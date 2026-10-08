@@ -1,7 +1,8 @@
 import type { Ref } from 'vue'
-import { computed, ref, watch } from 'vue'
+import { computed, onScopeDispose, ref, watch } from 'vue'
 import { useI18n } from 'vue-i18n'
 
+import { useFeatureFlags } from '@/composables/useFeatureFlags'
 import { st } from '@/i18n'
 import { civitaiImportSource } from '@/platform/assets/importSources/civitaiImportSource'
 import { huggingfaceImportSource } from '@/platform/assets/importSources/huggingfaceImportSource'
@@ -11,7 +12,11 @@ import type {
 } from '@/platform/assets/schemas/assetSchema'
 import { assetService } from '@/platform/assets/services/assetService'
 import type { ImportSource } from '@/platform/assets/types/importSource'
-import { getAssetFilename } from '@/platform/assets/utils/assetMetadataUtils'
+import {
+  getAssetFilename,
+  stripModelTypePrefix,
+  toModelTypeTag
+} from '@/platform/assets/utils/assetMetadataUtils'
 import { validateSourceUrl } from '@/platform/assets/utils/importSourceUtil'
 import { useAssetDownloadStore } from '@/stores/assetDownloadStore'
 import { useAssetsStore } from '@/stores/assetsStore'
@@ -68,6 +73,7 @@ export function useUploadModelWizard(
   options: UploadModelWizardOptions = {}
 ) {
   const { t } = useI18n()
+  const { flags } = useFeatureFlags()
   const assetsStore = useAssetsStore()
   const assetDownloadStore = useAssetDownloadStore()
   const modelToNodeStore = useModelToNodeStore()
@@ -79,6 +85,16 @@ export function useUploadModelWizard(
   const uploadError = ref('')
   const uploadTypeMismatch = ref<UploadModelTypeMismatch | null>(null)
   let stopAsyncWatch: (() => void) | undefined
+  let activeAsyncTaskId: string | undefined
+  let uploadGeneration = 0
+  let disposed = false
+  const isStaleUpload = (generation: number) =>
+    disposed || generation !== uploadGeneration
+  onScopeDispose(() => {
+    disposed = true
+    uploadGeneration++
+    stopAsyncWatch?.()
+  })
 
   const wizardData = ref<WizardData>({
     url: '',
@@ -217,7 +233,7 @@ export function useUploadModelWizard(
 
   async function uploadPreviewImage(
     filename: string
-  ): Promise<string | undefined> {
+  ): Promise<{ id: string; createdNew: boolean } | undefined> {
     if (!wizardData.value.previewImage) return undefined
 
     try {
@@ -235,19 +251,20 @@ export function useUploadModelWizard(
         name: `${baseFilename}_preview.${extension}`,
         tags: ['preview']
       })
-      return previewAsset.id
+      return {
+        id: previewAsset.id,
+        createdNew: previewAsset.created_new
+      }
     } catch (error) {
       console.error('Failed to upload preview image:', error)
       return undefined
     }
   }
 
-  async function refreshModelCaches() {
-    if (!resolvedModelType.value) return
+  async function refreshModelCaches(modelType = resolvedModelType.value) {
+    if (!modelType) return
 
-    const providers = modelToNodeStore.getAllNodeProviders(
-      resolvedModelType.value
-    )
+    const providers = modelToNodeStore.getAllNodeProviders(modelType)
     const results = await Promise.allSettled(
       providers.map((provider) =>
         assetsStore.updateModelsForNodeType(provider.nodeDef.name)
@@ -271,19 +288,22 @@ export function useUploadModelWizard(
   }
 
   function getImportedModelType(asset: AssetItem): string | undefined {
-    const knownType = asset.tags.find(
-      (tag) =>
-        tag !== MODEL_ROOT_TAG &&
+    const subtypeTags = asset.tags
+      .filter((tag) => tag !== MODEL_ROOT_TAG)
+      .map(stripModelTypePrefix)
+    return (
+      subtypeTags.find((tag) =>
         modelTypes.value.some((type) => type.value === tag)
+      ) ?? subtypeTags[0]
     )
-    return knownType ?? asset.tags.find((tag) => tag !== MODEL_ROOT_TAG)
   }
 
   function blockMismatchedImportedModel(
     asset: AssetItem,
     requiredType: string
   ): boolean {
-    if (asset.tags.includes(requiredType)) return false
+    if (asset.tags.map(stripModelTypePrefix).includes(requiredType))
+      return false
 
     const importedType = getImportedModelType(asset)
     uploadStatus.value = 'error'
@@ -299,6 +319,74 @@ export function useUploadModelWizard(
     return true
   }
 
+  function watchAsyncUpload(
+    taskId: string,
+    filename: string,
+    modelType: string | undefined
+  ): UploadModelSuccess {
+    uploadStatus.value = 'processing'
+    const uploadSuccess: UploadModelSuccess = {
+      filename,
+      modelType,
+      taskId,
+      status: 'processing'
+    }
+
+    activeAsyncTaskId = taskId
+    const watchState: { resolved: boolean; stop?: () => void } = {
+      resolved: false
+    }
+    const stop = watch(
+      () =>
+        assetDownloadStore.downloadList.find((d) => d.taskId === taskId)
+          ?.status,
+      async (status) => {
+        if (activeAsyncTaskId !== taskId) {
+          watchState.stop?.()
+          return
+        }
+        if (status === 'completed') {
+          watchState.resolved = true
+          uploadStatus.value = 'success'
+          uploadError.value = ''
+          await refreshModelCaches()
+          watchState.stop?.()
+          if (stopAsyncWatch === watchState.stop) stopAsyncWatch = undefined
+          if (activeAsyncTaskId === taskId) activeAsyncTaskId = undefined
+          return
+        }
+        if (
+          status === 'failed' ||
+          status === 'cancellation_pending' ||
+          status === 'cancelled'
+        ) {
+          // Keep watching because an authoritative completion can replace
+          // provisional failure and cancellation states.
+          const download = assetDownloadStore.downloadList.find(
+            (d) => d.taskId === taskId
+          )
+          uploadStatus.value = 'error'
+          uploadError.value =
+            status === 'cancelled' || status === 'cancellation_pending'
+              ? t('electronFileDownload.cancelled')
+              : download?.error ||
+                t('assetBrowser.downloadFailed', {
+                  name: download?.assetName || ''
+                })
+        }
+      },
+      { immediate: true }
+    )
+    watchState.stop = stop
+    if (watchState.resolved) {
+      stop()
+      stopAsyncWatch = undefined
+    } else {
+      stopAsyncWatch = stop
+    }
+    return uploadSuccess
+  }
+
   async function uploadModel(): Promise<UploadModelSuccess | null> {
     if (isUploading.value) return null
     if (!canUploadModel.value) {
@@ -312,18 +400,37 @@ export function useUploadModelWizard(
     }
 
     isUploading.value = true
+    const generation = ++uploadGeneration
+    stopAsyncWatch?.()
+    stopAsyncWatch = undefined
+    activeAsyncTaskId = undefined
     uploadTypeMismatch.value = null
     let uploadSuccess: UploadModelSuccess | null = null
 
     try {
       const modelType = resolvedModelType.value
-      const tags = modelType ? ['models', modelType] : ['models']
+      const subtypeTag =
+        modelType && flags.supportsModelTypeTags
+          ? toModelTypeTag(modelType)
+          : modelType
+      const tags = subtypeTag ? [MODEL_ROOT_TAG, subtypeTag] : [MODEL_ROOT_TAG]
       const filename =
         wizardData.value.metadata?.filename ||
         wizardData.value.metadata?.name ||
         'model'
 
-      const previewId = await uploadPreviewImage(filename)
+      const preview = await uploadPreviewImage(filename)
+      if (isStaleUpload(generation)) {
+        if (preview?.createdNew) {
+          try {
+            await assetService.deleteAsset(preview.id)
+          } catch (error) {
+            console.error('Failed to clean up stale preview image:', error)
+          }
+        }
+        return null
+      }
+
       const userMetadata = {
         source: source.type,
         source_url: wizardData.value.url,
@@ -334,7 +441,7 @@ export function useUploadModelWizard(
         source_url: wizardData.value.url,
         tags,
         user_metadata: userMetadata,
-        preview_id: previewId
+        preview_id: preview?.id
       })
 
       if (result.type === 'async' && result.task.status !== 'completed') {
@@ -345,51 +452,21 @@ export function useUploadModelWizard(
             filename
           )
         }
-        uploadStatus.value = 'processing'
-        uploadSuccess = {
-          filename,
-          modelType,
-          taskId: result.task.task_id,
-          status: 'processing'
-        }
+      }
 
-        stopAsyncWatch?.()
-        let resolved = false
-        const stop = watch(
-          () =>
-            assetDownloadStore.downloadList.find(
-              (d) => d.taskId === result.task.task_id
-            )?.status,
-          async (status) => {
-            if (status === 'completed') {
-              resolved = true
-              uploadStatus.value = 'success'
-              await refreshModelCaches()
-              stopAsyncWatch?.()
-              stopAsyncWatch = undefined
-            } else if (status === 'failed') {
-              resolved = true
-              const download = assetDownloadStore.downloadList.find(
-                (d) => d.taskId === result.task.task_id
-              )
-              uploadStatus.value = 'error'
-              uploadError.value =
-                download?.error ||
-                t('assetBrowser.downloadFailed', {
-                  name: download?.assetName || ''
-                })
-              stopAsyncWatch?.()
-              stopAsyncWatch = undefined
-            }
-          },
-          { immediate: true }
-        )
-        if (resolved) {
-          stop()
-          stopAsyncWatch = undefined
-        } else {
-          stopAsyncWatch = stop
+      if (isStaleUpload(generation)) {
+        if (result.type === 'sync' || result.task.status === 'completed') {
+          await refreshModelCaches(modelType)
         }
+        return null
+      }
+
+      if (result.type === 'async' && result.task.status !== 'completed') {
+        uploadSuccess = watchAsyncUpload(
+          result.task.task_id,
+          filename,
+          modelType
+        )
       } else {
         if (
           requiredModelType &&
@@ -403,6 +480,7 @@ export function useUploadModelWizard(
 
         uploadStatus.value = 'success'
         await refreshModelCaches()
+        if (isStaleUpload(generation)) return null
         uploadSuccess = {
           filename:
             result.type === 'sync' ? getAssetFilename(result.asset) : filename,
@@ -412,13 +490,16 @@ export function useUploadModelWizard(
       }
       currentStep.value = 3
     } catch (error) {
+      if (isStaleUpload(generation)) return null
       console.error('Failed to upload asset:', error)
       uploadStatus.value = 'error'
       uploadError.value =
         error instanceof Error ? error.message : 'Failed to upload model'
       currentStep.value = 3
     } finally {
-      isUploading.value = false
+      if (!isStaleUpload(generation)) {
+        isUploading.value = false
+      }
     }
     return uploadSuccess
   }
@@ -430,8 +511,10 @@ export function useUploadModelWizard(
   }
 
   function resetWizard() {
+    uploadGeneration++
     stopAsyncWatch?.()
     stopAsyncWatch = undefined
+    activeAsyncTaskId = undefined
     currentStep.value = 1
     isFetchingMetadata.value = false
     isUploading.value = false

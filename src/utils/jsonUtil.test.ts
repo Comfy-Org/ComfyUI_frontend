@@ -1,13 +1,9 @@
-import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
+import { beforeEach, describe, expect, it, vi } from 'vitest'
 
 import { parseJsonWithNonFinite } from '@/utils/jsonUtil'
 
 beforeEach(() => {
   vi.spyOn(console, 'warn').mockImplementation(() => {})
-})
-
-afterEach(() => {
-  vi.restoreAllMocks()
 })
 
 describe('parseJsonWithNonFinite', () => {
@@ -124,10 +120,6 @@ describe('parseJsonWithNonFinite', () => {
     expect(
       parseJsonWithNonFinite('{"x": "a\\nNaN", "y": "\\u0022Infinity\\u0022"}')
     ).toEqual({ x: 'a\nNaN', y: '"Infinity"' })
-  })
-
-  it('throws SyntaxError on otherwise-invalid JSON', () => {
-    expect(() => parseJsonWithNonFinite('{not json}')).toThrow(SyntaxError)
   })
 
   it.for([

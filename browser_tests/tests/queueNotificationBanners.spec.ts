@@ -1,14 +1,23 @@
 import type { Page } from '@playwright/test'
-import { expect } from '@playwright/test'
+import { expect, mergeTests } from '@playwright/test'
 
-import { comfyPageFixture as test } from '@e2e/fixtures/ComfyPage'
+import { comfyPageFixture } from '@e2e/fixtures/ComfyPage'
+import { ExecutionHelper } from '@e2e/fixtures/helpers/ExecutionHelper'
+import {
+  createRouteMockJob,
+  jobsRouteFixture
+} from '@e2e/fixtures/jobsRouteFixture'
 import { TestIds } from '@e2e/fixtures/selectors'
+import { webSocketFixture } from '@e2e/fixtures/ws'
+
+const test = mergeTests(comfyPageFixture, webSocketFixture, jobsRouteFixture)
 
 // Mirrors BANNER_DISMISS_DELAY_MS in src/composables/queue/useQueueNotificationBanners.ts.
 // Duplicated here to avoid pulling production source (and its litegraph
 // transitive deps) into the Playwright TS loader.
 const BANNER_DISMISS_DELAY_MS = 4000
 const BANNER_ASSERT_TIMEOUT_MS = BANNER_DISMISS_DELAY_MS + 2000
+const BANNER_MOCK_FINISH_SKEW_MS = 60_000
 
 const REQUEST_ID_PRIMARY = 1
 const REQUEST_ID_SECONDARY = 2
@@ -144,6 +153,43 @@ test.describe('Queue notification banners', { tag: ['@ui'] }, () => {
       await expect(banner).toContainText('2 jobs added to queue', {
         timeout: BANNER_ASSERT_TIMEOUT_MS
       })
+    })
+  })
+
+  test.describe('Run acknowledgement priority', () => {
+    test('a new run is acknowledged over an outcome banner still on screen', async ({
+      comfyPage,
+      getWebSocket,
+      jobsRoutes
+    }) => {
+      const failedJobId = 'failed-job-1'
+      // mockJobsScenario matches queueStore's own maxHistoryItems (64); the bare
+      // mockJobsHistory default is 200 and never matches the request. The finish
+      // time has to beat the moment the queue goes active, which is later than
+      // this mock is built.
+      await jobsRoutes.mockJobsScenario({
+        history: [
+          createRouteMockJob({
+            id: failedJobId,
+            status: 'failed',
+            execution_end_time: Date.now() + BANNER_MOCK_FINISH_SKEW_MS
+          })
+        ]
+      })
+
+      const exec = new ExecutionHelper(comfyPage, await getWebSocket())
+      exec.executionStart(failedJobId)
+      exec.executionError(failedJobId, '1', 'boom')
+      exec.status(0)
+
+      const banner = bannerLocator(comfyPage.page)
+      await expect(banner).toContainText('failed', {
+        timeout: BANNER_ASSERT_TIMEOUT_MS
+      })
+
+      await dispatchPromptQueueing(comfyPage.page)
+
+      await expect(banner).toContainText('queuing')
     })
   })
 

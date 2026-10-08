@@ -1,15 +1,16 @@
-import {
-  type ComfyApiWorkflow,
-  type ComfyWorkflowJSON
+import type {
+  ComfyApiWorkflow,
+  ComfyWorkflowJSON
 } from '@/platform/workflow/validation/schemas/workflowSchema'
-import {
-  type ComfyMetadata,
-  ComfyMetadataTags,
-  type EbmlElementRange,
-  type EbmlTagPosition,
-  type TextRange,
-  type VInt
+import { ComfyMetadataTags } from '@/types/metadataTypes'
+import type {
+  ComfyMetadata,
+  EbmlElementRange,
+  EbmlTagPosition,
+  TextRange,
+  VInt
 } from '@/types/metadataTypes'
+import { readFileAsArrayBuffer } from '@/utils/fileUtil'
 import { parseJsonWithNonFinite } from '@/utils/jsonUtil'
 
 const WEBM_SIGNATURE = [0x1a, 0x45, 0xdf, 0xa3]
@@ -325,25 +326,14 @@ const parseMetadata = (data: Uint8Array): ComfyMetadata => {
   return meta
 }
 
-const handleFileLoad = (
-  event: ProgressEvent<FileReader>,
-  resolve: (value: ComfyMetadata) => void
-) => {
-  if (!event.target?.result) {
-    resolve({})
-    return
-  }
-
+const parseWebmBuffer = (buffer: ArrayBuffer): ComfyMetadata => {
   try {
-    const data = new Uint8Array(event.target.result as ArrayBuffer)
-    if (data.length < 4 || !hasWebmSignature(data)) {
-      resolve({})
-      return
-    }
+    const data = new Uint8Array(buffer)
+    if (data.length < 4 || !hasWebmSignature(data)) return {}
 
-    resolve(parseMetadata(data))
+    return parseMetadata(data)
   } catch {
-    resolve({})
+    return {}
   }
 }
 
@@ -351,12 +341,9 @@ const handleFileLoad = (
  * Extracts ComfyUI Workflow metadata from a WebM file
  * @param file - The WebM file to extract metadata from
  */
-export function getFromWebmFile(file: File): Promise<ComfyMetadata> {
-  return new Promise<ComfyMetadata>((resolve) => {
-    const reader = new FileReader()
-    reader.onload = (event) => handleFileLoad(event, resolve)
-    reader.onerror = () => resolve({})
-    reader.onabort = () => resolve({})
-    reader.readAsArrayBuffer(file.slice(0, MAX_READ_BYTES))
-  })
+export async function getFromWebmFile(file: File): Promise<ComfyMetadata> {
+  const buffer = await readFileAsArrayBuffer(file, MAX_READ_BYTES)
+  if (!buffer) return {}
+
+  return parseWebmBuffer(buffer)
 }

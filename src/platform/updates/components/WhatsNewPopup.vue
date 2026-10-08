@@ -15,10 +15,10 @@
       <!-- Modal Body -->
       <div class="modal-body flex flex-1 flex-col gap-4 px-0 pt-0 pb-2">
         <!-- Release Content -->
-        <div
+        <SanitizedHtml
           class="content-text max-h-96 overflow-y-auto"
-          v-html="formattedContent"
-        ></div>
+          :html="formattedContent"
+        />
       </div>
 
       <!-- Modal Footer -->
@@ -55,6 +55,7 @@ import { default as DOMPurify } from 'dompurify'
 import { computed, onMounted, ref } from 'vue'
 import { useI18n } from 'vue-i18n'
 
+import SanitizedHtml from '@/components/common/SanitizedHtml.vue'
 import Button from '@/components/ui/button/Button.vue'
 import { useExternalLink } from '@/composables/useExternalLink'
 import { formatVersionAnchor } from '@/utils/formatUtil'
@@ -231,6 +232,7 @@ defineExpose({
 
 /* What's new title - targets h2 or strong text after h1 */
 .content-text :deep(h2),
+/* stylelint-disable-next-line selector-max-type -- generated markdown offers no class hooks */
 .content-text :deep(h1 + p strong) {
   color: var(--text-primary);
   font-family: Inter, sans-serif;

@@ -1,4 +1,4 @@
-import { beforeEach, describe, expect, it, vi } from 'vitest'
+import { describe, expect, it, vi } from 'vitest'
 
 import {
   OAuthApiError,
@@ -35,10 +35,6 @@ const errorResponse = (status: number, message: string) =>
   })
 
 describe('fetchOAuthConsentChallenge', () => {
-  beforeEach(() => {
-    vi.restoreAllMocks()
-  })
-
   it('returns the parsed challenge on 200', async () => {
     vi.spyOn(globalThis, 'fetch').mockResolvedValue(okResponse(validChallenge))
 
@@ -144,10 +140,6 @@ describe('fetchOAuthConsentChallenge', () => {
 })
 
 describe('submitOAuthConsentDecision', () => {
-  beforeEach(() => {
-    vi.restoreAllMocks()
-  })
-
   it('navigates to the redirect_url returned by cloud on success', async () => {
     vi.spyOn(globalThis, 'fetch').mockResolvedValue(
       okResponse({ redirect_url: 'http://127.0.0.1:50632/cb?code=xyz' })
@@ -205,6 +197,32 @@ describe('submitOAuthConsentDecision', () => {
         workspaceId: 'personal-workspace'
       })
     ).rejects.toBeInstanceOf(OAuthApiError)
+  })
+
+  it('carries the refusal code from the error body', async () => {
+    vi.spyOn(globalThis, 'fetch').mockResolvedValue(
+      new Response(
+        JSON.stringify({
+          code: 'origin_not_allowed',
+          message: 'This origin may not use the session'
+        }),
+        { status: 403, headers: { 'Content-Type': 'application/json' } }
+      )
+    )
+
+    await expect(
+      submitOAuthConsentDecision({
+        oauthRequestId: validChallenge.oauth_request_id,
+        csrfToken: validChallenge.csrf_token,
+        decision: 'allow',
+        workspaceId: 'personal-workspace'
+      })
+    ).rejects.toMatchObject({
+      name: 'OAuthApiError',
+      status: 403,
+      code: 'origin_not_allowed',
+      message: 'This origin may not use the session'
+    })
   })
 
   it('throws when redirect_url is missing from a successful response', async () => {

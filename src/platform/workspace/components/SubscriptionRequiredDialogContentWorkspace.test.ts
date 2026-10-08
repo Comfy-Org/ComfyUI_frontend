@@ -1,4 +1,4 @@
-import { createTestingPinia } from '@pinia/testing'
+import { getActivePinia } from 'pinia'
 import { render, screen } from '@testing-library/vue'
 import userEvent from '@testing-library/user-event'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
@@ -6,6 +6,7 @@ import { ref } from 'vue'
 import { createI18n } from 'vue-i18n'
 
 import type { PaymentIntentSource } from '@/platform/telemetry/types'
+import type { SubscriptionCheckoutSelection } from '@/platform/workspace/composables/useSubscriptionCheckout'
 
 import SubscriptionRequiredDialogContentWorkspace from './SubscriptionRequiredDialogContentWorkspace.vue'
 
@@ -15,13 +16,18 @@ const mockHandleAddCreditCard = vi.fn()
 const mockHandleConfirmTransition = vi.fn()
 const mockHandleResubscribe = vi.fn()
 const mockHandleSuccessClose = vi.fn()
+const mockApplyPromotionCode = vi.fn()
+const mockInvalidateQuote = vi.fn()
 const mockCheckoutStep = ref<'pricing' | 'preview' | 'success'>('pricing')
 const mockPreviewData = ref<{ transition_type: string } | null>(null)
 const mockUseSubscriptionCheckout = vi.hoisted(() => vi.fn())
 
-vi.mock('@/platform/workspace/composables/useSubscriptionCheckout', () => ({
-  useSubscriptionCheckout: mockUseSubscriptionCheckout
-}))
+vi.mock(
+  import('@/platform/workspace/composables/useSubscriptionCheckout'),
+  () => ({
+    useSubscriptionCheckout: mockUseSubscriptionCheckout
+  })
+)
 
 const i18n = createI18n({
   legacy: false,
@@ -54,8 +60,13 @@ const PricingTableStub = {
 
 const AddPaymentPreviewStub = {
   name: 'SubscriptionAddPaymentPreviewWorkspace',
+  props: ['quoteIsCurrent'],
   template: `<div data-testid="add-payment-preview">
+    <span data-testid="quote-current">{{ quoteIsCurrent }}</span>
     <button data-testid="add-card-btn" @click="$emit('addCreditCard')">Add Card</button>
+    <button data-testid="apply-promo-btn" @click="$emit('applyPromotionCode', 'SAVE20')">Apply promo</button>
+    <button data-testid="invalidate-quote-btn" @click="$emit('invalidateQuote')">Invalidate quote</button>
+    <button @click="$emit('back')">Back</button>
   </div>`
 }
 
@@ -77,22 +88,25 @@ function renderComponent(
   props: {
     onClose?: () => void
     reason?: PaymentIntentSource
+    paymentIntentSource?: PaymentIntentSource
     isPersonal?: boolean
+    initialCheckout?: SubscriptionCheckoutSelection
   } = {}
 ) {
   return render(SubscriptionRequiredDialogContentWorkspace, {
     props: {
       onClose: props.onClose ?? vi.fn(),
+      paymentIntentSource: props.paymentIntentSource,
       ...(props.reason ? { reason: props.reason } : {}),
       ...(props.isPersonal !== undefined
         ? { isPersonal: props.isPersonal }
+        : {}),
+      ...(props.initialCheckout
+        ? { initialCheckout: props.initialCheckout }
         : {})
     },
     global: {
-      plugins: [
-        createTestingPinia({ createSpy: vi.fn, stubActions: false }),
-        i18n
-      ],
+      plugins: [getActivePinia()!, i18n],
       stubs: {
         PricingTableWorkspace: PricingTableStub,
         SubscriptionAddPaymentPreviewWorkspace: AddPaymentPreviewStub,
@@ -105,7 +119,6 @@ function renderComponent(
 
 describe('SubscriptionRequiredDialogContentWorkspace', () => {
   beforeEach(() => {
-    vi.clearAllMocks()
     mockUseSubscriptionCheckout.mockReturnValue({
       checkoutStep: mockCheckoutStep,
       isLoadingPreview: ref(false),
@@ -113,13 +126,18 @@ describe('SubscriptionRequiredDialogContentWorkspace', () => {
       isSubscribing: ref(false),
       isResubscribing: ref(false),
       previewData: mockPreviewData,
+      quoteIsCurrent: ref(true),
+      isApplyingPromotionCode: ref(false),
       selectedTierKey: ref('standard'),
       selectedBillingCycle: ref('yearly'),
+      activeCheckoutActionUrl: ref(null),
       isPolling: ref(false),
       handleSubscribeClick: mockHandleSubscribeClick,
       handleBackToPricing: mockHandleBackToPricing,
       handleAddCreditCard: mockHandleAddCreditCard,
       handleConfirmTransition: mockHandleConfirmTransition,
+      applyPromotionCode: mockApplyPromotionCode,
+      invalidateQuote: mockInvalidateQuote,
       handleResubscribe: mockHandleResubscribe,
       handleSuccessClose: mockHandleSuccessClose
     })
@@ -134,13 +152,40 @@ describe('SubscriptionRequiredDialogContentWorkspace', () => {
     expect(screen.queryByTestId('transition-preview')).not.toBeInTheDocument()
   })
 
-  it('passes the reason into subscription checkout', () => {
-    renderComponent({ reason: 'out_of_credits' })
+  it('passes the surface, not the copy reason, into subscription checkout', () => {
+    renderComponent({
+      reason: 'out_of_credits',
+      paymentIntentSource: 'agent_paywall'
+    })
 
     expect(mockUseSubscriptionCheckout).toHaveBeenCalledWith(
       expect.any(Function),
-      'out_of_credits'
+      'agent_paywall',
+      { tierPlanType: 'team' }
     )
+    expect(screen.getByText('Insufficient Credits')).toBeInTheDocument()
+  })
+
+  it('marks the legacy Personal table as a personal-plan target', () => {
+    renderComponent({ isPersonal: true })
+
+    expect(mockUseSubscriptionCheckout).toHaveBeenCalledWith(
+      expect.any(Function),
+      undefined,
+      { tierPlanType: 'personal' }
+    )
+  })
+
+  it('opens a personal deep-linked checkout on mount', () => {
+    const initialCheckout = {
+      planMode: 'personal',
+      tierKey: 'creator',
+      billingCycle: 'monthly'
+    } as const
+
+    renderComponent({ isPersonal: true, initialCheckout })
+
+    expect(mockHandleSubscribeClick).toHaveBeenCalledWith(initialCheckout)
   })
 
   it('shows the team workspace header by default', () => {
@@ -171,11 +216,11 @@ describe('SubscriptionRequiredDialogContentWorkspace', () => {
     expect(onClose).toHaveBeenCalledOnce()
   })
 
-  it('shows back button on preview step', () => {
+  it('leaves the back action to the preview step that renders its own', () => {
     mockCheckoutStep.value = 'preview'
     mockPreviewData.value = { transition_type: 'new_subscription' }
     renderComponent()
-    expect(screen.getByLabelText('Back')).toBeInTheDocument()
+    expect(screen.getAllByRole('button', { name: 'Back' })).toHaveLength(1)
   })
 
   it('shows insufficient credits message when reason is out_of_credits', () => {
@@ -195,6 +240,19 @@ describe('SubscriptionRequiredDialogContentWorkspace', () => {
     renderComponent()
     expect(screen.getByTestId('add-payment-preview')).toBeInTheDocument()
     expect(screen.queryByTestId('transition-preview')).not.toBeInTheDocument()
+  })
+
+  it('keeps the legacy checkout current and wires promotion controls', async () => {
+    mockCheckoutStep.value = 'preview'
+    mockPreviewData.value = { transition_type: 'new_subscription' }
+    renderComponent()
+
+    expect(screen.getByTestId('quote-current')).toHaveTextContent('true')
+    await userEvent.click(screen.getByTestId('apply-promo-btn'))
+    await userEvent.click(screen.getByTestId('invalidate-quote-btn'))
+
+    expect(mockApplyPromotionCode).toHaveBeenCalledWith('SAVE20')
+    expect(mockInvalidateQuote).toHaveBeenCalledOnce()
   })
 
   it('shows transition preview when transition_type is upgrade', () => {
@@ -232,7 +290,7 @@ describe('SubscriptionRequiredDialogContentWorkspace', () => {
     mockPreviewData.value = { transition_type: 'new_subscription' }
     renderComponent()
 
-    await user.click(screen.getByLabelText('Back'))
+    await user.click(screen.getByRole('button', { name: 'Back' }))
 
     expect(mockHandleBackToPricing).toHaveBeenCalled()
   })

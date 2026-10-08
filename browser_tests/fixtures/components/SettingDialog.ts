@@ -3,25 +3,68 @@ import type { Locator, Page } from '@playwright/test'
 import type { ComfyPage } from '@e2e/fixtures/ComfyPage'
 import { TestIds } from '@e2e/fixtures/selectors'
 import { BaseDialog } from '@e2e/fixtures/components/BaseDialog'
+import { KeybindingPanel } from '@e2e/fixtures/components/KeybindingPanel'
+import { comfyExpect as expect } from '@e2e/fixtures/utils/customMatchers'
 
 export class SettingDialog extends BaseDialog {
-  public readonly searchBox: Locator
   public readonly categories: Locator
   public readonly contentArea: Locator
+  public readonly extensionActionsButton: Locator
+  public readonly keybindingPanel: KeybindingPanel
+  public readonly searchBox: Locator
 
   constructor(
     page: Page,
     public readonly comfyPage: ComfyPage
   ) {
     super(page, TestIds.dialogs.settings)
-    this.searchBox = this.root.getByPlaceholder(/Search/)
     this.categories = this.root.locator('nav').getByRole('button')
     this.contentArea = this.root.getByRole('main')
+    this.extensionActionsButton = this.contentArea
+      .getByRole('columnheader')
+      .getByRole('button', { name: 'More Options' })
+    this.keybindingPanel = new KeybindingPanel(page, comfyPage)
+    this.searchBox = this.root.getByPlaceholder(/Search/)
   }
 
   async open() {
     await this.comfyPage.command.executeCommand('Comfy.ShowSettingsDialog')
     await this.waitForVisible()
+  }
+
+  async openExtensionActions() {
+    await this.category('Extension').click()
+    await expect(this.extensionActionsButton).toHaveAttribute(
+      'aria-haspopup',
+      'menu'
+    )
+    await this.extensionActionsButton.click()
+    await expect(
+      this.comfyPage.contextMenu.menuItem('Enable Selected')
+    ).toBeVisible()
+  }
+
+  async selectLocale(locale: 'zh' | 'en') {
+    await this.open()
+    await this.category('Comfy').click()
+    const select = this.root
+      .locator('[data-setting-id="Comfy.Locale"]')
+      .getByRole('combobox')
+    await expect(select).toBeVisible()
+    await select.click()
+    await this.page
+      .getByRole('option', {
+        name: locale === 'zh' ? '中文' : 'English',
+        exact: true
+      })
+      .click()
+    await expect
+      .poll(() => this.comfyPage.settings.getPersistedSetting('Comfy.Locale'))
+      .toBe(locale)
+    await this.root
+      .getByRole('button', { name: /Close dialog|关闭对话框/i })
+      .click()
+    await this.waitForHidden()
   }
 
   /**
@@ -39,8 +82,16 @@ export class SettingDialog extends BaseDialog {
    * @param id - The id of the setting
    */
   async toggleBooleanSetting(id: string) {
-    const settingInputDiv = this.root.locator(`div[id="${id}"]`)
-    await settingInputDiv.locator('input').click()
+    await this.root.locator(`button[role="switch"][id="${id}"]`).click()
+  }
+
+  async selectSetting(id: string, value: string) {
+    await this.root
+      .locator(`[data-setting-id="${id}"]`)
+      .getByRole('combobox')
+      .click()
+    await this.page.getByRole('option', { name: value, exact: true }).click()
+    await expect.poll(() => this.comfyPage.settings.getSetting(id)).toBe(value)
   }
 
   category(name: string) {

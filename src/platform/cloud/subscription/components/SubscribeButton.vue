@@ -37,12 +37,12 @@ const emit = defineEmits<{
   subscribed: []
 }>()
 
-const { isActiveSubscription, showSubscriptionDialog, tier } =
+const { canAccessSubscriptionFeatures, showSubscriptionDialog, tier } =
   useBillingContext()
 const isAwaitingStripeSubscription = ref(false)
 
 watch(
-  [isAwaitingStripeSubscription, isActiveSubscription],
+  [isAwaitingStripeSubscription, canAccessSubscriptionFeatures],
   ([awaiting, isActive]) => {
     if (isCloud && awaiting && isActive) {
       emit('subscribed')
@@ -53,7 +53,8 @@ watch(
 
 const handleSubscribe = () => {
   useTelemetry()?.trackSubscription('subscribe_clicked', {
-    current_tier: tier.value?.toLowerCase()
+    current_tier: tier.value?.toLowerCase(),
+    reason: 'subscribe_now_button'
   })
   isAwaitingStripeSubscription.value = true
   showSubscriptionDialog({ reason: 'subscribe_now_button' })

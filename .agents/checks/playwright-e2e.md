@@ -7,12 +7,20 @@ tools: [Read, Grep]
 
 You are reviewing Playwright E2E test code in `browser_tests/`. Focus on issues a **reviewer** would catch that an author might miss — flakiness risks, fixture misuse, test isolation problems, and convention violations.
 
+**Rulebook — single source of truth:** `browser_tests/README.md` is the canonical
+browser-test guide. Every rule below is enforced against it; when in doubt, read
+that file. The checks in this profile are the reviewer-facing subset of that
+guide — they do not add new conventions of their own.
+
 Reference docs (read if you need full context):
 
-- `browser_tests/README.md` — setup, patterns, screenshot workflow
-- `browser_tests/AGENTS.md` — directory structure, fixture overview
-- `docs/guidance/playwright.md` — type assertion rules, test tags, forbidden patterns
-- `.claude/skills/writing-playwright-tests/SKILL.md` — anti-patterns, retry patterns, Vue Nodes vs LiteGraph decision guide
+- **`browser_tests/README.md`** — canonical guide: setup, directory structure,
+  writing conventions, typed mocks, flake prevention, screenshot workflow
+- `.claude/skills/writing-playwright-tests/SKILL.md` — authoring anti-patterns,
+  retry patterns, Vue Nodes vs LiteGraph decision guide
+- `.claude/skills/hardening-flaky-e2e-tests/SKILL.md` — flake transforms
+- `browser_tests/AGENTS.md` and `docs/guidance/playwright.md` are stubs that
+  redirect to the canonical guide
 
 ## Checks
 
@@ -28,7 +36,7 @@ Reference docs (read if you need full context):
 
 5. **Shared mutable state between tests** — Variables declared outside `test()` blocks, `let` state mutated across tests, or tests depending on execution order. Each test must be independently runnable.
 
-6. **Missing cleanup of server-persisted state** — Settings changed via `comfyPage.settings.setSetting()` persist across tests. Must be reset in `afterEach` or at test start. Same for uploaded files or saved workflows. Prefer moving cleanup into [fixture options](https://playwright.dev/docs/test-fixtures#fixtures-options) so individual tests don't manage reset logic.
+6. **Missing state isolation** — `comfyPageFixture` replaces backend settings before each test, so do not request settings resets in `afterEach`. Prefer `test.use({ initialSettings })` over startup-only setters in `beforeEach`. Nested option objects replace their parents; preserve inherited overrides and pre-navigation mock ordering. Manual boots must seed settings for their user, and mock-only cloud tests need a fresh mock settings response. Uploaded files and saved workflows still need cleanup. See [Starting settings and isolation](../../browser_tests/README.md#starting-settings-and-isolation).
 
 7. **Double-click without `{ delay }` option** — `dblclick()` without `{ delay: 5 }` or similar can be too fast for the canvas event handler.
 
@@ -38,7 +46,7 @@ Reference docs (read if you need full context):
    - `comfyPage.command.executeCommand()` for menu/command actions
    - `comfyPage.workflow.loadWorkflow()` for loading test workflows
    - `comfyPage.canvasOps.resetView()` for view reset
-   - `comfyPage.settings.setSetting()` for settings
+   - `test.use({ initialSettings })` for starting settings; `comfyPage.settings.setSetting()` for runtime changes under test
    - Component page objects in `browser_tests/fixtures/components/`
 
 9. **Building workflows programmatically when a JSON asset would work** — Complex `page.evaluate` chains to construct a graph should use a premade JSON workflow in `browser_tests/assets/` loaded via `comfyPage.workflow.loadWorkflow()`.
@@ -47,9 +55,9 @@ Reference docs (read if you need full context):
 
 ### Convention Violations (Minor)
 
-11. **Missing test tags** — Every `test.describe` should have `tag` with at least one of: `@smoke`, `@slow`, `@screenshot`, `@canvas`, `@node`, `@widget`, `@mobile`, `@2x`. See `.claude/skills/writing-playwright-tests/SKILL.md` for when to use each.
+11. **Missing required tags** — Project-routing tags are load-bearing: `playwright.config.ts` selects which project/run a test lands in by grepping `@mobile`, `@2x`, `@0.5x`, `@perf`, `@audit`, `@cloud`, `@oss`. A test that must run in one of those projects but lacks the tag silently won't run there. Vue-node tests must use `@vue-nodes`, which enables the renderer and waits for initial readiness. Never manually set `Comfy.VueNodes.Enabled` or call `comfyPage.vueNodes.waitForNodes()` in tests. Organizational tags (`@smoke`, `@slow`, `@screenshot`, `@canvas`, `@node`, `@widget`, `@subgraph`, `@ui`) are for `--grep` filtering and are encouraged but not mandatory. See `browser_tests/README.md` → Test Tags.
 
-12. **`as any` type assertions** — Forbidden in E2E tests. Use specific type assertions or test-local type helpers. See `docs/guidance/playwright.md` for acceptable patterns.
+12. **`as any` type assertions** — Forbidden in E2E tests. Use specific type assertions or test-local type helpers. See `browser_tests/README.md` → Type safety for acceptable patterns.
 
 13. **Screenshot tests without masking dynamic content** — Timestamps, version numbers, or other non-deterministic content in screenshots will cause flakes. Use `mask` option.
 
@@ -65,10 +73,22 @@ Reference docs (read if you need full context):
 
 18. **Vue Nodes / LiteGraph mismatch** — If testing Vue-rendered node UI (DOM widgets, CSS states), should use `comfyPage.vueNodes.*`. If testing canvas interactions/connections, should use `comfyPage.nodeOps.*`. Mixing both in one test is a smell.
 
+### Structure, Types & Regressions (Medium)
+
+19. **Non-test code inline in the spec** — Flag free-standing functions/constants at the top of a spec that do setup, wire locators, or drive reusable dialog interactions (e.g. a "close the templates dialog" helper). These belong in `browser_tests/fixtures/components/` (page objects), `fixtures/helpers/`, or a Playwright fixture. Do NOT flag top-level Playwright hooks or configuration — `test.use()`, `test.describe.configure()`, and file-level `test.beforeEach()`/`test.afterEach()` legitimately live in the spec. The target is free-standing helpers/constants/locator wiring, not Playwright's own API surface. See `browser_tests/README.md` → Test structure.
+
+20. **Inline-declared types in specs/mocks** — Never hand-write `interface`/`type` shapes for API payloads, node definitions, or store data inside a spec or mock file. Must import the real type — generated packages (`@comfyorg/ingest-types`, `@comfyorg/registry-types`, `generatedManagerTypes.ts`) or `src/` Zod schemas. This requirement also applies to typed mock/data factories under `browser_tests/fixtures/data/` — the imported-type rule is enforced there despite the general `browser_tests/fixtures/` exclusion below. See `browser_tests/README.md` → Type safety and Test Data & Typed Mocks.
+
+21. **Spec not nested in a feature folder** — New specs must live in a `tests/` subfolder mirroring the feature under test, not dumped at the top level of `tests/`. Flag new top-level `browser_tests/tests/*.spec.ts` additions. See `browser_tests/README.md` → Spec File Placement.
+
+22. **Stale spec filename** — A spec's filename must describe the coverage it actually holds. Flag renamed/rescoped tests whose filename no longer matches their content. See `browser_tests/README.md` → Spec File Placement.
+
+23. **Test edit that may undo a prior fix** — When a diff removes or weakens an existing assertion, wait, or timeout in a test, confirm the change isn't silently undoing a deliberate regression/flake fix. The author should have run a `git blame` regression-detection pass; a reviewer flags removals of load-bearing guards whose history shows they fixed a specific race or bug. See `browser_tests/README.md` → Before changing an existing test.
+
 ## Rules
 
 - Only review `.spec.ts` files and supporting code in `browser_tests/`
-- Do NOT flag patterns in fixture/helper code (`browser_tests/fixtures/`) — those are shared infrastructure with different rules
-- "Major" for flakiness risks (items 1-7), "medium" for fixture misuse (8-10), "minor" for convention violations (11-15), "nitpick" for test design (16-18)
+- Do NOT flag patterns in fixture/helper code (`browser_tests/fixtures/`) — those are shared infrastructure with different rules (exception: rule 20's imported-type requirement still applies to typed mock/data factories under `browser_tests/fixtures/data/`)
+- "Major" for flakiness risks (items 1-7), "medium" for fixture misuse (8-10), "minor" for convention violations (11-15), "nitpick" for test design (16-18), "medium" for structure/type/regression rules (19-23)
 - When flagging missing fixture usage (item 8), confirm the helper exists by checking the fixture code — don't assume
 - Existing tests that predate conventions are acceptable to modify but not required to fix

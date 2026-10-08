@@ -1,10 +1,11 @@
-import { createTestingPinia } from '@pinia/testing'
-import { render, screen } from '@testing-library/vue'
 import userEvent from '@testing-library/user-event'
-import { setActivePinia } from 'pinia'
+import { render, screen, waitFor } from '@testing-library/vue'
+import { fromPartial } from '@total-typescript/shoehorn'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { defineComponent } from 'vue'
 import { createI18n } from 'vue-i18n'
+
+import { useTelemetry } from '@/platform/telemetry'
 
 import { promoteValueWidgetViaSubgraphInput } from '@/core/graph/subgraph/promotionUtils'
 import { LGraphNode } from '@/lib/litegraph/src/litegraph'
@@ -15,28 +16,20 @@ import {
 } from '@/lib/litegraph/src/subgraph/__fixtures__/subgraphHelpers'
 import type { SubgraphNode } from '@/lib/litegraph/src/subgraph/SubgraphNode'
 import type { IBaseWidget } from '@/lib/litegraph/src/types/widgets'
+import { useCanvasStore } from '@/renderer/core/canvas/canvasStore'
 import { useExecutionErrorStore } from '@/stores/executionErrorStore'
-import type { NodeExecutionId } from '@/types/nodeIdentification'
+import { useNodeDefStore } from '@/stores/nodeDefStore'
 import { toNodeId } from '@/types/nodeId'
+import type { NodeExecutionId } from '@/types/nodeIdentification'
 import { getExecutionIdByNode } from '@/utils/graphTraversalUtil'
 
 import SectionWidgets from './SectionWidgets.vue'
 
 const setDirty = vi.fn()
-const selectedItems: unknown[] = []
+const getNodeById = vi.fn()
+const animateToBounds = vi.fn()
 
-vi.mock('@/renderer/core/canvas/canvasStore', () => ({
-  useCanvasStore: () => ({
-    canvas: { setDirty },
-    selectedItems
-  })
-}))
-
-vi.mock('@/stores/nodeDefStore', () => ({
-  useNodeDefStore: () => ({
-    getInputSpecForWidget: vi.fn()
-  })
-}))
+vi.mock(import('@/platform/telemetry'))
 
 const WidgetItemStub = defineComponent({
   inheritAttrs: false,
@@ -63,6 +56,7 @@ const i18n = createI18n({
       rightSidePanel: {
         inputs: 'Inputs',
         resetAllParameters: 'Reset all',
+        locateNode: 'Locate',
         seeError: 'See error'
       }
     }
@@ -98,7 +92,7 @@ function createHostWithPromotedModel(): {
     promoteValueWidgetViaSubgraphInput(host, sourceNode, sourceWidget).ok
   ).toBe(true)
 
-  const promotedWidget = host.widgets?.find(
+  const promotedWidget = host.widgets.find(
     (widget) => widget.name === sourceWidget.name
   )
   if (!promotedWidget) throw new Error('Expected promoted widget')
@@ -121,9 +115,15 @@ function createHostWithPromotedModel(): {
 
 describe('SectionWidgets', () => {
   beforeEach(() => {
-    setActivePinia(createTestingPinia({ stubActions: false }))
-    setDirty.mockClear()
-    selectedItems.length = 0
+    useCanvasStore().canvas = fromPartial({
+      setDirty,
+      graph: fromPartial({
+        id: 'root',
+        rootGraph: { id: 'root' },
+        getNodeById
+      }),
+      animateToBounds
+    })
   })
 
   it('clears promoted widget validation by source and missing model by host', async () => {
@@ -145,7 +145,6 @@ describe('SectionWidgets', () => {
       global: {
         plugins: [i18n],
         stubs: {
-          Button: true,
           WidgetItem: WidgetItemStub,
           PropertiesAccordionItem: PropertiesAccordionItemStub
         }
@@ -170,5 +169,112 @@ describe('SectionWidgets', () => {
       'real_model.safetensors',
       { min: undefined, max: undefined }
     )
+  })
+
+  function createSimpleNodeWithWidget(): {
+    node: LGraphNode
+    widget: IBaseWidget
+  } {
+    const node = new LGraphNode('CheckpointLoaderSimple')
+    node.id = toNodeId(7)
+    const widget = node.addWidget(
+      'combo',
+      'ckpt_name',
+      'model.safetensors',
+      () => {},
+      { values: ['model.safetensors'] }
+    )
+    return { node, widget }
+  }
+
+  it('initializes dragging after mounting', async () => {
+    const { node, widget } = createSimpleNodeWithWidget()
+
+    render(SectionWidgets, {
+      props: {
+        widgets: [{ widget, node }],
+        isDraggable: true
+      },
+      global: {
+        plugins: [i18n],
+        stubs: {
+          WidgetItem: WidgetItemStub,
+          PropertiesAccordionItem: PropertiesAccordionItemStub
+        }
+      }
+    })
+
+    await waitFor(() =>
+      expect(
+        screen
+          .getByTestId('section-widgets-list')
+          .getAttribute('data-draggable-ready')
+      ).toBe('true')
+    )
+  })
+
+  it('tracks and locates the node when the Locate button is clicked', async () => {
+    const { node, widget } = createSimpleNodeWithWidget()
+    const boundingRect = [0, 0, 100, 100]
+    getNodeById.mockReturnValue({ boundingRect })
+    const user = userEvent.setup()
+
+    render(SectionWidgets, {
+      props: {
+        widgets: [{ widget, node }],
+        showLocateButton: true
+      },
+      global: {
+        plugins: [i18n],
+        stubs: {
+          WidgetItem: WidgetItemStub,
+          PropertiesAccordionItem: PropertiesAccordionItemStub
+        }
+      }
+    })
+
+    await user.click(screen.getByRole('button', { name: 'Locate' }))
+
+    expect(
+      useTelemetry()?.trackUiButtonClicked
+    ).toHaveBeenCalledExactlyOnceWith({
+      button_id: 'right_side_panel_locate_node_clicked',
+      element_group: 'right_side_panel_nodes'
+    })
+    expect(getNodeById).toHaveBeenCalledWith(node.id)
+    expect(animateToBounds).toHaveBeenCalledWith(boundingRect)
+  })
+
+  it('tracks and resets all widgets when the Reset all button is clicked', async () => {
+    const { node, widget } = createSimpleNodeWithWidget()
+    vi.mocked(useNodeDefStore().getInputSpecForWidget).mockReturnValue({
+      name: widget.name,
+      type: 'COMBO',
+      default: 'default_model.safetensors'
+    })
+    const user = userEvent.setup()
+
+    render(SectionWidgets, {
+      props: {
+        widgets: [{ widget, node }]
+      },
+      global: {
+        plugins: [i18n],
+        stubs: {
+          WidgetItem: WidgetItemStub,
+          PropertiesAccordionItem: PropertiesAccordionItemStub
+        }
+      }
+    })
+
+    await user.click(screen.getByRole('button', { name: 'Reset all' }))
+
+    expect(
+      useTelemetry()?.trackUiButtonClicked
+    ).toHaveBeenCalledExactlyOnceWith({
+      button_id: 'right_side_panel_reset_all_parameters_clicked',
+      element_group: 'right_side_panel_nodes'
+    })
+    expect(widget.value).toBe('default_model.safetensors')
   })
 })

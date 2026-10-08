@@ -13,17 +13,15 @@ describe('BadgePill', () => {
 
   it('renders icon when provided', () => {
     render(BadgePill, {
-      props: { icon: 'icon-[comfy--credits]', text: 'Credits' }
+      props: { icon: 'icon-[lucide--coins]', text: 'Credits' }
     })
-    expect(screen.getByTestId('badge-icon')).toHaveClass(
-      'icon-[comfy--credits]'
-    )
+    expect(screen.getByTestId('badge-icon')).toHaveClass('icon-[lucide--coins]')
   })
 
   it('applies iconClass to icon', () => {
     render(BadgePill, {
       props: {
-        icon: 'icon-[comfy--credits]',
+        icon: 'icon-[lucide--coins]',
         iconClass: 'text-amber-400'
       }
     })
@@ -84,14 +82,16 @@ describe('BadgePill', () => {
     render(BadgePill, {
       props: { text: 'Not Filled', borderStyle: '#f59e0b' }
     })
-    expect(screen.getByTestId('badge-pill')).toHaveClass('text-foreground')
+    expect(screen.getByTestId('badge-pill')).toHaveClass('text-base-foreground')
   })
 
   it('does not have foreground text class when filled', () => {
     render(BadgePill, {
       props: { text: 'Filled', borderStyle: '#f59e0b', filled: true }
     })
-    expect(screen.getByTestId('badge-pill')).not.toHaveClass('text-foreground')
+    expect(screen.getByTestId('badge-pill')).not.toHaveClass(
+      'text-base-foreground'
+    )
   })
 
   it('renders slot content', () => {

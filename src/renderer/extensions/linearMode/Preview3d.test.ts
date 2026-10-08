@@ -1,4 +1,4 @@
-import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
+import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { nextTick } from 'vue'
 
 import { render, screen } from '@testing-library/vue'
@@ -8,7 +8,7 @@ const cleanup = vi.fn()
 
 const viewerOverrides: Record<string, unknown> = {}
 
-vi.mock('@/composables/useLoad3dViewer', () => ({
+vi.mock<unknown>(import('@/composables/useLoad3dViewer'), () => ({
   useLoad3dViewer: () => ({
     initializeStandaloneViewer,
     cleanup,
@@ -33,7 +33,7 @@ vi.mock('@/composables/useLoad3dViewer', () => ({
   })
 }))
 
-vi.mock('@/components/load3d/Load3DControls.vue', () => ({
+vi.mock<unknown>(import('@/components/load3d/Load3DControls.vue'), () => ({
   default: {
     name: 'Load3DControlsStub',
     props: [
@@ -59,18 +59,16 @@ vi.mock('@/components/load3d/Load3DControls.vue', () => ({
   }
 }))
 
-vi.mock('@/components/load3d/controls/AnimationControls.vue', () => ({
-  default: { template: '<div />' }
-}))
+vi.mock<unknown>(
+  import('@/components/load3d/controls/AnimationControls.vue'),
+  () => ({
+    default: { template: '<div />' }
+  })
+)
 
 describe('Preview3d', () => {
   beforeEach(() => {
-    vi.clearAllMocks()
     for (const k of Object.keys(viewerOverrides)) delete viewerOverrides[k]
-  })
-
-  afterEach(() => {
-    vi.restoreAllMocks()
   })
 
   async function renderPreview3d(

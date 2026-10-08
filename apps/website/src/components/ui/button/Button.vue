@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import type { PrimitiveProps } from 'reka-ui'
-import type { Component, HTMLAttributes } from 'vue'
+import type { AnchorHTMLAttributes, Component, HTMLAttributes } from 'vue'
 import type { ButtonVariants } from '.'
 import { Primitive } from 'reka-ui'
 import { cn } from '@comfyorg/tailwind-utils'
@@ -13,17 +13,19 @@ interface Props extends PrimitiveProps {
   disabled?: boolean
   prependIcon?: Component
   appendIcon?: Component
+  href?: AnchorHTMLAttributes['href']
 }
 
 const {
-  as = 'button',
+  as,
   asChild,
   variant,
   size,
   class: className,
   disabled,
   prependIcon,
-  appendIcon
+  appendIcon,
+  href
 } = defineProps<Props>()
 </script>
 
@@ -32,15 +34,16 @@ const {
     data-slot="button"
     :data-variant="variant"
     :data-size="size"
-    :as
+    :as="as ?? (href != null && !disabled ? 'a' : 'button')"
     :as-child
     :disabled
+    :href="disabled ? undefined : href"
     :class="cn(buttonVariants({ variant, size }), className)"
   >
     <slot name="prepend">
       <component :is="prependIcon" v-if="prependIcon" />
     </slot>
-    <span class="ppformula-text-center">
+    <span class="inline-block">
       <slot />
     </span>
     <slot name="append">

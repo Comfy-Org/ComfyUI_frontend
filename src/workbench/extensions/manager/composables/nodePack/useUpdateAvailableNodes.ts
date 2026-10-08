@@ -1,9 +1,9 @@
-import { compare, valid } from 'semver'
 import { computed, onMounted } from 'vue'
 
 import type { components } from '@/types/comfyRegistryTypes'
 import { useInstalledPacks } from '@/workbench/extensions/manager/composables/nodePack/useInstalledPacks'
 import { useComfyManagerStore } from '@/workbench/extensions/manager/stores/comfyManagerStore'
+import { getPackUpdateStatus } from '@/workbench/extensions/manager/utils/packUpdateStatus'
 
 /**
  * Composable to find NodePacks that have updates available
@@ -14,24 +14,8 @@ export const useUpdateAvailableNodes = () => {
   const { installedPacks, isLoading, error, startFetchInstalled } =
     useInstalledPacks()
 
-  // Check if a pack has updates available (same logic as usePackUpdateStatus)
-  const isOutdatedPack = (pack: components['schemas']['Node']) => {
-    const isInstalled = comfyManagerStore.isPackInstalled(pack?.id)
-    if (!isInstalled) return false
-
-    const installedVersion = comfyManagerStore.getInstalledPackVersion(
-      pack.id ?? ''
-    )
-    const latestVersion = pack.latest_version?.version
-
-    const isNightlyPack = !!installedVersion && !valid(installedVersion)
-
-    if (isNightlyPack || !latestVersion || !installedVersion) {
-      return false
-    }
-
-    return compare(latestVersion, installedVersion) > 0
-  }
+  const isOutdatedPack = (pack: components['schemas']['Node']) =>
+    getPackUpdateStatus(pack, comfyManagerStore).isUpdateAvailable
 
   const filterOutdatedPacks = (packs: components['schemas']['Node'][]) =>
     packs.filter(isOutdatedPack)

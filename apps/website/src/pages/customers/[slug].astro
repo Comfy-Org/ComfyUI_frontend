@@ -1,10 +1,13 @@
 ---
-import CustomerArticle from '../../components/customers/CustomerArticle.astro'
-import DetailHeroSection from '../../components/customers/DetailHeroSection.vue'
-import WhatsNextSection from '../../components/customers/WhatsNextSection.vue'
-import BaseLayout from '../../layouts/BaseLayout.astro'
-import { nextStory, storySlug } from '../../utils/customers'
-import { loadStories } from '../../utils/loadStories'
+import BreadcrumbBar from '@/components/common/BreadcrumbBar.vue'
+import CustomerArticle from '@/components/customers/CustomerArticle.astro'
+import DetailHeroSection from '@/components/customers/DetailHeroSection.vue'
+import WhatsNextSection from '@/components/customers/WhatsNextSection.vue'
+import BaseLayout from '@/layouts/BaseLayout.astro'
+import { customerVideoForStory } from '@/data/customerVideos'
+import { nextStory, storySlug } from '@/utils/customers'
+import { loadStories } from '@/utils/loadStories'
+import { absoluteUrl, articleNode, jsonLdId, pageContext } from '@/utils/jsonLd'
 
 export async function getStaticPaths() {
   const stories = await loadStories('en')
@@ -15,19 +18,67 @@ export async function getStaticPaths() {
 }
 
 const { entry, next } = Astro.props
+
+const { siteUrl, locale, url } = pageContext(
+  Astro.site,
+  Astro.url.pathname,
+  Astro.currentLocale
+)
+const article = articleNode({
+  siteUrl,
+  pageUrl: url,
+  title: entry.data.title,
+  description: entry.data.description,
+  imageUrl: entry.data.cover,
+  locale
+})
+
+const homeLabel = Astro.locals.t('breadcrumb.home')
+const collectionLabel = Astro.locals.t('nav.customerStories')
+const relatedVideo = customerVideoForStory(storySlug(entry.id))
 ---
 
-<BaseLayout title={`${entry.data.title} - Comfy`}>
+<BaseLayout
+  title={`${entry.data.title} - Comfy`}
+  description={entry.data.description}
+  ogImage={entry.data.cover}
+  mainEntityId={jsonLdId(url, 'article')}
+  breadcrumbs={[
+    { name: homeLabel, url: absoluteUrl(Astro.site, '/') },
+    {
+      name: collectionLabel,
+      url: absoluteUrl(Astro.site, '/customers')
+    },
+    { name: entry.data.title }
+  ]}
+  extraJsonLd={[article]}
+>
+  <BreadcrumbBar
+    crumbs={[
+      { label: homeLabel, href: '/' },
+      { label: collectionLabel, href: '/customers/' },
+      { label: entry.data.title }
+    ]}
+    label={Astro.locals.t('ui.breadcrumb')}
+  />
   <DetailHeroSection
     label={entry.data.category}
     title={entry.data.title}
     description={entry.data.description}
-    image={entry.data.cover}
+    image={entry.data.hideHeroImage ? undefined : entry.data.cover}
   />
   <CustomerArticle entry={entry} />
+  {relatedVideo && <div class="mx-auto max-w-9xl px-6 pb-10 lg:px-16">
+    <a
+      href={`/customers/videos/${relatedVideo.slug}/`}
+      class="text-sm font-semibold tracking-wide text-primary-comfy-yellow uppercase hover:underline"
+    >
+      {Astro.locals.t('customers.article.watchVideo')}
+    </a>
+  </div>}
   <WhatsNextSection
     title={next.data.title}
     image={next.data.cover}
-    href={`/customers/${storySlug(next.id)}`}
+    href={`/customers/${storySlug(next.id)}/`}
   />
 </BaseLayout>

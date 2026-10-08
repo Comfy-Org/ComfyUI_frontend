@@ -19,9 +19,10 @@ export function translateCatalogMessage(
     return params ? t(key, params, { escapeParameter: false }) : t(key)
   if (!params) return fallback
 
-  return fallback.replace(/\{(\w+)\}/g, (match, paramName) =>
-    params[paramName] === undefined ? match : String(params[paramName])
-  )
+  return fallback.replace(/\{(\w+)\}/g, (match, paramName) => {
+    const value: unknown = params[paramName]
+    return value === undefined ? match : String(value)
+  })
 }
 
 export function translateOptionalCatalogMessage(

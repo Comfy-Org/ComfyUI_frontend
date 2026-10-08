@@ -19,11 +19,13 @@ const WidgetLayoutFieldStub = defineComponent({
 const ColorPickerStub = defineComponent({
   name: 'ColorPicker',
   props: {
-    modelValue: { type: String, default: '' }
+    modelValue: { type: String, default: '' },
+    alpha: { type: Boolean, default: true }
   },
   emits: ['update:modelValue'],
   template: `<input
     data-testid="color-picker-input"
+    :data-alpha="alpha"
     :value="modelValue"
     @input="$emit('update:modelValue', $event.target.value)"
   />`
@@ -31,11 +33,11 @@ const ColorPickerStub = defineComponent({
 
 describe('WidgetColorPicker Value Binding', () => {
   const createColorWidget = (
-    value: string = '#000000',
+    value: string | number = '#000000',
     options: Record<string, unknown> = {},
-    callback?: (value: string) => void
+    callback?: (value: string | number) => void
   ) =>
-    createMockWidget<string>({
+    createMockWidget({
       value,
       name: 'test_color_picker',
       type: 'color',
@@ -44,8 +46,8 @@ describe('WidgetColorPicker Value Binding', () => {
     })
 
   const renderComponent = (
-    widget: SimplifiedWidget<string>,
-    modelValue: string,
+    widget: SimplifiedWidget<string | number>,
+    modelValue: string | number,
     extraProps: Record<string, unknown> = {}
   ) => {
     return render(WidgetColorPicker, {
@@ -77,33 +79,22 @@ describe('WidgetColorPicker Value Binding', () => {
       expect(onUpdateModelValue).toHaveBeenCalledWith('#00ff00')
     })
 
-    it('handles missing callback gracefully', async () => {
+    it('round-trips integer-backed colors including zero', async () => {
       const onUpdateModelValue = vi.fn()
-      const widget = createColorWidget('#000000', {}, undefined)
-      renderComponent(widget, '#000000', {
+      const widget = createColorWidget(0, { format: 'int' })
+      renderComponent(widget, 0, {
         'onUpdate:modelValue': onUpdateModelValue
       })
 
       const input = screen.getByTestId('color-picker-input')
-      await fireEvent.update(input, '#ff00ff')
+      expect(input).toHaveValue('#000000')
+      expect(input).toHaveAttribute('data-alpha', 'false')
 
-      expect(onUpdateModelValue).toHaveBeenCalledWith('#ff00ff')
-    })
-  })
+      await fireEvent.update(input, '#00ff00')
+      expect(onUpdateModelValue).toHaveBeenCalledWith(0x00ff00)
 
-  describe('Component Rendering', () => {
-    it('renders color picker component', () => {
-      const widget = createColorWidget('#ff0000')
-      renderComponent(widget, '#ff0000')
-
-      expect(screen.getByTestId('color-picker-input')).toBeInTheDocument()
-    })
-
-    it('renders layout field wrapper', () => {
-      const widget = createColorWidget('#ff0000')
-      renderComponent(widget, '#ff0000')
-
-      expect(screen.getByTestId('layout-field')).toBeInTheDocument()
+      await fireEvent.update(input, '#000000')
+      expect(onUpdateModelValue).toHaveBeenCalledWith(0)
     })
   })
 
@@ -116,14 +107,6 @@ describe('WidgetColorPicker Value Binding', () => {
       expect(layoutField.getAttribute('data-widget-name')).toBe(
         'test_color_picker'
       )
-    })
-
-    it('maintains proper component structure', () => {
-      const widget = createColorWidget('#ff0000')
-      renderComponent(widget, '#ff0000')
-
-      expect(screen.getByTestId('layout-field')).toBeInTheDocument()
-      expect(screen.getByTestId('color-picker-input')).toBeInTheDocument()
     })
   })
 

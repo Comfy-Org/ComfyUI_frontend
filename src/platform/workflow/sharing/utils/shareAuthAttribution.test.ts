@@ -23,7 +23,6 @@ const invalidShareQueries: Array<{ name: string; query: LocationQuery }> = [
 describe('shareAuthAttribution', () => {
   beforeEach(() => {
     clearPreservedQuery(SHARE_AUTH_NAMESPACE)
-    sessionStorage.clear()
   })
 
   it('preserves a valid share id for logged-out users', () => {

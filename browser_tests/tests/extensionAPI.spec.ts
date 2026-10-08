@@ -1,7 +1,6 @@
 import { expect } from '@playwright/test'
 
-import type { Settings } from '@/schemas/apiSchema'
-import type { SettingParams } from '@/platform/settings/types'
+import type { Settings, SettingParams } from '@/platform/settings/types'
 import { comfyPageFixture as test } from '@e2e/fixtures/ComfyPage'
 
 /**
@@ -21,9 +20,7 @@ test.describe('Topbar commands', () => {
           {
             id: 'foo',
             label: 'foo-command',
-            function: () => {
-              window.foo = true
-            }
+            function: () => {}
           }
         ],
         menuCommands: [
@@ -34,11 +31,10 @@ test.describe('Topbar commands', () => {
         ]
       })
     })
+    await comfyPage.command.mockCommand('foo')
 
     await comfyPage.menu.topbar.triggerTopbarCommand(['ext', 'foo-command'])
-    await expect
-      .poll(() => comfyPage.page.evaluate(() => window.foo))
-      .toBe(true)
+    await expect.poll(() => comfyPage.command.getExecutionCount('foo')).toBe(1)
   })
 
   test('Should not allow register command defined in other extension', async ({
@@ -69,9 +65,7 @@ test.describe('Topbar commands', () => {
         commands: [
           {
             id: 'TestCommand',
-            function: () => {
-              window.TestCommand = true
-            }
+            function: () => {}
           }
         ],
         keybindings: [
@@ -82,11 +76,12 @@ test.describe('Topbar commands', () => {
         ]
       })
     })
+    await comfyPage.command.mockCommand('TestCommand')
 
     await comfyPage.page.keyboard.press('k')
     await expect
-      .poll(() => comfyPage.page.evaluate(() => window.TestCommand))
-      .toBe(true)
+      .poll(() => comfyPage.command.getExecutionCount('TestCommand'))
+      .toBe(1)
   })
 
   test.describe('Settings', () => {
@@ -163,8 +158,11 @@ test.describe('Topbar commands', () => {
 
     test.describe('Passing through attrs to setting components', () => {
       const testCases: Array<{
-        config: Pick<SettingParams, 'type' | 'defaultValue'> &
-          Partial<Omit<SettingParams, 'id' | 'type' | 'defaultValue'>>
+        config: {
+          type: Extract<SettingParams['type'], string>
+          defaultValue: string | number | boolean
+          options?: string[]
+        }
         selector: string
       }> = [
         {
@@ -172,21 +170,21 @@ test.describe('Topbar commands', () => {
             type: 'boolean',
             defaultValue: true
           },
-          selector: '.p-toggleswitch.p-component'
+          selector: 'button[role="switch"]'
         },
         {
           config: {
             type: 'number',
             defaultValue: 10
           },
-          selector: '.p-inputnumber input'
+          selector: 'input[inputmode="decimal"]'
         },
         {
           config: {
             type: 'slider',
             defaultValue: 10
           },
-          selector: '.p-slider.p-component'
+          selector: '[data-slot="slider"]'
         },
         {
           config: {
@@ -194,14 +192,14 @@ test.describe('Topbar commands', () => {
             defaultValue: 'foo',
             options: ['foo', 'bar', 'baz']
           },
-          selector: '.p-select.p-component'
+          selector: '[role="combobox"]'
         },
         {
           config: {
             type: 'text',
             defaultValue: 'Hello'
           },
-          selector: '.p-inputtext'
+          selector: 'input'
         },
         {
           config: {
@@ -236,16 +234,11 @@ test.describe('Topbar commands', () => {
             .getByText('TestSetting Test')
             .locator(selector)
 
-          await expect
-            .poll(() =>
-              component.evaluate((el) =>
-                el instanceof HTMLInputElement ||
-                el instanceof HTMLButtonElement
-                  ? el.disabled
-                  : el.classList.contains('p-disabled')
-              )
-            )
-            .toBe(true)
+          if (config.type === 'slider') {
+            await expect(component).toHaveAttribute('aria-disabled', 'true')
+          } else {
+            await expect(component).toBeDisabled()
+          }
         })
       }
     })
@@ -346,9 +339,7 @@ test.describe('Topbar commands', () => {
   })
 
   test.describe('Selection Toolbox', () => {
-    test.beforeEach(async ({ comfyPage }) => {
-      await comfyPage.settings.setSetting('Comfy.Canvas.SelectionToolbox', true)
-    })
+    test.use({ initialSettings: { 'Comfy.Canvas.SelectionToolbox': true } })
 
     test('Should allow adding commands to selection toolbox', async ({
       comfyPage
@@ -362,16 +353,13 @@ test.describe('Topbar commands', () => {
               id: 'test.selection.command',
               label: 'Test Command',
               icon: 'pi pi-star',
-              function: () => {
-                ;(window as unknown as Record<string, unknown>)[
-                  'selectionCommandExecuted'
-                ] = true
-              }
+              function: () => {}
             }
           ],
           getSelectionToolboxCommands: () => ['test.selection.command']
         })
       })
+      await comfyPage.command.mockCommand('test.selection.command')
 
       await comfyPage.nodeOps.selectNodes(['CLIP Text Encode (Prompt)'])
 
@@ -383,14 +371,9 @@ test.describe('Topbar commands', () => {
 
       await expect
         .poll(() =>
-          comfyPage.page.evaluate(
-            () =>
-              (window as unknown as Record<string, unknown>)[
-                'selectionCommandExecuted'
-              ]
-          )
+          comfyPage.command.getExecutionCount('test.selection.command')
         )
-        .toBe(true)
+        .toBe(1)
     })
   })
 })

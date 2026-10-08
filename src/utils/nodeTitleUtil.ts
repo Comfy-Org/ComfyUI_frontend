@@ -1,16 +1,13 @@
-import { normalizeI18nKey } from '@/utils/formatUtil'
+import { resolveNodeDefText } from '@/i18n'
 
 type NodeTitleInfo = {
   title?: string | number | null
   type?: string | number | null
 }
 
-type StaticTranslate = (key: string, fallbackMessage: string) => string
-
 type ResolveNodeDisplayNameOptions = {
   emptyLabel: string
   untitledLabel: string
-  st: StaticTranslate
 }
 
 export function resolveNodeDisplayName(
@@ -23,6 +20,5 @@ export function resolveNodeDisplayName(
   if (title.length > 0) return title
 
   const nodeType = (node.type ?? '').toString().trim() || options.untitledLabel
-  const key = `nodeDefs.${normalizeI18nKey(nodeType)}.display_name`
-  return options.st(key, nodeType)
+  return resolveNodeDefText('display_name', nodeType)
 }

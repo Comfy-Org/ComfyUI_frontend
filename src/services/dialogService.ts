@@ -1,19 +1,31 @@
+import { zPromptErrorResponse } from '@comfyorg/ingest-types/zod'
+import { isPlainObject } from 'es-toolkit'
 import { merge } from 'es-toolkit/compat'
+import { watch } from 'vue'
 import type { Component } from 'vue'
 
 import ConfirmationDialogContent from '@/components/dialog/content/ConfirmationDialogContent.vue'
 import ErrorDialogContent from '@/components/dialog/content/ErrorDialogContent.vue'
 import PromptDialogContent from '@/components/dialog/content/PromptDialogContent.vue'
 import TopUpCreditsDialogContentLegacy from '@/components/dialog/content/TopUpCreditsDialogContentLegacy.vue'
+import {
+  HUG_CONTENT_CLASS,
+  SELF_STYLED_PANEL_CONTENT_CLASS
+} from '@/components/ui/dialog/dialog.variants'
 import InsufficientCreditsMemberDialog from '@/platform/workspace/components/InsufficientCreditsMemberDialog.vue'
 import TopUpCreditsDialogContentWorkspace from '@/platform/workspace/components/TopUpCreditsDialogContentWorkspace.vue'
-import { useWorkspaceUI } from '@/platform/workspace/composables/useWorkspaceUI'
+import { useBillingCapabilities } from '@/platform/workspace/composables/useBillingCapabilities'
+import { useTeamWorkspaceStore } from '@/platform/workspace/stores/teamWorkspaceStore'
 import { t } from '@/i18n'
 import { useTelemetry } from '@/platform/telemetry'
 import { isCloud } from '@/platform/distribution/types'
 import { useBillingContext } from '@/composables/billing/useBillingContext'
 import { useToastStore } from '@/platform/updates/common/toastStore'
 import { useDialogStore } from '@/stores/dialogStore'
+import type { RunErrorMessageSource } from '@/platform/errorCatalog/types'
+import type { PromptError } from '@/platform/remote/comfyui/types'
+import { PromptExecutionError } from '@/scripts/api'
+import { tryExtractValidationError } from '@/utils/executionErrorUtil'
 import type {
   DialogComponentProps,
   ShowDialogOptions
@@ -21,7 +33,10 @@ import type {
 
 import type { ComponentAttrs } from 'vue-component-type-helpers'
 import type { SubscriptionDialogOptions } from '@/platform/cloud/subscription/composables/useSubscriptionDialog'
+import type { PaymentIntentSource } from '@/platform/telemetry/types'
 import type { WorkspaceRole } from '@/platform/workspace/api/workspaceApi'
+import type { DowngradeToPersonalResult } from '@/platform/workspace/composables/useDowngradeToPersonal'
+import type { CancellationFlowDialogOptions } from '@/platform/cloud/subscription/launchCancellationFlow'
 
 // Lazy loaders for dialogs - components are loaded on first use
 const lazyApiNodesSignInContent = () =>
@@ -37,19 +52,19 @@ const lazyCloudNotificationContent = () =>
 const lazyPublishDialog = () =>
   import('@/platform/workflow/sharing/components/publish/ComfyHubPublishDialog.vue')
 
-/**
- * Shrink-wrap the Reka DialogContent around the content's intrinsic width,
- * like the auto-sized PrimeVue root it replaces.
- */
-const HUG_CONTENT_CLASS =
-  'w-fit max-w-[calc(100vw-1rem)] sm:max-w-[calc(100vw-1rem)]'
+// A type alias, not an interface: `showDialog`'s props are index-signature
+// typed, and only object literal types get an implicit index signature.
+type TopUpCreditsDialogOptions = {
+  isInsufficientCredits?: boolean
+  source?: PaymentIntentSource
+}
 
-/**
- * Reka chrome for headless dialogs whose content draws its own panel
- * (background/border/rounding) — neutralize the DialogContent box and
- * shrink-wrap it around the content.
- */
-const SELF_STYLED_PANEL_CONTENT_CLASS = `${HUG_CONTENT_CLASS} border-none bg-transparent shadow-none`
+function topUpFallbackReason(
+  options?: TopUpCreditsDialogOptions
+): PaymentIntentSource {
+  if (options?.isInsufficientCredits) return 'out_of_credits'
+  return options?.source ?? 'top_up_blocked'
+}
 
 export type ConfirmationDialogType =
   | 'default'
@@ -68,6 +83,13 @@ interface BaseConfirmOptions {
   /** Displayed as an unordered list immediately below the message body */
   itemList?: string[]
   hint?: string
+  /**
+   * Dialog-stack key, defaulting to the shared `global-prompt`. `showDialog`
+   * reuses an existing entry with the same key and discards the new resolver,
+   * leaving the caller's promise pending forever — a flow whose confirmation
+   * must survive an already-open shared prompt passes its own key.
+   */
+  key?: string
 }
 
 type ConfirmOptions = BaseConfirmOptions &
@@ -92,22 +114,138 @@ type ConfirmOptions = BaseConfirmOptions &
 export interface ExecutionErrorDialogInput {
   exception_type: string
   exception_message: string
-  node_id: string | number
-  node_type: string
-  traceback: string[]
+  node_id?: string | number | null
+  node_type?: string | null
+  traceback?: string[] | null
+}
+
+const GLOBAL_PROMPT_KEY = 'global-prompt'
+
+function getCatalogPromptError(value: unknown): PromptError | null {
+  if (typeof value === 'string')
+    return { type: 'error', message: value, details: '' }
+  if (!isPlainObject(value)) return null
+
+  const {
+    type = 'error',
+    message = '',
+    details = ''
+  }: Record<string, unknown> = value
+  return typeof type === 'string' &&
+    typeof message === 'string' &&
+    typeof details === 'string'
+    ? { type, message, details }
+    : null
+}
+
+function getPromptErrorSources(response: unknown): RunErrorMessageSource[] {
+  const parsed = zPromptErrorResponse.safeParse(response)
+  if (!parsed.success) return []
+
+  const promptError = getCatalogPromptError(parsed.data.error)
+  const nodeErrors: Record<string, unknown> = isPlainObject(
+    parsed.data.node_errors
+  )
+    ? parsed.data.node_errors
+    : {}
+
+  return [
+    ...(promptError
+      ? [{ kind: 'prompt' as const, error: promptError, isCloud }]
+      : []),
+    ...Object.entries(nodeErrors).flatMap(([nodeId, value]) => {
+      if (!isPlainObject(value)) return []
+      const node: Record<string, unknown> = value
+      const errors: unknown[] = Array.isArray(node.errors) ? node.errors : []
+      return errors.flatMap((value): RunErrorMessageSource[] => {
+        if (!isPlainObject(value)) return []
+        const error = getCatalogPromptError(value)
+        if (!error) return []
+
+        const extraInfo: Record<string, unknown> = isPlainObject(
+          value.extra_info
+        )
+          ? value.extra_info
+          : {}
+        return [
+          {
+            kind: 'node_validation',
+            error: {
+              ...error,
+              extra_info: {
+                ...extraInfo,
+                input_name:
+                  typeof extraInfo.input_name === 'string'
+                    ? extraInfo.input_name
+                    : undefined
+              }
+            },
+            nodeDisplayName:
+              typeof node.class_type === 'string'
+                ? `${node.class_type} (#${nodeId})`
+                : `#${nodeId}`
+          }
+        ]
+      })
+    })
+  ]
+}
+
+function formatDialogError(error: Error): string {
+  try {
+    return error.toString()
+  } catch (cause) {
+    if (!(error instanceof PromptExecutionError)) throw cause
+    return JSON.stringify(error.response)
+  }
+}
+
+// dialogStore.showDialog raises an existing dialog with the same key instead of
+// wiring the new caller's callbacks, so a second concurrent caller on that key
+// would never settle. Serialize FIFO per key; distinct keys stay concurrent.
+const promptTails = new Map<string, Promise<unknown>>()
+
+function enqueuePrompt<T>(
+  key: string,
+  show: (resolve: (value: T) => void) => void
+): Promise<T> {
+  const tail = promptTails.get(key) ?? Promise.resolve()
+  const result = tail.then(() => new Promise<T>(show))
+  const settled = result.then(
+    () => undefined,
+    () => undefined
+  )
+  promptTails.set(key, settled)
+  void settled.then(() => {
+    if (promptTails.get(key) === settled) promptTails.delete(key)
+  })
+  return result
 }
 
 export const useDialogService = () => {
   const dialogStore = useDialogStore()
 
   function showExecutionErrorDialog(executionError: ExecutionErrorDialogInput) {
+    const validationError = tryExtractValidationError(
+      executionError.exception_message
+    )
+    const validationSources = getPromptErrorSources(validationError)
     const props: ComponentAttrs<typeof ErrorDialogContent> = {
+      errorSources: validationSources.length
+        ? validationSources
+        : [
+            {
+              kind: 'execution',
+              error: executionError,
+              nodeDisplayName: executionError.node_type ?? ''
+            }
+          ],
       error: {
         exceptionType: executionError.exception_type,
         exceptionMessage: executionError.exception_message,
         nodeId: executionError.node_id?.toString(),
-        nodeType: executionError.node_type,
-        traceback: executionError.traceback.join('\n'),
+        nodeType: executionError.node_type ?? undefined,
+        traceback: executionError.traceback?.join('\n') ?? '',
         reportType: 'graphExecutionError'
       }
     }
@@ -140,7 +278,7 @@ export const useDialogService = () => {
       : undefined
 
     return {
-      errorMessage: error.toString(),
+      errorMessage: formatDialogError(error),
       stackTrace: error.stack,
       extensionFile
     }
@@ -170,6 +308,10 @@ export const useDialogService = () => {
           }
 
     const props: ComponentAttrs<typeof ErrorDialogContent> = {
+      errorSources:
+        error instanceof PromptExecutionError
+          ? getPromptErrorSources(error.response)
+          : undefined,
       error: {
         exceptionType: options.title ?? 'Unknown Error',
         exceptionMessage: errorProps.errorMessage,
@@ -203,28 +345,30 @@ export const useDialogService = () => {
   async function showApiNodesSignInDialog(
     apiNodeNames: string[]
   ): Promise<boolean> {
-    const [{ default: ApiNodesSignInContent }, { default: ComfyOrgHeader }] =
-      await Promise.all([lazyApiNodesSignInContent(), lazyComfyOrgHeader()])
+    const { default: ApiNodesSignInContent } = await lazyApiNodesSignInContent()
+
+    const key = 'api-nodes-signin'
 
     return new Promise<boolean>((resolve) => {
       dialogStore.showDialog({
-        key: 'api-nodes-signin',
+        key,
         component: ApiNodesSignInContent,
         props: {
           apiNodeNames,
+          titleId: key,
           onLogin: () => showSignInDialog().then((result) => resolve(result)),
           onCancel: () => resolve(false)
         },
-        headerComponent: ComfyOrgHeader,
         dialogComponentProps: {
           renderer: 'reka',
-          contentClass: HUG_CONTENT_CLASS,
-          closable: false,
-          onClose: () => resolve(false)
+          headless: true,
+          contentClass: `${SELF_STYLED_PANEL_CONTENT_CLASS} p-0`,
+          closable: true,
+          onRemoved: () => resolve(false)
         }
       })
     }).then((result) => {
-      dialogStore.closeDialog({ key: 'api-nodes-signin' })
+      dialogStore.closeDialog({ key })
       return result
     })
   }
@@ -247,7 +391,7 @@ export const useDialogService = () => {
           // 352px after the body padding; hug the intrinsic width instead.
           contentClass: HUG_CONTENT_CLASS,
           closable: true,
-          onClose: () => resolve(false)
+          onRemoved: () => resolve(false)
         }
       })
     }).then((result) => {
@@ -267,9 +411,9 @@ export const useDialogService = () => {
     defaultValue?: string
     placeholder?: string
   }): Promise<string | null> {
-    return new Promise((resolve) => {
+    return enqueuePrompt<string | null>(GLOBAL_PROMPT_KEY, (resolve) => {
       dialogStore.showDialog({
-        key: 'global-prompt',
+        key: GLOBAL_PROMPT_KEY,
         title,
         component: PromptDialogContent,
         props: {
@@ -283,7 +427,7 @@ export const useDialogService = () => {
         dialogComponentProps: {
           renderer: 'reka',
           size: 'md',
-          onClose: () => {
+          onRemoved: () => {
             resolve(null)
           }
         }
@@ -302,11 +446,12 @@ export const useDialogService = () => {
     type = 'default',
     itemList = [],
     hint,
-    denyLabel
+    denyLabel,
+    key = GLOBAL_PROMPT_KEY
   }: ConfirmOptions): Promise<boolean | null> {
-    return new Promise((resolve) => {
+    const show = (resolve: (value: boolean | null) => void) => {
       const options: ShowDialogOptions = {
-        key: 'global-prompt',
+        key,
         title,
         component: ConfirmationDialogContent,
         props: {
@@ -320,33 +465,41 @@ export const useDialogService = () => {
         dialogComponentProps: {
           renderer: 'reka',
           size: 'md',
-          onClose: () => resolve(null)
+          onRemoved: () => resolve(null)
         }
       }
 
       dialogStore.showDialog(options)
-    })
+    }
+
+    return enqueuePrompt<boolean | null>(key, show)
   }
 
-  async function showTopUpCreditsDialog(options?: {
-    isInsufficientCredits?: boolean
-  }) {
-    const { isActiveSubscription, isFreeTier, type } = useBillingContext()
-    if (!isActiveSubscription.value || isFreeTier.value) {
+  async function showTopUpCreditsDialog(options?: TopUpCreditsDialogOptions) {
+    useTelemetry()?.trackBillingEvent({
+      operation: 'entry',
+      stage: 'add_credits_clicked',
+      outcome: 'pending',
+      payment_intent_source:
+        options?.source ??
+        (options?.isInsufficientCredits ? 'out_of_credits' : undefined)
+    })
+    const { type } = useBillingContext()
+    const { canTopUp, canSubscribeSelfServe, isReady, initialize } =
+      useBillingCapabilities()
+    // A capability read still in flight has to be awaited here, or a top-up
+    // triggered during that window is silently dropped with no recovery UI.
+    if (!isReady.value) await initialize()
+    if (!isReady.value) return
+    if (!canTopUp.value && canSubscribeSelfServe.value) {
       await showSubscriptionRequiredDialog({
-        reason: options?.isInsufficientCredits
-          ? 'out_of_credits'
-          : 'top_up_blocked'
+        reason: topUpFallbackReason(options),
+        paymentIntentSource: options?.source
       })
       return
     }
 
-    // Members can't top up a team workspace, so they get a read-only
-    // "ask your workspace admins" notice instead of the purchase dialog.
-    if (
-      type.value === 'workspace' &&
-      !useWorkspaceUI().permissions.value.canTopUp
-    ) {
+    if (!canTopUp.value && type.value === 'workspace') {
       return dialogStore.showDialog({
         key: 'insufficient-credits-member',
         component: InsufficientCreditsMemberDialog,
@@ -362,15 +515,16 @@ export const useDialogService = () => {
         }
       })
     }
+    if (!canTopUp.value) return
 
-    const component =
-      type.value === 'workspace'
-        ? TopUpCreditsDialogContentWorkspace
-        : TopUpCreditsDialogContentLegacy
+    // Unknown never selects the legacy content, which buys credits directly.
+    const isWorkspaceRail = type.value !== 'legacy'
 
     return dialogStore.showDialog({
       key: 'top-up-credits',
-      component,
+      component: isWorkspaceRail
+        ? TopUpCreditsDialogContentWorkspace
+        : TopUpCreditsDialogContentLegacy,
       props: options,
       dialogComponentProps: {
         renderer: 'reka',
@@ -454,10 +608,7 @@ export const useDialogService = () => {
       dialogComponentProps: {
         renderer: 'reka',
         closable: true,
-        // Contents bring their own width and separators — shrink-wrap the
-        // chrome and zero the section padding.
-        contentClass:
-          'w-fit max-w-[calc(100vw-1rem)] sm:max-w-[calc(100vw-1rem)] border-border-default',
+        contentClass: `${HUG_CONTENT_CLASS} border-border-default`,
         headerClass: 'p-0',
         bodyClass: 'p-0 overflow-y-hidden',
         footerClass: 'p-0',
@@ -469,7 +620,38 @@ export const useDialogService = () => {
   async function showSubscriptionRequiredDialog(
     options?: SubscriptionDialogOptions
   ) {
-    if (!isCloud || !window.__CONFIG__?.subscription_required) {
+    if (!isCloud) return
+
+    // A caller (e.g. the agent panel's paywall card) can fire this before the
+    // bootstrap /features fetch resolves, most likely right after a fresh
+    // load. window.__CONFIG__ is then still empty and the flag check below
+    // would silently swallow the click. Await one fresh fetch before
+    // deciding, rather than trusting a config snapshot that was never taken.
+    if (!window.__CONFIG__?.subscription_required) {
+      const { remoteConfigState } =
+        await import('@/platform/remoteConfig/remoteConfig')
+      if (remoteConfigState.value === 'unloaded') {
+        const { refreshRemoteConfig } =
+          await import('@/platform/remoteConfig/refreshRemoteConfig')
+        await refreshRemoteConfig()
+      }
+    }
+
+    if (!window.__CONFIG__?.subscription_required) {
+      // This gate closing is never expected to be reachable from a cloud
+      // surface with subscriptions enabled. Report it instead of returning
+      // silently, so a caller's "Subscribe" button failing to do anything
+      // shows up in telemetry rather than only in a user's bug report.
+      const { reportError } = await import('@/platform/telemetry/reportError')
+      reportError(
+        new Error(
+          'showSubscriptionRequiredDialog: subscription_required gate closed'
+        ),
+        {
+          surface: 'billing',
+          errorType: 'error_opening_subscription_dialog_gate_closed'
+        }
+      )
       return
     }
 
@@ -582,6 +764,22 @@ export const useDialogService = () => {
     })
   }
 
+  async function showSetMemberCreditLimitDialog(props: {
+    memberId: string
+    memberName: string
+    creditsUsed?: number
+    currentLimit?: number | null
+  }) {
+    const { default: component } =
+      await import('@/platform/workspace/components/dialogs/SetMemberCreditLimitDialogContent.vue')
+    return dialogStore.showDialog({
+      key: 'set-member-credit-limit',
+      component,
+      props,
+      dialogComponentProps: workspaceDialogProps
+    })
+  }
+
   async function showInviteMemberDialog() {
     const { default: component } =
       await import('@/platform/workspace/components/dialogs/InviteMemberDialogContent.vue')
@@ -600,6 +798,34 @@ export const useDialogService = () => {
     return dialogStore.showDialog({
       key: 'invite-member-upsell',
       component,
+      dialogComponentProps: {
+        ...workspaceDialogProps
+      }
+    })
+  }
+
+  async function showInviteLinkInvalidDialog() {
+    const { default: component } =
+      await import('@/platform/workspace/components/dialogs/InviteLinkInvalidDialogContent.vue')
+    return dialogStore.showDialog({
+      key: 'invite-link-invalid',
+      component,
+      dialogComponentProps: {
+        ...workspaceDialogProps
+      }
+    })
+  }
+
+  async function showInviteWrongAccountDialog(props: { inviteToken: string }) {
+    const { default: component } =
+      await import('@/platform/workspace/components/dialogs/InviteWrongAccountDialogContent.vue')
+    // showDialog keeps an existing entry's props; close first so a repeat 403
+    // carries the fresh token instead of replaying the previous one.
+    dialogStore.closeDialog({ key: 'invite-wrong-account' })
+    return dialogStore.showDialog({
+      key: 'invite-wrong-account',
+      component,
+      props,
       dialogComponentProps: {
         ...workspaceDialogProps
       }
@@ -635,38 +861,98 @@ export const useDialogService = () => {
     })
   }
 
-  async function showCancelSubscriptionDialog(cancelAt?: string) {
+  async function showCancelSubscriptionDialog(
+    cancelAt?: string,
+    flowAlreadyOpened?: boolean,
+    isScopeCurrent?: () => boolean,
+    flowAlreadyConfirmed?: boolean
+  ) {
     const { default: component } =
       await import('@/components/dialog/content/subscription/CancelSubscriptionDialogContent.vue')
+    if (isScopeCurrent && !isScopeCurrent()) return false
+    const guardedProps = {
+      ...(flowAlreadyOpened !== undefined ? { flowAlreadyOpened } : {}),
+      ...(flowAlreadyConfirmed !== undefined ? { flowAlreadyConfirmed } : {}),
+      ...(cancelAt !== undefined ? { cancelAt } : {}),
+      ...(isScopeCurrent ? { isScopeCurrent } : {})
+    }
+    dialogStore.updateDialog({
+      key: 'cancel-subscription',
+      contentProps: guardedProps
+    })
     return dialogStore.showDialog({
       key: 'cancel-subscription',
       component,
-      props: { cancelAt },
+      props: guardedProps,
       dialogComponentProps: {
         ...workspaceDialogProps
       }
     })
   }
 
+  async function showCancellationFlowDialog(
+    options: CancellationFlowDialogOptions
+  ) {
+    const { default: component } =
+      await import('@/platform/cloud/subscription/components/CancellationFlowDialogContent.vue')
+    if (!options.isScopeCurrent()) return false
+    return dialogStore.showDialog({
+      key: 'cancel-subscription',
+      component,
+      props: { ...options },
+      dialogComponentProps: {
+        ...workspaceDialogProps,
+        closable: false,
+        dismissableMask: false
+      }
+    })
+  }
+
+  async function showCancelSubscriptionFlow(cancelAt?: string) {
+    const launchWorkspaceId = useTeamWorkspaceStore().activeWorkspaceId
+    const cancellationFlow =
+      await import('@/platform/cloud/subscription/launchCancellationFlow')
+    return cancellationFlow.launchCancellationFlow({
+      cancelAt,
+      launchWorkspaceId,
+      showFlow: showCancellationFlowDialog
+    })
+  }
+
   /**
-   * Downgrade a team plan to a personal plan (FE-977). Skips the type-"I
-   * understand" confirm dialog when the workspace has no other members;
-   * failures on that path surface as an error toast.
+   * Downgrade a team plan to a personal plan. Skips the type-"I understand"
+   * confirm dialog only when there's nothing to confirm: no other members to
+   * remove and no reactivation charge to disclose. Failures on that fast
+   * path surface as an error toast.
    */
   async function showDowngradeToPersonalDialog(options: {
     planName: string
     planSlug: string
-  }) {
-    const { useDowngradeToPersonal } =
-      await import('@/platform/workspace/composables/useDowngradeToPersonal')
-    const { hasOtherMembers, refreshMembers, downgradeToPersonal } =
-      useDowngradeToPersonal()
+    paymentIntentSource?: PaymentIntentSource
+  }): Promise<DowngradeToPersonalResult | null> {
+    const {
+      useDowngradeToPersonal,
+      ReactivationConfirmationRequiredError,
+      ReactivationAmountChangedError
+    } = await import('@/platform/workspace/composables/useDowngradeToPersonal')
+    const {
+      hasOtherMembers,
+      refreshMembers,
+      previewDowngrade,
+      downgradeToPersonal
+    } = useDowngradeToPersonal({
+      paymentIntentSource: options.paymentIntentSource
+    })
 
+    let requiresReactivation = false
+    let chargeCents = 0
     try {
       await refreshMembers()
-      if (!hasOtherMembers.value) {
-        await downgradeToPersonal(options.planSlug)
-        return
+      const preview = await previewDowngrade(options.planSlug)
+      requiresReactivation = preview.requiresReactivationConfirmation
+      chargeCents = preview.preview.cost_today_cents
+      if (!hasOtherMembers.value && !requiresReactivation) {
+        return await downgradeToPersonal(options.planSlug)
       }
     } catch (error) {
       useToastStore().add({
@@ -674,24 +960,72 @@ export const useDialogService = () => {
         summary: t('subscription.downgrade.failed'),
         detail: error instanceof Error ? error.message : t('g.unknownError')
       })
-      return
+      return null
     }
 
     const { default: component } =
       await import('@/platform/workspace/components/dialogs/DowngradeRemoveMembersDialogContent.vue')
-    return dialogStore.showDialog({
-      key: 'downgrade-remove-members',
-      component,
-      props: {
-        planName: options.planName,
-        planSlug: options.planSlug,
-        onConfirm: downgradeToPersonal
-      },
-      dialogComponentProps: {
-        ...workspaceDialogProps,
-        closable: false,
-        dismissableMask: false
+    const dialogKey = 'downgrade-remove-members'
+    dialogStore.closeDialog({ key: dialogKey })
+    return new Promise((resolve) => {
+      const stopWatching = watch(
+        () => dialogStore.isDialogOpen(dialogKey),
+        (isOpen) => {
+          if (!isOpen) resolveResult(null)
+        },
+        { flush: 'sync' }
+      )
+      function resolveResult(result: DowngradeToPersonalResult | null) {
+        stopWatching()
+        resolve(result)
       }
+
+      dialogStore.showDialog({
+        key: dialogKey,
+        component,
+        props: {
+          planName: options.planName,
+          planSlug: options.planSlug,
+          requiresRemoval: hasOtherMembers.value,
+          requiresReactivation,
+          chargeCents,
+          onConfirm: async (planSlug: string, confirmReactivation: boolean) => {
+            try {
+              const result = await downgradeToPersonal(
+                planSlug,
+                confirmReactivation,
+                chargeCents
+              )
+              resolveResult(result)
+            } catch (error) {
+              // A fresh preview inside downgradeToPersonal() found the
+              // dialog's captured state (open-time cancellation/charge) is
+              // stale and refused to bill it. Push the corrected values into
+              // the still-open dialog so a retry sends what these errors'
+              // own preview says is actually true, instead of repeating the
+              // same rejected request forever.
+              if (
+                error instanceof ReactivationConfirmationRequiredError ||
+                error instanceof ReactivationAmountChangedError
+              ) {
+                requiresReactivation = true
+                chargeCents = error.preview.cost_today_cents
+                dialogStore.updateDialog({
+                  key: dialogKey,
+                  contentProps: { requiresReactivation, chargeCents }
+                })
+              }
+              throw error
+            }
+          }
+        },
+        dialogComponentProps: {
+          ...workspaceDialogProps,
+          closable: false,
+          dismissableMask: false,
+          onClose: () => resolveResult(null)
+        }
+      })
     })
   }
 
@@ -706,8 +1040,8 @@ export const useDialogService = () => {
         dialogComponentProps: {
           closable: false,
           contentClass:
-            'w-170 max-w-[calc(100vw-1rem)] sm:max-w-[42.5rem] rounded-2xl overflow-hidden',
-          onClose: () => resolve()
+            'w-170 max-w-[calc(100vw-1rem)] sm:max-w-[calc(100vw-1rem)] rounded-2xl overflow-hidden',
+          onRemoved: () => resolve()
         }
       })
     })
@@ -753,11 +1087,15 @@ export const useDialogService = () => {
     showEditWorkspaceDialog,
     showRemoveMemberDialog,
     showChangeMemberRoleDialog,
+    showSetMemberCreditLimitDialog,
     showRevokeInviteDialog,
     showInviteMemberDialog,
     showInviteMemberUpsellDialog,
+    showInviteLinkInvalidDialog,
+    showInviteWrongAccountDialog,
     showBillingComingSoonDialog,
     showCancelSubscriptionDialog,
+    showCancelSubscriptionFlow,
     showDowngradeToPersonalDialog
   }
 }

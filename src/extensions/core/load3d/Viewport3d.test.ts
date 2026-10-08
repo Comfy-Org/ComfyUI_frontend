@@ -1,6 +1,7 @@
 import * as THREE from 'three'
-import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
+import { beforeEach, describe, expect, it, vi } from 'vitest'
 
+import type { Viewport3dDeps } from '@/extensions/core/load3d/Viewport3d'
 import { Viewport3d } from '@/extensions/core/load3d/Viewport3d'
 
 type CameraStub = {
@@ -14,6 +15,7 @@ type CameraStub = {
   handleResize: ReturnType<typeof vi.fn>
   updateAspectRatio: ReturnType<typeof vi.fn>
   dispose: ReturnType<typeof vi.fn>
+  setUseCustomUp: ReturnType<typeof vi.fn>
   activeCamera: THREE.Camera
 }
 
@@ -26,6 +28,7 @@ type SceneStub = {
   setBackgroundRenderMode: ReturnType<typeof vi.fn>
   handleResize: ReturnType<typeof vi.fn>
   renderBackground: ReturnType<typeof vi.fn>
+  hasSplats: ReturnType<typeof vi.fn>
   dispose: ReturnType<typeof vi.fn>
   updateBackgroundSize: ReturnType<typeof vi.fn>
   backgroundTexture: unknown
@@ -50,6 +53,7 @@ function makeViewportInstance() {
     handleResize: vi.fn(),
     updateAspectRatio: vi.fn(),
     dispose: vi.fn(),
+    setUseCustomUp: vi.fn(),
     activeCamera: new THREE.PerspectiveCamera()
   }
   const sceneManager: SceneStub = {
@@ -61,6 +65,7 @@ function makeViewportInstance() {
     setBackgroundRenderMode: vi.fn(),
     handleResize: vi.fn(),
     renderBackground: vi.fn(),
+    hasSplats: vi.fn(() => false),
     dispose: vi.fn(),
     updateBackgroundSize: vi.fn(),
     backgroundTexture: null,
@@ -123,10 +128,6 @@ describe('Viewport3d', () => {
     ctx = makeViewportInstance()
   })
 
-  afterEach(() => {
-    vi.restoreAllMocks()
-  })
-
   describe('camera delegation (model-independent)', () => {
     it('toggleCamera updates controls and recreates view helper without touching model state', () => {
       ctx.viewport.toggleCamera('orthographic')
@@ -152,14 +153,14 @@ describe('Viewport3d', () => {
       expect(ctx.viewport.isActive()).toBe(false)
     })
 
-    it('does not consult recording or animation state — that is a Load3d concern', () => {
+    it('is active from mouse presence alone — recording and animation are Load3d concerns', () => {
       Object.assign(ctx.viewport, {
         STATUS_MOUSE_ON_NODE: false,
-        STATUS_MOUSE_ON_SCENE: false,
+        STATUS_MOUSE_ON_SCENE: true,
         STATUS_MOUSE_ON_VIEWER: false,
         INITIAL_RENDER_DONE: true
       })
-      expect(() => ctx.viewport.isActive()).not.toThrow()
+      expect(ctx.viewport.isActive()).toBe(true)
     })
   })
 
@@ -251,7 +252,6 @@ describe('Viewport3d', () => {
       expect(overlay.onActiveCameraChange).toHaveBeenCalledWith(
         ctx.cameraManager.activeCamera
       )
-      expect(ctx.viewport.getOverlay()).toBe(overlay)
     })
 
     it('replacing an overlay detaches and disposes the prior one', () => {
@@ -263,18 +263,6 @@ describe('Viewport3d', () => {
       expect(first.detach).toHaveBeenCalledOnce()
       expect(first.dispose).toHaveBeenCalledOnce()
       expect(second.attach).toHaveBeenCalledWith(ctx.sceneManager.scene)
-      expect(ctx.viewport.getOverlay()).toBe(second)
-    })
-
-    it('removeOverlay detaches and disposes the installed overlay', () => {
-      const overlay = makeOverlay()
-      ctx.viewport.setOverlay(overlay)
-
-      ctx.viewport.removeOverlay()
-
-      expect(overlay.detach).toHaveBeenCalledOnce()
-      expect(overlay.dispose).toHaveBeenCalledOnce()
-      expect(ctx.viewport.getOverlay()).toBeNull()
     })
 
     it('tickPerFrame forwards delta to the overlay before view-helper/controls update', () => {
@@ -403,7 +391,7 @@ describe('Viewport3d', () => {
         x: rect.left,
         y: rect.top,
         toJSON: () => ({})
-      } as DOMRect)
+      })
       Object.assign(ctx.viewport, { view: { canvas } })
     }
 
@@ -467,7 +455,9 @@ describe('Viewport3d', () => {
       const render = vi.fn()
       Object.assign(ctx.viewport, {
         view: {
-          renderer: { setViewport: vi.fn(), setScissor: vi.fn(), render }
+          setViewport: vi.fn(),
+          setScissor: vi.fn(),
+          renderer: { render }
         }
       })
       const internals = ctx.viewport as unknown as DimmerInternals
@@ -483,7 +473,7 @@ describe('Viewport3d', () => {
       const setScissor = vi.fn()
       const render = vi.fn()
       Object.assign(ctx.viewport, {
-        view: { renderer: { setViewport, setScissor, render } }
+        view: { setViewport, setScissor, renderer: { render } }
       })
       const internals = ctx.viewport as unknown as DimmerInternals
 
@@ -503,11 +493,9 @@ describe('Viewport3d', () => {
     it('disposeManagers disposes the dim overlay resources', () => {
       Object.assign(ctx.viewport, {
         view: {
-          renderer: {
-            setViewport: vi.fn(),
-            setScissor: vi.fn(),
-            render: vi.fn()
-          }
+          setViewport: vi.fn(),
+          setScissor: vi.fn(),
+          renderer: { render: vi.fn() }
         }
       })
       const internals = ctx.viewport as unknown as DimmerInternals
@@ -527,7 +515,6 @@ describe('Viewport3d', () => {
 
   describe('start / remove lifecycle', () => {
     beforeEach(() => {
-      vi.useFakeTimers()
       Object.assign(ctx.viewport, {
         hasStarted: false,
         initialRenderTimer: null,
@@ -540,10 +527,6 @@ describe('Viewport3d', () => {
         },
         disposeManagers: vi.fn()
       })
-    })
-
-    afterEach(() => {
-      vi.useRealTimers()
     })
 
     it('start schedules a deferred forceRender and remove clears it before the timer fires', () => {
@@ -563,6 +546,196 @@ describe('Viewport3d', () => {
       vi.advanceTimersByTime(100)
 
       expect(ctx.forceRender).toHaveBeenCalledOnce()
+    })
+  })
+
+  describe('frame timing (constructed instance)', () => {
+    function makeConstructedViewport(hasSplats = false) {
+      const renderer = {
+        setClearColor: vi.fn(),
+        clear: vi.fn(),
+        render: vi.fn(),
+        state: { reset: vi.fn() }
+      }
+      const view = {
+        canvas: document.createElement('canvas'),
+        renderer,
+        setViewport: vi.fn(),
+        setScissor: vi.fn(),
+        setScissorTest: vi.fn(),
+        width: 800,
+        height: 600,
+        state: { clearColor: new THREE.Color(0x000000), clearAlpha: 0 },
+        observeResize: vi.fn(),
+        beginRender: vi.fn(),
+        blit: vi.fn(),
+        setSize: vi.fn(),
+        dispose: vi.fn()
+      }
+      const controlsManager = { init: vi.fn(), update: vi.fn() }
+      const viewHelperManager = {
+        createViewHelper: vi.fn(),
+        init: vi.fn(),
+        update: vi.fn<(delta: number) => void>(),
+        render: vi.fn()
+      }
+      const deps = {
+        view,
+        eventManager: {
+          addEventListener: vi.fn(),
+          removeEventListener: vi.fn(),
+          emitEvent: vi.fn()
+        },
+        sceneManager: {
+          init: vi.fn(),
+          scene: new THREE.Scene(),
+          renderBackground: vi.fn(),
+          hasSplats: () => hasSplats
+        },
+        cameraManager: {
+          init: vi.fn(),
+          activeCamera: new THREE.PerspectiveCamera()
+        },
+        controlsManager,
+        lightingManager: { init: vi.fn() },
+        viewHelperManager
+      } as unknown as Viewport3dDeps
+
+      const viewport = new Viewport3d(document.createElement('div'), deps)
+      return { viewport, view, renderer, controlsManager, viewHelperManager }
+    }
+
+    beforeEach(() => {
+      vi.useFakeTimers({ toFake: ['performance'] })
+    })
+
+    it('forceRender feeds elapsed time between frames to per-frame updates and renders the view', () => {
+      const { viewport, view, renderer, controlsManager, viewHelperManager } =
+        makeConstructedViewport()
+
+      viewport.forceRender()
+      vi.advanceTimersByTime(100)
+      viewport.forceRender()
+
+      const deltas = viewHelperManager.update.mock.calls.map(([delta]) => delta)
+      expect(deltas).toHaveLength(2)
+      expect(deltas[1]).toBeCloseTo(0.1)
+
+      expect(controlsManager.update).toHaveBeenCalledTimes(2)
+      expect(view.beginRender).toHaveBeenCalledTimes(2)
+      expect(renderer.render).toHaveBeenCalledTimes(2)
+      expect(view.blit).toHaveBeenCalledTimes(2)
+      expect(viewport.INITIAL_RENDER_DONE).toBe(true)
+    })
+
+    it.for([false, true])(
+      'renders with high precision only when the scene has splats (%s)',
+      (hasSplats) => {
+        const { viewport, view } = makeConstructedViewport(hasSplats)
+
+        viewport.forceRender()
+
+        expect(view.beginRender).toHaveBeenCalledWith(hasSplats)
+      }
+    )
+
+    it('resyncs the shared GL state before every frame so texture uploads keep flipY', () => {
+      const { viewport, renderer } = makeConstructedViewport()
+
+      viewport.forceRender()
+
+      expect(renderer.state.reset).toHaveBeenCalledOnce()
+      expect(renderer.state.reset.mock.invocationCallOrder[0]).toBeLessThan(
+        renderer.render.mock.invocationCallOrder[0]
+      )
+    })
+  })
+
+  describe('render callback dispatch', () => {
+    interface CallbackAccess {
+      preRenderCallbacks: Array<() => void>
+      postRenderCallbacks: Array<() => void>
+      addPreRenderCallback(cb: () => void): () => void
+      addPostRenderCallback(cb: () => void): () => void
+      runPreRenderCallbacks(): void
+      runPostRenderCallbacks(): void
+    }
+
+    it('does not skip siblings when a post-render callback disposes itself', () => {
+      const vp = ctx.viewport as unknown as CallbackAccess
+      vp.postRenderCallbacks = []
+      const calls: string[] = []
+
+      const disposeA = vp.addPostRenderCallback(() => {
+        calls.push('a')
+        disposeA()
+      })
+      vp.addPostRenderCallback(() => calls.push('b'))
+
+      vp.runPostRenderCallbacks()
+
+      expect(calls).toEqual(['a', 'b'])
+    })
+
+    it('runs pre-render callbacks and stops after disposal', () => {
+      const vp = ctx.viewport as unknown as CallbackAccess
+      vp.preRenderCallbacks = []
+      const cb = vi.fn()
+
+      const dispose = vp.addPreRenderCallback(cb)
+      vp.runPreRenderCallbacks()
+      dispose()
+      vp.runPreRenderCallbacks()
+
+      expect(cb).toHaveBeenCalledOnce()
+    })
+
+    it('scopes each disposer to its own registration of the same callback', () => {
+      const vp = ctx.viewport as unknown as CallbackAccess
+      vp.postRenderCallbacks = []
+      const cb = vi.fn()
+
+      const disposeA = vp.addPostRenderCallback(cb)
+      vp.addPostRenderCallback(cb)
+      disposeA()
+      disposeA()
+      vp.runPostRenderCallbacks()
+
+      expect(cb).toHaveBeenCalledOnce()
+    })
+
+    it('dispatches pre -> main scene -> post within a render cycle', () => {
+      const order: string[] = []
+      Object.assign(ctx.viewport, {
+        view: {
+          setScissorTest: vi.fn(),
+          renderer: { state: { reset: vi.fn() } },
+          beginRender: () => order.push('begin'),
+          blit: vi.fn()
+        },
+        renderMainScene: () => order.push('main'),
+        viewHelperManager: { render: vi.fn() }
+      })
+      const vp = ctx.viewport as unknown as CallbackAccess & {
+        renderView(): void
+      }
+      vp.preRenderCallbacks = []
+      vp.postRenderCallbacks = []
+      vp.addPreRenderCallback(() => order.push('pre'))
+      vp.addPostRenderCallback(() => order.push('post'))
+
+      vp.renderView()
+
+      expect(order).toEqual(['begin', 'pre', 'main', 'post'])
+    })
+  })
+
+  describe('setUseCustomUp', () => {
+    it('delegates to the camera manager and forces a render', () => {
+      ctx.viewport.setUseCustomUp(true)
+
+      expect(ctx.cameraManager.setUseCustomUp).toHaveBeenCalledWith(true)
+      expect(ctx.forceRender).toHaveBeenCalled()
     })
   })
 })

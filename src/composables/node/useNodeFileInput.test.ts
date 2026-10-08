@@ -1,5 +1,5 @@
 import { fromAny } from '@total-typescript/shoehorn'
-import { beforeEach, describe, expect, it, vi } from 'vitest'
+import { describe, expect, it, vi } from 'vitest'
 
 import type { LGraphNode } from '@/lib/litegraph/src/litegraph'
 import { useNodeFileInput } from './useNodeFileInput'
@@ -30,10 +30,6 @@ function setInputValue(input: HTMLInputElement, value: string) {
 }
 
 describe('useNodeFileInput', () => {
-  beforeEach(() => {
-    vi.restoreAllMocks()
-  })
-
   it('creates a file input with configured attributes and defaults', () => {
     const fileInput = document.createElement('input')
     const createElementSpy = vi
@@ -138,6 +134,24 @@ describe('useNodeFileInput', () => {
     fileInput.onchange?.(new Event('change'))
 
     expect(onSelect).not.toHaveBeenCalled()
+  })
+
+  it('reports files rejected by the filter', () => {
+    const fileInput = document.createElement('input')
+    vi.spyOn(document, 'createElement').mockReturnValue(fileInput)
+    const onReject = vi.fn()
+    const file = createFile('extensionless', 'video/mp4')
+
+    useNodeFileInput(createNode(), {
+      onSelect: vi.fn(),
+      fileFilter: () => false,
+      onReject
+    })
+
+    setInputFiles(fileInput, [file])
+    fileInput.onchange?.(new Event('change'))
+
+    expect(onReject).toHaveBeenCalledWith([file])
   })
 
   it('openFileSelection clicks the generated input', () => {

@@ -1,61 +1,84 @@
-import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
-import { ref } from 'vue'
+import { useBillingCapabilities } from '@/platform/workspace/composables/useBillingCapabilities'
+import { getActivePinia } from 'pinia'
+import { useBillingOperationStore } from '@/platform/workspace/stores/billingOperationStore'
+import { beforeEach, describe, expect, it, vi } from 'vitest'
+import { computed, ref } from 'vue'
 
+import { useCurrentUser } from '@/composables/auth/useCurrentUser'
+import { useBillingContext } from '@/composables/billing/useBillingContext'
+import { t } from '@/i18n'
+import { useTelemetry } from '@/platform/telemetry'
+import { useWorkspaceUI } from '@/platform/workspace/composables/useWorkspaceUI'
+
+import { WorkspaceApiError } from '@/platform/workspace/api/workspaceApi'
 import type { WorkspaceMember } from '@/platform/workspace/stores/teamWorkspaceStore'
+import { useTeamWorkspaceStore } from '@/platform/workspace/stores/teamWorkspaceStore'
 
-import { useDowngradeToPersonal } from './useDowngradeToPersonal'
+import { billingOperation } from './billingOperationTestUtils'
+import {
+  ReactivationAmountChangedError,
+  ReactivationConfirmationRequiredError,
+  useDowngradeToPersonal
+} from './useDowngradeToPersonal'
 
-const mockMembers = ref<WorkspaceMember[]>([])
-const mockUserEmail = ref<string | null>(null)
-const mockRemoveMember = vi.hoisted(() => vi.fn())
-const mockFetchMembers = vi.hoisted(() => vi.fn())
-const mockSubscribe = vi.hoisted(() => vi.fn())
+const mockSubscription = ref<{ isCancelled: boolean } | null>(null)
+const mockIsInitialized = ref(true)
 const mockPreviewSubscribe = vi.hoisted(() => vi.fn())
-const mockStartOperation = vi.hoisted(() => vi.fn())
 
-vi.mock('pinia', async (importOriginal) => {
-  const actual = await importOriginal()
-  return {
-    ...(actual as object),
-    storeToRefs: (store: Record<string, unknown>) => store
+const mockPermissions = vi.hoisted(() => ({
+  value: {
+    canManageSubscription: true,
+    canDowngradeToPersonal: true
   }
-})
-
-vi.mock('@/platform/workspace/stores/teamWorkspaceStore', () => ({
-  useTeamWorkspaceStore: () => ({
-    members: mockMembers,
-    removeMember: mockRemoveMember,
-    fetchMembers: mockFetchMembers
-  })
 }))
 
-vi.mock('@/platform/workspace/stores/billingOperationStore', () => ({
-  useBillingOperationStore: () => ({
-    startOperation: mockStartOperation
-  })
-}))
+let workspaceStore: ReturnType<typeof useTeamWorkspaceStore> & {
+  activeWorkspaceId: string | null
+}
 
-vi.mock('@/composables/billing/useBillingContext', () => ({
-  useBillingContext: () => ({
-    subscribe: mockSubscribe,
-    previewSubscribe: mockPreviewSubscribe
-  })
-}))
+const mockMembers = {
+  get value() {
+    return workspaceStore.members
+  },
+  set value(members: WorkspaceMember[]) {
+    workspaceStore.workspaces = [
+      {
+        id: 'workspace-one',
+        name: 'Team workspace',
+        type: 'team',
+        role: 'owner',
+        created_at: '2025-01-01',
+        joined_at: '2025-01-01',
+        isSubscribed: true,
+        subscriptionPlan: null,
+        subscriptionTier: 'PRO',
+        members,
+        pendingInvites: [],
+        membersLoaded: true,
+        pendingInvitesLoaded: true
+      }
+    ]
+    workspaceStore.activeWorkspaceId = 'workspace-one'
+  }
+}
 
-vi.mock('@/composables/auth/useCurrentUser', () => ({
-  useCurrentUser: () => ({
-    userEmail: mockUserEmail
-  })
-}))
+vi.mock(import('@/platform/workspace/composables/useWorkspaceUI'))
 
-vi.mock('@/i18n', () => ({
-  t: (key: string, params?: Record<string, unknown>) =>
-    params ? `${key} ${JSON.stringify(params)}` : key
-}))
+vi.mock(import('@/platform/distribution/types'), () => ({ isCloud: true }))
 
-vi.mock('@/config/comfyApi', () => ({
+vi.mock(import('@/platform/workspace/composables/useBillingCapabilities'))
+
+vi.mock(import('@/composables/billing/useBillingContext'))
+
+vi.mock(import('@/composables/auth/useCurrentUser'))
+
+vi.mock(import('@/i18n'))
+
+vi.mock(import('@/config/comfyApi'), () => ({
   getComfyPlatformBaseUrl: () => 'https://platform.test'
 }))
+
+vi.mock(import('@/platform/telemetry'))
 
 function createMember(
   overrides: Partial<WorkspaceMember> = {}
@@ -83,23 +106,71 @@ function teamWithOwnerAnd(...memberIds: string[]) {
   ]
 }
 
+beforeEach(() => {
+  vi.mocked(t).mockImplementation((key: unknown, params?: unknown) =>
+    params ? `${String(key)} ${JSON.stringify(params)}` : String(key)
+  )
+  useCurrentUser().userEmail = computed(() => null)
+  vi.mocked(useBillingOperationStore().startOperation).mockResolvedValue(
+    billingOperation()
+  )
+})
+
 describe('useDowngradeToPersonal', () => {
   let windowOpen: ReturnType<typeof vi.spyOn>
 
   beforeEach(() => {
-    vi.resetAllMocks()
+    const workspaceUI = vi.mocked(useWorkspaceUI())
+    const defaultPermissions = workspaceUI.permissions.value
+    workspaceUI.permissions = computed(() => ({
+      ...defaultPermissions,
+      ...mockPermissions.value
+    }))
+    const billingContext = useBillingContext()
+    vi.mocked(useBillingContext).mockReturnValue(billingContext)
+    billingContext.previewSubscribe = mockPreviewSubscribe
+    billingContext.subscription = computed(() =>
+      mockSubscription.value
+        ? {
+            isActive: true,
+            tier: null,
+            duration: null,
+            planSlug: null,
+            scheduledChange: null,
+            renewalDate: null,
+            endDate: null,
+            hasFunds: true,
+            agentHasFunds: true,
+            ...mockSubscription.value
+          }
+        : null
+    )
+    billingContext.isInitialized = mockIsInitialized
+    const pinia = getActivePinia()!
+    workspaceStore = useTeamWorkspaceStore(pinia)
     mockMembers.value = []
-    mockUserEmail.value = null
-    mockPreviewSubscribe.mockResolvedValue({ allowed: true })
-    mockSubscribe.mockResolvedValue({
+    vi.mocked(workspaceStore.removeMember).mockResolvedValue()
+    vi.mocked(workspaceStore.fetchMembers).mockResolvedValue([])
+    // Once loaded (isInitialized true), subscription is never null in
+    // production — it's at least a FREE-tier record. Default to that
+    // loaded-and-active shape; tests that need "not loaded yet" set
+    // subscription back to null explicitly alongside isInitialized: false.
+    mockSubscription.value = { isCancelled: false }
+    mockIsInitialized.value = true
+    mockPreviewSubscribe.mockResolvedValue({
+      allowed: true
+    })
+    vi.mocked(useBillingContext().fetchStatus).mockResolvedValue(undefined)
+    vi.mocked(useBillingContext().subscribe).mockResolvedValue({
       billing_op_id: 'op-1',
       status: 'subscribed'
     })
+    mockPermissions.value = {
+      canManageSubscription: true,
+      canDowngradeToPersonal: true
+    }
+    useBillingCapabilities().canDowngradeToPersonal = computed(() => true)
     windowOpen = vi.spyOn(window, 'open').mockReturnValue({} as Window)
-  })
-
-  afterEach(() => {
-    windowOpen.mockRestore()
   })
 
   describe('removableMembers / hasOtherMembers', () => {
@@ -129,7 +200,7 @@ describe('useDowngradeToPersonal', () => {
     })
 
     it('falls back to protecting owners and the current user when the flag is absent', () => {
-      mockUserEmail.value = 'me@example.com'
+      useCurrentUser().userEmail = computed(() => 'me@example.com')
       mockMembers.value = [
         createMember({
           id: 'owner',
@@ -156,21 +227,278 @@ describe('useDowngradeToPersonal', () => {
   })
 
   describe('downgradeToPersonal', () => {
+    it('rejects a promoted owner before previewing or removing members', async () => {
+      mockPermissions.value.canDowngradeToPersonal = false
+      useBillingCapabilities().canDowngradeToPersonal = computed(() => false)
+      mockMembers.value = teamWithOwnerAnd('m1')
+      const { downgradeToPersonal } = useDowngradeToPersonal()
+
+      await expect(downgradeToPersonal('founder-monthly')).rejects.toThrow(
+        'subscription.downgrade.notAllowed'
+      )
+      expect(mockPreviewSubscribe).not.toHaveBeenCalled()
+      expect(workspaceStore.removeMember).not.toHaveBeenCalled()
+      expect(useBillingContext().subscribe).not.toHaveBeenCalled()
+    })
+
+    it('rejects a client-side owner when the server denies the downgrade', async () => {
+      mockPermissions.value.canDowngradeToPersonal = true
+      useBillingCapabilities().canDowngradeToPersonal = computed(() => false)
+      mockMembers.value = teamWithOwnerAnd('m1')
+      const { downgradeToPersonal } = useDowngradeToPersonal()
+
+      await expect(downgradeToPersonal('founder-monthly')).rejects.toThrow(
+        'subscription.downgrade.notAllowed'
+      )
+      expect(mockPreviewSubscribe).not.toHaveBeenCalled()
+      expect(workspaceStore.removeMember).not.toHaveBeenCalled()
+      expect(useBillingContext().subscribe).not.toHaveBeenCalled()
+    })
+
+    it('stops before member removal when downgrade access is revoked during preview', async () => {
+      const canDowngradeToPersonal = ref(true)
+      useBillingCapabilities().canDowngradeToPersonal = computed(
+        () => canDowngradeToPersonal.value
+      )
+
+      mockMembers.value = teamWithOwnerAnd('m1')
+      mockPreviewSubscribe.mockImplementation(async () => {
+        mockPermissions.value.canDowngradeToPersonal = false
+        canDowngradeToPersonal.value = false
+        return { allowed: true }
+      })
+      const { downgradeToPersonal } = useDowngradeToPersonal()
+
+      await expect(downgradeToPersonal('founder-monthly')).rejects.toThrow(
+        'subscription.downgrade.notAllowed'
+      )
+      expect(workspaceStore.removeMember).not.toHaveBeenCalled()
+      expect(useBillingContext().subscribe).not.toHaveBeenCalled()
+    })
+
+    it('stops before submit when downgrade access is revoked during member removal', async () => {
+      const canDowngradeToPersonal = ref(true)
+      useBillingCapabilities().canDowngradeToPersonal = computed(
+        () => canDowngradeToPersonal.value
+      )
+
+      mockMembers.value = teamWithOwnerAnd('m1', 'm2')
+      vi.mocked(workspaceStore.removeMember).mockImplementation(async () => {
+        mockPermissions.value.canDowngradeToPersonal = false
+        canDowngradeToPersonal.value = false
+      })
+      const { downgradeToPersonal } = useDowngradeToPersonal()
+
+      await expect(downgradeToPersonal('founder-monthly')).rejects.toThrow(
+        'subscription.downgrade.notAllowed'
+      )
+      expect(workspaceStore.removeMember).toHaveBeenCalledOnce()
+      expect(useBillingContext().subscribe).not.toHaveBeenCalled()
+    })
+
     it('removes every non-creator member then initiates the tier change', async () => {
       mockMembers.value = teamWithOwnerAnd('m1', 'm2')
       const { downgradeToPersonal } = useDowngradeToPersonal()
 
       await downgradeToPersonal('founder-monthly')
 
-      expect(mockRemoveMember).toHaveBeenCalledTimes(2)
-      expect(mockRemoveMember).toHaveBeenCalledWith('m1')
-      expect(mockRemoveMember).toHaveBeenCalledWith('m2')
-      expect(mockRemoveMember).not.toHaveBeenCalledWith('owner')
-      expect(mockSubscribe).toHaveBeenCalledWith('founder-monthly', {
-        returnUrl: 'https://platform.test/payment/success',
-        cancelUrl: 'https://platform.test/payment/failed'
+      expect(workspaceStore.removeMember).toHaveBeenCalledTimes(2)
+      expect(workspaceStore.removeMember).toHaveBeenCalledWith('m1')
+      expect(workspaceStore.removeMember).toHaveBeenCalledWith('m2')
+      expect(workspaceStore.removeMember).not.toHaveBeenCalledWith('owner')
+      expect(useBillingContext().subscribe).toHaveBeenCalledWith(
+        'founder-monthly',
+        {
+          returnUrl: 'https://platform.test/payment/success',
+          cancelUrl: 'https://platform.test/payment/failed',
+          confirmReactivation: false,
+          attemptStartedAt: expect.any(Number)
+        }
+      )
+    })
+
+    it('removes nobody and never subscribes when the subscription is cancelled and reactivation is not confirmed', async () => {
+      mockSubscription.value = { isCancelled: true }
+      mockMembers.value = teamWithOwnerAnd('m1', 'm2')
+      mockPreviewSubscribe.mockResolvedValue({
+        allowed: true,
+        transition_type: 'downgrade'
       })
-      expect(mockStartOperation).not.toHaveBeenCalled()
+      const { downgradeToPersonal } = useDowngradeToPersonal()
+
+      await expect(downgradeToPersonal('founder-monthly')).rejects.toThrow(
+        'subscription.downgrade.reactivationConfirmationRequired'
+      )
+      expect(workspaceStore.removeMember).not.toHaveBeenCalled()
+      expect(useBillingContext().subscribe).not.toHaveBeenCalled()
+    })
+
+    it('removes members and forwards confirmReactivation once explicitly confirmed with the matching charge', async () => {
+      mockSubscription.value = { isCancelled: true }
+      mockMembers.value = teamWithOwnerAnd('m1')
+      mockPreviewSubscribe.mockResolvedValue({
+        allowed: true,
+        transition_type: 'downgrade',
+        cost_today_cents: 1500
+      })
+      const { downgradeToPersonal } = useDowngradeToPersonal()
+
+      await downgradeToPersonal('founder-monthly', true, 1500)
+
+      expect(workspaceStore.removeMember).toHaveBeenCalledWith('m1')
+      expect(useBillingContext().subscribe).toHaveBeenCalledWith(
+        'founder-monthly',
+        {
+          returnUrl: 'https://platform.test/payment/success',
+          cancelUrl: 'https://platform.test/payment/failed',
+          confirmReactivation: true,
+          attemptStartedAt: expect.any(Number)
+        }
+      )
+    })
+
+    it('refuses to bill when the fresh preview cost no longer matches the confirmed charge', async () => {
+      // The user consented to $15.00; pricing moved to $20.00 before this
+      // fresh preview — billing on the new figure would charge an amount
+      // never actually shown to the user.
+      mockSubscription.value = { isCancelled: true }
+      mockMembers.value = teamWithOwnerAnd('m1')
+      mockPreviewSubscribe.mockResolvedValue({
+        allowed: true,
+        transition_type: 'downgrade',
+        cost_today_cents: 2000
+      })
+      const { downgradeToPersonal } = useDowngradeToPersonal()
+
+      await expect(
+        downgradeToPersonal('founder-monthly', true, 1500)
+      ).rejects.toThrow('subscription.downgrade.reactivationAmountChanged')
+      expect(workspaceStore.removeMember).not.toHaveBeenCalled()
+      expect(useBillingContext().subscribe).not.toHaveBeenCalled()
+    })
+
+    it('refuses to remove members when a status refresh discovers a cancellation the cached read missed', async () => {
+      // Mirrors the previewDowngrade race: the subscription looked active at
+      // the time of the earlier preview, but was cancelled before this
+      // confirm call. The pre-billing status refresh must catch it so
+      // members are never removed for a doomed request.
+      mockSubscription.value = { isCancelled: false }
+      vi.mocked(useBillingContext().fetchStatus).mockImplementation(() => {
+        mockSubscription.value = { isCancelled: true }
+        return Promise.resolve()
+      })
+      mockMembers.value = teamWithOwnerAnd('m1')
+      mockPreviewSubscribe.mockResolvedValue({
+        allowed: true,
+        transition_type: 'downgrade'
+      })
+      const { downgradeToPersonal } = useDowngradeToPersonal()
+
+      await expect(downgradeToPersonal('founder-monthly')).rejects.toThrow(
+        'subscription.downgrade.reactivationConfirmationRequired'
+      )
+      expect(useBillingContext().fetchStatus).toHaveBeenCalled()
+      expect(workspaceStore.removeMember).not.toHaveBeenCalled()
+      expect(useBillingContext().subscribe).not.toHaveBeenCalled()
+    })
+
+    it('surfaces a hidden cancellation after member cleanup and forwards the quote timestamp', async () => {
+      mockSubscription.value = { isCancelled: false }
+      mockMembers.value = teamWithOwnerAnd('m1')
+      mockPreviewSubscribe.mockResolvedValue({
+        allowed: true,
+        transition_type: 'downgrade',
+        cost_today_cents: 1500,
+        proration_at: '2026-07-30T00:00:00Z'
+      })
+      vi.mocked(useBillingContext().subscribe).mockRejectedValueOnce(
+        Object.assign(new Error('reactivation confirmation required'), {
+          code: 'REACTIVATION_CONFIRMATION_REQUIRED'
+        })
+      )
+      const { downgradeToPersonal } = useDowngradeToPersonal()
+
+      await expect(downgradeToPersonal('founder-monthly')).rejects.toThrow(
+        ReactivationConfirmationRequiredError
+      )
+      expect(useBillingContext().subscribe).toHaveBeenCalledWith(
+        'founder-monthly',
+        expect.objectContaining({
+          confirmReactivation: false,
+          prorationAt: '2026-07-30T00:00:00Z'
+        })
+      )
+      expect(workspaceStore.removeMember).toHaveBeenCalledWith('m1')
+    })
+
+    it('requires reactivation confirmation when subscription state has not loaded yet', async () => {
+      // isInitialized false means "cancelled or not" is unknown; must not
+      // default to "not cancelled" and skip disclosure.
+      mockIsInitialized.value = false
+      mockSubscription.value = null
+      mockMembers.value = teamWithOwnerAnd('m1')
+      mockPreviewSubscribe.mockResolvedValue({
+        allowed: true,
+        transition_type: 'downgrade'
+      })
+      const { downgradeToPersonal } = useDowngradeToPersonal()
+
+      await expect(downgradeToPersonal('founder-monthly')).rejects.toThrow(
+        'subscription.downgrade.reactivationConfirmationRequired'
+      )
+      expect(workspaceStore.removeMember).not.toHaveBeenCalled()
+      expect(useBillingContext().subscribe).not.toHaveBeenCalled()
+    })
+
+    it('does not require reactivation confirmation for a brand-new subscription even if cancelled', async () => {
+      // A `new_subscription` transition has nothing to reactivate.
+      mockSubscription.value = { isCancelled: true }
+      mockMembers.value = teamWithOwnerAnd('m1')
+      mockPreviewSubscribe.mockResolvedValue({
+        allowed: true,
+        transition_type: 'new_subscription'
+      })
+      const { downgradeToPersonal } = useDowngradeToPersonal()
+
+      await downgradeToPersonal('founder-monthly')
+
+      expect(workspaceStore.removeMember).toHaveBeenCalledWith('m1')
+      expect(useBillingContext().subscribe).toHaveBeenCalledWith(
+        'founder-monthly',
+        {
+          returnUrl: 'https://platform.test/payment/success',
+          cancelUrl: 'https://platform.test/payment/failed',
+          confirmReactivation: false,
+          attemptStartedAt: expect.any(Number)
+        }
+      )
+    })
+
+    // Regression guard: isInitialized is aggregate (status + balance +
+    // plans). A balance/plans failure must not force reactivation onto an
+    // otherwise-valid, already-loaded, active subscription.
+    it('removes members and subscribes without requiring reactivation when isInitialized is false but subscription status is loaded and active', async () => {
+      mockIsInitialized.value = false
+      mockSubscription.value = { isCancelled: false }
+      mockMembers.value = teamWithOwnerAnd('m1')
+      mockPreviewSubscribe.mockResolvedValue({
+        allowed: true,
+        transition_type: 'downgrade'
+      })
+      const { downgradeToPersonal } = useDowngradeToPersonal()
+
+      await downgradeToPersonal('founder-monthly')
+
+      expect(workspaceStore.removeMember).toHaveBeenCalledWith('m1')
+      expect(useBillingContext().subscribe).toHaveBeenCalledWith(
+        'founder-monthly',
+        {
+          returnUrl: 'https://platform.test/payment/success',
+          cancelUrl: 'https://platform.test/payment/failed',
+          confirmReactivation: false,
+          attemptStartedAt: expect.any(Number)
+        }
+      )
     })
 
     it('never removes the original owner', async () => {
@@ -181,22 +509,33 @@ describe('useDowngradeToPersonal', () => {
 
       await downgradeToPersonal('founder-monthly')
 
-      expect(mockRemoveMember).not.toHaveBeenCalled()
-      expect(mockSubscribe).toHaveBeenCalled()
+      expect(workspaceStore.removeMember).not.toHaveBeenCalled()
+      expect(useBillingContext().subscribe).toHaveBeenCalled()
     })
 
-    it('validates the transition before removing, then removes, then subscribes', async () => {
+    it('validates the transition before removing members, then subscribes', async () => {
       mockMembers.value = teamWithOwnerAnd('m1')
       const calls: string[] = []
       mockPreviewSubscribe.mockImplementation(() => {
         calls.push('preview')
         return Promise.resolve({ allowed: true })
       })
-      mockRemoveMember.mockImplementation(() => {
+      vi.mocked(workspaceStore.removeMember).mockImplementation(() => {
         calls.push('remove')
         return Promise.resolve()
       })
-      mockSubscribe.mockImplementation(() => {
+      vi.mocked(useTelemetry()?.trackBillingEvent)?.mockImplementation(
+        (event) => {
+          if (
+            event.stage === 'started' &&
+            (event.operation === 'subscription_checkout' ||
+              event.operation === 'operation')
+          ) {
+            calls.push(`${event.operation}-start`)
+          }
+        }
+      )
+      vi.mocked(useBillingContext().subscribe).mockImplementation(() => {
         calls.push('subscribe')
         return Promise.resolve({ billing_op_id: 'op-1', status: 'subscribed' })
       })
@@ -204,7 +543,58 @@ describe('useDowngradeToPersonal', () => {
 
       await downgradeToPersonal('founder-monthly')
 
-      expect(calls).toEqual(['preview', 'remove', 'subscribe'])
+      expect(calls).toEqual([
+        'preview',
+        'remove',
+        'subscription_checkout-start',
+        'operation-start',
+        'subscribe'
+      ])
+    })
+
+    it('returns the preview and subscribe response', async () => {
+      const preview = {
+        allowed: true,
+        transition_type: 'downgrade' as const,
+        effective_at: '2099-02-20T00:00:00Z',
+        is_immediate: false,
+        cost_today_cents: 0,
+        cost_next_period_cents: 33_600,
+        credits_today_cents: 0,
+        credits_next_period_cents: 7_400,
+        new_plan: {
+          slug: 'creator-annual',
+          tier: 'CREATOR' as const,
+          duration: 'ANNUAL' as const,
+          price_cents: 33_600,
+          credits_cents: 7_400,
+          seat_summary: {
+            seat_count: 1,
+            total_cost_cents: 33_600,
+            total_credits_cents: 7_400
+          }
+        }
+      }
+      const response = {
+        billing_op_id: 'existing-downgrade',
+        status: 'subscribed' as const
+      }
+      mockPreviewSubscribe.mockResolvedValue(preview)
+      vi.mocked(useBillingContext().subscribe).mockResolvedValue(response)
+      const { downgradeToPersonal } = useDowngradeToPersonal()
+
+      const result = await downgradeToPersonal('creator-annual')
+
+      expect(result).toStrictEqual({ preview, response })
+      expect(useTelemetry()?.trackBillingEvent).toHaveBeenCalledWith({
+        operation: 'downgrade_to_personal',
+        stage: 'succeeded',
+        outcome: 'success',
+        member_removal_count: 0,
+        member_removal_failures: 0,
+        target_tier: 'creator',
+        duration_ms: expect.any(Number)
+      })
     })
 
     it('throws the BE reason and removes nobody when the transition is disallowed', async () => {
@@ -218,13 +608,13 @@ describe('useDowngradeToPersonal', () => {
       await expect(downgradeToPersonal('founder-monthly')).rejects.toThrow(
         'Outstanding balance'
       )
-      expect(mockRemoveMember).not.toHaveBeenCalled()
-      expect(mockSubscribe).not.toHaveBeenCalled()
+      expect(workspaceStore.removeMember).not.toHaveBeenCalled()
+      expect(useBillingContext().subscribe).not.toHaveBeenCalled()
     })
 
     it('opens the payment-method page and polls when subscribe needs a payment method', async () => {
       mockMembers.value = teamWithOwnerAnd('m1')
-      mockSubscribe.mockResolvedValue({
+      vi.mocked(useBillingContext().subscribe).mockResolvedValue({
         billing_op_id: 'op-2',
         status: 'needs_payment_method',
         payment_method_url: 'https://pay.test/method'
@@ -237,12 +627,29 @@ describe('useDowngradeToPersonal', () => {
         'https://pay.test/method',
         '_blank'
       )
-      expect(mockStartOperation).toHaveBeenCalledWith('op-2', 'subscription')
+      expect(useBillingOperationStore().startOperation).toHaveBeenCalledWith(
+        'op-2',
+        'subscription',
+        {
+          tier: undefined,
+          cycle: undefined,
+          checkoutType: 'change',
+          downgradeToPersonal: {
+            memberRemovalCount: 1,
+            memberRemovalFailures: 0,
+            targetTier: undefined,
+            startedAt: expect.any(Number)
+          },
+          attemptStartedAt: expect.any(Number)
+        }
+      )
     })
 
     it('falls back to the generic message when the transition is disallowed without a reason', async () => {
       mockMembers.value = teamWithOwnerAnd('m1')
-      mockPreviewSubscribe.mockResolvedValue({ allowed: false })
+      mockPreviewSubscribe.mockResolvedValue({
+        allowed: false
+      })
       const { downgradeToPersonal } = useDowngradeToPersonal()
 
       await expect(downgradeToPersonal('founder-monthly')).rejects.toThrow(
@@ -252,7 +659,7 @@ describe('useDowngradeToPersonal', () => {
 
     it('throws and skips polling when the payment tab is popup-blocked', async () => {
       mockMembers.value = teamWithOwnerAnd('m1')
-      mockSubscribe.mockResolvedValue({
+      vi.mocked(useBillingContext().subscribe).mockResolvedValue({
         billing_op_id: 'op-5',
         status: 'needs_payment_method',
         payment_method_url: 'https://pay.test/method'
@@ -263,12 +670,12 @@ describe('useDowngradeToPersonal', () => {
       await expect(downgradeToPersonal('founder-monthly')).rejects.toThrow(
         'subscription.downgrade.paymentPageBlocked'
       )
-      expect(mockStartOperation).not.toHaveBeenCalled()
+      expect(useBillingOperationStore().startOperation).not.toHaveBeenCalled()
     })
 
     it('throws when a payment method is needed but no url is provided', async () => {
       mockMembers.value = teamWithOwnerAnd('m1')
-      mockSubscribe.mockResolvedValue({
+      vi.mocked(useBillingContext().subscribe).mockResolvedValue({
         billing_op_id: 'op-3',
         status: 'needs_payment_method'
       })
@@ -277,12 +684,12 @@ describe('useDowngradeToPersonal', () => {
       await expect(downgradeToPersonal('founder-monthly')).rejects.toThrow(
         'subscription.downgrade.paymentMethodRequired'
       )
-      expect(mockStartOperation).not.toHaveBeenCalled()
+      expect(useBillingOperationStore().startOperation).not.toHaveBeenCalled()
     })
 
     it('polls without opening a tab when the payment is pending', async () => {
       mockMembers.value = teamWithOwnerAnd('m1')
-      mockSubscribe.mockResolvedValue({
+      vi.mocked(useBillingContext().subscribe).mockResolvedValue({
         billing_op_id: 'op-4',
         status: 'pending_payment'
       })
@@ -291,12 +698,35 @@ describe('useDowngradeToPersonal', () => {
       await downgradeToPersonal('founder-monthly')
 
       expect(windowOpen).not.toHaveBeenCalled()
-      expect(mockStartOperation).toHaveBeenCalledWith('op-4', 'subscription')
+      // One poller, whichever rail the flag names: `subscribe` is already
+      // railed upstream in `useWorkspaceBilling`, and a rail subscribe settles
+      // before it returns, so a `pending_payment` here came off the legacy
+      // transport and this registration is its only one.
+      expect(useBillingOperationStore().startOperation).toHaveBeenCalledOnce()
+      expect(useBillingOperationStore().startOperation).toHaveBeenCalledWith(
+        'op-4',
+        'subscription',
+        {
+          tier: undefined,
+          cycle: undefined,
+          checkoutType: 'change',
+          downgradeToPersonal: {
+            memberRemovalCount: 1,
+            memberRemovalFailures: 0,
+            targetTier: undefined,
+            startedAt: expect.any(Number)
+          },
+          attemptStartedAt: expect.any(Number)
+        }
+      )
+      expect(useTelemetry()?.trackBillingEvent).not.toHaveBeenCalledWith(
+        expect.objectContaining({ stage: 'succeeded' })
+      )
     })
 
     it('reports the generic failure when subscribe fails and no members were removed', async () => {
       mockMembers.value = teamWithOwnerAnd()
-      mockSubscribe.mockResolvedValue(undefined)
+      vi.mocked(useBillingContext().subscribe).mockResolvedValue(undefined)
       const { downgradeToPersonal } = useDowngradeToPersonal()
 
       await expect(downgradeToPersonal('founder-monthly')).rejects.toThrow(
@@ -304,19 +734,46 @@ describe('useDowngradeToPersonal', () => {
       )
     })
 
-    it('reports members were already removed when subscribe fails after removal', async () => {
+    it('reports members were already removed when subscribe returns no response', async () => {
       mockMembers.value = teamWithOwnerAnd('m1')
-      mockSubscribe.mockResolvedValue(undefined)
+      vi.mocked(useBillingContext().subscribe).mockResolvedValue(undefined)
       const { downgradeToPersonal } = useDowngradeToPersonal()
 
       await expect(downgradeToPersonal('founder-monthly')).rejects.toThrow(
         'subscription.downgrade.failedAfterMemberRemoval'
       )
+      expect(workspaceStore.removeMember).toHaveBeenCalledWith('m1')
     })
 
-    it('surfaces which member failed and skips the plan change when removal throws', async () => {
+    it('reports prior member removal when a reactivation retry returns no response', async () => {
+      mockMembers.value = teamWithOwnerAnd('m1')
+      mockPreviewSubscribe.mockResolvedValue({
+        allowed: true,
+        transition_type: 'downgrade',
+        cost_today_cents: 1500
+      })
+      vi.mocked(useBillingContext().subscribe).mockRejectedValueOnce(
+        Object.assign(new Error('reactivation confirmation required'), {
+          code: 'REACTIVATION_CONFIRMATION_REQUIRED'
+        })
+      )
+      const { downgradeToPersonal } = useDowngradeToPersonal()
+
+      await expect(downgradeToPersonal('founder-monthly')).rejects.toThrow(
+        ReactivationConfirmationRequiredError
+      )
+
+      mockMembers.value = teamWithOwnerAnd()
+      mockSubscription.value = { isCancelled: true }
+      vi.mocked(useBillingContext().subscribe).mockResolvedValueOnce(undefined)
+      await expect(
+        downgradeToPersonal('founder-monthly', true, 1500)
+      ).rejects.toThrow('subscription.downgrade.failedAfterMemberRemoval')
+    })
+
+    it('surfaces which member failed and skips the plan change', async () => {
       mockMembers.value = teamWithOwnerAnd('m1', 'm2')
-      mockRemoveMember.mockImplementation((id: string) =>
+      vi.mocked(workspaceStore.removeMember).mockImplementation((id: string) =>
         id === 'm2' ? Promise.reject(new Error('network')) : Promise.resolve()
       )
       const { downgradeToPersonal } = useDowngradeToPersonal()
@@ -324,15 +781,397 @@ describe('useDowngradeToPersonal', () => {
       await expect(downgradeToPersonal('founder-monthly')).rejects.toThrow(
         'm2@example.com'
       )
-      expect(mockRemoveMember).toHaveBeenCalledWith('m1')
-      expect(mockSubscribe).not.toHaveBeenCalled()
+      expect(workspaceStore.removeMember).toHaveBeenCalledWith('m1')
+      expect(useBillingContext().subscribe).not.toHaveBeenCalled()
+    })
+  })
+
+  describe('downgradeToPersonal telemetry', () => {
+    function billingLifecycle(): string[] {
+      const trackBillingEvent = useTelemetry()?.trackBillingEvent
+      if (!trackBillingEvent) throw new Error('telemetry not mocked')
+      return vi
+        .mocked(trackBillingEvent)
+        .mock.calls.map(([event]) => `${event.operation}.${event.stage}`)
+    }
+
+    it('keeps one telemetry attempt across an authoritative reactivation retry', async () => {
+      mockMembers.value = teamWithOwnerAnd('m1')
+      mockPreviewSubscribe.mockResolvedValue({
+        allowed: true,
+        transition_type: 'downgrade',
+        cost_today_cents: 1500
+      })
+      vi.mocked(useBillingContext().subscribe).mockRejectedValueOnce(
+        Object.assign(new Error('reactivation confirmation required'), {
+          code: 'REACTIVATION_CONFIRMATION_REQUIRED'
+        })
+      )
+      const { downgradeToPersonal } = useDowngradeToPersonal()
+
+      await expect(downgradeToPersonal('founder-monthly')).rejects.toThrow(
+        ReactivationConfirmationRequiredError
+      )
+      await downgradeToPersonal('founder-monthly', true, 1500)
+
+      expect(billingLifecycle()).toEqual([
+        'downgrade_to_personal.started',
+        'subscription_checkout.started',
+        'operation.started',
+        'downgrade_to_personal.succeeded',
+        'subscription_checkout.succeeded',
+        'operation.succeeded'
+      ])
+      expect(useTelemetry()?.trackBillingEvent).toHaveBeenCalledWith(
+        expect.objectContaining({
+          operation: 'downgrade_to_personal',
+          stage: 'succeeded',
+          member_removal_count: 1,
+          duration_ms: expect.any(Number)
+        })
+      )
+    })
+
+    it('keeps one telemetry attempt when the reactivation amount changes', async () => {
+      mockMembers.value = teamWithOwnerAnd('m1')
+      mockPreviewSubscribe.mockResolvedValue({
+        allowed: true,
+        transition_type: 'downgrade',
+        cost_today_cents: 1500
+      })
+      vi.mocked(useBillingContext().subscribe).mockRejectedValueOnce(
+        Object.assign(new Error('reactivation confirmation required'), {
+          code: 'REACTIVATION_CONFIRMATION_REQUIRED'
+        })
+      )
+      const { downgradeToPersonal } = useDowngradeToPersonal()
+
+      await expect(downgradeToPersonal('founder-monthly')).rejects.toThrow(
+        ReactivationConfirmationRequiredError
+      )
+
+      mockMembers.value = teamWithOwnerAnd()
+      mockSubscription.value = { isCancelled: true }
+      mockPreviewSubscribe.mockResolvedValue({
+        allowed: true,
+        transition_type: 'downgrade',
+        cost_today_cents: 2000
+      })
+      await expect(
+        downgradeToPersonal('founder-monthly', true, 1500)
+      ).rejects.toThrow(ReactivationAmountChangedError)
+      await downgradeToPersonal('founder-monthly', true, 2000)
+
+      expect(billingLifecycle()).toEqual([
+        'downgrade_to_personal.started',
+        'subscription_checkout.started',
+        'operation.started',
+        'downgrade_to_personal.succeeded',
+        'subscription_checkout.succeeded',
+        'operation.succeeded'
+      ])
+      expect(workspaceStore.removeMember).toHaveBeenCalledTimes(1)
+      expect(useTelemetry()?.trackBillingEvent).toHaveBeenCalledWith(
+        expect.objectContaining({
+          operation: 'downgrade_to_personal',
+          stage: 'succeeded',
+          member_removal_count: 1,
+          duration_ms: expect.any(Number)
+        })
+      )
+    })
+
+    const fromTeamMembersPanel = (operation: string, stage: string) => [
+      expect.objectContaining({
+        operation,
+        stage,
+        payment_intent_source: 'team_members_panel'
+      })
+    ]
+
+    it('reports the surface the downgrade started from on every event of a completed downgrade', async () => {
+      mockMembers.value = teamWithOwnerAnd('m1')
+      const { downgradeToPersonal } = useDowngradeToPersonal({
+        paymentIntentSource: 'team_members_panel'
+      })
+
+      await downgradeToPersonal('founder-monthly')
+
+      expect(vi.mocked(useTelemetry()!.trackBillingEvent).mock.calls).toEqual([
+        fromTeamMembersPanel('downgrade_to_personal', 'started'),
+        fromTeamMembersPanel('subscription_checkout', 'started'),
+        fromTeamMembersPanel('operation', 'started'),
+        fromTeamMembersPanel('downgrade_to_personal', 'succeeded'),
+        fromTeamMembersPanel('subscription_checkout', 'succeeded'),
+        fromTeamMembersPanel('operation', 'succeeded')
+      ])
+    })
+
+    it('reports the surface on the events of a downgrade that fails', async () => {
+      mockMembers.value = teamWithOwnerAnd('m1')
+      mockPreviewSubscribe.mockRejectedValue('boom')
+      const { downgradeToPersonal } = useDowngradeToPersonal({
+        paymentIntentSource: 'team_members_panel'
+      })
+
+      await expect(downgradeToPersonal('founder-monthly')).rejects.toBe('boom')
+
+      expect(vi.mocked(useTelemetry()!.trackBillingEvent).mock.calls).toEqual([
+        fromTeamMembersPanel('downgrade_to_personal', 'started'),
+        fromTeamMembersPanel('downgrade_to_personal', 'failed')
+      ])
+    })
+
+    it('hands the surface to the poller that reports a payment settled later', async () => {
+      mockMembers.value = teamWithOwnerAnd('m1')
+      vi.mocked(useBillingContext().subscribe).mockResolvedValue({
+        billing_op_id: 'op-5',
+        status: 'pending_payment'
+      })
+      const { downgradeToPersonal } = useDowngradeToPersonal({
+        paymentIntentSource: 'team_members_panel'
+      })
+
+      await downgradeToPersonal('founder-monthly')
+
+      expect(useBillingOperationStore().startOperation).toHaveBeenCalledWith(
+        'op-5',
+        'subscription',
+        expect.objectContaining({ paymentIntentSource: 'team_members_panel' })
+      )
+    })
+
+    it('tracks the start of the downgrade with the pending removal count', async () => {
+      mockMembers.value = teamWithOwnerAnd('m1', 'm2')
+      const { downgradeToPersonal } = useDowngradeToPersonal()
+
+      await downgradeToPersonal('founder-monthly')
+
+      expect(useTelemetry()?.trackBillingEvent).toHaveBeenCalledWith({
+        operation: 'downgrade_to_personal',
+        stage: 'started',
+        outcome: 'pending',
+        member_removal_count: 2,
+        member_removal_failures: 0
+      })
+    })
+
+    it('tracks a failed outcome without the member email', async () => {
+      mockMembers.value = teamWithOwnerAnd('m1', 'm2')
+      vi.mocked(workspaceStore.removeMember).mockImplementation((id: string) =>
+        id === 'm2' ? Promise.reject(new Error('network')) : Promise.resolve()
+      )
+      const { downgradeToPersonal } = useDowngradeToPersonal()
+
+      await expect(downgradeToPersonal('founder-monthly')).rejects.toThrow(
+        'm2@example.com'
+      )
+
+      expect(useTelemetry()?.trackBillingEvent).toHaveBeenCalledWith({
+        operation: 'downgrade_to_personal',
+        stage: 'failed',
+        outcome: 'failure',
+        member_removal_count: 2,
+        member_removal_failures: 1,
+        target_tier: undefined,
+        failure_category: 'unknown',
+        error_code: 'member_removal_failed',
+        duration_ms: expect.any(Number)
+      })
+      expect(useTelemetry()?.trackBillingEvent).not.toHaveBeenCalledWith(
+        expect.objectContaining({ stage: 'succeeded' })
+      )
+    })
+
+    it('uses a bounded unknown category when a non-Error value is thrown', async () => {
+      mockMembers.value = teamWithOwnerAnd('m1')
+      mockPreviewSubscribe.mockRejectedValue('boom')
+      const { downgradeToPersonal } = useDowngradeToPersonal()
+
+      await expect(downgradeToPersonal('founder-monthly')).rejects.toBe('boom')
+
+      expect(useTelemetry()?.trackBillingEvent).toHaveBeenCalledWith({
+        operation: 'downgrade_to_personal',
+        stage: 'failed',
+        outcome: 'failure',
+        member_removal_count: 1,
+        member_removal_failures: 0,
+        target_tier: undefined,
+        failure_category: 'unknown',
+        duration_ms: expect.any(Number)
+      })
+    })
+
+    it('categorizes an uncaught previewSubscribe failure via the shared classifier', async () => {
+      mockMembers.value = teamWithOwnerAnd('m1')
+      mockPreviewSubscribe.mockRejectedValue(
+        new WorkspaceApiError('offline', 502)
+      )
+      const { downgradeToPersonal } = useDowngradeToPersonal()
+
+      await expect(downgradeToPersonal('founder-monthly')).rejects.toThrow(
+        'offline'
+      )
+
+      expect(useTelemetry()?.trackBillingEvent).toHaveBeenCalledWith({
+        operation: 'downgrade_to_personal',
+        stage: 'failed',
+        outcome: 'failure',
+        member_removal_count: 1,
+        member_removal_failures: 0,
+        target_tier: undefined,
+        failure_category: 'api_rejected',
+        duration_ms: expect.any(Number)
+      })
+    })
+
+    it('categorizes a status-less previewSubscribe failure as network', async () => {
+      mockMembers.value = teamWithOwnerAnd('m1')
+      mockPreviewSubscribe.mockRejectedValue(new WorkspaceApiError('offline'))
+      const { downgradeToPersonal } = useDowngradeToPersonal()
+
+      await expect(downgradeToPersonal('founder-monthly')).rejects.toThrow(
+        'offline'
+      )
+
+      expect(useTelemetry()?.trackBillingEvent).toHaveBeenCalledWith({
+        operation: 'downgrade_to_personal',
+        stage: 'failed',
+        outcome: 'failure',
+        member_removal_count: 1,
+        member_removal_failures: 0,
+        target_tier: undefined,
+        failure_category: 'network',
+        duration_ms: expect.any(Number)
+      })
+    })
+
+    it('categorizes a member-removal failure via the shared classifier', async () => {
+      mockMembers.value = teamWithOwnerAnd('m1')
+      vi.mocked(workspaceStore.removeMember).mockRejectedValue(
+        new WorkspaceApiError('rejected', 400)
+      )
+      const { downgradeToPersonal } = useDowngradeToPersonal()
+
+      await expect(downgradeToPersonal('founder-monthly')).rejects.toThrow(
+        'm1@example.com'
+      )
+
+      expect(useTelemetry()?.trackBillingEvent).toHaveBeenCalledWith({
+        operation: 'downgrade_to_personal',
+        stage: 'failed',
+        outcome: 'failure',
+        member_removal_count: 1,
+        member_removal_failures: 1,
+        target_tier: undefined,
+        failure_category: 'api_rejected',
+        error_code: 'member_removal_failed',
+        duration_ms: expect.any(Number)
+      })
+    })
+  })
+
+  describe('previewDowngrade', () => {
+    it('reports requiresReactivationConfirmation for a cancelled subscription changing plans', async () => {
+      mockSubscription.value = { isCancelled: true }
+      mockPreviewSubscribe.mockResolvedValue({
+        allowed: true,
+        transition_type: 'downgrade',
+        cost_today_cents: 0
+      })
+      const { previewDowngrade } = useDowngradeToPersonal()
+
+      const result = await previewDowngrade('founder-monthly')
+
+      expect(result.requiresReactivationConfirmation).toBe(true)
+      expect(workspaceStore.removeMember).not.toHaveBeenCalled()
+    })
+
+    it('reports no reactivation requirement when the subscription is known and not cancelled', async () => {
+      mockSubscription.value = { isCancelled: false }
+      mockIsInitialized.value = true
+      mockPreviewSubscribe.mockResolvedValue({
+        allowed: true,
+        transition_type: 'downgrade'
+      })
+      const { previewDowngrade } = useDowngradeToPersonal()
+
+      const result = await previewDowngrade('founder-monthly')
+
+      expect(result.requiresReactivationConfirmation).toBe(false)
+    })
+
+    // Regression guard: isInitialized only becomes true once status, balance,
+    // AND plans have all loaded — a balance/plans failure must not force
+    // reactivation onto an otherwise-valid, already-loaded, active
+    // subscription. Gate on status readiness (subscription !== null) instead.
+    it('reports no reactivation requirement when isInitialized is false but subscription status is loaded and active', async () => {
+      mockSubscription.value = { isCancelled: false }
+      mockIsInitialized.value = false
+      mockPreviewSubscribe.mockResolvedValue({
+        allowed: true,
+        transition_type: 'downgrade'
+      })
+      const { previewDowngrade } = useDowngradeToPersonal()
+
+      const result = await previewDowngrade('founder-monthly')
+
+      expect(result.requiresReactivationConfirmation).toBe(false)
+    })
+
+    it('requires reactivation confirmation when subscription state has not loaded, even with no cached subscription', async () => {
+      mockSubscription.value = null
+      mockIsInitialized.value = false
+      mockPreviewSubscribe.mockResolvedValue({
+        allowed: true,
+        transition_type: 'downgrade'
+      })
+      const { previewDowngrade } = useDowngradeToPersonal()
+
+      const result = await previewDowngrade('founder-monthly')
+
+      expect(result.requiresReactivationConfirmation).toBe(true)
+    })
+
+    it('throws the BE reason without removing members when the transition is disallowed', async () => {
+      mockSubscription.value = { isCancelled: true }
+      mockPreviewSubscribe.mockResolvedValue({
+        allowed: false,
+        reason: 'Outstanding balance'
+      })
+      const { previewDowngrade } = useDowngradeToPersonal()
+
+      await expect(previewDowngrade('founder-monthly')).rejects.toThrow(
+        'Outstanding balance'
+      )
+    })
+
+    it('reports the cancellation discovered by refreshing status, not the stale cached read', async () => {
+      // The cached subscription (loaded earlier) still says "not cancelled";
+      // the status refresh this call triggers is what discovers the
+      // cancellation, so the decision must reflect the refreshed value.
+      mockSubscription.value = { isCancelled: false }
+      vi.mocked(useBillingContext().fetchStatus).mockImplementation(() => {
+        mockSubscription.value = { isCancelled: true }
+        return Promise.resolve()
+      })
+      mockPreviewSubscribe.mockResolvedValue({
+        allowed: true,
+        transition_type: 'downgrade'
+      })
+      const { previewDowngrade } = useDowngradeToPersonal()
+
+      const result = await previewDowngrade('founder-monthly')
+
+      expect(useBillingContext().fetchStatus).toHaveBeenCalled()
+      expect(result.requiresReactivationConfirmation).toBe(true)
     })
   })
 
   describe('refreshMembers', () => {
     it('refetches members so a stale empty list cannot skip the confirm gate', async () => {
       mockMembers.value = []
-      mockFetchMembers.mockImplementation(() => {
+      vi.mocked(workspaceStore.fetchMembers).mockImplementation(() => {
         mockMembers.value = teamWithOwnerAnd('m1')
         return Promise.resolve(mockMembers.value)
       })
@@ -342,6 +1181,31 @@ describe('useDowngradeToPersonal', () => {
       await refreshMembers()
 
       expect(hasOtherMembers.value).toBe(true)
+    })
+
+    it('rejects a member without fetching workspace members', async () => {
+      mockPermissions.value = {
+        canManageSubscription: false,
+        canDowngradeToPersonal: false
+      }
+      useBillingCapabilities().canDowngradeToPersonal = computed(() => false)
+      const { refreshMembers } = useDowngradeToPersonal()
+
+      await expect(refreshMembers()).rejects.toThrow(
+        'subscription.downgrade.notAllowed'
+      )
+      expect(workspaceStore.fetchMembers).not.toHaveBeenCalled()
+    })
+
+    it('rejects a promoted owner after refreshing the original-owner signal', async () => {
+      mockPermissions.value.canDowngradeToPersonal = false
+      useBillingCapabilities().canDowngradeToPersonal = computed(() => false)
+      const { refreshMembers } = useDowngradeToPersonal()
+
+      await expect(refreshMembers()).rejects.toThrow(
+        'subscription.downgrade.notAllowed'
+      )
+      expect(workspaceStore.fetchMembers).toHaveBeenCalledOnce()
     })
   })
 })

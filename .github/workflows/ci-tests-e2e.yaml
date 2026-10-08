@@ -14,56 +14,163 @@ concurrency:
   cancel-in-progress: true
 
 jobs:
+  lint-pr:
+    if: github.event_name == 'pull_request'
+    uses: ./.github/workflows/ci-lint-format.yaml
+    permissions:
+      contents: write
+      pull-requests: write
+    secrets:
+      PR_GH_TOKEN: ${{ secrets.PR_GH_TOKEN }}
+
+  lint-queue:
+    if: github.event_name == 'merge_group'
+    uses: ./.github/workflows/ci-lint-format-queue.yaml
+    permissions:
+      contents: read
+
+  fallow:
+    if: github.event_name == 'pull_request' || github.event_name == 'merge_group'
+    uses: ./.github/workflows/ci-fallow.yaml
+    permissions:
+      contents: read
+      pull-requests: write
+
+  lint-and-format:
+    needs: [lint-pr, lint-queue]
+    if: ${{ always() && (github.event_name == 'pull_request' || github.event_name == 'merge_group') }}
+    runs-on: ubuntu-latest
+    permissions: {}
+    steps:
+      - name: Check candidate lint result
+        env:
+          RESULT: ${{ github.event_name == 'pull_request' && needs.lint-pr.result || needs.lint-queue.result }}
+        run: test "$RESULT" = success
+
   changes:
     runs-on: ubuntu-latest
     permissions:
       contents: read
     outputs:
-      should-run: ${{ steps.changes.outputs.should-run }}
+      should-run: ${{ steps.changes.outputs.should-run-e2e }}
+      should-build: ${{ steps.changes.outputs.should-run-e2e == 'true' || ((github.event_name == 'pull_request' || github.event_name == 'merge_group') && steps.changes.outputs.should-run-unit == 'true') }}
     steps:
-      - uses: actions/checkout@v6
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
       - id: changes
         uses: ./.github/actions/changes-filter
 
   setup:
     needs: changes
-    if: ${{ needs.changes.outputs.should-run == 'true' }}
+    if: ${{ needs.changes.outputs.should-build == 'true' }}
     runs-on: ubuntu-latest
+    env:
+      EXPECTED_FRONTEND_COMMIT: ${{ github.sha }}
     steps:
       - name: Checkout repository
-        uses: actions/checkout@v6
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
       - name: Setup frontend
         uses: ./.github/actions/setup-frontend
         with:
           include_build_step: true
+        env:
+          COLLECT_COVERAGE: 'true'
 
-      # Upload only built dist/ (containerized test jobs will pnpm install without cache)
+      - name: Verify localhost Assets default
+        run: pnpm test:assets-flag-artifact
+        env:
+          EXPECTED_DISTRIBUTION: localhost
+
+      # Upload only verified dist/ (containerized test jobs will pnpm install without cache)
       - name: Upload built frontend
-        uses: actions/upload-artifact@v6
+        uses: actions/upload-artifact@b7c566a772e6b6bfb58ed0dc250532a479d7789f # v6.0.0
         with:
           name: frontend-dist
           path: dist/
           retention-days: 1
 
-      - name: Build cloud frontend
-        run: pnpm build:cloud
+      - name: Build and verify desktop Assets default
+        run: |
+          pnpm build:desktop-dist
+          pnpm test:assets-flag-artifact
         env:
+          EXPECTED_DISTRIBUTION: desktop
           VITE_USE_LEGACY_DEFAULT_GRAPH: 'true'
 
-      - name: Upload cloud frontend
-        uses: actions/upload-artifact@v6
+      - name: Upload desktop frontend
+        uses: actions/upload-artifact@b7c566a772e6b6bfb58ed0dc250532a479d7789f # v6.0.0
         with:
-          name: frontend-dist-cloud
+          name: frontend-dist-desktop
           path: dist/
           retention-days: 1
 
+      - name: Build cloud frontend
+        uses: ./.github/actions/build-cloud-frontend
+        with:
+          expected_commit: ${{ github.sha }}
+
+  preflight:
+    needs: [changes, setup, lint-and-format, fallow]
+    if: ${{ !cancelled() }}
+    runs-on: ubuntu-latest
+    permissions: {}
+    steps:
+      - name: Require successful prerequisites
+        env:
+          EVENT: ${{ github.event_name }}
+          CHANGES: ${{ needs.changes.result }}
+          SHOULD_BUILD: ${{ needs.changes.outputs.should-build }}
+          BUILD: ${{ needs.setup.result }}
+          LINT: ${{ needs.lint-and-format.result }}
+          FALLOW: ${{ needs.fallow.result }}
+        run: |
+          test "$CHANGES" = success
+          case "$SHOULD_BUILD:$BUILD" in
+            true:success | false:skipped) ;;
+            *) echo "::error::Build prerequisite did not pass: $SHOULD_BUILD:$BUILD"; exit 1 ;;
+          esac
+          case "$EVENT" in
+            pull_request | merge_group)
+              test "$LINT" = success && test "$FALLOW" = success ;;
+          esac
+
+  unit:
+    needs: preflight
+    if: ${{ !cancelled() && needs.preflight.result == 'success' && (github.event_name == 'pull_request' || github.event_name == 'merge_group') }}
+    uses: ./.github/workflows/ci-tests-unit.yaml
+    permissions:
+      contents: read
+    secrets:
+      CODECOV_TOKEN: ${{ secrets.CODECOV_TOKEN }}
+
+  test:
+    needs: [preflight, unit]
+    if: ${{ always() && (github.event_name == 'pull_request' || github.event_name == 'merge_group') }}
+    runs-on: ubuntu-latest
+    permissions: {}
+    steps:
+      - name: Check unit result
+        env:
+          PREFLIGHT: ${{ needs.preflight.result }}
+          UNIT: ${{ needs.unit.result }}
+        run: test "$PREFLIGHT" = success && test "$UNIT" = success
+
+  ecosystem:
+    needs: preflight
+    if: ${{ !cancelled() && needs.preflight.result == 'success' && (github.event_name == 'pull_request' || github.event_name == 'merge_group') }}
+    uses: ./.github/workflows/ci-ecosystem-matrix.yaml
+    permissions:
+      contents: read
+      pull-requests: write
+      actions: write
+
   # Sharded chromium tests
   playwright-tests-chromium-sharded:
-    needs: setup
+    needs: [changes, setup, preflight]
+    if: ${{ !cancelled() && needs.preflight.result == 'success' && needs.changes.outputs.should-run == 'true' }}
     runs-on: ubuntu-latest
     timeout-minutes: 60
     container:
-      image: ghcr.io/comfy-org/comfyui-ci-container:0.0.21
+      image: ghcr.io/comfy-org/comfyui-ci-container:0.0.27
       credentials:
         username: ${{ github.actor }}
         password: ${{ secrets.GITHUB_TOKEN }}
@@ -77,9 +184,9 @@ jobs:
         shardTotal: [16]
     steps:
       - name: Checkout repository
-        uses: actions/checkout@v6
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
       - name: Download built frontend
-        uses: actions/download-artifact@v7
+        uses: actions/download-artifact@3e5f45b2cfb9172054b4087a40e8e0b5a5461e7c # v8.0.1
         with:
           name: frontend-dist
           path: dist/
@@ -87,8 +194,10 @@ jobs:
       - name: Start ComfyUI server
         uses: ./.github/actions/start-comfyui-server
 
-      - name: Install frontend deps
-        run: pnpm install --frozen-lockfile
+      - name: Setup frontend
+        uses: ./.github/actions/setup-frontend
+        with:
+          node_cache: 'false'
 
       # Run sharded tests (browsers pre-installed in container)
       - name: Run Playwright tests (Shard ${{ matrix.shardIndex }}/${{ matrix.shardTotal }})
@@ -99,7 +208,7 @@ jobs:
           COLLECT_COVERAGE: 'true'
 
       - name: Upload blob report
-        uses: actions/upload-artifact@v6
+        uses: actions/upload-artifact@b7c566a772e6b6bfb58ed0dc250532a479d7789f # v6.0.0
         if: ${{ !cancelled() }}
         with:
           name: blob-report-chromium-${{ matrix.shardIndex }}
@@ -108,20 +217,25 @@ jobs:
 
       - name: Upload shard coverage data
         if: always()
-        uses: actions/upload-artifact@v6
+        uses: actions/upload-artifact@b7c566a772e6b6bfb58ed0dc250532a479d7789f # v6.0.0
         with:
           name: e2e-coverage-shard-${{ matrix.shardIndex }}
           path: coverage/playwright/
           retention-days: 1
-          if-no-files-found: warn
+          # A shard that produced no coverage fails here rather than going
+          # missing from the merge, so the matrix result is the only
+          # completeness signal the packager needs.
+          if-no-files-found: error
 
-  playwright-tests:
-    # Ideally, each shard runs test in 6 minutes, but allow up to 15 minutes
-    timeout-minutes: 15
-    needs: setup
+  # Sharded cloud tests: the cloud project alone ran longer than any chromium
+  # shard, so it was the critical path of every merge-group entry.
+  playwright-tests-cloud-sharded:
+    needs: [changes, setup, preflight]
+    if: ${{ !cancelled() && needs.preflight.result == 'success' && needs.changes.outputs.should-run == 'true' }}
     runs-on: ubuntu-latest
+    timeout-minutes: 30
     container:
-      image: ghcr.io/comfy-org/comfyui-ci-container:0.0.21
+      image: ghcr.io/comfy-org/comfyui-ci-container:0.0.27
       credentials:
         username: ${{ github.actor }}
         password: ${{ secrets.GITHUB_TOKEN }}
@@ -131,21 +245,83 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        browser: [chromium-2x, chromium-0.5x, mobile-chrome, cloud]
+        shardIndex: [1, 2, 3, 4]
+        shardTotal: [4]
     steps:
       - name: Checkout repository
-        uses: actions/checkout@v6
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
       - name: Download built frontend
-        uses: actions/download-artifact@v7
+        uses: actions/download-artifact@3e5f45b2cfb9172054b4087a40e8e0b5a5461e7c # v8.0.1
         with:
-          name: ${{ matrix.browser == 'cloud' && 'frontend-dist-cloud' || 'frontend-dist' }}
+          name: frontend-dist-cloud
           path: dist/
 
       - name: Start ComfyUI server
         uses: ./.github/actions/start-comfyui-server
 
-      - name: Install frontend deps
-        run: pnpm install --frozen-lockfile
+      - name: Setup frontend
+        uses: ./.github/actions/setup-frontend
+        with:
+          node_cache: 'false'
+
+      - name: Run Playwright tests (cloud, Shard ${{ matrix.shardIndex }}/${{ matrix.shardTotal }})
+        id: playwright
+        run: pnpm exec playwright test --project=cloud --shard=${{ matrix.shardIndex }}/${{ matrix.shardTotal }}
+        env:
+          PLAYWRIGHT_BLOB_OUTPUT_DIR: ./blob-report
+
+      - name: Upload blob report
+        uses: actions/upload-artifact@b7c566a772e6b6bfb58ed0dc250532a479d7789f # v6.0.0
+        if: ${{ !cancelled() }}
+        with:
+          name: blob-report-cloud-${{ matrix.shardIndex }}
+          path: blob-report/
+          retention-days: 1
+
+  playwright-tests:
+    # Ideally, each shard runs test in 6 minutes, but allow up to 30 minutes
+    timeout-minutes: 30
+    needs: [changes, setup, preflight]
+    if: ${{ !cancelled() && needs.preflight.result == 'success' && needs.changes.outputs.should-run == 'true' }}
+    runs-on: ubuntu-latest
+    container:
+      image: ghcr.io/comfy-org/comfyui-ci-container:0.0.27
+      credentials:
+        username: ${{ github.actor }}
+        password: ${{ secrets.GITHUB_TOKEN }}
+    permissions:
+      contents: read
+      packages: read
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - browser: chromium-2x
+            artifact: frontend-dist
+          - browser: chromium-0.5x
+            artifact: frontend-dist
+          - browser: mobile-chrome
+            artifact: frontend-dist
+          - browser: mobile-safari
+            artifact: frontend-dist-cloud
+          - browser: desktop
+            artifact: frontend-dist-desktop
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+      - name: Download built frontend
+        uses: actions/download-artifact@3e5f45b2cfb9172054b4087a40e8e0b5a5461e7c # v8.0.1
+        with:
+          name: ${{ matrix.artifact }}
+          path: dist/
+
+      - name: Start ComfyUI server
+        uses: ./.github/actions/start-comfyui-server
+
+      - name: Setup frontend
+        uses: ./.github/actions/setup-frontend
+        with:
+          node_cache: 'false'
 
       # Run tests (browsers pre-installed in container)
       - name: Run Playwright tests (${{ matrix.browser }})
@@ -164,7 +340,7 @@ jobs:
           pnpm exec playwright merge-reports --reporter=json ./blob-report
 
       - name: Upload Playwright report
-        uses: actions/upload-artifact@v6
+        uses: actions/upload-artifact@b7c566a772e6b6bfb58ed0dc250532a479d7789f # v6.0.0
         if: always()
         with:
           name: playwright-report-${{ matrix.browser }}
@@ -173,20 +349,34 @@ jobs:
 
   # Merge sharded test reports (no container needed - only runs CLI)
   merge-reports:
-    needs: [changes, playwright-tests-chromium-sharded]
+    needs:
+      [
+        changes,
+        preflight,
+        playwright-tests-chromium-sharded,
+        playwright-tests-cloud-sharded
+      ]
     runs-on: ubuntu-latest
-    if: ${{ !cancelled() && needs.changes.outputs.should-run == 'true' }}
+    if: ${{ !cancelled() && needs.preflight.result == 'success' && needs.changes.outputs.should-run == 'true' }}
+    strategy:
+      fail-fast: false
+      matrix:
+        project: [chromium, cloud]
     steps:
-      - name: Install pnpm
-        uses: pnpm/action-setup@fc06bc1257f339d1d5d8b3a19a8cae5388b55320 # v4.4.0
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
-          version: 10
+          sparse-checkout: /package.json
+          sparse-checkout-cone-mode: false
+          persist-credentials: false
+
+      - name: Install pnpm
+        uses: pnpm/action-setup@0977fd99725f1db4007ccb2928dbb4e90d06cc86 # v6.0.10
 
       - name: Download blob reports
-        uses: actions/download-artifact@v7
+        uses: actions/download-artifact@3e5f45b2cfb9172054b4087a40e8e0b5a5461e7c # v8.0.1
         with:
           path: ./all-blob-reports
-          pattern: blob-report-chromium-*
+          pattern: blob-report-${{ matrix.project }}-*
           merge-multiple: true
 
       - name: Merge into HTML Report
@@ -198,9 +388,9 @@ jobs:
           pnpm dlx @playwright/test merge-reports --reporter=json ./all-blob-reports
 
       - name: Upload HTML report
-        uses: actions/upload-artifact@v6
+        uses: actions/upload-artifact@b7c566a772e6b6bfb58ed0dc250532a479d7789f # v6.0.0
         with:
-          name: playwright-report-chromium
+          name: playwright-report-${{ matrix.project }}
           path: ./playwright-report/
           retention-days: 30
 
@@ -209,38 +399,76 @@ jobs:
   # expanded check names so PRs with no e2e-relevant changes aren't stuck.
   e2e-status:
     if: ${{ always() }}
-    needs: [changes, playwright-tests-chromium-sharded, playwright-tests]
+    needs:
+      [
+        changes,
+        preflight,
+        playwright-tests-chromium-sharded,
+        playwright-tests-cloud-sharded,
+        playwright-tests
+      ]
     runs-on: ubuntu-latest
     steps:
       - name: Check E2E results
         env:
+          PREFLIGHT: ${{ needs.preflight.result }}
+          CHANGES: ${{ needs.changes.result }}
           SHOULD_RUN: ${{ needs.changes.outputs.should-run }}
           SHARDED: ${{ needs.playwright-tests-chromium-sharded.result }}
+          CLOUD: ${{ needs.playwright-tests-cloud-sharded.result }}
           BROWSERS: ${{ needs.playwright-tests.result }}
         run: |
+          echo "changes=$CHANGES should_run=$SHOULD_RUN sharded=$SHARDED cloud=$CLOUD browsers=$BROWSERS"
+          [[ "$PREFLIGHT" != "success" ]] && echo "CI prerequisites did not pass ($PREFLIGHT)" && exit 1
+          [[ "$CHANGES" != "success" ]] && echo "changes gate did not complete ($CHANGES)" && exit 1
           [[ "$SHOULD_RUN" != "true" ]] && echo "E2E skipped" && exit 0
-          [[ "$SHARDED" != "success" || "$BROWSERS" != "success" ]] && echo "E2E failed" && exit 1
+          [[ "$SHARDED" == "failure" || "$CLOUD" == "failure" || "$BROWSERS" == "failure" ]] && echo "E2E failed" && exit 1
+          [[ "$SHARDED" == "cancelled" || "$CLOUD" == "cancelled" || "$BROWSERS" == "cancelled" ]] && echo "E2E cancelled, not failed" && exit 1
+          [[ "$SHARDED" != "success" || "$CLOUD" != "success" || "$BROWSERS" != "success" ]] && echo "E2E failed" && exit 1
           echo "E2E passed"
 
-  #### BEGIN Deployment and commenting (non-forked PRs only)
-  # when using pull_request event, we have permission to comment directly
-  # if its a forked repo, we need to use workflow_run event in a separate workflow (pr-playwright-deploy.yaml)
-
-  # Post starting section into the unified PR report comment for non-forked PRs
-  comment-on-pr-start:
-    needs: changes
-    runs-on: ubuntu-latest
+  upload-e2e-coverage:
+    needs: [changes, preflight, playwright-tests-chromium-sharded]
     if: >-
       ${{
+        always() &&
+        needs.preflight.result == 'success' &&
+        needs.changes.outputs.should-run == 'true' &&
+        needs.playwright-tests-chromium-sharded.result != 'cancelled'
+      }}
+    uses: ./.github/workflows/ci-tests-e2e-coverage-package.yaml
+    with:
+      source_sha: ${{ github.event.pull_request.head.sha || github.sha }}
+      # A shard that died partway still uploads a tracefile, and one that
+      # produced none fails its own upload, so the matrix verdict is what
+      # makes the merge trustworthy for trend reporting.
+      shards_succeeded: ${{ needs.playwright-tests-chromium-sharded.result == 'success' }}
+
+  #### BEGIN Deployment and commenting (PRs with direct secret access)
+  # when using pull_request event, we have permission to comment directly
+  # otherwise, we use workflow_run in ci-tests-e2e-forks.yaml
+
+  # Post starting section into the unified PR report comment
+  comment-on-pr-start:
+    needs: [changes, preflight]
+    runs-on: ubuntu-latest
+    concurrency:
+      group: pr-comment-${{ github.event.pull_request.number }}
+      cancel-in-progress: false
+    if: >-
+      ${{
+        !cancelled() &&
+        needs.preflight.result == 'success' &&
         needs.changes.outputs.should-run == 'true' &&
         github.event_name == 'pull_request' &&
-        github.event.pull_request.head.repo.fork == false
+        github.event.pull_request.head.repo.fork == false &&
+        github.event.pull_request.user.login != 'dependabot[bot]'
       }}
     permissions:
       pull-requests: write
     steps:
       - name: Checkout repository
-        uses: actions/checkout@v6
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
 
       - name: Upsert playwright starting section into unified report
         uses: ./.github/actions/upsert-comment-section
@@ -248,29 +476,33 @@ jobs:
           pr-number: ${{ github.event.pull_request.number }}
           section-name: playwright
           section-content: '## 🎭 Playwright: ⏳ Running...'
-          comment-marker: '<!-- COMFYUI_FRONTEND_PR_REPORT -->'
           token: ${{ github.token }}
 
-  # Deploy and upsert final playwright section for non-forked PRs only
+  # Deploy and upsert final playwright section
   deploy-and-comment:
-    needs: [changes, playwright-tests, merge-reports]
+    needs: [changes, preflight, playwright-tests, merge-reports]
     runs-on: ubuntu-latest
+    concurrency:
+      group: pr-comment-${{ github.event.pull_request.number }}
+      cancel-in-progress: false
     if: >-
       ${{
         always() &&
+        needs.preflight.result == 'success' &&
         needs.changes.outputs.should-run == 'true' &&
         github.event_name == 'pull_request' &&
-        github.event.pull_request.head.repo.fork == false
+        github.event.pull_request.head.repo.fork == false &&
+        github.event.pull_request.user.login != 'dependabot[bot]'
       }}
     permissions:
       pull-requests: write
       contents: read
     steps:
       - name: Checkout repository
-        uses: actions/checkout@v6
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
 
       - name: Download all playwright reports
-        uses: actions/download-artifact@v7
+        uses: actions/download-artifact@3e5f45b2cfb9172054b4087a40e8e0b5a5461e7c # v8.0.1
         with:
           pattern: playwright-report-*
           path: reports
@@ -289,20 +521,11 @@ jobs:
             "$BRANCH_NAME" \
             "completed"
 
-      - name: Read playwright section
-        id: section
-        if: ${{ !cancelled() && hashFiles('playwright-section.md') != '' }}
-        uses: juliangruber/read-file-action@b549046febe0fe86f8cb4f93c24e284433f9ab58 # v1.1.7
-        with:
-          path: playwright-section.md
-
-      - name: Upsert playwright section into unified report
-        if: ${{ !cancelled() && steps.section.outputs.content != '' }}
-        uses: ./.github/actions/upsert-comment-section
+      - name: Read and upsert playwright section
+        if: ${{ !cancelled() }}
+        uses: ./.github/actions/read-and-upsert-comment-section
         with:
           pr-number: ${{ github.event.pull_request.number }}
           section-name: playwright
-          section-content: ${{ steps.section.outputs.content }}
-          comment-marker: '<!-- COMFYUI_FRONTEND_PR_REPORT -->'
+          section-file: playwright-section.md
           token: ${{ github.token }}
-  #### END Deployment and commenting (non-forked PRs only)

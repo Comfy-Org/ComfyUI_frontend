@@ -1,6 +1,7 @@
-import { test as base, expect } from '@playwright/test'
+import { expect } from '@playwright/test'
 import type { Page } from '@playwright/test'
 
+import { networkIsolationFixture as base } from '@e2e/fixtures/networkIsolationFixture'
 import { SubgraphBreadcrumbPanel } from '@e2e/fixtures/components/SubgraphBreadcrumbPanel'
 
 class SubgraphBreadcrumbHelper {
@@ -16,6 +17,11 @@ class SubgraphBreadcrumbHelper {
 
   async clickItem(key: string): Promise<void> {
     await this.page.getByTestId(`subgraph-breadcrumb-item-${key}`).click()
+  }
+
+  async activateRootWithKeyboard(): Promise<void> {
+    await this.panel.rootItem.focus()
+    await this.panel.rootItem.press('Enter')
   }
 
   async openActiveItemMenu(menuKey: string): Promise<void> {

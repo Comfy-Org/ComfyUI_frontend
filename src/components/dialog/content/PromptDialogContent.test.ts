@@ -1,7 +1,6 @@
 import { fireEvent, render, screen } from '@testing-library/vue'
 import userEvent from '@testing-library/user-event'
-import { createPinia, setActivePinia } from 'pinia'
-import { beforeEach, describe, expect, it, vi } from 'vitest'
+import { describe, expect, it, vi } from 'vitest'
 import type { ComponentProps } from 'vue-component-type-helpers'
 import { createI18n } from 'vue-i18n'
 
@@ -19,10 +18,6 @@ const i18n = createI18n({
 })
 
 describe('PromptDialogContent', () => {
-  beforeEach(() => {
-    setActivePinia(createPinia())
-  })
-
   function renderComponent(props: Partial<Props> = {}) {
     const user = userEvent.setup()
     render(PromptDialogContent, {

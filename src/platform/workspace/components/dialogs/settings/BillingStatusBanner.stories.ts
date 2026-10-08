@@ -4,13 +4,17 @@ import type { SubscriptionInfo } from '@/composables/billing/types'
 import { i18n } from '@/i18n'
 import type { BillingContextMockState } from '@/storybook/mocks/useBillingContext'
 import { setBillingContextMock } from '@/storybook/mocks/useBillingContext'
+import {
+  setCanSubscribeSelfServeMock,
+  setCanTopUpMock
+} from '@/storybook/mocks/useBillingCapabilities'
 import type { WorkspaceUIMockState } from '@/storybook/mocks/useWorkspaceUI'
 import { setWorkspaceUIMock } from '@/storybook/mocks/useWorkspaceUI'
 
 import BillingStatusBanner from './BillingStatusBanner.vue'
 
 /**
- * The single billing banner slot for team workspaces (FE-1246), rendered in
+ * The single billing banner slot for team and personal plans (FE-1246), rendered in
  * priority order: paused > payment declined > out of credits > ending. At most
  * one state shows at a time. Each story drives the real `deriveBillingBanner`
  * through the stubbed billing context, so these are the states the backend can
@@ -40,10 +44,12 @@ const teamSubscription: SubscriptionInfo = {
   tier: null,
   duration: 'MONTHLY',
   planSlug: 'team-monthly',
+  scheduledChange: null,
   renewalDate: RENEWAL_DATE,
   endDate: null,
   isCancelled: false,
-  hasFunds: true
+  hasFunds: true,
+  agentHasFunds: true
 }
 
 const funded = teamSubscription
@@ -57,13 +63,13 @@ const cancelled: SubscriptionInfo = {
 const owner: Partial<WorkspaceUIMockState> = {}
 const member: Partial<WorkspaceUIMockState> = {
   canManageSubscription: false,
-  canManageSubscriptionLifecycle: false,
-  canTopUp: false
+  canManageSubscriptionLifecycle: false
 }
 
 function story(
   billing: Partial<BillingContextMockState>,
-  workspace: Partial<WorkspaceUIMockState>
+  workspace: Partial<WorkspaceUIMockState>,
+  capabilities: { canTopUp?: boolean; canSubscribeSelfServe?: boolean } = {}
 ): Story {
   return {
     beforeEach() {
@@ -72,6 +78,8 @@ function story(
       i18n.global.locale.value = 'en'
       setBillingContextMock({ isTeamPlan: true, ...billing })
       setWorkspaceUIMock(workspace)
+      setCanTopUpMock(capabilities.canTopUp ?? true)
+      setCanSubscribeSelfServeMock(capabilities.canSubscribeSelfServe ?? false)
     }
   }
 }
@@ -84,7 +92,7 @@ function story(
 export const PausedOwner: Story = story(
   {
     subscription: funded,
-    isActiveSubscription: false,
+    canAccessSubscriptionFeatures: false,
     billingStatus: 'paused',
     subscriptionStatus: 'active'
   },
@@ -95,11 +103,12 @@ export const PausedOwner: Story = story(
 export const PausedMember: Story = story(
   {
     subscription: funded,
-    isActiveSubscription: false,
+    canAccessSubscriptionFeatures: false,
     billingStatus: 'paused',
     subscriptionStatus: 'active'
   },
-  member
+  member,
+  { canTopUp: false }
 )
 
 /**
@@ -109,7 +118,7 @@ export const PausedMember: Story = story(
 export const PaymentDeclined: Story = story(
   {
     subscription: funded,
-    isActiveSubscription: false,
+    canAccessSubscriptionFeatures: false,
     billingStatus: 'payment_failed',
     subscriptionStatus: 'active',
     renewalDate: RENEWAL_DATE
@@ -121,7 +130,7 @@ export const PaymentDeclined: Story = story(
 export const PaymentDeclinedNoDate: Story = story(
   {
     subscription: funded,
-    isActiveSubscription: false,
+    canAccessSubscriptionFeatures: false,
     billingStatus: 'payment_failed',
     subscriptionStatus: 'active'
   },
@@ -132,7 +141,7 @@ export const PaymentDeclinedNoDate: Story = story(
 export const OutOfCreditsOwner: Story = story(
   {
     subscription: exhausted,
-    isActiveSubscription: true,
+    canAccessSubscriptionFeatures: true,
     billingStatus: 'paid',
     subscriptionStatus: 'active',
     renewalDate: RENEWAL_DATE
@@ -144,35 +153,155 @@ export const OutOfCreditsOwner: Story = story(
 export const OutOfCreditsMember: Story = story(
   {
     subscription: exhausted,
-    isActiveSubscription: true,
+    canAccessSubscriptionFeatures: true,
     billingStatus: 'paid',
     subscriptionStatus: 'active',
     renewalDate: RENEWAL_DATE
   },
-  member
+  member,
+  { canTopUp: false }
 )
 
 /** Cancelled but still active until the period end. Informational. */
 export const EndingOwner: Story = story(
   {
     subscription: cancelled,
-    isActiveSubscription: true,
+    canAccessSubscriptionFeatures: true,
     billingStatus: 'paid',
     subscriptionStatus: 'canceled'
   },
   owner
 )
 
-/**
- * Reactivate is lifecycle-gated to the original owner, so a non-original owner
- * sees the notice read-only.
- */
-export const EndingNonOriginalOwner: Story = story(
+/** Members see the end date without an action. */
+export const EndingMember: Story = story(
   {
     subscription: cancelled,
-    isActiveSubscription: true,
+    canAccessSubscriptionFeatures: true,
     billingStatus: 'paid',
     subscriptionStatus: 'canceled'
   },
-  { canManageSubscriptionLifecycle: false }
+  member,
+  { canTopUp: false }
+)
+
+export const EndingPromotedOwner: Story = story(
+  {
+    subscription: cancelled,
+    canAccessSubscriptionFeatures: true,
+    billingStatus: 'paid',
+    subscriptionStatus: 'canceled'
+  },
+  { canManageSubscriptionLifecycle: true }
+)
+
+/** A plan change is scheduled for the next period. Informational. */
+export const PlanChangeOwner: Story = story(
+  {
+    subscription: {
+      ...teamSubscription,
+      scheduledChange: {
+        plan_slug: 'enterprise-monthly',
+        effective_at: PLAN_END_DATE,
+        team_credit_stop: null
+      }
+    },
+    canAccessSubscriptionFeatures: true,
+    billingStatus: 'paid',
+    subscriptionStatus: 'active'
+  },
+  owner
+)
+
+const TEN_DAYS_MS = 10 * 24 * 60 * 60 * 1000
+
+/** An Enterprise end date stays quiet until it is two weeks out. */
+const enterpriseEnding: Partial<BillingContextMockState> = {
+  subscription: {
+    ...cancelled,
+    tier: 'ENTERPRISE',
+    endDate: new Date(Date.now() + TEN_DAYS_MS).toISOString()
+  },
+  isTeamPlan: false,
+  canAccessSubscriptionFeatures: true,
+  billingStatus: 'paid',
+  subscriptionStatus: 'canceled'
+}
+
+export const EndingEnterpriseOwner: Story = story(enterpriseEnding, owner)
+
+export const EndingEnterpriseMember: Story = story(enterpriseEnding, member)
+
+const endedTeam: Partial<BillingContextMockState> = {
+  subscription: {
+    ...cancelled,
+    tier: 'PRO',
+    hasFunds: false,
+    endDate: '2026-09-12T12:00:00Z'
+  },
+  canAccessSubscriptionFeatures: false,
+  billingStatus: 'inactive',
+  subscriptionStatus: 'ended'
+}
+
+/** The plan is over. Ships without the billing control flag. */
+export const PlanEndedOwner: Story = story(endedTeam, owner)
+
+export const PlanEndedMember: Story = story(endedTeam, member, {
+  canTopUp: false
+})
+
+const endedEnterprise: Partial<BillingContextMockState> = {
+  ...endedTeam,
+  subscription: { ...endedTeam.subscription!, tier: 'ENTERPRISE' },
+  isTeamPlan: false
+}
+
+export const PlanEndedEnterpriseOwner: Story = story(endedEnterprise, owner)
+
+export const PlanEndedEnterpriseMember: Story = story(endedEnterprise, member)
+
+const personalOwner: Partial<WorkspaceUIMockState> = {
+  workspaceType: 'personal'
+}
+
+function personalPlan(
+  subscription: SubscriptionInfo,
+  billing: Partial<BillingContextMockState>
+): Partial<BillingContextMockState> {
+  return {
+    ...billing,
+    subscription: { ...subscription, tier: 'PRO', planSlug: 'pro-monthly' },
+    isTeamPlan: false
+  }
+}
+
+/** Personal plans get first-person copy and no member version. */
+export const OutOfCreditsPersonal: Story = story(
+  personalPlan(exhausted, {
+    canAccessSubscriptionFeatures: true,
+    billingStatus: 'paid',
+    subscriptionStatus: 'active',
+    renewalDate: RENEWAL_DATE
+  }),
+  personalOwner
+)
+
+export const EndingPersonal: Story = story(
+  personalPlan(cancelled, {
+    canAccessSubscriptionFeatures: true,
+    billingStatus: 'paid',
+    subscriptionStatus: 'canceled'
+  }),
+  personalOwner
+)
+
+/** Resubscribe opens the pricing table on Personal plans. */
+export const PlanEndedPersonal: Story = story(
+  personalPlan(endedTeam.subscription!, {
+    canAccessSubscriptionFeatures: false,
+    billingStatus: 'inactive',
+    subscriptionStatus: 'ended'
+  }),
+  personalOwner
 )

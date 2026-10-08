@@ -33,6 +33,22 @@ function renderGroup(
 }
 
 describe('ModelMenuGroup', () => {
+  it.for([
+    { trigger: 'Up Direction', selected: 'ORIGINAL' },
+    { trigger: 'Material', selected: 'Original' }
+  ])(
+    'marks the selected $trigger option semantically',
+    async ({ trigger, selected }) => {
+      const { user } = renderGroup()
+
+      await user.click(screen.getByRole('button', { name: trigger }))
+
+      const option = screen.getByRole('button', { name: selected })
+      expect(option).toHaveAttribute('aria-pressed', 'true')
+      expect(option).toHaveClass('bg-secondary-background-selected')
+    }
+  )
+
   it('sets the up direction from the popover', async () => {
     const config = makeConfig()
     const { user } = renderGroup({ config })
@@ -51,6 +67,38 @@ describe('ModelMenuGroup', () => {
     await user.click(screen.getByRole('button', { name: 'Wireframe' }))
 
     expect(config.materialMode).toBe('wireframe')
+  })
+
+  it('only shows one popover at a time', async () => {
+    const { user } = renderGroup()
+
+    await user.click(screen.getByRole('button', { name: 'Up Direction' }))
+    expect(screen.getByRole('button', { name: '+Y' })).toBeInTheDocument()
+
+    await user.click(screen.getByRole('button', { name: 'Material' }))
+    expect(screen.queryByRole('button', { name: '+Y' })).not.toBeInTheDocument()
+    expect(
+      screen.getByRole('button', { name: 'Wireframe' })
+    ).toBeInTheDocument()
+
+    await user.click(screen.getByRole('button', { name: 'Up Direction' }))
+    expect(
+      screen.queryByRole('button', { name: 'Wireframe' })
+    ).not.toBeInTheDocument()
+    expect(screen.getByRole('button', { name: '+Y' })).toBeInTheDocument()
+
+    await user.click(screen.getByRole('button', { name: 'Up Direction' }))
+    expect(screen.queryByRole('button', { name: '+Y' })).not.toBeInTheDocument()
+  })
+
+  it('closes the open popover on Escape', async () => {
+    const { user } = renderGroup()
+
+    await user.click(screen.getByRole('button', { name: 'Up Direction' }))
+    expect(screen.getByRole('button', { name: '+Y' })).toBeInTheDocument()
+
+    await user.keyboard('{Escape}')
+    expect(screen.queryByRole('button', { name: '+Y' })).not.toBeInTheDocument()
   })
 
   it('toggles the skeleton only when supported', async () => {

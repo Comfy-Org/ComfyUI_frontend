@@ -3,9 +3,9 @@ import { useEventListener, useIntersectionObserver } from '@vueuse/core'
 import { onMounted, ref } from 'vue'
 import type { ComponentProps } from 'vue-component-type-helpers'
 
-import { prefersReducedMotion } from '../../composables/useReducedMotion'
-import { scrollTo } from '../../scripts/smoothScroll'
-import CategoryNav from '../common/CategoryNav.vue'
+import { prefersReducedMotion } from '@/composables/useReducedMotion'
+import { scrollTo } from '@/scripts/smoothScroll'
+import CategoryNav from '@/components/common/CategoryNav.vue'
 
 type Category = ComponentProps<typeof CategoryNav>['categories'][number]
 
@@ -63,8 +63,6 @@ function scrollToSection(id: string) {
 }
 
 onMounted(() => {
-  // The section anchors live in the statically rendered article body, so the
-  // observer targets are resolved from the DOM by id rather than template refs.
   const elements = categories
     .map((category) => document.getElementById(category.value))
     .filter((el): el is HTMLElement => el !== null)

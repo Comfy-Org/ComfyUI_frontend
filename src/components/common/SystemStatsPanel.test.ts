@@ -1,15 +1,15 @@
 import { render, screen } from '@testing-library/vue'
 import userEvent from '@testing-library/user-event'
-import { beforeEach, describe, expect, it, vi } from 'vitest'
+import { describe, expect, it, vi } from 'vitest'
 import { createI18n } from 'vue-i18n'
 
 import enMessages from '@/locales/en/main.json'
-import type { SystemStats } from '@/schemas/apiSchema'
+import type { SystemStats } from '@/platform/remote/comfyui/types'
 
 import SystemStatsPanel from './SystemStatsPanel.vue'
 
 const copyToClipboard = vi.fn()
-vi.mock('@/composables/useCopyToClipboard', () => ({
+vi.mock(import('@/composables/useCopyToClipboard'), () => ({
   useCopyToClipboard: () => ({ copyToClipboard })
 }))
 
@@ -45,16 +45,17 @@ function renderPanel(stats: SystemStats) {
     props: { stats },
     global: {
       plugins: [i18n],
-      stubs: { Divider: true, TabView: true, TabPanel: true, DeviceInfo: true }
+      stubs: {
+        DeviceInfo: {
+          props: ['device'],
+          template: '<div>{{ device.name }}</div>'
+        }
+      }
     }
   })
 }
 
 describe('SystemStatsPanel', () => {
-  beforeEach(() => {
-    vi.clearAllMocks()
-  })
-
   it('renders localized headers with corrected PyTorch casing', () => {
     renderPanel(createStats())
 
@@ -82,5 +83,38 @@ describe('SystemStatsPanel', () => {
     expect(copied).toContain('## System Info')
     expect(copied).toContain('PyTorch Version: 2.4.0')
     expect(copied).toContain('RAM Total: 1 KB')
+  })
+
+  it('switches between device tabs', async () => {
+    const stats = createStats()
+    stats.devices = [
+      {
+        name: 'GPU 0',
+        type: 'cuda',
+        index: 0,
+        vram_total: 100,
+        vram_free: 50,
+        torch_vram_total: 100,
+        torch_vram_free: 50
+      },
+      {
+        name: 'GPU 1',
+        type: 'cuda',
+        index: 1,
+        vram_total: 100,
+        vram_free: 50,
+        torch_vram_total: 100,
+        torch_vram_free: 50
+      }
+    ]
+    const user = userEvent.setup()
+    renderPanel(stats)
+
+    expect(screen.getByText('GPU 0', { selector: 'div' })).toBeVisible()
+    expect(screen.queryByText('GPU 1', { selector: 'div' })).toBeNull()
+
+    await user.click(screen.getByRole('tab', { name: 'GPU 1' }))
+    expect(screen.getByText('GPU 1', { selector: 'div' })).toBeVisible()
+    expect(screen.queryByText('GPU 0', { selector: 'div' })).toBeNull()
   })
 })

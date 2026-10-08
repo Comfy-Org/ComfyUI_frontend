@@ -1,5 +1,9 @@
-import type { NodeError, PromptError } from '@/schemas/apiSchema'
+import type { NodeError, PromptError } from '@/platform/remote/comfyui/types'
 import type { SerializedNodeId } from '@/types/nodeId'
+
+type RawPromptError =
+  | string
+  | { type?: string; message?: string; details?: string }
 
 /**
  * The standard prompt validation response shape (`{ error, node_errors }`).
@@ -8,7 +12,7 @@ import type { SerializedNodeId } from '@/types/nodeId'
  * rather than as direct HTTP responses.
  */
 interface CloudValidationError {
-  error?: { type?: string; message?: string; details?: string } | string
+  error?: RawPromptError
   node_errors?: Record<SerializedNodeId, NodeError>
 }
 
@@ -51,6 +55,35 @@ type CloudValidationResult =
   | { kind: 'nodeErrors'; nodeErrors: Record<SerializedNodeId, NodeError> }
   | { kind: 'promptError'; promptError: PromptError }
 
+export function normalizePromptError(error: unknown): PromptError | null {
+  if (error !== null && typeof error === 'object') {
+    return {
+      type:
+        'type' in error && typeof error.type === 'string'
+          ? error.type
+          : 'error',
+      message:
+        'message' in error && typeof error.message === 'string'
+          ? error.message
+          : '',
+      details:
+        'details' in error && typeof error.details === 'string'
+          ? error.details
+          : ''
+    }
+  }
+
+  return typeof error === 'string'
+    ? { type: 'error', message: error, details: '' }
+    : null
+}
+
+export function isMissingNodePromptError(
+  promptError: PromptError | null | undefined
+): boolean {
+  return promptError?.type === 'missing_node_type'
+}
+
 /**
  * Classifies an embedded cloud validation error from `exception_message`
  * as either node-level errors or a prompt-level error.
@@ -70,25 +103,22 @@ export function classifyCloudValidationError(
     return { kind: 'nodeErrors', nodeErrors: node_errors }
   }
 
-  if (error && typeof error === 'object') {
-    return {
-      kind: 'promptError',
-      promptError: {
-        type: error.type ?? 'error',
-        message: error.message ?? '',
-        details: error.details ?? ''
-      }
-    }
-  }
+  const promptError = normalizePromptError(error)
+  return promptError ? { kind: 'promptError', promptError } : null
+}
 
-  if (typeof error === 'string') {
-    return {
-      kind: 'promptError',
-      promptError: { type: 'error', message: error, details: '' }
-    }
-  }
+export function errorsForSlot(
+  errors: NodeError['errors'],
+  slotName: string
+): NodeError['errors'] {
+  return errors.filter((error) => error.extra_info?.input_name === slotName)
+}
 
-  return null
+export function hasErrorForSlot(
+  errors: NodeError['errors'],
+  slotName: string
+): boolean {
+  return errors.some((error) => error.extra_info?.input_name === slotName)
 }
 
 /**
@@ -120,6 +150,7 @@ export const INPUT_LEVEL_VALIDATION_ERROR_TYPES = new Set([
 ])
 
 export const NODE_LEVEL_VALIDATION_ERROR_TYPES = new Set([
+  'PARTNER_NODE_DISABLED',
   'exception_during_validation',
   'dependency_cycle'
 ])

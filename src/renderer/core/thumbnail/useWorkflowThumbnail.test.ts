@@ -1,17 +1,17 @@
-import { createPinia, setActivePinia } from 'pinia'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 
+import { LGraph } from '@/lib/litegraph/src/litegraph'
 import type { ComfyWorkflow } from '@/platform/workflow/management/stores/workflowStore'
 import { useWorkflowStore } from '@/platform/workflow/management/stores/workflowStore'
 import { createGraphThumbnail } from '@/renderer/core/thumbnail/graphThumbnailRenderer'
 import { useWorkflowThumbnail } from '@/renderer/core/thumbnail/useWorkflowThumbnail'
 import { api } from '@/scripts/api'
 
-vi.mock('@/renderer/core/thumbnail/graphThumbnailRenderer', () => ({
+vi.mock(import('@/renderer/core/thumbnail/graphThumbnailRenderer'), () => ({
   createGraphThumbnail: vi.fn()
 }))
 
-vi.mock('@/scripts/api', () => ({
+vi.mock<unknown>(import('@/scripts/api'), () => ({
   api: {
     moveUserData: vi.fn(),
     listUserDataFullInfo: vi.fn(),
@@ -24,17 +24,17 @@ vi.mock('@/scripts/api', () => ({
 
 describe('useWorkflowThumbnail', () => {
   let workflowStore: ReturnType<typeof useWorkflowStore>
+  let graph: LGraph
 
   beforeEach(() => {
-    setActivePinia(createPinia())
     workflowStore = useWorkflowStore()
+    graph = new LGraph()
 
     // Clear any existing thumbnails from previous tests BEFORE mocking
     const { clearAllThumbnails } = useWorkflowThumbnail()
     clearAllThumbnails()
 
     // Now set up mocks
-    vi.clearAllMocks()
 
     global.URL.createObjectURL = vi.fn(() => 'data:image/png;base64,test')
     global.URL.revokeObjectURL = vi.fn()
@@ -50,9 +50,9 @@ describe('useWorkflowThumbnail', () => {
 
   it('should capture minimap thumbnail', async () => {
     const { createMinimapPreview } = useWorkflowThumbnail()
-    const thumbnail = await createMinimapPreview()
+    const thumbnail = await createMinimapPreview(graph)
 
-    expect(createGraphThumbnail).toHaveBeenCalledOnce()
+    expect(createGraphThumbnail).toHaveBeenCalledExactlyOnceWith(graph)
     expect(thumbnail).toBe('data:image/png;base64,test')
   })
 
@@ -61,7 +61,7 @@ describe('useWorkflowThumbnail', () => {
 
     const mockWorkflow = { key: 'test-workflow-key' } as ComfyWorkflow
 
-    await storeThumbnail(mockWorkflow)
+    await storeThumbnail(mockWorkflow, graph)
 
     const thumbnail = getThumbnail('test-workflow-key')
     expect(thumbnail).toBe('data:image/png;base64,test')
@@ -73,7 +73,7 @@ describe('useWorkflowThumbnail', () => {
 
     const mockWorkflow = { key: 'test-workflow-key' } as ComfyWorkflow
 
-    await storeThumbnail(mockWorkflow)
+    await storeThumbnail(mockWorkflow, graph)
 
     expect(getThumbnail('test-workflow-key')).toBeDefined()
 
@@ -92,8 +92,8 @@ describe('useWorkflowThumbnail', () => {
     const mockWorkflow1 = { key: 'workflow-1' } as ComfyWorkflow
     const mockWorkflow2 = { key: 'workflow-2' } as ComfyWorkflow
 
-    await storeThumbnail(mockWorkflow1)
-    await storeThumbnail(mockWorkflow2)
+    await storeThumbnail(mockWorkflow1, graph)
+    await storeThumbnail(mockWorkflow2, graph)
 
     expect(getThumbnail('workflow-1')).toBeDefined()
     expect(getThumbnail('workflow-2')).toBeDefined()
@@ -114,7 +114,7 @@ describe('useWorkflowThumbnail', () => {
     const originalKey = workflow.key
 
     // Store thumbnail for the workflow
-    await storeThumbnail(workflow)
+    await storeThumbnail(workflow, graph)
     expect(getThumbnail(originalKey)).toBe('data:image/png;base64,test')
     expect(workflowThumbnails.value.size).toBe(1)
 
@@ -139,7 +139,7 @@ describe('useWorkflowThumbnail', () => {
     const mockWorkflow = { key: 'test-workflow' } as ComfyWorkflow
 
     // Store first thumbnail
-    await storeThumbnail(mockWorkflow)
+    await storeThumbnail(mockWorkflow, graph)
     const firstThumbnail = getThumbnail('test-workflow')
     expect(firstThumbnail).toBe('data:image/png;base64,test')
 
@@ -151,7 +151,7 @@ describe('useWorkflowThumbnail', () => {
     )
 
     // Store second thumbnail for same workflow - should revoke the first URL
-    await storeThumbnail(mockWorkflow)
+    await storeThumbnail(mockWorkflow, graph)
     const secondThumbnail = getThumbnail('test-workflow')
     expect(secondThumbnail).toBe('data:image/png;base64,test2')
 
@@ -168,7 +168,7 @@ describe('useWorkflowThumbnail', () => {
 
     // Create a workflow and store thumbnail
     const workflow = workflowStore.createTemporary('test-delete.json')
-    await storeThumbnail(workflow)
+    await storeThumbnail(workflow, graph)
 
     expect(getThumbnail(workflow.key)).toBe('data:image/png;base64,test')
     expect(workflowThumbnails.value.size).toBe(1)
@@ -190,7 +190,7 @@ describe('useWorkflowThumbnail', () => {
 
     // Create a temporary workflow and store thumbnail
     const workflow = workflowStore.createTemporary('temp-workflow.json')
-    await storeThumbnail(workflow)
+    await storeThumbnail(workflow, graph)
 
     expect(getThumbnail(workflow.key)).toBe('data:image/png;base64,test')
     expect(workflowThumbnails.value.size).toBe(1)
@@ -212,7 +212,7 @@ describe('useWorkflowThumbnail', () => {
 
     // Create workflow and store thumbnail
     const workflow = workflowStore.createTemporary('original.json')
-    await storeThumbnail(workflow)
+    await storeThumbnail(workflow, graph)
     const originalKey = workflow.key
 
     expect(getThumbnail(originalKey)).toBe('data:image/png;base64,test')
@@ -260,7 +260,7 @@ describe('useWorkflowThumbnail', () => {
     // Test moving to same key (should not cause issues)
     const { storeThumbnail } = useWorkflowThumbnail()
     const mockWorkflow = { key: 'test-key' } as ComfyWorkflow
-    await storeThumbnail(mockWorkflow)
+    await storeThumbnail(mockWorkflow, graph)
 
     expect(workflowThumbnails.value.size).toBe(1)
     moveWorkflowThumbnail('test-key', 'test-key')
@@ -274,7 +274,7 @@ describe('useWorkflowThumbnail', () => {
     })
 
     const { createMinimapPreview } = useWorkflowThumbnail()
-    const result = await createMinimapPreview()
+    const result = await createMinimapPreview(graph)
 
     expect(result).toBeNull()
   })
@@ -287,7 +287,7 @@ describe('useWorkflowThumbnail', () => {
     const { storeThumbnail, getThumbnail } = useWorkflowThumbnail()
     const mockWorkflow = { key: 'error-workflow' } as ComfyWorkflow
 
-    await storeThumbnail(mockWorkflow)
+    await storeThumbnail(mockWorkflow, graph)
 
     expect(getThumbnail('error-workflow')).toBeUndefined()
   })

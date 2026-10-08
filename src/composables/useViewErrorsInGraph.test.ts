@@ -1,11 +1,11 @@
-import { createPinia, setActivePinia } from 'pinia'
+import { nextTick } from 'vue'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 
 import { useCanvasStore } from '@/renderer/core/canvas/canvasStore'
 import { useExecutionErrorStore } from '@/stores/executionErrorStore'
 import { useRightSidePanelStore } from '@/stores/workspace/rightSidePanelStore'
 import { LGraph, LGraphCanvas, LGraphNode } from '@/lib/litegraph/src/litegraph'
-import { createMockCanvasRenderingContext2D } from '@/utils/__tests__/litegraphTestUtils'
+import { createMockCanvasRenderingContext2D } from '@/utils/__tests__/canvasTestUtils'
 import { useWorkflowStore } from '@/platform/workflow/management/stores/workflowStore'
 
 import { useViewErrorsInGraph } from './useViewErrorsInGraph'
@@ -16,25 +16,11 @@ const apiMock = vi.hoisted(() => ({
   storeSettings: vi.fn()
 }))
 
-vi.mock('@/scripts/api', () => ({
+vi.mock<unknown>(import('@/scripts/api'), () => ({
   api: apiMock
 }))
 
-const appMock = vi.hoisted(() => ({
-  ui: {
-    settings: {
-      dispatchChange: vi.fn()
-    }
-  },
-  rootGraph: {
-    events: new EventTarget(),
-    nodes: []
-  }
-}))
-
-vi.mock('@/scripts/app', () => ({
-  app: appMock
-}))
+vi.mock(import('@/scripts/app'))
 
 function createSelectedCanvas() {
   const graph = new LGraph()
@@ -51,22 +37,19 @@ function createSelectedCanvas() {
   })
   const node = new LGraphNode('Selected Node')
   graph.add(node)
-  canvas.selectedItems.add(node)
-  node.selected = true
+  canvas.select(node)
 
   return { canvas, node }
 }
 
 describe('useViewErrorsInGraph', () => {
   beforeEach(() => {
-    vi.clearAllMocks()
-    setActivePinia(createPinia())
     apiMock.getSettings.mockResolvedValue({})
     apiMock.storeSetting.mockResolvedValue(undefined)
     apiMock.storeSettings.mockResolvedValue(undefined)
   })
 
-  it('opens graph errors and clears app-mode error UI state', () => {
+  it('opens graph errors and clears app-mode error UI state', async () => {
     const canvasStore = useCanvasStore()
     const executionErrorStore = useExecutionErrorStore()
     const rightSidePanelStore = useRightSidePanelStore()
@@ -76,7 +59,8 @@ describe('useViewErrorsInGraph', () => {
       activeMode: 'app'
     } as typeof workflowStore.activeWorkflow
     canvasStore.canvas = canvas
-    canvasStore.selectedItems = [node]
+    await nextTick()
+    expect(canvasStore.selectedItems).toEqual([node])
     executionErrorStore.showErrorOverlay()
 
     useViewErrorsInGraph().viewErrorsInGraph()

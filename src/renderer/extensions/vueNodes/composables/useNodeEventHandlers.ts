@@ -1,67 +1,15 @@
-/**
- * Node Event Handlers Composable
- *
- * Handles all Vue node interaction events including:
- * - Node selection with multi-select support
- * - Node collapse/expand state management
- * - Node title editing and updates
- * - Layout mutations for visual feedback
- * - Integration with LiteGraph canvas selection system
- */
 import { createSharedComposable } from '@vueuse/core'
 
-import { useVueNodeLifecycle } from '@/composables/graph/useVueNodeLifecycle'
 import { useCanvasStore } from '@/renderer/core/canvas/canvasStore'
 import { useCanvasInteractions } from '@/renderer/core/canvas/useCanvasInteractions'
-import { useNodeZIndex } from '@/renderer/extensions/vueNodes/composables/useNodeZIndex'
-import { isMultiSelectKey } from '@/renderer/extensions/vueNodes/utils/selectionUtils'
 import type { NodeId } from '@/types/nodeId'
 
 function useNodeEventHandlersIndividual() {
   const canvasStore = useCanvasStore()
-  const { nodeManager } = useVueNodeLifecycle()
-  const { bringNodeToFront } = useNodeZIndex()
   const { shouldHandleNodePointerEvents } = useCanvasInteractions()
 
   function getNode(nodeId: NodeId) {
-    return nodeManager.value?.getNode(nodeId)
-  }
-
-  /**
-   * Handle node selection events
-   * Supports single selection and multi-select with Ctrl/Cmd
-   */
-  function handleNodeSelect(event: PointerEvent, nodeId: NodeId) {
-    if (!shouldHandleNodePointerEvents.value) return
-
-    if (!canvasStore.canvas) return
-
-    const node = getNode(nodeId)
-    if (!node) return
-
-    const multiSelect = isMultiSelectKey(event)
-    const selectedItemsCount = canvasStore.selectedItems.length
-    const preserveExistingSelection =
-      !multiSelect && node.selected && selectedItemsCount > 1
-
-    if (multiSelect) {
-      if (!node.selected) {
-        canvasStore.canvas.select(node)
-      }
-    } else if (!preserveExistingSelection) {
-      // Regular click -> single select
-      canvasStore.canvas.deselectAll()
-      canvasStore.canvas.select(node)
-    }
-
-    // Bring node to front when clicked (similar to LiteGraph behavior)
-    // Skip if node is pinned to avoid unwanted movement
-    if (!node.flags?.pinned) {
-      bringNodeToFront(nodeId)
-    }
-
-    // Update canvas selection tracking
-    canvasStore.updateSelectedItems()
+    return canvasStore.currentGraph?.getNodeById(nodeId) ?? undefined
   }
 
   /**
@@ -75,7 +23,7 @@ function useNodeEventHandlersIndividual() {
     if (!node) return
 
     // Use LiteGraph's collapse method if the state needs to change
-    const currentCollapsed = node.flags?.collapsed ?? false
+    const currentCollapsed = node.flags.collapsed ?? false
     if (currentCollapsed !== collapsed) {
       node.collapse()
     }
@@ -95,7 +43,7 @@ function useNodeEventHandlersIndividual() {
     node.title = newTitle
 
     // If this is a subgraph node, sync the subgraph name for breadcrumb reactivity
-    if (node.isSubgraphNode?.()) {
+    if (node.isSubgraphNode()) {
       node.subgraph.name = newTitle
     }
   }
@@ -104,7 +52,7 @@ function useNodeEventHandlersIndividual() {
    * Handle node right-click context menu events
    * Integrates with LiteGraph's context menu system
    */
-  function handleNodeRightClick(event: PointerEvent, nodeId: NodeId) {
+  function handleNodeRightClick(event: MouseEvent, nodeId: NodeId) {
     if (!shouldHandleNodePointerEvents.value) return
 
     if (!canvasStore.canvas) return
@@ -112,62 +60,15 @@ function useNodeEventHandlersIndividual() {
     const node = getNode(nodeId)
     if (!node) return
 
-    // Prevent default context menu
     event.preventDefault()
 
-    // Select the node if not already selected
-    if (!node.selected) {
-      handleNodeSelect(event, nodeId)
-    }
-
-    // Let LiteGraph handle the context menu
-    // The canvas will handle showing the appropriate context menu
-  }
-
-  function toggleNodeSelectionAfterPointerUp(
-    nodeId: NodeId,
-    multiSelect: boolean
-  ) {
-    if (!shouldHandleNodePointerEvents.value) return
-
-    if (!canvasStore.canvas) return
-
-    const node = getNode(nodeId)
-    if (!node) return
-
-    if (!multiSelect) {
-      canvasStore.canvas.deselectAll()
-      canvasStore.canvas.select(node)
-      canvasStore.updateSelectedItems()
-      // Bring node to front when selected (unless pinned)
-      if (!node.flags?.pinned) {
-        bringNodeToFront(nodeId)
-      }
-      return
-    }
-
-    if (node.selected) {
-      canvasStore.canvas.deselect(node)
-    } else {
-      canvasStore.canvas.select(node)
-      // Bring node to front when selected (unless pinned)
-      if (!node.flags?.pinned) {
-        bringNodeToFront(nodeId)
-      }
-    }
-
-    canvasStore.updateSelectedItems()
+    canvasStore.canvas.processSelect(node, event, true)
   }
 
   return {
-    // Core event handlers
-    handleNodeSelect,
     handleNodeCollapse,
     handleNodeTitleUpdate,
-    handleNodeRightClick,
-
-    // Batch operations
-    toggleNodeSelectionAfterPointerUp
+    handleNodeRightClick
   }
 }
 

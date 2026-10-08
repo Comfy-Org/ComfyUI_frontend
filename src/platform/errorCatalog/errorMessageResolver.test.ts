@@ -6,10 +6,10 @@ import {
   resolveRunErrorMessage
 } from './errorMessageResolver'
 import type { NodeValidationError } from './types'
-import type { ExecutionErrorWsMessage } from '@/schemas/apiSchema'
+import type { ExecutionErrorWsMessage } from '@/platform/remote/comfyui/execution/types'
 import type { MissingMediaGroup } from '@/platform/missingMedia/types'
 import type { MissingModelGroup } from '@/platform/missingModel/types'
-import type { MissingNodeType } from '@/types/comfy'
+import type { MissingNodeType } from '@/platform/nodeReplacement/types'
 import { i18n, te } from '@/i18n'
 
 function nodeValidationError(
@@ -131,6 +131,25 @@ describe('errorMessageResolver', () => {
     })
   })
 
+  it('resolves partner policy denials to actionable node-level copy', () => {
+    const result = resolveRunErrorMessage({
+      kind: 'node_validation',
+      error: nodeValidationError('PARTNER_NODE_DISABLED'),
+      nodeDisplayName: 'Kling Image to Video'
+    })
+
+    expect(result).toEqual({
+      catalogId: 'PARTNER_NODE_DISABLED',
+      displayTitle: 'Disabled node',
+      displayMessage:
+        'This node has been disabled by your workspace policy. Use a different node.',
+      displayDetails: undefined,
+      displayItemLabel: 'Kling Image to Video',
+      toastTitle: 'Partner nodes',
+      toastMessage: 'This node has been disabled by your workspace policy.'
+    })
+  })
+
   it('preserves special characters in catalog copy for node names', () => {
     const nodeDisplayName = 'A & B <C>'
     const result = resolveRunErrorMessage({
@@ -158,6 +177,27 @@ describe('errorMessageResolver', () => {
 
     expect(result.displayDetails).toContain(nodeDisplayName)
     expect(result.displayDetails).not.toMatch(/&(?:amp|lt|gt);/)
+  })
+
+  it('preserves slashes and ampersands in received values for value_not_in_list', () => {
+    expect(
+      te('errorCatalog.validationErrors.value_not_in_list.detailsWithValue')
+    ).toBe(true)
+    const receivedValue =
+      "Wan22_FunReward/Wan2.2-Fun-A14B-InP-HIGH-MPS_resized_dynamic_avg_rank_21_bf16.safetensors & Bob's model"
+    const result = resolveRunErrorMessage({
+      kind: 'node_validation',
+      error: nodeValidationError('value_not_in_list', 'lora_0', 'lora_0', {
+        received_value: receivedValue
+      }),
+      nodeDisplayName: 'WanVideo Lora Select Multi'
+    })
+    const htmlEntityPattern = /&(?:#x?[0-9a-f]+|[a-z]+);/i
+
+    expect(result.displayDetails).toContain(receivedValue)
+    expect(result.displayDetails).not.toMatch(htmlEntityPattern)
+    expect(result.toastMessage).toContain(receivedValue)
+    expect(result.toastMessage).not.toMatch(htmlEntityPattern)
   })
 
   it('uses catalog fallbacks when required_input_missing lacks node or input labels', () => {
@@ -193,6 +233,57 @@ describe('errorMessageResolver', () => {
       toastMessage: 'KSampler returned an unrecognized validation error.'
     })
   })
+
+  it.for([
+    {
+      type: 'unknown_node_class',
+      catalogId: 'unknown_validation_error',
+      displayTitle: 'Validation failed',
+      toastMessage: 'KSampler returned an unrecognized validation error.'
+    },
+    {
+      type: 'exception_during_validation',
+      catalogId: 'exception_during_validation',
+      displayTitle: 'Validation failed',
+      toastMessage: 'KSampler failed during validation.'
+    },
+    {
+      type: 'custom_validation_failed',
+      catalogId: 'custom_validation_failed',
+      displayTitle: 'Invalid input',
+      toastMessage: 'KSampler rejected the value for unknown input.'
+    },
+    {
+      type: 'dependency_cycle',
+      catalogId: 'dependency_cycle',
+      displayTitle: 'Invalid workflow',
+      toastMessage: 'KSampler is part of a circular connection.'
+    },
+    {
+      type: 'value_not_in_list',
+      catalogId: 'value_not_in_list',
+      displayTitle: 'Invalid input',
+      toastMessage: 'KSampler has an unsupported value for unknown input.'
+    },
+    {
+      type: 'PARTNER_NODE_DISABLED',
+      catalogId: 'PARTNER_NODE_DISABLED',
+      displayTitle: 'Disabled node',
+      toastMessage: 'This node has been disabled by your workspace policy.'
+    }
+  ])(
+    'resolves $type when the backend omits details, as the cloud contract allows',
+    ({ type, catalogId, displayTitle, toastMessage }) => {
+      const resolved = resolveRunErrorMessage({
+        kind: 'node_validation',
+        error: { type, message: 'Validation failed' },
+        nodeDisplayName: 'KSampler'
+      })
+
+      expect(resolved).toMatchObject({ catalogId, displayTitle, toastMessage })
+      expect(Object.values(resolved).join('\n')).not.toContain('undefined')
+    }
+  )
 
   it('falls back to raw API copy when catalog keys are missing in the active locale', () => {
     const originalLocale = i18n.global.locale.value
@@ -581,6 +672,41 @@ describe('errorMessageResolver', () => {
       displayTitle: 'Prompt has no outputs',
       displayMessage:
         'The workflow does not contain any output nodes (e.g. Save Image, Preview Image) to produce a result.'
+    })
+  })
+
+  it('resolves agent API failures with catalog copy', () => {
+    expect(
+      resolveRunErrorMessage({
+        kind: 'prompt',
+        isCloud: true,
+        error: {
+          type: 'agent_api_failed',
+          message: 'The agent request failed',
+          details: ''
+        }
+      })
+    ).toEqual({
+      displayTitle: 'Comfy Agent error',
+      displayMessage: 'Comfy Agent hit a server error.'
+    })
+  })
+
+  it('resolves an agent transport failure to overlay copy', () => {
+    expect(
+      resolveRunErrorMessage({
+        kind: 'prompt',
+        isCloud: true,
+        error: {
+          type: 'apply_failed',
+          message: 'An agent edit could not be applied',
+          details: 'op_rejected: unknown_widget at seed'
+        }
+      })
+    ).toEqual({
+      displayTitle: 'Agent edit failed',
+      displayMessage:
+        'An agent edit could not be applied to the workflow document.'
     })
   })
 

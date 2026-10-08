@@ -2,6 +2,7 @@ import type { AxiosError, AxiosResponse } from 'axios'
 import axios from 'axios'
 import { ref, watch } from 'vue'
 
+import { webSessionResourceHeader } from '@/platform/auth/session/webSessionFetch'
 import { attachUnifiedRemintInterceptor } from '@/platform/auth/unified/remintRetry'
 import { getComfyApiBaseUrl } from '@/config/comfyApi'
 import { d, t } from '@/i18n'
@@ -36,6 +37,7 @@ attachUnifiedRemintInterceptor(customerApiClient)
 export const useCustomerEventsService = () => {
   const isLoading = ref(false)
   const error = ref<string | null>(null)
+  let latestRequestId = 0
 
   watch(
     () => getComfyApiBaseUrl(),
@@ -44,30 +46,26 @@ export const useCustomerEventsService = () => {
     }
   )
 
-  const handleRequestError = (
+  const describeRequestError = (
     err: unknown,
     context: string,
     routeSpecificErrors?: Record<number, string>
-  ) => {
+  ): string | null => {
     // Don't treat cancellation as an error
-    if (isAbortError(err)) return
+    if (isAbortError(err)) return null
 
-    let message: string
     if (!axios.isAxiosError(err)) {
-      message = `${context} failed: ${err instanceof Error ? err.message : String(err)}`
-    } else {
-      const axiosError = err as AxiosError<{ message: string }>
-      const status = axiosError.response?.status
-      if (status && routeSpecificErrors?.[status]) {
-        message = routeSpecificErrors[status]
-      } else {
-        message =
-          axiosError.response?.data?.message ??
-          `${context} failed with status ${status}`
-      }
+      return `${context} failed: ${err instanceof Error ? err.message : String(err)}`
     }
-
-    error.value = message
+    const axiosError = err as AxiosError<{ message: string }>
+    const status = axiosError.response?.status
+    if (status && routeSpecificErrors?.[status]) {
+      return routeSpecificErrors[status]
+    }
+    return (
+      axiosError.response?.data.message ??
+      `${context} failed with status ${status}`
+    )
   }
 
   const executeRequest = async <T>(
@@ -76,20 +74,21 @@ export const useCustomerEventsService = () => {
       errorContext: string
       routeSpecificErrors?: Record<number, string>
     }
-  ): Promise<T | null> => {
+  ): Promise<{ data: T | null; errorMessage: string | null }> => {
     const { errorContext, routeSpecificErrors } = options
-
-    isLoading.value = true
-    error.value = null
 
     try {
       const response = await requestCall()
-      return response.data
+      return { data: response.data, errorMessage: null }
     } catch (err) {
-      handleRequestError(err, errorContext, routeSpecificErrors)
-      return null
-    } finally {
-      isLoading.value = false
+      return {
+        data: null,
+        errorMessage: describeRequestError(
+          err,
+          errorContext,
+          routeSpecificErrors
+        )
+      }
     }
   }
 
@@ -190,14 +189,42 @@ export const useCustomerEventsService = () => {
       404: 'Not found'
     }
 
-    // Get auth headers
-    const authHeaders = await useAuthStore().getAuthHeader()
+    const authStore = useAuthStore()
+    const requestOwner = authStore.currentUserIdentity()
+    const requestId = ++latestRequestId
+    if (!authStore.hasPersonalWorkspace) {
+      isLoading.value = false
+      error.value = t('toastMessages.noPersonalWorkspace')
+      return null
+    }
+    isLoading.value = true
+    error.value = null
+
+    let authHeaders
+    try {
+      authHeaders =
+        (await webSessionResourceHeader()) ??
+        (await authStore.getUserAuthHeader())
+    } catch (err) {
+      if (requestId !== latestRequestId) return null
+      isLoading.value = false
+      error.value = describeRequestError(err, errorContext)
+      return null
+    }
+    if (requestId !== latestRequestId) {
+      return null
+    }
+    if (authStore.currentUserIdentity() !== requestOwner) {
+      isLoading.value = false
+      return null
+    }
     if (!authHeaders) {
+      isLoading.value = false
       error.value = 'Authentication header is missing'
       return null
     }
 
-    const result = await executeRequest<CustomerEventsResponse>(
+    const { data, errorMessage } = await executeRequest<CustomerEventsResponse>(
       () =>
         customerApiClient.get('/customers/events', {
           params: { page, limit },
@@ -206,7 +233,15 @@ export const useCustomerEventsService = () => {
       { errorContext, routeSpecificErrors }
     )
 
-    return result
+    if (requestId !== latestRequestId) {
+      return null
+    }
+    isLoading.value = false
+    if (authStore.currentUserIdentity() !== requestOwner) {
+      return null
+    }
+    error.value = errorMessage
+    return data
   }
 
   return {

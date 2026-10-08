@@ -1,0 +1,415 @@
+import { describe, expect, it } from 'vitest'
+
+import type {
+  BillingOpStatus,
+  BillingOperationIdentity,
+  BillingOperationState,
+  BillingPresentationState,
+  PendingBillingOperation
+} from './operationState.js'
+import {
+  BillingOpStatusSchema,
+  reduceBillingOperation,
+  validateActionUrl
+} from './operationState.js'
+import { projectPaymentStep } from './paymentProjection.js'
+
+const SCOPE = { userId: 'uid-1', workspaceId: 'ws-1', role: 'owner' } as const
+
+function pending(
+  overrides: Partial<
+    Omit<PendingBillingOperation, 'presentation' | 'hostedDestination'>
+  > = {},
+  presentation: BillingPresentationState = { presentation: 'embedded' }
+): PendingBillingOperation {
+  return {
+    id: 'op-1',
+    kind: 'subscription',
+    scope: SCOPE,
+    ...presentation,
+    observedAt: 1_000,
+    attemptStartedAt: 500,
+    phase: 'pending',
+    customerActionSeen: false,
+    ...overrides
+  }
+}
+
+function status(overrides: Partial<BillingOpStatus> = {}): BillingOpStatus {
+  return {
+    id: 'op-1',
+    status: 'pending',
+    started_at: '2026-09-14T00:00:00.000Z',
+    ...overrides
+  }
+}
+
+function polled(
+  state: BillingOperationState,
+  overrides: Partial<BillingOpStatus>
+) {
+  return reduceBillingOperation(state, {
+    type: 'status_polled',
+    status: status(overrides)
+  })
+}
+
+describe('reduceBillingOperation', () => {
+  it.for([
+    {
+      phase: 'awaiting_payment_method',
+      expected: 'https://checkout.example/resumed'
+    },
+    { phase: 'awaiting_invoice_payment', expected: undefined }
+  ] as const)(
+    'keeps a reissued checkout link through a poll that omits it only while it waits on a card ($phase)',
+    ({ phase, expected }) => {
+      const reissued = reduceBillingOperation(pending(), {
+        type: 'action_reissued',
+        actionUrl: 'https://checkout.example/resumed'
+      })
+
+      const next = polled(reissued, { phase })
+
+      expect(next).toMatchObject({ phase: 'pending' })
+      expect((next as PendingBillingOperation).actionUrl).toBe(expected)
+    }
+  )
+
+  it('terminalizes on the server verdict and keeps the coded reason only', () => {
+    const failed = polled(pending(), {
+      status: 'failed',
+      decline_reason: 'insufficient_funds',
+      recovery_action: 'replace_payment_method',
+      retryable: true,
+      error_message: 'Your card has insufficient funds. (Stripe: card_error)'
+    })
+
+    expect(failed).toMatchObject({
+      phase: 'failed',
+      id: 'op-1',
+      declineReason: 'insufficient_funds',
+      recoveryAction: 'replace_payment_method',
+      retryable: true
+    })
+    expect(JSON.stringify(failed)).not.toContain('Stripe')
+    expect(polled(pending(), { status: 'failed' })).toMatchObject({
+      phase: 'failed',
+      declineReason: 'generic',
+      retryable: false
+    })
+    expect(polled(pending(), { status: 'succeeded' }).phase).toBe('succeeded')
+  })
+
+  it('carries the plan the server reports for a pending operation, and drops it once the server stops reporting one', () => {
+    const plan = {
+      slug: 'team_monthly',
+      duration: 'MONTHLY',
+      tier: 'TEAM',
+      price_cents: 66_500,
+      currency: 'usd'
+    } as const
+
+    const next = polled(pending(), { plan })
+
+    expect(next).toMatchObject({ phase: 'pending', plan })
+    expect(polled(next, {})).not.toHaveProperty('plan')
+  })
+
+  it('ignores a status that names another operation', () => {
+    const state = pending()
+
+    expect(polled(state, { id: 'op-2', status: 'succeeded' })).toBe(state)
+    expect(polled(state, { id: 'op-2', status: 'failed' })).toBe(state)
+  })
+
+  it('treats a reconciliation authentication state as terminal like the status', () => {
+    expect(
+      polled(pending(), { authentication_state: 'reconciliation_needed' }).phase
+    ).toBe('reconciliation_needed')
+    expect(polled(pending(), { status: 'reconciliation_needed' }).phase).toBe(
+      'reconciliation_needed'
+    )
+  })
+
+  it('ignores every event once terminal', () => {
+    const succeeded = polled(pending(), { status: 'succeeded' })
+
+    expect(polled(succeeded, { status: 'failed' })).toBe(succeeded)
+    expect(reduceBillingOperation(succeeded, { type: 'superseded' })).toBe(
+      succeeded
+    )
+    expect(
+      reduceBillingOperation(succeeded, {
+        type: 'presentation_switched',
+        presentation: 'hosted',
+        hostedDestination: 'stripe'
+      })
+    ).toBe(succeeded)
+  })
+
+  it('adopts a challenge for the embedded presentation only', () => {
+    const embedded = polled(pending(), {
+      authentication_state: 'requires_action',
+      payment_intent_client_secret: 'pi_secret'
+    })
+    const hosted = polled(
+      pending({}, { presentation: 'hosted', hostedDestination: 'stripe' }),
+      {
+        authentication_state: 'requires_action',
+        payment_intent_client_secret: 'pi_secret'
+      }
+    )
+
+    expect(embedded).toMatchObject({
+      challenge: { clientSecret: 'pi_secret', status: 'required' },
+      customerActionSeen: true
+    })
+    expect(hosted).toMatchObject({ phase: 'pending', customerActionSeen: true })
+    expect((hosted as PendingBillingOperation).challenge).toBeUndefined()
+  })
+
+  it("keeps this tab's challenge verdict over a server echo of the same challenge", () => {
+    const inProgress = reduceBillingOperation(
+      polled(pending(), {
+        authentication_state: 'requires_action',
+        payment_intent_client_secret: 'pi_secret'
+      }),
+      { type: 'challenge_started' }
+    )
+    const failed = reduceBillingOperation(inProgress, {
+      type: 'challenge_settled',
+      outcome: 'failed'
+    })
+    const completed = reduceBillingOperation(inProgress, {
+      type: 'challenge_settled',
+      outcome: 'completed'
+    })
+    const echo = {
+      authentication_state: 'requires_action',
+      payment_intent_client_secret: 'pi_secret',
+      action_url: 'https://billing.example/continue'
+    } as const
+
+    expect(polled(failed, echo)).toMatchObject({
+      authenticationState: 'failed_retryable',
+      challenge: { status: 'failed' },
+      actionUrl: 'https://billing.example/continue'
+    })
+    expect(polled(completed, echo)).toMatchObject({
+      authenticationState: 'processing',
+      challenge: { status: 'completed' }
+    })
+    expect(
+      (polled(completed, echo) as PendingBillingOperation).actionUrl
+    ).toBeUndefined()
+
+    const moved = polled(completed, {
+      authentication_state: 'requires_action',
+      payment_intent_client_secret: 'pi_other'
+    })
+    expect(moved).toMatchObject({
+      authenticationState: 'requires_action',
+      challenge: { clientSecret: 'pi_other', status: 'required' }
+    })
+  })
+
+  it('carries the decline reason only while the customer may retry', () => {
+    const declined = polled(pending(), {
+      authentication_state: 'failed_retryable',
+      decline_reason: 'card_declined'
+    })
+    expect(declined).toMatchObject({ declineReason: 'card_declined' })
+
+    const processing = polled(declined, { authentication_state: 'processing' })
+    expect(
+      (processing as PendingBillingOperation).declineReason
+    ).toBeUndefined()
+  })
+
+  it.for(['authentication_failed', 'authentication_required'] as const)(
+    "keeps the server's %s reason on a settled failure",
+    (reason) => {
+      expect(
+        polled(pending(), { status: 'failed', decline_reason: reason })
+      ).toMatchObject({ phase: 'failed', declineReason: reason })
+    }
+  )
+
+  it.for([
+    { latest: true, expected: true },
+    { latest: false, expected: false },
+    { latest: undefined, expected: undefined }
+  ])(
+    "carries only the latest poll's cancelable claim ($latest)",
+    ({ latest, expected }) => {
+      const claimed = polled(pending(), {
+        authentication_state: 'failed_retryable',
+        cancelable: true
+      })
+
+      const next = polled(claimed, {
+        authentication_state: 'failed_retryable',
+        ...(latest === undefined ? {} : { cancelable: latest })
+      })
+
+      expect((next as PendingBillingOperation).cancelable).toBe(expected)
+    }
+  )
+
+  it('reads a retryable failure served without a reason as a generic decline', () => {
+    const failed = polled(pending(), {
+      authentication_state: 'failed_retryable'
+    })
+
+    expect(failed).toMatchObject({ declineReason: 'generic' })
+    expect(projectPaymentStep(failed, 'preview').step).toBe('processing_error')
+  })
+
+  it('switches presentation under the same id and restores a failed challenge on rollback', () => {
+    const challenged = polled(pending(), {
+      authentication_state: 'requires_action',
+      payment_intent_client_secret: 'pi_secret',
+      action_url: 'https://billing.example/continue'
+    })
+    const failed = reduceBillingOperation(
+      reduceBillingOperation(challenged, { type: 'challenge_started' }),
+      { type: 'challenge_settled', outcome: 'failed' }
+    )
+
+    const hosted = reduceBillingOperation(failed, {
+      type: 'presentation_switched',
+      presentation: 'hosted',
+      hostedDestination: 'billing_web'
+    })
+    expect(hosted).toMatchObject({
+      id: 'op-1',
+      presentation: 'hosted',
+      hostedDestination: 'billing_web',
+      actionUrl: 'https://billing.example/continue',
+      challenge: { clientSecret: 'pi_secret', status: 'failed' }
+    })
+
+    const rolledBack = reduceBillingOperation(hosted, {
+      type: 'presentation_switched',
+      presentation: 'embedded'
+    })
+    expect(rolledBack).toMatchObject({
+      id: 'op-1',
+      presentation: 'embedded',
+      challenge: { clientSecret: 'pi_secret', status: 'required' }
+    })
+    expect(rolledBack.hostedDestination).toBeUndefined()
+    expect(
+      reduceBillingOperation(hosted, {
+        type: 'presentation_switched',
+        presentation: 'hosted',
+        hostedDestination: 'billing_web'
+      })
+    ).toBe(hosted)
+  })
+})
+
+describe('validateActionUrl', () => {
+  it('accepts only absolute https links', () => {
+    expect(validateActionUrl('https://billing.example/x')).toBe(
+      'https://billing.example/x'
+    )
+    expect(validateActionUrl('http://billing.example/x')).toBeUndefined()
+    expect(validateActionUrl('javascript:alert(1)')).toBeUndefined()
+    expect(validateActionUrl('/relative')).toBeUndefined()
+    expect(validateActionUrl(undefined)).toBeUndefined()
+  })
+})
+
+describe('BillingOperationIdentity', () => {
+  const core = {
+    id: 'op-1',
+    kind: 'subscription',
+    scope: SCOPE,
+    observedAt: 1_000,
+    attemptStartedAt: 500
+  } as const
+
+  function readDestination(
+    identity: BillingOperationIdentity
+  ): string | undefined {
+    return identity.hostedDestination
+  }
+
+  it('admits a hosted identity only with a destination', () => {
+    const hosted: BillingOperationIdentity = {
+      ...core,
+      presentation: 'hosted',
+      hostedDestination: 'billing_web'
+    }
+
+    // @ts-expect-error a hosted presentation without a destination
+    const missing: BillingOperationIdentity = {
+      ...core,
+      presentation: 'hosted'
+    }
+
+    expect(readDestination(hosted)).toBe('billing_web')
+    expect(missing.presentation).toBe('hosted')
+    // @ts-expect-error the same gap crossing a function boundary
+    expect(readDestination({ ...core, presentation: 'hosted' })).toBeUndefined()
+  })
+
+  it('refuses a destination on an embedded identity', () => {
+    const embedded: BillingOperationIdentity = {
+      ...core,
+      presentation: 'embedded',
+      // @ts-expect-error an embedded presentation is served from no origin
+      hostedDestination: 'stripe'
+    }
+
+    expect(readDestination(embedded)).toBe('stripe')
+    expect(
+      readDestination({
+        ...core,
+        presentation: 'embedded',
+        // @ts-expect-error the same conflict crossing a function boundary
+        hostedDestination: 'stripe'
+      })
+    ).toBe('stripe')
+  })
+})
+
+describe('BillingOpStatusSchema charge_breakdown', () => {
+  const wire = (reasonCents: unknown) => ({
+    id: 'op-1',
+    status: 'succeeded',
+    started_at: '2026-09-14T00:00:00.000Z',
+    charge_breakdown: {
+      amount_charged_cents: 900,
+      currency: 'usd',
+      prorated: false,
+      reasons: [
+        {
+          amount_cents: reasonCents,
+          kind: 'promo_code',
+          discount: {
+            kind: 'promotion',
+            code: 'SAVE10',
+            amount_off_cents: 100,
+            duration_in_months: 3
+          }
+        }
+      ]
+    }
+  })
+
+  it('reads every amount as a number', () => {
+    const parsed = BillingOpStatusSchema.parse(wire(100))
+    const breakdown = parsed.charge_breakdown!
+    expect(breakdown.amount_charged_cents).toBe(900)
+    expect(breakdown.reasons[0].amount_cents).toBe(100)
+    expect(breakdown.reasons[0].discount?.amount_off_cents).toBe(100)
+    expect(breakdown.reasons[0].discount?.duration_in_months).toBe(3)
+  })
+
+  it('rejects an amount beyond the safe-integer range', () => {
+    expect(BillingOpStatusSchema.safeParse(wire(2 ** 53)).success).toBe(false)
+  })
+})

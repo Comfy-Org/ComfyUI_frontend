@@ -6,5 +6,9 @@ export const PRESERVED_QUERY_NAMESPACES = {
   CREATE_WORKSPACE: 'create_workspace',
   OAUTH: 'oauth',
   PRICING: 'pricing',
-  DESKTOP_LOGIN: 'desktop_login'
+  TOPUP: 'topup',
+  SETTINGS: 'settings',
+  ASSETS: 'assets',
+  DESKTOP_LOGIN: 'desktop_login',
+  WORKSPACE: 'workspace'
 } as const

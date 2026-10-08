@@ -5,12 +5,12 @@ import { defineStore } from 'pinia'
 import { computed, markRaw, ref } from 'vue'
 import type { Raw } from 'vue'
 
-import type { PositionConfig } from '@/composables/element/useAbsolutePosition'
+import type { PositionConfig } from '@/types/positionConfig'
 import type { BaseDOMWidget } from '@/scripts/domWidget'
 
 export interface DomWidgetState extends PositionConfig {
   // Raw widget instance
-  widget: Raw<BaseDOMWidget<object | string>>
+  widget: Raw<BaseDOMWidget>
   visible: boolean
   readonly: boolean
   zIndex: number
@@ -30,7 +30,7 @@ export const useDomWidgetStore = defineStore('domWidget', () => {
 
   function registerWidget<V extends object | string>(widget: BaseDOMWidget<V>) {
     widgetStates.value.set(widget.id, {
-      widget: markRaw(widget) as unknown as Raw<BaseDOMWidget<object | string>>,
+      widget: markRaw(widget) as unknown as Raw<BaseDOMWidget>,
       visible: true,
       readonly: false,
       zIndex: 0,

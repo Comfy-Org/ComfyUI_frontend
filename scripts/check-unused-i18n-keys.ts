@@ -3,6 +3,7 @@ import { execSync } from 'child_process'
 import * as fs from 'fs'
 import { globSync } from 'glob'
 import type { LocaleData } from './i18n-types'
+import { isNestedLocaleData } from './i18n-types'
 
 // Configuration
 const SOURCE_PATTERNS = ['src/**/*.{js,ts,vue}', '!src/locales/**/*']
@@ -15,6 +16,7 @@ const IGNORE_PATTERNS = [
   /^dataTypes\./, // Data types might be referenced dynamically
   /^contextMenu\./, // Context menu items might be dynamic
   /^color\./, // Color names might be used dynamically
+  /^onboardingCoachmarks\.[^.]+\.[^.]+\./, // Step keys derived as onboardingCoachmarks.<tour>.<step>.*
   // Auto-generated categories from collect-i18n-general.ts
   /^menuLabels\./, // Menu labels generated from command labels
   /^settingsCategories\./, // Settings categories generated from setting definitions
@@ -33,9 +35,7 @@ function getStagedLocaleFiles(): string[] {
     })
     return output
       .split('\n')
-      .filter(
-        (file) => file.startsWith('src/locales/') && file.endsWith('.json')
-      )
+      .filter((file) => /^src\/locales\/[^./][^/]*\/[^/]+\.json$/.test(file))
   } catch {
     return []
   }
@@ -48,7 +48,7 @@ function extractKeys(obj: LocaleData, prefix = ''): string[] {
   for (const [key, value] of Object.entries(obj)) {
     const fullKey = prefix ? `${prefix}.${key}` : key
 
-    if (typeof value === 'object' && value !== null && !Array.isArray(value)) {
+    if (isNestedLocaleData(value)) {
       keys.push(...extractKeys(value, fullKey))
     } else {
       keys.push(fullKey)

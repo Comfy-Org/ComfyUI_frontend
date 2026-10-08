@@ -1,109 +1,118 @@
 import { expect } from '@playwright/test'
-import type { Locator, Page } from '@playwright/test'
 
 import type { Member } from '@/platform/workspace/api/workspaceApi'
 
 import { comfyPageFixture as test } from '@e2e/fixtures/ComfyPage'
+import { MembersSettingsPanel } from '@e2e/fixtures/components/MembersSettingsPanel'
 import {
   CREATOR,
+  DEFAULT_TEAM_MEMBERS,
   MEMBER_JANE,
   MEMBER_JOHN,
   VIEWER
 } from '@e2e/fixtures/data/cloudWorkspace'
 import { CloudWorkspaceMockHelper } from '@e2e/fixtures/helpers/CloudWorkspaceMockHelper'
+import { workspace } from '@e2e/fixtures/utils/workspaceMocks'
 
 // Drives a raw `page` (not the `comfyPage` fixture) so the cloud app boots
 // against fully mocked endpoints; `comfyPage` would try to reach the OSS
 // devtools backend during setup.
 
-/**
- * Member role change (Settings ▸ Workspace ▸ Members) — Figma 2993-15512.
- *
- * The viewer is a promoted owner (not the workspace creator), so the spec can
- * distinguish the creator guard from the self guard: the creator row and the
- * viewer's own row hide the row menu, every other row exposes
- * "Change role ›" (Owner / Member) plus "Remove member". Promoting a member
- * sends PATCH /api/workspace/members/:id {role}, flips the Role column,
- * re-sorts the row under the creator, and the promoted owner stays demotable.
- */
 const APP_URL = process.env.PLAYWRIGHT_TEST_URL || 'http://localhost:8188'
 
-async function openMembersTab(page: Page): Promise<Locator> {
-  await page.goto(APP_URL)
-  await page.waitForFunction(() => !!window.app?.extensionManager, null, {
-    timeout: 45_000
+test.describe('Members plan gating', { tag: '@cloud' }, () => {
+  test('personal workspace with a Team plan gets member management', async ({
+    page
+  }) => {
+    await new CloudWorkspaceMockHelper(page).setup(
+      DEFAULT_TEAM_MEMBERS,
+      workspace('personal', 'owner')
+    )
+    const members = new MembersSettingsPanel(page)
+    await members.open(APP_URL)
+    const { content } = members
+
+    const inviteButton = content.getByRole('button', {
+      name: 'Invite member'
+    })
+    await expect(inviteButton).toBeEnabled()
+    await expect(content.getByText('Role', { exact: true })).toBeVisible()
+    await expect(
+      content.getByText(MEMBER_JANE.email, { exact: true })
+    ).toBeVisible()
+    await expect(
+      content.getByRole('button', { name: 'Upgrade to Team' })
+    ).toHaveCount(0)
+    await expect(
+      members.menuButton(members.memberRow(CREATOR.email))
+    ).toHaveCount(0)
+
+    await inviteButton.click()
+    await expect(
+      page.getByRole('heading', {
+        name: 'Invite members to this workspace'
+      })
+    ).toBeVisible()
   })
-
-  await page
-    .getByRole('button', { name: /^Settings/ })
-    .first()
-    .click()
-  const dialog = page.getByTestId('settings-dialog')
-  await expect(dialog).toBeVisible()
-  await dialog.locator('nav').getByRole('button', { name: 'Workspace' }).click()
-
-  const content = dialog.getByRole('main')
-  await content.getByRole('tab', { name: /Members/ }).click()
-  await expect(content.getByText('4 of 30 members')).toBeVisible()
-  return content
-}
-
-function memberRow(content: Locator, email: string): Locator {
-  return content
-    .locator('div.grid')
-    .filter({ has: content.page().getByText(email, { exact: true }) })
-}
-
-function menuButton(row: Locator): Locator {
-  return row.getByRole('button', { name: 'More Options' })
-}
-
-// Reka submenus open on real pointer travel or keyboard; Playwright's
-// synthetic hover doesn't trigger the pointermove handler, so drive the
-// subtrigger with ArrowRight instead.
-async function openChangeRoleSubmenu(page: Page) {
-  const trigger = page.getByRole('menuitem', { name: 'Change role' })
-  await expect(trigger).toBeVisible()
-  await trigger.press('ArrowRight')
-  await expect(
-    page.getByRole('menuitemradio', { name: 'Owner', exact: true })
-  ).toBeVisible()
-}
+})
 
 test.describe('Member role change (Members tab)', { tag: '@cloud' }, () => {
   test.describe.configure({ timeout: 60_000 })
 
-  test('row menus respect creator and self guards', async ({ page }) => {
-    await new CloudWorkspaceMockHelper(page).setup()
-    const content = await openMembersTab(page)
+  test('additional workspace creator has actions while self does not', async ({
+    page
+  }) => {
+    const state = await new CloudWorkspaceMockHelper(page).setup()
+    const members = new MembersSettingsPanel(page)
+    await members.open(APP_URL)
+    const creatorRow = members.memberRow(CREATOR.email)
 
-    // US8/US9 — no row actions on the creator row (Liz) nor on the viewer's
-    // own row; the two plain members each expose a menu.
     await expect(
-      menuButton(memberRow(content, MEMBER_JOHN.email))
+      members.menuButton(members.memberRow(MEMBER_JOHN.email))
     ).toBeVisible()
     await expect(
-      menuButton(memberRow(content, MEMBER_JANE.email))
+      members.menuButton(members.memberRow(MEMBER_JANE.email))
     ).toBeVisible()
-    await expect(menuButton(memberRow(content, CREATOR.email))).toHaveCount(0)
-    await expect(menuButton(memberRow(content, VIEWER.email))).toHaveCount(0)
+    await expect(members.menuButton(creatorRow)).toBeVisible()
+    await expect(
+      members.menuButton(members.memberRow(VIEWER.email))
+    ).toHaveCount(0)
 
-    // US1/US12 — the row menu exposes Change role and the FE-768 remove flow.
-    await menuButton(memberRow(content, MEMBER_JANE.email)).click()
+    await members.menuButton(creatorRow).click()
     await expect(
       page.getByRole('menuitem', { name: 'Change role' })
     ).toBeVisible()
     await page.getByRole('menuitem', { name: 'Remove member' }).click()
     await expect(page.getByText('Remove this member?')).toBeVisible()
+    await page.getByRole('button', { name: 'Cancel', exact: true }).click()
+
+    await members.menuButton(creatorRow).click()
+    await members.openChangeRoleSubmenu()
+    await page
+      .getByRole('menuitemradio', { name: 'Member', exact: true })
+      .click()
+    await expect(
+      page.getByRole('heading', { name: 'Demote Liz to member?' })
+    ).toBeVisible()
+    await page.getByRole('button', { name: 'Demote to member' }).click()
+
+    await expect(creatorRow.getByText('Member', { exact: true })).toBeVisible()
+    expect(state.patches).toEqual([
+      {
+        url: expect.stringContaining('/api/workspace/members/u-liz'),
+        role: 'member'
+      }
+    ])
   })
 
   test('selecting the current role is a no-op', async ({ page }) => {
     const state = await new CloudWorkspaceMockHelper(page).setup()
-    const content = await openMembersTab(page)
+    const members = new MembersSettingsPanel(page)
+    await members.open(APP_URL)
 
-    const janeRow = memberRow(content, MEMBER_JANE.email)
-    await menuButton(janeRow).click()
-    await openChangeRoleSubmenu(page)
+    const janeRow = members.memberRow(MEMBER_JANE.email)
+    await members.menuButton(janeRow).click()
+    await members.openChangeRoleSubmenu()
 
     // The current role is a checked radio item so assistive tech can announce
     // which role is active.
@@ -128,11 +137,12 @@ test.describe('Member role change (Members tab)', { tag: '@cloud' }, () => {
     page
   }) => {
     const state = await new CloudWorkspaceMockHelper(page).setup()
-    const content = await openMembersTab(page)
+    const members = new MembersSettingsPanel(page)
+    await members.open(APP_URL)
 
-    const janeRow = memberRow(content, MEMBER_JANE.email)
-    await menuButton(janeRow).click()
-    await openChangeRoleSubmenu(page)
+    const janeRow = members.memberRow(MEMBER_JANE.email)
+    await members.menuButton(janeRow).click()
+    await members.openChangeRoleSubmenu()
     await page
       .getByRole('menuitemradio', { name: 'Owner', exact: true })
       .click()
@@ -146,9 +156,7 @@ test.describe('Member role change (Members tab)', { tag: '@cloud' }, () => {
       page.getByText('Manage members, payment methods, and workspace settings')
     ).toBeVisible()
     await expect(
-      page.getByText(
-        'Promote and demote other owners (except the workspace creator).'
-      )
+      page.getByText('Promote members and demote eligible owners.')
     ).toBeVisible()
 
     await page.getByRole('button', { name: 'Cancel', exact: true }).click()
@@ -163,7 +171,9 @@ test.describe('Member role change (Members tab)', { tag: '@cloud' }, () => {
     page
   }) => {
     const state = await new CloudWorkspaceMockHelper(page).setup()
-    const content = await openMembersTab(page)
+    const members = new MembersSettingsPanel(page)
+    await members.open(APP_URL)
+    const { content } = members
 
     const emails = content.getByText(/@test\.comfy\.org/)
     await expect(emails).toHaveText([
@@ -173,9 +183,9 @@ test.describe('Member role change (Members tab)', { tag: '@cloud' }, () => {
       MEMBER_JANE.email
     ])
 
-    const janeRow = memberRow(content, MEMBER_JANE.email)
-    await menuButton(janeRow).click()
-    await openChangeRoleSubmenu(page)
+    const janeRow = members.memberRow(MEMBER_JANE.email)
+    await members.menuButton(janeRow).click()
+    await members.openChangeRoleSubmenu()
     await page
       .getByRole('menuitemradio', { name: 'Owner', exact: true })
       .click()
@@ -197,7 +207,7 @@ test.describe('Member role change (Members tab)', { tag: '@cloud' }, () => {
     ])
 
     // The promoted owner keeps its row menu (still demotable).
-    await expect(menuButton(janeRow)).toBeVisible()
+    await expect(members.menuButton(janeRow)).toBeVisible()
   })
 
   test('demoting an owner returns them to member', async ({ page }) => {
@@ -208,13 +218,14 @@ test.describe('Member role change (Members tab)', { tag: '@cloud' }, () => {
       ownerJane,
       MEMBER_JOHN
     ])
-    const content = await openMembersTab(page)
+    const members = new MembersSettingsPanel(page)
+    await members.open(APP_URL)
 
-    const janeRow = memberRow(content, MEMBER_JANE.email)
+    const janeRow = members.memberRow(MEMBER_JANE.email)
     await expect(janeRow.getByText('Owner', { exact: true })).toBeVisible()
 
-    await menuButton(janeRow).click()
-    await openChangeRoleSubmenu(page)
+    await members.menuButton(janeRow).click()
+    await members.openChangeRoleSubmenu()
     await page
       .getByRole('menuitemradio', { name: 'Member', exact: true })
       .click()
@@ -243,11 +254,12 @@ test.describe('Member role change (Members tab)', { tag: '@cloud' }, () => {
         ? route.fulfill({ status: 500, body: '{}' })
         : route.fallback()
     )
-    const content = await openMembersTab(page)
+    const members = new MembersSettingsPanel(page)
+    await members.open(APP_URL)
 
-    const janeRow = memberRow(content, MEMBER_JANE.email)
-    await menuButton(janeRow).click()
-    await openChangeRoleSubmenu(page)
+    const janeRow = members.memberRow(MEMBER_JANE.email)
+    await members.menuButton(janeRow).click()
+    await members.openChangeRoleSubmenu()
     await page
       .getByRole('menuitemradio', { name: 'Owner', exact: true })
       .click()

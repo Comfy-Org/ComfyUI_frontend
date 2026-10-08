@@ -1,6 +1,4 @@
-import { createTestingPinia } from '@pinia/testing'
-import { setActivePinia } from 'pinia'
-import { beforeEach, describe, expect, test, vi } from 'vitest'
+import { describe, expect, test, vi } from 'vitest'
 
 import { resolveSubgraphInputTarget } from '@/core/graph/subgraph/resolveSubgraphInputTarget'
 import { LGraphNode } from '@/lib/litegraph/src/litegraph'
@@ -12,15 +10,7 @@ import type { Subgraph } from '@/lib/litegraph/src/subgraph/Subgraph'
 import type { SubgraphNode } from '@/lib/litegraph/src/subgraph/SubgraphNode'
 import { toNodeId } from '@/types/nodeId'
 
-vi.mock('@/renderer/core/canvas/canvasStore', () => ({
-  useCanvasStore: () => ({})
-}))
-vi.mock('@/stores/domWidgetStore', () => ({
-  useDomWidgetStore: () => ({ widgetStates: new Map() })
-}))
-vi.mock('@/services/litegraphService', () => ({
-  useLitegraphService: () => ({ updatePreviews: () => ({}) })
-}))
+vi.mock(import('@/services/litegraphService'))
 
 function createOuterSubgraphSetup(inputNames: string[]): {
   outerSubgraph: Subgraph
@@ -63,11 +53,6 @@ function addLinkedNestedSubgraphNode(
 
   return { innerSubgraphNode }
 }
-
-beforeEach(() => {
-  setActivePinia(createTestingPinia({ stubActions: false }))
-  vi.clearAllMocks()
-})
 
 describe('resolveSubgraphInputTarget', () => {
   test('returns target for widget-backed input on nested SubgraphNode', () => {

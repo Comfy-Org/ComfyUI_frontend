@@ -1,45 +1,27 @@
+import { fromPartial } from '@total-typescript/shoehorn'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 
+import type { LGraph, LGraphCanvas } from '@/lib/litegraph/src/litegraph'
 import { LGraphNode, SubgraphNode } from '@/lib/litegraph/src/litegraph'
+import { useToastStore } from '@/platform/updates/common/toastStore'
+import type { LoadedComfyWorkflow } from '@/platform/workflow/management/stores/workflowStore'
+import { useWorkflowStore } from '@/platform/workflow/management/stores/workflowStore'
+import { useCanvasStore } from '@/renderer/core/canvas/canvasStore'
+import { useNodeOutputStore } from '@/stores/nodeOutputStore'
+import { useSubgraphStore } from '@/stores/subgraphStore'
+import { setCanvasSelection } from '@/utils/__tests__/canvasSelectionTestUtils'
+import { useSubgraphOperations } from './useSubgraphOperations'
 
-const mocks = vi.hoisted(() => ({
-  publishSubgraph: vi.fn(),
-  selectedItems: [] as unknown[]
-}))
+const captureCanvasState = vi.fn()
 
-vi.mock('@/composables/canvas/useSelectedLiteGraphItems', () => ({
-  useSelectedLiteGraphItems: () => ({
-    getSelectedNodes: vi.fn(() => [])
+vi.mock<unknown>(
+  import('@/composables/canvas/useSelectedLiteGraphItems'),
+  () => ({
+    useSelectedLiteGraphItems: () => ({
+      getSelectedNodes: vi.fn(() => [])
+    })
   })
-}))
-
-vi.mock('@/renderer/core/canvas/canvasStore', () => ({
-  useCanvasStore: () => ({
-    getCanvas: vi.fn(),
-    get selectedItems() {
-      return mocks.selectedItems
-    },
-    updateSelectedItems: vi.fn()
-  })
-}))
-
-vi.mock('@/platform/workflow/management/stores/workflowStore', () => ({
-  useWorkflowStore: () => ({
-    activeWorkflow: null
-  })
-}))
-
-vi.mock('@/stores/nodeOutputStore', () => ({
-  useNodeOutputStore: () => ({
-    revokeSubgraphPreviews: vi.fn()
-  })
-}))
-
-vi.mock('@/stores/subgraphStore', () => ({
-  useSubgraphStore: () => ({
-    publishSubgraph: mocks.publishSubgraph
-  })
-}))
+)
 
 function createSubgraphNode(): SubgraphNode {
   const node = Object.create(SubgraphNode.prototype)
@@ -52,55 +34,104 @@ function createRegularNode(): LGraphNode {
 
 describe('useSubgraphOperations', () => {
   beforeEach(() => {
-    vi.clearAllMocks()
-    mocks.selectedItems = []
+    setCanvasSelection([])
+    useWorkflowStore().activeWorkflow = fromPartial<LoadedComfyWorkflow>({
+      changeTracker: { captureCanvasState }
+    })
+    vi.mocked(useSubgraphStore().publishSubgraph).mockResolvedValue(undefined)
+  })
+
+  it('preserves previews and history when every unpack is refused', () => {
+    const firstSubgraphNode = createSubgraphNode()
+    const secondSubgraphNode = createSubgraphNode()
+    const unpackSubgraph = vi.fn(() => false)
+    const revokeSubgraphPreviews = vi
+      .spyOn(useNodeOutputStore(), 'revokeSubgraphPreviews')
+      .mockImplementation(() => {})
+    vi.mocked(useCanvasStore().getCanvas).mockReturnValue(
+      fromPartial<LGraphCanvas>({
+        graph: fromPartial<LGraph>({ unpackSubgraph }),
+        selectedItems: new Set([firstSubgraphNode, secondSubgraphNode])
+      })
+    )
+
+    useSubgraphOperations().unpackSubgraph()
+
+    expect(unpackSubgraph).toHaveBeenCalledWith(firstSubgraphNode, {
+      skipMissingNodes: true
+    })
+    expect(unpackSubgraph).toHaveBeenCalledWith(secondSubgraphNode, {
+      skipMissingNodes: true
+    })
+    expect(revokeSubgraphPreviews).not.toHaveBeenCalled()
+    expect(captureCanvasState).not.toHaveBeenCalled()
+    expect(useToastStore().messagesToAdd).toEqual([
+      {
+        severity: 'error',
+        summary: 'Error',
+        detail: 'Unable to unpack the selected subgraph.'
+      }
+    ])
+  })
+
+  it('updates previews and history only for successful unpacks', () => {
+    const refusedNode = createSubgraphNode()
+    const unpackedNode = createSubgraphNode()
+    const unpackSubgraph = vi
+      .fn<() => boolean>()
+      .mockReturnValueOnce(false)
+      .mockReturnValueOnce(true)
+    const graph = fromPartial<LGraph>({ unpackSubgraph })
+    const revokeSubgraphPreviews = vi
+      .spyOn(useNodeOutputStore(), 'revokeSubgraphPreviews')
+      .mockImplementation(() => {})
+    vi.mocked(useCanvasStore().getCanvas).mockReturnValue(
+      fromPartial<LGraphCanvas>({
+        graph,
+        selectedItems: new Set([refusedNode, unpackedNode])
+      })
+    )
+
+    useSubgraphOperations().unpackSubgraph()
+
+    expect(revokeSubgraphPreviews).toHaveBeenCalledOnce()
+    expect(revokeSubgraphPreviews).toHaveBeenCalledWith(unpackedNode, graph)
+    expect(captureCanvasState).toHaveBeenCalledOnce()
   })
 
   it('addSubgraphToLibrary calls publishSubgraph when single SubgraphNode selected', async () => {
-    mocks.selectedItems = [createSubgraphNode()]
-
-    const { useSubgraphOperations } =
-      await import('@/composables/graph/useSubgraphOperations')
+    setCanvasSelection([createSubgraphNode()])
     const { addSubgraphToLibrary } = useSubgraphOperations()
 
     await addSubgraphToLibrary()
 
-    expect(mocks.publishSubgraph).toHaveBeenCalledOnce()
+    expect(useSubgraphStore().publishSubgraph).toHaveBeenCalledOnce()
   })
 
   it('addSubgraphToLibrary does not call publishSubgraph when no items selected', async () => {
-    mocks.selectedItems = []
-
-    const { useSubgraphOperations } =
-      await import('@/composables/graph/useSubgraphOperations')
+    setCanvasSelection([])
     const { addSubgraphToLibrary } = useSubgraphOperations()
 
     await addSubgraphToLibrary()
 
-    expect(mocks.publishSubgraph).not.toHaveBeenCalled()
+    expect(useSubgraphStore().publishSubgraph).not.toHaveBeenCalled()
   })
 
   it('addSubgraphToLibrary does not call publishSubgraph when multiple items selected', async () => {
-    mocks.selectedItems = [createSubgraphNode(), createSubgraphNode()]
-
-    const { useSubgraphOperations } =
-      await import('@/composables/graph/useSubgraphOperations')
+    setCanvasSelection([createSubgraphNode(), createSubgraphNode()])
     const { addSubgraphToLibrary } = useSubgraphOperations()
 
     await addSubgraphToLibrary()
 
-    expect(mocks.publishSubgraph).not.toHaveBeenCalled()
+    expect(useSubgraphStore().publishSubgraph).not.toHaveBeenCalled()
   })
 
   it('addSubgraphToLibrary does not call publishSubgraph when selected item is not a SubgraphNode', async () => {
-    mocks.selectedItems = [createRegularNode()]
-
-    const { useSubgraphOperations } =
-      await import('@/composables/graph/useSubgraphOperations')
+    setCanvasSelection([createRegularNode()])
     const { addSubgraphToLibrary } = useSubgraphOperations()
 
     await addSubgraphToLibrary()
 
-    expect(mocks.publishSubgraph).not.toHaveBeenCalled()
+    expect(useSubgraphStore().publishSubgraph).not.toHaveBeenCalled()
   })
 })

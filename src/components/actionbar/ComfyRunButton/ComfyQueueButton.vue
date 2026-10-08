@@ -10,101 +10,94 @@
       }"
       :variant="queueButtonVariant"
       size="unset"
-      :class="queueActionButtonClass"
+      :class="
+        cn(
+          'h-full gap-1.5 rounded-l-lg rounded-r-none px-4',
+          paymentRecoveryLock ? 'font-medium' : 'font-light'
+        )
+      "
       data-testid="queue-button"
-      :data-variant="queueButtonVariant"
       @click="queuePrompt"
     >
-      <i :class="cn(iconClass, 'size-4')" />
+      <i :class="cn(iconClass, 'size-4')" data-testid="queue-button-icon" />
       {{ queueButtonLabel }}
     </Button>
 
-    <DropdownMenuRoot>
-      <DropdownMenuTrigger as-child>
+    <Menu side="bottom" :side-offset="4" class="min-w-44">
+      <template #trigger>
         <Button
-          variant="secondary"
+          :variant="queueMenuTriggerVariant"
           size="unset"
-          :class="queueMenuTriggerClass"
-          :aria-label="t('menu.run')"
+          :disabled="Boolean(paymentRecoveryLock)"
+          :class="
+            cn(
+              queueMenuTriggerClass,
+              queueMenuTriggerVariantClass[queueMenuTriggerVariant]
+            )
+          "
+          :aria-label="t('menu.runOptions')"
           data-testid="queue-mode-menu-trigger"
         >
           <TinyChevronIcon />
         </Button>
-      </DropdownMenuTrigger>
-      <DropdownMenuPortal>
-        <DropdownMenuContent
-          :side-offset="4"
-          class="z-1000 min-w-44 rounded-lg border border-border-subtle bg-base-background p-1 shadow-interface"
-        >
-          <DropdownMenuItem
-            v-for="item in queueModeMenuItems"
-            :key="item.key"
-            as-child
-            @select.prevent="item.command"
-          >
-            <Button
-              v-tooltip="{
-                value: item.tooltip,
-                showDelay: 600
-              }"
-              :variant="
-                item.key === selectedQueueMode ? 'primary' : 'secondary'
-              "
-              size="sm"
-              :class="queueMenuItemButtonClass"
-            >
-              {{ item.label }}
-            </Button>
-          </DropdownMenuItem>
-        </DropdownMenuContent>
-      </DropdownMenuPortal>
-    </DropdownMenuRoot>
+      </template>
+      <MenuRadioGroup
+        :model-value="selectedQueueMode"
+        :options="queueModeMenuItems"
+        @select.prevent
+      />
+    </Menu>
   </ButtonGroup>
 </template>
 
 <script setup lang="ts">
-import {
-  DropdownMenuContent,
-  DropdownMenuItem,
-  DropdownMenuPortal,
-  DropdownMenuRoot,
-  DropdownMenuTrigger
-} from 'reka-ui'
 import { storeToRefs } from 'pinia'
-import { computed } from 'vue'
+import { computed, watch } from 'vue'
 import { useI18n } from 'vue-i18n'
 
 import BatchCountEdit from '@/components/actionbar/BatchCountEdit.vue'
 import TinyChevronIcon from '@/components/actionbar/TinyChevronIcon.vue'
 import Button from '@/components/ui/button/Button.vue'
 import ButtonGroup from '@/components/ui/button-group/ButtonGroup.vue'
+import Menu from '@/components/ui/menu/Menu.vue'
+import MenuRadioGroup from '@/components/ui/menu/MenuRadioGroup.vue'
 import { isCloud } from '@/platform/distribution/types'
 import { useTelemetry } from '@/platform/telemetry'
-import { app } from '@/scripts/app'
 import { useCommandStore } from '@/stores/commandStore'
-import { useNodeDefStore } from '@/stores/nodeDefStore'
+import { useExecutionErrorStore } from '@/stores/executionErrorStore'
 import {
   isInstantMode,
   isInstantRunningMode,
   useQueueSettingsStore
-} from '@/stores/queueStore'
+} from '@/stores/queueSettingsStore'
 import { useWorkspaceStore } from '@/stores/workspaceStore'
 import { cn } from '@comfyorg/tailwind-utils'
-import { graphHasMissingNodes } from '@/workbench/extensions/manager/utils/graphHasMissingNodes'
 
 const workspaceStore = useWorkspaceStore()
 const { mode: queueMode, batchCount } = storeToRefs(useQueueSettingsStore())
-
-const nodeDefStore = useNodeDefStore()
-const hasMissingNodes = computed(() =>
-  graphHasMissingNodes(app.rootGraph, nodeDefStore.nodeDefsByName)
-)
+const { hasMissingError } = storeToRefs(useExecutionErrorStore())
 
 const { t } = useI18n()
 type QueueModeMenuKey = 'disabled' | 'change' | 'instant-idle'
+type PaymentRecoveryLock = 'owner' | 'member'
+
+const { paymentRecoveryLock = null } = defineProps<{
+  paymentRecoveryLock?: PaymentRecoveryLock | null
+}>()
+const emit = defineEmits<{
+  paymentRecoveryClick: []
+}>()
+
+watch(
+  () => paymentRecoveryLock,
+  (lock) => {
+    if (lock) queueMode.value = 'disabled'
+  },
+  { immediate: true }
+)
 
 interface QueueModeMenuItem {
-  key: QueueModeMenuKey
+  value: QueueModeMenuKey
   label: string
   tooltip: string
   command: () => void
@@ -118,7 +111,7 @@ const queueModeMenuItemLookup = computed<Record<string, QueueModeMenuItem>>(
   () => {
     const items: Record<string, QueueModeMenuItem> = {
       disabled: {
-        key: 'disabled',
+        value: 'disabled',
         label: t('menu.run'),
         tooltip: t('menu.disabledTooltip'),
         command: () => {
@@ -126,7 +119,7 @@ const queueModeMenuItemLookup = computed<Record<string, QueueModeMenuItem>>(
         }
       },
       change: {
-        key: 'change',
+        value: 'change',
         label: `${t('menu.run')} (${t('menu.onChange')})`,
         tooltip: t('menu.onChangeTooltip'),
         command: () => {
@@ -141,7 +134,7 @@ const queueModeMenuItemLookup = computed<Record<string, QueueModeMenuItem>>(
 
     if (!isCloud) {
       items['instant-idle'] = {
-        key: 'instant-idle',
+        value: 'instant-idle',
         label: `${t('menu.run')} (${t('menu.instant')})`,
         tooltip: t('menu.instantTooltip'),
         command: () => {
@@ -173,24 +166,48 @@ const isStopInstantAction = computed(() =>
 )
 
 const queueButtonLabel = computed(() =>
-  isStopInstantAction.value
-    ? t('menu.stopRunInstant')
-    : String(activeQueueModeMenuItem.value?.label ?? '')
+  paymentRecoveryLock === 'owner'
+    ? t('subscription.paymentRecovery.ownerRunLabel')
+    : paymentRecoveryLock === 'member'
+      ? t('subscription.paymentRecovery.memberRunLabel')
+      : isStopInstantAction.value
+        ? t('menu.stopRunInstant')
+        : String(activeQueueModeMenuItem.value?.label ?? '')
 )
 
-const queueButtonVariant = computed<'destructive' | 'primary'>(() =>
-  isStopInstantAction.value ? 'destructive' : 'primary'
+const queueButtonVariant = computed<
+  'destructive' | 'inverted' | 'secondary' | 'subscribe'
+>(() =>
+  paymentRecoveryLock === 'owner'
+    ? 'subscribe'
+    : paymentRecoveryLock === 'member'
+      ? 'secondary'
+      : isStopInstantAction.value
+        ? 'destructive'
+        : 'inverted'
 )
-const queueActionButtonClass = 'h-full rounded-lg gap-1.5 px-4 font-light'
+const queueMenuTriggerVariant = computed(() =>
+  queueButtonVariant.value === 'subscribe'
+    ? 'secondary'
+    : queueButtonVariant.value
+)
+const queueMenuTriggerVariantClass = {
+  destructive:
+    'border-black/20 data-[state=open]:bg-destructive-background-hover',
+  inverted: 'data-[state=open]:bg-base-foreground/80',
+  secondary: 'text-muted-foreground'
+} satisfies Record<typeof queueMenuTriggerVariant.value, string>
 const queueMenuTriggerClass =
-  'h-full w-6 rounded-l-none rounded-r-lg border-l border-border-subtle p-0 text-muted-foreground data-[state=open]:bg-secondary-background-hover'
-const queueMenuItemButtonClass = 'w-full justify-start font-normal'
+  'h-full w-6 rounded-l-none rounded-r-lg border-0 border-l border-solid border-current/25 p-0'
 
 const iconClass = computed(() => {
+  if (paymentRecoveryLock) {
+    return 'icon-[lucide--lock]'
+  }
   if (isStopInstantAction.value) {
     return 'icon-[lucide--square]'
   }
-  if (hasMissingNodes.value) {
+  if (hasMissingError.value) {
     return 'icon-[lucide--triangle-alert]'
   }
   if (workspaceStore.shiftDown) {
@@ -209,11 +226,17 @@ const iconClass = computed(() => {
 })
 
 const queueButtonTooltip = computed(() => {
+  if (paymentRecoveryLock === 'owner') {
+    return t('subscription.paymentRecovery.ownerRunTooltip')
+  }
+  if (paymentRecoveryLock === 'member') {
+    return t('subscription.paymentRecovery.memberRunTooltip')
+  }
   if (isStopInstantAction.value) {
     return t('menu.stopRunInstantTooltip')
   }
-  if (hasMissingNodes.value) {
-    return t('menu.runWorkflowDisabled')
+  if (hasMissingError.value) {
+    return t('menu.runWorkflowMissingResources')
   }
   if (workspaceStore.shiftDown) {
     return t('menu.runWorkflowFront')
@@ -223,6 +246,10 @@ const queueButtonTooltip = computed(() => {
 
 const commandStore = useCommandStore()
 const queuePrompt = async (e: Event) => {
+  if (paymentRecoveryLock) {
+    emit('paymentRecoveryClick')
+    return
+  }
   if (isStopInstantAction.value) {
     queueMode.value = 'instant-idle'
     return

@@ -78,7 +78,7 @@ export type Viewport3dDeps = {
 
 export class Viewport3d {
   protected readonly view: RendererView
-  protected clock: THREE.Clock
+  protected timer: THREE.Timer
   private renderLoop: RenderLoopHandle | null = null
   private onContextMenuCallback?: (event: MouseEvent) => void
   private getDimensionsCallback?: () => { width: number; height: number } | null
@@ -114,7 +114,7 @@ export class Viewport3d {
     options: Load3DOptions = {}
   ) {
     this.view = deps.view
-    this.clock = new THREE.Clock()
+    this.timer = new THREE.Timer()
     this.isViewerMode = options.isViewerMode || false
     this.onContextMenuCallback = options.onContextMenu
     this.getDimensionsCallback = options.getDimensions
@@ -149,6 +149,10 @@ export class Viewport3d {
 
   get renderer(): THREE.WebGLRenderer {
     return this.view.renderer
+  }
+
+  get rendererView(): RendererView {
+    return this.view
   }
 
   get domElement(): HTMLCanvasElement {
@@ -215,23 +219,55 @@ export class Viewport3d {
   }
 
   forceRender(): void {
-    const delta = this.clock.getDelta()
+    const delta = this.timer.update().getDelta()
     this.tickPerFrame(delta)
     this.renderView()
     this.INITIAL_RENDER_DONE = true
   }
 
   private renderView(): void {
-    this.view.beginRender()
+    this.renderer.state.reset()
+    this.view.beginRender(this.sceneManager.hasSplats())
+    this.runPreRenderCallbacks()
     this.renderMainScene()
+    this.runPostRenderCallbacks()
 
-    this.renderer.setScissorTest(false)
+    this.view.setScissorTest(false)
     this.viewHelperManager.render(
-      this.renderer,
+      this.view,
       VIEW_HELPER_SIZE * this.viewPixelScale
     )
 
     this.view.blit()
+  }
+
+  private readonly preRenderCallbacks: Array<() => void> = []
+  private readonly postRenderCallbacks: Array<() => void> = []
+
+  addPreRenderCallback(cb: () => void): () => void {
+    const registered = () => cb()
+    this.preRenderCallbacks.push(registered)
+    return () => {
+      const i = this.preRenderCallbacks.indexOf(registered)
+      if (i >= 0) this.preRenderCallbacks.splice(i, 1)
+    }
+  }
+
+  addPostRenderCallback(cb: () => void): () => void {
+    const registered = () => cb()
+    this.postRenderCallbacks.push(registered)
+    return () => {
+      const i = this.postRenderCallbacks.indexOf(registered)
+      if (i >= 0) this.postRenderCallbacks.splice(i, 1)
+    }
+  }
+
+  private runPreRenderCallbacks(): void {
+    for (const cb of Array.from(this.preRenderCallbacks)) cb()
+  }
+
+  private runPostRenderCallbacks(): void {
+    for (const cb of Array.from(this.postRenderCallbacks)) cb()
   }
 
   protected tickPerFrame(delta: number): void {
@@ -293,9 +329,9 @@ export class Viewport3d {
       }
     }
 
-    this.renderer.setViewport(0, 0, viewWidth, viewHeight)
-    this.renderer.setScissor(0, 0, viewWidth, viewHeight)
-    this.renderer.setScissorTest(true)
+    this.view.setViewport(0, 0, viewWidth, viewHeight)
+    this.view.setScissor(0, 0, viewWidth, viewHeight)
+    this.view.setScissorTest(true)
 
     if (!this.shouldMaintainAspectRatio()) {
       this.renderer.setClearColor(
@@ -322,13 +358,13 @@ export class Viewport3d {
     const camera = this.getRenderCamera()
 
     if (!supportsViewOffset(camera)) {
-      this.renderer.setViewport(
+      this.view.setViewport(
         viewport.offsetX,
         viewport.offsetY,
         viewport.width,
         viewport.height
       )
-      this.renderer.setScissor(
+      this.view.setScissor(
         viewport.offsetX,
         viewport.offsetY,
         viewport.width,
@@ -361,21 +397,21 @@ export class Viewport3d {
       return
     }
 
-    this.renderer.setViewport(
+    this.view.setViewport(
       viewport.offsetX,
       viewport.offsetY,
       viewport.width,
       viewport.height
     )
-    this.renderer.setScissor(
+    this.view.setScissor(
       viewport.offsetX,
       viewport.offsetY,
       viewport.width,
       viewport.height
     )
     this.sceneManager.renderBackground()
-    this.renderer.setViewport(0, 0, this.view.width, this.view.height)
-    this.renderer.setScissor(0, 0, this.view.width, this.view.height)
+    this.view.setViewport(0, 0, this.view.width, this.view.height)
+    this.view.setScissor(0, 0, this.view.width, this.view.height)
   }
 
   private dimLetterboxBars(bars: ViewportRect[]): void {
@@ -383,8 +419,8 @@ export class Viewport3d {
 
     const dimmer = (this.letterboxDimmer ??= createLetterboxDimmer())
     for (const bar of bars) {
-      this.renderer.setViewport(bar.x, bar.y, bar.width, bar.height)
-      this.renderer.setScissor(bar.x, bar.y, bar.width, bar.height)
+      this.view.setViewport(bar.x, bar.y, bar.width, bar.height)
+      this.view.setScissor(bar.x, bar.y, bar.width, bar.height)
       this.renderer.render(dimmer.scene, dimmer.camera)
     }
   }
@@ -403,7 +439,7 @@ export class Viewport3d {
   protected startAnimation(): void {
     this.renderLoop = startRenderLoop({
       tick: () => {
-        const delta = this.clock.getDelta()
+        const delta = this.timer.update().getDelta()
         this.tickPerFrame(delta)
         this.renderView()
       },
@@ -458,6 +494,11 @@ export class Viewport3d {
 
   getCameraState(): CameraState {
     return this.cameraManager.getCameraState()
+  }
+
+  setUseCustomUp(use: boolean): void {
+    this.cameraManager.setUseCustomUp(use)
+    this.forceRender()
   }
 
   setTargetSize(width: number, height: number): void {

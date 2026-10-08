@@ -1,163 +1,83 @@
-import { createTestingPinia } from '@pinia/testing'
-import { setActivePinia } from 'pinia'
-import { nextTick, ref } from 'vue'
-import { beforeEach, describe, expect, it, vi } from 'vitest'
+import { describe, expect, it, vi } from 'vitest'
 
+import { useFeatureFlags } from '@/composables/useFeatureFlags'
+import { useSettingStore } from '@/platform/settings/settingStore'
+import { useCommandStore } from '@/stores/commandStore'
 import { useSidebarTabStore } from '@/stores/workspace/sidebarTabStore'
 
-const { mockGetSetting, mockRegisterCommand, mockRegisterCommands } =
-  vi.hoisted(() => ({
-    mockGetSetting: vi.fn(),
-    mockRegisterCommand: vi.fn(),
-    mockRegisterCommands: vi.fn()
-  }))
+const mockOpenModelLibraryBrowser = vi.hoisted(() => vi.fn())
 
-vi.mock('@/platform/settings/settingStore', () => ({
-  useSettingStore: () => ({
-    get: mockGetSetting
+vi.mock(import('@/composables/useFeatureFlags'))
+vi.mock(
+  import('@/platform/assets/composables/openModelLibraryBrowser'),
+  () => ({
+    openModelLibraryBrowser: mockOpenModelLibraryBrowser
   })
-}))
+)
 
-vi.mock('@/stores/commandStore', () => ({
-  useCommandStore: () => ({
-    registerCommand: mockRegisterCommand,
-    commands: []
-  })
-}))
-
-vi.mock('@/stores/menuItemStore', () => ({
-  useMenuItemStore: () => ({
-    registerCommands: mockRegisterCommands
-  })
-}))
-
-vi.mock('@/i18n', () => ({
+vi.mock(import('@/i18n'), () => ({
   t: (key: string) => key,
   te: () => false
 }))
 
-vi.mock('@/composables/sidebarTabs/useAssetsSidebarTab', () => ({
-  useAssetsSidebarTab: () => ({
-    id: 'assets',
-    title: 'assets',
-    type: 'vue',
-    component: {}
-  })
-}))
-
-vi.mock('@/composables/sidebarTabs/useJobHistorySidebarTab', () => ({
-  useJobHistorySidebarTab: () => ({
-    id: 'job-history',
-    title: 'job-history',
-    type: 'vue',
-    component: {}
-  })
-}))
-
-vi.mock('@/composables/sidebarTabs/useNodeLibrarySidebarTab', () => ({
-  useNodeLibrarySidebarTab: () => ({
-    id: 'node-library',
-    title: 'node-library',
-    type: 'vue',
-    component: {}
-  })
-}))
-
-vi.mock('@/composables/sidebarTabs/useModelLibrarySidebarTab', () => ({
-  useModelLibrarySidebarTab: () => ({
-    id: 'model-library',
-    title: 'model-library',
-    type: 'vue',
-    component: {}
-  })
-}))
-
-vi.mock(
-  '@/platform/workflow/management/composables/useWorkflowsSidebarTab',
-  () => ({
-    useWorkflowsSidebarTab: () => ({
-      id: 'workflows',
-      title: 'workflows',
+describe('useSidebarTabStore', () => {
+  const registerModelLibraryTab = () => {
+    const store = useSidebarTabStore()
+    store.registerSidebarTab({
+      id: 'model-library',
+      title: 'model-library',
       type: 'vue',
       component: {}
     })
-  })
-)
+    return store
+  }
 
-vi.mock('@/platform/workflow/management/composables/useAppsSidebarTab', () => ({
-  useAppsSidebarTab: () => ({
-    id: 'apps',
-    title: 'apps',
-    type: 'vue',
-    component: {}
-  })
-}))
-
-describe('useSidebarTabStore', () => {
-  beforeEach(() => {
-    setActivePinia(createTestingPinia({ stubActions: false }))
-    mockGetSetting.mockReset()
-    mockRegisterCommand.mockClear()
-    mockRegisterCommands.mockClear()
-  })
-
-  it('registers the job history tab when QPO V2 is enabled', () => {
-    mockGetSetting.mockImplementation((key: string) =>
-      key === 'Comfy.Queue.QPOV2' ? true : undefined
+  const toggleModelLibrary = async () => {
+    const toggleCommand = useCommandStore().commands.find(
+      (command) => command.id === 'Workspace.ToggleSidebarTab.model-library'
     )
+    await toggleCommand?.function()
+  }
 
-    const store = useSidebarTabStore()
-    store.registerCoreSidebarTabs()
+  describe('model library view selection', () => {
+    const useAssetBrowserSetting = (enabled: boolean) => {
+      useSettingStore().settingValues['Comfy.ModelLibrary.UseAssetBrowser'] =
+        enabled
+    }
 
-    expect(store.sidebarTabs.map((tab) => tab.id)).toEqual([
-      'job-history',
-      'assets',
-      'node-library',
-      'model-library',
-      'workflows',
-      'apps'
-    ])
-    expect(mockRegisterCommand).toHaveBeenCalledTimes(6)
-  })
+    it('toggles the sidebar tab when the asset view is disabled', async () => {
+      useAssetBrowserSetting(false)
+      vi.mocked(useFeatureFlags().flags).assetsEnabled = true
 
-  it('does not register the job history tab when QPO V2 is disabled', () => {
-    mockGetSetting.mockImplementation((key: string) =>
-      key === 'Comfy.Queue.QPOV2' ? false : undefined
-    )
+      const store = registerModelLibraryTab()
 
-    const store = useSidebarTabStore()
-    store.registerCoreSidebarTabs()
+      await toggleModelLibrary()
 
-    expect(store.sidebarTabs.map((tab) => tab.id)).toEqual([
-      'assets',
-      'node-library',
-      'model-library',
-      'workflows',
-      'apps'
-    ])
-    expect(mockRegisterCommand).toHaveBeenCalledTimes(5)
-  })
+      expect(store.activeSidebarTabId).toBe('model-library')
+      expect(mockOpenModelLibraryBrowser).not.toHaveBeenCalled()
+    })
 
-  it('prepends the job history tab when QPO V2 is toggled on', async () => {
-    const qpoV2Enabled = ref(false)
-    mockGetSetting.mockImplementation((key: string) =>
-      key === 'Comfy.Queue.QPOV2' ? qpoV2Enabled.value : undefined
-    )
+    it('opens the asset browser when the asset view and the assets capability are both enabled', async () => {
+      useAssetBrowserSetting(true)
+      vi.mocked(useFeatureFlags().flags).assetsEnabled = true
 
-    const store = useSidebarTabStore()
-    store.registerCoreSidebarTabs()
+      const store = registerModelLibraryTab()
 
-    qpoV2Enabled.value = true
-    await nextTick()
+      await toggleModelLibrary()
 
-    expect(store.sidebarTabs.map((tab) => tab.id)).toEqual([
-      'job-history',
-      'assets',
-      'node-library',
-      'model-library',
-      'workflows',
-      'apps'
-    ])
-    expect(mockRegisterCommand).toHaveBeenCalledTimes(6)
+      expect(mockOpenModelLibraryBrowser).toHaveBeenCalledOnce()
+      expect(store.activeSidebarTabId).toBeNull()
+    })
+
+    it('falls back to the sidebar tree when the assets capability is missing', async () => {
+      useAssetBrowserSetting(true)
+
+      const store = registerModelLibraryTab()
+
+      await toggleModelLibrary()
+
+      expect(store.activeSidebarTabId).toBe('model-library')
+      expect(mockOpenModelLibraryBrowser).not.toHaveBeenCalled()
+    })
   })
 })

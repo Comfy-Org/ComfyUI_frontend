@@ -6,16 +6,17 @@
         variant="muted-textonly"
         size="icon"
         :aria-label="$t('g.refresh')"
-        @click="modelStore.refresh"
+        @click="withLoadFailureToast(() => modelStore.refresh())"
       >
         <i class="icon-[lucide--refresh-cw] size-4" />
       </Button>
       <Button
+        v-if="!flags.assetsEnabled"
         v-tooltip.bottom="$t('g.loadAllFolders')"
         variant="muted-textonly"
         size="icon"
         :aria-label="$t('g.loadAllFolders')"
-        @click="modelStore.loadModels"
+        @click="withLoadFailureToast(() => modelStore.loadModels())"
       >
         <i class="icon-[lucide--cloud-download] size-4" />
       </Button>
@@ -32,43 +33,63 @@
           "
           @search="handleSearch"
         />
+        <p
+          v-if="searchResults.capped"
+          role="status"
+          class="mx-2 my-1 text-xs text-muted"
+        >
+          {{
+            $t('sideToolbar.searchResultsCapped', {
+              limit: SEARCH_RESULT_LIMIT
+            })
+          }}
+        </p>
       </SidebarTopArea>
     </template>
     <template #body>
       <ElectronDownloadItems v-if="isDesktop" />
 
-      <Divider type="dashed" class="m-2" />
       <TreeExplorer
         v-model:expanded-keys="expandedKeys"
         class="model-lib-tree-explorer"
+        :aria-label="$t('sideToolbar.modelLibrary')"
         :root="renderedRoot"
       >
-        <template #node="{ node }">
-          <ModelTreeLeaf :node="node" />
+        <template #preview="{ node }">
+          <ModelPreview
+            v-if="node.data && hasPreviewDetails(node.data)"
+            :model-def="node.data"
+          />
         </template>
       </TreeExplorer>
     </template>
   </SidebarTabTemplate>
-  <div id="model-library-model-preview-container" />
 </template>
 
 <script setup lang="ts">
-import { Divider } from 'primevue'
-import { computed, nextTick, onMounted, ref, toRef, watch } from 'vue'
+import { computed, onMounted, ref, toRef, watch } from 'vue'
+import { useI18n } from 'vue-i18n'
 
 import SearchInput from '@/components/ui/search-input/SearchInput.vue'
 import SidebarTopArea from '@/components/sidebar/tabs/SidebarTopArea.vue'
 import TreeExplorer from '@/components/common/TreeExplorer.vue'
 import SidebarTabTemplate from '@/components/sidebar/tabs/SidebarTabTemplate.vue'
 import ElectronDownloadItems from '@/components/sidebar/tabs/modelLibrary/ElectronDownloadItems.vue'
-import ModelTreeLeaf from '@/components/sidebar/tabs/modelLibrary/ModelTreeLeaf.vue'
+import ModelPreview from '@/components/sidebar/tabs/modelLibrary/ModelPreview.vue'
 import Button from '@/components/ui/button/Button.vue'
 import { startModelLoaderDrag } from '@/composables/node/startModelNodeDragFromAsset'
+import { useFeatureFlags } from '@/composables/useFeatureFlags'
 import { useTreeExpansion } from '@/composables/useTreeExpansion'
 import { useSettingStore } from '@/platform/settings/settingStore'
+import { useToastStore } from '@/platform/updates/common/toastStore'
 import { useAssetDownloadStore } from '@/stores/assetDownloadStore'
-import type { ComfyModelDef, ModelFolder } from '@/stores/modelStore'
-import { ResourceState, useModelStore } from '@/stores/modelStore'
+import type { ComfyModelDef } from '@/stores/modelStore'
+import {
+  ModelFolder,
+  ResourceState,
+  getModelPreviewUrl,
+  useModelStore
+} from '@/stores/modelStore'
 import { useModelToNodeStore } from '@/stores/modelToNodeStore'
 import type { TreeExplorerNode, TreeNode } from '@/types/treeExplorerTypes'
 import { isDesktop } from '@/platform/distribution/types'
@@ -77,49 +98,98 @@ import { buildTree } from '@/utils/treeUtil'
 const modelStore = useModelStore()
 const modelToNodeStore = useModelToNodeStore()
 const settingStore = useSettingStore()
+const toastStore = useToastStore()
+const { t } = useI18n()
+const { flags } = useFeatureFlags()
 const assetDownloadStore = useAssetDownloadStore()
 const searchBoxRef = ref()
 const searchQuery = ref<string>('')
+/**
+ * The committed query the tree derives from. SearchInput debounces its
+ * `search` emit, so the full recompute-and-mount cost of a query change runs
+ * once per typing pause instead of on every keystroke of `searchQuery`.
+ */
+const activeSearchQuery = ref<string>('')
 const expandedKeys = ref<Record<string, boolean>>({})
-const { expandNode, toggleNodeOnEvent } = useTreeExpansion(expandedKeys)
+const { toggleNodeOnEvent } = useTreeExpansion(expandedKeys)
 
-const filteredModels = ref<ComfyModelDef[]>([])
+// Search results render expanded and un-virtualized, and the tree's cost is
+// O(n^2) in mounted rows, so an unbounded result set hangs the tab on large
+// libraries (measured: seconds at 5k models). Cap what renders; refining the
+// query is the path to the tail.
+const SEARCH_RESULT_LIMIT = 500
+
+const searchResults = computed<{ models: ComfyModelDef[]; capped: boolean }>(
+  () => {
+    const search = activeSearchQuery.value.toLocaleLowerCase()
+    if (!search) return { models: [], capped: false }
+    const matches: ComfyModelDef[] = []
+    for (const model of modelStore.models) {
+      if (!model.searchable.includes(search)) continue
+      if (matches.length === SEARCH_RESULT_LIMIT) {
+        return { models: matches, capped: true }
+      }
+      matches.push(model)
+    }
+    return { models: matches, capped: false }
+  }
+)
+
 const handleSearch = async (query: string) => {
+  autoExpandedSearchKeys.clear()
+  activeSearchQuery.value = query
   if (!query) {
-    filteredModels.value = []
     expandedKeys.value = {}
     return
   }
-  // Load all models to ensure we have the latest data
+  // Load all models to ensure results cover folders not yet opened
   await modelStore.loadModels()
-  const search = query.toLocaleLowerCase()
-  filteredModels.value = modelStore.models.filter((model: ComfyModelDef) => {
-    return model.searchable.includes(search)
-  })
-
-  await nextTick()
-  expandNode(root.value)
 }
 
 type ModelOrFolder = ComfyModelDef | ModelFolder
 
-const root = computed<TreeNode>(() => {
-  const allNodes: ModelOrFolder[] = searchQuery.value
-    ? filteredModels.value
-    : [...modelStore.modelFolders, ...modelStore.models]
+const root = computed<TreeNode<ModelOrFolder>>(() => {
+  const allNodes: ModelOrFolder[] = activeSearchQuery.value
+    ? searchResults.value.models
+    : [...modelStore.visibleModelFolders, ...modelStore.models]
   return buildTree(allNodes, (modelOrFolder: ModelOrFolder) =>
     modelOrFolder.key.split('/')
   )
 })
 
-const renderedRoot = computed<TreeExplorerNode<ModelOrFolder>>(() => {
+/**
+ * Folder keys already auto-expanded for the current query. Expansion runs
+ * once per key: the query's initial result set opens on commit, and a
+ * background reload (e.g. a scan completing mid-search) opens only folders
+ * newly appearing in the results. A folder the user collapsed keeps its key
+ * here and stays collapsed, and an unchanged tree costs no expand pass.
+ */
+const autoExpandedSearchKeys = new Set<string>()
+
+function expandNewSearchFolders(node: TreeNode<ModelOrFolder>) {
+  if (node.leaf) return
+  if (!autoExpandedSearchKeys.has(node.key)) {
+    autoExpandedSearchKeys.add(node.key)
+    expandedKeys.value[node.key] = true
+  }
+  for (const child of node.children ?? []) {
+    expandNewSearchFolders(child)
+  }
+}
+
+watch(root, (newRoot) => {
+  if (!activeSearchQuery.value) return
+  expandNewSearchFolders(newRoot)
+})
+
+const renderedRoot = computed<TreeExplorerNode<ComfyModelDef>>(() => {
   const nameFormat = settingStore.get('Comfy.ModelLibrary.NameFormat')
-  const fillNodeInfo = (node: TreeNode): TreeExplorerNode<ModelOrFolder> => {
+  const fillNodeInfo = (
+    node: TreeNode<ModelOrFolder>
+  ): TreeExplorerNode<ComfyModelDef> => {
     const children = node.children?.map(fillNodeInfo)
-    const model: ComfyModelDef | null =
-      node.leaf && node.data ? node.data : null
-    const folder: ModelFolder | null =
-      !node.leaf && node.data ? node.data : null
+    const folder = node.data instanceof ModelFolder ? node.data : undefined
+    const model = node.data instanceof ModelFolder ? undefined : node.data
 
     return {
       key: node.key,
@@ -129,7 +199,7 @@ const renderedRoot = computed<TreeExplorerNode<ModelOrFolder>>(() => {
           : model.simplified_file_name
         : node.label,
       leaf: node.leaf,
-      data: node.data,
+      data: model,
       getIcon() {
         if (model) {
           return model.image ? 'pi pi-image' : 'pi pi-file'
@@ -140,6 +210,9 @@ const renderedRoot = computed<TreeExplorerNode<ModelOrFolder>>(() => {
             : 'pi pi-folder'
         }
         return 'pi pi-folder'
+      },
+      getIconImage() {
+        return (model && getModelPreviewUrl(model)) || undefined
       },
       getBadgeText() {
         // Return undefined to apply default badge text
@@ -167,6 +240,41 @@ const renderedRoot = computed<TreeExplorerNode<ModelOrFolder>>(() => {
   return fillNodeInfo(root.value)
 })
 
+function hasPreviewDetails(model: ComfyModelDef) {
+  return (
+    model.has_loaded_metadata &&
+    Boolean(
+      model.author ||
+      model.simplified_file_name != model.title ||
+      model.description ||
+      model.usage_hint ||
+      model.trigger_phrase ||
+      model.image
+    )
+  )
+}
+
+const visibleModels = computed(() => {
+  const models: ComfyModelDef[] = []
+  const collect = (node: TreeNode<ModelOrFolder>) => {
+    for (const child of node.children ?? []) {
+      if (child.leaf) {
+        if (child.data && !(child.data instanceof ModelFolder)) {
+          models.push(child.data)
+        }
+      } else if (expandedKeys.value[child.key]) {
+        collect(child)
+      }
+    }
+  }
+  collect(root.value)
+  return models
+})
+
+watch(visibleModels, (models) => {
+  for (const model of models) void model.load()
+})
+
 watch(
   toRef(expandedKeys, 'value'),
   (newExpandedKeys) => {
@@ -191,12 +299,39 @@ watch(
   }
 )
 
+async function withLoadFailureToast(action: () => Promise<unknown>) {
+  try {
+    await action()
+  } catch (error) {
+    console.error('Model library load failed', error)
+    toastStore.add({
+      severity: 'error',
+      summary: t('g.error'),
+      detail: t('sideToolbar.modelLibraryLoadFailed'),
+      life: 5000
+    })
+  }
+}
+
 onMounted(async () => {
   searchBoxRef.value?.focus()
-  if (settingStore.get('Comfy.ModelLibrary.AutoLoadAll')) {
-    await modelStore.loadModels()
+  // In asset mode the whole library resolves from one cached walk, so eager
+  // loading is cheap and keeps search and folder badges complete from the
+  // start; AutoLoadAll remains the opt-in for the request-per-folder legacy path.
+  if (
+    flags.assetsEnabled ||
+    settingStore.get('Comfy.ModelLibrary.AutoLoadAll')
+  ) {
+    await withLoadFailureToast(() => modelStore.loadModels())
   }
 })
+
+watch(
+  () => flags.assetsEnabled,
+  async (enabled) => {
+    if (enabled) await withLoadFailureToast(() => modelStore.loadModels())
+  }
+)
 </script>
 
 <style scoped>

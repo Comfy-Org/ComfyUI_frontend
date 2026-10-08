@@ -1,6 +1,6 @@
-import { $el } from '../../ui'
 import { prop } from '../../utils'
-import { type ClassList, applyClasses } from '../utils'
+import { $el, applyClasses } from '../utils'
+import type { ClassList } from '../utils'
 
 export class ComfyPopup extends EventTarget {
   element = $el('div.comfyui-popup')
@@ -89,8 +89,7 @@ export class ComfyPopup extends EventTarget {
     this.dispatchEvent(new CustomEvent('change'))
   }
 
-  // @ts-expect-error fixme ts strict error
-  private _escHandler = (e) => {
+  private _escHandler = (e: KeyboardEvent) => {
     if (e.key === 'Escape') {
       this.open = false
       e.preventDefault()
@@ -98,11 +97,10 @@ export class ComfyPopup extends EventTarget {
     }
   }
 
-  // @ts-expect-error fixme ts strict error
-  private _clickHandler = (e) => {
-    /** @type {any} */
+  private _clickHandler = (e: MouseEvent) => {
     const target = e.target
     if (
+      target instanceof Node &&
       !this.element.contains(target) &&
       this.ignoreTarget &&
       !this.target.contains(target)

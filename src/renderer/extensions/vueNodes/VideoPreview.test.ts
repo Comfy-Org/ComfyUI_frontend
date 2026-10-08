@@ -1,14 +1,14 @@
-import { createTestingPinia } from '@pinia/testing'
+import { getActivePinia } from 'pinia'
 import { fireEvent, render, screen } from '@testing-library/vue'
 import userEvent from '@testing-library/user-event'
-import { afterEach, describe, expect, it, vi } from 'vitest'
+import { describe, expect, it, vi } from 'vitest'
 import { nextTick } from 'vue'
 import { createI18n } from 'vue-i18n'
 import type { ComponentProps } from 'vue-component-type-helpers'
 
 import VideoPreview from '@/renderer/extensions/vueNodes/VideoPreview.vue'
 
-vi.mock('@/base/common/downloadUtil', () => ({
+vi.mock(import('@/base/common/downloadUtil'), () => ({
   downloadFile: vi.fn()
 }))
 
@@ -41,10 +41,6 @@ describe('VideoPreview', () => {
     ]
   }
 
-  afterEach(() => {
-    vi.clearAllMocks()
-  })
-
   function renderVideoPreview(
     props: Partial<ComponentProps<typeof VideoPreview>> = {}
   ) {
@@ -53,10 +49,7 @@ describe('VideoPreview', () => {
         typeof VideoPreview
       >,
       global: {
-        plugins: [createTestingPinia({ createSpy: vi.fn }), i18n],
-        stubs: {
-          Skeleton: true
-        }
+        plugins: [getActivePinia()!, i18n]
       }
     })
   }
@@ -70,13 +63,13 @@ describe('VideoPreview', () => {
       const user = userEvent.setup()
 
       // Simulate initial video load
-      // eslint-disable-next-line testing-library/no-container, testing-library/no-node-access
+      // oxlint-disable-next-line testing-library/no-container, testing-library/no-node-access
       const videoEl = container.querySelector('video')
       expect(videoEl).not.toBeNull()
       await fireEvent.loadedData(videoEl!)
       await nextTick()
       expect(
-        // eslint-disable-next-line testing-library/no-container, testing-library/no-node-access
+        // oxlint-disable-next-line testing-library/no-container, testing-library/no-node-access
         container.querySelector('[aria-busy="true"]')
       ).not.toBeInTheDocument()
 
@@ -87,7 +80,7 @@ describe('VideoPreview', () => {
 
       // Should NOT be in loading state since URL didn't change
       expect(
-        // eslint-disable-next-line testing-library/no-container, testing-library/no-node-access
+        // oxlint-disable-next-line testing-library/no-container, testing-library/no-node-access
         container.querySelector('[aria-busy="true"]')
       ).not.toBeInTheDocument()
     })
@@ -102,13 +95,13 @@ describe('VideoPreview', () => {
       const user = userEvent.setup()
 
       // Simulate initial video load
-      // eslint-disable-next-line testing-library/no-container, testing-library/no-node-access
+      // oxlint-disable-next-line testing-library/no-container, testing-library/no-node-access
       const videoEl = container.querySelector('video')
       expect(videoEl).not.toBeNull()
       await fireEvent.loadedData(videoEl!)
       await nextTick()
       expect(
-        // eslint-disable-next-line testing-library/no-container, testing-library/no-node-access
+        // oxlint-disable-next-line testing-library/no-container, testing-library/no-node-access
         container.querySelector('[aria-busy="true"]')
       ).not.toBeInTheDocument()
 
@@ -118,7 +111,7 @@ describe('VideoPreview', () => {
       await nextTick()
 
       // Should be in loading state since URL changed
-      // eslint-disable-next-line testing-library/no-container, testing-library/no-node-access
+      // oxlint-disable-next-line testing-library/no-container, testing-library/no-node-access
       expect(container.querySelector('[aria-busy="true"]')).toBeInTheDocument()
     })
   })

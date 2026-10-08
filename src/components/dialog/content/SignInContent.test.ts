@@ -1,0 +1,337 @@
+import { render, screen, waitFor } from '@testing-library/vue'
+import userEvent from '@testing-library/user-event'
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
+import { createI18n } from 'vue-i18n'
+
+import SignInContent from '@/components/dialog/content/SignInContent.vue'
+import { useAuthActions } from '@/composables/auth/useAuthActions'
+import type { DesktopHostAuthState } from '@/platform/auth/desktopHost/desktopHostAuthBridge'
+import {
+  startDesktopHostSession,
+  stopDesktopHostSession
+} from '@/platform/auth/desktopHost/desktopHostSession'
+
+vi.mock(import('@/composables/auth/useAuthActions'))
+
+vi.mock(import('@comfyorg/account-core/webviewDetection'), () => ({
+  isEmbeddedWebView: () => false
+}))
+vi.mock(import('@/utils/hostWhitelist'), () => ({
+  isHostWhitelisted: () => true,
+  normalizeHost: (host: string) => host
+}))
+vi.mock(import('@/platform/remoteConfig/remoteConfig'))
+
+const inChina = vi.hoisted(() => ({
+  value: false,
+  pending: null as Promise<boolean> | null,
+  /** Detection that never settles, as on a network that blackholes. */
+  hang() {
+    this.pending = new Promise<boolean>(() => {})
+  },
+  /** Holds detection pending; returns the settle function. */
+  defer(): (inChina: boolean) => void {
+    let settle!: (inChina: boolean) => void
+    this.pending = new Promise<boolean>((resolve) => {
+      settle = resolve
+    })
+    return settle
+  },
+  reject(error: Error) {
+    this.pending = Promise.reject(error)
+  }
+}))
+vi.mock(import('@comfyorg/account-ui/auth/regionProbe'), () => ({
+  isInChina: () => inChina.pending ?? Promise.resolve(inChina.value)
+}))
+
+const MESSAGES = {
+  auth: {
+    login: {
+      title: 'Sign in',
+      newUser: 'New user?',
+      signUp: 'Sign up',
+      orContinueWith: 'or continue with',
+      loginWithGoogle: 'Sign in with Google',
+      loginWithGithub: 'Sign in with GitHub',
+      useApiKey: 'Use API key',
+      termsText: 'Terms',
+      termsLink: 'Terms of Service',
+      andText: 'and',
+      privacyLink: 'Privacy Policy',
+      questionsContactPrefix: 'Questions?',
+      insecureContextWarning: 'Insecure context'
+    },
+    signup: {
+      title: 'Sign up',
+      alreadyHaveAccount: 'Already have an account?',
+      signIn: 'Sign in',
+      signUpWithGoogle: 'Sign up with Google',
+      signUpWithGithub: 'Sign up with GitHub',
+      regionRestrictionChina: 'Email sign-up is unavailable in your region.'
+    },
+    apiKey: { helpText: 'Help', generateKey: 'Generate key' },
+    sso: { continueWithSso: 'Continue with SSO' },
+    desktopHost: {
+      continueInBrowser: 'Finish signing in in your browser',
+      signInFailed: 'Sign-in did not finish'
+    },
+    reauthRequired: { title: 'Reauth', message: 'Reauth' }
+  },
+  g: { comfy: 'Comfy', close: 'Close' },
+  toastMessages: { useApiKeyTip: 'Tip' }
+}
+
+function renderSignInContent(onSuccess = vi.fn()) {
+  return render(SignInContent, {
+    props: { onSuccess },
+    global: {
+      plugins: [
+        createI18n({ legacy: false, locale: 'en', messages: { en: MESSAGES } })
+      ],
+      stubs: {
+        SignUpForm: { template: '<form data-testid="signup-form" />' },
+        SignInForm: { template: '<form data-testid="signin-form" />' },
+        ApiKeyForm: true,
+        Divider: true
+      }
+    }
+  })
+}
+
+async function switchToSignUp(advanceTimers?: (ms: number) => void) {
+  const user = userEvent.setup(advanceTimers ? { advanceTimers } : {})
+  await user.click(screen.getByText('Sign up'))
+}
+
+beforeEach(() => {
+  inChina.value = false
+  inChina.pending = null
+})
+
+afterEach(() => stopDesktopHostSession())
+
+function desktopHostBridge(signInResult: DesktopHostAuthState) {
+  return {
+    getState: vi.fn(
+      async (): Promise<DesktopHostAuthState> => ({
+        status: 'signed_out'
+      })
+    ),
+    getWorkspaceToken: vi.fn(async () => null),
+    requestSignIn: vi.fn(async () => signInResult),
+    signOut: vi.fn(
+      async (): Promise<DesktopHostAuthState> => ({ status: 'signed_out' })
+    ),
+    onChanged: vi.fn(() => () => {})
+  }
+}
+
+describe('SignInContent', () => {
+  it('shows the access-error tip again after dismissal and another error', async () => {
+    const user = userEvent.setup()
+    const { accessError } = useAuthActions()
+    accessError.value = true
+    renderSignInContent()
+
+    expect(screen.getByText('Tip')).toBeVisible()
+    await user.click(screen.getByRole('button', { name: 'Close' }))
+    expect(screen.queryByText('Tip')).not.toBeInTheDocument()
+    expect(accessError.value).toBe(false)
+
+    accessError.value = true
+    expect(await screen.findByText('Tip')).toBeVisible()
+  })
+
+  it('finishes a closed popup’s late result as a sign-in, then reports success', async () => {
+    const onSuccess = vi.fn()
+    const actions = useAuthActions()
+    render(SignInContent, {
+      props: { onSuccess },
+      global: {
+        plugins: [
+          createI18n({
+            legacy: false,
+            locale: 'en',
+            messages: { en: MESSAGES }
+          })
+        ],
+        stubs: {
+          SignUpForm: true,
+          SignInForm: true,
+          ApiKeyForm: true,
+          Divider: true
+        }
+      }
+    })
+    await userEvent
+      .setup()
+      .click(screen.getByRole('button', { name: /sign in with google/i }))
+    const popup = vi.mocked(actions.signInWithGoogle).mock.calls[0]?.[0]?.popup
+    vi.mocked(actions.signInWithGoogle).mockResolvedValueOnce({
+      user: { uid: 'u1' }
+    } as never)
+
+    popup?.onResumed?.(Promise.resolve({ user: { uid: 'u1' } } as never))
+
+    await waitFor(() => expect(onSuccess).toHaveBeenCalledOnce())
+  })
+
+  it('links legal terms directly to canonical Comfy pages', () => {
+    renderSignInContent()
+
+    expect(
+      screen.getByRole('link', { name: 'Terms of Service' })
+    ).toHaveAttribute('href', 'https://comfy.org/terms-of-service/')
+    expect(
+      screen.getByRole('link', { name: 'Privacy Policy' })
+    ).toHaveAttribute('href', 'https://comfy.org/privacy-policy/')
+  })
+
+  it('withholds the sign-up form while region detection is pending', async () => {
+    const settle = inChina.defer()
+    renderSignInContent()
+    await switchToSignUp()
+
+    expect(screen.getByTestId('region-check-pending')).toBeInTheDocument()
+    expect(screen.queryByTestId('signup-form')).not.toBeInTheDocument()
+    expect(
+      screen.getByRole('button', { name: /Sign up with Google/ }),
+      'only email sign-up is gated on region; third-party auth never waits on the probe'
+    ).toBeInTheDocument()
+
+    settle(false)
+
+    await waitFor(() => {
+      expect(screen.getByTestId('signup-form')).toBeInTheDocument()
+    })
+  })
+
+  it('never renders the sign-up form inside China, pending or settled', async () => {
+    const settle = inChina.defer()
+    renderSignInContent()
+    await switchToSignUp()
+
+    expect(screen.queryByTestId('signup-form')).not.toBeInTheDocument()
+
+    settle(true)
+
+    await waitFor(() => {
+      expect(
+        screen.getByText('Email sign-up is unavailable in your region.')
+      ).toBeInTheDocument()
+    })
+    expect(screen.queryByTestId('signup-form')).not.toBeInTheDocument()
+  })
+
+  it('renders the sign-up form outside China', async () => {
+    renderSignInContent()
+    await switchToSignUp()
+
+    await waitFor(() => {
+      expect(screen.getByTestId('signup-form')).toBeInTheDocument()
+    })
+    expect(
+      screen.queryByText('Email sign-up is unavailable in your region.')
+    ).not.toBeInTheDocument()
+  })
+
+  it('releases the sign-up form when region detection fails', async () => {
+    inChina.reject(new Error('probe failed'))
+    renderSignInContent()
+    await switchToSignUp()
+
+    await waitFor(() => {
+      expect(screen.getByTestId('signup-form')).toBeInTheDocument()
+    })
+  })
+
+  it('keeps the form withheld however long detection takes', async () => {
+    // Fake timers must predate mount, or a fallback scheduled during mount runs
+    // on the real clock and escapes the drain below.
+    vi.useFakeTimers()
+    try {
+      inChina.hang()
+      renderSignInContent()
+      await switchToSignUp(vi.advanceTimersByTime)
+
+      expect(screen.getByTestId('region-check-pending')).toBeInTheDocument()
+
+      await vi.advanceTimersByTimeAsync(60_000)
+
+      expect(
+        screen.queryByTestId('signup-form'),
+        "no caller-side fallback may release the form on detection's behalf"
+      ).not.toBeInTheDocument()
+      expect(screen.getByTestId('region-check-pending')).toBeInTheDocument()
+    } finally {
+      vi.useRealTimers()
+    }
+  })
+
+  it('leaves sign-in ungated by region', async () => {
+    inChina.value = true
+    renderSignInContent()
+
+    await waitFor(() => {
+      expect(screen.getByTestId('signin-form')).toBeInTheDocument()
+    })
+    expect(screen.queryByTestId('region-check-pending')).not.toBeInTheDocument()
+  })
+
+  it('offers social sign-up inside China', async () => {
+    inChina.value = true
+    renderSignInContent()
+    await switchToSignUp()
+
+    await waitFor(() => {
+      expect(
+        screen.getByRole('button', { name: /Sign up with Google/ })
+      ).toBeInTheDocument()
+    })
+    expect(
+      screen.getByRole('button', { name: /Sign up with GitHub/ })
+    ).toBeInTheDocument()
+  })
+
+  it('offers SSO through Comfy Desktop only when Desktop shares its session', async () => {
+    const { unmount } = renderSignInContent()
+    expect(
+      screen.queryByRole('button', { name: 'Continue with SSO' })
+    ).not.toBeInTheDocument()
+    unmount()
+
+    await startDesktopHostSession(desktopHostBridge({ status: 'signed_out' }))
+    renderSignInContent()
+
+    expect(
+      screen.getByRole('button', { name: 'Continue with SSO' })
+    ).toBeVisible()
+  })
+
+  it.for([
+    {
+      name: 'closes once Desktop signs in',
+      result: { status: 'signed_in', userId: 'sso-user' } as const,
+      succeeded: true
+    },
+    {
+      name: 'stays open when the sign-in does not finish',
+      result: { status: 'signed_out' } as const,
+      succeeded: false
+    }
+  ])('SSO through Comfy Desktop $name', async ({ result, succeeded }) => {
+    const user = userEvent.setup()
+    const bridge = desktopHostBridge(result)
+    await startDesktopHostSession(bridge)
+    const onSuccess = vi.fn()
+    renderSignInContent(onSuccess)
+
+    await user.click(screen.getByRole('button', { name: 'Continue with SSO' }))
+
+    await waitFor(() => expect(bridge.requestSignIn).toHaveBeenCalledOnce())
+    await waitFor(() =>
+      expect(onSuccess).toHaveBeenCalledTimes(succeeded ? 1 : 0)
+    )
+  })
+})

@@ -1,9 +1,11 @@
 import { describe, expect, it, vi } from 'vitest'
 
 import {
+  extractApiPrompt,
   extractWorkflow,
   fetchHistory,
   fetchHistoryPage,
+  fetchJobAssets,
   fetchJobDetail,
   fetchQueue
 } from '@/platform/remote/comfyui/jobs/fetchJobs'
@@ -275,6 +277,14 @@ describe('fetchJobs', () => {
 
       expect(result).toEqual({ Running: [], Pending: [] })
     })
+
+    it('propagates errors when requested', async () => {
+      const mockFetch = vi.fn().mockResolvedValue({ ok: false, status: 500 })
+
+      await expect(
+        fetchQueue(mockFetch, { throwOnError: true })
+      ).rejects.toThrow('Failed to fetch jobs: 500')
+    })
   })
 
   describe('fetchJobDetail', () => {
@@ -381,6 +391,428 @@ describe('fetchJobs', () => {
         expect.any(String)
       )
       consoleSpy.mockRestore()
+    })
+  })
+
+  describe('extractApiPrompt', () => {
+    const apiPrompt = {
+      '1': { class_type: 'KSampler', inputs: { seed: 1 } }
+    }
+
+    it('extracts the stored API graph when no workflow is embedded', () => {
+      const jobDetail = {
+        ...createMockJob('job1', 'completed'),
+        workflow: { prompt: apiPrompt }
+      }
+
+      expect(extractApiPrompt(jobDetail)).toEqual(apiPrompt)
+    })
+
+    it('returns undefined when a workflow is embedded', () => {
+      const jobDetail = {
+        ...createMockJob('job1', 'completed'),
+        workflow: {
+          prompt: apiPrompt,
+          extra_data: {
+            extra_pnginfo: {
+              workflow: {
+                version: 0.4,
+                last_node_id: 1,
+                last_link_id: 0,
+                nodes: [],
+                links: []
+              }
+            }
+          }
+        }
+      }
+
+      expect(extractApiPrompt(jobDetail)).toBeUndefined()
+    })
+
+    it('returns undefined when the embedded workflow is a malformed empty string', () => {
+      const jobDetail = {
+        ...createMockJob('job1', 'completed'),
+        workflow: {
+          prompt: apiPrompt,
+          extra_data: { extra_pnginfo: { workflow: '' } }
+        }
+      }
+
+      expect(extractApiPrompt(jobDetail)).toBeUndefined()
+    })
+
+    it('returns undefined when the job stores no prompt', () => {
+      const jobDetail = createMockJob('job1', 'completed')
+
+      expect(extractApiPrompt(jobDetail)).toBeUndefined()
+    })
+
+    it('returns undefined for undefined input', () => {
+      expect(extractApiPrompt(undefined)).toBeUndefined()
+    })
+
+    it('extracts the API graph when the job nulls out its workflow keys', () => {
+      const jobDetail = {
+        ...createMockJob('job1', 'completed'),
+        workflow: {
+          prompt: apiPrompt,
+          extra_data: { extra_pnginfo: null }
+        }
+      }
+
+      expect(extractApiPrompt(jobDetail)).toEqual(apiPrompt)
+      expect(
+        extractApiPrompt({
+          ...createMockJob('job2', 'completed'),
+          workflow: { prompt: apiPrompt, extra_data: null }
+        })
+      ).toEqual(apiPrompt)
+    })
+  })
+  describe('PM-1150 — agent-submitted job round trip (synthetic fixture)', () => {
+    const PM_1150_JOB_ID = '33a723f2-bf1f-4faf-9c42-1b83e2185601'
+    const PM_1150_API_PROMPT = {
+      '1': {
+        class_type: 'CheckpointLoaderSimple',
+        inputs: { ckpt_name: 'v1-5-pruned-emaonly.ckpt' },
+        _meta: { title: 'Load Checkpoint' }
+      },
+      '2': {
+        class_type: 'KSampler',
+        inputs: {
+          seed: 156680208700286,
+          steps: 20,
+          cfg: 8,
+          sampler_name: 'euler',
+          scheduler: 'normal',
+          denoise: 1,
+          model: ['1', 0],
+          positive: ['1', 1],
+          negative: ['1', 1],
+          latent_image: ['1', 2]
+        },
+        _meta: { title: 'KSampler' }
+      },
+      '3': {
+        class_type: 'SaveImage',
+        inputs: { filename_prefix: 'ComfyUI', images: ['2', 0] },
+        _meta: { title: 'Save Image' }
+      }
+    }
+
+    function pm1150JobDetailJson() {
+      return {
+        ...createMockJob(PM_1150_JOB_ID, 'completed'),
+        workflow_id: 'agent-service-workflow',
+        outputs: {
+          '3': {
+            images: [
+              {
+                filename: 'agent_job_output.png',
+                subfolder: '',
+                type: 'output'
+              }
+            ]
+          }
+        },
+        // No `extra_data` key at all — the fallback path this fixture covers.
+        workflow: { prompt: PM_1150_API_PROMPT }
+      }
+    }
+
+    it('parses workflow.prompt through the real zJobDetail schema and extracts it', async () => {
+      const mockFetch = vi.fn().mockResolvedValue({
+        ok: true,
+        json: () => Promise.resolve(pm1150JobDetailJson())
+      })
+
+      const jobDetail = await fetchJobDetail(mockFetch, PM_1150_JOB_ID)
+
+      expect(jobDetail).toBeDefined()
+      expect(extractApiPrompt(jobDetail)).toEqual(PM_1150_API_PROMPT)
+    })
+  })
+  describe('fetchJobAssets', () => {
+    function createAssetsResponse(
+      jobId: string,
+      assets: Record<string, unknown>[],
+      hasMore = false,
+      offset = 0
+    ) {
+      return {
+        job_id: jobId,
+        assets,
+        pagination: {
+          offset,
+          limit: 500,
+          total: assets.length,
+          has_more: hasMore
+        }
+      }
+    }
+
+    it('fetches job assets with node context', async () => {
+      const mockFetch = vi.fn().mockResolvedValue({
+        ok: true,
+        json: () =>
+          Promise.resolve(
+            createAssetsResponse('job1', [
+              {
+                id: 'asset-1',
+                name: 'a.png',
+                hash: 'blake3:abc',
+                preview_url: '/view/a.png',
+                mime_type: 'image/png',
+                size: 123,
+                node_id: '9',
+                output_key: 'images',
+                output_index: 0,
+                created_at: '2025-01-01T00:00:00.000Z'
+              }
+            ])
+          )
+      })
+
+      const { assets, complete } = await fetchJobAssets(mockFetch, 'job1')
+
+      expect(mockFetch).toHaveBeenCalledWith(
+        '/jobs/job1/assets?limit=500&offset=0'
+      )
+      expect(assets).toHaveLength(1)
+      expect(assets[0].id).toBe('asset-1')
+      expect(assets[0].node_id).toBe('9')
+      expect(assets[0].output_index).toBe(0)
+      expect(complete).toBe(true)
+    })
+
+    it('accepts null node context fields', async () => {
+      const mockFetch = vi.fn().mockResolvedValue({
+        ok: true,
+        json: () =>
+          Promise.resolve(
+            createAssetsResponse('job1', [
+              {
+                id: 'asset-1',
+                name: 'a.png',
+                node_id: null,
+                output_key: null,
+                output_index: null,
+                created_at: '2025-01-01T00:00:00.000Z'
+              }
+            ])
+          )
+      })
+
+      const { assets, complete } = await fetchJobAssets(mockFetch, 'job1')
+
+      expect(assets).toHaveLength(1)
+      expect(assets[0].node_id).toBeNull()
+      expect(complete).toBe(true)
+    })
+
+    it('accepts null hash, preview_url, mime_type, size, and created_at fields', async () => {
+      const mockFetch = vi.fn().mockResolvedValue({
+        ok: true,
+        json: () =>
+          Promise.resolve(
+            createAssetsResponse('job1', [
+              {
+                id: 'asset-1',
+                name: 'a.png',
+                hash: null,
+                preview_url: null,
+                mime_type: null,
+                size: null,
+                created_at: null
+              }
+            ])
+          )
+      })
+
+      const { assets, complete } = await fetchJobAssets(mockFetch, 'job1')
+
+      expect(assets).toHaveLength(1)
+      expect(assets[0].id).toBe('asset-1')
+      expect(complete).toBe(true)
+    })
+
+    it('paginates until has_more is false', async () => {
+      const mockFetch = vi
+        .fn()
+        .mockResolvedValueOnce({
+          ok: true,
+          json: () =>
+            Promise.resolve(
+              createAssetsResponse(
+                'job1',
+                [{ id: 'a1', name: 'a.png', created_at: 't' }],
+                true,
+                0
+              )
+            )
+        })
+        .mockResolvedValueOnce({
+          ok: true,
+          json: () =>
+            Promise.resolve(
+              createAssetsResponse(
+                'job1',
+                [{ id: 'a2', name: 'b.png', created_at: 't' }],
+                false,
+                1
+              )
+            )
+        })
+
+      const { assets, complete } = await fetchJobAssets(mockFetch, 'job1')
+
+      expect(mockFetch).toHaveBeenCalledTimes(2)
+      expect(mockFetch).toHaveBeenNthCalledWith(
+        2,
+        '/jobs/job1/assets?limit=500&offset=1'
+      )
+      expect(assets.map((a) => a.id)).toEqual(['a1', 'a2'])
+      expect(complete).toBe(true)
+    })
+
+    it('returns empty array and logs the status on non-ok response', async () => {
+      const consoleWarnSpy = vi
+        .spyOn(console, 'warn')
+        .mockImplementation(() => {})
+      const mockFetch = vi.fn().mockResolvedValue({ ok: false, status: 404 })
+
+      const { assets, complete } = await fetchJobAssets(mockFetch, 'job1')
+
+      expect(assets).toEqual([])
+      expect(complete).toBe(false)
+      expect(consoleWarnSpy).toHaveBeenCalledWith(
+        expect.stringContaining('404')
+      )
+      consoleWarnSpy.mockRestore()
+    })
+
+    it('accepts an envelope without job_id, offset, limit, or asset created_at', async () => {
+      const mockFetch = vi.fn().mockResolvedValue({
+        ok: true,
+        json: () =>
+          Promise.resolve({
+            assets: [{ id: 'asset-1', name: 'a.png' }],
+            pagination: { total: 1, has_more: false }
+          })
+      })
+
+      const { assets, complete } = await fetchJobAssets(mockFetch, 'job1')
+
+      expect(assets.map((a) => a.id)).toEqual(['asset-1'])
+      expect(complete).toBe(true)
+    })
+
+    it('stops after one page when pagination is absent', async () => {
+      const mockFetch = vi.fn().mockResolvedValue({
+        ok: true,
+        json: () =>
+          Promise.resolve({
+            assets: [{ id: 'asset-1', name: 'a.png', created_at: 't' }]
+          })
+      })
+
+      const { assets, complete } = await fetchJobAssets(mockFetch, 'job1')
+
+      expect(mockFetch).toHaveBeenCalledTimes(1)
+      expect(assets).toHaveLength(1)
+      expect(complete).toBe(true)
+    })
+
+    it('returns empty array on error', async () => {
+      const consoleSpy = vi.spyOn(console, 'error').mockImplementation(() => {})
+      const mockFetch = vi.fn().mockRejectedValue(new Error('Network error'))
+
+      const { assets, complete } = await fetchJobAssets(mockFetch, 'job1')
+
+      expect(assets).toEqual([])
+      expect(complete).toBe(false)
+      consoleSpy.mockRestore()
+    })
+
+    it('stops at the page cap when the server always reports has_more', async () => {
+      const consoleWarnSpy = vi
+        .spyOn(console, 'warn')
+        .mockImplementation(() => {})
+      const mockFetch = vi.fn().mockImplementation((url: string) => {
+        const offset = Number(
+          new URL(url, 'http://x').searchParams.get('offset')
+        )
+        return Promise.resolve({
+          ok: true,
+          json: () =>
+            Promise.resolve(
+              createAssetsResponse(
+                'job1',
+                [{ id: `a${offset}`, name: `${offset}.png`, created_at: 't' }],
+                true,
+                offset
+              )
+            )
+        })
+      })
+
+      const { assets, complete } = await fetchJobAssets(mockFetch, 'job1')
+
+      expect(mockFetch).toHaveBeenCalledTimes(20)
+      expect(assets).toHaveLength(20)
+      expect(complete).toBe(false)
+      expect(consoleWarnSpy).toHaveBeenCalledWith(
+        expect.stringContaining('20-page cap')
+      )
+      consoleWarnSpy.mockRestore()
+    })
+
+    it('reports incomplete when a later page fails mid-pagination', async () => {
+      const consoleWarnSpy = vi
+        .spyOn(console, 'warn')
+        .mockImplementation(() => {})
+      const mockFetch = vi
+        .fn()
+        .mockResolvedValueOnce({
+          ok: true,
+          json: () =>
+            Promise.resolve(
+              createAssetsResponse(
+                'job1',
+                [{ id: 'a1', name: 'a.png', created_at: 't' }],
+                true,
+                0
+              )
+            )
+        })
+        .mockResolvedValueOnce({ ok: false, status: 503 })
+
+      const { assets, complete } = await fetchJobAssets(mockFetch, 'job1')
+
+      expect(assets.map((a) => a.id)).toEqual(['a1'])
+      expect(complete).toBe(false)
+      consoleWarnSpy.mockRestore()
+    })
+
+    it('warns when has_more is true but the page is empty', async () => {
+      const consoleWarnSpy = vi
+        .spyOn(console, 'warn')
+        .mockImplementation(() => {})
+      const mockFetch = vi.fn().mockResolvedValue({
+        ok: true,
+        json: () => Promise.resolve(createAssetsResponse('job1', [], true, 0))
+      })
+
+      const { assets, complete } = await fetchJobAssets(mockFetch, 'job1')
+
+      expect(assets).toEqual([])
+      expect(complete).toBe(false)
+      expect(mockFetch).toHaveBeenCalledTimes(1)
+      expect(consoleWarnSpy).toHaveBeenCalledWith(
+        expect.stringContaining('has_more with an empty page')
+      )
+      consoleWarnSpy.mockRestore()
     })
   })
 })

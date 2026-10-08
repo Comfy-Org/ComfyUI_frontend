@@ -1,54 +1,60 @@
 <template>
   <div
     v-if="!workspaceStore.focusMode"
-    class="ml-1 flex flex-col gap-1 pt-1"
+    class="ml-(--comfy-canvas-gutter) flex flex-col gap-1 pt-(--comfy-canvas-gutter)"
     @mouseenter="isTopMenuHovered = true"
     @mouseleave="isTopMenuHovered = false"
   >
     <div class="flex gap-x-0.5">
-      <div class="min-w-0 flex-1">
+      <div
+        :inert="isActionBarsHidden"
+        :aria-hidden="isActionBarsHidden"
+        :class="
+          cn(
+            'max-h-16 min-w-0 flex-1 transition-all duration-300 ease-in-out',
+            isActionBarsHidden &&
+              'max-h-0 -translate-x-8 overflow-hidden opacity-0'
+          )
+        "
+      >
         <SubgraphBreadcrumb />
       </div>
 
-      <div class="mx-1 flex flex-col items-end gap-1">
-        <div class="flex items-start gap-2">
+      <div class="ml-(--comfy-canvas-gutter) flex flex-col items-end gap-1">
+        <div
+          data-testid="top-menu-actionbars"
+          :inert="isActionBarsHidden"
+          :aria-hidden="isActionBarsHidden"
+          :class="
+            cn(
+              'flex max-h-24 items-start gap-2 transition-all duration-300 ease-in-out',
+              isActionBarsHidden &&
+                'max-h-0 translate-x-8 overflow-hidden opacity-0'
+            )
+          "
+        >
           <div
-            v-if="managerState.shouldShowManagerButtons.value || isCloud"
-            class="pointer-events-auto flex h-12 shrink-0 items-center rounded-lg border border-interface-stroke bg-comfy-menu-bg px-2 shadow-interface"
-          >
-            <Button
-              v-tooltip.bottom="customNodesManagerTooltipConfig"
-              variant="secondary"
-              :aria-label="t('menu.manageExtensions')"
-              class="relative"
-              @click="openCustomNodeManager"
-            >
-              <i class="icon-[comfy--extensions-blocks] size-4" />
-              <span class="not-md:hidden">
-                {{ t('menu.manageExtensions') }}
-              </span>
-              <span
-                v-if="shouldShowRedDot"
-                class="absolute top-0.5 right-1 size-2 rounded-full bg-red-500"
-              />
-            </Button>
-          </div>
-
-          <div
-            class="pointer-events-auto z-1 flex flex-col rounded-lg border border-interface-stroke bg-comfy-menu-bg px-2 py-1.75 shadow-interface"
+            ref="actionbarCardRef"
+            data-testid="action-bar-card"
+            :class="
+              cn(
+                'pointer-events-auto relative z-1 flex flex-col',
+                isActionbarContainerEmpty
+                  ? 'has-[.border-dashed]:floating-panel'
+                  : 'floating-panel'
+              )
+            "
           >
             <div
-              ref="actionbarContainerRef"
               :class="
                 cn(
                   'actionbar-container relative flex items-center gap-2',
                   isActionbarContainerEmpty &&
-                    '-ml-2 w-0 min-w-0 border-transparent shadow-none has-[.border-dashed]:ml-0 has-[.border-dashed]:w-auto has-[.border-dashed]:min-w-auto has-[.border-dashed]:border-interface-stroke has-[.border-dashed]:pl-2 has-[.border-dashed]:shadow-interface'
+                    'w-0 min-w-0 has-[.border-dashed]:w-auto has-[.border-dashed]:min-w-auto'
                 )
               "
             >
               <ActionBarButtons />
-              <!-- Support for legacy topbar elements attached by custom scripts, hidden if no elements present -->
               <div
                 ref="legacyCommandsContainerRef"
                 data-testid="legacy-topbar-container"
@@ -56,7 +62,7 @@
               ></div>
 
               <ComfyActionbar
-                :top-menu-container="actionbarContainerRef"
+                :docked-progress-container="actionbarCardRef"
                 :queue-overlay-expanded="isQueueOverlayExpanded"
                 @update:progress-target="updateProgressTarget"
               />
@@ -64,19 +70,31 @@
                 v-if="isLoggedIn && !isIntegratedTabBar"
                 class="shrink-0"
               />
-              <LoginButton v-else-if="isDesktop && !isIntegratedTabBar" />
+              <LoginButton v-else-if="!isIntegratedTabBar" />
               <Button
-                v-if="isCloud && flags.workflowSharingEnabled"
+                v-if="managerState.shouldShowExtensionsButton.value"
+                v-tooltip.bottom="customNodesManagerTooltipConfig"
+                variant="secondary"
+                size="icon"
+                :aria-label="t('menu.manageExtensions')"
+                @click="openCustomNodeManager"
+              >
+                <i class="icon-[comfy--extensions-blocks] size-4" />
+                <span
+                  v-if="shouldShowRedDot"
+                  class="absolute top-0.5 right-1 size-2 rounded-full bg-red-500"
+                />
+              </Button>
+              <Button
+                v-if="isCloud"
                 v-tooltip.bottom="shareTooltipConfig"
                 variant="secondary"
+                size="icon"
                 :aria-label="t('actionbar.shareTooltip')"
                 @click="() => openShareDialog().catch(toastErrorHandler)"
                 @pointerenter="prefetchShareDialog"
               >
                 <i class="icon-[comfy--send] size-4" />
-                <span class="not-md:hidden">
-                  {{ t('actionbar.share') }}
-                </span>
               </Button>
               <div v-if="!isRightSidePanelOpen" class="relative">
                 <Button
@@ -103,9 +121,12 @@
               </div>
             </div>
             <FreeTierQuota v-if="!isActionbarFloating" />
+            <!-- Complement of ComfyActionbar's `!isDocked` mount (same storage
+                 key), so at most one caption renders in any menu state. -->
+            <PartnerNodesRunCaption v-if="isActionbarDocked" />
           </div>
         </div>
-        <ErrorOverlay />
+        <ErrorOverlay v-if="!isActionBarsHidden" />
         <QueueProgressOverlay
           v-if="isQueueProgressOverlayEnabled"
           v-model:expanded="isQueueOverlayExpanded"
@@ -133,8 +154,8 @@
         :hidden="shouldHideInlineProgressSummary"
       />
       <QueueNotificationBannerHost
-        v-if="shouldShowQueueNotificationBanners"
-        class="pr-1"
+        v-if="isActionbarEnabled"
+        :class="cn('pr-1', isActionBarsHidden && 'hidden')"
       />
     </div>
   </div>
@@ -147,6 +168,7 @@ import { computed, onBeforeUnmount, onMounted, ref } from 'vue'
 import { useI18n } from 'vue-i18n'
 
 import ComfyActionbar from '@/components/actionbar/ComfyActionbar.vue'
+import PartnerNodesRunCaption from '@/components/actionbar/PartnerNodesRunCaption.vue'
 import SubgraphBreadcrumb from '@/components/breadcrumb/SubgraphBreadcrumb.vue'
 import QueueInlineProgressSummary from '@/components/queue/QueueInlineProgressSummary.vue'
 import QueueNotificationBannerHost from '@/components/queue/QueueNotificationBannerHost.vue'
@@ -166,12 +188,12 @@ import { useSettingStore } from '@/platform/settings/settingStore'
 import { useTelemetry } from '@/platform/telemetry'
 import { app } from '@/scripts/app'
 import { useExecutionErrorStore } from '@/stores/executionErrorStore'
+import { useCanvasStore } from '@/renderer/core/canvas/canvasStore'
 import { useActionBarButtonStore } from '@/stores/actionBarButtonStore'
 import { useQueueUIStore } from '@/stores/queueStore'
 import { useRightSidePanelStore } from '@/stores/workspace/rightSidePanelStore'
 import { useWorkspaceStore } from '@/stores/workspaceStore'
-import { isCloud, isDesktop } from '@/platform/distribution/types'
-import { useFeatureFlags } from '@/composables/useFeatureFlags'
+import { isCloud } from '@/platform/distribution/types'
 import {
   openShareDialog,
   prefetchShareDialog
@@ -185,9 +207,10 @@ import { cn } from '@comfyorg/tailwind-utils'
 const settingStore = useSettingStore()
 const workspaceStore = useWorkspaceStore()
 const rightSidePanelStore = useRightSidePanelStore()
+const canvasStore = useCanvasStore()
+const isActionBarsHidden = computed(() => canvasStore.isPickingNodes)
 const managerState = useManagerState()
 const managerSurveyDialog = useManagerSurveyDialog()
-const { flags } = useFeatureFlags()
 const { isLoggedIn } = useCurrentUser()
 const { t } = useI18n()
 const { toastErrorHandler } = useErrorHandling()
@@ -198,7 +221,7 @@ const { isOverlayExpanded: isQueueOverlayExpanded } = storeToRefs(queueUIStore)
 const { shouldShowRedDot: shouldShowConflictRedDot } =
   useConflictAcknowledgment()
 const isTopMenuHovered = ref(false)
-const actionbarContainerRef = ref<HTMLElement>()
+const actionbarCardRef = ref<HTMLElement>()
 const isActionbarDocked = useLocalStorage('Comfy.MenuPosition.Docked', true)
 const actionbarPosition = computed(() => settingStore.get('Comfy.UseNewMenu'))
 const isActionbarEnabled = computed(
@@ -215,9 +238,9 @@ const isActionbarFloating = computed(
 const hasDockedButtons = computed(() => {
   if (actionBarButtonStore.buttons.length > 0) return true
   if (hasLegacyContent.value) return true
-  if (isLoggedIn.value && !isIntegratedTabBar.value) return true
-  if (isDesktop && !isIntegratedTabBar.value) return true
-  if (isCloud && flags.workflowSharingEnabled) return true
+  if (!isIntegratedTabBar.value) return true
+  if (managerState.shouldShowExtensionsButton.value) return true
+  if (isCloud) return true
   if (!isRightSidePanelOpen.value) return true
   return false
 })
@@ -230,16 +253,14 @@ const isIntegratedTabBar = computed(
 const { isQueuePanelV2Enabled, isRunProgressBarEnabled } =
   useQueueFeatureFlags()
 const isQueueProgressOverlayEnabled = computed(
-  () => !isQueuePanelV2Enabled.value
+  () => !isQueuePanelV2Enabled.value && !isActionBarsHidden.value
 )
 const shouldShowInlineProgressSummary = computed(
   () =>
     isQueuePanelV2Enabled.value &&
     isActionbarEnabled.value &&
-    isRunProgressBarEnabled.value
-)
-const shouldShowQueueNotificationBanners = computed(
-  () => isActionbarEnabled.value
+    isRunProgressBarEnabled.value &&
+    !isActionBarsHidden.value
 )
 const progressTarget = ref<HTMLElement | null>(null)
 function updateProgressTarget(target: HTMLElement | null) {
@@ -293,7 +314,6 @@ function openRightSidePanel() {
   rightSidePanelStore.togglePanel()
 }
 
-// Maintain support for legacy topbar elements attached by custom scripts
 const legacyCommandsContainerRef = ref<HTMLElement>()
 const hasLegacyContent = ref(false)
 let legacyContentCheckRafId: number | null = null
@@ -304,38 +324,33 @@ function checkLegacyContent() {
     hasLegacyContent.value = false
     return
   }
-  // Mirror the CSS: [&:not(:has(*>*:not(:empty)))]:hidden
   hasLegacyContent.value =
     el.querySelector(':scope > * > *:not(:empty)') !== null
 }
 
-function scheduleLegacyContentCheck() {
-  if (legacyContentCheckRafId !== null) return
-
-  legacyContentCheckRafId = requestAnimationFrame(() => {
-    legacyContentCheckRafId = null
-    checkLegacyContent()
-  })
-}
-
-useMutationObserver(legacyCommandsContainerRef, scheduleLegacyContentCheck, {
-  childList: true,
-  subtree: true
-})
+useMutationObserver(
+  legacyCommandsContainerRef,
+  () => {
+    if (legacyContentCheckRafId !== null) return
+    legacyContentCheckRafId = requestAnimationFrame(() => {
+      legacyContentCheckRafId = null
+      checkLegacyContent()
+    })
+  },
+  { childList: true, subtree: true }
+)
 
 onMounted(() => {
-  if (legacyCommandsContainerRef.value) {
-    app.menu.element.style.width = 'fit-content'
-    legacyCommandsContainerRef.value.appendChild(app.menu.element)
-    checkLegacyContent()
-  }
+  const container = legacyCommandsContainerRef.value
+  if (!container) return
+  app.menu.element.style.width = 'fit-content'
+  container.appendChild(app.menu.element)
+  checkLegacyContent()
 })
 
 onBeforeUnmount(() => {
   if (legacyContentCheckRafId === null) return
-
   cancelAnimationFrame(legacyContentCheckRafId)
-  legacyContentCheckRafId = null
 })
 
 const openCustomNodeManager = async () => {

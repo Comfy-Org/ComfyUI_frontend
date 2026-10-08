@@ -1,4 +1,7 @@
-import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
+import { beforeEach, describe, expect, it, vi } from 'vitest'
+import { computed, watch } from 'vue'
+
+import { useCurrentUser } from '@/composables/auth/useCurrentUser'
 
 const hoisted = vi.hoisted(() => {
   const analytics = {
@@ -13,6 +16,7 @@ const hoisted = vi.hoisted(() => {
   const resolvedUserInfo = { value: null as { id: string } | null }
   return {
     analytics,
+    reportError: vi.fn(),
     load: vi.fn(() => analytics),
     inAppPlugin: vi.fn(() => ({ name: 'Customer.io In-App Plugin' })),
     userEmail: { value: null as string | null },
@@ -40,19 +44,18 @@ const hoisted = vi.hoisted(() => {
   }
 })
 
-vi.mock('@customerio/cdp-analytics-browser', () => ({
+vi.mock(import('@/platform/telemetry/reportError'), () => ({
+  reportError: hoisted.reportError
+}))
+
+vi.mock<unknown>(import('@customerio/cdp-analytics-browser'), () => ({
   AnalyticsBrowser: { load: hoisted.load },
   InAppPlugin: hoisted.inAppPlugin
 }))
 
-vi.mock('@/composables/auth/useCurrentUser', () => ({
-  useCurrentUser: () => ({
-    userEmail: hoisted.userEmail,
-    resolvedUserInfo: hoisted.resolvedUserInfo,
-    onUserResolved: hoisted.onUserResolved,
-    onUserLogout: hoisted.onUserLogout
-  })
-}))
+vi.mock(import('@/composables/auth/useCurrentUser'))
+
+import { i18n } from '@/i18n'
 
 import {
   CustomerIoTelemetryProvider,
@@ -68,7 +71,7 @@ function createProvider(
     customer_io: { write_key: WRITE_KEY, site_id: SITE_ID }
   }
 ): CustomerIoTelemetryProvider {
-  window.__CONFIG__ = config as typeof window.__CONFIG__
+  window.__CONFIG__ = config
   return new CustomerIoTelemetryProvider()
 }
 
@@ -82,20 +85,34 @@ function createDeferred() {
 
 describe('CustomerIoTelemetryProvider', () => {
   beforeEach(() => {
-    vi.clearAllMocks()
+    const currentUser = vi.mocked(useCurrentUser())
+    currentUser.userEmail = computed(() => hoisted.userEmail.value)
+    currentUser.resolvedUserInfo = computed(
+      () => hoisted.resolvedUserInfo.value
+    )
+    currentUser.onUserResolved.mockImplementation((callback) => {
+      hoisted.onUserResolved(callback)
+      return watch(
+        () => false,
+        () => {}
+      )
+    })
+    currentUser.onUserLogout.mockImplementation((callback) => {
+      hoisted.onUserLogout(callback)
+      return watch(
+        () => false,
+        () => {}
+      )
+    })
     hoisted.resetCallbacks()
     hoisted.load.mockReturnValue(hoisted.analytics)
     hoisted.analytics.identify.mockResolvedValue(undefined)
     hoisted.analytics.track.mockResolvedValue(undefined)
-    hoisted.analytics.reset.mockReset().mockResolvedValue(undefined)
+    hoisted.analytics.reset.mockResolvedValue(undefined)
     hoisted.analytics.register.mockResolvedValue(undefined)
     hoisted.userEmail.value = null
-    window.__CONFIG__ = {} as typeof window.__CONFIG__
-  })
-
-  afterEach(() => {
-    vi.restoreAllMocks()
-    vi.useRealTimers()
+    i18n.global.locale.value = 'en'
+    window.__CONFIG__ = {}
   })
 
   it('loads the client and registers the in-app plugin with the site id', async () => {
@@ -158,7 +175,6 @@ describe('CustomerIoTelemetryProvider', () => {
   })
 
   it('continues tracking events and page views when the in-app plugin fails to register', async () => {
-    const consoleError = vi.spyOn(console, 'error').mockImplementation(() => {})
     const registrationError = new Error('in-app setup failed')
     hoisted.analytics.register.mockRejectedValue(registrationError)
     const provider = createProvider()
@@ -174,10 +190,10 @@ describe('CustomerIoTelemetryProvider', () => {
       SOURCE
     )
     expect(hoisted.analytics.page).toHaveBeenCalledOnce()
-    expect(consoleError).toHaveBeenCalledWith(
-      'Failed to initialize Customer.io in-app plugin:',
-      registrationError
-    )
+    expect(hoisted.reportError).toHaveBeenCalledWith(registrationError, {
+      surface: 'platform',
+      errorType: 'customerio_in_app_plugin_registration_failure'
+    })
 
     provider.trackAddApiCreditButtonClicked()
     await vi.waitFor(() =>
@@ -218,9 +234,33 @@ describe('CustomerIoTelemetryProvider', () => {
     await vi.waitFor(() =>
       expect(hoisted.analytics.identify).toHaveBeenCalledWith(
         'test-uid-7f3a9c',
-        { email: 'user@example.com' }
+        { email: 'user@example.com', locale: 'en' }
       )
     )
+  })
+
+  it('updates the identified user when the active locale changes', async () => {
+    createProvider()
+    await vi.dynamicImportSettled()
+
+    hoisted.userEmail.value = 'user@example.com'
+    hoisted.resolveUser('test-uid-7f3a9c')
+    await vi.waitFor(() =>
+      expect(hoisted.analytics.identify).toHaveBeenCalledWith(
+        'test-uid-7f3a9c',
+        { email: 'user@example.com', locale: 'en' }
+      )
+    )
+
+    i18n.global.locale.value = 'fr'
+
+    await vi.waitFor(() =>
+      expect(hoisted.analytics.identify).toHaveBeenCalledWith(
+        'test-uid-7f3a9c',
+        { email: 'user@example.com', locale: 'fr' }
+      )
+    )
+    i18n.global.locale.value = 'en'
   })
 
   it('identifies with the configured user_id override without waiting for auth', async () => {
@@ -233,10 +273,9 @@ describe('CustomerIoTelemetryProvider', () => {
     })
     await vi.dynamicImportSettled()
 
-    expect(hoisted.analytics.identify).toHaveBeenCalledWith(
-      'forced-uid',
-      undefined
-    )
+    expect(hoisted.analytics.identify).toHaveBeenCalledWith('forced-uid', {
+      locale: 'en'
+    })
     expect(hoisted.onUserResolved).toHaveBeenCalledOnce()
   })
 
@@ -255,7 +294,8 @@ describe('CustomerIoTelemetryProvider', () => {
 
     expect(hoisted.analytics.identify).toHaveBeenCalledOnce()
     expect(hoisted.analytics.identify).toHaveBeenCalledWith('forced-uid', {
-      email: 'restored@example.com'
+      email: 'restored@example.com',
+      locale: 'en'
     })
   })
 
@@ -277,7 +317,7 @@ describe('CustomerIoTelemetryProvider', () => {
       expect(hoisted.analytics.identify).toHaveBeenNthCalledWith(
         2,
         'forced-uid',
-        { email: 'returning@example.com' }
+        { email: 'returning@example.com', locale: 'en' }
       )
     )
     expect(hoisted.analytics.reset).toHaveBeenCalledOnce()
@@ -324,9 +364,9 @@ describe('CustomerIoTelemetryProvider', () => {
 
     await vi.waitFor(() =>
       expect(hoisted.analytics.identify.mock.calls).toEqual([
-        ['current-uid', { email: 'current@example.com' }],
-        ['queued-uid', { email: 'queued@example.com' }],
-        ['current-uid', { email: 'current@example.com' }]
+        ['current-uid', { email: 'current@example.com', locale: 'en' }],
+        ['queued-uid', { email: 'queued@example.com', locale: 'en' }],
+        ['current-uid', { email: 'current@example.com', locale: 'en' }]
       ])
     )
     expect(activeUser).toBe('current-uid')
@@ -488,7 +528,8 @@ describe('CustomerIoTelemetryProvider', () => {
     await vi.dynamicImportSettled()
 
     expect(hoisted.analytics.identify).toHaveBeenCalledWith('uid-1', {
-      email: 'person@example.com'
+      email: 'person@example.com',
+      locale: 'en'
     })
     expect(hoisted.analytics.track).not.toHaveBeenCalled()
 
@@ -629,8 +670,8 @@ describe('CustomerIoTelemetryProvider', () => {
 
     await vi.waitFor(() =>
       expect(hoisted.analytics.identify.mock.calls).toEqual([
-        ['firebase-uid', { email: 'person@example.com' }],
-        ['forced-uid', undefined]
+        ['firebase-uid', { email: 'person@example.com', locale: 'en' }],
+        ['forced-uid', { locale: 'en' }]
       ])
     )
     expect(hoisted.analytics.track.mock.invocationCallOrder[0]).toBeLessThan(
@@ -657,7 +698,6 @@ describe('CustomerIoTelemetryProvider', () => {
   })
 
   it('does not stall later events when identification never settles', async () => {
-    vi.useFakeTimers()
     vi.spyOn(console, 'error').mockImplementation(() => {})
     hoisted.analytics.identify.mockReturnValueOnce(new Promise(() => {}))
     const provider = createProvider()
@@ -690,7 +730,7 @@ describe('CustomerIoTelemetryProvider', () => {
     await vi.waitFor(() =>
       expect(hoisted.analytics.identify).toHaveBeenCalledWith(
         'uid-without-email',
-        undefined
+        { locale: 'en' }
       )
     )
     await vi.waitFor(() =>
@@ -811,7 +851,7 @@ describe('CustomerIoTelemetryProvider', () => {
       expect(hoisted.analytics.identify).toHaveBeenNthCalledWith(
         2,
         'resolved-uid',
-        { email: 'first@example.com' }
+        { email: 'first@example.com', locale: 'en' }
       )
     )
   })

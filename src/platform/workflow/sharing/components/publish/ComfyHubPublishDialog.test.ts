@@ -1,21 +1,23 @@
+import { useWorkflowStore } from '@/platform/workflow/management/stores/workflowStore'
+import type { LoadedComfyWorkflow } from '@/platform/workflow/management/stores/workflowStore'
+import { fromPartial } from '@total-typescript/shoehorn'
 import { render, screen } from '@testing-library/vue'
 import userEvent from '@testing-library/user-event'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { nextTick, ref } from 'vue'
+import { createI18n } from 'vue-i18n'
 
-vi.mock('vue-i18n', async (importOriginal) => {
-  const actual = await importOriginal()
-  return {
-    ...(actual as Record<string, unknown>),
-    useI18n: () => ({ t: (key: string) => key })
-  }
-})
+import type { ComfyHubPublishFormData } from '@/platform/workflow/sharing/types/comfyHubTypes'
+import { useWorkflowService } from '@/platform/workflow/core/services/workflowService'
 
 const mockToastAdd = vi.hoisted(() => vi.fn())
 
-vi.mock('primevue/usetoast', () => ({
-  useToast: () => ({ add: mockToastAdd })
-}))
+vi.mock<unknown>(
+  import('primevue/usetoast'), // oxlint-disable-line comfy/no-primevue-imports
+  () => ({
+    useToast: () => ({ add: mockToastAdd })
+  })
+)
 
 import ComfyHubPublishDialog from '@/platform/workflow/sharing/components/publish/ComfyHubPublishDialog.vue'
 
@@ -30,13 +32,12 @@ const mockCachePublishPrefill = vi.hoisted(() => vi.fn())
 const mockGetCachedPrefill = vi.hoisted(() => vi.fn())
 const mockSubmitToComfyHub = vi.hoisted(() => vi.fn())
 const mockGetPublishStatus = vi.hoisted(() => vi.fn())
-const mockRenameWorkflow = vi.hoisted(() => vi.fn())
 const mockFormDataHolder = vi.hoisted(
-  () => ({ value: null }) as { value: Record<string, unknown> | null }
+  (): { value: ComfyHubPublishFormData | null } => ({ value: null })
 )
 
-vi.mock(
-  '@/platform/workflow/sharing/composables/useComfyHubProfileGate',
+vi.mock<unknown>(
+  import('@/platform/workflow/sharing/composables/useComfyHubProfileGate'),
   () => ({
     useComfyHubProfileGate: () => ({
       fetchProfile: mockFetchProfile
@@ -44,8 +45,8 @@ vi.mock(
   })
 )
 
-vi.mock(
-  '@/platform/workflow/sharing/composables/useComfyHubPublishWizard',
+vi.mock<unknown>(
+  import('@/platform/workflow/sharing/composables/useComfyHubPublishWizard'),
   () => {
     mockFormDataHolder.value = {
       name: '',
@@ -84,7 +85,7 @@ vi.mock(
 )
 
 vi.mock(
-  '@/platform/workflow/sharing/composables/useComfyHubPublishSubmission',
+  import('@/platform/workflow/sharing/composables/useComfyHubPublishSubmission'),
   () => ({
     useComfyHubPublishSubmission: () => ({
       submitToComfyHub: mockSubmitToComfyHub
@@ -92,62 +93,55 @@ vi.mock(
   })
 )
 
-vi.mock('@/platform/workflow/sharing/services/workflowShareService', () => ({
-  useWorkflowShareService: () => ({
-    getPublishStatus: mockGetPublishStatus
-  })
-}))
-
-vi.mock('@/platform/workflow/core/services/workflowService', () => ({
-  useWorkflowService: () => ({
-    renameWorkflow: mockRenameWorkflow,
-    saveWorkflow: vi.fn()
-  })
-}))
-
-const mockWorkflowStore = vi.hoisted(() => {
-  return {
-    instance: null as { activeWorkflow: Record<string, unknown> | null } | null
-  }
-})
-
-vi.mock('@/platform/workflow/management/stores/workflowStore', async () => {
-  const { reactive } = await import('vue')
-  mockWorkflowStore.instance = reactive({
-    activeWorkflow: {
-      path: 'workflows/test.json',
-      filename: 'test.json',
-      directory: 'workflows',
-      isTemporary: false,
-      isModified: false
-    } as Record<string, unknown> | null
-  })
-  return {
-    useWorkflowStore: () => ({
-      ...mockWorkflowStore.instance,
-      get activeWorkflow() {
-        return mockWorkflowStore.instance?.activeWorkflow ?? null
-      },
-      saveWorkflow: vi.fn()
+vi.mock<unknown>(
+  import('@/platform/workflow/sharing/services/workflowShareService'),
+  () => ({
+    useWorkflowShareService: () => ({
+      getPublishStatus: mockGetPublishStatus
     })
-  }
-})
+  })
+)
 
-function setActiveWorkflow(workflow: Record<string, unknown> | null) {
-  if (mockWorkflowStore.instance) {
-    mockWorkflowStore.instance.activeWorkflow = workflow
-  }
+vi.mock(import('@/platform/workflow/core/services/workflowService'))
+
+function setActiveWorkflow(workflow: Partial<LoadedComfyWorkflow>) {
+  useWorkflowStore().activeWorkflow = fromPartial<LoadedComfyWorkflow>(workflow)
+}
+
+function createTestI18n() {
+  return createI18n({
+    legacy: false,
+    locale: 'en',
+    messages: {
+      en: {
+        comfyHubPublish: {
+          title: 'Publish to Comfy Workflows',
+          publishFailedTitle: 'Publish failed',
+          publishFailedDescription:
+            'Something went wrong while publishing your workflow. Please try again.',
+          publishFailedDescriptionWithReason:
+            'Something went wrong while publishing your workflow: {reason}',
+          publishSuccessTitle: 'Published successfully',
+          publishSuccessDescription:
+            'Your workflow is now live on Comfy Workflows.'
+        }
+      }
+    }
+  })
 }
 
 async function flushPromises() {
   await new Promise((r) => setTimeout(r, 0))
 }
 
+beforeEach(() => {
+  vi.mocked(useWorkflowStore().saveWorkflow).mockResolvedValue(undefined)
+})
+
 describe('ComfyHubPublishDialog', () => {
   const onClose = vi.fn()
 
   beforeEach(() => {
-    vi.clearAllMocks()
     setActiveWorkflow({
       path: 'workflows/test.json',
       filename: 'test.json',
@@ -157,7 +151,6 @@ describe('ComfyHubPublishDialog', () => {
     })
     mockFetchProfile.mockResolvedValue(null)
     mockSubmitToComfyHub.mockResolvedValue(undefined)
-    mockRenameWorkflow.mockResolvedValue(undefined)
     if (mockFormDataHolder.value) mockFormDataHolder.value.name = ''
     mockGetCachedPrefill.mockReturnValue(null)
     mockGetPublishStatus.mockResolvedValue({
@@ -173,9 +166,7 @@ describe('ComfyHubPublishDialog', () => {
     return render(ComfyHubPublishDialog, {
       props: { onClose },
       global: {
-        mocks: {
-          $t: (key: string) => key
-        },
+        plugins: [createTestI18n()],
         stubs: {
           BaseModalLayout: {
             template:
@@ -266,54 +257,23 @@ describe('ComfyHubPublishDialog', () => {
     expect(onClose).toHaveBeenCalledOnce()
   })
 
-  it('renames the local workflow when the published name differs', async () => {
+  it('keeps the local workflow name when the Hub title differs', async () => {
     renderComponent()
     await flushPromises()
-    if (mockFormDataHolder.value) mockFormDataHolder.value.name = 'renamed'
+    if (mockFormDataHolder.value) {
+      mockFormDataHolder.value.name = 'Published title'
+    }
 
     await userEvent.click(screen.getByTestId('publish'))
     await flushPromises()
 
-    expect(mockRenameWorkflow).toHaveBeenCalledWith(
-      expect.anything(),
-      'workflows/renamed.json'
+    expect(mockSubmitToComfyHub).toHaveBeenCalledWith(
+      expect.objectContaining({ name: 'Published title' })
     )
-    expect(mockSubmitToComfyHub.mock.invocationCallOrder[0]).toBeLessThan(
-      mockRenameWorkflow.mock.invocationCallOrder[0]
-    )
+    expect(useWorkflowService().renameWorkflow).not.toHaveBeenCalled()
   })
 
-  it('does not rename when the published name matches the file name', async () => {
-    renderComponent()
-    await flushPromises()
-    if (mockFormDataHolder.value) mockFormDataHolder.value.name = 'test'
-
-    await userEvent.click(screen.getByTestId('publish'))
-    await flushPromises()
-
-    expect(mockRenameWorkflow).not.toHaveBeenCalled()
-  })
-
-  it('still reports success but warns when the post-publish rename fails', async () => {
-    mockRenameWorkflow.mockRejectedValueOnce(new Error('rename failed'))
-    renderComponent()
-    await flushPromises()
-    if (mockFormDataHolder.value) mockFormDataHolder.value.name = 'renamed'
-
-    await userEvent.click(screen.getByTestId('publish'))
-    await flushPromises()
-
-    expect(mockSubmitToComfyHub).toHaveBeenCalledOnce()
-    expect(mockToastAdd).toHaveBeenCalledWith(
-      expect.objectContaining({ severity: 'warn' })
-    )
-    expect(mockToastAdd).toHaveBeenCalledWith(
-      expect.objectContaining({ severity: 'success' })
-    )
-    expect(onClose).toHaveBeenCalledOnce()
-  })
-
-  it('does not rename or close when publish submission fails', async () => {
+  it('does not close when publish submission fails', async () => {
     mockSubmitToComfyHub.mockRejectedValueOnce(new Error('submit failed'))
     renderComponent()
     await flushPromises()
@@ -323,7 +283,6 @@ describe('ComfyHubPublishDialog', () => {
     await flushPromises()
 
     expect(mockSubmitToComfyHub).toHaveBeenCalledOnce()
-    expect(mockRenameWorkflow).not.toHaveBeenCalled()
     expect(mockToastAdd).toHaveBeenCalledWith(
       expect.objectContaining({ severity: 'error' })
     )
@@ -333,49 +292,58 @@ describe('ComfyHubPublishDialog', () => {
     expect(onClose).not.toHaveBeenCalled()
   })
 
-  it('does not refetch publish status when the rename changes the path mid-publish', async () => {
-    mockRenameWorkflow.mockImplementationOnce(async () => {
-      setActiveWorkflow({
-        path: 'workflows/renamed.json',
-        filename: 'renamed.json',
-        directory: 'workflows',
-        isTemporary: false,
-        isModified: false
-      })
-    })
+  it('shows the backend error message when publish rejects with an Error', async () => {
+    mockSubmitToComfyHub.mockRejectedValueOnce(
+      new Error(
+        'unsupported content type "video/quicktime"; allowed: image/png, image/jpeg, video/mp4'
+      )
+    )
     renderComponent()
     await flushPromises()
-    mockGetPublishStatus.mockClear()
-    if (mockFormDataHolder.value) mockFormDataHolder.value.name = 'renamed'
 
     await userEvent.click(screen.getByTestId('publish'))
     await flushPromises()
 
-    expect(mockGetPublishStatus).not.toHaveBeenCalledWith(
-      'workflows/renamed.json'
+    expect(mockToastAdd).toHaveBeenCalledWith(
+      expect.objectContaining({
+        severity: 'error',
+        detail:
+          'Something went wrong while publishing your workflow: unsupported content type "video/quicktime"; allowed: image/png, image/jpeg, video/mp4'
+      })
     )
   })
 
-  it('caches the prefill under the renamed path after publish', async () => {
-    mockRenameWorkflow.mockImplementationOnce(async () => {
-      setActiveWorkflow({
-        path: 'workflows/renamed.json',
-        filename: 'renamed.json',
-        directory: 'workflows',
-        isTemporary: false,
-        isModified: false
-      })
-    })
+  it('shows a generic error toast without crashing when publish rejects with a non-Error value', async () => {
+    mockSubmitToComfyHub.mockRejectedValueOnce(undefined)
     renderComponent()
     await flushPromises()
-    if (mockFormDataHolder.value) mockFormDataHolder.value.name = 'renamed'
+
+    await userEvent.click(screen.getByTestId('publish'))
+    await flushPromises()
+
+    expect(mockToastAdd).toHaveBeenCalledWith(
+      expect.objectContaining({
+        severity: 'error',
+        detail:
+          'Something went wrong while publishing your workflow. Please try again.'
+      })
+    )
+    expect(onClose).not.toHaveBeenCalled()
+  })
+
+  it('caches the Hub title under the unchanged workflow path', async () => {
+    renderComponent()
+    await flushPromises()
+    if (mockFormDataHolder.value) {
+      mockFormDataHolder.value.name = 'Published title'
+    }
 
     await userEvent.click(screen.getByTestId('publish'))
     await flushPromises()
 
     expect(mockCachePublishPrefill).toHaveBeenCalledWith(
-      'workflows/renamed.json',
-      expect.anything()
+      'workflows/test.json',
+      expect.objectContaining({ name: 'Published title' })
     )
   })
 
@@ -386,6 +354,7 @@ describe('ComfyHubPublishDialog', () => {
       shareUrl: 'http://localhost/?share=abc123',
       publishedAt: new Date(),
       prefill: {
+        name: 'Published title',
         description: 'Existing description',
         tags: ['art', 'upscale'],
         thumbnailType: 'video',
@@ -397,6 +366,7 @@ describe('ComfyHubPublishDialog', () => {
     await flushPromises()
 
     expect(mockApplyPrefill).toHaveBeenCalledWith({
+      name: 'Published title',
       description: 'Existing description',
       tags: ['art', 'upscale'],
       thumbnailType: 'video',

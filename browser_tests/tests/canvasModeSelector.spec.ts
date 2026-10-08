@@ -2,6 +2,7 @@ import type { Page } from '@playwright/test'
 import { expect } from '@playwright/test'
 
 import { comfyPageFixture as test } from '@e2e/fixtures/ComfyPage'
+import { CanvasModeSelector } from '@e2e/fixtures/components/CanvasModeSelector'
 
 const getLocators = (page: Page) => ({
   trigger: page.getByRole('button', { name: 'Canvas Mode' }),
@@ -26,8 +27,9 @@ const MODES = [
 ]
 
 test.describe('CanvasModeSelector', { tag: '@canvas' }, () => {
+  test.use({ initialSettings: { 'Comfy.Graph.CanvasMenu': true } })
+
   test.beforeEach(async ({ comfyPage }) => {
-    await comfyPage.settings.setSetting('Comfy.Graph.CanvasMenu', true)
     await comfyPage.command.executeCommand('Comfy.Canvas.Unlock')
   })
 
@@ -52,7 +54,26 @@ test.describe('CanvasModeSelector', { tag: '@canvas' }, () => {
     }
   })
 
-  test.describe('Popover lifecycle', () => {
+  test.describe('Menu lifecycle', () => {
+    test('closes on viewport resize rather than leaving a detached menu', async ({
+      comfyPage
+    }) => {
+      const selector = new CanvasModeSelector(comfyPage.page)
+
+      await test.step('Open the canvas mode menu', async () => {
+        await comfyPage.page.setViewportSize({ width: 1280, height: 720 })
+        await selector.open()
+        await comfyPage.canvas.hover()
+        await expect(selector.menu).toBeVisible()
+      })
+
+      await test.step('Resize the viewport', async () => {
+        await comfyPage.page.setViewportSize({ width: 960, height: 720 })
+        await expect(selector.menu).toBeHidden()
+        await expect(selector.trigger).toHaveAttribute('aria-expanded', 'false')
+      })
+    })
+
     test('opens when trigger is clicked', async ({ comfyPage }) => {
       const { trigger, menu } = getLocators(comfyPage.page)
       await trigger.click()
@@ -181,7 +202,7 @@ test.describe('CanvasModeSelector', { tag: '@canvas' }, () => {
       await expect(handItem).toBeFocused()
     })
 
-    test('Escape closes popover and restores focus to trigger', async ({
+    test('Escape closes menu and restores focus to trigger', async ({
       comfyPage
     }) => {
       const { trigger, menu, selectItem, handItem } = getLocators(

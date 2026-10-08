@@ -78,6 +78,7 @@ export const comfyBaseSchema = z.object({
   ['interface-panel-surface']: z.string().optional(),
   ['interface-panel-box-shadow']: z.string().optional(),
   ['interface-panel-drop-shadow']: z.string().optional(),
+  ['interface-floating-panel-shadow']: z.string().optional(),
   ['interface-panel-hover-surface']: z.string().optional(),
   ['interface-panel-selected-surface']: z.string().optional(),
   ['interface-button-hover-surface']: z.string().optional()
@@ -113,9 +114,7 @@ const completedPaletteSchema = z
   })
   .passthrough()
 
-export const colorPalettesSchema = z.record(paletteSchema)
-
 export type Colors = z.infer<typeof colorsSchema>
 export type Palette = z.infer<typeof paletteSchema>
 export type CompletedPalette = z.infer<typeof completedPaletteSchema>
-export type ColorPalettes = z.infer<typeof colorPalettesSchema>
+export type ColorPalettes = Record<string, Palette>

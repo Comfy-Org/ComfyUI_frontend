@@ -63,7 +63,7 @@
       <i class="icon-[lucide--globe] size-4" />
       <span v-if="!compact">{{ t('load3d.menuBar.panorama') }}</span>
     </button>
-    <Popover v-if="isPanorama">
+    <Popover v-if="isPanorama" v-model:open="fovOpen">
       <PopoverTrigger as-child>
         <button
           v-tooltip.bottom="tip(t('load3d.menuBar.fov'))"
@@ -79,7 +79,7 @@
         side="bottom"
         align="start"
         :side-offset="8"
-        :class="cn(panelClass, 'w-56')"
+        :class="cn(formPanelClass, 'w-56')"
       >
         <div class="flex flex-col gap-2 p-1">
           <span class="text-sm text-base-foreground">{{
@@ -115,9 +115,10 @@ import { useI18n } from 'vue-i18n'
 
 import {
   actionClass,
-  panelClass,
+  formPanelClass,
   tip
 } from '@/components/load3d/menubar/menuBarStyles'
+import { usePopoverExclusivity } from '@/components/load3d/menubar/usePopoverExclusivity'
 import Popover from '@/components/ui/popover/Popover.vue'
 import PopoverContent from '@/components/ui/popover/PopoverContent.vue'
 import Slider from '@/components/ui/slider/Slider.vue'
@@ -156,6 +157,8 @@ const fovValue = computed(() => fov.value ?? 10)
 
 const colorRef = ref<HTMLInputElement | null>(null)
 const bgImageRef = ref<HTMLInputElement | null>(null)
+
+const fovOpen = usePopoverExclusivity()('scene-fov')
 
 function toggleGrid() {
   if (config.value) config.value.showGrid = !config.value.showGrid

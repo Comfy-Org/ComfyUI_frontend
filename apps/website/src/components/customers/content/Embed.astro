@@ -1,0 +1,22 @@
+---
+interface Props {
+  src: string
+  title: string
+}
+
+const { src, title } = Astro.props
+---
+
+<div
+  class="my-8 aspect-video overflow-hidden rounded-2xl border border-white/10 bg-black"
+>
+  <iframe
+    src={src}
+    title={title}
+    class="size-full"
+    loading="lazy"
+    allow="autoplay; fullscreen; picture-in-picture; clipboard-write"
+    referrerpolicy="strict-origin-when-cross-origin"
+    sandbox="allow-scripts allow-same-origin allow-presentation allow-popups"
+  ></iframe>
+</div>

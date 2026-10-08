@@ -3,17 +3,6 @@
     class="relative flex h-full flex-col gap-6 overflow-y-auto p-4 pt-8 md:px-16 md:py-8"
   >
     <Button
-      v-if="checkoutStep === 'preview'"
-      size="icon"
-      variant="muted-textonly"
-      class="absolute top-2.5 left-2.5 shrink-0 rounded-full text-text-secondary hover:bg-white/10"
-      :aria-label="$t('g.back')"
-      @click="handleBackToPricing"
-    >
-      <i class="pi pi-arrow-left text-xl" />
-    </Button>
-
-    <Button
       size="icon"
       variant="muted-textonly"
       class="absolute top-2.5 right-2.5 shrink-0 rounded-full text-text-secondary hover:bg-white/10"
@@ -85,7 +74,16 @@
       :tier-key="selectedTierKey!"
       :billing-cycle="selectedBillingCycle"
       :is-loading="isSubscribing || isPolling"
+      :action-url="activeCheckoutActionUrl"
+      :authentication-state
+      :authentication-error
+      :reconciliation-operation-id
+      :parked-checkout-recovery
+      :quote-is-current
+      :is-applying-promotion-code
       @add-credit-card="handleAddCreditCard"
+      @apply-promotion-code="applyPromotionCode"
+      @invalidate-quote="invalidateQuote"
       @back="handleBackToPricing"
     />
 
@@ -98,7 +96,20 @@
       "
       :preview-data="previewData"
       :is-loading="isSubscribing || isPolling"
+      :action-url="activeCheckoutActionUrl"
+      :force-reactivation="reactivationRequired"
+      :authentication-state
+      :authentication-error
+      :reconciliation-operation-id
+      :quote-is-current
+      :is-applying-promotion-code
+      :payment-cancelable
+      :canceling-payment="isCancelingPayment"
+      :cancel-payment-error
+      @cancel-payment="cancelPayment"
       @confirm="handleConfirmTransition"
+      @apply-promotion-code="applyPromotionCode"
+      @invalidate-quote="invalidateQuote"
       @back="handleBackToPricing"
     />
 
@@ -114,9 +125,11 @@
 
 <script setup lang="ts">
 import { cn } from '@comfyorg/tailwind-utils'
+import { onMounted } from 'vue'
 
 import Button from '@/components/ui/button/Button.vue'
 import type { PaymentIntentSource } from '@/platform/telemetry/types'
+import type { SubscriptionCheckoutSelection } from '@/platform/workspace/composables/useSubscriptionCheckout'
 import { useSubscriptionCheckout } from '@/platform/workspace/composables/useSubscriptionCheckout'
 
 import PricingTableWorkspace from './PricingTableWorkspace.vue'
@@ -127,11 +140,15 @@ import SubscriptionTransitionPreviewWorkspace from './SubscriptionTransitionPrev
 const {
   onClose,
   reason,
-  isPersonal = false
+  paymentIntentSource,
+  isPersonal = false,
+  initialCheckout
 } = defineProps<{
   onClose: () => void
   reason?: PaymentIntentSource
+  paymentIntentSource: PaymentIntentSource | undefined
   isPersonal?: boolean
+  initialCheckout?: SubscriptionCheckoutSelection
 }>()
 
 const emit = defineEmits<{
@@ -145,16 +162,38 @@ const {
   isSubscribing,
   isResubscribing,
   previewData,
+  reactivationRequired,
+  quoteIsCurrent,
+  isApplyingPromotionCode,
   selectedTierKey,
   selectedBillingCycle,
+  activeCheckoutActionUrl,
+  authenticationState,
+  authenticationError,
+  reconciliationOperationId,
+  parkedCheckoutRecovery,
   isPolling,
+  paymentCancelable,
+  isCancelingPayment,
+  cancelPaymentError,
+  cancelPayment,
   handleSubscribeClick,
   handleBackToPricing,
   handleAddCreditCard,
   handleConfirmTransition,
+  applyPromotionCode,
+  invalidateQuote,
   handleResubscribe,
   handleSuccessClose
-} = useSubscriptionCheckout(emit, reason)
+} = useSubscriptionCheckout(emit, paymentIntentSource, {
+  tierPlanType: isPersonal ? 'personal' : 'team'
+})
+
+onMounted(() => {
+  if (initialCheckout?.planMode === 'personal') {
+    void handleSubscribeClick(initialCheckout)
+  }
+})
 </script>
 
 <style scoped>

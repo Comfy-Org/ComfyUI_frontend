@@ -1,35 +1,42 @@
-import { storeToRefs } from 'pinia'
 import { computed } from 'vue'
 
 import { useBillingContext } from '@/composables/billing/useBillingContext'
-import { useTeamWorkspaceStore } from '@/platform/workspace/stores/teamWorkspaceStore'
 
-/**
- * Team-plan state for the active workspace. The team plan is tier-independent
- * (no standard/creator/pro): "on the team plan" simply means a team workspace
- * that is subscribed to it.
- */
 export function useTeamPlan() {
-  const { subscription, subscriptionStatus } = useBillingContext()
-  const { isInPersonalWorkspace, isWorkspaceSubscribed } = storeToRefs(
-    useTeamWorkspaceStore()
-  )
+  const {
+    canAccessSubscriptionFeatures,
+    isInitialized,
+    isTeamPlan,
+    maxSeats,
+    subscription,
+    subscriptionStatus
+  } = useBillingContext()
 
-  const isTeamWorkspace = computed(() => !isInPersonalWorkspace.value)
-
-  const isOnTeamPlan = computed(
-    () => isTeamWorkspace.value && isWorkspaceSubscribed.value
-  )
   const isCancelled = computed(() => subscription.value?.isCancelled ?? false)
-
-  const isSubscriptionLapsed = computed(
+  const isOnTeamPlan = computed(
     () =>
-      subscriptionStatus.value === 'canceled' ||
-      subscriptionStatus.value === 'ended'
+      isTeamPlan.value &&
+      canAccessSubscriptionFeatures.value &&
+      !isCancelled.value
   )
   const hasLapsedTeamPlan = computed(
-    () => isTeamWorkspace.value && isSubscriptionLapsed.value
+    () =>
+      isTeamPlan.value &&
+      (subscriptionStatus.value === 'canceled' ||
+        subscriptionStatus.value === 'ended')
   )
+  const hasMemberSeats = computed(
+    () => maxSeats.value === 0 || (maxSeats.value ?? 0) > 1
+  )
+  const isPlanLoading = computed(() => !isInitialized.value)
 
-  return { isOnTeamPlan, isCancelled, hasLapsedTeamPlan }
+  return {
+    maxSeats,
+    hasTeamPlan: isTeamPlan,
+    isOnTeamPlan,
+    isCancelled,
+    hasLapsedTeamPlan,
+    hasMemberSeats,
+    isPlanLoading
+  }
 }
