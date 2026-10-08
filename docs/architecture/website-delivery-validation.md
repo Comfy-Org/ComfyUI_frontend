@@ -6,9 +6,13 @@ change on their timeline while the rest of the monorepo keeps its current safegu
 ## Current lane
 
 The checked-in policy is `.github/fast-lanes/website.json`. It allows changes only under
-`apps/website/`. Stage 1 includes `bertfy` as a trusted author and also accepts a fresh
-`website-fast-lane:approve` label from one of the listed operators. `website-fast-lane:hold`, a
-draft, a human change request, a fork, a mixed-path change, or a stale head stops the lane.
+`apps/website/`. `bertfy` is a trusted author. For other authors, a listed operator adds
+`website-fast-lane:approve` to the current head; removing it withdraws the approval.
+`website-fast-lane:hold`, a draft, a human change request, a fork, or a mixed-path change stops the
+lane. A hold does not undo a merge that already happened. To resume after a hold, remove
+`website-fast-lane:hold`; for an author who is not in the allowlist, also remove and re-apply
+`website-fast-lane:approve`. If the run for an approval label shows as cancelled, a listed operator
+re-runs it or re-applies the label; a re-run works only while the head is unchanged.
 
 The `website-approval` environment supplies `WEBSITE_APPROVAL_TOKEN`. The credential currently
 belongs to `christian-byrne`, whose team membership satisfies the website path review rule. The
@@ -33,14 +37,15 @@ mode validates the target and marker without changing production. With `perform_
 it performs an instant rollback, verifies the canonical marker and public homepage, then promotes
 the same known-good deployment so normal production assignment can resume.
 
-The first production deployment containing `/__build.json` is bootstrap evidence, not the positive
-canary. Before opening the disposable canary:
+The first production deployment containing `/__build.json` is bootstrap evidence, not the canary.
+Before opening the canary:
 
-1. Download that deployment's transition artifact.
+1. Within 7 days, download that deployment's transition artifact (the same IDs appear in the run's
+   step summary).
 2. Run `Validation: Website Production Rollback` with its `deployedDeploymentId` and `deployedSha`.
 3. Leave `perform_rollback` disabled and require the no-mutation preflight to pass.
-4. Run the canary from update through production, then exercise rollback only under the agreed
-   trial procedure.
+4. Run the canary from update through production. A real rollback (`perform_rollback: true`)
+   changes production, so run it only when the operators running the trial agree to it.
 
 ## Evidence to record
 
