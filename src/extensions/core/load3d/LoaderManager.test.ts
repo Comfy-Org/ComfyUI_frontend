@@ -487,9 +487,6 @@ describe('LoaderManager', () => {
     it('classifies an aborted current request as cancelled without reporting it', async () => {
       const controller = new AbortController()
       const { lm, eventManager } = makeLoaderManager()
-      const consoleError = vi
-        .spyOn(console, 'error')
-        .mockImplementation(() => {})
       meshLoad.mockImplementationOnce(async () => {
         controller.abort()
         throw new DOMException('The operation was aborted', 'AbortError')
@@ -506,7 +503,7 @@ describe('LoaderManager', () => {
         null
       )
       expect(useToastStore().addAlert).not.toHaveBeenCalled()
-      expect(consoleError).not.toHaveBeenCalled()
+      expect(console.error).not.toHaveBeenCalled()
     })
 
     it('cancels and disposes a load whose parse resolves after the caller aborted', async () => {
@@ -645,7 +642,6 @@ describe('LoaderManager', () => {
     it('rejects with the load failure instead of alerting when silent is set', async () => {
       const { lm } = makeLoaderManager()
       meshLoad.mockRejectedValueOnce(new Error('parse failure: bad header'))
-      vi.spyOn(console, 'error').mockImplementation(() => {})
 
       await expect(
         lm.loadModel('api/view?filename=cube.glb', undefined, { silent: true })
@@ -655,7 +651,6 @@ describe('LoaderManager', () => {
 
     it('rejects on an undeterminable file type instead of alerting when silent is set', async () => {
       const { lm } = makeLoaderManager()
-      vi.spyOn(console, 'error').mockImplementation(() => {})
 
       await expect(
         lm.loadModel('api/view?type=output', undefined, { silent: true })
@@ -688,15 +683,12 @@ describe('LoaderManager', () => {
 
     it('rejects when the URL carries no filename and silent is set', async () => {
       const { lm } = makeLoaderManager()
-      const consoleError = vi
-        .spyOn(console, 'error')
-        .mockImplementation(() => {})
 
       await expect(
         lm.loadModel('api/view?type=output', 'scene.glb', { silent: true })
       ).rejects.toThrow(/No model was produced/)
       expect(useToastStore().addAlert).not.toHaveBeenCalled()
-      expect(consoleError).not.toHaveBeenCalled()
+      expect(console.error).not.toHaveBeenCalled()
     })
 
     it('never embeds the requested URL in a silent load error, only the file type', async () => {
