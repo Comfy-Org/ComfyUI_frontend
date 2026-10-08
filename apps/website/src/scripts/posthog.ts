@@ -47,6 +47,7 @@ const ANALYTICS_EVENT = {
   agentUsecaseVideoPlayed: 'website:agent_usecase_video_played',
   vfxLinkClicked: 'website:vfx_link_clicked',
   verticalLinkClicked: 'website:vertical_link_clicked',
+  agencyLinkClicked: 'website:agency_link_clicked',
   // Shared with the cloud app so one PostHog funnel covers auth outcomes
   // across every surface.
   authRefreshSucceeded: SESSION_TELEMETRY_EVENT.refreshSucceeded,
@@ -78,6 +79,10 @@ type AnalyticsEvent =
   | {
       name: typeof ANALYTICS_EVENT.verticalLinkClicked
       properties: VerticalLinkProperties
+    }
+  | {
+      name: typeof ANALYTICS_EVENT.agencyLinkClicked
+      properties: AgencyLinkProperties
     }
   | {
       name: `website:workshop_${WorkshopAnalyticsEvent['name']}`
@@ -146,9 +151,14 @@ interface VerticalLinkProperties extends VfxLinkProperties {
   vertical: Exclude<CampaignVertical, 'vfx'>
 }
 
+interface AgencyLinkProperties extends VfxLinkProperties {
+  vertical: CampaignVertical
+  campaign_type: 'agency-led'
+}
+
 interface VfxLinkProperties {
   destination: string
-  placement: 'hero' | 'workflows' | 'studio' | 'page'
+  placement: 'hero' | 'workflows' | 'studio' | 'partners' | 'page'
 }
 
 const WORKSHOP_AUTH_FLAG = 'workshop-auth'
@@ -473,6 +483,10 @@ export function captureVerticalLinkClick(
   properties: VerticalLinkProperties
 ): void {
   captureEvent({ name: ANALYTICS_EVENT.verticalLinkClicked, properties })
+}
+
+export function captureAgencyLinkClick(properties: AgencyLinkProperties): void {
+  captureEvent({ name: ANALYTICS_EVENT.agencyLinkClicked, properties })
 }
 
 export function captureWorkshopEvent(event: WorkshopAnalyticsEvent): void {

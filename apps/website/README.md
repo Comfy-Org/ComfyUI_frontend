@@ -659,3 +659,22 @@ the hosted script once, and renders the documented embed container.
 - `pnpm test:e2e` — Playwright E2E tests (requires `pnpm build:e2e` first)
 - `pnpm ashby:refresh-snapshot` — refresh the committed careers snapshot
 - `pnpm cloud-nodes:refresh-snapshot` — refresh the committed cloud nodes snapshot
+
+### Agency-led campaign pages
+
+The four `/agency-led/<vertical>/` pages (VFX, Advertising, Film & Animation,
+Architectural Visualization) have Chinese twins and share
+`AgencyLandingPage.astro`. They reuse the industry-page hero, published workflow
+media, Hub cards, and production sections. Product demonstrations are labeled
+separately from agency portfolio work.
+
+These drafts are excluded from search indexing and from the public navigation
+and `llms.txt`. Named agency assignments, approved logos, reels, and partner
+copy are pending. Keep unpublished partner material out of public previews;
+noindex does not restrict access.
+
+Project inquiry links lead to Comfy's existing contact form with `interest`,
+`campaign_type=agency-led`, and incoming UTM parameters. Campaign clicks emit
+`website:agency_link_clicked` with `vertical`, `campaign_type`, `destination`,
+and `placement`, separate from the Comfy-led campaign events. This records
+link clicks; it does not establish form submission or agency handoff tracking.

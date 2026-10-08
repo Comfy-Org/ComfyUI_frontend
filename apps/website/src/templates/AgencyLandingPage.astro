@@ -1,0 +1,172 @@
+---
+import BaseLayout from '@/layouts/BaseLayout.astro'
+import HeroSplit01 from '@/components/blocks/HeroSplit01.vue'
+import FeatureRows01 from '@/components/blocks/FeatureRows01.vue'
+import StepsCards01 from '@/components/blocks/StepsCards01.vue'
+import SectionIntro01 from '@/components/blocks/SectionIntro01.vue'
+import HubWorkflowCard from '@/components/hub/HubWorkflowCard.vue'
+import FAQSplit01 from '@/components/blocks/FAQSplit01.vue'
+import BrandButton from '@/components/common/BrandButton.vue'
+import CallToActionSection from '@/components/common/CallToActionSection.vue'
+import SectionHeader from '@/components/common/SectionHeader.vue'
+import SocialProofBarSection from '@/components/common/SocialProofBarSection.vue'
+import EnterpriseProductionSections from '@/templates/enterprise/EnterpriseProductionSections.astro'
+import { getAgencyVertical } from '@/data/agencyVerticals'
+import type { AgencyVerticalId } from '@/data/agencyVerticals'
+import { getRoutes } from '@/config/routes'
+import { faqPageNode, pageContext } from '@/utils/jsonLd'
+
+interface Props {
+  vertical: AgencyVerticalId
+}
+const { vertical } = Astro.props
+const { locale, url } = pageContext(
+  Astro.site,
+  Astro.url.pathname,
+  Astro.currentLocale
+)
+const config = getAgencyVertical(vertical, locale)
+const { t } = Astro.locals
+const routes = getRoutes(locale)
+const prefix = `agency.${vertical}` as const
+const faqs = ([1, 2, 3, 4] as const).map((id) => ({
+  id: `agency-${vertical}-${id}`,
+  question: t(`agency.shared.faqs.${id}.question`),
+  answer: t(`agency.shared.faqs.${id}.answer`)
+}))
+const steps = ([1, 2, 3, 4] as const).map((id) => ({
+  id: String(id),
+  title: t(`agency.shared.steps.${id}.title`),
+  description: t(`agency.shared.steps.${id}.description`)
+}))
+const contactHref = `${routes.contact}?interest=${vertical}&campaign_type=agency-led`
+---
+
+<BaseLayout
+  title={t(`${prefix}.metaTitle`)}
+  description={t(`${prefix}.metaDescription`)}
+  ogImage={config.hero.poster}
+  hideAnnouncementBanner
+  extraJsonLd={[faqPageNode(url, faqs)]}
+>
+  <div data-agency-campaign={vertical}>
+    <HeroSplit01
+      data-campaign-hero
+      locale={locale}
+      badgeText={t(`${prefix}.badge`)}
+      title={t(`${prefix}.heroTitle`)}
+      subtitle={t(`${prefix}.heroDescription`)}
+      primaryCta={{
+        label: t('agency.shared.contactButton'),
+        href: contactHref
+      }}
+      secondaryCta={{
+        label: t('agency.shared.approachButton'),
+        href: '#approach'
+      }}
+      videoSrc={config.hero.type === 'video' ? config.hero.src : undefined}
+      videoPoster={config.hero.poster}
+      videoTracks={
+        config.hero.type === 'video'
+          ? [...(config.hero.tracks ?? [])]
+          : undefined
+      }
+      imageSrc={config.hero.type === 'image' ? config.hero.src : undefined}
+      imageAlt={t(`${prefix}.mediaLabel`)}
+      videoAriaLabel={t(`${prefix}.mediaLabel`)}
+      videoAutoplay
+      videoLoop
+      client:load
+    />
+    <SocialProofBarSection />
+    <div id="approach" class="scroll-mt-28">
+      <SectionIntro01
+        heading={t('agency.shared.briefHeading')}
+        subtitle={t(`${prefix}.briefDescription`)}
+      />
+      <FeatureRows01
+        locale={locale}
+        heading={t(`${prefix}.briefTitle`)}
+        eyebrow={t('agency.shared.examplesDescription')}
+        rows={config.examples.slice(0, 1)}
+        client:visible
+      />
+      <StepsCards01 heading={t('agency.shared.processHeading')} steps={steps} />
+    </div>
+    <div id="workflows" class="scroll-mt-28">
+      <section class="mx-auto max-w-9xl px-6 py-16 lg:py-24">
+        <SectionHeader>
+          {t('agency.shared.workflowsHeading')}
+          <p
+            slot="subtitle"
+            class="mt-6 text-base text-primary-comfy-canvas/70"
+          >
+            {t('agency.shared.workflowsDescription')}
+          </p>
+        </SectionHeader>
+        <div class="grid grid-cols-1 gap-5 sm:grid-cols-2 lg:grid-cols-3">
+          {config.workflows.slice(0, 3).map((workflow) => (
+            <HubWorkflowCard
+              {...workflow}
+              locale={locale}
+              tryNowLabel={t('vfx.workflows.tryNow')}
+              showTypeBadge={false}
+              showAuthor={false}
+              showAction={false}
+              providerBadgeAtTop
+              class="[&_h3]:right-5 [&_h3]:text-base [&_h3]:sm:text-lg [&_h3]:lg:text-xl"
+              client:visible
+            />
+          ))}
+        </div>
+        <div class="mt-10 flex justify-center">
+          <BrandButton
+            href={routes.hubWorkflows}
+            variant="outline"
+            class="uppercase"
+          >
+            {t('agency.shared.browseLabel')}
+          </BrandButton>
+        </div>
+      </section>
+    </div>
+    <EnterpriseProductionSections
+      locale={locale}
+      includeManagedDetails
+      showOptionDetails={false}
+    />
+    <CallToActionSection
+      locale={locale}
+      headingKey={`${prefix}.contactHeading`}
+      primaryLabelKey="agency.shared.contactButton"
+      primaryHref={contactHref}
+      secondaryLabelKey="industry.shared.enterpriseButton"
+      secondaryHref={routes.enterprise}
+    />
+    <FAQSplit01
+      heading={t('agency.shared.faqHeading')}
+      faqs={faqs}
+      client:visible
+    />
+  </div>
+</BaseLayout>
+
+<script>
+  import { mountAgencyCampaign } from '@/scripts/vfx-campaign'
+  import type { CampaignVertical } from '@/scripts/posthog'
+
+  const verticals: readonly CampaignVertical[] = [
+    'vfx',
+    'advertising',
+    'film-animation',
+    'architectural-visualization'
+  ]
+  let cleanup: (() => void) | undefined
+  document.addEventListener('astro:page-load', () => {
+    cleanup?.()
+    const root = document.querySelector<HTMLElement>('[data-agency-campaign]')
+    const vertical = verticals.find((id) => id === root?.dataset.agencyCampaign)
+    cleanup = root && vertical ? mountAgencyCampaign(root, vertical) : undefined
+  })
+  document.addEventListener('astro:before-swap', () => cleanup?.())
+</script>

@@ -5214,5 +5214,100 @@
       "contactButton": "联系我们的团队",
       "enterpriseButton": "了解企业服务"
     }
+  },
+  "agency": {
+    "shared": {
+      "contactButton": "讨论您的项目",
+      "approachButton": "了解合作方式",
+      "briefHeading": "创意专长与明确的制作简报。",
+      "briefDescription": "告诉我们您需要制作什么。我们可以探讨项目所需的创意支持、合适的代理团队以及 ComfyUI 制作方式。",
+      "processHeading": "从简报到明确的合作范围",
+      "steps": {
+        "1": {
+          "title": "分享简报",
+          "description": "准备参考资料、原始素材、预期用途和交付要求。"
+        },
+        "2": {
+          "title": "讨论合适的团队",
+          "description": "与 Comfy 梳理创意和技术需求，包括代理团队的专业能力可以在哪些环节提供帮助。"
+        },
+        "3": {
+          "title": "确定试点范围",
+          "description": "开始制作前，明确交付内容、审核标准、各方职责与合作条款。"
+        },
+        "4": {
+          "title": "规划交接",
+          "description": "明确最终素材，以及团队继续制作所需的工作流文档。"
+        }
+      },
+      "examplesHeading": "探索 ComfyUI 的能力",
+      "examplesDescription": "通过已发布的工作流演示完善简报。这些是产品示例，并非代理团队的作品。",
+      "workflowsHeading": "制作讨论的起点",
+      "workflowsDescription": "探索已发布的 ComfyUI 工作流。项目的具体方式取决于创意和技术需求。",
+      "browseLabel": "探索全部工作流",
+      "faqHeading": "规划您的项目",
+      "faqs": {
+        "1": {
+          "question": "我应该联系谁讨论项目？",
+          "answer": "请通过联系表单与 Comfy 开始沟通。描述项目及所需的创意或技术支持。在确定范围时，可以讨论代理团队的参与方式与职责。"
+        },
+        "2": {
+          "question": "简报应该包含哪些内容？",
+          "answer": "请提供参考资料、原始素材、预期用途、交付要求、时间安排，以及安全或制作流程方面的限制。在适当条款确定之前，请勿分享保密的制作文件。"
+        },
+        "3": {
+          "question": "这些工作流示例是代理团队的作品吗？",
+          "answer": "不是。本页的演示和工作流卡片是已发布的 ComfyUI 产品示例。在讨论适合项目的团队时，应另外审阅代理团队的作品集和项目案例。"
+        },
+        "4": {
+          "question": "可以使用现有的制作环境吗？",
+          "answer": "联系 Comfy 时，请说明您的工具、模型、依赖项和部署要求。可以结合创意制作范围讨论企业方案，包括 Managed Builds。"
+        }
+      }
+    },
+    "vfx": {
+      "badge": "视效",
+      "heroTitle": "为下一个镜头寻找创意团队。",
+      "heroDescription": "与 Comfy 探讨镜头制作、合成与可复用的 ComfyUI 工作流。从素材、目标效果和团队现有流程开始。",
+      "briefTitle": "兼顾制作流程的镜头工作。",
+      "briefDescription": "准备参考画面、原始素材和交付要求。明确创意目标，以及各个镜头之间需要保持一致的内容。",
+      "metaTitle": "视效创意制作 - Comfy",
+      "metaDescription": "与 Comfy 探讨镜头制作、合成与可复用的 ComfyUI 工作流。从素材、目标效果和团队现有流程开始。",
+      "mediaLabel": "视效工作流演示",
+      "contactHeading": "告诉我们您需要制作什么。"
+    },
+    "advertising": {
+      "badge": "广告",
+      "heroTitle": "将广告创意简报转化为制作计划。",
+      "heroDescription": "与 Comfy 探讨创意制作，从产品图像到广告素材的多种版本。准备品牌规范、渠道要求和需要交付的素材。",
+      "briefTitle": "围绕品牌展开的创意制作。",
+      "briefDescription": "明确产品准确性、视觉方向和广告所需的版本。根据投放渠道与审核流程确定制作范围。",
+      "metaTitle": "广告创意制作 - Comfy",
+      "metaDescription": "与 Comfy 探讨创意制作，从产品图像到广告素材的多种版本。准备品牌规范、渠道要求和需要交付的素材。",
+      "mediaLabel": "广告工作流演示",
+      "contactHeading": "告诉我们您需要制作什么。"
+    },
+    "film-animation": {
+      "badge": "影视与动画",
+      "heroTitle": "让故事从概念迈向明确的下一步。",
+      "heroDescription": "与 Comfy 探讨故事开发和视觉制作。准备剧本、参考资料与制作限制，形成可执行的创意简报。",
+      "briefTitle": "让故事与视觉方向保持一致。",
+      "briefDescription": "明确关键角色、场景与镜头。在扩大制作范围之前，先约定试点需要验证的内容。",
+      "metaTitle": "影视与动画创意制作 - Comfy",
+      "metaDescription": "与 Comfy 探讨故事开发和视觉制作。准备剧本、参考资料与制作限制，形成可执行的创意简报。",
+      "mediaLabel": "影视与动画工作流演示",
+      "contactHeading": "告诉我们您需要制作什么。"
+    },
+    "architectural-visualization": {
+      "badge": "建筑可视化",
+      "heroTitle": "为下一个空间建立更清晰的视觉方向。",
+      "heroDescription": "与 Comfy 探讨建筑图像制作。准备设计意图、原始渲染图和材质参考，明确项目的视觉制作范围。",
+      "briefTitle": "从设计意图出发。",
+      "briefDescription": "明确需要忠于设计的视角、材质、光照与细节。分别确定探索阶段与最终图像的范围。",
+      "metaTitle": "建筑可视化创意制作 - Comfy",
+      "metaDescription": "与 Comfy 探讨建筑图像制作。准备设计意图、原始渲染图和材质参考，明确项目的视觉制作范围。",
+      "mediaLabel": "建筑可视化工作流演示",
+      "contactHeading": "告诉我们您需要制作什么。"
+    }
   }
 }

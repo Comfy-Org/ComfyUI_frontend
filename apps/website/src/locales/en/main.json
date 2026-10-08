@@ -5821,5 +5821,100 @@
       "contactButton": "TALK TO OUR TEAM",
       "enterpriseButton": "EXPLORE ENTERPRISE"
     }
+  },
+  "agency": {
+    "shared": {
+      "contactButton": "DISCUSS YOUR PROJECT",
+      "approachButton": "SEE THE APPROACH",
+      "briefHeading": "Creative expertise. A clear production brief.",
+      "briefDescription": "Tell us what you need to make. We can discuss the creative support, agency fit, and ComfyUI production approach for your project.",
+      "processHeading": "From your brief to a scoped engagement",
+      "steps": {
+        "1": {
+          "title": "Share the brief",
+          "description": "Bring your references, source assets, intended use, and delivery needs."
+        },
+        "2": {
+          "title": "Discuss the right fit",
+          "description": "Review the creative and technical needs with Comfy, including where agency expertise could help."
+        },
+        "3": {
+          "title": "Scope a pilot",
+          "description": "Agree on the deliverables, review criteria, responsibilities, and terms before work begins."
+        },
+        "4": {
+          "title": "Plan the handoff",
+          "description": "Define the final assets and any workflow documentation your team needs to continue production."
+        }
+      },
+      "examplesHeading": "Explore what ComfyUI can do",
+      "examplesDescription": "Published workflow demonstrations to help shape your brief. These are product examples, not agency portfolio work.",
+      "workflowsHeading": "Starting points for the production conversation",
+      "workflowsDescription": "Explore published ComfyUI workflows. The approach for your project will depend on its creative and technical requirements.",
+      "browseLabel": "EXPLORE ALL WORKFLOWS",
+      "faqHeading": "Planning your project",
+      "faqs": {
+        "1": {
+          "question": "Who do I contact about a project?",
+          "answer": "Start with Comfy through the contact form. Describe your project and the creative or technical support you need. Agency involvement and responsibilities can be discussed during scoping."
+        },
+        "2": {
+          "question": "What should I include in my brief?",
+          "answer": "Include your references, source assets, intended use, delivery requirements, timeline, and any security or pipeline constraints. Avoid sharing confidential production files until the appropriate terms are in place."
+        },
+        "3": {
+          "question": "Are the workflow examples agency work?",
+          "answer": "No. The demonstrations and workflow cards on this page are published ComfyUI product examples. Agency portfolios and project examples should be reviewed separately when discussing a team for your project."
+        },
+        "4": {
+          "question": "Can we use our existing production environment?",
+          "answer": "Describe your tools, models, dependencies, and deployment requirements when you contact Comfy. Enterprise options, including Managed Builds, can be discussed alongside the creative scope."
+        }
+      }
+    },
+    "vfx": {
+      "badge": "VFX",
+      "heroTitle": "Bring your next shot to a creative team.",
+      "heroDescription": "Discuss shot work, compositing, and repeatable ComfyUI workflows with Comfy. Start with your footage, the finish you need, and the pipeline your team uses.",
+      "briefTitle": "Shot work, with the pipeline in mind.",
+      "briefDescription": "Bring reference frames, source footage, and delivery requirements. Define the creative target and what needs to stay consistent across shots.",
+      "metaTitle": "VFX Creative Production - Comfy",
+      "metaDescription": "Discuss shot work, compositing, and repeatable ComfyUI workflows with Comfy. Start with your footage, the finish you need, and the pipeline your team uses.",
+      "mediaLabel": "VFX workflow demonstration",
+      "contactHeading": "Tell us what you need to make."
+    },
+    "advertising": {
+      "badge": "ADVERTISING",
+      "heroTitle": "Turn a campaign brief into a production plan.",
+      "heroDescription": "Discuss creative production with Comfy, from product imagery to campaign variations. Bring your brand guidelines, channel requirements, and the assets you need to deliver.",
+      "briefTitle": "Creative work built around your brand.",
+      "briefDescription": "Define product accuracy, visual direction, and the versions your campaign needs. Scope the work around your channels and review process.",
+      "metaTitle": "ADVERTISING Creative Production - Comfy",
+      "metaDescription": "Discuss creative production with Comfy, from product imagery to campaign variations. Bring your brand guidelines, channel requirements, and the assets you need to deliver.",
+      "mediaLabel": "ADVERTISING workflow demonstration",
+      "contactHeading": "Tell us what you need to make."
+    },
+    "film-animation": {
+      "badge": "FILM & ANIMATION",
+      "heroTitle": "Take your story from concept to a clear next step.",
+      "heroDescription": "Discuss story development and visual production with Comfy. Bring your script, references, and production constraints to shape a practical creative brief.",
+      "briefTitle": "Keep the story and visual direction together.",
+      "briefDescription": "Define the characters, environments, and shots that matter. Agree on what a pilot should prove before expanding the work.",
+      "metaTitle": "FILM & ANIMATION Creative Production - Comfy",
+      "metaDescription": "Discuss story development and visual production with Comfy. Bring your script, references, and production constraints to shape a practical creative brief.",
+      "mediaLabel": "FILM & ANIMATION workflow demonstration",
+      "contactHeading": "Tell us what you need to make."
+    },
+    "architectural-visualization": {
+      "badge": "ARCHVIZ",
+      "heroTitle": "Build a clearer vision for your next space.",
+      "heroDescription": "Discuss architectural imagery with Comfy. Bring your design intent, source renders, and material references to scope visuals for your project.",
+      "briefTitle": "Start with the design intent.",
+      "briefDescription": "Define the views, materials, lighting, and details that need to remain faithful to your design. Scope exploration and final imagery separately.",
+      "metaTitle": "ARCHITECTURAL VISUALIZATION Creative Production - Comfy",
+      "metaDescription": "Discuss architectural imagery with Comfy. Bring your design intent, source renders, and material references to scope visuals for your project.",
+      "mediaLabel": "ARCHITECTURAL VISUALIZATION workflow demonstration",
+      "contactHeading": "Tell us what you need to make."
+    }
   }
 }

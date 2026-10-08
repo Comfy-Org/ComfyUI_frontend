@@ -1,5 +1,6 @@
 import type { CampaignVertical } from '@/scripts/posthog'
 import {
+  captureAgencyLinkClick,
   captureVerticalLinkClick,
   captureVfxLinkClick
 } from '@/scripts/posthog'
@@ -8,6 +9,7 @@ import { campaignHref } from '@/utils/campaignHref'
 function linkPlacement(
   link: HTMLAnchorElement
 ): Parameters<typeof captureVfxLinkClick>[0]['placement'] {
+  if (link.closest('#agency-partners')) return 'partners'
   if (link.closest('#workflows')) return 'workflows'
   if (link.closest('#studio')) return 'studio'
   if (link.closest('[data-vfx-hero], [data-campaign-hero]')) return 'hero'
@@ -21,6 +23,29 @@ export function mountVfxCampaign(root: HTMLElement): () => void {
 export function mountIndustryCampaign(
   root: HTMLElement,
   vertical: CampaignVertical
+): () => void {
+  return mountCampaign(root, (properties) => {
+    if (vertical === 'vfx') captureVfxLinkClick(properties)
+    else captureVerticalLinkClick({ ...properties, vertical })
+  })
+}
+
+export function mountAgencyCampaign(
+  root: HTMLElement,
+  vertical: CampaignVertical
+): () => void {
+  return mountCampaign(root, (properties) =>
+    captureAgencyLinkClick({
+      ...properties,
+      vertical,
+      campaign_type: 'agency-led'
+    })
+  )
+}
+
+function mountCampaign(
+  root: HTMLElement,
+  captureClick: (properties: Parameters<typeof captureVfxLinkClick>[0]) => void
 ): () => void {
   function onPlay(event: Event) {
     if (!(event.target instanceof HTMLVideoElement)) return
@@ -51,8 +76,7 @@ export function mountIndustryCampaign(
       destination: new URL(link.href).pathname,
       placement: linkPlacement(link)
     }
-    if (vertical === 'vfx') captureVfxLinkClick(properties)
-    else captureVerticalLinkClick({ ...properties, vertical })
+    captureClick(properties)
     if (!anchor && card) {
       event.stopPropagation()
       window.open(link.href, '_blank', 'noopener')
