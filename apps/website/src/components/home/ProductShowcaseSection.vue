@@ -249,7 +249,7 @@ useIntersectionObserver(sectionRef, ([entry]) => {
                   <span
                     :class="
                       cn(
-                        'col-start-1 row-start-2 mt-6 inline-flex h-10 w-fit items-center justify-center rounded-2xl bg-primary-comfy-ink px-6 py-2.5 text-xs font-bold tracking-wider text-primary-comfy-yellow uppercase transition-opacity duration-300 md:text-sm',
+                        'col-start-1 row-start-2 mt-6 inline-flex h-10 w-fit items-center justify-center rounded-2xl border border-primary-comfy-ink px-6 py-2.5 text-xs font-bold tracking-wider text-primary-comfy-ink uppercase transition-opacity duration-300 md:text-sm',
                         activeIndex === i
                           ? 'opacity-100'
                           : 'invisible opacity-0'
