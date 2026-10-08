@@ -1,0 +1,170 @@
+import userEvent from '@testing-library/user-event'
+import { render, screen, waitFor, within } from '@testing-library/vue'
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
+
+import { SEARCH_SETTLE_MS } from '@/composables/useHubCatalogueTracking'
+import type { WorkshopModel } from '@/config/models-catalogue'
+import { captureWorkshopEvent } from '@/scripts/posthog'
+import WorkshopModelsGrid from './WorkshopModelsGrid.vue'
+
+vi.mock(import('@/scripts/posthog'))
+
+const models: WorkshopModel[] = [
+  {
+    slug: 'kling-ai',
+    name: 'Kling AI',
+    workflowCount: 3,
+    href: '/models/kling-ai/',
+    routerId: 'kling/kling-ai',
+    capabilities: [],
+    provider: 'Kling',
+    modality: 'video',
+    task: 'text-to-video',
+    thumbnailUrl: 'https://media.comfy.org/kling.webp'
+  },
+  {
+    slug: 'flux',
+    name: 'Flux',
+    workflowCount: 2,
+    href: '/models/flux/',
+    routerId: 'bfl/flux',
+    capabilities: [],
+    provider: 'Black Forest Labs',
+    modality: 'image',
+    task: 'image-to-image'
+  }
+]
+
+const events = (name: string) =>
+  vi
+    .mocked(captureWorkshopEvent)
+    .mock.calls.map(([event]) => event)
+    .filter((event) => event.name === name)
+
+async function searchbox() {
+  const field = screen.getByRole('searchbox', {
+    name: 'Search models, providers, and categories'
+  })
+  await waitFor(() => expect(field).not.toHaveProperty('disabled', true))
+  return field
+}
+
+beforeEach(() => {
+  vi.useFakeTimers({ shouldAdvanceTime: true })
+})
+
+afterEach(() => {
+  history.replaceState(null, '', '/')
+  sessionStorage.clear()
+})
+
+describe('WorkshopModelsGrid analytics', () => {
+  it('reports a search once it settles, with how many models it found', async () => {
+    const user = userEvent.setup({ advanceTimers: vi.advanceTimersByTime })
+    render(WorkshopModelsGrid, { props: { models } })
+
+    await user.type(await searchbox(), 'Forest')
+    expect(events('hub_search_performed')).toEqual([])
+
+    vi.advanceTimersByTime(SEARCH_SETTLE_MS)
+    expect(events('hub_search_performed')).toEqual([
+      {
+        name: 'hub_search_performed',
+        properties: {
+          surface: 'models',
+          query: 'forest',
+          query_length: 6,
+          results_count: 1
+        }
+      }
+    ])
+  })
+
+  it('reports a search at once on Enter', async () => {
+    const user = userEvent.setup()
+    render(WorkshopModelsGrid, { props: { models } })
+
+    await user.type(await searchbox(), 'kling{Enter}')
+
+    expect(events('hub_search_performed')).toHaveLength(1)
+  })
+
+  it('reports the use case and sort a visitor picks', async () => {
+    const user = userEvent.setup()
+    render(WorkshopModelsGrid, { props: { models } })
+
+    await user.click(screen.getByRole('button', { name: 'Use cases' }))
+    const dialog = await screen.findByRole('dialog', { name: 'Use cases' })
+    await user.click(
+      within(dialog).getByRole('button', { name: 'Edit images 1' })
+    )
+    await user.click(screen.getByRole('button', { name: 'Sort' }))
+    await user.click(
+      await screen.findByRole('menuitemradio', { name: 'Name A to Z' })
+    )
+
+    expect(events('hub_filter_changed')).toEqual([
+      {
+        name: 'hub_filter_changed',
+        properties: {
+          surface: 'models',
+          filter: 'use_case',
+          value: 'edit-images',
+          previous_value: 'all'
+        }
+      },
+      {
+        name: 'hub_filter_changed',
+        properties: {
+          surface: 'models',
+          filter: 'sort',
+          value: 'name',
+          previous_value: 'popular'
+        }
+      }
+    ])
+  })
+
+  it('stays silent about the search and use case a shared link sets', async () => {
+    history.replaceState(null, '', '/models/?q=flux&useCase=edit-images')
+    render(WorkshopModelsGrid, { props: { models } })
+    await waitFor(async () => expect(await searchbox()).toHaveValue('flux'))
+
+    vi.advanceTimersByTime(SEARCH_SETTLE_MS)
+    expect(captureWorkshopEvent).not.toHaveBeenCalled()
+  })
+
+  it.for([
+    ['the featured banner', 'kling-ai', 'featured_banner'],
+    ['the results grid', 'flux', 'results_grid']
+  ] as const)('reports a model opened from %s', async ([, slug, source]) => {
+    const user = userEvent.setup()
+    render(WorkshopModelsGrid, { props: { models } })
+
+    if (source === 'featured_banner')
+      await user.click(screen.getByTestId('featured-slide-link'))
+    else {
+      await user.click(
+        screen.getByRole('button', { name: 'Browse all models' })
+      )
+      await user.click(
+        within(screen.getByTestId('workshop-models-grid')).getAllByRole(
+          'link'
+        )[1]
+      )
+    }
+
+    expect(events('hub_item_clicked')).toEqual([
+      {
+        name: 'hub_item_clicked',
+        properties: {
+          surface: 'models',
+          kind: 'model',
+          slug,
+          source,
+          position: source === 'featured_banner' ? 0 : 1
+        }
+      }
+    ])
+  })
+})
