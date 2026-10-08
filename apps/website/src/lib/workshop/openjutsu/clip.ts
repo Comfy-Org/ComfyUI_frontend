@@ -1,7 +1,7 @@
 import type { TrimLimits } from '@/lib/workshop/video-trim/range'
 
 /** MiniMax H3 reads and writes 24 frames a second, in lengths of 17k + 5 frames. */
-export const FPS = 24
+const FPS = 24
 const GRID_STEP = 17
 const GRID_OFFSET = 5
 
