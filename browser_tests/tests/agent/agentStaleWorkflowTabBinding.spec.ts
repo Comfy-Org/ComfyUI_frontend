@@ -157,7 +157,7 @@ test.describe(
         return route.fulfill({ ...jsonRoute(accepted), status: 202 })
       })
       const cloudWorkflows: CloudWorkflowEntry[] = []
-      await page.route('**/api/workflows**', (route) =>
+      await page.route('**/api/workflows?*', (route) =>
         route.fulfill(
           jsonRoute({
             data: cloudWorkflows,
@@ -169,6 +169,9 @@ test.describe(
             }
           })
         )
+      )
+      await page.route(`**/api/workflows/${staleWorkflowId}`, (route) =>
+        route.fulfill({ status: 404 })
       )
 
       await bootAgentApp(page, agentFlagEnabled, {
@@ -232,7 +235,7 @@ test.describe(
       await expect(panel.getByTestId('user-message-bubble')).toHaveText([
         EARLIER_REQUEST
       ])
-      // The Cloud no longer lists the abandoned workflow, so the chat says so.
+      // Direct lookup confirms that the abandoned workflow is gone.
       const unavailable = panel.getByText(
         enMessages.agent.targetWorkflowUnavailable
       )

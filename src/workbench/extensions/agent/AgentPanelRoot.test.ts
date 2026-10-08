@@ -530,6 +530,7 @@ function stubHistoryWithWorkflowListing(
             })
           ])
         )
+      if (url.includes('/workflows/wf-gone')) return json(404, {})
       if (url.includes('/workflows'))
         return json(await listingStatus, {
           data: [],
@@ -7159,6 +7160,156 @@ describe('AgentPanelRoot workflow binding', () => {
     expect(screen.queryByRole('alert')).toBeNull()
   })
 
+  it.for([
+    {
+      entryPoint: 'history',
+      openChat: async () => {
+        const rendered = renderWithSelectedTarget()
+        await userEvent.click(
+          screen.getByRole('button', {
+            name: i18n.global.t('agent.showChatHistory')
+          })
+        )
+        await userEvent.click(
+          await screen.findByRole('button', { name: 'Unresolved target chat' })
+        )
+        return rendered
+      }
+    },
+    {
+      entryPoint: 'startup',
+      openChat: async () => {
+        localStorage.setItem(StorageKeys.agentThread('personal'), 'th-history')
+        return render(AgentPanelRoot, { global: { plugins: [i18n] } })
+      }
+    }
+  ])(
+    'opens a readable unresolved chat from $entryPoint and sends only after explicit retargeting',
+    async ({ openChat }) => {
+      paywallHasFunds.value = true
+      paywallAgentHasFunds.value = true
+      const current = makeTab('wf-42')
+      const bodies: unknown[] = []
+      const fetchMock = vi.fn(async (url: string, _init?: RequestInit) => {
+        if (url.includes('/messages') && _init?.method === 'POST') {
+          bodies.push(JSON.parse(String(_init.body)))
+          return json(202, { ...ack('wf-42'), thread_id: 'th-history' })
+        }
+        if (url.includes('/messages'))
+          return json(200, [
+            {
+              id: 'history-user',
+              thread_id: 'th-history',
+              seq: 1,
+              role: 'user',
+              status: 'complete',
+              turn_id: 'history-turn',
+              workflow_id: 'wf-unresolved',
+              content: { text: 'Historical prompt' }
+            }
+          ] satisfies AgentMessages)
+        if (url.includes('/agent/threads'))
+          return json(
+            200,
+            agentThreadList([
+              agentThread({
+                id: 'th-history',
+                title: 'Unresolved target chat',
+                last_message_at: '2026-09-01T00:00:00Z'
+              })
+            ])
+          )
+        if (url.includes('/workflows'))
+          return json(200, {
+            data: [
+              { id: 'wf-unresolved', name: 'missing-saved-file' },
+              { id: 'wf-42', name: 'current' }
+            ],
+            pagination: { offset: 0, limit: 100, total: 2, has_more: false }
+          })
+        return json(200, {})
+      })
+      vi.stubGlobal('fetch', fetchMock)
+      const rendered = await openChat()
+      await screen.findAllByText('Historical prompt')
+      expect(screen.queryByRole('heading', { name: 'Chat history' })).toBeNull()
+      expect(
+        screen.queryByText(i18n.global.t('agent.historyOpenFailed'))
+      ).toBeNull()
+      await waitFor(() =>
+        expect(useAgentChatHistoryStore().activeId).toBe('th-history')
+      )
+      expect(useAgentPanelStore().selectedWorkflow).toBeNull()
+      expect(useAgentPanelStore().targetUnavailable).toBe(false)
+      expect(workflowStore.activeWorkflow?.path).toBe(current.path)
+      expect(useWorkflowService().openWorkflow).not.toHaveBeenCalled()
+      expect(
+        screen.getByRole('button', {
+          name: i18n.global.t('agent.switchWorkflow')
+        })
+      ).toHaveTextContent(i18n.global.t('agent.selectWorkflowForAgent'))
+      useAgentComposerStore().setText('Do not edit the visible graph')
+      await nextTick()
+      const other = addTab('workflows/other.json', {
+        activeState: fromPartial<ComfyWorkflowJSON>({ id: 'local-other' })
+      })
+      workflowStore.activeWorkflow = other
+      await nextTick()
+      expect(useAgentPanelStore().selectedWorkflow).toBeNull()
+      rendered.unmount()
+      render(AgentPanelRoot, { global: { plugins: [i18n] } })
+      await screen.findAllByText('Historical prompt')
+      expect(useAgentPanelStore().selectedWorkflow).toBeNull()
+      await userEvent.click(
+        screen.getByRole('button', {
+          name: i18n.global.t('agent.showChatHistory')
+        })
+      )
+      await userEvent.click(
+        await screen.findByRole('button', { name: 'Unresolved target chat' })
+      )
+      await screen.findAllByText('Historical prompt')
+      expect(useAgentPanelStore().selectedWorkflow).toBeNull()
+      expect(workflowStore.activeWorkflow.path).toBe(other.path)
+      expect(useAgentComposerStore().draft).toBe(
+        'Do not edit the visible graph'
+      )
+      await userEvent.click(screen.getByRole('button', { name: 'Send' }))
+      await nextTick()
+      expect(
+        fetchMock.mock.calls.some(
+          ([url, init]) => url.includes('/messages') && init?.method === 'POST'
+        )
+      ).toBe(false)
+      expect(useAgentComposerStore().draft).toBe(
+        'Do not edit the visible graph'
+      )
+      expect(workflowStore.activeWorkflow.path).toBe(other.path)
+      expect(
+        await screen.findByPlaceholderText(
+          i18n.global.t('agent.searchWorkflows')
+        )
+      ).toBeVisible()
+      await userEvent.click(
+        await screen.findByRole('menuitemradio', { name: 'current' })
+      )
+      await waitFor(() =>
+        expect(useAgentPanelStore().selectedWorkflow?.path).toBe(current.path)
+      )
+      workflowStore.activeWorkflow = other
+      await nextTick()
+      await userEvent.click(screen.getByRole('button', { name: 'Send' }))
+      await screen.findByRole('button', { name: 'Stop' })
+      expect(bodies).toHaveLength(1)
+      expect(bodies[0]).toMatchObject({
+        workflow_id: 'wf-42',
+        draft: { content: { id: 'wf-42' } }
+      })
+      expect(workflowStore.activeWorkflow.path).toBe(other.path)
+      expect(useAgentPanelStore().selectedWorkflow?.path).toBe(current.path)
+    }
+  )
+
   it.for(['false', 'throw', 'missing-id'])(
     'handles a history restoration with %s without showing an unready chat',
     async (outcome) => {
@@ -7878,7 +8029,10 @@ describe('AgentPanelRoot workflow binding', () => {
     resolveLookup?.(json(404, { error: 'none' }))
 
     await vi.waitFor(() =>
-      expect(useWorkflowService().openWorkflow).toHaveBeenCalledWith(bound)
+      expect(useWorkflowService().openWorkflow).toHaveBeenCalledWith(
+        bound,
+        expect.objectContaining({ isCurrent: expect.any(Function) })
+      )
     )
     expect(activity.creatingTab).toBe(false)
     expect(workflowStore.getWorkflowByPath('workflows/Fresh.json')).toBeNull()
@@ -8163,7 +8317,10 @@ describe('AgentPanelRoot workflow binding', () => {
 
     ws.emit('agent_active_tab', { workflow_id: 'wf-42', thread_id: 'th-1' })
     await vi.waitFor(() =>
-      expect(useWorkflowService().openWorkflow).toHaveBeenCalledWith(tab)
+      expect(useWorkflowService().openWorkflow).toHaveBeenCalledWith(
+        tab,
+        expect.objectContaining({ isCurrent: expect.any(Function) })
+      )
     )
     expect(useWorkflowService().saveWorkflowAs).not.toHaveBeenCalled()
     // The whole FE-1310 chain: wire event -> session -> store -> rendered card.
@@ -8420,6 +8577,49 @@ describe('AgentPanelRoot workflow binding', () => {
     )
   })
 
+  it('preserves a legacy activation queued before the first send acknowledgment', async () => {
+    makeTab('wf-42')
+    mockMessagesEndpoint('wf-42', [{ id: 'wf-42', name: 'current' }])
+    const defaultFetch = vi.mocked(fetch).getMockImplementation()
+    assert.exists(defaultFetch)
+    let finishSend = (_response: Response) => {}
+    const sending = new Promise<Response>((resolve) => {
+      finishSend = resolve
+    })
+    vi.mocked(fetch).mockImplementation((input, init) =>
+      String(input).includes('/messages') && init?.method === 'POST'
+        ? sending
+        : defaultFetch(input, init)
+    )
+    renderWithSelectedTarget()
+    await userEvent.click(screen.getByRole('textbox'))
+    await userEvent.paste('work here')
+    await userEvent.click(screen.getByRole('button', { name: 'Send' }))
+    await waitFor(() =>
+      expect(
+        vi
+          .mocked(fetch)
+          .mock.calls.some(
+            ([input, init]) =>
+              String(input).includes('/messages') && init?.method === 'POST'
+          )
+      ).toBe(true)
+    )
+    expect(useAgentConversationStore().threadId).toBeNull()
+    vi.useFakeTimers()
+    ws.emit('agent_active_tab', { workflow_id: 'wf-late', name: 'Late' })
+    await vi.advanceTimersByTimeAsync(0)
+    finishSend(json(202, ack('wf-42')))
+    await vi.advanceTimersByTimeAsync(0)
+    expect(useAgentConversationStore().threadId).toBe('th-1')
+    await vi.advanceTimersByTimeAsync(500)
+
+    expect(workflowStore.activeWorkflow?.path).toBe('workflows/Late.json')
+    expect(useAgentWorkflowTabBindingStore().tabPathFor('wf-late')).toBe(
+      'workflows/Late.json'
+    )
+  })
+
   it('agent_active_tab opens an unknown workflow as a blank named tab', async () => {
     makeTab('wf-42')
     mockMessagesEndpoint('wf-42')
@@ -8505,6 +8705,258 @@ describe('AgentPanelRoot workflow binding', () => {
       expect(
         Boolean(workflowStore.getWorkflowByPath('workflows/Other.json'))
       ).toBe(kind === 'saved')
+    }
+  )
+
+  async function startNewChat(): Promise<void> {
+    await userEvent.click(screen.getByRole('button', { name: 'New chat' }))
+  }
+
+  async function openOtherChat(): Promise<void> {
+    await userEvent.click(
+      screen.getByRole('button', {
+        name: i18n.global.t('agent.showChatHistory')
+      })
+    )
+    await userEvent.click(
+      await screen.findByRole('button', { name: 'Other chat' })
+    )
+    await screen.findByRole('textbox')
+  }
+
+  it.for([
+    {
+      navigation: 'new-chat',
+      navigate: startNewChat,
+      targetPath: 'workflows/current.json'
+    },
+    { navigation: 'history', navigate: openOtherChat, targetPath: null }
+  ])(
+    'drops an older chat activation when $navigation navigation happens during the creation delay',
+    async ({ navigate, targetPath }) => {
+      const current = makeTab('wf-42')
+      mockMessagesEndpoint(
+        'wf-42',
+        [{ id: 'wf-42', name: 'current' }],
+        [
+          agentThread({
+            id: 'th-other',
+            title: 'Other chat',
+            last_message_at: '2026-09-25T00:00:00Z'
+          })
+        ]
+      )
+      renderWithSelectedTarget()
+      await sendFromComposer('work here')
+      vi.useFakeTimers()
+      ws.emit('agent_active_tab', {
+        workflow_id: 'wf-late',
+        name: 'Late',
+        thread_id: 'th-1'
+      })
+      await vi.advanceTimersByTimeAsync(0)
+      expect(useWorkflowTabActivityStore().creatingTab).toBe(true)
+      await navigate()
+      await vi.advanceTimersByTimeAsync(500)
+
+      expect(workflowStore.getWorkflowByPath('workflows/Late.json')).toBeNull()
+      expect(workflowStore.activeWorkflow?.path).toBe(current.path)
+      expect(useAgentPanelStore().selectedWorkflow?.path ?? null).toBe(
+        targetPath
+      )
+      expect(
+        useAgentWorkflowTabBindingStore().tabPathFor('wf-late')
+      ).toBeUndefined()
+    }
+  )
+
+  it.for([
+    {
+      kind: 'saved',
+      navigation: 'new-chat',
+      navigate: startNewChat,
+      prepareTab: () => addTab('workflows/Late.json'),
+      cloudRows: [{ id: 'wf-late', name: 'Late' }],
+      targetPath: 'workflows/current.json'
+    },
+    {
+      kind: 'saved',
+      navigation: 'history',
+      navigate: openOtherChat,
+      prepareTab: () => addTab('workflows/Late.json'),
+      cloudRows: [{ id: 'wf-late', name: 'Late' }],
+      targetPath: null
+    },
+    {
+      kind: 'new',
+      navigation: 'new-chat',
+      navigate: startNewChat,
+      prepareTab: () => {},
+      cloudRows: [],
+      targetPath: 'workflows/current.json'
+    },
+    {
+      kind: 'new',
+      navigation: 'history',
+      navigate: openOtherChat,
+      prepareTab: () => {},
+      cloudRows: [],
+      targetPath: null
+    }
+  ])(
+    'keeps the newer chat target when an older $kind activation settles after $navigation',
+    async ({ navigate, prepareTab, cloudRows, targetPath }) => {
+      const current = makeTab('wf-42')
+      prepareTab()
+      mockMessagesEndpoint(
+        'wf-42',
+        [{ id: 'wf-42', name: 'current' }, ...cloudRows],
+        [
+          agentThread({
+            id: 'th-other',
+            title: 'Other chat',
+            last_message_at: '2026-09-25T00:00:00Z'
+          })
+        ]
+      )
+      renderWithSelectedTarget()
+      await sendFromComposer('work here')
+      vi.useFakeTimers()
+      let finishOpen = () => {}
+      const opening = new Promise<void>((resolve) => {
+        finishOpen = resolve
+      })
+      let openStarted = () => {}
+      const started = new Promise<void>((resolve) => {
+        openStarted = resolve
+      })
+      vi.mocked(useWorkflowService().openWorkflow).mockImplementationOnce(
+        async (tab, options) => {
+          openStarted()
+          await opening
+          if (options?.isCurrent?.() === false) return false
+          workflowStore.activeWorkflow = await tab.load()
+          return true
+        }
+      )
+      ws.emit('agent_active_tab', {
+        workflow_id: 'wf-late',
+        name: 'Late',
+        thread_id: 'th-1'
+      })
+      await vi.advanceTimersByTimeAsync(500)
+      await started
+      await navigate()
+      finishOpen()
+      await vi.advanceTimersByTimeAsync(0)
+
+      expect(workflowStore.activeWorkflow?.path).toBe(current.path)
+      expect(useAgentPanelStore().selectedWorkflow?.path ?? null).toBe(
+        targetPath
+      )
+      expect(
+        useAgentWorkflowTabBindingStore().workflowIdFor(current.path)
+      ).toBe('wf-42')
+      expect(
+        useAgentWorkflowTabBindingStore().tabPathFor('wf-late')
+      ).toBeUndefined()
+      expect(useWorkflowTabActivityStore().creatingTab).toBe(false)
+    }
+  )
+
+  async function startCurrentChat(): Promise<void> {
+    mockMessagesEndpoint('wf-42', [{ id: 'wf-42', name: 'current' }])
+    renderWithSelectedTarget()
+    await sendFromComposer('work here')
+  }
+
+  async function openUnresolvedCurrentChat(): Promise<void> {
+    localStorage.setItem(StorageKeys.agentThread('personal'), 'th-history')
+    stubHistoryWithWorkflowListing(200)
+    render(AgentPanelRoot, { global: { plugins: [i18n] } })
+    await waitFor(() =>
+      expect(useAgentChatHistoryStore().activeId).toBe('th-history')
+    )
+    expect(useAgentPanelStore().selectedWorkflow).toBeNull()
+  }
+
+  async function deleteFailedHistoryRow(): Promise<void> {
+    const options = screen.getByRole('button', {
+      name: i18n.global.t('agent.chatOptions')
+    })
+    expect(options).toBeEnabled()
+    await userEvent.click(options)
+    await userEvent.click(
+      await screen.findByRole('menuitem', {
+        name: i18n.global.t('g.delete')
+      })
+    )
+    expect(screen.queryByRole('button', { name: 'Earlier chat' })).toBeNull()
+  }
+
+  it.for([
+    {
+      rowState: 'retry',
+      alreadyCurrent: false,
+      prepareChat: startCurrentChat,
+      afterFailure: async () => {},
+      activeId: 'th-1'
+    },
+    {
+      rowState: 'deleted',
+      alreadyCurrent: false,
+      prepareChat: startCurrentChat,
+      afterFailure: deleteFailedHistoryRow,
+      activeId: 'th-1'
+    },
+    {
+      rowState: 'retry',
+      alreadyCurrent: true,
+      prepareChat: openUnresolvedCurrentChat,
+      afterFailure: async () => {},
+      activeId: 'th-history'
+    }
+  ])(
+    'does not activate a failed history row ($rowState, Current=$alreadyCurrent)',
+    async ({ prepareChat, afterFailure, activeId }) => {
+      const current = makeTab('wf-42')
+      await prepareChat()
+      let finishListing = (_status: number) => {}
+      const listing = new Promise<number>((resolve) => {
+        finishListing = resolve
+      })
+      stubHistoryWithWorkflowListing(listing)
+      await userEvent.click(
+        screen.getByRole('button', {
+          name: i18n.global.t('agent.showChatHistory')
+        })
+      )
+      await userEvent.click(
+        await screen.findByRole('button', { name: 'Earlier chat' })
+      )
+      await waitFor(() =>
+        expect(useAgentConversationStore().threadId).toBe('th-history')
+      )
+      vi.useFakeTimers()
+      ws.emit('agent_active_tab', {
+        workflow_id: 'wf-late',
+        name: 'Late',
+        thread_id: 'th-history'
+      })
+      finishListing(500)
+      await vi.advanceTimersByTimeAsync(0)
+      expect(
+        await screen.findByText(i18n.global.t('agent.historyOpenFailed'))
+      ).toBeVisible()
+      await afterFailure()
+      await vi.advanceTimersByTimeAsync(500)
+
+      expect(workflowStore.activeWorkflow?.path).toBe(current.path)
+      expect(workflowStore.getWorkflowByPath('workflows/Late.json')).toBeNull()
+      expect(
+        useAgentWorkflowTabBindingStore().tabPathFor('wf-late')
+      ).toBeUndefined()
+      expect(useAgentChatHistoryStore().activeId).toBe(activeId)
     }
   )
 
@@ -8612,7 +9064,8 @@ describe('AgentPanelRoot workflow binding', () => {
     await vi.advanceTimersByTimeAsync(500)
 
     expect(useWorkflowService().openWorkflow).toHaveBeenCalledExactlyOnceWith(
-      current
+      current,
+      expect.objectContaining({ isCurrent: expect.any(Function) })
     )
     expect(workflowStore.getWorkflowByPath('workflows/Queued.json')).toBeNull()
     expect(
@@ -8672,7 +9125,8 @@ describe('AgentPanelRoot workflow binding', () => {
 
     await vi.waitFor(() =>
       expect(useWorkflowService().openWorkflow).toHaveBeenCalledWith(
-        expect.objectContaining({ path: 'workflows/Video test.json' })
+        expect.objectContaining({ path: 'workflows/Video test.json' }),
+        expect.objectContaining({ isCurrent: expect.any(Function) })
       )
     )
     await vi.waitFor(() =>
@@ -8708,7 +9162,8 @@ describe('AgentPanelRoot workflow binding', () => {
 
     await vi.waitFor(() =>
       expect(useWorkflowService().openWorkflow).toHaveBeenCalledWith(
-        expect.objectContaining({ path: 'workflows/Video test.json' })
+        expect.objectContaining({ path: 'workflows/Video test.json' }),
+        expect.objectContaining({ isCurrent: expect.any(Function) })
       )
     )
     await vi.waitFor(() =>
@@ -9283,7 +9738,10 @@ describe('AgentPanelRoot workflow binding', () => {
       thread_id: 'th-1'
     })
     await vi.waitFor(() =>
-      expect(useWorkflowService().openWorkflow).toHaveBeenCalledWith(duck)
+      expect(useWorkflowService().openWorkflow).toHaveBeenCalledWith(
+        duck,
+        expect.objectContaining({ isCurrent: expect.any(Function) })
+      )
     )
     expect(
       workflowStore.getWorkflowByPath('workflows/duck (2).json')
@@ -10287,7 +10745,10 @@ describe('AgentPanelRoot workflow binding', () => {
       thread_id: 'th-1'
     })
     await vi.waitFor(() =>
-      expect(useWorkflowService().openWorkflow).toHaveBeenCalledWith(other)
+      expect(useWorkflowService().openWorkflow).toHaveBeenCalledWith(
+        other,
+        expect.objectContaining({ isCurrent: expect.any(Function) })
+      )
     )
     expect(selector).toHaveTextContent('current')
 
