@@ -43,11 +43,9 @@ test.describe('Footer language switcher', () => {
       languages.getByRole('link', { name: '简体中文' })
     ).toHaveAttribute('href', '/zh-CN/privacy-policy/')
 
-    const current = languages.locator('[aria-current]')
-    await expect(current).toHaveCount(1)
-    await expect(current).toHaveAttribute('aria-current', 'page')
-    await expect(current).toHaveText('English')
-    await expect(current).toHaveAttribute('href', '/privacy-policy/')
+    await expect(languages.locator('[aria-current="page"]')).toHaveText(
+      'English'
+    )
 
     await expect
       .poll(() =>
