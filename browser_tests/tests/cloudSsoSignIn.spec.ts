@@ -204,9 +204,13 @@ test.describe('Cloud login SSO entry', { tag: ['@cloud', '@ui'] }, () => {
         const returnTo = new URL(route.request().url()).searchParams.get(
           'return_to'
         )
+        // Playwright does not route requests that follow a redirect, so the
+        // IdP round trip ends in a fresh navigation to return_to instead.
+        const target = new URL(returnTo ?? '/', APP_URL).toString()
         return route.fulfill({
-          status: 302,
-          headers: { location: new URL(returnTo ?? '/', APP_URL).toString() }
+          status: 200,
+          contentType: 'text/html',
+          body: `<script>location.replace(${JSON.stringify(target)})</script>`
         })
       })
       // The server serves the SPA as a page only at /cloud/oauth/consent and
