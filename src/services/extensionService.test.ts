@@ -230,10 +230,11 @@ describe('invokeExtensionsAsync', () => {
     expect(events).toEqual(['slow:start', 'fast:start', 'slow:end'])
   })
 
-  it('waits for async hooks and resolves with their results', async () => {
+  it('returns one result per extension, in extension order', async () => {
+    const widgets = { CUSTOM: noop }
     register(
       { name: 'none-first' },
-      { name: 'sync', [HOOK]: () => 'sync-result' },
+      { name: 'sync', [HOOK]: () => widgets },
       { name: 'a', [HOOK]: async () => 'a-result' },
       { name: 'none-last' },
       { name: 'b', [HOOK]: () => Promise.resolve('b-result') }
@@ -241,7 +242,27 @@ describe('invokeExtensionsAsync', () => {
 
     const results = await invoke()
 
-    expect(results).toEqual(['a-result', 'b-result'])
+    expect(results).toHaveLength(5)
+    expect(results).toEqual([
+      undefined,
+      widgets,
+      'a-result',
+      undefined,
+      'b-result'
+    ])
+    expect(results[1]).toBe(widgets)
+  })
+
+  it('keeps falsy but defined sync and async return values', async () => {
+    register(
+      { name: 'zero', [HOOK]: () => 0 },
+      { name: 'false', [HOOK]: () => false },
+      { name: 'empty', [HOOK]: () => '' },
+      { name: 'null', [HOOK]: () => null },
+      { name: 'async-zero', [HOOK]: async () => 0 }
+    )
+
+    expect(await invoke()).toEqual([0, false, '', null, 0])
   })
 
   it('awaits thenables that are not native promises', async () => {
@@ -264,14 +285,15 @@ describe('invokeExtensionsAsync', () => {
     expect(results).toEqual(['done'])
   })
 
-  it('skips disabled extensions', async () => {
+  it('skips disabled extensions without leaving a slot', async () => {
     const hook = vi.fn()
     register({ name: 'off', [HOOK]: hook }, { name: 'on', [HOOK]: hook })
     useExtensionStore().loadDisabledExtensionNames(['off'])
 
-    await invoke()
+    const results = await invoke()
 
     expect(hook).toHaveBeenCalledOnce()
+    expect(results).toHaveLength(1)
   })
 
   it('calls hooks inherited from the prototype chain', async () => {
@@ -303,9 +325,10 @@ describe('invokeExtensionsAsync', () => {
       { name: 'after', [HOOK]: after }
     )
 
-    await invoke()
+    const results = await invoke()
 
     expect(after).toHaveBeenCalledOnce()
+    expect(results).toEqual([undefined, undefined])
     expect(console.error).not.toHaveBeenCalled()
   })
 
@@ -323,10 +346,12 @@ describe('invokeExtensionsAsync', () => {
       { name: 'after', [HOOK]: after }
     )
 
-    await invoke()
+    const results = await invoke()
 
     expect(before).toHaveBeenCalledOnce()
     expect(after).toHaveBeenCalledOnce()
+    expect(results).toHaveLength(3)
+    expect(results[1]).toBeUndefined()
     expect(console.error).toHaveBeenCalledOnce()
     expect(vi.mocked(console.error).mock.calls[0][0]).toBe(
       `Error calling extension 'sync-throw' method '${HOOK}'`

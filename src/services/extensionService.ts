@@ -280,19 +280,21 @@ export const useExtensionService = () => {
   /**
    * Invoke an async extension callback
    * Each callback will be invoked concurrently, in extension order. Only
-   * extensions that define the callback do any work, and only the promises
-   * that callbacks actually return are awaited (callbacks that return
-   * synchronously are never wrapped in a promise). The resolved array holds
-   * the results of those async callbacks, so it is not index-aligned with the
-   * extensions.
+   * extensions that define the callback do any work, and only promises that
+   * callbacks actually return are awaited (callbacks that return
+   * synchronously are never wrapped in a promise).
    * @param {string} method The extension callback to execute
    * @param  {...unknown} args Any arguments to pass to the callback
-   * @returns
+   * @returns One entry per enabled extension, in extension order: the
+   * (awaited) return value of its callback, or undefined if it has no such
+   * callback or the callback threw or rejected.
    */
   const invokeExtensionsAsync = async <T extends KnownExtensionMethods>(
     method: T,
     ...args: Parameters<ComfyExtensionParamsWithoutApp<T>>
   ) => {
+    type Result = Awaited<ReturnType<ComfyExtensionMethod<T>>> | undefined
+
     const logError = (ext: ComfyExtension, error: unknown) =>
       console.error(
         `Error calling extension '${ext.name}' method '${method}'`,
@@ -303,13 +305,15 @@ export const useExtensionService = () => {
 
     // This runs once per node def per extension, so avoid allocating promises
     // or closures for extensions that do not define the hook.
-    const pending: Promise<unknown>[] = []
-    for (const ext of extensionStore.enabledExtensions) {
+    const exts = extensionStore.enabledExtensions
+    const results: Result[] = Array.from({ length: exts.length })
+    const pending: Promise<void>[] = []
+    exts.forEach((ext, index) => {
       // The property read is inside the try so a throwing getter or Proxy trap
       // only affects its own extension.
       try {
         const fn = ext[method]
-        if (typeof fn !== 'function') continue
+        if (typeof fn !== 'function') return
 
         if (method === 'setup') {
           // Track the current extension for legacy compatibility
@@ -321,22 +325,31 @@ export const useExtensionService = () => {
               } finally {
                 legacyMenuCompat.setCurrentExtension(null)
               }
-            })().catch((error) => logError(ext, error))
+            })().then(
+              (value) => void (results[index] = value as Result),
+              (error) => logError(ext, error)
+            )
           )
-          continue
+          return
         }
 
         const result: unknown = fn.call(ext, ...args, app)
         if (isPromiseLike(result)) {
           pending.push(
-            Promise.resolve(result).catch((error) => logError(ext, error))
+            Promise.resolve(result).then(
+              (value) => void (results[index] = value as Result),
+              (error) => logError(ext, error)
+            )
           )
+        } else {
+          results[index] = result as Result
         }
       } catch (error) {
         logError(ext, error)
       }
-    }
-    return await Promise.all(pending)
+    })
+    await Promise.all(pending)
+    return results
   }
 
   return {
