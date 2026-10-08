@@ -1,5 +1,6 @@
 import { spawnSync } from 'node:child_process'
 import { readFileSync } from 'node:fs'
+import { runInNewContext } from 'node:vm'
 
 import { describe, expect, it } from 'vitest'
 import { parse } from 'yaml'
@@ -7,7 +8,9 @@ import { z } from 'zod'
 
 const stepSchema = z.object({
   run: z.string().optional(),
+  if: z.string().optional(),
   uses: z.string().optional(),
+  env: z.record(z.string(), z.string()).optional(),
   with: z.record(z.string(), z.unknown()).optional()
 })
 
@@ -151,8 +154,7 @@ describe('candidate prerequisites', () => {
         SHOULD_RUN: 'false',
         DESKTOP_CLOUD_BUILD: 'skipped',
         SHARDED: 'skipped',
-        BROWSERS: 'skipped',
-        VIDEO: 'skipped'
+        BROWSERS: 'skipped'
       },
       1
     ],
@@ -164,8 +166,7 @@ describe('candidate prerequisites', () => {
         SHOULD_RUN: 'false',
         DESKTOP_CLOUD_BUILD: 'skipped',
         SHARDED: 'skipped',
-        BROWSERS: 'skipped',
-        VIDEO: 'skipped'
+        BROWSERS: 'skipped'
       },
       0
     ]
@@ -272,3 +273,46 @@ describe('candidate prerequisites', () => {
     }
   )
 })
+
+it.for([
+  ['ci-tests-e2e.yaml', 'deploy-and-comment', '${{ needs.e2e-status.result }}'],
+  [
+    'ci-tests-e2e-forks.yaml',
+    'deploy-and-comment-forked-pr',
+    '${{ github.event.workflow_run.conclusion }}'
+  ]
+])('%s passes its verdict to the report renderer', ([file, job, result]) => {
+  expect(
+    workflow(file).jobs[job].steps?.find((step) => step.env?.SUMMARY_FILE)?.env
+      ?.WORKFLOW_RESULT
+  ).toBe(result)
+})
+
+it.for([
+  ['cloud', 'success', true],
+  ['cloud', 'failure', false],
+  ['cloud', 'cancelled', false],
+  ['chromium', 'failure', true]
+])(
+  'merges %s reports after a %s distribution build: %s',
+  ([project, result, expected]) => {
+    const decisions = pipeline.jobs['merge-reports'].steps?.map((step) =>
+      runInNewContext(
+        (step.if ?? '${{ true }}')
+          .slice(3, -2)
+          .replace(/\.([a-zA-Z_][\w-]*)/g, '["$1"]'),
+        {
+          matrix: { project },
+          needs: { 'setup-desktop-cloud': { result } }
+        }
+      )
+    )
+    expect(decisions).toEqual([
+      expected,
+      expected,
+      expected,
+      expected,
+      expected
+    ])
+  }
+)

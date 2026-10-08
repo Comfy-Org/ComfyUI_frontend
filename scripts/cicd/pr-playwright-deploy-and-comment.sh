@@ -292,7 +292,7 @@ else
     unset IFS
     
     # Determine overall status (flaky tests are treated as passing)
-    if [ $total_failed -gt 0 ]; then
+    if [ "${WORKFLOW_RESULT:-success}" != "success" ] || [ $total_failed -gt 0 ]; then
         status_icon="❌"
     elif [ $total_tests -gt 0 ]; then
         status_icon="✅"
@@ -308,11 +308,21 @@ else
     
     # Generate compact single-line comment (omit standalone marker when writing
     # to SUMMARY_FILE — the upsert action adds its own section delimiters).
+    result_note=""
+    if [ "${WORKFLOW_RESULT:-success}" != "success" ]; then
+        result_note="Workflow ${WORKFLOW_RESULT} · "
+    fi
     if [ -n "${SUMMARY_FILE:-}" ]; then
-        comment="## 🎭 Playwright: $status_icon $total_passed passed, $total_failed failed$flaky_note"
+        comment="## 🎭 Playwright: $status_icon ${result_note}${total_passed} passed, $total_failed failed$flaky_note"
     else
         comment="$COMMENT_MARKER
-## 🎭 Playwright: $status_icon $total_passed passed, $total_failed failed$flaky_note"
+## 🎭 Playwright: $status_icon ${result_note}${total_passed} passed, $total_failed failed$flaky_note"
+    fi
+
+    if [ "${WORKFLOW_RESULT:-success}" != "success" ]; then
+        comment="$comment
+
+Workflow result: ${WORKFLOW_RESULT}. Test counts include only available reports."
     fi
 
     # Extract and display failed tests from all browsers (flaky tests are treated as passing)

@@ -91,6 +91,8 @@ jobs:
   # Separate from setup so the chromium shards, which only need frontend-dist,
   # don't wait for these builds.
   setup-desktop-cloud:
+    permissions:
+      contents: read
     needs: changes
     if: ${{ needs.changes.outputs.should-run == 'true' }}
     runs-on: ubuntu-latest
@@ -368,7 +370,8 @@ jobs:
         changes,
         preflight,
         playwright-tests-chromium-sharded,
-        playwright-tests-cloud-sharded
+        playwright-tests-cloud-sharded,
+        setup-desktop-cloud
       ]
     runs-on: ubuntu-latest
     if: ${{ !cancelled() && needs.preflight.result == 'success' && needs.changes.outputs.should-run == 'true' }}
@@ -377,16 +380,19 @@ jobs:
       matrix:
         project: [chromium, cloud]
     steps:
-      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+      - if: ${{ matrix.project != 'cloud' || needs.setup-desktop-cloud.result == 'success' }}
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
           sparse-checkout: /package.json
           sparse-checkout-cone-mode: false
           persist-credentials: false
 
       - name: Install pnpm
+        if: ${{ matrix.project != 'cloud' || needs.setup-desktop-cloud.result == 'success' }}
         uses: pnpm/action-setup@0977fd99725f1db4007ccb2928dbb4e90d06cc86 # v6.0.10
 
       - name: Download blob reports
+        if: ${{ matrix.project != 'cloud' || needs.setup-desktop-cloud.result == 'success' }}
         uses: actions/download-artifact@3e5f45b2cfb9172054b4087a40e8e0b5a5461e7c # v8.0.1
         with:
           path: ./all-blob-reports
@@ -394,6 +400,7 @@ jobs:
           merge-multiple: true
 
       - name: Merge into HTML Report
+        if: ${{ matrix.project != 'cloud' || needs.setup-desktop-cloud.result == 'success' }}
         run: |
           # Generate HTML report
           pnpm dlx @playwright/test merge-reports --reporter=html ./all-blob-reports
@@ -402,6 +409,7 @@ jobs:
           pnpm dlx @playwright/test merge-reports --reporter=json ./all-blob-reports
 
       - name: Upload HTML report
+        if: ${{ matrix.project != 'cloud' || needs.setup-desktop-cloud.result == 'success' }}
         uses: actions/upload-artifact@b7c566a772e6b6bfb58ed0dc250532a479d7789f # v6.0.0
         with:
           name: playwright-report-${{ matrix.project }}
@@ -438,6 +446,7 @@ jobs:
           [[ "$PREFLIGHT" != "success" ]] && echo "CI prerequisites did not pass ($PREFLIGHT)" && exit 1
           [[ "$CHANGES" != "success" ]] && echo "changes gate did not complete ($CHANGES)" && exit 1
           [[ "$SHOULD_RUN" != "true" ]] && echo "E2E skipped" && exit 0
+          [[ "$DESKTOP_CLOUD_BUILD" == "cancelled" ]] && echo "E2E cancelled, not failed" && exit 1
           [[ "$DESKTOP_CLOUD_BUILD" != "success" ]] && echo "Desktop and cloud builds did not pass ($DESKTOP_CLOUD_BUILD)" && exit 1
           [[ "$SHARDED" == "failure" || "$CLOUD" == "failure" || "$BROWSERS" == "failure" ]] && echo "E2E failed" && exit 1
           [[ "$SHARDED" == "cancelled" || "$CLOUD" == "cancelled" || "$BROWSERS" == "cancelled" ]] && echo "E2E cancelled, not failed" && exit 1
@@ -497,7 +506,7 @@ jobs:
 
   # Deploy and upsert final playwright section
   deploy-and-comment:
-    needs: [changes, preflight, playwright-tests, merge-reports]
+    needs: [changes, preflight, playwright-tests, merge-reports, e2e-status]
     runs-on: ubuntu-latest
     concurrency:
       group: pr-comment-${{ github.event.pull_request.number }}
@@ -531,6 +540,7 @@ jobs:
           GITHUB_TOKEN: ${{ github.token }}
           GITHUB_SHA: ${{ github.event.pull_request.head.sha }}
           SUMMARY_FILE: playwright-section.md
+          WORKFLOW_RESULT: ${{ needs.e2e-status.result }}
           BRANCH_NAME: ${{ github.head_ref }}
         run: |
           bash ./scripts/cicd/pr-playwright-deploy-and-comment.sh \
