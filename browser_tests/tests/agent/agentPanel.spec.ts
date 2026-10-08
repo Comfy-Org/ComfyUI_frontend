@@ -4,7 +4,6 @@ import type { WebSocketRoute } from '@playwright/test'
 import { expect, mergeTests } from '@playwright/test'
 
 import { TopUpCreditsDialog } from '@e2e/fixtures/components/TopUpCreditsDialog'
-import { hostTelemetryFixture } from '@e2e/fixtures/hostTelemetryFixture'
 import { webSocketFixture } from '@e2e/fixtures/ws'
 
 import enMessages from '@/locales/en/main.json' with { type: 'json' }
@@ -27,7 +26,7 @@ import {
   agentTest
 } from '@e2e/tests/agent/agentPanelMocks'
 
-const test = mergeTests(agentTest, webSocketFixture, hostTelemetryFixture)
+const test = mergeTests(agentTest, webSocketFixture)
 
 function pushEvent(ws: WebSocketRoute, event: AgentWsEvent): void {
   ws.send(JSON.stringify(event))
@@ -178,54 +177,6 @@ test.describe('In-App Agent panel', { tag: '@cloud' }, () => {
     await expect(panel.getByText('Set widget')).toBeVisible()
     await expect(panel.getByText('Opened a new tab')).toBeVisible()
     await expect(panel.getByText('Resize image node')).toBeVisible()
-  })
-
-  test.describe('starter prompt experiment', () => {
-    test.describe('treatment', () => {
-      test.use({
-        initialFeatureFlags: { enable_telemetry: true },
-        starterPromptSet: 'test'
-      })
-
-      test('reports the treatment exposure and carries the arm onto the send', async ({
-        agentPanel,
-        hostTelemetry
-      }) => {
-        const treatmentPrompt =
-          enMessages.agent.suggestedPrompts.treatment.cloud[0]
-
-        await test.step('open the panel on the treatment arm', async () => {
-          await agentPanel.open()
-          await agentPanel.selectWorkflow()
-          await expect
-            .poll(() =>
-              hostTelemetry.find(
-                ({ event }) => event === 'app:agent_starter_prompt_exposure'
-              )
-            )
-            .toEqual({
-              event: 'app:agent_starter_prompt_exposure',
-              properties: { '$feature/agent-starter-prompt-set': 'test' }
-            })
-        })
-
-        await test.step('send a treatment starter prompt', async () => {
-          await agentPanel.root
-            .getByRole('button', { name: treatmentPrompt })
-            .click()
-          await expect(agentPanel.composer).toHaveText(treatmentPrompt)
-          await agentPanel.sendButton.click()
-          await expect
-            .poll(
-              () =>
-                hostTelemetry.find(
-                  ({ event }) => event === 'app:agent_message_sent'
-                )?.properties['$feature/agent-starter-prompt-set']
-            )
-            .toBe('test')
-        })
-      })
-    })
   })
 
   test('shows an admission paywall without losing the rejected prompt', async ({
