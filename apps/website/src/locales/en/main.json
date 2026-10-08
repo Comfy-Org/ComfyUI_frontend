@@ -697,7 +697,7 @@
       "buildHint": "Put it in your product with APIs"
     },
     "explore": {
-      "subtitle": "Want a result? Use an app. Want control? Open a workflow. Building a product? Use a model’s API.",
+      "subtitle": "Start with an app, go deeper with a workflow, or build with a model.",
       "searchLabel": "Search the Hub",
       "searchPlaceholder": "Try “relight”, “upscale” or a model name",
       "popularTitle": "Popular right now",

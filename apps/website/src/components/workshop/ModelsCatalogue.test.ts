@@ -100,13 +100,12 @@ describe('ModelsCatalogue', () => {
       locale: 'en',
       tab: 'explore',
       subtitle:
-        'Want a result? Use an app. Want control? Open a workflow. Building a product? Use a model’s API.'
+        'Start with an app, go deeper with a workflow, or build with a model.'
     },
     {
       locale: 'zh-CN',
       tab: 'explore',
-      subtitle:
-        '想要结果？用应用。想要掌控？打开工作流。要做产品？用模型的 API。'
+      subtitle: '从应用开始，用工作流深入，或用模型来构建。'
     },
     {
       locale: 'en',

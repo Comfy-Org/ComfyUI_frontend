@@ -4541,7 +4541,7 @@
       "buildHint": "通过 API 用在你的产品中"
     },
     "explore": {
-      "subtitle": "想要结果？用应用。想要掌控？打开工作流。要做产品？用模型的 API。",
+      "subtitle": "从应用开始，用工作流深入，或用模型来构建。",
       "searchLabel": "搜索 Hub",
       "searchPlaceholder": "试试“relight”、“upscale”或模型名称",
       "popularTitle": "当前热门",

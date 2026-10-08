@@ -102,7 +102,7 @@ for (const reducedMotion of ['no-preference', 'reduce'] as const) {
     {
       from: 'apps',
       to: 'explore',
-      copy: 'Want a result? Use an app.'
+      copy: 'Start with an app, go deeper with a workflow'
     }
   ] as const) {
     test(`${from} to ${to} crossfades only under no-preference (${reducedMotion})`, async ({
