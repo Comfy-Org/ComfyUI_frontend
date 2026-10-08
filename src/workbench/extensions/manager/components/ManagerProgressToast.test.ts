@@ -61,7 +61,9 @@ it('offers startup retry while keeping accepted tasks pending', async () => {
     }
   })
   expect(
-    screen.getByText('Tasks are pending. Retry to continue.')
+    screen.getByText('Tasks are pending. Retry to continue.', {
+      selector: 'span'
+    })
   ).toBeVisible()
   expect(screen.getByRole('button', { name: 'Close' })).toBeDisabled()
   expect(
@@ -99,7 +101,7 @@ it('shows failed installations without suggesting a successful change', async ()
   expect(
     screen.queryByRole('button', { name: 'Apply Changes' })
   ).not.toBeInTheDocument()
-  expect(screen.getByText('Failed')).toBeInTheDocument()
+  expect(screen.getByText('Failed', { selector: 'span' })).toBeInTheDocument()
   const user = userEvent.setup()
   await user.click(screen.getByRole('button', { name: 'Expand' }))
   await user.click(screen.getByRole('tab', { name: 'Failed' }))
@@ -252,7 +254,7 @@ it.for([[], ['failed']])(
       }
     })
     expect(
-      screen.getByText(en.manager.restartToApplyChanges)
+      screen.getByText(en.manager.restartToApplyChanges, { selector: 'span' })
     ).toBeInTheDocument()
     expect(screen.getByRole('button', { name: 'Apply Changes' })).toBeEnabled()
   }
@@ -297,7 +299,7 @@ it('finishes an empty batch without an error or restart action', () => {
       plugins: [createI18n({ legacy: false, locale: 'en', messages: { en } })]
     }
   })
-  expect(screen.getByText(en.g.completed)).toBeVisible()
+  expect(screen.getByText(en.g.completed, { selector: 'span' })).toBeVisible()
   expect(screen.queryByText('Failed')).not.toBeInTheDocument()
   expect(
     screen.queryByRole('button', { name: 'Apply Changes' })
@@ -502,4 +504,49 @@ it('renders only while task logs exist', async () => {
   await nextTick()
 
   expect(screen.getByRole('button', { name: 'Expand' })).toBeVisible()
+})
+
+it.for([
+  {
+    name: 'installing',
+    announcement: en.manager.installingDependencies,
+    arrange: (store: ReturnType<typeof useComfyManagerStore>) => {
+      vi.spyOn(store, 'isProcessingTasks', 'get').mockReturnValue(true)
+    }
+  },
+  {
+    name: 'waiting on a failed queue start',
+    announcement: en.manager.queueWaitingToContinue,
+    arrange: (store: ReturnType<typeof useComfyManagerStore>) => {
+      vi.spyOn(store, 'isProcessingTasks', 'get').mockReturnValue(true)
+      store.queueError = 'Queue start temporarily unavailable'
+    }
+  },
+  {
+    name: 'finished with a failure',
+    announcement: en.g.failed,
+    arrange: (store: ReturnType<typeof useComfyManagerStore>) => {
+      store.failedTasksIds = ['task']
+    }
+  },
+  {
+    name: 'finished successfully',
+    announcement: en.manager.restartToApplyChanges,
+    arrange: (store: ReturnType<typeof useComfyManagerStore>) => {
+      store.succeededTasksIds = ['task']
+    }
+  }
+])('announces the queue status when $name', ({ announcement, arrange }) => {
+  const store = useComfyManagerStore()
+  store.taskLogs = [{ taskId: 'task', taskName: 'Installing pack', logs: [] }]
+  arrange(store)
+  render(ManagerProgressToast, {
+    global: {
+      plugins: [createI18n({ legacy: false, locale: 'en', messages: { en } })]
+    }
+  })
+
+  expect(
+    screen.getByText(announcement, { selector: '[role="status"]' })
+  ).toBeInTheDocument()
 })

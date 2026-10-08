@@ -79,6 +79,17 @@ const currentTaskName = computed(() => {
   return task?.taskName ?? t('manager.installingDependencies')
 })
 
+const announcement = computed(() => {
+  if (comfyManagerStore.queueError && isInProgress.value)
+    return t('manager.queueWaitingToContinue')
+  if (isRestarting.value || isRestartCompleted.value)
+    return currentTaskName.value
+  if (isInProgress.value) return t('manager.installingDependencies')
+  if (hasSuccessfulTasks.value) return t('manager.restartToApplyChanges')
+  if (comfyManagerStore.failedTasksIds.length) return t('g.failed')
+  return t('g.completed')
+})
+
 const sectionsContainerRef = ref<HTMLElement | null>(null)
 const { y: scrollY } = useScroll(sectionsContainerRef, {
   eventListenerOptions: { passive: true }
@@ -162,7 +173,7 @@ onBeforeUnmount(() => {
 </script>
 
 <template>
-  <ToastPanel v-model:expanded="isExpanded" :visible>
+  <ToastPanel v-model:expanded="isExpanded" :visible :announcement>
     <template #default>
       <Tabs
         v-if="isExpanded"

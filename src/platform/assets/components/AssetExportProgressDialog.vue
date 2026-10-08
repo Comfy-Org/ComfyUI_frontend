@@ -45,6 +45,10 @@ const footerLabel = computed(() => {
   return t('exportToast.allExportsCompleted')
 })
 
+const announcement = computed(() =>
+  isInProgress.value ? t('exportToast.exportingAssets') : footerLabel.value
+)
+
 const footerIconClass = computed(() => {
   if (isInProgress.value)
     return 'icon-[lucide--loader-circle] animate-spin text-muted-foreground'
@@ -72,7 +76,7 @@ function closeDialog() {
 </script>
 
 <template>
-  <ToastPanel v-model:expanded="isExpanded" :visible>
+  <ToastPanel v-model:expanded="isExpanded" :visible :announcement>
     <template #default>
       <div
         class="flex h-12 items-center justify-between border-b border-border-default px-4"

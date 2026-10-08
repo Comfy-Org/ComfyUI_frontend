@@ -1,8 +1,9 @@
 <script setup lang="ts">
 import { cn } from '@comfyorg/tailwind-utils'
 
-const { visible } = defineProps<{
+const { visible, announcement = '' } = defineProps<{
   visible: boolean
+  announcement?: string
 }>()
 
 const isExpanded = defineModel<boolean>('expanded', { default: false })
@@ -13,6 +14,9 @@ function toggle() {
 </script>
 
 <template>
+  <div role="status" aria-atomic="true" class="sr-only">
+    <template v-if="visible">{{ announcement }}</template>
+  </div>
   <Transition
     enter-active-class="transition-all duration-300 ease-out"
     enter-from-class="translate-y-full opacity-0"

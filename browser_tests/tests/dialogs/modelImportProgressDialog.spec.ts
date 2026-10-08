@@ -89,13 +89,14 @@ test.describe('Model import progress toast', { tag: ['@screenshot'] }, () => {
       })
 
       await expect(
-        page.getByText('Importing Models', { exact: true })
+        comfyPage.toast.panels.getByText('Importing Models', { exact: true })
       ).toBeVisible()
     })
 
-    const failedFooterText = page.getByText('1 download failed', {
-      exact: true
-    })
+    const failedFooterText = comfyPage.toast.panels.getByText(
+      '1 download failed',
+      { exact: true }
+    )
 
     await test.step('show the retryable failure reported by the backend', async () => {
       await comfyPage.assets.dispatchDownload({
@@ -125,7 +126,9 @@ test.describe('Model import progress toast', { tag: ['@screenshot'] }, () => {
 
       await expect(failedFooterText).toBeHidden()
       await expect(
-        page.getByText('All downloads completed', { exact: true })
+        comfyPage.toast.panels.getByText('All downloads completed', {
+          exact: true
+        })
       ).toBeVisible()
     })
 
@@ -171,7 +174,7 @@ test.describe('Model import progress toast', { tag: ['@screenshot'] }, () => {
       .filter({ hasText: '1 download failed' })
     await expect(toast).toBeVisible()
     await expect(
-      page.getByText('1 download failed', { exact: true })
+      comfyPage.toast.panels.getByText('1 download failed', { exact: true })
     ).toBeVisible()
 
     await test.step('dismiss the failed model import', async () => {

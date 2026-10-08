@@ -133,3 +133,24 @@ it('renders only while a download is tracked', async () => {
 
   expect(screen.getByRole('button', { name: 'Expand' })).toBeVisible()
 })
+
+describe('ModelImportProgressDialog announcements', () => {
+  it.for([
+    { status: 'running', announcement: 'Importing Models' },
+    { status: 'failed', announcement: '1 download failed' },
+    { status: 'completed', announcement: 'All downloads completed' },
+    { status: 'cancelled', announcement: 'Cancelled' }
+  ] as const)(
+    'announces "$announcement" when the import is $status',
+    async ({ status, announcement }) => {
+      const store = renderDialog()
+
+      store.downloadList[0].status = status
+      await nextTick()
+
+      expect(
+        screen.getByText(announcement, { selector: '[role="status"]' })
+      ).toBeInTheDocument()
+    }
+  )
+})

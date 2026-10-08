@@ -1,6 +1,8 @@
 import { expect } from '@playwright/test'
 import type { Locator, Page } from '@playwright/test'
 
+import { TestIds } from '@e2e/fixtures/selectors'
+
 type ToastKind = 'error' | 'success' | 'warning' | 'loading'
 
 const TOAST_SELECTOR = '[data-testid="toast"]'
@@ -10,6 +12,7 @@ export function toastSelector(kind: ToastKind): string {
 }
 
 export class ToastHelper {
+  public readonly panels: Locator
   public readonly toastErrors: Locator
   public readonly toastLoadings: Locator
   public readonly toastSuccesses: Locator
@@ -17,6 +20,7 @@ export class ToastHelper {
   public readonly visibleToasts: Locator
 
   constructor(page: Page) {
+    this.panels = page.getByTestId(TestIds.toast.panel)
     this.toastErrors = page.locator(toastSelector('error'))
     this.toastLoadings = page.locator(toastSelector('loading'))
     this.toastSuccesses = page.locator(toastSelector('success'))

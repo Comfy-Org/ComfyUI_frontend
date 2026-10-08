@@ -470,7 +470,7 @@ test.describe('ManagerDialog', { tag: '@ui' }, () => {
         comfyPage.toast.toastErrors.filter({ hasText: result.result })
       ).toBeVisible()
       await expect(
-        comfyPage.page.getByText('Failed', { exact: true })
+        comfyPage.toast.panels.getByText('Failed', { exact: true })
       ).toBeVisible()
       await expect(
         info.getByRole('button', { name: 'Install', exact: true })
