@@ -21,10 +21,8 @@ describe('awareness frame validation', () => {
     data: { workflowId: 'wf-1', actor: 'human:user:tab-a', expiresAt: 456 }
   }
 
-  // Each wire state lands in one of three outcomes: absent keeps the frame
-  // without a state, invalid rejects the frame, and a valid record passes
-  // through. A null state counts as absent rather than discarding the whole
-  // frame (and with it actor/expires_at). discussion_r3911665011.
+  // The Go server omits an empty state and never sends `state: null`; null
+  // still counts as absent so the frame keeps actor and expires_at (#16653).
   const rejected = null
   it.for([
     {
