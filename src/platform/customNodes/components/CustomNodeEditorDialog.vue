@@ -152,6 +152,15 @@
       </div>
     </header>
 
+    <CustomNodeDraftTestPanel
+      v-if="session.editorKind === 'workbench' && isEditorVisible"
+      :key="session.id"
+      :session-id="session.id"
+      :disabled="!!activeAction || isNameSaving || isAbandoning"
+      :before-test="saveDraftForTest"
+      @busy="isDraftTesting = $event"
+    />
+
     <div
       v-if="pollError"
       class="shrink-0 border-b border-destructive-background/30 bg-destructive-background/10 px-4 py-2 text-sm text-destructive-background"
@@ -240,6 +249,7 @@ import type {
   CustomNodeEditorStatus
 } from '../composables/useCustomNodeEditor'
 import CustomNodeWorkbench from './CustomNodeWorkbench.vue'
+import CustomNodeDraftTestPanel from './CustomNodeDraftTestPanel.vue'
 
 const props = defineProps<{
   initialSession: CustomNodeEditorSession
@@ -263,6 +273,7 @@ const {
 const session = ref<CustomNodeEditorSession>({ ...props.initialSession })
 const isPolling = ref(false)
 const isAbandoning = ref(false)
+const isDraftTesting = ref(false)
 const agentOpen = ref(true)
 const explorerOpen = ref(true)
 const activeAction = ref<CustomNodeEditorAction | null>(null)
@@ -308,6 +319,7 @@ const canRename = computed(
   () =>
     session.value.status === 'ready' &&
     !isAbandoning.value &&
+    !isDraftTesting.value &&
     !isNameSaving.value &&
     !activeAction.value
 )
@@ -315,6 +327,7 @@ const canRunEditorAction = computed(
   () =>
     session.value.status === 'ready' &&
     !isAbandoning.value &&
+    !isDraftTesting.value &&
     !isNameSaving.value &&
     !activeAction.value
 )
@@ -446,6 +459,17 @@ const runEditorAction = async (action: CustomNodeEditorAction) => {
   } finally {
     activeAction.value = null
   }
+}
+
+async function saveDraftForTest() {
+  await commitName()
+  if (renameState.value.phase !== 'idle') {
+    throw new CustomNodeEditorRequestError(
+      t('customNodePacks.editor.renameFailed'),
+      409
+    )
+  }
+  await workbenchRef.value?.saveAll()
 }
 
 const onNameBlur = () => {

@@ -72,6 +72,9 @@ vi.mock('./CustomNodeWorkbench.vue', () => ({
       '<div data-testid="custom-node-workbench" :data-agent-open="agentOpen" :data-explorer-open="explorerOpen" />'
   }
 }))
+vi.mock('./CustomNodeDraftTestPanel.vue', () => ({
+  default: { template: '<div />' }
+}))
 vi.mock('../composables/useCustomNodeEditor', () => ({
   CustomNodeEditorRequestError: mocks.RequestError,
   useCustomNodeEditor: () => ({

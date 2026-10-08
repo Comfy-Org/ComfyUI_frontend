@@ -87,6 +87,21 @@
     "deleteFailed": "Delete failed",
     "close": "Close",
     "editor": {
+      "draftTest": {
+        "workflow": "Draft test workflow",
+        "run": "Test Draft",
+        "failed": "Could not run the draft test.",
+        "workflowMissing": "This test workflow no longer exists. Reopen the editor to refresh the list.",
+        "timeout": "Draft test timed out and was cancelled.",
+        "details": "Sandbox: {sandbox} · {duration} ms · {count} outputs",
+        "status": {
+          "queued": "Test queued",
+          "running": "Testing draft…",
+          "passed": "Backend test passed",
+          "failed": "Backend test failed",
+          "cancelled": "Test cancelled"
+        }
+      },
       "title": "Editing {name}",
       "editing": "Editing",
       "nameLabel": "Custom node pack name",
