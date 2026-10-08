@@ -3,6 +3,7 @@ import { beforeEach, describe, expect, it, vi } from 'vitest'
 
 import { captureWorkshopEvent } from '@/scripts/posthog'
 import {
+  FakeIntersectionObserver,
   setAllIntersecting,
   stubIntersectionObserver
 } from '@/test/fakeIntersectionObserver'
@@ -21,6 +22,16 @@ beforeEach(() => {
 })
 
 describe('HubRowSeen', () => {
+  it('watches the row it sits in, not itself', async () => {
+    const { container } = render(HubRowSeen, {
+      props: { view: { ...view, slugs: [...view.slugs] } }
+    })
+
+    await setAllIntersecting(false)
+
+    expect(FakeIntersectionObserver.instances[0].observed).toEqual([container])
+  })
+
   it('reports the row once it scrolls into view, and only once', async () => {
     render(HubRowSeen, { props: { view: { ...view, slugs: [...view.slugs] } } })
 

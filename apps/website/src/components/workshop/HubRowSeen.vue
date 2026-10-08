@@ -9,12 +9,16 @@ const { view } = defineProps<{ view: HubRowView }>()
 
 const marker = useTemplateRef<HTMLElement>('marker')
 let seen = false
-const { stop } = useIntersectionObserver(marker, ([entry]) => {
-  if (seen || !entry?.isIntersecting) return
-  seen = true
-  stop()
-  captureHubRowView(view)
-})
+const { stop } = useIntersectionObserver(
+  () => marker.value?.parentElement,
+  ([entry]) => {
+    if (seen || !entry?.isIntersecting) return
+    seen = true
+    stop()
+    captureHubRowView(view)
+  },
+  { rootMargin: '0px 0px -25% 0px' }
+)
 </script>
 
 <template>

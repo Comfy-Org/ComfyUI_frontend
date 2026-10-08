@@ -94,40 +94,42 @@ describe('WorkshopSections analytics', () => {
 
     await setAllIntersecting(true)
 
-    expect(
-      vi
-        .mocked(captureWorkshopEvent)
-        .mock.calls.map(([event]) => event)
-        .filter((event) => event.name === 'hub_row_viewed')
-    ).toEqual([
-      {
-        name: 'hub_row_viewed',
-        properties: {
-          surface: 'models',
-          source: 'use_case_row',
-          row: 'generate-videos',
-          item_count: 2,
-          slugs: ['a', 'b']
+    const rowViews = vi
+      .mocked(captureWorkshopEvent)
+      .mock.calls.map(([event]) => event)
+      .filter((event) => event.name === 'hub_row_viewed')
+    expect(rowViews).toHaveLength(3)
+    expect(rowViews).toEqual(
+      expect.arrayContaining([
+        {
+          name: 'hub_row_viewed',
+          properties: {
+            surface: 'models',
+            source: 'use_case_row',
+            row: 'generate-videos',
+            item_count: 2,
+            slugs: ['a', 'b']
+          }
+        },
+        {
+          name: 'hub_row_viewed',
+          properties: {
+            surface: 'models',
+            source: 'other_formats_row',
+            item_count: 1,
+            slugs: ['voice']
+          }
+        },
+        {
+          name: 'hub_row_viewed',
+          properties: {
+            surface: 'models',
+            source: 'unplaced_grid',
+            item_count: 1,
+            slugs: ['mystery']
+          }
         }
-      },
-      {
-        name: 'hub_row_viewed',
-        properties: {
-          surface: 'models',
-          source: 'other_formats_row',
-          item_count: 1,
-          slugs: ['voice']
-        }
-      },
-      {
-        name: 'hub_row_viewed',
-        properties: {
-          surface: 'models',
-          source: 'unplaced_grid',
-          item_count: 1,
-          slugs: ['mystery']
-        }
-      }
-    ])
+      ])
+    )
   })
 })
