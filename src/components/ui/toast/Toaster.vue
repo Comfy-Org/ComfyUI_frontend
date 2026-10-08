@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import { storeToRefs } from 'pinia'
 import { ToastProvider } from 'reka-ui'
-import { computed } from 'vue'
+import { computed, onBeforeUnmount } from 'vue'
 import { useI18n } from 'vue-i18n'
 
 import { cn } from '@comfyorg/tailwind-utils'
@@ -21,6 +21,8 @@ const toast = useToast()
 const { held, toasts } = storeToRefs(toast)
 const { t } = useI18n()
 
+onBeforeUnmount(toast.dismissAll)
+
 const shownToasts = computed(() => (held.value ? [] : toasts.value))
 const latestToastId = computed(() => shownToasts.value.at(-1)?.id)
 const regionLabel = computed(() => t('toastMessages.notificationsLabel'))
@@ -28,9 +30,9 @@ const regionLabel = computed(() => t('toastMessages.notificationsLabel'))
 const isAssertive = (item: Toast) =>
   item.kind === 'error' || item.kind === 'warning'
 const politeToasts = computed(() =>
-  shownToasts.value.filter((item) => !isAssertive(item))
+  toasts.value.filter((item) => !isAssertive(item))
 )
-const assertiveToasts = computed(() => shownToasts.value.filter(isAssertive))
+const assertiveToasts = computed(() => toasts.value.filter(isAssertive))
 
 function announcement(item: Toast) {
   return [item.title, item.description, item.action?.label]

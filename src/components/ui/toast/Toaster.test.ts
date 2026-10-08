@@ -66,6 +66,25 @@ describe('Toaster', () => {
     expect(assertive).toHaveAttribute('aria-atomic', 'false')
   })
 
+  it('does not announce a notification again after node picking ends', async () => {
+    renderToaster()
+    const toast = useToast()
+    toast.info('Uploaded')
+    await nextTick()
+    const announcement = screen.getByText('Uploaded', {
+      selector: '[role="status"] > p'
+    })
+
+    toast.held = true
+    await nextTick()
+    toast.held = false
+    await nextTick()
+
+    expect(
+      screen.getByText('Uploaded', { selector: '[role="status"] > p' })
+    ).toBe(announcement)
+  })
+
   it('renders each notification once outside the live regions', async () => {
     renderToaster()
 
@@ -127,8 +146,10 @@ describe('Toaster', () => {
     ).toHaveTextContent('Enregistré')
   })
 
-  it('lifts a new notification above an open dialog', async () => {
+  it('lifts a new notification above a dialog opened after the last one', async () => {
     renderToaster()
+    useToast().info('Uploading')
+    await nextTick()
     render({
       directives: { rekaZIndex: vRekaZIndex },
       template: '<div v-reka-z-index data-testid="dialog" />'
@@ -152,6 +173,16 @@ describe('Toaster', () => {
 
     expect(ZIndex.getCurrent('modal')).toBeLessThan(MODAL_Z_BASE)
     expect(screen.queryByTestId('toast-viewport')).not.toBeInTheDocument()
+  })
+
+  it('drops its notifications when its layout unmounts', async () => {
+    const { unmount } = renderToaster()
+    useToast().error('Invalid login credentials')
+    await nextTick()
+
+    unmount()
+
+    expect(useToast().toasts).toEqual([])
   })
 
   it('automatically dismisses a timed notification', async () => {
