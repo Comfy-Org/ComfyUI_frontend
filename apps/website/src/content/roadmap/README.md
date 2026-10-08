@@ -34,7 +34,7 @@ every entry stays visible.
 1. Create `en/<slug>.mdx` and `zh-CN/<slug>.mdx`. The same filename is the same
    entry in both languages, as with `customers`.
 2. Frontmatter (see `../roadmap.schema.ts`):
-   - `title`: one line, plain language, the words someone would search for
+   - `title`: one line, see the title rule below
    - `area`: `engine` | `cloud` | `frontend` | `desktop` | `platform` | `community`
    - `stage`: `exploring` | `building` | `shipping` | `shipped`
    - `date`: required for `shipped`, optional otherwise, see below
@@ -44,6 +44,23 @@ every entry stays visible.
    keep prose plain.
 4. When something ships, move it to `shipped` and give it a verified month. When
    it is old enough to stop being news, delete it and let the changelog carry it.
+
+## Titles
+
+**Name the product if it has a name. Otherwise name what changes for the
+reader. Never describe our internal change.**
+
+A title written from our side of the screen is the easiest mistake to make here
+and the hardest to notice afterwards, because it reads fine to whoever wrote it.
+
+- "Linux on the download page" describes an edit to a page we own. "Comfy
+  Desktop on Linux" is the thing a person wants, and the thing they would
+  search for. A name is searchable; a description is not.
+- "One owner for graph state" is a refactor description and means nothing to a
+  reader. "Fewer selection, resize and undo bugs" is what they actually get.
+
+When the title becomes a bare product name, the body has to carry the
+explanation the title just dropped, so say what the thing is.
 
 ## Dates
 
