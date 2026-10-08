@@ -12,12 +12,10 @@ vercel_api() {
 
 write_build_identity() {
   jq -n \
-    --arg repository "${GITHUB_REPOSITORY:?}" \
     --arg sha "${1:?usage: write-build-identity <sha>}" \
     --arg runId "${GITHUB_RUN_ID:?}" \
     --arg runAttempt "${GITHUB_RUN_ATTEMPT:?}" \
-    --arg builtAt "$(date -u +%Y-%m-%dT%H:%M:%SZ)" \
-    '{$repository, $sha, $runId, $runAttempt, $builtAt}' \
+    '{$sha, $runId, $runAttempt}' \
     >"$BUILD_IDENTITY_PATH"
 }
 

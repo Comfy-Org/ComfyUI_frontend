@@ -51,7 +51,6 @@ function run(...args: string[]) {
     env: {
       PATH: `${path.join(dir, 'bin')}:${process.env.PATH ?? ''}`,
       FAKE_DIR: dir,
-      GITHUB_REPOSITORY: 'Comfy-Org/ComfyUI_frontend',
       GITHUB_RUN_ID: '7',
       GITHUB_RUN_ATTEMPT: '2',
       VERCEL_ORG_ID: 'team_comfy',
@@ -80,10 +79,7 @@ describe('website deployment identity', () => {
           'utf8'
         )
       )
-    ).toMatchObject({
-      repository: 'Comfy-Org/ComfyUI_frontend',
-      ...ownIdentity
-    })
+    ).toEqual(ownIdentity)
   })
 
   it.for([
