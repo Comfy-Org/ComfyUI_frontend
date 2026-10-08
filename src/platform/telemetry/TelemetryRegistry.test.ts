@@ -398,8 +398,9 @@ describe('TelemetryRegistry', () => {
       },
       {
         method: 'trackAgentAttachButtonClicked',
-        expected: undefined,
-        invoke: (registry) => registry.trackAgentAttachButtonClicked()
+        expected: { method: 'drag_drop' },
+        invoke: (registry) =>
+          registry.trackAgentAttachButtonClicked({ method: 'drag_drop' })
       },
       {
         method: 'trackAgentWorkflowApplied',

@@ -6,7 +6,7 @@ import type {
 import { useAgentComposerStore } from '../../stores/agent/agentComposerStore'
 import { render, screen, waitFor, within } from '@testing-library/vue'
 import userEvent from '@testing-library/user-event'
-import { assert, beforeEach, describe, expect, it, vi } from 'vitest'
+import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { defineComponent, h, nextTick, ref, shallowRef } from 'vue'
 import type { DirectiveBinding, ShallowRef } from 'vue'
 import type { ComponentProps } from 'vue-component-type-helpers'
