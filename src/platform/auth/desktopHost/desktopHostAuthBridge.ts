@@ -18,5 +18,7 @@ export interface DesktopHostAuthBridge {
   getWorkspaceToken(workspaceId: string): Promise<string | null>
   requestSignIn(): Promise<DesktopHostAuthState>
   signOut(): Promise<DesktopHostAuthState>
+  /** Absent on Desktop builds before Comfy-Desktop #1671. */
+  switchWorkspace?(workspaceId: string): Promise<DesktopHostAuthState>
   onChanged(callback: (state: DesktopHostAuthState) => void): () => void
 }

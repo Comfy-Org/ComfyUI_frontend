@@ -1,8 +1,13 @@
 import { defineStore } from 'pinia'
-import { computed, ref, shallowRef } from 'vue'
+import { computed, ref, shallowRef, watch } from 'vue'
 
 import { useCurrentUser } from '@/composables/auth/useCurrentUser'
 import { useFeatureFlags } from '@/composables/useFeatureFlags'
+import {
+  desktopHostUser,
+  isDesktopHostSignedIn,
+  requestDesktopHostWorkspaceSwitch
+} from '@/platform/auth/desktopHost/desktopHostSession'
 import { isCloud } from '@/platform/distribution/types'
 import { WORKSPACE_STORAGE_KEYS } from '@/platform/workspace/workspaceConstants'
 import { clearPreservedQuery } from '@/platform/navigation/preservedQueryManager'
@@ -329,6 +334,24 @@ export const useTeamWorkspaceStore = defineStore('teamWorkspace', () => {
         // server. There is no discovery, switching, or token exchange for it:
         // the server echoes the binding back and the key itself authenticates
         // workspace-scoped calls.
+        // Desktop owns a host session's workspace: list what the account can
+        // reach and follow the workspace Desktop's session is scoped to.
+        if (isDesktopHostSignedIn()) {
+          const response = await workspaceApi.list()
+          if (isStaleIdentity(generation)) return
+          workspaces.value = sortWorkspaces(
+            response.workspaces.map(createWorkspaceState)
+          )
+          const hostWorkspaceId = desktopHostUser.value?.workspaceId
+          if (!workspaces.value.some((w) => w.id === hostWorkspaceId)) {
+            throw new NoWorkspaceAccessError('Desktop workspace not available')
+          }
+          mutableActiveWorkspaceId.value = hostWorkspaceId ?? null
+          initState.value = 'ready'
+          isFetchingWorkspaces.value = false
+          return
+        }
+
         if (isApiKeySession) {
           const current = await workspaceApi.getCurrentWorkspace()
           if (isStaleIdentity(generation)) return
@@ -563,9 +586,15 @@ export const useTeamWorkspaceStore = defineStore('teamWorkspace', () => {
       if (isStaleIdentity(generation)) return
 
       if (!isCloud) {
-        await workspaceAuthStore.switchWorkspace(workspaceId)
+        const switched = isDesktopHostSignedIn()
+          ? await requestDesktopHostWorkspaceSwitch(workspaceId)
+          : await workspaceAuthStore
+              .switchWorkspace(workspaceId)
+              .then(
+                () => workspaceAuthStore.currentWorkspace?.id === workspaceId
+              )
         if (isStaleIdentity(generation)) return
-        if (workspaceAuthStore.currentWorkspace?.id !== workspaceId) {
+        if (!switched) {
           throw new Error('Workspace authentication did not switch')
         }
         mutableActiveWorkspaceId.value = workspaceId
@@ -1021,6 +1050,42 @@ export const useTeamWorkspaceStore = defineStore('teamWorkspace', () => {
     const workspaceAuthStore = useWorkspaceAuthStore()
     workspaceAuthStore.destroy()
   }
+
+  // A switch made in Desktop (its chooser, or another view) re-scopes this
+  // view's credential. The tab drops its old scope at once and takes the new
+  // workspace only once the account's list confirms it.
+  async function followDesktopHostWorkspace(
+    hostWorkspaceId: string
+  ): Promise<void> {
+    const generation = identityGeneration
+    mutableActiveWorkspaceId.value = null
+    const isListed = () =>
+      workspaces.value.some((w) => w.id === hostWorkspaceId)
+    if (!isListed()) {
+      await refreshWorkspaces().catch(() => undefined)
+      if (
+        isStaleIdentity(generation) ||
+        desktopHostUser.value?.workspaceId !== hostWorkspaceId
+      ) {
+        return
+      }
+    }
+    if (isListed()) mutableActiveWorkspaceId.value = hostWorkspaceId
+  }
+
+  watch(
+    () => desktopHostUser.value?.workspaceId,
+    (hostWorkspaceId) => {
+      if (
+        !hostWorkspaceId ||
+        initState.value !== 'ready' ||
+        hostWorkspaceId === mutableActiveWorkspaceId.value
+      ) {
+        return
+      }
+      void followDesktopHostWorkspace(hostWorkspaceId)
+    }
+  )
 
   function resetForIdentityChange(): void {
     identityGeneration++
