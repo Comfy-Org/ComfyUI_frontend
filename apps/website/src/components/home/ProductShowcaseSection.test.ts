@@ -1,6 +1,6 @@
 /* oxlint-disable testing-library/no-node-access */
 import { render, screen } from '@testing-library/vue'
-import { beforeEach, describe, expect, it } from 'vitest'
+import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { nextTick } from 'vue'
 
 import { stubIntersectionObserver } from '@/test/fakeIntersectionObserver'
@@ -65,6 +65,26 @@ describe('ProductShowcaseSection', () => {
       expect(
         sceneSources().filter((s) => s === '/animations/scene-1/scene-01.json')
       ).toHaveLength(1)
+    }
+  )
+
+  it.for(['Comfy Agent', 'Comfy API'])(
+    'keeps the %s demo free of playback controls',
+    async (name) => {
+      vi.spyOn(HTMLMediaElement.prototype, 'play').mockResolvedValue(undefined)
+      render(ProductShowcaseSection, {
+        global: { stubs: { LottieScene: true } }
+      })
+
+      screen.getByRole('heading', { name }).click()
+      await nextTick()
+
+      expect(
+        screen.queryByRole('button', {
+          name: /^(Play|Pause|Mute|Unmute)$/
+        })
+      ).toBeNull()
+      expect(screen.queryByTestId('player-control-bar')).toBeNull()
     }
   )
 })

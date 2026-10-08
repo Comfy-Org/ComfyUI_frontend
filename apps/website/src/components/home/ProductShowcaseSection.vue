@@ -116,7 +116,7 @@ useIntersectionObserver(sectionRef, ([entry]) => {
                 autoplay
                 lazy-autoplay
                 loop
-                mute-only
+                hide-controls
                 fit="contain"
                 class="absolute inset-0 aspect-auto size-full rounded-none border-0"
               />
@@ -153,7 +153,7 @@ useIntersectionObserver(sectionRef, ([entry]) => {
                   autoplay
                   lazy-autoplay
                   loop
-                  mute-only
+                  hide-controls
                   fit="contain"
                   class="aspect-auto size-full rounded-none border-0"
                 />
