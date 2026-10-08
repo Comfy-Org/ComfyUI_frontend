@@ -91,7 +91,7 @@ const icons = {
   <ToastProvider v-if="shownToasts.length" :label="regionLabel" disable-swipe>
     <ToastRoot
       v-for="item in shownToasts"
-      :key="item.id"
+      :key="item.instance"
       :open="true"
       :duration="item.duration"
       data-testid="toast"

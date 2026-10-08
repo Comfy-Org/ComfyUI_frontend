@@ -7,6 +7,7 @@ import { createI18n } from 'vue-i18n'
 
 import { MODAL_Z_BASE, vRekaZIndex } from '@/components/dialog/vRekaZIndex'
 
+import { createToastId } from '@/types/toastId'
 import type { ToastId } from '@/types/toastId'
 
 import Toaster from './Toaster.vue'
@@ -184,6 +185,28 @@ describe('Toaster', () => {
 
     expect(useToast().toasts).toEqual([])
   })
+
+  it.for([
+    { name: 'a sticky replacement', elapsed: 0, replacement: undefined },
+    { name: 'a reissued timed notification', elapsed: 2500, replacement: 3000 }
+  ])(
+    'gives $name of an id a fresh lifetime',
+    async ({ elapsed, replacement }) => {
+      renderToaster()
+      const toast = useToast()
+      const id = createToastId()
+      toast.info('Uploading', { duration: 3000, id })
+      await nextTick()
+      await vi.advanceTimersByTimeAsync(elapsed)
+
+      toast.error('Upload failed', { duration: replacement, id })
+      await nextTick()
+      await vi.advanceTimersByTimeAsync(3000 - elapsed + 100)
+      await nextTick()
+
+      expect(screen.getByTestId('toast')).toHaveTextContent('Upload failed')
+    }
+  )
 
   it('automatically dismisses a timed notification', async () => {
     renderToaster()

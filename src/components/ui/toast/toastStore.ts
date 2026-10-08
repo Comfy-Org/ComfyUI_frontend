@@ -11,6 +11,7 @@ export interface Toast {
   closable: boolean
   duration: number
   id: ToastId
+  instance: symbol
   kind: ToastKind
   title: string
   action?: ToastAction
@@ -31,6 +32,7 @@ export const useToast = defineStore('toast', () => {
         description: options.description,
         duration: options.duration ?? Number.POSITIVE_INFINITY,
         id,
+        instance: Symbol(),
         kind,
         title
       }
