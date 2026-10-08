@@ -2943,6 +2943,27 @@
       }
     }
   },
+  "ClarityCrystalUpscaleNode": {
+    "description": "Skalieren Sie ein Bild mit dem Crystal Upscaler von Clarity AI hoch, einem hochpräzisen Upscaler, der dem Original treu bleibt und Gesichter, Haut und feine Texturen wiederherstellt. Maximale Ausgabe: 100 Megapixel.",
+    "display_name": "Clarity AI Crystal Upscale",
+    "inputs": {
+      "model": {
+        "name": "Modell",
+        "tooltip": "Zu verwendendes Modell."
+      },
+      "model_creativity": {
+        "name": "Kreativität"
+      },
+      "model_scale_factor": {
+        "name": "Skalierungsfaktor"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
   "ClaudeNode": {
     "description": "Generieren Sie Textantworten mit den Claude-Modellen von Anthropic. Geben Sie einen Text-Prompt und optional ein oder mehrere Bilder für multimodalen Kontext an.",
     "display_name": "Anthropic Claude",
@@ -10394,6 +10415,36 @@
       "prompt": {
         "name": "prompt",
         "tooltip": "Positiver Text-Prompt."
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "KlingTryOnNode": {
+    "description": "Kleiden Sie eine Person mit einem Kleidungsstück ein. Das Ergebnis hat dieselbe Größe wie das Personenbild, begrenzt auf 2048 px an der längsten Seite.",
+    "display_name": "Kling Virtuelles Anprobieren",
+    "inputs": {
+      "control_after_generate": {
+        "name": "Steuerung nach Generierung"
+      },
+      "garment_image": {
+        "name": "Kleidungsbild",
+        "tooltip": "Das anzuziehende Kleidungsstück: Produktfoto, Flat Lay, Schaufensterpuppe oder Foto an einem Model. Ein Foto an einem Model kann den Rest dieses Outfits übernehmen. Nur Kleidung; Schuhe, Taschen und Accessoires werden nicht unterstützt."
+      },
+      "keep_pose": {
+        "name": "Pose beibehalten",
+        "tooltip": "Deaktivieren Sie diese Option, damit sich die Pose für eine bessere Outfit-Präsentation ändern kann."
+      },
+      "person_image": {
+        "name": "Personenbild",
+        "tooltip": "Foto einer Person, idealerweise von vorn oder in Dreiviertelansicht. Bilder mit einer Seite über 2048 px werden zunächst herunterskaliert."
+      },
+      "seed": {
+        "name": "Seed",
+        "tooltip": "Der Seed steuert, ob der Node erneut ausgeführt werden soll; die Ergebnisse sind unabhängig vom Seed nicht deterministisch."
       }
     },
     "outputs": {

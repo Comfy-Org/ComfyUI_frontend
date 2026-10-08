@@ -2943,6 +2943,27 @@
       }
     }
   },
+  "ClarityCrystalUpscaleNode": {
+    "description": "Clarity AI の Crystal Upscaler を使用して画像をアップスケールします。これは元画像への忠実性を保ちながら、顔、肌、細かなテクスチャを復元する高忠実度アップスケーラーです。最大出力：100メガピクセル。",
+    "display_name": "Clarity AI Crystal アップスケール",
+    "inputs": {
+      "model": {
+        "name": "model",
+        "tooltip": "使用するモデル。"
+      },
+      "model_creativity": {
+        "name": "creativity"
+      },
+      "model_scale_factor": {
+        "name": "scale_factor"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
   "ClaudeNode": {
     "description": "Anthropic の Claude モデルでテキスト応答を生成します。テキストプロンプトを入力し、必要に応じてマルチモーダルコンテキスト用に1枚以上の画像を追加できます。",
     "display_name": "Anthropic Claude",
@@ -10394,6 +10415,36 @@
       "prompt": {
         "name": "プロンプト",
         "tooltip": "肯定的なテキストプロンプト。"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "KlingTryOnNode": {
+    "description": "人物に衣類を着せます。結果は人物画像と同じサイズで、長辺は最大2048pxです。",
+    "display_name": "Kling バーチャル試着",
+    "inputs": {
+      "control_after_generate": {
+        "name": "生成後の制御"
+      },
+      "garment_image": {
+        "name": "garment_image",
+        "tooltip": "着せる衣類：商品写真、平置き写真、マネキン写真、またはモデル着用写真。モデル着用写真の場合、そのコーディネートの残りの部分も引き継がれることがあります。衣類のみ対応しており、靴、バッグ、アクセサリーには対応していません。"
+      },
+      "keep_pose": {
+        "name": "keep_pose",
+        "tooltip": "より良いコーディネート表示のためにポーズの変更を許可するには、オフにします。"
+      },
+      "person_image": {
+        "name": "person_image",
+        "tooltip": "1人の人物の写真。できれば正面向きまたは斜め向きのもの。いずれかの辺が2048pxを超える画像は、まず縮小されます。"
+      },
+      "seed": {
+        "name": "seed",
+        "tooltip": "シードはノードを再実行するかどうかを制御します。シードにかかわらず、結果は非決定的です。"
       }
     },
     "outputs": {

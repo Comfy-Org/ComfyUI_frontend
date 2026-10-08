@@ -2943,6 +2943,27 @@
       }
     }
   },
+  "ClarityCrystalUpscaleNode": {
+    "description": "Amplie uma imagem com o Crystal Upscaler da Clarity AI, um ampliador de alta fidelidade que permanece fiel ao original e restaura rostos, pele e texturas finas. Saída máxima: 100 megapixels.",
+    "display_name": "Ampliação Crystal da Clarity AI",
+    "inputs": {
+      "model": {
+        "name": "model",
+        "tooltip": "Modelo a usar."
+      },
+      "model_creativity": {
+        "name": "creativity"
+      },
+      "model_scale_factor": {
+        "name": "scale_factor"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
   "ClaudeNode": {
     "description": "Gere respostas de texto com os modelos Claude da Anthropic. Forneça um prompt de texto e, opcionalmente, uma ou mais imagens para contexto multimodal.",
     "display_name": "Anthropic Claude",
@@ -10394,6 +10415,36 @@
       "prompt": {
         "name": "prompt",
         "tooltip": "Prompt de texto positivo."
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "KlingTryOnNode": {
+    "description": "Vista uma pessoa com uma peça de roupa. O resultado tem o mesmo tamanho da imagem da pessoa, limitado a 2048 px no lado mais longo.",
+    "display_name": "Provador Virtual Kling",
+    "inputs": {
+      "control_after_generate": {
+        "name": "controle após gerar"
+      },
+      "garment_image": {
+        "name": "garment_image",
+        "tooltip": "A roupa a vestir: foto de produto, flat lay, manequim ou foto em modelo. Uma foto em modelo pode incluir o restante daquele look. Somente roupas; sapatos, bolsas e acessórios não são compatíveis."
+      },
+      "keep_pose": {
+        "name": "keep_pose",
+        "tooltip": "Desative para permitir que a pose mude e melhorar a apresentação da roupa."
+      },
+      "person_image": {
+        "name": "person_image",
+        "tooltip": "Foto de uma pessoa, idealmente de frente ou em visão de երեք quartos. Imagens com um lado maior que 2048 px são reduzidas primeiro."
+      },
+      "seed": {
+        "name": "seed",
+        "tooltip": "A seed controla se o nó deve ser executado novamente; os resultados não são determinísticos, independentemente da seed."
       }
     },
     "outputs": {

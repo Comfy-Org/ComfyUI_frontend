@@ -2943,6 +2943,27 @@
       }
     }
   },
+  "ClarityCrystalUpscaleNode": {
+    "description": "Agrandissez une image avec Crystal Upscaler de Clarity AI, un suréchantillonneur haute fidélité qui reste fidèle à l’original et restaure les visages, la peau et les textures fines. Sortie maximale : 100 mégapixels.",
+    "display_name": "Suréchantillonnage Crystal de Clarity AI",
+    "inputs": {
+      "model": {
+        "name": "model",
+        "tooltip": "Modèle à utiliser."
+      },
+      "model_creativity": {
+        "name": "creativity"
+      },
+      "model_scale_factor": {
+        "name": "scale_factor"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
   "ClaudeNode": {
     "description": "Générez des réponses textuelles avec les modèles Claude d'Anthropic. Fournissez une invite textuelle et éventuellement une ou plusieurs images pour un contexte multimodal.",
     "display_name": "Anthropic Claude",
@@ -10394,6 +10415,36 @@
       "prompt": {
         "name": "prompt",
         "tooltip": "Invite textuelle positive."
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "KlingTryOnNode": {
+    "description": "Habillez une personne avec un vêtement. Le résultat a la même taille que l’image de la personne, limitée à 2048 px sur le côté le plus long.",
+    "display_name": "Essayage virtuel Kling",
+    "inputs": {
+      "control_after_generate": {
+        "name": "contrôle après génération"
+      },
+      "garment_image": {
+        "name": "garment_image",
+        "tooltip": "Le vêtement à essayer : photo de produit, vue à plat, mannequin ou photo portée par un modèle. Une photo portée par un modèle peut conserver le reste de cette tenue. Vêtements uniquement ; les chaussures, sacs et accessoires ne sont pas pris en charge."
+      },
+      "keep_pose": {
+        "name": "keep_pose",
+        "tooltip": "Désactivez cette option pour permettre à la pose de changer afin de mieux présenter la tenue."
+      },
+      "person_image": {
+        "name": "person_image",
+        "tooltip": "Photo d’une seule personne, idéalement de face ou de trois quarts. Les images dont un côté dépasse 2048 px sont d’abord réduites."
+      },
+      "seed": {
+        "name": "seed",
+        "tooltip": "La seed détermine si le nœud doit être réexécuté ; les résultats sont non déterministes, quelle que soit la seed."
       }
     },
     "outputs": {

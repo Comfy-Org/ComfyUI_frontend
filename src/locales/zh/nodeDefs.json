@@ -2943,6 +2943,27 @@
       }
     }
   },
+  "ClarityCrystalUpscaleNode": {
+    "description": "使用 Clarity AI 的 Crystal Upscaler 放大图像。这是一款高保真放大器，能够忠实还原原图，并修复面部、皮肤和细微纹理。最大输出：1 亿像素。",
+    "display_name": "Clarity AI Crystal 放大",
+    "inputs": {
+      "model": {
+        "name": "模型",
+        "tooltip": "要使用的模型。"
+      },
+      "model_creativity": {
+        "name": "创意度"
+      },
+      "model_scale_factor": {
+        "name": "缩放系数"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
   "ClaudeNode": {
     "description": "使用Anthropic的Claude模型生成文本回复。提供文本提示，并可选提供一张或多张图像用于多模态上下文。",
     "display_name": "Anthropic Claude",
@@ -10394,6 +10415,36 @@
       "prompt": {
         "name": "提示词",
         "tooltip": "正面文本提示词。"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "KlingTryOnNode": {
+    "description": "为人物穿上服装。结果图像与人物图像尺寸相同，最长边最大为 2048px。",
+    "display_name": "Kling 虚拟试穿",
+    "inputs": {
+      "control_after_generate": {
+        "name": "生成后控制"
+      },
+      "garment_image": {
+        "name": "服装图像",
+        "tooltip": "要穿上的服装：商品图、平铺图、人台图或模特上身照。模特上身照可能会连带保留该套装的其他部分。仅支持服装；不支持鞋子、包袋和配饰。"
+      },
+      "keep_pose": {
+        "name": "保持姿势",
+        "tooltip": "关闭此选项可允许改变姿势，以获得更好的服装展示效果。"
+      },
+      "person_image": {
+        "name": "人物图像",
+        "tooltip": "仅含一人的照片，最好是正面或四分之三视角。任一边超过 2048px 的图像会先缩小。"
+      },
+      "seed": {
+        "name": "种子",
+        "tooltip": "种子控制节点是否应重新运行；无论种子为何，结果均不具有确定性。"
       }
     },
     "outputs": {

@@ -2943,6 +2943,27 @@
       }
     }
   },
+  "ClarityCrystalUpscaleNode": {
+    "description": "הגדלת תמונה באמצעות Crystal Upscaler של Clarity AI, מגדיל ברמת נאמנות גבוהה השומר על נאמנות למקור ומשחזר פנים, עור ומרקם עדין. פלט מרבי: 100 מגה-פיקסל.",
+    "display_name": "הגדלת Crystal של Clarity AI",
+    "inputs": {
+      "model": {
+        "name": "model",
+        "tooltip": "המודל שבו יש להשתמש."
+      },
+      "model_creativity": {
+        "name": "יצירתיות"
+      },
+      "model_scale_factor": {
+        "name": "scale_factor"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
   "ClaudeNode": {
     "description": "יצירת תגובות טקסט עם המודלים של Claude מבית Anthropic. יש לספק פרומפט טקסטואלי ואופציונלית תמונה אחת או יותר להקשר מולטימודלי.",
     "display_name": "Anthropic Claude",
@@ -10394,6 +10415,36 @@
       "prompt": {
         "name": "prompt",
         "tooltip": "פרומפט חיובי (הנחיה חיובית)."
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "KlingTryOnNode": {
+    "description": "הלבשת אדם בפריט לבוש. התוצאה היא באותו גודל כמו תמונת האדם, עד למגבלה של 2048px בצלע הארוכה ביותר.",
+    "display_name": "מדידה וירטואלית של Kling",
+    "inputs": {
+      "control_after_generate": {
+        "name": "בקרה לאחר יצירה"
+      },
+      "garment_image": {
+        "name": "garment_image",
+        "tooltip": "פריט הלבוש להלבשה: תמונת מוצר, צילום פריסה שטוחה, בובת תצוגה או תמונה של דוגמן/ית. תמונה של דוגמן/ית עשויה להעביר גם את שאר פריטי התלבושת. פריטי לבוש בלבד; נעליים, תיקים ואביזרים אינם נתמכים."
+      },
+      "keep_pose": {
+        "name": "keep_pose",
+        "tooltip": "יש לכבות כדי לאפשר שינוי בתנוחה להצגה טובה יותר של התלבושת."
+      },
+      "person_image": {
+        "name": "person_image",
+        "tooltip": "תמונה של אדם אחד, רצוי במבט חזיתי או בזווית של שלושה רבעים. תמונות שבהן אחת הצלעות גדולה מ-2048px יוקטנו תחילה."
+      },
+      "seed": {
+        "name": "seed",
+        "tooltip": "ה-seed קובע אם יש להפעיל את הצומת מחדש; התוצאות אינן דטרמיניסטיות ללא קשר ל-seed."
       }
     },
     "outputs": {
