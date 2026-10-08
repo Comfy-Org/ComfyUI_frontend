@@ -79,10 +79,15 @@ test.describe('Models catalog', () => {
     await expect(hero.getByTestId('models-hub-counts')).toHaveText(
       /^\d+ models · \d+ open weights · \d+ partner models$/
     )
-    const latest = hero.getByTestId('models-hub-latest').getByRole('link')
-    await expect(latest).toContainText('Latest launch')
+    const card = hero.getByTestId('models-hub-latest')
+    await expect(card).toContainText('Latest launch')
+    const latest = card.getByTestId('models-hub-latest-title')
     const href = await latest.getAttribute('href')
     if (!href) throw new Error('The latest launch has no page')
+    await expect(card.getByTestId('models-hub-latest-try')).toHaveAttribute(
+      'href',
+      href
+    )
 
     await latest.click()
 
