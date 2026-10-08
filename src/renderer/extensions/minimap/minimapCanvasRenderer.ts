@@ -4,7 +4,11 @@ import { useColorPaletteStore } from '@/stores/workspace/colorPaletteStore'
 import { adjustColor } from '@/utils/colorUtil'
 
 import { MinimapDataSource } from './data/MinimapDataSource'
-import type { MinimapNodeData, MinimapRenderContext } from './types'
+import type {
+  MinimapNodeData,
+  MinimapNodeExecutionState,
+  MinimapRenderContext
+} from './types'
 
 export const MINIMAP_DECORATION_POP_MS = 260
 
@@ -157,7 +161,7 @@ function renderNodes(
       w: number
       h: number
       hasErrors?: boolean
-      executionState?: 'pending' | 'running' | 'finished' | 'error' | null
+      executionState?: MinimapNodeExecutionState | null
     }>
   >()
 
@@ -296,7 +300,7 @@ export function renderMinimapToCanvas(
   // Clear canvas
   ctx.clearRect(0, 0, context.width, context.height)
 
-  const dataSource = new MinimapDataSource(graph)
+  const dataSource = new MinimapDataSource(graph, context.nodeProgressStates)
 
   // Fast path for empty graph
   if (!dataSource.hasData()) {

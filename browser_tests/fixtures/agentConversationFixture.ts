@@ -1,6 +1,6 @@
 import type { Locator, Page, TestInfo } from '@playwright/test'
 import { expect } from '@playwright/test'
-import type { ApplyOutcome } from '@comfyorg/comfy-multi-player'
+import type { ApplyOutcome, WorkflowJSON } from '@comfyorg/comfy-multi-player'
 import type { ListAssetsResponse } from '@comfyorg/ingest-types'
 import { z } from 'zod'
 
@@ -1017,6 +1017,18 @@ export class AgentConversationHarness {
 
   hostNodePositions(): (number[] | undefined)[] {
     return this.host.projection().nodes.map((node) => node.pos)
+  }
+
+  /**
+   * The workflow node the host document holds for `nodeId`, as the library
+   * projects it — the same snapshot a catch-up, a resubscribe or an agent op
+   * that copies an existing node would carry. Undefined when the document has
+   * no such node.
+   */
+  hostNode(nodeId: string): WorkflowJSON['nodes'][number] | undefined {
+    return this.host
+      .projection()
+      .nodes.find((node) => String(node.id) === nodeId)
   }
 
   async reloadWithoutLocalWorkflow(): Promise<void> {

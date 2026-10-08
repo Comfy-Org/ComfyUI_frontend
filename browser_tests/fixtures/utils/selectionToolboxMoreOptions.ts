@@ -21,7 +21,7 @@ export async function openMoreOptionsMenu(
   await moreOptionsBtn.click()
   await comfyPage.nextFrame()
 
-  const menu = comfyPage.page.locator('.p-contextmenu')
+  const menu = comfyPage.page.getByRole('menu')
   await expect(menu).toBeVisible()
 
   return menu

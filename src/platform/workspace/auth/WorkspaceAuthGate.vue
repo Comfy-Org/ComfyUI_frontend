@@ -1,6 +1,31 @@
 <template>
   <slot v-if="initializationState === 'ready'" />
   <div
+    v-else-if="initializationState === 'no_workspace'"
+    ref="errorPanel"
+    class="flex size-full items-center justify-center bg-base-background p-8"
+    role="alert"
+    tabindex="-1"
+  >
+    <div class="flex max-w-md flex-col items-center gap-4 text-center">
+      <i
+        aria-hidden="true"
+        class="icon-[lucide--users] size-8 text-muted-foreground"
+      />
+      <div>
+        <h1 class="m-0 text-lg font-semibold text-base-foreground">
+          {{ $t('workspaceAuth.noWorkspaceAccess.title') }}
+        </h1>
+        <p class="mt-2 mb-0 text-muted-foreground">
+          {{ $t('workspaceAuth.noWorkspaceAccess.detail') }}
+        </p>
+      </div>
+      <Button variant="secondary" @click="handleSignOut">
+        {{ $t('auth.signOut.signOut') }}
+      </Button>
+    </div>
+  </div>
+  <div
     v-else-if="initializationState !== 'initializing'"
     ref="errorPanel"
     class="flex size-full items-center justify-center bg-base-background p-8"
@@ -79,6 +104,7 @@ import {
 } from '@/platform/remoteConfig/remoteConfig'
 import { refreshRemoteConfig } from '@/platform/remoteConfig/refreshRemoteConfig'
 import { reportError } from '@/platform/telemetry/reportError'
+import { NoWorkspaceAccessError } from '@/platform/workspace/api/workspaceApiError'
 import { useWorkspaceAuthStore } from '@/platform/workspace/stores/workspaceAuthStore'
 import { useTeamWorkspaceStore } from '@/platform/workspace/stores/teamWorkspaceStore'
 import { useBillingCapabilities } from '@/platform/workspace/composables/useBillingCapabilities'
@@ -89,7 +115,7 @@ const FIREBASE_INIT_TIMEOUT_MS = 16_000
 const CONFIG_REFRESH_TIMEOUT_MS = 10_000
 
 const initializationState = ref<
-  'initializing' | 'retrying' | 'ready' | 'error'
+  'initializing' | 'retrying' | 'ready' | 'error' | 'no_workspace'
 >(isCloud ? 'initializing' : 'ready')
 const initializationRetryable = ref(true)
 const errorPanel = useTemplateRef<HTMLElement>('errorPanel')
@@ -114,6 +140,11 @@ async function requiresUnifiedToken(): Promise<boolean> {
     useAuthStore().currentUser !== null &&
     !(await signedInOnWebSession())
   )
+}
+
+/** A session sign-in mid-setup lifts the need for the token that went missing. */
+async function missingUnifiedToken(hasToken: boolean): Promise<boolean> {
+  return !hasToken && (await requiresUnifiedToken())
 }
 
 async function initialize(): Promise<void> {
@@ -172,7 +203,7 @@ async function initialize(): Promise<void> {
     if (needsUnifiedToken) {
       const authenticated = await workspaceAuthStore.mintAtLogin()
       if (generation !== initializationGeneration) return
-      if (!authenticated) {
+      if (await missingUnifiedToken(authenticated)) {
         throw new Error('Failed to initialize unified cloud auth')
       }
     }
@@ -180,7 +211,8 @@ async function initialize(): Promise<void> {
     await initializeWorkspaceMode()
     if (generation !== initializationGeneration) return
     void billingCapabilities.initialize(controller.signal)
-    if (needsUnifiedToken && !workspaceAuthStore.getUnifiedToken()) {
+    const hasUnifiedToken = Boolean(workspaceAuthStore.getUnifiedToken())
+    if (needsUnifiedToken && (await missingUnifiedToken(hasUnifiedToken))) {
       throw new Error('Unified cloud auth was cleared during workspace setup')
     }
 
@@ -194,7 +226,11 @@ async function initialize(): Promise<void> {
       errorType: 'workspace_auth_gate_initialization_failure'
     })
     initializationRetryable.value = isRetryableInitializationError(error)
-    initializationState.value = 'error'
+    initializationState.value =
+      useFeatureFlags().flags.ssoEnabled &&
+      error instanceof NoWorkspaceAccessError
+        ? 'no_workspace'
+        : 'error'
     document.getElementById('splash-loader')?.remove()
     await nextTick()
     if (generation !== initializationGeneration) return
