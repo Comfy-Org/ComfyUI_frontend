@@ -77,7 +77,6 @@ const FIXTURE = {
 
 function stubFetchWith(body: unknown) {
   vi.mocked(fetch).mockImplementation(async () => Response.json(body))
-  return vi.mocked(fetch)
 }
 
 async function mountScene(props: { src: string; active?: boolean }) {
@@ -110,17 +109,15 @@ describe('VideoMaskScene', () => {
   })
 
   it('loads the scene once visible and plays the first active layer', async () => {
-    const fetchMock = stubFetchWith(FIXTURE)
+    stubFetchWith(FIXTURE)
     const { root } = await mountScene({ src: '/animations/x/scene.json' })
 
-    expect(fetchMock).not.toHaveBeenCalled()
+    expect(fetch).not.toHaveBeenCalled()
 
     await setAllIntersecting(true)
     await vi.advanceTimersByTimeAsync(10)
 
-    expect(fetchMock).toHaveBeenCalledExactlyOnceWith(
-      '/animations/x/scene.json'
-    )
+    expect(fetch).toHaveBeenCalledExactlyOnceWith('/animations/x/scene.json')
     // Relative clips resolve against the descriptor's assets/ sibling
     // directory; absolute CDN URLs pass through unchanged.
     const sources = [...root.querySelectorAll('video')].map((v) =>
@@ -215,8 +212,7 @@ describe('VideoMaskScene', () => {
   })
 
   it('retries the descriptor fetch after a failure', async () => {
-    const fetchMock = vi
-      .mocked(fetch)
+    vi.mocked(fetch)
       .mockRejectedValueOnce(new Error('offline'))
       .mockImplementation(async () => Response.json(FIXTURE))
 
@@ -231,7 +227,7 @@ describe('VideoMaskScene', () => {
     await setAllIntersecting(true)
     await vi.advanceTimersByTimeAsync(10)
 
-    expect(fetchMock).toHaveBeenCalledTimes(2)
+    expect(fetch).toHaveBeenCalledTimes(2)
     expect(root.querySelector('video')).toBeTruthy()
   })
 })

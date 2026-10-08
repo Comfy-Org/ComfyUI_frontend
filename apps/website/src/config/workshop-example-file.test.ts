@@ -132,7 +132,7 @@ describe('example source images', () => {
       'bfl--flux-2-max--generate-images'
     )
     if (!page?.execution) throw new Error('Missing BFL page')
-    const fetchImage = vi.mocked(fetch).mockImplementation(
+    vi.mocked(fetch).mockImplementation(
       async (url) =>
         new Response(String(url), {
           headers: { 'Content-Type': 'image/png' }
@@ -149,9 +149,11 @@ describe('example source images', () => {
     expect([body.input_image, body.input_image_2, body.input_image_3]).toEqual(
       sources.map((source) => btoa(source))
     )
-    expect(fetchImage).toHaveBeenCalledTimes(3)
+    expect(fetch).toHaveBeenCalledTimes(3)
     expect(
-      fetchImage.mock.calls.every(([, init]) => init?.credentials === 'omit')
+      vi
+        .mocked(fetch)
+        .mock.calls.every(([, init]) => init?.credentials === 'omit')
     ).toBe(true)
   })
 
@@ -178,15 +180,13 @@ describe('example source images', () => {
       'vertexai--veo-3-first-last-frame--animate-images'
     )
     if (!page?.execution) throw new Error('Missing Veo page')
-    const fetchImage = vi
-      .mocked(fetch)
-      .mockImplementation(
-        async (url) =>
-          new Response(
-            String(url).includes('1.1.png') ? 'first frame' : 'last frame',
-            { headers: { 'Content-Type': 'image/png' } }
-          )
-      )
+    vi.mocked(fetch).mockImplementation(
+      async (url) =>
+        new Response(
+          String(url).includes('1.1.png') ? 'first frame' : 'last frame',
+          { headers: { 'Content-Type': 'image/png' } }
+        )
+    )
     const values = defaultValues(schemaForModel(page), page.defaults)
     expect(values.first_frame).toMatchObject({
       sourceUrl: expect.stringContaining('1.1.png')
@@ -215,9 +215,11 @@ describe('example source images', () => {
       ]
     })
     await prepare()
-    expect(fetchImage).toHaveBeenCalledTimes(2)
+    expect(fetch).toHaveBeenCalledTimes(2)
     expect(
-      fetchImage.mock.calls.every(([, init]) => init?.credentials === 'omit')
+      vi
+        .mocked(fetch)
+        .mock.calls.every(([, init]) => init?.credentials === 'omit')
     ).toBe(true)
   })
 
@@ -293,7 +295,6 @@ describe('example source images', () => {
   )
 
   it('does not fetch invalid schemes, credentialed URLs, or after cancellation', async () => {
-    const fetchImage = vi.mocked(fetch)
     for (const url of [
       'file:///source.png',
       'javascript:alert(1)',
@@ -307,6 +308,6 @@ describe('example source images', () => {
     await expect(
       loadWorkshopExampleFile(value, controller.signal)
     ).rejects.toMatchObject({ name: 'AbortError' })
-    expect(fetchImage).not.toHaveBeenCalled()
+    expect(fetch).not.toHaveBeenCalled()
   })
 })

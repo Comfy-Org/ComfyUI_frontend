@@ -46,15 +46,13 @@ describe('fetchOAuthConsentChallenge', () => {
   })
 
   it('URL-encodes the oauth_request_id', async () => {
-    const fetchSpy = vi
-      .mocked(fetch)
-      .mockResolvedValue(okResponse(validChallenge))
+    vi.mocked(fetch).mockResolvedValue(okResponse(validChallenge))
 
     // Reserved characters get percent-encoded (defense-in-depth — valid UUIDs
     // never contain these chars, but the call should be safe regardless).
     await fetchOAuthConsentChallenge('id with spaces&injected=evil')
 
-    const url = fetchSpy.mock.calls[0]?.[0] as string
+    const url = vi.mocked(fetch).mock.calls[0]?.[0] as string
     expect(url).toContain(
       'oauth_request_id=id%20with%20spaces%26injected%3Devil'
     )
@@ -357,9 +355,9 @@ describe('submitOAuthConsentDecision', () => {
   })
 
   it('sends the expected JSON body', async () => {
-    const fetchSpy = vi
-      .mocked(fetch)
-      .mockResolvedValue(okResponse({ redirect_url: 'http://x.test/' }))
+    vi.mocked(fetch).mockResolvedValue(
+      okResponse({ redirect_url: 'http://x.test/' })
+    )
 
     await submitOAuthConsentDecision({
       oauthRequestId: validChallenge.oauth_request_id,
@@ -368,7 +366,7 @@ describe('submitOAuthConsentDecision', () => {
       workspaceId: 'personal-workspace'
     })
 
-    const init = fetchSpy.mock.calls[0]?.[1] as RequestInit
+    const init = vi.mocked(fetch).mock.calls[0]?.[1] as RequestInit
     expect(JSON.parse(init.body as string)).toEqual({
       oauth_request_id: validChallenge.oauth_request_id,
       csrf_token: validChallenge.csrf_token,

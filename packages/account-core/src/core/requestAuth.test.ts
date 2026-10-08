@@ -240,7 +240,6 @@ describe('createRequestAuthorizer', () => {
     'authorizes an API key on $target $method with its header alone',
     async ({ target, method }) => {
       const getWorkspaceToken = vi.fn(async () => 'jwt')
-      const fetchSpy = vi.mocked(fetch)
       const authorizeWithSpies = createRequestAuthorizer({ getWorkspaceToken })
 
       const result = await authorizeWithSpies(API_KEY, {
@@ -251,8 +250,8 @@ describe('createRequestAuthorizer', () => {
 
       expect(result).toStrictEqual({ headers: { 'X-API-KEY': 'comfyui-key' } })
       expect(getWorkspaceToken).not.toHaveBeenCalled()
-      expect(fetchSpy).not.toHaveBeenCalled()
-      fetchSpy.mockRestore()
+      expect(fetch).not.toHaveBeenCalled()
+      vi.mocked(fetch).mockRestore()
     }
   )
 

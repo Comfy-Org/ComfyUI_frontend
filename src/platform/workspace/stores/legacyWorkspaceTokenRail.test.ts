@@ -37,11 +37,9 @@ function makeDeps(): LegacyWorkspaceTokenRailDeps {
 }
 
 describe('createLegacyWorkspaceTokenRail', () => {
-  const mockFetch = vi.mocked(fetch)
-
   beforeEach(() => {
     vi.useFakeTimers({ shouldAdvanceTime: false })
-    mockFetch.mockImplementation(async () =>
+    vi.mocked(fetch).mockImplementation(async () =>
       Response.json({
         token: 'workspace-token-abc',
         expires_at: new Date(Date.now() + expiresInMs).toISOString(),
@@ -58,7 +56,7 @@ describe('createLegacyWorkspaceTokenRail', () => {
 
     await rail.switchLegacyWorkspace('workspace-123')
 
-    expect(mockFetch).toHaveBeenCalledWith(
+    expect(fetch).toHaveBeenCalledWith(
       expect.stringContaining('/auth/token'),
       expect.objectContaining({
         headers: expect.objectContaining({
@@ -114,7 +112,7 @@ describe('createLegacyWorkspaceTokenRail', () => {
       await vi.advanceTimersByTimeAsync(expiresInMs)
 
       expect(deps.switchWorkspace).toHaveBeenCalledTimes(refreshes)
-      expect(mockFetch).toHaveBeenCalledOnce()
+      expect(fetch).toHaveBeenCalledOnce()
     }
   )
 })

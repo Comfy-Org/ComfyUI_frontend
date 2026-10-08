@@ -29,7 +29,6 @@ let revokeObjectURLSpy: MockInstance<typeof URL.revokeObjectURL>
 
 describe('downloadUtil', () => {
   let mockLink: HTMLAnchorElement
-  const fetchMock = vi.mocked(fetch)
 
   beforeEach(() => {
     createObjectURLSpy = vi
@@ -67,7 +66,7 @@ describe('downloadUtil', () => {
       expect(document.body.appendChild).toHaveBeenCalledWith(mockLink)
       expect(mockLink.click).toHaveBeenCalled()
       expect(document.body.removeChild).toHaveBeenCalledWith(mockLink)
-      expect(fetchMock).not.toHaveBeenCalled()
+      expect(fetch).not.toHaveBeenCalled()
       expect(createObjectURLSpy).not.toHaveBeenCalled()
     })
 
@@ -79,7 +78,7 @@ describe('downloadUtil', () => {
 
       expect(mockLink.href).toBe(testUrl)
       expect(mockLink.download).toBe(customFilename)
-      expect(fetchMock).not.toHaveBeenCalled()
+      expect(fetch).not.toHaveBeenCalled()
       expect(createObjectURLSpy).not.toHaveBeenCalled()
     })
 
@@ -112,7 +111,7 @@ describe('downloadUtil', () => {
       expect(mockLink.href).toBe(invalidUrl)
       expect(mockLink.download).toBe('download.png')
       expect(mockLink.click).toHaveBeenCalled()
-      expect(fetchMock).not.toHaveBeenCalled()
+      expect(fetch).not.toHaveBeenCalled()
       expect(createObjectURLSpy).not.toHaveBeenCalled()
     })
 
@@ -143,7 +142,7 @@ describe('downloadUtil', () => {
 
       expect(mockLink.href).toBe(relativeUrl)
       expect(mockLink.download).toBe('relative-image.png')
-      expect(fetchMock).not.toHaveBeenCalled()
+      expect(fetch).not.toHaveBeenCalled()
       expect(createObjectURLSpy).not.toHaveBeenCalled()
     })
 
@@ -155,7 +154,7 @@ describe('downloadUtil', () => {
       const headersMock = {
         get: vi.fn().mockReturnValue(null)
       }
-      fetchMock.mockResolvedValue(
+      vi.mocked(fetch).mockResolvedValue(
         fromPartial<Response>({
           ok: true,
           status: 200,
@@ -166,8 +165,9 @@ describe('downloadUtil', () => {
 
       downloadFile(testUrl)
 
-      expect(fetchMock).toHaveBeenCalledWith(testUrl)
-      const fetchPromise = fetchMock.mock.results[0].value as Promise<Response>
+      expect(fetch).toHaveBeenCalledWith(testUrl)
+      const fetchPromise = vi.mocked(fetch).mock.results[0]
+        .value as Promise<Response>
       await fetchPromise
       await Promise.resolve() // let fetchAsBlob return
       const blobPromise = blobFn.mock.results[0].value as Promise<Blob>
@@ -182,7 +182,7 @@ describe('downloadUtil', () => {
     it('logs an error when cloud fetch fails', async () => {
       mockIsCloud.value = true
       const testUrl = 'https://storage.googleapis.com/bucket/missing.bin'
-      fetchMock.mockResolvedValue(
+      vi.mocked(fetch).mockResolvedValue(
         fromPartial<Response>({
           ok: false,
           status: 404,
@@ -192,8 +192,9 @@ describe('downloadUtil', () => {
 
       downloadFile(testUrl)
 
-      expect(fetchMock).toHaveBeenCalledWith(testUrl)
-      const fetchPromise = fetchMock.mock.results[0].value as Promise<Response>
+      expect(fetch).toHaveBeenCalledWith(testUrl)
+      const fetchPromise = vi.mocked(fetch).mock.results[0]
+        .value as Promise<Response>
       await fetchPromise
       await Promise.resolve() // let fetchAsBlob throw
       await Promise.resolve() // let .catch handler run
@@ -209,7 +210,7 @@ describe('downloadUtil', () => {
       const headersMock = {
         get: vi.fn().mockReturnValue('attachment; filename="user-friendly.png"')
       }
-      fetchMock.mockResolvedValue(
+      vi.mocked(fetch).mockResolvedValue(
         fromPartial<Response>({
           ok: true,
           status: 200,
@@ -220,8 +221,9 @@ describe('downloadUtil', () => {
 
       downloadFile(testUrl)
 
-      expect(fetchMock).toHaveBeenCalledWith(testUrl)
-      const fetchPromise = fetchMock.mock.results[0].value as Promise<Response>
+      expect(fetch).toHaveBeenCalledWith(testUrl)
+      const fetchPromise = vi.mocked(fetch).mock.results[0]
+        .value as Promise<Response>
       await fetchPromise
       await Promise.resolve() // let fetchAsBlob return
       const blobPromise = blobFn.mock.results[0].value as Promise<Blob>
@@ -243,7 +245,7 @@ describe('downloadUtil', () => {
             'attachment; filename="fallback.png"; filename*=UTF-8\'\'%E4%B8%AD%E6%96%87.png'
           )
       }
-      fetchMock.mockResolvedValue(
+      vi.mocked(fetch).mockResolvedValue(
         fromPartial<Response>({
           ok: true,
           status: 200,
@@ -254,7 +256,8 @@ describe('downloadUtil', () => {
 
       downloadFile(testUrl)
 
-      const fetchPromise = fetchMock.mock.results[0].value as Promise<Response>
+      const fetchPromise = vi.mocked(fetch).mock.results[0]
+        .value as Promise<Response>
       await fetchPromise
       await Promise.resolve() // let fetchAsBlob return
       const blobPromise = blobFn.mock.results[0].value as Promise<Blob>
@@ -271,7 +274,7 @@ describe('downloadUtil', () => {
       const headersMock = {
         get: vi.fn().mockReturnValue(null)
       }
-      fetchMock.mockResolvedValue(
+      vi.mocked(fetch).mockResolvedValue(
         fromPartial<Response>({
           ok: true,
           status: 200,
@@ -282,7 +285,8 @@ describe('downloadUtil', () => {
 
       downloadFile(testUrl, 'my-fallback.png')
 
-      const fetchPromise = fetchMock.mock.results[0].value as Promise<Response>
+      const fetchPromise = vi.mocked(fetch).mock.results[0]
+        .value as Promise<Response>
       await fetchPromise
       await Promise.resolve() // let fetchAsBlob return
       const blobPromise = blobFn.mock.results[0].value as Promise<Blob>
@@ -337,7 +341,7 @@ describe('downloadUtil', () => {
       await openFileInNewTab(testUrl)
 
       expect(windowOpenSpy).toHaveBeenCalledWith(testUrl, '_blank')
-      expect(fetchMock).not.toHaveBeenCalled()
+      expect(fetch).not.toHaveBeenCalled()
     })
 
     it('opens blank tab synchronously then navigates to blob URL in cloud mode', async () => {
@@ -346,7 +350,7 @@ describe('downloadUtil', () => {
       const blob = new Blob(['test'], { type: 'image/png' })
       const mockTab = { location: { href: '' }, closed: false, close: vi.fn() }
       windowOpenSpy.mockReturnValue(fromAny<Window, unknown>(mockTab))
-      fetchMock.mockResolvedValue(
+      vi.mocked(fetch).mockResolvedValue(
         fromPartial<Response>({
           ok: true,
           blob: vi.fn().mockResolvedValue(blob)
@@ -356,7 +360,7 @@ describe('downloadUtil', () => {
       await openFileInNewTab(testUrl)
 
       expect(windowOpenSpy).toHaveBeenCalledWith('', '_blank')
-      expect(fetchMock).toHaveBeenCalledWith(testUrl)
+      expect(fetch).toHaveBeenCalledWith(testUrl)
       expect(createObjectURLSpy).toHaveBeenCalledWith(blob)
       expect(mockTab.location.href).toBe('blob:mock-url')
     })
@@ -371,7 +375,7 @@ describe('downloadUtil', () => {
       )
       const mockTab = { location: { href: '' }, closed: false, close: vi.fn() }
       windowOpenSpy.mockReturnValue(fromAny<Window, unknown>(mockTab))
-      fetchMock.mockResolvedValue(
+      vi.mocked(fetch).mockResolvedValue(
         fromPartial<Response>({
           ok: true,
           blob: vi.fn().mockResolvedValue(htmlBlob)
@@ -390,7 +394,7 @@ describe('downloadUtil', () => {
       const audioBlob = new Blob(['test'], { type: 'audio/ogg; codecs=opus' })
       const mockTab = { location: { href: '' }, closed: false, close: vi.fn() }
       windowOpenSpy.mockReturnValue(fromAny<Window, unknown>(mockTab))
-      fetchMock.mockResolvedValue(
+      vi.mocked(fetch).mockResolvedValue(
         fromPartial<Response>({
           ok: true,
           blob: vi.fn().mockResolvedValue(audioBlob)
@@ -407,7 +411,7 @@ describe('downloadUtil', () => {
       const blob = new Blob(['test'], { type: 'image/png' })
       const mockTab = { location: { href: '' }, closed: false, close: vi.fn() }
       windowOpenSpy.mockReturnValue(fromAny<Window, unknown>(mockTab))
-      fetchMock.mockResolvedValue(
+      vi.mocked(fetch).mockResolvedValue(
         fromPartial<Response>({
           ok: true,
           blob: vi.fn().mockResolvedValue(blob)
@@ -426,7 +430,7 @@ describe('downloadUtil', () => {
       const testUrl = 'https://storage.googleapis.com/bucket/missing.png'
       const mockTab = { location: { href: '' }, closed: false, close: vi.fn() }
       windowOpenSpy.mockReturnValue(fromAny<Window, unknown>(mockTab))
-      fetchMock.mockResolvedValue(
+      vi.mocked(fetch).mockResolvedValue(
         fromPartial<Response>({ ok: false, status: 404 })
       )
 
@@ -441,7 +445,7 @@ describe('downloadUtil', () => {
       const blob = new Blob(['test'], { type: 'image/png' })
       const mockTab = { location: { href: '' }, closed: true, close: vi.fn() }
       windowOpenSpy.mockReturnValue(fromAny<Window, unknown>(mockTab))
-      fetchMock.mockResolvedValue(
+      vi.mocked(fetch).mockResolvedValue(
         fromPartial<Response>({
           ok: true,
           blob: vi.fn().mockResolvedValue(blob)

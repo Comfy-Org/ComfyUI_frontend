@@ -188,14 +188,13 @@ describe('useAgentChatHistoryStore', () => {
   })
 
   it('removes a session with no server request', () => {
-    const fetchSpy = vi.mocked(fetch)
     const store = useAgentChatHistoryStore()
     store.replaceAll([session('a', 1)])
 
     store.remove('a')
 
-    expect(fetchSpy).not.toHaveBeenCalled()
+    expect(fetch).not.toHaveBeenCalled()
     expect(store.sessions).toHaveLength(0)
-    fetchSpy.mockRestore()
+    vi.mocked(fetch).mockRestore()
   })
 })

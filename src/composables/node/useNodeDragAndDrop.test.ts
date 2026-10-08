@@ -159,7 +159,6 @@ describe('useNodeDragAndDrop', () => {
   })
 
   it('does not fetch the page for a non-file drop without a uri', async () => {
-    const fetchSpy = vi.mocked(fetch)
     const node = createNode()
     useNodeDragAndDrop(node, { onDrop: vi.fn().mockResolvedValue([]) })
 
@@ -168,12 +167,12 @@ describe('useNodeDragAndDrop', () => {
     )
 
     expect(result).toBe(false)
-    expect(fetchSpy).not.toHaveBeenCalled()
+    expect(fetch).not.toHaveBeenCalled()
   })
 
   it('onDragDrop handles same-origin uri drops', async () => {
     const onDrop = vi.fn().mockResolvedValue([])
-    const fetchSpy = vi.mocked(fetch).mockResolvedValue(
+    vi.mocked(fetch).mockResolvedValue(
       fromAny<Response, unknown>({
         ok: true,
         blob: vi
@@ -191,7 +190,7 @@ describe('useNodeDragAndDrop', () => {
     )
 
     expect(result).toBe(true)
-    expect(fetchSpy).toHaveBeenCalledWith(new URL(uri))
+    expect(fetch).toHaveBeenCalledWith(new URL(uri))
     expect(onDrop).toHaveBeenCalledTimes(1)
     expect(onDrop.mock.calls[0][0][0]).toBeInstanceOf(File)
     expect(onDrop.mock.calls[0][0][0].name).toBe('uri.png')
@@ -226,7 +225,6 @@ describe('useNodeDragAndDrop', () => {
   it('onDragDrop returns false for cross-origin uri drops', async () => {
     const node = createNode()
     const onDrop = vi.fn().mockResolvedValue([])
-    const fetchSpy = vi.mocked(fetch)
     useNodeDragAndDrop(node, { onDrop })
 
     const result = await node.onDragDrop?.(
@@ -237,7 +235,7 @@ describe('useNodeDragAndDrop', () => {
     )
 
     expect(result).toBe(false)
-    expect(fetchSpy).not.toHaveBeenCalled()
+    expect(fetch).not.toHaveBeenCalled()
     expect(onDrop).not.toHaveBeenCalled()
   })
 

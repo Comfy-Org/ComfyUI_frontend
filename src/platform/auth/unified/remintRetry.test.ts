@@ -36,14 +36,15 @@ beforeEach(() => {
 describe('fetchWithUnifiedRemint', () => {
   const ok = { status: 200 } as Response
   const unauthorized = { status: 401 } as Response
-  const mockFetch = vi.mocked(fetch)
 
   beforeEach(() => {
     vi.mocked(useFeatureFlags().flags).unifiedCloudAuthEnabled = true
   })
 
   it('re-mints once and retries with the fresh token on a 401 (AC1)', async () => {
-    mockFetch.mockResolvedValueOnce(unauthorized).mockResolvedValueOnce(ok)
+    vi.mocked(fetch)
+      .mockResolvedValueOnce(unauthorized)
+      .mockResolvedValueOnce(ok)
     vi.mocked(useWorkspaceAuthStore().remintUnifiedOnce).mockResolvedValue(
       'tokenB'
     )
@@ -57,13 +58,13 @@ describe('fetchWithUnifiedRemint', () => {
     )
 
     expect(result).toBe(ok)
-    expect(mockFetch).toHaveBeenCalledTimes(2)
+    expect(fetch).toHaveBeenCalledTimes(2)
     expect(useWorkspaceAuthStore().remintUnifiedOnce).toHaveBeenCalledTimes(1)
     expect(useWorkspaceAuthStore().remintUnifiedOnce).toHaveBeenCalledWith(
       'tokenA'
     )
 
-    const retryHeaders = new Headers(mockFetch.mock.calls[1][1]?.headers)
+    const retryHeaders = new Headers(vi.mocked(fetch).mock.calls[1][1]?.headers)
     expect(retryHeaders.get('Authorization')).toBe('Bearer tokenB')
     expect(retryHeaders.get('Comfy-User')).toBe('u1')
     expect(
@@ -77,7 +78,7 @@ describe('fetchWithUnifiedRemint', () => {
 
   it('surfaces a persistent 401 after exactly one retry (AC2)', async () => {
     const secondUnauthorized = { status: 401 } as Response
-    mockFetch
+    vi.mocked(fetch)
       .mockResolvedValueOnce(unauthorized)
       .mockResolvedValueOnce(secondUnauthorized)
     vi.mocked(useWorkspaceAuthStore().remintUnifiedOnce).mockResolvedValue(
@@ -91,7 +92,7 @@ describe('fetchWithUnifiedRemint', () => {
     )
 
     expect(result).toBe(secondUnauthorized)
-    expect(mockFetch).toHaveBeenCalledTimes(2)
+    expect(fetch).toHaveBeenCalledTimes(2)
     expect(useWorkspaceAuthStore().remintUnifiedOnce).toHaveBeenCalledTimes(1)
     expect(
       useTelemetry()?.trackUnifiedAuthRetry
@@ -104,7 +105,7 @@ describe('fetchWithUnifiedRemint', () => {
   })
 
   it('does not re-mint or retry when the caller gate is false (AC3)', async () => {
-    mockFetch.mockResolvedValueOnce(unauthorized)
+    vi.mocked(fetch).mockResolvedValueOnce(unauthorized)
 
     const result = await fetchWithUnifiedRemint(
       'https://cloud/x',
@@ -113,14 +114,14 @@ describe('fetchWithUnifiedRemint', () => {
     )
 
     expect(result).toBe(unauthorized)
-    expect(mockFetch).toHaveBeenCalledTimes(1)
+    expect(fetch).toHaveBeenCalledTimes(1)
     expect(useWorkspaceAuthStore().remintUnifiedOnce).not.toHaveBeenCalled()
     expect(useTelemetry()?.trackUnifiedAuthRetry).not.toHaveBeenCalled()
   })
 
   it('does not retry a non-401 response', async () => {
     const serverError = { status: 500 } as Response
-    mockFetch.mockResolvedValueOnce(serverError)
+    vi.mocked(fetch).mockResolvedValueOnce(serverError)
 
     const result = await fetchWithUnifiedRemint(
       'https://cloud/x',
@@ -129,12 +130,12 @@ describe('fetchWithUnifiedRemint', () => {
     )
 
     expect(result).toBe(serverError)
-    expect(mockFetch).toHaveBeenCalledTimes(1)
+    expect(fetch).toHaveBeenCalledTimes(1)
     expect(useWorkspaceAuthStore().remintUnifiedOnce).not.toHaveBeenCalled()
   })
 
   it('surfaces the original 401 when the re-mint yields no token', async () => {
-    mockFetch.mockResolvedValueOnce(unauthorized)
+    vi.mocked(fetch).mockResolvedValueOnce(unauthorized)
     vi.mocked(useWorkspaceAuthStore().remintUnifiedOnce).mockResolvedValue(null)
 
     const result = await fetchWithUnifiedRemint(
@@ -144,7 +145,7 @@ describe('fetchWithUnifiedRemint', () => {
     )
 
     expect(result).toBe(unauthorized)
-    expect(mockFetch).toHaveBeenCalledTimes(1)
+    expect(fetch).toHaveBeenCalledTimes(1)
     expect(useWorkspaceAuthStore().remintUnifiedOnce).toHaveBeenCalledTimes(1)
     expect(
       useTelemetry()?.trackUnifiedAuthRetry
@@ -157,7 +158,9 @@ describe('fetchWithUnifiedRemint', () => {
   })
 
   it('uses the bearer from a Request when init does not override headers', async () => {
-    mockFetch.mockResolvedValueOnce(unauthorized).mockResolvedValueOnce(ok)
+    vi.mocked(fetch)
+      .mockResolvedValueOnce(unauthorized)
+      .mockResolvedValueOnce(ok)
     vi.mocked(useWorkspaceAuthStore().remintUnifiedOnce).mockResolvedValue(
       'tokenB'
     )
@@ -171,7 +174,7 @@ describe('fetchWithUnifiedRemint', () => {
     expect(useWorkspaceAuthStore().remintUnifiedOnce).toHaveBeenCalledWith(
       'tokenA'
     )
-    const retryHeaders = new Headers(mockFetch.mock.calls[1][1]?.headers)
+    const retryHeaders = new Headers(vi.mocked(fetch).mock.calls[1][1]?.headers)
     expect(retryHeaders.get('Authorization')).toBe('Bearer tokenB')
   })
 
@@ -182,7 +185,7 @@ describe('fetchWithUnifiedRemint', () => {
       body,
       headers: { Authorization: 'Bearer tokenA' as const }
     })
-    mockFetch
+    vi.mocked(fetch)
       .mockImplementationOnce(async (input) => {
         assert.instanceOf(input, Request)
         expect(await input.text()).toBe(body)
@@ -201,18 +204,18 @@ describe('fetchWithUnifiedRemint', () => {
     const result = await fetchWithUnifiedRemint(request, {}, true)
 
     expect(result).toBe(ok)
-    expect(mockFetch).toHaveBeenCalledTimes(2)
-    const retryHeaders = new Headers(mockFetch.mock.calls[1][1]?.headers)
+    expect(fetch).toHaveBeenCalledTimes(2)
+    const retryHeaders = new Headers(vi.mocked(fetch).mock.calls[1][1]?.headers)
     expect(retryHeaders.get('Authorization')).toBe('Bearer tokenB')
   })
 
   it('surfaces the original 401 when the original bearer is unavailable', async () => {
-    mockFetch.mockResolvedValueOnce(unauthorized)
+    vi.mocked(fetch).mockResolvedValueOnce(unauthorized)
 
     const result = await fetchWithUnifiedRemint('https://cloud/x', {}, true)
 
     expect(result).toBe(unauthorized)
-    expect(mockFetch).toHaveBeenCalledTimes(1)
+    expect(fetch).toHaveBeenCalledTimes(1)
     expect(useWorkspaceAuthStore().remintUnifiedOnce).not.toHaveBeenCalled()
     expect(
       useTelemetry()?.trackUnifiedAuthRetry
@@ -225,7 +228,7 @@ describe('fetchWithUnifiedRemint', () => {
   })
 
   it('surfaces the original 401 when the re-mint throws a permanent auth error', async () => {
-    mockFetch.mockResolvedValueOnce(unauthorized)
+    vi.mocked(fetch).mockResolvedValueOnce(unauthorized)
     vi.mocked(useWorkspaceAuthStore().remintUnifiedOnce).mockRejectedValue(
       new Error('INVALID_FIREBASE_TOKEN')
     )
@@ -237,13 +240,13 @@ describe('fetchWithUnifiedRemint', () => {
     )
 
     expect(result).toBe(unauthorized)
-    expect(mockFetch).toHaveBeenCalledTimes(1)
+    expect(fetch).toHaveBeenCalledTimes(1)
     expect(useWorkspaceAuthStore().remintUnifiedOnce).toHaveBeenCalledTimes(1)
   })
 
   it('reports an unexpected re-mint throw as auth_unified_remint_unexpected and keeps the 401 fallback', async () => {
     const thrown = new TypeError('Failed to fetch dynamically imported module')
-    mockFetch.mockResolvedValueOnce(unauthorized)
+    vi.mocked(fetch).mockResolvedValueOnce(unauthorized)
     vi.mocked(useWorkspaceAuthStore().remintUnifiedOnce).mockRejectedValue(
       thrown
     )
@@ -281,7 +284,7 @@ describe('fetchWithUnifiedRemint', () => {
   })
 
   it('does not report when the re-mint primitive returns null without throwing', async () => {
-    mockFetch.mockResolvedValueOnce(unauthorized)
+    vi.mocked(fetch).mockResolvedValueOnce(unauthorized)
     vi.mocked(useWorkspaceAuthStore().remintUnifiedOnce).mockResolvedValue(null)
 
     await fetchWithUnifiedRemint(
@@ -294,7 +297,7 @@ describe('fetchWithUnifiedRemint', () => {
   })
 
   it('surfaces the original 401 without re-minting when the body is a non-replayable stream', async () => {
-    mockFetch.mockResolvedValueOnce(unauthorized)
+    vi.mocked(fetch).mockResolvedValueOnce(unauthorized)
     vi.mocked(useWorkspaceAuthStore().remintUnifiedOnce).mockResolvedValue(
       'tokenB'
     )
@@ -310,7 +313,7 @@ describe('fetchWithUnifiedRemint', () => {
     )
 
     expect(result).toBe(unauthorized)
-    expect(mockFetch).toHaveBeenCalledTimes(1)
+    expect(fetch).toHaveBeenCalledTimes(1)
     expect(useWorkspaceAuthStore().remintUnifiedOnce).not.toHaveBeenCalled()
     expect(
       useTelemetry()?.trackUnifiedAuthRetry
@@ -323,7 +326,9 @@ describe('fetchWithUnifiedRemint', () => {
   })
 
   it('ends the initial timeout before re-minting and uses a fresh signal for the retry', async () => {
-    mockFetch.mockResolvedValueOnce(unauthorized).mockResolvedValueOnce(ok)
+    vi.mocked(fetch)
+      .mockResolvedValueOnce(unauthorized)
+      .mockResolvedValueOnce(ok)
     vi.mocked(useWorkspaceAuthStore().remintUnifiedOnce).mockResolvedValue(
       'tokenB'
     )
@@ -346,13 +351,13 @@ describe('fetchWithUnifiedRemint', () => {
     expect(clearInitialTimeout).toHaveBeenCalledTimes(1)
     expect(createSignal).toHaveBeenCalledTimes(1)
     expect(clearInitialTimeout).toHaveBeenCalledBefore(createSignal)
-    const retrySignal = mockFetch.mock.calls[1][1]?.signal
+    const retrySignal = vi.mocked(fetch).mock.calls[1][1]?.signal
     expect(retrySignal).toBe(freshController.signal)
     expect(retrySignal).not.toBe(originalController.signal)
   })
 
   it('does not use the retry signal lifecycle when no retry happens', async () => {
-    mockFetch.mockResolvedValueOnce(unauthorized)
+    vi.mocked(fetch).mockResolvedValueOnce(unauthorized)
     const clearInitialTimeout = vi.fn()
     const createSignal = vi.fn()
 
@@ -390,7 +395,9 @@ describe('fetchWithUnifiedRemint', () => {
   ] as { shape: string; headers: HeadersInit }[])(
     'preserves method/body and replaces Authorization on a POST retry ($shape headers)',
     async ({ headers }) => {
-      mockFetch.mockResolvedValueOnce(unauthorized).mockResolvedValueOnce(ok)
+      vi.mocked(fetch)
+        .mockResolvedValueOnce(unauthorized)
+        .mockResolvedValueOnce(ok)
       vi.mocked(useWorkspaceAuthStore().remintUnifiedOnce).mockResolvedValue(
         'tokenB'
       )
@@ -402,7 +409,7 @@ describe('fetchWithUnifiedRemint', () => {
         true
       )
 
-      const retryInit = mockFetch.mock.calls[1][1]
+      const retryInit = vi.mocked(fetch).mock.calls[1][1]
       assert.exists(retryInit)
       expect(retryInit.method).toBe('POST')
       expect(retryInit.body).toBe(body)
