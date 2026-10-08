@@ -21,21 +21,6 @@ const i18n = createI18n({
   }
 })
 
-const ComboboxVirtualizerStub = defineComponent({
-  name: 'ComboboxVirtualizer',
-  props: {
-    options: Array,
-    estimateSize: Number,
-    textContent: Function
-  },
-  setup(props, { slots }) {
-    return () =>
-      (props.options ?? []).flatMap(
-        (option) => slots.default?.({ option }) ?? []
-      )
-  }
-})
-
 const WidgetLayoutFieldStub = defineComponent({
   name: 'WidgetLayoutField',
   template: '<div class="relative"><slot /></div>'
@@ -47,6 +32,7 @@ const flushPromises = () =>
 describe('WidgetSelectDefault', () => {
   beforeEach(() => {
     vi.useRealTimers()
+    vi.spyOn(HTMLElement.prototype, 'offsetHeight', 'get').mockReturnValue(1000)
   })
 
   const createWidget = (
@@ -76,7 +62,6 @@ describe('WidgetSelectDefault', () => {
       global: {
         plugins: [i18n],
         stubs: {
-          ComboboxVirtualizer: ComboboxVirtualizerStub,
           WidgetLayoutField: WidgetLayoutFieldStub
         }
       }
