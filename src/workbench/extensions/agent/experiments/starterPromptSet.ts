@@ -31,15 +31,16 @@ function resolveAssignment(): {
 
 /** Resolves the current assignment and attributes an eligible rendered arm. */
 export function useStarterPromptSet() {
-  const resolved = computed(resolveAssignment)
-  const assignment = computed(() =>
-    isAuthenticatedConfigLoaded.value || resolved.value.hasQaOverride
-      ? resolved.value.assignment
+  const assignment = computed(() => {
+    const resolved = resolveAssignment()
+    return isAuthenticatedConfigLoaded.value || resolved.hasQaOverride
+      ? resolved.assignment
       : 'control'
-  )
-  const attributeExperiment = computed(
-    () => isAuthenticatedConfigLoaded.value && !resolved.value.hasQaOverride
-  )
+  })
+  const attributeExperiment = computed(() => {
+    const resolved = resolveAssignment()
+    return isAuthenticatedConfigLoaded.value && !resolved.hasQaOverride
+  })
 
   const expose = (renderedAssignment: AgentStarterPromptAssignment) => {
     if (!attributeExperiment.value || renderedAssignment !== assignment.value)

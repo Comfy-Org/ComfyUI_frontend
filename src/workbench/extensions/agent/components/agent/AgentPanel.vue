@@ -81,7 +81,7 @@ const {
   answeringAskIds = new Set<string>(),
   freeUsePlacement = 'control',
   starterPromptAssignment = 'control',
-  attributeStarterPromptExperiment = true
+  attributeStarterPromptExperiment = false
 } = defineProps<{
   entries: ConversationEntry[]
   userName?: string

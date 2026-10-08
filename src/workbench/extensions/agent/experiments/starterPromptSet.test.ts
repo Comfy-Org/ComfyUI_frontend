@@ -1,3 +1,4 @@
+import { nextTick } from 'vue'
 import { describe, expect, it, vi } from 'vitest'
 
 import {
@@ -43,12 +44,13 @@ describe('useStarterPromptSet', () => {
     })
   })
 
-  it('does not expose a surface rendered before authentication', () => {
+  it('does not expose a surface rendered before authentication', async () => {
     remoteConfig.value = { [STARTER_PROMPT_SET_FLAG]: 'test' }
     const { assignment, expose } = useStarterPromptSet()
 
     expose('control')
     authenticatedRemoteConfigState.value = 'authenticated'
+    await nextTick()
 
     expect(assignment.value).toBe('test')
     expect(
@@ -151,18 +153,21 @@ describe('useStarterPromptSet', () => {
     ).toHaveBeenCalledTimes(2)
   })
 
-  it('renders QA overrides without attributing experiment events', () => {
-    authenticatedRemoteConfigState.value = 'authenticated'
-    remoteConfig.value = { [STARTER_PROMPT_SET_FLAG]: 'control' }
-    vi.mocked(getSessionOverride).mockReturnValue('test')
+  it.for(['authenticated', 'unloaded'] as const)(
+    'renders QA overrides without attributing experiment events while %s',
+    (configState) => {
+      authenticatedRemoteConfigState.value = configState
+      remoteConfig.value = { [STARTER_PROMPT_SET_FLAG]: 'control' }
+      vi.mocked(getSessionOverride).mockReturnValue('test')
 
-    const { assignment, attributeExperiment, expose } = useStarterPromptSet()
+      const { assignment, attributeExperiment, expose } = useStarterPromptSet()
 
-    expect(assignment.value).toBe('test')
-    expect(attributeExperiment.value).toBe(false)
-    expose('test')
-    expect(
-      useTelemetry()?.trackAgentStarterPromptExposure
-    ).not.toHaveBeenCalled()
-  })
+      expect(assignment.value).toBe('test')
+      expect(attributeExperiment.value).toBe(false)
+      expose('test')
+      expect(
+        useTelemetry()?.trackAgentStarterPromptExposure
+      ).not.toHaveBeenCalled()
+    }
+  )
 })

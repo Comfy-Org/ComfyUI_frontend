@@ -1,14 +1,6 @@
 import { render, screen } from '@testing-library/vue'
 import { describe, expect, it, vi } from 'vitest'
 
-vi.hoisted(() => {
-  globalThis.ResizeObserver = class {
-    observe() {}
-    unobserve() {}
-    disconnect() {}
-  }
-})
-
 vi.mock(import('@/platform/distribution/types'), () => ({ isCloud: true }))
 
 import { i18n } from '@/i18n'
@@ -24,7 +16,8 @@ describe('AgentPanel starter prompt set', () => {
       props: {
         entries: [],
         historyGroups: { current: [], today: [], yesterday: [], earlier: [] },
-        starterPromptAssignment: 'test'
+        starterPromptAssignment: 'test',
+        attributeStarterPromptExperiment: true
       },
       global: {
         plugins: [i18n],
@@ -35,7 +28,7 @@ describe('AgentPanel starter prompt set', () => {
 
     expect(
       screen.getByRole('button', {
-        name: 'Create a polished product image from a text prompt'
+        name: i18n.global.t('agent.suggestedPrompts.treatment.cloud.0')
       })
     ).toBeVisible()
     expect(emitted('starterPromptRendered')).toEqual([['test']])

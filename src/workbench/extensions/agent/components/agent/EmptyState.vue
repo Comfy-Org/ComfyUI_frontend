@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { computed, onMounted, ref } from 'vue'
+import { computed, onMounted } from 'vue'
 import { useI18n } from 'vue-i18n'
 
 import { cn } from '@comfyorg/tailwind-utils'
@@ -14,7 +14,7 @@ import { starterPromptAttribution } from '../../utils/starterPrompts'
 const {
   userName,
   assignment = 'control',
-  attributeExperiment = true
+  attributeExperiment = false
 } = defineProps<{
   userName?: string
   assignment?: AgentStarterPromptAssignment
@@ -31,22 +31,21 @@ const promptKey = isCloud
   ? 'agent.suggestedPrompts.cloud'
   : 'agent.suggestedPrompts.local'
 const treatmentPromptKey = 'agent.suggestedPrompts.treatment.cloud'
-const hasTreatmentCopy = computed(() =>
-  isCloud ? te(`${treatmentPromptKey}.0`, locale.value) : false
+const hasTreatmentCopy = computed(
+  () => isCloud && te(`${treatmentPromptKey}.0`, locale.value)
 )
-const renderedAssignment = ref<AgentStarterPromptAssignment>(
+const renderedAssignment: AgentStarterPromptAssignment =
   assignment === 'test' && hasTreatmentCopy.value ? 'test' : 'control'
+const selectedPromptKey = computed(() =>
+  renderedAssignment === 'test' && hasTreatmentCopy.value
+    ? treatmentPromptKey
+    : promptKey
 )
-const selectedPromptKey = computed(() => {
-  if (renderedAssignment.value !== 'test' || !hasTreatmentCopy.value)
-    return promptKey
-  return treatmentPromptKey
-})
 const prompts = computed(() => {
   return tm(selectedPromptKey.value) as string[]
 })
 const effectiveAssignment = computed<AgentStarterPromptAssignment>(() =>
-  selectedPromptKey.value === promptKey ? 'control' : assignment
+  selectedPromptKey.value === treatmentPromptKey ? 'test' : 'control'
 )
 const promptLocale = computed(() => {
   return te(`${selectedPromptKey.value}.0`, locale.value)
@@ -55,8 +54,8 @@ const promptLocale = computed(() => {
 })
 
 const eligibleAtMount = attributeExperiment && hasTreatmentCopy.value
-const shouldAttributeExperiment = computed(() =>
-  Boolean(eligibleAtMount && hasTreatmentCopy.value)
+const shouldAttributeExperiment = computed(
+  () => eligibleAtMount && hasTreatmentCopy.value
 )
 
 onMounted(() => {

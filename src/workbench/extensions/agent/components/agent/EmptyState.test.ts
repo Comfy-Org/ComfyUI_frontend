@@ -95,7 +95,7 @@ describe('EmptyState', () => {
       try {
         const user = userEvent.setup()
         const { emitted } = render(EmptyState, {
-          props: { assignment },
+          props: { assignment, attributeExperiment: true },
           global: { plugins: [i18n] }
         })
         const text = i18n.global.t(key)
@@ -132,7 +132,7 @@ describe('EmptyState', () => {
       try {
         const user = userEvent.setup()
         const { emitted } = render(EmptyState, {
-          props: { assignment },
+          props: { assignment, attributeExperiment: true },
           global: { plugins: [i18n] }
         })
         const text = i18n.global.t(key)
@@ -157,21 +157,33 @@ describe('EmptyState', () => {
       global: { plugins: [i18n] }
     })
 
-    await user.click(
-      screen.getByRole('button', {
-        name: 'Create a polished product image from a text prompt'
-      })
-    )
+    const text = i18n.global.t('agent.suggestedPrompts.treatment.cloud.0')
+    await user.click(screen.getByRole('button', { name: text }))
 
     expect(emitted().insert).toEqual([
-      [
-        'Create a polished product image from a text prompt',
-        expect.not.objectContaining({ assignment: expect.anything() })
-      ]
+      [text, expect.not.objectContaining({ assignment: expect.anything() })]
+    ])
+  })
+
+  it('keeps attributing the arm it rendered when the assignment changes', async () => {
+    distribution.isCloud = true
+    const user = userEvent.setup()
+    const { emitted, rerender } = render(EmptyState, {
+      props: { assignment: 'test', attributeExperiment: true },
+      global: { plugins: [i18n] }
+    })
+
+    await rerender({ assignment: 'control', attributeExperiment: false })
+    const text = i18n.global.t('agent.suggestedPrompts.treatment.cloud.0')
+    await user.click(screen.getByRole('button', { name: text }))
+
+    expect(emitted().insert).toEqual([
+      [text, expect.objectContaining({ assignment: 'test' })]
     ])
   })
 
   it('does not attribute a surface that mounted before experiment config loaded', async () => {
+    distribution.isCloud = true
     const user = userEvent.setup()
     const { emitted, rerender } = render(EmptyState, {
       props: {
@@ -185,7 +197,7 @@ describe('EmptyState', () => {
       assignment: 'test',
       attributeExperiment: true
     })
-    const text = i18n.global.t('agent.suggestedPrompts.local.0')
+    const text = i18n.global.t('agent.suggestedPrompts.cloud.0')
     await user.click(screen.getByRole('button', { name: text }))
 
     expect(emitted()).not.toHaveProperty('rendered')
