@@ -33,10 +33,12 @@ describe('HeaderMainMobile', () => {
     const user = await openMenu()
     await user.click(screen.getByRole('button', { name: /^Company\b/i }))
 
-    const socialLinks = ['Discord', 'GitHub', 'YouTube', 'Reddit']
+    const socialLinks = ['Discord', 'GitHub', 'YouTube', 'Reddit'].map(
+      (label) => `${label} (opens in new tab)`
+    )
     expect(
-      socialLinks.map(
-        (label) => screen.getByRole('link', { name: label }).textContent
+      socialLinks.map((name) =>
+        screen.getByRole('link', { name }).textContent.trim()
       )
     ).toEqual(socialLinks)
   })

@@ -204,10 +204,16 @@ test.describe('Desktop dropdown @interaction', () => {
       await expect(dropdown.getByText(item, { exact: true })).toBeVisible()
     }
     await expect(
-      dropdown.getByRole('link', { name: 'Discord', exact: true })
+      dropdown.getByRole('link', {
+        name: 'Discord (opens in new tab)',
+        exact: true
+      })
     ).toHaveAttribute('href', 'https://discord.com/invite/comfyorg')
     await expect(
-      dropdown.getByRole('link', { name: 'YouTube', exact: true })
+      dropdown.getByRole('link', {
+        name: 'YouTube (opens in new tab)',
+        exact: true
+      })
     ).toBeVisible()
   })
 

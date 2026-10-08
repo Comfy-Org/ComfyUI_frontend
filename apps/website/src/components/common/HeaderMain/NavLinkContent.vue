@@ -3,12 +3,14 @@ import { ArrowUpRight } from '@lucide/vue'
 
 import type { NavColumnItem } from '@/data/mainNavigation'
 import type { Locale } from '@/i18n/translations'
+import { translationsFor } from '@/i18n/translations'
 import NewBadge from './NewBadge.vue'
 
-defineProps<{
+const { locale } = defineProps<{
   item: Pick<NavColumnItem, 'label' | 'badge' | 'external' | 'icon'>
   locale: Locale
 }>()
+const { t } = translationsFor(locale)
 </script>
 
 <template>
@@ -18,7 +20,12 @@ defineProps<{
       :style="{ maskImage: `url('${item.icon}')` }"
       aria-hidden="true"
     />
-    <span class="sr-only">{{ item.label }}</span>
+    <span class="sr-only">
+      {{ item.label
+      }}<template v-if="item.external">
+        ({{ t('nav.opensInNewTab') }})</template
+      >
+    </span>
   </span>
   <span v-else class="flex items-center gap-2">
     <span class="inline-block">{{ item.label }}</span>
