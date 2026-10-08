@@ -2943,6 +2943,27 @@
       }
     }
   },
+  "ClarityCrystalUpscaleNode": {
+    "description": "Escala una imagen con Crystal Upscaler de Clarity AI, un escalador de alta fidelidad que se mantiene fiel al original y restaura rostros, piel y textura fina. Salida máxima: 100 megapíxeles.",
+    "display_name": "Escalado Crystal de Clarity AI",
+    "inputs": {
+      "model": {
+        "name": "model",
+        "tooltip": "Modelo que se utilizará."
+      },
+      "model_creativity": {
+        "name": "creativity"
+      },
+      "model_scale_factor": {
+        "name": "scale_factor"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
   "ClaudeNode": {
     "description": "Genera respuestas de texto con los modelos Claude de Anthropic. Proporciona un mensaje de texto y, opcionalmente, una o más imágenes para contexto multimodal.",
     "display_name": "Anthropic Claude",
@@ -10394,6 +10415,36 @@
       "prompt": {
         "name": "prompt",
         "tooltip": "Prompt de texto positivo."
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "KlingTryOnNode": {
+    "description": "Viste a una persona con una prenda. El resultado tiene el mismo tamaño que la imagen de la persona, con un máximo de 2048px en el lado más largo.",
+    "display_name": "Prueba virtual de Kling",
+    "inputs": {
+      "control_after_generate": {
+        "name": "control después de generar"
+      },
+      "garment_image": {
+        "name": "garment_image",
+        "tooltip": "La prenda que se va a poner: foto de producto, composición plana, maniquí o foto con modelo. Una foto con modelo puede transferir el resto de ese atuendo. Solo prendas; no se admiten zapatos, bolsos ni accesorios."
+      },
+      "keep_pose": {
+        "name": "keep_pose",
+        "tooltip": "Desactívalo para permitir que la pose cambie y lograr una mejor presentación del atuendo."
+      },
+      "person_image": {
+        "name": "person_image",
+        "tooltip": "Foto de una persona, idealmente de frente o en vista de tres cuartos. Las imágenes con un lado superior a 2048px se reducen primero."
+      },
+      "seed": {
+        "name": "seed",
+        "tooltip": "La semilla controla si el nodo debe volver a ejecutarse; los resultados no son deterministas independientemente de la semilla."
       }
     },
     "outputs": {

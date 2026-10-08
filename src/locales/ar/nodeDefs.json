@@ -2943,6 +2943,27 @@
       }
     }
   },
+  "ClarityCrystalUpscaleNode": {
+    "description": "قم بترقية دقة صورة باستخدام Crystal Upscaler من Clarity AI، وهو مُرقّي دقة عالي الدقة يحافظ على الأصل ويستعيد الوجوه والبشرة والملمس الدقيق. الحد الأقصى للإخراج: 100 ميغابكسل.",
+    "display_name": "ترقية دقة Clarity AI Crystal",
+    "inputs": {
+      "model": {
+        "name": "model",
+        "tooltip": "النموذج المراد استخدامه."
+      },
+      "model_creativity": {
+        "name": "creativity"
+      },
+      "model_scale_factor": {
+        "name": "scale_factor"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
   "ClaudeNode": {
     "description": "إنشاء ردود نصية باستخدام نماذج Claude من Anthropic. قدم مطالبة نصية ويمكنك أيضًا إضافة صورة أو أكثر للسياق متعدد الوسائط.",
     "display_name": "Anthropic Claude",
@@ -10394,6 +10415,36 @@
       "prompt": {
         "name": "prompt",
         "tooltip": "وصف نصي إيجابي."
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "KlingTryOnNode": {
+    "description": "ألبِس شخصًا قطعة ملابس. تكون النتيجة بالحجم نفسه لصورة الشخص، مع حد أقصى يبلغ 2048px لأطول ضلع.",
+    "display_name": "التجربة الافتراضية للملابس من Kling",
+    "inputs": {
+      "control_after_generate": {
+        "name": "التحكم بعد التوليد"
+      },
+      "garment_image": {
+        "name": "garment_image",
+        "tooltip": "الملابس المراد إلباسها: صورة منتج، أو تصوير مسطّح، أو دمية عرض، أو صورة لعارض يرتديها. يمكن أن تنقل الصورة التي يظهر فيها عارض يرتديها بقية ذلك الزي. الملابس فقط؛ الأحذية والحقائب والإكسسوارات غير مدعومة."
+      },
+      "keep_pose": {
+        "name": "keep_pose",
+        "tooltip": "أوقف هذا الخيار للسماح بتغيير الوضعية من أجل عرض أفضل للزي."
+      },
+      "person_image": {
+        "name": "person_image",
+        "tooltip": "صورة لشخص واحد، ويُفضَّل أن تكون مواجهة للأمام أو بزاوية ثلاثة أرباع. تُصغَّر الصور التي يزيد أحد أضلاعها عن 2048px أولًا."
+      },
+      "seed": {
+        "name": "seed",
+        "tooltip": "يتحكم seed في ما إذا كان يجب إعادة تشغيل العقدة؛ النتائج غير حتمية بغض النظر عن seed."
       }
     },
     "outputs": {

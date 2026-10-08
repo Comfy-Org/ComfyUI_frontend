@@ -2943,6 +2943,27 @@
       }
     }
   },
+  "ClarityCrystalUpscaleNode": {
+    "description": "Aumenta la risoluzione di un'immagine con Crystal Upscaler di Clarity AI, un upscaler ad alta fedeltà che rimane fedele all'originale e ripristina volti, pelle e texture fini. Output massimo: 100 megapixel.",
+    "display_name": "Upscaling Crystal di Clarity AI",
+    "inputs": {
+      "model": {
+        "name": "modello",
+        "tooltip": "Modello da usare."
+      },
+      "model_creativity": {
+        "name": "creatività"
+      },
+      "model_scale_factor": {
+        "name": "fattore_di_scala"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
   "ClaudeNode": {
     "description": "Genera risposte testuali con i modelli Claude di Anthropic. Fornisci un prompt testuale e opzionalmente una o più immagini per il contesto multimodale.",
     "display_name": "Anthropic Claude",
@@ -10394,6 +10415,36 @@
       "prompt": {
         "name": "prompt",
         "tooltip": "Prompt testuale positivo."
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "KlingTryOnNode": {
+    "description": "Veste una persona con un capo di abbigliamento. Il risultato ha le stesse dimensioni dell'immagine della persona, con un massimo di 2048px sul lato più lungo.",
+    "display_name": "Prova virtuale Kling",
+    "inputs": {
+      "control_after_generate": {
+        "name": "controllo dopo la generazione"
+      },
+      "garment_image": {
+        "name": "immagine_capo",
+        "tooltip": "L'abbigliamento da indossare: foto del prodotto, flat lay, manichino o foto indossata da una modella o un modello. Una foto indossata da una modella o un modello può trasferire anche il resto di quell'outfit. Solo abbigliamento; scarpe, borse e accessori non sono supportati."
+      },
+      "keep_pose": {
+        "name": "mantieni_posa",
+        "tooltip": "Disattiva per consentire alla posa di cambiare, per una migliore presentazione dell'outfit."
+      },
+      "person_image": {
+        "name": "immagine_persona",
+        "tooltip": "Foto di una persona, idealmente frontale o con inquadratura a tre quarti. Le immagini con un lato superiore a 2048px vengono prima ridotte."
+      },
+      "seed": {
+        "name": "seme",
+        "tooltip": "Il seed controlla se il nodo deve essere rieseguito; i risultati non sono deterministici indipendentemente dal seed."
       }
     },
     "outputs": {

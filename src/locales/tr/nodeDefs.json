@@ -2943,6 +2943,27 @@
       }
     }
   },
+  "ClarityCrystalUpscaleNode": {
+    "description": "Bir görüntüyü, orijinaline sadık kalan ve yüzleri, cildi ve ince dokuları geri yükleyen yüksek kaliteli bir büyütücü olan Clarity AI Crystal Upscaler ile büyütün. Maksimum çıktı: 100 megapiksel.",
+    "display_name": "Clarity AI Crystal Büyütme",
+    "inputs": {
+      "model": {
+        "name": "model",
+        "tooltip": "Kullanılacak model."
+      },
+      "model_creativity": {
+        "name": "creativity"
+      },
+      "model_scale_factor": {
+        "name": "scale_factor"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
   "ClaudeNode": {
     "description": "Anthropic'in Claude modelleriyle metin yanıtları oluşturun. Bir metin istemi girin ve isteğe bağlı olarak çok modlu bağlam için bir veya daha fazla görsel ekleyin.",
     "display_name": "Anthropic Claude",
@@ -10394,6 +10415,36 @@
       "prompt": {
         "name": "prompt",
         "tooltip": "Olumlu metin istemi."
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "KlingTryOnNode": {
+    "description": "Bir kişiye bir giysi giydirin. Sonuç, kişi görüntüsüyle aynı boyutta olur ve en uzun kenarı 2048 px ile sınırlanır.",
+    "display_name": "Kling Sanal Deneme",
+    "inputs": {
+      "control_after_generate": {
+        "name": "oluşturma sonrası kontrol"
+      },
+      "garment_image": {
+        "name": "garment_image",
+        "tooltip": "Giydirilecek kıyafet: ürün fotoğrafı, düz serim, manken veya model üzerindeki fotoğraf. Model üzerindeki bir fotoğraf, o kombinin geri kalanını da taşıyabilir. Yalnızca kıyafetler desteklenir; ayakkabılar, çantalar ve aksesuarlar desteklenmez."
+      },
+      "keep_pose": {
+        "name": "keep_pose",
+        "tooltip": "Kıyafetin daha iyi sunulması için pozun değişmesine izin vermek üzere kapatın."
+      },
+      "person_image": {
+        "name": "person_image",
+        "tooltip": "Tek bir kişinin fotoğrafı; ideal olarak önden veya üç çeyrek açıdan. Kenarlarından biri 2048 px'i aşan görüntüler önce küçültülür."
+      },
+      "seed": {
+        "name": "seed",
+        "tooltip": "Seed, düğümün yeniden çalıştırılıp çalıştırılmayacağını denetler; sonuçlar seed'den bağımsız olarak deterministik değildir."
       }
     },
     "outputs": {

@@ -2564,6 +2564,27 @@
       }
     }
   },
+  "ClarityCrystalUpscaleNode": {
+    "display_name": "Clarity AI Crystal Upscale",
+    "description": "Upscale an image with Clarity AI's Crystal Upscaler, a high-fidelity upscaler that stays faithful to the original and restores faces, skin, and fine texture. Maximum output: 100 megapixels.",
+    "inputs": {
+      "model": {
+        "name": "model",
+        "tooltip": "Model to use."
+      },
+      "model_creativity": {
+        "name": "creativity"
+      },
+      "model_scale_factor": {
+        "name": "scale_factor"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
   "ClaudeNode": {
     "display_name": "Anthropic Claude",
     "description": "Generate text responses with Anthropic's Claude models. Provide a text prompt and optionally one or more images for multimodal context.",
@@ -10280,6 +10301,36 @@
       },
       "generate_audio": {
         "name": "generate_audio"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "KlingTryOnNode": {
+    "display_name": "Kling Virtual Try-On",
+    "description": "Dress a person in a clothing item. The result has the same size as the person image, capped at 2048px on the longest side.",
+    "inputs": {
+      "person_image": {
+        "name": "person_image",
+        "tooltip": "Photo of one person, ideally front-facing or three-quarter view. Images with a side over 2048px are downscaled first."
+      },
+      "garment_image": {
+        "name": "garment_image",
+        "tooltip": "The clothing to put on: product photo, flat lay, mannequin or on-model photo. An on-model photo can carry over the rest of that outfit. Clothing only; shoes, bags and accessories are not supported."
+      },
+      "keep_pose": {
+        "name": "keep_pose",
+        "tooltip": "Turn off to allow the pose to change for a better outfit presentation."
+      },
+      "seed": {
+        "name": "seed",
+        "tooltip": "Seed controls whether the node should re-run; results are non-deterministic regardless of seed."
+      },
+      "control_after_generate": {
+        "name": "control after generate"
       }
     },
     "outputs": {
