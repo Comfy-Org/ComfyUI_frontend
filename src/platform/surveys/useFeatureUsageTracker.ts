@@ -9,8 +9,14 @@ interface FeatureUsage {
 
 type FeatureUsageRecord = Partial<Record<string, FeatureUsage>>
 
+interface PendingFeatureUsage {
+  incrementCount: number
+  firstUsed: number
+  lastUsed: number
+}
+
 const STORAGE_KEY = 'Comfy.FeatureUsage'
-const pendingUsage = new Map<string, FeatureUsage>()
+const pendingUsage = new Map<string, PendingFeatureUsage>()
 
 function latestUsage(
   storedUsage: FeatureUsage | undefined,
@@ -38,12 +44,31 @@ function applyPendingUsage(usageData: FeatureUsageRecord) {
   return {
     ...usageData,
     ...Object.fromEntries(
-      [...pendingUsage].map(([featureId, usage]) => [
-        featureId,
-        latestUsage(usageData[featureId], usage)
-      ])
+      [...pendingUsage].map(([featureId, pending]) => {
+        const stored = usageData[featureId]
+        return [
+          featureId,
+          {
+            useCount: (stored?.useCount ?? 0) + pending.incrementCount,
+            firstUsed: Math.min(
+              stored?.firstUsed ?? pending.firstUsed,
+              pending.firstUsed
+            ),
+            lastUsed: Math.max(stored?.lastUsed ?? 0, pending.lastUsed)
+          }
+        ]
+      })
     )
   }
+}
+
+function addPendingUsage(featureId: string, now: number) {
+  const pending = pendingUsage.get(featureId)
+  pendingUsage.set(featureId, {
+    incrementCount: (pending?.incrementCount ?? 0) + 1,
+    firstUsed: pending?.firstUsed ?? now,
+    lastUsed: now
+  })
 }
 
 function persistUsageData(
@@ -107,8 +132,7 @@ export function useFeatureUsageTracker(featureId: string) {
       [featureId]: incrementUsage(existing, now)
     }
     if (!persistedUsageData) {
-      const nextUsage = nextUsageData[featureId]
-      if (nextUsage) pendingUsage.set(featureId, nextUsage)
+      addPendingUsage(featureId, now)
     }
     usageData.value = nextUsageData
   }

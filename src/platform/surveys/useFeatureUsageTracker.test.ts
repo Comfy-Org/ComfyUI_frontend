@@ -137,6 +137,22 @@ describe('useFeatureUsageTracker', () => {
     expect(useCount.value).toBe(3)
   })
 
+  it('preserves failed increments from separate trackers', () => {
+    const firstTracker = useFeatureUsageTracker('shared-recovery-feature')
+    const secondTracker = useFeatureUsageTracker('shared-recovery-feature')
+    const setItem = vi.spyOn(localStorage, 'setItem').mockImplementation(() => {
+      throw new DOMException('Storage quota exceeded', 'QuotaExceededError')
+    })
+
+    firstTracker.trackUsage()
+    secondTracker.trackUsage()
+    setItem.mockRestore()
+    firstTracker.trackUsage()
+
+    const stored = JSON.parse(localStorage.getItem(STORAGE_KEY) ?? '{}')
+    expect(stored['shared-recovery-feature']?.useCount).toBe(3)
+  })
+
   it('preserves other in-memory features when storage recovers', () => {
     const recoveringFeature = useFeatureUsageTracker('recovering-feature')
     const triggerFeature = useFeatureUsageTracker('trigger-feature')
