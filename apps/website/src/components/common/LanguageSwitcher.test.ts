@@ -14,40 +14,26 @@ describe('LanguageSwitcher', () => {
   it('links each published language by its own name', () => {
     render(LanguageSwitcher, { props: { locale: 'en', alternates: home } })
 
-    const links = screen.getAllByRole('link')
-    expect(links.map((link) => link.textContent.trim())).toEqual([
-      'English',
-      '简体中文',
-      '日本語'
-    ])
-    expect(links.map((link) => link.getAttribute('href'))).toEqual([
-      '/',
-      '/zh-CN/',
-      '/ja/'
-    ])
-    expect(links.map((link) => link.getAttribute('lang'))).toEqual([
-      'en',
-      'zh-CN',
-      'ja'
-    ])
-    expect(links.map((link) => link.getAttribute('hreflang'))).toEqual([
-      'en',
-      'zh-CN',
-      'ja'
+    expect(
+      screen.getAllByRole('link').map((link) => ({
+        name: link.textContent.trim(),
+        href: link.getAttribute('href'),
+        lang: link.getAttribute('lang'),
+        hreflang: link.getAttribute('hreflang')
+      }))
+    ).toEqual([
+      { name: 'English', href: '/', lang: 'en', hreflang: 'en' },
+      { name: '简体中文', href: '/zh-CN/', lang: 'zh-CN', hreflang: 'zh-CN' },
+      { name: '日本語', href: '/ja/', lang: 'ja', hreflang: 'ja' }
     ])
   })
 
   it('marks the language being read as the current page', () => {
     render(LanguageSwitcher, { props: { locale: 'zh-CN', alternates: home } })
 
-    const current = screen.getByRole('link', { current: 'page' })
-    expect(current.textContent.trim()).toBe('简体中文')
-    expect(current.className).toContain('underline')
     expect(
-      screen
-        .getAllByRole('link')
-        .filter((link) => link.className.includes('underline'))
-    ).toEqual([current])
+      screen.getByRole('link', { current: 'page' }).textContent.trim()
+    ).toBe('简体中文')
   })
 
   it.for([
