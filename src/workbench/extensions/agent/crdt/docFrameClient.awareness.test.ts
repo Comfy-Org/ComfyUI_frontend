@@ -50,9 +50,21 @@ describe('awareness frame validation', () => {
       expected: rejected
     },
     {
-      name: 'a state over 8 KiB',
+      name: 'a state of exactly 8 KiB',
+      kind: 'state',
+      state: { value: 'x'.repeat(8 * 1024 - 12) },
+      expected: {
+        type: 'awareness',
+        data: {
+          ...withoutState.data,
+          state: { value: 'x'.repeat(8 * 1024 - 12) }
+        }
+      }
+    },
+    {
+      name: 'a state of 8 KiB plus one byte',
       kind: 'invalid',
-      state: { value: 'x'.repeat(8 * 1024) },
+      state: { value: 'x'.repeat(8 * 1024 - 11) },
       expected: rejected
     },
     {
