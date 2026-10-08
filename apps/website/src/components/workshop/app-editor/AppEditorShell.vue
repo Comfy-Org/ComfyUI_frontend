@@ -4,7 +4,7 @@ import { ChevronLeft } from '@lucide/vue'
 import { getRoutes } from '@/config/routes'
 import type { Locale } from '@/i18n/translations'
 import { translationsFor } from '@/i18n/translations'
-import AppRepoLink from '../cinematic-studio/AppRepoLink.vue'
+import AppRepoLink from '@/components/workshop/cinematic-studio/AppRepoLink.vue'
 
 const {
   title,

@@ -2,9 +2,9 @@
 import { Upload } from '@lucide/vue'
 import { useTemplateRef } from 'vue'
 
-import type { Locale } from '../../../i18n/translations'
-import { mc } from '../../../lib/workshop/move-anything/copy'
-import { MOVE_EXAMPLE } from '../../../lib/workshop/move-anything/mock-run'
+import type { Locale } from '@/i18n/translations'
+import { mc } from '@/lib/workshop/move-anything/copy'
+import { MOVE_EXAMPLE } from '@/lib/workshop/move-anything/mock-run'
 
 const { locale = 'en' } = defineProps<{ locale?: Locale }>()
 const emit = defineEmits<{ file: [file: File]; example: [] }>()

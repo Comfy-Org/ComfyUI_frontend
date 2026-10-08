@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import { cn } from '@comfyorg/tailwind-utils'
 
-import type { Corner, Rect } from '../../../lib/workshop/move-anything/arrange'
+import type { Corner, Rect } from '@/lib/workshop/move-anything/arrange'
 
 const { rect, n, label, description, selected } = defineProps<{
   rect: Rect

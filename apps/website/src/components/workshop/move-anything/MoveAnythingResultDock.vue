@@ -1,10 +1,10 @@
 <script setup lang="ts">
 import { ChevronLeft, Columns2, Download, Image, RefreshCw } from '@lucide/vue'
 
-import type { MoveView } from '../../../composables/useMoveAnything'
-import type { Locale } from '../../../i18n/translations'
-import { mc } from '../../../lib/workshop/move-anything/copy'
-import EditorTool from '../app-editor/EditorTool.vue'
+import type { MoveView } from '@/composables/useMoveAnything'
+import type { Locale } from '@/i18n/translations'
+import { mc } from '@/lib/workshop/move-anything/copy'
+import EditorTool from '@/components/workshop/app-editor/EditorTool.vue'
 
 const {
   resultUrl,

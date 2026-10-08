@@ -1,10 +1,10 @@
 <script setup lang="ts">
 import { cn } from '@comfyorg/tailwind-utils'
 
-import type { Locale } from '../../../i18n/translations'
-import { mc } from '../../../lib/workshop/move-anything/copy'
-import type { MoveQuality } from '../../../lib/workshop/move-anything/mock-run'
-import EditorTray from '../app-editor/EditorTray.vue'
+import type { Locale } from '@/i18n/translations'
+import { mc } from '@/lib/workshop/move-anything/copy'
+import type { MoveQuality } from '@/lib/workshop/move-anything/mock-run'
+import EditorTray from '@/components/workshop/app-editor/EditorTray.vue'
 
 const { locale = 'en' } = defineProps<{ locale?: Locale }>()
 const quality = defineModel<MoveQuality>({ required: true })

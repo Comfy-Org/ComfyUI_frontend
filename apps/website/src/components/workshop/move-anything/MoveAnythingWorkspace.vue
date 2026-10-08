@@ -1,13 +1,10 @@
 <script setup lang="ts">
 import { ref, watch } from 'vue'
 
-import type {
-  MoveImage,
-  useMoveAnything
-} from '../../../composables/useMoveAnything'
-import type { Locale } from '../../../i18n/translations'
-import { mc } from '../../../lib/workshop/move-anything/copy'
-import EditorBusy from '../app-editor/EditorBusy.vue'
+import type { MoveImage, useMoveAnything } from '@/composables/useMoveAnything'
+import type { Locale } from '@/i18n/translations'
+import { mc } from '@/lib/workshop/move-anything/copy'
+import EditorBusy from '@/components/workshop/app-editor/EditorBusy.vue'
 import MoveAnythingHint from './MoveAnythingHint.vue'
 import MoveAnythingStage from './MoveAnythingStage.vue'
 

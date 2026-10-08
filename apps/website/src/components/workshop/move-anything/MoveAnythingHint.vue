@@ -1,9 +1,9 @@
 <script setup lang="ts">
 import { MousePointer2 } from '@lucide/vue'
 
-import type { MoveTool } from '../../../composables/useMoveAnything'
-import type { Locale } from '../../../i18n/translations'
-import { mc } from '../../../lib/workshop/move-anything/copy'
+import type { MoveTool } from '@/composables/useMoveAnything'
+import type { Locale } from '@/i18n/translations'
+import { mc } from '@/lib/workshop/move-anything/copy'
 
 const { tool, locale = 'en' } = defineProps<{
   tool: MoveTool

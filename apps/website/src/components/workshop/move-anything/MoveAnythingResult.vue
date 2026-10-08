@@ -1,10 +1,10 @@
 <script setup lang="ts">
-import type { MoveImage, MoveView } from '../../../composables/useMoveAnything'
-import type { Locale } from '../../../i18n/translations'
-import { mc } from '../../../lib/workshop/move-anything/copy'
-import { MOVE_EXAMPLE } from '../../../lib/workshop/move-anything/mock-run'
-import EditorCompare from '../app-editor/EditorCompare.vue'
-import EditorFrame from '../app-editor/EditorFrame.vue'
+import type { MoveImage, MoveView } from '@/composables/useMoveAnything'
+import type { Locale } from '@/i18n/translations'
+import { mc } from '@/lib/workshop/move-anything/copy'
+import { MOVE_EXAMPLE } from '@/lib/workshop/move-anything/mock-run'
+import EditorCompare from '@/components/workshop/app-editor/EditorCompare.vue'
+import EditorFrame from '@/components/workshop/app-editor/EditorFrame.vue'
 
 const {
   image,

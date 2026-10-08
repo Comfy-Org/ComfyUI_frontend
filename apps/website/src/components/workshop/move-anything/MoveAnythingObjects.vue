@@ -3,14 +3,11 @@ import { Plus, X } from '@lucide/vue'
 
 import { cn } from '@comfyorg/tailwind-utils'
 
-import type { Locale } from '../../../i18n/translations'
-import type { MoveObject } from '../../../lib/workshop/move-anything/arrange'
-import {
-  MAX_OBJECTS,
-  isMoved
-} from '../../../lib/workshop/move-anything/arrange'
-import { mc } from '../../../lib/workshop/move-anything/copy'
-import EditorTray from '../app-editor/EditorTray.vue'
+import type { Locale } from '@/i18n/translations'
+import type { MoveObject } from '@/lib/workshop/move-anything/arrange'
+import { MAX_OBJECTS, isMoved } from '@/lib/workshop/move-anything/arrange'
+import { mc } from '@/lib/workshop/move-anything/copy'
+import EditorTray from '@/components/workshop/app-editor/EditorTray.vue'
 
 const {
   objects,

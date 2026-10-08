@@ -6,13 +6,13 @@ import type {
   MoveImage,
   MoveTool,
   MoveTray
-} from '../../../composables/useMoveAnything'
-import type { Locale } from '../../../i18n/translations'
-import { mc } from '../../../lib/workshop/move-anything/copy'
-import type { MoveQuality } from '../../../lib/workshop/move-anything/mock-run'
-import { MOVE_CREDITS } from '../../../lib/workshop/move-anything/mock-run'
-import EditorChip from '../app-editor/EditorChip.vue'
-import EditorTool from '../app-editor/EditorTool.vue'
+} from '@/composables/useMoveAnything'
+import type { Locale } from '@/i18n/translations'
+import { mc } from '@/lib/workshop/move-anything/copy'
+import type { MoveQuality } from '@/lib/workshop/move-anything/mock-run'
+import { MOVE_CREDITS } from '@/lib/workshop/move-anything/mock-run'
+import EditorChip from '@/components/workshop/app-editor/EditorChip.vue'
+import EditorTool from '@/components/workshop/app-editor/EditorTool.vue'
 
 const {
   image,
