@@ -93,6 +93,46 @@ test.describe('Careers page role links', () => {
   })
 })
 
+test.describe('Careers team photos', () => {
+  test('scroll on their own and loop with a hidden second copy', async ({
+    page
+  }) => {
+    await page.goto('/careers')
+    await page.getByTestId('careers-team-photos').scrollIntoViewIfNeeded()
+    const strip = page.getByTestId('careers-team-photos-strip')
+
+    await expect(page.getByTestId('careers-team-photos-loop')).toHaveAttribute(
+      'aria-hidden',
+      'true'
+    )
+    await expect(strip).toHaveCSS('animation-name', 'marquee')
+
+    const offset = () =>
+      strip.evaluate(
+        (element) =>
+          new DOMMatrixReadOnly(getComputedStyle(element).transform).m41
+      )
+    const start = await offset()
+    await expect.poll(offset).toBeLessThan(start - 10)
+  })
+
+  test('stay still and scroll by hand when motion is reduced', async ({
+    page
+  }) => {
+    await page.emulateMedia({ reducedMotion: 'reduce' })
+    await page.goto('/careers')
+    await page.getByTestId('careers-team-photos').scrollIntoViewIfNeeded()
+    const strip = page.getByTestId('careers-team-photos-strip')
+
+    await expect(strip).toHaveCSS('animation-name', 'none')
+    await expect(page.getByTestId('careers-team-photos-loop')).toBeHidden()
+    await expect(page.getByTestId('careers-team-photos')).toHaveCSS(
+      'overflow-x',
+      'auto'
+    )
+  })
+})
+
 test.describe('Careers page (zh-CN) @smoke', () => {
   test('renders localized heading and roles', async ({ page }) => {
     await page.goto('/zh-CN/careers')
