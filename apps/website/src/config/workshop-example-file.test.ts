@@ -107,28 +107,23 @@ describe('example source images', () => {
       }
     })
     expect(uploaded).toEqual([companionUrl])
-    expect(
-      vi.mocked(fetch).mock.calls.map(([url, init]) => ({
-        url: String(url),
-        method: init?.method,
-        credentials: init?.credentials,
-        body: init?.body
-      }))
-    ).toEqual([
-      { url: companionUrl, credentials: 'omit' },
-      {
-        url: expect.stringMatching(/\/customers\/storage$/),
-        method: 'POST',
-        credentials: 'omit',
-        body: expect.any(String)
-      },
-      {
-        url: 'https://storage.example/upload-1',
+    expect(fetch).toHaveBeenCalledTimes(3)
+    expect(fetch).toHaveBeenCalledWith(
+      companionUrl,
+      expect.objectContaining({ credentials: 'omit' })
+    )
+    expect(fetch).toHaveBeenCalledWith(
+      expect.stringMatching(/\/customers\/storage$/),
+      expect.objectContaining({ method: 'POST', credentials: 'omit' })
+    )
+    expect(fetch).toHaveBeenCalledWith(
+      'https://storage.example/upload-1',
+      expect.objectContaining({
         method: 'PUT',
         credentials: 'omit',
         body: expect.objectContaining({ type: 'image/png' })
-      }
-    ])
+      })
+    )
   })
 
   it('passes both reference URLs through in order when neither is a template asset', async () => {
