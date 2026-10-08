@@ -11,14 +11,35 @@
  * so no server or payment-provider text can reach a consumer through this
  * state.
  */
-import type { zBillingOpStatusResponse } from '@comfyorg/ingest-types/zod'
-import type { z } from 'zod'
+import {
+  zBillingOpReceiptPlan,
+  zBillingOpStatusResponse
+} from '@comfyorg/ingest-types/zod'
+import { z } from 'zod'
 
 import type { BillingScope } from './billingScope.js'
 
-export type BillingOpStatus = z.infer<typeof zBillingOpStatusResponse>
+const wireCents = z.number().int().safe()
+
+export const BillingOpStatusSchema = zBillingOpStatusResponse.extend({
+  plan: zBillingOpReceiptPlan
+    .extend({
+      price_cents: wireCents.optional(),
+      monthly_price_cents: wireCents.optional()
+    })
+    .optional()
+})
+
+export type BillingOpStatus = z.infer<typeof BillingOpStatusSchema>
 
 export type BillingOperationKind = 'subscription' | 'topup' | 'cancel'
+
+/**
+ * The plan the server reports an operation is for, in every status of a plan
+ * change, initial subscription or resubscribe. Its tier and prices are absent
+ * when the server cannot describe the plan.
+ */
+export type BillingOperationPlan = NonNullable<BillingOpStatus['plan']>
 
 /**
  * Where the customer completes the operation: the challenge this tab drives
@@ -97,6 +118,7 @@ export type PendingBillingOperation = BillingOperationIdentity & {
   readonly recoveryAction?: BillingRecoveryAction
   /** True once the operation has ever waited on the customer; widens the poll budget. */
   readonly customerActionSeen: boolean
+  readonly plan?: BillingOperationPlan
 }
 
 export type FailedBillingOperation = BillingOperationIdentity & {
@@ -106,9 +128,19 @@ export type FailedBillingOperation = BillingOperationIdentity & {
   readonly retryable: boolean
 }
 
+/** What the server reports a succeeded operation did, for display only. */
+export interface BillingOperationReceipt {
+  readonly plan?: BillingOperationPlan
+}
+
+type SucceededBillingOperation = BillingOperationIdentity & {
+  readonly phase: 'succeeded'
+  readonly receipt?: BillingOperationReceipt
+}
+
 export type BillingOperationState =
   | PendingBillingOperation
-  | (BillingOperationIdentity & { readonly phase: 'succeeded' })
+  | SucceededBillingOperation
   | FailedBillingOperation
   /** This tab's poll budget ran out; the server may still settle the operation. */
   | (BillingOperationIdentity & { readonly phase: 'timed_out' })
@@ -224,11 +256,21 @@ function nextChallenge(
   return { clientSecret: secret, status: 'required' }
 }
 
+function succeeded(
+  state: BillingOperationState,
+  status: BillingOpStatus
+): SucceededBillingOperation {
+  return {
+    ...withPhase(state, 'succeeded'),
+    ...(status.plan === undefined ? {} : { receipt: { plan: status.plan } })
+  }
+}
+
 function terminalFromStatus(
   state: PendingBillingOperation,
   status: BillingOpStatus
 ): BillingOperationState | undefined {
-  if (status.status === 'succeeded') return withPhase(state, 'succeeded')
+  if (status.status === 'succeeded') return succeeded(state, status)
   if (status.status === 'failed') {
     return {
       ...identityOf(state),
@@ -301,9 +343,11 @@ function reducePending(
     : status.authentication_state
   const actionUrl = nextActionUrl(state, status, authenticationState)
   const declineReason = nextDeclineReason(state, status, authenticationState)
+  const { plan: _previousPlan, ...rest } = state
 
   return {
-    ...state,
+    ...rest,
+    ...(status.plan === undefined ? {} : { plan: status.plan }),
     challenge: nextChallenge(state, status),
     authenticationState,
     actionUrl,

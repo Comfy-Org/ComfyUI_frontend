@@ -121,6 +121,7 @@ export type {
   BillingCompanyDetailsUpdateRequest,
   BillingEvent,
   BillingEventsResponse,
+  BillingOpReceiptPlan,
   BillingOpStatusResponse,
   BillingPlansResponse,
   BillingStatus,

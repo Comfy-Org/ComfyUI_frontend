@@ -672,6 +672,31 @@ describe('createBillingOperationLifecycle', () => {
       expect(JSON.stringify(telemetry)).not.toContain('Stripe')
     })
 
+    it('reads the plan the server reports for a pending operation with its prices as numbers', async () => {
+      const { lifecycle } = harness({
+        answers: [
+          httpOk({
+            ...opStatus(),
+            plan: {
+              slug: 'pro_annual',
+              duration: 'ANNUAL',
+              tier: 'PRO',
+              price_cents: 48_000,
+              monthly_price_cents: 4_000,
+              currency: 'usd'
+            }
+          })
+        ]
+      })
+      await lifecycle.begin('subscription', issued())
+      await flush()
+
+      expect(lifecycle.get('op-1')).toMatchObject({
+        phase: 'pending',
+        plan: { price_cents: 48_000, monthly_price_cents: 4_000 }
+      })
+    })
+
     it('reports an operation the server cannot find as needing reconciliation', async () => {
       const { lifecycle, telemetry } = harness({ answers: [httpStatus(404)] })
       await lifecycle.begin('topup', issued())
