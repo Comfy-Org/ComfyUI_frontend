@@ -1491,6 +1491,7 @@
       },
       "standard": {
         "label": "STANDARD",
+        "whatsIncluded": "What's included:",
         "price": "$20",
         "yearlyPrice": "$16",
         "yearlyTotal": "$192",
@@ -1505,6 +1506,7 @@
       },
       "creator": {
         "label": "CREATOR",
+        "everythingInStandardPlus": "Everything in Standard, plus:",
         "price": "$35",
         "yearlyPrice": "$28",
         "yearlyTotal": "$336",
@@ -1519,6 +1521,7 @@
       },
       "pro": {
         "label": "PRO",
+        "everythingInCreatorPlus": "Everything in Creator, plus:",
         "price": "$100",
         "yearlyPrice": "$80",
         "yearlyTotal": "$960",
