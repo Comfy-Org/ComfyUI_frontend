@@ -7,9 +7,9 @@ import { stubIntersectionObserver } from '@/test/fakeIntersectionObserver'
 import ProductShowcaseSection from './ProductShowcaseSection.vue'
 
 const AGENT_VIDEO =
-  'https://media.comfy.org/website/comfy-agent/andidea-animation-ensub-1080p.mp4'
+  'https://media.comfy.org/website/comfy-agent/homepage-agent-cut-03.mp4'
 const API_VIDEO =
-  'https://media.comfy.org/website/comfy-api/comfy-api-product-demo.mp4'
+  'https://media.comfy.org/website/comfy-api/homepage-api-cut-04.mp4'
 
 // The scene players are covered by their own suites; here only the slide
 // wiring matters.

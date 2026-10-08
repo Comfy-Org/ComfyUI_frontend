@@ -38,11 +38,8 @@ const features: Feature[] = [
     description: t('showcase.feature2.description'),
     cta: t('showcase.feature2.cta'),
     href: routes.agent,
-    // Same demo as the Comfy Agent page's featured video.
     video: {
-      src: 'https://media.comfy.org/website/comfy-agent/andidea-animation-ensub-1080p.mp4',
-      poster:
-        'https://media.comfy.org/website/comfy-agent/andidea-animation-poster.webp'
+      src: 'https://media.comfy.org/website/comfy-agent/homepage-agent-cut-03.mp4'
     }
   },
   {
@@ -50,9 +47,8 @@ const features: Feature[] = [
     description: t('showcase.feature3.description'),
     cta: t('showcase.feature3.cta'),
     href: routes.platformComfyApi,
-    // Same demo as the Comfy API page's product video, which has no poster.
     video: {
-      src: 'https://media.comfy.org/website/comfy-api/comfy-api-product-demo.mp4'
+      src: 'https://media.comfy.org/website/comfy-api/homepage-api-cut-04.mp4'
     }
   }
 ]
