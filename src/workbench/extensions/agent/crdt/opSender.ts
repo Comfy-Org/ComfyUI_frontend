@@ -121,7 +121,10 @@ export interface OpSender {
    *
    * Each op is serialized once here; a malformed op settles `undeliverable`
    * at once and the rest of the admission is still admitted. Mint order is
-   * preserved per document, not across documents.
+   * preserved per document, not across documents, including when a
+   * serializer or settlement listener re-enters `admit()` or `enqueue()`:
+   * the re-entrant admission lands behind the one in progress, and a flush
+   * requested meanwhile runs once every pending admission is committed.
    */
   admit(operations: GraphOperation[]): void
   /** Seal the open admission group into wire batches and start delivery. */
@@ -185,6 +188,15 @@ function toWireBatch(workflowId: string, chunk: readonly SizedOp[]): WireBatch {
     ops: chunk.map((sized) => sized.op),
     wire: chunk.map((sized) => sized.wire)
   }
+}
+
+/** One admit() call after measurement, awaiting commitment in mint order. */
+interface Admission {
+  workflowId: string | null
+  minted: Op[]
+  admitted: SizedOp[]
+  rejected: Op[]
+  cause: unknown
 }
 
 interface InFlight extends WireBatch {
@@ -467,13 +479,50 @@ export function createOpSender(deps: OpSenderDeps): OpSender {
     else open = { workflowId, ops: admitted }
   }
 
+  // Admissions in mint order. Measurement runs user-controlled toJSON and
+  // commitment runs settlement listeners; either may re-enter admit(). A
+  // re-entrant admission takes the slot after the one in progress and is
+  // committed by the outermost call, so the open group and the queue receive
+  // ops in the order their base_versions were minted.
+  const admitting: Admission[] = []
+  let flushDeferred = false
+
   function admit(operations: GraphOperation[]): void {
     if (operations.length === 0) return
     const workflowId = deps.workflowId()
     const minted = mintAdmission(operations, workflowId)
-    // Measurement runs user-controlled toJSON before any state changes, so a
-    // serializer that re-enters the sender cannot leave a half-applied admit.
-    const { admitted, rejected, cause } = measureMintedOps(minted)
+    const admission: Admission = {
+      workflowId,
+      minted,
+      admitted: [],
+      rejected: [],
+      cause: undefined
+    }
+    const nested = admitting.length > 0
+    admitting.push(admission)
+    Object.assign(admission, measureMintedOps(minted))
+    if (nested) return
+    commitAdmissions()
+  }
+
+  function commitAdmissions(): void {
+    try {
+      for (const admission of admitting) commitAdmission(admission)
+    } finally {
+      admitting.length = 0
+    }
+    if (!flushDeferred) return
+    flushDeferred = false
+    flush()
+  }
+
+  function commitAdmission({
+    workflowId,
+    minted,
+    admitted,
+    rejected,
+    cause
+  }: Admission): void {
     if (detached) {
       settleUndeliverableInBoundedGroups(minted, notifyDetachSettlement)
       return
@@ -503,6 +552,10 @@ export function createOpSender(deps: OpSenderDeps): OpSender {
   }
 
   function flush(): void {
+    if (admitting.length > 0) {
+      flushDeferred = true
+      return
+    }
     seal()
     pump()
   }

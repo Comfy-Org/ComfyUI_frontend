@@ -70,23 +70,67 @@ export interface SizedOp {
   readonly bytes: number
 }
 
-function isDocOp(value: unknown): value is DocOp {
+/**
+ * The sequencing envelope: the fields the chunker classifies by (`op`), the
+ * sender settles by (`op_id`), and the applier orders by (`base_version`,
+ * `stamp`, `actor`). The wire must carry exactly the values minted onto the
+ * semantic op.
+ */
+interface Envelope {
+  readonly op: string
+  readonly op_id: string
+  readonly actor: Actor
+  readonly base_version: number
+  readonly stamp: Stamp
+}
+
+type WireOp = DocOp & Envelope
+
+function isWireOp(value: unknown): value is WireOp {
   return (
     typeof value === 'object' &&
     value !== null &&
     !Array.isArray(value) &&
+    'op' in value &&
+    typeof value.op === 'string' &&
     'op_id' in value &&
     typeof value.op_id === 'string' &&
     'actor' in value &&
-    typeof value.actor === 'string'
+    typeof value.actor === 'string' &&
+    'base_version' in value &&
+    typeof value.base_version === 'number' &&
+    'stamp' in value &&
+    Array.isArray(value.stamp) &&
+    value.stamp.length === 2 &&
+    typeof value.stamp[0] === 'number' &&
+    typeof value.stamp[1] === 'string'
+  )
+}
+
+function envelopeOf({
+  op,
+  op_id,
+  actor,
+  base_version,
+  stamp
+}: Envelope): Envelope {
+  return { op, op_id, actor, base_version, stamp: [stamp[0], stamp[1]] }
+}
+
+function sameEnvelope(a: Envelope, b: Envelope): boolean {
+  return (
+    a.op === b.op &&
+    a.op_id === b.op_id &&
+    a.actor === b.actor &&
+    a.base_version === b.base_version &&
+    a.stamp[0] === b.stamp[0] &&
+    a.stamp[1] === b.stamp[1]
   )
 }
 
 export type WireMeasurement =
   | { readonly admitted: true; readonly sized: SizedOp }
   | { readonly admitted: false; readonly op: Op; readonly cause: unknown }
-
-const ENVELOPE_FIELDS = ['op', 'op_id', 'actor'] as const
 
 function stringifyOp(op: Op): { json: string } | { cause: unknown } {
   try {
@@ -107,21 +151,27 @@ function rejected(op: Op, message: string): WireMeasurement {
  * Serialize an op once to prove it can ride a `doc_ops` frame and learn its
  * wire form and size. Never throws: anything `JSON.stringify` cannot turn
  * into a wire object (a cycle in a custom-node value, a `toJSON` that throws
- * or yields a non-object) and any wire form whose envelope — kind, `op_id`,
- * `actor` — differs from the op's comes back as a rejection carrying the
- * cause. The chunker classifies and the sender settles by the semantic op,
- * so the wire must carry the same identity. Callers settle a rejected op at
- * admission; the original op is never serialized again.
+ * or yields a non-object) comes back as a rejection carrying the cause, and
+ * so does any serializer that leaves the wire's {@link Envelope} different
+ * from the one minted before serialization, or rewrites the semantic op's
+ * own envelope while running. The envelope is captured before `toJSON` runs
+ * and compared against both results afterwards, so a stateful serializer
+ * cannot settle one sequence position while transmitting another. Callers
+ * settle a rejected op at admission; the original op is never serialized
+ * again.
  */
 export function measureWireOp(op: Op): WireMeasurement {
+  const minted = envelopeOf(op)
   const serialized = stringifyOp(op)
   if ('cause' in serialized)
     return { admitted: false, op, cause: serialized.cause }
   const wire: unknown = JSON.parse(serialized.json)
-  if (!isDocOp(wire))
+  if (!isWireOp(wire))
     return rejected(op, 'Operation did not serialize to a wire object')
-  if (ENVELOPE_FIELDS.some((field) => wire[field] !== op[field]))
+  if (!sameEnvelope(wire, minted))
     return rejected(op, 'Operation serialized with a different envelope')
+  if (!sameEnvelope(op, minted))
+    return rejected(op, 'Operation changed its envelope while serializing')
   return {
     admitted: true,
     sized: { op, wire, bytes: new TextEncoder().encode(serialized.json).length }

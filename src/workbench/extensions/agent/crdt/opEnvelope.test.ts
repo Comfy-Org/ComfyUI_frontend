@@ -208,7 +208,10 @@ describe('measureWireOp', () => {
   it.for([
     { label: 'kind', patch: { op: 'clear' } },
     { label: 'op_id', patch: { op_id: mintOpId() } },
-    { label: 'actor', patch: { actor: 'human:other-user:tab-9' } }
+    { label: 'actor', patch: { actor: 'human:other-user:tab-9' } },
+    { label: 'base_version', patch: { base_version: 999 } },
+    { label: 'stamp version', patch: { stamp: [999, MINT.actor] } },
+    { label: 'stamp actor', patch: { stamp: [7, 'human:other-user:tab-9'] } }
   ])('rejects an op whose toJSON rewrites the envelope $label', ({ patch }) => {
     const [op] = mintWireOps([addNode(1)], MINT)
     Object.assign(op, { toJSON: () => ({ ...op, ...patch }) })
@@ -219,6 +222,40 @@ describe('measureWireOp', () => {
       cause: new TypeError('Operation serialized with a different envelope')
     })
   })
+
+  it.for([
+    {
+      label: 'serializes the moved envelope',
+      toJSON(this: Op) {
+        this.base_version = 9
+        this.stamp = [9, MINT.actor]
+        return { ...this }
+      },
+      message: 'Operation serialized with a different envelope'
+    },
+    {
+      label: 'serializes the minted envelope',
+      toJSON(this: Op) {
+        const wire = { ...this, stamp: [...this.stamp] }
+        this.base_version = 9
+        this.stamp[0] = 9
+        return wire
+      },
+      message: 'Operation changed its envelope while serializing'
+    }
+  ])(
+    'rejects an op whose toJSON moves its own envelope and $label',
+    ({ toJSON, message }) => {
+      const [op] = mintWireOps([addNode(1)], MINT)
+      Object.assign(op, { toJSON })
+
+      expect(measureWireOp(op)).toEqual({
+        admitted: false,
+        op,
+        cause: new TypeError(message)
+      })
+    }
+  )
 
   it('rejects an op whose toJSON throws, carrying the thrown value as the cause', () => {
     const [op] = mintWireOps([addNode(1)], MINT)

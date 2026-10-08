@@ -1283,6 +1283,30 @@ describe('createOpSender', () => {
     localSender.detach()
   })
 
+  it.for([
+    { label: 'admits', reenter: 'admit' },
+    { label: 'enqueues', reenter: 'enqueue' }
+  ] as const)(
+    'keeps mint order when a toJSON $label another op during admission',
+    ({ reenter }) => {
+      const operation = addNode(1)
+      operation.node = {
+        ...operation.node,
+        toJSON() {
+          sender[reenter]([addNode(2)])
+          return { id: 1, type: 'TestNode' }
+        }
+      }
+
+      sender.admit([operation])
+      sender.flush()
+
+      expect(sent).toHaveLength(1)
+      expect(nodeIdsOf(sent[0].ops)).toEqual([1, 2])
+      expect(sent[0].ops.map((op) => op.base_version)).toEqual([41, 42])
+    }
+  )
+
   it('reads detachment after measurement, so a toJSON that detaches settles its op undeliverable', () => {
     const localSettled: BatchOutcome[] = []
     const localSender = createOpSender({
