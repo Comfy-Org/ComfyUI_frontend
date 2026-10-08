@@ -16,12 +16,7 @@
     { "path": "src/extensions/core/maskeditor.ts", "role": "integration" }
   ],
   "publicEntryPoints": [],
-  "owners": [
-    "@trsommer",
-    "@brucew4yn3rp",
-    "@jtydhr88",
-    "@Comfy-Org/comfy_frontend_devs"
-  ],
+  "owners": ["@trsommer", "@jtydhr88", "@Comfy-Org/comfy_frontend_devs"],
   "allowedDependencies": [],
   "allowedConsumers": [],
   "characterizationScenarios": [
