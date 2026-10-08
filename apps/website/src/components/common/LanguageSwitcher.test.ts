@@ -1,6 +1,7 @@
 import { render, screen } from '@testing-library/vue'
 import { describe, expect, it } from 'vitest'
 
+import type { Locale } from '@/i18n/translations'
 import type { LocaleAlternate } from '@/lib/hreflang'
 import LanguageSwitcher from './LanguageSwitcher.vue'
 
@@ -35,6 +36,20 @@ describe('LanguageSwitcher', () => {
       screen.getByRole('link', { current: 'page' }).textContent.trim()
     ).toBe('简体中文')
   })
+
+  it.for([
+    { locale: 'en', label: 'Language' },
+    { locale: 'zh-CN', label: '语言' }
+  ] satisfies { locale: Locale; label: string }[])(
+    'labels the switcher $label for a $locale reader',
+    ({ locale, label }) => {
+      render(LanguageSwitcher, { props: { locale, alternates: home } })
+
+      expect(
+        screen.getByRole('navigation', { name: label })
+      ).toBeInTheDocument()
+    }
+  )
 
   it.for([
     { name: 'no alternates', alternates: [] },
