@@ -1,4 +1,5 @@
 <script setup lang="ts">
+import PlayOverlay from '@/components/blocks/PlayOverlay.vue'
 import ButtonPill from '@/components/ui/button-pill/ButtonPill.vue'
 
 import { prefersReducedMotion } from '@/composables/useReducedMotion'
@@ -39,16 +40,22 @@ function pauseBeforeAutoplayLimit({ currentTarget }: Event) {
         playsinline
         @timeupdate="pauseBeforeAutoplayLimit"
       />
-      <img
-        v-else
-        class="aspect-4/3 w-62 max-w-none rounded-xl object-cover"
-        :src="featured.imageSrc"
-        :alt="featured.imageAlt ?? ''"
-        width="744"
-        height="558"
-        loading="lazy"
-        decoding="async"
-      />
+      <span v-else class="relative block w-62">
+        <img
+          class="aspect-4/3 w-62 max-w-none rounded-xl object-cover"
+          :src="featured.imageSrc"
+          :alt="featured.imageAlt ?? ''"
+          width="744"
+          height="558"
+          loading="lazy"
+          decoding="async"
+        />
+        <PlayOverlay
+          v-if="featured.showPlayOverlay"
+          size="nav"
+          class="text-white"
+        />
+      </span>
       <p class="mt-4 font-extrabold uppercase">
         {{ featured.title }}
       </p>
