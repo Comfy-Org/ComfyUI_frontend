@@ -2902,6 +2902,18 @@ describe.for([{ unified: false }, { unified: true }])(
           }
         )
 
+        it('closes the dialogs left open when the session is signed out elsewhere', async () => {
+          const { server, landings } = await enterAppRecordingNavigations()
+          const dialogs = useDialogStore()
+          dialogs.showDialog({ key: 'global-settings', component: {} })
+
+          server.session = 'revoked'
+          await vi.advanceTimersByTimeAsync(TEN_MINUTES_MS)
+          await vi.waitFor(() => expect(landings).toEqual(['/cloud/login']))
+
+          expect(dialogs.dialogStack).toEqual([])
+        })
+
         it('leaves the navigation of a sign-out in this tab to the sign-out flow', async () => {
           const { started } = await enterAppRecordingNavigations()
 
