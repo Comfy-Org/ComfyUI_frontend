@@ -30,7 +30,6 @@ import type {
 } from '@/schemas/nodeDefSchema'
 import { useSettingStore } from '@/platform/settings/settingStore'
 import { NodeSearchService } from '@/services/nodeSearchService'
-import { useSubgraphStore } from '@/stores/subgraphStore'
 import { NODE_TO_ESSENTIALS_CATEGORY } from '@/constants/essentialsNodes'
 import { CORE_NODE_MODULES, getNodeSource } from '@/types/nodeSource'
 import type { NodeSource } from '@/types/nodeSource'
@@ -392,14 +391,21 @@ export const useNodeDefStore = defineStore('nodeDef', () => {
     }
   })
 
-  const nodeDefs = computed(() => {
-    const subgraphStore = useSubgraphStore()
-    // Blueprints first for discoverability in the node library sidebar
-    return [
-      ...subgraphStore.subgraphBlueprints,
-      ...Object.values(nodeDefsByName.value)
-    ]
-  })
+  const blueprintNodeDefs = ref<Map<string, ComfyNodeDefImpl>>(new Map())
+  const blueprintNodeDefsByName = computed<
+    ReadonlyMap<string, ComfyNodeDefImpl>
+  >(() => blueprintNodeDefs.value)
+  function registerBlueprintNodeDef(nodeDef: ComfyNodeDefImpl) {
+    blueprintNodeDefs.value.set(nodeDef.name, nodeDef)
+  }
+  function removeBlueprintNodeDef(name: string) {
+    blueprintNodeDefs.value.delete(name)
+  }
+  // Blueprints first for discoverability in the node library sidebar
+  const nodeDefs = computed(() => [
+    ...blueprintNodeDefs.value.values(),
+    ...Object.values(nodeDefsByName.value)
+  ])
   const nodeDataTypes = computed(() => {
     const types = new Set<string>()
     for (const nodeDef of nodeDefs.value) {
@@ -565,6 +571,7 @@ export const useNodeDefStore = defineStore('nodeDef', () => {
 
   return {
     nodeDefsByName,
+    blueprintNodeDefsByName,
     nodeDefsByDisplayName,
     allNodeDefsByName,
     allNodeDefsByDisplayName,
@@ -582,6 +589,8 @@ export const useNodeDefStore = defineStore('nodeDef', () => {
     updateNodeDefs,
     addNodeDef,
     removeNodeDef,
+    registerBlueprintNodeDef,
+    removeBlueprintNodeDef,
     getNodeDefByName,
     fromLGraphNode,
     getInputSpecForWidget,
