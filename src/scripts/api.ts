@@ -18,6 +18,10 @@ import { ref } from 'vue'
 
 import defaultClientFeatureFlags from '@/config/clientFeatureFlags.json' with { type: 'json' }
 import {
+  authCredentialOf,
+  notifyAuthCredential
+} from '@/platform/auth/authCredential'
+import {
   fetchWithUnifiedRemint,
   shouldRemintCloudRequest
 } from '@/platform/auth/unified/remintRetry'
@@ -76,7 +80,7 @@ import type {
 } from '@/platform/remote/comfyui/jobs/jobTypes'
 import type { ComfyNodeDef } from '@/schemas/nodeDefSchema'
 import type { useAuthStore } from '@/stores/authStore'
-import type { AuthHeader } from '@/types/authTypes'
+import type { AuthCredential, AuthHeader, AuthScheme } from '@/types/authTypes'
 import type { NodeExecutionId } from '@/types/nodeIdentification'
 import {
   fetchHistory,
@@ -141,22 +145,13 @@ interface QueuePromptRequestBody {
 
 const FETCH_RESPONSE_HEADERS_TIMEOUT_MS = 60_000
 
-/**
- * Which cloud auth path a request actually took, for error diagnostics (PM-1802).
- *
- * `none` means no auth scheme was used at all, which covers both a non-cloud
- * distribution and a cloud request whose auth header was unavailable. Those are
- * the same statement about the request - nothing authenticated it - and the
- * deploy surface already distinguishes them, so this stays three values rather
- * than growing a fourth that only restates `isCloud`.
- */
-export type AuthScheme = 'web-session' | 'cloud-auth-header' | 'none'
-
 interface FetchApiOptions extends RequestInit {
   timeoutMs?: number | null
   onAuthHeader?: (attached: boolean) => void
   /** Reports which auth path was taken, independent of onAuthHeader's attached/not boolean. */
   onAuthScheme?: (scheme: AuthScheme) => void
+  /** Reports the kind of credential sent, to tell a missing token from a wrong one. */
+  onAuthCredential?: (credential: AuthCredential) => void
 }
 
 const FETCH_ROUTE_GROUPS = new Set([
@@ -583,6 +578,7 @@ export class ComfyApi extends EventTarget {
       timeoutMs = FETCH_RESPONSE_HEADERS_TIMEOUT_MS,
       onAuthHeader,
       onAuthScheme,
+      onAuthCredential,
       ...requestOptions
     } = options ?? {}
     const headers: HeadersInit = requestOptions.headers ?? {}
@@ -614,9 +610,11 @@ export class ComfyApi extends EventTarget {
       // Reported from the header actually obtained, not assumed on entry: an
       // unavailable header sends nothing, which is the unauthenticated case.
       onAuthScheme?.(authHeader ? 'cloud-auth-header' : 'none')
+      notifyAuthCredential(onAuthCredential, authCredentialOf(authHeader))
     } else {
       onAuthHeader?.(false)
       onAuthScheme?.('none')
+      notifyAuthCredential(onAuthCredential, 'none')
     }
 
     addHeaderEntry(headers, 'Comfy-User', this.user)
