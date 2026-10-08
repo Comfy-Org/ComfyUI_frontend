@@ -1,14 +1,6 @@
 import userEvent from '@testing-library/user-event'
 import { render, screen } from '@testing-library/vue'
-import {
-  assert,
-  beforeEach,
-  describe,
-  expect,
-  it,
-  onTestFinished,
-  vi
-} from 'vitest'
+import { assert, describe, expect, it, onTestFinished, vi } from 'vitest'
 import { nextTick } from 'vue'
 
 import { i18n } from '@/i18n'
@@ -37,11 +29,6 @@ function renderTray(attachments = images) {
 }
 
 describe('asset tray previews', () => {
-  beforeEach(() => {
-    vi.useFakeTimers()
-    return () => vi.useRealTimers()
-  })
-
   it('replaces a clicked preview when another asset is hovered', async () => {
     const { user } = renderTray()
     const first = screen.getByRole('button', { name: 'Preview cat.png' })
