@@ -433,6 +433,37 @@ export function attachDocOpMinter(deps: DocOpMinterDeps): DocOpMinter {
     queueMicrotask(flush)
   }
 
+  function rememberMintedAdd(graph: LGraph, node: LGraphNode): void {
+    const docIdentity = deps.docIdentity()
+    if (docIdentity === null) return
+    for (const [key, identity] of mintedAdds)
+      if (identity !== docIdentity) mintedAdds.delete(key)
+    mintedAdds.set(nodeKey(graph.id, node.id), docIdentity)
+  }
+
+  function mintAddNodeOperation(
+    graph: LGraph,
+    node: LGraphNode
+  ): GraphOperation | null {
+    if (node.graph !== graph) return null
+    const snapshot = wireNodeSnapshot(node)
+    if (!snapshot) {
+      console.error(
+        '[agent-crdt] add_node mint dropped: no snapshot for node',
+        node.id
+      )
+      return null
+    }
+    rememberMintedAdd(graph, node)
+    return {
+      op: 'add_node',
+      node_id: node.id,
+      class_type: snapshot.type,
+      pos: [node.pos[0], node.pos[1]],
+      node: snapshot
+    }
+  }
+
   function flush(): void {
     flushScheduled = false
     reported.clear()
@@ -440,36 +471,13 @@ export function attachDocOpMinter(deps: DocOpMinterDeps): DocOpMinter {
     pending = []
     pendingAdds.clear()
     if (detached) return
-    const operations: GraphOperation[] = []
-    for (const entry of batch) {
-      if (entry.kind === 'op') {
-        operations.push(entry.operation)
-        continue
-      }
-      const { graph, node } = entry
-      if (node.graph !== graph) continue
-      const snapshot = wireNodeSnapshot(node)
-      if (!snapshot) {
-        console.error(
-          '[agent-crdt] add_node mint dropped: no snapshot for node',
-          node.id
-        )
-        continue
-      }
-      const docIdentity = deps.docIdentity()
-      if (docIdentity !== null) {
-        for (const [key, identity] of mintedAdds)
-          if (identity !== docIdentity) mintedAdds.delete(key)
-        mintedAdds.set(nodeKey(graph.id, node.id), docIdentity)
-      }
-      operations.push({
-        op: 'add_node',
-        node_id: node.id,
-        class_type: snapshot.type,
-        pos: [node.pos[0], node.pos[1]],
-        node: snapshot
-      })
-    }
+    const operations = batch.flatMap((entry) => {
+      const operation =
+        entry.kind === 'op'
+          ? entry.operation
+          : mintAddNodeOperation(entry.graph, entry.node)
+      return operation ? [operation] : []
+    })
     if (operations.length > 0) deps.enqueue(operations)
   }
 
