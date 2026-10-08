@@ -4,7 +4,7 @@ import { nextTick } from 'vue'
 import { st } from '@/i18n'
 import { useSettingSearch } from '@/platform/settings/composables/useSettingSearch'
 import { useSettingStore } from '@/platform/settings/settingStore'
-import type { SettingTreeNode } from '@/platform/settings/settingStore'
+import type { SettingTreeNode } from '@/platform/settings/composables/useSettingSearch'
 import type { SettingParams } from '@/platform/settings/types'
 
 vi.mock(import('@/i18n'))

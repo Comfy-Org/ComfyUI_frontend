@@ -754,7 +754,6 @@ describe('assetsStore - Model Assets Cache (Cloud)', () => {
       vi.mocked(assetService.updateAsset).mockRejectedValueOnce(
         new Error('500 Internal Error')
       )
-      const consoleSpy = vi.spyOn(console, 'error').mockImplementation(() => {})
 
       await store.updateAssetMetadata(
         original,
@@ -764,7 +763,6 @@ describe('assetsStore - Model Assets Cache (Cloud)', () => {
 
       const cached = store.getAssets('CheckpointLoaderSimple')[0]
       expect(cached.user_metadata).toEqual({ note: 'before' })
-      consoleSpy.mockRestore()
     })
   })
 
@@ -821,10 +819,6 @@ describe('assetsStore - Model Assets Cache (Cloud)', () => {
   })
 
   describe('updateAssetTags partial-failure compensation', () => {
-    beforeEach(() => {
-      vi.spyOn(console, 'error').mockImplementation(() => {})
-    })
-
     it('re-adds removed tags when add fails so cache and server converge', async () => {
       const store = useAssetsStore()
       const asset = createMockAsset('tags-partial-fail', ['models', 'loras'])

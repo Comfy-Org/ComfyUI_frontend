@@ -1,12 +1,13 @@
 import { i18n } from '@/i18n'
 import { reportError } from '@/platform/telemetry/reportError'
-import { hasImageType } from '@/utils/eventUtils'
-import { formatSize } from '@/utils/formatUtil'
+import { hasAudioType, hasImageType, hasVideoType } from '@/utils/eventUtils'
+import { formatSize, getMediaTypeFromFilename } from '@/utils/formatUtil'
+import type { MediaKind } from '@/platform/assets/schemas/mediaAssetSchema'
 import {
   AgentApiError,
   AgentResponseUnreadableError
 } from '../../services/agent/agentRestClient'
-import type { ComposerAttachment } from './useComposer'
+import type { ComposerAttachment } from '../../types/composerAttachment'
 
 export const MAX_ATTACHMENT_BYTES = 20 * 1024 * 1024
 const UPLOAD_HANDSHAKE_TIMEOUT_MS = 30 * 1000
@@ -29,13 +30,21 @@ interface UploadResult {
   url?: string
 }
 
+type DeferredFileResult =
+  | 'uploaded'
+  | 'unsupported'
+  | 'cancelled'
+  | 'failed'
+  | 'duplicate'
+
 export interface UseAttachmentOptions {
   upload: (file: File, signal: AbortSignal) => Promise<UploadResult>
   uploadTimeoutMs?: number
   maxBytes?: (file: File) => number
   onError?: (message: string) => void
   onUploaded?: () => void
-  stage: (attachment: ComposerAttachment) => void
+  onDuplicate?: (names: string[]) => void
+  stage: (attachment: ComposerAttachment) => boolean
   update: (id: string, patch: Partial<ComposerAttachment>) => void
   remove: (id: string) => void
 }
@@ -75,17 +84,70 @@ async function withDeadline<T>(
 
 let stagedCount = 0
 
+function fileUploadKey(file: File): string {
+  return `${file.name}:${file.size}:${file.lastModified}`
+}
+
+async function fileContentHash(file: File): Promise<string> {
+  const digest = await crypto.subtle.digest('SHA-256', await file.arrayBuffer())
+  return Array.from(new Uint8Array(digest))
+    .map((byte) => byte.toString(16).padStart(2, '0'))
+    .join('')
+}
+
+function attachmentMediaKind(file: File): MediaKind {
+  if (hasImageType(file)) return 'image'
+  if (hasVideoType(file)) return 'video'
+  if (hasAudioType(file)) return 'audio'
+  return getMediaTypeFromFilename(file.name)
+}
+
+function localPreview(
+  file: File,
+  kind: MediaKind
+): Pick<ComposerAttachment, 'previewUrl' | 'mediaUrl'> {
+  const playable = kind === 'video' || kind === 'audio'
+  const url =
+    kind === 'image' || playable ? URL.createObjectURL(file) : undefined
+  return {
+    previewUrl: kind === 'image' ? url : undefined,
+    mediaUrl: playable ? url : undefined
+  }
+}
+
+function uploadedPreview(
+  kind: MediaKind,
+  url?: string
+): Partial<ComposerAttachment> {
+  if (!url) return {}
+  if (kind === 'audio' || kind === 'video') return { mediaUrl: url }
+  if (kind === 'image') return { previewUrl: url }
+  return {}
+}
+
 export function useAttachment(options: UseAttachmentOptions) {
   const pending = new Set<string>()
   const inFlight = new Map<string, AbortController>()
   const cancelled = new Set<string>()
   const waiting: Array<() => void> = []
+  const uploaded = new Map<string, Map<string, UploadResult>>()
+  const contentHashes = new WeakMap<File, Promise<string>>()
+  let uploadGeneration = 0
   let activeUploads = 0
 
-  function stage(name: string): string {
+  function contentHashFor(file: File): Promise<string> {
+    const cached = contentHashes.get(file)
+    if (cached) return cached
+    const hash = fileContentHash(file)
+    contentHashes.set(file, hash)
+    return hash
+  }
+
+  function stage(name: string, sourceKey?: string): string | undefined {
     const id = `upload-${++stagedCount}:${name}`
+    if (!options.stage({ id, name, ref: '', uploading: true, sourceKey }))
+      return undefined
     pending.add(id)
-    options.stage({ id, name, ref: '', uploading: true })
     return id
   }
 
@@ -155,26 +217,55 @@ export function useAttachment(options: UseAttachmentOptions) {
     }
   }
 
+  async function resolveUpload(id: string, file: File): Promise<UploadResult> {
+    const key = fileUploadKey(file)
+    const contentHash = contentHashFor(file)
+    if (uploaded.has(key)) {
+      const hash = await contentHash
+      const cachedResult = uploaded.get(key)?.get(hash)
+      if (cancelled.has(id)) throw new DOMException('Aborted', 'AbortError')
+      if (cachedResult) return cachedResult
+    }
+
+    const generation = uploadGeneration
+    const controller = new AbortController()
+    inFlight.set(id, controller)
+    const result = await withDeadline(
+      options.upload(file, controller.signal),
+      options.uploadTimeoutMs ?? uploadDeadlineMs(file),
+      () => controller.abort()
+    )
+    const hash = await contentHash
+    if (cancelled.has(id)) throw new DOMException('Aborted', 'AbortError')
+    if (generation === uploadGeneration) {
+      const cachedResults = uploaded.get(key) ?? new Map<string, UploadResult>()
+      cachedResults.set(hash, result)
+      uploaded.set(key, cachedResults)
+    }
+    return result
+  }
+
+  function forgetUploads(): void {
+    uploaded.clear()
+    uploadGeneration += 1
+  }
+
   async function uploadStagedFile(id: string, file: File): Promise<boolean> {
     if (activeUploads === MAX_CONCURRENT_UPLOADS)
       await new Promise<void>((resolve) => waiting.push(resolve))
     else activeUploads += 1
     try {
       if (cancelled.has(id)) return false
+      const mediaKind = attachmentMediaKind(file)
       options.update(id, {
         name: file.name,
-        previewUrl: hasImageType(file) ? URL.createObjectURL(file) : undefined
+        mediaKind,
+        ...localPreview(file, mediaKind)
       })
-      const controller = new AbortController()
-      inFlight.set(id, controller)
-      const result = await withDeadline(
-        options.upload(file, controller.signal),
-        options.uploadTimeoutMs ?? uploadDeadlineMs(file),
-        () => controller.abort()
-      )
+      const result = await resolveUpload(id, file)
       options.update(id, {
         ref: result.ref,
-        ...(result.url ? { previewUrl: result.url } : {}),
+        ...uploadedPreview(mediaKind, result.url),
         uploading: false
       })
       return true
@@ -201,11 +292,11 @@ export function useAttachment(options: UseAttachmentOptions) {
     for (const id of Array.from(pending)) cancelUpload(id)
   }
 
-  async function addDeferredFile(
+  async function uploadDeferredFile(
+    id: string,
     name: string,
     resolve: () => Promise<File | undefined>
-  ): Promise<'uploaded' | 'unsupported' | 'cancelled' | 'failed'> {
-    const id = stage(name)
+  ): Promise<DeferredFileResult> {
     try {
       const file = await withDeadline(resolve(), DEFERRED_FETCH_TIMEOUT_MS)
       if (cancelled.has(id)) return 'cancelled'
@@ -229,10 +320,30 @@ export function useAttachment(options: UseAttachmentOptions) {
     }
   }
 
+  async function addDeferredFile(
+    name: string,
+    resolve: () => Promise<File | undefined>,
+    sourceKey?: string
+  ): Promise<DeferredFileResult> {
+    const id = stage(name, sourceKey)
+    if (!id) {
+      options.onDuplicate?.([name])
+      return 'duplicate'
+    }
+    return uploadDeferredFile(id, name, resolve)
+  }
+
   async function addFiles(files: Iterable<File>): Promise<boolean> {
+    const duplicates: string[] = []
     const staged = [...files]
       .filter((file) => !isTooLarge(file))
-      .map((file) => ({ file, id: stage(file.name) }))
+      .flatMap((file) => {
+        const sourceKey = `file:${JSON.stringify([file.name, file.size, file.lastModified, file.type])}`
+        const id = stage(file.name, sourceKey)
+        if (!id) duplicates.push(file.name)
+        return id ? [{ file, id }] : []
+      })
+    if (duplicates.length) options.onDuplicate?.(duplicates)
     let uploaded = 0
     await Promise.all(
       staged.map(async ({ id, file }) => {
@@ -243,5 +354,11 @@ export function useAttachment(options: UseAttachmentOptions) {
     return uploaded > 0
   }
 
-  return { addDeferredFile, addFiles, cancelUpload, cancelAllUploads }
+  return {
+    addDeferredFile,
+    addFiles,
+    cancelUpload,
+    cancelAllUploads,
+    forgetUploads
+  }
 }

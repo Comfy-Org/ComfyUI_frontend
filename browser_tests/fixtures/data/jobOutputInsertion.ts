@@ -29,7 +29,8 @@ export const jobOutputInsertionCases: readonly JobOutputInsertionCase[] = [
       id: 'job-queue-image',
       preview_output: {
         filename: imageOutputFilename,
-        subfolder: 'images',
+        subfolder: '',
+        type: 'output',
         nodeId: '1',
         mediaType: 'images'
       }

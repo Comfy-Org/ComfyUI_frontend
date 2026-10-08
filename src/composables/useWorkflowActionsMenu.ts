@@ -2,6 +2,7 @@ import type { ComputedRef, Ref } from 'vue'
 import { computed } from 'vue'
 import { useI18n } from 'vue-i18n'
 
+import { useEnterBuilder } from '@/components/builder/useEnterBuilder'
 import { useErrorHandling } from '@/composables/useErrorHandling'
 import { useFeatureFlags } from '@/composables/useFeatureFlags'
 import { isCloud } from '@/platform/distribution/types'
@@ -57,7 +58,8 @@ export function useWorkflowActionsMenu(
   const menuItemStore = useMenuItemStore()
   const { flags } = useFeatureFlags()
   const appModeStore = useAppModeStore()
-  const { enterBuilder, pruneLinearData } = appModeStore
+  const { pruneLinearData } = appModeStore
+  const { enterBuilder } = useEnterBuilder()
   const { toastErrorHandler } = useErrorHandling()
 
   const targetWorkflow = computed(

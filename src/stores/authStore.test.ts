@@ -2828,6 +2828,69 @@ describe('useAuthStore in local/desktop distribution', () => {
       expect(mockUser.getIdToken).not.toHaveBeenCalled()
     })
 
+    it("loads the host account's workspaces when Desktop signs in", async () => {
+      const initialize = vi
+        .spyOn(useTeamWorkspaceStore(), 'initialize')
+        .mockResolvedValue()
+      const bridge = hostBridge({ status: 'signed_out' })
+      await startDesktopHostSession(bridge)
+      expect(initialize).not.toHaveBeenCalled()
+
+      bridge.push({
+        status: 'signed_in',
+        userId: 'host-user',
+        workspaceId: 'ws-host'
+      })
+
+      await vi.waitFor(() => expect(initialize).toHaveBeenCalledOnce())
+    })
+
+    it("loads the host account's workspaces when Desktop signed in before the store started", async () => {
+      store.$dispose()
+      const initialize = vi
+        .spyOn(useTeamWorkspaceStore(), 'initialize')
+        .mockResolvedValue()
+      await startDesktopHostSession(
+        hostBridge({
+          status: 'signed_in',
+          userId: 'host-user',
+          workspaceId: 'ws-host'
+        })
+      )
+      await nextTick()
+      expect(initialize).not.toHaveBeenCalled()
+
+      useAuthStore()
+
+      expect(initialize).toHaveBeenCalledOnce()
+    })
+
+    it('drops workspaces loaded for the Firebase account when Desktop signs in', async () => {
+      const teams = useTeamWorkspaceStore()
+      teams.initState = 'ready'
+      const reset = vi.spyOn(teams, 'resetForIdentityChange')
+      const clearWorkspace = vi.spyOn(
+        useWorkspaceAuthStore(),
+        'clearWorkspaceContext'
+      )
+      const initialize = vi.spyOn(teams, 'initialize').mockResolvedValue()
+      const bridge = hostBridge({ status: 'signed_out' })
+      await startDesktopHostSession(bridge)
+
+      bridge.push({
+        status: 'signed_in',
+        userId: 'host-user',
+        workspaceId: 'ws-host'
+      })
+      await nextTick()
+
+      expect(clearWorkspace).toHaveBeenCalled()
+      expect(reset).toHaveBeenCalledOnce()
+      expect(reset.mock.invocationCallOrder[0]).toBeLessThan(
+        initialize.mock.invocationCallOrder[0]
+      )
+    })
+
     it('has no workspace credential when no workspace is known', async () => {
       const bridge = hostBridge({ status: 'signed_in', userId: 'host-user' })
       await startDesktopHostSession(bridge)

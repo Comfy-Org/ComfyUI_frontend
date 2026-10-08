@@ -91,6 +91,7 @@ Guardrails: agents must use `comfyPage` fixture (not bare `page`), never add `wa
 - `pnpm lint` / `pnpm lint:fix`: Lint (ESLint)
 - `pnpm format` / `pnpm format:check`: oxfmt
 - `pnpm typecheck`: Vue TSC type checking
+- `pnpm deps:audit`: Report `src/` import cycles with dependency-cruiser (warnings only, not a gate)
 - `pnpm storybook`: Start Storybook development server
 
 > **`vue-tsc` needs its own `node_modules` in the checkout.** `vue-tsc --noEmit`

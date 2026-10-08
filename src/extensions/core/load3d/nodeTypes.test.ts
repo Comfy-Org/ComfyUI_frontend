@@ -7,13 +7,14 @@ import {
 } from './nodeTypes'
 
 describe('load3d node types', () => {
-  it('treats the camera tool nodes as three.js nodes without making them Load3D nodes', () => {
-    for (const nodeType of ['CreateCameraInfo', 'CameraAngle']) {
+  it.for(['CreateCameraInfo', 'CameraAngle', 'CreateLightInfo'])(
+    'treats %s as a three.js node without making it a Load3D node',
+    (nodeType) => {
       expect(isThreeJsNode(nodeType)).toBe(true)
       expect(isLoad3dNode(nodeType)).toBe(false)
       expect(isLoad3dResultViewerNode(nodeType)).toBe(false)
     }
-  })
+  )
 
   it('keeps Load3D viewers as three.js nodes and ignores unrelated nodes', () => {
     expect(isThreeJsNode('Preview3D')).toBe(true)

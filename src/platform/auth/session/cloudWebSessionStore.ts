@@ -148,8 +148,9 @@ function resetForAccountChange(change: WebSessionAccountChange): void {
 }
 
 function teamWorkspaceId(): string | undefined {
-  const workspace = useWorkspaceAuthStore().currentWorkspace
-  return workspace?.type === 'team' ? workspace.id : undefined
+  const { currentWorkspace, deniedWorkspaceId } = useWorkspaceAuthStore()
+  if (currentWorkspace?.type === 'team') return currentWorkspace.id
+  return deniedWorkspaceId ?? undefined
 }
 
 function sessionOptions(): WebSessionOptions {

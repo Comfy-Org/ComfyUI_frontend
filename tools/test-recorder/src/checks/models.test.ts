@@ -1,4 +1,4 @@
-import { beforeEach, describe, expect, it, vi } from 'vitest'
+import { describe, expect, it, vi } from 'vitest'
 
 import { checkModels } from './models'
 
@@ -9,10 +9,6 @@ function objectInfo(names: unknown) {
 }
 
 describe('checkModels', () => {
-  beforeEach(() => {
-    vi.spyOn(console, 'log').mockImplementation(() => {})
-  })
-
   function stubJson(body: unknown, status = 200) {
     vi.stubGlobal('fetch', () =>
       Promise.resolve(

@@ -184,7 +184,6 @@ describe('downloadUtil', () => {
     it('logs an error when cloud fetch fails', async () => {
       mockIsCloud.value = true
       const testUrl = 'https://storage.googleapis.com/bucket/missing.bin'
-      const consoleSpy = vi.spyOn(console, 'error').mockImplementation(() => {})
       fetchMock.mockResolvedValue(
         fromPartial<Response>({
           ok: false,
@@ -200,9 +199,8 @@ describe('downloadUtil', () => {
       await fetchPromise
       await Promise.resolve() // let fetchAsBlob throw
       await Promise.resolve() // let .catch handler run
-      expect(consoleSpy).toHaveBeenCalled()
+      expect(console.error).toHaveBeenCalled()
       expect(createObjectURLSpy).not.toHaveBeenCalled()
-      consoleSpy.mockRestore()
     })
 
     it('uses filename from Content-Disposition header in cloud mode', async () => {
@@ -428,7 +426,6 @@ describe('downloadUtil', () => {
     it('closes blank tab and logs error when cloud fetch fails', async () => {
       mockIsCloud.value = true
       const testUrl = 'https://storage.googleapis.com/bucket/missing.png'
-      const consoleSpy = vi.spyOn(console, 'error').mockImplementation(() => {})
       const mockTab = { location: { href: '' }, closed: false, close: vi.fn() }
       windowOpenSpy.mockReturnValue(fromAny<Window, unknown>(mockTab))
       fetchMock.mockResolvedValue(
@@ -438,8 +435,7 @@ describe('downloadUtil', () => {
       await openFileInNewTab(testUrl)
 
       expect(mockTab.close).toHaveBeenCalled()
-      expect(consoleSpy).toHaveBeenCalled()
-      consoleSpy.mockRestore()
+      expect(console.error).toHaveBeenCalled()
     })
 
     it('revokes blob URL immediately if tab was closed by user', async () => {

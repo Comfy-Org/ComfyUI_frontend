@@ -463,16 +463,12 @@ describe('InviteMemberDialogContent', () => {
       vi.mocked(useTeamWorkspaceStore().fetchPendingInvites)
         .mockResolvedValueOnce([])
         .mockRejectedValue(new Error('nope'))
-      const consoleError = vi
-        .spyOn(console, 'error')
-        .mockImplementation(() => {})
       const { user } = renderDialog()
 
       await inviteAndConfirm(user, 'a@b.com{Enter}')
 
       expect(screen.getByText('a@b.com')).toBeInTheDocument()
       expect(copyLinkButtons()).toHaveLength(0)
-      consoleError.mockRestore()
     })
 
     // pendingInviteFor derives the id from the email, so the tests above pass

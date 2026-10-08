@@ -1,7 +1,7 @@
 import { useSettingStore } from '@/platform/settings/settingStore'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 
-import type { MissingNodeType } from '@/types/comfy'
+import type { MissingNodeType } from '@/platform/nodeReplacement/types'
 
 vi.mock(import('@/i18n'))
 

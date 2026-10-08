@@ -80,7 +80,6 @@ describe('fetchWithCustomerRecovery', () => {
   })
 
   it('returns the original 409 when provisioning fails', async () => {
-    vi.spyOn(console, 'warn').mockImplementation(() => {})
     const original = conflict()
     const request = vi.fn(async () => original)
 
@@ -96,7 +95,6 @@ describe('fetchWithCustomerRecovery', () => {
   })
 
   it('returns the original 409 when the retry fails at the network level', async () => {
-    vi.spyOn(console, 'warn').mockImplementation(() => {})
     const original = conflict()
     const request = vi
       .fn<() => Promise<Response>>()

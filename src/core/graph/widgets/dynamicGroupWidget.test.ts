@@ -568,7 +568,6 @@ describe('DynamicGroup widgets', () => {
     const link = source.connect(0, node, node.findInputSlot('loras.0.strength'))
     const saved = node.serialize()
     const previousWidgets = [...(node.widgets ?? [])]
-    vi.spyOn(console, 'error').mockImplementation(() => {})
     const update = vi.spyOn(useLinkStore(), 'updateEndpoints').mockReturnValue({
       ok: false,
       error: { code: 'unowned-topology', message: 'Rejected' }
@@ -592,7 +591,6 @@ describe('DynamicGroup widgets', () => {
     graph.add(source)
     const link = source.connect(0, node, node.findInputSlot('loras.1.strength'))
     const saved = node.serialize()
-    vi.spyOn(console, 'error').mockImplementation(() => {})
     vi.spyOn(useLinkStore(), 'updateEndpoints').mockReturnValue({
       ok: false,
       error: { code: 'unowned-topology', message: 'Rejected' }
@@ -661,7 +659,6 @@ describe('DynamicGroup widgets', () => {
       }
     }
     LiteGraph.registerNodeType(nodeType, InvalidDynamicGroup)
-    vi.spyOn(console, 'error').mockImplementation(() => {})
     try {
       const restored = new LGraph()
       restored.configure(saved)

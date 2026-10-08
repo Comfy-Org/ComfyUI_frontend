@@ -685,7 +685,10 @@ export const useWorkflowService = () => {
       useNodeOutputStore().stashPreviewsForWorkflow(activeWorkflow.path)
 
       // Capture thumbnail before loading new graph
-      void workflowThumbnail.storeThumbnail(activeWorkflow)
+      void workflowThumbnail.storeThumbnail(
+        activeWorkflow,
+        workflowStore.activeSubgraph || app.canvasOrUndefined?.graph
+      )
       domWidgetStore.clear()
 
       // Save subgraph viewport before the canvas gets overwritten

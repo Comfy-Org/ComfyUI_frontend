@@ -209,16 +209,11 @@ export class CanvasPointer {
     const { eDown } = this
     if (!eDown) return
 
-    // No buttons down, but eDown exists - clean up & leave
-    if (!e.buttons) {
-      this.reset()
-      return
-    }
-
-    // Primary button released - treat as pointerup.
     if (!(e.buttons & eDown.buttons)) {
-      this.eUp = e
-      this.dispatch(this.upEvent(e), e)
+      if (this.state.phase !== 'idle') {
+        this.eUp = e
+        this.dispatch(this.upEvent(e), e)
+      }
       this.reset()
       return
     }

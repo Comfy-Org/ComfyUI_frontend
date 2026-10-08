@@ -1,6 +1,6 @@
 import { beforeEach, describe, expect, it } from 'vitest'
 
-import type { IContextMenuValue } from '@/lib/litegraph/src/interfaces'
+import type { IContextMenuValue } from '@/lib/litegraph/src/types/contextMenu'
 import type { LGraphCanvas, LGraphNode } from '@/lib/litegraph/src/litegraph'
 import { useExtensionService } from '@/services/extensionService'
 import { useExtensionStore } from '@/stores/extensionStore'

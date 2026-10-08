@@ -36,15 +36,13 @@ import type { LinkId } from './LLink'
 import { createMutationView } from './infrastructure/createMutationView'
 import type {
   CanvasColour,
-  INodeInputSlot,
-  INodeOutputSlot,
-  LinkNetwork,
   LinkSegment,
   Point,
   Positionable,
-  ReadOnlyRect,
-  ReadonlyLinkNetwork
+  ReadOnlyRect
 } from './interfaces'
+import type { INodeInputSlot, INodeOutputSlot } from './types/slots'
+import type { LinkNetwork, ReadonlyLinkNetwork } from './types/linkNetwork'
 import { LiteGraph } from './litegraph'
 import { distance, isPointInRect } from './measure'
 import type { Serialisable, SerialisableReroute } from './types/serialisation'

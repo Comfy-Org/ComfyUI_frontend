@@ -8,6 +8,7 @@
  * leave the customer on the path that still works.
  */
 import type {
+  BillingClient,
   BillingTelemetryFailure,
   CancelOperationResult,
   PaymentPortalResult,
@@ -62,6 +63,11 @@ export class SettledOperationError extends WorkspaceApiError {
 }
 
 import type { BillingOperationRecordView } from './operationRecordView'
+
+/** The client a subscription action issued now runs on: the rail while its routes serve, else the legacy call. */
+export function billingClientOf(rail: SubscriptionRail | null): BillingClient {
+  return rail?.subscriptionRouteAvailable ? 'sdk' : 'legacy'
+}
 
 export type SubscriptionRailOutcome<T = void> =
   | { readonly status: 'ok'; readonly value: T }

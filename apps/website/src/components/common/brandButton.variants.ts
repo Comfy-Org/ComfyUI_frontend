@@ -19,6 +19,7 @@ export const brandButtonVariants = cva({
     size: {
       xs: 'rounded-2xl px-6 py-3 text-xs font-bold',
       sm: 'rounded-2xl px-4 py-2 text-sm font-semibold',
+      md: 'h-13 w-40 rounded-2xl text-base tracking-normal',
       nav: 'rounded-2xl px-6 py-2.5 text-sm font-semibold',
       lg: 'rounded-2xl px-4 py-2 text-sm'
     }

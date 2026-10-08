@@ -287,9 +287,6 @@ describe('useNodeDragToCanvas', () => {
       vi.mocked(useLitegraphService().addNodeOnGraph).mockReturnValue(
         placedNode
       )
-      const consoleErrorSpy = vi
-        .spyOn(console, 'error')
-        .mockImplementation(() => {})
 
       const { startDrag } = useNodeDragToCanvas()
       startDrag(mockNodeDef, {
@@ -311,7 +308,7 @@ describe('useNodeDragToCanvas', () => {
           detail: 'assetBrowser.failedToSetModelValue'
         })
       )
-      expect(consoleErrorSpy).toHaveBeenCalledWith(
+      expect(console.error).toHaveBeenCalledWith(
         expect.stringContaining('ckpt_name')
       )
     })
@@ -324,7 +321,6 @@ describe('useNodeDragToCanvas', () => {
         bottom: 500
       })
       mockConvertEventToCanvasOffset.mockReturnValue([150, 150])
-      vi.spyOn(console, 'error').mockImplementation(() => {})
 
       const { startDrag } = useNodeDragToCanvas()
       startDrag(mockNodeDef)
@@ -353,7 +349,6 @@ describe('useNodeDragToCanvas', () => {
         bottom: 500
       })
       mockConvertEventToCanvasOffset.mockReturnValue([150, 150])
-      vi.spyOn(console, 'error').mockImplementation(() => {})
 
       const { startDrag } = useNodeDragToCanvas()
       startDrag(mockNodeDef)

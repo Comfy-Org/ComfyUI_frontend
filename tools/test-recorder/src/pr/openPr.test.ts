@@ -123,7 +123,6 @@ describe('openPr', () => {
         success: false,
         error: 'not a branch'
       })
-      const logSpy = vi.spyOn(console, 'log').mockImplementation(() => {})
 
       await openPr({
         testFilePath: 'browser_tests/tests/foo.spec.ts',
@@ -132,7 +131,10 @@ describe('openPr', () => {
         projectRoot: '/repo'
       })
 
-      const output = logSpy.mock.calls.map((c) => String(c[0])).join('\n')
+      const output = vi
+        .mocked(console.log)
+        .mock.calls.map((c) => String(c[0]))
+        .join('\n')
       expect(output).toContain('git checkout feature/wip')
     })
   })

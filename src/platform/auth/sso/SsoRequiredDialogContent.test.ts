@@ -12,15 +12,19 @@ import { useAuthStore } from '@/stores/authStore'
 
 vi.mock(import('firebase/auth'))
 
-async function renderDialog(props: {
-  email?: string
-  returnTo?: string
-  organizationId?: string
-}) {
+async function renderDialog(
+  props: {
+    email?: string
+    returnTo?: string
+    organizationId?: string
+  },
+  at = '/workflows?id=7'
+) {
   const router = createRouter({
     history: createMemoryHistory(),
     routes: [
       { path: '/workflows', component: { template: '<div />' } },
+      { path: '/oauth/consent', component: { template: '<div />' } },
       {
         path: '/cloud/login',
         name: 'cloud-login',
@@ -28,7 +32,7 @@ async function renderDialog(props: {
       }
     ]
   })
-  await router.push('/workflows?id=7')
+  await router.push(at)
   return render(SsoRequiredDialogContent, {
     props,
     global: {
@@ -99,6 +103,22 @@ describe('SsoRequiredDialogContent', () => {
     expect(useAuthStore().logout).toHaveBeenCalledOnce()
     expect(assigned(assign).searchParams.get('return_to')).toBe(
       '/workflows?id=7'
+    )
+  })
+
+  it('returns from the consent page to the consent path the server serves', async () => {
+    await renderDialog(
+      { email: 'ada@acme.com' },
+      '/oauth/consent?oauth_request_id=req-1'
+    )
+
+    await userEvent.click(
+      screen.getByRole('button', { name: 'auth.sso.continueWithSso' })
+    )
+
+    await waitFor(() => expect(assign).toHaveBeenCalledOnce())
+    expect(assigned(assign).searchParams.get('return_to')).toBe(
+      '/cloud/oauth/consent?oauth_request_id=req-1'
     )
   })
 

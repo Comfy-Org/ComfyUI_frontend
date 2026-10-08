@@ -2,6 +2,7 @@ import { ref } from 'vue'
 import type { Ref, ShallowRef } from 'vue'
 
 import type { LGraph } from '@/lib/litegraph/src/litegraph'
+import { useExecutionStore } from '@/stores/executionStore'
 
 import { renderMinimapToCanvas } from '../minimapCanvasRenderer'
 import type { MinimapRenderContext, UpdateFlags } from '../types'
@@ -23,6 +24,7 @@ export function useMinimapRenderer(
   height: number,
   decorations: Ref<MinimapRenderContext['decorations']> = ref([])
 ) {
+  const executionStore = useExecutionStore()
   const needsFullRedraw = ref(true)
   const needsBoundsUpdate = ref(true)
 
@@ -58,6 +60,7 @@ export function useMinimapRenderer(
         width,
         height,
         decorations: decorations.value,
+        nodeProgressStates: executionStore.nodeLocationProgressStates,
         now: performance.now()
       })
 

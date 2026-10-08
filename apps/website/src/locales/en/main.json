@@ -2394,6 +2394,8 @@
     "featuredCommunityCtaAria": "Watch the Product Photography demo",
     "featuredCompanyTitle": "Customer story: Black Math",
     "featuredCompanyAlt": "Black Math customer story image",
+    "featuredEnterpriseAlt": "MiniMax commercial license video",
+    "opensInNewTab": "opens in new tab",
     "featuredCompanyCtaAria": "Watch the Black Math customer story",
     "developerPlatform": "Developer Platform",
     "comfyRouter": "Comfy Router",
@@ -2421,7 +2423,19 @@
     "upgrade": "Upgrade",
     "addCredits": "Add credits",
     "upgradeToAddCredits": "Upgrade to add credits",
-    "cinematicStudio": "Cinematic Studio"
+    "cinematicStudio": "Cinematic Studio",
+    "enterprise": "Enterprise",
+    "comfyApi": "Comfy API",
+    "comfySdks": "Comfy SDKs",
+    "builds": "Builds",
+    "teamBilling": "Team Billing",
+    "commercialLicensing": "Commercial Licensing",
+    "contactSales": "Contact Sales",
+    "colCreate": "Create",
+    "colAutomate": "Automate",
+    "colBuild": "Build",
+    "colResources": "Resources",
+    "colUpdates": "Updates"
   },
   "breadcrumb": {
     "agent": "Comfy Agent",
@@ -2471,7 +2485,8 @@
     "qwenImage21": "Qwen-Image 2.1",
     "nanoBanana": "Nano Banana 2.1",
     "cloudNodes": "Comfy Cloud Nodes",
-    "modelCatalogue": "ComfyUI Models"
+    "modelCatalogue": "ComfyUI Models",
+    "changelog": "Changelog"
   },
   "privacy": {
     "intro": {
@@ -5567,5 +5582,18 @@
     "noWebgl": "This preview needs WebGL2, which this browser does not offer.",
     "play": "Play",
     "pause": "Pause"
+  },
+  "changelog": {
+    "meta": {
+      "title": "Changelog - Comfy",
+      "description": "The latest ComfyUI features, improvements, and fixes from Comfy docs."
+    },
+    "title": "Changelog",
+    "viewDocs": "VIEW DOCS",
+    "saved": "Showing saved release notes. The latest updates could not be loaded.",
+    "unavailable": "Release notes could not be loaded.",
+    "loading": "Loading the latest release notes…",
+    "introduction": "The latest ComfyUI features, improvements, and fixes, updated from Comfy docs.",
+    "retry": "Try again"
   }
 }

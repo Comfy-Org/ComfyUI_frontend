@@ -1,5 +1,5 @@
+import { LAYER_EDITOR_DIALOG_KEY } from '@/renderer/extensions/layerEditor/layerEditorDialogKey'
 import {
-  LAYER_EDITOR_DIALOG_KEY,
   LayerEditorDialogContent,
   LayerEditorDialogHeader,
   layerEditorDialogProps

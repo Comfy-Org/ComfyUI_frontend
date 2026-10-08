@@ -1,5 +1,6 @@
 <template>
   <SidebarIcon
+    v-coachmark="FIRST_RUN_COACH_IDS.templatesButton"
     icon="icon-[comfy--template]"
     :tooltip="$t('sideToolbar.templates')"
     :label="$t('sideToolbar.labels.templates')"
@@ -13,6 +14,8 @@
 import { computed } from 'vue'
 
 import { useWorkflowTemplateSelectorDialog } from '@/composables/useWorkflowTemplateSelectorDialog'
+import { FIRST_RUN_COACH_IDS } from '@/platform/onboarding/onboardingTours'
+import { vCoachmark } from '@/platform/onboarding/vCoachmark'
 import { useSettingStore } from '@/platform/settings/settingStore'
 import { useTelemetry } from '@/platform/telemetry'
 

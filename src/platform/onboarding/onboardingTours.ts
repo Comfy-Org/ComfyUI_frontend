@@ -18,6 +18,8 @@ export type CoachPlacement =
   | 'bottom'
   /** Left of the target, vertically centred on it (clamps to the viewport edge). */
   | 'leftCenter'
+  /** Right of the target, vertically centred on it (clamps to the viewport edge). */
+  | 'rightCenter'
   /** Sits on whichever horizontal side of the target has more room. */
   | 'auto'
 
@@ -30,16 +32,18 @@ export const COACH_IDS = {
 } as const
 
 /**
- * Graph-view anchors for the first-run tour. Kept out of {@link COACH_IDS}
- * because the drift guard iterates that map and asserts each id resolves in
- * App mode, where none of these exist. `runButton` is the exception: ordinary
- * chrome, so only the first-run walk covers its drift.
+ * Graph-view anchors for the first-run tour and its nudge. Kept out of
+ * {@link COACH_IDS} because the drift guard iterates that map and asserts each
+ * id resolves in App mode, where the canvas anchors do not exist.
+ * `runButton` and `templatesButton` are ordinary chrome, so only the first-run
+ * walk and the nudge e2e cover their drift.
  */
 export const FIRST_RUN_COACH_IDS = {
   runButton: 'first-run-run-button',
   source: 'first-run-source',
   prompt: 'first-run-prompt',
-  sink: 'first-run-sink'
+  sink: 'first-run-sink',
+  templatesButton: 'first-run-templates-button'
 } as const
 
 export type CoachId =

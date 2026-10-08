@@ -54,7 +54,6 @@ describe('ModelImportProgressDialog cancellation', () => {
     const store = renderDialog()
     const toastStore = useToastStore()
     const addToast = vi.spyOn(toastStore, 'add')
-    vi.spyOn(console, 'error').mockImplementation(() => {})
     const error = new Error('Cancellation unavailable')
     vi.spyOn(store, 'cancelDownload').mockResolvedValue({ ok: false, error })
 

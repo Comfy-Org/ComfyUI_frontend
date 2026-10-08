@@ -18,7 +18,7 @@ const meta: Meta<typeof BrandButton> = {
     },
     size: {
       control: { type: 'select' },
-      options: ['xs', 'sm', 'nav', 'lg']
+      options: ['xs', 'sm', 'md', 'nav', 'lg']
     }
   },
   args: {

@@ -24,10 +24,11 @@
 
     <!-- Workspace Selector -->
     <div v-if="!accountActionsOnly" class="relative">
-      <!-- An API-key session is bound to one server-resolved workspace and
-           exposes no discovery or switching -->
+      <!-- An API-key session is bound to one server-resolved workspace, and a
+           Desktop build without workspace switching fixes the host session's;
+           neither exposes discovery or switching -->
       <div
-        v-if="isApiKeyLogin"
+        v-if="isApiKeyLogin || isDesktopHostWorkspaceFixed"
         class="flex w-full items-center gap-2 rounded-lg px-4 py-2"
         data-testid="workspace-context-row"
       >
@@ -263,6 +264,10 @@ import WorkspaceProfilePic from '@/platform/workspace/components/WorkspaceProfil
 import WorkspaceSwitcherPopover from '@/platform/workspace/components/WorkspaceSwitcherPopover.vue'
 import Button from '@/components/ui/button/Button.vue'
 import { useCurrentUser } from '@/composables/auth/useCurrentUser'
+import {
+  canDesktopHostSwitchWorkspace,
+  isDesktopHostSignedIn
+} from '@/platform/auth/desktopHost/desktopHostSession'
 
 import { useExternalLink } from '@/composables/useExternalLink'
 import { useBillingContext } from '@/composables/billing/useBillingContext'
@@ -316,6 +321,9 @@ const {
   handleSignOut,
   isApiKeyLogin
 } = useCurrentUser()
+const isDesktopHostWorkspaceFixed = computed(
+  () => isDesktopHostSignedIn() && !canDesktopHostSwitchWorkspace()
+)
 const settingsDialog = useSettingsDialog()
 const dialogService = useDialogService()
 const {

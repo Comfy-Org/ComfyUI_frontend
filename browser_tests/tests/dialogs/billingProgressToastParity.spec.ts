@@ -424,8 +424,7 @@ test.describe('Billing progress toast parity', { tag: '@cloud' }, () => {
 
         const cancel = new CancelSubscriptionDialog(page)
         await cancel.open(ACTIVE_STANDARD.renewal_date)
-        await cancel.confirmCancelButton.click()
-        await expect(cancel.root).toBeHidden()
+        await cancel.confirmCancel()
 
         await expect(page.getByText(/Processing payment/)).toHaveCount(0)
         await expect(page.getByText(SUBSCRIPTION_ACTION_REQUIRED)).toHaveCount(

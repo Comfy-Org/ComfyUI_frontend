@@ -11,11 +11,12 @@ export default defineConfig({
     restoreMocks: true,
     unstubEnvs: true,
     unstubGlobals: true,
+    silent: 'passed-only',
     fakeTimers: { shouldAdvanceTime: true },
     environment: 'node',
     include: ['src/**/*.{test,spec}.ts'],
     globals: false,
     env: { TZ: 'UTC' },
-    setupFiles: ['../../vitest.timer.setup.ts']
+    setupFiles: ['../../vitest.console.setup.ts', '../../vitest.timer.setup.ts']
   }
 })

@@ -189,7 +189,8 @@ const topColumns: { title: string; links: FooterLink[] }[] = [
       {
         label: t('footer.affiliateProgram'),
         href: routes.affiliates
-      }
+      },
+      { label: t('footer.changelog'), href: routes.changelog }
     ]
   },
   {

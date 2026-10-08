@@ -7,12 +7,9 @@ import type { LLink } from '@/lib/litegraph/src/LLink'
 import type { Reroute } from '@/lib/litegraph/src/Reroute'
 import type { CustomEventTarget } from '@/lib/litegraph/src/infrastructure/CustomEventTarget'
 import type { LinkConnectorEventMap } from '@/lib/litegraph/src/infrastructure/LinkConnectorEventMap'
-import type {
-  INodeOutputSlot,
-  LinkNetwork,
-  Point,
-  SlotIndex
-} from '@/lib/litegraph/src/interfaces'
+import type { Point, SlotIndex } from '@/lib/litegraph/src/interfaces'
+import type { INodeOutputSlot } from '@/lib/litegraph/src/types/slots'
+import type { LinkNetwork } from '@/lib/litegraph/src/types/linkNetwork'
 import type { SubgraphOutput } from '@/lib/litegraph/src/subgraph/SubgraphOutput'
 import type { SubgraphOutputNode } from '@/lib/litegraph/src/subgraph/SubgraphOutputNode'
 import type { NodeLike } from '@/lib/litegraph/src/types/NodeLike'

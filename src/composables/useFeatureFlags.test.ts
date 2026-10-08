@@ -842,38 +842,6 @@ describe('useFeatureFlags', () => {
     })
   })
 
-  describe('churnkeyAppId', () => {
-    afterEach(() => {
-      vi.mocked(distributionTypes).isCloud = false
-      remoteConfig.value = {}
-    })
-
-    it('is disabled outside the cloud distribution', () => {
-      remoteConfig.value = { churnkey_app_id: 'app_test' }
-
-      expect(useFeatureFlags().flags.churnkeyAppId).toBe('')
-    })
-
-    it('reads and trims the cloud remote-config value', () => {
-      vi.mocked(distributionTypes).isCloud = true
-      remoteConfig.value = { churnkey_app_id: ' app_test ' }
-
-      expect(useFeatureFlags().flags.churnkeyAppId).toBe('app_test')
-    })
-
-    it('falls back to the trimmed server feature value', () => {
-      vi.mocked(distributionTypes).isCloud = true
-      vi.mocked(api.getServerFeature).mockImplementation(
-        (path, defaultValue) =>
-          path === ServerFeatureFlag.CHURNKEY_APP_ID
-            ? ' app_server '
-            : defaultValue
-      )
-
-      expect(useFeatureFlags().flags.churnkeyAppId).toBe('app_server')
-    })
-  })
-
   describe('feature flag telemetry', () => {
     afterEach(() => {
       vi.mocked(distributionTypes).isCloud = false
@@ -887,8 +855,7 @@ describe('useFeatureFlags', () => {
       authenticatedRemoteConfigState.value = 'authenticated'
       remoteConfig.value = {
         partner_node_governance_enabled: false,
-        unified_cloud_auth: false,
-        churnkey_app_id: ' app_test '
+        unified_cloud_auth: false
       }
       vi.mocked(api.getServerFeature).mockImplementation(
         (_path, defaultValue) => defaultValue
@@ -903,10 +870,6 @@ describe('useFeatureFlags', () => {
       expect(useTelemetry()?.trackFeatureFlagEvaluation).toHaveBeenCalledWith(
         ServerFeatureFlag.UNIFIED_CLOUD_AUTH,
         false
-      )
-      expect(useTelemetry()?.trackFeatureFlagEvaluation).toHaveBeenCalledWith(
-        ServerFeatureFlag.CHURNKEY_APP_ID,
-        'app_test'
       )
       expect(useTelemetry()?.trackFeatureFlagEvaluation).toHaveBeenCalledWith(
         'assets',

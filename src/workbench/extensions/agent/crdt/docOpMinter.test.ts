@@ -792,6 +792,32 @@ describe('attachDocOpMinter', () => {
   })
 
   it.for([
+    { name: 'outnumbers', stored: ['first', 'second', 'extra'] },
+    { name: 'undercounts', stored: ['only'] }
+  ])(
+    'refuses a document whose stored array $name its matching promoted names',
+    async ({ stored }) => {
+      const { host, doc } = seedPromotedHost(stored)
+      expect(readDocPromotedWidgets(doc, String(host.id))).toMatchObject({
+        valueCount: stored.length,
+        promotedNames: ['prefix', 'text']
+      })
+
+      host.widgets[1].value = 'pasted'
+      await afterFlush()
+
+      expect(minted).toEqual([])
+      expect(reportError).toHaveBeenCalledWith(
+        expect.any(Error),
+        expect.objectContaining({
+          errorType: 'agent_crdt_promoted_widget_order_drift'
+        })
+      )
+      doc.destroy()
+    }
+  )
+
+  it.for([
     {
       name: 'sizes its array for a different set of widgets',
       doc: {
@@ -929,12 +955,48 @@ describe('attachDocOpMinter', () => {
       promotedNames: ['text', 'prefix']
     })
 
-    for (const value of ['p', 'pa', 'pas']) {
-      host.widgets[1].value = value
-      await afterFlush()
-    }
+    host.widgets[1].value = 'p'
+    await afterFlush()
+    host.widgets[1].value = 'pa'
+    await afterFlush()
+    host.widgets[1].value = 'pas'
+    await afterFlush()
 
     expect(minted).toHaveLength(0)
+    expect(
+      vi
+        .mocked(reportError)
+        .mock.calls.filter(
+          ([, options]) =>
+            options.errorType === 'agent_crdt_promoted_widget_order_drift'
+        )
+    ).toHaveLength(1)
+    doc.destroy()
+  })
+
+  it('reports a drifted host once across interleaved ordinary flushes', async () => {
+    const source = new TestSource()
+    withGraphIntentSource('load', () => graph.add(source))
+    const { host, doc } = seedPromotedHost()
+    docPromotedWidgets = () => ({
+      valueCount: 2,
+      declaredNames: ['text', 'prefix'],
+      promotedNames: ['text', 'prefix']
+    })
+
+    host.widgets[1].value = 'p'
+    await afterFlush()
+    source.widgets![0].value = 41
+    await afterFlush()
+    host.widgets[1].value = 'pa'
+    await afterFlush()
+    source.widgets![0].value = 42
+    await afterFlush()
+
+    expect(minted).toEqual([
+      expect.objectContaining({ node_id: source.id, value: 41 }),
+      expect.objectContaining({ node_id: source.id, value: 42 })
+    ])
     expect(
       vi
         .mocked(reportError)

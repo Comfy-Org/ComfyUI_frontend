@@ -1,4 +1,4 @@
-import { assert, beforeEach, describe, expect, it, vi } from 'vitest'
+import { assert, describe, expect, it, vi } from 'vitest'
 
 import { reportError } from '@/platform/telemetry/reportError'
 import { api } from '@/scripts/api'
@@ -46,11 +46,6 @@ describe('extension loading', () => {
   const failureFor = (ext: string): ExtensionLoadFailure => ({
     ext,
     error: new Error(`Cannot find module '${ext}'`)
-  })
-
-  beforeEach(() => {
-    vi.spyOn(console, 'error').mockImplementation(() => {})
-    vi.spyOn(console, 'warn').mockImplementation(() => {})
   })
 
   describe('reportExtensionLoadFailures', () => {

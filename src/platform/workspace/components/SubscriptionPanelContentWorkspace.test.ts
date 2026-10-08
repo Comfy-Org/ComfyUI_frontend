@@ -791,7 +791,6 @@ describe('SubscriptionPanelContentWorkspace', () => {
   })
 
   it('falls back to the per-member price when the subscribed stop id is stale', () => {
-    const warn = vi.spyOn(console, 'warn').mockImplementation(() => {})
     mockCurrentTeamCreditStop.value = {
       id: 'team_unknown',
       credits_monthly: 1,
@@ -801,8 +800,7 @@ describe('SubscriptionPanelContentWorkspace', () => {
 
     expect(screen.getByText('$100')).toBeInTheDocument()
     expect(screen.getByText('USD / mo / member')).toBeInTheDocument()
-    expect(warn).toHaveBeenCalledOnce()
-    warn.mockRestore()
+    expect(console.warn).toHaveBeenCalledOnce()
   })
 
   it('shows cents when the subscribed stop price is not a whole dollar', () => {

@@ -426,6 +426,35 @@ describe('PostHogTelemetryProvider', () => {
       )
     })
 
+    it('captures in-app survey events in the shape PostHog surveys read', async () => {
+      const provider = createProvider()
+      await vi.dynamicImportSettled()
+
+      provider.trackInAppSurvey('shown', { surveyId: 'survey-1' })
+      provider.trackInAppSurvey('sent', {
+        surveyId: 'survey-1',
+        responses: { 'question-1': 'Too expensive' },
+        properties: { outcome: 'keep_plan' }
+      })
+      provider.trackInAppSurvey('dismissed', {
+        surveyId: 'survey-1',
+        properties: { outcome: 'closed' }
+      })
+
+      expect(hoisted.mockCapture.mock.calls).toEqual([
+        ['survey shown', { $survey_id: 'survey-1' }],
+        [
+          'survey sent',
+          {
+            $survey_id: 'survey-1',
+            '$survey_response_question-1': 'Too expensive',
+            outcome: 'keep_plan'
+          }
+        ],
+        ['survey dismissed', { $survey_id: 'survey-1', outcome: 'closed' }]
+      ])
+    })
+
     it('captures auth events with metadata', async () => {
       const provider = createProvider()
       await vi.dynamicImportSettled()

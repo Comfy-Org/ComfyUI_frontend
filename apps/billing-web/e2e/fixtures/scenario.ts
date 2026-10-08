@@ -60,6 +60,15 @@ export function capabilitiesWith(
   }
 }
 
+/** The plan the server reports on an operation for the Pro Monthly link, as it does in every status. */
+export const PRO_MONTHLY_OP_PLAN = {
+  slug: 'pro_monthly',
+  duration: 'MONTHLY',
+  tier: 'PRO',
+  price_cents: 5000,
+  currency: 'usd'
+} as const satisfies NonNullable<BillingOpStatusResponse['plan']>
+
 export function succeededOperation(id: string): BillingOpStatusResponse {
   const now = new Date().toISOString()
   return { id, status: 'succeeded', started_at: now, completed_at: now }

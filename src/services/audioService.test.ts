@@ -26,8 +26,6 @@ describe('useAudioService', () => {
   }
 
   beforeEach(() => {
-    vi.spyOn(console, 'error').mockImplementation(() => {})
-
     mockConnect.mockResolvedValue('mock-encoder')
     mockRegister.mockResolvedValue(undefined)
     vi.mocked(api.fetchApi).mockResolvedValue(

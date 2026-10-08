@@ -263,7 +263,6 @@ describe('slotLinks', () => {
     assignments.set(target.inputs[0], stale)
     const onConnectionsChange = vi.fn()
     target.onConnectionsChange = onConnectionsChange
-    const consoleError = vi.spyOn(console, 'error').mockImplementation(() => {})
 
     expect(
       replaceNodeInputs(target, previous, [target.inputs[0]], assignments)
@@ -274,15 +273,17 @@ describe('slotLinks', () => {
         message: `Link ${stale.id} does not own its current placement`
       }
     })
-    expect(consoleError).toHaveBeenCalledWith('Failed to replace node inputs', {
-      code: 'unowned-topology',
-      message: `Link ${stale.id} does not own its current placement`
-    })
+    expect(console.error).toHaveBeenCalledWith(
+      'Failed to replace node inputs',
+      {
+        code: 'unowned-topology',
+        message: `Link ${stale.id} does not own its current placement`
+      }
+    )
 
     expect(target.getInputLink(0)).toBe(kept)
     expect(target.getInputLink(1)).toBe(removed)
     expect(onConnectionsChange).not.toHaveBeenCalled()
-    consoleError.mockRestore()
   })
 
   it('rejects duplicate input objects without changing topology', () => {

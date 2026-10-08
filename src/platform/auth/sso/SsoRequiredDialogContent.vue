@@ -51,6 +51,7 @@ import { ssoStartUrl } from '@comfyorg/account-core/sso'
 import Button from '@/components/ui/button/Button.vue'
 import { useErrorHandling } from '@/composables/useErrorHandling'
 import { SSO_REQUIRED_DIALOG_KEY } from '@/platform/auth/sso/ssoRequiredDialogKey'
+import { toSsoReturnPath } from '@/platform/auth/sso/ssoReturnPath'
 import { SSO_ENTRY_OPEN_QUERY } from '@/platform/cloud/onboarding/sso/ssoEntryQuery'
 import { useAuthStore } from '@/stores/authStore'
 import { useDialogStore } from '@/stores/dialogStore'
@@ -75,7 +76,7 @@ function dismiss() {
 
 function destination(): string {
   const back = {
-    returnTo: returnTo ?? router.currentRoute.value.fullPath,
+    returnTo: toSsoReturnPath(returnTo ?? router.currentRoute.value.fullPath),
     origin: window.location.origin
   }
   if (organizationId) {

@@ -17,15 +17,10 @@ import SheetTrigger from '@/components/ui/sheet/SheetTrigger.vue'
 import Button from '@/components/ui/button/Button.vue'
 import { cn } from '@comfyorg/tailwind-utils'
 
-const { locale = 'en', workshopInBuild = false } = defineProps<{
-  locale?: Locale
-  workshopInBuild?: boolean
-}>()
+const { locale = 'en' } = defineProps<{ locale?: Locale }>()
 const { t } = translationsFor(locale)
 const routes = getRoutes(locale)
-const mainNavigation = computed(() =>
-  getMainNavigation(locale, workshopInBuild)
-)
+const mainNavigation = computed(() => getMainNavigation(locale))
 
 const isOpen = ref(false)
 const activeSection = ref<string | null>(null)
@@ -136,26 +131,35 @@ onUnmounted(() => {
 
               <div v-if="activeItem" class="mt-6 flex flex-col gap-y-12">
                 <div
-                  v-for="column in activeItem.columns"
-                  :key="column.header"
+                  v-for="(column, columnIndex) in activeItem.columns"
+                  :key="column.header ?? columnIndex"
                   class="flex flex-col gap-y-3"
                 >
                   <p
+                    v-if="column.header"
                     class="text-base font-bold tracking-wider text-primary-warm-gray uppercase"
                   >
                     {{ column.header }}
                   </p>
-                  <Button
-                    v-for="link in column.items"
-                    :key="link.label"
-                    :href="link.href"
-                    variant="nav"
-                    as="a"
-                    :target="link.external ? '_blank' : undefined"
-                    :rel="link.external ? 'noopener noreferrer' : undefined"
+                  <div
+                    :class="
+                      column.items.every((link) => link.icon)
+                        ? 'flex flex-wrap gap-6'
+                        : 'flex flex-col gap-y-3'
+                    "
                   >
-                    <NavLinkContent :item="link" :locale="locale" />
-                  </Button>
+                    <Button
+                      v-for="link in column.items"
+                      :key="link.label"
+                      :href="link.href"
+                      variant="nav"
+                      as="a"
+                      :target="link.external ? '_blank' : undefined"
+                      :rel="link.external ? 'noopener noreferrer' : undefined"
+                    >
+                      <NavLinkContent :item="link" :locale="locale" />
+                    </Button>
+                  </div>
                 </div>
               </div>
             </div>

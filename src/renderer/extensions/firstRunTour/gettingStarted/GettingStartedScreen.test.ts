@@ -138,7 +138,6 @@ describe('GettingStartedScreen', () => {
     const rejections: unknown[] = []
     const onRejection = (reason: unknown) => rejections.push(reason)
     process.on('unhandledRejection', onRejection)
-    vi.spyOn(console, 'error').mockImplementation(() => {})
     await renderScreen()
 
     await pickFirstTemplate()

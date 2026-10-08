@@ -171,6 +171,31 @@ class TestPrototypeNamedWidget extends LGraphNode {
   }
 }
 
+/**
+ * Two serializable widgets under ONE name, the second pinned so it cannot be
+ * renamed apart. A plain frozen object handed to `addWidget` does not
+ * reproduce it — the widget class's own writable accessor wins — so `name` is
+ * redefined on the already-concrete widget.
+ */
+class TestRepeatedWidgetName extends LGraphNode {
+  constructor() {
+    super('Test Repeated Widget Name')
+    this.addWidget('string', 'dup', 'first default', () => {})
+    const second = this.addWidget(
+      'string',
+      'second',
+      'second default',
+      () => {}
+    )
+    Object.defineProperty(second, 'name', {
+      value: 'dup',
+      writable: false,
+      configurable: false
+    })
+    this.serialize_widgets = true
+  }
+}
+
 /** Keeps the definition's output names through `configure`, as `ComfyNode` does. */
 class TestDefinedSource extends LGraphNode {
   constructor() {
@@ -202,6 +227,10 @@ const CATALOG: WidgetCatalog = {
     TestNestedGrowing: { widget_order: ['mode', 'mode.inner', 'mode.inner.x'] },
     TestAliasNamedWidget: { widget_order: ['first', 'second', '_extra_1'] },
     TestPrototypeNamedWidget: { widget_order: ['known'] },
+    // The catalog names one widget TWICE, which schema v5 stores as one
+    // register per OCCURRENCE. The frontend cannot hold two widgets under one
+    // name, so the second register has no widget to address (FE-3036).
+    TestRepeatedWidgetName: { widget_order: ['dup', 'dup'] },
     TestSink: { widget_order: [] }
   }
 }
@@ -259,6 +288,7 @@ beforeEach(() => {
     'TestPrototypeNamedWidget',
     TestPrototypeNamedWidget
   )
+  LiteGraph.registerNodeType('TestRepeatedWidgetName', TestRepeatedWidgetName)
   LiteGraph.registerNodeType('TestSink', TestSink)
 
   const dynamicCombo = transformInputSpecV1ToV2(
@@ -335,6 +365,76 @@ describe('LiveGraphApplier', () => {
       expect.objectContaining({
         message: "Node 1 (TestPlainWidgets) has no widget '_extra_1'"
       }),
+      expect.objectContaining({ errorType: 'agent_graph_widget_missing' })
+    )
+  })
+
+  /**
+   * The pin bump's own regression, at the level that can see it cheaply. The
+   * browser case (`agentDuplicateWidgetOccurrenceFollower.spec.ts`) proves the
+   * same repair through the rendered canvas; this one runs the real applier,
+   * the real `LGraph` and the pinned package, so a pin rollback or an applier
+   * change that decodes an occurrence key back to the bare name goes red here
+   * instead of only on the cloud browser shard.
+   */
+  it('keeps the occurrence it can address on a repeated-name class and reports the one it cannot', () => {
+    const { graph, doc, collector, applier, applyCollected } = setup({
+      nodes: [
+        {
+          id: 1,
+          type: 'TestRepeatedWidgetName',
+          pos: [0, 0],
+          size: [210, 100],
+          widgets_values: ['first occurrence', 'second occurrence']
+        }
+      ],
+      links: []
+    })
+
+    applyCollected()
+
+    // One widget survives registration, holding occurrence 0's value — not
+    // occurrence 1's, which is what schema v4's single register carried.
+    const node = graph.getNodeById(toNodeId(1))
+    expect(node?.widgets?.map((widget) => [widget.name, widget.value])).toEqual(
+      [['dup', 'first occurrence']]
+    )
+    // And it is one because the duplicate was REFUSED at registration, not
+    // because the class only ever had one widget.
+    expect(reportError).toHaveBeenCalledWith(
+      expect.anything(),
+      expect.objectContaining({
+        errorType: 'failure_renaming_widget_duplicate_name'
+      })
+    )
+
+    // A write aimed at the register the frontend cannot address is applied by
+    // the document and then skipped on the canvas, with a report — never
+    // misaddressed onto the widget the frontend kept.
+    const write: Op = {
+      op_id: 'occurrence-write'.padEnd(32, '0'),
+      actor: 'agent:test',
+      base_version: 1,
+      stamp: [1, 'agent:test'],
+      op: 'set_widget',
+      node_id: 1,
+      widget: 'dup',
+      widget_occurrence: 1,
+      value: 'rewritten second occurrence'
+    }
+    expect(applyOps(doc, [write], CATALOG).outcomes).toEqual([
+      { op_id: write.op_id, outcome: 'applied' }
+    ])
+    applier.applyChanges(doc, collector.take(), {
+      actor: 'agent:test',
+      opIds: [write.op_id]
+    })
+
+    expect(node?.widgets?.map((widget) => widget.value)).toEqual([
+      'first occurrence'
+    ])
+    expect(reportError).toHaveBeenCalledWith(
+      expect.anything(),
       expect.objectContaining({ errorType: 'agent_graph_widget_missing' })
     )
   })

@@ -394,7 +394,6 @@ describe('usePricingTableUrlLoader', () => {
     vi.mocked(useBillingContext().fetchPlans).mockRejectedValueOnce(
       new Error('catalog unavailable')
     )
-    vi.spyOn(console, 'error').mockImplementation(() => {})
 
     const { loadPricingTableFromUrl } = usePricingTableUrlLoader()
     await loadPricingTableFromUrl()

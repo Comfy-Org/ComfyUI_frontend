@@ -1,6 +1,7 @@
 import type { Page } from '@playwright/test'
-import type { Asset, ListAssetsResponse } from '@comfyorg/ingest-types'
+import type { Asset } from '@comfyorg/ingest-types'
 
+import { makeAssetsResponse } from '@e2e/fixtures/assetApiFixture'
 import {
   comfyExpect as expect,
   comfyPageFixture as test
@@ -15,15 +16,10 @@ const ASSET_LISTING_URL = /\/api\/assets(?=\?|$)/
 
 async function mockAssetListing(page: Page, assets: Asset[]): Promise<void> {
   await page.route(ASSET_LISTING_URL, async (route) => {
-    const response: ListAssetsResponse = {
-      assets,
-      total: assets.length,
-      has_more: false
-    }
     await route.fulfill({
       status: 200,
       contentType: 'application/json',
-      body: JSON.stringify(response)
+      body: JSON.stringify(makeAssetsResponse(route.request().url(), assets))
     })
   })
 }
@@ -66,7 +62,7 @@ async function getCachedMissingMediaNames(
 }
 
 test.describe(
-  'Missing media detection by asset file_path',
+  'Missing media detection by asset hash',
   { tag: '@cloud' },
   () => {
     test.use({
@@ -75,42 +71,14 @@ test.describe(
       }
     })
 
-    test('does not surface missing media when the asset file_path differs from a bare-filename widget value', async ({
+    test('does not surface missing media when an asset hash matches the widget value', async ({
       comfyPage
     }) => {
       await mockAssetListing(comfyPage.page, [
         {
-          id: 'asset-with-file-path',
+          id: 'matching-asset',
           name: WORKFLOW_WIDGET_VALUE,
-          hash: 'blake3:00000000000000000000000000000000',
-          file_path: 'input/sub/bare_photo.png',
-          size: 1024,
-          mime_type: 'image/png',
-          tags: ['input'],
-          created_at: '2026-05-22T00:00:00Z',
-          updated_at: '2026-05-22T00:00:00Z',
-          last_access_time: '2026-05-22T00:00:00Z'
-        }
-      ])
-
-      await loadWorkflowAndWaitForAssetListing(comfyPage)
-
-      await expect(
-        comfyPage.page.getByTestId(TestIds.dialogs.errorOverlay)
-      ).toBeHidden()
-      await expect.poll(() => getCachedMissingMediaNames(comfyPage)).toEqual([])
-    })
-
-    test('matches by name when the asset has no file_path', async ({
-      comfyPage
-    }) => {
-      await mockAssetListing(comfyPage.page, [
-        {
-          id: 'asset-without-file-path',
-          name: WORKFLOW_WIDGET_VALUE,
-          hash: 'blake3:00000000000000000000000000000001',
-          file_path: null,
-          display_name: null,
+          hash: WORKFLOW_WIDGET_VALUE,
           size: 1024,
           mime_type: 'image/png',
           tags: ['input'],
@@ -135,8 +103,7 @@ test.describe(
         {
           id: 'unrelated-asset',
           name: 'unrelated.png',
-          hash: 'blake3:00000000000000000000000000000002',
-          file_path: 'input/unrelated.png',
+          hash: 'unrelated.png',
           size: 1024,
           mime_type: 'image/png',
           tags: ['input'],

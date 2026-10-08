@@ -229,6 +229,9 @@ export const app = {
   set canvas(value: Canvas) {
     state().canvas = value
   },
+  get canvasOrUndefined() {
+    return state().canvas
+  },
   get rootGraph() {
     const graph = state().rootGraph
     assert.exists(graph, 'The test has not initialized a root graph')

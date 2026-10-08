@@ -436,7 +436,6 @@ describe('Workshop visibility', () => {
       identifyWorkshopUser({ uid: 'staff-uid' })
       hoisted.mockIsFeatureEnabled.mockReturnValue(true)
       emitFeatureFlags()
-      vi.spyOn(console, 'error').mockImplementation(() => undefined)
       const call =
         operation === 'identify'
           ? hoisted.mockIdentify
@@ -719,7 +718,6 @@ describe('Workshop analytics transport', () => {
       'website:workshop_catalogue_viewed',
       { model_count: 10 }
     )
-    vi.spyOn(console, 'error').mockImplementation(() => undefined)
     hoisted.mockCapture.mockImplementation(() => {
       throw new Error('Capture unavailable')
     })
@@ -871,7 +869,6 @@ describe('useWorkshopAuthFlag', () => {
     hoisted.mockInit.mockImplementationOnce(() => {
       throw new Error('Analytics unavailable')
     })
-    vi.spyOn(console, 'error').mockImplementation(() => undefined)
     const { initPostHog, useWorkshopAuthFlag } = await import('./posthog')
 
     initPostHog()

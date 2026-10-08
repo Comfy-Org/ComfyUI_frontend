@@ -73,6 +73,8 @@ import type {
   HelpCenterClosedMetadata,
   HelpCenterOpenedMetadata,
   HelpResourceClickedMetadata,
+  InAppSurveyEvent,
+  InAppSurveyStage,
   LinkDedupDropMetadata,
   NamedValuesShadowDiffMismatchMetadata,
   NamedValuesShadowDiffSummaryMetadata,
@@ -117,6 +119,12 @@ import {
 import { normalizeSurveyResponses } from '../../utils/surveyNormalization'
 
 const EXECUTION_EVENT_SOURCE = 'web-sdk'
+
+const IN_APP_SURVEY_EVENTS: Record<InAppSurveyStage, TelemetryEventName> = {
+  shown: TelemetryEvents.IN_APP_SURVEY_SHOWN,
+  sent: TelemetryEvents.IN_APP_SURVEY_SENT,
+  dismissed: TelemetryEvents.IN_APP_SURVEY_DISMISSED
+}
 
 const DEFAULT_DISABLED_EVENTS = [
   TelemetryEvents.WORKFLOW_OPENED,
@@ -583,6 +591,23 @@ export class PostHogTelemetryProvider implements TelemetryProvider {
         console.error('Failed to set PostHog user properties:', error)
       }
     }
+  }
+
+  trackInAppSurvey(
+    stage: InAppSurveyStage,
+    { surveyId, responses = {}, properties = {} }: InAppSurveyEvent
+  ): void {
+    const responseProperties = Object.fromEntries(
+      Object.entries(responses).map(([questionId, answer]) => [
+        `$survey_response_${questionId}`,
+        answer
+      ])
+    )
+    this.captureRaw(IN_APP_SURVEY_EVENTS[stage], {
+      ...properties,
+      ...responseProperties,
+      $survey_id: surveyId
+    })
   }
 
   trackEmailVerification(stage: 'opened' | 'requested' | 'completed'): void {

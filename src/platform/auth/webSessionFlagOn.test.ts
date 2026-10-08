@@ -82,6 +82,7 @@ import { createDisposablePinia } from '@/testing/pinia'
 import { useCustomerEventsService } from '@/services/customerEventsService'
 import { useApiKeyAuthStore } from '@/stores/apiKeyAuthStore'
 import { NO_PERSONAL_WORKSPACE, useAuthStore } from '@/stores/authStore'
+import { getWorkspaceId } from '@/platform/workflow/persistence/base/storageKeys'
 import { useDialogStore } from '@/stores/dialogStore'
 import type { ComfyExtension } from '@/types/comfy'
 import {
@@ -978,7 +979,7 @@ describe('cloud API requests on the shared web session', () => {
     }
   )
 
-  it('workspace_access_denied drops the selection and is never replayed', async () => {
+  it('workspace_access_denied drops the selection, is never replayed, and never falls back to Personal while the reload is held', async () => {
     const ingest = await bootOnSession()
     vi.spyOn(window.location, 'reload').mockImplementation(() => {})
     const workspaceAuth = useWorkspaceAuthStore()
@@ -987,7 +988,7 @@ describe('cloud API requests on the shared web session', () => {
     ingest.refusals.push('workspace_access_denied')
 
     const response = await postPrompt()
-    await api.fetchApi('/queue')
+    await postPrompt()
 
     expect(response.status).toBe(403)
     expect(workspaceAuth.currentWorkspace).toBeNull()
@@ -997,7 +998,11 @@ describe('cloud API requests on the shared web session', () => {
         ...PROMPT_HEADERS,
         'x-csrf-token': 'csrf-1'
       }),
-      sessionRequest('GET', '/api/queue', { 'comfy-user': '' })
+      sessionRequest('POST', '/api/prompt', {
+        'x-comfy-workspace-id': 'ws-team',
+        ...PROMPT_HEADERS,
+        'x-csrf-token': 'csrf-1'
+      })
     ])
   })
 
@@ -1258,6 +1263,35 @@ describe('live updates and media on the shared web session', () => {
     await api.init()
     return ingest
   }
+
+  it('keeps the socket off Personal once the team workspace is refused and the reload is held', async () => {
+    const ingest = await bootWithSocket()
+    vi.spyOn(window.location, 'reload').mockImplementation(() => {})
+    await useWorkspaceAuthStore().switchWorkspace('ws-team')
+    await vi.waitFor(() =>
+      expect(api.socket).toEqual(
+        expect.objectContaining({ path: '/ws?workspace_id=ws-team' })
+      )
+    )
+    const socketsBefore = FakeSocket.created.length
+    ingest.refusals.push('workspace_access_denied')
+
+    await postPrompt()
+    await vi.advanceTimersByTimeAsync(0)
+
+    expect(FakeSocket.created.slice(socketsBefore)).toEqual([])
+  })
+
+  it('keeps each workspace its own workflow drafts', async () => {
+    await bootOnSession()
+    const workspaceAuth = useWorkspaceAuthStore()
+
+    await workspaceAuth.switchWorkspace('ws-team')
+    expect(getWorkspaceId()).toBe('ws-team')
+
+    await workspaceAuth.switchWorkspace('ws-personal')
+    expect(getWorkspaceId()).toBe('personal')
+  })
 
   it('opens the socket on the cookie and reconnects it into each workspace without minting a token', async () => {
     const ingest = await bootWithSocket()
@@ -2901,6 +2935,18 @@ describe.for([{ unified: false }, { unified: true }])(
             )
           }
         )
+
+        it('closes the dialogs left open when the session is signed out elsewhere', async () => {
+          const { server, landings } = await enterAppRecordingNavigations()
+          const dialogs = useDialogStore()
+          dialogs.showDialog({ key: 'global-settings', component: {} })
+
+          server.session = 'revoked'
+          await vi.advanceTimersByTimeAsync(TEN_MINUTES_MS)
+          await vi.waitFor(() => expect(landings).toEqual(['/cloud/login']))
+
+          expect(dialogs.dialogStack).toEqual([])
+        })
 
         it('leaves the navigation of a sign-out in this tab to the sign-out flow', async () => {
           const { started } = await enterAppRecordingNavigations()

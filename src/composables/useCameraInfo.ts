@@ -1,7 +1,10 @@
 import { computed, ref, toRaw, toRef } from 'vue'
 import type { MaybeRef } from 'vue'
 
-import { useViewportNodeWiring } from '@/composables/useViewportNodeWiring'
+import {
+  createSceneHoverHandlers,
+  useViewportNodeWiring
+} from '@/composables/useViewportNodeWiring'
 import { CameraInfoViewport } from '@/extensions/core/cameraInfo/CameraInfoViewport'
 import type { TransformGizmoMode } from '@/extensions/core/cameraInfo/CameraInfoViewport'
 import { DEFAULT_CAMERA_INFO_STATE } from '@/extensions/core/cameraInfo/types'
@@ -74,14 +77,9 @@ export function useCameraInfo(nodeRef: MaybeRef<LGraphNode | null>) {
     viewport = null
   }
 
-  const handleMouseEnter = (): void => {
-    viewport?.viewport.updateStatusMouseOnScene(true)
-    viewport?.viewport.refreshViewport()
-  }
-
-  const handleMouseLeave = (): void => {
-    viewport?.viewport.updateStatusMouseOnScene(false)
-  }
+  const { handleMouseEnter, handleMouseLeave } = createSceneHoverHandlers(
+    () => viewport?.viewport
+  )
 
   const setGizmosVisible = (on: boolean): void => {
     viewport?.setGizmosVisible(on)

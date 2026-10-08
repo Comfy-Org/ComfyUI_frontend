@@ -27,6 +27,7 @@ import { isCloud, isDesktop } from '@/platform/distribution/types'
 import { useTelemetry } from '@/platform/telemetry'
 import { useDialogService } from '@/services/dialogService'
 import { useAuthStore } from '@/stores/authStore'
+import { useDialogStore } from '@/stores/dialogStore'
 import { useUserStore } from '@/stores/userStore'
 import LayoutDefault from '@/views/layouts/LayoutDefault.vue'
 
@@ -160,12 +161,16 @@ if (isCloud) {
     ])
   }
   const watchedSessions = new WeakSet<object>()
-  /** Re-runs this guard on the current route, which then sends the tab to sign-in. */
+  /** Closes the signed-in tab's dialogs and re-runs this guard on the current route, which then sends the tab to sign-in. */
   function rerouteWhenSignedOutElsewhere(): void {
     const webSession = useCloudWebSessionStore()
     if (watchedSessions.has(webSession)) return
     watchedSessions.add(webSession)
     webSession.onSignedOutElsewhere(() => {
+      const dialogs = useDialogStore()
+      dialogs.dialogStack
+        .map(({ key }) => key)
+        .forEach((key) => dialogs.closeDialog({ key }))
       const { path, query, hash } = router.currentRoute.value
       void router.replace({ path, query, hash, force: true })
     })

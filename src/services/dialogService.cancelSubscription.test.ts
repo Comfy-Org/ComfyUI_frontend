@@ -1,5 +1,6 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 
+import type { CancellationFlowDialogOptions } from '@/platform/cloud/subscription/launchCancellationFlow'
 import { launchCancellationFlow } from '@/platform/cloud/subscription/launchCancellationFlow'
 import { useDialogStore } from '@/stores/dialogStore'
 
@@ -17,45 +18,55 @@ vi.mock(import('@/platform/cloud/subscription/launchCancellationFlow'))
 
 import { useDialogService } from '@/services/dialogService'
 
-function cancelSubscriptionContentProps() {
+function cancelSubscriptionDialog() {
   return useDialogStore().dialogStack.find(
     (dialog) => dialog.key === 'cancel-subscription'
-  )?.contentProps
+  )
 }
 
-describe('showCancelSubscriptionFlow native fallback', () => {
+function opensFlowWith(options: CancellationFlowDialogOptions) {
+  vi.mocked(launchCancellationFlow).mockImplementation(async ({ showFlow }) => {
+    await showFlow(options)
+  })
+}
+
+describe('showCancelSubscriptionFlow', () => {
   beforeEach(() => {
     vi.mocked(launchCancellationFlow).mockResolvedValue(undefined)
   })
 
-  it.for([
-    {
-      name: 'a flow the provider opened and the customer confirmed',
-      handed: { flowAlreadyOpened: true, flowAlreadyConfirmed: true },
-      shown: { flowAlreadyOpened: true, flowAlreadyConfirmed: true }
-    },
-    {
-      name: 'a flow the provider opened and the customer never confirmed',
-      handed: { flowAlreadyOpened: true },
-      shown: { flowAlreadyOpened: true, flowAlreadyConfirmed: false }
-    },
-    {
-      name: 'a flow the provider never opened',
-      handed: {},
-      shown: { flowAlreadyOpened: false, flowAlreadyConfirmed: false }
+  it('opens the flow in the cancel dialog, closable only from its steps', async () => {
+    const options: CancellationFlowDialogOptions = {
+      cancelAt: '2026-10-01',
+      surveyId: 'survey-1',
+      flow: null,
+      workspaceId: 'workspace-1',
+      isScopeCurrent: () => true
     }
-  ])('hands the dialog $name', async ({ handed, shown }) => {
-    vi.mocked(launchCancellationFlow).mockImplementation(
-      async ({ showFallback }) => {
-        await showFallback(handed)
-      }
-    )
+    opensFlowWith(options)
 
     await useDialogService().showCancelSubscriptionFlow('2026-10-01')
 
-    expect(cancelSubscriptionContentProps()).toMatchObject({
-      cancelAt: '2026-10-01',
-      ...shown
+    expect(launchCancellationFlow).toHaveBeenCalledWith(
+      expect.objectContaining({ cancelAt: '2026-10-01' })
+    )
+    expect(cancelSubscriptionDialog()?.contentProps).toEqual(options)
+    expect(cancelSubscriptionDialog()?.dialogComponentProps).toMatchObject({
+      closable: false,
+      dismissableMask: false
     })
+  })
+
+  it('does not open the flow once its workspace is no longer active', async () => {
+    opensFlowWith({
+      surveyId: 'survey-1',
+      flow: null,
+      workspaceId: 'workspace-1',
+      isScopeCurrent: () => false
+    })
+
+    await useDialogService().showCancelSubscriptionFlow()
+
+    expect(cancelSubscriptionDialog()).toBeUndefined()
   })
 })

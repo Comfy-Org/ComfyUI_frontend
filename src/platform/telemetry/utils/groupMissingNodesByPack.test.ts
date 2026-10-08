@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest'
 
-import type { MissingNodeType } from '@/types/comfy'
+import type { MissingNodeType } from '@/platform/nodeReplacement/types'
 
 import { groupMissingNodesByPack } from './groupMissingNodesByPack'
 

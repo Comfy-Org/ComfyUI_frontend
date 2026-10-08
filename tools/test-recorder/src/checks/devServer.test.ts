@@ -7,7 +7,6 @@ const VITE_PAGE =
 
 describe('checkDevServer', () => {
   beforeEach(() => {
-    vi.spyOn(console, 'log').mockImplementation(() => {})
     delete process.env.COMFY_TEST_DEV_PORT
     delete process.env.PLAYWRIGHT_TEST_URL
   })

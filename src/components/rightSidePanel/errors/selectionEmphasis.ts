@@ -1,6 +1,6 @@
 import { cn } from '@comfyorg/tailwind-utils'
 
-import type { MissingNodeType } from '@/types/comfy'
+import type { MissingNodeType } from '@/platform/nodeReplacement/types'
 
 // The negative margin and matching padding cancel out, so the background
 // bleeds 6px past the content without shifting the text.

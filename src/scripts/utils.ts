@@ -2,7 +2,7 @@ import { applyTextReplacements as _applyTextReplacements } from '@/utils/searchA
 
 import { api } from './api'
 import type { ComfyApp } from './app'
-import { $el } from './ui'
+import { $el } from './ui/utils'
 
 export function clone<T>(obj: T): T {
   try {

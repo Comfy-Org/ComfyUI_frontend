@@ -7,8 +7,12 @@
     :billing-cycle
     :dark-surface
     :close-demoted="inviting"
+    :plan-replaced
     @close="emit('close')"
   >
+    <template #plan>
+      <slot name="plan" />
+    </template>
     <template #details>
       <div v-if="showInviteBlock" class="mt-4 flex w-full flex-col gap-2">
         <h3 class="m-0 text-base font-normal text-base-foreground">
@@ -98,7 +102,8 @@ const {
   darkSurface = false,
   maxSeats,
   occupiedSeats,
-  invites
+  invites,
+  planReplaced = false
 } = defineProps<{
   plan: CheckoutPlan
   copy: CheckoutSuccessCopy
@@ -111,6 +116,8 @@ const {
   maxSeats: number | null
   occupiedSeats: number | null
   invites: WorkspaceInviteCommands
+  /** The host names a plan it did not quote here in the `plan` slot. */
+  planReplaced?: boolean
 }>()
 
 const emit = defineEmits<{

@@ -443,8 +443,7 @@ test.describe('Subscription rail outcomes', { tag: '@cloud' }, () => {
 
     const cancelDialog = new CancelSubscriptionDialog(page)
     await cancelDialog.open('2099-02-20T00:00:00Z')
-    await cancelDialog.confirmCancelButton.click()
-    await expect(cancelDialog.root).toBeHidden()
+    await cancelDialog.confirmCancel()
 
     const topUp = new TopUpCreditsDialog(page)
     await topUp.open()
@@ -487,8 +486,7 @@ test.describe('Subscription rail outcomes', { tag: '@cloud' }, () => {
 
     const cancelDialog = new CancelSubscriptionDialog(page)
     await cancelDialog.open('2099-03-15T10:00:00Z')
-    await cancelDialog.confirmCancelButton.click()
-    await expect(cancelDialog.root).toBeHidden()
+    await cancelDialog.confirmCancel()
     expect(transport(routes.cancelRequests[0])).toBe('fetch')
 
     const statusReadsBeforeReload = routes.statusRequests.length

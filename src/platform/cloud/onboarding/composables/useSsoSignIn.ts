@@ -5,6 +5,8 @@ import { useRoute, useRouter } from 'vue-router'
 
 import { discoverSso, ssoStartUrl } from '@comfyorg/account-core/sso'
 
+import { toSsoReturnPath } from '@/platform/auth/sso/ssoReturnPath'
+
 import {
   captureOAuthRequestId,
   getOAuthRequestId
@@ -34,10 +36,12 @@ export function resolveSsoReturnTo(
   const oauthRequestId =
     captureOAuthRequestId(route.query) ?? getOAuthRequestId()
   if (oauthRequestId) {
-    return router.resolve({
-      name: 'cloud-oauth-consent',
-      query: { oauth_request_id: oauthRequestId }
-    }).href
+    return toSsoReturnPath(
+      router.resolve({
+        name: 'cloud-oauth-consent',
+        query: { oauth_request_id: oauthRequestId }
+      }).href
+    )
   }
   return getSafePreviousFullPath(route.query) ?? SSO_DEFAULT_RETURN_TO
 }

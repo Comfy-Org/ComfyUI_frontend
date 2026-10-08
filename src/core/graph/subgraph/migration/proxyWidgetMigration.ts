@@ -16,7 +16,7 @@ import type {
   ProxyWidgetQuarantineReason
 } from '@/core/schemas/proxyWidgetQuarantineSchema'
 import { parseProxyWidgetErrorQuarantine } from '@/core/schemas/proxyWidgetQuarantineSchema'
-import type { INodeInputSlot } from '@/lib/litegraph/src/interfaces'
+import type { INodeInputSlot } from '@/lib/litegraph/src/types/slots'
 import type { LGraphNode } from '@/lib/litegraph/src/litegraph'
 import { nextUniqueName } from '@/lib/litegraph/src/strings'
 import type { Subgraph } from '@/lib/litegraph/src/subgraph/Subgraph'
