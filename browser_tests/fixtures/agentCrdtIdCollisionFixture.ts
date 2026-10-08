@@ -27,7 +27,6 @@
  */
 import type { Locator, Page } from '@playwright/test'
 import { expect } from '@playwright/test'
-import { createI18n } from 'vue-i18n'
 
 import type {
   AgentRunMode,
@@ -69,14 +68,7 @@ const SUBSCRIBE_TIMEOUT = 15_000
 const THREAD_ID = 'e9a2f3d1-7c44-4b2e-9a01-idcollision01'
 const MESSAGE_ID = 'id-collision-repro-message-0'
 const SEND_LABEL = enMessages.agent.send
-// The composer names itself with the rendered message, escapes resolved; the
-// app's own i18n module is a Vite build, so this mirrors it over the same
-// locale file exactly as `agentConversationFixture.ts` does.
-const COMPOSER_LABEL = createI18n({
-  legacy: false,
-  locale: 'en',
-  messages: { en: enMessages }
-}).global.t('agent.placeholder')
+const COMPOSER_LABEL = /^Describe ideas/
 
 const CATALOG: WidgetCatalog = {
   types: {

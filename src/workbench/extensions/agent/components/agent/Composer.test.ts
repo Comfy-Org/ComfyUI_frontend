@@ -183,11 +183,11 @@ describe('Composer', () => {
     expect(emitted().mentionPick).toBeUndefined()
   })
 
-  it('hints at ideas, skills, references and dragged assets', () => {
+  it('hints at ideas, references and dragged assets without skills', () => {
     mount()
 
     const text = screen.getByText(
-      'Describe ideas, / use skills, @ add references, drag in assets'
+      'Describe ideas, @ add references, drag in assets'
     )
     expect(text).toBeVisible()
   })
@@ -206,9 +206,7 @@ describe('Composer', () => {
       mount()
       const box = screen.getByRole('textbox')
       expect(
-        screen.getByText(
-          'Describe ideas, / use skills, @ add references, drag in assets'
-        )
+        screen.getByText('Describe ideas, @ add references, drag in assets')
       ).toBeVisible()
 
       await userEvent.click(box)
@@ -217,18 +215,14 @@ describe('Composer', () => {
       expect(store.draft).toBe('hello')
       expect(
         isInaccessible(
-          screen.getByText(
-            'Describe ideas, / use skills, @ add references, drag in assets'
-          )
+          screen.getByText('Describe ideas, @ add references, drag in assets')
         )
       ).toBe(true)
 
       await userEvent.keyboard('{Control>}a{/Control}{Backspace}')
       expect(store.draft).toBe('')
       expect(
-        screen.getByText(
-          'Describe ideas, / use skills, @ add references, drag in assets'
-        )
+        screen.getByText('Describe ideas, @ add references, drag in assets')
       ).toBeVisible()
       expect(store.attachments).toEqual(attachments)
     }
@@ -1713,9 +1707,7 @@ describe('Composer', () => {
     mount({ selectionTags: [{ id: '5', title: 'KSampler' }] })
 
     expect(
-      screen.getByText(
-        'Describe ideas, / use skills, @ add references, drag in assets'
-      )
+      screen.getByText('Describe ideas, @ add references, drag in assets')
     ).toBeVisible()
   })
 

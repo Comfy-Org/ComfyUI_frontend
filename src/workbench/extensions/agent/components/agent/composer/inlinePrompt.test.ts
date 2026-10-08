@@ -10,6 +10,7 @@ import { parseWorkflowReferences } from '../../../utils/workflowReferenceText'
 
 import {
   inlinePromptSchema,
+  pastedSkillCommand,
   promptDocument,
   promptDocumentPosition,
   promptDraft,
@@ -17,6 +18,28 @@ import {
 } from './inlinePrompt'
 
 describe('inline prompt', () => {
+  it.for([
+    ['', 0, true],
+    ['src', 3, false],
+    ['src ', 4, true],
+    ['line\n', 5, true],
+    ['src', 0, true]
+  ] as const)(
+    'accepts a pasted skill command only at the text start or after whitespace: %j at %i',
+    ([text, offset, accepted]) => {
+      const doc = promptDocument({
+        text,
+        references: [
+          { kind: 'workflow', id: 'ref', name: 'Reference', textOffset: 0 }
+        ]
+      })
+      const position = promptDocumentPosition(doc, offset)
+      expect(pastedSkillCommand(doc, position, '/portrait next')).toEqual(
+        accepted ? { name: 'portrait', suffix: ' next' } : undefined
+      )
+    }
+  )
+
   it('round-trips a scoped skill with adjacent workflow and repeated asset references', () => {
     const draft: ComposerPrompt = {
       text: '😀 before  after',
@@ -60,6 +83,52 @@ describe('inline prompt', () => {
       unavailable: true
     })
   })
+
+  it.for(['portrait.v2', '_portrait', '-portrait', 'a'.repeat(64)])(
+    'accepts valid rich skill display metadata for %s',
+    (name) => {
+      const content = document.createElement('div')
+      const chip = document.createElement('span')
+      chip.dataset.comfySkill = '1'
+      chip.dataset.skillName = name
+      chip.dataset.skillDescription = 'Original\nDescription'
+      chip.textContent = `/${name}`
+      content.append(chip)
+      const doc = DOMParser.fromSchema(inlinePromptSchema).parse(content)
+      expect(promptDraft(doc).references).toEqual([
+        {
+          kind: 'skill',
+          name,
+          description: 'Original\nDescription',
+          scope: '',
+          textOffset: 0
+        }
+      ])
+    }
+  )
+
+  it.for([
+    { name: 'a'.repeat(65), description: 'Original', label: null },
+    { name: 'portrait', description: 'a'.repeat(1025), label: null },
+    { name: '..', description: 'Original', label: null },
+    { name: 'portrait', description: null, label: null },
+    { name: 'portrait', description: 'Original', label: '/different' }
+  ])(
+    'keeps malformed rich skill metadata as readable text: %j',
+    ({ name, description, label }) => {
+      const content = document.createElement('div')
+      const chip = document.createElement('span')
+      chip.dataset.comfySkill = '1'
+      chip.dataset.skillName = name
+      if (description !== null) chip.dataset.skillDescription = description
+      chip.textContent = label ?? `/${name}`
+      content.append(chip)
+      const prompt = promptDraft(
+        DOMParser.fromSchema(inlinePromptSchema).parse(content)
+      )
+      expect(prompt).toEqual({ text: label ?? `/${name}`, references: [] })
+    }
+  )
 
   it.for([true, false])(
     'round-trips adjacent scoped nodes and assets with uploading=%s',

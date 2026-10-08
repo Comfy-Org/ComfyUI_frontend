@@ -23,18 +23,20 @@ export function parseSkillReferenceText(
   workflowReferences: WorkflowReference[] = []
 ): PromptSnapshot {
   for (const match of content.matchAll(
-    /\[Use the saved skill \/([A-Za-z0-9._-]+)\]\(skill:\/\/\1\?description=([^\s)]*)\)/g
+    // Tolerates a legacy `&id`; skills resolve by name.
+    /(\[Use the saved skill \/([A-Za-z0-9._-]+)\]\(skill:\/\/\2\?description=([^\s)&]*))(?:&id=[A-Za-z0-9_-]{1,128})?\)/g
   )) {
-    const name = match[1]
+    const [, canonical, name] = match
     if (name.length > MAX_NAME_LENGTH || !PACK_NAME_PATTERN.test(name)) continue
     let description: string
     try {
-      description = decodeURIComponent(match[2])
+      description = decodeURIComponent(match[3])
     } catch {
       continue
     }
     if (codePointLength(description) > MAX_DESCRIPTION_CODE_POINTS) continue
-    if (serializeSkillReference({ name, description }) !== match[0]) continue
+    if (serializeSkillReference({ name, description }) !== `${canonical})`)
+      continue
     const start = match.index
     const end = start + match[0].length
     return {

@@ -14,6 +14,22 @@ import { selectedNodeKey } from './useCanvasSelection'
 import type { SkillReferenceMetadata } from '../../types/skillReference'
 import type { ComposerAttachment } from '../../types/composerAttachment'
 
+const SKILL_QUERY = /^[A-Za-z0-9._-]*$/
+
+function triggerStart(text: string, caret: number, trigger: '@' | '/'): number {
+  const start = text.lastIndexOf(trigger, caret - 1)
+  if (start < 0 || start >= caret) return -1
+  if (start > 0 && !/\s/.test(text[start - 1])) return -1
+  return text.slice(start + 1, caret).includes('\n') ? -1 : start
+}
+
+function skillTriggerStart(text: string, caret: number): number {
+  const start = triggerStart(text, caret, '/')
+  return start >= 0 && SKILL_QUERY.test(text.slice(start + 1, caret))
+    ? start
+    : -1
+}
+
 interface MentionPickerOptions {
   draft: () => string
   editor: () => PromptEditor | null
@@ -167,6 +183,9 @@ export function useAgentMentionPicker(options: MentionPickerOptions) {
           (match) => match.kind !== 'back' && !isNodeReferenceDisabled(match)
         ))
   )
+  const skillQueryEmpty = computed(
+    () => mentionSection.value === 'skills' && mentionQuery.value === ''
+  )
   const mentionHasResults = computed(() =>
     mentionSection.value === 'skills'
       ? mentionMatches.value.length > 0
@@ -219,44 +238,46 @@ export function useAgentMentionPicker(options: MentionPickerOptions) {
     })
   }
 
+  function mentionTrigger(
+    text: string,
+    caret: number,
+    collapsed: boolean
+  ): { trigger: '@' | '/'; start: number } | undefined {
+    const at = triggerStart(text, caret, '@')
+    const slash =
+      collapsed && options.skillsEnabled() ? skillTriggerStart(text, caret) : -1
+    const state = mention.value
+    const atOpen = state.status === 'open' && state.section !== 'skills'
+    if (at >= 0 && (atOpen || at > slash)) return { trigger: '@', start: at }
+    return slash >= 0 ? { trigger: '/', start: slash } : undefined
+  }
+
   function syncMention(): void {
     const selection = options.editor()?.selection()
     const caret = selection?.start ?? 0
     const text = options.draft()
-    const candidate = (['@', '/'] as const)
-      .map((trigger) => ({
-        trigger,
-        start: text.lastIndexOf(trigger, caret - 1)
-      }))
-      .sort((a, b) => b.start - a.start)
-      .find(({ trigger, start }) => {
-        if (
-          start < 0 ||
-          start >= caret ||
-          (start > 0 && !/\s/.test(text[start - 1]))
-        )
-          return false
-        const query = text.slice(start + 1, caret)
-        return (
-          !query.includes('\n') &&
-          (trigger === '@' ||
-            (options.skillsEnabled() && /^[A-Za-z0-9._-]*$/.test(query)))
-        )
-      })
-    if (!candidate || selection?.end !== caret) {
+    const open = mentionTrigger(text, caret, selection?.end === caret)
+    if (!open) {
       dispatchMention({ type: 'closed' })
       return
     }
-    const { trigger, start: at } = candidate
-    const query = text.slice(at + 1, caret)
-    updateMentionQuery(trigger, at, query)
+    updateMentionQuery(
+      open.trigger,
+      open.start,
+      text.slice(open.start + 1, caret)
+    )
   }
 
   watch(
     () => options.skills(),
     (_next, previous) => {
       const state = mention.value
-      if (state.status !== 'open' || state.section !== 'skills') return
+      if (
+        state.status !== 'open' ||
+        state.section !== 'skills' ||
+        state.activeIndex < 0
+      )
+        return
       const selected = previous
         .filter(({ name }) =>
           name.toLowerCase().includes(state.query.toLowerCase())
@@ -414,6 +435,7 @@ export function useAgentMentionPicker(options: MentionPickerOptions) {
     mentionMatches,
     mentionVisible,
     mentionHasResults,
+    skillQueryEmpty,
     graphDupes,
     syncMention,
     pickMention,

@@ -1,8 +1,6 @@
 import type { WebSocketRoute } from '@playwright/test'
 import { expect } from '@playwright/test'
 
-import { createI18n } from 'vue-i18n'
-
 import type { WidgetCatalog, WorkflowJSON } from '@comfyorg/comfy-multi-player'
 import type { WorkflowListResponse } from '@comfyorg/ingest-types'
 import type { UserDataFullInfo } from '@/platform/remote/comfyui/types'
@@ -74,11 +72,7 @@ const SEED: WorkflowJSON = { nodes: [], links: [] }
 
 const SEND_LABEL = enMessages.agent.send
 const STOP_LABEL = enMessages.agent.stop
-const COMPOSER_LABEL = createI18n({
-  legacy: false,
-  locale: 'en',
-  messages: { en: enMessages }
-}).global.t('agent.placeholder')
+const COMPOSER_LABEL = /^Describe ideas/
 
 test.describe(
   'Agent canvas recovers after an unreadable doc schema is repaired',

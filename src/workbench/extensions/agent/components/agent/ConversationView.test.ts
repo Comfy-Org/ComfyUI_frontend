@@ -1,6 +1,6 @@
 import { fromPartial } from '@total-typescript/shoehorn'
 import { getActivePinia } from 'pinia'
-import { fireEvent, render, screen } from '@testing-library/vue'
+import { fireEvent, render, screen, waitFor } from '@testing-library/vue'
 import userEvent from '@testing-library/user-event'
 import { defineComponent, nextTick } from 'vue'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
@@ -11,6 +11,7 @@ const intersectionCallbacks = vi.hoisted(
 )
 const resizeCallbacks = vi.hoisted(() => [] as (() => void)[])
 vi.mock(import('@vueuse/core'), { spy: true })
+vi.mock(import('@/composables/auth/useCurrentUser'))
 vi.mocked(useIntersectionObserver).mockImplementation((_target, callback) => {
   intersectionCallbacks.push((entries) =>
     callback(
@@ -26,6 +27,11 @@ vi.mocked(useResizeObserver).mockImplementation((_target, callback) => {
 })
 
 import { i18n } from '@/i18n'
+import { useSkillPacksStore } from '@/platform/skills/stores/skillPacksStore'
+import { useTeamWorkspaceStore } from '@/platform/workspace/stores/teamWorkspaceStore'
+import { listSkillPacks } from '@/platform/skills/api/skillsApi'
+vi.mock(import('@/platform/skills/api/skillsApi'), { spy: true })
+vi.mock(import('@/platform/telemetry/reportError'))
 import { toTurnId, zAgentWsEvent } from '../../schemas/agentApiSchema'
 import type { AgentChatEvent } from '../../services/agent/agentEventTransport'
 import type { AssistantMessage } from '../../services/agent/agentMessageParts'
@@ -147,9 +153,9 @@ describe('ConversationView', () => {
         '/portrait'
       )
       await userEvent.hover(screen.getByTestId('skill-reference'))
-      expect(
-        await screen.findByRole('tooltip', { name: '/portrait' })
-      ).toHaveTextContent('Use defaults')
+      expect(await screen.findByRole('tooltip')).toHaveTextContent(
+        /^Use defaults$/
+      )
       await userEvent.unhover(screen.getByTestId('skill-reference'))
       expect(screen.getByTestId('workflow-reference-chip')).toHaveTextContent(
         'Reference'
@@ -177,6 +183,135 @@ describe('ConversationView', () => {
       })
     }
   )
+
+  it('refreshes once for multiple historical references without refetching on text updates', async () => {
+    const skills = useSkillPacksStore()
+    skills.flagsEnabled = true
+    vi.spyOn(skills, 'startFlagGate').mockResolvedValue()
+    let resolve: (
+      packs: Awaited<ReturnType<typeof listSkillPacks>>
+    ) => void = () => {}
+    vi.mocked(listSkillPacks).mockReturnValueOnce(
+      new Promise((settle) => {
+        resolve = settle
+      })
+    )
+    const entries = ['one', 'two'].map((id) => ({
+      id: toTurnId(id),
+      role: 'user' as const,
+      text: ' render',
+      skillReference: {
+        name: 'portrait',
+        description: 'Original',
+        textOffset: 0
+      }
+    }))
+    const view = render(ConversationView, {
+      props: { entries, conversationId: 'conversation' },
+      global: { plugins: [i18n] }
+    })
+    await waitFor(() => expect(listSkillPacks).toHaveBeenCalledOnce())
+    expect(screen.getAllByTestId('skill-reference')).toHaveLength(2)
+    expect(screen.getAllByTestId('skill-reference')[0]).toHaveClass(
+      'text-warning-background'
+    )
+    const refresh = skills.refreshPacks()
+    expect(listSkillPacks).toHaveBeenCalledOnce()
+    await view.rerender({
+      entries: entries.map((entry) => ({ ...entry, text: ' changed text' }))
+    })
+    expect(listSkillPacks).toHaveBeenCalledOnce()
+    resolve([
+      {
+        id: 'portrait',
+        name: 'portrait',
+        description: 'Current',
+        body: '',
+        body_hash: '',
+        created_at: '',
+        updated_at: ''
+      }
+    ])
+    await refresh
+    expect(skills.catalogConfirmed).toBe(true)
+    await userEvent.hover(screen.getAllByTestId('skill-reference')[0])
+    expect(await screen.findByRole('tooltip')).toHaveTextContent(/^Original$/)
+  })
+
+  it('does not display a late historical catalog description after switching workspace', async () => {
+    const skills = useSkillPacksStore()
+    skills.flagsEnabled = true
+    vi.spyOn(skills, 'startFlagGate').mockResolvedValue()
+    let resolveOld: (
+      packs: Awaited<ReturnType<typeof listSkillPacks>>
+    ) => void = () => {}
+    let resolveNew: (
+      packs: Awaited<ReturnType<typeof listSkillPacks>>
+    ) => void = () => {}
+    vi.mocked(listSkillPacks)
+      .mockReturnValueOnce(
+        new Promise((settle) => {
+          resolveOld = settle
+        })
+      )
+      .mockReturnValueOnce(
+        new Promise((settle) => {
+          resolveNew = settle
+        })
+      )
+    render(ConversationView, {
+      props: {
+        conversationId: 'history',
+        entries: [
+          {
+            id: T,
+            role: 'user',
+            text: ' render',
+            skillReference: {
+              name: 'portrait',
+              description: 'Original',
+              textOffset: 0
+            }
+          }
+        ]
+      },
+      global: { plugins: [i18n] }
+    })
+    await waitFor(() => expect(listSkillPacks).toHaveBeenCalledOnce())
+    const oldRequest = skills.refreshPacks()
+    Object.assign(useTeamWorkspaceStore(), { workspaceId: 'new-workspace' })
+    await waitFor(() => expect(listSkillPacks).toHaveBeenCalledTimes(2))
+    const newRequest = skills.refreshPacks()
+    resolveNew([
+      {
+        id: 'portrait',
+        name: 'portrait',
+        description: 'New workspace description',
+        body: '',
+        body_hash: '',
+        created_at: '',
+        updated_at: ''
+      }
+    ])
+    await newRequest
+    resolveOld([
+      {
+        id: 'portrait',
+        name: 'portrait',
+        description: 'Foreign old description',
+        body: '',
+        body_hash: '',
+        created_at: '',
+        updated_at: ''
+      }
+    ])
+    await oldRequest
+    await userEvent.hover(screen.getByTestId('skill-reference'))
+    const tooltip = await screen.findByRole('tooltip')
+    expect(tooltip).toHaveTextContent(/^Original$/)
+    expect(tooltip).not.toHaveTextContent('Foreign old description')
+    expect(tooltip).not.toHaveTextContent('New workspace description')
+  })
 
   it('wire-driven v1 turn renders user pill, spinner, reasoning-free text, work summary', async () => {
     const { store } = mountHarness()

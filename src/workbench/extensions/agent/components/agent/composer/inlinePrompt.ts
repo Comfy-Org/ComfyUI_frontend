@@ -3,6 +3,12 @@ import type { Node } from '@tiptap/pm/model'
 
 import { zMediaKindSchema } from '@/platform/assets/schemas/mediaAssetSchema'
 import { isNodeLocatorId } from '@/types/nodeIdentification'
+import {
+  MAX_DESCRIPTION_CODE_POINTS,
+  MAX_NAME_LENGTH,
+  PACK_NAME_PATTERN,
+  codePointLength
+} from '@/platform/skills/types'
 import type {
   ComposerInsertionPoint,
   ComposerPrompt,
@@ -13,6 +19,18 @@ import {
   nodeReferenceText
 } from '../../../utils/agentMessageText'
 
+function isSkillName(name: string): boolean {
+  return name.length <= MAX_NAME_LENGTH && PACK_NAME_PATTERN.test(name)
+}
+
+/** Typing opens the skill menu only at the text start or after whitespace. */
+export function pastedSkillCommand(doc: Node, position: number, text: string) {
+  if (!/(?:^|\s)$/.test(doc.textBetween(0, position, '', ''))) return
+  const match = /^\/(\S+)(?=\s|$)/.exec(text)
+  if (!match || !isSkillName(match[1])) return
+  return { name: match[1], suffix: text.slice(match[0].length) }
+}
+
 export const inlinePromptSchema = new Schema({
   nodes: {
     doc: { content: 'inline*', whitespace: 'pre' },
@@ -21,9 +39,37 @@ export const inlinePromptSchema = new Schema({
       group: 'inline',
       inline: true,
       atom: true,
-      attrs: { name: {}, description: {}, scope: {} },
-      // Clipboard copies are readable text, never an authorization to load a skill.
-      toDOM: (node) => ['span', {}, `/${node.attrs.name}`]
+      attrs: {
+        name: {},
+        description: {},
+        scope: {},
+        resolvePastedName: { default: false }
+      },
+      toDOM: (node) => [
+        'span',
+        {
+          'data-comfy-skill': '1',
+          'data-skill-name': node.attrs.name,
+          'data-skill-description': node.attrs.description
+        },
+        `/${node.attrs.name}`
+      ],
+      parseDOM: [
+        {
+          tag: 'span[data-comfy-skill="1"]',
+          getAttrs(element) {
+            const name = element.getAttribute('data-skill-name')
+            const description = element.getAttribute('data-skill-description')
+            return name &&
+              isSkillName(name) &&
+              description !== null &&
+              codePointLength(description) <= MAX_DESCRIPTION_CODE_POINTS &&
+              element.textContent === `/${name}`
+              ? { name, description, scope: '' }
+              : false
+          }
+        }
+      ]
     },
     workflow: {
       group: 'inline',
@@ -96,7 +142,8 @@ function promptReferenceNode(reference: ComposerReference): Node {
       return inlinePromptSchema.nodes.skill.create({
         name: reference.name,
         description: reference.description,
-        scope: reference.scope
+        scope: reference.scope,
+        resolvePastedName: reference.resolvePastedName === true
       })
     case 'workflow':
       return inlinePromptSchema.nodes.workflow.create({
@@ -158,21 +205,34 @@ function assetNodeReference(
   }
 }
 
+function skillNodeReference(
+  node: Node,
+  textOffset: number
+): ComposerReference | undefined {
+  const { name, description, scope, resolvePastedName } = node.attrs
+  if (
+    typeof name !== 'string' ||
+    typeof description !== 'string' ||
+    typeof scope !== 'string'
+  )
+    return
+  return {
+    kind: 'skill',
+    name,
+    description,
+    scope,
+    textOffset,
+    ...(resolvePastedName === true ? { resolvePastedName: true as const } : {})
+  }
+}
+
 export function promptNodeReference(
   node: Node,
   textOffset: number
 ): ComposerReference | undefined {
+  if (node.type === inlinePromptSchema.nodes.skill)
+    return skillNodeReference(node, textOffset)
   const { id, name } = node.attrs
-  if (node.type === inlinePromptSchema.nodes.skill) {
-    const { description, scope } = node.attrs
-    if (
-      typeof name !== 'string' ||
-      typeof description !== 'string' ||
-      typeof scope !== 'string'
-    )
-      return
-    return { kind: 'skill', name, description, scope, textOffset }
-  }
   if (typeof id !== 'string' || typeof name !== 'string') return
   if (node.type.name === 'workflow')
     return {

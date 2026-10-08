@@ -62,7 +62,12 @@ export function composerPromptForSend(prompt: ComposerPrompt): PromptSnapshot {
       const { kind: _kind, ...workflow } = reference
       workflowReferences.push({ ...workflow, textOffset: text.length })
     } else if (reference.kind === 'skill') {
-      const { kind: _kind, scope: _scope, ...skill } = reference
+      const {
+        kind: _kind,
+        scope: _scope,
+        resolvePastedName: _resolvePastedName,
+        ...skill
+      } = reference
       skillReference = {
         ...skill,
         textOffset: text.length,

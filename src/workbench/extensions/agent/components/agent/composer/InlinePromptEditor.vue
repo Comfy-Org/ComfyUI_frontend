@@ -18,6 +18,8 @@ import {
 import { default as DOMPurify } from 'dompurify'
 import { useI18n } from 'vue-i18n'
 
+import { useSkillPacksStore } from '@/platform/skills/stores/skillPacksStore'
+
 import type { ComposerPrompt } from '../../../types/composerPrompt'
 import {
   composerReferenceKey,
@@ -33,7 +35,6 @@ import { selectedNodeKey } from '../../../composables/agent/useCanvasSelection'
 import type { PromptEditor } from '../../../types/promptEditor'
 import type { WorkflowReferenceMetadata } from '../../../types/workflowReference'
 import type { SkillReferenceMetadata } from '../../../types/skillReference'
-import SkillReference from '../SkillReference.vue'
 import InlineAssetReference from './InlineAssetReference.vue'
 import {
   inlineReferenceChipClass,
@@ -41,8 +42,10 @@ import {
   inlineReferenceRemoveBadgeClass,
   inlineReferenceRemoveButtonClass
 } from './inlineReferenceChipStyles'
+import ComposerSkillReference from './ComposerSkillReference.vue'
 import {
   inlinePromptSchema,
+  pastedSkillCommand,
   promptDocument,
   promptDocumentPosition,
   promptInsertionPoint,
@@ -58,7 +61,8 @@ const {
   activeDescendant,
   historyEpoch = 0,
   editableWorkflowId,
-  skillScope = ''
+  skillScope = '',
+  searchHint
 } = defineProps<{
   label: string
   expanded?: boolean
@@ -66,17 +70,19 @@ const {
   historyEpoch?: number
   editableWorkflowId?: string
   skillScope?: string
+  searchHint?: string
 }>()
 const model = defineModel<ComposerPrompt>({
   default: () => ({ text: '', references: [] })
 })
 const emit = defineEmits<{
   input: []
+  resolveSkillMetadata: [prompt: ComposerPrompt]
   selectionChange: []
   keydown: [event: KeyboardEvent]
   keyup: [event: KeyboardEvent]
   click: []
-  blur: []
+  blur: [event: FocusEvent]
   attachFiles: [files: File[]]
   openReferenceWorkflow: [id: string, name: string]
   removeWorkflowReference: [id: string]
@@ -84,6 +90,7 @@ const emit = defineEmits<{
   highlightAssets: [ids: string[]]
 }>()
 const { t } = useI18n()
+const skillPacks = useSkillPacksStore()
 const appContext = getCurrentInstance()?.appContext
 const host = useTemplateRef<HTMLDivElement>('host')
 let view: EditorView | undefined
@@ -145,6 +152,29 @@ function referenceClipboardText(node: Node): string {
     : assetReferenceText(name)
 }
 
+function resolvePastedSkillDescription(): void {
+  if (!view || !skillPacks.enabled || !skillPacks.catalogConfirmed) return
+  const transaction = view.state.tr
+  view.state.doc.forEach((node, position) => {
+    if (!node.attrs.resolvePastedName || node.attrs.scope !== skillPacks.scope)
+      return
+    const pack = skillPacks.packs.find((pack) => pack.name === node.attrs.name)
+    if (pack) {
+      transaction.setNodeMarkup(position, undefined, {
+        ...node.attrs,
+        description: pack.description,
+        resolvePastedName: false
+      })
+    }
+  })
+  if (transaction.docChanged)
+    view.dispatch(
+      transaction
+        .setMeta('addToHistory', false)
+        .setMeta('resolveSkillMetadata', true)
+    )
+}
+
 function insertPastedContent(
   editor: EditorView,
   clipboard: DataTransfer,
@@ -152,11 +182,51 @@ function insertPastedContent(
   text: string
 ): void {
   const { state } = editor
-  const hasWorkflows = slice.content.content.some(
-    (node) => node.type === inlinePromptSchema.nodes.workflow
+  const hasReferences = slice.content.content.some(
+    (node) =>
+      node.type === inlinePromptSchema.nodes.workflow ||
+      node.type === inlinePromptSchema.nodes.skill
   )
-  if (!hasWorkflows) {
-    editor.dispatch(state.tr.insertText(text).scrollIntoView())
+  let hasSkill = false
+  state.doc.forEach((node, position) => {
+    if (
+      node.type === inlinePromptSchema.nodes.skill &&
+      (position < state.selection.from || position >= state.selection.to)
+    )
+      hasSkill = true
+  })
+  if (!hasReferences) {
+    const leading = pastedSkillCommand(state.doc, state.selection.from, text)
+    if (leading && !hasSkill && skillPacks.enabled) {
+      const { name, suffix } = leading
+      const pack = skillPacks.catalogConfirmed
+        ? skillPacks.packs.find((pack) => pack.name === name)
+        : undefined
+      const description = pack?.description ?? ''
+      const node = inlinePromptSchema.nodes.skill.create({
+        name,
+        description,
+        scope: skillScope,
+        resolvePastedName: !pack
+      })
+      const content = [node]
+      if (suffix) content.push(inlinePromptSchema.text(suffix))
+      editor.dispatch(
+        closeHistory(state.tr)
+          .replaceSelection(new Slice(Fragment.from(content), 0, 0))
+          .setMeta('paste', true)
+          .setMeta('uiEvent', 'paste')
+          .scrollIntoView()
+      )
+    } else
+      editor.dispatch(
+        closeHistory(state.tr)
+          .insertText(text)
+          .setMeta('paste', true)
+          .setMeta('uiEvent', 'paste')
+          .scrollIntoView()
+      )
+    editor.dispatch(closeHistory(editor.state.tr))
     return
   }
   const usedIds = new Set([editableWorkflowId])
@@ -175,6 +245,16 @@ function insertPastedContent(
     { preserveWhitespace: 'full' }
   )
   const content = pasted.content.content.map((node) => {
+    if (node.type === inlinePromptSchema.nodes.skill) {
+      if (hasSkill || !skillPacks.enabled)
+        return inlinePromptSchema.text(referenceClipboardText(node))
+      hasSkill = true
+      return inlinePromptSchema.nodes.skill.create({
+        name: node.attrs.name,
+        description: node.attrs.description,
+        scope: skillScope
+      })
+    }
     if (node.type !== inlinePromptSchema.nodes.workflow) return node
     if (usedIds.has(node.attrs.id))
       return inlinePromptSchema.text(referenceClipboardText(node))
@@ -182,12 +262,21 @@ function insertPastedContent(
     return node
   })
   editor.dispatch(
-    state.tr
+    closeHistory(state.tr)
       .replaceSelection(new Slice(Fragment.from(content), 0, 0))
       .setMeta('paste', true)
       .setMeta('uiEvent', 'paste')
       .scrollIntoView()
   )
+  editor.dispatch(closeHistory(editor.state.tr))
+}
+
+function searchHintDom(): HTMLElement {
+  const hint = document.createElement('span')
+  hint.className = 'pointer-events-none text-muted-foreground select-none'
+  hint.setAttribute('aria-hidden', 'true')
+  hint.textContent = searchHint ?? ''
+  return hint
 }
 
 function assetReferenceView(
@@ -296,7 +385,15 @@ onMounted(() => {
         'text-base-foreground w-full flex-1 cursor-text p-3 font-inter text-[14px]/5 font-normal wrap-anywhere whitespace-pre-wrap outline-none'
     }),
     decorations(state) {
-      if (state.selection.empty) return null
+      if (state.selection.empty) {
+        if (!searchHint) return null
+        return DecorationSet.create(state.doc, [
+          Decoration.widget(state.selection.from, () => searchHintDom(), {
+            side: 1,
+            key: `search-hint:${searchHint}`
+          })
+        ])
+      }
       const decorations: Decoration[] = []
       state.doc.nodesBetween(
         state.selection.from,
@@ -317,12 +414,13 @@ onMounted(() => {
       const previousReferences = promptDraft(view.state.doc).references
       const nextReferences = promptDraft(transaction.doc).references
       if (
-        previousReferences.length !== nextReferences.length ||
-        previousReferences.some(
-          (reference, index) =>
-            composerReferenceKey(reference) !==
-            composerReferenceKey(nextReferences[index])
-        )
+        !transaction.getMeta('resolveSkillMetadata') &&
+        (previousReferences.length !== nextReferences.length ||
+          previousReferences.some(
+            (reference, index) =>
+              composerReferenceKey(reference) !==
+              composerReferenceKey(nextReferences[index])
+          ))
       )
         closeHistory(transaction)
       for (const insertion of insertions) {
@@ -336,7 +434,9 @@ onMounted(() => {
       view.updateState(view.state.apply(transaction))
       if (transaction.docChanged) {
         const draft = promptDraft(view.state.doc)
-        model.value = draft
+        if (transaction.getMeta('resolveSkillMetadata'))
+          emit('resolveSkillMetadata', draft)
+        else model.value = draft
         for (const previous of previousReferences) {
           if (
             draft.references.some(
@@ -351,10 +451,11 @@ onMounted(() => {
           if (previous.kind === 'node')
             emit('removeNodeReference', selectedNodeKey(previous.node))
         }
-        emit('input')
+        if (!transaction.getMeta('resolveSkillMetadata')) emit('input')
       }
       if (transaction.selectionSet || transaction.docChanged)
         emit('selectionChange')
+      resolvePastedSkillDescription()
     },
     handleKeyDown(editor, event) {
       emit('keydown', event)
@@ -393,8 +494,8 @@ onMounted(() => {
         emit('click')
         return false
       },
-      blur: () => {
-        emit('blur')
+      blur: (_view, event) => {
+        emit('blur', event)
         return false
       }
     },
@@ -421,7 +522,7 @@ onMounted(() => {
         dom.contentEditable = 'false'
         dom.className =
           'rounded-sm [&.ProseMirror-selectednode]:ring-2 [&.ProseMirror-selectednode]:ring-base-foreground'
-        const vnode = h(SkillReference, { skill: reference })
+        const vnode = h(ComposerSkillReference, { skill: reference })
         vnode.appContext = appContext ?? null
         render(vnode, dom)
         return {
@@ -538,8 +639,12 @@ watch(
 )
 
 watch(
-  () => [label, expanded, activeDescendant],
+  () => [label, expanded, activeDescendant, searchHint],
   () => view?.setProps({})
+)
+watch(
+  [() => skillPacks.catalogConfirmed, () => skillPacks.packs],
+  resolvePastedSkillDescription
 )
 onBeforeUnmount(() => {
   insertions.clear()

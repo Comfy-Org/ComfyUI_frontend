@@ -179,7 +179,7 @@ export const useAgentComposerStore = defineStore('agentComposer', () => {
     return [{ ...item, attachment }]
   }
 
-  function applyEditorPrompt(next: ComposerPrompt): void {
+  function applyEditorPrompt(next: ComposerPrompt, metadataOnly = false): void {
     const seen = new Set<string>()
     let hasSkill = false
     const references = next.references.flatMap((item): ComposerReference[] => {
@@ -200,7 +200,25 @@ export const useAgentComposerStore = defineStore('agentComposer', () => {
       promptOrigin.value = 'typed'
       starterPrompt.value = null
     }
-    updateDraft({ text: next.text, references })
+    if (metadataOnly) draftState.value = { text: next.text, references }
+    else updateDraft({ text: next.text, references })
+  }
+
+  function resolveSkillMetadata(next: ComposerPrompt): void {
+    if (next.text !== prompt.value.text) return
+    const previous = prompt.value.references.find(
+      (item) => item.kind === 'skill'
+    )
+    const resolved = next.references.find((item) => item.kind === 'skill')
+    if (
+      !previous?.resolvePastedName ||
+      !resolved ||
+      resolved.resolvePastedName ||
+      previous.name !== resolved.name ||
+      previous.scope !== resolved.scope
+    )
+      return
+    applyEditorPrompt(next, true)
   }
 
   function markSuggestedPrompt(source?: AgentStarterPromptSource): void {
@@ -544,6 +562,7 @@ export const useAgentComposerStore = defineStore('agentComposer', () => {
     setInsertionPoint,
     resetPromptHistory,
     applyEditorPrompt,
+    resolveSkillMetadata,
     markSuggestedPrompt,
     replacePrompt,
     restorePrompt,

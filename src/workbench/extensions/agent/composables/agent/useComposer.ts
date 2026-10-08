@@ -80,6 +80,7 @@ export function useComposer(options: UseComposerOptions) {
     prompt,
     promptEpoch,
     applyEditorPrompt: store.applyEditorPrompt,
+    resolveSkillMetadata: store.resolveSkillMetadata,
     setInsertionPoint: store.setInsertionPoint,
     setSkillScope: store.setSkillScope,
     removeReference: store.removeReference,

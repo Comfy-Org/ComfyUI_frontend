@@ -1,10 +1,11 @@
 <script setup lang="ts">
-import { computed } from 'vue'
+import { computed, useTemplateRef } from 'vue'
 import { cn } from '@comfyorg/tailwind-utils'
 import AccessibleTooltip from '@/components/ui/tooltip/AccessibleTooltip.vue'
 import type { useAgentMentionPicker } from '../../../composables/agent/useAgentMentionPicker'
+import type { SkillReferenceMetadata } from '../../../types/skillReference'
 import AssetThumbnail from './AssetThumbnail.vue'
-import SkillHoverPreview from '../SkillHoverPreview.vue'
+import SkillMenuDescription from './SkillMenuDescription.vue'
 
 type MentionMatch = ReturnType<
   typeof useAgentMentionPicker
@@ -15,7 +16,9 @@ const {
   active,
   disabled,
   nodeReferenceDisabledReason,
-  duplicateNodeTitles
+  duplicateNodeTitles,
+  describedSkill,
+  descriptionId
 } = defineProps<{
   match: MentionMatch
   index: number
@@ -23,8 +26,21 @@ const {
   disabled: boolean
   nodeReferenceDisabledReason?: string
   duplicateNodeTitles: Set<string>
+  describedSkill?: SkillReferenceMetadata
+  descriptionId?: string
 }>()
-const emit = defineEmits<{ highlight: []; pick: [] }>()
+const emit = defineEmits<{
+  highlight: []
+  pick: []
+  descriptionEnter: []
+  descriptionLeave: []
+  descriptionFocusout: [event: FocusEvent]
+  descriptionReleaseFocus: []
+}>()
+const row = useTemplateRef<HTMLDivElement>('row')
+const description = computed(() =>
+  active && descriptionId ? describedSkill : undefined
+)
 const disabledReason = computed(() =>
   match.kind === 'node' || (match.kind === 'section' && match.id === 'nodes')
     ? nodeReferenceDisabledReason
@@ -59,8 +75,10 @@ const nodeId = computed(() =>
     <template #trigger>
       <div
         :id="`agent-reference-item-${index}`"
+        ref="row"
         :aria-disabled="disabled || undefined"
         :aria-description="disabledReason"
+        :aria-describedby="description ? descriptionId : undefined"
         role="menuitem"
         :aria-label="asset || match.kind === 'skill' ? match.label : undefined"
         :data-active="active"
@@ -83,21 +101,16 @@ const nodeId = computed(() =>
           class="size-5 shrink-0"
         />
         <span class="min-w-0 flex-1 truncate">{{ match.label }}</span>
-        <SkillHoverPreview v-if="match.kind === 'skill'" :skill="match.skill">
-          <button
-            type="button"
-            :aria-label="$t('agent.skillInfo', { name: match.skill.name })"
-            :class="
-              cn(
-                'flex h-4 w-6 cursor-pointer items-center justify-center rounded-sm text-muted-foreground opacity-0 hover:text-base-foreground focus-visible:opacity-100',
-                active && 'opacity-100'
-              )
-            "
-            @click.stop
-          >
-            <span aria-hidden="true" class="icon-[lucide--info] size-3" />
-          </button>
-        </SkillHoverPreview>
+        <SkillMenuDescription
+          v-if="description && descriptionId"
+          :id="descriptionId"
+          :skill="description"
+          :anchor="row"
+          @enter="emit('descriptionEnter')"
+          @leave="emit('descriptionLeave')"
+          @focusout="emit('descriptionFocusout', $event)"
+          @release-focus="emit('descriptionReleaseFocus')"
+        />
         <span v-if="unsavedWorkflow" class="text-xs text-muted-foreground">{{
           $t('agent.unsavedWorkflow')
         }}</span>

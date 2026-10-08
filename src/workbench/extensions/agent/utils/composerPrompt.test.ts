@@ -2,13 +2,79 @@ import { describe, expect, it } from 'vitest'
 
 import { useAgentComposerStore } from '../stores/agent/agentComposerStore'
 import { agentMessageText } from './agentMessageText'
+import { parseSkillReferenceText } from './skillReferenceText'
 import type { ComposerPrompt } from '../types/composerPrompt'
 import {
   composerPromptForSend,
+  composerPromptForSubmission,
   insertComposerReference
 } from './composerPrompt'
 
 describe('composer prompt boundaries', () => {
+  it('submits the reference’s own name and description without changing snapshots or adjacent workflow order', () => {
+    const prompt: ComposerPrompt = {
+      text: 'Use  now',
+      references: [
+        {
+          kind: 'skill',
+          name: 'old',
+          description: 'Original description',
+          scope: 'scope',
+          textOffset: 4
+        },
+        { kind: 'workflow', id: 'workflow', name: 'Reference', textOffset: 4 }
+      ]
+    }
+    const original = structuredClone(prompt)
+    const submitted = composerPromptForSubmission(prompt)
+    const marker =
+      '[Use the saved skill /old](skill://old?description=Original%20description)'
+    expect(submitted).toEqual({
+      text: `Use ${marker} now`,
+      workflowReferences: [
+        { id: 'workflow', name: 'Reference', textOffset: 4 + marker.length }
+      ]
+    })
+    expect(
+      parseSkillReferenceText(submitted.text, submitted.workflowReferences)
+    ).toEqual({
+      text: 'Use  now',
+      workflowReferences: [
+        { id: 'workflow', name: 'Reference', textOffset: 4 }
+      ],
+      skillReference: {
+        name: 'old',
+        description: 'Original description',
+        textOffset: 4,
+        workflowIndex: 0
+      }
+    })
+    expect(prompt).toEqual(original)
+  })
+
+  it('keeps pending pasted-name resolution draft-only while preserving the display snapshot', () => {
+    const snapshot = composerPromptForSend({
+      text: ' colors',
+      references: [
+        {
+          kind: 'skill',
+          name: 'portrait',
+          description: 'Original',
+          scope: 'scope',
+          resolvePastedName: true,
+          textOffset: 0
+        }
+      ]
+    })
+    expect(snapshot.skillReference).toEqual({
+      name: 'portrait',
+      description: 'Original',
+      textOffset: 0,
+      workflowIndex: 0
+    })
+    expect(snapshot.skillReference).not.toHaveProperty('resolvePastedName')
+  })
+
   it.for(['skill-first', 'workflow-first'])(
     'preserves adjacent cross-kind order through render, edit and draft restoration: %s',
     (order) => {

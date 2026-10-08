@@ -13,10 +13,17 @@ import type { SkillPack } from '../types'
 const AGENT_EXPERIENCE_FLAG = 'agent-in-app-experience'
 const SKILL_PACKS_FLAG = 'agent-skill-packs'
 
+function isRoutesUnavailable(error: unknown): boolean {
+  return error instanceof SkillPacksApiError && error.status === 404
+}
+
 export const useSkillPacksStore = defineStore('skillPacks', () => {
   const packs = ref<SkillPack[]>([])
   const loading = ref(false)
   const hasLoaded = ref(false)
+  // CRUD can populate a partial cache; only a full listing proves absence.
+  // Refreshes keep the last confirmation until a response replaces it.
+  const catalogConfirmed = ref(false)
   const loadFailed = ref(false)
   const flagsEnabled = ref(false)
   // Disabled backend gates answer 404, independently of PostHog flags.
@@ -46,6 +53,7 @@ export const useSkillPacksStore = defineStore('skillPacks', () => {
     packs.value = []
     loading.value = false
     hasLoaded.value = false
+    catalogConfirmed.value = false
     loadFailed.value = false
     routesAvailable.value = true
   }
@@ -131,6 +139,17 @@ export const useSkillPacksStore = defineStore('skillPacks', () => {
     return requestScope === scope.value
   }
 
+  function isSuperseded(generation: number, requestScope: string): boolean {
+    return generation !== fetchGeneration || requestScope !== currentScope()
+  }
+
+  function applyCatalog(nextPacks: SkillPack[]): void {
+    packs.value = nextPacks
+    hasLoaded.value = true
+    catalogConfirmed.value = true
+    routesAvailable.value = true
+  }
+
   async function fetchPacksOnce(): Promise<void> {
     const generation = ++fetchGeneration
     const requestScope = scope.value
@@ -138,15 +157,11 @@ export const useSkillPacksStore = defineStore('skillPacks', () => {
     loadFailed.value = false
     try {
       const nextPacks = await listSkillPacks()
-      if (generation !== fetchGeneration || requestScope !== currentScope())
-        return
-      packs.value = nextPacks
-      hasLoaded.value = true
-      routesAvailable.value = true
+      if (isSuperseded(generation, requestScope)) return
+      applyCatalog(nextPacks)
     } catch (error) {
-      if (generation !== fetchGeneration || requestScope !== currentScope())
-        return
-      if (error instanceof SkillPacksApiError && error.status === 404) {
+      if (isSuperseded(generation, requestScope)) return
+      if (isRoutesUnavailable(error)) {
         markUnavailable()
         return
       }
@@ -184,12 +199,22 @@ export const useSkillPacksStore = defineStore('skillPacks', () => {
     loading.value = false
     routesAvailable.value = false
     hasLoaded.value = false
+    catalogConfirmed.value = false
     packs.value = []
   }
 
   async function refreshPacks(): Promise<void> {
     syncScope()
     if (!enabled.value) return
+    await fetchPacks().catch(reportFetchFailure)
+  }
+
+  // Lists after any in-flight request, so the result covers earlier changes.
+  async function refreshPacksInBackground(): Promise<void> {
+    syncScope()
+    const requestScope = scope.value
+    if (inFlight) await inFlight.catch(() => undefined)
+    if (!isCurrentScope(requestScope) || !enabled.value) return
     await fetchPacks().catch(reportFetchFailure)
   }
 
@@ -208,6 +233,7 @@ export const useSkillPacksStore = defineStore('skillPacks', () => {
     packs,
     loading,
     hasLoaded,
+    catalogConfirmed,
     loadFailed,
     scope,
     enabled,
@@ -216,6 +242,7 @@ export const useSkillPacksStore = defineStore('skillPacks', () => {
     startFlagGate,
     fetchPacks,
     refreshPacks,
+    refreshPacksInBackground,
     ensurePacks,
     isCurrentScope,
     upsertPack,

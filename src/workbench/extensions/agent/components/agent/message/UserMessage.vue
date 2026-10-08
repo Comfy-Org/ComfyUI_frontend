@@ -21,7 +21,7 @@ import { isReplyAssetKind } from '../../../utils/replyAssets'
 import { agentMessageText } from '../../../utils/agentMessageText'
 import { promptReferenceParts } from '../../../utils/promptReferenceParts'
 import type { SkillReference as SkillReferenceData } from '../../../types/skillReference'
-import SkillReference from '../SkillReference.vue'
+import CatalogSkillReference from '../CatalogSkillReference.vue'
 import ReplyAssetGroup from './ReplyAssetGroup.vue'
 import {
   selectedUserMessageClipboard,
@@ -70,7 +70,7 @@ const copied = computed(
 
 async function copyMessage(): Promise<void> {
   if (
-    workflowReferences.length &&
+    (workflowReferences.length || skillReference) &&
     richClipboard.isSupported.value &&
     typeof ClipboardItem !== 'undefined'
   ) {
@@ -242,7 +242,7 @@ function gridAsset(item: UserAttachment): ReplyAsset | undefined {
             <span class="icon-[comfy--workflow] size-3 shrink-0" />
           </template>
         </Tag>
-        <SkillReference
+        <CatalogSkillReference
           v-else-if="part.type === 'skill'"
           :skill="part.reference"
         />

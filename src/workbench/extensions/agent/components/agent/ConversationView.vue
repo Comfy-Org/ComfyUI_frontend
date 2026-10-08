@@ -8,6 +8,7 @@ import { computed, nextTick, onBeforeUnmount, ref, watch } from 'vue'
 import { useI18n } from 'vue-i18n'
 
 import Button from '@/components/ui/button/Button.vue'
+import { useSkillPacksStore } from '@/platform/skills/stores/skillPacksStore'
 import { buildTooltipConfig } from '@/composables/useTooltipConfig'
 
 import { cn } from '@comfyorg/tailwind-utils'
@@ -48,6 +49,28 @@ const emit = defineEmits<{
 }>()
 
 const { t } = useI18n()
+const skills = useSkillPacksStore()
+const skillNames = computed(() => {
+  const names = [
+    ...new Set(
+      entries.flatMap((entry) =>
+        entry.role === 'user' && entry.skillReference
+          ? [entry.skillReference.name]
+          : []
+      )
+    )
+  ].sort()
+  return names.length ? JSON.stringify(names) : ''
+})
+watch(
+  [() => conversationId, skillNames, () => skills.enabled, () => skills.scope],
+  ([, hasSkills, enabled]) => {
+    if (!hasSkills) return
+    void skills.startFlagGate({ fetch: false })
+    if (enabled) void skills.refreshPacks()
+  },
+  { immediate: true }
+)
 
 const scrollContainer = ref<HTMLElement>()
 const content = ref<HTMLElement>()

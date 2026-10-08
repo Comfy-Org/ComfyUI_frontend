@@ -3,6 +3,7 @@ import { DOMParser, DOMSerializer } from '@tiptap/pm/model'
 import { agentMessageText } from '../../../utils/agentMessageText'
 import type { ComposerReference } from '../../../types/composerPrompt'
 import { promptReferenceParts } from '../../../utils/promptReferenceParts'
+import { composerPromptForSend } from '../../../utils/composerPrompt'
 import {
   inlinePromptSchema,
   promptDocument,
@@ -52,18 +53,24 @@ export function selectedUserMessageClipboard(
   )
     return
 
-  for (const chip of bubble.querySelectorAll('[data-comfy-workflow="1"]')) {
+  for (const chip of bubble.querySelectorAll(
+    '[data-comfy-workflow="1"], [data-comfy-skill="1"]'
+  )) {
     if (chip.contains(range.startContainer)) range.setStartBefore(chip)
     if (chip.contains(range.endContainer)) range.setEndAfter(chip)
   }
+  const selectedContent = range.cloneContents()
+  for (const skill of selectedContent.querySelectorAll(
+    '[data-comfy-skill="1"]'
+  )) {
+    const name = skill.getAttribute('data-skill-name')
+    if (name !== null) skill.textContent = `/${name}`
+  }
   const prompt = promptDraft(
-    DOMParser.fromSchema(inlinePromptSchema).parse(range.cloneContents(), {
+    DOMParser.fromSchema(inlinePromptSchema).parse(selectedContent, {
       preserveWhitespace: 'full'
     })
   )
-  const workflowReferences = prompt.references.filter(
-    (reference) => reference.kind === 'workflow'
-  )
-  if (!workflowReferences.length) return
-  return userMessageClipboard({ text: prompt.text, workflowReferences })
+  if (!prompt.references.length) return
+  return userMessageClipboard(composerPromptForSend(prompt))
 }

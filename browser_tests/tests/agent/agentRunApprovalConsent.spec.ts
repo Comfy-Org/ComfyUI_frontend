@@ -1,6 +1,5 @@
 import type { Locator, Page, WebSocketRoute } from '@playwright/test'
 import { expect } from '@playwright/test'
-import { createI18n } from 'vue-i18n'
 
 import type { WidgetCatalog, WorkflowJSON } from '@comfyorg/comfy-multi-player'
 import type { AgentRunMode } from '@comfyorg/ingest-types'
@@ -39,11 +38,7 @@ const SEND_LABEL = enMessages.agent.send
 const CARD_LEAD = enMessages.agent.runApproval.leadBound
 const RUN_LABEL = enMessages.agent.runApproval.run
 const CANCEL_LABEL = enMessages.agent.runApproval.cancel
-const COMPOSER_LABEL = createI18n({
-  legacy: false,
-  locale: 'en',
-  messages: { en: enMessages }
-}).global.t('agent.placeholder')
+const COMPOSER_LABEL = /^Describe ideas/
 
 const ids = { thread_id: THREAD_ID, message_id: MESSAGE_ID }
 

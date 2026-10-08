@@ -4,8 +4,6 @@ import type { ApplyOutcome, WorkflowJSON } from '@comfyorg/comfy-multi-player'
 import type { ListAssetsResponse } from '@comfyorg/ingest-types'
 import { z } from 'zod'
 
-import { createI18n } from 'vue-i18n'
-
 import enMessages from '@/locales/en/main.json' with { type: 'json' }
 import type { useWorkflowStore } from '@/platform/workflow/management/stores/workflowStore'
 import type { ComfyNodeDef, ObjectInfoResponse } from '@/schemas/nodeDefSchema'
@@ -67,14 +65,7 @@ const CANCEL_TIMEOUT = 10_000
 
 const SEND_LABEL = enMessages.agent.send
 const STOP_LABEL = enMessages.agent.stop
-// The composer names itself with the rendered message, escapes resolved; the
-// app's own i18n module is a Vite build, so the fixture renders the message
-// with the same library over the same locale file.
-const COMPOSER_LABEL = createI18n({
-  legacy: false,
-  locale: 'en',
-  messages: { en: enMessages }
-}).global.t('agent.placeholder')
+const COMPOSER_LABEL = /^Describe ideas/
 // Matches "Worked", "Worked for 3 seconds" and "Worked for 1m 2s" (agent.worked*).
 const SUMMARY_LABEL = new RegExp(`^${enMessages.agent.worked}( for .+)?$`)
 const FAILED_GLYPH = /lucide--circle-x/

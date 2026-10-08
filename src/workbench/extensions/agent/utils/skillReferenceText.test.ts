@@ -12,6 +12,35 @@ import {
 } from './workflowReferenceText'
 
 describe('skill references in ordinary message content', () => {
+  it('serializes the canonical link and roundtrips it', () => {
+    const skill = { name: 'portrait', description: 'Original description' }
+    const content = serializeSkillReference(skill)
+    expect(content).toBe(
+      '[Use the saved skill /portrait](skill://portrait?description=Original%20description)'
+    )
+    expect(parseSkillReferenceText(content).skillReference).toEqual({
+      ...skill,
+      textOffset: 0,
+      workflowIndex: 0
+    })
+  })
+
+  it('restores a legacy link carrying an ID as the same name-only reference', () => {
+    const snapshot = parseSkillReferenceText(
+      'Use [Use the saved skill /portrait](skill://portrait?description=Original%20description&id=876ba965-32ec-4fad-9a3f-913c2f43bb57) now'
+    )
+    expect(snapshot).toEqual({
+      text: 'Use  now',
+      workflowReferences: [],
+      skillReference: {
+        name: 'portrait',
+        description: 'Original description',
+        textOffset: 4,
+        workflowIndex: 0
+      }
+    })
+  })
+
   it('sends a skill alongside workflow, node and asset references using their existing transport', () => {
     const result = composerPromptForSubmission({
       text: 'Use  and.',
@@ -70,7 +99,17 @@ describe('skill references in ordinary message content', () => {
     '[Use the saved skill /portrait](skill://portrait?description=%E0%A4)',
     '[Use the saved skill /portrait](skill://portrait?description=Use+defaults)',
     serializeSkillReference({ name: 'a'.repeat(65), description: 'Too long' }),
-    serializeSkillReference({ name: 'portrait', description: '🖼'.repeat(1025) })
+    serializeSkillReference({
+      name: 'portrait',
+      description: '🖼'.repeat(1025)
+    }),
+    '[Original skill /portrait is unavailable; do not resolve or use a same-name replacement](skill://portrait?description=Original&id=original-id&unavailable=1)',
+    '[Original skill /portrait is unavailable; do not resolve or use a same-name replacement](skill://portrait?description=Original&id=original-id)',
+    '[Use the saved skill /portrait](skill://portrait?description=Original&id=original-id&unavailable=1)',
+    '[Use the saved skill /portrait](skill://portrait?description=Original&unavailable=1)',
+    '[Use the saved skill /portrait](skill://portrait?description=Original&id=)',
+    '[Use the saved skill /portrait](skill://portrait?description=Original&id=a&id=b)',
+    '[Use the saved skill /portrait](skill://portrait?description=Original&id=a%20b)'
   ])('keeps ordinary or malformed content readable: %s', (content) => {
     expect(parseSkillReferenceText(content)).toEqual({
       text: content,

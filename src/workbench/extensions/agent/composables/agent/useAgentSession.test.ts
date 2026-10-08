@@ -7,6 +7,11 @@ import { assert, beforeEach, describe, expect, it, vi } from 'vitest'
 import { nextTick } from 'vue'
 
 import { useTelemetry } from '@/platform/telemetry'
+import { listSkillPacks } from '@/platform/skills/api/skillsApi'
+import { useSkillPacksStore } from '@/platform/skills/stores/skillPacksStore'
+import { serializeSkillReference } from '../../utils/skillReferenceText'
+vi.mock(import('@/composables/auth/useCurrentUser'))
+vi.mock(import('@/platform/skills/api/skillsApi'), { spy: true })
 import { reportError } from '@/platform/telemetry/reportError'
 import { StorageKeys } from '@/platform/workflow/persistence/base/storageKeys'
 import { api } from '@/scripts/api'
@@ -372,6 +377,96 @@ describe('useAgentSession (v1 composition root)', () => {
     sessionStorage.clear()
     vi.mocked(reportError).mockClear()
     telemetry.trackAgentStopClicked.mockClear()
+  })
+
+  it.for([
+    'reference',
+    'load_skill',
+    'cancel',
+    'error',
+    'background',
+    'unrelated'
+  ] as const)(
+    'refreshes saved skills once after a live %s turn ends',
+    async (kind) => {
+      const skills = useSkillPacksStore()
+      skills.flagsEnabled = true
+      vi.mocked(listSkillPacks).mockResolvedValue([])
+      await skills.refreshPacks()
+      const { source, emit } = fakeEvents()
+      const session = useAgentSession({ rest: fakeRest(), events: source })
+      session.start()
+      await session.sendMessage(
+        kind !== 'load_skill' && kind !== 'unrelated'
+          ? serializeSkillReference({
+              name: 'portrait',
+              description: 'Original'
+            })
+          : 'ordinary text'
+      )
+      if (kind === 'load_skill')
+        emit(
+          wire({
+            type: 'agent_tool_call',
+            data: {
+              tool_call_id: 'load',
+              tool_name: 'load_skill',
+              status: 'running',
+              message_id: 'msg-1',
+              thread_id: 'th-1'
+            }
+          })
+        )
+      emitDeltaBurst(emit, 3)
+      if (kind === 'cancel') await session.stopTurn()
+      if (kind === 'background') session.newChat()
+      expect(listSkillPacks).toHaveBeenCalledOnce()
+      emit(
+        kind === 'error'
+          ? { type: 'agent_message_done', data: { message_id: 'msg-1' } }
+          : done('msg-1')
+      )
+      emit(done('msg-1'))
+      await Promise.resolve()
+      expect(listSkillPacks).toHaveBeenCalledTimes(kind === 'unrelated' ? 1 : 2)
+      session.stop()
+    }
+  )
+
+  it('refreshes a referenced turn recovered as failed only once', async () => {
+    const skills = useSkillPacksStore()
+    skills.flagsEnabled = true
+    vi.mocked(listSkillPacks).mockResolvedValue([])
+    await skills.refreshPacks()
+    const text = serializeSkillReference({
+      name: 'portrait',
+      description: 'Original'
+    })
+    const rest = fakeRest({
+      getMessages: vi.fn(
+        async (): Promise<AgentMessages> => [
+          historyRow(1, 'user', 'msg-1', text),
+          {
+            ...historyRow(2, 'assistant', 'msg-1', '', 'msg-1'),
+            status: 'error'
+          }
+        ]
+      )
+    })
+    const { source, status } = fakeEvents()
+    const session = useAgentSession({ rest, events: source })
+    session.start()
+    status(true)
+    await session.sendMessage(text)
+    status(false)
+    status(true)
+    await vi.waitFor(() => expect(session.isStreaming.value).toBe(false))
+    expect(listSkillPacks).toHaveBeenCalledTimes(2)
+    status(false)
+    status(true)
+    await Promise.resolve()
+    expect(listSkillPacks).toHaveBeenCalledTimes(2)
+    session.stop()
   })
 
   it('initializes when legacy storage cleanup fails', () => {

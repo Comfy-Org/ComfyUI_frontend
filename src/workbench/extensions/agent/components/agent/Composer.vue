@@ -20,8 +20,10 @@ import InlinePromptEditor from './composer/InlinePromptEditor.vue'
 import { composerPromptForSubmission } from '../../utils/composerPrompt'
 import type { AgentStarterPromptAttribution } from '../../utils/starterPrompts'
 import { useAgentMentionPicker } from '../../composables/agent/useAgentMentionPicker'
+import { useSkillMenuDescription } from '../../composables/agent/useSkillMenuDescription'
 import { useWorkflowReferencePicker } from '../../composables/agent/useWorkflowReferencePicker'
 import type { ComposerAttachment } from '../../types/composerAttachment'
+import type { MentionSection } from '../../composables/agent/mentionPickerState'
 import { useComposer } from '../../composables/agent/useComposer'
 import type { SelectedNode } from '../../composables/agent/useCanvasSelection'
 import type {
@@ -36,6 +38,7 @@ import AssetTray from './composer/AssetTray.vue'
 import ComposerAddMenu from './composer/ComposerAddMenu.vue'
 import ComposerPlaceholder from './composer/ComposerPlaceholder.vue'
 import MentionMenuItem from './composer/MentionMenuItem.vue'
+import MentionMenuStatus from './composer/MentionMenuStatus.vue'
 import RunModePopover from './composer/RunModePopover.vue'
 
 const {
@@ -91,15 +94,15 @@ const skills = useSkillPacksStore()
 const running = computed(() => streaming || submitting)
 
 const composer = useComposer({
-  onSend: (text, attachments) => {
+  onSend: (_text, attachments) => {
     if (workflowSelecting || submitting) return
     if (!hasWorkflowTarget) {
       emit('workflowTargetRequired')
       return
     }
+    const prepared = composerPromptForSubmission(composer.prompt.value)
     if (workflowReferences.value.length > 0) {
-      const { text: draft, workflowReferences: references } =
-        composerPromptForSubmission(composer.prompt.value)
+      const { text: draft, workflowReferences: references } = prepared
       const offsets = references.map((reference) => reference.textOffset)
       const start = Math.min(
         draft.length - draft.trimStart().length,
@@ -118,7 +121,7 @@ const composer = useComposer({
           )
         }))
       )
-    } else emit('send', text, attachments)
+    } else emit('send', prepared.text.trim(), attachments)
   },
   isRunning: () => running.value,
   onStop: () => emit('stop', 'button')
@@ -132,6 +135,12 @@ watch(
   { immediate: true, flush: 'sync' }
 )
 const { workflowReferences } = composer
+const placeholderLabel = computed(() =>
+  t(skills.enabled ? 'agent.placeholder' : 'agent.placeholderWithoutSkills')
+)
+const showPlaceholderHint = computed(
+  () => !composer.draft.value && !composer.prompt.value.references.length
+)
 
 const highlightedAssetIds = ref<string[]>([])
 const uploadingAttachmentCount = computed(
@@ -153,6 +162,7 @@ const {
   mentionMatches,
   mentionVisible,
   mentionHasResults,
+  skillQueryEmpty,
   graphDupes,
   syncMention,
   pickMention,
@@ -190,25 +200,113 @@ watch(mentionSection, (section) => {
   if (section === 'skills') void skills.refreshPacks()
 })
 
+type DraftSkillSnapshot = [
+  name: string | undefined,
+  epoch: number,
+  enabled: boolean,
+  section: MentionSection
+]
+
+function draftSkillNeedsRefresh(
+  [name, epoch, enabled]: DraftSkillSnapshot,
+  [oldName, oldEpoch, oldEnabled, oldSection]: Partial<DraftSkillSnapshot>
+): boolean {
+  if (!name || !enabled) return false
+  if (epoch !== oldEpoch || enabled !== oldEnabled) return true
+  // A pick from the open skills menu is covered by the menu-open refresh.
+  return name !== oldName && oldSection !== 'skills'
+}
+
+watch(
+  [
+    () =>
+      composer.prompt.value.references.find(
+        (reference) => reference.kind === 'skill'
+      )?.name,
+    () => composer.promptEpoch.value,
+    () => skills.enabled,
+    mentionSection
+  ],
+  (next, previous) => {
+    if (draftSkillNeedsRefresh(next, previous))
+      void skills.refreshPacksInBackground()
+  },
+  { immediate: true }
+)
+
 function onEditorSelectionChange(): void {
   const point = editorRef.value?.insertionPoint()
   if (point) composer.setInsertionPoint(point)
   syncMention()
 }
 
+const SKILL_DESCRIPTION_ID = 'agent-skill-description'
+const {
+  describedSkill,
+  requestDescription,
+  dismissDescription,
+  leaveDescription,
+  keepDescriptionOpen
+} = useSkillMenuDescription(() => {
+  const match = mentionMatches.value[mentionActive.value]
+  return match?.kind === 'skill' ? match.skill : undefined
+})
+watch(mentionVisible, (visible) => {
+  if (!visible) dismissDescription()
+})
+
+function onMentionHover(index: number): void {
+  highlightMention(index)
+  requestDescription('hover')
+}
+
+function onEditorInput(): void {
+  syncMention()
+  if (mentionVisible.value) requestDescription('input')
+}
+
+function focusEditor(): void {
+  editorRef.value?.focus()
+}
+
+function isSkillDescription(target: EventTarget | null): boolean {
+  return (
+    target instanceof Element && !!target.closest(`#${SKILL_DESCRIPTION_ID}`)
+  )
+}
+
+function onEditorBlur(event: FocusEvent): void {
+  if (!isSkillDescription(event.relatedTarget)) closeMention()
+}
+
+const editorHostRef = useTemplateRef<HTMLDivElement>('editorHostRef')
+
+function onDescriptionFocusOut(event: FocusEvent): void {
+  const next = event.relatedTarget
+  if (next instanceof Node && editorHostRef.value?.contains(next)) return
+  closeMention()
+}
+
+const HIGHLIGHT_KEYS = ['ArrowDown', 'ArrowUp']
+
+function requestKeyboardDescription(event: KeyboardEvent): void {
+  if (mentionVisible.value && HIGHLIGHT_KEYS.includes(event.key))
+    requestDescription('input')
+}
+
+function stopRunOnEscape(event: KeyboardEvent): void {
+  if (event.key !== 'Escape' || !running.value) return
+  if (event.isComposing || event.repeat) return
+  event.preventDefault()
+  event.stopPropagation()
+  emit('stop', 'escape')
+}
+
 function onComposerKeydown(event: KeyboardEvent): void {
+  requestKeyboardDescription(event)
   if (handleMentionKeydown(event)) return
   if (event.key === 'Enter') onEnter(event)
-  if (
-    event.key === 'Escape' &&
-    running.value &&
-    !event.isComposing &&
-    !event.repeat
-  ) {
-    event.preventDefault()
-    event.stopPropagation()
-    emit('stop', 'escape')
-  }
+  stopRunOnEscape(event)
 }
 
 const mentionListRef = useTemplateRef<HTMLDivElement>('mentionListRef')
@@ -219,6 +317,16 @@ watch(mentionActive, async () => {
     ?.scrollIntoView?.({ block: 'nearest' })
 })
 
+const mentionMenuLabel = computed(() =>
+  t(mentionSection.value === 'skills' ? 'agent.skills' : 'agent.addToPrompt')
+)
+const mentionMenuHeading = computed(() => {
+  if (mentionSection.value === 'skills') return t('agent.skills')
+  return mentionSection.value === 'root' ? t('agent.reference') : undefined
+})
+const skillsRetryVisible = computed(
+  () => mentionSection.value === 'skills' && skills.loadFailed
+)
 const emptyMentionLabel = computed(() =>
   mentionSection.value === 'skills'
     ? t(
@@ -251,8 +359,11 @@ const primaryActionVariant = computed(() =>
 const primaryActionDisabled = computed(
   () => !running.value && (workflowSelecting || !composer.canSend.value)
 )
+const skillSearchHint = computed(() =>
+  skillQueryEmpty.value ? t('agent.typeToSearch') : undefined
+)
 const activeMentionDescendant = computed(() =>
-  mentionVisible.value
+  mentionVisible.value && mentionActive.value >= 0
     ? `agent-reference-item-${mentionActive.value}`
     : undefined
 )
@@ -360,19 +471,16 @@ defineExpose({
       ref="mentionListRef"
       data-testid="agent-reference-menu"
       role="menu"
-      :aria-label="
-        t(mentionSection === 'skills' ? 'agent.skills' : 'agent.addToPrompt')
-      "
+      :aria-label="mentionMenuLabel"
       class="absolute inset-x-0 bottom-full z-1100 -mb-8.75 max-h-64 overflow-y-auto rounded-lg border border-border-subtle bg-secondary-background p-1 font-inter shadow-md"
       @mousedown.prevent
+      @mouseleave="leaveDescription"
     >
       <div
-        v-if="mentionSection === 'root' || mentionSection === 'skills'"
+        v-if="mentionMenuHeading"
         class="flex h-6 items-center px-1.5 py-1 text-xs/4 text-muted-foreground"
       >
-        {{
-          t(mentionSection === 'skills' ? 'agent.skills' : 'agent.reference')
-        }}
+        {{ mentionMenuHeading }}
       </div>
       <MentionMenuItem
         v-for="(match, index) in mentionMatches"
@@ -383,23 +491,21 @@ defineExpose({
         :disabled="isMentionDisabled(match)"
         :node-reference-disabled-reason
         :duplicate-node-titles="graphDupes"
-        @highlight="highlightMention(index)"
+        :described-skill="describedSkill"
+        :description-id="SKILL_DESCRIPTION_ID"
+        @highlight="onMentionHover(index)"
         @pick="pickMention(match)"
+        @description-enter="keepDescriptionOpen"
+        @description-leave="leaveDescription"
+        @description-focusout="onDescriptionFocusOut"
+        @description-release-focus="focusEditor"
       />
-      <div
+      <MentionMenuStatus
         v-if="!mentionHasResults"
-        role="status"
-        class="px-2 py-1 text-xs text-muted-foreground"
-      >
-        {{ emptyMentionLabel }}
-        <Button
-          v-if="mentionSection === 'skills' && skills.loadFailed"
-          variant="textonly"
-          size="sm"
-          @click="skills.ensurePacks()"
-          >{{ t('g.retry') }}</Button
-        >
-      </div>
+        :label="emptyMentionLabel"
+        :retryable="skillsRetryVisible"
+        @retry="skills.ensurePacks()"
+      />
     </div>
 
     <div
@@ -456,23 +562,28 @@ defineExpose({
           {{ t('agent.savingWorkflow') }}
         </div>
         <div class="grid flex-1">
-          <div class="col-start-1 row-start-1 flex flex-col">
+          <div
+            ref="editorHostRef"
+            class="col-start-1 row-start-1 flex flex-col"
+          >
             <InlinePromptEditor
               ref="editorRef"
               :model-value="composer.prompt.value"
-              :label="t('agent.placeholder')"
+              :label="placeholderLabel"
               :expanded="mentionVisible"
               :active-descendant="activeMentionDescendant"
+              :search-hint="skillSearchHint"
               :history-epoch="composer.promptEpoch.value"
               :editable-workflow-id
               :skill-scope="skills.scope"
               @keydown="onComposerKeydown"
               @update:model-value="composer.applyEditorPrompt"
+              @resolve-skill-metadata="composer.resolveSkillMetadata"
               @keyup="onComposerKeyup"
-              @input="syncMention"
+              @input="onEditorInput"
               @selection-change="onEditorSelectionChange"
               @click="syncMention"
-              @blur="closeMention()"
+              @blur="onEditorBlur"
               @attach-files="emit('attachFiles', $event)"
               @open-reference-workflow="
                 (id, name) => emit('openReferenceWorkflow', id, name)
@@ -486,9 +597,8 @@ defineExpose({
           </div>
 
           <ComposerPlaceholder
-            :visible="
-              !composer.draft.value && !composer.prompt.value.references.length
-            "
+            :label="placeholderLabel"
+            :visible="showPlaceholderHint"
             :node-reference-disabled-reason
             @select-nodes="onSelectNodes"
           />

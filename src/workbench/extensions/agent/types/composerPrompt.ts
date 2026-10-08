@@ -6,7 +6,11 @@ import type { SkillReference } from './skillReference'
 
 export type ComposerReference =
   | (WorkflowReference & { kind: 'workflow' })
-  | (SkillReference & { kind: 'skill'; scope: string })
+  | (SkillReference & {
+      kind: 'skill'
+      scope: string
+      resolvePastedName?: true
+    })
   | {
       kind: 'node'
       node: SelectedNode

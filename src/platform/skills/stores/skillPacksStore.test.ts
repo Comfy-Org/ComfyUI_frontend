@@ -51,6 +51,129 @@ function deferredCatalog() {
 }
 
 describe('skillPacksStore', () => {
+  it.for(['refreshPacks', 'refreshPacksInBackground'] as const)(
+    'keeps the confirmed catalog while %s is pending or fails, then applies a successful result',
+    async (refresh) => {
+      const store = useSkillPacksStore()
+      store.flagsEnabled = true
+      vi.mocked(listSkillPacks).mockResolvedValueOnce([makePack()])
+      await store.refreshPacks()
+      const pending = deferredCatalog()
+      vi.mocked(listSkillPacks).mockReturnValueOnce(pending.promise)
+      const request = store[refresh]()
+      expect(store.loading).toBe(true)
+      expect(store.catalogConfirmed).toBe(true)
+      expect(store.packs).toEqual([makePack()])
+      const replaced = makePack({ id: 'pack-2', name: 'replaced' })
+      pending.resolve([replaced])
+      await request
+      expect(store.catalogConfirmed).toBe(true)
+      expect(store.packs).toEqual([replaced])
+      vi.mocked(listSkillPacks).mockRejectedValueOnce(
+        new SkillPacksApiError('failed', 503)
+      )
+      await store[refresh]()
+      expect(store.catalogConfirmed).toBe(true)
+      expect(store.loadFailed).toBe(true)
+      expect(store.packs).toEqual([replaced])
+      expect(store.enabled).toBe(true)
+    }
+  )
+
+  it.for(['upsert', 'remove'] as const)(
+    'keeps a confirmed catalog confirmed when a local %s supersedes a refresh',
+    async (change) => {
+      const store = useSkillPacksStore()
+      store.flagsEnabled = true
+      vi.mocked(listSkillPacks).mockResolvedValueOnce([makePack()])
+      await store.refreshPacks()
+      const pending = deferredCatalog()
+      vi.mocked(listSkillPacks).mockReturnValueOnce(pending.promise)
+      const refresh = store.refreshPacks()
+      if (change === 'upsert')
+        store.upsertPack(makePack({ id: 'pack-2', name: 'created' }))
+      else store.removePack('my-pack')
+      pending.resolve([makePack({ id: 'pack-3', name: 'stale' })])
+      await refresh
+      expect(store.catalogConfirmed).toBe(true)
+      expect(store.loading).toBe(false)
+      expect(store.packs.map((pack) => pack.name)).toEqual(
+        change === 'upsert' ? ['created', 'my-pack'] : []
+      )
+    }
+  )
+
+  it('leaves a never-confirmed catalog unconfirmed when local CRUD supersedes its first listing', async () => {
+    const store = useSkillPacksStore()
+    store.flagsEnabled = true
+    const pending = deferredCatalog()
+    vi.mocked(listSkillPacks).mockReturnValueOnce(pending.promise)
+    const refresh = store.refreshPacks()
+    store.upsertPack(makePack())
+    pending.resolve([makePack(), makePack({ id: 'pack-2', name: 'other' })])
+    await refresh
+    expect(store.catalogConfirmed).toBe(false)
+    store.removePack('my-pack')
+    expect(store.catalogConfirmed).toBe(false)
+    vi.mocked(listSkillPacks).mockResolvedValueOnce([])
+    await store.refreshPacks()
+    expect(store.catalogConfirmed).toBe(true)
+  })
+
+  it('invalidates route availability on a background 404', async () => {
+    const store = useSkillPacksStore()
+    store.flagsEnabled = true
+    vi.mocked(listSkillPacks).mockResolvedValueOnce([makePack()])
+    await store.refreshPacks()
+    vi.mocked(listSkillPacks).mockRejectedValueOnce(
+      new SkillPacksApiError('disabled', 404)
+    )
+    await store.refreshPacksInBackground()
+    expect(store.catalogConfirmed).toBe(false)
+    expect(store.enabled).toBe(false)
+    expect(store.packs).toEqual([])
+  })
+
+  it('queues a terminal refresh after an earlier request and ignores a waiting refresh after scope changes', async () => {
+    const store = useSkillPacksStore()
+    store.flagsEnabled = true
+    const first = deferredCatalog()
+    vi.mocked(listSkillPacks)
+      .mockReturnValueOnce(first.promise)
+      .mockResolvedValueOnce([])
+    const initial = store.refreshPacks()
+    const terminal = store.refreshPacksInBackground()
+    expect(listSkillPacks).toHaveBeenCalledOnce()
+    first.resolve([makePack()])
+    await Promise.all([initial, terminal])
+    expect(listSkillPacks).toHaveBeenCalledTimes(2)
+    expect(store.packs).toEqual([])
+    const next = deferredCatalog()
+    vi.mocked(listSkillPacks).mockReturnValueOnce(next.promise)
+    const foreground = store.refreshPacks()
+    const waiting = store.refreshPacksInBackground()
+    Object.assign(useTeamWorkspaceStore(), { workspaceId: 'new-scope' })
+    next.resolve([makePack()])
+    await Promise.all([foreground, waiting])
+    expect(store.catalogConfirmed).toBe(false)
+    expect(store.packs).toEqual([])
+    expect(listSkillPacks).toHaveBeenCalledTimes(3)
+  })
+
+  it('requires a full current-scope listing to confirm catalog absence', async () => {
+    const store = useSkillPacksStore()
+    store.flagsEnabled = true
+    store.upsertPack(makePack())
+    expect(store.catalogConfirmed).toBe(false)
+    store.removePack('my-pack')
+    expect(store.catalogConfirmed).toBe(false)
+    vi.mocked(listSkillPacks).mockResolvedValueOnce([])
+    await store.refreshPacks()
+    expect(store.catalogConfirmed).toBe(true)
+    Object.assign(useTeamWorkspaceStore(), { workspaceId: 'another-workspace' })
+    expect(store.catalogConfirmed).toBe(false)
+  })
+
   it('keeps cached packs during refresh and deduplicates concurrent refresh requests', async () => {
     const store = useSkillPacksStore()
     store.flagsEnabled = true

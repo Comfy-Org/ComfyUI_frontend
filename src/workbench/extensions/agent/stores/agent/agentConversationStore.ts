@@ -68,6 +68,10 @@ interface ActiveTurnSlot {
  */
 const ASK_RESOLUTION_GRACE_MS = 15_000
 
+function isLoadSkillPart(part: AssistantMessage['parts'][number]): boolean {
+  return part.type === 'tool' && part.name === 'load_skill'
+}
+
 export interface LiveTurn {
   threadId: string
   messageId: TurnId
@@ -949,6 +953,30 @@ export const useAgentConversationStore = defineStore(
       ]
     }
 
+    function liveTurnSkillState(
+      turn: LiveTurn
+    ): Pick<BackgroundTurn, 'message' | 'skillReference'> | undefined {
+      const slot = activeSlot.value
+      if (slot?.threadId === turn.threadId && slot.turnId === turn.messageId)
+        return {
+          message: slot.message,
+          skillReference: userSkillReferences.value.get(slot.message.id)
+        }
+      const entry = backgroundTurns.get(turn.messageId)
+      return entry?.threadId === turn.threadId && !entry.settled
+        ? entry
+        : undefined
+    }
+
+    function turnUsesSkill(turn: LiveTurn): boolean {
+      const live = liveTurnSkillState(turn)
+      return (
+        live !== undefined &&
+        (live.skillReference !== undefined ||
+          live.message.parts.some(isLoadSkillPart))
+      )
+    }
+
     function settleTurn(
       turn: LiveTurn,
       persistedParts: AssistantMessage['parts'] | undefined
@@ -1264,6 +1292,7 @@ export const useAgentConversationStore = defineStore(
       settleBackgroundTurn,
       dropBackgroundTurns,
       liveTurns,
+      turnUsesSkill,
       settleTurn,
       reset,
       hydrate
