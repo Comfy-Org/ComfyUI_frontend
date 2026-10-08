@@ -30,14 +30,24 @@ describe('LanguageSwitcher', () => {
       'zh-CN',
       'ja'
     ])
+    expect(links.map((link) => link.getAttribute('hreflang'))).toEqual([
+      'en',
+      'zh-CN',
+      'ja'
+    ])
   })
 
   it('marks the language being read as the current page', () => {
     render(LanguageSwitcher, { props: { locale: 'zh-CN', alternates: home } })
 
+    const current = screen.getByRole('link', { current: 'page' })
+    expect(current.textContent.trim()).toBe('简体中文')
+    expect(current.className).toContain('underline')
     expect(
-      screen.getByRole('link', { current: 'page' }).textContent.trim()
-    ).toBe('简体中文')
+      screen
+        .getAllByRole('link')
+        .filter((link) => link.className.includes('underline'))
+    ).toEqual([current])
   })
 
   it.for([
