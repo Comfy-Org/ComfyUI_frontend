@@ -2,7 +2,7 @@ import { z } from 'astro/zod'
 import { zJobCancelResponse, zPromptResponse } from '@comfyorg/ingest-types/zod'
 import type { PromptRequest } from '@comfyorg/ingest-types'
 
-import { combineAbortSignals, createTimeoutSignal } from '../utils/abortSignal'
+import { combineAbortSignals, createTimeoutSignal } from '@/utils/abortSignal'
 import { WORKSHOP_CLOUD_BASE_URL } from './workshop-env'
 import type { WorkshopWorkflowDefinition } from './workshop-workflow-definition'
 import type { FieldErrors } from './workshop-playground'
@@ -153,6 +153,13 @@ const cloudErrorSchema = z.object({
   error: z.object({ type: z.string() })
 })
 
+const CREDIT_REFUSAL_TYPES = new Set([
+  'PAYMENT_REQUIRED',
+  'FREE_TIER_UNAVAILABLE',
+  'FREE_TIER_EXHAUSTED',
+  'PARTNER_NODE_PAYMENT_REQUIRED'
+])
+
 async function cloudErrorType(response: Response): Promise<string | undefined> {
   try {
     const parsed = cloudErrorSchema.safeParse(
@@ -167,7 +174,8 @@ async function cloudErrorType(response: Response): Promise<string | undefined> {
 async function failedResponseError(
   response: Response
 ): Promise<WorkshopWorkflowError> {
-  if ((await cloudErrorType(response)) === 'PAYMENT_REQUIRED')
+  const errorType = await cloudErrorType(response)
+  if (errorType && CREDIT_REFUSAL_TYPES.has(errorType))
     return new WorkshopWorkflowError(
       'insufficient_credits',
       {},

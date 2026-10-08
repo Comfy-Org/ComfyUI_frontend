@@ -1,12 +1,12 @@
+import type { CheckoutEntrySource } from '@comfyorg/account-core/billing'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
-
-import type { CheckoutEntrySource } from '@/platform/telemetry/types'
 
 import {
   bindOperationToCheckoutJourney,
   clearCheckoutJourney,
   createCheckoutJourneyRecord,
   getActiveCheckoutJourney,
+  getCheckoutJourneyPaymentIntentSource,
   resolveCheckoutAssignment,
   resolveCheckoutJourney,
   resolveEntrySource,
@@ -466,6 +466,89 @@ describe('entry source attribution across rehydration', () => {
     )
 
     expect(getActiveCheckoutJourney()?.entry_source).toBe('unknown')
+  })
+})
+
+describe('payment intent source of a bound journey', () => {
+  function persistBoundJourney(record: Record<string, unknown>): void {
+    sessionStorage.setItem(
+      STORAGE_KEY,
+      JSON.stringify({
+        journey_id: 'journey-1',
+        entered_at: '2026-09-09T00:00:00.000Z',
+        started_at_ms: Date.now(),
+        actor_uid: 'user-1',
+        workspace_id: 'ws-1',
+        entry_flow: 'initial_subscription',
+        assignment_status: 'unavailable',
+        billing_op_id: 'op-1',
+        ...record
+      })
+    )
+  }
+
+  it('survives a reload on the journey bound to the operation', () => {
+    activeJourney({ ...baseInput, paymentIntentSource: 'avatar_menu_plans' })
+    bindOperationToCheckoutJourney('op-1')
+    const persisted = sessionStorage.getItem(STORAGE_KEY)
+    clearCheckoutJourney()
+    sessionStorage.setItem(STORAGE_KEY, persisted ?? '')
+
+    expect(getCheckoutJourneyPaymentIntentSource('op-1')).toBe(
+      'avatar_menu_plans'
+    )
+  })
+
+  it.for([
+    {
+      name: 'the agent paywall',
+      entry_source: 'agent_paywall',
+      reported: 'agent_paywall'
+    },
+    {
+      name: 'the settings panel',
+      entry_source: 'settings_billing',
+      reported: 'settings_billing_panel'
+    }
+  ])(
+    'falls back to the journey entry source for a record written without one: $name',
+    ({ entry_source, reported }) => {
+      persistBoundJourney({ entry_source })
+
+      expect(getCheckoutJourneyPaymentIntentSource('op-1')).toBe(reported)
+    }
+  )
+
+  it.for([
+    {
+      name: 'a pricing entry that names no source',
+      record: { entry_source: 'pricing' },
+      asked: 'op-1'
+    },
+    {
+      name: 'an operation the journey is not bound to',
+      record: {
+        entry_source: 'pricing',
+        payment_intent_source: 'avatar_menu_plans'
+      },
+      asked: 'op-2'
+    },
+    {
+      name: 'a source outside the one list',
+      record: {
+        entry_source: 'pricing',
+        payment_intent_source: 'not_a_source'
+      },
+      asked: 'op-1'
+    }
+  ])('reports no source for $name', ({ record, asked }) => {
+    persistBoundJourney(record)
+
+    expect(getCheckoutJourneyPaymentIntentSource(asked)).toBeUndefined()
+  })
+
+  it('reports no source when no journey is active', () => {
+    expect(getCheckoutJourneyPaymentIntentSource('op-1')).toBeUndefined()
   })
 })
 

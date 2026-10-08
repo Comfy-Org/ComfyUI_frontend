@@ -126,9 +126,6 @@ describe('WidgetSelectDefault', () => {
       const values = vi.fn(() => {
         throw error
       })
-      const consoleError = vi
-        .spyOn(console, 'error')
-        .mockImplementation(() => {})
 
       try {
         const { user } = renderComponent(createWidget(values))
@@ -137,12 +134,12 @@ describe('WidgetSelectDefault', () => {
 
         expect(optionLabels()).toEqual([])
         expect(screen.getByRole('status')).toHaveTextContent('No results found')
-        expect(consoleError).toHaveBeenCalledWith(
+        expect(console.error).toHaveBeenCalledWith(
           '[WidgetSelectDefault] Failed to resolve options',
           error
         )
       } finally {
-        consoleError.mockRestore()
+        vi.mocked(console.error).mockRestore()
       }
     })
 
@@ -315,7 +312,7 @@ describe('WidgetSelectDefault', () => {
 
         // user-event does not model the raw viewport pointerdown that triggers
         // this Reka focus-outside interaction.
-        // eslint-disable-next-line testing-library/prefer-user-event
+        // oxlint-disable-next-line testing-library/prefer-user-event
         await fireEvent.pointerDown(viewport)
         outsideButton.focus()
         await fireEvent.focusIn(outsideButton)

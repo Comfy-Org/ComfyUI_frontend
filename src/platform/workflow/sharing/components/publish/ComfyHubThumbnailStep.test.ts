@@ -154,7 +154,7 @@ describe('ComfyHubThumbnailStep', () => {
       'src',
       'https://cdn.example.com/anim.gif'
     )
-    // eslint-disable-next-line testing-library/no-node-access, testing-library/no-container
+    // oxlint-disable-next-line testing-library/no-node-access, testing-library/no-container
     expect(container.querySelector('video')).toBeNull()
   })
 
@@ -165,7 +165,7 @@ describe('ComfyHubThumbnailStep', () => {
       existingThumbnailType: 'video'
     })
 
-    // eslint-disable-next-line testing-library/no-node-access, testing-library/no-container
+    // oxlint-disable-next-line testing-library/no-node-access, testing-library/no-container
     const video = container.querySelector('video')
     expect(video?.getAttribute('src')).toBe('https://cdn.example.com/clip.mp4')
     expect(screen.queryByRole('img')).toBeNull()
@@ -178,7 +178,7 @@ describe('ComfyHubThumbnailStep', () => {
       existingThumbnailType: 'video'
     })
 
-    // eslint-disable-next-line testing-library/no-node-access, testing-library/no-container
+    // oxlint-disable-next-line testing-library/no-node-access, testing-library/no-container
     expect(container.querySelector('video')).not.toBeNull()
     expect(screen.queryByRole('img')).toBeNull()
   })
@@ -190,7 +190,7 @@ describe('ComfyHubThumbnailStep', () => {
       existingThumbnailType: 'video'
     })
 
-    // eslint-disable-next-line testing-library/no-node-access, testing-library/no-container
+    // oxlint-disable-next-line testing-library/no-node-access, testing-library/no-container
     expect(container.querySelector('video')).not.toBeNull()
     expect(screen.queryByRole('img')).toBeNull()
   })
@@ -203,7 +203,7 @@ describe('ComfyHubThumbnailStep', () => {
       existingThumbnailType: 'imageComparison'
     })
 
-    // eslint-disable-next-line testing-library/no-node-access, testing-library/no-container
+    // oxlint-disable-next-line testing-library/no-node-access, testing-library/no-container
     const srcs = Array.from(container.querySelectorAll('img')).map((el) =>
       el.getAttribute('src')
     )

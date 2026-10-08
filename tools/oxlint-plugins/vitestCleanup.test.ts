@@ -257,10 +257,123 @@ LiteGraph.unregisterNodeType()
 LiteGraph.clearRegisteredTypes()
 `
 
-function expectReportsAt(output: string, lines: readonly number[]) {
+const mockInstanceFixture = `import { afterAll, afterEach, beforeAll, beforeEach, describe, it, vi } from 'vitest'
+
+const mock = vi.fn()
+const other = vi.fn()
+
+afterEach(() => mock.mockRestore())
+afterAll(() => {
+  mock.mockClear()
+})
+beforeAll(() => vi.mocked(mock).mockReset())
+describe('leading cleanup', () => {
+  beforeEach(() => {
+    other.mockClear()
+    mock.mockReset().mockReturnValue(2)
+    render()
+    other.mockClear()
+  })
+})
+describe('concise optional cleanup', () => {
+  beforeEach(() => mock?.mockClear())
+})
+describe('concise cleanup', () => {
+  beforeEach(() => mock.mockClear())
+})
+describe('reset after configuration', () => {
+  beforeEach(() => {
+    mock.mockReturnValue(1)
+    mock.mockReset()
+  })
+})
+describe('restore after configuration', () => {
+  beforeEach(() => {
+    mock.mockReturnValue(1)
+    mock.mockRestore()
+  })
+})
+describe('nested setup', () => {
+  beforeEach(() => {
+    if (globalThis.location) {
+      render()
+      mock.mockClear()
+    }
+  })
+})
+describe('earlier hook in the same suite', () => {
+  beforeEach(() => render())
+  beforeEach(() => mock.mockClear())
+})
+describe('outer hook', () => {
+  beforeEach(() => render())
+  describe('inner suite', () => {
+    beforeEach(() => mock.mockClear())
+  })
+})
+describe('later hook in the same suite', () => {
+  beforeEach(() => mock.mockClear())
+  beforeEach(() => render())
+})
+describe('setup in the same expression', () => {
+  beforeEach(() => {
+    render() && mock.mockClear()
+  })
+})
+describe('concise setup in the same expression', () => {
+  beforeEach(() => render() && mock.mockClear())
+})
+it('allows per-mock cleanup in tests', () => {
+  mock.mockClear()
+  mock.mockReset()
+  mock.mockRestore()
+})
+afterEach(() => {
+  const helper = () => mock.mockClear()
+  helper()
+})
+function render() {}
+`
+
+const consoleFixture = `import { beforeEach, it, vi as vitest } from 'vitest'
+import * as Vitest from 'vitest'
+
+beforeEach(() => {
+  vi.spyOn(console, 'error').mockImplementation(() => {})
+  vi.spyOn(console, 'warn')
+})
+
+it('reports every globally spied console method', () => {
+  vi.spyOn(console, 'log')
+  vi.spyOn(console, 'info')
+  vi.spyOn(console, 'debug')
+  vitest.spyOn(globalThis.console, 'error')
+  Vitest.vi.spyOn(window.console, 'warn')
+})
+
+it('allows unspied methods, vi.mocked, and local consoles', () => {
+  vi.spyOn(console, 'table')
+  vi.mocked(console.error).mockImplementation(() => {})
+  const local = { console: { error() {} } }
+  vi.spyOn(local.console, 'error')
+  const spy = { spyOn() {} }
+  spy.spyOn(console, 'error')
+})
+
+it('allows a shadowed console', () => {
+  const console = { error() {} }
+  vi.spyOn(console, 'error')
+})
+`
+
+function expectReportsAt(
+  output: string,
+  lines: readonly number[],
+  file = 'invalid.test.ts'
+) {
   const plainOutput = stripVTControlCharacters(output)
   for (const line of lines) {
-    expect(plainOutput).toContain(`invalid.test.ts:${line}:`)
+    expect(plainOutput).toContain(`${file}:${line}:`)
   }
 }
 
@@ -271,7 +384,12 @@ describe('Vitest cleanup rules', () => {
   beforeAll(() => {
     workDir = mkdtempSync(path.join(tmpdir(), 'comfy-vitest-cleanup-'))
     writeFileSync(path.join(workDir, 'invalid.test.ts'), invalidFixture)
+    writeFileSync(path.join(workDir, 'console.test.ts'), consoleFixture)
     writeFileSync(path.join(workDir, 'litegraph.test.ts'), liteGraphFixture)
+    writeFileSync(
+      path.join(workDir, 'mock-instance.test.ts'),
+      mockInstanceFixture
+    )
     writeFileSync(path.join(workDir, 'unrelated.test.ts'), unrelatedFixture)
     writeFileSync(path.join(workDir, 'playwright.spec.ts'), invalidFixture)
     writeFileSync(
@@ -284,6 +402,7 @@ describe('Vitest cleanup rules', () => {
             rules: {
               'comfy/no-module-scope-vitest-mocks': 'warn',
               'comfy/no-persistent-litegraph-registration': 'warn',
+              'comfy/no-redundant-console-spy': 'warn',
               'comfy/no-redundant-litegraph-cleanup': 'warn',
               'comfy/no-redundant-vitest-cleanup': 'warn'
             }
@@ -299,7 +418,9 @@ describe('Vitest cleanup rules', () => {
         '--config',
         path.join(workDir, '.oxlintrc.json'),
         'invalid.test.ts',
+        'console.test.ts',
         'litegraph.test.ts',
+        'mock-instance.test.ts',
         'unrelated.test.ts',
         'playwright.spec.ts'
       ],
@@ -354,6 +475,15 @@ describe('Vitest cleanup rules', () => {
     expectReportsAt(output, [73, 74, 75, 76, 77, 80, 131, 136, 137, 138])
   })
 
+  it('reports per-mock cleanup in hooks unless beforeEach setup ran first', () => {
+    expect(output.match(/resets and restores every mock/g)).toHaveLength(8)
+    expectReportsAt(
+      output,
+      [6, 8, 10, 13, 14, 20, 23, 56],
+      'mock-instance.test.ts'
+    )
+  })
+
   it('reports persistent LiteGraph registrations and redundant cleanup', () => {
     expect(
       output.match(/Register LiteGraph node types in beforeEach or a test/g)
@@ -364,6 +494,13 @@ describe('Vitest cleanup rules', () => {
     expect(
       output.match(/LiteGraph\.clearRegisteredTypes\(\) is redundant/g)
     ).toHaveLength(1)
+  })
+
+  it('reports re-spying globally spied console methods anywhere in a test file', () => {
+    expectReportsAt(output, [5, 6, 10, 11, 12, 13, 14], 'console.test.ts')
+    expect(
+      stripVTControlCharacters(output).match(/console\.test\.ts:\d+:/g)
+    ).toHaveLength(7)
   })
 
   it('ignores unrelated names, nested helpers, test bodies, and Playwright specs', () => {
