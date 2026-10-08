@@ -124,14 +124,14 @@ const tests = readVitestReport(reportPath)
 const verdict = verdictFor(tests, process.env.TESTS_OUTCOME)
 
 const result = {
-  schema: 'crdt-skew-alarm/1',
+  schema: 'crdt-skew-alarm/2',
   generated_at: new Date().toISOString(),
   informational_only: true,
-  premise: 'pin-vs-remote',
+  premise: 'workspace-vs-release',
   package: process.env.CMP_PACKAGE ?? null,
-  pinned_version: process.env.PINNED_VERSION ?? null,
-  upstream_sha: process.env.CMP_SHA ?? null,
-  upstream_spec: process.env.CMP_SPEC ?? null,
+  release_version: process.env.PINNED_VERSION ?? null,
+  workspace_sha: process.env.CMP_SHA ?? null,
+  source: process.env.CMP_SPEC ?? null,
   tests_outcome: process.env.TESTS_OUTCOME ?? null,
   tests,
   verdict
@@ -150,8 +150,9 @@ const summary = [
   '',
   `Verdict: **${verdict}**`,
   '',
-  `- Pinned: \`${result.package}@${result.pinned_version}\``,
-  `- Upstream \`main\`: \`${result.upstream_sha}\``,
+  `- Published baseline: \`${result.package}@${result.release_version}\``,
+  `- Workspace commit: \`${result.workspace_sha}\``,
+  `- Tested source: \`${result.source}\``,
   `- Follower suite: ${counts}`,
   '',
   'This job is informational. It runs on a schedule and on manual dispatch only, so it',

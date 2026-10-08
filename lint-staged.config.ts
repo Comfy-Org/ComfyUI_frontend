@@ -61,7 +61,8 @@ export default function lintStaged(stagedFiles: string[]) {
     ...(multiplayerChanged
       ? [
           ...repoWide('pnpm --dir packages/comfy-multi-player lint'),
-          ...repoWide('pnpm --dir packages/comfy-multi-player typecheck')
+          ...repoWide('pnpm --dir packages/comfy-multi-player typecheck'),
+          ...repoWide('pnpm typecheck:app')
         ]
       : [])
   ]

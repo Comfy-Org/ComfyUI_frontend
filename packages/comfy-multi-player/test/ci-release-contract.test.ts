@@ -158,22 +158,23 @@ describe("monorepo package ownership", () => {
     expect(install).toContain("comfy-multi-player-v");
   });
 
-  it("records the stacked migration: source imported, frontend consumption unchanged", () => {
+  it("records the stacked migration and the cloud rollout blocker", () => {
     const plan = section(readPackage("docs/ROADMAP.md"), "## Repository plan");
     expect(plan).toBeDefined();
     expect(plan).toContain("canonical writable source");
     expect(plan).toContain(PACKAGE_DIR);
     expect(plan).toContain("0.3.6");
+    expect(plan).toContain("workspace:*");
     expect(plan).toContain("cloud rollout");
     expect(plan).toContain("comfy-multi-player-v");
     expect(plan).not.toMatch(/migration[^.]*is closed and deferred/);
   });
 
-  it("does not claim the frontend already consumes the workspace source", () => {
+  it("distinguishes workspace consumption from deployed compatibility", () => {
     const schema = readPackage("docs/multiplayer-schema.md");
-    expect(schema).not.toContain("canonical workspace source");
     expect(schema).not.toContain("frontend source migration is deferred");
     expect(schema).toContain(`source now lives in \`${PACKAGE_DIR}\``);
+    expect(schema).toContain("switch requires cloud rollout alignment");
   });
 
   it("routes vulnerability reports to the frontend repository's private channel", () => {

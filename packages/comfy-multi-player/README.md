@@ -757,8 +757,9 @@ package's standalone history is preserved in the import. CI is
 [`.github/workflows/ci-comfy-multi-player.yaml`](../../.github/workflows/ci-comfy-multi-player.yaml)
 at the repository root, and nightly mutation testing is
 [`.github/workflows/mutation-comfy-multi-player.yaml`](../../.github/workflows/mutation-comfy-multi-player.yaml).
-The frontend app still consumes the published 0.3.6 from npm rather than this
-workspace source; see [`docs/ROADMAP.md`](docs/ROADMAP.md#repository-plan).
+The frontend app imports this package's TypeScript source through `workspace:*`.
+The switch from npm 0.3.6 requires cloud rollout alignment before merging;
+see [`docs/ROADMAP.md`](docs/ROADMAP.md#repository-plan).
 
 `fixtures/` holds the replay corpus: recorded op sessions with their starting
 and final workflows, six conflict-resolution vectors, and the pinned catalog.
