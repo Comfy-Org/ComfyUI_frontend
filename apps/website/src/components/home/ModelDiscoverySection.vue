@@ -1,19 +1,19 @@
 <script setup lang="ts">
-import WorkshopGate from '../workshop/WorkshopGate.vue'
+import WorkshopGate from '@/components/workshop/WorkshopGate.vue'
 import { computed, ref, watch } from 'vue'
 
-import { catalogSearch } from '../../config/models-catalogue'
-import { getRoutes } from '../../config/routes'
+import { catalogSearch } from '@/config/models-catalogue'
+import { getRoutes } from '@/config/routes'
 import type {
   DiscoveryProvider,
   DiscoveryWorkflow
-} from '../../data/modelDiscovery'
-import type { Locale } from '../../i18n/translations'
-import { t } from '../../i18n/translations'
-import { useWorkshopWorkflowsEnabled } from '../../scripts/posthog'
-import Button from '../ui/button/Button.vue'
-import type { CatalogueTab } from '../workshop/CatalogueTabs.vue'
-import CatalogueTabs from '../workshop/CatalogueTabs.vue'
+} from '@/data/modelDiscovery'
+import type { Locale } from '@/i18n/translations'
+import { translationsFor } from '@/i18n/translations'
+import { useWorkshopWorkflowsEnabled } from '@/scripts/posthog'
+import Button from '@/components/ui/button/Button.vue'
+import type { CatalogueTab } from '@/components/workshop/CatalogueTabs.vue'
+import CatalogueTabs from '@/components/workshop/CatalogueTabs.vue'
 import DiscoveryProviderCard from './DiscoveryProviderCard.vue'
 import DiscoveryWorkflowCard from './DiscoveryWorkflowCard.vue'
 
@@ -26,6 +26,7 @@ const {
   providers: readonly DiscoveryProvider[]
   workflows?: readonly DiscoveryWorkflow[]
 }>()
+const { t } = translationsFor(locale)
 const routes = getRoutes(locale)
 
 // The catalogue's own workflows half is behind a flag, so the home page offers
@@ -44,16 +45,14 @@ const rowLabel = computed(() =>
   t(
     onWorkflows.value
       ? 'modelDiscovery.workflowRowLabel'
-      : 'modelDiscovery.rowLabel',
-    locale
+      : 'modelDiscovery.rowLabel'
   )
 )
 const browseLabel = computed(() =>
   t(
     onWorkflows.value
       ? 'modelDiscovery.browseWorkflows'
-      : 'modelDiscovery.browse',
-    locale
+      : 'modelDiscovery.browse'
   )
 )
 const browseHref = computed(() =>
@@ -95,17 +94,17 @@ const cardClass =
         <p
           class="text-sm font-bold tracking-widest text-primary-comfy-yellow uppercase"
         >
-          {{ t('modelDiscovery.label', locale) }}
+          {{ t('modelDiscovery.label') }}
         </p>
         <h2
           class="mt-4 text-3.5xl/tight font-light whitespace-pre-line text-primary-comfy-canvas lg:text-5xl"
         >
-          {{ t('modelDiscovery.heading', locale) }}
+          {{ t('modelDiscovery.heading') }}
         </h2>
         <p
           class="mt-4 max-w-xl text-sm font-light text-primary-comfy-canvas/80 lg:text-base/snug"
         >
-          {{ t('modelDiscovery.subtitle', locale) }}
+          {{ t('modelDiscovery.subtitle') }}
         </p>
 
         <!-- The catalogue's own control, taught here: whoever presses it on

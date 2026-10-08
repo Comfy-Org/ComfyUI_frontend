@@ -7,6 +7,8 @@
     ".": "./src/comfyRegistryTypes.ts"
   },
   "scripts": {
+    "format": "oxfmt --write",
+    "format:check": "oxfmt --check",
     "typecheck": "tsx ../../scripts/vue-tsc-native.ts --noEmit"
   }
 }

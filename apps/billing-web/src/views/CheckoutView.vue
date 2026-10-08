@@ -6,7 +6,7 @@
  * every way out leads back there. A hosted continuation redirects this tab
  * and comes back on `/v1/result`.
  */
-import { useTimeoutFn } from '@vueuse/core'
+import { useEventListener, useTimeoutFn } from '@vueuse/core'
 import { computed, onMounted, ref, watch } from 'vue'
 import { useI18n } from 'vue-i18n'
 
@@ -39,9 +39,11 @@ import {
   buildReturnUrl
 } from '@comfyorg/billing-contract'
 
+import { quoteFailureEndingOf } from '@/checkout/checkoutJourney'
 import type { PaymentChoice } from '@/checkout/checkoutRequest'
 import {
   buildSubscribeRequest,
+  paysOnOwnSite,
   teamCheckoutPlan,
   tierCheckoutPlan
 } from '@/checkout/checkoutRequest'
@@ -93,12 +95,25 @@ const { plans } = usePlans()
 // setup runs, instead of the fallback this ref started with.
 const stripeKey = useBillingWebStripeKey()
 
-const { lifecycle, status } = useBillingClient<'lifecycle' | 'status'>(
-  undefined
-)
+const { lifecycle, status, commands } = useBillingClient<
+  'lifecycle' | 'status' | 'commands'
+>(undefined)
+
+/** A page handed to a hosted step or a method's own site has not been abandoned. */
+const handedToHostedStep = ref(false)
+const payingOnOwnSite = ref(false)
+
+useEventListener(window, 'pageshow', (event) => {
+  if (!event.persisted) return
+  handedToHostedStep.value = false
+  payingOnOwnSite.value = false
+})
 
 const checkout = useCheckout({
-  openUrl: (url) => window.location.assign(url),
+  openUrl: (url) => {
+    handedToHostedStep.value = true
+    window.location.assign(url)
+  },
   navigationMode: 'redirect',
   // Deferred: reads the key at challenge time, not this setup's snapshot.
   challengePort: createDeferredStripeChallengePort(awaitBillingWebStripeKey)
@@ -133,6 +148,8 @@ async function quotePlan(
   if (call === latestQuoteCall) {
     if (promotionCode === undefined) journey.quoted(result)
     else journey.promoQuoted(result, promotionCode)
+    if (failure.value && !preview.value)
+      journey.ended(quoteFailureEndingOf(failure.value), undefined)
   }
   return result
 }
@@ -307,8 +324,10 @@ const operationToast = computed(() => {
       }
 })
 
-const actionUrl = computed(
-  () => validateActionUrl(pendingOperation.value?.actionUrl) ?? null
+const actionUrl = computed(() =>
+  handedToHostedStep.value || payingOnOwnSite.value
+    ? null
+    : (validateActionUrl(pendingOperation.value?.actionUrl) ?? null)
 )
 
 const parkedCheckoutRecovery = computed(
@@ -337,6 +356,33 @@ const operationHoldsConfirm = computed(() => {
     authenticationState.value !== 'requires_action'
   )
 })
+
+/**
+ * Offered only on the server's `cancelable`; the cancel wakes the lifecycle,
+ * whose re-read settles the operation through the failed path above.
+ */
+const paymentCancelable = computed(
+  () => pendingOperation.value?.cancelable === true
+)
+const CANCEL_REFUSAL_COPY = {
+  NOT_CANCELABLE: 'checkout.preview.cancelPaymentNotCancelable',
+  PAYMENT_IN_FLIGHT: 'checkout.preview.cancelPaymentInFlight'
+} as const
+const cancelingPayment = ref(false)
+const cancelPaymentError = ref<string>()
+
+async function cancelPayment() {
+  const operationId = pendingOperation.value?.id
+  if (operationId === undefined || cancelingPayment.value) return
+  cancelingPayment.value = true
+  cancelPaymentError.value = undefined
+  const answer = await commands.cancelOperation(operationId)
+  cancelingPayment.value = false
+  if (answer.status === 'error')
+    cancelPaymentError.value = t('checkout.preview.cancelPaymentFailed')
+  else if (answer.status === 'not_canceled')
+    cancelPaymentError.value = t(CANCEL_REFUSAL_COPY[answer.code])
+}
 
 /** The app keeps a closed progress toast closed until the operation's state changes. */
 const operationToastKey = computed(() =>
@@ -416,6 +462,7 @@ watch(
     if (!settled || submitting || id === announcedSuccess.value) return
     announcedSuccess.value = id
     const result = checkout.result.value
+    journey.ended('success', result?.status === 'ok' ? 'started' : 'followed')
     const tookPayment =
       result?.status !== 'ok' || result.value.issuedStatus !== 'subscribed'
     if (tookPayment) showSuccessToast()
@@ -459,7 +506,7 @@ function closeToast(key: string) {
 
 const paying = computed(
   () =>
-    checkout.submitting.value ||
+    (checkout.submitting.value && !pendingOperation.value) ||
     (operationHoldsConfirm.value && !succeeded.value)
 )
 
@@ -509,11 +556,12 @@ function selectedRailOf(choice: PaymentChoice) {
   return choice.savedPaymentMethodId !== undefined ? 'saved' : 'on_file'
 }
 
-function reportMethodSelected(choice: PaymentChoice) {
-  const savedType = methods.value?.find(
-    ({ id }) => id === choice.savedPaymentMethodId
-  )?.type
-  journey.methodSelected(selectedRailOf(choice), choice.methodType ?? savedType)
+/** The chosen method's type: the form names a new one, and a saved one is read from the loaded methods. */
+function methodTypeOf(choice: PaymentChoice): string | undefined {
+  return (
+    choice.methodType ??
+    methods.value?.find(({ id }) => id === choice.savedPaymentMethodId)?.type
+  )
 }
 
 async function pay(choice: PaymentChoice) {
@@ -521,8 +569,10 @@ async function pay(choice: PaymentChoice) {
   const slug = planSlug.value
   if (slug === undefined || !quoted || loading.value) return
   submitFailure.value = undefined
-  reportMethodSelected(choice)
+  const methodType = methodTypeOf(choice)
+  journey.methodSelected(selectedRailOf(choice), methodType)
   const press = journey.submitted()
+  payingOnOwnSite.value = paysOnOwnSite(methodType)
   let result: SubscriptionCommandResult
   try {
     result = await attempts.run(checkoutAttemptOf(quoted, entry.value), () =>
@@ -539,6 +589,7 @@ async function pay(choice: PaymentChoice) {
       )
     )
   } finally {
+    payingOnOwnSite.value = false
     journey.submitSettled(press)
   }
   if (result.status === 'ok') return
@@ -572,8 +623,14 @@ function leaveForHost(control: WebReturnControl) {
   const href = returnLink.value
   if (href === undefined) return
   reportReturnClicked(control)
+  if (control !== 'success_close') journey.abandoned(control)
   returnToHost(href)
 }
+
+useEventListener(window, 'pagehide', () => {
+  if (!handedToHostedStep.value && !payingOnOwnSite.value)
+    journey.abandoned('page_exit')
+})
 </script>
 
 <template>
@@ -674,6 +731,10 @@ function leaveForHost(control: WebReturnControl) {
             :quote-is-current
             :is-applying-promotion-code="applyingPromotionCode"
             :embedded-checkout-enabled="true"
+            :payment-cancelable
+            :canceling-payment
+            :cancel-payment-error
+            @cancel-payment="cancelPayment"
             @confirm="pay({ confirmReactivation: $event })"
             @apply-promotion-code="applyPromotionCode"
             @invalidate-quote="quoteIsCurrent = false"

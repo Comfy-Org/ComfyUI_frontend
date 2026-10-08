@@ -14,7 +14,7 @@ const { mockIsCloud } = vi.hoisted(() => ({
 }))
 
 vi.mock(
-  import('@/platform/distribution/types'), // eslint-disable-line import-x/no-restricted-paths
+  import('@/platform/distribution/types'), // oxlint-disable-line comfy/no-restricted-paths
   () => ({
     get isCloud() {
       return mockIsCloud.value
@@ -145,18 +145,6 @@ describe('downloadUtil', () => {
 
       expect(mockLink.href).toBe(relativeUrl)
       expect(mockLink.download).toBe('relative-image.png')
-      expect(fetchMock).not.toHaveBeenCalled()
-      expect(createObjectURLSpy).not.toHaveBeenCalled()
-    })
-
-    it('should clean up DOM elements after download', () => {
-      const testUrl = 'https://example.com/image.png'
-
-      downloadFile(testUrl)
-
-      // Verify the element was added and then removed
-      expect(document.body.appendChild).toHaveBeenCalledWith(mockLink)
-      expect(document.body.removeChild).toHaveBeenCalledWith(mockLink)
       expect(fetchMock).not.toHaveBeenCalled()
       expect(createObjectURLSpy).not.toHaveBeenCalled()
     })

@@ -10,7 +10,7 @@ import type {
 import { centsToCredits } from '@comfyorg/shared-frontend-utils/creditsUtil'
 
 import { test } from './fixtures/modelsAccount'
-import { hubWorkflowHref } from '../src/config/hub-models'
+import { hubWorkflowHref } from '@/config/hub-models'
 
 const workflowId = 'workflows/remove-background'
 // `character-turnaround` is the simplest workflow carrying a `randomize` seed:

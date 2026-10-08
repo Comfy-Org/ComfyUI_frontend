@@ -187,6 +187,22 @@ test.describe('About', { tag: '@visual' }, () => {
   }
 })
 
+test.describe('Customers', { tag: '@visual' }, () => {
+  for (const vp of VIEWPORTS.filter(
+    (v) => v.name === '1-sm' || v.name === '3-lg'
+  )) {
+    test(`hero-${vp.name}`, async ({ page }) => {
+      await page.setViewportSize({ width: vp.width, height: vp.height })
+      await navigateAndSettle(page, '/customers')
+
+      await expect(
+        page.getByRole('heading', { level: 1, name: /creative companies/i })
+      ).toBeVisible()
+      await expect(page).toHaveScreenshot(`customers-hero-${vp.name}.png`)
+    })
+  }
+})
+
 test.describe('Overflow guards', { tag: '@visual' }, () => {
   test.describe.configure({ mode: 'parallel' })
 

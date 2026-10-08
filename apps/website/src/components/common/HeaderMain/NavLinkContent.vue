@@ -1,8 +1,8 @@
 <script setup lang="ts">
 import { ArrowUpRight } from '@lucide/vue'
 
-import type { NavColumnItem } from '../../../data/mainNavigation'
-import type { Locale } from '../../../i18n/translations'
+import type { NavColumnItem } from '@/data/mainNavigation'
+import type { Locale } from '@/i18n/translations'
 import NewBadge from './NewBadge.vue'
 
 defineProps<{

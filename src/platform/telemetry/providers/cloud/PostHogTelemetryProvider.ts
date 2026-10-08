@@ -2,13 +2,14 @@ import {
   CHECKOUT_JOURNEY_EVENT_NAME_BY_PHASE,
   getBillingTelemetryEventName,
   getCheckoutJourneyTelemetryEventName,
-  getCheckoutJourneyTelemetryEventPayload,
-  getCloudAppBillingTelemetryEventPayload
+  getCloudAppBillingTelemetryEventPayload,
+  getCloudAppCheckoutJourneyTelemetryEventPayload
 } from '@comfyorg/account-core/billing'
 import type {
   BillingTelemetryEvent,
   CheckoutJourneyTelemetryEvent
 } from '@comfyorg/account-core/billing'
+import type { WebSessionTelemetryEvent } from '@comfyorg/account-core/telemetry'
 import type { PostHog } from 'posthog-js'
 import { watch } from 'vue'
 import type { WatchStopHandle } from 'vue'
@@ -72,6 +73,8 @@ import type {
   HelpCenterClosedMetadata,
   HelpCenterOpenedMetadata,
   HelpResourceClickedMetadata,
+  InAppSurveyEvent,
+  InAppSurveyStage,
   LinkDedupDropMetadata,
   NamedValuesShadowDiffMismatchMetadata,
   NamedValuesShadowDiffSummaryMetadata,
@@ -116,6 +119,12 @@ import {
 import { normalizeSurveyResponses } from '../../utils/surveyNormalization'
 
 const EXECUTION_EVENT_SOURCE = 'web-sdk'
+
+const IN_APP_SURVEY_EVENTS: Record<InAppSurveyStage, TelemetryEventName> = {
+  shown: TelemetryEvents.IN_APP_SURVEY_SHOWN,
+  sent: TelemetryEvents.IN_APP_SURVEY_SENT,
+  dismissed: TelemetryEvents.IN_APP_SURVEY_DISMISSED
+}
 
 const DEFAULT_DISABLED_EVENTS = [
   TelemetryEvents.WORKFLOW_OPENED,
@@ -442,6 +451,10 @@ export class PostHogTelemetryProvider implements TelemetryProvider {
     )
   }
 
+  trackWebSessionEvent(event: WebSessionTelemetryEvent): void {
+    this.trackEvent(event.name, event.properties)
+  }
+
   trackImageLoadFailed(metadata: ImageLoadFailureMetadata): void {
     this.trackEvent(TelemetryEvents.IMAGE_LOAD_FAILED, metadata)
   }
@@ -521,10 +534,13 @@ export class PostHogTelemetryProvider implements TelemetryProvider {
   }
 
   trackCheckoutJourneyEvent(event: CheckoutJourneyTelemetryEvent): void {
-    this.trackEvent(
-      getCheckoutJourneyTelemetryEventName(event),
-      getCheckoutJourneyTelemetryEventPayload(event)
-    )
+    const name = getCheckoutJourneyTelemetryEventName(event)
+    const payload = getCloudAppCheckoutJourneyTelemetryEventPayload(event)
+    if (event.phase === 'abandoned' && event.exit === 'page_exit') {
+      this.captureOnTeardown(name, payload)
+      return
+    }
+    this.trackEvent(name, payload)
   }
 
   trackAgentPaywallShown(metadata: AgentPaywallShownMetadata): void {
@@ -575,6 +591,23 @@ export class PostHogTelemetryProvider implements TelemetryProvider {
         console.error('Failed to set PostHog user properties:', error)
       }
     }
+  }
+
+  trackInAppSurvey(
+    stage: InAppSurveyStage,
+    { surveyId, responses = {}, properties = {} }: InAppSurveyEvent
+  ): void {
+    const responseProperties = Object.fromEntries(
+      Object.entries(responses).map(([questionId, answer]) => [
+        `$survey_response_${questionId}`,
+        answer
+      ])
+    )
+    this.captureRaw(IN_APP_SURVEY_EVENTS[stage], {
+      ...properties,
+      ...responseProperties,
+      $survey_id: surveyId
+    })
   }
 
   trackEmailVerification(stage: 'opened' | 'requested' | 'completed'): void {

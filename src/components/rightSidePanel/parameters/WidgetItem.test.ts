@@ -102,7 +102,7 @@ function renderWidgetItem(
 }
 
 function getStubWidget(container: Element) {
-  // eslint-disable-next-line testing-library/no-node-access
+  // oxlint-disable-next-line testing-library/no-node-access
   const el = container.querySelector('.stub-widget')
   if (!el) throw new Error('stub-widget not found')
   return {

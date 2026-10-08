@@ -122,11 +122,22 @@ export class DragAndScale {
   }
 
   setViewportSize(width: number, height: number): void {
-    this.viewportSize = [width, height]
+    this.viewportSize =
+      width > 0 &&
+      height > 0 &&
+      Number.isFinite(width) &&
+      Number.isFinite(height)
+        ? [width, height]
+        : undefined
+  }
+
+  invalidateViewportSize(): void {
+    this.viewportSize = undefined
   }
 
   getViewportSize(): [number, number] {
-    if (this.viewportSize) return this.viewportSize
+    const cached = this.viewportSize
+    if (cached) return [cached[0], cached[1]]
 
     const rect = this.element.getBoundingClientRect()
     if (rect.width > 0 && rect.height > 0) {

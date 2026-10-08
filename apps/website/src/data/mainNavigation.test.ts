@@ -1,7 +1,7 @@
 import { describe, expect, it } from 'vitest'
 
-import { getRoutes } from '../config/routes'
-import { t } from '../i18n/translations'
+import { getRoutes } from '@/config/routes'
+import { t } from '@/i18n/translations'
 import { getMainNavigation } from './mainNavigation'
 
 describe('getMainNavigation', () => {
@@ -11,18 +11,18 @@ describe('getMainNavigation', () => {
       const navigation = getMainNavigation(locale)
       const catalogue = getRoutes(locale).workshop
       const create = navigation
-        .find((item) => item.label === t('nav.products', locale))
+        .find((item) => item.label === t('nav.products', {}, { locale }))
         ?.columns?.find(
-          (column) => column.header === t('nav.colCreate', locale)
+          (column) => column.header === t('nav.colCreate', {}, { locale })
         )
 
       expect(catalogue).toBe('/hub/models/')
       expect(navigation[0]).toEqual({
-        label: t('nav.workshop', locale),
+        label: t('nav.workshop', {}, { locale }),
         href: catalogue
       })
       expect(create?.items).toContainEqual({
-        label: t('nav.comfyWorkshop', locale),
+        label: t('nav.comfyWorkshop', {}, { locale }),
         href: catalogue,
         badge: 'new'
       })
@@ -76,7 +76,7 @@ describe('getMainNavigation', () => {
     (locale) => {
       const routes = getRoutes(locale)
       const products = getMainNavigation(locale)
-        .find((item) => item.label === t('nav.products', locale))
+        .find((item) => item.label === t('nav.products', {}, { locale }))
         ?.columns?.flatMap((column) => column.items)
       const badgeOf = (href: string) => {
         const entry = products?.find((item) => item.href === href)
@@ -157,7 +157,7 @@ describe('getMainNavigation', () => {
     'links the Products featured card to $href for $locale',
     ({ locale, href }) => {
       const featured = getMainNavigation(locale).find(
-        (item) => item.label === t('nav.products', locale)
+        (item) => item.label === t('nav.products', {}, { locale })
       )?.featured
       expect(featured?.imageSrc).toBe(
         'https://media.comfy.org/website/gemini-omni/card-5.webp'

@@ -167,9 +167,13 @@ export type {
 } from './operationLifecycle.js'
 export {
   createBillingOperationLifecycle,
+  failureCategoryFor,
   operationRoute
 } from './operationLifecycle.js'
-export { BILLING_OPERATION_TELEMETRY_EVENT } from '../../telemetry.js'
+export {
+  BILLING_CHECKOUT_FRICTION_TELEMETRY_EVENT,
+  BILLING_OPERATION_TELEMETRY_EVENT
+} from '../../telemetry.js'
 export * from './telemetry/index.js'
 export type {
   EmbeddedChallengeOutcome,
@@ -183,6 +187,8 @@ export {
 export type {
   BillingCommands,
   BillingCommandsOptions,
+  CancelOperationResult,
+  CancelRefusalCode,
   PaymentPortalResult,
   PreviewSubscribeInput,
   PreviewSubscribeOptions,

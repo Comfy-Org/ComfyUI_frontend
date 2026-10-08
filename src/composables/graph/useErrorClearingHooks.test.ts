@@ -914,7 +914,7 @@ describe('installErrorClearingHooks lifecycle', () => {
     graph.remove(node)
 
     expect(store.hasPendingAddedNodeErrorScan(graph, executionId)).toBe(false)
-    expect(verifySpy.mock.calls[0][1].signal?.aborted).toBe(true)
+    expect(verifySpy.mock.calls[0][1]?.signal?.aborted).toBe(true)
 
     resolveVerification()
     await vi.waitFor(() => expect(candidate.isMissing).toBe(true))
@@ -1810,17 +1810,9 @@ describe('scan skips interior of bypassed subgraph containers', () => {
       expect.any(Function),
       expect.any(Function)
     )
-    expect(mediaScanSpy).toHaveBeenCalledWith(
-      rootGraph,
-      outerSubgraphNode,
-      false
-    )
-    expect(mediaScanSpy).toHaveBeenCalledWith(rootGraph, leafNode, false)
-    expect(mediaScanSpy).toHaveBeenCalledWith(
-      rootGraph,
-      innerSubgraphNode,
-      false
-    )
+    expect(mediaScanSpy).toHaveBeenCalledWith(rootGraph, outerSubgraphNode)
+    expect(mediaScanSpy).toHaveBeenCalledWith(rootGraph, leafNode)
+    expect(mediaScanSpy).toHaveBeenCalledWith(rootGraph, innerSubgraphNode)
   })
 
   it('removes host-keyed promoted missing models when a source ancestor is bypassed', () => {

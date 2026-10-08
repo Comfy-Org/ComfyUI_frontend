@@ -19,6 +19,9 @@ const exportJobs = computed(() => assetExportStore.exportList)
 const failedJobs = computed(() =>
   assetExportStore.finishedExports.filter((e) => e.status === 'failed')
 )
+const cancelledJobs = computed(() =>
+  assetExportStore.finishedExports.filter((e) => e.status === 'cancelled')
+)
 
 const isInProgress = computed(() => assetExportStore.hasActiveExports)
 const currentJobName = computed(() => {
@@ -38,6 +41,7 @@ const footerLabel = computed(() => {
   if (isInProgress.value) return currentJobName.value
   if (failedJobs.value.length > 0)
     return t('exportToast.exportFailed', { count: failedJobs.value.length })
+  if (cancelledJobs.value.length > 0) return t('electronFileDownload.cancelled')
   return t('exportToast.allExportsCompleted')
 })
 
@@ -46,6 +50,8 @@ const footerIconClass = computed(() => {
     return 'icon-[lucide--loader-circle] animate-spin text-muted-foreground'
   if (failedJobs.value.length > 0)
     return 'icon-[lucide--circle-alert] text-destructive-background'
+  if (cancelledJobs.value.length > 0)
+    return 'icon-[lucide--circle-x] text-muted-foreground'
   return 'icon-[lucide--check-circle] text-jade-600'
 })
 
@@ -145,6 +151,11 @@ function closeDialog() {
                     class="icon-[lucide--download] size-4 text-success-background"
                   />
                 </Button>
+              </template>
+              <template v-else-if="job.status === 'cancelled'">
+                <span class="text-xs text-muted-foreground">
+                  {{ t('electronFileDownload.cancelled') }}
+                </span>
               </template>
               <template v-else-if="job.status === 'running'">
                 <Loader size="sm" class="text-base-foreground" />

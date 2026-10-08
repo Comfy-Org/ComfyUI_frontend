@@ -5,9 +5,9 @@ import { renderToString } from 'vue/server-renderer'
 
 import HeaderAccount from './HeaderAccount.vue'
 
-vi.mock(import('../../scripts/posthog'))
-vi.mock(import('../../config/workshop-session-state'))
-vi.mock(import('../../config/workshop-credits'))
+vi.mock(import('@/scripts/posthog'))
+vi.mock(import('@/config/workshop-session-state'))
+vi.mock(import('@/config/workshop-credits'))
 
 describe('HeaderAccount on the server', () => {
   it('renders the plain sign-in href, since hydration would never repair a mismatched one', async () => {
