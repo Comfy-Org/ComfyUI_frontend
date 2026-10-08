@@ -2,6 +2,7 @@
 import { getCollection, render } from 'astro:content'
 
 import RoadmapEntry from '@/components/roadmap/RoadmapEntry.astro'
+import RoadmapFeedback from '@/components/roadmap/RoadmapFeedback.astro'
 import RoadmapLink from '@/components/roadmap/RoadmapLink.astro'
 import {
   ROADMAP_AREA_ORDER,
@@ -160,6 +161,8 @@ const filterChip = `${chip} cursor-pointer border-primary-comfy-canvas/20 text-p
       </RoadmapEntry>)}
     </ol>
   </div>
+
+  <RoadmapFeedback />
 </section>
 
 <style is:global>

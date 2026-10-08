@@ -103,6 +103,18 @@ link, because the page already links the changelog once at the top.
   timeline. That applies to `link` and to any anchor you write in a body, and
   both get a visually hidden "opens in a new tab" suffix for screen readers.
 
+## The feedback block
+
+The timeline ends with a block inviting three separate asks: this roadmap is
+wrong or incomplete, a feature request, and a bug. They are separate because
+they land in different inboxes, and one combined link produces an inbox nobody
+can triage.
+
+**The destination channel is not decided yet** (forum, GitHub Discussions,
+Discord), so the three URLs are placeholders and live together in
+`src/config/roadmap-feedback.ts`. Repoint them there and nowhere else. Copy is
+`roadmap.feedback.*` in `src/locales/<locale>/main.json`.
+
 ## Gotchas
 
 - `order` is scoped to the group (shipped, or everything below the marker), not

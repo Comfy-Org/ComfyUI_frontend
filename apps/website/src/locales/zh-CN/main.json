@@ -4947,6 +4947,22 @@
       "all": "全部"
     },
     "now": "现在",
-    "opensInNewTab": "在新标签页中打开"
+    "opensInNewTab": "在新标签页中打开",
+    "feedback": {
+      "heading": "觉得有遗漏，或者写错了？",
+      "intro": "告诉我们。去哪里取决于是什么事。",
+      "roadmap": {
+        "label": "认为路线图应该不一样",
+        "description": "有遗漏、顺序不对，或者想知道为什么某件事不在这里。"
+      },
+      "featureRequest": {
+        "label": "提交功能需求",
+        "description": "你想要、但还不在列表上的功能。"
+      },
+      "bug": {
+        "label": "报告 bug",
+        "description": "有东西坏了。"
+      }
+    }
   }
 }

@@ -5554,6 +5554,22 @@
       "all": "All"
     },
     "now": "Now",
-    "opensInNewTab": "opens in a new tab"
+    "opensInNewTab": "opens in a new tab",
+    "feedback": {
+      "heading": "Think something is missing, or wrong?",
+      "intro": "Tell us. Where to go depends on what it is.",
+      "roadmap": {
+        "label": "Say the roadmap should be different",
+        "description": "Something is missing, in the wrong order, or you want to know why it is not here."
+      },
+      "featureRequest": {
+        "label": "Request a feature",
+        "description": "Something you want that is not on the list yet."
+      },
+      "bug": {
+        "label": "Report a bug",
+        "description": "Something is broken."
+      }
+    }
   }
 }
