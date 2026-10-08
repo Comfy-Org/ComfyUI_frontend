@@ -111,7 +111,7 @@ test(
       .getByRole('menuitem', { name: enMessages.agent.nodes, exact: true })
       .click()
     await expect(
-      panel.getByText(enMessages.agent.noNodesToMention, { exact: true })
+      panel.getByText(enMessages.agent.noNodesToReference, { exact: true })
     ).toBeVisible()
     await expect(
       panel.getByRole('menuitem', { name: /Color balance/ })

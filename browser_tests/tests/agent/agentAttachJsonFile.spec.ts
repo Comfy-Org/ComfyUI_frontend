@@ -52,7 +52,7 @@ test.describe(
 
       await attachment.hover()
       await attachment
-        .getByRole('button', { name: enMessages.agent.remove, exact: true })
+        .getByRole('button', { name: 'Remove default.json', exact: true })
         .click()
       await expect(assetSection).toHaveCount(0)
     })
