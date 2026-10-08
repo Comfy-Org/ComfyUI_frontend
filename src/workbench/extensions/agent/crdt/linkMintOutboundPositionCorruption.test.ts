@@ -193,7 +193,7 @@ describe('agent CRDT outbound leg: link mint by live position vs. doc order', ()
         readDocSlotNames(doc, String(nodeId), 'inputs'),
       docPromotedWidgets: (nodeId) =>
         readDocPromotedWidgets(doc, String(nodeId)),
-      isDocPopulated: () => true,
+      isDocCaughtUp: () => true,
       docIdentity: () => doc
     })
 

@@ -272,7 +272,7 @@ describe('LiveGraphApplier with the real change tracker', () => {
       boundRootGraphId: () => toRootGraphId(graph.id),
       docInputNames: () => [],
       docPromotedWidgets: () => null,
-      isDocPopulated: () => true,
+      isDocCaughtUp: () => true,
       docIdentity: () => null,
       enqueue
     })

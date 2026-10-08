@@ -116,6 +116,9 @@ export class LayoutFollowerBridge extends EventTarget {
    * update has been applied.
    */
   private ackSeq: number | null = null
+  private preSubscribeSeq: number | null = null
+  private subscribeAcknowledged = false
+  private subscribeBaselineIntegrated = false
   /**
    * Armed by the ack, disarmed by the first applied frame whose seq equals
    * {@link ackSeq}. The relay joins the fanout BEFORE it acks, so a live frame
@@ -160,6 +163,14 @@ export class LayoutFollowerBridge extends EventTarget {
    */
   get lastSequence(): number {
     return this.lastSeq ?? this.ackSeq ?? 0
+  }
+
+  get isSubscribeBaselineIntegrated(): boolean {
+    return (
+      this.subscribeAcknowledged &&
+      this.subscribeBaselineIntegrated &&
+      this.schemaError === null
+    )
   }
 
   /** The KA-11 read-gate failure that closed this bridge's read path, if any. */
@@ -225,9 +236,12 @@ export class LayoutFollowerBridge extends EventTarget {
       trySend(() => this.client.subscribe(desired, this.follower.stateVector()))
     ) {
       this.sentWorkflowId = desired
+      this.preSubscribeSeq = this.lastSeq ?? this.ackSeq
       this.lastSeq = null
       this.ackSeq = null
       this.catchUpPending = false
+      this.subscribeAcknowledged = false
+      this.subscribeBaselineIntegrated = false
       this.dispatchEvent(
         new CustomEvent('doc_subscribe_sent', {
           detail: { workflowId: desired }
@@ -338,7 +352,10 @@ export class LayoutFollowerBridge extends EventTarget {
     if (this.rejectSequenceGap(update)) return
     if (this.lastSeq === null || update.seq > this.lastSeq)
       this.lastSeq = update.seq
-    if (isCatchUp) this.catchUpPending = false
+    if (isCatchUp) {
+      this.catchUpPending = false
+      this.subscribeBaselineIntegrated = true
+    }
 
     // Merge every same-lineage, in-order frame — even one arriving after a
     // schema-gate failure. Yjs merge is monotonic and a Y.Map key is
@@ -436,6 +453,12 @@ export class LayoutFollowerBridge extends EventTarget {
     this.followerDoc.destroy()
     this.followerDoc = new FollowerDoc()
     this.schemaError = null
+    this.lastSeq = null
+    this.ackSeq = null
+    this.preSubscribeSeq = null
+    this.catchUpPending = false
+    this.subscribeAcknowledged = false
+    this.subscribeBaselineIntegrated = false
   }
 
   /**
@@ -470,10 +493,22 @@ export class LayoutFollowerBridge extends EventTarget {
         : null
     if (subscribed.ok) {
       this.reseedBlockedUntilConfirmedWorkflowId = null
-      this.ackSeq = subscribed.seq ?? null
-      this.catchUpPending = this.ackSeq !== null
-    } else this.sentWorkflowId = null
+      this.acceptSubscribeBaseline(subscribed.seq)
+    } else {
+      this.subscribeAcknowledged = false
+      this.subscribeBaselineIntegrated = false
+      this.sentWorkflowId = null
+    }
     this.dispatchEvent(new CustomEvent(event.type, { detail: event.detail }))
+  }
+
+  private acceptSubscribeBaseline(seq: number | undefined): void {
+    this.ackSeq = seq ?? null
+    this.subscribeAcknowledged = true
+    const integratedSeq = this.lastSeq ?? this.preSubscribeSeq
+    this.subscribeBaselineIntegrated =
+      this.ackSeq === null || this.ackSeq === 0 || integratedSeq === this.ackSeq
+    this.catchUpPending = this.ackSeq !== null
   }
 
   private readonly onDocReseedResult: EventListener = (event) => {

@@ -9,7 +9,6 @@ import {
 } from 'vue'
 import type { Ref } from 'vue'
 
-import { nodesMap } from '@comfyorg/comfy-multi-player'
 import type { Op } from '@comfyorg/comfy-multi-player'
 
 import type { LGraph } from '@/lib/litegraph/src/litegraph'
@@ -346,7 +345,7 @@ export function useAgentCrdtFollower(
       follower.value?.docInputNames(nodeId) ?? null,
     docPromotedWidgets: (nodeId: NodeId) =>
       follower.value?.docPromotedWidgets(nodeId) ?? null,
-    isDocPopulated: () => follower.value?.isDocPopulated() ?? false,
+    isDocCaughtUp: () => follower.value?.isDocCaughtUp() ?? false,
     docIdentity: () => follower.value?.docIdentity() ?? null
   }
 }
@@ -902,7 +901,7 @@ function startAgentCrdtFollower(
       readDocSlotNames(bridge.follower.doc, String(nodeId), 'inputs'),
     docPromotedWidgets: (nodeId: NodeId) =>
       readDocPromotedWidgets(bridge.follower.doc, String(nodeId)),
-    isDocPopulated: () => nodesMap(bridge.follower.doc).size > 0,
+    isDocCaughtUp: () => bridge.isSubscribeBaselineIntegrated,
     docIdentity: (): object => bridge.follower.doc
   }
 }

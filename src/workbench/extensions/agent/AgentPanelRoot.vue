@@ -853,7 +853,7 @@ const {
   enqueueHumanOperations,
   docInputNames,
   docPromotedWidgets,
-  isDocPopulated,
+  isDocCaughtUp,
   docIdentity
 } = useAgentCrdtFollower(
   boundWorkflowId,
@@ -915,7 +915,7 @@ const docOpMinter = attachDocOpMinter({
   boundRootGraphId,
   docInputNames,
   docPromotedWidgets,
-  isDocPopulated,
+  isDocCaughtUp,
   docIdentity,
   onWidgetWriteRefused: () =>
     toast.add({

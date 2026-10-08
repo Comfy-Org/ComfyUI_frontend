@@ -133,7 +133,7 @@ describe('a human-added node across a tab switch', () => {
       boundRootGraphId: () => null,
       docInputNames: followerApi.docInputNames,
       docPromotedWidgets: followerApi.docPromotedWidgets,
-      isDocPopulated: followerApi.isDocPopulated,
+      isDocCaughtUp: followerApi.isDocCaughtUp,
       docIdentity: followerApi.docIdentity
     })
     const cleanup = () => {

@@ -72,13 +72,8 @@ export interface DocOpMinterDeps {
    * when the document holds no such node.
    */
   docPromotedWidgets(nodeId: NodeId): DocPromotedWidgets | null
-  /**
-   * Whether the bound document holds any node yet. False right after binding,
-   * before the subscribe catch-up lands, when an absent node says nothing. A
-   * host this tab already sent an `add_node` for into the same document is
-   * still writable then.
-   */
-  isDocPopulated(): boolean
+  /** Whether the current subscribe baseline has been integrated and is readable. */
+  isDocCaughtUp(): boolean
   /** Identity of the follower document; changes when it is replaced. */
   docIdentity(): object | null
   /** A local promoted widget edit was refused and never reached the document. */
@@ -231,7 +226,7 @@ function promotedHostWrite(
   node: LGraphNode | null,
   event: IntentOf<'set_widget'>,
   docPromotedWidgets: () => DocPromotedWidgets | null,
-  isDocPopulated: () => boolean,
+  isDocCaughtUp: () => boolean,
   mintedHere: () => boolean,
   onRefused: (
     reason: PromotedWriteRefusal,
@@ -249,11 +244,11 @@ function promotedHostWrite(
     onRefused('unpromoted_widget', liveNames, null)
     return null
   }
-  const doc = docPromotedWidgets()
-  if (doc === null && !isDocPopulated() && !mintedHere()) {
+  if (!isDocCaughtUp() && !mintedHere()) {
     onRefused('doc_not_synced', liveNames, null)
     return null
   }
+  const doc = docPromotedWidgets()
   if (!documentAcceptsLiveIndex(doc, liveNames)) {
     onRefused('layout_drift', liveNames, doc)
     return null
@@ -313,7 +308,7 @@ function routedWidgetOperation(
   event: IntentOf<'set_widget'>,
   node: LGraphNode | null,
   docPromotedWidgets: () => DocPromotedWidgets | null,
-  isDocPopulated: () => boolean,
+  isDocCaughtUp: () => boolean,
   mintedHere: () => boolean,
   onRefused: (
     reason: PromotedWriteRefusal,
@@ -335,7 +330,7 @@ function routedWidgetOperation(
       node,
       event,
       docPromotedWidgets,
-      isDocPopulated,
+      isDocCaughtUp,
       mintedHere,
       onRefused
     )
@@ -538,7 +533,7 @@ export function attachDocOpMinter(deps: DocOpMinterDeps): DocOpMinter {
       event,
       owner,
       () => deps.docPromotedWidgets(event.nodeId),
-      () => deps.isDocPopulated(),
+      () => deps.isDocCaughtUp(),
       () => {
         const identity = deps.docIdentity()
         return (

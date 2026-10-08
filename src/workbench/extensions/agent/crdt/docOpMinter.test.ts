@@ -183,7 +183,7 @@ describe('attachDocOpMinter', () => {
   let bound: boolean
   let docInputNames: DocOpMinterDeps['docInputNames']
   let docPromotedWidgets: DocOpMinterDeps['docPromotedWidgets']
-  let docPopulated: boolean
+  let docCaughtUp: boolean
   let docIdentity: object
   let refused: Parameters<
     NonNullable<DocOpMinterDeps['onWidgetWriteRefused']>
@@ -197,7 +197,7 @@ describe('attachDocOpMinter', () => {
     bound = true
     docInputNames = () => null
     docPromotedWidgets = () => null
-    docPopulated = true
+    docCaughtUp = true
     docIdentity = {}
     refused = []
     minter = attachDocOpMinter({
@@ -208,7 +208,7 @@ describe('attachDocOpMinter', () => {
       boundRootGraphId: () => rootGraphId,
       docInputNames: (nodeId) => docInputNames(nodeId),
       docPromotedWidgets: (nodeId) => docPromotedWidgets(nodeId),
-      isDocPopulated: () => docPopulated,
+      isDocCaughtUp: () => docCaughtUp,
       docIdentity: () => docIdentity,
       onWidgetWriteRefused: (write) => refused.push(write)
     })
@@ -500,7 +500,7 @@ describe('attachDocOpMinter', () => {
       boundRootGraphId: () => rootGraphId,
       docInputNames: () => null,
       docPromotedWidgets: () => null,
-      isDocPopulated: () => true,
+      isDocCaughtUp: () => true,
       docIdentity: () => null
     })
 
@@ -998,8 +998,12 @@ describe('attachDocOpMinter', () => {
       reason: 'doc_not_synced',
       errorType: 'agent_crdt_promoted_widget_doc_not_synced',
       act: (host: ReturnType<typeof createTestSubgraphNode>) => {
-        docPromotedWidgets = () => null
-        docPopulated = false
+        docPromotedWidgets = () => ({
+          valueCount: 2,
+          declaredNames: ['prefix', 'text'],
+          promotedNames: ['prefix', 'text']
+        })
+        docCaughtUp = false
         host.widgets[1].value = 'too early'
         return 'text'
       }
@@ -1035,7 +1039,7 @@ describe('attachDocOpMinter', () => {
       subgraph.inputNode.slots[0].connect(interior.inputs[0], interior)
     })
     docPromotedWidgets = () => null
-    docPopulated = false
+    docCaughtUp = false
     const host = createTestSubgraphNode(subgraph)
 
     graph.add(host)
@@ -1068,7 +1072,7 @@ describe('attachDocOpMinter', () => {
     await afterFlush()
     minted.length = 0
 
-    docPopulated = false
+    docCaughtUp = false
     host.widgets[0].value = 'typed after a delete echo emptied the doc'
     await afterFlush()
 
@@ -1091,7 +1095,7 @@ describe('attachDocOpMinter', () => {
       subgraph.inputNode.slots[0].connect(interior.inputs[0], interior)
     })
     docPromotedWidgets = () => null
-    docPopulated = false
+    docCaughtUp = false
     const host = createTestSubgraphNode(subgraph)
     graph.add(host)
     await afterFlush()
