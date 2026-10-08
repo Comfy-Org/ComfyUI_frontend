@@ -69,7 +69,7 @@ describe("invalid op states are unrepresentable (issue #17)", () => {
   });
 
   it("compiles test/types/invalid-states.negative.ts with zero diagnostics", () => {
-    expect(existsSync(tsc), "typescript devDependency missing — run `npm ci`").toBe(true);
+    expect(existsSync(tsc), "typescript devDependency missing — run `pnpm install --frozen-lockfile --ignore-scripts` from the repository root").toBe(true);
     expect(
       existsSync(negatives),
       "the negative-type file is gone; `include` now names it explicitly so this is TS18003, " +

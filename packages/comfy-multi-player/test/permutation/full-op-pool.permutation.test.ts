@@ -7,7 +7,7 @@
  * equivalence classes, both arrival orders, and both batch boundaries.
  * Longer streams are fixed-seed fast-check samples with shrinking
  * left enabled. The default tier rotates actor/stamp classes across all
- * 64 kind pairs × 8 states (2,048 executions), plus 128 seeded streams (256 executions).
+ * 81 kind pairs × 8 states (2,592 executions), plus 128 seeded streams (256 executions).
  * Every frozen kind still meets every state, both orders, and both batch modes.
  *
  * Amendment A6 / docs/decisions/EXCEPTIONS.md and schema §2.5 item 2 are the
@@ -233,7 +233,7 @@ function makeOp(
       return { ...env, op: "delete_node", node_id: side === 0 ? 10 : 20, removed_links: [80, 100, 101] };
     case "clear":
       return { ...env, op: "clear", removed_nodes: side === 0 ? [10, 40, 57] : [20, 40, 57] };
-    case "define_subgraph":
+    case "define_subgraph": {
       const id = "12345678-1234-4123-8123-123456789abc";
       return {
         ...env,
@@ -246,6 +246,7 @@ function makeOp(
           links: [],
         },
       };
+    }
     case "insert_workflow":
       return { ...env, op: "insert_workflow", workflow: { nodes: [node(140 + serial, "Aux", [], [], [value])], links: [] } };
     case "reset_doc":
