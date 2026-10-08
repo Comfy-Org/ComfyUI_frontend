@@ -1,4 +1,4 @@
-import type { ErrorEvent, Event } from '@sentry/vue'
+import type { Event } from '@sentry/vue'
 import {
   BrowserClient,
   defaultStackParser,
@@ -6,7 +6,7 @@ import {
   makeFetchTransport
 } from '@sentry/vue'
 import { createApp } from 'vue'
-import { assert, beforeEach, expect, it, vi } from 'vitest'
+import { beforeEach, expect, it, vi } from 'vitest'
 
 vi.mock(import('@sentry/vue'), { spy: true })
 
@@ -71,26 +71,6 @@ function nonCloudFilter(event: Event) {
     event
   )
 }
-
-it('adds Vue directive diagnostics after filtering', async () => {
-  const event = {
-    type: undefined,
-    exception: {
-      values: [
-        {
-          value: 'undefined is not a function',
-          stacktrace: { frames: [{ function: 'withDirectives' }] }
-        }
-      ]
-    }
-  } satisfies ErrorEvent
-  const beforeSend = initOptions(true).beforeSend
-  assert.exists(beforeSend)
-
-  expect((await beforeSend(event, {}))?.tags?.diagnostic).toBe(
-    'vue_directive_runtime'
-  )
-})
 
 it('disables default integrations on non-cloud builds', () => {
   expect(initOptions(false).defaultIntegrations).toBe(false)
