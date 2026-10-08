@@ -1,3 +1,5 @@
+import { setImmediate } from 'node:timers/promises'
+
 import type { Response as OpenAiResponse } from 'openai/resources/responses/responses'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 
@@ -220,7 +222,7 @@ describe('mapWithConcurrency', () => {
       mapWithConcurrency([1, 2, 3, 4], 2, async (item) => {
         started.push(item)
         if (item === 1) throw new Error('boom')
-        await Promise.resolve()
+        await setImmediate()
         inFlightTaskSettled = true
         return item
       })
