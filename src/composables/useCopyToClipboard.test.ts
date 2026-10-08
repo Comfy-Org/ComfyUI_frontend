@@ -37,7 +37,7 @@ describe('useCopyToClipboard', () => {
     const copied = await copyToClipboard('hello', { toastOnSuccess: false })
 
     expect(copied).toBe(true)
-    expect(mockToastAdd).not.toHaveBeenCalled()
+    expect(useToast().toasts).toEqual([])
   })
 
   it('falls back to legacy when modern clipboard fails', async () => {
