@@ -89,6 +89,7 @@
 
 <script setup lang="ts">
 import { cn } from '@comfyorg/tailwind-utils'
+import { useTimestamp } from '@vueuse/core'
 import { computed } from 'vue'
 import { useI18n } from 'vue-i18n'
 
@@ -165,11 +166,14 @@ function longDate(
 // front and refills at renewal, so the suggestion only holds within a month of
 // it, and its date keeps the year (DES-1088). With no known cadence, or a date
 // that has already passed, there is nothing to tell the user to wait for.
+// The panel can stay open across the window's edges, so this reads a ticking
+// clock rather than Date.now(), which a computed would never re-read.
 const ANNUAL_REFILL_SUGGESTION_WINDOW_MS = 31 * 24 * 60 * 60 * 1000
+const now = useTimestamp({ interval: 60_000 })
 const refillSuggestionDate = computed(() => {
   const date = parseDate(renewalDate.value)
   if (!date) return ''
-  const untilRefill = date.getTime() - Date.now()
+  const untilRefill = date.getTime() - now.value
   if (untilRefill <= 0) return ''
   const sub = subscription.value
   const refillsMonthly =

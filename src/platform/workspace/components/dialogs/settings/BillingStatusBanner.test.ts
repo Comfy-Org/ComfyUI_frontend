@@ -991,6 +991,50 @@ describe('BillingStatusBanner', () => {
           expect(screen.getByRole('status')).toHaveTextContent(body)
         }
       )
+
+      it('starts suggesting the wait when an annual refill enters the window while open', async () => {
+        state.workspaceType = 'team'
+        state.isTeamPlan = true
+        state.renewalDate = iso(new Date(inDays(31).getTime() + 90_000))
+        state.subscription = {
+          ...state.subscription!,
+          tier: 'TEAM',
+          duration: 'ANNUAL',
+          hasFunds: false
+        }
+        renderBanner()
+        expect(screen.getByRole('status')).toHaveTextContent(
+          'Your team has used all its credits. Add more credits.'
+        )
+
+        await vi.advanceTimersByTimeAsync(2 * 60_000)
+
+        expect(screen.getByRole('status')).toHaveTextContent(
+          'Your team has used all its credits. Add more credits or wait until credits refill on November 8, 2026.'
+        )
+      })
+
+      it('drops the suggestion when the refill date passes while open', async () => {
+        state.workspaceType = 'team'
+        state.isTeamPlan = true
+        state.renewalDate = iso(new Date(NOW.getTime() + 30_000))
+        state.subscription = {
+          ...state.subscription!,
+          tier: 'TEAM',
+          duration: 'MONTHLY',
+          hasFunds: false
+        }
+        renderBanner()
+        expect(screen.getByRole('status')).toHaveTextContent(
+          'Your team has used all its credits. Add more credits or wait until credits refill on October 8.'
+        )
+
+        await vi.advanceTimersByTimeAsync(2 * 60_000)
+
+        expect(screen.getByRole('status')).toHaveTextContent(
+          'Your team has used all its credits. Add more credits.'
+        )
+      })
     })
 
     it.for([
