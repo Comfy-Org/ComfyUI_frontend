@@ -1,6 +1,7 @@
 import { Schema } from '@tiptap/pm/model'
 import type { Node } from '@tiptap/pm/model'
 
+import { zMediaKindSchema } from '@/platform/assets/schemas/mediaAssetSchema'
 import { isNodeLocatorId } from '@/types/nodeIdentification'
 import type {
   ComposerInsertionPoint,
@@ -68,6 +69,8 @@ export const inlinePromptSchema = new Schema({
         name: {},
         ref: {},
         previewUrl: { default: null },
+        mediaUrl: { default: null },
+        mediaKind: { default: null },
         uploading: { default: false }
       },
       toDOM: (node) => [
@@ -117,6 +120,30 @@ export function promptDocument(prompt: ComposerPrompt): Node {
   return inlinePromptSchema.nodes.doc.create(null, content)
 }
 
+function assetNodeReference(
+  node: Node,
+  id: string,
+  name: string,
+  textOffset: number
+): ComposerReference | undefined {
+  const { ref, previewUrl, mediaUrl, uploading } = node.attrs
+  const mediaKind = zMediaKindSchema.safeParse(node.attrs.mediaKind).data
+  if (typeof ref !== 'string') return
+  return {
+    kind: 'asset',
+    textOffset,
+    attachment: {
+      id,
+      name,
+      ref,
+      ...(typeof previewUrl === 'string' ? { previewUrl } : {}),
+      ...(typeof mediaUrl === 'string' ? { mediaUrl } : {}),
+      ...(mediaKind ? { mediaKind } : {}),
+      ...(uploading === true ? { uploading: true } : {})
+    }
+  }
+}
+
 export function promptNodeReference(
   node: Node,
   textOffset: number
@@ -145,21 +172,8 @@ export function promptNodeReference(
       }
     }
   }
-  if (node.type.name === 'asset') {
-    const { ref, previewUrl, uploading } = node.attrs
-    if (typeof ref !== 'string') return
-    return {
-      kind: 'asset',
-      textOffset,
-      attachment: {
-        id,
-        name,
-        ref,
-        ...(typeof previewUrl === 'string' ? { previewUrl } : {}),
-        ...(uploading === true ? { uploading: true } : {})
-      }
-    }
-  }
+  if (node.type.name === 'asset')
+    return assetNodeReference(node, id, name, textOffset)
 }
 
 export function promptDraft(doc: Node): ComposerPrompt {

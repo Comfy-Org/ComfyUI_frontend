@@ -1,4 +1,4 @@
-import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
+import { describe, expect, it, vi } from 'vitest'
 
 import { useRegistrySearchGateway } from '@/services/gateway/registrySearchGateway'
 import { useAlgoliaSearchProvider } from '@/services/providers/algoliaSearchProvider'
@@ -9,19 +9,6 @@ vi.mock(import('@/services/providers/algoliaSearchProvider'))
 vi.mock(import('@/services/providers/registrySearchProvider'))
 
 describe('useRegistrySearchGateway', () => {
-  let consoleWarnSpy: ReturnType<typeof vi.spyOn>
-  let consoleInfoSpy: ReturnType<typeof vi.spyOn>
-
-  beforeEach(() => {
-    consoleWarnSpy = vi.spyOn(console, 'warn').mockImplementation(() => {})
-    consoleInfoSpy = vi.spyOn(console, 'info').mockImplementation(() => {})
-  })
-
-  afterEach(() => {
-    consoleWarnSpy.mockRestore()
-    consoleInfoSpy.mockRestore()
-  })
-
   describe('Provider initialization', () => {
     it('should initialize with both providers', () => {
       const mockAlgoliaProvider = {

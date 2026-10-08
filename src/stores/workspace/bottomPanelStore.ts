@@ -1,9 +1,6 @@
 import { defineStore } from 'pinia'
 import { computed, ref } from 'vue'
 
-import { useShortcutsTab } from '@/composables/bottomPanelTabs/useShortcutsTab'
-
-import { isDesktop } from '@/platform/distribution/types'
 import { useCommandStore } from '@/stores/commandStore'
 import type { ComfyExtension } from '@/types/comfy'
 import type { BottomPanelExtension } from '@/types/extensionTypes'
@@ -128,25 +125,6 @@ export const useBottomPanelStore = defineStore('bottomPanel', () => {
     })
   }
 
-  const registerCoreBottomPanelTabs = async () => {
-    // Register shortcuts tabs first (synchronous, always available)
-    useShortcutsTab().forEach(registerBottomPanelTab)
-
-    // Use __DISTRIBUTION__ directly for proper dead code elimination
-    if (__DISTRIBUTION__ !== 'cloud') {
-      try {
-        const { useLogsTerminalTab, useCommandTerminalTab } =
-          await import('@/composables/bottomPanelTabs/useTerminalTabs')
-        registerBottomPanelTab(useLogsTerminalTab())
-        if (isDesktop) {
-          registerBottomPanelTab(useCommandTerminalTab())
-        }
-      } catch (error) {
-        console.error('Failed to load terminal tabs:', error)
-      }
-    }
-  }
-
   const registerExtensionBottomPanelTabs = (extension: ComfyExtension) => {
     if (extension.bottomPanelTabs) {
       extension.bottomPanelTabs.forEach(registerBottomPanelTab)
@@ -167,7 +145,6 @@ export const useBottomPanelStore = defineStore('bottomPanel', () => {
     setActiveTab,
     toggleBottomPanelTab,
     registerBottomPanelTab,
-    registerCoreBottomPanelTabs,
     registerExtensionBottomPanelTabs
   }
 })
