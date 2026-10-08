@@ -448,7 +448,8 @@ async function mockAgentBoot(
           },
           csrf_token: csrfToken,
           expires_at: '2100-01-01T00:00:00.000Z',
-          absolute_expires_at: '2100-01-08T00:00:00.000Z'
+          absolute_expires_at: '2100-01-08T00:00:00.000Z',
+          has_personal_workspace: true
         })
       )
     )

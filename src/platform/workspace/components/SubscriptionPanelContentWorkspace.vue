@@ -421,6 +421,7 @@ import {
 import type { TierBenefit } from '@/platform/cloud/subscription/utils/tierBenefits'
 import { getCommonTierBenefits } from '@/platform/cloud/subscription/utils/tierBenefits'
 import { isCloud } from '@/platform/distribution/types'
+import { useBillingBanner } from '@/platform/workspace/composables/useBillingBanner'
 import { useResubscribe } from '@/platform/workspace/composables/useResubscribe'
 import { useScheduledPlanChange } from '@/platform/workspace/composables/useScheduledPlanChange'
 import { useBillingCapabilities } from '@/platform/workspace/composables/useBillingCapabilities'
@@ -624,13 +625,17 @@ const isQuietEnterpriseEnding = computed(
     !isWithinEnterpriseEndingNotice(subscription.value?.endDate, now.value)
 )
 
+const { kind: billingBannerKind } = useBillingBanner()
+
 // An end-dated Enterprise plan never shows the amber card; inside the notice
-// window the muted ending banner carries the message instead.
+// window the muted ending banner carries the message instead. The banner is
+// still rolling out, so the card stays wherever the ending banner is not shown.
 const showSubscriptionStateCard = computed(
   () =>
     isSubscriptionCancelled.value &&
     !isSubscriptionEnded.value &&
-    !hasScheduledEnterpriseEnd.value
+    !hasScheduledEnterpriseEnd.value &&
+    billingBannerKind.value !== 'ending'
 )
 
 const subscriptionStateCardTitle = computed(() =>

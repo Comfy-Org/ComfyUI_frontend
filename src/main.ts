@@ -74,6 +74,13 @@ if (hasHostTelemetryBridge) {
   initHostTelemetry()
 }
 
+const desktopHostAuth = isCloud ? undefined : window.__comfyDesktop2?.Auth
+if (desktopHostAuth) {
+  const { startDesktopHostSession } =
+    await import('@/platform/auth/desktopHost/desktopHostSession')
+  await startDesktopHostSession(desktopHostAuth)
+}
+
 const ComfyUIPreset = definePreset(Aura, {
   semantic: {
     primary: (Aura as { primitive: { blue: PaletteDesignToken } }).primitive
