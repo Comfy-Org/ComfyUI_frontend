@@ -2,7 +2,8 @@ name: 'PR: Unified Report'
 
 on:
   workflow_run:
-    workflows: ['CI: Size Data', 'CI: Performance Report', 'CI: Tests E2E']
+    workflows:
+      ['CI: Dist Inspection', 'CI: Performance Report', 'CI: Tests E2E']
     types:
       - completed
     branches-ignore:
@@ -39,8 +40,10 @@ jobs:
         id: find-size
         uses: ./.github/actions/find-workflow-run
         with:
-          workflow-id: ci-size-data.yaml
+          workflow-id: ci-dist-inspection.yaml
           head-sha: ${{ steps.pr-meta.outputs.head-sha }}
+          artifact-name: size-data
+          not-found-status: skip
           token: ${{ secrets.GITHUB_TOKEN }}
 
       - name: Find perf workflow run
@@ -68,7 +71,9 @@ jobs:
         uses: dawidd6/action-download-artifact@0bd50d53a6d7fb5cb921e607957e9cc12b4ce392 # v12
         with:
           branch: ${{ steps.pr-meta.outputs.base }}
-          workflow: ci-size-data.yaml
+          workflow: ci-dist-inspection.yaml
+          workflow_conclusion: completed
+          search_artifacts: true
           event: push
           name: size-data
           path: temp/size-prev

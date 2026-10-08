@@ -3,7 +3,7 @@ description: Finds a workflow run for a given commit SHA and outputs its status 
 
 inputs:
   workflow-id:
-    description: The workflow filename (e.g., 'ci-size-data.yaml')
+    description: The workflow filename (e.g., 'ci-dist-inspection.yaml')
     required: true
   head-sha:
     description: The commit SHA to find runs for

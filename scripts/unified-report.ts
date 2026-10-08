@@ -36,7 +36,7 @@ if (sizeStatus === 'ready' && hasSizeData) {
   lines.push('## 📦 Bundle Size')
   lines.push('')
   lines.push('> ⚠️ Size data collection failed. Check the CI workflow logs.')
-} else if (sizeStatus !== 'ready') {
+} else if (sizeStatus !== 'ready' && sizeStatus !== 'skip') {
   lines.push('## 📦 Bundle Size')
   lines.push('')
   lines.push('> ⏳ Size data collection in progress…')
