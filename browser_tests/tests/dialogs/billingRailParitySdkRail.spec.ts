@@ -152,6 +152,7 @@ interface BillingServer {
 
 interface ParityRoutes {
   readonly server: BillingServer
+  readonly paymentMethodRequests: Request[]
   readonly topupRequests: Request[]
   readonly subscribeRequests: Request[]
   readonly previewRequests: Request[]
@@ -183,6 +184,7 @@ async function setupParity(
     balanceMicros: OPENING_BALANCE_MICROS
   }
   const routes = {
+    paymentMethodRequests: [] as Request[],
     topupRequests: [] as Request[],
     subscribeRequests: [] as Request[],
     previewRequests: [] as Request[],
@@ -257,9 +259,10 @@ async function setupParity(
   await page.route('**/api/billing/plans', (route) =>
     route.fulfill(jsonRoute(PLAN_CATALOG))
   )
-  await page.route('**/api/billing/payment-methods', (route) =>
-    route.fulfill(jsonRoute(paymentMethods))
-  )
+  await page.route('**/api/billing/payment-methods', (route) => {
+    routes.paymentMethodRequests.push(route.request())
+    return route.fulfill(jsonRoute(paymentMethods))
+  })
   await page.route('**/api/billing/preview-subscribe', (route) => {
     routes.previewRequests.push(route.request())
     return route.fulfill(jsonRoute(UPGRADE_QUOTE))
@@ -362,19 +365,6 @@ async function buyFiftyDollars(page: Page): Promise<TopUpCreditsDialog> {
   return dialog
 }
 
-/** Opens the top-up confirm step and returns the saved-card note under it. */
-async function savedCardNote(page: Page): Promise<Locator> {
-  const dialog = new TopUpCreditsDialog(page)
-  await dialog.open()
-  await dialog.root
-    .getByRole('button', { name: 'Add credits', exact: true })
-    .click()
-  await expect(
-    dialog.root.getByRole('button', { name: 'Pay $50.00' })
-  ).toBeVisible()
-  return dialog.root.getByText(/payment method/)
-}
-
 /** A customer coming back to this tab from another one. */
 async function returnToTab(page: Page) {
   await page.evaluate(() => window.dispatchEvent(new Event('focus')))
@@ -471,9 +461,32 @@ async function topUpThenUpgrade(page: Page): Promise<Locator> {
   return panel
 }
 
-const SAVED_CARD_NOTE = 'Your saved payment method is charged immediately.'
-
 test.describe('Billing rail parity', { tag: '@cloud' }, () => {
+  test.describe('opening a usable top-up confirmation', () => {
+    for (const { name, rails } of [
+      { name: 'legacy', rails: RAILS_OFF },
+      { name: 'SDK', rails: TOPUP_RAIL_ONLY }
+    ]) {
+      test(`does not fetch saved payment methods on the ${name} rail`, async ({
+        page
+      }) => {
+        const routes = await setupParity(page, { rails })
+        await bootApp(page)
+
+        const dialog = new TopUpCreditsDialog(page)
+        await dialog.open()
+        await dialog.root
+          .getByRole('button', { name: 'Add credits', exact: true })
+          .click()
+
+        await expect(
+          dialog.root.getByRole('button', { name: 'Pay $50.00' })
+        ).toBeVisible()
+        expect(routes.paymentMethodRequests).toHaveLength(0)
+      })
+    }
+  })
+
   test.describe('with only the subscription rail on', () => {
     test('buys credits on the legacy transport and refreshes the balance', async ({
       page
@@ -540,33 +553,6 @@ test.describe('Billing rail parity', { tag: '@cloud' }, () => {
           OPENING_BALANCE_MICROS + TOPUP_MICROS + SUBSCRIPTION_GRANT_MICROS
         )
       )
-    })
-  })
-
-  test.describe('saved-card note in the top-up dialog', () => {
-    test('shows the saved card while the rails are off', async ({ page }) => {
-      await setupParity(page, { rails: RAILS_OFF })
-      await bootApp(page)
-
-      await expect(await savedCardNote(page)).toHaveText(SAVED_CARD_NOTE)
-    })
-
-    test('shows the same note while the top-up rail is on', async ({
-      page
-    }) => {
-      await setupParity(page, { rails: TOPUP_RAIL_ONLY })
-      await bootApp(page)
-
-      await expect(await savedCardNote(page)).toHaveText(SAVED_CARD_NOTE)
-    })
-
-    test('shows the same note while the subscription rail is on', async ({
-      page
-    }) => {
-      await setupParity(page, { rails: SUBSCRIPTION_RAIL_ONLY })
-      await bootApp(page)
-
-      await expect(await savedCardNote(page)).toHaveText(SAVED_CARD_NOTE)
     })
   })
 

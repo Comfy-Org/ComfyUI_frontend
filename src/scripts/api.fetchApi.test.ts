@@ -167,6 +167,135 @@ describe('api.fetchApi', () => {
     })
   })
 
+  // PM-1802: the auth-rejection diagnostic is only worth anything if the
+  // scheme it names is the scheme the request actually used. These are
+  // integration tests on purpose - the agentRestClient tests invoke
+  // `onAuthScheme` by hand, so they cannot falsify what fetchApi reports.
+  describe('onAuthScheme (PM-1802)', () => {
+    function signInOnCloud() {
+      mockDistribution.isCloud = true
+      vi.spyOn(firebaseIdentity, 'onUserChanged').mockReturnValue(() => {})
+      vi.spyOn(firebaseIdentity, 'onTokenChanged').mockReturnValue(() => {})
+      useAuthStore().isInitialized = true
+    }
+
+    afterEach(() => {
+      mockDistribution.isCloud = false
+    })
+
+    it('reports none off-cloud, where no auth scheme is used at all', async () => {
+      vi.mocked(global.fetch).mockResolvedValue(new Response())
+      const onAuthScheme = vi.fn()
+
+      await api.fetchApi('/test', { onAuthScheme })
+
+      expect(onAuthScheme).toHaveBeenCalledExactlyOnceWith('none')
+    })
+
+    it('reports cloud-auth-header when a header was attached', async () => {
+      signInOnCloud()
+      vi.mocked(useAuthStore().getAuthHeader).mockResolvedValue({
+        Authorization: 'Bearer tokenA'
+      })
+      vi.mocked(global.fetch).mockResolvedValue(new Response())
+      const onAuthScheme = vi.fn()
+
+      await api.fetchApi('/test', { onAuthScheme })
+
+      expect(onAuthScheme).toHaveBeenCalledExactlyOnceWith('cloud-auth-header')
+      expect(vi.mocked(global.fetch).mock.calls[0][1]?.headers).toMatchObject({
+        Authorization: 'Bearer tokenA'
+      })
+    })
+
+    // The case the alert is about, and the one the first implementation got
+    // wrong: `addCloudAuthHeader` attaches nothing when auth is unavailable,
+    // so announcing `cloud-auth-header` for taking this branch misidentified
+    // an unauthenticated request as an authenticated one.
+    it('reports none when the cloud auth header was unavailable', async () => {
+      signInOnCloud()
+      vi.mocked(useAuthStore().getAuthHeader).mockResolvedValue(null)
+      vi.mocked(global.fetch).mockResolvedValue(new Response())
+      const onAuthScheme = vi.fn()
+      const onAuthHeader = vi.fn()
+
+      await api.fetchApi('/test', { onAuthScheme, onAuthHeader })
+
+      expect(onAuthScheme).toHaveBeenCalledExactlyOnceWith('none')
+      // Agrees with the existing boolean rather than contradicting it.
+      expect(onAuthHeader).toHaveBeenCalledExactlyOnceWith(false)
+      expect(
+        vi.mocked(global.fetch).mock.calls[0][1]?.headers
+      ).not.toHaveProperty('Authorization')
+    })
+
+    it('reports none when getting the cloud auth header throws', async () => {
+      signInOnCloud()
+      vi.mocked(useAuthStore().getAuthHeader).mockRejectedValue(
+        new Error('auth store unavailable')
+      )
+      vi.mocked(global.fetch).mockResolvedValue(new Response())
+      const onAuthScheme = vi.fn()
+
+      await api.fetchApi('/test', { onAuthScheme })
+
+      expect(onAuthScheme).toHaveBeenCalledExactlyOnceWith('none')
+    })
+
+    it('is not broken by a throwing onAuthCredential callback', async () => {
+      signInOnCloud()
+      vi.spyOn(console, 'warn').mockImplementation(() => {})
+      vi.mocked(useAuthStore().getAuthHeader).mockResolvedValue({
+        Authorization: 'Bearer tokenA'
+      })
+      vi.mocked(global.fetch).mockResolvedValue(new Response('ok'))
+
+      const response = await api.fetchApi('/test', {
+        onAuthCredential: () => {
+          throw new Error('callback bug')
+        }
+      })
+
+      expect(await response.text()).toBe('ok')
+      expect(vi.mocked(global.fetch).mock.calls[0][1]?.headers).toMatchObject({
+        Authorization: 'Bearer tokenA'
+      })
+    })
+
+    it('reports the credential kind each auth path sent', async () => {
+      vi.mocked(global.fetch).mockResolvedValue(new Response())
+      const offCloud = vi.fn()
+      await api.fetchApi('/test', { onAuthCredential: offCloud })
+
+      signInOnCloud()
+      const getAuthHeader = vi.mocked(useAuthStore().getAuthHeader)
+      const bearer = vi.fn()
+      getAuthHeader.mockResolvedValueOnce({ Authorization: 'Bearer tokenA' })
+      await api.fetchApi('/test', { onAuthCredential: bearer })
+      const apiKey = vi.fn()
+      getAuthHeader.mockResolvedValueOnce({ 'X-API-KEY': 'key' })
+      await api.fetchApi('/test', { onAuthCredential: apiKey })
+      const missing = vi.fn()
+      getAuthHeader.mockResolvedValueOnce(null)
+      await api.fetchApi('/test', { onAuthCredential: missing })
+      expect(
+        [offCloud, bearer, apiKey, missing].map(
+          (callback) => callback.mock.calls
+        )
+      ).toEqual([[['none']], [['bearer']], [['api-key']], [['none']]])
+    })
+
+    it('is not forwarded to fetch as a request option', async () => {
+      vi.mocked(global.fetch).mockResolvedValue(new Response())
+
+      await api.fetchApi('/test', { onAuthScheme: vi.fn() })
+
+      expect(vi.mocked(global.fetch).mock.calls[0][1]).not.toHaveProperty(
+        'onAuthScheme'
+      )
+    })
+  })
+
   describe('default options', () => {
     it('should set cache to no-cache by default', async () => {
       const mockFetch = vi

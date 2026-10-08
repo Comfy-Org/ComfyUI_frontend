@@ -1,3 +1,5 @@
+import type { Placement } from '@floating-ui/vue'
+
 export interface Viewport {
   width: number
   height: number
@@ -76,6 +78,28 @@ export function hitRegionPath(
 
 export function noTargetCardLeft(viewportWidth: number): number {
   return Math.max(VIEWPORT_MARGIN, (viewportWidth - CARD_WIDTH) / 2)
+}
+
+/** Floats the cursor in the gap on the card edge facing the target. */
+const CURSOR_EDGE_CLASS = {
+  top: '-top-7 left-1/2 -translate-x-1/2 rotate-45',
+  bottom: '-bottom-7 left-1/2 -translate-x-1/2 -rotate-[135deg]',
+  left: '-left-7 top-1/2 -translate-y-1/2 -rotate-45',
+  right: '-right-7 top-1/2 -translate-y-1/2 rotate-[135deg]'
+} as const
+
+const TARGET_FACING_EDGE = {
+  top: 'bottom',
+  bottom: 'top',
+  left: 'right',
+  right: 'left'
+} as const
+
+type Side = keyof typeof TARGET_FACING_EDGE
+
+export function cursorEdgeClass(placement: Placement): string {
+  const side = placement.split('-')[0] as Side
+  return CURSOR_EDGE_CLASS[TARGET_FACING_EDGE[side]]
 }
 
 const TOP_BAR_HEIGHT_VAR = '--comfy-topbar-height'

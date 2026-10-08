@@ -18,6 +18,10 @@ import { ref } from 'vue'
 
 import defaultClientFeatureFlags from '@/config/clientFeatureFlags.json' with { type: 'json' }
 import {
+  authCredentialOf,
+  notifyAuthCredential
+} from '@/platform/auth/authCredential'
+import {
   fetchWithUnifiedRemint,
   shouldRemintCloudRequest
 } from '@/platform/auth/unified/remintRetry'
@@ -76,7 +80,7 @@ import type {
 } from '@/platform/remote/comfyui/jobs/jobTypes'
 import type { ComfyNodeDef } from '@/schemas/nodeDefSchema'
 import type { useAuthStore } from '@/stores/authStore'
-import type { AuthHeader } from '@/types/authTypes'
+import type { AuthCredential, AuthHeader, AuthScheme } from '@/types/authTypes'
 import type { NodeExecutionId } from '@/types/nodeIdentification'
 import {
   fetchHistory,
@@ -144,6 +148,10 @@ const FETCH_RESPONSE_HEADERS_TIMEOUT_MS = 60_000
 interface FetchApiOptions extends RequestInit {
   timeoutMs?: number | null
   onAuthHeader?: (attached: boolean) => void
+  /** Reports which auth path was taken, independent of onAuthHeader's attached/not boolean. */
+  onAuthScheme?: (scheme: AuthScheme) => void
+  /** Reports the kind of credential sent, to tell a missing token from a wrong one. */
+  onAuthCredential?: (credential: AuthCredential) => void
 }
 
 const FETCH_ROUTE_GROUPS = new Set([
@@ -569,6 +577,8 @@ export class ComfyApi extends EventTarget {
     const {
       timeoutMs = FETCH_RESPONSE_HEADERS_TIMEOUT_MS,
       onAuthHeader,
+      onAuthScheme,
+      onAuthCredential,
       ...requestOptions
     } = options ?? {}
     const headers: HeadersInit = requestOptions.headers ?? {}
@@ -597,8 +607,14 @@ export class ComfyApi extends EventTarget {
         }
         unifiedRetryOn401 = await shouldRemintCloudRequest()
       }
+      // Reported from the header actually obtained, not assumed on entry: an
+      // unavailable header sends nothing, which is the unauthenticated case.
+      onAuthScheme?.(authHeader ? 'cloud-auth-header' : 'none')
+      notifyAuthCredential(onAuthCredential, authCredentialOf(authHeader))
     } else {
       onAuthHeader?.(false)
+      onAuthScheme?.('none')
+      notifyAuthCredential(onAuthCredential, 'none')
     }
 
     addHeaderEntry(headers, 'Comfy-User', this.user)

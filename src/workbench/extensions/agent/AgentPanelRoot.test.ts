@@ -1659,6 +1659,16 @@ describe('AgentPanelRoot standing credits-exhausted paywall', () => {
     expect(telemetry.trackAgentPaywallShown).not.toHaveBeenCalled()
   })
 
+  it('stays hidden before Agent consent is accepted', async () => {
+    Object.assign(useAgentConsentStore(), { accepted: false })
+    paywallHasFunds.value = false
+    render(AgentPanelRoot, { global: { plugins: [i18n] } })
+    await screen.findByRole('textbox')
+
+    expect(screen.queryByTestId(STANDING)).not.toBeInTheDocument()
+    expect(telemetry.trackAgentPaywallShown).not.toHaveBeenCalled()
+  })
+
   it('stays hidden on the legacy rail whose unloaded balance reads as false', async () => {
     paywallHasFunds.value = false
     paywallBilling.type = 'legacy'
@@ -3443,7 +3453,10 @@ describe('AgentPanelRoot attach flow', () => {
         integration_target: 'assets',
         feature_flag: 'agent_panel',
         feature_flag_state: 'enabled',
-        project_context: 'agent_composer'
+        project_context: 'agent_composer',
+        upload_failure_cause: 'http_500',
+        file_type: 'image/png',
+        file_size_bytes: 1
       }
     })
     const serializedReport = JSON.stringify(vi.mocked(reportError).mock.calls)
