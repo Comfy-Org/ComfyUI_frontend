@@ -1,5 +1,6 @@
 {
   "customNodePacks": {
+    "thumbnail": "Generated thumbnail for {name}",
     "registry": {
       "title": "Cloud node registry",
       "description": "Select exact converted pack revisions for this workspace. Pinning does not install nodes or dependencies.",

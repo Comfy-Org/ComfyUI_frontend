@@ -12,11 +12,7 @@
   >
     <div class="w-full rounded-t-lg">
       <slot name="banner">
-        <img
-          src="/assets/images/fallback-gradient-avatar.svg"
-          :alt="$t('g.defaultBanner')"
-          class="aspect-7/3 w-full object-cover"
-        />
+        <NodePackThumbnail :name />
       </slot>
     </div>
     <div class="flex min-h-0 flex-1 flex-col rounded-lg">
@@ -46,6 +42,8 @@
 
 <script setup lang="ts">
 import { cn } from '@comfyorg/tailwind-utils'
+
+import NodePackThumbnail from '@/components/common/NodePackThumbnail.vue'
 
 const {
   name,
