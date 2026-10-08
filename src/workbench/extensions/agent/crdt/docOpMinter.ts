@@ -87,6 +87,12 @@ type PendingOp =
   | { kind: 'add_node'; graph: LGraph; node: LGraphNode }
   | { kind: 'op'; operation: GraphOperation }
 
+type SerializeDriftReporter = (
+  name: string,
+  liveSerialize: boolean | undefined,
+  storedSerialize: boolean | undefined
+) => void
+
 /**
  * Serialized save-format node. `widgets_values` is NAME-KEYED via the node's
  * own `widgets_values_named` minus non-value widgets (FE-1904: the doc host's
@@ -103,12 +109,6 @@ type PendingOp =
  * `flags.ghost` is a placement-in-progress marker the placement click clears
  * without minting, so the document must not record it.
  */
-type SerializeDriftReporter = (
-  name: string,
-  liveSerialize: boolean | undefined,
-  storedSerialize: boolean | undefined
-) => void
-
 export function wireNodeSnapshot(
   node: LGraphNode,
   onSerializeDrift?: SerializeDriftReporter
