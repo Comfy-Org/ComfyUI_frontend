@@ -1,20 +1,19 @@
-// @vitest-environment happy-dom
 import { render, screen } from '@testing-library/vue'
 import userEvent from '@testing-library/user-event'
 import { describe, expect, it } from 'vitest'
 import { nextTick } from 'vue'
 
-import { pricingPlans } from '../../data/pricingPlans'
-import { teamCreditTiers } from '../../data/teamCreditTiers'
-import type { Locale, TranslationKey } from '../../i18n/translations'
-import { t } from '../../i18n/translations'
+import { pricingPlans } from '@/data/pricingPlans'
+import { teamCreditTiers } from '@/data/teamCreditTiers'
+import type { Locale, TranslationKey } from '@/i18n/translations'
+import { t } from '@/i18n/translations'
 import PricingSection from './PricingSection.vue'
 
 const MONTHS_PER_YEAR = 12
 const LOCALES: Locale[] = ['en', 'zh-CN']
 
 function firstNumber(key: TranslationKey, locale: Locale): number {
-  const match = /[\d,]+/.exec(t(key, locale))
+  const match = /[\d,]+/.exec(t(key, {}, { locale }))
   if (!match) throw new Error(`no number in ${key} (${locale})`)
   return Number(match[0].replaceAll(',', ''))
 }

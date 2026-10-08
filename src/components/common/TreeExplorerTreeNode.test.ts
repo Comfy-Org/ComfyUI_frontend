@@ -1,13 +1,10 @@
 import { getActivePinia } from 'pinia'
 import { fireEvent, render, screen } from '@testing-library/vue'
-import Badge from 'primevue/badge'
-import PrimeVue from 'primevue/config'
-import InputText from 'primevue/inputtext'
-import { beforeAll, describe, expect, it, vi } from 'vitest'
-import { createApp } from 'vue'
+import { describe, expect, it, vi } from 'vitest'
 import { createI18n } from 'vue-i18n'
 
 import EditableText from '@/components/common/EditableText.vue'
+import Badge from '@/components/ui/badge/Badge.vue'
 import TreeExplorerTreeNode from '@/components/common/TreeExplorerTreeNode.vue'
 import type { RenderedTreeExplorerNode } from '@/types/treeExplorerTypes'
 import { InjectKeyHandleEditLabelFunction } from '@/types/treeExplorerTypes'
@@ -18,84 +15,59 @@ const i18n = createI18n({
   messages: {}
 })
 
-describe('TreeExplorerTreeNode', () => {
-  const mockNode = {
-    key: '1',
-    label: 'Test Node',
-    leaf: false,
-    totalLeaves: 3,
-    icon: 'pi pi-folder',
-    type: 'folder',
-    handleRename: () => {}
-  } as RenderedTreeExplorerNode
+const mockNode = {
+  key: '1',
+  label: 'Test Node',
+  leaf: false,
+  totalLeaves: 3,
+  icon: 'pi pi-folder',
+  type: 'folder',
+  handleRename: () => {}
+} as RenderedTreeExplorerNode
 
-  const mockHandleEditLabel = vi.fn()
-
-  beforeAll(() => {
-    const app = createApp({})
-    app.use(PrimeVue)
+function renderNode(
+  overrides: Partial<RenderedTreeExplorerNode> = {},
+  handleEditLabel = vi.fn()
+) {
+  render(TreeExplorerTreeNode, {
+    props: { node: { ...mockNode, ...overrides } },
+    global: {
+      components: { EditableText, Badge },
+      plugins: [getActivePinia()!, i18n],
+      provide: { [InjectKeyHandleEditLabelFunction]: handleEditLabel }
+    }
   })
+}
 
-  it('renders correctly', () => {
-    render(TreeExplorerTreeNode, {
-      props: { node: mockNode },
-      global: {
-        components: { EditableText, Badge },
-        plugins: [getActivePinia()!, i18n],
-        provide: {
-          [InjectKeyHandleEditLabelFunction]: mockHandleEditLabel
-        }
-      }
-    })
+describe('TreeExplorerTreeNode', () => {
+  it.for([
+    { kind: 'a folder', overrides: {}, leafCount: '3' },
+    {
+      kind: 'a leaf',
+      overrides: { leaf: true, type: 'node' as const },
+      leafCount: undefined
+    }
+  ])('renders $kind with its leaf count', ({ overrides, leafCount }) => {
+    renderNode(overrides)
 
-    const treeNode = screen.getByTestId('tree-node-1')
-    expect(treeNode).toBeInTheDocument()
-    expect(treeNode).toHaveClass('tree-folder')
-    expect(treeNode).not.toHaveClass('tree-leaf')
     expect(screen.getByText('Test Node')).toBeInTheDocument()
-    expect(screen.getByText('3')).toBeInTheDocument()
+    expect(screen.queryByTestId('tree-leaf-count')?.textContent.trim()).toBe(
+      leafCount
+    )
   })
 
   it('makes node label editable when isEditingLabel is true', () => {
-    render(TreeExplorerTreeNode, {
-      props: {
-        node: {
-          ...mockNode,
-          isEditingLabel: true
-        }
-      },
-      global: {
-        components: { EditableText, Badge, InputText },
-        plugins: [getActivePinia()!, i18n, PrimeVue],
-        provide: {
-          [InjectKeyHandleEditLabelFunction]: mockHandleEditLabel
-        }
-      }
-    })
+    renderNode({ isEditingLabel: true })
 
     expect(screen.getByRole('textbox')).toBeInTheDocument()
   })
 
   it('triggers handleEditLabel callback when editing is finished', async () => {
-    const handleEditLabelMock = vi.fn()
+    const handleEditLabel = vi.fn()
+    renderNode({ isEditingLabel: true }, handleEditLabel)
 
-    render(TreeExplorerTreeNode, {
-      props: {
-        node: {
-          ...mockNode,
-          isEditingLabel: true
-        }
-      },
-      global: {
-        components: { EditableText, Badge, InputText },
-        provide: { [InjectKeyHandleEditLabelFunction]: handleEditLabelMock },
-        plugins: [getActivePinia()!, i18n, PrimeVue]
-      }
-    })
-
-    // Trigger blur on the input to finish editing (fires the 'edit' event)
     await fireEvent.blur(screen.getByRole('textbox'))
 
-    expect(handleEditLabelMock).toHaveBeenCalledOnce()
+    expect(handleEditLabel).toHaveBeenCalledOnce()
   })
 })

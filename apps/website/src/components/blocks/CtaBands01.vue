@@ -2,9 +2,9 @@
 import { cn } from '@comfyorg/tailwind-utils'
 import type { AnchorHTMLAttributes, HTMLAttributes } from 'vue'
 
-import GlassCard from '../common/GlassCard.vue'
-import Button from '../ui/button/Button.vue'
-import { resolveRel } from '../../utils/cta'
+import GlassCard from '@/components/common/GlassCard.vue'
+import Button from '@/components/ui/button/Button.vue'
+import { resolveRel } from '@/utils/cta'
 
 type Cta = {
   label: string
@@ -31,7 +31,7 @@ const {
 </script>
 
 <template>
-  <section :class="cn('max-w-9xl mx-auto px-6 py-16 lg:py-24', className)">
+  <section :class="cn('mx-auto max-w-9xl px-6 py-16 lg:py-24', className)">
     <GlassCard class="flex flex-col gap-2">
       <div
         v-for="band in bands"
@@ -65,7 +65,7 @@ const {
         </template>
         <template v-else>
           <h2
-            class="text-primary-comfy-yellow shrink-0 text-2xl font-normal tracking-wide uppercase lg:w-72 lg:text-[1.625rem]"
+            class="shrink-0 text-2xl font-normal tracking-wide text-primary-comfy-yellow uppercase lg:w-72 lg:text-[1.625rem]"
           >
             {{ band.label }}
           </h2>

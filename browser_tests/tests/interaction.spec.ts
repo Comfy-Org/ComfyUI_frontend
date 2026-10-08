@@ -1,4 +1,3 @@
-import type { Locator } from '@playwright/test'
 import { expect } from '@playwright/test'
 import type { Position } from '@vueuse/core'
 
@@ -12,30 +11,100 @@ import { TestIds } from '@e2e/fixtures/selectors'
 import type { NodeReference } from '@e2e/fixtures/utils/litegraphUtils'
 import type { WorkspaceStore } from '@e2e/types/globals'
 
-test.beforeEach(async ({ comfyPage }) => {
-  await comfyPage.settings.setSetting('Comfy.UseNewMenu', 'Disabled')
+test.use({ initialSettings: { 'Comfy.UseNewMenu': 'Disabled' } })
+
+test.beforeEach(async ({ comfyPage, initialSettings }) => {
   // Wait for the legacy menu to appear and canvas to settle after layout shift.
-  await comfyPage.page.locator('.comfy-menu').waitFor({ state: 'visible' })
+  if (initialSettings['Comfy.UseNewMenu'] === 'Disabled') {
+    await comfyPage.page.locator('.comfy-menu').waitFor({ state: 'visible' })
+  }
   await comfyPage.nextFrame()
 })
 
-test.describe('Item Interaction', { tag: ['@screenshot', '@node'] }, () => {
-  test('Can select/delete all items', async ({ comfyPage }) => {
-    await comfyPage.workflow.loadWorkflow('groups/mixed_graph_items')
-    await comfyPage.canvas.press('Control+a')
-    await expect(comfyPage.canvas).toHaveScreenshot('selected-all.png')
-    await comfyPage.canvas.press('Delete')
-    await expect(comfyPage.canvas).toHaveScreenshot('deleted-all.png')
+test.describe('Item Interaction', { tag: ['@node'] }, () => {
+  test(
+    'Can select/delete all items',
+    { tag: ['@screenshot'] },
+    async ({ comfyPage }) => {
+      await comfyPage.workflow.loadWorkflow('groups/mixed_graph_items')
+      await comfyPage.canvas.press('Control+a')
+      await expect(comfyPage.canvas).toHaveScreenshot('selected-all.png')
+      await comfyPage.canvas.press('Delete')
+      await expect(comfyPage.canvas).toHaveScreenshot('deleted-all.png')
+    }
+  )
+
+  test('A pinned node resists dragging and stays pinned across a reload', async ({
+    comfyPage
+  }) => {
+    await comfyPage.workflow.loadWorkflow('nodes/single_ksampler')
+
+    const title = 'KSampler'
+    async function readPos() {
+      const node = await comfyPage.nodeOps.getNodeRefByTitle(title)
+      return node.getProperty<[number, number]>('pos')
+    }
+
+    const node = await comfyPage.nodeOps.getNodeRefByTitle(title)
+    const pinnedOrigin = await readPos()
+
+    const dragDelta = { x: 90, y: 70 }
+
+    await test.step('Pinned node resists dragging', async () => {
+      await comfyPage.nodeOps.selectNodes([title])
+      await comfyPage.command.executeCommand(
+        'Comfy.Canvas.ToggleSelectedNodes.Pin'
+      )
+      await expect.poll(() => node.isPinned()).toBe(true)
+
+      await node.dragBy(dragDelta)
+      await expect.poll(readPos).toEqual(pinnedOrigin)
+    })
+
+    const movedPos =
+      await test.step('Unpinned node moves with the same drag', async () => {
+        // Control: the same gesture must move the node once it is unpinned.
+        // Without this, "did not move" could simply mean the drag never landed.
+        await comfyPage.command.executeCommand(
+          'Comfy.Canvas.ToggleSelectedNodes.Pin'
+        )
+        await expect.poll(() => node.isPinned()).toBe(false)
+        await node.dragBy(dragDelta)
+        await expect.poll(readPos).not.toEqual(pinnedOrigin)
+        return await readPos()
+      })
+
+    await test.step('Repin and save the moved node', async () => {
+      const beforeRepin = Date.now()
+      await comfyPage.command.executeCommand(
+        'Comfy.Canvas.ToggleSelectedNodes.Pin'
+      )
+      await expect.poll(() => node.isPinned()).toBe(true)
+      await comfyPage.workflow.waitForDraftIndexUpdatedSince(beforeRepin)
+    })
+
+    await test.step('Reload restores the pinned node at its moved position', async () => {
+      await comfyPage.workflow.reloadAndWaitForApp()
+
+      const reloaded = await comfyPage.nodeOps.getNodeRefByTitle(title)
+      expect(reloaded.id).toBe(node.id)
+      await expect.poll(() => reloaded.isPinned()).toBe(true)
+      await expect.poll(readPos).toEqual(movedPos)
+    })
   })
 
-  test('Can pin/unpin items with keyboard shortcut', async ({ comfyPage }) => {
-    await comfyPage.workflow.loadWorkflow('groups/mixed_graph_items')
-    await comfyPage.canvas.press('Control+a')
-    await comfyPage.keyboard.press('KeyP')
-    await expect(comfyPage.canvas).toHaveScreenshot('pinned-all.png')
-    await comfyPage.keyboard.press('KeyP')
-    await expect(comfyPage.canvas).toHaveScreenshot('unpinned-all.png')
-  })
+  test(
+    'Can pin/unpin items with keyboard shortcut',
+    { tag: ['@screenshot'] },
+    async ({ comfyPage }) => {
+      await comfyPage.workflow.loadWorkflow('groups/mixed_graph_items')
+      await comfyPage.canvas.press('Control+a')
+      await comfyPage.keyboard.press('KeyP')
+      await expect(comfyPage.canvas).toHaveScreenshot('pinned-all.png')
+      await comfyPage.keyboard.press('KeyP')
+      await expect(comfyPage.canvas).toHaveScreenshot('unpinned-all.png')
+    }
+  )
 })
 
 test.describe('Node Interaction', () => {
@@ -167,12 +236,6 @@ test.describe('Node Interaction', () => {
   })
 
   test.describe('Node Duplication', () => {
-    test.beforeEach(async ({ comfyPage }) => {
-      // Pin this suite to the legacy canvas path so Alt+drag exercises
-      // LGraphCanvas, not the Vue node drag handler.
-      await comfyPage.settings.setSetting('Comfy.VueNodes.Enabled', false)
-    })
-
     test('Can duplicate a regular node via Alt+drag', async ({ comfyPage }) => {
       const before = await comfyPage.nodeOps.getNodeRefsByType('CLIPTextEncode')
       expect(
@@ -208,15 +271,12 @@ test.describe('Node Interaction', () => {
   })
 
   test.describe('Edge Interaction', { tag: '@screenshot' }, () => {
-    test.beforeEach(async ({ comfyPage }) => {
-      await comfyPage.settings.setSetting(
-        'Comfy.LinkRelease.Action',
-        'no action'
-      )
-      await comfyPage.settings.setSetting(
-        'Comfy.LinkRelease.ActionShift',
-        'no action'
-      )
+    test.use({
+      initialSettings: {
+        'Comfy.UseNewMenu': 'Disabled',
+        'Comfy.LinkRelease.Action': 'no action',
+        'Comfy.LinkRelease.ActionShift': 'no action'
+      }
     })
 
     // Test both directions of edge connection.
@@ -234,6 +294,53 @@ test.describe('Node Interaction', () => {
           maxDiffPixels: 50
         })
       })
+    })
+
+    test('Repeated disconnect/connect leaves exactly one link', async ({
+      comfyPage
+    }) => {
+      test.slow()
+      await comfyPage.workflow.loadWorkflow('default')
+
+      const checkpoint = await comfyPage.nodeOps.getNodeRefByType(
+        'CheckpointLoaderSimple'
+      )
+      const clipOutput = await checkpoint.getOutput(1)
+      const targetNode = await comfyPage.nodeOps.getNodeRefById(6)
+      const targetInput = await targetNode.getInput(0)
+      const targetLink = await targetInput.getLink()
+      if (!targetLink) throw new Error('Default workflow link not found')
+
+      const targetEndpoints = {
+        origin_id: targetLink.origin_id,
+        origin_slot: targetLink.origin_slot,
+        target_id: targetLink.target_id,
+        target_slot: targetLink.target_slot
+      }
+      const initial = await clipOutput.getLinkCount()
+      expect(initial, 'default workflow should have links').toBeGreaterThan(0)
+
+      for (let cycle = 0; cycle < 5; cycle++) {
+        await comfyPage.canvasOps.disconnectEdge()
+        await clipOutput.expectLinkCount(initial - 1)
+        await expect.poll(() => targetInput.getLink()).toBeNull()
+        await comfyPage.canvasOps.connectEdge()
+        await clipOutput.expectLinkCount(initial)
+        await expect
+          .poll(() => targetInput.getLink())
+          .toMatchObject(targetEndpoints)
+      }
+
+      // End disconnected so the reload assertion cannot pass by restoring a
+      // pristine default instead of the edited draft.
+      await comfyPage.canvasOps.disconnectEdge()
+      await comfyPage.canvasOps.moveMouseToEmptyArea()
+      await clipOutput.expectLinkCount(initial - 1)
+      await expect.poll(() => targetInput.getLink()).toBeNull()
+
+      await comfyPage.workflow.reloadAndWaitForApp()
+      await clipOutput.expectLinkCount(initial - 1)
+      await expect.poll(() => targetInput.getLink()).toBeNull()
     })
 
     test('Can move link', async ({ comfyPage }) => {
@@ -354,6 +461,11 @@ test.describe('Node Interaction', () => {
     'Can toggle dom widget node open/closed',
     { tag: '@screenshot' },
     async ({ comfyPage }) => {
+      const DOUBLE_CLICK_TIME = 100
+      await comfyPage.settings.setSetting(
+        'Comfy.Pointer.DoubleClickTime',
+        DOUBLE_CLICK_TIME
+      )
       // Find the node whose collapse toggler matches the hardcoded position.
       // getNodeRefsByType order is non-deterministic, so identify by proximity.
       const nodes = await comfyPage.nodeOps.getNodeRefsByType('CLIPTextEncode')
@@ -373,21 +485,23 @@ test.describe('Node Interaction', () => {
       await comfyPage.canvas.click({
         position: togglerPos
       })
+      const firstClickAt = await comfyPage.page.evaluate(() =>
+        performance.now()
+      )
       await expect.poll(() => targetNode.isCollapsed()).toBe(true)
       await expect(comfyPage.canvas).toHaveScreenshot(
         'text-encode-toggled-off.png'
       )
-      // Wait for the double-click window (300ms) to expire so the next
-      // click at the same position isn't interpreted as a double-click.
       await expect
-        .poll(() =>
-          comfyPage.page.evaluate(() => {
-            const pointer = window.app!.canvas.pointer
-            if (!pointer.eLastDown) return true
-            return performance.now() - pointer.eLastDown.timeStamp > 300
-          })
+        .poll(
+          () =>
+            comfyPage.page.evaluate(
+              (since) => performance.now() - since,
+              firstClickAt
+            ),
+          { message: 'double-click window after the first toggle has elapsed' }
         )
-        .toBe(true)
+        .toBeGreaterThan(DOUBLE_CLICK_TIME)
       await comfyPage.canvas.click({
         position: togglerPos
       })
@@ -846,30 +960,13 @@ test.describe('Load workflow', { tag: '@screenshot' }, () => {
   }) => {
     await comfyPage.workflow.loadWorkflow('nodes/single_ksampler')
     const node = (await comfyPage.nodeOps.getFirstNodeRef())!
+    const draftSaveStartedAt = Date.now()
     await node.click('collapse')
     await comfyPage.canvasOps.clickEmptySpace()
     await expect(comfyPage.canvas).toHaveScreenshot(
       'single_ksampler_modified.png'
     )
-    // Wait for V2 persistence debounce to save the modified workflow
-    const start = Date.now()
-    await comfyPage.page.waitForFunction((since) => {
-      for (let i = 0; i < window.localStorage.length; i++) {
-        const key = window.localStorage.key(i)
-        if (!key?.startsWith('Comfy.Workflow.DraftIndex.v2:')) continue
-        const json = window.localStorage.getItem(key)
-        if (!json) continue
-        try {
-          const index = JSON.parse(json)
-          if (typeof index.updatedAt === 'number' && index.updatedAt >= since) {
-            return true
-          }
-        } catch {
-          // ignore
-        }
-      }
-      return false
-    }, start)
+    await comfyPage.workflow.waitForDraftIndexUpdatedSince(draftSaveStartedAt)
     // oxlint-disable-next-line comfy/no-comfy-page-setup-call -- pre-existing call, migration tracked in #16859; not fixed in this pass
     await comfyPage.setup({ clearStorage: false })
     await expect(comfyPage.canvas).toHaveScreenshot(
@@ -881,11 +978,13 @@ test.describe('Load workflow', { tag: '@screenshot' }, () => {
     `${Date.now().toString(36)}-${Math.random().toString(36).slice(2, 8)}${extension}`
 
   test.describe('Restore all open workflows on reload', () => {
+    test.describe.configure({ timeout: 45_000 })
+    test.use({ initialSettings: { 'Comfy.UseNewMenu': 'Top' } })
+
     let workflowA: string
     let workflowB: string
 
     test.beforeEach(async ({ comfyPage }) => {
-      await comfyPage.settings.setSetting('Comfy.UseNewMenu', 'Top')
       workflowA = generateUniqueFilename()
       await comfyPage.menu.topbar.saveWorkflow(workflowA)
       workflowB = generateUniqueFilename()
@@ -956,11 +1055,13 @@ test.describe('Load workflow', { tag: '@screenshot' }, () => {
   })
 
   test.describe('Restore workflow tabs after browser restart', () => {
+    test.describe.configure({ timeout: 45_000 })
+    test.use({ initialSettings: { 'Comfy.UseNewMenu': 'Top' } })
+
     let workflowA: string
     let workflowB: string
 
     test.beforeEach(async ({ comfyPage }) => {
-      await comfyPage.settings.setSetting('Comfy.UseNewMenu', 'Top')
       workflowA = generateUniqueFilename()
       await comfyPage.menu.topbar.saveWorkflow(workflowA)
       workflowB = generateUniqueFilename()
@@ -1064,13 +1165,13 @@ test.describe('Load duplicate workflow', () => {
 })
 
 test.describe('Viewport settings', () => {
-  test.beforeEach(async ({ comfyPage }) => {
-    await comfyPage.settings.setSetting('Comfy.UseNewMenu', 'Top')
-    await comfyPage.settings.setSetting(
-      'Comfy.Workflow.WorkflowTabsPosition',
-      'Topbar'
-    )
+  test.use({
+    initialSettings: {
+      'Comfy.UseNewMenu': 'Top'
+    }
+  })
 
+  test.beforeEach(async ({ comfyPage }) => {
     await comfyPage.workflow.setupWorkflowsDirectory({})
   })
 
@@ -1083,68 +1184,66 @@ test.describe('Viewport settings', () => {
       offset: await comfyPage.canvasOps.getOffset()
     })
 
-    const changeTab = async (tab: Locator) => {
-      await tab.click()
-      await comfyPage.nextFrame()
+    const changeTab = async (workflowName: string) => {
+      await comfyPage.menu.topbar.getWorkflowTab(workflowName).click()
+      await expect
+        .poll(() => comfyPage.workflow.getActiveWorkflowPath())
+        .toBe(`workflows/${workflowName}.json`)
+      await comfyPage.canvasOps.waitForViewToSettle()
       await comfyMouse.move(DefaultGraphPositions.emptySpace)
 
-      // If tooltip is visible, wait for it to hide
       await expect(
         comfyPage.page.locator('.workflow-popover-fade')
       ).toHaveCount(0)
     }
 
-    // Screenshot the canvas element
-    await comfyPage.settings.setSetting('Comfy.Graph.CanvasMenu', true)
+    await test.step('Save two workflow tabs', async () => {
+      await comfyPage.settings.setSetting('Comfy.Graph.CanvasMenu', true)
+      await comfyPage.page
+        .getByTestId(TestIds.canvas.toggleMinimapButton)
+        .click()
+      await comfyPage.settings.setSetting('Comfy.Graph.CanvasMenu', false)
 
-    const toggleButton = comfyPage.page.getByTestId(
-      TestIds.canvas.toggleMinimapButton
-    )
-    await toggleButton.click()
-    await comfyPage.settings.setSetting('Comfy.Graph.CanvasMenu', false)
+      await comfyPage.menu.topbar.saveWorkflow('Workflow A')
+      await comfyPage.nextFrame()
+      await comfyPage.menu.topbar.saveWorkflowAs('Workflow B')
+      await comfyPage.nextFrame()
+    })
 
-    await comfyPage.menu.topbar.saveWorkflow('Workflow A')
-    await comfyPage.nextFrame()
+    const { viewportA, viewportB } =
+      await test.step('Give each workflow a distinct viewport', async () => {
+        await changeTab('Workflow A')
+        const viewportA = await getViewport()
 
-    // Save workflow as a new file, then zoom out before screen shot
-    await comfyPage.menu.topbar.saveWorkflowAs('Workflow B')
+        await changeTab('Workflow B')
+        await comfyMouse.wheel(0, 60)
+        await expect.poll(getViewport).not.toEqual(viewportA)
+        await comfyPage.canvasOps.waitForViewToSettle()
 
-    await comfyPage.nextFrame()
-    const tabA = comfyPage.menu.topbar.getWorkflowTab('Workflow A')
-    await changeTab(tabA)
+        const viewportB = await getViewport()
+        expect(viewportB).not.toEqual(viewportA)
+        return { viewportA, viewportB }
+      })
 
-    const viewportA = await getViewport()
+    await test.step('Restore Workflow A viewport', async () => {
+      await changeTab('Workflow A')
+      await expect.poll(getViewport).toEqual(viewportA)
+    })
 
-    const tabB = comfyPage.menu.topbar.getWorkflowTab('Workflow B')
-    await changeTab(tabB)
-
-    await comfyMouse.move(DefaultGraphPositions.emptySpace)
-    for (let i = 0; i < 4; i++) {
-      await comfyMouse.wheel(0, 60)
-    }
-
-    await comfyPage.nextFrame()
-    const viewportB = await getViewport()
-
-    expect(viewportB).not.toEqual(viewportA)
-
-    // Go back to Workflow A
-    await changeTab(tabA)
-    await expect.poll(getViewport).toEqual(viewportA)
-
-    // And back to Workflow B
-    await changeTab(tabB)
-    await expect.poll(getViewport).toEqual(viewportB)
+    await test.step('Restore Workflow B viewport', async () => {
+      await changeTab('Workflow B')
+      await expect.poll(getViewport).toEqual(viewportB)
+    })
   })
 })
 
 test.describe('Canvas Navigation', { tag: '@screenshot' }, () => {
   test.describe('Legacy Mode', () => {
-    test.beforeEach(async ({ comfyPage }) => {
-      await comfyPage.settings.setSetting(
-        'Comfy.Canvas.NavigationMode',
-        'legacy'
-      )
+    test.use({
+      initialSettings: {
+        'Comfy.UseNewMenu': 'Disabled',
+        'Comfy.Canvas.NavigationMode': 'legacy'
+      }
     })
 
     test('Left-click drag in empty area should pan canvas', async ({
@@ -1200,11 +1299,11 @@ test.describe('Canvas Navigation', { tag: '@screenshot' }, () => {
   })
 
   test.describe('Standard Mode', () => {
-    test.beforeEach(async ({ comfyPage }) => {
-      await comfyPage.settings.setSetting(
-        'Comfy.Canvas.NavigationMode',
-        'standard'
-      )
+    test.use({
+      initialSettings: {
+        'Comfy.UseNewMenu': 'Disabled',
+        'Comfy.Canvas.NavigationMode': 'standard'
+      }
     })
 
     test('Left-click drag in empty area should select nodes', async ({

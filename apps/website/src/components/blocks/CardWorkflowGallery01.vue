@@ -20,7 +20,7 @@ const {
 </script>
 
 <template>
-  <section :class="cn('max-w-9xl mx-auto px-6 py-16 lg:py-24', className)">
+  <section :class="cn('mx-auto max-w-9xl px-6 py-16 lg:py-24', className)">
     <h2
       v-if="title"
       class="text-3xl font-light tracking-tight text-primary-warm-white lg:text-5xl"

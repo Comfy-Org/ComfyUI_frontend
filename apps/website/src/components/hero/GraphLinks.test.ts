@@ -1,18 +1,17 @@
-// @vitest-environment happy-dom
-/* eslint-disable testing-library/no-container, testing-library/no-node-access */
+/* oxlint-disable testing-library/no-container, testing-library/no-node-access */
 import { render } from '@testing-library/vue'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 
 import {
   setAllIntersecting,
   stubIntersectionObserver
-} from '../../test/fakeIntersectionObserver'
+} from '@/test/fakeIntersectionObserver'
 import { ELEMENT_KEYS, FLOW } from './graphLayout'
 import GraphLinks from './GraphLinks.vue'
 
 const motion = vi.hoisted(() => ({ reduced: false }))
 
-vi.mock('../../composables/useReducedMotion', () => ({
+vi.mock(import('@/composables/useReducedMotion'), () => ({
   prefersReducedMotion: () => motion.reduced
 }))
 
@@ -66,7 +65,7 @@ describe('GraphLinks', () => {
     const { container } = renderLinks()
     const uses = [...container.querySelectorAll('use')].slice(0, BANDS)
 
-    expect((uses[0] as SVGUseElement).style.strokeOpacity).toBe('1')
+    expect(uses[0].style.strokeOpacity).toBe('1')
     expect((uses.at(-1) as SVGUseElement).style.strokeOpacity).toBe('0.04')
   })
 

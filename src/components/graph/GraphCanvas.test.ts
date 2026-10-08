@@ -1,5 +1,5 @@
 import { getActivePinia } from 'pinia'
-import { render } from '@testing-library/vue'
+import { cleanup, render, screen } from '@testing-library/vue'
 import type { RenderOptions } from '@testing-library/vue'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { nextTick } from 'vue'
@@ -10,6 +10,7 @@ import { useSettingStore } from '@/platform/settings/settingStore'
 import { useReleaseStore } from '@/platform/updates/common/releaseStore'
 import { useWorkflowStore } from '@/platform/workflow/management/stores/workflowStore'
 import { useCanvasStore } from '@/renderer/core/canvas/canvasStore'
+import { api } from '@/scripts/api'
 import { app } from '@/scripts/app'
 import { useBootstrapStore } from '@/stores/bootstrapStore'
 import { useExecutionStore } from '@/stores/executionStore'
@@ -17,8 +18,24 @@ import { toNodeId } from '@/types/nodeId'
 import { createNodeLocatorId } from '@/types/nodeIdentification'
 
 import GraphCanvas from './GraphCanvas.vue'
+const agentDocked = { value: true }
+vi.mock<unknown>(
+  import('@/workbench/extensions/agent/composables/useAgentDockMount'),
+  async () => {
+    const { computed, defineComponent, h } = await import('vue')
+    return {
+      useAgentDockMount: () => ({
+        docked: computed(() => agentDocked.value),
+        DockedAgentPanel: defineComponent({
+          name: 'DockedAgentPanel',
+          setup: () => () => h('div')
+        })
+      })
+    }
+  }
+)
+
 vi.mock(import('firebase/auth'))
-vi.mock(import('vuefire'), () => ({ useFirebaseAuth: vi.fn() }))
 
 /**
  * GraphCanvas is the only place the first-run tour is wired into startup: it
@@ -109,20 +126,15 @@ vi.mock<unknown>(import('@/services/colorPaletteService'), () => ({
   useColorPaletteService: () => ({ loadColorPalette: vi.fn() })
 }))
 
-vi.mock<unknown>(
-  import('@/renderer/core/canvas/useCanvasInteractions'),
-  () => ({
-    useCanvasInteractions: () => ({ forwardEventToCanvas: vi.fn() })
-  })
-)
+vi.mock(import('@/renderer/core/canvas/useCanvasInteractions'))
 
-vi.mock<unknown>(import('@/composables/useCanvasDrop'), () => ({
+vi.mock(import('@/composables/useCanvasDrop'), () => ({
   useCanvasDrop: vi.fn()
 }))
 vi.mock(import('@/platform/settings/composables/useLitegraphSettings'), () => ({
   useLitegraphSettings: vi.fn()
 }))
-vi.mock<unknown>(import('@/composables/node/useNodeBadge'), () => ({
+vi.mock(import('@/composables/node/useNodeBadge'), () => ({
   useNodeBadge: vi.fn()
 }))
 vi.mock(import('@/composables/useGlobalLitegraph'), () => ({
@@ -142,7 +154,7 @@ vi.mock(
   () => ({ useWorkflowAutoSave: vi.fn() })
 )
 
-async function mountGraphCanvas() {
+async function mountGraphCanvas(stubs: Record<string, unknown> = {}) {
   // Handed to the component rather than left to the active-Pinia fallback, so
   // the readiness gates below are set on the instance startup actually reads.
   const pinia = getActivePinia()!
@@ -162,7 +174,8 @@ async function mountGraphCanvas() {
       plugins: [
         pinia,
         createI18n({ legacy: false, locale: 'en', missingWarn: false })
-      ]
+      ],
+      stubs
     }
   } as RenderOptions<typeof GraphCanvas>)
 
@@ -202,6 +215,29 @@ describe('GraphCanvas first-run tour wiring', () => {
       'image_to_image',
       undefined
     )
+  })
+})
+
+describe('GraphCanvas legacy settings bridge', () => {
+  it('replays setting changes on the legacy settings dialog', async () => {
+    await mountGraphCanvas()
+
+    expect(app.ui.settings.dispatchChange).toHaveBeenCalledWith(
+      'Comfy.Locale',
+      expect.anything(),
+      undefined
+    )
+  })
+
+  it('stops replaying after unmount', async () => {
+    await mountGraphCanvas()
+    cleanup()
+    vi.mocked(app.ui.settings.dispatchChange).mockClear()
+    vi.spyOn(api, 'storeSetting').mockResolvedValue(new Response())
+
+    await useSettingStore().set('Comfy.Locale', 'zh')
+
+    expect(app.ui.settings.dispatchChange).not.toHaveBeenCalled()
   })
 })
 
@@ -447,5 +483,30 @@ describe('GraphCanvas execution progress updates', () => {
     expect(harness.progressWrites).toBe(0)
     expect(mocks.setDirty).not.toHaveBeenCalled()
     expect(harness.workflowStore.nodeToNodeLocatorId).not.toHaveBeenCalled()
+  })
+})
+
+describe('GraphCanvas agent dock', () => {
+  // The dock is slot content of the splitter overlay, so the overlay stub has
+  // to render that slot for the guard to be observable.
+  const dockStubs = {
+    LiteGraphCanvasSplitterOverlay: {
+      template: '<div><slot name="agent-panel" /></div>'
+    },
+    DockedAgentPanel: { template: '<div data-testid="docked-agent-panel" />' }
+  }
+
+  it('mounts the dock in graph mode', async () => {
+    useCanvasStore().linearMode = false
+    await mountGraphCanvas(dockStubs)
+
+    expect(screen.getByTestId('docked-agent-panel')).toBeInTheDocument()
+  })
+
+  it('leaves the dock to LinearView in linear mode', async () => {
+    useCanvasStore().linearMode = true
+    await mountGraphCanvas(dockStubs)
+
+    expect(screen.queryByTestId('docked-agent-panel')).not.toBeInTheDocument()
   })
 })

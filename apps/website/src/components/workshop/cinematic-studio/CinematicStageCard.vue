@@ -1,0 +1,125 @@
+<script setup lang="ts">
+import { computed } from 'vue'
+
+import { cn } from '@comfyorg/tailwind-utils'
+
+import type { AspectRatio } from '@/lib/workshop/cinematic-studio/catalog'
+import type { CinematicModel } from '@/lib/workshop/cinematic-studio/models'
+import type { Reel } from '@/lib/workshop/cinematic-studio/reel'
+import { selectedTake, takesOfShot } from '@/lib/workshop/cinematic-studio/reel'
+import type { Locale } from '@/i18n/translations'
+import { translationsFor } from '@/i18n/translations'
+import { framedStyle } from './aspect-style'
+import CinematicCreditSummary from './CinematicCreditSummary.vue'
+import CinematicSequence from './CinematicSequence.vue'
+import CinematicTakeBar from './CinematicTakeBar.vue'
+import CinematicTakeFrame from './CinematicTakeFrame.vue'
+
+const {
+  reel,
+  aspect,
+  models,
+  memberWorkspace,
+  locale = 'en'
+} = defineProps<{
+  reel: Reel
+  aspect: AspectRatio
+  models: readonly CinematicModel[]
+  memberWorkspace?: string
+  locale?: Locale
+}>()
+const { t } = translationsFor(locale)
+
+const emit = defineEmits<{
+  select: [id: string]
+  retry: [...ids: string[]]
+}>()
+
+const current = computed(() => selectedTake(reel))
+const modelName = computed(
+  () =>
+    models.find((model) => model.slug === current.value?.modelSlug)?.name ?? ''
+)
+const siblings = computed(() =>
+  current.value ? takesOfShot(reel, current.value.shot) : []
+)
+</script>
+
+<template>
+  <section
+    class="flex min-w-0 flex-col overflow-hidden rounded-2xl border border-transparency-white-t8 bg-transparency-white-t4"
+    :aria-label="t('cinematic.stage.label')"
+  >
+    <header
+      class="flex min-h-11 items-center justify-between gap-3 border-b border-transparency-white-t8 px-5 py-1"
+      data-testid="cinematic-output-header"
+    >
+      <span
+        class="shrink-0 text-xs font-bold tracking-wider text-primary-comfy-canvas uppercase"
+      >
+        {{ t('workshop.output.title') }}
+      </span>
+      <CinematicTakeBar
+        v-if="current"
+        :current
+        :siblings
+        :model-name="modelName"
+        :take-picker="false"
+        :locale
+      />
+    </header>
+    <div
+      :class="
+        cn(
+          'flex flex-col items-center justify-center gap-4 sm:min-h-72 sm:p-6 lg:min-h-112',
+          !current && 'min-h-72 p-4'
+        )
+      "
+      data-testid="cinematic-output-body"
+    >
+      <template v-if="current">
+        <CinematicTakeFrame
+          class="max-sm:rounded-none"
+          :current
+          :member-workspace="memberWorkspace"
+          :locale
+          @retry="emit('retry', current.id)"
+        />
+        <CinematicCreditSummary
+          :takes="siblings"
+          :member-workspace="memberWorkspace"
+          :locale
+          class="w-full max-sm:px-4"
+          @retry="emit('retry', ...$event)"
+        />
+      </template>
+
+      <div
+        v-else
+        class="flex max-w-3xl flex-col items-center justify-center gap-2 rounded-xl p-6 text-center transition-[aspect-ratio] duration-300"
+        :style="framedStyle(aspect, '60vh')"
+        data-testid="cinematic-frame-preview"
+      >
+        <span
+          class="text-xs font-bold tracking-wider text-primary-warm-gray uppercase"
+        >
+          {{ aspect }}
+        </span>
+        <p class="text-base font-semibold text-primary-warm-white">
+          {{ t('cinematic.stage.emptyTitle') }}
+        </p>
+        <p class="text-sm text-primary-warm-gray">
+          {{ t('cinematic.stage.emptyBody') }}
+        </p>
+      </div>
+    </div>
+    <CinematicSequence
+      v-if="reel.takes.length"
+      :takes="reel.takes"
+      :current-id="current?.id"
+      :locale
+      class="border-t border-transparency-white-t8 px-4 py-3"
+      @select="emit('select', $event)"
+    />
+  </section>
+</template>

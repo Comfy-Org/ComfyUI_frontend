@@ -1,25 +1,28 @@
 <script setup lang="ts">
 import { cn } from '@comfyorg/tailwind-utils'
 
-import type { Pack } from '../../data/cloudNodes'
-import type { Locale } from '../../i18n/translations'
+import type { Pack } from '@/data/cloudNodes'
+import type { Locale } from '@/i18n/translations'
 
 import {
   formatLocalizedMediumDate,
   formatLocalizedNumber
 } from '@comfyorg/shared-frontend-utils/formatUtil'
 
-import { useNodesByCategory } from '../../composables/useNodesByCategory'
-import { t } from '../../i18n/translations'
+import { useNodesByCategory } from '@/composables/useNodesByCategory'
+import { translationsFor } from '@/i18n/translations'
 import PackBanner from './PackBanner.vue'
 
 const { pack, locale = 'en' } = defineProps<{
   pack: Pack
   locale?: Locale
 }>()
+const { t } = translationsFor(locale)
 
 const backHref =
-  locale === 'zh-CN' ? '/zh-CN/cloud/supported-nodes' : '/cloud/supported-nodes'
+  locale === 'zh-CN'
+    ? '/zh-CN/cloud/supported-nodes/'
+    : '/cloud/supported-nodes/'
 
 const { groupedNodes } = useNodesByCategory(() => pack.nodes)
 </script>
@@ -32,13 +35,13 @@ const { groupedNodes } = useNodesByCategory(() => pack.nodes)
     <div class="mx-auto flex w-full max-w-6xl flex-col gap-8">
       <a
         :href="backHref"
-        class="text-primary-comfy-yellow hover:text-primary-comfy-yellow/85 w-fit text-sm font-semibold underline"
+        class="w-fit text-sm font-semibold text-primary-comfy-yellow underline hover:text-primary-comfy-yellow/85"
       >
-        {{ t('cloudNodes.detail.back', locale) }}
+        {{ t('cloudNodes.detail.back') }}
       </a>
 
       <div
-        class="bg-transparency-white-t5 border-primary-warm-gray/20 overflow-hidden rounded-3xl border"
+        class="overflow-hidden rounded-3xl border border-primary-warm-gray/20 bg-transparency-white-t4"
       >
         <PackBanner
           :banner-url="pack.bannerUrl"
@@ -55,11 +58,10 @@ const { groupedNodes } = useNodesByCategory(() => pack.nodes)
               {{ pack.displayName }}
             </h1>
             <p
-              class="text-primary-warm-gray text-sm/relaxed md:text-base/relaxed"
+              class="text-sm/relaxed text-primary-warm-gray md:text-base/relaxed"
             >
               {{
-                pack.description ||
-                t('cloudNodes.card.unavailableDescription', locale)
+                pack.description || t('cloudNodes.card.unavailableDescription')
               }}
             </p>
           </header>
@@ -67,7 +69,7 @@ const { groupedNodes } = useNodesByCategory(() => pack.nodes)
           <dl class="grid grid-cols-1 gap-4 text-sm md:grid-cols-2">
             <div class="flex flex-col gap-1">
               <dt class="text-primary-warm-gray">
-                {{ t('cloudNodes.card.viewRepo', locale) }}
+                {{ t('cloudNodes.card.viewRepo') }}
               </dt>
               <dd>
                 <a
@@ -75,7 +77,7 @@ const { groupedNodes } = useNodesByCategory(() => pack.nodes)
                   :href="pack.repoUrl"
                   target="_blank"
                   rel="noopener noreferrer"
-                  class="text-primary-comfy-yellow hover:text-primary-comfy-yellow/85 font-semibold underline"
+                  class="font-semibold text-primary-comfy-yellow underline hover:text-primary-comfy-yellow/85"
                 >
                   {{ pack.repoUrl }}
                 </a>
@@ -85,7 +87,7 @@ const { groupedNodes } = useNodesByCategory(() => pack.nodes)
 
             <div class="flex flex-col gap-1">
               <dt class="text-primary-warm-gray">
-                {{ t('cloudNodes.detail.publisher', locale) }}
+                {{ t('cloudNodes.detail.publisher') }}
               </dt>
               <dd class="text-primary-comfy-canvas">
                 {{ pack.publisher?.name || pack.publisher?.id || '—' }}
@@ -94,7 +96,7 @@ const { groupedNodes } = useNodesByCategory(() => pack.nodes)
 
             <div class="flex flex-col gap-1">
               <dt class="text-primary-warm-gray">
-                {{ t('cloudNodes.detail.downloads', locale) }}
+                {{ t('cloudNodes.detail.downloads') }}
               </dt>
               <dd class="text-primary-comfy-canvas">
                 {{ formatLocalizedNumber(pack.downloads, locale) }}
@@ -103,7 +105,7 @@ const { groupedNodes } = useNodesByCategory(() => pack.nodes)
 
             <div class="flex flex-col gap-1">
               <dt class="text-primary-warm-gray">
-                {{ t('cloudNodes.detail.stars', locale) }}
+                {{ t('cloudNodes.detail.stars') }}
               </dt>
               <dd class="text-primary-comfy-canvas">
                 {{ formatLocalizedNumber(pack.githubStars, locale) }}
@@ -112,7 +114,7 @@ const { groupedNodes } = useNodesByCategory(() => pack.nodes)
 
             <div class="flex flex-col gap-1">
               <dt class="text-primary-warm-gray">
-                {{ t('cloudNodes.detail.latestVersion', locale) }}
+                {{ t('cloudNodes.detail.latestVersion') }}
               </dt>
               <dd class="text-primary-comfy-canvas">
                 {{ pack.latestVersion || '—' }}
@@ -121,7 +123,7 @@ const { groupedNodes } = useNodesByCategory(() => pack.nodes)
 
             <div class="flex flex-col gap-1">
               <dt class="text-primary-warm-gray">
-                {{ t('cloudNodes.detail.license', locale) }}
+                {{ t('cloudNodes.detail.license') }}
               </dt>
               <dd class="text-primary-comfy-canvas">
                 {{ pack.license || '—' }}
@@ -130,7 +132,7 @@ const { groupedNodes } = useNodesByCategory(() => pack.nodes)
 
             <div class="flex flex-col gap-1">
               <dt class="text-primary-warm-gray">
-                {{ t('cloudNodes.detail.lastUpdated', locale) }}
+                {{ t('cloudNodes.detail.lastUpdated') }}
               </dt>
               <dd class="text-primary-comfy-canvas">
                 {{ formatLocalizedMediumDate(pack.lastUpdated, locale) }}
@@ -142,13 +144,13 @@ const { groupedNodes } = useNodesByCategory(() => pack.nodes)
             <h2
               class="text-xl font-semibold text-primary-comfy-canvas md:text-2xl"
             >
-              {{ t('cloudNodes.detail.nodesHeading', locale) }}
+              {{ t('cloudNodes.detail.nodesHeading') }}
             </h2>
 
             <section
               v-for="group in groupedNodes"
               :key="group.category"
-              class="border-primary-warm-gray/20 rounded-2xl border p-4"
+              class="rounded-2xl border border-primary-warm-gray/20 p-4"
             >
               <h3 class="text-base font-semibold text-primary-comfy-canvas">
                 {{ group.category }}
@@ -157,7 +159,7 @@ const { groupedNodes } = useNodesByCategory(() => pack.nodes)
                 <li
                   v-for="node in group.nodes"
                   :key="node.name"
-                  class="border-primary-warm-gray/20 rounded-xl border p-3"
+                  class="rounded-xl border border-primary-warm-gray/20 p-3"
                   data-testid="cloud-node-pack-detail-node"
                 >
                   <div class="flex flex-wrap items-center gap-2">
@@ -170,11 +172,11 @@ const { groupedNodes } = useNodesByCategory(() => pack.nodes)
                       v-if="node.experimental"
                       :class="
                         cn(
-                          'bg-primary-comfy-yellow/20 rounded-full px-2 py-0.5 text-xs font-semibold text-primary-comfy-canvas'
+                          'rounded-full bg-primary-comfy-yellow/20 px-2 py-0.5 text-xs font-semibold text-primary-comfy-canvas'
                         )
                       "
                     >
-                      {{ t('cloudNodes.detail.experimental', locale) }}
+                      {{ t('cloudNodes.detail.experimental') }}
                     </span>
                     <span
                       v-if="node.deprecated"
@@ -184,12 +186,12 @@ const { groupedNodes } = useNodesByCategory(() => pack.nodes)
                         )
                       "
                     >
-                      {{ t('cloudNodes.detail.deprecated', locale) }}
+                      {{ t('cloudNodes.detail.deprecated') }}
                     </span>
                   </div>
                   <p
                     v-if="node.description"
-                    class="text-primary-warm-gray mt-2 text-sm/relaxed"
+                    class="mt-2 text-sm/relaxed text-primary-warm-gray"
                   >
                     {{ node.description }}
                   </p>

@@ -13,22 +13,35 @@ export interface ReplyAsset {
   label?: string
 }
 
-const ASSET_KINDS = new Set<MediaType>(['image', 'video', 'audio', '3D'])
+export function isReplyAssetKind(value: MediaType): value is ReplyAssetKind {
+  return (
+    value === 'image' ||
+    value === 'video' ||
+    value === 'audio' ||
+    value === '3D'
+  )
+}
 
-export function classifyAssetUrl(href: string): ReplyAsset | null {
+export function classifyAssetUrl(
+  href: string,
+  baseUrl = window.location.origin
+): ReplyAsset | null {
   let url: URL
   try {
-    url = new URL(href, window.location.origin)
+    url = new URL(href, baseUrl)
   } catch {
     return null
   }
-  const filename =
-    url.searchParams.get('filename') ??
-    decodeURIComponent(url.pathname.split('/').at(-1) ?? '')
+  let filename = url.searchParams.get('filename')
+  try {
+    filename ??= decodeURIComponent(url.pathname.split('/').at(-1) ?? '')
+  } catch {
+    return null
+  }
   if (!filename) return null
   const kind = getMediaTypeFromFilename(filename)
-  if (!ASSET_KINDS.has(kind)) return null
-  return { url: href, filename, kind: kind as ReplyAssetKind }
+  if (!isReplyAssetKind(kind)) return null
+  return { url: href, filename, kind }
 }
 
 type InlineToken = { type: string; href?: string; text?: string }
@@ -112,6 +125,7 @@ export function replyAssetResultItem(asset: ReplyAsset): AugmentedResultItem {
     type: 'output',
     nodeId: '',
     mediaType: asset.kind === 'image' ? 'images' : asset.kind,
+    mediaTypeIsResolved: true,
     url: asset.url
   }
 }

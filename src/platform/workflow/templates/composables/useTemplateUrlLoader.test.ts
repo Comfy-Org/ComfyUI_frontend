@@ -1,10 +1,11 @@
-import { useCanvasStore } from '@/renderer/core/canvas/canvasStore' // eslint-disable-line import-x/no-restricted-paths
+import { useCanvasStore } from '@/renderer/core/canvas/canvasStore' // oxlint-disable-line comfy/no-restricted-paths
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import type { App } from 'vue'
 import { createApp, defineComponent } from 'vue'
 
 import { i18n } from '@/i18n'
 import { useTemplateUrlLoader as createTemplateUrlLoader } from '@/platform/workflow/templates/composables/useTemplateUrlLoader'
+import type { useTemplateWorkflows } from '@/platform/workflow/templates/composables/useTemplateWorkflows'
 
 /**
  * Unit tests for useTemplateUrlLoader composable
@@ -41,7 +42,9 @@ vi.mock(
 
 // Mock template workflows composable
 const mockLoadTemplates = vi.fn(async () => true)
-const mockLoadWorkflowTemplate = vi.fn(async () => true)
+const mockLoadWorkflowTemplate = vi.fn<
+  ReturnType<typeof useTemplateWorkflows>['loadWorkflowTemplate']
+>(async () => 'loaded')
 
 vi.mock<unknown>(
   import('@/platform/workflow/templates/composables/useTemplateWorkflows'),
@@ -56,7 +59,7 @@ vi.mock<unknown>(
 // Mock toast
 const mockToastAdd = vi.fn()
 vi.mock<unknown>(
-  import('primevue/usetoast'), // eslint-disable-line primevue-removal/no-imports
+  import('primevue/usetoast'), // oxlint-disable-line comfy/no-primevue-imports
 
   () => ({
     useToast: () => ({
@@ -144,19 +147,18 @@ describe('useTemplateUrlLoader', () => {
     )
   })
 
-  it('shows error toast when template loading fails', async () => {
-    mockQueryParams = { template: 'invalid-template' }
-    mockLoadWorkflowTemplate.mockResolvedValueOnce(false)
+  it.for(['not-started', 'graph-failed'] as const)(
+    'does not add a toast when the template loader returns %s',
+    async (result) => {
+      mockQueryParams = { template: 'invalid-template' }
+      mockLoadWorkflowTemplate.mockResolvedValueOnce(result)
 
-    const { loadTemplateFromUrl } = useTemplateUrlLoader()
-    await loadTemplateFromUrl()
+      const { loadTemplateFromUrl } = useTemplateUrlLoader()
+      await loadTemplateFromUrl()
 
-    expect(mockToastAdd).toHaveBeenCalledWith({
-      severity: 'error',
-      summary: 'Error',
-      detail: 'Template "invalid-template" not found'
-    })
-  })
+      expect(mockToastAdd).not.toHaveBeenCalled()
+    }
+  )
 
   it('handles array query params correctly', () => {
     // Vue Router can return string[] for duplicate params
@@ -247,7 +249,7 @@ describe('useTemplateUrlLoader', () => {
     expect(mockToastAdd).toHaveBeenCalledWith({
       severity: 'error',
       summary: 'Error',
-      detail: i18n.global.t('g.errorLoadingTemplate')
+      detail: i18n.global.t('templateWorkflows.error.loading')
     })
   })
 
@@ -269,7 +271,7 @@ describe('useTemplateUrlLoader', () => {
 
   it('removes template params from URL even on error', async () => {
     mockQueryParams = { template: 'invalid', source: 'custom', other: 'param' }
-    mockLoadWorkflowTemplate.mockResolvedValueOnce(false)
+    mockLoadWorkflowTemplate.mockResolvedValueOnce('not-started')
 
     const { loadTemplateFromUrl } = useTemplateUrlLoader()
     await loadTemplateFromUrl()
@@ -306,7 +308,7 @@ describe('useTemplateUrlLoader', () => {
 
   it('does not set linear mode when template loading fails', async () => {
     mockQueryParams = { template: 'invalid-template', mode: 'linear' }
-    mockLoadWorkflowTemplate.mockResolvedValueOnce(false)
+    mockLoadWorkflowTemplate.mockResolvedValueOnce('graph-failed')
 
     const { loadTemplateFromUrl } = useTemplateUrlLoader()
     await loadTemplateFromUrl()
@@ -351,13 +353,12 @@ describe('useTemplateUrlLoader', () => {
   })
 
   it('warns about unsupported mode values but continues loading', async () => {
-    const consoleSpy = vi.spyOn(console, 'warn').mockImplementation(() => {})
     mockQueryParams = { template: 'flux_simple', mode: 'unsupported' }
 
     const { loadTemplateFromUrl } = useTemplateUrlLoader()
     await loadTemplateFromUrl()
 
-    expect(consoleSpy).toHaveBeenCalledWith(
+    expect(console.warn).toHaveBeenCalledWith(
       '[useTemplateUrlLoader] Unsupported mode parameter: unsupported. Supported modes: linear'
     )
     expect(mockLoadWorkflowTemplate).toHaveBeenCalledWith(
@@ -365,8 +366,6 @@ describe('useTemplateUrlLoader', () => {
       'default'
     )
     expect(useCanvasStore().linearMode).toBe(false)
-
-    consoleSpy.mockRestore()
   })
 
   it('accepts supported mode parameter: linear', async () => {
@@ -383,19 +382,18 @@ describe('useTemplateUrlLoader', () => {
   })
 
   it('accepts valid format but warns about unsupported modes', async () => {
-    const consoleSpy = vi.spyOn(console, 'warn').mockImplementation(() => {})
     const unsupportedModes = ['graph', 'mode123', 'my_mode-2']
 
     for (const mode of unsupportedModes) {
       vi.clearAllMocks()
-      consoleSpy.mockClear()
+      vi.mocked(console.warn).mockClear()
       Object.assign(useCanvasStore(), { linearMode: false })
       mockQueryParams = { template: 'flux_simple', mode }
 
       const { loadTemplateFromUrl } = useTemplateUrlLoader()
       await loadTemplateFromUrl()
 
-      expect(consoleSpy).toHaveBeenCalledWith(
+      expect(console.warn).toHaveBeenCalledWith(
         `[useTemplateUrlLoader] Unsupported mode parameter: ${mode}. Supported modes: linear`
       )
       expect(mockLoadWorkflowTemplate).toHaveBeenCalledWith(
@@ -404,7 +402,5 @@ describe('useTemplateUrlLoader', () => {
       )
       expect(useCanvasStore().linearMode).toBe(false)
     }
-
-    consoleSpy.mockRestore()
   })
 })

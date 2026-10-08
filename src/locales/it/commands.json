@@ -230,6 +230,9 @@
   "Comfy_NewBlankWorkflow": {
     "label": "Nuovo workflow vuoto"
   },
+  "Comfy_Onboarding_Replay": {
+    "label": "Ripeti l'onboarding"
+  },
   "Comfy_OpenClipspace": {
     "label": "Clipspace"
   },
@@ -277,9 +280,6 @@
   },
   "Comfy_Subgraph_SetSearchAliases": {
     "label": "Imposta alias di ricerca subgraph"
-  },
-  "Comfy_ToggleAssetAPI": {
-    "label": "Sperimentale: Abilita AssetAPI"
   },
   "Comfy_ToggleCanvasInfo": {
     "label": "Prestazioni canvas"

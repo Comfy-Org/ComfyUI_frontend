@@ -1,9 +1,7 @@
 import type { LGraphNode } from '@/lib/litegraph/src/LGraphNode'
 import type { LinkId } from '@/lib/litegraph/src/LLink'
-import type {
-  IWidgetInputSlot,
-  SharedIntersection
-} from '@/lib/litegraph/src/interfaces'
+import type { SharedIntersection } from '@/lib/litegraph/src/interfaces'
+import type { IWidgetInputSlot } from '@/lib/litegraph/src/types/slots'
 import type {
   INodeInputSlot,
   INodeOutputSlot

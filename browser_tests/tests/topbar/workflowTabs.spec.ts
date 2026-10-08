@@ -4,62 +4,49 @@ import type { Locator, Page } from '@playwright/test'
 import { comfyPageFixture as test } from '@e2e/fixtures/ComfyPage'
 
 test.describe('Workflow tabs', () => {
-  test.use({
-    initialSettings: {
-      'Comfy.Workflow.WorkflowTabsPosition': 'Topbar'
-    }
-  })
+  test.describe('Path-backed active-tab identity', () => {
+    const pathBackedWorkflowNames = [
+      'path-backed-first',
+      'path-backed-second'
+    ] as const
 
-  // These Agent-adjacent path-identity cases are staged behind the stacked
-  // workflow-tab slice: https://github.com/Comfy-Org/ComfyUI_frontend/pull/16184
-  test.describe('Agent workflow-tab contract from slice 04', () => {
+    test.afterEach(async ({ comfyPage }) => {
+      for (const name of pathBackedWorkflowNames) {
+        await comfyPage.workflow.deleteWorkflow(name)
+      }
+    })
+
     test('keeps exactly one active tab after selecting several workflows', async ({
       comfyPage
     }) => {
-      test.fixme(
-        true,
-        'Activates after slice PR 16184 merges: https://github.com/Comfy-Org/ComfyUI_frontend/pull/16184'
-      )
-
       const topbar = comfyPage.menu.topbar
       await topbar.newWorkflowButton.click()
       await topbar.newWorkflowButton.click()
       await expect.poll(() => topbar.getTabNames()).toHaveLength(3)
 
       await topbar.getTab(1).click()
-      await expect(topbar.getActiveTab()).toHaveAttribute(
-        'aria-pressed',
-        'true'
-      )
-      await expect(
-        comfyPage.page.locator('.workflow-tabs .p-togglebutton-checked')
-      ).toHaveCount(1)
+      await expect(topbar.getActiveTab()).toHaveCount(1)
     })
 
     test('keeps path-backed active identity after a tab switch', async ({
       comfyPage
     }) => {
-      test.fixme(
-        true,
-        'Activates after slice PR 16184 merges: https://github.com/Comfy-Org/ComfyUI_frontend/pull/16184'
-      )
-
       const topbar = comfyPage.menu.topbar
+      const [firstWorkflow, secondWorkflow] = pathBackedWorkflowNames
+
+      await topbar.saveWorkflow(firstWorkflow)
       await topbar.newWorkflowButton.click()
-      const names = await topbar.getTabNames()
+      await topbar.saveWorkflow(secondWorkflow)
       await topbar.getTab(0).click()
 
-      await expect.poll(() => topbar.getActiveTabName()).toContain(names[0])
+      await expect
+        .poll(() => comfyPage.workflow.getActiveWorkflowPath())
+        .toContain(firstWorkflow)
     })
 
     test('activates a valid neighbor when the active workflow is closed', async ({
       comfyPage
     }) => {
-      test.fixme(
-        true,
-        'Activates after slice PR 16184 merges: https://github.com/Comfy-Org/ComfyUI_frontend/pull/16184'
-      )
-
       const topbar = comfyPage.menu.topbar
       await topbar.newWorkflowButton.click()
       await topbar.newWorkflowButton.click()
@@ -74,11 +61,6 @@ test.describe('Workflow tabs', () => {
     test('preserves tab identity across browser reload', async ({
       comfyPage
     }) => {
-      test.fixme(
-        true,
-        'Activates after slice PR 16184 merges: https://github.com/Comfy-Org/ComfyUI_frontend/pull/16184'
-      )
-
       const topbar = comfyPage.menu.topbar
       await topbar.newWorkflowButton.click()
       await topbar.getTab(1).click()
@@ -240,20 +222,20 @@ test.describe('Workflow tabs', () => {
     await expect.poll(() => topbar.getTabNames()).toEqual([c, a, b])
   })
 
-  test('Drag preserves active tab', async ({ comfyPage }) => {
+  test('Dragging a tab activates it', async ({ comfyPage }) => {
     const topbar = comfyPage.menu.topbar
 
     await topbar.newWorkflowButton.click()
     await topbar.newWorkflowButton.click()
     await expect.poll(() => topbar.getTabNames()).toHaveLength(3)
 
-    const [, b] = await topbar.getTabNames()
+    const [a, b] = await topbar.getTabNames()
     await topbar.getTab(1).click()
     await expect.poll(() => topbar.getActiveTabName()).toContain(b)
 
     await topbar.getTab(0).dragTo(topbar.getTab(2))
 
-    await expect.poll(() => topbar.getActiveTabName()).toContain(b)
+    await expect(topbar.getActiveTab()).toHaveText(a)
   })
 
   test('Multiple tabs can be created, switched, and closed', async ({
@@ -299,12 +281,40 @@ test.describe('Workflow tabs', () => {
       await expect(scrollLeft).toBeVisible()
       await expect(scrollLeft).toBeEnabled()
       await expect(scrollRight).toBeDisabled()
+      const moreWorkflows = topbar.workflowTabs.getByRole('button', {
+        name: 'More workflows',
+        exact: true
+      })
+      await expect(async () => {
+        const [scrollArrowBox, moreWorkflowsBox] = await Promise.all([
+          scrollRight.boundingBox(),
+          moreWorkflows.boundingBox()
+        ])
+        expect(scrollArrowBox).not.toBeNull()
+        expect(moreWorkflowsBox).toMatchObject({
+          height: scrollArrowBox?.height
+        })
+      }).toPass({ timeout: 5000 })
 
       const activeTabName = await topbar.getActiveTabName()
       await scrollLeft.dispatchEvent('mousedown')
       await expect(scrollRight).toBeEnabled()
       await scrollLeft.dispatchEvent('mouseup')
       await expect.poll(() => topbar.getActiveTabName()).toBe(activeTabName)
+
+      await test.step('Keyboard overflow menu opens below its trigger', async () => {
+        await topbar.openWorkflowOverflowMenu()
+        await expect(async () => {
+          const gap = await topbar.getWorkflowOverflowMenuVerticalGap()
+          expect(gap).toBeGreaterThanOrEqual(0)
+          expect(gap).toBeLessThan(10)
+        }).toPass({ timeout: 5000 })
+      })
+
+      await test.step('Escape returns focus to the overflow trigger', async () => {
+        await topbar.closeWorkflowOverflowMenu()
+        await expect(topbar.workflowOverflowButton).toBeFocused()
+      })
     }
   )
 
@@ -375,9 +385,13 @@ test.describe('Workflow tabs', () => {
       await modifyActiveWorkflow(comfyPage.page, topbar.getActiveTab())
       await topbar.closeWorkflowTab('Unsaved Workflow (2)')
 
-      await expect(comfyPage.page.getByRole('dialog')).toBeVisible()
+      const dialog = comfyPage.page.getByRole('dialog', {
+        name: 'Save Changes?',
+        exact: true
+      })
+      await expect(dialog).toBeVisible()
       await comfyPage.page.keyboard.press('Escape')
-      await expect(comfyPage.page.getByRole('dialog')).toBeHidden()
+      await expect(dialog).toBeHidden()
 
       await expect.poll(() => topbar.getTabNames()).toHaveLength(2)
     })

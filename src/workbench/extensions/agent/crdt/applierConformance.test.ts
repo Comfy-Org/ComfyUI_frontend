@@ -26,6 +26,7 @@ import {
   compareStampKeys,
   hasAppliedOp,
   mint,
+  project,
   readGraph,
   stampKey
 } from '@comfyorg/comfy-multi-player'
@@ -36,7 +37,11 @@ import { mintOpId, mintWireOps } from './opEnvelope'
 const CATALOG: WidgetCatalog = {
   types: {
     TestNode: { widget_order: ['seed'] },
-    OtherNode: { widget_order: ['text'] }
+    OtherNode: { widget_order: ['text'] },
+    // A class whose pinned order names ONE widget twice. Schema v5 stores a
+    // register per occurrence; v4 stored one per name, so the second position
+    // overwrote the first at mint and `widget_occurrence` was ignored.
+    DupNode: { widget_order: ['dup', 'dup'] }
   }
 }
 
@@ -117,6 +122,37 @@ function nodesOf(doc: ReturnType<typeof seedDoc>): ProjectedNodes {
 
 function seedWidgetValue(doc: ReturnType<typeof seedDoc>): unknown {
   return nodesOf(doc)['1']?.widgets?.seed
+}
+
+const DUP_WORKFLOW: WorkflowJSON = {
+  nodes: [
+    {
+      id: 1,
+      type: 'DupNode',
+      pos: [0, 0],
+      widgets_values: ['A', 'B'],
+      inputs: [],
+      outputs: []
+    }
+  ],
+  links: []
+}
+
+/** `widgets_values` as the document would hand it back to a client. */
+function dupValues(doc: ReturnType<typeof mint>): unknown {
+  return project(doc, CATALOG).nodes.find((node) => node.id === 1)
+    ?.widgets_values
+}
+
+function dupWrite(overrides: Partial<SetWidgetOp> = {}): SetWidgetOp {
+  return {
+    ...envelope(),
+    op: 'set_widget',
+    node_id: 1,
+    widget: 'dup',
+    value: 'W',
+    ...overrides
+  } as SetWidgetOp
 }
 
 describe('applier conformance (the pinned package the doc host runs)', () => {
@@ -272,6 +308,70 @@ describe('applier conformance (the pinned package the doc host runs)', () => {
     expect(hasAppliedOp(doc, lateWrite.op_id)).toBe(true)
   })
 
+  /**
+   * Every op the frontend can mint against a class whose pinned order repeats
+   * a widget name, and what the document hands back after each. This is the
+   * table the 0.3.10 pin bump rests on: at the previous pin (0.3.6, schema v4)
+   * `mint only` projects `['B']`, `set_widget{dup}` moves BOTH positions, and
+   * `widget_occurrence` is accepted and silently ignored. The `dup#1` row is
+   * the one no other test covers — if a future pin resolves `name#N` to
+   * occurrence N, a human edit on a renamable repeat moves to a different
+   * register and nothing else in the repo fails.
+   */
+  it.for([
+    {
+      vector: 'mint keeps one register per occurrence',
+      write: null,
+      outcome: null,
+      projection: ['A', 'B']
+    },
+    {
+      vector: 'set_widget{dup} addresses occurrence 0 only',
+      write: () => dupWrite(),
+      outcome: 'applied',
+      projection: ['W', 'B']
+    },
+    {
+      vector: 'set_widget{dup#1} is rejected, never misaddressed',
+      write: () => dupWrite({ widget: 'dup#1' }),
+      outcome: 'rejected:unknown_widget',
+      projection: ['A', 'B']
+    },
+    {
+      vector: 'set_widget{dup, occurrence 1} addresses occurrence 1',
+      write: () => dupWrite({ widget_occurrence: 1 }),
+      outcome: 'applied',
+      projection: ['A', 'W']
+    }
+  ])('repeated catalog name: $vector', ({ write, outcome, projection }) => {
+    const doc = mint(DUP_WORKFLOW, CATALOG)
+
+    if (write !== null) {
+      const [observed] = applyOps(doc, [write()], CATALOG).outcomes
+      expect(
+        observed.outcome === 'rejected'
+          ? `rejected:${observed.reason.code}`
+          : observed.outcome
+      ).toBe(outcome)
+    }
+
+    expect(dupValues(doc)).toEqual(projection)
+  })
+
+  it('accepts a disconnect for a link absent from the projection', () => {
+    const doc = seedDoc()
+    const [disconnect] = mintWireOps(
+      [{ op: 'disconnect', link_id: 41, to_node: 1, to_slot: 0 }],
+      { actor: 'human:u1:tab', baseVersion: 1 }
+    )
+
+    const result = applyOps(doc, [disconnect], CATALOG)
+
+    expect(result.outcomes).toEqual([
+      { op_id: disconnect.op_id, outcome: 'no-op' }
+    ])
+  })
+
   it('accepts every op family the mint ports emit, end to end through our envelope', () => {
     const doc = seedDoc()
     const context = { actor: 'human:u1:tab', baseVersion: 1 }
@@ -285,7 +385,12 @@ describe('applier conformance (the pinned package the doc host runs)', () => {
         to_slot: 0,
         link_type: 'IMAGE'
       },
-      { op: 'set_widget', node_id: 1, widget: 'seed', value: 42, old: 3 },
+      { op: 'set_widget', node_id: 1, widget: 'seed', value: 42, old: 3 }
+    ]
+    const disconnectOps: GraphOperation[] = [
+      { op: 'disconnect', link_id: 41, to_node: 1, to_slot: 0 }
+    ]
+    const nodeOps: GraphOperation[] = [
       { op: 'delete_node', node_id: 2, removed_links: [41] },
       {
         op: 'add_node',
@@ -302,15 +407,30 @@ describe('applier conformance (the pinned package the doc host runs)', () => {
     const clearOps: GraphOperation[] = [{ op: 'clear', removed_nodes: [1, 7] }]
 
     const result = applyOps(doc, mintWireOps(legOps, context), CATALOG)
+    const disconnectResult = applyOps(
+      doc,
+      mintWireOps(disconnectOps, { ...context, baseVersion: 2 }),
+      CATALOG
+    )
+    const nodeResult = applyOps(
+      doc,
+      mintWireOps(nodeOps, { ...context, baseVersion: 3 }),
+      CATALOG
+    )
     const clearResult = applyOps(
       doc,
-      mintWireOps(clearOps, { ...context, baseVersion: 2 }),
+      mintWireOps(clearOps, { ...context, baseVersion: 4 }),
       CATALOG
     )
 
     expect(result.outcomes.map((outcome) => outcome.outcome)).toEqual([
       'applied',
-      'applied',
+      'applied'
+    ])
+    expect(disconnectResult.outcomes.map((outcome) => outcome.outcome)).toEqual(
+      ['applied']
+    )
+    expect(nodeResult.outcomes.map((outcome) => outcome.outcome)).toEqual([
       'applied',
       'applied'
     ])

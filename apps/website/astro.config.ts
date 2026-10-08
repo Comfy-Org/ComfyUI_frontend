@@ -3,14 +3,13 @@ import mdx from '@astrojs/mdx'
 import sitemap from '@astrojs/sitemap'
 import vue from '@astrojs/vue'
 import tailwindcss from '@tailwindcss/vite'
-import { isExcludedFromSitemap } from './src/config/indexing'
-import { redirects } from './src/config/redirects'
+import { isExcludedFromSitemap, isIndexableBuild } from './src/config/indexing'
+import { DEFAULT_LOCALE, LOCALE_CODES } from './src/config/locales'
+import { astroRedirects } from './src/config/redirects'
+import { indexNowManifest } from './src/integrations/indexnow-manifest'
 import { markdownTwins } from './src/integrations/markdown-twins'
 import { workshopReleaseGate } from './src/integrations/workshop-release-gate'
 import { sitemapAlternates } from './src/lib/hreflang'
-
-const LOCALES = ['en', 'zh-CN', 'ja'] as const
-const DEFAULT_LOCALE = 'en'
 
 export default defineConfig({
   site: 'https://comfy.org',
@@ -22,7 +21,7 @@ export default defineConfig({
   // Keep MDX punctuation verbatim; SmartyPants would turn the source's straight
   // quotes into curly ones and drift from the rest of the site's copy.
   markdown: { smartypants: false },
-  redirects,
+  redirects: astroRedirects,
   build: {
     assets: '_website'
   },
@@ -32,13 +31,29 @@ export default defineConfig({
     mdx(),
     sitemap({
       filter: (page) => !isExcludedFromSitemap(page),
-      serialize: (item) => ({ ...item, links: sitemapAlternates(item.url) })
+      serialize: (item) =>
+        isIndexableBuild()
+          ? { ...item, links: sitemapAlternates(item.url) }
+          : item
     }),
     markdownTwins(),
+    indexNowManifest(),
     workshopReleaseGate()
   ],
   vite: {
     plugins: [tailwindcss()],
+    define: {
+      __VUE_I18N_LEGACY_API__: false,
+      __VUE_I18N_FULL_INSTALL__: false,
+      __INTLIFY_PROD_DEVTOOLS__: false
+    },
+    optimizeDeps: {
+      // Leaflet only reaches the graph through a dynamic import inside an
+      // island (MapPins01), which Vite's dep scanner does not walk. Without
+      // this the dev server serves a stale pre-bundle URL and the map silently
+      // fails to load.
+      include: ['leaflet']
+    },
     server: {
       watch: {
         ignored: ['**/playwright-report/**']
@@ -46,7 +61,7 @@ export default defineConfig({
     }
   },
   i18n: {
-    locales: [...LOCALES],
+    locales: [...LOCALE_CODES],
     defaultLocale: DEFAULT_LOCALE,
     routing: {
       prefixDefaultLocale: false

@@ -25,6 +25,7 @@ export class ComfyActionbar {
   public readonly root: Locator
   public readonly card: Locator
   public readonly queueButton: ComfyQueueButton
+  public readonly cancelButton: Locator
   public readonly propertiesButton: Locator
   public readonly dragHandle: Locator
   public readonly inlineProgress: Locator
@@ -34,6 +35,9 @@ export class ComfyActionbar {
     this.root = page.locator('.actionbar-container')
     this.card = page.getByTestId(TestIds.topbar.actionBarCard)
     this.queueButton = new ComfyQueueButton(this)
+    this.cancelButton = this.root.getByRole('button', {
+      name: 'Cancel current run'
+    })
     this.propertiesButton = this.root.getByLabel('Toggle properties panel')
     this.dragHandle = this.root.locator('.drag-handle')
     this.inlineProgress = page.getByTestId(TestIds.topbar.queueInlineProgress)
@@ -171,11 +175,11 @@ class ComfyQueueButtonOptions {
 
   constructor(public readonly page: Page) {
     this.menu = page.getByRole('menu')
-    this.modeItems = this.menu.getByRole('menuitem')
+    this.modeItems = this.menu.getByRole('menuitemradio')
   }
 
   public modeItem(name: string) {
-    return this.menu.getByRole('menuitem', { name, exact: true })
+    return this.menu.getByRole('menuitemradio', { name, exact: true })
   }
 
   public async selectMode(name: string) {

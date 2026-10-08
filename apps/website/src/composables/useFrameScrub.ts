@@ -1,7 +1,7 @@
 import type { Ref } from 'vue'
 import { onMounted, onUnmounted } from 'vue'
 
-import { gsap } from '../scripts/gsapSetup'
+import { gsap } from '@/scripts/gsapSetup'
 import { prefersReducedMotion } from './useReducedMotion'
 
 interface FrameScrubOptions {
@@ -44,9 +44,9 @@ export function useFrameScrub(
     canvas.width = w
     canvas.height = h
 
-    function drawFrame(index: number) {
-      const img = frames[Math.round(index)]
-      if (!img || !draw) return
+    const drawFrame = (index: number) => {
+      const img = frames.at(Math.round(index))
+      if (!img) return
       draw.clearRect(0, 0, w, h)
       draw.drawImage(img, 0, 0)
     }

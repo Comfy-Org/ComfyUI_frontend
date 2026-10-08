@@ -2,6 +2,8 @@ import { SCHEMA_VERSION, mint } from '@comfyorg/comfy-multi-player'
 import { describe, expect, it, vi } from 'vitest'
 import * as Y from 'yjs'
 
+import { setAssertReporter } from '@/base/assert'
+
 import { FollowerSchemaError, assertReadableSchema } from './schemaGuard'
 
 function docAtVersion(version: unknown): Y.Doc {
@@ -34,32 +36,43 @@ describe('assertReadableSchema', () => {
   })
 
   it('fails closed on a doc with no schema version at all', () => {
-    vi.spyOn(console, 'error').mockImplementation(() => undefined)
     const doc = new Y.Doc()
     expect(() => assertReadableSchema(doc)).toThrow(FollowerSchemaError)
   })
 
   it('fails closed on a version of the wrong type (strict equality)', () => {
-    vi.spyOn(console, 'error').mockImplementation(() => undefined)
     const doc = docAtVersion(String(SCHEMA_VERSION))
     expect(() => assertReadableSchema(doc)).toThrow(FollowerSchemaError)
   })
 
   it('routes the refusal through the central invariant channel', () => {
-    const consoleError = vi
-      .spyOn(console, 'error')
-      .mockImplementation(() => undefined)
     expect(() => assertReadableSchema(docAtVersion(99))).toThrow(
       FollowerSchemaError
     )
-    expect(consoleError).toHaveBeenCalledWith(
+    expect(console.error).toHaveBeenCalledWith(
       expect.stringContaining('meta.schema_version is not the layout')
     )
-    expect(consoleError).not.toHaveBeenCalledWith(expect.stringContaining('99'))
+    expect(console.error).not.toHaveBeenCalledWith(
+      expect.stringContaining('99')
+    )
+  })
+
+  it('reports the rejected version as structured context', () => {
+    vi.stubEnv('DEV', false)
+    const reporter = vi.fn()
+    setAssertReporter(reporter)
+
+    expect(() => assertReadableSchema(docAtVersion(99))).toThrow(
+      FollowerSchemaError
+    )
+    expect(reporter).toHaveBeenCalledWith(
+      expect.stringContaining('meta.schema_version is not the layout'),
+      { found: 99 }
+    )
+    setAssertReporter(null)
   })
 
   it('never writes the doc it refuses', () => {
-    vi.spyOn(console, 'error').mockImplementation(() => undefined)
     const doc = docAtVersion(99)
     const before = Y.encodeStateVector(doc)
     expect(() => assertReadableSchema(doc)).toThrow(FollowerSchemaError)

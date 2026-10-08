@@ -1,11 +1,20 @@
 import { render } from '@testing-library/vue'
 import { getActivePinia } from 'pinia'
-import { beforeEach, describe, expect, it } from 'vitest'
+import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { nextTick } from 'vue'
 
 import ComfyActionbar from '@/components/actionbar/ComfyActionbar.vue'
 import { i18n } from '@/i18n'
 import { useSettingStore } from '@/platform/settings/settingStore'
+
+vi.mock(import('@/components/actionbar/ComfyRunButton'), async () => {
+  const { defineComponent } = await import('vue')
+  return {
+    default: defineComponent({
+      template: '<button type="button">Run</button>'
+    })
+  }
+})
 
 const renderActionbar = (showRunProgressBar: boolean) => {
   const dockedProgressContainer = document.createElement('div')
@@ -27,15 +36,6 @@ const renderActionbar = (showRunProgressBar: boolean) => {
     global: {
       plugins: [pinia, i18n],
       stubs: {
-        ContextMenu: {
-          name: 'ContextMenu',
-          template: '<div />'
-        },
-        StatusBadge: true,
-        ComfyRunButton: {
-          name: 'ComfyRunButton',
-          template: '<button type="button">Run</button>'
-        },
         QueueInlineProgress: true
       },
       directives: {
@@ -58,13 +58,13 @@ describe('ComfyActionbar', () => {
     try {
       await nextTick()
 
-      /* eslint-disable testing-library/no-node-access -- Teleport target verification requires scoping to the container element */
+      /* oxlint-disable testing-library/no-node-access -- Teleport target verification requires scoping to the container element */
       expect(
         dockedProgressContainer.querySelector(
           '[data-testid="queue-inline-progress"]'
         )
       ).not.toBeNull()
-      /* eslint-enable testing-library/no-node-access */
+      /* oxlint-enable testing-library/no-node-access */
     } finally {
       dockedProgressContainer.remove()
     }
@@ -76,13 +76,13 @@ describe('ComfyActionbar', () => {
     try {
       await nextTick()
 
-      /* eslint-disable testing-library/no-node-access -- Teleport target verification requires scoping to the container element */
+      /* oxlint-disable testing-library/no-node-access -- Teleport target verification requires scoping to the container element */
       expect(
         dockedProgressContainer.querySelector(
           '[data-testid="queue-inline-progress"]'
         )
       ).toBeNull()
-      /* eslint-enable testing-library/no-node-access */
+      /* oxlint-enable testing-library/no-node-access */
     } finally {
       dockedProgressContainer.remove()
     }

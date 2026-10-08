@@ -1,16 +1,34 @@
 <script setup lang="ts">
 import { ArrowUpRight } from '@lucide/vue'
 
-import type { NavColumnItem } from '../../../data/mainNavigation'
-import type { Locale } from '../../../i18n/translations'
+import type { NavColumnItem } from '@/data/mainNavigation'
+import type { Locale } from '@/i18n/translations'
+import { translationsFor } from '@/i18n/translations'
 import NewBadge from './NewBadge.vue'
 
-defineProps<{ item: NavColumnItem; locale: Locale }>()
+const { locale } = defineProps<{
+  item: Pick<NavColumnItem, 'label' | 'badge' | 'external' | 'icon'>
+  locale: Locale
+}>()
+const { t } = translationsFor(locale)
 </script>
 
 <template>
-  <span class="flex items-center gap-2">
-    <span class="ppformula-text-center">{{ item.label }}</span>
+  <span v-if="item.icon" class="flex items-center">
+    <span
+      class="block size-5 icon-mask"
+      :style="{ maskImage: `url('${item.icon}')` }"
+      aria-hidden="true"
+    />
+    <span class="sr-only">
+      {{ item.label
+      }}<template v-if="item.external">
+        ({{ t('nav.opensInNewTab') }})</template
+      >
+    </span>
+  </span>
+  <span v-else class="flex items-center gap-2">
+    <span class="inline-block">{{ item.label }}</span>
     <NewBadge
       v-if="item.badge"
       :locale="locale"
@@ -19,7 +37,7 @@ defineProps<{ item: NavColumnItem; locale: Locale }>()
     />
     <ArrowUpRight
       v-if="item.external"
-      class="text-primary-comfy-yellow size-4"
+      class="size-4 text-primary-comfy-yellow"
     />
   </span>
 </template>

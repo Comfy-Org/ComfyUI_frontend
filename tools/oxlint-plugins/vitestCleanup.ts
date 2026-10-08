@@ -5,6 +5,11 @@ const REDUNDANT_CLEANUP_METHODS = new Set([
   'unstubAllEnvs',
   'unstubAllGlobals'
 ])
+const REDUNDANT_MOCK_INSTANCE_CLEANUP_METHODS = new Set([
+  'mockClear',
+  'mockReset',
+  'mockRestore'
+])
 const REDUNDANT_TIMER_CLEANUP_METHODS = new Set([
   'clearAllTimers',
   'useRealTimers'
@@ -14,8 +19,23 @@ const REDUNDANT_LITEGRAPH_CLEANUP_METHODS = new Set([
   'unregisterNodeType'
 ])
 
+const GLOBALLY_SPIED_CONSOLE_METHODS = new Set([
+  'debug',
+  'error',
+  'info',
+  'log',
+  'warn'
+])
+const CONSOLE_GLOBAL = new Set(['console'])
+const CONSOLE_OWNERS = new Set(['globalThis', 'window'])
+const FETCH_GLOBAL = new Set(['fetch'])
+const FETCH_OWNERS = new Set(['global', 'globalThis', 'window'])
+
 const MODULE_SCOPE_MOCK_METHODS = new Set(['spyOn', 'stubGlobal'])
+const PARTIAL_MOCK_METHODS = new Set(['doMock', 'mock'])
 const AFTER_EACH_IMPORTS = new Set(['afterEach'])
+const BEFORE_EACH_IMPORTS = new Set(['beforeEach'])
+const NON_BEFORE_EACH_HOOKS = new Set(['afterAll', 'afterEach', 'beforeAll'])
 const BEFORE_TEST_IMPORTS = new Set(['beforeAll', 'describe', 'suite'])
 const SUITE_CALLBACK_MODIFIERS = new Set([
   'concurrent',
@@ -49,6 +69,19 @@ interface StringLiteral extends Node {
   readonly value: string
 }
 
+interface TemplateLiteral extends Node {
+  readonly type: 'TemplateLiteral'
+  readonly expressions: readonly Expression[]
+  readonly quasis: readonly {
+    readonly value: { readonly cooked?: string; readonly raw: string }
+  }[]
+}
+
+interface ImportExpression extends Node {
+  readonly type: 'ImportExpression'
+  readonly source: Expression
+}
+
 interface PropertyDefinition extends Node {
   readonly type: 'PropertyDefinition'
   readonly static: boolean
@@ -70,8 +103,14 @@ type Expression =
   | Node
   | Identifier
   | StringLiteral
+  | TemplateLiteral
   | MemberExpression
   | ChainExpression
+
+interface AssignmentExpression extends Node {
+  readonly type: 'AssignmentExpression'
+  readonly left: Expression
+}
 
 interface CallExpression extends Node {
   readonly type: 'CallExpression'
@@ -79,9 +118,59 @@ interface CallExpression extends Node {
   readonly arguments: readonly Expression[]
 }
 
+interface FunctionExpression extends Node {
+  readonly type:
+    | 'ArrowFunctionExpression'
+    | 'FunctionDeclaration'
+    | 'FunctionExpression'
+  readonly params: readonly Node[]
+}
+
+interface ExpressionStatement extends Node {
+  readonly type: 'ExpressionStatement'
+  readonly expression: Expression
+}
+
+interface BlockStatement extends Node {
+  readonly type: 'BlockStatement'
+  readonly body: readonly Node[]
+}
+
+function isImportExpression(node: Node | undefined): node is ImportExpression {
+  return node?.type === 'ImportExpression'
+}
+
+function isTemplateLiteral(node: Node): node is TemplateLiteral {
+  return node.type === 'TemplateLiteral'
+}
+
+function staticModuleName(node: Node | undefined): string | undefined {
+  if (!node) return
+  if (isImportExpression(node)) return staticModuleName(node.source)
+  if ('value' in node && typeof node.value === 'string') return node.value
+  if (isTemplateLiteral(node)) {
+    if (node.expressions.length === 0) {
+      return node.quasis[0]?.value.cooked ?? node.quasis[0]?.value.raw
+    }
+  }
+}
+
+function isFunctionExpression(
+  node: Node | undefined
+): node is FunctionExpression {
+  return (
+    node?.type === 'ArrowFunctionExpression' ||
+    node?.type === 'FunctionDeclaration' ||
+    node?.type === 'FunctionExpression'
+  )
+}
+
 interface ScopeVariableDefinition {
   readonly type: string
-  readonly node: Node & { readonly imported?: Identifier }
+  readonly node: Node & {
+    readonly imported?: Identifier
+    readonly init?: Expression
+  }
   readonly parent: Node & { readonly source?: StringLiteral }
 }
 
@@ -151,6 +240,29 @@ function resolvedVariable(
     )
     if (reference) return reference.resolved
     scope = scope.upper
+  }
+}
+
+function mockFactory(
+  context: RuleContext,
+  expression: Expression | undefined
+): FunctionExpression | undefined {
+  if (isFunctionExpression(expression)) return expression
+  const identifier = expression && asIdentifier(expression)
+  if (!identifier) return
+
+  const variable = resolvedVariable(context, identifier)
+  const definition = variable?.defs.find(
+    ({ node }) =>
+      isFunctionExpression(node) ||
+      (node.type === 'VariableDeclarator' && isFunctionExpression(node.init))
+  )?.node
+  if (isFunctionExpression(definition)) return definition
+  if (
+    definition?.type === 'VariableDeclarator' &&
+    isFunctionExpression(definition.init)
+  ) {
+    return definition.init
   }
 }
 
@@ -348,10 +460,146 @@ function runsBeforeTests(context: RuleContext, node: CallExpression): boolean {
   )
 }
 
+function calledMemberName(node: Node | undefined): string | undefined {
+  if (node?.type !== 'CallExpression') return
+  const member = asMemberExpression((node as CallExpression).callee)
+  return member && staticMemberName(member)
+}
+
+function isMockInstanceCleanup(statement: Node): boolean {
+  if (statement.type !== 'ExpressionStatement') return false
+  const methodName = calledMemberName(
+    unwrapChain((statement as ExpressionStatement).expression)
+  )
+  return (
+    methodName !== undefined &&
+    REDUNDANT_MOCK_INSTANCE_CLEANUP_METHODS.has(methodName)
+  )
+}
+
+function continuesReceiverChain(parent: Node, child: Node): boolean {
+  return (
+    parent.type === 'ChainExpression' ||
+    (parent.type === 'CallExpression' &&
+      (parent as CallExpression).callee === child) ||
+    (parent.type === 'MemberExpression' &&
+      (parent as MemberExpression).object === child)
+  )
+}
+
+function headsExpression(
+  ancestors: readonly Node[],
+  rootIndex: number,
+  node: CallExpression
+): boolean {
+  return ancestors
+    .slice(rootIndex + 1)
+    .every((parent, offset, chain) =>
+      continuesReceiverChain(parent, chain.at(offset + 1) ?? node)
+    )
+}
+
+function leadsHookBody(
+  ancestors: readonly Node[],
+  boundaryIndex: number,
+  node: CallExpression
+) {
+  const body = ancestors.at(boundaryIndex + 1)
+  if (body?.type !== 'BlockStatement') {
+    return headsExpression(ancestors, boundaryIndex, node)
+  }
+  const statement = ancestors.at(boundaryIndex + 2)
+  if (
+    statement?.type !== 'ExpressionStatement' ||
+    !headsExpression(ancestors, boundaryIndex + 2, node)
+  ) {
+    return false
+  }
+  const statements = (body as BlockStatement).body
+  return statements
+    .slice(0, statements.indexOf(statement))
+    .every(isMockInstanceCleanup)
+}
+
+function isBeforeEachStatement(context: RuleContext, statement: Node) {
+  return (
+    statement.type === 'ExpressionStatement' &&
+    isVitestCallbackCall(
+      context,
+      unwrapChain((statement as ExpressionStatement).expression),
+      BEFORE_EACH_IMPORTS
+    )
+  )
+}
+
+function runsFirstAmongBeforeEachHooks(
+  context: RuleContext,
+  hookAncestors: readonly Node[]
+): boolean {
+  let innermost = true
+  for (let index = hookAncestors.length - 2; index >= 0; index--) {
+    const scope = hookAncestors[index]
+    if (scope.type !== 'Program' && scope.type !== 'BlockStatement') continue
+    const statements = (scope as BlockStatement).body
+    const ownStatement = hookAncestors[index + 1]
+    const earlierHooks = innermost
+      ? statements.slice(0, statements.indexOf(ownStatement))
+      : statements.filter((statement) => statement !== ownStatement)
+    if (
+      earlierHooks.some((statement) =>
+        isBeforeEachStatement(context, statement)
+      )
+    ) {
+      return false
+    }
+    innermost = false
+  }
+  return true
+}
+
+function precedesBeforeEachSetup(
+  context: RuleContext,
+  node: CallExpression
+): boolean {
+  const ancestors = context.sourceCode.getAncestors(node)
+  const boundaryIndex = enclosingExecutionBoundaryIndex(ancestors)
+  return (
+    leadsHookBody(ancestors, boundaryIndex, node) &&
+    runsFirstAmongBeforeEachHooks(
+      context,
+      ancestors.slice(0, boundaryIndex - 1)
+    )
+  )
+}
+
+function isRedundantMockInstanceCleanup(
+  context: RuleContext,
+  node: CallExpression
+): boolean {
+  return (
+    runsDirectlyInVitestCallback(context, node, NON_BEFORE_EACH_HOOKS) ||
+    (runsDirectlyInVitestCallback(context, node, BEFORE_EACH_IMPORTS) &&
+      precedesBeforeEachSetup(context, node))
+  )
+}
+
 export const noRedundantVitestCleanup = {
   create(context: RuleContext) {
     return {
       CallExpression(node: CallExpression) {
+        const mockMethodName = calledMemberName(node)
+        if (
+          mockMethodName &&
+          REDUNDANT_MOCK_INSTANCE_CLEANUP_METHODS.has(mockMethodName) &&
+          isRedundantMockInstanceCleanup(context, node)
+        ) {
+          context.report({
+            node,
+            message: `.${mockMethodName}() is redundant in a Vitest hook because the project test setup resets and restores every mock before each test.`
+          })
+          return
+        }
+
         const methodName = vitestMethodName(context, node)
         if (
           !methodName ||
@@ -389,6 +637,156 @@ export const noModuleScopeVitestMocks = {
           node,
           message: `Install vi.${methodName}() in beforeEach or a test because automatic Vitest cleanup removes earlier mock installations before assertions run.`
         })
+      }
+    }
+  }
+}
+
+function isGlobalIdentifier(
+  context: RuleContext,
+  expression: Expression,
+  names: ReadonlySet<string>
+): boolean {
+  const identifier = asIdentifier(expression)
+  return (
+    identifier !== undefined &&
+    names.has(identifier.name) &&
+    !resolvedVariable(context, identifier)?.defs.length
+  )
+}
+
+function isGlobalConsole(context: RuleContext, expression: Expression) {
+  if (isGlobalIdentifier(context, expression, CONSOLE_GLOBAL)) {
+    return true
+  }
+  const member = asMemberExpression(expression)
+  return (
+    member !== undefined &&
+    staticMemberName(member) === 'console' &&
+    isGlobalIdentifier(context, member.object, CONSOLE_OWNERS)
+  )
+}
+
+export const noRedundantConsoleSpy = {
+  create(context: RuleContext) {
+    return {
+      CallExpression(node: CallExpression) {
+        if (
+          vitestMethodName(context, node) !== 'spyOn' ||
+          node.arguments.length < 2
+        ) {
+          return
+        }
+        const [target, method] = node.arguments
+        const methodName = staticModuleName(method)
+        if (
+          !methodName ||
+          !GLOBALLY_SPIED_CONSOLE_METHODS.has(methodName) ||
+          !isGlobalConsole(context, target)
+        ) {
+          return
+        }
+        context.report({
+          node,
+          message: `console.${methodName} is already spied before every test by vitest.console.setup.ts, and output from passing tests is silenced. Assert with expect(console.${methodName}) and replace its implementation with vi.mocked(console.${methodName}).`
+        })
+      }
+    }
+  }
+}
+
+const FETCH_STUB_MESSAGE =
+  'fetch is already a mock from vitest.network.setup.ts that blocks real requests by default, and the automatic reset restores that guard. Configure it with vi.mocked(fetch) instead.'
+
+function isGlobalFetch(context: RuleContext, expression: Expression) {
+  if (isGlobalIdentifier(context, expression, FETCH_GLOBAL)) return true
+  const member = asMemberExpression(expression)
+  return (
+    member !== undefined &&
+    staticMemberName(member) === 'fetch' &&
+    isGlobalIdentifier(context, member.object, FETCH_OWNERS)
+  )
+}
+
+export const noRedundantFetchStub = {
+  create(context: RuleContext) {
+    return {
+      AssignmentExpression(node: AssignmentExpression) {
+        if (isGlobalFetch(context, node.left)) {
+          context.report({ node, message: FETCH_STUB_MESSAGE })
+        }
+      },
+      CallExpression(node: CallExpression) {
+        const methodName = vitestMethodName(context, node)
+        if (node.arguments.length < 2) return
+        const [target, property] = node.arguments
+        const stubsFetch =
+          methodName === 'stubGlobal' && staticModuleName(target) === 'fetch'
+        const spiesOnFetch =
+          methodName === 'spyOn' &&
+          isGlobalIdentifier(context, target, FETCH_OWNERS) &&
+          staticModuleName(property) === 'fetch'
+        if (stubsFetch || spiesOnFetch) {
+          context.report({ node, message: FETCH_STUB_MESSAGE })
+        }
+      }
+    }
+  }
+}
+
+export const noImportActual = {
+  create(context: RuleContext) {
+    const mockedModulesByFactory = new Map<FunctionExpression, Set<string>>()
+    const importsInFactories: {
+      node: ImportExpression
+      factory: FunctionExpression
+      importedModule: string
+    }[] = []
+
+    return {
+      CallExpression(node: CallExpression) {
+        const methodName = vitestMethodName(context, node)
+        const factory =
+          methodName !== undefined && PARTIAL_MOCK_METHODS.has(methodName)
+            ? mockFactory(context, node.arguments[1])
+            : undefined
+        if (factory !== undefined) {
+          const mockedModule = staticModuleName(node.arguments[0])
+          if (mockedModule !== undefined) {
+            const modules = mockedModulesByFactory.get(factory) ?? new Set()
+            modules.add(mockedModule)
+            mockedModulesByFactory.set(factory, modules)
+          }
+        }
+        const usesImportOriginal =
+          factory !== undefined && factory.params.length > 0
+
+        if (methodName !== 'importActual' && !usesImportOriginal) return
+
+        context.report({
+          node,
+          message:
+            'Avoid importOriginal() and vi.importActual(). Import the module normally and use vi.spyOn(), vi.mock(..., { spy: true }), or a focused full mock.'
+        })
+      },
+      ImportExpression(node: ImportExpression) {
+        const importedModule = staticModuleName(node.source)
+        if (importedModule === undefined) return
+        const ancestors = context.sourceCode.getAncestors(node)
+        const factory = ancestors.findLast(isFunctionExpression)
+        if (factory === undefined) return
+        importsInFactories.push({ node, factory, importedModule })
+      },
+      'Program:exit'() {
+        for (const { node, factory, importedModule } of importsInFactories) {
+          if (!mockedModulesByFactory.get(factory)?.has(importedModule))
+            continue
+          context.report({
+            node,
+            message:
+              'Do not dynamically import the original module in a vi.mock() factory. Delete the mock, use vi.mock(..., { spy: true }), or provide a focused full mock.'
+          })
+        }
       }
     }
   }

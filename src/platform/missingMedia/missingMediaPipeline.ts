@@ -1,6 +1,5 @@
 import { st } from '@/i18n'
 import type { LGraph } from '@/lib/litegraph/src/litegraph'
-import { isCloud } from '@/platform/distribution/types'
 import {
   isMissingMediaCandidateActive,
   isMissingMediaCandidateScopeActive,
@@ -18,6 +17,7 @@ import { useWorkspaceStore } from '@/stores/workspaceStore'
 interface RunMissingMediaPipelineOptions {
   rootGraph: LGraph
   silent?: boolean
+  onVerified?: (candidates: MissingMediaCandidate[]) => void
 }
 
 function cacheMediaCandidates(
@@ -32,11 +32,12 @@ function cacheMediaCandidates(
 
 export async function runMissingMediaPipeline({
   rootGraph,
-  silent = false
+  silent = false,
+  onVerified
 }: RunMissingMediaPipelineOptions): Promise<void> {
   const missingMediaStore = useMissingMediaStore()
   const activeWf = useWorkspaceStore().workflow.activeWorkflow
-  const allCandidates = scanAllMediaCandidates(rootGraph, isCloud)
+  const allCandidates = scanAllMediaCandidates(rootGraph)
   // Drop candidates whose enclosing subgraph is muted/bypassed.
   const candidates = allCandidates.filter((candidate) =>
     isMissingMediaCandidateScopeActive(rootGraph, candidate)
@@ -44,16 +45,14 @@ export async function runMissingMediaPipeline({
 
   if (!candidates.length) {
     cacheMediaCandidates(activeWf, [])
+    onVerified?.([])
     return
   }
 
   const pending = candidates.some((c) => c.isMissing === undefined)
   if (pending) {
     const controller = missingMediaStore.createVerificationAbortController()
-    void verifyMediaCandidates(candidates, {
-      isCloud,
-      signal: controller.signal
-    })
+    void verifyMediaCandidates(candidates, { signal: controller.signal })
       .then(() => {
         if (controller.signal.aborted) return
         // Re-check ancestor after async verification (see model pipeline).
@@ -64,6 +63,11 @@ export async function runMissingMediaPipeline({
           useExecutionErrorStore().surfaceMissingMedia(confirmed, { silent })
         }
         cacheMediaCandidates(activeWf, confirmed)
+        onVerified?.(
+          candidates.filter((candidate) =>
+            isMissingMediaCandidateScopeActive(rootGraph, candidate)
+          )
+        )
       })
       .catch((err) => {
         console.warn('[Missing Media Pipeline] Asset verification failed:', err)
@@ -78,9 +82,8 @@ export async function runMissingMediaPipeline({
       })
   } else {
     const confirmed = candidates.filter((c) => c.isMissing === true)
-    if (confirmed.length) {
-      useExecutionErrorStore().surfaceMissingMedia(confirmed, { silent })
-    }
+    useExecutionErrorStore().surfaceMissingMedia(confirmed, { silent })
     cacheMediaCandidates(activeWf, confirmed)
+    onVerified?.(candidates)
   }
 }

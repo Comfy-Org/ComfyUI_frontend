@@ -1,7 +1,7 @@
 import { marked } from 'marked'
 import { describe, expect, it } from 'vitest'
 
-import { isImageResult } from '@/utils/resultItem'
+import { isAudioResult, isImageResult, isVideoResult } from '@/utils/resultItem'
 
 import {
   classifyAssetUrl,
@@ -53,6 +53,7 @@ describe('classifyAssetUrl', () => {
   it('rejects non-media and extensionless references', () => {
     expect(classifyAssetUrl(view('notes.txt'))).toBeNull()
     expect(classifyAssetUrl('https://cloud.comfy.org/api/view')).toBeNull()
+    expect(classifyAssetUrl('/view/%ZZ', 'http://localhost')).toBeNull()
   })
 
   it('falls back to the pathname when no filename param exists', () => {
@@ -122,4 +123,37 @@ describe('replyAssetResultItem', () => {
     expect(item.url).toBe('https://x/y?filename=a.png')
     expect(isImageResult(item)).toBe(true)
   })
+
+  it.for([
+    {
+      kind: 'image' as const,
+      filename: 'stored-video.mp4',
+      expected: [true, false, false]
+    },
+    {
+      kind: 'video' as const,
+      filename: 'stored-image.png',
+      expected: [false, true, false]
+    },
+    {
+      kind: 'audio' as const,
+      filename: 'stored-image.png',
+      expected: [false, false, true]
+    }
+  ])(
+    'keeps resolved $kind authoritative over $filename',
+    ({ kind, filename, expected }) => {
+      const item = replyAssetResultItem({
+        url: `https://x/y?filename=${filename}`,
+        filename,
+        kind
+      })
+
+      expect([
+        isImageResult(item),
+        isVideoResult(item),
+        isAudioResult(item)
+      ]).toEqual(expected)
+    }
+  )
 })

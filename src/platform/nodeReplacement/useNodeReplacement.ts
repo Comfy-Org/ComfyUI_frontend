@@ -12,7 +12,10 @@ import type { TWidgetValue } from '@/lib/litegraph/src/types/widgets'
 import { isNodeBindable } from '@/lib/litegraph/src/utils/type'
 import { t } from '@/i18n'
 import { useMissingNodesErrorStore } from '@/platform/nodeReplacement/missingNodesErrorStore'
-import type { NodeReplacement } from '@/platform/nodeReplacement/types'
+import type {
+  MissingNodeType,
+  NodeReplacement
+} from '@/platform/nodeReplacement/types'
 import { useToastStore } from '@/platform/updates/common/toastStore'
 import {
   removePendingMissingNodeTypesByType,
@@ -23,7 +26,6 @@ import { app, sanitizeNodeName } from '@/scripts/app'
 import { clearNodeOwnedStoreState } from '@/stores/clearNodeOwnedStoreState'
 import type { EndpointPatch, EndpointUpdate } from '@/stores/linkStore'
 import { useLinkStore } from '@/stores/linkStore'
-import type { MissingNodeType } from '@/types/comfy'
 import { graphScopeOf } from '@/types/graphScopeId'
 import type { LinkId } from '@/types/linkId'
 import type { LinkTopology } from '@/types/linkTopology'
@@ -259,7 +261,7 @@ function replaceWithMapping(
   const serialized = node.last_serialization ?? node.serialize()
   if (serialized.title != null) newNode.title = serialized.title
   if (serialized.properties) {
-    newNode.properties = { ...serialized.properties }
+    newNode.properties = { ...newNode.properties, ...serialized.properties }
     if ('Node name for S&R' in newNode.properties) {
       newNode.properties['Node name for S&R'] = replacement.new_node_id
     }

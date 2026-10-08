@@ -1,18 +1,25 @@
 import { describe, expect, it, vi } from 'vitest'
 
-import { isWorkshopInBuild, isWorkshopRoute } from './workshop-release'
+import {
+  assertWorkshopCloudEnvForBuild,
+  isWorkshopInBuild,
+  isWorkshopRoute
+} from './workshop-release'
+import { hubModelSlugs } from './hub-models'
+
+const [hubModelSlug] = hubModelSlugs.values()
 
 describe('isWorkshopInBuild', () => {
   it.for([
     {
-      name: 'production excludes Workshop',
+      name: 'production includes Workshop',
       vercelEnv: 'production',
-      expected: false
+      expected: true
     },
     {
-      name: 'preview excludes Workshop',
+      name: 'preview includes Workshop',
       vercelEnv: 'preview',
-      expected: false
+      expected: true
     },
     { name: 'an unset environment includes Workshop', expected: true },
     {
@@ -51,10 +58,120 @@ describe('isWorkshopRoute', () => {
   it('claims the Workshop tree and nothing else', () => {
     expect(isWorkshopRoute('/workshop')).toBe(true)
     expect(isWorkshopRoute('/workshop/models/[slug]')).toBe(true)
+    expect(isWorkshopRoute(`/hub/models/${hubModelSlug}/`)).toBe(true)
+    expect(isWorkshopRoute('/models/local/')).toBe(false)
+    expect(isWorkshopRoute('/models/showcase/')).toBe(true)
+    expect(isWorkshopRoute('/cinematic-studio/')).toBe(true)
+    expect(isWorkshopRoute('/models')).toBe(true)
+    expect(isWorkshopRoute('/hub/models')).toBe(false)
+    expect(isWorkshopRoute('/hub/models/')).toBe(false)
+    expect(isWorkshopRoute('/hub/models/local/')).toBe(false)
+    expect(isWorkshopRoute('/hub/models/local/4x-ultrasharp/')).toBe(false)
+    expect(isWorkshopRoute('/hub/models/local/llms.txt')).toBe(false)
 
     expect(isWorkshopRoute('/')).toBe(false)
     expect(isWorkshopRoute('/pricing')).toBe(false)
     // A sibling route that merely starts with the same letters must survive.
     expect(isWorkshopRoute('/workshops-are-elsewhere')).toBe(false)
+  })
+})
+
+describe('assertWorkshopCloudEnvForBuild', () => {
+  it.for([
+    { name: 'a local build needs no family' },
+    { name: 'a local build may name one', family: 'test' },
+    {
+      name: 'a production build with Workshop targets prod',
+      vercelEnv: 'production',
+      inBuild: '1',
+      family: 'prod'
+    },
+    {
+      name: 'a preview with Workshop may target staging',
+      vercelEnv: 'preview',
+      inBuild: '1',
+      family: 'staging'
+    },
+    {
+      name: 'a preview with Workshop may target test',
+      vercelEnv: 'preview',
+      inBuild: '1',
+      family: 'test'
+    }
+  ])('$name', ({ vercelEnv, inBuild, family }) => {
+    vi.stubEnv('VERCEL_ENV', vercelEnv)
+    vi.stubEnv('WORKSHOP_IN_BUILD', inBuild)
+    vi.stubEnv('PUBLIC_WORKSHOP_CLOUD_ENV', family)
+
+    expect(() => assertWorkshopCloudEnvForBuild()).not.toThrow()
+  })
+
+  it.for([
+    {
+      name: 'a Workshop build rejects a misspelt family',
+      vercelEnv: 'preview',
+      inBuild: '1',
+      family: 'production',
+      message: /not one of prod, staging, test/
+    },
+    {
+      name: 'a production build with Workshop must name its family',
+      vercelEnv: 'production',
+      inBuild: '1',
+      message: /PUBLIC_WORKSHOP_CLOUD_ENV is unset/
+    },
+    {
+      name: 'comfy.org may not reach staging',
+      vercelEnv: 'production',
+      inBuild: '1',
+      family: 'staging',
+      message: /may only reach prod Cloud/
+    },
+    {
+      name: 'comfy.org may not reach test',
+      vercelEnv: 'production',
+      inBuild: '1',
+      family: 'test',
+      message: /may only reach prod Cloud/
+    },
+    {
+      name: 'a preview with Workshop must name its family',
+      vercelEnv: 'preview',
+      inBuild: '1',
+      message: /PUBLIC_WORKSHOP_CLOUD_ENV is unset/
+    },
+    {
+      name: 'a preview with Workshop treats an empty family as unset',
+      vercelEnv: 'preview',
+      inBuild: '1',
+      family: '',
+      message: /PUBLIC_WORKSHOP_CLOUD_ENV is unset/
+    },
+    {
+      name: 'a production build without Workshop must still name its family for sign-in',
+      vercelEnv: 'production',
+      inBuild: '0',
+      message: /PUBLIC_WORKSHOP_CLOUD_ENV is unset/
+    },
+    {
+      name: 'a preview without Workshop may not reach prod',
+      vercelEnv: 'preview',
+      inBuild: '0',
+      family: 'prod',
+      message: /may only reach staging or test Cloud/
+    },
+    {
+      name: 'a preview may not reach prod',
+      vercelEnv: 'preview',
+      inBuild: '1',
+      family: 'prod',
+      message: /may only reach staging or test Cloud/
+    }
+  ])('$name', ({ vercelEnv, inBuild, family, message }) => {
+    vi.stubEnv('VERCEL_ENV', vercelEnv)
+    vi.stubEnv('WORKSHOP_IN_BUILD', inBuild)
+    vi.stubEnv('PUBLIC_WORKSHOP_CLOUD_ENV', family)
+
+    expect(() => assertWorkshopCloudEnvForBuild()).toThrow(message)
   })
 })

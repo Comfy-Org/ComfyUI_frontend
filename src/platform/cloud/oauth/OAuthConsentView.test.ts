@@ -2,18 +2,22 @@ import { render, screen, waitFor } from '@testing-library/vue'
 import userEvent from '@testing-library/user-event'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { createI18n } from 'vue-i18n'
+import { createMemoryHistory, createRouter } from 'vue-router'
 
 import OAuthConsentView from '@/platform/cloud/oauth/OAuthConsentView.vue'
-import { OAuthApiError } from '@/platform/cloud/oauth/oauthApi'
-import type * as oauthApi from '@/platform/cloud/oauth/oauthApi'
+import {
+  OAuthApiError,
+  submitOAuthConsentDecision
+} from '@/platform/cloud/oauth/oauthApi'
 import type { OAuthConsentChallenge } from '@/platform/cloud/oauth/oauthApi'
 
-const submitOAuthConsentDecision = vi.hoisted(() => vi.fn())
+vi.mock(import('@/platform/cloud/oauth/oauthApi'), { spy: true })
+const mockSubmitOAuthConsentDecision = vi.mocked(submitOAuthConsentDecision)
 
-vi.mock(import('@/platform/cloud/oauth/oauthApi'), async (importOriginal) => ({
-  ...(await importOriginal<typeof oauthApi>()),
-  submitOAuthConsentDecision
-}))
+const SCOPE_BROADENING =
+  "The previously approved permissions don't cover this request."
+const ORIGIN_REFUSED =
+  "We couldn't approve this from this page. Reopen the sign-in from the app."
 
 const i18n = createI18n({
   legacy: false,
@@ -41,8 +45,8 @@ const i18n = createI18n({
           appTypeWeb: 'Web app',
           errorExpired:
             'This consent request has expired or has already been used.',
-          errorScopeBroadening:
-            "The previously approved permissions don't cover this request.",
+          errorScopeBroadening: SCOPE_BROADENING,
+          errorOriginRefused: ORIGIN_REFUSED,
           errorUnavailable: "This feature isn't available right now.",
           sessionError: 'Failed to establish session. Please try again.'
         },
@@ -98,7 +102,27 @@ const renderConsent = (overrides: Partial<OAuthConsentChallenge> = {}) =>
 
 describe('OAuthConsentView', () => {
   beforeEach(() => {
-    submitOAuthConsentDecision.mockReset().mockResolvedValue(undefined)
+    mockSubmitOAuthConsentDecision.mockResolvedValue(undefined)
+  })
+
+  it('loads the consent named in the URL on the session cookie alone, as an SSO callback lands', async () => {
+    vi.mocked(fetch).mockResolvedValueOnce(Response.json(challenge))
+    const router = createRouter({
+      history: createMemoryHistory(),
+      routes: [{ path: '/oauth/consent', component: OAuthConsentView }]
+    })
+    await router.push(
+      `/oauth/consent?oauth_request_id=${challenge.oauth_request_id}`
+    )
+    render(OAuthConsentView, { global: { plugins: [i18n, router] } })
+
+    expect(await screen.findByText('Comfy Desktop wants access')).toBeVisible()
+    const [url, init] = vi.mocked(fetch).mock.calls[0]
+    expect(url).toBe(
+      `/oauth/authorize?oauth_request_id=${challenge.oauth_request_id}`
+    )
+    expect(init?.credentials).toBe('include')
+    expect(new Headers(init?.headers).has('Authorization')).toBe(false)
   })
 
   it('shows the generic app icon regardless of client_display_name', () => {
@@ -145,7 +169,7 @@ describe('OAuthConsentView', () => {
     // sole workspace_id.
     await user.click(screen.getByRole('button', { name: 'Continue' }))
 
-    expect(submitOAuthConsentDecision).toHaveBeenCalledWith({
+    expect(mockSubmitOAuthConsentDecision).toHaveBeenCalledWith({
       oauthRequestId: '550e8400-e29b-41d4-a716-446655440000',
       csrfToken: 'csrf-token',
       decision: 'allow',
@@ -166,7 +190,7 @@ describe('OAuthConsentView', () => {
 
     await user.click(screen.getByRole('button', { name: 'Cancel' }))
 
-    expect(submitOAuthConsentDecision).toHaveBeenCalledWith(
+    expect(mockSubmitOAuthConsentDecision).toHaveBeenCalledWith(
       expect.objectContaining({
         decision: 'deny',
         workspaceId: 'personal-workspace'
@@ -187,11 +211,11 @@ describe('OAuthConsentView', () => {
     await user.click(screen.getByRole('button', { name: 'Cancel' }))
 
     expect(screen.getByRole('alert')).toBeVisible()
-    expect(submitOAuthConsentDecision).not.toHaveBeenCalled()
+    expect(mockSubmitOAuthConsentDecision).not.toHaveBeenCalled()
   })
 
   it('maps OAuthApiError(400) to the expired-request message', async () => {
-    submitOAuthConsentDecision.mockRejectedValue(
+    mockSubmitOAuthConsentDecision.mockRejectedValue(
       new OAuthApiError('expired', 400)
     )
     const user = userEvent.setup()
@@ -209,7 +233,7 @@ describe('OAuthConsentView', () => {
   })
 
   it('maps OAuthApiError(401) to the session-expired message', async () => {
-    submitOAuthConsentDecision.mockRejectedValue(
+    mockSubmitOAuthConsentDecision.mockRejectedValue(
       new OAuthApiError('session expired', 401)
     )
     const user = userEvent.setup()
@@ -224,26 +248,25 @@ describe('OAuthConsentView', () => {
     })
   })
 
-  it('maps OAuthApiError(403) to the scope-broadening re-prompt message', async () => {
-    submitOAuthConsentDecision.mockRejectedValue(
-      new OAuthApiError('scope broadening', 403)
+  it.for([
+    { code: 'scope_broadening', message: SCOPE_BROADENING },
+    { code: 'origin_not_allowed', message: ORIGIN_REFUSED },
+    { code: 'cross_site_request', message: ORIGIN_REFUSED },
+    { code: undefined, message: SCOPE_BROADENING }
+  ])('maps a 403 with code $code to its message', async ({ code, message }) => {
+    mockSubmitOAuthConsentDecision.mockRejectedValue(
+      new OAuthApiError('refused', 403, code)
     )
     const user = userEvent.setup()
     renderConsent({ workspaces: [challenge.workspaces[0]] })
 
     await user.click(screen.getByRole('button', { name: 'Continue' }))
 
-    await waitFor(() => {
-      expect(
-        screen.getByText(
-          "The previously approved permissions don't cover this request."
-        )
-      ).toBeVisible()
-    })
+    expect(await screen.findByRole('alert')).toHaveTextContent(message)
   })
 
   it('maps OAuthApiError(404) to the feature-unavailable message', async () => {
-    submitOAuthConsentDecision.mockRejectedValue(
+    mockSubmitOAuthConsentDecision.mockRejectedValue(
       new OAuthApiError('disabled', 404)
     )
     const user = userEvent.setup()

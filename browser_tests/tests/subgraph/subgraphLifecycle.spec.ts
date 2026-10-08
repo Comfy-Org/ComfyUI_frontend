@@ -234,8 +234,9 @@ test.describe('Subgraph Lifecycle', { tag: ['@subgraph'] }, () => {
       }
     }
 
+    test.use({ initialSettings: { 'Comfy.RightSidePanel.IsOpen': true } })
+
     test.beforeEach(async ({ comfyPage }) => {
-      await comfyPage.settings.setSetting('Comfy.RightSidePanel.IsOpen', true)
       await comfyPage.workflow.loadWorkflow(
         'subgraphs/subgraph-with-promoted-text-widget'
       )

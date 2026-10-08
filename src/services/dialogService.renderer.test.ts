@@ -1,3 +1,5 @@
+import { computed } from 'vue'
+import { useBillingContext } from '@/composables/billing/useBillingContext'
 /**
  * Dialog migration regression net: when callers in `dialogService` open a
  * Reka-migrated dialog, the dialog stack item must carry `renderer: 'reka'`.
@@ -5,81 +7,160 @@
  */
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 
-vi.mock(import('@/i18n'), () => ({
-  t: (key: string) => key
-}))
+vi.mock(import('@/i18n'))
 
-vi.mock<unknown>(import('@/platform/telemetry'), () => ({
-  useTelemetry: () => ({ trackEvent: vi.fn() })
-}))
+vi.mock(import('@/platform/telemetry'))
+
+beforeEach(() => {
+  const billing = useBillingContext()
+  billing.canAccessSubscriptionFeatures = computed(() => true)
+  billing.isTeamPlan = computed(() => false)
+  billing.tier = computed(() => 'STANDARD')
+  billing.type = computed(() => 'legacy')
+  vi.mocked(useBillingContext).mockReturnValue(billing)
+})
 
 vi.mock(import('@/platform/distribution/types'), () => ({
   isCloud: false
 }))
 
-vi.mock<unknown>(import('@/composables/billing/useBillingContext'), () => ({
-  useBillingContext: () => ({
-    canAccessSubscriptionFeatures: { value: true },
-    isTeamPlan: { value: false },
-    tier: { value: 'STANDARD' },
-    type: { value: 'legacy' }
-  })
-}))
+vi.mock(import('@/composables/billing/useBillingContext'))
 
-vi.mock<unknown>(
-  import('@/platform/workspace/composables/useBillingCapabilities'),
-  () => ({
-    useBillingCapabilities: () => ({
-      canTopUp: { value: true },
-      canSubscribeSelfServe: { value: false },
-      isReady: { value: true }
-    })
-  })
-)
+vi.mock(import('@/platform/workspace/composables/useBillingCapabilities'))
 
 import { useDialogService } from '@/services/dialogService'
 import { useDialogStore } from '@/stores/dialogStore'
 
 describe('dialogService Reka renderer opt-in', () => {
-  let showDialog: ReturnType<
-    typeof vi.mocked<ReturnType<typeof useDialogStore>['showDialog']>
-  >
-
-  beforeEach(() => {
-    showDialog = vi.mocked(useDialogStore().showDialog)
-  })
-
-  it("prompt() sets renderer 'reka' and size 'md'", () => {
-    void useDialogService().prompt({ title: 'T', message: 'M' })
-    const [args] = showDialog.mock.calls[0]
+  it("prompt() sets renderer 'reka' and size 'md'", async () => {
+    const result = useDialogService().prompt({ title: 'T', message: 'M' })
+    await vi.waitFor(() =>
+      expect(useDialogStore().showDialog).toHaveBeenCalled()
+    )
+    const [args] = vi.mocked(useDialogStore().showDialog).mock.calls[0]
     expect(args.dialogComponentProps?.renderer).toBe('reka')
     expect(args.dialogComponentProps?.size).toBe('md')
+    args.dialogComponentProps?.onRemoved?.()
+    await expect(result).resolves.toBeNull()
   })
 
-  it("confirm() sets renderer 'reka' and size 'md'", () => {
-    void useDialogService().confirm({ title: 'T', message: 'M' })
-    const [args] = showDialog.mock.calls[0]
+  it("confirm() sets renderer 'reka' and size 'md'", async () => {
+    const result = useDialogService().confirm({ title: 'T', message: 'M' })
+    await vi.waitFor(() =>
+      expect(useDialogStore().showDialog).toHaveBeenCalled()
+    )
+    const [args] = vi.mocked(useDialogStore().showDialog).mock.calls[0]
     expect(args.dialogComponentProps?.renderer).toBe('reka')
     expect(args.dialogComponentProps?.size).toBe('md')
+    args.dialogComponentProps?.onRemoved?.()
+    await expect(result).resolves.toBeNull()
   })
 
-  it('confirm() opens under its own stack key when the caller passes one', () => {
-    void useDialogService().confirm({ title: 'T', message: 'M' })
-    void useDialogService().confirm({
+  it('confirm() opens under its own stack key when the caller passes one', async () => {
+    const service = useDialogService()
+    const shared = service.confirm({ title: 'T', message: 'M' })
+    const ownKey = service.confirm({
       key: 'global-desktop-login-confirm',
       title: 'T2',
       message: 'M2'
     })
-    const keys = showDialog.mock.calls.slice(-2).map(([args]) => args.key)
+    await vi.waitFor(() =>
+      expect(useDialogStore().showDialog).toHaveBeenCalledTimes(2)
+    )
+    const calls = vi.mocked(useDialogStore().showDialog).mock.calls
+    const keys = calls.slice(-2).map(([args]) => args.key)
     expect(
-      keys,
+      new Set(keys),
       'a shared key would make showDialog reuse the open prompt and drop the second resolver, leaving its promise pending forever'
-    ).toEqual(['global-prompt', 'global-desktop-login-confirm'])
+    ).toEqual(new Set(['global-prompt', 'global-desktop-login-confirm']))
+
+    for (const [args] of calls.slice(-2)) {
+      args.dialogComponentProps?.onRemoved?.()
+    }
+    await expect(Promise.all([shared, ownKey])).resolves.toEqual([null, null])
+  })
+
+  it('a caller-supplied key does not wait behind an open shared prompt', async () => {
+    const service = useDialogService()
+    const shared = service.prompt({ title: 'T', message: 'M' })
+    await vi.waitFor(() =>
+      expect(useDialogStore().showDialog).toHaveBeenCalledTimes(1)
+    )
+
+    const ownKey = service.confirm({
+      key: 'global-desktop-login-confirm',
+      title: 'T2',
+      message: 'M2'
+    })
+    await vi.waitFor(() =>
+      expect(useDialogStore().showDialog).toHaveBeenCalledTimes(2)
+    )
+    const [ownKeyArgs] = vi.mocked(useDialogStore().showDialog).mock.calls[1]
+    ownKeyArgs.dialogComponentProps?.onRemoved?.()
+    await expect(
+      ownKey,
+      'the own-key confirm must settle while the shared prompt is still open'
+    ).resolves.toBeNull()
+
+    const [sharedArgs] = vi.mocked(useDialogStore().showDialog).mock.calls[0]
+    sharedArgs.dialogComponentProps?.onRemoved?.()
+    await expect(shared).resolves.toBeNull()
+  })
+
+  it('serializes two concurrent confirms that share one caller-supplied key', async () => {
+    const service = useDialogService()
+    const options = { key: 'global-desktop-login-confirm', message: 'M' }
+
+    const first = service.confirm({ ...options, title: 'First' })
+    const second = service.confirm({ ...options, title: 'Second' })
+
+    await vi.waitFor(() =>
+      expect(useDialogStore().showDialog).toHaveBeenCalledTimes(1)
+    )
+    expect(
+      vi.mocked(useDialogStore().showDialog).mock.calls[0][0].title,
+      'showDialog reuses an open dialog by key, so the second confirm must wait rather than have its resolver dropped'
+    ).toBe('First')
+
+    vi.mocked(
+      useDialogStore().showDialog
+    ).mock.calls[0][0].dialogComponentProps?.onRemoved?.()
+    await expect(first).resolves.toBeNull()
+
+    await vi.waitFor(() =>
+      expect(useDialogStore().showDialog).toHaveBeenCalledTimes(2)
+    )
+    expect(vi.mocked(useDialogStore().showDialog).mock.calls[1][0].title).toBe(
+      'Second'
+    )
+    vi.mocked(
+      useDialogStore().showDialog
+    ).mock.calls[1][0].dialogComponentProps?.onRemoved?.()
+    await expect(second).resolves.toBeNull()
+  })
+
+  it('releases the FIFO queue when showDialog throws for the head prompt', async () => {
+    vi.mocked(useDialogStore().showDialog).mockImplementationOnce(() => {
+      throw new Error('boom')
+    })
+    const service = useDialogService()
+
+    await expect(service.prompt({ title: 'T', message: 'M' })).rejects.toThrow(
+      'boom'
+    )
+
+    const result = service.confirm({ title: 'T2', message: 'M2' })
+    await vi.waitFor(() =>
+      expect(useDialogStore().showDialog).toHaveBeenCalledTimes(2)
+    )
+    const [args] = vi.mocked(useDialogStore().showDialog).mock.calls[1]
+    args.dialogComponentProps?.onRemoved?.()
+    await expect(result).resolves.toBeNull()
   })
 
   it("showBillingComingSoonDialog() sets renderer 'reka', size 'sm', and 360px contentClass", () => {
     useDialogService().showBillingComingSoonDialog()
-    const [args] = showDialog.mock.calls[0]
+    const [args] = vi.mocked(useDialogStore().showDialog).mock.calls[0]
     expect(args.dialogComponentProps?.renderer).toBe('reka')
     expect(args.dialogComponentProps?.size).toBe('sm')
     expect(args.dialogComponentProps?.contentClass).toBe('max-w-[360px]')
@@ -93,21 +174,21 @@ describe('dialogService Reka renderer opt-in', () => {
       node_type: 'KSampler',
       traceback: ['line 1', 'line 2']
     })
-    const [args] = showDialog.mock.calls[0]
+    const [args] = vi.mocked(useDialogStore().showDialog).mock.calls[0]
     expect(args.dialogComponentProps?.renderer).toBe('reka')
     expect(args.dialogComponentProps?.size).toBe('lg')
   })
 
   it("showErrorDialog() sets renderer 'reka' and size 'lg'", () => {
     useDialogService().showErrorDialog(new Error('boom'))
-    const [args] = showDialog.mock.calls[0]
+    const [args] = vi.mocked(useDialogStore().showDialog).mock.calls[0]
     expect(args.dialogComponentProps?.renderer).toBe('reka')
     expect(args.dialogComponentProps?.size).toBe('lg')
   })
 
   it("showTopUpCreditsDialog() sets renderer 'reka' with a transparent shrink-wrapped chrome", async () => {
     await useDialogService().showTopUpCreditsDialog()
-    const [args] = showDialog.mock.calls[0]
+    const [args] = vi.mocked(useDialogStore().showDialog).mock.calls[0]
     expect(args.dialogComponentProps?.renderer).toBe('reka')
     expect(args.dialogComponentProps?.headless).toBe(true)
     expect(args.dialogComponentProps?.pt).toBeUndefined()
@@ -122,7 +203,7 @@ describe('dialogService Reka renderer opt-in', () => {
       component: Component,
       props: {}
     })
-    const [args] = showDialog.mock.calls[0]
+    const [args] = vi.mocked(useDialogStore().showDialog).mock.calls[0]
     expect(args.dialogComponentProps?.renderer).toBe('reka')
     expect(args.dialogComponentProps?.headless).toBe(true)
     expect(args.dialogComponentProps?.pt).toBeUndefined()
@@ -136,7 +217,7 @@ describe('dialogService Reka renderer opt-in', () => {
       props: {},
       dialogComponentProps: { closable: false, contentClass: 'w-170' }
     })
-    const [args] = showDialog.mock.calls[0]
+    const [args] = vi.mocked(useDialogStore().showDialog).mock.calls[0]
     expect(args.dialogComponentProps?.renderer).toBe('reka')
     expect(args.dialogComponentProps?.closable).toBe(false)
     expect(args.dialogComponentProps?.contentClass).toBe('w-170')
@@ -148,7 +229,7 @@ describe('dialogService Reka renderer opt-in', () => {
       key: 'small-layout-test',
       component: Component
     })
-    const [args] = showDialog.mock.calls[0]
+    const [args] = vi.mocked(useDialogStore().showDialog).mock.calls[0]
     expect(args.dialogComponentProps?.renderer).toBe('reka')
     expect(args.dialogComponentProps?.pt).toBeUndefined()
     expect(args.dialogComponentProps?.contentClass).toContain('w-fit')

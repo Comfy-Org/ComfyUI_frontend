@@ -5,12 +5,14 @@ import { beforeEach, describe, expect, it, vi } from 'vitest'
 
 import type { FormDropdownItem } from '@/renderer/extensions/vueNodes/widgets/components/form/dropdown/types'
 import { useWidgetSelectActions } from '@/renderer/extensions/vueNodes/widgets/composables/useWidgetSelectActions'
+import { api } from '@/scripts/api'
 import { useToastStore } from '@/platform/updates/common/toastStore'
 import type { SimplifiedWidget } from '@/types/simplifiedWidget'
+import enMessages from '@/locales/en/main.json'
 
 const mockCaptureCanvasState = vi.hoisted(() => vi.fn())
 
-vi.mock<unknown>(import('@/scripts/api'))
+vi.mock(import('@/scripts/api'))
 
 function createItems(...names: string[]): FormDropdownItem[] {
   return names.map((name, i) => ({
@@ -75,8 +77,33 @@ describe('useWidgetSelectActions', () => {
   })
 
   describe('handleFilesUpdate', () => {
+    it('rejects extensionless videos before upload', async () => {
+      const modelValue = ref<string | undefined>('existing.mp4')
+      const { handleFilesUpdate } = useWidgetSelectActions({
+        modelValue,
+        dropdownItems: computed(() => []),
+        widget: () =>
+          fromPartial<SimplifiedWidget<string | undefined>>({
+            name: 'test',
+            type: 'combo',
+            options: { values: ['existing.mp4'] }
+          }),
+        uploadFolder: () => 'input',
+        uploadSubfolder: () => undefined
+      })
+
+      await handleFilesUpdate([
+        new File(['video'], 'extensionless', { type: 'video/mp4' })
+      ])
+
+      expect(api.fetchApi).not.toHaveBeenCalled()
+      expect(modelValue.value).toBe('existing.mp4')
+      expect(useToastStore().addAlert).toHaveBeenCalledWith(
+        enMessages.g.videoFilenameExtensionRequired
+      )
+    })
+
     it('uploads file and updates modelValue', async () => {
-      const { api } = await import('@/scripts/api')
       vi.mocked(api.fetchApi).mockResolvedValue(
         fromPartial<Response>({
           status: 200,
@@ -111,7 +138,6 @@ describe('useWidgetSelectActions', () => {
     })
 
     it('adds uploaded path to widget values array', async () => {
-      const { api } = await import('@/scripts/api')
       vi.mocked(api.fetchApi).mockResolvedValue(
         fromPartial<Response>({
           status: 200,
@@ -141,7 +167,6 @@ describe('useWidgetSelectActions', () => {
     })
 
     it('calls widget callback after upload', async () => {
-      const { api } = await import('@/scripts/api')
       vi.mocked(api.fetchApi).mockResolvedValue(
         fromPartial<Response>({
           status: 200,
@@ -171,7 +196,6 @@ describe('useWidgetSelectActions', () => {
     })
 
     it('shows alert toast on upload failure', async () => {
-      const { api } = await import('@/scripts/api')
       vi.mocked(api.fetchApi).mockResolvedValue(
         fromPartial<Response>({
           status: 500,
@@ -199,7 +223,93 @@ describe('useWidgetSelectActions', () => {
 
       const toastStore = useToastStore()
       expect(toastStore.addAlert).toHaveBeenCalledWith(
-        '500 - Internal Server Error'
+        'Upload failed: Internal Server Error'
+      )
+    })
+
+    it('shows a status-derived toast without a dangling separator when statusText is empty', async () => {
+      vi.mocked(api.fetchApi).mockResolvedValue(
+        fromPartial<Response>({
+          status: 502,
+          statusText: ''
+        })
+      )
+
+      const { handleFilesUpdate } = useWidgetSelectActions({
+        modelValue: ref<string | undefined>(),
+        dropdownItems: computed(() => []),
+        widget: () =>
+          fromPartial<SimplifiedWidget<string | undefined>>({
+            name: 'test',
+            type: 'combo',
+            options: { values: [] }
+          }),
+        uploadFolder: () => 'input',
+        uploadSubfolder: () => undefined
+      })
+
+      await handleFilesUpdate([new File(['test'], 'fail.png')])
+
+      expect(useToastStore().addAlert).toHaveBeenCalledWith(
+        'Upload failed: HTTP 502'
+      )
+    })
+
+    it('shows a file-too-large toast on a 413 with no known upload limit', async () => {
+      vi.mocked(api.getServerFeature).mockReturnValue(undefined)
+      vi.mocked(api.fetchApi).mockResolvedValue(
+        fromPartial<Response>({
+          status: 413,
+          statusText: 'Payload Too Large'
+        })
+      )
+
+      const { handleFilesUpdate } = useWidgetSelectActions({
+        modelValue: ref<string | undefined>(),
+        dropdownItems: computed(() => []),
+        widget: () =>
+          fromPartial<SimplifiedWidget<string | undefined>>({
+            name: 'test',
+            type: 'combo',
+            options: { values: [] }
+          }),
+        uploadFolder: () => 'input',
+        uploadSubfolder: () => undefined
+      })
+
+      await handleFilesUpdate([new File(['test'], 'huge.png')])
+
+      expect(useToastStore().addAlert).toHaveBeenCalledWith(
+        'File is too large to upload.'
+      )
+    })
+
+    it('shows a file-too-large toast with the limit on a 413 when the server reports one', async () => {
+      vi.mocked(api.getServerFeature).mockReturnValue(104_857_600)
+      vi.mocked(api.fetchApi).mockResolvedValue(
+        fromPartial<Response>({
+          status: 413,
+          statusText: 'Payload Too Large'
+        })
+      )
+
+      const { handleFilesUpdate } = useWidgetSelectActions({
+        modelValue: ref<string | undefined>(),
+        dropdownItems: computed(() => []),
+        widget: () =>
+          fromPartial<SimplifiedWidget<string | undefined>>({
+            name: 'test',
+            type: 'combo',
+            options: { values: [] }
+          }),
+        uploadFolder: () => 'input',
+        uploadSubfolder: () => undefined
+      })
+
+      await handleFilesUpdate([new File(['test'], 'huge.png')])
+
+      expect(useToastStore().addAlert).toHaveBeenCalledWith(
+        'File is too large to upload (limit: 100 MB).'
       )
     })
   })

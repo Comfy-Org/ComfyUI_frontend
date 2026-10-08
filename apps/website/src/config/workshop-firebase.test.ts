@@ -1,0 +1,197 @@
+import type { UserCredential } from 'firebase/auth'
+import { describe, expect, it, vi } from 'vitest'
+
+import { captureSignupRollbackFailure } from '@/scripts/posthog'
+import {
+  isWorkshopProvisioningError,
+  provisionCustomer,
+  provisionWorkshopCustomer,
+  signInWorkshopWithEmail,
+  signInWorkshopWithGitHub,
+  signInWorkshopWithGoogle,
+  signUpWorkshopWithEmail
+} from './workshop-firebase'
+
+const h = vi.hoisted(() => ({
+  identityConfig: undefined as unknown,
+  createUserWithEmail: vi.fn(),
+  signInWithEmail: vi.fn(),
+  signInWithGoogle: vi.fn(),
+  signInWithGitHub: vi.fn()
+}))
+
+vi.mock(import('@/scripts/posthog'))
+
+vi.mock<unknown>(import('@comfyorg/account-core/firebase'), () => ({
+  createFirebaseIdentity: (config: unknown) => {
+    h.identityConfig = config
+    return {
+      onUserChanged: vi.fn(() => () => undefined),
+      signInWithGoogle: h.signInWithGoogle,
+      signInWithGitHub: h.signInWithGitHub,
+      signInWithEmail: h.signInWithEmail,
+      createUserWithEmail: h.createUserWithEmail,
+      sendPasswordReset: vi.fn(),
+      signOut: vi.fn()
+    }
+  }
+}))
+
+describe('provisionCustomer', () => {
+  const user = { getIdToken: async () => 'jwt' }
+
+  it('sends the workshop signup source with the bearer token', async () => {
+    const fetchImpl = vi.fn(async () => new Response(null, { status: 201 }))
+
+    await provisionCustomer(user, { fetchImpl })
+
+    const [url, init] = fetchImpl.mock.calls[0] as unknown as [
+      string,
+      RequestInit
+    ]
+    expect(url).toMatch(/\/customers$/)
+    expect(init.headers).toMatchObject({ Authorization: 'Bearer jwt' })
+    expect(JSON.parse(String(init.body))).toEqual({
+      signup_source: 'comfy-workshop'
+    })
+  })
+
+  it.for([400, 401, 409, 500])(
+    'fails on a %s answer instead of treating it as an existing customer',
+    async (status) => {
+      const fetchImpl = vi.fn(async () => new Response(null, { status }))
+
+      await expect(
+        provisionCustomer(user, { fetchImpl }),
+        'the backend answers 200 for an existing customer; a 409 is a real conflict'
+      ).rejects.toThrow(String(status))
+    }
+  )
+
+  it('bounds the POST with an abort signal so a hung request cannot strand sign-in', async () => {
+    const fetchImpl = vi.fn(async () => new Response(null, { status: 201 }))
+
+    await provisionCustomer(user, { fetchImpl })
+
+    const [, init] = fetchImpl.mock.calls[0] as unknown as [string, RequestInit]
+    expect(
+      init.signal,
+      'a provisioning POST without an abort signal hangs sign-in forever'
+    ).toBeInstanceOf(AbortSignal)
+  })
+
+  it('sends the Turnstile token using the customer API wire name', async () => {
+    const fetchImpl = vi.fn(async () => new Response(null, { status: 201 }))
+
+    await provisionCustomer(user, {
+      turnstileToken: 'cf-token',
+      fetchImpl
+    })
+
+    const [, init] = fetchImpl.mock.calls[0] as unknown as [string, RequestInit]
+    expect(JSON.parse(String(init.body))).toEqual({
+      signup_source: 'comfy-workshop',
+      turnstile_token: 'cf-token'
+    })
+  })
+})
+
+describe('signUpWorkshopWithEmail rollback reporting', () => {
+  function armSignUp(deleteFn: () => Promise<void>) {
+    h.createUserWithEmail.mockResolvedValue({
+      user: { delete: deleteFn, getIdToken: async () => 'jwt' }
+    })
+    vi.mocked(fetch).mockImplementation(
+      async () => new Response(null, { status: 500 })
+    )
+  }
+
+  it('reports a rollback that still failed after its retry', async () => {
+    const deleteFn = vi.fn(async () => {
+      throw new Error('delete down')
+    })
+    armSignUp(deleteFn)
+
+    await expect(
+      signUpWorkshopWithEmail('a@b.example', 'hunter22!', 'cf-token')
+    ).rejects.toThrow('Customer provisioning failed')
+
+    expect(deleteFn).toHaveBeenCalledTimes(2)
+    expect(
+      vi.mocked(captureSignupRollbackFailure),
+      'a double delete failure orphans the account; without the event nobody ever learns'
+    ).toHaveBeenCalledOnce()
+  })
+
+  it('stays silent when the rollback delete recovers', async () => {
+    const deleteFn = vi
+      .fn<() => Promise<void>>()
+      .mockRejectedValueOnce(new Error('blip'))
+      .mockResolvedValueOnce(undefined)
+    armSignUp(deleteFn)
+
+    await expect(
+      signUpWorkshopWithEmail('a@b.example', 'hunter22!', 'cf-token')
+    ).rejects.toThrow('Customer provisioning failed')
+
+    expect(vi.mocked(captureSignupRollbackFailure)).not.toHaveBeenCalled()
+  })
+})
+
+describe('popup sign-in', () => {
+  it('watches the popup so a closed one is reported at once', () => {
+    expect(h.identityConfig).toMatchObject({ watchPopupSignIn: true })
+  })
+
+  it.for([
+    ['google', signInWorkshopWithGoogle, h.signInWithGoogle],
+    ['github', signInWorkshopWithGitHub, h.signInWithGitHub]
+  ] as const)(
+    'hands the %s popup the caller’s late-result options',
+    async ([, signIn, identitySignIn]) => {
+      identitySignIn.mockResolvedValue({})
+      const options = { onResumed: vi.fn(), keepLateResult: () => true }
+
+      await signIn(options)
+
+      expect(identitySignIn).toHaveBeenCalledWith(options)
+    }
+  )
+})
+
+describe('social sign-in provisioning boundary', () => {
+  const user = { uid: 'u1', email: 'a@b.co', getIdToken: async () => 'jwt' }
+
+  it('rethrows a popup failure untouched, so the caller sees the Firebase code', async () => {
+    const popupFailure = { code: 'auth/popup-closed-by-user', message: 'x' }
+    h.signInWithGoogle.mockRejectedValue(popupFailure)
+
+    await expect(signInWorkshopWithGoogle()).rejects.toBe(popupFailure)
+  })
+
+  it('wraps a provisioning failure with the signed-in user and the original cause', async () => {
+    vi.mocked(fetch).mockImplementation(
+      async () => new Response(null, { status: 500 })
+    )
+
+    const failure = await provisionWorkshopCustomer({
+      user
+    } as unknown as UserCredential).catch((error) => error)
+
+    expect(
+      isWorkshopProvisioningError(failure),
+      'the sign-in succeeded, so the page keeps the identity and says setup did not finish'
+    ).toBe(true)
+    expect(failure.user).toBe(user)
+    expect(String(failure.cause)).toContain('500')
+  })
+})
+
+describe('email sign-in boundary', () => {
+  it('rethrows a credential failure untouched', async () => {
+    const wrong = { code: 'auth/wrong-password', message: 'x' }
+    h.signInWithEmail.mockRejectedValue(wrong)
+
+    await expect(signInWorkshopWithEmail('a@b.co', 'nope')).rejects.toBe(wrong)
+  })
+})

@@ -2,9 +2,9 @@ import { createHash } from 'node:crypto'
 import { readFile } from 'node:fs/promises'
 
 import type { AshbyJobPosting } from './ashby.schema'
-import type { Department, Role, RolesSnapshot } from '../data/roles'
+import type { Department, Role, RolesSnapshot } from '@/data/roles'
 
-import bundledSnapshot from '../data/ashby-roles.snapshot.json' with { type: 'json' }
+import bundledSnapshot from '@/data/ashby-roles.snapshot.json' with { type: 'json' }
 import {
   AshbyJobBoardResponseSchema,
   AshbyJobPostingSchema
@@ -215,7 +215,7 @@ function extractTitle(raw: unknown): string {
     raw !== null &&
     typeof raw === 'object' &&
     'title' in raw &&
-    typeof (raw as { title: unknown }).title === 'string'
+    typeof raw.title === 'string'
   ) {
     return (raw as { title: string }).title
   }

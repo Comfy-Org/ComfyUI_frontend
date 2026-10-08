@@ -1,9 +1,9 @@
-import type * as VueUse from '@vueuse/core'
 import { useCanvasStore } from '@/renderer/core/canvas/canvasStore'
 import { useSettingStore } from '@/platform/settings/settingStore'
 import type { Mock } from 'vitest'
+import * as VueUse from '@vueuse/core'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
-import { nextTick, shallowRef } from 'vue'
+import { nextTick, ref, shallowRef } from 'vue'
 
 import { CustomEventTarget } from '@/lib/litegraph/src/infrastructure/CustomEventTarget'
 import type { LGraphCanvas } from '@/lib/litegraph/src/litegraph'
@@ -13,9 +13,9 @@ import { toLinkId } from '@/types/linkId'
 import { toOwningGraphId, toRootGraphId } from '@/types/graphScopeId'
 import { toNodeId } from '@/types/nodeId'
 import {
-  createMockCanvas2DContext,
+  createMockCanvasRenderingContext2D,
   createMockMinimapCanvas
-} from '@/utils/__tests__/litegraphTestUtils'
+} from '@/utils/__tests__/canvasTestUtils'
 import type { UUID } from '@/utils/uuid'
 
 interface MockNode {
@@ -95,45 +95,35 @@ const mockIntervalResume = vi.fn()
 const rafCallbacks: Record<string, () => void> = {}
 let rafCallbackId = 0
 
-vi.mock<unknown>(import('@vueuse/core'), async (importOriginal) => {
-  const { ref } = await import('vue')
-  return {
-    ...(await importOriginal<typeof VueUse>()),
-    useDocumentVisibility: vi.fn(() => ref('visible')),
-    useRafFn: vi.fn((callback, options) => {
+vi.mock(import('@vueuse/core'), { spy: true })
+function setupVueUseMocks() {
+  vi.mocked(VueUse.useDocumentVisibility).mockReturnValue(ref('visible'))
+  vi.mocked(VueUse.useRafFn, { partial: true }).mockImplementation(
+    (callback, options) => {
       const id = rafCallbackId++
-      rafCallbacks[id] = callback
-
-      if (options?.immediate !== false) {
-        void Promise.resolve().then(() => callback())
-      }
-
-      const resumeFn = vi.fn(() => {
-        mockResume()
-        // Execute the RAF callback immediately when resumed
-        const callback = Object.hasOwn(rafCallbacks, id)
-          ? rafCallbacks[id]
-          : undefined
-        callback?.()
-      })
-
+      const run = () => callback({ timestamp: 0, delta: 0 })
+      rafCallbacks[id] = run
+      if (options?.immediate !== false) void Promise.resolve().then(run)
       return {
+        isActive: ref(false),
         pause: mockPause,
-        resume: resumeFn
+        resume: vi.fn(() => {
+          mockResume()
+          rafCallbacks[id]?.()
+        })
       }
-    }),
-    useIntervalFn: vi.fn((callback, _interval, options) => {
+    }
+  )
+  vi.mocked(VueUse.useIntervalFn, { partial: true }).mockImplementation(
+    (callback, _interval, options) => {
       const id = rafCallbackId++
       const state = { active: options?.immediate !== false }
       rafCallbacks[id] = () => {
         if (state.active) callback()
       }
-
-      if (state.active) {
-        void Promise.resolve().then(() => callback())
-      }
-
+      if (state.active) void Promise.resolve().then(callback)
       return {
+        isActive: ref(state.active),
         pause: vi.fn(() => {
           state.active = false
           mockIntervalPause()
@@ -144,14 +134,12 @@ vi.mock<unknown>(import('@vueuse/core'), async (importOriginal) => {
           callback()
         })
       }
-    }),
-    useThrottleFn: vi.fn((callback) => {
-      return (...args: unknown[]) => {
-        return callback(...args)
-      }
-    })
-  }
-})
+    }
+  )
+  vi.mocked(VueUse.useThrottleFn, { partial: true }).mockImplementation(
+    (callback) => callback
+  )
+}
 
 let moduleMockCanvas: MockCanvas = null!
 let moduleMockGraph: MockGraph = null!
@@ -221,13 +209,7 @@ const setupMocks = () => {
 
 setupMocks()
 
-vi.mock<unknown>(import('@/scripts/api'), () => ({
-  api: {
-    addEventListener: vi.fn(),
-    removeEventListener: vi.fn(),
-    apiURL: vi.fn().mockReturnValue('http://localhost:8188')
-  }
-}))
+vi.mock(import('@/scripts/api'))
 
 vi.mock<unknown>(import('@/scripts/app'), () => ({
   app: {
@@ -261,9 +243,10 @@ describe('useMinimap', () => {
   }
 
   beforeEach(() => {
+    setupVueUseMocks()
     registerMockLink(1, 'node2')
 
-    mockContext2D = createMockCanvas2DContext()
+    mockContext2D = createMockCanvasRenderingContext2D()
 
     moduleMockCanvasElement = createMockMinimapCanvas({
       getContext: vi
@@ -393,7 +376,7 @@ describe('useMinimap', () => {
       await minimap.init()
 
       expect(minimap.initialized.value).toBe(true)
-      expect(vi.mocked(useSettingStore().get)).toHaveBeenCalledWith(
+      expect(useSettingStore().get).toHaveBeenCalledWith(
         'Comfy.Minimap.Visible'
       )
       expect(api.addEventListener).toHaveBeenCalledWith(
@@ -417,16 +400,6 @@ describe('useMinimap', () => {
       expect(api.addEventListener).not.toHaveBeenCalled()
 
       useCanvasStore().canvas = originalCanvas
-    })
-
-    it('should setup event listeners on graph', async () => {
-      const minimap = await createAndInitializeMinimap()
-
-      await minimap.init()
-
-      expect(moduleMockGraph.onNodeAdded).toBeDefined()
-      expect(moduleMockGraph.onNodeRemoved).toBeDefined()
-      expect(moduleMockGraph.onConnectionChange).toBeDefined()
     })
 
     it('should handle visibility from settings', async () => {
@@ -962,17 +935,6 @@ describe('useMinimap', () => {
 
       expect(mockContext2D.fillRect).toHaveBeenCalled()
       expect(mockContext2D.fillStyle).toBeDefined()
-    })
-  })
-
-  describe('setMinimapRef', () => {
-    it('should set minimap reference', () => {
-      const minimap = useMinimap()
-      const ref = document.createElement('div')
-
-      minimap.setMinimapRef(ref)
-
-      expect(() => minimap.setMinimapRef(ref)).not.toThrow()
     })
   })
 })

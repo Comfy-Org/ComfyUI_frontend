@@ -1,4 +1,3 @@
-import type * as VueUse from '@vueuse/core'
 import { useExecutionStore } from '@/stores/executionStore'
 import { useThrottleFn } from '@vueuse/core'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
@@ -22,17 +21,9 @@ import {
   createMockLinks
 } from '@/utils/__tests__/litegraphTestUtils'
 
-vi.mock<unknown>(import('@vueuse/core'), async (importOriginal) => ({
-  ...(await importOriginal<typeof VueUse>()),
-  useThrottleFn: vi.fn((fn) => fn)
-}))
+vi.mock(import('@vueuse/core'), { spy: true })
 
-vi.mock<unknown>(import('@/scripts/api'), () => ({
-  api: {
-    addEventListener: vi.fn(),
-    removeEventListener: vi.fn()
-  }
-}))
+vi.mock(import('@/scripts/api'))
 
 describe('useMinimapGraph', () => {
   let mockGraph: LGraph

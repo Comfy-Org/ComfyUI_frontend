@@ -1,5 +1,7 @@
+import { setTelemetryRegistry } from '@/platform/telemetry'
+import { TelemetryRegistry } from '@/platform/telemetry/TelemetryRegistry'
 import { useAuthStore } from '@/stores/authStore'
-import { beforeEach, describe, expect, it, vi } from 'vitest'
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 
 import type {
   BillingOpStatusResponse,
@@ -30,21 +32,21 @@ vi.mock<unknown>(import('axios'), () => ({
   }
 }))
 
-vi.mock(import('@/i18n'), () => ({
-  t: vi.fn((key: string) => key)
-}))
-
-vi.mock(import('@/scripts/api'), async (importOriginal) => ({
-  api: Object.assign((await importOriginal()).api, {
-    apiURL: vi.fn((path: string) => `/api${path}`)
-  })
-}))
+vi.mock(import('@/i18n'))
 
 vi.mock(import('./workspaceApiUrl'), () => ({
   workspaceApiUrl: (path: string) => `/api${path}`
 }))
 
+vi.mock(import('firebase/auth'), { spy: true })
+
+beforeEach(() => {
+  stubFirebaseAuthHarness()
+})
+
 import { workspaceApi } from './workspaceApi'
+import { NoWorkspaceAccessError } from './workspaceApiError'
+import { stubFirebaseAuthHarness } from '@/utils/__tests__/stubAccountIdentityPort'
 
 const AUTH_HEADER = { Authorization: 'Bearer test-token' } as const
 
@@ -55,6 +57,87 @@ describe('workspaceApi', () => {
     )
     vi.mocked(useAuthStore().getFirebaseAuthHeaderOrThrow).mockResolvedValue(
       AUTH_HEADER
+    )
+  })
+
+  describe('billing request dispatch telemetry', () => {
+    const record = vi.fn()
+
+    beforeEach(() => {
+      const registry = new TelemetryRegistry()
+      registry.registerProvider({ trackBillingEvent: record })
+      setTelemetryRegistry(registry)
+    })
+    afterEach(() => setTelemetryRegistry(null))
+
+    it.for(['pending_payment', 'needs_payment_method', 'subscribed'] as const)(
+      'records subscription checkout response %s without calling it payment success',
+      async (status) => {
+        const response = { billing_op_id: 'op-subscription', status }
+        mockAxiosInstance.post.mockResolvedValueOnce({ data: response })
+        await expect(
+          workspaceApi.subscribe('standard-monthly')
+        ).resolves.toEqual(response)
+        expect(record).toHaveBeenLastCalledWith({
+          operation: 'subscription_checkout',
+          stage: 'checkout_received',
+          outcome: 'pending',
+          billing_op_id: 'op-subscription',
+          checkout_status: status
+        })
+        expect(record).toHaveBeenCalledTimes(2)
+      }
+    )
+
+    it.for(['pending', 'failed', 'completed'] as const)(
+      'records top-up checkout response %s without calling it payment success',
+      async (status) => {
+        const response = {
+          billing_op_id: 'op-topup',
+          topup_id: 'op-topup',
+          status,
+          amount_cents: 5000
+        }
+        mockAxiosInstance.post.mockResolvedValueOnce({ data: response })
+        await expect(workspaceApi.createTopup(5000)).resolves.toEqual(response)
+        expect(record).toHaveBeenLastCalledWith({
+          operation: 'topup',
+          stage: 'checkout_received',
+          outcome: 'pending',
+          billing_op_id: 'op-topup',
+          checkout_status: status
+        })
+        expect(record).toHaveBeenCalledTimes(2)
+      }
+    )
+
+    it.for(['subscription_checkout', 'topup'] as const)(
+      'records %s dispatch before its response, but not when authentication fails',
+      async (operation) => {
+        const send = () =>
+          operation === 'topup'
+            ? workspaceApi.createTopup(5000)
+            : workspaceApi.subscribe('standard-monthly')
+        const error = new Error('request rejected')
+        mockAxiosInstance.post.mockImplementationOnce(() => {
+          expect(record).toHaveBeenCalledExactlyOnceWith({
+            operation,
+            stage: 'request_sent',
+            outcome: 'pending'
+          })
+          return Promise.reject(error)
+        })
+        await expect(send()).rejects.toBe(error)
+
+        record.mockClear()
+        mockAxiosInstance.post.mockClear()
+        vi.mocked(
+          useAuthStore().getWorkspaceAuthHeaderOrThrow
+        ).mockRejectedValueOnce(error)
+        await expect(send()).rejects.toBe(error)
+        expect(record).not.toHaveBeenCalled()
+        expect(mockAxiosInstance.post).not.toHaveBeenCalled()
+      }
     )
   })
 
@@ -93,6 +176,57 @@ describe('workspaceApi', () => {
         message: 'Forbidden'
       })
     })
+
+    it.for([
+      {
+        operation: 'getBillingOpStatus',
+        call: () => workspaceApi.getBillingOpStatus('op-1'),
+        code: undefined
+      },
+      {
+        operation: 'acceptInvite',
+        call: () => workspaceApi.acceptInvite('token'),
+        code: undefined
+      },
+      {
+        operation: 'getCurrentWorkspace',
+        call: () => workspaceApi.getCurrentWorkspace(),
+        code: 'no_workspace_access'
+      }
+    ])(
+      'names $operation as the failed operation',
+      async ({ operation, call, code }) => {
+        const axiosErr = {
+          isAxiosError: true,
+          response: { status: 403, data: { message: 'Forbidden', code } },
+          message: 'Request failed'
+        }
+        mockAxiosInstance.get.mockRejectedValue(axiosErr)
+        mockAxiosInstance.post.mockRejectedValue(axiosErr)
+
+        await expect(call()).rejects.toMatchObject({ operation })
+      }
+    )
+
+    it.for([
+      { status: 403, code: 'no_workspace_access', typed: true },
+      { status: 403, code: undefined, typed: false },
+      { status: 404, code: 'no_workspace_access', typed: false }
+    ])(
+      'a $status with code $code is NoWorkspaceAccessError: $typed',
+      async ({ status, code, typed }) => {
+        mockAxiosInstance.get.mockRejectedValue({
+          isAxiosError: true,
+          response: { status, data: { message: 'No workspace', code } },
+          message: 'Request failed'
+        })
+
+        const error = await workspaceApi.list().catch((e: unknown) => e)
+
+        expect(error instanceof NoWorkspaceAccessError).toBe(typed)
+        expect(error).toMatchObject({ status, code })
+      }
+    )
 
     it('falls back to err.message when response data has no message', async () => {
       const axiosErr = {
@@ -419,51 +553,101 @@ describe('workspaceApi', () => {
       expect(result).toEqual(data)
     })
 
-    it('getChurnkeyAuth() returns validated Stripe-provider credentials', async () => {
-      const data = {
-        customer_id: 'cus_test_1',
-        auth_hash: 'hash-1',
-        mode: 'test'
+    const retentionFlow = {
+      session_id: '00000000-0000-4000-8000-000000000001',
+      expires_at: 2_000_000_000,
+      subscription: {
+        currency: 'usd',
+        unit_amount: 2000,
+        quantity: 1,
+        period_end: 2_000_000_000
       }
-      mockAxiosInstance.get.mockResolvedValue({ data })
+    }
 
-      await expect(workspaceApi.getChurnkeyAuth()).resolves.toEqual(data)
-      expect(mockAxiosInstance.get).toHaveBeenCalledWith(
-        '/api/billing/churnkey/auth',
-        { headers: AUTH_HEADER }
+    it.for([
+      { name: 'without an offer', data: retentionFlow },
+      {
+        name: 'with an offer',
+        data: {
+          ...retentionFlow,
+          experiment_variant: 'save_30_next_3_v1',
+          offer: {
+            id: 'save_30_next_3_v1',
+            percent_off: 30,
+            duration_in_months: 3
+          }
+        }
+      }
+    ])('prepareRetentionFlow() returns a session $name', async ({ data }) => {
+      mockAxiosInstance.post.mockResolvedValue({ data })
+
+      await expect(workspaceApi.prepareRetentionFlow()).resolves.toEqual(data)
+      expect(mockAxiosInstance.post).toHaveBeenCalledWith(
+        '/api/billing/retention/prepare',
+        {},
+        { headers: AUTH_HEADER, timeout: 5_000 }
       )
     })
 
-    it('getChurnkeyAuth() rejects malformed credentials', async () => {
-      mockAxiosInstance.get.mockResolvedValue({
-        data: {
-          customer_id: 'cus_test_1',
-          auth_hash: '',
-          mode: 'test'
-        }
+    it('prepareRetentionFlow() rejects a malformed session', async () => {
+      mockAxiosInstance.post.mockResolvedValue({
+        data: { ...retentionFlow, session_id: 'not-a-session' }
       })
 
-      await expect(workspaceApi.getChurnkeyAuth()).rejects.toMatchObject({
+      await expect(workspaceApi.prepareRetentionFlow()).rejects.toMatchObject({
         name: 'ZodError'
       })
     })
 
-    it('getChurnkeyAuth() normalizes Axios failures', async () => {
-      mockAxiosInstance.get.mockRejectedValue({
+    it('acceptRetentionOffer() sends only the session', async () => {
+      const data = { billing_op_id: 'op-1', status: 'pending' }
+      mockAxiosInstance.post.mockResolvedValue({ data })
+
+      await expect(
+        workspaceApi.acceptRetentionOffer(retentionFlow.session_id)
+      ).resolves.toEqual(data)
+      expect(mockAxiosInstance.post).toHaveBeenCalledWith(
+        '/api/billing/retention/accept',
+        { session_id: retentionFlow.session_id },
+        { headers: AUTH_HEADER }
+      )
+    })
+
+    it('recordRetentionFlowEvent() posts the event', async () => {
+      mockAxiosInstance.post.mockResolvedValue({ data: undefined })
+      const event = {
+        session_id: retentionFlow.session_id,
+        event: 'offer_shown'
+      } as const
+
+      await workspaceApi.recordRetentionFlowEvent(event)
+
+      expect(mockAxiosInstance.post).toHaveBeenCalledWith(
+        '/api/billing/retention/events',
+        event,
+        { headers: AUTH_HEADER }
+      )
+    })
+
+    it('prepareRetentionFlow() normalizes Axios failures', async () => {
+      mockAxiosInstance.post.mockRejectedValue({
         isAxiosError: true,
         response: {
           status: 503,
-          data: { message: 'Churnkey auth unavailable', code: 'UNAVAILABLE' }
+          data: {
+            message: 'cancellation offers are unavailable',
+            code: 'RETENTION_UNAVAILABLE'
+          }
         },
         message: 'Request failed',
         config: { headers: AUTH_HEADER }
       })
 
-      await expect(workspaceApi.getChurnkeyAuth()).rejects.toMatchObject({
+      await expect(workspaceApi.prepareRetentionFlow()).rejects.toMatchObject({
         name: 'WorkspaceApiError',
         status: 503,
-        code: 'UNAVAILABLE',
-        message: 'Churnkey auth unavailable'
+        code: 'RETENTION_UNAVAILABLE',
+        message: 'cancellation offers are unavailable'
       })
     })
   })
@@ -787,10 +971,3 @@ describe('workspaceApi', () => {
     })
   })
 })
-
-vi.mock(import('firebase/auth'), async (importOriginal) => ({
-  ...(await importOriginal()),
-  setPersistence: vi.fn().mockResolvedValue(undefined),
-  onAuthStateChanged: vi.fn(() => vi.fn()),
-  onIdTokenChanged: vi.fn(() => vi.fn())
-}))

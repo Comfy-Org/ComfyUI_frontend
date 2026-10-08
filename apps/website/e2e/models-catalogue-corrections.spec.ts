@@ -1,0 +1,118 @@
+import { join } from 'node:path'
+import { readFileSync } from 'node:fs'
+import { expect } from '@playwright/test'
+
+import { websiteRoot } from '@website/paths'
+import { hubModelAliases, hubModelSlugs } from '@/config/hub-models'
+import { workshopModelAvailabilitySchema } from '@/config/workshop-model-availability-schema'
+import { test } from './fixtures/modelsAccount'
+
+const availability = workshopModelAvailabilitySchema.parse(
+  JSON.parse(
+    readFileSync(
+      join(websiteRoot, 'src/data/workshop-model-availability.json'),
+      'utf8'
+    )
+  )
+)
+const disabledModelSlugs = Object.entries(availability).flatMap(
+  ([slug, state]) => (state.disabled ? [slug] : [])
+)
+
+test('availability manifest withholds disabled models from catalogue and routes', async ({
+  request
+}) => {
+  const catalogueResponse = await request.get('/models/catalogue.json')
+  expect(catalogueResponse.ok()).toBe(true)
+  const catalogue: unknown = await catalogueResponse.json()
+  if (!Array.isArray(catalogue)) throw new Error('Invalid models catalogue')
+  const publishedSlugs = new Set(
+    catalogue.flatMap((entry) =>
+      typeof entry === 'object' &&
+      entry !== null &&
+      'slug' in entry &&
+      typeof entry.slug === 'string'
+        ? [entry.slug]
+        : []
+    )
+  )
+
+  expect(disabledModelSlugs.length).toBeGreaterThan(0)
+  for (const slug of disabledModelSlugs) {
+    expect(publishedSlugs.has(slug), `${slug} is in the catalogue`).toBe(false)
+    expect(hubModelSlugs.has(slug), `${slug} has a hub page`).toBe(false)
+    expect(hubModelAliases.has(slug), `${slug} has a hub alias`).toBe(false)
+    const response = await request.get(`/hub/models/${slug}/`)
+    expect(response.status(), `${slug} has a public route`).toBe(404)
+  }
+})
+
+test('GPT Image generation pages remain discoverable while disabled edit pages are withheld', async ({
+  page
+}) => {
+  const hydrated = Promise.withResolvers<void>()
+  const moduleRequested = page.waitForRequest(
+    '**/_website/ModelsCatalogue.*.js'
+  )
+  await page.route('**/_website/ModelsCatalogue.*.js', async (route) => {
+    await hydrated.promise
+    await route.fallback()
+  })
+  try {
+    await page.goto('/hub/models/?useCase=generate-images', {
+      waitUntil: 'commit'
+    })
+    await moduleRequested
+    await expect(page.getByTestId('workshop-search')).toHaveCount(0)
+    await expect(page.getByTestId('models-loading')).toBeVisible()
+    await expect(
+      page.getByRole('heading', { level: 1, name: /Grok Imagine/ })
+    ).toHaveCount(0)
+  } finally {
+    hydrated.resolve()
+  }
+  await page.getByTestId('workshop-search').fill('gpt image')
+  const cards = page
+    .getByTestId('workshop-models-grid')
+    .getByTestId('workshop-model-card')
+  await expect(cards).toHaveCount(5)
+  const card = cards.first()
+  await expect(card).toHaveAccessibleName(/GPT Image/)
+  await expect(card.getByRole('img', { name: /GPT Image/ })).toHaveCount(0)
+  await page
+    .getByTestId('workshop-models-grid')
+    .getByRole('link', { name: /GPT Image 1\.5/ })
+    .click()
+  await expect(page).toHaveURL(/\/hub\/models\/gpt-image-1-5-image-edit\/$/)
+  await expect(
+    page.getByRole('textbox', { name: 'Prompt', exact: true })
+  ).toBeVisible()
+  await page.goto('/hub/models/?useCase=edit-images')
+  await page.getByTestId('workshop-search').fill('gpt image')
+  await expect(cards).toHaveCount(0)
+  expect(hubModelSlugs.has('openai--gpt-image-2--edit-images')).toBe(false)
+  const disabledPage = await page.goto('/hub/models/gpt-image-2-image-edit/')
+  expect(disabledPage?.status()).toBe(404)
+  await expect(page.getByTestId('model-detail')).toHaveCount(0)
+})
+
+test('role-specific pages omit controls that their requests cannot accept', async ({
+  page
+}) => {
+  await page.goto('/hub/models/veo-3-image-to-video/')
+  await expect(
+    page.getByRole('group', { name: 'First frame', exact: true })
+  ).toBeVisible()
+  await expect(
+    page.getByRole('group', { name: 'Reference images', exact: true })
+  ).toHaveCount(0)
+
+  await page.goto('/hub/models/seedream-5-0-pro-text-to-image/')
+  await expect(
+    page.getByRole('group', { name: 'Source images', exact: true })
+  ).toHaveCount(0)
+  await page.getByTestId('playground-advanced').locator('summary').click()
+  await expect(page.getByText('Separate layers', { exact: true })).toHaveCount(
+    0
+  )
+})

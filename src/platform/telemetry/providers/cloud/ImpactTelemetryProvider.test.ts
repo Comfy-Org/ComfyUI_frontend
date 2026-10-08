@@ -1,5 +1,6 @@
 import { createHash } from 'node:crypto'
 import { fromPartial } from '@total-typescript/shoehorn'
+
 import type { User } from 'firebase/auth'
 import { getActivePinia, setActivePinia } from 'pinia'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
@@ -15,14 +16,14 @@ vi.mock(import('@/platform/telemetry/utils/checkoutAttribution'), () => ({
   captureCheckoutAttributionFromSearch: mockCaptureCheckoutAttributionFromSearch
 }))
 
-vi.mock(import('firebase/auth'), async (importOriginal) => ({
-  ...(await importOriginal()),
-  onAuthStateChanged: vi.fn(),
-  onIdTokenChanged: vi.fn(),
-  setPersistence: vi.fn()
-}))
+vi.mock(import('firebase/auth'), { spy: true })
+
+beforeEach(() => {
+  stubFirebaseAuthHarness()
+})
 
 import { ImpactTelemetryProvider } from './ImpactTelemetryProvider'
+import { stubFirebaseAuthHarness } from '@/utils/__tests__/stubAccountIdentityPort'
 
 const IMPACT_SCRIPT_URL =
   'https://utt.impactcdn.com/A6951770-3747-434a-9ac7-4e582e67d91f1.js'
@@ -227,4 +228,49 @@ describe('ImpactTelemetryProvider', () => {
       }
     ])
   })
+
+  it.for([
+    { name: 'with no API key', apiKeyUser: null },
+    {
+      name: 'over a stored API key',
+      apiKeyUser: { id: 'api-key-user-123', email: 'apikey@example.com' }
+    }
+  ])(
+    'identifies a session-only SSO user by the session user $name',
+    async ({ apiKeyUser }) => {
+      apiKeyAuthStore.currentUser = apiKeyUser && fromPartial(apiKeyUser)
+      Object.assign(authStore, {
+        sessionOnlyUser: { id: 'sso-user-123', email: 'SSO@example.com' }
+      })
+      vi.stubGlobal('crypto', {
+        subtle: {
+          digest: vi.fn(
+            async (_algorithm: AlgorithmIdentifier, data: BufferSource) => {
+              const digest = createHash('sha1')
+                .update(toUint8Array(data))
+                .digest()
+              return Uint8Array.from(digest).buffer
+            }
+          )
+        }
+      })
+
+      const provider = new ImpactTelemetryProvider()
+      provider.trackPageView('home', {
+        path: 'https://cloud.comfy.org/?im_ref=impact-123'
+      })
+
+      await flushAsyncWork()
+
+      expect(window.ire?.a?.[0]).toEqual([
+        'identify',
+        {
+          customerId: 'sso-user-123',
+          customerEmail: createHash('sha1')
+            .update('sso@example.com')
+            .digest('hex')
+        }
+      ])
+    }
+  )
 })

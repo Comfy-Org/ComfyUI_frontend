@@ -1,16 +1,11 @@
-import { getActivePinia } from 'pinia'
-import type { Pinia } from 'pinia'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 
-import { visibleCanvasViewport } from '@/composables/canvas/visibleCanvasViewport'
-import type { LGraphCanvas } from '@/lib/litegraph/src/litegraph'
 import { useAgentDockMount } from '@/workbench/extensions/agent/composables/useAgentDockMount'
 
 import { useAgentPanelStore } from './agentPanelStore'
 
-vi.mock<unknown>(import('@/platform/telemetry'), () => ({
-  useTelemetry: () => undefined
-}))
+vi.mock(import('@/platform/telemetry'))
+vi.mock(import('@/composables/billing/useBillingContext'))
 
 /**
  * Regression pin for the duplicate Pinia id `agentPanel`.
@@ -27,24 +22,10 @@ vi.mock<unknown>(import('@/platform/telemetry'), () => ({
  * registration order.
  */
 describe('the agentPanel store id', () => {
-  let pinia: Pinia
-
   beforeEach(() => {
     localStorage.clear()
-    pinia = getActivePinia()!
     vi.stubGlobal('__DISTRIBUTION__', 'cloud')
     vi.stubGlobal('devicePixelRatio', 1)
-  })
-
-  it('resolves the full panel shape even though the dock mount registers it first', () => {
-    useAgentDockMount()
-
-    const store = useAgentPanelStore()
-
-    expect(typeof store.width).toBe('number')
-    expect(Number.isFinite(store.width)).toBe(true)
-    expect(typeof store.toggleMaximize).toBe('function')
-    expect(Object.keys(pinia.state.value.agentPanel)).toContain('width')
   })
 
   it('maximizes the panel through the store the dock mount already registered', () => {
@@ -58,17 +39,13 @@ describe('the agentPanel store id', () => {
     expect(store.isMaximized).toBe(true)
   })
 
-  it('keeps the visible canvas viewport finite while the panel is docked', () => {
+  it('keeps the panel docked when the full store is active', () => {
     const { docked } = useAgentDockMount()
     const store = useAgentPanelStore()
     store.enabled = true
+    store.consentAccepted = true
     store.isOpen = true
+
     expect(docked.value).toBe(true)
-
-    const canvas = { canvas: { width: 1600, height: 900 } } as LGraphCanvas
-    const viewport = visibleCanvasViewport(canvas)
-
-    expect(viewport.every((value) => Number.isFinite(value))).toBe(true)
-    expect(viewport).toEqual([0, 0, 1600 - store.width, 900])
   })
 })

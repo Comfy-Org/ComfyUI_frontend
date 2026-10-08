@@ -1,3 +1,4 @@
+import { fromPartial } from '@total-typescript/shoehorn'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 
 import {
@@ -11,18 +12,20 @@ import type { LGraphNode } from '@/lib/litegraph/src/LGraphNode'
 import type { IBaseWidget } from '@/lib/litegraph/src/types/widgets'
 import type { ComfyApp } from '@/scripts/app'
 import type { ComfyExtension } from '@/types/comfy'
+import type { useExtensionService } from '@/services/extensionService'
 import { toNodeId } from '@/types/nodeId'
 
 import './imageCompositor'
 
 const capturedExtensions = vi.hoisted<ComfyExtension[]>(() => [])
 
-vi.mock('@/services/extensionService', () => ({
-  useExtensionService: () => ({
-    registerExtension: (ext: ComfyExtension) => {
-      capturedExtensions.push(ext)
-    }
-  })
+vi.mock(import('@/services/extensionService'), () => ({
+  useExtensionService: () =>
+    fromPartial<ReturnType<typeof useExtensionService>>({
+      registerExtension: (ext: ComfyExtension) => {
+        capturedExtensions.push(ext)
+      }
+    })
 }))
 
 const nodeId = toNodeId(11)

@@ -1,6 +1,7 @@
 import { describe, expect, it } from 'vitest'
 
-import { externalLinks } from '../config/routes'
+import { externalLinks } from '@/config/routes'
+import { t } from '@/i18n/translations'
 import { escapeJsonLd } from './escapeJsonLd'
 import type { JsonLdGraph } from './jsonLd'
 import {
@@ -18,7 +19,8 @@ import {
   pageContext,
   productNode,
   softwareApplicationNode,
-  videoObjectNode
+  videoObjectNode,
+  webPageName
 } from './jsonLd'
 
 const siteUrl = 'https://comfy.org'
@@ -34,6 +36,13 @@ describe('absoluteUrl', () => {
     expect(absoluteUrl(site, '/about/')).toBe('https://comfy.org/about/')
     expect(absoluteUrl(site, '/')).toBe('https://comfy.org/')
   })
+
+  it.for(['/contact', '/contact/'])(
+    'ends %s with exactly one slash',
+    (path) => {
+      expect(absoluteUrl(site, path)).toBe('https://comfy.org/contact/')
+    }
+  )
 })
 
 describe('pageContext', () => {
@@ -159,7 +168,7 @@ describe('softwareApplicationNode', () => {
       name: 'Foo Pack',
       url: 'https://comfy.org/cloud/supported-nodes/foo/',
       applicationCategory: 'DeveloperApplication',
-      authorName: 'Jane Dev'
+      author: { type: 'Person', name: 'Jane Dev' }
     })
     expect(node.author).toEqual({ '@type': 'Person', name: 'Jane Dev' })
     expect(node.publisher).toBeUndefined()
@@ -175,6 +184,66 @@ describe('softwareApplicationNode', () => {
     })
     expect(node.author).toBeUndefined()
     expect(node.publisher).toBeUndefined()
+  })
+})
+
+describe('site identity', () => {
+  const graph = buildPageGraph(
+    { siteUrl, locale: 'en' },
+    { url: `${siteUrl}/`, name: 'Home' }
+  )
+  const nodeOfType = (type: string) =>
+    graph['@graph'].find((node) => node['@type'] === type)
+
+  it('describes the organization and how to contact it', () => {
+    const org = nodeOfType('Organization')
+    expect(org?.description).toEqual(expect.stringContaining('Comfy'))
+    expect(org?.contactPoint).toEqual({
+      '@type': 'ContactPoint',
+      contactType: 'customer support',
+      email: 'support@comfy.org',
+      url: 'https://comfy.org/contact/'
+    })
+    expect(org).not.toHaveProperty('address')
+  })
+
+  it('describes the organization in the page language', () => {
+    const zhGraph = buildPageGraph(
+      { siteUrl, locale: 'zh-CN' },
+      { url: `${siteUrl}/zh-CN/`, name: '首页' }
+    )
+    const zhOrg = zhGraph['@graph'].find(
+      (node) => node['@type'] === 'Organization'
+    )
+    expect(zhOrg?.description).toBe(t('hero.subtitle', {}, { locale: 'zh-CN' }))
+  })
+
+  it('names the GitHub organization, not the ComfyUI repository', () => {
+    const org = nodeOfType('Organization')
+    expect(org?.sameAs).toContain('https://github.com/Comfy-Org')
+    expect(org?.sameAs).not.toContain('https://github.com/Comfy-Org/ComfyUI')
+  })
+
+  it('gives the website its alternate names', () => {
+    expect(nodeOfType('WebSite')?.alternateName).toEqual([
+      'Comfy Org',
+      'comfy.org'
+    ])
+  })
+})
+
+describe('webPageName', () => {
+  it.for([
+    ['Models - Comfy', 'Models'],
+    ['404 - Page Not Found - Comfy', '404 - Page Not Found'],
+    ['Pricing - Comfy Cloud', 'Pricing - Comfy Cloud'],
+    [
+      'Serverless animation comparison · Comfy',
+      'Serverless animation comparison'
+    ],
+    ['Comfy', 'Comfy']
+  ])('%s -> %s', ([title, name]) => {
+    expect(webPageName(title)).toBe(name)
   })
 })
 
@@ -213,15 +282,56 @@ describe('productNode', () => {
   it('gives every offer a currency and price', () => {
     const node = productNode({
       siteUrl,
-      id: 'https://comfy.org/cloud/pricing/#product',
+      id: 'https://comfy.org/pricing/#product',
       name: 'Comfy Cloud',
-      url: 'https://comfy.org/cloud/pricing/',
-      offers: [{ name: 'Standard', price: '20' }]
+      url: 'https://comfy.org/pricing/',
+      image: 'https://media.comfy.org/website/comfy.webp',
+      description: 'Comfy Cloud plans and credits.',
+      offers: [{ name: 'Standard', price: '20', cycle: 'monthly' }]
     })
     const offers = node.offers as Record<string, unknown>[]
     expect(offers[0].price).toBe('20')
     expect(offers[0].priceCurrency).toBe('USD')
     expect(offers[0].seller).toEqual({ '@id': organizationId(siteUrl) })
+  })
+
+  it('carries the fields Google requires for merchant listings', () => {
+    const node = productNode({
+      siteUrl,
+      id: 'https://comfy.org/pricing/#product',
+      name: 'Comfy Cloud',
+      url: 'https://comfy.org/pricing/',
+      image: 'https://media.comfy.org/website/comfy.webp',
+      description: 'Comfy Cloud plans and credits.',
+      offers: [{ name: 'Standard', price: '20', cycle: 'monthly' }]
+    })
+    expect(node.image).toBe('https://media.comfy.org/website/comfy.webp')
+    expect(node.description).toBe('Comfy Cloud plans and credits.')
+    expect(node.brand).toEqual({ '@id': organizationId(siteUrl) })
+    const offers = node.offers as Record<string, unknown>[]
+    expect(offers[0].availability).toBe('https://schema.org/InStock')
+  })
+
+  it('prices each offer per its own billing period', () => {
+    const node = productNode({
+      siteUrl,
+      id: 'https://comfy.org/pricing/#product',
+      name: 'Comfy Cloud',
+      url: 'https://comfy.org/pricing/',
+      image: 'https://media.comfy.org/website/comfy.webp',
+      description: 'Comfy Cloud plans and credits.',
+      offers: [
+        { name: 'Standard (monthly)', price: '20', cycle: 'monthly' },
+        { name: 'Standard (yearly)', price: '192', cycle: 'yearly' }
+      ]
+    })
+    const specs = (node.offers as Record<string, unknown>[]).map(
+      (offer) => offer.priceSpecification
+    )
+    expect(specs).toEqual([
+      expect.objectContaining({ price: '20', unitCode: 'MON' }),
+      expect.objectContaining({ price: '192', unitCode: 'ANN' })
+    ])
   })
 })
 
@@ -293,6 +403,7 @@ describe('videoObjectNode', () => {
     name: 'A video',
     description: 'A description',
     thumbnailUrl: `${siteUrl}/poster.webp`,
+    uploadDate: '2026-07-16',
     locale: 'en' as const
   }
 
@@ -301,10 +412,17 @@ describe('videoObjectNode', () => {
     expect(node.duration).toBe('PT4M32S')
   })
 
-  it('omits duration and uploadDate rather than defaulting them', () => {
+  it('omits duration rather than defaulting it', () => {
     const node = videoObjectNode(base)
     expect(node.duration).toBeUndefined()
-    expect(node.uploadDate).toBeUndefined()
+  })
+
+  it.for([
+    ['2026-07-16', '2026-07-16T00:00:00+00:00'],
+    ['2026-07-16T18:00:00-07:00', '2026-07-16T18:00:00-07:00'],
+    ['2026-07-16T18:00:00Z', '2026-07-16T18:00:00Z']
+  ])('writes uploadDate %s as %s', ([uploadDate, expected]) => {
+    expect(videoObjectNode({ ...base, uploadDate }).uploadDate).toBe(expected)
   })
 })
 
@@ -318,4 +436,25 @@ describe('escapeJsonLd on a built graph', () => {
     expect(serialized).not.toContain('</script>')
     expect(serialized).toContain('\\u003c')
   })
+
+  it.for([
+    { description: 'U+2028 line', separator: '\u2028', escaped: '\\u2028' },
+    {
+      description: 'U+2029 paragraph',
+      separator: '\u2029',
+      escaped: '\\u2029'
+    }
+  ] as const)(
+    'escapes a $description separator in a page name',
+    ({ separator, escaped }) => {
+      const name = `before${separator}after`
+      const graph = buildPageGraph(
+        { siteUrl, locale: 'en' },
+        { url: `${siteUrl}/x/`, name }
+      )
+      const serialized = escapeJsonLd(graph)
+      expect(serialized).not.toContain(separator)
+      expect(serialized).toContain(`before${escaped}after`)
+    }
+  )
 })

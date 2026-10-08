@@ -1,8 +1,7 @@
-// @vitest-environment happy-dom
 import { render, screen } from '@testing-library/vue'
 import { describe, expect, it } from 'vitest'
 
-import { externalLinks, getRoutes } from '../../config/routes'
+import { externalLinks, getRoutes } from '@/config/routes'
 import ClosingCtaSection from './ClosingCtaSection.vue'
 import FAQSection from './FAQSection.vue'
 import HeroSection from './HeroSection.vue'
@@ -18,7 +17,7 @@ describe('HeroSection', () => {
   it('reads "Your graph. Our GPUs." in that order', () => {
     render(HeroSection, { props, global: { stubs: { VideoPlayer: true } } })
     const heading = screen.getByRole('heading', { level: 1 })
-    expect(heading.textContent?.replace(/\s+/g, ' ').trim()).toBe(
+    expect(heading.textContent.replace(/\s+/g, ' ').trim()).toBe(
       'Your graph. Our GPUs.'
     )
   })
