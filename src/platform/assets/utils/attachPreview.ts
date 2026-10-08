@@ -9,7 +9,7 @@ export async function attachPreview(
   const uploaded = await assetService.uploadAssetFromBase64({
     data: await blobToDataUrl(blob),
     name: previewFilename,
-    tags: ['output'],
+    tags: ['preview'],
     user_metadata: { filename: previewFilename }
   })
 

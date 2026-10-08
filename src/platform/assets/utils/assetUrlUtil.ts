@@ -90,3 +90,9 @@ export function getAssetFileUrl(
   }
   return asset.preview_url || getAssetUrl(asset)
 }
+
+export function getGeneratedPreviewUrl(
+  asset: Pick<AssetItem, 'preview_id' | 'preview_url'>
+): string {
+  return (asset.preview_id && asset.preview_url) || ''
+}

@@ -5,10 +5,12 @@ import { useI18n } from 'vue-i18n'
 
 import { cn } from '@comfyorg/tailwind-utils'
 
+import HdrPreviewImage from '@/components/hdr/HdrPreviewImage.vue'
 import {
   findServerPreviewUrl,
   isAssetPreviewSupported
 } from '@/platform/assets/utils/assetPreviewUtil'
+import { isHdrImageFilename } from '@/utils/hdrFormatUtil'
 
 import { AssetKindKey } from './types'
 import type { FormDropdownMenuItemProps } from './types'
@@ -28,6 +30,7 @@ const assetKind = inject(AssetKindKey)
 
 const isVideo = computed(() => assetKind?.value === 'video')
 const isMesh = computed(() => assetKind?.value === 'mesh')
+const isHdr = computed(() => isHdrImageFilename(toLookupName(props.name)))
 
 const mediaContainerRef = ref<HTMLElement>()
 const resolvedMeshPreview = ref<string | null>(null)
@@ -160,6 +163,17 @@ function handleVideoLoad(event: Event) {
         class="size-full object-cover"
         @load="handleImageLoad"
       />
+      <HdrPreviewImage
+        v-else-if="isHdr"
+        :filename="toLookupName(name)"
+        class="size-full"
+      >
+        <div
+          class="flex size-full items-center justify-center bg-modal-card-placeholder-background"
+        >
+          <i class="icon-[lucide--sun] size-8 text-muted-foreground" />
+        </div>
+      </HdrPreviewImage>
       <div
         v-else-if="isMesh"
         data-testid="dropdown-item-mesh-placeholder"

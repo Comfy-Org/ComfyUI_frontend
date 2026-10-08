@@ -24,7 +24,7 @@
     <div
       class="relative aspect-square overflow-hidden p-0"
       @click.stop="handlePreviewClick"
-      @dblclick.stop="handlePreviewDblClick"
+      @dblclick.stop="fileKind === 'image' && handleZoomClick()"
     >
       <!-- Loading State -->
       <div
@@ -94,6 +94,15 @@
         "
       >
         <IconGroup background-class="bg-white">
+          <Button
+            v-if="isHdr"
+            variant="overlay-white"
+            size="icon"
+            :aria-label="$t('hdrViewer.openInHdrViewer')"
+            @click.stop="handleOpenHdrViewer"
+          >
+            <i class="icon-[lucide--sun] size-4" />
+          </Button>
           <Button
             variant="overlay-white"
             size="icon"
@@ -357,9 +366,8 @@ const handleZoomClick = () => {
   }
 }
 
-function handlePreviewDblClick() {
-  if (asset && isHdr.value) openHdrViewer(getAssetUrl(asset))
-  else if (fileKind.value === 'image') handleZoomClick()
+function handleOpenHdrViewer() {
+  if (asset) openHdrViewer(getAssetUrl(asset))
 }
 
 const handleImageLoaded = (width: number, height: number) => {

@@ -25,9 +25,11 @@ import type { FormDropdownItem } from '@/renderer/extensions/vueNodes/widgets/co
 import type { useAssetWidgetData } from '@/renderer/extensions/vueNodes/widgets/composables/useAssetWidgetData'
 import { getOutputAssetMetadata } from '@/platform/assets/schemas/assetMetadataSchema'
 import type { AssetItem } from '@/platform/assets/schemas/assetSchema'
+import { getGeneratedPreviewUrl } from '@/platform/assets/utils/assetUrlUtil'
 import { resolveOutputAssetItems } from '@/platform/assets/utils/outputAssetUtil'
 import type { AssetKind } from '@/types/widgetTypes'
 import { getMediaTypeFromFilename } from '@/utils/formatUtil'
+import { isHdrImageFilename } from '@/utils/hdrFormatUtil'
 import type { PagedList } from '@/utils/pagedList'
 
 function getDisplayLabel(
@@ -54,6 +56,7 @@ function getMediaUrl(
   assetKind: AssetKind | undefined
 ): string {
   if (!['image', 'video', 'audio'].includes(assetKind ?? '')) return ''
+  if (isHdrImageFilename(filename)) return ''
   const params = new URLSearchParams({ filename, type })
   appendCloudResParam(params, filename)
   return `/api/view?${params}`
@@ -218,7 +221,9 @@ export function useWidgetSelectItems(options: UseWidgetSelectItemsOptions) {
 
     const missing = missingMediaValues.value
     for (const asset of assets) {
-      if (getMediaTypeFromFilename(asset.name) !== targetMediaType) continue
+      const isHdr = kind === 'image' && isHdrImageFilename(asset.name)
+      if (!isHdr && getMediaTypeFromFilename(asset.name) !== targetMediaType)
+        continue
       if (seen.has(asset.id)) continue
       seen.add(asset.id)
       const filenameForUrl = getAssetUrlFilename(asset)
@@ -237,7 +242,10 @@ export function useWidgetSelectItems(options: UseWidgetSelectItemsOptions) {
         preview_url:
           kind === 'mesh'
             ? ''
-            : asset.preview_url || getMediaUrl(filenameForUrl, 'output', kind),
+            : isHdr
+              ? getGeneratedPreviewUrl(asset)
+              : asset.preview_url ||
+                getMediaUrl(filenameForUrl, 'output', kind),
         name: annotatedPath,
         label: getDisplayLabel(displayLabel, labelFn)
       })
