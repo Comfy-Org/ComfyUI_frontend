@@ -47,10 +47,7 @@ function useNodeEventHandlersIndividual() {
         canvasStore.canvas.select(node)
       }
     } else if (!preserveExistingSelection) {
-      // Regular click -> single select. Suppress the clear notification so the
-      // click reports one change, holding the node the user picked.
-      canvasStore.canvas.deselectAll({ notify: false })
-      canvasStore.canvas.select(node)
+      canvasStore.canvas.selectItems([node])
     }
 
     // Bring node to front when clicked (similar to LiteGraph behavior)
@@ -132,9 +129,7 @@ function useNodeEventHandlersIndividual() {
     if (!node) return
 
     if (!multiSelect) {
-      // One notification for the replacing selection, as above.
-      canvasStore.canvas.deselectAll({ notify: false })
-      canvasStore.canvas.select(node)
+      canvasStore.canvas.selectItems([node])
       // Bring node to front when selected (unless pinned)
       if (!node.flags.pinned) {
         bringNodeToFront(nodeId)

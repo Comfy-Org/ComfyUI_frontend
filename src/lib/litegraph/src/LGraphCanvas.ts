@@ -3975,10 +3975,7 @@ export class LGraphCanvas implements CustomEventDispatcher<LGraphCanvasEventMap>
       nodeId: node.id
     })
 
-    // One notification for the whole placement: suppress the clear so
-    // listeners only see the completed selection.
-    this.deselectAll({ notify: false })
-    this.select(node)
+    this.selectItems([node])
     this.isDragging = true
 
     this._startNodeAutoPan()
@@ -4815,7 +4812,8 @@ export class LGraphCanvas implements CustomEventDispatcher<LGraphCanvasEventMap>
     if (itemsToSelect.length === 0 && items?.length) return
     if (!add_to_current_selection) this.deselectAll({ notify: false })
     changeCanvasSelection(this, itemsToSelect, true)
-    this.onSelectionChange?.(this.selected_nodes)
+    if (this.selectionNotificationDepth === 0)
+      this.onSelectionChange?.(this.selected_nodes)
     this.setDirty(true)
   }
 

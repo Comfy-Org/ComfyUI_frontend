@@ -476,6 +476,20 @@ describe('LGraphCanvas selection', () => {
       expect(onSelectionChange).toHaveBeenCalledTimes(1)
     })
 
+    it('a nested selectItems() inside a deselection hook adds no change', () => {
+      canvas.select(a)
+      a.onDeselected = () => canvas.selectItems([b])
+      vi.mocked(onSelectionChange).mockClear()
+
+      canvas.deselectAll()
+
+      expect(
+        vi
+          .mocked(onSelectionChange)
+          .mock.calls.map(([selected]) => Object.keys(selected))
+      ).toEqual([[String(b.id)]])
+    })
+
     it('alt aux-clicking a selected reroute reports one change', () => {
       const reroute = graph.setReroute({ pos: [500, 500], linkIds: [] })!
       canvas._visibleReroutes.add(reroute)

@@ -52,6 +52,7 @@ beforeEach(() => {
     graph,
     canvas: document.createElement('canvas'),
     select: vi.fn(),
+    selectItems: vi.fn(),
     deselect: vi.fn(),
     deselectAll: vi.fn()
   })
@@ -82,8 +83,7 @@ describe('useNodeEventHandlers', () => {
 
       handleNodeSelect(event, testNodeId)
 
-      expect(canvas?.deselectAll).toHaveBeenCalledOnce()
-      expect(canvas?.select).toHaveBeenCalledWith(mockNode)
+      expect(canvas?.selectItems).toHaveBeenCalledWith([mockNode])
     })
 
     it('on pointer down with ctrl+click: selects node immediately', () => {
@@ -272,8 +272,7 @@ describe('useNodeEventHandlers', () => {
 
       toggleNodeSelectionAfterPointerUp(testNodeId, false)
 
-      expect(canvas?.deselectAll).toHaveBeenCalledOnce()
-      expect(canvas?.select).toHaveBeenCalledWith(mockNode)
+      expect(canvas?.selectItems).toHaveBeenCalledWith([mockNode])
     })
 
     it('on pointer up without multi-select: keeps single selection intact', () => {
@@ -285,7 +284,7 @@ describe('useNodeEventHandlers', () => {
 
       toggleNodeSelectionAfterPointerUp(testNodeId, false)
 
-      expect(canvas?.select).toHaveBeenCalledWith(mockNode)
+      expect(canvas?.selectItems).toHaveBeenCalledWith([mockNode])
     })
   })
 })
