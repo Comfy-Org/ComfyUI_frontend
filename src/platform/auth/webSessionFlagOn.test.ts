@@ -57,6 +57,7 @@ import {
   webSessionResourceHeader,
   webSessionSend
 } from '@/platform/auth/session/webSessionFetch'
+import { installCloudApiAuth } from '@/platform/auth/cloudApiAuthProvider'
 import { useTelemetry } from '@/platform/telemetry'
 import { reportError } from '@/platform/telemetry/reportError'
 import { refreshRemoteConfig } from '@/platform/remoteConfig/refreshRemoteConfig'
@@ -177,6 +178,8 @@ vi.mock(import('@/platform/telemetry/reportError'))
 
 await import('@/extensions/core/cloudSessionCookie')
 const { default: router } = await import('@/router')
+
+installCloudApiAuth()
 
 const TEN_MINUTES_MS = 10 * 60 * 1000
 
