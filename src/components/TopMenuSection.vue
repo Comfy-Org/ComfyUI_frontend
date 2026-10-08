@@ -55,7 +55,6 @@
               "
             >
               <ActionBarButtons />
-              <!-- Support for legacy topbar elements attached by custom scripts, hidden if no elements present -->
               <div
                 ref="legacyCommandsContainerRef"
                 data-testid="legacy-topbar-container"
@@ -87,7 +86,7 @@
                 />
               </Button>
               <Button
-                v-if="isCloud && flags.workflowSharingEnabled"
+                v-if="isCloud"
                 v-tooltip.bottom="shareTooltipConfig"
                 variant="secondary"
                 size="icon"
@@ -189,13 +188,12 @@ import { useSettingStore } from '@/platform/settings/settingStore'
 import { useTelemetry } from '@/platform/telemetry'
 import { app } from '@/scripts/app'
 import { useExecutionErrorStore } from '@/stores/executionErrorStore'
-import { useAgentNodeSelectionStore } from '@/stores/agentNodeSelectionStore'
+import { useCanvasStore } from '@/renderer/core/canvas/canvasStore'
 import { useActionBarButtonStore } from '@/stores/actionBarButtonStore'
 import { useQueueUIStore } from '@/stores/queueStore'
 import { useRightSidePanelStore } from '@/stores/workspace/rightSidePanelStore'
 import { useWorkspaceStore } from '@/stores/workspaceStore'
 import { isCloud } from '@/platform/distribution/types'
-import { useFeatureFlags } from '@/composables/useFeatureFlags'
 import {
   openShareDialog,
   prefetchShareDialog
@@ -209,13 +207,10 @@ import { cn } from '@comfyorg/tailwind-utils'
 const settingStore = useSettingStore()
 const workspaceStore = useWorkspaceStore()
 const rightSidePanelStore = useRightSidePanelStore()
-const agentNodeSelectionStore = useAgentNodeSelectionStore()
-const isActionBarsHidden = computed(
-  () => agentNodeSelectionStore.isActionBarsHidden
-)
+const canvasStore = useCanvasStore()
+const isActionBarsHidden = computed(() => canvasStore.isPickingNodes)
 const managerState = useManagerState()
 const managerSurveyDialog = useManagerSurveyDialog()
-const { flags } = useFeatureFlags()
 const { isLoggedIn } = useCurrentUser()
 const { t } = useI18n()
 const { toastErrorHandler } = useErrorHandling()
@@ -245,7 +240,7 @@ const hasDockedButtons = computed(() => {
   if (hasLegacyContent.value) return true
   if (!isIntegratedTabBar.value) return true
   if (managerState.shouldShowExtensionsButton.value) return true
-  if (isCloud && flags.workflowSharingEnabled) return true
+  if (isCloud) return true
   if (!isRightSidePanelOpen.value) return true
   return false
 })
@@ -319,7 +314,6 @@ function openRightSidePanel() {
   rightSidePanelStore.togglePanel()
 }
 
-// Maintain support for legacy topbar elements attached by custom scripts
 const legacyCommandsContainerRef = ref<HTMLElement>()
 const hasLegacyContent = ref(false)
 let legacyContentCheckRafId: number | null = null
@@ -330,38 +324,33 @@ function checkLegacyContent() {
     hasLegacyContent.value = false
     return
   }
-  // Mirror the CSS: [&:not(:has(*>*:not(:empty)))]:hidden
   hasLegacyContent.value =
     el.querySelector(':scope > * > *:not(:empty)') !== null
 }
 
-function scheduleLegacyContentCheck() {
-  if (legacyContentCheckRafId !== null) return
-
-  legacyContentCheckRafId = requestAnimationFrame(() => {
-    legacyContentCheckRafId = null
-    checkLegacyContent()
-  })
-}
-
-useMutationObserver(legacyCommandsContainerRef, scheduleLegacyContentCheck, {
-  childList: true,
-  subtree: true
-})
+useMutationObserver(
+  legacyCommandsContainerRef,
+  () => {
+    if (legacyContentCheckRafId !== null) return
+    legacyContentCheckRafId = requestAnimationFrame(() => {
+      legacyContentCheckRafId = null
+      checkLegacyContent()
+    })
+  },
+  { childList: true, subtree: true }
+)
 
 onMounted(() => {
-  if (legacyCommandsContainerRef.value) {
-    app.menu.element.style.width = 'fit-content'
-    legacyCommandsContainerRef.value.appendChild(app.menu.element)
-    checkLegacyContent()
-  }
+  const container = legacyCommandsContainerRef.value
+  if (!container) return
+  app.menu.element.style.width = 'fit-content'
+  container.appendChild(app.menu.element)
+  checkLegacyContent()
 })
 
 onBeforeUnmount(() => {
   if (legacyContentCheckRafId === null) return
-
   cancelAnimationFrame(legacyContentCheckRafId)
-  legacyContentCheckRafId = null
 })
 
 const openCustomNodeManager = async () => {

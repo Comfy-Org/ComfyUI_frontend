@@ -1,11 +1,19 @@
-import type { UserCredential } from 'firebase/auth'
 import { ref } from 'vue'
 import type { RouteLocationRaw } from 'vue-router'
+import { useRoute, useRouter } from 'vue-router'
 
 import { isEmbeddedWebView } from '@comfyorg/account-core/webviewDetection'
 
-import { useAuthActions } from '@/composables/auth/useAuthActions'
+import { useFeatureFlags } from '@/composables/useFeatureFlags'
+import { useSessionCookie } from '@/platform/auth/session/useSessionCookie'
+import { useSocialSignIn } from '@/platform/auth/social/useSocialSignIn'
+import { presentSsoRequired } from '@/platform/auth/sso/ssoRequired'
+import { resolveSsoReturnTo } from '@/platform/cloud/onboarding/composables/useSsoSignIn'
 import { usePostAuthRedirect } from '@/platform/cloud/onboarding/composables/usePostAuthRedirect'
+import { SSO_ENTRY_OPEN_QUERY } from '@/platform/cloud/onboarding/sso/ssoEntryQuery'
+import { useAuthStore } from '@/stores/authStore'
+
+type AuthMode = 'social' | 'email' | 'sso'
 
 /**
  * State shared by CloudLoginView and CloudSignupView. Sign-up passes
@@ -17,44 +25,67 @@ export function useCloudAuthPage(options: {
   successSummary: string
   defaultRedirect: () => RouteLocationRaw
 }) {
-  const authActions = useAuthActions()
+  const route = useRoute()
+  const router = useRouter()
+  const { flags } = useFeatureFlags()
   const authError = ref('')
-  const showEmailForm = ref(false)
+  const authMode = ref<AuthMode>(
+    flags.ssoEnabled && route.query.sso === SSO_ENTRY_OPEN_QUERY.sso
+      ? 'sso'
+      : 'social'
+  )
 
-  const { onAuthSuccess } = usePostAuthRedirect({
+  const { onAuthSuccess: redirectAfterAuth } = usePostAuthRedirect({
     authError,
     successSummary: options.successSummary,
     defaultRedirect: options.defaultRedirect
   })
 
-  const providerOptions = options.isNewUser ? { isNewUser: true } : undefined
-
-  /** `undefined` means useAuthActions already toasted the failure. */
-  const signInWith = async (
-    provider: (opts?: {
-      isNewUser?: boolean
-    }) => Promise<UserCredential | undefined>
-  ) => {
-    authError.value = ''
-    if (await provider(providerOptions)) {
-      await onAuthSuccess()
+  /**
+   * Firebase accepts an account an SSO organization holds; ingest refuses its
+   * session. That account is signed out again and sent to SSO.
+   */
+  async function onAuthSuccess() {
+    if (flags.ssoEnabled && (await useSessionCookie().sessionRequiresSso())) {
+      const authStore = useAuthStore()
+      presentSsoRequired({
+        email: authStore.userEmail ?? undefined,
+        returnTo: resolveSsoReturnTo(route, router)
+      })
+      await authStore.logout()
+      return
     }
+    await redirectAfterAuth()
   }
+
+  const social = useSocialSignIn({
+    isNewUser: () => options.isNewUser,
+    onSignedIn: onAuthSuccess
+  })
 
   return {
     authError,
-    showEmailForm,
+    authMode,
     onAuthSuccess,
     /** Snapshots, not refs: neither can change while the page is mounted. */
     isSecureContext: globalThis.isSecureContext,
     showGoogleSsoInAppBrowserNotice: isEmbeddedWebView(),
     switchToEmailForm: () => {
-      showEmailForm.value = true
+      authMode.value = 'email'
+    },
+    switchToSsoForm: () => {
+      authMode.value = 'sso'
     },
     switchToSocialLogin: () => {
-      showEmailForm.value = false
+      authMode.value = 'social'
     },
-    signInWithGoogle: () => signInWith(authActions.signInWithGoogle),
-    signInWithGithub: () => signInWith(authActions.signInWithGithub)
+    signInWithGoogle: () => {
+      authError.value = ''
+      return social.signInWithGoogle()
+    },
+    signInWithGithub: () => {
+      authError.value = ''
+      return social.signInWithGithub()
+    }
   }
 }

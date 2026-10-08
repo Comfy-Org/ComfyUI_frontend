@@ -1,15 +1,15 @@
-import type { ReshootTake } from '../../../../composables/useReshootDemo'
-import { rc } from '../../../../lib/workshop/cinematic-studio/reshoot-copy'
-import type { Locale } from '../../../../i18n/translations'
+import type { ReshootTake } from '@/composables/useReshoot'
+import type { Locale } from '@/i18n/translations'
+import { translationsFor } from '@/i18n/translations'
 
 export function takeLabel(take: ReshootTake, locale: Locale): string {
-  if (take.id === 'example') return rc('reshoot.take.example', locale)
+  const { t } = translationsFor(locale)
+  if (take.id === 'example') return t('reshoot.take.example')
   if (take.keys > 1)
-    return rc('reshoot.take.move', locale)
-      .replace('{n}', String(take.n))
-      .replace('{keys}', String(take.keys))
-  return rc('reshoot.take.static', locale)
-    .replace('{n}', String(take.n))
-    .replace('{az}', String(take.camera.azimuth))
-    .replace('{el}', String(take.camera.elevation))
+    return t('reshoot.take.move', { n: take.n, keys: take.keys })
+  return t('reshoot.take.static', {
+    n: take.n,
+    az: take.camera.azimuth,
+    el: take.camera.elevation
+  })
 }

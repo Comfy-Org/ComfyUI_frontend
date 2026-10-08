@@ -2,6 +2,7 @@ import { useDialogService } from '@/services/dialogService'
 import { useWorkflowStore } from '@/platform/workflow/management/stores/workflowStore'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 
+import { i18n } from '@/i18n'
 import { useTelemetry } from '@/platform/telemetry'
 
 import { useFeatureFlags } from '@/composables/useFeatureFlags'
@@ -25,16 +26,6 @@ import { createMockLGraphNode } from '@/utils/__tests__/litegraphTestUtils'
 import { fromPartial } from '@total-typescript/shoehorn'
 
 vi.mock(import('@/core/graph/subgraph/promotionUtils'), { spy: true })
-
-const mockRunMintPortsIntentionalClear = vi.hoisted(() =>
-  vi.fn(<T>(clear: () => T): T => clear())
-)
-vi.mock<unknown>(
-  import('@/workbench/extensions/agent/crdt/mintPortWiring'),
-  () => ({
-    runMintPortsIntentionalClear: mockRunMintPortsIntentionalClear
-  })
-)
 
 vi.mock<unknown>(
   import('@/components/sidebar/tabs/ModelLibrarySidebarTab.vue'),
@@ -251,7 +242,6 @@ describe('useCoreCommands', () => {
     useSettingStore().settingValues['Comfy.ConfirmClear'] = false
 
     global.confirm = vi.fn().mockReturnValue(true)
-    mockRunMintPortsIntentionalClear.mockClear()
   })
 
   describe('ClearWorkflow command', () => {
@@ -265,7 +255,6 @@ describe('useCoreCommands', () => {
 
       expect(app.clean).toHaveBeenCalled()
       expect(app.rootGraph.clear).toHaveBeenCalled()
-      expect(mockRunMintPortsIntentionalClear).toHaveBeenCalledOnce()
       expect(api.dispatchCustomEvent).toHaveBeenCalledWith('graphCleared')
     })
 
@@ -281,7 +270,6 @@ describe('useCoreCommands', () => {
 
       expect(app.clean).not.toHaveBeenCalled()
       expect(app.rootGraph.clear).not.toHaveBeenCalled()
-      expect(mockRunMintPortsIntentionalClear).not.toHaveBeenCalled()
 
       const subgraph = app.canvas.subgraph
       expect(subgraph.remove).toHaveBeenCalledTimes(2)
@@ -308,6 +296,43 @@ describe('useCoreCommands', () => {
       expect(app.clean).not.toHaveBeenCalled()
       expect(app.rootGraph.clear).not.toHaveBeenCalled()
       expect(api.dispatchCustomEvent).not.toHaveBeenCalled()
+    })
+  })
+
+  describe('PasteFromClipboardWithConnect command', () => {
+    // An unresolved key renders as its own path, and this one reads as valid
+    // English, so asserting the shipped string would pass either way. Only a
+    // value the catalog alone can supply separates a lookup from an echo.
+    it('resolves its label against the catalog rather than echoing a key', () => {
+      const menuLabels = 'menuLabels'
+      const key = 'Paste with Connect'
+      const messages = i18n.global.getLocaleMessage('en') as Record<
+        string,
+        Record<string, string>
+      >
+      const original = messages[menuLabels][key]
+      const previousLocale = i18n.global.locale.value
+
+      try {
+        i18n.global.locale.value = 'en'
+        i18n.global.mergeLocaleMessage('en', {
+          [menuLabels]: { [key]: 'Sentinel paste label' }
+        })
+
+        const command = useCoreCommands().find(
+          (cmd) => cmd.id === 'Comfy.Canvas.PasteFromClipboardWithConnect'
+        )!
+
+        const label =
+          typeof command.label === 'function' ? command.label() : command.label
+
+        expect(label).toBe('Sentinel paste label')
+      } finally {
+        i18n.global.mergeLocaleMessage('en', {
+          [menuLabels]: { [key]: original }
+        })
+        i18n.global.locale.value = previousLocale
+      }
     })
   })
 

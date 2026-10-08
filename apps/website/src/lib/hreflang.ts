@@ -1,12 +1,13 @@
-import type { Hreflang, Locale } from '../config/locales'
+import { isNoindexPathname } from '@/config/indexing'
+import type { Hreflang, Locale } from '@/config/locales'
 import {
   LOCALE_CODES,
   LOCALES,
   NON_DEFAULT_LOCALE_PREFIXES,
   normalizeRoute,
   withRouteSlash
-} from '../config/locales'
-import { supportsLocaleRoute } from '../config/routes'
+} from '@/config/locales'
+import { supportsLocaleRoute } from '@/config/routes'
 
 export interface Alternate {
   hreflang: Hreflang | 'x-default'
@@ -27,10 +28,15 @@ export function hreflangAlternates(
   origin: string
 ): Alternate[] {
   const en = englishPath(pathname)
-  const locales = LOCALE_CODES.filter((locale) =>
-    supportsLocaleRoute(locale, en)
-  )
-  if (locales.length === 0) return []
+  const locales = LOCALE_CODES.filter((locale) => {
+    if (!supportsLocaleRoute(locale, en)) return false
+    const localePath = `${LOCALES[locale].prefix}${en === '/' ? '' : en}`
+    return !isNoindexPathname(localePath)
+  })
+  // A cluster needs at least one translation to link to; a lone indexable
+  // page (or one whose only published locale is itself noindexed, like
+  // /comfy-agent) has nothing to pair with, so hreflang has nothing to say.
+  if (locales.length < 2) return []
 
   const enHref = new URL(withRouteSlash(en), origin).href
   const alternates: Alternate[] = locales.map((locale) => ({

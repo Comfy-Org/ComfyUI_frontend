@@ -16,18 +16,26 @@
   "files": [
     "src/css",
     "src/icons",
+    "src/button.variants.ts",
+    "src/select.variants.ts",
+    "src/tag.variants.ts",
     "src/workspaceAvatar.ts"
   ],
   "type": "module",
   "exports": {
     "./css/*": "./src/css/*",
     "./icons/*": "./src/icons/*",
+    "./button.variants": "./src/button.variants.ts",
+    "./select.variants": "./src/select.variants.ts",
+    "./tag.variants": "./src/tag.variants.ts",
     "./workspaceAvatar": "./src/workspaceAvatar.ts"
   },
   "publishConfig": {
     "access": "public"
   },
   "scripts": {
+    "format": "oxfmt --write",
+    "format:check": "oxfmt --check",
     "test": "vitest run",
     "typecheck": "tsx ../../scripts/vue-tsc-native.ts --noEmit"
   },
@@ -36,6 +44,7 @@
     "@iconify/tailwind4": "catalog:",
     "@iconify/tools": "catalog:",
     "@iconify/utils": "catalog:",
+    "cva": "catalog:",
     "tailwindcss-primeui": "catalog:",
     "tw-animate-css": "catalog:"
   },

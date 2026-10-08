@@ -1,34 +1,40 @@
 import type { UserCredential } from 'firebase/auth'
-import { beforeEach, describe, expect, it, vi } from 'vitest'
+import { describe, expect, it, vi } from 'vitest'
 
-import { captureSignupRollbackFailure } from '../scripts/posthog'
+import { captureSignupRollbackFailure } from '@/scripts/posthog'
 import {
   isWorkshopProvisioningError,
   provisionCustomer,
   provisionWorkshopCustomer,
   signInWorkshopWithEmail,
+  signInWorkshopWithGitHub,
   signInWorkshopWithGoogle,
   signUpWorkshopWithEmail
 } from './workshop-firebase'
 
 const h = vi.hoisted(() => ({
+  identityConfig: undefined as unknown,
   createUserWithEmail: vi.fn(),
   signInWithEmail: vi.fn(),
-  signInWithGoogle: vi.fn()
+  signInWithGoogle: vi.fn(),
+  signInWithGitHub: vi.fn()
 }))
 
-vi.mock(import('../scripts/posthog'))
+vi.mock(import('@/scripts/posthog'))
 
 vi.mock<unknown>(import('@comfyorg/account-core/firebase'), () => ({
-  createFirebaseIdentity: () => ({
-    onUserChanged: vi.fn(() => () => undefined),
-    signInWithGoogle: h.signInWithGoogle,
-    signInWithGitHub: vi.fn(),
-    signInWithEmail: h.signInWithEmail,
-    createUserWithEmail: h.createUserWithEmail,
-    sendPasswordReset: vi.fn(),
-    signOut: vi.fn()
-  })
+  createFirebaseIdentity: (config: unknown) => {
+    h.identityConfig = config
+    return {
+      onUserChanged: vi.fn(() => () => undefined),
+      signInWithGoogle: h.signInWithGoogle,
+      signInWithGitHub: h.signInWithGitHub,
+      signInWithEmail: h.signInWithEmail,
+      createUserWithEmail: h.createUserWithEmail,
+      sendPasswordReset: vi.fn(),
+      signOut: vi.fn()
+    }
+  }
 }))
 
 describe('provisionCustomer', () => {
@@ -133,12 +139,29 @@ describe('signUpWorkshopWithEmail rollback reporting', () => {
   })
 })
 
+describe('popup sign-in', () => {
+  it('watches the popup so a closed one is reported at once', () => {
+    expect(h.identityConfig).toMatchObject({ watchPopupSignIn: true })
+  })
+
+  it.for([
+    ['google', signInWorkshopWithGoogle, h.signInWithGoogle],
+    ['github', signInWorkshopWithGitHub, h.signInWithGitHub]
+  ] as const)(
+    'hands the %s popup the caller’s late-result options',
+    async ([, signIn, identitySignIn]) => {
+      identitySignIn.mockResolvedValue({})
+      const options = { onResumed: vi.fn(), keepLateResult: () => true }
+
+      await signIn(options)
+
+      expect(identitySignIn).toHaveBeenCalledWith(options)
+    }
+  )
+})
+
 describe('social sign-in provisioning boundary', () => {
   const user = { uid: 'u1', email: 'a@b.co', getIdToken: async () => 'jwt' }
-
-  beforeEach(() => {
-    h.signInWithGoogle.mockReset()
-  })
 
   it('rethrows a popup failure untouched, so the caller sees the Firebase code', async () => {
     const popupFailure = { code: 'auth/popup-closed-by-user', message: 'x' }

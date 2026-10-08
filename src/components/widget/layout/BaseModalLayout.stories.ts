@@ -2,7 +2,8 @@ import type { Meta, StoryObj } from '@storybook/vue3-vite'
 import { computed, provide, ref } from 'vue'
 
 import Button from '@/components/ui/button/Button.vue'
-import MoreButton from '@/components/button/MoreButton.vue'
+import Menu from '@/components/ui/menu/Menu.vue'
+import type { MenuItem } from '@/components/ui/menu/types'
 import CardBottom from '@/components/card/CardBottom.vue'
 import CardContainer from '@/components/card/CardContainer.vue'
 import CardTop from '@/components/card/CardTop.vue'
@@ -24,6 +25,7 @@ interface StoryArgs {
   hasHeader: boolean
   hasContentFilter: boolean
   hasHeaderRightArea: boolean
+  headerPadding?: 'default' | 'symmetric'
   cardCount: number
 }
 
@@ -45,6 +47,11 @@ const meta: Meta<StoryArgs> = {
     hasHeader: {
       control: 'boolean',
       description: 'Toggle header visibility'
+    },
+    headerPadding: {
+      control: 'select',
+      options: ['default', 'symmetric'],
+      description: 'Header bar spacing; symmetric matches the settings dialog'
     },
     hasContentFilter: {
       control: 'boolean',
@@ -72,7 +79,7 @@ const createStoryTemplate = (args: StoryArgs) => ({
     MultiSelect,
     SingleSelect,
     Button,
-    MoreButton,
+    Menu,
     CardContainer,
     CardTop,
     CardBottom,
@@ -154,6 +161,10 @@ const createStoryTemplate = (args: StoryArgs) => ({
     const selectedSort = ref<string>('popular')
 
     const gridStyle = computed(() => createGridStyle())
+    const moreMenuItems: MenuItem[] = [
+      { label: 'Settings', icon: 'icon-[lucide--download]', command: () => {} },
+      { label: 'Profile', icon: 'icon-[lucide--scroll]', command: () => {} }
+    ]
 
     return {
       args,
@@ -167,12 +178,13 @@ const createStoryTemplate = (args: StoryArgs) => ({
       selectedFrameworks,
       selectedProjects,
       selectedSort,
-      gridStyle
+      gridStyle,
+      moreMenuItems
     }
   },
   template: `
     <div>
-      <BaseModalLayout v-if="!args.hasRightPanel" :content-title="args.contentTitle || 'Content Title'">
+      <BaseModalLayout v-if="!args.hasRightPanel" :content-title="args.contentTitle || 'Content Title'" :header-padding="args.headerPadding">
         <!-- Left Panel Header Title -->
         <template v-if="args.hasLeftPanel" #leftPanelHeaderTitle>
           <i class="icon-[lucide--puzzle] size-4 text-neutral" />
@@ -202,29 +214,13 @@ const createStoryTemplate = (args: StoryArgs) => ({
               <span> Upload Model </span>
             </Button>
 
-            <MoreButton>
-              <template #default="{ close }">
-                <Button
-                  variant="secondary"
-                  label="Settings"
-                  @click="() => { close() }"
-                >
-                  <template #icon>
-                    <i class="icon-[lucide--download] size-3" />
-                  </template>
-                </Button>
-
-                <Button
-                  variant="primary"
-                  label="Profile"
-                  @click="() => { close() }"
-                >
-                  <template #icon>
-                    <i class="icon-[lucide--scroll] size-3" />
-                  </template>
+            <Menu :items="moreMenuItems" align="end">
+              <template #trigger>
+                <Button size="icon" variant="secondary">
+                  <i class="icon-[lucide--ellipsis] size-4" />
                 </Button>
               </template>
-            </MoreButton>
+            </Menu>
           </div>
         </template>
 
@@ -294,7 +290,7 @@ const createStoryTemplate = (args: StoryArgs) => ({
         </template>
       </BaseModalLayout>
 
-      <BaseModalLayout v-else :content-title="args.contentTitle || 'Content Title'">
+      <BaseModalLayout v-else :content-title="args.contentTitle || 'Content Title'" :header-padding="args.headerPadding">
         <!-- Same content but WITH right panel -->
         <!-- Left Panel Header Title -->
         <template v-if="args.hasLeftPanel" #leftPanelHeaderTitle>
@@ -325,25 +321,13 @@ const createStoryTemplate = (args: StoryArgs) => ({
                 <span>Upload Model</span>
             </Button>
 
-            <MoreButton>
-              <template #default="{ close }">
-                <Button
-                  variant="secondary"
-                  @click="() => { close() }"
-                >
-                    <i class="icon-[lucide--download] size-3" />
-                    <span>Settings</span>
-                </Button>
-
-                <Button
-                  variant="primary"
-                  @click="() => { close() }"
-                >
-                    <i class="icon-[lucide--scroll] size-3" />
-                    <span>Profile</span>
+            <Menu :items="moreMenuItems" align="end">
+              <template #trigger>
+                <Button size="icon" variant="secondary">
+                  <i class="icon-[lucide--ellipsis] size-4" />
                 </Button>
               </template>
-            </MoreButton>
+            </Menu>
           </div>
         </template>
 
@@ -421,6 +405,7 @@ const createStoryTemplate = (args: StoryArgs) => ({
 export const Default: Story = {
   render: (args: StoryArgs) => createStoryTemplate(args),
   args: {
+    headerPadding: 'default',
     contentTitle: 'Content Title',
     hasLeftPanel: true,
     hasRightPanel: true,

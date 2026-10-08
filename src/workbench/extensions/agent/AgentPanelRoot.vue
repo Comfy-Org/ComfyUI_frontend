@@ -9,6 +9,7 @@ import {
   defineAsyncComponent,
   nextTick,
   onBeforeUnmount,
+  onMounted,
   provide,
   readonly,
   ref,
@@ -18,41 +19,40 @@ import { useI18n } from 'vue-i18n'
 
 import { useCurrentUser } from '@/composables/auth/useCurrentUser'
 import { useTelemetry } from '@/platform/telemetry'
+import { reportError } from '@/platform/telemetry/reportError'
 import type {
+  AgentErrorMetadata,
+  AgentFreeUseNoticeMetadata,
   AgentMessageSentMetadata,
+  AgentPaywallSurface,
   AgentRunApprovalDecision,
   AgentStopMethod
 } from '@/platform/telemetry/types'
 import { useSettingStore } from '@/platform/settings/settingStore'
-import type { LiveAutogrowGroupAnswer } from '@/workbench/extensions/agent/crdt/graphMutations'
-import { createGraphMutations } from '@/workbench/extensions/agent/crdt/graphMutations'
 import { formatWorkflowSyncErrorDetail } from '@/workbench/extensions/agent/crdt/workflowSyncErrorDetail'
 import { useWorkflowService } from '@/platform/workflow/core/services/workflowService'
 import type { ComfyWorkflow } from '@/platform/workflow/management/stores/comfyWorkflow'
 import { useWorkflowStore } from '@/platform/workflow/management/stores/workflowStore'
-import type { LGraphCanvas, LGraphNode } from '@/lib/litegraph/src/litegraph'
+import type { LGraphNode } from '@/lib/litegraph/src/litegraph'
 import { useAppMode } from '@/composables/useAppMode'
 import { MIME_ASSET_INFO } from '@/platform/assets/schemas/mediaAssetSchema'
 import { fetchDroppedAsset, getDroppedAsset } from '@/utils/eventUtils'
 import { useAssetsStore } from '@/stores/assetsStore'
 import { AGENT_ATTACH_ACCEPT, isAgentAttachable } from './utils/attachableFiles'
 import { getNodeByLocatorId } from '@/utils/graphTraversalUtil'
-// eslint-disable-next-line import-x/no-restricted-paths
+// oxlint-disable-next-line comfy/no-restricted-paths
 import { useCanvasStore } from '@/renderer/core/canvas/canvasStore'
+import type { MinimapDecorationLayer } from '@/platform/canvas/minimapDecorationRegistry'
 import { registerMinimapDecorationLayer } from '@/platform/canvas/minimapDecorationRegistry'
 // The composition root injects the renderer-owned layout port; follower core
 // stays independent of renderer and LiteGraph runtime values.
-// eslint-disable-next-line import-x/no-restricted-paths
+// oxlint-disable-next-line comfy/no-restricted-paths
 import { layoutStore } from '@/renderer/core/layout/store/layoutStore'
-// eslint-disable-next-line import-x/no-restricted-paths
-import { ACTOR_CONFIG } from '@/renderer/core/layout/constants'
-// eslint-disable-next-line import-x/no-restricted-paths
-import { LayoutSource } from '@/renderer/core/layout/types'
+
 import { api } from '@/scripts/api'
 import { app } from '@/scripts/app'
 import type { ComfyWorkflowJSON } from '@/platform/workflow/validation/schemas/workflowSchema'
 import { blankGraph } from '@/scripts/defaultGraph'
-import { useAgentNodeSelectionStore } from '@/stores/agentNodeSelectionStore'
 import { useExecutionErrorStore } from '@/stores/executionErrorStore'
 import { useWorkflowTabActivityStore } from '@/stores/workflowTabActivityStore'
 import { useSidebarTabStore } from '@/stores/workspace/sidebarTabStore'
@@ -77,6 +77,7 @@ import {
   trackCoachDeferral
 } from './composables/agent/useOnboarding'
 
+import { useFreeUsePlacement } from './experiments/freeUsePlacement'
 import AgentPanel from './components/agent/AgentPanel.vue'
 import { agentBoundWorkflowIdKey } from './components/agent/agentBoundWorkflowId'
 import AgentGraphActivityBar from './components/AgentGraphActivityBar.vue'
@@ -103,9 +104,14 @@ import type {
   WorkflowTurnContext
 } from './composables/agent/useAgentSession'
 import type { CoachStep } from './composables/agent/useOnboarding'
+import { useAgentConsent } from './composables/agent/useAgentConsent'
 import { useAgentWorkflowResolver } from './composables/agent/useAgentWorkflowResolver'
 import { useAgentWorkflowSelection } from './composables/agent/useAgentWorkflowSelection'
-import { useAgentSession } from './composables/agent/useAgentSession'
+import {
+  isRetryableRequestFailure,
+  trackAgentError,
+  useAgentSession
+} from './composables/agent/useAgentSession'
 import { useAgentDraftSubmission } from './composables/agent/useAgentDraftSubmission'
 import { useAgentWorkflowTabBindingStore } from './stores/agent/agentWorkflowTabBindingStore'
 import { createAgentRestClient } from './services/agent/agentRestClient'
@@ -121,6 +127,10 @@ import { createAgentEventSource } from './services/agent/agentEventSource'
 import { createStandaloneAgentEventSource } from './services/agent/standaloneAgentEventSource'
 import { useAgentChatHistoryStore } from './stores/agent/agentChatHistoryStore'
 import { agentMessageText } from './utils/agentMessageText'
+import {
+  deriveSessionTitle,
+  withCurrentSessionTitle
+} from './utils/sessionTitle'
 import { useAgentComposerStore } from './stores/agent/agentComposerStore'
 import { useAgentConsentStore } from './stores/agent/agentConsentStore'
 import { useAgentPanelStore } from './stores/agent/agentPanelStore'
@@ -129,12 +139,8 @@ import {
   isCrdtDebugEnabled,
   resolveDebugPanelEnabled
 } from './crdt/crdtDebugGate'
-import { attachMintPortWiring } from './crdt/mintPortWiring'
-import {
-  createLiveWidgetProjection,
-  owningGraph
-} from './crdt/liveWidgetProjection'
-import { liveAutogrowGroupOf } from '@/core/graph/widgets/dynamicWidgets'
+import { attachDocOpMinter } from './crdt/docOpMinter'
+import { attachRestoreOpMinter } from './crdt/restoreOpMinter'
 import { useAgentCrdtFollower } from './crdt/useAgentCrdtFollower'
 
 const CrdtDevPanel = defineAsyncComponent(
@@ -145,12 +151,20 @@ const { t } = useI18n()
 const toast = useToastStore()
 const { open: openAccountPrecondition } = useAccountPreconditionDialog()
 const { workspaceRole } = useWorkspaceUI()
-const { subscription, tier: subscriptionTier } = useBillingContext()
+const {
+  subscription,
+  tier: subscriptionTier,
+  type: billingType,
+  billingStatus,
+  fetchStatus: refreshBillingStatus
+} = useBillingContext()
 const conversationStore = useAgentConversationStore()
+const history = useAgentChatHistoryStore()
+const { accepted: consentAccepted } = storeToRefs(useAgentConsentStore())
 watch(
   subscription,
   (currentSubscription) => {
-    if (currentSubscription?.hasFunds) conversationStore.resolvePaywalls()
+    if (currentSubscription?.agentHasFunds) conversationStore.resolvePaywalls()
   },
   { immediate: true }
 )
@@ -177,6 +191,7 @@ const sidebarTabStore = useSidebarTabStore()
 const { isBuilderMode } = useAppMode()
 
 const { resolvedUserInfo, userDisplayName } = useCurrentUser()
+const teamWorkspaceStore = useTeamWorkspaceStore()
 const userName = computed(
   () => userDisplayName.value?.trim().split(/\s+/)[0] || undefined
 )
@@ -188,9 +203,13 @@ const events =
     ? createStandaloneAgentEventSource()
     : createAgentEventSource(api)
 
-function onPaywallAction(action: AgentPaywallAction): void {
+function onPaywallAction(
+  action: AgentPaywallAction,
+  surface: AgentPaywallSurface
+): void {
   useTelemetry()?.trackAgentPaywallCtaClicked({
-    cta: toAgentPaywallCta(action)
+    cta: toAgentPaywallCta(action),
+    surface
   })
   if (action === 'addCredits') {
     if (canTopUp.value) {
@@ -201,10 +220,15 @@ function onPaywallAction(action: AgentPaywallAction): void {
     openAccountPrecondition('credits', { source: 'agent_paywall' })
     return
   }
+  useTelemetry()?.trackSubscription('subscribe_clicked', {
+    current_tier: subscriptionTier.value?.toLowerCase(),
+    reason: 'agent_paywall'
+  })
   openAccountPrecondition('subscription', { source: 'agent_paywall' })
 }
 
-const { messages: conversationMessages } = storeToRefs(conversationStore)
+const { messages: conversationMessages, entries: conversationEntries } =
+  storeToRefs(conversationStore)
 watch(
   () =>
     // Gated on the read having *settled*, which includes settling as
@@ -230,26 +254,113 @@ watch(
         // rather than from capabilities. Report the impression as `unknown`.
         reason: snapshotAuthoritative.value
           ? toAgentPaywallReason(paywallPresentation.value)
-          : 'unknown'
+          : 'unknown',
+        surface: 'refused_send'
       })
     }
   },
   { immediate: true }
 )
 
+/**
+ * The standing credit-exhaustion surface.
+ *
+ * The inline card above is reachable from exactly one moment: a turn POST that
+ * came back 402/`no_funds` (`recordSendError` -> `recordPaywall`). Every other
+ * way a user meets the ceiling — including a refusal inside a server-side LLM
+ * hop that the browser cannot observe — needs a durable upgrade path.
+ *
+ * So this reads the funds signal the client already holds rather than waiting
+ * for a refusal to carry it. It is deliberately the symmetric half of the
+ * `hasFunds` watch above, which already clears paywalls when funds return.
+ *
+ * Consolidated cloud billing only: legacy balance loading currently collapses
+ * unknown into false, so it cannot safely drive this surface.
+ *
+ * Non-blocking by construction — it renders beside the composer and disables
+ * nothing.
+ */
+const agentHasFunds = computed(() => subscription.value?.agentHasFunds)
+const creditsExhausted = computed(() => {
+  if (!consentAccepted.value) return false
+  if (billingType.value !== 'workspace') return false
+  // Same gate as the impression report above: an unsettled read cannot say
+  // which presentation is right, and a card naming the wrong remediation is
+  // worse than no card.
+  if (!capabilityReadSettled.value) return false
+  if (agentHasFunds.value !== false) return false
+  if (
+    billingStatus.value === 'paused' ||
+    billingStatus.value === 'payment_failed'
+  )
+    return false
+  // A standing card must offer a next step. Refusal-anchored inline cards can
+  // still explain member, sales-managed, or unavailable states without a CTA.
+  return ['subscribed', 'subscriptionRequired', 'local'].includes(
+    paywallPresentation.value.kind
+  )
+})
+
+/**
+ * Suppressed while the latest transcript entry is an unresolved inline card:
+ * the two render the same copy. An older card may be scrolled away and must not
+ * hide the standing recovery path after a later server-side refusal.
+ */
+const showStandingPaywall = computed(() => {
+  if (!creditsExhausted.value) return false
+  const latestEntry = conversationEntries.value.at(-1)
+  return !(
+    latestEntry?.role === 'assistant' &&
+    latestEntry.parts.some((part) => part.type === 'paywall')
+  )
+})
+
+const agentPanelStore = useAgentPanelStore()
+const billingIdentity = computed(
+  () =>
+    `${resolvedUserInfo.value?.id ?? 'anonymous'}:${teamWorkspaceStore.workspaceId ?? 'none'}`
+)
+
+/**
+ * One impression per exhaustion episode, not per render: the surface is
+ * standing, so it is visible for as long as the workspace is out of credits and
+ * a per-render report would make impressions a function of session length.
+ * Reset when funds return, so a later exhaustion reports again — mirroring how
+ * `useBillingBanner` scopes its dismissal to one episode.
+ */
+watch(billingIdentity, () => {
+  agentPanelStore.reportedExhaustionIdentity = null
+})
+
+function onStandingPaywallShown(): void {
+  if (
+    !showStandingPaywall.value ||
+    agentPanelStore.reportedExhaustionIdentity === billingIdentity.value
+  )
+    return
+  const telemetry = useTelemetry()
+  if (!telemetry) return
+  agentPanelStore.reportedExhaustionIdentity = billingIdentity.value
+  telemetry.trackAgentPaywallShown({
+    reason: snapshotAuthoritative.value
+      ? toAgentPaywallReason(paywallPresentation.value)
+      : 'unknown',
+    surface: 'credits_exhausted'
+  })
+}
+
 const workflowStore = useWorkflowStore()
 const workflowService = useWorkflowService()
 const bindingStore = useAgentWorkflowTabBindingStore()
-const agentPanelStore = useAgentPanelStore()
 const composerStore = useAgentComposerStore()
 const { selectedWorkflow: selectedTarget } = storeToRefs(agentPanelStore)
 const { dismissedSelectionSignature, enabled: agentEnabled } =
   storeToRefs(agentPanelStore)
-const agentNodeSelectionStore = useAgentNodeSelectionStore()
 const workflowResolver = useAgentWorkflowResolver({
   workflows: workflowStore,
   bindings: bindingStore,
-  listCloudWorkflows: () => rest.listCloudWorkflows()
+  listCloudWorkflows: () => rest.listCloudWorkflows(),
+  getCloudWorkflow: (workflowId) => rest.getCloudWorkflow(workflowId)
 })
 const {
   refreshCloudWorkflowIds,
@@ -275,6 +386,7 @@ const {
   resolver: workflowResolver,
   canSelectTarget: () => !isSending.value && status.value === 'idle',
   warnWorkflowUnavailable,
+  warnRestoreFailed,
   onTargetBound: (workflowId, previousWorkflowId, source) =>
     reportWorkflowBound(workflowId, previousWorkflowId, source)
 })
@@ -304,34 +416,75 @@ watch(
   },
   { immediate: true }
 )
-const agentMinimapLayer = registerMinimapDecorationLayer('agent.graph-activity')
-watch(
-  () => graphActivity.state,
-  (activity) => {
-    if (activity.phase === 'idle') {
-      agentMinimapLayer.replace([])
-      return
+// Claimed on mount rather than in setup so a setup failure cannot leave the id
+// registered with no unmount to release it.
+let agentMinimapLayer: MinimapDecorationLayer | undefined
+function syncAgentMinimapLayer(activity: typeof graphActivity.state): void {
+  if (activity.phase === 'idle') {
+    agentMinimapLayer?.replace([])
+    return
+  }
+  const rootGraphId = toRootGraphId(activity.rootGraphId)
+  agentMinimapLayer?.replace(
+    activity.nodeIds.map((nodeId) => ({
+      target: {
+        rootGraphId,
+        owningGraphId: toOwningGraphId(activity.rootGraphId),
+        nodeId
+      },
+      enter: 'pop'
+    }))
+  )
+  if (
+    activity.phase === 'running' &&
+    !settingStore.get('Comfy.Minimap.Visible')
+  )
+    void settingStore.set('Comfy.Minimap.Visible', true)
+}
+watch(() => graphActivity.state, syncAgentMinimapLayer, { immediate: true })
+onMounted(() => {
+  agentMinimapLayer = registerMinimapDecorationLayer('agent.graph-activity')
+  syncAgentMinimapLayer(graphActivity.state)
+})
+// Teardown must be total. Nothing is re-thrown: an error escaping an unmount
+// hook reaches Vue's logError, which re-throws outside production builds (this
+// app registers no app.config.errorHandler) and aborts both the steps after it
+// and the rest of unmountComponent -- stranding this panel's later releases on
+// singletons that outlive it, such as the PM-1575 canvas-sync gate below.
+//
+// Steps are keyed rather than positional for two reasons: the key names the
+// failure in telemetry, which is now the only signal that a release was
+// skipped, and insertion order is the run order (no key is integer-like, so
+// Object.entries order is specified). They return `undefined` rather than
+// `void` so an async step -- whose rejection would escape the catch below
+// while still looking contained -- fails to compile instead.
+function runPanelTeardown(
+  steps: Readonly<Record<string, () => undefined>>
+): void {
+  for (const [step, release] of Object.entries(steps)) {
+    try {
+      release()
+    } catch (error) {
+      try {
+        reportError(error, {
+          surface: 'agent',
+          errorType: 'failure_tearing_down_agent_panel',
+          tags: { step }
+        })
+      } catch {
+        // A reporter that throws must not abort the teardown it reports on.
+      }
     }
-    const rootGraphId = toRootGraphId(activity.rootGraphId)
-    agentMinimapLayer.replace(
-      activity.nodeIds.map((nodeId) => ({
-        target: {
-          rootGraphId,
-          owningGraphId: toOwningGraphId(activity.rootGraphId),
-          nodeId
-        },
-        enter: 'pop'
-      }))
-    )
-    if (
-      activity.phase === 'running' &&
-      !settingStore.get('Comfy.Minimap.Visible')
-    )
-      void settingStore.set('Comfy.Minimap.Visible', true)
-  },
-  { immediate: true }
+  }
+}
+onBeforeUnmount(() =>
+  runPanelTeardown({
+    disposeMinimapLayer: () => {
+      agentMinimapLayer?.dispose()
+    }
+  })
 )
-const { accepted: consentAccepted } = storeToRefs(useAgentConsentStore())
+const { withConsent } = useAgentConsent()
 const workspaceStore = useTeamWorkspaceStore()
 const onboardingKey = computed(() =>
   scopedOnboardingKey(
@@ -357,127 +510,35 @@ const coachDeferredBy = computed(() =>
       ? 'tour_active'
       : null
 )
+const coachCompletionWaiters = new Set<() => void>()
+function releaseCoachCompletionWaiters(): void {
+  for (const resolve of coachCompletionWaiters) resolve()
+  coachCompletionWaiters.clear()
+}
 watch(
   [consentAccepted, onboardingKey, coachDeferredBy],
   ([accepted, key, reason]) => {
     if (accepted && key && !hasSeenCoach(key)) trackCoachDeferral(key, reason)
+    if (reason !== null) releaseCoachCompletionWaiters()
   },
   { immediate: true }
 )
 const coachRef = ref<InstanceType<typeof OnboardingCoach>>()
+
+async function waitForCoachCompletion(): Promise<void> {
+  const key = onboardingKey.value
+  if (!key || hasSeenCoach(key)) return
+  await nextTick()
+  if (coachDeferredBy.value !== null || !coachRef.value) return
+  await new Promise<void>((resolve) => coachCompletionWaiters.add(resolve))
+}
+
 function restartCoach(): void {
   // Take-the-tour stays clickable while the coach is deferred by App Mode, and
   // there is no instance to hand the transition to. Clearing the persisted flag
   // makes the replay wait for the mount instead of being dropped.
   if (coachRef.value) coachRef.value.restart()
   else if (onboardingKey.value) resetCoach(onboardingKey.value)
-}
-const graphMutationsByWorkflow = new Map<
-  string,
-  ReturnType<typeof createGraphMutations>
->()
-const liveWidgets = createLiveWidgetProjection({
-  getRootGraph: () => app.rootGraphOrUndefined,
-  getCanvas: () => app.canvas,
-  markDirty: () => app.canvas?.setDirty(true)
-})
-const graphMutations = (workflowId: string) => {
-  const existing = graphMutationsByWorkflow.get(workflowId)
-  if (existing) return existing
-  const mutations = createGraphMutations({
-    getScope() {
-      const rootGraphId = boundOrOpenWorkflowFor(workflowId)?.activeState?.id
-      return rootGraphId
-        ? {
-            rootGraphId: toRootGraphId(rootGraphId),
-            owningGraphId: toOwningGraphId(rootGraphId)
-          }
-        : null
-    },
-    layout: {
-      createNode(scope, nodeId, layout, context) {
-        const { position, size } = layout
-        layoutStore.applyOperation({
-          type: 'createNode',
-          graphId: scope.rootGraphId,
-          ownerGraphId: scope.owningGraphId,
-          nodeId,
-          layout: {
-            id: nodeId,
-            position,
-            size,
-            bounds: { x: position.x, y: position.y, ...size },
-            zIndex: layoutStore.allocateZIndex(),
-            visible: true
-          },
-          source: LayoutSource.AgentRemote,
-          actor: context.actor,
-          opId: context.opId,
-          timestamp: Date.now()
-        })
-      },
-      deleteNodes(scope, nodeIds, context) {
-        const timestamp = Date.now()
-        layoutStore.applyOperations(
-          nodeIds.map((nodeId) => ({
-            type: 'deleteNode',
-            graphId: scope.rootGraphId,
-            ownerGraphId: scope.owningGraphId,
-            nodeId,
-            source: LayoutSource.AgentRemote,
-            actor: context.actor,
-            opId: context.opId,
-            timestamp
-          }))
-        )
-      }
-    },
-    placement: {
-      nodeBounds(scope, nodeId) {
-        const layout = layoutStore.getNodeLayout(scope.rootGraphId, nodeId)
-        return layout
-          ? {
-              x: layout.position.x,
-              y: layout.position.y,
-              width: layout.size.width,
-              height: layout.size.height
-            }
-          : null
-      },
-      viewportBounds(scope) {
-        const canvas = canvasStore.canvas
-        if (
-          !canvas ||
-          String(canvas.graph?.id) !== String(scope.owningGraphId)
-        ) {
-          return null
-        }
-        const [x, y, width, height] = canvas.ds.visible_area
-        return { x, y, width, height }
-      }
-    },
-    liveWidgets,
-    liveNodes: {
-      autogrowGroupOf(scope, nodeId, name): LiveAutogrowGroupAnswer {
-        const rootGraph = app.rootGraphOrUndefined
-        const node = rootGraph
-          ? owningGraph(rootGraph, scope)?.getNodeById(nodeId)
-          : undefined
-        // Unmounted / background workflow: the node itself can't be asked,
-        // so this carries no opinion -- `resolveAutogrowGroup` falls back to
-        // remembered provenance, then the node type's own static definition,
-        // and only then the name-shape heuristic, instead of treating this
-        // as "not a member".
-        if (!node) return { kind: 'unavailable' }
-        const group = liveAutogrowGroupOf(node, name)
-        return group === undefined
-          ? { kind: 'notMember' }
-          : { kind: 'member', group }
-      }
-    }
-  })
-  graphMutationsByWorkflow.set(workflowId, mutations)
-  return mutations
 }
 
 function toSelectedNode(node: LGraphNode): SelectedNode {
@@ -505,7 +566,7 @@ const nodeReferenceDisabledReason = computed(() => {
 const selectedNodes = computed<SelectedNode[]>(() =>
   canvasStore.selectedItems.filter(isLGraphNode).map(toSelectedNode)
 )
-composerStore.setNodeScope(selectedTarget.value?.path ?? null)
+composerStore.setNodeScope(selectedTarget.value?.instanceId ?? null)
 const {
   staged: selectionTags,
   consume: consumeSelection,
@@ -522,9 +583,8 @@ const {
   selection: selectedNodes,
   enabled: () => agentEnabled.value && selectedTarget.value !== null,
   isLive: () => agentPanelStore.isOpen,
-  isTracking: () => canReferenceNodes.value && agentNodeSelectionStore.isActive,
-  isPaused: () => agentNodeSelectionStore.isLoadingWorkflow,
-  scope: () => selectedTarget.value?.path ?? null,
+  isTracking: () => canReferenceNodes.value && canvasStore.isPickingNodes,
+  scope: () => selectedTarget.value?.instanceId ?? null,
   dismissedSignature: dismissedSelectionSignature,
   retainStagedNode: (node) => {
     const locator = parseNodeLocatorId(selectedNodeKey(node))
@@ -553,31 +613,8 @@ watch(
   selectionTags,
   (tags) => {
     nodeReferenceWorkflow = tags.length ? selectedTarget.value : null
-    if (!agentPanelStore.isOpen || agentNodeSelectionStore.isLoadingWorkflow)
-      return
-    agentNodeSelectionStore.saveNodeIds(
-      selectedTarget.value?.path,
-      tags.map(selectedNodeKey)
-    )
   },
   { deep: true, flush: 'sync' }
-)
-
-watch(
-  [() => agentPanelStore.isOpen, canReferenceNodes],
-  ([open, canReference]) => {
-    if (!open || !canReference || selectionTags.value.length > 0) return
-    const locatorIds = new Set(
-      agentNodeSelectionStore.nodeIds(selectedTarget.value?.path)
-    )
-    replaceSelectionTags(
-      [...locatorIds]
-        .map((locatorId) => getNodeByLocatorId(app.rootGraph, locatorId))
-        .filter((node): node is LGraphNode => node !== null)
-        .map(toSelectedNode)
-    )
-  },
-  { immediate: true }
 )
 
 const workflowDetached = computed(() => selectedTarget.value === null)
@@ -610,15 +647,24 @@ function targetWorkflowTurnContext(
     : { id, tabPath: target.path }
 }
 
+function serializedCanvas(target: ComfyWorkflow) {
+  if (target.path === workflowStore.activeWorkflow?.path)
+    target.changeTracker?.prepareForSave()
+  return target.activeState
+}
+
 function targetWorkflowDraft(origin?: TurnOrigin): DraftSnapshot | undefined {
   if (workflowDetached.value) return undefined
   const target = originWorkflow(origin)
   if (!target) return undefined
-  if (target.path === workflowStore.activeWorkflow?.path)
-    target.changeTracker?.prepareForSave()
-  const content = target.activeState
+  const content = serializedCanvas(target)
   if (!content) return undefined
   return { content }
+}
+
+function canvasForWorkflow(workflowId: string): Record<string, unknown> | null {
+  const target = boundOrOpenWorkflowFor(workflowId)
+  return target ? serializedCanvas(target) : null
 }
 
 const selectedTargetTab = computed<ActiveTab | null>(() => {
@@ -679,6 +725,25 @@ function warnWorkflowUnavailable(): void {
   })
 }
 
+function warnRestoreFailed(): void {
+  const { view } = agentPanelStore
+  // A loading history row reports its own failure.
+  if (view.screen === 'history' && view.selection.status === 'loading') return
+  toast.add({
+    severity: 'warn',
+    detail: t('agent.targetWorkflowOpenFailed'),
+    life: 5000
+  })
+}
+
+function trackWorkflowOpenFailure(
+  uiTreatment: AgentErrorMetadata['ui_treatment']
+): void {
+  trackAgentError('workflow_open_failed', 'post_acceptance', uiTreatment, {
+    retryable: false
+  })
+}
+
 /**
  * The sent message, held from the moment the user sends until the cloud ids
  * are refreshed, alongside the turn's origin. Scoped to one `sendMessage`
@@ -714,6 +779,7 @@ const {
   sendMessage,
   stopTurn,
   isSending: sessionIsSending,
+  isTranscriptReady,
   newChat,
   start,
   stop,
@@ -735,6 +801,7 @@ const {
   events,
   onThreadStarted: (source) =>
     useTelemetry()?.trackAgentThreadStarted({ source }),
+  onThreadActivated: (id) => history.setActive(id),
   onAskResolved: forgetApproval,
   workflow: {
     initialize: agentPanelStore.initializeTargetTracking,
@@ -783,10 +850,11 @@ const isBoundWorkflowActive = computed(() => {
 const {
   status: crdtStatus,
   debugSnapshot: crdtDebugSnapshot,
-  enqueueHumanOperations
+  enqueueHumanOperations,
+  docInputNames,
+  docPromotedWidgets
 } = useAgentCrdtFollower(
   boundWorkflowId,
-  graphMutations,
   () => resolvedUserInfo.value?.id ?? null,
   isBoundWorkflowActive,
   // `app.isGraphReady` is a plain getter; reading `canvasStore.canvas` (set
@@ -798,7 +866,8 @@ const {
       if (app.isGraphReady) {
         graphActivity.recordMaterialized(
           { workflowId, rootGraphId: toRootGraphId(app.rootGraph.id) },
-          nodeIds
+          nodeIds,
+          conversationTurnId.value
         )
         if (status.value === 'idle') graphActivity.finishTurn()
       }
@@ -813,7 +882,17 @@ const {
         life: 0
       })
   },
-  () => workflowStore.activeWorkflow?.changeTracker ?? null
+  {
+    getCanvas: () => app.canvas,
+    withRemoteActor: (actor, fn) => layoutStore.withActor(actor, fn),
+    viewportBounds() {
+      const canvas = canvasStore.canvas
+      if (!canvas || canvas.graph?.isRootGraph === false) return null
+      const [x, y, width, height] = canvas.ds.visible_area
+      return { x, y, width, height }
+    }
+  },
+  canvasForWorkflow
 )
 // The bound document's serialized root graph id, independent of what is
 // currently on the canvas: `beforeLoadNewGraph` persists the outgoing
@@ -826,16 +905,22 @@ function boundRootGraphId(): RootGraphId | null {
   const id = boundOrOpenWorkflowFor(bound)?.activeState?.id
   return id === undefined ? null : toRootGraphId(id)
 }
-const mintPortWiring = attachMintPortWiring({
+const docOpMinter = attachDocOpMinter({
   isEnabled: () => agentPanelStore.enabled,
   isDocBound: () => isBoundWorkflowActive.value,
   enqueue: enqueueHumanOperations,
-  layoutChanges: (listener) => layoutStore.onChange(listener),
-  localActorPrefix: ACTOR_CONFIG.USER_PREFIX,
+  getGraph: () => (app.isGraphReady ? app.rootGraph : null),
+  boundRootGraphId,
+  docInputNames,
+  docPromotedWidgets
+})
+const restoreOpMinter = attachRestoreOpMinter({
+  isEnabled: () => agentPanelStore.enabled,
+  isDocBound: () => isBoundWorkflowActive.value,
+  enqueue: enqueueHumanOperations,
   getGraph: () => (app.isGraphReady ? app.rootGraph : null),
   isRestoringState: () =>
-    workflowStore.activeWorkflow?.changeTracker?._restoringState === true,
-  boundRootGraphId
+    workflowStore.activeWorkflow?.changeTracker?._restoringState === true
 })
 const isCrdtDevPanelEnabled = resolveDebugPanelEnabled(
   agentPanelStore.enabled,
@@ -912,17 +997,29 @@ function resumedTurnTabPath(): string | null {
 // Adoption (onWorkflowAdopted) and tab activation (onAgentActiveTab) are the
 // primary spinner setters; the non-idle branch only re-arms it after the
 // stash/resume flip of a panel remount, where those setters never run.
-let observedActivityStatus = false
+let wasTurnActive = false
 watch(
   [status, conversationTurnId],
   ([value, turnId]) => {
+    const completedTurn = wasTurnActive && value === 'idle'
     if (value === 'idle') {
       // The immediate idle value on remount is a hydration snapshot, not a
       // completed turn. A real idle transition is observed after this pass.
-      if (observedActivityStatus) graphActivity.finishTurn()
+      if (completedTurn) graphActivity.finishTurn()
     } else graphActivity.startTurn(turnId)
-    observedActivityStatus = true
+    wasTurnActive = value !== 'idle'
     if (value === 'idle') {
+      // A server-side LLM-hop refusal does not reach the browser as a 402.
+      // Refresh the authoritative effective-funds verdict after every observed
+      // turn completion so both exhaustion and external top-ups converge.
+      if (completedTurn && billingType.value === 'workspace') {
+        void refreshBillingStatus().catch((error: unknown) => {
+          reportError(error, {
+            surface: 'agent',
+            errorType: 'error_refreshing_agent_billing_status'
+          })
+        })
+      }
       const completedPath = tabActivity.editingTabPath
       tabActivity.setEditing(null)
       if (completedPath !== null) tabActivity.markModified(completedPath)
@@ -995,13 +1092,22 @@ async function onNavigateToReferenceWorkflow(
   }
 }
 
-async function onShowTarget(): Promise<void> {
+async function onShowTarget(
+  isNavigationCurrent: () => boolean = () => true,
+  warnOpenFailed: () => void = warnWorkflowUnavailable
+): Promise<boolean> {
   const target = selectedTarget.value
-  if (target === null) return
+  if (target === null) return false
+  const isCurrent = () =>
+    isNavigationCurrent() && selectedTarget.value === target
   try {
-    if (!(await workflowService.openWorkflow(target))) warnWorkflowUnavailable()
+    const opened = await workflowService.openWorkflow(target, { isCurrent })
+    if (!isCurrent()) return false
+    if (!opened) warnOpenFailed()
+    return opened
   } catch {
-    warnWorkflowUnavailable()
+    if (isCurrent()) warnOpenFailed()
+    return false
   }
 }
 
@@ -1029,69 +1135,92 @@ async function onAgentActiveTab(
   if (stale()) return false
   try {
     const bound = boundOrOpenWorkflowFor(data.workflow_id)
-    if (bound) {
-      const opened = await workflowService.openWorkflow(bound)
-      if (stale()) return false
-      if (!opened) {
-        warnWorkflowUnavailable()
-        return false
-      }
-      // boundOrOpenWorkflowFor can resolve by cloud name, which leaves no binding behind
-      // for everything downstream that only reads tabPathFor.
-      bindingStore.bind(data.workflow_id, bound.path)
-      if (status.value !== 'idle') tabActivity.setEditing(bound.path)
-      bindWorkflow(data.workflow_id)
-      reportWorkflowBound(data.workflow_id, previousWorkflowId, 'active_tab')
-      useTelemetry()?.trackAgentWorkflowApplied({
-        workflow_id: data.workflow_id,
-        target: 'active_tab_switch'
-      })
-      return true
-    }
-    const creatingStartedAt = Date.now()
-    tabActivity.setCreating(true)
-    const remainingCreatingTime =
-      CREATING_TAB_MIN_DURATION_MS - (Date.now() - creatingStartedAt)
-    if (remainingCreatingTime > 0)
-      await new Promise((resolve) => setTimeout(resolve, remainingCreatingTime))
-    if (stale()) return false
-    const tab = workflowStore.createNewTemporary(
-      agentTabFilename(data.name),
-      agentTabGraph
-    )
-    tabActivity.setCreating(false)
-    let opened: boolean
-    try {
-      opened = await workflowService.openWorkflow(tab)
-    } catch (error) {
-      await workflowService.closeWorkflow(tab, { warnIfUnsaved: false })
-      throw error
-    }
-    if (stale() || !opened) {
-      await workflowService.closeWorkflow(tab, { warnIfUnsaved: false })
-      if (!stale()) warnWorkflowUnavailable()
-      return false
-    }
-    if (status.value !== 'idle') tabActivity.setEditing(tab.path)
-    bindingStore.bind(data.workflow_id, tab.path)
-    bindWorkflow(data.workflow_id)
-    reportWorkflowBound(data.workflow_id, previousWorkflowId, 'active_tab')
-    useTelemetry()?.trackAgentWorkflowApplied({
-      workflow_id: data.workflow_id,
-      target: 'active_tab_open'
-    })
-    return true
+    return bound
+      ? await activateExistingAgentTab(data, bound, previousWorkflowId, stale)
+      : await createAndActivateAgentTab(data, previousWorkflowId, stale)
   } catch (error) {
     if (stale()) return false
     bindWorkflow(data.workflow_id)
+    reportError(error, {
+      surface: 'agent',
+      errorType: 'agent_workflow_open_failed'
+    })
     surfaceAgentError(
       'agent_api_failed',
       error instanceof Error ? error.message : String(error)
     )
+    trackWorkflowOpenFailure('error_overlay')
     return false
   } finally {
     tabActivity.setCreating(false)
   }
+}
+
+async function activateExistingAgentTab(
+  data: AgentActiveTabData,
+  bound: ComfyWorkflow,
+  previousWorkflowId: string | null,
+  stale: () => boolean
+): Promise<boolean> {
+  const opened = await workflowService.openWorkflow(bound)
+  if (stale()) return false
+  if (!opened) {
+    warnWorkflowUnavailable()
+    trackWorkflowOpenFailure('toast')
+    return false
+  }
+  bindingStore.bind(data.workflow_id, bound.path)
+  if (status.value !== 'idle') tabActivity.setEditing(bound.path)
+  bindWorkflow(data.workflow_id)
+  reportWorkflowBound(data.workflow_id, previousWorkflowId, 'active_tab')
+  useTelemetry()?.trackAgentWorkflowApplied({
+    workflow_id: data.workflow_id,
+    target: 'active_tab_switch'
+  })
+  return true
+}
+
+async function createAndActivateAgentTab(
+  data: AgentActiveTabData,
+  previousWorkflowId: string | null,
+  stale: () => boolean
+): Promise<boolean> {
+  const creatingStartedAt = Date.now()
+  tabActivity.setCreating(true)
+  const remainingCreatingTime =
+    CREATING_TAB_MIN_DURATION_MS - (Date.now() - creatingStartedAt)
+  if (remainingCreatingTime > 0)
+    await new Promise((resolve) => setTimeout(resolve, remainingCreatingTime))
+  if (stale()) return false
+  const tab = workflowStore.createNewTemporary(
+    agentTabFilename(data.name),
+    agentTabGraph
+  )
+  tabActivity.setCreating(false)
+  let opened: boolean
+  try {
+    opened = await workflowService.openWorkflow(tab)
+  } catch (error) {
+    await workflowService.closeWorkflow(tab, { warnIfUnsaved: false })
+    throw error
+  }
+  if (stale() || !opened) {
+    await workflowService.closeWorkflow(tab, { warnIfUnsaved: false })
+    if (!stale()) {
+      warnWorkflowUnavailable()
+      trackWorkflowOpenFailure('toast')
+    }
+    return false
+  }
+  if (status.value !== 'idle') tabActivity.setEditing(tab.path)
+  bindingStore.bind(data.workflow_id, tab.path)
+  bindWorkflow(data.workflow_id)
+  reportWorkflowBound(data.workflow_id, previousWorkflowId, 'active_tab')
+  useTelemetry()?.trackAgentWorkflowApplied({
+    workflow_id: data.workflow_id,
+    target: 'active_tab_open'
+  })
+  return true
 }
 
 function onApprovalShown(
@@ -1137,27 +1266,62 @@ async function onAnswerAsk(
 
 void refreshCloudWorkflowIds()
 onBeforeUnmount(() => {
-  ++activeTabGeneration
-  mintPortWiring.detach()
-  exitNodeSelectionMode()
-  stop()
-  tabActivity.setEditing(null)
-  tabActivity.setCreating(false)
-  agentMinimapLayer.dispose()
-  // PM-1575: the store singleton outlives this component. Without resetting
-  // the gate here, a remount's own setCanvasSyncGate() call is the only
-  // thing standing between the old (now torn-down) follower's gate and a
-  // turn resumed in the meantime reading it -- reset to the always-safe
-  // default instead of leaving whatever this instance last set.
-  conversationStore.setCanvasSyncGate(
-    () => false,
-    () => 0
-  )
+  runPanelTeardown({
+    releaseCoachCompletionWaiters: () => {
+      releaseCoachCompletionWaiters()
+    },
+    invalidateConsentHeldSubmission: () => {
+      if (
+        (coachDeferredBy.value === null || !agentPanelStore.isVisible) &&
+        composerStore.submission?.id === consentHeldSubmissionId
+      )
+        composerStore.invalidateSubmission()
+    },
+    detachDocOpMinter: () => {
+      docOpMinter.detach()
+    },
+    detachRestoreOpMinter: () => {
+      restoreOpMinter.detach()
+    },
+    exitNodeSelectionMode: canvasStore.stopNodePicking,
+    stopSession: () => {
+      stop()
+    },
+    invalidateActiveTabGeneration: () => {
+      ++activeTabGeneration
+    },
+    clearEditingTab: () => {
+      tabActivity.setEditing(null)
+    },
+    clearCreatingTab: () => {
+      tabActivity.setCreating(false)
+    },
+    // PM-1575: the store singleton outlives this component. Without resetting
+    // the gate here, a remount's own setCanvasSyncGate() call is the only
+    // thing standing between the old (now torn-down) follower's gate and a
+    // turn resumed in the meantime reading it -- reset to the always-safe
+    // default instead of leaving whatever this instance last set.
+    resetCanvasSyncGate: () => {
+      conversationStore.setCanvasSyncGate(
+        () => false,
+        () => 0
+      )
+    }
+  })
 })
 
-const history = useAgentChatHistoryStore()
-
 const { copy } = useClipboard({ legacy: true })
+
+/**
+ * DES-1221. This component mounts only while the panel is on screen, so
+ * reading the flag here keeps the exposure — and the experiment's
+ * denominator — to the panel openers the hypothesis is about.
+ */
+const { variant: freeUsePlacement } = useFreeUsePlacement()
+
+function onFreeUseNotice(metadata: AgentFreeUseNoticeMetadata): void {
+  useTelemetry()?.trackAgentFreeUseNotice(metadata)
+}
 
 function onFeedback(turnId: string, vote: 'up' | 'down' | null): void {
   const message = entries.value.find(
@@ -1184,7 +1348,8 @@ function toChatSession(thread: AgentThreadSummary): ChatSession {
   return {
     id: thread.id,
     title: thread.title || thread.preview || t('agent.untitledChat'),
-    updatedAt: Number.isNaN(updatedAt) ? Date.now() : updatedAt
+    updatedAt: Number.isNaN(updatedAt) ? Date.now() : updatedAt,
+    titleSource: thread.title ? 'server' : 'fallback'
   }
 }
 
@@ -1192,25 +1357,58 @@ async function refreshHistory(): Promise<void> {
   try {
     history.replaceAll((await listThreads()).map(toChatSession))
   } catch (error) {
+    reportError(error, {
+      surface: 'agent',
+      errorType: 'agent_thread_list_load_failed'
+    })
     surfaceAgentError(
       'agent_api_failed',
       error instanceof Error ? error.message : String(error)
     )
+    trackAgentError(
+      'thread_list_load_failed',
+      'pre_acceptance',
+      'error_overlay',
+      { retryable: isRetryableRequestFailure(error, false) }
+    )
   }
 }
 
-watch(threadId, (id) => history.setActive(id), { immediate: true })
-
 void refreshHistory()
 
-async function onSelectHistory(id: string): Promise<void> {
+const currentChatReady = computed(
+  () =>
+    isTranscriptReady.value &&
+    threadId.value === history.activeId &&
+    selectedTarget.value !== null
+)
+
+const historyGroups = computed(() => {
+  const id = threadId.value
+  if (id === null || !isTranscriptReady.value || id !== history.activeId)
+    return history.grouped
+  return withCurrentSessionTitle(
+    history.grouped,
+    history.titleFor(id) || deriveSessionTitle(entries.value)
+  )
+})
+
+async function onSelectHistory(
+  id: string,
+  isCurrent: () => boolean
+): Promise<boolean> {
+  if (currentChatReady.value && id === threadId.value)
+    return onShowTarget(isCurrent, warnRestoreFailed)
+
   composerStore.invalidateSubmission()
   cancelWorkflowSelection()
   agentPanelStore.beginWorkflowRestoration()
-  exitNodeSelectionMode()
-  if (await loadThread(id))
+  canvasStore.stopNodePicking()
+  const opened = await loadThread(id, isCurrent)
+  if (opened)
     useTelemetry()?.trackAgentThreadStarted({ source: 'history_select' })
   void refreshHistory()
+  return opened
 }
 
 function buildTranscriptMarkdown(entries: ConversationEntry[]): string {
@@ -1227,7 +1425,8 @@ function buildTranscriptMarkdown(entries: ConversationEntry[]): string {
 }
 
 function onCopyMarkdown(id: string): void {
-  if (id === history.activeId) void copy(buildTranscriptMarkdown(entries.value))
+  if (id === history.activeId && id === threadId.value)
+    void copy(buildTranscriptMarkdown(entries.value))
   else toast.add({ severity: 'info', summary: t('agent.copyUnavailable') })
 }
 
@@ -1260,6 +1459,24 @@ const coachSteps = computed<CoachStep[]>(() => [
   }
 ])
 
+let consentHeldSubmissionId: number | undefined
+async function consentAllowsSubmission(
+  submissionId: number | undefined
+): Promise<boolean> {
+  let hasConsent = false
+  consentHeldSubmissionId = submissionId
+  try {
+    await withConsent('first_message', () => {
+      hasConsent = true
+    })
+    if (hasConsent) await waitForCoachCompletion()
+  } finally {
+    if (consentHeldSubmissionId === submissionId)
+      consentHeldSubmissionId = undefined
+  }
+  return composerStore.submission?.id === submissionId && hasConsent
+}
+
 const { submit: onSend } = useAgentDraftSubmission({
   canSubmit: () => !workflowSelecting.value && !isSending.value,
   onSubmit: agentPanelStore.retainWorkflowTarget,
@@ -1270,9 +1487,17 @@ const { submit: onSend } = useAgentDraftSubmission({
     workflow: () => nodeReferenceWorkflow,
     consume: consumeSelection,
     replace: replaceSelectionTags,
-    exit: exitNodeSelectionMode
+    exit: canvasStore.stopNodePicking
   },
+  // fallow-ignore-next-line complexity -- Existing PR logic; this lane changes only the composing panel test.
   send: async (text, attachments, nodes, references, meta) => {
+    const submissionId = composerStore.submission?.id
+    if (
+      !consentAccepted.value &&
+      !(await consentAllowsSubmission(submissionId))
+    )
+      return false
+
     // The same origin `performSend` pins the turn to, taken in the same tick,
     // so the report follows the tab the turn is posted against. Everything but
     // the workflow id is captured now, like the thread; the id here is only
@@ -1285,15 +1510,25 @@ const { submit: onSend } = useAgentDraftSubmission({
         thread_id: threadId.value,
         workflow_id: originContext?.id ?? null,
         client_message_id: meta.clientMessageId,
-        input_method: meta.inputMethod
+        input_method: meta.inputMethod,
+        starter_prompt_id: meta.starterPrompt?.id ?? null,
+        starter_prompt_click_id: meta.starterPrompt?.clickId ?? null
       },
       origin:
         originContext === undefined ? null : { tabPath: originContext.tabPath }
     }
     const selectionWorkflow = selectedTarget.value
     try {
-      return await sendMessage(text, attachments, nodes, references, () =>
-        selectionWorkflow ? cloudIdFor(selectionWorkflow) : undefined
+      return await sendMessage(
+        text,
+        attachments,
+        nodes,
+        references,
+        () => (selectionWorkflow ? cloudIdFor(selectionWorkflow) : undefined),
+        // The same id reported on app:agent_message_sent just above. Sent to the
+        // server so it can echo it onto agent_turn_started, which is what makes
+        // the message -> turn step attributable instead of only countable.
+        meta.clientMessageId
       )
     } finally {
       // Normally already consumed by the refresh. A send rejected before it
@@ -1318,15 +1553,18 @@ function onRenameHistory(id: string, title: string): void {
 }
 
 function onDeleteHistory(id: string): void {
+  const isCurrent =
+    id === history.activeId ||
+    (history.activeId === null && id === threadId.value)
   history.remove(id)
   // Deleting the open chat also ends it; a dead thread must not stay editable.
-  if (id === threadId.value) onNewChat('history_delete')
+  if (isCurrent) onNewChat('history_delete')
 }
 
 function onNewChat(source?: 'new_chat_button' | 'history_delete'): void {
   composerStore.invalidateSubmission()
   cancelWorkflowSelection()
-  exitNodeSelectionMode()
+  canvasStore.stopNodePicking()
   composerStore.setWorkflowReferences([])
   composerStore.resetPromptHistory()
   newChat(source)
@@ -1339,47 +1577,13 @@ const fileInput = ref<HTMLInputElement>()
 const assetDragActive = ref(false)
 let assetDragDepth = 0
 provide('agentAssetDragActive', readonly(assetDragActive))
-let selectingNodes = false
-let nodeSelectionCanvas: LGraphCanvas | undefined
-
-watch(
-  () => canvasStore.selectedItems,
-  (items) => {
-    if (agentNodeSelectionStore.restoredNodeIds !== null) {
-      if (canReferenceNodes.value) {
-        replaceSelectionTags(items.filter(isLGraphNode).map(toSelectedNode))
-      }
-      agentNodeSelectionStore.finishWorkflowLoad()
-    }
-  },
-  { immediate: true }
-)
-
-function exitNodeSelectionMode(): void {
-  const canvas = nodeSelectionCanvas
-  nodeSelectionCanvas = undefined
-  selectingNodes = false
-  if (agentNodeSelectionStore.isActive) agentNodeSelectionStore.exit()
-  if (canvas) {
-    canvas.deselectAll()
-  }
-}
-
-watch(
-  () => agentNodeSelectionStore.isActive,
-  (active) => {
-    if (!active) exitNodeSelectionMode()
-  }
-)
 
 watch(
   selectedTarget,
-  (target, previous) => {
-    exitNodeSelectionMode()
-    composerStore.setNodeScope(target?.path ?? null)
+  (target) => {
+    canvasStore.stopNodePicking()
+    composerStore.setNodeScope(target?.instanceId ?? null)
     nodeReferenceWorkflow = null
-    agentNodeSelectionStore.saveNodeIds(previous?.path, [])
-    agentNodeSelectionStore.saveNodeIds(target?.path, [])
   },
   { flush: 'sync' }
 )
@@ -1387,7 +1591,7 @@ watch(
 watch(
   () => workflowStore.activeWorkflow,
   () => {
-    exitNodeSelectionMode()
+    canvasStore.stopNodePicking()
     onVisibleWorkflowChanged()
   },
   { flush: 'sync' }
@@ -1395,18 +1599,19 @@ watch(
 
 // Target startup is an explicit session event, not a read of a thread ID that
 // happens to have been assigned by start(). Register scope cleanup first.
-start()
+start({
+  restore:
+    agentPanelStore.view.screen === 'chat' ||
+    (agentPanelStore.view.selection.status === 'idle' &&
+      threadId.value === agentPanelStore.view.previousThreadId)
+})
 
-watch(
-  () => canvasStore.currentGraph,
-  () => {
-    if (!agentNodeSelectionStore.isLoadingWorkflow) exitNodeSelectionMode()
-  },
-  { flush: 'sync' }
-)
+watch(() => canvasStore.currentGraph, canvasStore.stopNodePicking, {
+  flush: 'sync'
+})
 
 function onSelectNodes(): void {
-  if (!canReferenceNodes.value || selectingNodes) return
+  if (!canReferenceNodes.value || canvasStore.isPickingNodes) return
   const canvas = app.canvas
   if (!canvas) return
 
@@ -1423,11 +1628,9 @@ function onSelectNodes(): void {
   if (merged.size) {
     canvas.selectItems([...merged.values()])
   }
-  nodeSelectionCanvas = canvas
-  selectingNodes = true
-  agentNodeSelectionStore.enter()
+  canvasStore.startNodePicking()
   void nextTick(() => {
-    if (selectingNodes) canvas.canvas.focus()
+    if (canvasStore.isPickingNodes) canvas.canvas.focus()
   })
 }
 
@@ -1468,16 +1671,27 @@ const attachment = useAttachment({
   remove: composerStore.removeAttachment
 })
 
-onBeforeUnmount(() => attachment.cancelAllUploads())
+onBeforeUnmount(() =>
+  runPanelTeardown({
+    cancelAllUploads: () => {
+      attachment.cancelAllUploads()
+    }
+  })
+)
 
 function onAttach(): void {
-  exitNodeSelectionMode()
+  canvasStore.stopNodePicking()
   useTelemetry()?.trackAgentAttachButtonClicked({ method: 'menu' })
   fileInput.value?.click()
 }
 
+async function onAttachFiles(files: File[]): Promise<void> {
+  if (await attachment.addFiles(files))
+    useTelemetry()?.trackAgentAttachButtonClicked({ method: 'paste' })
+}
+
 function onOpenAssets(): void {
-  exitNodeSelectionMode()
+  canvasStore.stopNodePicking()
   sidebarTabStore.activeSidebarTabId = 'assets'
 }
 
@@ -1500,7 +1714,7 @@ function onRemoveSelectionTag(id: string): void {
 }
 
 function onClosePanel(): void {
-  exitNodeSelectionMode()
+  canvasStore.stopNodePicking()
   useTelemetry()?.trackAgentCloseButtonClicked()
   agentPanelStore.close('close_button')
 }
@@ -1634,7 +1848,9 @@ async function onPanelDrop(event: DragEvent): Promise<void> {
       :can-attach="true"
       :can-open-assets="!isBuilderMode"
       :is-maximized="agentPanelStore.isMaximized"
-      :history-groups="history.grouped"
+      :history-groups="historyGroups"
+      :select-history="onSelectHistory"
+      :current-chat-ready="currentChatReady"
       :session-id="threadId"
       :custom-title="history.titleFor(threadId)"
       :selection-tags="selectionTags"
@@ -1650,11 +1866,16 @@ async function onPanelDrop(event: DragEvent): Promise<void> {
       :selecting-tab-path="selectingTarget?.path ?? null"
       :select-tab="onSelectWorkflowTarget"
       :workflow-detached="workflowDetached"
+      :target-unavailable="agentPanelStore.targetUnavailable"
       :get-mention-nodes="mentionableNodes"
       :paywall-presentation="paywallPresentation"
+      :credits-exhausted="showStandingPaywall"
+      :free-use-placement="freeUsePlacement"
+      @free-use-notice="onFreeUseNotice"
       @send="onSend"
       @stop="onStop"
       @attach="onAttach"
+      @attach-files="onAttachFiles"
       @open-assets="onOpenAssets"
       @select-nodes="onSelectNodes"
       @remove-tag="onRemoveSelectionTag"
@@ -1668,12 +1889,12 @@ async function onPanelDrop(event: DragEvent): Promise<void> {
       @open-reference-workflow="onNavigateToReferenceWorkflow"
       @show-target="onShowTarget"
       @paywall-action="onPaywallAction"
+      @standing-paywall-shown="onStandingPaywallShown"
       @new-chat="onNewChat('new_chat_button')"
       @start-tour="restartCoach"
       @toggle-size="agentPanelStore.toggleMaximize()"
       @close="onClosePanel"
       @open-history="refreshHistory()"
-      @select-history="onSelectHistory"
       @delete-history="onDeleteHistory"
       @rename-history="onRenameHistory"
       @rename-chat="onRenameChat"
@@ -1689,6 +1910,7 @@ async function onPanelDrop(event: DragEvent): Promise<void> {
       ref="coachRef"
       :steps="coachSteps"
       :storage-key="onboardingKey"
+      @finished="releaseCoachCompletionWaiters"
     />
   </div>
 </template>

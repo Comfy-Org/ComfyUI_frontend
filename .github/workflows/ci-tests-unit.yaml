@@ -4,13 +4,14 @@ name: 'CI: Tests Unit'
 on:
   push:
     branches: [main, master, dev*, core/*, desktop/*]
-  pull_request:
-    branches-ignore: [wip/*, draft/*, temp/*]
-  merge_group:
+  workflow_call:
+    secrets:
+      CODECOV_TOKEN:
+        required: false
   workflow_dispatch:
 
 concurrency:
-  group: ${{ github.workflow }}-${{ github.ref }}
+  group: ${{ github.workflow }}-unit-${{ github.ref }}
   cancel-in-progress: true
 
 jobs:
@@ -32,7 +33,7 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        shard: [1, 2, 3, 4]
+        shard: [1, 2, 3, 4, 5, 6, 7, 8]
 
     steps:
       - uses: actions/checkout@v7
@@ -55,8 +56,40 @@ jobs:
           retention-days: 1
           if-no-files-found: error
 
+  test-packages:
+    needs: changes
+    if: ${{ needs.changes.outputs.should-run == 'true' }}
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+    steps:
+      - uses: actions/checkout@v7
+
+      - name: Setup frontend
+        uses: ./.github/actions/setup-frontend
+
+      - name: Run package unit tests with coverage
+        run: |
+          pnpm --recursive --no-sort --workspace-concurrency=2 --no-bail \
+            --filter @comfyorg/account-core \
+            --filter @comfyorg/account-ui \
+            --filter @comfyorg/billing-contract \
+            --filter @comfyorg/object-info-parser \
+            --filter @comfyorg/shared-frontend-utils \
+            --filter @comfyorg/design-system \
+            exec vitest run --coverage --maxWorkers=3
+
+      - name: Upload package coverage
+        if: ${{ !cancelled() }}
+        uses: actions/upload-artifact@v6
+        with:
+          name: unit-package-coverage
+          path: packages/*/coverage/lcov.info
+          retention-days: 1
+          if-no-files-found: error
+
   test-report:
-    needs: test-shards
+    needs: [test-shards, test-packages]
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v7
@@ -71,16 +104,14 @@ jobs:
           path: .vitest/blob
           merge-multiple: true
 
+      - name: Download package coverage
+        uses: actions/download-artifact@v8
+        with:
+          name: unit-package-coverage
+          path: packages
+
       - name: Merge reports and check coverage thresholds
         run: pnpm test:coverage --merge-reports=.vitest/blob
-
-      - name: Run package unit tests with coverage
-        run: |
-          rc=0
-          for pkg in account-core account-ui billing-contract object-info-parser shared-frontend-utils design-system; do
-            pnpm --filter "@comfyorg/$pkg" exec vitest run --coverage || rc=1
-          done
-          exit $rc
 
       - name: Upload unit coverage artifact
         if: always() && github.event_name == 'push'
@@ -102,7 +133,7 @@ jobs:
 
   test:
     if: ${{ always() }}
-    needs: [changes, test-shards, test-report]
+    needs: [changes, test-shards, test-packages, test-report]
     runs-on: ubuntu-latest
     steps:
       - name: Check unit test results
@@ -110,12 +141,13 @@ jobs:
           CHANGES: ${{ needs.changes.result }}
           SHOULD_RUN: ${{ needs.changes.outputs.should-run }}
           SHARDS: ${{ needs.test-shards.result }}
+          PACKAGES: ${{ needs.test-packages.result }}
           REPORT: ${{ needs.test-report.result }}
         run: |
-          echo "changes=$CHANGES should_run=$SHOULD_RUN shards=$SHARDS report=$REPORT"
+          echo "changes=$CHANGES should_run=$SHOULD_RUN shards=$SHARDS packages=$PACKAGES report=$REPORT"
           [[ "$CHANGES" == "success" ]] || exit 1
           if [[ "$SHOULD_RUN" == "false" ]]; then
-            [[ "$SHARDS" == "skipped" && "$REPORT" == "skipped" ]]
+            [[ "$SHARDS" == "skipped" && "$PACKAGES" == "skipped" && "$REPORT" == "skipped" ]]
           else
-            [[ "$SHOULD_RUN" == "true" && "$SHARDS" == "success" && "$REPORT" == "success" ]]
+            [[ "$SHOULD_RUN" == "true" && "$SHARDS" == "success" && "$PACKAGES" == "success" && "$REPORT" == "success" ]]
           fi

@@ -68,11 +68,13 @@ test.describe(
           await test.step('warm the composer twice', async () => {
             await editor.pressSequentially(text)
             await expect(editor).toHaveText(text)
-            await editor.fill('')
+            await editor.press('ControlOrMeta+a')
+            await editor.press('Backspace')
             await expect(editor).toBeEmpty()
             await editor.pressSequentially(text)
             await expect(editor).toHaveText(text)
-            await editor.fill('')
+            await editor.press('ControlOrMeta+a')
+            await editor.press('Backspace')
             await expect(editor).toBeEmpty()
           })
 

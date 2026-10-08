@@ -7,10 +7,10 @@
  */
 import type { Alternate } from './hreflangRoutes'
 
-import { isExcludedFromSitemap } from '../config/indexing'
-import { DEFAULT_LOCALE, LOCALE_CODES, LOCALES } from '../config/locales'
-import { redirects } from '../config/redirects'
-import { supportsLocaleRoute } from '../config/routes'
+import { isExcludedFromSitemap } from '@/config/indexing'
+import { DEFAULT_LOCALE, LOCALE_CODES, LOCALES } from '@/config/locales'
+import { astroRedirects } from '@/config/redirects'
+import { supportsLocaleRoute } from '@/config/routes'
 import { unprefixed } from './hreflangRoutes'
 
 export interface BuiltSite {
@@ -31,9 +31,36 @@ export interface BuiltSite {
 }
 
 /**
+ * Locales this path structurally routes to (per `supportsLocaleRoute`, which
+ * already excludes locale-invariant routes like /affiliates or /models) AND
+ * are not themselves noindexed. A routable but noindexed locale is not a
+ * translation the site can point a crawler at, so it does not count toward
+ * the "this route should cluster" threshold below.
+ *
+ * Deliberately stricter than `expectedAlternates`'s `pages.has(...)` fallback:
+ * a locale-invariant route can still have both locale pages built (the zh-CN
+ * copy renders, it is just not meant to be advertised as a translation), and
+ * that fallback existing must not, on its own, turn such a route into one
+ * that is expected to cluster.
+ */
+function clusterEligibleLocales(
+  path: string,
+  origin: string
+): (typeof LOCALE_CODES)[number][] {
+  return LOCALE_CODES.filter((locale) => {
+    if (!supportsLocaleRoute(locale, path)) return false
+    const localePath = `${LOCALES[locale].prefix}${path}`
+    return !isExcludedFromSitemap(`${origin}${localePath}`)
+  })
+}
+
+/**
  * The exact locale-to-URL mapping a clustered route must emit.
  *
- * Required locales come from policy; built pages also expose extra publication.
+ * Required locales come from policy; built pages also expose extra
+ * publication. Once a route is already expected to cluster (see
+ * `isClustered`), a noindexed locale variant still should not join that
+ * cluster, so the same noindex filter applies here too.
  */
 function expectedAlternates(
   route: string,
@@ -41,11 +68,11 @@ function expectedAlternates(
   pages: ReadonlyMap<string, Alternate[]>
 ): Map<string, string> {
   const path = unprefixed(route)
-  const publishedLocales = LOCALE_CODES.filter(
-    (locale) =>
-      supportsLocaleRoute(locale, path) ||
-      pages.has(`${LOCALES[locale].prefix}${path}`)
-  )
+  const publishedLocales = LOCALE_CODES.filter((locale) => {
+    const localePath = `${LOCALES[locale].prefix}${path}`
+    if (isExcludedFromSitemap(`${origin}${localePath}`)) return false
+    return supportsLocaleRoute(locale, path) || pages.has(localePath)
+  })
   const expected = new Map<string, string>(
     publishedLocales.map((locale): [string, string] => [
       LOCALES[locale].hreflang,
@@ -66,12 +93,13 @@ function isClustered(
 ): boolean {
   const path = unprefixed(route)
   // Observed links still get audited on exempt routes, and crawlable pages
-  // cannot evade the audit by omitting every link.
+  // cannot evade the audit by omitting every link. A lone indexable page with
+  // no indexable twin has nothing to cluster with, same as hreflangAlternates.
   return (
     alternates.length > 0 ||
-    (LOCALE_CODES.some((locale) => supportsLocaleRoute(locale, path)) &&
+    (clusterEligibleLocales(path, origin).length > 1 &&
       !isExcludedFromSitemap(`${origin}${route}`) &&
-      !Object.hasOwn(redirects, route.replace(/\/$/, '')))
+      !Object.hasOwn(astroRedirects, route.replace(/\/$/, '')))
   )
 }
 

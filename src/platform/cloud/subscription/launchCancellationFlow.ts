@@ -1,113 +1,152 @@
+import type {
+  RetentionFlowEventRequest,
+  RetentionFlowResponse
+} from '@comfyorg/ingest-types'
+
+import { supportsInAppCancellation } from '@/composables/billing/billingRail'
 import { useBillingContext } from '@/composables/billing/useBillingContext'
 import { t } from '@/i18n'
-import { prepareChurnkey } from '@/platform/cloud/churnkey/churnkeyClient'
-import { getSubscriptionCancellationMetadata } from '@/platform/cloud/subscription/utils/subscriptionCancellationTelemetry'
-import { useTelemetry } from '@/platform/telemetry'
+import { remoteConfig } from '@/platform/remoteConfig/remoteConfig'
 import { reportError } from '@/platform/telemetry/reportError'
 import { useToastStore } from '@/platform/updates/common/toastStore'
+import { workspaceApi } from '@/platform/workspace/api/workspaceApi'
+import { WorkspaceApiError } from '@/platform/workspace/api/workspaceApiError'
 import { useTeamWorkspaceStore } from '@/platform/workspace/stores/teamWorkspaceStore'
-import { getErrorMessage } from '@/utils/errorUtil'
 
-interface CancellationFallbackOptions {
-  flowAlreadyOpened?: boolean
+export interface CancellationFlowDialogOptions {
+  cancelAt?: string
+  surveyId?: string
+  flow: RetentionFlowResponse | null
+  workspaceId: string | null
+  isScopeCurrent: () => boolean
 }
 
 interface LaunchCancellationFlowOptions {
   cancelAt?: string
-  showFallback: (
-    options?: CancellationFallbackOptions
-  ) => void | Promise<unknown>
+  launchWorkspaceId?: string | null
+  showFlow: (options: CancellationFlowDialogOptions) => unknown
 }
 
-export async function launchCancellationFlow({
-  cancelAt,
-  showFallback
-}: LaunchCancellationFlowOptions): Promise<void> {
-  const billing = useBillingContext()
-  const workspaceStore = useTeamWorkspaceStore()
-  const launchWorkspaceId = workspaceStore.activeWorkspaceId
-  if (
-    billing.type.value !== 'workspace' ||
-    !launchWorkspaceId ||
-    workspaceStore.activeWorkspaceBillingRail !== 'stripe'
-  ) {
-    await showFallback()
-    return
-  }
+function offersUnavailable(error: unknown): boolean {
+  return (
+    error instanceof WorkspaceApiError &&
+    (error.status === 422 || error.status === 503)
+  )
+}
 
-  function isLaunchWorkspaceCurrent() {
-    return workspaceStore.activeWorkspaceId === launchWorkspaceId
-  }
-
-  const session = await prepareChurnkey().catch((error) => {
-    console.warn('Failed to prepare Churnkey cancellation flow:', error)
+async function prepareRetentionFlow(): Promise<RetentionFlowResponse | null> {
+  try {
+    return await workspaceApi.prepareRetentionFlow()
+  } catch (error) {
+    if (!offersUnavailable(error)) {
+      reportError(error, {
+        surface: 'billing',
+        errorType: 'failure_preparing_retention_flow',
+        level: 'warning'
+      })
+    }
     return null
-  })
-  if (!session) {
-    if (isLaunchWorkspaceCurrent()) await showFallback()
-    return
   }
-  if (!isLaunchWorkspaceCurrent()) return
+}
 
-  const telemetry = useTelemetry()
-  const metadata = getSubscriptionCancellationMetadata({
-    cancelAt,
-    duration: billing.subscription.value?.duration,
-    endDate: billing.subscription.value?.endDate,
-    tier: billing.tier.value
+type RetentionFlowEventOutcome = 'recorded' | 'expired' | 'failed'
+
+export async function recordRetentionFlowEvent(
+  sessionId: string,
+  event: RetentionFlowEventRequest['event']
+): Promise<RetentionFlowEventOutcome> {
+  try {
+    await workspaceApi.recordRetentionFlowEvent({
+      session_id: sessionId,
+      event
+    })
+    return 'recorded'
+  } catch (error) {
+    if (
+      error instanceof WorkspaceApiError &&
+      error.code === 'RETENTION_SESSION_STALE'
+    ) {
+      return 'expired'
+    }
+    reportError(error, {
+      surface: 'billing',
+      errorType: 'failure_recording_retention_flow_event',
+      context: { event }
+    })
+    return 'failed'
+  }
+}
+
+const pendingLaunches = new Map<string | null, Promise<void>>()
+
+export function launchCancellationFlow(
+  options: LaunchCancellationFlowOptions
+): Promise<void> {
+  const launchWorkspaceId =
+    options.launchWorkspaceId === undefined
+      ? useTeamWorkspaceStore().activeWorkspaceId
+      : options.launchWorkspaceId
+  const pending = pendingLaunches.get(launchWorkspaceId)
+  if (pending) return pending
+
+  const done = showCancellationFlow(
+    options.cancelAt,
+    launchWorkspaceId,
+    options.showFlow
+  ).finally(() => pendingLaunches.delete(launchWorkspaceId))
+  pendingLaunches.set(launchWorkspaceId, done)
+  return done
+}
+
+function canOfferRetention(launchWorkspaceId: string | null): boolean {
+  const workspaceStore = useTeamWorkspaceStore()
+  return (
+    useBillingContext().type.value === 'workspace' &&
+    !!launchWorkspaceId &&
+    workspaceStore.isInPersonalWorkspace &&
+    supportsInAppCancellation(workspaceStore.activeWorkspaceBillingRail)
+  )
+}
+
+function reportFlowNotShown(error: unknown, workspaceStillCurrent: boolean) {
+  reportError(error, {
+    surface: 'billing',
+    errorType: 'error_showing_cancellation_flow',
+    tags: { workspace_still_current: workspaceStillCurrent },
+    level: workspaceStillCurrent ? 'error' : 'warning'
   })
+  if (!workspaceStillCurrent) return
+  useToastStore().add({
+    severity: 'error',
+    summary: t('subscription.cancelDialog.failed'),
+    life: 8000
+  })
+}
 
-  telemetry?.trackSubscriptionCancellation('flow_opened', metadata)
+async function showCancellationFlow(
+  cancelAt: string | undefined,
+  launchWorkspaceId: string | null,
+  showFlow: LaunchCancellationFlowOptions['showFlow']
+): Promise<void> {
+  const workspaceStore = useTeamWorkspaceStore()
+  const isScopeCurrent = launchWorkspaceId
+    ? () => workspaceStore.activeWorkspaceId === launchWorkspaceId
+    : () => true
+
+  const flow = canOfferRetention(launchWorkspaceId)
+    ? await prepareRetentionFlow()
+    : null
+  if (!isScopeCurrent()) return
 
   try {
-    const results = await session.show({
-      handleCancel: async () => {
-        if (!isLaunchWorkspaceCurrent()) {
-          throw new Error(t('subscription.cancelDialog.workspaceChanged'))
-        }
-        telemetry?.trackSubscriptionCancellation('confirmed', metadata)
-        try {
-          await billing.cancelSubscription()
-          return { message: t('subscription.cancelSuccess') }
-        } catch (error) {
-          throw new Error(
-            getErrorMessage(error) ?? t('subscription.cancelDialog.failed'),
-            { cause: error }
-          )
-        }
-      }
+    await showFlow({
+      cancelAt,
+      surveyId: remoteConfig.value.cancellation_survey_id || undefined,
+      flow,
+      workspaceId: launchWorkspaceId,
+      isScopeCurrent
     })
-
-    switch (results.type) {
-      case 'discount-applied':
-        if (!isLaunchWorkspaceCurrent()) return
-        await billing.fetchStatus().catch((error) => {
-          reportError(error, {
-            errorType: 'error_refreshing_billing_after_churnkey_discount'
-          })
-          useToastStore().add({
-            severity: 'warn',
-            summary: t('subscription.cancelDialog.discountRefreshFailed'),
-            life: 8000
-          })
-        })
-        return
-      case 'abandoned':
-        telemetry?.trackSubscriptionCancellation('abandoned', metadata)
-        return
-      case 'closed':
-        return
-      default: {
-        const unreachable: never = results
-        return unreachable
-      }
-    }
   } catch (error) {
-    if (!isLaunchWorkspaceCurrent()) return
-    telemetry?.trackSubscriptionCancellation('failed', {
-      ...metadata,
-      error_message: getErrorMessage(error) ?? t('g.unknownError')
-    })
-    await showFallback({ flowAlreadyOpened: true })
+    reportFlowNotShown(error, isScopeCurrent())
   }
 }

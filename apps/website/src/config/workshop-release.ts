@@ -1,17 +1,24 @@
 import type { WorkshopCloudEnv } from './workshop-cloud-env'
 import { WORKSHOP_CLOUD_ENVS, isWorkshopCloudEnv } from './workshop-cloud-env'
+import { LOCAL_MODELS_PATH } from './local-models'
+import { modelsUrlKind } from './models-url-registry'
 
 export function isWorkshopInBuild(): boolean {
   return process.env.WORKSHOP_IN_BUILD !== '0'
 }
 
-/** Every route Workshop owns. Kept here so the gate has one definition. */
-export function isWorkshopRoute(pattern: string): boolean {
-  const pathname = pattern.replace(/\/$/, '')
-  // /models itself is the established marketing page when the gate is off.
+const isLocalModelsRoute = (pathname: string) =>
+  pathname === LOCAL_MODELS_PATH || pathname.startsWith(`${LOCAL_MODELS_PATH}/`)
+
+/** Whether a built pathname is a Workshop page, which stays out of the sitemap. */
+export function isWorkshopRoute(route: string): boolean {
+  const pathname = route.replace(/\/$/, '')
+  const modelsKind = modelsUrlKind(pathname)
   return (
     isLegacyWorkshopRoute(pathname) ||
-    pathname.startsWith('/models/') ||
+    (modelsKind !== undefined &&
+      modelsKind !== 'hub' &&
+      !isLocalModelsRoute(pathname)) ||
     pathname === '/cinematic-studio'
   )
 }
@@ -42,8 +49,6 @@ function allowedFamiliesFor(
 }
 
 export function assertWorkshopCloudEnvForBuild(): void {
-  if (!isWorkshopInBuild()) return
-
   const raw = process.env.PUBLIC_WORKSHOP_CLOUD_ENV
   const family = raw === undefined || raw === '' ? undefined : raw
   if (family !== undefined && !isWorkshopCloudEnv(family)) {
@@ -58,7 +63,7 @@ export function assertWorkshopCloudEnvForBuild(): void {
   const choices = allowed.join(' or ')
   if (family === undefined) {
     throw new Error(
-      `Workshop is in this ${vercelEnv} build but PUBLIC_WORKSHOP_CLOUD_ENV is unset. Set it to ${choices} in the Vercel ${vercelEnv} environment.`
+      `This ${vercelEnv} build signs users in through Firebase but PUBLIC_WORKSHOP_CLOUD_ENV is unset. Set it to ${choices} in the Vercel ${vercelEnv} environment.`
     )
   }
   if (!allowed.includes(family)) {

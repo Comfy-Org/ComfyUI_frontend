@@ -43,7 +43,7 @@ const {
     <slot name="prepend">
       <component :is="prependIcon" v-if="prependIcon" />
     </slot>
-    <span class="ppformula-text-center inline-block">
+    <span class="inline-block">
       <slot />
     </span>
     <slot name="append">

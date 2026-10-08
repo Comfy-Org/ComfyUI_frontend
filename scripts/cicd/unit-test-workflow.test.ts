@@ -17,29 +17,40 @@ it('runs the required check even when a dependency fails or is skipped', () => {
     jobs: {
       test: {
         if: '${{ always() }}',
-        needs: ['changes', 'test-shards', 'test-report']
+        needs: ['changes', 'test-shards', 'test-packages', 'test-report']
+      },
+      'test-packages': {
+        needs: 'changes',
+        if: "${{ needs.changes.outputs.should-run == 'true' }}"
+      },
+      'test-report': {
+        needs: ['test-shards', 'test-packages']
       }
     }
   })
 })
 
 it.for`
-  changes        | shouldRun  | shards         | report         | status
-  ${'success'}   | ${'true'}  | ${'success'}   | ${'success'}   | ${0}
-  ${'success'}   | ${'false'} | ${'skipped'}   | ${'skipped'}   | ${0}
-  ${'failure'}   | ${''}      | ${'skipped'}   | ${'skipped'}   | ${1}
-  ${'cancelled'} | ${''}      | ${'skipped'}   | ${'skipped'}   | ${1}
-  ${'success'}   | ${''}      | ${'skipped'}   | ${'skipped'}   | ${1}
-  ${'success'}   | ${'true'}  | ${'failure'}   | ${'skipped'}   | ${1}
-  ${'success'}   | ${'true'}  | ${'cancelled'} | ${'skipped'}   | ${1}
-  ${'success'}   | ${'true'}  | ${'skipped'}   | ${'skipped'}   | ${1}
-  ${'success'}   | ${'true'}  | ${'success'}   | ${'failure'}   | ${1}
-  ${'success'}   | ${'true'}  | ${'success'}   | ${'cancelled'} | ${1}
-  ${'success'}   | ${'true'}  | ${'success'}   | ${'skipped'}   | ${1}
-  ${'success'}   | ${'false'} | ${'failure'}   | ${'skipped'}   | ${1}
+  changes        | shouldRun  | shards         | packages       | report         | status
+  ${'success'}   | ${'true'}  | ${'success'}   | ${'success'}   | ${'success'}   | ${0}
+  ${'success'}   | ${'false'} | ${'skipped'}   | ${'skipped'}   | ${'skipped'}   | ${0}
+  ${'failure'}   | ${''}      | ${'skipped'}   | ${'skipped'}   | ${'skipped'}   | ${1}
+  ${'cancelled'} | ${''}      | ${'skipped'}   | ${'skipped'}   | ${'skipped'}   | ${1}
+  ${'success'}   | ${''}      | ${'skipped'}   | ${'skipped'}   | ${'skipped'}   | ${1}
+  ${'success'}   | ${'true'}  | ${'failure'}   | ${'success'}   | ${'skipped'}   | ${1}
+  ${'success'}   | ${'true'}  | ${'cancelled'} | ${'success'}   | ${'skipped'}   | ${1}
+  ${'success'}   | ${'true'}  | ${'skipped'}   | ${'success'}   | ${'skipped'}   | ${1}
+  ${'success'}   | ${'true'}  | ${'success'}   | ${'success'}   | ${'failure'}   | ${1}
+  ${'success'}   | ${'true'}  | ${'success'}   | ${'success'}   | ${'cancelled'} | ${1}
+  ${'success'}   | ${'true'}  | ${'success'}   | ${'success'}   | ${'skipped'}   | ${1}
+  ${'success'}   | ${'false'} | ${'failure'}   | ${'skipped'}   | ${'skipped'}   | ${1}
+  ${'success'}   | ${'true'}  | ${'success'}   | ${'failure'}   | ${'success'}   | ${1}
+  ${'success'}   | ${'true'}  | ${'success'}   | ${'cancelled'} | ${'success'}   | ${1}
+  ${'success'}   | ${'true'}  | ${'success'}   | ${'skipped'}   | ${'success'}   | ${1}
+  ${'success'}   | ${'false'} | ${'skipped'}   | ${'failure'}   | ${'skipped'}   | ${1}
 `(
-  'unit check exits $status for changes=$changes, shouldRun=$shouldRun, shards=$shards, report=$report',
-  ({ changes, shouldRun, shards, report, status }) => {
+  'unit check exits $status for changes=$changes, shouldRun=$shouldRun, shards=$shards, packages=$packages, report=$report',
+  ({ changes, shouldRun, shards, packages, report, status }) => {
     const result = spawnSync('bash', ['-e', '-o', 'pipefail', '-c', command], {
       encoding: 'utf8',
       env: {
@@ -47,6 +58,7 @@ it.for`
         CHANGES: changes,
         SHOULD_RUN: shouldRun,
         SHARDS: shards,
+        PACKAGES: packages,
         REPORT: report
       }
     })

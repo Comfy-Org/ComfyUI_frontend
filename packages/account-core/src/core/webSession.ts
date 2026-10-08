@@ -7,9 +7,15 @@ import {
   zCreateSessionResponse,
   zDeleteSessionResponse,
   zErrorResponse,
-  zGetSessionResponse
+  zGetSessionResponse,
+  zRevokeAllSessionsResponse,
+  zWebSessionUser
 } from '@comfyorg/ingest-types/zod'
+import { z } from 'zod'
 
+import { COMFY_CLIENT } from './requestAuth.js'
+import { timedSignal } from './requestTimeout.js'
+import { SSO_REQUIRED_SERVER_CODE } from './ssoRequired.js'
 import type {
   WebSessionCommandResult,
   WebSessionErrorCode,
@@ -31,17 +37,21 @@ export interface WebSessionOptions {
   readonly apiBaseUrl: string
   readonly fetchImpl: typeof fetch
   readonly signal?: AbortSignal
+  /** Caps each request, body included; a timeout is `SESSION_UNAVAILABLE`. Default: none. */
+  readonly timeoutMs?: number
 }
 
 const UNAUTHORIZED_CODES: Readonly<Record<string, WebSessionErrorCode>> = {
   no_session: 'NO_SESSION',
   session_expired: 'SESSION_EXPIRED',
-  session_revoked: 'SESSION_REVOKED'
+  session_revoked: 'SESSION_REVOKED',
+  TOKEN_REVOKED: 'SESSION_REVOKED'
 }
 
 const FORBIDDEN_CODES: Readonly<Record<string, WebSessionErrorCode>> = {
   csrf_invalid: 'CSRF_STALE',
-  workspace_access_denied: 'WORKSPACE_ACCESS_DENIED'
+  workspace_access_denied: 'WORKSPACE_ACCESS_DENIED',
+  [SSO_REQUIRED_SERVER_CODE]: 'SSO_REQUIRED'
 }
 
 function failure(
@@ -58,6 +68,13 @@ function failure(
   }
 }
 
+/** Adds `has_personal_workspace` until ingest-types carries it. */
+const zSessionResponse = zGetSessionResponse.extend({
+  user: zWebSessionUser.extend({
+    has_personal_workspace: z.boolean().optional()
+  })
+})
+
 async function readJson(response: Response): Promise<unknown> {
   try {
     return await response.json()
@@ -66,12 +83,15 @@ async function readJson(response: Response): Promise<unknown> {
   }
 }
 
-async function classifyFailure(response: Response): Promise<WebSessionFailure> {
-  const { status } = response
+/** Classifies an ingest refusal the way every session call does. */
+export function classifyWebSessionFailure(
+  status: number,
+  body: unknown
+): WebSessionFailure {
   if (status === 429 || status >= 500) {
     return failure('SESSION_UNAVAILABLE', status)
   }
-  const parsed = zErrorResponse.safeParse(await readJson(response))
+  const parsed = zErrorResponse.safeParse(body)
   if (!parsed.success) return failure('SESSION_REQUEST_REFUSED', status)
   const serverCode = parsed.data.code
   const byServerCode =
@@ -83,21 +103,33 @@ async function classifyFailure(response: Response): Promise<WebSessionFailure> {
   return failure(byServerCode, status, serverCode)
 }
 
+interface Answered {
+  readonly status: number
+  readonly body: unknown
+}
+
 async function send(
   options: WebSessionOptions,
   path: string,
   init: RequestInit
-): Promise<{ readonly response: Response } | WebSessionFailure> {
-  let response: Response
+): Promise<Answered | WebSessionFailure> {
+  const { signal, release } = timedSignal(options.signal, options.timeoutMs)
   try {
-    response = await options.fetchImpl(
+    const response = await options.fetchImpl(
       `${options.apiBaseUrl.replace(/\/+$/, '')}${path}`,
-      { ...init, credentials: 'include', signal: options.signal }
+      { ...init, credentials: 'include', signal }
     )
+    const body = await readJson(response)
+    if (signal?.aborted) return failure('SESSION_UNAVAILABLE')
+    const { status } = response
+    return response.ok
+      ? { status, body }
+      : classifyWebSessionFailure(status, body)
   } catch {
     return failure('SESSION_UNAVAILABLE')
+  } finally {
+    release()
   }
-  return response.ok ? { response } : classifyFailure(response)
 }
 
 export async function readWebSession(
@@ -108,10 +140,10 @@ export async function readWebSession(
     method: 'GET',
     cache: 'no-store'
   })
-  if (!('response' in sent)) return sent
+  if ('code' in sent) return sent
 
-  const { status } = sent.response
-  const parsed = zGetSessionResponse.safeParse(await readJson(sent.response))
+  const { status } = sent
+  const parsed = zSessionResponse.safeParse(sent.body)
   if (!parsed.success) return failure('SESSION_UNAVAILABLE', status)
   const { user, csrf_token, expires_at, absolute_expires_at } = parsed.data
   if (expectedUserId !== undefined && user.id !== expectedUserId) {
@@ -125,7 +157,8 @@ export async function readWebSession(
         email: user.email,
         name: user.name,
         emailVerified: user.email_verified,
-        signInProvider: user.sign_in_provider
+        signInProvider: user.sign_in_provider,
+        hasPersonalWorkspace: user.has_personal_workspace
       },
       csrfToken: csrf_token,
       expiresAt: Date.parse(expires_at),
@@ -148,11 +181,11 @@ export async function createWebSession(
     method: 'POST',
     headers: { Authorization: `Bearer ${proof}` }
   })
-  if (!('response' in sent)) return sent
+  if ('code' in sent) return sent
 
-  const parsed = zCreateSessionResponse.safeParse(await readJson(sent.response))
+  const parsed = zCreateSessionResponse.safeParse(sent.body)
   if (!parsed.success || !parsed.data.success) {
-    return failure('SESSION_UNAVAILABLE', sent.response.status)
+    return failure('SESSION_UNAVAILABLE', sent.status)
   }
   return readWebSession(options, { expectedUserId })
 }
@@ -162,11 +195,33 @@ export async function deleteWebSession(
   options: WebSessionOptions
 ): Promise<WebSessionCommandResult> {
   const sent = await send(options, '/auth/session', { method: 'DELETE' })
-  if (!('response' in sent)) return sent
+  if ('code' in sent) return sent
 
-  const parsed = zDeleteSessionResponse.safeParse(await readJson(sent.response))
+  const parsed = zDeleteSessionResponse.safeParse(sent.body)
   if (!parsed.success || !parsed.data.success) {
-    return failure('SESSION_UNAVAILABLE', sent.response.status)
+    return failure('SESSION_UNAVAILABLE', sent.status)
+  }
+  return { status: 'ok' }
+}
+
+/**
+ * Signs the user out of every device with the session cookie alone. Only a
+ * body the contract recognises is ok: the caller tells the user every device
+ * is signed out on that answer.
+ */
+export async function revokeAllWebSessions(
+  options: WebSessionOptions,
+  csrfToken: string
+): Promise<WebSessionCommandResult> {
+  const sent = await send(options, '/auth/sessions/revoke-all', {
+    method: 'POST',
+    headers: { 'X-Comfy-Client': COMFY_CLIENT, 'X-CSRF-Token': csrfToken }
+  })
+  if ('code' in sent) return sent
+
+  const parsed = zRevokeAllSessionsResponse.safeParse(sent.body)
+  if (!parsed.success) {
+    return failure('SESSION_UNAVAILABLE', sent.status)
   }
   return { status: 'ok' }
 }

@@ -4,15 +4,14 @@ import { computed } from 'vue'
 import { cn } from '@comfyorg/tailwind-utils'
 
 import Button from '@/components/ui/button/Button.vue'
-import type { ShotEstimate } from '../../../lib/workshop/cinematic-studio/estimate'
+import type { ShotEstimate } from '@/lib/workshop/cinematic-studio/estimate'
 import {
   formatCreditRange,
   takesWithin
-} from '../../../lib/workshop/cinematic-studio/estimate'
-import type { StudioGate } from '../../../lib/workshop/cinematic-studio/gate'
-import type { Locale } from '../../../i18n/translations'
-import { t } from '../../../i18n/translations'
-import { tc } from '../../../lib/workshop/cinematic-studio/copy'
+} from '@/lib/workshop/cinematic-studio/estimate'
+import type { StudioGate } from '@/lib/workshop/cinematic-studio/gate'
+import type { Locale } from '@/i18n/translations'
+import { translationsFor } from '@/i18n/translations'
 import CinematicCostLabel from './CinematicCostLabel.vue'
 import CinematicGateButton from './CinematicGateButton.vue'
 
@@ -25,6 +24,7 @@ const {
   estimate,
   credits,
   wide = false,
+  showCredits = true,
   locale = 'en'
 } = defineProps<{
   gate: StudioGate
@@ -35,8 +35,10 @@ const {
   estimate?: ShotEstimate
   credits?: number
   wide?: boolean
+  showCredits?: boolean
   locale?: Locale
 }>()
+const { t } = translationsFor(locale)
 
 const emit = defineEmits<{
   generate: []
@@ -51,14 +53,16 @@ const creditGate = computed(
 function shortfallNote(shot: ShotEstimate, balance: number): string {
   const key =
     shot.takes === 1 ? 'cinematic.credits.shortOne' : 'cinematic.credits.short'
-  return tc(key, locale)
-    .replace('{takes}', String(shot.takes))
-    .replace('{credits}', formatCreditRange(shot.total, locale))
-    .replace('{balance}', balance.toLocaleString(locale))
+  return t(key, {
+    takes: shot.takes,
+    credits: formatCreditRange(shot.total, locale),
+    balance: balance.toLocaleString(locale)
+  })
 }
 
 const shortfall = computed(() => {
-  if (!creditGate.value || !estimate || credits === undefined) return undefined
+  if (!showCredits || !creditGate.value || !estimate || credits === undefined)
+    return undefined
   return {
     note: shortfallNote(estimate, credits),
     fits: Math.min(takesWithin(credits, estimate.perTake), estimate.takes - 1)
@@ -77,11 +81,9 @@ const GATE_NOTES: Partial<
 
 const note = computed(() => {
   if (shortfall.value) return shortfall.value.note
-  if (gate === 'unavailable') return tc('cinematic.output.unavailable', locale)
+  if (gate === 'unavailable') return t('cinematic.output.unavailable')
   const key = GATE_NOTES[gate]
-  return key
-    ? t(key, locale).replace('{workspace}', () => workspaceName ?? '')
-    : undefined
+  return key ? t(key, { workspace: workspaceName ?? '' }) : undefined
 })
 
 interface Note {
@@ -103,7 +105,13 @@ const notes = computed<readonly Note[]>(() => {
         )
       }
     : wide && note.value
-      ? { text: note.value, class: 'text-xs text-content-secondary' }
+      ? {
+          text: note.value,
+          class: cn(
+            'text-xs text-content-secondary',
+            creditGate.value && 'lg:hidden'
+          )
+        }
       : undefined
   const blocked: Note | undefined = blockedNote
     ? {
@@ -122,21 +130,21 @@ const reduceTo = computed(() => {
   const fits = shortfall.value?.fits ?? 0
   return fits >= 1 ? fits : undefined
 })
-const reduceLabel = computed(() =>
-  reduceTo.value === 1
-    ? tc('cinematic.credits.reduceOne', locale)
-    : tc('cinematic.credits.reduce', locale).replace(
-        '{takes}',
-        String(reduceTo.value)
-      )
-)
+const reduceLabel = computed(() => {
+  const takes = reduceTo.value
+  if (takes === undefined) return undefined
+  return takes === 1
+    ? t('cinematic.credits.reduceOne')
+    : t('cinematic.credits.reduce', { takes })
+})
 const showCost = computed(
-  () => !rendering && gate !== 'unavailable' && gate !== 'pending'
+  () =>
+    showCredits && !rendering && gate !== 'unavailable' && gate !== 'pending'
 )
 const layout = computed(() =>
   wide
     ? {
-        root: 'flex flex-col gap-2.5',
+        root: 'flex flex-col gap-2.5 text-center',
         row: 'flex flex-col items-stretch gap-2',
         button: 'w-full rounded-full px-5'
       }
@@ -174,7 +182,7 @@ const layout = computed(() =>
         :rendering
         :can-generate="canGenerate"
         :note
-        :tooltip="!wide && !!note && !shortfall"
+        :tooltip="!!note && !shortfall"
         :wide
         :locale
         @generate="emit('generate')"

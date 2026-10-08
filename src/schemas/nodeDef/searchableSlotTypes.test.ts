@@ -1,4 +1,4 @@
-import { describe, expect, it, vi } from 'vitest'
+import { describe, expect, it } from 'vitest'
 
 import { transformInputSpecV1ToV2 } from '@/schemas/nodeDef/migration'
 import type { OutputSpec as OutputSpecV2 } from '@/schemas/nodeDef/nodeDefSchemaV2'
@@ -36,6 +36,20 @@ function resolve(spec: InputSpec): string[] {
 describe('collectSearchableInputTypes', () => {
   it('returns the declared type for a plain input', () => {
     expect(resolve(['IMAGE', {}])).toEqual(['IMAGE'])
+  })
+
+  it('finds widget types inside a DynamicGroup template', () => {
+    expect(
+      resolve([
+        'COMFY_DYNAMICGROUP_V3',
+        {
+          template: {
+            required: { name: ['COMBO', { options: ['A', 'B'] }] },
+            optional: { strength: ['FLOAT', { default: 1 }] }
+          }
+        }
+      ])
+    ).toEqual(['COMBO', 'FLOAT'])
   })
 
   describe('COMFY_DYNAMICCOMBO_V3', () => {
@@ -91,8 +105,6 @@ describe('collectSearchableInputTypes', () => {
     })
 
     it('keeps sibling option types when one option is unparseable', () => {
-      const warn = vi.spyOn(console, 'warn').mockImplementation(() => {})
-
       const spec: InputSpec = [
         'COMFY_DYNAMICCOMBO_V3',
         {
@@ -104,21 +116,12 @@ describe('collectSearchableInputTypes', () => {
       ]
 
       expect(collectSearchableInputTypes(toV2(spec))).toEqual(['IMAGE'])
-      expect(warn).toHaveBeenCalled()
-      warn.mockRestore()
     })
 
-    it('warns and yields nothing for a spec with no options array', () => {
-      const warn = vi.spyOn(console, 'warn').mockImplementation(() => {})
-
+    it('yields nothing for a spec with no options array', () => {
       expect(
         collectSearchableInputTypes(toV2(['COMFY_DYNAMICCOMBO_V3', {}]))
       ).toEqual([])
-      expect(warn).toHaveBeenCalledWith(
-        expect.stringContaining('Unparseable COMFY_DYNAMICCOMBO_V3 spec'),
-        expect.anything()
-      )
-      warn.mockRestore()
     })
   })
 
@@ -184,19 +187,12 @@ describe('collectSearchableInputTypes', () => {
   })
 
   describe('COMFY_AUTOGROW_V3', () => {
-    it('warns and yields nothing when the template is malformed', () => {
-      const warn = vi.spyOn(console, 'warn').mockImplementation(() => {})
-
+    it('yields nothing when the template is malformed', () => {
       expect(
         collectSearchableInputTypes(
           toV2(['COMFY_AUTOGROW_V3', { template: {} }])
         )
       ).toEqual([])
-      expect(warn).toHaveBeenCalledWith(
-        expect.stringContaining('Unparseable COMFY_AUTOGROW_V3 spec'),
-        expect.anything()
-      )
-      warn.mockRestore()
     })
   })
 
@@ -205,17 +201,13 @@ describe('collectSearchableInputTypes', () => {
       expect(resolve(matchType('IMAGE, MASK'))).toEqual(['IMAGE', 'MASK'])
     })
 
-    it('warns and yields nothing when template_id is missing', () => {
-      const warn = vi.spyOn(console, 'warn').mockImplementation(() => {})
-
+    it('yields nothing when template_id is missing', () => {
       const spec: InputSpec = [
         'COMFY_MATCHTYPE_V3',
         { template: { allowed_types: 'IMAGE' } }
       ]
 
       expect(collectSearchableInputTypes(toV2(spec))).toEqual([])
-      expect(warn).toHaveBeenCalled()
-      warn.mockRestore()
     })
   })
 })

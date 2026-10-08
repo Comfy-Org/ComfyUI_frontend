@@ -1,9 +1,9 @@
 <script setup lang="ts">
 import NavigationMenuLink from '@/components/ui/navigation-menu/NavigationMenuLink.vue'
 
-import { isHrefActive } from '../../../composables/useCurrentPath'
-import type { NavColumn } from '../../../data/mainNavigation'
-import type { Locale } from '../../../i18n/translations'
+import { isHrefActive } from '@/composables/useCurrentPath'
+import type { NavColumn } from '@/data/mainNavigation'
+import type { Locale } from '@/i18n/translations'
 import NavLinkContent from './NavLinkContent.vue'
 
 defineProps<{ column: NavColumn; locale: Locale; currentPath: string }>()

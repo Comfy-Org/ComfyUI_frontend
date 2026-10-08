@@ -1,8 +1,15 @@
 import userEvent from '@testing-library/user-event'
-import { render, screen, within } from '@testing-library/vue'
+import {
+  fireEvent,
+  render,
+  screen,
+  waitFor,
+  within
+} from '@testing-library/vue'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { createI18n } from 'vue-i18n'
 
+import { useMediaAssetActions } from '@/platform/assets/composables/useMediaAssetActions'
 import { resolveOutputAssetItems } from '@/platform/assets/utils/outputAssetUtil'
 import { useAssetsStore } from '@/stores/assetsStore'
 
@@ -91,6 +98,7 @@ const i18n = createI18n({
       g: { copyJobId: 'Copy Job ID' },
       sideToolbar: {
         backToAssets: 'Back to all assets',
+        closeSidebar: 'Close sidebar',
         mediaAssets: { title: 'Media Assets' },
         labels: { generated: 'Generated', imported: 'Imported' }
       }
@@ -112,18 +120,19 @@ const sidebarTabTemplateStub = {
 
 const assetsGridStub = {
   props: ['assets'],
-  emits: ['output-count-click'],
+  emits: ['output-count-click', 'context-menu'],
   template: `
     <div data-testid="assets-grid">
       <button
         aria-label="Enter output folder"
         @click="$emit('output-count-click', assets[0])"
+        @contextmenu.prevent="$emit('context-menu', $event, assets[0])"
       />
     </div>
   `
 }
 
-function renderTab() {
+function renderTab({ realTemplate = false } = {}) {
   return render(AssetsSidebarTab, {
     global: {
       plugins: [i18n],
@@ -131,13 +140,12 @@ function renderTab() {
         tooltip: {}
       },
       stubs: {
-        SidebarTabTemplate: sidebarTabTemplateStub,
+        ...(realTemplate ? {} : { SidebarTabTemplate: sidebarTabTemplateStub }),
         AssetsSidebarGridView: assetsGridStub,
         AssetsSidebarListView: true,
         MediaAssetFilterBar: true,
         MediaAssetSelectionBar: true,
-        MediaLightbox: true,
-        MediaAssetContextMenu: true
+        MediaLightbox: true
       }
     }
   })
@@ -186,5 +194,107 @@ describe('AssetsSidebarTab folder navigation', () => {
       screen.queryByRole('button', { name: 'Back to all assets' })
     ).not.toBeInTheDocument()
     expect(screen.queryByText('multi-output-job')).not.toBeInTheDocument()
+  })
+})
+
+it('shows the sidebar close button when mounted as a sidebar tab', () => {
+  renderTab({ realTemplate: true })
+
+  expect(screen.getByRole('button', { name: 'Close sidebar' })).toBeVisible()
+})
+
+describe('AssetsSidebarTab context menu', () => {
+  it('inserts a loadable image as a node', async () => {
+    const asset = { ...folderAsset, name: 'image.png' }
+    useAssetsStore().outputAssets.items = [asset]
+    renderTab()
+
+    await fireEvent.contextMenu(
+      screen.getByRole('button', { name: 'Enter output folder' })
+    )
+    await userEvent.click(
+      await screen.findByRole('menuitem', {
+        name: 'mediaAsset.actions.insertAsNodeInWorkflow'
+      })
+    )
+
+    expect(useMediaAssetActions().addWorkflow).toHaveBeenCalledWith(asset)
+  })
+
+  it('does not offer insertion for an unloadable file', async () => {
+    useAssetsStore().outputAssets.items = [
+      { ...folderAsset, name: 'result.txt' }
+    ]
+    renderTab()
+
+    await fireEvent.contextMenu(
+      screen.getByRole('button', { name: 'Enter output folder' })
+    )
+    await screen.findByRole('menu')
+
+    expect(
+      screen.queryByRole('menuitem', {
+        name: 'mediaAsset.actions.insertAsNodeInWorkflow'
+      })
+    ).not.toBeInTheDocument()
+  })
+
+  it('downloads grouped outputs through the multi-asset download action', async () => {
+    renderTab()
+    await fireEvent.contextMenu(
+      screen.getByRole('button', { name: 'Enter output folder' })
+    )
+
+    await userEvent.click(
+      await screen.findByRole('menuitem', {
+        name: 'mediaAsset.actions.download'
+      })
+    )
+
+    expect(useMediaAssetActions().downloadAssets).toHaveBeenCalledWith([
+      folderAsset
+    ])
+  })
+
+  it.for(['pointerDown', 'scroll'] as const)(
+    'dismisses on outside %s',
+    async (event) => {
+      renderTab()
+      await fireEvent.contextMenu(
+        screen.getByRole('button', { name: 'Enter output folder' })
+      )
+      await screen.findByRole('menu')
+
+      await fireEvent[event](
+        screen.getByRole('heading', { name: 'Media Assets' })
+      )
+
+      await waitFor(() =>
+        expect(screen.queryByRole('menu')).not.toBeInTheDocument()
+      )
+    }
+  )
+})
+
+describe('AssetsSidebarTab tab panel', () => {
+  it('labels the asset list with the selected tab', async () => {
+    renderTab()
+
+    expect(
+      screen.getByRole('tabpanel', { name: 'Generated' })
+    ).toContainElement(screen.getByTestId('assets-grid'))
+
+    await userEvent.click(screen.getByRole('tab', { name: 'Imported' }))
+
+    expect(screen.getByRole('tabpanel', { name: 'Imported' })).toBeVisible()
+  })
+
+  it('keeps the panel in the tab order', () => {
+    renderTab()
+
+    expect(screen.getByRole('tabpanel', { name: 'Generated' })).toHaveAttribute(
+      'tabindex',
+      '0'
+    )
   })
 })

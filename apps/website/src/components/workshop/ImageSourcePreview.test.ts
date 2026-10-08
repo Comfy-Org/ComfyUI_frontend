@@ -21,6 +21,10 @@ describe('image source previews', () => {
     render(ImageSourcePreview, {
       props: { name: 'Source image', src: 'https://example.com/image.png' }
     })
+    expect(screen.getByRole('img', { name: 'Source image' })).toHaveAttribute(
+      'fetchpriority',
+      'low'
+    )
 
     await user.click(
       screen.getByRole('button', { name: 'Expand Source image' })
@@ -32,6 +36,22 @@ describe('image source previews', () => {
     ).toBeVisible()
 
     await user.click(screen.getByRole('button', { name: 'Close' }))
+
+    await waitFor(() =>
+      expect(screen.queryByTestId('image-source-dialog')).toBeNull()
+    )
+  })
+
+  it('closes when the reader taps the space around the picture', async () => {
+    const user = userEvent.setup()
+    render(ImageSourcePreview, {
+      props: { name: 'Source image', src: 'https://example.com/image.png' }
+    })
+    await user.click(
+      screen.getByRole('button', { name: 'Expand Source image' })
+    )
+
+    await user.click(await screen.findByTestId('image-source-dialog'))
 
     await waitFor(() =>
       expect(screen.queryByTestId('image-source-dialog')).toBeNull()

@@ -3,25 +3,25 @@ import { render, waitFor } from '@testing-library/vue'
 import { assert, describe, expect, it, onTestFinished, vi } from 'vitest'
 import { computed, defineComponent, h, ref, shallowRef } from 'vue'
 
-import type { WorkflowWorkshopModelDetail } from '../config/models-catalogue'
-import { markWorkshopCreditsDirty } from '../config/workshop-credits'
-import { initialWorkshopPageState } from '../config/workshop-page-state'
-import type { FormValues } from '../config/workshop-playground'
-import { restoreFormValues } from '../config/workshop-playground'
-import type { WorkshopSession } from '../config/workshop-session-state'
-import { useWorkshopSession } from '../config/workshop-session-state'
-import { workflowDetailsBySlug } from '../config/workshop-workflow-content'
-import type { SavedWorkflow } from '../config/workshop-workflow-storage'
-import { workflowStorage } from '../config/workshop-workflow-storage'
-import { createWorkflowUploader } from '../config/workshop-workflow-upload'
-import { captureWorkshopEvent } from '../scripts/posthog'
+import type { WorkflowWorkshopModelDetail } from '@/config/models-catalogue'
+import { markWorkshopCreditsDirty } from '@/config/workshop-credits'
+import { initialWorkshopPageState } from '@/config/workshop-page-state'
+import type { FormValues } from '@/config/workshop-playground'
+import { restoreFormValues } from '@/config/workshop-playground'
+import type { WorkshopSession } from '@/config/workshop-session-state'
+import { useWorkshopSession } from '@/config/workshop-session-state'
+import { workflowDetailsBySlug } from '@/config/workshop-workflow-content'
+import type { SavedWorkflow } from '@/config/workshop-workflow-storage'
+import { workflowStorage } from '@/config/workshop-workflow-storage'
+import { createWorkflowUploader } from '@/config/workshop-workflow-upload'
+import { captureWorkshopEvent } from '@/scripts/posthog'
 import { useWorkflowFormDraft } from './useWorkflowFormDraft'
 import { useWorkflowRun } from './useWorkflowRun'
 
-vi.mock(import('../config/workshop-session-state'))
-vi.mock(import('../config/workshop-credits'))
-vi.mock(import('../config/workshop-workflow-upload'))
-vi.mock(import('../scripts/posthog'))
+vi.mock(import('@/config/workshop-session-state'))
+vi.mock(import('@/config/workshop-credits'))
+vi.mock(import('@/config/workshop-workflow-upload'))
+vi.mock(import('@/scripts/posthog'))
 
 const runId = 'bafc696e-e5d4-42f1-9a3d-d01f82a0629b'
 const input = { image: 'https://storage.googleapis.com/inputs/canonical' }
@@ -295,6 +295,43 @@ describe('workflow page caller lifecycle', () => {
       })
     }
   )
+
+  it('records where a failed Cloud job broke without its message', async () => {
+    const f = fixture()
+    f.fetch
+      .mockResolvedValueOnce(Response.json({ prompt_id: runId }))
+      .mockResolvedValueOnce(
+        Response.json({
+          ...finished(),
+          status: 'failed',
+          outputs: {},
+          execution_error: {
+            node_id: '7',
+            node_type: 'GeminiImage2Node',
+            exception_type: 'Exception',
+            exception_message: 'Unauthorized: private detail',
+            traceback: [],
+            current_inputs: {},
+            current_outputs: {}
+          }
+        })
+      )
+
+    await f.workflow.start(input)
+
+    expect(captureWorkshopEvent).toHaveBeenLastCalledWith({
+      name: 'run_finished',
+      properties: expect.objectContaining({
+        status: 'failed',
+        failed_node_id: '7',
+        failed_node_type: 'GeminiImage2Node',
+        cloud_exception_type: 'Exception'
+      })
+    })
+    expect(
+      JSON.stringify(vi.mocked(captureWorkshopEvent).mock.calls)
+    ).not.toContain('private')
+  })
 
   type Fixture = ReturnType<typeof fixture>
   type CredentialResult = Awaited<ReturnType<Fixture['session']['ensureFresh']>>

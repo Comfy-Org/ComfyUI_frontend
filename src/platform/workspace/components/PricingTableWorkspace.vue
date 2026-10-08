@@ -1,31 +1,18 @@
 <template>
   <div class="flex flex-col gap-6">
     <div class="flex justify-center">
-      <SelectButton
+      <ToggleGroup
         v-model="currentBillingCycle"
-        :options="billingCycleOptions"
-        option-label="label"
-        option-value="value"
+        type="single"
         :allow-empty="false"
-        unstyled
-        :pt="{
-          root: {
-            class: 'flex gap-1 bg-secondary-background rounded-lg p-1.5'
-          },
-          pcToggleButton: {
-            root: ({ context }: ToggleButtonPassThroughMethodOptions) => ({
-              class: [
-                'w-36  h-8 rounded-md transition-colors cursor-pointer border-none outline-none ring-0 text-sm font-medium flex items-center justify-center',
-                context.active
-                  ? 'bg-base-foreground text-base-background'
-                  : 'bg-transparent text-muted-foreground hover:bg-secondary-background-hover'
-              ]
-            }),
-            label: { class: 'flex items-center gap-2 ' }
-          }
-        }"
+        class="rounded-lg bg-secondary-background p-1.5"
       >
-        <template #option="{ option }">
+        <ToggleGroupItem
+          v-for="option in billingCycleOptions"
+          :key="option.value"
+          :value="option.value"
+          class="h-8 w-36 data-[state=on]:bg-base-foreground data-[state=on]:text-base-background"
+        >
           <div class="flex items-center gap-2">
             <span>{{ option.label }}</span>
             <div
@@ -35,8 +22,8 @@
               -20%
             </div>
           </div>
-        </template>
-      </SelectButton>
+        </ToggleGroupItem>
+      </ToggleGroup>
     </div>
     <div class="flex flex-col items-stretch gap-4 xl:flex-row">
       <div
@@ -237,21 +224,7 @@
     </div>
 
     <!-- Video Estimate Help Popover -->
-    <Popover
-      ref="popover"
-      append-to="body"
-      :auto-z-index="true"
-      :base-z-index="1000"
-      :dismissable="true"
-      :close-on-escape="true"
-      unstyled
-      :pt="{
-        root: {
-          class:
-            'rounded-lg border border-interface-stroke bg-interface-panel-surface shadow-lg p-4 max-w-xs'
-        }
-      }"
-    >
+    <Popover ref="popover" align="start" content-class="max-w-sm p-4">
       <div class="flex flex-col gap-2">
         <p class="text-sm/normal text-base-foreground">
           {{ t('subscription.videoEstimateExplanation') }}
@@ -299,13 +272,12 @@
 
 <script setup lang="ts">
 import { cn } from '@comfyorg/tailwind-utils'
-import Popover from 'primevue/popover'
-import SelectButton from 'primevue/selectbutton'
-import type { ToggleButtonPassThroughMethodOptions } from 'primevue/togglebutton'
+import Popover from '@/components/common/ImperativePopover.vue'
 import { computed, onMounted, ref } from 'vue'
 import { useI18n } from 'vue-i18n'
 
 import Button from '@/components/ui/button/Button.vue'
+import { ToggleGroup, ToggleGroupItem } from '@/components/ui/toggle-group'
 import { useBillingContext } from '@/composables/billing/useBillingContext'
 import {
   TIER_PRICING,
@@ -528,6 +500,7 @@ const maxMembersByTier = computed(
 )
 
 const getCreditsPerMember = (tier: PricingTierConfig): number =>
+  getApiPlanForTier(tier.key, currentBillingCycle.value)?.credits ??
   amountForBillingCycle(tier.pricing.credits, isYearly.value)
 
 const getVideoEstimateDisplay = (tier: PricingTierConfig): number =>

@@ -421,6 +421,12 @@ export interface WebSessionIdentity {
   /** Only after an interactive sign-in; a token refresh must never call it. */
   signedIn: (getProof: () => Promise<string>) => Promise<WebSessionResult>
   signOut: () => Promise<WebSessionCommandResult>
+  /**
+   * Reads the session now, as a heartbeat would, and resolves once the answer
+   * and any restore it starts have settled. Reads nothing unless signed in as
+   * `expectedUserId` (any user when omitted).
+   */
+  refresh: (expectedUserId?: string) => Promise<WebSessionIdentityState>
   /** Changes with the account; an answer started under an older epoch is stale. */
   getEpoch: () => number
   /** Cancels timers, ignores answers in flight, and returns to idle. */
@@ -439,7 +445,8 @@ const zSharedResult = z.discriminatedUnion('status', [
         email: z.string(),
         name: z.string().optional(),
         emailVerified: z.boolean(),
-        signInProvider: z.string().optional()
+        signInProvider: z.string().optional(),
+        hasPersonalWorkspace: z.boolean().optional()
       }),
       csrfToken: z.string(),
       expiresAt: z.number(),
@@ -453,6 +460,11 @@ const zSharedResult = z.discriminatedUnion('status', [
   })
 ])
 
+/**
+ * Every tab of a site reads the same host-only cookie, so a sibling's answer
+ * is this tab's own session observed elsewhere; that is what makes adopting
+ * it safe. A per-tab session scope would break this assumption.
+ */
 const zSharedMessage = z.object({
   from: z.enum(['heartbeat', 'sign_in', 'sign_out']),
   result: zSharedResult
@@ -496,6 +508,7 @@ function createApiKeyIdentity(): WebSessionIdentity {
       retryable: false
     }),
     signOut: async () => ({ status: 'ok' }),
+    refresh: async () => state,
     getEpoch: () => 0,
     dispose: () => undefined
   }
@@ -512,10 +525,14 @@ function createAccountIdentity(
   const listeners = new Set<(state: WebSessionIdentityState) => void>()
   let state: WebSessionIdentityState = { phase: 'idle' }
   let epoch = 0
+  let signOuts = 0
+  let signIns = 0
+  let liveSignIn = 0
   let cancelRetry: (() => void) | undefined
   let cancelBeat: (() => void) | undefined
   let releaseLeadership: (() => void) | undefined
   let stopWatching: (() => void)[] = []
+  let restoring = { epoch, settled: Promise.resolve() }
 
   function dispatch(event: WebSessionIdentityEvent): void {
     const next = transitionWebSessionIdentity(state, event)
@@ -545,14 +562,22 @@ function createAccountIdentity(
       () => undefined
     )
     if (started !== epoch) return
-    if (remembered === undefined) return dispatch({ type: 'login_errored' })
-    dispatch({ ...answered, result, rememberedUserId: remembered.value })
+    // A failed lookup matters only without a live session to adopt: with one,
+    // it can skip nothing but the different-user sign-out.
+    if (remembered === undefined && result.status !== 'ok') {
+      return dispatch({ type: 'login_errored' })
+    }
+    dispatch({
+      ...answered,
+      result,
+      rememberedUserId: remembered?.value ?? null
+    })
   }
 
-  function beat(): void {
+  function beat(): Promise<void> {
     const started = epoch
     const observed = { type: 'session_observed', from: 'this_tab' } as const
-    void answer(started, observed, async () => {
+    return answer(started, observed, async () => {
       const result = await readWebSession(options.session)
       const shared = result.status === 'ok' || result.code === 'SESSION_REVOKED'
       if (shared && started === epoch) publish('heartbeat', result)
@@ -560,10 +585,16 @@ function createAccountIdentity(
     })
   }
 
+  function invalidatePendingSignIns(): void {
+    signOuts += 1
+    liveSignIn = 0
+  }
+
   function adopt(message: unknown): void {
     const parsed = zSharedMessage.safeParse(message)
     if (!parsed.success) return
     const { from, result } = parsed.data
+    if (from === 'sign_out') invalidatePendingSignIns()
     const observed = {
       type: 'session_observed',
       from: `sibling_${from}`
@@ -581,7 +612,7 @@ function createAccountIdentity(
 
   function armBeat(): void {
     cancelBeat = schedule(() => {
-      beat()
+      void beat()
       armBeat()
     }, heartbeat?.intervalMs ?? HEARTBEAT_INTERVAL_MS)
   }
@@ -613,7 +644,7 @@ function createAccountIdentity(
     const { visibility, crossTab } = heartbeat
     stopWatching = [
       visibility.onChange((visible) => {
-        if (visible && state.phase === 'signed_in') beat()
+        if (visible && state.phase === 'signed_in') void beat()
         syncLeadership()
       }),
       ...(crossTab ? [crossTab.onCredential(HEARTBEAT_KEY, adopt)] : [])
@@ -645,7 +676,7 @@ function createAccountIdentity(
         )
         return
       case 'restore':
-        void restore(epoch, effect.expectedUserId)
+        restoring = { epoch, settled: restore(epoch, effect.expectedUserId) }
         return
       case 'schedule_retry':
         cancelRetry = schedule(
@@ -702,17 +733,36 @@ function createAccountIdentity(
       dispatch({ type: 'boot' })
     },
     signedIn: async (getProof) => {
+      const signOutsAtStart = signOuts
+      const signIn = ++signIns
       const result = await createWebSession(options.session, getProof)
       if (result.status !== 'ok') return result
+      if (signOuts !== signOutsAtStart) {
+        // A later sign-in owns the cookie now; deleting would end its session.
+        if (liveSignIn > signIn) return revoked
+        const cleanup = await deleteWebSession(options.session)
+        return cleanup.status === 'ok' ? revoked : cleanup
+      }
+      liveSignIn = signIn
       dispatch({ type: 'session_created', session: result.session })
       publish('sign_in', result)
       return result
     },
     signOut: async () => {
+      invalidatePendingSignIns()
       dispatch({ type: 'sign_out_requested' })
       const result = await deleteWebSession(options.session)
       if (result.status === 'ok') publish('sign_out', revoked)
       return result
+    },
+    refresh: async (expectedUserId) => {
+      if (state.phase !== 'signed_in') return state
+      if ((expectedUserId ?? state.session.user.id) !== state.session.user.id) {
+        return state
+      }
+      await beat()
+      if (restoring.epoch === epoch) await restoring.settled
+      return state
     },
     getEpoch: () => epoch,
     dispose: () => {

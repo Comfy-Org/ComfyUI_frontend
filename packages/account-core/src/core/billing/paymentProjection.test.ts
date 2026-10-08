@@ -6,7 +6,7 @@ import type {
   PendingBillingOperation
 } from './operationState.js'
 import type { HostPaymentStep, PaymentProjection } from './paymentProjection.js'
-import { projectPaymentStep } from './paymentProjection.js'
+import { awaitsHostedAction, projectPaymentStep } from './paymentProjection.js'
 
 const IDENTITY = {
   id: 'op-1',
@@ -121,6 +121,19 @@ const ROWS: readonly Row[] = [
       authenticationState: 'failed_retryable'
     }),
     expected: { step: 'declined', reasonKey: 'authentication_failed' }
+  },
+  {
+    name: 'pending on a payment the customer did not approve is declined as not completed',
+    operation: pending({
+      authenticationState: 'failed_retryable',
+      declineReason: 'payment_not_completed',
+      recoveryAction: 'retry'
+    }),
+    expected: {
+      step: 'declined',
+      reasonKey: 'payment_not_completed',
+      recoveryAction: 'retry'
+    }
   },
   {
     name: 'pending with a retryable decline is declined with the coded reason',
@@ -293,5 +306,35 @@ describe('projectPaymentStep', () => {
     expect(projections.map((p) => p.step)).not.toContain(
       'payment_received_hold'
     )
+  })
+})
+
+describe('awaitsHostedAction', () => {
+  it.for<{
+    state: string
+    overrides: Partial<Pick<PendingBillingOperation, 'challenge' | 'actionUrl'>>
+    prompts: boolean
+  }>([
+    { state: 'nothing asked of the customer', overrides: {}, prompts: false },
+    {
+      state: 'an in-page challenge',
+      overrides: {
+        challenge: { clientSecret: 'pi_secret', status: 'in_progress' }
+      },
+      prompts: false
+    },
+    {
+      state: 'a hosted action page',
+      overrides: { actionUrl: 'https://bank.example' },
+      prompts: true
+    }
+  ])('$state prompts the customer: $prompts', ({ overrides, prompts }) => {
+    const operation: PendingBillingOperation = {
+      ...IDENTITY,
+      phase: 'pending',
+      customerActionSeen: false,
+      ...overrides
+    }
+    expect(awaitsHostedAction(operation)).toBe(prompts)
   })
 })

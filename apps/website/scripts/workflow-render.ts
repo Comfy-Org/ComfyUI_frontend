@@ -1,29 +1,30 @@
+import { join } from 'node:path'
 import { readFileSync } from 'node:fs'
-import { URL } from 'node:url'
 
-import type { WorkflowWorkshopModelDetail } from '../src/config/models-catalogue'
-import { workshopDisplayEntriesSchema } from '../src/content/workshop-display.schema'
-import { parseWorkflowCatalog } from '../src/config/workshop-workflow-catalog-schema'
-import { workflowPagesFor } from '../src/config/workshop-workflow-pages'
-import { initialWorkshopPageState } from '../src/config/workshop-page-state'
-import type { FormValues } from '../src/config/workshop-playground'
-import { WorkshopWorkflowError } from '../src/config/workshop-workflow-api'
-import type { WorkflowRenderOptions } from '../src/config/workflow-render'
-import { renderWorkflow as render } from '../src/config/workflow-render'
+import { websiteRoot } from '@website/paths'
+import type { WorkflowWorkshopModelDetail } from '@/config/models-catalogue'
+import { workshopDisplayEntriesSchema } from '@/content/workshop-display.schema'
+import { parseWorkflowCatalog } from '@/config/workshop-workflow-catalog-schema'
+import { workflowPagesFor } from '@/config/workshop-workflow-pages'
+import { initialWorkshopPageState } from '@/config/workshop-page-state'
+import type { FormValues } from '@/config/workshop-playground'
+import { WorkshopWorkflowError } from '@/config/workshop-workflow-api'
+import type { WorkflowRenderOptions } from '@/config/workflow-render'
+import { renderWorkflow as render } from '@/config/workflow-render'
 
 let definitions: ReadonlyMap<string, WorkflowWorkshopModelDetail> | undefined
 
-function lookupWorkflow(slug: string) {
+function loadDefinitions() {
   if (!definitions) {
     const pages: unknown = JSON.parse(
       readFileSync(
-        new URL('../src/content/workshop-display.json', import.meta.url),
+        join(websiteRoot, 'src/content/workshop-display.json'),
         'utf8'
       )
     )
     const catalog = parseWorkflowCatalog(
       readFileSync(
-        new URL('../src/content/workshop-workflows.jsonl', import.meta.url),
+        join(websiteRoot, 'src/content/workshop-workflows.jsonl'),
         'utf8'
       )
     )
@@ -33,7 +34,15 @@ function lookupWorkflow(slug: string) {
       )
     )
   }
-  return definitions.get(slug)
+  return definitions
+}
+
+export function publishedWorkflows(): WorkflowWorkshopModelDetail[] {
+  return [...loadDefinitions().values()]
+}
+
+function lookupWorkflow(slug: string) {
+  return loadDefinitions().get(slug)
 }
 
 function modelFor(slug: string) {

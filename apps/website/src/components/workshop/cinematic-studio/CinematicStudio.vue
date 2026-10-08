@@ -1,45 +1,64 @@
 <script setup lang="ts">
+import { translationsFor } from '@/i18n/translations'
 import { computed, ref } from 'vue'
 
 import { cn } from '@comfyorg/tailwind-utils'
 
-import { useCinematicLeaveGuard } from '../../../composables/useCinematicLeaveGuard'
-import { useCinematicPopover } from '../../../composables/useCinematicPopover'
-import { useCinematicShot } from '../../../composables/useCinematicShot'
-import { reportStudioBusy } from '../../../composables/useStudioSwitchGuard'
-import type { DirectionPart } from '../../../lib/workshop/cinematic-studio/catalog'
-import type { CinematicModel } from '../../../lib/workshop/cinematic-studio/models'
-import type { StarterShot } from '../../../lib/workshop/cinematic-studio/starters'
-import type { Locale } from '../../../i18n/translations'
-import { tc } from '../../../lib/workshop/cinematic-studio/copy'
-import RunLeaveDialog from '../RunLeaveDialog.vue'
+import { useCinematicLeaveGuard } from '@/composables/useCinematicLeaveGuard'
+import { useCinematicPopover } from '@/composables/useCinematicPopover'
+import { useCinematicShot } from '@/composables/useCinematicShot'
+import { reportStudioBusy } from '@/composables/useStudioSwitchGuard'
+import type { CinematicModel } from '@/lib/workshop/cinematic-studio/models'
+import type { StarterShot } from '@/lib/workshop/cinematic-studio/starters'
+import type { Locale } from '@/i18n/translations'
+import RunLeaveDialog from '@/components/workshop/RunLeaveDialog.vue'
 import AppsBackLink from './AppsBackLink.vue'
 import CinematicComposer from './CinematicComposer.vue'
-import CinematicOutputControls from './CinematicOutputControls.vue'
+import CinematicModeSwitch from './CinematicModeSwitch.vue'
 import CinematicPicker from './CinematicPicker.vue'
-import CinematicPopover from './CinematicPopover.vue'
-import CinematicReferenceSlot from './CinematicReferenceSlot.vue'
 import CinematicStage from './CinematicStage.vue'
-import type { PopoverKey } from './picker-key'
+import type { PickerKey } from './picker-key'
 import { pickerGroups, popoverTitle } from './picker-key'
+import { referenceSlots } from './reference-kind'
 
-const { models, locale = 'en' } = defineProps<{
+const {
+  models,
+  showCredits = true,
+  locale = 'en'
+} = defineProps<{
   models: readonly CinematicModel[]
+  showCredits?: boolean
   locale?: Locale
 }>()
+const { t } = translationsFor(locale)
 
 const {
   studio,
+  mode,
+  modeModels,
+  hasVideo,
+  model,
+  video,
+  duration,
+  videoResolution,
+  audio,
+  firstFrame,
+  lastFrame,
+  sourceVideo,
+  blocked,
+  animate,
+  useAsReference: useTake,
   modelSlug,
   scene,
   enhance,
   direction,
   aspect,
+  aspects,
   resolution,
   takes,
   cast,
-  palette,
-  references,
+  colors,
+  mainColor,
   estimate,
   memberWorkspace,
   choose,
@@ -51,13 +70,10 @@ const {
   open: popover,
   toggle: togglePopover,
   close: closePopover
-} = useCinematicPopover<PopoverKey>()
+} = useCinematicPopover<PickerKey>()
 
-const POPOVER_WIDTH: Readonly<Partial<Record<PopoverKey, string>>> = {
-  camera: 'lg:w-4xl',
-  direction: 'lg:w-2xl',
-  references: 'lg:w-96',
-  format: 'lg:w-96'
+const POPOVER_WIDTH: Readonly<Partial<Record<PickerKey, string>>> = {
+  camera: 'lg:w-4xl'
 }
 const popoverClass = computed(() =>
   cn(
@@ -67,17 +83,6 @@ const popoverClass = computed(() =>
 )
 
 const starter = ref<string>()
-
-const directionStart = ref<DirectionPart>()
-
-function openPopover(key: PopoverKey, part?: DirectionPart) {
-  const switchingTab =
-    key === 'direction' &&
-    popover.value === 'direction' &&
-    part !== directionStart.value
-  directionStart.value = part
-  if (!switchingTab) togglePopover(key)
-}
 
 const { leavingTo, leave, stay } = useCinematicLeaveGuard(
   () => studio.rendering.value,
@@ -94,12 +99,17 @@ function start(shot: StarterShot) {
   focusScene()
 }
 
+const takeError = ref(false)
+
 async function useAsReference(url: string, name: string) {
-  const blob = await fetch(url)
-    .then((response) => (response.ok ? response.blob() : undefined))
-    .catch(() => undefined)
-  if (blob)
-    cast.value = new File([blob], name, { type: blob.type || 'image/png' })
+  takeError.value = !(await useTake(url, name))
+}
+
+const canAnimate = models.some((option) => !!option.firstFrameSlug)
+async function animateTake(url: string, name: string) {
+  closePopover()
+  takeError.value = !(await animate(url, name))
+  if (!takeError.value) focusScene()
 }
 
 function generate() {
@@ -122,6 +132,8 @@ function generateOn(slug: string) {
     <CinematicStage
       :reel="studio.reel.value"
       :models
+      :can-animate="canAnimate"
+      :can-reference="mode === 'image'"
       :locale
       :starter
       :member-workspace="memberWorkspace"
@@ -130,6 +142,7 @@ function generateOn(slug: string) {
       @again="generate"
       @retry="studio.retry"
       @reference="useAsReference"
+      @animate="animateTake"
       @switch-model="generateOn"
       @edit-scene="focusScene"
     />
@@ -144,10 +157,11 @@ function generateOn(slug: string) {
           aria-hidden="true"
         />
         <CinematicPicker
-          v-if="popover && pickerGroups(popover).length"
-          :key="`${popover}-${directionStart}`"
+          v-if="popover"
+          :key="popover"
+          v-model:colors="colors"
+          v-model:main-color="mainColor"
           :groups="pickerGroups(popover)"
-          :start="directionStart"
           :direction
           :title="popoverTitle(popover, locale)"
           :locale
@@ -155,62 +169,50 @@ function generateOn(slug: string) {
           @choose="choose"
           @close="closePopover"
         />
-        <CinematicPopover
-          v-else-if="popover"
-          :key="popover"
-          :title="popoverTitle(popover, locale)"
-          :locale
-          :class="popoverClass"
-          @close="closePopover"
+        <p
+          v-if="takeError"
+          role="status"
+          class="mb-2 text-xs text-primary-comfy-canvas"
         >
-          <div v-if="popover === 'references'" class="grid grid-cols-2 gap-2">
-            <CinematicReferenceSlot v-model="cast" kind="cast" :locale />
-            <CinematicReferenceSlot v-model="palette" kind="palette" :locale />
-          </div>
-          <div v-else class="flex flex-col gap-3">
-            <CinematicOutputControls
-              v-model:aspect="aspect"
-              v-model:resolution="resolution"
-              v-model:takes="takes"
-              :locale
-            />
-            <label
-              class="flex cursor-pointer items-center gap-2.5 rounded-xl px-1 text-xs text-primary-warm-white"
-            >
-              <input
-                v-model="enhance"
-                type="checkbox"
-                role="switch"
-                class="peer sr-only"
-              />
-              <span
-                class="relative h-4 w-7 shrink-0 rounded-full bg-transparency-white-t20 transition-colors peer-checked:bg-primary-comfy-yellow peer-focus-visible:ring-3 peer-focus-visible:ring-primary-comfy-yellow/50 after:absolute after:top-0.5 after:left-0.5 after:size-3 after:rounded-full after:bg-primary-comfy-ink after:transition-transform peer-checked:after:translate-x-3"
-                aria-hidden="true"
-              />
-              {{ tc('cinematic.scene.enhance', locale) }}
-              <span class="truncate text-primary-warm-gray">
-                {{ tc('cinematic.scene.enhanceHint', locale) }}
-              </span>
-            </label>
-          </div>
-        </CinematicPopover>
+          {{ t('cinematic.references.unreadable') }}
+        </p>
+        <CinematicModeSwitch
+          v-if="hasVideo"
+          v-model="mode"
+          :disabled="studio.rendering.value"
+          :locale
+          class="mb-3 w-fit"
+        />
         <CinematicComposer
           v-model:scene="scene"
           v-model:model="modelSlug"
           v-model:takes="takes"
-          :models
+          v-model:aspect="aspect"
+          v-model:resolution="resolution"
+          v-model:enhance="enhance"
+          v-model:cast="cast"
+          v-model:first-frame="firstFrame"
+          v-model:last-frame="lastFrame"
+          v-model:source-video="sourceVideo"
+          v-model:duration="duration"
+          v-model:video-resolution="videoResolution"
+          v-model:audio="audio"
+          :models="modeModels"
+          :aspects
+          :slots="referenceSlots(model, !!firstFrame)"
+          :colors
+          :blocked
+          :video
           :direction
-          :aspect
-          :resolution
-          :references
           :gate="studio.gate.value"
           :workspace-name="studio.session.value?.workspace.name"
           :rendering="studio.rendering.value"
           :estimate
           :credits="studio.credits.value"
+          :show-credits="showCredits"
           :open-popover="popover"
           :locale
-          @open="openPopover"
+          @open="togglePopover"
           @generate="generate"
           @cancel="studio.cancel"
         />
