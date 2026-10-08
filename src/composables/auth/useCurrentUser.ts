@@ -2,6 +2,8 @@ import { whenever } from '@vueuse/core'
 import { computed, watch } from 'vue'
 
 import { desktopHostUser } from '@/platform/auth/desktopHost/desktopHostSession'
+import { isCloud } from '@/platform/distribution/types'
+import { signOutWorkflowStorage } from '@/platform/workflow/persistence/base/storageIO'
 import { useApiKeyAuthStore } from '@/stores/apiKeyAuthStore'
 import { useCommandStore } from '@/stores/commandStore'
 import { useAuthStore } from '@/stores/authStore'
@@ -125,6 +127,7 @@ export const useCurrentUser = () => {
   const handleSignOut = async () => {
     if (isApiKeyLogin.value) {
       await apiKeyStore.clearStoredApiKey()
+      if (isCloud) signOutWorkflowStorage()
     } else {
       await commandStore.execute('Comfy.User.SignOut')
     }

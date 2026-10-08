@@ -31,21 +31,44 @@ let workflowStorageState: WorkflowStorageState = {
   status: 'ready',
   availability: 'available'
 }
-const pendingPersistenceFlushes = new Set<() => void>()
+const WORKFLOW_SIGN_OUT_INTENT_KEY = 'Comfy.Workflow.SignOutIntent'
 
-export function registerWorkflowPersistenceFlush(
+interface PendingWorkflowPersistence {
   flush: () => void
+  cancel: () => void
+}
+
+const pendingWorkflowPersistence = new Set<PendingWorkflowPersistence>()
+
+export function registerWorkflowPersistence(
+  pending: PendingWorkflowPersistence
 ): () => void {
-  pendingPersistenceFlushes.add(flush)
-  return () => pendingPersistenceFlushes.delete(flush)
+  pendingWorkflowPersistence.add(pending)
+  window.addEventListener('storage', handleSignOutIntent)
+  return () => {
+    pendingWorkflowPersistence.delete(pending)
+    if (pendingWorkflowPersistence.size === 0) {
+      window.removeEventListener('storage', handleSignOutIntent)
+    }
+  }
 }
 
 function flushPendingWorkflowPersistence(): void {
-  for (const flush of pendingPersistenceFlushes) {
+  for (const { flush } of pendingWorkflowPersistence) {
     try {
       flush()
     } catch (error) {
       console.warn('Failed to flush pending workflow persistence', error)
+    }
+  }
+}
+
+function cancelPendingWorkflowPersistence(): void {
+  for (const { cancel } of pendingWorkflowPersistence) {
+    try {
+      cancel()
+    } catch (error) {
+      console.warn('Failed to cancel pending workflow persistence', error)
     }
   }
 }
@@ -540,7 +563,8 @@ export function prepareWorkflowWorkspaceTransition(): () => void {
   }
 }
 
-export function prepareWorkflowLogoutTransition(): void {
+function fenceAndClearWorkflowStorage(): void {
+  cancelPendingWorkflowPersistence()
   workflowStorageState = {
     status: 'transitioning',
     reason: 'logout',
@@ -548,6 +572,27 @@ export function prepareWorkflowLogoutTransition(): void {
       workflowStorageState.status === 'transitioning'
         ? workflowStorageState.resumeAvailability
         : workflowStorageState.availability
+  }
+  clearAllWorkspaceStorage()
+}
+
+function handleSignOutIntent(event: StorageEvent): void {
+  if (
+    event.storageArea === localStorage &&
+    event.key === WORKFLOW_SIGN_OUT_INTENT_KEY &&
+    event.newValue !== null
+  ) {
+    fenceAndClearWorkflowStorage()
+  }
+}
+
+export function signOutWorkflowStorage(): void {
+  fenceAndClearWorkflowStorage()
+  try {
+    localStorage.setItem(WORKFLOW_SIGN_OUT_INTENT_KEY, crypto.randomUUID())
+    localStorage.removeItem(WORKFLOW_SIGN_OUT_INTENT_KEY)
+  } catch {
+    // This window is already fenced and cleared; only the broadcast is lost.
   }
 }
 
@@ -578,7 +623,7 @@ export function clearAllWorkflowStorage(): void {
   removeStorageKeys(sessionStorage, sessionRestoreKeys, sessionRestorePrefixes)
 }
 
-export function clearAllWorkspaceStorage(): void {
+function clearAllWorkspaceStorage(): void {
   clearAllWorkflowStorage()
   clearLegacyAgentStorage()
   removeStorageKeys(

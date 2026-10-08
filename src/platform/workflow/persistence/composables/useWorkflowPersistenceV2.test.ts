@@ -2,11 +2,12 @@ import { useCommandStore } from '@/stores/commandStore'
 import { useTeamWorkspaceStore } from '@/platform/workspace/stores/teamWorkspaceStore'
 import { useSettingStore } from '@/platform/settings/settingStore'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
-import { createApp, defineComponent, nextTick } from 'vue'
+import { computed, createApp, defineComponent, nextTick, ref } from 'vue'
 import { createI18n } from 'vue-i18n'
 
 import { useCurrentUser } from '@/composables/auth/useCurrentUser'
 import { WORKSPACE_STORAGE_KEYS } from '@/platform/workspace/workspaceConstants'
+import type { AuthUserInfo } from '@/types/authTypes'
 import { useWorkflowStore } from '@/platform/workflow/management/stores/workflowStore'
 import { StorageKeys } from '../base/storageKeys'
 import * as storageIO from '../base/storageIO'
@@ -195,6 +196,7 @@ describe('useWorkflowPersistenceV2', () => {
       app.unmount()
       container.remove()
     }
+    storageIO.resetStorageAvailable()
   })
 
   function mountWorkflowPersistence(): WorkflowPersistence {
@@ -783,16 +785,188 @@ describe('useWorkflowPersistenceV2', () => {
     cancelTransition()
   })
 
+  it('keeps drafts and persistence alive when another window removes the shared auth record', async () => {
+    distributionMocks.isCloud = true
+    sessionStorage.setItem(
+      WORKSPACE_STORAGE_KEYS.CURRENT_WORKSPACE,
+      JSON.stringify({ id: 'personal', type: 'personal' })
+    )
+    const observedUser = ref<AuthUserInfo | null>({ id: 'user-a' })
+    useCurrentUser().resolvedUserInfo = computed(() => observedUser.value)
+    const workflowStore = useWorkflowStore()
+    const workflow = await workflowStore
+      .createTemporary('ForeignWindow.json')
+      .load()
+    workflowStore.activeWorkflow = workflow
+    mountWorkflowPersistence()
+
+    mocks.state.currentGraph = { marker: 'before-foreign-auth-change' }
+    mocks.state.graphChangedHandler?.()
+    await vi.runAllTimersAsync()
+
+    const payloadKey = StorageKeys.draftPayload(workflow.path, 'personal')
+    expect(localStorage.getItem(payloadKey)).not.toBeNull()
+
+    observedUser.value = null
+    await nextTick()
+
+    sessionStorage.removeItem(WORKSPACE_STORAGE_KEYS.CURRENT_WORKSPACE)
+
+    expect(localStorage.getItem(payloadKey)).not.toBeNull()
+    expect(storageIO.isStorageAvailable()).toBe(true)
+
+    mocks.state.currentGraph = { marker: 'after-foreign-auth-change' }
+    mocks.state.graphChangedHandler?.()
+    await vi.runAllTimersAsync()
+
+    const payload = JSON.parse(localStorage.getItem(payloadKey)!)
+    expect(JSON.parse(payload.data)).toEqual({
+      marker: 'after-foreign-auth-change'
+    })
+    expect(mockToastAdd).not.toHaveBeenCalled()
+  })
+
+  it('keeps drafts and persistence alive when another window rewrites the shared auth record', async () => {
+    distributionMocks.isCloud = true
+    sessionStorage.setItem(
+      WORKSPACE_STORAGE_KEYS.CURRENT_WORKSPACE,
+      JSON.stringify({ id: 'personal', type: 'personal' })
+    )
+    const workflowStore = useWorkflowStore()
+    const workflow = await workflowStore
+      .createTemporary('ForeignAuthRecordWrite.json')
+      .load()
+    workflowStore.activeWorkflow = workflow
+    mountWorkflowPersistence()
+
+    mocks.state.currentGraph = { marker: 'before-foreign-auth-record-write' }
+    mocks.state.graphChangedHandler?.()
+    await vi.runAllTimersAsync()
+
+    const payloadKey = StorageKeys.draftPayload(workflow.path, 'personal')
+    expect(localStorage.getItem(payloadKey)).not.toBeNull()
+
+    const foreignAuthRecordKey = 'firebase:authUser:test-api-key:[DEFAULT]'
+    window.dispatchEvent(
+      new StorageEvent('storage', {
+        key: foreignAuthRecordKey,
+        newValue: JSON.stringify({ uid: 'user-b' }),
+        storageArea: localStorage
+      })
+    )
+    window.dispatchEvent(
+      new StorageEvent('storage', {
+        key: foreignAuthRecordKey,
+        newValue: null,
+        oldValue: JSON.stringify({ uid: 'user-b' }),
+        storageArea: localStorage
+      })
+    )
+
+    expect(localStorage.getItem(payloadKey)).not.toBeNull()
+    expect(storageIO.isStorageAvailable()).toBe(true)
+
+    mocks.state.currentGraph = { marker: 'after-foreign-auth-record-write' }
+    mocks.state.graphChangedHandler?.()
+    await vi.runAllTimersAsync()
+
+    const payload = JSON.parse(localStorage.getItem(payloadKey)!)
+    expect(JSON.parse(payload.data)).toEqual({
+      marker: 'after-foreign-auth-record-write'
+    })
+    expect(mockToastAdd).not.toHaveBeenCalled()
+  })
+
+  it('abandons persistence when another window broadcasts deliberate sign-out', async () => {
+    distributionMocks.isCloud = true
+    sessionStorage.setItem(
+      WORKSPACE_STORAGE_KEYS.CURRENT_WORKSPACE,
+      JSON.stringify({ id: 'workspace-a', type: 'team' })
+    )
+    const workflowStore = useWorkflowStore()
+    const workflow = await workflowStore
+      .createTemporary('CrossWindowSignOut.json')
+      .load()
+    workflowStore.activeWorkflow = workflow
+    mountWorkflowPersistence()
+
+    mocks.state.currentGraph = { marker: 'before-sign-out' }
+    mocks.state.graphChangedHandler?.()
+    await vi.runAllTimersAsync()
+
+    localStorage.clear()
+    const personalPayloadKey = StorageKeys.draftPayload(
+      workflow.path,
+      'personal'
+    )
+    localStorage.setItem(
+      personalPayloadKey,
+      JSON.stringify({
+        data: JSON.stringify({ marker: 'written-before-intent-arrived' }),
+        updatedAt: Date.now()
+      })
+    )
+    window.dispatchEvent(
+      new StorageEvent('storage', {
+        key: 'Comfy.Workflow.SignOutIntent',
+        newValue: crypto.randomUUID(),
+        storageArea: localStorage
+      })
+    )
+    expect(localStorage.getItem(personalPayloadKey)).toBeNull()
+    sessionStorage.removeItem(WORKSPACE_STORAGE_KEYS.CURRENT_WORKSPACE)
+
+    mocks.state.currentGraph = { marker: 'after-sign-out' }
+    mocks.state.graphChangedHandler?.()
+    window.dispatchEvent(new Event('pagehide'))
+    await vi.runAllTimersAsync()
+
+    expect(localStorage.getItem(personalPayloadKey)).toBeNull()
+  })
+
+  it('abandons the queued write and the stale readiness watcher when this window signs out', async () => {
+    distributionMocks.isCloud = true
+    sessionStorage.setItem(
+      WORKSPACE_STORAGE_KEYS.CURRENT_WORKSPACE,
+      JSON.stringify({ id: 'personal', type: 'personal' })
+    )
+    useCurrentUser().resolvedUserInfo = computed(() => ({ id: 'user-a' }))
+    const workflowStore = useWorkflowStore()
+    const workflow = await workflowStore.createTemporary('SignOut.json').load()
+    workflowStore.activeWorkflow = workflow
+    mountWorkflowPersistence()
+
+    mocks.state.currentGraph = { marker: 'queued-before-sign-out' }
+    mocks.state.graphChangedHandler?.()
+
+    const payloadKey = StorageKeys.draftPayload(workflow.path, 'personal')
+    expect(localStorage.getItem(payloadKey)).toBeNull()
+
+    storageIO.signOutWorkflowStorage()
+
+    Object.assign(useTeamWorkspaceStore(), {
+      initState: 'ready',
+      activeWorkspaceId: 'personal'
+    })
+    await nextTick()
+    expect(storageIO.isStorageAvailable()).toBe(false)
+
+    window.dispatchEvent(new Event('pagehide'))
+    await vi.runAllTimersAsync()
+
+    expect(localStorage.getItem(payloadKey)).toBeNull()
+    expect(mockToastAdd).not.toHaveBeenCalled()
+  })
+
   it('resumes workflow writes once workspace readiness is confirmed after authentication recovers', async () => {
     distributionMocks.isCloud = true
     localStorage.setItem('Comfy.Workflow.DraftIndex.v2:workspace-a', '{}')
     sessionStorage.setItem('Comfy.Workflow.ActivePath:test-client', '{}')
     mountWorkflowPersistence()
 
-    const onLogout = vi.mocked(useCurrentUser().onUserLogout).mock.calls[0][0]
     const onUserResolved = vi.mocked(useCurrentUser().onUserResolved).mock
       .calls[0][0]
-    onLogout()
+    storageIO.signOutWorkflowStorage()
 
     expect(localStorage).toHaveLength(0)
     expect(sessionStorage).toHaveLength(0)
@@ -832,12 +1006,11 @@ describe('useWorkflowPersistenceV2', () => {
     )
     mountWorkflowPersistence()
 
-    const onLogout = vi.mocked(useCurrentUser().onUserLogout).mock.calls[0][0]
     const onUserResolved = vi.mocked(useCurrentUser().onUserResolved).mock
       .calls[0][0]
-    onLogout()
+    storageIO.signOutWorkflowStorage()
     onUserResolved({ id: 'user-b' })
-    onLogout()
+    storageIO.signOutWorkflowStorage()
     onUserResolved({ id: 'user-c' })
 
     Object.assign(useTeamWorkspaceStore(), { activeWorkspaceId: 'workspace-c' })
@@ -855,10 +1028,9 @@ describe('useWorkflowPersistenceV2', () => {
     )
     mountWorkflowPersistence()
 
-    const onLogout = vi.mocked(useCurrentUser().onUserLogout).mock.calls[0][0]
     const onUserResolved = vi.mocked(useCurrentUser().onUserResolved).mock
       .calls[0][0]
-    onLogout()
+    storageIO.signOutWorkflowStorage()
     onUserResolved({ id: 'user-a' })
 
     expect(completeTransitionSpy).not.toHaveBeenCalled()
@@ -886,10 +1058,9 @@ describe('useWorkflowPersistenceV2', () => {
     mocks.state.currentGraph = { marker: 'stale-source-edit' }
     mocks.state.graphChangedHandler?.()
 
-    const onLogout = vi.mocked(useCurrentUser().onUserLogout).mock.calls[0][0]
     const onUserResolved = vi.mocked(useCurrentUser().onUserResolved).mock
       .calls[0][0]
-    onLogout()
+    storageIO.signOutWorkflowStorage()
     onUserResolved({ id: 'user-b' })
     await vi.runAllTimersAsync()
 

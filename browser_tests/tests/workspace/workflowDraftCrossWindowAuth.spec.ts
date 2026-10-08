@@ -1,10 +1,10 @@
 import {
   expect,
-  workflowDraftForeignWindowSignInFixture as test
-} from '@e2e/fixtures/workflowDraftForeignWindowSignInFixture'
+  workflowDraftCrossWindowAuthFixture as test
+} from '@e2e/fixtures/workflowDraftCrossWindowAuthFixture'
 
 test.describe('workflow drafts across windows', { tag: '@cloud' }, () => {
-  test('a second window signing in neither wipes drafts nor stops persistence', async ({
+  test('a second window removing the shared auth record neither wipes drafts nor stops persistence', async ({
     workflowDraft
   }) => {
     const initialTouch = await workflowDraft.touchGraph()
@@ -29,11 +29,6 @@ test.describe('workflow drafts across windows', { tag: '@cloud' }, () => {
 
     await expect(workflowDraft.logoutButton).toBeVisible()
 
-    test.fail(
-      true,
-      'Foreign-window sign-in wipes drafts and fences persistence'
-    )
-
     expect
       .soft(
         await workflowDraft.getDraftKeys(),
@@ -48,5 +43,25 @@ test.describe('workflow drafts across windows', { tag: '@cloud' }, () => {
           'persistence stayed fenced after the auth change - the logout transition was never completed'
       })
       .toBe(true)
+  })
+
+  test('a deliberate sign-out in a second window stops departed-user persistence', async ({
+    workflowDraft
+  }) => {
+    const initialTouch = await workflowDraft.touchGraph()
+    await expect
+      .poll(() => workflowDraft.hasPersistedTouch(initialTouch))
+      .toBe(true)
+
+    await workflowDraft.triggerForeignWindowSignOut()
+
+    await expect.poll(() => workflowDraft.getDraftKeys()).toEqual([])
+
+    const touchAfterSignOut = await workflowDraft.touchGraph()
+    await workflowDraft.firePageHide()
+
+    await expect
+      .poll(() => workflowDraft.hasPersistedTouch(touchAfterSignOut))
+      .toBe(false)
   })
 })
