@@ -11,7 +11,6 @@ import { useEventListener } from '@vueuse/core'
 import { defineStore } from 'pinia'
 import { computed, ref } from 'vue'
 
-import { useBillingContext } from '@/composables/billing/useBillingContext'
 import { useToast } from '@/components/ui/toast/toastStore'
 import { useFeatureFlags } from '@/composables/useFeatureFlags'
 import { t } from '@/i18n'
@@ -29,6 +28,7 @@ import type {
   BillingDeclineReason,
   BillingRecoveryAction
 } from '@/platform/workspace/api/workspaceApi'
+import { refreshBilling } from '@/platform/workspace/billing/billingRefresh'
 import type {
   ProgressToast,
   ProgressToastKind
@@ -901,17 +901,15 @@ export const useBillingOperationStore = defineStore('billingOperation', () => {
 
       if (operation.type === 'retention') return
 
-      const billingContext = useBillingContext()
       const capabilities = useBillingCapabilities()
       if (operation.type === 'subscription') {
         await Promise.allSettled([
-          billingContext.reconcileSubscriptionSuccess(),
+          refreshBilling('subscription'),
           capabilities.refresh()
         ])
       } else {
         await Promise.allSettled([
-          billingContext.fetchStatus(),
-          billingContext.fetchBalance(),
+          refreshBilling('account'),
           capabilities.refresh()
         ])
       }

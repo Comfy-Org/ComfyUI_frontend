@@ -412,6 +412,7 @@ import Menu from '@/components/ui/menu/Menu.vue'
 import StatusBadge from '@/components/common/StatusBadge.vue'
 import Button from '@/components/ui/button/Button.vue'
 import { useBillingContext } from '@/composables/billing/useBillingContext'
+import { useSubscriptionPaywall } from '@/composables/billing/useSubscriptionPaywall'
 import { useSubscriptionDialog } from '@/platform/cloud/subscription/composables/useSubscriptionDialog'
 import { useFreeTierQuota } from '@/platform/cloud/subscription/composables/useFreeTierQuota'
 import {
@@ -468,12 +469,12 @@ const {
   subscriptionStatus,
   isLoading,
   error,
-  showSubscriptionDialog,
   manageSubscription,
   initialize
 } = useBillingContext()
 
 const { showPricingTable } = useSubscriptionDialog()
+const { showSubscriptionDialog } = useSubscriptionPaywall()
 
 const { isResubscribing, handleResubscribe } = useResubscribe()
 const { displayPrice, priceUnitLabel, isPriceCycleUnknown } =

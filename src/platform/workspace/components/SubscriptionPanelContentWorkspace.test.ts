@@ -1,4 +1,5 @@
 import { useBillingCapabilities } from '@/platform/workspace/composables/useBillingCapabilities'
+import { useSubscriptionPaywall } from '@/composables/billing/useSubscriptionPaywall'
 import { useBillingDialogs } from '@/composables/billing/useBillingDialogs'
 import { useWorkspaceDialogs } from '@/platform/workspace/composables/useWorkspaceDialogs'
 import { useBillingContext } from '@/composables/billing/useBillingContext'
@@ -208,6 +209,8 @@ vi.mock(import('@/platform/workspace/composables/useWorkspaceUI'))
 vi.mock(import('@/platform/workspace/composables/useBillingCapabilities'))
 
 vi.mock(import('@/composables/billing/useBillingDialogs'))
+
+vi.mock(import('@/composables/billing/useSubscriptionPaywall'))
 vi.mock(import('@/platform/workspace/composables/useWorkspaceDialogs'))
 
 vi.mock(
@@ -823,7 +826,9 @@ describe('SubscriptionPanelContentWorkspace', () => {
     expect(useBillingContext().manageSubscription).toHaveBeenCalledOnce()
 
     await user.click(screen.getByRole('button', { name: 'Change plan' }))
-    expect(useBillingContext().showSubscriptionDialog).toHaveBeenCalledOnce()
+    expect(
+      useSubscriptionPaywall().showSubscriptionDialog
+    ).toHaveBeenCalledOnce()
   })
 
   it('hides Change plan when the server denies seat changes to a client-side owner', () => {
@@ -996,7 +1001,9 @@ describe('SubscriptionPanelContentWorkspace', () => {
       screen.getByRole('button', { name: 'Resume subscription' })
     )
     expect(useBillingContext().resubscribe).toHaveBeenCalledOnce()
-    expect(useBillingContext().showSubscriptionDialog).not.toHaveBeenCalled()
+    expect(
+      useSubscriptionPaywall().showSubscriptionDialog
+    ).not.toHaveBeenCalled()
   })
 
   it('drops the state card for an inactive ended subscription without a date', () => {
@@ -1083,7 +1090,9 @@ describe('SubscriptionPanelContentWorkspace', () => {
       screen.getByRole('button', { name: 'Resume subscription' })
     )
 
-    expect(useBillingContext().showSubscriptionDialog).toHaveBeenCalledWith({
+    expect(
+      useSubscriptionPaywall().showSubscriptionDialog
+    ).toHaveBeenCalledWith({
       reason: 'settings_billing_panel'
     })
     expect(useBillingContext().resubscribe).not.toHaveBeenCalled()
@@ -1310,7 +1319,9 @@ describe('SubscriptionPanelContentWorkspace', () => {
     expect(useBillingContext().manageSubscription).toHaveBeenCalledOnce()
 
     await user.click(screen.getByRole('button', { name: 'Subscribe' }))
-    expect(useBillingContext().showSubscriptionDialog).toHaveBeenCalledOnce()
+    expect(
+      useSubscriptionPaywall().showSubscriptionDialog
+    ).toHaveBeenCalledOnce()
   })
 
   it.for([

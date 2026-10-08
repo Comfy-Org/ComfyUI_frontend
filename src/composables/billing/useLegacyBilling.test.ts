@@ -114,6 +114,26 @@ describe('useLegacyBilling', () => {
     })
   })
 
+  describe('topup', () => {
+    it.for([
+      { canAccess: true, purchases: [[5]] },
+      { canAccess: false, purchases: [] }
+    ])(
+      'buys credits in dollars only when subscription features are available ($canAccess)',
+      async ({ canAccess, purchases }) => {
+        Object.assign(useSubscription(), {
+          canAccessSubscriptionFeatures: computed(() => canAccess)
+        })
+
+        await useLegacyBilling().topup(500)
+
+        expect(
+          vi.mocked(useAuthActions().purchaseCreditsDirect).mock.calls
+        ).toEqual(purchases)
+      }
+    )
+  })
+
   describe('actions whose caller does not show a result', () => {
     it.for([
       {
