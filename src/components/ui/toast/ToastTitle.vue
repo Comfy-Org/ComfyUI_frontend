@@ -14,7 +14,9 @@ const forwardedProps = useForwardProps(restProps)
 <template>
   <ToastTitle
     v-bind="forwardedProps"
-    :class="cn('text-sm font-medium wrap-break-word', className)"
+    :class="
+      cn('text-sm font-medium wrap-break-word whitespace-pre-line', className)
+    "
   >
     <slot />
   </ToastTitle>
