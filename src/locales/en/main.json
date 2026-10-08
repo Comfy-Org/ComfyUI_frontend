@@ -4795,6 +4795,35 @@
       "expand": "Expand"
     },
     "missingModels": {
+      "huggingFaceAccess": "Hugging Face access",
+      "huggingFaceAccessHelp": "Open each gated repository using its lock link and request access or accept its terms. Then provide a read-capable token from the approved account. The token is sent to your ComfyUI server for downloads and kept in memory until you refresh this page or remove it.",
+      "huggingFaceTokenSettings": "Create a Hugging Face token",
+      "huggingFaceToken": "Hugging Face read token",
+      "useToken": "Use token",
+      "removeToken": "Remove token",
+      "tokenProvided": "Token provided",
+      "gatedModelsServerHint": "{count} model requires Hugging Face access. Open its repository, obtain access, and provide your account's read token below before downloading. | {count} models require Hugging Face access. Open their repositories, obtain access, and provide your account's read token below before downloading.",
+      "gatedModelServerDownloadTooltip": "Obtain access on the Hugging Face repository and provide a read token from the approved account in Hugging Face access.",
+      "retryModel": "Retry download of {model}",
+      "downloadErrors": {
+        "authentication": "Provide a valid Hugging Face read token in Hugging Face access, then retry.",
+        "gated": "Open the Hugging Face repository and request access or accept its terms. Once approved, provide a read token from that account and retry.",
+        "accessDenied": "Hugging Face denied access. Check your account's repository access and the token's read permissions, then retry.",
+        "timeout": "The connection timed out. Check your connection and retry; this file will restart from the beginning."
+      },
+      "downloadRequestFailed": "Could not download models. Check the connection and try again.",
+      "cancelDownloadFailed": "Could not cancel the download. Try again.",
+      "cancelDownload": "Cancel download of {model}",
+      "downloadStatus": {
+        "queued": "Queued",
+        "running": "Downloading",
+        "canceling": "Canceling",
+        "completed": "Downloaded",
+        "skipped_existing": "Already installed",
+        "failed": "Download failed",
+        "blocked": "Download blocked",
+        "canceled": "Canceled"
+      },
       "import": "Import",
       "importing": "Importing...",
       "customNodeDownloadDisabled": "Nodes that reference the models below do not support imported models. Open the node to choose a supported built-in model, or replace it with a standard node that supports imported models.",

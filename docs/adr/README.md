@@ -10,6 +10,7 @@ An Architecture Decision Record captures an important architectural decision mad
 
 | ADR                                                                                                              | Title                                                                              | Status     | Date       |
 | ---------------------------------------------------------------------------------------------------------------- | ---------------------------------------------------------------------------------- | ---------- | ---------- |
+| [MODEL-DOWNLOADS-0040](MODEL-DOWNLOADS-0040-session-credentials-and-transfer-timeouts.md)                        | Session Credentials and Transfer Timeouts                                          | Proposed   | 2026-10-02 |
 | [AGENT-BINDING-0035](AGENT-BINDING-0035-document-identity-gates-persisted-workflow-tab-bindings.md)              | Document Identity Gates Persisted Workflow Tab Bindings                            | Proposed   | 2026-09-19 |
 | [AGENT-COMPOSER-0040](AGENT-COMPOSER-0040-independent-assets-and-prompt-references.md)                           | Independent Assets and Prompt References                                           | Proposed   | 2026-10-05 |
 | [AGENT-CONTEXT-0028](AGENT-CONTEXT-0028-separate-workflow-references-from-editor-tabs.md)                        | Separate Workflow References from Editor Tabs                                      | Proposed   | 2026-09-07 |

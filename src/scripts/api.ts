@@ -51,6 +51,7 @@ import type {
   FeatureFlagsWsMessage,
   LogsRawResponse,
   LogsWsMessage,
+  MissingModelDownloadWsMessage,
   NotificationWsMessage,
   ProgressStateWsMessage,
   ProgressTextWsMessage,
@@ -271,6 +272,7 @@ interface BackendApiCalls {
   progress_text: ProgressTextWsMessage
   progress_state: ProgressStateWsMessage
   feature_flags: FeatureFlagsWsMessage
+  missing_model_download: MissingModelDownloadWsMessage
   asset_download: AssetDownloadWsMessage
   asset_export: AssetExportWsMessage
 }
@@ -1159,6 +1161,7 @@ export class ComfyApi extends EventTarget {
                 msg.data.display_node || msg.data.node
               )
               break
+            case 'missing_model_download':
             case 'execution_start':
             case 'execution_error':
             case 'execution_interrupted':
