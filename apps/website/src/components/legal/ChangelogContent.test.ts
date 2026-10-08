@@ -23,6 +23,22 @@ describe('ChangelogContent', () => {
     )
   })
 
+  it('shows a release without a description and omits its date', async () => {
+    vi.stubGlobal(
+      'fetch',
+      vi
+        .fn()
+        .mockResolvedValue(
+          new Response(source.replace(' description="October 5, 2026"', ''))
+        )
+    )
+    render(ChangelogContent)
+    const release = await screen.findByRole('article', { name: 'v1' })
+    expect(release).toHaveTextContent('Feature')
+    expect(release).not.toHaveTextContent('October 5, 2026')
+    expect(screen.queryByRole('button', { name: 'Try again' })).toBeNull()
+  })
+
   it('refreshes an open page when the docs source changes', async () => {
     const fetcher = vi
       .fn()

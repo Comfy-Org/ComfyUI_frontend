@@ -19,6 +19,9 @@ describe('ChangelogMarkdown', () => {
       '<p>T</p>'
     ],
     ['a relative link', '[Install](/installation)', '<p>Install</p>'],
+    ['a level-2 heading', '## Notes', 'Notes'],
+    ['a level-4 heading', '#### Detail', 'Detail'],
+    ['a level-3 heading', '### Fixes', '<h3>Fixes</h3>'],
     [
       'inline event and style attributes',
       '<p onclick="alert(1)" style="color:red">Hi</p>',

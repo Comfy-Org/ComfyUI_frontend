@@ -145,7 +145,9 @@ onUnmounted(() => {
             >
               {{ entry.label }}
             </h2>
-            <p class="text-sm text-primary-warm-gray">{{ entry.date }}</p>
+            <p v-if="entry.date" class="text-sm text-primary-warm-gray">
+              {{ entry.date }}
+            </p>
           </div>
           <ChangelogMarkdown
             data-testid="release-notes"

@@ -22,6 +22,21 @@ describe('docs changelog boundary', () => {
       entry
     ])
   })
+  it.for([
+    ['no description', source.replace(' description="October 5, 2026"', '')],
+    ['an empty description', source.replace('October 5, 2026', '')]
+  ] as const)('reads a release with %s and no date', ([, input]) => {
+    const { date: _date, ...undated } = entry
+    expect(parseChangelog(input)).toEqual([undated])
+    expect(parseChangelog(input)[0]).not.toHaveProperty('date')
+  })
+  it('rejects a release without notes', () => {
+    expect(() =>
+      parseChangelog(
+        '<Update label="v1" description="October 5, 2026"> </Update>'
+      )
+    ).toThrow('Empty update')
+  })
   it('gives each release an anchor id derived from its label', () => {
     expect(parseChangelog(source.replace('v1', 'v1.0 Beta'))[0]?.id).toBe(
       'v1-0-beta'
@@ -49,7 +64,6 @@ describe('docs changelog boundary', () => {
     ['an empty source', ''],
     ['an HTML error page', '<html>Error</html>'],
     ['an unterminated update', source + '<Update label="v2">broken'],
-    ['an empty date', source.replace('October 5, 2026', '')],
     [
       'a duplicate label',
       source.replace('label="v1"', 'label="v1" label="v2"')

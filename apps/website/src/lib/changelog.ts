@@ -11,7 +11,7 @@ const CHANGELOG_TIMEOUT_MS = 10 * 1000
 export interface ChangelogEntry {
   id: string
   label: string
-  date: string
+  date?: string
   markdown: string
 }
 
@@ -47,11 +47,16 @@ export function parseChangelog(source: string): ChangelogEntry[] {
     if (!match.groups) throw new Error('Unsupported update')
     const { attributes, markdown } = match.groups
     const { label, date } = updateMetadata(attributes)
-    if (!label || !date || !markdown.trim()) throw new Error('Empty update')
+    if (!label || !markdown.trim()) throw new Error('Empty update')
     const id = releaseId(label)
     if (releaseIds.has(id)) throw new Error('Ambiguous release label')
     releaseIds.add(id)
-    entries.push({ id, label, date, markdown: markdown.trim() })
+    entries.push({
+      id,
+      label,
+      ...(date ? { date } : {}),
+      markdown: markdown.trim()
+    })
   }
   if (!entries.length || body.replace(updatePattern, '').trim()) {
     throw new Error('Unsupported changelog format')

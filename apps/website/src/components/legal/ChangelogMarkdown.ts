@@ -16,9 +16,7 @@ const allowedTags = new Set([
   'code',
   'pre',
   'br',
-  'h2',
   'h3',
-  'h4',
   'blockquote'
 ])
 
