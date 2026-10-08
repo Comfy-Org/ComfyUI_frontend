@@ -8,7 +8,7 @@ without weakening the rest of the repository. A lane has four independent stages
 3. **Approval:** apply the package's reviewed approval policy to the exact commit.
 4. **Delivery:** use the repository's normal merge, deployment, and rollback systems.
 
-The website is the first lane. The approval engine in `scripts/cicd/fast-lane/` is package-neutral;
+The website is the first lane. The approval engine in the `tools/cicd/fast-lane/` workspace is package-neutral;
 the change classifier output, the scoped CI jobs, and the workflow are per lane.
 
 ## The dials a package owns
@@ -62,7 +62,7 @@ These are implementation invariants, not package dials:
   policy review on the pull request. Because the identity is a personal account, that includes the
   account owner's own merge actions in that window.
 
-The reusable TypeScript engine lives in `scripts/cicd/fast-lane/`. `policy.ts` contains pure policy
+The reusable TypeScript engine lives in `tools/cicd/fast-lane/src/`. `policy.ts` contains pure policy
 decisions, `github.ts` contains GitHub transport, and `automation.ts` owns the approval and merge
 lifecycle. Behavioral tests run `runFastLane` against an in-memory GitHub double and cover each
 fixed rule.
@@ -77,8 +77,8 @@ fixed rule.
 4. Add a workflow like `pr-website-auto-approve.yaml`: `pull_request_target`, `status`, and
    `workflow_run` triggers; a resolver job that finds the pull request; and one lane job keyed on
    that pull request's concurrency group. The lane job sparse-checks out `.nvmrc`, the selected
-   policy, and `scripts/cicd/fast-lane/` from the default branch (cone mode also includes
-   root-level files) and runs `node scripts/cicd/fast-lane/run.ts` without installing
+   policy, and `tools/cicd/fast-lane/` from the default branch (cone mode also includes
+   root-level files) and runs `node tools/cicd/fast-lane/src/run.ts` without installing
    dependencies.
 5. Put the approval credential in a package-specific protected environment and restrict that
    environment to the protected default branch.

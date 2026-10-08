@@ -142,7 +142,7 @@ export async function stopMergeAutomation(
   )
 }
 
-export async function armMergeAutomation(
+async function armMergeAutomation(
   github: GitHubClient,
   pull: PullRequest,
   config: RuntimeConfig,

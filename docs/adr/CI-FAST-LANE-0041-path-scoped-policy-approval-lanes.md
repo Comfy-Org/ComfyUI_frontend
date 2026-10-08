@@ -26,7 +26,7 @@ Introduce path-scoped delivery lanes, starting with the website:
 - A website-only pull request runs website-scoped lint, format, typecheck, unused-code, and locale
   checks inside the existing `lint-and-format` context. Mixed pull requests and merge-queue
   candidates keep the full checks.
-- `pr-website-auto-approve.yaml` runs `scripts/cicd/fast-lane/` from the default branch. For an
+- `pr-website-auto-approve.yaml` runs the `tools/cicd/fast-lane/` workspace from the default branch. For an
   eligible same-repository pull request whose complete changed-file set is inside the lane, it
   posts a policy-only approval bound to the exact head with a credential held in a
   `main`-restricted environment, then arms native auto-merge or enters the queue. Every later run

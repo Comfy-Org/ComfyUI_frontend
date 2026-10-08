@@ -83,7 +83,7 @@ jobs:
           sparse-checkout: |
             .nvmrc
             .github/fast-lanes/website.json
-            scripts/cicd/fast-lane
+            tools/cicd/fast-lane
 
       - uses: actions/setup-node@v6
         with:
@@ -100,4 +100,4 @@ jobs:
           GITHUB_REPOSITORY: ${{ github.repository }}
           PR_HEAD_SHA: ${{ github.event.pull_request.head.sha || github.event.sha || github.event.workflow_run.head_sha }}
           PR_NUMBER: ${{ needs.resolve.outputs.pull-request-number }}
-        run: node scripts/cicd/fast-lane/run.ts
+        run: node tools/cicd/fast-lane/src/run.ts

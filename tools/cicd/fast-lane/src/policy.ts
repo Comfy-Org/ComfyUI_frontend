@@ -118,10 +118,7 @@ function isRepository(
   return repo?.full_name?.toLowerCase() === repository.toLowerCase()
 }
 
-export function isPolicyReview(
-  review: PullRequestReview,
-  identity: string
-): boolean {
+function isPolicyReview(review: PullRequestReview, identity: string): boolean {
   return (
     isLogin(review.user, identity) &&
     review.body?.startsWith(POLICY_REVIEW_PREFIX) === true
