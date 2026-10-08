@@ -617,7 +617,7 @@ export function useReshoot({ locale = 'en' }: { locale?: Locale } = {}) {
         }),
         (phase) => updateTake(id, { phase }),
         signal,
-        () => takeAllowance.record()
+        () => takeAllowance.record(startedFor.uid)
       )
       const optional = (part: string) =>
         downloadOutput(transport, job, part, signal).catch(() => undefined)

@@ -2,6 +2,8 @@ import { render } from '@testing-library/vue'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { computed, defineComponent, nextTick, ref } from 'vue'
 
+import type { AccountCredential } from '@comfyorg/account-core/session'
+
 import { refreshWorkshopCredits } from '@/config/workshop-credits'
 import { useWorkshopSession } from '@/config/workshop-session-state'
 import { RESHOOT_APP_SLUG } from '@/lib/workshop/cinematic-studio/analytics'
@@ -388,6 +390,36 @@ describe('useReshoot', () => {
 
     expect(transport.submit).toHaveBeenCalledTimes(submits + 1)
     expect(reshoot.current.value?.status).toBe('done')
+  })
+
+  it('counts an admitted take for the user who submitted it, after sign-out', async () => {
+    const credential = ref<AccountCredential | undefined>(RESHOOT_CREDENTIAL)
+    useWorkshopSession().session = computed(() => credential.value)
+    const reshoot = start()
+    await readScene(reshoot)
+    const submitNow = vi.mocked(transport.submit).getMockImplementation()
+    if (!submitNow) throw new Error('the fake transport cannot submit')
+    const admission = Promise.withResolvers<void>()
+    vi.mocked(transport.submit).mockImplementationOnce(async (...args) => {
+      await admission.promise
+      return submitNow(...args)
+    })
+    const { runs } = RESHOOT_LIMITS.generate
+
+    void reshoot.generate()
+    await vi.advanceTimersByTimeAsync(0)
+    credential.value = undefined
+    admission.resolve()
+    await vi.advanceTimersByTimeAsync(2_500)
+
+    expect(reshoot.limitNote.value).toBe(
+      `${runs} of ${runs} takes left this hour`
+    )
+    credential.value = RESHOOT_CREDENTIAL
+    await nextTick()
+    expect(reshoot.limitNote.value).toBe(
+      `${runs - 1} of ${runs} takes left this hour`
+    )
   })
 })
 

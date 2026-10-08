@@ -61,11 +61,15 @@ export function useReshootAllowance(
     allowance(runs.value, limit, now.value)
   )
 
-  function record(at = Date.now()) {
-    const latest = (stored && readRuns(key.value)) || runs.value
-    runs.value = [...pruneRuns(latest, limit, at), at]
-    inMemory.set(key.value, runs.value)
-    stored = writeRuns(key.value, runs.value)
+  function record(forOwner = toValue(owner), at = Date.now()) {
+    const target = storageKey(kind, forOwner ?? 'guest')
+    const current = target === key.value
+    const kept = current ? runs.value : (inMemory.get(target) ?? [])
+    const latest = (stored && readRuns(target)) || kept
+    const next = [...pruneRuns(latest, limit, at), at]
+    if (current) runs.value = next
+    inMemory.set(target, next)
+    stored = writeRuns(target, next)
   }
 
   return { allowance: left, record }
