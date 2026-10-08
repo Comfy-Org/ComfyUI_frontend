@@ -32,6 +32,45 @@ test.describe('Model import progress toast', { tag: ['@screenshot'] }, () => {
     ).toBeVisible()
   })
 
+  test('keeps a panel reachable when expanded panels outgrow a short viewport', async ({
+    comfyPage,
+    modelImportProgress
+  }) => {
+    await comfyPage.page.setViewportSize({ width: 1280, height: 360 })
+    await comfyPage.assets.dispatchExport({
+      task_id: 'stacked-export',
+      export_name: 'outputs.zip',
+      assets_total: 4,
+      assets_attempted: 1,
+      assets_failed: 0,
+      bytes_total: 1000,
+      bytes_processed: 250,
+      progress: 0.25,
+      status: 'running'
+    })
+    const exportPanel = comfyPage.page
+      .getByTestId(TestIds.toast.panel)
+      .filter({ hasText: 'Exporting Assets' })
+
+    await modelImportProgress.expand()
+    await exportPanel.getByRole('button', { name: 'Expand' }).click()
+    await modelImportProgress.filterBy('Failed')
+    await expect(
+      modelImportProgress.job('completed-model.safetensors')
+    ).toBeHidden()
+
+    const panelBounds = await modelImportProgress.root.boundingBox()
+    const collapseBounds = await modelImportProgress.root
+      .getByRole('button', { name: 'Collapse' })
+      .boundingBox()
+    expect(panelBounds).not.toBeNull()
+    expect(collapseBounds).not.toBeNull()
+    expect(
+      collapseBounds!.y + collapseBounds!.height,
+      'the footer must not be clipped by a squashed panel'
+    ).toBeLessThanOrEqual(panelBounds!.y + panelBounds!.height)
+  })
+
   test('recovers from a premature failed status once the backend silently retries and completes it (PM-1302)', async ({
     comfyPage
   }) => {
