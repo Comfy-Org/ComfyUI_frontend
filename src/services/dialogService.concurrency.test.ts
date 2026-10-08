@@ -184,7 +184,7 @@ describe('dialogService prompt queues', () => {
   })
 
   it('preserves an existing cancellation scope guard for public callers', async () => {
-    const { service, dialogStore } = await importDialogModules()
+    const { service, dialogStore } = createDialogTest()
     const existingGuard = () => false
     dialogStore.showDialog({
       key: 'cancel-subscription',
@@ -207,7 +207,7 @@ describe('dialogService prompt queues', () => {
   })
 
   it('declines a guarded cancellation dialog after its scope changes', async () => {
-    const { service, dialogStore } = await importDialogModules()
+    const { service, dialogStore } = createDialogTest()
 
     await expect(
       service.showCancelSubscriptionDialog(undefined, true, () => false)
