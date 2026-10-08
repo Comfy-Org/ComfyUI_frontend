@@ -3688,12 +3688,12 @@
       "title": "节点带来的可控性"
     },
     "feature2": {
-      "description": "如果您是 ComfyUI 新手，可以从 App 模式开始——这是工作流的简化视图。您随时可以切换回节点图视图以深入了解。",
-      "title": "App 模式，工作流的简化视图"
+      "description": "描述你想要的效果，Comfy Agent 会为你构建并运行工作流。",
+      "title": "Comfy Agent"
     },
     "feature3": {
-      "description": "浏览和混搭数千个社区共享的工作流。从经过验证的模板开始，按需自定义。",
-      "title": "Comfy Workflows 上的社区工作流"
+      "description": "通过一个 API，在你自己的应用中运行 Comfy 工作流和模型。",
+      "title": "Comfy API"
     },
     "subtitle1": "在画布上连接模型、处理步骤和输出，每个决策都可见，每个步骤都可检查。",
     "subtitle2": "从工作流模板开始，或从零构建。"

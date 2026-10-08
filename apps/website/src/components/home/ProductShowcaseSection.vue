@@ -6,8 +6,8 @@ import { ref, useTemplateRef } from 'vue'
 import type { Locale } from '@/i18n/translations'
 import { translationsFor } from '@/i18n/translations'
 import NodeBadge from '@/components/common/NodeBadge.vue'
+import VideoPlayer from '@/components/common/VideoPlayer.vue'
 import LottieScene from './LottieScene.vue'
-import VideoMaskScene from './VideoMaskScene.vue'
 
 const { locale = 'en' } = defineProps<{ locale?: Locale }>()
 const { t } = translationsFor(locale)
@@ -16,7 +16,7 @@ interface Feature {
   title: string
   description: string
   lottie?: string
-  maskScene?: string
+  video?: { src: string; poster?: string }
 }
 
 const features: Feature[] = [
@@ -30,17 +30,20 @@ const features: Feature[] = [
   {
     title: t('showcase.feature2.title'),
     description: t('showcase.feature2.description'),
-    // Replaces ui-overview.webm. Source ships 22MB of PNGs embedded as base64;
-    // extracted to external WebP, which is why this is 804KB rather than 29MB.
-    lottie: '/animations/scene-2/scene-02.json'
+    // Same demo as the Comfy Agent page's featured video.
+    video: {
+      src: 'https://media.comfy.org/website/comfy-agent/andidea-animation-ensub-1080p.mp4',
+      poster:
+        'https://media.comfy.org/website/comfy-agent/andidea-animation-poster.webp'
+    }
   },
   {
     title: t('showcase.feature3.title'),
     description: t('showcase.feature3.description'),
-    // Replaces video-showcase.webm. Not Lottie: the source is a bespoke player
-    // driving real <video> layers behind animated rounded-rect masks, ported
-    // into VideoMaskScene.
-    maskScene: '/animations/scene-3/scene-03.json'
+    // Same demo as the Comfy API page's product video, which has no poster.
+    video: {
+      src: 'https://media.comfy.org/website/comfy-api/comfy-api-product-demo.mp4'
+    }
   }
 ]
 
@@ -102,16 +105,20 @@ useIntersectionObserver(sectionRef, ([entry]) => {
                   )
                 "
               />
-              <VideoMaskScene
-                v-else-if="feature.maskScene"
-                :src="feature.maskScene"
-                :active="activeIndex === i"
-                :class="
-                  cn(
-                    'absolute inset-0 size-full transition-opacity duration-300 will-change-[opacity]',
-                    activeIndex === i ? 'opacity-100' : 'opacity-0'
-                  )
-                "
+              <!-- Mounted only while active so an idle tab never loads or
+                plays its video. -->
+              <VideoPlayer
+                v-else-if="feature.video && activeIndex === i"
+                :locale
+                :src="feature.video.src"
+                :poster="feature.video.poster"
+                :aria-label="feature.title"
+                autoplay
+                lazy-autoplay
+                loop
+                mute-only
+                fit="contain"
+                class="absolute inset-0 aspect-auto size-full rounded-none border-0"
               />
             </template>
           </div>
@@ -137,10 +144,18 @@ useIntersectionObserver(sectionRef, ([entry]) => {
                   :src="feature.lottie"
                   class="size-full"
                 />
-                <VideoMaskScene
-                  v-else-if="feature.maskScene"
-                  :src="feature.maskScene"
-                  class="size-full"
+                <VideoPlayer
+                  v-else-if="feature.video"
+                  :locale
+                  :src="feature.video.src"
+                  :poster="feature.video.poster"
+                  :aria-label="feature.title"
+                  autoplay
+                  lazy-autoplay
+                  loop
+                  mute-only
+                  fit="contain"
+                  class="aspect-auto size-full rounded-none border-0"
                 />
               </div>
             </div>

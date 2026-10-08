@@ -922,12 +922,12 @@
       "description": "Build powerful AI pipelines by connecting nodes on an infinite canvas. Every model, parameter, and processing step is visible and adjustable."
     },
     "feature2": {
-      "title": "App mode, a simplified view of your workflows",
-      "description": "If you are new to ComfyUI, get started with App Mode, a simplified view of your workflows. You can flip back to the node graph view anytime to go deeper."
+      "title": "Comfy Agent",
+      "description": "Describe what you want and Comfy Agent builds and runs the workflow for you."
     },
     "feature3": {
-      "title": "Community Workflows on Comfy Workflows",
-      "description": "Browse and remix thousands of community-shared workflows. Start from a proven template and customize it to your needs."
+      "title": "Comfy API",
+      "description": "Run Comfy workflows and models from your own app with one API."
     },
     "badgeHow": "HOW",
     "badgeWorks": "WORKS"
