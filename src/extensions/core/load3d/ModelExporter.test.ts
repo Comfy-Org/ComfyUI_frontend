@@ -141,7 +141,6 @@ describe('ModelExporter', () => {
     })
 
     it('rethrows and shows a toast alert when fetch fails', async () => {
-      vi.spyOn(console, 'error').mockImplementation(() => {})
       vi.stubGlobal('fetch', vi.fn().mockRejectedValue(new Error('network')))
 
       await expect(
@@ -154,7 +153,6 @@ describe('ModelExporter', () => {
     })
 
     it('rethrows and shows a toast alert when the response status is not ok', async () => {
-      vi.spyOn(console, 'error').mockImplementation(() => {})
       vi.stubGlobal(
         'fetch',
         vi.fn().mockResolvedValue({
@@ -219,7 +217,6 @@ describe('ModelExporter', () => {
     })
 
     it('alerts and rethrows when GLTFExporter rejects', async () => {
-      vi.spyOn(console, 'error').mockImplementation(() => {})
       gltfParseMock.mockImplementation(
         (_model: unknown, _onDone: unknown, onError: (e: Error) => void) =>
           onError(new Error('parse fail'))
@@ -271,7 +268,6 @@ describe('ModelExporter', () => {
     })
 
     it('alerts and rethrows when OBJExporter throws', async () => {
-      vi.spyOn(console, 'error').mockImplementation(() => {})
       objParseMock.mockImplementation(() => {
         throw new Error('obj fail')
       })
@@ -322,7 +318,6 @@ describe('ModelExporter', () => {
     })
 
     it('alerts and rethrows when STLExporter throws', async () => {
-      vi.spyOn(console, 'error').mockImplementation(() => {})
       stlParseMock.mockImplementation(() => {
         throw new Error('stl fail')
       })
@@ -403,7 +398,6 @@ describe('ModelExporter', () => {
     })
 
     it('alerts and rethrows when FBXExporter throws', async () => {
-      vi.spyOn(console, 'error').mockImplementation(() => {})
       fbxParseAsyncMock.mockRejectedValue(new Error('fbx fail'))
 
       const promise = ModelExporter.exportFBX(new THREE.Object3D(), 'out.fbx')

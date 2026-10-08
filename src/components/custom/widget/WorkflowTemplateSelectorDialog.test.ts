@@ -89,7 +89,6 @@ describe('template picker close lifecycle', () => {
       outcome: 'rejection',
       loaded: false,
       settle: (load: ReturnType<typeof deferred<boolean>>) => {
-        vi.spyOn(console, 'error').mockImplementation(() => {})
         load.reject(new Error('Graph load failed'))
       }
     },
@@ -123,7 +122,6 @@ describe('template picker close lifecycle', () => {
   })
 
   it('keeps the picker open after a fetch failure', async () => {
-    vi.spyOn(console, 'error').mockImplementation(() => {})
     const { afterClose } = renderPicker()
     const template = await screen.findByTestId('template-workflow-example')
     vi.mocked(fetch).mockRejectedValueOnce(new Error('Fetch failed'))

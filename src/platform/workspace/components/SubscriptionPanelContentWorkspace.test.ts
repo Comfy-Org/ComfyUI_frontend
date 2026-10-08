@@ -21,11 +21,29 @@ import type {
   TeamCreditStops,
   TeamCreditStopSummary
 } from '@/platform/workspace/api/workspaceApi'
+import type { BillingBannerKind } from '@/platform/workspace/composables/useBillingBanner'
 
 import SubscriptionPanelContentWorkspace from './SubscriptionPanelContentWorkspace.vue'
 import { useWorkspaceUI } from '@/platform/workspace/composables/useWorkspaceUI'
 
 const mockDistributionState = vi.hoisted(() => ({ isCloud: true }))
+const mockBillingBanner = vi.hoisted(() => ({
+  kind: null as BillingBannerKind | null
+}))
+
+vi.mock<unknown>(
+  import('@/platform/workspace/composables/useBillingBanner'),
+  async () => {
+    const { computed } = await import('vue')
+    return {
+      useBillingBanner: () => ({
+        kind: computed(() => mockBillingBanner.kind),
+        audience: computed(() => null),
+        dismiss: vi.fn()
+      })
+    }
+  }
+)
 
 vi.mock(import('@/composables/billing/useBillingRouting'))
 
@@ -305,6 +323,7 @@ describe('SubscriptionPanelContentWorkspace', () => {
         : null
     )
     mockDistributionState.isCloud = true
+    mockBillingBanner.kind = null
     mockSubscriptionStatus.value = 'active'
     mockBillingStatus.value = 'paid'
     mockBillingType.value = 'workspace'
@@ -772,7 +791,6 @@ describe('SubscriptionPanelContentWorkspace', () => {
   })
 
   it('falls back to the per-member price when the subscribed stop id is stale', () => {
-    const warn = vi.spyOn(console, 'warn').mockImplementation(() => {})
     mockCurrentTeamCreditStop.value = {
       id: 'team_unknown',
       credits_monthly: 1,
@@ -782,8 +800,7 @@ describe('SubscriptionPanelContentWorkspace', () => {
 
     expect(screen.getByText('$100')).toBeInTheDocument()
     expect(screen.getByText('USD / mo / member')).toBeInTheDocument()
-    expect(warn).toHaveBeenCalledOnce()
-    warn.mockRestore()
+    expect(console.warn).toHaveBeenCalledOnce()
   })
 
   it('shows cents when the subscribed stop price is not a whole dollar', () => {
@@ -1076,6 +1093,24 @@ describe('SubscriptionPanelContentWorkspace', () => {
     })
     expect(useBillingContext().resubscribe).not.toHaveBeenCalled()
   })
+
+  it.for([
+    { kind: null, showsCard: true },
+    { kind: 'ending', showsCard: false },
+    { kind: 'outOfCredits', showsCard: true },
+    { kind: 'planChange', showsCard: true }
+  ] as const)(
+    'lets the ending banner replace the canceled card (banner: $kind)',
+    ({ kind, showsCard }) => {
+      mockSubscriptionStatus.value = 'canceled'
+      mockBillingBanner.kind = kind
+      renderComponent()
+
+      expect(screen.queryByTestId('subscription-state-card') !== null).toBe(
+        showsCard
+      )
+    }
+  )
 
   it('keeps ended Team credits inactive when self-serve capabilities are unavailable', () => {
     mockSubscriptionStatus.value = 'canceled'

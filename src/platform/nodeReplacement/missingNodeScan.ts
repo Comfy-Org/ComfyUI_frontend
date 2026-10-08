@@ -4,7 +4,7 @@ import { LGraphEventMode } from '@/lib/litegraph/src/types/globalEnums'
 import { useNodeReplacementStore } from '@/platform/nodeReplacement/nodeReplacementStore'
 import { useExecutionErrorStore } from '@/stores/executionErrorStore'
 import { useMissingNodesErrorStore } from '@/platform/nodeReplacement/missingNodesErrorStore'
-import type { MissingNodeType } from '@/types/comfy'
+import type { MissingNodeType } from '@/platform/nodeReplacement/types'
 import {
   collectAllNodes,
   getExecutionIdByNode

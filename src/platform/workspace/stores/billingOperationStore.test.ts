@@ -1536,6 +1536,57 @@ describe('billingOperationStore', () => {
       expect(store.getOperation('op-1')?.errorMessage).toBe(detail)
     })
 
+    it('names a saved method that cannot be charged without the customer', async () => {
+      vi.mocked(workspaceApi.getBillingOpStatus).mockResolvedValue({
+        id: 'op-1',
+        status: 'failed',
+        error_message: 'subscribe_method_not_chargeable_off_session',
+        recovery_action: 'replace_payment_method',
+        started_at: new Date().toISOString()
+      })
+
+      const store = useBillingOperationStore()
+      void store.startOperation('op-1', 'subscription')
+
+      await vi.advanceTimersByTimeAsync(0)
+
+      expect(store.getOperation('op-1')).toMatchObject({
+        status: 'failed',
+        errorMessage: 'billingOperation.methodNotChargeableOffSessionDetail'
+      })
+      expect(useToastStore().add).toHaveBeenCalledWith({
+        severity: 'error',
+        summary: 'billingOperation.subscriptionFailed',
+        detail: 'billingOperation.methodNotChargeableOffSessionDetail',
+        life: 7000
+      })
+    })
+
+    it('does not name a payment method for a downgrade to personal', async () => {
+      vi.mocked(workspaceApi.getBillingOpStatus).mockResolvedValue({
+        id: 'op-1',
+        status: 'failed',
+        error_message: 'subscribe_method_not_chargeable_off_session',
+        recovery_action: 'replace_payment_method',
+        started_at: new Date().toISOString()
+      })
+
+      const store = useBillingOperationStore()
+      void store.startOperation('op-1', 'subscription', {
+        downgradeToPersonal: {
+          memberRemovalCount: 1,
+          memberRemovalFailures: 0,
+          startedAt: 0
+        }
+      })
+
+      await vi.advanceTimersByTimeAsync(0)
+
+      expect(store.getOperation('op-1')?.errorMessage).not.toBe(
+        'billingOperation.methodNotChargeableOffSessionDetail'
+      )
+    })
+
     // Neither operation presents a card, so no recovery action can describe one.
     it.for([
       { name: 'a cancellation', type: 'cancel' as const, metadata: undefined },
@@ -3340,6 +3391,74 @@ describe('billingOperationStore', () => {
         severity: 'error',
         summary: 'billingOperation.topupTimeout'
       })
+    })
+  })
+
+  describe('retention operations', () => {
+    it('leaves the refresh and the outcome to the offer dialog', async () => {
+      const billing = mockBillingContext()
+      vi.mocked(workspaceApi.getBillingOpStatus).mockResolvedValue({
+        id: 'op-1',
+        status: 'succeeded',
+        started_at: new Date().toISOString()
+      })
+
+      const store = useBillingOperationStore()
+      const terminal = store.startOperation('op-1', 'retention')
+
+      await vi.advanceTimersByTimeAsync(0)
+      const operation = await terminal
+
+      expect(operation.status).toBe('succeeded')
+      expect(billing.fetchStatus).not.toHaveBeenCalled()
+      expect(
+        useTeamWorkspaceStore().updateActiveWorkspace
+      ).not.toHaveBeenCalled()
+      expect(useSettingsDialog().show).not.toHaveBeenCalled()
+      expect(useToastStore().add).not.toHaveBeenCalled()
+    })
+
+    it.for(['failed', 'reconciliation_needed'] as const)(
+      'leaves a %s outcome to the offer dialog',
+      async (status) => {
+        vi.mocked(workspaceApi.getBillingOpStatus).mockResolvedValue({
+          id: 'op-1',
+          status,
+          started_at: new Date().toISOString()
+        })
+
+        const store = useBillingOperationStore()
+        const terminal = store.startOperation('op-1', 'retention')
+
+        await vi.advanceTimersByTimeAsync(0)
+        const operation = await terminal
+
+        expect(operation.status).toBe(status)
+        expect(useToastStore().add).not.toHaveBeenCalled()
+      }
+    )
+
+    it('polls only while its launch workspace is active', async () => {
+      vi.mocked(workspaceApi.getBillingOpStatus).mockResolvedValue({
+        id: 'op-1',
+        status: 'pending',
+        started_at: new Date().toISOString()
+      })
+
+      const store = useBillingOperationStore()
+      void store.startOperation('op-1', 'retention', {
+        workspaceId: 'workspace-2'
+      })
+      await vi.advanceTimersByTimeAsync(0)
+
+      expect(workspaceApi.getBillingOpStatus).not.toHaveBeenCalled()
+
+      Object.assign(useTeamWorkspaceStore(), {
+        activeWorkspaceId: 'workspace-2'
+      })
+      await vi.advanceTimersByTimeAsync(5_000)
+
+      expect(workspaceApi.getBillingOpStatus).toHaveBeenCalledWith('op-1')
     })
   })
 

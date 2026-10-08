@@ -1,6 +1,5 @@
 import { st } from '@/i18n'
 import type { LGraph } from '@/lib/litegraph/src/litegraph'
-import { isCloud } from '@/platform/distribution/types'
 import {
   isMissingMediaCandidateActive,
   isMissingMediaCandidateScopeActive,
@@ -53,10 +52,7 @@ export async function runMissingMediaPipeline({
   const pending = candidates.some((c) => c.isMissing === undefined)
   if (pending) {
     const controller = missingMediaStore.createVerificationAbortController()
-    void verifyMediaCandidates(candidates, {
-      isCloud,
-      signal: controller.signal
-    })
+    void verifyMediaCandidates(candidates, { signal: controller.signal })
       .then(() => {
         if (controller.signal.aborted) return
         // Re-check ancestor after async verification (see model pipeline).
@@ -86,9 +82,7 @@ export async function runMissingMediaPipeline({
       })
   } else {
     const confirmed = candidates.filter((c) => c.isMissing === true)
-    if (confirmed.length) {
-      useExecutionErrorStore().surfaceMissingMedia(confirmed, { silent })
-    }
+    useExecutionErrorStore().surfaceMissingMedia(confirmed, { silent })
     cacheMediaCandidates(activeWf, confirmed)
     onVerified?.(candidates)
   }

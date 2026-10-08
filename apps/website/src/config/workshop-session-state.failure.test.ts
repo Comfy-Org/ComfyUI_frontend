@@ -70,11 +70,10 @@ describe('useWorkshopSession initialization failure', () => {
     vi.mocked(workshopIdentity.activate).mockRejectedValueOnce(
       new Error('activate exploded')
     )
-    const errorSpy = vi.spyOn(console, 'error').mockImplementation(() => {})
     const sessionModule = await import('./workshop-session-state')
 
     sessionModule.useWorkshopSession()
-    await vi.waitFor(() => expect(errorSpy).toHaveBeenCalledOnce())
+    await vi.waitFor(() => expect(console.error).toHaveBeenCalledOnce())
     expect(
       subscribers.size,
       'a partial subscription from the failed attempt must not stay installed'
@@ -89,7 +88,6 @@ describe('useWorkshopSession initialization failure', () => {
       ).toHaveBeenCalledTimes(2)
     )
     expect(subscribers.size).toBe(1)
-    errorSpy.mockRestore()
   })
 
   it('abandons an in-flight workspace restore when a begin step fails after activation', async () => {
@@ -110,7 +108,6 @@ describe('useWorkshopSession initialization failure', () => {
     vi.mocked(subscribeAuthRefreshTelemetry).mockImplementation(() => {
       throw new Error('telemetry exploded')
     })
-    const errorSpy = vi.spyOn(console, 'error').mockImplementation(() => {})
     const sessionModule = await import('./workshop-session-state')
 
     const session = sessionModule.useWorkshopSession()
@@ -118,7 +115,7 @@ describe('useWorkshopSession initialization failure', () => {
     await vi.waitFor(() =>
       expect(vi.mocked(workshopSessionClient.remint)).toHaveBeenCalledOnce()
     )
-    await vi.waitFor(() => expect(errorSpy).toHaveBeenCalledOnce())
+    await vi.waitFor(() => expect(console.error).toHaveBeenCalledOnce())
 
     // The restore's re-mint settles only now, after begin threw and abandoned.
     finishRestore({ status: 'error', code: 'TOKEN_EXCHANGE_FAILED' })
@@ -133,6 +130,5 @@ describe('useWorkshopSession initialization failure', () => {
       vi.mocked(workshopIdentity.deactivate),
       'the failed attempt reaches deactivate(); the integration suite pins the storage effect'
     ).toHaveBeenCalledOnce()
-    errorSpy.mockRestore()
   })
 })

@@ -6,7 +6,7 @@ import TabsContent from './TabsContent.vue'
 import TabsList from './TabsList.vue'
 import TabsTrigger from './TabsTrigger.vue'
 
-const meta = {
+const meta: Meta<typeof Tabs> = {
   title: 'Components/Tabs',
   component: Tabs,
   tags: ['autodocs'],
@@ -17,7 +17,7 @@ const meta = {
     },
     'onUpdate:modelValue': { action: 'update:modelValue' }
   }
-} satisfies Meta<typeof Tabs>
+}
 
 export default meta
 type Story = StoryObj<typeof meta>

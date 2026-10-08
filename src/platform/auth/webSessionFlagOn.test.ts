@@ -1,6 +1,15 @@
 import { fromPartial } from '@total-typescript/shoehorn'
 import type { User, UserCredential } from 'firebase/auth'
-import { afterEach, assert, beforeEach, describe, expect, it, vi } from 'vitest'
+import {
+  afterEach,
+  assert,
+  beforeEach,
+  describe,
+  expect,
+  it,
+  onTestFinished,
+  vi
+} from 'vitest'
 import type { Mock } from 'vitest'
 import { setActivePinia } from 'pinia'
 import { defineComponent, effectScope } from 'vue'
@@ -66,6 +75,7 @@ import { useTeamWorkspaceStore } from '@/platform/workspace/stores/teamWorkspace
 import { useWorkspaceAuthStore } from '@/platform/workspace/stores/workspaceAuthStore'
 import { WORKSPACE_STORAGE_KEYS } from '@/platform/workspace/workspaceConstants'
 import { api } from '@/scripts/api'
+import { getSessionOverride } from '@/utils/sessionFeatureFlagOverride'
 import type { ComfyApp } from '@/scripts/app'
 import type { useExtensionService } from '@/services/extensionService'
 import { createDisposablePinia } from '@/testing/pinia'
@@ -195,7 +205,7 @@ type ServerSession =
   | 'network'
   | 'restore_token_revoked'
   | 'sso_required'
-  | { userId: string; provider?: string }
+  | { userId: string; provider?: string; email?: string }
 
 interface FeatureAnswers {
   probe: boolean
@@ -220,13 +230,14 @@ function sessionBody(
   userId: string,
   {
     provider = 'google.com',
+    email = `${userId}@example.com`,
     hasPersonalWorkspace
-  }: { provider?: string; hasPersonalWorkspace?: boolean } = {}
+  }: { provider?: string; email?: string; hasPersonalWorkspace?: boolean } = {}
 ) {
   return {
     user: {
       id: userId,
-      email: `${userId}@example.com`,
+      email,
       email_verified: true,
       sign_in_provider: provider,
       ...(hasPersonalWorkspace !== undefined && {
@@ -235,7 +246,8 @@ function sessionBody(
     },
     csrf_token: `csrf-${userId}`,
     expires_at: new Date(Date.now() + 86_400_000).toISOString(),
-    absolute_expires_at: new Date(Date.now() + 604_800_000).toISOString()
+    absolute_expires_at: new Date(Date.now() + 604_800_000).toISOString(),
+    has_personal_workspace: true
   }
 }
 
@@ -279,7 +291,10 @@ function installServer(
     }
     if (typeof session === 'object')
       return jsonResponse(
-        sessionBody(session.userId, { provider: session.provider })
+        sessionBody(session.userId, {
+          provider: session.provider,
+          email: session.email
+        })
       )
     const code = session === 'revoked' ? 'session_revoked' : 'no_session'
     return jsonResponse({ code, message: code }, 401)
@@ -533,6 +548,24 @@ describe('cloud app on the shared web session (unified_web_session on)', () => {
     expect(server.revokeAllRequests).toEqual([cookieRevokeAll])
   })
 
+  it('honours an employee ?ff= override on a session-only tab until sign-out', async () => {
+    onTestFinished(() => {
+      window.history.replaceState({}, '', '/')
+      sessionStorage.removeItem('Comfy.FeatureFlagOverride')
+    })
+    window.history.replaceState({}, '', '/?ff=onboarding_tour_enabled')
+    installServer({ userId: 'user-a', email: 'dev@comfy.org' })
+    await refreshRemoteConfig({ useAuth: false })
+    await useSessionCookie().ensureSessionCookie()
+    const webSession = useCloudWebSessionStore()
+    expect(webSession.state.phase).toBe('signed_in')
+    expect(getSessionOverride('onboarding_tour_enabled')).toBe(true)
+
+    await webSession.signOut()
+
+    expect(getSessionOverride('onboarding_tour_enabled')).toBeUndefined()
+  })
+
   it('resets the tab and tells the user when another account takes the session', async () => {
     const server = installServer({ userId: 'user-a' })
     await refreshRemoteConfig({ useAuth: false })
@@ -679,6 +712,7 @@ function installIngest(features: Record<string, boolean> = {}) {
     userId: 'user-a',
     csrfToken: 'csrf-1',
     sessionDown: false,
+    sessionMissing: false,
     refusals: [] as string[],
     mintRefusal: undefined as (() => Response) | undefined,
     mintGate: undefined as Promise<void> | undefined,
@@ -747,8 +781,12 @@ function installIngest(features: Record<string, boolean> = {}) {
     )
   }
 
-  const answerSession = (): Response =>
-    ingest.sessionDown
+  const answerSession = (method: string): Response => {
+    if (ingest.sessionMissing) {
+      return jsonResponse({ code: 'no_session', message: 'no_session' }, 401)
+    }
+    if (method === 'POST') return jsonResponse({ success: true })
+    return ingest.sessionDown
       ? jsonResponse({ code: 'unavailable', message: 'down' }, 503)
       : jsonResponse({
           ...sessionBody(ingest.userId, {
@@ -756,10 +794,11 @@ function installIngest(features: Record<string, boolean> = {}) {
           }),
           csrf_token: ingest.csrfToken
         })
+  }
 
   const respond = (request: ApiRequest, body: unknown): Response => {
     const { path, headers } = request
-    if (path === '/api/auth/session') return answerSession()
+    if (path === '/api/auth/session') return answerSession(request.method)
     if (path === '/api/auth/token') return mint(body)
     if (path === '/api/workspaces/current') {
       if (ingest.currentWorkspaceDown) return ingest.currentWorkspaceDown()
@@ -2115,12 +2154,41 @@ describe('a sibling tab under unified_cloud_auth', () => {
     })
     const workspaceAuth = useWorkspaceAuthStore()
 
-    await expect(workspaceAuth.mintAtLogin()).resolves.toBe(true)
+    await vi.waitFor(() =>
+      expect(workspaceAuth.getUnifiedToken()).toBeDefined()
+    )
     publishFromSibling()
 
     expect(firebaseExchanges()).toHaveLength(1)
     expect(workspaceAuth.currentWorkspace?.id).toBe('ws-personal')
     expect(workspaceAuth.getUnifiedToken()).toBe('sibling-jwt')
+  })
+  it('drops the fallback credential once the session signs the tab in, so a sibling token cannot move its Run', async () => {
+    const ingest = installIngest({ unified_cloud_auth: true })
+    ingest.sessionMissing = true
+    await refreshRemoteConfig({ useAuth: false })
+    useAuthStore()
+    const workspaceAuth = useWorkspaceAuthStore()
+    identity.signIn(USER_A)
+    await useSessionCookie().ensureSessionCookie()
+    await expect(workspaceAuth.mintAtLogin()).resolves.toBe(true)
+
+    ingest.sessionMissing = false
+    const webSession = useCloudWebSessionStore()
+    webSession.signedInInteractively(USER_A)
+    await webSession.whenSessionCreated()
+    await workspaceAuth.switchWorkspace('ws-team')
+    publishFromSibling()
+    await postPrompt()
+
+    expect(workspaceAuth.currentWorkspace?.id).toBe('ws-team')
+    expect(ingest.requests.at(-1)).toEqual(
+      sessionRequest('POST', '/api/prompt', {
+        'x-comfy-workspace-id': 'ws-team',
+        ...PROMPT_HEADERS,
+        'x-csrf-token': 'csrf-1'
+      })
+    )
   })
 })
 

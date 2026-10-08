@@ -123,8 +123,6 @@ beforeEach(() => {
     return Promise.resolve(tokenResponse({}, workspaceId))
   })
   vi.stubGlobal('fetch', mockFetch)
-  vi.spyOn(console, 'warn').mockImplementation(() => {})
-  vi.spyOn(console, 'error').mockImplementation(() => {})
 })
 
 describe('minting a workspace token', () => {

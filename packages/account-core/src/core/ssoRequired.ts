@@ -13,3 +13,12 @@ export function isSsoRequiredRefusal(status: number, body: unknown): boolean {
     zErrorResponse.safeParse(body).data?.code === SSO_REQUIRED_SERVER_CODE
   )
 }
+
+/**
+ * The organization whose SSO the refusal asks for, when ingest names one. A
+ * workspace accepts only its own organization's sign-in, so this outranks the
+ * organization the email's domain would discover.
+ */
+export function ssoRequiredOrganizationId(body: unknown): string | undefined {
+  return zErrorResponse.safeParse(body).data?.organization_id || undefined
+}
