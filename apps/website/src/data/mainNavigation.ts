@@ -146,6 +146,7 @@ export function getMainNavigation(locale: Locale): NavItem[] {
         imageSrc:
           'https://media.comfy.org/website/minimax-license/hero-poster.jpg',
         videoSrc: 'https://media.comfy.org/website/minimax-license/hero.mp4',
+        imageAlt: t('nav.featuredEnterpriseAlt'),
         title: t('minimaxLicense.breadcrumb.model'),
         cta: {
           label: t('minimaxLicense.runOptions.cta'),

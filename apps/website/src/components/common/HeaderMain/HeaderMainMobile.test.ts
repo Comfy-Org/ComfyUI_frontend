@@ -33,9 +33,12 @@ describe('HeaderMainMobile', () => {
     const user = await openMenu()
     await user.click(screen.getByRole('button', { name: /^Company\b/i }))
 
-    for (const label of ['Discord', 'GitHub', 'YouTube', 'Reddit']) {
-      expect(screen.getByRole('link', { name: label })).toBeTruthy()
-    }
+    const socialLinks = ['Discord', 'GitHub', 'YouTube', 'Reddit']
+    expect(
+      socialLinks.map(
+        (label) => screen.getByRole('link', { name: label }).textContent
+      )
+    ).toEqual(socialLinks)
   })
 
   it('shows no NEW badge on the top-level sections', async () => {
@@ -49,14 +52,17 @@ describe('HeaderMainMobile', () => {
     const user = await openMenu()
     await user.click(screen.getByRole('button', { name: /^Enterprise\b/i }))
 
-    for (const label of [
+    const enterpriseLinks = [
       'Comfy Enterprise',
       'Forward Deployed Creatives',
       'Team Billing',
       'Commercial Licensing',
       'Contact Sales'
-    ]) {
-      expect(screen.getByRole('link', { name: label })).toBeTruthy()
-    }
+    ]
+    expect(
+      enterpriseLinks.map(
+        (label) => screen.getByRole('link', { name: label }).textContent
+      )
+    ).toEqual(enterpriseLinks)
   })
 })
