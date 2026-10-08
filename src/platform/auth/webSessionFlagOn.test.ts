@@ -1264,6 +1264,24 @@ describe('live updates and media on the shared web session', () => {
     return ingest
   }
 
+  it('keeps the socket off Personal once the team workspace is refused and the reload is held', async () => {
+    const ingest = await bootWithSocket()
+    vi.spyOn(window.location, 'reload').mockImplementation(() => {})
+    await useWorkspaceAuthStore().switchWorkspace('ws-team')
+    await vi.waitFor(() =>
+      expect(api.socket).toEqual(
+        expect.objectContaining({ path: '/ws?workspace_id=ws-team' })
+      )
+    )
+    const socketsBefore = FakeSocket.created.length
+    ingest.refusals.push('workspace_access_denied')
+
+    await postPrompt()
+    await vi.advanceTimersByTimeAsync(0)
+
+    expect(FakeSocket.created.slice(socketsBefore)).toEqual([])
+  })
+
   it('keeps each workspace its own workflow drafts', async () => {
     await bootOnSession()
     const workspaceAuth = useWorkspaceAuthStore()
