@@ -17,13 +17,12 @@ import type { SwapTake } from '@/composables/useOpenjutsu'
 import type { Locale } from '@/i18n/translations'
 import { translationsFor } from '@/i18n/translations'
 import type { SwapWindow } from '@/lib/workshop/openjutsu/clip'
-import { FPS } from '@/lib/workshop/openjutsu/clip'
 
 const {
   videoUrl,
   clipSeconds,
   range,
-  frames,
+  partSeconds,
   takes,
   selected,
   current,
@@ -34,7 +33,7 @@ const {
   videoUrl?: string
   clipSeconds?: number
   range?: SwapWindow
-  frames?: number
+  partSeconds?: number
   takes: readonly SwapTake[]
   selected: string
   current?: SwapTake
@@ -71,12 +70,12 @@ watch(
 /** The window the player loops: the trim while editing, a take's own after. */
 const shown = computed<SwapWindow | undefined>(() => {
   if (!current)
-    return range && frames
-      ? { start: range.start, seconds: frames / FPS }
+    return range && partSeconds !== undefined
+      ? { start: range.start, seconds: partSeconds }
       : undefined
   return current.url && compare.value === 'result'
     ? undefined
-    : { start: current.window.start, seconds: current.frames / FPS }
+    : { start: current.window.start, seconds: current.seconds }
 })
 const src = computed(() =>
   current?.url && compare.value === 'result' ? current.url : videoUrl

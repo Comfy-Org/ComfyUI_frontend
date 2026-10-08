@@ -1,23 +1,34 @@
 import { describe, expect, it } from 'vitest'
 
-import { gridFrames, pickCanvas } from './clip'
+import { gridFrames, pickCanvas, sourceFrames, swapSeconds } from './clip'
 
 describe('gridFrames', () => {
   it.for<[number, number]>([
-    [4.97, 107],
-    [5, 107],
-    [5.2, 124],
-    [10, 226],
-    [14.4, 345],
+    [4.97, 124],
+    [5, 124],
+    [5.2, 141],
+    [9.4, 226],
+    [14.3, 345],
     [15, 345]
-  ])('fits %f seconds into %i frames of 17k + 5', ([seconds, frames]) => {
-    expect(gridFrames(seconds)).toBe(frames)
-    expect((frames - 5) % 17).toBe(0)
-  })
+  ])(
+    'generates the next 17k + 5 length for %f seconds: %i',
+    ([seconds, frames]) => {
+      expect(gridFrames(seconds)).toBe(frames)
+      expect((frames - 5) % 17).toBe(0)
+    }
+  )
 
-  it('never asks for more frames than the seconds hold', () => {
+  it('never generates fewer frames than the part holds', () => {
     for (let seconds = 5; seconds <= 15; seconds += 0.37)
-      expect(gridFrames(seconds) / 24).toBeLessThanOrEqual(seconds + 1e-6)
+      expect(gridFrames(seconds)).toBeGreaterThanOrEqual(sourceFrames(seconds))
+  })
+})
+
+describe('swapSeconds', () => {
+  it('gives back the part chosen, up to the longest run', () => {
+    expect(swapSeconds(5)).toBe(5)
+    expect(swapSeconds(15)).toBe(345 / 24)
+    expect(sourceFrames(15)).toBe(345)
   })
 })
 

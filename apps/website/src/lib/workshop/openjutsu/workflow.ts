@@ -1,5 +1,5 @@
 import type { SwapCanvas } from './clip'
-import { FPS } from './clip'
+import { gridFrames, sourceFrames } from './clip'
 import swapGraph from './swap.api.json'
 
 type Graph = Record<
@@ -18,8 +18,8 @@ export interface SwapRequest {
   readonly target: string
   /** Seconds into the clip where the swap starts. */
   readonly start: number
-  /** A length on H3's 17k + 5 grid; see `gridFrames`. */
-  readonly frames: number
+  /** Seconds of the clip to swap, and of the result; see `swapSeconds`. */
+  readonly seconds: number
   readonly canvas: SwapCanvas
   readonly seed: number
 }
@@ -49,15 +49,17 @@ export function resolveSeed(
   return seed === undefined ? random() : Math.min(MAX_SEED, Math.max(0, seed))
 }
 
-/** The seconds of output a request makes, which is also what it trims to. */
-export const swapSeconds = (frames: number) => frames / FPS
-
 export function swapWorkflow(request: SwapRequest): Graph {
   const graph: Graph = structuredClone(swapGraph)
   graph.video.inputs.file = request.video
   graph.character.inputs.image = request.character
   graph.trim.inputs.start_time = request.start
-  graph.frames.inputs.value = request.frames
+  // H3 is shown the part's own frames, generates the next grid length up, and
+  // the result is cut back to the part, so it lines up with the source sound.
+  graph.trim.inputs.duration = request.seconds
+  graph.sample.inputs.num_frames = sourceFrames(request.seconds)
+  graph.frames.inputs.value = gridFrames(request.seconds)
+  graph.cut.inputs.duration = request.seconds
   graph['129'].inputs.noise_seed = request.seed
   Object.assign(graph['136'].inputs, {
     prompt: swapPrompt(request.target),

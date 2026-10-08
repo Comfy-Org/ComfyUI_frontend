@@ -8,14 +8,13 @@ import ReshootDisclosure from '@/components/workshop/cinematic-studio/reshoot/Re
 import type { Locale } from '@/i18n/translations'
 import { translationsFor } from '@/i18n/translations'
 import type { StudioGate } from '@/lib/workshop/cinematic-studio/gate'
-import { FPS } from '@/lib/workshop/openjutsu/clip'
 import OpenjutsuMediaSlot from './OpenjutsuMediaSlot.vue'
 
 const {
   videoUrl,
   videoName,
   clipSeconds,
-  frames,
+  partSeconds,
   characterUrl,
   characterName,
   missing,
@@ -29,7 +28,7 @@ const {
   videoUrl?: string
   videoName?: string
   clipSeconds?: number
-  frames?: number
+  partSeconds?: number
   characterUrl?: string
   characterName?: string
   /** The first thing still needed before a run, if any. */
@@ -65,11 +64,11 @@ const seedText = computed({
 })
 
 const videoDetail = computed(() =>
-  clipSeconds === undefined || frames === undefined
+  clipSeconds === undefined || partSeconds === undefined
     ? undefined
     : t('openjutsu.video.detail', {
         seconds: clipSeconds.toFixed(1),
-        used: (frames / FPS).toFixed(1)
+        used: partSeconds.toFixed(1)
       })
 )
 const NEEDS = {

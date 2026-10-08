@@ -107,14 +107,7 @@
   "frames": {
     "class_type": "PrimitiveInt",
     "inputs": {
-      "value": 107
-    }
-  },
-  "duration": {
-    "class_type": "ComfyMathExpression",
-    "inputs": {
-      "expression": "a / 24",
-      "values.a": ["frames", 0]
+      "value": 124
     }
   },
   "video": {
@@ -128,7 +121,7 @@
     "inputs": {
       "video": ["video", 0],
       "start_time": 0,
-      "duration": ["duration", 0],
+      "duration": 5,
       "strict_duration": true
     }
   },
@@ -142,7 +135,7 @@
     "class_type": "VideoFrameSample",
     "inputs": {
       "video": ["trim", 0],
-      "num_frames": ["frames", 0],
+      "num_frames": 120,
       "strategy": "uniform",
       "seed": 0
     }
@@ -163,10 +156,19 @@
   "out": {
     "class_type": "SaveVideo",
     "inputs": {
-      "video": ["130", 0],
+      "video": ["cut", 0],
       "filename_prefix": "openjutsu/result",
       "format": "mp4",
       "format.codec": "h264"
+    }
+  },
+  "cut": {
+    "class_type": "Video Slice",
+    "inputs": {
+      "video": ["130", 0],
+      "start_time": 0,
+      "duration": 5,
+      "strict_duration": false
     }
   }
 }

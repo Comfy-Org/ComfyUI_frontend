@@ -1,14 +1,14 @@
 import { describe, expect, it } from 'vitest'
 
 import swapGraph from './swap.api.json'
-import { resolveSeed, swapPrompt, swapSeconds, swapWorkflow } from './workflow'
+import { resolveSeed, swapPrompt, swapWorkflow } from './workflow'
 
 const request = {
   video: 'clip.mp4',
   character: 'hero.png',
   target: 'the man in the purple shirt.',
   start: 2.5,
-  frames: 124,
+  seconds: 5,
   canvas: { width: 768, height: 1344 },
   seed: 42
 }
@@ -25,11 +25,16 @@ describe('swapWorkflow', () => {
     ])
   })
 
-  it('trims to the chosen part and generates the same length', () => {
-    expect(graph.trim.inputs.start_time).toBe(2.5)
+  it('shows H3 the chosen part and generates the next grid length up', () => {
+    expect(graph.trim.inputs).toMatchObject({ start_time: 2.5, duration: 5 })
+    expect(graph.sample.inputs.num_frames).toBe(120)
     expect(graph.frames.inputs.value).toBe(124)
     expect(graph['136'].inputs.length).toEqual(['frames', 0])
-    expect(swapSeconds(124)).toBeCloseTo(5.167, 3)
+  })
+
+  it('cuts the result back to the chosen length before saving', () => {
+    expect(graph.cut.inputs).toMatchObject({ start_time: 0, duration: 5 })
+    expect(graph.out.inputs.video).toEqual(['cut', 0])
   })
 
   it('sizes the canvas and seeds the run', () => {

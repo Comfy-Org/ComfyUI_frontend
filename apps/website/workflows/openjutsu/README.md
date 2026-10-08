@@ -41,30 +41,30 @@ which is what the Openjutsu build installs. Comfy Cloud's shared model list does
 
 ## Settings and why
 
-| Setting             | Value                                                                | Why                                                                                                                                                                                                   |
-| ------------------- | -------------------------------------------------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| Sampler / scheduler | `res_multistep` / `simple`                                           | The LoRA author's default.                                                                                                                                                                            |
-| Steps               | 20                                                                   | The author's default. The reference Space uses 28, and Character Swap passed at 28.                                                                                                                   |
-| Turbo LoRA          | off                                                                  | The card says none is required; its Turbo result was an experiment.                                                                                                                                   |
-| Frame rate          | 24 fps                                                               | H3's rate. The graph samples the frames it needs evenly from the chosen part. Sources under 24 fps are untested since the frame-repeat step (a KJNodes node) was removed to keep the build core-only. |
-| Length              | `17k + 5` frames, 107 to 345                                         | H3's grid. The run takes the most frames that fit the chosen part (4.5 to 14.4 s), so it is never longer than the part; 362 frames would pass 15 s.                                                   |
-| Canvas              | nearest of 1344x768, 768x1344, 768x768, 1024x768, 768x1024, 1536x672 | The LoRA's 768 short edge, matched to the source shape so the shot is not recomposed.                                                                                                                 |
-| `ref_image_size`    | `match`                                                              | The example's value. `max` may hold identity better and costs time.                                                                                                                                   |
-| Reference order     | image, then video                                                    | The order the LoRA was trained with.                                                                                                                                                                  |
-| Prompt              | the card's example wording                                           | See `swapPrompt`. The card warns that pushing expressions can suppress the swap.                                                                                                                      |
-| Sound               | source audio, trimmed to the same part                               | The card's own later reviews did this. H3's generated audio drifted.                                                                                                                                  |
+| Setting             | Value                                                                | Why                                                                                                                                                                                                                                             |
+| ------------------- | -------------------------------------------------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Sampler / scheduler | `res_multistep` / `simple`                                           | The LoRA author's default. `beta` was dropped as too slow (Rob, 2026-10-07).                                                                                                                                                                    |
+| Steps               | 20                                                                   | The author's default, and the most Rob wants spent (2026-10-07).                                                                                                                                                                                |
+| Turbo LoRA          | off                                                                  | The card says none is required; its Turbo result was an experiment.                                                                                                                                                                             |
+| Frame rate          | 24 fps                                                               | H3's rate. The graph samples the frames it needs evenly from the chosen part. Sources under 24 fps are untested since the frame-repeat step (a KJNodes node) was removed to keep the build core-only.                                           |
+| Length              | `17k + 5` frames, 124 to 345                                         | H3's grid. As the LoRA's author sets it, the run generates the next grid length at or above the chosen part (5 s becomes 124 frames) and the result is cut back to the part's own length. 345 frames (14.4 s) is the most; 362 would pass 15 s. |
+| Canvas              | nearest of 1344x768, 768x1344, 768x768, 1024x768, 768x1024, 1536x672 | The LoRA's 768 short edge, matched to the source shape so the shot is not recomposed.                                                                                                                                                           |
+| `ref_image_size`    | `match`                                                              | The example's value. `max` may hold identity better and costs time.                                                                                                                                                                             |
+| Reference order     | image, then video                                                    | The order the LoRA was trained with.                                                                                                                                                                                                            |
+| Prompt              | the card's example wording                                           | See `swapPrompt`. The card warns that pushing expressions can suppress the swap.                                                                                                                                                                |
+| Sound               | source audio, trimmed to the same part                               | The card's own later reviews did this. H3's generated audio drifted.                                                                                                                                                                            |
 
 ## App inputs to graph inputs
 
-| App input                        | Graph input                                                            |
-| -------------------------------- | ---------------------------------------------------------------------- |
-| Video                            | `video.file`                                                           |
-| Character image                  | `character.image`                                                      |
-| Who to replace                   | `136.prompt`, through `swapPrompt`                                     |
-| Start of the part (trim dialog)  | `trim.start_time` (seconds)                                            |
-| Length of the part (trim dialog) | `frames.value`, through `gridFrames`; the trim length is `frames / 24` |
-| Canvas                           | `136.width`, `136.height`                                              |
-| Seed (blank draws one)           | `129.noise_seed`                                                       |
+| App input                        | Graph input                                                                                                           |
+| -------------------------------- | --------------------------------------------------------------------------------------------------------------------- |
+| Video                            | `video.file`                                                                                                          |
+| Character image                  | `character.image`                                                                                                     |
+| Who to replace                   | `136.prompt`, through `swapPrompt`                                                                                    |
+| Start of the part (trim dialog)  | `trim.start_time` (seconds)                                                                                           |
+| Length of the part (trim dialog) | `trim.duration` and `cut.duration` (seconds), `sample.num_frames` (the part at 24 fps), `frames.value` (`gridFrames`) |
+| Canvas                           | `136.width`, `136.height`                                                                                             |
+| Seed (blank draws one)           | `129.noise_seed`                                                                                                      |
 
 Output: node `out` saves `openjutsu/result_*.mp4` (H.264). `LoadVideo` also
 emits a preview of the input under node `video`; the app takes the file whose
@@ -92,8 +92,6 @@ excludes the US, EU, UK and South Korea and describes separate authorisation.
 
 ## Open before a paid run
 
-1. Steps 20 against 28, and `simple` against `beta` (the H3 template's note
-   says `beta` or `normal` can do better with references).
 2. `ref_image_size` `match` against `max`.
 3. Whether 10 to 14 second parts hold up at all, and what each length costs.
 4. The LoRA installed on a deployment, and the name it has there.

@@ -11,21 +11,30 @@ export const SWAP_TRIM_LIMITS: TrimLimits = { min: 5, max: 15 }
 /** The longest run: 345 frames (14.4 s). The next grid length passes 15 s. */
 const MAX_FRAMES = 345
 
+/** The seconds a swap gives back: the part chosen, up to H3's longest run. */
+export const swapSeconds = (chosen: number) =>
+  Math.min(chosen, MAX_FRAMES / FPS)
+
+/** The frames of the chosen part at 24 fps: what H3 is shown of the source. */
+export const sourceFrames = (chosen: number) =>
+  Math.round(swapSeconds(chosen) * FPS)
+
 /**
- * The most frames H3's grid fits into `seconds` of source at 24 fps. The run
- * is a little shorter than the part chosen, never longer than it.
+ * The frames H3 generates for a part: the next grid length at or above it,
+ * as the LoRA's author sets it (5 s becomes 124 frames). The result is then
+ * cut back to the part's own length.
  */
-export function gridFrames(seconds: number): number {
-  const available = Math.floor(seconds * FPS + 1e-6)
-  const spare = (available - GRID_OFFSET) % GRID_STEP
-  return Math.min(MAX_FRAMES, available - Math.max(0, spare))
+export function gridFrames(chosen: number): number {
+  const needed = sourceFrames(chosen)
+  const short = (GRID_OFFSET - needed) % GRID_STEP
+  return Math.min(MAX_FRAMES, needed + ((short + GRID_STEP) % GRID_STEP))
 }
 
 /** The part of the clip a swap runs on. */
 export interface SwapWindow {
   /** Seconds into the clip. */
   readonly start: number
-  /** Seconds chosen; the run uses `gridFrames` of it. */
+  /** Seconds chosen; see `swapSeconds` for what comes back. */
   readonly seconds: number
 }
 

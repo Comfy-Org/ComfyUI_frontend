@@ -24,7 +24,7 @@ const {
   target,
   seed,
   range,
-  frames,
+  partSeconds,
   takes,
   selected,
   current,
@@ -80,7 +80,7 @@ const { leavingTo, leave, stay } = useCinematicLeaveGuard(
         :video-url="videoUrl"
         :video-name="video?.name"
         :clip-seconds="clipSeconds"
-        :frames
+        :part-seconds="partSeconds"
         :character-url="characterUrl"
         :character-name="character?.name"
         :missing
@@ -99,7 +99,7 @@ const { leavingTo, leave, stay } = useCinematicLeaveGuard(
         :video-url="videoUrl"
         :clip-seconds="clipSeconds"
         :range
-        :frames
+        :part-seconds="partSeconds"
         :takes
         :selected
         :current
