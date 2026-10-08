@@ -47,6 +47,10 @@ function trySend(send: () => boolean): boolean {
   }
 }
 
+// Past this many out-of-order frames the evidence is dropped (failing
+// closed); the next catch-up restores it.
+const MAX_APPLIED_ABOVE_INTEGRATED = 10_000
+
 /**
  * Bridges server doc frames to the follower's semantic {@link FollowerDoc} and
  * re-dispatches them. It does NOT touch the layout store: the semantic doc is
@@ -105,6 +109,8 @@ export class LayoutFollowerBridge extends EventTarget {
   private attemptLastSeq: number | null = null
   /** Highest contiguous server seq proven to exist in the follower document. */
   private integratedSeq: number | null = null
+  /** Applied seqs above {@link integratedSeq} still waiting on a predecessor. */
+  private readonly appliedAboveIntegrated = new Set<number>()
   /**
    * The host's seq at the moment it acknowledged the current subscribe
    * (`doc_subscribed.seq`); `null` until that ack lands. It is NOT an applied
@@ -160,7 +166,7 @@ export class LayoutFollowerBridge extends EventTarget {
    * at 0 until the next live frame.
    */
   get lastSequence(): number {
-    return this.lastSeq ?? this.ackSeq ?? 0
+    return Math.max(this.lastSeq ?? 0, this.ackSeq ?? 0)
   }
 
   get isSubscribeBaselineIntegrated(): boolean {
@@ -456,6 +462,7 @@ export class LayoutFollowerBridge extends EventTarget {
     this.lastSeq = null
     this.attemptLastSeq = null
     this.integratedSeq = null
+    this.appliedAboveIntegrated.clear()
     this.ackSeq = null
     this.catchUpPending = false
     this.subscribeAcknowledged = false
@@ -520,13 +527,27 @@ export class LayoutFollowerBridge extends EventTarget {
       this.recordCatchUpSequence(seq)
     } else if (this.isNextIntegratedSequence(seq)) {
       this.integratedSeq = seq
+    } else if (seq > (this.integratedSeq ?? 0)) {
+      this.appliedAboveIntegrated.add(seq)
     }
+    this.drainAppliedAboveIntegrated()
     this.subscribeBaselineIntegrated = this.hasIntegratedSubscribeBaseline()
   }
 
+  /** A catch-up vouches for its own seq only, never for frames beyond it. */
   private recordCatchUpSequence(seq: number): void {
     this.catchUpPending = false
-    this.integratedSeq = Math.max(this.integratedSeq ?? 0, this.lastSeq ?? seq)
+    this.integratedSeq = Math.max(this.integratedSeq ?? 0, seq)
+    for (const held of this.appliedAboveIntegrated)
+      if (held <= this.integratedSeq) this.appliedAboveIntegrated.delete(held)
+  }
+
+  private drainAppliedAboveIntegrated(): void {
+    if (this.integratedSeq !== null)
+      while (this.appliedAboveIntegrated.delete(this.integratedSeq + 1))
+        this.integratedSeq += 1
+    if (this.appliedAboveIntegrated.size > MAX_APPLIED_ABOVE_INTEGRATED)
+      this.appliedAboveIntegrated.clear()
   }
 
   private isNextIntegratedSequence(seq: number): boolean {
