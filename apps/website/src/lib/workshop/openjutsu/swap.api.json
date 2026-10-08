@@ -93,7 +93,7 @@
   "145": {
     "class_type": "LoraLoaderModelOnly",
     "inputs": {
-      "lora_name": "akatz-ai__MiniMax-H3-Character-Swap-LoRA__h3_character_swap_pro4500_1000.safetensors",
+      "lora_name": "h3_character_swap_pro4500_1000.safetensors",
       "strength_model": 1,
       "model": ["127", 0]
     }
@@ -138,42 +138,10 @@
       "video": ["trim", 0]
     }
   },
-  "repeats": {
-    "class_type": "ComfyMathExpression",
-    "inputs": {
-      "expression": "max(1, ceil(24 / a))",
-      "values.a": ["components", 2]
-    }
-  },
-  "repeat-frames": {
-    "class_type": "ImageBatchRepeatInterleaving",
-    "inputs": {
-      "images": ["components", 0],
-      "repeats": ["repeats", 1]
-    }
-  },
-  "repeat-fps": {
-    "class_type": "ComfyMathExpression",
-    "inputs": {
-      "expression": "a * b",
-      "values.a": ["components", 2],
-      "values.b": ["repeats", 1]
-    }
-  },
-  "source-frames": {
-    "class_type": "CreateVideo",
-    "inputs": {
-      "images": ["repeat-frames", 0],
-      "fps": ["repeat-fps", 0],
-      "bit_depth": 8,
-      "color_space": "sRGB",
-      "codec": "none"
-    }
-  },
   "sample": {
     "class_type": "VideoFrameSample",
     "inputs": {
-      "video": ["source-frames", 0],
+      "video": ["trim", 0],
       "num_frames": ["frames", 0],
       "strategy": "uniform",
       "seed": 0

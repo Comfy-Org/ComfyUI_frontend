@@ -9,6 +9,9 @@ been benchmarked; see "Open before a paid run".
 The graph is `src/lib/workshop/openjutsu/swap.api.json`, filled in by
 `workflow.ts` beside it. Every node is built into ComfyUI; no custom node pack.
 
+Build spec (outside the repo): `~/comfyvibe/projects/comfy_workshop/openjutsu/build/comfy-build.yaml`,
+Build `openjutsu-h3-swap` (`4dacf7e1-f80e-4315-902b-6c769af2e79e`), ComfyUI `52f98af2`.
+
 ## What it does
 
 One job: swap one person in a chosen 5 to 15 second part of a video for the
@@ -33,24 +36,23 @@ character in one image, keep the scene, and put the clip's own sound back on the
 | Video VAE       | `minimax_h3_video_vae_fp16`                                | What Comfy Cloud has. The example uses the `int8_convrot` build of the same VAE.         |
 | Audio VAE       | `minimax_h3_audio_vae_fp32`                                | Loaded because the conditioning node needs it; its output is not decoded.                |
 
-The LoRA is not in Cloud's model list. `lora_name` is the name it took when
-imported into Rob's account, so **a deployment must have the LoRA installed
-under a name this graph is then given**.
+The graph names the LoRA by its published file name, `h3_character_swap_pro4500_1000.safetensors`,
+which is what the Openjutsu build installs. Comfy Cloud's shared model list does not have it.
 
 ## Settings and why
 
-| Setting             | Value                                                                | Why                                                                                                                                                 |
-| ------------------- | -------------------------------------------------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------- |
-| Sampler / scheduler | `res_multistep` / `simple`                                           | The LoRA author's default.                                                                                                                          |
-| Steps               | 20                                                                   | The author's default. The reference Space uses 28, and Character Swap passed at 28.                                                                 |
-| Turbo LoRA          | off                                                                  | The card says none is required; its Turbo result was an experiment.                                                                                 |
-| Frame rate          | 24 fps                                                               | H3's rate. The graph resamples other rates rather than changing speed.                                                                              |
-| Length              | `17k + 5` frames, 107 to 345                                         | H3's grid. The run takes the most frames that fit the chosen part (4.5 to 14.4 s), so it is never longer than the part; 362 frames would pass 15 s. |
-| Canvas              | nearest of 1344x768, 768x1344, 768x768, 1024x768, 768x1024, 1536x672 | The LoRA's 768 short edge, matched to the source shape so the shot is not recomposed.                                                               |
-| `ref_image_size`    | `match`                                                              | The example's value. `max` may hold identity better and costs time.                                                                                 |
-| Reference order     | image, then video                                                    | The order the LoRA was trained with.                                                                                                                |
-| Prompt              | the card's example wording                                           | See `swapPrompt`. The card warns that pushing expressions can suppress the swap.                                                                    |
-| Sound               | source audio, trimmed to the same part                               | The card's own later reviews did this. H3's generated audio drifted.                                                                                |
+| Setting             | Value                                                                | Why                                                                                                                                                                                                   |
+| ------------------- | -------------------------------------------------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Sampler / scheduler | `res_multistep` / `simple`                                           | The LoRA author's default.                                                                                                                                                                            |
+| Steps               | 20                                                                   | The author's default. The reference Space uses 28, and Character Swap passed at 28.                                                                                                                   |
+| Turbo LoRA          | off                                                                  | The card says none is required; its Turbo result was an experiment.                                                                                                                                   |
+| Frame rate          | 24 fps                                                               | H3's rate. The graph samples the frames it needs evenly from the chosen part. Sources under 24 fps are untested since the frame-repeat step (a KJNodes node) was removed to keep the build core-only. |
+| Length              | `17k + 5` frames, 107 to 345                                         | H3's grid. The run takes the most frames that fit the chosen part (4.5 to 14.4 s), so it is never longer than the part; 362 frames would pass 15 s.                                                   |
+| Canvas              | nearest of 1344x768, 768x1344, 768x768, 1024x768, 768x1024, 1536x672 | The LoRA's 768 short edge, matched to the source shape so the shot is not recomposed.                                                                                                                 |
+| `ref_image_size`    | `match`                                                              | The example's value. `max` may hold identity better and costs time.                                                                                                                                   |
+| Reference order     | image, then video                                                    | The order the LoRA was trained with.                                                                                                                                                                  |
+| Prompt              | the card's example wording                                           | See `swapPrompt`. The card warns that pushing expressions can suppress the swap.                                                                                                                      |
+| Sound               | source audio, trimmed to the same part                               | The card's own later reviews did this. H3's generated audio drifted.                                                                                                                                  |
 
 ## App inputs to graph inputs
 
