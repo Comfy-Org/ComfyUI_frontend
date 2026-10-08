@@ -30,6 +30,21 @@ const assertiveToasts = computed(() =>
   toasts.value.filter((toast) => toast.kind !== 'success')
 )
 
+let escapeToastId: number | undefined
+
+function preserveToastOnEscape(event: KeyboardEvent, id: number) {
+  if (!event.defaultPrevented) escapeToastId = id
+}
+
+function updateToastOpen(id: number, open: boolean) {
+  if (open) return
+  if (escapeToastId === id) {
+    escapeToastId = undefined
+    return
+  }
+  dismissAuthToast(id)
+}
+
 function announcement(toast: AuthToast) {
   return [toast.title, toast.description].filter(Boolean).join('. ')
 }
@@ -54,13 +69,15 @@ const KIND_ICON = {
       </p>
     </div>
   </div>
-  <ToastProvider>
+  <ToastProvider v-if="toasts.length" disable-swipe>
     <ToastRoot
       v-for="toast in toasts"
       :key="toast.id"
+      :open="true"
       :duration="toast.duration"
       class="pointer-events-auto flex items-start gap-3 rounded-2xl border border-primary-comfy-canvas/15 bg-primary-comfy-ink-light p-4 text-primary-comfy-canvas shadow-lg"
-      @update:open="(open) => open || dismissAuthToast(toast.id)"
+      @escape-key-down="preserveToastOnEscape($event, toast.id)"
+      @update:open="updateToastOpen(toast.id, $event)"
     >
       <div class="contents" data-reka-toast-announce-exclude="">
         <component
