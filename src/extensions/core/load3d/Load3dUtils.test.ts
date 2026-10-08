@@ -63,10 +63,7 @@ describe('Load3dUtils upload failures', () => {
   })
 
   it('warns with a localized title and throws when the temp image upload is rejected', async () => {
-    vi.stubGlobal(
-      'fetch',
-      vi.fn().mockResolvedValue({ blob: () => Promise.resolve(new Blob()) })
-    )
+    vi.mocked(fetch).mockResolvedValue(new Response(new Blob()))
     vi.mocked(api.fetchApi).mockResolvedValue(serverError())
 
     await expect(
