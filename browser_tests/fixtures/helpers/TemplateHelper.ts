@@ -47,6 +47,15 @@ export function withTemplates(templates: TemplateInfo[]): TemplateOperator {
   return (config) => addTemplates(config, templates)
 }
 
+/**
+ * Serves this index instead of the default-module one `mockTemplateIndex`
+ * builds. The module a template is served under decides whether it counts as
+ * first-party, so a test about that distinction has to choose it.
+ */
+export function withIndex(index: WorkflowTemplates[]): TemplateOperator {
+  return (config) => ({ ...config, index })
+}
+
 export class TemplateHelper {
   private templates: TemplateInfo[]
   private index: WorkflowTemplates[] | null
