@@ -346,10 +346,6 @@ type AwarenessStateResult =
   | { kind: 'absent' }
   | { kind: 'invalid' }
 
-/**
- * An awareness frame's state: `absent` when the wire carries none (missing or
- * null), `invalid` when it is malformed or over budget.
- */
 function parseAwarenessState(value: unknown): AwarenessStateResult {
   if (isAbsent(value)) return { kind: 'absent' }
   const state = parseRecord(value)
