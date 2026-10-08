@@ -4,24 +4,33 @@ import type {
   ISerialisedGraph,
   SerialisableGraph
 } from '@/lib/litegraph/src/types/serialisation'
-import type { ComfyNodeDef as ComfyNodeDefV1 } from '@/schemas/nodeDefSchema'
+import type {
+  ComfyNodeDef as ComfyNodeDefV1,
+  InputSpec
+} from '@/schemas/nodeDefSchema'
 import { useLitegraphService } from '@/services/litegraphService'
 import { app } from '@/scripts/app'
 import { toNodeId } from '@/types/nodeId'
 import { reloadSerializedGraph } from '@/utils/__tests__/litegraphTestUtils'
+import { growAutogrowInput } from './dynamicWidgets'
 
 const TYPE = 'test/SeedanceRef'
 const IMAGES = 'model.reference_images'
 const VIDEOS = 'model.reference_videos'
 
-function ag(inputType: string, key: string, names: string[]) {
+function ag(
+  inputType: string,
+  key: string,
+  names: string[],
+  min = 0
+): InputSpec {
   return [
     'COMFY_AUTOGROW_V3',
     {
       template: {
         input: { required: { [key]: [inputType, {}] } },
         names,
-        min: 0
+        min
       }
     }
   ]
@@ -76,6 +85,45 @@ const def: ComfyNodeDefV1 = {
   output_node: false
 }
 
+function nonDefaultReferencesDef(referenceImages: InputSpec): ComfyNodeDefV1 {
+  return {
+    ...def,
+    input: {
+      required: {
+        model: [
+          'COMFY_DYNAMICCOMBO_V3',
+          {
+            options: [
+              { key: 'without references', inputs: {} },
+              {
+                key: 'with references',
+                inputs: {
+                  required: {
+                    reference_images: referenceImages,
+                    reference_videos: ag('VIDEO', 'video', seq('video', 3))
+                  }
+                }
+              }
+            ]
+          }
+        ]
+      }
+    }
+  }
+}
+
+const prefixImages: InputSpec = [
+  'COMFY_AUTOGROW_V3',
+  {
+    template: {
+      input: { required: { image: ['IMAGE', {}] } },
+      prefix: 'image_',
+      min: 0,
+      max: 4
+    }
+  }
+]
+
 class Src extends LGraphNode {
   constructor() {
     super('Src')
@@ -110,6 +158,16 @@ function nodeIn(graph: LGraph, id: number) {
   const node = graph.getNodeById(toNodeId(id))
   assert.ok(node, `node ${id}`)
   return node
+}
+
+function sampleReloads(graph: LGraph, nodeId: number, count: number) {
+  const samples = []
+  for (let generation = 0; generation < count; generation++) {
+    graph = reloadAsTabSwitch(graph.serialize())
+    const node = nodeIn(graph, nodeId)
+    samples.push({ linked: linked(node), slots: groupSlots(node) })
+  }
+  return samples
 }
 
 function selectModel(node: LGraphNode, option: string) {
@@ -293,20 +351,135 @@ describe('Autogrow-in-DynamicCombo links survive a workflow reload (FE-2443)', (
     }
   )
 
-  test('a second round-trip of the reloaded graph keeps the same links and slots', () => {
-    const { graph, node } = buildGraph(undefined, 6, 2)
-    const before = { linked: linked(node), slots: groupSlots(node) }
+  test.for([
+    {
+      images: 1,
+      linked: [`${image(1)}<-2`, `${video(1)}<-3`, `${video(2)}<-4`],
+      slots: [image(1), image(2), video(1), video(2), video(3)]
+    },
+    {
+      images: 6,
+      linked: [
+        `${image(1)}<-2`,
+        `${image(2)}<-3`,
+        `${image(3)}<-4`,
+        `${image(4)}<-5`,
+        `${image(5)}<-6`,
+        `${image(6)}<-7`,
+        `${video(1)}<-8`,
+        `${video(2)}<-9`
+      ],
+      slots: [...seq(`${IMAGES}.image`, 7), ...seq(`${VIDEOS}.video`, 3)]
+    }
+  ])(
+    '$images image and 2 video links keep their endpoints and slots over six reloads',
+    ({ images, linked, slots }) => {
+      const { graph, node } = buildGraph(undefined, images, 2)
 
-    const once = reloadAsTabSwitch(graph.serialize())
-    const twiceNode = nodeIn(
-      reloadAsTabSwitch(once.serialize()),
-      Number(node.id)
-    )
+      expect(sampleReloads(graph, Number(node.id), 6)).toEqual(
+        Array.from({ length: 6 }, () => ({ linked, slots }))
+      )
+    }
+  )
 
-    expect({ linked: linked(twiceNode), slots: groupSlots(twiceNode) }).toEqual(
-      before
-    )
-  })
+  test.for([
+    {
+      min: 0,
+      images: 5,
+      videos: 0,
+      linked: [
+        `${image(1)}<-2`,
+        `${image(2)}<-3`,
+        `${image(3)}<-4`,
+        `${image(4)}<-5`,
+        `${image(5)}<-6`
+      ],
+      slots: [...seq(`${IMAGES}.image`, 6), video(1)]
+    },
+    {
+      min: 2,
+      images: 6,
+      videos: 2,
+      linked: [
+        `${image(1)}<-2`,
+        `${image(2)}<-3`,
+        `${image(3)}<-4`,
+        `${image(4)}<-5`,
+        `${image(5)}<-6`,
+        `${image(6)}<-7`,
+        `${video(1)}<-8`,
+        `${video(2)}<-9`
+      ],
+      slots: [...seq(`${IMAGES}.image`, 7), ...seq(`${VIDEOS}.video`, 3)]
+    },
+    {
+      min: 4,
+      images: 8,
+      videos: 3,
+      linked: [
+        `${image(1)}<-2`,
+        `${image(2)}<-3`,
+        `${image(3)}<-4`,
+        `${image(4)}<-5`,
+        `${image(5)}<-6`,
+        `${image(6)}<-7`,
+        `${image(7)}<-8`,
+        `${image(8)}<-9`,
+        `${video(1)}<-10`,
+        `${video(2)}<-11`,
+        `${video(3)}<-12`
+      ],
+      slots: [...seq(`${IMAGES}.image`, 9), ...seq(`${VIDEOS}.video`, 3)]
+    }
+  ])(
+    'restores a non-default option with min=$min, $images images and $videos videos',
+    async ({ min, images, videos, linked: expectedLinked, slots }) => {
+      await useLitegraphService().registerNodeDef(
+        TYPE,
+        nonDefaultReferencesDef(ag('IMAGE', 'image', seq('image', 9), min))
+      )
+      const { graph, node } = buildGraph('with references', images, videos)
+
+      const reloadedNode = nodeIn(
+        reloadAsTabSwitch(graph.serialize()),
+        Number(node.id)
+      )
+
+      expect({
+        linked: linked(reloadedNode),
+        slots: groupSlots(reloadedNode)
+      }).toEqual({ linked: expectedLinked, slots })
+    }
+  )
+
+  test.for([
+    { ordinal: 3, expected: `${IMAGES}.image_3` },
+    { ordinal: 4, expected: undefined },
+    { ordinal: 900_000_000, expected: undefined }
+  ])(
+    'bounds growth of prefix ordinal $ordinal by the group maximum',
+    async ({ ordinal, expected }) => {
+      await useLitegraphService().registerNodeDef(
+        TYPE,
+        nonDefaultReferencesDef(prefixImages)
+      )
+      const { graph, node } = buildGraph('with references', 0, 0)
+      vi.spyOn(graph, 'setDirtyCanvas').mockImplementation(() => {
+        if (vi.mocked(graph.setDirtyCanvas).mock.calls.length > 100)
+          throw new Error('Autogrow exceeded its canvas invalidation budget')
+      })
+
+      const slot = growAutogrowInput(node, `${IMAGES}.image_${ordinal}`)
+
+      expect({
+        input: slot === undefined ? undefined : node.inputs[slot].name,
+        slots: groupSlots(node)
+      }).toEqual({
+        input: expected,
+        slots: [`${IMAGES}.image_0`, image(1), image(2), image(3), video(1)]
+      })
+    }
+  )
 
   test('switching the option by hand hands over only the fresh layout', () => {
     const { node } = buildGraph(undefined, 6, 2)
