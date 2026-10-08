@@ -1,5 +1,6 @@
 <template>
   <div
+    ref="containerElement"
     class="relative size-full overflow-hidden rounded-sm bg-black"
     @mouseenter="isHovered = true"
     @mouseleave="isHovered = false"
@@ -8,6 +9,7 @@
       v-if="status !== 'failed'"
       ref="videoElement"
       data-testid="media-asset-video"
+      :aria-label="getAssetDisplayName(asset)"
       :src="src"
       :controls="shouldShowControls"
       preload="metadata"
@@ -37,6 +39,7 @@ import { computed, ref } from 'vue'
 
 import { useRetryableMediaSrc } from '@/composables/media/useRetryableMediaSrc'
 import type { AssetMeta } from '../schemas/mediaAssetSchema'
+import { getAssetDisplayName } from '../utils/assetMetadataUtils'
 
 import VideoPlayOverlay from './VideoPlayOverlay.vue'
 
@@ -45,6 +48,7 @@ const { asset, showNativeControls = true } = defineProps<{
   showNativeControls?: boolean
 }>()
 
+const containerElement = ref<HTMLDivElement | null>(null)
 const videoElement = ref<HTMLVideoElement | null>(null)
 const isHovered = ref(false)
 const isPlaying = ref(false)
@@ -76,28 +80,29 @@ const handleVideoError = () => {
 // `composedPath()`. Position is the only signal, and the strip is roughly the
 // bottom 38px in WebKit and the bottom 64px in Chromium. Use the larger
 // value: over-guarding a few extra px on WebKit is a minor inconvenience,
-// under-guarding on Chromium defeats this fix entirely.
+// under-guarding on Chromium defeats this fix entirely. Measure the clipping
+// container, not the video: the video is scaled while hovered, so its rect
+// extends below the visible edge.
 const NATIVE_CONTROLS_STRIP_PX = 64
 
-function isOverNativeControls(event: MouseEvent, video: HTMLVideoElement) {
-  const { bottom, height } = video.getBoundingClientRect()
+function isOverNativeControls(event: MouseEvent, container: HTMLElement) {
+  const { bottom, height } = container.getBoundingClientRect()
   if (height <= 0) return false
   const stripHeight = Math.min(NATIVE_CONTROLS_STRIP_PX, height / 2)
   const distanceFromBottom = bottom - event.clientY
   return distanceFromBottom >= 0 && distanceFromBottom <= stripHeight
 }
 
-async function onVideoClick(event: MouseEvent) {
+function stopNativeControlsClick(event: MouseEvent) {
+  const container = containerElement.value
+  if (container && isOverNativeControls(event, container)) {
+    event.stopPropagation()
+  }
+}
+
+async function togglePlayback() {
   const video = videoElement.value
   if (!video) return
-
-  // Clicks elsewhere on the video keep bubbling so modifier-select still works.
-  if (shouldShowControls.value) {
-    if (isOverNativeControls(event, video)) event.stopPropagation()
-    return
-  }
-
-  if (event.shiftKey || event.metaKey || event.ctrlKey) return
 
   if (video.paused || video.ended) {
     await video.play().catch(() => {})
@@ -105,5 +110,16 @@ async function onVideoClick(event: MouseEvent) {
   }
 
   video.pause()
+}
+
+async function onVideoClick(event: MouseEvent) {
+  if (shouldShowControls.value) {
+    stopNativeControlsClick(event)
+    return
+  }
+
+  if (event.shiftKey || event.metaKey || event.ctrlKey) return
+
+  await togglePlayback()
 }
 </script>
