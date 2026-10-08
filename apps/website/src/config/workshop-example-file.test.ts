@@ -51,25 +51,12 @@ describe('example source images', () => {
       }
     }
   )
-  it.for([
-    'wan--reference-to-video-3.0--animate-images',
-    'wan--reference-video-2.7--animate-images'
-  ])('preserves multiple reference assets in order for %s', async (slug) => {
+  async function prepareReferenceAssets(slug: string, companionUrl: string) {
     const page = getRouterWorkshopModelDetail(slug)
     if (!page?.execution) throw new Error('Missing Wan page')
     const initialValues = defaultValues(schemaForModel(page), page.defaults)
-    expect(initialValues.image_url).toMatch(/^https:\/\//)
-    const hasPinnedCompanion =
-      slug === 'wan--reference-to-video-3.0--animate-images'
-    const values: FormValues = {
-      ...initialValues,
-      image_url_2: hasPinnedCompanion
-        ? 'https://cdn.jsdelivr.net/gh/Comfy-Org/workflow_templates@3db6490611e6a16b84b09110e61a07264ce47cd3/input/reference.png'
-        : `https://example.com/${slug}.png`
-    }
-    const sources = [values.image_url, values.image_url_2]
+    const values: FormValues = { ...initialValues, image_url_2: companionUrl }
     const uploaded: string[] = []
-    const downloads: string[] = []
     let grants = 0
     vi.mocked(fetch).mockImplementation(async (url, init) => {
       if (init?.method === 'POST') {
@@ -84,7 +71,6 @@ describe('example source images', () => {
         uploaded.push(await init.body.text())
         return new Response(null)
       }
-      downloads.push(String(url))
       return new Response(String(url), {
         headers: { 'Content-Type': 'image/png' }
       })
@@ -97,19 +83,30 @@ describe('example source images', () => {
       undefined,
       (file, signal) => uploader(file, 'token', 'owner:workspace', signal)
     )
+    return { body, primaryUrl: values.image_url, uploaded }
+  }
+
+  it('re-hosts the pinned template companion after the primary reference', async () => {
+    const companionUrl =
+      'https://cdn.jsdelivr.net/gh/Comfy-Org/workflow_templates@3db6490611e6a16b84b09110e61a07264ce47cd3/input/reference.png'
+    const { body, primaryUrl, uploaded } = await prepareReferenceAssets(
+      'wan--reference-to-video-3.0--animate-images',
+      companionUrl
+    )
+
+    expect(primaryUrl).toMatch(/^https:\/\//)
     expect(body).toMatchObject({
       input: {
-        media: sources.map((source, index) => ({
-          type: 'reference_image',
-          url:
-            hasPinnedCompanion && index === 1
-              ? 'https://storage.example/reference-1.png'
-              : source
-        }))
+        media: [
+          { type: 'reference_image', url: primaryUrl },
+          {
+            type: 'reference_image',
+            url: 'https://storage.example/reference-1.png'
+          }
+        ]
       }
     })
-    expect(downloads).toEqual(hasPinnedCompanion ? [sources[1]] : [])
-    expect(uploaded).toEqual(hasPinnedCompanion ? [sources[1]] : [])
+    expect(uploaded).toEqual([companionUrl])
     expect(
       vi.mocked(fetch).mock.calls.map(([url, init]) => ({
         url: String(url),
@@ -117,25 +114,42 @@ describe('example source images', () => {
         credentials: init?.credentials,
         body: init?.body
       }))
-    ).toEqual(
-      hasPinnedCompanion
-        ? [
-            { url: sources[1], credentials: 'omit' },
-            {
-              url: expect.stringMatching(/\/customers\/storage$/),
-              method: 'POST',
-              credentials: 'omit',
-              body: expect.any(String)
-            },
-            {
-              url: 'https://storage.example/upload-1',
-              method: 'PUT',
-              credentials: 'omit',
-              body: expect.objectContaining({ type: 'image/png' })
-            }
-          ]
-        : []
+    ).toEqual([
+      { url: companionUrl, credentials: 'omit' },
+      {
+        url: expect.stringMatching(/\/customers\/storage$/),
+        method: 'POST',
+        credentials: 'omit',
+        body: expect.any(String)
+      },
+      {
+        url: 'https://storage.example/upload-1',
+        method: 'PUT',
+        credentials: 'omit',
+        body: expect.objectContaining({ type: 'image/png' })
+      }
+    ])
+  })
+
+  it('passes both reference URLs through in order when neither is a template asset', async () => {
+    const companionUrl =
+      'https://example.com/wan--reference-video-2.7--animate-images.png'
+    const { body, primaryUrl, uploaded } = await prepareReferenceAssets(
+      'wan--reference-video-2.7--animate-images',
+      companionUrl
     )
+
+    expect(primaryUrl).toMatch(/^https:\/\//)
+    expect(body).toMatchObject({
+      input: {
+        media: [
+          { type: 'reference_image', url: primaryUrl },
+          { type: 'reference_image', url: companionUrl }
+        ]
+      }
+    })
+    expect(uploaded).toEqual([])
+    expect(fetch).not.toHaveBeenCalled()
   })
   it('preserves all reference images in a native multi-image request, not filenames or URLs as Base64', async () => {
     const page = getRouterWorkshopModelDetail(
