@@ -223,6 +223,40 @@ test.describe('Color Palette', { tag: ['@screenshot', '@settings'] }, () => {
     })
   })
 
+  test.describe('Interface surfaces', () => {
+    test.use({
+      initialSettings: {
+        'Comfy.UseNewMenu': 'Disabled',
+        'Comfy.CustomColorPalettes': customColorPalettes
+      }
+    })
+
+    test('settings panel follows each palette menu colour', async ({
+      comfyPage
+    }) => {
+      await comfyPage.settingDialog.open()
+      const panel = comfyPage.settingDialog.root.locator('nav').first()
+      const panelBytes = () =>
+        panel.evaluate((el) => {
+          const ctx = document.createElement('canvas').getContext('2d')
+          if (!ctx) throw new Error('2D canvas unavailable')
+          ctx.fillStyle = getComputedStyle(el).backgroundColor
+          ctx.fillRect(0, 0, 1, 1)
+          return [...ctx.getImageData(0, 0, 1, 1).data]
+        })
+
+      for (const { palette, bytes } of [
+        { palette: 'solarized', bytes: [29, 72, 84, 255] },
+        { palette: 'obsidian', bytes: [40, 40, 40, 255] },
+        { palette: 'light_red', bytes: [255, 255, 255, 255] },
+        { palette: 'dark', bytes: [38, 39, 41, 255] }
+      ]) {
+        await comfyPage.settings.setSetting('Comfy.ColorPalette', palette)
+        await expect.poll(panelBytes, { message: palette }).toEqual(bytes)
+      }
+    })
+  })
+
   test('Can add custom color palette', async ({ comfyPage }) => {
     await comfyPage.page.evaluate(async (p) => {
       await (

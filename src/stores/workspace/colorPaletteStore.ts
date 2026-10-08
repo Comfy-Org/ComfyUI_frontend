@@ -62,18 +62,16 @@ export const useColorPaletteStore = defineStore('colorPalette', () => {
    * @returns The completed palette.
    */
   const completePalette = (palette: Palette): CompletedPalette => {
-    // Set comfy-menu-secondary-bg to comfy-menu-bg if not set
-    if (
-      palette.colors.comfy_base['comfy-menu-bg'] &&
-      !palette.colors.comfy_base['comfy-menu-secondary-bg']
-    ) {
-      palette.colors.comfy_base['comfy-menu-secondary-bg'] =
-        palette.colors.comfy_base['comfy-menu-bg']
-    }
-
     const defaultPalette = palette.light_theme
       ? DEFAULT_LIGHT_COLOR_PALETTE
       : DEFAULT_DARK_COLOR_PALETTE
+
+    const comfyBase = palette.colors.comfy_base
+    const menuBg =
+      comfyBase['comfy-menu-bg'] &&
+      !CSS.supports('color', comfyBase['comfy-menu-bg'])
+        ? defaultPalette.colors.comfy_base['comfy-menu-bg']
+        : comfyBase['comfy-menu-bg']
 
     return {
       ...palette,
@@ -89,7 +87,12 @@ export const useColorPaletteStore = defineStore('colorPalette', () => {
         },
         comfy_base: {
           ...defaultPalette.colors.comfy_base,
-          ...palette.colors.comfy_base
+          ...comfyBase,
+          ...(menuBg && {
+            'comfy-menu-bg': menuBg,
+            'comfy-menu-secondary-bg':
+              comfyBase['comfy-menu-secondary-bg'] || menuBg
+          })
         }
       }
     }

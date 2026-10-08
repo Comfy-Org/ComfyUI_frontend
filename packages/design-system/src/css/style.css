@@ -310,6 +310,12 @@
 }
 
 .dark-theme {
+  --surface-800: var(--color-charcoal-800);
+  --surface-600: var(--color-charcoal-600);
+  --surface-400: var(--color-charcoal-400);
+  --surface-300: var(--color-charcoal-300);
+  --surface-200: var(--color-charcoal-200);
+
   --fg-color: #fff;
   --bg-color: #202020;
   --content-bg: #4e4e4e;
@@ -320,18 +326,18 @@
   --accent-primary: var(--color-white);
   --backdrop: var(--color-neutral-900);
 
-  --button-surface: var(--color-charcoal-600);
+  --button-surface: var(--surface-600);
   --button-surface-contrast: var(--color-white);
-  --button-hover-surface: var(--color-charcoal-600);
-  --button-active-surface: var(--color-charcoal-600);
+  --button-hover-surface: var(--surface-600);
+  --button-active-surface: var(--surface-600);
   --button-icon: var(--color-smoke-800);
 
   --dialog-surface: var(--color-neutral-700);
 
-  --interface-menu-component-surface-hovered: var(--color-charcoal-400);
-  --interface-menu-component-surface-selected: var(--color-charcoal-300);
-  --interface-menu-keybind-surface-default: var(--color-charcoal-200);
-  --interface-menu-surface: var(--color-charcoal-800);
+  --interface-menu-component-surface-hovered: var(--surface-400);
+  --interface-menu-component-surface-selected: var(--surface-300);
+  --interface-menu-keybind-surface-default: var(--surface-200);
+  --interface-menu-surface: var(--surface-800);
   --interface-menu-stroke: var(--color-ash-800);
   --interface-panel-surface: var(--color-charcoal-800);
   --interface-stroke: var(--color-charcoal-400);
@@ -341,7 +347,7 @@
   --interface-builder-mode-button-foreground: var(--color-white);
   --interface-builder-mode-footer-background: var(--color-ocean-900);
 
-  --nav-background: var(--color-charcoal-800);
+  --nav-background: var(--surface-800);
 
   --node-border: var(--color-charcoal-500);
   --node-component-border: var(--color-ash-800);
@@ -356,12 +362,12 @@
   --node-component-slot-dot-outline: var(--color-white);
   --node-component-slot-text: var(--color-smoke-700);
   --node-component-surface-highlight: var(--color-smoke-800);
-  --node-component-surface-hovered: var(--color-charcoal-600);
+  --node-component-surface-hovered: var(--surface-600);
   --node-component-surface-selected: var(--color-charcoal-200);
-  --node-component-surface: var(--color-charcoal-600);
+  --node-component-surface: var(--surface-600);
   --node-component-tooltip: var(--color-white);
-  --node-component-tooltip-border: var(--color-charcoal-200);
-  --node-component-tooltip-surface: var(--color-charcoal-800);
+  --node-component-tooltip-border: var(--surface-200);
+  --node-component-tooltip-surface: var(--surface-800);
   --node-component-widget-skeleton-surface: var(--color-zinc-800);
   --node-component-disabled: var(--color-alpha-charcoal-600-30);
   --node-divider: var(--color-charcoal-500);
@@ -388,12 +394,12 @@
   --base-foreground: var(--color-white);
   --brand-yellow: var(--color-electric-400);
   --brand-blue: var(--color-sapphire-700);
-  --secondary-background: var(--color-charcoal-600);
-  --secondary-background-hover: var(--color-charcoal-400);
-  --secondary-background-selected: var(--color-charcoal-200);
-  --tertiary-background: var(--color-charcoal-400);
-  --tertiary-background-hover: var(--color-charcoal-300);
-  --base-background: var(--color-charcoal-800);
+  --secondary-background: var(--surface-600);
+  --secondary-background-hover: var(--surface-400);
+  --secondary-background-selected: var(--surface-200);
+  --tertiary-background: var(--surface-400);
+  --tertiary-background-hover: var(--surface-300);
+  --base-background: var(--surface-800);
   --primary-background: var(--color-azure-600);
   --primary-background-hover: var(--color-azure-400);
   --destructive-background: var(--color-coral-700);
@@ -404,8 +410,8 @@
   --warning-foreground: var(--color-gold-600);
   --warning-on-background: var(--color-charcoal-800);
   --success-background: var(--color-jade-600);
-  --border-default: var(--color-charcoal-200);
-  --border-subtle: var(--color-charcoal-300);
+  --border-default: var(--surface-200);
+  --border-subtle: var(--surface-300);
   --muted-background: var(--color-charcoal-100);
   --accent-background: var(--color-charcoal-100);
 
@@ -419,7 +425,7 @@
     --secondary-background-selected
   );
   --component-node-widget-background-selected: var(--color-charcoal-100);
-  --component-node-widget-background-disabled: var(--color-charcoal-800);
+  --component-node-widget-background-disabled: var(--surface-800);
   --component-node-widget-background-highlighted: var(--color-smoke-800);
   --component-node-widget-promoted: var(--color-purple-700);
   --component-node-widget-advanced: var(--color-azure-600);
@@ -427,11 +433,31 @@
   --modal-card-background: var(--secondary-background);
   --modal-card-background-hovered: var(--secondary-background-hover);
   --modal-card-border-highlighted: var(--color-ash-400);
-  --modal-card-button-surface: var(--color-charcoal-300);
+  --modal-card-button-surface: var(--surface-300);
   --modal-card-placeholder-background: var(--secondary-background);
   --modal-card-tag-background: var(--color-ash-800);
   --modal-card-tag-foreground: var(--base-foreground);
-  --modal-panel-background: var(--color-charcoal-600);
+  --modal-panel-background: var(--surface-600);
+}
+
+:root.dark-theme[data-color-palette]:not([data-color-palette='dark']) {
+  --surface-800: oklch(from var(--comfy-menu-bg) clamp(0.2, l, 0.35) c h / 1);
+
+  /* Offsets are L(charcoal-N) - L(charcoal-800) in OKLCH, from _palette.css. */
+  --surface-600: oklch(from var(--surface-800) calc(l + 0.0675) c h);
+  --surface-400: oklch(from var(--surface-800) calc(l + 0.1123) c h);
+  --surface-300: oklch(from var(--surface-800) calc(l + 0.1559) c h);
+  --surface-200: oklch(from var(--surface-800) calc(l + 0.2054) c h);
+
+  --muted-foreground: oklch(
+    from var(--surface-800) calc(l + 0.46) calc(c * 0.4) h
+  );
+  --text-secondary: oklch(
+    from var(--surface-800) calc(l + 0.5008) calc(c * 0.4) h
+  );
+  --button-icon: var(--muted-foreground);
+
+  --modal-card-tag-background: var(--surface-300);
 }
 
 @theme inline {
