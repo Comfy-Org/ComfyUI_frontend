@@ -23,7 +23,7 @@
  * quantified residual risk (`docs/decisions/EXCEPTIONS.md`'s KA-5 row)
  * rather than something the mint tries to avoid by reading state.
  */
-import { describe, expect, it } from "vitest";
+import { beforeEach, describe, expect, it } from "vitest";
 import * as Y from "yjs";
 
 import { appliedMap } from "../src/doc.js";
@@ -86,6 +86,7 @@ function template(): WorkflowJSON {
 }
 
 let seq = 0;
+beforeEach(() => { seq = 0; });
 function env(): Pick<Op, "op_id" | "actor" | "base_version" | "stamp"> {
   return {
     op_id: ("i" + String(seq++).padStart(4, "0")).padEnd(32, "0"),
@@ -152,7 +153,6 @@ describe("insert_workflow: happy path", () => {
         { nodes: [], links: [], groups: [{ id: "raw-group", title: "Pinned group" }] },
         { op_id: opId },
       );
-      seq--;
 
       expect(applyOps(doc, [op], catalog).outcomes[0]).toMatchObject({ outcome: "applied" });
       expect(project(doc, catalog).groups).toEqual([{ id: expectedGroupId, title: "Pinned group" }]);
@@ -434,12 +434,13 @@ describe("insert_workflow: happy path", () => {
     // unlike the op-id-embedding derived STRING every other insert_workflow
     // id keeps: ComfyUI_frontend's `LinkId` is a branded `number`.
     expect(typeof linkIds(wf)[1]).toBe("number");
-    expect(defIds(wf).find((id) => id !== "def-1")).toMatch(/^[0-9a-f-]{36}$/);
+    const insertedDefinitionId = defIds(wf).find((id) => id !== "def-1");
+    expect(insertedDefinitionId).toMatch(/^[0-9a-f-]{36}$/);
     // Inserted nodes project with their widgets resolved through the catalog.
     const n100 = wf.nodes!.find((n) => n.pos?.[0] === 0)!;
     expect(n100.type).toBe("Src");
     expect(n100.pos).toEqual([0, 0]);
-    const n101 = wf.nodes!.find((n) => n.type === defIds(wf)[1])!;
+    const n101 = wf.nodes!.find((n) => n.type === insertedDefinitionId)!;
     expect((n101.inputs?.[0] as { link?: unknown } | undefined)?.link).toBe(linkIds(wf)[1]);
     expect(wf.last_node_id).toBe(7);
     expect(wf.last_link_id).toBe(7);
@@ -623,7 +624,6 @@ describe("insert_workflow: happy path", () => {
     };
     const doc = mint({ nodes: [], links: [] }, catalog);
     const op = insertOp(workflow, { op_id: opId });
-    seq--;
 
     // `remap.ts`'s `derivedLinkId` is a pure function of (opId, scope,
     // original) alone (ADR-033, amended), so the candidate this direct call
@@ -883,7 +883,6 @@ describe("insert_workflow: rejection (KA-4 byte identity, op_id absent from appl
         },
         { op_id: "c641df0c31f9440b9385ac8e01e099b2" },
       );
-      seq--;
 
       expect(rejectedOutcomeWithIndex(applyOps(doc, [op], catalog))).toMatchObject({ index: 0, code: vector.code });
       expect(bytes(doc).equals(beforeBytes)).toBe(true);
@@ -908,7 +907,6 @@ describe("insert_workflow: rejection (KA-4 byte identity, op_id absent from appl
         { nodes: [{ id: 701, type: "Src" }, { id: 702, type: "Sink" }], links: [[901, 701, 0, 702, 0, "candidate link"]] },
         { op_id: opId },
       );
-      seq--;
 
       expect(applyOps(doc, [op], catalog).outcomes[0]).toMatchObject({ outcome: "applied" });
       const insertedLink = (project(doc, catalog).links as unknown[][]).find((link) => link[5] === "candidate link")!;
@@ -937,7 +935,6 @@ describe("insert_workflow: rejection (KA-4 byte identity, op_id absent from appl
         { nodes: [{ id: 701, type: "Src" }, { id: 702, type: "Sink" }], links: [[901, 701, 0, 702, 0, "candidate link"]] },
         { op_id: opId },
       );
-      seq--;
 
       expect(rejectedOutcomeWithIndex(applyOps(doc, [op], catalog))).toMatchObject({ index: 0, code: "link_id_collision" });
       expect(bytes(doc).equals(before)).toBe(true);
@@ -1030,9 +1027,6 @@ describe("insert_workflow: rejection (KA-4 byte identity, op_id absent from appl
   });
 });
 
-// Declared last in the file: every other test's expectations embed op_ids
-// derived from the shared `seq` counter `env()` advances, so a new test
-// declared earlier would shift them all.
 describe("insert_workflow: subgraph instance nested inside another subgraph", () => {
   it("remaps an interior node that is itself a subgraph instance of a FLAT SIBLING definition", () => {
     // litegraph's own serializer (`LGraph.asSerialisable`, `findUsedSubgraphIds`)
