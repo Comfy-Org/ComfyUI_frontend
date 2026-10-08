@@ -3,7 +3,7 @@ import { useEventListener } from '@vueuse/core'
 import {
   CANVAS_CLIPBOARD_ID_KEY,
   CANVAS_CLIPBOARD_KEY
-} from '@/lib/litegraph/src/litegraph'
+} from '@/lib/litegraph/src/canvas/clipboardStorage'
 import { reportError } from '@/platform/telemetry/reportError'
 import { useCanvasStore } from '@/renderer/core/canvas/canvasStore'
 import {
@@ -11,11 +11,38 @@ import {
   shouldIgnoreCopyPaste
 } from '@/workbench/eventHelpers'
 
-const clipboardHtmlPattern =
-  /^(?:<meta charset='utf-8'>|<html>\r\n<body>\r\n<!--StartFragment-->)?<meta charset="utf-8"><div><span data-(?:comfy-)?metadata="([A-Za-z0-9+/=]+)"><\/span><\/div><span style="white-space:pre-wrap;">Text<\/span>(?:<!--EndFragment-->\r\n<\/body>\r\n<\/html>)?$/
+const metadataHtmlPrefix =
+  '<meta charset="utf-8"><div><span data-comfy-metadata="'
+const legacyMetadataHtmlPrefix =
+  '<meta charset="utf-8"><div><span data-metadata="'
+const metadataHtmlSuffix =
+  '"></span></div><span style="white-space:pre-wrap;">Text</span>'
+const chromiumHtmlWrappers = [
+  { before: '', after: '' },
+  { before: "<meta charset='utf-8'>", after: '' },
+  {
+    before: '<html>\r\n<body>\r\n<!--StartFragment-->',
+    after: '<!--EndFragment-->\r\n</body>\r\n</html>'
+  }
+]
 
 function clipboardHtml(base64Data: string): string {
-  return `<meta charset="utf-8"><div><span data-comfy-metadata="${base64Data}"></span></div><span style="white-space:pre-wrap;">Text</span>`
+  return `${metadataHtmlPrefix}${base64Data}${metadataHtmlSuffix}`
+}
+
+function between(text: string, before: string, after: string) {
+  if (!text.startsWith(before) || !text.endsWith(after)) return undefined
+  return text.slice(before.length, text.length - after.length)
+}
+
+function readMetadata(html: string): string | undefined {
+  return chromiumHtmlWrappers
+    .flatMap(({ before, after }) =>
+      [metadataHtmlPrefix, legacyMetadataHtmlPrefix].map((prefix) =>
+        between(html, before + prefix, metadataHtmlSuffix + after)
+      )
+    )
+    .find((base64Data) => base64Data !== undefined)
 }
 
 const clipboardByteChunkSize = 0x8000
@@ -45,17 +72,15 @@ function encodeClipboardData(data: string): string {
 type ClipboardHtmlParse =
   | { status: 'absent' }
   | { status: 'unreadable'; cause: unknown }
-  | { status: 'read'; payload: unknown }
+  | { status: 'read'; text: string; payload: unknown }
 
 export function parseClipboardHtml(html: string): ClipboardHtmlParse {
-  const base64Data = html.match(clipboardHtmlPattern)?.[1]
+  const base64Data = readMetadata(html)
   if (!base64Data) return { status: 'absent' }
   try {
     const bytes = Uint8Array.from(atob(base64Data), (c) => c.charCodeAt(0))
-    return {
-      status: 'read',
-      payload: JSON.parse(new TextDecoder().decode(bytes))
-    }
+    const text = new TextDecoder().decode(bytes)
+    return { status: 'read', text, payload: JSON.parse(text) }
   } catch (cause) {
     return { status: 'unreadable', cause }
   }
@@ -88,12 +113,7 @@ export const useCopy = () => {
       const serializedData = canvas.copyToClipboard()
       keyboardCopyId = localStorage.getItem(CANVAS_CLIPBOARD_ID_KEY)
       try {
-        const base64Data = encodeClipboardData(
-          JSON.stringify({
-            ...JSON.parse(serializedData),
-            clipboardId: keyboardCopyId
-          })
-        )
+        const base64Data = encodeClipboardData(serializedData)
         // clearData doesn't remove images from clipboard
         e.clipboardData?.setData('text/html', clipboardHtml(base64Data))
       } catch (error) {

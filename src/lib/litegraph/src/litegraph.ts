@@ -84,11 +84,6 @@ export interface LGraphNodeConstructor<T extends LGraphNode = LGraphNode> {
 export type { CanvasInteractionModeReader } from './canvas/CanvasInteractionMode'
 export { LinkConnector } from './canvas/LinkConnector'
 export { isOverNodeInput, isOverNodeOutput } from './canvas/measureSlots'
-export {
-  CANVAS_CLIPBOARD_ID_KEY,
-  CANVAS_CLIPBOARD_KEY,
-  snapshotCanvasClipboard
-} from './canvasClipboard'
 export { CanvasPointer } from './CanvasPointer'
 export * as Constants from './constants'
 export { SUBGRAPH_INPUT_ID } from './constants'
