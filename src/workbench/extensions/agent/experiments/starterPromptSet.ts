@@ -34,7 +34,6 @@ function resolveAssignment(): {
   }
 }
 
-/** Resolves the current assignment and attributes an eligible rendered arm. */
 export function useStarterPromptSet() {
   const assignment = computed(() => {
     const resolved = resolveAssignment()
