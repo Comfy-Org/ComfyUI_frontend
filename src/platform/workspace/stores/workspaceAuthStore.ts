@@ -260,6 +260,7 @@ export const useWorkspaceAuthStore = defineStore('workspaceAuth', () => {
     }
     const { id, name, type, role = 'member' } = current.data
     currentWorkspace.value = { id, name, type, role }
+    persistWorkspaceIdentity(currentWorkspace.value)
   }
 
   function switchTokenWorkspace(workspaceId: string): Promise<void> {
