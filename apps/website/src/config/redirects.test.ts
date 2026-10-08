@@ -196,7 +196,15 @@ describe('generated Vercel rules', () => {
       '/minimax',
       '/minimax/',
       '/zh-CN/minimax',
-      '/zh-CN/minimax/'
+      '/zh-CN/minimax/',
+      '/gallery',
+      '/gallery/',
+      '/launches',
+      '/launches/',
+      '/zh-CN/gallery',
+      '/zh-CN/gallery/',
+      '/zh-CN/launches',
+      '/zh-CN/launches/'
     ])
   })
 
@@ -233,7 +241,7 @@ describe('Astro redirects', () => {
         )
         .map(({ source }) => source)
     )
-    expect(Object.keys(astroRedirects)).toHaveLength(18)
+    expect(Object.keys(astroRedirects)).toHaveLength(22)
     expect(astroRedirects['/minimax']).toEqual({
       status: 307,
       destination: '/minimax-h3/'

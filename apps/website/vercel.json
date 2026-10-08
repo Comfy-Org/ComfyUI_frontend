@@ -208,6 +208,46 @@
       "permanent": true
     },
     {
+      "source": "/gallery",
+      "destination": "/",
+      "permanent": false
+    },
+    {
+      "source": "/gallery/",
+      "destination": "/",
+      "permanent": false
+    },
+    {
+      "source": "/launches",
+      "destination": "/",
+      "permanent": false
+    },
+    {
+      "source": "/launches/",
+      "destination": "/",
+      "permanent": false
+    },
+    {
+      "source": "/zh-CN/gallery",
+      "destination": "/zh-CN/",
+      "permanent": false
+    },
+    {
+      "source": "/zh-CN/gallery/",
+      "destination": "/zh-CN/",
+      "permanent": false
+    },
+    {
+      "source": "/zh-CN/launches",
+      "destination": "/zh-CN/",
+      "permanent": false
+    },
+    {
+      "source": "/zh-CN/launches/",
+      "destination": "/zh-CN/",
+      "permanent": false
+    },
+    {
       "source": "/api",
       "destination": "/platform/",
       "permanent": true

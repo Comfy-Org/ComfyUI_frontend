@@ -112,7 +112,6 @@ describe('SiteFooter', () => {
       ['Comfy MCP', routes.mcp],
       ['Comfy Agent', routes.agent],
       ['Comfy CLI', routes.cli],
-      ['Launches', routes.launches],
       ['Supported Models', routes.models]
     ])
   })
@@ -127,20 +126,16 @@ describe('SiteFooter', () => {
     expect(docs.getAttribute('target')).toBe('_blank')
   })
 
-  it('lists Launches and Supported Models only in Features', () => {
+  it('lists Supported Models only in Features', () => {
     render(SiteFooter)
 
     for (const column of ['Products', 'Models', 'Resources', 'Company']) {
       const nav = screen.getByRole('navigation', { name: column })
-      expect(within(nav).queryByRole('link', { name: 'Launches' })).toBeNull()
       expect(
         within(nav).queryByRole('link', { name: 'Supported Models' })
       ).toBeNull()
     }
     const features = screen.getByRole('navigation', { name: 'Features' })
-    expect(
-      within(features).getByRole('link', { name: 'Launches' })
-    ).toBeTruthy()
     expect(
       within(features).getByRole('link', { name: 'Supported Models' })
     ).toBeTruthy()

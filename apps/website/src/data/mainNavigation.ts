@@ -230,7 +230,6 @@ export function getMainNavigation(locale: Locale): NavItem[] {
               href: routes.customers,
               badge: 'new'
             },
-            { label: t('nav.launches'), href: routes.launches },
             {
               label: t('nav.blogs'),
               href: externalLinks.blog,

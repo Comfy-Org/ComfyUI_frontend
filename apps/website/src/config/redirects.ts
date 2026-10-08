@@ -189,6 +189,27 @@ export const siteRedirects: readonly SiteRedirect[] = [
     destination: '/customers/series-entertainment/'
   },
   { source: '/zh-CN/terms-of-service', destination: '/terms-of-service/' },
+  // Parked, not deleted: the pages live on as src/pages/_gallery.astro and _launches.astro.
+  {
+    source: '/gallery',
+    destination: '/',
+    temporaryBecause: 'parked, may return'
+  },
+  {
+    source: '/launches',
+    destination: '/',
+    temporaryBecause: 'parked, may return'
+  },
+  {
+    source: '/zh-CN/gallery',
+    destination: '/zh-CN/',
+    temporaryBecause: 'parked, may return'
+  },
+  {
+    source: '/zh-CN/launches',
+    destination: '/zh-CN/',
+    temporaryBecause: 'parked, may return'
+  },
   { source: '/api', destination: '/platform/' },
   { source: '/zh-CN/api', destination: '/zh-CN/platform/' },
   { source: '/platform/models', destination: '/platform/router/' },

@@ -135,7 +135,7 @@ describe('getMainNavigation', () => {
       'Connect'
     ])
     expect(labels(0)).toEqual(['Events', 'Affiliates', 'Learning'])
-    expect(labels(2)).toEqual(['Customer Stories', 'Launches', 'Blog'])
+    expect(labels(2)).toEqual(['Customer Stories', 'Blog'])
     expect(company?.columns?.[3].placement).toBe('footer')
     expect(company?.columns?.[3].items).toContainEqual({
       label: 'Discord',
