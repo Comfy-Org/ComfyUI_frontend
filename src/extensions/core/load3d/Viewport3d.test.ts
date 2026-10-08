@@ -28,6 +28,7 @@ type SceneStub = {
   setBackgroundRenderMode: ReturnType<typeof vi.fn>
   handleResize: ReturnType<typeof vi.fn>
   renderBackground: ReturnType<typeof vi.fn>
+  hasSplats: ReturnType<typeof vi.fn>
   dispose: ReturnType<typeof vi.fn>
   updateBackgroundSize: ReturnType<typeof vi.fn>
   backgroundTexture: unknown
@@ -64,6 +65,7 @@ function makeViewportInstance() {
     setBackgroundRenderMode: vi.fn(),
     handleResize: vi.fn(),
     renderBackground: vi.fn(),
+    hasSplats: vi.fn(() => false),
     dispose: vi.fn(),
     updateBackgroundSize: vi.fn(),
     backgroundTexture: null,
@@ -453,7 +455,9 @@ describe('Viewport3d', () => {
       const render = vi.fn()
       Object.assign(ctx.viewport, {
         view: {
-          renderer: { setViewport: vi.fn(), setScissor: vi.fn(), render }
+          setViewport: vi.fn(),
+          setScissor: vi.fn(),
+          renderer: { render }
         }
       })
       const internals = ctx.viewport as unknown as DimmerInternals
@@ -469,7 +473,7 @@ describe('Viewport3d', () => {
       const setScissor = vi.fn()
       const render = vi.fn()
       Object.assign(ctx.viewport, {
-        view: { renderer: { setViewport, setScissor, render } }
+        view: { setViewport, setScissor, renderer: { render } }
       })
       const internals = ctx.viewport as unknown as DimmerInternals
 
@@ -489,11 +493,9 @@ describe('Viewport3d', () => {
     it('disposeManagers disposes the dim overlay resources', () => {
       Object.assign(ctx.viewport, {
         view: {
-          renderer: {
-            setViewport: vi.fn(),
-            setScissor: vi.fn(),
-            render: vi.fn()
-          }
+          setViewport: vi.fn(),
+          setScissor: vi.fn(),
+          renderer: { render: vi.fn() }
         }
       })
       const internals = ctx.viewport as unknown as DimmerInternals
@@ -548,11 +550,8 @@ describe('Viewport3d', () => {
   })
 
   describe('frame timing (constructed instance)', () => {
-    function makeConstructedViewport() {
+    function makeConstructedViewport(hasSplats = false) {
       const renderer = {
-        setViewport: vi.fn(),
-        setScissor: vi.fn(),
-        setScissorTest: vi.fn(),
         setClearColor: vi.fn(),
         clear: vi.fn(),
         render: vi.fn(),
@@ -561,6 +560,9 @@ describe('Viewport3d', () => {
       const view = {
         canvas: document.createElement('canvas'),
         renderer,
+        setViewport: vi.fn(),
+        setScissor: vi.fn(),
+        setScissorTest: vi.fn(),
         width: 800,
         height: 600,
         state: { clearColor: new THREE.Color(0x000000), clearAlpha: 0 },
@@ -587,7 +589,8 @@ describe('Viewport3d', () => {
         sceneManager: {
           init: vi.fn(),
           scene: new THREE.Scene(),
-          renderBackground: vi.fn()
+          renderBackground: vi.fn(),
+          hasSplats: () => hasSplats
         },
         cameraManager: {
           init: vi.fn(),
@@ -624,6 +627,17 @@ describe('Viewport3d', () => {
       expect(view.blit).toHaveBeenCalledTimes(2)
       expect(viewport.INITIAL_RENDER_DONE).toBe(true)
     })
+
+    it.for([false, true])(
+      'renders with high precision only when the scene has splats (%s)',
+      (hasSplats) => {
+        const { viewport, view } = makeConstructedViewport(hasSplats)
+
+        viewport.forceRender()
+
+        expect(view.beginRender).toHaveBeenCalledWith(hasSplats)
+      }
+    )
 
     it('resyncs the shared GL state before every frame so texture uploads keep flipY', () => {
       const { viewport, renderer } = makeConstructedViewport()
@@ -694,7 +708,8 @@ describe('Viewport3d', () => {
       const order: string[] = []
       Object.assign(ctx.viewport, {
         view: {
-          renderer: { setScissorTest: vi.fn(), state: { reset: vi.fn() } },
+          setScissorTest: vi.fn(),
+          renderer: { state: { reset: vi.fn() } },
           beginRender: () => order.push('begin'),
           blit: vi.fn()
         },

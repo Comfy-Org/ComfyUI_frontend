@@ -45,6 +45,7 @@ beforeEach(() => {
 })
 
 import { workspaceApi } from './workspaceApi'
+import { NoWorkspaceAccessError } from './workspaceApiError'
 import { stubFirebaseAuthHarness } from '@/utils/__tests__/stubAccountIdentityPort'
 
 const AUTH_HEADER = { Authorization: 'Bearer test-token' } as const
@@ -175,6 +176,57 @@ describe('workspaceApi', () => {
         message: 'Forbidden'
       })
     })
+
+    it.for([
+      {
+        operation: 'getBillingOpStatus',
+        call: () => workspaceApi.getBillingOpStatus('op-1'),
+        code: undefined
+      },
+      {
+        operation: 'acceptInvite',
+        call: () => workspaceApi.acceptInvite('token'),
+        code: undefined
+      },
+      {
+        operation: 'getCurrentWorkspace',
+        call: () => workspaceApi.getCurrentWorkspace(),
+        code: 'no_workspace_access'
+      }
+    ])(
+      'names $operation as the failed operation',
+      async ({ operation, call, code }) => {
+        const axiosErr = {
+          isAxiosError: true,
+          response: { status: 403, data: { message: 'Forbidden', code } },
+          message: 'Request failed'
+        }
+        mockAxiosInstance.get.mockRejectedValue(axiosErr)
+        mockAxiosInstance.post.mockRejectedValue(axiosErr)
+
+        await expect(call()).rejects.toMatchObject({ operation })
+      }
+    )
+
+    it.for([
+      { status: 403, code: 'no_workspace_access', typed: true },
+      { status: 403, code: undefined, typed: false },
+      { status: 404, code: 'no_workspace_access', typed: false }
+    ])(
+      'a $status with code $code is NoWorkspaceAccessError: $typed',
+      async ({ status, code, typed }) => {
+        mockAxiosInstance.get.mockRejectedValue({
+          isAxiosError: true,
+          response: { status, data: { message: 'No workspace', code } },
+          message: 'Request failed'
+        })
+
+        const error = await workspaceApi.list().catch((e: unknown) => e)
+
+        expect(error instanceof NoWorkspaceAccessError).toBe(typed)
+        expect(error).toMatchObject({ status, code })
+      }
+    )
 
     it('falls back to err.message when response data has no message', async () => {
       const axiosErr = {

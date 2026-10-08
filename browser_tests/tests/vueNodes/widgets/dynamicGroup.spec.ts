@@ -468,8 +468,16 @@ test.describe(
             .toBe(4)
           await comfyPage.command.executeCommand('Comfy.Canvas.SelectAll')
           await comfyPage.command.executeCommand('Comfy.Canvas.FitView')
-          const [originalRef, copyRef] =
+          const hostRefs =
             await comfyPage.nodeOps.getNodeRefsByTitle('New Subgraph')
+          const originalRef = hostRefs.find(
+            (node) => String(node.id) === originalId
+          )!
+          const copyRef = hostRefs.find(
+            (node) => String(node.id) !== originalId
+          )!
+          expect(originalRef).toBeDefined()
+          expect(copyRef).toBeDefined()
           expect(await copyRef.getType()).not.toBe(await originalRef.getType())
           const original = comfyPage.vueNodes.getNodeLocator(originalId)
           const copy = comfyPage.vueNodes.getNodeLocator(String(copyRef.id))
@@ -677,18 +685,18 @@ test.describe(
               .getByTestId(TestIds.breadcrumb.item('root'))
               .click()
             const outer = comfyPage.vueNodes.getNodeLocator(outerId)
-            await expect.soft(outer.getByRole('combobox')).toHaveCount(0)
-            await expect.soft(outer.getByRole('spinbutton')).toHaveCount(0)
-            await expect.soft(outer.getByRole('switch')).toHaveCount(0)
-            expect
-              .soft(await getPromotedWidgetNames(comfyPage, outerId))
+            await expect(outer.getByRole('combobox')).toHaveCount(0)
+            await expect(outer.getByRole('spinbutton')).toHaveCount(0)
+            await expect(outer.getByRole('switch')).toHaveCount(0)
+            await expect
+              .poll(() => getPromotedWidgetNames(comfyPage, outerId))
               .toEqual([])
             await comfyPage.vueNodes.enterSubgraph(outerId)
             await expect
               .poll(() => getPromotedWidgetNames(comfyPage, innerId))
               .toEqual([])
-            expect
-              .soft(await comfyPage.subgraph.getDefinitionInventory())
+            await expect
+              .poll(() => comfyPage.subgraph.getDefinitionInventory())
               .toEqual([
                 { name: 'New Subgraph', nodes: 1, links: 1 },
                 { name: 'New Subgraph', nodes: 1, links: 1 }
@@ -704,9 +712,9 @@ test.describe(
             )
             await comfyPage.workflow.waitForDraftPersisted()
             await comfyPage.workflow.reloadAndWaitForApp()
-            await expect.soft(outer.getByRole('combobox')).toHaveCount(0)
-            await expect.soft(outer.getByRole('spinbutton')).toHaveCount(0)
-            await expect.soft(outer.getByRole('switch')).toHaveCount(0)
+            await expect(outer.getByRole('combobox')).toHaveCount(0)
+            await expect(outer.getByRole('spinbutton')).toHaveCount(0)
+            await expect(outer.getByRole('switch')).toHaveCount(0)
           })
         })
 

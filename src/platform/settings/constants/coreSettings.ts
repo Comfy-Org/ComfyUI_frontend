@@ -405,7 +405,7 @@ export const CORE_SETTINGS: SettingParams[] = [
     category: ['Appearance', 'Tree Explorer', 'ItemPadding'],
     name: 'Tree explorer item padding',
     type: 'slider',
-    defaultValue: 2,
+    defaultValue: 8,
     attrs: {
       min: 0,
       max: 8,

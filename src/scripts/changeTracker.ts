@@ -296,10 +296,9 @@ export class ChangeTracker {
    * Save the current state as the initial state.
    */
   reset(state?: ComfyWorkflowJSON) {
-    // Do not reset the state if we are restoring.
+    if (state) this.activeState = clone(state)
     if (this._restoringState) return
 
-    if (state) this.activeState = clone(state)
     this.initialState = clone(this.activeState)
   }
 
@@ -472,16 +471,31 @@ export class ChangeTracker {
     const prevState = source.pop()
     if (prevState) {
       const previousState = this.activeState
-      target.push(previousState)
+      const restoresSavedState = ChangeTracker.graphEqual(
+        prevState,
+        this.initialState
+      )
+      let restored = false
       this._restoringState = true
       try {
-        await app.loadGraphData(prevState, false, false, this.workflow, {
-          checkForRerouteMigration: false,
-          silentAssetErrors: true
-        })
-        this.activeState = prevState
+        const result = await app.loadGraphData(
+          prevState,
+          false,
+          false,
+          this.workflow,
+          {
+            checkForRerouteMigration: false,
+            silentAssetErrors: true
+          }
+        )
+        if (result === false || result === undefined) return
+
+        restored = true
+        target.push(previousState)
+        if (restoresSavedState) this.initialState = clone(this.activeState)
         this.updateModified(previousState)
       } finally {
+        if (!restored) source.push(prevState)
         this._restoringState = false
       }
     }

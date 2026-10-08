@@ -1,4 +1,4 @@
-import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
+import { beforeEach, describe, expect, it, vi } from 'vitest'
 
 import { useCommandStore } from '@/stores/commandStore'
 
@@ -30,10 +30,6 @@ describe('useErrorActions', () => {
       trackHelpResourceClicked: mocks.trackHelpResourceClicked
     }
     windowOpenSpy = vi.spyOn(window, 'open').mockImplementation(() => null)
-  })
-
-  afterEach(() => {
-    windowOpenSpy.mockRestore()
   })
 
   describe('openGitHubIssues', () => {
