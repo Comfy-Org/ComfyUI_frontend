@@ -1,12 +1,9 @@
 import type { ContextMenu } from './ContextMenu'
 import type { LGraphNode } from './LGraphNode'
 import { LiteGraphGlobal } from './LiteGraphGlobal'
-import type {
-  ConnectingLink,
-  IContextMenuOptions,
-  Point,
-  Size
-} from './interfaces'
+import type { Point, Size } from './interfaces'
+import type { ConnectingLink } from './types/slots'
+import type { IContextMenuOptions } from './types/contextMenu'
 import { registerLiteGraphInstance } from './litegraphInstance'
 import { loadPolyfills } from './polyfills'
 import type { CanvasEventDetail } from './types/events'
@@ -84,11 +81,6 @@ export interface LGraphNodeConstructor<T extends LGraphNode = LGraphNode> {
 export type { CanvasInteractionModeReader } from './canvas/CanvasInteractionMode'
 export { LinkConnector } from './canvas/LinkConnector'
 export { isOverNodeInput, isOverNodeOutput } from './canvas/measureSlots'
-export {
-  CANVAS_CLIPBOARD_ID_KEY,
-  CANVAS_CLIPBOARD_KEY,
-  snapshotCanvasClipboard
-} from './canvasClipboard'
 export { CanvasPointer } from './CanvasPointer'
 export * as Constants from './constants'
 export { SUBGRAPH_INPUT_ID } from './constants'
@@ -101,19 +93,19 @@ export type { SubgraphEventMap } from './infrastructure/SubgraphEventMap'
 export type {
   CanvasColour,
   ColorOption,
-  CreateNodeOptions,
-  IContextMenuOptions,
-  IContextMenuValue,
-  INodeInputSlot,
-  INodeOutputSlot,
   INodeSlot,
   ISlotType,
-  LinkNetwork,
   Point,
   Positionable,
   Size,
   SlotIndex
 } from './interfaces'
+export type {
+  IContextMenuOptions,
+  IContextMenuValue
+} from './types/contextMenu'
+export type { LinkNetwork } from './types/linkNetwork'
+export type { INodeInputSlot, INodeOutputSlot } from './types/slots'
 export {
   LGraph,
   type LGraphTriggerAction,
@@ -187,3 +179,4 @@ export { inputAsSerialisable, outputAsSerialisable } from './node/slotUtils'
 export { MovingInputLink } from './canvas/MovingInputLink'
 export { ToInputRenderLink } from './canvas/ToInputRenderLink'
 export { LiteGraphGlobal } from './LiteGraphGlobal'
+export type { CreateNodeOptions } from './LiteGraphGlobal'

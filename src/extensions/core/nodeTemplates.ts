@@ -1,10 +1,6 @@
 import { downloadBlob } from '@/base/common/downloadUtil'
 import { t } from '@/i18n'
-import type { IContextMenuValue } from '@/lib/litegraph/src/interfaces'
-import {
-  CANVAS_CLIPBOARD_KEY,
-  snapshotCanvasClipboard
-} from '@/lib/litegraph/src/litegraph'
+import type { IContextMenuValue } from '@/lib/litegraph/src/types/contextMenu'
 import type { LGraphCanvas } from '@/lib/litegraph/src/litegraph'
 import { reportError } from '@/platform/telemetry/reportError'
 import { useToastStore } from '@/platform/updates/common/toastStore'
@@ -14,7 +10,8 @@ import { deserialiseAndCreate } from '@/utils/vintageClipboard'
 
 import { api } from '../../scripts/api'
 import { app } from '../../scripts/app'
-import { $el, ComfyDialog } from '../../scripts/ui'
+import { ComfyDialog } from '../../scripts/ui'
+import { $el } from '../../scripts/ui/utils'
 
 // Adds the ability to save and add multiple nodes as a template
 // To save:
@@ -360,12 +357,10 @@ const manage = new ManageTemplates()
 const clipboardAction = async (cb: () => void | Promise<void>) => {
   // We use the clipboard functions but dont want to overwrite the current user clipboard
   // Restore it after we've run our callback
-  const restoreCanvasClipboard = snapshotCanvasClipboard()
-  try {
-    await cb()
-  } finally {
-    restoreCanvasClipboard()
-  }
+  const old = localStorage.getItem('litegrapheditor_clipboard')
+  await cb()
+  if (old === null) localStorage.removeItem('litegrapheditor_clipboard')
+  else localStorage.setItem('litegrapheditor_clipboard', old)
 }
 
 const ext: ComfyExtension = {
@@ -388,7 +383,7 @@ const ext: ComfyExtension = {
 
         await clipboardAction(async () => {
           app.canvas.copyToClipboard()
-          const data = localStorage.getItem(CANVAS_CLIPBOARD_KEY)
+          const data = localStorage.getItem('litegrapheditor_clipboard')
 
           manage.templates.push({
             name,
@@ -419,7 +414,7 @@ const ext: ComfyExtension = {
               if (!data.reroutes) {
                 deserialiseAndCreate(template.data, app.canvas)
               } else {
-                localStorage.setItem(CANVAS_CLIPBOARD_KEY, template.data)
+                localStorage.setItem('litegrapheditor_clipboard', template.data)
                 app.canvas.pasteFromClipboard()
               }
             })

@@ -1,7 +1,7 @@
 <script setup lang="ts">
 // Play-button overlay for thumbnail links. The parent provides the positioning
 // context (`relative`) and, via class fallthrough, any hover-reveal classes.
-const { size = 'lg' } = defineProps<{ size?: 'sm' | 'lg' }>()
+const { size = 'lg' } = defineProps<{ size?: 'sm' | 'lg' | 'nav' }>()
 </script>
 
 <template>
@@ -16,12 +16,18 @@ const { size = 'lg' } = defineProps<{ size?: 'sm' | 'lg' }>()
       :class="
         size === 'sm'
           ? 'size-14 md:size-9'
-          : 'size-14 transition-transform group-hover:scale-105'
+          : size === 'nav'
+            ? 'size-10 transition-transform group-hover/pill-trigger:scale-105'
+            : 'size-14 transition-transform group-hover:scale-105'
       "
     >
       <svg
         :class="
-          size === 'sm' ? 'ml-1 size-5 md:ml-0.5 md:size-4' : 'ml-1 size-5'
+          size === 'sm'
+            ? 'ml-1 size-5 md:ml-0.5 md:size-4'
+            : size === 'nav'
+              ? 'ml-0.5 size-3.5'
+              : 'ml-1 size-5'
         "
         viewBox="0 0 24 24"
         fill="currentColor"
