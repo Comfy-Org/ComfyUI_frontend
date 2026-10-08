@@ -58,6 +58,7 @@ import FirstRunTour from '@/renderer/extensions/firstRunTour/FirstRunTour.vue'
 import GlobalToast from '@/components/toast/GlobalToast.vue'
 import InviteAcceptedToast from '@/platform/workspace/components/toasts/InviteAcceptedToast.vue'
 import RerouteMigrationToast from '@/components/toast/RerouteMigrationToast.vue'
+import { registerCoreSidebarTabs } from '@/composables/sidebarTabs/registerCoreSidebarTabs'
 import { useBrowserTabTitle } from '@/composables/useBrowserTabTitle'
 import { useCoreCommands } from '@/composables/useCoreCommands'
 import { useQueuePolling } from '@/platform/remote/comfyui/useQueuePolling'
@@ -76,6 +77,8 @@ import AssetExportProgressDialog from '@/platform/assets/components/AssetExportP
 import ModelImportProgressDialog from '@/platform/assets/components/ModelImportProgressDialog.vue'
 import DesktopCloudNotificationController from '@/platform/cloud/notification/components/DesktopCloudNotificationController.vue'
 import { isCloud, isDesktop } from '@/platform/distribution/types'
+import SettingDialog from '@/platform/settings/components/SettingDialog.vue'
+import { registerSettingDialogComponent } from '@/platform/settings/composables/useSettingsDialog'
 import { useSettingStore } from '@/platform/settings/settingStore'
 import { useTelemetry } from '@/platform/telemetry'
 import { reportError } from '@/platform/telemetry/reportError'
@@ -280,7 +283,8 @@ const coreCommands = useCoreCommands()
 useCommandStore().registerCommands(coreCommands)
 useMenuItemStore().registerCoreMenuCommands()
 useKeybindingService().registerCoreKeybindings()
-useSidebarTabStore().registerCoreSidebarTabs()
+registerCoreSidebarTabs()
+registerSettingDialogComponent(SettingDialog)
 void useBottomPanelStore().registerCoreBottomPanelTabs()
 
 useQueuePolling()

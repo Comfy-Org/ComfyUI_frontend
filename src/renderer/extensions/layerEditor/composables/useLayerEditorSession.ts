@@ -417,8 +417,7 @@ export function useLayerEditorSession(opts: LayerEditorSessionOptions = {}) {
     requestRender()
   }
 
-  function ensureBackgroundLayer(): void {
-    if (editor.document().root.children[0]?.kind === 'fill') return
+  function addBackgroundLayer(): void {
     editor.addNode(
       fillKind.create({
         name: 'Background',
@@ -434,7 +433,6 @@ export function useLayerEditorSession(opts: LayerEditorSessionOptions = {}) {
   async function loadImages(urls: string[], names: string[]): Promise<number> {
     flipParity.clear()
     inputOrderIds.length = 0
-    ensureBackgroundLayer()
     let failed = 0
     let docWidth = 0
     let docHeight = 0
@@ -1033,6 +1031,9 @@ export function useLayerEditorSession(opts: LayerEditorSessionOptions = {}) {
     moveRaf = null
     compositor.dispose()
   }
+
+  addBackgroundLayer()
+  editor.history.clear()
 
   return {
     editor,

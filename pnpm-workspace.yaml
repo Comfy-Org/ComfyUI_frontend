@@ -108,6 +108,7 @@ catalog:
   lint-staged: ^16.2.7
   lottie-web: ^5.13.0
   markdown-table: ^3.0.4
+  marked: ^15.0.11
   mediabunny: ^1.53.1
   minisearch: ^7.2.0
   mime-types: 3.0.2
@@ -168,6 +169,7 @@ catalog:
   '@datadog/browser-logs': 6.33.0
   '@comfyorg/comfy-multi-player': 0.3.6
   typescript-native-bridge: 6.0.3-bridge.17.tsgo.7.0.2
+  dependency-cruiser: ^18.5.0
 
 cleanupUnusedCatalogs: true
 

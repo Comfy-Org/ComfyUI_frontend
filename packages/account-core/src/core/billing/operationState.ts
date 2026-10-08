@@ -143,6 +143,8 @@ export type PendingBillingOperation = BillingOperationIdentity & {
   /** Set while the customer's last attempt was declined and they may try again. */
   readonly declineReason?: BillingDeclineReason
   readonly recoveryAction?: BillingRecoveryAction
+  /** The server's word on whether cancelling this operation would take effect; absent is no claim. */
+  readonly cancelable?: boolean
   /** True once the operation has ever waited on the customer; widens the poll budget. */
   readonly customerActionSeen: boolean
   readonly plan?: BillingOperationPlan
@@ -421,6 +423,7 @@ function reducePending(
     serverPhase: status.phase,
     declineReason,
     recoveryAction: status.recovery_action,
+    cancelable: status.cancelable,
     customerActionSeen:
       state.customerActionSeen ||
       actionUrl !== undefined ||

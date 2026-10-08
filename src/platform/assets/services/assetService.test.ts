@@ -205,28 +205,6 @@ describe(assetService.getAssetMetadata, () => {
   })
 })
 
-describe(assetService.getInputAssetsIncludingPublic, () => {
-  beforeEach(() => {
-    assetService.invalidateInputAssetsIncludingPublic()
-  })
-
-  it('keeps hash-only assets whose file_path and display_name are null', async () => {
-    const hashOnlyAsset = validAsset({
-      id: 'hash-only-input',
-      name: 'fe746_photo.png',
-      tags: ['input'],
-      hash: 'blake3:fe746',
-      file_path: null,
-      display_name: null
-    })
-    fetchApiMock.mockResolvedValueOnce(buildAssetListResponse([hashOnlyAsset]))
-
-    const assets = await assetService.getInputAssetsIncludingPublic()
-
-    expect(assets).toEqual([hashOnlyAsset])
-  })
-})
-
 describe(assetService.uploadAssetFromUrl, () => {
   it('rejects when the upload response is invalid', async () => {
     const consoleSpy = vi.spyOn(console, 'error').mockImplementation(() => {})

@@ -129,17 +129,14 @@ import { useSearchQueryTracking } from '@/platform/telemetry/searchQuery/useSear
 import type { SettingTreeNode } from '@/platform/settings/settingStore'
 import type {
   ISettingGroup,
-  SettingPanelType,
+  SettingDialogProps,
   SettingParams
 } from '@/platform/settings/types'
 import { OnCloseKey } from '@/types/widgetTypes'
 import { flattenTree } from '@/utils/treeUtil'
 
-const { onClose, defaultPanel, scrollToSettingId } = defineProps<{
-  onClose: () => void
-  defaultPanel?: SettingPanelType
-  scrollToSettingId?: string
-}>()
+const { onClose, defaultPanel, scrollToSettingId } =
+  defineProps<SettingDialogProps>()
 
 provide(OnCloseKey, onClose)
 
