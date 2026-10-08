@@ -281,7 +281,6 @@ describe('appModeStore', () => {
         id === toNodeId(1) ? node1 : null
       )
 
-      const warnSpy = vi.mocked(console.warn)
       store.loadSelections({
         inputs: [
           [1, 'prompt'],
@@ -290,11 +289,10 @@ describe('appModeStore', () => {
       })
 
       expect(store.selectedInputs).toEqual([[entityPrompt, 'prompt']])
-      expect(warnSpy).toHaveBeenCalledWith(
+      expect(console.warn).toHaveBeenCalledWith(
         expect.stringContaining('dropping legacy selectedInput tuple'),
         expect.objectContaining({ widgetName: 'deleted_widget' })
       )
-      warnSpy.mockRestore()
     })
 
     it('removes outputs referencing deleted nodes on load', () => {
@@ -444,7 +442,6 @@ describe('appModeStore', () => {
 
   describe('loadSelections app-config warning', () => {
     it('warns when non-empty linearData resolves to nothing', () => {
-      const warnSpy = vi.mocked(console.warn)
       vi.mocked(app.rootGraph).id = rootGraphId
       vi.mocked(app.rootGraph).nodes = [nodeWithWidgets(1, ['seed'])]
       vi.mocked(app.rootGraph).getNodeById = vi.fn(() => null)
@@ -454,16 +451,14 @@ describe('appModeStore', () => {
 
       expect(store.selectedInputs).toEqual([])
       expect(store.selectedOutputs).toEqual([])
-      expect(warnSpy).toHaveBeenCalledWith(
+      expect(console.warn).toHaveBeenCalledWith(
         expect.stringContaining('app config could not be interpreted'),
         expect.anything()
       )
-      warnSpy.mockRestore()
     })
 
     it('does not warn when the config resolves', () => {
       const node1 = nodeWithWidgets(1, ['seed'])
-      const warnSpy = vi.mocked(console.warn)
       vi.mocked(app.rootGraph).id = rootGraphId
       vi.mocked(app.rootGraph).nodes = [node1]
       vi.mocked(app.rootGraph).getNodeById = vi.fn((id) =>
@@ -475,16 +470,14 @@ describe('appModeStore', () => {
 
       store.loadSelections({ inputs: [[1, 'seed']], outputs: [toNodeId(1)] })
 
-      expect(warnSpy).not.toHaveBeenCalledWith(
+      expect(console.warn).not.toHaveBeenCalledWith(
         expect.stringContaining('app config could not be interpreted'),
         expect.anything()
       )
-      warnSpy.mockRestore()
     })
 
     it('does not warn when only inputs resolve (partial resolution is success)', () => {
       const node1 = nodeWithWidgets(1, ['seed'])
-      const warnSpy = vi.mocked(console.warn)
       vi.mocked(app.rootGraph).id = rootGraphId
       vi.mocked(app.rootGraph).nodes = [node1]
       vi.mocked(app.rootGraph).getNodeById = vi.fn((id) =>
@@ -498,16 +491,14 @@ describe('appModeStore', () => {
 
       expect(store.selectedInputs.length).toBeGreaterThan(0)
       expect(store.selectedOutputs).toEqual([])
-      expect(warnSpy).not.toHaveBeenCalledWith(
+      expect(console.warn).not.toHaveBeenCalledWith(
         expect.stringContaining('app config could not be interpreted'),
         expect.anything()
       )
-      warnSpy.mockRestore()
     })
 
     it('does not warn when only outputs resolve (partial resolution is success)', () => {
       const node1 = nodeWithWidgets(1, ['seed'])
-      const warnSpy = vi.mocked(console.warn)
       vi.mocked(app.rootGraph).id = rootGraphId
       vi.mocked(app.rootGraph).nodes = [node1]
       vi.mocked(app.rootGraph).getNodeById = vi.fn((id) =>
@@ -521,25 +512,21 @@ describe('appModeStore', () => {
 
       expect(store.selectedInputs).toEqual([])
       expect(store.selectedOutputs.length).toBeGreaterThan(0)
-      expect(warnSpy).not.toHaveBeenCalledWith(
+      expect(console.warn).not.toHaveBeenCalledWith(
         expect.stringContaining('app config could not be interpreted'),
         expect.anything()
       )
-      warnSpy.mockRestore()
     })
 
     it('does not warn for empty config', () => {
-      const warnSpy = vi.mocked(console.warn)
       vi.mocked(app.rootGraph).nodes = [nodeWithWidgets(1, ['seed'])]
 
       store.loadSelections({})
 
-      expect(warnSpy).not.toHaveBeenCalled()
-      warnSpy.mockRestore()
+      expect(console.warn).not.toHaveBeenCalled()
     })
 
     it('does not warn while a graph is still loading', () => {
-      const warnSpy = vi.mocked(console.warn)
       ChangeTracker.isLoadingGraph = true
       vi.mocked(app.rootGraph).id = rootGraphId
       vi.mocked(app.rootGraph).nodes = [nodeWithWidgets(1, ['seed'])]
@@ -548,15 +535,13 @@ describe('appModeStore', () => {
 
       store.loadSelections({ inputs: [[99, 'gone']], outputs: [99] })
 
-      expect(warnSpy).not.toHaveBeenCalledWith(
+      expect(console.warn).not.toHaveBeenCalledWith(
         expect.stringContaining('app config could not be interpreted'),
         expect.anything()
       )
-      warnSpy.mockRestore()
     })
 
     it('does not warn when the graph has no nodes', () => {
-      const warnSpy = vi.mocked(console.warn)
       vi.mocked(app.rootGraph).id = rootGraphId
       vi.mocked(app.rootGraph).nodes = []
       vi.mocked(app.rootGraph).getNodeById = vi.fn(() => null)
@@ -564,11 +549,10 @@ describe('appModeStore', () => {
 
       store.loadSelections({ inputs: [[99, 'gone']], outputs: [99] })
 
-      expect(warnSpy).not.toHaveBeenCalledWith(
+      expect(console.warn).not.toHaveBeenCalledWith(
         expect.stringContaining('app config could not be interpreted'),
         expect.anything()
       )
-      warnSpy.mockRestore()
     })
   })
 
@@ -1053,7 +1037,6 @@ describe('appModeStore', () => {
     })
 
     it('warns and drops a tuple whose target widget no longer resolves', () => {
-      const warnSpy = vi.mocked(console.warn)
       vi.mocked(app.rootGraph).id = rootGraphId
       vi.mocked(app.rootGraph).nodes = []
       vi.mocked(app.rootGraph).getNodeById = vi.fn(() => null)
@@ -1064,19 +1047,16 @@ describe('appModeStore', () => {
       })
 
       expect(result.inputs).toEqual([])
-      expect(warnSpy).toHaveBeenCalledWith(
+      expect(console.warn).toHaveBeenCalledWith(
         expect.stringContaining('legacy selectedInput tuple'),
         expect.objectContaining({
           storedId: 42,
           widgetName: 'widget-name'
         })
       )
-      warnSpy.mockRestore()
     })
 
     it('migrates legacy `hostLocator:subgraphInputName` tuples to entity-id form', () => {
-      const warnSpy = vi.mocked(console.warn)
-
       const hostId = 5
       const hostLocator = `${rootGraphId}:${hostId}`
       const promotedEntityId =
@@ -1099,8 +1079,7 @@ describe('appModeStore', () => {
       })
 
       expect(result.inputs).toEqual([[promotedEntityId, 'subgraph_input_name']])
-      expect(warnSpy).not.toHaveBeenCalled()
-      warnSpy.mockRestore()
+      expect(console.warn).not.toHaveBeenCalled()
     })
   })
 })

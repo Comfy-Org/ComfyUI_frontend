@@ -46,14 +46,15 @@ describe('assertReadableSchema (KA-11, fail-closed on read)', () => {
   })
 
   it('routes the refusal through the central invariant channel', () => {
-    const consoleError = vi.mocked(console.error)
     expect(() => assertReadableSchema(docAtVersion(99))).toThrow(
       FollowerSchemaError
     )
-    expect(consoleError).toHaveBeenCalledWith(
+    expect(console.error).toHaveBeenCalledWith(
       expect.stringContaining('meta.schema_version is not the layout')
     )
-    expect(consoleError).not.toHaveBeenCalledWith(expect.stringContaining('99'))
+    expect(console.error).not.toHaveBeenCalledWith(
+      expect.stringContaining('99')
+    )
   })
 
   it('reports the rejected version as structured context', () => {

@@ -146,7 +146,6 @@ describe('useOutputStacks', () => {
 
   it('does not expand when resolving children throws', async () => {
     const parent = createAsset({ id: 'parent', name: 'parent.png' })
-    const errorSpy = vi.mocked(console.error)
 
     vi.mocked(resolveOutputAssetItems).mockRejectedValue(
       new Error('resolve failed')
@@ -160,8 +159,6 @@ describe('useOutputStacks', () => {
 
     expect(isStackExpanded(parent)).toBe(false)
     expect(assetItems.value.map((item) => item.asset.id)).toEqual([parent.id])
-
-    errorSpy.mockRestore()
   })
 
   it('guards against duplicate loads while a stack is resolving', async () => {

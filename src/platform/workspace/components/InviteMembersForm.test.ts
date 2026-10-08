@@ -142,7 +142,6 @@ describe('InviteMembersForm', () => {
 
   it('completes submission when the billing refresh fails', async () => {
     const refreshError = new Error('refresh failed')
-    const consoleError = vi.mocked(console.error)
     const { user, emitted } = renderForm()
     vi.mocked(useBillingContext().fetchStatus).mockRejectedValueOnce(
       refreshError
@@ -156,7 +155,9 @@ describe('InviteMembersForm', () => {
     )
     expect(submitButton()).toBeEnabled()
     expect(useBillingContext().fetchStatus).toHaveBeenCalledOnce()
-    await waitFor(() => expect(consoleError).toHaveBeenCalledWith(refreshError))
+    await waitFor(() =>
+      expect(console.error).toHaveBeenCalledWith(refreshError)
+    )
   })
 
   it('ignores stale cached invites when pending invites cannot be refreshed', async () => {
@@ -167,11 +168,12 @@ describe('InviteMembersForm', () => {
     vi.mocked(
       useTeamWorkspaceStore().fetchPendingInvites
     ).mockRejectedValueOnce(refreshError)
-    const consoleError = vi.mocked(console.error)
     const { user, emitted } = renderForm()
 
     await user.type(emailInput(), 'stale@example.com{Enter}')
-    await waitFor(() => expect(consoleError).toHaveBeenCalledWith(refreshError))
+    await waitFor(() =>
+      expect(console.error).toHaveBeenCalledWith(refreshError)
+    )
 
     expect(
       screen.queryByText(

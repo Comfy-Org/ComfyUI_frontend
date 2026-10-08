@@ -191,27 +191,24 @@ describe('NodeTooltip', () => {
   })
 
   it('shows input slot JSON tooltips without i18n placeholder errors', async () => {
-    const consoleError = vi.mocked(console.error)
     vi.mocked(mockIsOverNodeInput).mockReturnValue(0)
 
     await renderAndHoverCanvas()
 
     expect(screen.getByText(jsonTooltip)).toBeInTheDocument()
-    expect(consoleError).not.toHaveBeenCalled()
+    expect(console.error).not.toHaveBeenCalled()
   })
 
   it('shows output slot JSON tooltips without i18n placeholder errors', async () => {
-    const consoleError = vi.mocked(console.error)
     vi.mocked(mockIsOverNodeOutput).mockReturnValue(0)
 
     await renderAndHoverCanvas()
 
     expect(screen.getByText(jsonTooltip)).toBeInTheDocument()
-    expect(consoleError).not.toHaveBeenCalled()
+    expect(console.error).not.toHaveBeenCalled()
   })
 
   it('shows widget JSON tooltips without i18n placeholder errors', async () => {
-    const consoleError = vi.mocked(console.error)
     vi.mocked(mockCanvas.getWidgetAtCursor).mockReturnValue({
       name: 'positive_coords'
     })
@@ -219,7 +216,7 @@ describe('NodeTooltip', () => {
     await renderAndHoverCanvas()
 
     expect(screen.getByText(jsonTooltip)).toBeInTheDocument()
-    expect(consoleError).not.toHaveBeenCalled()
+    expect(console.error).not.toHaveBeenCalled()
   })
 
   describe('when the bundled snapshot has gone stale', () => {

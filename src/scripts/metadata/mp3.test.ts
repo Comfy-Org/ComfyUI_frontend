@@ -1,6 +1,6 @@
 import fs from 'fs'
 import path from 'path'
-import { describe, expect, it, vi } from 'vitest'
+import { describe, expect, it } from 'vitest'
 
 import {
   EXPECTED_PROMPT,
@@ -41,7 +41,6 @@ describe('MP3 metadata', () => {
   })
 
   it('does not log an invalid signature for a valid MP3 sync header', async () => {
-    const errorSpy = vi.mocked(console.error)
     const buf = new Uint8Array(16)
     buf[0] = 0xff
     buf[1] = 0xfb
@@ -49,11 +48,10 @@ describe('MP3 metadata', () => {
 
     await getMp3Metadata(file)
 
-    expect(errorSpy).not.toHaveBeenCalled()
+    expect(console.error).not.toHaveBeenCalled()
   })
 
   it('does not log an invalid signature for a valid ID3v2 header', async () => {
-    const errorSpy = vi.mocked(console.error)
     const buf = new Uint8Array(16)
     buf[0] = 0x49
     buf[1] = 0x44
@@ -62,7 +60,7 @@ describe('MP3 metadata', () => {
 
     await getMp3Metadata(file)
 
-    expect(errorSpy).not.toHaveBeenCalled()
+    expect(console.error).not.toHaveBeenCalled()
   })
 
   it('parses Python generated prompt with bare NaN/Infinity tokens', async () => {
@@ -96,7 +94,6 @@ describe('MP3 metadata', () => {
   })
 
   it('logs and skips when embedded JSON is malformed', async () => {
-    const errorSpy = vi.mocked(console.error)
     const metadata = `prompt\0{not json}\0workflow\0{also bad}\0`
     const buf = new Uint8Array(64 + metadata.length)
     buf[0] = 0xff
@@ -110,11 +107,11 @@ describe('MP3 metadata', () => {
 
     expect(result.prompt).toBeUndefined()
     expect(result.workflow).toBeUndefined()
-    expect(errorSpy).toHaveBeenCalledWith(
+    expect(console.error).toHaveBeenCalledWith(
       'Failed to parse MP3 prompt metadata',
       expect.any(SyntaxError)
     )
-    expect(errorSpy).toHaveBeenCalledWith(
+    expect(console.error).toHaveBeenCalledWith(
       'Failed to parse MP3 workflow metadata',
       expect.any(SyntaxError)
     )

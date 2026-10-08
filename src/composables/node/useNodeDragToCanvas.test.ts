@@ -287,7 +287,6 @@ describe('useNodeDragToCanvas', () => {
       vi.mocked(useLitegraphService().addNodeOnGraph).mockReturnValue(
         placedNode
       )
-      const consoleErrorSpy = vi.mocked(console.error)
 
       const { startDrag } = useNodeDragToCanvas()
       startDrag(mockNodeDef, {
@@ -309,7 +308,7 @@ describe('useNodeDragToCanvas', () => {
           detail: 'assetBrowser.failedToSetModelValue'
         })
       )
-      expect(consoleErrorSpy).toHaveBeenCalledWith(
+      expect(console.error).toHaveBeenCalledWith(
         expect.stringContaining('ckpt_name')
       )
     })

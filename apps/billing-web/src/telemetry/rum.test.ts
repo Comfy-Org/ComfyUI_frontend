@@ -242,14 +242,12 @@ describe('reportBillingWebError', () => {
   })
 
   it('logs the failure once, and RUM drops that console copy', () => {
-    const consoleError = vi.mocked(console.error)
-
     reportBillingWebError(new Error('Card declined'), {
       errorType: 'failure_confirming_checkout'
     })
 
-    expect(consoleError).toHaveBeenCalledOnce()
-    const logged = consoleError.mock.lastCall ?? []
+    expect(console.error).toHaveBeenCalledOnce()
+    const logged = vi.mocked(console.error).mock.lastCall ?? []
     const consoleEcho: ScrubbableRumEvent = {
       type: 'error',
       view: { url: 'https://billing.comfy.org/v1/checkout' },
@@ -259,8 +257,6 @@ describe('reportBillingWebError', () => {
   })
 
   it('logs only the redacted message, not the cause chain RUM would collect from the console', () => {
-    const consoleError = vi.mocked(console.error)
-
     reportBillingWebError(
       new Error(
         'Confirm failed for ada@example.com at https://billing.comfy.org/v1/checkout?payment_intent_client_secret=pi_1_secret_2',
@@ -269,7 +265,7 @@ describe('reportBillingWebError', () => {
       { errorType: 'failure_confirming_checkout' }
     )
 
-    expect(consoleError.mock.lastCall).toEqual([
+    expect(vi.mocked(console.error).mock.lastCall).toEqual([
       '[Reported error]: failure_confirming_checkout',
       'Confirm failed for [email] at https://billing.comfy.org/v1/checkout'
     ])

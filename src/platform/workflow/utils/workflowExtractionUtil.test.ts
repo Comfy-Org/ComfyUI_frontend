@@ -125,13 +125,12 @@ describe('extractWorkflowFromAsset', () => {
   })
 
   it('swallows errors during extraction and logs them', async () => {
-    const errorSpy = vi.mocked(console.error)
     vi.stubGlobal('fetch', vi.fn().mockRejectedValue(new Error('network down')))
 
     const result = await extractWorkflowFromAsset(makeAsset())
 
     expect(result).toEqual({ workflow: null, filename: 'image.json' })
-    expect(errorSpy).toHaveBeenCalledWith(
+    expect(console.error).toHaveBeenCalledWith(
       'Failed to extract workflow from asset:',
       expect.any(Error)
     )

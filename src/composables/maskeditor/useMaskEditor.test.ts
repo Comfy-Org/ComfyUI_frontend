@@ -34,11 +34,8 @@ const nodeWithImage = (overrides: NodeShape = {}): LGraphNode =>
   }) as unknown as LGraphNode
 
 describe('useMaskEditor', () => {
-  let errorSpy: ReturnType<typeof vi.spyOn>
-
   beforeEach(() => {
     mockDialogStore = useDialogStore()
-    errorSpy = vi.mocked(console.error)
   })
 
   describe('openMaskEditor', () => {
@@ -95,7 +92,9 @@ describe('useMaskEditor', () => {
     it('should log and bail when node is null', () => {
       useMaskEditor().openMaskEditor(null)
 
-      expect(errorSpy).toHaveBeenCalledWith('[MaskEditor] No node provided')
+      expect(console.error).toHaveBeenCalledWith(
+        '[MaskEditor] No node provided'
+      )
       expect(mockDialogStore.showDialog).not.toHaveBeenCalled()
     })
 
@@ -104,7 +103,9 @@ describe('useMaskEditor', () => {
 
       useMaskEditor().openMaskEditor(node)
 
-      expect(errorSpy).toHaveBeenCalledWith('[MaskEditor] Node has no images')
+      expect(console.error).toHaveBeenCalledWith(
+        '[MaskEditor] Node has no images'
+      )
       expect(mockDialogStore.showDialog).not.toHaveBeenCalled()
     })
 

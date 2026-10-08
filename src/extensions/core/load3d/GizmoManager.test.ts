@@ -208,13 +208,14 @@ describe('GizmoManager', () => {
     })
 
     it('warns and skips the override when _getPointer is missing at init', () => {
-      const warn = vi.mocked(console.warn)
       omitGetPointer.value = true
       manager.setPointerNdcSource(() => ({ x: 0.5, y: 0.5, inside: true }))
 
       manager.init()
 
-      expect(warn).toHaveBeenCalledWith(expect.stringContaining('_getPointer'))
+      expect(console.warn).toHaveBeenCalledWith(
+        expect.stringContaining('_getPointer')
+      )
       expect(lastControls()._getPointer).toBeUndefined()
     })
   })

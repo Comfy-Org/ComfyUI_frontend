@@ -272,7 +272,6 @@ describe('GlobalDialog Reka parity with PrimeVue', () => {
   })
 
   it('opens the save dialog with an accessible name and description', async () => {
-    const warn = vi.mocked(console.warn)
     mountDialog()
     const store = useDialogStore()
 
@@ -290,7 +289,7 @@ describe('GlobalDialog Reka parity with PrimeVue', () => {
     const dialog = await screen.findByRole('dialog', { name: 'Save as' })
     expect(dialog).toHaveAccessibleDescription('Filename')
     expect(screen.getByLabelText('Filename')).toHaveFocus()
-    expect(warn).not.toHaveBeenCalled()
+    expect(console.warn).not.toHaveBeenCalled()
   })
 
   it('closes the dialog on Escape by default', async () => {

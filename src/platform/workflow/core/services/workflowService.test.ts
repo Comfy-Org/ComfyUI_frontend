@@ -437,7 +437,6 @@ describe('useWorkflowService', () => {
         return key === 'Comfy.Workflow.Persist'
       })
       const addToastSpy = vi.spyOn(useToastStore(), 'add')
-      const consoleErrorSpy = vi.mocked(console.error)
       const error = new Error('storage unavailable')
       vi.mocked(useWorkflowDraftStoreV2().saveDraft).mockImplementation(() => {
         throw error
@@ -450,7 +449,7 @@ describe('useWorkflowService', () => {
       try {
         useWorkflowService().beforeLoadNewGraph()
 
-        expect(consoleErrorSpy).toHaveBeenCalledWith(
+        expect(console.error).toHaveBeenCalledWith(
           'Failed to persist active workflow draft',
           error
         )
@@ -462,7 +461,7 @@ describe('useWorkflowService', () => {
           })
         )
       } finally {
-        consoleErrorSpy.mockRestore()
+        vi.mocked(console.error).mockRestore()
       }
     })
   })
@@ -716,7 +715,6 @@ describe('useWorkflowService', () => {
       const storeClose = vi.spyOn(workflowStore, 'closeWorkflow')
       const error = new Error('replacement load failed')
       vi.mocked(app.loadGraphData).mockRejectedValueOnce(error)
-      const consoleError = vi.mocked(console.error)
 
       await expect(
         useWorkflowService().closeWorkflow(closing, { warnIfUnsaved: false })
@@ -726,7 +724,6 @@ describe('useWorkflowService', () => {
       // close must keep its draft.
       expect(storeClose).not.toHaveBeenCalled()
       expect(useWorkflowDraftStoreV2().removeDraft).not.toHaveBeenCalled()
-      consoleError.mockRestore()
     })
 
     it('keeps the tab and draft when the replacement load reports failure', async () => {

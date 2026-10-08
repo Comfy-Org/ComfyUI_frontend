@@ -650,7 +650,6 @@ describe('useModelStore', () => {
     })
 
     it('logs instead of rejecting when the post-scan reload fails', async () => {
-      const error = vi.mocked(console.error)
       enableMocks(true)
       store = useModelStore()
       await store.loadModels()
@@ -661,11 +660,10 @@ describe('useModelStore', () => {
       await getScanCallback()()
       await flushScanReload()
 
-      expect(error).toHaveBeenCalledWith(
+      expect(console.error).toHaveBeenCalledWith(
         expect.stringContaining('reload'),
         expect.any(Error)
       )
-      error.mockRestore()
     })
   })
 

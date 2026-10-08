@@ -27,17 +27,16 @@ describe('extensionStore', () => {
 
     it('warns when registering a disabled extension but still installs it', () => {
       const store = useExtensionStore()
-      const warnSpy = vi.mocked(console.warn)
       try {
         store.loadDisabledExtensionNames(['disabled.ext'])
         store.registerExtension({ name: 'disabled.ext' })
-        expect(warnSpy).toHaveBeenCalledWith(
+        expect(console.warn).toHaveBeenCalledWith(
           'Extension disabled.ext is disabled.'
         )
         expect(store.isExtensionInstalled('disabled.ext')).toBe(true)
         expect(store.isExtensionEnabled('disabled.ext')).toBe(false)
       } finally {
-        warnSpy.mockRestore()
+        vi.mocked(console.warn).mockRestore()
       }
     })
   })

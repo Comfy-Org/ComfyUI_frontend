@@ -178,7 +178,6 @@ describe('useWorkshopSession over the real session client', () => {
     vi.mocked(identifyWorkshopUser).mockImplementationOnce(() => {
       throw new Error('identify exploded')
     })
-    const errorSpy = vi.mocked(console.error)
     const { expires_at, ...cached } = mintBody('jwt-cached')
     sessionStorage.setItem(
       STORAGE_KEY,
@@ -193,7 +192,7 @@ describe('useWorkshopSession over the real session client', () => {
     await boot(true)
 
     await firebaseAnswers(user)
-    await vi.waitFor(() => expect(errorSpy).toHaveBeenCalledOnce())
+    await vi.waitFor(() => expect(console.error).toHaveBeenCalledOnce())
     await new Promise((resolve) => setTimeout(resolve))
 
     expect(

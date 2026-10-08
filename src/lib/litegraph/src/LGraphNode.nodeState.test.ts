@@ -204,7 +204,6 @@ describe('LGraphNode node-data adoption', () => {
     const { node } = addNodeToSubgraph()
     const registeredState = node._state
     const registeredId = node.id
-    const warn = vi.mocked(console.warn)
 
     node.id = node.id
     node.id = toNodeId(9999)
@@ -214,9 +213,9 @@ describe('LGraphNode node-data adoption', () => {
     expect(node.id).toBe(registeredId)
     expect(node.type).toBe('replacement')
     expect(registeredState.type).toBe('replacement')
-    expect(warn).toHaveBeenCalledWith(
+    expect(console.warn).toHaveBeenCalledWith(
       'LiteGraph: changing a node type after construction is deprecated'
     )
-    expect(warn).toHaveBeenCalledTimes(2)
+    expect(console.warn).toHaveBeenCalledTimes(2)
   })
 })

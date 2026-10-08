@@ -173,7 +173,6 @@ describe('CheckoutSummaryColumn discount rows', () => {
       .filter((text) => /discount|Promo code/.test(text))
 
   it('re-prices two unnamed discounts as rows of their own', async () => {
-    const warn = vi.mocked(console.warn)
     const { rerender } = renderColumn(
       discounted(['Promo code', '−$10.00'], ['Education discount', '−$4.00'])
     )
@@ -191,7 +190,7 @@ describe('CheckoutSummaryColumn discount rows', () => {
       'Promo code−$10.00',
       'Promo code−$5.00'
     ])
-    expect(warn).not.toHaveBeenCalled()
+    expect(console.warn).not.toHaveBeenCalled()
   })
 })
 

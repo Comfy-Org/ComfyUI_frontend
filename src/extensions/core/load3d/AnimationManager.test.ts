@@ -100,17 +100,13 @@ describe('AnimationManager', () => {
 
   describe('updateSelectedAnimation', () => {
     it('warns and does nothing when called before any setup', () => {
-      const warn = vi.mocked(console.warn)
-
       manager.updateSelectedAnimation(0)
 
-      expect(warn).toHaveBeenCalled()
+      expect(console.warn).toHaveBeenCalled()
       expect(manager.animationActions).toEqual([])
-      warn.mockRestore()
     })
 
     it('warns when the index is out of bounds', () => {
-      const warn = vi.mocked(console.warn)
       manager.setupModelAnimations(
         makeAnimatedModel([makeClip('only', 1)]),
         null
@@ -118,8 +114,7 @@ describe('AnimationManager', () => {
 
       manager.updateSelectedAnimation(5)
 
-      expect(warn).toHaveBeenCalled()
-      warn.mockRestore()
+      expect(console.warn).toHaveBeenCalled()
     })
 
     it('switches to the requested clip and emits an initial progress event', () => {
@@ -159,13 +154,10 @@ describe('AnimationManager', () => {
 
   describe('toggleAnimation', () => {
     it('warns and is a no-op when there is no animation loaded', () => {
-      const warn = vi.mocked(console.warn)
-
       manager.toggleAnimation(true)
 
-      expect(warn).toHaveBeenCalled()
+      expect(console.warn).toHaveBeenCalled()
       expect(manager.isAnimationPlaying).toBe(false)
-      warn.mockRestore()
     })
 
     it('flips the playing state when called without an explicit value', () => {

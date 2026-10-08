@@ -87,14 +87,10 @@ describe('usePartnerNodesInGraph', () => {
   })
 
   it('returns empty without touching rootGraph before the graph is ready', () => {
-    const consoleError = vi.mocked(console.error)
-
     const { partnerNodes, hasPartnerNodes } = setup()
     expect(partnerNodes.value).toEqual([])
     expect(hasPartnerNodes.value).toBe(false)
-    expect(consoleError).not.toHaveBeenCalled()
-
-    consoleError.mockRestore()
+    expect(console.error).not.toHaveBeenCalled()
   })
 
   it('collects only api_node defs, deduped, with display-name fallback', () => {

@@ -754,7 +754,6 @@ describe('assetsStore - Model Assets Cache (Cloud)', () => {
       vi.mocked(assetService.updateAsset).mockRejectedValueOnce(
         new Error('500 Internal Error')
       )
-      const consoleSpy = vi.mocked(console.error)
 
       await store.updateAssetMetadata(
         original,
@@ -764,7 +763,6 @@ describe('assetsStore - Model Assets Cache (Cloud)', () => {
 
       const cached = store.getAssets('CheckpointLoaderSimple')[0]
       expect(cached.user_metadata).toEqual({ note: 'before' })
-      consoleSpy.mockRestore()
     })
   })
 

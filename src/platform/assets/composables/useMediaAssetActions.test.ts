@@ -555,7 +555,6 @@ describe('useMediaAssetActions', () => {
       })
       mockExtractApiPromptFromAsset.mockResolvedValue(apiPrompt)
       mockLoadApiJson.mockRejectedValueOnce(new Error('boom'))
-      const consoleSpy = vi.mocked(console.error)
       const actions = useMediaAssetActions()
 
       await actions.openWorkflow(createMockAsset())
@@ -563,7 +562,6 @@ describe('useMediaAssetActions', () => {
       expect(useToast().add).toHaveBeenCalledWith(
         expect.objectContaining({ severity: 'warn', detail: 'boom' })
       )
-      consoleSpy.mockRestore()
     })
 
     it('warns when fetching the stored API graph fails', async () => {
@@ -574,7 +572,6 @@ describe('useMediaAssetActions', () => {
       mockExtractApiPromptFromAsset.mockRejectedValueOnce(
         new Error('network down')
       )
-      const consoleSpy = vi.mocked(console.error)
       const actions = useMediaAssetActions()
 
       await actions.openWorkflow(createMockAsset())
@@ -582,7 +579,6 @@ describe('useMediaAssetActions', () => {
       expect(useToast().add).toHaveBeenCalledWith(
         expect.objectContaining({ severity: 'warn', detail: 'network down' })
       )
-      consoleSpy.mockRestore()
     })
 
     it('warns when neither a workflow nor a stored API graph exists', async () => {

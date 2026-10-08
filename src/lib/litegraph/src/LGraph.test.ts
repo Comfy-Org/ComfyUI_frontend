@@ -594,7 +594,6 @@ describe('Floating Links / Reroutes', () => {
       -1
     )
     const collision = LLink.create(incumbent)
-    const consoleError = vi.mocked(console.error)
     graph.addFloatingLink(incumbent)
 
     const result = graph.addFloatingLink(collision)
@@ -603,7 +602,7 @@ describe('Floating Links / Reroutes', () => {
     expect(collision.id).toBe(toLinkId(7))
     expect(graph.floatingLinks.size).toBe(1)
     expect(graph.floatingLinks.get(toLinkId(7))).toBe(incumbent)
-    expect(consoleError).toHaveBeenCalledOnce()
+    expect(console.error).toHaveBeenCalledOnce()
   })
 
   test('removing a rejected floating link preserves the incumbent', () => {
@@ -944,10 +943,8 @@ describe('Store-driven serialization parity', () => {
     const graph = createGraph(new DummyNode())
     const before = graph.asSerialisable()
 
-    const error = vi.mocked(console.error)
-
     expect(graph.configure(before, true)).toBe(false)
-    expect(error).toHaveBeenCalledWith(
+    expect(console.error).toHaveBeenCalledWith(
       'Cannot additively configure a populated graph'
     )
     expect(graph.asSerialisable()).toEqual(before)
@@ -2353,17 +2350,18 @@ describe('deduplicateSubgraphNodeIds (via configure)', () => {
     it('warns when configuring a host with legacy proxyWidgets and no migration hook is wired', () => {
       const previous = LGraph.proxyWidgetMigrationFlush
       LGraph.proxyWidgetMigrationFlush = undefined
-      const warn = vi.mocked(console.warn)
       try {
         const graph = new LGraph()
         serialized.id = graph.id
         graph.configure(serialized)
 
-        const migrationCall = warn.mock.calls.find(
-          (call) =>
-            typeof call[0] === 'string' &&
-            call[0].includes('Legacy proxyWidgets were not migrated')
-        )
+        const migrationCall = vi
+          .mocked(console.warn)
+          .mock.calls.find(
+            (call) =>
+              typeof call[0] === 'string' &&
+              call[0].includes('Legacy proxyWidgets were not migrated')
+          )
         expect(migrationCall).toBeDefined()
         if (!migrationCall)
           throw new Error('Expected proxy widget migration warning')
@@ -2375,7 +2373,7 @@ describe('deduplicateSubgraphNodeIds (via configure)', () => {
         )
       } finally {
         LGraph.proxyWidgetMigrationFlush = previous
-        warn.mockRestore()
+        vi.mocked(console.warn).mockRestore()
       }
     })
   })
@@ -2450,7 +2448,6 @@ describe('Zero UUID handling in configure', () => {
   })
 
   it('creates a subgraph exposing IO without warning', () => {
-    const warn = vi.mocked(console.warn)
     const graph = new LGraph()
 
     graph.createSubgraph(
@@ -2459,7 +2456,7 @@ describe('Zero UUID handling in configure', () => {
       })
     )
 
-    expect(warn).not.toHaveBeenCalled()
+    expect(console.warn).not.toHaveBeenCalled()
   })
 })
 

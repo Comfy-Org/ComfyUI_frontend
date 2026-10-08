@@ -55,7 +55,6 @@ describe('slot reveal error recovery', () => {
     async ([, Component]) => {
       const user = userEvent.setup()
       const error = new Error('Connection dot failed to render')
-      const reportError = vi.mocked(console.error)
       const failRender = ref(false)
       const SlotConnectionDot = defineComponent(() => () => {
         if (failRender.value) throw error
@@ -105,7 +104,7 @@ describe('slot reveal error recovery', () => {
       expect(screen.getByText('⚠️')).toBeInTheDocument()
       expect(isLinkRevealed(SCOPE.rootGraphId, linkId)).toBe(false)
       expect(app.canvas.setDirty).toHaveBeenCalledWith(false, true)
-      expect(reportError).toHaveBeenCalledWith(error)
+      expect(console.error).toHaveBeenCalledWith(error)
     }
   )
 })

@@ -178,15 +178,13 @@ describe('useSettingStore', () => {
         type: 'text',
         defaultValue: 'default'
       }
-      const consoleWarnSpy = vi.mocked(console.warn)
 
       store.addSetting(setting)
       store.addSetting(setting)
 
-      expect(consoleWarnSpy).toHaveBeenCalledWith(
+      expect(console.warn).toHaveBeenCalledWith(
         'Setting already registered: Comfy.Locale'
       )
-      consoleWarnSpy.mockRestore()
     })
 
     it('should migrate deprecated values', () => {

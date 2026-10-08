@@ -17,7 +17,6 @@ vi.mock(import('@/platform/cloud/onboarding/auth'), () => ({
 describe('UserCheckView', () => {
   it('renders bootstrap state without unresolved component warnings', () => {
     vi.mocked(useFeatureFlags().flags).onboardingSurveyEnabled = true
-    const warn = vi.mocked(console.warn)
 
     render(UserCheckView, {
       global: {
@@ -28,7 +27,7 @@ describe('UserCheckView', () => {
     })
 
     expect(screen.getByRole('progressbar')).toBeInTheDocument()
-    expect(warn.mock.calls.flat().join(' ')).not.toContain(
+    expect(vi.mocked(console.warn).mock.calls.flat().join(' ')).not.toContain(
       'Failed to resolve component: CloudWaitlistViewSkeleton'
     )
   })

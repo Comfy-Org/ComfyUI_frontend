@@ -30,15 +30,16 @@ describe('commandStore', () => {
 
     it('warns on duplicate registration and overwrites with new function', async () => {
       const store = useCommandStore()
-      const warnSpy = vi.mocked(console.warn)
 
       const originalFn = vi.fn()
       const replacementFn = vi.fn()
       store.registerCommand({ id: 'dup', function: originalFn })
       store.registerCommand({ id: 'dup', function: replacementFn })
 
-      expect(warnSpy).toHaveBeenCalledWith('Command dup already registered')
-      warnSpy.mockRestore()
+      expect(console.warn).toHaveBeenCalledWith(
+        'Command dup already registered'
+      )
+      vi.mocked(console.warn).mockRestore()
 
       await store.getCommand('dup').function()
       expect(replacementFn).toHaveBeenCalled()

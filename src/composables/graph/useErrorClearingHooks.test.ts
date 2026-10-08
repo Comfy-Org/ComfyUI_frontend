@@ -627,7 +627,6 @@ describe('installErrorClearingHooks lifecycle', () => {
         resolveVerification = resolve
       })
     })
-    const warn = vi.mocked(console.warn)
     installErrorClearingHooks(graph)
 
     const node = new LGraphNode('CheckpointLoaderSimple')
@@ -643,7 +642,7 @@ describe('installErrorClearingHooks lifecycle', () => {
     )
     await Promise.resolve()
     expect(store.hasPendingAddedNodeErrorScan(graph, executionId)).toBe(true)
-    expect(warn).not.toHaveBeenCalledWith(
+    expect(console.warn).not.toHaveBeenCalledWith(
       '[useErrorClearingHooks] added-node scan failed:',
       scanError
     )
@@ -652,7 +651,7 @@ describe('installErrorClearingHooks lifecycle', () => {
     await vi.waitFor(() =>
       expect(store.hasPendingAddedNodeErrorScan(graph, executionId)).toBe(false)
     )
-    expect(warn).toHaveBeenCalledWith(
+    expect(console.warn).toHaveBeenCalledWith(
       '[useErrorClearingHooks] added-node scan failed:',
       scanError
     )

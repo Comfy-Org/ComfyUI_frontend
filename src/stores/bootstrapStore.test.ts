@@ -206,7 +206,6 @@ describe('bootstrapStore', () => {
 
     it('gives up after a second timeout, reports it, and keeps authenticated stores gated', async () => {
       vi.useFakeTimers()
-      const consoleError = vi.mocked(console.error)
       try {
         const store = useBootstrapStore()
         const settingStore = useSettingStore()
@@ -220,7 +219,7 @@ describe('bootstrapStore', () => {
           surface: 'platform',
           errorType: 'bootstrap_auth_wait_timeout'
         })
-        expect(consoleError).not.toHaveBeenCalled()
+        expect(console.error).not.toHaveBeenCalled()
         expect(settingStore.isReady).toBe(false)
       } finally {
         vi.useRealTimers()

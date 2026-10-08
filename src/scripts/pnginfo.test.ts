@@ -307,7 +307,6 @@ describe('importA1111', () => {
     const graph = new LGraph()
     const clear = vi.spyOn(graph, 'clear')
     const beforeGraphClear = vi.fn()
-    const consoleError = vi.mocked(console.error)
     vi.mocked(api.getEmbeddings).mockRejectedValue(
       new TypeError('Failed to fetch')
     )
@@ -318,7 +317,7 @@ describe('importA1111', () => {
     expect(imported).toBe('imported-without-embeddings')
     expect(beforeGraphClear).toHaveBeenCalledOnce()
     expect(clear).toHaveBeenCalledOnce()
-    expect(consoleError).toHaveBeenCalledWith(
+    expect(console.error).toHaveBeenCalledWith(
       'Failed to load embeddings for A1111 import:',
       expect.any(TypeError)
     )

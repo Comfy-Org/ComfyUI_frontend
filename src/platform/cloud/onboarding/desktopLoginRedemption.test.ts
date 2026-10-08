@@ -442,7 +442,6 @@ describe('installDesktopLoginRedemption', () => {
   })
 
   it('contains an unexpected internal error instead of rejecting', async () => {
-    const consoleError = vi.mocked(console.error)
     const { trigger, seedStash } = await setup()
     seedStash(VALID_CODE)
     vi.mocked(useDialogService().confirm).mockRejectedValue(
@@ -451,7 +450,7 @@ describe('installDesktopLoginRedemption', () => {
 
     await expect(trigger()).resolves.toBeUndefined()
 
-    expect(consoleError).toHaveBeenCalledWith(
+    expect(console.error).toHaveBeenCalledWith(
       '[DesktopLoginRedemption] Redemption failed:',
       expect.any(Error)
     )

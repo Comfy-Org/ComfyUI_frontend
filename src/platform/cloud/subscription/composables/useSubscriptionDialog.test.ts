@@ -823,14 +823,13 @@ describe('useSubscriptionDialog', () => {
     })
 
     it('reopens pricing table on dialog rejection', async () => {
-      const consoleSpy = vi.mocked(console.error)
       mockShowTeamWorkspacesDialog.mockRejectedValue(new Error('dialog error'))
 
       const { startTeamWorkspaceUpgradeFlow } = useSubscriptionDialog()
       startTeamWorkspaceUpgradeFlow()
 
       await vi.waitFor(() => {
-        expect(consoleSpy).toHaveBeenCalledWith(
+        expect(console.error).toHaveBeenCalledWith(
           '[useSubscriptionDialog] Failed to open team workspaces dialog:',
           expect.any(Error)
         )
@@ -839,8 +838,6 @@ describe('useSubscriptionDialog', () => {
       expect(mockShowLayoutDialog).toHaveBeenCalledWith(
         expect.objectContaining({ key: 'subscription-required' })
       )
-
-      consoleSpy.mockRestore()
     })
   })
 

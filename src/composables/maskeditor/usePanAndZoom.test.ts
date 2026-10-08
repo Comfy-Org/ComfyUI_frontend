@@ -166,11 +166,10 @@ describe('usePanAndZoom', () => {
 
     it('ignores move called without start', async () => {
       const pz = usePanAndZoom()
-      const consoleSpy = vi.mocked(console.error)
 
       await pz.handlePanMove({ clientX: 0, clientY: 0 } as PointerEvent)
 
-      expect(consoleSpy).toHaveBeenCalledWith('mouseDownPoint is null')
+      expect(console.error).toHaveBeenCalledWith('mouseDownPoint is null')
       expect(mockStore.setPanOffset).not.toHaveBeenCalled()
     })
   })
@@ -287,16 +286,14 @@ describe('usePanAndZoom', () => {
 
   describe('invalidatePanZoom', () => {
     it('warns and returns early when image is missing', async () => {
-      const consoleWarnSpy = vi.mocked(console.warn)
-
       try {
         const pz = usePanAndZoom()
         await pz.invalidatePanZoom()
-        expect(consoleWarnSpy).toHaveBeenCalledWith(
+        expect(console.warn).toHaveBeenCalledWith(
           'Missing required properties for pan/zoom'
         )
       } finally {
-        consoleWarnSpy.mockRestore()
+        vi.mocked(console.warn).mockRestore()
       }
     })
   })

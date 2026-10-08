@@ -195,12 +195,10 @@ describe('pruneDisconnected', () => {
       hostInput.widgetId = keptWidgetId
     }
 
-    const warnSpy = vi.mocked(console.warn)
-
     pruneDisconnected(subgraphNode)
 
     expect(subgraph.inputs.map((input) => input.name)).toEqual(['kept'])
-    expect(warnSpy).toHaveBeenCalledOnce()
+    expect(console.warn).toHaveBeenCalledOnce()
   })
 
   it('does not prune preview exposures for PreviewImage nodes', () => {

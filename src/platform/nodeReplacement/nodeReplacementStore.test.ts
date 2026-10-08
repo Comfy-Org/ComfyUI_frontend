@@ -201,20 +201,17 @@ describe('useNodeReplacementStore', () => {
     })
 
     it('should log error but not throw when fetch fails', async () => {
-      const consoleErrorSpy = vi.mocked(console.error)
       const error = new Error('Network error')
       vi.mocked(fetchNodeReplacements).mockRejectedValue(error)
       store = createStore()
 
       await expect(store.load()).resolves.toBeUndefined()
 
-      expect(consoleErrorSpy).toHaveBeenCalledWith(
+      expect(console.error).toHaveBeenCalledWith(
         'Failed to load node replacements:',
         error
       )
       expect(store.isLoaded).toBe(false)
-
-      consoleErrorSpy.mockRestore()
     })
 
     it('should not fetch when setting is disabled', async () => {

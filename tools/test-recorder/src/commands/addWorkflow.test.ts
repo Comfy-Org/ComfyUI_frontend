@@ -29,13 +29,11 @@ describe('runAddWorkflow', () => {
     const sourcePath = join(projectRoot, 'example.json')
     writeFileSync(sourcePath, '{"nodes":[]}')
     findProjectRoot.mockReturnValue(projectRoot)
-    const log = vi.mocked(console.log)
-    const error = vi.mocked(console.error)
 
     runAddWorkflow(sourcePath)
 
-    expect(log).toHaveBeenCalledOnce()
-    expect(log).toHaveBeenCalledWith('example')
-    expect(error).toHaveBeenCalledWith(WORKFLOW_ASSET_EXPLANATION)
+    expect(console.log).toHaveBeenCalledOnce()
+    expect(console.log).toHaveBeenCalledWith('example')
+    expect(console.error).toHaveBeenCalledWith(WORKFLOW_ASSET_EXPLANATION)
   })
 })

@@ -143,8 +143,6 @@ describe('useWorkflowAutoSave', () => {
       activeWorkflow: { isModified: true, isPersisted: true }
     })
 
-    const consoleErrorSpy = vi.mocked(console.error)
-
     try {
       render({
         template: `<div></div>`,
@@ -161,12 +159,12 @@ describe('useWorkflowAutoSave', () => {
       vi.advanceTimersByTime(1000)
       await Promise.resolve()
 
-      expect(consoleErrorSpy).toHaveBeenCalledWith(
+      expect(console.error).toHaveBeenCalledWith(
         'Auto save failed:',
         expect.any(Error)
       )
     } finally {
-      consoleErrorSpy.mockRestore()
+      vi.mocked(console.error).mockRestore()
     }
   })
 

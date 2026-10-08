@@ -1,4 +1,4 @@
-import { describe, expect, it, vi } from 'vitest'
+import { describe, expect, it } from 'vitest'
 import { computed } from 'vue'
 
 import { SUBGRAPH_OUTPUT_ID } from '@/lib/litegraph/src/constants'
@@ -43,7 +43,6 @@ function link(
 describe('useLinkStore', () => {
   it('keeps the first registration for a contested target slot', () => {
     const store = useLinkStore()
-    const consoleError = vi.mocked(console.error)
     store.registerLink(graphA, link(1, 5, 0, 9, 2))
     const rejected = { ...link(2, 5, 0, 9, 2), graphId: graphB.owningGraphId }
 
@@ -51,7 +50,7 @@ describe('useLinkStore', () => {
 
     expect(store.getInputSlotLink(graphA, toNodeId(9), 2)?.id).toBe(toLinkId(1))
     expect(rejected.graphId).toBe(graphB.owningGraphId)
-    expect(consoleError).toHaveBeenCalledOnce()
+    expect(console.error).toHaveBeenCalledOnce()
   })
 
   it('queries and protects a subgraph-output target slot', () => {

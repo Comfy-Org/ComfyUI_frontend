@@ -1,4 +1,4 @@
-import { afterEach, describe, expect, it, vi } from 'vitest'
+import { afterEach, describe, expect, it } from 'vitest'
 
 import type { BadgeData, CoreBadgeData } from '@/types/badgeData'
 
@@ -43,13 +43,12 @@ describe('registerBadgeRowsProvider', () => {
   })
 
   it('keeps the installed provider when a conflicting registration fails', () => {
-    const error = vi.mocked(console.error)
     register(firstProvider)
     const disposeConflict = register(secondProvider)
     disposeConflict()
 
     expect(badgeRows(node)).toBe(firstRows)
-    expect(error).toHaveBeenCalledWith(
+    expect(console.error).toHaveBeenCalledWith(
       'A badge rows provider is already registered'
     )
   })

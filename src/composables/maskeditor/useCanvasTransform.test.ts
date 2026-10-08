@@ -202,17 +202,14 @@ describe('useCanvasTransform', () => {
     })
 
     it('should log error when canvas contexts not ready', async () => {
-      const consoleErrorSpy = vi.mocked(console.error)
       mockStore.maskCanvas = null
 
       const transform = useCanvasTransform()
       await transform.rotateClockwise()
 
-      expect(consoleErrorSpy).toHaveBeenCalledWith(
+      expect(console.error).toHaveBeenCalledWith(
         '[useCanvasTransform] Canvas contexts not ready'
       )
-
-      consoleErrorSpy.mockRestore()
     })
 
     it('should handle GPU texture recreation when GPU is active', async () => {
@@ -569,17 +566,14 @@ describe('useCanvasTransform', () => {
     })
 
     it('should log error when canvas contexts not ready', async () => {
-      const consoleErrorSpy = vi.mocked(console.error)
       mockStore.maskCanvas = null
 
       const transform = useCanvasTransform()
       await transform.mirrorVertical()
 
-      expect(consoleErrorSpy).toHaveBeenCalledWith(
+      expect(console.error).toHaveBeenCalledWith(
         '[useCanvasTransform] Canvas contexts not ready'
       )
-
-      consoleErrorSpy.mockRestore()
     })
   })
 

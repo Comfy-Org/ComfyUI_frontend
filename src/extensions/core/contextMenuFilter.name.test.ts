@@ -12,8 +12,6 @@ import { LGraphCanvas } from '@/lib/litegraph/src/litegraph'
  */
 describe('Context Menu Extension Name in Warnings', () => {
   it('should include extension name in deprecation warning', () => {
-    const warnSpy = vi.mocked(console.warn)
-
     // Install compatibility layer
     legacyMenuCompat.install(LGraphCanvas.prototype, 'getCanvasMenuOptions')
 
@@ -33,8 +31,8 @@ describe('Context Menu Extension Name in Warnings', () => {
     legacyMenuCompat.setCurrentExtension(null)
 
     // Verify the warning includes the extension name
-    expect(warnSpy).toHaveBeenCalled()
-    const warningMessage = warnSpy.mock.calls[0][0]
+    expect(console.warn).toHaveBeenCalled()
+    const warningMessage = vi.mocked(console.warn).mock.calls[0][0]
 
     expect(warningMessage).toContain('[DEPRECATED]')
     expect(warningMessage).toContain('getCanvasMenuOptions')
@@ -44,8 +42,6 @@ describe('Context Menu Extension Name in Warnings', () => {
   })
 
   it('should include extension name for node menu patches', () => {
-    const warnSpy = vi.mocked(console.warn)
-
     // Install compatibility layer
     legacyMenuCompat.install(LGraphCanvas.prototype, 'getNodeMenuOptions')
 
@@ -64,8 +60,8 @@ describe('Context Menu Extension Name in Warnings', () => {
     legacyMenuCompat.setCurrentExtension(null)
 
     // Verify the warning includes extension info
-    expect(warnSpy).toHaveBeenCalled()
-    const warningMessage = warnSpy.mock.calls[0][0]
+    expect(console.warn).toHaveBeenCalled()
+    const warningMessage = vi.mocked(console.warn).mock.calls[0][0]
 
     expect(warningMessage).toContain('[DEPRECATED]')
     expect(warningMessage).toContain('getNodeMenuOptions')

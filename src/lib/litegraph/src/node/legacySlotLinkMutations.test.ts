@@ -205,8 +205,6 @@ describe('comfyui-promptchain indexed slot replacement', () => {
   })
 
   it('keeps the input layout when the endpoint batch is rejected', () => {
-    const consoleError = vi.mocked(console.error)
-
     const forced = autogrowChain(4, [0, 1, 2])
     const layoutBefore = forced.target.inputs.map((input) => input.name)
     vi.spyOn(useLinkStore(), 'updateEndpoints').mockReturnValue({
@@ -215,10 +213,13 @@ describe('comfyui-promptchain indexed slot replacement', () => {
     })
     forced.target.removeInput(0)
 
-    expect(consoleError).toHaveBeenCalledWith('Failed to replace node inputs', {
-      code: 'occupied-target',
-      message: 'forced'
-    })
+    expect(console.error).toHaveBeenCalledWith(
+      'Failed to replace node inputs',
+      {
+        code: 'occupied-target',
+        message: 'forced'
+      }
+    )
     expect(forced.target.inputs.map((input) => input.name)).toEqual(
       layoutBefore
     )

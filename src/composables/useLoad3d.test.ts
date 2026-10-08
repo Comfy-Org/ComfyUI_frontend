@@ -1779,8 +1779,6 @@ describe('useLoad3d', () => {
     })
 
     it('isolates a throwing callback so subsequent callbacks and event wiring still run', async () => {
-      const consoleErrorSpy = vi.mocked(console.error)
-
       const composable = useLoad3d(mockNode)
       const throwing = vi.fn(() => {
         throw new Error('boom')
@@ -1795,17 +1793,13 @@ describe('useLoad3d', () => {
       expect(after).toHaveBeenCalledTimes(1)
       expect(mockLoad3d.addEventListener).toHaveBeenCalled()
       expect(mockToastStore.addAlert).not.toHaveBeenCalled()
-      expect(consoleErrorSpy).toHaveBeenCalledWith(
+      expect(console.error).toHaveBeenCalledWith(
         'Load3d ready callback failed:',
         expect.any(Error)
       )
-
-      consoleErrorSpy.mockRestore()
     })
 
     it('isolates a throwing callback in the synchronous already-mounted path', async () => {
-      const consoleErrorSpy = vi.mocked(console.error)
-
       const composable = useLoad3d(mockNode)
       await composable.initializeLoad3d(document.createElement('div'))
 
@@ -1816,8 +1810,6 @@ describe('useLoad3d', () => {
       expect(() => composable.waitForLoad3d(throwing)).not.toThrow()
       expect(() => composable.onLoad3dReady(throwing)).not.toThrow()
       expect(throwing).toHaveBeenCalledTimes(2)
-
-      consoleErrorSpy.mockRestore()
     })
 
     it('cleans up callback maps when the node is removed before initializeLoad3d runs', async () => {

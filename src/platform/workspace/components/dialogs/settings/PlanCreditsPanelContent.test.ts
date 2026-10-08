@@ -153,13 +153,12 @@ describe('PlanCreditsPanelContent', () => {
 
   it('reports usage-log refresh failures', async () => {
     refreshSpy.mockRejectedValueOnce(new Error('refresh failed'))
-    const consoleError = vi.mocked(console.error)
     renderPanel()
 
     await userEvent.click(screen.getByRole('button', { name: 'Activity' }))
 
     await waitFor(() =>
-      expect(consoleError).toHaveBeenCalledWith('Error refreshing usage logs')
+      expect(console.error).toHaveBeenCalledWith('Error refreshing usage logs')
     )
   })
 })

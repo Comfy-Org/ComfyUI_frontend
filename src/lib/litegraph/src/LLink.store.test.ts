@@ -52,11 +52,10 @@ describe('LLink ↔ linkStore integration', () => {
       UNASSIGNED_NODE_ID,
       -1
     )
-    const error = vi.mocked(console.error)
 
     graph.links.set(toLinkId(2), link)
 
-    expect(error).toHaveBeenCalledWith(
+    expect(console.error).toHaveBeenCalledWith(
       'LiteGraph: refusing to register link 1 under mismatched id 2'
     )
     expect(graph.links.size).toBe(0)
@@ -544,11 +543,10 @@ describe('LLink ↔ linkStore integration', () => {
     const first = firstSource.connect(0, target, 0)!
     secondSource.connect(0, target, 1)
 
-    const error = vi.mocked(console.error)
     expect(() => {
       first.target_slot = 1
     }).not.toThrow()
-    expect(error).toHaveBeenCalledWith(
+    expect(console.error).toHaveBeenCalledWith(
       'Failed to update link endpoints',
       expect.objectContaining({ code: 'occupied-target' })
     )

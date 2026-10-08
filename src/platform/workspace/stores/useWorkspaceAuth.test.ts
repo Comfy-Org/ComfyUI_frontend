@@ -1600,9 +1600,6 @@ describe('useWorkspaceAuthStore', () => {
         text: () => Promise.resolve(JSON.stringify({ message: 'Server error' }))
       })
 
-      const consoleErrorSpy = vi.mocked(console.error)
-      const consoleWarnSpy = vi.mocked(console.warn)
-
       const refreshPromise = store.refreshToken()
 
       // Drain only the retry backoff delays; do not advance to the scheduled
@@ -1616,19 +1613,19 @@ describe('useWorkspaceAuthStore', () => {
       expect(mockFetch).toHaveBeenCalledTimes(5)
       // Each exponential-backoff delay includes bounded jitter.
       expect(
-        consoleWarnSpy.mock.calls.some((c) =>
-          /retrying in 1500ms/.test(String(c[0]))
-        )
+        vi
+          .mocked(console.warn)
+          .mock.calls.some((c) => /retrying in 1500ms/.test(String(c[0])))
       ).toBe(true)
       expect(
-        consoleWarnSpy.mock.calls.some((c) =>
-          /retrying in 2500ms/.test(String(c[0]))
-        )
+        vi
+          .mocked(console.warn)
+          .mock.calls.some((c) => /retrying in 2500ms/.test(String(c[0])))
       ).toBe(true)
       expect(
-        consoleWarnSpy.mock.calls.some((c) =>
-          /retrying in 4500ms/.test(String(c[0]))
-        )
+        vi
+          .mocked(console.warn)
+          .mock.calls.some((c) => /retrying in 4500ms/.test(String(c[0])))
       ).toBe(true)
 
       // After the final transient failure the still-valid context is preserved.
@@ -1644,7 +1641,7 @@ describe('useWorkspaceAuthStore', () => {
         expectedExpiresAtMs(mockTokenResponse.expires_at)
       )
       expect(error.value).toBeNull()
-      expect(consoleErrorSpy).not.toHaveBeenCalled()
+      expect(console.error).not.toHaveBeenCalled()
 
       mockFetch.mockResolvedValueOnce({
         ok: true,
@@ -1662,8 +1659,7 @@ describe('useWorkspaceAuthStore', () => {
         expect(workspaceToken.value).toBe('retry-token')
       })
 
-      consoleErrorSpy.mockRestore()
-      consoleWarnSpy.mockRestore()
+      vi.mocked(console.warn).mockRestore()
       randomSpy.mockRestore()
     })
 
@@ -1730,15 +1726,11 @@ describe('useWorkspaceAuthStore', () => {
           Promise.resolve(JSON.stringify({ message: 'Invalid token' }))
       })
 
-      const consoleErrorSpy = vi.mocked(console.error)
-
       await store.refreshToken()
 
       // Initial + exactly one refresh attempt; no retries on permanent errors.
       expect(mockFetch).toHaveBeenCalledTimes(2)
       expect(currentWorkspace.value).toBeNull()
-
-      consoleErrorSpy.mockRestore()
     })
 
     it.for([
@@ -2132,7 +2124,6 @@ describe('useWorkspaceAuthStore', () => {
         clear: originalSessionStorage.clear.bind(originalSessionStorage)
       } satisfies Storage
       vi.stubGlobal('sessionStorage', throwingSessionStorage)
-      const consoleWarnSpy = vi.mocked(console.warn)
 
       try {
         const store = useWorkspaceAuthStore()
@@ -2141,12 +2132,12 @@ describe('useWorkspaceAuthStore', () => {
         await store.switchWorkspace('workspace-123')
 
         expect(workspaceToken.value).toBe('workspace-token-abc')
-        expect(consoleWarnSpy).toHaveBeenCalledWith(
+        expect(console.warn).toHaveBeenCalledWith(
           'Failed to persist workspace identity to sessionStorage'
         )
       } finally {
         vi.stubGlobal('sessionStorage', originalSessionStorage)
-        consoleWarnSpy.mockRestore()
+        vi.mocked(console.warn).mockRestore()
       }
     })
   })

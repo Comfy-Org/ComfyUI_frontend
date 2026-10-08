@@ -113,13 +113,10 @@ describe('useCameraInfo', () => {
     ViewportMock.mockImplementationOnce(() => {
       throw new Error('webgl unavailable')
     })
-    const consoleError = vi.mocked(console.error)
     const camera = useCameraInfo(nodeRef(makeNode({ mode: 'orbit' })))
 
     expect(() => camera.initialize(document.createElement('div'))).not.toThrow()
     expect(useToastStore().addAlert).toHaveBeenCalledOnce()
-
-    consoleError.mockRestore()
   })
 
   it('forwards toolbar actions to the viewport', () => {

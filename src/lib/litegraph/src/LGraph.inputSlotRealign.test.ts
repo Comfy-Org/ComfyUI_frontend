@@ -623,12 +623,10 @@ describe('LGraph.configure realignment with an unmatched input name (#15581)', (
   })
 
   it('reports no error while realigning around an unmatched name', () => {
-    const error = vi.mocked(console.error)
-
     const graph = new LGraph()
     graph.configure(unmatchedInputNameWorkflow('test/DroppedInputTarget'))
 
-    expect(error).not.toHaveBeenCalled()
+    expect(console.error).not.toHaveBeenCalled()
   })
 })
 

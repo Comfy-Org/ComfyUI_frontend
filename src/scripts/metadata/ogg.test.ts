@@ -1,6 +1,6 @@
 import fs from 'fs'
 import path from 'path'
-import { describe, expect, it, vi } from 'vitest'
+import { describe, expect, it } from 'vitest'
 
 import {
   EXPECTED_PROMPT,
@@ -65,7 +65,6 @@ describe('OGG/Opus metadata', () => {
   })
 
   it('logs and skips when embedded JSON is malformed', async () => {
-    const errorSpy = vi.mocked(console.error)
     const metadata = `prompt={not json}\0workflow={also bad}\0`
     const oggs = new TextEncoder().encode('OggS\0')
     const buf = new Uint8Array(128)
@@ -80,11 +79,11 @@ describe('OGG/Opus metadata', () => {
 
     expect(result.prompt).toBeUndefined()
     expect(result.workflow).toBeUndefined()
-    expect(errorSpy).toHaveBeenCalledWith(
+    expect(console.error).toHaveBeenCalledWith(
       'Failed to parse Ogg prompt metadata',
       expect.any(SyntaxError)
     )
-    expect(errorSpy).toHaveBeenCalledWith(
+    expect(console.error).toHaveBeenCalledWith(
       'Failed to parse Ogg workflow metadata',
       expect.any(SyntaxError)
     )

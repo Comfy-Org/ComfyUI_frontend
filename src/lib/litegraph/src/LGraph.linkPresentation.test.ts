@@ -1,4 +1,4 @@
-import { describe, expect, it, onTestFinished, vi } from 'vitest'
+import { describe, expect, it, onTestFinished } from 'vitest'
 
 import { LGraph } from '@/lib/litegraph/src/litegraph'
 import { createTestNode } from '@/lib/litegraph/src/__fixtures__/nodeHelpers'
@@ -270,7 +270,6 @@ describe('link presentation ownership', () => {
   })
 
   it('rejects a same-id replacement and keeps the incumbent presentation', () => {
-    const error = vi.mocked(console.error)
     const graph = new LGraph()
     const incumbent = makeLink()
     graph._addLink(incumbent)
@@ -284,6 +283,6 @@ describe('link presentation ownership', () => {
       hidden: true,
       label: 'Kept'
     })
-    expect(error).toHaveBeenCalledOnce()
+    expect(console.error).toHaveBeenCalledOnce()
   })
 })

@@ -104,7 +104,6 @@ describe('crossview dev proxy', () => {
         )
       )
     )
-    const logged = vi.mocked(console.error)
     const server = createServer(
       handler({ target: 'https://deployment.example', key: 'key' })
     )
@@ -128,7 +127,7 @@ describe('crossview dev proxy', () => {
         outgoing.once('error', () => resolve())
         outgoing.end()
       })
-      expect(logged).toHaveBeenCalledWith(failure)
+      expect(console.error).toHaveBeenCalledWith(failure)
     } finally {
       server.closeAllConnections()
       server.close()

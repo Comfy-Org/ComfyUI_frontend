@@ -62,15 +62,12 @@ function makeCard(overrides: Partial<ErrorCardData> = {}): ErrorCardData {
 }
 
 describe('useErrorReport', () => {
-  let warnSpy: ReturnType<typeof vi.spyOn>
-
   beforeEach(async () => {
     vi.spyOn(app.rootGraph, 'serialize').mockImplementation(mocks.serialize)
     const store = useSystemStatsStore()
     await until(() => store.isInitialized).toBe(true)
     store.systemStats = null
     store.isLoading = false
-    warnSpy = vi.mocked(console.warn)
   })
 
   it('returns early without enrichment when the card has no runtime errors', async () => {
@@ -211,7 +208,7 @@ describe('useErrorReport', () => {
     expect(useSystemStatsStore().refetchSystemStats).toHaveBeenCalledTimes(1)
     expect(mocks.getLogs).not.toHaveBeenCalled()
     expect(mocks.generateErrorReport).not.toHaveBeenCalled()
-    expect(warnSpy).toHaveBeenCalled()
+    expect(console.warn).toHaveBeenCalled()
   })
 
   it('returns early and warns when workflow serialization throws', async () => {
@@ -230,7 +227,7 @@ describe('useErrorReport', () => {
     await flushPromises()
 
     expect(mocks.generateErrorReport).not.toHaveBeenCalled()
-    expect(warnSpy).toHaveBeenCalled()
+    expect(console.warn).toHaveBeenCalled()
     expect(displayedDetailsMap.value).toEqual({ 0: 'trace' })
   })
 
@@ -252,7 +249,7 @@ describe('useErrorReport', () => {
     const { displayedDetailsMap } = useErrorReport(card)
     await flushPromises()
 
-    expect(warnSpy).toHaveBeenCalled()
+    expect(console.warn).toHaveBeenCalled()
     expect(displayedDetailsMap.value).toEqual({ 0: 'fallback' })
   })
 

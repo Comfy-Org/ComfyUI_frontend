@@ -154,13 +154,10 @@ describe('useCameraAngle', () => {
     ViewportMock.mockImplementationOnce(() => {
       throw new Error('webgl unavailable')
     })
-    const consoleError = vi.mocked(console.error)
     const camera = useCameraAngle(nodeRef(makeNode(DEFAULT_WIDGETS)))
 
     expect(() => camera.initialize(document.createElement('div'))).not.toThrow()
     expect(useToastStore().addAlert).toHaveBeenCalledOnce()
-
-    consoleError.mockRestore()
   })
 
   it('writes viewport interaction results back into the widgets', () => {

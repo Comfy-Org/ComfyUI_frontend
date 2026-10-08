@@ -89,11 +89,9 @@ describe('normalizeConfiguredTopology with conflicting origins (#15577)', () => 
   })
 
   it('warns when a link is dropped in favour of a different origin', () => {
-    const warn = vi.mocked(console.warn)
-
     configureConflictingOrigins()
 
-    expect(warn).toHaveBeenCalledWith(
+    expect(console.warn).toHaveBeenCalledWith(
       expect.any(String),
       expect.objectContaining({ targetNodeId: toNodeId(3), targetSlot: 0 })
     )

@@ -111,7 +111,6 @@ describe('firebaseIdentity', () => {
     } = await loadFresh()
     vi.mocked(initializeApp).mockReturnValue(defaultApp)
     vi.mocked(initializeAuth).mockReturnValue(fromPartial<Auth>({}))
-    const consoleError = vi.mocked(console.error)
     remoteConfigState.value = 'error'
     remoteConfig.value = {}
 
@@ -121,7 +120,7 @@ describe('firebaseIdentity', () => {
       expect.objectContaining({ projectId: 'dreamboothy-dev' }),
       '[DEFAULT]'
     )
-    expect(consoleError).not.toHaveBeenCalled()
+    expect(console.error).not.toHaveBeenCalled()
   })
 
   it('initializes Auth on an existing [DEFAULT] app with the same persistence list and popup resolver instead of taking whatever its creator chose', async () => {

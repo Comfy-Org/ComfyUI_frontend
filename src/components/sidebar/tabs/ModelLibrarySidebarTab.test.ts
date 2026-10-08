@@ -405,7 +405,6 @@ describe('ModelLibrarySidebarTab', () => {
 
   describe('asset mode', () => {
     it('surfaces an error toast when the eager load fails on mount', async () => {
-      const error = vi.mocked(console.error)
       vi.mocked(useFeatureFlags().flags).assetsEnabled = true
       vi.mocked(useModelStore().loadModels).mockRejectedValueOnce(
         new Error('walk failed')
@@ -421,7 +420,6 @@ describe('ModelLibrarySidebarTab', () => {
           detail: 'sideToolbar.modelLibraryLoadFailed'
         })
       )
-      error.mockRestore()
     })
 
     it('hides the load-all button and eager-loads models on mount', async () => {
