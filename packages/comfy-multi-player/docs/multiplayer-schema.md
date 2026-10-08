@@ -1426,8 +1426,8 @@ consumer repositories at their current revisions, not by analogy to A3:
 - **At the time of this amendment, the frontend did not consume this package.** That historical
   observation does not establish present consumer compatibility. ADR-006 requires consumers to pin
   the same exact published npm version. The package source now lives in `packages/comfy-multi-player`
-  of `Comfy-Org/ComfyUI_frontend`, but the frontend app still consumes a published version rather than
-  the workspace source. Future changes require fresh consumer checks.
+  of `Comfy-Org/ComfyUI_frontend`. The frontend imports workspace source on this branch; merging that
+  switch requires cloud rollout alignment. Future changes require fresh consumer checks.
 - **Two endpoints reach `project()`**, both in the doc-host sidecar: `/project` and `/apply` (whose
   response embeds a projection computed after `applyOps`). `/mint` and `/resync` do not.
 

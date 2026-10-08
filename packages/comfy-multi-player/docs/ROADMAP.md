@@ -29,17 +29,19 @@ tooling. It was imported from upstream
 [Comfy-Org/comfy-multi-player](https://github.com/Comfy-Org/comfy-multi-player)
 `main` at 0.3.10 with that history preserved; target frontend `main`.
 
-The migration is stacked, and only the first step is done:
+The migration separates the import from the consumer switch:
 
-1. **Source import (this step).** The package source, its gates
+1. **Source import.** The package source, its gates
    (`ci-comfy-multi-player.yaml`, `mutation-comfy-multi-player.yaml`), and its
-   CodeRabbit rules live in the frontend repository. The frontend app still
-   consumes the published 0.3.6 from npm through the pnpm catalog, so the import
-   changes no shipped behavior. The package version stays 0.3.10; the first
+   CodeRabbit rules live in the frontend repository. That PR retains the
+   frontend's published 0.3.6 dependency, so the import changes no shipped
+   behavior. The package version stays 0.3.10; the first
    monorepo release must be a new version, tagged `comfy-multi-player-v<version>`.
-2. **Workspace switch (blocked).** Pointing the frontend at the workspace package
-   is blocked on the cloud rollout. Browser and server must still run the same
-   exact version (ADR-006).
+2. **Workspace switch, draft.** The frontend imports source through `workspace:*`
+   on this branch. Merging remains blocked on the cloud rollout. Browser and
+   server must run the same exact version (ADR-006). The scheduled CRDT alarm
+   compares the follower suite against workspace source and the latest npm
+   release; it does not verify the deployed server.
 
 The npm trusted-publisher configuration and the retirement of the standalone
 repository are separate maintainer actions that this import does not change.

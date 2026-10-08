@@ -1182,7 +1182,7 @@ function applyInsertWorkflow(doc: Y.Doc, op: InsertWorkflowOp, catalog?: WidgetC
   }
 
   commitPreparedWrites();
-  updateInsertedWorkflowMeta(doc, wf, nodeWrites, linkWrites);
+  updateInsertedWorkflowMeta(doc, wf, nodeWrites);
   return nodeWrites.length > 0 || linkWrites.length > 0 || definitionWrites.length > 0 || ((wf["groups"] as unknown[] | undefined)?.length ?? 0) > 0
     ? "applied"
     : "no-op";
@@ -1192,7 +1192,6 @@ function updateInsertedWorkflowMeta(
   doc: Y.Doc,
   wf: Record<string, unknown>,
   nodeWrites: Array<[string, unknown, Y.Map<unknown>]>,
-  linkWrites: unknown[][],
 ): void {
   const meta = metaMap(doc);
   if (Array.isArray(wf["groups"])) {
