@@ -2,13 +2,13 @@ import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { nextTick } from 'vue'
 
 import { useToast } from '@/components/ui/toast/toastStore'
-import { useBillingContext } from '@/composables/billing/useBillingContext'
 import { useFeatureFlags } from '@/composables/useFeatureFlags'
 import { remoteConfig } from '@/platform/remoteConfig/remoteConfig'
 import { useSettingsDialog } from '@/platform/settings/composables/useSettingsDialog'
 import { useTelemetry } from '@/platform/telemetry'
 import { WorkspaceApiError } from '@/platform/workspace/api/workspaceApi'
 import { workspaceApiUrl } from '@/platform/workspace/api/workspaceApiUrl'
+import { onBillingRefresh } from '@/platform/workspace/billing/billingRefresh'
 import { useBillingCapabilities } from '@/platform/workspace/composables/useBillingCapabilities'
 import { useTeamWorkspaceStore } from '@/platform/workspace/stores/teamWorkspaceStore'
 import { useWorkspaceAuthStore } from '@/platform/workspace/stores/workspaceAuthStore'
@@ -45,8 +45,6 @@ vi.mock(import('./createBillingSdk'), () => ({
   createBillingSdk: mockCreateBillingSdk
 }))
 
-vi.mock(import('@/composables/billing/useBillingContext'))
-
 vi.mock(import('@/platform/workspace/composables/useBillingCapabilities'))
 
 vi.mock(import('@/platform/settings/composables/useSettingsDialog'))
@@ -66,12 +64,12 @@ vi.mock<unknown>(import('@stripe/stripe-js/pure'), () => ({
 
 let harness: ReturnType<typeof fakeBillingSdk>
 let options: BillingSdkOptions
+const refreshed = vi.fn()
 
 beforeEach(() => {
   stubAccountIdentityPort()
   vi.mocked(useFeatureFlags().flags).embeddedCheckoutEnabled = false
   vi.mocked(useFeatureFlags().flags).hostedBillingDestination = 'stripe'
-  vi.mocked(useBillingContext).mockReturnValue(useBillingContext())
   remoteConfig.value = {}
   harness = fakeBillingSdk()
   mockCreateBillingSdk.mockImplementation((sdkOptions) => {
@@ -80,6 +78,7 @@ beforeEach(() => {
   })
   vi.mocked(useDialogStore().closeDialog).mockImplementation(() => {})
   vi.spyOn(window, 'open').mockReturnValue(window)
+  return onBillingRefresh(refreshed)
 })
 
 afterEach(() => {
@@ -350,8 +349,7 @@ describe('useBillingSdkStore', () => {
     await vi.waitFor(() =>
       expect(useSettingsDialog().show).toHaveBeenCalledWith('workspace')
     )
-    expect(useBillingContext().fetchStatus).toHaveBeenCalledOnce()
-    expect(useBillingContext().fetchBalance).toHaveBeenCalledOnce()
+    expect(refreshed.mock.calls).toEqual([['account']])
     expect(useBillingCapabilities().refresh).toHaveBeenCalledOnce()
     expect(useDialogStore().closeDialog).toHaveBeenCalledWith({
       key: 'top-up-credits'
@@ -400,7 +398,7 @@ describe('useBillingSdkStore', () => {
 
     expect(useTelemetry()?.trackBillingEvent).not.toHaveBeenCalled()
     expect(useSettingsDialog().show).not.toHaveBeenCalled()
-    expect(useBillingContext().fetchStatus).not.toHaveBeenCalled()
+    expect(refreshed).not.toHaveBeenCalled()
     expect(useToast().toasts).toEqual([])
   })
 
@@ -595,8 +593,7 @@ describe('useBillingSdkStore subscription commands', () => {
       status: 'ok',
       value: { operationObserved: true }
     })
-    expect(useBillingContext().fetchStatus).toHaveBeenCalledOnce()
-    expect(useBillingContext().fetchBalance).toHaveBeenCalledOnce()
+    expect(refreshed.mock.calls).toEqual([['account']])
     expect(useBillingCapabilities().refresh).toHaveBeenCalledOnce()
   })
 
@@ -607,9 +604,7 @@ describe('useBillingSdkStore subscription commands', () => {
       status: 'ok',
       value: { operationObserved: true }
     })
-    expect(
-      useBillingContext().reconcileSubscriptionSuccess
-    ).toHaveBeenCalledOnce()
+    expect(refreshed.mock.calls).toEqual([['subscription']])
     expect(useBillingCapabilities().refresh).toHaveBeenCalledOnce()
   })
 
@@ -639,7 +634,7 @@ describe('useBillingSdkStore subscription commands', () => {
     expect(harness.sdk.commands.openPaymentPortal).not.toHaveBeenCalled()
     expect(harness.sdk.commands.subscribe).not.toHaveBeenCalled()
     expect(harness.sdk.commands.previewSubscribe).not.toHaveBeenCalled()
-    expect(useBillingContext().fetchStatus).not.toHaveBeenCalled()
+    expect(refreshed).not.toHaveBeenCalled()
   })
 
   it('reconciles the subscription after a plan change settles', async () => {
@@ -661,9 +656,7 @@ describe('useBillingSdkStore subscription commands', () => {
     expect(harness.sdk.commands.subscribe).toHaveBeenCalledWith({
       plan_slug: 'pro-yearly'
     })
-    expect(
-      useBillingContext().reconcileSubscriptionSuccess
-    ).toHaveBeenCalledOnce()
+    expect(refreshed.mock.calls).toEqual([['subscription']])
     expect(useBillingCapabilities().refresh).toHaveBeenCalledOnce()
   })
 
@@ -727,9 +720,7 @@ describe('useBillingSdkStore subscription commands', () => {
         { duration: 5000 }
       )
     )
-    expect(
-      useBillingContext().reconcileSubscriptionSuccess
-    ).toHaveBeenCalledOnce()
+    expect(refreshed.mock.calls).toEqual([['subscription']])
     expect(useBillingCapabilities().refresh).toHaveBeenCalledOnce()
   })
 
@@ -754,9 +745,7 @@ describe('useBillingSdkStore subscription commands', () => {
     expect(useToast().error).toHaveBeenCalledWith(
       'Subscription verification timed out'
     )
-    expect(
-      useBillingContext().reconcileSubscriptionSuccess
-    ).not.toHaveBeenCalled()
+    expect(refreshed).not.toHaveBeenCalled()
   })
 
   it('leaves a subscribe it issued to the checkout that issued it', async () => {
@@ -765,9 +754,7 @@ describe('useBillingSdkStore subscription commands', () => {
     harness.publish(settledOperation('succeeded', 'subscription'))
     await nextTick()
 
-    expect(
-      useBillingContext().reconcileSubscriptionSuccess
-    ).not.toHaveBeenCalled()
+    expect(refreshed).not.toHaveBeenCalled()
     expect(useToast().toasts).toEqual([])
   })
 
@@ -780,10 +767,7 @@ describe('useBillingSdkStore subscription commands', () => {
     await expect(
       useBillingSdkStore().previewSubscribe({ planSlug: 'pro-yearly' })
     ).resolves.toEqual({ status: 'ok', value: QUOTE })
-    expect(
-      useBillingContext().reconcileSubscriptionSuccess
-    ).not.toHaveBeenCalled()
-    expect(useBillingContext().fetchStatus).not.toHaveBeenCalled()
+    expect(refreshed).not.toHaveBeenCalled()
   })
 
   it('warns once and keeps a blocked payment page reachable however long it polls', () => {
@@ -969,7 +953,7 @@ describe('useBillingSdkStore subscription commands', () => {
     expect(harness.sdk.commands.openPaymentPortal).toHaveBeenCalledWith({
       returnUrl: 'https://app.example/'
     })
-    expect(useBillingContext().fetchStatus).not.toHaveBeenCalled()
+    expect(refreshed).not.toHaveBeenCalled()
   })
 
   it('drops the saved cards it holds when it hands the portal URL out', async () => {
