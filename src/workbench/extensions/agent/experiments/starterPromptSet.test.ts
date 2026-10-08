@@ -6,6 +6,7 @@ import {
   remoteConfig
 } from '@/platform/remoteConfig/remoteConfig'
 import { useTelemetry } from '@/platform/telemetry'
+import { getDevOverride } from '@/utils/devFeatureFlagOverride'
 import { getSessionOverride } from '@/utils/sessionFeatureFlagOverride'
 
 import {
@@ -165,6 +166,29 @@ describe('useStarterPromptSet', () => {
       expect(assignment.value).toBe('test')
       expect(attributeExperiment.value).toBe(false)
       expose('test')
+      expect(
+        useTelemetry()?.trackAgentStarterPromptExposure
+      ).not.toHaveBeenCalled()
+    }
+  )
+
+  it.for([
+    { source: 'session', readOverride: getSessionOverride },
+    { source: 'dev', readOverride: getDevOverride }
+  ])(
+    'treats a null $source override as an unattributed control render',
+    ({ readOverride }) => {
+      authenticatedRemoteConfigState.value = 'authenticated'
+      remoteConfig.value = { [STARTER_PROMPT_SET_FLAG]: 'test' }
+      vi.mocked(getSessionOverride).mockReturnValue(undefined)
+      vi.mocked(getDevOverride).mockReturnValue(undefined)
+      vi.mocked(readOverride).mockReturnValue(null)
+
+      const { assignment, attributeExperiment, expose } = useStarterPromptSet()
+
+      expect(assignment.value).toBe('control')
+      expect(attributeExperiment.value).toBe(false)
+      expose('control')
       expect(
         useTelemetry()?.trackAgentStarterPromptExposure
       ).not.toHaveBeenCalled()
