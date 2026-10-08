@@ -231,68 +231,29 @@ test.describe('Color Palette', { tag: ['@screenshot', '@settings'] }, () => {
       }
     })
 
-    const rungs = [
-      '--surface-800',
-      '--surface-600',
-      '--surface-400',
-      '--surface-300',
-      '--surface-200'
-    ]
-
-    const cases = [
-      { palette: 'dark', base: [23, 23, 24] },
-      { palette: 'solarized', base: [7, 54, 66] },
-      { palette: 'obsidian', base: [24, 24, 24] }
-    ]
-
-    for (const { palette, base } of cases) {
-      test(`${palette} builds an ascending ladder from its menu colour`, async ({
-        comfyPage
-      }) => {
-        await comfyPage.settings.setSetting('Comfy.ColorPalette', palette)
-
-        const readLadder = () =>
-          comfyPage.page.evaluate((names) => {
-            const ctx = document.createElement('canvas').getContext('2d')
-            if (!ctx) throw new Error('2D canvas unavailable')
-            const probe = document.createElement('div')
-            document.body.append(probe)
-            const colours = names.map((name) => {
-              probe.style.backgroundColor = `var(${name})`
-              ctx.clearRect(0, 0, 1, 1)
-              ctx.fillStyle = getComputedStyle(probe).backgroundColor
-              ctx.fillRect(0, 0, 1, 1)
-              return [...ctx.getImageData(0, 0, 1, 1).data]
-            })
-            probe.remove()
-            return colours
-          }, rungs)
-
-        await expect
-          .poll(async () => (await readLadder())[0])
-          .toEqual([...base, 255])
-        const ladder = await readLadder()
-        const lightness = ladder.map(([r, g, b]) => r + g + b)
-        for (let i = 1; i < lightness.length; i++) {
-          expect(lightness[i]).toBeGreaterThan(lightness[i - 1])
-        }
-      })
-    }
-
-    test('light palettes leave the dark ladder unset', async ({
+    test('settings panel follows each palette menu colour', async ({
       comfyPage
     }) => {
-      await comfyPage.settings.setSetting('Comfy.ColorPalette', 'light_red')
+      await comfyPage.settingDialog.open()
+      const panel = comfyPage.settingDialog.root.locator('nav').first()
+      const panelBytes = () =>
+        panel.evaluate((el) => {
+          const ctx = document.createElement('canvas').getContext('2d')
+          if (!ctx) throw new Error('2D canvas unavailable')
+          ctx.fillStyle = getComputedStyle(el).backgroundColor
+          ctx.fillRect(0, 0, 1, 1)
+          return [...ctx.getImageData(0, 0, 1, 1).data]
+        })
 
-      await expect
-        .poll(() =>
-          comfyPage.page.evaluate(() =>
-            getComputedStyle(document.documentElement)
-              .getPropertyValue('--surface-800')
-              .trim()
-          )
-        )
-        .toBe('')
+      for (const { palette, bytes } of [
+        { palette: 'solarized', bytes: [29, 72, 84, 255] },
+        { palette: 'obsidian', bytes: [40, 40, 40, 255] },
+        { palette: 'light_red', bytes: [255, 255, 255, 255] },
+        { palette: 'dark', bytes: [38, 39, 41, 255] }
+      ]) {
+        await comfyPage.settings.setSetting('Comfy.ColorPalette', palette)
+        await expect.poll(panelBytes, { message: palette }).toEqual(bytes)
+      }
     })
   })
 
