@@ -595,7 +595,7 @@ export function useReshoot({ locale = 'en' }: { locale?: Locale } = {}) {
     return { ...(keys.value[0]?.camera ?? camera), fov: camera.fov }
   }
 
-  async function generate() {
+  function generateReady() {
     const read = scene.value
     const startedFor = session.value
     if (
@@ -604,7 +604,14 @@ export function useReshoot({ locale = 'en' }: { locale?: Locale } = {}) {
       read.phase !== 'ready' ||
       !startedFor
     )
-      return
+      return undefined
+    return { read, startedFor, transport }
+  }
+
+  async function generate() {
+    const ready = generateReady()
+    if (!ready) return
+    const { read, startedFor, transport } = ready
     const n = takes.value.length
     const id = `take-${n}`
     const still = stillCamera()
