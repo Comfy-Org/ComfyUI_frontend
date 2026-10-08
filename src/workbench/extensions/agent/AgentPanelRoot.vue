@@ -11,7 +11,6 @@ import {
   onBeforeUnmount,
   onMounted,
   provide,
-  readonly,
   ref,
   watch
 } from 'vue'
@@ -602,7 +601,9 @@ let nodeReferenceWorkflow = selectionTags.value.length
   : null
 
 function viewedGraphNodes() {
-  return app.canvas?.graph?.nodes ?? app.graph?.nodes ?? []
+  return (
+    (canvasStore.currentGraph ?? app.canvas?.graph ?? app.graph)?.nodes ?? []
+  )
 }
 
 function mentionableNodes(): SelectedNode[] {
@@ -851,7 +852,8 @@ const {
   status: crdtStatus,
   debugSnapshot: crdtDebugSnapshot,
   enqueueHumanOperations,
-  docInputNames
+  docInputNames,
+  docPromotedWidgets
 } = useAgentCrdtFollower(
   boundWorkflowId,
   () => resolvedUserInfo.value?.id ?? null,
@@ -910,7 +912,8 @@ const docOpMinter = attachDocOpMinter({
   enqueue: enqueueHumanOperations,
   getGraph: () => (app.isGraphReady ? app.rootGraph : null),
   boundRootGraphId,
-  docInputNames
+  docInputNames,
+  docPromotedWidgets
 })
 const restoreOpMinter = attachRestoreOpMinter({
   isEnabled: () => agentPanelStore.enabled,
@@ -1570,11 +1573,9 @@ function onNewChat(source?: 'new_chat_button' | 'history_delete'): void {
   else agentPanelStore.startFollowingVisibleWorkflow()
 }
 
-const panelRef = ref<InstanceType<typeof AgentPanel>>()
 const fileInput = ref<HTMLInputElement>()
 const assetDragActive = ref(false)
 let assetDragDepth = 0
-provide('agentAssetDragActive', readonly(assetDragActive))
 
 watch(
   selectedTarget,
@@ -1664,10 +1665,23 @@ const attachment = useAttachment({
   // must not raise the server-error overlay.
   onError: (message) =>
     toast.add({ severity: 'warn', detail: message, life: 5000 }),
+  onDuplicate: notifyDuplicateAttachments,
   stage: composerStore.addAttachment,
   update: composerStore.updateAttachment,
   remove: composerStore.removeAttachment
 })
+
+function notifyDuplicateAttachments(names: string[]): void {
+  toast.add({
+    severity: 'info',
+    detail: t(
+      'agent.attachmentsAlreadyAdded',
+      { name: names[0], count: names.length },
+      names.length
+    ),
+    life: 3500
+  })
+}
 
 onBeforeUnmount(() =>
   runPanelTeardown({
@@ -1708,6 +1722,7 @@ function onRemoveSelectionTag(id: string): void {
   removeSelectionTag(id)
   if (node) {
     canvasStore.canvas?.deselect(node)
+    canvasStore.canvas?.setDirty(true)
   }
 }
 
@@ -1764,21 +1779,33 @@ async function attachDroppedAsset(event: DragEvent): Promise<boolean> {
     return false
   }
 
+  const sourceKey = asset.ref ? `asset:${asset.ref}` : `uri:${asset.uri}`
   if (asset.ref && asset.kind !== 'other') {
-    return (
-      panelRef.value?.addAttachment({
-        id: `asset:${asset.ref}`,
-        name: asset.name,
-        ref: asset.ref,
-        previewUrl: asset.previewUrl
-      }) ?? false
-    )
+    if (composerStore.attachments.some((item) => item.ref === asset.ref)) {
+      notifyDuplicateAttachments([asset.name])
+      return false
+    }
+    const added = composerStore.addAttachment({
+      id: `asset:${crypto.randomUUID()}`,
+      name: asset.name,
+      ref: asset.ref,
+      sourceKey,
+      previewUrl: asset.previewUrl,
+      mediaUrl: asset.mediaUrl,
+      mediaKind: asset.kind
+    })
+    if (!added) notifyDuplicateAttachments([asset.name])
+    return added
   }
 
-  const result = await attachment.addDeferredFile(asset.name, async () => {
-    const file = await fetchDroppedAsset(asset)
-    return file && isAgentAttachable(file) ? file : undefined
-  })
+  const result = await attachment.addDeferredFile(
+    asset.name,
+    async () => {
+      const file = await fetchDroppedAsset(asset)
+      return file && isAgentAttachable(file) ? file : undefined
+    },
+    sourceKey
+  )
   if (result === 'unsupported')
     toast.add({
       severity: 'warn',
@@ -1820,7 +1847,7 @@ async function onPanelDrop(event: DragEvent): Promise<void> {
   <AgentGraphActivityBar :canvas="canvasStore.canvas" />
   <div
     id="agent-panel-root"
-    class="size-full"
+    class="relative size-full"
     @dragenter="onPanelDragEnter"
     @dragleave="onPanelDragLeave"
     @dragover="onPanelDragOver"
@@ -1836,7 +1863,6 @@ async function onPanelDrop(event: DragEvent): Promise<void> {
       @change="onFilesPicked"
     />
     <AgentPanel
-      ref="panelRef"
       :entries
       :editable-turn-id="editableTurnId"
       :answering-ask-ids="answeringAskIds"
@@ -1902,6 +1928,17 @@ async function onPanelDrop(event: DragEvent): Promise<void> {
         <CrdtDevPanel :status="crdtStatus" :snapshot="crdtDebugSnapshot" />
       </template>
     </AgentPanel>
+    <div
+      v-if="assetDragActive"
+      role="status"
+      class="pointer-events-none absolute inset-2 z-20 flex flex-col items-center justify-center gap-3 rounded-xl border-2 border-dashed border-border-default bg-secondary-background/90 p-4 font-inter text-sm/5 text-base-foreground"
+    >
+      <span
+        aria-hidden="true"
+        class="icon-[lucide--upload] size-8 shrink-0 text-muted-foreground"
+      />
+      <span>{{ t('agent.dragAndDropAssets') }}</span>
+    </div>
     <OnboardingCoach
       v-if="consentAccepted && onboardingKey && coachDeferredBy === null"
       :key="onboardingKey"

@@ -2272,12 +2272,16 @@
     "hideGizmos": "Hide gizmos",
     "lookThrough": "Camera view",
     "exitLookThrough": "Exit camera view",
+    "outputView": "Output view",
+    "lockCamera": "Lock camera",
+    "unlockCamera": "Unlock camera",
     "transformGizmo": {
       "label": "Edit",
       "none": "None",
       "target": "Target",
       "cameraTranslate": "Cam pos",
-      "cameraRotate": "Cam rot"
+      "cameraRotate": "Cam rot",
+      "lightPosition": "Light pos"
     },
     "showGrid": "Show Grid",
     "backgroundColor": "Background Color",
@@ -2459,6 +2463,23 @@
       "bottom": "BOTTOM"
     }
   },
+  "lightInfo": {
+    "addLight": "Add light",
+    "removeLight": "Remove light",
+    "lightChip": "Light {index}, {type}",
+    "noLights": "Add a light to get started.",
+    "directional": "Directional",
+    "point": "Point",
+    "spot": "Spot",
+    "color": "Color",
+    "intensity": "Intensity",
+    "range": "Range",
+    "innerCone": "Inner cone",
+    "outerCone": "Outer cone",
+    "castShadow": "Cast shadow",
+    "size": "Size",
+    "angle": "Angle"
+  },
   "boundingBoxes": {
     "clearAll": "Clear all",
     "clickRegionToEdit": "Click a region to edit it.",
@@ -2590,6 +2611,7 @@
     "failedToInitializeLoad3dViewer": "Failed to initialize 3D Viewer",
     "failedToInitializeCameraInfoViewer": "Failed to initialize Camera Info viewer. Try reloading the page.",
     "failedToInitializeCameraAngleViewer": "Failed to initialize Camera Angle viewer. Try reloading the page.",
+    "failedToInitializeLightInfoViewer": "Failed to initialize Light Info viewer. Try reloading the page.",
     "failedToLoadBackgroundImage": "Failed to load background image",
     "failedToLoadModel": "Failed to load 3D model",
     "modelLoadedSuccessfully": "3D model loaded successfully",
@@ -2658,6 +2680,11 @@
     }
   },
   "auth": {
+    "desktopHost": {
+      "continueInBrowser": "Finish signing in in your browser",
+      "signInFailed": "Sign-in didn't finish. Try again.",
+      "signOutFailed": "Comfy Desktop is still signed in. Finish or cancel any running install, then sign out again."
+    },
     "showPassword": "Show password",
     "hidePassword": "Hide password",
     "apiKey": {
@@ -2902,10 +2929,7 @@
       "addMoreCreditsToRun": "Add more credits to run",
       "insufficientWorkflowMessage": "You don't have enough credits to run this workflow.",
       "creditsDescription": "Credits are used to run workflows or partner nodes.",
-      "chargedImmediatelyNote": "Your saved payment method is charged immediately.",
-      "paymentDetailsRequiredNote": "You'll be asked to add a payment method to complete this purchase.",
       "noPaymentMethodError": "No payment method is saved for this workspace. Add one via Settings → Plan & Credits → Manage billing, then retry the top-up.",
-      "manageBillingError": "Failed to open the billing portal. Please try again.",
       "confirmSubtitle": "Credits are added to this workspace as soon as payment completes.",
       "confirmTitle": "Confirm",
       "howManyCredits": "How many credits would you like to add?",
@@ -3036,19 +3060,45 @@
       "description": "You won't be charged again. Your features remain active until {date}.",
       "descriptionWithoutDate": "You won't be charged again. Your features remain active until the end of your billing period."
     },
-    "cancelSuccess": "Subscription cancelled successfully",
     "cancelDialog": {
-      "title": "Cancel subscription",
-      "description": "Your access continues until {date}. You won't be charged again, and your workspace and credits will be preserved. You can resubscribe anytime.",
-      "endOfBillingPeriod": "end of billing period",
+      "endOfBillingPeriod": "the end of your billing period",
       "finishOnStripe": "Your subscription isn't cancelled yet. Finish cancelling on the Stripe page that just opened. Until you do, your plan will renew as usual.",
-      "keepSubscription": "Keep subscription",
-      "confirmCancel": "Cancel subscription",
       "failed": "Failed to cancel subscription",
-      "workspaceChanged": "Your active workspace changed. Switch back and try again.",
-      "offerUnavailable": "This option isn't available. Please choose another option.",
-      "discountApplied": "Your discount has been applied, so this subscription wasn't canceled. Close this window to see your updated plan.",
-      "discountRefreshFailed": "Your discount was applied. Refresh the page to see your updated plan."
+      "workspaceChanged": "Your active workspace changed. Switch back and try again."
+    },
+    "retentionOffer": {
+      "title": "Before you go",
+      "subtitle": "Here's an offer while you decide",
+      "stayOnPlan": "Stay on {plan}",
+      "percentOff": "{percent}% off",
+      "perMonth": "/mo",
+      "term": "for your next payment, then {regular}/mo | for your next {months} payments, then {regular}/mo",
+      "keepCreditsAndLoRAs": "Keep your {credits} monthly credits, custom LoRAs, and everything else in {plan}.",
+      "keepCredits": "Keep your {credits} monthly credits and everything else in {plan}.",
+      "keepEverything": "Keep everything in your {plan} plan.",
+      "finePrint": "One-time offer. After 1 renewal, {plan} returns to {regular}/mo. Cancel anytime. | One-time offer. After {months} renewals, {plan} returns to {regular}/mo. Cancel anytime.",
+      "accept": "Keep {plan} and save {percent}%",
+      "appliedTitle": "You're staying on {plan}",
+      "appliedBody": "{percent}% off is applied to your next payment, starting {date}. | {percent}% off is applied to your next {months} payments, starting {date}.",
+      "nextPayments": "Next payment | Next {months} payments",
+      "appliedBadge": "Applied",
+      "pricePerMonth": "{price}/mo",
+      "savings": "You'll save {savings} on this payment. | You'll save {savings} across these {months} payments.",
+      "renewsAt": "Renews at {regular} on {date}.",
+      "failedTitle": "We couldn't apply your discount",
+      "failedBody": "Something went wrong on our end, and your {plan} plan hasn't changed. Try again, or continue cancelling.",
+      "declinedBody": "Your {plan} plan hasn't changed. You can keep it at its current price or continue cancelling.",
+      "expiredTitle": "This offer is no longer available",
+      "expiredBody": "It expired, or your plan changed since it was made. Close and reopen cancellation to see your current options.",
+      "supportCode": "If this keeps happening, contact support with code DISCOUNT_NOT_APPLIED.",
+      "tryAgain": "Try again",
+      "unconfirmedTitle": "Your discount isn't confirmed yet",
+      "unconfirmedBody": "Your discount may still be applying. Check again in a moment before you make another billing change.",
+      "failed": "We couldn't apply this offer, and your plan hasn't changed. You can still cancel.",
+      "unconfirmed": "We're still confirming your discount. Check again in a moment, or contact support if this doesn't clear up.",
+      "checkAgain": "Check again",
+      "pendingToast": "Your discount is still being confirmed. Check your plan before making another billing change.",
+      "refreshFailed": "Your discount was applied. Refresh the page to see your updated plan."
     },
     "downgrade": {
       "title": "Change to {plan} plan?",
@@ -3400,6 +3450,54 @@
       "sendInvites": "Send invites",
       "promoApplied": "{code} applied.",
       "promoRenews": "Renews at {amount} on {date}"
+    },
+    "cancelFlow": {
+      "keepPlan": "Keep my plan",
+      "continueCancelling": "Continue cancelling",
+      "done": "Done",
+      "genericPlanName": "Comfy Cloud",
+      "survey": {
+        "title": "Why are you cancelling?",
+        "subtitle": "Optional, but it helps make Comfy Cloud better.",
+        "reasons": {
+          "tooExpensive": "Too expensive",
+          "notUsingEnough": "Not using it enough",
+          "missingFeatures": "Missing features or models",
+          "switchingTools": "Switching to another tool",
+          "somethingElse": "Something else"
+        },
+        "commentLabel": "Anything else you want to share? (optional)",
+        "commentPlaceholder": "Tell us anything"
+      },
+      "confirm": {
+        "title": "Cancel your plan?",
+        "description": "Your {plan} plan stays active until {date}, and you won't be charged again. You can resubscribe anytime.",
+        "loseAccess": "After {date}, you'll lose access to:",
+        "cancelPlan": "Cancel my plan",
+        "features": {
+          "gpus": {
+            "title": "Cloud GPUs",
+            "description": "RTX 6000 Pro hardware, nothing to set up."
+          },
+          "models": {
+            "title": "Every model, one balance",
+            "description": "Open-source and partner models side by side."
+          },
+          "customNodes": {
+            "title": "Custom nodes, ready",
+            "description": "The nodes behind ~90% of community workflows."
+          },
+          "credits": {
+            "monthly": "{credits} monthly credits",
+            "yearly": "{credits} yearly credits",
+            "generic": "Monthly credits",
+            "description": "Your credits stop refilling."
+          }
+        }
+      },
+      "cancelled": {
+        "title": "Your plan is cancelled"
+      }
     }
   },
   "userSettings": {
@@ -5468,6 +5566,7 @@
     "failedDetail": "Your onboarding state could not be reset. Please try again."
   },
   "agent": {
+    "previewAsset": "Preview {name}",
     "title": "Comfy Agent",
     "diagnosticReport": {
       "retry": "Retry copy report",
@@ -5565,6 +5664,7 @@
     "assetNotAttachable": "Images, video, audio, 3D models, and text files can be attached",
     "attachmentTooLarge": "{name} is larger than {limit}",
     "attachmentUploadFailed": "{name} could not be uploaded",
+    "attachmentsAlreadyAdded": "{name} is already in the asset tray | Skipped {count} duplicate assets",
     "mention": "Mention a node",
     "changeWorkflowForChat": "Change the workflow that the agent can edit",
     "chatOptions": "Chat options",
@@ -5614,7 +5714,11 @@
     "focusNode": "Show on canvas",
     "focusNodeLabel": "Show {node} on canvas",
     "removeNodeLabel": "Remove {node} reference",
+    "removeAssetReference": "Remove {name} reference",
+    "removeAsset": "Remove {name}",
+    "previewAsset": "Preview {name}",
     "uploading": "Uploading",
+    "uploadingAttachments": "Uploading {count} attachment | Uploading {count} attachments",
     "noNodesToMention": "No nodes in this workflow",
     "friend": "there",
     "sendFailed": "Message failed to send",

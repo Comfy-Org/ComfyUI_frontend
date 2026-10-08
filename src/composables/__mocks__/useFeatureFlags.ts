@@ -38,7 +38,6 @@ const defaultFlags: FeatureFlags = {
   billingSdkSubscriptionEnabled: false,
   billingSdkSubscriptionRailEnabled: false,
   v1PaymentRecovery: false,
-  churnkeyAppId: '',
   signupTurnstileMode: 'off',
   supportsModelTypeTags: false,
   onboardingTourEnabled: false,
