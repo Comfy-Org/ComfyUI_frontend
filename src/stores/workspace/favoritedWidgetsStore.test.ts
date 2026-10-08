@@ -1,5 +1,5 @@
 import { fromPartial } from '@total-typescript/shoehorn'
-import { describe, expect, it, vi } from 'vitest'
+import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { nextTick } from 'vue'
 
 import { reportError } from '@/platform/telemetry/reportError'
@@ -15,6 +15,10 @@ const storedFavorites = {
 }
 
 describe('useFavoritedWidgetsStore', () => {
+  beforeEach(() => {
+    app.rootGraph.extra = {}
+  })
+
   it('clears favorites and reports when the workflow data cannot be loaded', async () => {
     app.rootGraph.extra.favoritedWidgets = storedFavorites
     const store = useFavoritedWidgetsStore()
@@ -34,9 +38,8 @@ describe('useFavoritedWidgetsStore', () => {
   })
 
   it('keeps the persisted favorites and reports when saving fails', () => {
-    app.rootGraph.extra.favoritedWidgets = storedFavorites
+    app.rootGraph.extra = Object.freeze({ favoritedWidgets: storedFavorites })
     const store = useFavoritedWidgetsStore()
-    Object.freeze(app.rootGraph.extra)
 
     store.clearFavorites()
 
