@@ -97,7 +97,7 @@ useIntersectionObserver(sectionRef, ([entry]) => {
           "
         >
           <div
-            class="relative size-full overflow-hidden rounded-[calc(2.5rem-2px)] bg-primary-comfy-ink"
+            class="relative size-full overflow-hidden rounded-[calc(2.5rem-2px)] bg-transparency-white-t4"
           >
             <template v-for="(feature, i) in features" :key="feature.title">
               <LottieScene
@@ -143,7 +143,7 @@ useIntersectionObserver(sectionRef, ([entry]) => {
               class="size-full animate-border-spin overflow-hidden rounded-4xl p-0.5"
             >
               <div
-                class="size-full overflow-hidden rounded-[calc(2rem-2px)] bg-primary-comfy-ink"
+                class="size-full overflow-hidden rounded-[calc(2rem-2px)] bg-transparency-white-t4"
               >
                 <LottieScene
                   v-if="feature.lottie"
