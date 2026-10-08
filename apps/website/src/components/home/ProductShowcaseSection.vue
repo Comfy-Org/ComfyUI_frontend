@@ -17,6 +17,7 @@ const routes = getRoutes(locale)
 interface Feature {
   title: string
   description: string
+  cta: string
   href?: string
   lottie?: string
   video?: { src: string; poster?: string }
@@ -26,6 +27,7 @@ const features: Feature[] = [
   {
     title: t('showcase.feature1.title'),
     description: t('showcase.feature1.description'),
+    cta: t('showcase.feature1.cta'),
     href: routes.download,
     // Vector scene from Comfy-Org/comfy-website-animations, replacing the
     // node-workflow.webm capture this slide used to play.
@@ -34,6 +36,7 @@ const features: Feature[] = [
   {
     title: t('showcase.feature2.title'),
     description: t('showcase.feature2.description'),
+    cta: t('showcase.feature2.cta'),
     href: routes.agent,
     // Same demo as the Comfy Agent page's featured video.
     video: {
@@ -45,6 +48,7 @@ const features: Feature[] = [
   {
     title: t('showcase.feature3.title'),
     description: t('showcase.feature3.description'),
+    cta: t('showcase.feature3.cta'),
     href: routes.platformComfyApi,
     // Same demo as the Comfy API page's product video, which has no poster.
     video: {
@@ -246,6 +250,18 @@ useIntersectionObserver(sectionRef, ([entry]) => {
                   >
                     {{ f.description }}
                   </p>
+                  <span
+                    :class="
+                      cn(
+                        'col-start-1 row-start-2 mt-6 inline-flex h-10 w-fit items-center justify-center rounded-2xl bg-primary-comfy-ink px-6 py-2.5 text-xs font-bold tracking-wider text-primary-comfy-yellow uppercase transition-opacity duration-300 md:text-sm',
+                        activeIndex === i
+                          ? 'opacity-100'
+                          : 'invisible opacity-0'
+                      )
+                    "
+                  >
+                    {{ feature.cta }}
+                  </span>
                 </div>
               </div>
             </component>

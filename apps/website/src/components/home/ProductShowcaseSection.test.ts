@@ -51,19 +51,22 @@ describe('ProductShowcaseSection', () => {
   })
 
   it.for([
-    ['Full Control with Nodes', '/download/'],
-    ['Comfy Agent', '/agent/'],
-    ['Comfy API', '/platform/comfy-api/']
-  ])('links the selected %s card to its product page', async ([name, href]) => {
-    renderSection()
+    ['Full Control with Nodes', '/download/', 'Explore Comfy Desktop'],
+    ['Comfy Agent', '/agent/', 'Explore Comfy Agent'],
+    ['Comfy API', '/platform/comfy-api/', 'Explore Comfy API']
+  ])(
+    'links the selected %s card to its product page',
+    async ([name, href, cta]) => {
+      renderSection()
 
-    screen.getByRole('heading', { name }).click()
-    await nextTick()
+      screen.getByRole('heading', { name }).click()
+      await nextTick()
 
-    expect(
-      screen.getByRole('link', { name: new RegExp(name) })
-    ).toHaveAttribute('href', href)
-  })
+      const link = screen.getByRole('link', { name: new RegExp(name) })
+      expect(link).toHaveAttribute('href', href)
+      expect(link).toHaveTextContent(cta)
+    }
+  )
 
   it.for([
     ['Comfy Agent', AGENT_VIDEO],

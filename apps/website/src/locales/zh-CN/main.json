@@ -3684,14 +3684,17 @@
     "badgeHow": "了解",
     "badgeWorks": "运行方式",
     "feature1": {
+      "cta": "探索 Comfy Desktop",
       "description": "在无限画布上连接节点，构建强大的 AI 管线。每个模型、参数和处理步骤都可见且可调整。",
       "title": "节点带来的可控性"
     },
     "feature2": {
+      "cta": "探索 Comfy Agent",
       "description": "描述你想要的效果，Comfy Agent 会为你构建并运行工作流。",
       "title": "Comfy Agent"
     },
     "feature3": {
+      "cta": "探索 Comfy API",
       "description": "通过一个 API，在你自己的应用中运行 Comfy 工作流和模型。",
       "title": "Comfy API"
     },
