@@ -19,8 +19,8 @@ env:
     .eslintcache
     .stylelintcache
   TYPECHECK_CACHE_PATHS: |
-    node_modules/.cache/tsbuildinfo
-    packages/*/node_modules/.cache/tsbuildinfo
+    .cache/tsbuildinfo
+    packages/*/.cache/tsbuildinfo
 
 jobs:
   lint:
@@ -32,6 +32,14 @@ jobs:
           ref: ${{ !github.event.pull_request.head.repo.fork && github.head_ref || github.ref }}
           token: ${{ !github.event.pull_request.head.repo.fork && secrets.PR_GH_TOKEN || github.token }}
 
+      - name: Restore lint caches
+        id: lint-cache
+        background: true
+        uses: ./.github/actions/tool-cache-restore
+        with:
+          scope: lint
+          path: ${{ env.LINT_CACHE_PATHS }}
+
       - name: Setup frontend
         uses: ./.github/actions/setup-frontend
         with:
@@ -39,12 +47,8 @@ jobs:
           # Lint and format verification do not depend on the cache.
           node_cache: 'false'
 
-      - name: Restore lint caches
-        id: lint-cache
-        uses: ./.github/actions/tool-cache-restore
-        with:
-          scope: lint
-          path: ${{ env.LINT_CACHE_PATHS }}
+      - name: Wait for lint caches
+        wait: lint-cache
 
       - name: Run ESLint with auto-fix
         run: pnpm lint:fix:ci
@@ -115,15 +119,19 @@ jobs:
       - name: Checkout PR
         uses: actions/checkout@v7
 
-      - name: Setup frontend
-        uses: ./.github/actions/setup-frontend
-
       - name: Restore incremental typecheck cache
         id: typecheck-cache
+        background: true
         uses: ./.github/actions/tool-cache-restore
         with:
           scope: typecheck
           path: ${{ env.TYPECHECK_CACHE_PATHS }}
+
+      - name: Setup frontend
+        uses: ./.github/actions/setup-frontend
+
+      - name: Wait for incremental typecheck cache
+        wait: typecheck-cache
 
       - name: Typecheck application and packages
         run: pnpm typecheck && pnpm typecheck:workspaces
@@ -141,15 +149,19 @@ jobs:
       - name: Checkout PR
         uses: actions/checkout@v7
 
-      - name: Setup frontend
-        uses: ./.github/actions/setup-frontend
-
       - name: Restore incremental typecheck cache
         id: typecheck-cache
+        background: true
         uses: ./.github/actions/tool-cache-restore
         with:
           scope: typecheck-aux
           path: ${{ env.TYPECHECK_CACHE_PATHS }}
+
+      - name: Setup frontend
+        uses: ./.github/actions/setup-frontend
+
+      - name: Wait for incremental typecheck cache
+        wait: typecheck-cache
 
       - name: Typecheck browser tests, scripts and tools
         uses: ./.github/actions/typecheck-aux
