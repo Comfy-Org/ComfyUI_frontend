@@ -1,12 +1,18 @@
 import { i18n } from '@/i18n'
 import { reportError } from '@/platform/telemetry/reportError'
-import { DroppedAssetTooLargeError, hasImageType } from '@/utils/eventUtils'
-import { formatSize } from '@/utils/formatUtil'
+import {
+  DroppedAssetTooLargeError,
+  hasAudioType,
+  hasImageType,
+  hasVideoType
+} from '@/utils/eventUtils'
+import { formatSize, getMediaTypeFromFilename } from '@/utils/formatUtil'
+import type { MediaKind } from '@/platform/assets/schemas/mediaAssetSchema'
 import {
   AgentApiError,
   AgentResponseUnreadableError
 } from '../../services/agent/agentRestClient'
-import type { ComposerAttachment } from './useComposer'
+import type { ComposerAttachment } from '../../types/composerAttachment'
 
 export const MAX_ATTACHMENT_BYTES = 20 * 1024 * 1024
 const UPLOAD_HANDSHAKE_TIMEOUT_MS = 60 * 1000
@@ -31,13 +37,21 @@ interface UploadResult {
   uploadType?: string
 }
 
+type DeferredFileResult =
+  | 'uploaded'
+  | 'unsupported'
+  | 'cancelled'
+  | 'failed'
+  | 'duplicate'
+
 export interface UseAttachmentOptions {
   upload: (file: File, signal: AbortSignal) => Promise<UploadResult>
   uploadTimeoutMs?: number
   maxBytes?: (file: File) => number
   onError?: (message: string) => void
   onUploaded?: () => void
-  stage: (attachment: ComposerAttachment) => void
+  onDuplicate?: (names: string[]) => void
+  stage: (attachment: ComposerAttachment) => boolean
   update: (id: string, patch: Partial<ComposerAttachment>) => void
   remove: (id: string) => void
   isPresent?: (id: string) => boolean
@@ -77,6 +91,36 @@ async function withDeadline<T>(
 
 let stagedCount = 0
 
+function attachmentMediaKind(file: File): MediaKind {
+  if (hasImageType(file)) return 'image'
+  if (hasVideoType(file)) return 'video'
+  if (hasAudioType(file)) return 'audio'
+  return getMediaTypeFromFilename(file.name)
+}
+
+function localPreview(
+  file: File,
+  kind: MediaKind
+): Pick<ComposerAttachment, 'previewUrl' | 'mediaUrl'> {
+  const playable = kind === 'video' || kind === 'audio'
+  const url =
+    kind === 'image' || playable ? URL.createObjectURL(file) : undefined
+  return {
+    previewUrl: kind === 'image' ? url : undefined,
+    mediaUrl: playable ? url : undefined
+  }
+}
+
+function uploadedPreview(
+  kind: MediaKind,
+  url?: string
+): Partial<ComposerAttachment> {
+  if (!url) return {}
+  if (kind === 'audio' || kind === 'video') return { mediaUrl: url }
+  if (kind === 'image') return { previewUrl: url }
+  return {}
+}
+
 export function useAttachment(options: UseAttachmentOptions) {
   const pending = new Set<string>()
   const inFlight = new Map<string, AbortController>()
@@ -84,10 +128,11 @@ export function useAttachment(options: UseAttachmentOptions) {
   const waiting: Array<() => void> = []
   let activeUploads = 0
 
-  function stage(name: string): string {
+  function stage(name: string, sourceKey?: string): string | undefined {
     const id = `upload-${++stagedCount}:${name}`
+    if (!options.stage({ id, name, ref: '', uploading: true, sourceKey }))
+      return undefined
     pending.add(id)
-    options.stage({ id, name, ref: '', uploading: true })
     return id
   }
 
@@ -184,9 +229,11 @@ export function useAttachment(options: UseAttachmentOptions) {
     if (slot) await slot
     try {
       if (cancelled.has(id)) return 'cancelled'
+      const mediaKind = attachmentMediaKind(file)
       options.update(id, {
         name: file.name,
-        previewUrl: hasImageType(file) ? URL.createObjectURL(file) : undefined
+        mediaKind,
+        ...localPreview(file, mediaKind)
       })
       const controller = new AbortController()
       inFlight.set(id, controller)
@@ -197,7 +244,7 @@ export function useAttachment(options: UseAttachmentOptions) {
       )
       options.update(id, {
         ref: result.ref,
-        ...(result.url ? { previewUrl: result.url } : {}),
+        ...uploadedPreview(mediaKind, result.url),
         ...(result.subfolder ? { subfolder: result.subfolder } : {}),
         ...(result.uploadType ? { uploadType: result.uploadType } : {}),
         uploading: false
@@ -227,23 +274,14 @@ export function useAttachment(options: UseAttachmentOptions) {
     for (const id of [...pending]) cancelUpload(id)
   }
 
-  async function addDeferredFile(
+  async function uploadDeferredFile(
+    id: string,
     name: string,
     resolve: (
       signal: AbortSignal,
       maxBytes: number
     ) => Promise<File | undefined>
-  ): Promise<'uploaded' | 'unsupported' | 'cancelled' | 'failed'> {
-    if (pending.size >= MAX_ATTACHMENT_BATCH_SIZE) {
-      options.onError?.(
-        i18n.global.t('agent.attachmentBatchLimit', {
-          count: 1,
-          limit: MAX_ATTACHMENT_BATCH_SIZE
-        })
-      )
-      return 'failed'
-    }
-    const id = stage(name)
+  ): Promise<DeferredFileResult> {
     const slot = acquireUploadSlot()
     if (slot) await slot
     try {
@@ -296,7 +334,32 @@ export function useAttachment(options: UseAttachmentOptions) {
     }
   }
 
-  async function addFiles(files: Iterable<File>): Promise<void> {
+  async function addDeferredFile(
+    name: string,
+    resolve: (
+      signal: AbortSignal,
+      maxBytes: number
+    ) => Promise<File | undefined>,
+    sourceKey?: string
+  ): Promise<DeferredFileResult> {
+    if (pending.size >= MAX_ATTACHMENT_BATCH_SIZE) {
+      options.onError?.(
+        i18n.global.t('agent.attachmentBatchLimit', {
+          count: 1,
+          limit: MAX_ATTACHMENT_BATCH_SIZE
+        })
+      )
+      return 'failed'
+    }
+    const id = stage(name, sourceKey)
+    if (!id) {
+      options.onDuplicate?.([name])
+      return 'duplicate'
+    }
+    return uploadDeferredFile(id, name, resolve)
+  }
+
+  async function addFiles(files: Iterable<File>): Promise<boolean> {
     const candidates = [...files]
     const accepted: File[] = []
     let oversized = 0
@@ -323,10 +386,8 @@ export function useAttachment(options: UseAttachmentOptions) {
       )
     }
     const availableSlots = Math.max(0, MAX_ATTACHMENT_BATCH_SIZE - pending.size)
-    const staged = accepted
-      .slice(0, availableSlots)
-      .map((file) => ({ file, id: stage(file.name) }))
-    const omitted = accepted.length - staged.length
+    const admitted = accepted.slice(0, availableSlots)
+    const omitted = accepted.length - admitted.length
     if (omitted > 0)
       options.onError?.(
         i18n.global.t('agent.attachmentBatchLimit', {
@@ -334,12 +395,24 @@ export function useAttachment(options: UseAttachmentOptions) {
           limit: MAX_ATTACHMENT_BATCH_SIZE
         })
       )
+    const duplicates: string[] = []
+    const staged = admitted.flatMap((file) => {
+      const sourceKey = `file:${JSON.stringify([file.name, file.size, file.lastModified, file.type])}`
+      const id = stage(file.name, sourceKey)
+      if (!id) duplicates.push(file.name)
+      return id ? [{ file, id }] : []
+    })
+    if (duplicates.length) options.onDuplicate?.(duplicates)
+    let uploaded = 0
     await Promise.all(
       staged.map(async ({ id, file }) => {
-        if ((await uploadStagedFile(id, file)) === 'uploaded')
+        if ((await uploadStagedFile(id, file)) === 'uploaded') {
+          uploaded += 1
           options.onUploaded?.()
+        }
       })
     )
+    return uploaded > 0
   }
 
   return { addDeferredFile, addFiles, cancelUpload, cancelAllUploads }

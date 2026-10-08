@@ -180,6 +180,15 @@ export class VueNodeHelpers {
     await this.deleteSelected()
   }
 
+  /** Rename a node through the canvas title editor. */
+  async renameNode(nodeId: string, newTitle: string): Promise<void> {
+    const title = this.getNodeLocator(nodeId).getByTestId('node-title')
+    await title.dblclick({ delay: 5 })
+    const input = title.getByTestId('node-title-input')
+    await input.fill(newTitle)
+    await input.press('Enter')
+  }
+
   /**
    * Delete selected Vue nodes using Backspace key
    */

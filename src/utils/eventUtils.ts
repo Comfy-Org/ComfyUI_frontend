@@ -8,6 +8,7 @@ export interface DroppedAsset {
   ref?: string
   kind?: MediaKind
   previewUrl?: string
+  mediaUrl?: string
 }
 
 class DroppedAssetFetchError extends Error {
@@ -45,7 +46,8 @@ export function getDroppedAsset(
         uri,
         ref,
         kind: asset?.media_kind,
-        previewUrl: asset?.preview_url
+        previewUrl: asset?.preview_url,
+        mediaUrl: asset?.media_url
       }
     : undefined
 }

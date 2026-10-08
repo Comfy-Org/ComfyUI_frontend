@@ -6,12 +6,12 @@ import type { ComfyWorkflow } from '@/platform/workflow/management/stores/comfyW
 import { createMockLoadedWorkflow } from '@/utils/__tests__/litegraphTestUtils'
 
 import type { WorkflowReference } from '../../types/workflowReference'
+import type { ComposerAttachment } from '../../types/composerAttachment'
 import { useAgentComposerStore } from '../../stores/agent/agentComposerStore'
 import type { SubmissionMeta } from './useAgentDraftSubmission'
 import { useAgentDraftSubmission } from './useAgentDraftSubmission'
 import type { SelectedNode } from './useCanvasSelection'
 import { useCanvasSelection } from './useCanvasSelection'
-import type { ComposerAttachment } from './useComposer'
 
 type ComposerStore = ReturnType<typeof useAgentComposerStore>
 type Send = (
@@ -196,6 +196,37 @@ describe('Agent draft submission', () => {
     expect(revoke).not.toHaveBeenCalled()
   })
 
+  it('retains media through a pending send and failed recovery, releasing it on success', async () => {
+    const { composer, submit, send, pending } = setup()
+    const revoke = vi.spyOn(URL, 'revokeObjectURL')
+    composer.addAttachment({
+      id: 'video',
+      name: 'clip.mp4',
+      ref: 'clip.mp4',
+      mediaKind: 'video',
+      mediaUrl: 'blob:video'
+    })
+    composer.referenceAttachment('video')
+    const sending = submit()
+    composer.releaseUnusedAssets()
+    expect(revoke).not.toHaveBeenCalled()
+    pending.resolve(false)
+    await sending
+    await nextTick()
+    expect(composer.attachments).toContainEqual({
+      id: 'video',
+      name: 'clip.mp4',
+      ref: 'clip.mp4',
+      mediaKind: 'video',
+      mediaUrl: 'blob:video'
+    })
+    expect(revoke).not.toHaveBeenCalled()
+    send.mockResolvedValue(true)
+    await submit()
+    expect(composer.attachments).toEqual([])
+    expect(revoke.mock.calls).toEqual([['blob:cat'], ['blob:video']])
+  })
+
   it('does not recover over an edit that was subsequently cleared', async () => {
     const { composer, selection, submit, pending } = setup()
     const sending = submit()
@@ -208,6 +239,42 @@ describe('Agent draft submission', () => {
     expect(composer.attachments).toEqual([])
     expect(composer.workflowReferences).toEqual([])
     expect(selection.staged.value).toEqual([])
+  })
+
+  it('restores repeated mentions and unmentioned assets with their original inline positions after failure', async () => {
+    const { composer, submit, send } = setup()
+    composer.referenceAttachment('upload-1')
+    composer.referenceAttachment('upload-1')
+    composer.addAttachment({
+      id: 'upload-2',
+      name: 'background.png',
+      ref: 'background.png'
+    })
+    const prompt = composer.prompt
+    const attachments = [...composer.attachments]
+    send.mockResolvedValue(false)
+
+    await submit()
+
+    expect(composer.prompt).toEqual(prompt)
+    expect(composer.attachments).toEqual(attachments)
+    expect(
+      composer.prompt.references.filter((item) => item.kind === 'asset')
+    ).toHaveLength(2)
+  })
+
+  it('keeps a newer tray attachment instead of restoring a failed submission', async () => {
+    const { composer, submit, pending } = setup()
+    const sending = submit()
+    composer.addAttachment({ id: 'new', name: 'new.png', ref: 'new.png' })
+    pending.resolve(false)
+
+    await sending
+
+    expect(composer.prompt).toEqual({ text: '', references: [] })
+    expect(composer.attachments).toEqual([
+      { id: 'new', name: 'new.png', ref: 'new.png' }
+    ])
   })
 
   it.for(['pending', 'failed'])(

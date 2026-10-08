@@ -134,19 +134,21 @@ describe('keybindingService - Escape key handling', () => {
     expect(mockCommandExecute).not.toHaveBeenCalled()
   })
 
-  it('should leave Escape events from menus to the menu', async () => {
-    const menu = document.createElement('div')
-    menu.setAttribute('role', 'menu')
-    const menuItem = document.createElement('div')
-    menuItem.setAttribute('role', 'menuitemcheckbox')
-    menu.appendChild(menuItem)
+  it.for(['menu', 'dialog'])(
+    'should leave Escape events from role=%s to the overlay',
+    async (role) => {
+      const overlay = document.createElement('div')
+      overlay.setAttribute('role', role)
+      const target = document.createElement('div')
+      overlay.appendChild(target)
 
-    const event = createKeyboardEvent('Escape', { target: menuItem })
-    await keybindingService.keybindHandler(event)
+      const event = createKeyboardEvent('Escape', { target })
+      await keybindingService.keybindHandler(event)
 
-    expect(event.preventDefault).not.toHaveBeenCalled()
-    expect(mockCommandExecute).not.toHaveBeenCalled()
-  })
+      expect(event.preventDefault).not.toHaveBeenCalled()
+      expect(mockCommandExecute).not.toHaveBeenCalled()
+    }
+  )
 
   it('does not throw when Escape fires with a non-Element target (e.g. document, in Safari when nothing has focus)', async () => {
     const event = createKeyboardEvent('Escape', {

@@ -192,9 +192,12 @@ for (const scenario of [
       const composer = panel.getByRole('textbox', { name: /^Describe ideas/ })
       await dropAssets(page, composer, scenario.assets, 'input')
       for (const filename of filenames) {
-        await expect(panel.getByTestId('composer-asset-section')).toContainText(
-          filename
-        )
+        await expect(
+          panel.getByTestId('composer-asset-section').getByRole('group', {
+            name: filename,
+            exact: true
+          })
+        ).toBeVisible()
       }
 
       await composer.pressSequentially('compare these attachments')
