@@ -5,7 +5,7 @@ import NodeUnionIcon from '@/components/icons/NodeUnionIcon.vue'
 
 type Step = { id: string; label: string; description: string; title?: string }
 
-const { layout = 'grid' } = defineProps<{
+const { layout = 'grid', highlightedId } = defineProps<{
   heading: string
   layout?: 'grid' | 'timeline'
   highlightedId?: string
@@ -41,6 +41,19 @@ function cardClass(i: number, total: number) {
     !fullSpan && rtl && i % 2 === 1 && 'lg:col-start-1'
   )
 }
+function timelineHeadingClass(id: string) {
+  return cn(
+    'font-formula-narrow text-2xl font-semibold uppercase',
+    id === highlightedId ? 'text-primary-comfy-yellow' : 'text-timeline-neutral'
+  )
+}
+
+function timelineBadgeClass(id: string) {
+  return cn(
+    'mt-3 inline-block -skew-x-12 rounded-xl px-5 py-1.5 font-formula-narrow text-3xl font-semibold text-primary-comfy-ink',
+    id === highlightedId ? 'bg-primary-comfy-yellow' : 'bg-timeline-neutral'
+  )
+}
 </script>
 
 <template>
@@ -57,28 +70,10 @@ function cardClass(i: number, total: number) {
         :key="step.id"
         class="relative pb-10 text-center"
       >
-        <h3
-          :class="
-            cn(
-              'font-formula-narrow text-2xl font-semibold uppercase',
-              step.id === highlightedId
-                ? 'text-primary-comfy-yellow'
-                : 'text-timeline-neutral'
-            )
-          "
-        >
+        <h3 :class="timelineHeadingClass(step.id)">
           {{ step.title }}
         </h3>
-        <span
-          :class="
-            cn(
-              'mt-3 inline-block -skew-x-12 rounded-xl px-5 py-1.5 font-formula-narrow text-3xl font-semibold text-primary-comfy-ink',
-              step.id === highlightedId
-                ? 'bg-primary-comfy-yellow'
-                : 'bg-timeline-neutral'
-            )
-          "
-        >
+        <span :class="timelineBadgeClass(step.id)">
           <span class="inline-block skew-x-12">{{ step.label }}</span>
         </span>
         <div class="relative mt-12 h-4" aria-hidden="true">
