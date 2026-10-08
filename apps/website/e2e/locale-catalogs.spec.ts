@@ -16,7 +16,9 @@ test.describe('Locale catalogs', () => {
   for (const { path, loaded } of [
     { path: '/', loaded: ['en'] },
     { path: '/zh-CN/', loaded: ['en', 'zh-CN'] },
-    { path: '/ja/', loaded: ['en', 'ja'] }
+    { path: '/ja/', loaded: ['en', 'ja'] },
+    { path: '/enterprise-msa/', loaded: ['en'] },
+    { path: '/affiliates/terms/', loaded: ['en'] }
   ]) {
     test(`${path} downloads only the ${loaded.join(' and ')} catalogs`, async ({
       page
@@ -32,23 +34,115 @@ test.describe('Locale catalogs', () => {
 
       const downloaded = await page.evaluate(async (copies) => {
         const sources = await Promise.all(
-          performance
-            .getEntriesByType('resource')
-            .map((entry) => new URL(entry.name))
+          [
+            ...new Set(
+              performance
+                .getEntriesByType('resource')
+                .map((entry) => entry.name)
+            )
+          ]
+            .map((name) => new URL(name))
             .filter(
               (url) =>
                 url.origin === location.origin &&
-                /\.(js|json)$/.test(url.pathname)
+                /^\/_website\/.*\.(js|json)$/.test(url.pathname)
             )
-            .map(async (url) => (await fetch(url)).text())
+            .map(async (url) => ({
+              path: url.pathname,
+              source: await (await fetch(url)).text()
+            }))
         )
-        return Object.entries(copies)
-          .filter(([, copy]) => sources.some((source) => source.includes(copy)))
-          .map(([locale]) => locale)
+        return Object.entries(copies).flatMap(([locale, copy]) =>
+          sources
+            .filter(({ source }) => source.includes(copy))
+            .map(({ path }) => ({ locale, path }))
+        )
       }, copyOnlyIn)
-      expect(downloaded).toEqual(loaded)
+      expect(
+        downloaded.map(({ locale }) => locale),
+        JSON.stringify(downloaded)
+      ).toEqual(loaded)
     })
   }
+
+  test('switching language before the locale module starts keeps the new page interactive', async ({
+    page,
+    context
+  }) => {
+    const moduleRequested = Promise.withResolvers<void>()
+    const releaseModule = Promise.withResolvers<void>()
+    const releaseDocument = Promise.withResolvers<void>()
+    const fullNavigations: string[] = []
+    const errors: string[] = []
+    page.on('request', (request) => {
+      if (request.isNavigationRequest()) fullNavigations.push(request.url())
+    })
+    page.on('console', (message) => {
+      if (
+        /catalog|setup function|hydration|t is not a function/i.test(
+          message.text()
+        )
+      )
+        errors.push(message.text())
+    })
+    page.on('pageerror', (error) => errors.push(error.message))
+    await page.setViewportSize({ width: 390, height: 844 })
+    await page.addInitScript(() => {
+      document.addEventListener('astro:before-preparation', () => {
+        document.documentElement.dataset.preparationStarted = 'true'
+      })
+    })
+    await context.route(
+      /\/_website\/translations\.[^/]+\.js$/,
+      async (route) => {
+        moduleRequested.resolve()
+        await releaseModule.promise
+        await route.continue()
+      }
+    )
+    await context.route(/\/zh-CN\/cli\/$/, async (route) => {
+      await releaseDocument.promise
+      await route.continue()
+    })
+
+    try {
+      await page.goto('/cli/', { waitUntil: 'commit' })
+      await moduleRequested.promise
+      await page.waitForFunction(() => typeof history.state?.index === 'number')
+      await page
+        .getByRole('contentinfo')
+        .getByRole('link', { name: '简体中文' })
+        .click()
+      await expect(page.locator('html')).toHaveAttribute(
+        'data-preparation-started',
+        'true'
+      )
+      releaseModule.resolve()
+      await waitForIsland(
+        page,
+        page.getByRole('button', { name: 'Toggle menu' })
+      )
+      releaseDocument.resolve()
+
+      await expect(page).toHaveURL(/\/zh-CN\/cli\/$/)
+      await expectIslandHydrated(
+        page,
+        page.getByRole('navigation', { name: 'Main navigation' })
+      )
+      expect(errors).toEqual([])
+      const menuButton = page.getByRole('button', { name: '切换菜单' })
+      await waitForIsland(page, menuButton)
+      await menuButton.click()
+      await expect(page.getByRole('dialog', { name: '菜单' })).toBeVisible()
+      expect(errors).toEqual([])
+      expect(fullNavigations.map((url) => new URL(url).pathname)).toEqual([
+        '/cli/'
+      ])
+    } finally {
+      releaseModule.resolve()
+      releaseDocument.resolve()
+    }
+  })
 
   test('switching language before the first catalog loads keeps the new page interactive', async ({
     page,
@@ -67,6 +161,13 @@ test.describe('Locale catalogs', () => {
     page.on('pageerror', (error) => errors.push(error.message))
     await page.setViewportSize({ width: 390, height: 844 })
     await page.addInitScript(() => {
+      document.addEventListener('astro:before-preparation', (event) => {
+        const loadDocument = event.loader
+        event.loader = async () => {
+          await loadDocument()
+          document.documentElement.dataset.documentPrepared = 'true'
+        }
+      })
       const fetch = window.fetch.bind(window)
       window.fetch = (...args) => {
         const [resource] = args
@@ -89,12 +190,14 @@ test.describe('Locale catalogs', () => {
         'data-catalog-requested',
         'true'
       )
-      const targetPage = page.waitForResponse(/\/zh-CN\/cli\/$/)
       const switchLanguage = page
         .getByRole('contentinfo')
         .getByRole('link', { name: '简体中文' })
         .click()
-      await targetPage
+      await expect(page.locator('html')).toHaveAttribute(
+        'data-document-prepared',
+        'true'
+      )
       releaseCatalogs.resolve()
       await switchLanguage
 

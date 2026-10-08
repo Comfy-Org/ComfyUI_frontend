@@ -1,4 +1,5 @@
 import { mkdtemp, readFile, mkdir, writeFile } from 'node:fs/promises'
+import https from 'node:https'
 import { tmpdir } from 'node:os'
 import { join } from 'node:path'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
@@ -161,12 +162,21 @@ describe('htmlToTwin', () => {
     expect(noMain.body).toBe('# Pack\n\nNodes.')
   })
 
-  it('reads a page that preloads a fetched resource without loading it', () => {
-    const page = htmlToTwin(
-      '<html><head><link rel="preload" as="fetch" crossorigin href="/_website/main.json"></head><body><main><p>x</p></main></body></html>',
-      'https://comfy.org/x/'
-    )
-    expect(page.body).toBe('x')
+  it('reads a page that preloads a fetched resource without loading it', async () => {
+    const request = vi.spyOn(https, 'request').mockImplementation(() => {
+      throw new Error('Markdown extraction attempted an outbound request')
+    })
+    try {
+      const page = htmlToTwin(
+        '<html><head><link rel="preload" as="fetch" crossorigin href="/_website/main.json"></head><body><main><p>x</p></main></body></html>',
+        'https://comfy.org/x/'
+      )
+      await new Promise<void>((resolve) => setImmediate(resolve))
+      expect(page.body).toBe('x')
+      expect(request).not.toHaveBeenCalled()
+    } finally {
+      request.mockRestore()
+    }
   })
 
   it('falls back to the route when the page has no canonical link', () => {

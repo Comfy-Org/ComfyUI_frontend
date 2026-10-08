@@ -289,13 +289,7 @@ export function htmlToTwin(html: string, fallbackCanonical: string): TwinPage {
     settings: {
       disableJavaScriptEvaluation: true,
       disableJavaScriptFileLoading: true,
-      disableCSSFileLoading: true,
-      fetch: {
-        interceptor: {
-          beforeAsyncRequest: ({ window }) =>
-            Promise.resolve(new window.Response(null, { status: 204 }))
-        }
-      }
+      disableCSSFileLoading: true
     }
   })
   try {
