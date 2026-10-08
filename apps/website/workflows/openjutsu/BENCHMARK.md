@@ -64,3 +64,33 @@ Since these runs the app gained a 480p option and a final resize to the
 source's exact shape. Neither changes the sampling work measured here.
 
 No price or free-run allowance is proposed here yet.
+
+## Second round: clean HD sources (2026-10-08, later)
+
+The first round's sources were 600 pixels wide. These are Higgsfield's original
+example inputs: 1080x1920 at 30 fps (example 02), 1920x1080 at 60 fps (example 05) and 1276x718 at 30 fps (example 09). Same deployment, raised to three
+workers; a warm-up job went to each worker first. Graph as the app sends it,
+20 steps.
+
+| Run                              | Quality | Output | GPU s      | Cost  | Result                                         |
+| -------------------------------- | ------- | ------ | ---------- | ----- | ---------------------------------------------- |
+| Example 09, striped-shirt person | 480p    | 5.0 s  | 277        | $0.35 | good; a beat late on one cut                   |
+| Example 05, the woman            | 480p    | 5.0 s  | 326        | $0.41 | good                                           |
+| Example 05, the man              | 480p    | 5.0 s  | 325        | $0.41 | not reviewed                                   |
+| Example 02, portrait             | 480p    | 5.7 s  | 413        | $0.52 | good                                           |
+| Example 05, the woman            | 768p    | 5.0 s  | 693        | $0.87 | good; some timing drift                        |
+| Example 05, the man              | 768p    | 5.0 s  | 691        | $0.87 | good                                           |
+| Example 02, portrait             | 768p    | 5.7 s  | 920 (cold) | $1.16 | good                                           |
+| Example 09                       | 480p    | 10.0 s | 964        | $1.22 | poor: stops following the cuts, framing shifts |
+| Example 09                       | 480p    | 14.1 s | 1889       | $2.38 | failed: shots out of order, swap lost midway   |
+
+- HD sources cost about three times what the first round measured for the same
+  canvas and length. H3 reads the reference video at its own resolution.
+- Shrinking the source frames to the canvas first cut 5 s at 480p to 134 s
+  (example 09) and 138 s (example 05), but example 09 then lost the swap after
+  a cut. Not adopted; two runs is not enough to decide.
+- Length at 480p on one clip: 5 s, 10 s and 14.1 s took 277, 964 and 1889 s.
+  Quality fell apart by 10 s.
+- Two 11.3 s runs at 768p were cancelled about 11 minutes in, on step 3 of 20.
+
+Results and comparison images: `bench/results-clean/`.
