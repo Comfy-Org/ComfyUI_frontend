@@ -1,10 +1,14 @@
-import { expect } from '@playwright/test'
+import { expect, mergeTests } from '@playwright/test'
 
-import { comfyPageFixture as test } from '@e2e/fixtures/ComfyPage'
+import { comfyPageFixture } from '@e2e/fixtures/ComfyPage'
+import { ExecutionHelper } from '@e2e/fixtures/helpers/ExecutionHelper'
 import {
   logMeasurement,
   recordMeasurement
 } from '@e2e/fixtures/utils/perfReporter'
+import { webSocketFixture } from '@e2e/fixtures/ws'
+
+const test = mergeTests(comfyPageFixture, webSocketFixture)
 
 test.describe('Performance', { tag: ['@perf'] }, () => {
   test('canvas idle style recalculations', async ({ comfyPage }) => {
@@ -22,6 +26,24 @@ test.describe('Performance', { tag: ['@perf'] }, () => {
     console.log(
       `Canvas idle: ${m.styleRecalcs} style recalcs, ${m.layouts} layouts`
     )
+  })
+
+  test('frame collector captures in-window blocking', async ({ comfyPage }) => {
+    await comfyPage.workflow.loadWorkflow('default')
+    await comfyPage.perf.startMeasuring()
+    await comfyPage.nextFrame()
+    await comfyPage.page.evaluate(() => {
+      const end = performance.now() + 100
+      while (performance.now() < end) {}
+    })
+    await comfyPage.nextFrame()
+
+    const measurement = await comfyPage.perf.stopMeasuring(
+      'frame-collector-positive-control'
+    )
+    expect(measurement.allFrameDurationsMs.length).toBeGreaterThan(1)
+    expect(measurement.maxFrameDurationMs).toBeGreaterThanOrEqual(75)
+    expect(measurement.framesOver50Ms).toBeGreaterThanOrEqual(1)
   })
 
   test('canvas mouse interaction style recalculations', async ({
@@ -461,5 +483,65 @@ test.describe('Performance', { tag: ['@perf'] }, () => {
     console.log(
       `Workflow execution: ${m.durationMs.toFixed(0)}ms total, ${m.layouts} layouts, TBT=${m.totalBlockingTimeMs.toFixed(0)}ms`
     )
+  })
+
+  test('large graph sustained execution', async ({
+    comfyPage,
+    getWebSocket
+  }) => {
+    await comfyPage.workflow.loadWorkflow('large-graph-workflow')
+    const execution = new ExecutionHelper(comfyPage, await getWebSocket())
+    const jobId = await execution.run()
+    const nodeId = await comfyPage.page.evaluate(() =>
+      String(window.app?.graph.nodes[0]?.id)
+    )
+    const arm = process.env.PERF_MESSAGE_ARM ?? 'both'
+    if (!['none', 'progress', 'progress_state', 'both'].includes(arm))
+      throw new Error(`Unknown PERF_MESSAGE_ARM: ${arm}`)
+
+    await comfyPage.idleFrames(2)
+    await comfyPage.page.waitForTimeout(0)
+
+    await comfyPage.perf.startMeasuring()
+    execution.executionStart(jobId)
+    execution.executing(jobId, nodeId)
+    for (let step = 0; step < 100; step++) {
+      if (arm === 'progress' || arm === 'both') {
+        execution.progress(jobId, nodeId, step, 100)
+        comfyPage.perf.noteEmitted('progress')
+      }
+      if (arm === 'progress_state' || arm === 'both') {
+        execution.progressState(jobId, {
+          [nodeId]: {
+            node_id: nodeId,
+            display_node_id: nodeId,
+            real_node_id: nodeId,
+            prompt_id: jobId,
+            state: 'running',
+            value: step,
+            max: 100
+          }
+        })
+        comfyPage.perf.noteEmitted('progress_state')
+      }
+      await comfyPage.page.waitForTimeout(100)
+    }
+    execution.executing(jobId, null)
+    execution.executionSuccess(jobId)
+
+    const measurement = await comfyPage.perf.stopMeasuring(
+      `large-graph-running-${arm}`
+    )
+    recordMeasurement(measurement)
+    logMeasurement('Large graph running', measurement, [
+      'durationMs',
+      'taskDurationMs',
+      'styleRecalcs',
+      'layouts',
+      'p95FrameDurationMs',
+      'maxFrameDurationMs',
+      'framesOver33Ms',
+      'framesOver50Ms'
+    ])
   })
 })
