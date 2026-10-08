@@ -184,28 +184,44 @@ describe('reduceCreditTransitionNotice', () => {
   })
 
   it('reports one impression per refill-and-exhaust cycle', () => {
-    let state = reduceCreditTransitionNotice(null, {
+    const funded = reduceCreditTransitionNotice(null, {
       type: 'scopedRead',
       identity: IDENTITY,
       scopedHasFunds: true
     })
-    const impressions: boolean[] = []
 
-    for (const scopedHasFunds of [false, true, false]) {
-      state = reduceCreditTransitionNotice(state, {
-        type: 'scopedRead',
-        identity: IDENTITY,
-        scopedHasFunds
-      })
-      const shown = reduceCreditTransitionNotice(state, {
-        type: 'shown',
-        identity: IDENTITY
-      })
-      impressions.push(shown !== state)
-      state = shown
-    }
+    const exhaustedFirst = reduceCreditTransitionNotice(funded, {
+      type: 'scopedRead',
+      identity: IDENTITY,
+      scopedHasFunds: false
+    })
+    const shownFirst = reduceCreditTransitionNotice(exhaustedFirst, {
+      type: 'shown',
+      identity: IDENTITY
+    })
+    expect(shownFirst).not.toBe(exhaustedFirst)
 
-    expect(impressions).toEqual([true, false, true])
+    const refilled = reduceCreditTransitionNotice(shownFirst, {
+      type: 'scopedRead',
+      identity: IDENTITY,
+      scopedHasFunds: true
+    })
+    const shownSecond = reduceCreditTransitionNotice(refilled, {
+      type: 'shown',
+      identity: IDENTITY
+    })
+    expect(shownSecond).toBe(refilled)
+
+    const exhaustedSecond = reduceCreditTransitionNotice(shownSecond, {
+      type: 'scopedRead',
+      identity: IDENTITY,
+      scopedHasFunds: false
+    })
+    const shownThird = reduceCreditTransitionNotice(exhaustedSecond, {
+      type: 'shown',
+      identity: IDENTITY
+    })
+    expect(shownThird).not.toBe(exhaustedSecond)
   })
 })
 
