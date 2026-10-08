@@ -76,10 +76,21 @@ describe('AttachmentChip', () => {
     { name: 'clip.mp4', selector: 'video', key: '{Enter}' },
     { name: 'song.mp3', selector: 'audio', key: ' ' }
   ])(
-    'opens $name playback from the keyboard, focuses native controls and restores focus on Escape',
+    'closes $name playback on Escape even when a global handler prevents the default',
     async ({ name, selector, key }) => {
       const user = userEvent.setup()
       renderChip({ name, mediaUrl: '/playable-media' })
+      const preventEscapeDefault = (event: KeyboardEvent) => {
+        if (event.key === 'Escape') event.preventDefault()
+      }
+      window.addEventListener('keydown', preventEscapeDefault, {
+        capture: true
+      })
+      onTestFinished(() => {
+        window.removeEventListener('keydown', preventEscapeDefault, {
+          capture: true
+        })
+      })
       const trigger = screen.getByRole('button', { name: `Preview ${name}` })
       await user.tab()
       expect(trigger).toHaveFocus()

@@ -88,11 +88,11 @@ function onOpenAutoFocus(event: Event): void {
 }
 
 function onEscape(): void {
-  if (
+  const restoreFocus =
     mode.value === 'interactive' ||
     content.value?.contains(document.activeElement)
-  )
-    trigger.value?.focus()
+  mode.value = 'dismissed'
+  if (restoreFocus) trigger.value?.focus()
 }
 
 function onInteractOutside(event: Event): void {
