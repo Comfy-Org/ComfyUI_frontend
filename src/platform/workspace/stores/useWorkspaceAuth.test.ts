@@ -1,14 +1,21 @@
 import { fromPartial } from '@total-typescript/shoehorn'
 import { useAuthStore } from '@/stores/authStore'
+import { useDialogStore } from '@/stores/dialogStore'
+import { SSO_REQUIRED_DIALOG_KEY } from '@/platform/auth/sso/ssoRequiredDialogKey'
 import { useTeamWorkspaceStore } from '@/platform/workspace/stores/teamWorkspaceStore'
 import { useToastStore } from '@/platform/updates/common/toastStore'
 import type { User } from 'firebase/auth'
 
 import { storeToRefs } from 'pinia'
 import { nextTick } from 'vue'
-import { beforeEach, describe, expect, it, vi } from 'vitest'
+import { beforeEach, describe, expect, it, onTestFinished, vi } from 'vitest'
 
 import { firebaseIdentity } from '@/platform/auth/firebaseIdentity'
+import type {
+  WebSessionRequestScope,
+  WebSessionRequests
+} from '@/platform/auth/session/webSessionFetch'
+import { provideWebSessionRequests } from '@/platform/auth/session/webSessionFetch'
 import { useFeatureFlags } from '@/composables/useFeatureFlags'
 import { t } from '@/i18n'
 import { useTelemetry } from '@/platform/telemetry'
@@ -1061,6 +1068,84 @@ describe('useWorkspaceAuthStore', () => {
       expect(useToastStore().add).toHaveBeenCalledTimes(1)
     })
 
+    it.for([
+      {
+        ssoEnabled: false,
+        toasts: ['workspaceAuth.errors.accessDenied'],
+        shown: false,
+        reloads: 1
+      },
+      { ssoEnabled: true, toasts: [], shown: true, reloads: 0 }
+    ])(
+      'a recovery refused with sso_required tears down; the SSO screen replaces the toast and the reload: $shown (sso_enabled $ssoEnabled)',
+      async ({ ssoEnabled, toasts, shown, reloads }) => {
+        vi.mocked(useFeatureFlags().flags).ssoEnabled = ssoEnabled
+        vi.mocked(useAuthStore().getIdToken).mockResolvedValue(
+          'firebase-token-xyz'
+        )
+        vi.stubGlobal(
+          'fetch',
+          vi
+            .fn()
+            .mockResolvedValueOnce({
+              ok: true,
+              json: () => Promise.resolve(mockTokenResponse)
+            })
+            .mockResolvedValue(
+              Response.json(
+                { code: 'sso_required', message: 'use SSO' },
+                { status: 403 }
+              )
+            )
+        )
+
+        const store = useWorkspaceAuthStore()
+        const { currentWorkspace } = storeToRefs(store)
+        await store.switchWorkspace('workspace-123')
+
+        const token = await store.ensureWorkspaceToken('workspace-999')
+        await vi.dynamicImportSettled()
+
+        expect(token).toBeNull()
+        expect(currentWorkspace.value).toBeNull()
+        expect(
+          vi
+            .mocked(useToastStore().add)
+            .mock.calls.map(([toast]) => toast.detail)
+        ).toEqual(toasts)
+        expect(useDialogStore().isDialogOpen(SSO_REQUIRED_DIALOG_KEY)).toBe(
+          shown
+        )
+        expect(mockReload).toHaveBeenCalledTimes(reloads)
+      }
+    )
+
+    it('names an sso_required refusal SSO_REQUIRED and keeps the access-denied message', async () => {
+      vi.mocked(useAuthStore().getIdToken).mockResolvedValue(
+        'firebase-token-xyz'
+      )
+      vi.stubGlobal(
+        'fetch',
+        vi
+          .fn()
+          .mockResolvedValue(
+            Response.json(
+              { code: 'sso_required', message: 'use SSO' },
+              { status: 403 }
+            )
+          )
+      )
+
+      const store = useWorkspaceAuthStore()
+
+      await expect(store.switchWorkspace('workspace-123')).rejects.toEqual(
+        expect.objectContaining({
+          code: 'SSO_REQUIRED',
+          message: 'workspaceAuth.errors.accessDenied'
+        })
+      )
+    })
+
     it('backs off re-minting after a failed recovery instead of retrying every call', async () => {
       vi.mocked(useAuthStore().getIdToken).mockResolvedValue(
         'firebase-token-xyz'
@@ -1442,6 +1527,7 @@ describe('useWorkspaceAuthStore', () => {
 
   describe('refreshToken retry/race paths', () => {
     it('ends an expired workspace session behind the workflow write barrier', async () => {
+      const randomSpy = vi.spyOn(Math, 'random').mockReturnValue(0)
       vi.mocked(useAuthStore().getIdToken).mockResolvedValue(
         'firebase-token-xyz'
       )
@@ -1471,8 +1557,6 @@ describe('useWorkspaceAuthStore', () => {
           sessionStorage.getItem(WORKSPACE_STORAGE_KEYS.CURRENT_WORKSPACE)
         ).toBe(JSON.stringify(mockWorkspaceWithRole))
       })
-      vi.spyOn(console, 'error').mockImplementation(() => {})
-      vi.spyOn(console, 'warn').mockImplementation(() => {})
 
       const refreshPromise = store.refreshToken()
       await vi.advanceTimersByTimeAsync(1000)
@@ -1485,9 +1569,11 @@ describe('useWorkspaceAuthStore', () => {
       expect(
         sessionStorage.getItem(WORKSPACE_STORAGE_KEYS.CURRENT_WORKSPACE)
       ).toBeNull()
+      randomSpy.mockRestore()
     })
 
     it('retries up to 3 times with exponential backoff on TOKEN_EXCHANGE_FAILED, then preserves valid context', async () => {
+      const randomSpy = vi.spyOn(Math, 'random').mockReturnValue(0.5)
       vi.mocked(useAuthStore().getIdToken).mockResolvedValue(
         'firebase-token-xyz'
       )
@@ -1514,39 +1600,32 @@ describe('useWorkspaceAuthStore', () => {
         text: () => Promise.resolve(JSON.stringify({ message: 'Server error' }))
       })
 
-      const consoleErrorSpy = vi
-        .spyOn(console, 'error')
-        .mockImplementation(() => {})
-      const consoleWarnSpy = vi
-        .spyOn(console, 'warn')
-        .mockImplementation(() => {})
-
       const refreshPromise = store.refreshToken()
 
       // Drain only the retry backoff delays; do not advance to the scheduled
       // proactive refresh timer for the still-valid token.
-      await vi.advanceTimersByTimeAsync(1000)
-      await vi.advanceTimersByTimeAsync(2000)
-      await vi.advanceTimersByTimeAsync(4000)
+      await vi.advanceTimersByTimeAsync(1500)
+      await vi.advanceTimersByTimeAsync(2500)
+      await vi.advanceTimersByTimeAsync(4500)
       await refreshPromise
 
       // 1 initial switchWorkspace + 4 refresh attempts = 5 total fetch calls.
       expect(mockFetch).toHaveBeenCalledTimes(5)
-      // Backoff: 1s + 2s + 4s = 7s of cumulative warn-logged delays.
+      // Each exponential-backoff delay includes bounded jitter.
       expect(
-        consoleWarnSpy.mock.calls.some((c) =>
-          /retrying in 1000ms/.test(String(c[0]))
-        )
+        vi
+          .mocked(console.warn)
+          .mock.calls.some((c) => /retrying in 1500ms/.test(String(c[0])))
       ).toBe(true)
       expect(
-        consoleWarnSpy.mock.calls.some((c) =>
-          /retrying in 2000ms/.test(String(c[0]))
-        )
+        vi
+          .mocked(console.warn)
+          .mock.calls.some((c) => /retrying in 2500ms/.test(String(c[0])))
       ).toBe(true)
       expect(
-        consoleWarnSpy.mock.calls.some((c) =>
-          /retrying in 4000ms/.test(String(c[0]))
-        )
+        vi
+          .mocked(console.warn)
+          .mock.calls.some((c) => /retrying in 4500ms/.test(String(c[0])))
       ).toBe(true)
 
       // After the final transient failure the still-valid context is preserved.
@@ -1562,7 +1641,7 @@ describe('useWorkspaceAuthStore', () => {
         expectedExpiresAtMs(mockTokenResponse.expires_at)
       )
       expect(error.value).toBeNull()
-      expect(consoleErrorSpy).not.toHaveBeenCalled()
+      expect(console.error).not.toHaveBeenCalled()
 
       mockFetch.mockResolvedValueOnce({
         ok: true,
@@ -1570,8 +1649,8 @@ describe('useWorkspaceAuthStore', () => {
           Promise.resolve({ ...mockTokenResponse, token: 'retry-token' })
       })
 
-      // Retry is scheduled at baseDelayMs * 2^maxRetries = 8000ms.
-      await vi.advanceTimersByTimeAsync(7999)
+      // The scheduled retry also includes bounded jitter (8000ms + 500ms).
+      await vi.advanceTimersByTimeAsync(8499)
       expect(mockFetch).toHaveBeenCalledTimes(5)
 
       await vi.advanceTimersByTimeAsync(1)
@@ -1580,8 +1659,46 @@ describe('useWorkspaceAuthStore', () => {
         expect(workspaceToken.value).toBe('retry-token')
       })
 
-      consoleErrorSpy.mockRestore()
-      consoleWarnSpy.mockRestore()
+      vi.mocked(console.warn).mockRestore()
+      randomSpy.mockRestore()
+    })
+
+    it('does not let an in-flight refresh re-arm timers after destroy', async () => {
+      vi.mocked(useAuthStore().getIdToken).mockResolvedValue(
+        'firebase-token-xyz'
+      )
+      const mockFetch = vi.fn().mockResolvedValueOnce({
+        ok: true,
+        json: () => Promise.resolve(mockTokenResponse)
+      })
+      vi.stubGlobal('fetch', mockFetch)
+
+      const store = useWorkspaceAuthStore()
+      await store.switchWorkspace('workspace-123')
+
+      let resolveRefreshFetch: (value: unknown) => void = () => {}
+      mockFetch.mockReturnValueOnce(
+        new Promise((resolve) => {
+          resolveRefreshFetch = resolve
+        })
+      )
+
+      const refreshPromise = store.refreshToken()
+      await vi.waitFor(() => expect(mockFetch).toHaveBeenCalledTimes(2))
+      store.destroy()
+      resolveRefreshFetch({
+        ok: true,
+        json: () =>
+          Promise.resolve({
+            ...mockTokenResponse,
+            token: 'late-refresh-token'
+          })
+      })
+      await refreshPromise
+
+      expect(store.workspaceToken).toBe('workspace-token-abc')
+      await vi.advanceTimersByTimeAsync(60 * 60 * 1000)
+      expect(mockFetch).toHaveBeenCalledTimes(2)
     })
 
     it('clears context immediately on INVALID_FIREBASE_TOKEN without retrying', async () => {
@@ -1609,18 +1726,53 @@ describe('useWorkspaceAuthStore', () => {
           Promise.resolve(JSON.stringify({ message: 'Invalid token' }))
       })
 
-      const consoleErrorSpy = vi
-        .spyOn(console, 'error')
-        .mockImplementation(() => {})
-
       await store.refreshToken()
 
       // Initial + exactly one refresh attempt; no retries on permanent errors.
       expect(mockFetch).toHaveBeenCalledTimes(2)
       expect(currentWorkspace.value).toBeNull()
-
-      consoleErrorSpy.mockRestore()
     })
+
+    it.for([
+      { ssoEnabled: false, shown: false, reloads: 1 },
+      { ssoEnabled: true, shown: true, reloads: 0 }
+    ])(
+      'a refresh refused with sso_required shows the SSO screen instead of reloading: $shown (sso_enabled $ssoEnabled)',
+      async ({ ssoEnabled, shown, reloads }) => {
+        vi.mocked(useFeatureFlags().flags).ssoEnabled = ssoEnabled
+        vi.mocked(useAuthStore().getIdToken).mockResolvedValue(
+          'firebase-token-xyz'
+        )
+        vi.stubGlobal(
+          'fetch',
+          vi
+            .fn()
+            .mockResolvedValueOnce({
+              ok: true,
+              json: () => Promise.resolve(mockTokenResponse)
+            })
+            .mockResolvedValue(
+              Response.json(
+                { code: 'sso_required', message: 'use SSO' },
+                { status: 403 }
+              )
+            )
+        )
+
+        const store = useWorkspaceAuthStore()
+        const { currentWorkspace } = storeToRefs(store)
+        await store.switchWorkspace('workspace-123')
+
+        await store.refreshToken()
+        await vi.dynamicImportSettled()
+
+        expect(currentWorkspace.value).toBeNull()
+        expect(useDialogStore().isDialogOpen(SSO_REQUIRED_DIALOG_KEY)).toBe(
+          shown
+        )
+        expect(mockReload).toHaveBeenCalledTimes(reloads)
+      }
+    )
 
     it('keeps the old workspace refresh when a newer workspace switch fails', async () => {
       vi.mocked(useAuthStore().getIdToken).mockResolvedValue(
@@ -1972,9 +2124,6 @@ describe('useWorkspaceAuthStore', () => {
         clear: originalSessionStorage.clear.bind(originalSessionStorage)
       } satisfies Storage
       vi.stubGlobal('sessionStorage', throwingSessionStorage)
-      const consoleWarnSpy = vi
-        .spyOn(console, 'warn')
-        .mockImplementation(() => {})
 
       try {
         const store = useWorkspaceAuthStore()
@@ -1983,12 +2132,12 @@ describe('useWorkspaceAuthStore', () => {
         await store.switchWorkspace('workspace-123')
 
         expect(workspaceToken.value).toBe('workspace-token-abc')
-        expect(consoleWarnSpy).toHaveBeenCalledWith(
+        expect(console.warn).toHaveBeenCalledWith(
           'Failed to persist workspace identity to sessionStorage'
         )
       } finally {
         vi.stubGlobal('sessionStorage', originalSessionStorage)
-        consoleWarnSpy.mockRestore()
+        vi.mocked(console.warn).mockRestore()
       }
     })
   })
@@ -3022,6 +3171,51 @@ describe('useWorkspaceAuthStore', () => {
       expect(unifiedToken.value).toBeNull()
     })
 
+    it('refuses a mint that parked on the identity before the session signed the tab in', async () => {
+      const mockFetch = vi.fn().mockResolvedValue({
+        ok: true,
+        json: () => Promise.resolve(personalTokenResponse)
+      })
+      vi.stubGlobal('fetch', mockFetch)
+      vi.mocked(useAuthStore().getIdToken).mockResolvedValue(
+        'firebase-token-xyz'
+      )
+      const heldPort = replayIdentityPort(() => null)
+      vi.spyOn(firebaseIdentity, 'onUserChanged').mockImplementation(
+        heldPort.register
+      )
+      const signedInScope: WebSessionRequestScope = {
+        session: {
+          user: { id: 'user-1', email: 'a@example.com', emailVerified: true },
+          csrfToken: 'csrf-1',
+          expiresAt: Date.now() + 60 * 60_000,
+          absoluteExpiresAt: Date.now() + 24 * 60 * 60_000
+        },
+        epoch: 1
+      }
+      let signedIn = false
+      onTestFinished(
+        provideWebSessionRequests(
+          fromPartial<WebSessionRequests>({
+            scope: async () => (signedIn ? signedInScope : undefined)
+          })
+        )
+      )
+
+      const store = useWorkspaceAuthStore()
+      const { unifiedToken } = storeToRefs(store)
+      Object.assign(useAuthStore(), { currentUser: { uid: 'user-1' } })
+      const parked = store.mintAtLogin()
+
+      signedIn = true
+      await nextTick()
+      heldPort.emit(portUser({ uid: 'user-1' }))
+
+      await expect(parked).resolves.toBe(false)
+      expect(mockFetch).not.toHaveBeenCalled()
+      expect(unifiedToken.value).toBeNull()
+    })
+
     it('is fully dormant under the flag OFF: no unified network, timer, or rotation', async () => {
       vi.mocked(useFeatureFlags().flags).unifiedCloudAuthEnabled = false
       vi.mocked(useAuthStore().getIdToken).mockResolvedValue(
@@ -3107,6 +3301,7 @@ describe('useWorkspaceAuthStore', () => {
         expect(reportError).toHaveBeenCalledWith(
           expect.any(Error),
           expect.objectContaining({
+            surface: 'auth',
             errorType: 'failure_refreshing_unified_auth_permanent',
             tags: { failure_code: code, retry_count: 0 },
             // The toast path owns the console line for this failure.
@@ -3114,6 +3309,68 @@ describe('useWorkspaceAuthStore', () => {
           })
         )
         expect(unifiedToken.value).toBeNull()
+      }
+    )
+
+    it.for([
+      {
+        ssoEnabled: false,
+        toasts: ['workspaceAuth.errors.accessDenied'],
+        shown: false,
+        reloads: 1
+      },
+      { ssoEnabled: true, toasts: [], shown: true, reloads: 0 }
+    ])(
+      'a refresh refused with sso_required clears the slot; the SSO screen replaces the toast and the reload: $shown (sso_enabled $ssoEnabled)',
+      async ({ ssoEnabled, toasts, shown, reloads }) => {
+        vi.mocked(useFeatureFlags().flags).ssoEnabled = ssoEnabled
+        vi.mocked(useAuthStore().getIdToken).mockResolvedValue(
+          'firebase-token-xyz'
+        )
+        const expiresInMs = 3600 * 1000
+        vi.stubGlobal(
+          'fetch',
+          vi
+            .fn()
+            .mockResolvedValueOnce({
+              ok: true,
+              json: () =>
+                Promise.resolve({
+                  ...personalTokenResponse,
+                  expires_at: new Date(Date.now() + expiresInMs).toISOString()
+                })
+            })
+            .mockResolvedValue(
+              Response.json(
+                { code: 'sso_required', message: 'use SSO' },
+                { status: 403 }
+              )
+            )
+        )
+
+        const store = useWorkspaceAuthStore()
+        const { unifiedToken } = storeToRefs(store)
+        await store.mintAtLogin()
+
+        await vi.advanceTimersByTimeAsync(expiresInMs - 5 * 60 * 1000)
+        await vi.dynamicImportSettled()
+
+        expect(unifiedToken.value).toBeNull()
+        expect(reportError).toHaveBeenCalledWith(
+          expect.any(Error),
+          expect.objectContaining({
+            tags: { failure_code: 'SSO_REQUIRED', retry_count: 0 }
+          })
+        )
+        expect(
+          vi
+            .mocked(useToastStore().add)
+            .mock.calls.map(([toast]) => toast.detail)
+        ).toEqual(toasts)
+        expect(useDialogStore().isDialogOpen(SSO_REQUIRED_DIALOG_KEY)).toBe(
+          shown
+        )
+        expect(mockReload).toHaveBeenCalledTimes(reloads)
       }
     )
 
@@ -3356,6 +3613,7 @@ describe('useWorkspaceAuthStore', () => {
       expect(reportError).toHaveBeenCalledWith(
         expect.any(Error),
         expect.objectContaining({
+          surface: 'auth',
           errorType: 'failure_refreshing_unified_auth_retries_exhausted',
           tags: expect.objectContaining({ retry_count: 3 })
         })

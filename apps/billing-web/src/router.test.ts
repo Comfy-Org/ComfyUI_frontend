@@ -3,6 +3,7 @@ import { createMemoryHistory } from 'vue-router'
 import type { Router } from 'vue-router'
 
 import { BILLING_CLIENT_KEY } from '@comfyorg/account-ui/billing'
+import type { BillingSource } from '@comfyorg/billing-contract'
 
 import App from '@/App.vue'
 import { safeReturnTo } from '@/auth/returnTo'
@@ -22,8 +23,10 @@ function routerAt(phase: BillingWebSessionPhase) {
   return createBillingRouter(createMemoryHistory(), () => phase)
 }
 
-async function arriveAt(path: string): Promise<Router> {
-  const router = routerAt('authenticated')
+async function arriveAt(
+  path: string,
+  router: Router = routerAt('authenticated')
+): Promise<Router> {
   await router.push(path)
   await router.isReady()
   const { client } = createFakeBillingClient()
@@ -77,6 +80,70 @@ describe('entry workspace binding', () => {
   })
 })
 
+describe('plan selection, which the host app owns', () => {
+  function hostBoundRouter(phase: BillingWebSessionPhase = 'signed-out') {
+    const onEntryWorkspace = vi.fn()
+    const leave = vi.fn()
+    const router = createBillingRouter(
+      createMemoryHistory(),
+      () => phase,
+      onEntryWorkspace,
+      leave
+    )
+    return { router, onEntryWorkspace, leave }
+  }
+
+  it.for([
+    [
+      `/v1/pricing?${ENTRY_QUERY}&workspace=ws-team`,
+      'https://testcloud.comfy.org/?workspace=ws-team'
+    ],
+    [
+      `/v1/checkout?${ENTRY_QUERY}&workspace=ws-team`,
+      'https://testcloud.comfy.org/?pricing=1&workspace=ws-team'
+    ]
+  ])(
+    'sends %s to %s without rebinding the tab',
+    async ([path, destination]) => {
+      const { router, onEntryWorkspace, leave } = hostBoundRouter()
+
+      await router.push(path)
+
+      expect(leave).toHaveBeenCalledExactlyOnceWith(destination)
+      expect(onEntryWorkspace).not.toHaveBeenCalled()
+      expect(router.currentRoute.value.path).not.toBe('/sign-in')
+    }
+  )
+
+  it('keeps a checkout that names a plan', async () => {
+    const { router, leave } = hostBoundRouter('authenticated')
+
+    await router.push(`/v1/checkout?${ENTRY_QUERY}&plan=creator_monthly`)
+
+    expect(leave).not.toHaveBeenCalled()
+    expect(router.currentRoute.value.path).toBe('/v1/checkout')
+  })
+
+  it.for(['/v1/pricing?product=platform&return_to=platform_account'])(
+    'explains %s, which has nowhere to go back to',
+    async (path) => {
+      const { router, onEntryWorkspace, leave } =
+        hostBoundRouter('authenticated')
+
+      await arriveAt(path, router)
+
+      expect(
+        await screen.findByText(
+          "That link doesn't name a place we can send you back to."
+        )
+      ).toBeInTheDocument()
+      expect(leave).not.toHaveBeenCalled()
+      expect(onEntryWorkspace).not.toHaveBeenCalled()
+      expect(useBillingEntry().entry.value).toBeUndefined()
+    }
+  )
+})
+
 describe('the billing route guard', () => {
   it.for(['pending', 'signed-out', 'minting', 'error'] as const)(
     'sends a %s visitor to sign-in with the path to come back to',
@@ -127,6 +194,53 @@ describe('the billing route guard', () => {
   })
 })
 
+describe("a checkout's return_to, which is optional", () => {
+  it.for([
+    {
+      name: 'none at all',
+      path: '/v1/checkout?product=comfyui&plan=creator_monthly'
+    },
+    {
+      name: 'one outside the registry',
+      path: '/v1/checkout?product=comfyui&return_to=https://evil.test&plan=creator_monthly'
+    },
+    {
+      name: 'one this family has no destination for',
+      path: '/v1/checkout?product=platform&return_to=platform_account&plan=creator_monthly'
+    }
+  ])(
+    'checks out a link with $name and returns to Plan & Credits',
+    async ({ path }) => {
+      const leave = vi.fn()
+      const router = createBillingRouter(
+        createMemoryHistory(),
+        () => 'authenticated',
+        vi.fn(),
+        leave
+      )
+
+      await router.push(path)
+
+      expect(router.currentRoute.value.path).toBe('/v1/checkout')
+      expect(useBillingEntry().error.value).toBeUndefined()
+      expect(useBillingEntry().entry.value).toMatchObject({
+        intent: 'checkout',
+        plan: 'creator_monthly',
+        returnTo: 'comfyui_credits'
+      })
+      expect(leave).not.toHaveBeenCalled()
+    }
+  )
+
+  it('keeps a return_to this family can follow', async () => {
+    await routerAt('authenticated').push(
+      `/v1/checkout?${ENTRY_QUERY}&plan=creator_monthly`
+    )
+
+    expect(useBillingEntry().entry.value?.returnTo).toBe('comfyui_workspace')
+  })
+})
+
 describe('the return destination', () => {
   it.for([
     ['/', '/'],
@@ -148,11 +262,9 @@ describe('the return destination', () => {
 describe('hosted billing entry routing', () => {
   it.for([
     { intent: 'subscription', surface: 'Your subscription' },
-    { intent: 'pricing', surface: 'Plans' },
     { intent: 'payment-methods', surface: 'Payment methods' },
     { intent: 'invoices', surface: 'Invoices' },
-    { intent: 'result', surface: 'Billing result' },
-    { intent: 'checkout', surface: 'Checkout' }
+    { intent: 'result', surface: 'Billing result' }
   ])('opens $intent on the $surface surface', async ({ intent, surface }) => {
     await arriveAt(`/v1/${intent}?${ENTRY_QUERY}`)
 
@@ -170,6 +282,39 @@ describe('hosted billing entry routing', () => {
       product: 'comfyui',
       returnTo: 'comfyui_workspace',
       plan: 'creator_monthly'
+    })
+  })
+
+  it('publishes the source and journey the product handed over', async () => {
+    await arriveAt(
+      `/v1/subscription?${ENTRY_QUERY}&source=agent_paywall&correlation_id=journey-1`
+    )
+
+    const { entry } = useBillingEntry()
+    expect(entry.value).toEqual({
+      version: 'v1',
+      intent: 'subscription',
+      product: 'comfyui',
+      returnTo: 'comfyui_workspace',
+      source: 'agent_paywall',
+      correlationId: 'journey-1'
+    })
+    expectTypeOf(entry.value?.source).toEqualTypeOf<BillingSource | undefined>()
+    expectTypeOf(entry.value?.correlationId).toEqualTypeOf<string | undefined>()
+  })
+
+  it('publishes a link whose source is outside the shared list without one', async () => {
+    await arriveAt(
+      `/v1/subscription?${ENTRY_QUERY}&source=https%3A%2F%2Fevil.test&correlation_id=journey-1`
+    )
+
+    expect(useBillingEntry().error.value).toBeUndefined()
+    expect(useBillingEntry().entry.value).toEqual({
+      version: 'v1',
+      intent: 'subscription',
+      product: 'comfyui',
+      returnTo: 'comfyui_workspace',
+      correlationId: 'journey-1'
     })
   })
 

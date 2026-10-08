@@ -7,6 +7,7 @@ const presentationSchema = z.object({
   name: z.string(),
   workflowCount: z.number(),
   recommendedRank: z.number().optional(),
+  // Required: catalogue.json only ships published pages (pinned by its test)
   href: z.string(),
   incompleteReason: z.literal('missing-input-schema').optional(),
   provider: z.string().optional(),
@@ -27,13 +28,15 @@ const presentationSchema = z.object({
   thumbnail: z
     .object({
       url: z.string(),
-      kind: z.enum(['image', 'video', 'audio'])
+      kind: z.enum(['image', 'video', 'audio']),
+      poster: z.string().optional()
     })
     .optional(),
   useCases: z.array(z.enum(USE_CASES)).optional(),
   summary: z.string().optional(),
   status: z.enum(['deprecated', 'degraded']).optional(),
-  successorSlug: z.string().optional()
+  successorSlug: z.string().optional(),
+  flag: z.string().optional()
 })
 
 export const routerModelSchema = presentationSchema.extend({
@@ -54,7 +57,18 @@ export const workflowModelSchema = presentationSchema.extend({
   author: z.string().optional()
 })
 
-export const modelSchema = z.union([routerModelSchema, workflowModelSchema])
+const appModelSchema = presentationSchema.extend({
+  type: z.literal('APP'),
+  appId: z.enum(['studio', 'reshoot']),
+  routerId: z.never().optional(),
+  workflowId: z.never().optional()
+})
+
+export const modelSchema = z.union([
+  routerModelSchema,
+  workflowModelSchema,
+  appModelSchema
+])
 
 export async function readModelsData(path: string): Promise<unknown> {
   const response = await fetch(path)

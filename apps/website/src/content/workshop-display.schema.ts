@@ -1,7 +1,7 @@
 import { z } from 'astro/zod'
 
-import { workshopInputDefinitionSchema } from '../config/workshop-input-definition'
-import { workshopTemplateSchema } from '../config/workshop-workflow-definition'
+import { workshopInputDefinitionSchema } from '@/config/workshop-input-definition'
+import { workshopTemplateSchema } from '@/config/workshop-workflow-definition'
 
 /**
  * How a media asset should be presented. Carried explicitly rather than
@@ -23,9 +23,17 @@ export const WORKSHOP_USE_CASES = [
 
 const workshopUseCaseSchema = z.enum(WORKSHOP_USE_CASES)
 
+const STILL_IMAGE = /\.(?:avif|gif|jpe?g|png|webp)(?:[?#].*)?$/i
+
 const mediaAssetSchema = z.object({
-  url: z.string().url(),
+  /** An absolute URL, or a root-relative path to a file this site serves. */
+  url: z.union([z.string().url(), z.string().regex(/^\/[^/]/)]),
   kind: mediaKindSchema,
+  /** A still shown in place of a video until it plays, or when it never does. */
+  poster: z
+    .union([z.string().url(), z.string().regex(/^\/[^/]/)])
+    .refine((url) => STILL_IMAGE.test(url), 'A poster must be a still image')
+    .optional(),
   /** The prompt that produced a sample, where the content side recorded one. */
   prompt: z.string().optional()
 })
@@ -96,7 +104,9 @@ export const workshopDisplaySourceSchema = z.object({
 
 export type WorkshopDisplaySource = z.infer<typeof workshopDisplaySourceSchema>
 
-const contentSlug = z.string().regex(/^(?:workflows\/)?[a-z0-9][a-z0-9._-]*$/)
+const contentSlug = z
+  .string()
+  .regex(/^(?:workflows\/|apps\/)?[a-z0-9][a-z0-9._-]*$/)
 
 export function workshopContentSlug(modelId: string, useCase: string): string {
   return `${modelId.replace('/', '--')}--${useCase}`
@@ -108,7 +118,7 @@ export const workshopDisplaySchema = workshopDisplaySourceSchema
     id: contentSlug,
     slug: contentSlug,
     modelId: workshopDisplaySourceSchema.shape.id,
-    type: z.enum(['MODEL', 'CLOUD', 'SERVERLESS']).optional(),
+    type: z.enum(['MODEL', 'CLOUD', 'SERVERLESS', 'APP']).optional(),
     description: z.string().optional(),
     inputs: z.record(z.string(), workshopInputDefinitionSchema).optional(),
     template: workshopTemplateSchema.optional(),
@@ -128,8 +138,22 @@ export const workshopDisplaySchema = workshopDisplaySourceSchema
       entry.id === entry.slug &&
       (entry.type === 'CLOUD' || entry.type === 'SERVERLESS'
         ? entry.slug === entry.modelId && entry.slug.startsWith('workflows/')
-        : entry.slug === workshopContentSlug(entry.modelId, entry.useCase)),
+        : entry.type === 'APP'
+          ? entry.slug === entry.modelId && entry.slug.startsWith('apps/')
+          : entry.slug === workshopContentSlug(entry.modelId, entry.useCase)),
     'Content id/slug must be model plus use case; modelId stays separate'
+  )
+  .refine(
+    (entry) => entry.type !== 'APP' || entry.displayName !== undefined,
+    'App pages require a display name'
+  )
+  .refine(
+    (entry) =>
+      entry.type === 'APP' ||
+      [entry.media.thumbnail, ...(entry.media.samples ?? [])].every(
+        (asset) => asset === undefined || !asset.url.startsWith('/')
+      ),
+    'Only app pages may use media this site serves; others use an absolute URL'
   )
   .refine(
     (entry) =>

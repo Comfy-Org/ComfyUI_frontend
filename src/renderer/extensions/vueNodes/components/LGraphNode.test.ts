@@ -1,10 +1,12 @@
-import { render, screen } from '@testing-library/vue'
+import { fireEvent, render, screen } from '@testing-library/vue'
 import { getActivePinia } from 'pinia'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 
 import { fromAny } from '@total-typescript/shoehorn'
 
-import type { NodeError } from '@/platform/remote/comfyui/types'
+import { nodeError, validationError } from '@/utils/__tests__/nodeErrorHelpers'
+import { useMissingModelStore } from '@/platform/missingModel/missingModelStore'
+import { createNodeExecutionId } from '@/types/nodeIdentification'
 import { useExecutionErrorStore } from '@/stores/executionErrorStore'
 import { useWidgetValueStore } from '@/stores/widgetValueStore'
 import { toNodeId } from '@/types/nodeId'
@@ -23,6 +25,7 @@ import type { NodeState } from '@/types/nodeState'
 import { resizeNodeLayout } from '@/renderer/core/layout/operations/graphLayoutAttachment'
 import LGraphNode from '@/renderer/extensions/vueNodes/components/LGraphNode.vue'
 import type NodeWidgets from '@/renderer/extensions/vueNodes/components/NodeWidgets.vue'
+import type { useNodeEventHandlers } from '@/renderer/extensions/vueNodes/composables/useNodeEventHandlers'
 import { useVueElementTracking } from '@/renderer/extensions/vueNodes/composables/useVueNodeResizeTracking'
 import type { ResizeCallbackPayload } from '@/renderer/extensions/vueNodes/interactions/resize/useNodeResize'
 import { useCanvasStore } from '@/renderer/core/canvas/canvasStore'
@@ -41,6 +44,13 @@ const mockData = vi.hoisted(() => ({
   mockLgraphNode: null as Record<string, unknown> | null,
   resizeCallback: null as ResizeCallback | null
 }))
+const mockNodeEventHandlers = vi.hoisted(
+  (): ReturnType<typeof useNodeEventHandlers> => ({
+    handleNodeCollapse: vi.fn(),
+    handleNodeRightClick: vi.fn(),
+    handleNodeTitleUpdate: vi.fn()
+  })
+)
 
 vi.mock(import('@/utils/graphTraversalUtil'))
 vi.mocked(getNodeByLocatorId).mockImplementation(() =>
@@ -51,12 +61,9 @@ vi.mocked(getNodeByLocatorId).mockImplementation(() =>
 
 vi.mock(import('@/renderer/core/layout/transform/useTransformState'))
 
-vi.mock<unknown>(
+vi.mock(
   import('@/renderer/extensions/vueNodes/composables/useNodeEventHandlers'),
-  () => {
-    const handleNodeSelect = vi.fn()
-    return { useNodeEventHandlers: () => ({ handleNodeSelect }) }
-  }
+  () => ({ useNodeEventHandlers: () => mockNodeEventHandlers })
 )
 
 vi.mock(
@@ -141,6 +148,7 @@ const i18n = createI18n({
         error: 'Error'
       },
       rightSidePanel: {
+        errors: 'Issues',
         showAdvancedShort: 'Show Advanced',
         showAdvancedInputsButton: 'Show Advanced Inputs'
       },
@@ -239,6 +247,17 @@ describe('LGraphNode', () => {
 
     expect(getNodeRoot(container).getAttribute('data-node-id')).toBe(
       'test-node-123'
+    )
+  })
+
+  it('binds the node context menu handler to the root element', async () => {
+    const { container } = renderLGraphNode({ nodeData: mockNodeData })
+
+    await fireEvent.contextMenu(getNodeRoot(container))
+
+    expect(mockNodeEventHandlers.handleNodeRightClick).toHaveBeenCalledWith(
+      expect.any(MouseEvent),
+      mockNodeData.id
     )
   })
 
@@ -526,12 +545,61 @@ describe('LGraphNode', () => {
     expect(screen.getByTestId('node-widgets')).toHaveTextContent('audioUI')
   })
 
+  it('updates the ring and footer as a missing model gains and clears an unrelated error', async () => {
+    const errors = useExecutionErrorStore()
+    const models = useMissingModelStore()
+    models.setMissingModels([
+      {
+        nodeId: createNodeExecutionId([mockNodeData.id]),
+        nodeType: 'TestNode',
+        widgetName: 'ckpt_name',
+        name: 'missing.safetensors',
+        directory: 'checkpoints',
+        isAssetSupported: false,
+        isMissing: true
+      }
+    ])
+    useSettingStore().settingValues['Comfy.ErrorSystem.ShowMissingModels'] =
+      true
+    renderLGraphNode({ nodeData: mockNodeData })
+
+    expect(screen.getByTestId('node-inner-wrapper')).toHaveClass(
+      'ring-warning-background'
+    )
+    expect(screen.getByRole('button', { name: 'Issues' })).toBeInTheDocument()
+
+    errors.recordNodeErrors({
+      [mockNodeData.id]: nodeError([
+        validationError('required_input_missing', 'positive')
+      ])
+    })
+    await nextTick()
+
+    expect(screen.getByTestId('node-inner-wrapper')).toHaveClass(
+      'ring-destructive-background'
+    )
+    expect(screen.getByRole('button', { name: 'Error' })).toBeInTheDocument()
+
+    errors.recordNodeErrors(null)
+    await nextTick()
+    expect(screen.getByRole('button', { name: 'Issues' })).toBeInTheDocument()
+
+    models.setMissingModels([])
+    await nextTick()
+    expect(screen.getByTestId('node-inner-wrapper')).not.toHaveClass('ring-4')
+    expect(
+      screen.queryByRole('button', { name: 'Issues' })
+    ).not.toBeInTheDocument()
+  })
+
   it('should widen the selection outline rounding when the node has an error', () => {
     const canvasStore = useCanvasStore()
     canvasStore.selectedNodeIds.add(mockNodeData.id)
-    vi.mocked(useExecutionErrorStore().getNodeErrors).mockReturnValue(
-      fromAny<NodeError, unknown>({ errors: [], class_type: 'TestNode' })
-    )
+    useExecutionErrorStore().recordNodeErrors({
+      [mockNodeData.id]: nodeError([
+        validationError('required_input_missing', 'positive')
+      ])
+    })
 
     renderLGraphNode({ nodeData: mockNodeData })
 
@@ -643,11 +711,11 @@ describe('LGraphNode', () => {
         { name: 'advancedWidget', type: 'number', options: { advanced: true } }
       ]
     }
-    // Seed the store, not `node.has_errors`: the ring is derived from the error
-    // stores so it can react when the error clears.
-    vi.mocked(useExecutionErrorStore().getNodeErrors).mockReturnValue(
-      fromAny<NodeError, unknown>({ errors: [], class_type: 'TestNode' })
-    )
+    useExecutionErrorStore().recordNodeErrors({
+      [mockNodeData.id]: nodeError([
+        validationError('required_input_missing', 'positive')
+      ])
+    })
     renderLGraphNode({
       nodeData: {
         ...mockNodeData,
@@ -697,14 +765,14 @@ describe('LGraphNode', () => {
       const { container } = renderLGraphNode({
         nodeData: mockRerouteNodeData
       })
-      // eslint-disable-next-line testing-library/no-container, testing-library/no-node-access
+      // oxlint-disable-next-line testing-library/no-container, testing-library/no-node-access
       expect(container.querySelector('[role="button"][aria-label]')).toBeNull()
     })
 
     it('should render resize handle for regular nodes', () => {
       const { container } = renderLGraphNode({ nodeData: mockNodeData })
       expect(
-        // eslint-disable-next-line testing-library/no-container, testing-library/no-node-access
+        // oxlint-disable-next-line testing-library/no-container, testing-library/no-node-access
         container.querySelector('[role="button"][aria-label]')
       ).not.toBeNull()
     })
@@ -719,7 +787,7 @@ describe('LGraphNode', () => {
 
       const { container } = renderLGraphNode({ nodeData: mockNodeData })
       const nodeEl = getNodeRoot(container)
-      // eslint-disable-next-line testing-library/no-node-access
+      // oxlint-disable-next-line testing-library/no-node-access
       const parent = nodeEl.parentElement!
 
       const parentListener = vi.fn()

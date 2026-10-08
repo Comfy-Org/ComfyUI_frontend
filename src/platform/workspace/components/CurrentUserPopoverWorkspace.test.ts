@@ -6,7 +6,7 @@ import { render, screen, waitFor } from '@testing-library/vue'
 import userEvent from '@testing-library/user-event'
 import PrimeVue from 'primevue/config'
 import Tooltip from 'primevue/tooltip'
-import { beforeEach, describe, expect, it, vi } from 'vitest'
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { computed, defineComponent, ref } from 'vue'
 import { createI18n } from 'vue-i18n'
 
@@ -15,6 +15,11 @@ import { useBillingContext } from '@/composables/billing/useBillingContext'
 import { useBillingRouting } from '@/composables/billing/useBillingRouting'
 import type { BalanceInfo, SubscriptionInfo } from '@/composables/billing/types'
 import { useFeatureFlags } from '@/composables/useFeatureFlags'
+import type { DesktopHostAuthBridge } from '@/platform/auth/desktopHost/desktopHostAuthBridge'
+import {
+  startDesktopHostSession,
+  stopDesktopHostSession
+} from '@/platform/auth/desktopHost/desktopHostSession'
 import enMessages from '@/locales/en/main.json'
 import { useSubscriptionDialog } from '@/platform/cloud/subscription/composables/useSubscriptionDialog'
 import { useSettingsDialog } from '@/platform/settings/composables/useSettingsDialog'
@@ -174,7 +179,8 @@ describe('CurrentUserPopoverWorkspace', () => {
           scheduledChange: null,
           renewalDate: null,
           endDate: null,
-          hasFunds: true
+          hasFunds: true,
+          agentHasFunds: true
         }) satisfies SubscriptionInfo
     )
     billingContext.balance = computed(
@@ -251,6 +257,39 @@ describe('CurrentUserPopoverWorkspace', () => {
     expect(
       screen.queryByTestId('workspace-settings-menu-item')
     ).not.toBeInTheDocument()
+  })
+
+  describe('with a Desktop host session', () => {
+    const signedIn = {
+      status: 'signed_in',
+      userId: 'host-user',
+      workspaceId: 'ws-1'
+    } as const
+    const hostBridge = (canSwitch: boolean): DesktopHostAuthBridge => ({
+      getState: async () => signedIn,
+      getWorkspaceToken: async () => 'host-token',
+      requestSignIn: async () => signedIn,
+      signOut: async () => ({ status: 'signed_out' }),
+      ...(canSwitch && { switchWorkspace: async () => signedIn }),
+      onChanged: () => () => {}
+    })
+
+    afterEach(() => stopDesktopHostSession())
+
+    it.for([
+      { name: 'offers the switcher when Desktop can switch', canSwitch: true },
+      { name: 'shows a fixed workspace on an older Desktop', canSwitch: false }
+    ])('$name', async ({ canSwitch }) => {
+      await startDesktopHostSession(hostBridge(canSwitch))
+      renderComponent('team')
+
+      expect(screen.queryByTestId('workspace-switcher-trigger') !== null).toBe(
+        canSwitch
+      )
+      expect(screen.queryByTestId('workspace-context-row') !== null).toBe(
+        !canSwitch
+      )
+    })
   })
 
   it('exposes the full workspace name on hover', async () => {
@@ -414,7 +453,9 @@ describe('CurrentUserPopoverWorkspace', () => {
     ).not.toBeInTheDocument()
     await user.click(screen.getByTestId('add-credits-button'))
 
-    expect(useDialogService().showTopUpCreditsDialog).toHaveBeenCalledOnce()
+    expect(
+      useDialogService().showTopUpCreditsDialog
+    ).toHaveBeenCalledExactlyOnceWith({ source: 'avatar_menu_plans' })
   })
 
   it('offers add-credits alongside Subscribe for an unsubscribed Cloud owner', () => {

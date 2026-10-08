@@ -19,7 +19,6 @@ import type { Subgraph } from '@/lib/litegraph/src/LGraph'
 import type { ExportedSubgraph } from '@/lib/litegraph/src/types/serialisation'
 import type { ComfyWorkflowJSON } from '@/platform/workflow/validation/schemas/workflowSchema'
 import type { ComfyApi } from '@/scripts/api'
-import type { ComfyApp } from '@/scripts/app'
 import { validateComfyWorkflow } from '@/platform/workflow/validation/schemas/workflowSchema'
 import { useQueueSettingsStore } from '@/stores/queueSettingsStore'
 
@@ -29,36 +28,7 @@ vi.mock(import('@/base/assert'), () => ({
   assert: mockAssert
 }))
 
-vi.mock(import('@/scripts/app'), () => ({
-  app: fromPartial<ComfyApp>({
-    nodeOutputs: {},
-    nodePreviewImages: {},
-    graph: {},
-    isGraphReady: true,
-    rootGraph: {
-      subgraphs: new Map(),
-      serialize: vi.fn(() => ({
-        nodes: [],
-        links: [],
-        groups: [],
-        extra: {},
-        config: {},
-        version: 0.4,
-        last_node_id: 0,
-        last_link_id: 0
-      }))
-    },
-    loadGraphData: vi.fn(() => Promise.resolve()),
-    canvas: {
-      ds: { scale: 1, offset: [0, 0] },
-      setGraph: vi.fn()
-    },
-    ui: {
-      autoQueueEnabled: false,
-      autoQueueMode: 'instant'
-    }
-  })
-}))
+vi.mock(import('@/scripts/app'))
 
 vi.mock(import('@/scripts/api'), () => ({
   api: fromPartial<ComfyApi>({
@@ -116,7 +86,7 @@ function createTracker(initialState?: ComfyWorkflowJSON): ChangeTracker {
 }
 
 function mockCanvasState(state: ComfyWorkflowJSON) {
-  vi.mocked(app.rootGraph.serialize).mockReturnValue(state as never)
+  vi.spyOn(app.rootGraph, 'serialize').mockReturnValue(state as never)
 }
 
 function dispatchedEventNames() {
@@ -314,6 +284,138 @@ describe('ChangeTracker', () => {
         expect(undo).toHaveBeenCalledTimes(undoCalls)
       }
     )
+
+    describe('modifier release around history shortcuts', () => {
+      let events: EventTarget
+      let frames: FrameRequestCallback[]
+
+      beforeEach(() => {
+        events = new EventTarget()
+        frames = []
+        vi.spyOn(window, 'addEventListener').mockImplementation(
+          (type, listener, options) =>
+            events.addEventListener(type, listener, options)
+        )
+        vi.spyOn(window, 'requestAnimationFrame').mockImplementation((frame) =>
+          frames.push(frame)
+        )
+        ChangeTracker.init()
+      })
+
+      it.for([
+        { key: 'y', shiftKey: false, queue: 'redoQueue' },
+        { key: 'z', shiftKey: true, queue: 'redoQueue' },
+        { key: 'z', shiftKey: false, queue: 'undoQueue' }
+      ] as const)(
+        'Ctrl+$key shift=$shiftKey restores history when released before the next frame',
+        async ({ key, shiftKey, queue }) => {
+          const tracker = createTracker(createState(1))
+          const target = createState(2)
+          tracker[queue].push(target)
+          mockCanvasState(createState(3))
+
+          events.dispatchEvent(
+            new KeyboardEvent('keydown', { key: 'Control', ctrlKey: true })
+          )
+          await Promise.all(frames.splice(0).map((frame) => frame(0)))
+          events.dispatchEvent(
+            new KeyboardEvent('keydown', { key, ctrlKey: true, shiftKey })
+          )
+          events.dispatchEvent(
+            new KeyboardEvent('keyup', { key, ctrlKey: true, shiftKey })
+          )
+          events.dispatchEvent(new KeyboardEvent('keyup', { key: 'Control' }))
+          await Promise.all(frames.splice(0).map((frame) => frame(0)))
+
+          expect(tracker.activeState).toEqual(target)
+        }
+      )
+
+      it('captures changes when a bare modifier is released within one frame', () => {
+        const tracker = createTracker(createState(1))
+        const changed = createState(2)
+        mockCanvasState(changed)
+
+        events.dispatchEvent(
+          new KeyboardEvent('keydown', { key: 'Control', ctrlKey: true })
+        )
+        events.dispatchEvent(new KeyboardEvent('keyup', { key: 'Control' }))
+
+        expect(tracker.activeState).toEqual(changed)
+      })
+    })
+
+    it.for([
+      { editor: 'INPUT', createElement: () => document.createElement('input') },
+      {
+        editor: 'TEXTAREA',
+        createElement: () => document.createElement('textarea')
+      },
+      {
+        editor: 'contenteditable',
+        createElement: () => {
+          const element = document.createElement('div')
+          Object.defineProperty(element, 'isContentEditable', { value: true })
+          return element
+        }
+      }
+    ])(
+      'leaves $editor history to the editor without scanning modals',
+      ({ createElement }) => {
+        vi.spyOn(document, 'activeElement', 'get').mockReturnValue(
+          createElement()
+        )
+        useQueueSettingsStore().mode = 'disabled'
+        const querySelectorAll = vi.spyOn(document, 'querySelectorAll')
+        const frames: FrameRequestCallback[] = []
+        vi.spyOn(window, 'requestAnimationFrame').mockImplementation((frame) =>
+          frames.push(frame)
+        )
+        const addEventListener = vi
+          .spyOn(window, 'addEventListener')
+          .mockImplementation(() => {})
+        ChangeTracker.init()
+        const keydown = addEventListener.mock.calls.find(
+          ([type]) => type === 'keydown'
+        )?.[1]
+        if (typeof keydown !== 'function')
+          throw new Error('keydown listener missing')
+
+        keydown(new KeyboardEvent('keydown', { key: 'a' }))
+
+        expect(querySelectorAll).not.toHaveBeenCalled()
+        expect(frames).toHaveLength(0)
+      }
+    )
+
+    it('captures editor changes when store-backed auto-queue uses change mode', async () => {
+      const editor = document.createElement('input')
+      vi.spyOn(document, 'activeElement', 'get').mockReturnValue(editor)
+      useQueueSettingsStore().mode = 'change'
+      app.ui.autoQueueEnabled = false
+      const tracker = createTracker(createState(1))
+      mockCanvasState(createState(2))
+      const frames: FrameRequestCallback[] = []
+      vi.spyOn(window, 'requestAnimationFrame').mockImplementation((frame) =>
+        frames.push(frame)
+      )
+      const addEventListener = vi
+        .spyOn(window, 'addEventListener')
+        .mockImplementation(() => {})
+      ChangeTracker.init()
+      const keydown = addEventListener.mock.calls.find(
+        ([type]) => type === 'keydown'
+      )?.[1]
+      if (typeof keydown !== 'function')
+        throw new Error('keydown listener missing')
+
+      keydown(new KeyboardEvent('keydown', { key: 'a' }))
+      expect(frames).toHaveLength(1)
+      await frames[0](0)
+
+      expect(dispatchedEventNames()).toContain('autoQueueGraphChanged')
+      expect(tracker.activeState.nodes).toHaveLength(2)
+    })
   })
 
   describe('captureCanvasState', () => {
@@ -1409,7 +1511,6 @@ describe('ChangeTracker', () => {
 
   describe('checkState (deprecated)', () => {
     it('captures each state and warns once across repeated calls', () => {
-      const warn = vi.spyOn(console, 'warn').mockImplementation(() => undefined)
       const tracker = createTracker(createState(1))
       const firstChanged = createState(2)
       mockCanvasState(firstChanged)
@@ -1423,10 +1524,15 @@ describe('ChangeTracker', () => {
       tracker.checkState()
 
       expect(tracker.activeState).toEqual(secondChanged)
-      expect(warn).toHaveBeenCalledOnce()
-      expect(warn).toHaveBeenCalledWith(
-        'checkState() is deprecated — use captureCanvasState() instead.'
-      )
+      expect(
+        vi
+          .mocked(console.warn)
+          .mock.calls.filter(
+            ([message]) =>
+              message ===
+              'checkState() is deprecated — use captureCanvasState() instead.'
+          )
+      ).toHaveLength(1)
     })
   })
 

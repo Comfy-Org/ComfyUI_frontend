@@ -3,7 +3,7 @@ import { cn } from '@comfyorg/tailwind-utils'
 
 import type { HTMLAttributes } from 'vue'
 
-import BrandButton from '../common/BrandButton.vue'
+import BrandButton from '@/components/common/BrandButton.vue'
 
 type Cta = {
   label: string

@@ -51,7 +51,9 @@ describe('useSubscriptionActions', () => {
     it('should call showTopUpCreditsDialog', () => {
       const { handleAddApiCredits } = useSubscriptionActions()
       handleAddApiCredits()
-      expect(useDialogService().showTopUpCreditsDialog).toHaveBeenCalledOnce()
+      expect(
+        useDialogService().showTopUpCreditsDialog
+      ).toHaveBeenCalledExactlyOnceWith({ source: 'settings_billing_panel' })
       expect(
         useTelemetry()?.trackAddApiCreditButtonClicked
       ).toHaveBeenCalledWith({ source: 'settings_billing_panel' })
@@ -124,6 +126,7 @@ describe('useSubscriptionActions', () => {
       await handleMessageSupport()
 
       expect(mockReportError).toHaveBeenCalledWith(failure, {
+        surface: 'billing',
         errorType: 'contact_support_failed'
       })
     })
@@ -141,6 +144,7 @@ describe('useSubscriptionActions', () => {
       await handleMessageSupport()
 
       expect(mockReportError).toHaveBeenCalledWith('Command failed', {
+        surface: 'billing',
         errorType: 'contact_support_failed'
       })
     })

@@ -76,11 +76,13 @@ function sessionBody(user: WebSessionUser, now: () => number) {
       email: user.email,
       name: user.name,
       email_verified: user.emailVerified,
-      sign_in_provider: user.signInProvider
+      sign_in_provider: user.signInProvider,
+      has_personal_workspace: user.hasPersonalWorkspace
     },
     csrf_token: FAKE_CSRF_TOKEN,
     expires_at: new Date(now() + DAY_MS).toISOString(),
-    absolute_expires_at: new Date(now() + 7 * DAY_MS).toISOString()
+    absolute_expires_at: new Date(now() + 7 * DAY_MS).toISOString(),
+    has_personal_workspace: true
   }
 }
 
@@ -118,14 +120,31 @@ function routesFor(
               401,
               state.kind === 'dead' ? state.code : 'no_session'
             )
+    ],
+    [
+      'POST /api/auth/sessions/revoke-all',
+      (endpoint, headers) => {
+        if (endpoint.state.kind === 'dead') {
+          return errorResponse(401, endpoint.state.code)
+        }
+        if (headers.get('x-csrf-token') !== FAKE_CSRF_TOKEN) {
+          return errorResponse(403, 'csrf_invalid')
+        }
+        if (!headers.has('x-comfy-client')) {
+          return errorResponse(403, 'origin_not_allowed')
+        }
+        revoke(endpoint)
+        return jsonResponse(200, { revoked: 1 })
+      }
     ]
   ])
 }
 
 /**
  * A `fetch` serving ingest's session routes under `/api/auth`. POST with a
- * bearer proof signs `signInUser` in; DELETE leaves the cookie revoked, as
- * the real endpoint does.
+ * bearer proof signs `signInUser` in; DELETE and revoke-all leave the cookie
+ * revoked, as the real endpoint does. Revoke-all serves only the cookie path,
+ * which needs the CSRF token and `X-Comfy-Client`.
  */
 export function createFakeWebSessionEndpoint({
   state,

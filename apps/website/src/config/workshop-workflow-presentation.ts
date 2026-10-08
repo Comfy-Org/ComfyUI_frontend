@@ -1,6 +1,7 @@
-import type { TranslationKey } from '../i18n/translations'
+import type { TranslationKey } from '@/i18n/translations'
 import type { WorkshopWorkflowError } from './workshop-workflow-api'
 import type { WorkflowRunSummary } from './workshop-workflow-response'
+import type { WorkflowState } from './workshop-workflow-state'
 
 export function workflowStatusKey(run: WorkflowRunSummary): TranslationKey {
   if (run.state === 'cancelled') return 'workshop.workflow.cancelRequested'
@@ -49,4 +50,16 @@ export function workflowErrorKey(error: WorkshopWorkflowError): TranslationKey {
     default:
       return 'workshop.workflow.connectionLost'
   }
+}
+
+export function workflowNoticeKey(
+  state: WorkflowState,
+  error: WorkshopWorkflowError
+): TranslationKey {
+  const key = workflowErrorKey(error)
+  return key === 'workshop.workflow.connectionLost' &&
+    state.phase === 'interrupted' &&
+    state.record.stage === 'run'
+    ? 'workshop.workflow.lostContact'
+    : key
 }

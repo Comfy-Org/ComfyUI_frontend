@@ -1,19 +1,20 @@
 <script setup lang="ts">
-import { CalendarDays, ChevronDown, LayoutGrid, Map, Search } from '@lucide/vue'
+import { CalendarDays, LayoutGrid, Map } from '@lucide/vue'
 import { computed, reactive, ref, watch } from 'vue'
 
-import { cn } from '@comfyorg/tailwind-utils'
+import type { MapPinMarker } from '@/components/blocks/MapPins01.vue'
+import type { ComfyEvent } from '@/data/events'
+import type { Locale } from '@/i18n/translations'
+import type { EventsDirectoryView } from '@/utils/eventsDirectory'
 
-import type { MapPinMarker } from '../../components/blocks/MapPins01.vue'
-import type { ComfyEvent } from '../../data/events'
-import type { Locale } from '../../i18n/translations'
-import type { EventsDirectoryView } from '../../utils/eventsDirectory'
-
-import MapPins01 from '../../components/blocks/MapPins01.vue'
+import MapPins01 from '@/components/blocks/MapPins01.vue'
+import DirectorySearchField from '@/components/common/DirectorySearchField.vue'
+import DirectorySelect from '@/components/common/DirectorySelect.vue'
+import DirectoryToggleGroup from '@/components/common/DirectoryToggleGroup.vue'
 import EventsAgendaView from './EventsAgendaView.vue'
 import EventsCardsView from './EventsCardsView.vue'
-import { directoryEvents, eventsDerivedAt } from '../../data/events'
-import { t } from '../../i18n/translations'
+import { directoryEvents, eventsDerivedAt } from '@/data/events'
+import { translationsFor } from '@/i18n/translations'
 import {
   DIRECTORY_FILTER_ALL,
   EVENT_CATEGORIES,
@@ -21,7 +22,7 @@ import {
   defaultDirectoryFilters,
   directoryRows,
   filterDirectoryEvents
-} from '../../utils/eventsDirectory'
+} from '@/utils/eventsDirectory'
 import EventsDirectoryList from './EventsDirectoryList.vue'
 
 const {
@@ -33,6 +34,7 @@ const {
   events?: readonly ComfyEvent[]
   derivedAt?: Date
 }>()
+const { t } = translationsFor(locale)
 
 // Search, type and organizer feed whichever view is active, so the whole
 // section is one reactive model: three filter fields plus the view. Everything
@@ -98,24 +100,17 @@ const selectedEventId = computed(() =>
 
 // Names a cluster badge for screen readers: the count plus what a click does.
 const clusterLabel = (labels: string[]) =>
-  t('events.directory.clusterLabel', locale).replace(
-    '{count}',
-    String(labels.length)
-  )
+  t('events.directory.clusterLabel', { count: labels.length })
 
 // Heading of the popup a still-coincident cluster opens on the map.
 const clusterPopupTitle = (count: number) =>
-  t('events.directory.clusterPopupTitle', locale).replace(
-    '{count}',
-    String(count)
-  )
+  t('events.directory.clusterPopupTitle', { count })
 
-// `t()` has neither interpolation nor plurals, so both are resolved here.
 const countLabel = computed(() => {
   const count = visibleEvents.value.length
   const key =
     count === 1 ? 'events.directory.countOne' : 'events.directory.count'
-  return t(key, locale).replace('{count}', String(count))
+  return t(key, { count })
 })
 
 // Switching tabs leaves `filters` untouched, so search and both filters carry
@@ -128,19 +123,32 @@ const VIEWS: ReadonlyArray<{
   { key: 'cards', icon: LayoutGrid },
   { key: 'calendar', icon: CalendarDays }
 ]
+const viewOptions = VIEWS.map(({ key, icon }) => ({
+  value: key,
+  icon,
+  label: t(`events.directory.view.${key}`)
+}))
 
-const controlClass =
-  'bg-transparency-white-t4 h-11 rounded-full border border-white/15 text-sm text-primary-comfy-canvas'
+const categoryOptions = [
+  { value: DIRECTORY_FILTER_ALL, label: t('events.directory.allTypes') },
+  ...EVENT_CATEGORIES.map((category) => ({
+    value: category,
+    label: t(`events.category.${category}`)
+  }))
+]
 
-// `appearance-none` drops the native arrow, so each select is wrapped and gets
-// a ChevronDown overlaid, the same icon the rest of the site uses.
-const selectClass = cn(
-  controlClass,
-  'w-full cursor-pointer appearance-none pr-10 pl-4 sm:w-auto'
-)
+const organizerOptions = [
+  { value: DIRECTORY_FILTER_ALL, label: t('events.directory.allOrganizers') },
+  ...EVENT_ORGANIZERS.map((organizer) => ({
+    value: organizer,
+    label: t(`events.organizer.${organizer}`)
+  }))
+]
 
-const caretClass =
-  'pointer-events-none absolute top-1/2 right-4 size-4 -translate-y-1/2 text-primary-comfy-canvas/50'
+const sortOptions = [
+  { value: 'latest', label: t('events.directory.sortLatest') },
+  { value: 'oldest', label: t('events.directory.sortOldest') }
+] as const
 </script>
 
 <template>
@@ -159,13 +167,13 @@ const caretClass =
       <h2
         class="mt-4 text-3xl font-light tracking-tight text-primary-warm-white lg:text-5xl"
       >
-        {{ t('events.directory.title', locale) }}
+        {{ t('events.directory.title') }}
       </h2>
 
       <p
         class="mt-6 text-base font-light text-balance text-primary-comfy-canvas lg:text-lg"
       >
-        {{ t('events.directory.lead', locale) }}
+        {{ t('events.directory.lead') }}
       </p>
     </div>
 
@@ -173,119 +181,43 @@ const caretClass =
       class="mt-10 flex flex-col gap-3 lg:mt-12 lg:flex-row lg:items-center"
       data-testid="events-directory-controls"
     >
-      <label for="events-directory-search" class="sr-only">
-        {{ t('events.directory.searchLabel', locale) }}
-      </label>
-      <div class="relative flex-1">
-        <Search
-          class="pointer-events-none absolute top-1/2 left-4 size-4 -translate-y-1/2 text-primary-comfy-canvas/50"
-          aria-hidden="true"
-        />
-        <input
-          id="events-directory-search"
-          v-model="filters.query"
-          type="search"
-          :placeholder="t('events.directory.searchPlaceholder', locale)"
-          :class="
-            cn(
-              controlClass,
-              'w-full pr-4 pl-11 placeholder:text-primary-comfy-canvas/50'
-            )
-          "
-        />
-      </div>
+      <DirectorySearchField
+        id="events-directory-search"
+        v-model="filters.query"
+        :label="t('events.directory.searchLabel')"
+        :placeholder="t('events.directory.searchPlaceholder')"
+      />
 
-      <label for="events-directory-type" class="sr-only">
-        {{ t('events.directory.typeLabel', locale) }}
-      </label>
-      <div class="relative">
-        <select
-          id="events-directory-type"
-          v-model="filters.category"
-          :class="selectClass"
-        >
-          <option :value="DIRECTORY_FILTER_ALL">
-            {{ t('events.directory.allTypes', locale) }}
-          </option>
-          <option
-            v-for="category in EVENT_CATEGORIES"
-            :key="category"
-            :value="category"
-          >
-            {{ t(`events.category.${category}`, locale) }}
-          </option>
-        </select>
-        <ChevronDown :class="caretClass" aria-hidden="true" />
-      </div>
+      <DirectorySelect
+        id="events-directory-type"
+        v-model="filters.category"
+        :label="t('events.directory.typeLabel')"
+        :options="categoryOptions"
+        class="sm:w-fit"
+      />
 
-      <label for="events-directory-organizer" class="sr-only">
-        {{ t('events.directory.organizerLabel', locale) }}
-      </label>
-      <div class="relative">
-        <select
-          id="events-directory-organizer"
-          v-model="filters.organizer"
-          :class="selectClass"
-        >
-          <option :value="DIRECTORY_FILTER_ALL">
-            {{ t('events.directory.allOrganizers', locale) }}
-          </option>
-          <option
-            v-for="organizer in EVENT_ORGANIZERS"
-            :key="organizer"
-            :value="organizer"
-          >
-            {{ t(`events.organizer.${organizer}`, locale) }}
-          </option>
-        </select>
-        <ChevronDown :class="caretClass" aria-hidden="true" />
-      </div>
+      <DirectorySelect
+        id="events-directory-organizer"
+        v-model="filters.organizer"
+        :label="t('events.directory.organizerLabel')"
+        :options="organizerOptions"
+        class="sm:w-fit"
+      />
 
-      <template v-if="view !== 'calendar'">
-        <label for="events-directory-sort" class="sr-only">
-          {{ t('events.directory.sortLabel', locale) }}
-        </label>
-        <div class="relative">
-          <select
-            id="events-directory-sort"
-            v-model="sort"
-            :class="selectClass"
-          >
-            <option value="latest">
-              {{ t('events.directory.sortLatest', locale) }}
-            </option>
-            <option value="oldest">
-              {{ t('events.directory.sortOldest', locale) }}
-            </option>
-          </select>
-          <ChevronDown :class="caretClass" aria-hidden="true" />
-        </div>
-      </template>
+      <DirectorySelect
+        v-if="view !== 'calendar'"
+        id="events-directory-sort"
+        v-model="sort"
+        :label="t('events.directory.sortLabel')"
+        :options="sortOptions"
+        class="sm:w-fit"
+      />
 
-      <div
-        role="group"
-        :aria-label="t('events.directory.viewLabel', locale)"
-        class="flex gap-1 rounded-2xl border border-white/15 p-1.5"
-      >
-        <button
-          v-for="entry in VIEWS"
-          :key="entry.key"
-          type="button"
-          :aria-pressed="view === entry.key"
-          :class="
-            cn(
-              'flex h-8 cursor-pointer items-center gap-1.5 rounded-xl px-3 text-xs font-semibold whitespace-nowrap transition-colors',
-              view === entry.key
-                ? 'bg-primary-comfy-yellow text-primary-comfy-ink'
-                : 'text-primary-comfy-canvas hover:bg-white/10'
-            )
-          "
-          @click="view = entry.key"
-        >
-          <component :is="entry.icon" class="size-3.5" aria-hidden="true" />
-          {{ t(`events.directory.view.${entry.key}`, locale) }}
-        </button>
-      </div>
+      <DirectoryToggleGroup
+        v-model="view"
+        :label="t('events.directory.viewLabel')"
+        :options="viewOptions"
+      />
     </div>
 
     <div
@@ -294,7 +226,7 @@ const caretClass =
     >
       <MapPins01
         :markers
-        :region-label="t('events.directory.mapLabel', locale)"
+        :region-label="t('events.directory.mapLabel')"
         :cluster-label="clusterLabel"
         :popup-title="clusterPopupTitle"
         class="h-80 sm:h-96 lg:h-140"

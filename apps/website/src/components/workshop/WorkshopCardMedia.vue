@@ -1,21 +1,27 @@
 <script setup lang="ts">
 import { useTemplateRef } from 'vue'
 
-import { usePreviewVideo } from '../../composables/usePreviewVideo'
-import type { WorkshopModel } from '../../config/models-catalogue'
+import { usePreviewVideo } from '@/composables/usePreviewVideo'
+import type { WorkshopModel } from '@/config/models-catalogue'
 
-const { model } = defineProps<{ model: WorkshopModel }>()
+const { model } = defineProps<{
+  model: Pick<WorkshopModel, 'name' | 'thumbnail'>
+}>()
 const video = useTemplateRef<HTMLVideoElement>('video')
 const previewSrc = usePreviewVideo(video, () => model.thumbnail?.url)
 </script>
 
 <template>
+  <!-- The card names itself in its heading and marks its provider over the
+    artwork, so a third reading of the name here is noise in the link. -->
   <video
     v-if="model.thumbnail?.kind === 'video'"
     ref="video"
     :src="previewSrc"
-    :aria-label="model.name"
+    :poster="model.thumbnail.poster"
     class="size-full object-cover transition-transform duration-300 group-hover:scale-105"
+    aria-hidden="true"
+    data-testid="model-card-media"
     muted
     loop
     playsinline
@@ -24,8 +30,9 @@ const previewSrc = usePreviewVideo(video, () => model.thumbnail?.url)
   <img
     v-else-if="model.thumbnail"
     :src="model.thumbnail.url"
-    :alt="model.name"
+    alt=""
     class="size-full object-cover transition-transform duration-300 select-none group-hover:scale-105"
+    data-testid="model-card-media"
     loading="lazy"
     decoding="async"
     draggable="false"

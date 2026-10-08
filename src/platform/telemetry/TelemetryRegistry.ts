@@ -1,12 +1,21 @@
 import type {
+  BillingTelemetryEvent,
+  CheckoutJourneyTelemetryEvent
+} from '@comfyorg/account-core/billing'
+import type { WebSessionTelemetryEvent } from '@comfyorg/account-core/telemetry'
+import type {
   AddCreditsClickMetadata,
   AgentAttachButtonClickedMetadata,
   AgentConsentNotOfferedMetadata,
+  AgentConsentOfferExitedMetadata,
   AgentConsentResolvedMetadata,
   AgentConsentShownMetadata,
   AgentPaywallCtaMetadata,
   AgentPaywallShownMetadata,
   AgentEntryButtonClickedMetadata,
+  AgentErrorMetadata,
+  AgentFreeUseExposureMetadata,
+  AgentFreeUseNoticeMetadata,
   AgentMessageSentMetadata,
   AgentMessageFeedbackMetadata,
   AgentNodeTaggedMetadata,
@@ -17,6 +26,7 @@ import type {
   AgentRunApprovalResolvedMetadata,
   AgentRunApprovalShownMetadata,
   AgentRunModeChangedMetadata,
+  AgentStarterPromptClickedMetadata,
   AgentStopClickedMetadata,
   AgentThreadStartedMetadata,
   AgentWorkflowBoundMetadata,
@@ -24,9 +34,7 @@ import type {
   AuthErrorMetadata,
   AuthMetadata,
   BeginCheckoutMetadata,
-  BillingTelemetryEvent,
   BootstrapCompleteMetadata,
-  CheckoutJourneyTelemetryEvent,
   DefaultViewSetMetadata,
   EnterLinearMetadata,
   ExecutionErrorMetadata,
@@ -36,6 +44,8 @@ import type {
   HelpCenterOpenedMetadata,
   HelpResourceClickedMetadata,
   ImageLoadFailureMetadata,
+  InAppSurveyEvent,
+  InAppSurveyStage,
   LinkDedupDropMetadata,
   NamedValuesShadowDiffMismatchMetadata,
   NamedValuesShadowDiffSummaryMetadata,
@@ -124,6 +134,11 @@ export class TelemetryRegistry implements TelemetryDispatcher {
 
   trackUnifiedAuthRefresh(metadata: UnifiedAuthRefreshMetadata): void {
     this.dispatch((provider) => provider.trackUnifiedAuthRefresh?.(metadata))
+  }
+
+  // fallow-ignore-next-line unused-class-member
+  trackWebSessionEvent(event: WebSessionTelemetryEvent): void {
+    this.dispatch((provider) => provider.trackWebSessionEvent?.(event))
   }
 
   trackImageLoadFailed(metadata: ImageLoadFailureMetadata): void {
@@ -231,6 +246,11 @@ export class TelemetryRegistry implements TelemetryDispatcher {
     responses?: SurveyResponses
   ): void {
     this.dispatch((provider) => provider.trackSurvey?.(stage, responses))
+  }
+
+  // fallow-ignore-next-line unused-class-member
+  trackInAppSurvey(stage: InAppSurveyStage, event: InAppSurveyEvent): void {
+    this.dispatch((provider) => provider.trackInAppSurvey?.(stage, event))
   }
 
   trackOnboardingTour(
@@ -419,6 +439,24 @@ export class TelemetryRegistry implements TelemetryDispatcher {
     this.dispatch((provider) => provider.trackAgentMessageSent?.(metadata))
   }
 
+  trackAgentStarterPromptClicked(
+    metadata: AgentStarterPromptClickedMetadata
+  ): void {
+    this.dispatch((provider) =>
+      provider.trackAgentStarterPromptClicked?.(metadata)
+    )
+  }
+
+  // fallow-ignore-next-line unused-class-member
+  trackAgentFreeUseNotice(metadata: AgentFreeUseNoticeMetadata): void {
+    this.dispatch((provider) => provider.trackAgentFreeUseNotice?.(metadata))
+  }
+
+  // fallow-ignore-next-line unused-class-member
+  trackAgentFreeUseExposure(metadata: AgentFreeUseExposureMetadata): void {
+    this.dispatch((provider) => provider.trackAgentFreeUseExposure?.(metadata))
+  }
+
   trackAgentNodeTagged(metadata: AgentNodeTaggedMetadata): void {
     this.dispatch((provider) => provider.trackAgentNodeTagged?.(metadata))
   }
@@ -433,6 +471,11 @@ export class TelemetryRegistry implements TelemetryDispatcher {
 
   trackAgentWorkflowApplied(metadata: AgentWorkflowAppliedMetadata): void {
     this.dispatch((provider) => provider.trackAgentWorkflowApplied?.(metadata))
+  }
+
+  // fallow-ignore-next-line unused-class-member
+  trackAgentError(metadata: AgentErrorMetadata): void {
+    this.dispatch((provider) => provider.trackAgentError?.(metadata))
   }
 
   trackAgentStopClicked(metadata: AgentStopClickedMetadata): void {
@@ -466,6 +509,14 @@ export class TelemetryRegistry implements TelemetryDispatcher {
   trackAgentConsentNotOffered(metadata: AgentConsentNotOfferedMetadata): void {
     this.dispatch((provider) =>
       provider.trackAgentConsentNotOffered?.(metadata)
+    )
+  }
+
+  trackAgentConsentOfferExited(
+    metadata: AgentConsentOfferExitedMetadata
+  ): void {
+    this.dispatch((provider) =>
+      provider.trackAgentConsentOfferExited?.(metadata)
     )
   }
 

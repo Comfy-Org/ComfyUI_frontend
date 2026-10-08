@@ -69,12 +69,13 @@ describe('nextPollDelayMs', () => {
       parked: false
     },
     {
-      name: 'a failed challenge awaiting a retry',
+      name: 'a failed challenge the server has not settled',
       state: embedded({
         authenticationState: 'failed_retryable',
+        customerActionSeen: true,
         challenge: { ...CHALLENGE, status: 'failed' }
       }),
-      parked: true
+      parked: false
     },
     {
       name: 'a hosted operation blocked before its page exists',
@@ -107,4 +108,33 @@ describe('nextPollDelayMs', () => {
       expect(parked && !STEPS_WITH_AN_ACTION.has(step)).toBe(false)
     }
   )
+})
+
+describe('nextPollDelayMs while blocked with no customer action', () => {
+  const actionless = embedded({
+    serverPhase: 'awaiting_invoice_payment',
+    authenticationState: 'processing'
+  })
+  const window = OPERATION_POLL_TIMING.actionDiscoveryMs
+
+  it.for([
+    { name: 'just entered', waitedMs: 0, parked: false },
+    { name: 'inside the window', waitedMs: window - 1, parked: false },
+    { name: 'at the end of the window', waitedMs: window, parked: true },
+    { name: 'long past the window', waitedMs: 20 * window, parked: true }
+  ])('parks when $name: $parked', ({ waitedMs, parked }) => {
+    expect(
+      nextPollDelayMs(actionless, OPERATION_POLL_TIMING.maxMs, waitedMs)
+    ).toBe(
+      parked ? OPERATION_POLL_TIMING.parkedMs : OPERATION_POLL_TIMING.maxMs
+    )
+  })
+
+  it('ignores the wait for an operation not blocked on the customer', () => {
+    const inProgress = embedded({ serverPhase: 'in_progress' })
+
+    expect(
+      nextPollDelayMs(inProgress, OPERATION_POLL_TIMING.maxMs, 20 * window)
+    ).toBe(OPERATION_POLL_TIMING.maxMs)
+  })
 })

@@ -1,14 +1,14 @@
 import { readdirSync } from 'node:fs'
-import { dirname, join, relative, sep } from 'node:path'
-import { fileURLToPath } from 'node:url'
+import { join, relative, sep } from 'node:path'
 
 import { describe, expect, it } from 'vitest'
 
-import { isNoindexPathname } from '../config/indexing'
-import type { Locale } from '../config/locales'
-import { DEFAULT_LOCALE, LOCALE_CODES, LOCALES } from '../config/locales'
-import { redirects } from '../config/redirects'
-import { routeOf } from '../utils/hreflangRoutes'
+import { websiteRoot } from '@website/paths'
+import { isNoindexPathname } from '@/config/indexing'
+import type { Locale } from '@/config/locales'
+import { DEFAULT_LOCALE, LOCALE_CODES, LOCALES } from '@/config/locales'
+import { astroRedirects } from '@/config/redirects'
+import { routeOf } from '@/utils/hreflangRoutes'
 import type { Alternate } from './hreflang'
 import {
   hreflangAlternates,
@@ -96,11 +96,23 @@ describe('hreflangAlternates', () => {
     '/enterprise-msa/',
     '/terms-of-service/',
     '/zh-CN/terms-of-service/',
-    '/p/supported-models/',
-    '/p/supported-models/flux-1-dev/',
+    '/hub/models/local/',
+    '/hub/models/local/4x-ultrasharp/',
+    '/comfy-agent/',
     '/404'
-  ])('emits nothing for English-only route %s', (pathname) => {
+  ])('emits nothing for %s without indexable translations', (pathname) => {
     expect(hreflangAlternates(pathname, ORIGIN)).toEqual([])
+  })
+
+  it('pairs the agent landing page with its zh-CN twin, unlike the still-noindexed /comfy-agent preview', () => {
+    expect(hreflangAlternates('/agent/', ORIGIN)).toEqual([
+      { hreflang: 'en', href: 'https://comfy.org/agent/' },
+      { hreflang: 'zh-CN', href: 'https://comfy.org/zh-CN/agent/' },
+      { hreflang: 'x-default', href: 'https://comfy.org/agent/' }
+    ])
+    expect(hreflangAlternates('/zh-CN/agent/', ORIGIN)).toEqual(
+      hreflangAlternates('/agent/', ORIGIN)
+    )
   })
 })
 
@@ -122,9 +134,12 @@ describe('sitemapAlternates', () => {
     ])
   })
 
-  it('leaves English-only entries without links', () => {
-    expect(sitemapAlternates('https://comfy.org/affiliates/')).toBeUndefined()
-  })
+  it.for(['/affiliates/'])(
+    'leaves %s without links to unindexable translations',
+    (pathname) => {
+      expect(sitemapAlternates(`${ORIGIN}${pathname}`)).toBeUndefined()
+    }
+  )
 })
 
 describe('og locale', () => {
@@ -186,7 +201,7 @@ describe('ogLocaleAlternates', () => {
 
 /** Static routes only; dynamic `getStaticPaths` output needs the built-site audit. */
 describe('the emitter agrees with the page tree', () => {
-  const pagesDir = join(dirname(fileURLToPath(import.meta.url)), '..', 'pages')
+  const pagesDir = join(websiteRoot, 'src/pages')
 
   const astroFiles = (dir: string): string[] =>
     readdirSync(dir, { withFileTypes: true }).flatMap((entry) => {
@@ -196,7 +211,7 @@ describe('the emitter agrees with the page tree', () => {
     })
 
   const redirected = new Set(
-    Object.keys(redirects).map((source) => source.replace(/\/$/, ''))
+    Object.keys(astroRedirects).map((source) => source.replace(/\/$/, ''))
   )
 
   const publishedPages = astroFiles(pagesDir)

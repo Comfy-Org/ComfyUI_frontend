@@ -1,8 +1,13 @@
+import { datadogRum } from '@datadog/browser-rum'
 import userEvent from '@testing-library/user-event'
 import { render, screen, waitFor } from '@testing-library/vue'
 import { createMemoryHistory, createRouter } from 'vue-router'
 
-import type { BillingPlansData } from '@comfyorg/account-core/billing'
+import type {
+  BillingPlansData,
+  BillingTelemetryEvent,
+  SubscriptionCommandResult
+} from '@comfyorg/account-core/billing'
 import { BILLING_CLIENT_KEY } from '@comfyorg/account-ui/billing'
 import { parseBillingEntry } from '@comfyorg/billing-contract'
 
@@ -12,11 +17,15 @@ import type { FakeBillingClientOptions } from '@/test/fakeBillingClient'
 import {
   challengedPendingOperation,
   createFakeBillingClient,
+  failedOperation,
   hostedPendingOperation,
   planOf,
-  previewOf
+  succeededOperation
 } from '@/test/fakeBillingClient'
+import { trackedBillingEvents } from '@/test/trackedBillingEvents'
 import SubscriptionView from '@/views/SubscriptionView.vue'
+
+vi.mock(import('@datadog/browser-rum'))
 
 /** The values this surface and the session it sits under read; a test-family key stands in for a deployment's. */
 vi.mock(import('@/config/env'), () => ({
@@ -38,7 +47,10 @@ vi.mock(import('@/session/stripeChallengePort'), () => ({
     getKey: () => string | undefined | Promise<string | undefined>
   ) => {
     void Promise.resolve(getKey()).then((key) => challengeMocks.createPort(key))
-    return { handleNextAction: challengeMocks.handleNextAction }
+    return {
+      handleNextAction: challengeMocks.handleNextAction,
+      leavesPage: () => Promise.resolve(true)
+    }
   }
 }))
 
@@ -51,15 +63,7 @@ const CATALOG: BillingPlansData = {
       price_cents: 0n,
       credits_cents: 0n
     }),
-    planOf({ slug: 'creator_monthly', tier: 'CREATOR' }),
-    planOf({
-      slug: 'team_monthly',
-      tier: 'TEAM',
-      max_seats: 5n,
-      price_cents: 9900n,
-      credits_cents: 20_000n,
-      availability: { available: false, reason: 'requires_team' }
-    })
+    planOf({ slug: 'creator_monthly', tier: 'CREATOR' })
   ]
 }
 
@@ -69,25 +73,21 @@ const ENTRY_QUERY = 'product=comfyui&return_to=comfyui_workspace'
 async function renderSubscription(options: FakeBillingClientOptions = {}) {
   const router = createRouter({
     history: createMemoryHistory(),
-    routes: [
-      { path: SURFACE_PATH, component: SubscriptionView },
-      { path: '/v1/checkout', component: { template: '<div />' } }
-    ]
+    routes: [{ path: SURFACE_PATH, component: SubscriptionView }]
   })
   const fake = createFakeBillingClient({
     plans: { status: 'ok', value: CATALOG },
-    preview: { status: 'ok', value: previewOf() },
     ...options
   })
   await router.push(`${SURFACE_PATH}?${ENTRY_QUERY}`)
   await router.isReady()
-  render(SubscriptionView, {
+  const { unmount } = render(SubscriptionView, {
     global: {
       plugins: [createBillingI18n(), router],
       provide: { [BILLING_CLIENT_KEY]: fake.client }
     }
   })
-  return { ...fake, router }
+  return { ...fake, unmount }
 }
 
 describe('SubscriptionView', () => {
@@ -101,73 +101,16 @@ describe('SubscriptionView', () => {
     expect(
       await screen.findByText('Current plan: Free · Monthly')
     ).toBeInTheDocument()
-    expect(screen.getByText('Current plan')).toBeInTheDocument()
   })
 
-  it('prices every plan the catalog offers', async () => {
+  it('leaves choosing a plan to the product that sent the customer', async () => {
     await renderSubscription()
-
-    expect(await screen.findByText('$28.00')).toBeInTheDocument()
-    expect(screen.getByText('$69.00 in monthly credits')).toBeInTheDocument()
-    expect(screen.getByText('5 seats')).toBeInTheDocument()
-  })
-
-  it('blocks a plan the workspace cannot move to and says why', async () => {
-    await renderSubscription()
+    await screen.findByText('Current plan: Free · Monthly')
 
     expect(
-      await screen.findByRole('button', { name: 'Choose Team · Monthly' })
-    ).toBeDisabled()
-    expect(
-      screen.getByText('This plan is only available to team workspaces.')
-    ).toBeInTheDocument()
-  })
-
-  it('quotes the chosen plan and carries it into checkout', async () => {
-    const fake = await renderSubscription({
-      preview: {
-        status: 'ok',
-        value: previewOf({ transition_type: 'upgrade' })
-      }
-    })
-
-    await userEvent.click(
-      await screen.findByRole('button', { name: 'Choose Creator · Monthly' })
-    )
-
-    expect(fake.previewSubscribe).toHaveBeenCalledWith(
-      { planSlug: 'creator_monthly' },
-      expect.anything()
-    )
-    expect(await screen.findByText('Upgrade')).toBeInTheDocument()
-    expect(screen.getByText('Oct 1, 2026')).toBeInTheDocument()
-    expect(screen.getByText('Cost today')).toBeInTheDocument()
-
-    await userEvent.click(
-      screen.getByRole('button', { name: 'Continue to checkout' })
-    )
-
-    expect(fake.router.currentRoute.value.fullPath).toBe(
-      `/v1/checkout?${ENTRY_QUERY}&plan=creator_monthly`
-    )
-  })
-
-  it('explains a quote the server will not allow', async () => {
-    const fake = await renderSubscription({
-      preview: { status: 'ok', value: previewOf({ allowed: false }) }
-    })
-
-    await userEvent.click(
-      await screen.findByRole('button', { name: 'Choose Creator · Monthly' })
-    )
-
-    expect(fake.previewSubscribe).toHaveBeenCalled()
-    expect(
-      await screen.findByText("This plan change isn't available right now.")
-    ).toBeInTheDocument()
-    expect(
-      screen.getByRole('button', { name: 'Continue to checkout' })
-    ).toBeDisabled()
+      screen.queryByRole('button', { name: /^Choose/ })
+    ).not.toBeInTheDocument()
+    expect(screen.queryByText('$28.00')).not.toBeInTheDocument()
   })
 
   it('offers cancel and resubscribe only when the server allows them', async () => {
@@ -421,6 +364,26 @@ describe('SubscriptionView', () => {
     ).toBeInTheDocument()
   })
 
+  it('explains a cancel refused while an earlier payment is still open', async () => {
+    await renderSubscription({
+      capabilities: { can_cancel: true },
+      cancel: { status: 'error', code: 'OPERATION_ALREADY_PENDING' }
+    })
+
+    await userEvent.click(
+      await screen.findByRole('button', { name: 'Cancel subscription' })
+    )
+    await userEvent.click(
+      screen.getByRole('button', { name: 'Confirm cancellation' })
+    )
+
+    expect(
+      await screen.findByText(
+        'A payment you started earlier is still going through. It has to finish before you can choose a different plan.'
+      )
+    ).toBeInTheDocument()
+  })
+
   it('explains a failed catalog read with copy of our own', async () => {
     await renderSubscription({
       plans: { status: 'error', code: 'REQUEST_FAILED' }
@@ -431,5 +394,277 @@ describe('SubscriptionView', () => {
         "We couldn't reach the billing service. Please try again."
       )
     ).toBeInTheDocument()
+  })
+
+  describe('cancel flow telemetry', () => {
+    const PRO_ANNUAL: BillingPlansData = {
+      current_plan_slug: 'pro_annual',
+      plans: [planOf({ slug: 'pro_annual', tier: 'PRO', duration: 'ANNUAL' })]
+    }
+
+    const flow = {
+      operation: 'cancel',
+      billing_client: 'sdk',
+      current_tier: 'pro',
+      cycle: 'yearly'
+    } as const
+
+    const INTENT: BillingTelemetryEvent = {
+      ...flow,
+      stage: 'intent',
+      outcome: 'pending'
+    }
+
+    function cancelEvents(sent: () => BillingTelemetryEvent[]) {
+      return sent().filter((event) => event.operation === 'cancel')
+    }
+
+    async function openCancelFlow(cancel?: SubscriptionCommandResult) {
+      const sent = trackedBillingEvents()
+      const view = await renderSubscription({
+        capabilities: { can_cancel: true },
+        plans: { status: 'ok', value: PRO_ANNUAL },
+        ...(cancel ? { cancel } : {})
+      })
+      await screen.findByText('Current plan: Pro · Yearly')
+      await userEvent.click(
+        screen.getByRole('button', { name: 'Cancel subscription' })
+      )
+      return { sent, view }
+    }
+
+    it('reports opening the confirmation and keeping the plan', async () => {
+      const { sent } = await openCancelFlow()
+
+      await userEvent.click(
+        screen.getByRole('button', { name: 'Keep my plan' })
+      )
+
+      expect(cancelEvents(sent)).toEqual([
+        INTENT,
+        { ...flow, stage: 'abandoned', outcome: 'pending' }
+      ])
+    })
+
+    it('reports leaving the page while the confirmation is open as abandoned', async () => {
+      const { sent, view } = await openCancelFlow()
+
+      view.unmount()
+
+      expect(cancelEvents(sent)).toEqual([
+        INTENT,
+        { ...flow, stage: 'abandoned', outcome: 'pending' }
+      ])
+    })
+
+    it.for<{ name: string; cancel: SubscriptionCommandResult }>([
+      {
+        name: 'a cancel the server settled',
+        cancel: {
+          status: 'ok',
+          value: { phase: 'succeeded', operation: succeededOperation() }
+        }
+      },
+      {
+        name: 'a cancel operation that failed',
+        cancel: {
+          status: 'ok',
+          value: {
+            phase: 'failed',
+            operation: failedOperation('card_declined')
+          }
+        }
+      },
+      {
+        name: 'a cancel that already held',
+        cancel: { status: 'ok', value: { phase: 'succeeded' } }
+      }
+    ])(
+      'leaves the end of $name to the operation events',
+      async ({ cancel }) => {
+        const { sent, view } = await openCancelFlow(cancel)
+
+        await userEvent.click(
+          screen.getByRole('button', { name: 'Confirm cancellation' })
+        )
+        await waitFor(() =>
+          expect(view.cancelSubscription).toHaveBeenCalledOnce()
+        )
+        view.unmount()
+
+        expect(cancelEvents(sent)).toEqual([INTENT])
+      }
+    )
+
+    it.for<{
+      name: string
+      cancel: SubscriptionCommandResult
+      failure: Record<string, string>
+    }>([
+      {
+        name: 'a request that never reached the server',
+        cancel: { status: 'error', code: 'REQUEST_FAILED' },
+        failure: { failure_category: 'network' }
+      },
+      {
+        name: 'no subscription to cancel',
+        cancel: { status: 'error', code: 'NO_ACTIVE_SUBSCRIPTION' },
+        failure: { failure_category: 'api_rejected' }
+      },
+      {
+        name: 'an earlier payment still open',
+        cancel: { status: 'error', code: 'OPERATION_ALREADY_PENDING' },
+        failure: {
+          failure_category: 'api_rejected',
+          error_code: 'operation_already_pending'
+        }
+      }
+    ])(
+      'reports $name as a failed cancel before any operation exists',
+      async ({ cancel, failure }) => {
+        const { sent } = await openCancelFlow(cancel)
+
+        await userEvent.click(
+          screen.getByRole('button', { name: 'Confirm cancellation' })
+        )
+
+        await waitFor(() =>
+          expect(cancelEvents(sent)).toEqual([
+            INTENT,
+            { ...flow, stage: 'failed', outcome: 'failure', ...failure }
+          ])
+        )
+      }
+    )
+  })
+})
+
+/** What the facade sent to the RUM sink for one billing operation, in order. */
+function reportedBillingEvents(operation: string) {
+  return vi
+    .mocked(datadogRum.addAction)
+    .mock.calls.filter(([name]) => name.startsWith(`billing.${operation}.`))
+    .map(([name, context]) => ({ name, context }))
+}
+
+describe('SubscriptionView resubscribe telemetry', () => {
+  const RESUBSCRIBE = {
+    operation: 'resubscribe',
+    source: 'billing_web_subscription',
+    payment_intent_source: 'deep_link',
+    billing_client: 'sdk',
+    billing_surface: 'billing_web'
+  }
+
+  beforeEach(() => {
+    recordBillingEntry(
+      parseBillingEntry(`${SURFACE_PATH}?${ENTRY_QUERY}&source=deep_link`)
+    )
+    vi.mocked(datadogRum.getInitConfiguration).mockReturnValue({
+      clientToken: 'pub',
+      applicationId: 'app'
+    })
+  })
+
+  it.for<{
+    name: string
+    resubscribe: FakeBillingClientOptions['resubscribe']
+    terminal: Record<string, unknown>
+  }>([
+    {
+      name: 'a resubscribe the server settled',
+      resubscribe: {
+        status: 'ok',
+        value: {
+          phase: 'succeeded',
+          operation: succeededOperation('op_9')
+        }
+      },
+      terminal: {
+        stage: 'succeeded',
+        outcome: 'success',
+        billing_op_id: 'op_9'
+      }
+    },
+    {
+      name: 'a plan that was already active, which issued nothing',
+      resubscribe: { status: 'ok', value: { phase: 'succeeded' } },
+      terminal: { stage: 'succeeded', outcome: 'success' }
+    },
+    {
+      name: 'a decline',
+      resubscribe: {
+        status: 'ok',
+        value: {
+          phase: 'failed',
+          operation: failedOperation('card_declined', 'op_9')
+        }
+      },
+      terminal: {
+        stage: 'failed',
+        outcome: 'failure',
+        failure_category: 'provider_decline',
+        decline_reason: 'card_declined',
+        billing_op_id: 'op_9'
+      }
+    },
+    {
+      name: 'a refusal before any operation exists',
+      resubscribe: {
+        status: 'error',
+        code: 'OPERATION_ALREADY_PENDING',
+        httpStatus: 409
+      },
+      terminal: {
+        stage: 'failed',
+        outcome: 'failure',
+        failure_category: 'api_rejected',
+        error_code: 'operation_already_pending'
+      }
+    }
+  ])('reports $name as one start and one terminal', async (row) => {
+    await renderSubscription({
+      capabilities: { can_reactivate: true },
+      resubscribe: row.resubscribe
+    })
+
+    await userEvent.click(
+      await screen.findByRole('button', { name: 'Resubscribe' })
+    )
+
+    await waitFor(() =>
+      expect(reportedBillingEvents('resubscribe')).toHaveLength(2)
+    )
+    expect(reportedBillingEvents('resubscribe')).toEqual([
+      {
+        name: 'billing.resubscribe.started',
+        context: { ...RESUBSCRIBE, stage: 'started', outcome: 'pending' }
+      },
+      {
+        name: `billing.resubscribe.${row.terminal.stage}`,
+        context: {
+          ...RESUBSCRIBE,
+          ...row.terminal,
+          duration_ms: expect.any(Number)
+        }
+      }
+    ])
+  })
+
+  it('reports no resubscribe for a cancel', async () => {
+    await renderSubscription({
+      capabilities: { can_cancel: true },
+      cancel: { status: 'ok', value: { phase: 'succeeded' } }
+    })
+
+    await userEvent.click(
+      await screen.findByRole('button', { name: 'Cancel subscription' })
+    )
+    await userEvent.click(
+      screen.getByRole('button', { name: 'Confirm cancellation' })
+    )
+    await screen.findByText('Your subscription is cancelled.')
+
+    expect(reportedBillingEvents('resubscribe')).toEqual([])
   })
 })

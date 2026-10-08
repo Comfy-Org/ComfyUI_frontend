@@ -191,6 +191,7 @@ describe('CustomerIoTelemetryProvider', () => {
     )
     expect(hoisted.analytics.page).toHaveBeenCalledOnce()
     expect(hoisted.reportError).toHaveBeenCalledWith(registrationError, {
+      surface: 'platform',
       errorType: 'customerio_in_app_plugin_registration_failure'
     })
 
@@ -414,7 +415,6 @@ describe('CustomerIoTelemetryProvider', () => {
   })
 
   it('continues tracking after reset fails', async () => {
-    vi.spyOn(console, 'error').mockImplementation(() => {})
     hoisted.analytics.reset.mockRejectedValueOnce(new Error('reset failed'))
     const provider = createProvider()
     await vi.dynamicImportSettled()
@@ -697,7 +697,6 @@ describe('CustomerIoTelemetryProvider', () => {
   })
 
   it('does not stall later events when identification never settles', async () => {
-    vi.spyOn(console, 'error').mockImplementation(() => {})
     hoisted.analytics.identify.mockReturnValueOnce(new Promise(() => {}))
     const provider = createProvider()
     await vi.dynamicImportSettled()
@@ -756,7 +755,6 @@ describe('CustomerIoTelemetryProvider', () => {
   })
 
   it('tracks auth after identification fails', async () => {
-    vi.spyOn(console, 'error').mockImplementation(() => {})
     hoisted.analytics.identify.mockRejectedValueOnce(
       new Error('identify failed')
     )
@@ -856,7 +854,6 @@ describe('CustomerIoTelemetryProvider', () => {
   })
 
   it('disables tracking when the SDK fails to load', async () => {
-    vi.spyOn(console, 'error').mockImplementation(() => {})
     hoisted.load.mockImplementation(() => {
       throw new Error('network down')
     })
@@ -871,7 +868,6 @@ describe('CustomerIoTelemetryProvider', () => {
   })
 
   it('keeps tracking after an individual event fails to send', async () => {
-    vi.spyOn(console, 'error').mockImplementation(() => {})
     const provider = createProvider()
     await vi.dynamicImportSettled()
 

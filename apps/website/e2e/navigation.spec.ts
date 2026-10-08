@@ -25,40 +25,44 @@ async function badgePlacement(row: Locator, label: string) {
 
 const minimaxLabel = 'MiniMax H3'
 const minimaxLabelZh = 'MiniMax H3'
-const minimaxRoute = '/minimax-h3'
-const minimaxRouteZh = '/zh-CN/minimax-h3'
+const minimaxRoute = '/minimax-h3/'
+const minimaxRouteZh = '/zh-CN/minimax-h3/'
 
 const TOP_LEVEL_LABELS = [
-  'Models',
+  'Hub',
   'Products',
+  'Enterprise',
   'Pricing',
-  'Community',
   'Company'
 ] as const
 
 const RETIRED_BADGE_PANELS = [
   {
     section: 'Products',
-    badged: 'Comfy Agent',
-    bare: [{ label: 'Comfy CLI', href: '/cli' }]
+    badged: [
+      { label: 'Comfy Agent', href: '/agent/' },
+      { label: 'Developer Platform', href: '/platform/' },
+      { label: 'Comfy Router', href: '/platform/router/' }
+    ],
+    bare: [
+      { label: 'Comfy CLI', href: '/cli/' },
+      { label: 'Managed Builds', href: '/enterprise/managed-builds/' }
+    ]
   },
   {
-    section: 'Community',
-    badged: 'Events',
+    section: 'Company',
+    badged: [
+      { label: 'Events', href: '/events/' },
+      { label: 'Customer Stories', href: '/customers/' }
+    ],
     bare: [
-      { label: 'Affiliates', href: '/affiliates' },
-      { label: 'Learning', href: '/learning' }
+      { label: 'Affiliates', href: '/affiliates/' },
+      { label: 'Learning', href: '/learning/' }
     ]
   }
 ] as const
 
 const BADGE_PALETTES = [
-  {
-    link: 'Developer Platform',
-    label: 'BETA',
-    text: '--color-primary-warm-white',
-    fill: '--color-primary-comfy-plum'
-  },
   {
     link: 'Comfy Agent',
     label: 'NEW',
@@ -71,14 +75,16 @@ async function expectRetiredBadges(
   panel: Locator,
   { badged, bare }: (typeof RETIRED_BADGE_PANELS)[number]
 ) {
-  await expect(
-    panel.getByRole('link', { name: badged }).getByText('NEW', { exact: true })
-  ).toBeVisible()
+  for (const { label, href } of badged) {
+    const link = panel.getByRole('link', { name: label })
+    await expect(link).toHaveAttribute('href', href)
+    await expect(link.getByText('NEW', { exact: true })).toBeVisible()
+  }
   for (const { label, href } of bare) {
     const link = panel.getByRole('link', { name: label })
     await expect(link).toBeVisible()
     await expect(link).toHaveAttribute('href', href)
-    await expect(link.getByText('NEW', { exact: true })).toHaveCount(0)
+    await expect(link.locator('[data-slot="badge"]')).toHaveCount(0)
   }
 }
 
@@ -104,32 +110,17 @@ test.describe('Desktop navigation @smoke', () => {
     }
   })
 
-  test('NEW badge shows on Workshop, Products and Community only', async ({
-    page
-  }) => {
+  test('no top-level item carries a NEW badge', async ({ page }) => {
     await page.setViewportSize({ width: 1600, height: 900 })
     const nav = page.getByRole('navigation', { name: 'Main navigation' })
     const desktopLinks = nav.getByTestId('desktop-nav-links')
 
-    await expect(
-      desktopLinks
-        .getByRole('link', { name: 'Models' })
-        .getByText('NEW', { exact: true })
-    ).toBeVisible()
-    for (const label of ['Products', 'Community']) {
+    for (const label of TOP_LEVEL_LABELS) {
       await expect(
-        desktopLinks
-          .getByRole('button', { name: label })
-          .getByText('NEW', { exact: true })
+        desktopLinks.getByText(label, { exact: true }).first()
       ).toBeVisible()
     }
-
-    await expect(
-      desktopLinks.getByRole('button', { name: 'Company' }).getByText('NEW')
-    ).toHaveCount(0)
-    await expect(
-      desktopLinks.getByRole('link', { name: 'Pricing' }).getByText('NEW')
-    ).toHaveCount(0)
+    await expect(desktopLinks.getByText('NEW', { exact: true })).toHaveCount(0)
   })
 
   test('CTA buttons are visible', async ({ page }) => {
@@ -160,9 +151,12 @@ test.describe('Desktop dropdown @interaction', () => {
     const dropdown = nav.getByTestId('nav-dropdown')
     for (const item of [
       'Comfy Desktop',
+      'Browse Models',
       'Comfy Cloud',
+      'Comfy Agent',
       'Developer Platform',
-      'Comfy Enterprise'
+      'Managed Builds',
+      'Docs'
     ]) {
       await expect(dropdown.getByText(item)).toBeVisible()
     }
@@ -185,7 +179,7 @@ test.describe('Desktop dropdown @interaction', () => {
       const card = nav.getByTestId('nav-dropdown').getByRole('link', {
         name: 'Explore the Gemini Omni 1.1 Flash release'
       })
-      await expect(card).toHaveAttribute('href', '/gemini-omni')
+      await expect(card).toHaveAttribute('href', '/gemini-omni/')
       const video = card.locator('video')
       await expect(video).toHaveAttribute(
         'src',
@@ -196,29 +190,35 @@ test.describe('Desktop dropdown @interaction', () => {
     })
   }
 
-  test('Community featured card links to the Product Photography tutorial', async ({
+  test('Company dropdown folds in Community and names each social icon link', async ({
     page
   }) => {
     const nav = page.getByRole('navigation', { name: 'Main navigation' })
     await nav
       .getByTestId('desktop-nav-links')
-      .getByRole('button', { name: 'Community' })
+      .getByRole('button', { name: 'Company' })
       .hover()
 
-    const card = nav
-      .getByTestId('nav-dropdown')
-      .getByRole('link', { name: 'Watch the Product Photography demo' })
-    await expect(card).toHaveAttribute(
-      'href',
-      '/learning/ads/product-photography'
-    )
+    const dropdown = nav.getByTestId('nav-dropdown')
+    for (const item of ['Events', 'About Us', 'Customer Stories', 'Launches']) {
+      await expect(dropdown.getByText(item, { exact: true })).toBeVisible()
+    }
     await expect(
-      card.getByRole('img', { name: 'Product Photography workflow demo image' })
+      dropdown.getByRole('link', {
+        name: 'Discord (opens in new tab)',
+        exact: true
+      })
+    ).toHaveAttribute('href', 'https://discord.com/invite/comfyorg')
+    await expect(
+      dropdown.getByRole('link', {
+        name: 'YouTube (opens in new tab)',
+        exact: true
+      })
     ).toBeVisible()
   })
 
   for (const panel of RETIRED_BADGE_PANELS) {
-    test(`${panel.section} dropdown keeps NEW on ${panel.badged} and drops it from the retired entries`, async ({
+    test(`${panel.section} dropdown keeps NEW on ${panel.badged.map((b) => b.label).join(', ')} and drops it from the retired entries`, async ({
       page
     }) => {
       const nav = page.getByRole('navigation', { name: 'Main navigation' })
@@ -229,9 +229,7 @@ test.describe('Desktop dropdown @interaction', () => {
     })
   }
 
-  test('BETA badges paint plum behind warm-white while NEW stays ink on yellow', async ({
-    page
-  }) => {
+  test('NEW badges paint ink on yellow', async ({ page }) => {
     const nav = page.getByRole('navigation', { name: 'Main navigation' })
     const desktopLinks = nav.getByTestId('desktop-nav-links')
     await desktopLinks.getByRole('button', { name: 'Products' }).hover()
@@ -326,41 +324,22 @@ test.describe('Mobile menu @mobile', () => {
     const menu = page.getByRole('dialog')
     await expect(menu).toBeVisible()
 
-    for (const label of ['Models', 'Products', 'Pricing', 'Community']) {
+    for (const label of TOP_LEVEL_LABELS) {
       await expect(menu.getByText(label, { exact: true }).first()).toBeVisible()
     }
   })
 
-  test('NEW badge shows on Workshop, Products and Community only', async ({
-    page
-  }) => {
+  test('no top-level item carries a NEW badge', async ({ page }) => {
     await page.getByRole('button', { name: 'Toggle menu' }).click()
 
     const menu = page.getByRole('dialog')
 
-    await expect(
-      menu.getByRole('link', { name: 'Models' }).getByText('NEW', {
-        exact: true
-      })
-    ).toBeVisible()
-    for (const label of ['Products', 'Community']) {
-      await expect(
-        menu.getByRole('button', { name: label }).getByText('NEW', {
-          exact: true
-        })
-      ).toBeVisible()
-    }
-
-    await expect(
-      menu.getByRole('button', { name: 'Company' }).getByText('NEW')
-    ).toHaveCount(0)
-    await expect(
-      menu.getByRole('link', { name: 'Pricing' }).getByText('NEW')
-    ).toHaveCount(0)
+    await expect(menu.getByRole('button', { name: 'Products' })).toBeVisible()
+    await expect(menu.getByText('NEW', { exact: true })).toHaveCount(0)
   })
 
   for (const panel of RETIRED_BADGE_PANELS) {
-    test(`${panel.section} drill-down keeps NEW on ${panel.badged} and drops it from the retired entries`, async ({
+    test(`${panel.section} drill-down keeps NEW on ${panel.badged.map((b) => b.label).join(', ')} and drops it from the retired entries`, async ({
       page
     }) => {
       await page.getByRole('button', { name: 'Toggle menu' }).click()
@@ -387,29 +366,27 @@ test.describe('Mobile menu @mobile', () => {
     await expect(menu.getByRole('button', { name: 'Products' })).toBeVisible()
   })
 
-  test('NEW badge sits beside the label the same way on top-level and drill-down rows', async ({
+  test('NEW badge sits beside the label the same way on every drill-down row', async ({
     page
   }) => {
     await page.getByRole('button', { name: 'Toggle menu' }).click()
 
     const menu = page.getByRole('dialog')
-    await settleAnimations(menu)
-    const products = menu.getByRole('button', { name: 'Products' })
-    const topLevel = await badgePlacement(products, 'Products')
-
-    await products.click()
+    await menu.getByRole('button', { name: 'Products' }).click()
+    const models = menu.getByRole('link', { name: 'Browse Models' })
     const agent = menu.getByRole('link', { name: 'Comfy Agent' })
     await expect(agent).toBeVisible()
     await settleAnimations(menu)
-    const drillDown = await badgePlacement(agent, 'Comfy Agent')
+    const first = await badgePlacement(models, 'Browse Models')
+    const second = await badgePlacement(agent, 'Comfy Agent')
 
-    expect(topLevel.gap).toBeGreaterThan(0)
-    expect(Math.abs(topLevel.gap - drillDown.gap)).toBeLessThanOrEqual(1)
+    expect(first.gap).toBeGreaterThan(0)
+    expect(Math.abs(first.gap - second.gap)).toBeLessThanOrEqual(1)
     expect(
-      Math.abs(topLevel.centerOffset - drillDown.centerOffset)
+      Math.abs(first.centerOffset - second.centerOffset)
     ).toBeLessThanOrEqual(1)
-    expect(Math.abs(topLevel.width - drillDown.width)).toBeLessThanOrEqual(1)
-    expect(Math.abs(topLevel.height - drillDown.height)).toBeLessThanOrEqual(1)
+    expect(Math.abs(first.width - second.width)).toBeLessThanOrEqual(1)
+    expect(Math.abs(first.height - second.height)).toBeLessThanOrEqual(1)
   })
 })
 
@@ -422,7 +399,7 @@ test.describe('Footer @smoke', () => {
     const footer = page.locator('footer')
     await expect(footer).toBeVisible()
 
-    for (const heading of ['Products', 'Resources', 'Company']) {
+    for (const heading of ['Products', 'Features', 'Resources', 'Company']) {
       await expect(
         footer.getByRole('heading', { name: heading }).first()
       ).toBeVisible()

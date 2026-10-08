@@ -3,21 +3,43 @@ import { readFileSync } from 'node:fs'
 import type { BrowserContext, Page } from '@playwright/test'
 import { expect } from '@playwright/test'
 
-import type { JobDetailResponse } from '@comfyorg/ingest-types'
+import type {
+  BillingBalanceResponse,
+  JobDetailResponse
+} from '@comfyorg/ingest-types'
+import { centsToCredits } from '@comfyorg/shared-frontend-utils/creditsUtil'
 
 import { test } from './fixtures/modelsAccount'
+import { hubWorkflowHref } from '@/config/hub-models'
 
 const workflowId = 'workflows/remove-background'
+// `character-turnaround` is the simplest workflow carrying a `randomize` seed:
+// its only required input is the image, and its seed schema spans 0 to
+// 4_294_967_295, so a stubbed Math.random maps to a known integer.
+const seedWorkflowId = 'workflows/character-turnaround'
+const seedMaximum = 4_294_967_295
 const runId = 'd982ea52-a2d8-4212-ad8a-ff3030ce42bf'
 const uploadId = '8b9a8b50-9fd5-4bbe-a03a-2a387f09713b'
 const path = '/api/jobs/' + runId
 const uploadPath = '/api/uploads/' + uploadId
 const inputName = 'uploaded-photo.webp'
 const image = readFileSync('e2e/assets/placeholder-1x1.webp')
+const creditRefusal = {
+  status: 429,
+  json: {
+    error: {
+      type: 'FREE_TIER_EXHAUSTED',
+      message:
+        "You've used all your free generations. Upgrade to keep creating."
+    }
+  }
+}
 
 async function setup(context: BrowserContext) {
   let enabled = true
   let generation = 0
+  let reachable = true
+  let refusesForCredits = false
   await context.route('https://apis.google.com/js/api.js*', (route) =>
     route.abort('blockedbyclient')
   )
@@ -89,6 +111,7 @@ async function setup(context: BrowserContext) {
     const request = route.request()
     const url = new URL(request.url())
     const method = request.method()
+    if (!reachable) return route.abort('failed')
     commands.push({
       method,
       path: url.pathname,
@@ -96,7 +119,9 @@ async function setup(context: BrowserContext) {
     })
     if (url.pathname === '/api/prompt') {
       expect(request.headers()).toHaveProperty('authorization')
-      return route.fulfill({ json: { prompt_id: runId } })
+      return route.fulfill(
+        refusesForCredits ? creditRefusal : { json: { prompt_id: runId } }
+      )
     }
     if (url.pathname.endsWith('/cancel'))
       return route.fulfill({ json: { cancelled: true } })
@@ -111,6 +136,12 @@ async function setup(context: BrowserContext) {
     disable() {
       enabled = false
     },
+    drop() {
+      reachable = false
+    },
+    refuseForCredits() {
+      refusesForCredits = true
+    },
     cancel() {
       current = { ...current, status: 'cancelled', update_time: Date.now() }
     }
@@ -121,6 +152,15 @@ async function signInAndRun(
   page: Page,
   account: { email: string; password: string }
 ) {
+  await signInAndSubmit(page, account)
+  await expect(page.getByTestId('workflow-run')).toHaveText('Waiting its turn')
+}
+
+async function signInAndFill(
+  page: Page,
+  account: { email: string; password: string },
+  model = workflowId
+) {
   await page.goto('/login/')
   await page.getByRole('button', { name: 'Use email instead' }).click()
   await page.getByLabel('Email').fill(account.email)
@@ -128,7 +168,7 @@ async function signInAndRun(
   await page.getByRole('button', { name: 'Sign in', exact: true }).click()
   await expect(page).toHaveURL('/')
   await page.clock.install()
-  await page.goto(`/models/${workflowId}/`)
+  await page.goto(hubWorkflowHref(model))
   await expect(page.getByTestId('workflow-run')).toBeEnabled()
   await page.getByTestId('field-image-upload').setInputFiles({
     name: 'photo.webp',
@@ -138,8 +178,15 @@ async function signInAndRun(
   await expect(
     page.getByRole('button', { name: 'Replace photo.webp' })
   ).toBeVisible()
+}
+
+async function signInAndSubmit(
+  page: Page,
+  account: { email: string; password: string },
+  model = workflowId
+) {
+  await signInAndFill(page, account, model)
   await page.getByTestId('workflow-run').click()
-  await expect(page.getByTestId('workflow-run')).toHaveText('Queued')
 }
 
 test('Cloud upload, refresh, partial delivery and downloads retain one run @mobile', async ({
@@ -156,29 +203,43 @@ test('Cloud upload, refresh, partial delivery and downloads retain one run @mobi
   expect(cloud.uploads).toEqual([image])
   expect(submissions()).toHaveLength(1)
   expect(submissions()[0].body).toMatchObject({
-    prompt: { '17': { class_type: 'LoadImage', inputs: { image: inputName } } }
+    prompt: { '17': { class_type: 'LoadImage', inputs: { image: inputName } } },
+    extra_data: { auth_token_comfy_org: 'mock-workspace-jwt' }
   })
 
   await page.reload()
-  await expect(page.getByTestId('workflow-run')).toHaveText('Queued')
+  await expect(page.getByTestId('workflow-run')).toHaveText('Waiting its turn')
   expect(cloud.uploads).toHaveLength(1)
   expect(submissions()).toHaveLength(1)
   await page.getByRole('tab', { name: 'API', exact: true }).click()
+  const sdkSnippet = page.getByTestId('workflow-api-snippet')
+  await expect(sdkSnippet).toContainText('from comfy_sdk import Comfy')
+  await expect(sdkSnippet).toContainText(
+    'job = client.run(workflow, api_key=api_key)'
+  )
+  await page.getByRole('tab', { name: 'TypeScript', exact: true }).click()
+  await expect(sdkSnippet).toContainText(
+    "import { Comfy } from '@comfyorg/sdk'"
+  )
+  await page.getByRole('tab', { name: 'cURL', exact: true }).click()
+  // The address a run is posted to, before the snippet that posts to it.
+  await expect(page.getByTestId('workflow-api-endpoint')).toContainText(
+    '/api/prompt'
+  )
+  await expect(
+    page.getByRole('link', { name: 'API documentation' })
+  ).toBeVisible()
   const snippet = await page.getByTestId('workflow-api-snippet').textContent()
   expect(snippet).toContain('/api/prompt')
   expect(snippet).toContain('X-API-Key:')
   await page.setViewportSize({ width: 320, height: 851 })
-  await page.getByRole('tab', { name: 'Workflow', exact: true }).click()
+  await page.getByRole('tab', { name: 'Details', exact: true }).click()
   await expect(
-    page.getByRole('img', { name: 'Workflow', exact: true })
+    page.getByRole('img', { name: /nodes of this workflow/i })
   ).toBeVisible()
   const panelRight = await page
-    .getByRole('tabpanel', { name: 'Workflow', exact: true })
-    .evaluate(
-      (panel) =>
-        panel.getBoundingClientRect().right -
-        parseFloat(getComputedStyle(panel).paddingRight)
-    )
+    .getByRole('tabpanel', { name: 'Details', exact: true })
+    .evaluate((panel) => panel.getBoundingClientRect().right)
   const downloadRight = await page
     .getByRole('link', { name: 'Download workflow JSON' })
     .evaluate((link) => link.getBoundingClientRect().right)
@@ -233,6 +294,84 @@ test('Cloud upload, refresh, partial delivery and downloads retain one run @mobi
   expect(submissions()).toHaveLength(1)
 })
 
+test('the credit chip shows a charge Cloud books after the run finishes', async ({
+  page,
+  context,
+  modelsAccount
+}) => {
+  const cloud = await setup(context)
+  let reads = 0
+  let chargedAfterRead = Number.POSITIVE_INFINITY
+  await context.route('**/api/billing/balance', (route) => {
+    reads++
+    const cents = reads > chargedAfterRead ? 483_200 : 583_200
+    return route.fulfill({
+      json: {
+        amount_micros: cents,
+        effective_balance_micros: cents,
+        currency: 'usd'
+      } satisfies BillingBalanceResponse
+    })
+  })
+  const chip = page.getByTestId('desktop-nav-cta').getByTestId('header-account')
+  const showing = (balance: number) =>
+    new RegExp(`, ${centsToCredits(balance).toLocaleString('en-US')} credits$`)
+  await signInAndRun(page, modelsAccount)
+  await expect(chip).toHaveAccessibleName(showing(583_200))
+  const readsBeforeCompletion = reads
+  chargedAfterRead = readsBeforeCompletion + 1
+
+  cloud.succeed(false)
+  await page.clock.fastForward(2100)
+  await expect(page.getByTestId('playground-output')).toHaveAttribute(
+    'data-state',
+    'succeeded'
+  )
+  await page.clock.fastForward(1)
+  await expect.poll(() => reads).toBeGreaterThan(readsBeforeCompletion)
+  await expect(chip).toHaveAccessibleName(showing(583_200))
+  await page.clock.fastForward(2_000)
+
+  await expect(chip).toHaveAccessibleName(showing(483_200))
+})
+
+test('a Cloud credit refusal opens Add credits without retrying', async ({
+  page,
+  context,
+  modelsAccount
+}) => {
+  const cloud = await setup(context)
+  cloud.refuseForCredits()
+  await context.route('**/api/billing/balance', (route) =>
+    route.fulfill({
+      json: {
+        amount_micros: 1_200,
+        effective_balance_micros: 1_200,
+        currency: 'usd'
+      } satisfies BillingBalanceResponse
+    })
+  )
+
+  await signInAndSubmit(page, modelsAccount)
+
+  const primary = page.getByTestId('workflow-run')
+  const dialog = page.getByTestId('buy-credits-dialog')
+  await expect(dialog).toBeVisible()
+  await expect(primary).toHaveText('Add credits')
+  await expect(primary).toHaveAttribute('data-gate', 'noCredits')
+  await expect(page.getByRole('button', { name: 'Run' })).toHaveCount(0)
+  await page.getByTestId('buy-credits-cancel').click()
+  await expect(dialog).toHaveCount(0)
+  await page.getByRole('tab', { name: 'Details' }).click()
+  await page.getByRole('tab', { name: 'Playground' }).click()
+  await expect(dialog).toHaveCount(0)
+  await primary.click()
+  await expect(dialog).toBeVisible()
+  expect(
+    cloud.commands.filter((command) => command.path === '/api/prompt')
+  ).toHaveLength(1)
+})
+
 test('workflow cancellation survives disabled admission and hides on sign-out', async ({
   page,
   context,
@@ -257,13 +396,10 @@ test('workflow cancellation survives disabled admission and hides on sign-out', 
   await page.clock.fastForward(2100)
   await expect(page.getByTestId('playground-output')).toHaveAttribute(
     'data-state',
-    'idle'
+    'cancelled'
   )
   await expect(
-    page.getByText(
-      'Cancellation requested. Check Cloud for the final job status.',
-      { exact: true }
-    )
+    page.getByText('This run was cancelled before it finished.').first()
   ).toBeVisible()
   await expect(page.getByTestId('workflow-run')).toBeDisabled()
   await page.locator('[data-testid="header-account"]:visible').click()
@@ -274,4 +410,90 @@ test('workflow cancellation survives disabled admission and hides on sign-out', 
       (command) => command.method === 'POST' && command.path === '/api/prompt'
     )
   ).toHaveLength(1)
+})
+
+test('a run the page stops hearing about holds the panel still', async ({
+  page,
+  context,
+  modelsAccount
+}) => {
+  const cloud = await setup(context)
+  await signInAndRun(page, modelsAccount)
+  const panel = page.getByTestId('playground-output')
+  const run = page.getByTestId('workflow-run')
+  await expect(panel).toHaveAttribute('data-state', 'running')
+  await expect(panel.getByTestId('run-spinner')).toBeVisible()
+  await expect(panel.getByTestId('run-elapsed')).toBeVisible()
+  await expect(run.getByTestId('run-button-spinner')).toBeVisible()
+
+  cloud.drop()
+  await page.clock.fastForward(2100)
+
+  await expect(panel.getByRole('status')).toHaveText('Connection interrupted')
+  await expect(panel).toHaveAttribute('data-state', 'running')
+  await expect(panel.getByTestId('run-spinner')).toHaveCount(0)
+  await expect(panel.getByTestId('run-elapsed')).toHaveCount(0)
+  await expect(run).toHaveText('Connection interrupted')
+  await expect(run.getByTestId('run-button-spinner')).toHaveCount(0)
+  await expect(
+    page.getByRole('button', { name: 'Reconnect to this run' })
+  ).toBeVisible()
+  await expect(page.getByTestId('workflow-run-footer')).toContainText(
+    'It may still be running on Cloud and using credits.'
+  )
+})
+
+// `withRandomizedInputs` rewrites the submitted body, so cover the drawn value
+// arriving at Cloud rather than only the draw itself. `workflowCloudRequest`
+// writes each app input onto the nodes its binding names, so the seed is read
+// back off the posted graph. `character-turnaround` binds seed to nodes 5 and 7,
+// whose template values are 54321 and 12345 -- a draw that never happened shows
+// up as those, so the assertions below discriminate.
+const seedNodeIds = ['5', '7']
+
+function submittedSeeds(
+  commands: Array<{ method: string; path: string; body: unknown }>
+) {
+  return commands
+    .filter(
+      (command) => command.method === 'POST' && command.path === '/api/prompt'
+    )
+    .map((command) => {
+      const { prompt } = command.body as {
+        prompt: Record<string, { inputs: Record<string, unknown> }>
+      }
+      return seedNodeIds.map((nodeId) => prompt[nodeId]?.inputs.seed)
+    })
+}
+
+test('an empty seed travels to Cloud as a freshly drawn integer', async ({
+  page,
+  context,
+  modelsAccount
+}) => {
+  const cloud = await setup(context)
+  await page.addInitScript(() => {
+    Math.random = () => 0.25
+  })
+  await signInAndSubmit(page, modelsAccount, seedWorkflowId)
+  await expect(page.getByTestId('workflow-run')).toHaveText('Waiting its turn')
+  const drawn = Math.floor(0.25 * (seedMaximum + 1))
+  expect(submittedSeeds(cloud.commands)).toEqual([[drawn, drawn]])
+})
+
+test('a seed typed under Advanced is sent unchanged', async ({
+  page,
+  context,
+  modelsAccount
+}) => {
+  const cloud = await setup(context)
+  await page.addInitScript(() => {
+    Math.random = () => 0.25
+  })
+  await signInAndFill(page, modelsAccount, seedWorkflowId)
+  await page.getByTestId('playground-advanced').locator('summary').click()
+  await page.getByTestId('field-seed').fill('7')
+  await page.getByTestId('workflow-run').click()
+  await expect(page.getByTestId('workflow-run')).toHaveText('Waiting its turn')
+  expect(submittedSeeds(cloud.commands)).toEqual([[7, 7]])
 })

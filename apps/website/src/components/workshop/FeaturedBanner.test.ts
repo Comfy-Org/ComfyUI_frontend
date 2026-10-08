@@ -3,17 +3,17 @@ import userEvent from '@testing-library/user-event'
 import { nextTick } from 'vue'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 
-import type { WorkshopModel } from '../../config/models-catalogue'
+import type { WorkshopModel } from '@/config/models-catalogue'
 import FeaturedBanner from './FeaturedBanner.vue'
-import { modelSlides } from '../../lib/workshop/featured-slides'
+import { modelSlides } from '@/lib/workshop/featured-slides'
 import {
   setAllIntersecting,
   stubIntersectionObserver
-} from '../../test/fakeIntersectionObserver'
+} from '@/test/fakeIntersectionObserver'
 
 const motion = vi.hoisted(() => ({ reduced: false }))
 
-vi.mock(import('../../composables/useReducedMotion'), () => ({
+vi.mock(import('@/composables/useReducedMotion'), () => ({
   prefersReducedMotion: () => motion.reduced
 }))
 
@@ -178,7 +178,9 @@ describe('FeaturedBanner', () => {
     await setAllIntersecting(true)
 
     expect(screen.queryByTestId('featured-video')).toBeNull()
-    expect(screen.getByAltText('').getAttribute('src')).toBe('/still.webp')
+    const still = screen.getByAltText('')
+    expect(still).toHaveAttribute('src', '/still.webp')
+    expect(still).toHaveAttribute('fetchpriority', 'high')
   })
 
   it('advances to the next slide on the autoplay cadence', async () => {
@@ -268,5 +270,25 @@ describe('FeaturedBanner', () => {
     document.dispatchEvent(new Event('visibilitychange'))
     await advanceAutoplay()
     expect(screen.getByRole('heading', { level: 2 }).textContent).toBe('Kling')
+  })
+
+  it('carries everything the reader came for', () => {
+    render(FeaturedBanner, {
+      props: { slides: modelSlides([base, kling], 'en') }
+    })
+    expect(screen.getByRole('heading', { level: 2 }).textContent).toBe('Flux')
+    expect(screen.getByText('Text to Image')).toBeTruthy()
+    expect(
+      screen.getByText(
+        'Photorealistic images with professional text rendering.'
+      )
+    ).toBeTruthy()
+    expect(screen.getByTestId('featured-slide-link').getAttribute('href')).toBe(
+      '/models/flux/'
+    )
+    expect(screen.getByRole('link', { name: /Try/i })).toHaveAttribute(
+      'href',
+      '/models/flux/'
+    )
   })
 })

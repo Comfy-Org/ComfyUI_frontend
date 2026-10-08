@@ -22,16 +22,9 @@ import type { LGraph } from './LGraph'
 import type { LGraphNode } from './LGraphNode'
 import type { NodeId, SerializedNodeId } from '@/types/nodeId'
 import type { Reroute } from './Reroute'
-import type {
-  CanvasColour,
-  INodeInputSlot,
-  INodeOutputSlot,
-  ISlotType,
-  LinkNetwork,
-  LinkSegment,
-  Point,
-  ReadonlyLinkNetwork
-} from './interfaces'
+import type { CanvasColour, ISlotType, LinkSegment, Point } from './interfaces'
+import type { INodeInputSlot, INodeOutputSlot } from './types/slots'
+import type { LinkNetwork, ReadonlyLinkNetwork } from './types/linkNetwork'
 import type { Serialisable, SerialisableLLink } from './types/serialisation'
 import { toRaw } from 'vue'
 
@@ -51,53 +44,6 @@ let topologyFacadeDescriptors: PropertyDescriptorMap | undefined
 
 export function resolveLinkTopology(topology: LinkTopology): LLink | undefined {
   return linkByTopology.get(toRaw(topology))
-}
-
-/**
- * Gives a topology that was registered directly by a renderer-free store
- * mutation its live LiteGraph facade. The store remains the identity owner;
- * this only installs the adapter used by graph lookup, painting, and link
- * interactions.
- *
- * This adoption is the only one of the three `adoptLinkTopology` call sites
- * that can run strictly after the topology's own registration bumped
- * {@link useLinkStore}'s revision (`registerLinkTopology` and
- * `replaceLinkTopology` register and adopt in the same call, so their
- * revision bump already postdates their adoption). Something reading
- * `graph.links` between this topology's registration and this function
- * materializing it — e.g. a CRDT `connect` mutation's own commit, checking
- * the slot it just displaced — would otherwise cache "no facade yet"
- * against that revision forever, since adoption alone never bumps it.
- */
-export function materializeLinkAdapter(
-  graph: Pick<LGraph, 'rootGraph' | 'id'>,
-  topology: LinkTopology
-): LLink | undefined {
-  const rawTopology = toRaw(topology)
-  const existing = linkByTopology.get(rawTopology)
-  if (existing) return existing
-
-  const scope = graphScopeOf(graph)
-  const registered = useLinkStore().getTopology(scope.rootGraphId, topology.id)
-  if (
-    registered?.graphId !== scope.owningGraphId ||
-    toRaw(registered) !== rawTopology
-  ) {
-    return
-  }
-
-  const link = new LLink(
-    topology.id,
-    topology.type,
-    serializeNodeId(topology.originNodeId),
-    topology.originSlot,
-    serializeNodeId(topology.targetNodeId),
-    topology.targetSlot,
-    topology.parentId
-  )
-  adoptLinkTopology(link, scope, registered)
-  useLinkStore().notifyAdapterAdopted()
-  return link
 }
 
 function defineEnumerableTopologyFacade(link: LLink): void {

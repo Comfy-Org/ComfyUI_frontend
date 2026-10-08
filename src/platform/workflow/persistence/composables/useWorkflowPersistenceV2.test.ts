@@ -117,10 +117,6 @@ vi.mock(import('@/platform/distribution/types'), () => ({
   }
 }))
 
-vi.mock(import('../migration/migrateV1toV2'), () => ({
-  migrateV1toV2: vi.fn()
-}))
-
 type GraphChangedHandler = (() => void) | null
 
 const mocks = vi.hoisted(() => {
@@ -419,7 +415,6 @@ describe('useWorkflowPersistenceV2', () => {
 
     it('falls back to the default workflow when metadata loading fails', async () => {
       const workflowStore = useWorkflowStore()
-      vi.spyOn(console, 'error').mockImplementation(() => {})
       vi.spyOn(workflowStore, 'loadWorkflows').mockRejectedValue(
         new Error('metadata failed')
       )

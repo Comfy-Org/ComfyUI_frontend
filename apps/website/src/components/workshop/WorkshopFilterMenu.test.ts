@@ -3,7 +3,7 @@ import { render, screen, waitFor, within } from '@testing-library/vue'
 import { describe, expect, it } from 'vitest'
 import { defineComponent, h, ref } from 'vue'
 
-import type { UseCase } from '../../config/models-catalogue'
+import type { UseCase } from '@/config/models-catalogue'
 import type { FacetMenuOption } from './WorkshopFilterMenu.vue'
 import WorkshopFilterMenu from './WorkshopFilterMenu.vue'
 
@@ -34,7 +34,7 @@ describe('WorkshopFilterMenu', () => {
   it('closes on Escape from inside the filter panel and restores trigger focus', async () => {
     const user = userEvent.setup()
     mountMenu()
-    const trigger = screen.getByRole('button', { name: 'Filter' })
+    const trigger = screen.getByRole('button', { name: 'Use cases' })
     await user.click(trigger)
     const dialog = await screen.findByRole('dialog')
     const useCase = await within(dialog).findByRole('button', {
