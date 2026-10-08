@@ -51,7 +51,7 @@ describe('ProductShowcaseSection', () => {
   })
 
   it.for([
-    ['Full Control with Nodes', '/download/', 'Explore Comfy Desktop'],
+    ['Full Control with Nodes', '/download/', 'See Desktop Features'],
     ['Comfy Agent', '/agent/', 'Explore Comfy Agent'],
     ['Comfy API', '/platform/comfy-api/', 'Explore Comfy API']
   ])(
