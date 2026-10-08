@@ -53,6 +53,23 @@ const FIREBASE_CONFIG = {
 interface CloudOverrides {
   readonly workspace?: () => Response
   readonly createSession?: () => Response
+  readonly credentialedFeaturesDelayMs?: number
+}
+
+async function answerFeatures(
+  init: RequestInit,
+  credentialedDelayMs = 0
+): Promise<Response> {
+  const credentialed = init.credentials === 'include'
+  if (credentialed && credentialedDelayMs > 0)
+    await new Promise((resolve) => setTimeout(resolve, credentialedDelayMs))
+  return new Response(
+    JSON.stringify(
+      credentialed
+        ? { unified_web_session: true }
+        : { web_session_probe: true, firebase_config: FIREBASE_CONFIG }
+    )
+  )
 }
 
 function stubCloud(state: FakeWebSessionState, overrides: CloudOverrides = {}) {
@@ -64,15 +81,8 @@ function stubCloud(state: FakeWebSessionState, overrides: CloudOverrides = {}) {
       const { pathname } = new URL(String(input))
       const workspace = new Headers(init.headers).get('X-Comfy-Workspace-ID')
       sent.push({ path: pathname, workspace })
-      if (pathname === '/api/features') {
-        return new Response(
-          JSON.stringify(
-            init.credentials === 'include'
-              ? { unified_web_session: true }
-              : { web_session_probe: true, firebase_config: FIREBASE_CONFIG }
-          )
-        )
-      }
+      if (pathname === '/api/features')
+        return answerFeatures(init, overrides.credentialedFeaturesDelayMs)
       if (pathname === '/api/workspaces/current' && overrides.workspace) {
         return overrides.workspace()
       }
@@ -151,6 +161,23 @@ describe('billing-web with unified_web_session on', () => {
       workspace: 'ws-team'
     })
   })
+
+  it("waits for a slow Cloud session answer instead of falling back to this origin's own sign-in", async () => {
+    const sent = stubCloud(
+      { kind: 'live', user: fakeWebSessionUser() },
+      { credentialedFeaturesDelayMs: 1200 }
+    )
+
+    const { router, signInPage } = await arriveAt(CHECKOUT)
+
+    await vi.waitFor(
+      () => expect(router.currentRoute.value.fullPath).toBe(CHECKOUT),
+      { timeout: 4000 }
+    )
+    expect(signInPage.leaving.value).toBe(true)
+    expect(h.initializeApp).not.toHaveBeenCalled()
+    expect(sent.map(({ path }) => path)).not.toContain('/api/auth/token')
+  }, 8000)
 
   it('keeps every entry parameter through a genuine sign-in (SO1)', async () => {
     stubCloud({ kind: 'dead', code: 'no_session' })

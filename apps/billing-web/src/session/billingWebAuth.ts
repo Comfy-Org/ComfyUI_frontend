@@ -5,8 +5,9 @@
  * phase reads `pending`, which is what main shows while Firebase has not
  * answered. Nothing reads either side before then, so the web session path
  * never initialises Firebase it does not need. A probe that is absent or
- * false settles it at once; the session path gets `DECISION_CAP_MS`, after
- * which this page load stays on the session client.
+ * false settles it at once; otherwise the credentialed read decides, bounded
+ * by its own timeout. It is never cut short: falling back to this origin's
+ * Firebase would sign in whoever last signed in here, not the Cloud session.
  */
 import type { ComputedRef } from 'vue'
 import { computed, shallowRef, watch } from 'vue'
@@ -57,8 +58,6 @@ function unifiedSession(): UnifiedBillingSession {
   return unified
 }
 
-const DECISION_CAP_MS = 800
-
 /** Set once the customer authenticates on this page, so a retry after that still reads as interactive. */
 let signedInHere = false
 
@@ -66,15 +65,8 @@ function reportEstablished(decided: WebSessionMode): void {
   reportSessionEstablished(signedInHere ? 'interactive' : 'restored', decided)
 }
 
-/** First answer wins; a flag arriving after the cap changes nothing. */
 function decideMode(): Promise<WebSessionMode> {
-  decision ??= new Promise<boolean>((resolve) => {
-    const cap = setTimeout(() => resolve(false), DECISION_CAP_MS)
-    void readBillingWebUnifiedWebSession().then((enabled) => {
-      clearTimeout(cap)
-      resolve(enabled)
-    })
-  }).then((enabled) => {
+  decision ??= readBillingWebUnifiedWebSession().then((enabled) => {
     mode.value = enabled ? 'web-session' : 'session-client'
     return mode.value
   })
