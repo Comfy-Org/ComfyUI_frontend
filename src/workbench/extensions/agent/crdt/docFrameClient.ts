@@ -341,6 +341,18 @@ function fitsAwarenessBudget(state: Record<string, unknown>): boolean {
   return stateSize !== null && stateSize <= MAX_AWARENESS_STATE_BYTES
 }
 
+type AwarenessStateResult =
+  | { kind: 'present'; state: Record<string, unknown> }
+  | { kind: 'absent' }
+  | { kind: 'invalid' }
+
+function parseAwarenessState(value: unknown): AwarenessStateResult {
+  if (isAbsent(value)) return { kind: 'absent' }
+  const state = parseRecord(value)
+  if (state === null || !fitsAwarenessBudget(state)) return { kind: 'invalid' }
+  return { kind: 'present', state }
+}
+
 const serverFrameParsers: ServerFrameParsers = {
   doc_update: (workflowId, data) => {
     if (!isSequence(data.seq) || typeof data.update_b64 !== 'string')
@@ -408,16 +420,15 @@ const serverFrameParsers: ServerFrameParsers = {
       : null,
   awareness: (workflowId, data) => {
     if (typeof data.actor !== 'string' || !isValidActor(data.actor)) return null
-    const state = parseRecord(data.state)
-    if (state === null ? !isAbsent(data.state) : !fitsAwarenessBudget(state))
-      return null
+    const parsed = parseAwarenessState(data.state)
+    if (parsed.kind === 'invalid') return null
     if (!isAbsent(data.expires_at) && !isSequence(data.expires_at)) return null
     return {
       type: 'awareness',
       data: {
         workflowId,
         actor: data.actor,
-        ...(state !== null && { state }),
+        ...(parsed.kind === 'present' && { state: parsed.state }),
         ...(isSequence(data.expires_at) && { expiresAt: data.expires_at })
       }
     }
