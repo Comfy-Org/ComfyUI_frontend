@@ -209,25 +209,29 @@ test.describe('Cloud login SSO entry', { tag: ['@cloud', '@ui'] }, () => {
           headers: { location: new URL(returnTo ?? '/', APP_URL).toString() }
         })
       })
-      await page.route('**/oauth/consent**', (route) =>
-        route.request().resourceType() === 'document' &&
-        new URL(route.request().url()).pathname.replace(/\/+$/, '') ===
-          '/oauth/consent'
-          ? route.fulfill({
-              status: 404,
-              json: { code: 'NOT_FOUND', message: 'Not Found' }
-            })
-          : route.fallback()
-      )
+      // The server serves the SPA as a page only at /cloud/oauth/consent and
+      // answers a document load of /oauth/consent with a JSON 404.
+      await page.route('**/oauth/consent**', async (route) => {
+        const request = route.request()
+        if (request.resourceType() !== 'document') return route.fallback()
+        const path = new URL(request.url()).pathname.replace(/\/+$/, '')
+        if (path === '/cloud/oauth/consent') {
+          const app = await route.fetch({ url: `${APP_URL}/` })
+          return route.fulfill({ response: app })
+        }
+        return route.fulfill({
+          status: 404,
+          json: { code: 'NOT_FOUND', message: 'Not Found' }
+        })
+      })
       await page.route('**/oauth/authorize?**', (route) =>
         route.request().resourceType() === 'document'
           ? route.fallback()
           : route.fulfill({ status: 200, json: CONSENT_CHALLENGE })
       )
 
-      await page.goto(
-        `${APP_URL}/cloud/login?oauth_request_id=${OAUTH_REQUEST_ID}`
-      )
+      await page.goto(`${APP_URL}/?oauth_request_id=${OAUTH_REQUEST_ID}`)
+      await expect(page).toHaveURL(/\/cloud\/login/)
       await page.getByRole('button', { name: SSO_COPY.continueWithSso }).click()
       await page.locator('#cloud-sso-email').fill(SSO_EMAIL)
       await page
