@@ -23,6 +23,15 @@ const INLINED_CLOUD_EXTENSIONS = new Set([
   '/extensions/cloud/sentry.js'
 ])
 
+function isPromiseLike(value: unknown): value is PromiseLike<unknown> {
+  return (
+    value instanceof Promise ||
+    (typeof value === 'object' &&
+      value !== null &&
+      typeof (value as { then?: unknown }).then === 'function')
+  )
+}
+
 export function shouldLoadExtension(
   extension: string,
   isCloudBuild: boolean
@@ -270,7 +279,12 @@ export const useExtensionService = () => {
 
   /**
    * Invoke an async extension callback
-   * Each callback will be invoked concurrently
+   * Each callback will be invoked concurrently, in extension order. Only
+   * extensions that define the callback do any work, and only the promises
+   * that callbacks actually return are awaited (callbacks that return
+   * synchronously are never wrapped in a promise). The resolved array holds
+   * the results of those async callbacks, so it is not index-aligned with the
+   * extensions.
    * @param {string} method The extension callback to execute
    * @param  {...unknown} args Any arguments to pass to the callback
    * @returns
@@ -287,61 +301,42 @@ export const useExtensionService = () => {
         { args }
       )
 
-    const callHook = async (ext: ComfyExtension) => {
+    // This runs once per node def per extension, so avoid allocating promises
+    // or closures for extensions that do not define the hook.
+    const pending: Promise<unknown>[] = []
+    for (const ext of extensionStore.enabledExtensions) {
+      // The property read is inside the try so a throwing getter or Proxy trap
+      // only affects its own extension.
       try {
         const fn = ext[method]
-        if (typeof fn !== 'function') {
-          return
-        }
+        if (typeof fn !== 'function') continue
 
-        // Set current extension name for legacy compatibility tracking
         if (method === 'setup') {
-          legacyMenuCompat.setCurrentExtension(ext.name)
+          // Track the current extension for legacy compatibility
+          pending.push(
+            (async () => {
+              legacyMenuCompat.setCurrentExtension(ext.name)
+              try {
+                return await fn.call(ext, ...args, app)
+              } finally {
+                legacyMenuCompat.setCurrentExtension(null)
+              }
+            })().catch((error) => logError(ext, error))
+          )
+          continue
         }
 
-        const result = await fn.call(ext, ...args, app)
-
-        // Clear current extension after setup
-        if (method === 'setup') {
-          legacyMenuCompat.setCurrentExtension(null)
+        const result: unknown = fn.call(ext, ...args, app)
+        if (isPromiseLike(result)) {
+          pending.push(
+            Promise.resolve(result).catch((error) => logError(ext, error))
+          )
         }
-
-        return result
       } catch (error) {
-        // Clear current extension on error too
-        if (method === 'setup') {
-          legacyMenuCompat.setCurrentExtension(null)
-        }
-
         logError(ext, error)
       }
     }
-
-    // Called once per node def per extension, so only start async work for
-    // extensions that define the hook. The `in` check stays synchronous and is
-    // evaluated in extension order, like the hook calls, and is guarded so a
-    // throwing Proxy `has` trap only affects its own extension.
-    const exts = extensionStore.enabledExtensions
-    const results: Awaited<ReturnType<typeof callHook>>[] = Array.from(
-      { length: exts.length },
-      () => undefined
-    )
-    const pending: Promise<void>[] = []
-    exts.forEach((ext, index) => {
-      try {
-        if (!(method in ext)) return
-      } catch (error) {
-        logError(ext, error)
-        return
-      }
-      pending.push(
-        callHook(ext).then((result) => {
-          results[index] = result
-        })
-      )
-    })
-    await Promise.all(pending)
-    return results
+    return await Promise.all(pending)
   }
 
   return {

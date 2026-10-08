@@ -4,7 +4,6 @@ import { legacyMenuCompat } from '@/lib/litegraph/src/contextMenuCompat'
 import { reportError } from '@/platform/telemetry/reportError'
 import { api } from '@/scripts/api'
 import { useExtensionStore } from '@/stores/extensionStore'
-import type { ComfyExtension } from '@/types/comfy'
 
 import type { ExtensionLoadFailure } from './extensionService'
 import {
@@ -196,6 +195,19 @@ describe('invokeExtensionsAsync', () => {
     expect(calls).toEqual(['a', 'b'])
   })
 
+  it('invokes every hook synchronously, before any await', () => {
+    const calls: string[] = []
+    register(
+      { name: 'sync', [HOOK]: () => void calls.push('sync') },
+      { name: 'async', [HOOK]: async () => void calls.push('async') },
+      { name: 'sync2', [HOOK]: () => void calls.push('sync2') }
+    )
+
+    void invoke()
+
+    expect(calls).toEqual(['sync', 'async', 'sync2'])
+  })
+
   it('starts hooks concurrently rather than sequentially', async () => {
     const events: string[] = []
     let releaseFirst = noop
@@ -218,37 +230,48 @@ describe('invokeExtensionsAsync', () => {
     expect(events).toEqual(['slow:start', 'fast:start', 'slow:end'])
   })
 
-  it('keeps one result slot per enabled extension, aligned by index', async () => {
+  it('waits for async hooks and resolves with their results', async () => {
     register(
       { name: 'none-first' },
-      { name: 'a', [HOOK]: () => 'a-result' },
-      { name: 'none-middle' },
-      { name: 'b', [HOOK]: async () => 'b-result' },
-      { name: 'none-last' }
+      { name: 'sync', [HOOK]: () => 'sync-result' },
+      { name: 'a', [HOOK]: async () => 'a-result' },
+      { name: 'none-last' },
+      { name: 'b', [HOOK]: () => Promise.resolve('b-result') }
     )
 
     const results = await invoke()
 
-    expect(results).toHaveLength(5)
-    expect(results).toEqual([
-      undefined,
-      'a-result',
-      undefined,
-      'b-result',
-      undefined
-    ])
-    expect(Array.from(results.keys())).toEqual([0, 1, 2, 3, 4])
+    expect(results).toEqual(['a-result', 'b-result'])
   })
 
-  it('skips disabled extensions without leaving a slot', async () => {
+  it('awaits thenables that are not native promises', async () => {
+    const order: string[] = []
+    register({
+      name: 'thenable',
+      [HOOK]: () => ({
+        then: (resolve: (value: string) => void) => {
+          setTimeout(() => {
+            order.push('thenable')
+            resolve('done')
+          }, 0)
+        }
+      })
+    })
+
+    const results = await invoke()
+
+    expect(order).toEqual(['thenable'])
+    expect(results).toEqual(['done'])
+  })
+
+  it('skips disabled extensions', async () => {
     const hook = vi.fn()
     register({ name: 'off', [HOOK]: hook }, { name: 'on', [HOOK]: hook })
     useExtensionStore().loadDisabledExtensionNames(['off'])
 
-    const results = await invoke()
+    await invoke()
 
     expect(hook).toHaveBeenCalledOnce()
-    expect(results).toHaveLength(1)
   })
 
   it('calls hooks inherited from the prototype chain', async () => {
@@ -262,37 +285,33 @@ describe('invokeExtensionsAsync', () => {
 
   it('passes the args plus the app and binds this to the extension', async () => {
     const hook = vi.fn()
-    const ext: TestExtension = { name: 'a', [HOOK]: hook }
-    register(ext)
+    register({ name: 'a', [HOOK]: hook })
     const defs = {}
 
     await useExtensionService().invokeExtensionsAsync(HOOK, defs)
 
     expect(hook).toHaveBeenCalledOnce()
+    expect(hook.mock.calls[0]).toHaveLength(2)
     expect(hook.mock.calls[0][0]).toBe(defs)
     expect(hook.mock.contexts[0]).toBe(useExtensionStore().extensions[0])
   })
 
-  it('ignores a non-function property of the same name', async () => {
+  it('silently ignores a non-function property of the same name', async () => {
     const after = vi.fn()
     register(
       { name: 'not-fn', [HOOK]: 'nope' },
-      {
-        name: 'after',
-        [HOOK]: after
-      }
+      { name: 'after', [HOOK]: after }
     )
 
-    const results = await invoke()
+    await invoke()
 
     expect(after).toHaveBeenCalledOnce()
-    expect(results).toEqual([undefined, undefined])
     expect(console.error).not.toHaveBeenCalled()
   })
 
-  it('logs a throwing or rejecting hook and still runs the others', async () => {
+  it('logs a throwing sync hook and still runs the others', async () => {
     const before = vi.fn()
-    const after = vi.fn(() => 'ok')
+    const after = vi.fn()
     register(
       { name: 'before', [HOOK]: before },
       {
@@ -301,21 +320,33 @@ describe('invokeExtensionsAsync', () => {
           throw new Error('sync boom')
         }
       },
-      {
-        name: 'async-reject',
-        [HOOK]: () => Promise.reject(new Error('async'))
-      },
+      { name: 'after', [HOOK]: after }
+    )
+
+    await invoke()
+
+    expect(before).toHaveBeenCalledOnce()
+    expect(after).toHaveBeenCalledOnce()
+    expect(console.error).toHaveBeenCalledOnce()
+    expect(vi.mocked(console.error).mock.calls[0][0]).toBe(
+      `Error calling extension 'sync-throw' method '${HOOK}'`
+    )
+  })
+
+  it('logs a rejecting async hook without failing the others', async () => {
+    const after = vi.fn(async () => 'ok')
+    register(
+      { name: 'async-reject', [HOOK]: () => Promise.reject(new Error('nope')) },
       { name: 'after', [HOOK]: after }
     )
 
     const results = await invoke()
 
-    expect(before).toHaveBeenCalledOnce()
     expect(after).toHaveBeenCalledOnce()
-    expect(results).toEqual([undefined, undefined, undefined, 'ok'])
-    expect(console.error).toHaveBeenCalledTimes(2)
+    expect(results).toEqual([undefined, 'ok'])
+    expect(console.error).toHaveBeenCalledOnce()
     expect(vi.mocked(console.error).mock.calls[0][0]).toBe(
-      `Error calling extension 'sync-throw' method '${HOOK}'`
+      `Error calling extension 'async-reject' method '${HOOK}'`
     )
   })
 
@@ -334,29 +365,28 @@ describe('invokeExtensionsAsync', () => {
 
     expect(after).toHaveBeenCalledOnce()
     expect(console.error).toHaveBeenCalledOnce()
+    expect(vi.mocked(console.error).mock.calls[0][0]).toBe(
+      `Error calling extension 'getter' method '${HOOK}'`
+    )
   })
 
-  it('isolates a Proxy whose has trap throws', async () => {
+  it('isolates a Proxy whose get trap throws', async () => {
     const after = vi.fn()
     const proxied = new Proxy(
       { name: 'proxy' },
       {
-        has(target, key) {
-          if (key === HOOK) throw new Error('has boom')
-          return key in target
+        get(target, key) {
+          if (key === HOOK) throw new Error('get boom')
+          return Reflect.get(target, key)
         }
       }
     )
     register(proxied, { name: 'after', [HOOK]: after })
 
-    const results = await invoke()
+    await invoke()
 
     expect(after).toHaveBeenCalledOnce()
-    expect(results).toEqual([undefined, undefined])
     expect(console.error).toHaveBeenCalledOnce()
-    expect(vi.mocked(console.error).mock.calls[0][0]).toBe(
-      `Error calling extension 'proxy' method '${HOOK}'`
-    )
   })
 
   it('picks up a hook added by an earlier extension during the same call', async () => {
@@ -385,14 +415,14 @@ describe('invokeExtensionsAsync', () => {
         useExtensionStore().registerExtension({ name: 'added', [HOOK]: added })
     })
 
-    const results = await invoke()
+    await invoke()
 
     expect(added).not.toHaveBeenCalled()
-    expect(results).toHaveLength(1)
   })
 
-  it('creates promise work only for extensions that define the hook', async () => {
-    const all = Array.from({ length: 1000 }, (_, i): ComfyExtension => {
+  it('only waits on promises that hooks actually return', async () => {
+    const all = Array.from({ length: 1000 }, (_, i): TestExtension => {
+      if (i === 0) return { name: `ext-${i}`, [HOOK]: async () => {} }
       return i % 300 === 0
         ? { name: `ext-${i}`, [HOOK]: noop }
         : { name: `ext-${i}` }
@@ -400,12 +430,10 @@ describe('invokeExtensionsAsync', () => {
     register(...all)
     const promiseAll = vi.spyOn(Promise, 'all')
 
-    const results = await invoke()
+    await invoke()
 
-    expect(results).toHaveLength(1000)
     const [pending] = promiseAll.mock.calls[0]
-    // ext-0, ext-300, ext-600 and ext-900 define the hook
-    expect([...pending]).toHaveLength(4)
+    expect([...pending]).toHaveLength(1)
   })
 
   describe('legacy menu compat tracking for setup', () => {
@@ -436,6 +464,32 @@ describe('invokeExtensionsAsync', () => {
       await useExtensionService().invokeExtensionsAsync('setup')
 
       expect(spy.mock.calls).toEqual([['bad'], [null]])
+      expect(console.error).toHaveBeenCalledOnce()
+    })
+
+    it('clears the current extension when setup rejects, without failing others', async () => {
+      const spy = vi.spyOn(legacyMenuCompat, 'setCurrentExtension')
+      const after = vi.fn()
+      register(
+        { name: 'bad', setup: () => Promise.reject(new Error('nope')) },
+        { name: 'after', setup: after }
+      )
+
+      await useExtensionService().invokeExtensionsAsync('setup')
+
+      expect(after).toHaveBeenCalledOnce()
+      expect(spy.mock.calls).toContainEqual([null])
+      expect(console.error).toHaveBeenCalledOnce()
+    })
+
+    it('passes the app once to setup hooks', async () => {
+      const setup = vi.fn()
+      register({ name: 'a', setup })
+
+      await useExtensionService().invokeExtensionsAsync('setup')
+
+      expect(setup).toHaveBeenCalledOnce()
+      expect(setup.mock.calls[0]).toHaveLength(1)
     })
   })
 })
