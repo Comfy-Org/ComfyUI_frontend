@@ -5,7 +5,7 @@ import { ref, watch } from 'vue'
 import { useApiRequest } from '@/composables/useApiRequest'
 import { attachUnifiedRemintInterceptor } from '@/platform/auth/unified/remintRetry'
 import { getComfyApiBaseUrl } from '@/config/comfyApi'
-import { d, t } from '@/i18n'
+import { d, t, tPlain } from '@/i18n'
 import { useAuthStore } from '@/stores/authStore'
 import type { components, operations } from '@/types/comfyRegistryTypes'
 
@@ -52,12 +52,18 @@ export const useCustomerEventsService = () => {
     routeSpecificErrors?: Record<number, string>
   ): string => {
     if (!axios.isAxiosError(err)) {
-      return `${context} failed: ${err instanceof Error ? err.message : String(err)}`
+      return tPlain('serviceErrors.failedWithMessage', {
+        context,
+        message: err instanceof Error ? err.message : String(err)
+      })
     }
 
     const axiosError = err as AxiosError<ErrorResponse>
     if (!axiosError.response) {
-      return `${context} failed: ${axiosError.message}`
+      return tPlain('serviceErrors.failedWithMessage', {
+        context,
+        message: axiosError.message
+      })
     }
 
     const status = axiosError.response.status
@@ -67,7 +73,7 @@ export const useCustomerEventsService = () => {
 
     return (
       axiosError.response.data?.message ??
-      `${context} failed with status ${status}`
+      tPlain('serviceErrors.failedWithStatus', { context, status })
     )
   }
 
@@ -167,10 +173,10 @@ export const useCustomerEventsService = () => {
     page = 1,
     limit = 10
   }: CustomerEventsResponseQuery = {}): Promise<CustomerEventsResponse | null> {
-    const errorContext = 'Fetching customer events'
+    const errorContext = t('serviceErrors.context.fetchingCustomerEvents')
     const routeSpecificErrors = {
-      400: 'Invalid input, object invalid',
-      404: 'Not found'
+      400: t('serviceErrors.route.invalidInputObject'),
+      404: t('serviceErrors.route.resourceNotFoundShort')
     }
 
     const authStore = useAuthStore()
@@ -189,7 +195,7 @@ export const useCustomerEventsService = () => {
     }
     if (!authHeaders) {
       isLoading.value = false
-      error.value = 'Authentication header is missing'
+      error.value = t('serviceErrors.authHeaderMissing')
       return null
     }
 

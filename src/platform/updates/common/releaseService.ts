@@ -4,6 +4,7 @@ import { watch } from 'vue'
 
 import { useApiRequest } from '@/composables/useApiRequest'
 import { getComfyApiBaseUrl } from '@/config/comfyApi'
+import { t, tPlain } from '@/i18n'
 import type { components, operations } from '@/types/comfyRegistryTypes'
 
 // Use generated types from OpenAPI spec
@@ -36,8 +37,11 @@ export const useReleaseService = () => {
   ): string => {
     if (!axios.isAxiosError(err))
       return err instanceof Error
-        ? `${context}: ${err.message}`
-        : `${context}: Unknown error occurred`
+        ? tPlain('serviceErrors.contextWithMessage', {
+            context,
+            message: err.message
+          })
+        : tPlain('serviceErrors.unknownError', { context })
 
     const axiosError = err as AxiosError<ErrorResponse>
 
@@ -49,21 +53,37 @@ export const useReleaseService = () => {
 
       switch (status) {
         case 400:
-          return `Bad request: ${data?.message || 'Invalid input'}`
+          return tPlain('serviceErrors.badRequest', {
+            message: data?.message || t('serviceErrors.invalidInput')
+          })
         case 401:
-          return 'Unauthorized: Authentication required'
+          return t('serviceErrors.unauthorized')
         case 403:
-          return `Forbidden: ${data?.message || 'Access denied'}`
+          return tPlain('serviceErrors.forbidden', {
+            message: data?.message || t('serviceErrors.accessDenied')
+          })
         case 404:
-          return `Not found: ${data?.message || 'Resource not found'}`
+          return tPlain('serviceErrors.notFound', {
+            message: data?.message || t('serviceErrors.resourceNotFound')
+          })
         case 500:
-          return `Server error: ${data?.message || 'Internal server error'}`
+          return tPlain('serviceErrors.serverError', {
+            message: data?.message || t('serviceErrors.internalServerError')
+          })
         default:
-          return `${context}: ${data?.message || axiosError.message}`
+          return tPlain('serviceErrors.contextWithMessage', {
+            context,
+            message: data?.message || axiosError.message
+          })
       }
     }
 
-    return `${context}: ${axiosError.message}`
+    return axiosError.message
+      ? tPlain('serviceErrors.contextWithMessage', {
+          context,
+          message: axiosError.message
+        })
+      : tPlain('serviceErrors.unknownError', { context })
   }
 
   const { isLoading, error, executeRequest } = useApiRequest({
@@ -78,9 +98,9 @@ export const useReleaseService = () => {
   ): Promise<ReleaseNote[] | null> => {
     const { signal, deployEnvironment } = options
     const endpoint = '/releases'
-    const errorContext = 'Failed to get releases'
+    const errorContext = t('serviceErrors.context.getReleases')
     const routeSpecificErrors = {
-      400: 'Invalid project or version parameter'
+      400: t('serviceErrors.route.invalidProjectOrVersion')
     }
 
     const apiResponse = await executeRequest(
