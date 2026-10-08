@@ -6,6 +6,7 @@ import type { AnchorHTMLAttributes, HTMLAttributes } from 'vue'
 
 import BrandButton from '@/components/common/BrandButton.vue'
 import CheckIcon from '@/components/icons/CheckIcon.vue'
+import BuildConfiguratorChipGroup from './BuildConfiguratorChipGroup.vue'
 
 type Cta = {
   label: string
@@ -47,6 +48,8 @@ const {
   nodesUnit = 'nodes',
   modelsUnit = 'models',
   pinnedLabel = 'pinned',
+  moreOptionsLabel = 'more options',
+  showOptionDetails = false,
   class: className
 } = defineProps<{
   heading: string
@@ -67,6 +70,8 @@ const {
   nodesUnit?: string
   modelsUnit?: string
   pinnedLabel?: string
+  moreOptionsLabel?: string
+  showOptionDetails?: boolean
   class?: HTMLAttributes['class']
 }>()
 
@@ -78,12 +83,6 @@ const activeNodeIds = ref(
 const activeModelIds = ref(
   models.filter((model) => model.selected).map((model) => model.id)
 )
-
-function toggleId(ids: string[], id: string): string[] {
-  return ids.includes(id)
-    ? ids.filter((existing) => existing !== id)
-    : [...ids, id]
-}
 
 const selectedEnvironment = computed(() =>
   environments.find(
@@ -106,15 +105,6 @@ const pillClasses = (selected: boolean) =>
     selected
       ? 'bg-primary-comfy-plum text-primary-warm-white'
       : 'bg-primary-comfy-canvas/8 text-primary-warm-white/55 hover:bg-primary-comfy-canvas/15'
-  )
-
-const chipClasses = (option: ChipOption, selected: boolean) =>
-  cn(
-    'cursor-pointer rounded-full px-3.5 py-2 transition-colors',
-    option.mono ? 'font-mono text-[11.5px]' : 'text-[13px]',
-    selected
-      ? 'bg-primary-comfy-plum text-primary-warm-white'
-      : 'bg-primary-comfy-canvas/8 text-primary-comfy-canvas hover:bg-primary-comfy-canvas/15'
   )
 </script>
 
@@ -189,6 +179,12 @@ const chipClasses = (option: ChipOption, selected: boolean) =>
             >
               {{ release }}
             </button>
+            <span
+              v-if="showOptionDetails"
+              class="self-center text-[13px] text-primary-warm-white/55 underline underline-offset-4"
+            >
+              {{ moreOptionsLabel }}
+            </span>
           </div>
         </div>
 
@@ -209,48 +205,29 @@ const chipClasses = (option: ChipOption, selected: boolean) =>
             >
               {{ environmentLabel(environment) }}
             </button>
+            <span
+              v-if="showOptionDetails"
+              class="self-center text-[13px] text-primary-warm-white/55 underline underline-offset-4"
+            >
+              {{ moreOptionsLabel }}
+            </span>
           </div>
         </div>
 
-        <div class="mt-6" role="group" :aria-label="nodesLabel">
-          <p
-            class="text-[0.65rem] tracking-[0.12em] text-primary-warm-white/55 uppercase"
-          >
-            {{ nodesLabel }}
-          </p>
-          <div class="mt-3 flex flex-wrap gap-2">
-            <button
-              v-for="node in nodes"
-              :key="node.id"
-              type="button"
-              :aria-pressed="activeNodeIds.includes(node.id)"
-              :class="chipClasses(node, activeNodeIds.includes(node.id))"
-              @click="activeNodeIds = toggleId(activeNodeIds, node.id)"
-            >
-              {{ node.label }}
-            </button>
-          </div>
-        </div>
-
-        <div class="mt-6" role="group" :aria-label="modelsLabel">
-          <p
-            class="text-[0.65rem] tracking-[0.12em] text-primary-warm-white/55 uppercase"
-          >
-            {{ modelsLabel }}
-          </p>
-          <div class="mt-3 flex flex-wrap gap-2">
-            <button
-              v-for="model in models"
-              :key="model.id"
-              type="button"
-              :aria-pressed="activeModelIds.includes(model.id)"
-              :class="chipClasses(model, activeModelIds.includes(model.id))"
-              @click="activeModelIds = toggleId(activeModelIds, model.id)"
-            >
-              {{ model.label }}
-            </button>
-          </div>
-        </div>
+        <BuildConfiguratorChipGroup
+          v-model="activeNodeIds"
+          :label="nodesLabel"
+          :options="nodes"
+          :show-option-details="showOptionDetails"
+          :more-options-label="moreOptionsLabel"
+        />
+        <BuildConfiguratorChipGroup
+          v-model="activeModelIds"
+          :label="modelsLabel"
+          :options="models"
+          :show-option-details="showOptionDetails"
+          :more-options-label="moreOptionsLabel"
+        />
 
         <div
           class="mt-8 flex flex-col gap-5 border-t border-primary-comfy-plum/25 pt-5 sm:flex-row sm:items-end sm:justify-between"

@@ -52,7 +52,7 @@ export default defineConfig({
       // island (MapPins01), which Vite's dep scanner does not walk. Without
       // this the dev server serves a stale pre-bundle URL and the map silently
       // fails to load.
-      include: ['leaflet']
+      include: ['leaflet', 'lottie-web']
     },
     server: {
       watch: {

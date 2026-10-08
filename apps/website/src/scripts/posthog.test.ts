@@ -756,6 +756,23 @@ describe('captureDownloadClick', () => {
   })
 })
 
+describe('VFX campaign clicks', () => {
+  beforeEach(() => vi.resetModules())
+
+  it('captures the destination and placement without visitor form data', async () => {
+    const { initPostHog, captureVfxLinkClick } = await import('./posthog')
+    initPostHog()
+    captureVfxLinkClick({ destination: '/contact/', placement: 'hero' })
+    expect(hoisted.mockCapture).toHaveBeenCalledWith(
+      'website:vfx_link_clicked',
+      {
+        destination: '/contact/',
+        placement: 'hero'
+      }
+    )
+  })
+})
+
 describe('captureCliConnectionTabClick', () => {
   beforeEach(() => {
     vi.resetModules()
@@ -1029,5 +1046,76 @@ describe('shared auth telemetry events', () => {
       AUTH_TELEMETRY_EVENT.authFailed,
       { error_code: 'auth/popup-closed-by-user', auth_action: 'google_sign_in' }
     )
+  })
+})
+
+describe('industry campaign clicks', () => {
+  beforeEach(() => vi.resetModules())
+
+  it.for([
+    'advertising',
+    'film-animation',
+    'architectural-visualization'
+  ] as const)(
+    'captures %s attribution with its placement',
+    async (vertical) => {
+      const { initPostHog, captureVerticalLinkClick } =
+        await import('./posthog')
+      initPostHog()
+      captureVerticalLinkClick({
+        vertical,
+        destination: '/contact/',
+        placement: 'studio'
+      })
+      expect(hoisted.mockCapture).toHaveBeenCalledWith(
+        'website:vertical_link_clicked',
+        { vertical, destination: '/contact/', placement: 'studio' }
+      )
+    }
+  )
+
+  it('does not capture industry clicks before initialization', async () => {
+    const { captureVerticalLinkClick } = await import('./posthog')
+    captureVerticalLinkClick({
+      vertical: 'advertising',
+      destination: '/contact/',
+      placement: 'page'
+    })
+    expect(hoisted.mockCapture).not.toHaveBeenCalled()
+  })
+})
+
+describe('agency campaign clicks', () => {
+  beforeEach(() => vi.resetModules())
+
+  it('captures agency campaign attribution separately from self-serve links', async () => {
+    const { initPostHog, captureAgencyLinkClick } = await import('./posthog')
+    initPostHog()
+    captureAgencyLinkClick({
+      vertical: 'vfx',
+      campaign_type: 'agency-led',
+      destination: '/contact/',
+      placement: 'partners'
+    })
+    expect(hoisted.mockCapture).toHaveBeenCalledExactlyOnceWith(
+      'website:agency_link_clicked',
+      {
+        vertical: 'vfx',
+        campaign_type: 'agency-led',
+        destination: '/contact/',
+        placement: 'partners'
+      }
+    )
+  })
+
+  it('does not capture agency clicks before initialization', async () => {
+    const { captureAgencyLinkClick } = await import('./posthog')
+    captureAgencyLinkClick({
+      vertical: 'advertising',
+      campaign_type: 'agency-led',
+      destination: '/contact/',
+      placement: 'hero'
+    })
+    expect(hoisted.mockCapture).not.toHaveBeenCalled()
   })
 })

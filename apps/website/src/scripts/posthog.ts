@@ -45,6 +45,9 @@ const ANALYTICS_EVENT = {
   routerRoadmapCardExpanded: 'website:router_roadmap_card_expanded',
   agentFaqExpanded: 'website:agent_faq_expanded',
   agentUsecaseVideoPlayed: 'website:agent_usecase_video_played',
+  vfxLinkClicked: 'website:vfx_link_clicked',
+  verticalLinkClicked: 'website:vertical_link_clicked',
+  agencyLinkClicked: 'website:agency_link_clicked',
   // Shared with the cloud app so one PostHog funnel covers auth outcomes
   // across every surface.
   authRefreshSucceeded: SESSION_TELEMETRY_EVENT.refreshSucceeded,
@@ -69,6 +72,18 @@ export type RouterRoadmapCardId = 'workflow' | 'strategy' | 'use-case' | 'byok'
 
 type AnalyticsEvent =
   | WebSessionTelemetryEvent
+  | {
+      name: typeof ANALYTICS_EVENT.vfxLinkClicked
+      properties: VfxLinkProperties
+    }
+  | {
+      name: typeof ANALYTICS_EVENT.verticalLinkClicked
+      properties: VerticalLinkProperties
+    }
+  | {
+      name: typeof ANALYTICS_EVENT.agencyLinkClicked
+      properties: AgencyLinkProperties
+    }
   | {
       name: `website:workshop_${WorkshopAnalyticsEvent['name']}`
       properties: WorkshopAnalyticsEvent['properties']
@@ -125,6 +140,26 @@ type AnalyticsEvent =
     }
 
 let initialized = false
+
+export type CampaignVertical =
+  | 'vfx'
+  | 'advertising'
+  | 'film-animation'
+  | 'architectural-visualization'
+
+interface VerticalLinkProperties extends VfxLinkProperties {
+  vertical: Exclude<CampaignVertical, 'vfx'>
+}
+
+interface AgencyLinkProperties extends VfxLinkProperties {
+  vertical: CampaignVertical
+  campaign_type: 'agency-led'
+}
+
+interface VfxLinkProperties {
+  destination: string
+  placement: 'hero' | 'workflows' | 'studio' | 'partners' | 'page'
+}
 
 const WORKSHOP_AUTH_FLAG = 'workshop-auth'
 const WORKSHOP_ENABLED_FLAG = 'workshop-enabled'
@@ -438,6 +473,20 @@ function captureEvent(event: AnalyticsEvent): void {
 
 export function capturePageview(): void {
   captureEvent({ name: ANALYTICS_EVENT.pageview })
+}
+
+export function captureVfxLinkClick(properties: VfxLinkProperties): void {
+  captureEvent({ name: ANALYTICS_EVENT.vfxLinkClicked, properties })
+}
+
+export function captureVerticalLinkClick(
+  properties: VerticalLinkProperties
+): void {
+  captureEvent({ name: ANALYTICS_EVENT.verticalLinkClicked, properties })
+}
+
+export function captureAgencyLinkClick(properties: AgencyLinkProperties): void {
+  captureEvent({ name: ANALYTICS_EVENT.agencyLinkClicked, properties })
 }
 
 export function captureWorkshopEvent(event: WorkshopAnalyticsEvent): void {

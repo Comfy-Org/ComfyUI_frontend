@@ -162,6 +162,10 @@ Languages: comfy.org is published in English and Simplified Chinese, with a Japa
 
 ## Learning
 
+- [Comfy for Advertising](https://comfy.org/advertising/): Creative workflows for brand campaigns, product photography, and ad production.
+- [Comfy for Film and Animation](https://comfy.org/film-animation/): Storyboards, character development, and animation workflows.
+- [Comfy for Architectural Visualization](https://comfy.org/architectural-visualization/): Spatial control, camera exploration, and image finishing workflows.
+- [Comfy for VFX](https://comfy.org/vfx/): VFX examples, reusable workflows, and studio deployment guidance.
 - [Learning Hub](https://comfy.org/learning/): Hands-on ComfyUI tutorials and workflows, organized by discipline.
 
 ### ComfyUI Basics

@@ -14,6 +14,10 @@ const ALL_LOCALE_PREFIXES = LOCALE_CODES.map((locale) => LOCALES[locale].prefix)
 
 export const NOINDEX_ROUTES = [
   ...PAYMENT_STATUSES.map((status) => `/payment/${status}`),
+  '/agency-led/vfx',
+  '/agency-led/advertising',
+  '/agency-led/film-animation',
+  '/agency-led/architectural-visualization',
   '/individual-submission',
   '/booking-confirmation',
   '/login',
