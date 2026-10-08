@@ -76,7 +76,7 @@ export const QA_ENVS: Partial<Record<string, QaEnv>> = {
 
 /** The named environment, or why it can't be used. */
 export function pickEnv(name: string): QaEnv {
-  const env = QA_ENVS[name]
+  const env = Object.hasOwn(QA_ENVS, name) ? QA_ENVS[name] : undefined
   if (env) return env
   throw new Error(
     `Unknown --env "${name}". Use one of: ${Object.keys(QA_ENVS).join(', ')}.`

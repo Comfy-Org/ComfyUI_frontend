@@ -17,6 +17,8 @@ import {
   cpSync,
   existsSync,
   mkdirSync,
+  mkdtempSync,
+  rmSync,
   readFileSync,
   renameSync,
   writeFileSync
@@ -142,7 +144,7 @@ function buildForEnv(sha: string, label: string, env: QaEnv): string {
   const repo = execFileSync('git', ['rev-parse', '--show-toplevel'], {
     encoding: 'utf8'
   }).trim()
-  const src = join(tmpdir(), `comfy-qa-build-${sha.slice(0, 7)}`)
+  const src = mkdtempSync(join(tmpdir(), `comfy-qa-build-${sha.slice(0, 7)}-`))
   run('git', ['fetch', 'origin', sha], repo)
   run('git', ['worktree', 'add', '--force', '--detach', src, sha], repo)
   try {
@@ -151,7 +153,10 @@ function buildForEnv(sha: string, label: string, env: QaEnv): string {
       VITE_USE_LEGACY_DEFAULT_GRAPH: 'true',
       ...env.buildEnv
     })
-    cpSync(join(src, 'dist'), dir, { recursive: true })
+    const staged = `${dir}.qa-tmp`
+    rmSync(staged, { recursive: true, force: true })
+    cpSync(join(src, 'dist'), staged, { recursive: true })
+    renameSync(staged, dir)
   } finally {
     run('git', ['worktree', 'remove', '--force', src], repo)
   }

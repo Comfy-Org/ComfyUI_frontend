@@ -165,7 +165,7 @@ describe('pickEnv', () => {
     })
   })
 
-  it('names the valid environments for an unknown one', () => {
-    expect(() => pickEnv('prod')).toThrow(/staging, testcloud/)
+  it.for(['prod', '__proto__'])('rejects %s as an environment', (name) => {
+    expect(() => pickEnv(name)).toThrow(/staging, testcloud/)
   })
 })
