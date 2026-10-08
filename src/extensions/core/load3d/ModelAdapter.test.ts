@@ -58,7 +58,7 @@ describe('fetchModelData', () => {
       'a b c.ply'
     )
 
-    expect(api.fetchApi).toHaveBeenCalledWith(
+    expect(vi.mocked(api.fetchApi).mock.calls[0][0]).toBe(
       '/view?type=input&subfolder=&filename=a%20b%20c.ply'
     )
   })
@@ -71,6 +71,21 @@ describe('fetchModelData', () => {
 
     await fetchModelData('custom?filename=', 'scene.splat')
 
-    expect(api.fetchApi).toHaveBeenCalledWith('/custom?filename=scene.splat')
+    expect(vi.mocked(api.fetchApi).mock.calls[0][0]).toBe(
+      '/custom?filename=scene.splat'
+    )
+  })
+
+  it('forwards cancellation to the model request', async () => {
+    const controller = new AbortController()
+    vi.mocked(api.fetchApi).mockResolvedValue(
+      new Response(new ArrayBuffer(0), { status: 200 })
+    )
+
+    await fetchModelData('api/view?filename=', 'model.glb', controller.signal)
+
+    expect(api.fetchApi).toHaveBeenCalledWith('/view?filename=model.glb', {
+      signal: controller.signal
+    })
   })
 })

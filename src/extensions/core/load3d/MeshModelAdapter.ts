@@ -37,34 +37,25 @@ export class MeshModelAdapter implements ModelAdapter {
   }
 
   private readonly gltfLoader = new GLTFLoader()
-  private readonly objLoader: OBJLoader2Parallel
   private readonly mtlLoader = new MTLLoader()
   private readonly fbxLoader = new FBXLoader()
   private readonly stlLoader = new STLLoader()
-
-  constructor() {
-    this.objLoader = new OBJLoader2Parallel()
-    this.objLoader.setWorkerUrl(
-      true,
-      new URL(OBJLoader2WorkerUrl, import.meta.url)
-    )
-  }
 
   async load(
     ctx: ModelLoadContext,
     path: string,
     filename: string,
-    fetchBytes?: () => Promise<ArrayBuffer>
+    fetchBytes: () => Promise<ArrayBuffer>
   ): Promise<ModelLoadResult | null> {
     const extension = filename.split('.').pop()?.toLowerCase()
     const object = await (extension === 'stl'
-      ? this.loadSTL(ctx, path, filename)
+      ? this.loadSTL(ctx, path, fetchBytes)
       : extension === 'fbx'
-        ? this.loadFBX(ctx, path, filename, fetchBytes)
+        ? this.loadFBX(ctx, path, fetchBytes)
         : extension === 'obj'
-          ? this.loadOBJ(ctx, path, filename)
+          ? this.loadOBJ(ctx, path, filename, fetchBytes)
           : extension === 'gltf' || extension === 'glb'
-            ? this.loadGLTF(ctx, path, filename)
+            ? this.loadGLTF(ctx, path, fetchBytes)
             : Promise.resolve(null))
     return object ? { object, capabilities: this.capabilities } : null
   }
@@ -72,10 +63,10 @@ export class MeshModelAdapter implements ModelAdapter {
   private async loadSTL(
     ctx: ModelLoadContext,
     path: string,
-    filename: string
+    fetchBytes: () => Promise<ArrayBuffer>
   ): Promise<THREE.Object3D> {
     this.stlLoader.setPath(path)
-    const geometry = await this.stlLoader.loadAsync(filename)
+    const geometry = this.stlLoader.parse(await fetchBytes())
     ctx.setOriginalModel(geometry)
     geometry.computeVertexNormals()
 
@@ -88,17 +79,14 @@ export class MeshModelAdapter implements ModelAdapter {
   private async loadFBX(
     ctx: ModelLoadContext,
     path: string,
-    filename: string,
-    fetchBytes?: () => Promise<ArrayBuffer>
+    fetchBytes: () => Promise<ArrayBuffer>
   ): Promise<THREE.Object3D> {
     this.fbxLoader.setPath(path)
-    const bytes = fetchBytes ? await fetchBytes() : null
-    const fbxModel = bytes
-      ? this.fbxLoader.parse(bytes, path)
-      : await this.fbxLoader.loadAsync(filename)
+    const bytes = await fetchBytes()
+    const fbxModel = this.fbxLoader.parse(bytes, path)
     ctx.setOriginalModel(fbxModel)
 
-    const polygons = bytes && isBinaryFbx(bytes) ? readFbxPolygons(bytes) : []
+    const polygons = isBinaryFbx(bytes) ? readFbxPolygons(bytes) : []
     fbxModel.traverse((child) => {
       if (child instanceof THREE.Mesh) {
         ctx.registerOriginalMaterial(child, child.material)
@@ -116,9 +104,12 @@ export class MeshModelAdapter implements ModelAdapter {
   private async loadOBJ(
     ctx: ModelLoadContext,
     path: string,
-    filename: string
+    filename: string,
+    fetchBytes: () => Promise<ArrayBuffer>
   ): Promise<THREE.Object3D> {
-    this.objLoader.setBaseObject3d(new THREE.Object3D())
+    const objLoader = new OBJLoader2Parallel()
+    objLoader.setWorkerUrl(true, new URL(OBJLoader2WorkerUrl, import.meta.url))
+    objLoader.setBaseObject3d(new THREE.Object3D())
 
     if (ctx.materialMode === 'original') {
       try {
@@ -128,7 +119,7 @@ export class MeshModelAdapter implements ModelAdapter {
         materials.preload()
         const materialsFromMtl =
           MtlObjBridge.addMaterialsFromMtlLoader(materials)
-        this.objLoader.setMaterials(materialsFromMtl)
+        objLoader.setMaterials(materialsFromMtl)
       } catch {
         console.warn(
           'No MTL file found or error loading it, continuing without materials'
@@ -136,8 +127,7 @@ export class MeshModelAdapter implements ModelAdapter {
       }
     }
 
-    const objUrl = path + encodeURIComponent(filename)
-    const model = await this.objLoader.loadAsync(objUrl)
+    const model = await this.parseOBJ(objLoader, await fetchBytes())
 
     model.traverse((child) => {
       if (child instanceof THREE.Mesh) {
@@ -148,13 +138,23 @@ export class MeshModelAdapter implements ModelAdapter {
     return model
   }
 
+  private parseOBJ(
+    objLoader: OBJLoader2Parallel,
+    bytes: ArrayBuffer
+  ): Promise<THREE.Object3D> {
+    return new Promise((resolve) => {
+      objLoader.setCallbackOnLoad(resolve)
+      objLoader.parse(bytes)
+    })
+  }
+
   private async loadGLTF(
     ctx: ModelLoadContext,
     path: string,
-    filename: string
+    fetchBytes: () => Promise<ArrayBuffer>
   ): Promise<THREE.Object3D> {
     this.gltfLoader.setPath(path)
-    const gltf = await this.gltfLoader.loadAsync(filename)
+    const gltf = await this.gltfLoader.parseAsync(await fetchBytes(), path)
     ctx.setOriginalModel(gltf)
 
     gltf.scene.traverse((child) => {

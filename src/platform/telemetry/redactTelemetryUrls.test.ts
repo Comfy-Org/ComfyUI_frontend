@@ -1,6 +1,7 @@
 import { assert, describe, expect, it } from 'vitest'
 
 import {
+  redactTelemetryError,
   redactTelemetryUrls,
   redactTelemetryValues
 } from './redactTelemetryUrls'
@@ -334,6 +335,12 @@ describe('redactTelemetryValues', () => {
     revoke()
 
     expect(redactTelemetryValues({ proxy })?.proxy).toBe('[Redacted]')
+  })
+
+  it('fails closed when a rejected value cannot be stringified', () => {
+    const value: object = Object.create(null)
+
+    expect(redactTelemetryError(value).message).toBe('[Redacted]')
   })
 
   it('fails closed for values beyond the traversal budgets', () => {

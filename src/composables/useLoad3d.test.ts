@@ -1,4 +1,5 @@
-import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
+import { afterEach, assert, beforeEach, describe, expect, it, vi } from 'vitest'
+import { fromPartial } from '@total-typescript/shoehorn'
 import { nextTick, ref, shallowRef, effectScope } from 'vue'
 import type { EffectScope } from 'vue'
 import { useSettingStore } from '@/platform/settings/settingStore'
@@ -133,7 +134,7 @@ describe('useLoad3d', () => {
       setFOV: vi.fn(),
       setLightIntensity: vi.fn(),
       setCameraState: vi.fn(),
-      loadModel: vi.fn<Load3d['loadModel']>().mockResolvedValue(true),
+      loadModel: vi.fn<Load3d['loadModel']>().mockResolvedValue('loaded'),
       refreshViewport: vi.fn(),
       updateStatusMouseOnNode: vi.fn(),
       updateStatusMouseOnScene: vi.fn(),
@@ -1007,6 +1008,13 @@ describe('useLoad3d', () => {
 
   describe('handleModelDrop', () => {
     it('should upload file, construct URL, and load model', async () => {
+      const modelWidget = fromPartial<IWidget>({
+        name: 'model_file',
+        value: '',
+        type: 'text'
+      })
+      mockNode.widgets ??= []
+      mockNode.widgets.push(modelWidget)
       vi.mocked(Load3dUtils.uploadFile).mockResolvedValue('uploaded/model.glb')
       vi.mocked(Load3dUtils.splitFilePath).mockReturnValue([
         'uploaded',
@@ -1032,6 +1040,26 @@ describe('useLoad3d', () => {
       expect(mockLoad3d.loadModel).toHaveBeenCalledWith(
         'http://localhost/api/view/uploaded/model.glb'
       )
+      expect(modelWidget.value).toBe('uploaded/model.glb')
+    })
+
+    it('does not commit the model widget when loading is not completed', async () => {
+      const modelWidget = fromPartial<IWidget>({
+        name: 'model_file',
+        value: 'previous.glb',
+        type: 'text'
+      })
+      mockNode.widgets ??= []
+      mockNode.widgets.push(modelWidget)
+      vi.mocked(Load3dUtils.uploadFile).mockResolvedValue('uploaded/model.glb')
+      assert.exists(mockLoad3d.loadModel)
+      vi.mocked(mockLoad3d.loadModel).mockResolvedValueOnce('cancelled')
+
+      const composable = useLoad3d(mockNode)
+      await composable.initializeLoad3d(document.createElement('div'))
+      await composable.handleModelDrop(new File([''], 'model.glb'))
+
+      expect(modelWidget.value).toBe('previous.glb')
     })
 
     it('should use resource folder for upload subfolder', async () => {

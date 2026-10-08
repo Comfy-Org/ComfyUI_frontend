@@ -9,13 +9,16 @@ import type {
   AdapterRef,
   ModelAdapter,
   ModelAdapterCapabilities,
-  ModelLoadContext
+  ModelLoadContext,
+  ModelLoadResult
 } from './ModelAdapter'
 import { PointCloudModelAdapter } from './PointCloudModelAdapter'
 import { SplatModelAdapter } from './SplatModelAdapter'
+import { disposeObject3D } from './SceneModelManager'
 import type {
   EventManagerInterface,
   LoadModelOptions,
+  LoadModelOutcome,
   LoaderManagerInterface,
   ModelManagerInterface
 } from './interfaces'
@@ -60,6 +63,7 @@ export class LoaderManager implements LoaderManagerInterface {
   private readonly adapters: ModelAdapter[]
   private readonly adapterRef: AdapterRef
   private currentLoadId: number = 0
+  private disposed = false
 
   constructor(
     modelManager: ModelManagerInterface,
@@ -77,15 +81,21 @@ export class LoaderManager implements LoaderManagerInterface {
     return this.adapterRef.current
   }
 
-  init(): void {}
+  init(): void {
+    this.disposed = false
+  }
 
-  dispose(): void {}
+  dispose(): void {
+    this.disposed = true
+    this.currentLoadId += 1
+  }
 
   async loadModel(
     url: string,
     originalFileName?: string,
     options?: LoadModelOptions
-  ): Promise<void> {
+  ): Promise<LoadModelOutcome> {
+    if (this.disposed) return 'cancelled'
     const loadId = ++this.currentLoadId
 
     try {
@@ -97,53 +107,123 @@ export class LoaderManager implements LoaderManagerInterface {
 
       this.modelManager.originalURL = url
 
-      let fileExtension: string | undefined
-      if (originalFileName) {
-        fileExtension = originalFileName.split('.').pop()?.toLowerCase()
-
-        this.modelManager.originalFileName =
-          originalFileName.split('/').pop()?.split('.')[0] || 'model'
-      } else {
-        const filename = new URLSearchParams(url.split('?')[1]).get('filename')
-        fileExtension = filename?.split('.').pop()?.toLowerCase()
-        this.modelManager.originalFileName = filename
-          ? filename.split('.')[0] || 'model'
-          : 'model'
-      }
+      const fileExtension = this.setOriginalFileName(url, originalFileName)
 
       if (!fileExtension) {
+        // The agent path may pass a credential-bearing URL, so keep this
+        // error URL-free; the thumbnail caller redacts what it reports.
+        if (options?.silent) throw new TypeError('Unknown model file type')
         useToastStore().addAlert(t('toastMessages.couldNotDetermineFileType'))
-        return
-      }
-
-      const result = await this.loadModelInternal(url, fileExtension)
-
-      if (loadId !== this.currentLoadId) {
-        // A newer loadModel has superseded us — do not publish our adapter
-        // and do not setup the model. Whichever load is current owns the
-        // shared state.
-        return
-      }
-
-      if (result) {
-        // Publish only after the staleness check so a slow older load
-        // can't clobber adapterRef.current that a newer load already
-        // wrote (or cleared).
-        this.adapterRef.current = result.adapter
-        this.adapterRef.capabilities = result.capabilities
-        await this.modelManager.setupModel(result.object)
-      }
-
-      this.eventManager.emitEvent('modelLoadingEnd', null)
-    } catch (error) {
-      if (loadId === this.currentLoadId) {
         this.eventManager.emitEvent('modelLoadingEnd', null)
-        console.error('Error loading model:', error)
-        if (!(options?.silentOnNotFound && isNotFoundError(error))) {
-          useToastStore().addAlert(t('toastMessages.errorLoadingModel'))
-        }
+        return 'empty'
       }
+
+      const result = await this.loadModelInternal(
+        url,
+        fileExtension,
+        loadId,
+        options?.silent,
+        options?.signal
+      )
+      if (options?.signal?.aborted) {
+        return this.cancelAbandonedLoad(result, loadId)
+      }
+      return await this.publishLoadResult(
+        result,
+        loadId,
+        fileExtension,
+        options?.silent
+      )
+    } catch (error) {
+      if (options?.signal?.aborted) {
+        return this.cancelAbandonedLoad(null, loadId)
+      }
+      return this.handleLoadError(error, loadId, options)
     }
+  }
+
+  /**
+   * Parsers ignore the signal, so an aborted load can still resolve — and
+   * `loadId` does not catch it when the caller starts no newer load.
+   */
+  private cancelAbandonedLoad(
+    result: (ModelLoadResult & { adapter: ModelAdapter }) | null,
+    loadId: number
+  ): LoadModelOutcome {
+    if (result) this.disposeLoadResult(result)
+    if (loadId === this.currentLoadId) {
+      this.eventManager.emitEvent('modelLoadingEnd', null)
+    }
+    return 'cancelled'
+  }
+
+  private async publishLoadResult(
+    result: (ModelLoadResult & { adapter: ModelAdapter }) | null,
+    loadId: number,
+    fileExtension: string,
+    silent?: boolean
+  ): Promise<LoadModelOutcome> {
+    if (loadId !== this.currentLoadId) {
+      // A newer loadModel has superseded us. createLoadContext gates on
+      // loadId, so the result never entered the scene and is safe to dispose.
+      if (result) this.disposeLoadResult(result)
+      return 'cancelled'
+    }
+    if (!result && silent) {
+      throw new TypeError(`No model was produced for type: ${fileExtension}`)
+    }
+    if (result) {
+      this.adapterRef.current = result.adapter
+      this.adapterRef.capabilities = result.capabilities
+      await this.modelManager.setupModel(result.object)
+      if (loadId !== this.currentLoadId) return 'cancelled'
+    }
+    this.eventManager.emitEvent('modelLoadingEnd', null)
+    return result ? 'loaded' : 'empty'
+  }
+
+  private setOriginalFileName(
+    url: string,
+    originalFileName?: string
+  ): string | undefined {
+    if (originalFileName) {
+      this.modelManager.originalFileName =
+        originalFileName.split('/').pop()?.split('.')[0] || 'model'
+      return originalFileName.split('.').pop()?.toLowerCase()
+    }
+
+    const filename = new URLSearchParams(url.split('?')[1]).get('filename')
+    this.modelManager.originalFileName = filename
+      ? filename.split('.')[0] || 'model'
+      : 'model'
+    return filename?.split('.').pop()?.toLowerCase()
+  }
+
+  private handleLoadError(
+    error: unknown,
+    loadId: number,
+    options?: LoadModelOptions
+  ): LoadModelOutcome {
+    if (loadId !== this.currentLoadId) return 'cancelled'
+    this.eventManager.emitEvent('modelLoadingEnd', null)
+    // A silent load's error (and the untrusted URL it may embed, e.g.
+    // from three.js's FileLoader "fetch for <url> responded with ...")
+    // is the caller's to report — logging it here on their behalf would
+    // write it to the console unredacted regardless of what the caller
+    // does with the rethrown error.
+    if (options?.silent) throw error
+    console.error('Error loading model:', error)
+    if (!(options?.silentOnNotFound && isNotFoundError(error))) {
+      useToastStore().addAlert(t('toastMessages.errorLoadingModel'))
+    }
+    return 'failed'
+  }
+
+  private disposeLoadResult(
+    result: ModelLoadResult & { adapter: ModelAdapter }
+  ): void {
+    result.adapter.disposeModel?.(result.object)
+    disposeObject3D(result.object, this.modelManager.standardMaterial)
   }
 
   private async pickAdapter(
@@ -160,12 +240,23 @@ export class LoaderManager implements LoaderManagerInterface {
     return null
   }
 
-  private createLoadContext(): ModelLoadContext {
+  private createLoadContext(
+    loadId: number,
+    signal?: AbortSignal
+  ): ModelLoadContext {
     const mm = this.modelManager
+    // Adapters write to modelManager synchronously during adapter.load(),
+    // before staleness or an abort can be checked. Gating those writes keeps a
+    // superseded or abandoned result out of modelManager, so it is safe to
+    // dispose.
+    const isCurrent = () => loadId === this.currentLoadId && !signal?.aborted
     return {
-      setOriginalModel: (model) => mm.setOriginalModel(model),
-      registerOriginalMaterial: (mesh, material) =>
-        mm.originalMaterials.set(mesh, material),
+      setOriginalModel: (model) => {
+        if (isCurrent()) mm.setOriginalModel(model)
+      },
+      registerOriginalMaterial: (mesh, material) => {
+        if (isCurrent()) mm.originalMaterials.set(mesh, material)
+      },
       get standardMaterial() {
         return mm.standardMaterial
       },
@@ -177,7 +268,10 @@ export class LoaderManager implements LoaderManagerInterface {
 
   private async loadModelInternal(
     url: string,
-    fileExtension: string
+    fileExtension: string,
+    loadId: number,
+    silent?: boolean,
+    signal?: AbortSignal
   ): Promise<{
     object: THREE.Object3D
     adapter: ModelAdapter
@@ -187,7 +281,9 @@ export class LoaderManager implements LoaderManagerInterface {
     const filename = params.get('filename')
 
     if (!filename) {
-      console.error('Missing filename in URL:', url)
+      // Silent loads may carry a credential-bearing URL; never log it on the
+      // caller's behalf.
+      if (!silent) console.error('Missing filename in URL:', url)
       return null
     }
 
@@ -205,13 +301,15 @@ export class LoaderManager implements LoaderManagerInterface {
       '&filename='
 
     let bytesPromise: Promise<ArrayBuffer> | null = null
-    const fetchBytes = () => (bytesPromise ??= fetchModelData(path, filename))
+    const fetchBytes = () =>
+      (bytesPromise ??= fetchModelData(path, filename, signal))
 
     const adapter = await this.pickAdapter(fileExtension, fetchBytes)
     if (!adapter) return null
+    if (this.disposed) return null
 
     const loadResult = await adapter.load(
-      this.createLoadContext(),
+      this.createLoadContext(loadId, signal),
       path,
       filename,
       fetchBytes
