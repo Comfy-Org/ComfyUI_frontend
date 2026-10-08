@@ -447,6 +447,28 @@ describe('useAttachment', () => {
     expect(upload).toHaveBeenCalledTimes(2)
   })
 
+  it('uploads distinct bytes even when all file metadata matches', async () => {
+    const upload = vi
+      .fn<(file: File) => Promise<{ ref: string }>>()
+      .mockResolvedValueOnce({ ref: 'first.png' })
+      .mockResolvedValueOnce({ ref: 'second.png' })
+    const registry = chipRegistry()
+    const { addFiles } = useAttachment({ upload, ...registry })
+
+    await addFiles([
+      new File(['cat-a'], 'cat.png', { lastModified: 0, type: 'image/png' })
+    ])
+    await addFiles([
+      new File(['cat-b'], 'cat.png', { lastModified: 0, type: 'image/png' })
+    ])
+
+    expect(upload).toHaveBeenCalledTimes(2)
+    expect(registry.chips.map(({ ref }) => ref)).toEqual([
+      'first.png',
+      'second.png'
+    ])
+  })
+
   it('uploads the same file again once completed uploads are forgotten', async () => {
     const upload = vi.fn(async (file: File) => ({
       ref: `uploaded_${file.name}`
