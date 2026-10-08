@@ -467,6 +467,8 @@ describe('useAgentSession (v1 composition root)', () => {
       await duringTurn({ session, emit })
       expect(listSkillPacks).toHaveBeenCalledOnce()
       emit(firstEndEvent)
+      await Promise.resolve()
+      expect(listSkillPacks).toHaveBeenCalledTimes(2)
       emit(done('msg-1'))
       await Promise.resolve()
       expect(listSkillPacks).toHaveBeenCalledTimes(2)
