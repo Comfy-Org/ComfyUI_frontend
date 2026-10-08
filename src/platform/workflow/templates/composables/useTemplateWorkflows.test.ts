@@ -926,7 +926,6 @@ describe('useTemplateWorkflows', () => {
         }
       }
       vi.mocked(fetch).mockImplementation(async () => Response.json(graph))
-      vi.spyOn(console, 'warn').mockImplementation(() => {})
       const { loader } = mountTemplateWorkflows()
 
       expect(await loader.loadWorkflowTemplate('video', 'default')).toBe(

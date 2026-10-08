@@ -293,7 +293,6 @@ describe('Composer', () => {
   })
 
   it('renders without vue-i18n message compilation errors', async () => {
-    const consoleError = vi.spyOn(console, 'error').mockImplementation(() => {})
     mount({ canAttach: true, canOpenAssets: true })
 
     // The menu strings only compile once reka mounts the lazy menu content.
@@ -302,11 +301,9 @@ describe('Composer', () => {
 
     // Unescaped syntax characters (@, |, {) in a locale message compile to an
     // error and silently fall back to the raw string.
-    expect(consoleError.mock.calls.flat().join(' ')).not.toContain(
+    expect(vi.mocked(console.error).mock.calls.flat().join(' ')).not.toContain(
       'Message compilation error'
     )
-
-    consoleError.mockRestore()
   })
 
   it('emits trimmed text and leaves the draft for the submission owner', async () => {

@@ -3688,9 +3688,6 @@ describe('ComfyApp', () => {
       ['an invalid structure', '[]'],
       ['invalid JSON', '{invalid']
     ])('shows one error for %s', async ([, workflow]) => {
-      const consoleError = vi
-        .spyOn(console, 'error')
-        .mockImplementation(() => {})
       vi.mocked(getWorkflowDataFromFile).mockResolvedValue({ workflow })
 
       await app.handleFile(createTestFile('broken.json', 'application/json'))
@@ -3699,7 +3696,6 @@ describe('ComfyApp', () => {
       expect(useToastStore().addAlert).toHaveBeenCalledWith(
         'Unable to find workflow in broken.json'
       )
-      consoleError.mockRestore()
     })
 
     it.for([

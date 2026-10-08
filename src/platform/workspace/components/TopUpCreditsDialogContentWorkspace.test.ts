@@ -964,7 +964,6 @@ describe('TopUpCreditsDialogContentWorkspace', () => {
     vi.mocked(useBillingOperationStore().startOperation).mockRejectedValue(
       error
     )
-    const consoleError = vi.spyOn(console, 'error').mockImplementation(() => {})
 
     renderDialog()
     await clickAddCredits()
@@ -986,8 +985,7 @@ describe('TopUpCreditsDialogContentWorkspace', () => {
       failure_category: 'unknown',
       duration_ms: expect.any(Number)
     })
-    expect(consoleError).toHaveBeenCalledWith('Purchase failed')
-    consoleError.mockRestore()
+    expect(console.error).toHaveBeenCalledWith('Purchase failed')
   })
 
   it('refreshes both balance and status after a completed top-up', async () => {
@@ -1345,7 +1343,6 @@ describe('TopUpCreditsDialogContentWorkspace', () => {
           result
         )
         vi.mocked(useFeatureFlags().flags).billingSdkTopupRailEnabled = true
-        vi.spyOn(console, 'error').mockImplementation(() => {})
 
         renderDialog()
         await clickAddCredits()
