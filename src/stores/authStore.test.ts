@@ -1377,7 +1377,8 @@ describe('useAuthStore', () => {
         errorType: 'auth_id_token_fetch_failure',
         surface: 'auth'
       })
-      expect(console.error).toHaveBeenCalledWith(authError)
+      expect(console.warn).toHaveBeenCalledWith(authError)
+      expect(console.error).not.toHaveBeenCalledWith(authError)
     })
   })
 

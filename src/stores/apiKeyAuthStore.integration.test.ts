@@ -173,7 +173,6 @@ describe('API key authentication initialization', () => {
 
       rejectLookup(error)
       void apiKeyStore.clearStoredApiKey()
-      await settleQueuedTasks()
     }
 
     it.for([
@@ -184,8 +183,8 @@ describe('API key authentication initialization', () => {
       async ({ error }) => {
         await failCustomerLookup(error)
 
+        await vi.waitFor(() => expect(console.warn).toHaveBeenCalledWith(error))
         expect(reportError).not.toHaveBeenCalled()
-        expect(console.warn).toHaveBeenCalledWith(error)
       }
     )
 
@@ -195,10 +194,12 @@ describe('API key authentication initialization', () => {
     ])('reports $name', async ({ error }) => {
       await failCustomerLookup(error)
 
-      expect(reportError).toHaveBeenCalledExactlyOnceWith(error, {
-        errorType: 'api_key_customer_creation_failure',
-        surface: 'auth'
-      })
+      await vi.waitFor(() =>
+        expect(reportError).toHaveBeenCalledExactlyOnceWith(error, {
+          errorType: 'api_key_customer_creation_failure',
+          surface: 'auth'
+        })
+      )
     })
   })
 })

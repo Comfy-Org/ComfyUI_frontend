@@ -337,7 +337,7 @@ export const useAuthStore = defineStore('auth', () => {
   const reportIdTokenFailure = (uid: string, error: unknown) => {
     const failureKey = `${uid}:${error instanceof FirebaseError ? error.code : 'unknown'}`
     if (reportedIdTokenFailures.has(failureKey)) {
-      console.error(error)
+      console.warn(error)
       return
     }
     reportedIdTokenFailures.add(failureKey)

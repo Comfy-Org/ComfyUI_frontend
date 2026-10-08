@@ -1214,29 +1214,48 @@ describe('useQueueStore', () => {
       expect(store.isLoading).toBe(false)
     })
 
-    it.for(['queue', 'history'] as const)(
-      'reports a %s fetch failure once per outage',
-      async (source) => {
-        const failure = new Error(`${source} down`)
-        for (const fails of [true, true, false, true]) {
-          if (source === 'queue' && fails) {
-            mockGetQueue.mockRejectedValueOnce(failure)
-          } else {
-            mockGetQueue.mockResolvedValueOnce({ Running: [], Pending: [] })
-          }
-          if (source === 'history' && fails) {
-            mockGetHistory.mockRejectedValueOnce(failure)
-          } else {
-            mockGetHistory.mockResolvedValueOnce([])
-          }
-          await store.update()
-        }
+    const queueDown = new Error('queue down')
+    const historyDown = new Error('history down')
+    const emptyQueue = { Running: [], Pending: [] }
 
+    it.for([
+      {
+        source: 'queue',
+        failure: queueDown,
+        failOnce: () => {
+          mockGetQueue.mockRejectedValueOnce(queueDown)
+          mockGetHistory.mockResolvedValueOnce([])
+        }
+      },
+      {
+        source: 'history',
+        failure: historyDown,
+        failOnce: () => {
+          mockGetQueue.mockResolvedValueOnce(emptyQueue)
+          mockGetHistory.mockRejectedValueOnce(historyDown)
+        }
+      }
+    ])(
+      'reports a $source fetch failure once per outage',
+      async ({ source, failure, failOnce }) => {
+        const expectedReport = [
+          failure,
+          { errorType: `queue_${source}_fetch_failure`, surface: 'workspace' }
+        ] as const
+
+        failOnce()
+        await store.update()
+        failOnce()
+        await store.update()
+        expect(reportError).toHaveBeenCalledExactlyOnceWith(...expectedReport)
+
+        mockGetQueue.mockResolvedValueOnce(emptyQueue)
+        mockGetHistory.mockResolvedValueOnce([])
+        await store.update()
+        failOnce()
+        await store.update()
         expect(reportError).toHaveBeenCalledTimes(2)
-        expect(reportError).toHaveBeenCalledWith(failure, {
-          errorType: `queue_${source}_fetch_failure`,
-          surface: 'workspace'
-        })
+        expect(reportError).toHaveBeenLastCalledWith(...expectedReport)
       }
     )
   })
