@@ -125,7 +125,7 @@ function onCustomComboCreated(this: LGraphNode) {
           return
         }
         if (v || node.widgets.at(-2) !== this || lastWidget?.value) return
-        node.widgets.pop()
+        if (lastWidget) node.removeWidget(lastWidget)
         node.computeSize(node.size)
         this.callback(v)
       }

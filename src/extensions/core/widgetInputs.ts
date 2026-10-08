@@ -20,6 +20,7 @@ import {
 } from '@/schemas/nodeDefSchema'
 import type { ComfyNodeDef, InputSpec } from '@/schemas/nodeDefSchema'
 import { app } from '@/scripts/app'
+import { useWidgetValueStore } from '@/stores/widgetValueStore'
 import type { WidgetValue } from '@/types/simplifiedWidget'
 import {
   ComfyWidgets,
@@ -441,6 +442,10 @@ export class PrimitiveNode extends LGraphNode {
         delete this.lastType
         delete this.controlValues
       }, 15)
+      const store = useWidgetValueStore()
+      for (const w of this.widgets) {
+        if (w.widgetId) store.deleteWidget(w.widgetId)
+      }
       this.widgets.length = 0
     }
   }

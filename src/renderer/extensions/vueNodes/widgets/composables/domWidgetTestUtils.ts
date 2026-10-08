@@ -63,6 +63,12 @@ export function createMockMediaNode(overrides: NodeOverrides = {}) {
       widgets.push(widget)
       return widget
     }),
+    removeWidget: vi.fn((widget: FakeMediaWidget) => {
+      const index = widgets.indexOf(widget)
+      if (index === -1) throw new Error('Widget not found on this node')
+      widget.onRemove?.()
+      widgets.splice(index, 1)
+    }),
     ...overrides
   })
 }

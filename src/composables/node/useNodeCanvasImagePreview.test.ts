@@ -1,10 +1,14 @@
+import { createTestingPinia } from '@pinia/testing'
+import { setActivePinia } from 'pinia'
 import { describe, expect, it, vi } from 'vitest'
 
-import { LGraphNode } from '@/lib/litegraph/src/litegraph'
+import { LGraph, LGraphNode } from '@/lib/litegraph/src/litegraph'
 import {
   createTestSubgraph,
   createTestSubgraphNode
 } from '@/lib/litegraph/src/subgraph/__fixtures__/subgraphHelpers'
+import { useWidgetValueStore } from '@/stores/widgetValueStore'
+import { widgetId } from '@/types/widgetId'
 
 import { useNodeCanvasImagePreview } from './useNodeCanvasImagePreview'
 
@@ -47,6 +51,23 @@ describe('useNodeCanvasImagePreview', () => {
     useNodeCanvasImagePreview().showCanvasImagePreview(node)
 
     expect(imagePreviewWidget).not.toHaveBeenCalled()
+  })
+
+  it('deletes the preview widget store entry on removal', () => {
+    setActivePinia(createTestingPinia({ stubActions: false }))
+    const graph = new LGraph()
+    const node = new LGraphNode('test')
+    graph.add(node)
+    node.addWidget('text', '$$canvas-image-preview', '', () => undefined, {})
+
+    const store = useWidgetValueStore()
+    const previewId = widgetId(graph.id, node.id, '$$canvas-image-preview')
+    expect(store.getWidget(previewId)).toBeDefined()
+
+    useNodeCanvasImagePreview().removeCanvasImagePreview(node)
+
+    expect(node.widgets).toHaveLength(0)
+    expect(store.getWidget(previewId)).toBeUndefined()
   })
 
   it('does not add preview widget directly on SubgraphNode', () => {

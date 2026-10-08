@@ -17,6 +17,7 @@ import { graphScopeOf } from '@/types/graphScopeId'
 import type { GraphScope } from '@/types/graphScopeId'
 import { mintLinkId } from './idAllocation'
 import { useNodeDataStore } from '@/stores/nodeDataStore'
+import { useWidgetValueStore } from '@/stores/widgetValueStore'
 import { UNASSIGNED_NODE_ID, toNodeId, serializeNodeId } from '@/types/nodeId'
 import type { NodeId } from '@/types/nodeId'
 import type { NodeState } from '@/types/nodeState'
@@ -2291,8 +2292,10 @@ export class LGraphNode
       }
     }
 
+    const boundWidgetId = widget.widgetId
     widget.onRemove?.()
     this.widgets.splice(widgetIndex, 1)
+    if (boundWidgetId) useWidgetValueStore().deleteWidget(boundWidgetId)
   }
 
   ensureWidgetRemoved(widget: IBaseWidget): void {

@@ -12,9 +12,11 @@ import type { IBaseWidget } from '@/lib/litegraph/src/types/widgets'
 import type { ComfyNodeDef, InputSpec } from '@/schemas/nodeDefSchema'
 import { CONFIG, GET_CONFIG } from '@/services/litegraphService'
 import { useLinkStore } from '@/stores/linkStore'
+import { useWidgetValueStore } from '@/stores/widgetValueStore'
 import { graphScopeOf } from '@/types/graphScopeId'
 import { toLinkId } from '@/types/linkId'
 import { toNodeId } from '@/types/nodeId'
+import { widgetId } from '@/types/widgetId'
 
 /** `app.configuringGraph` is a getter on the real app, so route it via a ref. */
 const appState = vi.hoisted(() => ({ configuringGraph: false }))
@@ -105,6 +107,29 @@ describe('PrimitiveNode', () => {
     node.onAfterGraphConfigured()
 
     expect(onLastDisconnect).toHaveBeenCalled()
+  })
+
+  it('deletes its widget store entries when the last link disconnects', () => {
+    const graph = new LGraph()
+    const node = new PrimitiveNode('Primitive')
+    graph.add(node)
+    node.addWidget('number', 'value', 3, () => {})
+    node.addWidget('combo', 'control_after_generate', 'fixed', () => {}, {
+      values: ['fixed', 'increment', 'decrement', 'randomize']
+    })
+
+    const store = useWidgetValueStore()
+    const valueId = widgetId(graph.id, node.id, 'value')
+    const controlId = widgetId(graph.id, node.id, 'control_after_generate')
+    expect(store.getWidget(valueId)).toBeDefined()
+    expect(store.getWidget(controlId)).toBeDefined()
+
+    node.onLastDisconnect()
+
+    expect(node.widgets).toHaveLength(0)
+    expect(store.getWidget(valueId)).toBeUndefined()
+    expect(store.getWidget(controlId)).toBeUndefined()
+    expect(store.getNodeWidgetIds(graph.id, node.id)).toHaveLength(0)
   })
 })
 

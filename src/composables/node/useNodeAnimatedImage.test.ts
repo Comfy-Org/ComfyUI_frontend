@@ -57,6 +57,16 @@ describe('useNodeAnimatedImage', () => {
     expect(canvasInteractionsMock.handlePointerDown).not.toHaveBeenCalled()
   })
 
+  it('routes preview removal through node.removeWidget', () => {
+    const { node, removeAnimatedPreview } = setup()
+    const widget = node.widgets[0]
+
+    removeAnimatedPreview(node)
+
+    expect(node.removeWidget).toHaveBeenCalledWith(widget)
+    expect(node.widgets).toHaveLength(0)
+  })
+
   it('detaches every listener when the preview is removed', () => {
     const { node, element, removeAnimatedPreview } = setup()
     removeAnimatedPreview(node)
