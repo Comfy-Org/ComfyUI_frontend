@@ -1522,9 +1522,9 @@ describe('useSubscriptionCheckout', () => {
       await checkout.handleConfirmTransition()
 
       expect(checkout.reactivationRequired.value).toBe(true)
-      expect(useToast().error).not.toHaveBeenCalledWith('Error', {
-        description: 'Reactivate first'
-      })
+      expect(useToast().toasts).not.toContainEqual(
+        expect.objectContaining({ description: 'Reactivate first' })
+      )
     })
 
     it('surfaces the rejection when a team subscribe reactivation block clears on refresh', async () => {

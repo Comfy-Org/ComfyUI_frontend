@@ -876,6 +876,55 @@ describe('useTemplateWorkflows', () => {
     )
   })
 
+  it.for([
+    {
+      name: 'the upload succeeds',
+      settle: (download: ReturnType<typeof deferred<Response>>) =>
+        download.resolve(new Response('video'))
+    },
+    {
+      name: 'the download fails',
+      settle: (download: ReturnType<typeof deferred<Response>>) =>
+        download.resolve(Promise.reject(new Error('offline')))
+    }
+  ])(
+    'shows the media progress toast only while samples upload when $name',
+    async ({ settle }) => {
+      const graph = addVideoTemplate()
+      const download = deferred<Response>()
+      const started = deferred<void>()
+      vi.mocked(fetch).mockImplementation((url) => {
+        if (String(url).startsWith('mock-internal-url'))
+          return Promise.resolve(Response.json([]))
+        if (String(url).endsWith('.mp4')) {
+          started.resolve()
+          return download.promise
+        }
+        return Promise.resolve(Response.json(graph))
+      })
+      vi.mocked(api.fetchApi).mockResolvedValue(
+        Response.json({ name: 'kitten_cop (1).mp4', type: 'input' })
+      )
+      const { loader } = mountTemplateWorkflows()
+      const result = loader.loadWorkflowTemplate('video', 'default')
+      await started.promise
+
+      expect(useToast().toasts).toEqual([
+        expect.objectContaining({
+          kind: 'loading',
+          title: i18n.global.t('templateWorkflows.preparingMedia')
+        })
+      ])
+
+      settle(download)
+
+      expect(await result).toBe('loaded')
+      expect(useToast().toasts).not.toContainEqual(
+        expect.objectContaining({ kind: 'loading' })
+      )
+    }
+  )
+
   it.for([null, 'main'])(
     'opens a template without downloading unversioned samples (revision: %s)',
     async (revision) => {
