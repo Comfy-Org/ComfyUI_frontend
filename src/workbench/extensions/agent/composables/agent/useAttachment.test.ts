@@ -233,6 +233,47 @@ describe('useAttachment', () => {
     expect(upload).toHaveBeenCalledTimes(2)
   })
 
+  it('uploads the same file again once completed uploads are forgotten', async () => {
+    const upload = vi.fn(async (file: File) => ({
+      ref: `uploaded_${file.name}`
+    }))
+    const registry = chipRegistry()
+    const { addFiles, forgetUploads } = useAttachment({ upload, ...registry })
+
+    await addFiles([identicalFile('cat.png', 1024)])
+    forgetUploads()
+    await addFiles([identicalFile('cat.png', 1024)])
+
+    expect(upload).toHaveBeenCalledTimes(2)
+  })
+
+  it('does not reuse an upload that finished after uploads were forgotten', async () => {
+    let finishFirst: (result: { ref: string }) => void = () => {}
+    const upload = vi
+      .fn<(file: File) => Promise<{ ref: string }>>()
+      .mockImplementationOnce(
+        () =>
+          new Promise((resolve) => {
+            finishFirst = resolve
+          })
+      )
+      .mockResolvedValue({ ref: 'uploaded_again.png' })
+    const registry = chipRegistry()
+    const { addFiles, forgetUploads } = useAttachment({ upload, ...registry })
+
+    const first = addFiles([identicalFile('cat.png', 1024)])
+    forgetUploads()
+    finishFirst({ ref: 'uploaded_before.png' })
+    await first
+    await addFiles([identicalFile('cat.png', 1024)])
+
+    expect(upload).toHaveBeenCalledTimes(2)
+    expect(registry.chips.map(({ ref }) => ref)).toEqual([
+      'uploaded_before.png',
+      'uploaded_again.png'
+    ])
+  })
+
   it('stages a deferred file before its source resolves', async () => {
     let resolveFile: (file: File | undefined) => void = () => {}
     const resolve = vi.fn(

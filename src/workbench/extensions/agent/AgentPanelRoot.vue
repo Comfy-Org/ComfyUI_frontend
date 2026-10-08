@@ -1737,6 +1737,15 @@ const attachment = useAttachment({
   remove: composerStore.removeAttachment
 })
 
+watch(
+  [
+    () => resolvedUserInfo.value?.id,
+    () => workspaceStore.activeWorkspaceId,
+    () => assetsStore.deletingAssetIds.size
+  ],
+  attachment.forgetUploads
+)
+
 onBeforeUnmount(() =>
   runPanelTeardown({
     cancelAllUploads: () => {

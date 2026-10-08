@@ -73,6 +73,7 @@ export function useAttachment(options: UseAttachmentOptions) {
   const cancelled = new Set<string>()
   const waiting: Array<() => void> = []
   const uploaded = new Map<string, UploadResult>()
+  let uploadGeneration = 0
   let activeUploads = 0
 
   function stage(name: string): string {
@@ -128,6 +129,7 @@ export function useAttachment(options: UseAttachmentOptions) {
     const cached = uploaded.get(key)
     if (cached) return cached
 
+    const generation = uploadGeneration
     const controller = new AbortController()
     inFlight.set(id, controller)
     const result = await withDeadline(
@@ -135,8 +137,13 @@ export function useAttachment(options: UseAttachmentOptions) {
       options.uploadTimeoutMs ?? uploadDeadlineMs(file),
       () => controller.abort()
     )
-    uploaded.set(key, result)
+    if (generation === uploadGeneration) uploaded.set(key, result)
     return result
+  }
+
+  function forgetUploads(): void {
+    uploaded.clear()
+    uploadGeneration += 1
   }
 
   async function uploadStagedFile(id: string, file: File): Promise<boolean> {
@@ -221,5 +228,11 @@ export function useAttachment(options: UseAttachmentOptions) {
     return uploaded > 0
   }
 
-  return { addDeferredFile, addFiles, cancelUpload, cancelAllUploads }
+  return {
+    addDeferredFile,
+    addFiles,
+    cancelUpload,
+    cancelAllUploads,
+    forgetUploads
+  }
 }
