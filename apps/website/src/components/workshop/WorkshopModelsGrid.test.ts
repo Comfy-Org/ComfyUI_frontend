@@ -524,7 +524,7 @@ describe('WorkshopModelsGrid', () => {
       ).toHaveAttribute('href', '/hub/models/?q=Wan+3.0')
       expect(
         within(family).getByRole('link', { name: 'Wan 2.2 (open)' })
-      ).toHaveAttribute('href', '/hub/models/?q=Wan2.2')
+      ).toHaveAttribute('href', '/hub/models/local/')
     })
 
     it('leaves Run a model out while nothing runs here', () => {
