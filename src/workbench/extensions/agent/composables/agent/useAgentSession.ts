@@ -235,11 +235,10 @@ function mergeAdjacentTextParts(
 }
 
 function terminalRecoveryParts(
-  rows: AgentMessages,
-  isAskUnavailable: (askId: string) => boolean
+  rows: AgentMessages
 ): AssistantMessage['parts'] | undefined {
   const parts = mergeAdjacentTextParts(
-    normalizeAgentTranscript(rows, isAskUnavailable).messages[0]?.parts ?? []
+    normalizeAgentTranscript(rows).messages[0]?.parts ?? []
   )
   if (parts.length > 0) return parts
   if (rows.every((row) => row.status !== 'error')) return undefined
@@ -2356,12 +2355,7 @@ export function useAgentSession(deps: AgentSessionDeps) {
         }
       return {
         kind: 'terminal',
-        parts: terminalRecoveryParts(
-          rows,
-          (askId) =>
-            conversationStore.isAskRetired(askId, turn.threadId) ||
-            conversationStore.submittedAskSelection(askId) !== undefined
-        )
+        parts: terminalRecoveryParts(rows)
       }
     } catch (error) {
       if (signal.aborted) throw error
