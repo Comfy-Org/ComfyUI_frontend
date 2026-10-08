@@ -21,22 +21,19 @@ approvals on push and merges through the native merge queue.
 
 Introduce path-scoped delivery lanes, starting with the website:
 
-- Each lane has a reviewed JSON policy under `.github/fast-lanes/` that names its path prefixes,
-  trusted authors, operator label, trusted labelers, hold label, and merge mode.
-- A website-only pull request runs website-scoped lint, format, typecheck, unused-code, and locale
-  checks inside the existing `lint-and-format` context. Mixed pull requests and merge-queue
-  candidates keep the full checks.
-- `pr-website-auto-approve.yaml` runs the `tools/cicd/fast-lane/` workspace from the default branch. For an
-  eligible same-repository pull request whose complete changed-file set is inside the lane, it
-  posts a policy-only approval bound to the exact head with a credential held in a
+- Each lane is a reviewed entry in `tools/cicd/fast-lane/src/lanes.ts` that names its path
+  prefixes, trusted authors, operator label, trusted labelers, and hold label.
+- `pr-website-auto-approve.yaml` runs the `tools/cicd/fast-lane/` workspace from the default
+  branch. For an eligible same-repository pull request whose complete changed-file set is inside
+  the lane, it posts a policy-only approval bound to the exact head with a credential held in a
   `main`-restricted environment, then arms native auto-merge or enters the queue. Every later run
   re-reads live state and withdraws lane-owned approvals and merge state when the pull request
   stops being eligible.
 - A non-allowlisted author is eligible only on a trusted operator's `labeled` event for the
   current head, and stays eligible only while the label remains applied.
 - CodeRabbit skips `apps/website/**` for the trial; human change requests still block the lane.
-- Website production deploys are staged, verified through `/__build.json`, then promoted; a
-  manual workflow validates or performs rollback.
+- Production deploys record a GitHub deployment for their commit; rollback uses Vercel's Instant
+  Rollback.
 
 ### Alternatives not chosen
 
@@ -52,6 +49,11 @@ Introduce path-scoped delivery lanes, starting with the website:
 - **One global concurrency group, or groups keyed by commit SHA.** A global group lets unrelated
   pull requests cancel a pending hold or label run; SHA-keyed groups let two runs approve and
   withdraw the same pull request at once. Runs are grouped per pull request instead.
+- **Website-scoped lint and typecheck jobs.** The full typecheck (about 6 minutes) finishes before
+  the website unit and browser suites, so scoping it does not shorten the time to merge.
+- **A deployment marker, staged promotion, and a rollback workflow.** The GitHub deployment record
+  and Vercel's deployment history already tie production to a commit, and Vercel's Instant Rollback
+  restores a known deployment.
 
 ## Consequences
 
@@ -60,7 +62,7 @@ Introduce path-scoped delivery lanes, starting with the website:
 - A trusted author's website-only change can reach the merge queue without waiting for a human
   reviewer, and every approval is tied to one head and can be withdrawn.
 - The rest of the repository keeps its checks, review rule, and merge queue unchanged.
-- Another package can add a lane with its own policy, classifier output, and scoped checks.
+- Another package can add a lane with one entry and a copy of the workflow.
 
 ### Negative
 
@@ -71,7 +73,7 @@ Introduce path-scoped delivery lanes, starting with the website:
 - GitHub keeps only the newest pending run per concurrency group, so a pending `labeled` run can be
   cancelled by another event on the same pull request; the operator re-runs it or re-applies the
   label.
-- The trial adds a workflow, an engine, and a rollback procedure that operators must maintain.
+- The trial adds a workflow and an engine that operators must maintain.
 
 ## Notes
 

@@ -5,8 +5,8 @@ change on their timeline while the rest of the monorepo keeps its current safegu
 
 ## Current lane
 
-The checked-in policy is `.github/fast-lanes/website.json`. It allows changes only under
-`apps/website/`. `bertfy` is a trusted author. For other authors, a listed operator adds
+The `website` entry in `tools/cicd/fast-lane/src/lanes.ts` is the policy. It allows changes only
+under `apps/website/`. `bertfy` is a trusted author. For other authors, a listed operator adds
 `website-fast-lane:approve` to the current head; removing it withdraws the approval.
 `website-fast-lane:hold`, a draft, a human change request, a fork, or a mixed-path change stops the
 lane. A hold does not undo a merge that already happened. To resume after a hold, remove
@@ -18,40 +18,24 @@ The `website-approval` environment supplies `WEBSITE_APPROVAL_TOKEN`. The creden
 belongs to `christian-byrne`, whose team membership satisfies the website path review rule. The
 workflow verifies that identity before it acts and cannot approve Christian's own pull requests.
 After approval it uses squash auto-merge or enters an already-clean exact head in GitHub's native
-queue without queue jumping. Later status and workflow-run events reconcile the decision.
+queue without queue jumping. Each `CI: Tests E2E` or `CI: Website E2E` completion re-runs the lane
+for its pull request in case native auto-merge did not hand the head to the queue.
 
-For a website-only pull request, the required lint context runs website-scoped lint, format,
-typecheck, and unused-code checks. A change outside `apps/website/` falls back to the full repository
-jobs. CodeRabbit is excluded from `apps/website/**` for this trial; human change requests still
-block the lane.
+Website-only pull requests run the normal required checks; the core unit and browser suites already
+skip when nothing outside `apps/` changed. CodeRabbit is excluded from `apps/website/**` for this
+trial; human change requests still block the lane.
 
 ## Production identity and rollback
 
-Each website preview and production build writes a cache-disabled `/__build.json` with the exact
-source SHA, workflow run, and attempt. Deployment verifies the
-immutable Vercel URL before accepting canonical `comfy.org` promotion and saves the previous and
-new deployment IDs and SHAs as a short-lived transition artifact. Both deployment workflows use
-`scripts/cicd/website-deployment.sh` for the build identity, Vercel lookups, and identity checks.
-
-`validation-website-rollback.yaml` accepts an immutable deployment ID and expected SHA. Its default
-mode validates the target and marker without changing production. With `perform_rollback` enabled,
-it performs an instant rollback, verifies the canonical marker and public homepage, then promotes
-the same known-good deployment so normal production assignment can resume.
-
-The first production deployment containing `/__build.json` is bootstrap evidence, not the canary.
-Before opening the canary:
-
-1. Within 7 days, download that deployment's transition artifact (the same IDs appear in the run's
-   step summary).
-2. Run `Validation: Website Production Rollback` with its `deployedDeploymentId` and `deployedSha`.
-3. Leave `perform_rollback` disabled and require the no-mutation preflight to pass.
-4. Run the canary from update through production. A real rollback (`perform_rollback: true`)
-   changes production, so run it only when the operators running the trial agree to it.
+Each production deploy records a `website-production` GitHub deployment for its commit, with the
+immutable Vercel URL. To roll back, use Vercel's Instant Rollback on the last good production
+deployment (dashboard or `vercel rollback <url>`). Vercel then stops assigning new production
+deployments, so once the fix has merged, use Undo Rollback (or `vercel promote <url>`) on it.
 
 ## Evidence to record
 
 Record timestamps for the contributor update, required checks, policy approval, queue entry, merge,
-and verified production SHA. Also record any manual intervention, confusing UI, false-positive
+and production deployment. Also record any manual intervention, confusing UI, false-positive
 check, or rollback problem. The trial succeeds only if the contributor can follow the path without
 developer rescue and production can be tied to the expected commit. The allowlist should not expand
 until the canary and rollback evidence are complete.

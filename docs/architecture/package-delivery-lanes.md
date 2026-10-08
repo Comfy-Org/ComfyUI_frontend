@@ -1,20 +1,17 @@
 # Package delivery lanes
 
 A package delivery lane lets one part of the monorepo choose its own balance of speed and rigor
-without weakening the rest of the repository. A lane has four independent stages:
+without weakening the rest of the repository. A lane decides whether every changed path belongs to
+the package, applies the package's reviewed approval policy to the exact commit, and then hands the
+pull request to the repository's normal checks, merge queue, deployment, and rollback.
 
-1. **Scope:** decide whether every changed path belongs to the package.
-2. **Quality:** run the package's checks instead of unrelated repository checks.
-3. **Approval:** apply the package's reviewed approval policy to the exact commit.
-4. **Delivery:** use the repository's normal merge, deployment, and rollback systems.
-
-The website is the first lane. The approval engine in the `tools/cicd/fast-lane/` workspace is package-neutral;
-the change classifier output, the scoped CI jobs, and the workflow are per lane.
+The website is the first lane. The approval engine in the `tools/cicd/fast-lane/` workspace is
+package-neutral; the lane entry and the workflow are per lane.
 
 ## The dials a package owns
 
-Each lane has a JSON policy in `.github/fast-lanes/`. A policy change receives normal repository
-review, so changing a dial is visible in history.
+Each lane is an entry in `tools/cicd/fast-lane/src/lanes.ts`, written in lowercase. A policy change
+receives normal repository review, so changing a dial is visible in history.
 
 | Dial                       | Meaning                                                                                      |
 | -------------------------- | -------------------------------------------------------------------------------------------- |
@@ -24,13 +21,6 @@ review, so changing a dial is visible in history.
 | `approval.approvalLabel`   | An explicit opt-in route for other authors.                                                  |
 | `approval.trustedLabelers` | Operators allowed to apply that label.                                                       |
 | `approval.holdLabel`       | Stops the lane at its next run: dismisses lane approvals and disarms lane-owned merge state. |
-| `merge.mode`               | `automatic` arms native auto-merge or the queue; `manual` stops after approval.              |
-| `merge.method`             | The repository-supported merge method used by automatic mode.                                |
-
-Package-specific quality commands remain in the package's CI jobs. The first routing rule is
-simple: a package-only pull request runs that package's checks; a mixed or root-level pull request
-runs the full repository checks. Merge-group and protected-branch runs remain full-repository checks
-unless a later change proves that a narrower candidate calculation is safe.
 
 ## Fixed safety rules
 
@@ -62,30 +52,20 @@ These are implementation invariants, not package dials:
   policy review on the pull request. Because the identity is a personal account, that includes the
   account owner's own merge actions in that window.
 
-The reusable TypeScript engine lives in `tools/cicd/fast-lane/src/`. `policy.ts` contains pure policy
-decisions, `github.ts` contains GitHub transport, and `automation.ts` owns the approval and merge
-lifecycle. Behavioral tests run `runFastLane` against an in-memory GitHub double and cover each
-fixed rule.
+The reusable TypeScript engine lives in `tools/cicd/fast-lane/src/`. `lanes.ts` holds the policies,
+`policy.ts` the pure policy decisions, `github.ts` the GitHub transport, and `automation.ts` the
+approval and merge lifecycle. Behavioral tests run `runFastLane` against an in-memory GitHub double
+and cover each fixed rule.
 
 ## Adding a lane
 
-1. Add a reviewed policy file under `.github/fast-lanes/`.
-2. Add a package-only output to the change classifier (`.github/actions/changes-filter`) and a
-   test that ties it to the policy's `pathPrefixes`.
-3. Add package-scoped lint, format, typecheck, test, and repository checks behind that result. Keep
-   the full checks as the fallback for mixed changes.
-4. Add a workflow like `pr-website-auto-approve.yaml`: `pull_request_target`, `status`, and
-   `workflow_run` triggers; a resolver job that finds the pull request; and one lane job keyed on
-   that pull request's concurrency group. The lane job sparse-checks out `.nvmrc`, the selected
-   policy, and `tools/cicd/fast-lane/` from the default branch (cone mode also includes
-   root-level files) and runs `node tools/cicd/fast-lane/src/run.ts` without installing
-   dependencies.
-5. Put the approval credential in a package-specific protected environment and restrict that
+1. Add the lane to `tools/cicd/fast-lane/src/lanes.ts`.
+2. Copy `pr-website-auto-approve.yaml` and point it at the new lane and at the workflows whose
+   completion should re-run the lane.
+3. Put the approval credential in a package-specific protected environment and restrict that
    environment to the protected default branch.
-6. Add negative tests for forks, mixed paths, stale heads, self-approval, unauthorized labels,
-   active change requests, and post-approval failure.
-7. Trial the lane with a disposable pull request. Record time from update to checks, approval,
-   queue entry, production identity, and rollback readiness before expanding its allowlist.
+4. Trial the lane with a disposable pull request. Record time from update to checks, approval,
+   queue entry, and production deployment before expanding its allowlist.
 
 This process changes package policy, not the repository's underlying protection model. A package
 can start with fast feedback and a narrow allowlist, then tighten or relax individual dials using
