@@ -30,17 +30,17 @@ describe('CardRow', () => {
     renderRow()
     await scrollRow(300, 900, 0)
 
-    expect(screen.getByTestId('carousel-prev')).toHaveAttribute(
+    expect(screen.getByTestId('card-row-prev')).toHaveAttribute(
       'aria-disabled',
       'true'
     )
-    expect(screen.getByTestId('carousel-next')).not.toHaveAttribute(
+    expect(screen.getByTestId('card-row-next')).not.toHaveAttribute(
       'aria-disabled'
     )
 
     await scrollRow(300, 900, 300)
 
-    for (const side of ['carousel-prev', 'carousel-next'])
+    for (const side of ['card-row-prev', 'card-row-next'])
       expect(screen.getByTestId(side)).not.toHaveAttribute('aria-disabled')
   })
 
@@ -51,8 +51,8 @@ describe('CardRow', () => {
     screen.getByTestId('card-row').scrollBy = scrollBy
 
     const user = userEvent.setup()
-    await user.click(screen.getByTestId('carousel-next'))
-    await user.click(screen.getByTestId('carousel-prev'))
+    await user.click(screen.getByTestId('card-row-next'))
+    await user.click(screen.getByTestId('card-row-prev'))
 
     expect(scrollBy.mock.calls).toEqual([
       [{ left: 240, behavior: 'smooth' }],
@@ -66,7 +66,7 @@ describe('CardRow', () => {
     const scrollBy = vi.fn()
     screen.getByTestId('card-row').scrollBy = scrollBy
 
-    await userEvent.setup().click(screen.getByTestId('carousel-prev'))
+    await userEvent.setup().click(screen.getByTestId('card-row-prev'))
 
     expect(scrollBy).not.toHaveBeenCalled()
   })
@@ -74,7 +74,7 @@ describe('CardRow', () => {
   it('keeps the reader on the arrow they are standing on when it is spent', async () => {
     renderRow()
     await scrollRow(300, 900, 300)
-    const forward = screen.getByTestId('carousel-next')
+    const forward = screen.getByTestId('card-row-next')
     forward.focus()
 
     await scrollRow(300, 900, 600)
@@ -83,10 +83,10 @@ describe('CardRow', () => {
     expect(forward).toHaveFocus()
   })
 
-  it('keeps focus in the row when it stops overflowing and the pair goes', async () => {
+  it('keeps focus in the row when it stops overflowing and the arrows go', async () => {
     renderRow()
     await scrollRow(300, 900, 300)
-    screen.getByTestId('carousel-next').focus()
+    screen.getByTestId('card-row-next').focus()
 
     await scrollRow(300, 300, 0)
     await nextTick()
@@ -95,7 +95,7 @@ describe('CardRow', () => {
     expect(screen.getByTestId('card-row')).toHaveFocus()
   })
 
-  it('leaves focus alone when the reader is not standing on the pair', async () => {
+  it('leaves focus alone when the reader is not standing on an arrow', async () => {
     renderRow()
     await scrollRow(300, 900, 300)
     const row = screen.getByTestId('card-row')

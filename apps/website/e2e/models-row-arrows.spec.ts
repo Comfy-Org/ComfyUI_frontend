@@ -7,8 +7,8 @@ test('the row keeps a keyboard on the arrow it is standing on', async ({
 }) => {
   await page.goto('/hub/models/')
   const row = page.getByTestId('section-generate-images')
-  const forward = row.getByTestId('carousel-next')
-  const back = row.getByTestId('carousel-prev')
+  const forward = row.getByTestId('card-row-next')
+  const back = row.getByTestId('card-row-prev')
   await expect(forward).toBeVisible()
   await expect(back).toHaveAttribute('aria-disabled', 'true')
 
