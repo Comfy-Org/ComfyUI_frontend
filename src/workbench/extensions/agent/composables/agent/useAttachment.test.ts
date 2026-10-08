@@ -36,14 +36,17 @@ describe('useAttachment', () => {
   it('deduplicates a file within a batch and across pending drops', async () => {
     const store = useAgentComposerStore()
     const upload = vi.fn(async (file: File) => ({ ref: file.name }))
+    const onDuplicate = vi.fn()
     const { addFiles } = useAttachment({
       upload,
+      onDuplicate,
       stage: store.addAttachment,
       update: store.updateAttachment,
       remove: store.removeAttachment
     })
     const file = new File(['image'], 'cat.png', { lastModified: 1 })
-    const batch = addFiles([file, file])
+    const batch = addFiles([file, file, file])
+    expect(onDuplicate).toHaveBeenCalledExactlyOnceWith(['cat.png', 'cat.png'])
     const repeated = addFiles([
       new File(['image'], 'cat.png', { lastModified: 1 })
     ])
@@ -51,19 +54,24 @@ describe('useAttachment', () => {
     await expect(repeated).resolves.toBe(false)
     await expect(batch).resolves.toBe(true)
     expect(upload).toHaveBeenCalledOnce()
+    expect(onDuplicate).toHaveBeenLastCalledWith(['cat.png'])
+    expect(onDuplicate).toHaveBeenCalledTimes(2)
   })
 
   it('ignores a settled duplicate but allows a removed file to be added again', async () => {
     const store = useAgentComposerStore()
     const upload = vi.fn(async (file: File) => ({ ref: file.name }))
+    const onDuplicate = vi.fn()
     const { addFiles } = useAttachment({
       upload,
+      onDuplicate,
       stage: store.addAttachment,
       update: store.updateAttachment,
       remove: store.removeAttachment
     })
     const file = new File(['image'], 'cat.png', { lastModified: 1 })
     await addFiles([file])
+    expect(onDuplicate).not.toHaveBeenCalled()
     const original = store.attachments[0]
     store.referenceAttachment(original.id)
     store.referenceAttachment(original.id)
@@ -75,6 +83,7 @@ describe('useAttachment', () => {
     expect(store.attachments).toHaveLength(1)
     expect(store.attachments[0].id).not.toBe(original.id)
     expect(upload).toHaveBeenCalledTimes(2)
+    expect(onDuplicate).toHaveBeenCalledExactlyOnceWith(['cat.png'])
   })
 
   it.for([
@@ -109,8 +118,10 @@ describe('useAttachment', () => {
     const store = useAgentComposerStore()
     const upload = vi.fn(async (file: File) => ({ ref: file.name }))
     upload.mockRejectedValueOnce(new Error('Upload failed'))
+    const onDuplicate = vi.fn()
     const { addFiles } = useAttachment({
       upload,
+      onDuplicate,
       stage: store.addAttachment,
       update: store.updateAttachment,
       remove: store.removeAttachment
@@ -120,6 +131,7 @@ describe('useAttachment', () => {
     await expect(addFiles([file])).resolves.toBe(true)
     expect(store.attachments).toHaveLength(1)
     expect(upload).toHaveBeenCalledTimes(2)
+    expect(onDuplicate).not.toHaveBeenCalled()
   })
 
   it('keeps a fresh re-addition after a cancelled upload settles late', async () => {

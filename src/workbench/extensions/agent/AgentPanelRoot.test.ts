@@ -2510,6 +2510,12 @@ describe('AgentPanelRoot attach flow', () => {
     await nextTick()
     expect(store.attachments).toHaveLength(1)
     expect(fetched).toEqual([source])
+    expect(useToastStore().messagesToAdd).toEqual([
+      expect.objectContaining({
+        severity: 'info',
+        detail: 'Recording.mp3 is already in the asset tray'
+      })
+    ])
   })
 
   it('allows a removed library asset to be explicitly dropped again while retaining retirement of its old identity', async () => {
@@ -2543,8 +2549,15 @@ describe('AgentPanelRoot attach flow', () => {
     expect(store.attachments).toEqual([newAttachment])
     expect(newAttachment.ref).toBe('stored-library.png')
     expect(store.prompt.references).toEqual([])
+    expect(useToastStore().messagesToAdd).toEqual([])
     expect(dispatchDrag(target, 'drop', data)).toBe(true)
     expect(store.attachments).toHaveLength(1)
+    expect(useToastStore().messagesToAdd).toEqual([
+      expect.objectContaining({
+        severity: 'info',
+        detail: 'library.png is already in the asset tray'
+      })
+    ])
   })
 
   it('allows the same library asset to be dropped into a new draft after sending', async () => {
@@ -3548,22 +3561,35 @@ describe('AgentPanelRoot attach flow', () => {
     ).toBeInTheDocument()
   })
 
-  it('keeps one tray item when the same local file is dropped again', async () => {
+  it.for([
+    { copies: 1, notice: 'cat.png is already in the asset tray' },
+    { copies: 2, notice: 'Skipped 2 duplicate assets' }
+  ])('reports $copies skipped files once', async ({ copies, notice }) => {
     const uploaded = stubUploadFetch()
     renderWithSelectedTarget()
     await nextTick()
     const store = useAgentComposerStore()
     store.setText('Keep this draft')
     const target = screen.getByRole('textbox')
+    await userEvent.click(target)
     dispatchDrag(target, 'drop', {
       files: [
         new File(['image'], 'cat.png', { type: 'image/png', lastModified: 1 })
       ]
     })
     await vi.waitFor(() => expect(store.attachments[0]?.uploading).toBe(false))
+    expect(useToastStore().messagesToAdd).toEqual([])
     dispatchDrag(target, 'drop', {
       files: [
-        new File(['image'], 'cat.png', { type: 'image/png', lastModified: 1 })
+        ...Array.from(
+          { length: copies },
+          () =>
+            new File(['image'], 'cat.png', {
+              type: 'image/png',
+              lastModified: 1
+            })
+        ),
+        new File(['another image'], 'dog.png', { type: 'image/png' })
       ]
     })
     await nextTick()
@@ -3575,7 +3601,12 @@ describe('AgentPanelRoot attach flow', () => {
         }
       )
     ).toHaveLength(1)
-    expect(uploaded).toEqual(['cat.png'])
+    await vi.waitFor(() => expect(uploaded).toEqual(['cat.png', 'dog.png']))
+    expect(useToastStore().messagesToAdd).toEqual([
+      expect.objectContaining({ severity: 'info', detail: notice })
+    ])
+    expect(screen.getByRole('group', { name: 'dog.png' })).toBeInTheDocument()
+    expect(target).toHaveFocus()
     expect(store.prompt).toEqual({ text: 'Keep this draft', references: [] })
   })
 

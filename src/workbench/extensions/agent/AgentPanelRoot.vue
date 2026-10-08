@@ -1730,10 +1730,23 @@ const attachment = useAttachment({
   // must not raise the server-error overlay.
   onError: (message) =>
     toast.add({ severity: 'warn', detail: message, life: 5000 }),
+  onDuplicate: notifyDuplicateAttachments,
   stage: composerStore.addAttachment,
   update: composerStore.updateAttachment,
   remove: composerStore.removeAttachment
 })
+
+function notifyDuplicateAttachments(names: string[]): void {
+  toast.add({
+    severity: 'info',
+    detail: t(
+      'agent.attachmentsAlreadyAdded',
+      { name: names[0], count: names.length },
+      names.length
+    ),
+    life: 3500
+  })
+}
 
 onBeforeUnmount(() =>
   runPanelTeardown({
@@ -1833,9 +1846,11 @@ async function attachDroppedAsset(event: DragEvent): Promise<boolean> {
 
   const sourceKey = asset.ref ? `asset:${asset.ref}` : `uri:${asset.uri}`
   if (asset.ref && asset.kind !== 'other') {
-    if (composerStore.attachments.some((item) => item.ref === asset.ref))
+    if (composerStore.attachments.some((item) => item.ref === asset.ref)) {
+      notifyDuplicateAttachments([asset.name])
       return false
-    return composerStore.addAttachment({
+    }
+    const added = composerStore.addAttachment({
       id: `asset:${crypto.randomUUID()}`,
       name: asset.name,
       ref: asset.ref,
@@ -1844,6 +1859,8 @@ async function attachDroppedAsset(event: DragEvent): Promise<boolean> {
       mediaUrl: asset.mediaUrl,
       mediaKind: asset.kind
     })
+    if (!added) notifyDuplicateAttachments([asset.name])
+    return added
   }
 
   const result = await attachment.addDeferredFile(

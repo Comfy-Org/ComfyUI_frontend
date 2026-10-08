@@ -22,6 +22,7 @@ export interface UseAttachmentOptions {
   maxBytes?: (file: File) => number
   onError?: (message: string) => void
   onUploaded?: () => void
+  onDuplicate?: (names: string[]) => void
   stage: (attachment: ComposerAttachment) => boolean
   update: (id: string, patch: Partial<ComposerAttachment>) => void
   remove: (id: string) => void
@@ -199,7 +200,10 @@ export function useAttachment(options: UseAttachmentOptions) {
     'uploaded' | 'unsupported' | 'cancelled' | 'failed' | 'duplicate'
   > {
     const id = stage(name, sourceKey)
-    if (!id) return 'duplicate'
+    if (!id) {
+      options.onDuplicate?.([name])
+      return 'duplicate'
+    }
     try {
       const file = await withDeadline(resolve(), DEFERRED_FETCH_TIMEOUT_MS)
       if (cancelled.has(id)) return 'cancelled'
@@ -224,13 +228,16 @@ export function useAttachment(options: UseAttachmentOptions) {
   }
 
   async function addFiles(files: Iterable<File>): Promise<boolean> {
+    const duplicates: string[] = []
     const staged = [...files]
       .filter((file) => !isTooLarge(file))
       .flatMap((file) => {
         const sourceKey = `file:${JSON.stringify([file.name, file.size, file.lastModified, file.type])}`
         const id = stage(file.name, sourceKey)
+        if (!id) duplicates.push(file.name)
         return id ? [{ file, id }] : []
       })
+    if (duplicates.length) options.onDuplicate?.(duplicates)
     let uploaded = 0
     await Promise.all(
       staged.map(async ({ id, file }) => {

@@ -5554,6 +5554,7 @@
     "assetNotAttachable": "Images, video, audio, 3D models, and text files can be attached",
     "attachmentTooLarge": "{name} is larger than {limit}",
     "attachmentUploadFailed": "{name} could not be uploaded",
+    "attachmentsAlreadyAdded": "{name} is already in the asset tray | Skipped {count} duplicate assets",
     "mention": "Mention a node",
     "changeWorkflowForChat": "Change the workflow that the agent can edit",
     "chatOptions": "Chat options",
