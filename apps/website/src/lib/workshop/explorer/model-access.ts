@@ -4,12 +4,11 @@ import type {
 } from '@/config/models-catalogue'
 import type { TranslationKey } from '@/i18n/translations'
 
-export const MODEL_ACCESS = ['run', 'api', 'download'] as const
+export const MODEL_ACCESS = ['run', 'api'] as const
 export type ModelAccess = (typeof MODEL_ACCESS)[number]
 
 const HOSTED_ACCESS: readonly ModelAccess[] = ['run', 'api']
 const API_ACCESS: readonly ModelAccess[] = ['api']
-export const OPEN_WEIGHT_ACCESS: readonly ModelAccess[] = ['download']
 
 /**
  * Whether a visitor can run this model from its Hub page. The Run button, the
@@ -45,12 +44,10 @@ export function offersAccess(
 
 export const accessBadgeKey: Record<ModelAccess, TranslationKey> = {
   run: 'workshop.explorer.badge.run',
-  api: 'workshop.explorer.badge.api',
-  download: 'workshop.explorer.badge.download'
+  api: 'workshop.explorer.badge.api'
 }
 
 export const accessFilterKey: Record<ModelAccess, TranslationKey> = {
   run: 'workshop.explorer.filter.run',
-  api: 'workshop.explorer.filter.api',
-  download: 'workshop.explorer.filter.download'
+  api: 'workshop.explorer.filter.api'
 }

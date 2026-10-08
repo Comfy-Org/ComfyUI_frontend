@@ -116,7 +116,7 @@ describe('runsHere', () => {
 describe('parseAccess', () => {
   it.for([
     { search: '?use=run', access: ['run'] },
-    { search: '?use=download,run', access: ['run', 'download'] },
+    { search: '?use=download,run', access: ['run'] },
     { search: '?use=price', access: [] },
     { search: '', access: [] }
   ] satisfies { search: string; access: ModelAccess[] }[])(
@@ -131,12 +131,12 @@ describe('offersAccess', () => {
   it.for([
     { wanted: [], offered: true },
     { wanted: ['api'], offered: true },
-    { wanted: ['download'], offered: false },
-    { wanted: ['download', 'run'], offered: true }
+    { wanted: ['run'], offered: false },
+    { wanted: ['run', 'api'], offered: true }
   ] satisfies { wanted: ModelAccess[]; offered: boolean }[])(
-    'a hosted model answers $wanted with $offered',
+    'an API-only model answers $wanted with $offered',
     ({ wanted, offered }) => {
-      expect(offersAccess(['run', 'api'], wanted)).toBe(offered)
+      expect(offersAccess(['api'], wanted)).toBe(offered)
     }
   )
 })

@@ -141,13 +141,23 @@ test.describe('Models catalog', () => {
     await expect(
       page.getByRole('link', { name: 'Explore the Wan family' })
     ).toHaveAttribute('href', '/hub/models/?q=Wan')
+    await expect(
+      page.getByTestId('model-family').getByRole('link', { name: /\(open\)/ })
+    ).not.toHaveCount(0)
+    for (const pill of await page
+      .getByTestId('model-family')
+      .getByRole('link', { name: /\(open\)/ })
+      .all())
+      await expect(pill).toHaveAttribute('href', '/hub/models/local/')
+
+    await expect(page.getByTestId('models-all-link')).toHaveAttribute(
+      'href',
+      '/hub/models/local/'
+    )
 
     await page.getByTestId('model-access-open').click()
 
-    await expect(page).toHaveURL(/\/hub\/models\/\?tab=open$/)
-    await expect(
-      page.getByTestId('open-weight-model-card').first()
-    ).toBeVisible()
+    await expect(page).toHaveURL(/\/hub\/models\/local\/$/)
   })
 
   test('answers questions about AI models in ComfyUI', async ({ page }) => {
@@ -596,29 +606,20 @@ test.describe('Models catalog', () => {
     await expect(page).not.toHaveURL(/#compare$/)
   })
 
-  test('the how-you-use-it filter lists open-weight downloads', async ({
+  test('the how-you-use-it filter offers only catalogue models', async ({
     page
   }) => {
     await page.goto('/hub/models/')
     await expect(page.getByTestId('workshop-models-grid')).toBeVisible()
     await page.getByTestId('workshop-filter').click()
     await page.getByTestId('workshop-facet-access').click()
-    await page.getByTestId('filter-access-download').click()
-
-    const grid = page.getByTestId('workshop-models-grid')
-    await expect(grid.getByTestId('workshop-model-card')).toHaveCount(0)
-    const openWeight = grid.getByTestId('open-weight-model-card')
-    await expect(openWeight.first()).toHaveAttribute(
-      'href',
-      /^\/hub\/models\/local\/[a-z0-9-]+\/$/
-    )
-    await expect(
-      openWeight.first().getByTestId('model-access-badges')
-    ).toHaveText('Download')
+    await expect(page.getByTestId('filter-access-download')).toHaveCount(0)
 
     await page.getByTestId('filter-access-api').click()
+    const grid = page.getByTestId('workshop-models-grid')
     await expect(grid.getByTestId('workshop-model-card').first()).toBeVisible()
-    await expect(page.getByTestId('workshop-filter-count')).toHaveText('2')
+    await expect(grid.getByTestId('open-weight-model-card')).toHaveCount(0)
+    await expect(page.getByTestId('workshop-filter-count')).toHaveText('1')
   })
 
   test('category tabs narrow the models and stay in the address', async ({
@@ -631,20 +632,25 @@ test.describe('Models catalog', () => {
       'true'
     )
 
-    await tabs.getByRole('tab', { name: 'Open weights' }).click()
-    await expect(page).toHaveURL(/[?&]tab=open/)
-    const grid = page.getByTestId('workshop-models-grid')
-    await expect(grid.getByTestId('workshop-model-card')).toHaveCount(0)
-    await expect(
-      grid.getByTestId('open-weight-model-card').first()
-    ).toHaveAttribute('href', /^\/hub\/models\/local\/[a-z0-9-]+\/$/)
+    await expect(tabs.getByRole('tab', { name: 'Open weights' })).toHaveCount(0)
+    await expect(tabs.getByRole('tab', { name: 'Partner nodes' })).toHaveCount(
+      0
+    )
 
-    await tabs.getByRole('tab', { name: 'Partner nodes' }).click()
-    await expect(grid.getByTestId('open-weight-model-card')).toHaveCount(0)
+    await tabs.getByRole('tab', { name: 'Image' }).click()
+    await expect(page).toHaveURL(/[?&]tab=image/)
+    const grid = page.getByTestId('workshop-models-grid')
     await expect(grid.getByTestId('workshop-model-card').first()).toBeVisible()
+    await expect(grid.getByTestId('open-weight-model-card')).toHaveCount(0)
 
     await page.goto('/hub/models/?tab=video')
     await expect(page.getByRole('tab', { name: 'Video' })).toHaveAttribute(
+      'aria-selected',
+      'true'
+    )
+
+    await page.goto('/hub/models/?tab=open')
+    await expect(page.getByRole('tab', { name: 'All' })).toHaveAttribute(
       'aria-selected',
       'true'
     )

@@ -1,10 +1,6 @@
 import { z } from 'astro/zod'
 
-import { getRoutes } from '@/config/routes'
-import type { UseCase } from '@/config/models-catalogue'
 import { USE_CASES } from '@/config/models-catalogue'
-import type { ModelTab } from './model-tabs'
-import { openWeightInTab } from './model-tabs'
 import generated from './open-weight-models.generated.json' with { type: 'json' }
 
 const openWeightModelSchema = z.object({
@@ -29,41 +25,3 @@ export type OpenWeightTask = OpenWeightModel['tasks'][number]
 export const OPEN_WEIGHT_MODELS: readonly OpenWeightModel[] = z
   .array(openWeightModelSchema)
   .parse(generated)
-
-export function openWeightHref(model: Pick<OpenWeightModel, 'slug'>): string {
-  return `${getRoutes().workshop}local/${model.slug}/`
-}
-
-export function filterOpenWeightModels(
-  list: readonly OpenWeightModel[],
-  {
-    query = '',
-    useCases = [],
-    tab = 'all',
-    downloads = false,
-    byName = false
-  }: {
-    query?: string
-    useCases?: readonly UseCase[]
-    tab?: ModelTab
-    /** The visitor asked for what they can download. */
-    downloads?: boolean
-    byName?: boolean
-  }
-): OpenWeightModel[] {
-  const needle = query.trim().toLowerCase()
-  const askedUnderAll = tab === 'all' && (needle !== '' || downloads)
-  const matches = list.filter(
-    (model) =>
-      (askedUnderAll || openWeightInTab(model, tab)) &&
-      (useCases.length === 0 || useCases.includes(model.useCase)) &&
-      (needle === '' ||
-        [model.name, model.provider ?? '', model.useCase.replaceAll('-', ' ')]
-          .join(' ')
-          .toLowerCase()
-          .includes(needle))
-  )
-  return byName
-    ? matches.toSorted((a, b) => a.name.localeCompare(b.name))
-    : matches
-}

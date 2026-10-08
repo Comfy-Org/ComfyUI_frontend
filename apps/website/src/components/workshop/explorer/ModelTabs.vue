@@ -3,9 +3,7 @@ import {
   AudioLines,
   BookOpen,
   Box,
-  Cloud,
   Columns2,
-  Download,
   Image,
   LayoutGrid,
   Pencil,
@@ -49,9 +47,7 @@ const icon: Record<ModelTab, Component> = {
   '3d': Box,
   edit: Pencil,
   upscale: Columns2,
-  llm: BookOpen,
-  open: Download,
-  partner: Cloud
+  llm: BookOpen
 }
 
 function targetIndex(key: string, index: number, length: number) {
@@ -86,7 +82,7 @@ function onKeydown(event: KeyboardEvent) {
 
 <template>
   <div
-    class="-mx-1 mb-8 overflow-x-auto px-1 py-1 max-sm:mb-4 lg:sticky lg:top-26 lg:mx-0 lg:mb-0 lg:w-58 lg:shrink-0 lg:overflow-visible lg:px-0 lg:pt-4"
+    class="-mx-1 mb-8 overflow-x-auto px-1 py-1 max-sm:mb-4 lg:mx-0 lg:mb-0 lg:overflow-visible lg:px-0 lg:pt-4"
   >
     <div
       ref="list"

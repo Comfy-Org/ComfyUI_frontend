@@ -1,7 +1,6 @@
 import type { WorkshopModel } from '@/config/models-catalogue'
 import { modalityOf, useCasesFor } from '@/config/models-catalogue'
 import type { TranslationKey } from '@/i18n/translations'
-import type { OpenWeightModel } from './open-weight-models'
 
 export const MODEL_TABS = [
   'all',
@@ -11,9 +10,7 @@ export const MODEL_TABS = [
   '3d',
   'edit',
   'upscale',
-  'llm',
-  'open',
-  'partner'
+  'llm'
 ] as const
 export type ModelTab = (typeof MODEL_TABS)[number]
 
@@ -27,9 +24,7 @@ export const modelTabLabelKey: Record<ModelTab, TranslationKey> = {
   '3d': 'workshop.explorer.tabs.3d',
   edit: 'workshop.explorer.tabs.edit',
   upscale: 'workshop.explorer.tabs.upscale',
-  llm: 'workshop.explorer.tabs.llm',
-  open: 'workshop.explorer.tabs.open',
-  partner: 'workshop.explorer.tabs.partner'
+  llm: 'workshop.explorer.tabs.llm'
 }
 
 const MEDIA_OF_TAB = {
@@ -71,10 +66,7 @@ function hostedEdits(model: WorkshopModel): boolean {
 export function hostedInTab(model: WorkshopModel, tab: ModelTab): boolean {
   switch (tab) {
     case 'all':
-    case 'partner':
       return true
-    case 'open':
-      return false
     case 'edit':
       return hostedEdits(model)
     case 'upscale':
@@ -83,28 +75,5 @@ export function hostedInTab(model: WorkshopModel, tab: ModelTab): boolean {
       return (model.modalities ?? [modalityOf(model)]).includes(
         MEDIA_OF_TAB[tab]
       )
-  }
-}
-
-/**
- * Whether an open-weight model belongs under a category tab. All is for what
- * runs here or by API, so a download waits to be searched or asked for.
- */
-export function openWeightInTab(
-  model: OpenWeightModel,
-  tab: ModelTab
-): boolean {
-  switch (tab) {
-    case 'open':
-      return true
-    case 'all':
-    case 'partner':
-    case 'llm':
-      return false
-    case 'edit':
-    case 'upscale':
-      return model.tasks.includes(tab)
-    default:
-      return model.modality === MEDIA_OF_TAB[tab]
   }
 }

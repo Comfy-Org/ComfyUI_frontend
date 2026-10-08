@@ -25,15 +25,12 @@ export const tabListKey: Record<Exclude<ModelTab, 'all'>, TranslationKey> = {
   '3d': 'workshop.modelsHub.back.tab.3d',
   edit: 'workshop.modelsHub.back.tab.edit',
   upscale: 'workshop.modelsHub.back.tab.upscale',
-  llm: 'workshop.modelsHub.back.tab.llm',
-  open: 'workshop.modelsHub.back.tab.open',
-  partner: 'workshop.modelsHub.back.tab.partner'
+  llm: 'workshop.modelsHub.back.tab.llm'
 }
 
 const accessListKey: Record<ModelAccess, TranslationKey> = {
   run: 'workshop.modelsHub.back.access.run',
-  api: 'workshop.modelsHub.back.access.api',
-  download: 'workshop.modelsHub.back.access.download'
+  api: 'workshop.modelsHub.back.access.api'
 }
 
 /**

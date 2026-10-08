@@ -4589,24 +4589,20 @@
         "edit": "编辑",
         "upscale": "放大",
         "llm": "大语言模型",
-        "open": "开放权重",
-        "partner": "合作伙伴节点",
         "groups": {
           "type": "类型",
-          "task": "任务",
-          "access": "获取方式"
+          "task": "任务"
         }
       },
+      "allModelsLink": "全部模型（含开放权重）",
       "filter": {
         "label": "使用方式",
         "run": "在线运行",
-        "api": "API",
-        "download": "下载"
+        "api": "API"
       },
       "badge": {
         "run": "运行",
-        "api": "API",
-        "download": "下载"
+        "api": "API"
       },
       "compare": {
         "label": "对比",
@@ -4686,14 +4682,11 @@
           "3d": "3D 模型",
           "edit": "编辑模型",
           "upscale": "放大模型",
-          "llm": "语言模型",
-          "open": "开放权重",
-          "partner": "合作伙伴模型"
+          "llm": "语言模型"
         },
         "access": {
           "run": "可在这里运行的模型",
-          "api": "可通过 API 调用的模型",
-          "download": "可下载的开放权重"
+          "api": "可通过 API 调用的模型"
         }
       }
     }

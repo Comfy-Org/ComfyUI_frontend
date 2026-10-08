@@ -12,19 +12,15 @@ function writeAddress(value: ModelTab) {
 
 /**
  * The Models page's category tab, kept in the address as `?tab=`. A tab the
- * page does not show opens as All and leaves the address.
+ * page does not show, or no longer has, opens as All and leaves the address.
  */
 export function useModelTab(shown: (tab: ModelTab) => boolean = () => true) {
   const tab = ref<ModelTab>('all')
 
   function readAddress(search: string) {
     const named = parseModelTab(search)
-    if (shown(named)) {
-      tab.value = named
-      return
-    }
-    tab.value = 'all'
-    writeAddress('all')
+    tab.value = shown(named) ? named : 'all'
+    if (tab.value === 'all') writeAddress('all')
   }
 
   watch(tab, writeAddress)

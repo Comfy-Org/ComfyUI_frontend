@@ -44,7 +44,7 @@ function tabNames() {
 afterEach(() => happyWindow.happyDOM.setViewport({ width: 1024 }))
 
 describe('ModelTabs', () => {
-  it('offers every category as a tab on one list, with Task and Access headed and the types first', () => {
+  it('offers every category as a tab on one list, with Task headed and the types first', () => {
     renderTabs()
     const list = screen.getByRole('tablist', { name: 'Model categories' })
     expect(list).toHaveAttribute('aria-orientation', 'vertical')
@@ -56,19 +56,21 @@ describe('ModelTabs', () => {
       '3d',
       'llm',
       'edit',
-      'upscale',
-      'open',
-      'partner'
+      'upscale'
     ])
-    expect(screen.getByRole('tab', { name: 'Partner nodes' })).toBeTruthy()
-    expect(
-      ['Task', 'Access'].map((title) => screen.getByText(title))
-    ).toHaveLength(2)
+    expect(screen.getByText('Task')).toBeTruthy()
     expect(screen.queryByText('Type')).toBeNull()
     for (const tab of screen.getAllByRole('tab')) {
       expect(list).toContainElement(tab)
       expect(tab).toHaveAttribute('aria-controls', 'panel')
     }
+  })
+
+  it('offers no Open weights or Partner nodes tab and no Access heading', () => {
+    renderTabs()
+    expect(screen.queryByRole('tab', { name: 'Open weights' })).toBeNull()
+    expect(screen.queryByRole('tab', { name: 'Partner nodes' })).toBeNull()
+    expect(screen.queryByText('Access')).toBeNull()
   })
 
   it('shows how many models each category lists', () => {
@@ -88,23 +90,15 @@ describe('ModelTabs', () => {
         ['upscale', 0]
       ])
     )
-    expect(tabNames()).toEqual([
-      'all',
-      'image',
-      'video',
-      'audio',
-      '3d',
-      'open',
-      'partner'
-    ])
+    expect(tabNames()).toEqual(['all', 'image', 'video', 'audio', '3d'])
     expect(screen.queryByText('Task')).toBeNull()
   })
 
   it('marks the chosen tab and keeps only it in the tab order', () => {
-    renderTabs('open')
-    const open = screen.getByRole('tab', { name: 'Open weights' })
-    expect(open).toHaveAttribute('aria-selected', 'true')
-    expect(open).toHaveAttribute('tabindex', '0')
+    renderTabs('edit')
+    const edit = screen.getByRole('tab', { name: 'Edit' })
+    expect(edit).toHaveAttribute('aria-selected', 'true')
+    expect(edit).toHaveAttribute('tabindex', '0')
     expect(screen.getByRole('tab', { name: 'All' })).toHaveAttribute(
       'aria-selected',
       'false'
@@ -131,16 +125,16 @@ describe('ModelTabs', () => {
     expect(screen.getByRole('tab', { name: 'Image' })).toHaveFocus()
 
     await user.keyboard('{ArrowUp}{ArrowUp}')
-    expect(selected.value).toBe('partner')
+    expect(selected.value).toBe('upscale')
 
     await user.keyboard('{Home}')
     expect(selected.value).toBe('all')
     await user.keyboard('{End}')
-    expect(selected.value).toBe('partner')
-    expect(screen.getByRole('tab', { name: 'Partner nodes' })).toHaveFocus()
+    expect(selected.value).toBe('upscale')
+    expect(screen.getByRole('tab', { name: 'Upscale' })).toHaveFocus()
 
     await user.keyboard('{ArrowLeft}')
-    expect(selected.value).toBe('partner')
+    expect(selected.value).toBe('upscale')
   })
 
   it('moves along the phone chip row with Left and Right', async () => {
@@ -156,6 +150,6 @@ describe('ModelTabs', () => {
     await user.keyboard('{ArrowRight}')
     expect(selected.value).toBe('image')
     await user.keyboard('{ArrowLeft}{ArrowLeft}')
-    expect(selected.value).toBe('partner')
+    expect(selected.value).toBe('upscale')
   })
 })

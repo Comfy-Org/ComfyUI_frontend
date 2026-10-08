@@ -5,7 +5,6 @@ import BrandButton from '@/components/common/BrandButton.vue'
 import { apiKeysLink, externalLinks, getRoutes } from '@/config/routes'
 import type { Locale } from '@/i18n/translations'
 import { translationsFor } from '@/i18n/translations'
-import { MODEL_TAB_PARAM } from '@/lib/workshop/explorer/model-tabs'
 
 const { locale = 'en' } = defineProps<{ locale?: Locale }>()
 const { t } = translationsFor(locale)
@@ -31,7 +30,7 @@ const cards: {
     links: [
       {
         label: t('workshop.modelsHub.access.openCta'),
-        href: `${getRoutes(locale).workshop}?${MODEL_TAB_PARAM}=open`,
+        href: getRoutes(locale).models,
         testId: 'model-access-open'
       }
     ],

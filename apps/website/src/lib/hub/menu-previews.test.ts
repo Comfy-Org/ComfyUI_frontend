@@ -18,40 +18,6 @@ const router = (
 describe('hubMenuPreviewsFor', () => {
   it.for([
     {
-      name: 'an image thumbnail',
-      thumbnail: { url: 'https://m/a.png', kind: 'image' as const },
-      still: 'https://m/a.png'
-    },
-    {
-      name: "a video's poster",
-      thumbnail: {
-        url: 'https://m/a.mp4',
-        kind: 'video' as const,
-        poster: 'https://m/a.jpg'
-      },
-      still: 'https://m/a.jpg'
-    },
-    {
-      name: 'nothing for a video without a poster',
-      thumbnail: { url: 'https://m/a.mp4', kind: 'video' as const },
-      still: undefined
-    },
-    {
-      name: 'nothing for audio',
-      thumbnail: { url: 'https://m/a.wav', kind: 'audio' as const },
-      still: undefined
-    }
-  ])('shows $name as the still', ({ thumbnail, still }) => {
-    const previews = hubMenuPreviewsFor(
-      [router({ thumbnail })],
-      ['/hub/models/x/'],
-      'en'
-    )
-    expect(previews['/hub/models/x/'].thumbnail).toBe(still)
-  })
-
-  it.for([
-    {
       model: router({ provider: 'ByteDance', modality: 'image' }),
       locale: 'en' as const,
       meta: 'ByteDance · Image'
@@ -83,35 +49,27 @@ describe('hubMenuPreviews', () => {
   it('previews every Hub example from the catalogue', () => {
     expect(hubMenuPreviews('en')).toEqual({
       '/hub/models/seedream-5-0-pro-text-to-image/': {
-        thumbnail: expect.stringMatching(/^https:\/\/.+\.png$/),
         meta: 'ByteDance · Image'
       },
       '/hub/models/seedance-2-5-reference-to-video/': {
-        thumbnail: undefined,
         meta: 'ByteDance · Video'
       },
       '/hub/models/nano-banana-2-image-edit/': {
-        thumbnail: expect.stringMatching(/^https:\/\/.+\.png$/),
         meta: 'Google · Image'
       },
       '/hub/models/gpt-image-2-text-to-image/': {
-        thumbnail: expect.stringMatching(/^https:\/\/.+\.png$/),
         meta: 'OpenAI · Image'
       },
       '/hub/workflows/change-material/': {
-        thumbnail: expect.stringMatching(/^https:\/\/.+\.webp$/),
         meta: 'Edit images'
       },
       '/hub/workflows/match-lighting/': {
-        thumbnail: expect.stringMatching(/^https:\/\/.+\.webp$/),
         meta: 'Edit images'
       },
       '/hub/apps/cinematic-studio/': {
-        thumbnail: expect.stringMatching(/poster\.jpg$/),
         meta: expect.stringMatching(/\S/)
       },
       '/hub/apps/reshoot/': {
-        thumbnail: expect.stringMatching(/poster\.jpg$/),
         meta: expect.stringMatching(/\S/)
       }
     })

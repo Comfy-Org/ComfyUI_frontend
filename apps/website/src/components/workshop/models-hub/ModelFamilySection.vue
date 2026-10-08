@@ -22,6 +22,7 @@ const { t } = translationsFor(locale)
 
 const catalogue = getRoutes(locale).workshop
 const searchHref = (query: string) => `${catalogue}${catalogSearch({ query })}`
+const openWeightsHref = getRoutes(locale).models
 const family = computed(() =>
   familyShowcase(FAMILY, models, OPEN_WEIGHT_MODELS)
 )
@@ -79,7 +80,10 @@ const pillClass =
             v-for="release in family.releases"
             :key="`${release.open}:${release.version}`"
           >
-            <a :href="searchHref(release.query)" :class="pillClass">
+            <a
+              :href="release.open ? openWeightsHref : searchHref(release.query)"
+              :class="pillClass"
+            >
               {{
                 release.open
                   ? t('workshop.modelsHub.family.openVersion', {

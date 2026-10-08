@@ -4,35 +4,28 @@ import { cn } from '@comfyorg/tailwind-utils'
 
 import type { NavColumnItem } from '@/data/mainNavigation'
 import type { Locale } from '@/i18n/translations'
-import NavItemThumb from './NavItemThumb.vue'
 import NewBadge from './NewBadge.vue'
 
 const { item } = defineProps<{
-  item: Pick<
-    NavColumnItem,
-    'label' | 'badge' | 'external' | 'seeAll' | 'thumbnail' | 'meta'
-  >
+  item: Pick<NavColumnItem, 'label' | 'badge' | 'external' | 'seeAll' | 'meta'>
   locale: Locale
 }>()
 </script>
 
 <template>
   <span
-    v-if="item.meta !== undefined || item.thumbnail"
-    class="flex min-w-0 items-center gap-3 font-normal tracking-normal"
+    v-if="item.meta !== undefined"
+    class="flex min-w-0 flex-col gap-0.5 font-normal tracking-normal"
   >
-    <NavItemThumb :src="item.thumbnail" :name="item.label" />
-    <span class="flex min-w-0 flex-col gap-0.5">
-      <span class="truncate text-base text-primary-warm-white">
-        {{ item.label }}
-      </span>
-      <span
-        v-if="item.meta"
-        class="truncate text-xs text-primary-warm-gray"
-        data-testid="nav-item-meta"
-      >
-        {{ item.meta }}
-      </span>
+    <span class="truncate text-base text-primary-warm-white">
+      {{ item.label }}
+    </span>
+    <span
+      v-if="item.meta"
+      class="truncate text-xs text-primary-warm-gray"
+      data-testid="nav-item-meta"
+    >
+      {{ item.meta }}
     </span>
   </span>
   <span

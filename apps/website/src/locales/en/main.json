@@ -743,24 +743,20 @@
         "edit": "Edit",
         "upscale": "Upscale",
         "llm": "LLM",
-        "open": "Open weights",
-        "partner": "Partner nodes",
         "groups": {
           "type": "Type",
-          "task": "Task",
-          "access": "Access"
+          "task": "Task"
         }
       },
+      "allModelsLink": "All models, including open weights",
       "filter": {
         "label": "How you use it",
         "run": "Run here",
-        "api": "API",
-        "download": "Download"
+        "api": "API"
       },
       "badge": {
         "run": "Run",
-        "api": "API",
-        "download": "Download"
+        "api": "API"
       },
       "compare": {
         "label": "Compare",
@@ -840,14 +836,11 @@
           "3d": "3D models",
           "edit": "Edit models",
           "upscale": "Upscale models",
-          "llm": "Language models",
-          "open": "Open weights",
-          "partner": "Partner models"
+          "llm": "Language models"
         },
         "access": {
           "run": "Models you can run here",
-          "api": "Models with an API",
-          "download": "Open weights to download"
+          "api": "Models with an API"
         }
       }
     }

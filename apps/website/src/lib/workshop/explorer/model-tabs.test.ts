@@ -2,13 +2,7 @@ import { describe, expect, it } from 'vitest'
 
 import { workshopModels } from '@/config/workshop-browse-content'
 import type { ModelTab } from './model-tabs'
-import {
-  hostedInTab,
-  MODEL_TABS,
-  openWeightInTab,
-  parseModelTab
-} from './model-tabs'
-import { OPEN_WEIGHT_MODELS } from './open-weight-models'
+import { hostedInTab, MODEL_TABS, parseModelTab } from './model-tabs'
 
 const hosted = workshopModels
 
@@ -18,48 +12,18 @@ function hostedSlugs(tab: ModelTab) {
     .map((model) => model.slug)
 }
 
-function openWeightSlugs(tab: ModelTab) {
-  return OPEN_WEIGHT_MODELS.filter((model) => openWeightInTab(model, tab)).map(
-    (model) => model.slug
-  )
-}
-
 describe('category tabs over the real catalogue', () => {
   it.for([
-    {
-      tab: 'image',
-      hosted: 'bfl--flux-2-max--generate-images',
-      openWeight: 'flux1-dev'
-    },
-    {
-      tab: 'video',
-      hosted: 'bfl--flux-3-text-to-video--generate-videos',
-      openWeight: 'wan2-2-ti2v-5b-fp16'
-    },
-    {
-      tab: 'audio',
-      hosted: 'elevenlabs--text-to-dialogue--audio',
-      openWeight: 'stable-audio-open-1-0'
-    },
-    { tab: '3d', openWeight: 'trellis-2-int8-convrot' },
-    {
-      tab: 'edit',
-      hosted: 'beeble--switchx-image-edit--edit-images',
-      openWeight: 'qwen-image-edit-2511-bf16'
-    },
-    {
-      tab: 'upscale',
-      hosted: 'wavespeed--flashvsr--edit-videos',
-      openWeight: 'seedvr2-3b-int8-convrot'
-    }
-  ] as const)('$tab holds models of that kind from both sources', (row) => {
-    if ('hosted' in row) expect(hostedSlugs(row.tab)).toContain(row.hosted)
-    expect(openWeightSlugs(row.tab)).toContain(row.openWeight)
+    { tab: 'image', hosted: 'bfl--flux-2-max--generate-images' },
+    { tab: 'video', hosted: 'bfl--flux-3-text-to-video--generate-videos' },
+    { tab: 'audio', hosted: 'elevenlabs--text-to-dialogue--audio' },
+    { tab: 'edit', hosted: 'beeble--switchx-image-edit--edit-images' },
+    { tab: 'upscale', hosted: 'wavespeed--flashvsr--edit-videos' }
+  ] as const)('$tab holds models of that kind', (row) => {
+    expect(hostedSlugs(row.tab)).toContain(row.hosted)
   })
 
   it('keeps each media tab to models that make that medium', () => {
-    expect(openWeightSlugs('image')).not.toContain('wan2-2-ti2v-5b-fp16')
-    expect(openWeightSlugs('video')).not.toContain('flux1-dev')
     expect(hostedSlugs('audio')).not.toContain(
       'bfl--flux-2-max--generate-images'
     )
@@ -69,27 +33,25 @@ describe('category tabs over the real catalogue', () => {
     expect(hostedSlugs('upscale')).not.toContain(
       'bfl--flux-2-max--generate-images'
     )
-    expect(openWeightSlugs('upscale')).not.toContain('flux1-dev')
   })
 
-  it('splits the catalogue into open weights and partner nodes', () => {
-    expect(openWeightSlugs('open')).toHaveLength(OPEN_WEIGHT_MODELS.length)
-    expect(hostedSlugs('open')).toEqual([])
-    expect(hostedSlugs('partner')).toHaveLength(hosted.length)
-    expect(openWeightSlugs('partner')).toEqual([])
-  })
-
-  it('lists every hosted model under All and no open weights', () => {
+  it('lists every hosted model under All', () => {
     expect(hostedSlugs('all')).toHaveLength(hosted.length)
-    expect(openWeightSlugs('all')).toEqual([])
+  })
+
+  it('offers no Open weights or Partner nodes tab', () => {
+    expect(MODEL_TABS).not.toContain('open')
+    expect(MODEL_TABS).not.toContain('partner')
   })
 })
 
 describe('parseModelTab', () => {
   it.for([
     ['?tab=video', 'video'],
-    ['?q=flux&tab=open', 'open'],
+    ['?q=flux&tab=edit', 'edit'],
     ['?tab=3d', '3d'],
+    ['?tab=open', 'all'],
+    ['?tab=partner', 'all'],
     ['?tab=unknown', 'all'],
     ['', 'all']
   ] as const)('reads %s as %s', ([search, tab]) => {

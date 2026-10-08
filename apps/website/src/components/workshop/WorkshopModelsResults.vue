@@ -5,19 +5,15 @@ import type { Locale } from '@/i18n/translations'
 import { translationsFor } from '@/i18n/translations'
 import { CARD_GRID_BESIDE_NAV } from '@/lib/workshop/card-layout'
 import { canCompare, MAX_COMPARED } from '@/lib/workshop/explorer/compare'
-import type { OpenWeightModel } from '@/lib/workshop/explorer/open-weight-models'
 import CompareToggle from '@/components/workshop/explorer/compare/CompareToggle.vue'
 import WorkshopModelCard from '@/components/workshop/WorkshopModelCard.vue'
-import OpenWeightModelCard from '@/components/workshop/explorer/OpenWeightModelCard.vue'
 
 const {
   families,
-  openWeight,
   compared = [],
   locale = 'en'
 } = defineProps<{
   families: readonly ModelFamily[]
-  openWeight: readonly OpenWeightModel[]
   compared?: readonly string[]
   locale?: Locale
 }>()
@@ -62,9 +58,6 @@ defineEmits<{
           class="absolute top-4 right-4 z-20"
           @update:model-value="$emit('compare', family.latest.slug)"
         />
-      </li>
-      <li v-for="model in openWeight" :key="model.slug">
-        <OpenWeightModelCard :model :locale />
       </li>
     </ul>
   </div>

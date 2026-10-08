@@ -14,13 +14,6 @@ const MEDIUM_LABEL: Partial<Record<string, TranslationKey>> = {
   text: 'workshop.task.text'
 }
 
-/** A still for the menu: the image itself, or a video's poster frame. */
-function stillOf(model: WorkshopModel): string | undefined {
-  const { thumbnail } = model
-  if (thumbnail?.kind === 'image') return thumbnail.url
-  return thumbnail?.kind === 'video' ? thumbnail.poster : undefined
-}
-
 function metaOf(
   model: WorkshopModel,
   t: ReturnType<typeof translationsFor>['t']
@@ -48,7 +41,7 @@ export function hubMenuPreviewsFor(
   return Object.fromEntries(
     models.flatMap((model): [string, NavItemPreview][] =>
       model.href && wanted.has(model.href)
-        ? [[model.href, { thumbnail: stillOf(model), meta: metaOf(model, t) }]]
+        ? [[model.href, { meta: metaOf(model, t) }]]
         : []
     )
   )

@@ -70,10 +70,9 @@ describe('HeaderMainMobile', () => {
     ).toHaveAttribute('href', '/hub/')
   })
 
-  it('shows the Hub examples with their stills and lines', async () => {
+  it('shows the Hub examples with their lines and no image', async () => {
     const user = await openMenu(true, {
       '/hub/apps/reshoot/': {
-        thumbnail: 'https://media.comfy.org/reshoot.jpg',
         meta: 'Aim a new camera at your clip'
       }
     })
@@ -82,9 +81,7 @@ describe('HeaderMainMobile', () => {
 
     expect(reshoot).toHaveTextContent('Aim a new camera at your clip')
     expect(reshoot).toHaveAttribute('target', '_blank')
-    expect(
-      within(reshoot).getByTestId('nav-item-thumb').getAttribute('src')
-    ).toBe('https://media.comfy.org/reshoot.jpg')
+    expect(within(reshoot).queryAllByRole('img')).toHaveLength(0)
   })
 
   it('ends the Company drill-down without the social links', async () => {

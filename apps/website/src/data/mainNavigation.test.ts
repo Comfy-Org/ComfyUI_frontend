@@ -160,7 +160,7 @@ describe('getMainNavigation', () => {
   })
 
   it('shows a catalogue preview beside each Hub example, never beside an All link', () => {
-    const preview = { thumbnail: 'https://media.comfy.org/a.png', meta: 'M' }
+    const preview = { meta: 'M' }
     const hub = findItem(
       getMainNavigation('en', true, ALL_SECTIONS, {
         '/hub/models/seedance-2-5-reference-to-video/': preview,
@@ -172,24 +172,17 @@ describe('getMainNavigation', () => {
     const previews = Object.fromEntries(
       (hub.columns ?? [])
         .flatMap((column) => column.items)
-        .map(({ href, thumbnail, meta }) => [href, { thumbnail, meta }])
+        .map(({ href, meta }) => [href, { meta }])
     )
 
     expect(previews['/hub/models/seedance-2-5-reference-to-video/']).toEqual(
       preview
     )
-    expect(previews['/hub/apps/reshoot/']).toEqual({
-      thumbnail: undefined,
-      meta: 'Only a summary'
-    })
+    expect(previews['/hub/apps/reshoot/']).toEqual({ meta: 'Only a summary' })
     expect(previews['/hub/models/seedream-5-0-pro-text-to-image/']).toEqual({
-      thumbnail: undefined,
       meta: undefined
     })
-    expect(previews['/hub/models/']).toEqual({
-      thumbnail: undefined,
-      meta: undefined
-    })
+    expect(previews['/hub/models/']).toEqual({ meta: undefined })
   })
 
   it('links the Hub examples to pages the site builds', () => {

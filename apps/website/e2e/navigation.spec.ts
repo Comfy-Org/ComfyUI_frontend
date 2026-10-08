@@ -246,7 +246,7 @@ test.describe('Desktop dropdown @interaction', () => {
       '/hub/models/seedream-5-0-pro-text-to-image/'
     )
     await expect(seedream).toContainText('ByteDance · Image')
-    await expect(seedream.getByTestId('nav-item-thumb')).toBeVisible()
+    await expect(dropdown.getByRole('img')).toHaveCount(0)
     await expect(dropdown.locator('video')).toHaveCount(0)
     await expect(
       dropdown.getByRole('link', { name: 'All models' })
@@ -467,7 +467,7 @@ test.describe('Mobile menu @mobile', () => {
     ).toHaveCount(0)
   })
 
-  test('Hub drill-down shows the examples with their stills and ends with the Explore link', async ({
+  test('Hub drill-down shows the examples without images and ends with the Explore link', async ({
     page
   }) => {
     await page.getByRole('button', { name: 'Toggle menu' }).click()
@@ -477,7 +477,7 @@ test.describe('Mobile menu @mobile', () => {
 
     const seedream = menu.getByRole('link', { name: /^Seedream 5\.0 Pro/ })
     await expect(seedream).toContainText('ByteDance · Image')
-    await expect(seedream.getByTestId('nav-item-thumb')).toBeVisible()
+    await expect(seedream.getByRole('img')).toHaveCount(0)
 
     await expect(
       menu.getByRole('link', { name: 'All models' })

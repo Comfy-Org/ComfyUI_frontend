@@ -1,4 +1,5 @@
 <script setup lang="ts">
+import { ArrowRight } from '@lucide/vue'
 import {
   computed,
   nextTick,
@@ -12,6 +13,7 @@ import {
 import { cn } from '@comfyorg/tailwind-utils'
 
 import { groupModels } from '@/config/model-family'
+import { getRoutes } from '@/config/routes'
 
 import type {
   SortOrder,
@@ -36,15 +38,10 @@ import {
   accessFilterKey,
   accessFor,
   MODEL_ACCESS,
-  OPEN_WEIGHT_ACCESS,
   offersAccess,
   parseAccess
 } from '@/lib/workshop/explorer/model-access'
 import { useCompareSelection } from '@/lib/workshop/explorer/compare-selection'
-import {
-  filterOpenWeightModels,
-  OPEN_WEIGHT_MODELS
-} from '@/lib/workshop/explorer/open-weight-models'
 import { hostedInTab } from '@/lib/workshop/explorer/model-tabs'
 import { modelTabCounts } from '@/lib/workshop/explorer/model-tab-counts'
 import { useModelTab } from '@/lib/workshop/explorer/model-tab-address'
@@ -86,7 +83,7 @@ const legacyModalities = ref<string[]>([])
 const legacyProviders = ref<string[]>([])
 const legacyCapabilities = ref<string[]>([])
 const sort = ref<SortOrder>('popular')
-const tabCounts = computed(() => modelTabCounts(models, OPEN_WEIGHT_MODELS))
+const tabCounts = computed(() => modelTabCounts(models))
 const { tab, readAddress: readTab } = useModelTab(
   (named) => (tabCounts.value.get(named) ?? 0) > 0
 )
@@ -154,9 +151,7 @@ const accessOptions = computed<FacetMenuOption<ModelAccess>[]>(() =>
   MODEL_ACCESS.map((value) => ({
     value,
     label: t(accessFilterKey[value]),
-    count: OPEN_WEIGHT_ACCESS.includes(value)
-      ? OPEN_WEIGHT_MODELS.length
-      : models.filter((model) => accessFor(model).includes(value)).length
+    count: models.filter((model) => accessFor(model).includes(value)).length
   }))
 )
 
@@ -165,19 +160,6 @@ const legacyFiltered = computed(
     legacyModalities.value.length > 0 ||
     legacyProviders.value.length > 0 ||
     legacyCapabilities.value.length > 0
-)
-
-const openWeightVisible = computed(() =>
-  offersAccess(OPEN_WEIGHT_ACCESS, selectedAccess.value) &&
-  !legacyFiltered.value
-    ? filterOpenWeightModels(OPEN_WEIGHT_MODELS, {
-        query: query.value,
-        useCases: selectedUseCases.value,
-        tab: tab.value,
-        downloads: selectedAccess.value.includes('download'),
-        byName: sort.value === 'name'
-      })
-    : []
 )
 
 const visible = computed(() =>
@@ -198,9 +180,7 @@ const visible = computed(() =>
     )
   )
 )
-const resultCount = computed(
-  () => visible.value.length + openWeightVisible.value.length
-)
+const resultCount = computed(() => visible.value.length)
 const isFiltered = computed(
   () =>
     query.value !== '' ||
@@ -214,15 +194,9 @@ const {
   limit: cardLimit,
   total: cardTotal,
   hasMore,
-  showMore
-} = usePagedList(() => [...visible.value, ...openWeightVisible.value])
-const shownFamilies = computed(() => visible.value.slice(0, cardLimit.value))
-const shownOpenWeight = computed(() =>
-  openWeightVisible.value.slice(
-    0,
-    Math.max(0, cardLimit.value - visible.value.length)
-  )
-)
+  showMore,
+  shown: shownFamilies
+} = usePagedList(() => visible.value)
 
 watch([openedShelf, () => query.value.trim() !== ''], () => {
   if (!scrollReady) return
@@ -282,13 +256,23 @@ function rememberModel(model: WorkshopModel, event: MouseEvent) {
       </h2>
 
       <div class="flex flex-col lg:flex-row lg:items-start lg:gap-10">
-        <ModelTabs
-          v-model="tab"
-          :panel-id="TAB_PANEL_ID"
-          :counts="tabCounts"
-          :locale
-          class="max-lg:order-1"
-        />
+        <div class="max-lg:contents lg:sticky lg:top-26 lg:w-58 lg:shrink-0">
+          <ModelTabs
+            v-model="tab"
+            :panel-id="TAB_PANEL_ID"
+            :counts="tabCounts"
+            :locale
+            class="max-lg:order-1"
+          />
+          <a
+            :href="getRoutes(locale).models"
+            class="mt-6 inline-flex items-center gap-1.5 self-start text-sm font-medium text-primary-warm-gray transition-colors outline-none hover:text-primary-comfy-yellow focus-visible:ring-3 focus-visible:ring-primary-comfy-yellow/50 max-lg:order-3 lg:px-3"
+            data-testid="models-all-link"
+          >
+            {{ t('workshop.explorer.allModelsLink') }}
+            <ArrowRight class="size-4 shrink-0" aria-hidden="true" />
+          </a>
+        </div>
 
         <div class="min-w-0 max-lg:contents lg:flex-1">
           <div
@@ -340,7 +324,6 @@ function rememberModel(model: WorkshopModel, event: MouseEvent) {
             <template v-if="resultCount">
               <WorkshopModelsResults
                 :families="shownFamilies"
-                :open-weight="shownOpenWeight"
                 :compared="comparedSlugs"
                 :locale
                 @open="rememberModel"

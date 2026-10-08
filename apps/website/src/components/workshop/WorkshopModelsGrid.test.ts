@@ -13,7 +13,6 @@ import {
 import { nextTick } from 'vue'
 
 import type { WorkshopModel } from '@/config/models-catalogue'
-import { OPEN_WEIGHT_MODELS } from '@/lib/workshop/explorer/open-weight-models'
 import { lastList } from '@/lib/workshop/shelf-memory'
 import WorkshopModelsGrid from './WorkshopModelsGrid.vue'
 
@@ -212,16 +211,29 @@ describe('WorkshopModelsGrid', () => {
     expect(openWeightCards()).toEqual([])
   })
 
-  it('finds open-weight models under All once the visitor searches', async () => {
+  it('finds no open-weight models when the visitor searches for one', async () => {
     const user = userEvent.setup()
     render(WorkshopModelsGrid, { props: { models } })
-    expect(openWeightCards()).toEqual([])
 
     await user.type(await search(), 'kontext')
-    expect(openWeightCards().map((card) => card.textContent)).toEqual([
-      expect.stringContaining('Flux1 Dev Kontext')
-    ])
+    expect(openWeightCards()).toEqual([])
+    expect(cardNames()).toEqual([])
+    expect(screen.getByText('No models match')).toBeTruthy()
   })
+
+  it.for([
+    { locale: 'en' as const, name: 'All models, including open weights' },
+    { locale: 'zh-CN' as const, name: '全部模型（含开放权重）' }
+  ])(
+    'links to every model, open weights included, in $locale',
+    ({ locale, name }) => {
+      render(WorkshopModelsGrid, { props: { models, locale } })
+
+      const link = screen.getByTestId('models-all-link')
+      expect(link).toHaveAccessibleName(name)
+      expect(link).toHaveAttribute('href', '/hub/models/local/')
+    }
+  )
 
   // A shelf and the filter are the same choice: opening "Edit images" has to
   // leave the menu saying so, or the reader sees a narrowed grid with nothing
@@ -502,7 +514,7 @@ describe('WorkshopModelsGrid', () => {
         )
       ).toBeTruthy()
       expect(screen.getByTestId('model-access-open').getAttribute('href')).toBe(
-        '/hub/models/?tab=open'
+        '/hub/models/local/'
       )
       const family = screen.getByRole('region', {
         name: 'Explore model families'
@@ -642,7 +654,7 @@ describe('WorkshopModelsGrid', () => {
       return screen.queryAllByTestId('workshop-model-card')
     }
 
-    it('offers the three ways to use a model with their counts', async () => {
+    it('offers the two ways to use a model with their counts, and no Download', async () => {
       render(WorkshopModelsGrid, {
         props: {
           models: [
@@ -659,88 +671,35 @@ describe('WorkshopModelsGrid', () => {
       })
       const { dialog } = await chooseAccess()
 
-      for (const name of [
-        `Run here ${models.length}`,
-        `API ${models.length}`,
-        `Download ${OPEN_WEIGHT_MODELS.length}`
-      ])
+      for (const name of [`Run here ${models.length}`, `API ${models.length}`])
         expect(within(dialog).getByRole('button', { name })).toHaveAttribute(
           'aria-pressed',
           'false'
         )
+      expect(
+        within(dialog).queryByRole('button', { name: /^Download/ })
+      ).toBeNull()
     })
 
     it.for([
-      { choice: ['Run here'], hosted: 3, openWeight: 0 },
-      { choice: ['API'], hosted: 3, openWeight: 0 },
-      {
-        choice: ['Download'],
-        hosted: 0,
-        openWeight: OPEN_WEIGHT_MODELS.length
-      },
-      {
-        choice: ['Run here', 'Download'],
-        hosted: 3,
-        openWeight: OPEN_WEIGHT_MODELS.length
-      }
+      { choice: ['Run here'], hosted: 3 },
+      { choice: ['API'], hosted: 3 },
+      { choice: ['Run here', 'API'], hosted: 3 }
     ])(
-      'lists $hosted hosted and $openWeight open-weight models for $choice',
-      async ({ choice, hosted, openWeight }) => {
+      'lists $hosted hosted and no open-weight models for $choice',
+      async ({ choice, hosted }) => {
         render(WorkshopModelsGrid, { props: { models } })
         const { user } = await chooseAccess(...choice)
         await user.keyboard('{Escape}')
         await showEveryPage(user)
 
         expect(hostedCards()).toHaveLength(hosted)
-        expect(openWeightCards()).toHaveLength(openWeight)
+        expect(openWeightCards()).toHaveLength(0)
         expect(screen.getByTestId('workshop-filter-count')).toHaveTextContent(
           String(choice.length)
         )
       }
     )
-
-    it('links each open-weight model to its model file page', async () => {
-      render(WorkshopModelsGrid, { props: { models } })
-      await chooseAccess('Download')
-
-      const [first] = openWeightCards()
-      expect(first).toHaveAttribute(
-        'href',
-        `/hub/models/local/${OPEN_WEIGHT_MODELS[0].slug}/`
-      )
-      expect(
-        within(first).getByTestId('model-access-badges')
-      ).toHaveTextContent(/^\s*Download\s*$/)
-    })
-
-    it('narrows open-weight models by use case', async () => {
-      render(WorkshopModelsGrid, { props: { models } })
-      const { user, dialog } = await chooseAccess('Download')
-      await user.click(within(dialog).getByRole('tab', { name: /Use cases/ }))
-      await user.click(
-        within(dialog).getByRole('button', { name: 'Edit images 1' })
-      )
-      await user.keyboard('{Escape}')
-      await showEveryPage(user)
-
-      expect(
-        openWeightCards().map((card) => card.getAttribute('href'))
-      ).toEqual(
-        OPEN_WEIGHT_MODELS.filter(
-          (model) => model.useCase === 'edit-images'
-        ).map((model) => `/hub/models/local/${model.slug}/`)
-      )
-    })
-
-    it('narrows open-weight models by the search', async () => {
-      render(WorkshopModelsGrid, { props: { models } })
-      const user = userEvent.setup()
-      await user.type(await search(), 'kontext')
-      await chooseAccess('Download')
-
-      expect(openWeightCards()).toHaveLength(1)
-      expect(openWeightCards()[0]).toHaveTextContent('Flux1 Dev Kontext')
-    })
 
     it('lists no hosted model under Run here while running here is off', async () => {
       vi.stubEnv('PUBLIC_WORKSHOP_ROUTER_RUN', undefined)
@@ -776,10 +735,10 @@ describe('WorkshopModelsGrid', () => {
 
     it('lets go of the choice with the rest of the filters', async () => {
       render(WorkshopModelsGrid, { props: { models } })
-      const { user, dialog } = await chooseAccess('Download')
+      const { user, dialog } = await chooseAccess('API')
       await user.click(within(dialog).getByTestId('workshop-filter-clear'))
 
-      expect(openWeightCards()).toHaveLength(0)
+      expect(hostedCards()).toHaveLength(models.length)
       expect(screen.queryByTestId('workshop-filter-count')).toBeNull()
       expect(catalogueHeading()).toHaveTextContent(`${models.length}`)
     })

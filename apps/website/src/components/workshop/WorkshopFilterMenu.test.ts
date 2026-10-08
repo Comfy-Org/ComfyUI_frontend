@@ -102,7 +102,7 @@ describe('WorkshopFilterMenu', () => {
             useCaseOptions,
             accessOptions: [
               { value: 'run', label: 'Run here', count: 3 },
-              { value: 'download', label: 'Download', count: 12 }
+              { value: 'api', label: 'API', count: 12 }
             ],
             resultCount: 12,
             useCases: [],
@@ -119,13 +119,13 @@ describe('WorkshopFilterMenu', () => {
     await user.click(
       within(dialog).getByRole('tab', { name: 'How you use it' })
     )
-    await user.click(screen.getByTestId('filter-access-download'))
-    expect(access.value).toEqual(['download'])
+    await user.click(screen.getByTestId('filter-access-api'))
+    expect(access.value).toEqual(['api'])
     expect(screen.getByTestId('workshop-facet-access-count')).toHaveTextContent(
       '1'
     )
 
-    await user.click(screen.getByTestId('filter-access-download'))
+    await user.click(screen.getByTestId('filter-access-api'))
     expect(access.value).toEqual([])
 
     await user.click(screen.getByTestId('filter-access-run'))

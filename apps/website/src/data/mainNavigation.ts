@@ -3,8 +3,6 @@ import type { Locale } from '@/i18n/translations'
 import { translationsFor } from '@/i18n/translations'
 
 export type NavItemPreview = {
-  /** A still from the catalogue, never a video. */
-  thumbnail?: string
   meta?: string
 }
 

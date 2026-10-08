@@ -95,11 +95,10 @@ describe('HeaderMainDesktop', () => {
     ).toBe(Node.DOCUMENT_POSITION_FOLLOWING)
   })
 
-  it('shows each Hub example with its catalogue still and a line about it', async () => {
+  it('shows each Hub example with a line about it and no image', async () => {
     const { menu } = await openMenu(/^Hub/, {
       hubPreviews: {
         '/hub/models/seedream-5-0-pro-text-to-image/': {
-          thumbnail: 'https://media.comfy.org/seedream.png',
           meta: 'ByteDance · Image'
         },
         '/hub/models/seedance-2-5-reference-to-video/': {
@@ -111,19 +110,8 @@ describe('HeaderMainDesktop', () => {
     const seedance = menu.getByRole('link', { name: /^Seedance 2\.5/ })
 
     expect(seedream).toHaveTextContent('ByteDance · Image')
-    expect(
-      within(seedream).getByTestId('nav-item-thumb').getAttribute('src')
-    ).toBe('https://media.comfy.org/seedream.png')
     expect(seedance).toHaveTextContent('ByteDance · Video')
-    expect(within(seedance).queryByTestId('nav-item-thumb')).toBeNull()
-    expect(
-      within(seedance).getByTestId('nav-item-thumb-placeholder')
-    ).toBeTruthy()
-    expect(
-      within(menu.getByRole('link', { name: 'All models' })).queryByTestId(
-        'nav-item-thumb-placeholder'
-      )
-    ).toBeNull()
+    expect(menu.queryAllByRole('img')).toHaveLength(0)
   })
 
   it('opens each app in a tab of its own, and the apps list in this one', async () => {
