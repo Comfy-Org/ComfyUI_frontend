@@ -360,17 +360,14 @@ export function createOpenAiTranslator(
         deferralReason = `${items.length} strings were still truncated (max_output_tokens) at maxTruncationSplitDepth ${options.maxTruncationSplitDepth}`
         break
       }
-      const settled = await Promise.allSettled(
-        splitTruncatedBatch(items).map((chunk) =>
-          translateBatch(locale, chunk, splitDepth + 1)
+      const merged: Record<string, string> = {}
+      for (const chunk of splitTruncatedBatch(items)) {
+        Object.assign(
+          merged,
+          await translateBatch(locale, chunk, splitDepth + 1)
         )
-      )
-      return Object.fromEntries(
-        settled.flatMap((result) => {
-          if (result.status === 'rejected') throw result.reason
-          return Object.entries(result.value)
-        })
-      )
+      }
+      return merged
     }
     console.warn(
       `${locale.code}: deferring ${items.length} strings for retry: ${deferralReason}`
