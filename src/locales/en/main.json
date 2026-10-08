@@ -5544,6 +5544,7 @@
     "failedDetail": "Your onboarding state could not be reset. Please try again."
   },
   "agent": {
+    "previewAsset": "Preview {name}",
     "title": "Comfy Agent",
     "diagnosticReport": {
       "retry": "Retry copy report",
@@ -5641,6 +5642,7 @@
     "assetNotAttachable": "Images, video, audio, 3D models, and text files can be attached",
     "attachmentTooLarge": "{name} is larger than {limit}",
     "attachmentUploadFailed": "{name} could not be uploaded",
+    "attachmentsAlreadyAdded": "{name} is already in the asset tray | Skipped {count} duplicate assets",
     "mention": "Mention a node",
     "changeWorkflowForChat": "Change the workflow that the agent can edit",
     "chatOptions": "Chat options",
@@ -5690,7 +5692,11 @@
     "focusNode": "Show on canvas",
     "focusNodeLabel": "Show {node} on canvas",
     "removeNodeLabel": "Remove {node} reference",
+    "removeAssetReference": "Remove {name} reference",
+    "removeAsset": "Remove {name}",
+    "previewAsset": "Preview {name}",
     "uploading": "Uploading",
+    "uploadingAttachments": "Uploading {count} attachment | Uploading {count} attachments",
     "noNodesToMention": "No nodes in this workflow",
     "friend": "there",
     "sendFailed": "Message failed to send",
