@@ -669,9 +669,13 @@ function growAutogrowGroupTo(
   if (groupName === undefined) return false
   const ordinal = resolveAutogrowOrdinal(name, groupName, node)
   if (ordinal === undefined) return false
+  const lastOrdinal = Math.min(
+    ordinal,
+    node.comfyDynamic.autogrow[groupName].max - 1
+  )
   for (
     let next = highestAutogrowOrdinal(node, groupName) + 1;
-    next <= ordinal;
+    next <= lastOrdinal;
     next++
   ) {
     grow(next, groupName)
