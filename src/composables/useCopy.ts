@@ -72,17 +72,15 @@ function encodeClipboardData(data: string): string {
 type ClipboardHtmlParse =
   | { status: 'absent' }
   | { status: 'unreadable'; cause: unknown }
-  | { status: 'read'; payload: unknown }
+  | { status: 'read'; text: string; payload: unknown }
 
 export function parseClipboardHtml(html: string): ClipboardHtmlParse {
   const base64Data = readMetadata(html)
   if (!base64Data) return { status: 'absent' }
   try {
     const bytes = Uint8Array.from(atob(base64Data), (c) => c.charCodeAt(0))
-    return {
-      status: 'read',
-      payload: JSON.parse(new TextDecoder().decode(bytes))
-    }
+    const text = new TextDecoder().decode(bytes)
+    return { status: 'read', text, payload: JSON.parse(text) }
   } catch (cause) {
     return { status: 'unreadable', cause }
   }
@@ -115,12 +113,7 @@ export const useCopy = () => {
       const serializedData = canvas.copyToClipboard()
       keyboardCopyId = localStorage.getItem(CANVAS_CLIPBOARD_ID_KEY)
       try {
-        const base64Data = encodeClipboardData(
-          JSON.stringify({
-            ...JSON.parse(serializedData),
-            clipboardId: keyboardCopyId
-          })
-        )
+        const base64Data = encodeClipboardData(serializedData)
         // clearData doesn't remove images from clipboard
         e.clipboardData?.setData('text/html', clipboardHtml(base64Data))
       } catch (error) {

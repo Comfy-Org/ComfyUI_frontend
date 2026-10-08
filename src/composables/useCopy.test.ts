@@ -109,23 +109,9 @@ describe('useCopy', () => {
 
     const dataTransfer = copySerializedData(serializedData)
 
-    expect(readClipboardPayload(dataTransfer)).toMatchObject(
+    expect(readClipboardPayload(dataTransfer)).toEqual(
       JSON.parse(serializedData)
     )
-  })
-
-  it("tags the copy with litegraph's clipboard id", () => {
-    copyMocks.canvas.copyToClipboard.mockImplementation(() => {
-      localStorage.setItem(CANVAS_CLIPBOARD_ID_KEY, 'canvas-copy-1')
-      return '{"nodes":[]}'
-    })
-
-    const dataTransfer = dispatchCopy()
-
-    expect(readClipboardPayload(dataTransfer)).toEqual({
-      nodes: [],
-      clipboardId: 'canvas-copy-1'
-    })
   })
 
   describe('copy on a target the canvas ignores', () => {

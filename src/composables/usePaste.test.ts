@@ -19,10 +19,7 @@ import type {
   Positionable
 } from '@/lib/litegraph/src/litegraph'
 import { useCopy } from '@/composables/useCopy'
-import {
-  CANVAS_CLIPBOARD_ID_KEY,
-  CANVAS_CLIPBOARD_KEY
-} from '@/lib/litegraph/src/canvas/clipboardStorage'
+import { CANVAS_CLIPBOARD_KEY } from '@/lib/litegraph/src/canvas/clipboardStorage'
 import { app } from '@/scripts/app'
 import { useToastStore } from '@/platform/updates/common/toastStore'
 import { createMockLGraphNode } from '@/utils/__tests__/litegraphTestUtils'
@@ -120,7 +117,6 @@ function copyToCanvasClipboard(data: unknown): () => string {
   return () => {
     const serialized = JSON.stringify(data)
     localStorage.setItem(CANVAS_CLIPBOARD_KEY, serialized)
-    localStorage.setItem(CANVAS_CLIPBOARD_ID_KEY, crypto.randomUUID())
     return serialized
   }
 }
@@ -858,9 +854,9 @@ describe('usePaste', () => {
       usePaste()
     }
 
-    function copyNodes(): DataTransfer {
+    function copyNodes(data: unknown = { nodes: [] }): DataTransfer {
       vi.mocked(mockCanvas.copyToClipboard).mockImplementation(
-        copyToCanvasClipboard({ nodes: [] })
+        copyToCanvasClipboard(data)
       )
       const clipboardData = new DataTransfer()
       document.dispatchEvent(new ClipboardEvent('copy', { clipboardData }))
@@ -871,16 +867,10 @@ describe('usePaste', () => {
       document.dispatchEvent(new ClipboardEvent('paste', { clipboardData }))
     }
 
-    it.for([
-      { name: 'without a clipboard id', data: { nodes: [] } },
-      {
-        name: 'with a null clipboard id',
-        data: { nodes: [], clipboardId: null }
-      }
-    ])('skips the default paste for node metadata $name', ({ data }) => {
+    it('skips the default paste for node metadata that is not the canvas clipboard', () => {
       setupMediaNodeSelected()
       const clipboardData = new DataTransfer()
-      clipboardData.setData('text/html', clipboardHtml(data))
+      clipboardData.setData('text/html', clipboardHtml({ nodes: [] }))
 
       paste(clipboardData)
 
@@ -907,8 +897,8 @@ describe('usePaste', () => {
 
     it('runs the default paste only for the latest copy', () => {
       setupMediaNodeSelected()
-      const earlier = copyNodes()
-      const latest = copyNodes()
+      const earlier = copyNodes({ nodes: [], groups: [] })
+      const latest = copyNodes({ nodes: [] })
 
       paste(earlier)
       expect(mockCanvas.pasteFromClipboard).not.toHaveBeenCalled()
@@ -919,7 +909,7 @@ describe('usePaste', () => {
     it('skips the default paste after a menu copy replaced the canvas clipboard', () => {
       setupMediaNodeSelected()
       const keyboardCopy = copyNodes()
-      mockCanvas.copyToClipboard()
+      localStorage.setItem(CANVAS_CLIPBOARD_KEY, '{"groups":[]}')
 
       paste(keyboardCopy)
 
