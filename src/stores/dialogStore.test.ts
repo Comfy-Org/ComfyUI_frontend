@@ -396,7 +396,7 @@ describe('dialogStore', () => {
       })
 
       // Close the active dialog
-      store.closeDialog({ key: store.activeKey! })
+      store.closeDialog({ key: store.activeKey })
 
       // The new active dialog should now be closable with ESC
       const newActiveDialog = store.dialogStack.find(

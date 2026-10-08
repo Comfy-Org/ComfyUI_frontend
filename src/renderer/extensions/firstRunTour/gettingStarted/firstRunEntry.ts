@@ -4,7 +4,7 @@ import {
   until,
   useBreakpoints
 } from '@vueuse/core'
-import { computed, ref, watch } from 'vue'
+import { computed, defineAsyncComponent, ref, watch } from 'vue'
 
 import { useFeatureFlags } from '@/composables/useFeatureFlags'
 import { useSubscription } from '@/platform/cloud/subscription/composables/useSubscription'
@@ -21,6 +21,7 @@ import type { SharedWorkflowUrlLoadStatus } from '@/platform/workflow/sharing/co
 import { useNewUserService } from '@/services/useNewUserService'
 import { useAuthStore } from '@/stores/authStore'
 import { useCommandStore } from '@/stores/commandStore'
+import { useDialogStore } from '@/stores/dialogStore'
 
 import { useFirstRunTourController } from '../tour/useFirstRunTourController'
 
@@ -74,17 +75,24 @@ function transitionFirstRunScreen(
   }
 }
 
+export const GETTING_STARTED_DIALOG_KEY = 'global-getting-started'
+
+const GettingStartedScreen = defineAsyncComponent(
+  () => import('./GettingStartedScreen.vue')
+)
+
 export const useFirstRunEntry = createSharedComposable(() => {
   const authStore = useAuthStore()
   const settingStore = useSettingStore()
+  const dialogStore = useDialogStore()
   const firstRunScreen = ref<FirstRunScreenState>({ phase: 'released' })
   const startupDecided = ref(false)
   let authGeneration = 0
   const isDesktopWidth =
     useBreakpoints(breakpointsTailwind).greaterOrEqual('md')
 
-  const gettingStartedVisible = computed(
-    () => firstRunScreen.value.phase === 'visible'
+  const gettingStartedVisible = computed(() =>
+    dialogStore.isDialogOpen(GETTING_STARTED_DIALOG_KEY)
   )
   const firstRunHoldsScreen = computed(
     () => firstRunScreen.value.phase !== 'released'
@@ -100,6 +108,7 @@ export const useFirstRunEntry = createSharedComposable(() => {
       if (previousUserId === undefined || userId === previousUserId) return
       authGeneration++
       dispatchFirstRunScreen({ type: 'released' })
+      dialogStore.closeDialog({ key: GETTING_STARTED_DIALOG_KEY })
       void useFirstRunTourController()
         .cancelPendingStart()
         .catch((error) =>
@@ -114,6 +123,28 @@ export const useFirstRunEntry = createSharedComposable(() => {
     },
     { flush: 'sync' }
   )
+
+  function showGettingStarted() {
+    dialogStore.showDialog({
+      key: GETTING_STARTED_DIALOG_KEY,
+      component: GettingStartedScreen,
+      priority: 0,
+      dialogComponentProps: {
+        headless: true,
+        modal: false,
+        showCloseButton: false,
+        dismissableMask: false,
+        dismissOnFocusOutside: false,
+        contentClass:
+          'inset-0 top-0 left-0 size-full max-h-none max-w-none translate-none rounded-none border-none shadow-none sm:max-w-none',
+        onClose: () => {
+          if (firstRunScreen.value.phase !== 'visible') return
+          dispatchFirstRunScreen({ type: 'dismissed' })
+          void markTutorialCompleted()
+        }
+      }
+    })
+  }
 
   type FirstRunDecision = 'getting-started' | 'defer' | 'complete'
 
@@ -164,6 +195,7 @@ export const useFirstRunEntry = createSharedComposable(() => {
     if (decision === 'getting-started') {
       dispatchFirstRunScreen({ type: 'shown' })
       consumeFirstRunReplayRequest(authStore.userId)
+      showGettingStarted()
       return
     }
 
@@ -231,6 +263,7 @@ export const useFirstRunEntry = createSharedComposable(() => {
 
   async function dismissGettingStarted() {
     dispatchFirstRunScreen({ type: 'dismissed' })
+    dialogStore.closeDialog({ key: GETTING_STARTED_DIALOG_KEY })
     await markTutorialCompleted()
   }
 
