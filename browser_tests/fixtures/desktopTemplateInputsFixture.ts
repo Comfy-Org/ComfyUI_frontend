@@ -88,15 +88,22 @@ export const desktopTemplateInputsFixture = desktopFixture.extend<{
           const asset = (state.assetsByTemplate[templateId] ?? []).find(
             (candidate) => candidate.assetId === assetId
           )
-          return {
-            status: 'accepted' as const,
-            download: {
-              downloadId: `job-${assetId}`,
-              filename: asset?.filename ?? `${assetId}.png`,
-              progress: 0,
-              status: 'pending' as const
-            }
+          const download = {
+            downloadId: `job-${assetId}`,
+            filename: asset?.filename ?? `${assetId}.png`,
+            progress: 0,
+            status: 'pending' as const
           }
+          // The host reports an admitted job straight away; the renderer
+          // relies on that to know a file is spoken for before anything else
+          // judges it missing.
+          for (const listener of state.listeners) {
+            listener({
+              ...download,
+              templateInputs: [{ templateId, assetId }]
+            })
+          }
+          return { status: 'accepted' as const, download }
         },
         onTemplateInputDownloadProgress: (
           callback: (data: ComfyTemplateInputDownloadProgress) => void
