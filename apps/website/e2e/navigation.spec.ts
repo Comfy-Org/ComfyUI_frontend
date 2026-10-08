@@ -261,8 +261,10 @@ test.describe('Desktop dropdown @interaction', () => {
     ).toHaveAttribute('href', '/hub/')
   })
 
-  for (const name of ['Hub', 'Products'])
-    test(`opens the ${name} panel under its trigger, not at the page edge`, async ({
+  const PANEL_EDGE_GAP = 10
+
+  for (const name of ['Hub', 'Products', 'Enterprise', 'Company'])
+    test(`opens the ${name} panel under its trigger, or as near as the page allows`, async ({
       page
     }) => {
       await page.setViewportSize({ width: 1440, height: 900 })
@@ -277,13 +279,16 @@ test.describe('Desktop dropdown @interaction', () => {
       await expect(nav.getByTestId('nav-dropdown')).toBeVisible()
       await expect
         .poll(async () => {
-          const [at, under] = [
+          const [at, under, pageWidth] = [
             await trigger.boundingBox(),
-            await panel.boundingBox()
+            await panel.boundingBox(),
+            await page.evaluate(() => document.documentElement.offsetWidth)
           ]
-          return at && under ? Math.abs(Math.round(under.x - at.x)) : undefined
+          if (!at || !under) return undefined
+          const lastFit = pageWidth - PANEL_EDGE_GAP - under.width
+          return Math.abs(Math.round(under.x - Math.min(at.x, lastFit))) <= 1
         })
-        .toBe(0)
+        .toBe(true)
     })
 
   test('PRODUCTS keeps social links out and shows its card before the columns', async ({
