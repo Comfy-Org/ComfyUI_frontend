@@ -4219,7 +4219,10 @@ describe('AgentPanelRoot history', () => {
 
     renderWithSelectedTarget()
     await vi.waitFor(() =>
-      expect(fetchMock).toHaveBeenCalledWith('/api/agent/threads')
+      expect(fetchMock).toHaveBeenCalledWith(
+        '/api/agent/threads',
+        expect.anything()
+      )
     )
 
     const workspace = useTeamWorkspaceStore()
