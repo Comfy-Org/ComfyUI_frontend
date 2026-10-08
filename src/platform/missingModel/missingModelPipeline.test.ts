@@ -254,7 +254,10 @@ describe('missingModelPipeline', () => {
         )
         expect(reportError).toHaveBeenCalledWith(
           new Error('asset service unavailable'),
-          { errorType: 'missing_model_verification_failed' }
+          {
+            surface: 'assets',
+            errorType: 'missing_model_verification_failed'
+          }
         )
       } else {
         expect(useToastStore().add).not.toHaveBeenCalled()

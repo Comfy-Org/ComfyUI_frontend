@@ -88,8 +88,10 @@ vi.mock(
 )
 
 const mockExtractWorkflowFromAsset = vi.hoisted(() => vi.fn())
+const mockExtractApiPromptFromAsset = vi.hoisted(() => vi.fn())
 vi.mock(import('@/platform/workflow/utils/workflowExtractionUtil'), () => ({
-  extractWorkflowFromAsset: mockExtractWorkflowFromAsset
+  extractWorkflowFromAsset: mockExtractWorkflowFromAsset,
+  extractApiPromptFromAsset: mockExtractApiPromptFromAsset
 }))
 
 vi.mock(import('@/services/litegraphService'))
@@ -157,6 +159,7 @@ vi.mock<unknown>(import('@/scripts/api'), () => ({
 const mockAppGraph = vi.hoisted(() => ({
   value: { nodes: [] as unknown[] }
 }))
+const mockLoadApiJson = vi.hoisted(() => vi.fn())
 vi.mock<unknown>(import('@/scripts/app'), () => ({
   app: {
     nodeOutputs: {},
@@ -166,7 +169,9 @@ vi.mock<unknown>(import('@/scripts/app'), () => ({
     },
     get rootGraph() {
       return mockAppGraph.value
-    }
+    },
+    isApiJson: (data: unknown) => !!data && typeof data === 'object',
+    loadApiJson: mockLoadApiJson
   }
 }))
 
@@ -500,6 +505,118 @@ describe('useMediaAssetActions', () => {
     })
   })
 
+  describe('openWorkflow', () => {
+    const apiPrompt = {
+      '1': { class_type: 'KSampler', inputs: { seed: 1 } }
+    }
+
+    beforeEach(() => {
+      mockOpenWorkflowAction.mockResolvedValue({ success: true })
+      mockExtractApiPromptFromAsset.mockResolvedValue(undefined)
+    })
+
+    it('opens an embedded workflow without touching the stored API graph', async () => {
+      mockExtractWorkflowFromAsset.mockResolvedValue({
+        workflow: { version: 0.4 },
+        filename: 'open.json'
+      })
+      const actions = useMediaAssetActions()
+
+      await actions.openWorkflow(createMockAsset())
+
+      expect(mockOpenWorkflowAction).toHaveBeenCalledWith(
+        { version: 0.4 },
+        'open.json'
+      )
+      expect(mockLoadApiJson).not.toHaveBeenCalled()
+    })
+
+    it('opens the stored API graph when no workflow is embedded', async () => {
+      mockExtractWorkflowFromAsset.mockResolvedValue({
+        workflow: null,
+        filename: 'open.json'
+      })
+      mockExtractApiPromptFromAsset.mockResolvedValue(apiPrompt)
+      const actions = useMediaAssetActions()
+
+      await actions.openWorkflow(createMockAsset())
+
+      expect(mockLoadApiJson).toHaveBeenCalledWith(apiPrompt, 'open.json')
+      expect(mockOpenWorkflowAction).not.toHaveBeenCalled()
+      expect(useToast().add).toHaveBeenCalledWith(
+        expect.objectContaining({ severity: 'success' })
+      )
+    })
+
+    it('warns when loading the stored API graph fails', async () => {
+      mockExtractWorkflowFromAsset.mockResolvedValue({
+        workflow: null,
+        filename: 'open.json'
+      })
+      mockExtractApiPromptFromAsset.mockResolvedValue(apiPrompt)
+      mockLoadApiJson.mockRejectedValueOnce(new Error('boom'))
+      const actions = useMediaAssetActions()
+
+      await actions.openWorkflow(createMockAsset())
+
+      expect(useToast().add).toHaveBeenCalledWith(
+        expect.objectContaining({ severity: 'warn', detail: 'boom' })
+      )
+    })
+
+    it('warns when fetching the stored API graph fails', async () => {
+      mockExtractWorkflowFromAsset.mockResolvedValue({
+        workflow: null,
+        filename: 'open.json'
+      })
+      mockExtractApiPromptFromAsset.mockRejectedValueOnce(
+        new Error('network down')
+      )
+      const actions = useMediaAssetActions()
+
+      await actions.openWorkflow(createMockAsset())
+
+      expect(useToast().add).toHaveBeenCalledWith(
+        expect.objectContaining({ severity: 'warn', detail: 'network down' })
+      )
+    })
+
+    it('warns when neither a workflow nor a stored API graph exists', async () => {
+      mockExtractWorkflowFromAsset.mockResolvedValue({
+        workflow: null,
+        filename: 'open.json'
+      })
+      const actions = useMediaAssetActions()
+
+      await actions.openWorkflow(createMockAsset())
+
+      expect(mockLoadApiJson).not.toHaveBeenCalled()
+      expect(useToast().add).toHaveBeenCalledWith(
+        expect.objectContaining({ severity: 'warn' })
+      )
+    })
+  })
+
+  describe('openMultipleWorkflows', () => {
+    it('falls back to the stored API graph for assets with no workflow', async () => {
+      const apiPrompt = { '1': { class_type: 'KSampler', inputs: {} } }
+      mockOpenWorkflowAction.mockResolvedValue({ success: true })
+      mockExtractWorkflowFromAsset.mockResolvedValue({
+        workflow: null,
+        filename: 'bulk.json'
+      })
+      mockExtractApiPromptFromAsset.mockResolvedValue(apiPrompt)
+      const actions = useMediaAssetActions()
+
+      await actions.openMultipleWorkflows([createMockAsset()])
+
+      expect(mockLoadApiJson).toHaveBeenCalledWith(apiPrompt, 'bulk.json')
+      expect(useToast().add).toHaveBeenCalledWith(
+        expect.objectContaining({ severity: 'success' })
+      )
+    })
+  })
+
   describe('exportWorkflow', () => {
     const successResult = { success: true } as const
     const cancelledResult = { success: false, cancelled: true } as const
@@ -722,6 +839,7 @@ describe('useMediaAssetActions', () => {
         )
       })
       expect(mockReportError).toHaveBeenCalledWith(failure, {
+        surface: 'assets',
         errorType: 'error_downloading_asset',
         context: { filename: 'a.png' }
       })
@@ -1185,6 +1303,98 @@ describe('useMediaAssetActions', () => {
     })
   })
 
+  describe('downloadAssets - local zip export', () => {
+    beforeEach(() => {
+      mockIsCloud.value = false
+      vi.mocked(api.getServerFeature).mockImplementation(
+        (path: string, defaultValue?: unknown) =>
+          path === 'assets' ? true : defaultValue
+      )
+      mockGetAssetType.mockImplementation((asset: AssetItem) =>
+        asset.tags.includes('input') ? 'input' : 'output'
+      )
+      mockGetOutputAssetMetadata.mockImplementation(
+        (meta: Record<string, unknown> | undefined) =>
+          meta && 'jobId' in meta ? meta : null
+      )
+    })
+
+    const groupedJob = createMockAsset({
+      id: 'job1',
+      name: 'cover.png',
+      tags: ['output'],
+      user_metadata: { jobId: 'job1', outputCount: 3 }
+    })
+    const flatJobOutput = createMockAsset({
+      id: 'flat-asset',
+      name: 'flat.png',
+      tags: ['output'],
+      job_id: 'job2'
+    })
+    const jobLessOutput = createMockAsset({
+      id: 'scanned-asset',
+      name: 'scanned.png',
+      tags: ['output'],
+      job_id: null
+    })
+    const input = createMockAsset({ id: 'input-asset', tags: ['input'] })
+
+    it.for([
+      {
+        name: 'a grouped job',
+        assets: [groupedJob],
+        expected: {
+          job_ids: ['job1'],
+          naming_strategy: 'preserve',
+          include_previews: true
+        }
+      },
+      {
+        name: 'an output without job metadata, by asset id',
+        assets: [groupedJob, flatJobOutput],
+        expected: {
+          job_ids: ['job1'],
+          asset_ids: ['flat-asset'],
+          naming_strategy: 'preserve',
+          include_previews: true
+        }
+      },
+      {
+        name: 'outputs with no job, by asset id',
+        assets: [groupedJob, jobLessOutput, input],
+        expected: {
+          job_ids: ['job1'],
+          asset_ids: ['scanned-asset', 'input-asset'],
+          naming_strategy: 'preserve',
+          include_previews: true
+        }
+      }
+    ])('zips $name', async ({ assets, expected }) => {
+      const actions = useMediaAssetActions()
+      actions.downloadAssets(assets)
+
+      await vi.waitFor(() => {
+        expect(mockCreateAssetExport).toHaveBeenCalledWith(expected)
+      })
+      expect(mockTrackExport).toHaveBeenCalledWith('test-task-id')
+      expect(mockDownloadFile).not.toHaveBeenCalled()
+    })
+
+    it('downloads files one by one when the assets system is disabled', async () => {
+      vi.mocked(api.getServerFeature).mockImplementation(
+        (_path: string, defaultValue?: unknown) => defaultValue
+      )
+
+      const actions = useMediaAssetActions()
+      actions.downloadAssets([jobLessOutput, input])
+
+      await vi.waitFor(() => {
+        expect(mockDownloadFile).toHaveBeenCalledTimes(2)
+      })
+      expect(mockCreateAssetExport).not.toHaveBeenCalled()
+    })
+  })
+
   describe('downloadAssets - export toast file count', () => {
     beforeEach(() => {
       mockIsCloud.value = true
@@ -1214,9 +1424,8 @@ describe('useMediaAssetActions', () => {
         expect(mockCreateAssetExport).toHaveBeenCalledTimes(1)
       })
 
-      const { add } = useToast()
       await vi.waitFor(() => {
-        expect(add).toHaveBeenCalledWith(
+        expect(useToastStore().add).toHaveBeenCalledWith(
           expect.objectContaining({
             detail: i18n.global.t(
               'mediaAsset.selection.exportStarted',

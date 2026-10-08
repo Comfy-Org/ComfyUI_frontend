@@ -3,6 +3,7 @@ import { expect } from '@playwright/test'
 import enMessages from '@/locales/en/main.json' with { type: 'json' }
 
 import { AssetsSidebarTab } from '@e2e/fixtures/components/SidebarTab'
+import { AgentPanel } from '@e2e/fixtures/components/AgentPanel'
 import {
   MULTI_OUTPUT_FIRST,
   MULTI_OUTPUT_JOB_ID,
@@ -47,10 +48,11 @@ const REPRESENTATIVE_VIDEO = {
 // Left failing rather than fixed here: the candidates are to publish a
 // `preview_url` for non-image kinds (which ADR-ASSETS-DRAG-DROP-0035 rule 2
 // deliberately scopes to image previews) or to resolve a staged attachment
-// through its asset id at send time. Both change product behaviour on a
-// surface with open owner PRs (#16985, #17767), so this ships as the repro
-// and the decision stays with the PM-1157/PM-1158 owners. Remove `.fail()`
-// with the fix.
+// through its asset id at send time. Both change product behaviour, so this
+// shipped as the repro and the decision stayed with the PM-1157/PM-1158
+// owners. PM-1158 has since closed on a partial fix (#18104, image path
+// only) and PM-1157 on this repro, so the non-image path below is unowned.
+// Remove `.fail()` with the fix.
 test.fail(
   'sends a nested video output by its display name, not its asset id',
   { tag: ['@cloud', '@agent'] },
@@ -100,9 +102,7 @@ test.fail(
       })
     })
 
-    await page
-      .getByRole('button', { name: enMessages.agent.entryButton })
-      .click()
+    await new AgentPanel(page).open()
     const panel = page.locator('#agent-panel-root')
     await expect(panel).toBeVisible()
     await panel

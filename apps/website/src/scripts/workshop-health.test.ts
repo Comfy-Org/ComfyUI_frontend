@@ -10,7 +10,7 @@ import {
   workshopDatadogEnvironment
 } from './workshop-datadog'
 import type { LogsEvent } from '@datadog/browser-logs'
-import { WorkshopRouterError } from '../config/workshop-router-errors'
+import { WorkshopRouterError } from '@/config/workshop-router-errors'
 import { workshopFailureAnalytics } from './workshop-analytics'
 
 const run: WorkshopRunAnalytics = {
@@ -36,6 +36,48 @@ type FailureDetails = Pick<FailedRun, 'reason'> &
   >
 
 describe('Workshop health', () => {
+  it.for([
+    { page: undefined, feature: 'models', surface: {} },
+    { page: 'model', feature: 'models', surface: {} },
+    {
+      page: 'workflow',
+      feature: 'workflows',
+      surface: {
+        render_engine: 'cloud',
+        workflow_id: 'workflows/remove-background'
+      }
+    },
+    {
+      page: 'app',
+      feature: 'apps',
+      surface: { render_engine: 'router', app_slug: 'cinematic-studio' }
+    }
+  ] as const)(
+    'files $page delivery under the $feature feature with its own tags',
+    ({ page, feature, surface }) => {
+      const record = workshopHealthLog({
+        name: 'delivery_finished',
+        properties: {
+          ...run,
+          ...(page && { page_type: page }),
+          ...surface,
+          status: 'succeeded',
+          duration_ms: 15,
+          output_kind: 'image'
+        }
+      })
+      expect(record).toMatchObject({
+        feature,
+        event_name: 'delivery_finished',
+        service_health: 'success',
+        ...surface
+      })
+      expect(JSON.stringify(record)).not.toMatch(
+        /private-user|private-workspace/
+      )
+    }
+  )
+
   it('preserves declared field names for validation diagnostics', () => {
     expect(
       workshopHealthLog({

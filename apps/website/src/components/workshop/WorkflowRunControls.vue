@@ -3,11 +3,11 @@ import { Loader2 } from '@lucide/vue'
 import { computed } from 'vue'
 
 import Button from '@/components/ui/button/Button.vue'
-import { useSignInHref } from '../../composables/useSignInHref'
-import { leaveForSignIn } from '../../config/workshop-return'
-import { WORKSHOP_CLOUD_BASE_URL } from '../../config/workshop-env'
-import type { WorkflowState } from '../../config/workshop-workflow-state'
-import { t } from '../../i18n/translations'
+import { useSignInHref } from '@/composables/useSignInHref'
+import { leaveForSignIn } from '@/config/workshop-return'
+import { WORKSHOP_CLOUD_BASE_URL } from '@/config/workshop-env'
+import type { WorkflowState } from '@/config/workshop-workflow-state'
+import { t } from '@/i18n/translations'
 
 const { state, signedIn, canStart, statusLabel } = defineProps<{
   state: WorkflowState
@@ -20,6 +20,7 @@ const signInHref = useSignInHref()
 const busy = computed(() =>
   ['preparing', 'active', 'interrupted'].includes(state.phase)
 )
+const spinning = computed(() => busy.value && state.phase !== 'interrupted')
 const unknownSubmission = computed(
   () => state.phase === 'interrupted' && state.record.stage === 'intent'
 )
@@ -39,22 +40,29 @@ const canCancel = computed(() => {
 </script>
 
 <template>
-  <a
+  <Button
     v-if="!signedIn"
+    as="a"
+    size="lg"
+    class="w-full"
     :href="signInHref"
-    class="flex min-h-12 items-center justify-center rounded-xl bg-primary-comfy-yellow text-sm font-bold text-primary-comfy-ink hover:bg-primary-comfy-yellow/90"
     @click="leaveForSignIn($event, signInHref)"
-    >{{ t('workshop.run.signIn') }}</a
+    >{{ t('workshop.run.signIn') }}</Button
   >
   <Button
     v-else
     type="submit"
-    class="min-h-12 w-full"
+    size="lg"
+    class="w-full"
     :disabled="!canStart"
     data-testid="workflow-run"
   >
-    <template v-if="busy" #prepend>
-      <Loader2 class="size-4 motion-safe:animate-spin" aria-hidden="true" />
+    <template v-if="spinning" #prepend>
+      <Loader2
+        class="size-4 motion-safe:animate-spin"
+        aria-hidden="true"
+        data-testid="run-button-spinner"
+      />
     </template>
     {{ busy ? statusLabel : t('workshop.run.run') }}
   </Button>

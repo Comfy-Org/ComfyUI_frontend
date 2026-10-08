@@ -4,10 +4,11 @@
  * Every Router model runs through Comfy's default route. The rows below are the
  * only ones that also accept `model_provider`. They mirror the API spec: each
  * model's `x-comfy-router-alt-providers`, published per model under
- * `router-schemas/` in the public Comfy-Org/docs repository. Reading the live
- * spec needs an API key, so the rows are copied by hand;
- * `router-providers.test.ts` compares them with the published spec and fails
- * the day they drift. Update `ROUTER_PROVIDER_COVERAGE_VERIFIED_AT` with them.
+ * `router-schemas/` in the public Comfy-Org/docs repository. The rows are
+ * copied by hand; the scheduled Router Provider Drift workflow compares them
+ * with the published sources and opens or updates an `area:testing` issue when
+ * they drift or a source is unavailable.
+ * Update `ROUTER_PROVIDER_COVERAGE_VERIFIED_AT` with them.
  */
 
 export const ROUTER_SERVING_PROVIDERS = [
@@ -36,10 +37,10 @@ export interface RouterProviderCoverageRow {
 const DOCS_MODELS_URL = 'https://docs.comfy.org/development/comfy-router/models'
 
 /** The day the rows and the catalog size were last checked against the docs. */
-export const ROUTER_PROVIDER_COVERAGE_VERIFIED_AT = '2026-09-23'
+export const ROUTER_PROVIDER_COVERAGE_VERIFIED_AT = '2026-09-30'
 
 /** How many models the Router catalog lists, all served by Comfy. */
-export const ROUTER_CATALOG_MODEL_COUNT = 209
+export const ROUTER_CATALOG_MODEL_COUNT = 213
 
 /** In the order the page shows them: alphabetical by `name`. */
 export const ROUTER_PROVIDER_COVERAGE: readonly RouterProviderCoverageRow[] = [

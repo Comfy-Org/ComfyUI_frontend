@@ -147,11 +147,27 @@ describe('CloudSurveyView', () => {
 
     expect(router.currentRoute.value.name).toBe('survey')
     expect(mocks.reportError).toHaveBeenCalledWith(error, {
+      surface: 'platform',
       errorType: 'error_submitting_onboarding_survey'
     })
     expect(useToastStore().add).toHaveBeenCalledWith(
       expect.objectContaining({ severity: 'error' })
     )
+    expect(screen.getByRole('button', { name: 'Submit survey' })).toBeEnabled()
+  })
+
+  it('stays usable without reporting a cancelled submission', async () => {
+    mocks.submitSurvey.mockResolvedValue({ status: 'cancelled' })
+    const { router } = await renderView()
+    await waitFor(() =>
+      expect(mocks.getSurveyCompletedStatus).toHaveBeenCalledOnce()
+    )
+
+    await userEvent.click(screen.getByRole('button', { name: 'Submit survey' }))
+
+    expect(router.currentRoute.value.name).toBe('survey')
+    expect(mocks.reportError).not.toHaveBeenCalled()
+    expect(useToastStore().add).not.toHaveBeenCalled()
     expect(screen.getByRole('button', { name: 'Submit survey' })).toBeEnabled()
   })
 
@@ -166,6 +182,7 @@ describe('CloudSurveyView', () => {
 
     expect(mocks.submitSurvey).not.toHaveBeenCalled()
     expect(mocks.reportError).toHaveBeenCalledWith(expect.any(Error), {
+      surface: 'platform',
       errorType: 'error_submitting_onboarding_survey'
     })
     expect(useToastStore().add).toHaveBeenCalledWith(
@@ -188,6 +205,7 @@ describe('CloudSurveyView', () => {
 
     expect(mocks.restoreSurveyReplayRequest).toHaveBeenCalledWith('account-a')
     expect(mocks.reportError).toHaveBeenCalledWith(error, {
+      surface: 'platform',
       errorType: 'error_navigating_from_onboarding_survey'
     })
     expect(useToastStore().add).toHaveBeenCalledWith(
@@ -214,7 +232,10 @@ describe('CloudSurveyView', () => {
     expect(mocks.restoreSurveyReplayRequest).toHaveBeenCalledWith('account-a')
     expect(mocks.reportError).toHaveBeenCalledWith(
       expect.objectContaining({ type: expect.any(Number) }),
-      { errorType: 'error_navigating_from_onboarding_survey' }
+      {
+        surface: 'platform',
+        errorType: 'error_navigating_from_onboarding_survey'
+      }
     )
     expect(screen.getByRole('button', { name: 'Submit survey' })).toBeEnabled()
   })

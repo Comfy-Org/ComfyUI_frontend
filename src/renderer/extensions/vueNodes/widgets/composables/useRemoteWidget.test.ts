@@ -1,23 +1,36 @@
-import { useAuthStore } from '@/stores/authStore'
-import axios from 'axios'
+import { fromPartial } from '@total-typescript/shoehorn'
+import axios, { AxiosHeaders } from 'axios'
+import type { AxiosResponse } from 'axios'
+import { afterEach, assert, beforeEach, describe, expect, it, vi } from 'vitest'
 
-import { beforeEach, describe, expect, it, vi } from 'vitest'
+import type { WebSession } from '@comfyorg/account-core/webSession'
 
 import type { IWidget } from '@/lib/litegraph/src/litegraph'
+import {
+  LGraph,
+  LGraphNode,
+  isComboWidget
+} from '@/lib/litegraph/src/litegraph'
+import type {
+  WebSessionRequestScope,
+  WebSessionRequests
+} from '@/platform/auth/session/webSessionFetch'
+import { provideWebSessionRequests } from '@/platform/auth/session/webSessionFetch'
 import { api } from '@/scripts/api'
 import { useRemoteWidget } from '@/renderer/extensions/vueNodes/widgets/composables/useRemoteWidget'
 import type { RemoteWidgetConfig } from '@/schemas/nodeDefSchema'
 import { createMockLGraphNode } from '@/utils/__tests__/litegraphTestUtils'
 import { stubFirebaseAuthHarness } from '@/utils/__tests__/stubAccountIdentityPort'
+import { useAuthStore } from '@/stores/authStore'
 
 function createMockWidget(overrides: Partial<IWidget> = {}): IWidget {
-  return {
+  const widget = fromPartial<IWidget>({
     name: 'test_widget',
     type: 'text',
     value: '',
-    options: {},
-    ...overrides
-  } as Partial<IWidget> as IWidget
+    options: {}
+  })
+  return Object.assign(widget, overrides)
 }
 
 const mockCloudAuth = vi.hoisted(() => ({
@@ -56,7 +69,14 @@ const createMockOptions = (inputOverrides = {}) => ({
 })
 
 function mockAxiosResponse(data: unknown, status = 200) {
-  vi.mocked(axios.get).mockResolvedValueOnce({ data, status })
+  const response: AxiosResponse<unknown> = {
+    data,
+    status,
+    statusText: '',
+    headers: new AxiosHeaders(),
+    config: { headers: new AxiosHeaders() }
+  }
+  vi.mocked(axios.get).mockResolvedValueOnce(response)
 }
 
 function mockAxiosError(error: Error | string) {
@@ -461,7 +481,7 @@ describe('useRemoteWidget', () => {
       const hook2 = useRemoteWidget(options)
 
       // Since they have the same route, only one request will be made
-      await Promise.race([getResolvedValue(hook1), getResolvedValue(hook2)])
+      await Promise.all([getResolvedValue(hook1), getResolvedValue(hook2)])
 
       const data1 = hook1.getValue()
       const data2 = hook2.getValue()
@@ -581,6 +601,222 @@ describe('useRemoteWidget', () => {
         expect(axiosCall).not.toHaveProperty('headers')
       })
     })
+  })
+
+  describe('web session', () => {
+    const sessionScope = (): WebSessionRequestScope | undefined => ({
+      session: fromPartial<WebSession>({}),
+      epoch: 1
+    })
+    let release: (() => void) | undefined
+    let scope: () => WebSessionRequestScope | undefined
+    let send: ReturnType<
+      typeof vi.fn<(url: string, init: RequestInit) => Promise<Response>>
+    >
+
+    const provideSession = () => {
+      release = provideWebSessionRequests(
+        fromPartial<WebSessionRequests>({
+          scope: async () => scope(),
+          workspaceId: () => undefined,
+          send: (url, init) => send(url, init)
+        })
+      )
+    }
+
+    beforeEach(() => {
+      scope = sessionScope
+      send = vi.fn<(url: string, init: RequestInit) => Promise<Response>>()
+      vi.stubGlobal('fetch', vi.fn())
+    })
+
+    afterEach(() => {
+      release?.()
+      release = undefined
+      mockCloudAuth.isCloud = false
+      mockCloudAuth.authHeader = null
+    })
+
+    const jsonBody = (body: unknown, status = 200) =>
+      new Response(JSON.stringify(body), { status })
+
+    let routeCount = 0
+    const uniqueRoute = () => `/api/models/${routeCount++}`
+
+    it.for([
+      {
+        name: 'a plain route',
+        suffix: '',
+        params: undefined,
+        responseKey: undefined,
+        body: ['a', 'b'],
+        value: ['a', 'b']
+      },
+      {
+        name: 'a route that already has a query',
+        suffix: '?a=1',
+        params: { b: '2' },
+        responseKey: undefined,
+        body: ['a'],
+        value: ['a'],
+        query: '?a=1&b=2'
+      },
+      {
+        name: 'query params on a plain route',
+        suffix: '',
+        params: { b: '2' },
+        responseKey: undefined,
+        body: ['a'],
+        value: ['a'],
+        query: '?b=2'
+      },
+      {
+        name: 'a response key',
+        suffix: '',
+        params: undefined,
+        responseKey: 'items',
+        body: { items: ['k'] },
+        value: ['k']
+      }
+    ])(
+      'fetches on the web session: $name',
+      async ({ suffix, params, responseKey, body, value, query = '' }) => {
+        provideSession()
+        send.mockResolvedValueOnce(jsonBody(body))
+        const route = uniqueRoute()
+        const hook = useRemoteWidget(
+          createMockOptions({
+            route: `${route}${suffix}`,
+            query_params: params,
+            response_key: responseKey
+          })
+        )
+
+        await getResolvedValue(hook)
+
+        expect(send).toHaveBeenCalledExactlyOnceWith(
+          `${route}${query || suffix}`,
+          {
+            method: 'GET',
+            signal: expect.any(AbortSignal)
+          }
+        )
+        expect(vi.mocked(axios.get)).not.toHaveBeenCalled()
+        expect(hook.getCachedValue()).toEqual(value)
+      }
+    )
+
+    it('keeps a body that is not JSON as text', async () => {
+      provideSession()
+      send.mockResolvedValueOnce(new Response('plain'))
+      const hook = useRemoteWidget(createMockOptions())
+
+      await getResolvedValue(hook)
+
+      expect(hook.getCachedValue()).toBe('plain')
+    })
+
+    it('treats a failed status as an error and keeps the default', async () => {
+      provideSession()
+      send.mockResolvedValueOnce(jsonBody({ message: 'no' }, 500))
+      const hook = useRemoteWidget(createMockOptions())
+
+      await getResolvedValue(hook)
+
+      expect(hook.getInventoryStatus()).toBe('error')
+      expect(hook.getCachedValue()).toBe(DEFAULT_VALUE)
+    })
+
+    it('aborts a session request that outlives its timeout', async () => {
+      provideSession()
+      send.mockImplementationOnce(
+        (_url, init) =>
+          new Promise((_resolve, reject) => {
+            init.signal?.addEventListener('abort', () =>
+              reject(new Error('aborted'))
+            )
+          })
+      )
+      const hook = useRemoteWidget(createMockOptions({ timeout: 50 }))
+
+      const settled = getResolvedValue(hook)
+      await vi.advanceTimersByTimeAsync(50)
+      await settled
+
+      expect(hook.getInventoryStatus()).toBe('error')
+    })
+
+    it.for([
+      {
+        name: 'a cross-origin route',
+        route: 'https://example.com/x',
+        sessionScope: sessionScope
+      },
+      {
+        name: 'a protocol-relative route',
+        route: '//example.com/x',
+        sessionScope: sessionScope
+      },
+      {
+        name: 'a tab that is not on the session',
+        route: uniqueRoute(),
+        sessionScope: () => undefined
+      }
+    ])(
+      'stays on axios for $name',
+      async ({ route, sessionScope: nextScope }) => {
+        mockCloudAuth.isCloud = true
+        mockCloudAuth.authHeader = { Authorization: 'Bearer test-token' }
+        scope = nextScope
+        provideSession()
+        mockAxiosResponse(['ax'])
+        const hook = useRemoteWidget(createMockOptions({ route }))
+
+        await getResolvedValue(hook)
+
+        expect(send).not.toHaveBeenCalled()
+        expect(vi.mocked(axios.get)).toHaveBeenCalledExactlyOnceWith(route, {
+          params: undefined,
+          signal: expect.any(AbortSignal),
+          timeout: 4096,
+          headers: { Authorization: 'Bearer test-token' }
+        })
+        expect(hook.getCachedValue()).toEqual(['ax'])
+      }
+    )
+
+    it.for([
+      { name: 'not cloud', isCloud: false, headers: {} },
+      {
+        name: 'cloud with a token',
+        isCloud: true,
+        headers: { headers: { Authorization: 'Bearer test-token' } }
+      }
+    ])(
+      'sends flag-off traffic through axios only ($name)',
+      async ({ isCloud, headers }) => {
+        mockCloudAuth.isCloud = isCloud
+        mockCloudAuth.authHeader = isCloud
+          ? { Authorization: 'Bearer test-token' }
+          : null
+        mockAxiosResponse(['ax'])
+        const options = createMockOptions({ query_params: { q: '1' } })
+        const hook = useRemoteWidget(options)
+
+        await getResolvedValue(hook)
+
+        expect(vi.mocked(axios.get)).toHaveBeenCalledExactlyOnceWith(
+          options.remoteConfig.route,
+          {
+            params: { q: '1' },
+            signal: expect.any(AbortSignal),
+            timeout: 4096,
+            ...headers
+          }
+        )
+        expect(fetch).not.toHaveBeenCalled()
+      }
+    )
   })
 
   describe('auto-refresh on task completion', () => {
@@ -705,6 +941,59 @@ describe('useRemoteWidget', () => {
       executionSuccessHandler?.()
 
       expect(refreshSpy).not.toHaveBeenCalled()
+    })
+
+    it('initializes a remote widget after the same node is removed and re-added', async () => {
+      const graph = new LGraph()
+      const node = new LGraphNode('remote')
+      graph.add(node)
+      const widget = node.addWidget('combo', 'model', DEFAULT_VALUE, () => {}, {
+        values: []
+      })
+      assert(isComboWidget(widget))
+      const hook = useRemoteWidget({
+        node,
+        widget,
+        remoteConfig: createMockConfig(),
+        defaultValue: DEFAULT_VALUE
+      })
+
+      try {
+        graph.remove(node)
+        graph.add(node)
+        mockAxiosResponse(['optionA', 'optionB'])
+
+        await getResolvedValue(hook)
+
+        expect(widget.value).toBe('optionA')
+      } finally {
+        graph.remove(node)
+      }
+    })
+
+    it('does not apply a pending response after the owning widget is removed', async () => {
+      let resolveResponse!: (value: AxiosResponse<string[]>) => void
+      const response = new Promise<AxiosResponse<string[]>>((resolve) => {
+        resolveResponse = resolve
+      })
+      vi.mocked(axios.get).mockReturnValueOnce(response)
+      const options = createMockOptions()
+      options.widget.value = 'saved'
+      const cleanup = vi.fn()
+      options.widget.onRemove = cleanup
+      const hook = useRemoteWidget(options)
+      const loaded = getResolvedValue(hook)
+      options.widget.onRemove()
+      resolveResponse({
+        data: ['replacement'],
+        status: 200,
+        statusText: 'OK',
+        headers: new AxiosHeaders(),
+        config: { headers: new AxiosHeaders() }
+      })
+      await loaded
+      expect(options.widget.value).toBe('saved')
+      expect(cleanup).toHaveBeenCalledOnce()
     })
 
     it('should cleanup event listener on node removal', async () => {
@@ -837,14 +1126,13 @@ describe('useRemoteWidget', () => {
 
     it('handles errors thrown by the completion callback', async () => {
       const error = new Error('completion callback failed')
-      const errorSpy = vi.spyOn(console, 'error').mockImplementation(() => {})
       const hook = createHookWithData(['option1'])
 
       hook.getValue(() => {
         throw error
       })
 
-      await vi.waitFor(() => expect(errorSpy).toHaveBeenCalledWith(error))
+      await vi.waitFor(() => expect(console.error).toHaveBeenCalledWith(error))
       expect(hook.getInventoryStatus()).toBe('ready')
     })
 
