@@ -8,12 +8,7 @@ import { apiKeysLink, getRoutes } from '@/config/routes'
 import type { Locale } from '@/i18n/translations'
 import { translationsFor } from '@/i18n/translations'
 import { runsHere } from '@/lib/workshop/explorer/model-access'
-import { OPEN_WEIGHT_MODELS } from '@/lib/workshop/explorer/open-weight-models'
-import {
-  latestLaunch,
-  MODELS_CATALOGUE_ID,
-  modelsHubCounts
-} from '@/lib/workshop/models-hub'
+import { latestLaunch, MODELS_CATALOGUE_ID } from '@/lib/workshop/models-hub'
 import HubBreadcrumb from '@/components/workshop/HubBreadcrumb.vue'
 import LatestLaunchCard from './LatestLaunchCard.vue'
 
@@ -26,7 +21,6 @@ const { t } = translationsFor(locale)
 const routes = getRoutes(locale)
 const runHref = `#${MODELS_CATALOGUE_ID}`
 const canRun = computed(() => models.some(runsHere))
-const counts = computed(() => modelsHubCounts(models, OPEN_WEIGHT_MODELS))
 const featured = computed(() => latestLaunch(models))
 </script>
 
@@ -78,12 +72,6 @@ const featured = computed(() => latestLaunch(models))
           {{ t('workshop.modelsHub.getApiKey') }}
         </BrandButton>
       </div>
-      <p
-        class="text-sm text-primary-warm-gray tabular-nums"
-        data-testid="models-hub-counts"
-      >
-        {{ t('workshop.modelsHub.counts', { ...counts }) }}
-      </p>
     </div>
 
     <div v-if="featured" class="min-w-0" data-testid="models-hub-latest">

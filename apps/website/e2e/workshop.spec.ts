@@ -92,9 +92,6 @@ test.describe('Models catalog', () => {
       hero.getByRole('heading', { level: 1, name: 'Models', exact: true })
     ).toBeVisible()
     await expect(page.getByTestId('workshop-heading')).toHaveCount(0)
-    await expect(hero.getByTestId('models-hub-counts')).toHaveText(
-      /^\d+ models · \d+ open weights · \d+ partner models$/
-    )
     const card = hero.getByTestId('models-hub-latest')
     await expect(card).toContainText('Latest launch')
     const latest = card.getByTestId('models-hub-latest-title')

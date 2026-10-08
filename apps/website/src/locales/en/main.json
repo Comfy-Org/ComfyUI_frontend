@@ -783,7 +783,6 @@
       "subtitle": "For developers: call the latest models through one API, try them here first or download open weights for ComfyUI.",
       "runModel": "Run a model",
       "getApiKey": "Get an API key",
-      "counts": "{models} models · {openWeights} open weights · {partner} partner models",
       "latestLaunch": "Latest launch",
       "access": {
         "heading": "Choose how you access models",

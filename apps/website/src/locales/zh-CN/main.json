@@ -4627,7 +4627,6 @@
       "subtitle": "面向开发者：通过一个 API 调用最新模型，先在这里试用，或下载开放权重在 ComfyUI 中使用。",
       "runModel": "运行模型",
       "getApiKey": "获取 API 密钥",
-      "counts": "{models} 个模型 · {openWeights} 个开放权重 · {partner} 个合作伙伴模型",
       "latestLaunch": "最新发布",
       "access": {
         "heading": "选择模型访问方式",

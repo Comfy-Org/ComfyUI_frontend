@@ -482,9 +482,7 @@ describe('WorkshopModelsGrid', () => {
         within(hero).getByRole('link', { name: 'Run a model' })
       ).toHaveAttribute('href', '#models-catalogue')
       expect(catalogueHeading()).toHaveAttribute('id', 'models-catalogue')
-      expect(screen.getByTestId('models-hub-counts')).toHaveTextContent(
-        `${hub.length + OPEN_WEIGHT_MODELS.length} models · ${OPEN_WEIGHT_MODELS.length} open weights · ${hub.length} partner models`
-      )
+      expect(screen.queryByTestId('models-hub-counts')).toBeNull()
       expect(screen.getByTestId('models-hub-latest')).toHaveTextContent(
         'Seedance 2.5 Text-to-Video'
       )

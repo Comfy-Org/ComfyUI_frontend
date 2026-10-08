@@ -2,7 +2,7 @@ import { describe, expect, it } from 'vitest'
 
 import type { RouterWorkshopModel } from '@/config/models-catalogue'
 import type { OpenWeightModel } from './explorer/open-weight-models'
-import { familyShowcase, latestLaunch, modelsHubCounts } from './models-hub'
+import { familyShowcase, latestLaunch } from './models-hub'
 
 function hosted(
   slug: string,
@@ -64,14 +64,6 @@ describe('latestLaunch', () => {
     }
   ])('features $latest when $kind', ({ models, latest }) => {
     expect(latestLaunch(models, releases)?.slug).toBe(latest)
-  })
-})
-
-describe('modelsHubCounts', () => {
-  it('adds the open weights to the partner models', () => {
-    expect(
-      modelsHubCounts([hosted('a'), hosted('b')], [open('Wan2.2 T2v')])
-    ).toEqual({ models: 3, openWeights: 1, partner: 2 })
   })
 })
 

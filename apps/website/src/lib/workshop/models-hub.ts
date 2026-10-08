@@ -38,23 +38,6 @@ export function latestLaunch(
     .find((model) => model?.href !== undefined)
 }
 
-export interface ModelsHubCounts {
-  readonly models: number
-  readonly openWeights: number
-  readonly partner: number
-}
-
-export function modelsHubCounts(
-  partner: readonly WorkshopModel[],
-  openWeights: readonly OpenWeightModel[]
-): ModelsHubCounts {
-  return {
-    models: partner.length + openWeights.length,
-    openWeights: openWeights.length,
-    partner: partner.length
-  }
-}
-
 interface FamilyRelease {
   readonly version: string
   readonly open: boolean
