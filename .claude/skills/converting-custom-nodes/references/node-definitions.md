@@ -98,8 +98,9 @@ b.onExecuted((node, result) => populate(node, result.text))
 ```
 
 `ExecutionResult` exposes `images`, `text`, and `raw` for everything else.
-Custom output keys survive in `raw` — ADR 0007's passthrough schema guarantees
-it — so a pack reading a bespoke key keeps working.
+Custom output keys survive in `raw` —
+[ADR-NODE-OUTPUTS-0007](../../../../docs/adr/NODE-OUTPUTS-0007-output-passthrough-for-extensible-nodes.md)
+guarantees it — so a pack reading a bespoke key keeps working.
 
 ## A worked example touching four surfaces at once
 

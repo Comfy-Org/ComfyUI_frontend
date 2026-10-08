@@ -110,8 +110,7 @@ interface HandleCommon {
 // ─── comfyApi.ts ─────────────────────────────────────────────────
 
 interface Comfy {
-  /** Available in the Secure Nodes worker realm, for caller-owned UI only. */
-  element(name: string): OwnedElementHandle
+  element(name: string, scope?: OwnedElementScope): OwnedElementHandle
   /**
    * `major.minor`. Prefer `supports()` over comparing this — a capability
    * survives being backported or reordered across minors; a version comparison
@@ -1562,28 +1561,50 @@ interface NodeHandle extends HandleCommon {
 
 // ─── ownedElementHandle.ts ───────────────────────────────────────
 
-/** Scalar operations on a keyed element in the caller's mounted UI.
- * The secure provider enforces the mounted tag's allowlist and ownership.
- * No DOM node is returned; removed elements reject until remounted.
- */
+interface OwnedElementScope {
+  readonly nodeId: string
+  readonly widget: string
+}
+
+type OwnedElementNumberProperty =
+  | 'currentTime'
+  | 'duration'
+  | 'videoWidth'
+  | 'videoHeight'
+  | 'readyState'
+  | 'volume'
+  | 'naturalWidth'
+  | 'naturalHeight'
+  | 'width'
+  | 'height'
+  | 'selectionStart'
+  | 'selectionEnd'
+  | 'scrollTop'
+
+type OwnedElementBooleanProperty = 'paused' | 'ended' | 'muted' | 'complete'
+
+type OwnedElementEvent =
+  | 'timeupdate'
+  | 'loadedmetadata'
+  | 'loadeddata'
+  | 'play'
+  | 'pause'
+  | 'ended'
+  | 'seeked'
+  | 'error'
+  | 'load'
+  | 'input'
+  | 'change'
+
+interface OwnedElementEventDetail {
+  readonly currentTime?: number
+  readonly duration?: number
+  readonly value?: string
+}
+
 interface OwnedElementHandle {
-  get(
-    property:
-      | 'currentTime'
-      | 'duration'
-      | 'videoWidth'
-      | 'videoHeight'
-      | 'readyState'
-      | 'volume'
-      | 'naturalWidth'
-      | 'naturalHeight'
-      | 'width'
-      | 'height'
-      | 'selectionStart'
-      | 'selectionEnd'
-      | 'scrollTop'
-  ): Promise<number>
-  get(property: 'paused' | 'ended' | 'muted' | 'complete'): Promise<boolean>
+  get(property: OwnedElementNumberProperty): Promise<number>
+  get(property: OwnedElementBooleanProperty): Promise<boolean>
   get(property: 'value'): Promise<string>
   set(
     property:
@@ -1607,24 +1628,9 @@ interface OwnedElementHandle {
     direction?: 'forward' | 'backward' | 'none'
   ): Promise<void>
   listen(
-    event:
-      | 'timeupdate'
-      | 'loadedmetadata'
-      | 'loadeddata'
-      | 'play'
-      | 'pause'
-      | 'ended'
-      | 'seeked'
-      | 'error'
-      | 'load'
-      | 'input'
-      | 'change',
-    listener: (detail: {
-      readonly currentTime?: number
-      readonly duration?: number
-      readonly value?: string
-    }) => void
-  ): Promise<void>
+    event: OwnedElementEvent,
+    listener: (detail: OwnedElementEventDetail) => void
+  ): Promise<Unsubscribe>
 }
 
 // ─── queueHandle.ts ──────────────────────────────────────────────

@@ -54,7 +54,11 @@ import { createSystemApi } from './systemHandle'
 import type { SystemHandle } from './systemHandle'
 import type { UiHandle } from './uiHandle'
 import type { NodeHandle } from './nodeHandle'
-import type { OwnedElementHandle } from './ownedElementHandle'
+import { createOwnedElementAccessor } from './nativeOwnedElement'
+import type {
+  OwnedElementHandle,
+  OwnedElementScope
+} from './ownedElementHandle'
 import { createWorkflowApi } from './workflowHandle'
 import type {
   WorkflowData,
@@ -138,6 +142,7 @@ const CAPABILITIES: ReadonlyMap<string, string> = new Map([
   ['widgets.create', '2.0'],
   ['serialization.control', '2.0'],
   ['widgets.mount', '2.0'],
+  ['ui.owned-elements', '2.0'],
   ['widgets.typeContext', '2.0'],
   ['widgets.canvas', '2.0'],
   ['node.onPreview', '2.0'],
@@ -198,8 +203,7 @@ const PLANNED: ReadonlyMap<string, string> = new Map([
 ])
 
 export interface Comfy {
-  /** Available in the Secure Nodes worker realm, for caller-owned UI only. */
-  element(name: string): OwnedElementHandle
+  element(name: string, scope?: OwnedElementScope): OwnedElementHandle
   /**
    * `major.minor`. Prefer `supports()` over comparing this — a capability
    * survives being backported or reordered across minors; a version comparison
@@ -523,11 +527,7 @@ function buildMajor(
     capabilities: () => Object.freeze([...capabilities.keys()]),
     forMajor,
     sameEntity: isSameEntity,
-    element() {
-      throw new ComfyApiError(
-        'Owned element handles require a Secure Nodes worker realm.'
-      )
-    },
+    element: createOwnedElementAccessor(getGraph),
     adopt(handle: unknown) {
       const token = handleToken(handle)
       // Only node handles are adoptable today; slots and widgets are reached

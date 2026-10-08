@@ -1,25 +1,53 @@
-/** Scalar operations on a keyed element in the caller's mounted UI.
- * The secure provider enforces the mounted tag's allowlist and ownership.
- * No DOM node is returned; removed elements reject until remounted.
- */
+import type { Unsubscribe } from './widgetHandle'
+
+export interface OwnedElementScope {
+  readonly nodeId: string
+  readonly widget: string
+}
+
+export type OwnedElementNumberProperty =
+  | 'currentTime'
+  | 'duration'
+  | 'videoWidth'
+  | 'videoHeight'
+  | 'readyState'
+  | 'volume'
+  | 'naturalWidth'
+  | 'naturalHeight'
+  | 'width'
+  | 'height'
+  | 'selectionStart'
+  | 'selectionEnd'
+  | 'scrollTop'
+
+export type OwnedElementBooleanProperty =
+  | 'paused'
+  | 'ended'
+  | 'muted'
+  | 'complete'
+
+export type OwnedElementEvent =
+  | 'timeupdate'
+  | 'loadedmetadata'
+  | 'loadeddata'
+  | 'play'
+  | 'pause'
+  | 'ended'
+  | 'seeked'
+  | 'error'
+  | 'load'
+  | 'input'
+  | 'change'
+
+export interface OwnedElementEventDetail {
+  readonly currentTime?: number
+  readonly duration?: number
+  readonly value?: string
+}
+
 export interface OwnedElementHandle {
-  get(
-    property:
-      | 'currentTime'
-      | 'duration'
-      | 'videoWidth'
-      | 'videoHeight'
-      | 'readyState'
-      | 'volume'
-      | 'naturalWidth'
-      | 'naturalHeight'
-      | 'width'
-      | 'height'
-      | 'selectionStart'
-      | 'selectionEnd'
-      | 'scrollTop'
-  ): Promise<number>
-  get(property: 'paused' | 'ended' | 'muted' | 'complete'): Promise<boolean>
+  get(property: OwnedElementNumberProperty): Promise<number>
+  get(property: OwnedElementBooleanProperty): Promise<boolean>
   get(property: 'value'): Promise<string>
   set(
     property:
@@ -43,22 +71,7 @@ export interface OwnedElementHandle {
     direction?: 'forward' | 'backward' | 'none'
   ): Promise<void>
   listen(
-    event:
-      | 'timeupdate'
-      | 'loadedmetadata'
-      | 'loadeddata'
-      | 'play'
-      | 'pause'
-      | 'ended'
-      | 'seeked'
-      | 'error'
-      | 'load'
-      | 'input'
-      | 'change',
-    listener: (detail: {
-      readonly currentTime?: number
-      readonly duration?: number
-      readonly value?: string
-    }) => void
-  ): Promise<void>
+    event: OwnedElementEvent,
+    listener: (detail: OwnedElementEventDetail) => void
+  ): Promise<Unsubscribe>
 }

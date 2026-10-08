@@ -25,8 +25,14 @@ describe('comfy API root', () => {
 
   const api = () => createComfyApi(() => graph)
 
-  it('does not expose host DOM elements without the secure provider', () => {
-    expect(() => api().element('host-document')).toThrow(/worker realm/)
+  it('does not look up arbitrary host DOM elements', async () => {
+    const input = document.createElement('textarea')
+    input.setAttribute('data-name', 'host-document')
+    document.body.append(input)
+    await expect(api().element('host-document').get('value')).rejects.toThrow(
+      /Unknown element/
+    )
+    input.remove()
   })
 
   it('reports a version independent of the app version', () => {

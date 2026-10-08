@@ -32,14 +32,53 @@ retention; the current default policy is one hour. Managed model loading remains
 separate. The core Python contract is `comfy_api/latest/_sdk_public.pyi`, with
 machine-readable signatures in `comfy_api/latest/api-spec.json`.
 
-`OwnedElementHandle` is reached through `comfy.element(name)` in the Secure
-Nodes worker realm. It reads bounded scalar state and invokes allowlisted
-operations on this pack's mounted, keyed elements. It never returns a DOM node
-or looks up the host document. The mounted tag determines permitted operations;
-removal revokes access. In the unsandboxed host this accessor reports that the
-secure provider is required; local render callbacks already receive their DOM
-container. Textareas admit at most 262144 UTF-16 units and 1 MiB UTF-8; selection
-indices are bounded and use native clamping.
+`OwnedElementHandle` is reached through
+`comfy.element(name, { nodeId, widget })`. It reads bounded scalar state and
+invokes allowlisted operations on keyed elements in that node's mounted widget.
+The scope is optional only when the name is unambiguous. The handle binds on
+first use, survives updates of the same element, and is permanently revoked
+when the element, widget or document is removed. A fresh handle is required for
+a replacement. `listen()` returns an unsubscribe function; removal also cleans
+up listeners. Async media failures propagate to the caller.
+
+Both native and secure providers implement this contract. Neither searches the
+host document or returns a DOM node. The secure provider additionally restricts
+lookup to the relay-identified calling pack. Native extensions already execute
+with host privileges: this accessor does not sandbox them. Probe
+`comfy.supports('ui.owned-elements')` for availability; it is not a permission
+grant. Text values admit at most 262144 UTF-16 units and 1 MiB UTF-8. Selection
+indices use UTF-16 offsets and native clamping. A handle admits at most 128
+active subscriptions. Oversized text events are dropped; a later bounded event
+still reaches the subscriber.
+
+| Type                          | Purpose                                                                     |
+| ----------------------------- | --------------------------------------------------------------------------- |
+| `OwnedElementScope`           | Node ID and mounted widget name; never a caller-supplied pack identity.     |
+| `OwnedElementNumberProperty`  | Numeric state such as natural dimensions, caret offsets and media position. |
+| `OwnedElementBooleanProperty` | Scalar media/image readiness and muted state.                               |
+| `OwnedElementEvent`           | Allowlisted media, image and text-control events.                           |
+| `OwnedElementEventDetail`     | Scalar event data, without a DOM event or element reference.                |
+
+Set operations are tag-specific. Text controls expose value/selection/scroll,
+images expose natural dimensions and bounded source/alt updates, media exposes
+playback state and controls, and canvases expose dimensions. Scroll is finite
+and within ±1000000; canvas dimensions are integers up to 8192 and at most
+16777216 pixels; volume is 0–1 and playback rate is 0.0625–16. Source URLs use
+HTTP(S), blob or image-data schemes. These limits do not grant network access.
+Persist author UI state through mounted value cells, not by treating a DOM
+value edit as a graph command.
+
+```typescript
+const editor = comfy.element('editor', {
+  nodeId: node.id,
+  widget: 'textDisplay'
+})
+const stop = await editor.listen('input', ({ value }) => {
+  console.log(value)
+})
+await editor.invoke('setSelectionRange', 0, 3)
+stop()
+```
 
 ## Entry point
 
@@ -705,9 +744,9 @@ This block is generated from `CAPABILITIES` in `comfyApi.ts`.
 `slots.connectedType`, `slots.dynamic`, `slots.identity`, `slots.layout`,
 `slots.localizedName`, `slots.moveLinks`, `slots.resolvedSource`,
 `slots.retype`, `slots.widgetConfig`, `storage`, `supply.outputs`,
-`supply.resolved`, `system.monitor`, `ui.sidebarTab`, `viewport.changed`,
-`widgets.canvas`, `widgets.create`, `widgets.height`, `widgets.hidden`,
-`widgets.linked`, `widgets.mount`, `widgets.reorder`,
+`supply.resolved`, `system.monitor`, `ui.owned-elements`, `ui.sidebarTab`,
+`viewport.changed`, `widgets.canvas`, `widgets.create`, `widgets.height`,
+`widgets.hidden`, `widgets.linked`, `widgets.mount`, `widgets.reorder`,
 `widgets.textInteraction`, `widgets.typeContext`, `workflow.document`,
 `workflow.documentLifecycle`, `workflow.open`, `workflow.open.new`,
 `workflow.textReplacements`.

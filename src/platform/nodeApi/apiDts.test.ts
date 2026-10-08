@@ -118,13 +118,13 @@ export function mutate(): void {}
     const pack = `
 import { comfy } from '/comfy/api/v2.js'
 
-const editor = comfy.element('editor')
+const editor = comfy.element('editor', { nodeId: '1', widget: 'textDisplay' })
 const text: Promise<string> = editor.get('value')
 const caret: Promise<number> = editor.get('selectionStart')
 const selected: Promise<void> = editor.invoke('setSelectionRange', 1, 3, 'forward')
 const playing: Promise<void> = comfy.element('player').invoke('play')
 editor.set('value', 'updated')
-editor.listen('input', detail => { const value: string | undefined = detail.value })
+const unsubscribe: Promise<() => void> = editor.listen('input', detail => { const value: string | undefined = detail.value })
 `
     expect(contractDiagnostics(buildApiDts(directory), pack)).toEqual([])
   })
@@ -133,7 +133,8 @@ editor.listen('input', detail => { const value: string | undefined = detail.valu
     "comfy.element('editor').get('ownerDocument')",
     "comfy.element('editor').set('value', 42)",
     "comfy.element('editor').invoke('setSelectionRange', '1', 3)",
-    "comfy.element('editor').invoke('querySelector', 'body')"
+    "comfy.element('editor').invoke('querySelector', 'body')",
+    "comfy.element('editor', { pack: 'another' })"
   ])('rejects unsupported owned element operation: %s', (operation) => {
     const directory = resolve(process.cwd(), 'src/platform/nodeApi')
     const pack = `import { comfy } from '/comfy/api/v2.js'\n${operation}`
