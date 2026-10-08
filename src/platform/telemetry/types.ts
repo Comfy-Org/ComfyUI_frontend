@@ -883,6 +883,14 @@ export type AgentStarterPromptId =
 export type AgentStarterPromptAssignment = NonNullable<
   GetFeaturesResponses[200]['agent-starter-prompt-set']
 >
+interface AgentStarterPromptExperimentMetadata {
+  /**
+   * Assignment of the prompt set that rendered. Optional consumers omit it
+   * for QA overrides, unsupported locales, and surfaces rendered before
+   * authenticated config.
+   */
+  '$feature/agent-starter-prompt-set': AgentStarterPromptAssignment
+}
 /**
  * Where the free-use notice was placed, for the DES-1221 placement experiment.
  *
@@ -911,10 +919,10 @@ export interface AgentFreeUseNoticeMetadata extends Record<string, unknown> {
   action: 'shown' | 'dismissed' | 'learn_more_clicked'
   placement: AgentFreeUsePlacement
 }
-export interface AgentStarterPromptClickedMetadata extends Record<
-  string,
-  unknown
-> {
+export interface AgentStarterPromptClickedMetadata
+  extends
+    Record<string, unknown>,
+    Partial<AgentStarterPromptExperimentMetadata> {
   prompt_id: AgentStarterPromptId
   /** Slot position, so a reorder is visible rather than silently re-labelling. */
   prompt_index: number
@@ -943,19 +951,13 @@ export interface AgentStarterPromptClickedMetadata extends Record<
    * something else — do not read those as a clean per-prompt outcome.
    */
   draft_was_empty: boolean
-  /**
-   * Assignment of the prompt set that rendered. Omitted for QA overrides,
-   * unsupported locales, and surfaces rendered before authenticated config.
-   */
-  '$feature/agent-starter-prompt-set'?: AgentStarterPromptAssignment
 }
-export interface AgentStarterPromptExposureMetadata extends Record<
-  string,
-  unknown
-> {
-  '$feature/agent-starter-prompt-set': AgentStarterPromptAssignment
-}
-export interface AgentMessageSentMetadata extends Record<string, unknown> {
+export interface AgentStarterPromptExposureMetadata
+  extends Record<string, unknown>, AgentStarterPromptExperimentMetadata {}
+export interface AgentMessageSentMetadata
+  extends
+    Record<string, unknown>,
+    Partial<AgentStarterPromptExperimentMetadata> {
   attachment_count: number
   node_tag_count: number
   /**
@@ -990,12 +992,6 @@ export interface AgentMessageSentMetadata extends Record<string, unknown> {
   starter_prompt_id: AgentStarterPromptId | null
   /** `click_id` of the `app:agent_starter_prompt_clicked` this send came from, `null` when typed. */
   starter_prompt_click_id: string | null
-  /**
-   * Rendered assignment copied from the clicked starter prompt; omitted for
-   * typed sends, QA overrides, unsupported locales, and surfaces rendered
-   * before authenticated config.
-   */
-  '$feature/agent-starter-prompt-set'?: AgentStarterPromptAssignment
 }
 export interface AgentNodeTaggedMetadata extends Record<string, unknown> {
   source: 'mention_picker'
