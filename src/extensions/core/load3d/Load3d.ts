@@ -20,6 +20,7 @@ import type {
   GizmoMode,
   Load3DOptions,
   LoadModelOptions,
+  LoadModelOutcome,
   MaterialMode,
   Model3DTransform,
   UpDirection
@@ -64,7 +65,7 @@ class Load3d extends Viewport3d {
   adapterRef: AdapterRef
   private configurationCleanup?: () => void
 
-  private loadingPromise: Promise<boolean> | null = null
+  private loadingPromise: Promise<LoadModelOutcome> | null = null
   private _loadGeneration: number = 0
   private hasLoadedModel: boolean = false
   private thumbnailCaptureQueue: Promise<unknown> = Promise.resolve()
@@ -335,7 +336,7 @@ class Load3d extends Viewport3d {
     url: string,
     originalFileName?: string,
     options?: LoadModelOptions
-  ): Promise<boolean> {
+  ): Promise<LoadModelOutcome> {
     this._loadGeneration += 1
     const loadGeneration = this._loadGeneration
 
@@ -347,13 +348,14 @@ class Load3d extends Viewport3d {
         // Serialization only: the rejection already reached the loadModel caller.
       }
 
+      let outcome: LoadModelOutcome
       try {
-        await this._loadModelInternal(url, originalFileName, options)
+        outcome = await this._loadModelInternal(url, originalFileName, options)
       } finally {
         if (loadGeneration !== this._loadGeneration) this.clearModelState()
       }
 
-      return loadGeneration === this._loadGeneration
+      return loadGeneration === this._loadGeneration ? outcome : 'cancelled'
     })()
 
     // Publish the tail before waiting so every accepted load is visible to
@@ -367,7 +369,7 @@ class Load3d extends Viewport3d {
   }
 
   async whenLoadIdle(): Promise<void> {
-    let last: Promise<boolean> | null = null
+    let last: Promise<LoadModelOutcome> | null = null
     while (this.loadingPromise && this.loadingPromise !== last) {
       last = this.loadingPromise
       try {
@@ -382,7 +384,7 @@ class Load3d extends Viewport3d {
     url: string,
     originalFileName?: string,
     options?: LoadModelOptions
-  ): Promise<void> {
+  ): Promise<LoadModelOutcome> {
     const shouldRetainView = this.hasLoadedModel
     const savedCameraState = shouldRetainView
       ? this.cameraManager.getCameraState()
@@ -396,7 +398,16 @@ class Load3d extends Viewport3d {
     this.modelManager.clearModel()
     this.animationManager.dispose()
 
-    await this.loaderManager.loadModel(url, originalFileName, options)
+    const outcome = await this.loaderManager.loadModel(
+      url,
+      originalFileName,
+      options
+    )
+
+    if (outcome !== 'loaded') {
+      this.hasLoadedModel = false
+      return outcome
+    }
 
     if (this.modelManager.currentModel) {
       this.animationManager.setupModelAnimations(
@@ -417,6 +428,8 @@ class Load3d extends Viewport3d {
     }
 
     this.handleResize()
+
+    return outcome
   }
 
   isSplatModel(): boolean {

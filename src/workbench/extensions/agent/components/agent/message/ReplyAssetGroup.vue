@@ -1,5 +1,11 @@
 <script setup lang="ts">
-import { computed, defineAsyncComponent, ref, watch } from 'vue'
+import {
+  computed,
+  defineAsyncComponent,
+  onBeforeUnmount,
+  ref,
+  watch
+} from 'vue'
 import { useI18n } from 'vue-i18n'
 
 import { LOAD3D_VIEWER_DIALOG_PROPS } from '@/components/load3d/load3dViewerDialog'
@@ -66,6 +72,9 @@ const galleryIndex = ref(-1)
 
 const modelThumbnails = ref<Record<string, string>>({})
 const assetNames = ref<Record<string, string>>({})
+const thumbnailAbortController = new AbortController()
+
+onBeforeUnmount(() => thumbnailAbortController.abort())
 
 watch(
   () => assets.filter((asset) => asset.kind === '3D' || asset.kind === 'audio'),
@@ -82,8 +91,14 @@ watch(
             }
             const { generateModelThumbnail } =
               await import('@/components/load3d/modelThumbnail')
-            const generated = await generateModelThumbnail(url, filename)
-            if (generated) modelThumbnails.value[url] = generated
+            const generated = await generateModelThumbnail(
+              url,
+              filename,
+              thumbnailAbortController.signal
+            )
+            if (generated.status === 'rendered') {
+              modelThumbnails.value[url] = generated.dataUrl
+            }
           })
           .catch(() => {})
       }
