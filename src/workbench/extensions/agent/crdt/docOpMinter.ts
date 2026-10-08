@@ -13,6 +13,7 @@
  */
 import type {
   NodeId as WireNodeId,
+  PromotedHostWrite,
   WorkflowNode
 } from '@comfyorg/comfy-multi-player'
 
@@ -25,7 +26,9 @@ import type { LGraph } from '@/lib/litegraph/src/LGraph'
 import type { LGraphNode } from '@/lib/litegraph/src/LGraphNode'
 import type { LLink } from '@/lib/litegraph/src/LLink'
 import type { ISerialisedNode } from '@/lib/litegraph/src/types/serialisation'
+import { isWidgetValue } from '@/lib/litegraph/src/types/widgets'
 import { reportError } from '@/platform/telemetry/reportError'
+import { useWidgetValueStore } from '@/stores/widgetValueStore'
 import type { RootGraphId } from '@/types/graphScopeId'
 import type { NodeId } from '@/types/nodeId'
 import {
@@ -33,6 +36,7 @@ import {
   findSubgraphNodePathById
 } from '@/utils/graphTraversalUtil'
 
+import type { DocPromotedWidgets } from './agentSubgraphDefinitions'
 import type { GraphOperation } from './graphOperations'
 
 export interface DocOpMinterDeps {
@@ -57,6 +61,11 @@ export interface DocOpMinterDeps {
    * flight, or no document is subscribed).
    */
   docInputNames(nodeId: NodeId): readonly (string | undefined)[] | null
+  /**
+   * The bound document's view of a node's promoted widget layout, or null
+   * when the document holds no such node.
+   */
+  docPromotedWidgets(nodeId: NodeId): DocPromotedWidgets | null
 }
 
 export interface DocOpMinter {
@@ -170,6 +179,90 @@ function owningGraphIdOf(graph: LGraph, event: IntentOf<'set_widget'>): string {
 }
 
 /**
+ * The positional payload a write to a PROMOTED widget needs (schema Amendment
+ * A15). A subgraph instance's `type` is a definition UUID, so the pinned
+ * catalog never describes it and the document stores its promoted values as
+ * one opaque positional array (schema §1.2) that no name can address: a named
+ * `set_widget` against such a node is rejected outright (`opaque_widgets`),
+ * which bounced edits to a promoted widget while the agent held the document
+ * (PM-1995). A host nested inside another definition still takes the interior
+ * route below and is still refused.
+ *
+ * `value_index` is the widget's position among the node's widget-backed
+ * inputs — the order `SubgraphNode.serialize` builds `widgets_values` in and
+ * the order `applyHostWidgets` reads it back in. The document is consulted
+ * only to REFUSE a write it would misplace, never as the index itself: its
+ * `inputs` mirror can widget-mark fewer slots than `widgets_values` has
+ * entries, so an index taken from it lands on another widget's value.
+ */
+function promotedHostWrite(
+  node: LGraphNode | null,
+  event: IntentOf<'set_widget'>,
+  docPromotedWidgets: () => DocPromotedWidgets | null,
+  onOrderDrift: (names: readonly string[], doc: DocPromotedWidgets) => void
+): PromotedHostWrite | null {
+  if (!node?.isSubgraphNode()) return null
+  const hostInputs = node.inputs.flatMap((input) =>
+    input.widgetId ? [{ name: input.name, widgetId: input.widgetId }] : []
+  )
+  const valueIndex = hostInputs.findIndex((input) => input.name === event.name)
+  if (valueIndex === -1) return null
+  const liveNames = hostInputs.map((input) => input.name)
+  const doc = docPromotedWidgets()
+  if (!documentAcceptsLiveIndex(doc, liveNames)) {
+    if (doc) onOrderDrift(liveNames, doc)
+    return null
+  }
+  const widgetValueStore = useWidgetValueStore()
+  return {
+    value_index: valueIndex,
+    instance_path: [String(event.nodeId)],
+    host_widgets_values: hostInputs.map((input, index) => {
+      if (index === valueIndex) return event.value
+      const value = widgetValueStore.getWidget(input.widgetId)?.value
+      return isWidgetValue(value) ? value : undefined
+    })
+  }
+}
+
+/**
+ * Whether a live index is a safe index into the document's array.
+ *
+ * Two independent ways it is not, and the document answers both:
+ *
+ * - The array is sized for a different set of widgets. Checked against
+ *   `valueCount`, the same cardinality invariant `applyHostWidgets` enforces
+ *   on the way in.
+ * - The promoted name sequence is different. Definition order combined with
+ *   the instance's stored input mirror identifies the exact names behind the
+ *   positional array, catching same-cardinality demote/promote swaps as well
+ *   as `reorderSubgraphInputsByWidgetOrder` permutations.
+ *
+ * A document holding no array yet is sized by nothing, but it is NOT ordered
+ * by nothing: the first write seeds the whole array from `host_widgets_values`
+ * in live order, and a reload reads it back in the DEFINITION's order
+ * (`_applyPromotedWidgetValues`). A reorder permutes the live definition
+ * without minting, so the document's copy still holds the old order — seeding
+ * against it would land every value on a neighbour. Only a document that
+ * declares no definition at all leaves the live order unopposed.
+ *
+ * A refused write is dropped before enqueue so its `opaque_widgets` rejection
+ * cannot abort unrelated operations in the same batch.
+ */
+function documentAcceptsLiveIndex(
+  doc: DocPromotedWidgets | null,
+  liveNames: readonly string[]
+): boolean {
+  if (doc === null) return true
+  const namesMatch =
+    doc.promotedNames != null &&
+    doc.promotedNames.length === liveNames.length &&
+    doc.promotedNames.every((name, index) => name === liveNames[index])
+  if (doc.valueCount === 0) return doc.promotedNames === undefined || namesMatch
+  return doc.valueCount === liveNames.length && namesMatch
+}
+
+/**
  * The document input register a live link's target slot names, resolved by
  * NAME against the bound document's own input order: the live order drifts
  * from it (an autogrow slot disconnected and regrown lands at the tail of
@@ -192,6 +285,10 @@ export function attachDocOpMinter(deps: DocOpMinterDeps): DocOpMinter {
   let pending: PendingOp[] = []
   const pendingAdds = new Map<string, LGraphNode>()
   const reported = new Set<string>()
+  // Budgeted for the minter's whole life, not per flush: this one sits on the
+  // keystroke-paced widget path, where a per-flush budget reports every
+  // character typed into a drifted host.
+  const reportedDrift = new Set<string>()
   let flushScheduled = false
   let detached = false
 
@@ -240,10 +337,11 @@ export function attachDocOpMinter(deps: DocOpMinterDeps): DocOpMinter {
     key: string,
     message: string,
     errorType: string,
-    context: Record<string, unknown>
+    context: Record<string, unknown>,
+    budget: Set<string> = reported
   ): void {
-    if (reported.has(key)) return
-    reported.add(key)
+    if (budget.has(key)) return
+    budget.add(key)
     reportError(new Error(message), { errorType, context })
   }
 
@@ -281,6 +379,7 @@ export function attachDocOpMinter(deps: DocOpMinterDeps): DocOpMinter {
     const graph = deps.getGraph()
     if (!graph) return
     const rootGraphId = deps.boundRootGraphId() ?? graph.id
+    const owner = findNodeInHierarchy(graph, event.nodeId)
     const operation = {
       op: 'set_widget',
       node_id: event.nodeId,
@@ -290,7 +389,31 @@ export function attachDocOpMinter(deps: DocOpMinterDeps): DocOpMinter {
     } as const
     const owningGraphId = owningGraphIdOf(graph, event)
     if (owningGraphId === rootGraphId) {
-      schedule({ kind: 'op', operation })
+      if (!owner?.isSubgraphNode()) {
+        schedule({ kind: 'op', operation })
+        return
+      }
+      const promoted = promotedHostWrite(
+        owner,
+        event,
+        () => deps.docPromotedWidgets(event.nodeId),
+        (liveNames, doc) =>
+          reportOnce(
+            `promoted_drift:${rootGraphId}:${String(event.nodeId)}`,
+            `Subgraph host ${String(event.nodeId)} promotes [${liveNames.join(', ')}], which the document's ${doc.valueCount} stored values and declared inputs [${doc.declaredNames.join(', ')}] do not place; refusing to mint a promoted write`,
+            'agent_crdt_promoted_widget_order_drift',
+            {
+              nodeId: event.nodeId,
+              liveNames,
+              docValueCount: doc.valueCount,
+              docDeclaredNames: doc.declaredNames,
+              docPromotedNames: doc.promotedNames
+            },
+            reportedDrift
+          )
+      )
+      if (promoted)
+        schedule({ kind: 'op', operation: { ...operation, promoted } })
       return
     }
     const subgraphNodePath = findSubgraphNodePathById(graph, owningGraphId)

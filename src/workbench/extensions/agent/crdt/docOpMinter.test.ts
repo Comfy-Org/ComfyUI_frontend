@@ -1,7 +1,7 @@
 import { applyOps, mint, project } from '@comfyorg/comfy-multi-player'
 import type { WidgetCatalog, WorkflowJSON } from '@comfyorg/comfy-multi-player'
 import { fromPartial } from '@total-typescript/shoehorn'
-import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
+import { assert, afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { z } from 'zod'
 
 import { isRootGraphDocBound } from '@/lib/litegraph/src/docBoundGraphs'
@@ -30,6 +30,7 @@ import { createUuidv4 } from '@/utils/uuid'
 import { attachDocOpMinter } from './docOpMinter'
 import type { DocOpMinter, DocOpMinterDeps } from './docOpMinter'
 import type { GraphOperation } from './graphOperations'
+import { readDocPromotedWidgets } from './agentSubgraphDefinitions'
 import { readDocSlotNames } from './liveGraphApplier'
 import { mintWireOps } from './opEnvelope'
 
@@ -88,11 +89,22 @@ class TestNote extends LGraphNode {
   }
 }
 
+class TestPrompt extends LGraphNode {
+  constructor() {
+    super('Test Prompt')
+    const input = this.addInput('text', 'STRING')
+    input.widget = { name: 'text' }
+    this.addWidget('text', 'text', 'an interior default', () => {})
+    this.serialize_widgets = true
+  }
+}
+
 const CATALOG: WidgetCatalog = {
   types: {
     TestSource: { widget_order: ['steps'] },
     TestSink: { widget_order: [] },
-    TestAutogrowSink: { widget_order: [] }
+    TestAutogrowSink: { widget_order: [] },
+    TestPrompt: { widget_order: ['text'] }
   }
 }
 
@@ -106,12 +118,16 @@ const zDocInputs = z.array(
   z.object({ name: z.string(), link: z.number().nullable() })
 )
 
-function applyMinted(doc: ReturnType<typeof mint>, ops: GraphOperation[]) {
+function applyOutcomes(doc: ReturnType<typeof mint>, ops: GraphOperation[]) {
   return applyOps(
     doc,
     mintWireOps(ops, { actor: 'human:user:tab', baseVersion: 1 }),
     CATALOG
-  ).outcomes.map((outcome) => outcome.outcome)
+  ).outcomes
+}
+
+function applyMinted(doc: ReturnType<typeof mint>, ops: GraphOperation[]) {
+  return applyOutcomes(doc, ops).map((outcome) => outcome.outcome)
 }
 
 function docInputs(doc: ReturnType<typeof mint>, nodeId: unknown) {
@@ -143,6 +159,7 @@ beforeEach(() => {
   LiteGraph.registerNodeType('TestSink', TestSink)
   LiteGraph.registerNodeType('TestAutogrowSink', TestAutogrowSink)
   LiteGraph.registerNodeType('TestNote', TestNote)
+  LiteGraph.registerNodeType('TestPrompt', TestPrompt)
 })
 
 describe('attachDocOpMinter', () => {
@@ -153,6 +170,7 @@ describe('attachDocOpMinter', () => {
   let enabled: boolean
   let bound: boolean
   let docInputNames: DocOpMinterDeps['docInputNames']
+  let docPromotedWidgets: DocOpMinterDeps['docPromotedWidgets']
 
   beforeEach(() => {
     vi.mocked(reportError).mockClear()
@@ -162,13 +180,15 @@ describe('attachDocOpMinter', () => {
     enabled = true
     bound = true
     docInputNames = () => null
+    docPromotedWidgets = () => null
     minter = attachDocOpMinter({
       isEnabled: () => enabled,
       isDocBound: () => bound,
       enqueue: (operations) => minted.push(...operations),
       getGraph: () => graph,
       boundRootGraphId: () => rootGraphId,
-      docInputNames: (nodeId) => docInputNames(nodeId)
+      docInputNames: (nodeId) => docInputNames(nodeId),
+      docPromotedWidgets: (nodeId) => docPromotedWidgets(nodeId)
     })
   })
 
@@ -456,7 +476,8 @@ describe('attachDocOpMinter', () => {
       enqueue,
       getGraph: () => graph,
       boundRootGraphId: () => rootGraphId,
-      docInputNames: () => null
+      docInputNames: () => null,
+      docPromotedWidgets: () => null
     })
 
     const added = new TestSink()
@@ -640,6 +661,169 @@ describe('attachDocOpMinter', () => {
       ])
       doc.destroy()
     })
+  })
+
+  function seedPromotedHost(hostWidgetValues?: unknown[]) {
+    const subgraph = createTestSubgraph({
+      rootGraph: graph,
+      inputs: [
+        { name: 'prefix', type: 'STRING' },
+        { name: 'text', type: 'STRING' }
+      ]
+    })
+    graph.subgraphs.set(subgraph.id, subgraph)
+    const host = createTestSubgraphNode(subgraph)
+    withGraphIntentSource('load', () => {
+      graph.add(host)
+      for (const index of [0, 1]) {
+        const interior = LiteGraph.createNode('TestPrompt')
+        assert.exists(interior)
+        subgraph.add(interior)
+        subgraph.inputNode.slots[index].connect(interior.inputs[0], interior)
+      }
+    })
+    const serialized = graph.serialize() as unknown as WorkflowJSON
+    if (hostWidgetValues) {
+      const hostNode = serialized.nodes.find(
+        (node) => String(node.id) === String(host.id)
+      )
+      assert.exists(hostNode)
+      hostNode.widgets_values = hostWidgetValues
+    }
+    const doc = mint(serialized, CATALOG)
+    docPromotedWidgets = (nodeId) => readDocPromotedWidgets(doc, String(nodeId))
+    return { host, doc }
+  }
+
+  it('PM-1995: mints a promoted host write the doc host accepts', async () => {
+    const { host, doc } = seedPromotedHost()
+
+    host.widgets[1].value = 'a prompt pasted while the agent panel is open'
+    await afterFlush()
+
+    expect(minted).toEqual([
+      {
+        op: 'set_widget',
+        node_id: host.id,
+        widget: 'text',
+        value: 'a prompt pasted while the agent panel is open',
+        old: 'an interior default',
+        promoted: {
+          value_index: 1,
+          instance_path: [String(host.id)],
+          host_widgets_values: [
+            'an interior default',
+            'a prompt pasted while the agent panel is open'
+          ]
+        }
+      }
+    ])
+    const [write] = minted
+    assert(write.op === 'set_widget' && write.path == null)
+    const { promoted: _promoted, ...named } = write
+    expect(applyOutcomes(doc, [named])).toEqual([
+      expect.objectContaining({
+        outcome: 'rejected',
+        reason: expect.objectContaining({ code: 'opaque_widgets' })
+      })
+    ])
+    expect(applyMinted(doc, minted)).toEqual(['applied'])
+    expect(
+      project(doc, CATALOG).nodes.find(
+        (node) => String(node.id) === String(host.id)
+      )?.widgets_values
+    ).toEqual([
+      'an interior default',
+      'a prompt pasted while the agent panel is open'
+    ])
+    doc.destroy()
+  })
+
+  it('builds a promoted array from host values when the document holds none', async () => {
+    const { host, doc } = seedPromotedHost([])
+
+    host.widgets[1].value = 'pasted'
+    await afterFlush()
+
+    expect(minted).toEqual([
+      expect.objectContaining({
+        promoted: {
+          value_index: 1,
+          instance_path: [String(host.id)],
+          host_widgets_values: ['an interior default', 'pasted']
+        }
+      })
+    ])
+    expect(applyMinted(doc, minted)).toEqual(['applied'])
+    doc.destroy()
+  })
+
+  it.for([
+    {
+      name: 'has a different widget count',
+      doc: {
+        valueCount: 3,
+        declaredNames: [],
+        promotedNames: ['prefix', 'text', 'other']
+      }
+    },
+    {
+      name: 'declares the widgets in another order',
+      doc: {
+        valueCount: 2,
+        declaredNames: ['text', 'prefix'],
+        promotedNames: ['text', 'prefix']
+      }
+    },
+    {
+      name: 'has an unreadable promoted sequence',
+      doc: { valueCount: 2, declaredNames: [], promotedNames: null }
+    }
+  ])(
+    'refuses a promoted write when the document $name',
+    async ({ doc: docWidgets }) => {
+      const { host, doc } = seedPromotedHost()
+      docPromotedWidgets = () => docWidgets
+
+      host.widgets[1].value = 'misplaced'
+      await afterFlush()
+
+      expect(minted).toEqual([])
+      expect(reportError).toHaveBeenCalledWith(
+        expect.any(Error),
+        expect.objectContaining({
+          errorType: 'agent_crdt_promoted_widget_order_drift'
+        })
+      )
+      doc.destroy()
+    }
+  )
+
+  it('drops a refused host write without poisoning its same-tick batch', async () => {
+    const source = new TestSource()
+    withGraphIntentSource('load', () => graph.add(source))
+    const { host, doc } = seedPromotedHost()
+    docPromotedWidgets = () => ({
+      valueCount: 2,
+      declaredNames: ['text', 'prefix'],
+      promotedNames: ['text', 'prefix']
+    })
+
+    host.widgets[1].value = 'misplaced'
+    source.widgets![0].value = 42
+    await afterFlush()
+
+    expect(minted).toEqual([
+      {
+        op: 'set_widget',
+        node_id: source.id,
+        widget: 'steps',
+        value: 42,
+        old: 20
+      }
+    ])
+    expect(applyMinted(doc, minted)).toEqual(['applied'])
+    doc.destroy()
   })
 
   it('mints a live subgraph-interior widget write with the subgraph-node path', async () => {
