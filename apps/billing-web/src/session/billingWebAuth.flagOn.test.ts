@@ -66,7 +66,7 @@ async function answerFeatures(
   return new Response(
     JSON.stringify(
       credentialed
-        ? { unified_web_session: true }
+        ? { unified_web_session: true, billing_web_checkout_ui: 'full_page' }
         : { web_session_probe: true, firebase_config: FIREBASE_CONFIG }
     )
   )
@@ -178,6 +178,17 @@ describe('billing-web with unified_web_session on', () => {
     expect(h.initializeApp).not.toHaveBeenCalled()
     expect(sent.map(({ path }) => path)).not.toContain('/api/auth/token')
   }, 8000)
+
+  it("renders the checkout UI the Cloud session's account is flagged for", async () => {
+    stubCloud({ kind: 'live', user: fakeWebSessionUser() })
+    const { router } = await arriveAt(CHECKOUT)
+    await vi.waitFor(() =>
+      expect(router.currentRoute.value.fullPath).toBe(CHECKOUT)
+    )
+    const { awaitCheckoutUiVariant } = await import('@/config/checkoutUi')
+
+    await expect(awaitCheckoutUiVariant()).resolves.toBe('full_page')
+  })
 
   it('keeps every entry parameter through a genuine sign-in (SO1)', async () => {
     stubCloud({ kind: 'dead', code: 'no_session' })
