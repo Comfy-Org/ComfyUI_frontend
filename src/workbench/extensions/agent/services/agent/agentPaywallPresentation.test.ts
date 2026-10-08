@@ -133,7 +133,8 @@ describe('toAgentPaywallReason', () => {
     },
     { presentation: { kind: 'member' }, expected: 'member_cannot_pay' },
     { presentation: { kind: 'salesManaged' }, expected: 'sales_managed' },
-    { presentation: { kind: 'unavailable' }, expected: 'unknown' }
+    { presentation: { kind: 'unavailable' }, expected: 'unknown' },
+    { presentation: { kind: 'unresolved' }, expected: 'unknown' }
   ] as const)(
     'reports $expected for $presentation.kind',
     ({ presentation, expected }) => {

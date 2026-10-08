@@ -59,13 +59,14 @@ describe('AgentMessage paywall reply', () => {
     ).toBeInTheDocument()
   })
 
-  it('renders the server denial reason from the part through to the card', () => {
-    const serverMessage =
-      'Your workspace spent its September credits on 2026-09-18; billing owner must top up.'
+  const serverMessage =
+    'Your workspace spent its September credits on 2026-09-18; billing owner must top up.'
+
+  it('renders the server denial reason from the part through to the card when capabilities are unknown', () => {
     render(AgentMessage, {
       props: {
         message: paywallMessage(serverMessage),
-        paywallPresentation: { kind: 'subscribed', showUpgrade: true }
+        paywallPresentation: { kind: 'unavailable' }
       },
       global: { plugins: [i18n] }
     })
@@ -78,6 +79,35 @@ describe('AgentMessage paywall reply', () => {
       )
     ).not.toBeInTheDocument()
   })
+
+  // The server's prose is always English. Once capabilities name a
+  // presentation, that presentation's localized body is the better copy, so it
+  // wins over the part's message rather than the other way round.
+  it.for([
+    {
+      paywallPresentation: { kind: 'subscribed' as const, showUpgrade: true },
+      body: 'This workspace has spent its monthly credits and its top-up balance. Add credits to keep the agent running.'
+    },
+    {
+      paywallPresentation: { kind: 'unresolved' as const },
+      body: "You've run out of available credits."
+    }
+  ])(
+    'prefers the localized $paywallPresentation.kind body over the server denial reason',
+    ({ paywallPresentation, body }) => {
+      render(AgentMessage, {
+        props: {
+          message: paywallMessage(serverMessage),
+          paywallPresentation
+        },
+        global: { plugins: [i18n] }
+      })
+
+      const card = screen.getByRole('alert')
+      expect(within(card).getByText(body)).toBeInTheDocument()
+      expect(card).not.toHaveTextContent(serverMessage)
+    }
+  )
 
   it('exposes distinct actions for adding credits and upgrading', async () => {
     const user = userEvent.setup()

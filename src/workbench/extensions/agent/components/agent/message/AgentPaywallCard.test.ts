@@ -13,7 +13,10 @@ describe('AgentPaywallCard visual contract', () => {
     const user = userEvent.setup()
     const onPaywallAction = vi.fn()
     render(AgentPaywallCard, {
-      props: { presentation: { kind: 'subscribed', showUpgrade: true } },
+      props: {
+        presentation: { kind: 'subscribed', showUpgrade: true },
+        message: 'Add credits to continue.'
+      },
       attrs: {
         'aria-label': 'Out of credits card',
         onPaywallAction
@@ -28,6 +31,9 @@ describe('AgentPaywallCard visual contract', () => {
         'This workspace has spent its monthly credits and its top-up balance. Add credits to keep the agent running.'
       )
     ).toBeInTheDocument()
+    expect(
+      screen.queryByText('Add credits to continue.')
+    ).not.toBeInTheDocument()
 
     const upgrade = screen.getByRole('button', { name: 'Upgrade plan' })
     const addCredits = screen.getByRole('button', { name: 'Add credits' })
@@ -35,6 +41,24 @@ describe('AgentPaywallCard visual contract', () => {
     await user.click(upgrade)
     await user.click(addCredits)
     expect(onPaywallAction.mock.calls).toEqual([['upgrade'], ['addCredits']])
+  })
+
+  // The transient read. Rendering the English server prose here and replacing
+  // it on settle would re-announce this `role="alert"` with different content,
+  // so `unresolved` keeps the localized generic body throughout.
+  it('keeps localized copy while the capability read is still in flight', () => {
+    render(AgentPaywallCard, {
+      props: {
+        presentation: { kind: 'unresolved' },
+        message: 'Add credits to continue.'
+      },
+      global: { plugins: [i18n] }
+    })
+
+    const card = screen.getByRole('alert')
+    expect(card).toHaveTextContent("You've run out of available credits.")
+    expect(card).not.toHaveTextContent('Add credits to continue.')
+    expect(screen.queryByRole('button')).not.toBeInTheDocument()
   })
 
   it('announces the server denial without purchase actions when capabilities are unknown', () => {

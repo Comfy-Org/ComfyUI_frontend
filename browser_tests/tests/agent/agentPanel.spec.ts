@@ -7,6 +7,7 @@ import { TopUpCreditsDialog } from '@e2e/fixtures/components/TopUpCreditsDialog'
 import { webSocketFixture } from '@e2e/fixtures/ws'
 
 import enMessages from '@/locales/en/main.json' with { type: 'json' }
+import frMessages from '@/locales/fr/main.json' with { type: 'json' }
 import type { AgentWsEvent } from '@/workbench/extensions/agent/schemas/agentApiSchema'
 import {
   zAgentAdmissionError,
@@ -179,44 +180,65 @@ test.describe('In-App Agent panel', { tag: '@cloud' }, () => {
     await expect(panel.getByText('Resize image node')).toBeVisible()
   })
 
-  test('shows an admission paywall without losing the rejected prompt', async ({
-    agentPanel,
-    comfyPage
-  }) => {
-    const page = comfyPage.page
-    const panel = agentPanel.root
-    const composer = panel.getByRole('textbox', { name: /^Describe ideas/ })
-    const prompt = 'Build a product photo workflow'
+  // Seeded before the first page load rather than switched mid-test. Setting
+  // `Comfy.Locale` on a live page fires the locale watcher in GraphCanvas.vue,
+  // which runs `Comfy.RefreshNodeDefinitions` and then
+  // `reloadCurrentWorkflow()`; `setSetting` only awaits a frame, so that reload
+  // races the send below and can clear the workflow just selected.
+  test.describe('localized', () => {
+    test.use({ initialSettings: { 'Comfy.Locale': 'fr' } })
 
-    await test.step('reject the next turn with a no-funds admission error', async () => {
-      // Scoped to POST so the fixture's GET handler for the same URL still
-      // serves the thread's message history.
-      await page.route('**/api/agent/threads/*/messages', async (route) => {
-        if (route.request().method() !== 'POST') return route.fallback()
-        await route.fulfill({
-          status: 402,
-          contentType: 'application/json',
-          body: JSON.stringify(NO_FUNDS_ERROR)
+    test('localizes an admission paywall without losing the rejected prompt', async ({
+      agentPanel,
+      comfyPage
+    }) => {
+      const page = comfyPage.page
+      const panel = agentPanel.root
+      const composer = panel.getByRole('textbox', {
+        name: /^Décrivez vos idées/
+      })
+      const prompt = 'Build a product photo workflow'
+
+      await test.step('reject the next turn with a no-funds admission error', async () => {
+        // Scoped to POST so the fixture's GET handler for the same URL still
+        // serves the thread's message history.
+        await page.route('**/api/agent/threads/*/messages', async (route) => {
+          if (route.request().method() !== 'POST') return route.fallback()
+          await route.fulfill({
+            status: 402,
+            contentType: 'application/json',
+            body: JSON.stringify(NO_FUNDS_ERROR)
+          })
         })
       })
-    })
 
-    await test.step('open the agent panel on a workflow', async () => {
-      await agentPanel.open()
-      await agentPanel.selectWorkflow()
-    })
+      await test.step('open the agent panel on a workflow', async () => {
+        await agentPanel.open()
+        await agentPanel.selectWorkflow()
+      })
 
-    await test.step('send a prompt the server will reject', async () => {
-      await composer.fill(prompt)
-      await panel.getByRole('button', { name: 'Send' }).click()
-    })
+      await test.step('send a prompt the server will reject', async () => {
+        await composer.fill(prompt)
+        await panel.getByRole('button', { name: frMessages.agent.send }).click()
+      })
 
-    await test.step('keep the rejected prompt and surface the paywall', async () => {
-      await expect(panel.getByTestId('user-message-bubble')).toHaveText(prompt)
-      await expect(composer).toHaveText(prompt)
-      const paywall = panel.getByRole('alert')
-      await expect(paywall).toContainText(enMessages.agent.paywall.title)
-      await expect(paywall).toContainText('Add credits to continue.')
+      await test.step('keep the rejected prompt and surface the paywall', async () => {
+        await expect(panel.getByTestId('user-message-bubble')).toHaveText(
+          prompt
+        )
+        await expect(composer).toHaveText(prompt)
+        const paywall = panel.getByRole('alert')
+        await expect(paywall).toContainText(frMessages.agent.paywall.title)
+        await expect(paywall).toContainText(
+          frMessages.agent.paywall.body.subscribed
+        )
+        // Steady state. That the English server literal never renders even
+        // transiently — while `/api/billing/capabilities` is in flight — is a
+        // component-level property and is pinned in
+        // `AgentPaywallCard.test.ts` ('unresolved'), which this assertion
+        // alone could not prove: it retries, so a flash would still pass.
+        await expect(paywall).not.toContainText(NO_FUNDS_ERROR.error.message)
+      })
     })
   })
 
