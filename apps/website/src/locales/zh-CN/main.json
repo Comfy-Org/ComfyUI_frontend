@@ -4328,13 +4328,11 @@
     },
     "sections": {
       "allModels": "所有模型",
-      "back": "返回所有类别",
       "count": "{n} 个模型",
       "featured": "精选",
       "otherFormats": "其他格式",
       "scrollBack": "向前滚动",
-      "scrollForward": "向后滚动",
-      "trending": "热门"
+      "scrollForward": "向后滚动"
     },
     "showMore": "显示更多模型",
     "signIn": {
@@ -4514,7 +4512,6 @@
       "appsSubtitle": "现成的工具，一个只做一件事。无需节点，无需配置。",
       "noWorkflows": "没有符合搜索和筛选条件的工作流。",
       "allWorkflows": "全部工作流",
-      "browseAllWorkflows": "浏览全部工作流",
       "searchWorkflows": "搜索工作流…",
       "showWorkflows": "显示 {n} 个工作流",
       "heading": "ComfyUI 模型",
@@ -4632,8 +4629,6 @@
       "getApiKey": "获取 API 密钥",
       "counts": "{models} 个模型 · {openWeights} 个开放权重 · {partner} 个合作伙伴模型",
       "latestLaunch": "最新发布",
-      "trendingSubtitle": "本周正在运行的模型",
-      "viewAll": "查看全部模型",
       "access": {
         "heading": "选择模型访问方式",
         "openTitle": "开放权重",
@@ -5197,11 +5192,6 @@
       "workflows": "{count} 个工作流",
       "apps": "{count} 个应用",
       "kinds": "按类型统计的结果"
-    },
-    "workflows": {
-      "popular": "热门",
-      "image": "图像",
-      "video": "视频"
     },
     "workflow": {
       "moreLikeThis": "更多类似内容",

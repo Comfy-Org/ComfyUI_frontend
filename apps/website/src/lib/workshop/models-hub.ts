@@ -2,6 +2,8 @@ import type { WorkshopModel } from '@/config/models-catalogue'
 import { sortWorkshopModels } from '@/config/models-catalogue'
 import type { OpenWeightModel } from './explorer/open-weight-models'
 
+export const MODELS_CATALOGUE_ID = 'models-catalogue'
+
 interface PartnerRelease {
   readonly slug: string
   /** ISO date of the vendor's own release announcement. */

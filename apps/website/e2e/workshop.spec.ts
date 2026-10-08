@@ -1,8 +1,24 @@
 import { readFileSync } from 'node:fs'
 import { expect } from '@playwright/test'
+import type { Page } from '@playwright/test'
 
 import { MODEL_PATH, test } from './fixtures/modelsAccount'
 import { waitForIsland } from './fixtures/islands'
+
+function catalogueHeading(page: Page) {
+  return page.locator('#models-catalogue')
+}
+
+async function catalogueCount(page: Page) {
+  const heading = catalogueHeading(page)
+  await expect(heading).toHaveText(/\d+\s*$/)
+  return Number((await heading.innerText()).match(/(\d+)\s*$/)?.[1])
+}
+
+async function showEveryPage(page: Page) {
+  const more = page.getByTestId('catalogue-show-more')
+  while (await more.isVisible()) await more.click()
+}
 
 test.describe('Retired prototype routes', () => {
   test.beforeEach(async ({ page }) => {
@@ -13,11 +29,11 @@ test.describe('Retired prototype routes', () => {
 
   test('ignores old stored and query layout overrides', async ({ page }) => {
     await page.goto('/hub/models/?version=v2')
-    await expect(page.getByTestId('workshop-sections')).toBeVisible()
+    await expect(page.getByTestId('workshop-models-grid')).toBeVisible()
     await expect(page.getByTestId('workshop-hub')).toHaveCount(0)
     await expect(page.getByTestId('workshop-tabs')).toHaveCount(0)
     await page.reload()
-    await expect(page.getByTestId('workshop-sections')).toBeVisible()
+    await expect(page.getByTestId('workshop-models-grid')).toBeVisible()
   })
 
   test('does not serve retired workflow or Workshop pages', async ({
@@ -28,7 +44,7 @@ test.describe('Retired prototype routes', () => {
     await expect(page.getByTestId('model-detail')).toHaveCount(0)
     const workshop = await page.goto('/workshop/')
     expect(workshop?.status()).toBe(404)
-    await expect(page.getByTestId('workshop-sections')).toHaveCount(0)
+    await expect(page.getByTestId('workshop-models-grid')).toHaveCount(0)
   })
 })
 
@@ -94,7 +110,7 @@ test.describe('Models catalog', () => {
     await expect(page).toHaveURL(new URL(href, page.url()).href)
   })
 
-  test('runs a model from the hero by narrowing to the ones that run here', async ({
+  test('runs a model from the hero by scrolling to the catalogue on the same page', async ({
     page
   }) => {
     await page.goto('/hub/models/')
@@ -103,15 +119,17 @@ test.describe('Models catalog', () => {
       .getByRole('link', { name: 'Run a model' })
       .click()
 
-    await expect(page).toHaveURL(/\/hub\/models\/\?use=run$/)
-    await expect(page.getByTestId('models-hub-hero')).toHaveCount(0)
-    await expect(page.getByTestId('workshop-filter-count')).toHaveText('1')
-    const cards = page
-      .getByTestId('workshop-models-grid')
-      .getByTestId('workshop-model-card')
-    await expect(cards.first()).toBeVisible()
-    for (const card of (await cards.all()).slice(0, 8))
-      await expect(card.getByTestId('model-access-badges')).toContainText('Run')
+    await expect(page).toHaveURL(/\/hub\/models\/#models-catalogue$/)
+    await expect(catalogueHeading(page)).toBeInViewport()
+    await expect(catalogueHeading(page)).toHaveText(/^All models \d+$/)
+    await expect(page.getByTestId('models-hub-hero')).toHaveCount(1)
+    await expect(page.getByTestId('workshop-filter-count')).toHaveCount(0)
+    await expect(
+      page
+        .getByTestId('workshop-models-grid')
+        .getByTestId('workshop-model-card')
+        .first()
+    ).toBeVisible()
   })
 
   test('opens open weights and the Wan family from the default view', async ({
@@ -253,7 +271,7 @@ test.describe('Models catalog', () => {
     page
   }) => {
     await page.goto('/hub/models/')
-    await expect(page.getByTestId('workshop-sections')).toBeVisible()
+    await expect(catalogueHeading(page)).toHaveText(/^All models \d+$/)
     const cards = page
       .getByTestId('workshop-models-grid')
       .getByTestId('workshop-model-card')
@@ -271,41 +289,38 @@ test.describe('Models catalog', () => {
     await page
       .getByRole('button', { name: 'Clear filters', exact: true })
       .click()
-    await expect(page.getByTestId('workshop-sections')).toBeVisible()
+    await expect(catalogueHeading(page)).toHaveText(/^All models \d+$/)
   })
 
-  test('the Hub models listing leads with Trending, then the ways in', async ({
+  test('the Hub models listing opens on the whole catalogue in pages, then the ways in', async ({
     page
   }) => {
     await page.goto('/hub/models/')
-    const sections = page.getByTestId('workshop-sections')
-    await expect(sections).toBeVisible()
-    await expect(sections.getByRole('heading', { level: 2 })).toHaveText([
-      'Trending',
+    await expect(page.getByTestId('section-trending')).toHaveCount(0)
+    await expect(page.getByTestId('section-back')).toHaveCount(0)
+    const promisedCount = await catalogueCount(page)
+    expect(promisedCount).toBeGreaterThan(12)
+    const cards = page
+      .getByTestId('workshop-models-grid')
+      .getByTestId('workshop-model-card')
+    await expect(cards).toHaveCount(12)
+
+    await page.getByTestId('catalogue-show-more').click()
+    await expect(cards).toHaveCount(Math.min(24, promisedCount))
+    await showEveryPage(page)
+    await expect(cards).toHaveCount(promisedCount)
+
+    const more = page.getByTestId('models-hub-more')
+    await expect(more.getByRole('heading', { level: 2 })).toHaveText([
       'Choose how you access models',
       'Explore model families'
     ])
-    const trending = page.getByTestId('section-trending')
-    await expect(trending).toContainText('What is running this week')
-    await expect(trending.getByTestId('workshop-model-card')).toHaveCount(8)
-
-    await trending.getByRole('button', { name: 'View all models' }).click()
-    await expect(sections).toHaveCount(0)
-    const heading = page.getByRole('heading', {
-      level: 2,
-      name: /^All models \d+$/
-    })
-    const promisedCount = Number(
-      (await heading.innerText()).match(/(\d+)\s*$/)?.[1]
-    )
-    expect(promisedCount).toBeGreaterThan(8)
-    await expect(
-      page
-        .getByTestId('workshop-models-grid')
-        .getByTestId('workshop-model-card')
-    ).toHaveCount(promisedCount)
-    await page.getByTestId('section-back').click()
-    await expect(sections).toBeVisible()
+    const [gridBox, moreBox] = await Promise.all([
+      page.getByTestId('workshop-models-grid').boundingBox(),
+      more.boundingBox()
+    ])
+    if (!gridBox || !moreBox) throw new Error('the page did not lay out')
+    expect(moreBox.y).toBeGreaterThan(gridBox.y + gridBox.height)
   })
 
   test('every model by provider waits behind a closed disclosure', async ({
@@ -321,30 +336,6 @@ test.describe('Models catalog', () => {
     await expect(firstLink).toBeVisible()
   })
 
-  test('the rows listing opens the whole catalogue', async ({ page }) => {
-    await page.goto('/hub/models/')
-    await page.getByTestId('section-trending-see-all').click()
-
-    await expect(page.getByTestId('workshop-sections')).toHaveCount(0)
-    const heading = page.getByRole('heading', {
-      level: 2,
-      name: /^All models \d+$/
-    })
-    await expect(heading).toBeVisible()
-    const promisedCount = Number(
-      (await heading.innerText()).match(/(\d+)\s*$/)?.[1]
-    )
-    expect(promisedCount).toBeGreaterThan(0)
-    await expect(
-      page
-        .getByTestId('workshop-models-grid')
-        .getByTestId('workshop-model-card')
-    ).toHaveCount(promisedCount)
-
-    await page.getByTestId('section-back').click()
-    await expect(page.getByTestId('workshop-sections')).toBeVisible()
-  })
-
   test('an opened shelf reads as a chosen filter', async ({ page }) => {
     await page.goto('/hub/models/?useCase=generate-videos')
     await expect(
@@ -356,7 +347,7 @@ test.describe('Models catalog', () => {
       '1 selected'
     )
     await page.getByTestId('workshop-filter-clear').click()
-    await expect(page.getByTestId('workshop-sections')).toBeVisible()
+    await expect(catalogueHeading(page)).toHaveText(/^All models \d+$/)
   })
 
   test('a model page returns to the shelf it was opened from', async ({
@@ -386,7 +377,7 @@ test.describe('Models catalog', () => {
     await expect(
       page.getByRole('heading', { level: 2, name: 'Generate videos' })
     ).toBeVisible()
-    await expect(page.getByTestId('workshop-sections')).toHaveCount(0)
+    await expect(page.getByTestId('workshop-filter-count')).toHaveText('1')
   })
 
   test('a model page returns to the category tab it was opened from', async ({
@@ -447,7 +438,7 @@ test.describe('Models catalog', () => {
     page
   }) => {
     await page.goto('/hub/models/')
-    await expect(page.getByTestId('workshop-sections')).toBeVisible()
+    await expect(page.getByTestId('workshop-models-grid')).toBeVisible()
     await page.evaluate(() => window.scrollTo(0, 700))
     const search = page.getByTestId('workshop-search')
 
@@ -463,7 +454,7 @@ test.describe('Models catalog', () => {
     const searching = await search.boundingBox()
 
     await search.fill('')
-    await expect(page.getByTestId('workshop-sections')).toBeVisible()
+    await expect(catalogueHeading(page)).toHaveText(/^All models \d+$/)
     if (!searching)
       throw new Error('the search field was never on screen to measure')
     await expect
@@ -541,11 +532,7 @@ test.describe('Models catalog', () => {
 
   test('the use-case filter actually narrows the catalog', async ({ page }) => {
     await page.goto('/hub/models/')
-    await page.getByTestId('section-trending-see-all').click()
-    const all = await page
-      .getByTestId('workshop-models-grid')
-      .getByTestId('workshop-model-card')
-      .count()
+    const all = await catalogueCount(page)
     expect(all).toBeGreaterThan(0)
     await page.getByTestId('workshop-filter').click()
     await page.getByTestId('filter-useCase-edit-images').click()
@@ -553,7 +540,17 @@ test.describe('Models catalog', () => {
       .getByTestId('workshop-models-grid')
       .getByTestId('workshop-model-card')
     await expect(cards.first()).toBeVisible()
-    expect(await cards.count()).toBeLessThan(all)
+    await expect(catalogueHeading(page)).toHaveText(/^Edit images \d+$/)
+    const narrowed = await catalogueCount(page)
+    expect(narrowed).toBeLessThan(all)
+    await expect(page.getByTestId('workshop-filter-applied')).toHaveText(
+      '1 selected'
+    )
+    await expect(page.getByTestId('workshop-filter-count')).toHaveText('1')
+
+    await page.keyboard.press('Escape')
+    await showEveryPage(page)
+    await expect(cards).toHaveCount(narrowed)
     await expect(
       page.locator(
         '[data-testid="workshop-model-card"][href="/hub/models/nano-banana-2-image-edit/"]'
@@ -564,12 +561,11 @@ test.describe('Models catalog', () => {
         '[data-testid="workshop-model-card"][href="/hub/models/flux-2-max-text-to-image/"]'
       )
     ).toHaveCount(0)
-    await expect(page.getByTestId('workshop-filter-applied')).toHaveText(
-      '1 selected'
-    )
-    await expect(page.getByTestId('workshop-filter-count')).toHaveText('1')
+
+    await page.getByTestId('workshop-filter').click()
     await page.getByTestId('workshop-filter-clear').click()
-    await expect(cards).toHaveCount(all)
+    await expect(catalogueHeading(page)).toHaveText(`All models ${all}`)
+    await expect(cards).toHaveCount(Math.min(12, all))
   })
 
   test('hosted model cards say they run here and by API', async ({ page }) => {
@@ -583,7 +579,6 @@ test.describe('Models catalog', () => {
 
   test('compares two hosted models side by side', async ({ page }) => {
     await page.goto('/hub/models/')
-    await page.getByTestId('section-trending-see-all').click()
     const toggles = page.getByRole('checkbox', { name: /^Compare / })
     await toggles.nth(0).check()
     await toggles.nth(1).check()
@@ -608,7 +603,7 @@ test.describe('Models catalog', () => {
     page
   }) => {
     await page.goto('/hub/models/')
-    await expect(page.getByTestId('workshop-sections')).toBeVisible()
+    await expect(page.getByTestId('workshop-models-grid')).toBeVisible()
     await page.getByTestId('workshop-filter').click()
     await page.getByTestId('workshop-facet-access').click()
     await page.getByTestId('filter-access-download').click()

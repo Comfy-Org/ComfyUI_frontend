@@ -179,25 +179,16 @@ for (const width of [1440, 390]) {
   })
 }
 
-// A use case is a category on models, and a category hides the hub link behind
-// its own way back, so the way to the Hub starts by leaving the category.
-async function leaveCategory(page: Page) {
-  await page.getByTestId('section-back').click()
-  await expect(page.getByTestId('section-back')).toHaveCount(0)
-}
-
-for (const { section, query, filter, reachHubLink } of [
+for (const { section, query, filter } of [
   {
     section: 'models' as const,
     query: 'kling',
-    filter: 'useCase=generate-images',
-    reachHubLink: leaveCategory
+    filter: 'useCase=generate-images'
   },
   {
     section: 'workflows' as const,
     query: 'material',
-    filter: 'category=product',
-    reachHubLink: async () => {}
+    filter: 'category=product'
   }
 ]) {
   test(`leaving filtered ${section} through the Hub does not carry its filters back`, async ({
@@ -210,7 +201,6 @@ for (const { section, query, filter, reachHubLink } of [
     await expect(search).toHaveValue(query)
     await expect(count).toHaveText('1')
 
-    await reachHubLink(page)
     await page.getByTestId('hub-back').click()
     await expectAt(page, 'explore')
     await page.getByTestId(`explore-door-${section}`).click()
@@ -413,11 +403,14 @@ for (const { section, openCategory } of [
     await expectSearchFillsRow(page)
 
     await openCategory(page)
-    await expect(page.getByTestId('section-back')).toBeVisible()
+    await expect(page.getByTestId('workshop-filter-count')).toHaveText('1')
+    await expect(page.getByTestId('section-back')).toHaveCount(0)
     await expectSearchFillsRow(page)
 
-    await page.getByTestId('section-back').click()
-    await expect(page.getByTestId('section-back')).toHaveCount(0)
+    await page.getByTestId('workshop-filter').click()
+    await page.getByTestId('workshop-filter-clear').click()
+    await page.keyboard.press('Escape')
+    await expect(page.getByTestId('workshop-filter-count')).toHaveCount(0)
     await expectSearchFillsRow(page)
   })
 }

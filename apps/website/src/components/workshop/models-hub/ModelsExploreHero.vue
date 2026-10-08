@@ -7,9 +7,13 @@ import type { WorkshopModel } from '@/config/models-catalogue'
 import { apiKeysLink, getRoutes } from '@/config/routes'
 import type { Locale } from '@/i18n/translations'
 import { translationsFor } from '@/i18n/translations'
-import { ACCESS_PARAM, runsHere } from '@/lib/workshop/explorer/model-access'
+import { runsHere } from '@/lib/workshop/explorer/model-access'
 import { OPEN_WEIGHT_MODELS } from '@/lib/workshop/explorer/open-weight-models'
-import { latestLaunch, modelsHubCounts } from '@/lib/workshop/models-hub'
+import {
+  latestLaunch,
+  MODELS_CATALOGUE_ID,
+  modelsHubCounts
+} from '@/lib/workshop/models-hub'
 import HubBreadcrumb from '@/components/workshop/HubBreadcrumb.vue'
 import LatestLaunchCard from './LatestLaunchCard.vue'
 
@@ -20,7 +24,7 @@ const { models, locale = 'en' } = defineProps<{
 const { t } = translationsFor(locale)
 
 const routes = getRoutes(locale)
-const runHref = `${routes.workshop}?${ACCESS_PARAM}=run`
+const runHref = `#${MODELS_CATALOGUE_ID}`
 const canRun = computed(() => models.some(runsHere))
 const counts = computed(() => modelsHubCounts(models, OPEN_WEIGHT_MODELS))
 const featured = computed(() => latestLaunch(models))

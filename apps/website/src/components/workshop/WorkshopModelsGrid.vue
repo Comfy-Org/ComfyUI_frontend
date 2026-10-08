@@ -1,5 +1,4 @@
 <script setup lang="ts">
-import { ChevronLeft } from '@lucide/vue'
 import {
   computed,
   nextTick,
@@ -29,6 +28,7 @@ import {
 import { searchWorkshopModels } from '@/config/models-search'
 import type { Locale, TranslationKey } from '@/i18n/translations'
 import { translationsFor } from '@/i18n/translations'
+import { usePagedList } from '@/composables/usePagedList'
 import { HUB_TOOLBAR_ID } from '@/scripts/hubToolbar'
 import type { ModelAccess } from '@/lib/workshop/explorer/model-access'
 import {
@@ -50,6 +50,7 @@ import { modelTabCounts } from '@/lib/workshop/explorer/model-tab-counts'
 import { useModelTab } from '@/lib/workshop/explorer/model-tab-address'
 import { rememberListOnClick } from '@/lib/workshop/shelf-memory'
 import { modelsListReturn } from '@/lib/workshop/models-list-return'
+import { MODELS_CATALOGUE_ID } from '@/lib/workshop/models-hub'
 import { openedUseCases, shelfOf } from '@/lib/workshop/shelf-use-cases'
 import { sectionTitleKeyFor } from '@/lib/workshop/section-title'
 import { useCaseLabelKey } from '@/lib/workshop/use-case-label'
@@ -63,8 +64,8 @@ import ModelTabs from '@/components/workshop/explorer/ModelTabs.vue'
 import ModelAccessSection from '@/components/workshop/models-hub/ModelAccessSection.vue'
 import ModelFamilySection from '@/components/workshop/models-hub/ModelFamilySection.vue'
 import ModelsExploreHero from '@/components/workshop/models-hub/ModelsExploreHero.vue'
+import CatalogueShowMore from './CatalogueShowMore.vue'
 import WorkshopSearchField from './WorkshopSearchField.vue'
-import WorkshopSections from './WorkshopSections.vue'
 import WorkshopSortMenu from './WorkshopSortMenu.vue'
 
 const {
@@ -91,9 +92,6 @@ const { tab, readAddress: readTab } = useModelTab(
 )
 const TAB_PANEL_ID = 'workshop-model-tab-panel'
 const openedShelf = computed(() => shelfOf(selectedUseCases.value))
-// Willie's browseable listing: rows per use case until the visitor narrows
-// down, then the flat grid takes over.
-const browseAll = defineModel<boolean>('browseAll', { default: false })
 let scrollReady = false
 
 function readAddress(search: string) {
@@ -119,7 +117,6 @@ watch(selectedAccess, (value) => {
 // catalogue the address names. The address is the truth on every show.
 function onPageShow(event: PageTransitionEvent) {
   if (!event.persisted) return
-  browseAll.value = false
   readAddress(location.search)
 }
 
@@ -127,6 +124,7 @@ onMounted(() => {
   readAddress(initialSearch ?? location.search)
   window.addEventListener('pageshow', onPageShow)
   void nextTick(() => {
+    if (isFiltered.value) heading.value?.scrollIntoView({ block: 'start' })
     scrollReady = true
   })
 })
@@ -212,40 +210,31 @@ const isFiltered = computed(
     legacyFiltered.value
 )
 
-watch(
-  [openedShelf, browseAll, () => query.value.trim() !== ''],
-  ([nextShelf, nextBrowse], [previousShelf, previousBrowse]) => {
-    if (!scrollReady) return
-    const sectionChanged =
-      nextShelf !== previousShelf || nextBrowse !== previousBrowse
-    void nextTick(() => {
-      if (sectionChanged) window.scrollTo({ top: 0 })
-      else (heading.value ?? toolbar.value)?.scrollIntoView({ block: 'start' })
-    })
-  }
+const {
+  limit: cardLimit,
+  hasMore,
+  showMore
+} = usePagedList(() => [...visible.value, ...openWeightVisible.value])
+const shownFamilies = computed(() => visible.value.slice(0, cardLimit.value))
+const shownOpenWeight = computed(() =>
+  openWeightVisible.value.slice(
+    0,
+    Math.max(0, cardLimit.value - visible.value.length)
+  )
 )
-const browsing = computed(
-  () => !isFiltered.value && !browseAll.value && sort.value === 'popular'
-)
-const inSection = computed(
-  () => selectedUseCases.value.length > 0 || browseAll.value
-)
+
+watch([openedShelf, () => query.value.trim() !== ''], () => {
+  if (!scrollReady) return
+  void nextTick(() =>
+    (heading.value ?? toolbar.value)?.scrollIntoView({ block: 'start' })
+  )
+})
 
 const sectionTitleKey = computed<TranslationKey>(() =>
-  sectionTitleKeyFor(selectedUseCases.value)
+  sectionTitleKeyFor(selectedUseCases.value, tab.value)
 )
 
-// A category names the screen it opens, so the page heading above it would say
-// the catalogue's name twice.
-const emit = defineEmits<{ section: [boolean]; hero: [boolean] }>()
-watch(inSection, (value) => emit('section', value), { immediate: true })
-watch(browsing, (value) => emit('hero', value), { immediate: true })
-
-function leaveSection() {
-  clearFilters()
-}
-
-function resetFilters() {
+function clearFilters() {
   query.value = ''
   selectedUseCases.value = []
   selectedAccess.value = []
@@ -257,11 +246,6 @@ function resetFilters() {
 
 function applyUseCases(values: UseCase[]) {
   selectedUseCases.value = values
-}
-
-function clearFilters() {
-  browseAll.value = false
-  resetFilters()
 }
 
 function rememberModel(model: WorkshopModel, event: MouseEvent) {
@@ -277,31 +261,18 @@ function rememberModel(model: WorkshopModel, event: MouseEvent) {
   )
   rememberListOnClick(list, model.href, event)
 }
-
-watch(browseAll, (on) => on && resetFilters())
 </script>
 
 <template>
   <section :class="cn('gap-10', comparedModels.length && 'pb-24')">
     <div class="min-w-0">
-      <button
-        v-if="inSection"
-        type="button"
-        class="-ml-2.5 inline-flex cursor-pointer items-center gap-1 rounded-lg px-1 text-sm font-medium text-primary-warm-gray opacity-60 transition hover:text-primary-comfy-yellow hover:opacity-100 focus-visible:opacity-100 focus-visible:ring-3 focus-visible:ring-primary-comfy-yellow/50"
-        data-testid="section-back"
-        @click="leaveSection"
-      >
-        <ChevronLeft class="size-4" aria-hidden="true" />
-        {{ t('workshop.sections.back') }}
-      </button>
-
-      <ModelsExploreHero v-if="browsing" :models :locale />
+      <ModelsExploreHero :models :locale />
 
       <!-- scroll-mt tracks the nav height; the toolbar's is lower because its py-4 absorbs the difference -->
       <h2
-        v-if="inSection"
+        :id="MODELS_CATALOGUE_ID"
         ref="heading"
-        class="mt-5 mb-4 scroll-mt-24 text-3xl font-bold text-primary-warm-white sm:text-4xl lg:scroll-mt-32"
+        class="mb-4 scroll-mt-24 text-3xl font-bold text-primary-warm-white sm:text-4xl lg:scroll-mt-32"
       >
         {{ t(sectionTitleKey) }}
         <span class="text-base font-normal text-primary-warm-gray tabular-nums">
@@ -365,41 +336,33 @@ watch(browseAll, (on) => on && resetFilters())
             :aria-labelledby="`${TAB_PANEL_ID}-${tab}`"
             class="max-lg:order-2"
           >
-            <div
-              v-if="browsing"
-              class="flex flex-col gap-14 max-sm:gap-10"
-              data-testid="workshop-sections"
-            >
-              <WorkshopSections
-                :models
-                :compared="comparedSlugs"
-                :locale
-                @browse="browseAll = true"
-                @compare="toggleCompare"
-              />
-              <ModelAccessSection :locale />
-              <ModelFamilySection :models :locale />
-            </div>
-
-            <template v-else>
+            <template v-if="resultCount">
               <WorkshopModelsResults
-                v-if="resultCount"
-                :families="visible"
-                :open-weight="openWeightVisible"
+                :families="shownFamilies"
+                :open-weight="shownOpenWeight"
                 :compared="comparedSlugs"
                 :locale
                 @open="rememberModel"
                 @compare="toggleCompare"
               />
-              <WorkshopModelsEmpty
-                v-else
-                :filtered="isFiltered"
-                :locale
-                @clear="clearFilters"
-              />
+              <CatalogueShowMore v-if="hasMore" :locale @more="showMore" />
             </template>
+            <WorkshopModelsEmpty
+              v-else
+              :filtered="isFiltered"
+              :locale
+              @clear="clearFilters"
+            />
           </div>
         </div>
+      </div>
+
+      <div
+        class="mt-20 flex flex-col gap-14 max-sm:mt-14 max-sm:gap-10"
+        data-testid="models-hub-more"
+      >
+        <ModelAccessSection :locale />
+        <ModelFamilySection :models :locale />
       </div>
     </div>
 

@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { computed, defineAsyncComponent, ref, watch } from 'vue'
+import { computed, defineAsyncComponent, watch } from 'vue'
 import { useMounted, whenever } from '@vueuse/core'
 import { cn } from '@comfyorg/tailwind-utils'
 
@@ -47,16 +47,11 @@ const {
 }>()
 const { t } = translationsFor(locale)
 
-const inSection = ref(false)
-// A category replaces the page's own heading and the switch between
-// catalogues, so the state has to reach the page that renders them.
-const emit = defineEmits<{ section: [boolean]; hero: [boolean] }>()
-watch(inSection, (value) => emit('section', value), { immediate: true })
-// The Models hero carries its own title and subtitle while nothing narrows
-// the catalogue, so the page's plain heading steps aside for it.
-const heroShown = ref(false)
+// The Models hero carries its own title and subtitle, so the page's plain
+// heading steps aside for it.
+const emit = defineEmits<{ hero: [boolean] }>()
+const heroShown = computed(() => section === 'models')
 watch(heroShown, (value) => emit('hero', value), { immediate: true })
-const browseAll = ref(false)
 const mounted = useMounted()
 const enabled = useWorkshopEnabled()
 const appsEnabled = useWorkshopAppsEnabled()
@@ -136,7 +131,7 @@ whenever(
 
 <template>
   <div
-    v-if="!inSection && !heroShown"
+    v-if="!heroShown"
     class="relative isolate -mx-6 mb-6 flex flex-wrap items-center justify-between gap-x-6 gap-y-4 overflow-hidden px-6 pb-2 max-sm:mb-4 max-sm:pb-0 lg:-mx-8 lg:px-8 sm:short:pb-0"
     data-testid="workshop-hero"
   >
@@ -166,27 +161,20 @@ whenever(
   </div>
   <WorkshopModelsGrid
     v-else-if="section === 'models'"
-    v-model:browse-all="browseAll"
     :models="routerModels"
     :initial-search
     :locale
-    @section="inSection = $event"
-    @hero="heroShown = $event"
   />
   <WorkflowCatalogue
     v-else-if="section === 'workflows'"
-    v-model:browse-all="browseAll"
     :models="workflows"
     :initial-search
     :locale
-    @section="inSection = $event"
   />
   <AppCatalogue
     v-else
-    v-model:browse-all="browseAll"
     :apps="appCards"
     :upcoming="upcomingApps(locale)"
     :locale
-    @section="inSection = $event"
   />
 </template>

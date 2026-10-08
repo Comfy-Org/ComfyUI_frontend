@@ -185,9 +185,7 @@
     },
     "sections": {
       "featured": "Featured",
-      "trending": "Trending",
       "otherFormats": "Other formats",
-      "back": "Back to all categories",
       "allModels": "All models",
       "scrollBack": "Scroll back",
       "scrollForward": "Scroll forward",
@@ -670,7 +668,6 @@
       "appsSubtitle": "Ready-made tools, one job each. No nodes, no setup.",
       "noWorkflows": "No workflows match your search and filters.",
       "allWorkflows": "All workflows",
-      "browseAllWorkflows": "Browse all workflows",
       "searchWorkflows": "Search workflows…",
       "showWorkflows": "Show {n} workflows",
       "heading": "ComfyUI models",
@@ -788,8 +785,6 @@
       "getApiKey": "Get an API key",
       "counts": "{models} models · {openWeights} open weights · {partner} partner models",
       "latestLaunch": "Latest launch",
-      "trendingSubtitle": "What is running this week",
-      "viewAll": "View all models",
       "access": {
         "heading": "Choose how you access models",
         "openTitle": "Open weights",
@@ -5804,11 +5799,6 @@
       "workflows": "{count} workflow | {count} workflows",
       "apps": "{count} app | {count} apps",
       "kinds": "Results by kind"
-    },
-    "workflows": {
-      "popular": "Popular",
-      "image": "Image",
-      "video": "Video"
     },
     "workflow": {
       "moreLikeThis": "More like this",

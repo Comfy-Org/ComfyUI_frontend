@@ -166,10 +166,9 @@ describe('ModelsCatalogue', () => {
     })
     expect(screen.queryByText('Image model')).toBeNull()
     expect(
-      await screen.findByRole('heading', { level: 2, name: 'Popular' })
-    ).toBeVisible()
-    expect(
-      screen.getByRole('heading', { level: 2, name: 'Image' })
+      within(await screen.findByTestId('workflow-grid')).getByRole('link', {
+        name: /Remove an image background/
+      })
     ).toBeVisible()
     expect(screen.queryByText(/See all/)).toBeNull()
 
@@ -535,23 +534,22 @@ describe('ModelsCatalogue', () => {
     )
   })
 
-  it('lists the workflows in rows with no section to open', async () => {
+  it('lists the workflows in one grid with no rows to open', async () => {
     render(ModelsCatalogue, {
       props: { models: launchModels, section: 'workflows' }
     })
-    await screen.findByRole('heading', { level: 2, name: 'Popular' })
+    await screen.findByTestId('workflow-grid')
+    expect(screen.queryByRole('heading', { level: 2 })).toBeNull()
     expect(screen.queryByTestId('browse-all-end')).toBeNull()
     expect(screen.getByTestId('workshop-hero')).toBeVisible()
   })
 
-  it('keeps all models limited to models when workflows are available', async () => {
-    const user = userEvent.setup()
+  it('keeps all models limited to models when workflows are available', () => {
     render(ModelsCatalogue, { props: { models: launchModels } })
-    await user.click(screen.getByTestId('section-trending-see-all'))
     expect(
       screen.getByRole('heading', { level: 2, name: /^All models \d+$/ })
     ).toBeVisible()
-    expect(screen.queryByRole('heading', { level: 1 })).toBeNull()
+    expect(screen.getAllByRole('heading', { level: 1 })).toHaveLength(1)
     expect(screen.getByRole('link', { name: /Image model/ })).toBeVisible()
     expect(screen.queryByRole('link', { name: /Change a material/ })).toBeNull()
     expect(
@@ -602,32 +600,17 @@ describe('ModelsCatalogue', () => {
       render(ModelsCatalogue, { props: { models: [] } })
       expect(screen.getByTestId('models-hub-hero')).toBeTruthy()
       expect(screen.queryByTestId('workshop-hub')).toBeNull()
-      expect(screen.getByTestId('workshop-sections')).toBeTruthy()
+      expect(screen.getByTestId('workshop-toolbar')).toBeTruthy()
     }
   )
 
-  it('gives the hero away to the section the reader opened', async () => {
+  it('keeps the hero over the models while a filter or a search narrows them', async () => {
     const user = userEvent.setup()
     const { emitted } = render(ModelsCatalogue, {
       props: { models: launchModels }
     })
     expect(screen.getByTestId('models-hub-hero')).toBeTruthy()
-    expect(emitted().hero.at(-1)).toEqual([true])
-
-    // Inside a section the page is about that section, and the heading over it
-    // belongs to the whole catalogue.
-    await user.click(screen.getByTestId('section-trending-see-all'))
-
-    expect(screen.queryByTestId('models-hub-hero')).toBeNull()
-    expect(screen.queryByTestId('workshop-hero')).toBeNull()
-    expect(emitted().hero.at(-1)).toEqual([false])
-  })
-
-  it('brings back the plain heading and subtitle while a search narrows the models', async () => {
-    const user = userEvent.setup()
-    const { emitted } = render(ModelsCatalogue, {
-      props: { models: launchModels }
-    })
+    expect(emitted().hero).toEqual([[true]])
 
     const field = screen.getByRole('searchbox', {
       name: 'Search models, providers, and categories'
@@ -635,12 +618,18 @@ describe('ModelsCatalogue', () => {
     await waitFor(() => expect(field).not.toHaveProperty('disabled', true))
     await user.type(field, 'image')
 
-    await waitFor(() =>
-      expect(screen.queryByTestId('models-hub-hero')).toBeNull()
-    )
-    expect(screen.getByTestId('workshop-hero')).toHaveTextContent(
-      'Run many of them right here'
-    )
-    expect(emitted().hero.at(-1)).toEqual([false])
+    expect(screen.getByTestId('models-hub-hero')).toBeTruthy()
+    expect(screen.queryByTestId('workshop-hero')).toBeNull()
+    expect(emitted().hero).toEqual([[true]])
   })
+
+  it.for(['workflows', 'apps'] as const)(
+    'leaves the plain heading to the %s page',
+    (section) => {
+      const { emitted } = render(ModelsCatalogue, {
+        props: { models: launchModels, section }
+      })
+      expect(emitted().hero).toEqual([[false]])
+    }
+  )
 })

@@ -1,3 +1,4 @@
+import userEvent from '@testing-library/user-event'
 import { render, screen, within } from '@testing-library/vue'
 import { describe, expect, it } from 'vitest'
 
@@ -28,6 +29,23 @@ describe('AppCatalogue', () => {
         .map((card) => card.dataset.soon ?? 'open')
     ).toEqual([...Array(2).fill('open'), ...Array(9).fill('true')])
     expect(screen.queryByRole('button')).toBeNull()
+  })
+
+  it('shows twelve apps at a time, coming-soon ones last', async () => {
+    const user = userEvent.setup()
+    render(AppCatalogue, {
+      props: { apps: appsOf(10, 'open'), upcoming: appsOf(6, 'soon') }
+    })
+    const cards = () =>
+      within(screen.getByRole('list', { name: 'Apps' })).getAllByTestId(
+        'workshop-app-card'
+      )
+    expect(cards()).toHaveLength(12)
+    expect(cards().at(-1)?.dataset.soon).toBe('true')
+
+    await user.click(screen.getByRole('button', { name: 'Load more' }))
+    expect(cards()).toHaveLength(16)
+    expect(screen.queryByRole('button', { name: 'Load more' })).toBeNull()
   })
 
   it('puts no featured app ahead of the list', () => {

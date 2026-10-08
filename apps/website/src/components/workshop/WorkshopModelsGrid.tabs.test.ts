@@ -65,10 +65,22 @@ async function chooseTab(name: string) {
   await userEvent.click(screen.getByRole('tab', { name }))
 }
 
+async function showEveryPage() {
+  let more = screen.queryByRole('button', { name: 'Load more' })
+  while (more) {
+    await userEvent.click(more)
+    more = screen.queryByRole('button', { name: 'Load more' })
+  }
+}
+
+function wholeCatalogue() {
+  return screen.getByRole('heading', { level: 2, name: /^All models \d+$/ })
+}
+
 describe('WorkshopModelsGrid category tabs', () => {
   afterEach(() => history.replaceState(null, '', '/'))
 
-  it('reads before the toolbar, as the sidebar beside it, and opens on All with the browsing rows', async () => {
+  it('reads before the toolbar, as the sidebar beside it, and opens on All with the whole catalogue', async () => {
     render(WorkshopModelsGrid, { props: { models } })
     const tabs = screen.getByRole('tablist', { name: 'Model categories' })
     expect(
@@ -79,7 +91,12 @@ describe('WorkshopModelsGrid category tabs', () => {
       'aria-selected',
       'true'
     )
-    expect(await screen.findByTestId('workshop-sections')).toBeTruthy()
+    expect(wholeCatalogue()).toHaveTextContent(`${models.length}`)
+    expect(hostedNames().toSorted()).toEqual([
+      'Kling AI',
+      'Sharp Upscaler',
+      'Speech'
+    ])
     expect(screen.getByRole('tabpanel')).toHaveAccessibleName('All')
   })
 
@@ -131,8 +148,8 @@ describe('WorkshopModelsGrid category tabs', () => {
     async ({ tab, hosted, openWeight }) => {
       render(WorkshopModelsGrid, { props: { models } })
       await chooseTab(tab)
+      await showEveryPage()
 
-      expect(screen.queryByTestId('workshop-sections')).toBeNull()
       expect(hostedNames().toSorted()).toEqual(hosted)
       expect(openWeightHrefs()).toEqual(openWeight)
     }
@@ -146,7 +163,7 @@ describe('WorkshopModelsGrid category tabs', () => {
 
     await chooseTab('All')
     expect(location.search).toBe('')
-    expect(screen.getByTestId('workshop-sections')).toBeTruthy()
+    expect(wholeCatalogue()).toBeTruthy()
   })
 
   it('opens on the tab the address names', async () => {
@@ -205,7 +222,7 @@ describe('WorkshopModelsGrid category tabs', () => {
       )
     )
     expect(location.search).toBe('')
-    expect(screen.getByTestId('workshop-sections')).toBeTruthy()
+    expect(wholeCatalogue()).toBeTruthy()
   })
 
   it('goes back to All when the filters are cleared', async () => {

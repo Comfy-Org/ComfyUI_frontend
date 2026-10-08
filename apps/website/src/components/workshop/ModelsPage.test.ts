@@ -479,7 +479,7 @@ describe('Models page entry', () => {
     )
   })
 
-  it('gives the page heading to the hero, then to a category, and takes it back', async () => {
+  it('gives the page heading to the hero and leaves it there as the catalogue narrows', async () => {
     const user = userEvent.setup()
     vi.stubGlobal(
       'fetch',
@@ -500,16 +500,10 @@ describe('Models page entry', () => {
       /^Models$/
     )
 
-    await user.click(screen.getByTestId('section-trending-see-all'))
-    expect(headingWrapper()).toHaveClass('sr-only')
-    // Hidden, not removed: the page still owns the only h1.
-    expect(
-      screen.getByRole('heading', { level: 1, name: 'Models heading' })
-    ).toBeInTheDocument()
-
-    await user.click(screen.getByTestId('section-back'))
+    await user.type(screen.getByTestId('workshop-search'), 'image')
     expect(headingWrapper()).toBeNull()
     expect(screen.getAllByRole('heading', { level: 1 })).toHaveLength(1)
+    expect(screen.queryByTestId('section-back')).toBeNull()
   })
 
   it('switches the loaded catalogue and heading without fetching its data again', async () => {

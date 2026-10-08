@@ -11,9 +11,10 @@ import { sortWorkshopModels } from '@/config/models-catalogue'
 import { searchWorkshopModels } from '@/config/models-search'
 import type { Locale } from '@/i18n/translations'
 import { translationsFor } from '@/i18n/translations'
+import { usePagedList } from '@/composables/usePagedList'
 import { HUB_TOOLBAR_ID } from '@/scripts/hubToolbar'
-import CardRow from './CardRow.vue'
-import { CARD_GRID, SHELF_CARD } from '@/lib/workshop/card-layout'
+import { CARD_GRID } from '@/lib/workshop/card-layout'
+import CatalogueShowMore from './CatalogueShowMore.vue'
 import type { FilterChip } from './WorkshopFilterChips.vue'
 import WorkshopFilterChips from './WorkshopFilterChips.vue'
 import WorkshopFilterMenu from './WorkshopFilterMenu.vue'
@@ -31,10 +32,6 @@ const {
   locale?: Locale
 }>()
 const { t } = translationsFor(locale)
-
-// The catalogue page binds a browse-all section for every listing; this one
-// lists its rows and its search results with no section of its own to open.
-defineOptions({ inheritAttrs: false })
 
 const query = ref('')
 const selected = ref<string[]>([])
@@ -116,45 +113,7 @@ const visible = computed(() => {
     ? matching
     : sortWorkshopModels(matching, sort.value)
 })
-const browsing = computed(
-  () => !query.value.trim() && !selected.value.length && !runsOn.value.length
-)
-const POPULAR_LIMIT = 6
-const recommended = (a: WorkflowWorkshopModel, b: WorkflowWorkshopModel) =>
-  (a.recommendedRank ?? Infinity) - (b.recommendedRank ?? Infinity) ||
-  (a.categoryOrder ?? Infinity) - (b.categoryOrder ?? Infinity)
-const ordered = computed(() =>
-  sort.value === 'name'
-    ? sortWorkshopModels(models, 'name')
-    : [...models].sort(recommended)
-)
-// Each category's highlight leads, then the rest in recommended order.
-const popular = computed(() =>
-  sort.value === 'name'
-    ? ordered.value
-    : [...ordered.value].sort(
-        (a, b) => Number(!a.categoryHighlight) - Number(!b.categoryHighlight)
-      )
-)
-const shelves = computed(() =>
-  [
-    {
-      id: 'popular',
-      label: t('hubPages.workflows.popular'),
-      models: popular.value.slice(0, POPULAR_LIMIT)
-    },
-    {
-      id: 'image',
-      label: t('hubPages.workflows.image'),
-      models: ordered.value.filter((model) => model.modality === 'image')
-    },
-    {
-      id: 'video',
-      label: t('hubPages.workflows.video'),
-      models: ordered.value.filter((model) => model.modality === 'video')
-    }
-  ].filter((shelf) => shelf.models.length)
-)
+const { shown, hasMore, showMore } = usePagedList(visible)
 
 // What narrowed the list stays legible next to it, so a reader can take one
 // choice off without reopening the menu that made it.
@@ -233,43 +192,18 @@ function clear() {
       @emptied="filterMenu?.focus()"
     />
 
-    <div v-if="browsing" class="flex flex-col gap-14">
-      <section
-        v-for="shelf in shelves"
-        :key="shelf.id"
-        :aria-labelledby="`workflow-shelf-${shelf.id}`"
-        :data-testid="`workflow-shelf-${shelf.id}`"
+    <template v-if="visible.length">
+      <ul
+        :class="CARD_GRID"
+        :aria-label="t('workshop.hub.workflows')"
+        data-testid="workflow-grid"
       >
-        <CardRow :locale>
-          <template #heading>
-            <h2
-              :id="`workflow-shelf-${shelf.id}`"
-              class="text-xl font-medium text-primary-warm-white"
-            >
-              {{ shelf.label }}
-            </h2>
-          </template>
-          <li
-            v-for="model in shelf.models"
-            :key="model.slug"
-            :class="SHELF_CARD"
-          >
-            <WorkshopModelCard :model :locale />
-          </li>
-        </CardRow>
-      </section>
-    </div>
-
-    <ul
-      v-else-if="visible.length"
-      :class="CARD_GRID"
-      :aria-label="t('workshop.hub.workflows')"
-      data-testid="workflow-search-results"
-    >
-      <li v-for="model in visible" :key="model.slug">
-        <WorkshopModelCard :model :locale />
-      </li>
-    </ul>
+        <li v-for="model in shown" :key="model.slug">
+          <WorkshopModelCard :model :locale />
+        </li>
+      </ul>
+      <CatalogueShowMore v-if="hasMore" :locale @more="showMore" />
+    </template>
     <div
       v-else
       class="flex flex-col items-center gap-3 rounded-2xl border border-dashed border-transparency-white-t8 px-6 py-16 text-center"

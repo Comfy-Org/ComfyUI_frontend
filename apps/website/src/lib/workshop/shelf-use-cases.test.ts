@@ -42,4 +42,12 @@ describe('what a selection calls its screen', () => {
   ])('%s is titled %s', ([selected, expected]) => {
     expect(sectionTitleKeyFor(selected)).toBe(expected)
   })
+
+  it.for<[UseCase[], string]>([
+    [[], 'workshop.modelsHub.back.tab.video'],
+    [['audio'], 'workshop.useCase.audio'],
+    [['text', '3d'], 'workshop.sections.allModels']
+  ])('%s under the Video tab is titled %s', ([selected, expected]) => {
+    expect(sectionTitleKeyFor(selected, 'video')).toBe(expected)
+  })
 })

@@ -1,7 +1,11 @@
 <script setup lang="ts">
+import { computed } from 'vue'
+
+import { usePagedList } from '@/composables/usePagedList'
 import type { Locale } from '@/i18n/translations'
 import type { CatalogueApp } from '@/lib/workshop/catalogue-apps'
 import { ac, appMeta } from '@/lib/workshop/catalogue-apps'
+import CatalogueShowMore from './CatalogueShowMore.vue'
 import WorkshopAppCard from './WorkshopAppCard.vue'
 
 const {
@@ -14,9 +18,14 @@ const {
   locale?: Locale
 }>()
 
-// The catalogue page binds a browse-all section for every listing; the apps
-// list is one grid with none to open, so the binding stays off the markup.
-defineOptions({ inheritAttrs: false })
+const cards = computed(() => [
+  ...apps.map((app) => ({ app, meta: appMeta(app.key, locale) })),
+  ...upcoming.map((app) => ({
+    app: { ...app, href: undefined },
+    meta: undefined
+  }))
+])
+const { shown, hasMore, showMore } = usePagedList(cards)
 </script>
 
 <template>
@@ -26,12 +35,10 @@ defineOptions({ inheritAttrs: false })
       :aria-label="ac('apps', locale)"
       data-testid="app-grid"
     >
-      <li v-for="app in apps" :key="app.key">
-        <WorkshopAppCard :app :meta="appMeta(app.key, locale)" :locale />
-      </li>
-      <li v-for="app in upcoming" :key="app.key">
-        <WorkshopAppCard :app="{ ...app, href: undefined }" :locale />
+      <li v-for="{ app, meta } in shown" :key="app.key">
+        <WorkshopAppCard :app :meta :locale />
       </li>
     </ul>
+    <CatalogueShowMore v-if="hasMore" :locale @more="showMore" />
   </section>
 </template>

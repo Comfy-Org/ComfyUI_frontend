@@ -44,26 +44,17 @@ test('workflow launch groups lead to the existing shared form', async ({
     )
   ).toBeVisible()
   const catalogue = page.getByTestId('workflow-catalogue')
-  await expect(catalogue.getByRole('heading', { level: 2 })).toHaveText([
-    'Popular',
-    'Image',
-    'Video'
-  ])
-  await expect(
-    catalogue
-      .getByTestId('workflow-shelf-popular')
-      .getByTestId('workshop-model-card')
-  ).toHaveCount(6)
-  await expect(
-    catalogue
-      .getByTestId('workflow-shelf-image')
-      .getByTestId('workshop-model-card')
-  ).toHaveCount(16)
-  await expect(
-    catalogue
-      .getByTestId('workflow-shelf-video')
-      .getByTestId('workshop-model-card')
-  ).toHaveCount(14)
+  await expect(catalogue.getByRole('heading', { level: 2 })).toHaveCount(0)
+  const cards = catalogue
+    .getByTestId('workflow-grid')
+    .getByTestId('workshop-model-card')
+  await expect(cards).toHaveCount(12)
+  const more = catalogue.getByTestId('catalogue-show-more')
+  await more.click()
+  await expect(cards).toHaveCount(24)
+  await more.click()
+  await expect(cards).toHaveCount(30)
+  await expect(more).toHaveCount(0)
   await expect(catalogue.getByTestId('workshop-sort')).toHaveText('Recommended')
   await expect(catalogue.getByRole('button', { name: /See all/ })).toHaveCount(
     0
@@ -72,7 +63,7 @@ test('workflow launch groups lead to the existing shared form', async ({
   await expect(page.getByTestId('browse-all-end')).toHaveCount(0)
   await expect(
     catalogue
-      .getByTestId('workflow-shelf-video')
+      .getByTestId('workflow-grid')
       .getByRole('link', { name: /Create a video from references/ })
       .getByTestId('model-media-placeholder')
   ).toHaveCount(1)
@@ -124,7 +115,7 @@ test('workflow launch groups lead to the existing shared form', async ({
     page.getByRole('heading', { level: 1, name: 'Workflows' })
   ).toBeVisible()
   await expect(page.getByTestId('workshop-filter-count')).toHaveText('1')
-  const filtered = page.getByTestId('workflow-search-results')
+  const filtered = page.getByTestId('workflow-grid')
   await expect(
     filtered.getByRole('link', { name: /Change a material/ })
   ).toBeVisible()
@@ -269,9 +260,7 @@ test('workflow search and category filters share the mobile controls @mobile', a
   await page.getByRole('button', { name: 'Upscale & restore 6' }).click()
   await page.getByRole('button', { name: 'Show 6 workflows' }).click()
   await expect(
-    page
-      .getByTestId('workflow-search-results')
-      .getByTestId('workshop-model-card')
+    page.getByTestId('workflow-grid').getByTestId('workshop-model-card')
   ).toHaveCount(6)
   await page.getByTestId('workshop-search-button').click()
   await page.getByTestId('workshop-search-sheet-input').fill('SeedVR2')
@@ -280,9 +269,7 @@ test('workflow search and category filters share the mobile controls @mobile', a
   )
   await page.getByTestId('workshop-search-sheet-apply').click()
   await expect(
-    page
-      .getByTestId('workflow-search-results')
-      .getByTestId('workshop-model-card')
+    page.getByTestId('workflow-grid').getByTestId('workshop-model-card')
   ).toHaveCount(2)
   await page.getByTestId('workshop-search-button').click()
   await page.getByTestId('workshop-search-sheet-input').fill('material')
@@ -307,8 +294,6 @@ test('workflow search and category filters share the mobile controls @mobile', a
   )
 })
 
-// The outcome rows give way to a flat grid the moment a filter is on, so what
-// the model facet narrows is what the reader ends up looking at.
 test('the workflows half narrows to the model it runs on, from the menu and from a shared link', async ({
   page,
   context
@@ -319,13 +304,12 @@ test('the workflows half narrows to the model it runs on, from the menu and from
   const outcomes = page
     .getByTestId('workflow-catalogue')
     .getByTestId('workshop-model-card')
-  // Browsing, every workflow sits in its Image or Video row once.
-  const listed = page
-    .locator(
-      '[data-testid="workflow-shelf-image"], [data-testid="workflow-shelf-video"]'
-    )
-    .getByTestId('workshop-model-card')
-  await expect(listed).toHaveCount(30)
+  const more = page.getByTestId('catalogue-show-more')
+  await expect(outcomes).toHaveCount(12)
+  await more.click()
+  await more.click()
+  await expect(outcomes).toHaveCount(30)
+  await expect(more).toHaveCount(0)
 
   await page.getByTestId('workshop-filter').click()
   await page.getByTestId('workshop-facet-model').click()
@@ -341,7 +325,8 @@ test('the workflows half narrows to the model it runs on, from the menu and from
   // Clearing gives the whole catalogue back, not just the badge.
   await page.getByTestId('workshop-filter-clear').click()
   await expect(page.getByTestId('workshop-filter-count')).toHaveCount(0)
-  await expect(listed).toHaveCount(30)
+  await expect(outcomes).toHaveCount(12)
+  await expect(more).toBeVisible()
 
   await page.goto('/hub/models/?type=workflows&model=LTX-2.3')
   await expect(page).toHaveURL('/hub/workflows/?model=LTX-2.3')

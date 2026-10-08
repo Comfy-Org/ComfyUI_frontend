@@ -18,7 +18,7 @@ export interface ModelsListState {
   readonly access: readonly ModelAccess[]
 }
 
-const tabListKey: Record<Exclude<ModelTab, 'all'>, TranslationKey> = {
+export const tabListKey: Record<Exclude<ModelTab, 'all'>, TranslationKey> = {
   image: 'workshop.modelsHub.back.tab.image',
   video: 'workshop.modelsHub.back.tab.video',
   audio: 'workshop.modelsHub.back.tab.audio',

@@ -1,5 +1,5 @@
 import userEvent from '@testing-library/user-event'
-import { render, screen, waitFor, within } from '@testing-library/vue'
+import { render, screen, waitFor } from '@testing-library/vue'
 import { beforeEach, describe, expect, it } from 'vitest'
 
 import type { WorkflowWorkshopModel } from '@/config/models-catalogue'
@@ -57,52 +57,55 @@ function visibleOutcomes() {
     .map((card) => card.getAttribute('href'))
 }
 
-function shelves() {
-  return Object.fromEntries(
-    ['popular', 'image', 'video'].map((id) => [
-      id,
-      within(screen.getByTestId(`workflow-shelf-${id}`))
-        .getAllByTestId('workshop-model-card')
-        .map((card) => card.getAttribute('href'))
-    ])
-  )
-}
-
-const BROWSING = {
-  popular: [
-    '/models/workflows/animate/',
-    '/models/workflows/restore/',
-    '/models/workflows/connect/'
-  ],
-  image: ['/models/workflows/restore/'],
-  video: ['/models/workflows/animate/', '/models/workflows/connect/']
-}
+const ALL = [
+  '/models/workflows/animate/',
+  '/models/workflows/connect/',
+  '/models/workflows/restore/'
+]
 
 beforeEach(() => history.replaceState(null, '', '/hub/workflows/'))
 
 describe('workflow catalogue ordering and shared links', () => {
-  it('browses Popular, Image and Video rows in recommended order, then by name', async () => {
+  it('opens on every workflow in one grid in recommended order, then by name', async () => {
     const user = userEvent.setup()
     render(WorkflowCatalogue, { props: { models } })
 
-    expect(
-      screen.getAllByRole('heading', { level: 2 }).map((h) => h.textContent)
-    ).toEqual(['Popular', 'Image', 'Video'])
-    expect(shelves()).toEqual(BROWSING)
+    expect(screen.queryByRole('heading', { level: 2 })).toBeNull()
+    expect(visibleOutcomes()).toEqual(ALL)
     expect(screen.queryByRole('button', { name: /Browse all/ })).toBeNull()
     expect(screen.queryByTestId('featured-banner')).toBeNull()
 
     await user.click(screen.getByTestId('workshop-sort'))
     await user.click(screen.getByTestId('sort-name'))
-    expect(shelves()).toEqual({
-      popular: [
-        '/models/workflows/connect/',
-        '/models/workflows/restore/',
-        '/models/workflows/animate/'
-      ],
-      image: ['/models/workflows/restore/'],
-      video: ['/models/workflows/connect/', '/models/workflows/animate/']
-    })
+    expect(visibleOutcomes()).toEqual([
+      '/models/workflows/connect/',
+      '/models/workflows/restore/',
+      '/models/workflows/animate/'
+    ])
+  })
+
+  it('shows twelve workflows at a time and starts again when a search narrows them', async () => {
+    const many: WorkflowWorkshopModel[] = Array.from(
+      { length: 20 },
+      (_, index) => ({
+        ...models[0],
+        workflowId: `restore-${index}`,
+        slug: `workflows/restore-${index}`,
+        name: `Restore portrait ${index}`,
+        href: `/models/workflows/restore-${index}/`,
+        recommendedRank: index
+      })
+    )
+    const user = userEvent.setup()
+    render(WorkflowCatalogue, { props: { models: many } })
+    expect(visibleOutcomes()).toHaveLength(12)
+
+    await user.click(screen.getByRole('button', { name: 'Load more' }))
+    expect(visibleOutcomes()).toHaveLength(20)
+    expect(screen.queryByRole('button', { name: 'Load more' })).toBeNull()
+
+    await user.type(screen.getByRole('searchbox'), 'portrait')
+    expect(visibleOutcomes()).toHaveLength(12)
   })
 
   it('narrows the outcomes to the model they run on, and lets go of it', async () => {
@@ -124,7 +127,7 @@ describe('workflow catalogue ordering and shared links', () => {
     ])
 
     await user.click(screen.getByTestId('workshop-filter-clear'))
-    expect(shelves()).toEqual(BROWSING)
+    expect(visibleOutcomes()).toEqual(ALL)
   })
 
   it('names the category it was narrowed by, and lets go of it from that name', async () => {
@@ -139,7 +142,7 @@ describe('workflow catalogue ordering and shared links', () => {
 
     await user.click(screen.getByRole('button', { name: 'Remove video' }))
     expect(screen.queryByTestId('workshop-filter-chips')).toBeNull()
-    expect(shelves()).toEqual(BROWSING)
+    expect(visibleOutcomes()).toEqual(ALL)
   })
 
   // A cross that cleared everything would pass a test that only ever set one
@@ -198,7 +201,7 @@ describe('workflow catalogue ordering and shared links', () => {
       screen.getByRole('button', { name: 'Remove Runs on SeedVR2' })
     )
     expect(screen.queryByTestId('workshop-filter-chips')).toBeNull()
-    expect(shelves()).toEqual(BROWSING)
+    expect(visibleOutcomes()).toEqual(ALL)
   })
 
   it('restores a known model from a shared URL and drops one it does not list', async () => {
