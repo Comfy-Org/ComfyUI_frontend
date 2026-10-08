@@ -1,6 +1,5 @@
-import { useExecutionStore } from '@/stores/executionStore'
 import { fromPartial } from '@total-typescript/shoehorn'
-import { beforeEach, describe, expect, it } from 'vitest'
+import { describe, expect, it } from 'vitest'
 
 import type { INodeOutputSlot } from '@/lib/litegraph/src/interfaces'
 import type {
@@ -59,10 +58,6 @@ function rootGraph(
 }
 
 describe('MinimapDataSource', () => {
-  beforeEach(() => {
-    Object.assign(useExecutionStore(), { nodeLocationProgressStates: {} })
-  })
-
   it('uses graph position and rendered size', () => {
     const source = new MinimapDataSource(
       rootGraph([graphNode('node1', [10, 20], 0, [100, 50], [240, 180])])
@@ -81,15 +76,11 @@ describe('MinimapDataSource', () => {
       rootGraph: rootGraph(),
       _nodes: [node]
     })
-    Object.assign(useExecutionStore(), {
-      nodeLocationProgressStates: {
-        [createNodeLocatorId(SUBGRAPH_ID, node.id)]: { state: 'running' }
-      }
+    const source = new MinimapDataSource(subgraph, {
+      [createNodeLocatorId(SUBGRAPH_ID, node.id)]: { state: 'running' }
     })
 
-    expect(new MinimapDataSource(subgraph).getNodes()).toMatchObject([
-      { executionState: 'running' }
-    ])
+    expect(source.getNodes()).toMatchObject([{ executionState: 'running' }])
   })
 
   it('handles an empty graph', () => {
