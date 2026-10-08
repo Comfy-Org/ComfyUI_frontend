@@ -230,10 +230,11 @@ describe('invokeExtensionsAsync', () => {
     expect(events).toEqual(['slow:start', 'fast:start', 'slow:end'])
   })
 
-  it('waits for async hooks and resolves with their results', async () => {
+  it('resolves with the results of the hooks that ran, in order', async () => {
+    const widgets = { CUSTOM: noop }
     register(
       { name: 'none-first' },
-      { name: 'sync', [HOOK]: () => 'sync-result' },
+      { name: 'sync', [HOOK]: () => widgets },
       { name: 'a', [HOOK]: async () => 'a-result' },
       { name: 'none-last' },
       { name: 'b', [HOOK]: () => Promise.resolve('b-result') }
@@ -241,7 +242,20 @@ describe('invokeExtensionsAsync', () => {
 
     const results = await invoke()
 
-    expect(results).toEqual(['a-result', 'b-result'])
+    expect(results).toEqual([widgets, 'a-result', 'b-result'])
+    expect(results[0]).toBe(widgets)
+  })
+
+  it('keeps falsy but defined sync and async return values', async () => {
+    register(
+      { name: 'zero', [HOOK]: () => 0 },
+      { name: 'false', [HOOK]: () => false },
+      { name: 'empty', [HOOK]: () => '' },
+      { name: 'null', [HOOK]: () => null },
+      { name: 'async-zero', [HOOK]: async () => 0 }
+    )
+
+    expect(await invoke()).toEqual([0, false, '', null, 0])
   })
 
   it('awaits thenables that are not native promises', async () => {
@@ -420,20 +434,23 @@ describe('invokeExtensionsAsync', () => {
     expect(added).not.toHaveBeenCalled()
   })
 
-  it('only waits on promises that hooks actually return', async () => {
+  it('does no work for extensions that do not define the hook', async () => {
     const all = Array.from({ length: 1000 }, (_, i): TestExtension => {
-      if (i === 0) return { name: `ext-${i}`, [HOOK]: async () => {} }
+      if (i === 0) return { name: `ext-${i}`, [HOOK]: async () => 'async' }
       return i % 300 === 0
-        ? { name: `ext-${i}`, [HOOK]: noop }
+        ? { name: `ext-${i}`, [HOOK]: () => 'sync' }
         : { name: `ext-${i}` }
     })
     register(...all)
     const promiseAll = vi.spyOn(Promise, 'all')
 
-    await invoke()
+    const results = await invoke()
 
+    // ext-0, ext-300, ext-600 and ext-900 define the hook; only ext-0 is async
+    expect(results).toEqual(['async', 'sync', 'sync', 'sync'])
     const [pending] = promiseAll.mock.calls[0]
-    expect([...pending]).toHaveLength(1)
+    expect([...pending]).toHaveLength(4)
+    expect([...pending].filter((p) => p instanceof Promise)).toHaveLength(1)
   })
 
   describe('legacy menu compat tracking for setup', () => {
