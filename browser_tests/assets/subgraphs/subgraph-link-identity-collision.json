@@ -97,7 +97,7 @@
           "lastGroupId": 0,
           "lastNodeId": 0,
           "lastLinkId": 1,
-          "lastRerouteId": 201
+          "lastRerouteId": 101
         },
         "revision": 0,
         "config": {},
@@ -139,10 +139,10 @@
             "target_id": -20,
             "target_slot": 0,
             "type": "*",
-            "parentId": 201
+            "parentId": 101
           }
         ],
-        "reroutes": [{ "id": 201, "pos": [400, 420], "linkIds": [1] }],
+        "reroutes": [{ "id": 101, "pos": [400, 420], "linkIds": [1] }],
         "extra": {}
       }
     ]

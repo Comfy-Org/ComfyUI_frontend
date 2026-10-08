@@ -178,5 +178,210 @@ test.describe(
         )
       })
     })
+
+    test('restores reroute chains and store bindings after delete, undo, and redo', async ({
+      comfyPage
+    }) => {
+      await comfyPage.workflow.loadWorkflow('reroute/native_reroute')
+
+      const { baseline, parityAtLoad } =
+        await test.step('Capture baseline serialization and store parity', async () => {
+          const baseline = await comfyPage.page.evaluate(() =>
+            window.app!.graph!.serialize()
+          )
+          const parityAtLoad =
+            await comfyPage.canvasOps.getCurrentGraphRerouteParity()
+
+          expect(parityAtLoad.map((entry) => entry.id)).toEqual([1, 2])
+          for (const entry of parityAtLoad) {
+            expect(
+              entry.boundToStore,
+              `reroute ${entry.id} chain must be the store-held state`
+            ).toBe(true)
+          }
+          const [floatingReroute, liveReroute] = parityAtLoad
+          expect(
+            floatingReroute.floatingSlotType,
+            'fixture reroute 1 must be floating for this test to cover the floating path'
+          ).toBe('output')
+          expect(
+            liveReroute.linkIds,
+            'fixture reroute 2 must carry a live link for this test to cover membership'
+          ).toEqual([33])
+          return { baseline, parityAtLoad }
+        })
+
+      await test.step('Delete everything and verify the store is cleaned up', async () => {
+        await comfyPage.keyboard.selectAll()
+        await comfyPage.keyboard.delete()
+
+        await expect
+          .poll(() =>
+            comfyPage.page.evaluate(() => window.app!.graph!.reroutes.size)
+          )
+          .toBe(0)
+        expect(
+          await comfyPage.canvasOps.probeCurrentGraphRerouteStore([1, 2]),
+          'store must not hold chains for deleted reroutes'
+        ).toEqual({ 1: false, 2: false })
+      })
+
+      await test.step('Undo and verify class state, store state, and serialization agree', async () => {
+        await comfyPage.keyboard.undo()
+
+        await expect
+          .poll(() =>
+            comfyPage.page.evaluate(() => window.app!.graph!.serialize())
+          )
+          .toEqual(baseline)
+        expect(
+          await comfyPage.canvasOps.getCurrentGraphRerouteParity(),
+          'restored reroutes must be re-registered in the store with identical chains and membership'
+        ).toEqual(parityAtLoad)
+      })
+
+      await test.step('Redo and verify the store does not leak chains', async () => {
+        await comfyPage.keyboard.redo()
+
+        await expect
+          .poll(() =>
+            comfyPage.page.evaluate(() => window.app!.graph!.reroutes.size)
+          )
+          .toBe(0)
+        expect(
+          await comfyPage.canvasOps.probeCurrentGraphRerouteStore([1, 2]),
+          'store must not leak chains after redoing the deletion'
+        ).toEqual({ 1: false, 2: false })
+      })
+    })
+
+    test('keeps subgraph reroute ownership isolated through delete, undo, and redo', async ({
+      comfyPage
+    }) => {
+      await comfyPage.workflow.loadWorkflow(
+        'subgraphs/subgraph-link-identity-collision'
+      )
+
+      const runtimeRerouteIds = await comfyPage.page.evaluate(() =>
+        [...window.app!.graph!.subgraphs.values()]
+          .map((subgraph) => [...subgraph.reroutes.keys()][0])
+          .sort((a, b) => a - b)
+      )
+      expect(runtimeRerouteIds).toHaveLength(2)
+      expect(new Set(runtimeRerouteIds).size).toBe(2)
+
+      await comfyPage.vueNodes.enterSubgraph('1')
+      const firstParity =
+        await comfyPage.canvasOps.getCurrentGraphRerouteParity()
+      expect(firstParity).toHaveLength(1)
+      expect(firstParity[0].boundToStore).toBe(true)
+      expect(firstParity[0].linkIds).toHaveLength(1)
+      const firstRerouteId = firstParity[0].id
+
+      await comfyPage.keyboard.selectAll()
+      await comfyPage.keyboard.delete()
+
+      await expect
+        .poll(() =>
+          comfyPage.page.evaluate(() => window.app!.canvas.graph!.reroutes.size)
+        )
+        .toBe(0)
+      expect(
+        await comfyPage.canvasOps.probeCurrentGraphRerouteStore([
+          firstRerouteId
+        ])
+      ).toEqual({ [firstRerouteId]: false })
+
+      await comfyPage.keyboard.undo()
+      await expect
+        .poll(() => comfyPage.canvasOps.getCurrentGraphRerouteParity())
+        .toEqual(firstParity)
+
+      await comfyPage.keyboard.redo()
+      await expect
+        .poll(() =>
+          comfyPage.page.evaluate(() => window.app!.canvas.graph!.reroutes.size)
+        )
+        .toBe(0)
+      expect(
+        await comfyPage.canvasOps.probeCurrentGraphRerouteStore([
+          firstRerouteId
+        ])
+      ).toEqual({ [firstRerouteId]: false })
+
+      await comfyPage.keyboard.undo()
+      await comfyPage.subgraph.exitViaBreadcrumb()
+      await comfyPage.vueNodes.enterSubgraph('2')
+
+      const secondParity =
+        await comfyPage.canvasOps.getCurrentGraphRerouteParity()
+      expect(secondParity).toHaveLength(1)
+      expect(secondParity[0].id).not.toBe(firstRerouteId)
+      expect(secondParity[0].boundToStore).toBe(true)
+      expect(secondParity[0].linkIds).toHaveLength(1)
+    })
+
+    test('restores groups after delete, undo, and redo', async ({
+      comfyPage
+    }) => {
+      await comfyPage.workflow.loadWorkflow('groups/single_group')
+
+      const { baseline, groupsAtLoad } =
+        await test.step('Capture baseline serialization and group state', async () => {
+          const baseline = await comfyPage.page.evaluate(() =>
+            window.app!.graph!.serialize()
+          )
+          const groupsAtLoad = await comfyPage.page.evaluate(() =>
+            window.app!.graph!.groups.map((group) => ({
+              title: group.title,
+              pos: [...group.pos].map(Number),
+              size: [...group.size].map(Number)
+            }))
+          )
+          expect(groupsAtLoad).toHaveLength(1)
+          expect(groupsAtLoad[0].title).toBe('Group')
+          return { baseline, groupsAtLoad }
+        })
+
+      await test.step('Delete everything', async () => {
+        await comfyPage.keyboard.selectAll()
+        await comfyPage.keyboard.delete()
+
+        await expect
+          .poll(() =>
+            comfyPage.page.evaluate(() => window.app!.graph!.groups.length)
+          )
+          .toBe(0)
+      })
+
+      await test.step('Undo and verify the group and serialization are restored', async () => {
+        await comfyPage.keyboard.undo()
+
+        await expect
+          .poll(() =>
+            comfyPage.page.evaluate(() => window.app!.graph!.serialize())
+          )
+          .toEqual(baseline)
+        expect(
+          await comfyPage.page.evaluate(() =>
+            window.app!.graph!.groups.map((group) => ({
+              title: group.title,
+              pos: [...group.pos].map(Number),
+              size: [...group.size].map(Number)
+            }))
+          )
+        ).toEqual(groupsAtLoad)
+      })
+
+      await test.step('Redo the deletion', async () => {
+        await comfyPage.keyboard.redo()
+
+        await expect
+          .poll(() =>
+            comfyPage.page.evaluate(() => window.app!.graph!.groups.length)
+          )
+          .toBe(0)
+      })
+    })
   }
 )

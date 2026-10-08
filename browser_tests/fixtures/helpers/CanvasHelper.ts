@@ -15,6 +15,18 @@ type NodeGeometry = {
   size: Point
 }
 
+/** One reroute's class-side state paired with the reroute store's view of it. */
+type RerouteParityEntry = {
+  id: number
+  /** True when the reroute's `_chain` is the store-held reactive state. */
+  boundToStore: boolean
+  graphId: string | null
+  parentId: number | null
+  floatingSlotType: 'input' | 'output' | null
+  linkIds: number[]
+  floatingLinkIds: number[]
+}
+
 export class CanvasHelper {
   constructor(
     private page: Page,
@@ -305,6 +317,121 @@ export class CanvasHelper {
         expect(reroute.y).toBeCloseTo(expected.y, 1)
       }
     }).toPass({ timeout: 5000 })
+  }
+
+  /**
+   * Captures, for every reroute in the current graph, the class-side state next
+   * to what the Pinia reroute store holds for the same id: whether the
+   * reroute's `_chain` is literally the store-held reactive state
+   * (`boundToStore`), the chain fields, and the store-derived link
+   * membership. Sorted by id so snapshots compare with `toEqual`.
+   */
+  async getCurrentGraphRerouteParity(): Promise<RerouteParityEntry[]> {
+    return await this.page.evaluate(() => {
+      const graph = window.app!.canvas.graph
+      if (!graph) throw new Error('Graph not available')
+      interface StoreScope {
+        rootGraphId: string
+        owningGraphId: string
+      }
+      interface ChainLike {
+        id: unknown
+        graphId: string
+        parentId?: unknown
+        floating?: { slotType: 'input' | 'output' }
+      }
+      interface RerouteStoreLike {
+        getReroute(scope: StoreScope, id: unknown): ChainLike | undefined
+        getMembership(
+          scope: StoreScope,
+          id: unknown
+        ): {
+          linkIds: ReadonlySet<unknown>
+          floatingLinkIds: ReadonlySet<unknown>
+        }
+      }
+      const host = document.getElementById('vue-app') as
+        | (HTMLElement & {
+            __vue_app__?: {
+              config: {
+                globalProperties: { $pinia?: { _s: Map<string, unknown> } }
+              }
+            }
+          })
+        | null
+      const store = host?.__vue_app__?.config.globalProperties.$pinia?._s.get(
+        'reroute'
+      ) as RerouteStoreLike | undefined
+      if (!store)
+        throw new Error('reroute store not reachable from page context')
+      const scope = {
+        rootGraphId: graph.rootGraph.id,
+        owningGraphId: graph.id
+      }
+      return [...graph.reroutes.values()]
+        .map((reroute) => {
+          const chain = store.getReroute(scope, reroute.id)
+          const membership = store.getMembership(scope, reroute.id)
+          return {
+            id: Number(reroute.id),
+            boundToStore:
+              chain !== undefined &&
+              chain === (reroute._chain as unknown as ChainLike),
+            graphId: chain?.graphId ?? null,
+            parentId: chain?.parentId == null ? null : Number(chain.parentId),
+            floatingSlotType: chain?.floating?.slotType ?? null,
+            linkIds: [...membership.linkIds].map(Number).sort((a, b) => a - b),
+            floatingLinkIds: [...membership.floatingLinkIds]
+              .map(Number)
+              .sort((a, b) => a - b)
+          }
+        })
+        .sort((a, b) => a.id - b.id)
+    })
+  }
+
+  /**
+   * Asks the Pinia reroute store whether it still holds a chain for each id,
+   * scoped to the current graph. Detects store leaks that class-side state
+   * cannot show: `graph.reroutes` may be empty while the store still holds
+   * stale chains.
+   */
+  async probeCurrentGraphRerouteStore(
+    rerouteIds: number[]
+  ): Promise<Record<number, boolean>> {
+    return await this.page.evaluate((ids) => {
+      const graph = window.app!.canvas.graph
+      if (!graph) throw new Error('Graph not available')
+      interface RerouteStoreLike {
+        getReroute(
+          scope: { rootGraphId: string; owningGraphId: string },
+          id: unknown
+        ): unknown
+      }
+      const host = document.getElementById('vue-app') as
+        | (HTMLElement & {
+            __vue_app__?: {
+              config: {
+                globalProperties: { $pinia?: { _s: Map<string, unknown> } }
+              }
+            }
+          })
+        | null
+      const store = host?.__vue_app__?.config.globalProperties.$pinia?._s.get(
+        'reroute'
+      ) as RerouteStoreLike | undefined
+      if (!store)
+        throw new Error('reroute store not reachable from page context')
+      const scope = {
+        rootGraphId: graph.rootGraph.id,
+        owningGraphId: graph.id
+      }
+      const result: Record<number, boolean> = {}
+      for (const id of ids) {
+        result[id] = store.getReroute(scope, id) !== undefined
+      }
+      return result
+    }, rerouteIds)
   }
 
   async getGroupPosition(title: string): Promise<Position> {
