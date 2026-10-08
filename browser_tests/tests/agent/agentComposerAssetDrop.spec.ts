@@ -77,6 +77,11 @@ test.describe('Agent composer asset drop', { tag: '@cloud' }, () => {
       await expect(agentPanel.attachmentChips).toHaveCount(1)
       await source.dragTo(agentPanel.root)
       await expect(agentPanel.attachmentChips).toHaveCount(1)
+      const duplicateNotice = page.getByRole('alert').filter({
+        hasText: `${ASSET_NAME} is already in the asset tray`
+      })
+      await expect(duplicateNotice).toHaveCount(1)
+      await duplicateNotice.getByRole('button', { name: 'Close' }).click()
       await agentPanel.composer.fill('Keep this draft @agent_generated')
       await agentPanel.root
         .getByRole('menuitem', { name: ASSET_NAME, exact: true })

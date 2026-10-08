@@ -11,26 +11,21 @@ import { nextFrame } from '@e2e/fixtures/utils/timing'
 export class DragDropHelper {
   constructor(private readonly page: Page) {}
 
-  async dropFileOn(target: Locator, filePath: string): Promise<void> {
-    const name = basename(filePath)
-    const transfer = await this.page.evaluateHandle(
-      ({ bytes, name, type, lastModified }) => {
-        const transfer = new DataTransfer()
+  async dropFilesOn(target: Locator, filePaths: string[]): Promise<void> {
+    const files = filePaths.map((filePath) => ({
+      bytes: Array.from(readFileSync(filePath)),
+      name: basename(filePath),
+      type: getMimeType(basename(filePath)),
+      lastModified: statSync(filePath).mtimeMs
+    }))
+    const transfer = await this.page.evaluateHandle((files) => {
+      const transfer = new DataTransfer()
+      for (const { bytes, name, type, lastModified } of files)
         transfer.items.add(
-          new File([new Uint8Array(bytes)], name, {
-            type,
-            lastModified
-          })
+          new File([new Uint8Array(bytes)], name, { type, lastModified })
         )
-        return transfer
-      },
-      {
-        bytes: Array.from(readFileSync(filePath)),
-        name,
-        type: getMimeType(name),
-        lastModified: statSync(filePath).mtimeMs
-      }
-    )
+      return transfer
+    }, files)
     try {
       await target.dispatchEvent('drop', { dataTransfer: transfer })
     } finally {

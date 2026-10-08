@@ -77,6 +77,7 @@ export const AGENT_VIDEO_ASSET: Asset = createOutputAsset({
 
 export const AGENT_AUDIO_ASSET: Asset = createOutputAsset({
   id: '33333333-3333-4333-a333-333333333333',
+  hash: 'blake3:3333333333333333333333333333333333333333333333333333333333333333',
   name: 'agent_generated_audio.wav',
   mime_type: 'audio/wav',
   size: 24_044,

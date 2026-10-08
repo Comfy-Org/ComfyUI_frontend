@@ -35,6 +35,12 @@ test(
       .tap()
     const preview = page.getByRole('dialog', { name: 'notes.txt', exact: true })
     await expect(preview.getByText('notes.txt', { exact: true })).toBeVisible()
+    await panel.previewAssetButton('test_upload_image.png').tap()
+    await expect(panel.assetPreview('test_upload_image.png')).toBeVisible()
+    await expect(preview).toHaveCount(0)
+    await panel.previewAssetButton('notes.txt').tap()
+    await expect(preview).toBeVisible()
+    await expect(panel.assetPreview('test_upload_image.png')).toHaveCount(0)
     await panel.composer.tap()
     await expect(preview).toHaveCount(0)
     const remove = panel
