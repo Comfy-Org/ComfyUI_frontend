@@ -152,6 +152,20 @@ export function createUnifiedBillingSession(deps: UnifiedBillingSessionDeps) {
     }
   }
 
+  /** One GET on the session cookie; undefined while signed out. */
+  async function sessionGet(
+    url: string,
+    init: RequestInit
+  ): Promise<Response | undefined> {
+    const current = state.value
+    if (current.phase !== 'signed_in') return undefined
+    const auth = await authorize(
+      { kind: 'session', session: current.session },
+      { target: 'ingest', method: 'GET' }
+    )
+    return deps.fetchImpl(url, { ...init, ...auth })
+  }
+
   function resolveWorkspace(): Promise<WorkspaceResolution> {
     const current = state.value
     if (current.phase !== 'signed_in') {
@@ -278,6 +292,7 @@ export function createUnifiedBillingSession(deps: UnifiedBillingSessionDeps) {
     settledPhase,
     livePhase: computed(settledOf),
     resolveWorkspace,
+    sessionGet,
     scopeSource,
     webSession,
     signInPort,
