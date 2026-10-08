@@ -33,6 +33,7 @@
       <Button
         variant="secondary"
         size="lg"
+        autofocus
         :loading="leaving"
         @click="continueWithSso"
       >
