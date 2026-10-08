@@ -627,7 +627,6 @@ describe('useRemoteWidget', () => {
     beforeEach(() => {
       scope = sessionScope
       send = vi.fn<(url: string, init: RequestInit) => Promise<Response>>()
-      vi.stubGlobal('fetch', vi.fn())
     })
 
     afterEach(() => {
@@ -1126,14 +1125,13 @@ describe('useRemoteWidget', () => {
 
     it('handles errors thrown by the completion callback', async () => {
       const error = new Error('completion callback failed')
-      const errorSpy = vi.spyOn(console, 'error').mockImplementation(() => {})
       const hook = createHookWithData(['option1'])
 
       hook.getValue(() => {
         throw error
       })
 
-      await vi.waitFor(() => expect(errorSpy).toHaveBeenCalledWith(error))
+      await vi.waitFor(() => expect(console.error).toHaveBeenCalledWith(error))
       expect(hook.getInventoryStatus()).toBe('ready')
     })
 

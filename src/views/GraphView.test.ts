@@ -11,7 +11,6 @@ import { useAssetsStore } from '@/stores/assetsStore'
 import { useExecutionStore } from '@/stores/executionStore'
 import { useMenuItemStore } from '@/stores/menuItemStore'
 import { useTemplateInputDownloadStore } from '@/stores/templateInputDownloadStore'
-import { useBottomPanelStore } from '@/stores/workspace/bottomPanelStore'
 import { useSidebarTabStore } from '@/stores/workspace/sidebarTabStore'
 
 beforeEach(() => {
@@ -27,9 +26,6 @@ beforeEach(() => {
   vi.mocked(useMenuItemStore().registerCoreMenuCommands).mockImplementation(
     () => {}
   )
-  vi.mocked(
-    useBottomPanelStore().registerCoreBottomPanelTabs
-  ).mockResolvedValue(undefined)
 })
 
 const apiMock = vi.hoisted(() =>
@@ -86,6 +82,11 @@ vi.mock<unknown>(import('@/scripts/app'), () => ({
 vi.mock(import('@/composables/sidebarTabs/registerCoreSidebarTabs'), () => ({
   registerCoreSidebarTabs: vi.fn()
 }))
+
+vi.mock(
+  import('@/composables/bottomPanelTabs/registerCoreBottomPanelTabs'),
+  () => ({ registerCoreBottomPanelTabs: vi.fn(async () => {}) })
+)
 
 vi.mock(import('@/composables/useReconnectQueueRefresh'), () => {
   const refreshOnReconnect = vi.fn(async () => {})
@@ -168,6 +169,10 @@ vi.mock<unknown>(import('@/components/graph/GraphCanvas.vue'), () => stubModule)
 vi.mock<unknown>(import('@/views/LinearView.vue'), () => stubModule)
 vi.mock<unknown>(
   import('@/platform/settings/components/SettingDialog.vue'),
+  () => stubModule
+)
+vi.mock<unknown>(
+  import('@/platform/assets/components/AssetBrowserModal.vue'),
   () => stubModule
 )
 vi.mock<unknown>(

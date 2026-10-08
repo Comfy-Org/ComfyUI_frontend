@@ -112,7 +112,6 @@ describe('useFeatureUsageTracker', () => {
     const { trackUsage, useCount } = useFeatureUsageTracker(
       'unavailable-storage'
     )
-    vi.spyOn(console, 'error').mockImplementation(() => {})
     vi.spyOn(localStorage, 'setItem').mockImplementation(() => {
       throw new DOMException('Storage quota exceeded', 'QuotaExceededError')
     })
@@ -126,7 +125,6 @@ describe('useFeatureUsageTracker', () => {
       useFeatureUsageTracker('recovering-storage')
 
     trackUsage()
-    vi.spyOn(console, 'error').mockImplementation(() => {})
     const setItem = vi.spyOn(localStorage, 'setItem').mockImplementation(() => {
       throw new DOMException('Storage quota exceeded', 'QuotaExceededError')
     })
@@ -137,6 +135,24 @@ describe('useFeatureUsageTracker', () => {
     const stored = JSON.parse(localStorage.getItem(STORAGE_KEY) ?? '{}')
     expect(stored['recovering-storage']?.useCount).toBe(3)
     expect(useCount.value).toBe(3)
+  })
+
+  it('preserves other in-memory features when storage recovers', () => {
+    const recoveringFeature = useFeatureUsageTracker('recovering-feature')
+    const triggerFeature = useFeatureUsageTracker('trigger-feature')
+
+    recoveringFeature.trackUsage()
+    const setItem = vi.spyOn(localStorage, 'setItem').mockImplementation(() => {
+      throw new DOMException('Storage quota exceeded', 'QuotaExceededError')
+    })
+    recoveringFeature.trackUsage()
+    setItem.mockRestore()
+    triggerFeature.trackUsage()
+
+    const stored = JSON.parse(localStorage.getItem(STORAGE_KEY) ?? '{}')
+    expect(stored['recovering-feature']?.useCount).toBe(2)
+    expect(stored['trigger-feature']?.useCount).toBe(1)
+    expect(recoveringFeature.useCount.value).toBe(2)
   })
 
   it('preserves intervening usage when tracked after scope disposal', () => {

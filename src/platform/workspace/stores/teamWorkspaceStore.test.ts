@@ -666,14 +666,11 @@ describe('useTeamWorkspaceStore', () => {
       )
 
       const firstSwitch = store.switchWorkspace(mockTeamWorkspace.id)
-      const consoleError = vi
-        .spyOn(console, 'error')
-        .mockImplementation(() => {})
       await store.switchWorkspace(mockMemberWorkspace.id)
       finishSwitch()
       await firstSwitch
 
-      expect(consoleError).toHaveBeenCalledWith(
+      expect(console.error).toHaveBeenCalledWith(
         'Workspace switch already in progress'
       )
       expect(store.activeWorkspaceId).toBe(mockTeamWorkspace.id)
@@ -1786,15 +1783,12 @@ describe('useTeamWorkspaceStore', () => {
     })
 
     it('logs a failed request and retries on the next call', async () => {
-      const consoleError = vi
-        .spyOn(console, 'error')
-        .mockImplementation(() => {})
       mockWorkspaceApi.listMembers.mockRejectedValueOnce(new Error('boom'))
       const store = await activateTeamWorkspace()
 
       await store.ensureMembersLoaded()
 
-      expect(consoleError).toHaveBeenCalled()
+      expect(console.error).toHaveBeenCalled()
       expect(store.members).toHaveLength(0)
 
       mockMembersResponse()
@@ -1802,8 +1796,6 @@ describe('useTeamWorkspaceStore', () => {
 
       expect(mockWorkspaceApi.listMembers).toHaveBeenCalledTimes(2)
       expect(store.members).toHaveLength(1)
-
-      consoleError.mockRestore()
     })
   })
 
@@ -2214,11 +2206,8 @@ describe('useTeamWorkspaceStore', () => {
       await store.fetchPendingInvites()
 
       const first = store.resendInvite('inv-1')
-      const consoleError = vi
-        .spyOn(console, 'error')
-        .mockImplementation(() => {})
       const duplicateResult = await store.resendInvite('inv-1')
-      expect(consoleError).toHaveBeenCalledWith(
+      expect(console.error).toHaveBeenCalledWith(
         'Invite resend already in progress'
       )
       await first
@@ -2397,6 +2386,25 @@ describe('useTeamWorkspaceStore', () => {
 
       await vi.waitFor(() => expect(mockWorkspaceApi.list).toHaveBeenCalled())
       await nextTick()
+      expect(store.activeWorkspaceId).toBeNull()
+    })
+
+    it('reports a failed refresh and keeps no active workspace', async () => {
+      const store = useTeamWorkspaceStore()
+      await store.initialize()
+      const failure = new Error('list failed')
+      mockWorkspaceApi.list.mockRejectedValue(failure)
+
+      pushHostState(hostOn(mockMemberWorkspace.id))
+
+      await vi.waitFor(() =>
+        expect(reportError).toHaveBeenCalledWith(
+          failure,
+          expect.objectContaining({
+            errorType: 'error_refreshing_workspaces_for_desktop_host'
+          })
+        )
+      )
       expect(store.activeWorkspaceId).toBeNull()
     })
 

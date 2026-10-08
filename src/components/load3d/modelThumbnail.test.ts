@@ -45,10 +45,7 @@ describe('generateModelThumbnail', () => {
 
   it('persists the thumbnail when the asset API is available', async () => {
     isAssetPreviewSupported.mockReturnValue(true)
-    vi.stubGlobal(
-      'fetch',
-      vi.fn().mockResolvedValue({ blob: () => Promise.resolve(new Blob()) })
-    )
+    vi.mocked(fetch).mockImplementation(async () => new Response(new Blob()))
     createLoad3d.mockReturnValue(mockInstance())
 
     await generateModelThumbnail('/a.glb', 'a.glb')

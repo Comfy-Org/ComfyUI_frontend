@@ -114,7 +114,6 @@ describe('useSettingStore', () => {
       // GraphCanvas rethrows `error` before registering any core setting, so a
       // rejection here would leave the app unable to start.
       it('leaves the store loadable when the write fails', async () => {
-        vi.spyOn(console, 'warn').mockImplementation(() => {})
         vi.mocked(api.storeSettings).mockRejectedValue(new Error('offline'))
 
         await loadWith({ [NAV]: 'standard' })
@@ -126,7 +125,6 @@ describe('useSettingStore', () => {
     })
 
     it('leaves the store loadable when the zoom threshold write fails', async () => {
-      vi.spyOn(console, 'warn').mockImplementation(() => {})
       vi.mocked(api.storeSetting).mockRejectedValue(new Error('offline'))
       vi.mocked(api.getSettings).mockResolvedValue({
         'LiteGraph.Canvas.LowQualityRenderingZoomThreshold': 0.6
@@ -180,17 +178,13 @@ describe('useSettingStore', () => {
         type: 'text',
         defaultValue: 'default'
       }
-      const consoleWarnSpy = vi
-        .spyOn(console, 'warn')
-        .mockImplementation(() => {})
 
       store.addSetting(setting)
       store.addSetting(setting)
 
-      expect(consoleWarnSpy).toHaveBeenCalledWith(
+      expect(console.warn).toHaveBeenCalledWith(
         'Setting already registered: Comfy.Locale'
       )
-      consoleWarnSpy.mockRestore()
     })
 
     it('should migrate deprecated values', () => {
@@ -541,7 +535,6 @@ describe('useSettingStore', () => {
         }
       }
     ])('persists the value when a handler $label', async ({ onChange }) => {
-      vi.spyOn(console, 'warn').mockImplementation(() => {})
       store.addSetting({
         id: 'Comfy.Locale',
         name: 'Comfy.Locale',

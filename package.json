@@ -38,6 +38,7 @@
     "format:check": "oxfmt --check \"!apps/**\" \"!packages/**\" \"!tools/test-recorder/**\" \"!tools/cicd/fast-lane/**\"",
     "format": "oxfmt --write \"!apps/**\" \"!packages/**\" \"!tools/test-recorder/**\" \"!tools/cicd/fast-lane/**\"",
     "json-schema": "tsx scripts/generate-json-schema.ts",
+    "qa:desktop-frontend": "tsx scripts/qa-desktop-frontend.ts",
     "deps:audit": "depcruise src",
     "knip:no-cache": "knip",
     "knip": "knip --cache",
@@ -167,6 +168,7 @@
   },
   "devDependencies": {
     "@comfyorg/ingest-types": "workspace:*",
+    "@comfyorg/test-utils": "workspace:*",
     "@comfyorg/website": "workspace:*",
     "@eslint/js": "catalog:",
     "@intlify/eslint-plugin-vue-i18n": "catalog:",

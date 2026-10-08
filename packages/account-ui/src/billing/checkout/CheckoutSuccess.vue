@@ -14,44 +14,50 @@
         {{ copy.receiptEmailed }}
       </p>
 
-      <div
-        :class="
-          cn(
-            'mt-4 flex w-full flex-col gap-1 rounded-xl border border-border-default bg-base-background p-4',
-            darkSurface && 'border-none bg-secondary-background'
-          )
-        "
-      >
-        <span class="text-sm text-base-foreground">{{ plan.name }}</span>
-        <div class="flex items-baseline gap-1">
-          <span
-            class="text-2xl font-semibold text-base-foreground tabular-nums"
-          >
-            ${{ displayPrice }}
-          </span>
-          <span class="text-sm text-base-foreground">
-            {{ isYearly ? copy.usdPerYear : copy.usdPerMonth }}
-          </span>
+      <slot v-if="planReplaced" name="plan" />
+      <template v-else>
+        <div
+          :class="
+            cn(
+              'mt-4 flex w-full flex-col gap-1 rounded-xl border border-border-default bg-base-background p-4',
+              darkSurface && 'border-none bg-secondary-background'
+            )
+          "
+        >
+          <span class="text-sm text-base-foreground">{{ plan.name }}</span>
+          <div class="flex items-baseline gap-1">
+            <span
+              class="text-2xl font-semibold text-base-foreground tabular-nums"
+            >
+              ${{ displayPrice }}
+            </span>
+            <span class="text-sm text-base-foreground">
+              {{ isYearly ? copy.usdPerYear : copy.usdPerMonth }}
+            </span>
+          </div>
+          <div class="flex items-center gap-1 text-sm text-muted-foreground">
+            <i class="icon-[lucide--coins] size-4 shrink-0 bg-credit" />
+            <span class="tabular-nums">
+              {{ displayCredits }} {{ isYearly ? copy.perYear : copy.perMonth }}
+            </span>
+          </div>
         </div>
-        <div class="flex items-center gap-1 text-sm text-muted-foreground">
-          <i class="icon-[lucide--coins] size-4 shrink-0 bg-credit" />
-          <span class="tabular-nums">
-            {{ displayCredits }} {{ isYearly ? copy.perYear : copy.perMonth }}
-          </span>
-        </div>
-      </div>
 
-      <p
-        v-if="promoApplied"
-        class="m-0 text-center text-sm text-muted-foreground tabular-nums"
-      >
-        <span class="font-medium text-base-foreground">
-          {{ copy.promoApplied(promoApplied.code) }}
-        </span>
-        {{
-          copy.promoRenews(promoApplied.renewalAmount, promoApplied.renewalDate)
-        }}
-      </p>
+        <p
+          v-if="promoApplied"
+          class="m-0 text-center text-sm text-muted-foreground tabular-nums"
+        >
+          <span class="font-medium text-base-foreground">
+            {{ copy.promoApplied(promoApplied.code) }}
+          </span>
+          {{
+            copy.promoRenews(
+              promoApplied.renewalAmount,
+              promoApplied.renewalDate
+            )
+          }}
+        </p>
+      </template>
 
       <slot name="details" />
     </div>
@@ -75,7 +81,8 @@
  * The step after a successful subscribe: what the customer now has. A host
  * adds its own follow-up (the cloud app's team invite) through the
  * `details` and `actions` slots, demoting Close when it leads with another
- * action.
+ * action, and names a plan it did not quote here through the `plan` slot and
+ * `planReplaced`.
  */
 import { computed } from 'vue'
 
@@ -95,7 +102,8 @@ const {
   billingCycle = 'monthly',
   darkSurface = false,
   promoApplied = null,
-  closeDemoted = false
+  closeDemoted = false,
+  planReplaced = false
 } = defineProps<{
   plan: CheckoutPlan
   copy: CheckoutSuccessCopy
@@ -112,6 +120,8 @@ const {
     renewalDate: string
   } | null
   closeDemoted?: boolean
+  /** The host names a plan it did not quote here in the `plan` slot. */
+  planReplaced?: boolean
 }>()
 
 const emit = defineEmits<{

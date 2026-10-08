@@ -335,6 +335,76 @@ afterEach(() => {
 function render() {}
 `
 
+const consoleFixture = `import { beforeEach, it, vi as vitest } from 'vitest'
+import * as Vitest from 'vitest'
+
+beforeEach(() => {
+  vi.spyOn(console, 'error').mockImplementation(() => {})
+  vi.spyOn(console, 'warn')
+})
+
+it('reports every globally spied console method', () => {
+  vi.spyOn(console, 'log')
+  vi.spyOn(console, 'info')
+  vi.spyOn(console, 'debug')
+  vitest.spyOn(globalThis.console, 'error')
+  Vitest.vi.spyOn(window.console, 'warn')
+})
+
+it('allows unspied methods, vi.mocked, and local consoles', () => {
+  vi.spyOn(console, 'table')
+  vi.mocked(console.error).mockImplementation(() => {})
+  const local = { console: { error() {} } }
+  vi.spyOn(local.console, 'error')
+  const spy = { spyOn() {} }
+  spy.spyOn(console, 'error')
+})
+
+it('allows a shadowed console', () => {
+  const console = { error() {} }
+  vi.spyOn(console, 'error')
+})
+`
+
+const fetchFixture = `import { beforeEach, it, vi as vitest } from 'vitest'
+import * as Vitest from 'vitest'
+
+beforeEach(() => {
+  vi.stubGlobal('fetch', vi.fn())
+  vi.spyOn(globalThis, 'fetch')
+})
+
+it('reports every way of replacing the shared fetch mock', () => {
+  vitest.stubGlobal(\`fetch\`, vi.fn())
+  Vitest.vi.spyOn(window, 'fetch')
+  globalThis.fetch = vi.fn()
+  window.fetch = vi.fn()
+  global.fetch = vi.fn()
+  fetch = vi.fn()
+})
+
+it('allows configuring the shared mock and other globals', () => {
+  vi.mocked(fetch).mockResolvedValue(new Response('ok'))
+  vi.stubGlobal('location', undefined)
+  vi.spyOn(globalThis, 'setTimeout')
+  const client = { fetch() {} }
+  client.fetch = vi.fn()
+  vi.spyOn(client, 'fetch')
+})
+
+it('allows a shadowed global owner', () => {
+  const window = { fetch() {} }
+  window.fetch = vi.fn()
+  vi.spyOn(window, 'fetch')
+})
+
+it('allows assigning a local named fetch', () => {
+  let fetch = () => undefined
+  fetch = () => undefined
+  void fetch
+})
+`
+
 function expectReportsAt(
   output: string,
   lines: readonly number[],
@@ -353,6 +423,8 @@ describe('Vitest cleanup rules', () => {
   beforeAll(() => {
     workDir = mkdtempSync(path.join(tmpdir(), 'comfy-vitest-cleanup-'))
     writeFileSync(path.join(workDir, 'invalid.test.ts'), invalidFixture)
+    writeFileSync(path.join(workDir, 'console.test.ts'), consoleFixture)
+    writeFileSync(path.join(workDir, 'fetch.test.ts'), fetchFixture)
     writeFileSync(path.join(workDir, 'litegraph.test.ts'), liteGraphFixture)
     writeFileSync(
       path.join(workDir, 'mock-instance.test.ts'),
@@ -370,6 +442,8 @@ describe('Vitest cleanup rules', () => {
             rules: {
               'comfy/no-module-scope-vitest-mocks': 'warn',
               'comfy/no-persistent-litegraph-registration': 'warn',
+              'comfy/no-redundant-console-spy': 'warn',
+              'comfy/no-redundant-fetch-stub': 'warn',
               'comfy/no-redundant-litegraph-cleanup': 'warn',
               'comfy/no-redundant-vitest-cleanup': 'warn'
             }
@@ -385,6 +459,8 @@ describe('Vitest cleanup rules', () => {
         '--config',
         path.join(workDir, '.oxlintrc.json'),
         'invalid.test.ts',
+        'console.test.ts',
+        'fetch.test.ts',
         'litegraph.test.ts',
         'mock-instance.test.ts',
         'unrelated.test.ts',
@@ -460,6 +536,20 @@ describe('Vitest cleanup rules', () => {
     expect(
       output.match(/LiteGraph\.clearRegisteredTypes\(\) is redundant/g)
     ).toHaveLength(1)
+  })
+
+  it('reports re-spying globally spied console methods anywhere in a test file', () => {
+    expectReportsAt(output, [5, 6, 10, 11, 12, 13, 14], 'console.test.ts')
+    expect(
+      stripVTControlCharacters(output).match(/console\.test\.ts:\d+:/g)
+    ).toHaveLength(7)
+  })
+
+  it('reports replacing the shared fetch mock anywhere in a test file', () => {
+    expectReportsAt(output, [5, 6, 10, 11, 12, 13, 14, 15], 'fetch.test.ts')
+    expect(
+      stripVTControlCharacters(output).match(/fetch\.test\.ts:\d+:/g)
+    ).toHaveLength(8)
   })
 
   it('ignores unrelated names, nested helpers, test bodies, and Playwright specs', () => {
