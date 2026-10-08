@@ -114,8 +114,16 @@ export function getMainNavigation(
             href: `${routes.workshop}seedream-5-0-pro-text-to-image/`
           }),
           previewed({
-            label: t('nav.hubKlingO3'),
-            href: `${routes.workshop}kling-o3-text-to-video/`
+            label: t('nav.hubSeedance25'),
+            href: `${routes.workshop}seedance-2-5-reference-to-video/`
+          }),
+          previewed({
+            label: t('nav.hubNanoBanana2'),
+            href: `${routes.workshop}nano-banana-2-image-edit/`
+          }),
+          previewed({
+            label: t('nav.hubGptImage2'),
+            href: `${routes.workshop}gpt-image-2-text-to-image/`
           }),
           { label: t('nav.hubAllModels'), href: routes.workshop, seeAll: true }
         ]

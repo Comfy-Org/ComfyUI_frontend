@@ -51,7 +51,9 @@ describe('HeaderMainDesktop', () => {
     expect(
       [
         'Seedream 5.0 Pro',
-        'Kling O3',
+        'Seedance 2.5',
+        'Nano Banana 2',
+        'GPT Image 2',
         'All models',
         'Change material',
         'Match lighting',
@@ -62,7 +64,9 @@ describe('HeaderMainDesktop', () => {
       ].map((name) => menu.getByRole('link', { name }).getAttribute('href'))
     ).toEqual([
       '/hub/models/seedream-5-0-pro-text-to-image/',
-      '/hub/models/kling-o3-text-to-video/',
+      '/hub/models/seedance-2-5-reference-to-video/',
+      '/hub/models/nano-banana-2-image-edit/',
+      '/hub/models/gpt-image-2-text-to-image/',
       '/hub/models/',
       '/hub/workflows/change-material/',
       '/hub/workflows/match-lighting/',
@@ -98,19 +102,23 @@ describe('HeaderMainDesktop', () => {
           thumbnail: 'https://media.comfy.org/seedream.png',
           meta: 'ByteDance · Image'
         },
-        '/hub/models/kling-o3-text-to-video/': { meta: 'Kling · Video' }
+        '/hub/models/seedance-2-5-reference-to-video/': {
+          meta: 'ByteDance · Video'
+        }
       }
     })
     const seedream = menu.getByRole('link', { name: /^Seedream 5\.0 Pro/ })
-    const kling = menu.getByRole('link', { name: /^Kling O3/ })
+    const seedance = menu.getByRole('link', { name: /^Seedance 2\.5/ })
 
     expect(seedream).toHaveTextContent('ByteDance · Image')
     expect(
       within(seedream).getByTestId('nav-item-thumb').getAttribute('src')
     ).toBe('https://media.comfy.org/seedream.png')
-    expect(kling).toHaveTextContent('Kling · Video')
-    expect(within(kling).queryByTestId('nav-item-thumb')).toBeNull()
-    expect(within(kling).getByTestId('nav-item-thumb-placeholder')).toBeTruthy()
+    expect(seedance).toHaveTextContent('ByteDance · Video')
+    expect(within(seedance).queryByTestId('nav-item-thumb')).toBeNull()
+    expect(
+      within(seedance).getByTestId('nav-item-thumb-placeholder')
+    ).toBeTruthy()
     expect(
       within(menu.getByRole('link', { name: 'All models' })).queryByTestId(
         'nav-item-thumb-placeholder'
@@ -126,7 +134,7 @@ describe('HeaderMainDesktop', () => {
       expect(link).toHaveAttribute('target', '_blank')
       expect(link).toHaveAttribute('rel', 'noopener')
     }
-    for (const name of ['All apps', 'Change material', 'Kling O3'])
+    for (const name of ['All apps', 'Change material', 'Seedance 2.5'])
       expect(menu.getByRole('link', { name })).not.toHaveAttribute('target')
   })
 

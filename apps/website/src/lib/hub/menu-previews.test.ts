@@ -86,9 +86,17 @@ describe('hubMenuPreviews', () => {
         thumbnail: expect.stringMatching(/^https:\/\/.+\.png$/),
         meta: 'ByteDance · Image'
       },
-      '/hub/models/kling-o3-text-to-video/': {
+      '/hub/models/seedance-2-5-reference-to-video/': {
         thumbnail: undefined,
-        meta: 'Kling · Video'
+        meta: 'ByteDance · Video'
+      },
+      '/hub/models/nano-banana-2-image-edit/': {
+        thumbnail: expect.stringMatching(/^https:\/\/.+\.png$/),
+        meta: 'Google · Image'
+      },
+      '/hub/models/gpt-image-2-text-to-image/': {
+        thumbnail: expect.stringMatching(/^https:\/\/.+\.png$/),
+        meta: 'OpenAI · Image'
       },
       '/hub/workflows/change-material/': {
         thumbnail: expect.stringMatching(/^https:\/\/.+\.webp$/),

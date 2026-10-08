@@ -109,8 +109,18 @@ describe('getMainNavigation', () => {
             seeAll: undefined
           },
           {
-            label: 'Kling O3',
-            href: '/hub/models/kling-o3-text-to-video/',
+            label: 'Seedance 2.5',
+            href: '/hub/models/seedance-2-5-reference-to-video/',
+            seeAll: undefined
+          },
+          {
+            label: 'Nano Banana 2',
+            href: '/hub/models/nano-banana-2-image-edit/',
+            seeAll: undefined
+          },
+          {
+            label: 'GPT Image 2',
+            href: '/hub/models/gpt-image-2-text-to-image/',
             seeAll: undefined
           },
           { label: 'All models', href: routes.workshop, seeAll: true }
@@ -153,7 +163,7 @@ describe('getMainNavigation', () => {
     const preview = { thumbnail: 'https://media.comfy.org/a.png', meta: 'M' }
     const hub = findItem(
       getMainNavigation('en', true, ALL_SECTIONS, {
-        '/hub/models/kling-o3-text-to-video/': preview,
+        '/hub/models/seedance-2-5-reference-to-video/': preview,
         '/hub/models/': preview,
         '/hub/apps/reshoot/': { meta: 'Only a summary' }
       }),
@@ -165,7 +175,9 @@ describe('getMainNavigation', () => {
         .map(({ href, thumbnail, meta }) => [href, { thumbnail, meta }])
     )
 
-    expect(previews['/hub/models/kling-o3-text-to-video/']).toEqual(preview)
+    expect(previews['/hub/models/seedance-2-5-reference-to-video/']).toEqual(
+      preview
+    )
     expect(previews['/hub/apps/reshoot/']).toEqual({
       thumbnail: undefined,
       meta: 'Only a summary'
@@ -191,7 +203,7 @@ describe('getMainNavigation', () => {
       .flatMap((column) => column.items)
       .filter((item) => !item.seeAll)
 
-    expect(examples).toHaveLength(6)
+    expect(examples).toHaveLength(8)
     for (const { href } of examples) expect(built).toContain(href)
   })
 
