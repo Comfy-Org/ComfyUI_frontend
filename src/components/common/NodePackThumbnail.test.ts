@@ -16,13 +16,13 @@ describe('NodePackThumbnail', () => {
       props: { name: 'Image Tools' },
       global: { plugins: [i18n] }
     })
-    expect(screen.getByRole('img')).toHaveClass(
-      createNodePackThumbnail('Image Tools').palette
-    )
+    expect(screen.getByRole('img')).toHaveStyle({
+      '--thumbnail-base': createNodePackThumbnail('Image Tools').palette.base
+    })
     await rerender({ name: 'Audio Tools' })
-    expect(screen.getByRole('img')).toHaveClass(
-      createNodePackThumbnail('Audio Tools').palette
-    )
+    expect(screen.getByRole('img')).toHaveStyle({
+      '--thumbnail-base': createNodePackThumbnail('Audio Tools').palette.base
+    })
   })
 
   it('renders accessible vector artwork without a remote image', () => {
@@ -71,9 +71,9 @@ describe('NodePackThumbnail', () => {
       props: { name: 'Image Tools', identity: 'same-pack' },
       global: { plugins: [i18n] }
     })
-    const classes = screen.getByRole('img').getAttribute('class')
+    const colors = screen.getByRole('img').getAttribute('style')
     await rerender({ name: 'Audio Tools', identity: 'same-pack' })
-    expect(screen.getByRole('img')).toHaveAttribute('class', classes)
+    expect(screen.getByRole('img')).toHaveAttribute('style', colors)
     expect(screen.getByText('AT')).toBeInTheDocument()
     expect(screen.getByRole('img')).toHaveAccessibleName(
       'Generated thumbnail for Audio Tools'

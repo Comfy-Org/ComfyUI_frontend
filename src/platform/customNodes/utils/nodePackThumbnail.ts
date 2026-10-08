@@ -1,12 +1,12 @@
 const palettes = [
-  '[--thumbnail-base:var(--color-ink-900)] [--thumbnail-accent:var(--color-plum-600)] [--thumbnail-glow:var(--color-plum-300)]',
-  '[--thumbnail-base:var(--color-charcoal-950)] [--thumbnail-accent:var(--color-azure-600)] [--thumbnail-glow:var(--color-azure-300)]',
-  '[--thumbnail-base:var(--color-ocean-900)] [--thumbnail-accent:var(--color-jade-600)] [--thumbnail-glow:var(--color-jade-400)]',
-  '[--thumbnail-base:var(--color-ink-800)] [--thumbnail-accent:var(--color-gold-700)] [--thumbnail-glow:var(--color-gold-400)]',
-  '[--thumbnail-base:var(--color-charcoal-900)] [--thumbnail-accent:var(--color-coral-700)] [--thumbnail-glow:var(--color-coral-500)]',
-  '[--thumbnail-base:var(--color-ink-900)] [--thumbnail-accent:var(--color-magenta-700)] [--thumbnail-glow:var(--color-magenta-300)]',
-  '[--thumbnail-base:var(--color-ocean-900)] [--thumbnail-accent:var(--color-ocean-600)] [--thumbnail-glow:var(--color-ocean-300)]',
-  '[--thumbnail-base:var(--color-charcoal-950)] [--thumbnail-accent:var(--color-brand-blue)] [--thumbnail-glow:var(--color-brand-yellow)]'
+  { base: '#772f3c', accent: '#bc4d5a', glow: '#e8a196' },
+  { base: '#244c81', accent: '#3e79b8', glow: '#9abedb' },
+  { base: '#255e49', accent: '#3b8b66', glow: '#a2c4a0' },
+  { base: '#845126', accent: '#bd803b', glow: '#e3ba75' },
+  { base: '#583c7b', accent: '#8660ad', glow: '#bd9bce' },
+  { base: '#235d69', accent: '#38889b', glow: '#99c3c8' },
+  { base: '#753f61', accent: '#af658a', glow: '#d8a5bf' },
+  { base: '#716027', accent: '#a68a3c', glow: '#d5c180' }
 ] as const
 
 const topics = [
@@ -41,6 +41,7 @@ export function createNodePackThumbnail(identity: string, name = identity) {
 
   return {
     palette: palettes[hash % palettes.length],
+    foreground: '#f3ede2',
     background: hash & 8 ? ('solid' as const) : ('gradient' as const),
     motif: motifs[(hash >>> 4) % motifs.length],
     icon: topics.find(([, pattern]) => pattern.test(label))?.[0] ?? 'network',

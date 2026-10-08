@@ -29,9 +29,18 @@ describe('createNodePackThumbnail', () => {
     expect(new Set(artworks.map((artwork) => artwork.background))).toEqual(
       new Set(['gradient', 'solid'])
     )
-    for (const { palette } of artworks) {
-      expect(palette).toContain('var(--color-')
-      expect(palette).not.toContain('#')
+  })
+
+  it('provides self-contained softened colors without theme tokens or RGB extremes', () => {
+    for (let index = 0; index < 200; index++) {
+      const { palette, foreground } = createNodePackThumbnail(`pack-${index}`)
+      for (const color of [...Object.values(palette), foreground]) {
+        expect(color).toMatch(/^#[\da-f]{6}$/i)
+        for (const channel of color.slice(1).match(/../g) ?? []) {
+          expect(parseInt(channel, 16)).toBeGreaterThan(0)
+          expect(parseInt(channel, 16)).toBeLessThan(255)
+        }
+      }
     }
   })
 
@@ -70,7 +79,7 @@ describe('createNodePackThumbnail', () => {
     )
     expect(Array.from(artwork.monogram).length).toBeLessThanOrEqual(3)
     expect(artwork.monogram).toMatch(/^[\p{L}\p{N}]+$/u)
-    expect(artwork.palette).not.toContain('script')
+    expect(Object.values(artwork.palette).join('')).not.toContain('script')
     expect(artwork.icon).toBe('network')
   })
 })

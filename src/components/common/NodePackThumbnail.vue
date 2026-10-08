@@ -7,7 +7,13 @@
         ? $t('customNodePacks.thumbnail', { name })
         : $t('g.defaultBanner')
     "
-    :class="['block aspect-7/3 w-full text-white', artwork.palette]"
+    class="block aspect-7/3 w-full"
+    :style="{
+      '--thumbnail-base': artwork.palette.base,
+      '--thumbnail-accent': artwork.palette.accent,
+      '--thumbnail-glow': artwork.palette.glow,
+      color: artwork.foreground
+    }"
   >
     <defs>
       <linearGradient :id="gradientId" x1="0" y1="1" x2="1" y2="0">
