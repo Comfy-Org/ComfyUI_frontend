@@ -19,10 +19,15 @@ function resolveAssignment(): {
   assignment: AgentStarterPromptAssignment
   hasQaOverride: boolean
 } {
+  const sessionOverride = getSessionOverride<unknown>(STARTER_PROMPT_SET_FLAG)
   const override =
-    getSessionOverride<unknown>(STARTER_PROMPT_SET_FLAG) ??
-    getDevOverride<unknown>(STARTER_PROMPT_SET_FLAG)
-  const candidate = override ?? remoteConfig.value[STARTER_PROMPT_SET_FLAG]
+    sessionOverride !== undefined
+      ? sessionOverride
+      : getDevOverride<unknown>(STARTER_PROMPT_SET_FLAG)
+  const candidate =
+    override !== undefined
+      ? override
+      : remoteConfig.value[STARTER_PROMPT_SET_FLAG]
   return {
     assignment: starterPromptAssignmentSchema.parse(candidate),
     hasQaOverride: override !== undefined
