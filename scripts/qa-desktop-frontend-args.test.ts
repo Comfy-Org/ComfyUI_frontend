@@ -1,6 +1,8 @@
 import { describe, expect, it } from 'vitest'
 
 import {
+  pickBuildRun,
+  pickInstall,
   splitLaunchArgs,
   withFrontendRoot,
   withoutFrontendOverride
@@ -54,5 +56,75 @@ describe('withoutFrontendOverride', () => {
         '--enable-manager --front-end-root "/a b" --comfy-api-base https://x'
       )
     ).toBe('--enable-manager --comfy-api-base https://x')
+  })
+})
+
+describe('pickInstall', () => {
+  const local = { id: 'inst-1', name: 'Local', sourceId: 'standalone' }
+  const cloud = { id: 'inst-2', name: 'Cloud', sourceId: 'cloud' }
+  const portable = { id: 'inst-3', name: 'Portable', sourceId: 'portable' }
+
+  it('takes the only local install, ignoring Cloud', () => {
+    expect(pickInstall([local, cloud])).toBe(local)
+  })
+
+  it('takes the named install by id or name', () => {
+    expect(pickInstall([local, portable], 'inst-3')).toBe(portable)
+    expect(pickInstall([local, portable], 'Local')).toBe(local)
+  })
+
+  it.for([
+    {
+      name: 'several local installs',
+      installs: [local, portable],
+      wanted: undefined,
+      message: /More than one/
+    },
+    {
+      name: 'no match',
+      installs: [local],
+      wanted: 'nope',
+      message: /No matching/
+    }
+  ])('asks for --install with $name', ({ installs, wanted, message }) => {
+    expect(() => pickInstall(installs, wanted)).toThrow(message)
+  })
+})
+
+describe('pickBuildRun', () => {
+  const hint = (id: number) => `rerun ${id}`
+  const sha = 'abcdef1234567'
+
+  it('takes the first run that still has the build', () => {
+    expect(
+      pickBuildRun(
+        [
+          { databaseId: 3, status: 'completed', hasArtifact: false },
+          { databaseId: 2, status: 'completed', hasArtifact: true }
+        ],
+        sha,
+        hint
+      )
+    ).toBe(2)
+  })
+
+  it.for([
+    {
+      name: 'the build is still running',
+      runs: [{ databaseId: 4, status: 'in_progress', hasArtifact: false }],
+      message: /still running \(run 4\)/
+    },
+    {
+      name: 'the build has expired',
+      runs: [{ databaseId: 5, status: 'completed', hasArtifact: false }],
+      message: /expired.*rerun 5/
+    },
+    {
+      name: 'there is no build',
+      runs: [],
+      message: /No CI build found for abcdef1/
+    }
+  ])('explains when $name', ({ runs, message }) => {
+    expect(() => pickBuildRun(runs, sha, hint)).toThrow(message)
   })
 })

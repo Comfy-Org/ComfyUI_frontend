@@ -52,3 +52,57 @@ export function installationsPath(
       : join(home, 'Library', 'Application Support')
   return join(base, appDir, 'installations.json')
 }
+
+export interface Installation {
+  id: string
+  name: string
+  sourceId?: string
+  launchArgs?: string
+}
+
+/** The one local install to change: the named one, or the only one. */
+export function pickInstall(
+  installs: Installation[],
+  wanted?: string
+): Installation {
+  const local = installs.filter(
+    (i) => i.sourceId !== 'cloud' && i.sourceId !== 'remote'
+  )
+  const match = wanted
+    ? local.filter((i) => i.id === wanted || i.name === wanted)
+    : local
+  if (match.length === 1) return match[0]
+  const names = local.map((i) => `  ${i.id}  ${i.name}`).join('\n')
+  const problem = match.length === 0 ? 'No matching' : 'More than one'
+  throw new Error(
+    `${problem} local install; pass --install <id|name>:\n${names}`
+  )
+}
+
+interface BuildRun {
+  databaseId: number
+  status: string
+  hasArtifact: boolean
+}
+
+/** The run whose build to use, or why there is none yet. */
+export function pickBuildRun(
+  runs: BuildRun[],
+  sha: string,
+  rerunHint: (runId: number) => string
+): number {
+  const ready = runs.find((r) => r.hasArtifact)
+  if (ready) return ready.databaseId
+  const short = sha.slice(0, 7)
+  const running = runs.find((r) => r.status !== 'completed')
+  if (running) {
+    throw new Error(
+      `The CI build for ${short} is still running (run ${running.databaseId}). Try again when it finishes.`
+    )
+  }
+  const last = runs.at(0)
+  if (!last) throw new Error(`No CI build found for ${short}.`)
+  throw new Error(
+    `The CI build for ${short} has expired (kept for one day). Rebuild it with: ${rerunHint(last.databaseId)}`
+  )
+}

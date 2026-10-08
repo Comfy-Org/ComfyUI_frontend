@@ -11,27 +11,31 @@
  * `--dev` targets a Desktop dev build (`comfyui-desktop-2`) instead of the app.
  */
 import { execFileSync } from 'node:child_process'
-import { existsSync, mkdirSync, readFileSync, writeFileSync } from 'node:fs'
+import {
+  existsSync,
+  mkdirSync,
+  readFileSync,
+  renameSync,
+  writeFileSync
+} from 'node:fs'
 import { homedir } from 'node:os'
 import { dirname, join } from 'node:path'
 import { parseArgs } from 'node:util'
 
+import type { Installation } from './qa-desktop-frontend-args'
 import {
   installationsPath,
+  pickBuildRun,
+  pickInstall,
   withFrontendRoot,
   withoutFrontendOverride
 } from './qa-desktop-frontend-args'
 
 const REPO = 'Comfy-Org/ComfyUI_frontend'
 const WORKFLOW = 'ci-tests-e2e.yaml'
+// Desktop 2.0 local installs run the localhost build; `frontend-dist-desktop`
+// is the legacy Desktop v1 distribution.
 const ARTIFACT = 'frontend-dist'
-
-interface Installation {
-  id: string
-  name: string
-  sourceId?: string
-  launchArgs?: string
-}
 
 function gh(args: string[]): string {
   return execFileSync('gh', args, { encoding: 'utf8' }).trim()
@@ -56,6 +60,18 @@ function resolveCommit(ref: string): { sha: string; label: string } {
   return { sha, label: ref.replace(/[^\w.-]+/g, '-') }
 }
 
+function hasLiveArtifact(runId: number): boolean {
+  const artifacts: { expired: boolean }[] = JSON.parse(
+    gh([
+      'api',
+      `repos/${REPO}/actions/runs/${runId}/artifacts?name=${ARTIFACT}`,
+      '-q',
+      '.artifacts'
+    ])
+  )
+  return artifacts.some((a) => !a.expired)
+}
+
 function findBuild(sha: string): number {
   const runs: { databaseId: number; status: string }[] = JSON.parse(
     gh([
@@ -73,30 +89,10 @@ function findBuild(sha: string): number {
       '10'
     ])
   )
-  for (const run of runs) {
-    const artifacts: { name: string; expired: boolean }[] = JSON.parse(
-      gh([
-        'api',
-        `repos/${REPO}/actions/runs/${run.databaseId}/artifacts?name=${ARTIFACT}`,
-        '-q',
-        '.artifacts'
-      ])
-    )
-    if (artifacts.some((a) => a.name === ARTIFACT && !a.expired)) {
-      return run.databaseId
-    }
-  }
-  const running = runs.find((r) => r.status !== 'completed')
-  if (running) {
-    throw new Error(
-      `The CI build for ${sha.slice(0, 7)} is still running (run ${running.databaseId}). Try again when it finishes.`
-    )
-  }
-  const last = runs.at(0)
-  throw new Error(
-    last
-      ? `No ${ARTIFACT} artifact for ${sha.slice(0, 7)}; CI keeps it for one day. Rebuild it with: gh run rerun ${last.databaseId} --repo ${REPO}`
-      : `No ${WORKFLOW} run found for ${sha.slice(0, 7)}.`
+  return pickBuildRun(
+    runs.map((r) => ({ ...r, hasArtifact: hasLiveArtifact(r.databaseId) })),
+    sha,
+    (runId) => `gh run rerun ${runId} --repo ${REPO}`
   )
 }
 
@@ -130,29 +126,68 @@ function download(runId: number, sha: string, label: string): string {
 function readInstallations(file: string): Installation[] {
   if (!existsSync(file)) {
     throw new Error(
-      `No Desktop installations found at ${file}. Is Comfy Desktop installed${file.includes('comfyui-desktop-2') ? ' (dev build)' : ''}?`
+      `No Desktop installations found at ${file}. Is Comfy Desktop installed?`
     )
   }
   return JSON.parse(readFileSync(file, 'utf8'))
 }
 
-function pickInstall(installs: Installation[], wanted?: string): Installation {
-  const local = installs.filter(
-    (i) => i.sourceId !== 'cloud' && i.sourceId !== 'remote'
-  )
-  const match = wanted
-    ? local.filter((i) => i.id === wanted || i.name === wanted)
-    : local
-  if (match.length === 1) return match[0]
-  const names = local.map((i) => `  ${i.id}  ${i.name}`).join('\n')
-  throw new Error(
-    `${match.length === 0 ? 'No matching' : 'More than one'} local install; pass --install <id|name>:\n${names}`
-  )
-}
-
+/** Backs the file up, then replaces it atomically so Desktop never reads half of it. */
 function save(file: string, installs: Installation[]): void {
   writeFileSync(`${file}.qa-backup`, readFileSync(file))
-  writeFileSync(file, `${JSON.stringify(installs, null, 2)}\n`)
+  const tmp = `${file}.qa-tmp`
+  writeFileSync(tmp, `${JSON.stringify(installs, null, 2)}\n`)
+  renameSync(tmp, file)
+}
+
+function updateInstall(
+  file: string,
+  wanted: string | undefined,
+  change: (launchArgs: string) => string
+): Installation {
+  const installs = readInstallations(file)
+  const install = pickInstall(installs, wanted)
+  install.launchArgs = change(install.launchArgs ?? '')
+  save(file, installs)
+  return install
+}
+
+interface Context {
+  file: string
+  ref?: string
+  install?: string
+}
+
+const COMMANDS: Partial<Record<string, (ctx: Context) => void>> = {
+  list: ({ file }) => {
+    for (const i of readInstallations(file)) {
+      console.log(`${i.id}  ${i.name}  [${i.sourceId}]  ${i.launchArgs ?? ''}`)
+    }
+  },
+  id: ({ file }) => {
+    const idFile = join(dirname(file), 'device-id.txt')
+    if (!existsSync(idFile)) {
+      throw new Error(
+        `No installation id at ${idFile}. Launch Comfy Desktop once first.`
+      )
+    }
+    console.log(readFileSync(idFile, 'utf8').trim())
+  },
+  use: ({ file, ref, install }) => {
+    if (!ref) throw new Error('Pass a frontend PR number or branch.')
+    const { sha, label } = resolveCommit(ref)
+    const dir = download(findBuild(sha), sha, label)
+    const changed = updateInstall(file, install, (args) =>
+      withFrontendRoot(args, dir)
+    )
+    console.log(
+      `"${changed.name}" now loads ${label} (${sha.slice(0, 7)}) from ${dir}.\nLaunch it in Comfy Desktop to test.`
+    )
+  },
+  reset: ({ file, install }) => {
+    const changed = updateInstall(file, install, withoutFrontendOverride)
+    console.log(`"${changed.name}" is back on its bundled frontend.`)
+  }
 }
 
 function main(): void {
@@ -164,52 +199,19 @@ function main(): void {
     }
   })
   const [command, ref] = positionals
-  const file = installationsPath(process.platform, process.env, values.dev)
-
-  if (command === 'list') {
-    for (const i of readInstallations(file)) {
-      console.log(`${i.id}  ${i.name}  [${i.sourceId}]  ${i.launchArgs ?? ''}`)
-    }
-    return
-  }
-
-  if (command === 'id') {
-    const idFile = join(dirname(file), 'device-id.txt')
-    if (!existsSync(idFile)) {
-      throw new Error(
-        `No installation id at ${idFile}. Launch Comfy Desktop once first.`
-      )
-    }
-    console.log(readFileSync(idFile, 'utf8').trim())
-    return
-  }
-
-  if (command === 'use' && ref) {
-    const { sha, label } = resolveCommit(ref)
-    const dir = download(findBuild(sha), sha, label)
-    const installs = readInstallations(file)
-    const install = pickInstall(installs, values.install)
-    install.launchArgs = withFrontendRoot(install.launchArgs ?? '', dir)
-    save(file, installs)
+  const run = COMMANDS[command]
+  if (!run) {
     console.log(
-      `"${install.name}" now loads ${label} (${sha.slice(0, 7)}) from ${dir}.\nLaunch it in Comfy Desktop to test.`
+      'Usage: pnpm qa:desktop-frontend use <pr|branch> | reset | list | id  [--install <id|name>] [--dev]'
     )
+    process.exitCode = 1
     return
   }
-
-  if (command === 'reset') {
-    const installs = readInstallations(file)
-    const install = pickInstall(installs, values.install)
-    install.launchArgs = withoutFrontendOverride(install.launchArgs ?? '')
-    save(file, installs)
-    console.log(`"${install.name}" is back on its bundled frontend.`)
-    return
-  }
-
-  console.log(
-    'Usage: pnpm qa:desktop-frontend use <pr|branch> | reset | list | id  [--install <id|name>] [--dev]'
-  )
-  process.exitCode = 1
+  run({
+    file: installationsPath(process.platform, process.env, values.dev),
+    ref,
+    install: values.install
+  })
 }
 
 try {
