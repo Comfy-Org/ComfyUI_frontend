@@ -86,25 +86,32 @@ interface Envelope {
 
 type WireOp = DocOp & Envelope
 
-function isWireOp(value: unknown): value is WireOp {
+const WIRE_SCALAR_FIELDS = {
+  op: 'string',
+  op_id: 'string',
+  actor: 'string',
+  base_version: 'number'
+} as const
+
+function isStamp(value: unknown): value is Stamp {
   return (
-    typeof value === 'object' &&
-    value !== null &&
-    !Array.isArray(value) &&
-    'op' in value &&
-    typeof value.op === 'string' &&
-    'op_id' in value &&
-    typeof value.op_id === 'string' &&
-    'actor' in value &&
-    typeof value.actor === 'string' &&
-    'base_version' in value &&
-    typeof value.base_version === 'number' &&
-    'stamp' in value &&
-    Array.isArray(value.stamp) &&
-    value.stamp.length === 2 &&
-    typeof value.stamp[0] === 'number' &&
-    typeof value.stamp[1] === 'string'
+    Array.isArray(value) &&
+    value.length === 2 &&
+    typeof value[0] === 'number' &&
+    typeof value[1] === 'string'
   )
+}
+
+function isRecord(value: unknown): value is Record<string, unknown> {
+  return typeof value === 'object' && value !== null && !Array.isArray(value)
+}
+
+function isWireOp(value: unknown): value is WireOp {
+  if (!isRecord(value)) return false
+  const scalarsTyped = Object.entries(WIRE_SCALAR_FIELDS).every(
+    ([field, type]) => typeof value[field] === type
+  )
+  return scalarsTyped && isStamp(value.stamp)
 }
 
 function envelopeOf({
