@@ -188,6 +188,11 @@ describe('Workflow input upload grants', () => {
       failure: { code: 'media_upload_rejected', status: 404, stage: 'upload' }
     },
     {
+      name: 'an unavailable upload service',
+      fail: () => Promise.resolve(new Response(null, { status: 503 })),
+      failure: { code: 'service_unavailable', status: 503, stage: 'upload' }
+    },
+    {
       name: 'a lost PUT response',
       fail: () => Promise.reject(new TypeError('Failed to fetch')),
       failure: {
@@ -242,6 +247,49 @@ describe('Workflow input upload grants', () => {
       stage: 'timeout',
       cause: { name: 'TimeoutError' }
     })
+  })
+
+  it('reports a PUT response body that outlived its time limit as a timeout', async () => {
+    const f = fixture()
+    const timeout = new AbortController()
+    vi.spyOn(AbortSignal, 'timeout').mockReturnValueOnce(timeout.signal)
+    const body = new ReadableStream<Uint8Array>(
+      {
+        pull(controller) {
+          timeout.abort(new DOMException('Upload timed out', 'TimeoutError'))
+          controller.error(timeout.signal.reason)
+        }
+      },
+      { highWaterMark: 0 }
+    )
+    f.fetch
+      .mockReset()
+      .mockResolvedValueOnce(Response.json(grant))
+      .mockResolvedValueOnce(
+        new Response(body, {
+          headers: { 'Content-Type': 'application/json' }
+        })
+      )
+
+    await expect(
+      f.upload(f.file, new AbortController().signal)
+    ).rejects.toMatchObject({
+      code: 'media_upload_timeout',
+      stage: 'timeout',
+      cause: { name: 'TimeoutError' }
+    })
+  })
+
+  it('attributes an unreadable PUT response to the upload stage', async () => {
+    const f = fixture()
+    f.fetch
+      .mockReset()
+      .mockResolvedValueOnce(Response.json(grant))
+      .mockResolvedValueOnce(new Response('not json'))
+
+    await expect(
+      f.upload(f.file, new AbortController().signal)
+    ).rejects.toMatchObject({ code: 'response', stage: 'upload' })
   })
 
   it('discards a PUT response after caller cancellation', async () => {
@@ -344,17 +392,30 @@ describe('Workflow input upload grants', () => {
   })
 
   it.for([
-    { name: 'a failed download', status: 403, type: 'image/png', length: 4 },
-    { name: 'a non-media download', status: 200, type: 'text/html', length: 4 },
+    {
+      name: 'a failed download',
+      status: 403,
+      type: 'image/png',
+      length: 4,
+      reported: 403
+    },
+    {
+      name: 'a non-media download',
+      status: 200,
+      type: 'text/html',
+      length: 4,
+      reported: undefined
+    },
     {
       name: 'an oversized declared download',
       status: 200,
       type: 'image/png',
-      length: WORKFLOW_FILE_BYTES + 1
+      length: WORKFLOW_FILE_BYTES + 1,
+      reported: undefined
     }
   ])(
     'rejects $name before requesting a grant',
-    async ({ status, type, length }) => {
+    async ({ status, type, length, reported }) => {
       const f = fixture()
       f.fetch.mockReset().mockResolvedValueOnce(
         new Response(bytes, {
@@ -370,7 +431,7 @@ describe('Workflow input upload grants', () => {
         )
       ).rejects.toMatchObject({
         code: 'media_download_failed',
-        status,
+        status: reported,
         stage: 'download'
       })
       expect(f.fetch).toHaveBeenCalledOnce()
@@ -387,6 +448,29 @@ describe('Workflow input upload grants', () => {
       code: 'media_download_failed',
       stage: 'download',
       cause: new TypeError('Failed to fetch')
+    })
+    expect(f.fetch).toHaveBeenCalledOnce()
+  })
+
+  it('reports a source stream that failed mid-read as a failed download', async () => {
+    const f = fixture()
+    const body = new ReadableStream<Uint8Array>({
+      pull(controller) {
+        controller.error(new TypeError('network error'))
+      }
+    })
+    f.fetch
+      .mockReset()
+      .mockResolvedValueOnce(
+        new Response(body, { headers: { 'Content-Type': 'image/png' } })
+      )
+
+    await expect(
+      f.upload('https://media.example/source.png', new AbortController().signal)
+    ).rejects.toMatchObject({
+      code: 'media_download_failed',
+      stage: 'download',
+      cause: new TypeError('network error')
     })
     expect(f.fetch).toHaveBeenCalledOnce()
   })

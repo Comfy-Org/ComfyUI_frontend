@@ -126,6 +126,17 @@ describe('Workshop execution attribution', () => {
       }
     },
     {
+      name: 'a credential refused while minting an upload grant',
+      failure: new WorkshopWorkflowError('not_authenticated', {}, 401, {
+        stage: 'mint'
+      }),
+      details: {
+        workflow_error_code: 'not_authenticated',
+        http_status: 401,
+        failure_stage: 'mint'
+      }
+    },
+    {
       name: 'a rejected upload',
       failure: new WorkshopWorkflowError('media_upload_rejected', {}, 404, {
         stage: 'upload'

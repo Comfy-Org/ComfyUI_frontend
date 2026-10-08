@@ -73,9 +73,11 @@ export async function workflowResponseJson(
       offset += chunk.byteLength
     }
     return JSON.parse(new TextDecoder('utf-8', { fatal: true }).decode(bytes))
-  } catch {
+  } catch (error) {
     await reader.cancel().catch(() => {})
-    throw new WorkshopWorkflowError('response')
+    throw error instanceof WorkshopWorkflowError
+      ? error
+      : new WorkshopWorkflowError('response', {}, undefined, { cause: error })
   } finally {
     reader.releaseLock()
   }

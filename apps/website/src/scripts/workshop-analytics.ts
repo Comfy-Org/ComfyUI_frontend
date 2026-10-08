@@ -241,10 +241,10 @@ export function workshopWorkflowFailureAnalytics(
     reason: WORKFLOW_FAILURE_REASONS[failure.code],
     workflow_error_code: failure.code,
     http_status: workshopHttpStatus(failure.status),
-    ...(['not_authenticated', 'access_denied'].includes(failure.code)
-      ? { failure_stage: 'credential' as const }
-      : failure.stage
-        ? { failure_stage: failure.stage }
+    ...(failure.stage
+      ? { failure_stage: failure.stage }
+      : ['not_authenticated', 'access_denied'].includes(failure.code)
+        ? { failure_stage: 'credential' as const }
         : {}),
     ...(failure.cause === undefined
       ? {}

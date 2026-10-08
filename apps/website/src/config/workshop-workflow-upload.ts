@@ -50,11 +50,7 @@ async function downloadInput(
     cache: 'no-store',
     referrerPolicy: 'no-referrer'
   }).catch((error: unknown) => {
-    if (signal.aborted) throw error
-    throw new WorkshopWorkflowError('media_download_failed', {}, undefined, {
-      cause: error,
-      stage: 'download'
-    })
+    throw downloadFailure(error, signal)
   })
   const type = (response.headers.get('Content-Type') ?? '')
     .split(';')[0]
@@ -70,11 +66,21 @@ async function downloadInput(
     throw new WorkshopWorkflowError(
       'media_download_failed',
       {},
-      response.status,
+      response.ok ? undefined : response.status,
       { stage: 'download' }
     )
   }
-  return inputFile(response.body, type, signal)
+  return inputFile(response.body, type, signal).catch((error: unknown) => {
+    throw downloadFailure(error, signal)
+  })
+}
+
+function downloadFailure(error: unknown, signal: AbortSignal): unknown {
+  if (signal.aborted || error instanceof WorkshopWorkflowError) return error
+  return new WorkshopWorkflowError('media_download_failed', {}, undefined, {
+    cause: error,
+    stage: 'download'
+  })
 }
 
 async function inputFile(
@@ -117,20 +123,36 @@ function mintFailure(error: unknown): unknown {
   )
 }
 
+function uploadTimeout(error: unknown): WorkshopWorkflowError {
+  return new WorkshopWorkflowError('media_upload_timeout', {}, undefined, {
+    cause: error,
+    stage: 'timeout'
+  })
+}
+
 function uploadFailure(
   error: unknown,
   requestSignal: AbortSignal
 ): WorkshopWorkflowError {
   if (error instanceof WorkshopWorkflowError) return error
   return requestSignal.aborted
-    ? new WorkshopWorkflowError('media_upload_timeout', {}, undefined, {
-        cause: error,
-        stage: 'timeout'
-      })
+    ? uploadTimeout(error)
     : new WorkshopWorkflowError('media_upload_network', {}, undefined, {
         cause: error,
         stage: 'network'
       })
+}
+
+function uploadResponseFailure(
+  error: unknown,
+  requestSignal: AbortSignal
+): WorkshopWorkflowError {
+  const cause = error instanceof WorkshopWorkflowError ? error.cause : error
+  if (requestSignal.aborted) return uploadTimeout(cause ?? error)
+  return new WorkshopWorkflowError('response', {}, undefined, {
+    cause,
+    stage: 'upload'
+  })
 }
 
 export function createWorkflowUploader(
@@ -179,16 +201,24 @@ export function createWorkflowUploader(
       if (!response.ok) {
         await response.body?.cancel()
         throw new WorkshopWorkflowError(
-          'media_upload_rejected',
+          response.status >= 500
+            ? 'service_unavailable'
+            : 'media_upload_rejected',
           {},
           response.status,
           { stage: 'upload' }
         )
       }
-      const result = uploadResultSchema.safeParse(
-        await workflowResponseJson(response)
+      const body = await workflowResponseJson(response).catch(
+        (error: unknown) => {
+          throw uploadResponseFailure(error, requestSignal)
+        }
       )
-      if (!result.success) throw new WorkshopWorkflowError('response')
+      const result = uploadResultSchema.safeParse(body)
+      if (!result.success)
+        throw new WorkshopWorkflowError('response', {}, undefined, {
+          stage: 'upload'
+        })
       signal.throwIfAborted()
       return result.data.name
     } catch (error) {
