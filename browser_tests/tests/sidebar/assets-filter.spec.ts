@@ -4,7 +4,7 @@ import type { Asset, ListAssetsResponse } from '@comfyorg/ingest-types'
 import { comfyPageFixture } from '@e2e/fixtures/ComfyPage'
 
 // The assets sidebar's attribute filter menu only renders in cloud mode
-// (`MediaAssetFilterBar.vue` gates `MediaAssetFilterButton` behind `isCloud`).
+// (`MediaAssetFilterBar.vue` gates the filter menu behind `isCloud`).
 // We tag tests `@cloud` so they run against the cloud Playwright project,
 // and register `/api/assets` route handlers as auto fixtures — Playwright
 // runs auto fixtures before the `comfyPage` fixture's internal `setup()`,

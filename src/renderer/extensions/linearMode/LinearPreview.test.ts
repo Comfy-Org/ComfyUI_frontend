@@ -167,7 +167,9 @@ describe('LinearPreview', () => {
     await userEvent
       .setup()
       .click(screen.getByRole('button', { name: 'More Options' }))
-    expect(await screen.findByRole('dialog')).toHaveTextContent('Delete all')
+    expect(
+      await screen.findByRole('menuitem', { name: 'Delete all' })
+    ).toBeInTheDocument()
     expect(screen.getByText('Rerun')).toBeInTheDocument()
     expect(screen.getByText('Reuse Parameters')).toBeInTheDocument()
   })

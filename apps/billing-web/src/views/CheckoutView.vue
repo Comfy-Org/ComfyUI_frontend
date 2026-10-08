@@ -47,9 +47,11 @@ import {
   teamCheckoutPlan,
   tierCheckoutPlan
 } from '@/checkout/checkoutRequest'
+import { operationPlanLabel, operationPlanOf } from '@/checkout/operationPlan'
 import CheckoutFrame from '@/components/CheckoutFrame.vue'
 import type { CheckoutToastItem } from '@/components/CheckoutToasts.vue'
 import CheckoutToasts from '@/components/CheckoutToasts.vue'
+import OperationPlanSummary from '@/components/OperationPlanSummary.vue'
 import { useBilledWorkspace } from '@/composables/useBilledWorkspace'
 import { useCheckoutCopy } from '@/composables/useCheckoutCopy'
 import { useCheckoutJourney } from '@/composables/useCheckoutJourney'
@@ -95,17 +97,23 @@ const { plans } = usePlans()
 // setup runs, instead of the fallback this ref started with.
 const stripeKey = useBillingWebStripeKey()
 
-const { lifecycle, status } = useBillingClient<'lifecycle' | 'status'>(
-  undefined
-)
+const { lifecycle, status, commands } = useBillingClient<
+  'lifecycle' | 'status' | 'commands'
+>(undefined)
 
 /** A page handed to a hosted step or a method's own site has not been abandoned. */
-let handedToHostedStep = false
-let payingOnOwnSite = false
+const handedToHostedStep = ref(false)
+const payingOnOwnSite = ref(false)
+
+useEventListener(window, 'pageshow', (event) => {
+  if (!event.persisted) return
+  handedToHostedStep.value = false
+  payingOnOwnSite.value = false
+})
 
 const checkout = useCheckout({
   openUrl: (url) => {
-    handedToHostedStep = true
+    handedToHostedStep.value = true
     window.location.assign(url)
   },
   navigationMode: 'redirect',
@@ -318,8 +326,10 @@ const operationToast = computed(() => {
       }
 })
 
-const actionUrl = computed(
-  () => validateActionUrl(pendingOperation.value?.actionUrl) ?? null
+const actionUrl = computed(() =>
+  handedToHostedStep.value || payingOnOwnSite.value
+    ? null
+    : (validateActionUrl(pendingOperation.value?.actionUrl) ?? null)
 )
 
 const parkedCheckoutRecovery = computed(
@@ -348,6 +358,33 @@ const operationHoldsConfirm = computed(() => {
     authenticationState.value !== 'requires_action'
   )
 })
+
+/**
+ * Offered only on the server's `cancelable`; the cancel wakes the lifecycle,
+ * whose re-read settles the operation through the failed path above.
+ */
+const paymentCancelable = computed(
+  () => pendingOperation.value?.cancelable === true
+)
+const CANCEL_REFUSAL_COPY = {
+  NOT_CANCELABLE: 'checkout.preview.cancelPaymentNotCancelable',
+  PAYMENT_IN_FLIGHT: 'checkout.preview.cancelPaymentInFlight'
+} as const
+const cancelingPayment = ref(false)
+const cancelPaymentError = ref<string>()
+
+async function cancelPayment() {
+  const operationId = pendingOperation.value?.id
+  if (operationId === undefined || cancelingPayment.value) return
+  cancelingPayment.value = true
+  cancelPaymentError.value = undefined
+  const answer = await commands.cancelOperation(operationId)
+  cancelingPayment.value = false
+  if (answer.status === 'error')
+    cancelPaymentError.value = t('checkout.preview.cancelPaymentFailed')
+  else if (answer.status === 'not_canceled')
+    cancelPaymentError.value = t(CANCEL_REFUSAL_COPY[answer.code])
+}
 
 /** The app keeps a closed progress toast closed until the operation's state changes. */
 const operationToastKey = computed(() =>
@@ -382,6 +419,40 @@ watch(
     }
   }
 )
+
+/**
+ * The operation this page found rather than issued: one the lifecycle held
+ * before this page's own subscribe was in flight. Pay joins it, never replaces
+ * it, so it keeps that provenance to the end.
+ */
+const recoveredOperationId = ref<string>()
+watch(
+  () => checkout.operation.value?.id,
+  (id) => {
+    if (id !== undefined && !checkout.submitting.value)
+      recoveredOperationId.value = id
+  },
+  { immediate: true, flush: 'sync' }
+)
+
+/** A recovered payment is summarized by the plan the server reports for it, never the link's. */
+const recoveredPlan = computed(() => {
+  const operation = checkout.operation.value
+  if (operation === undefined || operation.id !== recoveredOperationId.value)
+    return undefined
+  if (operation.phase !== 'pending' && operation.phase !== 'succeeded')
+    return undefined
+  const plan = operationPlanOf(operation)
+  return {
+    label:
+      plan &&
+      operationPlanLabel(plan, {
+        t,
+        tierName: (tier) => coded('tier', tier),
+        locale: locale.value
+      })
+  }
+})
 
 const succeeded = computed(() => checkout.projection.value.step === 'success')
 
@@ -471,7 +542,7 @@ function closeToast(key: string) {
 
 const paying = computed(
   () =>
-    checkout.submitting.value ||
+    (checkout.submitting.value && !pendingOperation.value) ||
     (operationHoldsConfirm.value && !succeeded.value)
 )
 
@@ -537,7 +608,7 @@ async function pay(choice: PaymentChoice) {
   const methodType = methodTypeOf(choice)
   journey.methodSelected(selectedRailOf(choice), methodType)
   const press = journey.submitted()
-  payingOnOwnSite = paysOnOwnSite(methodType)
+  payingOnOwnSite.value = paysOnOwnSite(methodType)
   let result: SubscriptionCommandResult
   try {
     result = await attempts.run(checkoutAttemptOf(quoted, entry.value), () =>
@@ -554,7 +625,7 @@ async function pay(choice: PaymentChoice) {
       )
     )
   } finally {
-    payingOnOwnSite = false
+    payingOnOwnSite.value = false
     journey.submitSettled(press)
   }
   if (result.status === 'ok') return
@@ -593,7 +664,8 @@ function leaveForHost(control: WebReturnControl) {
 }
 
 useEventListener(window, 'pagehide', () => {
-  if (!handedToHostedStep && !payingOnOwnSite) journey.abandoned('page_exit')
+  if (!handedToHostedStep.value && !payingOnOwnSite.value)
+    journey.abandoned('page_exit')
 })
 </script>
 
@@ -640,11 +712,19 @@ useEventListener(window, 'pagehide', () => {
             :dark-surface="isNewSubscription"
             :max-seats="seats.max"
             :occupied-seats="seats.occupied"
+            :plan-replaced="recoveredPlan !== undefined"
             :invites
             @invited="readSeats"
             @invites-failed="inviteFailure = $event"
             @close="leaveForHost('success_close')"
-          />
+          >
+            <template #plan>
+              <OperationPlanSummary
+                class="mt-4 w-full rounded-xl bg-secondary-background p-4"
+                :recovered="recoveredPlan"
+              />
+            </template>
+          </CheckoutTeamSuccess>
           <CheckoutSubscribeConfirm
             v-else-if="isNewSubscription"
             :selected-saved-method-id="selectedSavedMethodId"
@@ -665,6 +745,7 @@ useEventListener(window, 'pagehide', () => {
             :quote-is-current
             :is-applying-promotion-code="applyingPromotionCode"
             :embedded-checkout-enabled="true"
+            :summary-replaced="recoveredPlan !== undefined"
             @update:selected-saved-method-id="selectSavedMethod"
             @change-payment-method="selectSavedMethod(null)"
             @add-credit-card="payWithoutCard"
@@ -676,7 +757,11 @@ useEventListener(window, 'pagehide', () => {
             @invalidate-quote="quoteIsCurrent = false"
             @payment-phase="journey.track"
             @back="leaveForHost('back')"
-          />
+          >
+            <template #summary>
+              <OperationPlanSummary :recovered="recoveredPlan" />
+            </template>
+          </CheckoutSubscribeConfirm>
           <CheckoutTransitionConfirm
             v-else
             :preview-data="preview"
@@ -695,11 +780,20 @@ useEventListener(window, 'pagehide', () => {
             :quote-is-current
             :is-applying-promotion-code="applyingPromotionCode"
             :embedded-checkout-enabled="true"
+            :summary-replaced="recoveredPlan !== undefined"
+            :payment-cancelable
+            :canceling-payment
+            :cancel-payment-error
+            @cancel-payment="cancelPayment"
             @confirm="pay({ confirmReactivation: $event })"
             @apply-promotion-code="applyPromotionCode"
             @invalidate-quote="quoteIsCurrent = false"
             @back="leaveForHost('back')"
-          />
+          >
+            <template #summary>
+              <OperationPlanSummary :recovered="recoveredPlan" />
+            </template>
+          </CheckoutTransitionConfirm>
         </CheckoutFrame>
       </template>
     </section>

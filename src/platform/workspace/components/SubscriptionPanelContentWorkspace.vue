@@ -137,22 +137,20 @@
                     )
                   }}
                 </Button>
-                <DropdownMenu
+                <Menu
                   v-if="showInactiveTeamSubscription && menuEntries.length > 0"
-                  :entries="menuEntries"
+                  :items="menuEntries"
                 >
-                  <template #button>
+                  <template #trigger>
                     <Button
                       v-tooltip="{ value: $t('g.moreOptions'), showDelay: 300 }"
                       variant="secondary"
                       size="icon-lg"
-                      class="rounded-lg bg-interface-menu-component-surface-selected text-text-primary"
+                      icon="icon-[lucide--ellipsis]"
                       :aria-label="$t('g.moreOptions')"
-                    >
-                      <i class="pi pi-ellipsis-h" />
-                    </Button>
+                    />
                   </template>
-                </DropdownMenu>
+                </Menu>
               </div>
             </template>
 
@@ -200,22 +198,17 @@
                 >
                   {{ $t('subscription.subscribe') }}
                 </Button>
-                <DropdownMenu
-                  v-if="menuEntries.length > 0"
-                  :entries="menuEntries"
-                >
-                  <template #button>
+                <Menu v-if="menuEntries.length > 0" :items="menuEntries">
+                  <template #trigger>
                     <Button
                       v-tooltip="{ value: $t('g.moreOptions'), showDelay: 300 }"
                       variant="secondary"
                       size="icon-lg"
-                      class="rounded-lg bg-interface-menu-component-surface-selected text-text-primary"
+                      icon="icon-[lucide--ellipsis]"
                       :aria-label="$t('g.moreOptions')"
-                    >
-                      <i class="pi pi-ellipsis-h" />
-                    </Button>
+                    />
                   </template>
-                </DropdownMenu>
+                </Menu>
               </div>
             </template>
 
@@ -306,22 +299,17 @@
                       : $t('subscription.changePlan')
                   }}
                 </Button>
-                <DropdownMenu
-                  v-if="menuEntries.length > 0"
-                  :entries="menuEntries"
-                >
-                  <template #button>
+                <Menu v-if="menuEntries.length > 0" :items="menuEntries">
+                  <template #trigger>
                     <Button
                       v-tooltip="{ value: $t('g.moreOptions'), showDelay: 300 }"
                       variant="secondary"
                       size="icon-lg"
-                      class="rounded-lg bg-interface-menu-component-surface-selected text-text-primary"
+                      icon="icon-[lucide--ellipsis]"
                       :aria-label="$t('g.moreOptions')"
-                    >
-                      <i class="pi pi-ellipsis-h" />
-                    </Button>
+                    />
                   </template>
-                </DropdownMenu>
+                </Menu>
               </div>
             </template>
           </div>
@@ -420,7 +408,7 @@ import { useI18n } from 'vue-i18n'
 
 import CreditsTile from '@/platform/cloud/subscription/components/CreditsTile.vue'
 import SubscriptionFooterLinks from '@/platform/cloud/subscription/components/SubscriptionFooterLinks.vue'
-import DropdownMenu from '@/components/common/DropdownMenu.vue'
+import Menu from '@/components/ui/menu/Menu.vue'
 import StatusBadge from '@/components/common/StatusBadge.vue'
 import Button from '@/components/ui/button/Button.vue'
 import { useBillingContext } from '@/composables/billing/useBillingContext'
@@ -433,6 +421,7 @@ import {
 import type { TierBenefit } from '@/platform/cloud/subscription/utils/tierBenefits'
 import { getCommonTierBenefits } from '@/platform/cloud/subscription/utils/tierBenefits'
 import { isCloud } from '@/platform/distribution/types'
+import { useBillingBanner } from '@/platform/workspace/composables/useBillingBanner'
 import { useResubscribe } from '@/platform/workspace/composables/useResubscribe'
 import { useScheduledPlanChange } from '@/platform/workspace/composables/useScheduledPlanChange'
 import { useBillingCapabilities } from '@/platform/workspace/composables/useBillingCapabilities'
@@ -636,13 +625,17 @@ const isQuietEnterpriseEnding = computed(
     !isWithinEnterpriseEndingNotice(subscription.value?.endDate, now.value)
 )
 
+const { kind: billingBannerKind } = useBillingBanner()
+
 // An end-dated Enterprise plan never shows the amber card; inside the notice
-// window the muted ending banner carries the message instead.
+// window the muted ending banner carries the message instead. The banner is
+// still rolling out, so the card stays wherever the ending banner is not shown.
 const showSubscriptionStateCard = computed(
   () =>
     isSubscriptionCancelled.value &&
     !isSubscriptionEnded.value &&
-    !hasScheduledEnterpriseEnd.value
+    !hasScheduledEnterpriseEnd.value &&
+    billingBannerKind.value !== 'ending'
 )
 
 const subscriptionStateCardTitle = computed(() =>

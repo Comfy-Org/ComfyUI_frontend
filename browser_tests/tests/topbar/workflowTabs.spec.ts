@@ -414,6 +414,26 @@ test.describe('Workflow tabs', () => {
   })
 
   test(
+    'Keyboard overflow menu opens below its trigger and returns focus',
+    { tag: '@ui' },
+    async ({ comfyPage }) => {
+      await comfyPage.page.setViewportSize({ width: 800, height: 720 })
+      const topbar = comfyPage.menu.topbar
+
+      await topbar.openBlankWorkflows(8)
+      await topbar.openWorkflowOverflowMenu()
+      await expect(async () => {
+        const gap = await topbar.getWorkflowOverflowMenuVerticalGap()
+        expect(gap).toBeGreaterThanOrEqual(0)
+        expect(gap).toBeLessThan(10)
+      }).toPass({ timeout: 5000 })
+
+      await topbar.closeWorkflowOverflowMenu()
+      await expect(topbar.workflowOverflowButton).toBeFocused()
+    }
+  )
+
+  test(
     'Hover popover is centered under the hovered tab',
     { tag: '@ui' },
     async ({ comfyPage }) => {

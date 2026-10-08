@@ -16,6 +16,24 @@ const FLAG_KEY = 'billing_web_checkout_ui'
 const FAIL_CLOSED: CheckoutUiVariant = 'embedded'
 const FLAG_FETCH_TIMEOUT_MS = 4000
 
+/** The shared web session's signed-in user and a cookie read of a Cloud URL. */
+export interface WebSessionCloudRead {
+  readonly uid: string
+  readonly read: (
+    url: string,
+    init: RequestInit
+  ) => Promise<Response | undefined>
+}
+
+let webSessionCloudRead: () => WebSessionCloudRead | undefined = () => undefined
+
+/** Set by the auth module, which decides whether this tab is on the web session. */
+export function provideWebSessionCloudRead(
+  source: () => WebSessionCloudRead | undefined
+): void {
+  webSessionCloudRead = source
+}
+
 /** `settled` is terminal, so a mounted checkout can never become the other one. */
 export function settleCheckoutUi(
   state: CheckoutUiState,
@@ -51,16 +69,12 @@ function readDevOverride(): CheckoutUiVariant | undefined {
   }
 }
 
-async function fetchVariant(
-  token: string,
-  signal: AbortSignal
+const FEATURES_URL = `${CLOUD_BASE_URL}/api/features`
+
+async function variantOf(
+  response: Response | undefined
 ): Promise<CheckoutUiVariant> {
-  const response = await fetch(`${CLOUD_BASE_URL}/api/features`, {
-    headers: { Authorization: `Bearer ${token}` },
-    cache: 'no-store',
-    signal
-  })
-  if (!response.ok) return FAIL_CLOSED
+  if (!response?.ok) return FAIL_CLOSED
   const body: unknown = await response.json()
   if (typeof body !== 'object' || body === null || !(FLAG_KEY in body))
     return FAIL_CLOSED
@@ -72,17 +86,29 @@ async function fetchVariant(
  * `ensureFresh` would mint for the personal workspace and remount the view
  * under the customer.
  */
-async function resolveVariant(workspaceId: string): Promise<CheckoutUiVariant> {
+function readWithToken(workspaceId: string) {
+  return async (signal: AbortSignal): Promise<Response | undefined> => {
+    const minted = await billingWebSessionClient().ensureFresh(undefined, {
+      workspaceId,
+      signal,
+      timeoutMs: FLAG_FETCH_TIMEOUT_MS
+    })
+    if (minted?.status !== 'ok') return undefined
+    return fetch(FEATURES_URL, {
+      headers: { Authorization: `Bearer ${minted.session.token}` },
+      cache: 'no-store',
+      signal
+    })
+  }
+}
+
+async function resolveVariant(
+  read: (signal: AbortSignal) => Promise<Response | undefined>
+): Promise<CheckoutUiVariant> {
   const controller = new AbortController()
   const timer = setTimeout(() => controller.abort(), FLAG_FETCH_TIMEOUT_MS)
   try {
-    const minted = await billingWebSessionClient().ensureFresh(undefined, {
-      workspaceId,
-      signal: controller.signal,
-      timeoutMs: FLAG_FETCH_TIMEOUT_MS
-    })
-    if (minted?.status !== 'ok') return FAIL_CLOSED
-    return await fetchVariant(minted.session.token, controller.signal)
+    return await variantOf(await read(controller.signal))
   } catch {
     return FAIL_CLOSED
   } finally {
@@ -98,10 +124,22 @@ let memo:
 export function awaitCheckoutUiVariant(): Promise<CheckoutUiVariant> {
   const override = readDevOverride()
   if (override !== undefined) return Promise.resolve(override)
+  const onSession = webSessionCloudRead()
+  if (onSession) {
+    const { uid, read } = onSession
+    if (memo?.uid !== uid)
+      memo = {
+        uid,
+        resolution: resolveVariant((signal) =>
+          read(FEATURES_URL, { cache: 'no-store', signal })
+        )
+      }
+    return memo.resolution
+  }
   const snapshot = billingWebSessionClient().getSnapshot()
   if (snapshot.phase !== 'authenticated') return Promise.resolve(FAIL_CLOSED)
   const { uid, workspace } = snapshot.session
   if (memo?.uid !== uid)
-    memo = { uid, resolution: resolveVariant(workspace.id) }
+    memo = { uid, resolution: resolveVariant(readWithToken(workspace.id)) }
   return memo.resolution
 }

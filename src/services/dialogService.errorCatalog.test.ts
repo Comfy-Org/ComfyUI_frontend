@@ -32,7 +32,7 @@ vi.mock(import('primevue/usetoast'), () => ({
   })
 }))
 vi.mock(import('@/composables/useCopyToClipboard'), () => ({
-  useCopyToClipboard: () => ({ copyToClipboard: vi.fn(async () => {}) })
+  useCopyToClipboard: () => ({ copyToClipboard: vi.fn(async () => true) })
 }))
 vi.mock(import('@/composables/billing/useBillingContext'))
 vi.mock(import('@/platform/workspace/composables/useBillingCapabilities'))

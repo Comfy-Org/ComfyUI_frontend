@@ -401,7 +401,7 @@ describe('billing-web first render with unified_web_session undecided', () => {
     expect(h.initializeApp).not.toHaveBeenCalled()
   })
 
-  it('takes the session-client path at the cap when the flag read hangs, and never swaps', async () => {
+  it('takes the session-client path only once the flag read times out, and never swaps', async () => {
     vi.useFakeTimers({ toFake: ['setTimeout', 'clearTimeout'] })
     const { sent, fetchImpl } = recordingFetch(
       { firebase_config: FIREBASE_CONFIG, web_session_probe: true },
@@ -412,8 +412,11 @@ describe('billing-web first render with unified_web_session undecided', () => {
       'fetch',
       vi.fn<typeof fetch>((input, init) =>
         init?.credentials === 'include'
-          ? new Promise<Response>((resolve) => {
+          ? new Promise<Response>((resolve, reject) => {
               answerFlag = resolve
+              init.signal?.addEventListener('abort', () =>
+                reject(new DOMException('Aborted', 'AbortError'))
+              )
             })
           : fetchImpl(input, init)
       )
@@ -422,7 +425,7 @@ describe('billing-web first render with unified_web_session undecided', () => {
 
     const router = await renderApp()
     expect(screen.getByText(UNAVAILABLE)).toBeInTheDocument()
-    await vi.advanceTimersByTimeAsync(799)
+    await vi.advanceTimersByTimeAsync(3999)
     expect(h.initializeApp).not.toHaveBeenCalled()
 
     await vi.advanceTimersByTimeAsync(1)
@@ -437,7 +440,7 @@ describe('billing-web first render with unified_web_session undecided', () => {
     expect(h.initializeApp).toHaveBeenCalledOnce()
   })
 
-  it('does not wait for the cap when the probe is false', async () => {
+  it('does not wait for the flag read when the probe is false', async () => {
     const { fetchImpl } = recordingFetch(
       { firebase_config: FIREBASE_CONFIG, web_session_probe: false },
       {}

@@ -1,0 +1,199 @@
+import type { MaybeRefOrGetter } from 'vue'
+import { computed, onScopeDispose, reactive, ref, toValue, watch } from 'vue'
+import { useI18n } from 'vue-i18n'
+
+import { reportError } from '@/platform/telemetry/reportError'
+
+import { publishSkillPack, SkillPacksApiError } from '../api/skillsApi'
+import { useSkillPacksStore } from '../stores/skillPacksStore'
+import type { SkillPack } from '../types'
+import {
+  CONTROL_CHARACTERS,
+  codePointLength,
+  MAX_DESCRIPTION_CODE_POINTS,
+  MAX_NAME_LENGTH,
+  PACK_NAME_PATTERN,
+  RESERVED_PACK_NAMES,
+  utf8ByteLength
+} from '../types'
+
+interface UseSkillPackFormOptions {
+  pack?: MaybeRefOrGetter<SkillPack | undefined>
+  visible: { value: boolean }
+}
+
+export function useSkillPackForm(options: UseSkillPackFormOptions) {
+  const { t } = useI18n()
+  const { pack: packRef, visible } = options
+  const store = useSkillPacksStore()
+
+  const loading = ref(false)
+  let formGeneration = 0
+  const fieldError = ref<string | null>(null)
+  // The server's 409 message names the configured limit and overage.
+  const budgetError = ref<string | null>(null)
+
+  const form = reactive({
+    name: '',
+    description: '',
+    body: ''
+  })
+
+  const errors = reactive({
+    name: '',
+    description: '',
+    body: ''
+  })
+
+  const isReplacing = computed(() =>
+    store.packs.some((existing) => existing.name === form.name.trim())
+  )
+
+  const bodyBytes = computed(() => utf8ByteLength(form.body))
+
+  function resetForm() {
+    const pack = toValue(packRef)
+    form.name = pack?.name ?? ''
+    form.description = pack?.description ?? ''
+    form.body = pack?.body ?? ''
+    errors.name = ''
+    errors.description = ''
+    errors.body = ''
+    fieldError.value = null
+    budgetError.value = null
+  }
+
+  resetForm()
+  watch(
+    () => visible.value,
+    () => formGeneration++,
+    { flush: 'sync' }
+  )
+  watch(
+    () => visible.value,
+    (isVisible) => {
+      if (isVisible) resetForm()
+    }
+  )
+  onScopeDispose(() => formGeneration++)
+
+  function validateName(): boolean {
+    const name = form.name.trim()
+    if (!name) {
+      errors.name = t('skillPacks.errors.nameRequired')
+      return false
+    }
+    if (name.length > MAX_NAME_LENGTH) {
+      errors.name = t('skillPacks.errors.nameTooLong', {
+        max: MAX_NAME_LENGTH
+      })
+      return false
+    }
+    if (!PACK_NAME_PATTERN.test(name)) {
+      errors.name = t('skillPacks.errors.nameCharset')
+      return false
+    }
+    if (RESERVED_PACK_NAMES.some((reserved) => reserved === name)) {
+      errors.name = t('skillPacks.errors.nameReserved', { name })
+      return false
+    }
+    if (!toValue(packRef) && isReplacing.value) {
+      errors.name = t('skillPacks.errors.nameAlreadyExists', { name })
+      return false
+    }
+    return true
+  }
+
+  function validateDescription(): boolean {
+    if (!form.description.trim()) {
+      errors.description = t('skillPacks.errors.descriptionRequired')
+      return false
+    }
+    if (CONTROL_CHARACTERS.test(form.description)) {
+      errors.description = t('skillPacks.errors.descriptionSingleLine')
+      return false
+    }
+    if (codePointLength(form.description) > MAX_DESCRIPTION_CODE_POINTS) {
+      errors.description = t('skillPacks.errors.descriptionTooLong', {
+        max: MAX_DESCRIPTION_CODE_POINTS
+      })
+      return false
+    }
+    return true
+  }
+
+  function validateBody(): boolean {
+    if (!form.body.trim()) {
+      errors.body = t('skillPacks.errors.bodyRequired')
+      return false
+    }
+    return true
+  }
+
+  function validate(): boolean {
+    errors.name = ''
+    errors.description = ''
+    errors.body = ''
+    fieldError.value = null
+    budgetError.value = null
+
+    if (!validateName() || !validateDescription() || !validateBody()) {
+      return false
+    }
+    return true
+  }
+
+  function handlePublishFailure(error: unknown, generation: number) {
+    if (error instanceof SkillPacksApiError && error.status === 404) {
+      store.markUnavailable()
+      if (generation === formGeneration) visible.value = false
+      return
+    }
+    if (!(error instanceof SkillPacksApiError)) {
+      reportError(error, {
+        errorType: 'error_publishing_agent_skill_pack',
+        surface: 'agent'
+      })
+    }
+    if (generation !== formGeneration) return
+    if (error instanceof SkillPacksApiError && error.status === 409) {
+      budgetError.value = error.message
+    } else if (error instanceof SkillPacksApiError) {
+      fieldError.value = error.message
+    } else {
+      fieldError.value = t('g.unknownError')
+    }
+  }
+
+  async function handleSubmit() {
+    if (loading.value || !visible.value) return
+    if (!validate()) return
+
+    const generation = formGeneration
+    loading.value = true
+    try {
+      const saved = await publishSkillPack({
+        name: form.name.trim(),
+        description: form.description,
+        body: form.body
+      })
+      store.upsertPack(saved)
+      if (generation !== formGeneration) return
+      visible.value = false
+    } catch (error) {
+      handlePublishFailure(error, generation)
+    } finally {
+      loading.value = false
+    }
+  }
+
+  return {
+    form,
+    errors,
+    loading,
+    fieldError,
+    budgetError,
+    bodyBytes,
+    handleSubmit
+  }
+}

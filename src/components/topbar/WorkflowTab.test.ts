@@ -136,12 +136,7 @@ function renderTab({
         )
     ),
     {
-      global: {
-        plugins: [i18n],
-        stubs: {
-          WorkflowActionsList: true
-        }
-      }
+      global: { plugins: [i18n] }
     }
   )
   const workflowStore = useWorkflowStore()

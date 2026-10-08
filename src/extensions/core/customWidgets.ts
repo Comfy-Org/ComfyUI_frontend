@@ -7,6 +7,7 @@ import type { IBaseWidget } from '@/lib/litegraph/src/types/widgets'
 import { BaseWidget } from '@/lib/litegraph/src/widgets/BaseWidget'
 import type { ComfyNodeDef } from '@/schemas/nodeDefSchema'
 import { app } from '@/scripts/app'
+import { GET_CONFIG } from '@/services/litegraphService'
 import { useWidgetValueStore } from '@/stores/widgetValueStore'
 import type { WidgetValue } from '@/types/simplifiedWidget'
 
@@ -161,7 +162,7 @@ class StubWidget<T extends WidgetValue> extends BaseWidget {
     name: string,
     protected valueGetter: () => T
   ) {
-    super({ name, node, options: {}, type: 'hidden', y: 0 })
+    super({ name, node, options: { socketless: true }, type: 'hidden', y: 0 })
   }
   drawWidget() {}
   onClick() {}
@@ -304,6 +305,10 @@ app.registerExtension({
         const values = () => connectedInputs.value
         const startValue = connectedInputs.value[0] ?? ''
         node.addWidget('combo', inputName, startValue, () => {}, { values })
+        node.onInputAdded = useChainCallback(node.onInputAdded, (input) => {
+          if (input.widget?.name !== inputName) return
+          input.widget[GET_CONFIG] = () => ['COMBO', { options: values }]
+        })
       }
     }
   }

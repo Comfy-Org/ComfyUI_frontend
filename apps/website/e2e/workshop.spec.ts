@@ -514,7 +514,7 @@ test.describe('Models catalog', () => {
       .getByTestId('workshop-model-card')
     await expect(cards.first()).toBeVisible()
     for (const card of await cards.all())
-      await expect(card).toHaveAccessibleName(/premium/i)
+      await expect(card.getByTestId('tag-row')).toContainText(/premium/i)
   })
 
   test('the hero medium deep-links into the catalog', async ({ page }) => {
@@ -675,7 +675,7 @@ test.describe('Model playground', () => {
     )
   })
 
-  test('restores sign-in and keeps Run and uploads enabled after Models menu navigation', async ({
+  test('restores sign-in and keeps Run and uploads enabled after Browse Models navigation', async ({
     page,
     modelsAccount
   }) => {
@@ -705,8 +705,9 @@ test.describe('Model playground', () => {
 
     await page
       .getByRole('navigation', { name: 'Main navigation', exact: true })
-      .getByRole('link', { name: 'Hub', exact: true })
+      .getByRole('button', { name: /^Products\b/ })
       .click()
+    await page.getByRole('link', { name: /^Browse Models\b/ }).click()
     await page.getByTestId('workshop-search').fill('Seedream 4.5 Image Edit')
     await page
       .getByTestId('workshop-models-grid')
