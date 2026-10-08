@@ -4,7 +4,7 @@ import { v4 as uuidv4 } from 'uuid'
 
 import type { ExecuteRequestOptions } from '@/composables/useApiRequest'
 import { useApiRequest } from '@/composables/useApiRequest'
-import { t } from '@/i18n'
+import { t, tPlain } from '@/i18n'
 import { reportError } from '@/platform/telemetry/reportError'
 import { api } from '@/scripts/api'
 import { useManagerState } from '@/workbench/extensions/manager/composables/useManagerState'
@@ -62,7 +62,7 @@ export const useComfyManagerService = () => {
     routeSpecificErrors?: Record<number, string>
   ): string => {
     if (!axios.isAxiosError(err)) {
-      return t('serviceErrors.failedWithMessage', {
+      return tPlain('serviceErrors.failedWithMessage', {
         context,
         message: err instanceof Error ? err.message : String(err)
       })
@@ -70,7 +70,7 @@ export const useComfyManagerService = () => {
 
     const axiosError = err as AxiosError<{ message: string }>
     if (!axiosError.response) {
-      return t('serviceErrors.failedWithMessage', {
+      return tPlain('serviceErrors.failedWithMessage', {
         context,
         message: axiosError.message
       })
@@ -86,7 +86,7 @@ export const useComfyManagerService = () => {
 
     return (
       axiosError.response.data?.message ??
-      t('serviceErrors.failedWithStatus', { context, status })
+      tPlain('serviceErrors.failedWithStatus', { context, status })
     )
   }
 
@@ -140,16 +140,12 @@ export const useComfyManagerService = () => {
     signal?: AbortSignal
   ): Promise<string | null> => {
     const errorContext = t('serviceErrors.context.startingQueue')
-    const routeSpecificErrors = {
-      201: t('serviceErrors.route.queueAlreadyRunning')
-    }
 
     let failure: string | null = null
     await executeRequest<null>(
       (client) => client.post(ManagerRoute.START_QUEUE, null, { signal }),
       {
         errorContext,
-        routeSpecificErrors,
         onError: (message) => {
           failure = message
         }
@@ -226,7 +222,7 @@ export const useComfyManagerService = () => {
       client_id: api.clientId ?? api.initialClientId ?? 'unknown'
     }
 
-    const errorContext = t('serviceErrors.context.queueingTask', {
+    const errorContext = tPlain('serviceErrors.context.queueingTask', {
       kind: task.kind
     })
     const routeSpecificErrors = {

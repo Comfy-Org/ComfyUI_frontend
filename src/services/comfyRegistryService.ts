@@ -2,7 +2,7 @@ import type { AxiosError } from 'axios'
 import axios from 'axios'
 
 import { useApiRequest } from '@/composables/useApiRequest'
-import { t } from '@/i18n'
+import { t, tPlain } from '@/i18n'
 import type { components, operations } from '@/types/comfyRegistryTypes'
 
 const API_BASE_URL = 'https://api.comfy.org'
@@ -29,11 +29,11 @@ export const useComfyRegistryService = () => {
   ): string => {
     if (!axios.isAxiosError(err))
       return err instanceof Error
-        ? t('serviceErrors.contextWithMessage', {
+        ? tPlain('serviceErrors.contextWithMessage', {
             context,
             message: err.message
           })
-        : t('serviceErrors.unknownError', { context })
+        : tPlain('serviceErrors.unknownError', { context })
 
     const axiosError = err as AxiosError<components['schemas']['ErrorResponse']>
 
@@ -45,39 +45,41 @@ export const useComfyRegistryService = () => {
 
       switch (status) {
         case 400:
-          return t('serviceErrors.badRequest', {
+          return tPlain('serviceErrors.badRequest', {
             message: data?.message || t('serviceErrors.invalidInput')
           })
         case 401:
           return t('serviceErrors.unauthorized')
         case 403:
-          return t('serviceErrors.forbidden', {
+          return tPlain('serviceErrors.forbidden', {
             message: data?.message || t('serviceErrors.accessDenied')
           })
         case 404:
-          return t('serviceErrors.notFound', {
+          return tPlain('serviceErrors.notFound', {
             message: data?.message || t('serviceErrors.resourceNotFound')
           })
         case 409:
-          return t('serviceErrors.conflict', {
+          return tPlain('serviceErrors.conflict', {
             message: data?.message || t('serviceErrors.resourceConflict')
           })
         case 500:
-          return t('serviceErrors.serverError', {
+          return tPlain('serviceErrors.serverError', {
             message: data?.message || t('serviceErrors.internalServerError')
           })
         default:
-          return t('serviceErrors.contextWithMessage', {
+          return tPlain('serviceErrors.contextWithMessage', {
             context,
             message: data?.message || axiosError.message
           })
       }
     }
 
-    return t('serviceErrors.contextWithMessage', {
-      context,
-      message: axiosError.message
-    })
+    return axiosError.message
+      ? tPlain('serviceErrors.contextWithMessage', {
+          context,
+          message: axiosError.message
+        })
+      : tPlain('serviceErrors.unknownError', { context })
   }
 
   const { isLoading, error, executeRequest } = useApiRequest({
@@ -150,7 +152,7 @@ export const useComfyRegistryService = () => {
     const endpoint = `/publishers/${publisherId}`
     const errorContext = t('serviceErrors.context.getPublisher')
     const routeSpecificErrors = {
-      404: t('serviceErrors.route.publisherNotFound', { publisherId })
+      404: tPlain('serviceErrors.route.publisherNotFound', { publisherId })
     }
 
     return executeRequest(
@@ -175,7 +177,7 @@ export const useComfyRegistryService = () => {
     const errorContext = t('serviceErrors.context.listPacksForPublisher')
     const routeSpecificErrors = {
       400: t('serviceErrors.route.invalidInputData'),
-      404: t('serviceErrors.route.publisherNotFound', { publisherId })
+      404: tPlain('serviceErrors.route.publisherNotFound', { publisherId })
     }
 
     return executeRequest(
@@ -201,7 +203,7 @@ export const useComfyRegistryService = () => {
     const errorContext = t('serviceErrors.context.addReview')
     const routeSpecificErrors = {
       400: t('serviceErrors.route.invalidReview'),
-      404: t('serviceErrors.route.packNotFound', { packId })
+      404: tPlain('serviceErrors.route.packNotFound', { packId })
     }
 
     return executeRequest(
@@ -245,7 +247,7 @@ export const useComfyRegistryService = () => {
     const errorContext = t('serviceErrors.context.getPackVersions')
     const routeSpecificErrors = {
       403: t('serviceErrors.route.packBannedVersions'),
-      404: t('serviceErrors.route.packNotFound', { packId })
+      404: tPlain('serviceErrors.route.packNotFound', { packId })
     }
 
     return executeRequest(
@@ -270,7 +272,7 @@ export const useComfyRegistryService = () => {
     const errorContext = t('serviceErrors.context.getPackVersion')
     const routeSpecificErrors = {
       403: t('serviceErrors.route.packBannedVersions'),
-      404: t('serviceErrors.route.packNotFound', { packId })
+      404: tPlain('serviceErrors.route.packNotFound', { packId })
     }
 
     return executeRequest(
@@ -292,7 +294,7 @@ export const useComfyRegistryService = () => {
     const endpoint = `/nodes/${packId}`
     const errorContext = t('serviceErrors.context.getPack')
     const routeSpecificErrors = {
-      404: t('serviceErrors.route.packByIdNotFound', { packId })
+      404: tPlain('serviceErrors.route.packByIdNotFound', { packId })
     }
 
     return executeRequest(
@@ -337,7 +339,7 @@ export const useComfyRegistryService = () => {
     const endpoint = `/comfy-nodes/${nodeName}/node`
     const errorContext = t('serviceErrors.context.inferPackFromNodeName')
     const routeSpecificErrors = {
-      404: t('serviceErrors.route.comfyNodeNotFound', { nodeName })
+      404: tPlain('serviceErrors.route.comfyNodeNotFound', { nodeName })
     }
 
     return executeRequest(

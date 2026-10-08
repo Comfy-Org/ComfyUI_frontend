@@ -312,6 +312,10 @@ export const t: (typeof i18n.global)['t'] = i18n.global.t
 export const te: (typeof i18n.global)['te'] = (key, locale) =>
   i18n.global.te(key, locale ?? i18n.global.locale.value)
 export const d: (typeof i18n.global)['d'] = i18n.global.d
+
+/** Like `t`, but leaves named params unescaped for plain-text display. */
+export const tPlain = (key: string, named: Record<string, unknown>) =>
+  t(key, named, { escapeParameter: false })
 const tm = i18n.global.tm
 
 function rawTranslationOrFallback(key: string, fallbackMessage: string) {

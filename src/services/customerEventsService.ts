@@ -5,7 +5,7 @@ import { ref, watch } from 'vue'
 import { useApiRequest } from '@/composables/useApiRequest'
 import { attachUnifiedRemintInterceptor } from '@/platform/auth/unified/remintRetry'
 import { getComfyApiBaseUrl } from '@/config/comfyApi'
-import { d, t } from '@/i18n'
+import { d, t, tPlain } from '@/i18n'
 import { useAuthStore } from '@/stores/authStore'
 import type { components, operations } from '@/types/comfyRegistryTypes'
 
@@ -52,7 +52,7 @@ export const useCustomerEventsService = () => {
     routeSpecificErrors?: Record<number, string>
   ): string => {
     if (!axios.isAxiosError(err)) {
-      return t('serviceErrors.failedWithMessage', {
+      return tPlain('serviceErrors.failedWithMessage', {
         context,
         message: err instanceof Error ? err.message : String(err)
       })
@@ -60,7 +60,7 @@ export const useCustomerEventsService = () => {
 
     const axiosError = err as AxiosError<ErrorResponse>
     if (!axiosError.response) {
-      return t('serviceErrors.failedWithMessage', {
+      return tPlain('serviceErrors.failedWithMessage', {
         context,
         message: axiosError.message
       })
@@ -73,7 +73,7 @@ export const useCustomerEventsService = () => {
 
     return (
       axiosError.response.data?.message ??
-      t('serviceErrors.failedWithStatus', { context, status })
+      tPlain('serviceErrors.failedWithStatus', { context, status })
     )
   }
 

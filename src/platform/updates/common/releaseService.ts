@@ -4,7 +4,7 @@ import { watch } from 'vue'
 
 import { useApiRequest } from '@/composables/useApiRequest'
 import { getComfyApiBaseUrl } from '@/config/comfyApi'
-import { t } from '@/i18n'
+import { t, tPlain } from '@/i18n'
 import type { components, operations } from '@/types/comfyRegistryTypes'
 
 // Use generated types from OpenAPI spec
@@ -37,11 +37,11 @@ export const useReleaseService = () => {
   ): string => {
     if (!axios.isAxiosError(err))
       return err instanceof Error
-        ? t('serviceErrors.contextWithMessage', {
+        ? tPlain('serviceErrors.contextWithMessage', {
             context,
             message: err.message
           })
-        : t('serviceErrors.unknownError', { context })
+        : tPlain('serviceErrors.unknownError', { context })
 
     const axiosError = err as AxiosError<ErrorResponse>
 
@@ -53,35 +53,37 @@ export const useReleaseService = () => {
 
       switch (status) {
         case 400:
-          return t('serviceErrors.badRequest', {
+          return tPlain('serviceErrors.badRequest', {
             message: data?.message || t('serviceErrors.invalidInput')
           })
         case 401:
           return t('serviceErrors.unauthorized')
         case 403:
-          return t('serviceErrors.forbidden', {
+          return tPlain('serviceErrors.forbidden', {
             message: data?.message || t('serviceErrors.accessDenied')
           })
         case 404:
-          return t('serviceErrors.notFound', {
+          return tPlain('serviceErrors.notFound', {
             message: data?.message || t('serviceErrors.resourceNotFound')
           })
         case 500:
-          return t('serviceErrors.serverError', {
+          return tPlain('serviceErrors.serverError', {
             message: data?.message || t('serviceErrors.internalServerError')
           })
         default:
-          return t('serviceErrors.contextWithMessage', {
+          return tPlain('serviceErrors.contextWithMessage', {
             context,
             message: data?.message || axiosError.message
           })
       }
     }
 
-    return t('serviceErrors.contextWithMessage', {
-      context,
-      message: axiosError.message
-    })
+    return axiosError.message
+      ? tPlain('serviceErrors.contextWithMessage', {
+          context,
+          message: axiosError.message
+        })
+      : tPlain('serviceErrors.unknownError', { context })
   }
 
   const { isLoading, error, executeRequest } = useApiRequest({
