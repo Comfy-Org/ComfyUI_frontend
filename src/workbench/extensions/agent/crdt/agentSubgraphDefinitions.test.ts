@@ -1,5 +1,7 @@
+import { readFileSync } from 'node:fs'
+
 import { mint } from '@comfyorg/comfy-multi-player'
-import type { WidgetCatalog } from '@comfyorg/comfy-multi-player'
+import type { WidgetCatalog, WorkflowJSON } from '@comfyorg/comfy-multi-player'
 import { assert, describe, expect, it } from 'vitest'
 import * as Y from 'yjs'
 
@@ -11,6 +13,7 @@ import type {
 } from '@/lib/litegraph/src/types/serialisation'
 
 import {
+  readDocPromotedWidgets,
   readSubgraphDefinitionIds,
   readSubgraphDefinitions
 } from './agentSubgraphDefinitions'
@@ -91,6 +94,25 @@ function nestedDefinitionChain(depth: number): Record<string, unknown> {
   }
   return current
 }
+
+describe('readDocPromotedWidgets', () => {
+  it('reconstructs a promoted host array from the definition and instance mirror', () => {
+    const workflow = JSON.parse(
+      readFileSync(
+        'browser_tests/assets/missing/missing_model_promoted_widget.json',
+        'utf8'
+      )
+    ) as WorkflowJSON
+    const doc = mint(workflow, CATALOG)
+
+    expect(readDocPromotedWidgets(doc, '2')).toEqual({
+      valueCount: 1,
+      declaredNames: ['ckpt_name'],
+      promotedNames: ['ckpt_name']
+    })
+    doc.destroy()
+  })
+})
 
 describe('readSubgraphDefinitions', () => {
   it('returns nothing for a document without definitions', () => {

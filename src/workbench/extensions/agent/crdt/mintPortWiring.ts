@@ -11,6 +11,7 @@ import type { LGraph } from '@/lib/litegraph/src/LGraph'
 import type { LGraphNode } from '@/lib/litegraph/src/LGraphNode'
 import type { RootGraphId } from '@/types/graphScopeId'
 import type { NodeId } from '@/types/nodeId'
+import { toNodeId } from '@/types/nodeId'
 import type { WorkflowNode } from '@comfyorg/comfy-multi-player'
 
 import { useLinkStore } from '@/stores/linkStore'
@@ -21,6 +22,7 @@ import { parseWidgetId } from '@/types/widgetId'
 import { findSubgraphNodePathById } from '@/utils/graphTraversalUtil'
 
 import type { GraphOperation } from './graphOperations'
+import type { DocPromotedWidgets } from './agentSubgraphDefinitions'
 import { attachLayoutMintPort } from './layoutMintPort'
 import type { LayoutChangeView, LayoutMintPort } from './layoutMintPort'
 import { attachLinkMintPort } from './linkMintPort'
@@ -59,6 +61,8 @@ export interface MintPortWiringDeps {
    * nodes into the old document.
    */
   boundRootGraphId(): RootGraphId | null
+  /** The bound document's promoted-widget layout for a root node. */
+  docPromotedWidgets(nodeId: NodeId): DocPromotedWidgets | null
 }
 
 export interface MintPortWiring {
@@ -168,6 +172,7 @@ function valueWidgetsOnly(
 
 export function attachMintPortWiring(deps: MintPortWiringDeps): MintPortWiring {
   const session = createMintSession()
+  const widgetStore = useWidgetValueStore()
   const enqueue = (operations: GraphOperation[]) => {
     const pending = bufferedEnqueues.at(-1)
     if (pending) pending.push(() => deps.enqueue(operations))
@@ -239,6 +244,13 @@ export function attachMintPortWiring(deps: MintPortWiringDeps): MintPortWiring {
       if (!graph) return null
       return graph.rootGraph?.id ?? graph.id
     },
+    rootNode(nodeId) {
+      return deps.getGraph()?.getNodeById(toNodeId(nodeId)) ?? null
+    },
+    docPromotedWidgets: (nodeId) => deps.docPromotedWidgets(toNodeId(nodeId)),
+    widgetValue(widgetId) {
+      return widgetStore.getWidget(widgetId)?.value
+    },
     resolveInteriorPath(owningGraphId) {
       const graph = deps.getGraph()
       if (!graph) return null
@@ -248,7 +260,6 @@ export function attachMintPortWiring(deps: MintPortWiringDeps): MintPortWiring {
   })
 
   const linkStore = useLinkStore()
-  const widgetStore = useWidgetValueStore()
 
   const detachLinkActions = linkStore.$onAction(({ name, args, after }) => {
     // The remote origin travels on the store call itself. Do not rely on the
