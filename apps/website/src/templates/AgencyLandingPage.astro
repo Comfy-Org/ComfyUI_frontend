@@ -78,7 +78,7 @@ const contactHref = `${routes.contact}?interest=${vertical}&campaign_type=agency
       videoLoop
       client:load
     />
-    <SocialProofBarSection />
+    <SocialProofBarSection agencyPartners={vertical === 'vfx'} />
     <div id="approach" class="scroll-mt-28">
       <SectionIntro01
         heading={t('agency.shared.briefHeading')}

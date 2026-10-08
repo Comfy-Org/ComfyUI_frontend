@@ -1,5 +1,7 @@
 <script setup lang="ts">
-const logos = [
+const { agencyPartners = false } = defineProps<{ agencyPartners?: boolean }>()
+
+const clientLogos = [
   'Amazon Studios',
   'Apple',
   'Autodesk',
@@ -12,6 +14,14 @@ const logos = [
   'Tencent',
   'Ubisoft'
 ]
+
+const logos = agencyPartners
+  ? [...clientLogos, 'Native Foreign', 'Black Math']
+  : clientLogos
+const partnerLogoSources: Record<string, string> = {
+  'Native Foreign': '/images/agency-partners/native-foreign-white.png',
+  'Black Math': '/images/agency-partners/black-math-stacked.png'
+}
 
 const mobileRow1Logos = logos.slice(0, 6)
 const mobileRow2Logos = logos.slice(6)
@@ -33,7 +43,17 @@ const mobileRow2Logos = logos.slice(6)
           :key="logo"
           class="flex h-20 w-50 shrink-0 items-center justify-center"
         >
-          <img :src="`/icons/clients/${logo}.svg`" :alt="logo" />
+          <span
+            v-if="partnerLogoSources[logo]"
+            role="img"
+            :aria-label="logo"
+            class="h-20 w-40 bg-secondary-mauve mask-contain mask-center mask-no-repeat"
+            :style="{
+              maskImage: `url('${partnerLogoSources[logo]}')`,
+              scale: logo === 'Native Foreign' ? '0.7' : undefined
+            }"
+          />
+          <img v-else :src="`/icons/clients/${logo}.svg`" :alt="logo" />
         </div>
       </div>
     </div>
@@ -56,11 +76,21 @@ const mobileRow2Logos = logos.slice(6)
             :key="logo"
             class="flex h-10 w-40 shrink-0 items-center justify-center"
           >
-            <img :src="`/icons/clients/${logo}.svg`" :alt="logo" />
+            <span
+              v-if="partnerLogoSources[logo]"
+              role="img"
+              :aria-label="logo"
+              class="h-10 w-32 bg-secondary-mauve mask-contain mask-center mask-no-repeat"
+              :style="{
+                maskImage: `url('${partnerLogoSources[logo]}')`,
+                scale: logo === 'Native Foreign' ? '0.7' : undefined
+              }"
+            />
+            <img v-else :src="`/icons/clients/${logo}.svg`" :alt="logo" />
           </div>
         </div>
       </div>
-      <div class="flex w-max gap-8">
+      <div v-if="mobileRow2Logos.length" class="flex w-max gap-8">
         <div
           v-for="copy in 2"
           :key="copy"
@@ -73,7 +103,17 @@ const mobileRow2Logos = logos.slice(6)
             :key="logo"
             class="flex h-10 w-40 shrink-0 items-center justify-center"
           >
-            <img :src="`/icons/clients/${logo}.svg`" :alt="logo" />
+            <span
+              v-if="partnerLogoSources[logo]"
+              role="img"
+              :aria-label="logo"
+              class="h-10 w-32 bg-secondary-mauve mask-contain mask-center mask-no-repeat"
+              :style="{
+                maskImage: `url('${partnerLogoSources[logo]}')`,
+                scale: logo === 'Native Foreign' ? '0.7' : undefined
+              }"
+            />
+            <img v-else :src="`/icons/clients/${logo}.svg`" :alt="logo" />
           </div>
         </div>
       </div>
