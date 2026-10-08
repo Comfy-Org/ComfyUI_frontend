@@ -14,6 +14,7 @@
 import {
   zBillingOpChargeBreakdown,
   zBillingOpChargeReason,
+  zBillingOpReceiptPlan,
   zBillingOpStatusResponse
 } from '@comfyorg/ingest-types/zod'
 import type { z } from 'zod'
@@ -34,12 +35,25 @@ export const BillingOpStatusSchema = zBillingOpStatusResponse.extend({
         })
         .array()
     })
+    .optional(),
+  plan: zBillingOpReceiptPlan
+    .extend({
+      price_cents: centsSchema.optional(),
+      monthly_price_cents: centsSchema.optional()
+    })
     .optional()
 })
 
 export type BillingOpStatus = z.infer<typeof BillingOpStatusSchema>
 
 export type BillingOperationKind = 'subscription' | 'topup' | 'cancel'
+
+/**
+ * The plan the server reports an operation is for, in every status of a plan
+ * change, initial subscription or resubscribe. Its tier and prices are absent
+ * when the server cannot describe the plan.
+ */
+export type BillingOperationPlan = NonNullable<BillingOpStatus['plan']>
 
 /**
  * Where the customer completes the operation: the challenge this tab drives
@@ -118,6 +132,7 @@ export type PendingBillingOperation = BillingOperationIdentity & {
   readonly recoveryAction?: BillingRecoveryAction
   /** True once the operation has ever waited on the customer; widens the poll budget. */
   readonly customerActionSeen: boolean
+  readonly plan?: BillingOperationPlan
 }
 
 export type FailedBillingOperation = BillingOperationIdentity & {
@@ -129,7 +144,10 @@ export type FailedBillingOperation = BillingOperationIdentity & {
 
 export type BillingOperationState =
   | PendingBillingOperation
-  | (BillingOperationIdentity & { readonly phase: 'succeeded' })
+  | (BillingOperationIdentity & {
+      readonly phase: 'succeeded'
+      readonly plan?: BillingOperationPlan
+    })
   | FailedBillingOperation
   /** This tab's poll budget ran out; the server may still settle the operation. */
   | (BillingOperationIdentity & { readonly phase: 'timed_out' })
@@ -249,7 +267,11 @@ function terminalFromStatus(
   state: PendingBillingOperation,
   status: BillingOpStatus
 ): BillingOperationState | undefined {
-  if (status.status === 'succeeded') return withPhase(state, 'succeeded')
+  if (status.status === 'succeeded')
+    return {
+      ...withPhase(state, 'succeeded'),
+      ...(status.plan === undefined ? {} : { plan: status.plan })
+    }
   if (status.status === 'failed') {
     return {
       ...identityOf(state),
@@ -322,9 +344,11 @@ function reducePending(
     : status.authentication_state
   const actionUrl = nextActionUrl(state, status, authenticationState)
   const declineReason = nextDeclineReason(state, status, authenticationState)
+  const { plan: _previousPlan, ...rest } = state
 
   return {
-    ...state,
+    ...rest,
+    ...(status.plan === undefined ? {} : { plan: status.plan }),
     challenge: nextChallenge(state, status),
     authenticationState,
     actionUrl,

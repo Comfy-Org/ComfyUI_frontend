@@ -110,6 +110,7 @@ export type {
   BillingOpStatus,
   BillingOperationEvent,
   BillingOperationIdentity,
+  BillingOperationPlan,
   BillingOperationKind,
   BillingOperationPhase,
   BillingOperationServerPhase,

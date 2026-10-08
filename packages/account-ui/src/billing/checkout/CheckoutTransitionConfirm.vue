@@ -33,56 +33,36 @@
         "
       />
 
-      <CheckoutTransitionSummary
-        :plan-name="plan.name"
-        :hero-price
-        :usd-per-month="copy.usdPerMonth"
-        :details="planDetails"
-        :heading="isImmediate ? '' : copy.afterThat"
-        :refill-label="refillLabel"
-        :refill-credits
-        :note="refillNote"
-      />
+      <slot v-if="summaryReplaced" name="summary" />
+      <template v-else>
+        <CheckoutTransitionSummary
+          :plan-name="plan.name"
+          :hero-price
+          :usd-per-month="copy.usdPerMonth"
+          :details="planDetails"
+          :heading="isImmediate ? '' : copy.afterThat"
+          :refill-label="refillLabel"
+          :refill-credits
+          :note="refillNote"
+        />
 
-      <!-- Immediate changes carry their addends: one sum under one divider
-           (Figma 5344-35724). -->
-      <div :class="totalClass">
-        <template v-if="discounts.length">
-          <div class="flex items-center justify-between text-muted-foreground">
-            <span>{{ copy.discountComposition }}</span>
-          </div>
-          <div
-            v-for="discount in discounts"
-            :key="discount.key"
-            class="flex items-center justify-between text-muted-foreground"
-          >
-            <span>{{ discount.label }}</span>
-            <span class="text-base-foreground">
-              {{ discount.name
-              }}<template v-if="discount.amount">
-                · −{{ discount.amount }}</template
-              >
-            </span>
-          </div>
-        </template>
-        <div class="flex items-center justify-between text-base">
-          <span class="text-base-foreground">
-            {{ copy.totalDueToday }}
-          </span>
-          <span class="font-bold text-base-foreground tabular-nums">
-            {{ amountDueToday }}
-          </span>
-        </div>
-        <span class="text-sm text-muted-foreground">{{ renewalTerms }}</span>
-      </div>
-      <CheckoutPromotionCode
-        v-if="embeddedCheckoutEnabled"
-        :applied-code="previewData.promotion_code"
-        :disabled="interactionLocked"
-        :copy
-        @apply="emit('applyPromotionCode', $event)"
-        @invalidate="emit('invalidateQuote')"
-      />
+        <CheckoutTransitionTotal
+          :discounts
+          :discount-composition="copy.discountComposition"
+          :total-due-today="copy.totalDueToday"
+          :amount-due-today
+          :renewal-terms
+          :scheduled="!isImmediate"
+        />
+        <CheckoutPromotionCode
+          v-if="embeddedCheckoutEnabled"
+          :applied-code="previewData.promotion_code"
+          :disabled="interactionLocked"
+          :copy
+          @apply="emit('applyPromotionCode', $event)"
+          @invalidate="emit('invalidateQuote')"
+        />
+      </template>
     </div>
 
     <div class="flex flex-col gap-2 pt-8 pb-4">
@@ -121,7 +101,9 @@
  * The confirm step of a change to an existing subscription: what it switches
  * to and when, what is charged today, and — for a subscription set to end —
  * the reactivation the change implies, which a large enough charge has to be
- * acknowledged before the confirm unlocks.
+ * acknowledged before the confirm unlocks. A host following a payment it did
+ * not quote here replaces the plan and charge through the `summary` slot and
+ * `summaryReplaced`.
  */
 import { computed, ref, watch } from 'vue'
 
@@ -129,7 +111,6 @@ import type {
   BillingAuthenticationState,
   SubscriptionPreview
 } from '@comfyorg/account-core/billing'
-import { cn } from '@comfyorg/tailwind-utils'
 
 import CheckoutButton from './CheckoutButton.vue'
 import CheckoutPaymentNotices from './CheckoutPaymentNotices.vue'
@@ -137,6 +118,7 @@ import CheckoutPromotionCode from './CheckoutPromotionCode.vue'
 import CheckoutReactivationBanner from './CheckoutReactivationBanner.vue'
 import CheckoutTermsNote from './CheckoutTermsNote.vue'
 import CheckoutTransitionSummary from './CheckoutTransitionSummary.vue'
+import CheckoutTransitionTotal from './CheckoutTransitionTotal.vue'
 import CheckoutVerificationPrompt from './CheckoutVerificationPrompt.vue'
 import type { CheckoutCopy } from './checkoutCopy'
 import { splitPlaceholders } from './checkoutCopy'
@@ -170,7 +152,8 @@ const {
   reconciliationOperationId = null,
   quoteIsCurrent = false,
   isApplyingPromotionCode = false,
-  embeddedCheckoutEnabled = false
+  embeddedCheckoutEnabled = false,
+  summaryReplaced = false
 } = defineProps<{
   previewData: SubscriptionPreview
   /** The plan switched to: its name and the credits one month refills. All
@@ -195,6 +178,8 @@ const {
   quoteIsCurrent?: boolean
   isApplyingPromotionCode?: boolean
   embeddedCheckoutEnabled?: boolean
+  /** The host summarizes a payment it did not quote here in the `summary` slot. */
+  summaryReplaced?: boolean
 }>()
 
 const emit = defineEmits<{
@@ -407,13 +392,6 @@ const refillNote = computed(() => {
     ? copy.billedYearly(annualTotalFormatted.value)
     : copy.billedEachMonth(`$${formatNumber(newMonthlyUsd.value, locale)}`)
 })
-
-const totalClass = computed(() =>
-  cn(
-    'flex flex-col gap-2 border-t border-border-subtle pt-6',
-    !isImmediate.value && 'mt-10'
-  )
-)
 
 const discounts = computed(() =>
   isImmediate.value

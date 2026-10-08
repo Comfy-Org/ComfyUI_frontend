@@ -3,15 +3,20 @@ import { useI18n } from 'vue-i18n'
 
 import { cn } from '@comfyorg/tailwind-utils'
 
+import type { OperationPlanLabel } from '@/checkout/operationPlan'
 import type { SummaryLedger } from '@/checkout/summaryLedger'
+import OperationPlanSummary from '@/components/OperationPlanSummary.vue'
 import CheckoutLedger from '@/components/fullPage/summary/CheckoutLedger.vue'
 
 const {
   ledger,
+  operationPlan,
   locked = false,
   repricing = false
 } = defineProps<{
   ledger?: SummaryLedger
+  /** Money in flight this page did not send, summarized by the plan the server reports for it. */
+  operationPlan?: { readonly label?: OperationPlanLabel }
   /** Money on its way: the back arrow goes with the rest of the page. */
   locked?: boolean
   /** A promo re-quote is in flight, so the total on screen is not final. */
@@ -30,7 +35,9 @@ const SKELETON_BAR =
   <section
     class="flex bg-base-background lg:w-1/2 lg:justify-end"
     :aria-label="t('checkout.fullPage.summary.label')"
-    :aria-busy="ledger === undefined || repricing"
+    :aria-busy="
+      (ledger === undefined && operationPlan === undefined) || repricing
+    "
   >
     <div class="flex w-full flex-col px-6 py-12 lg:max-w-lg lg:px-16">
       <div class="relative flex h-5 items-center">
@@ -50,7 +57,12 @@ const SKELETON_BAR =
         />
       </div>
 
-      <CheckoutLedger v-if="ledger" :ledger>
+      <OperationPlanSummary
+        v-if="operationPlan"
+        class="mt-16"
+        :recovered="operationPlan"
+      />
+      <CheckoutLedger v-else-if="ledger" :ledger>
         <slot :ledger />
       </CheckoutLedger>
       <template v-else>
