@@ -743,12 +743,40 @@ export const noRedundantFetchStub = {
   }
 }
 
-function isExpectCall(call: CallExpression): boolean {
+interface ObjectPattern extends Node {
+  readonly type: 'ObjectPattern'
+  readonly properties: readonly (Node & { readonly key?: Expression })[]
+}
+
+function destructuresExpect(param: Node): boolean {
+  return (
+    param.type === 'ObjectPattern' &&
+    (param as ObjectPattern).properties.some(
+      ({ key }) => key !== undefined && asIdentifier(key)?.name === 'expect'
+    )
+  )
+}
+
+function isVitestExpect(context: RuleContext, identifier: Identifier) {
+  const variable = resolvedVariable(context, identifier)
+  if (!variable?.defs.length) return true
+  return variable.defs.some(
+    (definition) =>
+      (definition.type === 'ImportBinding' &&
+        definition.parent.source?.value === 'vitest') ||
+      (definition.type === 'Parameter' &&
+        isFunctionExpression(definition.node) &&
+        definition.node.params.some(destructuresExpect))
+  )
+}
+
+function isExpectCall(context: RuleContext, call: CallExpression): boolean {
   const callee = unwrapChain(call.callee)
   const member = asMemberExpression(callee)
   const target =
     member && staticMemberName(member) === 'soft' ? member.object : callee
-  return asIdentifier(target)?.name === 'expect'
+  const identifier = asIdentifier(target)
+  return identifier?.name === 'expect' && isVitestExpect(context, identifier)
 }
 
 const PARENTHESIS_FREE_SUBJECTS = new Set([
@@ -791,16 +819,16 @@ export const noMockedInExpect = {
   create(context: RuleContext) {
     return {
       CallExpression(node: CallExpression) {
-        if (node.arguments.length === 0 || !isExpectCall(node)) return
+        if (node.arguments.length === 0 || !isExpectCall(context, node)) return
         const mocked = mockedRootOfSubject(context, node.arguments[0])
         if (!mocked) return
         const [mockedValue] = mocked.arguments
         const valueText = context.sourceCode.getText(mockedValue)
-        const replacement =
-          mocked === unwrapChain(node.arguments[0]) ||
-          PARENTHESIS_FREE_SUBJECTS.has(mockedValue.type)
-            ? valueText
-            : `(${valueText})`
+        const needsParentheses =
+          mockedValue.type === 'SequenceExpression' ||
+          (mocked !== unwrapChain(node.arguments[0]) &&
+            !PARENTHESIS_FREE_SUBJECTS.has(mockedValue.type))
+        const replacement = needsParentheses ? `(${valueText})` : valueText
         context.report({
           node: mocked,
           message:

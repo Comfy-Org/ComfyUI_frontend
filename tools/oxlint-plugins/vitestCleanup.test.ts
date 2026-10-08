@@ -424,6 +424,15 @@ it('allows vi.mocked where its type is needed', () => {
   vi.mocked(store.save).mockReturnValue(undefined)
   expect([vi.mocked(store.save)]).toHaveLength(1)
 })
+
+it('reports a destructured test-context expect', ({ expect }) => {
+  expect(vi.mocked(store.save)).toHaveBeenCalled()
+})
+
+it('allows a local expect that is not Vitest', () => {
+  const expect = (value: unknown) => value
+  expect(vi.mocked(store.save))
+})
 `
 
 const mockedInExpectAutofixFixture = `import { expect, it, vi } from 'vitest'
@@ -437,6 +446,7 @@ it('passes each subject to expect without vi.mocked', () => {
   expect(vi.mocked(store).save).toHaveBeenCalled()
   expect(vi.mocked(active ?? fallback)).toBe(fallback)
   expect(vi.mocked(active ?? fallback).save).toHaveBeenCalled()
+  expect(vi.mocked((store.save, fallback.save))).toBe(fallback.save)
   expect(vi.mocked(store.save).mock.calls).toEqual([])
 })
 `
@@ -452,6 +462,7 @@ it('passes each subject to expect without vi.mocked', () => {
   expect(store.save).toHaveBeenCalled()
   expect(active ?? fallback).toBe(fallback)
   expect((active ?? fallback).save).toHaveBeenCalled()
+  expect((store.save, fallback.save)).toBe(fallback.save)
   expect(vi.mocked(store.save).mock.calls).toEqual([])
 })
 `
@@ -631,10 +642,10 @@ describe('Vitest cleanup rules', () => {
   })
 
   it('reports vi.mocked only as the direct subject of expect', () => {
-    expectReportsAt(output, [7, 8, 9, 10], 'mocked-in-expect.test.ts')
+    expectReportsAt(output, [7, 8, 9, 10, 22], 'mocked-in-expect.test.ts')
     expect(
       stripVTControlCharacters(output).match(/mocked-in-expect\.test\.ts:\d+:/g)
-    ).toHaveLength(4)
+    ).toHaveLength(5)
   })
 
   it('fixes vi.mocked subjects and keeps the precedence of member chains', () => {
