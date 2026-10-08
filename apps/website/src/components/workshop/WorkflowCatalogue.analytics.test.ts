@@ -110,47 +110,54 @@ describe('WorkflowCatalogue analytics', () => {
     ])
   })
 
-  it.for([
-    [
-      'the featured banner',
-      'featured-slide-link',
-      'restore',
-      'featured_banner',
-      0
-    ],
-    ['a category row', 'workflow-category-video', 'connect', 'category_row', 1]
-  ] as const)(
-    'reports a workflow opened from %s',
-    async ([, testId, slug, source, position]) => {
-      const user = userEvent.setup()
-      const highlighted = models.map((model) => ({
-        ...model,
-        categoryHighlight: model.workflowId === 'restore'
-      }))
-      render(WorkflowCatalogue, { props: { models: highlighted } })
+  it('reports a workflow opened from the featured banner', async () => {
+    const user = userEvent.setup()
+    const highlighted = models.map((model) => ({
+      ...model,
+      categoryHighlight: model.workflowId === 'restore'
+    }))
+    render(WorkflowCatalogue, { props: { models: highlighted } })
 
-      const placement = screen.getByTestId(testId)
-      await user.click(
-        placement.tagName === 'A'
-          ? placement
-          : within(placement).getAllByTestId('workshop-model-card')[position]
-      )
+    await user.click(screen.getByTestId('featured-slide-link'))
 
-      expect(events('hub_item_clicked')).toEqual([
-        {
-          name: 'hub_item_clicked',
-          properties: {
-            surface: 'workflows',
-            kind: 'workflow',
-            slug: `workflows/${slug}`,
-            source,
-            position,
-            ...(source === 'category_row' ? { row: 'video' } : {})
-          }
+    expect(events('hub_item_clicked')).toEqual([
+      {
+        name: 'hub_item_clicked',
+        properties: {
+          surface: 'workflows',
+          kind: 'workflow',
+          slug: 'workflows/restore',
+          source: 'featured_banner',
+          position: 0
         }
-      ])
-    }
-  )
+      }
+    ])
+  })
+
+  it('reports a workflow opened from a category row', async () => {
+    const user = userEvent.setup()
+    render(WorkflowCatalogue, { props: { models } })
+
+    await user.click(
+      within(screen.getByTestId('workflow-category-video')).getAllByTestId(
+        'workshop-model-card'
+      )[1]
+    )
+
+    expect(events('hub_item_clicked')).toEqual([
+      {
+        name: 'hub_item_clicked',
+        properties: {
+          surface: 'workflows',
+          kind: 'workflow',
+          slug: 'workflows/connect',
+          source: 'category_row',
+          position: 1,
+          row: 'video'
+        }
+      }
+    ])
+  })
 
   it('reports a workflow opened from the search results', async () => {
     const user = userEvent.setup()

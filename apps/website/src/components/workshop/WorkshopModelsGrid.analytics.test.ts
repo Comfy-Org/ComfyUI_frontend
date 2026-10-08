@@ -155,25 +155,11 @@ describe('WorkshopModelsGrid analytics', () => {
     expect(captureWorkshopEvent).not.toHaveBeenCalled()
   })
 
-  it.for([
-    ['the featured banner', 'kling-ai', 'featured_banner'],
-    ['the results grid', 'flux', 'results_grid']
-  ] as const)('reports a model opened from %s', async ([, slug, source]) => {
+  it('reports a model opened from the featured banner', async () => {
     const user = userEvent.setup()
     render(WorkshopModelsGrid, { props: { models } })
 
-    if (source === 'featured_banner')
-      await user.click(screen.getByTestId('featured-slide-link'))
-    else {
-      await user.click(
-        screen.getByRole('button', { name: 'Browse all models' })
-      )
-      await user.click(
-        within(screen.getByTestId('workshop-models-grid')).getAllByRole(
-          'link'
-        )[1]
-      )
-    }
+    await user.click(screen.getByTestId('featured-slide-link'))
 
     expect(events('hub_item_clicked')).toEqual([
       {
@@ -181,9 +167,32 @@ describe('WorkshopModelsGrid analytics', () => {
         properties: {
           surface: 'models',
           kind: 'model',
-          slug,
-          source,
-          position: source === 'featured_banner' ? 0 : 1
+          slug: 'kling-ai',
+          source: 'featured_banner',
+          position: 0
+        }
+      }
+    ])
+  })
+
+  it('reports a model opened from the results grid', async () => {
+    const user = userEvent.setup()
+    render(WorkshopModelsGrid, { props: { models } })
+
+    await user.click(screen.getByRole('button', { name: 'Browse all models' }))
+    await user.click(
+      within(screen.getByTestId('workshop-models-grid')).getAllByRole('link')[1]
+    )
+
+    expect(events('hub_item_clicked')).toEqual([
+      {
+        name: 'hub_item_clicked',
+        properties: {
+          surface: 'models',
+          kind: 'model',
+          slug: 'flux',
+          source: 'results_grid',
+          position: 1
         }
       }
     ])
