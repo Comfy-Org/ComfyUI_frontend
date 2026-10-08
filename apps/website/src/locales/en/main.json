@@ -5367,7 +5367,6 @@
       "fit": "Fit to screen, now {n}%"
     },
     "compare": {
-      "label": "Compare",
       "before": "Before",
       "after": "After"
     }
