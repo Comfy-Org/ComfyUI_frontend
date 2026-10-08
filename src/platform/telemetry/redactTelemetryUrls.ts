@@ -8,7 +8,7 @@ export function redactTelemetryUrls(text: string): string {
 
 const MAX_REDACTABLE_TEXT_LENGTH = 16_384
 const SPACED_QUERY_URL_PATTERN =
-  /(?:https?:\/\/[^\s"'<>?#]+|\/[A-Za-z0-9._~%/-]+|(?<![A-Za-z0-9._~%/-])[A-Za-z0-9_~%-]+(?:[./][A-Za-z0-9._~%-]+)*)\?[^\n"'<>]*\s[^\n"'<>]*&[A-Za-z0-9_~%-]+=[^\n"'<>]*/gi
+  /(?:\/[A-Za-z0-9._~%/-]+|(?<![A-Za-z0-9._~%/-])[A-Za-z0-9_~%-]+(?:[./][A-Za-z0-9._~%-]+)*)\?[^\n"'<>]*\s[^\n"'<>]*&[A-Za-z0-9_~%-]+=[^\n"'<>]*/gi
 
 /**
  * The root-relative alternative starts at a non-digit, or at a digit followed
