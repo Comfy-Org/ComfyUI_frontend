@@ -241,10 +241,16 @@ test.describe('Agent run permissions popover', { tag: '@cloud' }, () => {
     })
     await page.route('**/api/agent/run-mode', async (route) => {
       const request = route.request()
+      // ask_approval, which is also agentRunModeStore's own default, so the
+      // starting mode does not depend on this route winning a race.
+      // DockedAgentPanel fires load() on setup, and asserting a mode only this
+      // mock can produce was right about one attempt in four: it failed the
+      // initial run and two retries in CI and was reported 'flaky' only
+      // because a fourth attempt passed.
       if (request.method() !== 'PUT')
         return route.fulfill(
           jsonRoute({
-            mode: 'auto',
+            mode: 'ask_approval',
             credit_limit: null
           } satisfies AgentRunModePreference)
         )
@@ -265,16 +271,19 @@ test.describe('Agent run permissions popover', { tag: '@cloud' }, () => {
       name: enMessages.agent.runModeTriggerAuto,
       exact: true
     })
-    await expect(autoTrigger).toBeVisible()
+    await expect(askTrigger).toBeVisible()
 
     holdTheSend = true
     await agentPanel.sendMessage('run the wf')
 
+    // Picked in the ESCALATING direction: the turn was sent under
+    // ask_approval, so a PUT that overtook it would let an already-sent turn
+    // run without a consent card.
     await test.step('switching mode now does not overtake the message', async () => {
-      await autoTrigger.click()
+      await askTrigger.click()
       await page
         .getByRole('menuitemradio', {
-          name: new RegExp(enMessages.agent.runModeAsk)
+          name: new RegExp(enMessages.agent.runModeAuto)
         })
         .click()
 
@@ -284,13 +293,13 @@ test.describe('Agent run permissions popover', { tag: '@cloud' }, () => {
       // Nothing at all should have been forwarded while the send is held.
       await expect(
         page.getByRole('menuitemradio', {
-          name: new RegExp(enMessages.agent.runModeAsk)
+          name: new RegExp(enMessages.agent.runModeAuto)
         })
       ).toHaveAttribute('aria-busy', 'true')
       expect(reachedServer).toEqual([])
 
       releaseTheSend()
-      await expect(askTrigger).toBeVisible()
+      await expect(autoTrigger).toBeVisible()
       // The load-bearing assertion: the write landed, and it landed second.
       await expect.poll(() => reachedServer).toEqual(['message', 'run-mode'])
     })
