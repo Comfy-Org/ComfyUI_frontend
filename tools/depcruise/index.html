@@ -1,0 +1,163 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Gordian Knot</title>
+    <link
+      rel="stylesheet"
+      href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500&family=IBM+Plex+Sans:wght@400;500;600&display=swap"
+    />
+    <link rel="stylesheet" href="style.css" />
+  </head>
+  <body>
+    <main>
+      <header>
+        <h1>Gordian Knot</h1>
+        <p class="lede">
+          Import cycles in <code>src/</code>, commit by commit, across the
+          FE-3037 pull requests. A knot is a set of modules that can all reach
+          each other through imports.
+        </p>
+      </header>
+
+      <section class="timeline" aria-label="Timeline">
+        <div class="transport">
+          <button id="first" type="button" title="First commit (Home)">
+            First
+          </button>
+          <button id="prev" type="button" title="Previous commit (Left arrow)">
+            Previous
+          </button>
+          <button id="play" type="button" class="primary" title="Play (Space)">
+            Play
+          </button>
+          <button id="next" type="button" title="Next commit (Right arrow)">
+            Next
+          </button>
+          <button id="last" type="button" title="Last commit (End)">
+            Last
+          </button>
+          <label class="speed">
+            Speed
+            <select id="speed">
+              <option value="2">Slow</option>
+              <option value="1" selected>Normal</option>
+              <option value="0.4">Fast</option>
+            </select>
+          </label>
+          <label class="check">
+            <input id="feOnly" type="checkbox" />
+            Step through FE-3037 commits only
+          </label>
+        </div>
+        <div class="legend" id="chartLegend"></div>
+        <div class="chartwrap">
+          <svg id="chart" role="img" aria-label="Knot sizes per commit"></svg>
+        </div>
+        <input
+          id="scrub"
+          type="range"
+          min="0"
+          value="0"
+          step="1"
+          aria-label="Commit"
+        />
+      </section>
+
+      <section class="stage">
+        <figure>
+          <figcaption>
+            <div class="legend" id="mapLegend"></div>
+          </figcaption>
+          <canvas
+            id="map"
+            aria-label="Module map for the selected commit"
+          ></canvas>
+        </figure>
+
+        <aside>
+          <div class="tabs" role="tablist" aria-label="Side panel">
+            <button
+              id="tabDetails"
+              type="button"
+              role="tab"
+              aria-selected="true"
+              aria-controls="panelDetails"
+            >
+              Details
+            </button>
+            <button
+              id="tabPrs"
+              type="button"
+              role="tab"
+              aria-selected="false"
+              aria-controls="open-prs"
+              hidden
+            >
+              Open pull requests
+            </button>
+          </div>
+          <div
+            id="panelDetails"
+            class="panel"
+            role="tabpanel"
+            aria-labelledby="tabDetails"
+          >
+            <div class="commit">
+              <div class="where" id="where"></div>
+              <h2 id="subject"></h2>
+              <div class="links" id="links"></div>
+            </div>
+            <dl class="stats" id="stats"></dl>
+            <div class="delta">
+              <h3 id="deltaTitle">This commit</h3>
+              <p id="deltaSummary"></p>
+              <ul id="splits"></ul>
+              <details id="freedBox">
+                <summary id="freedSummary"></summary>
+                <ul id="freedList" class="paths"></ul>
+              </details>
+              <details id="entangledBox">
+                <summary id="entangledSummary"></summary>
+                <ul id="entangledList" class="paths"></ul>
+              </details>
+            </div>
+            <div class="knots">
+              <h3 id="knotsTitle">Knots at this commit</h3>
+              <ul id="knotList"></ul>
+            </div>
+          </div>
+          <div
+            id="open-prs"
+            class="panel"
+            role="tabpanel"
+            aria-labelledby="tabPrs"
+            hidden
+          >
+            <p id="prSummary"></p>
+            <div id="prList"></div>
+            <p class="note">
+              Each pull request is analysed at its pushed head, so a row
+              includes everything below it in its stack. Pick a row to put that
+              state on the map; Up and Down move between rows.
+            </p>
+          </div>
+        </aside>
+      </section>
+
+      <footer>
+        <p>
+          Measured with <code>depcruise src</code> and the repo's
+          <code>.dependency-cruiser.json</code> on every commit in the range.
+          Type-only imports count; tests and stories are excluded. The
+          structured data is in <code>data/timeline.json</code> and
+          <code>data/graph.json</code>; <code>scripts/</code> regenerates it.
+        </p>
+      </footer>
+    </main>
+    <div id="tip" hidden></div>
+    <script src="data/data.js"></script>
+    <script src="app.js"></script>
+  </body>
+</html>
