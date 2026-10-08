@@ -16,7 +16,6 @@ import { useWorkflowDraftStoreV2 } from '@/platform/workflow/persistence/stores/
 import { api } from '@/scripts/api'
 import { app as comfyApp } from '@/scripts/app'
 import { defaultGraph, defaultGraphJSON } from '@/scripts/defaultGraph'
-import { useExecutionStore } from '@/stores/executionStore'
 import { toNodeId } from '@/types/nodeId'
 import type { NodeId } from '@/types/nodeId'
 import { createNodeLocatorId } from '@/types/nodeIdentification'
@@ -615,47 +614,6 @@ describe('useWorkflowStore', () => {
       // Check that no bookmarks were affected
       expect(bookmarkStore.isBookmarked(workflow.path)).toBe(false)
       expect(bookmarkStore.isBookmarked('test.json')).toBe(false)
-    })
-
-    it('renames only jobs from the matching workflow instance', async () => {
-      const duplicateId = 'duplicate-workflow-id'
-      const workflow = store.createTemporary('app-to-save.json', {
-        ...defaultGraph,
-        id: duplicateId
-      })
-      const otherWorkflow = store.createTemporary('other.json', {
-        ...defaultGraph,
-        id: duplicateId
-      })
-      const executionStore = useExecutionStore()
-
-      executionStore.ensureSessionWorkflowPath(
-        'job-1',
-        workflow.path,
-        workflow.instanceId
-      )
-      executionStore.ensureSessionWorkflowPath(
-        'job-other',
-        workflow.path,
-        otherWorkflow.instanceId
-      )
-
-      vi.spyOn(workflow, 'rename').mockImplementation(
-        async (renamedPath: string) => {
-          workflow.path = renamedPath
-          return workflow
-        }
-      )
-
-      const newPath = 'workflows/saved-app.app.json'
-      await store.renameWorkflow(workflow, newPath)
-
-      expect(executionStore.jobIdToSessionWorkflowPath.get('job-1')).toBe(
-        newPath
-      )
-      expect(executionStore.jobIdToSessionWorkflowPath.get('job-other')).toBe(
-        'workflows/app-to-save.json'
-      )
     })
   })
 

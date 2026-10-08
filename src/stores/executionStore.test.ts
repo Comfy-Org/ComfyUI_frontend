@@ -1,5 +1,8 @@
 import { useWorkflowStore } from '@/platform/workflow/management/stores/workflowStore'
-import type { LoadedComfyWorkflow } from '@/platform/workflow/management/stores/comfyWorkflow'
+import type {
+  ComfyWorkflow,
+  LoadedComfyWorkflow
+} from '@/platform/workflow/management/stores/comfyWorkflow'
 import { fromPartial } from '@total-typescript/shoehorn'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { nextTick } from 'vue'
@@ -8,6 +11,7 @@ import { useAppMode } from '@/composables/useAppMode'
 import { useTelemetry } from '@/platform/telemetry'
 import { app } from '@/scripts/app'
 import { api } from '@/scripts/api'
+import { defaultGraph } from '@/scripts/defaultGraph'
 import { MAX_PROGRESS_JOBS, useExecutionStore } from '@/stores/executionStore'
 import { useExecutionErrorStore } from '@/stores/executionErrorStore'
 import { useMissingNodesErrorStore } from '@/platform/nodeReplacement/missingNodesErrorStore'
@@ -1295,105 +1299,59 @@ describe('useExecutionStore - clearActiveJobIfStale', () => {
   })
 })
 
-describe('rewriteSessionWorkflowPaths', () => {
+describe('session workflow paths on workflow rename', () => {
   let store: ReturnType<typeof useExecutionStore>
 
   beforeEach(() => {
     store = useExecutionStore()
   })
 
-  it('rewrites all entries associated with the workflow instance', () => {
-    store.ensureSessionWorkflowPath(
-      'job-1',
-      'workflows/old.app.json',
-      'instance-A'
-    )
-    store.ensureSessionWorkflowPath(
-      'job-2',
-      'workflows/keep.app.json',
-      'instance-B'
-    )
-    store.ensureSessionWorkflowPath(
-      'job-3',
-      'workflows/old.app.json',
-      'instance-A'
-    )
+  async function renameWorkflow(workflow: ComfyWorkflow, newPath: string) {
+    vi.spyOn(workflow, 'rename').mockImplementation(async (renamedPath) => {
+      workflow.path = renamedPath
+      return workflow
+    })
+    await useWorkflowStore().renameWorkflow(workflow, newPath)
+  }
 
-    store.rewriteSessionWorkflowPaths('instance-A', 'workflows/new.app.json')
+  it('rewrites every job of the renamed workflow instance', async () => {
+    const renamed = useWorkflowStore().createTemporary('old.app.json')
+    const other = useWorkflowStore().createTemporary('keep.app.json')
+    store.ensureSessionWorkflowPath('job-1', renamed.path, renamed.instanceId)
+    store.ensureSessionWorkflowPath('job-2', other.path, other.instanceId)
+    store.ensureSessionWorkflowPath('job-3', renamed.path, renamed.instanceId)
 
-    expect(store.jobIdToSessionWorkflowPath.get('job-1')).toBe(
-      'workflows/new.app.json'
-    )
-    expect(store.jobIdToSessionWorkflowPath.get('job-2')).toBe(
-      'workflows/keep.app.json'
-    )
-    expect(store.jobIdToSessionWorkflowPath.get('job-3')).toBe(
-      'workflows/new.app.json'
-    )
+    await renameWorkflow(renamed, 'workflows/new.app.json')
+
+    expect(Object.fromEntries(store.jobIdToSessionWorkflowPath)).toEqual({
+      'job-1': 'workflows/new.app.json',
+      'job-2': 'workflows/keep.app.json',
+      'job-3': 'workflows/new.app.json'
+    })
   })
 
-  it('only rewrites entries matching the workflow instance', () => {
-    store.ensureSessionWorkflowPath(
-      'job-1',
-      'workflows/old.app.json',
-      'instance-A'
-    )
-    store.ensureSessionWorkflowPath(
-      'job-2',
-      'workflows/old.app.json',
-      'instance-B'
-    )
+  it('does not rewrite jobs of another workflow sharing the path and graph id', async () => {
+    const graph = { ...defaultGraph, id: 'duplicate-workflow-id' }
+    const older = useWorkflowStore().createTemporary('Unsaved.json', graph)
+    const newer = useWorkflowStore().createTemporary('Unsaved.json', graph)
+    store.ensureSessionWorkflowPath('job-old', older.path, older.instanceId)
+    store.ensureSessionWorkflowPath('job-new', older.path, newer.instanceId)
 
-    store.rewriteSessionWorkflowPaths('instance-A', 'workflows/new.app.json')
+    await renameWorkflow(newer, 'workflows/saved.app.json')
 
-    expect(store.jobIdToSessionWorkflowPath.get('job-1')).toBe(
-      'workflows/new.app.json'
-    )
-    expect(store.jobIdToSessionWorkflowPath.get('job-2')).toBe(
-      'workflows/old.app.json'
-    )
+    expect(Object.fromEntries(store.jobIdToSessionWorkflowPath)).toEqual({
+      'job-old': older.path,
+      'job-new': 'workflows/saved.app.json'
+    })
   })
 
-  it('does not rewrite entries from a different workflow sharing the same temp path', () => {
-    store.ensureSessionWorkflowPath(
-      'job-old',
-      'workflows/Unsaved Workflow.json',
-      'instance-OLD'
-    )
-    store.ensureSessionWorkflowPath(
-      'job-new',
-      'workflows/Unsaved Workflow.json',
-      'instance-NEW'
-    )
-
-    store.rewriteSessionWorkflowPaths(
-      'instance-NEW',
-      'workflows/saved.app.json'
-    )
-
-    expect(store.jobIdToSessionWorkflowPath.get('job-old')).toBe(
-      'workflows/Unsaved Workflow.json'
-    )
-    expect(store.jobIdToSessionWorkflowPath.get('job-new')).toBe(
-      'workflows/saved.app.json'
-    )
-  })
-
-  it('does not trigger reactivity when no entries match', () => {
+  it('keeps the same map when no job belongs to the renamed workflow', async () => {
+    const renamed = useWorkflowStore().createTemporary('old.app.json')
     store.ensureSessionWorkflowPath('job-1', 'workflows/keep.app.json')
     const originalMap = store.jobIdToSessionWorkflowPath
 
-    store.rewriteSessionWorkflowPaths('instance-A', 'workflows/new.app.json')
+    await renameWorkflow(renamed, 'workflows/new.app.json')
 
-    expect(store.jobIdToSessionWorkflowPath).toBe(originalMap)
-  })
-
-  it('handles empty map', () => {
-    const originalMap = store.jobIdToSessionWorkflowPath
-
-    store.rewriteSessionWorkflowPaths('instance-A', 'workflows/new.app.json')
-
-    expect(store.jobIdToSessionWorkflowPath.size).toBe(0)
     expect(store.jobIdToSessionWorkflowPath).toBe(originalMap)
   })
 })
