@@ -333,6 +333,20 @@ export const useAuthStore = defineStore('auth', () => {
   const desktopHostTabHeader = async (): Promise<AuthHeader | null> =>
     headerFromToken(await desktopHostTabToken())
 
+  const reportedIdTokenFailures = new Set<string>()
+  const reportIdTokenFailure = (uid: string, error: unknown) => {
+    const failureKey = `${uid}:${error instanceof FirebaseError ? error.code : 'unknown'}`
+    if (reportedIdTokenFailures.has(failureKey)) {
+      console.error(error)
+      return
+    }
+    reportedIdTokenFailures.add(failureKey)
+    reportError(error, {
+      errorType: 'auth_id_token_fetch_failure',
+      surface: 'auth'
+    })
+  }
+
   const getFirebaseIdToken = async (): Promise<string | undefined> => {
     const user = currentUser.value
     if (!user) return
@@ -355,7 +369,7 @@ export const useAuthStore = defineStore('auth', () => {
         title: t('errorDialog.defaultTitle'),
         reportType: 'authenticationError'
       })
-      console.error(error)
+      reportIdTokenFailure(user.uid, error)
     }
   }
 

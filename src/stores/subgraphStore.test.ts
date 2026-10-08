@@ -9,6 +9,7 @@ import {
   createTestSubgraphNode
 } from '@/lib/litegraph/src/subgraph/__fixtures__/subgraphHelpers'
 import type { ExportedSubgraph } from '@/lib/litegraph/src/types/serialisation'
+import { reportError } from '@/platform/telemetry/reportError'
 import { TemplateIncludeOnDistributionEnum } from '@/platform/workflow/templates/types/template'
 import type { ComfyNodeDef as ComfyNodeDefV1 } from '@/schemas/nodeDefSchema'
 import type { GlobalSubgraphData } from '@/scripts/api'
@@ -28,6 +29,7 @@ const mockDistributionTypes = vi.hoisted(() => ({
 vi.mock(import('@/platform/distribution/types'), () => mockDistributionTypes)
 
 vi.mock(import('@/platform/telemetry'))
+vi.mock(import('@/platform/telemetry/reportError'))
 
 // Add mock for api at the top of the file
 vi.mock<unknown>(import('@/scripts/api'), () => ({
@@ -294,10 +296,11 @@ describe('useSubgraphStore', () => {
         }
       }
     )
-    expect(console.error).toHaveBeenCalledWith(
-      'Failed to load subgraph blueprint',
-      expect.any(Error)
-    )
+    expect(reportError).toHaveBeenCalledWith(expect.any(Error), {
+      errorType: 'subgraph_blueprint_load_failure',
+      surface: 'graph',
+      context: { failedBlueprintCount: 1 }
+    })
     expect(useNodeDefStore().blueprintNodeDefsByName.size).toBe(0)
   })
 
@@ -314,10 +317,11 @@ describe('useSubgraphStore', () => {
         }
       }
     )
-    expect(console.error).toHaveBeenCalledWith(
-      'Failed to load subgraph blueprint',
-      expect.any(Error)
-    )
+    expect(reportError).toHaveBeenCalledWith(expect.any(Error), {
+      errorType: 'subgraph_blueprint_load_failure',
+      surface: 'graph',
+      context: { failedBlueprintCount: 1 }
+    })
     expect(useNodeDefStore().blueprintNodeDefsByName.size).toBe(0)
   })
 
@@ -337,8 +341,24 @@ describe('useSubgraphStore', () => {
         }
       }
     )
-    expect(console.error).toHaveBeenCalled()
+    expect(reportError).toHaveBeenCalledOnce()
     expect(useNodeDefStore().blueprintNodeDefsByName.size).toBe(1)
+  })
+
+  it('reports one aggregated failure when several blueprints fail', async () => {
+    await mockFetch(
+      {},
+      {
+        first: { name: 'First', info: { node_pack: 'test_pack' }, data: '' },
+        second: { name: 'Second', info: { node_pack: 'test_pack' }, data: '' }
+      }
+    )
+    expect(reportError).toHaveBeenCalledOnce()
+    expect(reportError).toHaveBeenCalledWith(expect.any(Error), {
+      errorType: 'subgraph_blueprint_load_failure',
+      surface: 'graph',
+      context: { failedBlueprintCount: 2 }
+    })
   })
 
   describe('search_aliases support', () => {

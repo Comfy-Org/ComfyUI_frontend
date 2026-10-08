@@ -1,10 +1,13 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 
 import type { SystemStats } from '@/platform/remote/comfyui/types'
+import { reportError } from '@/platform/telemetry/reportError'
 import { api } from '@/scripts/api'
 import { useSystemStatsStore } from '@/stores/systemStatsStore'
 
 const mockData = vi.hoisted(() => ({ isDesktop: false }))
+
+vi.mock(import('@/platform/telemetry/reportError'))
 
 // Mock the API
 vi.mock<unknown>(import('@/scripts/api'), () => ({
@@ -77,6 +80,10 @@ describe('useSystemStatsStore', () => {
       expect(store.systemStats).toBeNull() // Initial value stays null on error
       expect(store.isLoading).toBe(false)
       expect(store.error).toEqual(error) // useAsyncState stores the actual error object
+      expect(reportError).toHaveBeenCalledWith(error, {
+        errorType: 'system_stats_fetch_failure',
+        surface: 'platform'
+      })
     })
 
     it('should handle non-Error objects', async () => {

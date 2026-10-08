@@ -2,6 +2,7 @@ import { beforeEach, describe, expect, it, vi } from 'vitest'
 
 import type { JobListItem } from '@/platform/remote/comfyui/jobs/jobTypes'
 import type { TaskOutput } from '@/platform/remote/comfyui/execution/types'
+import { reportError } from '@/platform/telemetry/reportError'
 import { api } from '@/scripts/api'
 import { useExecutionStore } from '@/stores/executionStore'
 import {
@@ -66,6 +67,8 @@ type QueueResponse = { Running: JobListItem[]; Pending: JobListItem[] }
 type QueueResolver = (value: QueueResponse) => void
 
 // Mock API
+vi.mock(import('@/platform/telemetry/reportError'))
+
 vi.mock<unknown>(import('@/scripts/api'), () => ({
   api: {
     getQueue: vi.fn(),
@@ -1210,5 +1213,31 @@ describe('useQueueStore', () => {
       expect(store.historyTasks[0].jobId).toBe('hist-1')
       expect(store.isLoading).toBe(false)
     })
+
+    it.for(['queue', 'history'] as const)(
+      'reports a %s fetch failure once per outage',
+      async (source) => {
+        const failure = new Error(`${source} down`)
+        for (const fails of [true, true, false, true]) {
+          if (source === 'queue' && fails) {
+            mockGetQueue.mockRejectedValueOnce(failure)
+          } else {
+            mockGetQueue.mockResolvedValueOnce({ Running: [], Pending: [] })
+          }
+          if (source === 'history' && fails) {
+            mockGetHistory.mockRejectedValueOnce(failure)
+          } else {
+            mockGetHistory.mockResolvedValueOnce([])
+          }
+          await store.update()
+        }
+
+        expect(reportError).toHaveBeenCalledTimes(2)
+        expect(reportError).toHaveBeenCalledWith(failure, {
+          errorType: `queue_${source}_fetch_failure`,
+          surface: 'workspace'
+        })
+      }
+    )
   })
 })

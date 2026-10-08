@@ -36,6 +36,7 @@ import type { NodeSource } from '@/types/nodeSource'
 import type { TreeNode } from '@/types/treeExplorerTypes'
 import type { FuseSearchable, SearchAuxScore } from '@/utils/fuseUtil'
 import { buildTree } from '@/utils/treeUtil'
+import { reportError } from '@/platform/telemetry/reportError'
 
 export class ComfyNodeDefImpl
   implements ComfyNodeDefV1, ComfyNodeDefV2, FuseSearchable
@@ -614,7 +615,10 @@ export const useNodeFrequencyStore = defineStore('nodeFrequency', () => {
         nodeFrequencyLookup.value = response.data
         isLoaded.value = true
       } catch (error) {
-        console.error('Error loading node frequencies:', error)
+        reportError(error, {
+          errorType: 'node_frequency_load_failure',
+          surface: 'workspace'
+        })
       }
     }
   }

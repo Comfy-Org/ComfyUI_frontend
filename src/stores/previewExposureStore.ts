@@ -10,6 +10,7 @@ import type { PromotedWidgetSource } from '@/core/graph/subgraph/promotedWidgetT
 import type { PreviewExposure } from '@/core/schemas/previewExposureSchema'
 import type { SubgraphNode } from '@/lib/litegraph/src/litegraph'
 import { nextUniqueName } from '@/lib/litegraph/src/strings'
+import { reportAssertFailure } from '@/platform/telemetry/assertFailureReporter'
 import { createNodeLocatorId } from '@/types/nodeIdentification'
 import type { NodeLocatorId } from '@/types/nodeIdentification'
 import { toNodeId } from '@/types/nodeId'
@@ -43,6 +44,9 @@ export function getPreviewExposureHostLocator(
   console.error(
     `Cannot create preview exposure host locator for node ${String(host.id)}`
   )
+  reportAssertFailure('Cannot create preview exposure host locator', {
+    hostNodeId: String(host.id)
+  })
   return null
 }
 

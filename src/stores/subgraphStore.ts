@@ -3,6 +3,7 @@ import { defineStore } from 'pinia'
 import { t } from '@/i18n'
 import { SubgraphNode } from '@/lib/litegraph/src/litegraph'
 import { useSettingStore } from '@/platform/settings/settingStore'
+import { reportError } from '@/platform/telemetry/reportError'
 import { useToastStore } from '@/platform/updates/common/toastStore'
 import { useWorkflowService } from '@/platform/workflow/core/services/workflowService'
 import type { LoadedComfyWorkflow } from '@/platform/workflow/management/stores/comfyWorkflow'
@@ -258,8 +259,15 @@ export const useSubgraphStore = defineStore('subgraph', () => {
     const settled = [...globalResults, ...userResults]
 
     const errors = settled.filter((i) => 'reason' in i).map((i) => i.reason)
-    errors.forEach((e) => console.error('Failed to load subgraph blueprint', e))
     if (errors.length > 0) {
+      reportError(errors[0], {
+        errorType: 'subgraph_blueprint_load_failure',
+        surface: 'graph',
+        context: { failedBlueprintCount: errors.length }
+      })
+      errors
+        .slice(1)
+        .forEach((e) => console.error('Failed to load subgraph blueprint', e))
       useToastStore().add({
         severity: 'error',
         summary: t('subgraphStore.loadFailure'),

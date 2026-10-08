@@ -6,7 +6,10 @@ import { useFeatureFlags } from '@/composables/useFeatureFlags'
 import type { ModelFile } from '@/platform/assets/schemas/assetSchema'
 import { assetService } from '@/platform/assets/services/assetService'
 import { isCloud } from '@/platform/distribution/types'
+import { reportError } from '@/platform/telemetry/reportError'
 import { api } from '@/scripts/api'
+
+let hasReportedMetadataLoadFailure = false
 
 /** (Internal helper) finds a value in a metadata object from any of a list of keys. */
 function _findInMetadata(
@@ -152,7 +155,16 @@ export class ComfyModelDef {
       this.has_loaded_metadata = true
       this.updateSearchable()
     } catch (error) {
-      console.error('Error loading model metadata', this.file_name, this, error)
+      if (hasReportedMetadataLoadFailure) {
+        console.error('Error loading model metadata', this.file_name, error)
+        return
+      }
+      hasReportedMetadataLoadFailure = true
+      reportError(error, {
+        errorType: 'model_metadata_load_failure',
+        surface: 'assets',
+        context: { fileName: this.file_name }
+      })
     }
   }
 }
@@ -513,7 +525,10 @@ export const useModelStore = defineStore('models', () => {
     try {
       await reloadModels()
     } catch (error) {
-      console.error('Failed to reload the model library', error)
+      reportError(error, {
+        errorType: 'model_library_reload_failure',
+        surface: 'assets'
+      })
     }
   }, MODEL_RELOAD_DEBOUNCE_MS)
 

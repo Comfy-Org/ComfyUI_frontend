@@ -1,7 +1,8 @@
 import { fromAny } from '@total-typescript/shoehorn'
-import { beforeEach, describe, expect, it } from 'vitest'
+import { beforeEach, describe, expect, it, vi } from 'vitest'
 
 import type { SubgraphNode } from '@/lib/litegraph/src/litegraph'
+import { reportAssertFailure } from '@/platform/telemetry/assertFailureReporter'
 import { toNodeId } from '@/types/nodeId'
 import type { UUID } from '@/utils/uuid'
 
@@ -9,6 +10,8 @@ import {
   getPreviewExposureHostLocator,
   usePreviewExposureStore
 } from './previewExposureStore'
+
+vi.mock(import('@/platform/telemetry/assertFailureReporter'))
 
 describe(getPreviewExposureHostLocator, () => {
   it('reports a host ID that cannot form a locator', () => {
@@ -20,6 +23,10 @@ describe(getPreviewExposureHostLocator, () => {
     expect(getPreviewExposureHostLocator(host)).toBeNull()
     expect(console.error).toHaveBeenCalledWith(
       'Cannot create preview exposure host locator for node invalid:id'
+    )
+    expect(reportAssertFailure).toHaveBeenCalledWith(
+      'Cannot create preview exposure host locator',
+      { hostNodeId: 'invalid:id' }
     )
   })
 })
