@@ -8,6 +8,7 @@ import type { Page } from '@playwright/test'
 
 import { E2E_USER } from './fixtures/env'
 import {
+  PRO_MONTHLY_OP_PLAN,
   pendingOperation,
   processingOperation,
   succeededOperation
@@ -68,18 +69,24 @@ function pendingFromRead(cloud: MockCloud, id: string, fromRead: number) {
 const subscribeRequests = (cloud: MockCloud) =>
   cloud.requests.filter((request) => request.path === '/billing/subscribe')
 
-test('a reload while a payment is in flight renders the waiting state, never a form, and follows it to Already completed', async ({
+test('a reload while a payment is in flight renders the waiting state on its own plan, never a form, and follows it to Already completed', async ({
   page,
   cloud,
   signIn
 }) => {
   cloud.scenario.paymentMethods = []
   markPending(cloud, 'op_in_flight')
-  cloud.scenario.operations.op_in_flight = processingOperation('op_in_flight')
+  cloud.scenario.operations.op_in_flight = {
+    ...processingOperation('op_in_flight'),
+    plan: PRO_MONTHLY_OP_PLAN
+  }
   await signIn(CHECKOUT)
 
   await expect(waiting(page)).toHaveText(WAITING)
-  await expect(page.getByText(EYEBROW)).toBeVisible()
+  await expect(
+    page.getByRole('region', { name: 'Order summary' })
+  ).toContainText('Pro Monthly$50.00USD / mo')
+  await expect(page.getByText(EYEBROW)).toBeHidden()
   await expect(payButton(page)).toBeDisabled()
   await expect(page).toHaveURL(/\/v1\/checkout\?/)
 

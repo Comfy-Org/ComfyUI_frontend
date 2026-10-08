@@ -2618,14 +2618,40 @@ export const zBillingPlansResponse = z.object({
 
 /**
  * Display only. The plan the operation targets; for a scheduled change,
- * the plan it switches to at period end. Present only for succeeded
- * plan changes, initial subscriptions and resubscribes. Visible to any
- * workspace member who can read the operation.
+ * the plan it switches to at period end. Present for plan changes,
+ * initial subscriptions and resubscribes in every status (pending,
+ * failed and succeeded alike), so a recovered pending operation can be
+ * labelled with its own plan. Absent when the target plan could not be
+ * resolved. Visible to any workspace member who can read the operation.
+ * tier and the price fields are absent when the server cannot describe
+ * the plan, as for the retired seat-based Team plans, whose rows carry a
+ * personal tier and whose price depends on the workspace's seats.
  *
  */
 export const zBillingOpReceiptPlan = z.object({
+  currency: z.string().optional(),
   duration: zSubscriptionDuration,
-  slug: z.string()
+  monthly_price_cents: z.coerce
+    .bigint()
+    .min(BigInt('-9223372036854775808'), {
+      message: 'Invalid value: Expected int64 to be >= -9223372036854775808'
+    })
+    .max(BigInt('9223372036854775807'), {
+      message: 'Invalid value: Expected int64 to be <= 9223372036854775807'
+    })
+    .optional(),
+  price_cents: z.coerce
+    .bigint()
+    .min(BigInt('-9223372036854775808'), {
+      message: 'Invalid value: Expected int64 to be >= -9223372036854775808'
+    })
+    .max(BigInt('9223372036854775807'), {
+      message: 'Invalid value: Expected int64 to be <= 9223372036854775807'
+    })
+    .optional(),
+  slug: z.string(),
+  team_credit_stop_id: z.string().optional(),
+  tier: zSubscriptionTier.optional()
 })
 
 /**

@@ -3,6 +3,7 @@ import { useEventListener } from '@vueuse/core'
 import { computed } from 'vue'
 import { useI18n } from 'vue-i18n'
 
+import type { SubscriptionPreview } from '@comfyorg/account-core/billing'
 import {
   formatQuoteMoney,
   isAnnualDuration
@@ -13,10 +14,12 @@ import {
   isLocked
 } from '@/checkout/checkoutPage'
 import { endingOf } from '@/checkout/endingScreen'
+import { operationPlanLabel, operationPlanOf } from '@/checkout/operationPlan'
 import type { EndingPlan } from '@/components/fullPage/CheckoutEnding.vue'
 import CheckoutEnding from '@/components/fullPage/CheckoutEnding.vue'
 import type { CheckoutCharge } from '@/components/fullPage/CheckoutPaymentColumn.vue'
 import CheckoutPaymentColumn from '@/components/fullPage/CheckoutPaymentColumn.vue'
+import type { LedgerContext } from '@/checkout/summaryLedger'
 import { buildSummaryLedger } from '@/checkout/summaryLedger'
 import CheckoutSummaryColumn from '@/components/fullPage/CheckoutSummaryColumn.vue'
 import { keepSubscriptionCopy } from '@/checkout/keepSubscription'
@@ -69,15 +72,17 @@ const quote = computed(() =>
     : undefined
 )
 
+const ledgerContext = computed<LedgerContext>(() => ({
+  workspace: session.value?.workspace.name,
+  tierName: (tier) => coded('tier', tier),
+  t,
+  locale: locale.value
+}))
+
 const ledger = computed(() => {
   const quoted = quote.value
   if (!quoted) return undefined
-  return buildSummaryLedger(quoted, {
-    workspace: session.value?.workspace.name,
-    tierName: (tier) => coded('tier', tier),
-    t,
-    locale: locale.value
-  })
+  return buildSummaryLedger(quoted, ledgerContext.value)
 })
 
 const charge = computed<CheckoutCharge | undefined>(() => {
@@ -113,25 +118,43 @@ const locked = computed(() => isLocked(page.value))
 /** The server cannot cancel a pending payment yet; the click has nowhere honest to go. */
 function cancelPayment() {}
 
-/** The plan this page's own Pay bought, as its quote priced it. */
+const recoveredPlan = computed(() => {
+  const current = page.value
+  if (current.kind !== 'waiting') return undefined
+  const plan = current.operation.plan
+  return { label: plan && operationPlanLabel(plan, ledgerContext.value) }
+})
+
+/**
+ * The plan a settled payment bought, as the server reports it for the
+ * operation. Only this page's own Pay, settled without a report that names or
+ * prices the plan, names the plan its quote priced.
+ */
 const endingPlan = computed<EndingPlan | undefined>(() => {
+  const current = page.value
+  if (current.kind !== 'terminal') return undefined
+  const reported = operationPlanOf(current.operation)
+  const label = reported && operationPlanLabel(reported, ledgerContext.value)
+  if (label) return label
+  if (current.attribution !== 'started') return undefined
   const quoted = preview.value
-  if (!quoted) return undefined
+  return quoted && quotedPlanLabel(quoted)
+})
+
+function quotedPlanLabel(quoted: SubscriptionPreview): EndingPlan {
+  const plan = quoted.new_plan
+  const currency = quoted.currency ?? 'usd'
   return {
-    name: coded('tier', quoted.new_plan.tier),
-    price: formatQuoteMoney(
-      quoted.new_plan.price_cents,
-      quoted.currency ?? 'usd',
-      locale.value
-    ),
+    name: coded('tier', plan.tier),
+    price: formatQuoteMoney(plan.price_cents, currency, locale.value),
     period: t(
-      isAnnualDuration(quoted.new_plan.duration)
+      isAnnualDuration(plan.duration)
         ? 'checkout.fullPage.ending.perYear'
         : 'checkout.fullPage.ending.perMonth',
-      { currency: (quoted.currency ?? 'usd').toUpperCase() }
+      { currency: currency.toUpperCase() }
     )
   }
-})
+}
 
 function returnToProduct() {
   window.location.assign(returnLink.value)
@@ -164,6 +187,7 @@ function viewPlans() {
       <CheckoutSummaryColumn
         v-slot="{ ledger: shown }"
         :ledger
+        :operation-plan="recoveredPlan"
         :locked
         :repricing="promo.busy.value"
         @back="returnToProduct"

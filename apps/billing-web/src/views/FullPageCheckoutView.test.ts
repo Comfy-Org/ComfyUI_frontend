@@ -4,6 +4,7 @@ import { nextTick, ref } from 'vue'
 import type { VNode } from 'vue'
 
 import type {
+  BillingOperationPlan,
   BillingOperationState,
   BillingResult,
   PendingBillingOperation,
@@ -417,8 +418,8 @@ describe('FullPageCheckoutView', () => {
     )
     expect(payButton()).toBeDisabled()
     expect(
-      screen.getByText('Upgrade to Creator Plan · Acme Team')
-    ).toBeInTheDocument()
+      screen.queryByText('Upgrade to Creator Plan · Acme Team')
+    ).not.toBeInTheDocument()
   })
 
   it.for<{
@@ -978,6 +979,56 @@ describe('FullPageCheckoutView outcomes after Pay', () => {
     expect(fake.subscribe).toHaveBeenCalledOnce()
   })
 
+  it("keeps the plan its own Pay quoted when the server's plan for it carries no tier or price", async () => {
+    await payReady({
+      subscribe: {
+        status: 'ok',
+        value: {
+          phase: 'succeeded',
+          operation: {
+            ...succeededOperation('op_mine'),
+            phase: 'succeeded',
+            plan: { slug: 'creator_monthly', duration: 'MONTHLY' }
+          }
+        }
+      }
+    })
+
+    form.emit('confirm', 'ctoken_1')
+
+    expect(await screen.findByTestId('checkout-ending-plan')).toHaveTextContent(
+      'Creator$28.00 USD / mo'
+    )
+  })
+
+  it('names the plan the server reports for its own Pay over the plan it quoted', async () => {
+    await payReady({
+      subscribe: {
+        status: 'ok',
+        value: {
+          phase: 'succeeded',
+          operation: {
+            ...succeededOperation('op_mine'),
+            phase: 'succeeded',
+            plan: {
+              slug: 'pro_monthly',
+              duration: 'MONTHLY',
+              tier: 'PRO',
+              price_cents: 5000,
+              currency: 'usd'
+            }
+          }
+        }
+      }
+    })
+
+    form.emit('confirm', 'ctoken_1')
+
+    const plan = await screen.findByTestId('checkout-ending-plan')
+    expect(plan).toHaveTextContent('Pro Monthly$50.00 USD / mo')
+    expect(plan).not.toHaveTextContent('Creator')
+  })
+
   describe('Close', () => {
     const SETTLED: FakeBillingClientOptions = {
       subscribe: {
@@ -1317,8 +1368,8 @@ describe('FullPageCheckoutView mount reconciliation', () => {
       "This payment is already processing and can't be canceled."
     )
     expect(
-      screen.getByText('Subscribe to Creator Plan · Acme Team')
-    ).toBeInTheDocument()
+      screen.queryByText('Subscribe to Creator Plan · Acme Team')
+    ).not.toBeInTheDocument()
     expect(form.mounts).toBe(0)
     expect(payButton()).toBeDisabled()
 
@@ -1338,6 +1389,104 @@ describe('FullPageCheckoutView mount reconciliation', () => {
     expect(screen.queryByTestId('checkout-ending-plan')).not.toBeInTheDocument()
     expect(form.mounts).toBe(0)
   })
+
+  const summaryColumn = () =>
+    screen.getByRole('region', { name: 'Order summary' })
+  const shownText = (element: HTMLElement) =>
+    element.textContent.replace(/\s+/g, ' ').trim()
+
+  type ServerPlan = BillingOperationPlan
+
+  /** Money in flight that this page did not send, on the plan the server reports for it. */
+  function recoveredOn(plan: ServerPlan, id: string) {
+    const recovered = { ...processingOperation(id), plan }
+    return recovered
+  }
+
+  it.for<{
+    name: string
+    plan: ServerPlan
+    summary: string
+  }>([
+    {
+      name: 'its own plan and monthly rate, never the link plan',
+      plan: {
+        slug: 'team_monthly',
+        duration: 'MONTHLY',
+        tier: 'TEAM',
+        price_cents: 66_500,
+        currency: 'usd'
+      },
+      summary: 'Team Monthly$665.00USD / mo'
+    },
+    {
+      name: 'the per-month figure the server gives an annual plan',
+      plan: {
+        slug: 'pro_annual',
+        duration: 'ANNUAL',
+        tier: 'PRO',
+        price_cents: 48_000,
+        monthly_price_cents: 4_000,
+        currency: 'usd'
+      },
+      summary: 'Pro Yearly$40.00USD / mo'
+    },
+    {
+      name: 'no name or price where the server describes neither',
+      plan: { slug: 'team_seats_legacy', duration: 'MONTHLY' },
+      summary: ''
+    }
+  ])('summarizes a recovered payment with $name', async ({ plan, summary }) => {
+    await renderCheckout({
+      recover: {
+        status: 'ok',
+        value: recoveredOn(plan, 'op_recovered')
+      }
+    })
+
+    await waitingStatus()
+    expect(shownText(summaryColumn())).toBe(summary)
+  })
+
+  it.for<{ name: string; plan: ServerPlan }>([
+    {
+      name: 'one the server describes',
+      plan: {
+        slug: 'team_monthly',
+        duration: 'MONTHLY',
+        tier: 'TEAM',
+        price_cents: 66_500,
+        currency: 'usd'
+      }
+    },
+    {
+      name: 'one the server cannot describe',
+      plan: { slug: 'creator_monthly', duration: 'MONTHLY' }
+    }
+  ])(
+    "ends a recovered payment on $name without naming the link's plan",
+    async ({ plan }) => {
+      const fake = await renderCheckout({
+        recover: { status: 'ok', value: recoveredOn(plan, 'op_recovered') }
+      })
+      await waitingStatus()
+
+      fake.publishOperation({
+        ...succeededOperation('op_recovered'),
+        phase: 'succeeded',
+        plan
+      })
+
+      await screen.findByRole('heading', { name: 'Already completed' })
+      expect(
+        screen.queryByTestId('checkout-ending-plan')
+      ).not.toBeInTheDocument()
+      expect(screen.getByRole('main')).not.toHaveTextContent(/Creator|\$28/)
+      expect(screen.getByTestId('checkout-ending-code')).toHaveTextContent(
+        'op_recovered'
+      )
+    }
+  )
 
   it.for<{
     name: string

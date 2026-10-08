@@ -32,8 +32,10 @@ const REFUSAL_COPY: Readonly<Record<CapabilityDenialReason, RefusalCopy>> = {
 /**
  * The full-page screen a checkout ends on, and the code support can act on.
  * `success` is the only one that may name a plan: this page's own Pay sent
- * it. `completed` is money this page watched settle without sending it;
- * `already_completed` was through before the page could offer a form.
+ * it. It names the plan the server reports for the operation, or, without
+ * that report, the plan its quote priced. `completed` is money this page
+ * watched settle without sending it; `already_completed` was through before
+ * the page could offer a form.
  */
 export type EndingScreen =
   | { readonly kind: 'success' }
