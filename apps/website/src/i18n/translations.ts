@@ -7830,13 +7830,13 @@ Enterprise`
   },
   // NVIDIA RTX landing page (/nvidia-rtx)
   'nvidiaRtx.meta.title': {
-    en: 'ComfyUI on NVIDIA RTX: Run AI Models Locally',
-    'zh-CN': 'NVIDIA RTX 上的 ComfyUI：在本地运行 AI 模型'
+    en: 'Nvidia VFX Nodes for ComfyUI',
+    'zh-CN': 'ComfyUI 的 Nvidia VFX 节点'
   },
   'nvidiaRtx.meta.description': {
-    en: 'Run open image, video, audio, and 3D models on your NVIDIA RTX GPU with ComfyUI. Free, private, and fully under your control.',
+    en: "Three open-source ComfyUI nodes powered by Nvidia's RTX technology for ultra fast video super resolution, frame generation and SDR-to-HDR conversion.",
     'zh-CN':
-      '使用 ComfyUI 在你的 NVIDIA RTX GPU 上运行开源图像、视频、音频与 3D 模型。免费、私密，完全由你掌控。'
+      '三个由 Nvidia RTX 技术驱动的开源 ComfyUI 节点，提供超快的视频超分辨率、帧生成与 SDR 转 HDR。'
   },
   'nvidiaRtx.breadcrumb.model': {
     en: 'NVIDIA RTX',
@@ -7847,33 +7847,33 @@ Enterprise`
     'zh-CN': '更新于 2026 年 9 月'
   },
   'nvidiaRtx.hero.title': {
-    en: 'RTX Video nodes\nare here',
-    'zh-CN': 'RTX Video 节点已上线'
+    en: 'Nvidia VFX Nodes',
+    'zh-CN': 'Nvidia VFX 节点'
   },
   'nvidiaRtx.hero.description': {
-    en: 'Three open-source nodes, now in ComfyUI. Upscale, multiply frame rate up to 4×, and convert SDR to HDR on your own RTX GPU. Built for VFX artists and professional video creators.',
+    en: "Three open-source nodes powered by Nvidia's RTX technology for ultra fast video super resolution, frame generation and SDR-to-HDR conversion. Built for VFX artists and professional video creators.",
     'zh-CN':
-      '三个开源节点，现已加入 ComfyUI。在你自己的 RTX GPU 上进行视频放大、最高 4 倍帧率提升，以及 SDR 转 HDR。专为 VFX 艺术家与专业视频创作者打造。'
+      '三个由 Nvidia RTX 技术驱动的开源节点，提供超快的视频超分辨率、帧生成与 SDR 转 HDR。专为 VFX 艺术家与专业视频创作者打造。'
   },
   'nvidiaRtx.hero.tagUpscale': {
-    en: 'Upscale',
-    'zh-CN': '视频放大'
+    en: 'Super Resolution up to 4×',
+    'zh-CN': '最高 4 倍超分辨率'
   },
   'nvidiaRtx.hero.tagFrameRate': {
-    en: 'Frame Rate up to 4×',
-    'zh-CN': '最高 4 倍帧率'
+    en: 'Frame Rate up to 16×',
+    'zh-CN': '最高 16 倍帧率'
   },
   'nvidiaRtx.hero.tagSdrToHdr': {
-    en: 'SDR to HDR',
+    en: 'SDR-to-HDR',
     'zh-CN': 'SDR 转 HDR'
   },
   'nvidiaRtx.hero.primaryCta': {
-    en: 'DOWNLOAD DESKTOP',
-    'zh-CN': '下载桌面版'
+    en: 'TRY ON COMFY CLOUD',
+    'zh-CN': '在 Comfy Cloud 试用'
   },
   'nvidiaRtx.hero.secondaryCta': {
-    en: 'READ THE GUIDE',
-    'zh-CN': '查看教程'
+    en: 'VIEW ON GITHUB',
+    'zh-CN': '在 GitHub 查看'
   },
   'nvidiaRtx.beforeAfter.heading': {
     en: 'One clip, two states.',
@@ -7888,8 +7888,8 @@ Enterprise`
     'zh-CN': '在 NVIDIA RTX 上创作'
   },
   'nvidiaRtx.steps.heading': {
-    en: 'Start in three steps',
-    'zh-CN': '三步即可开始'
+    en: 'Run it locally in three steps',
+    'zh-CN': '三步在本地运行'
   },
   'nvidiaRtx.steps.step': { en: 'Step', 'zh-CN': '步骤' },
   'nvidiaRtx.steps.primaryCta': {
