@@ -155,6 +155,28 @@ export function redactTelemetryValues(
   )
 }
 
+export function redactTelemetryError(error: unknown): Error {
+  let source: Error
+  if (error instanceof Error) {
+    source = error
+  } else {
+    try {
+      source = new Error(String(error))
+    } catch {
+      source = new Error('[Redacted]')
+    }
+  }
+  return redactError(
+    source,
+    {
+      ancestors: new WeakSet<object>(),
+      memo: new WeakMap<object, unknown>(),
+      nodesRemaining: MAX_REDACTION_NODES
+    },
+    0
+  )
+}
+
 interface RedactionContext {
   ancestors: WeakSet<object>
   memo: WeakMap<object, unknown>

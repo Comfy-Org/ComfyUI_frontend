@@ -116,7 +116,7 @@ export interface ModelAdapter {
     ctx: ModelLoadContext,
     path: string,
     filename: string,
-    fetchBytes?: () => Promise<ArrayBuffer>
+    fetchBytes: () => Promise<ArrayBuffer>
   ): Promise<ModelLoadResult | null>
   /**
    * Optional. Return a world-space AABB for the given model. Adapters for
@@ -145,10 +145,11 @@ export interface ModelAdapter {
 
 export async function fetchModelData(
   path: string,
-  filename: string
+  filename: string,
+  signal?: AbortSignal
 ): Promise<ArrayBuffer> {
   const route = '/' + path.replace(/^api\//, '') + encodeURIComponent(filename)
-  const response = await api.fetchApi(route)
+  const response = await api.fetchApi(route, { signal })
   if (!response.ok) {
     throw new Error(`Failed to fetch model: ${response.status}`)
   }

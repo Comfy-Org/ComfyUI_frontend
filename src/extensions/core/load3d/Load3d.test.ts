@@ -6,7 +6,9 @@ import type { Load3dDeps } from '@/extensions/core/load3d/Load3d'
 import Load3d from '@/extensions/core/load3d/Load3d'
 import type {
   CameraState,
-  GizmoMode
+  GizmoMode,
+  LoadModelOutcome,
+  LoaderManagerInterface
 } from '@/extensions/core/load3d/interfaces'
 import type { PointerNdcSource } from '@/extensions/core/load3d/load3dViewport'
 import { QuadWireframeOverlay } from '@/extensions/core/load3d/quadWireframe/QuadWireframeManager'
@@ -957,6 +959,13 @@ describe('Load3d', () => {
           modelManager.currentModel = null
         })
       }
+      const loadModel: LoaderManagerInterface['loadModel'] = vi.fn(
+        async (): Promise<LoadModelOutcome> => {
+          await pendingLoad
+          modelManager.currentModel = loadedModel
+          return 'loaded'
+        }
+      )
       Object.assign(ctx.load3d, {
         _loadGeneration: 0,
         loadingPromise: null,
@@ -968,10 +977,7 @@ describe('Load3d', () => {
         },
         controlsManager: { ...ctx.controlsManager, reset: vi.fn() },
         loaderManager: {
-          loadModel: vi.fn(async () => {
-            await pendingLoad
-            modelManager.currentModel = loadedModel
-          })
+          loadModel
         },
         modelManager,
         animationManager: {
@@ -987,7 +993,7 @@ describe('Load3d', () => {
       resolveLoad()
       const [accepted] = await Promise.all([load, idle])
 
-      expect(accepted).toBe(false)
+      expect(accepted).toBe('cancelled')
       expect(ctx.load3d.getCurrentModel()).toBeNull()
     })
   })
@@ -1053,7 +1059,9 @@ describe('Load3d', () => {
       }))
       const setCameraState = vi.fn()
       const getCurrentCameraType = vi.fn(() => 'perspective' as const)
-      const loaderLoadModel = vi.fn().mockResolvedValue(undefined)
+      const loaderLoadModel = vi.fn<() => Promise<LoadModelOutcome>>(
+        async () => 'loaded'
+      )
       Object.assign(ctx.load3d, {
         cameraManager: {
           ...ctx.cameraManager,
@@ -1075,7 +1083,12 @@ describe('Load3d', () => {
         handleResize: vi.fn(),
         hasLoadedModel: false
       })
-      return { getCameraState, setCameraState, getCurrentCameraType }
+      return {
+        getCameraState,
+        setCameraState,
+        getCurrentCameraType,
+        loaderLoadModel
+      }
     }
 
     it('first load uses default framing', async () => {
@@ -1086,6 +1099,34 @@ describe('Load3d', () => {
       expect(ctx.cameraManager.reset).toHaveBeenCalledOnce()
       expect(mocks.getCameraState).not.toHaveBeenCalled()
       expect(mocks.setCameraState).not.toHaveBeenCalled()
+    })
+
+    it('does not restore camera or animations for a cancelled load', async () => {
+      const mocks = setupLoadInternal()
+      await ctx.load3d.loadModel('initial.glb')
+      mocks.setCameraState.mockClear()
+      vi.mocked(ctx.load3d.animationManager.setupModelAnimations).mockClear()
+      mocks.loaderLoadModel.mockResolvedValueOnce('cancelled')
+
+      await expect(ctx.load3d.loadModel('cancelled.glb')).resolves.toBe(
+        'cancelled'
+      )
+
+      expect(mocks.setCameraState).not.toHaveBeenCalled()
+      expect(
+        ctx.load3d.animationManager.setupModelAnimations
+      ).not.toHaveBeenCalled()
+    })
+
+    it('drains whenLoadIdle after the loader rejects', async () => {
+      const mocks = setupLoadInternal()
+      mocks.loaderLoadModel.mockRejectedValueOnce(new Error('load failed'))
+
+      const load = ctx.load3d.loadModel('broken.glb')
+      const idle = ctx.load3d.whenLoadIdle()
+
+      await expect(load).rejects.toThrow('load failed')
+      await expect(idle).resolves.toBeUndefined()
     })
 
     it('subsequent load preserves the user-adjusted camera framing', async () => {
@@ -1131,6 +1172,20 @@ describe('Load3d', () => {
       mocks.getCameraState.mockClear()
 
       await ctx.load3d.loadModel('b.glb')
+
+      expect(ctx.cameraManager.reset).toHaveBeenCalledOnce()
+      expect(mocks.getCameraState).not.toHaveBeenCalled()
+    })
+
+    it('uses default framing after a failed reload', async () => {
+      const mocks = setupLoadInternal()
+      await ctx.load3d.loadModel('a.glb')
+      mocks.loaderLoadModel.mockResolvedValueOnce('failed')
+      await ctx.load3d.loadModel('broken.glb')
+      ctx.cameraManager.reset.mockClear()
+      mocks.getCameraState.mockClear()
+
+      await ctx.load3d.loadModel('replacement.glb')
 
       expect(ctx.cameraManager.reset).toHaveBeenCalledOnce()
       expect(mocks.getCameraState).not.toHaveBeenCalled()
