@@ -1318,8 +1318,8 @@ export class ComfyApp {
     )
   }
 
-  private rejectSupersededGraphLoad(): false {
-    return false
+  private rejectSupersededGraphLoad(): 'superseded' {
+    return 'superseded'
   }
 
   async loadGraphData(
@@ -1336,7 +1336,7 @@ export class ComfyApp {
       silentAssetErrors?: boolean
       workflowNavigationId?: number
     } = {}
-  ): Promise<LoadedComfyWorkflow | boolean | undefined> {
+  ): Promise<LoadedComfyWorkflow | boolean | 'superseded' | undefined> {
     const canvasScheduler = useCanvasScheduler()
     const loadId = ++this.graphLoadSequence
 
@@ -1371,16 +1371,6 @@ export class ComfyApp {
       } else {
         useMissingModelStore().clearMissingModels()
         useMissingMediaStore().clearMissingMedia()
-      }
-
-      if (clean) {
-        // Reset canvas context before configuring a new graph so subgraph UI
-        // state from the previous workflow cannot leak into the newly loaded
-        // one, and so `clean()` can clear the root graph even when the user is
-        // currently inside a subgraph.
-        this.canvas.setGraph(this.rootGraph)
-
-        withGraphIntentSource('load', () => this.clean())
       }
 
       // Use explicit validation instead of falsy check to avoid replacing
@@ -1552,16 +1542,14 @@ export class ComfyApp {
       }
     }
 
+    if (!this.ownsGraphLoad(loadId)) return this.rejectSupersededGraphLoad()
+
     const endGraphLoadSuppression = ChangeTracker.beginGraphLoad()
     let activatedWorkflow: LoadedComfyWorkflow | undefined
     let reconcileResourceErrors: (() => void) | undefined
     let resourceScanLoadCompleted = false
     try {
       try {
-        if (!this.ownsGraphLoad(loadId)) {
-          return await this.rejectSupersededGraphLoad()
-        }
-
         this.rootGraph.configure(graphData as ISerialisedGraph)
 
         // Save original renderer version before scaling (it gets modified during scaling)
@@ -2517,9 +2505,6 @@ export class ComfyApp {
       await this.rejectSupersededGraphLoad()
       return
     }
-    this.canvas.setGraph(this.rootGraph)
-    withGraphIntentSource('load', () => this.clean())
-
     const ids = Object.keys(apiData)
     // Export (API) flattens subgraph nodes to ids like "194:45". At the root
     // graph a colon reads as an execution-id path: Locate walks into node

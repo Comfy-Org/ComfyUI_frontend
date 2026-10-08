@@ -701,7 +701,7 @@ describe('ComfyApp', () => {
       const olderLoad = app.loadGraphData(createWorkflowGraphData(), false)
       await app.loadGraphData(createWorkflowGraphData(), false)
       releaseFirstLoad()
-      await expect(olderLoad).resolves.toBe(false)
+      await expect(olderLoad).resolves.toBe('superseded')
 
       const hooks = mockExtensionService.invokeExtensionsAsync.mock.calls.map(
         ([hook]) => hook
@@ -732,7 +732,7 @@ describe('ComfyApp', () => {
       setGraph.mockClear()
       clean.mockClear()
       releaseOlderLoad()
-      await expect(olderLoad).resolves.toBe(false)
+      await expect(olderLoad).resolves.toBe('superseded')
 
       expect(setGraph).not.toHaveBeenCalled()
       expect(clean).not.toHaveBeenCalled()
@@ -752,7 +752,7 @@ describe('ComfyApp', () => {
       const olderLoad = app.loadGraphData(createWorkflowGraphData(), false)
       await app.loadGraphData(createWorkflowGraphData(), false)
       releaseOlderLoad()
-      await expect(olderLoad).resolves.toBe(false)
+      await expect(olderLoad).resolves.toBe('superseded')
 
       expect(mockWorkflowService.afterLoadNewGraph).toHaveBeenCalledOnce()
     })
@@ -855,7 +855,7 @@ describe('ComfyApp', () => {
       )
       await app.loadGraphData(createWorkflowGraphData(), false)
       releaseOlderLoad()
-      await expect(olderLoad).resolves.toBe(false)
+      await expect(olderLoad).resolves.toBe('superseded')
 
       expect(runMissingModelPipeline).toHaveBeenCalledOnce()
     })
@@ -888,7 +888,7 @@ describe('ComfyApp', () => {
       await app.loadGraphData(createWorkflowGraphData(), false)
       configure.mockClear()
       releaseOlderLoad()
-      await expect(olderLoad).resolves.toBe(false)
+      await expect(olderLoad).resolves.toBe('superseded')
 
       expect(configure).not.toHaveBeenCalled()
     })
@@ -2909,7 +2909,7 @@ describe('ComfyApp', () => {
 
       await expect(
         app.loadGraphData(createWorkflowGraphData(), false)
-      ).resolves.toBe(false)
+      ).resolves.toBe('superseded')
       expect(
         mockExtensionService.invokeExtensionsAsync
       ).not.toHaveBeenCalledWith('afterLoadGraph')
@@ -3006,6 +3006,53 @@ describe('ComfyApp', () => {
       expect(graph.getNodeById(survivor.id)).toBe(survivor)
     })
 
+    it('keeps the newer load suppression active when an older load resumes stale', async () => {
+      app.canvasElRef.value = document.createElement('canvas')
+      Reflect.set(app, 'rootGraphInternal', new LGraph())
+      let releaseOlderLoad!: () => void
+      const olderLoadBlocked = new Promise<void>((resolve) => {
+        releaseOlderLoad = resolve
+      })
+      let releaseNewerLoad!: () => void
+      const newerLoadBlocked = new Promise<void>((resolve) => {
+        releaseNewerLoad = resolve
+      })
+      vi.when(mockExtensionService.invokeExtensionsAsync)
+        .calledWith(
+          'beforeConfigureGraph',
+          expect.anything(),
+          expect.anything()
+        )
+        .thenReturnOnce(olderLoadBlocked)
+      vi.when(mockExtensionService.invokeExtensionsAsync)
+        .calledWith('afterConfigureGraph', expect.anything())
+        .thenReturnOnce(newerLoadBlocked)
+
+      const olderLoad = app.loadGraphData(createWorkflowGraphData(), true)
+      await vi.waitFor(() =>
+        expect(mockExtensionService.invokeExtensionsAsync).toHaveBeenCalledWith(
+          'beforeConfigureGraph',
+          expect.anything(),
+          expect.anything()
+        )
+      )
+      const newerLoad = app.loadGraphData(createWorkflowGraphData(), true)
+      await vi.waitFor(() =>
+        expect(mockExtensionService.invokeExtensionsAsync).toHaveBeenCalledWith(
+          'afterConfigureGraph',
+          expect.anything()
+        )
+      )
+
+      releaseOlderLoad()
+      await olderLoad
+
+      expect(ChangeTracker.isLoadingGraph).toBe(true)
+
+      releaseNewerLoad()
+      await newerLoad
+    })
+
     it('does not add a superseded API JSON import’s nodes to the newer graph', async () => {
       app.canvasElRef.value = document.createElement('canvas')
       const graph = new LGraph()
@@ -3039,7 +3086,6 @@ describe('ComfyApp', () => {
       const graph = new LGraph()
       Reflect.set(app, 'rootGraphInternal', graph)
       Reflect.set(singletonApp, 'rootGraphInternal', graph)
-      const clean = vi.spyOn(app, 'clean')
       let releaseOlderLoad!: () => void
       const olderLoadBlocked = new Promise<void>((resolve) => {
         releaseOlderLoad = resolve
@@ -3072,14 +3118,15 @@ describe('ComfyApp', () => {
         { '1': { class_type: 'KSampler', inputs: {} } },
         'newer.json'
       )
-      await vi.waitFor(() => expect(clean).toHaveBeenCalledTimes(2))
+      await vi.waitFor(() =>
+        expect(useNodeReplacementStore().load).toHaveBeenCalled()
+      )
 
       releaseOlderLoad()
       await olderLoad
       releaseReplacements()
       await apiImport
 
-      expect(clean).toHaveBeenCalledTimes(3)
       expect(graph.nodes).toHaveLength(1)
       expect(graph.nodes[0].type).toBe('KSampler')
     })

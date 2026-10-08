@@ -485,6 +485,10 @@ export const useWorkflowService = () => {
           await restoreRetainedWorkflow(workflow)
           return false
         }
+        if (loaded === 'superseded') {
+          useSubgraphNavigationStore().endWorkflowNavigation(navigationIntentId)
+          return false
+        }
         showPendingWarnings(undefined, {
           silent: !loadFromRemote && !options.force
         })
@@ -777,7 +781,7 @@ export const useWorkflowService = () => {
             isSameActiveWorkflowLoad)
         ) {
           const loadedWorkflow = await openCurrentWorkflow(existingWorkflow)
-          if (options.isCurrent?.() === false) return false
+          if (!loadedWorkflow || options.isCurrent?.() === false) return false
           activateRunErrors(loadedWorkflow)
           if (loadedWorkflow.initialMode === undefined) {
             // Prefer the file's linearMode over the draft's since the file
@@ -813,13 +817,13 @@ export const useWorkflowService = () => {
       }
       trackIfEnteringApp(tempWorkflow)
       const loadedWorkflow = await openCurrentWorkflow(tempWorkflow)
-      if (options.isCurrent?.() === false) return false
+      if (!loadedWorkflow || options.isCurrent?.() === false) return false
       activateRunErrors(loadedWorkflow)
       return true
     }
 
     const loadedWorkflow = await openCurrentWorkflow(value)
-    if (options.isCurrent?.() === false) return false
+    if (!loadedWorkflow || options.isCurrent?.() === false) return false
     activateRunErrors(loadedWorkflow)
     if (shareId) {
       loadedWorkflow.shareId = shareId

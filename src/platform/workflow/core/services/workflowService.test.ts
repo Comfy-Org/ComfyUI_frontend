@@ -477,6 +477,21 @@ describe('useWorkflowService', () => {
       expect(loading.isLoaded).toBe(false)
     })
 
+    it('does not restore the retained workflow after a superseded graph load', async () => {
+      const workflows = useWorkflowStore()
+      const current = createModeTestWorkflow({ path: 'workflows/current.json' })
+      const loading = createModeTestWorkflow({ path: 'workflows/loading.json' })
+      workflows.activeWorkflow = current
+      vi.mocked(app.loadGraphData).mockResolvedValue('superseded')
+
+      await expect(useWorkflowService().openWorkflow(loading)).resolves.toBe(
+        false
+      )
+
+      expect(app.loadGraphData).toHaveBeenCalledOnce()
+      expect(workflows.activeWorkflow.path).toBe(current.path)
+    })
+
     it('leaves a saved workflow clean after a superseded load applied its draft', async () => {
       const workflows = useWorkflowStore()
       const current = createModeTestWorkflow({ path: 'workflows/current.json' })
