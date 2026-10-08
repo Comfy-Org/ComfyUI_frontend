@@ -17,9 +17,12 @@ describe('ExploreDoors', () => {
           within(door).getByTestId('explore-door-hint').textContent.trim()
         ])
     ).toEqual([
-      ['Explore and compare', 'Try one, call it by API or download it.'],
-      ['Work with nodes', 'Open the node graph and change any step.'],
-      ['Fastest result', 'Upload, click, done. No nodes.']
+      [
+        'For developers',
+        'Call the latest models from your code. Try them here first.'
+      ],
+      ['For ComfyUI users', 'Open the graph and change any step.'],
+      ['For creators', 'Upload, click, done. No nodes, no setup.']
     ])
   })
 

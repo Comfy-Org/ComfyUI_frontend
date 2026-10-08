@@ -100,44 +100,45 @@ describe('ModelsCatalogue', () => {
       locale: 'en',
       tab: 'explore',
       subtitle:
-        'Search, or pick how you want to work: explore models, open a workflow or use an app.'
+        'Want a result? Use an app. Want control? Open a workflow. Building a product? Use a model’s API.'
     },
     {
       locale: 'zh-CN',
       tab: 'explore',
-      subtitle: '直接搜索，或选择你的工作方式：探索模型、打开工作流或使用应用。'
+      subtitle:
+        '想要结果？用应用。想要掌控？打开工作流。要做产品？用模型的 API。'
     },
     {
       locale: 'en',
       tab: 'models',
       subtitle:
-        'Run models here, call them by API or download open weights for ComfyUI.'
+        'For developers: call the latest models through one API, try them here first or download open weights for ComfyUI.'
     },
     {
       locale: 'en',
       tab: 'workflows',
-      subtitle: 'Open one, change any step, make it yours.'
+      subtitle: 'Download one or run it in Comfy Cloud, then change any step.'
     },
     {
       locale: 'en',
       tab: 'apps',
-      subtitle: 'One job each, no nodes needed.'
+      subtitle: 'Ready-made tools, one job each. No nodes, no setup.'
     },
     {
       locale: 'zh-CN',
       tab: 'models',
       subtitle:
-        '在这里运行模型、通过 API 调用，或下载开放权重在 ComfyUI 中使用。'
+        '面向开发者：通过一个 API 调用最新模型，先在这里试用，或下载开放权重在 ComfyUI 中使用。'
     },
     {
       locale: 'zh-CN',
       tab: 'workflows',
-      subtitle: '打开一个，修改任意步骤，让它成为你的。'
+      subtitle: '下载一个，或在 Comfy Cloud 中运行，然后修改任意步骤。'
     },
     {
       locale: 'zh-CN',
       tab: 'apps',
-      subtitle: '一个应用只做一件事，无需节点。'
+      subtitle: '现成的工具，一个只做一件事。无需节点，无需配置。'
     }
   ] as const)(
     'introduces the $tab section in its own words ($locale)',

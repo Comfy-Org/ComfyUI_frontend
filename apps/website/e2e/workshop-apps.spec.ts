@@ -102,7 +102,9 @@ test('lists both apps, then the apps still being built, on the hub apps page', a
     page.getByRole('heading', { level: 1, name: 'Apps' })
   ).toBeVisible()
   await expect(page.getByTestId('hub-back')).toHaveAttribute('href', '/hub/')
-  await expect(page.getByText('One job each, no nodes needed.')).toBeVisible()
+  await expect(
+    page.getByText('Ready-made tools, one job each. No nodes, no setup.')
+  ).toBeVisible()
   await expect(page.getByTestId('app-featured')).toHaveCount(0)
   const grid = page.getByTestId('app-grid')
   const cards = grid.getByRole('link')

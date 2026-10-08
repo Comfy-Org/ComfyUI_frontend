@@ -39,7 +39,9 @@ test('workflow launch groups lead to the existing shared form', async ({
     page.getByRole('navigation', { name: 'Breadcrumb' }).getByRole('listitem')
   ).toHaveText(['Hub', 'Workflows'])
   await expect(
-    page.getByText('Open one, change any step, make it yours.')
+    page.getByText(
+      'Download one or run it in Comfy Cloud, then change any step.'
+    )
   ).toBeVisible()
   const catalogue = page.getByTestId('workflow-catalogue')
   await expect(catalogue.getByRole('heading', { level: 2 })).toHaveText([
