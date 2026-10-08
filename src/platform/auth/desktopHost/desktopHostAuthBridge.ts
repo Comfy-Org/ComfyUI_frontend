@@ -1,22 +1,12 @@
-/**
- * Mirrors `__comfyDesktop2.Auth` (Comfy-Desktop #1657). The pinned
- * `@comfyorg/comfyui-desktop-bridge-types` predates it; switch to the package
- * types once a version carrying `ComfyDesktop2AuthBridge` is pinned.
- */
-export type DesktopHostAuthState =
-  | { status: 'disabled' }
-  | { status: 'signed_out' }
-  | {
-      status: 'signed_in'
-      userId: string
-      email?: string
-      workspaceId?: string
-    }
+import type {
+  ComfyDesktop2AuthBridge,
+  ComfyDesktop2AuthState
+} from '@comfyorg/comfyui-desktop-bridge-types'
 
-export interface DesktopHostAuthBridge {
-  getState(): Promise<DesktopHostAuthState>
-  getWorkspaceToken(workspaceId: string): Promise<string | null>
-  requestSignIn(): Promise<DesktopHostAuthState>
-  signOut(): Promise<DesktopHostAuthState>
-  onChanged(callback: (state: DesktopHostAuthState) => void): () => void
+export type DesktopHostAuthState = ComfyDesktop2AuthState
+
+/** `switchWorkspace` lands with bridge types 0.5.0 (Comfy-Desktop #1671). */
+export interface DesktopHostAuthBridge extends ComfyDesktop2AuthBridge {
+  /** Absent on Desktop builds before Comfy-Desktop #1671. */
+  switchWorkspace?(workspaceId: string): Promise<DesktopHostAuthState>
 }
