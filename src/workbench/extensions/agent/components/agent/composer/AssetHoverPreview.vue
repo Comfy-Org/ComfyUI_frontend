@@ -49,11 +49,15 @@ const contentStyle = useModalLiftedZIndex(open)
 watch(
   [triggerHovered, contentHovered, triggerPointerInside],
   ([onTrigger, onContent, pointerInside]) => {
-    if (mode.value === 'interactive') return
-    if (mode.value === 'dismissed' && (onTrigger || onContent || pointerInside))
-      return
-    if (mode.value === 'closed' && !(onTrigger && pointerInside)) return
-    mode.value = onTrigger || onContent ? 'hover' : 'closed'
+    const hovering = onTrigger || onContent
+    const acceptsHoverUpdate: Record<AssetPreviewMode, boolean> = {
+      closed: onTrigger && pointerInside,
+      hover: true,
+      interactive: false,
+      dismissed: !hovering && !pointerInside
+    }
+    if (acceptsHoverUpdate[mode.value])
+      mode.value = hovering ? 'hover' : 'closed'
   }
 )
 onBeforeUnmount(() => {

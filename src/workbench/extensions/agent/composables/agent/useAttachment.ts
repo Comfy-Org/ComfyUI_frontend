@@ -30,6 +30,13 @@ interface UploadResult {
   url?: string
 }
 
+type DeferredFileResult =
+  | 'uploaded'
+  | 'unsupported'
+  | 'cancelled'
+  | 'failed'
+  | 'duplicate'
+
 export interface UseAttachmentOptions {
   upload: (file: File, signal: AbortSignal) => Promise<UploadResult>
   uploadTimeoutMs?: number
@@ -236,18 +243,11 @@ export function useAttachment(options: UseAttachmentOptions) {
     for (const id of Array.from(pending)) cancelUpload(id)
   }
 
-  async function addDeferredFile(
+  async function uploadDeferredFile(
+    id: string,
     name: string,
-    resolve: () => Promise<File | undefined>,
-    sourceKey?: string
-  ): Promise<
-    'uploaded' | 'unsupported' | 'cancelled' | 'failed' | 'duplicate'
-  > {
-    const id = stage(name, sourceKey)
-    if (!id) {
-      options.onDuplicate?.([name])
-      return 'duplicate'
-    }
+    resolve: () => Promise<File | undefined>
+  ): Promise<DeferredFileResult> {
     try {
       const file = await withDeadline(resolve(), DEFERRED_FETCH_TIMEOUT_MS)
       if (cancelled.has(id)) return 'cancelled'
@@ -269,6 +269,19 @@ export function useAttachment(options: UseAttachmentOptions) {
     } finally {
       settle(id)
     }
+  }
+
+  async function addDeferredFile(
+    name: string,
+    resolve: () => Promise<File | undefined>,
+    sourceKey?: string
+  ): Promise<DeferredFileResult> {
+    const id = stage(name, sourceKey)
+    if (!id) {
+      options.onDuplicate?.([name])
+      return 'duplicate'
+    }
+    return uploadDeferredFile(id, name, resolve)
   }
 
   async function addFiles(files: Iterable<File>): Promise<boolean> {

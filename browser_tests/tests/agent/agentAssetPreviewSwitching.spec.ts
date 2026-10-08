@@ -43,15 +43,10 @@ test.describe('Single asset tray preview', { tag: '@cloud' }, () => {
     await panel.open()
     const assets = new AssetsSidebarTab(page)
     await assets.open()
-    await assets
-      .getAssetCardByName('agent_generated_audio')
-      .getByText('agent_generated_audio', { exact: true })
-      .dragTo(panel.root)
+    await assets.waitForAssets(2)
+    await assets.getAssetCardByName('agent_generated_audio').dragTo(panel.root)
     await expect(panel.attachmentChip(AGENT_AUDIO_ASSET.name)).toBeVisible()
-    await assets
-      .getAssetCardByName('agent_generated_video')
-      .getByText('agent_generated_video', { exact: true })
-      .dragTo(panel.root)
+    await assets.getAssetCardByName('agent_generated_video').dragTo(panel.root)
     await expect(panel.attachmentChips).toHaveCount(2)
     await panel.composer.fill('Keep this draft')
   })
