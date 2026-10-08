@@ -52,6 +52,7 @@ test.describe(
             )
             await comfyPage.menu.topbar.setVueNodesEnabled(false)
             await expect(comfyPage.vueNodes.nodes).toHaveCount(0)
+            await comfyPage.canvas.focus()
             await expect(comfyPage.canvas).toHaveScreenshot(
               `dynamic-group-legacy-${filenames.length}-rows.png`
             )
