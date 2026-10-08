@@ -279,44 +279,69 @@ export const useExtensionService = () => {
     method: T,
     ...args: Parameters<ComfyExtensionParamsWithoutApp<T>>
   ) => {
-    return await Promise.all(
-      extensionStore.enabledExtensions.map(async (ext) => {
-        if (method in ext) {
-          try {
-            const fn = ext[method]
-            if (typeof fn !== 'function') {
-              return
-            }
+    const logError = (ext: ComfyExtension, error: unknown) =>
+      console.error(
+        `Error calling extension '${ext.name}' method '${method}'`,
+        { error },
+        { extension: ext },
+        { args }
+      )
 
-            // Set current extension name for legacy compatibility tracking
-            if (method === 'setup') {
-              legacyMenuCompat.setCurrentExtension(ext.name)
-            }
-
-            const result = await fn.call(ext, ...args, app)
-
-            // Clear current extension after setup
-            if (method === 'setup') {
-              legacyMenuCompat.setCurrentExtension(null)
-            }
-
-            return result
-          } catch (error) {
-            // Clear current extension on error too
-            if (method === 'setup') {
-              legacyMenuCompat.setCurrentExtension(null)
-            }
-
-            console.error(
-              `Error calling extension '${ext.name}' method '${method}'`,
-              { error },
-              { extension: ext },
-              { args }
-            )
-          }
+    const callHook = async (ext: ComfyExtension) => {
+      try {
+        const fn = ext[method]
+        if (typeof fn !== 'function') {
+          return
         }
-      })
+
+        // Set current extension name for legacy compatibility tracking
+        if (method === 'setup') {
+          legacyMenuCompat.setCurrentExtension(ext.name)
+        }
+
+        const result = await fn.call(ext, ...args, app)
+
+        // Clear current extension after setup
+        if (method === 'setup') {
+          legacyMenuCompat.setCurrentExtension(null)
+        }
+
+        return result
+      } catch (error) {
+        // Clear current extension on error too
+        if (method === 'setup') {
+          legacyMenuCompat.setCurrentExtension(null)
+        }
+
+        logError(ext, error)
+      }
+    }
+
+    // Called once per node def per extension, so only start async work for
+    // extensions that define the hook. The `in` check stays synchronous and is
+    // evaluated in extension order, like the hook calls, and is guarded so a
+    // throwing Proxy `has` trap only affects its own extension.
+    const exts = extensionStore.enabledExtensions
+    const results: Awaited<ReturnType<typeof callHook>>[] = Array.from(
+      { length: exts.length },
+      () => undefined
     )
+    const pending: Promise<void>[] = []
+    exts.forEach((ext, index) => {
+      try {
+        if (!(method in ext)) return
+      } catch (error) {
+        logError(ext, error)
+        return
+      }
+      pending.push(
+        callHook(ext).then((result) => {
+          results[index] = result
+        })
+      )
+    })
+    await Promise.all(pending)
+    return results
   }
 
   return {
