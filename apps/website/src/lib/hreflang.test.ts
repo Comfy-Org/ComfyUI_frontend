@@ -121,57 +121,12 @@ describe('hreflangAlternates', () => {
 })
 
 describe('localeAlternates', () => {
-  it.for([
-    {
-      pathname: '/privacy-policy/',
-      expected: [
-        { locale: 'en', path: '/privacy-policy/' },
-        { locale: 'zh-CN', path: '/zh-CN/privacy-policy/' }
-      ]
-    },
-    {
-      pathname: '/zh-CN/privacy-policy/',
-      expected: [
-        { locale: 'en', path: '/privacy-policy/' },
-        { locale: 'zh-CN', path: '/zh-CN/privacy-policy/' }
-      ]
-    },
-    {
-      pathname: '/booking-confirmation/',
-      expected: [
-        { locale: 'en', path: '/booking-confirmation/' },
-        { locale: 'zh-CN', path: '/zh-CN/booking-confirmation/' }
-      ]
-    },
-    { pathname: '/terms-of-service/', expected: [] },
-    {
-      pathname: '/cli/',
-      expected: [
-        { locale: 'en', path: '/cli/' },
-        { locale: 'zh-CN', path: '/zh-CN/cli/' }
-      ]
-    },
-    {
-      pathname: '/zh-CN/cli',
-      expected: [
-        { locale: 'en', path: '/cli/' },
-        { locale: 'zh-CN', path: '/zh-CN/cli/' }
-      ]
-    },
-    {
-      pathname: '/ja/',
-      expected: [
-        { locale: 'en', path: '/' },
-        { locale: 'zh-CN', path: '/zh-CN/' },
-        { locale: 'ja', path: '/ja/' }
-      ]
-    }
-  ])(
-    'lists the site-relative page in each published locale ($pathname)',
-    ({ pathname, expected }) => {
-      expect(localeAlternates(pathname)).toEqual(expected)
-    }
-  )
+  it('normalizes a locale path without a trailing slash', () => {
+    expect(localeAlternates('/zh-CN/cli')).toEqual([
+      { locale: 'en', path: '/cli/' },
+      { locale: 'zh-CN', path: '/zh-CN/cli/' }
+    ])
+  })
 })
 
 describe('sitemapAlternates', () => {

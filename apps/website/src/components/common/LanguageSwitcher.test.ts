@@ -38,6 +38,27 @@ describe('LanguageSwitcher', () => {
   })
 
   it.for([
+    { language: 'English', modifiers: {}, prevented: true },
+    { language: '简体中文', modifiers: {}, prevented: false },
+    { language: 'English', modifiers: { metaKey: true }, prevented: false },
+    { language: 'English', modifiers: { ctrlKey: true }, prevented: false },
+    { language: 'English', modifiers: { shiftKey: true }, prevented: false },
+    { language: 'English', modifiers: { altKey: true }, prevented: false }
+  ])(
+    'prevents navigation=$prevented for $language with $modifiers',
+    ({ language, modifiers, prevented }) => {
+      render(LanguageSwitcher, { props: { locale: 'en', alternates: home } })
+      const click = new MouseEvent('click', {
+        bubbles: true,
+        cancelable: true,
+        ...modifiers
+      })
+      screen.getByRole('link', { name: language }).dispatchEvent(click)
+      expect(click.defaultPrevented).toBe(prevented)
+    }
+  )
+
+  it.for([
     { locale: 'en', label: 'Language' },
     { locale: 'zh-CN', label: '语言' }
   ] satisfies { locale: Locale; label: string }[])(

@@ -11,6 +11,14 @@ const { locale, alternates } = defineProps<{
   alternates: readonly LocaleAlternate[]
 }>()
 const { t } = translationsFor(locale)
+
+function preventCurrentNavigation(event: MouseEvent, targetLocale: Locale) {
+  if (
+    targetLocale === locale &&
+    !(event.metaKey || event.ctrlKey || event.shiftKey || event.altKey)
+  )
+    event.preventDefault()
+}
 </script>
 
 <template>
@@ -28,6 +36,7 @@ const { t } = translationsFor(locale)
               alternate.locale === locale && 'underline underline-offset-4'
             )
           "
+          @click="preventCurrentNavigation($event, alternate.locale)"
         >
           {{ LOCALES[alternate.locale].nativeName }}
         </a>

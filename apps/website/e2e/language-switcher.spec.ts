@@ -12,12 +12,13 @@ test.describe('Footer language switcher', () => {
 
     await page.goto('/cli/')
     const footer = page.getByRole('contentinfo')
-    await footer.getByRole('link', { name: '简体中文' }).click()
+    const chinese = footer.getByRole('link', { name: '简体中文' })
+    await waitForIsland(page, chinese)
+    await chinese.click()
 
     await expect(page).toHaveURL(/\/zh-CN\/cli\/$/)
     await expect(page.locator('html')).toHaveAttribute('lang', 'zh-CN')
 
-    const chinese = footer.getByRole('link', { name: '简体中文' })
     await waitForIsland(page, chinese)
     await expect(chinese).toHaveAttribute('aria-current', 'page')
     await expect(
@@ -60,5 +61,24 @@ test.describe('Footer language switcher', () => {
     expect((await page.request.get('/zh-CN/privacy-policy/')).status()).toBe(
       200
     )
+
+    const current = languages.getByRole('link', { name: 'English' })
+    await waitForIsland(page, current)
+    await current.scrollIntoViewIfNeeded()
+    const scrollPosition = await page.evaluate(() => window.scrollY)
+    const repeatedRequests: string[] = []
+    page.on('request', (request) => {
+      if (new URL(request.url()).pathname === '/privacy-policy/')
+        repeatedRequests.push(request.url())
+    })
+
+    await current.click()
+    await page.evaluate(
+      () =>
+        new Promise<void>((resolve) => requestAnimationFrame(() => resolve()))
+    )
+
+    expect(repeatedRequests).toEqual([])
+    expect(await page.evaluate(() => window.scrollY)).toBe(scrollPosition)
   })
 })

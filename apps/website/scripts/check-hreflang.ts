@@ -15,6 +15,8 @@ import { join, relative } from 'node:path'
 
 import {
   auditBuiltSite,
+  auditLanguageLinks,
+  languageLinksIn,
   routeOfHref,
   sitemapChunkNames
 } from '@/utils/hreflangAudit'
@@ -78,22 +80,29 @@ const publicHtmlPaths = new Set(
     ? htmlFiles(PUBLIC).map((file) => relative(PUBLIC, file))
     : []
 )
-const files = htmlFiles(DIST).filter(
+const builtFiles = htmlFiles(DIST)
+const files = builtFiles.filter(
   (file) => !publicHtmlPaths.has(relative(DIST, file))
 )
 const pages = new Map<string, Alternate[]>()
+const pageLanguageLinks = new Map<string, Alternate[]>()
 const canonicals = new Map<string, string>()
 
-for (const file of files) {
+for (const file of builtFiles) {
   const route = routeOf(DIST, file)
   const html = readFileSync(file, 'utf-8')
+  pageLanguageLinks.set(route, languageLinksIn(html))
+  if (publicHtmlPaths.has(relative(DIST, file))) continue
   const alternates = alternatesIn(html)
   pages.set(route, alternates)
   const canonical = /<link\s+rel="canonical"\s+href="([^"]+)"/.exec(html)?.[1]
   if (canonical !== undefined) canonicals.set(route, canonical)
 }
 const sitemap = sitemapAlternates()
-const errors = auditBuiltSite({ pages, canonicals, sitemap, origin: ORIGIN })
+const errors = [
+  ...auditBuiltSite({ pages, canonicals, sitemap, origin: ORIGIN }),
+  ...auditLanguageLinks(pageLanguageLinks, ORIGIN)
+]
 
 const withCluster = [...pages.values()].filter((list) => list.length > 0).length
 // The repo's lint config allows console.warn and console.error only, and this
@@ -111,6 +120,6 @@ if (errors.length > 0) {
   process.exit(1)
 }
 console.warn(
-  '[hreflang] every alternate resolves, every cluster is reciprocal, and every ' +
+  '[hreflang] every alternate and language link resolves, every cluster is reciprocal, and every ' +
     'locale points where it claims.'
 )
