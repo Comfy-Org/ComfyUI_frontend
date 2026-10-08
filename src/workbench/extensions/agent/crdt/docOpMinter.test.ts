@@ -1009,6 +1009,34 @@ describe('attachDocOpMinter', () => {
     }
   )
 
+  it('mints for a host it added to a document that is still empty', async () => {
+    const subgraph = createTestSubgraph({
+      rootGraph: graph,
+      inputs: [{ name: 'text', type: 'STRING' }]
+    })
+    graph.subgraphs.set(subgraph.id, subgraph)
+    withGraphIntentSource('load', () => {
+      const interior = LiteGraph.createNode('TestPrompt')
+      assert.exists(interior)
+      subgraph.add(interior)
+      subgraph.inputNode.slots[0].connect(interior.inputs[0], interior)
+    })
+    docPromotedWidgets = () => null
+    docPopulated = false
+    const host = createTestSubgraphNode(subgraph)
+
+    graph.add(host)
+    await afterFlush()
+    host.widgets[0].value = 'typed before the echo'
+    await afterFlush()
+
+    expect(minted).toEqual([
+      expect.objectContaining({ op: 'add_node', node_id: host.id }),
+      expect.objectContaining({ op: 'set_widget', node_id: host.id })
+    ])
+    expect(refused).toEqual([])
+  })
+
   it('still mints for a host the populated document does not hold yet', async () => {
     const { host, doc } = seedPromotedHost()
     docPromotedWidgets = () => null

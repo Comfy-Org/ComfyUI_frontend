@@ -230,6 +230,7 @@ function promotedHostWrite(
   event: IntentOf<'set_widget'>,
   docPromotedWidgets: () => DocPromotedWidgets | null,
   isDocPopulated: () => boolean,
+  mintedHere: () => boolean,
   onRefused: (
     reason: PromotedWriteRefusal,
     liveNames: readonly string[],
@@ -247,7 +248,7 @@ function promotedHostWrite(
     return null
   }
   const doc = docPromotedWidgets()
-  if (doc === null && !isDocPopulated()) {
+  if (doc === null && !isDocPopulated() && !mintedHere()) {
     onRefused('doc_not_synced', liveNames, null)
     return null
   }
@@ -311,6 +312,7 @@ function routedWidgetOperation(
   node: LGraphNode | null,
   docPromotedWidgets: () => DocPromotedWidgets | null,
   isDocPopulated: () => boolean,
+  mintedHere: () => boolean,
   onRefused: (
     reason: PromotedWriteRefusal,
     liveNames: readonly string[],
@@ -332,6 +334,7 @@ function routedWidgetOperation(
       event,
       docPromotedWidgets,
       isDocPopulated,
+      mintedHere,
       onRefused
     )
     return promoted ? { ...operation, promoted } : null
@@ -408,6 +411,9 @@ function docInputIndex(
 export function attachDocOpMinter(deps: DocOpMinterDeps): DocOpMinter {
   let pending: PendingOp[] = []
   const pendingAdds = new Map<string, LGraphNode>()
+  // Hosts whose `add_node` this minter sent while the document was still
+  // empty: the sender's FIFO delivers that add before any later write to it.
+  const mintedAdds = new Set<string>()
   const reported = new Set<string>()
   // Budgeted for the minter's whole life, not per flush: this one sits on the
   // keystroke-paced widget path, where a per-flush budget reports every
@@ -447,6 +453,8 @@ export function attachDocOpMinter(deps: DocOpMinterDeps): DocOpMinter {
         )
         continue
       }
+      if (deps.isDocPopulated()) mintedAdds.clear()
+      else mintedAdds.add(nodeKey(graph.id, node.id))
       operations.push({
         op: 'add_node',
         node_id: node.id,
@@ -516,6 +524,7 @@ export function attachDocOpMinter(deps: DocOpMinterDeps): DocOpMinter {
       owner,
       () => deps.docPromotedWidgets(event.nodeId),
       () => deps.isDocPopulated(),
+      () => mintedAdds.has(nodeKey(event.graphId, event.nodeId)),
       (reason, liveNames, doc) => {
         reportRefusal(rootGraphId, event, reason, liveNames, doc)
         notifyRefusal(rootGraphId, event, reason)
