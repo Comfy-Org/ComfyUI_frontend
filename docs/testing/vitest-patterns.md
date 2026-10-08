@@ -156,10 +156,11 @@ beforeEach(() => {
 and `warn` before every test, and every configuration sets
 `silent: 'passed-only'`, so console output appears only for failing tests.
 Do not spy on these methods again; `comfy/no-redundant-console-spy` reports
-it. Use `vi.mocked()` to assert on calls or replace the implementation:
+it. Assert on the method directly, and use `vi.mocked()` only to replace its
+implementation:
 
 ```typescript
-expect(vi.mocked(console.warn)).toHaveBeenCalledWith('deprecated')
+expect(console.warn).toHaveBeenCalledWith('deprecated')
 vi.mocked(console.log).mockImplementation((line) => lines.push(line))
 ```
 

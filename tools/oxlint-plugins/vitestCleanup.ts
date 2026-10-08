@@ -681,7 +681,7 @@ export const noRedundantConsoleSpy = {
         }
         context.report({
           node,
-          message: `console.${methodName} is already spied before every test by vitest.console.setup.ts, and output from passing tests is silenced. Use vi.mocked(console.${methodName}) to assert on it or replace its implementation.`
+          message: `console.${methodName} is already spied before every test by vitest.console.setup.ts, and output from passing tests is silenced. Assert with expect(console.${methodName}) and replace its implementation with vi.mocked(console.${methodName}).`
         })
       }
     }

@@ -31,8 +31,9 @@ ESLint rule enforces the Testing Library query rule. Do not disable it.
   test that needs them. Module-scope stubs and spies are removed before the
   first test runs.
 - `console.debug`, `error`, `info`, `log`, and `warn` are already spied before
-  every test, and output from passing tests is hidden. Use
-  `vi.mocked(console.error)` instead of `vi.spyOn(console, 'error')`.
+  every test, and output from passing tests is hidden. Assert with
+  `expect(console.error)` and configure with `vi.mocked(console.error)` instead
+  of calling `vi.spyOn(console, 'error')`.
 - Module-scope `vi.fn()` declarations may provide reset-persistent defaults by
   passing the implementation directly to `vi.fn(implementation)`.
 
