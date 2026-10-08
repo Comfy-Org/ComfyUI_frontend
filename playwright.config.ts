@@ -55,7 +55,13 @@ export default defineConfig({
   ],
   fullyParallel: true,
   forbidOnly: !!process.env.CI,
-  reporter: process.env.PLAYWRIGHT_BLOB_OUTPUT_DIR ? 'blob' : 'html',
+  reporter: [
+    [process.env.PLAYWRIGHT_BLOB_OUTPUT_DIR ? 'blob' : 'html'],
+    [
+      './scripts/cicd/duration-shard-reporter.ts',
+      { durations: process.env.PLAYWRIGHT_SHARD_DURATIONS }
+    ]
+  ],
   ...maybeLocalOptions,
 
   globalSetup:
