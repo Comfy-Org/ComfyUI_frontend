@@ -2,24 +2,43 @@
 import { computed } from 'vue'
 import { useI18n } from 'vue-i18n'
 
+import type { BillingReturn } from '@comfyorg/billing-contract'
 import { buildReturnUrl } from '@comfyorg/billing-contract'
 
+import { useBilledWorkspace } from '@/composables/useBilledWorkspace'
 import { useHostedCopy } from '@/composables/useHostedCopy'
 import { BILLING_WEB_ENV } from '@/config/env'
 import { useBillingEntry } from '@/entry/billingEntry'
+import { returnToHost } from '@/entry/returnToHost'
+import { useBilledScope } from '@/session/billingWebAuth'
+import { reportReturnClicked } from '@/telemetry/webReturnTelemetry'
+
+/** What the trip back should say, when the surface has a result to report. */
+const { returnResult } = defineProps<{ returnResult?: BillingReturn }>()
 
 const { t } = useI18n()
 const { coded } = useHostedCopy()
 const { entry, error } = useBillingEntry()
+const session = useBilledScope()
+const billedWorkspace = useBilledWorkspace()
 
 const title = computed(() => coded('title', entry.value?.intent))
+
+/** Which workspace is being billed, when the session names one. */
+const workspaceLabel = computed(() =>
+  session.value
+    ? t('hosted.workspace.current', { name: session.value.workspace.name })
+    : undefined
+)
 
 const returnLink = computed(() => {
   const arrival = entry.value
   if (!arrival) return undefined
   const url = buildReturnUrl({
     target: arrival.returnTo,
-    environment: BILLING_WEB_ENV
+    environment: BILLING_WEB_ENV,
+    workspace: billedWorkspace(),
+    ...returnResult
   })
   if (!url) return undefined
   return {
@@ -29,6 +48,11 @@ const returnLink = computed(() => {
     })
   }
 })
+
+function leaveForHost(href: string) {
+  reportReturnClicked('host_link')
+  returnToHost(href)
+}
 </script>
 
 <template>
@@ -37,13 +61,19 @@ const returnLink = computed(() => {
   >
     <div class="mx-auto flex max-w-3xl flex-col gap-6">
       <header class="flex flex-wrap items-center justify-between gap-3">
-        <h1 class="m-0 text-xl font-semibold text-base-foreground">
-          {{ title }}
-        </h1>
+        <div class="flex flex-col gap-1">
+          <h1 class="m-0 text-xl font-semibold text-base-foreground">
+            {{ title }}
+          </h1>
+          <p v-if="workspaceLabel" class="m-0 text-xs text-muted-foreground">
+            {{ workspaceLabel }}
+          </p>
+        </div>
         <a
           v-if="returnLink"
           :href="returnLink.href"
           class="text-sm text-muted-foreground underline underline-offset-4 hover:text-base-foreground"
+          @click.prevent="leaveForHost(returnLink.href)"
         >
           {{ returnLink.label }}
         </a>

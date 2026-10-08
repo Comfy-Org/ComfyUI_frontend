@@ -17,11 +17,11 @@ import {
   SUBGRAPH_INPUT_ID,
   SUBGRAPH_OUTPUT_ID
 } from '@/lib/litegraph/src/constants'
+import type { Positionable } from '@/lib/litegraph/src/interfaces'
 import type {
   INodeInputSlot,
-  INodeOutputSlot,
-  Positionable
-} from '@/lib/litegraph/src/interfaces'
+  INodeOutputSlot
+} from '@/lib/litegraph/src/types/slots'
 import { LiteGraph, createUuidv4 } from '@/lib/litegraph/src/litegraph'
 import { nextUniqueName } from '@/lib/litegraph/src/strings'
 import { UNASSIGNED_NODE_ID } from '@/types/nodeId'
@@ -562,6 +562,19 @@ export function findReleasableSubgraphs(
   const removedSubtree: Subgraph[] = []
   collectSubgraphsPostOrder(removedNode.subgraph, new Set(), removedSubtree)
   return removedSubtree.filter((subgraph) => !liveIds.has(subgraph.id))
+}
+
+export function findOrphanedSubgraphs(
+  rootGraph: LGraph,
+  removedNodes: Iterable<LGraphNode>
+): Subgraph[] {
+  const orphaned = new Map<SubgraphId, Subgraph>()
+  for (const node of removedNodes) {
+    if (!node.isSubgraphNode()) continue
+    for (const subgraph of findReleasableSubgraphs(rootGraph, node))
+      orphaned.set(subgraph.id, subgraph)
+  }
+  return [...orphaned.values()]
 }
 
 function reorderInPlace(arr: unknown[], indices: readonly number[]): void {

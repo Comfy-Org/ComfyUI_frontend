@@ -1,8 +1,5 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 
-import type { SessionSnapshot } from './session.js'
-import { createSessionClient } from './session.js'
-import { makeClient } from './__fixtures__/sessionClientFixture.js'
 import {
   EXCHANGE_URL,
   NINETY_MINUTES_MS,
@@ -13,6 +10,25 @@ import {
   okFetch,
   testUser
 } from './__fixtures__/sessionFakes.js'
+import type {
+  AccountIdentity,
+  SessionClientOptions,
+  SessionSnapshot
+} from './session.js'
+import { createSessionClient } from './session.js'
+
+function makeClient(
+  overrides: Partial<SessionClientOptions> = {},
+  port?: AccountIdentity
+) {
+  const storage = memoryStorage()
+  const identity = manualIdentity()
+  const client = createSessionClient(
+    { exchangeUrl: EXCHANGE_URL, storage, ...overrides },
+    port ?? identity.port
+  )
+  return { client, storage, identity }
+}
 
 function phasesOf(client: ReturnType<typeof makeClient>['client']) {
   const phases: SessionSnapshot['phase'][] = []
@@ -65,16 +81,6 @@ describe('constructing with identity', () => {
 
     expect(seen).toEqual(['pending', 'signed-out'])
     expect(fetchImpl).not.toHaveBeenCalled()
-  })
-
-  it('refuses a port that did not come from the package entry or the testing seam', () => {
-    expect(() =>
-      createSessionClient(
-        { exchangeUrl: EXCHANGE_URL, storage: memoryStorage() },
-        // @ts-expect-error an unbranded port is not an AccountIdentity
-        { onUserChanged: () => () => undefined }
-      )
-    ).toThrow('the session client needs the identity')
   })
 })
 
@@ -148,12 +154,55 @@ describe('dispose', () => {
     ).toBeNull()
   })
 
+  it('does not mint when a listener disposes the client during the identity publish', async () => {
+    const fetchImpl = okFetch()
+    const { client, storage, identity } = makeClient({
+      fetchImpl,
+      refreshScheduler: {}
+    })
+    const user = testUser()
+    client.subscribe((snapshot) => {
+      if (snapshot.phase === 'minting') client.dispose()
+    })
+
+    identity.fire(user)
+    await vi.advanceTimersByTimeAsync(NINETY_MINUTES_MS * 10)
+
+    expect(client.getSnapshot().phase).toBe('pending')
+    expect(user.getIdToken).not.toHaveBeenCalled()
+    expect(
+      fetchImpl,
+      'a client disposed inside the publish no longer tracks the user it would mint for'
+    ).not.toHaveBeenCalled()
+    expect(storage.raw()).toBeNull()
+  })
+
+  it('mints once, for the newer user, when a listener delivers a second user during the publish', async () => {
+    const fetchImpl = okFetch()
+    const { client, identity } = makeClient({ fetchImpl, refreshScheduler: {} })
+    const first = testUser('uid-a', 'id-token-a')
+    const second = testUser('uid-b', 'id-token-b')
+    let reentered = false
+    client.subscribe((snapshot) => {
+      if (snapshot.user?.uid === 'uid-a' && !reentered) {
+        reentered = true
+        identity.fire(second)
+      }
+    })
+
+    identity.fire(first)
+    await vi.advanceTimersByTimeAsync(0)
+
+    expect(
+      first.getIdToken,
+      'the superseded first delivery must not mint'
+    ).not.toHaveBeenCalled()
+    expect(second.getIdToken).toHaveBeenCalledOnce()
+    expect(fetchImpl).toHaveBeenCalledOnce()
+  })
+
   it('still serves an explicit-user mint after dispose, like a detach, without publishing it', async () => {
-    const identity = manualIdentity()
-    const { client, storage } = makeClient(
-      { fetchImpl: okFetch() },
-      identity.port
-    )
+    const { client, storage, identity } = makeClient({ fetchImpl: okFetch() })
     identity.fire(testUser())
     await vi.waitFor(() => expect(client.getToken()).toBe('workspace-jwt'))
     client.dispose()
@@ -165,44 +214,5 @@ describe('dispose', () => {
     expect(storage.raw()).not.toBeNull()
     expect(client.getSnapshot().phase).toBe('pending')
     expect(client.getToken()).toBeUndefined()
-  })
-
-  it('leaves the client attachable again, like a detach', async () => {
-    const identity = manualIdentity()
-    const { client } = makeClient(
-      { fetchImpl: okFetch('jwt-b') },
-      identity.port
-    )
-    client.dispose()
-    const replacement = manualIdentity()
-
-    client.attachIdentity(replacement.port)
-    replacement.fire(testUser('uid-2'))
-
-    await vi.waitFor(() => expect(client.getToken()).toBe('jwt-b'))
-    expect(identity.unsubscribe).toHaveBeenCalledOnce()
-  })
-})
-
-describe('attachIdentity on a client constructed with identity', () => {
-  it('replaces the constructed subscription', async () => {
-    const identity = manualIdentity()
-    const { client } = makeClient(
-      { fetchImpl: okFetch('jwt-b') },
-      identity.port
-    )
-    const replacement = manualIdentity()
-
-    client.attachIdentity(replacement.port)
-    replacement.fire(testUser('uid-2'))
-    await vi.waitFor(() => expect(client.getToken()).toBe('jwt-b'))
-    identity.fire(null)
-
-    expect(identity.unsubscribe).toHaveBeenCalledOnce()
-    expect(
-      client.getSnapshot().phase,
-      'the constructed port is superseded; its events must not sign the client out'
-    ).toBe('authenticated')
-    expect(client.getToken()).toBe('jwt-b')
   })
 })

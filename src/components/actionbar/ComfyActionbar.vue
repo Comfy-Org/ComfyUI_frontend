@@ -25,7 +25,7 @@
         </Suspense>
         <Button
           v-tooltip.bottom="cancelJobTooltipConfig"
-          variant="destructive"
+          :variant="isExecutionIdle ? 'secondary' : 'destructive'"
           size="icon"
           :disabled="isExecutionIdle"
           :aria-label="t('menu.interrupt')"
@@ -73,7 +73,7 @@
     <Teleport v-if="inlineProgressTarget" :to="inlineProgressTarget">
       <QueueInlineProgress
         :hidden="shouldHideInlineProgress"
-        :radius-class="cn(isDocked ? 'rounded-[7px]' : 'rounded-[5px]')"
+        radius-class="rounded-xl"
         data-testid="queue-inline-progress"
       />
     </Teleport>
@@ -89,8 +89,6 @@ import {
 } from '@vueuse/core'
 import { clamp } from 'es-toolkit/compat'
 import { storeToRefs } from 'pinia'
-import ContextMenu from 'primevue/contextmenu'
-import type { MenuItem } from 'primevue/menuitem'
 import { computed, nextTick, ref, watch } from 'vue'
 import { useI18n } from 'vue-i18n'
 
@@ -98,6 +96,8 @@ import PartnerNodesRunCaption from '@/components/actionbar/PartnerNodesRunCaptio
 import StatusBadge from '@/components/common/StatusBadge.vue'
 import QueueInlineProgress from '@/components/queue/QueueInlineProgress.vue'
 import Button from '@/components/ui/button/Button.vue'
+import ContextMenu from '@/components/ui/menu/ContextMenu.vue'
+import type { MenuItem } from '@/components/ui/menu/types'
 import { useQueueFeatureFlags } from '@/composables/queue/useQueueFeatureFlags'
 import { buildTooltipConfig } from '@/composables/useTooltipConfig'
 import FreeTierQuota from '@/platform/cloud/subscription/components/FreeTierQuota.vue'
@@ -429,8 +429,7 @@ const panelClass = computed(() =>
   cn(
     'actionbar pointer-events-auto',
     isDragging.value && 'pointer-events-none select-none',
-    !isDocked.value &&
-      'fixed z-1300 rounded-lg border border-interface-stroke bg-interface-panel-surface p-1 shadow-interface'
+    !isDocked.value && 'fixed z-1300 floating-panel'
   )
 )
 </script>

@@ -2,7 +2,7 @@ import { defineStore } from 'pinia'
 import { computed, ref } from 'vue'
 
 import { t } from '@/i18n'
-// eslint-disable-next-line import-x/no-restricted-paths
+// oxlint-disable-next-line comfy/no-restricted-paths
 import { useCanvasStore } from '@/renderer/core/canvas/canvasStore'
 import { app } from '@/scripts/app'
 import { isMissingWarningVisible } from '@/platform/settings/missingWarningVisibility'
@@ -80,9 +80,11 @@ export const useMissingModelStore = defineStore('missingModel', () => {
   )
 
   const activeMissingModelGraphIds = computed<Set<string>>(() => {
+    const rootGraph = app.rootGraphOrUndefined
+    if (!rootGraph) return new Set()
     return getActiveGraphNodeIds(
-      app.rootGraph,
-      canvasStore.currentGraph ?? app.rootGraph,
+      rootGraph,
+      canvasStore.currentGraph ?? rootGraph,
       missingModelAncestorExecutionIds.value
     )
   })

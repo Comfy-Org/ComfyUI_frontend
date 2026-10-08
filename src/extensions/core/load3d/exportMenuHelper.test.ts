@@ -1,6 +1,6 @@
-import { fromAny } from '@total-typescript/shoehorn'
 import { describe, expect, it, vi } from 'vitest'
 
+import { t } from '@/i18n'
 import { useToastStore } from '@/platform/updates/common/toastStore'
 import { LiteGraph } from '@/lib/litegraph/src/litegraph'
 
@@ -11,11 +11,7 @@ const { contextMenuMock } = vi.hoisted(() => ({
   contextMenuMock: vi.fn()
 }))
 
-vi.mock(import('@/i18n'), () => ({
-  t: fromAny((key: string, vars?: unknown) =>
-    vars ? `${key}:${JSON.stringify(vars)}` : key
-  )
-}))
+vi.mock(import('@/i18n'))
 
 vi.mock(import('@/lib/litegraph/src/litegraph'), { spy: true })
 
@@ -113,16 +109,18 @@ describe('createExportMenuItems', () => {
         expect(useToastStore().add).toHaveBeenCalledWith(
           expect.objectContaining({
             severity: 'success',
-            summary: `toastMessages.exportSuccess:${JSON.stringify({ format: label })}`
+            summary: 'toastMessages.exportSuccess'
           })
         )
       )
+      expect(t).toHaveBeenCalledWith('toastMessages.exportSuccess', {
+        format: label
+      })
       expect(useToastStore().addAlert).not.toHaveBeenCalled()
     }
   )
 
   it('shows an alert toast and logs when exportModel rejects', async () => {
-    const consoleError = vi.spyOn(console, 'error').mockImplementation(() => {})
     const exportModel = vi.fn().mockRejectedValue(new Error('boom'))
     const items = createExportMenuItems(makeLoad3d(exportModel))
     ;(items[1]!.callback as (...args: unknown[]) => void)(
@@ -139,10 +137,13 @@ describe('createExportMenuItems', () => {
 
     await vi.waitFor(() =>
       expect(useToastStore().addAlert).toHaveBeenCalledWith(
-        `toastMessages.failedToExportModel:${JSON.stringify({ format: 'GLB' })}`
+        'toastMessages.failedToExportModel'
       )
     )
-    expect(consoleError).toHaveBeenCalledWith(
+    expect(t).toHaveBeenCalledWith('toastMessages.failedToExportModel', {
+      format: 'GLB'
+    })
+    expect(console.error).toHaveBeenCalledWith(
       'Export failed:',
       expect.any(Error)
     )

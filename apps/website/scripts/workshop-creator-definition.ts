@@ -40,7 +40,7 @@ export const workshopCreatorDefinitionSchema = z.discriminatedUnion('family', [
     .object({
       family: z.literal('gpt-image'),
       options: options
-        .extend({ mode: z.enum(['generate', 'edit']).optional() })
+        .extend({ mode: z.literal('generate').optional() })
         .prefault({})
     })
     .strict(),

@@ -6,6 +6,7 @@ on:
     branches: [main]
     paths:
       - 'packages/account-core/package.json'
+      - 'packages/account-ui/package.json'
       - 'packages/billing-contract/package.json'
       - 'packages/ingest-types/package.json'
 
@@ -44,7 +45,7 @@ jobs:
           set -euo pipefail
           INCLUDE='[]'
           SUMMARY=''
-          for PACKAGE in account-core billing-contract ingest-types; do
+          for PACKAGE in account-core account-ui billing-contract ingest-types; do
             PACKAGE_JSON="packages/$PACKAGE/package.json"
             if ! git diff --quiet HEAD^1 HEAD -- "$PACKAGE_JSON"; then
               PREV_JSON=$(git show "HEAD^1:$PACKAGE_JSON" 2>/dev/null || true)

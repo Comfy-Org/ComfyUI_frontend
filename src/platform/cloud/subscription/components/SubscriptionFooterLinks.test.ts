@@ -6,6 +6,7 @@ import { ref } from 'vue'
 import type { ComponentProps } from 'vue-component-type-helpers'
 import { createI18n } from 'vue-i18n'
 
+import { useTeamWorkspaceStore } from '@/platform/workspace/stores/teamWorkspaceStore'
 import { mockBillingContext } from '@/utils/__tests__/mockBillingContext'
 
 import SubscriptionFooterLinks from './SubscriptionFooterLinks.vue'
@@ -61,14 +62,7 @@ function renderComponent(
   return render(SubscriptionFooterLinks, {
     props,
     global: {
-      plugins: [i18n],
-      stubs: {
-        Button: {
-          props: ['loading'],
-          emits: ['click'],
-          template: '<button @click="$emit(\'click\')"><slot /></button>'
-        }
-      }
+      plugins: [i18n]
     }
   })
 }
@@ -139,9 +133,10 @@ describe('SubscriptionFooterLinks', () => {
     expect(useBillingContext().manageSubscription).not.toHaveBeenCalled()
   })
 
-  it('opens the platform usage page', async () => {
+  it('opens the platform usage page in the active workspace', async () => {
     const user = userEvent.setup()
     const openSpy = vi.spyOn(window, 'open').mockReturnValue(null)
+    Object.assign(useTeamWorkspaceStore(), { activeWorkspaceId: 'ws-team-1' })
     renderComponent()
 
     await user.click(
@@ -149,7 +144,7 @@ describe('SubscriptionFooterLinks', () => {
     )
 
     expect(openSpy).toHaveBeenCalledWith(
-      'https://platform.comfy.org/profile/usage',
+      'https://platform.comfy.org/profile/usage?workspace=ws-team-1',
       '_blank',
       'noopener'
     )

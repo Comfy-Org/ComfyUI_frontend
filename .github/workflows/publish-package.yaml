@@ -7,7 +7,7 @@ on:
         description: 'Package to publish'
         required: true
         type: 'choice'
-        options: [account-core, billing-contract, ingest-types]
+        options: [account-core, account-ui, billing-contract, ingest-types]
       version:
         description: 'Version to publish (e.g., 1.0.0-alpha.1)'
         required: true
@@ -71,6 +71,7 @@ jobs:
           set -euo pipefail
           case "$PACKAGE" in
             account-core) NPM_NAME='@comfyorg/account-core' ;;
+            account-ui) NPM_NAME='@comfyorg/account-ui' ;;
             billing-contract) NPM_NAME='@comfyorg/billing-contract' ;;
             ingest-types) NPM_NAME='@comfyorg/ingest-types' ;;
             *)

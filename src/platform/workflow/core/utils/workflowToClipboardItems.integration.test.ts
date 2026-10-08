@@ -14,14 +14,12 @@ import type {
   SerialisableGraph
 } from '@/lib/litegraph/src/types/serialisation'
 import { toRerouteId } from '@/types/rerouteId'
-import { createMockCanvasRenderingContext2D } from '@/utils/__tests__/litegraphTestUtils'
+import { createMockCanvasRenderingContext2D } from '@/utils/__tests__/canvasTestUtils'
 import { createUuidv4 } from '@/utils/uuid'
 
 import { workflowToClipboardItems } from './workflowToClipboardItems'
 
-vi.mock<unknown>(import('@/services/litegraphService'), () => ({
-  useLitegraphService: () => ({ updatePreviews: () => ({}) })
-}))
+vi.mock(import('@/services/litegraphService'))
 
 describe('workflow clipboard insertion', () => {
   it('pastes reroutes at their source-relative position', () => {

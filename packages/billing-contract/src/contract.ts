@@ -24,6 +24,7 @@ export const BILLING_CONTRACT_VERSION = 'v1'
 export const BILLING_INTENTS = [
   'pricing',
   'checkout',
+  'top-up',
   'subscription',
   'payment-methods',
   'invoices',
@@ -57,6 +58,36 @@ export function isBillingProduct(
   value: string | null | undefined
 ): value is BillingProduct {
   return BILLING_PRODUCTS.some((product) => product === value)
+}
+
+/**
+ * Where in a product the customer asked for billing. A value outside this list
+ * is read as no source.
+ */
+export const BILLING_SOURCES = [
+  'subscription_required',
+  'out_of_credits',
+  'top_up_blocked',
+  'deep_link',
+  'subscribe_to_run',
+  'subscribe_now_button',
+  'upgrade_to_add_credits',
+  'settings_billing_panel',
+  'avatar_menu_plans',
+  'team_members_panel',
+  'invite_member_upsell',
+  'upload_model_upgrade',
+  'team_upgrade_resume',
+  'free_tier_quota',
+  'agent_paywall'
+] as const
+
+export type BillingSource = (typeof BILLING_SOURCES)[number]
+
+export function isBillingSource(
+  value: string | null | undefined
+): value is BillingSource {
+  return BILLING_SOURCES.some((source) => source === value)
 }
 
 /**

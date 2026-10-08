@@ -37,15 +37,7 @@ vi.mock(import('@/composables/graph/useNodeErrorFlagSync'), () => ({
   useNodeErrorFlagSync: vi.fn()
 }))
 
-vi.mock<unknown>(import('@/scripts/app'), () => ({
-  app: {
-    isGraphReady: false,
-    rootGraph: {
-      serialize: vi.fn(() => ({})),
-      getNodeById: vi.fn()
-    }
-  }
-}))
+vi.mock(import('@/scripts/app'))
 
 vi.mock<unknown>(import('@/utils/graphTraversalUtil'), () => ({
   executionIdToNodeLocatorId: vi.fn((id: string) => id),
@@ -62,11 +54,14 @@ function createTestI18n() {
       en: {
         g: {
           close: 'Close',
-          dismiss: 'Dismiss'
+          dismiss: 'Dismiss',
+          error: 'Error',
+          warning: 'Warning'
         },
         errorOverlay: {
-          multipleErrorCount: '{count} error found | {count} errors found',
-          multipleErrorsMessage: 'Resolve them before running the workflow.',
+          multipleIssueCount: '{count} issue found | {count} issues found',
+          multipleIssuesMessage:
+            'Resolve these issues before running the workflow.',
           viewDetails: 'View details'
         },
         linearMode: {
@@ -95,12 +90,7 @@ function renderOverlay(props: { appMode?: boolean } = {}) {
   return render(ErrorOverlay, {
     props,
     global: {
-      plugins: [createTestI18n()],
-      stubs: {
-        Button: {
-          template: '<button v-bind="$attrs"><slot /></button>'
-        }
-      }
+      plugins: [createTestI18n()]
     }
   })
 }
@@ -117,6 +107,46 @@ describe('ErrorOverlay', () => {
     useCanvasStore().currentGraph = null
   })
 
+  it.for([
+    {
+      group: { type: 'missing_model', severity: 'missing' } as const,
+      label: 'Warning'
+    },
+    {
+      group: {
+        type: 'execution' as const,
+        severity: 'error' as const,
+        cards: []
+      },
+      label: 'Error'
+    }
+  ])('announces $label with aggregate issue copy', ({ group, label }) => {
+    mockAllErrorGroups.value = [
+      {
+        type: 'missing_media',
+        severity: 'missing',
+        groupKey: 'missing_media',
+        displayTitle: 'Missing media',
+        count: 1,
+        priority: 0,
+        blockedLastRun: false
+      },
+      {
+        ...group,
+        groupKey: group.type,
+        displayTitle: 'Another issue',
+        count: 1,
+        priority: 0,
+        blockedLastRun: false
+      }
+    ]
+    useExecutionErrorStore().showErrorOverlay()
+    renderOverlay()
+
+    expect(screen.getByRole('status')).toHaveTextContent('2 issues found')
+    expect(screen.getByRole('status')).toContainElement(screen.getByText(label))
+  })
+
   it('renders a single overlay message without list markup', async () => {
     mockAllErrorGroups.value = [
       {
@@ -126,6 +156,7 @@ describe('ErrorOverlay', () => {
         displayTitle: 'Execution failed',
         count: 1,
         priority: 0,
+        blockedLastRun: false,
         cards: [
           {
             id: '1',
@@ -164,6 +195,7 @@ describe('ErrorOverlay', () => {
         displayTitle: 'Execution failed',
         count: 1,
         priority: 0,
+        blockedLastRun: false,
         cards: [
           {
             id: '1',

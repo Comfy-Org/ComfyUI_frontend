@@ -1,6 +1,8 @@
+import { readFileSync } from 'node:fs'
 import { expect } from '@playwright/test'
 
 import { MODEL_PATH, test } from './fixtures/modelsAccount'
+import { waitForIsland } from './fixtures/islands'
 
 test.describe('Retired prototype routes', () => {
   test.beforeEach(async ({ page }) => {
@@ -10,7 +12,7 @@ test.describe('Retired prototype routes', () => {
   })
 
   test('ignores old stored and query layout overrides', async ({ page }) => {
-    await page.goto('/models/?version=v2')
+    await page.goto('/hub/models/?version=v2')
     await expect(page.getByTestId('workshop-sections')).toBeVisible()
     await expect(page.getByTestId('workshop-hub')).toHaveCount(0)
     await expect(page.getByTestId('workshop-tabs')).toHaveCount(0)
@@ -21,7 +23,7 @@ test.describe('Retired prototype routes', () => {
   test('does not serve retired workflow or Workshop pages', async ({
     page
   }) => {
-    const workflow = await page.goto('/models/workflows/video_minimax_h3_i2v/')
+    const workflow = await page.goto('/hub/workflows/video_minimax_h3_i2v/')
     expect(workflow?.status()).toBe(404)
     await expect(page.getByTestId('model-detail')).toHaveCount(0)
     const workshop = await page.goto('/workshop/')
@@ -30,11 +32,47 @@ test.describe('Retired prototype routes', () => {
   })
 })
 
+test.describe('Hub pages', () => {
+  for (const { path, title, heading, noindex } of [
+    {
+      path: 'hub/models',
+      title: 'ComfyUI Models: Run AI Image, Video &amp; Audio Models - Comfy',
+      heading: 'ComfyUI models',
+      noindex: false
+    },
+    {
+      path: 'hub/workflows',
+      title:
+        'ComfyUI Workflows: Multi-Step AI Image &amp; Video Workflows - Comfy',
+      heading: 'ComfyUI workflows',
+      noindex: true
+    },
+    {
+      path: 'hub/apps',
+      title: 'ComfyUI Apps: Creative Tools Built from Workflows - Comfy',
+      heading: 'ComfyUI apps',
+      noindex: true
+    }
+  ])
+    test(`builds /${path}/ with its own title, heading and canonical`, () => {
+      const html = readFileSync(`dist/${path}/index.html`, 'utf8')
+
+      expect(html).toContain(`<title>${title}</title>`)
+      expect(html).toMatch(new RegExp(`<h1[^>]*>\\s*${heading}\\s*</h1>`))
+      expect(html).toContain(
+        `rel="canonical" href="https://comfy.org/${path}/"`
+      )
+      expect(html.includes('<meta name="robots" content="noindex')).toBe(
+        noindex
+      )
+    })
+})
+
 test.describe('Models catalog', () => {
   test('opens the featured model from the full banner surface', async ({
     page
   }) => {
-    await page.goto('/models/')
+    await page.goto('/hub/models/')
     const slide = page.getByTestId('featured-slide')
     const href = await page
       .getByTestId('featured-slide-link')
@@ -47,10 +85,44 @@ test.describe('Models catalog', () => {
     await expect(page).toHaveURL(new URL(href, page.url()).href)
   })
 
+  test('opens the model from the banner beside the pagination bars', async ({
+    page
+  }) => {
+    await page.setViewportSize({ width: 1280, height: 900 })
+    await page.goto('/hub/models/')
+    const strip = page.getByTestId('featured-pagination')
+    const card = page.getByTestId('featured-slide')
+    const href = await page
+      .getByTestId('featured-slide-link')
+      .getAttribute('href')
+    const [bars, area] = [await strip.boundingBox(), await card.boundingBox()]
+    if (!href || !bars || !area)
+      throw new Error('Featured banner is not laid out')
+
+    // The strip spans the card so the bars can share the room, which puts a
+    // wide empty stretch of it over the link.
+    await page.mouse.click(area.x + area.width - 80, bars.y + bars.height / 2)
+
+    await expect(page).toHaveURL(new URL(href, page.url()).href)
+  })
+
+  test('keeps every pagination bar inside the banner on a phone', async ({
+    page
+  }) => {
+    await page.setViewportSize({ width: 390, height: 844 })
+    await page.goto('/hub/models/')
+    const strip = page.getByTestId('featured-pagination')
+    const card = page.getByTestId('featured-slide')
+    const [bars, card_] = [await strip.boundingBox(), await card.boundingBox()]
+    if (!bars || !card_) throw new Error('Featured banner is not laid out')
+    expect(bars.x + bars.width).toBeLessThanOrEqual(card_.x + card_.width)
+    expect(bars.x).toBeGreaterThanOrEqual(card_.x)
+  })
+
   test('switches between the curated recommendation and alphabetical order', async ({
     page
   }) => {
-    await page.goto('/models/')
+    await page.goto('/hub/models/')
     const sections = page.getByTestId('workshop-sections')
     await expect(sections).toBeVisible()
     const sort = page.getByTestId('workshop-sort')
@@ -77,45 +149,45 @@ test.describe('Models catalog', () => {
       cards.slice(0, 6).map((card) => card.getAttribute('href') ?? '')
     )
     expect(recommended).toEqual([
-      '/models/byteplus--seedream-5-pro--generate-images/',
-      '/models/openai--gpt-image-2--generate-images/',
-      '/models/byteplus--seedream-4--generate-images/',
-      '/models/xai--grok-imagine-image-2.0--generate-images/',
-      '/models/vertexai--gemini-nano-banana-2--generate-images/',
-      '/models/bfl--flux-2-pro--generate-images/'
+      '/hub/models/seedream-5-0-pro-text-to-image/',
+      '/hub/models/gpt-image-2-text-to-image/',
+      '/hub/models/seedream-4-0-text-to-image/',
+      '/hub/models/grok-imagine-image-2-0-text-to-image/',
+      '/hub/models/nano-banana-2-text-to-image/',
+      '/hub/models/flux-2-pro-text-to-image/'
     ])
     expect(await recommendedIn('generate-videos', 5)).toEqual([
-      '/models/byteplus--seedance-2-5-text-to-video--generate-videos/',
-      '/models/kling--kling-3.0-turbo-text-to-video--generate-videos/',
-      '/models/xai--grok-imagine-video-1.5--generate-videos/',
-      '/models/wan--text-to-video-3.0--generate-videos/',
-      '/models/gemini--omni-1.1-flash--generate-videos/'
+      '/hub/models/seedance-2-5-text-to-video/',
+      '/hub/models/kling-3-0-turbo-text-to-video/',
+      '/hub/models/grok-imagine-video-1-5-text-to-video/',
+      '/hub/models/wan-3-0-text-to-video/',
+      '/hub/models/gemini-omni-1-1-flash-text-to-video/'
     ])
     expect(await recommendedIn('animate-images', 6)).toEqual([
-      '/models/byteplus--seedance-2-5-reference--generate-videos/',
-      '/models/byteplus--seedance-2-5-first-last-frame--animate-images/',
-      '/models/byteplus--seedance-2-image-to-video--animate-images/',
-      '/models/xai--grok-imagine-video--animate-images/',
-      '/models/wan--image-to-video-3.0--animate-images/',
-      '/models/wan--reference-to-video-3.0--animate-images/'
+      '/hub/models/seedance-2-5-reference-to-video/',
+      '/hub/models/seedance-2-5-first-last-frame/',
+      '/hub/models/seedance-2-0-image-to-video/',
+      '/hub/models/grok-imagine-video-image-to-video/',
+      '/hub/models/wan-3-0-image-to-video/',
+      '/hub/models/wan-3-0-reference-to-video/'
     ])
     expect(await recommendedIn('other-formats', 1)).toEqual([
-      '/models/byteplus--seed-audio-1.0--audio/'
+      '/hub/models/seed-audio-1-0-text-to-speech/'
     ])
     expect(await recommendedIn('edit-videos', 6)).toEqual([
-      '/models/byteplus--seedance-2-5-edit-video--edit-videos/',
-      '/models/kling--omni-pro-edit-video--edit-videos/',
-      '/models/gemini--omni-1.1-flash--edit-videos/',
-      '/models/runway--aleph2-video-to-video--edit-videos/',
-      '/models/gemini--omni-flash-preview--edit-videos/',
-      '/models/wan--video-edit-2.7--edit-videos/'
+      '/hub/models/seedance-2-5-video-edit/',
+      '/hub/models/kling-o3-video-edit/',
+      '/hub/models/gemini-omni-1-1-flash-video-edit/',
+      '/hub/models/runway-aleph-2-video-to-video/',
+      '/hub/models/gemini-omni-flash-preview-video-edit/',
+      '/hub/models/wan-2-7-video-edit/'
     ])
     expect(await recommendedIn('edit-images', 5)).toEqual([
-      '/models/vertexai--gemini-nano-banana-2--edit-images/',
-      '/models/vertexai--gemini-3-pro-image--edit-images/',
-      '/models/byteplus--seedream-5-pro--edit-images/',
-      '/models/openai--gpt-image-2--edit-images/',
-      '/models/openai--gpt-image-2.5-sunburst--edit-images/'
+      '/hub/models/nano-banana-2-image-edit/',
+      '/hub/models/nano-banana-pro-image-edit/',
+      '/hub/models/seedream-5-0-pro-image-edit/',
+      '/hub/models/seedream-5-0-pro-layer-separation/',
+      '/hub/models/seedream-4-5-image-edit/'
     ])
 
     await sort.click()
@@ -155,7 +227,7 @@ test.describe('Models catalog', () => {
   test('searches the approved catalog and recovers from empty results', async ({
     page
   }) => {
-    await page.goto('/models/')
+    await page.goto('/hub/models/')
     await expect(page.getByTestId('workshop-sections')).toBeVisible()
     const cards = page
       .getByTestId('workshop-models-grid')
@@ -180,7 +252,7 @@ test.describe('Models catalog', () => {
   test('category rows drill into the promised number of models', async ({
     page
   }) => {
-    await page.goto('/models/')
+    await page.goto('/hub/models/')
     const sections = page.getByTestId('workshop-sections')
     await expect(sections).toBeVisible()
     const videos = page.getByTestId('section-generate-videos')
@@ -199,9 +271,9 @@ test.describe('Models catalog', () => {
     await expect(sections).toHaveCount(0)
     await expect(cards).toHaveCount(promisedCount)
     await expect(page.getByTestId('workshop-hero')).toHaveCount(0)
-    await expect(page.getByRole('heading', { level: 1 })).toContainText(
-      rowLabel
-    )
+    await expect(
+      page.getByRole('heading', { level: 2, name: rowLabel })
+    ).toBeVisible()
     await page
       .getByRole('button', { name: 'Back to all categories', exact: true })
       .click()
@@ -209,13 +281,42 @@ test.describe('Models catalog', () => {
     await expect(page.getByTestId('workshop-hero')).toBeVisible()
   })
 
+  // A row loads eight whatever its total says, so a row holding fewer than
+  // eight cards is showing its whole shelf and has nothing left to open.
+  test('a shelf showing everything stops promising more', async ({ page }) => {
+    await page.goto('/hub/models/')
+    const sections = page.getByTestId('workshop-sections')
+    await expect(sections).toBeVisible()
+    await expect(
+      sections.getByTestId('workshop-model-card').first()
+    ).toBeVisible()
+    const shelves = sections
+      .locator('[data-testid^="section-"]')
+      .filter({ has: page.getByTestId('workshop-model-card') })
+    const count = await shelves.count()
+    expect(count).toBeGreaterThan(1)
+
+    let complete = 0
+    for (let index = 0; index < count; index++) {
+      const shelf = shelves.nth(index)
+      if ((await shelf.getByTestId('workshop-model-card').count()) >= 8)
+        continue
+      complete++
+      await expect(shelf.locator('[data-testid$="-see-all"]')).toHaveCount(0)
+    }
+    expect(complete).toBeGreaterThan(0)
+  })
+
   test('the rows listing opens the whole catalogue', async ({ page }) => {
-    await page.goto('/models/')
-    await page.getByTestId('browse-all').click()
+    await page.goto('/hub/models/')
+    await page.getByTestId('browse-all-end').click()
 
     await expect(page.getByTestId('workshop-sections')).toHaveCount(0)
-    const heading = page.getByRole('heading', { level: 1 })
-    await expect(heading).toContainText('All models')
+    const heading = page.getByRole('heading', {
+      level: 2,
+      name: /^All models \d+$/
+    })
+    await expect(heading).toBeVisible()
     const promisedCount = Number(
       (await heading.innerText()).match(/(\d+)\s*$/)?.[1]
     )
@@ -230,14 +331,29 @@ test.describe('Models catalog', () => {
     await expect(page.getByTestId('workshop-sections')).toBeVisible()
   })
 
+  test('an opened shelf reads as a chosen filter', async ({ page }) => {
+    await page.goto('/hub/models/')
+    await page.getByTestId('section-generate-videos-open').click()
+    await expect(
+      page.getByRole('heading', { level: 2, name: /Generate videos/ })
+    ).toBeVisible()
+    await expect(page.getByTestId('workshop-filter-count')).toHaveText('1')
+    await page.getByTestId('workshop-filter').click()
+    await expect(page.getByTestId('workshop-filter-applied')).toHaveText(
+      '1 selected'
+    )
+    await page.getByTestId('workshop-filter-clear').click()
+    await expect(page.getByTestId('workshop-sections')).toBeVisible()
+  })
+
   test('a model page returns to the shelf it was opened from', async ({
     page
   }) => {
-    await page.goto('/models/')
+    await page.goto('/hub/models/')
     await page.getByTestId('section-generate-videos-open').click()
-    await expect(page.getByRole('heading', { level: 1 })).toContainText(
-      'Generate videos'
-    )
+    await expect(
+      page.getByRole('heading', { level: 2, name: 'Generate videos' })
+    ).toBeVisible()
     await page
       .getByTestId('workshop-models-grid')
       .getByTestId('workshop-model-card')
@@ -246,17 +362,21 @@ test.describe('Models catalog', () => {
 
     const back = page.getByTestId('model-back')
     await expect(back).toHaveText('Back to Generate videos')
-    await back.click()
-    await expect(page.getByRole('heading', { level: 1 })).toContainText(
-      'Generate videos'
+    await expect(back).toHaveAttribute(
+      'href',
+      '/hub/models/?useCase=generate-videos'
     )
+    await back.click()
+    await expect(
+      page.getByRole('heading', { level: 2, name: 'Generate videos' })
+    ).toBeVisible()
     await expect(page.getByTestId('workshop-sections')).toHaveCount(0)
   })
 
   test('the search field stays put as the results swap under it', async ({
     page
   }) => {
-    await page.goto('/models/')
+    await page.goto('/hub/models/')
     await expect(page.getByTestId('workshop-sections')).toBeVisible()
     await page.evaluate(() => window.scrollTo(0, 700))
     const search = page.getByTestId('workshop-search')
@@ -284,10 +404,13 @@ test.describe('Models catalog', () => {
   test('the category heading stays clear of the nav while searching', async ({
     page
   }) => {
-    await page.goto('/models/')
+    await page.goto('/hub/models/')
     await page.getByTestId('section-generate-videos-open').click()
-    const heading = page.getByRole('heading', { level: 1 })
-    await expect(heading).toContainText('Generate videos')
+    const heading = page.getByRole('heading', {
+      level: 2,
+      name: 'Generate videos'
+    })
+    await expect(heading).toBeVisible()
 
     // Typing scrolls the heading's row into view, which is what used to bury
     // the heading and the result count it carries under the sticky nav.
@@ -319,7 +442,7 @@ test.describe('Models catalog', () => {
   test('cards open canonical model pages with related models', async ({
     page
   }) => {
-    await page.goto('/models/')
+    await page.goto('/hub/models/')
     await page.getByTestId('workshop-search').fill('kling avatar')
     await page.getByRole('heading', { level: 1 }).click()
     await page
@@ -327,7 +450,7 @@ test.describe('Models catalog', () => {
       .getByTestId('workshop-model-card')
       .first()
       .click()
-    await expect(page).toHaveURL(/\/models\/kling--avatar--animate-images\/$/)
+    await expect(page).toHaveURL(/\/hub\/models\/kling-avatar\/$/)
     await expect(page.getByRole('heading', { level: 1 })).toHaveText(
       'Kling Avatar'
     )
@@ -339,21 +462,16 @@ test.describe('Models catalog', () => {
     ).toBeVisible()
   })
 
-  test('a static compatibility alias reaches its canonical model page', async ({
-    page
-  }) => {
-    const response = await page.goto('/models/bfl--flux-2-max/')
+  test('the hub page an old alias points at renders', async ({ page }) => {
+    const response = await page.goto('/hub/models/flux-2-max-text-to-image/')
     expect(response?.status()).toBe(200)
-    await expect(page).toHaveURL(
-      /\/models\/bfl--flux-2-max--generate-images\/$/
-    )
     await expect(page.getByRole('heading', { level: 1 })).toHaveText(
       'FLUX 2 Max Text-to-Image'
     )
   })
 
   test('the use-case filter actually narrows the catalog', async ({ page }) => {
-    await page.goto('/models/')
+    await page.goto('/hub/models/')
     await expect(page.getByTestId('workshop-sections')).toBeVisible()
     const all = await page.getByTestId('workshop-model-card').count()
     expect(all).toBeGreaterThan(0)
@@ -366,12 +484,12 @@ test.describe('Models catalog', () => {
     expect(await cards.count()).toBeLessThan(all)
     await expect(
       page.locator(
-        '[data-testid="workshop-model-card"][href="/models/vertexai--gemini-nano-banana-2--edit-images/"]'
+        '[data-testid="workshop-model-card"][href="/hub/models/nano-banana-2-image-edit/"]'
       )
     ).toBeVisible()
     await expect(
       page.locator(
-        '[data-testid="workshop-model-card"][href="/models/bfl--flux-2-max--generate-images/"]'
+        '[data-testid="workshop-model-card"][href="/hub/models/flux-2-max-text-to-image/"]'
       )
     ).toHaveCount(0)
     await expect(page.getByTestId('workshop-filter-applied')).toHaveText(
@@ -386,28 +504,28 @@ test.describe('Models catalog', () => {
     await page.goto(MODEL_PATH)
     const tag = page
       .getByTestId('model-tags')
-      .getByRole('link', { name: 'flux', exact: true })
-    await expect(tag).toHaveAttribute('href', '/models?q=flux')
+      .getByRole('link', { name: 'premium', exact: true })
+    await expect(tag).toHaveAttribute('href', '/hub/models/?q=premium')
     await tag.click()
-    await expect(page).toHaveURL(/\/models\/?\?q=flux$/)
-    await expect(page.getByTestId('workshop-search')).toHaveValue('flux')
+    await expect(page).toHaveURL(/\/hub\/models\/?\?q=premium$/)
+    await expect(page.getByTestId('workshop-search')).toHaveValue('premium')
     const cards = page
       .getByTestId('workshop-models-grid')
       .getByTestId('workshop-model-card')
     await expect(cards.first()).toBeVisible()
     for (const card of await cards.all())
-      await expect(card).toContainText(/flux/i)
+      await expect(card.getByTestId('tag-row')).toContainText(/premium/i)
   })
 
   test('the hero medium deep-links into the catalog', async ({ page }) => {
-    await page.goto('/models/kling--avatar--animate-images/')
+    await page.goto('/hub/models/kling-avatar/')
     await page
       .getByTestId('model-hero')
       .getByRole('link', { name: 'Image to video', exact: true })
       .click()
-    await expect(page).toHaveURL(/\/models\/?\?useCase=animate-images$/)
+    await expect(page).toHaveURL(/\/hub\/models\/?\?useCase=animate-images$/)
     await expect(
-      page.getByRole('heading', { level: 1, name: /Image to video/ })
+      page.getByRole('heading', { level: 2, name: /Image to video/ })
     ).toBeVisible()
   })
 
@@ -420,10 +538,7 @@ test.describe('Models catalog', () => {
       .scrollIntoViewIfNeeded()
     await expect(
       page.getByRole('link', { name: /Explore Seedance/i })
-    ).toHaveAttribute(
-      'href',
-      '/models/byteplus--seedance-2-5-text-to-video--generate-videos/'
-    )
+    ).toHaveAttribute('href', '/hub/models/seedance-2-5-text-to-video/')
   })
 
   test('the row arrow sits level with the middle of a card', async ({
@@ -431,7 +546,7 @@ test.describe('Models catalog', () => {
   }) => {
     for (const width of [1440, 820, 420]) {
       await page.setViewportSize({ width, height: 1000 })
-      await page.goto('/models/')
+      await page.goto('/hub/models/')
       const row = page.getByTestId('section-generate-images')
       const card = row.getByTestId('workshop-model-card').first()
       await expect(card).toBeVisible()
@@ -446,7 +561,7 @@ test.describe('Models catalog', () => {
   })
 
   test('the fade reaches both ends of the scrolling row', async ({ page }) => {
-    await page.goto('/models/')
+    await page.goto('/hub/models/')
     const row = page.getByTestId('section-generate-images')
     await expect(row.getByTestId('workshop-model-card').first()).toBeVisible()
     await row.hover()
@@ -467,19 +582,100 @@ test.describe('Models catalog', () => {
 })
 
 test.describe('Model playground', () => {
+  test('keeps a long prompt whole instead of scrolling it out of sight', async ({
+    page
+  }) => {
+    await page.goto(MODEL_PATH)
+    const prompt = page.getByTestId('field-prompt')
+    const hidden = () =>
+      prompt.evaluate((box) => box.scrollHeight - box.clientHeight)
+    const height = () => prompt.evaluate((box) => box.clientHeight)
+
+    await prompt.fill(
+      Array.from({ length: 12 }, (_, line) => `Line ${line + 1}.`).join('\n')
+    )
+    await expect.poll(hidden).toBeLessThanOrEqual(1)
+    const tall = await height()
+
+    await prompt.fill('One line.')
+    await expect.poll(height).toBeLessThan(tall)
+    await expect.poll(hidden).toBeLessThanOrEqual(1)
+  })
+
+  test('keeps a long prompt whole when the layout narrows under it', async ({
+    page
+  }) => {
+    await page.goto(MODEL_PATH)
+    const prompt = page.getByTestId('field-prompt')
+    const hidden = () =>
+      prompt.evaluate((box) => box.scrollHeight - box.clientHeight)
+
+    await prompt.fill(
+      'A slow push-in on a glass teapot lit from behind by a low winter sun, steam rising and catching the light while the room around it stays in shadow, the reflections on the table kept sharp and the background soft, with no people, no text and no logos anywhere in the frame.'
+    )
+    await expect.poll(hidden).toBeLessThanOrEqual(1)
+
+    await page.setViewportSize({ width: 380, height: 900 })
+
+    await expect.poll(hidden).toBeLessThanOrEqual(1)
+  })
+
+  test('stops the prompt box short of swallowing the window', async ({
+    page
+  }) => {
+    await page.setViewportSize({ width: 1280, height: 800 })
+    await page.goto(MODEL_PATH)
+    const prompt = page.getByTestId('field-prompt')
+
+    await prompt.fill(
+      Array.from({ length: 60 }, (_, line) => `Line ${line + 1}.`).join('\n')
+    )
+
+    // A prompt this long would bury the rest of the form, so the box keeps a
+    // share of the window and scrolls what is left.
+    await expect
+      .poll(() => prompt.evaluate((box) => box.clientHeight))
+      .toBeLessThan(800)
+    await expect
+      .poll(() => prompt.evaluate((box) => box.scrollHeight - box.clientHeight))
+      .toBeGreaterThan(1)
+  })
+
   test('puts data-declared parameters in the Advanced disclosure', async ({
     page
   }) => {
     await page.goto(MODEL_PATH)
     const advanced = page.getByTestId('playground-advanced')
-    await expect(advanced).toBeVisible()
-    await expect(page.getByTestId('field-safety_tolerance')).not.toBeVisible()
+    await waitForIsland(page, advanced)
+    await expect(page.getByTestId('field-prompt_upsampling')).not.toBeVisible()
     await advanced.locator('summary').click()
-    await expect(page.getByTestId('field-safety_tolerance')).toBeVisible()
+    await expect(page.getByTestId('field-prompt_upsampling')).toBeVisible()
     await expect(page.getByTestId('field-seed')).toBeVisible()
   })
 
-  test('restores sign-in and keeps Run and uploads enabled after Models menu navigation', async ({
+  test('asks nothing about the provider moderation checks and sends nothing', async ({
+    page
+  }) => {
+    await page.goto(MODEL_PATH)
+    const advanced = page.getByTestId('playground-advanced')
+    await waitForIsland(page, advanced)
+    await advanced.locator('summary').click()
+
+    await expect(page.getByTestId('field-safety_tolerance')).toHaveCount(0)
+    await expect(
+      page.getByRole('combobox', { name: 'Safety tolerance', exact: true })
+    ).toHaveCount(0)
+    await expect(
+      page.getByRole('slider', { name: 'Safety tolerance', exact: true })
+    ).toHaveCount(0)
+
+    await page.getByRole('tab', { name: 'API', exact: true }).click()
+    await expect(page.getByTestId('snippet')).not.toContainText(
+      'safety_tolerance'
+    )
+  })
+
+  test('restores sign-in and keeps Run and uploads enabled after Browse Models navigation', async ({
     page,
     modelsAccount
   }) => {
@@ -509,10 +705,14 @@ test.describe('Model playground', () => {
 
     await page
       .getByRole('navigation', { name: 'Main navigation', exact: true })
-      .getByRole('link', { name: 'Models', exact: true })
+      .getByRole('button', { name: /^Products\b/ })
       .click()
+    await page.getByRole('link', { name: /^Browse Models\b/ }).click()
     await page.getByTestId('workshop-search').fill('Seedream 4.5 Image Edit')
-    await page.getByRole('link', { name: /Seedream 4\.5 Image Edit/ }).click()
+    await page
+      .getByTestId('workshop-models-grid')
+      .getByRole('link', { name: /Seedream 4\.5 Image Edit/ })
+      .click()
     await expect(page.getByRole('heading', { level: 1 })).toHaveText(
       'Seedream 4.5 Image Edit'
     )
@@ -565,7 +765,7 @@ test.describe('Model playground', () => {
   })
 
   test('API snippets keep uploaded media local', async ({ page }) => {
-    await page.goto('/models/byteplus--seedream-4-5--edit-images/')
+    await page.goto('/hub/models/seedream-4-5-image-edit/')
     const [chooser] = await Promise.all([
       page.waitForEvent('filechooser'),
       page.getByRole('button', { name: /^Replace seedream-4-5-input-/ }).click()
@@ -627,6 +827,13 @@ test.describe('Model playground', () => {
     await prompt.fill('')
 
     await page.getByTestId('example-card').first().click()
+    const dialog = page.getByTestId('example-replace-dialog')
+    await expect(dialog.getByRole('heading')).toHaveText('Load this example?')
+    await expect(dialog.getByRole('button')).toHaveCount(2)
+    await expect(dialog.getByRole('button', { name: 'Cancel' })).toBeVisible()
+    await expect(
+      dialog.getByRole('button', { name: 'Load example' })
+    ).toBeVisible()
     await page.getByTestId('example-replace-keep').click()
 
     await expect(page.getByTestId('example-replace-dialog')).toHaveCount(0)
@@ -634,7 +841,7 @@ test.describe('Model playground', () => {
   })
 
   test('three examples fill the available desktop row', async ({ page }) => {
-    await page.goto('/models/krea--krea-2-medium-turbo--generate-images/')
+    await page.goto('/hub/models/krea-2-medium-turbo-text-to-image/')
     const list = page.getByTestId('examples-tab').locator('ul')
     const cards = page.getByTestId('example-card')
     await expect(cards).toHaveCount(3)
@@ -658,7 +865,7 @@ test.describe('Model playground', () => {
   })
 
   test('a phone sample is big enough to judge @mobile', async ({ page }) => {
-    await page.goto('/models/krea--krea-2-medium-turbo--generate-images/')
+    await page.goto('/hub/models/krea-2-medium-turbo-text-to-image/')
     const cards = page.getByTestId('example-card')
     await expect(cards).toHaveCount(3)
 
@@ -682,7 +889,7 @@ test.describe('Model playground', () => {
   }) => {
     const width = 320
     await page.setViewportSize({ width, height: 720 })
-    await page.goto('/models/krea--krea-2-medium-turbo--generate-images/')
+    await page.goto('/hub/models/krea-2-medium-turbo-text-to-image/')
     const cards = page.getByTestId('example-card')
     await expect(cards).toHaveCount(3)
 
@@ -698,7 +905,7 @@ test.describe('Model playground', () => {
   })
 
   test('a lone sample takes the phone row @mobile', async ({ page }) => {
-    await page.goto('/models/bfl--flux-2-pro--generate-images/')
+    await page.goto('/hub/models/flux-2-pro-text-to-image/')
     const cards = page.getByTestId('example-card')
     await expect(cards).toHaveCount(1)
 
@@ -719,7 +926,7 @@ test.describe('Model playground', () => {
 
 test.describe('Filter sheet @mobile', () => {
   test('the handle pulls the sheet up and lets it go', async ({ page }) => {
-    await page.goto('/models/')
+    await page.goto('/hub/models/')
     await page.getByTestId('workshop-filter').click()
 
     const sheet = page.getByTestId('workshop-filter-menu')

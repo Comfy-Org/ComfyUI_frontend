@@ -5,6 +5,7 @@ import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { nextTick } from 'vue'
 import { createI18n } from 'vue-i18n'
 
+import { useNodeDragToCanvas } from '@/composables/node/useNodeDragToCanvas'
 import { useFeatureFlags } from '@/composables/useFeatureFlags'
 import { useSettingStore } from '@/platform/settings/settingStore'
 import { useToastStore } from '@/platform/updates/common/toastStore'
@@ -32,7 +33,6 @@ const {
   resetRoot,
   captureExpandedKeys,
   getExpandedKeys,
-  mockStartDrag,
   mockToggleNodeOnEvent
 } = vi.hoisted(() => {
   let capturedRoot: TreeExplorerNode | null = null
@@ -49,14 +49,11 @@ const {
       capturedExpandedKeys = keys
     },
     getExpandedKeys: () => capturedExpandedKeys,
-    mockStartDrag: vi.fn(),
     mockToggleNodeOnEvent: vi.fn()
   }
 })
 
-vi.mock<unknown>(import('@/composables/node/useNodeDragToCanvas'), () => ({
-  useNodeDragToCanvas: () => ({ startDrag: mockStartDrag })
-}))
+vi.mock(import('@/composables/node/useNodeDragToCanvas'))
 
 const mockModel = fromPartial<ComfyModelDef>({
   key: 'checkpoints/model.safetensors',
@@ -64,7 +61,8 @@ const mockModel = fromPartial<ComfyModelDef>({
   simplified_file_name: 'model',
   title: 'Model',
   directory: 'checkpoints',
-  searchable: 'checkpoints/model.safetensors'
+  searchable: 'checkpoints/model.safetensors',
+  load: () => Promise.resolve()
 })
 
 vi.mock(import('@/composables/useFeatureFlags'))
@@ -96,45 +94,6 @@ vi.mock<unknown>(import('@/components/common/TreeExplorer.vue'), async () => {
   }
 })
 
-vi.mock<unknown>(
-  import('@/components/ui/search-input/SearchInput.vue'),
-  () => ({
-    default: {
-      name: 'SearchInput',
-      template:
-        '<input data-testid="search-input" @input="onInput" />' +
-        '<input data-testid="search-input-raw" @input="onRawInput" />',
-      props: ['modelValue', 'placeholder'],
-      emits: ['update:modelValue', 'search'],
-      setup(
-        _props: unknown,
-        {
-          emit,
-          expose
-        }: {
-          emit: (event: 'update:modelValue' | 'search', value: string) => void
-          expose: (exposed: Record<string, unknown>) => void
-        }
-      ) {
-        expose({ focus: vi.fn() })
-        return {
-          onInput: (event: Event) => {
-            const value = (event.target as HTMLInputElement).value
-            emit('update:modelValue', value)
-            emit('search', value)
-          },
-          // A keystroke the real SearchInput has not yet debounced into a
-          // `search` emit: only the model value updates.
-          onRawInput: (event: Event) => {
-            const value = (event.target as HTMLInputElement).value
-            emit('update:modelValue', value)
-          }
-        }
-      }
-    }
-  })
-)
-
 vi.mock<unknown>(import('./SidebarTopArea.vue'), () => ({
   default: { name: 'SidebarTopArea', template: '<div><slot /></div>' }
 }))
@@ -149,10 +108,6 @@ vi.mock<unknown>(import('./SidebarTabTemplate.vue'), () => ({
 
 vi.mock<unknown>(import('./modelLibrary/ElectronDownloadItems.vue'), () => ({
   default: { name: 'ElectronDownloadItems', template: '<div />' }
-}))
-
-vi.mock<unknown>(import('./modelLibrary/ModelTreeLeaf.vue'), () => ({
-  default: { name: 'ModelTreeLeaf', template: '<div />', props: ['node'] }
 }))
 
 const i18n = createI18n({
@@ -181,7 +136,7 @@ describe('ModelLibrarySidebarTab', () => {
 
   it('renders search input', () => {
     renderComponent()
-    expect(screen.getByTestId('search-input')).toBeInTheDocument()
+    expect(screen.getByRole('combobox')).toBeInTheDocument()
   })
 
   it('starts a ghost drag carrying the widget value to fill on placement', async () => {
@@ -207,13 +162,37 @@ describe('ModelLibrarySidebarTab', () => {
     const mockEvent = new MouseEvent('click')
     await modelLeaf?.handleClick?.(mockEvent)
 
-    expect(
-      vi.mocked(useModelToNodeStore().getNodeProvider)
-    ).toHaveBeenCalledWith('checkpoints')
-    expect(mockStartDrag).toHaveBeenCalledWith(mockNodeDef, {
+    expect(useModelToNodeStore().getNodeProvider).toHaveBeenCalledWith(
+      'checkpoints'
+    )
+    expect(useNodeDragToCanvas().startDrag).toHaveBeenCalledWith(mockNodeDef, {
       widgetValues: { ckpt_name: 'model.safetensors' },
       source: 'sidebar_drag'
     })
+  })
+
+  it('loads model metadata once its folder is expanded', async () => {
+    const load = vi.fn()
+    Object.assign(useModelStore(), {
+      models: [
+        fromPartial<ComfyModelDef>({
+          key: 'checkpoints/model.safetensors',
+          directory: 'checkpoints',
+          searchable: 'checkpoints/model.safetensors',
+          load
+        })
+      ]
+    })
+    renderComponent()
+    await nextTick()
+    expect(load).not.toHaveBeenCalled()
+
+    const root = getRoot()
+    const checkpointsFolder = root.children?.[0]
+    getExpandedKeys()[checkpointsFolder?.key ?? ''] = true
+    await nextTick()
+
+    expect(load).toHaveBeenCalledOnce()
   })
 
   it('toggles folder expansion on click', async () => {
@@ -233,7 +212,7 @@ describe('ModelLibrarySidebarTab', () => {
     renderComponent()
     await nextTick()
 
-    expect(vi.mocked(useModelStore().refreshModelFolder)).not.toHaveBeenCalled()
+    expect(useModelStore().refreshModelFolder).not.toHaveBeenCalled()
 
     useAssetDownloadStore().lastCompletedDownload = {
       taskId: 'task-1',
@@ -242,7 +221,7 @@ describe('ModelLibrarySidebarTab', () => {
     }
     await nextTick()
 
-    expect(vi.mocked(useModelStore().refreshModelFolder)).toHaveBeenCalledWith(
+    expect(useModelStore().refreshModelFolder).toHaveBeenCalledWith(
       'checkpoints'
     )
   })
@@ -251,7 +230,7 @@ describe('ModelLibrarySidebarTab', () => {
     renderComponent()
     await nextTick()
 
-    expect(vi.mocked(useModelStore().refreshModelFolder)).not.toHaveBeenCalled()
+    expect(useModelStore().refreshModelFolder).not.toHaveBeenCalled()
   })
 
   describe('search', () => {
@@ -260,10 +239,10 @@ describe('ModelLibrarySidebarTab', () => {
       renderComponent()
       await nextTick()
 
-      await user.type(screen.getByTestId('search-input'), 'model')
-      await nextTick()
+      await user.type(screen.getByRole('combobox'), 'model')
+      await vi.advanceTimersByTimeAsync(300)
 
-      expect(vi.mocked(useModelStore().loadModels)).toHaveBeenCalled()
+      expect(useModelStore().loadModels).toHaveBeenCalled()
       const leafLabels = () => {
         const { children: folders = [] } = getRoot()
         return folders.flatMap(({ children: leaves = [] }) =>
@@ -282,7 +261,8 @@ describe('ModelLibrarySidebarTab', () => {
             simplified_file_name: 'model-new',
             title: 'Model New',
             directory: 'checkpoints',
-            searchable: 'checkpoints/model-new.safetensors'
+            searchable: 'checkpoints/model-new.safetensors',
+            load: () => Promise.resolve()
           })
         ]
       })
@@ -292,14 +272,15 @@ describe('ModelLibrarySidebarTab', () => {
     })
 
     it('leaves the tree untouched until the debounced search event fires', async () => {
-      const user = userEvent.setup()
+      vi.useFakeTimers({ shouldAdvanceTime: false })
+      const user = userEvent.setup({ advanceTimers: vi.advanceTimersByTime })
       renderComponent()
       await nextTick()
 
       // Raw keystrokes update the input model only; a non-matching query
       // would empty the tree if it drove the derivation directly.
-      await user.type(screen.getByTestId('search-input-raw'), 'zzz')
-      await nextTick()
+      await user.type(screen.getByRole('combobox'), 'zzz')
+      await vi.advanceTimersByTimeAsync(299)
 
       const leafLabels = () => {
         const { children: folders = [] } = getRoot()
@@ -309,8 +290,7 @@ describe('ModelLibrarySidebarTab', () => {
       }
       expect(leafLabels()).toEqual(['model'])
 
-      await user.type(screen.getByTestId('search-input'), 'zzz')
-      await nextTick()
+      await vi.advanceTimersByTimeAsync(1)
 
       expect(leafLabels()).toEqual([])
     })
@@ -331,14 +311,15 @@ describe('ModelLibrarySidebarTab', () => {
               simplified_file_name: `bulk-${i}`,
               title: `bulk-${i}`,
               directory: 'checkpoints',
-              searchable: `checkpoints/bulk-${i}.safetensors`
+              searchable: `checkpoints/bulk-${i}.safetensors`,
+              load: () => Promise.resolve()
             })
           )
         ]
       })
 
-      await user.type(screen.getByTestId('search-input'), 'bulk')
-      await nextTick()
+      await user.type(screen.getByRole('combobox'), 'bulk')
+      await vi.advanceTimersByTimeAsync(300)
 
       const { children: folders = [] } = getRoot()
       const leafCount = folders.flatMap(
@@ -355,8 +336,8 @@ describe('ModelLibrarySidebarTab', () => {
       renderComponent()
       await nextTick()
 
-      await user.type(screen.getByTestId('search-input'), 'model')
-      await nextTick()
+      await user.type(screen.getByRole('combobox'), 'model')
+      await vi.advanceTimersByTimeAsync(300)
       await nextTick()
       // The query's initial result folders auto-expand.
       expect(getExpandedKeys()['root/checkpoints']).toBe(true)
@@ -375,7 +356,8 @@ describe('ModelLibrarySidebarTab', () => {
             simplified_file_name: 'model-late',
             title: 'Model Late',
             directory: 'checkpoints',
-            searchable: 'checkpoints/model-late.safetensors'
+            searchable: 'checkpoints/model-late.safetensors',
+            load: () => Promise.resolve()
           })
         ]
       })
@@ -392,8 +374,8 @@ describe('ModelLibrarySidebarTab', () => {
 
       // No prefix of the query matches the existing model, so the result
       // tree stays empty and no folder has auto-expanded yet.
-      await user.type(screen.getByTestId('search-input'), 'zzz')
-      await nextTick()
+      await user.type(screen.getByRole('combobox'), 'zzz')
+      await vi.advanceTimersByTimeAsync(300)
       await nextTick()
       expect(getExpandedKeys()['root/checkpoints']).toBeUndefined()
 
@@ -409,7 +391,8 @@ describe('ModelLibrarySidebarTab', () => {
             simplified_file_name: 'zzz-model',
             title: 'Zzz Model',
             directory: 'checkpoints',
-            searchable: 'checkpoints/zzz-model.safetensors'
+            searchable: 'checkpoints/zzz-model.safetensors',
+            load: () => Promise.resolve()
           })
         ]
       })
@@ -422,7 +405,6 @@ describe('ModelLibrarySidebarTab', () => {
 
   describe('asset mode', () => {
     it('surfaces an error toast when the eager load fails on mount', async () => {
-      const error = vi.spyOn(console, 'error').mockImplementation(() => {})
       vi.mocked(useFeatureFlags().flags).assetsEnabled = true
       vi.mocked(useModelStore().loadModels).mockRejectedValueOnce(
         new Error('walk failed')
@@ -438,7 +420,6 @@ describe('ModelLibrarySidebarTab', () => {
           detail: 'sideToolbar.modelLibraryLoadFailed'
         })
       )
-      error.mockRestore()
     })
 
     it('hides the load-all button and eager-loads models on mount', async () => {
@@ -448,7 +429,7 @@ describe('ModelLibrarySidebarTab', () => {
 
       expect(screen.queryByLabelText('g.loadAllFolders')).toBeNull()
       expect(screen.getByLabelText('g.refresh')).toBeInTheDocument()
-      expect(vi.mocked(useModelStore().loadModels)).toHaveBeenCalledTimes(1)
+      expect(useModelStore().loadModels).toHaveBeenCalledTimes(1)
     })
 
     it('legacy mode keeps the load-all button and stays lazy by default', async () => {
@@ -456,7 +437,7 @@ describe('ModelLibrarySidebarTab', () => {
       await nextTick()
 
       expect(screen.getByLabelText('g.loadAllFolders')).toBeInTheDocument()
-      expect(vi.mocked(useModelStore().loadModels)).not.toHaveBeenCalled()
+      expect(useModelStore().loadModels).not.toHaveBeenCalled()
     })
 
     it('legacy mode still honors AutoLoadAll', async () => {
@@ -464,7 +445,7 @@ describe('ModelLibrarySidebarTab', () => {
       renderComponent()
       await nextTick()
 
-      expect(vi.mocked(useModelStore().loadModels)).toHaveBeenCalledTimes(1)
+      expect(useModelStore().loadModels).toHaveBeenCalledTimes(1)
     })
   })
 })

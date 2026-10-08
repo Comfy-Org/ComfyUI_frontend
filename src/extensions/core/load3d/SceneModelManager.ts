@@ -13,6 +13,7 @@ import type {
   ModelManagerInterface,
   UpDirection
 } from './interfaces'
+import { QuadWireframeManager } from './quadWireframe/QuadWireframeManager'
 
 export class SceneModelManager implements ModelManagerInterface {
   currentModel: THREE.Object3D | null = null
@@ -30,6 +31,7 @@ export class SceneModelManager implements ModelManagerInterface {
   normalMaterial: THREE.MeshNormalMaterial
   standardMaterial: THREE.MeshStandardMaterial
   wireframeMaterial: THREE.MeshBasicMaterial
+  occluderMaterial: THREE.MeshBasicMaterial
   depthMaterial: THREE.MeshDepthMaterial
   clayMaterial: THREE.MeshStandardMaterial
   originalFileName: string | null = null
@@ -52,6 +54,7 @@ export class SceneModelManager implements ModelManagerInterface {
     size: THREE.Vector3
     center: THREE.Vector3
   } | null
+  private readonly quadWireframe = new QuadWireframeManager()
 
   constructor(
     scene: THREE.Scene,
@@ -95,6 +98,14 @@ export class SceneModelManager implements ModelManagerInterface {
       wireframe: true,
       transparent: false,
       opacity: 1.0
+    })
+
+    this.occluderMaterial = new THREE.MeshBasicMaterial({
+      colorWrite: false,
+      side: THREE.DoubleSide,
+      polygonOffset: true,
+      polygonOffsetFactor: 1,
+      polygonOffsetUnits: 1
     })
 
     this.depthMaterial = new THREE.MeshDepthMaterial({
@@ -145,9 +156,11 @@ export class SceneModelManager implements ModelManagerInterface {
 
   dispose(): void {
     this.clearModel()
+    this.quadWireframe.dispose()
     this.normalMaterial.dispose()
     this.standardMaterial.dispose()
     this.wireframeMaterial.dispose()
+    this.occluderMaterial.dispose()
     this.depthMaterial.dispose()
     this.clayMaterial.dispose()
 
@@ -168,6 +181,7 @@ export class SceneModelManager implements ModelManagerInterface {
   }
 
   private removeAllMainModelsFromScene(): void {
+    this.quadWireframe.clear()
     const oldMainModels: THREE.Object3D[] = []
     this.scene.traverse((obj) => {
       if (obj.name === 'MainModel') oldMainModels.push(obj)
@@ -241,9 +255,7 @@ export class SceneModelManager implements ModelManagerInterface {
       this.viewState.outputColorSpace = THREE.SRGBColorSpace
     }
 
-    if (this.currentModel) {
-      this.currentModel.visible = true
-    }
+    this.currentModel.visible = true
 
     this.currentModel.traverse((child) => {
       if (child instanceof THREE.Mesh) {
@@ -295,7 +307,23 @@ export class SceneModelManager implements ModelManagerInterface {
       }
     })
 
+    this.syncQuadWireframe(mode)
     this.eventManager.emitEvent('materialModeChange', mode)
+  }
+
+  clearQuadWireframe(): void {
+    this.quadWireframe.clear()
+  }
+
+  private syncQuadWireframe(mode: MaterialMode): void {
+    if (mode !== 'wireframe') {
+      this.quadWireframe.hide()
+      return
+    }
+    if (!this.currentModel) return
+    for (const mesh of this.quadWireframe.show(this.currentModel)) {
+      mesh.material = this.occluderMaterial
+    }
   }
 
   setupModelMaterials(model: THREE.Object3D): void {
@@ -309,9 +337,10 @@ export class SceneModelManager implements ModelManagerInterface {
   }
 
   clearModel(): void {
+    this.quadWireframe.clear()
     const objectsToRemove: THREE.Object3D[] = []
 
-    for (const object of [...this.scene.children]) {
+    for (const object of Array.from(this.scene.children)) {
       const isEnvironmentObject =
         object instanceof THREE.GridHelper ||
         object instanceof THREE.Light ||
@@ -371,7 +400,7 @@ export class SceneModelManager implements ModelManagerInterface {
     if (!this.currentModel) return false
     let found = false
     this.currentModel.traverse((child) => {
-      if (child instanceof THREE.SkinnedMesh && child.skeleton) {
+      if (child instanceof THREE.SkinnedMesh) {
         found = true
       }
     })
@@ -383,30 +412,23 @@ export class SceneModelManager implements ModelManagerInterface {
 
     if (show) {
       if (!this.skeletonHelper && this.currentModel) {
-        let rootBone: THREE.Bone | null = null
+        const rootBones: THREE.Bone[] = []
+        const skinnedMeshes: THREE.SkinnedMesh[] = []
         this.currentModel.traverse((child) => {
-          if (child instanceof THREE.Bone && !rootBone) {
-            if (!(child.parent instanceof THREE.Bone)) {
-              rootBone = child
-            }
+          if (
+            child instanceof THREE.Bone &&
+            !(child.parent instanceof THREE.Bone)
+          ) {
+            rootBones.push(child)
+          } else if (child instanceof THREE.SkinnedMesh) {
+            skinnedMeshes.push(child)
           }
         })
 
-        if (rootBone) {
-          this.skeletonHelper = new THREE.SkeletonHelper(rootBone)
+        const skeletonRoot = rootBones.at(0) ?? skinnedMeshes.at(0)
+        if (skeletonRoot) {
+          this.skeletonHelper = new THREE.SkeletonHelper(skeletonRoot)
           this.scene.add(this.skeletonHelper)
-        } else {
-          let skinnedMesh: THREE.SkinnedMesh | null = null
-          this.currentModel.traverse((child) => {
-            if (child instanceof THREE.SkinnedMesh && !skinnedMesh) {
-              skinnedMesh = child
-            }
-          })
-
-          if (skinnedMesh) {
-            this.skeletonHelper = new THREE.SkeletonHelper(skinnedMesh)
-            this.scene.add(this.skeletonHelper)
-          }
         }
       } else if (this.skeletonHelper) {
         this.skeletonHelper.visible = true
@@ -527,15 +549,9 @@ export class SceneModelManager implements ModelManagerInterface {
 
     const directionChanged = this.currentUpDirection !== direction
 
-    if (!this.originalRotation && this.currentModel.rotation) {
-      this.originalRotation = this.currentModel.rotation.clone()
-    }
-
+    this.originalRotation ??= this.currentModel.rotation.clone()
     this.currentUpDirection = direction
-
-    if (this.originalRotation) {
-      this.currentModel.rotation.copy(this.originalRotation)
-    }
+    this.currentModel.rotation.copy(this.originalRotation)
 
     switch (direction) {
       case 'original':

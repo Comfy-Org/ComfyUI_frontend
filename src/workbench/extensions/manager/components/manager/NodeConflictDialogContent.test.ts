@@ -53,11 +53,7 @@ describe('NodeConflictDialogContent', () => {
     const result = render(NodeConflictDialogContent, {
       props,
       global: {
-        plugins: [pinia, i18n],
-        stubs: {
-          ContentDivider: true,
-          Button: { template: '<button><slot /></button>' }
-        }
+        plugins: [pinia, i18n]
       }
     })
     return { ...result, user }
@@ -164,7 +160,7 @@ describe('NodeConflictDialogContent', () => {
 
       const { container } = renderComponent()
 
-      // eslint-disable-next-line testing-library/no-container, testing-library/no-node-access
+      // oxlint-disable-next-line testing-library/no-container, testing-library/no-node-access
       const sections = container.querySelectorAll(
         '.w-full.flex.flex-col.bg-base-background'
       )
@@ -203,7 +199,7 @@ describe('NodeConflictDialogContent', () => {
       expect(expandedContent).toBeInTheDocument()
       expect(expandedContent.textContent).toContain('Test Package 3')
 
-      // eslint-disable-next-line testing-library/no-container, testing-library/no-node-access
+      // oxlint-disable-next-line testing-library/no-container, testing-library/no-node-access
       const chevronIcon = container.querySelector(
         '[data-testid="conflict-dialog-panel-toggle"] i'
       )
@@ -349,7 +345,7 @@ describe('NodeConflictDialogContent', () => {
       for (const header of headers) {
         await user.click(header)
 
-        // eslint-disable-next-line testing-library/no-container, testing-library/no-node-access
+        // oxlint-disable-next-line testing-library/no-container, testing-library/no-node-access
         const scrollableContainer = container.querySelector(
           '[class*="max-h-"][class*="overflow-y-auto"][class*="scrollbar-hide"]'
         )
@@ -365,7 +361,7 @@ describe('NodeConflictDialogContent', () => {
       mockConflictData.value = mockConflictResults
       const { container } = renderComponent()
 
-      // eslint-disable-next-line testing-library/no-container, testing-library/no-node-access
+      // oxlint-disable-next-line testing-library/no-container, testing-library/no-node-access
       const icons = container.querySelectorAll('i[class*="pi-chevron"]')
       expect(icons).toHaveLength(3)
 

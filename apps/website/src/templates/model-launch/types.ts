@@ -1,8 +1,8 @@
 import type { AnchorHTMLAttributes } from 'vue'
 
-import type { getRoutes } from '../../config/routes'
-import type { BillingCycle } from '../../data/pricingPlans'
-import type { LocalizedText, TranslationKey } from '../../i18n/translations'
+import type { getRoutes } from '@/config/routes'
+import type { BillingCycle } from '@/data/pricingPlans'
+import type { LocalizedText, TranslationKey } from '@/i18n/translations'
 
 // Shape of a model-launch landing page (comfy.org/minimax was the first one).
 // To add the next launch page: export one of these from `src/data/<model>.ts`,
@@ -34,6 +34,10 @@ export interface ModelLaunchHero {
   // Still stand-in for the hero frame, for pages announcing a model whose
   // launch footage does not exist yet. Ignored once videoSrc is set.
   placeholderImageSrc?: string
+  // Overlay pages without videoSrc only: spins the extruded Comfy C above the
+  // copy and shows this image through its body. A flat C stands in until
+  // WebGL is ready and for reduced-motion visitors.
+  logoMaskImageSrc?: string
   // Still shown instead of the video below the 768px breakpoint, so phones
   // never fetch videoSrc. Opt-in: pages that omit it keep playing the video
   // at every viewport size, as they did before this field existed.
@@ -57,6 +61,9 @@ export interface ModelLaunchHero {
   // Rendered muted directly after `titleKey`, for the two-tone Figma heading.
   titleRestKey?: TranslationKey
   descriptionKey?: TranslationKey
+  // Shorter copy shown in place of `descriptionKey` below the md breakpoint,
+  // for the media-first and content-first layouts.
+  mobileDescriptionKey?: TranslationKey
   // Optional so a hero can render as title + description + badges only.
   primaryCta?: ModelLaunchCta
   secondaryCta?: ModelLaunchCta
@@ -110,6 +117,24 @@ export interface ModelLaunchAudioCard {
 
 export interface ModelLaunchAudioGallery {
   cards: readonly ModelLaunchAudioCard[]
+}
+
+interface ModelLaunchShowcaseCard {
+  id: string
+  alt: LocalizedText
+  src: string
+}
+
+// A centred heading and subhead over a full-bleed strip of stills. The strip
+// stands still until the pointer is over it, then loops as a marquee. Visitors
+// who prefer reduced motion get a still strip they can scroll by hand. A page
+// stacks one per use case.
+export interface ModelLaunchShowcase {
+  headingKey: TranslationKey
+  descriptionKey?: TranslationKey
+  // Inline text link rendered after the description.
+  cta?: ModelLaunchCta
+  cards: readonly ModelLaunchShowcaseCard[]
 }
 
 interface ModelLaunchPricingBanner {
@@ -183,27 +208,32 @@ export interface ModelLaunchRunOptions {
   ctaKey: TranslationKey
 }
 
+// The yellow promo card. It points at /mcp unless a page names another route
+// to cross-sell. It renders above the testimonials by default; a page that
+// sets `highlight` at the top level instead places it in the body order.
+export interface ModelLaunchHighlight {
+  titleKey: TranslationKey
+  descriptionKey: TranslationKey
+  ctaKey: TranslationKey
+  route?: keyof ReturnType<typeof getRoutes>
+}
+
 export interface ModelLaunchReviews {
   headingKey: TranslationKey
-  // The promo card above the testimonials. It points at /mcp unless a page
-  // names another route to cross-sell.
-  highlight: {
-    titleKey: TranslationKey
-    descriptionKey: TranslationKey
-    ctaKey: TranslationKey
-    route?: keyof ReturnType<typeof getRoutes>
-  }
+  highlight?: ModelLaunchHighlight
 }
 
 // The optional body sections, in the order they render between the hero and the
 // run-options footer. hero/runOptions/reviews are fixed and are not listed here.
 export type ModelLaunchSection =
+  | 'showcases'
   | 'gallery'
   | 'audioGallery'
   | 'steps'
   | 'comparison'
   | 'pricing'
   | 'faq'
+  | 'highlight'
   | 'closingCta'
 
 // The order the video launch pages shipped with; audioGallery slots in beside
@@ -211,10 +241,12 @@ export type ModelLaunchSection =
 // reorders its sections with `sectionOrder` rather than editing the template,
 // so one page's layout never moves another's.
 export const DEFAULT_SECTION_ORDER: readonly ModelLaunchSection[] = [
+  'showcases',
   'gallery',
   'audioGallery',
   'pricing',
   'faq',
+  'highlight',
   'steps',
   'comparison',
   'closingCta'
@@ -225,13 +257,18 @@ export interface ModelLaunchPage {
   metaDescriptionKey: TranslationKey
   breadcrumbLabelKey: TranslationKey
   breadcrumbUpdatedKey: TranslationKey
+  // Puts the updated date on its own row under the crumbs below the md
+  // breakpoint instead of beside them.
+  stackBreadcrumbOnMobile?: boolean
   hero: ModelLaunchHero
+  showcases?: readonly ModelLaunchShowcase[]
   // Absent on announcement pages, which render hero, run options and reviews
   // only until the model ships.
   gallery?: ModelLaunchGallery
   audioGallery?: ModelLaunchAudioGallery
   pricing?: ModelLaunchPricing
   faq?: ModelLaunchFaqSection
+  highlight?: ModelLaunchHighlight
   steps?: ModelLaunchSteps
   comparison?: ModelLaunchComparison
   // Pages that end on a steps CTA row do not need a separate closing CTA.

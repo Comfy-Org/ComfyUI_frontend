@@ -7,9 +7,11 @@
  */
 import type {
   BillingCommands,
+  BillingEventsReader,
   BillingOperationLifecycle,
   BillingOperationPointerStorage,
   BillingOperationTelemetryEvent,
+  BillingScopeSource,
   BillingSession,
   BillingStatusReader,
   CapabilitiesReader,
@@ -23,6 +25,7 @@ import type {
 } from '@comfyorg/account-core/billing'
 import {
   createBillingCommands,
+  createBillingEventsReader,
   createBillingOperationLifecycle,
   createBillingStatusReader,
   createCapabilitiesReader,
@@ -37,6 +40,8 @@ import {
 
 export interface BillingSdkOptions {
   readonly session: BillingSession
+  /** Defaults to the scope the session last minted for. */
+  readonly scopeSource?: BillingScopeSource
   readonly resolveUrl: (route: string) => string
   /** The target the host's session minted for; must match it or every request re-mints. */
   readonly workspaceId: () => string | undefined
@@ -57,6 +62,7 @@ export interface BillingSdk {
   readonly capabilities: CapabilitiesReader
   readonly plans: PlansReader
   readonly paymentMethods: PaymentMethodsReader
+  readonly events: BillingEventsReader
   readonly topup: TopupCommand
   readonly commands: BillingCommands
   readonly driveChallenge: (
@@ -89,12 +95,13 @@ export function createBillingSdk(options: BillingSdkOptions): BillingSdk {
     workspaceId,
     ...(fetchImpl === undefined ? {} : { fetchImpl })
   })
-  const scopeSource = sessionBillingScopeSource(session)
+  const scopeSource = options.scopeSource ?? sessionBillingScopeSource(session)
   const status = createBillingStatusReader({ transport, scopeSource })
   const credits = createCreditsReader({ transport, scopeSource })
   const capabilities = createCapabilitiesReader({ transport, scopeSource })
   const plans = createPlansReader({ transport, scopeSource })
   const paymentMethods = createPaymentMethodsReader({ transport, scopeSource })
+  const events = createBillingEventsReader({ transport, scopeSource })
   const lifecycle = createBillingOperationLifecycle({
     transport,
     scopeSource,
@@ -125,6 +132,7 @@ export function createBillingSdk(options: BillingSdkOptions): BillingSdk {
     capabilities,
     plans,
     paymentMethods,
+    events,
     topup,
     commands,
     driveChallenge: async (operationId) =>
@@ -143,6 +151,7 @@ export function createBillingSdk(options: BillingSdkOptions): BillingSdk {
       capabilities.dispose()
       plans.dispose()
       paymentMethods.dispose()
+      events.dispose()
     }
   }
 }

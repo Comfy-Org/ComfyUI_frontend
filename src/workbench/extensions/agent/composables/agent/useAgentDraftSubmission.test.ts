@@ -5,9 +5,22 @@ import type { EffectScope } from 'vue'
 import type { ComfyWorkflow } from '@/platform/workflow/management/stores/comfyWorkflow'
 import { createMockLoadedWorkflow } from '@/utils/__tests__/litegraphTestUtils'
 
+import type { WorkflowReference } from '../../types/workflowReference'
 import { useAgentComposerStore } from '../../stores/agent/agentComposerStore'
+import type { SubmissionMeta } from './useAgentDraftSubmission'
 import { useAgentDraftSubmission } from './useAgentDraftSubmission'
+import type { SelectedNode } from './useCanvasSelection'
 import { useCanvasSelection } from './useCanvasSelection'
+import type { ComposerAttachment } from '../../types/composerAttachment'
+
+type ComposerStore = ReturnType<typeof useAgentComposerStore>
+type Send = (
+  text: string,
+  attachments: ComposerAttachment[],
+  nodes: SelectedNode[],
+  references: WorkflowReference[],
+  meta: SubmissionMeta
+) => Promise<boolean>
 
 const scopes: EffectScope[] = []
 afterEach(() => {
@@ -61,9 +74,10 @@ function setup() {
       resolveSend = resolve
     })
     const pending = { promise, resolve: resolveSend }
-    const send = vi.fn(() => pending.promise)
+    const send = vi.fn<Send>(() => pending.promise)
     const options = {
       canSubmit: () => canSubmit.value,
+      onSubmit: vi.fn(),
       target: () => target.value,
       editableWorkflowId: () => editableWorkflowId.value,
       selection: {
@@ -71,8 +85,7 @@ function setup() {
         workflow: () => nodeWorkflow.value,
         exit: () => {}
       },
-      send,
-      stop: vi.fn(async () => {})
+      send
     }
     let submission = useAgentDraftSubmission(options)
     let mountedScope = scope
@@ -125,7 +138,12 @@ describe('Agent draft submission', () => {
       'Compare these',
       original.attachments,
       original.nodes,
-      original.references
+      original.references,
+      {
+        clientMessageId: expect.any(String),
+        inputMethod: 'typed',
+        starterPrompt: null
+      }
     )
     composer.setText('Next prompt')
     pending.resolve(true)
@@ -177,6 +195,37 @@ describe('Agent draft submission', () => {
     expect(revoke).not.toHaveBeenCalled()
   })
 
+  it('retains media through a pending send and failed recovery, releasing it on success', async () => {
+    const { composer, submit, send, pending } = setup()
+    const revoke = vi.spyOn(URL, 'revokeObjectURL')
+    composer.addAttachment({
+      id: 'video',
+      name: 'clip.mp4',
+      ref: 'clip.mp4',
+      mediaKind: 'video',
+      mediaUrl: 'blob:video'
+    })
+    composer.referenceAttachment('video')
+    const sending = submit()
+    composer.releaseUnusedAssets()
+    expect(revoke).not.toHaveBeenCalled()
+    pending.resolve(false)
+    await sending
+    await nextTick()
+    expect(composer.attachments).toContainEqual({
+      id: 'video',
+      name: 'clip.mp4',
+      ref: 'clip.mp4',
+      mediaKind: 'video',
+      mediaUrl: 'blob:video'
+    })
+    expect(revoke).not.toHaveBeenCalled()
+    send.mockResolvedValue(true)
+    await submit()
+    expect(composer.attachments).toEqual([])
+    expect(revoke.mock.calls).toEqual([['blob:cat'], ['blob:video']])
+  })
+
   it('does not recover over an edit that was subsequently cleared', async () => {
     const { composer, selection, submit, pending } = setup()
     const sending = submit()
@@ -189,6 +238,42 @@ describe('Agent draft submission', () => {
     expect(composer.attachments).toEqual([])
     expect(composer.workflowReferences).toEqual([])
     expect(selection.staged.value).toEqual([])
+  })
+
+  it('restores repeated mentions and unmentioned assets with their original inline positions after failure', async () => {
+    const { composer, submit, send } = setup()
+    composer.referenceAttachment('upload-1')
+    composer.referenceAttachment('upload-1')
+    composer.addAttachment({
+      id: 'upload-2',
+      name: 'background.png',
+      ref: 'background.png'
+    })
+    const prompt = composer.prompt
+    const attachments = [...composer.attachments]
+    send.mockResolvedValue(false)
+
+    await submit()
+
+    expect(composer.prompt).toEqual(prompt)
+    expect(composer.attachments).toEqual(attachments)
+    expect(
+      composer.prompt.references.filter((item) => item.kind === 'asset')
+    ).toHaveLength(2)
+  })
+
+  it('keeps a newer tray attachment instead of restoring a failed submission', async () => {
+    const { composer, submit, pending } = setup()
+    const sending = submit()
+    composer.addAttachment({ id: 'new', name: 'new.png', ref: 'new.png' })
+    pending.resolve(false)
+
+    await sending
+
+    expect(composer.prompt).toEqual({ text: '', references: [] })
+    expect(composer.attachments).toEqual([
+      { id: 'new', name: 'new.png', ref: 'new.png' }
+    ])
   })
 
   it.for(['pending', 'failed'])(
@@ -316,9 +401,106 @@ describe('Agent draft submission', () => {
       'Compare these',
       original.attachments,
       [],
-      original.references
+      original.references,
+      {
+        clientMessageId: expect.any(String),
+        inputMethod: 'typed',
+        starterPrompt: null
+      }
     )
     expect(composer.draft).toBe(original.draft)
     expect(selection.staged.value).toEqual([])
+  })
+
+  it('gives each send attempt its own client message id', async () => {
+    const { composer, submit, send } = setup()
+    send.mockResolvedValue(true)
+
+    await submit()
+    composer.setText('and again')
+    await submit()
+
+    const [first, second] = send.mock.calls.map((call) => call[4])
+    expect(first.clientMessageId).toEqual(expect.any(String))
+    expect(second.clientMessageId).not.toBe(first.clientMessageId)
+  })
+
+  it.for([
+    {
+      origin: 'suggestion',
+      mark: (store: ComposerStore) => store.markSuggestedPrompt()
+    },
+    {
+      origin: 'edited',
+      mark: (store: ComposerStore) =>
+        store.replacePrompt({ text: 'Compare these', workflowReferences: [] })
+    }
+  ])('reports the $origin the draft came from', async ({ origin, mark }) => {
+    const { composer, submit, send } = setup()
+    send.mockResolvedValue(true)
+    mark(composer)
+
+    await submit()
+
+    expect(send.mock.calls[0][4]).toEqual({
+      clientMessageId: expect.any(String),
+      inputMethod: origin,
+      starterPrompt: null
+    })
+  })
+
+  it('carries the starter prompt a suggestion came from into the send', async () => {
+    const { composer, submit, send } = setup()
+    send.mockResolvedValue(true)
+    composer.markSuggestedPrompt({ id: 'slot_2', clickId: 'click-1' })
+
+    await submit()
+
+    expect(send.mock.calls[0][4]).toEqual({
+      clientMessageId: expect.any(String),
+      inputMethod: 'suggestion',
+      starterPrompt: { id: 'slot_2', clickId: 'click-1' }
+    })
+  })
+
+  it('does not carry it into the next send', async () => {
+    const { composer, submit, send } = setup()
+    send.mockResolvedValue(true)
+    composer.markSuggestedPrompt({ id: 'slot_2', clickId: 'click-1' })
+
+    await submit()
+    composer.setText('and again')
+    await submit()
+
+    expect(send.mock.calls[1][4]).toEqual({
+      clientMessageId: expect.any(String),
+      inputMethod: 'typed',
+      starterPrompt: null
+    })
+  })
+
+  it('reports retries as separate attempts joined to the same starter click', async () => {
+    const { composer, submit, send } = setup()
+    send.mockResolvedValue(false)
+    composer.markSuggestedPrompt({ id: 'slot_3', clickId: 'click-2' })
+
+    await submit()
+    await submit()
+
+    expect(send.mock.calls.map((call) => call[4])).toEqual([
+      {
+        clientMessageId: expect.any(String),
+        inputMethod: 'suggestion',
+        starterPrompt: { id: 'slot_3', clickId: 'click-2' }
+      },
+      {
+        clientMessageId: expect.any(String),
+        inputMethod: 'suggestion',
+        starterPrompt: { id: 'slot_3', clickId: 'click-2' }
+      }
+    ])
+    expect(send.mock.calls[1][4].clientMessageId).not.toBe(
+      send.mock.calls[0][4].clientMessageId
+    )
   })
 })

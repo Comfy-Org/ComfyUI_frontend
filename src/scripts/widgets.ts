@@ -6,7 +6,7 @@ import type {
   IComboWidget,
   IStringWidget
 } from '@/lib/litegraph/src/types/widgets'
-import { nextValueForLinkedTarget } from './valueControl'
+import { isValueControlMode, nextValueForLinkedTarget } from './valueControl'
 import { useSettingStore } from '@/platform/settings/settingStore'
 import { dynamicWidgets } from '@/core/graph/widgets/dynamicWidgets'
 import { useBooleanWidget } from '@/renderer/extensions/vueNodes/widgets/composables/useBooleanWidget'
@@ -19,6 +19,7 @@ import { useCompositorWidget } from '@/renderer/extensions/vueNodes/widgets/comp
 import { useFloatWidget } from '@/renderer/extensions/vueNodes/widgets/composables/useFloatWidget'
 import { useGalleriaWidget } from '@/renderer/extensions/vueNodes/widgets/composables/useGalleriaWidget'
 import { useBoundingBoxesWidget } from '@/renderer/extensions/vueNodes/widgets/composables/useBoundingBoxesWidget'
+import { useLightInfoWidget } from '@/renderer/extensions/vueNodes/widgets/composables/useLightInfoWidget'
 import { useColorsWidget } from '@/renderer/extensions/vueNodes/widgets/composables/useColorsWidget'
 import { useImageCompareWidget } from '@/renderer/extensions/vueNodes/widgets/composables/useImageCompareWidget'
 import { useImageUploadWidget } from '@/renderer/extensions/vueNodes/widgets/composables/useImageUploadWidget'
@@ -33,6 +34,7 @@ import { useVideoEditWidget } from '@/renderer/extensions/vueNodes/widgets/compo
 import { transformInputSpecV1ToV2 } from '@/schemas/nodeDef/migration'
 import type { InputSpec as InputSpecV2 } from '@/schemas/nodeDef/nodeDefSchemaV2'
 import type { InputSpec } from '@/schemas/nodeDefSchema'
+import { CONTROL_OPTIONS } from '@/types/simplifiedWidget'
 
 import type { ComfyApp } from './app'
 import { IS_CONTROL_WIDGET } from './controlWidgetMarker'
@@ -100,6 +102,16 @@ export function updateControlWidgetLabel(widget: IBaseWidget) {
 
 const HAS_EXECUTED = Symbol()
 
+/**
+ * `control_after_generate` is either a group-node widget name override or a
+ * control mode that core's `io.ControlAfterGenerate` enum serialises into
+ * `object_info`. Only a non-blank string that is not a mode is a name.
+ */
+function controlAfterGenerateNameOverride(value: unknown): string | undefined {
+  if (typeof value !== 'string' || value.trim() === '') return undefined
+  return isValueControlMode(value) ? undefined : value
+}
+
 export function addValueControlWidget(
   node: LGraphNode,
   targetWidget: IBaseWidget,
@@ -108,9 +120,9 @@ export function addValueControlWidget(
   widgetName?: string,
   inputData?: InputSpec
 ): IComboWidget {
-  const controlAfterGenerate = inputData?.[1]?.control_after_generate
   const name =
-    typeof controlAfterGenerate === 'string' ? controlAfterGenerate : widgetName
+    controlAfterGenerateNameOverride(inputData?.[1]?.control_after_generate) ??
+    widgetName
   const widgets = addValueControlWidgets(
     node,
     targetWidget,
@@ -137,22 +149,33 @@ export function addValueControlWidgets(
   options: ValueControlWidgetOptions = {},
   inputData?: InputSpec
 ): [IComboWidget, ...IStringWidget[]] {
-  if (!defaultValue) defaultValue = 'randomize'
+  // `useIntWidget` forwards a group-node name override here as the mode.
+  const specNameOverride = controlAfterGenerateNameOverride(
+    inputData?.[1]?.control_after_generate
+  )
+  if (!defaultValue || defaultValue === specNameOverride) {
+    defaultValue = 'randomize'
+  }
 
   const getName = (
-    defaultName: string,
+    defaultName: 'control_after_generate' | 'control_filter_list',
     optionName: 'controlAfterGenerateName' | 'controlFilterListName'
   ) => {
-    let name = defaultName
     const nameOverride = options[optionName]
-    if (nameOverride) {
-      name = nameOverride
-    } else if (typeof inputData?.[1]?.[defaultName] === 'string') {
-      name = inputData?.[1]?.[defaultName]
-    } else if (inputData?.[1]?.control_prefix) {
-      name = inputData?.[1]?.control_prefix + ' ' + name
+    if (nameOverride) return nameOverride
+    const inputOptions = inputData?.[1]
+    const specValue = inputOptions?.[defaultName]
+    const defaultNameOverride =
+      defaultName === 'control_after_generate'
+        ? controlAfterGenerateNameOverride(specValue)
+        : typeof specValue === 'string'
+          ? specValue
+          : undefined
+    if (defaultNameOverride !== undefined) return defaultNameOverride
+    if (inputOptions?.control_prefix) {
+      return inputOptions.control_prefix + ' ' + defaultName
     }
-    return name
+    return defaultName
   }
 
   const valueControl = node.addWidget(
@@ -161,7 +184,7 @@ export function addValueControlWidgets(
     defaultValue,
     function () {},
     {
-      values: ['fixed', 'increment', 'decrement', 'randomize'],
+      values: [...CONTROL_OPTIONS],
       serialize: false, // Don't include this in prompt.
       surfaces: { canvas: 'shown', vueNode: 'never', panel: 'never' }
     }
@@ -178,9 +201,9 @@ export function addValueControlWidgets(
 
   const isCombo = isComboWidget(targetWidget)
   let comboFilter: IStringWidget
-  if (isCombo && valueControl.options.values) {
-    // @ts-expect-error Combo widget values may be a dictionary or legacy function type
-    valueControl.options.values.push('increment-wrap')
+  if (isCombo) {
+    const values = valueControl.options.values
+    if (Array.isArray(values)) values.push('increment-wrap')
   }
   if (isCombo && options.addFilterList !== false) {
     comboFilter = node.addWidget(
@@ -204,7 +227,7 @@ export function addValueControlWidgets(
 
   function applyWidgetControl() {
     if (
-      node.inputs?.some(
+      node.inputs.some(
         (input, index) =>
           input.widget?.name === targetWidget.name &&
           node.isInputConnected(index)
@@ -265,6 +288,7 @@ export const ComfyWidgets = {
     useResolutionPreviewWidget()
   ),
   BOUNDING_BOXES: transformWidgetConstructorV2ToV1(useBoundingBoxesWidget()),
+  LIGHT_INFO_PREVIEW: transformWidgetConstructorV2ToV1(useLightInfoWidget()),
   COLORS: transformWidgetConstructorV2ToV1(useColorsWidget()),
   ...dynamicWidgets
 } as const
@@ -272,5 +296,5 @@ export const ComfyWidgets = {
 export function isValidWidgetType(
   key: unknown
 ): key is keyof typeof ComfyWidgets {
-  return ComfyWidgets[key as keyof typeof ComfyWidgets] !== undefined
+  return typeof key === 'string' && Object.hasOwn(ComfyWidgets, key)
 }

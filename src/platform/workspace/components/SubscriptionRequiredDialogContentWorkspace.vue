@@ -103,6 +103,10 @@
       :reconciliation-operation-id
       :quote-is-current
       :is-applying-promotion-code
+      :payment-cancelable
+      :canceling-payment="isCancelingPayment"
+      :cancel-payment-error
+      @cancel-payment="cancelPayment"
       @confirm="handleConfirmTransition"
       @apply-promotion-code="applyPromotionCode"
       @invalidate-quote="invalidateQuote"
@@ -136,11 +140,13 @@ import SubscriptionTransitionPreviewWorkspace from './SubscriptionTransitionPrev
 const {
   onClose,
   reason,
+  paymentIntentSource,
   isPersonal = false,
   initialCheckout
 } = defineProps<{
   onClose: () => void
   reason?: PaymentIntentSource
+  paymentIntentSource: PaymentIntentSource | undefined
   isPersonal?: boolean
   initialCheckout?: SubscriptionCheckoutSelection
 }>()
@@ -167,6 +173,10 @@ const {
   reconciliationOperationId,
   parkedCheckoutRecovery,
   isPolling,
+  paymentCancelable,
+  isCancelingPayment,
+  cancelPaymentError,
+  cancelPayment,
   handleSubscribeClick,
   handleBackToPricing,
   handleAddCreditCard,
@@ -175,7 +185,7 @@ const {
   invalidateQuote,
   handleResubscribe,
   handleSuccessClose
-} = useSubscriptionCheckout(emit, reason, {
+} = useSubscriptionCheckout(emit, paymentIntentSource, {
   tierPlanType: isPersonal ? 'personal' : 'team'
 })
 

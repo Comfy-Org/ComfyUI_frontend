@@ -1,53 +1,25 @@
 import { describe, expect, it } from 'vitest'
 
-import { brandIdentity, identityBrand, isAccountIdentity } from './identity.js'
+import { EXCHANGE_URL, memoryStorage } from './__fixtures__/sessionFakes.js'
+import type { AccountIdentity } from './identity.js'
+import { brandIdentity, identityBrand } from './identity.js'
+import { createSessionClient } from './session.js'
 
-describe('isAccountIdentity', () => {
-  it('accepts a port branded through the package entry', () => {
-    const identity = brandIdentity({ onUserChanged: () => () => undefined })
+describe('identity brand', () => {
+  it('an unbranded port is a compile error and brandIdentity stamps the brand without mutating its input', () => {
+    const port = { onUserChanged: () => () => undefined }
+    // @ts-expect-error an unbranded port is not an AccountIdentity
+    const unbranded: AccountIdentity = port
+    const branded: AccountIdentity = brandIdentity(port)
+    const client = createSessionClient(
+      { exchangeUrl: EXCHANGE_URL, storage: memoryStorage() },
+      // @ts-expect-error createSessionClient takes only a branded identity
+      port
+    )
+    client.dispose()
 
-    expect(
-      isAccountIdentity(identity),
-      'a port branded by the package must satisfy the full contract'
-    ).toBe(true)
-  })
-
-  it('rejects a forged brand key whose value is not the literal true', () => {
-    const forged = {
-      onUserChanged: () => () => undefined,
-      [identityBrand]: false
-    }
-
-    expect(
-      isAccountIdentity(forged),
-      'the brand must hold the literal true, not merely be present as a key'
-    ).toBe(false)
-  })
-
-  it('rejects a branded object missing the onUserChanged method', () => {
-    const brandOnly = { [identityBrand]: true }
-
-    expect(
-      isAccountIdentity(brandOnly),
-      'the guard promises onUserChanged, so a branded object without it must fail'
-    ).toBe(false)
-  })
-
-  it('rejects a branded object whose onUserChanged is not callable', () => {
-    const wrongMethod = {
-      onUserChanged: 'not a function',
-      [identityBrand]: true
-    }
-
-    expect(
-      isAccountIdentity(wrongMethod),
-      'onUserChanged must be a function for the guard to claim the contract'
-    ).toBe(false)
-  })
-
-  it('rejects non-object values', () => {
-    expect(isAccountIdentity(null)).toBe(false)
-    expect(isAccountIdentity(undefined)).toBe(false)
-    expect(isAccountIdentity('branded')).toBe(false)
+    expect(branded[identityBrand]).toBe(true)
+    expect(branded.onUserChanged).toBe(port.onUserChanged)
+    expect(identityBrand in unbranded).toBe(false)
   })
 })

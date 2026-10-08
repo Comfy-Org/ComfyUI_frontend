@@ -5,7 +5,7 @@ import { beforeEach, describe, expect, it, vi } from 'vitest'
 
 import type { ComboWidgetInventoryStatus } from '@/core/graph/widgets/comboWidgetInventory'
 import { registerComboWidgetInventory } from '@/core/graph/widgets/comboWidgetInventory'
-import type { INodeInputSlot } from '@/lib/litegraph/src/interfaces'
+import type { INodeInputSlot } from '@/lib/litegraph/src/types/slots'
 import type { LGraph } from '@/lib/litegraph/src/LGraph'
 import type { LGraphNode } from '@/lib/litegraph/src/LGraphNode'
 import type {
@@ -1743,10 +1743,7 @@ const { mockUpdateModelsForNodeType, mockGetAssets } = vi.hoisted(() => ({
   mockGetAssets: vi.fn().mockReturnValue([])
 }))
 
-vi.mock(import('@/i18n'), () => ({
-  t: (key: string) => key,
-  st: (_key: string, fallback: string) => fallback
-}))
+vi.mock(import('@/i18n'))
 
 function makeAssetCandidate(
   name: string,

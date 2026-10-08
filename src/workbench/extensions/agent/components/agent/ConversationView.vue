@@ -1,6 +1,10 @@
 <script setup lang="ts">
-import { useIntersectionObserver } from '@vueuse/core'
-import { computed, nextTick, ref, watch } from 'vue'
+import {
+  useEventListener,
+  useIntersectionObserver,
+  useResizeObserver
+} from '@vueuse/core'
+import { computed, nextTick, onBeforeUnmount, ref, watch } from 'vue'
 import { useI18n } from 'vue-i18n'
 
 import Button from '@/components/ui/button/Button.vue'
@@ -22,11 +26,13 @@ import UserMessage from './message/UserMessage.vue'
 
 const {
   entries,
+  conversationId,
   paywallPresentation = DEFAULT_AGENT_PAYWALL_PRESENTATION,
   editableTurnId = null,
   answeringAskIds = new Set<string>()
 } = defineProps<{
   entries: ConversationEntry[]
+  conversationId?: string | null
   paywallPresentation?: AgentPaywallPresentation
   editableTurnId?: TurnId | null
   answeringAskIds?: ReadonlySet<string>
@@ -35,19 +41,22 @@ const emit = defineEmits<{
   feedback: [turnId: string, vote: 'up' | 'down' | null]
   editPrompt: [prompt: PromptSnapshot]
   answerAsk: [askId: string, selection: 'run' | 'cancel']
-  openWorkflow: [workflowId: string, workflowName?: string]
+  openWorkflow: [askId: string, workflowId: string, workflowName?: string]
+  approvalShown: [askId: string, turnId: string, workflowId: string | null]
   openReferenceWorkflow: [workflowId: string, workflowName: string]
   paywallAction: [action: AgentPaywallAction]
 }>()
 
 const { t } = useI18n()
 
-const bottom = ref<HTMLElement>()
+const scrollContainer = ref<HTMLElement>()
+const content = ref<HTMLElement>()
+const shouldFollowLatest = ref(true)
 const atBottom = ref(true)
-
-useIntersectionObserver(bottom, ([entry]) => {
-  atBottom.value = entry?.isIntersecting ?? true
-})
+const bottomGracePx = 16
+const followIntentTolerancePx = 1
+let pendingProgrammaticScroll: { target: number; frame: number } | undefined
+let pendingConversationId: string | undefined
 
 const top = ref<HTMLElement>()
 const atTop = ref(true)
@@ -56,31 +65,140 @@ useIntersectionObserver(top, ([entry]) => {
   atTop.value = entry?.isIntersecting ?? true
 })
 
-function scrollToLatest(): void {
-  bottom.value?.scrollIntoView({ block: 'end' })
+function clearPendingProgrammaticScroll(): void {
+  if (pendingProgrammaticScroll)
+    cancelAnimationFrame(pendingProgrammaticScroll.frame)
+  pendingProgrammaticScroll = undefined
 }
+
+useEventListener(scrollContainer, 'pointerdown', clearPendingProgrammaticScroll)
+useEventListener(scrollContainer, 'keydown', clearPendingProgrammaticScroll)
+useEventListener(scrollContainer, 'wheel', clearPendingProgrammaticScroll, {
+  passive: true
+})
+useEventListener(
+  scrollContainer,
+  'touchstart',
+  clearPendingProgrammaticScroll,
+  {
+    passive: true
+  }
+)
+
+onBeforeUnmount(clearPendingProgrammaticScroll)
+
+function scrollToLatest(): void {
+  const element = scrollContainer.value
+  if (!element) return
+  shouldFollowLatest.value = true
+  atBottom.value = true
+  const target = Math.max(0, element.scrollHeight - element.clientHeight)
+  clearPendingProgrammaticScroll()
+  const willMove =
+    element.scrollHeight > element.clientHeight &&
+    Math.abs(element.scrollTop - target) > bottomGracePx
+  if (willMove) {
+    pendingProgrammaticScroll = {
+      target,
+      frame: requestAnimationFrame(clearPendingProgrammaticScroll)
+    }
+  }
+  if (typeof element.scrollTo === 'function') {
+    element.scrollTo({ top: target, behavior: 'instant' })
+  } else {
+    element.scrollTop = target
+  }
+}
+
+useEventListener(scrollContainer, 'scroll', () => {
+  const element = scrollContainer.value
+  if (!element) return
+  atBottom.value =
+    element.scrollHeight - element.scrollTop - element.clientHeight <=
+    bottomGracePx
+  if (
+    pendingProgrammaticScroll &&
+    Math.abs(element.scrollTop - pendingProgrammaticScroll.target) <=
+      bottomGracePx
+  ) {
+    clearPendingProgrammaticScroll()
+    return
+  }
+  shouldFollowLatest.value =
+    element.scrollHeight - element.scrollTop - element.clientHeight <=
+    followIntentTolerancePx
+  clearPendingProgrammaticScroll()
+})
+
+function followLatestAfterResize(): void {
+  const element = scrollContainer.value
+  if (!element || element.clientHeight === 0) return
+  atBottom.value =
+    element.scrollHeight - element.scrollTop - element.clientHeight <=
+    bottomGracePx
+  if (shouldFollowLatest.value) scrollToLatest()
+}
+
+useResizeObserver(content, followLatestAfterResize)
+useResizeObserver(scrollContainer, followLatestAfterResize)
 
 const latestContentSignal = computed(() => {
   const last = entries.at(-1)
-  if (!last) return '0'
-  const size = 'parts' in last ? JSON.stringify(last.parts).length : 0
-  return `${entries.length}:${size}`
+  if (!last || !('parts' in last)) return `${entries.length}`
+  const tail = last.parts.at(-1)
+  const tailText = tail && 'text' in tail ? tail.text.length : 0
+  const settled = last.parts.filter(
+    (part) => 'state' in part && part.state === 'done'
+  ).length
+  return `${entries.length}:${last.streaming}:${last.parts.length}:${settled}:${tailText}`
 })
+
+watch(
+  () => conversationId,
+  (current, previous) => {
+    if (current == null || previous == null) return
+    pendingConversationId = current
+    shouldFollowLatest.value = true
+  }
+)
+
+watch(
+  () => entries,
+  async () => {
+    if (entries.length === 0) {
+      pendingConversationId = undefined
+      shouldFollowLatest.value = true
+      return
+    }
+    if (
+      pendingConversationId === undefined ||
+      pendingConversationId !== conversationId
+    )
+      return
+    pendingConversationId = undefined
+    shouldFollowLatest.value = true
+    await nextTick()
+    scrollToLatest()
+  }
+)
 
 watch(
   latestContentSignal,
   async () => {
-    if (!atBottom.value) return
+    if (!shouldFollowLatest.value) return
     await nextTick()
+    if (!shouldFollowLatest.value) return
     scrollToLatest()
   },
-  { flush: 'post' }
+  { flush: 'post', immediate: true }
 )
 </script>
 
 <template>
-  <div class="relative h-full">
+  <div data-testid="agent-conversation" class="relative h-full">
     <div
+      ref="scrollContainer"
+      data-testid="agent-conversation-scroll"
       :class="
         cn(
           'h-full overflow-y-auto',
@@ -90,7 +208,7 @@ watch(
       "
     >
       <div ref="top" />
-      <div class="mx-auto max-w-[640px] p-4">
+      <div ref="content" class="mx-auto max-w-[640px] p-4">
         <div class="flex flex-col gap-4">
           <template v-for="entry in entries" :key="`${entry.role}-${entry.id}`">
             <UserMessage
@@ -116,20 +234,23 @@ watch(
                 (askId: string, selection: 'run' | 'cancel') =>
                   emit('answerAsk', askId, selection)
               "
+              @approval-shown="
+                (askId, turnId, workflowId) =>
+                  emit('approvalShown', askId, turnId, workflowId)
+              "
               @open-workflow="
-                (workflowId: string, workflowName?: string) =>
-                  emit('openWorkflow', workflowId, workflowName)
+                (askId: string, workflowId: string, workflowName?: string) =>
+                  emit('openWorkflow', askId, workflowId, workflowName)
               "
               @paywall-action="emit('paywallAction', $event)"
             />
           </template>
-          <div ref="bottom" />
         </div>
       </div>
     </div>
 
     <Button
-      v-if="!atBottom"
+      v-if="!shouldFollowLatest"
       v-tooltip.top="buildTooltipConfig(t('agent.latest'))"
       type="button"
       variant="secondary"

@@ -4,7 +4,7 @@ const mockWriteText = vi.fn()
 const mockToastAdd = vi.fn()
 
 vi.mock<unknown>(
-  import('primevue/usetoast'), // eslint-disable-line primevue-removal/no-imports
+  import('primevue/usetoast'), // oxlint-disable-line comfy/no-primevue-imports
 
   () => ({
     useToast: vi.fn(() => ({
@@ -13,9 +13,7 @@ vi.mock<unknown>(
   })
 )
 
-vi.mock(import('@/i18n'), () => ({
-  t: (key: string) => key
-}))
+vi.mock(import('@/i18n'))
 
 import { useCopyToClipboard } from '@/composables/useCopyToClipboard'
 
@@ -31,7 +29,9 @@ describe('useCopyToClipboard', () => {
     mockWriteText.mockResolvedValue(undefined)
 
     const { copyToClipboard } = useCopyToClipboard()
-    await copyToClipboard('hello')
+    const copied = await copyToClipboard('hello')
+
+    expect(copied).toBe(true)
 
     expect(mockWriteText).toHaveBeenCalledWith('hello')
     expect(mockToastAdd).toHaveBeenCalledWith(
@@ -39,12 +39,24 @@ describe('useCopyToClipboard', () => {
     )
   })
 
+  it('reports success without a toast when the caller shows its own', async () => {
+    mockWriteText.mockResolvedValue(undefined)
+
+    const { copyToClipboard } = useCopyToClipboard()
+    const copied = await copyToClipboard('hello', { toastOnSuccess: false })
+
+    expect(copied).toBe(true)
+    expect(mockToastAdd).not.toHaveBeenCalled()
+  })
+
   it('falls back to legacy when modern clipboard fails', async () => {
     mockWriteText.mockRejectedValue(new Error('Not allowed'))
     document.execCommand = vi.fn(() => true)
 
     const { copyToClipboard } = useCopyToClipboard()
-    await copyToClipboard('hello')
+    const copied = await copyToClipboard('hello')
+
+    expect(copied).toBe(true)
 
     expect(document.execCommand).toHaveBeenCalledWith('copy')
     expect(mockToastAdd).toHaveBeenCalledWith(
@@ -57,7 +69,9 @@ describe('useCopyToClipboard', () => {
     document.execCommand = vi.fn(() => false)
 
     const { copyToClipboard } = useCopyToClipboard()
-    await copyToClipboard('hello')
+    const copied = await copyToClipboard('hello')
+
+    expect(copied).toBe(false)
 
     expect(mockToastAdd).toHaveBeenCalledWith(
       expect.objectContaining({ severity: 'error' })
@@ -72,7 +86,9 @@ describe('useCopyToClipboard', () => {
     document.execCommand = vi.fn(() => true)
 
     const { copyToClipboard } = useCopyToClipboard()
-    await copyToClipboard('hello')
+    const copied = await copyToClipboard('hello')
+
+    expect(copied).toBe(true)
 
     expect(mockWriteText).not.toHaveBeenCalled()
     expect(document.execCommand).toHaveBeenCalledWith('copy')

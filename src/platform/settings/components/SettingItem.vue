@@ -6,28 +6,33 @@
     @update:form-value="updateSettingValue"
   >
     <template #name-prefix>
-      <Tag v-if="setting.id === 'Comfy.Locale'" class="pi pi-language" />
-      <Tag
+      <Badge
+        v-if="setting.id === 'Comfy.Locale'"
+        severity="primary"
+        class="pi pi-language"
+      />
+      <Badge
         v-if="setting.experimental"
         v-tooltip="{
           value: $t('g.experimental'),
           showDelay: 600
         }"
+        severity="primary"
       >
         <template #icon>
           <i-material-symbols:experiment-outline />
         </template>
-      </Tag>
+      </Badge>
     </template>
   </FormItem>
 </template>
 
 <script setup lang="ts">
-import Tag from 'primevue/tag'
 import { computed } from 'vue'
 import { useI18n } from 'vue-i18n'
 
 import FormItem from '@/components/common/FormItem.vue'
+import Badge from '@/components/ui/badge/Badge.vue'
 import { st } from '@/i18n'
 import { useSettingStore } from '@/platform/settings/settingStore'
 import type {
@@ -43,11 +48,13 @@ const props = defineProps<{
 
 const { t } = useI18n()
 
-function translateOptions(options: (SettingOption | string)[]) {
+function translateOptions(
+  options:
+    | (SettingOption | string)[]
+    | ((value: unknown) => (SettingOption | string)[])
+) {
   if (typeof options === 'function') {
-    // @ts-expect-error: Audit and deprecate usage of legacy options type:
-    // (value) => [string | {text: string, value: string}]
-    return translateOptions(options(props.setting.value ?? ''))
+    return translateOptions(options(settingValue.value))
   }
 
   return options.map((option) => {

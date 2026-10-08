@@ -1,29 +1,16 @@
-import { beforeEach, describe, expect, it, vi } from 'vitest'
+import { respondToFetch } from '@comfyorg/test-utils/fetch'
+import { describe, expect, it, vi } from 'vitest'
 
-import type {
-  HostedTopupCheckoutResult,
-  TopupCommand
-} from '@comfyorg/account-core/billing'
+import type { HostedTopupCheckoutResult } from '@comfyorg/account-core/billing'
 
+import { workshopTopupCommand } from '@/config/workshop-billing-sdk'
+import { WORKSHOP_CLOUD_BASE_URL } from '@/config/workshop-env'
+import { readBillingSdkTopupEnabled } from '@/config/workshop-features'
 import { TopUpCheckoutError } from './buy-credits'
 import { createWorkshopTopUpCheckout } from './buy-credits-sdk'
 
-const sdk = vi.hoisted(() => ({
-  createHostedTopupCheckout: vi.fn<TopupCommand['createHostedTopupCheckout']>(),
-  createTopupCheckout: vi.fn<TopupCommand['createTopupCheckout']>(),
-  readFlag: vi.fn<() => Promise<boolean>>()
-}))
-
-vi.mock(import('../../config/workshop-billing-sdk'), () => ({
-  workshopTopupCommand: (): TopupCommand => ({
-    createHostedTopupCheckout: sdk.createHostedTopupCheckout,
-    createTopupCheckout: sdk.createTopupCheckout
-  })
-}))
-
-vi.mock(import('../../config/workshop-features'), () => ({
-  readBillingSdkTopupEnabled: sdk.readFlag
-}))
+vi.mock(import('@/config/workshop-billing-sdk'))
+vi.mock(import('@/config/workshop-features'))
 
 const options = {
   token: 'fresh-token',
@@ -37,36 +24,34 @@ const legacySession = {
 }
 
 function stubLegacyCheckout() {
-  const fetchCheckout = vi
-    .fn<typeof fetch>()
-    .mockImplementation(() =>
-      Promise.resolve(new Response(JSON.stringify(legacySession)))
-    )
-  vi.stubGlobal('fetch', fetchCheckout)
-  return fetchCheckout
+  respondToFetch(
+    {
+      method: 'POST',
+      url: `${WORKSHOP_CLOUD_BASE_URL}/api/billing/topup/checkout`
+    },
+    () => Response.json(legacySession)
+  )
 }
 
 describe('createWorkshopTopUpCheckout', () => {
-  beforeEach(() => {
-    sdk.createHostedTopupCheckout.mockReset()
-    sdk.readFlag.mockReset().mockResolvedValue(false)
-  })
-
   it('uses the site request while the flag is off', async () => {
-    const fetchCheckout = stubLegacyCheckout()
+    stubLegacyCheckout()
 
     await expect(createWorkshopTopUpCheckout(options)).resolves.toEqual({
       url: legacySession.checkout_url,
       sessionId: legacySession.session_id
     })
-    expect(fetchCheckout).toHaveBeenCalledOnce()
-    expect(sdk.createHostedTopupCheckout).not.toHaveBeenCalled()
+    expect(fetch).toHaveBeenCalledOnce()
+    expect(
+      vi.mocked(workshopTopupCommand().createHostedTopupCheckout)
+    ).not.toHaveBeenCalled()
   })
 
   it('opens the SDK session while the flag is on', async () => {
-    const fetchCheckout = stubLegacyCheckout()
-    sdk.readFlag.mockResolvedValue(true)
-    sdk.createHostedTopupCheckout.mockResolvedValue({
+    vi.mocked(readBillingSdkTopupEnabled).mockResolvedValue(true)
+    vi.mocked(
+      workshopTopupCommand().createHostedTopupCheckout
+    ).mockResolvedValue({
       status: 'ok',
       url: 'https://checkout.comfy.org/c/sdk',
       sessionId: 'cs_sdk',
@@ -77,8 +62,10 @@ describe('createWorkshopTopUpCheckout', () => {
       url: 'https://checkout.comfy.org/c/sdk',
       sessionId: 'cs_sdk'
     })
-    expect(fetchCheckout).not.toHaveBeenCalled()
-    expect(sdk.createHostedTopupCheckout).toHaveBeenCalledWith({
+    expect(fetch).not.toHaveBeenCalled()
+    expect(
+      vi.mocked(workshopTopupCommand().createHostedTopupCheckout)
+    ).toHaveBeenCalledWith({
       amountCents: 5_000,
       returnUrl: new URL(
         '/checkout-return?workshopTopUpReturn=attempt-1',
@@ -88,9 +75,11 @@ describe('createWorkshopTopUpCheckout', () => {
   })
 
   it('falls back to the site request when the SDK route is not deployed', async () => {
-    const fetchCheckout = stubLegacyCheckout()
-    sdk.readFlag.mockResolvedValue(true)
-    sdk.createHostedTopupCheckout.mockResolvedValue({
+    stubLegacyCheckout()
+    vi.mocked(readBillingSdkTopupEnabled).mockResolvedValue(true)
+    vi.mocked(
+      workshopTopupCommand().createHostedTopupCheckout
+    ).mockResolvedValue({
       status: 'error',
       code: 'NOT_AVAILABLE'
     })
@@ -99,7 +88,7 @@ describe('createWorkshopTopUpCheckout', () => {
       url: legacySession.checkout_url,
       sessionId: legacySession.session_id
     })
-    expect(fetchCheckout).toHaveBeenCalledOnce()
+    expect(fetch).toHaveBeenCalledOnce()
   })
 
   it.for([
@@ -141,14 +130,15 @@ describe('createWorkshopTopUpCheckout', () => {
       expected: { status: 200, code: 'MALFORMED_RESPONSE' }
     }
   ])('surfaces $failure.code to the dialog', async ({ failure, expected }) => {
-    const fetchCheckout = stubLegacyCheckout()
-    sdk.readFlag.mockResolvedValue(true)
-    sdk.createHostedTopupCheckout.mockResolvedValue(failure)
+    vi.mocked(readBillingSdkTopupEnabled).mockResolvedValue(true)
+    vi.mocked(
+      workshopTopupCommand().createHostedTopupCheckout
+    ).mockResolvedValue(failure)
 
     const checkout = createWorkshopTopUpCheckout(options)
     await expect(checkout).rejects.toBeInstanceOf(TopUpCheckoutError)
     await expect(checkout).rejects.toMatchObject(expected)
-    expect(fetchCheckout).not.toHaveBeenCalled()
+    expect(fetch).not.toHaveBeenCalled()
   })
 
   it.for([
@@ -156,8 +146,10 @@ describe('createWorkshopTopUpCheckout', () => {
     'https://checkout.stripe.com:444/c/sdk',
     'https://user@checkout.comfy.org/c/sdk'
   ])('rejects an SDK checkout URL outside the allowlist: %s', async (url) => {
-    sdk.readFlag.mockResolvedValue(true)
-    sdk.createHostedTopupCheckout.mockResolvedValue({ status: 'ok', url })
+    vi.mocked(readBillingSdkTopupEnabled).mockResolvedValue(true)
+    vi.mocked(
+      workshopTopupCommand().createHostedTopupCheckout
+    ).mockResolvedValue({ status: 'ok', url })
 
     await expect(createWorkshopTopUpCheckout(options)).rejects.toMatchObject({
       status: 200,

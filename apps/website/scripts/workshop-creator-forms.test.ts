@@ -1,7 +1,7 @@
 import { z } from 'astro/zod'
 import { describe, expect, it } from 'vitest'
 
-import { workshopContract } from '../src/config/workshop-contract-catalog'
+import { workshopContract } from '@/config/workshop-contract-catalog'
 import { creatorFormFor } from './workshop-creator-forms'
 import { schemaAt } from './workshop-creator-fields'
 import { curateWorkshopInputs } from './workshop-input-presentation'
@@ -84,6 +84,26 @@ describe('sibling page modes', () => {
     }
   )
 
+  it.for([
+    { mode: 'image', fields: ['first_frame'] },
+    {
+      mode: 'mixed',
+      fields: ['first_frame', 'last_frame', 'reference_images']
+    }
+  ] as const)(
+    'preserves Seedance 2.5 $mode image bounds for file inputs',
+    ({ mode, fields }) => {
+      const form = formFor('byteplus/dreamina-seedance-2-5-260628', {
+        mode,
+        urlMedia: false
+      })
+      for (const field of fields)
+        expect(form.inputs[field]).toMatchObject({
+          imageAspectRatio: { minimum: 0.39, maximum: 2.5 }
+        })
+    }
+  )
+
   it('Seedance 2.5 edit page requires a source video and offers no frame or reference slots', () => {
     const form = formFor('byteplus/dreamina-seedance-2-5-260628', {
       mode: 'edit',
@@ -93,6 +113,9 @@ describe('sibling page modes', () => {
       expect.arrayContaining(['prompt', 'video_url'])
     )
     expect(form.inputs.video_url.urlUpload).toBe('video')
+    expect(object.parse(form.parameters.properties)).not.toHaveProperty(
+      'duration'
+    )
     expect(form.inputs).not.toHaveProperty('first_frame_url')
     expect(form.inputs).not.toHaveProperty('last_frame_url')
     expect(form.inputs).not.toHaveProperty('reference_image_url')
@@ -100,20 +123,51 @@ describe('sibling page modes', () => {
     expect(form.inputs).not.toHaveProperty('ratio')
   })
 
-  it('gives GPT Image 2 a generate page without images and an edit page that requires them', () => {
+  it.for([
+    {
+      mode: 'first-last',
+      fields: ['first_frame_url', 'last_frame_url']
+    },
+    {
+      mode: 'reference',
+      fields: [
+        'reference_image_url',
+        'reference_image_url_2',
+        'reference_image_url_3',
+        'reference_image_url_4'
+      ]
+    }
+  ] as const)(
+    'declares Seedance 2.5 $mode image aspect-ratio bounds',
+    ({ mode, fields }) => {
+      const form = formFor('byteplus/dreamina-seedance-2-5-260628', {
+        mode,
+        urlMedia: true
+      })
+      for (const field of fields)
+        expect(form.inputs[field]).toMatchObject({
+          imageAspectRatio: { minimum: 0.39, maximum: 2.5 }
+        })
+    }
+  )
+
+  it.for(['edit', 'reference-video'])(
+    'declares Kling %s source-video bounds',
+    (mode) => {
+      expect(
+        formFor('kling/kling-v3-omni', { mode }).inputs.video_url
+      ).toMatchObject({
+        maxVideoDurationSeconds: 15.5,
+        videoWidthPixels: { minimum: 700, maximum: 4553 }
+      })
+    }
+  )
+
+  it('keeps unsupported GPT Image edit media out of Router forms', () => {
     const id = 'openai/gpt-image-2'
+    expect(files(id, {})).toEqual([])
     expect(files(id, { mode: 'generate' })).toEqual([])
-    expect(files(id, { mode: 'edit' })).toEqual(['images*'])
-    expect(formFor(id, { mode: 'edit' }).files[0]).toMatchObject({
-      label: 'Source images',
-      maxItems: 10
-    })
-    const parameters = object.parse(formFor(id, { mode: 'edit' }).parameters)
-    expect(
-      object.parse(object.parse(parameters.properties).size)
-    ).toMatchObject({
-      enum: expect.arrayContaining(['2048x2048', '3840x2160'])
-    })
+    expect(() => formFor(id, { mode: 'edit' })).toThrow()
   })
 
   it('gives Veo a text page without frames and an animate page that requires the first frame', () => {
@@ -147,6 +201,27 @@ describe('sibling page modes', () => {
       const image = object.parse(formFor(id, { mode: 'image' }).parameters)
       expect(object.parse(image.properties)).toHaveProperty('image_url')
       expect(image.required).toContain('image_url')
+    }
+  )
+
+  it.for(['xai/grok-imagine-video', 'xai/grok-imagine-video-1.5'])(
+    'limits Grok reference-to-video resolution to 720p for %s',
+    (id) => {
+      const reference = object.parse(
+        formFor(id, { mode: 'reference' }).parameters
+      )
+      expect(object.parse(reference.properties).resolution).toMatchObject({
+        enum: ['480p', '720p'],
+        default: '720p'
+      })
+    }
+  )
+
+  it.for(['edit', 'reference-video'])(
+    'warns that Kling %s inputs must use SDR video',
+    (mode) => {
+      const form = formFor('kling/kling-v3-omni', { mode })
+      expect(form.inputs.video_url.help).toContain('HDR video is not supported')
     }
   )
 })

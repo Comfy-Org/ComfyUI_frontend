@@ -58,6 +58,8 @@ import FirstRunTour from '@/renderer/extensions/firstRunTour/FirstRunTour.vue'
 import GlobalToast from '@/components/toast/GlobalToast.vue'
 import InviteAcceptedToast from '@/platform/workspace/components/toasts/InviteAcceptedToast.vue'
 import RerouteMigrationToast from '@/components/toast/RerouteMigrationToast.vue'
+import { registerCoreBottomPanelTabs } from '@/composables/bottomPanelTabs/registerCoreBottomPanelTabs'
+import { registerCoreSidebarTabs } from '@/composables/sidebarTabs/registerCoreSidebarTabs'
 import { useBrowserTabTitle } from '@/composables/useBrowserTabTitle'
 import { useCoreCommands } from '@/composables/useCoreCommands'
 import { useQueuePolling } from '@/platform/remote/comfyui/useQueuePolling'
@@ -65,16 +67,26 @@ import { useErrorHandling } from '@/composables/useErrorHandling'
 import { useReconnectQueueRefresh } from '@/composables/useReconnectQueueRefresh'
 import { useReconnectingNotification } from '@/composables/useReconnectingNotification'
 import { useProgressFavicon } from '@/composables/useProgressFavicon'
+import { runMissingMediaPipeline } from '@/platform/missingMedia/missingMediaPipeline'
+import { scanAllMediaCandidates } from '@/platform/missingMedia/missingMediaScan'
+import { startTemplateInputDownloadGraphSync } from '@/platform/workflow/templates/composables/useTemplateInputDownloadGraphSync'
+import { refreshDownloadedTemplateInputBindings } from '@/platform/workflow/templates/utils/refreshDownloadedTemplateInputBindings'
 import { SERVER_CONFIG_ITEMS } from '@/constants/serverConfig'
 import type { ServerConfig, ServerConfigValue } from '@/constants/serverConfig'
 import { setActiveLocale } from '@/i18n'
+import AssetBrowserModal from '@/platform/assets/components/AssetBrowserModal.vue'
 import AssetExportProgressDialog from '@/platform/assets/components/AssetExportProgressDialog.vue'
 import ModelImportProgressDialog from '@/platform/assets/components/ModelImportProgressDialog.vue'
+import { registerAssetBrowserModalComponent } from '@/platform/assets/composables/useAssetBrowserDialog'
 import DesktopCloudNotificationController from '@/platform/cloud/notification/components/DesktopCloudNotificationController.vue'
 import { isCloud, isDesktop } from '@/platform/distribution/types'
+import SettingDialog from '@/platform/settings/components/SettingDialog.vue'
+import { registerSettingDialogComponent } from '@/platform/settings/composables/useSettingsDialog'
 import { useSettingStore } from '@/platform/settings/settingStore'
 import { useTelemetry } from '@/platform/telemetry'
+import { reportError } from '@/platform/telemetry/reportError'
 import { getShellLayoutSnapshot } from '@/platform/telemetry/utils/getShellLayoutSnapshot'
+import { getPageVisibilityMetadata } from '@/workbench/extensions/agent/utils/getPageVisibilityMetadata'
 import { useFrontendVersionMismatchWarning } from '@/platform/updates/common/useFrontendVersionMismatchWarning'
 import { useVersionCompatibilityStore } from '@/platform/updates/common/versionCompatibilityStore'
 import { useCanvasStore } from '@/renderer/core/canvas/canvasStore'
@@ -96,7 +108,7 @@ import {
   useQueueStore
 } from '@/stores/queueStore'
 import { useServerConfigStore } from '@/stores/serverConfigStore'
-import { useBottomPanelStore } from '@/stores/workspace/bottomPanelStore'
+import { useTemplateInputDownloadStore } from '@/stores/templateInputDownloadStore'
 import { useColorPaletteStore } from '@/stores/workspace/colorPaletteStore'
 import { useSidebarTabStore } from '@/stores/workspace/sidebarTabStore'
 import { electronAPI } from '@/utils/envUtil'
@@ -121,6 +133,46 @@ const graphCanvasContainerRef = ref<HTMLDivElement | null>(null)
 const graphReady = ref(false)
 const { isBuilderMode, mode, isAppMode } = useAppMode()
 const { linearMode } = storeToRefs(useCanvasStore())
+const templateInputDownloadStore = useTemplateInputDownloadStore()
+const templateInputGraphSync = startTemplateInputDownloadGraphSync({
+  getReferencedInputNames: () =>
+    new Set(scanAllMediaCandidates(app.rootGraph).map(({ name }) => name)),
+  refreshGraphBindings: async (completedInputNames) => {
+    try {
+      await app.reloadNodeDefs()
+      refreshDownloadedTemplateInputBindings(
+        app.rootGraph,
+        scanAllMediaCandidates(app.rootGraph),
+        new Set(completedInputNames)
+      )
+      await runMissingMediaPipeline({ rootGraph: app.rootGraph, silent: true })
+    } finally {
+      // The transfers finished even if rebinding them did not. Releasing them
+      // either way keeps a failed rebind from holding the run action behind a
+      // permanent finalizing state; the failure is reported separately.
+      templateInputDownloadStore.completeGraphSync(completedInputNames)
+    }
+  },
+  reportError: (error) => {
+    reportError(error, {
+      surface: 'graph',
+      errorType: 'workflow_template_input_refresh_failed'
+    })
+  }
+})
+const stopTemplateInputDownloadTracking =
+  (isDesktop &&
+    window.__comfyDesktop2?.onTemplateInputDownloadProgress?.((progress) => {
+      templateInputDownloadStore.updateProgress(progress)
+      templateInputGraphSync.handleProgress(progress)
+    })) ||
+  (() => undefined)
+
+onBeforeUnmount(() => {
+  stopTemplateInputDownloadTracking()
+  templateInputGraphSync.dispose()
+  templateInputDownloadStore.clear()
+})
 
 watch(linearMode, (isLinear) => {
   if (isLinear) {
@@ -192,7 +244,7 @@ watchEffect(() => {
 watchEffect(() => {
   const padding = settingStore.get('Comfy.TreeExplorer.ItemPadding')
   document.documentElement.style.setProperty(
-    '--comfy-tree-explorer-item-padding',
+    '--tree-item-padding',
     `${padding}px`
   )
 })
@@ -233,30 +285,23 @@ const coreCommands = useCoreCommands()
 useCommandStore().registerCommands(coreCommands)
 useMenuItemStore().registerCoreMenuCommands()
 useKeybindingService().registerCoreKeybindings()
-useSidebarTabStore().registerCoreSidebarTabs()
-void useBottomPanelStore().registerCoreBottomPanelTabs()
+registerCoreSidebarTabs()
+registerSettingDialogComponent(SettingDialog)
+registerAssetBrowserModalComponent(AssetBrowserModal)
+void registerCoreBottomPanelTabs()
 
 useQueuePolling()
 const queuePendingTaskCountStore = useQueuePendingTaskCountStore()
-const sidebarTabStore = useSidebarTabStore()
 
 const onStatus = async (e: CustomEvent<StatusWsMessageStatus>) => {
   queuePendingTaskCountStore.update(e)
   await queueStore.update()
-  // Only update assets if the assets sidebar is currently open
-  // When sidebar is closed, AssetsSidebarTab.vue will refresh on mount
-  if (sidebarTabStore.activeSidebarTabId === 'assets' || linearMode.value) {
-    await assetsStore.outputAssets.loadNew()
-  }
+  await assetsStore.outputAssets.loadNew()
 }
 
 const onExecutionSuccess = async () => {
   await queueStore.update()
-  // Only update assets if the assets sidebar is currently open
-  // When sidebar is closed, AssetsSidebarTab.vue will refresh on mount
-  if (sidebarTabStore.activeSidebarTabId === 'assets' || linearMode.value) {
-    await assetsStore.outputAssets.loadNew()
-  }
+  await assetsStore.outputAssets.loadNew()
 }
 
 const { onReconnecting, onReconnected } = useReconnectingNotification()
@@ -313,9 +358,11 @@ const onGraphReady = () => {
     // Set up page visibility tracking (cloud only)
     if (isCloud && telemetry) {
       useEventListener(document, 'visibilitychange', () => {
-        telemetry.trackPageVisibilityChanged({
-          visibility_state: document.visibilityState as 'visible' | 'hidden'
-        })
+        telemetry.trackPageVisibilityChanged(
+          getPageVisibilityMetadata(
+            document.visibilityState as 'visible' | 'hidden'
+          )
+        )
       })
     }
 

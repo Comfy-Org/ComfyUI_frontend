@@ -1,46 +1,22 @@
+import { fetchRequests } from '@comfyorg/test-utils/fetch'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 
-import type {
-  AccountCredential,
-  SessionSnapshot
-} from '@comfyorg/account-core/session'
+import type { AccountCredential } from '@comfyorg/account-core/session'
 
+import { testFirebaseUser } from './__fixtures__/workshopSessionFakes'
+let { workshopSessionClient } = await import('./workshop-account')
 import { WORKSHOP_CLOUD_BASE_URL } from './workshop-env'
 
-const account = vi.hoisted(() => {
-  const credential: AccountCredential = {
-    token: 'workspace-jwt',
-    expiresAt: Number.MAX_SAFE_INTEGER,
-    uid: 'uid-1',
-    workspace: { id: 'ws-1', name: 'Personal', type: 'personal' },
-    role: 'owner',
-    permissions: ['workspace:read']
-  }
-  const snapshot: SessionSnapshot = {
-    phase: 'authenticated',
-    user: {
-      uid: credential.uid,
-      getIdToken: () => Promise.resolve('id-token')
-    },
-    session: credential
-  }
-  const ensureFresh = vi.fn()
-  const remint = vi.fn()
-  return {
-    credential,
-    ensureFresh,
-    client: {
-      getSnapshot: () => snapshot,
-      subscribe: () => () => {},
-      ensureFresh,
-      remint
-    }
-  }
-})
+const credential: AccountCredential = {
+  token: 'workspace-jwt',
+  expiresAt: Number.MAX_SAFE_INTEGER,
+  uid: 'uid-1',
+  workspace: { id: 'ws-1', name: 'Personal', type: 'personal' },
+  role: 'owner',
+  permissions: ['workspace:read']
+}
 
-vi.mock<unknown>(import('./workshop-account'), () => ({
-  workshopSessionClient: account.client
-}))
+vi.mock(import('./workshop-account'))
 
 const CHECKOUT = {
   checkout_url: 'https://checkout.stripe.com/c/pay_1',
@@ -60,6 +36,7 @@ const CLOUD_BODIES: Readonly<Record<string, unknown>> = {
       can_downgrade_to_personal: false,
       can_invite_members: false,
       can_reactivate: false,
+      can_revert_scheduled_change: false,
       can_subscribe_self_serve: false,
       can_top_up: true
     },
@@ -80,7 +57,7 @@ const CLOUD_BODIES: Readonly<Record<string, unknown>> = {
 }
 
 function stubCloudFetch() {
-  const fetchCloud = vi.fn<typeof fetch>((input) => {
+  vi.mocked(fetch).mockImplementation((input) => {
     const body = CLOUD_BODIES[String(input)]
     return Promise.resolve(
       body === undefined
@@ -88,59 +65,60 @@ function stubCloudFetch() {
         : new Response(JSON.stringify(body))
     )
   })
-  vi.stubGlobal('fetch', fetchCloud)
-  return fetchCloud
 }
 
-async function importFresh() {
-  vi.resetModules()
+async function loadBillingSdk() {
   return import('./workshop-billing-sdk')
 }
 
 async function openHostedCheckout() {
-  const fetchCloud = stubCloudFetch()
-  const { workshopTopupCommand } = await importFresh()
-  const result = await workshopTopupCommand().createHostedTopupCheckout({
+  stubCloudFetch()
+  const { workshopTopupCommand } = await loadBillingSdk()
+  return workshopTopupCommand().createHostedTopupCheckout({
     amountCents: 5_000,
     returnUrl: RETURN_URL
   })
-  return { fetchCloud, result }
 }
 
-function requestTo(calls: readonly Parameters<typeof fetch>[], url: string) {
-  const call = calls.find(([target]) => String(target) === url)
-  if (call === undefined) throw new Error(`no request to ${url}`)
-  const body: unknown = JSON.parse(String(call[1]?.body))
-  return { init: call[1] ?? {}, headers: new Headers(call[1]?.headers), body }
-}
+beforeEach(async () => {
+  vi.resetModules()
+  ;({ workshopSessionClient } = await import('./workshop-account'))
 
-beforeEach(() => {
-  account.ensureFresh.mockResolvedValue({
+  vi.mocked(workshopSessionClient.getSnapshot).mockReturnValue({
+    phase: 'authenticated',
+    user: testFirebaseUser({ uid: credential.uid }),
+    session: credential
+  })
+  vi.mocked(workshopSessionClient.subscribe).mockImplementation((listener) => {
+    listener(workshopSessionClient.getSnapshot())
+    return () => {}
+  })
+  vi.mocked(workshopSessionClient.ensureFresh).mockResolvedValue({
     status: 'ok',
-    session: account.credential
+    session: credential
   })
 })
 
 describe('workshopTopupCommand', () => {
   it('builds the top-up command once for the page', async () => {
-    const { workshopTopupCommand } = await importFresh()
+    const { workshopTopupCommand } = await loadBillingSdk()
 
     expect(workshopTopupCommand()).toBe(workshopTopupCommand())
   })
 
   it('posts the hosted checkout to Cloud under one authorized idempotency key', async () => {
-    const { fetchCloud, result } = await openHostedCheckout()
+    const result = await openHostedCheckout()
 
     expect(result).toMatchObject({
       status: 'ok',
       url: CHECKOUT.checkout_url,
       sessionId: CHECKOUT.session_id
     })
-    const checkout = requestTo(fetchCloud.mock.calls, CHECKOUT_URL)
-    expect(checkout.init.method).toBe('POST')
+    const [checkout] = fetchRequests(CHECKOUT_URL)
+    expect(checkout.method).toBe('POST')
     expect(checkout.headers.get('Authorization')).toBe('Bearer workspace-jwt')
     expect(checkout.headers.get('Idempotency-Key')).toEqual(expect.any(String))
-    expect(checkout.body).toEqual({
+    expect(JSON.parse(String(checkout.body))).toEqual({
       amount_cents: 5_000,
       return_url: RETURN_URL,
       idempotency_key: checkout.headers.get('Idempotency-Key')
@@ -150,7 +128,7 @@ describe('workshopTopupCommand', () => {
   it('mints for the workspace the session currently holds', async () => {
     await openHostedCheckout()
 
-    expect(account.ensureFresh).toHaveBeenCalledWith(
+    expect(vi.mocked(workshopSessionClient.ensureFresh)).toHaveBeenCalledWith(
       undefined,
       expect.objectContaining({ workspaceId: 'ws-1' })
     )
