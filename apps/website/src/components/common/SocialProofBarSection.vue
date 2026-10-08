@@ -1,4 +1,6 @@
 <script setup lang="ts">
+import SocialProofLogo from '@/components/common/SocialProofLogo.vue'
+
 const { agencyPartners = false } = defineProps<{ agencyPartners?: boolean }>()
 
 const clientLogos = [
@@ -18,10 +20,6 @@ const clientLogos = [
 const logos = agencyPartners
   ? [...clientLogos, 'Native Foreign', 'Black Math']
   : clientLogos
-const partnerLogoSources: Record<string, string> = {
-  'Native Foreign': '/images/agency-partners/native-foreign-white.png',
-  'Black Math': '/images/agency-partners/black-math-stacked.png'
-}
 
 const mobileRow1Logos = logos.slice(0, 6)
 const mobileRow2Logos = logos.slice(6)
@@ -43,17 +41,7 @@ const mobileRow2Logos = logos.slice(6)
           :key="logo"
           class="flex h-20 w-50 shrink-0 items-center justify-center"
         >
-          <span
-            v-if="partnerLogoSources[logo]"
-            role="img"
-            :aria-label="logo"
-            class="h-20 w-40 bg-secondary-mauve mask-contain mask-center mask-no-repeat"
-            :style="{
-              maskImage: `url('${partnerLogoSources[logo]}')`,
-              scale: logo === 'Native Foreign' ? '0.7' : undefined
-            }"
-          />
-          <img v-else :src="`/icons/clients/${logo}.svg`" :alt="logo" />
+          <SocialProofLogo :name="logo" />
         </div>
       </div>
     </div>
@@ -76,17 +64,7 @@ const mobileRow2Logos = logos.slice(6)
             :key="logo"
             class="flex h-10 w-40 shrink-0 items-center justify-center"
           >
-            <span
-              v-if="partnerLogoSources[logo]"
-              role="img"
-              :aria-label="logo"
-              class="h-10 w-32 bg-secondary-mauve mask-contain mask-center mask-no-repeat"
-              :style="{
-                maskImage: `url('${partnerLogoSources[logo]}')`,
-                scale: logo === 'Native Foreign' ? '0.7' : undefined
-              }"
-            />
-            <img v-else :src="`/icons/clients/${logo}.svg`" :alt="logo" />
+            <SocialProofLogo :name="logo" />
           </div>
         </div>
       </div>
@@ -103,17 +81,7 @@ const mobileRow2Logos = logos.slice(6)
             :key="logo"
             class="flex h-10 w-40 shrink-0 items-center justify-center"
           >
-            <span
-              v-if="partnerLogoSources[logo]"
-              role="img"
-              :aria-label="logo"
-              class="h-10 w-32 bg-secondary-mauve mask-contain mask-center mask-no-repeat"
-              :style="{
-                maskImage: `url('${partnerLogoSources[logo]}')`,
-                scale: logo === 'Native Foreign' ? '0.7' : undefined
-              }"
-            />
-            <img v-else :src="`/icons/clients/${logo}.svg`" :alt="logo" />
+            <SocialProofLogo :name="logo" />
           </div>
         </div>
       </div>
