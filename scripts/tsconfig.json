@@ -3,7 +3,7 @@
   "compilerOptions": {
     /* Script files configuration */
     "noEmit": true,
-    "tsBuildInfoFile": "../.cache/tsbuildinfo/scripts.tsbuildinfo",
+    "tsBuildInfoFile": "../node_modules/.cache/tsbuildinfo/scripts.tsbuildinfo",
     "strict": true,
     "noUnusedLocals": true,
     "noUnusedParameters": true,

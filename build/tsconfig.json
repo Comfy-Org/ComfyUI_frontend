@@ -3,7 +3,7 @@
   "compilerOptions": {
     /* Build scripts configuration */
     "noEmit": true,
-    "tsBuildInfoFile": "../.cache/tsbuildinfo/build.tsbuildinfo",
+    "tsBuildInfoFile": "../node_modules/.cache/tsbuildinfo/build.tsbuildinfo",
     "strict": true,
     "esModuleInterop": true,
     "moduleResolution": "bundler",
