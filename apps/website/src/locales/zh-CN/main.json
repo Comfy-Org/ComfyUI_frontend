@@ -4597,7 +4597,7 @@
           "task": "任务"
         }
       },
-      "allModelsLink": "全部模型（含开放权重）",
+      "allModelsLink": "浏览开放权重",
       "filter": {
         "label": "使用方式",
         "run": "在线运行",

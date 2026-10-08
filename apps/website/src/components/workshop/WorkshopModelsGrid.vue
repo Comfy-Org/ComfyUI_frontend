@@ -266,7 +266,7 @@ function rememberModel(model: WorkshopModel, event: MouseEvent) {
           />
           <a
             :href="getRoutes(locale).models"
-            class="mt-6 inline-flex items-center gap-1.5 self-start text-sm font-medium text-primary-warm-gray transition-colors outline-none hover:text-primary-comfy-yellow focus-visible:ring-3 focus-visible:ring-primary-comfy-yellow/50 max-lg:order-3 lg:px-3"
+            class="mt-6 inline-flex items-center gap-1 self-start text-sm font-semibold text-primary-comfy-yellow transition-opacity outline-none hover:opacity-80 focus-visible:ring-3 focus-visible:ring-primary-comfy-yellow/50 max-lg:order-3 lg:px-3"
             data-testid="models-all-link"
           >
             {{ t('workshop.explorer.allModelsLink') }}

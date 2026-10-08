@@ -748,7 +748,7 @@
           "task": "Task"
         }
       },
-      "allModelsLink": "All models, including open weights",
+      "allModelsLink": "Browse open weights",
       "filter": {
         "label": "How you use it",
         "run": "Run here",

@@ -222,18 +222,15 @@ describe('WorkshopModelsGrid', () => {
   })
 
   it.for([
-    { locale: 'en' as const, name: 'All models, including open weights' },
-    { locale: 'zh-CN' as const, name: '全部模型（含开放权重）' }
-  ])(
-    'links to every model, open weights included, in $locale',
-    ({ locale, name }) => {
-      render(WorkshopModelsGrid, { props: { models, locale } })
+    { locale: 'en' as const, name: 'Browse open weights' },
+    { locale: 'zh-CN' as const, name: '浏览开放权重' }
+  ])('links to the open weights page in $locale', ({ locale, name }) => {
+    render(WorkshopModelsGrid, { props: { models, locale } })
 
-      const link = screen.getByTestId('models-all-link')
-      expect(link).toHaveAccessibleName(name)
-      expect(link).toHaveAttribute('href', '/hub/models/local/')
-    }
-  )
+    const link = screen.getByTestId('models-all-link')
+    expect(link).toHaveAccessibleName(name)
+    expect(link).toHaveAttribute('href', '/hub/models/local/')
+  })
 
   // A shelf and the filter are the same choice: opening "Edit images" has to
   // leave the menu saying so, or the reader sees a narrowed grid with nothing
