@@ -25,7 +25,13 @@ import type { IBaseWidget } from '@/lib/litegraph/src/types/widgets'
 import { isWidgetValue } from '@/lib/litegraph/src/types/widgets'
 import { reportError } from '@/platform/telemetry/reportError'
 import { zComfyNode } from '@/platform/workflow/validation/schemas/workflowSchema'
-import { inputSpecTree } from '@/schemas/nodeDef/inputSpecTree'
+import { transformInputSpecV1ToV2 } from '@/schemas/nodeDef/migration'
+import type { InputSpec as InputSpecV2 } from '@/schemas/nodeDef/nodeDefSchemaV2'
+import type { ComfyInputsSpec } from '@/schemas/nodeDefSchema'
+import {
+  zAutogrowOptions,
+  zDynamicComboInputSpec
+} from '@/schemas/nodeDefSchema'
 import { isUuidShapedSubgraphId } from '@/schemas/subgraphIdSchema'
 import type { LinkId } from '@/types/linkId'
 import { parseLinkId, toLinkId } from '@/types/linkId'
@@ -330,13 +336,71 @@ function serializableWidgets(node: LGraphNode): IBaseWidget[] {
   return (node.widgets ?? []).filter((widget) => widget.serialize !== false)
 }
 
+/**
+ * The input groups `spec` wraps, if it is a dynamic container.
+ *
+ * `main` resolves the nested-spec walk through
+ * `@/schemas/nodeDef/inputSpecTree`, which this release branch does not carry:
+ * that module needs DynamicGroup and dynamic-combo option schemas
+ * `object-info-parser` does not export here yet. The two containers this
+ * branch's node defs *can* express are walked instead, so the gate below
+ * answers the same question for every shape reachable on cloud/1.55. A
+ * container whose options fail to parse yields nothing, which is also what
+ * `inputSpecTree` does.
+ */
+function nestedInputGroups(spec: InputSpecV2): ComfyInputsSpec[] {
+  if (spec.type === 'COMFY_DYNAMICCOMBO_V3') {
+    const parsed = zDynamicComboInputSpec.safeParse([spec.type, spec])
+    return parsed.success
+      ? parsed.data[1].options.map(({ inputs }) => inputs)
+      : []
+  }
+  if (spec.type === 'COMFY_AUTOGROW_V3') {
+    const parsed = zAutogrowOptions.safeParse(spec)
+    return parsed.success ? [parsed.data.template.input] : []
+  }
+  return []
+}
+
+function* toInputSpecsV2(inputs: ComfyInputsSpec): Generator<InputSpecV2> {
+  const groups = [
+    { specs: inputs.required, isOptional: false },
+    { specs: inputs.optional, isOptional: true }
+  ]
+  for (const { specs, isOptional } of groups) {
+    for (const [name, specV1] of Object.entries(specs ?? {})) {
+      yield transformInputSpecV1ToV2(specV1, { name, isOptional })
+    }
+  }
+}
+
+/**
+ * `spec` together with every spec nested inside it, depth first.
+ *
+ * Nested specs arrive from the backend as V1 tuples even when `spec` itself
+ * has already been normalized, so each child is converted on the way out. The
+ * tree is finite: specs originate from parsed `/object_info` JSON, which
+ * cannot contain cycles.
+ */
+function* inputSpecTree(spec: InputSpecV2): Generator<InputSpecV2> {
+  yield spec
+  for (const inputs of nestedInputGroups(spec)) {
+    for (const child of toInputSpecsV2(inputs)) {
+      yield* inputSpecTree(child)
+    }
+  }
+}
+
 function supportsDynamicWidgetOverflow(node: LGraphNode): boolean {
   const inputs = node.constructor.nodeData?.inputs
   return (
     inputs !== undefined &&
-    Object.values(inputs).some((spec) =>
-      inputSpecTree(spec).some(({ type }) => type === 'COMFY_DYNAMICCOMBO_V3')
-    )
+    Object.values(inputs).some((spec) => {
+      for (const { type } of inputSpecTree(spec)) {
+        if (type === 'COMFY_DYNAMICCOMBO_V3') return true
+      }
+      return false
+    })
   )
 }
 
