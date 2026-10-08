@@ -65,11 +65,6 @@ const onEdit = (newValue: string) => {
   closeEditor()
 }
 
-/**
- * Hides the editor and restores canvas drag/zoom. Runs for both commit and
- * cancel (Escape); without it a cancelled edit leaves `allow_dragcanvas`
- * false and the canvas can no longer be panned or wheel-zoomed.
- */
 function closeEditor() {
   showInput.value = false
   titleEditorStore.titleEditorTarget = null
