@@ -9,7 +9,7 @@ import type { WorkflowReference } from '../../types/workflowReference'
 import type { AgentStarterPromptSource } from '../../utils/starterPrompts'
 import type { SelectedNode, useCanvasSelection } from './useCanvasSelection'
 import { selectedNodeKey } from './useCanvasSelection'
-import type { ComposerAttachment } from './useComposer'
+import type { ComposerAttachment } from '../../types/composerAttachment'
 
 interface UseAgentDraftSubmissionOptions {
   canSubmit: () => boolean
@@ -59,22 +59,25 @@ export function useAgentDraftSubmission(
     const snapshot = composer.takeFailedSubmission()
     if (!snapshot || selection.staged.value.length > 0) return
 
-    composer.restorePrompt({
-      text: snapshot.prompt.text,
-      references: snapshot.prompt.references.filter((reference) => {
-        if (reference.kind === 'workflow')
-          return reference.id !== options.editableWorkflowId()
-        if (reference.kind === 'node')
-          return (
-            options.target() === snapshot.target &&
-            snapshot.nodes.some(
-              (node) =>
-                selectedNodeKey(node) === selectedNodeKey(reference.node)
+    composer.restorePrompt(
+      {
+        text: snapshot.prompt.text,
+        references: snapshot.prompt.references.filter((reference) => {
+          if (reference.kind === 'workflow')
+            return reference.id !== options.editableWorkflowId()
+          if (reference.kind === 'node')
+            return (
+              options.target() === snapshot.target &&
+              snapshot.nodes.some(
+                (node) =>
+                  selectedNodeKey(node) === selectedNodeKey(reference.node)
+              )
             )
-          )
-        return true
-      })
-    })
+          return true
+        })
+      },
+      snapshot.attachments
+    )
     if (options.target() === snapshot.target) selection.replace(snapshot.nodes)
   }
 

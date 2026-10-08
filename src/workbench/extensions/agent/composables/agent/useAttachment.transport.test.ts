@@ -2,7 +2,7 @@ import { assert, expect, it, onTestFinished, vi } from 'vitest'
 
 import { createAgentRestClient } from '../../services/agent/agentRestClient'
 import { useAttachment } from './useAttachment'
-import type { ComposerAttachment } from './useComposer'
+import type { ComposerAttachment } from '../../types/composerAttachment'
 
 it('keeps a 4 MiB upload alive past 60 seconds and aborts it at 124 seconds', async () => {
   vi.useFakeTimers()
@@ -34,7 +34,10 @@ it('keeps a 4 MiB upload alive past 60 seconds and aborts it at 124 seconds', as
       )
       return { ref: result.name ?? file.name }
     },
-    stage: (chip) => chips.set(chip.id, chip),
+    stage: (chip) => {
+      chips.set(chip.id, chip)
+      return true
+    },
     update: (id, patch) => {
       const chip = chips.get(id)
       assert.exists(chip)
