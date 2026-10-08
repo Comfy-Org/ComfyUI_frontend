@@ -200,6 +200,8 @@ export const externalLinks = {
   routerApiKeys:
     'https://platform.comfy.org/profile/api-keys?onboarding=router',
   blog: 'https://blog.comfy.org/',
+  // What already shipped. The roadmap page points here so the two are not confused.
+  changelog: 'https://docs.comfy.org/changelog',
   cloud: 'https://cloud.comfy.org',
   cloudLogin: 'https://cloud.comfy.org/cloud/login',
   cloudCta: (content: string) =>

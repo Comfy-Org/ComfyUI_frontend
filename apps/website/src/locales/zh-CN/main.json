@@ -4960,5 +4960,45 @@
     "noWebgl": "此预览需要 WebGL2，当前浏览器不支持。",
     "play": "播放",
     "pause": "暂停"
+  },
+  "roadmap": {
+    "page": {
+      "title": "路线图：我们正在做什么",
+      "description": "Comfy 团队工作内容的一条时间线，从已经发布的功能到仍在权衡的想法，涵盖引擎、Comfy Cloud、编辑器、Desktop、平台与社区。"
+    },
+    "eyebrow": "路线图",
+    "heading": "我们正在做什么",
+    "intro": "分界线下方是我们面前的工作，上方是已经发布的内容。其中包含 bug，也包含我们尚未决定要做的想法。已发布的条目会标注上线月份；越往下走，多数条目无法给出时间，与其猜测，我们宁可不写。",
+    "changelog": {
+      "prompt": "想看每个版本的完整说明？",
+      "linkLabel": "查看更新日志"
+    },
+    "stage": {
+      "exploring": "探索中",
+      "building": "进行中",
+      "shipping": "即将上线",
+      "shipped": "已发布"
+    },
+    "area": {
+      "engine": "引擎",
+      "cloud": "Comfy Cloud",
+      "frontend": "编辑器",
+      "desktop": "Desktop",
+      "platform": "平台",
+      "community": "社区"
+    },
+    "stageDescription": {
+      "exploring": "我们仍在思考的问题，尚未决定要做",
+      "building": "已经有人在做的工作，包括修 bug",
+      "shipping": "已完成或接近完成，正在逐步放量",
+      "shipped": "已经发布，并标注上线月份"
+    },
+    "legendLabel": "各阶段的含义",
+    "filter": {
+      "label": "按领域筛选路线图",
+      "all": "全部"
+    },
+    "now": "现在",
+    "opensInNewTab": "在新标签页中打开"
   }
 }
