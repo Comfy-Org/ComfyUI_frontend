@@ -149,7 +149,17 @@ function longDate(raw: string | null | undefined): string {
   if (!date || Number.isNaN(date.getTime())) return ''
   return d(date, { year: 'numeric', month: 'long', day: 'numeric' })
 }
-const cycleResetDate = computed(() => longDate(renewalDate.value))
+// "Or wait until credits refill" is only a real option when the refill is
+// close. A yearly plan refills at renewal, which can be a year away, so past
+// this window the suggestion is dropped. Within it the date never needs a year.
+const REFILL_SUGGESTION_WINDOW_MS = 31 * 24 * 60 * 60 * 1000
+const nearRefillDate = computed(() => {
+  const raw = renewalDate.value
+  const date = raw ? new Date(raw) : null
+  if (!date || Number.isNaN(date.getTime())) return ''
+  if (date.getTime() - Date.now() > REFILL_SUGGESTION_WINDOW_MS) return ''
+  return d(date, { month: 'long', day: 'numeric' })
+})
 const planEndDate = computed(() => longDate(subscription.value?.endDate))
 const planName = computed(() => formatTierName(subscription.value?.tier, false))
 
@@ -274,7 +284,7 @@ const planEndedView = (): BannerView => {
 }
 
 const outOfCreditsBody = (key: string, noDateKey: string): string =>
-  cycleResetDate.value ? t(key, { date: cycleResetDate.value }) : t(noDateKey)
+  nearRefillDate.value ? t(key, { date: nearRefillDate.value }) : t(noDateKey)
 
 // An owner who cannot top up only reaches this once the plan has ended, which
 // the plan ended notice covers, so that case shows nothing.
