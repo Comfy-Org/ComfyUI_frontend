@@ -204,11 +204,6 @@
       "count": 1
     }
   },
-  "src/platform/cloud/subscription/launchCancellationFlow.ts": {
-    "comfy/no-new-error-throw": {
-      "count": 1
-    }
-  },
   "src/platform/keybindings/keybindingStore.ts": {
     "comfy/no-new-error-throw": {
       "count": 1

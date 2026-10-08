@@ -53,11 +53,11 @@ import { toRaw, watch } from 'vue'
 
 import Button from '@/components/ui/button/Button.vue'
 import { useToastStore } from '@/platform/updates/common/toastStore'
-import { useAgentNodeSelectionStore } from '@/stores/agentNodeSelectionStore'
+import { useCanvasStore } from '@/renderer/core/canvas/canvasStore'
 
 const toast = useToast()
 const toastStore = useToastStore()
-const agentNodeSelectionStore = useAgentNodeSelectionStore()
+const canvasStore = useCanvasStore()
 
 /**
  * Messages raised while node selection mode is active. The mode hides the whole
@@ -76,7 +76,7 @@ watch(
     }
 
     newMessages.forEach((message) => {
-      if (agentNodeSelectionStore.isActive) {
+      if (canvasStore.isPickingNodes) {
         deferredMessages.push(message)
       } else {
         toast.add(message)
@@ -88,7 +88,7 @@ watch(
 )
 
 watch(
-  () => agentNodeSelectionStore.isActive,
+  () => canvasStore.isPickingNodes,
   (active) => {
     if (active) return
     deferredMessages.splice(0).forEach((message) => {

@@ -73,6 +73,7 @@ import type {
   SubscriptionRailOutcome
 } from './subscriptionOperationView'
 import {
+  projectCancelOperationResult,
   projectPaymentPortalResult,
   projectPreviewSubscribeResult,
   projectSubscribeResult,
@@ -557,6 +558,14 @@ export const useBillingSdkStore = defineStore('billingSdk', () => {
     return outcome
   }
 
+  async function cancelOperation(
+    opId: string
+  ): Promise<SubscriptionRailOutcome> {
+    return projectCancelOperationResult(
+      await sdk.commands.cancelOperation(opId)
+    )
+  }
+
   /** Adopts the operation the server reports pending; true once one is adopted. */
   async function recover(): Promise<boolean> {
     const adopted = await sdk.lifecycle.recover()
@@ -673,6 +682,7 @@ export const useBillingSdkStore = defineStore('billingSdk', () => {
     cancelSubscription,
     resubscribe,
     openPaymentPortal,
+    cancelOperation,
     recover,
     readStatus,
     readBalance,

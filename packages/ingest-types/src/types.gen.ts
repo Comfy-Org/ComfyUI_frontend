@@ -415,15 +415,51 @@ export type UsageTimeSeries = {
   summary: UsageSummary
 }
 
+/**
+ * Current remaining balance, mirroring /billing/balance. Every amount is CENTS of `currency`; the `*_micros` names are a misnomer kept for wire compatibility.
+ */
 export type UsageBalance = {
+  /**
+   * The total remaining balance. Cents of `currency`, the same value as `amount_micros`, which is misnamed. A fractional `number`, deliberately not the integer-cents convention other `*_cents` fields in this spec use -- do not decode it as an integer.
+   */
+  amount_cents?: number
+  /**
+   * DEPRECATED misnomer: this value is CENTS, not micros. Divide by 100. Use `amount_cents`. The total remaining balance.
+   *
+   * @deprecated
+   */
   amount_micros?: number
+  /**
+   * The remaining balance from cloud credits (subscription). Cents of `currency`, the same value as `cloud_credit_balance_micros`, which is misnamed. A fractional `number`, deliberately not the integer-cents convention other `*_cents` fields in this spec use -- do not decode it as an integer.
+   */
+  cloud_credit_balance_cents?: number
+  /**
+   * DEPRECATED misnomer: this value is CENTS, not micros. Divide by 100. Use `cloud_credit_balance_cents`. The remaining balance from cloud credits (subscription).
+   *
+   * @deprecated
+   */
   cloud_credit_balance_micros?: number
   currency?: string
+  /**
+   * The remaining balance from prepaid commits (top-ups). Cents of `currency`, the same value as `prepaid_balance_micros`, which is misnamed. A fractional `number`, deliberately not the integer-cents convention other `*_cents` fields in this spec use -- do not decode it as an integer.
+   */
+  prepaid_balance_cents?: number
+  /**
+   * DEPRECATED misnomer: this value is CENTS, not micros. Divide by 100. Use `prepaid_balance_cents`. The remaining balance from prepaid commits (top-ups).
+   *
+   * @deprecated
+   */
   prepaid_balance_micros?: number
 }
 
+/**
+ * Mixed units, deliberately. `spend_micros` here (and `cost_micros` on UsageBucket / UsageBreakdownRow) is genuinely MICROS -- 1/1,000,000 of the currency unit -- because it comes from Metronome's usage figures. The `balance` breakdown below is CENTS, and its `*_micros` names are a misnomer; use its `*_cents` fields.
+ */
 export type UsageSummary = {
   balance?: UsageBalance
+  /**
+   * Total gross spend over the range, in microamount (1/1,000,000 of the currency unit). Genuinely micros, unlike the balance breakdown.
+   */
   spend_micros: number
 }
 
@@ -4442,6 +4478,19 @@ export type BillingOpStatusResponse = {
     | 'failed_retryable'
     | 'succeeded'
     | 'reconciliation_needed'
+  /**
+   * true exactly when POST /api/billing/ops/{id}/cancel would deliver
+   * the abandon for this caller: a pending plan change or initial
+   * subscription whose workflow is waiting on the customer's
+   * authentication. An already-canceled operation is false even though
+   * the cancel call still answers 200 for it. Decided by the same
+   * check the cancel endpoint runs, so clients must not derive it from
+   * status, phase or authentication_state. false for terminal
+   * operations, other operation types and callers who may not cancel.
+   * Absent when it could not be determined; absent means no claim.
+   *
+   */
+  cancelable?: boolean
   charge_breakdown?: BillingOpChargeBreakdown
   /**
    * When the operation completed (success or failure)
@@ -4536,14 +4585,51 @@ export type BillingOpStatusResponse = {
 
 /**
  * Display only. The plan the operation targets; for a scheduled change,
- * the plan it switches to at period end. Present only for succeeded
- * plan changes, initial subscriptions and resubscribes. Visible to any
- * workspace member who can read the operation.
+ * the plan it switches to at period end. Present for plan changes,
+ * initial subscriptions and resubscribes in every status (pending,
+ * failed and succeeded alike), so a recovered pending operation can be
+ * labelled with its own plan. Absent when the target plan could not be
+ * resolved. Visible to any workspace member who can read the operation.
+ * tier and the price fields are absent when the server cannot describe
+ * the plan, as for the retired seat-based Team plans, whose rows carry a
+ * personal tier and whose price depends on the workspace's seats.
  *
  */
 export type BillingOpReceiptPlan = {
+  /**
+   * ISO 4217 currency of price_cents, lowercase (e.g. usd). Present
+   * exactly when price_cents is present.
+   *
+   */
+  currency?: string
   duration: SubscriptionDuration
+  /**
+   * price_cents divided by 12 and rounded half up to the nearest cent,
+   * as on the subscribe preview's new_plan. Display only. Present
+   * exactly when price_cents is present on an ANNUAL plan.
+   *
+   */
+  monthly_price_cents?: number
+  /**
+   * The plan's recurring price for one billing period, at
+   * team_credit_stop_id for a per-credit Team plan: a whole year for
+   * ANNUAL. The same figure as new_plan.price_cents on the subscribe
+   * preview, before tax, promotions, account balance and proration,
+   * so it is not what the operation charged; amount_charged_cents is.
+   * Present together with currency, and absent when the plan could
+   * not be priced, including the retired seat-based Team plans.
+   *
+   */
+  price_cents?: number
   slug: string
+  /**
+   * The per-credit Team credit stop the operation targets (e.g.
+   * team_200). Absent for personal plans and for Team plans without a
+   * credit stop.
+   *
+   */
+  team_credit_stop_id?: string
+  tier?: SubscriptionTier
 }
 
 /**
@@ -4811,15 +4897,27 @@ export type BillingCapabilities = {
 }
 
 /**
- * Current credit balance and usage details for a workspace.
+ * Current credit balance and usage details for a workspace. Every amount here is CENTS of `currency`. The `*_micros` fields are a misnamed legacy set kept for wire compatibility; the `*_cents` fields beside them carry the identical values under honest names. `amount_micros` stays required and `amount_cents` is optional so existing strict clients are unaffected.
  */
 export type BillingBalanceResponse = {
   /**
-   * The total remaining balance in microamount (1/1,000,000 of the currency unit)
+   * The total remaining balance. Cents of `currency`, the same value as `amount_micros`, which is misnamed. A fractional `number`, deliberately not the integer-cents convention other `*_cents` fields in this spec use -- do not decode it as an integer.
+   */
+  amount_cents?: number
+  /**
+   * DEPRECATED misnomer: this value is CENTS, not micros. Divide by 100. Use `amount_cents`. The total remaining balance.
+   *
+   * @deprecated
    */
   amount_micros: number
   /**
-   * The remaining balance from cloud credits in microamount
+   * The remaining balance from cloud credits (subscription). Cents of `currency`, the same value as `cloud_credit_balance_micros`, which is misnamed. A fractional `number`, deliberately not the integer-cents convention other `*_cents` fields in this spec use -- do not decode it as an integer.
+   */
+  cloud_credit_balance_cents?: number
+  /**
+   * DEPRECATED misnomer: this value is CENTS, not micros. Divide by 100. Use `cloud_credit_balance_cents`. The remaining balance from cloud credits (subscription).
+   *
+   * @deprecated
    */
   cloud_credit_balance_micros?: number
   /**
@@ -4827,15 +4925,37 @@ export type BillingBalanceResponse = {
    */
   currency: string
   /**
-   * The effective balance (total balance minus pending charges). Can be negative if pending charges exceed the balance.
+   * False when pending charges could not be read. effective_balance_* and pending_charges_* are then omitted, because total minus an unread pending amount would overstate spendable credit. Present on every 200: the zero-balance response for an unprovisioned workspace reports true, because no draft-invoice read happened there to fail. Treat an absent flag as "server predates this field", not as false.
+   */
+  effective_balance_authoritative?: boolean
+  /**
+   * The total balance minus pending charges; negative when charges exceed credit. Cents of `currency`, the same value as `effective_balance_micros`, which is misnamed. A fractional `number`, deliberately not the integer-cents convention other `*_cents` fields in this spec use -- do not decode it as an integer.
+   */
+  effective_balance_cents?: number
+  /**
+   * DEPRECATED misnomer: this value is CENTS, not micros. Divide by 100. Use `effective_balance_cents`. The total balance minus pending charges; negative when charges exceed credit.
+   *
+   * @deprecated
    */
   effective_balance_micros?: number
   /**
-   * The total amount of pending/unbilled charges from draft invoices in microamount
+   * Pending/unbilled charges from draft invoices. Cents of `currency`, the same value as `pending_charges_micros`, which is misnamed. A fractional `number`, deliberately not the integer-cents convention other `*_cents` fields in this spec use -- do not decode it as an integer.
+   */
+  pending_charges_cents?: number
+  /**
+   * DEPRECATED misnomer: this value is CENTS, not micros. Divide by 100. Use `pending_charges_cents`. Pending/unbilled charges from draft invoices.
+   *
+   * @deprecated
    */
   pending_charges_micros?: number
   /**
-   * The remaining balance from prepaid commits in microamount
+   * The remaining balance from prepaid commits (top-ups). Cents of `currency`, the same value as `prepaid_balance_micros`, which is misnamed. A fractional `number`, deliberately not the integer-cents convention other `*_cents` fields in this spec use -- do not decode it as an integer.
+   */
+  prepaid_balance_cents?: number
+  /**
+   * DEPRECATED misnomer: this value is CENTS, not micros. Divide by 100. Use `prepaid_balance_cents`. The remaining balance from prepaid commits (top-ups).
+   *
+   * @deprecated
    */
   prepaid_balance_micros?: number
 }
@@ -5198,6 +5318,14 @@ export type AgentPostMessageRequest = {
    * Optional input filenames the client already uploaded to the ComfyUI input namespace (via /api/upload/image, which returns the {name, subfolder, type} reference). Images, video and audio are all accepted. The agent wires them into the workflow by filename — it never receives file bytes here, and reads an attachment's contents through its own asset tools when a request depends on them.
    */
   attachments?: Array<string>
+  /**
+   * The client's live ComfyUI WebSocket clientId (the `sid` the server hands back on the socket's first status message). Local runs the agent submits on the caller's behalf are submitted under this id, so ComfyUI addresses their execution events — node highlights, progress and outputs — to this client instead of to the short-lived CLI socket that submitted them. Additive and advisory; omitting it restores the previous behaviour, where an agent-started run leaves the canvas with no execution feedback. Ignored on the cloud target, which fans execution events out per user/workspace regardless of submitter. A value that could not be a ComfyUI socket id is DROPPED, not rejected — no turn fails over it — so an id longer than 128 bytes, or one containing whitespace or non-printable characters, or one starting with `-`, is accepted with 202 and behaves exactly like omitting the field. Surrounding whitespace is trimmed.
+   */
+  client_id?: string
+  /**
+   * Client-generated identifier for this send attempt. The frontend emits the same value on app:agent_message_sent; the agent echoes it on agent_turn_started so accepted turns can be joined to their originating sends without using timestamp proximity. Retries mint a new value. Older clients may omit it.
+   */
+  client_message_id?: string
   /**
    * The user's message.
    */
@@ -9759,6 +9887,10 @@ export type GetFeaturesResponses = {
       | 'near-composer'
       | 'above-input'
       | 'inside-input'
+    /**
+     * Authenticated assignment for the Agent starter-prompt experiment. Current Cloud responses include it and default to control when the caller is unauthenticated, evaluation is unavailable, or no treatment is assigned. It remains optional in the client contract so older environments and partial feature fixtures fail closed. Reading this field does not constitute experiment exposure; the frontend emits the custom exposure event only after rendering the starter prompt surface.
+     */
+    'agent-starter-prompt-set'?: 'control' | 'test'
     /**
      * Origin of the billing-web deployment paired with this Cloud environment (e.g. https://billing.comfy.org). Absent when BILLING_WEB_URL is not configured on the server, so a client can tell "not configured" from "configured as empty".
      */

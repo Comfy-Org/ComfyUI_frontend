@@ -1,0 +1,49 @@
+name: 'CI: Container Candidate'
+
+on:
+  pull_request:
+    paths:
+      - 'tools/ci-container/**'
+      - '.github/workflows/ci-container.yaml'
+  push:
+    branches: [main]
+    paths:
+      - 'tools/ci-container/**'
+      - '.github/workflows/ci-container.yaml'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: ci-container-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  validate:
+    runs-on: ubuntu-latest
+    timeout-minutes: 45
+    steps:
+      - uses: actions/checkout@v7
+        with:
+          persist-credentials: false
+
+      - name: Free space for image layers
+        run: sudo rm -rf /usr/local/lib/android /usr/share/dotnet
+
+      - name: Build candidate image
+        run: docker build --tag comfyui-ci-container:candidate tools/ci-container
+
+      - name: Setup frontend
+        uses: ./.github/actions/setup-frontend
+        with:
+          node_cache: 'false'
+
+      - name: Build frontend
+        run: pnpm exec vite build
+        env:
+          DISTRIBUTION: localhost
+          VITE_USE_LEGACY_DEFAULT_GRAPH: 'true'
+
+      - name: Validate candidate image
+        run: bash tools/ci-container/validate.sh
