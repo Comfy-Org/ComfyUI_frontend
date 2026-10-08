@@ -1,8 +1,4 @@
-export const MERGE_MODES = ['automatic', 'manual'] as const
-export const MERGE_METHODS = ['MERGE', 'REBASE', 'SQUASH'] as const
-
 export interface FastLaneConfig {
-  schemaVersion: 1
   id: string
   pathPrefixes: string[]
   approval: {
@@ -11,10 +7,6 @@ export interface FastLaneConfig {
     approvalLabel: string
     trustedLabelers: string[]
     holdLabel: string
-  }
-  merge: {
-    mode: (typeof MERGE_MODES)[number]
-    method: (typeof MERGE_METHODS)[number]
   }
 }
 

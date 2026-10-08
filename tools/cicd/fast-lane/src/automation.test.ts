@@ -166,17 +166,6 @@ describe('runFastLane', () => {
       ]
     },
     {
-      name: 'a manual lane',
-      options: {},
-      config: {
-        lane: {
-          ...lane,
-          merge: { mode: 'manual', method: 'SQUASH' }
-        }
-      },
-      writes: [approvalPost]
-    },
-    {
       name: 'a head that advanced before arming',
       options: { mergeState: { headRefOid: 'f'.repeat(40) } },
       config: {},

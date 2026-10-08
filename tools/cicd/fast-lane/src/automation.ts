@@ -148,8 +148,6 @@ async function armMergeAutomation(
   config: RuntimeConfig,
   summary: Summary
 ): Promise<void> {
-  if (config.lane.merge.mode === 'manual') return
-
   const headSha = config.eventHeadSha
   const state = await readMergeState(github, pull)
   if (state.headRefOid !== headSha) {
@@ -197,7 +195,7 @@ async function armMergeAutomation(
     {
       pullRequestId: state.id,
       expectedHeadOid: headSha,
-      mergeMethod: config.lane.merge.method
+      mergeMethod: 'SQUASH'
     }
   )
   summary(`Armed native auto-merge for ${shortSha(headSha)}.`)

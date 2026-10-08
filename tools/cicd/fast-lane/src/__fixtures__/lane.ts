@@ -10,7 +10,6 @@ export const headSha = '0123456789abcdef0123456789abcdef01234567'
 export const floorTime = '2026-10-06T10:00:00Z'
 
 export const lane: FastLaneConfig = {
-  schemaVersion: 1,
   id: 'website',
   pathPrefixes: ['apps/website/'],
   approval: {
@@ -19,8 +18,7 @@ export const lane: FastLaneConfig = {
     approvalLabel: 'website-fast-lane:approve',
     trustedLabelers: ['drjkl'],
     holdLabel: 'website-fast-lane:hold'
-  },
-  merge: { mode: 'automatic', method: 'SQUASH' }
+  }
 }
 
 export const operatorLabelEvent = {

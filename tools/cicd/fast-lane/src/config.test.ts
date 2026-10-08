@@ -1,76 +1,22 @@
-import { readFileSync } from 'node:fs'
-
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 
-import { lane, operatorLabelEvent } from './__fixtures__/lane.ts'
-import { loadRuntimeConfig, parseFastLaneConfig } from './config.ts'
+import { operatorLabelEvent } from './__fixtures__/lane.ts'
+import { loadRuntimeConfig } from './config.ts'
+import { lanes } from './lanes.ts'
 
-describe('lane configuration', () => {
-  it('normalizes logins while preserving the reviewed path policy', () => {
-    expect(
-      parseFastLaneConfig({
-        ...lane,
-        approval: {
-          ...lane.approval,
-          identity: 'Christian-Byrne',
-          trustedAuthors: ['BertFY', 'bertfy'],
-          trustedLabelers: ['DrJKL']
-        }
-      })
-    ).toEqual(lane)
-  })
-
-  it('parses the checked-in website lane', () => {
-    const shipped: unknown = JSON.parse(
-      readFileSync('.github/fast-lanes/website.json', 'utf8')
-    )
-    expect(parseFastLaneConfig(shipped).pathPrefixes).toEqual(['apps/website/'])
-  })
-
-  it.for([
-    {
-      key: 'schema version',
-      value: { ...lane, schemaVersion: 2 },
-      message: 'schemaVersion must be 1'
-    },
-    {
-      key: 'empty path policy',
-      value: { ...lane, pathPrefixes: [] },
-      message: 'pathPrefixes must be an array'
-    },
-    {
-      key: 'ambiguous path prefix',
-      value: { ...lane, pathPrefixes: ['apps/website'] },
-      message: 'relative directory prefixes'
-    },
-    {
-      key: 'absolute path prefix',
-      value: { ...lane, pathPrefixes: ['/apps/website/'] },
-      message: 'relative directory prefixes'
-    },
-    {
-      key: 'parent path segment',
-      value: { ...lane, pathPrefixes: ['apps/website/../'] },
-      message: 'relative directory prefixes'
-    },
-    {
-      key: 'unknown merge mode',
-      value: { ...lane, merge: { mode: 'sometimes', method: 'SQUASH' } },
-      message: 'automatic or manual'
-    },
-    {
-      key: 'unknown merge method',
-      value: { ...lane, merge: { mode: 'automatic', method: 'FAST_FORWARD' } },
-      message: 'MERGE, REBASE, or SQUASH'
-    }
-  ])('rejects $key', ({ value, message }) => {
-    expect(() => parseFastLaneConfig(value)).toThrow(message)
-  })
+it.for(lanes)('keeps the $id lane in the form the engine compares', (lane) => {
+  for (const value of Object.values(lane.approval).flat()) {
+    expect(value).toBe(value.toLowerCase())
+  }
+  for (const prefix of lane.pathPrefixes) {
+    expect(prefix).toMatch(/\/$/)
+    expect(prefix).not.toMatch(/^\/|(^|\/)\.\.\//)
+  }
 })
 
 describe('runtime configuration', () => {
   beforeEach(() => {
-    vi.stubEnv('FAST_LANE_CONFIG', '.github/fast-lanes/website.json')
+    vi.stubEnv('FAST_LANE', 'website')
     vi.stubEnv('GITHUB_REPOSITORY', 'Comfy-Org/ComfyUI_frontend')
     vi.stubEnv('PR_NUMBER', '42')
     vi.stubEnv('PR_HEAD_SHA', 'head-sha')
@@ -107,7 +53,12 @@ describe('runtime configuration', () => {
     }
   )
 
-  it('requires the resolved pull request number', () => {
+  it('rejects an unconfigured lane', () => {
+    vi.stubEnv('FAST_LANE', 'docs')
+    expect(() => loadRuntimeConfig()).toThrow('not a configured lane')
+  })
+
+  it('requires the pull request number', () => {
     vi.stubEnv('PR_NUMBER', '')
     expect(() => loadRuntimeConfig()).toThrow('PR_NUMBER is required')
   })
