@@ -342,7 +342,7 @@ function fitsAwarenessBudget(state: Record<string, unknown>): boolean {
 }
 
 type AwarenessStateResult =
-  | { kind: 'state'; state: Record<string, unknown> }
+  | { kind: 'present'; state: Record<string, unknown> }
   | { kind: 'absent' }
   | { kind: 'invalid' }
 
@@ -350,7 +350,7 @@ function parseAwarenessState(value: unknown): AwarenessStateResult {
   if (isAbsent(value)) return { kind: 'absent' }
   const state = parseRecord(value)
   if (state === null || !fitsAwarenessBudget(state)) return { kind: 'invalid' }
-  return { kind: 'state', state }
+  return { kind: 'present', state }
 }
 
 const serverFrameParsers: ServerFrameParsers = {
@@ -428,7 +428,7 @@ const serverFrameParsers: ServerFrameParsers = {
       data: {
         workflowId,
         actor: data.actor,
-        ...(parsed.kind === 'state' && { state: parsed.state }),
+        ...(parsed.kind === 'present' && { state: parsed.state }),
         ...(isSequence(data.expires_at) && { expiresAt: data.expires_at })
       }
     }
