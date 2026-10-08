@@ -71,7 +71,7 @@ describe('WorkflowPage header', () => {
     )
   })
 
-  it('leads with Run here, then Comfy Cloud, the download and the API', () => {
+  it('leads with Comfy Cloud, then the download and the API, with no Run here up top', () => {
     mount()
 
     const paths = screen.getByRole('navigation', {
@@ -82,7 +82,6 @@ describe('WorkflowPage header', () => {
         .getAllByRole('link')
         .map((link) => [link.textContent.trim(), link.getAttribute('href')])
     ).toEqual([
-      ['Run here', '#playground'],
       [
         'Try in Comfy Cloud (opens in a new tab)',
         expect.stringContaining(`?template=${template.id}`)
@@ -91,8 +90,9 @@ describe('WorkflowPage header', () => {
       ['API', '#api']
     ])
     expect(
-      within(paths).getByRole('link', { name: 'Run here' })
+      within(paths).getByRole('link', { name: /Try in Comfy Cloud/ })
     ).toHaveAttribute('data-variant', 'default')
+    expect(within(paths).queryByRole('link', { name: 'Run here' })).toBeNull()
     expect(
       within(paths).getByRole('link', { name: 'Download workflow' })
     ).toHaveAttribute('download')

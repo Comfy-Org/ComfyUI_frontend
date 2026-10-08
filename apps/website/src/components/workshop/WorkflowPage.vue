@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { Cloud, Code, Download, Play } from '@lucide/vue'
+import { Cloud, Code, Download } from '@lucide/vue'
 import { computed } from 'vue'
 
 import Button from '@/components/ui/button/Button.vue'
@@ -38,7 +38,7 @@ const cloudHref = template
   ? `${WORKSHOP_CLOUD_BASE_URL}/?template=${encodeURIComponent(template.id)}`
   : undefined
 
-const primary = paths.run ? 'run' : cloudHref ? 'cloud' : 'download'
+const primary = cloudHref ? 'cloud' : 'download'
 
 const enabled = useWorkshopEnabled()
 const workflowsEnabled = useWorkshopWorkflowsEnabled()
@@ -91,20 +91,6 @@ function captureDownload() {
         class="mt-6 flex flex-wrap items-center gap-2"
         data-testid="workflow-paths"
       >
-        <Button
-          v-if="paths.run"
-          as="a"
-          href="#playground"
-          variant="default"
-          class="px-5"
-          data-testid="workflow-path-run"
-          @click="goTo($event, 'playground')"
-        >
-          <template #prepend>
-            <Play class="size-3.5 fill-current" aria-hidden="true" />
-          </template>
-          {{ t('workshop.workflow.runHere') }}
-        </Button>
         <Button
           v-if="cloudHref"
           as="a"

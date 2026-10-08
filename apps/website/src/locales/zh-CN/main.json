@@ -4486,7 +4486,6 @@
       "paths": "使用此工作流的方式",
       "downloadWorkflow": "下载工作流",
       "runInCloud": "在 Comfy Cloud 中试用",
-      "runHere": "在此运行",
       "apiPath": "API",
       "filesNeeded": "所需文件",
       "filesNote": "将每个文件放入所示文件夹，该文件夹位于你的 ComfyUI 目录中。",

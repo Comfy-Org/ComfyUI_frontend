@@ -637,7 +637,6 @@
       "paths": "Ways to use this workflow",
       "downloadWorkflow": "Download workflow",
       "runInCloud": "Try in Comfy Cloud",
-      "runHere": "Run here",
       "apiPath": "API",
       "filesNeeded": "Files it needs",
       "filesNote": "Put each file in the folder shown, inside your ComfyUI folder.",

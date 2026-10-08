@@ -1,7 +1,7 @@
 import userEvent from '@testing-library/user-event'
 import { fireEvent, render, screen, within } from '@testing-library/vue'
 import { describe, expect, it, vi } from 'vitest'
-import { defineComponent, h, nextTick, ref } from 'vue'
+import { defineComponent, h, ref } from 'vue'
 
 import type {
   FieldErrors,
@@ -86,27 +86,22 @@ describe('PlaygroundField', () => {
     expect(screen.queryByText(`Default: ${field.defaultValue}`)).toBeNull()
   })
 
-  it('grows the prompt box to the prompt an example drops into it', async () => {
-    const field: FieldSchema = {
-      kind: 'text',
-      name: 'prompt',
-      label: 'Prompt',
-      required: true,
-      multiline: true
-    }
-    const values = mountField(field, { prompt: 'A forest.' })
+  it('keeps a long prompt in a five-line box the reader can scroll or drag taller', () => {
+    mountField(
+      {
+        kind: 'text',
+        name: 'prompt',
+        label: 'Prompt',
+        required: true,
+        multiline: true
+      },
+      { prompt: Array.from({ length: 12 }, (_, i) => `Line ${i}`).join('\n') }
+    )
     const box = screen.getByTestId<HTMLTextAreaElement>('field-prompt')
-    const lineHeight = 24
-    Object.defineProperty(box, 'scrollHeight', {
-      get: () => box.value.split('\n').length * lineHeight
-    })
 
-    values.value = {
-      prompt: 'A forest.\nThen a clearing.\nThen the sea.\nThen dusk.'
-    }
-    await nextTick()
-
-    expect(box.style.height).toBe(`${4 * lineHeight}px`)
+    expect(box).toHaveAttribute('rows', '5')
+    expect(box).toHaveClass('resize-y', 'overflow-y-auto')
+    expect(box.style.height).toBe('')
   })
 
   it('preserves a provider rejection when the input passes its form constraint', () => {
