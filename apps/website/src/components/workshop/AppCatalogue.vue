@@ -25,7 +25,7 @@ const cards = computed(() => [
     meta: undefined
   }))
 ])
-const { shown, hasMore, showMore } = usePagedList(cards)
+const { shown, total, hasMore, showMore } = usePagedList(cards)
 </script>
 
 <template>
@@ -39,6 +39,12 @@ const { shown, hasMore, showMore } = usePagedList(cards)
         <WorkshopAppCard :app :meta :locale />
       </li>
     </ul>
-    <CatalogueShowMore v-if="hasMore" :locale @more="showMore" />
+    <CatalogueShowMore
+      v-if="hasMore"
+      :shown="shown.length"
+      :total
+      :locale
+      @more="showMore"
+    />
   </section>
 </template>

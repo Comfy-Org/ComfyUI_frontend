@@ -548,7 +548,9 @@
       "loadMore": "Load more",
       "empty": "No workflows match your filters",
       "emptyHint": "Try removing some filters",
-      "showing": "Showing {shown} of {total} workflows"
+      "showing": "Showing {shown} of {total} workflows",
+      "showingOf": "Showing {shown} of {total}",
+      "showMore": "Show more"
     },
     "workflow": {
       "by": "by {author}",

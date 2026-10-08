@@ -77,10 +77,10 @@ function catalogueHeading() {
 }
 
 async function showEveryPage(user: ReturnType<typeof userEvent.setup>) {
-  let more = screen.queryByRole('button', { name: 'Load more' })
+  let more = screen.queryByRole('button', { name: 'Show more' })
   while (more) {
     await user.click(more)
-    more = screen.queryByRole('button', { name: 'Load more' })
+    more = screen.queryByRole('button', { name: 'Show more' })
   }
 }
 
@@ -572,24 +572,24 @@ describe('WorkshopModelsGrid', () => {
       expect(catalogueHeading()).toHaveTextContent('30')
       expect(cardNames()).toHaveLength(12)
 
-      await user.click(screen.getByRole('button', { name: 'Load more' }))
+      await user.click(screen.getByRole('button', { name: 'Show more' }))
       expect(cardNames()).toHaveLength(24)
 
-      await user.click(screen.getByRole('button', { name: 'Load more' }))
+      await user.click(screen.getByRole('button', { name: 'Show more' }))
       expect(cardNames()).toHaveLength(30)
-      expect(screen.queryByRole('button', { name: 'Load more' })).toBeNull()
+      expect(screen.queryByRole('button', { name: 'Show more' })).toBeNull()
     })
 
     it('starts again from the first page when the search or sort changes', async () => {
       const user = userEvent.setup()
       render(WorkshopModelsGrid, { props: { models: many } })
-      await user.click(screen.getByRole('button', { name: 'Load more' }))
+      await user.click(screen.getByRole('button', { name: 'Show more' }))
       expect(cardNames()).toHaveLength(24)
 
       await user.type(await search(), 'model')
       expect(cardNames()).toHaveLength(12)
 
-      await user.click(screen.getByRole('button', { name: 'Load more' }))
+      await user.click(screen.getByRole('button', { name: 'Show more' }))
       await user.click(screen.getByRole('button', { name: 'Sort' }))
       await user.click(
         await screen.findByRole('menuitemradio', { name: 'Name A to Z' })
@@ -599,7 +599,7 @@ describe('WorkshopModelsGrid', () => {
 
     it('shows no more button when one page holds every model', () => {
       render(WorkshopModelsGrid, { props: { models } })
-      expect(screen.queryByRole('button', { name: 'Load more' })).toBeNull()
+      expect(screen.queryByRole('button', { name: 'Show more' })).toBeNull()
     })
 
     it('leaves the heading above the toolbar holding the controls', () => {

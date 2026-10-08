@@ -17,11 +17,12 @@ export function usePagedList<T>(
   )
 
   const shown = computed(() => toValue(items).slice(0, limit.value))
-  const hasMore = computed(() => toValue(items).length > limit.value)
+  const total = computed(() => toValue(items).length)
+  const hasMore = computed(() => total.value > limit.value)
 
   function showMore() {
     limit.value += pageSize
   }
 
-  return { limit, shown, hasMore, showMore }
+  return { limit, shown, total, hasMore, showMore }
 }

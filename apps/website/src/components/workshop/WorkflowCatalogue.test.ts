@@ -99,10 +99,13 @@ describe('workflow catalogue ordering and shared links', () => {
     const user = userEvent.setup()
     render(WorkflowCatalogue, { props: { models: many } })
     expect(visibleOutcomes()).toHaveLength(12)
+    expect(screen.getByTestId('catalogue-show-more-count')).toHaveTextContent(
+      'Showing 12 of 20'
+    )
 
-    await user.click(screen.getByRole('button', { name: 'Load more' }))
+    await user.click(screen.getByRole('button', { name: 'Show more' }))
     expect(visibleOutcomes()).toHaveLength(20)
-    expect(screen.queryByRole('button', { name: 'Load more' })).toBeNull()
+    expect(screen.queryByRole('button', { name: 'Show more' })).toBeNull()
 
     await user.type(screen.getByRole('searchbox'), 'portrait')
     expect(visibleOutcomes()).toHaveLength(12)

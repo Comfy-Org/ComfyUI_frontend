@@ -66,10 +66,10 @@ async function chooseTab(name: string) {
 }
 
 async function showEveryPage() {
-  let more = screen.queryByRole('button', { name: 'Load more' })
+  let more = screen.queryByRole('button', { name: 'Show more' })
   while (more) {
     await userEvent.click(more)
-    more = screen.queryByRole('button', { name: 'Load more' })
+    more = screen.queryByRole('button', { name: 'Show more' })
   }
 }
 

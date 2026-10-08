@@ -113,7 +113,7 @@ const visible = computed(() => {
     ? matching
     : sortWorkshopModels(matching, sort.value)
 })
-const { shown, hasMore, showMore } = usePagedList(visible)
+const { shown, total, hasMore, showMore } = usePagedList(visible)
 
 // What narrowed the list stays legible next to it, so a reader can take one
 // choice off without reopening the menu that made it.
@@ -202,7 +202,13 @@ function clear() {
           <WorkshopModelCard :model :locale />
         </li>
       </ul>
-      <CatalogueShowMore v-if="hasMore" :locale @more="showMore" />
+      <CatalogueShowMore
+        v-if="hasMore"
+        :shown="shown.length"
+        :total
+        :locale
+        @more="showMore"
+      />
     </template>
     <div
       v-else

@@ -43,9 +43,9 @@ describe('AppCatalogue', () => {
     expect(cards()).toHaveLength(12)
     expect(cards().at(-1)?.dataset.soon).toBe('true')
 
-    await user.click(screen.getByRole('button', { name: 'Load more' }))
+    await user.click(screen.getByRole('button', { name: 'Show more' }))
     expect(cards()).toHaveLength(16)
-    expect(screen.queryByRole('button', { name: 'Load more' })).toBeNull()
+    expect(screen.queryByRole('button', { name: 'Show more' })).toBeNull()
   })
 
   it('puts no featured app ahead of the list', () => {

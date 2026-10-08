@@ -212,6 +212,7 @@ const isFiltered = computed(
 
 const {
   limit: cardLimit,
+  total: cardTotal,
   hasMore,
   showMore
 } = usePagedList(() => [...visible.value, ...openWeightVisible.value])
@@ -345,7 +346,13 @@ function rememberModel(model: WorkshopModel, event: MouseEvent) {
                 @open="rememberModel"
                 @compare="toggleCompare"
               />
-              <CatalogueShowMore v-if="hasMore" :locale @more="showMore" />
+              <CatalogueShowMore
+                v-if="hasMore"
+                :shown="cardLimit"
+                :total="cardTotal"
+                :locale
+                @more="showMore"
+              />
             </template>
             <WorkshopModelsEmpty
               v-else
