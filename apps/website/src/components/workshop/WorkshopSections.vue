@@ -2,13 +2,15 @@
 import { ChevronRight } from '@lucide/vue'
 import { computed } from 'vue'
 
+import { cn } from '@comfyorg/tailwind-utils'
+
 import Button from '@/components/ui/button/Button.vue'
 import type { WorkshopModel } from '@/config/models-catalogue'
 import { sortWorkshopModels } from '@/config/models-catalogue'
 import type { Locale } from '@/i18n/translations'
 import { translationsFor } from '@/i18n/translations'
 import { groupModels } from '@/config/model-family'
-import { CARD_GRID } from '@/lib/workshop/card-layout'
+import { CARD_GRID_BESIDE_NAV } from '@/lib/workshop/card-layout'
 import { canCompare, MAX_COMPARED } from '@/lib/workshop/explorer/compare'
 import { getRoutes } from '@/config/routes'
 import { rememberListOnClick } from '@/lib/workshop/shelf-memory'
@@ -16,6 +18,7 @@ import CompareToggle from '@/components/workshop/explorer/compare/CompareToggle.
 import WorkshopModelCard from './WorkshopModelCard.vue'
 
 const TRENDING_LIMIT = 8
+const TRENDING_THREE_ACROSS = 6
 
 const {
   models,
@@ -70,11 +73,16 @@ function rememberModel(model: WorkshopModel, event: MouseEvent) {
       </Button>
     </div>
 
-    <ul :class="CARD_GRID">
+    <ul :class="CARD_GRID_BESIDE_NAV">
       <li
-        v-for="family in trending"
+        v-for="(family, index) in trending"
         :key="family.key"
-        class="group/compare relative"
+        :class="
+          cn(
+            'group/compare relative',
+            index >= TRENDING_THREE_ACROSS && 'xl:max-2xl:hidden'
+          )
+        "
       >
         <WorkshopModelCard
           :model="family.latest"

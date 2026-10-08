@@ -9,3 +9,7 @@ export const SHELF_CARD =
 
 export const CARD_GRID =
   'grid grid-cols-1 gap-5 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4'
+
+/** The grid beside the Models category sidebar, a column narrower. */
+export const CARD_GRID_BESIDE_NAV =
+  'grid grid-cols-1 gap-5 sm:grid-cols-2 xl:grid-cols-3 2xl:grid-cols-4'

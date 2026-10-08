@@ -3,7 +3,7 @@ import type { ModelFamily } from '@/config/model-family'
 import type { WorkshopModel } from '@/config/models-catalogue'
 import type { Locale } from '@/i18n/translations'
 import { translationsFor } from '@/i18n/translations'
-import { CARD_GRID } from '@/lib/workshop/card-layout'
+import { CARD_GRID_BESIDE_NAV } from '@/lib/workshop/card-layout'
 import { canCompare, MAX_COMPARED } from '@/lib/workshop/explorer/compare'
 import type { OpenWeightModel } from '@/lib/workshop/explorer/open-weight-models'
 import CompareToggle from '@/components/workshop/explorer/compare/CompareToggle.vue'
@@ -35,7 +35,7 @@ defineEmits<{
       {{ t('workshop.models.heading') }}
     </h2>
     <ul
-      :class="CARD_GRID"
+      :class="CARD_GRID_BESIDE_NAV"
       aria-labelledby="workshop-models-heading"
       data-testid="workshop-models-grid"
     >

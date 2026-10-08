@@ -46,6 +46,7 @@ import {
   OPEN_WEIGHT_MODELS
 } from '@/lib/workshop/explorer/open-weight-models'
 import { hostedInTab } from '@/lib/workshop/explorer/model-tabs'
+import { modelTabCounts } from '@/lib/workshop/explorer/model-tab-counts'
 import { useModelTab } from '@/lib/workshop/explorer/model-tab-address'
 import { rememberListOnClick } from '@/lib/workshop/shelf-memory'
 import { modelsListReturn } from '@/lib/workshop/models-list-return'
@@ -84,7 +85,10 @@ const legacyModalities = ref<string[]>([])
 const legacyProviders = ref<string[]>([])
 const legacyCapabilities = ref<string[]>([])
 const sort = ref<SortOrder>('popular')
-const { tab, readAddress: readTab } = useModelTab()
+const tabCounts = computed(() => modelTabCounts(models, OPEN_WEIGHT_MODELS))
+const { tab, readAddress: readTab } = useModelTab(
+  (named) => (tabCounts.value.get(named) ?? 0) > 0
+)
 const TAB_PANEL_ID = 'workshop-model-tab-panel'
 const openedShelf = computed(() => shelfOf(selectedUseCases.value))
 // Willie's browseable listing: rows per use case until the visitor narrows
@@ -305,79 +309,97 @@ watch(browseAll, (on) => on && resetFilters())
         </span>
       </h2>
 
-      <div
-        :id="HUB_TOOLBAR_ID"
-        ref="toolbar"
-        data-testid="workshop-toolbar"
-        class="sticky top-20 z-30 -mx-1 mb-8 flex scroll-mt-20 flex-wrap items-center gap-3 bg-page px-1 py-4 max-sm:mb-4 max-sm:py-2 lg:top-26 lg:scroll-mt-26"
-      >
-        <div
-          class="flex min-w-0 flex-1 items-center gap-3 max-sm:basis-full sm:min-w-fit"
-        >
-          <WorkshopSearchField
-            v-model="query"
-            :models
-            :locale
-            compact
-            class="min-w-0 flex-1"
-          />
+      <div class="flex flex-col lg:flex-row lg:items-start lg:gap-10">
+        <ModelTabs
+          v-model="tab"
+          :panel-id="TAB_PANEL_ID"
+          :counts="tabCounts"
+          :locale
+          class="max-lg:order-1"
+        />
 
-          <div class="flex items-center gap-2" data-testid="workshop-filters">
-            <WorkshopFilterMenu
-              v-model:access="selectedAccess"
-              :use-cases="selectedUseCases"
-              :use-case-options="useCaseOptions"
-              :access-options="accessOptions"
-              :result-count
-              :locale
-              @update:use-cases="applyUseCases"
-            />
+        <div class="min-w-0 max-lg:contents lg:flex-1">
+          <div
+            :id="HUB_TOOLBAR_ID"
+            ref="toolbar"
+            data-testid="workshop-toolbar"
+            class="sticky top-20 z-30 -mx-1 mb-8 flex scroll-mt-20 flex-wrap items-center gap-3 bg-page px-1 py-4 max-sm:mb-4 max-sm:py-2 lg:top-26 lg:scroll-mt-26"
+          >
+            <div
+              class="flex min-w-0 flex-1 items-center gap-3 max-sm:basis-full sm:min-w-fit"
+            >
+              <WorkshopSearchField
+                v-model="query"
+                :models
+                :locale
+                compact
+                class="min-w-0 flex-1"
+              />
 
-            <WorkshopSortMenu v-model="sort" :orders="SORT_ORDERS" :locale />
+              <div
+                class="flex items-center gap-2"
+                data-testid="workshop-filters"
+              >
+                <WorkshopFilterMenu
+                  v-model:access="selectedAccess"
+                  :use-cases="selectedUseCases"
+                  :use-case-options="useCaseOptions"
+                  :access-options="accessOptions"
+                  :result-count
+                  :locale
+                  @update:use-cases="applyUseCases"
+                />
+
+                <WorkshopSortMenu
+                  v-model="sort"
+                  :orders="SORT_ORDERS"
+                  :locale
+                />
+              </div>
+            </div>
+          </div>
+
+          <div
+            :id="TAB_PANEL_ID"
+            role="tabpanel"
+            :aria-labelledby="`${TAB_PANEL_ID}-${tab}`"
+            class="max-lg:order-2"
+          >
+            <div
+              v-if="browsing"
+              class="flex flex-col gap-14 max-sm:gap-10"
+              data-testid="workshop-sections"
+            >
+              <WorkshopSections
+                :models
+                :compared="comparedSlugs"
+                :locale
+                @browse="browseAll = true"
+                @compare="toggleCompare"
+              />
+              <ModelAccessSection :locale />
+              <ModelFamilySection :models :locale />
+            </div>
+
+            <template v-else>
+              <WorkshopModelsResults
+                v-if="resultCount"
+                :families="visible"
+                :open-weight="openWeightVisible"
+                :compared="comparedSlugs"
+                :locale
+                @open="rememberModel"
+                @compare="toggleCompare"
+              />
+              <WorkshopModelsEmpty
+                v-else
+                :filtered="isFiltered"
+                :locale
+                @clear="clearFilters"
+              />
+            </template>
           </div>
         </div>
-      </div>
-
-      <ModelTabs v-model="tab" :panel-id="TAB_PANEL_ID" :locale />
-
-      <div
-        :id="TAB_PANEL_ID"
-        role="tabpanel"
-        :aria-labelledby="`${TAB_PANEL_ID}-${tab}`"
-      >
-        <div
-          v-if="browsing"
-          class="flex flex-col gap-14 max-sm:gap-10"
-          data-testid="workshop-sections"
-        >
-          <WorkshopSections
-            :models
-            :compared="comparedSlugs"
-            :locale
-            @browse="browseAll = true"
-            @compare="toggleCompare"
-          />
-          <ModelAccessSection :locale />
-          <ModelFamilySection :models :locale />
-        </div>
-
-        <template v-else>
-          <WorkshopModelsResults
-            v-if="resultCount"
-            :families="visible"
-            :open-weight="openWeightVisible"
-            :compared="comparedSlugs"
-            :locale
-            @open="rememberModel"
-            @compare="toggleCompare"
-          />
-          <WorkshopModelsEmpty
-            v-else
-            :filtered="isFiltered"
-            :locale
-            @clear="clearFilters"
-          />
-        </template>
       </div>
     </div>
 

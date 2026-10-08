@@ -4589,7 +4589,12 @@
         "upscale": "放大",
         "llm": "大语言模型",
         "open": "开放权重",
-        "partner": "合作伙伴节点"
+        "partner": "合作伙伴节点",
+        "groups": {
+          "type": "类型",
+          "task": "任务",
+          "access": "获取方式"
+        }
       },
       "filter": {
         "label": "使用方式",

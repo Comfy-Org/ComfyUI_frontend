@@ -68,13 +68,13 @@ async function chooseTab(name: string) {
 describe('WorkshopModelsGrid category tabs', () => {
   afterEach(() => history.replaceState(null, '', '/'))
 
-  it('sits under the toolbar and opens on All with the browsing rows', async () => {
+  it('reads before the toolbar, as the sidebar beside it, and opens on All with the browsing rows', async () => {
     render(WorkshopModelsGrid, { props: { models } })
     const tabs = screen.getByRole('tablist', { name: 'Model categories' })
     expect(
       screen.getByTestId('workshop-toolbar').compareDocumentPosition(tabs) &
-        Node.DOCUMENT_POSITION_FOLLOWING
-    ).toBe(Node.DOCUMENT_POSITION_FOLLOWING)
+        Node.DOCUMENT_POSITION_PRECEDING
+    ).toBe(Node.DOCUMENT_POSITION_PRECEDING)
     expect(screen.getByRole('tab', { name: 'All' })).toHaveAttribute(
       'aria-selected',
       'true'
@@ -116,7 +116,6 @@ describe('WorkshopModelsGrid category tabs', () => {
         model.tasks.includes('upscale')
       )
     },
-    { tab: 'LLM', hosted: [], openWeight: [] },
     {
       tab: 'Open weights',
       hosted: [],
@@ -189,10 +188,36 @@ describe('WorkshopModelsGrid category tabs', () => {
     expect(screen.getByText('No models match')).toBeTruthy()
   })
 
+  it('leaves out a category that lists nothing', () => {
+    render(WorkshopModelsGrid, { props: { models } })
+
+    expect(screen.queryByRole('tab', { name: 'LLM' })).toBeNull()
+  })
+
+  it('falls back to All when the address names a category that lists nothing', async () => {
+    history.replaceState(null, '', '/models/?tab=llm')
+    render(WorkshopModelsGrid, { props: { models } })
+
+    await waitFor(() =>
+      expect(screen.getByRole('tab', { name: 'All' })).toHaveAttribute(
+        'aria-selected',
+        'true'
+      )
+    )
+    expect(location.search).toBe('')
+    expect(screen.getByTestId('workshop-sections')).toBeTruthy()
+  })
+
   it('goes back to All when the filters are cleared', async () => {
     const user = userEvent.setup()
     render(WorkshopModelsGrid, { props: { models } })
-    await chooseTab('LLM')
+    await chooseTab('Video')
+    await user.type(
+      screen.getByRole('searchbox', {
+        name: 'Search models, providers, and categories'
+      }),
+      'nothing by this name'
+    )
     expect(screen.getByText('No models match')).toBeTruthy()
 
     await user.click(screen.getByRole('button', { name: 'Clear filters' }))

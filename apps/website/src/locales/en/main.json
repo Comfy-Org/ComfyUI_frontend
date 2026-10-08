@@ -745,7 +745,12 @@
         "upscale": "Upscale",
         "llm": "LLM",
         "open": "Open weights",
-        "partner": "Partner nodes"
+        "partner": "Partner nodes",
+        "groups": {
+          "type": "Type",
+          "task": "Task",
+          "access": "Access"
+        }
       },
       "filter": {
         "label": "How you use it",
