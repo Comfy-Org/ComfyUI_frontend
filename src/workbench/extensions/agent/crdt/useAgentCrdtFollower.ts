@@ -389,6 +389,26 @@ function startAgentCrdtFollower(
   const confirmedDeletes = new Set<string>()
   const rejectedOpNotifier = createRejectedOpNotifier()
   const projection = new AgentCrdtProjection(getGraph, applierDeps)
+  const pendingRejected = new Map<string, Op[]>()
+
+  const applyRejectedOps = (
+    workflowId: string,
+    rejected: readonly Op[]
+  ): boolean => {
+    if (getGraph() === null) return false
+    reportMaterialized(
+      workflowId,
+      projection.revertRejected(workflowId, rejected)
+    )
+    return true
+  }
+
+  const drainRejectedOps = (workflowId: string): void => {
+    const rejected = pendingRejected.get(workflowId)
+    if (!rejected) return
+    if (applyRejectedOps(workflowId, rejected))
+      pendingRejected.delete(workflowId)
+  }
 
   const trackAcknowledgedDeletes = (
     outcome: Extract<BatchOutcome, { state: 'acknowledged' }>
@@ -411,10 +431,18 @@ function startAgentCrdtFollower(
 
     const applied = new Set(outcome.result.applied)
     const rejected = outcome.ops.filter((op) => !applied.has(op.op_id))
-    reportMaterialized(
-      workflowId,
-      projection.revertRejected(workflowId, rejected)
-    )
+    if (!isTargetActive.value) {
+      pendingRejected.set(workflowId, [
+        ...(pendingRejected.get(workflowId) ?? []),
+        ...rejected
+      ])
+      return
+    }
+    if (!applyRejectedOps(workflowId, rejected))
+      pendingRejected.set(workflowId, [
+        ...(pendingRejected.get(workflowId) ?? []),
+        ...rejected
+      ])
   }
 
   const settleHumanOps = (outcome: BatchOutcome) => {
@@ -729,7 +757,10 @@ function startAgentCrdtFollower(
   // collected at the bind site instead, once the binding actually exists.
   watch(getGraph, (graph) => {
     const bound = subscribedWorkflowId.value
-    if (graph && bound !== null && isTargetActive.value) applyCollected(bound)
+    if (graph && bound !== null && isTargetActive.value) {
+      applyCollected(bound)
+      drainRejectedOps(bound)
+    }
   })
   const rebindProjection = (next: string | null): void => {
     const current = subscribedWorkflowId.value
@@ -816,6 +847,7 @@ function startAgentCrdtFollower(
     initialBind = false
     rebindProjection(next)
     retarget(next)
+    drainRejectedOps(next)
     if (justActivated) applyCollected(next)
   }
 
@@ -864,6 +896,7 @@ function startAgentCrdtFollower(
       () => bridge.removeEventListener('doc_reseed_result', onReseedResult),
       () => sender.detach(),
       () => rejectedOpNotifier.cancel(),
+      () => pendingRejected.clear(),
       () => coalescer.detach(),
       () => projection.destroy(),
       () => bridge.destroy(),
