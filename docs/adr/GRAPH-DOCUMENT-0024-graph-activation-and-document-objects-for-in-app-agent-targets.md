@@ -21,10 +21,8 @@ the self-contained frontend contract for target routing, document ownership, and
 Every remote mutation carries a canonical wire `workflow_id`; an unresolved target retains
 its target-scoped batch without falling back to the active graph, and queue drain preserves
 arrival order and the original operation stamps. Recovery is scoped to that same target.
-This reproduces the target-routing contract recorded in private program ADR-015 at commit
-`f3175059413d3ce4d22f53fc2b77107b475f9afb`. This frontend ADR keeps a separately minted
-`document_id` for local document ownership and maps cloud-backed documents to their
-`workflow_id` explicitly.
+This frontend ADR keeps a separately minted `document_id` for local document ownership
+and maps cloud-backed documents to their `workflow_id` explicitly.
 
 The current `ChangeTracker` is important prior art. It stores serialized state during
 tab deactivation, allowing transient graph state to survive a tab switch, but its
@@ -265,7 +263,7 @@ it never wipes or independently reseeds that document. A `doc_reset` is the sole
 replacement path and starts a new lineage only after all projectors have observed the
 reset.
 
-DQ-11(c)'s `node_incarnation` is shared-applier payload data. The frontend carries it
+`node_incarnation` is shared-applier payload data. The frontend carries it
 through the document, queue, projection, and reload boundaries. It never infers an
 incarnation from the active canvas, collapses it into a client ID, or mints a replacement.
 A delete/re-add with the same node ID therefore cannot allow stale widget stamps from
@@ -355,7 +353,7 @@ document registry and target-aware tracker seam are the intended follow-up.
 - The same activation seam can support the V1 API, incremental ECS migration, and later
   Nodes 2.0 renderer replacement without changing the public custom-node contract.
 - Explicit commit and replay boundaries make target isolation, byte-identical persistence,
-  and DQ-11(c) incarnation handling testable.
+  and node-incarnation handling testable.
 
 ### Negative
 
@@ -376,9 +374,6 @@ document registry and target-aware tracker seam are the intended follow-up.
 - [Subgraph Boundaries and Widget Promotion](../architecture/subgraph-boundaries-and-promotion.md)
 - [PR #15721: graph-level atomicity audit](https://github.com/Comfy-Org/ComfyUI_frontend/pull/15721)
 - [PR #15421: canonical architecture knowledge and domain glossary](https://github.com/Comfy-Org/ComfyUI_frontend/pull/15421)
-- Program ADR-015: target-graph addressing and offscreen queues (private provenance at
-  commit `f3175059413d3ce4d22f53fc2b77107b475f9afb`; applicable contract reproduced in
-  Context)
 
 ## Glossary
 
@@ -398,7 +393,7 @@ document registry and target-aware tracker seam are the intended follow-up.
   apply semantic operations and produce follower updates.
 - **Lineage** — history identity of a document; an explicit `doc_reset` starts a new
   lineage and is the only ordinary follower-document replacement path.
-- **`node_incarnation` / DQ-11(c)** — stamp namespace distinguishing a node after a
+- **`node_incarnation`** — stamp namespace distinguishing a node after a
   delete/re-add from its prior occupant with the same node ID.
 - **Pending-effect queue** — bounded, target-scoped delivery buffer whose entries are
   not acknowledged until follower, ECS, tracker, and replay state commit together.

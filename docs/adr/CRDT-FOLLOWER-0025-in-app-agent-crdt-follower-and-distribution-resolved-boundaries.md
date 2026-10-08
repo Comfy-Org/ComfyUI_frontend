@@ -360,12 +360,9 @@ transport is claimed operational solely because its feature gate is enabled.
 
 ## Notes
 
-This ADR mirrors two cross-repo workspace decisions (ADR-010 follower
-direction, ADR-011 one-branch distribution strategy) into the repository they
-govern. It relates to [CRDT-LAYOUT-0003](CRDT-LAYOUT-0003-crdt-layout-intent-and-local-measurement.md)
-and [ECS-0008](ECS-0008-entity-component-system.md). Linear FE-1330 tracked
-the store-migration dependency the original text had; that dependency no
-longer exists.
+This ADR relates to [CRDT-LAYOUT-0003](CRDT-LAYOUT-0003-crdt-layout-intent-and-local-measurement.md)
+and [ECS-0008](ECS-0008-entity-component-system.md). The store-migration
+dependency the original text had no longer exists.
 
 [PM-1293](https://linear.app/comfyorg/issue/PM-1293) proposed a competing
 redesign of widget ownership and node replacement between the agent applier

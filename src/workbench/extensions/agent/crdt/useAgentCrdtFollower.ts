@@ -46,14 +46,14 @@ import { createRejectedOpNotifier } from './rejectedOpNotice'
 export { apiTransport, STALE_AFTER_MS, SUBSCRIBE_CATCHUP_GRACE_MS }
 
 /**
- * s5-metrics-1: per-outcome counters for every `doc_update` the composable's
+ * Per-outcome counters for every `doc_update` the composable's
  * listeners observe, replacing the single overloaded `updatesApplied`
  * observable. Each counter increments exactly once, at the boundary where
  * that outcome is decided — never inferred after the fact. `received` counts
  * only frames the bridge re-dispatched as `doc_update`, so
  * `received === applied + skipped` always holds; `errored`, `gap` and
  * `dropped` are disjoint from it because the bridge returns before
- * re-dispatching in each of those cases (schema gate, FEB-2 seq jump,
+ * re-dispatching in each of those cases (schema gate, sequence jump,
  * stale/duplicate discard). Frames the bridge drops for a workflowId other
  * than its `sentWorkflowId` emit no event and are not counted anywhere.
  * `applied` is tracked independently of `bridge.follower.updatesApplied`
@@ -81,7 +81,7 @@ interface AgentCrdtOutcomeCounters {
   appliedLive: number
   /** Received but not applied: inactive target, workflow mismatch, or no bound adapter session. */
   skipped: number
-  /** The merged doc failed the KA-11 read gate (`schema_error`). */
+  /** The merged doc failed the read gate (`schema_error`). */
   errored: number
   /** A seq jump was detected upstream; the frame was withheld and a resubscribe forced (`doc_gap`). */
   gap: number
@@ -668,7 +668,7 @@ function startAgentCrdtFollower(
     }
   }
   const onSchemaError: EventListener = (event) => {
-    // KA-11 fail-closed: the bridge refused to propagate an unreadable doc, so
+    // The bridge refused to propagate an unreadable doc, so
     // nothing was projected. Surface it as its own status rather than as a
     // generic "disconnected", which is indistinguishable from "never connected".
     connected.value = false
@@ -745,7 +745,7 @@ function startAgentCrdtFollower(
   api.addEventListener('reconnected', onReconnected)
   api.addEventListener('status', onSocketActivity)
 
-  // FE-1902 (poc-3): distinguish the mount-time null (in-memory doc id died
+  // Distinguish the mount-time null (in-memory doc id died
   // with the previous mount — rebind from sessionStorage) from a later null
   // (a REAL detach, e.g. new chat — drop the persisted id too).
   let initialBind = true

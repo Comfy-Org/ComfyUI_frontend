@@ -209,7 +209,7 @@ test.describe('FE-130 assets sidebar route mocks', () => {
   }) => {
     const tab = comfyPage.menu.assetsTab
 
-    // oxlint-disable-next-line comfy/no-comfy-page-setup-call -- pre-existing call, tracked by evfail-23; not fixed in this pass
+    // oxlint-disable-next-line comfy/no-comfy-page-setup-call -- pre-existing call, migration tracked in #16859; not fixed in this pass
     await comfyPage.setup()
     await tab.open()
 
@@ -232,7 +232,7 @@ test.describe('FE-130 assets sidebar route mocks', () => {
   }) => {
     const tab = comfyPage.menu.assetsTab
 
-    // oxlint-disable-next-line comfy/no-comfy-page-setup-call -- pre-existing call, tracked by evfail-23; not fixed in this pass
+    // oxlint-disable-next-line comfy/no-comfy-page-setup-call -- pre-existing call, migration tracked in #16859; not fixed in this pass
     await comfyPage.setup()
     await tab.open()
 
@@ -263,7 +263,7 @@ test.describe('FE-130 assets sidebar route mocks', () => {
   }) => {
     const tab = comfyPage.menu.assetsTab
 
-    // oxlint-disable-next-line comfy/no-comfy-page-setup-call -- pre-existing call, tracked by evfail-23; not fixed in this pass
+    // oxlint-disable-next-line comfy/no-comfy-page-setup-call -- pre-existing call, migration tracked in #16859; not fixed in this pass
     await comfyPage.setup()
     await tab.open()
 
@@ -290,7 +290,7 @@ test.describe('FE-130 assets sidebar route mocks', () => {
     await jobsRoutes.mockJobsHistory([multiOutputJob])
     await jobsRoutes.mockJobDetail('multi-output', multiOutputJobDetail)
 
-    // oxlint-disable-next-line comfy/no-comfy-page-setup-call -- pre-existing call, tracked by evfail-23; not fixed in this pass
+    // oxlint-disable-next-line comfy/no-comfy-page-setup-call -- pre-existing call, migration tracked in #16859; not fixed in this pass
     await comfyPage.setup()
     await tab.open()
 
@@ -325,7 +325,7 @@ test.describe('FE-130 assets sidebar route mocks', () => {
       previewableCountJobDetail
     )
 
-    // oxlint-disable-next-line comfy/no-comfy-page-setup-call -- pre-existing call, tracked by evfail-23; not fixed in this pass
+    // oxlint-disable-next-line comfy/no-comfy-page-setup-call -- pre-existing call, migration tracked in #16859; not fixed in this pass
     await comfyPage.setup()
     await tab.open()
 
@@ -425,7 +425,7 @@ test.describe('FE-910 marquee selection and select all', () => {
     await jobsRoutes.mockJobsHistory(generatedJobs)
     await mockInputFiles(page, ['imported.png'])
     await mockViewFiles(page, viewFiles)
-    // oxlint-disable-next-line comfy/no-comfy-page-setup-call -- pre-existing call, tracked by evfail-23; not fixed in this pass
+    // oxlint-disable-next-line comfy/no-comfy-page-setup-call -- pre-existing call, migration tracked in #16859; not fixed in this pass
     await comfyPage.setup()
     await comfyPage.menu.assetsTab.open()
   })

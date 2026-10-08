@@ -45,7 +45,7 @@ test.describe('Node search box', { tag: '@node' }, () => {
     comfyPage
   }) => {
     // Start fresh to test new user behavior
-    // oxlint-disable-next-line comfy/no-comfy-page-setup-call -- pre-existing call, tracked by evfail-23; not fixed in this pass
+    // oxlint-disable-next-line comfy/no-comfy-page-setup-call -- pre-existing call, migration tracked in #16859; not fixed in this pass
     await comfyPage.setup({ clearStorage: true })
     // Simulate new user with 1.24.1+ installed version
     await comfyPage.settings.setSetting('Comfy.InstalledVersion', '1.24.1')
@@ -412,7 +412,7 @@ test.describe('Release context menu', { tag: '@node' }, () => {
     comfyPage
   }) => {
     // Start fresh to test existing user behavior
-    // oxlint-disable-next-line comfy/no-comfy-page-setup-call -- pre-existing call, tracked by evfail-23; not fixed in this pass
+    // oxlint-disable-next-line comfy/no-comfy-page-setup-call -- pre-existing call, migration tracked in #16859; not fixed in this pass
     await comfyPage.setup({ clearStorage: true })
     // Simulate existing user with pre-1.24.1 version
     await comfyPage.settings.setSetting('Comfy.InstalledVersion', '1.23.0')
@@ -433,7 +433,7 @@ test.describe('Release context menu', { tag: '@node' }, () => {
     comfyPage
   }) => {
     // Start fresh and simulate new user who should get search box by default
-    // oxlint-disable-next-line comfy/no-comfy-page-setup-call -- pre-existing call, tracked by evfail-23; not fixed in this pass
+    // oxlint-disable-next-line comfy/no-comfy-page-setup-call -- pre-existing call, migration tracked in #16859; not fixed in this pass
     await comfyPage.setup({ clearStorage: true })
     await comfyPage.settings.setSetting('Comfy.InstalledVersion', '1.24.1')
     // But explicitly set to context menu (overriding versioned default)

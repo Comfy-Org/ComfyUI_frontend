@@ -1,10 +1,10 @@
 /**
- * The transport boundary of the human write leg (plan 3.3): mints wire
+ * The transport boundary of the human write leg mints wire
  * identity onto semantic {@link GraphOperation}s and chunks batches to the
  * wire caps clients respect (contract layer, verified against comfy-cli's
  * vocabulary): 256 ops and 4 MiB per batch, under the package's own library
- * budgets. `clear` is catastrophic-by-nature and never rides inside a batch
- * (plan D4): it always ships as a batch of exactly one.
+ * budgets. `clear` is catastrophic-by-nature and never rides inside a batch:
+ * it always ships as a batch of exactly one.
  */
 import { BATCHABLE_OPS } from '@comfyorg/comfy-multi-player'
 import type { Actor, Op, Stamp } from '@comfyorg/comfy-multi-player'

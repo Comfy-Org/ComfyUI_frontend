@@ -83,7 +83,7 @@ describe('ReplyAssetGroup', () => {
     generateModelThumbnail.mockResolvedValue(null)
   })
 
-  it('T-09 / PM-652 / FE-1326 renders image and video previews inline', () => {
+  it('renders image and video previews inline', () => {
     renderGroup([image(1), video])
 
     expect(screen.getByRole('img', { name: 'i1.png' })).toBeInTheDocument()
@@ -111,7 +111,7 @@ describe('ReplyAssetGroup', () => {
     ).toBeNull()
   })
 
-  it('T-09 / PM-652 / FE-1326 opens inspect view at the clicked visual asset', async () => {
+  it('opens inspect view at the clicked visual asset', async () => {
     renderGroup([image(1), video])
 
     await userEvent.click(screen.getByRole('button', { name: 'clip.mp4' }))

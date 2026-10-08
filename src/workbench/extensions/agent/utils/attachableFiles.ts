@@ -8,7 +8,7 @@ const AGENT_ATTACH_MEDIA_KINDS = [
 ] as const satisfies readonly MediaType[]
 const MEDIA_ATTACHABLE_KINDS = new Set<MediaType>(AGENT_ATTACH_MEDIA_KINDS)
 
-/* Non-media formats approved for agent attach (Jo, FE-1323); extended as the
+/* Non-media formats approved for agent attachments; extended as the
    backend grows support. json is deliberately left out here: the panel's
    drop handler claims a raw File drop only when isAgentAttachable approves
    it, and a bare-dropped workflow .json must stay unclaimed so the graph

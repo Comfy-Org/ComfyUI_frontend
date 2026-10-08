@@ -932,7 +932,7 @@ test.describe('Load workflow', { tag: '@screenshot' }, () => {
     comfyPage
   }) => {
     await comfyPage.settings.setSetting('Comfy.Workflow.Persist', false)
-    // oxlint-disable-next-line comfy/no-comfy-page-setup-call -- pre-existing call, tracked by evfail-23; not fixed in this pass
+    // oxlint-disable-next-line comfy/no-comfy-page-setup-call -- pre-existing call, migration tracked in #16859; not fixed in this pass
     await comfyPage.setup()
 
     await expect
@@ -950,7 +950,7 @@ test.describe('Load workflow', { tag: '@screenshot' }, () => {
   }) => {
     await comfyPage.workflow.loadWorkflow('nodes/single_ksampler')
     await expect(comfyPage.canvas).toHaveScreenshot('single_ksampler.png')
-    // oxlint-disable-next-line comfy/no-comfy-page-setup-call -- pre-existing call, tracked by evfail-23; not fixed in this pass
+    // oxlint-disable-next-line comfy/no-comfy-page-setup-call -- pre-existing call, migration tracked in #16859; not fixed in this pass
     await comfyPage.setup({ clearStorage: false })
     await expect(comfyPage.canvas).toHaveScreenshot('single_ksampler.png')
   })
@@ -967,7 +967,7 @@ test.describe('Load workflow', { tag: '@screenshot' }, () => {
       'single_ksampler_modified.png'
     )
     await comfyPage.workflow.waitForDraftIndexUpdatedSince(draftSaveStartedAt)
-    // oxlint-disable-next-line comfy/no-comfy-page-setup-call -- pre-existing call, tracked by evfail-23; not fixed in this pass
+    // oxlint-disable-next-line comfy/no-comfy-page-setup-call -- pre-existing call, migration tracked in #16859; not fixed in this pass
     await comfyPage.setup({ clearStorage: false })
     await expect(comfyPage.canvas).toHaveScreenshot(
       'single_ksampler_modified.png'
@@ -1002,7 +1002,7 @@ test.describe('Load workflow', { tag: '@screenshot' }, () => {
         }
         return false
       })
-      // oxlint-disable-next-line comfy/no-comfy-page-setup-call -- pre-existing call, tracked by evfail-23; not fixed in this pass
+      // oxlint-disable-next-line comfy/no-comfy-page-setup-call -- pre-existing call, migration tracked in #16859; not fixed in this pass
       await comfyPage.setup({ clearStorage: false })
     })
 
@@ -1084,7 +1084,7 @@ test.describe('Load workflow', { tag: '@screenshot' }, () => {
       await comfyPage.page.evaluate(() => {
         sessionStorage.clear()
       })
-      // oxlint-disable-next-line comfy/no-comfy-page-setup-call -- pre-existing call, tracked by evfail-23; not fixed in this pass
+      // oxlint-disable-next-line comfy/no-comfy-page-setup-call -- pre-existing call, migration tracked in #16859; not fixed in this pass
       await comfyPage.setup({ clearStorage: false })
     })
 

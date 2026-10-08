@@ -44,8 +44,8 @@ test.describe('Vue Node Widget Tooltip', { tag: '@vue-nodes' }, () => {
     }
   })
 
-  // BUG-020: a widget tooltip that joins a short label and a long value with a
-  // blank line collapsed onto a single line because the tooltip text had no
+  // A widget tooltip that joins a short label and a long value with a blank
+  // line collapsed onto a single line because the tooltip text had no
   // whitespace-preserving rule. Reproduce that shape (label + blank line + long
   // value) and assert the rendered tooltip keeps them on separate lines and
   // stays within the widened width bound.
@@ -64,8 +64,7 @@ test.describe('Vue Node Widget Tooltip', { tag: '@vue-nodes' }, () => {
 
     // Behavioral check: whitespace-pre-line preserves the blank-line separator,
     // so innerText keeps the label and value on distinct lines with an empty
-    // line between them instead of collapsing them onto one (the BUG-020
-    // regression).
+    // line between them instead of collapsing them onto one.
     const renderedText = await tooltipText.evaluate(
       (el) => (el as HTMLElement).innerText
     )

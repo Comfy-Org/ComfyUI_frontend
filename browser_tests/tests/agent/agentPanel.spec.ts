@@ -518,7 +518,7 @@ test.describe('In-App Agent panel', { tag: '@cloud' }, () => {
     })
   })
 
-  test('T-28 / PM-677 / FE-1320 keeps the Agent scrollbar track transparent', async ({
+  test('keeps the Agent scrollbar track transparent', async ({
     agentPanel
   }) => {
     await agentPanel.open()

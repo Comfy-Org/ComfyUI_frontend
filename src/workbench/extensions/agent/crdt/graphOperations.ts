@@ -1,5 +1,5 @@
 /**
- * The semantic type at the human-edit mint seam (plan 3.3; LAYOUT/ECS
+ * The semantic type at the human-edit mint seam (CRDT-LAYOUT/ECS
  * command pattern): systems and mint ports speak `GraphOperation`; ONLY the
  * transport layer (`opEnvelope.ts`) attaches wire identity (`op_id`, `actor`,
  * `base_version`, `stamp`) and speaks the frozen wire vocabulary.

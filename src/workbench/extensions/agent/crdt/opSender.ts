@@ -1,5 +1,5 @@
 /**
- * The human write leg's sender (plan 3.2/3.3): takes semantic
+ * The human write leg's sender takes semantic
  * {@link GraphOperation}s from the mint ports, mints wire identity ONCE, and
  * drives `doc_ops` frames through the doc frame client with bounded retries
  * that never re-mint an `op_id` (changed-payload reuse rejects host-side;

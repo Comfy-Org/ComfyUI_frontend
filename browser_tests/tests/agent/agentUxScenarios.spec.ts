@@ -7,7 +7,7 @@ import { agentTest as test } from '@e2e/tests/agent/agentPanelMocks'
 
 test.describe('Linear Agent UX scenarios', { tag: '@cloud' }, () => {
   for (const width of [480, 640]) {
-    test(`X-01 / PM-672 keeps controls usable at ${width}px panel width`, async ({
+    test(`keeps controls usable at ${width}px panel width`, async ({
       agentPanel,
       comfyPage
     }) => {

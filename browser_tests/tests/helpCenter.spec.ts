@@ -138,7 +138,7 @@ test.describe('Help Center', () => {
       )
 
       await helpCenter.mockReleases(releases)
-      // oxlint-disable-next-line comfy/no-comfy-page-setup-call -- pre-existing call, tracked by evfail-23; not fixed in this pass
+      // oxlint-disable-next-line comfy/no-comfy-page-setup-call -- pre-existing call, migration tracked in #16859; not fixed in this pass
       await comfyPage.setup({ mockReleases: false })
       await helpCenter.open()
 
@@ -158,7 +158,7 @@ test.describe('Help Center', () => {
 
       await helpCenter.mockReleases([release])
       await helpCenter.stubDocsPage()
-      // oxlint-disable-next-line comfy/no-comfy-page-setup-call -- pre-existing call, tracked by evfail-23; not fixed in this pass
+      // oxlint-disable-next-line comfy/no-comfy-page-setup-call -- pre-existing call, migration tracked in #16859; not fixed in this pass
       await comfyPage.setup({ mockReleases: false })
       await helpCenter.open()
 

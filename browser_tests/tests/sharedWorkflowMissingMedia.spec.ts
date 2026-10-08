@@ -89,7 +89,7 @@ test.describe('Shared workflow missing media', { tag: '@cloud' }, () => {
 
   test.beforeEach(async ({ comfyPage, sharedWorkflowImportMocks }) => {
     sharedWorkflowImportMocks.resetAndStartRecording()
-    // oxlint-disable-next-line comfy/no-comfy-page-setup-call -- pre-existing call, tracked by evfail-23; not fixed in this pass
+    // oxlint-disable-next-line comfy/no-comfy-page-setup-call -- pre-existing call, migration tracked in #16859; not fixed in this pass
     await comfyPage.setup({
       clearStorage: false,
       url: `/?share=${sharedWorkflowImportScenario.shareId}`
