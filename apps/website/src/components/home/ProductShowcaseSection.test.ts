@@ -51,6 +51,7 @@ describe('ProductShowcaseSection', () => {
   })
 
   it.for([
+    ['Full Control with Nodes', '/download/'],
     ['Comfy Agent', '/agent/'],
     ['Comfy API', '/platform/comfy-api/']
   ])('links the selected %s card to its product page', async ([name, href]) => {

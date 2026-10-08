@@ -26,6 +26,7 @@ const features: Feature[] = [
   {
     title: t('showcase.feature1.title'),
     description: t('showcase.feature1.description'),
+    href: routes.download,
     // Vector scene from Comfy-Org/comfy-website-animations, replacing the
     // node-workflow.webm capture this slide used to play.
     lottie: '/animations/scene-1/scene-01.json'
