@@ -126,14 +126,6 @@ function attachSavedWorkflowPaths(
     )
 }
 
-function configureLifecycleLookup(
-  getCloudWorkflow: ReturnType<typeof setup>['getCloudWorkflow'],
-  lookup: { status: 'live' } | { status: 'error'; error: AgentApiError }
-): void {
-  if (lookup.status === 'error')
-    getCloudWorkflow.mockRejectedValueOnce(lookup.error)
-}
-
 describe('historical workflow restoration', () => {
   beforeEach(() => localStorage.clear())
 
@@ -423,58 +415,11 @@ describe('historical workflow restoration', () => {
   })
 
   it.for([
-    {
-      lifecycle: 'live versionless draft',
-      workflowId: 'wf-draft',
-      lookup: { status: 'live' as const },
-      warnings: 0,
-      ready: true,
-      unavailable: false
-    },
-    {
-      lifecycle: 'live saved workflow',
-      workflowId: 'wf-saved',
-      lookup: { status: 'live' as const },
-      warnings: 0,
-      ready: true,
-      unavailable: false
-    },
-    {
-      lifecycle: 'deleted workflow',
-      workflowId: 'wf-deleted',
-      lookup: {
-        status: 'error' as const,
-        error: new AgentApiError('Workflow lookup failed', 404, undefined)
-      },
-      warnings: 0,
-      ready: true,
-      unavailable: true
-    },
-    {
-      lifecycle: 'unreadable workflow',
-      workflowId: 'wf-saved',
-      lookup: {
-        status: 'error' as const,
-        error: new AgentApiError('Workflow lookup failed', 403, undefined)
-      },
-      warnings: 1,
-      ready: false,
-      unavailable: false
-    },
-    {
-      lifecycle: 'failed workflow lookup',
-      workflowId: 'wf-saved',
-      lookup: {
-        status: 'error' as const,
-        error: new AgentApiError('Workflow lookup failed', 500, undefined)
-      },
-      warnings: 1,
-      ready: false,
-      unavailable: false
-    }
+    { lifecycle: 'live versionless draft', workflowId: 'wf-draft' },
+    { lifecycle: 'live saved workflow', workflowId: 'wf-saved' }
   ])(
-    'restores a chat with no local target using direct identity evidence for a $lifecycle',
-    async ({ workflowId, lookup, ready, unavailable, warnings }) => {
+    'reads a chat with no local target when direct lookup confirms a $lifecycle',
+    async ({ workflowId }) => {
       const {
         selection,
         workflows,
@@ -485,7 +430,58 @@ describe('historical workflow restoration', () => {
         warnRestoreFailed
       } = setup()
       listCloudWorkflows.mockResolvedValueOnce(listing([]))
-      configureLifecycleLookup(getCloudWorkflow, lookup)
+
+      expect(await selection.restoreTarget(workflowId, () => true)).toBe(true)
+      expect(getCloudWorkflow).toHaveBeenCalledWith(workflowId)
+      expect(panel.selectedWorkflow).toBeNull()
+      expect(panel.targetUnavailable).toBe(false)
+      expect(workflows.activeWorkflow?.path).toBe(current.path)
+      expect(useWorkflowService().openWorkflow).not.toHaveBeenCalled()
+      expect(warnRestoreFailed).not.toHaveBeenCalled()
+    }
+  )
+
+  it.for([
+    {
+      lifecycle: 'deleted workflow',
+      workflowId: 'wf-deleted',
+      status: 404,
+      warnings: 0,
+      ready: true,
+      unavailable: true
+    },
+    {
+      lifecycle: 'unreadable workflow',
+      workflowId: 'wf-saved',
+      status: 403,
+      warnings: 1,
+      ready: false,
+      unavailable: false
+    },
+    {
+      lifecycle: 'failed workflow lookup',
+      workflowId: 'wf-saved',
+      status: 500,
+      warnings: 1,
+      ready: false,
+      unavailable: false
+    }
+  ])(
+    'restores a chat with no local target using direct lookup errors for a $lifecycle',
+    async ({ workflowId, status, ready, unavailable, warnings }) => {
+      const {
+        selection,
+        workflows,
+        panel,
+        current,
+        listCloudWorkflows,
+        getCloudWorkflow,
+        warnRestoreFailed
+      } = setup()
+      listCloudWorkflows.mockResolvedValueOnce(listing([]))
+      getCloudWorkflow.mockRejectedValueOnce(
+        new AgentApiError('Workflow lookup failed', status, undefined)
+      )
 
       expect(await selection.restoreTarget(workflowId, () => true)).toBe(ready)
       expect(getCloudWorkflow).toHaveBeenCalledWith(workflowId)
