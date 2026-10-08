@@ -72,7 +72,25 @@ export interface DocOpMinterDeps {
    * when the document holds no such node.
    */
   docPromotedWidgets(nodeId: NodeId): DocPromotedWidgets | null
+  /**
+   * Whether the bound document holds any node yet. False right after binding,
+   * before the subscribe catch-up lands, when an absent node says nothing.
+   */
+  isDocPopulated(): boolean
+  /** A local promoted widget edit was refused and never reached the document. */
+  onWidgetWriteRefused?(write: {
+    nodeId: NodeId
+    name: string
+    reason: PromotedWriteRefusal
+  }): void
 }
+
+export type PromotedWriteRefusal =
+  | 'unpromoted_widget'
+  | 'layout_drift'
+  | 'doc_not_synced'
+
+const REFUSAL_NOTICE_INTERVAL_MS = 10_000
 
 export interface DocOpMinter {
   detach(): void
@@ -209,18 +227,30 @@ function promotedHostWrite(
   node: LGraphNode | null,
   event: IntentOf<'set_widget'>,
   docPromotedWidgets: () => DocPromotedWidgets | null,
-  onOrderDrift: (names: readonly string[], doc: DocPromotedWidgets) => void
+  isDocPopulated: () => boolean,
+  onRefused: (
+    reason: PromotedWriteRefusal,
+    liveNames: readonly string[],
+    doc: DocPromotedWidgets | null
+  ) => void
 ): PromotedHostWrite | null {
   if (!node?.isSubgraphNode()) return null
   const hostInputs = node.inputs.flatMap((input) =>
     input.widgetId ? [{ name: input.name, widgetId: input.widgetId }] : []
   )
   const valueIndex = hostInputs.findIndex((input) => input.name === event.name)
-  if (valueIndex === -1) return null
   const liveNames = hostInputs.map((input) => input.name)
+  if (valueIndex === -1) {
+    onRefused('unpromoted_widget', liveNames, null)
+    return null
+  }
   const doc = docPromotedWidgets()
+  if (doc === null && !isDocPopulated()) {
+    onRefused('doc_not_synced', liveNames, null)
+    return null
+  }
   if (!documentAcceptsLiveIndex(doc, liveNames)) {
-    if (doc) onOrderDrift(liveNames, doc)
+    onRefused('layout_drift', liveNames, doc)
     return null
   }
   const widgetValueStore = useWidgetValueStore()
@@ -278,7 +308,12 @@ function routedWidgetOperation(
   event: IntentOf<'set_widget'>,
   node: LGraphNode | null,
   docPromotedWidgets: () => DocPromotedWidgets | null,
-  onOrderDrift: (names: readonly string[], doc: DocPromotedWidgets) => void
+  isDocPopulated: () => boolean,
+  onRefused: (
+    reason: PromotedWriteRefusal,
+    liveNames: readonly string[],
+    doc: DocPromotedWidgets | null
+  ) => void
 ): GraphOperation | null {
   const operation = {
     op: 'set_widget',
@@ -294,7 +329,8 @@ function routedWidgetOperation(
       node,
       event,
       docPromotedWidgets,
-      onOrderDrift
+      isDocPopulated,
+      onRefused
     )
     return promoted ? { ...operation, promoted } : null
   }
@@ -375,6 +411,7 @@ export function attachDocOpMinter(deps: DocOpMinterDeps): DocOpMinter {
   // keystroke-paced widget path, where a per-flush budget reports every
   // character typed into a drifted host.
   const reportedDrift = new Set<string>()
+  const lastRefusalNotice = new Map<string, number>()
   let flushScheduled = false
   let detached = false
 
@@ -476,22 +513,72 @@ export function attachDocOpMinter(deps: DocOpMinterDeps): DocOpMinter {
       event,
       owner,
       () => deps.docPromotedWidgets(event.nodeId),
-      (liveNames, doc) =>
-        reportOnce(
-          `promoted_drift:${rootGraphId}:${String(event.nodeId)}`,
-          `Subgraph host ${String(event.nodeId)} promotes [${liveNames.join(', ')}], which the document's ${doc.valueCount} stored values and declared inputs [${doc.declaredNames.join(', ')}] do not place; refusing to mint a promoted write`,
-          'agent_crdt_promoted_widget_order_drift',
-          {
-            nodeId: event.nodeId,
-            liveNames,
-            docValueCount: doc.valueCount,
-            docDeclaredNames: doc.declaredNames,
-            docPromotedNames: doc.promotedNames
-          },
-          reportedDrift
-        )
+      () => deps.isDocPopulated(),
+      (reason, liveNames, doc) => {
+        reportRefusal(rootGraphId, event, reason, liveNames, doc)
+        notifyRefusal(event, reason)
+      }
     )
     if (operation) schedule({ kind: 'op', operation })
+  }
+
+  function reportRefusal(
+    rootGraphId: string,
+    event: IntentOf<'set_widget'>,
+    reason: PromotedWriteRefusal,
+    liveNames: readonly string[],
+    doc: DocPromotedWidgets | null
+  ): void {
+    const host = String(event.nodeId)
+    if (reason === 'layout_drift' && doc) {
+      reportOnce(
+        `promoted_drift:${rootGraphId}:${host}`,
+        `Subgraph host ${host} promotes [${liveNames.join(', ')}], which the document's ${doc.valueCount} stored values and declared inputs [${doc.declaredNames.join(', ')}] do not place; refusing to mint a promoted write`,
+        'agent_crdt_promoted_widget_order_drift',
+        {
+          nodeId: event.nodeId,
+          liveNames,
+          docValueCount: doc.valueCount,
+          docDeclaredNames: doc.declaredNames,
+          docPromotedNames: doc.promotedNames
+        },
+        reportedDrift
+      )
+      return
+    }
+    if (reason === 'unpromoted_widget') {
+      reportOnce(
+        `promoted_unpromoted:${rootGraphId}:${host}:${event.name}`,
+        `Widget ${event.name} on subgraph host ${host} is not one of its promoted inputs [${liveNames.join(', ')}]; refusing to mint`,
+        'agent_crdt_unpromoted_host_widget',
+        { nodeId: event.nodeId, widget: event.name, liveNames },
+        reportedDrift
+      )
+      return
+    }
+    reportOnce(
+      `promoted_unsynced:${rootGraphId}:${host}`,
+      `Subgraph host ${host} was edited before the bound document caught up; refusing to mint a promoted write`,
+      'agent_crdt_promoted_widget_doc_not_synced',
+      { nodeId: event.nodeId, widget: event.name },
+      reportedDrift
+    )
+  }
+
+  function notifyRefusal(
+    event: IntentOf<'set_widget'>,
+    reason: PromotedWriteRefusal
+  ): void {
+    const key = `${String(event.nodeId)}:${event.name}`
+    const now = Date.now()
+    const last = lastRefusalNotice.get(key)
+    if (last !== undefined && now - last < REFUSAL_NOTICE_INTERVAL_MS) return
+    lastRefusalNotice.set(key, now)
+    deps.onWidgetWriteRefused?.({
+      nodeId: event.nodeId,
+      name: event.name,
+      reason
+    })
   }
 
   function mintSetNodeField(event: IntentOf<'set_node_field'>): void {

@@ -272,6 +272,7 @@ describe('LiveGraphApplier with the real change tracker', () => {
       boundRootGraphId: () => toRootGraphId(graph.id),
       docInputNames: () => [],
       docPromotedWidgets: () => null,
+      isDocPopulated: () => true,
       enqueue
     })
     onTestFinished(() => minter.detach())

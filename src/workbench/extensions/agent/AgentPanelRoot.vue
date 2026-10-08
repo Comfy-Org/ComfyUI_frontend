@@ -852,7 +852,8 @@ const {
   debugSnapshot: crdtDebugSnapshot,
   enqueueHumanOperations,
   docInputNames,
-  docPromotedWidgets
+  docPromotedWidgets,
+  isDocPopulated
 } = useAgentCrdtFollower(
   boundWorkflowId,
   () => resolvedUserInfo.value?.id ?? null,
@@ -912,7 +913,15 @@ const docOpMinter = attachDocOpMinter({
   getGraph: () => (app.isGraphReady ? app.rootGraph : null),
   boundRootGraphId,
   docInputNames,
-  docPromotedWidgets
+  docPromotedWidgets,
+  isDocPopulated,
+  onWidgetWriteRefused: () =>
+    toast.add({
+      severity: 'error',
+      summary: t('g.error'),
+      detail: t('agent.editRejected.widgetWrite'),
+      life: 10_000
+    })
 })
 const restoreOpMinter = attachRestoreOpMinter({
   isEnabled: () => agentPanelStore.enabled,
