@@ -197,21 +197,18 @@ export class LightInfoViewport {
   }
 
   private refreshGizmoVisibility(): void {
-    const light = this.selectedLight
-    const type = light?.type ?? null
-    this.orbitHandles.setVisible(this.gizmosOn && type === 'directional')
-
-    const wantPosition =
-      light !== null &&
+    const type = this.gizmosOn ? (this.selectedLight?.type ?? null) : null
+    this.orbitHandles.setVisible(type === 'directional')
+    this.positionHandle.setVisible(
       this.transformGizmoMode === 'light-position' &&
-      lightPositionApplies(light.type)
-    this.positionHandle.setVisible(wantPosition)
-
-    const wantTarget =
-      light !== null &&
+        type !== null &&
+        lightPositionApplies(type)
+    )
+    this.targetHandle.setVisible(
       this.transformGizmoMode === 'target' &&
-      targetApplies(light.type)
-    this.targetHandle.setVisible(wantTarget)
+        type !== null &&
+        targetApplies(type)
+    )
   }
 
   private get canvas(): HTMLCanvasElement {

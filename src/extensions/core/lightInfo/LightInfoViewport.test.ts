@@ -200,6 +200,34 @@ describe('LightInfoViewport gizmo visibility', () => {
 
     expect(viewport.orbitHandles.isVisible()).toBe(false)
   })
+
+  it.for([
+    { type: 'point', mode: 'light-position', handle: 'positionHandle' },
+    { type: 'spot', mode: 'target', handle: 'targetHandle' }
+  ] satisfies {
+    type: LightInfoType
+    mode: LightTransformGizmoMode
+    handle: 'positionHandle' | 'targetHandle'
+  }[])(
+    'keeps the $mode handle hidden and inert while gizmos are off',
+    ({ type, mode, handle }) => {
+      const { viewport } = setup([createDefaultLight(type)])
+      const isActive = () =>
+        viewport[handle].isVisible() && gizmoControls(viewport[handle]).enabled
+
+      viewport.setTransformGizmoMode(mode)
+      viewport.setGizmosVisible(false)
+      expect(isActive()).toBe(false)
+
+      viewport.setGizmosVisible(true)
+      expect(isActive()).toBe(true)
+
+      viewport.setTransformGizmoMode('none')
+      viewport.setGizmosVisible(false)
+      viewport.setTransformGizmoMode(mode)
+      expect(isActive()).toBe(false)
+    }
+  )
 })
 
 describe('LightInfoViewport orbit handle drag', () => {
