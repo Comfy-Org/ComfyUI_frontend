@@ -25,6 +25,7 @@ type SentryTransactionEvent = Parameters<
   NonNullable<SentryOptions['beforeSendTransaction']>
 >[0]
 type SentrySpan = Parameters<NonNullable<SentryOptions['beforeSendSpan']>>[0]
+const REDACTED_QUERY_VALUE = '[Redacted]'
 
 function redactSentryEvent(event: ErrorEvent, hint: EventHint) {
   const filtered = sentryBeforeSend(event, hint)
@@ -72,17 +73,19 @@ function redactSentryRequest(event: Event): void {
   if (request.url) request.url = redactTelemetryUrls(request.url)
   request.data = redactUnknownValue(request.data)
   if (typeof request.query_string === 'string') {
-    request.query_string = redactTelemetryUrls(request.query_string)
+    request.query_string = request.query_string
+      ? REDACTED_QUERY_VALUE
+      : request.query_string
   } else if (Array.isArray(request.query_string)) {
     request.query_string = request.query_string.map(([key, value]) => [
       redactTelemetryUrls(key),
-      redactTelemetryUrls(value)
+      value ? REDACTED_QUERY_VALUE : value
     ])
   } else if (request.query_string) {
     request.query_string = Object.fromEntries(
       Object.entries(request.query_string).map(([key, value]) => [
         redactTelemetryUrls(key),
-        redactTelemetryUrls(value)
+        value ? REDACTED_QUERY_VALUE : value
       ])
     )
   }

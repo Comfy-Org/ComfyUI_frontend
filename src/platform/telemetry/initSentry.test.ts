@@ -151,7 +151,7 @@ it('redacts URL secrets from events, breadcrumbs, and spans', () => {
         contexts: { model: { source: secretUrl } },
         request: {
           url: secretUrl,
-          query_string: `next=${secretUrl}`,
+          query_string: 'token=private',
           data: { source: secretUrl },
           headers: { referer: secretUrl }
         },
@@ -175,7 +175,7 @@ it('redacts URL secrets from events, breadcrumbs, and spans', () => {
     contexts: { model: { source: 'https://example.com/model.glb' } },
     request: {
       url: 'https://example.com/model.glb',
-      query_string: 'next=https://example.com/model.glb',
+      query_string: '[Redacted]',
       data: { source: 'https://example.com/model.glb' },
       headers: { referer: 'https://example.com/model.glb' }
     },
@@ -225,6 +225,26 @@ it('redacts URL secrets from events, breadcrumbs, and spans', () => {
     },
     links: [{ attributes: { source: 'https://example.com/model.glb' } }]
   })
+})
+
+it.for([
+  {
+    kind: 'tuple',
+    queryString: [['token', 'private']] satisfies [string, string][],
+    expected: [['token', '[Redacted]']]
+  },
+  {
+    kind: 'record',
+    queryString: { token: 'private' },
+    expected: { token: '[Redacted]' }
+  }
+])('redacts $kind Sentry query strings', ({ queryString, expected }) => {
+  const beforeSend = initOptions(true).beforeSend
+  assert.exists(beforeSend)
+
+  expect(
+    beforeSend(fromPartial({ request: { query_string: queryString } }), {})
+  ).toMatchObject({ request: { query_string: expected } })
 })
 
 it('redacts URL secrets from sampled transactions', () => {
