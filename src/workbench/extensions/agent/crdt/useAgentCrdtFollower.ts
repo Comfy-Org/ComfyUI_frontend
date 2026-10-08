@@ -337,7 +337,8 @@ export function useAgentCrdtFollower(
    */
   getGraph: () => MaterializableGraph | null = () => null,
   events: AgentCrdtFollowerEvents = {},
-  canvasFor: (workflowId: string) => Record<string, unknown> | null = () => null
+  canvasFor: (workflowId: string) => Record<string, unknown> | undefined = () =>
+    undefined
 ) {
   const productGate = useAgentPanelStore()
   const follower = shallowRef<ReturnType<typeof startAgentCrdtFollower>>()
@@ -406,7 +407,7 @@ function startAgentCrdtFollower(
   isTargetActive: Ref<boolean>,
   getGraph: () => MaterializableGraph | null,
   events: AgentCrdtFollowerEvents,
-  canvasFor: (workflowId: string) => Record<string, unknown> | null
+  canvasFor: (workflowId: string) => Record<string, unknown> | undefined
 ) {
   const connected = ref(false)
   const updatesApplied = ref(0)
@@ -535,6 +536,11 @@ function startAgentCrdtFollower(
   let subscribeAckTimer: ReturnType<typeof setTimeout> | null = null
   let subscribeAckTimeouts = 0
   let subscribeGaveUp = false
+  let reseedAttempts = 0
+  let pendingReseed: {
+    workflowId: string
+    heldOperations: GraphOperation[]
+  } | null = null
 
   // The recency heartbeat: armed only while a subscribe is CONFIRMED (bound +
   // healthy by definition), slid forward by every doc-scoped frame, cancelled
@@ -596,6 +602,20 @@ function startAgentCrdtFollower(
     subscribeAckTimeouts = 0
   }
 
+  function giveUpOnReseed(reason: string): void {
+    clearStaleProbe()
+    clearSubscribeRetry()
+    clearSubscribeAckTimer()
+    subscribeGaveUp = true
+    pendingReseed = null
+    connected.value = false
+    reportError(new Error(`agent document reseed stopped: ${reason}`), {
+      errorType: 'failure_reseeding_agent_cloud_workflow',
+      level: 'warning',
+      tags: { feature_area: 'agent', operation: 'sync', outcome: 'gave_up' }
+    })
+  }
+
   const giveUpOnSubscribe = (workflowId: string): void => {
     clearStaleProbe()
     subscribeGaveUp = true
@@ -604,6 +624,10 @@ function startAgentCrdtFollower(
       { attempt: subscribeRetryAttempt, workflowId, terminal: true },
       { level: 'warn' }
     )
+    if (pendingReseed !== null) {
+      giveUpOnReseed('subscribe acknowledgement budget exhausted')
+      return
+    }
     reportError(
       new Error('agent doc subscribe was sent but never acknowledged'),
       {
@@ -638,13 +662,16 @@ function startAgentCrdtFollower(
         attempt: subscribeRetryAttempt,
         workflowId
       })
-      bridge.resubscribe()
+      if (!bridge.abandonPendingReseed()) bridge.resubscribe()
     }, SUBSCRIBE_ACK_TIMEOUT_MS)
   }
 
   const scheduleSubscribeRetry = (): void => {
     if (subscribeGaveUp || subscribeRetryTimer !== null) return
-    if (subscribeRetryAttempt >= SUBSCRIBE_RETRY_MAX_ATTEMPTS) return
+    if (subscribeRetryAttempt >= SUBSCRIBE_RETRY_MAX_ATTEMPTS) {
+      if (pendingReseed !== null) giveUpOnReseed('retry budget exhausted')
+      return
+    }
     const target = subscribedWorkflowId.value
     if (target === null) return
     const delay = SUBSCRIBE_RETRY_BASE_MS * 2 ** subscribeRetryAttempt
@@ -664,7 +691,11 @@ function startAgentCrdtFollower(
   const tryReseed = (): boolean => {
     const target = subscribedWorkflowId.value
     if (target === null || !bridge.canReseed(target)) return false
-    let canvas: Record<string, unknown> | null
+    if (reseedAttempts >= SUBSCRIBE_RETRY_MAX_ATTEMPTS) {
+      giveUpOnReseed('attempt budget exhausted')
+      return true
+    }
+    let canvas: Record<string, unknown> | undefined
     try {
       canvas = canvasFor(target)
     } catch (error) {
@@ -675,7 +706,20 @@ function startAgentCrdtFollower(
       })
       return false
     }
-    if (canvas === null || !bridge.reseed(target, canvas)) return false
+    if (canvas === undefined) return false
+    const sendResult = bridge.reseed(target, canvas)
+    if (sendResult === 'too_large') {
+      giveUpOnReseed('canvas exceeds the transport limit')
+      return true
+    }
+    if (sendResult === 'serialization_failed') {
+      giveUpOnReseed('canvas serialization failed')
+      return true
+    }
+    if (sendResult !== 'sent') return false
+    sender.abortAll()
+    pendingReseed = { workflowId: target, heldOperations: [] }
+    reseedAttempts += 1
     recordDevEvent('doc_reseed_sent', { workflowId: target })
     onSubscribeSent(
       new CustomEvent('doc_subscribe_sent', {
@@ -692,24 +736,20 @@ function startAgentCrdtFollower(
       ok?: unknown
       code?: unknown
     } | null
-    if (detail?.workflowId !== subscribedWorkflowId.value) return
+    if (detail?.workflowId !== workflowId.value) return
+    if (detail.workflowId !== subscribedWorkflowId.value) return
+    if (detail.workflowId !== pendingReseed?.workflowId) return
     lastFrameType.value = event.type
     recordDevEvent('doc_reseed_result', detail)
     const code = typeof detail.code === 'string' ? detail.code : undefined
-    if (detail.ok === true || code === RESEED_CONFLICT) return
+    if (detail.ok === true) return
+    if (code === RESEED_CONFLICT) {
+      pendingReseed = null
+      return
+    }
     clearSubscribeAckTimer()
     if (isRetryableReseedCode(code)) scheduleSubscribeRetry()
-    else {
-      clearStaleProbe()
-      clearSubscribeRetry()
-      subscribeGaveUp = true
-      connected.value = false
-      reportError(new Error('agent document reseed was rejected'), {
-        errorType: 'failure_reseeding_agent_cloud_workflow',
-        level: 'warning',
-        tags: { feature_area: 'agent', operation: 'sync', outcome: 'gave_up' }
-      })
-    }
+    else giveUpOnReseed('host rejected the reseed')
   }
 
   const onSubscribed: EventListener = (event) => {
@@ -725,6 +765,16 @@ function startAgentCrdtFollower(
       clearSubscribeRetry()
       armStaleProbe()
       resumeHeldOpsIfSubscribed()
+      if (
+        pendingReseed?.workflowId === subscribedWorkflowId.value &&
+        pendingReseed.heldOperations.length > 0
+      ) {
+        const held = pendingReseed.heldOperations
+        pendingReseed = null
+        coalescer.enqueue(held)
+      }
+      pendingReseed = null
+      reseedAttempts = 0
       // FE-1902 (poc-3): only a CONFIRMED binding is worth rebinding to after
       // a remount — persist on ok, not on intent.
       if (subscribedWorkflowId.value !== null)
@@ -848,6 +898,7 @@ function startAgentCrdtFollower(
     events.onReset?.(detail.workflowId)
     pendingLiveNodeIds.clear()
     sender.abortAll()
+    pendingReseed = null
     connected.value = false
     updatesApplied.value = 0
     lastFrameType.value = event.type
@@ -877,9 +928,10 @@ function startAgentCrdtFollower(
       workflowId === subscribedWorkflowId.value
     ) {
       updatesApplied.value = 0
-      confirmedDeletes.clear()
       pendingLiveNodeIds.clear()
+      knownDocNodeIds = new Set()
       if (detail?.preserveCanvas !== true) {
+        confirmedDeletes.clear()
         adapter.clearForReset(workflowId, {
           source: 'agent-remote',
           actor: 'agent-lineage',
@@ -931,6 +983,7 @@ function startAgentCrdtFollower(
     clearSubscribeAckTimer()
     clearSubscribeRetry()
     subscribeGaveUp = false
+    reseedAttempts = 0
     clearStaleProbe()
     recordDevEvent('reconnected', null)
     bridge.reconnect()
@@ -1076,9 +1129,14 @@ function startAgentCrdtFollower(
       // (`previous` is undefined there), so a plain mount or retarget keeps its
       // existing "reconcile on frame or on graph readiness" behaviour.
       const justActivated = active && previous?.[1] === false
+      const workflowChanged = previous === undefined || next !== previous[0]
       clearSubscribeAckTimer()
       clearSubscribeRetry()
       subscribeGaveUp = false
+      if (workflowChanged) {
+        reseedAttempts = 0
+        pendingReseed = null
+      }
       clearStaleProbe()
       connected.value = false
       knownDocNodeIds = new Set()
@@ -1181,7 +1239,10 @@ function startAgentCrdtFollower(
   return {
     status: readonly(status),
     debugSnapshot,
-    enqueueHumanOperations: (operations: GraphOperation[]) =>
-      coalescer.enqueue(operations)
+    enqueueHumanOperations: (operations: GraphOperation[]) => {
+      if (pendingReseed !== null)
+        pendingReseed.heldOperations.push(...operations)
+      else coalescer.enqueue(operations)
+    }
   }
 }

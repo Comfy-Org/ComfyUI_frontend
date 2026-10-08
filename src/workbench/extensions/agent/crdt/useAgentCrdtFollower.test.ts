@@ -23,6 +23,7 @@ import { toNodeId } from '@/types/nodeId'
 import { useAgentPanelStore } from '@/workbench/extensions/agent/stores/agent/agentPanelStore'
 
 import type { MaterializableGraph } from './agentNodeMaterializer'
+import type { DocReseedSendResult } from './docFrameClient'
 import type { BatchOutcome } from './opSender'
 import type { GraphOperation } from './graphOperations'
 
@@ -32,8 +33,9 @@ const bridgeState = vi.hoisted(() => {
     unsubscribe = vi.fn()
     resubscribe = vi.fn()
     reconnect = vi.fn(() => this.resubscribe())
+    abandonPendingReseed = vi.fn(() => false)
     canReseed = vi.fn(() => false)
-    reseed = vi.fn(() => false)
+    reseed = vi.fn<() => DocReseedSendResult>(() => 'unavailable')
     reconcile = vi.fn()
     destroy = vi.fn()
     sendHumanOps = vi.fn()
@@ -219,7 +221,7 @@ function mountFollower(
   initiallyActive = true,
   getGraph: () => MaterializableGraph | null = () => null,
   events: Parameters<typeof useAgentCrdtFollower>[5] = {},
-  canvasFor: Parameters<typeof useAgentCrdtFollower>[6] = () => null
+  canvasFor: Parameters<typeof useAgentCrdtFollower>[6] = () => undefined
 ): {
   unmount: () => void
   workflowId: Ref<string | null>
@@ -290,7 +292,7 @@ describe('useAgentCrdtFollower', () => {
     const canvasFor = vi.fn(() => visibleCanvas)
     mountFollower('wf-1', true, () => null, {}, canvasFor)
     bridge().canReseed.mockReturnValue(true)
-    bridge().reseed.mockReturnValue(true)
+    bridge().reseed.mockReturnValue('sent')
 
     dispatchFrame('doc_subscribed', {
       workflowId: 'wf-1',
@@ -313,7 +315,7 @@ describe('useAgentCrdtFollower', () => {
       () => emptyCanvas
     )
     bridge().canReseed.mockReturnValue(true)
-    bridge().reseed.mockReturnValue(true)
+    bridge().reseed.mockReturnValue('sent')
 
     dispatchFrame('doc_subscribed', {
       workflowId: 'wf-1',
@@ -323,6 +325,266 @@ describe('useAgentCrdtFollower', () => {
     })
 
     expect(bridge().reseed).toHaveBeenCalledWith('wf-1', emptyCanvas)
+  })
+
+  it('replays only edits made after the reseed snapshot is accepted', async () => {
+    const { enqueue } = mountFollower(
+      'wf-1',
+      true,
+      () => null,
+      {},
+      () => ({ nodes: [] })
+    )
+    bridge().canReseed.mockReturnValue(true)
+    bridge().reseed.mockReturnValue('sent')
+
+    dispatchFrame('doc_subscribed', {
+      workflowId: 'wf-1',
+      ok: false,
+      code: 'stale_schema_reseed_required',
+      expectedSeq: 7
+    })
+    enqueue([
+      { op: 'delete_node', node_id: 'after-snapshot', removed_links: [] }
+    ])
+    await Promise.resolve()
+
+    expect(clientState.sendOps).not.toHaveBeenCalled()
+
+    dispatchFrame('doc_subscribed', { workflowId: 'wf-1', ok: true })
+    await Promise.resolve()
+
+    expect(clientState.sendOps).toHaveBeenCalledOnce()
+    expect(clientState.sendOps).toHaveBeenCalledWith(
+      'wf-1',
+      expect.any(String),
+      [
+        expect.objectContaining({
+          op: 'delete_node',
+          node_id: 'after-snapshot'
+        })
+      ]
+    )
+  })
+
+  it('replays post-snapshot edits after reconnect confirms the reseed', async () => {
+    const { enqueue } = mountFollower(
+      'wf-1',
+      true,
+      () => null,
+      {},
+      () => ({ nodes: [] })
+    )
+    bridge().canReseed.mockReturnValue(true)
+    bridge().reseed.mockReturnValue('sent')
+
+    dispatchFrame('doc_subscribed', {
+      workflowId: 'wf-1',
+      ok: false,
+      code: 'stale_schema_reseed_required',
+      expectedSeq: 7
+    })
+    enqueue([
+      { op: 'delete_node', node_id: 'during-reconnect', removed_links: [] }
+    ])
+    apiState.target.dispatchEvent(new Event('reconnected'))
+    dispatchFrame('doc_subscribed', { workflowId: 'wf-1', ok: true })
+    await Promise.resolve()
+
+    expect(clientState.sendOps).toHaveBeenCalledOnce()
+    expect(clientState.sendOps).toHaveBeenCalledWith(
+      'wf-1',
+      expect.any(String),
+      [
+        expect.objectContaining({
+          op: 'delete_node',
+          node_id: 'during-reconnect'
+        })
+      ]
+    )
+  })
+
+  it('does not carry post-snapshot edits across a workflow retarget', async () => {
+    const { enqueue, workflowId } = mountFollower(
+      'wf-1',
+      true,
+      () => null,
+      {},
+      () => ({ nodes: [] })
+    )
+    bridge().canReseed.mockReturnValue(true)
+    bridge().reseed.mockReturnValue('sent')
+
+    dispatchFrame('doc_subscribed', {
+      workflowId: 'wf-1',
+      ok: false,
+      code: 'stale_schema_reseed_required',
+      expectedSeq: 7
+    })
+    enqueue([{ op: 'delete_node', node_id: 'wf-1-only', removed_links: [] }])
+    workflowId.value = 'wf-2'
+    await nextTick()
+    bridge().subscribedWorkflowId = 'wf-2'
+    dispatchFrame('doc_subscribed', { workflowId: 'wf-2', ok: true })
+    await Promise.resolve()
+
+    expect(clientState.sendOps).not.toHaveBeenCalled()
+  })
+
+  it('ignores a reseed result after the target starts retargeting', () => {
+    const { workflowId } = mountFollower(
+      'wf-1',
+      true,
+      () => null,
+      {},
+      () => ({ nodes: [] })
+    )
+    bridge().canReseed.mockReturnValue(true)
+    bridge().reseed.mockReturnValue('sent')
+    dispatchFrame('doc_subscribed', {
+      workflowId: 'wf-1',
+      ok: false,
+      code: 'stale_schema_reseed_required',
+      expectedSeq: 7
+    })
+
+    workflowId.value = 'wf-2'
+    dispatchFrame('doc_reseed_result', {
+      workflowId: 'wf-1',
+      ok: false,
+      code: 'invalid_frame'
+    })
+
+    expect(telemetryState.reportError).not.toHaveBeenCalled()
+    expect(bridge().resubscribe).not.toHaveBeenCalled()
+  })
+
+  it('ignores a reseed result after the target detaches', () => {
+    const { workflowId } = mountFollower(
+      'wf-1',
+      true,
+      () => null,
+      {},
+      () => ({ nodes: [] })
+    )
+    bridge().canReseed.mockReturnValue(true)
+    bridge().reseed.mockReturnValue('sent')
+    dispatchFrame('doc_subscribed', {
+      workflowId: 'wf-1',
+      ok: false,
+      code: 'stale_schema_reseed_required',
+      expectedSeq: 7
+    })
+
+    workflowId.value = null
+    dispatchFrame('doc_reseed_result', {
+      workflowId: 'wf-1',
+      ok: false,
+      code: 'invalid_frame'
+    })
+
+    expect(telemetryState.reportError).not.toHaveBeenCalled()
+    expect(bridge().resubscribe).not.toHaveBeenCalled()
+  })
+
+  it('releases future edits after a terminal reseed rejection', async () => {
+    const { enqueue } = mountFollower(
+      'wf-1',
+      true,
+      () => null,
+      {},
+      () => ({ nodes: [] })
+    )
+    bridge().canReseed.mockReturnValue(true)
+    bridge().reseed.mockReturnValue('sent')
+    dispatchFrame('doc_subscribed', {
+      workflowId: 'wf-1',
+      ok: false,
+      code: 'stale_schema_reseed_required',
+      expectedSeq: 7
+    })
+    enqueue([{ op: 'delete_node', node_id: 'held', removed_links: [] }])
+
+    dispatchFrame('doc_reseed_result', {
+      workflowId: 'wf-1',
+      ok: false,
+      code: 'invalid_frame'
+    })
+    enqueue([
+      { op: 'delete_node', node_id: 'after-failure', removed_links: [] }
+    ])
+    await Promise.resolve()
+
+    expect(telemetryState.reportError).toHaveBeenCalledExactlyOnceWith(
+      expect.any(Error),
+      {
+        errorType: 'failure_reseeding_agent_cloud_workflow',
+        level: 'warning',
+        tags: { feature_area: 'agent', operation: 'sync', outcome: 'gave_up' }
+      }
+    )
+    expect(clientState.sendOps).toHaveBeenCalledExactlyOnceWith(
+      'wf-1',
+      expect.any(String),
+      [expect.objectContaining({ node_id: 'after-failure' })]
+    )
+  })
+  it('replays post-snapshot edits after the same workflow tab is reactivated', async () => {
+    const { enqueue, isTargetActive } = mountFollower(
+      'wf-1',
+      true,
+      () => null,
+      {},
+      () => ({ nodes: [] })
+    )
+    bridge().canReseed.mockReturnValue(true)
+    bridge().reseed.mockReturnValue('sent')
+
+    dispatchFrame('doc_subscribed', {
+      workflowId: 'wf-1',
+      ok: false,
+      code: 'stale_schema_reseed_required',
+      expectedSeq: 7
+    })
+    enqueue([
+      { op: 'delete_node', node_id: 'while-inactive', removed_links: [] }
+    ])
+    isTargetActive.value = false
+    await nextTick()
+    isTargetActive.value = true
+    await nextTick()
+    dispatchFrame('doc_subscribed', { workflowId: 'wf-1', ok: true })
+    await Promise.resolve()
+
+    expect(clientState.sendOps).toHaveBeenCalledOnce()
+    expect(clientState.sendOps).toHaveBeenCalledWith(
+      'wf-1',
+      expect.any(String),
+      [
+        expect.objectContaining({
+          op: 'delete_node',
+          node_id: 'while-inactive'
+        })
+      ]
+    )
+  })
+
+  it('retries when a refusal arrives before the canvas binding settles', () => {
+    vi.useFakeTimers()
+    mountFollower('wf-1')
+    bridge().canReseed.mockReturnValue(true)
+
+    dispatchFrame('doc_subscribed', {
+      workflowId: 'wf-1',
+      ok: false,
+      code: 'stale_schema_reseed_required',
+      expectedSeq: 7
+    })
+
+    expect(bridge().reseed).not.toHaveBeenCalled()
+    vi.advanceTimersByTime(500)
+    expect(bridge().resubscribe).toHaveBeenCalledOnce()
+    expect(telemetryState.reportError).not.toHaveBeenCalled()
   })
 
   it('does not construct a follower when the product gate is disabled', () => {
@@ -1764,6 +2026,32 @@ describe('useAgentCrdtFollower', () => {
       unmount()
     })
 
+    it('keeps confirmed deletes across a canvas-preserving follower replacement', async () => {
+      const { unmount, enqueue } = mountWriter('wf-1')
+      const intent = adapterState.intent!
+      bridge().follower.doc.getMap = () => ({
+        toJSON: () => ({ '1': {} })
+      })
+
+      enqueue([deleteNode('1')])
+      await Promise.resolve()
+      ackSent(0)
+      expect([...intent.pendingDeletes('wf-1')]).toEqual(['1'])
+
+      dispatchFrame('follower_replaced', {
+        workflowId: 'wf-1',
+        preserveCanvas: true
+      })
+      expect([...intent.pendingDeletes('wf-1')]).toEqual(['1'])
+
+      dispatchFrame('follower_replaced', {
+        workflowId: 'wf-1',
+        preserveCanvas: false
+      })
+      expect([...intent.pendingDeletes('wf-1')]).toEqual([])
+      unmount()
+    })
+
     it('a refused resubscribe on return still settles the held batch undeliverable', async () => {
       const { unmount, isTargetActive, enqueue } = mountWriter('wf-1')
       enqueue([deleteNode('1')])
@@ -1850,6 +2138,19 @@ describe('useAgentCrdtFollower', () => {
     expect(bridge().resubscribe).not.toHaveBeenCalled()
     vi.advanceTimersByTime(1)
     expect(bridge().resubscribe).toHaveBeenCalledTimes(1)
+    unmount()
+  })
+
+  it('abandons an unacknowledged reseed before retrying', () => {
+    vi.useFakeTimers()
+    const { unmount } = mountFollower('wf-1')
+    bridge().abandonPendingReseed.mockReturnValue(true)
+    dispatchFrame('doc_subscribe_sent', { workflowId: 'wf-1' })
+
+    vi.advanceTimersByTime(SUBSCRIBE_ACK_TIMEOUT_MS)
+
+    expect(bridge().abandonPendingReseed).toHaveBeenCalledOnce()
+    expect(bridge().resubscribe).not.toHaveBeenCalled()
     unmount()
   })
 

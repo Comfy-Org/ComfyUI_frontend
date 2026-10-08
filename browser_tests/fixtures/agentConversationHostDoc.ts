@@ -122,6 +122,19 @@ export class HostDoc {
     }
   }
 
+  staleSchemaReseedRequired(): HostFrame {
+    return {
+      type: 'doc_subscribed',
+      data: {
+        v: DOC_PROTOCOL_VERSION,
+        workflow_id: this.workflowId,
+        ok: false,
+        code: 'stale_schema_reseed_required',
+        expected_seq: this.seq
+      }
+    }
+  }
+
   // The applier below is the only judge of a recorded op; the cast hands it
   // the structural record and nothing reads the ops as typed before it runs.
   apply(operations: RecordedGraphOperation[]): HostFrame {
