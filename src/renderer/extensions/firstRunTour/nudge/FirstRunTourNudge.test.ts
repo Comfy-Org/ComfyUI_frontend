@@ -1,10 +1,25 @@
+import type { DetachedWindowAPI } from 'happy-dom'
 import { useDialogStore } from '@/stores/dialogStore'
+import { useSidebarTabStore } from '@/stores/workspace/sidebarTabStore'
 import { fromPartial } from '@total-typescript/shoehorn'
 import userEvent from '@testing-library/user-event'
 import { render, screen } from '@testing-library/vue'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { createI18n } from 'vue-i18n'
 
+import {
+  clearCoachmarks,
+  registerCoachmark,
+  unregisterCoachmark
+} from '@/platform/onboarding/coachmarkRegistry'
+import { laidOut } from '@/platform/onboarding/fixtures/coachmarkTargets'
+import { useOnboardingTourStore } from '@/platform/onboarding/onboardingTourStore'
+import {
+  FIRST_RUN_COACH_IDS,
+  TOUR_SEEN_SETTING,
+  registerTour
+} from '@/platform/onboarding/onboardingTours'
+import { useSettingStore } from '@/platform/settings/settingStore'
 import { useTelemetry } from '@/platform/telemetry'
 
 import enMessages from '@/locales/en/main.json' with { type: 'json' }
@@ -12,6 +27,27 @@ import enMessages from '@/locales/en/main.json' with { type: 'json' }
 import FirstRunTourNudge from './FirstRunTourNudge.vue'
 
 const APPEAR_DELAY_MS = 1500
+const BUTTON = new DOMRect(600, 300, 48, 48)
+const DESKTOP_WIDTH = 1280
+const MOBILE_WIDTH = 500
+
+function resizeWindow(width: number) {
+  const happyDOM = (window as unknown as { happyDOM?: DetachedWindowAPI })
+    .happyDOM
+  if (!happyDOM) {
+    throw new Error('window.happyDOM is unavailable to set viewport')
+  }
+  happyDOM.setViewport({ width, height: 800 })
+  Object.defineProperty(document.documentElement, 'clientWidth', {
+    configurable: true,
+    value: width
+  })
+  Object.defineProperty(document.documentElement, 'clientHeight', {
+    configurable: true,
+    value: 800
+  })
+  window.dispatchEvent(new Event('resize'))
+}
 
 const mocks = await vi.hoisted(async () => {
   const { ref } = await import('vue')
@@ -63,6 +99,9 @@ describe('FirstRunTourNudge', () => {
     mocks.nudgeArmed.value = false
     mocks.tourWasCompleted.value = true
     useDialogStore().dialogStack = []
+    clearCoachmarks()
+    registerCoachmark(FIRST_RUN_COACH_IDS.templatesButton, laidOut())
+    resizeWindow(DESKTOP_WIDTH)
   })
 
   it('shows a nudge that came due before it mounted', async () => {
@@ -147,6 +186,133 @@ describe('FirstRunTourNudge', () => {
     ).toHaveLength(1)
   })
 
+  it('waits for a Templates button to point at', async () => {
+    clearCoachmarks()
+    mocks.nudgeArmed.value = true
+    renderNudge()
+
+    await vi.advanceTimersByTimeAsync(APPEAR_DELAY_MS)
+    expect(
+      nudge(),
+      'builder mode has no sidebar, and a nudge pointing at nothing is noise'
+    ).toBeNull()
+
+    registerCoachmark(FIRST_RUN_COACH_IDS.templatesButton, laidOut())
+    await vi.advanceTimersByTimeAsync(APPEAR_DELAY_MS)
+
+    expect(nudge()).not.toBeNull()
+  })
+
+  it('leaves once the Templates button goes away', async () => {
+    const button = laidOut()
+    clearCoachmarks()
+    registerCoachmark(FIRST_RUN_COACH_IDS.templatesButton, button)
+    mocks.nudgeArmed.value = true
+    renderNudge()
+    await vi.advanceTimersByTimeAsync(APPEAR_DELAY_MS)
+
+    unregisterCoachmark(FIRST_RUN_COACH_IDS.templatesButton, button)
+    await vi.advanceTimersByTimeAsync(0)
+
+    expect(nudge()).toBeNull()
+  })
+
+  it.for([
+    {
+      blocker: 'a sidebar panel is open beside the button',
+      block: () => {
+        const sidebar = useSidebarTabStore()
+        sidebar.sidebarTabs = [fromPartial({ id: 'node-library' })]
+        sidebar.activeSidebarTabId = 'node-library'
+      },
+      clear: () => {
+        useSidebarTabStore().activeSidebarTabId = null
+      }
+    }
+  ])('waits while $blocker', async ({ block, clear }) => {
+    block()
+    mocks.nudgeArmed.value = true
+    renderNudge()
+
+    await vi.advanceTimersByTimeAsync(APPEAR_DELAY_MS)
+    expect(nudge()).toBeNull()
+
+    clear()
+    await vi.advanceTimersByTimeAsync(APPEAR_DELAY_MS)
+
+    expect(nudge()).not.toBeNull()
+  })
+
+  it.for([
+    {
+      blocker: 'a tour is running',
+      block: () => {
+        useSettingStore().settingValues[TOUR_SEEN_SETTING] = []
+        registerTour('firstRun', [{ kind: 'landing', name: 'landing' }])
+        useOnboardingTourStore().replayTour('firstRun')
+      },
+      clear: () => useOnboardingTourStore().skip()
+    },
+    {
+      blocker: 'the window is narrower than the onboarding layout',
+      block: () => resizeWindow(MOBILE_WIDTH),
+      clear: () => resizeWindow(DESKTOP_WIDTH)
+    }
+  ])('also waits while $blocker', async ({ block, clear }) => {
+    block()
+    mocks.nudgeArmed.value = true
+    renderNudge()
+
+    await vi.advanceTimersByTimeAsync(APPEAR_DELAY_MS)
+    expect(nudge()).toBeNull()
+
+    clear()
+    await vi.advanceTimersByTimeAsync(APPEAR_DELAY_MS)
+
+    expect(nudge()).not.toBeNull()
+  })
+
+  it.for([
+    { location: 'left', side: 'right of' },
+    { location: 'right', side: 'left of' }
+  ] as const)(
+    'with the sidebar on the $location, sits $side the Templates button',
+    async ({ location }) => {
+      useSettingStore().settingValues['Comfy.Sidebar.Location'] = location
+      clearCoachmarks()
+      registerCoachmark(FIRST_RUN_COACH_IDS.templatesButton, laidOut(BUTTON))
+      mocks.nudgeArmed.value = true
+      renderNudge()
+      await vi.advanceTimersByTimeAsync(APPEAR_DELAY_MS)
+
+      const cardLeft = parseFloat(nudge()!.style.left)
+      if (location === 'left') {
+        expect(cardLeft).toBeGreaterThanOrEqual(BUTTON.right)
+      } else {
+        expect(
+          cardLeft,
+          'a right sidebar sits beside the docked Agent panel, so the card must open toward the canvas'
+        ).toBeLessThan(BUTTON.left)
+      }
+    }
+  )
+
+  it('brings a scrolled-away Templates button into view before pointing at it', async () => {
+    const button = laidOut(BUTTON)
+    const scrollIntoView = vi.spyOn(button, 'scrollIntoView')
+    clearCoachmarks()
+    registerCoachmark(FIRST_RUN_COACH_IDS.templatesButton, button)
+    mocks.nudgeArmed.value = true
+    renderNudge()
+
+    await vi.advanceTimersByTimeAsync(APPEAR_DELAY_MS)
+
+    expect(
+      scrollIntoView,
+      'on a short window the sidebar scrolls, and a pointer at a hidden button points at nothing'
+    ).toHaveBeenCalledWith({ block: 'nearest' })
+  })
+
   it('congratulates a tour the user walked to the end', async () => {
     mocks.tourWasCompleted.value = true
     mocks.nudgeArmed.value = true
@@ -194,6 +360,43 @@ describe('FirstRunTourNudge', () => {
 
     expect(mocks.dismissNudge).toHaveBeenCalled()
     expect(nudge()).toBeNull()
+  })
+
+  it.for([
+    {
+      gesture: 'clicks outside it',
+      act: (user: ReturnType<typeof userEvent.setup>) =>
+        user.click(document.body)
+    },
+    {
+      gesture: 'presses Escape',
+      act: (user: ReturnType<typeof userEvent.setup>) =>
+        user.keyboard('{Escape}')
+    }
+  ])('stays gone once the user $gesture', async ({ act }) => {
+    const user = userEvent.setup({ advanceTimers: vi.advanceTimersByTime })
+    mocks.nudgeArmed.value = true
+    renderNudge()
+    await vi.advanceTimersByTimeAsync(APPEAR_DELAY_MS)
+
+    await act(user)
+
+    expect(mocks.dismissNudge).toHaveBeenCalled()
+    expect(nudge()).toBeNull()
+  })
+
+  it('stays open while the user reads it', async () => {
+    const user = userEvent.setup({ advanceTimers: vi.advanceTimersByTime })
+    mocks.nudgeArmed.value = true
+    renderNudge()
+    await vi.advanceTimersByTimeAsync(APPEAR_DELAY_MS)
+
+    await user.click(screen.getByText(nudgeCopy.ran.body))
+
+    expect(
+      nudge(),
+      'a click inside the card is not a request to close it'
+    ).not.toBeNull()
   })
 
   it('stays gone once the user waves it away', async () => {
