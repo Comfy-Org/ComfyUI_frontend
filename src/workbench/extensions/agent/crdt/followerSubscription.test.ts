@@ -977,6 +977,37 @@ describe('subscribe catch-up state', () => {
     expect(bridge.isSubscribeBaselineIntegrated).toBe(true)
   })
 
+  it('keeps a resubscribe closed when the prior baseline never integrated', () => {
+    const { transport, bridge } = wire()
+    transport.open = true
+    bridge.subscribe(WORKFLOW_ID)
+    transport.deliver('doc_subscribed', {
+      v: 1,
+      workflow_id: WORKFLOW_ID,
+      ok: true,
+      seq: 1
+    })
+    expect(bridge.isSubscribeBaselineIntegrated).toBe(false)
+    expect(nodesMap(bridge.follower.doc).size).toBe(0)
+
+    bridge.resubscribe()
+    transport.deliver('doc_subscribed', {
+      v: 1,
+      workflow_id: WORKFLOW_ID,
+      ok: true,
+      seq: 1
+    })
+
+    expect(bridge.isSubscribeBaselineIntegrated).toBe(false)
+    expect(nodesMap(bridge.follower.doc).size).toBe(0)
+
+    transport.deliver(
+      'doc_update',
+      docUpdateFrame(hostDocUpdate(), WORKFLOW_ID, 1)
+    )
+    expect(bridge.isSubscribeBaselineIntegrated).toBe(true)
+  })
+
   it('keeps a stale non-empty same-lineage document closed', () => {
     const { transport, bridge } = wire()
     transport.open = true

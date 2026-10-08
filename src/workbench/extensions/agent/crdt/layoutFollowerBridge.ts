@@ -236,7 +236,9 @@ export class LayoutFollowerBridge extends EventTarget {
       trySend(() => this.client.subscribe(desired, this.follower.stateVector()))
     ) {
       this.sentWorkflowId = desired
-      this.preSubscribeSeq = this.lastSeq ?? this.ackSeq
+      this.preSubscribeSeq = this.isSubscribeBaselineIntegrated
+        ? (this.lastSeq ?? this.ackSeq)
+        : null
       this.lastSeq = null
       this.ackSeq = null
       this.catchUpPending = false
