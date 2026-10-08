@@ -149,6 +149,19 @@ export const useDialogStore = defineStore('dialog', () => {
    * Only the active dialog can be closed with the ESC key.
    */
   const activeKey = ref<string | null>(null)
+  let activationOrder: string[] = []
+
+  function activate(key: string) {
+    activationOrder = [...activationOrder.filter((k) => k !== key), key]
+    activeKey.value = key
+  }
+
+  function deactivate(key: string) {
+    activationOrder = activationOrder.filter(
+      (k) => k !== key && dialogStack.value.some((d) => d.key === k)
+    )
+    activeKey.value = activationOrder.at(-1) ?? null
+  }
 
   const genDialogKey = () => `dialog-${Math.random().toString(36).slice(2, 9)}`
 
@@ -174,7 +187,7 @@ export const useDialogStore = defineStore('dialog', () => {
     if (index !== -1) {
       const [dialog] = dialogStack.value.splice(index, 1)
       insertDialogByPriority(dialog)
-      activeKey.value = dialogKey
+      activate(dialogKey)
       updateCloseOnEscapeStates()
     }
   }
@@ -194,13 +207,9 @@ export const useDialogStore = defineStore('dialog', () => {
     if (removed) dialogStack.value.splice(index, 1)
 
     // A reentrant callback may have already activated a dialog of its own;
-    // only fall back to the stack tail when the active key named a dialog that
-    // is now gone.
+    // only fall back when the active key named a dialog that is now gone.
     if (!dialogStack.value.some((d) => d.key === activeKey.value)) {
-      activeKey.value =
-        dialogStack.value.length > 0
-          ? dialogStack.value[dialogStack.value.length - 1].key
-          : null
+      deactivate(targetDialog.key)
     }
 
     updateCloseOnEscapeStates()
@@ -259,7 +268,7 @@ export const useDialogStore = defineStore('dialog', () => {
     }
 
     insertDialogByPriority(dialog)
-    activeKey.value = options.key
+    activate(options.key)
     updateCloseOnEscapeStates()
     notifyRemoved(evicted)
 
