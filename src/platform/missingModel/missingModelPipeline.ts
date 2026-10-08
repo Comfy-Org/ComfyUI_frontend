@@ -19,7 +19,7 @@ import { api } from '@/scripts/api'
 import { useExecutionErrorStore } from '@/stores/executionErrorStore'
 import { useModelToNodeStore } from '@/stores/modelToNodeStore'
 import { useWorkspaceStore } from '@/stores/workspaceStore'
-import type { MissingNodeType } from '@/types/comfy'
+import type { MissingNodeType } from '@/platform/nodeReplacement/types'
 import {
   getNodeByExecutionId,
   isCandidateScopeActive,
