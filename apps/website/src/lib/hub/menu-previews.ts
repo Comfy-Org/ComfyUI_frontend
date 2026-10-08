@@ -48,7 +48,7 @@ export function hubMenuPreviewsFor(
 }
 
 export function hubMenuPreviews(locale: Locale): HubMenuPreviews {
-  const hrefs = getMainNavigation(locale, true, { workflows: true, apps: true })
+  const hrefs = getMainNavigation(locale, { workflows: true, apps: true })
     .flatMap((item) => item.columns ?? [])
     .filter((column) => column.kind)
     .flatMap((column) => column.items.map((item) => item.href))

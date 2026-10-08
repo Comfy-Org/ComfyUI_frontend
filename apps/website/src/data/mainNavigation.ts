@@ -12,6 +12,7 @@ export type HubMenuPreviews = Readonly<Record<string, NavItemPreview>>
 export type NavColumnItem = NavItemPreview & {
   label: string
   href: string
+  icon?: string
   badge?: 'new' | 'beta'
   external?: boolean
   /** Opens in a tab of its own without leaving the site, like a full-screen app. */
@@ -30,7 +31,7 @@ export function navLinkTarget(
 type NavColumnKind = 'model' | 'workflow' | 'app'
 
 export type NavColumn = {
-  header: string
+  header?: string
   kind?: NavColumnKind
   description?: string
   placement?: 'footer'
@@ -40,9 +41,8 @@ export type NavColumn = {
 export type NavFeatured = {
   imageSrc: string
   videoSrc?: string
+  showPlayOverlay?: boolean
   imageAlt?: string
-  eyebrow?: string
-  compact?: boolean
   title: string
   cta: {
     label: string
@@ -86,7 +86,6 @@ export const NO_HUB_SECTIONS: HubSections = { workflows: false, apps: false }
 
 export function getMainNavigation(
   locale: Locale,
-  workshopInBuild = false,
   hubSections: HubSections = NO_HUB_SECTIONS,
   hubPreviews: HubMenuPreviews = {}
 ): NavItem[] {
@@ -176,10 +175,9 @@ export function getMainNavigation(
     }
   }
   return [
-    ...when(workshopInBuild, [hub]),
+    hub,
     {
       label: t('nav.products'),
-      badge: 'new',
       featured: {
         imageSrc: 'https://media.comfy.org/website/gemini-omni/card-5.webp',
         videoSrc: 'https://media.comfy.org/website/gemini-omni/card-5.webm',
@@ -196,7 +194,16 @@ export function getMainNavigation(
           header: t('nav.colCreate'),
           items: [
             { label: t('nav.comfyLocal'), href: routes.download },
-            { label: t('nav.comfyCloud'), href: routes.cloud }
+            {
+              label: t('nav.comfyWorkshop'),
+              href: routes.workshop,
+              badge: 'new'
+            },
+            { label: t('nav.comfyCloud'), href: routes.cloud },
+            {
+              label: t('nav.comfyHub'),
+              href: externalLinks.workflows
+            }
           ]
         },
         {
@@ -208,32 +215,38 @@ export function getMainNavigation(
               badge: 'new'
             },
             { label: t('nav.mcpServer'), href: routes.mcp },
-            { label: t('nav.comfyCli'), href: routes.cli }
+            {
+              label: t('nav.comfyCli'),
+              href: routes.cli
+            }
           ]
         },
         {
           header: t('nav.colBuild'),
           items: [
-            ...when(!workshopInBuild, [
-              { label: t('nav.supportedModels'), href: routes.models }
-            ]),
             {
               label: t('nav.developerPlatform'),
               href: routes.platform,
               badge: 'new'
             },
-            { label: t('nav.comfyApi'), href: routes.platformComfyApi },
+            {
+              label: t('nav.comfyApi'),
+              href: routes.platformComfyApi
+            },
             {
               label: t('nav.comfyRouter'),
               href: routes.platformRouter,
               badge: 'new'
             },
             { label: t('nav.builds'), href: routes.platformBuilder },
-            { label: t('nav.managedBuilds'), href: routes.managedBuilds }
+            {
+              label: t('nav.managedBuilds'),
+              href: routes.managedBuilds
+            }
           ]
         },
         {
-          header: t('nav.resources'),
+          header: t('nav.colResources'),
           placement: 'footer',
           items: [
             {
@@ -245,8 +258,7 @@ export function getMainNavigation(
               label: t('nav.comfySdks'),
               href: externalLinks.docsSdk,
               external: true
-            },
-            { label: t('nav.launches'), href: routes.launches }
+            }
           ]
         }
       ]
@@ -255,29 +267,39 @@ export function getMainNavigation(
       label: t('nav.enterprise'),
       featured: {
         imageSrc:
-          'https://media.comfy.org/website/gallery/amber-passage_compressed.jpg',
+          'https://media.comfy.org/website/minimax-license/hero-poster.jpg',
+        videoSrc: 'https://media.comfy.org/website/minimax-license/hero.mp4',
         imageAlt: t('nav.featuredEnterpriseAlt'),
-        title: t('nav.featuredEnterpriseTitle'),
+        title: t('minimaxLicense.breadcrumb.model'),
         cta: {
-          label: t('nav.featuredEnterpriseCta'),
-          ariaLabel: t('nav.featuredEnterpriseCtaAria'),
+          label: t('minimaxLicense.runOptions.cta'),
+          ariaLabel: `${t('minimaxLicense.runOptions.cta')}: ${t('minimaxLicense.breadcrumb.model')}`,
           href: routes.minimaxLicense
         }
       },
       columns: [
         {
-          header: t('nav.enterprise'),
           items: [
             {
               label: t('nav.comfyEnterprise'),
               href: routes.enterprise
             },
-            { label: t('nav.fdct'), href: routes.fdct },
+            {
+              label: t('nav.fdct'),
+              href: routes.fdct
+            },
+            {
+              label: t('nav.teamBilling'),
+              href: `${routes.pricing}#team`
+            },
             {
               label: t('nav.commercialLicensing'),
               href: routes.minimaxLicense
             },
-            { label: t('nav.contactSales'), href: routes.contact }
+            {
+              label: t('nav.contactSales'),
+              href: routes.contact
+            }
           ]
         }
       ]
@@ -287,9 +309,8 @@ export function getMainNavigation(
       label: t('nav.company'),
       featured: {
         imageSrc: 'https://media.comfy.org/website/nav/customer-story-card.jpg',
+        showPlayOverlay: true,
         imageAlt: t('nav.featuredCompanyAlt'),
-        eyebrow: t('nav.featuredCompanyEyebrow'),
-        compact: true,
         title: t('nav.featuredCompanyTitle'),
         cta: {
           label: t('cta.watchNow'),
@@ -299,6 +320,24 @@ export function getMainNavigation(
       },
       columns: [
         {
+          header: t('nav.community'),
+          items: [
+            {
+              label: t('nav.events'),
+              href: routes.events,
+              badge: 'new'
+            },
+            {
+              label: t('nav.affiliates'),
+              href: routes.affiliates
+            },
+            {
+              label: t('nav.learning'),
+              href: routes.learning
+            }
+          ]
+        },
+        {
           header: t('nav.company'),
           items: [
             { label: t('nav.aboutUs'), href: routes.about },
@@ -307,9 +346,14 @@ export function getMainNavigation(
           ]
         },
         {
-          header: t('nav.updates'),
+          header: t('nav.colUpdates'),
           items: [
-            { label: t('nav.customerStories'), href: routes.customers },
+            {
+              label: t('nav.customerStories'),
+              href: routes.customers,
+              badge: 'new'
+            },
+            { label: t('nav.launches'), href: routes.launches },
             {
               label: t('nav.blogs'),
               href: externalLinks.blog,
@@ -318,16 +362,23 @@ export function getMainNavigation(
           ]
         },
         {
-          header: t('nav.community'),
-          items: [
-            {
-              label: t('nav.events'),
-              href: routes.events,
-              badge: 'new'
-            },
-            { label: t('nav.learning'), href: routes.learning },
-            { label: t('nav.affiliates'), href: routes.affiliates }
-          ]
+          header: t('nav.colConnect'),
+          placement: 'footer',
+          items: (
+            [
+              ['nav.discord', externalLinks.discord, 'discord'],
+              ['nav.github', externalLinks.github, 'github'],
+              ['nav.youtube', externalLinks.youtube, 'youtube'],
+              ['nav.reddit', externalLinks.reddit, 'reddit'],
+              ['nav.x', externalLinks.x, 'x'],
+              ['nav.instagram', externalLinks.instagram, 'instagram']
+            ] as const
+          ).map(([key, href, icon]) => ({
+            label: t(key),
+            href,
+            icon: `/icons/social/${icon}.svg`,
+            external: true
+          }))
         }
       ]
     }

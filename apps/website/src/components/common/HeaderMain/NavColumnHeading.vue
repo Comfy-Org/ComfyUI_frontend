@@ -1,7 +1,9 @@
 <script setup lang="ts">
+import { cn } from '@comfyorg/tailwind-utils'
+
 import type { NavColumn } from '@/data/mainNavigation'
 
-defineProps<{ column: NavColumn }>()
+defineProps<{ column: NavColumn; layout?: 'column' | 'row' }>()
 </script>
 
 <template>
@@ -17,8 +19,13 @@ defineProps<{ column: NavColumn }>()
     </p>
   </div>
   <p
-    v-else
-    class="shrink-0 pl-2 text-2xs font-bold tracking-widest text-primary-warm-gray uppercase"
+    v-else-if="column.header"
+    :class="
+      cn(
+        'font-formula text-xs font-medium text-primary-warm-gray',
+        layout !== 'row' && 'pl-2'
+      )
+    "
   >
     {{ column.header }}
   </p>

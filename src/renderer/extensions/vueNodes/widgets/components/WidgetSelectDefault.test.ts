@@ -32,6 +32,7 @@ const flushPromises = () =>
 describe('WidgetSelectDefault', () => {
   beforeEach(() => {
     vi.useRealTimers()
+    vi.spyOn(HTMLElement.prototype, 'offsetHeight', 'get').mockReturnValue(1000)
   })
 
   const createWidget = (

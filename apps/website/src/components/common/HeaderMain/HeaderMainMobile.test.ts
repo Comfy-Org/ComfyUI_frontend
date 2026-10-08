@@ -5,51 +5,30 @@ import { describe, expect, it } from 'vitest'
 import type { HubMenuPreviews } from '@/data/mainNavigation'
 import HeaderMainMobile from './HeaderMainMobile.vue'
 
-async function openMenu(
-  workshopInBuild: boolean,
-  hubPreviews?: HubMenuPreviews
-) {
+async function openMenu(hubPreviews?: HubMenuPreviews) {
   const user = userEvent.setup()
   render(HeaderMainMobile, {
-    props: {
-      workshopInBuild,
-      hubSections: { workflows: true, apps: true },
-      hubPreviews
-    }
+    props: { hubSections: { workflows: true, apps: true }, hubPreviews }
   })
   await user.click(screen.getByRole('button', { name: 'Toggle menu' }))
   return user
 }
 
 describe('HeaderMainMobile', () => {
-  it.for([
-    {
-      build: 'in',
-      workshopInBuild: true,
-      sections: ['Hub', 'Products', 'Enterprise', 'Company']
-    },
-    {
-      build: 'not in',
-      workshopInBuild: false,
-      sections: ['Products', 'Enterprise', 'Company']
-    }
-  ])(
-    'opens $sections as sections when the workshop is $build the build',
-    async ({ workshopInBuild, sections }) => {
-      await openMenu(workshopInBuild)
-      const menu = within(screen.getByRole('navigation', { name: 'Menu' }))
+  it('opens Hub, Products, Enterprise and Company as sections, with Pricing as a link', async () => {
+    await openMenu()
+    const menu = within(screen.getByRole('navigation', { name: 'Menu' }))
 
-      expect(
-        menu
-          .getAllByRole('button')
-          .map((button) => button.textContent.replace(/NEW$/, '').trim())
-      ).toEqual(sections)
-      expect(menu.getByRole('link', { name: 'Pricing' })).toBeTruthy()
-    }
-  )
+    expect(
+      menu
+        .getAllByRole('button')
+        .map((button) => button.textContent.replace(/NEW$/, '').trim())
+    ).toEqual(['Hub', 'Products', 'Enterprise', 'Company'])
+    expect(menu.getByRole('link', { name: 'Pricing' })).toBeTruthy()
+  })
 
   it('drills into the Hub formats and the Explore row', async () => {
-    const user = await openMenu(true)
+    const user = await openMenu()
     await user.click(screen.getByRole('button', { name: /^Hub/ }))
 
     expect(screen.getByText('Run, call by API or download').tagName).toBe('P')
@@ -71,7 +50,7 @@ describe('HeaderMainMobile', () => {
   })
 
   it('shows the Hub examples with their lines and no image', async () => {
-    const user = await openMenu(true, {
+    const user = await openMenu({
       '/hub/apps/reshoot/': {
         meta: 'Aim a new camera at your clip'
       }
@@ -84,20 +63,58 @@ describe('HeaderMainMobile', () => {
     expect(within(reshoot).queryAllByRole('img')).toHaveLength(0)
   })
 
-  it('ends the Company drill-down without the social links', async () => {
-    const user = await openMenu(false)
-    await user.click(screen.getByRole('button', { name: /^Company/ }))
+  it('offers Hub, Products and Enterprise at the top level', async () => {
+    await openMenu()
 
-    expect(screen.getByRole('link', { name: 'Affiliates' })).toBeTruthy()
-    for (const name of ['GitHub', 'Discord', 'X', 'Instagram'])
-      expect(screen.queryByRole('link', { name })).toBeNull()
+    expect(screen.getByRole('button', { name: /^Hub\b/i })).toBeTruthy()
+    expect(screen.getByRole('button', { name: /^Products\b/i })).toBeTruthy()
+    expect(screen.getByRole('button', { name: /^Enterprise\b/i })).toBeTruthy()
   })
 
-  it('labels a new top-level section with a NEW badge', async () => {
-    await openMenu(false)
+  it('offers Browse Models under Products', async () => {
+    const user = await openMenu()
+    await user.click(screen.getByRole('button', { name: /^Products\b/i }))
 
+    expect(screen.getByRole('link', { name: /^Browse Models\b/i })).toBeTruthy()
+  })
+
+  it('names each icon-only social link under Company', async () => {
+    const user = await openMenu()
+    await user.click(screen.getByRole('button', { name: /^Company\b/i }))
+
+    const socialLinks = ['Discord', 'GitHub', 'YouTube', 'Reddit'].map(
+      (label) => `${label} (opens in new tab)`
+    )
     expect(
-      screen.getByRole('button', { name: /^Products\s*NEW$/i })
-    ).toBeTruthy()
+      socialLinks.map((name) =>
+        screen.getByRole('link', { name }).textContent.trim()
+      )
+    ).toEqual(socialLinks)
+  })
+
+  it('shows a NEW badge on the Hub section only', async () => {
+    await openMenu()
+
+    expect(screen.getByRole('button', { name: /^Hub\s*NEW$/i })).toBeTruthy()
+    expect(screen.getByRole('button', { name: /^Products$/i })).toBeTruthy()
+    expect(screen.getAllByText('NEW', { exact: true })).toHaveLength(1)
+  })
+
+  it('shows the Enterprise links in one section', async () => {
+    const user = await openMenu()
+    await user.click(screen.getByRole('button', { name: /^Enterprise\b/i }))
+
+    const enterpriseLinks = [
+      'Comfy Enterprise',
+      'Forward Deployed Creatives',
+      'Team Billing',
+      'Commercial Licensing',
+      'Contact Sales'
+    ]
+    expect(
+      enterpriseLinks.map(
+        (label) => screen.getByRole('link', { name: label }).textContent
+      )
+    ).toEqual(enterpriseLinks)
   })
 })

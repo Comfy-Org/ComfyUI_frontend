@@ -468,15 +468,35 @@ export function useWorkspaceBilling(): WorkspaceBilling {
     options?: SubscribeOptions
   ): Promise<SettledSubscribeResponse> {
     const rail = useSubscriptionRail()
-    if (rail) {
+    const attemptStartedAt = options?.attemptStartedAt
+    if (rail?.subscriptionRouteAvailable) {
       const response = await onSubscriptionRail(() =>
         rail.subscribe(subscribeInputFrom(planSlug, options), {
-          callerStarted: options?.attemptStartedAt !== undefined
+          callerStarted: attemptStartedAt !== undefined
         })
       )
       // The SDK waited for the operation, so the refresh the legacy path fires
       // and forgets has already run on the rail.
       if (response !== DECLINED) return response
+      if (attemptStartedAt !== undefined) {
+        // The caller started this attempt on the rail; the legacy call is its own attempt.
+        telemetry?.trackBillingEvent({
+          operation: 'operation',
+          stage: 'failed',
+          outcome: 'failure',
+          operation_type: 'subscription',
+          billing_client: 'sdk',
+          failure_category: 'api_rejected',
+          duration_ms: Date.now() - attemptStartedAt
+        })
+        telemetry?.trackBillingEvent({
+          operation: 'operation',
+          stage: 'started',
+          outcome: 'pending',
+          operation_type: 'subscription',
+          billing_client: 'legacy'
+        })
+      }
     }
 
     isLoading.value = true

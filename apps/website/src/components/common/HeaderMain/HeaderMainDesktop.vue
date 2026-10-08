@@ -23,32 +23,31 @@ import NewBadge from './NewBadge.vue'
 
 const {
   locale = 'en',
-  workshopInBuild = false,
   hubSections = NO_HUB_SECTIONS,
   hubPreviews
 } = defineProps<{
   locale?: Locale
-  workshopInBuild?: boolean
   hubSections?: HubSections
   hubPreviews?: HubMenuPreviews
 }>()
 const mainNavigation = computed(() =>
-  getMainNavigation(locale, workshopInBuild, hubSections, hubPreviews)
+  getMainNavigation(locale, hubSections, hubPreviews)
 )
 const currentPath = useCurrentPath()
 
-function isNavItemActive(navItem: NavItem, path: string): boolean {
-  if (!navItem.columns) return isHrefActive(navItem.href, path)
-  if (
-    navItem.activePathPrefix &&
+function ownsPath(navItem: NavItem, path: string): boolean {
+  if (navItem.href) return isHrefActive(navItem.href, path)
+  return (
+    !!navItem.activePathPrefix &&
     `${path}/`.startsWith(navItem.activePathPrefix)
   )
-    return true
-  const onLeafPage = mainNavigation.value.some(
-    (item) => item.href && isHrefActive(item.href, path)
-  )
+}
+
+function isNavItemActive(navItem: NavItem, path: string): boolean {
+  if (ownsPath(navItem, path)) return true
+  if (!navItem.columns) return false
   return (
-    !onLeafPage &&
+    !mainNavigation.value.some((item) => ownsPath(item, path)) &&
     navItem.columns.some((column) =>
       column.items.some((item) => isHrefActive(item.href, path))
     )
@@ -69,7 +68,7 @@ function isNavItemActive(navItem: NavItem, path: string): boolean {
           >
             <span class="inline-flex items-center gap-1">
               <span>{{ navItem.label }}</span>
-              <span v-if="navItem.badge" class="hidden 2xl:inline-flex">
+              <span v-if="navItem.badge" class="inline-flex">
                 <NewBadge :locale="locale" size="xxs" />
               </span>
             </span>
@@ -94,7 +93,7 @@ function isNavItemActive(navItem: NavItem, path: string): boolean {
         >
           <a :href="navItem.href">
             <span class="inline-block">{{ navItem.label }}</span>
-            <span v-if="navItem.badge" class="hidden 2xl:inline-flex">
+            <span v-if="navItem.badge" class="inline-flex">
               <NewBadge :locale="locale" size="xxs" />
             </span>
           </a>

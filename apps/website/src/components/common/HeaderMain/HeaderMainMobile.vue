@@ -24,19 +24,17 @@ import { cn } from '@comfyorg/tailwind-utils'
 
 const {
   locale = 'en',
-  workshopInBuild = false,
   hubSections = NO_HUB_SECTIONS,
   hubPreviews
 } = defineProps<{
   locale?: Locale
-  workshopInBuild?: boolean
   hubSections?: HubSections
   hubPreviews?: HubMenuPreviews
 }>()
 const { t } = translationsFor(locale)
 const routes = getRoutes(locale)
 const mainNavigation = computed(() =>
-  getMainNavigation(locale, workshopInBuild, hubSections, hubPreviews)
+  getMainNavigation(locale, hubSections, hubPreviews)
 )
 
 const isOpen = ref(false)
@@ -148,11 +146,12 @@ onUnmounted(() => {
 
               <div v-if="activeItem" class="mt-6 flex flex-col gap-y-12">
                 <div
-                  v-for="column in activeItem.columns"
-                  :key="column.header"
+                  v-for="(column, columnIndex) in activeItem.columns"
+                  :key="column.header ?? columnIndex"
                   class="flex flex-col gap-y-3"
                 >
                   <p
+                    v-if="column.header"
                     class="text-base font-bold tracking-wider text-primary-warm-gray uppercase"
                   >
                     {{ column.header }}
@@ -165,11 +164,9 @@ onUnmounted(() => {
                   </p>
                   <div
                     :class="
-                      cn(
-                        'flex flex-col gap-y-3',
-                        column.placement === 'footer' &&
-                          'flex-row flex-wrap gap-x-6'
-                      )
+                      column.items.every((link) => link.icon)
+                        ? 'flex flex-wrap gap-6'
+                        : 'flex flex-col gap-y-3'
                     "
                   >
                     <Button

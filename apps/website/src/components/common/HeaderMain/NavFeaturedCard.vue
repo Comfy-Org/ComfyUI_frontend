@@ -1,6 +1,5 @@
 <script setup lang="ts">
-import { cn } from '@comfyorg/tailwind-utils'
-
+import PlayOverlay from '@/components/blocks/PlayOverlay.vue'
 import ButtonPill from '@/components/ui/button-pill/ButtonPill.vue'
 
 import { prefersReducedMotion } from '@/composables/useReducedMotion'
@@ -22,26 +21,15 @@ function pauseBeforeAutoplayLimit({ currentTarget }: Event) {
 </script>
 
 <template>
-  <li :class="cn('shrink-0', featured.compact && 'w-64')">
+  <li class="shrink-0">
     <a
       :href="featured.cta.href"
       :aria-label="featured.cta.ariaLabel"
-      :class="
-        cn(
-          'group/pill-trigger relative',
-          featured.compact ? 'flex items-start gap-4' : 'block'
-        )
-      "
-      data-testid="nav-featured-card"
+      class="group/pill-trigger relative block"
     >
       <video
         v-if="featured.videoSrc"
-        :class="
-          cn(
-            'max-w-none shrink-0 rounded-xl object-cover',
-            featured.compact ? 'size-24' : 'aspect-4/3 w-62'
-          )
-        "
+        class="aspect-4/3 w-62 max-w-none rounded-xl object-cover"
         :src="featured.videoSrc"
         :poster="featured.imageSrc"
         :aria-label="featured.imageAlt"
@@ -52,37 +40,30 @@ function pauseBeforeAutoplayLimit({ currentTarget }: Event) {
         playsinline
         @timeupdate="pauseBeforeAutoplayLimit"
       />
-      <img
-        v-else
-        :class="
-          cn(
-            'max-w-none shrink-0 rounded-xl object-cover',
-            featured.compact ? 'size-24' : 'aspect-4/3 w-62'
-          )
-        "
-        :src="featured.imageSrc"
-        :alt="featured.imageAlt ?? ''"
-        width="744"
-        height="558"
-        loading="lazy"
-        decoding="async"
-      />
-      <span :class="cn('flex min-w-0 flex-col', !featured.compact && 'mt-4')">
-        <span
-          v-if="featured.eyebrow"
-          class="text-xs font-medium tracking-wide text-primary-warm-gray uppercase"
-        >
-          {{ featured.eyebrow }}
-        </span>
-        <span class="font-extrabold uppercase">
-          {{ featured.title }}
-        </span>
-        <span class="mt-1">
-          <ButtonPill as="span" icon-position="left" variant="ghost">
-            {{ featured.cta.label }}
-          </ButtonPill>
-        </span>
+      <span v-else class="relative block w-62">
+        <img
+          class="aspect-4/3 w-62 max-w-none rounded-xl object-cover"
+          :src="featured.imageSrc"
+          :alt="featured.imageAlt ?? ''"
+          width="744"
+          height="558"
+          loading="lazy"
+          decoding="async"
+        />
+        <PlayOverlay
+          v-if="featured.showPlayOverlay"
+          size="nav"
+          class="text-white"
+        />
       </span>
+      <p class="mt-4 font-extrabold uppercase">
+        {{ featured.title }}
+      </p>
+      <div class="mt-1">
+        <ButtonPill as="span" icon-position="left" variant="ghost">
+          {{ featured.cta.label }}
+        </ButtonPill>
+      </div>
     </a>
   </li>
 </template>

@@ -22,11 +22,11 @@ catalogs:
       specifier: ^7.0.2
       version: 7.0.2
     '@comfyorg/comfy-multi-player':
-      specifier: 0.3.6
-      version: 0.3.6
+      specifier: 0.3.10
+      version: 0.3.10
     '@comfyorg/comfyui-desktop-bridge-types':
-      specifier: 0.4.0
-      version: 0.4.0
+      specifier: 0.5.0
+      version: 0.5.0
     '@comfyorg/comfyui-electron-types':
       specifier: 0.6.2
       version: 0.6.2
@@ -517,10 +517,10 @@ importers:
         version: link:packages/billing-contract
       '@comfyorg/comfy-multi-player':
         specifier: 'catalog:'
-        version: 0.3.6
+        version: 0.3.10
       '@comfyorg/comfyui-desktop-bridge-types':
         specifier: 'catalog:'
-        version: 0.4.0
+        version: 0.5.0
       '@comfyorg/comfyui-electron-types':
         specifier: 'catalog:'
         version: 0.6.2
@@ -2003,11 +2003,11 @@ packages:
     resolution: {integrity: sha512-y7/yvZ2TPAnR9+jnc00klvNNLkJiXFFrQA/hlLCcxA9a2A4zQIOimyFQ9XfwYKiGD1fb5GY8vbKIIgO8d5Tb2A==}
     engines: {node: '>= 20.12.0'}
 
-  '@comfyorg/comfy-multi-player@0.3.6':
-    resolution: {integrity: sha512-6mC4E43YH+58gV4I+tmUR4pIYxqUeiY8ShS1WjjDEYxsBKGbzU1rRNGZHKgrzP3cOKGzK/JSP663/SIN50kfeQ==}
+  '@comfyorg/comfy-multi-player@0.3.10':
+    resolution: {integrity: sha512-HPR9Of8qTbt0E5wXiYHCF8+FixXPqvRewUiKOfoSE8mZwm21u4gztoIMRXmsVS2pcWiAh0iW0Vh5bgu8XkylsA==}
 
-  '@comfyorg/comfyui-desktop-bridge-types@0.4.0':
-    resolution: {integrity: sha512-o692svyRg63dLisVcpEJRzIUK2m/T538eYZhoXFF2e+RBCScU4MHLk9FutZyjW+DCQxv0hGunBOs96Qffs+UcQ==}
+  '@comfyorg/comfyui-desktop-bridge-types@0.5.0':
+    resolution: {integrity: sha512-IlLhbbNaDwTw1JjE+7Z2OlejrE4zcfzORJdaF3mtkzSjCFdK+j8Nuf9XYX78S3vz+uqmxXtn35gDR4amHv7shw==}
 
   '@comfyorg/comfyui-electron-types@0.6.2':
     resolution: {integrity: sha512-r3By5Wbizq8jagUrhtcym79HYUTinsvoBnYkFFWbUmrURBWIaC0HduFVkRkI1PNdI76piW+JSOJJnw00YCVXeg==}
@@ -10710,11 +10710,11 @@ snapshots:
       fast-wrap-ansi: 0.2.2
       sisteransi: 1.0.5
 
-  '@comfyorg/comfy-multi-player@0.3.6':
+  '@comfyorg/comfy-multi-player@0.3.10':
     dependencies:
       yjs: 13.6.32
 
-  '@comfyorg/comfyui-desktop-bridge-types@0.4.0': {}
+  '@comfyorg/comfyui-desktop-bridge-types@0.5.0': {}
 
   '@comfyorg/comfyui-electron-types@0.6.2': {}
 

@@ -240,7 +240,6 @@ const ctaButtons = computed(() =>
     <!-- Desktop nav links -->
     <HeaderMainDesktop
       :locale
-      :workshop-in-build="showWorkshop"
       :hub-sections
       :hub-previews
       :class="showWorkshop ? 'hidden xl:block' : 'hidden lg:block'"
@@ -251,12 +250,7 @@ const ctaButtons = computed(() =>
       :class="showWorkshop ? 'xl:hidden' : 'lg:hidden'"
     >
       <HeaderAccount v-if="showAccount" :locale="locale" />
-      <HeaderMainMobile
-        :locale
-        :workshop-in-build="showWorkshop"
-        :hub-sections
-        :hub-previews
-      />
+      <HeaderMainMobile :locale :hub-sections :hub-previews />
     </div>
 
     <!-- Desktop CTA buttons -->

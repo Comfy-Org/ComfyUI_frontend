@@ -1062,7 +1062,12 @@ export const useTeamWorkspaceStore = defineStore('teamWorkspace', () => {
     const isListed = () =>
       workspaces.value.some((w) => w.id === hostWorkspaceId)
     if (!isListed()) {
-      await refreshWorkspaces().catch(() => undefined)
+      await refreshWorkspaces().catch((error: unknown) =>
+        reportError(error, {
+          errorType: 'error_refreshing_workspaces_for_desktop_host',
+          surface: 'workspace'
+        })
+      )
       if (
         isStaleIdentity(generation) ||
         desktopHostUser.value?.workspaceId !== hostWorkspaceId

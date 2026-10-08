@@ -831,7 +831,7 @@ test.describe('Model playground', () => {
     )
   })
 
-  test('restores sign-in and keeps Run and uploads enabled after Models menu navigation', async ({
+  test('restores sign-in and keeps Run and uploads enabled after Browse Models navigation', async ({
     page,
     modelsAccount
   }) => {
@@ -859,14 +859,11 @@ test.describe('Model playground', () => {
       page.getByRole('textbox', { name: 'Prompt', exact: true })
     ).toHaveValue(prompt)
 
-    const nav = page.getByRole('navigation', {
-      name: 'Main navigation',
-      exact: true
-    })
-    await nav.getByRole('button', { name: /^Hub/ }).hover()
-    await nav.getByRole('link', { name: /^Explore the Hub/ }).click()
-    await expect(page).toHaveURL('/hub/')
-    await page.getByTestId('explore-door-models').click()
+    await page
+      .getByRole('navigation', { name: 'Main navigation', exact: true })
+      .getByRole('button', { name: /^Products\b/ })
+      .click()
+    await page.getByRole('link', { name: /^Browse Models\b/ }).click()
     await page.getByTestId('workshop-search').fill('Seedream 4.5 Image Edit')
     await page
       .getByTestId('workshop-models-grid')

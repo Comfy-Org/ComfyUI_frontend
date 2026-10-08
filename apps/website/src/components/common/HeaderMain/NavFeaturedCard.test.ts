@@ -72,23 +72,4 @@ describe('NavFeaturedCard', () => {
       expect(video.paused).toBe(paused)
     }
   )
-
-  it.for([
-    { compact: true, eyebrow: 'Customer story', layout: 'flex' },
-    { compact: false, eyebrow: undefined, layout: 'block' }
-  ])(
-    'lays the card out as $layout when compact is $compact',
-    ({ compact, eyebrow, layout }) => {
-      render(NavFeaturedCard, {
-        props: { featured: { ...featured, compact, eyebrow } }
-      })
-
-      const card = screen.getByRole('link', { name: /New release/ })
-      expect(card).toHaveClass(layout)
-      if (eyebrow) expect(card).toHaveTextContent(`${eyebrow}New release`)
-      expect(screen.getByRole('img', { name: 'Featured clip' })).toHaveClass(
-        compact ? 'size-24' : 'w-62'
-      )
-    }
-  )
 })

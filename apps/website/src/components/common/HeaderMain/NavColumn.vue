@@ -10,26 +10,26 @@ import type { Locale } from '@/i18n/translations'
 import NavColumnHeading from './NavColumnHeading.vue'
 import NavLinkContent from './NavLinkContent.vue'
 
-defineProps<{ column: NavColumn; locale: Locale; currentPath: string }>()
+defineProps<{
+  column: NavColumn
+  locale: Locale
+  currentPath: string
+  layout?: 'column' | 'row'
+}>()
 </script>
 
 <template>
   <li
     :class="
-      cn(
-        'flex',
-        column.placement === 'footer'
-          ? 'items-center gap-4'
-          : 'flex-col space-y-4'
-      )
+      layout === 'row' ? 'flex items-center gap-8' : 'flex flex-col space-y-4'
     "
   >
-    <NavColumnHeading :column />
+    <NavColumnHeading :column :layout />
     <ul
       :class="
         cn(
           'flex',
-          column.placement === 'footer' ? 'flex-row' : 'flex-col',
+          layout === 'row' ? 'items-center gap-1' : 'flex-col',
           column.kind && 'w-64 gap-1'
         )
       "

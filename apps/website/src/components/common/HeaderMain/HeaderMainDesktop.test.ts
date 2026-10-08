@@ -7,25 +7,22 @@ import type { HubMenuPreviews, HubSections } from '@/data/mainNavigation'
 import HeaderMainDesktop from './HeaderMainDesktop.vue'
 
 const ALL_SECTIONS: HubSections = { workflows: true, apps: true }
-const GATED_HUB_LINK = /^\/hub\/(?!models\/local\/)/
 
 async function openMenu(
   name: RegExp,
   {
     path = '/pricing',
-    workshopInBuild = true,
     hubSections = ALL_SECTIONS,
     hubPreviews
   }: {
     path?: string
-    workshopInBuild?: boolean
     hubSections?: HubSections
     hubPreviews?: HubMenuPreviews
   } = {}
 ) {
   history.replaceState(null, '', path)
   render(HeaderMainDesktop, {
-    props: { workshopInBuild, hubSections, hubPreviews }
+    props: { hubSections, hubPreviews }
   })
   const trigger = screen.getByRole('button', { name })
   await userEvent.click(trigger)
@@ -35,9 +32,11 @@ async function openMenu(
 }
 
 describe('HeaderMainDesktop', () => {
-  it('has no Hub menu without a build opt-in', () => {
+  it('renders Hub, Products and Enterprise at the top level', () => {
     render(HeaderMainDesktop)
-    expect(screen.queryByRole('button', { name: /^Hub/ })).toBeNull()
+    for (const name of [/^Hub\b/, /^Products\b/, /^Enterprise\b/])
+      expect(screen.getByRole('button', { name })).toBeTruthy()
+    expect(screen.queryByRole('button', { name: /community/i })).toBeNull()
   })
 
   it('opens the Hub as Models, Workflows and Apps with an Explore row', async () => {
@@ -142,70 +141,61 @@ describe('HeaderMainDesktop', () => {
     expect(menu.queryByRole('link', { name: 'All apps' })).toBeNull()
   })
 
-  it.for([true, false])(
-    'keeps the Hub out of Products (workshop in build: %s)',
-    async (workshopInBuild) => {
-      const { menu } = await openMenu(/^products/i, { workshopInBuild })
-
-      const hrefs = menu
-        .getAllByRole('link')
-        .map((link) => link.getAttribute('href'))
-      expect(hrefs).not.toEqual(
-        expect.arrayContaining([expect.stringMatching(GATED_HUB_LINK)])
-      )
-      expect(
-        menu.queryByRole('link', { name: 'Supported Models' }) === null
-      ).toBe(workshopInBuild)
-    }
-  )
-
-  it('ends Products with the Resources row and shows its card after the columns', async () => {
+  it('opens Products with its card before the columns and ends with the Resources row', async () => {
     const { menu } = await openMenu(/^products/i)
 
     const links = menu.getAllByRole('link')
-    expect(links.slice(-4, -1).map((link) => link.textContent.trim())).toEqual([
+    expect(links.at(0)).toHaveAttribute('href', '/gemini-omni/')
+    expect(links.slice(-2).map((link) => link.textContent.trim())).toEqual([
       'Docs',
-      'Comfy SDKs',
-      'Launches'
+      'Comfy SDKs'
     ])
-    expect(links.at(-1)).toHaveAttribute('href', '/gemini-omni/')
-    expect(menu.queryByRole('link', { name: 'GitHub' })).toBeNull()
+    expect(menu.getByRole('link', { name: /^Browse Models/ })).toHaveAttribute(
+      'href',
+      '/hub/models/'
+    )
+    expect(menu.queryByRole('link', { name: 'Supported Models' })).toBeNull()
   })
 
-  it('shows the Company columns and its card after them, with no social links', async () => {
+  it('folds Community into Company, with its card first and social icons last', async () => {
     const { menu } = await openMenu(/^company/i)
 
-    for (const header of ['Company', 'Updates', 'Community']) {
+    for (const header of ['Community', 'Company', 'Updates', 'Connect']) {
       expect(menu.getByText(header, { exact: true })).toBeVisible()
     }
-    expect(menu.queryByText('Follow us')).toBeNull()
-    for (const name of ['GitHub', 'Discord', 'X', 'Instagram'])
-      expect(menu.queryByRole('link', { name })).toBeNull()
-    expect(menu.getAllByRole('link').at(-1)).toHaveAttribute(
+    expect(menu.getAllByRole('link').at(0)).toHaveAttribute(
       'href',
       '/customers/videos/black-math/'
     )
+    for (const name of ['Discord', 'GitHub', 'YouTube', 'X', 'Instagram'])
+      expect(
+        menu.getByRole('link', { name: new RegExp(`^${name}\\b`) })
+      ).toHaveAttribute('target', '_blank')
   })
 
-  it('opens Enterprise as one column followed by its card, with no Resources row', async () => {
+  it('opens Enterprise with its card followed by one column', async () => {
     const { menu } = await openMenu(/^enterprise/i)
 
     const links = menu.getAllByRole('link')
-    expect(links.slice(0, -1).map((link) => link.textContent.trim())).toEqual([
+    expect(links.at(0)).toHaveAttribute('href', '/minimax/license/')
+    expect(links.slice(1).map((link) => link.textContent.trim())).toEqual([
       'Comfy Enterprise',
       'Forward Deployed Creatives',
-      'Commercial licensing',
-      'Contact sales'
+      'Team Billing',
+      'Commercial Licensing',
+      'Contact Sales'
     ])
-    expect(links.at(-1)).toHaveAccessibleName(
-      'Learn about commercial licensing'
-    )
     expect(menu.queryByText('Resources')).toBeNull()
   })
 
   it.for([
     { path: '/hub/', hub: true, products: false },
     { path: '/hub/models/', hub: true, products: false },
+    {
+      path: '/hub/models/seedance-2-5-reference-to-video/',
+      hub: true,
+      products: false
+    },
     { path: '/hub/workflows/relight/', hub: true, products: false },
     { path: '/platform/', hub: false, products: true },
     { path: '/pricing', hub: false, products: false }
@@ -214,7 +204,7 @@ describe('HeaderMainDesktop', () => {
     async ({ path, hub, products }) => {
       history.replaceState(null, '', path)
       render(HeaderMainDesktop, {
-        props: { workshopInBuild: true, hubSections: ALL_SECTIONS }
+        props: { hubSections: ALL_SECTIONS }
       })
       await nextTick()
 
