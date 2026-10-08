@@ -75,6 +75,8 @@ export interface DocOpMinterDeps {
   /**
    * Whether the bound document holds any node yet. False right after binding,
    * before the subscribe catch-up lands, when an absent node says nothing.
+   * Also false for a genuinely empty workflow, so a host added to one is
+   * refused until its own `add_node` echo lands.
    */
   isDocPopulated(): boolean
   /** A local promoted widget edit was refused and never reached the document. */
@@ -516,7 +518,7 @@ export function attachDocOpMinter(deps: DocOpMinterDeps): DocOpMinter {
       () => deps.isDocPopulated(),
       (reason, liveNames, doc) => {
         reportRefusal(rootGraphId, event, reason, liveNames, doc)
-        notifyRefusal(event, reason)
+        notifyRefusal(rootGraphId, event, reason)
       }
     )
     if (operation) schedule({ kind: 'op', operation })
@@ -566,10 +568,11 @@ export function attachDocOpMinter(deps: DocOpMinterDeps): DocOpMinter {
   }
 
   function notifyRefusal(
+    rootGraphId: string,
     event: IntentOf<'set_widget'>,
     reason: PromotedWriteRefusal
   ): void {
-    const key = `${String(event.nodeId)}:${event.name}`
+    const key = `${rootGraphId}:${String(event.nodeId)}:${event.name}`
     const now = Date.now()
     const last = lastRefusalNotice.get(key)
     if (last !== undefined && now - last < REFUSAL_NOTICE_INTERVAL_MS) return

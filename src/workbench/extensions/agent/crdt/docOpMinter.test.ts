@@ -1040,6 +1040,33 @@ describe('attachDocOpMinter', () => {
     doc.destroy()
   })
 
+  it('notifies the same node and widget again in another workflow', async () => {
+    const first = seedPromotedHost()
+    docPromotedWidgets = () => ({
+      valueCount: 2,
+      declaredNames: ['text', 'prefix'],
+      promotedNames: ['text', 'prefix']
+    })
+    first.host.widgets[1].value = 'p'
+    await afterFlush()
+
+    graph = new LGraph()
+    rootGraphId = toRootGraphId(graph.id)
+    const second = seedPromotedHost()
+    docPromotedWidgets = () => ({
+      valueCount: 2,
+      declaredNames: ['text', 'prefix'],
+      promotedNames: ['text', 'prefix']
+    })
+    second.host.widgets[1].value = 'p'
+    await afterFlush()
+
+    expect(second.host.id).toBe(first.host.id)
+    expect(refused).toHaveLength(2)
+    first.doc.destroy()
+    second.doc.destroy()
+  })
+
   it('reports a drifted host once, not once per keystroke', async () => {
     const { host, doc } = seedPromotedHost()
     docPromotedWidgets = () => ({
