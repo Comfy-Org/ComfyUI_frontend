@@ -2,7 +2,8 @@ name: 'PR: Unified Report'
 
 on:
   workflow_run:
-    workflows: ['CI: Size Data', 'CI: Performance Report', 'CI: Tests E2E']
+    workflows:
+      ['CI: Dist Inspection', 'CI: Performance Report', 'CI: Tests E2E']
     types:
       - completed
     branches-ignore:
@@ -35,12 +36,15 @@ jobs:
         uses: ./.github/actions/resolve-pr-from-workflow-run
 
       - name: Find size workflow run
-        if: steps.pr-meta.outputs.skip != 'true'
+        if: steps.pr-meta.outputs.skip != 'true' && steps.pr-meta.outputs.base == 'main'
         id: find-size
         uses: ./.github/actions/find-workflow-run
         with:
-          workflow-id: ci-size-data.yaml
+          workflow-id: ci-dist-inspection.yaml
           head-sha: ${{ steps.pr-meta.outputs.head-sha }}
+          event: pull_request
+          artifact-name: size-data
+          not-found-status: skip
           token: ${{ secrets.GITHUB_TOKEN }}
 
       - name: Find perf workflow run
@@ -50,6 +54,7 @@ jobs:
         with:
           workflow-id: ci-perf-report.yaml
           head-sha: ${{ steps.pr-meta.outputs.head-sha }}
+          event: pull_request
           artifact-name: perf-metrics
           not-found-status: skip
           token: ${{ secrets.GITHUB_TOKEN }}
@@ -68,7 +73,9 @@ jobs:
         uses: dawidd6/action-download-artifact@0bd50d53a6d7fb5cb921e607957e9cc12b4ce392 # v12
         with:
           branch: ${{ steps.pr-meta.outputs.base }}
-          workflow: ci-size-data.yaml
+          workflow: ci-dist-inspection.yaml
+          workflow_conclusion: completed
+          search_artifacts: true
           event: push
           name: size-data
           path: temp/size-prev
@@ -81,6 +88,7 @@ jobs:
         with:
           workflow-id: ci-tests-e2e.yaml
           head-sha: ${{ steps.pr-meta.outputs.head-sha }}
+          event: pull_request
           artifact-name: e2e-coverage
           not-found-status: skip
           token: ${{ secrets.GITHUB_TOKEN }}
@@ -131,7 +139,7 @@ jobs:
         if: steps.pr-meta.outputs.skip != 'true'
         run: >
           pnpm exec tsx scripts/unified-report.ts
-          --size-status=${{ steps.find-size.outputs.status }}
+          --size-status=${{ steps.find-size.outputs.status || 'skip' }}
           --perf-status=${{ steps.find-perf.outputs.status }}
           --coverage-status=${{ steps.find-coverage.outputs.status }}
           > pr-report.md

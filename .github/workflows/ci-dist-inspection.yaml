@@ -1,0 +1,281 @@
+name: 'CI: Dist Inspection'
+
+on:
+  pull_request:
+    branches-ignore: [wip/*, draft/*, temp/*]
+  push:
+    branches: [main, dev*]
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+permissions:
+  contents: read
+
+jobs:
+  changes:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+    outputs:
+      should-run: ${{ steps.changes.outputs.should-run-source }}
+    steps:
+      - uses: actions/checkout@v7
+      - id: changes
+        uses: ./.github/actions/changes-filter
+
+  inspect:
+    needs: changes
+    if: ${{ needs.changes.outputs.should-run == 'true' }}
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v7
+
+      - name: Setup frontend
+        uses: ./.github/actions/setup-frontend
+
+      # Awaited last so a license failure does not skip the dist checks.
+      - name: Validate production dependency licenses
+        id: licenses
+        background: true
+        run: |
+          set -euo pipefail
+          echo '🔍 Checking production dependency licenses...'
+
+          # Use license-checker-rseidelsohn (actively maintained fork, handles monorepos)
+          # Exclude internal @comfyorg packages from license check.
+          # NOTE on @comfyorg/account-core: it is `private: true`, and license-checker
+          # reports a private package as UNLICENSED regardless of its `license`
+          # field, so it must stay in this exclusion list. The `license: MIT`
+          # metadata is added ahead of the FE-2171 publish work, which unsets
+          # `private` and removes this exclusion — at which point this check
+          # will validate the account-core license directly. This note covers account-core
+          # only; the other entries here are excluded for their own reasons.
+          # Run in if condition to capture exit code
+          if pnpx license-checker-rseidelsohn@4 \
+            --production \
+            --summary \
+            --excludePackages '@comfyorg/comfyui-frontend;@comfyorg/account-core;@comfyorg/account-ui;@comfyorg/billing-contract;@comfyorg/design-system;@comfyorg/ingest-types;@comfyorg/registry-types;@comfyorg/shared-frontend-utils;@comfyorg/tailwind-utils;@comfyorg/comfyui-electron-types;@comfyorg/comfy-multi-player' \
+            --clarificationsFile .github/license-clarifications.json \
+            --onlyAllow 'MIT;MIT*;Apache-2.0;BSD-2-Clause;BSD-3-Clause;ISC;0BSD;BlueOak-1.0.0;Python-2.0;CC0-1.0;Unlicense;(MIT OR Apache-2.0);(MIT OR GPL-3.0);(Apache-2.0 OR MIT);(MPL-2.0 OR Apache-2.0);MPL-2.0;CC-BY-4.0;CC-BY-3.0;GPL-3.0-only'; then
+            echo ''
+            echo '✅ All production dependency licenses are approved!'
+          else
+            echo ''
+            echo '❌ ERROR: Found dependencies with non-approved licenses!'
+            echo ''
+            echo 'To fix this:'
+            echo '1. Check the license of the problematic package'
+            echo '2. Find an alternative package with an approved license'
+            echo '3. If the license is safe and OSI-approved, add it to the --onlyAllow list'
+            echo ''
+            echo 'For more info on OSI-approved licenses:'
+            echo 'https://opensource.org/licenses'
+            exit 1
+          fi
+
+      - name: Build project
+        run: pnpm build:dist
+        env:
+          DISTRIBUTION: localhost
+
+      - parallel:
+          - name: Check for proprietary fonts in dist
+            run: |
+              set -euo pipefail
+              echo '🔍 Checking dist for proprietary fonts...'
+
+              if [ ! -d "dist" ] || [ -z "$(ls -A dist)" ]; then
+                echo '❌ ERROR: dist/ directory missing or empty!'
+                exit 1
+              fi
+
+              # Check for ABCROM and PP Formula font files
+              if find dist/ -type f \( -iname '*abcrom*' -o -iname '*ppformula*' \) \
+                \( -name '*.woff' -o -name '*.woff2' -o -name '*.ttf' -o -name '*.otf' \) \
+                -print -quit | grep -q .; then
+                echo ''
+                echo '❌ ERROR: Found proprietary font files in dist!'
+                echo ''
+                find dist/ -type f \( -iname '*abcrom*' -o -iname '*ppformula*' \) \
+                  \( -name '*.woff' -o -name '*.woff2' -o -name '*.ttf' -o -name '*.otf' \)
+                echo ''
+                echo 'ABCROM and PP Formula fonts are proprietary and should not ship to OSS builds.'
+                echo ''
+                echo 'To fix this:'
+                echo '1. Use conditional font loading based on isCloud'
+                echo '2. Ensure fonts are dynamically imported, not bundled'
+                echo '3. Check vite config for font handling'
+                exit 1
+              fi
+
+              echo '✅ No proprietary fonts found in dist'
+
+          - name: Scan dist for GTM telemetry references
+            if: github.event_name == 'pull_request'
+            run: |
+              set -euo pipefail
+              echo '🔍 Scanning for Google Tag Manager references...'
+              if rg --no-ignore -n \
+                -g '*.html' \
+                -g '*.js' \
+                -e 'Google Tag Manager' \
+                -e '(?i)\bgtm\.js\b' \
+                -e '(?i)googletagmanager\.com/gtm\.js\\?id=' \
+                -e '(?i)googletagmanager\.com/ns\.html\\?id=' \
+                dist; then
+                echo '❌ ERROR: Google Tag Manager references found in dist assets!'
+                echo 'GTM must be properly tree-shaken from OSS builds.'
+                exit 1
+              fi
+              echo '✅ No GTM references found'
+
+          - name: Scan dist for Mixpanel telemetry references
+            if: github.event_name == 'pull_request'
+            run: |
+              set -euo pipefail
+              echo '🔍 Scanning for Mixpanel references...'
+              if rg --no-ignore -n \
+                -g '*.html' \
+                -g '*.js' \
+                -e '(?i)mixpanel\.init' \
+                -e '(?i)mixpanel\.identify' \
+                -e 'MixpanelTelemetryProvider' \
+                -e 'mp\.comfy\.org' \
+                -e 'mixpanel-browser' \
+                -e '(?i)mixpanel\.track\(' \
+                dist; then
+                echo '❌ ERROR: Mixpanel references found in dist assets!'
+                echo 'Mixpanel must be properly tree-shaken from OSS builds.'
+                echo ''
+                echo 'To fix this:'
+                echo '1. Use the TelemetryProvider pattern (see src/platform/telemetry/)'
+                echo '2. Call telemetry via useTelemetry() hook'
+                echo '3. Use conditional dynamic imports behind isCloud checks'
+                exit 1
+              fi
+              echo '✅ No Mixpanel references found'
+
+          - name: Scan dist for PostHog telemetry references
+            if: github.event_name == 'pull_request'
+            run: |
+              set -euo pipefail
+              echo '🔍 Scanning for PostHog references...'
+              if rg --no-ignore -n \
+                -g '*.html' \
+                -g '*.js' \
+                -e '(?i)posthog\.init' \
+                -e '(?i)posthog\.capture' \
+                -e 'PostHogTelemetryProvider' \
+                -e 'ph\.comfy\.org' \
+                -e 'posthog-js' \
+                dist; then
+                echo '❌ ERROR: PostHog references found in dist assets!'
+                echo 'PostHog must be properly tree-shaken from OSS builds.'
+                exit 1
+              fi
+              echo '✅ No PostHog references found'
+
+          - name: Scan dist for Datadog RUM references
+            if: github.event_name == 'pull_request'
+            run: |
+              set -euo pipefail
+              echo '🔍 Scanning for Datadog RUM references...'
+              if rg --no-ignore -n \
+                -g '*.html' \
+                -g '*.js' \
+                -e '@datadog/browser-rum' \
+                -e '041a9897-5516-4b1f-a245-1a9aa6895488' \
+                -e 'pub7704486e5b64eb4ff6f62891cda45559' \
+                -e 'comfy-cloud-frontend' \
+                dist; then
+                echo '❌ ERROR: Datadog RUM references found in dist assets!'
+                echo 'Datadog RUM must be properly tree-shaken from OSS builds.'
+                exit 1
+              fi
+              echo '✅ No Datadog RUM references found'
+
+          - name: Scan dist for Customer.io telemetry references
+            if: github.event_name == 'pull_request'
+            run: |
+              set -euo pipefail
+              echo '🔍 Scanning for Customer.io references...'
+              if rg --no-ignore -n \
+                -g '*.html' \
+                -g '*.js' \
+                -e 'CustomerIoTelemetryProvider' \
+                -e '@customerio/cdp-analytics-browser' \
+                -e 'customerio-gist-web' \
+                -e '(?i)cdp\.customer\.io' \
+                -e 'Comfy\.CustomerIo' \
+                dist; then
+                echo '❌ ERROR: Customer.io references found in dist assets!'
+                echo 'Customer.io must be properly tree-shaken from OSS builds.'
+                echo ''
+                echo 'To fix this:'
+                echo '1. Use the TelemetryProvider pattern (see src/platform/telemetry/)'
+                echo '2. Call telemetry via useTelemetry() hook'
+                echo '3. Use conditional dynamic imports behind isCloud checks'
+                exit 1
+              fi
+              echo '✅ No Customer.io references found'
+
+          - name: Scan dist for Syft telemetry references
+            if: github.event_name == 'pull_request'
+            run: |
+              set -euo pipefail
+              echo '🔍 Scanning for Syft references...'
+              if rg --no-ignore -n \
+                -g '*.html' \
+                -g '*.js' \
+                -e '(?i)syft' \
+                -e '(?i)sy-d\.io' \
+                dist; then
+                echo '❌ ERROR: Syft references found in dist assets!'
+                echo 'Syft must be properly tree-shaken from OSS builds.'
+                echo ''
+                echo 'To fix this:'
+                echo '1. Use the TelemetryProvider pattern (see src/platform/telemetry/)'
+                echo '2. Call telemetry via useTelemetry() hook'
+                echo '3. Use conditional dynamic imports behind isCloud checks'
+                exit 1
+              fi
+              echo '✅ No Syft references found'
+
+          - name: Scan dist for Cloudflare Turnstile sitekey references
+            if: github.event_name == 'pull_request'
+            run: |
+              set -euo pipefail
+              echo '🔍 Scanning for Cloudflare Turnstile sitekeys...'
+              if rg --no-ignore -n \
+                -g '*.html' \
+                -g '*.js' \
+                -e '0x4AAAAAADnYZPVOpFCL_zeo' \
+                -e '0x4AAAAAADnYY4_Q0qxHZ5a7' \
+                -e '1x00000000000000000000AA' \
+                dist; then
+                echo '❌ ERROR: Cloudflare Turnstile sitekey found in dist assets!'
+                echo 'The per-env Turnstile sitekeys are cloud-only and must be tree-shaken from OSS builds.'
+                echo ''
+                echo 'To fix this:'
+                echo '1. Gate sitekey selection on the __DISTRIBUTION__ build define, not the runtime isCloud const'
+                echo '2. See getTurnstileSiteKey() in src/config/turnstile.ts'
+                exit 1
+              fi
+              echo '✅ No Turnstile sitekey references found'
+
+          - name: Collect size data
+            id: size
+            if: github.repository == 'Comfy-Org/ComfyUI_frontend' && (github.ref == 'refs/heads/main' || github.base_ref == 'main')
+            run: pnpm size:collect
+
+      - name: Upload size data
+        if: ${{ !cancelled() && steps.size.outcome == 'success' }}
+        uses: actions/upload-artifact@v6
+        with:
+          name: size-data
+          path: temp/size
+
+      - name: Wait for license validation
+        wait: licenses
