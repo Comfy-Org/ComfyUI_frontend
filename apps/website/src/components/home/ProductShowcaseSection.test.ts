@@ -55,7 +55,7 @@ describe('ProductShowcaseSection', () => {
     ['Comfy Agent', '/agent/', 'Explore Comfy Agent'],
     ['Comfy API', '/platform/comfy-api/', 'Explore Comfy API']
   ])(
-    'links the selected %s card to its product page',
+    'links the selected %s card to its product page and displays its CTA',
     async ([name, href, cta]) => {
       renderSection()
 
