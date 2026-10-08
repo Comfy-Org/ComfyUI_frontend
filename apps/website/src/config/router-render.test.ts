@@ -48,8 +48,6 @@ describe('shared Router rendering', () => {
     vi.spyOn(globalThis, 'btoa').mockImplementation(() => {
       throw cause
     })
-    const fetch = vi.fn<typeof globalThis.fetch>()
-    vi.mocked(globalThis.fetch).mockImplementation(fetch)
 
     await expect(
       router_render(
@@ -275,14 +273,13 @@ describe('shared Router rendering', () => {
 
   it('cancels after a storage grant without uploading or generating', async () => {
     const controller = new AbortController()
-    const requests = vi.fn<typeof fetch>(async () => {
+    vi.mocked(fetch).mockImplementation(async () => {
       controller.abort()
       return Response.json({
         upload_url: 'https://storage.example/upload',
         download_url: 'https://storage.example/input.png'
       })
     })
-    vi.mocked(globalThis.fetch).mockImplementation(requests)
     await expect(
       router_render(
         'wavespeed--seedvr2-image--edit-images',
@@ -290,6 +287,6 @@ describe('shared Router rendering', () => {
         { token: 'test-key', signal: controller.signal }
       )
     ).rejects.toMatchObject({ name: 'AbortError' })
-    expect(requests).toHaveBeenCalledTimes(1)
+    expect(fetch).toHaveBeenCalledTimes(1)
   })
 })

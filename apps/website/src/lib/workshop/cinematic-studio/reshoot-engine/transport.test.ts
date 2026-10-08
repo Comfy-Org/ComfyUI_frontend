@@ -1,3 +1,4 @@
+import { respondToFetch } from '@comfyorg/test-utils/fetch'
 import { afterEach, describe, expect, it, vi } from 'vitest'
 
 import {
@@ -15,7 +16,6 @@ vi.mock(import('astro:env/client'), () => ({
   }
 }))
 
-const fetchMock = vi.fn<typeof fetch>()
 const APP = `${WORKSHOP_ROUTER_BASE_URL}/app-proxy/app-1`
 const DEV = 'http://127.0.0.1:4329/api/v2'
 const FAMILY = `${WORKSHOP_ROUTER_BASE_URL}/app-proxy/${WORKSHOP_RESHOOT_PROXY_ID}`
@@ -25,12 +25,11 @@ const output = { id: 'out-1', asset_id: 'asset-1', filename: 'result.mp4' }
 function serve(
   response = () => Response.json({ id: 'job 1', status: 'queued' })
 ) {
-  vi.mocked(fetch).mockImplementation(fetchMock)
-  fetchMock.mockImplementation(async () => response())
+  respondToFetch({}, response)
 }
 
 function lastRequest() {
-  const [url, init] = fetchMock.mock.calls.at(-1) ?? []
+  const [url, init] = vi.mocked(fetch).mock.calls.at(-1) ?? []
   return { url: String(url), init: init ?? {} }
 }
 
@@ -124,14 +123,13 @@ describe('Re-shoot transports', () => {
     const blob = await app().output(job, signed)
 
     expect(await blob.text()).toBe('bytes')
-    expect(fetchMock).toHaveBeenCalledTimes(1)
+    expect(fetch).toHaveBeenCalledTimes(1)
     expect(lastRequest().url).toBe(signed.url)
     expect(lastRequest().init.headers).toBeUndefined()
   })
 
   it('falls back to the proxy route when the signed URL cannot be read', async () => {
-    vi.mocked(fetch).mockImplementation(fetchMock)
-    fetchMock
+    vi.mocked(fetch)
       .mockRejectedValueOnce(new TypeError('Failed to fetch'))
       .mockResolvedValueOnce(new Response('bytes'))
     const signed = {
@@ -181,7 +179,7 @@ describe('Re-shoot transports', () => {
   it('has no quote behind the dev proxy', async () => {
     serve()
     await expect(dev().quote()).resolves.toBeUndefined()
-    expect(fetchMock).not.toHaveBeenCalled()
+    expect(fetch).not.toHaveBeenCalled()
   })
 
   it.for<{

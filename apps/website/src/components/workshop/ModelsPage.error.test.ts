@@ -40,18 +40,16 @@ it.for([
   'retries a failed $view load once, then offers a retry',
   async ({ slug, visible }) => {
     const user = userEvent.setup()
-    const fetchMock = vi
-      .fn<typeof fetch>()
+    vi.mocked(fetch)
       .mockResolvedValueOnce(failed())
       .mockResolvedValueOnce(failed())
       .mockImplementation(async () =>
         Response.json(slug ? modelPage : workshopModels)
       )
-    vi.mocked(fetch).mockImplementation(fetchMock)
     render(ModelsPage, { props: { slug } })
 
     expect(await screen.findByTestId('models-load-error')).toBeTruthy()
-    expect(fetchMock).toHaveBeenCalledTimes(2)
+    expect(fetch).toHaveBeenCalledTimes(2)
     expect(screen.queryByTestId(visible)).toBeNull()
 
     await user.click(screen.getByRole('button', { name: 'Try again' }))

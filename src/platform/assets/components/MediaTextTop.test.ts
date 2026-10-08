@@ -17,24 +17,16 @@ function makeAsset(overrides: Partial<AssetMeta> = {}): AssetMeta {
 
 describe('MediaTextTop', () => {
   it('shows a snippet of the fetched text', async () => {
-    const fetchMock = vi.fn().mockResolvedValue({
-      ok: true,
-      text: () => Promise.resolve('hello world')
-    })
-    vi.mocked(fetch).mockImplementation(fetchMock)
+    vi.mocked(fetch).mockResolvedValueOnce(new Response('hello world'))
 
     render(MediaTextTop, { props: { asset: makeAsset() } })
 
     expect(await screen.findByText('hello world')).toBeInTheDocument()
-    expect(fetchMock).toHaveBeenCalledWith('http://example.com/result.txt')
+    expect(fetch).toHaveBeenCalledWith('http://example.com/result.txt')
   })
 
   it('prefers preview_url over src', async () => {
-    const fetchMock = vi.fn().mockResolvedValue({
-      ok: true,
-      text: () => Promise.resolve('preview text')
-    })
-    vi.mocked(fetch).mockImplementation(fetchMock)
+    vi.mocked(fetch).mockResolvedValueOnce(new Response('preview text'))
 
     render(MediaTextTop, {
       props: {
@@ -43,6 +35,6 @@ describe('MediaTextTop', () => {
     })
 
     expect(await screen.findByText('preview text')).toBeInTheDocument()
-    expect(fetchMock).toHaveBeenCalledWith('http://server/preview.txt')
+    expect(fetch).toHaveBeenCalledWith('http://server/preview.txt')
   })
 })

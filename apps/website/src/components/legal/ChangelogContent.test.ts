@@ -1,8 +1,13 @@
+import { respondToFetch } from '@comfyorg/test-utils/fetch'
 import { render, screen, waitFor } from '@testing-library/vue'
 import userEvent from '@testing-library/user-event'
 import { describe, expect, it, vi } from 'vitest'
 
-import { CHANGELOG_CACHE_KEY, CHANGELOG_REFRESH_MS } from '@/lib/changelog'
+import {
+  CHANGELOG_CACHE_KEY,
+  CHANGELOG_REFRESH_MS,
+  CHANGELOG_SOURCE
+} from '@/lib/changelog'
 import ChangelogContent from './ChangelogContent.vue'
 
 const source =
@@ -10,7 +15,7 @@ const source =
 
 describe('ChangelogContent', () => {
   it('keeps addressable release sections and links the docs changelog', async () => {
-    vi.mocked(fetch).mockResolvedValue(new Response(source))
+    respondToFetch(CHANGELOG_SOURCE, () => new Response(source))
     render(ChangelogContent)
     await screen.findByRole('heading', { name: 'v1' })
     expect(screen.getByRole('article', { name: 'v1' })).toHaveAttribute(
@@ -24,8 +29,9 @@ describe('ChangelogContent', () => {
   })
 
   it('shows a release without a description and omits its date', async () => {
-    vi.mocked(fetch).mockResolvedValue(
-      new Response(source.replace(' description="October 5, 2026"', ''))
+    respondToFetch(
+      CHANGELOG_SOURCE,
+      () => new Response(source.replace(' description="October 5, 2026"', ''))
     )
     render(ChangelogContent)
     const release = await screen.findByRole('article', { name: 'v1' })
@@ -35,9 +41,11 @@ describe('ChangelogContent', () => {
   })
 
   it('refreshes an open page when the docs source changes', async () => {
-    vi.mocked(fetch)
-      .mockResolvedValueOnce(new Response(source))
-      .mockResolvedValue(new Response(source.replace('v1', 'v2')))
+    respondToFetch(
+      CHANGELOG_SOURCE,
+      () => new Response(source.replace('v1', 'v2'))
+    )
+    respondToFetch(CHANGELOG_SOURCE, () => new Response(source), { times: 1 })
     render(ChangelogContent)
     await screen.findByRole('heading', { name: 'v1' })
     await vi.advanceTimersByTimeAsync(290_000)
@@ -51,7 +59,7 @@ describe('ChangelogContent', () => {
     const visibility = vi
       .spyOn(document, 'visibilityState', 'get')
       .mockReturnValue('visible')
-    vi.mocked(fetch).mockResolvedValue(new Response(source))
+    respondToFetch(CHANGELOG_SOURCE, () => new Response(source))
     render(ChangelogContent)
     await screen.findByRole('heading', { name: 'v1' })
     visibility.mockReturnValue('hidden')
@@ -74,7 +82,7 @@ describe('ChangelogContent', () => {
   })
 
   it('loads live notes and removes unsafe source markup', async () => {
-    vi.mocked(fetch).mockResolvedValue(new Response(source))
+    respondToFetch(CHANGELOG_SOURCE, () => new Response(source))
     render(ChangelogContent)
     expect(await screen.findByRole('status')).toHaveTextContent('Loading')
     await screen.findByRole('heading', { name: 'v1' })
@@ -96,7 +104,7 @@ describe('ChangelogContent', () => {
     vi.spyOn(localStorage, 'setItem').mockImplementation(() => {
       throw new DOMException('full', 'QuotaExceededError')
     })
-    vi.mocked(fetch).mockResolvedValue(new Response(source))
+    respondToFetch(CHANGELOG_SOURCE, () => new Response(source))
     render(ChangelogContent)
     await screen.findByRole('heading', { name: 'v1' })
     await waitFor(() =>
@@ -136,7 +144,7 @@ describe('ChangelogContent', () => {
       CHANGELOG_CACHE_KEY,
       JSON.stringify({ source, checkedAt: Date.now() })
     )
-    vi.mocked(fetch).mockResolvedValue(new Response(source + source))
+    respondToFetch(CHANGELOG_SOURCE, () => new Response(source + source))
     render(ChangelogContent)
     await screen.findByRole('heading', { name: 'v1' })
     await waitFor(() =>
@@ -159,9 +167,11 @@ describe('ChangelogContent', () => {
       finish = resolve
     })
     const v2 = source.replace('v1', 'v2')
-    vi.mocked(fetch)
-      .mockReturnValueOnce(pending)
-      .mockResolvedValue(new Response(v2 + source.replace('v1', 'v3')))
+    respondToFetch(
+      CHANGELOG_SOURCE,
+      () => new Response(v2 + source.replace('v1', 'v3'))
+    )
+    respondToFetch(CHANGELOG_SOURCE, () => pending, { times: 1 })
     render(ChangelogContent)
     await screen.findByRole('heading', { name: 'v1' })
     expect(scroll).not.toHaveBeenCalled()
@@ -181,9 +191,11 @@ describe('ChangelogContent', () => {
     const scroll = vi
       .spyOn(HTMLElement.prototype, 'scrollIntoView')
       .mockImplementation(() => {})
-    vi.mocked(fetch)
-      .mockResolvedValueOnce(new Response(source))
-      .mockResolvedValue(new Response(source.replace('v1', 'v2') + source))
+    respondToFetch(
+      CHANGELOG_SOURCE,
+      () => new Response(source.replace('v1', 'v2') + source)
+    )
+    respondToFetch(CHANGELOG_SOURCE, () => new Response(source), { times: 1 })
     render(ChangelogContent)
     await screen.findByRole('heading', { name: 'v1' })
     await vi.advanceTimersByTimeAsync(CHANGELOG_REFRESH_MS)

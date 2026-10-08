@@ -167,24 +167,40 @@ file happened to be running, and fails the run with every test passing.
 
 If you hit the guard, mock the module that issues the request, or configure
 the global `fetch`. The guard is a `vi.fn`, so `mockReset` puts it back before
-every test. Configure it with `vi.mocked(fetch)` in a `beforeEach` or the test,
-and return real `Response` objects:
+every test. Configure `fetch` itself in a `beforeEach` or the test; do not
+install a separate `vi.fn` with `mockImplementation`. `@comfyorg/test-utils/fetch`
+answers requests by route and reads back what was sent:
 
 ```ts
-vi.mocked(fetch).mockResolvedValue(Response.json({ ok: true }))
-vi.mocked(fetch).mockImplementation(async (input) =>
-  String(input).endsWith('/missing')
-    ? new Response(null, { status: 404 })
-    : Response.json({})
+import { fetchRequests, respondToFetch } from '@comfyorg/test-utils/fetch'
+
+respondToFetch(TOKEN_URL, () => Response.json(token))
+respondToFetch(
+  { method: 'POST', url: /\/uploads$/ },
+  () => new Response(null, { status: 201 })
 )
+respondToFetch(TOKEN_URL, () => Promise.reject(new TypeError('offline')), {
+  times: 1
+})
+
+expect(fetch).toHaveBeenCalledTimes(2)
+expect(JSON.parse(String(fetchRequests(TOKEN_URL)[0].body))).toEqual({
+  workspace_id: 'ws-1'
+})
 ```
 
-A `Response` body can be read once. When several requests share a response,
-use `mockImplementation` to build a fresh one per call. Do not replace `fetch`
-with `vi.stubGlobal`, `vi.spyOn(globalThis, 'fetch')`, or assignment;
-`comfy/no-redundant-fetch-stub` reports it. To wrap the current fake, capture
-`vi.mocked(fetch).getMockImplementation()` instead of `fetch` itself, which is
-the same mock and would call itself.
+- Later routes are checked first. A request that matches no route, or only
+  used-up routes, reaches the guard and fails the test, so stub every request
+  the code makes.
+- The handler runs per call. Return real `Response` objects and build a new
+  one each time: a body can be read once.
+- A single call that ignores the URL can stay a one-liner:
+  `vi.mocked(fetch).mockResolvedValueOnce(new Response(null, { status: 404 }))`.
+- Fakes that model behaviour (stateful route tables, abort-aware or delayed
+  responses) are plain functions passed to `vi.mocked(fetch).mockImplementation`.
+- Do not replace `fetch` with `vi.stubGlobal`, `vi.spyOn(globalThis, 'fetch')`,
+  or assignment; `comfy/no-redundant-fetch-stub` reports it. A test that needs
+  no network asserts `expect(fetch).not.toHaveBeenCalled()`.
 
 ## Component Testing
 

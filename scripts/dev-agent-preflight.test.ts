@@ -9,10 +9,7 @@ vi.mock(import('node:fs/promises'), () => ({ access: vi.fn() }))
 
 describe('preflightAgent', () => {
   it('resolves one runtime contract for both launch modes', async () => {
-    const fetchMock = vi
-      .fn<typeof fetch>()
-      .mockResolvedValue(new Response(null, { status: 200 }))
-    vi.mocked(fetch).mockImplementation(fetchMock)
+    vi.mocked(fetch).mockResolvedValueOnce(new Response(null, { status: 200 }))
     const options = parseOptions([
       '--cloud-repo',
       '/tmp/cloud',
@@ -32,18 +29,14 @@ describe('preflightAgent', () => {
     expect(access).toHaveBeenCalledWith(
       '/tmp/cloud/services/agent/dochost/start.sh'
     )
-    expect(fetchMock).toHaveBeenCalledWith(
+    expect(fetch).toHaveBeenCalledWith(
       'http://127.0.0.1:8188/system_stats',
       expect.objectContaining({ signal: expect.any(AbortSignal) })
     )
   })
 
   it('rejects a launch without model credentials', async () => {
-    vi.mocked(fetch).mockImplementation(
-      vi
-        .fn<typeof fetch>()
-        .mockResolvedValue(new Response(null, { status: 200 }))
-    )
+    vi.mocked(fetch).mockResolvedValueOnce(new Response(null, { status: 200 }))
     const options = parseOptions([])
 
     await expect(preflightAgent(options, [], {})).rejects.toThrow(

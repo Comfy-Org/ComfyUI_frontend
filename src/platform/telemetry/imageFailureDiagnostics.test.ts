@@ -8,7 +8,7 @@ import {
 const ORIGIN = 'https://cloud.comfy.org'
 
 function respondWith(status: number) {
-  return vi.fn().mockResolvedValue({ status, type: 'basic', body: null })
+  return async () => new Response(null, { status })
 }
 
 describe('describeImageLoadFailure', () => {
@@ -51,12 +51,11 @@ describe('describeImageLoadFailure', () => {
   })
 
   it('probes with credentials, or it would manufacture the 401 it measures', async () => {
-    const fetchSpy = respondWith(200)
-    vi.mocked(fetch).mockImplementation(fetchSpy)
+    vi.mocked(fetch).mockImplementation(respondWith(200))
 
     await describeImageLoadFailure(`${ORIGIN}/api/view?filename=a.png`)
 
-    expect(fetchSpy).toHaveBeenCalledWith(
+    expect(fetch).toHaveBeenCalledWith(
       expect.any(String),
       expect.objectContaining({
         credentials: 'include',
@@ -77,8 +76,7 @@ describe('describeImageLoadFailure', () => {
   })
 
   it('caps probes so a node retrying one missing file cannot amplify', async () => {
-    const fetchSpy = respondWith(404)
-    vi.mocked(fetch).mockImplementation(fetchSpy)
+    vi.mocked(fetch).mockImplementation(respondWith(404))
 
     const results = []
     for (let i = 0; i < 25; i++) {
@@ -87,32 +85,26 @@ describe('describeImageLoadFailure', () => {
       )
     }
 
-    expect(fetchSpy).toHaveBeenCalledTimes(20)
+    expect(fetch).toHaveBeenCalledTimes(20)
     expect(results.at(-1)?.probe_outcome).toBe('probe_capped')
     // The report still lands — a capped probe must not silence the event.
     expect(results.at(-1)?.source).toBe('node_image_preview')
   })
 
   it('does not probe cross-origin urls, which would report our own opacity', async () => {
-    const fetchSpy = respondWith(200)
-    vi.mocked(fetch).mockImplementation(fetchSpy)
-
     const result = await describeImageLoadFailure(
       'https://cdn.example.com/a.png'
     )
 
-    expect(fetchSpy).not.toHaveBeenCalled()
+    expect(fetch).not.toHaveBeenCalled()
     expect(result.same_origin).toBe(false)
     expect(result.probe_outcome).toBe('probe_blocked')
   })
 
   it('reports an unparseable src instead of fabricating url shape fields', async () => {
-    const fetchSpy = respondWith(200)
-    vi.mocked(fetch).mockImplementation(fetchSpy)
-
     const result = await describeImageLoadFailure('')
 
-    expect(fetchSpy).not.toHaveBeenCalled()
+    expect(fetch).not.toHaveBeenCalled()
     expect(result.probe_outcome).toBe('invalid_src')
   })
 
@@ -132,12 +124,11 @@ describe('describeImageLoadFailure', () => {
   })
 
   it('does not follow redirects — a signed storage URL answers on its own terms', async () => {
-    const fetchSpy = respondWith(200)
-    vi.mocked(fetch).mockImplementation(fetchSpy)
+    vi.mocked(fetch).mockImplementation(respondWith(200))
 
     await describeImageLoadFailure(`${ORIGIN}/api/view?filename=a.png`)
 
-    expect(fetchSpy).toHaveBeenCalledWith(
+    expect(fetch).toHaveBeenCalledWith(
       expect.any(String),
       expect.objectContaining({ redirect: 'manual' })
     )

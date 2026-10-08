@@ -168,6 +168,7 @@
   },
   "devDependencies": {
     "@comfyorg/ingest-types": "workspace:*",
+    "@comfyorg/test-utils": "workspace:*",
     "@comfyorg/website": "workspace:*",
     "@eslint/js": "catalog:",
     "@intlify/eslint-plugin-vue-i18n": "catalog:",

@@ -58,12 +58,12 @@ function recordingFetch(
   perUser: Record<string, unknown>
 ) {
   const sent: SentRequest[] = []
-  const fetchImpl = vi.fn<typeof fetch>(async (input, init) => {
+  const fetchImpl: typeof fetch = async (input, init) => {
     const { credentials, cache, headers } = init ?? {}
     sent.push({ url: String(input), credentials, cache, headers })
     const body = credentials === 'include' ? perUser : anonymous
     return new Response(JSON.stringify(body))
-  })
+  }
   return { sent, fetchImpl }
 }
 

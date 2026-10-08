@@ -1,17 +1,11 @@
-import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
+import { afterEach, describe, expect, it, vi } from 'vitest'
 
 import { remoteConfig } from '@/platform/remoteConfig/remoteConfig'
 import { setTelemetryRegistry, useTelemetry } from '@/platform/telemetry'
 import { initHostTelemetry } from '@/platform/telemetry/initHostTelemetry'
 import { TelemetryEvents } from '@/platform/telemetry/types'
 
-const fetchMock = vi.fn()
-
 describe('initHostTelemetry', () => {
-  beforeEach(() => {
-    vi.mocked(fetch).mockImplementation(fetchMock)
-  })
-
   afterEach(() => {
     remoteConfig.value = {}
     setTelemetryRegistry(null)
@@ -24,7 +18,7 @@ describe('initHostTelemetry', () => {
     initHostTelemetry()
 
     expect(useTelemetry()).toBeNull()
-    expect(fetchMock).not.toHaveBeenCalled()
+    expect(fetch).not.toHaveBeenCalled()
   })
 
   it('leaves the registry untouched when enable_telemetry is off', () => {

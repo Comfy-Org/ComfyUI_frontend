@@ -1,4 +1,5 @@
 // @vitest-environment happy-dom
+import { respondToFetch } from '@comfyorg/test-utils/fetch'
 import userEvent from '@testing-library/user-event'
 import { fireEvent, render, screen, within } from '@testing-library/vue'
 import { IDBFactory } from 'fake-indexeddb'
@@ -1011,21 +1012,18 @@ describe('ModelDetail', () => {
 
   it('asks for an unreadable image to be reselected and then runs successfully', async () => {
     auth.session.value = credential
-    let uploadAttempts = 0
-    const fetch = vi.fn<typeof globalThis.fetch>(async (_, init) => {
-      if (init?.method === 'POST')
-        return Response.json({
-          upload_url: 'https://storage.example/upload',
-          download_url: 'https://storage.example/image.png'
-        })
-      if (init?.method === 'PUT') {
-        uploadAttempts += 1
-        if (uploadAttempts === 1) throw new TypeError('Failed to fetch')
-        return new Response(null, { status: 200 })
-      }
-      throw new Error('Unexpected request')
-    })
-    vi.mocked(globalThis.fetch).mockImplementation(fetch)
+    respondToFetch({ method: 'POST' }, () =>
+      Response.json({
+        upload_url: 'https://storage.example/upload',
+        download_url: 'https://storage.example/image.png'
+      })
+    )
+    respondToFetch({ method: 'PUT' }, () => new Response(null, { status: 200 }))
+    respondToFetch(
+      { method: 'PUT' },
+      () => Promise.reject(new TypeError('Failed to fetch')),
+      { times: 1 }
+    )
     const model = getRouterWorkshopModelDetail(
       'vertexai--gemini-nano-banana-2--edit-images'
     )
@@ -1198,15 +1196,13 @@ describe('ModelDetail', () => {
 
   it('reuses uploaded URLs and the retry key after a request whose outcome is unknown', async () => {
     auth.session.value = credential
-    const uploads = vi.fn<typeof fetch>(async (_, init) =>
-      init?.method === 'POST'
-        ? Response.json({
-            upload_url: 'https://storage.example/upload',
-            download_url: 'https://storage.example/image.png'
-          })
-        : new Response(null, { status: 200 })
+    respondToFetch({ method: 'POST' }, () =>
+      Response.json({
+        upload_url: 'https://storage.example/upload',
+        download_url: 'https://storage.example/image.png'
+      })
     )
-    vi.mocked(globalThis.fetch).mockImplementation(uploads)
+    respondToFetch({ method: 'PUT' }, () => new Response(null, { status: 200 }))
     vi.mocked(runWorkshopRouter).mockRejectedValue(
       new WorkshopRouterError('network')
     )
@@ -1221,7 +1217,7 @@ describe('ModelDetail', () => {
       }),
       file
     )
-    expect(uploads).not.toHaveBeenCalled()
+    expect(fetch).not.toHaveBeenCalled()
     await user().click(screen.getByTestId('run-button'))
     await vi.waitFor(() =>
       expect(
@@ -1236,14 +1232,12 @@ describe('ModelDetail', () => {
     })
     expect(second[0].body).toEqual(first[0].body)
     expect(second[0].idempotencyKey).toBe(first[0].idempotencyKey)
-    expect(uploads).toHaveBeenCalledTimes(2)
+    expect(fetch).toHaveBeenCalledTimes(2)
   })
 
   it('shows an upload error and never calls paid generation if storage fails', async () => {
     auth.session.value = credential
-    vi.mocked(globalThis.fetch).mockImplementation(
-      vi.fn<typeof fetch>().mockRejectedValue(new TypeError('Failed to fetch'))
-    )
+    vi.mocked(fetch).mockRejectedValue(new TypeError('Failed to fetch'))
     const model = getRouterWorkshopModelDetail('wavespeed--seedvr2')
     if (!model) throw new Error('Missing Wavespeed model')
     await mountDetail({ model })
@@ -1267,7 +1261,7 @@ describe('ModelDetail', () => {
     auth.session.value = credential
     const pending = Promise.withResolvers<Response>()
     let uploadSignal: AbortSignal | null | undefined
-    vi.mocked(globalThis.fetch).mockImplementation(async (_, init) => {
+    vi.mocked(fetch).mockImplementation(async (_, init) => {
       uploadSignal = init?.signal
       return pending.promise
     })

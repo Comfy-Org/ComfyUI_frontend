@@ -1,3 +1,4 @@
+import { respondToFetch } from '@comfyorg/test-utils/fetch'
 import { describe, expect, it, vi } from 'vitest'
 
 import type { operations } from '@comfyorg/registry-types'
@@ -18,7 +19,7 @@ describe('URL upload transport', () => {
     const file = new File([new Uint8Array(40_000_000)], 'clip.mp4', {
       type: 'video/mp4'
     })
-    const requests = vi.fn<typeof fetch>(async (_, init) => {
+    vi.mocked(fetch).mockImplementation(async (_, init) => {
       if (init?.method === 'POST') {
         expect(typeof init.body).toBe('string')
         expect(String(init.body).length).toBeLessThan(300)
@@ -27,7 +28,6 @@ describe('URL upload transport', () => {
       expect(init?.body).toBe(file)
       return new Response(null, { status: 200 })
     })
-    vi.mocked(fetch).mockImplementation(requests)
     expect(
       await createWorkshopUrlUploader()(
         file,
@@ -36,17 +36,15 @@ describe('URL upload transport', () => {
         new AbortController().signal
       )
     ).toBe(grant.download_url)
-    expect(requests).toHaveBeenCalledTimes(2)
+    expect(fetch).toHaveBeenCalledTimes(2)
   })
 
   it('identifies a browser upload transport failure without retaining the signed URL', async () => {
-    const requests = vi
-      .fn<typeof fetch>()
+    vi.mocked(fetch)
       .mockResolvedValueOnce(Response.json(grant))
       .mockRejectedValueOnce(
         new TypeError(`Failed to fetch ${grant.upload_url}`)
       )
-    vi.mocked(fetch).mockImplementation(requests)
     const error = await createWorkshopUrlUploader()(
       new File(['image'], 'image.png'),
       'token',
@@ -61,7 +59,7 @@ describe('URL upload transport', () => {
     const names: string[] = []
     const bytes = new Uint8Array([0, 255, 13, 34])
     const file = new File([bytes], '../image.png', { type: 'image/png' })
-    const requests = vi.fn<typeof fetch>(async (url, init) => {
+    vi.mocked(fetch).mockImplementation(async (url, init) => {
       if (!init) throw new Error('Missing upload request')
       expect(init.credentials).toBe('omit')
       expect(init.redirect).toBe('error')
@@ -83,7 +81,6 @@ describe('URL upload transport', () => {
       expect(new Uint8Array(await init.body.arrayBuffer())).toEqual(bytes)
       return new Response(null, { status: 200 })
     })
-    vi.mocked(fetch).mockImplementation(requests)
     const upload = createWorkshopUrlUploader()
     const signal = new AbortController().signal
     expect(
@@ -92,7 +89,7 @@ describe('URL upload transport', () => {
     expect(
       await upload(file, 'workspace-token', 'owner:workspace', signal)
     ).toBe(grant.download_url)
-    expect(requests).toHaveBeenCalledTimes(2)
+    expect(fetch).toHaveBeenCalledTimes(2)
     await upload(
       new File([bytes], file.name, { type: file.type }),
       'workspace-token',
@@ -101,22 +98,20 @@ describe('URL upload transport', () => {
     )
     expect(new Set(names).size).toBe(2)
     await upload(file, 'workspace-token', 'owner:another-workspace', signal)
-    expect(requests).toHaveBeenCalledTimes(6)
+    expect(fetch).toHaveBeenCalledTimes(6)
   })
 
   it('does not cache a failed PUT and respects the actual grant expiry with a safety margin', async () => {
     vi.useFakeTimers()
     vi.setSystemTime(new Date('2026-09-10T10:00:00Z'))
     const shortGrant = { ...grant, expires_at: '2026-09-10T10:10:00Z' }
-    const requests = vi
-      .fn<typeof fetch>()
+    vi.mocked(fetch)
       .mockResolvedValueOnce(Response.json(shortGrant))
       .mockResolvedValueOnce(new Response(null, { status: 403 }))
       .mockResolvedValueOnce(Response.json(shortGrant))
       .mockResolvedValueOnce(new Response(null, { status: 200 }))
       .mockResolvedValueOnce(Response.json(grant))
       .mockResolvedValueOnce(new Response(null, { status: 200 }))
-    vi.mocked(fetch).mockImplementation(requests)
     const upload = createWorkshopUrlUploader()
     const file = new File(['image'], 'image.png', { type: 'image/png' })
     const signal = new AbortController().signal
@@ -130,41 +125,38 @@ describe('URL upload transport', () => {
     )
     vi.setSystemTime(new Date('2026-09-10T10:08:59Z'))
     await upload(file, 'token', 'scope', signal)
-    expect(requests).toHaveBeenCalledTimes(4)
+    expect(fetch).toHaveBeenCalledTimes(4)
     vi.setSystemTime(new Date('2026-09-10T10:09:00Z'))
     await upload(file, 'token', 'scope', signal)
-    expect(requests).toHaveBeenCalledTimes(6)
+    expect(fetch).toHaveBeenCalledTimes(6)
   })
 
   it('reuses the backend two-field grant for its documented 24-hour lifetime', async () => {
     vi.useFakeTimers()
     vi.setSystemTime(new Date('2026-09-10T10:00:00Z'))
-    const requests = vi.fn<typeof fetch>(async (_, init) =>
-      init?.method === 'POST'
-        ? Response.json({
-            upload_url: grant.upload_url,
-            download_url: grant.download_url
-          })
-        : new Response(null, { status: 200 })
+    respondToFetch({ method: 'POST' }, () =>
+      Response.json({
+        upload_url: grant.upload_url,
+        download_url: grant.download_url
+      })
     )
-    vi.mocked(fetch).mockImplementation(requests)
+    respondToFetch({ method: 'PUT' }, () => new Response(null, { status: 200 }))
     const upload = createWorkshopUrlUploader()
     const file = new File(['image'], 'image.png')
     const signal = new AbortController().signal
     await upload(file, 'token', 'scope', signal)
     vi.setSystemTime(new Date('2026-09-11T09:58:59Z'))
     await upload(file, 'token', 'scope', signal)
-    expect(requests).toHaveBeenCalledTimes(2)
+    expect(fetch).toHaveBeenCalledTimes(2)
     vi.setSystemTime(new Date('2026-09-11T09:59:00Z'))
     await upload(file, 'token', 'scope', signal)
-    expect(requests).toHaveBeenCalledTimes(4)
+    expect(fetch).toHaveBeenCalledTimes(4)
   })
 
   it('rejects an invalid explicit expiry before uploading', async () => {
-    const requests = vi
-      .fn<typeof fetch>()
-      .mockResolvedValue(Response.json({ ...grant, expires_at: 'invalid' }))
-    vi.mocked(fetch).mockImplementation(requests)
+    vi.mocked(fetch).mockResolvedValueOnce(
+      Response.json({ ...grant, expires_at: 'invalid' })
+    )
     await expect(
       createWorkshopUrlUploader()(
         new File(['private'], 'image.png'),
@@ -173,16 +165,13 @@ describe('URL upload transport', () => {
         new AbortController().signal
       )
     ).rejects.toMatchObject({ reason: 'upload', stage: 'upload_grant' })
-    expect(requests).toHaveBeenCalledTimes(1)
+    expect(fetch).toHaveBeenCalledTimes(1)
   })
 
   it('rejects an already-expired grant before sending private bytes', async () => {
-    const requests = vi
-      .fn<typeof fetch>()
-      .mockResolvedValue(
-        Response.json({ ...grant, expires_at: '2000-01-01T00:00:00Z' })
-      )
-    vi.mocked(fetch).mockImplementation(requests)
+    vi.mocked(fetch).mockResolvedValueOnce(
+      Response.json({ ...grant, expires_at: '2000-01-01T00:00:00Z' })
+    )
     await expect(
       createWorkshopUrlUploader()(
         new File(['private'], 'image.png'),
@@ -191,7 +180,7 @@ describe('URL upload transport', () => {
         new AbortController().signal
       )
     ).rejects.toMatchObject({ reason: 'upload', stage: 'upload_grant' })
-    expect(requests).toHaveBeenCalledTimes(1)
+    expect(fetch).toHaveBeenCalledTimes(1)
   })
 
   it.for([
@@ -208,10 +197,7 @@ describe('URL upload transport', () => {
   ])(
     'rejects an invalid grant before transmitting private bytes: %j',
     async (response) => {
-      const requests = vi
-        .fn<typeof fetch>()
-        .mockResolvedValue(Response.json(response))
-      vi.mocked(fetch).mockImplementation(requests)
+      vi.mocked(fetch).mockResolvedValueOnce(Response.json(response))
       await expect(
         createWorkshopUrlUploader()(
           new File(['private'], 'image.png'),
@@ -220,17 +206,16 @@ describe('URL upload transport', () => {
           new AbortController().signal
         )
       ).rejects.toThrow()
-      expect(requests).toHaveBeenCalledTimes(1)
+      expect(fetch).toHaveBeenCalledTimes(1)
     }
   )
 
   it('cancels between grant and PUT without uploading or caching the file', async () => {
     const controller = new AbortController()
-    const requests = vi.fn<typeof fetch>(async () => {
+    vi.mocked(fetch).mockImplementation(async () => {
       controller.abort()
       return Response.json(grant)
     })
-    vi.mocked(fetch).mockImplementation(requests)
     await expect(
       createWorkshopUrlUploader()(
         new File(['private'], 'image.png'),
@@ -239,18 +224,17 @@ describe('URL upload transport', () => {
         controller.signal
       )
     ).rejects.toMatchObject({ name: 'AbortError' })
-    expect(requests).toHaveBeenCalledTimes(1)
+    expect(fetch).toHaveBeenCalledTimes(1)
   })
 
   it('does not cache a late PUT completion after its timeout', async () => {
     const timeout = new AbortController()
     vi.spyOn(AbortSignal, 'timeout').mockReturnValueOnce(timeout.signal)
-    const requests = vi.fn<typeof fetch>(async (_, init) => {
+    vi.mocked(fetch).mockImplementation(async (_, init) => {
       if (init?.method === 'POST') return Response.json(grant)
       timeout.abort(new DOMException('Upload timed out', 'TimeoutError'))
       return new Response(null, { status: 200 })
     })
-    vi.mocked(fetch).mockImplementation(requests)
     const upload = createWorkshopUrlUploader()
     const file = new File(['private'], 'image.png')
     const signal = new AbortController().signal
@@ -261,6 +245,6 @@ describe('URL upload transport', () => {
     expect(await upload(file, 'token', 'scope', signal)).toBe(
       grant.download_url
     )
-    expect(requests).toHaveBeenCalledTimes(4)
+    expect(fetch).toHaveBeenCalledTimes(4)
   })
 })

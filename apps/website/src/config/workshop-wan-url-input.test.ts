@@ -15,7 +15,7 @@ function setup(slug = 'wan--reference-to-video-3.0--animate-images') {
 
 function storage() {
   let grants = 0
-  const requests = vi.fn<typeof fetch>(async (url, init) => {
+  vi.mocked(fetch).mockImplementation(async (url, init) => {
     if (init?.method === 'POST') {
       expect(String(url)).toMatch(/\/customers\/storage$/)
       expect(new Headers(init.headers).get('Authorization')).toBe(
@@ -36,10 +36,8 @@ function storage() {
       headers: { 'Content-Type': 'image/png' }
     })
   })
-  vi.mocked(fetch).mockImplementation(requests)
   const uploader = createWorkshopUrlUploader()
   return {
-    requests,
     grants: () => grants,
     uploadFile: (file: File, signal: AbortSignal) =>
       uploader(file, 'token', 'owner:workspace', signal)
@@ -68,7 +66,7 @@ describe('Wan 3 source URL rehosting', () => {
       }
     )
     expect(prepared.body).toHaveProperty('input.media.0.url', source)
-    expect(transport.requests).not.toHaveBeenCalled()
+    expect(fetch).not.toHaveBeenCalled()
   })
 
   it('rejects a credential-bearing lookalike before any download', async () => {
@@ -91,7 +89,7 @@ describe('Wan 3 source URL rehosting', () => {
         }
       )
     ).rejects.toMatchObject({ reason: 'validation' })
-    expect(transport.requests).not.toHaveBeenCalled()
+    expect(fetch).not.toHaveBeenCalled()
   })
 
   it('uses contract policy, not the Router model name, to enable rehosting', async () => {
@@ -110,7 +108,7 @@ describe('Wan 3 source URL rehosting', () => {
       transport.uploadFile
     )
     expect(unchanged).toHaveProperty('input.media.0.url', source)
-    expect(transport.requests).not.toHaveBeenCalled()
+    expect(fetch).not.toHaveBeenCalled()
     const rehosted = await prepareWorkshopRouterInput(
       { ...model.execution, id: 'fixture/custom', rehostUrlInputs: true },
       values,
@@ -122,7 +120,7 @@ describe('Wan 3 source URL rehosting', () => {
       'input.media.0.url',
       'https://storage.example/image-1.png'
     )
-    expect(transport.requests).toHaveBeenCalledWith(
+    expect(fetch).toHaveBeenCalledWith(
       source,
       expect.objectContaining({ redirect: 'error', credentials: 'omit' })
     )
@@ -170,7 +168,7 @@ describe('Wan 3 source URL rehosting', () => {
     )
     expect(retry.body).toEqual(first.body)
     expect(transport.grants()).toBe(2)
-    expect(transport.requests).toHaveBeenCalledTimes(6)
+    expect(fetch).toHaveBeenCalledTimes(6)
     expect(values.image_url).toContain('@revision')
   })
 
@@ -206,7 +204,7 @@ describe('Wan 3 source URL rehosting', () => {
     const retry = await prepareModelRouterRender(model, {}, options)
     expect(retry.body).toEqual(first.body)
     expect(transport.grants()).toBe(10)
-    expect(transport.requests).toHaveBeenCalledTimes(30)
+    expect(fetch).toHaveBeenCalledTimes(30)
   })
 
   it('keeps ordinary URLs and uploaded binary inputs working', async () => {
@@ -244,15 +242,13 @@ describe('Wan 3 source URL rehosting', () => {
         ]
       }
     })
-    expect(transport.requests).toHaveBeenCalledTimes(2)
+    expect(fetch).toHaveBeenCalledTimes(2)
   })
 
   it('does not generate or cache a failed download, and permits a later retry', async () => {
     const { model, form } = setup('wan--image-to-video-3.0--animate-images')
     const transport = storage()
-    transport.requests.mockResolvedValueOnce(
-      new Response(null, { status: 503 })
-    )
+    vi.mocked(fetch).mockResolvedValueOnce(new Response(null, { status: 503 }))
     const options = {
       model,
       token: 'token',
@@ -270,7 +266,7 @@ describe('Wan 3 source URL rehosting', () => {
       fieldErrors: { image_url: 'uploadFailed' }
     })
     expect(transport.grants()).toBe(0)
-    expect(transport.requests).toHaveBeenCalledTimes(1)
+    expect(fetch).toHaveBeenCalledTimes(1)
     await expect(
       prepareModelRouterRender(model, {}, options)
     ).resolves.toMatchObject({
@@ -287,11 +283,10 @@ describe('Wan 3 source URL rehosting', () => {
   it('stops an aborted source download before storage or generation', async () => {
     const { model, form } = setup('wan--image-to-video-3.0--animate-images')
     const controller = new AbortController()
-    const requests = vi.fn<typeof fetch>(async () => {
+    vi.mocked(fetch).mockImplementation(async () => {
       controller.abort()
       return new Response('image', { headers: { 'Content-Type': 'image/png' } })
     })
-    vi.mocked(fetch).mockImplementation(requests)
     await expect(
       router_render(
         model.slug,
@@ -311,6 +306,6 @@ describe('Wan 3 source URL rehosting', () => {
         }
       )
     ).rejects.toMatchObject({ name: 'AbortError' })
-    expect(requests).toHaveBeenCalledTimes(1)
+    expect(fetch).toHaveBeenCalledTimes(1)
   })
 })

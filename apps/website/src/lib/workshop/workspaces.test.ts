@@ -1,3 +1,4 @@
+import { fetchRequests, respondToFetch } from '@comfyorg/test-utils/fetch'
 import { describe, expect, it, vi } from 'vitest'
 
 import { WORKSHOP_CLOUD_BASE_URL } from '@/config/workshop-env'
@@ -13,55 +14,41 @@ const workspace = {
   joined_at: '2026-01-01T00:00:00Z'
 } as const
 
-function fetchUntilAborted() {
-  return vi.fn<typeof fetch>(
-    (_input, init) =>
-      new Promise<Response>((_resolve, reject) => {
-        const signal = init?.signal
-        if (!signal) {
-          reject(new Error('Expected listWorkspaces to pass an abort signal'))
-          return
-        }
-        if (signal.aborted) {
-          reject(signal.reason)
-          return
-        }
-        signal.addEventListener('abort', () => reject(signal.reason), {
-          once: true
-        })
-      })
-  )
-}
+const WORKSPACES_URL = new URL('/api/workspaces', WORKSHOP_CLOUD_BASE_URL).href
+
+const fetchUntilAborted: typeof fetch = (_input, init) =>
+  new Promise<Response>((_resolve, reject) => {
+    const signal = init?.signal
+    if (!signal) {
+      reject(new Error('Expected listWorkspaces to pass an abort signal'))
+      return
+    }
+    if (signal.aborted) {
+      reject(signal.reason)
+      return
+    }
+    signal.addEventListener('abort', () => reject(signal.reason), {
+      once: true
+    })
+  })
 
 describe('listWorkspaces', () => {
   it('returns the parsed workspace list with its scoped authorization', async () => {
-    const fetchWorkspaces = vi.fn<typeof fetch>().mockResolvedValue(
-      new Response(JSON.stringify({ workspaces: [workspace] }), {
-        status: 200
-      })
+    respondToFetch(WORKSPACES_URL, () =>
+      Response.json({ workspaces: [workspace] })
     )
-    vi.mocked(fetch).mockImplementation(fetchWorkspaces)
 
     await expect(listWorkspaces('workspace-jwt')).resolves.toEqual([workspace])
-    const [target, init] = fetchWorkspaces.mock.calls[0]
-    expect(String(target)).toBe(
-      new URL('/api/workspaces', WORKSHOP_CLOUD_BASE_URL).href
-    )
-    expect(new Headers(init?.headers).get('Authorization')).toBe(
+    expect(fetchRequests(WORKSPACES_URL)[0].headers.get('Authorization')).toBe(
       'Bearer workspace-jwt'
     )
   })
 
   it.for([
-    ['invalid JSON', new Response('{', { status: 200 })],
-    [
-      'the wrong schema',
-      new Response(JSON.stringify({ workspaces: [{ id: 1 }] }), { status: 200 })
-    ]
-  ] as const)('rejects %s', async ([, response]) => {
-    vi.mocked(fetch).mockImplementation(
-      vi.fn<typeof fetch>().mockResolvedValue(response)
-    )
+    ['invalid JSON', '{'],
+    ['the wrong schema', JSON.stringify({ workspaces: [{ id: 1 }] })]
+  ] as const)('rejects %s', async ([, body]) => {
+    vi.mocked(fetch).mockResolvedValueOnce(new Response(body, { status: 200 }))
 
     await expect(listWorkspaces('workspace-jwt')).rejects.toThrow(
       'Workspace list response malformed'
@@ -69,9 +56,7 @@ describe('listWorkspaces', () => {
   })
 
   it('rejects a non-success response before parsing it', async () => {
-    vi.mocked(fetch).mockImplementation(
-      vi.fn<typeof fetch>().mockResolvedValue(new Response('', { status: 503 }))
-    )
+    vi.mocked(fetch).mockResolvedValueOnce(new Response('', { status: 503 }))
 
     await expect(listWorkspaces('workspace-jwt')).rejects.toThrow(
       'Workspace list failed with status 503'
@@ -79,8 +64,7 @@ describe('listWorkspaces', () => {
   })
 
   it('composes and honors a caller-provided abort signal', async () => {
-    const fetchWorkspaces = fetchUntilAborted()
-    vi.mocked(fetch).mockImplementation(fetchWorkspaces)
+    vi.mocked(fetch).mockImplementation(fetchUntilAborted)
     const controller = new AbortController()
     const reason = new DOMException('Caller stopped', 'AbortError')
 
@@ -91,7 +75,7 @@ describe('listWorkspaces', () => {
     controller.abort(reason)
 
     await expect(pending).rejects.toBe(reason)
-    const passedSignal = fetchWorkspaces.mock.calls[0][1]?.signal
+    const passedSignal = vi.mocked(fetch).mock.calls[0][1]?.signal
     expect(passedSignal).not.toBe(controller.signal)
     expect(passedSignal?.aborted).toBe(true)
   })
@@ -101,7 +85,7 @@ describe('listWorkspaces', () => {
     const timeoutSpy = vi
       .spyOn(AbortSignal, 'timeout')
       .mockReturnValue(timeout.signal)
-    vi.mocked(fetch).mockImplementation(fetchUntilAborted())
+    vi.mocked(fetch).mockImplementation(fetchUntilAborted)
     const reason = new DOMException('Timed out', 'TimeoutError')
 
     const pending = listWorkspaces('workspace-jwt', { timeoutMs: 25 })

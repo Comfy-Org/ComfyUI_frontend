@@ -106,10 +106,7 @@ describe('OAuthConsentView', () => {
   })
 
   it('loads the consent named in the URL on the session cookie alone, as an SSO callback lands', async () => {
-    const fetchMock = vi.fn<typeof fetch>(
-      async () => new Response(JSON.stringify(challenge), { status: 200 })
-    )
-    vi.mocked(fetch).mockImplementation(fetchMock)
+    vi.mocked(fetch).mockResolvedValueOnce(Response.json(challenge))
     const router = createRouter({
       history: createMemoryHistory(),
       routes: [{ path: '/oauth/consent', component: OAuthConsentView }]
@@ -120,7 +117,7 @@ describe('OAuthConsentView', () => {
     render(OAuthConsentView, { global: { plugins: [i18n, router] } })
 
     expect(await screen.findByText('Comfy Desktop wants access')).toBeVisible()
-    const [url, init] = fetchMock.mock.calls[0]
+    const [url, init] = vi.mocked(fetch).mock.calls[0]
     expect(url).toBe(
       `/oauth/authorize?oauth_request_id=${challenge.oauth_request_id}`
     )

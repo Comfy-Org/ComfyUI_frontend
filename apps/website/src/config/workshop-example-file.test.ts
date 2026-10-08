@@ -71,7 +71,7 @@ describe('example source images', () => {
     const uploaded: string[] = []
     const downloads: string[] = []
     let grants = 0
-    const transport = vi.fn<typeof fetch>(async (url, init) => {
+    vi.mocked(fetch).mockImplementation(async (url, init) => {
       if (init?.method === 'POST') {
         grants += 1
         return Response.json({
@@ -89,7 +89,6 @@ describe('example source images', () => {
         headers: { 'Content-Type': 'image/png' }
       })
     })
-    vi.mocked(fetch).mockImplementation(transport)
     const uploader = createWorkshopUrlUploader()
     const body = await prepareWorkshopRouterInput(
       page.execution,
@@ -111,9 +110,9 @@ describe('example source images', () => {
     })
     expect(downloads).toEqual(hasPinnedCompanion ? [sources[1]] : [])
     expect(uploaded).toEqual(hasPinnedCompanion ? [sources[1]] : [])
-    expect(transport).toHaveBeenCalledTimes(hasPinnedCompanion ? 3 : 0)
+    expect(fetch).toHaveBeenCalledTimes(hasPinnedCompanion ? 3 : 0)
     let uploadIndex = 0
-    for (const [url, init] of transport.mock.calls) {
+    for (const [url, init] of vi.mocked(fetch).mock.calls) {
       if (init?.method === 'POST')
         expect(String(url)).toMatch(/\/customers\/storage$/)
       else if (init?.method === 'PUT') {

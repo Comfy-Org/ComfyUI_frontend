@@ -2,6 +2,7 @@ import { createMemoryHistory } from 'vue-router'
 
 import type { WebEntryBounceTarget } from '@comfyorg/account-core/billing'
 import type { BillingEnvironment } from '@comfyorg/billing-contract'
+import { respondToFetch } from '@comfyorg/test-utils/fetch'
 
 import type { BillingWebSessionPhase } from '@/router'
 
@@ -42,15 +43,17 @@ vi.mock<unknown>(import('@/session/billingWebSession'), () => ({
   })
 }))
 
-const fetchMock = vi.fn<typeof fetch>()
+const FEATURES_URL = 'https://testcloud.comfy.org/api/features'
 
 function flagAnswers(variant: string) {
   if (variant === 'unreachable') {
-    fetchMock.mockRejectedValue(new TypeError('Failed to fetch'))
+    respondToFetch(FEATURES_URL, () =>
+      Promise.reject(new TypeError('Failed to fetch'))
+    )
     return
   }
-  fetchMock.mockResolvedValue(
-    new Response(JSON.stringify({ billing_web_checkout_ui: variant }))
+  respondToFetch(FEATURES_URL, () =>
+    Response.json({ billing_web_checkout_ui: variant })
   )
 }
 
@@ -68,8 +71,6 @@ const PLANLESS_BOUNCE = {
 beforeEach(() => {
   sessionStorage.clear()
   vi.resetModules()
-  vi.mocked(fetch).mockImplementation(fetchMock)
-  fetchMock.mockReset()
   h.bind.mockReset()
   h.track.mockReset()
 })
@@ -140,7 +141,7 @@ describe('a checkout link that names no plan', () => {
       expect(leave).toHaveBeenCalledExactlyOnceWith(PRICING_TABLE)
       expect(router.currentRoute.value.path).not.toBe('/sign-in')
       expect(h.bind).not.toHaveBeenCalled()
-      expect(fetchMock).not.toHaveBeenCalled()
+      expect(fetch).not.toHaveBeenCalled()
       expect(h.track).toHaveBeenCalledExactlyOnceWith(PLANLESS_BOUNCE)
     }
   )
@@ -259,7 +260,7 @@ describe('where a checkout link that names no plan sends the customer to pick on
     expect(leave).toHaveBeenCalledExactlyOnceWith(destination)
     expect(router.currentRoute.value.path).not.toBe('/sign-in')
     expect(h.bind).not.toHaveBeenCalled()
-    expect(fetchMock).not.toHaveBeenCalled()
+    expect(fetch).not.toHaveBeenCalled()
     expect(h.track).toHaveBeenCalledExactlyOnceWith({
       ...PLANLESS_BOUNCE,
       to
@@ -293,7 +294,7 @@ describe('a planless checkout link the customer navigates away from', () => {
     async (variant) => {
       h.livePhase = 'authenticated'
       let answerFlag: (response: Response) => void = () => undefined
-      fetchMock.mockReturnValue(
+      vi.mocked(fetch).mockReturnValueOnce(
         new Promise((resolve) => {
           answerFlag = resolve
         })
@@ -309,7 +310,7 @@ describe('a planless checkout link the customer navigates away from', () => {
       )
 
       const planless = router.push(PLANLESS)
-      await vi.waitFor(() => expect(fetchMock).toHaveBeenCalled())
+      await vi.waitFor(() => expect(fetch).toHaveBeenCalled())
       await router.push(LATER)
       answerFlag(
         new Response(JSON.stringify({ billing_web_checkout_ui: variant }))

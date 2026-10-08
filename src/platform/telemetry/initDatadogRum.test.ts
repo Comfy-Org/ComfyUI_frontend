@@ -1,7 +1,6 @@
+import { respondToFetch } from '@comfyorg/test-utils/fetch'
 import { datadogRum } from '@datadog/browser-rum'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
-
-const fetchMock = vi.fn<typeof fetch>()
 
 vi.mock(import('@datadog/browser-rum'))
 vi.mock(import('./manualRefreshTracker'), () => ({
@@ -14,9 +13,11 @@ import { trackUserManualRefresh } from './manualRefreshTracker'
 
 describe('initDatadogRum', () => {
   beforeEach(() => {
-    fetchMock.mockResolvedValue(new Response(null, { status: 503 }))
+    respondToFetch(
+      { method: 'HEAD' },
+      () => new Response(null, { status: 503 })
+    )
     vi.mocked(datadogRum.getInitConfiguration).mockReturnValue(undefined)
-    vi.mocked(fetch).mockImplementation(fetchMock)
   })
 
   it.for([
@@ -52,7 +53,7 @@ describe('initDatadogRum', () => {
 
   it('tags canary traffic with its bucket and frontend version', async () => {
     let resolveProbe: (response: Response) => void
-    fetchMock.mockReturnValue(
+    vi.mocked(fetch).mockReturnValueOnce(
       new Promise((resolve) => {
         resolveProbe = resolve
       })
@@ -88,7 +89,7 @@ describe('initDatadogRum', () => {
 
   it('serializes concurrent initialization', async () => {
     let resolveProbe: (response: Response) => void
-    fetchMock.mockReturnValue(
+    vi.mocked(fetch).mockReturnValueOnce(
       new Promise((resolve) => {
         resolveProbe = resolve
       })
@@ -107,7 +108,7 @@ describe('initDatadogRum', () => {
     )
     await Promise.all([firstInitialization, secondInitialization])
 
-    expect(fetchMock).toHaveBeenCalledOnce()
+    expect(fetch).toHaveBeenCalledOnce()
     expect(datadogRum.init).toHaveBeenCalledOnce()
     expect(datadogRum.getGlobalContext()).toEqual({
       bucket: 'canary',
@@ -117,7 +118,7 @@ describe('initDatadogRum', () => {
   })
 
   it('defaults the bucket to stable and tracks its frontend version', async () => {
-    fetchMock.mockResolvedValue(
+    vi.mocked(fetch).mockResolvedValueOnce(
       new Response(null, {
         headers: { 'X-Frontend-Version': __COMFYUI_FRONTEND_COMMIT__ }
       })
@@ -133,7 +134,7 @@ describe('initDatadogRum', () => {
   })
 
   it('leaves traffic unclassified when the frontend version is absent', async () => {
-    fetchMock.mockResolvedValue(
+    vi.mocked(fetch).mockResolvedValueOnce(
       new Response(null, {
         headers: { 'X-Frontend-Bucket': 'canary' }
       })
@@ -147,7 +148,7 @@ describe('initDatadogRum', () => {
   })
 
   it('leaves traffic unclassified when the probe reaches another version', async () => {
-    fetchMock.mockResolvedValue(
+    vi.mocked(fetch).mockResolvedValueOnce(
       new Response(null, {
         headers: {
           'X-Frontend-Bucket': 'stable',
@@ -164,7 +165,7 @@ describe('initDatadogRum', () => {
   })
 
   it('leaves traffic unclassified when the header probe fails', async () => {
-    fetchMock.mockResolvedValue(new Response(null, { status: 503 }))
+    vi.mocked(fetch).mockResolvedValueOnce(new Response(null, { status: 503 }))
 
     await initDatadogRum('cloud.comfy.org')
 
@@ -175,7 +176,7 @@ describe('initDatadogRum', () => {
   })
 
   it('initializes RUM when the header probe rejects', async () => {
-    fetchMock.mockRejectedValue(new Error('network error'))
+    vi.mocked(fetch).mockRejectedValueOnce(new Error('network error'))
 
     await initDatadogRum('cloud.comfy.org')
 
@@ -188,7 +189,7 @@ describe('initDatadogRum', () => {
   it('initializes RUM when the header probe times out', async () => {
     const abortController = new AbortController()
     vi.spyOn(AbortSignal, 'timeout').mockReturnValue(abortController.signal)
-    fetchMock.mockImplementation(
+    vi.mocked(fetch).mockImplementation(
       (_input, init) =>
         new Promise((_resolve, reject) => {
           init?.signal?.addEventListener('abort', () => {

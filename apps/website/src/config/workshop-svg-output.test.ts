@@ -1,6 +1,7 @@
 // @vitest-environment node
 
-import { assert, describe, expect, it, vi } from 'vitest'
+import { respondToFetch } from '@comfyorg/test-utils/fetch'
+import { describe, expect, it, vi } from 'vitest'
 
 import { workshopContractSchema } from './workshop-contract'
 import { parseRouterResponse, releaseRouterOutputs } from './workshop-response'
@@ -61,17 +62,12 @@ describe('SVG output conversion', () => {
   it.for(['https://example.com/vector.svg', 'https://example.com/output/123'])(
     'rasterizes a provider JSON result at %s',
     async (url) => {
-      const localFetch = vi.mocked(fetch).getMockImplementation()
-      assert.exists(localFetch)
-      vi.mocked(globalThis.fetch).mockImplementation(
-        (input: RequestInfo | URL, init?: RequestInit) =>
-          String(input).startsWith('https:')
-            ? Promise.resolve(
-                new Response(init?.method === 'HEAD' ? null : svg, {
-                  headers: { 'Content-Type': 'image/svg+xml' }
-                })
-              )
-            : localFetch(input, init)
+      respondToFetch(
+        /^https:/,
+        (_input, init) =>
+          new Response(init?.method === 'HEAD' ? null : svg, {
+            headers: { 'Content-Type': 'image/svg+xml' }
+          })
       )
       const outputs = await parseRouterResponse(
         contract,
@@ -258,8 +254,6 @@ describe('SVG output conversion', () => {
   ])(
     'never turns unsafe SVG sources into fallback links: %s',
     async (source) => {
-      const fetch = vi.fn()
-      vi.mocked(globalThis.fetch).mockImplementation(fetch)
       await expect(svgOutputs(source, 'vector.svg')).rejects.toThrow(
         'Unsafe SVG URL'
       )

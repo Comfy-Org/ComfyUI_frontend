@@ -118,7 +118,7 @@ describe('useWorkshopSession over the real session client', () => {
 
   it('cannot commit a mint that was in flight when the flag turned off', async () => {
     let releaseMint!: () => void
-    const fetchSpy = vi.fn<typeof fetch>(
+    vi.mocked(fetch).mockImplementation(
       () =>
         new Promise<Response>((resolve) => {
           releaseMint = () =>
@@ -129,15 +129,14 @@ describe('useWorkshopSession over the real session client', () => {
             )
         })
     )
-    vi.mocked(fetch).mockImplementation(fetchSpy)
     const { session, flag, phases, client } = await boot(true)
     await firebaseAnswers(user)
-    await vi.waitFor(() => expect(fetchSpy).toHaveBeenCalledOnce())
+    await vi.waitFor(() => expect(fetch).toHaveBeenCalledOnce())
 
     flag.value = false
     await vi.waitFor(() => expect(session.settled.value).toBe(false))
     releaseMint()
-    await fetchSpy.mock.results[0]?.value
+    await vi.mocked(fetch).mock.results[0]?.value
     await new Promise((resolve) => setTimeout(resolve))
 
     expect(client.getToken()).toBeUndefined()
@@ -150,8 +149,7 @@ describe('useWorkshopSession over the real session client', () => {
   })
 
   it('installs nothing when the flag turns off before the first Firebase answer lands', async () => {
-    const fetchSpy = okFetch()
-    vi.mocked(fetch).mockImplementation(fetchSpy)
+    vi.mocked(fetch).mockImplementation(okFetch())
     const { session, flag, phases, client } = await boot(true)
     await vi.waitFor(() => expect(deliver).toBeDefined())
 
@@ -187,8 +185,7 @@ describe('useWorkshopSession over the real session client', () => {
         expiresAt: Date.parse(expires_at)
       })
     )
-    const fetchSpy = okFetch()
-    vi.mocked(fetch).mockImplementation(fetchSpy)
+    vi.mocked(fetch).mockImplementation(okFetch())
     await boot(true)
 
     await firebaseAnswers(user)
@@ -196,7 +193,7 @@ describe('useWorkshopSession over the real session client', () => {
     await new Promise((resolve) => setTimeout(resolve))
 
     expect(
-      fetchSpy,
+      fetch,
       'the seeded credential was served from cache, so the boot never minted'
     ).not.toHaveBeenCalled()
     expect(

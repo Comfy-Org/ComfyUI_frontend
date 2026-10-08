@@ -1,7 +1,5 @@
-import { assert, beforeEach, describe, expect, it, vi } from 'vitest'
+import { assert, describe, expect, it, vi } from 'vitest'
 import { api } from '@/scripts/api'
-
-const mockGlobalFetch = vi.hoisted(() => vi.fn())
 
 vi.mock(import('@/scripts/api'))
 
@@ -15,19 +13,7 @@ function mockJsonResponse(payload: unknown, ok = true, status = 200): Response {
   } as Response
 }
 
-function mockUploadResponse(ok = true, status = 200): Response {
-  return {
-    ok,
-    status,
-    json: async () => ({})
-  } as Response
-}
-
 describe('useComfyHubService', () => {
-  beforeEach(() => {
-    vi.mocked(fetch).mockImplementation(mockGlobalFetch)
-  })
-
   it('requests upload url and returns token payload', async () => {
     vi.mocked(api.fetchApi).mockResolvedValue(
       mockJsonResponse({
@@ -59,7 +45,7 @@ describe('useComfyHubService', () => {
   })
 
   it('uploads file to presigned url with PUT', async () => {
-    mockGlobalFetch.mockResolvedValue(mockUploadResponse())
+    vi.mocked(fetch).mockResolvedValueOnce(Response.json({}))
 
     const service = useComfyHubService()
     const file = new File(['payload'], 'avatar.png', { type: 'image/png' })
@@ -69,16 +55,13 @@ describe('useComfyHubService', () => {
       contentType: 'image/png'
     })
 
-    expect(mockGlobalFetch).toHaveBeenCalledWith(
-      'https://upload.example.com/object',
-      {
-        method: 'PUT',
-        headers: {
-          'Content-Type': 'image/png'
-        },
-        body: file
-      }
-    )
+    expect(fetch).toHaveBeenCalledWith('https://upload.example.com/object', {
+      method: 'PUT',
+      headers: {
+        'Content-Type': 'image/png'
+      },
+      body: file
+    })
   })
 
   it('creates profile with workspace_id JSON body', async () => {

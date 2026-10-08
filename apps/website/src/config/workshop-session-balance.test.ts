@@ -67,7 +67,7 @@ interface Sent {
 
 function recordingFetch(response: () => Response) {
   const sent: Sent[] = []
-  const fetchImpl = vi.fn<typeof fetch>(async (input, init = {}) => {
+  const fetchImpl: typeof fetch = async (input, init = {}) => {
     sent.push({
       url: String(input),
       headers: Object.fromEntries(
@@ -79,7 +79,7 @@ function recordingFetch(response: () => Response) {
       ...(init.credentials ? { credentials: init.credentials } : {})
     })
     return response()
-  })
+  }
   return { sent, fetchImpl }
 }
 
@@ -231,9 +231,7 @@ describe('useWorkshopSessionBalance', () => {
   })
 
   it('clears the balance on sign-out', async () => {
-    vi.mocked(fetch).mockImplementation(
-      recordingFetch(() => answer(200, BALANCE_BODY)).fetchImpl
-    )
+    vi.mocked(fetch).mockImplementation(async () => answer(200, BALANCE_BODY))
     const session = shallowRef<WebSession | undefined>(SESSION)
     const balance = await mountOn(session)
     await vi.waitFor(() => expect(balance.value.status).toBe('ok'))
@@ -250,7 +248,7 @@ describe('useWorkshopSessionBalance', () => {
       answer(200, BALANCE_BODY)
     ]
     vi.mocked(fetch).mockImplementation(
-      recordingFetch(() => answers.shift() ?? answer(500, {})).fetchImpl
+      async () => answers.shift() ?? answer(500, {})
     )
     const session = shallowRef<WebSession | undefined>(SESSION)
     const balance = await mountOn(session)

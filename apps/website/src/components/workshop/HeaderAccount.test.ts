@@ -729,13 +729,11 @@ describe('HeaderAccount workspace switcher', () => {
 
   it('retries a failed workspace list without closing the submenu', async () => {
     signIn()
-    const fetchWorkspaces = vi
-      .fn()
+    vi.mocked(fetch)
       .mockResolvedValueOnce(new Response('', { status: 500 }))
       .mockResolvedValueOnce(
         new Response(JSON.stringify(listing), { status: 200 })
       )
-    vi.mocked(fetch).mockImplementation(fetchWorkspaces)
     const user = userEvent.setup()
     render(HeaderAccount)
 
@@ -749,7 +747,7 @@ describe('HeaderAccount workspace switcher', () => {
     await user.keyboard('{Enter}')
 
     expect(await screen.findByTestId('account-workspace-team-1')).toBeTruthy()
-    expect(fetchWorkspaces).toHaveBeenCalledTimes(2)
+    expect(fetch).toHaveBeenCalledTimes(2)
   })
 
   it('reloads the workspace list when the session scope changes', async () => {
@@ -767,8 +765,7 @@ describe('HeaderAccount workspace switcher', () => {
         }
       ]
     }
-    const fetchWorkspaces = vi
-      .fn()
+    vi.mocked(fetch)
       .mockImplementationOnce(
         () =>
           new Promise<Response>((resolve) => {
@@ -778,7 +775,6 @@ describe('HeaderAccount workspace switcher', () => {
       .mockResolvedValueOnce(
         new Response(JSON.stringify(replacement), { status: 200 })
       )
-    vi.mocked(fetch).mockImplementation(fetchWorkspaces)
     const user = userEvent.setup()
     render(HeaderAccount)
 
@@ -797,7 +793,7 @@ describe('HeaderAccount workspace switcher', () => {
       email: 'other@b.co',
       displayName: 'Other'
     }
-    await vi.waitFor(() => expect(fetchWorkspaces).toHaveBeenCalledTimes(2))
+    await vi.waitFor(() => expect(fetch).toHaveBeenCalledTimes(2))
     resolveList(new Response(JSON.stringify(listing), { status: 200 }))
 
     expect(await screen.findByTestId('account-workspace-other')).toBeTruthy()

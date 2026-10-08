@@ -1,3 +1,4 @@
+import { fetchRequests, respondToFetch } from '@comfyorg/test-utils/fetch'
 import { fromPartial } from '@total-typescript/shoehorn'
 
 import type {
@@ -2608,7 +2609,7 @@ describe('AgentPanelRoot attach flow', () => {
 
   it('uploads a picked file, stages its ref, and forwards it on the next send', async () => {
     const messageBodies: unknown[] = []
-    const fetchMock = vi.fn(
+    vi.mocked(fetch).mockImplementation(
       async (input: RequestInfo | URL, init?: RequestInit) => {
         const url = String(input)
 
@@ -2626,7 +2627,6 @@ describe('AgentPanelRoot attach flow', () => {
         return json(202, { thread_id: 'th-1', message_id: 'm-1' })
       }
     )
-    vi.mocked(fetch).mockImplementation(fetchMock)
 
     renderWithSelectedTarget()
 
@@ -3447,7 +3447,7 @@ describe('AgentPanelRoot attach flow', () => {
     'stages an existing Media-card $mime reference without uploading',
     async ({ mime, filename }) => {
       const messageBodies: unknown[] = []
-      const fetchSpy = vi.fn(
+      vi.mocked(fetch).mockImplementation(
         async (input: RequestInfo | URL, init?: RequestInit) => {
           const url = String(input)
           if (init?.method === 'POST' && url.includes('/messages')) {
@@ -3460,7 +3460,6 @@ describe('AgentPanelRoot attach flow', () => {
           })
         }
       )
-      vi.mocked(fetch).mockImplementation(fetchSpy)
       renderWithSelectedTarget()
       await nextTick()
       telemetry.trackAgentAttachButtonClicked.mockClear()
@@ -3509,11 +3508,7 @@ describe('AgentPanelRoot attach flow', () => {
 
       expect(messageBodies).toHaveLength(1)
       expect(messageBodies[0]).toMatchObject({ attachments: [ref] })
-      expect(
-        fetchSpy.mock.calls.some(([url]) =>
-          /\/api\/(view|upload\/image)/.test(String(url))
-        )
-      ).toBe(false)
+      expect(fetchRequests(/\/api\/(view|upload\/image)/)).toEqual([])
     }
   )
 
@@ -3836,7 +3831,7 @@ describe('AgentPanelRoot attach flow', () => {
 
   it('shows an uploading chip and blocks send until the upload settles', async () => {
     let settleUpload: () => void = () => {}
-    const fetchMock = vi.fn(async (input: RequestInfo | URL) => {
+    vi.mocked(fetch).mockImplementation(async (input: RequestInfo | URL) => {
       const url = String(input)
 
       if (url.endsWith('/api/upload/image')) {
@@ -3854,7 +3849,6 @@ describe('AgentPanelRoot attach flow', () => {
       }
       return json(202, { thread_id: 'th-1', message_id: 'm-1' })
     })
-    vi.mocked(fetch).mockImplementation(fetchMock)
 
     renderWithSelectedTarget()
 
@@ -4411,7 +4405,7 @@ describe('AgentPanelRoot history', () => {
   })
 
   it('populates Chat History from the server thread list on mount', async () => {
-    const fetchMock = vi.fn(async (input: RequestInfo | URL) => {
+    vi.mocked(fetch).mockImplementation(async (input: RequestInfo | URL) => {
       const url = String(input)
 
       if (url.endsWith('/api/agent/threads')) {
@@ -4439,7 +4433,6 @@ describe('AgentPanelRoot history', () => {
         headers: { 'Content-Type': 'application/json' }
       })
     })
-    vi.mocked(fetch).mockImplementation(fetchMock)
 
     renderWithSelectedTarget()
 
@@ -4837,7 +4830,7 @@ describe('AgentPanelRoot run approval telemetry', () => {
     const answerResponse = new Promise<Response>((resolve) => {
       resolveAnswer = resolve
     })
-    const fetchMock = vi.fn(
+    vi.mocked(fetch).mockImplementation(
       async (input: RequestInfo | URL, init?: RequestInit) => {
         const url = String(input)
 
@@ -4857,7 +4850,6 @@ describe('AgentPanelRoot run approval telemetry', () => {
         return json(200, {})
       }
     )
-    vi.mocked(fetch).mockImplementation(fetchMock)
     telemetry.trackAgentRunApprovalShown.mockClear()
     telemetry.trackAgentRunApprovalResolved.mockClear()
     let currentTime = 1_000
@@ -4925,12 +4917,7 @@ describe('AgentPanelRoot run approval telemetry', () => {
     currentTime = 1_275
     await userEvent.click(screen.getByRole('button', { name: 'Run' }))
     await vi.waitFor(() =>
-      expect(
-        fetchMock.mock.calls.filter(
-          ([url, init]) =>
-            String(url).includes('/asks/') && init?.method === 'POST'
-        )
-      ).toHaveLength(1)
+      expect(fetchRequests({ method: 'POST', url: /\/asks\// })).toHaveLength(1)
     )
     ws.emit('agent_ask_resolved', {
       thread_id: 'th-1',
@@ -4947,12 +4934,7 @@ describe('AgentPanelRoot run approval telemetry', () => {
         [{ decision: 'run', time_to_decide_ms: 275 }]
       ])
     )
-    expect(
-      fetchMock.mock.calls.filter(
-        ([url, init]) =>
-          String(url).includes('/asks/') && init?.method === 'POST'
-      )
-    ).toHaveLength(1)
+    expect(fetchRequests({ method: 'POST', url: /\/asks\// })).toHaveLength(1)
     now.mockRestore()
   })
 })
@@ -4994,14 +4976,9 @@ describe('AgentPanelRoot lifecycle', () => {
     const tab = addTab('workflows/current.json')
     workflowStore.activeWorkflow = tab
     useAgentWorkflowTabBindingStore().bind('wf-42', tab.path)
-    const urls: string[] = []
-    const fetchMock = vi.fn(async (input: RequestInfo | URL) => {
-      const url = String(input)
-
-      urls.push(url)
-      return json(202, { thread_id: 'th-1', message_id: 'm-1' })
-    })
-    vi.mocked(fetch).mockImplementation(fetchMock)
+    respondToFetch({}, () =>
+      json(202, { thread_id: 'th-1', message_id: 'm-1' })
+    )
 
     const { unmount } = renderWithSelectedTarget()
 
@@ -5010,7 +4987,7 @@ describe('AgentPanelRoot lifecycle', () => {
     unmount()
     await new Promise((resolve) => setTimeout(resolve))
 
-    expect(urls.some((url) => url.endsWith('/cancel'))).toBe(false)
+    expect(fetchRequests(/\/cancel$/)).toEqual([])
   })
 
   it('releases the minimap graph-activity layer even when another teardown step throws', () => {
@@ -5713,17 +5690,13 @@ describe('AgentPanelRoot workflow binding', () => {
       references: [{ path: 'workflows/other.json', workflowId: 'wf-other' }]
     })
     const bodies = mockMessagesEndpoint('wf-42')
-    const defaultFetch = vi.mocked(fetch).getMockImplementation()
-    assert.exists(defaultFetch)
     let finishSend = (_response: Response) => {}
     const firstSend = new Promise<Response>((resolve) => {
       finishSend = resolve
     })
-    vi.mocked(fetch).mockImplementation((input, init) =>
-      String(input).includes('/messages') && init?.method === 'POST'
-        ? firstSend
-        : defaultFetch(input, init)
-    )
+    respondToFetch({ method: 'POST', url: /\/messages/ }, () => firstSend, {
+      times: 1
+    })
     const panel = render(AgentPanelRoot, { global: { plugins: [i18n] } })
     await userEvent.click(screen.getByRole('textbox'))
     await userEvent.paste('keep my target')
@@ -5742,7 +5715,6 @@ describe('AgentPanelRoot workflow binding', () => {
     panel.unmount()
     render(AgentPanelRoot, { global: { plugins: [i18n] } })
     expect(useAgentPanelStore().selectedWorkflow?.path).toBe(target.path)
-    vi.mocked(fetch).mockImplementation(defaultFetch)
     await userEvent.click(screen.getByRole('button', { name: 'Send' }))
     await waitFor(() => expect(bodies).toHaveLength(1))
     expect(bodies[0]).toMatchObject({ workflow_id: 'wf-42' })
@@ -6057,17 +6029,11 @@ describe('AgentPanelRoot workflow binding', () => {
     })
     mockMessagesEndpoint('wf-other', [{ id: 'wf-other', name: 'other' }])
     localStorage.setItem(StorageKeys.agentThread('personal'), 'th-restored')
-    const defaultFetch = vi.mocked(fetch).getMockImplementation()
-    assert.exists(defaultFetch)
     let finishHistory = (_response: Response) => {}
     const history = new Promise<Response>((resolve) => {
       finishHistory = resolve
     })
-    vi.mocked(fetch).mockImplementation((input, init) =>
-      String(input).includes('/messages') && init?.method !== 'POST'
-        ? history
-        : defaultFetch(input, init)
-    )
+    respondToFetch({ method: 'GET', url: /\/messages/ }, () => history)
     render(AgentPanelRoot, { global: { plugins: [i18n] } })
     const panel = useAgentPanelStore()
     expect(panel.selectedWorkflow).toBeNull()
@@ -6120,8 +6086,6 @@ describe('AgentPanelRoot workflow binding', () => {
       )
       if (restored) {
         useAgentConversationStore().setThreadId('th-1')
-        const originalFetch = vi.mocked(fetch).getMockImplementation()
-        assert.exists(originalFetch)
         const messages: AgentMessages = [
           {
             id: 'earlier',
@@ -6134,11 +6098,7 @@ describe('AgentPanelRoot workflow binding', () => {
             content: { text: 'Keep working on this workflow' }
           }
         ]
-        vi.mocked(fetch).mockImplementation((input, init) =>
-          String(input).includes('/messages')
-            ? Promise.resolve(json(200, messages))
-            : originalFetch(input, init)
-        )
+        respondToFetch(/\/messages/, () => json(200, messages))
       }
       renderWithSelectedTarget()
       if (restored) await screen.findByTestId('user-message-bubble')
@@ -6148,15 +6108,9 @@ describe('AgentPanelRoot workflow binding', () => {
       if (!targetVisible)
         workflowStore.activeWorkflow = addTab('workflows/other.json')
 
-      const originalFetch = vi.mocked(fetch).getMockImplementation()
-      assert.exists(originalFetch)
-      const blockedFetch = vi.fn(() => new Promise<Response>(() => {}))
-      vi.mocked(fetch).mockImplementation((input, init) =>
-        String(input).includes('/messages') ||
-        String(input).includes('/workflows')
-          ? blockedFetch()
-          : originalFetch(input, init)
-      )
+      const blockedRoute = /\/(messages|workflows)/
+      const requestsBeforeSwitch = fetchRequests(blockedRoute).length
+      respondToFetch(blockedRoute, () => new Promise<Response>(() => {}))
       let finishOpening = () => {}
       const opening = new Promise<void>((resolve) => {
         finishOpening = resolve
@@ -6199,7 +6153,7 @@ describe('AgentPanelRoot workflow binding', () => {
       expect(useAgentPanelStore().selectedWorkflow?.path).toBe(target.path)
       expect(useAgentChatHistoryStore().activeId).toBe('th-1')
       expect(useToastStore().messagesToAdd).toHaveLength(0)
-      expect(blockedFetch).not.toHaveBeenCalled()
+      expect(fetchRequests(blockedRoute)).toHaveLength(requestsBeforeSwitch)
     }
   )
 
@@ -6366,8 +6320,6 @@ describe('AgentPanelRoot workflow binding', () => {
     const pendingHistory = new Promise<void>((resolve) => {
       finishHistory = resolve
     })
-    const originalFetch = vi.mocked(fetch).getMockImplementation()
-    assert.exists(originalFetch)
     const messages: AgentMessages = [
       {
         id: 'later',
@@ -6380,12 +6332,9 @@ describe('AgentPanelRoot workflow binding', () => {
         content: { text: 'Server update while panel closed' }
       }
     ]
-    vi.mocked(fetch).mockImplementation(async (input, init) => {
-      if (String(input).includes('/messages')) {
-        await pendingHistory
-        return json(200, messages)
-      }
-      return originalFetch(input, init)
+    respondToFetch(/\/messages/, async () => {
+      await pendingHistory
+      return json(200, messages)
     })
     render(AgentPanelRoot, { global: { plugins: [i18n] } })
     await userEvent.click(
@@ -6417,12 +6366,11 @@ describe('AgentPanelRoot workflow binding', () => {
     )
     const originalFetch = vi.mocked(fetch).getMockImplementation()
     assert.exists(originalFetch)
-    const refreshCloud = vi.fn(() => new Promise<Response>(() => {}))
     let identitiesFetched = false
     vi.mocked(fetch).mockImplementation((input, init) => {
       const url = String(input)
       if (url.includes('/workflows')) {
-        if (identitiesFetched) return refreshCloud()
+        if (identitiesFetched) return new Promise<Response>(() => {})
         identitiesFetched = true
       }
       if (url.includes('/messages')) {
@@ -6461,7 +6409,7 @@ describe('AgentPanelRoot workflow binding', () => {
 
     expect(workflowStore.activeWorkflow?.path).toBe(other.path)
     expect(useAgentPanelStore().selectedWorkflow?.path).toBe(other.path)
-    expect(refreshCloud).not.toHaveBeenCalled()
+    expect(fetchRequests(/\/workflows/).length).toBeLessThanOrEqual(1)
     expect(useToastStore().messagesToAdd).toHaveLength(0)
   })
 

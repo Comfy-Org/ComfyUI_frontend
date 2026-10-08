@@ -78,8 +78,7 @@ describe('Router output MIME discovery', () => {
   )
 
   it('preserves raster URLs, downloads known SVG, and never requests unsafe URLs', async () => {
-    const fetch = vi.fn(async () => new Response('<svg/>'))
-    vi.mocked(globalThis.fetch).mockImplementation(fetch)
+    vi.mocked(fetch).mockResolvedValueOnce(new Response('<svg/>'))
     const outputs = await parseRouterResponse(
       contract,
       Response.json({

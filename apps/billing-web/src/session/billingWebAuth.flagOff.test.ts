@@ -8,6 +8,7 @@ import { render, screen } from '@testing-library/vue'
 import { createMemoryHistory } from 'vue-router'
 
 import type { BillingTelemetryEvent } from '@comfyorg/account-core/billing'
+import { respondToFetch } from '@comfyorg/test-utils/fetch'
 
 import type * as ControllerModule from '@/auth/useSignInController'
 import type { SignInPort } from '@/auth/useSignInController'
@@ -86,7 +87,7 @@ function recordingFetch(
   perUser: Record<string, unknown>
 ) {
   const sent: SentRequest[] = []
-  const fetchImpl = vi.fn<typeof fetch>(async (input, init = {}) => {
+  const fetchImpl: typeof fetch = async (input, init = {}) => {
     const url = String(input)
     sent.push({
       method: init.method ?? 'GET',
@@ -107,7 +108,7 @@ function recordingFetch(
         ? MINTED
         : {}
     return new Response(JSON.stringify(body))
-  })
+  }
   return { sent, fetchImpl }
 }
 
@@ -336,10 +337,12 @@ describe('billing-web with unified_web_session off, as a funnel', () => {
   })
 
   it('reports a refused mint as sign-in required and failed with the refusal’s code', async () => {
-    vi.mocked(fetch).mockImplementation(async (input) =>
-      String(input).endsWith('/api/features')
-        ? new Response(JSON.stringify({ firebase_config: FIREBASE_CONFIG }))
-        : new Response('{}', { status: 403 })
+    respondToFetch(`${CLOUD}/api/features`, () =>
+      Response.json({ firebase_config: FIREBASE_CONFIG })
+    )
+    respondToFetch(
+      `${CLOUD}/api/auth/token`,
+      () => new Response('{}', { status: 403 })
     )
 
     await signInThenCallBilling(

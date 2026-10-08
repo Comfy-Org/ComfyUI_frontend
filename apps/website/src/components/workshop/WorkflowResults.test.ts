@@ -111,10 +111,9 @@ describe('WorkflowResults', () => {
     async (refreshed) => {
       const f = await mountResult()
       const user = userEvent.setup()
-      const download = vi
-        .fn<typeof globalThis.fetch>()
-        .mockResolvedValue(new Response(null, { status: 404 }))
-      vi.mocked(globalThis.fetch).mockImplementation(download)
+      vi.mocked(fetch).mockImplementation(
+        async () => new Response(null, { status: 404 })
+      )
       const open = vi.spyOn(window, 'open').mockReturnValue(null)
       const preview = screen.getByRole('img', { name: 'Output' })
       const original = preview.getAttribute('src')
@@ -124,7 +123,7 @@ describe('WorkflowResults', () => {
       await user.click(screen.getByRole('link', { name: 'Download' }))
       await screen.findByRole('link', { name: 'Refresh download link' })
       await waitFor(() => expect(f.fetch).toHaveBeenCalledTimes(3))
-      expect(download).toHaveBeenCalledWith(
+      expect(fetch).toHaveBeenCalledWith(
         original,
         expect.objectContaining({ credentials: 'omit' })
       )
@@ -159,11 +158,7 @@ describe('WorkflowResults', () => {
 
   it('keeps the direct download fallback when the browser cannot fetch the media', async () => {
     const f = await mountResult()
-    vi.mocked(globalThis.fetch).mockImplementation(
-      vi
-        .fn<typeof globalThis.fetch>()
-        .mockRejectedValue(new TypeError('Failed to fetch'))
-    )
+    vi.mocked(fetch).mockRejectedValue(new TypeError('Failed to fetch'))
     const open = vi.spyOn(window, 'open').mockReturnValue(null)
     const url = screen.getByRole('img', { name: 'Output' }).getAttribute('src')
     await userEvent

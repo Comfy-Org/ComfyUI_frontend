@@ -1,3 +1,4 @@
+import { fetchRequests } from '@comfyorg/test-utils/fetch'
 import { assert, beforeEach, describe, expect, it, vi } from 'vitest'
 
 import { workshopContract } from './workshop-contract-catalog'
@@ -63,12 +64,10 @@ function refusal(status: number, errorType: string, retryAfter?: string) {
 }
 
 function stubFetch(...responses: (Response | Error)[]) {
-  const calls = vi.fn<typeof fetch>()
   for (const response of responses)
-    if (response instanceof Error) calls.mockRejectedValueOnce(response)
-    else calls.mockResolvedValueOnce(response)
-  vi.mocked(fetch).mockImplementation(calls)
-  return calls
+    if (response instanceof Error)
+      vi.mocked(fetch).mockRejectedValueOnce(response)
+    else vi.mocked(fetch).mockResolvedValueOnce(response)
 }
 
 async function settle<T>(run: Promise<T>): Promise<T> {
@@ -106,8 +105,8 @@ async function withoutStaticAbortSignalHelpers<T>(
   }
 }
 
-function requestedUrls(calls: ReturnType<typeof stubFetch>) {
-  return calls.mock.calls.map(([url, init]) => `${init?.method} ${String(url)}`)
+function requestedUrls() {
+  return fetchRequests().map(({ method, url }) => `${method} ${url}`)
 }
 
 describe('queued Router delivery', () => {
@@ -117,7 +116,7 @@ describe('queued Router delivery', () => {
   })
 
   it('asks for saving in the address and leaves the provider body alone', async () => {
-    const calls = stubFetch(
+    stubFetch(
       Response.json(
         { request_id: REQUEST_ID, status: 'IN_QUEUE', comfy_save_asset: true },
         { status: 201 }
@@ -125,15 +124,15 @@ describe('queued Router delivery', () => {
       result()
     )
     await settle(runWorkshopRouter({ ...options(), comfy_save_asset: true }))
-    const [url, init] = calls.mock.calls[0]
-    expect(String(url)).toBe(`${SUBMIT_URL}?comfy_save_asset=true`)
-    expect(init?.body).toBe('{"prompt":"Private prompt"}')
+    const [submit] = fetchRequests()
+    expect(submit.url).toBe(`${SUBMIT_URL}?comfy_save_asset=true`)
+    expect(submit.body).toBe('{"prompt":"Private prompt"}')
   })
 
   // The request was admitted before the refusal was noticed, so the machine is
   // already running: throwing without stopping it would bill for nothing.
   it('cancels an admitted run whose save the router never acknowledged', async () => {
-    const calls = stubFetch(admitted(), Response.json({}, { status: 202 }))
+    stubFetch(admitted(), Response.json({}, { status: 202 }))
     const onRequestId = vi.fn()
     await expect(
       settle(
@@ -141,7 +140,7 @@ describe('queued Router delivery', () => {
       )
     ).rejects.toBeInstanceOf(WorkshopRouterError)
     expect(onRequestId).toHaveBeenLastCalledWith(REQUEST_ID)
-    expect(requestedUrls(calls)).toEqual([
+    expect(requestedUrls()).toEqual([
       `POST ${SUBMIT_URL}?comfy_save_asset=true`,
       `PUT ${RESULT_URL}/cancel`
     ])
@@ -151,7 +150,7 @@ describe('queued Router delivery', () => {
   // admitted. Handing that id out would let the page offer to leave running a
   // generation the Router never took.
   it('does not fall back to an unsaved synchronous generation when saving is refused', async () => {
-    const calls = stubFetch(refusal(403, 'not_enabled'))
+    stubFetch(refusal(403, 'not_enabled'))
     const onRequestId = vi.fn()
     await expect(
       settle(
@@ -159,45 +158,38 @@ describe('queued Router delivery', () => {
       )
     ).rejects.toBeInstanceOf(WorkshopRouterError)
     expect(onRequestId).not.toHaveBeenCalled()
-    expect(calls).toHaveBeenCalledTimes(1)
-    expect(String(calls.mock.calls[0][0])).toBe(
-      `${SUBMIT_URL}?comfy_save_asset=true`
-    )
+    expect(fetch).toHaveBeenCalledTimes(1)
+    expect(fetchRequests()[0].url).toBe(`${SUBMIT_URL}?comfy_save_asset=true`)
   })
 
   it('cancels the admitted generation when its page goes away for any other reason', async () => {
     const controller = new AbortController()
-    const calls = vi.fn<typeof fetch>(async (_, init) => {
+    vi.mocked(fetch).mockImplementation(async (_, init) => {
       if (init?.method === 'POST') return admitted()
       controller.abort()
       throw controller.signal.reason
     })
-    vi.mocked(fetch).mockImplementation(calls)
     await expect(
       settle(runWorkshopRouter(options(controller.signal)))
     ).rejects.toMatchObject({ name: 'AbortError' })
-    expect(requestedUrls(calls).at(-1)).toBe(`PUT ${RESULT_URL}/cancel`)
+    expect(requestedUrls().at(-1)).toBe(`PUT ${RESULT_URL}/cancel`)
   })
 
   it('leaves the admitted generation running only when told to leave it running', async () => {
     const controller = new AbortController()
-    const calls = vi.fn<typeof fetch>(async (_, init) => {
+    vi.mocked(fetch).mockImplementation(async (_, init) => {
       if (init?.method === 'POST') return admitted()
       controller.abort(WORKSHOP_LEAVE_RUNNING)
       throw controller.signal.reason
     })
-    vi.mocked(fetch).mockImplementation(calls)
     await expect(
       settle(runWorkshopRouter(options(controller.signal)))
     ).rejects.toMatchObject({ name: 'AbortError' })
-    expect(requestedUrls(calls)).toEqual([
-      `POST ${SUBMIT_URL}`,
-      `GET ${RESULT_URL}`
-    ])
+    expect(requestedUrls()).toEqual([`POST ${SUBMIT_URL}`, `GET ${RESULT_URL}`])
   })
 
   it('submits once, polls until the run finishes, and reports the durable request id', async () => {
-    const calls = stubFetch(admitted(), pending(), pending(), result())
+    stubFetch(admitted(), pending(), pending(), result())
     const onRequestId = vi.fn()
     const rendered = await settle(
       runWorkshopRouter({ ...options(), onRequestId })
@@ -205,21 +197,19 @@ describe('queued Router delivery', () => {
     expect(rendered.outputs[0].url).toBe('https://media.example/result.png')
     expect(rendered.requestId).toBe(REQUEST_ID)
     expect(onRequestId).toHaveBeenLastCalledWith(REQUEST_ID)
-    expect(requestedUrls(calls)).toEqual([
+    expect(requestedUrls()).toEqual([
       `POST ${SUBMIT_URL}`,
       `GET ${RESULT_URL}`,
       `GET ${RESULT_URL}`,
       `GET ${RESULT_URL}`
     ])
-    const submit = calls.mock.calls[0][1]
-    expect(new Headers(submit?.headers).get('Idempotency-Key')).toBe(
-      'logical-run'
-    )
-    expect(submit?.body).toBe('{"prompt":"Private prompt"}')
+    const [submit] = fetchRequests()
+    expect(submit.headers.get('Idempotency-Key')).toBe('logical-run')
+    expect(submit.body).toBe('{"prompt":"Private prompt"}')
   })
 
   it('runs when Safari lacks the static AbortSignal helpers', async () => {
-    const calls = stubFetch(admitted(), result())
+    stubFetch(admitted(), result())
     const controller = new AbortController()
 
     const rendered = await withoutStaticAbortSignalHelpers(() =>
@@ -227,15 +217,17 @@ describe('queued Router delivery', () => {
     )
 
     expect(rendered.outputs[0].url).toBe('https://media.example/result.png')
-    expect(calls).toHaveBeenCalledTimes(2)
+    expect(fetch).toHaveBeenCalledTimes(2)
     expect(
-      calls.mock.calls.every(([, init]) => init?.signal?.aborted === true)
+      vi
+        .mocked(fetch)
+        .mock.calls.every(([, init]) => init?.signal?.aborted === true)
     ).toBe(true)
     expect(controller.signal.aborted).toBe(false)
   })
 
   it('keeps collecting the same run when the connection drops mid-generation', async () => {
-    const calls = stubFetch(
+    stubFetch(
       admitted(),
       pending(),
       new TypeError('Failed to fetch'),
@@ -246,7 +238,7 @@ describe('queued Router delivery', () => {
     const rendered = await settle(runWorkshopRouter(options()))
     expect(rendered.requestId).toBe(REQUEST_ID)
     expect(
-      requestedUrls(calls).filter((request) => request.startsWith('POST'))
+      requestedUrls().filter((request) => request.startsWith('POST'))
     ).toHaveLength(1)
   })
 
@@ -291,19 +283,13 @@ describe('queued Router delivery', () => {
   })
 
   it('resubmits an interrupted submit with the identical key and body', async () => {
-    const calls = stubFetch(
-      new TypeError('Failed to fetch'),
-      admitted(),
-      result()
-    )
+    stubFetch(new TypeError('Failed to fetch'), admitted(), result())
     await settle(runWorkshopRouter(options()))
-    const submits = calls.mock.calls.slice(0, 2)
-    for (const [url, init] of submits) {
-      expect(String(url)).toBe(SUBMIT_URL)
-      expect(new Headers(init?.headers).get('Idempotency-Key')).toBe(
-        'logical-run'
-      )
-      expect(init?.body).toBe('{"prompt":"Private prompt"}')
+    const submits = fetchRequests().slice(0, 2)
+    for (const { url, headers, body } of submits) {
+      expect(url).toBe(SUBMIT_URL)
+      expect(headers.get('Idempotency-Key')).toBe('logical-run')
+      expect(body).toBe('{"prompt":"Private prompt"}')
     }
   })
 
@@ -316,10 +302,10 @@ describe('queued Router delivery', () => {
       }),
       { headers: { 'Content-Type': 'application/json' } }
     )
-    const calls = stubFetch(admitted(), cutOff, result())
+    stubFetch(admitted(), cutOff, result())
     const rendered = await settle(runWorkshopRouter(options()))
     expect(rendered.outputs[0].url).toBe('https://media.example/result.png')
-    expect(requestedUrls(calls)).toEqual([
+    expect(requestedUrls()).toEqual([
       `POST ${SUBMIT_URL}`,
       `GET ${RESULT_URL}`,
       `GET ${RESULT_URL}`
@@ -327,11 +313,9 @@ describe('queued Router delivery', () => {
   })
 
   it('gives up as a network failure that still names the run once the connection stays down', async () => {
-    const calls = vi
-      .fn<typeof fetch>()
+    vi.mocked(fetch)
       .mockResolvedValueOnce(admitted())
       .mockRejectedValue(new TypeError('Failed to fetch'))
-    vi.mocked(fetch).mockImplementation(calls)
     await expect(settle(runWorkshopRouter(options()))).rejects.toMatchObject({
       reason: 'network',
       requestId: REQUEST_ID,
@@ -374,12 +358,12 @@ describe('queued Router delivery', () => {
   ] as const)(
     'reports a %i %s refusal at submit without polling',
     async ([status, errorType, reason]) => {
-      const calls = stubFetch(refusal(status, errorType))
+      stubFetch(refusal(status, errorType))
       await expect(settle(runWorkshopRouter(options()))).rejects.toMatchObject({
         reason,
         response: { status, errorType }
       })
-      expect(calls).toHaveBeenCalledOnce()
+      expect(fetch).toHaveBeenCalledOnce()
     }
   )
 
@@ -572,7 +556,7 @@ describe('queued Router delivery', () => {
   })
 
   it('falls back to the synchronous route when queued delivery is not enabled for the caller', async () => {
-    const calls = stubFetch(refusal(403, 'not_enabled'), result())
+    stubFetch(refusal(403, 'not_enabled'), result())
     const tokens = ['queued-token', 'synchronous-token']
     const rendered = await settle(
       runWorkshopRouter({
@@ -582,20 +566,19 @@ describe('queued Router delivery', () => {
       })
     )
     expect(rendered.outputs[0].url).toBe('https://media.example/result.png')
-    expect(requestedUrls(calls)).toEqual([
+    expect(requestedUrls()).toEqual([
       `POST ${SUBMIT_URL}`,
       `POST ${WORKSHOP_ROUTER_BASE_URL}/v2/models/${MODEL}`
     ])
-    expect(
-      new Headers(calls.mock.calls[1][1]?.headers).get('Idempotency-Key')
-    ).toBe('logical-run')
-    expect(
-      new Headers(calls.mock.calls[1][1]?.headers).get('Authorization')
-    ).toBe('Bearer synchronous-token')
+    const synchronous = fetchRequests()[1]
+    expect(synchronous.headers.get('Idempotency-Key')).toBe('logical-run')
+    expect(synchronous.headers.get('Authorization')).toBe(
+      'Bearer synchronous-token'
+    )
   })
 
   it('uses a fresh credential for every request of a long run', async () => {
-    const calls = stubFetch(admitted(), pending(), result())
+    stubFetch(admitted(), pending(), result())
     const tokens = ['first', 'second', 'third']
     await settle(
       runWorkshopRouter({
@@ -604,21 +587,18 @@ describe('queued Router delivery', () => {
       })
     )
     expect(
-      calls.mock.calls.map(([, init]) =>
-        new Headers(init?.headers).get('Authorization')
-      )
+      fetchRequests().map(({ headers }) => headers.get('Authorization'))
     ).toEqual(['Bearer first', 'Bearer second', 'Bearer third'])
   })
 
   it('asks Router to cancel the admitted run with the latest credential', async () => {
     const controller = new AbortController()
-    const calls = vi.fn<typeof fetch>(async (_, init) => {
+    vi.mocked(fetch).mockImplementation(async (_, init) => {
       if (init?.method === 'POST') return admitted()
       if (init?.method === 'PUT') return Response.json({}, { status: 202 })
       controller.abort()
       throw controller.signal.reason
     })
-    vi.mocked(fetch).mockImplementation(calls)
     const tokens = ['submit-token', 'poll-token']
     await expect(
       settle(
@@ -628,20 +608,20 @@ describe('queued Router delivery', () => {
         })
       )
     ).rejects.toMatchObject({ name: 'AbortError' })
-    expect(requestedUrls(calls).at(-1)).toBe(`PUT ${RESULT_URL}/cancel`)
-    expect(
-      new Headers(calls.mock.calls.at(-1)?.[1]?.headers).get('Authorization')
-    ).toBe('Bearer poll-token')
+    expect(requestedUrls().at(-1)).toBe(`PUT ${RESULT_URL}/cancel`)
+    expect(fetchRequests().at(-1)?.headers.get('Authorization')).toBe(
+      'Bearer poll-token'
+    )
   })
 
   it.for([
     ['a path-shaped request id', '{"request_id":"../other"}'],
     ['a body that is not JSON', '<html>']
   ])('rejects a submit answered with %s', async ([, body]) => {
-    const calls = stubFetch(new Response(body, { status: 201 }))
+    stubFetch(new Response(body, { status: 201 }))
     await expect(settle(runWorkshopRouter(options()))).rejects.toMatchObject({
       reason: 'response'
     })
-    expect(calls).toHaveBeenCalledOnce()
+    expect(fetch).toHaveBeenCalledOnce()
   })
 })
