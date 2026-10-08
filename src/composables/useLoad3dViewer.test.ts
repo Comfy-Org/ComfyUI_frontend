@@ -844,7 +844,6 @@ describe('useLoad3dViewer', () => {
     })
 
     it('warns when loading another model into the standalone viewer fails', async () => {
-      vi.spyOn(console, 'error').mockImplementation(() => {})
       const viewer = useLoad3dViewer()
       const containerRef = document.createElement('div')
       await viewer.initializeStandaloneViewer(containerRef, 'model1.glb')

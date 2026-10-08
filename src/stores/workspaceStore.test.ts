@@ -71,8 +71,6 @@ describe('extension toast API', () => {
   })
 
   it('legacy add logs an unsupported severity instead of throwing', () => {
-    const consoleError = vi.spyOn(console, 'error').mockImplementation(() => {})
-
     useWorkspaceStore().toast.add(
       fromAny<ToastMessageOptions, unknown>({
         severity: 'warning',
@@ -81,7 +79,7 @@ describe('extension toast API', () => {
     )
 
     expect(useToast().toasts).toEqual([])
-    expect(consoleError).toHaveBeenCalledWith(
+    expect(console.error).toHaveBeenCalledWith(
       expect.stringContaining('"warning"')
     )
   })

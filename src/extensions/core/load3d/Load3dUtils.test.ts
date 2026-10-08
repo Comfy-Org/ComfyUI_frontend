@@ -48,7 +48,6 @@ describe('Load3dUtils upload failures', () => {
   })
 
   it('warns with a localized title when the model upload throws', async () => {
-    vi.spyOn(console, 'error').mockImplementation(() => {})
     vi.mocked(api.fetchApi).mockRejectedValue(new Error('Network Error'))
 
     await expect(
