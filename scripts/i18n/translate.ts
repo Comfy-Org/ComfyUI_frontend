@@ -1,3 +1,4 @@
+import { Semaphore } from 'es-toolkit'
 import OpenAI from 'openai'
 import { zodTextFormat } from 'openai/helpers/zod'
 import type {
@@ -285,6 +286,7 @@ function parseTranslationOutput(
 interface OpenAiTranslatorOptions extends PromptConfig {
   apiKey: string
   model: string
+  requestConcurrency: number
   reasoningEffort: TranslationPipelineConfig['reasoningEffort']
   maxTruncationSplitDepth: number
   fetchFn?: typeof fetch
@@ -301,8 +303,27 @@ export function createOpenAiTranslator(
     timeout: options.requestTimeoutMs ?? defaultRequestTimeoutMs,
     maxRetries: maxNetworkRetries
   })
+  const requests = new Semaphore(options.requestConcurrency)
+  let firstFailure: { reason: unknown } | undefined
 
   async function requestTranslation(
+    locale: OutputLocale,
+    items: TranslationItem[],
+    schema: z.ZodType<Record<string, string>>
+  ): Promise<TranslationAttempt> {
+    await requests.acquire()
+    try {
+      if (firstFailure) throw firstFailure.reason
+      return await sendTranslation(locale, items, schema)
+    } catch (error) {
+      firstFailure ??= { reason: error }
+      throw error
+    } finally {
+      requests.release()
+    }
+  }
+
+  async function sendTranslation(
     locale: OutputLocale,
     items: TranslationItem[],
     schema: z.ZodType<Record<string, string>>
@@ -360,14 +381,17 @@ export function createOpenAiTranslator(
         deferralReason = `${items.length} strings were still truncated (max_output_tokens) at maxTruncationSplitDepth ${options.maxTruncationSplitDepth}`
         break
       }
-      const merged: Record<string, string> = {}
-      for (const chunk of splitTruncatedBatch(items)) {
-        Object.assign(
-          merged,
-          await translateBatch(locale, chunk, splitDepth + 1)
+      const settled = await Promise.allSettled(
+        splitTruncatedBatch(items).map((chunk) =>
+          translateBatch(locale, chunk, splitDepth + 1)
         )
-      }
-      return merged
+      )
+      return Object.fromEntries(
+        settled.flatMap((result) => {
+          if (result.status === 'rejected') throw result.reason
+          return Object.entries(result.value)
+        })
+      )
     }
     console.warn(
       `${locale.code}: deferring ${items.length} strings for retry: ${deferralReason}`

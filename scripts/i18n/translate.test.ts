@@ -1,5 +1,3 @@
-import { setImmediate } from 'node:timers/promises'
-
 import type { Response as OpenAiResponse } from 'openai/resources/responses/responses'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 
@@ -30,6 +28,15 @@ const docsLink: TranslationItem = {
   context: 'index.json: docs.cta',
   source: 'Read the <a href="/docs">guide</a> first',
   preserve: ['</a>', '<a href="/docs">']
+}
+
+function deferred<T>() {
+  let resolve: ((value: T) => void) | undefined
+  const promise = new Promise<T>((complete) => {
+    resolve = complete
+  })
+  if (!resolve) throw new Error('Promise executor did not run')
+  return { promise, resolve }
 }
 
 describe('translateLocaleItems', () => {
@@ -215,20 +222,33 @@ describe('translateLocaleItems', () => {
 })
 
 describe('mapWithConcurrency', () => {
-  it('stops dispatching new tasks after a failure', async () => {
+  beforeEach(() => {
+    vi.useFakeTimers()
+    return () => vi.useRealTimers()
+  })
+
+  it('stops dispatching after failure and settles in-flight tasks before rejecting', async () => {
     const started: number[] = []
-    let inFlightTaskSettled = false
-    await expect(
-      mapWithConcurrency([1, 2, 3, 4], 2, async (item) => {
-        started.push(item)
-        if (item === 1) throw new Error('boom')
-        await setImmediate()
-        inFlightTaskSettled = true
-        return item
-      })
-    ).rejects.toThrow('boom')
+    const events: string[] = []
+    const inFlight = deferred<void>()
+    const result = mapWithConcurrency([1, 2, 3, 4], 2, async (item) => {
+      started.push(item)
+      if (item === 1) throw new Error('boom')
+      await inFlight.promise
+      events.push('settled')
+      return item
+    })
+    const rejection = result.catch((error: unknown) => {
+      events.push('rejected')
+      return error
+    })
+
+    await vi.advanceTimersByTimeAsync(0)
     expect(started).toEqual([1, 2])
-    expect(inFlightTaskSettled).toBe(true)
+    expect(events).toEqual([])
+    inFlight.resolve()
+    await expect(rejection).resolves.toEqual(new Error('boom'))
+    expect(events).toEqual(['settled', 'rejected'])
   })
 })
 
@@ -347,6 +367,7 @@ describe('createOpenAiTranslator', () => {
         Parameters<typeof createOpenAiTranslator>[0],
         | 'maxTruncationSplitDepth'
         | 'onUsage'
+        | 'requestConcurrency'
         | 'translationContext'
         | 'glossary'
       >
@@ -362,9 +383,9 @@ describe('createOpenAiTranslator', () => {
       }
       requestBodies.push(init.body)
       calls++
-      const response = Array.isArray(respond)
+      const response = await (Array.isArray(respond)
         ? respond.at(calls - 1)
-        : respond(init.body, calls)
+        : respond(init.body, calls))
       if (!response) {
         throw new Error(`no scripted response for request ${calls}`)
       }
@@ -373,6 +394,7 @@ describe('createOpenAiTranslator', () => {
     const translate = createOpenAiTranslator({
       apiKey: 'key',
       model: 'test-model',
+      requestConcurrency: 1,
       reasoningEffort: 'low',
       translationContext: 'a test application',
       glossary: '',
@@ -415,25 +437,83 @@ describe('createOpenAiTranslator', () => {
     ).toBe(true)
   })
 
-  it('does not fan out requests while splitting a truncated batch', async () => {
-    let activeRequests = 0
-    let peakRequests = 0
-    const { translate } = translatorFor(async (body, call) => {
-      if (call === 1) return response('{"1": "Bonj', truncated)
-      activeRequests++
-      peakRequests = Math.max(peakRequests, activeRequests)
-      await Promise.resolve()
-      activeRequests--
-      return body.includes('main.json: greeting')
-        ? response('{"1": "Bonjour {name}"}')
-        : response('{"2": "Au revoir {name}"}')
+  describe('request scheduling', () => {
+    beforeEach(() => {
+      vi.useFakeTimers()
+      return () => vi.useRealTimers()
     })
 
-    await expect(translate(locale, items)).resolves.toEqual({
-      '1': 'Bonjour {name}',
-      '2': 'Au revoir {name}'
+    it.for([1, 2])(
+      'uses available split capacity without exceeding %i live requests',
+      async (requestConcurrency) => {
+        const pending = deferred<void>()
+        let activeRequests = 0
+        let peakRequests = 0
+        const { translate } = translatorFor(
+          async (body, call) => {
+            if (call === 1) return response('{"1": "Bonj', truncated)
+            activeRequests++
+            peakRequests = Math.max(peakRequests, activeRequests)
+            await pending.promise
+            activeRequests--
+            return body.includes('main.json: greeting')
+              ? response('{"1": "Bonjour {name}"}')
+              : response('{"2": "Au revoir {name}"}')
+          },
+          { requestConcurrency }
+        )
+        const result = translate(locale, items)
+
+        await vi.advanceTimersByTimeAsync(0)
+        expect(activeRequests).toBe(requestConcurrency)
+        pending.resolve()
+        await expect(result).resolves.toEqual({
+          '1': 'Bonjour {name}',
+          '2': 'Au revoir {name}'
+        })
+        expect(peakRequests).toBe(requestConcurrency)
+      }
+    )
+
+    it('does not send a queued split after an authentication failure', async () => {
+      const { translate, callCount } = translatorFor([
+        response('{"1": "Bonj', truncated),
+        new Response('bad key', { status: 401 })
+      ])
+
+      await expect(translate(locale, items)).rejects.toMatchObject({
+        status: 401
+      })
+      expect(callCount()).toBe(2)
     })
-    expect(peakRequests).toBe(1)
+
+    it('settles in-flight splits and stops queued requests after a failure', async () => {
+      const pending = deferred<Response>()
+      const events: string[] = []
+      const { translate, callCount } = translatorFor(
+        async (_body, call) => {
+          if (call === 1) return response('{"1": "Bonj', truncated)
+          if (call === 2) return new Response('bad key', { status: 401 })
+          const result = await pending.promise
+          events.push('settled')
+          return result
+        },
+        { requestConcurrency: 2 }
+      )
+      const result = translate(locale, [...items, { ...items[0], id: '3' }])
+      const rejection = result.catch((error: unknown) => {
+        events.push('rejected')
+        return error
+      })
+
+      await vi.advanceTimersByTimeAsync(0)
+      expect(callCount()).toBe(3)
+      expect(events).toEqual([])
+      pending.resolve(response('{"2": "Au revoir {name}"}'))
+      await expect(rejection).resolves.toMatchObject({ status: 401 })
+      expect(events).toEqual(['settled', 'rejected'])
+      expect(callCount()).toBe(3)
+    })
   })
 
   it('defers a single string whose translation keeps truncating', async () => {
