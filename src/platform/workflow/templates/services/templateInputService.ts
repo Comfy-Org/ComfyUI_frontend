@@ -1,6 +1,7 @@
 import { zUploadImageResponse } from '@comfyorg/ingest-types/zod'
 import { z } from 'zod'
 
+import { combineAbortSignals } from '@/base/common/abortSignal'
 import type {
   ComfyNode,
   ComfyWorkflowJSON
@@ -53,7 +54,10 @@ async function uploadTemplateInput(
   sourceRevision: string,
   signal: AbortSignal
 ): Promise<{ ok: true; path: string } | { ok: false; error: Error }> {
-  const requestSignal = AbortSignal.any([signal, AbortSignal.timeout(120_000)])
+  const requestSignal = combineAbortSignals([
+    signal,
+    AbortSignal.timeout(120_000)
+  ])
   let operation = 'download'
   function failure(cause: unknown): { ok: false; error: Error } {
     return {

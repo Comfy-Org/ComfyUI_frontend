@@ -16,6 +16,7 @@ import { get } from 'es-toolkit/compat'
 import { trimEnd } from 'es-toolkit'
 import { ref } from 'vue'
 
+import { combineAbortSignals } from '@/base/common/abortSignal'
 import defaultClientFeatureFlags from '@/config/clientFeatureFlags.json' with { type: 'json' }
 import {
   authCredentialOf,
@@ -721,7 +722,10 @@ export class ComfyApi extends EventTarget {
       : undefined
     const signal =
       requestOptions.signal && timeout
-        ? AbortSignal.any([requestOptions.signal, timeout.controller.signal])
+        ? combineAbortSignals([
+            requestOptions.signal,
+            timeout.controller.signal
+          ])
         : (requestOptions.signal ?? timeout?.controller.signal)
 
     let retryTimeoutId: ReturnType<typeof setTimeout> | undefined
@@ -755,7 +759,10 @@ export class ComfyApi extends EventTarget {
             }, timeout.duration)
 
             return requestOptions.signal
-              ? AbortSignal.any([requestOptions.signal, retryController.signal])
+              ? combineAbortSignals([
+                  requestOptions.signal,
+                  retryController.signal
+                ])
               : retryController.signal
           }
         }
