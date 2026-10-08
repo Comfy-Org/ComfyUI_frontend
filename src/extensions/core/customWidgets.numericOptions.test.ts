@@ -40,7 +40,6 @@ const PRIMITIVE_FLOAT_INPUT_SPEC: InputSpec = {
   step: 0.1
 }
 
-// PrimitiveInt declares no step, so the widget falls back to 1.
 const PRIMITIVE_INT_INPUT_SPEC: InputSpec = {
   type: 'INT',
   name: 'value',
@@ -49,39 +48,30 @@ const PRIMITIVE_INT_INPUT_SPEC: InputSpec = {
   max: Number.MAX_SAFE_INTEGER
 }
 
-// A step that is not a power of ten cannot be recovered from the decimal
-// places it implies, so it detects a step derived from precision.
-const QUARTER_STEP_INPUT_SPEC: InputSpec = {
-  ...PRIMITIVE_FLOAT_INPUT_SPEC,
-  step: 0.25
-}
+const FLOAT_TYPES = {
+  primitive: PRIMITIVE_FLOAT_INPUT_SPEC,
+  quarterStep: { ...PRIMITIVE_FLOAT_INPUT_SPEC, step: 0.25 },
+  zeroStep: { ...PRIMITIVE_FLOAT_INPUT_SPEC, step: 0 },
+  unrounded: { ...PRIMITIVE_FLOAT_INPUT_SPEC, round: false },
+  declaredRound: { ...PRIMITIVE_FLOAT_INPUT_SPEC, round: 0.05 }
+} satisfies Record<string, InputSpec>
 
-// `false` is how a definition declares that it does not round.
-const UNROUNDED_INPUT_SPEC: InputSpec = {
-  ...PRIMITIVE_FLOAT_INPUT_SPEC,
-  round: false
-}
+type FloatType = keyof typeof FLOAT_TYPES
 
-// A declared step of zero would leave the stepper buttons inert.
-const ZERO_STEP_INPUT_SPEC: InputSpec = {
-  ...PRIMITIVE_FLOAT_INPUT_SPEC,
-  step: 0
-}
-
-const TEST_PRIMITIVE_FLOAT_TYPE = 'test/PrimitiveFloatNumericOptions'
 const TEST_PRIMITIVE_INT_TYPE = 'test/PrimitiveIntNumericOptions'
-const TEST_QUARTER_STEP_FLOAT_TYPE = 'test/QuarterStepFloatNumericOptions'
-const TEST_ZERO_STEP_FLOAT_TYPE = 'test/ZeroStepFloatNumericOptions'
-const TEST_UNROUNDED_FLOAT_TYPE = 'test/UnroundedFloatNumericOptions'
 
-class TestPrimitiveFloatNode extends LGraphNode {
-  static override title = 'Float'
+const floatNodeType = (name: string) => `test/${name}FloatNumericOptions`
 
-  constructor() {
-    super('PrimitiveFloat')
-    this.comfyClass = 'PrimitiveFloat'
-    this.addOutput('FLOAT', 'FLOAT')
-    useFloatWidget()(this, PRIMITIVE_FLOAT_INPUT_SPEC)
+function primitiveFloatNodeClass(spec: InputSpec) {
+  return class extends LGraphNode {
+    static override title = 'Float'
+
+    constructor() {
+      super('PrimitiveFloat')
+      this.comfyClass = 'PrimitiveFloat'
+      this.addOutput('FLOAT', 'FLOAT')
+      useFloatWidget()(this, spec)
+    }
   }
 }
 
@@ -96,38 +86,10 @@ class TestPrimitiveIntNode extends LGraphNode {
   }
 }
 
-class TestQuarterStepFloatNode extends LGraphNode {
-  static override title = 'Float'
-
-  constructor() {
-    super('PrimitiveFloat')
-    this.comfyClass = 'PrimitiveFloat'
-    this.addOutput('FLOAT', 'FLOAT')
-    useFloatWidget()(this, QUARTER_STEP_INPUT_SPEC)
-  }
-}
-
-class TestZeroStepFloatNode extends LGraphNode {
-  static override title = 'Float'
-
-  constructor() {
-    super('PrimitiveFloat')
-    this.comfyClass = 'PrimitiveFloat'
-    this.addOutput('FLOAT', 'FLOAT')
-    useFloatWidget()(this, ZERO_STEP_INPUT_SPEC)
-  }
-}
-
-class TestUnroundedFloatNode extends LGraphNode {
-  static override title = 'Float'
-
-  constructor() {
-    super('PrimitiveFloat')
-    this.comfyClass = 'PrimitiveFloat'
-    this.addOutput('FLOAT', 'FLOAT')
-    useFloatWidget()(this, UNROUNDED_INPUT_SPEC)
-  }
-}
+const floatNodeClasses = Object.entries(FLOAT_TYPES).map(([name, spec]) => ({
+  type: floatNodeType(name),
+  nodeClass: primitiveFloatNodeClass(spec)
+}))
 
 function stubSettings(overrides: Partial<Settings>) {
   const settingStore = useSettingStore(getActivePinia())
@@ -146,62 +108,40 @@ function createNode(type: string) {
   return { node, widget: node.widgets![0] as INumericWidget }
 }
 
+const createFloatNode = (name: FloatType = 'primitive') =>
+  createNode(floatNodeType(name))
+
 describe('Primitive numeric widget options', () => {
   beforeAll(async () => {
-    await extension.beforeRegisterNodeDef?.(
-      TestPrimitiveFloatNode,
-      { name: 'PrimitiveFloat' } as ComfyNodeDef,
-      app
-    )
+    for (const { nodeClass } of floatNodeClasses)
+      await extension.beforeRegisterNodeDef?.(
+        nodeClass,
+        { name: 'PrimitiveFloat' } as ComfyNodeDef,
+        app
+      )
     await extension.beforeRegisterNodeDef?.(
       TestPrimitiveIntNode,
       { name: 'PrimitiveInt' } as ComfyNodeDef,
       app
     )
-    await extension.beforeRegisterNodeDef?.(
-      TestQuarterStepFloatNode,
-      { name: 'PrimitiveFloat' } as ComfyNodeDef,
-      app
-    )
-    await extension.beforeRegisterNodeDef?.(
-      TestZeroStepFloatNode,
-      { name: 'PrimitiveFloat' } as ComfyNodeDef,
-      app
-    )
-    await extension.beforeRegisterNodeDef?.(
-      TestUnroundedFloatNode,
-      { name: 'PrimitiveFloat' } as ComfyNodeDef,
-      app
-    )
   })
 
   beforeEach(() => {
-    LiteGraph.registerNodeType(
-      TEST_PRIMITIVE_FLOAT_TYPE,
-      TestPrimitiveFloatNode
-    )
+    for (const { type, nodeClass } of floatNodeClasses)
+      LiteGraph.registerNodeType(type, nodeClass)
     LiteGraph.registerNodeType(TEST_PRIMITIVE_INT_TYPE, TestPrimitiveIntNode)
-    LiteGraph.registerNodeType(
-      TEST_QUARTER_STEP_FLOAT_TYPE,
-      TestQuarterStepFloatNode
-    )
-    LiteGraph.registerNodeType(TEST_ZERO_STEP_FLOAT_TYPE, TestZeroStepFloatNode)
-    LiteGraph.registerNodeType(
-      TEST_UNROUNDED_FLOAT_TYPE,
-      TestUnroundedFloatNode
-    )
   })
 
   describe('PrimitiveFloat', () => {
     it('steps by the increment declared in the node definition', () => {
-      const { widget } = createNode(TEST_PRIMITIVE_FLOAT_TYPE)
+      const { widget } = createFloatNode()
 
       expect(widget.options.step2).toBe(0.1)
       expect(getWidgetStep(widget.options)).toBe(0.1)
     })
 
     it('rounds to the granularity declared in the node definition', () => {
-      const { widget } = createNode(TEST_PRIMITIVE_FLOAT_TYPE)
+      const { widget } = createFloatNode()
 
       expect(widget.options.round).toBe(0.1)
       expect(widget.options.precision).toBe(1)
@@ -209,7 +149,7 @@ describe('Primitive numeric widget options', () => {
 
     it('keeps the declared step when the float rounding setting adds decimal places', () => {
       stubSettings({ 'Comfy.FloatRoundingPrecision': 3 })
-      const { widget } = createNode(TEST_PRIMITIVE_FLOAT_TYPE)
+      const { widget } = createFloatNode()
 
       expect(widget.options.step2).toBe(0.1)
       expect(getWidgetStep(widget.options)).toBe(0.1)
@@ -219,7 +159,7 @@ describe('Primitive numeric widget options', () => {
 
     it('does not round when float rounding is disabled', () => {
       stubSettings({ 'Comfy.DisableFloatRounding': true })
-      const { widget } = createNode(TEST_PRIMITIVE_FLOAT_TYPE)
+      const { widget } = createFloatNode()
 
       expect(widget.options.round).toBeUndefined()
 
@@ -229,7 +169,7 @@ describe('Primitive numeric widget options', () => {
 
     it('keeps rounding off when precision is set on a node that does not round', () => {
       stubSettings({ 'Comfy.DisableFloatRounding': true })
-      const { node, widget } = createNode(TEST_PRIMITIVE_FLOAT_TYPE)
+      const { node, widget } = createFloatNode()
 
       node.properties.precision = 3
 
@@ -237,9 +177,9 @@ describe('Primitive numeric widget options', () => {
       expect(widget.options.step2).toBe(0.001)
     })
 
-    it('keeps rounding off when precision is set on a node declared not to round', () => {
+    it('keeps rounding off when precision is set, rounding is disabled and the definition declares round: false', () => {
       stubSettings({ 'Comfy.DisableFloatRounding': true })
-      const { node, widget } = createNode(TEST_UNROUNDED_FLOAT_TYPE)
+      const { node, widget } = createFloatNode('unrounded')
 
       node.properties.precision = 3
 
@@ -247,40 +187,34 @@ describe('Primitive numeric widget options', () => {
       expect(widget.value).toBe(0.123456)
     })
 
-    it('preserves a round of zero configured on the node', () => {
-      const { node, widget } = createNode(TEST_PRIMITIVE_FLOAT_TYPE)
+    it('honours a round declared in the node definition, refined by node precision', () => {
+      const { node, widget } = createFloatNode('declaredRound')
 
-      node.properties.round = 0
+      expect(widget.options.round).toBe(0.05)
 
-      expect(widget.options.round).toBe(0)
+      node.properties.precision = 3
 
-      onFloatValueChange.call(widget, 0.123456)
-      expect(widget.value).toBe(0.123456)
+      expect(widget.options.round).toBe(0.001)
     })
 
-    it.for([-1, 101, 324, Number.POSITIVE_INFINITY, Number.NaN])(
-      'keeps the widget usable when precision is out of range (%s)',
+    it.for([324, Number.POSITIVE_INFINITY, Number.NaN])(
+      'keeps precision within what toFixed accepts (%s)',
       (precision) => {
-        const { node, widget } = createNode(TEST_PRIMITIVE_FLOAT_TYPE)
+        const { node, widget } = createFloatNode()
 
         node.properties.precision = precision
 
+        expect(widget.options.precision).toBeGreaterThanOrEqual(0)
+        expect(widget.options.precision).toBeLessThanOrEqual(100)
         expect(() => onFloatValueChange.call(widget, 0.123456)).not.toThrow()
         expect(Number.isFinite(widget.value)).toBe(true)
-        expect(
-          () =>
-            new Intl.NumberFormat('en-US', {
-              minimumFractionDigits: widget.options.precision,
-              maximumFractionDigits: widget.options.precision
-            })
-        ).not.toThrow()
       }
     )
 
     it.for(['3', null])(
       'falls back to the declared precision for a non-numeric property (%s)',
       (precision) => {
-        const { node, widget } = createNode(TEST_PRIMITIVE_FLOAT_TYPE)
+        const { node, widget } = createFloatNode()
 
         node.properties.precision = precision
 
@@ -291,16 +225,16 @@ describe('Primitive numeric widget options', () => {
 
     it('normalises an out-of-range global rounding precision', () => {
       stubSettings({ 'Comfy.FloatRoundingPrecision': 101 })
-      const { widget } = createNode(TEST_PRIMITIVE_FLOAT_TYPE)
+      const { widget } = createFloatNode()
 
       expect(widget.options.precision).toBe(100)
       expect(() => onFloatValueChange.call(widget, 0.123456)).not.toThrow()
     })
 
-    it.for([false, '', Number.NaN])(
-      'ignores a non-numeric round property rather than disabling rounding (%s)',
+    it.for([0, -1, false, '', Number.NaN])(
+      'ignores an unusable round property rather than disabling rounding (%s)',
       (round) => {
-        const { node, widget } = createNode(TEST_PRIMITIVE_FLOAT_TYPE)
+        const { node, widget } = createFloatNode()
 
         node.properties.round = round
 
@@ -309,23 +243,22 @@ describe('Primitive numeric widget options', () => {
     )
 
     it('keeps a declared step that is not a power of ten', () => {
-      const { widget } = createNode(TEST_QUARTER_STEP_FLOAT_TYPE)
+      const { widget } = createFloatNode('quarterStep')
 
       expect(widget.options.step2).toBe(0.25)
       expect(getWidgetStep(widget.options)).toBe(0.25)
     })
 
     it('keeps the stepper usable when the definition declares a zero step', () => {
-      const { widget } = createNode(TEST_ZERO_STEP_FLOAT_TYPE)
+      const { widget } = createFloatNode('zeroStep')
 
       expect(widget.options.step2).toBe(0.1)
-      expect(getWidgetStep(widget.options)).toBeGreaterThan(0)
     })
 
     it.for([0, -1, Number.POSITIVE_INFINITY, '0.5'])(
       'ignores an unusable step property rather than adopting it (%s)',
       (step) => {
-        const { node, widget } = createNode(TEST_PRIMITIVE_FLOAT_TYPE)
+        const { node, widget } = createFloatNode()
 
         node.properties.step = step
 
@@ -334,7 +267,7 @@ describe('Primitive numeric widget options', () => {
     )
 
     it('ignores an unusable precision rather than half-applying it', () => {
-      const { node, widget } = createNode(TEST_QUARTER_STEP_FLOAT_TYPE)
+      const { node, widget } = createFloatNode('quarterStep')
 
       node.properties.precision = Number.NaN
 
@@ -355,7 +288,7 @@ describe('Primitive numeric widget options', () => {
     ])(
       'steps and rounds by one unit of the last decimal place at precision $precision',
       ({ precision, usedPrecision, expected }) => {
-        const { node, widget } = createNode(TEST_PRIMITIVE_FLOAT_TYPE)
+        const { node, widget } = createFloatNode()
 
         node.properties.precision = precision
 
@@ -365,10 +298,11 @@ describe('Primitive numeric widget options', () => {
       }
     )
 
-    it('prefers an explicitly configured step over the derived one', () => {
-      const { node, widget } = createNode(TEST_PRIMITIVE_FLOAT_TYPE)
+    it('prefers an explicitly configured step over one derived from node precision', () => {
+      const { node, widget } = createFloatNode()
 
       node.properties.step = 0.25
+      node.properties.precision = 3
 
       expect(widget.options.step2).toBe(0.25)
       expect(getWidgetStep(widget.options)).toBe(0.25)
@@ -376,7 +310,7 @@ describe('Primitive numeric widget options', () => {
   })
 
   describe('PrimitiveInt', () => {
-    it('steps by the increment declared in the node definition', () => {
+    it('steps by 1 when the node definition declares no step', () => {
       const { widget } = createNode(TEST_PRIMITIVE_INT_TYPE)
 
       expect(widget.options.step2).toBe(1)

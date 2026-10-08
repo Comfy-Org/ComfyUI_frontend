@@ -208,9 +208,33 @@ function onCustomIntCreated(this: LGraphNode) {
 }
 const DISPLAY_WIDGET_TYPES = new Set(['gradientslider', 'slider', 'knob'])
 
+const finiteNumber = (value: unknown) =>
+  typeof value === 'number' && Number.isFinite(value) ? value : undefined
+
+const positiveNumber = (value: unknown) => {
+  const n = finiteNumber(value)
+  return n !== undefined && n > 0 ? n : undefined
+}
+
+const fractionDigits = (value: unknown) => {
+  const n = finiteNumber(value)
+  return n === undefined ? undefined : clamp(Math.trunc(n), 0, 100)
+}
+
+const lastDecimalPlace = (places: number) =>
+  Number((10 ** -places).toFixed(places))
+
 function onCustomFloatCreated(this: LGraphNode) {
   const valueWidget = this.widgets?.[0]
   if (!valueWidget) return
+
+  const declaredPrecision = fractionDigits(valueWidget.options.precision) ?? 1
+  const declaredStep =
+    positiveNumber(valueWidget.options.step2) ??
+    lastDecimalPlace(declaredPrecision)
+  const declaredRound = valueWidget.options.round
+  const declaresRounding = positiveNumber(declaredRound) !== undefined
+  const nodePrecision = () => fractionDigits(this.properties.precision)
 
   let baseType = valueWidget.type
   Object.defineProperty(valueWidget, 'type', {
@@ -245,62 +269,31 @@ function onCustomFloatCreated(this: LGraphNode) {
       valueWidget.callback?.(valueWidget.value)
     }
   })
-  // Properties are restored from workflow JSON unvalidated, so anything can
-  // arrive here.
-  const usableNumber = (value: unknown) =>
-    typeof value === 'number' && Number.isFinite(value) ? value : undefined
-  // Consumers pass precision straight to `toFixed`/`Intl.NumberFormat`, which
-  // reject anything outside 0-100.
-  const usablePrecision = (value: unknown) => {
-    const configured = usableNumber(value)
-    return configured === undefined
-      ? undefined
-      : clamp(Math.trunc(configured), 0, 100)
-  }
-
-  // A step of zero or less leaves the stepper inert or reversed, so it is
-  // rejected the same way `useIntWidget` rejects one.
-  const usableStep = (value: unknown) => {
-    const configured = usableNumber(value)
-    return configured !== undefined && configured > 0 ? configured : undefined
-  }
-
-  const defaultPrecision = usablePrecision(valueWidget.options.precision) ?? 1
-  const declaredRound = valueWidget.options.round
-  const declaresRounding = (usableNumber(declaredRound) ?? 0) > 0
-
-  const nodePrecision = () => usablePrecision(this.properties.precision)
-  const precision = () => nodePrecision() ?? defaultPrecision
-  const lastDecimalPlace = () => {
-    const places = precision()
-    return Number((10 ** -places).toFixed(places))
-  }
-  const declaredStep =
-    usableStep(valueWidget.options.step2) ?? lastDecimalPlace()
-  // Only precision set on this node steers step and round; `defaultPrecision`
-  // also carries the global `Comfy.FloatRoundingPrecision`, which must not.
-  const stepForPrecision = () =>
-    nodePrecision() !== undefined ? lastDecimalPlace() : declaredStep
-  // `Comfy.DisableFloatRounding` leaves `declaredRound` unset or `false`; node
-  // precision refines the granularity but must not switch rounding back on.
-  const roundForPrecision = () =>
-    declaresRounding && nodePrecision() !== undefined
-      ? lastDecimalPlace()
-      : declaredRound
-
   Object.defineProperty(valueWidget.options, 'precision', {
-    get: precision,
+    get: () => nodePrecision() ?? declaredPrecision,
     set: (v) => {
       this.properties.precision = v
       valueWidget.callback?.(valueWidget.value)
     }
   })
   Object.defineProperty(valueWidget.options, 'step2', {
-    get: () => usableStep(this.properties.step) ?? stepForPrecision(),
+    get: () => {
+      const configured = positiveNumber(this.properties.step)
+      if (configured !== undefined) return configured
+      const places = nodePrecision()
+      return places === undefined ? declaredStep : lastDecimalPlace(places)
+    },
     set: (v) => (this.properties.step = v)
   })
   Object.defineProperty(valueWidget.options, 'round', {
-    get: () => usableNumber(this.properties.round) ?? roundForPrecision(),
+    get: () => {
+      const configured = positiveNumber(this.properties.round)
+      if (configured !== undefined) return configured
+      const places = nodePrecision()
+      return places !== undefined && declaresRounding
+        ? lastDecimalPlace(places)
+        : declaredRound
+    },
     set: (v) => {
       this.properties.round = v
       valueWidget.callback?.(valueWidget.value)
