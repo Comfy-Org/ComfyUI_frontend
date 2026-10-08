@@ -1,3 +1,5 @@
+import { vi } from 'vitest'
+
 const originalFetch = globalThis.fetch
 
 function resolveRequestUrl(requestedUrl: string): string {
@@ -25,12 +27,10 @@ const blockedNetworkFetch: typeof globalThis.fetch = (input, init) => {
   return Promise.reject(
     new Error(
       `Blocked a real network request to ${requestUrl} from a unit test. ` +
-        'Mock the module that issues it (or stub globalThis.fetch in the ' +
+        'Mock the module that issues it (or configure vi.mocked(fetch) in the ' +
         'test) instead of letting the request escape - see vitest.network.setup.ts.'
     )
   )
 }
 
-globalThis.fetch = blockedNetworkFetch
-
-export {}
+globalThis.fetch = vi.fn(blockedNetworkFetch)

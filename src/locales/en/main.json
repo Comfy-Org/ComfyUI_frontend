@@ -2272,12 +2272,16 @@
     "hideGizmos": "Hide gizmos",
     "lookThrough": "Camera view",
     "exitLookThrough": "Exit camera view",
+    "outputView": "Output view",
+    "lockCamera": "Lock camera",
+    "unlockCamera": "Unlock camera",
     "transformGizmo": {
       "label": "Edit",
       "none": "None",
       "target": "Target",
       "cameraTranslate": "Cam pos",
-      "cameraRotate": "Cam rot"
+      "cameraRotate": "Cam rot",
+      "lightPosition": "Light pos"
     },
     "showGrid": "Show Grid",
     "backgroundColor": "Background Color",
@@ -2459,6 +2463,23 @@
       "bottom": "BOTTOM"
     }
   },
+  "lightInfo": {
+    "addLight": "Add light",
+    "removeLight": "Remove light",
+    "lightChip": "Light {index}, {type}",
+    "noLights": "Add a light to get started.",
+    "directional": "Directional",
+    "point": "Point",
+    "spot": "Spot",
+    "color": "Color",
+    "intensity": "Intensity",
+    "range": "Range",
+    "innerCone": "Inner cone",
+    "outerCone": "Outer cone",
+    "castShadow": "Cast shadow",
+    "size": "Size",
+    "angle": "Angle"
+  },
   "boundingBoxes": {
     "clearAll": "Clear all",
     "clickRegionToEdit": "Click a region to edit it.",
@@ -2532,6 +2553,7 @@
     "noVideoSource": "Select or connect a video to preview and edit"
   },
   "toastMessages": {
+    "nothingToPasteIntoNode": "Nothing to paste into this node",
     "nothingToQueue": "Nothing to queue",
     "pleaseSelectOutputNodes": "Please select output nodes",
     "failedToQueue": "Failed to queue",
@@ -2590,6 +2612,7 @@
     "failedToInitializeLoad3dViewer": "Failed to initialize 3D Viewer",
     "failedToInitializeCameraInfoViewer": "Failed to initialize Camera Info viewer. Try reloading the page.",
     "failedToInitializeCameraAngleViewer": "Failed to initialize Camera Angle viewer. Try reloading the page.",
+    "failedToInitializeLightInfoViewer": "Failed to initialize Light Info viewer. Try reloading the page.",
     "failedToLoadBackgroundImage": "Failed to load background image",
     "failedToLoadModel": "Failed to load 3D model",
     "modelLoadedSuccessfully": "3D model loaded successfully",
@@ -4402,7 +4425,13 @@
     "buttonLabel": "Deploy to Comfy API",
     "body": "Deploy this workflow as a production API in minutes. Package your custom nodes, models and Python dependencies into a reproducible build, and Comfy API runs it as an autoscaling endpoint.",
     "readDocs": "Read the docs",
-    "deployOnPlatform": "Deploy on Platform"
+    "deployOnPlatform": "Deploy on Platform",
+    "deployWithAgent": "Build with your agent",
+    "copied": "Copied",
+    "summaryPacks": "{count} node pack | {count} node packs",
+    "summaryModels": "{count} model | {count} models",
+    "summaryClasses": "{count} node class | {count} node classes",
+    "briefFailed": "The brief for your agent could not be prepared. Try again."
   },
   "openSharedWorkflow": {
     "dialogTitle": "Open shared workflow",
@@ -5544,6 +5573,7 @@
     "failedDetail": "Your onboarding state could not be reset. Please try again."
   },
   "agent": {
+    "previewAsset": "Preview {name}",
     "title": "Comfy Agent",
     "diagnosticReport": {
       "retry": "Retry copy report",
@@ -5641,6 +5671,7 @@
     "assetNotAttachable": "Images, video, audio, 3D models, and text files can be attached",
     "attachmentTooLarge": "{name} is larger than {limit}",
     "attachmentUploadFailed": "{name} could not be uploaded",
+    "attachmentsAlreadyAdded": "{name} is already in the asset tray | Skipped {count} duplicate assets",
     "mention": "Mention a node",
     "changeWorkflowForChat": "Change the workflow that the agent can edit",
     "chatOptions": "Chat options",
@@ -5690,7 +5721,11 @@
     "focusNode": "Show on canvas",
     "focusNodeLabel": "Show {node} on canvas",
     "removeNodeLabel": "Remove {node} reference",
+    "removeAssetReference": "Remove {name} reference",
+    "removeAsset": "Remove {name}",
+    "previewAsset": "Preview {name}",
     "uploading": "Uploading",
+    "uploadingAttachments": "Uploading {count} attachment | Uploading {count} attachments",
     "noNodesToMention": "No nodes in this workflow",
     "friend": "there",
     "sendFailed": "Message failed to send",

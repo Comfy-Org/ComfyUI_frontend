@@ -124,12 +124,7 @@ describe('ModelExporter', () => {
   describe('downloadFromURL', () => {
     it('fetches the URL and downloads the resulting blob', async () => {
       const blob = new Blob(['x'])
-      vi.stubGlobal(
-        'fetch',
-        vi
-          .fn()
-          .mockResolvedValue({ ok: true, blob: () => Promise.resolve(blob) })
-      )
+      vi.mocked(fetch).mockImplementation(async () => new Response(blob))
 
       await ModelExporter.downloadFromURL(
         'http://example.com/cube.glb',
@@ -141,8 +136,7 @@ describe('ModelExporter', () => {
     })
 
     it('rethrows and shows a toast alert when fetch fails', async () => {
-      vi.spyOn(console, 'error').mockImplementation(() => {})
-      vi.stubGlobal('fetch', vi.fn().mockRejectedValue(new Error('network')))
+      vi.mocked(fetch).mockRejectedValue(new Error('network'))
 
       await expect(
         ModelExporter.downloadFromURL('http://example.com/cube.glb', 'cube.glb')
@@ -154,14 +148,8 @@ describe('ModelExporter', () => {
     })
 
     it('rethrows and shows a toast alert when the response status is not ok', async () => {
-      vi.spyOn(console, 'error').mockImplementation(() => {})
-      vi.stubGlobal(
-        'fetch',
-        vi.fn().mockResolvedValue({
-          ok: false,
-          status: 404,
-          blob: () => Promise.resolve(new Blob(['x']))
-        })
+      vi.mocked(fetch).mockImplementation(
+        async () => new Response(new Blob(['x']), { status: 404 })
       )
 
       await expect(
@@ -178,12 +166,7 @@ describe('ModelExporter', () => {
   describe('exportGLB', () => {
     it('takes the direct-URL fast path when the original URL is already a .glb', async () => {
       const blob = new Blob(['x'])
-      vi.stubGlobal(
-        'fetch',
-        vi
-          .fn()
-          .mockResolvedValue({ ok: true, blob: () => Promise.resolve(blob) })
-      )
+      vi.mocked(fetch).mockImplementation(async () => new Response(blob))
       const model = new THREE.Object3D()
 
       await ModelExporter.exportGLB(
@@ -219,7 +202,6 @@ describe('ModelExporter', () => {
     })
 
     it('alerts and rethrows when GLTFExporter rejects', async () => {
-      vi.spyOn(console, 'error').mockImplementation(() => {})
       gltfParseMock.mockImplementation(
         (_model: unknown, _onDone: unknown, onError: (e: Error) => void) =>
           onError(new Error('parse fail'))
@@ -241,12 +223,7 @@ describe('ModelExporter', () => {
   describe('exportOBJ', () => {
     it('uses the direct-URL fast path for matching .obj URLs', async () => {
       const blob = new Blob(['x'])
-      vi.stubGlobal(
-        'fetch',
-        vi
-          .fn()
-          .mockResolvedValue({ ok: true, blob: () => Promise.resolve(blob) })
-      )
+      vi.mocked(fetch).mockImplementation(async () => new Response(blob))
 
       await ModelExporter.exportOBJ(
         new THREE.Object3D(),
@@ -271,7 +248,6 @@ describe('ModelExporter', () => {
     })
 
     it('alerts and rethrows when OBJExporter throws', async () => {
-      vi.spyOn(console, 'error').mockImplementation(() => {})
       objParseMock.mockImplementation(() => {
         throw new Error('obj fail')
       })
@@ -292,12 +268,7 @@ describe('ModelExporter', () => {
   describe('exportSTL', () => {
     it('uses the direct-URL fast path for matching .stl URLs', async () => {
       const blob = new Blob(['x'])
-      vi.stubGlobal(
-        'fetch',
-        vi
-          .fn()
-          .mockResolvedValue({ ok: true, blob: () => Promise.resolve(blob) })
-      )
+      vi.mocked(fetch).mockImplementation(async () => new Response(blob))
 
       await ModelExporter.exportSTL(
         new THREE.Object3D(),
@@ -322,7 +293,6 @@ describe('ModelExporter', () => {
     })
 
     it('alerts and rethrows when STLExporter throws', async () => {
-      vi.spyOn(console, 'error').mockImplementation(() => {})
       stlParseMock.mockImplementation(() => {
         throw new Error('stl fail')
       })
@@ -343,12 +313,7 @@ describe('ModelExporter', () => {
   describe('exportDirect', () => {
     it('downloads the original source file unchanged', async () => {
       const blob = new Blob(['x'])
-      vi.stubGlobal(
-        'fetch',
-        vi
-          .fn()
-          .mockResolvedValue({ ok: true, blob: () => Promise.resolve(blob) })
-      )
+      vi.mocked(fetch).mockImplementation(async () => new Response(blob))
 
       await ModelExporter.exportDirect(
         'http://example.com/api/view?filename=src.ply',
@@ -372,12 +337,7 @@ describe('ModelExporter', () => {
   describe('exportFBX', () => {
     it('uses the direct-URL fast path for matching .fbx URLs', async () => {
       const blob = new Blob(['x'])
-      vi.stubGlobal(
-        'fetch',
-        vi
-          .fn()
-          .mockResolvedValue({ ok: true, blob: () => Promise.resolve(blob) })
-      )
+      vi.mocked(fetch).mockImplementation(async () => new Response(blob))
 
       await ModelExporter.exportFBX(
         new THREE.Object3D(),
@@ -403,7 +363,6 @@ describe('ModelExporter', () => {
     })
 
     it('alerts and rethrows when FBXExporter throws', async () => {
-      vi.spyOn(console, 'error').mockImplementation(() => {})
       fbxParseAsyncMock.mockRejectedValue(new Error('fbx fail'))
 
       const promise = ModelExporter.exportFBX(new THREE.Object3D(), 'out.fbx')

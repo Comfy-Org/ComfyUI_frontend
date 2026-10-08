@@ -19,6 +19,11 @@ type ViewportStatus = Pick<
   'updateStatusMouseOnNode' | 'refreshViewport'
 >
 
+type SceneStatus = Pick<
+  Viewport3d,
+  'updateStatusMouseOnScene' | 'refreshViewport'
+>
+
 interface NodeWiringHooks {
   viewport: () => ViewportStatus | null | undefined
   onConnectionsChange?: () => void
@@ -91,4 +96,19 @@ export function useViewportNodeWiring() {
   }
 
   return { wireWidgets, wireNode, unwire }
+}
+
+export function createSceneHoverHandlers(
+  viewport: () => SceneStatus | null | undefined
+) {
+  return {
+    handleMouseEnter(): void {
+      const target = viewport()
+      target?.updateStatusMouseOnScene(true)
+      target?.refreshViewport()
+    },
+    handleMouseLeave(): void {
+      viewport()?.updateStatusMouseOnScene(false)
+    }
+  }
 }

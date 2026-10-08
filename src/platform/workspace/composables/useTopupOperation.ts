@@ -1,5 +1,7 @@
 import { computed } from 'vue'
 
+import type { BillingClient } from '@comfyorg/account-core/billing'
+
 import { useBillingContext } from '@/composables/billing/useBillingContext'
 import { useFeatureFlags } from '@/composables/useFeatureFlags'
 import type { PaymentIntentSource } from '@/platform/telemetry/types'
@@ -20,6 +22,7 @@ export function useTopupOperation() {
     : null
   const operationStore = useBillingOperationStore()
   const billingContext = useBillingContext()
+  const billingClient: BillingClient = sdkStore ? 'sdk' : 'legacy'
 
   const isAddingCredits = computed(() =>
     sdkStore ? sdkStore.isAddingCredits : operationStore.isAddingCredits
@@ -66,6 +69,7 @@ export function useTopupOperation() {
   }
 
   return {
+    billingClient,
     isAddingCredits,
     topupOperation,
     topup,

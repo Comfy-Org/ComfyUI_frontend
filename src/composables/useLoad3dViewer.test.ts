@@ -773,10 +773,7 @@ describe('useLoad3dViewer', () => {
   describe('standalone thumbnail persistence', () => {
     beforeEach(() => {
       isAssetPreviewSupported.mockReturnValue(false)
-      vi.stubGlobal(
-        'fetch',
-        vi.fn().mockResolvedValue({ blob: () => Promise.resolve(new Blob()) })
-      )
+      vi.mocked(fetch).mockImplementation(async () => new Response(new Blob()))
     })
 
     it('captures and persists a thumbnail after a standalone model loads', async () => {

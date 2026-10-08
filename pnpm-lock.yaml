@@ -22,11 +22,11 @@ catalogs:
       specifier: ^7.0.2
       version: 7.0.2
     '@comfyorg/comfy-multi-player':
-      specifier: 0.3.6
-      version: 0.3.6
+      specifier: 0.3.10
+      version: 0.3.10
     '@comfyorg/comfyui-desktop-bridge-types':
-      specifier: 0.3.0
-      version: 0.3.0
+      specifier: 0.5.0
+      version: 0.5.0
     '@comfyorg/comfyui-electron-types':
       specifier: 0.6.2
       version: 0.6.2
@@ -303,6 +303,9 @@ catalogs:
     markdown-table:
       specifier: ^3.0.4
       version: 3.0.4
+    marked:
+      specifier: ^15.0.11
+      version: 15.0.12
     mediabunny:
       specifier: ^1.53.1
       version: 1.53.1
@@ -514,10 +517,10 @@ importers:
         version: link:packages/billing-contract
       '@comfyorg/comfy-multi-player':
         specifier: 'catalog:'
-        version: 0.3.6
+        version: 0.3.10
       '@comfyorg/comfyui-desktop-bridge-types':
         specifier: 'catalog:'
-        version: 0.3.0
+        version: 0.5.0
       '@comfyorg/comfyui-electron-types':
         specifier: 'catalog:'
         version: 0.6.2
@@ -595,7 +598,7 @@ importers:
         version: 14.4.0(vue@3.5.42(typescript@6.0.3))
       '@vueuse/integrations':
         specifier: 'catalog:'
-        version: 14.4.0(axios@1.18.1)(fuse.js@7.0.0)(vue@3.5.42(typescript@6.0.3))
+        version: 14.4.0(axios@1.18.1(debug@4.4.3))(fuse.js@7.0.0)(vue@3.5.42(typescript@6.0.3))
       '@vueuse/router':
         specifier: ^14.4.0
         version: 14.4.0(vue-router@5.2.0(@vue/compiler-sfc@3.5.42)(esbuild@0.28.1)(pinia@4.0.2(@vue/devtools-api@8.1.5)(typescript@6.0.3)(vue@3.5.42(typescript@6.0.3)))(rolldown@1.2.6)(vite@8.2.2(@types/node@25.9.5)(esbuild@0.28.1)(jiti@2.7.0)(terser@5.49.0)(tsx@4.23.1)(yaml@2.9.0))(vue@3.5.42(typescript@6.0.3)))(vue@3.5.42(typescript@6.0.3))
@@ -648,7 +651,7 @@ importers:
         specifier: ^1.9.2
         version: 1.9.2
       marked:
-        specifier: ^15.0.11
+        specifier: 'catalog:'
         version: 15.0.12
       mediabunny:
         specifier: 'catalog:'
@@ -717,6 +720,9 @@ importers:
       '@comfyorg/ingest-types':
         specifier: workspace:*
         version: link:packages/ingest-types
+      '@comfyorg/test-utils':
+        specifier: workspace:*
+        version: link:packages/test-utils
       '@comfyorg/website':
         specifier: workspace:*
         version: link:apps/website
@@ -1012,6 +1018,9 @@ importers:
       '@comfyorg/ingest-types':
         specifier: workspace:*
         version: link:../../packages/ingest-types
+      '@comfyorg/test-utils':
+        specifier: workspace:*
+        version: link:../../packages/test-utils
       '@playwright/test':
         specifier: 'catalog:'
         version: 1.63.0
@@ -1135,6 +1144,9 @@ importers:
       lottie-web:
         specifier: 'catalog:'
         version: 5.13.0
+      marked:
+        specifier: 'catalog:'
+        version: 15.0.12
       parse5:
         specifier: 'catalog:'
         version: 8.0.1
@@ -1175,6 +1187,9 @@ importers:
       '@comfyorg/sdk':
         specifier: 'catalog:'
         version: 0.2.0
+      '@comfyorg/test-utils':
+        specifier: workspace:*
+        version: link:../../packages/test-utils
       '@hey-api/openapi-ts':
         specifier: 0.97.3
         version: 0.97.3(magicast@0.5.4)(typescript@6.0.3)
@@ -1251,6 +1266,9 @@ importers:
         specifier: workspace:^
         version: link:../ingest-types
     devDependencies:
+      '@comfyorg/test-utils':
+        specifier: workspace:*
+        version: link:../test-utils
       '@types/node':
         specifier: 'catalog:'
         version: 25.9.5
@@ -1288,6 +1306,9 @@ importers:
       '@comfyorg/tailwind-utils':
         specifier: workspace:^
         version: link:../tailwind-utils
+      '@comfyorg/test-utils':
+        specifier: workspace:*
+        version: link:../test-utils
       '@stripe/stripe-js':
         specifier: 'catalog:'
         version: 9.12.1
@@ -1459,6 +1480,15 @@ importers:
       typescript:
         specifier: 'catalog:'
         version: 6.0.3
+
+  packages/test-utils:
+    devDependencies:
+      typescript:
+        specifier: 'catalog:'
+        version: 6.0.3
+      vitest:
+        specifier: 'catalog:'
+        version: 5.0.2(@types/node@25.9.5)(@vitest/coverage-v8@5.0.2)(@vitest/ui@5.0.2)(happy-dom@20.14.5)(jsdom@29.1.1)(vite@8.2.2(@types/node@25.9.5)(esbuild@0.28.1)(jiti@2.7.0)(terser@5.49.0)(tsx@4.23.1)(yaml@2.9.0))
 
   tools/architecture:
     dependencies:
@@ -2013,11 +2043,11 @@ packages:
     resolution: {integrity: sha512-y7/yvZ2TPAnR9+jnc00klvNNLkJiXFFrQA/hlLCcxA9a2A4zQIOimyFQ9XfwYKiGD1fb5GY8vbKIIgO8d5Tb2A==}
     engines: {node: '>= 20.12.0'}
 
-  '@comfyorg/comfy-multi-player@0.3.6':
-    resolution: {integrity: sha512-6mC4E43YH+58gV4I+tmUR4pIYxqUeiY8ShS1WjjDEYxsBKGbzU1rRNGZHKgrzP3cOKGzK/JSP663/SIN50kfeQ==}
+  '@comfyorg/comfy-multi-player@0.3.10':
+    resolution: {integrity: sha512-HPR9Of8qTbt0E5wXiYHCF8+FixXPqvRewUiKOfoSE8mZwm21u4gztoIMRXmsVS2pcWiAh0iW0Vh5bgu8XkylsA==}
 
-  '@comfyorg/comfyui-desktop-bridge-types@0.3.0':
-    resolution: {integrity: sha512-pdYsrp3rwya5R3cumqPcZYhyoAReO5qBwxeqCQbo0NvRxxQPcrV/NNl4wDn0mmmUuBhlswWjXsrD36YNxv8xMg==}
+  '@comfyorg/comfyui-desktop-bridge-types@0.5.0':
+    resolution: {integrity: sha512-IlLhbbNaDwTw1JjE+7Z2OlejrE4zcfzORJdaF3mtkzSjCFdK+j8Nuf9XYX78S3vz+uqmxXtn35gDR4amHv7shw==}
 
   '@comfyorg/comfyui-electron-types@0.6.2':
     resolution: {integrity: sha512-r3By5Wbizq8jagUrhtcym79HYUTinsvoBnYkFFWbUmrURBWIaC0HduFVkRkI1PNdI76piW+JSOJJnw00YCVXeg==}
@@ -10720,11 +10750,11 @@ snapshots:
       fast-wrap-ansi: 0.2.2
       sisteransi: 1.0.5
 
-  '@comfyorg/comfy-multi-player@0.3.6':
+  '@comfyorg/comfy-multi-player@0.3.10':
     dependencies:
       yjs: 13.6.32
 
-  '@comfyorg/comfyui-desktop-bridge-types@0.3.0': {}
+  '@comfyorg/comfyui-desktop-bridge-types@0.5.0': {}
 
   '@comfyorg/comfyui-electron-types@0.6.2': {}
 
@@ -13815,7 +13845,7 @@ snapshots:
       '@vueuse/shared': 14.4.0(vue@3.5.42(typescript@6.0.3))
       vue: 3.5.42(typescript@6.0.3)
 
-  '@vueuse/integrations@14.4.0(axios@1.18.1)(fuse.js@7.0.0)(vue@3.5.42(typescript@6.0.3))':
+  '@vueuse/integrations@14.4.0(axios@1.18.1(debug@4.4.3))(fuse.js@7.0.0)(vue@3.5.42(typescript@6.0.3))':
     dependencies:
       '@vueuse/core': 14.4.0(vue@3.5.42(typescript@6.0.3))
       '@vueuse/shared': 14.4.0(vue@3.5.42(typescript@6.0.3))

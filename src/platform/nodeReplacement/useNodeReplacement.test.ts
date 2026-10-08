@@ -548,7 +548,6 @@ describe('useNodeReplacement', () => {
       vi.mocked(LiteGraph.createNode).mockReturnValue(
         createNewNode([{ name: 'in', link: null }])
       )
-      vi.spyOn(console, 'error').mockImplementation(() => {})
 
       const result = useNodeReplacement().replaceNodesInPlace([
         makeMissingNodeType('OldNode', {
@@ -632,7 +631,6 @@ describe('useNodeReplacement', () => {
         code: 'duplicate-target',
         message: 'forced'
       })
-      vi.spyOn(console, 'error').mockImplementation(() => {})
 
       const result = useNodeReplacement().replaceNodesInPlace([
         makeMissingNodeType('OldNode', {
@@ -668,7 +666,6 @@ describe('useNodeReplacement', () => {
       vi.mocked(collectAllNodes).mockReturnValue([placeholder])
       const newNode = createNewNode([], [{ name: 'removed', links: null }])
       vi.mocked(LiteGraph.createNode).mockReturnValue(newNode)
-      vi.spyOn(console, 'error').mockImplementation(() => {})
       const staleWidgetId = widgetId(GRAPH_ID, toNodeId(1), 'stale')
       useWidgetValueStore().registerWidget(staleWidgetId, {
         type: 'number',
@@ -818,7 +815,6 @@ describe('useNodeReplacement', () => {
         vi.mocked(LiteGraph.createNode).mockReturnValue(createNewNode())
         vi.mocked(canTransferReplacementOwnership).mockReturnValue(canTransfer)
         vi.mocked(transferReplacementOwnership).mockReturnValue(didTransfer)
-        vi.spyOn(console, 'error').mockImplementation(() => {})
 
         const result = useNodeReplacement().replaceNodesInPlace([
           makeMissingNodeType('OldNode', {
@@ -1875,7 +1871,6 @@ describe('useNodeReplacement', () => {
       vi.mocked(collectAllNodes).mockReturnValue([placeholder])
       const newNode = createNewNode()
       vi.mocked(LiteGraph.createNode).mockReturnValue(newNode)
-      vi.spyOn(console, 'error').mockImplementation(() => {})
 
       useNodeReplacement().replaceNodesInPlace([
         makeMissingNodeType('OldType', {

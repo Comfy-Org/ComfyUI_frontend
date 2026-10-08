@@ -39,6 +39,9 @@ const config: KnipConfig = {
     'packages/tailwind-utils': {
       project: ['src/**/*.{js,ts}']
     },
+    'packages/test-utils': {
+      project: ['src/**/*.ts']
+    },
     'packages/shared-frontend-utils': {
       project: ['src/**/*.{js,ts}']
     },
