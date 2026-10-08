@@ -118,6 +118,8 @@ export const useWorkspaceAuthStore = defineStore('workspaceAuth', () => {
 
   // State
   const currentWorkspace = shallowRef<WorkspaceIdentity | null>(null)
+  /** A team workspace the server refused, held until a reload or a new selection so requests never fall back to Personal. */
+  const deniedWorkspaceId = shallowRef<string | null>(null)
   const isLoading = ref(false)
   const error = ref<Error | null>(null)
 
@@ -259,6 +261,7 @@ export const useWorkspaceAuthStore = defineStore('workspaceAuth', () => {
       )
     }
     const { id, name, type, role = 'member' } = current.data
+    deniedWorkspaceId.value = null
     currentWorkspace.value = { id, name, type, role }
     persistWorkspaceIdentity(currentWorkspace.value)
   }
@@ -274,6 +277,7 @@ export const useWorkspaceAuthStore = defineStore('workspaceAuth', () => {
   function dropDeniedWorkspace(workspaceId: string): void {
     if (currentWorkspace.value?.id !== workspaceId) return
     endWorkspaceSession(workspaceId)
+    deniedWorkspaceId.value = workspaceId
   }
 
   // --- Unified Cloud-JWT lifecycle (flag-gated: unified_cloud_auth) ----------
@@ -667,6 +671,7 @@ export const useWorkspaceAuthStore = defineStore('workspaceAuth', () => {
   }
 
   function clearWorkspaceContext(): void {
+    deniedWorkspaceId.value = null
     clearLegacyContext()
     error.value = null
     clearSessionStorage()
@@ -707,6 +712,7 @@ export const useWorkspaceAuthStore = defineStore('workspaceAuth', () => {
   return {
     // State
     currentWorkspace,
+    deniedWorkspaceId,
     workspaceToken,
     unifiedToken,
     isLoading,
