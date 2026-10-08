@@ -24,16 +24,31 @@ const {
   loading = false,
   disabled = false
 } = defineProps<Props>()
+
+/** Keep a loading button focusable without allowing a second activation. */
+function preventDisabledClick(event: MouseEvent): void {
+  if (!loading && !disabled) return
+  event.preventDefault()
+  event.stopImmediatePropagation()
+}
 </script>
 
 <template>
   <Primitive
     :as
     :as-child
-    :disabled="disabled || loading"
+    :disabled="disabled"
+    :aria-disabled="disabled || loading || undefined"
     :aria-busy="loading || undefined"
     :data-variant="variant"
-    :class="cn(buttonVariants({ variant, size }), customClass)"
+    :class="
+      cn(
+        buttonVariants({ variant, size }),
+        'aria-disabled:opacity-50',
+        customClass
+      )
+    "
+    @click.capture="preventDisabledClick"
   >
     <i v-if="loading" class="pi pi-spin pi-spinner" aria-hidden="true" />
     <template v-if="loading">
