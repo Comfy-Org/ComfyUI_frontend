@@ -36,12 +36,13 @@ jobs:
         uses: ./.github/actions/resolve-pr-from-workflow-run
 
       - name: Find size workflow run
-        if: steps.pr-meta.outputs.skip != 'true'
+        if: steps.pr-meta.outputs.skip != 'true' && steps.pr-meta.outputs.base == 'main'
         id: find-size
         uses: ./.github/actions/find-workflow-run
         with:
           workflow-id: ci-dist-inspection.yaml
           head-sha: ${{ steps.pr-meta.outputs.head-sha }}
+          event: pull_request
           artifact-name: size-data
           not-found-status: skip
           token: ${{ secrets.GITHUB_TOKEN }}
@@ -53,6 +54,7 @@ jobs:
         with:
           workflow-id: ci-perf-report.yaml
           head-sha: ${{ steps.pr-meta.outputs.head-sha }}
+          event: pull_request
           artifact-name: perf-metrics
           not-found-status: skip
           token: ${{ secrets.GITHUB_TOKEN }}
@@ -86,6 +88,7 @@ jobs:
         with:
           workflow-id: ci-tests-e2e.yaml
           head-sha: ${{ steps.pr-meta.outputs.head-sha }}
+          event: pull_request
           artifact-name: e2e-coverage
           not-found-status: skip
           token: ${{ secrets.GITHUB_TOKEN }}
@@ -136,7 +139,7 @@ jobs:
         if: steps.pr-meta.outputs.skip != 'true'
         run: >
           pnpm exec tsx scripts/unified-report.ts
-          --size-status=${{ steps.find-size.outputs.status }}
+          --size-status=${{ steps.find-size.outputs.status || 'skip' }}
           --perf-status=${{ steps.find-perf.outputs.status }}
           --coverage-status=${{ steps.find-coverage.outputs.status }}
           > pr-report.md
