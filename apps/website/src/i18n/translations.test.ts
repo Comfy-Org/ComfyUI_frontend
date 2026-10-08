@@ -82,7 +82,8 @@ describe('site translations', () => {
   it('falls back from Japanese to English', () => {
     const { t } = translationsFor('ja')
     expect(t('hero.title')).toBe('ビジュアルAIを自在にコントロール')
-    expect(t('tags.partnerNodes')).toBe('Partner Nodes')
+    expect(t('tags.partnerNodes')).toBe('パートナーノード')
+    expect(t('tos.effectiveDateLabel')).toBe('Effective Date')
   })
 
   it('preserves intentional empty messages', () => {

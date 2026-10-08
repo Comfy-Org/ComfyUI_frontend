@@ -41,4 +41,20 @@ describe('FAQSection', () => {
     ).toBeTruthy()
     expect(screen.getAllByRole('button')).toHaveLength(11)
   })
+
+  it('keeps Japanese readers on the translated pricing page', () => {
+    render(FAQSection, {
+      props: {
+        locale: 'ja',
+        headingKey: 'cloud.faq.heading',
+        faqPrefix: 'cloud.faq',
+        faqCount: 12,
+        footerKey: 'cloud.faq.footer'
+      }
+    })
+
+    expect(
+      screen.getByRole('link', { name: '料金に関するよくある質問' })
+    ).toHaveAttribute('href', '/ja/pricing/#faq')
+  })
 })

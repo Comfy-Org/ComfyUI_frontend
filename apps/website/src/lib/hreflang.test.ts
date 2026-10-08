@@ -37,8 +37,6 @@ describe('hreflangAlternates', () => {
   })
 
   it('handles the home page in every locale that has one', () => {
-    // The home page is the one route with all three locales, so it is the only
-    // place the full cluster shape can be asserted today.
     const home = hreflangAlternates('/', ORIGIN)
     expect(home).toEqual([
       { hreflang: 'en', href: 'https://comfy.org/' },
@@ -65,9 +63,7 @@ describe('hreflangAlternates', () => {
     expect(hrefs).not.toContain('https://comfy.org/ja/ja/')
   })
 
-  // Japanese has exactly one page. A blanket rule like Chinese's would
-  // advertise a Japanese URL for every route on the site.
-  it.for(['/cli/', '/zh-CN/cli/', '/mcp/', '/zh-CN/pricing/'])(
+  it.for(['/cli/', '/zh-CN/cli/', '/mcp/', '/zh-CN/enterprise/'])(
     'offers no ja alternate for unpublished route %s',
     (pathname) => {
       expect(

@@ -85,6 +85,23 @@ describe('MinimaxLicensePricingSection', () => {
     expect(cta.getAttribute('href')).toBe('/minimax/license/')
   })
 
+  it('renders Japanese pricing while keeping unpublished destinations in English', () => {
+    render(MinimaxLicensePricingSection, { props: { locale: 'ja' } })
+
+    expect(
+      screen.getByRole('rowheader', { name: 'ライセンス対象ユーザー数' })
+    ).toBeTruthy()
+    expect(screen.getByRole('cell', { name: '月額$5,000から' })).toBeTruthy()
+    expect(
+      screen.getByRole('link', { name: 'ライセンスプランを見る' })
+    ).toHaveAttribute('href', '/minimax/license/')
+    expect(
+      screen
+        .getAllByRole('link', { name: '営業チームに問い合わせる' })
+        .map((link) => link.getAttribute('href'))
+    ).toEqual(['/contact/', '/contact/', '/contact/'])
+  })
+
   it('localizes the copy, the table and the CTA route for zh-CN', () => {
     render(MinimaxLicensePricingSection, { props: { locale: 'zh-CN' } })
 

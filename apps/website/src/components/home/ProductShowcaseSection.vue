@@ -44,11 +44,15 @@ const features: Feature[] = [
   }
 ]
 
-const badgeSegments = [
-  { text: t('showcase.badgeHow') },
-  { logoSrc: '/icons/logo.svg', logoAlt: 'Comfy' },
-  { text: t('showcase.badgeWorks') }
-]
+const badgeLogo = { logoSrc: '/icons/logo.svg', logoAlt: 'Comfy' }
+const badgeSegments =
+  locale === 'ja'
+    ? [badgeLogo, { text: t('showcase.badgeWorks') }]
+    : [
+        { text: t('showcase.badgeHow') },
+        badgeLogo,
+        { text: t('showcase.badgeWorks') }
+      ]
 
 const activeIndex = ref(0)
 const sectionRef = useTemplateRef<HTMLElement>('sectionRef')

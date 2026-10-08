@@ -28,77 +28,112 @@ const MINIMAX_H3_LICENSE_REQUEST_HREF = 'https://platform.minimax.io/h3-license'
 export const minimaxLicenseComparison: ModelLaunchComparison = {
   headingKey: 'minimaxLicense.comparison.heading',
   columns: [
-    { id: 'professional', label: { en: 'Professional', 'zh-CN': '专业版' } },
-    { id: 'enterprise', label: { en: 'Enterprise', 'zh-CN': '企业版' } }
+    {
+      id: 'professional',
+      label: { en: 'Professional', ja: 'Professional', 'zh-CN': '专业版' }
+    },
+    {
+      id: 'enterprise',
+      label: { en: 'Enterprise', ja: 'Enterprise', 'zh-CN': '企业版' }
+    }
   ],
   rows: [
     {
       id: 'price',
-      label: { en: 'Price', 'zh-CN': '价格' },
+      label: { en: 'Price', ja: '料金', 'zh-CN': '价格' },
       cells: [
-        { en: 'From $5,000 / month', 'zh-CN': '5,000 美元 / 月起' },
-        { en: 'Contact sales', 'zh-CN': '联系销售' }
+        {
+          en: 'From $5,000 / month',
+          ja: '月額$5,000から',
+          'zh-CN': '5,000 美元 / 月起'
+        },
+        {
+          en: 'Contact sales',
+          ja: '営業チームに問い合わせる',
+          'zh-CN': '联系销售'
+        }
       ]
     },
     {
       id: 'video-seconds',
-      label: { en: 'Video-seconds included', 'zh-CN': '包含视频秒数' },
+      label: {
+        en: 'Video-seconds included',
+        ja: '利用可能な動画秒数',
+        'zh-CN': '包含视频秒数'
+      },
       cells: [
-        { en: '~46,250', 'zh-CN': '约 46,250' },
-        { en: 'Custom', 'zh-CN': '定制' }
+        { en: '~46,250', ja: '約46,250', 'zh-CN': '约 46,250' },
+        { en: 'Custom', ja: 'カスタム', 'zh-CN': '定制' }
       ]
     },
     {
       id: 'price-per-video-second',
       label: {
         en: 'Price per video-second (in bundle)',
+        ja: '動画1秒あたりの料金（プラン内）',
         'zh-CN': '每视频秒价格（套餐内）'
       },
       cells: [
-        { en: '$0.108', 'zh-CN': '0.108 美元' },
-        { en: 'Contact sales', 'zh-CN': '联系销售' }
+        { en: '$0.108', ja: '$0.108', 'zh-CN': '0.108 美元' },
+        {
+          en: 'Contact sales',
+          ja: '営業チームに問い合わせる',
+          'zh-CN': '联系销售'
+        }
       ]
     },
     {
       id: 'overage',
       label: {
         en: 'Overage per video-second',
+        ja: '超過分の動画1秒あたりの料金',
         'zh-CN': '超出部分每视频秒价格'
       },
       cells: [
-        { en: '$0.036', 'zh-CN': '0.036 美元' },
-        { en: 'Contact sales', 'zh-CN': '联系销售' }
+        { en: '$0.036', ja: '$0.036', 'zh-CN': '0.036 美元' },
+        {
+          en: 'Contact sales',
+          ja: '営業チームに問い合わせる',
+          'zh-CN': '联系销售'
+        }
       ]
     },
     {
       id: 'licensed-users',
-      label: { en: 'Licensed users', 'zh-CN': '授权用户' },
+      label: {
+        en: 'Licensed users',
+        ja: 'ライセンス対象ユーザー数',
+        'zh-CN': '授权用户'
+      },
       cells: [
-        { en: 'Up to 10', 'zh-CN': '最多 10 个' },
-        { en: 'No cap', 'zh-CN': '不设上限' }
+        { en: 'Up to 10', ja: '最大10人', 'zh-CN': '最多 10 个' },
+        { en: 'No cap', ja: '上限なし', 'zh-CN': '不设上限' }
       ]
     },
     {
       id: 'domains',
-      label: { en: 'Domains', 'zh-CN': '域名数量' },
+      label: { en: 'Domains', ja: 'ドメイン数', 'zh-CN': '域名数量' },
       cells: [
-        { en: '1', 'zh-CN': '1 个' },
-        { en: 'Custom', 'zh-CN': '定制' }
+        { en: '1', ja: '1', 'zh-CN': '1 个' },
+        { en: 'Custom', ja: 'カスタム', 'zh-CN': '定制' }
       ]
     },
     {
       id: 'commercial-use',
       label: {
         en: 'Commercial use of outputs',
+        ja: '生成物の商用利用',
         'zh-CN': '产出的商业使用'
       },
       cells: [
         {
           en: 'Yes, full commercial rights',
+          ja: '可（完全な商用利用権）',
           'zh-CN': '是，完整商业权利'
         },
         {
           en: 'Yes, full commercial rights',
+          ja: '可（完全な商用利用権）',
           'zh-CN': '是，完整商业权利'
         }
       ]
@@ -107,44 +142,52 @@ export const minimaxLicenseComparison: ModelLaunchComparison = {
       id: 'fine-tuning',
       label: {
         en: 'Fine-tuning and LoRA training',
+        ja: 'ファインチューニングとLoRA学習',
         'zh-CN': '微调与 LoRA 训练'
       },
       cells: [
-        { en: 'Yes', 'zh-CN': '是' },
-        { en: 'Yes', 'zh-CN': '是' }
+        { en: 'Yes', ja: '可', 'zh-CN': '是' },
+        { en: 'Yes', ja: '可', 'zh-CN': '是' }
       ]
     },
     {
       id: 'client-work',
       label: {
         en: 'Client and downstream work',
+        ja: 'クライアント案件と後続の業務での利用',
         'zh-CN': '客户与下游项目'
       },
       cells: [
-        { en: 'Yes', 'zh-CN': '是' },
-        { en: 'Yes', 'zh-CN': '是' }
+        { en: 'Yes', ja: '可', 'zh-CN': '是' },
+        { en: 'Yes', ja: '可', 'zh-CN': '是' }
       ]
     },
     {
       id: 'model-versions',
-      label: { en: 'Model versions', 'zh-CN': '模型版本' },
+      label: {
+        en: 'Model versions',
+        ja: 'モデルバージョン',
+        'zh-CN': '模型版本'
+      },
       cells: [
         {
           en: 'Distilled open-weight versions',
+          ja: '蒸留済みのオープンウェイト版',
           'zh-CN': '蒸馏开源权重版本'
         },
         {
           en: 'Open weights, including all updates as released.',
+          ja: 'オープンウェイト版（公開されるすべての更新を含む）',
           'zh-CN': '开放权重，包含发布的所有更新。'
         }
       ]
     },
     {
       id: 'term',
-      label: { en: 'Term', 'zh-CN': '期限' },
+      label: { en: 'Term', ja: '契約期間', 'zh-CN': '期限' },
       cells: [
-        { en: 'Monthly', 'zh-CN': '按月' },
-        { en: '12-month minimum', 'zh-CN': '至少 12 个月' }
+        { en: 'Monthly', ja: '月単位', 'zh-CN': '按月' },
+        { en: '12-month minimum', ja: '最低12か月', 'zh-CN': '至少 12 个月' }
       ]
     }
   ]

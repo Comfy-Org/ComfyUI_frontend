@@ -15,7 +15,7 @@ describe('localizeHref', () => {
       expected: '/zh-CN/cloud?ref=nav'
     },
     { href: '/#features', locale: 'ja', expected: '/ja/#features' },
-    { href: '/about#team', locale: 'ja', expected: '/about#team' },
+    { href: '/about#team', locale: 'ja', expected: '/ja/about#team' },
     {
       href: '/hub/models/local/4x-ultrasharp',
       locale: 'zh-CN',
@@ -71,9 +71,10 @@ describe('localizeHref', () => {
     )
   })
 
-  it('only localizes the Japanese homepage', () => {
+  it('keeps unpublished Japanese pages on their English routes', () => {
     expect(localizeHref('/', 'ja')).toBe('/ja/')
-    expect(localizeHref('/cloud', 'ja')).toBe('/cloud')
+    expect(localizeHref('/cloud', 'ja')).toBe('/ja/cloud')
+    expect(localizeHref('/enterprise', 'ja')).toBe('/enterprise')
   })
 })
 
@@ -93,7 +94,7 @@ describe('getRoutes workshop', () => {
 
   it('still localizes the rest of the Japanese routes', () => {
     expect(getRoutes('ja').home).toBe('/ja/')
-    expect(getRoutes('ja').cloud).toBe('/cloud/')
+    expect(getRoutes('ja').cloud).toBe('/ja/cloud/')
   })
 })
 

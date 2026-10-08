@@ -122,6 +122,7 @@ function toggle(index: number) {
               as="p"
               class="text-sm whitespace-pre-line text-primary-comfy-canvas/70 [&_a]:text-primary-comfy-yellow [&_a]:underline"
               :html="faq.answer"
+              :locale
             />
           </section>
         </div>
@@ -131,6 +132,7 @@ function toggle(index: number) {
           as="p"
           class="mt-8 text-sm text-primary-comfy-canvas/70 [&_a]:text-primary-comfy-yellow [&_a]:underline"
           :html="t(footerKey)"
+          :locale
         />
       </div>
     </div>
