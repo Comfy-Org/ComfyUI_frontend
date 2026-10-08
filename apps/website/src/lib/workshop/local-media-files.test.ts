@@ -1,4 +1,4 @@
-import { mkdtempSync, mkdirSync, rmSync, writeFileSync } from 'node:fs'
+import { mkdtempSync, mkdirSync, rmSync, symlinkSync, writeFileSync } from 'node:fs'
 import { tmpdir } from 'node:os'
 import { join } from 'node:path'
 import { afterEach, describe, expect, it } from 'vitest'
@@ -152,5 +152,56 @@ describe('local Workshop media', () => {
         publicDir
       )
     ).toEqual(['apps/example media.thumbnail.url: missing public/ file /cover.png'])
+  })
+
+  it('rejects a media symlink to an existing file outside public/', () => {
+    const publicDir = fixtureDir()
+    const outsideDir = fixtureDir()
+    const outsideFile = join(outsideDir, 'outside.png')
+    writeFileSync(outsideFile, 'not public')
+    symlinkSync(outsideFile, join(publicDir, 'outside.png'))
+
+    expect(
+      findMissingLocalWorkshopMedia(
+        [{ id: 'apps/example', media: { thumbnail: { url: '/outside.png' } } }],
+        publicDir
+      )
+    ).toEqual([
+      'apps/example media.thumbnail.url: local media path escapes public/ /outside.png'
+    ])
+  })
+
+  it('rejects media paths whose parent directory is a symlink outside public/', () => {
+    const publicDir = fixtureDir()
+    const outsideDir = fixtureDir()
+    writeFileSync(join(outsideDir, 'image.png'), 'private')
+    symlinkSync(outsideDir, join(publicDir, 'outside-assets'), 'dir')
+
+    expect(
+      findMissingLocalWorkshopMedia(
+        [
+          {
+            id: 'apps/example',
+            media: { thumbnail: { url: '/outside-assets/image.png' } }
+          }
+        ],
+        publicDir
+      )
+    ).toEqual([
+      'apps/example media.thumbnail.url: local media path escapes public/ /outside-assets/image.png'
+    ])
+  })
+
+  it('accepts symlinks that remain inside public/', () => {
+    const publicDir = fixtureDir()
+    writeFileSync(join(publicDir, 'source.png'), 'public media')
+    symlinkSync(join(publicDir, 'source.png'), join(publicDir, 'alias.png'))
+
+    expect(
+      findMissingLocalWorkshopMedia(
+        [{ id: 'apps/example', media: { thumbnail: { url: '/alias.png' } } }],
+        publicDir
+      )
+    ).toEqual([])
   })
 })

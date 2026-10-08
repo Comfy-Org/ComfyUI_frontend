@@ -1,4 +1,4 @@
-import { statSync } from 'node:fs'
+import { realpathSync, statSync } from 'node:fs'
 import { isAbsolute, relative, resolve, sep } from 'node:path'
 
 /** The media fields used by the Workshop display overlay. */
@@ -19,6 +19,7 @@ export function findMissingLocalWorkshopMedia(
   publicDir: string
 ): string[] {
   const root = resolve(publicDir)
+  const realRoot = realpathSync(root)
   const missing: string[] = []
 
   function check(entryId: string, field: string, url: string): void {
@@ -52,9 +53,20 @@ export function findMissingLocalWorkshopMedia(
     }
 
     try {
-      if (statSync(candidate).isFile()) return
+      // statSync follows symlinks: check their real target as well as the URL path.
+      const realCandidate = realpathSync(candidate)
+      const withinRealRoot = relative(realRoot, realCandidate)
+      if (
+        withinRealRoot === '..' ||
+        withinRealRoot.startsWith(`..${sep}`) ||
+        isAbsolute(withinRealRoot)
+      ) {
+        missing.push(`${entryId} ${field}: local media path escapes public/ ${url}`)
+        return
+      }
+      if (statSync(realCandidate).isFile()) return
     } catch {
-      // A missing file is an expected validation failure, not an exception.
+      // A missing file or broken symlink is a validation failure, not an exception.
     }
     missing.push(`${entryId} ${field}: missing public/ file ${url}`)
   }
