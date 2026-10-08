@@ -63,16 +63,24 @@ function selectDocumentText(selectedCharacters: number): void {
   })
 }
 
-function readClipboardPayload(dataTransfer: DataTransfer): unknown {
-  const match = dataTransfer
-    .getData('text/html')
-    .match(
-      /^<meta charset="utf-8"><div><span data-comfy-metadata="([A-Za-z0-9+/=]+)"><\/span><\/div><span style="white-space:pre-wrap;">Text<\/span>$/
-    )?.[1]
-  if (!match) throw new Error('Expected clipboard metadata to be written')
+const releasedHtmlPrefix =
+  '<meta charset="utf-8"><div><span data-comfy-metadata="'
+const releasedHtmlSuffix =
+  '"></span></div><span style="white-space:pre-wrap;">Text</span>'
 
-  const binaryString = atob(match)
-  const bytes = Uint8Array.from(binaryString, (char) => char.charCodeAt(0))
+function readClipboardPayload(dataTransfer: DataTransfer): unknown {
+  const html = dataTransfer.getData('text/html')
+  if (
+    !html.startsWith(releasedHtmlPrefix) ||
+    !html.endsWith(releasedHtmlSuffix)
+  )
+    throw new Error('Expected clipboard metadata to be written')
+
+  const base64Data = html.slice(
+    releasedHtmlPrefix.length,
+    -releasedHtmlSuffix.length
+  )
+  const bytes = Uint8Array.from(atob(base64Data), (char) => char.charCodeAt(0))
   return JSON.parse(new TextDecoder().decode(bytes))
 }
 
