@@ -979,7 +979,8 @@ const isBoundWorkflowActive = computed(() => {
 const {
   status: crdtStatus,
   debugSnapshot: crdtDebugSnapshot,
-  enqueueHumanOperations
+  enqueueHumanOperations,
+  docPromotedWidgets
 } = useAgentCrdtFollower(
   boundWorkflowId,
   graphMutations,
@@ -1021,7 +1022,8 @@ const mintPortWiring = attachMintPortWiring({
   layoutChanges: (listener) => layoutStore.onChange(listener),
   localActorPrefix: ACTOR_CONFIG.USER_PREFIX,
   getGraph: () => (app.isGraphReady ? app.rootGraph : null),
-  boundRootGraphId
+  boundRootGraphId,
+  docPromotedWidgets
 })
 const isCrdtDevPanelEnabled = resolveDebugPanelEnabled(
   agentPanelStore.enabled,

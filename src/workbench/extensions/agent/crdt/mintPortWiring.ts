@@ -21,6 +21,7 @@ import { parseWidgetId } from '@/types/widgetId'
 import { findSubgraphNodePathById } from '@/utils/graphTraversalUtil'
 
 import type { GraphOperation } from './graphOperations'
+import type { DocPromotedWidgets } from './agentSubgraphDefinitions'
 import { attachLayoutMintPort } from './layoutMintPort'
 import type { LayoutChangeView, LayoutMintPort } from './layoutMintPort'
 import { attachLinkMintPort } from './linkMintPort'
@@ -59,6 +60,8 @@ export interface MintPortWiringDeps {
    * nodes into the old document.
    */
   boundRootGraphId(): RootGraphId | null
+  /** The bound document's promoted-widget layout for this root node. */
+  docPromotedWidgets(nodeId: NodeId): DocPromotedWidgets | null
 }
 
 export interface MintPortWiring {
@@ -239,6 +242,10 @@ export function attachMintPortWiring(deps: MintPortWiringDeps): MintPortWiring {
       if (!graph) return null
       return graph.rootGraph?.id ?? graph.id
     },
+    rootNode(nodeId) {
+      return deps.getGraph()?.getNodeById(nodeId) ?? null
+    },
+    docPromotedWidgets: deps.docPromotedWidgets,
     resolveInteriorPath(owningGraphId) {
       const graph = deps.getGraph()
       if (!graph) return null

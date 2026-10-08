@@ -127,7 +127,8 @@ describe('mint ports against the real layout store delivery', () => {
       layoutChanges: (listener) => layoutStore.onChange(listener),
       localActorPrefix: 'user-',
       getGraph: () => graph,
-      boundRootGraphId: () => toRootGraphId(graphId)
+      boundRootGraphId: () => toRootGraphId(graphId),
+      docPromotedWidgets: () => null
     })
   })
 
@@ -358,7 +359,8 @@ describe('attachMintPortWiring: root graph scope across a tab switch', () => {
       layoutChanges: (listener) => layoutStore.onChange(listener),
       localActorPrefix: ACTOR_CONFIG.USER_PREFIX,
       getGraph: () => graphAdapter,
-      boundRootGraphId: () => boundRootGraphId
+      boundRootGraphId: () => boundRootGraphId,
+      docPromotedWidgets: () => null
     })
   })
 
