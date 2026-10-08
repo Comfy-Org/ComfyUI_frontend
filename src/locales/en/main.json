@@ -3906,6 +3906,7 @@
   "nodeHelpPage": {
     "inputs": "Inputs",
     "outputs": "Outputs",
+    "pack": "Pack",
     "type": "Type",
     "moreHelp": "For more help, visit the",
     "documentationPage": "documentation page",

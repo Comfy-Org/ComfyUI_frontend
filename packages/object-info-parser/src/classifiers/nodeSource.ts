@@ -29,6 +29,15 @@ function shortenNodeName(name: string) {
     .replace(/(-ComfyUI|_ComfyUI|-Comfy|_Comfy)$/, '')
 }
 
+function packLabel(pythonModule: string) {
+  const rest = pythonModule.slice('custom_nodes.'.length)
+  const at = rest.indexOf('@')
+  const path = at === -1 ? rest : rest.slice(0, at)
+  const version = at === -1 ? '' : rest.slice(at + 1)
+  const displayName = shortenNodeName(path.split('.')[0] || path)
+  return version ? `${displayName} ${version}` : displayName
+}
+
 export function getNodeSource(
   python_module?: string,
   essentials_category?: string
@@ -39,12 +48,15 @@ export function getNodeSource(
   const modules = python_module.split('.')
   if (essentials_category) {
     const moduleName = modules[1] ?? modules[0]
-    const displayName = shortenNodeName(moduleName.split('@')[0])
+    const label =
+      modules[0] === 'custom_nodes'
+        ? packLabel(python_module)
+        : shortenNodeName(moduleName.split('@')[0])
     return {
       type: NodeSourceType.Essentials,
       className: 'comfy-essentials',
-      displayText: displayName,
-      badgeText: displayName
+      displayText: label,
+      badgeText: label
     }
   } else if (CORE_NODE_MODULES.includes(modules[0])) {
     return {
@@ -65,13 +77,12 @@ export function getNodeSource(
     if (!moduleName) {
       return UNKNOWN_NODE_SOURCE
     }
-    const customNodeName = moduleName.split('@')[0]
-    const displayName = shortenNodeName(customNodeName)
+    const label = packLabel(python_module)
     return {
       type: NodeSourceType.CustomNodes,
       className: 'comfy-custom-nodes',
-      displayText: displayName,
-      badgeText: displayName
+      displayText: label,
+      badgeText: label
     }
   } else {
     return UNKNOWN_NODE_SOURCE
