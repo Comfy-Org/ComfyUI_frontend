@@ -45,4 +45,18 @@ describe('FeaturedBanner analytics', () => {
       [slides[1], 1]
     ])
   })
+
+  it('reports the slide on screen after the slides shrink under it', async () => {
+    const user = userEvent.setup()
+    const slides = modelSlides([flux, kling], 'en')
+    const { emitted, rerender } = render(FeaturedBanner, {
+      props: { slides, autoplay: false }
+    })
+
+    await user.click(screen.getByRole('button', { name: 'Kling' }))
+    await rerender({ slides: slides.slice(0, 1) })
+    await user.click(screen.getByTestId('featured-slide-link'))
+
+    expect(emitted().open).toEqual([[slides[0], 0]])
+  })
 })
