@@ -55,4 +55,33 @@ describe('ProductShowcaseSection', () => {
       )
     ).toHaveLength(1)
   })
+
+  it('renders supplied prizes and switches the expanded award', async () => {
+    render(ProductShowcaseSection, {
+      props: {
+        heading: 'Challenge prizes',
+        features: [
+          { title: 'Most practical', description: 'A useful working app' },
+          { title: 'Most entertaining', description: 'A delightful demo' }
+        ]
+      },
+      slots: { media: '<p>Grand prize: $10,000</p>' },
+      global: { stubs: { LottieScene: true, VideoMaskScene: true } }
+    })
+
+    expect(
+      screen.getByRole('heading', { name: 'Challenge prizes' })
+    ).toBeVisible()
+    expect(screen.getAllByText('Grand prize: $10,000')).toHaveLength(2)
+    expect(sceneSources()).toEqual([])
+    const practical = screen.getByRole('button', { name: /Most practical/ })
+    const entertaining = screen.getByRole('button', {
+      name: /Most entertaining/
+    })
+    expect(practical).toHaveAttribute('aria-expanded', 'true')
+    entertaining.click()
+    await nextTick()
+    expect(practical).toHaveAttribute('aria-expanded', 'false')
+    expect(entertaining).toHaveAttribute('aria-expanded', 'true')
+  })
 })

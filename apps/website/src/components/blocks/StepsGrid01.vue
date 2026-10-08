@@ -3,10 +3,12 @@ import { cn } from '@comfyorg/tailwind-utils'
 
 import NodeUnionIcon from '@/components/icons/NodeUnionIcon.vue'
 
-type Step = { id: string; label: string; description: string }
+type Step = { id: string; label: string; description: string; title?: string }
 
-defineProps<{
+const { layout = 'grid' } = defineProps<{
   heading: string
+  layout?: 'grid' | 'timeline'
+  highlightedId?: string
   steps: readonly Step[]
 }>()
 
@@ -49,7 +51,51 @@ function cardClass(i: number, total: number) {
       {{ heading }}
     </h2>
 
+    <ol v-if="layout === 'timeline'" class="grid grid-cols-1 md:grid-cols-4">
+      <li
+        v-for="step in steps"
+        :key="step.id"
+        class="relative pb-10 text-center"
+      >
+        <h3
+          :class="
+            cn(
+              'font-formula-narrow text-2xl font-semibold uppercase',
+              step.id === highlightedId
+                ? 'text-primary-comfy-yellow'
+                : 'text-timeline-neutral'
+            )
+          "
+        >
+          {{ step.title }}
+        </h3>
+        <span
+          :class="
+            cn(
+              'mt-3 inline-block -skew-x-12 rounded-xl px-5 py-1.5 font-formula-narrow text-3xl font-semibold text-primary-comfy-ink',
+              step.id === highlightedId
+                ? 'bg-primary-comfy-yellow'
+                : 'bg-timeline-neutral'
+            )
+          "
+        >
+          <span class="inline-block skew-x-12">{{ step.label }}</span>
+        </span>
+        <div class="relative mt-12 h-4" aria-hidden="true">
+          <div
+            class="absolute top-1/2 h-px w-full bg-primary-comfy-yellow/60"
+          ></div>
+          <div
+            class="absolute left-1/2 size-4 -translate-x-1/2 rounded-full bg-primary-comfy-yellow"
+          ></div>
+        </div>
+        <p class="mt-6 px-6 text-sm/relaxed text-primary-comfy-canvas/70">
+          {{ step.description }}
+        </p>
+      </li>
+    </ol>
     <div
+      v-else
       class="mx-auto grid max-w-3xl grid-cols-1 gap-4 lg:grid-flow-dense lg:grid-cols-2"
     >
       <div

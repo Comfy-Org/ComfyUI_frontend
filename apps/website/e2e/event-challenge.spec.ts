@@ -15,7 +15,7 @@ const locales = [
     submit: 'Submit your entry',
     event: 'Register for SF Build Night',
     question: 'Do I have to attend the SF event?',
-    answer: 'The online challenge and October 13 Build Night are separate.'
+    answer: 'The online competition and October 13 Build Night are separate.'
   },
   {
     prefix: '/zh-CN',
@@ -28,7 +28,7 @@ const locales = [
     submit: '提交作品',
     event: '报名旧金山构建之夜',
     question: '必须参加旧金山线下活动吗？',
-    answer: '线上挑战赛与 10 月 13 日构建之夜独立进行。'
+    answer: '线上比赛与 10 月 13 日构建之夜独立进行。'
   }
 ] as const
 
@@ -60,16 +60,16 @@ for (const locale of locales) {
       .getByRole('navigation', { name: locale.details })
       .getByRole('link', { name: locale.timeline, exact: true })
       .click()
-    await expect(page).toHaveURL(`${base}timeline/#challenge-content`)
+    await expect(page).toHaveURL(`${base}#timeline`)
     await expect(
-      page.getByText(locale.deadline, { exact: false })
+      page.locator('#timeline').getByText(locale.deadline, { exact: false })
     ).toBeVisible()
 
     await page
       .getByRole('navigation', { name: locale.details })
       .getByRole('link', { name: locale.terms, exact: true })
       .click()
-    await expect(page).toHaveURL(`${base}terms/#challenge-content`)
+    await expect(page).toHaveURL(`${base}#terms`)
     await expect(
       page.getByRole('heading', { name: locale.rules, exact: true })
     ).toBeVisible()

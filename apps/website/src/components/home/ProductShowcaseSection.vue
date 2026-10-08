@@ -9,7 +9,15 @@ import NodeBadge from '@/components/common/NodeBadge.vue'
 import LottieScene from './LottieScene.vue'
 import VideoMaskScene from './VideoMaskScene.vue'
 
-const { locale = 'en' } = defineProps<{ locale?: Locale }>()
+const {
+  locale = 'en',
+  features: customFeatures,
+  heading
+} = defineProps<{
+  locale?: Locale
+  features?: readonly Feature[]
+  heading?: string
+}>()
 const { t } = translationsFor(locale)
 
 interface Feature {
@@ -19,7 +27,7 @@ interface Feature {
   maskScene?: string
 }
 
-const features: Feature[] = [
+const features: readonly Feature[] = customFeatures ?? [
   {
     title: t('showcase.feature1.title'),
     description: t('showcase.feature1.description'),
@@ -66,17 +74,32 @@ useIntersectionObserver(sectionRef, ([entry]) => {
   >
     <!-- Section header -->
     <div class="flex flex-col items-center text-center">
-      <NodeBadge :segments="badgeSegments" segment-class="" />
-      <p class="mt-12 max-w-xl text-sm/relaxed text-primary-comfy-canvas">
+      <h2
+        v-if="heading"
+        class="text-3xl font-light text-primary-comfy-canvas lg:text-5xl/tight"
+      >
+        {{ heading }}
+      </h2>
+      <NodeBadge v-else :segments="badgeSegments" segment-class="" />
+      <p
+        v-if="!heading"
+        class="mt-12 max-w-xl text-sm/relaxed text-primary-comfy-canvas"
+      >
         {{ t('showcase.subtitle1') }}
       </p>
-      <p class="mt-4 max-w-xl text-sm/relaxed text-primary-comfy-canvas">
+      <p
+        v-if="!heading"
+        class="mt-4 max-w-xl text-sm/relaxed text-primary-comfy-canvas"
+      >
         {{ t('showcase.subtitle2') }}
       </p>
     </div>
 
     <!-- Content area -->
-    <div class="mt-12 flex flex-col lg:mt-24 lg:flex-row lg:items-stretch">
+    <div :class="cn('mt-12 lg:mt-24', $slots['content-heading'] && 'mb-8')">
+      <slot name="content-heading" />
+    </div>
+    <div class="flex flex-col lg:flex-row lg:items-stretch">
       <!-- Video area (desktop only) -->
       <div class="hidden flex-1 lg:flex">
         <div
@@ -90,30 +113,32 @@ useIntersectionObserver(sectionRef, ([entry]) => {
           <div
             class="relative size-full overflow-hidden rounded-[calc(2.5rem-2px)] bg-primary-comfy-ink"
           >
-            <template v-for="(feature, i) in features" :key="feature.title">
-              <LottieScene
-                v-if="feature.lottie"
-                :src="feature.lottie"
-                :active="activeIndex === i"
-                :class="
-                  cn(
-                    'absolute inset-0 size-full transition-opacity duration-300 will-change-[opacity]',
-                    activeIndex === i ? 'opacity-100' : 'opacity-0'
-                  )
-                "
-              />
-              <VideoMaskScene
-                v-else-if="feature.maskScene"
-                :src="feature.maskScene"
-                :active="activeIndex === i"
-                :class="
-                  cn(
-                    'absolute inset-0 size-full transition-opacity duration-300 will-change-[opacity]',
-                    activeIndex === i ? 'opacity-100' : 'opacity-0'
-                  )
-                "
-              />
-            </template>
+            <slot name="media">
+              <template v-for="(feature, i) in features" :key="feature.title">
+                <LottieScene
+                  v-if="feature.lottie"
+                  :src="feature.lottie"
+                  :active="activeIndex === i"
+                  :class="
+                    cn(
+                      'absolute inset-0 size-full transition-opacity duration-300 will-change-[opacity]',
+                      activeIndex === i ? 'opacity-100' : 'opacity-0'
+                    )
+                  "
+                />
+                <VideoMaskScene
+                  v-else-if="feature.maskScene"
+                  :src="feature.maskScene"
+                  :active="activeIndex === i"
+                  :class="
+                    cn(
+                      'absolute inset-0 size-full transition-opacity duration-300 will-change-[opacity]',
+                      activeIndex === i ? 'opacity-100' : 'opacity-0'
+                    )
+                  "
+                />
+              </template>
+            </slot>
           </div>
         </div>
       </div>
@@ -124,7 +149,13 @@ useIntersectionObserver(sectionRef, ([entry]) => {
           <!-- Video area (mobile, rendered before active item) -->
           <div
             v-if="activeIndex === i"
-            :class="cn('aspect-video lg:hidden', i !== 0 && 'mt-4')"
+            :class="
+              cn(
+                'lg:hidden',
+                !$slots.media && 'aspect-video',
+                i !== 0 && 'mt-4'
+              )
+            "
           >
             <div
               class="size-full animate-border-spin overflow-hidden rounded-4xl p-0.5"
@@ -132,16 +163,18 @@ useIntersectionObserver(sectionRef, ([entry]) => {
               <div
                 class="size-full overflow-hidden rounded-[calc(2rem-2px)] bg-primary-comfy-ink"
               >
-                <LottieScene
-                  v-if="feature.lottie"
-                  :src="feature.lottie"
-                  class="size-full"
-                />
-                <VideoMaskScene
-                  v-else-if="feature.maskScene"
-                  :src="feature.maskScene"
-                  class="size-full"
-                />
+                <slot name="media">
+                  <LottieScene
+                    v-if="feature.lottie"
+                    :src="feature.lottie"
+                    class="size-full"
+                  />
+                  <VideoMaskScene
+                    v-else-if="feature.maskScene"
+                    :src="feature.maskScene"
+                    class="size-full"
+                  />
+                </slot>
               </div>
             </div>
           </div>
@@ -174,6 +207,7 @@ useIntersectionObserver(sectionRef, ([entry]) => {
             />
             <button
               type="button"
+              :aria-expanded="activeIndex === i"
               :class="
                 cn(
                   'w-full cursor-pointer rounded-5xl p-8 text-left transition-colors duration-300',

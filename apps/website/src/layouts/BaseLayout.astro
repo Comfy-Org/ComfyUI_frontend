@@ -56,6 +56,7 @@ interface Props {
   extraJsonLd?: (JsonLdNode | null | undefined)[]
   minimal?: boolean
   hideAnnouncementBanner?: boolean
+  smoothScroll?: boolean
   banner?: BannerConfig
   /** PP Formula faces this page renders above the fold beyond the site-wide set. */
   preloadFonts?: readonly PPFormulaFace[]
@@ -76,6 +77,7 @@ const {
   extraJsonLd,
   minimal = false,
   hideAnnouncementBanner = false,
+  smoothScroll = false,
   banner,
   preloadFonts = []
 } = Astro.props
@@ -141,6 +143,7 @@ const structuredData = head.emitStructuredData
      visible. The horizontal clip lives on <body>. */}
 <html
   lang={locale}
+  class:list={{ 'scroll-smooth motion-reduce:scroll-auto': smoothScroll }}
   data-banner-version={bannerVisible ? bannerVersion : undefined}
 >
   <head>
