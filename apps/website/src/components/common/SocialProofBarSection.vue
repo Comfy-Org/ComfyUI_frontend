@@ -68,7 +68,7 @@ const mobileRow2Logos = logos.slice(6)
           </div>
         </div>
       </div>
-      <div v-if="mobileRow2Logos.length" class="flex w-max gap-8">
+      <div class="flex w-max gap-8">
         <div
           v-for="copy in 2"
           :key="copy"
