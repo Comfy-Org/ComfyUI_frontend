@@ -9,12 +9,6 @@ import type { QueuedJob } from '@/stores/executionStore'
 import { useExecutionStore } from '@/stores/executionStore'
 import { parseNodeId } from '@/types/nodeId'
 
-/**
- * Mirrors `progress_text` server events onto node text preview widgets and
- * removes the leftover widgets once the job resets, so a node's completed
- * status line doesn't starve other widgets of the node's height on the next
- * run.
- */
 export function useProgressTextPreviews() {
   const executionStore = useExecutionStore()
   const workflowStore = useWorkflowStore()
