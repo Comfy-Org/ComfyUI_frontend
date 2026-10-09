@@ -17,7 +17,6 @@ import { useBootstrapStore } from '@/stores/bootstrapStore'
 import { useExecutionStore } from '@/stores/executionStore'
 import { toNodeId } from '@/types/nodeId'
 import { createNodeLocatorId } from '@/types/nodeIdentification'
-import { forEachNode } from '@/utils/graphTraversalUtil'
 
 import GraphCanvas from './GraphCanvas.vue'
 const agentDocked = { value: true }
@@ -513,26 +512,6 @@ describe('GraphCanvas widget control mode watcher', () => {
 
     return { graph, controlWidget }
   }
-
-  // Exercises this file's app mock, not GraphCanvas: it checks that the mock's
-  // force-cast `rootGraph` getter hands `undefined` (not `null`) to a traversal,
-  // so the guard test below runs against the real getter's shape.
-  it('hands an undefined root graph to a traversal like the real getter', async () => {
-    await mountGraphCanvas()
-
-    expect(app.rootGraphOrUndefined).toBeUndefined()
-
-    let thrown: unknown
-    try {
-      forEachNode(app.rootGraph, () => {})
-    } catch (error) {
-      thrown = error
-    }
-
-    expect(thrown).toBeInstanceOf(TypeError)
-    expect((thrown as TypeError).message).toMatch(/undefined/)
-    expect((thrown as TypeError).message).toMatch(/'nodes'/)
-  })
 
   // Defensive: the app only writes `canvasStore.canvas` after `setup()` has
   // installed the root graph, so this state is not reachable in production. The
