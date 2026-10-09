@@ -252,11 +252,32 @@ describe('generated Vercel rules', () => {
 })
 
 describe('the parked pages', () => {
+  const parkedPages = Object.keys(import.meta.glob('/src/pages/**/_*.astro'))
+
+  it('sends each parked page to a live page with a 307', () => {
+    const vercelRedirects = toVercelRedirects(siteRedirects)
+    expect(
+      parkedPages.map((file) => {
+        const route = routeOf(file.replace('/_', '/'))
+        return vercelRedirects.find(({ source }) => source === route)
+      })
+    ).toEqual([
+      { source: '/gallery/', destination: '/customers/', permanent: false },
+      { source: '/launches/', destination: '/events/', permanent: false },
+      {
+        source: '/zh-CN/gallery/',
+        destination: '/zh-CN/customers/',
+        permanent: false
+      },
+      {
+        source: '/zh-CN/launches/',
+        destination: '/zh-CN/events/',
+        permanent: false
+      }
+    ])
+  })
+
   it.for([
-    ['/gallery', '/customers/'],
-    ['/zh-CN/gallery', '/zh-CN/customers/'],
-    ['/launches', '/events/'],
-    ['/zh-CN/launches', '/zh-CN/events/'],
     ['/gallery.md', '/customers.md'],
     ['/zh-CN/gallery.md', '/zh-CN/customers.md'],
     ['/launches.md', '/events.md'],
