@@ -658,7 +658,7 @@ export const workspaceApi = {
       )
       return zRetentionFlowResponse.parse(response.data)
     } catch (err) {
-      handleAxiosError(err)
+      handleAxiosError(err, 'prepareRetentionFlow')
     }
   },
 
@@ -676,7 +676,7 @@ export const workspaceApi = {
       )
       return zRetentionAcceptance.parse(response.data)
     } catch (err) {
-      handleAxiosError(err)
+      handleAxiosError(err, 'acceptRetentionOffer')
     }
   },
 
@@ -695,7 +695,7 @@ export const workspaceApi = {
         auth
       )
     } catch (err) {
-      handleAxiosError(err, 'getChurnkeyAuth')
+      handleAxiosError(err, 'recordRetentionFlowEvent')
     }
   },
 
