@@ -1,6 +1,6 @@
 import { fireEvent, render, screen } from '@testing-library/vue'
 import userEvent from '@testing-library/user-event'
-import { describe, expect, it, onTestFinished } from 'vitest'
+import { describe, expect, it, onTestFinished, vi } from 'vitest'
 import { defineComponent, ref } from 'vue'
 
 import { vRekaZIndex } from '@/components/dialog/vRekaZIndex'
@@ -14,6 +14,7 @@ const TooltipHarness = defineComponent({
   components: { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger },
   directives: { RekaZIndex: vRekaZIndex },
   props: {
+    delayDuration: { type: Number, default: 0 },
     disabled: { type: Boolean, default: false },
     openOnClick: { type: Boolean, default: false }
   },
@@ -21,7 +22,7 @@ const TooltipHarness = defineComponent({
     return { dialogs: ref(0) }
   },
   template: `
-    <TooltipProvider :delay-duration="0">
+    <TooltipProvider :delay-duration>
       <Tooltip :disabled :open-on-click>
         <TooltipTrigger as-child>
           <button>Trigger</button>
@@ -111,6 +112,71 @@ describe('Tooltip', () => {
     await user.tab()
 
     expect(screen.getByRole('button', { name: 'Trigger' })).toHaveFocus()
+    expect(screen.queryByRole('tooltip')).not.toBeInTheDocument()
+  })
+
+  it('stays closed when the pointer enters with a button held', async () => {
+    const user = userEvent.setup()
+    render(TooltipHarness)
+
+    await user.pointer([
+      {
+        keys: '[MouseLeft>]',
+        target: screen.getByRole('button', { name: 'Open dialog' })
+      },
+      { target: screen.getByRole('button', { name: 'Trigger' }) }
+    ])
+    await vi.advanceTimersByTimeAsync(50)
+
+    expect(screen.queryByRole('tooltip')).not.toBeInTheDocument()
+  })
+
+  it('cancels the open delay when the wheel scrolls', async () => {
+    const user = userEvent.setup({ advanceTimers: vi.advanceTimersByTime })
+    render(TooltipHarness, { props: { delayDuration: 300 } })
+    const trigger = screen.getByRole('button', { name: 'Trigger' })
+
+    await user.hover(trigger)
+    await fireEvent.wheel(trigger)
+    await vi.advanceTimersByTimeAsync(400)
+
+    expect(screen.queryByRole('tooltip')).not.toBeInTheDocument()
+  })
+
+  it('keeps the open delay for the next tooltip after an open one unmounts', async () => {
+    const user = userEvent.setup({ advanceTimers: vi.advanceTimersByTime })
+    const { rerender } = render(
+      {
+        components: {
+          Tooltip,
+          TooltipContent,
+          TooltipProvider,
+          TooltipTrigger
+        },
+        props: { showFirst: { type: Boolean, default: true } },
+        template: `
+          <TooltipProvider :delay-duration="300">
+            <Tooltip v-if="showFirst">
+              <TooltipTrigger as-child><button>First</button></TooltipTrigger>
+              <TooltipContent>First tip</TooltipContent>
+            </Tooltip>
+            <Tooltip>
+              <TooltipTrigger as-child><button>Second</button></TooltipTrigger>
+              <TooltipContent>Second tip</TooltipContent>
+            </Tooltip>
+          </TooltipProvider>
+        `
+      },
+      { props: { showFirst: true } }
+    )
+
+    await user.hover(screen.getByRole('button', { name: 'First' }))
+    await vi.advanceTimersByTimeAsync(400)
+    await screen.findByRole('tooltip')
+    await rerender({ showFirst: false })
+    await vi.advanceTimersByTimeAsync(400)
+    await user.hover(screen.getByRole('button', { name: 'Second' }))
+
     expect(screen.queryByRole('tooltip')).not.toBeInTheDocument()
   })
 
