@@ -9,10 +9,8 @@ import { translationsFor } from '@/i18n/translations'
 import HubTypeBadge from '@/components/hub/HubTypeBadge.vue'
 import Badge from '@/components/ui/badge/Badge.vue'
 import { getLogoPath } from '@/lib/hub/model-logos'
-import { accessFor } from '@/lib/workshop/explorer/model-access'
 import { nameWithoutTask, taskLabelFor } from '@/lib/workshop/task-label'
 import TagRow from '@/components/hub/TagRow.vue'
-import ModelAccessBadges from './explorer/ModelAccessBadges.vue'
 import ModelSupport from './ModelSupport.vue'
 import WorkshopCardMark from './WorkshopCardMark.vue'
 import WorkshopCardMedia from './WorkshopCardMedia.vue'
@@ -66,7 +64,6 @@ const thumbnailLabel = computed(() =>
 
 const id = useId()
 const showsTask = computed(() => !workflow.value || !underHeading)
-const access = computed(() => accessFor(model))
 // The tags stay visible inside the link but out of its name.
 const labelledBy = computed(() =>
   [
@@ -153,7 +150,6 @@ const labelledBy = computed(() =>
         >
           {{ taskLabel }}
         </Badge>
-        <ModelAccessBadges v-if="access.length" :access :locale />
         <TagRow
           :tags="model.capabilities"
           :link-tags="false"

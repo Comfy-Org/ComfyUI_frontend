@@ -5,9 +5,7 @@ import { computed } from 'vue'
 import Badge from '@/components/ui/badge/Badge.vue'
 import type { WorkshopModel } from '@/config/models-catalogue'
 import type { Locale } from '@/i18n/translations'
-import type { ModelAccess } from '@/lib/workshop/explorer/model-access'
 import type { ExploreKind } from '@/lib/workshop/explore-search'
-import ModelAccessBadges from './explorer/ModelAccessBadges.vue'
 import ExploreKindTag from './ExploreKindTag.vue'
 import WorkshopCardMark from './WorkshopCardMark.vue'
 import WorkshopCardMedia from './WorkshopCardMedia.vue'
@@ -21,7 +19,6 @@ const {
   source,
   logo = null,
   pills = [],
-  access = [],
   locale = 'en'
 } = defineProps<{
   /** Absent for something not open yet: the card is shown, dimmed, unlinked. */
@@ -35,7 +32,6 @@ const {
   source?: string
   logo?: string | null
   pills?: readonly string[]
-  access?: readonly ModelAccess[]
   locale?: Locale
 }>()
 
@@ -44,7 +40,7 @@ const linkAttrs = computed(() => {
   return newTab ? { href, target: '_blank', rel: 'noopener' } : { href }
 })
 
-const hasTags = computed(() => Boolean(pills.length || access.length))
+const hasTags = computed(() => pills.length > 0)
 </script>
 
 <template>
@@ -84,7 +80,6 @@ const hasTags = computed(() => Boolean(pills.length || access.length))
         <Badge v-for="pill in pills" :key="pill" variant="subtle">
           {{ pill }}
         </Badge>
-        <ModelAccessBadges v-if="access.length" :access :locale />
       </span>
     </span>
   </component>

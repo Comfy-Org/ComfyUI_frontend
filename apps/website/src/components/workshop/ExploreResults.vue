@@ -8,7 +8,6 @@ import type { Locale } from '@/i18n/translations'
 import { translationsFor } from '@/i18n/translations'
 import { getLogoPath } from '@/lib/hub/model-logos'
 import { SHELF_CARD } from '@/lib/workshop/card-layout'
-import { accessFor } from '@/lib/workshop/explorer/model-access'
 import type { ExploreCount, ExploreEntry } from '@/lib/workshop/explore-search'
 import { nameWithoutTask, taskLabelFor } from '@/lib/workshop/task-label'
 import { useCaseLabelKey } from '@/lib/workshop/use-case-label'
@@ -100,7 +99,6 @@ function keyOf(entry: ExploreEntry): string {
           :source="sourceOf(entry.model)"
           :logo="logoOf(entry.model)"
           :pills="useCaseLabel(entry.model)"
-          :access="accessFor(entry.model)"
           :locale
         />
       </li>

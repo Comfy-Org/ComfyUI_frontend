@@ -34,7 +34,7 @@ describe('ExploreResultCard', () => {
     }
   )
 
-  it('says what kind it is, who makes it, and how it can be used', () => {
+  it('says what kind it is, who makes it, and what it does', () => {
     render(ExploreResultCard, {
       props: {
         href: '/hub/models/beeble/',
@@ -42,8 +42,7 @@ describe('ExploreResultCard', () => {
         name: 'Beeble SwitchX',
         model: still,
         source: 'Beeble',
-        pills: ['Edit images'],
-        access: ['run', 'api']
+        pills: ['Edit images']
       }
     })
 
@@ -53,7 +52,7 @@ describe('ExploreResultCard', () => {
     expect(screen.getByTestId('explore-source')).toHaveTextContent('Beeble')
     expect(
       pills.getAllByText(/./).map((pill) => pill.textContent.trim())
-    ).toEqual(expect.arrayContaining(['Edit images', 'Run', 'API']))
+    ).toEqual(['Edit images'])
   })
 
   it.for([

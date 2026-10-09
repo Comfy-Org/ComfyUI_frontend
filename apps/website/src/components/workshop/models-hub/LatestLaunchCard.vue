@@ -8,7 +8,6 @@ import WorkshopCardMedia from '@/components/workshop/WorkshopCardMedia.vue'
 import type { WorkshopModel } from '@/config/models-catalogue'
 import type { Locale } from '@/i18n/translations'
 import { translationsFor } from '@/i18n/translations'
-import { accessBadgeKey, accessFor } from '@/lib/workshop/explorer/model-access'
 import { taskLabelFor } from '@/lib/workshop/task-label'
 
 const { model, locale = 'en' } = defineProps<{
@@ -18,7 +17,6 @@ const { model, locale = 'en' } = defineProps<{
 const { t } = translationsFor(locale)
 
 const taskLabel = computed(() => taskLabelFor(model, locale))
-const access = computed(() => accessFor(model)[0])
 </script>
 
 <template>
@@ -61,9 +59,6 @@ const access = computed(() => accessFor(model)[0])
         </p>
         <div class="mt-1 flex items-center gap-1.5">
           <Badge variant="subtle">{{ taskLabel }}</Badge>
-          <Badge v-if="access" variant="subtle">
-            {{ t(accessBadgeKey[access]) }}
-          </Badge>
         </div>
       </div>
       <BrandButton

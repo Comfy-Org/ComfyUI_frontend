@@ -42,19 +42,11 @@ describe('LatestLaunchCard', () => {
     expect(screen.getByText('Latest launch')).toBeTruthy()
   })
 
-  it('shows the task and Run when the model runs here, without its raw tags', () => {
-    vi.stubEnv('PUBLIC_WORKSHOP_ROUTER_RUN', '1')
+  it('shows only the task, without Run, API or its raw tags', () => {
     render(LatestLaunchCard, { props: { model: launch } })
 
-    expect(chips()).toEqual(['Text to Video', 'Run'])
+    expect(chips()).toEqual(['Text to Video'])
     expect(screen.queryByText('seedance-2.5')).toBeNull()
     expect(screen.queryByText('byteplus')).toBeNull()
-  })
-
-  it('shows API when the model cannot run here', () => {
-    vi.stubEnv('PUBLIC_WORKSHOP_ROUTER_RUN', undefined)
-    render(LatestLaunchCard, { props: { model: launch } })
-
-    expect(chips()).toEqual(['Text to Video', 'API'])
   })
 })

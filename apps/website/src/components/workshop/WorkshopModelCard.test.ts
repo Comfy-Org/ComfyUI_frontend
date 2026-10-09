@@ -1,5 +1,5 @@
 import { render, screen } from '@testing-library/vue'
-import { afterEach, describe, expect, it, vi } from 'vitest'
+import { afterEach, describe, expect, it } from 'vitest'
 import { nextTick } from 'vue'
 
 import type { WorkshopModel } from '@/config/models-catalogue'
@@ -299,49 +299,8 @@ describe('WorkshopModelCard', () => {
     expect(screen.getByTestId('model-card-name').textContent).toBe(shown)
   })
 
-  it.for([
-    { kind: 'a hosted model', model: base, badges: ['Run', 'API'] },
-    {
-      kind: 'a hosted model while running here is off',
-      model: base,
-      run: undefined,
-      badges: ['API']
-    },
-    {
-      kind: 'a hosted model without an input schema',
-      model: { ...base, incompleteReason: 'missing-input-schema' },
-      badges: []
-    },
-    {
-      kind: 'a workflow',
-      model: {
-        type: 'CLOUD',
-        workflowId: 'workflows/upscale-a-video',
-        slug: 'workflows/upscale-a-video',
-        name: 'Upscale a video',
-        href: '/models/workflows/upscale-a-video/',
-        workflowCount: 1,
-        capabilities: [],
-        modality: 'video'
-      },
-      badges: []
-    }
-  ] satisfies {
-    kind: string
-    model: WorkshopModel
-    run?: string
-    badges: string[]
-  }[])('says how $kind can be used', (testCase) => {
-    const { model, badges } = testCase
-    vi.stubEnv(
-      'PUBLIC_WORKSHOP_ROUTER_RUN',
-      'run' in testCase ? testCase.run : '1'
-    )
-    render(WorkshopModelCard, { props: { model } })
-    expect(
-      screen
-        .queryAllByTestId('model-access-badge')
-        .map((badge) => badge.textContent.trim())
-    ).toEqual(badges)
+  it('leaves how a model can be used to its page', () => {
+    render(WorkshopModelCard, { props: { model: base } })
+    expect(screen.queryByText(/^(Run|API)$/)).toBeNull()
   })
 })

@@ -563,13 +563,11 @@ test.describe('Models catalog', () => {
     await expect(cards).toHaveCount(Math.min(12, all))
   })
 
-  test('hosted model cards say they run here and by API', async ({ page }) => {
+  test('model cards leave Run and API to the model page', async ({ page }) => {
     await page.goto('/hub/models/')
-    const badges = page
-      .getByTestId('workshop-model-card')
-      .first()
-      .getByTestId('model-access-badges')
-    await expect(badges).toHaveText(/Run\s*API/)
+    const card = page.getByTestId('workshop-model-card').first()
+    await expect(card).toBeVisible()
+    await expect(card.getByText(/^(Run|API)$/)).toHaveCount(0)
   })
 
   test('compares two hosted models side by side', async ({ page }) => {
