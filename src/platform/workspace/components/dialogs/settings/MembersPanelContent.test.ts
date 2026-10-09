@@ -948,6 +948,17 @@ describe('MembersPanelContent', () => {
       expect((button as HTMLButtonElement).disabled).toBe(true)
     })
 
+    it('hides the Active tab when there is no Pending tab to switch to', () => {
+      mockUiConfig.value = { ...mockUiConfig.value, showPendingTab: false }
+      renderComponent()
+      expect(
+        screen.queryByText('workspacePanel.members.tabs.active')
+      ).toBeNull()
+      expect(
+        screen.getByText('workspacePanel.members.columns.role')
+      ).toBeInTheDocument()
+    })
+
     it('hides the view tabs for a lone owner', () => {
       mockShowViewTabs.value = false
       renderComponent()
