@@ -1,12 +1,12 @@
 <script setup lang="ts">
-import { Film, Scissors, Upload } from '@lucide/vue'
+import { Scissors } from '@lucide/vue'
 import { computed } from 'vue'
 
-import EditorCollapsible from '@/components/workshop/app-editor/EditorCollapsible.vue'
+import EditorDropZone from '@/components/workshop/app-editor/EditorDropZone.vue'
 import EditorPanelRow from '@/components/workshop/app-editor/EditorPanelRow.vue'
 import EditorSelect from '@/components/workshop/app-editor/EditorSelect.vue'
 import EditorTextArea from '@/components/workshop/app-editor/EditorTextArea.vue'
-import EditorUploadSlot from '@/components/workshop/app-editor/EditorUploadSlot.vue'
+import EditorTiles from '@/components/workshop/app-editor/EditorTiles.vue'
 import type { Locale } from '@/i18n/translations'
 import { translationsFor } from '@/i18n/translations'
 import type {
@@ -15,9 +15,10 @@ import type {
   SwapWindow
 } from '@/lib/workshop/openjutsu/clip'
 import { SWAP_SIZES } from '@/lib/workshop/openjutsu/clip'
+import OpenjutsuSeedField from './OpenjutsuSeedField.vue'
 import OpenjutsuVideoInput from './OpenjutsuVideoInput.vue'
 
-/** The panel's fields, in the order a run needs them. */
+/** The panel's fields, in the order a run needs them, once a video is chosen. */
 const {
   videoUrl,
   videoName,
@@ -29,12 +30,12 @@ const {
   characterName,
   locale = 'en'
 } = defineProps<{
-  videoUrl?: string
+  videoUrl: string
   videoName?: string
   clipSeconds?: number
   range?: SwapWindow
   partSeconds?: number
-  /** The frame the result is saved at, once a video is chosen. */
+  /** The frame the result is saved at. */
   savedSize?: SwapCanvas
   characterUrl?: string
   characterName?: string
@@ -68,110 +69,92 @@ const videoDetail = computed(() =>
       })
 )
 
-/** Empty is random; a whole number, not negative, is a fixed seed. */
-function setSeed(event: Event) {
-  if (!(event.target instanceof HTMLInputElement)) return
-  const value = Number.parseFloat(event.target.value)
-  seed.value = Number.isFinite(value)
-    ? Math.max(0, Math.floor(value))
-    : undefined
-}
-
-const pill =
-  'flex h-7 shrink-0 cursor-pointer items-center gap-1 rounded-full bg-transparency-white-t8 px-2.5 text-[11px] text-primary-comfy-canvas transition hover:text-primary-warm-white focus-visible:ring-3 focus-visible:ring-primary-comfy-yellow/50 focus-visible:outline-none'
-const heading = 'px-1 text-xs text-primary-warm-gray'
+const characterTiles = computed(() =>
+  characterUrl
+    ? [{ id: 'character', label: characterName ?? '', src: characterUrl }]
+    : []
+)
+const characterUpload = computed(() =>
+  characterUrl
+    ? {
+        label: t('openjutsu.character.change'),
+        caption: t('reshoot.clip.change'),
+        inputTestId: 'openjutsu-character-file'
+      }
+    : {
+        label: t('openjutsu.character.drop'),
+        caption: t('openjutsu.character.upload'),
+        inputTestId: 'openjutsu-character-file'
+      }
+)
 </script>
 
 <template>
-  <EditorPanelRow data-testid="openjutsu-video-row">
-    <h2 :class="heading">{{ t('openjutsu.video.heading') }}</h2>
-    <div v-if="videoUrl" class="flex items-center gap-2.5 px-1">
-      <video
-        :src="videoUrl"
-        muted
-        playsinline
-        preload="metadata"
-        aria-hidden="true"
-        class="aspect-video w-16 shrink-0 rounded-md bg-primary-comfy-ink object-cover"
-      />
-      <span class="flex min-w-0 flex-1 flex-col">
-        <span class="truncate text-xs font-medium text-primary-warm-white">
-          {{ videoName }}
-        </span>
-        <span
-          v-if="videoDetail"
-          class="text-[11px]/snug text-primary-warm-gray"
-          data-testid="openjutsu-part"
-        >
+  <div
+    role="group"
+    :aria-label="t('openjutsu.video.heading')"
+    class="flex items-center gap-3 px-1 pt-2 pb-1"
+    data-testid="openjutsu-video-row"
+  >
+    <video
+      :src="videoUrl"
+      muted
+      playsinline
+      preload="metadata"
+      aria-hidden="true"
+      class="size-10 shrink-0 rounded-lg bg-primary-comfy-ink object-cover"
+    />
+    <span class="flex min-w-0 flex-1 flex-col">
+      <span class="truncate text-xs text-primary-warm-white">
+        {{ videoName }}
+      </span>
+      <button
+        v-if="videoDetail"
+        type="button"
+        class="flex w-fit items-start gap-1 rounded-sm text-left text-[11px]/snug text-primary-warm-gray tabular-nums transition hover:text-primary-warm-white focus-visible:ring-2 focus-visible:ring-primary-comfy-yellow/50 focus-visible:outline-none"
+        data-testid="openjutsu-part"
+        @click="emit('trim')"
+      >
+        <Scissors class="mt-0.5 size-3 shrink-0" aria-hidden="true" />
+        <span>
+          <span class="sr-only">{{ t('openjutsu.trim.edit') }}:</span>
           {{ videoDetail }}
         </span>
-      </span>
-    </div>
-    <div v-if="videoUrl" class="flex gap-1.5 px-1">
-      <button type="button" :class="pill" @click="emit('trim')">
-        <Scissors class="size-3" aria-hidden="true" />
-        {{ t('openjutsu.trim.edit') }}
       </button>
-      <OpenjutsuVideoInput
-        :class="pill"
-        :label="t('reshoot.clip.replace')"
-        @file="emit('video', $event)"
-      >
-        {{ t('reshoot.clip.change') }}
-      </OpenjutsuVideoInput>
-    </div>
+    </span>
     <OpenjutsuVideoInput
-      v-else
-      :label="t('openjutsu.video.drop')"
-      class="flex items-center gap-3 rounded-lg border border-dashed border-transparency-white-t20 px-3 py-2.5 text-left hover:bg-transparency-white-t4"
+      :label="t('reshoot.clip.replace')"
+      class="flex h-7 shrink-0 items-center rounded-full bg-transparency-white-t8 px-3 text-xs text-primary-warm-white hover:bg-transparency-white-t20"
       @file="emit('video', $event)"
     >
-      <Film class="size-4 shrink-0 text-primary-warm-gray" aria-hidden="true" />
-      <span class="flex min-w-0 flex-col">
-        <span class="text-xs font-medium text-primary-warm-white">
-          {{ t('openjutsu.video.drop') }}
-        </span>
-        <span class="text-[11px]/snug text-primary-warm-gray">
-          {{ t('openjutsu.video.hint') }}
-        </span>
-      </span>
+      {{ t('reshoot.clip.change') }}
     </OpenjutsuVideoInput>
-  </EditorPanelRow>
+  </div>
 
   <EditorPanelRow>
-    <h2 :class="heading">{{ t('openjutsu.character.heading') }}</h2>
-    <div class="flex items-center gap-2.5 px-1">
-      <EditorUploadSlot
-        :label="
+    <EditorDropZone
+      class="flex flex-col gap-2 rounded-xl"
+      @file="emit('character', $event)"
+    >
+      <h2 class="px-1 text-xs text-primary-warm-gray">
+        {{ t('openjutsu.character.heading') }}
+      </h2>
+      <EditorTiles
+        :model-value="characterUrl ? 'character' : undefined"
+        :label="t('openjutsu.character.heading')"
+        :options="characterTiles"
+        aspect="square"
+        :upload="characterUpload"
+        @upload="emit('character', $event)"
+      />
+      <p class="px-1 text-[11px]/snug text-primary-warm-gray">
+        {{
           characterUrl
-            ? t('reshoot.clip.change')
-            : t('openjutsu.character.drop')
-        "
-        input-test-id="openjutsu-character-file"
-        class="grid size-14 shrink-0 cursor-pointer place-items-center overflow-hidden rounded-lg border border-dashed border-transparency-white-t20 text-primary-warm-gray transition hover:bg-transparency-white-t4 hover:text-primary-warm-white focus-visible:ring-3 focus-visible:ring-primary-comfy-yellow/50 focus-visible:outline-none"
-        @file="emit('character', $event)"
-      >
-        <img
-          v-if="characterUrl"
-          :src="characterUrl"
-          alt=""
-          class="size-full object-cover"
-        />
-        <Upload v-else class="size-4" aria-hidden="true" />
-      </EditorUploadSlot>
-      <span class="flex min-w-0 flex-1 flex-col">
-        <span class="truncate text-xs font-medium text-primary-warm-white">
-          {{ characterName ?? t('openjutsu.character.drop') }}
-        </span>
-        <span class="text-[11px]/snug text-primary-warm-gray">
-          {{
-            characterUrl
-              ? t('openjutsu.character.detail')
-              : t('openjutsu.character.hint')
-          }}
-        </span>
-      </span>
-    </div>
+            ? t('openjutsu.character.detail')
+            : t('openjutsu.character.hint')
+        }}
+      </p>
+    </EditorDropZone>
   </EditorPanelRow>
 
   <EditorPanelRow>
@@ -204,25 +187,11 @@ const heading = 'px-1 text-xs text-primary-warm-gray'
           : t('openjutsu.size.shape')
       }}
     </p>
+    <OpenjutsuSeedField
+      v-model="seed"
+      :label="t('reshoot.seed.label')"
+      :random-label="t('reshoot.seed.random')"
+      :shuffle-label="t('openjutsu.seed.shuffle')"
+    />
   </EditorPanelRow>
-
-  <EditorCollapsible :title="t('reshoot.advanced.label')">
-    <label class="flex h-8 items-center gap-2 px-1">
-      <span class="w-24 shrink-0 text-xs text-primary-warm-gray">
-        {{ t('reshoot.seed.label') }}
-      </span>
-      <input
-        :value="seed ?? ''"
-        type="number"
-        min="0"
-        step="1"
-        :placeholder="t('reshoot.seed.random')"
-        class="h-8 min-w-0 flex-1 rounded-lg bg-transparency-white-t4 px-2.5 text-xs text-primary-warm-white tabular-nums placeholder:text-primary-warm-gray/60 focus-visible:ring-2 focus-visible:ring-primary-comfy-yellow/50 focus-visible:outline-none"
-        @change="setSeed"
-      />
-    </label>
-    <p class="px-1 text-[11px]/snug text-primary-warm-gray">
-      {{ t('reshoot.seed.help') }}
-    </p>
-  </EditorCollapsible>
 </template>

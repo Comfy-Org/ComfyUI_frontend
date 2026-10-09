@@ -5619,13 +5619,18 @@
       "heading": "New character",
       "drop": "Add a character image",
       "hint": "One image: a clear full view or a character sheet.",
-      "detail": "Replaces the person you name below"
+      "detail": "Replaces the person you name below",
+      "upload": "Upload",
+      "change": "Choose another character image"
     },
     "target": {
       "heading": "Who to replace",
       "placeholder": "e.g. the man in the purple shirt",
       "hint": "Describe one person so they cannot be confused with anyone else in the shot.",
       "help": "The swap follows this description, not a click on the picture. Say what sets the person apart: clothing, position, hair."
+    },
+    "seed": {
+      "shuffle": "Pick a random seed"
     },
     "trim": {
       "edit": "Trim",

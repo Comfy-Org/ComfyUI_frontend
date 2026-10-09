@@ -9,8 +9,8 @@ import type { StudioGate } from '@/lib/workshop/cinematic-studio/gate'
 import type { MissingInput } from '@/lib/workshop/openjutsu/swap-rules'
 
 /**
- * The panel's pinned footer: Swap with what it costs once the account can
- * run, or what the account has to do first, then the line under it.
+ * The panel's pinned footer: the kit's run button, saying why it cannot swap
+ * when it cannot, or what the account has to do first, then the line under it.
  */
 const {
   gate,
@@ -40,33 +40,34 @@ const NEEDS = {
   target: 'openjutsu.needs.target'
 } as const
 
-/** A run the quote refuses says why on the button, in place of its label. */
-const blocked = computed(() =>
-  gate === 'ready' && !missing && !canGenerate && !rendering
-    ? priceNote
-    : undefined
+/** Gates the account can act on keep their own buttons: sign in, buy, switch. */
+const accountGate = computed(
+  () =>
+    !rendering &&
+    (gate === 'signedOut' || gate === 'noCredits' || gate === 'memberNoCredits')
 )
-const footnote = computed(() =>
-  rendering ? t('openjutsu.generate.busy') : t('openjutsu.generate.note')
+
+/** Why the button cannot swap, said on it in place of its label. */
+const blocked = computed(() => {
+  if (rendering || gate === 'unavailable') return undefined
+  if (gate === 'pending') return t('cinematic.output.checking')
+  if (missing) return t(NEEDS[missing])
+  return canGenerate ? undefined : priceNote
+})
+const footnote = computed(() => {
+  if (rendering) return t('openjutsu.generate.busy')
+  if (gate === 'unavailable') return t('openjutsu.unavailable')
+  return t('openjutsu.generate.note')
+})
+const showPrice = computed(
+  () => gate === 'ready' && !!priceNote && blocked.value !== priceNote
 )
 </script>
 
 <template>
   <div class="flex flex-col gap-2">
-    <EditorRun
-      v-if="gate === 'ready' || rendering"
-      :label="t('openjutsu.run')"
-      :cancel-label="t('reshoot.cancel')"
-      :running="rendering"
-      :disabled="!canGenerate"
-      :missing="missing ? t(NEEDS[missing]) : blocked"
-      block
-      data-testid="openjutsu-action"
-      @run="emit('generate')"
-      @cancel="emit('cancel')"
-    />
     <CinematicGenerateAction
-      v-else
+      v-if="accountGate"
       :gate
       :workspace-name
       :rendering="false"
@@ -75,8 +76,20 @@ const footnote = computed(() =>
       wide
       :locale
     />
+    <EditorRun
+      v-else
+      :label="t('openjutsu.run')"
+      :cancel-label="t('reshoot.cancel')"
+      :running="rendering"
+      :disabled="!canGenerate"
+      :missing="blocked"
+      block
+      data-testid="openjutsu-action"
+      @run="emit('generate')"
+      @cancel="emit('cancel')"
+    />
     <p
-      v-if="priceNote && !blocked"
+      v-if="showPrice"
       class="text-center text-xs font-medium text-primary-warm-white"
       data-testid="openjutsu-price"
     >

@@ -1,5 +1,4 @@
 <script setup lang="ts">
-import { Film } from '@lucide/vue'
 import { computed, onBeforeUnmount, onMounted, ref, watch } from 'vue'
 
 import RunLeaveDialog from '@/components/workshop/RunLeaveDialog.vue'
@@ -127,7 +126,7 @@ onBeforeUnmount(() =>
       />
     </template>
 
-    <template #panel>
+    <template v-if="videoUrl" #panel>
       <OpenjutsuPanel
         v-model:target="target"
         v-model:seed="seed"
@@ -146,10 +145,9 @@ onBeforeUnmount(() =>
         @trim="swap.editTrim"
       />
     </template>
-    <template #panel-peek>
+    <template v-if="videoUrl" #panel-peek>
       <span class="flex shrink-0 items-center gap-1">
         <video
-          v-if="videoUrl"
           :src="videoUrl"
           muted
           playsinline
@@ -157,7 +155,6 @@ onBeforeUnmount(() =>
           aria-hidden="true"
           class="h-7 w-10 rounded-sm bg-primary-comfy-ink object-cover"
         />
-        <Film v-else class="size-4 text-primary-warm-gray" aria-hidden="true" />
         <img
           v-if="characterUrl"
           :src="characterUrl"
@@ -174,7 +171,7 @@ onBeforeUnmount(() =>
       </span>
       <span class="shrink-0 text-xs text-primary-warm-gray">{{ size }}</span>
     </template>
-    <template #panel-footer>
+    <template v-if="videoUrl" #panel-footer>
       <OpenjutsuRun
         :gate
         :missing

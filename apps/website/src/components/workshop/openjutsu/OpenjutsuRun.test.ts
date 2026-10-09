@@ -41,11 +41,30 @@ describe('OpenjutsuRun', () => {
         priceNote: 'No free runs left; next one in 5 hours'
       },
       says: 'No free runs left; next one in 5 hours'
+    },
+    {
+      name: 'the account is still being checked',
+      props: { gate: 'pending' as const, canGenerate: false },
+      says: 'Checking…'
     }
   ])('says why it cannot swap when $name', ({ props, says }) => {
     render(OpenjutsuRun, { props: { ...ready, ...props } })
 
     expect(screen.getByRole('button', { name: says })).toBeDisabled()
+  })
+
+  it('keeps the swap button, disabled, with the reason under it when swaps are unavailable', () => {
+    render(OpenjutsuRun, {
+      props: { ...ready, gate: 'unavailable', canGenerate: false }
+    })
+
+    expect(
+      screen.getByRole('button', { name: 'Swap character' })
+    ).toBeDisabled()
+    expect(
+      screen.getByText('Openjutsu is not available right now. Try again later.')
+    ).toBeVisible()
+    expect(screen.queryByTestId('openjutsu-price')).toBeNull()
   })
 
   it('becomes Cancel while a take renders, with the panel still open for the next', async () => {

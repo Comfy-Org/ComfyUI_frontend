@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { Film } from '@lucide/vue'
+import { Upload } from '@lucide/vue'
 
 import type { Locale } from '@/i18n/translations'
 import { translationsFor } from '@/i18n/translations'
@@ -13,7 +13,7 @@ const emit = defineEmits<{ video: [file: File] }>()
 
 <template>
   <OpenjutsuVideoInput
-    class="flex w-full max-w-120 flex-col items-center gap-5 self-center rounded-2xl border border-dashed border-transparency-white-t20 bg-primary-comfy-ink/70 px-6 py-8 text-center backdrop-blur-sm sm:px-10"
+    class="my-auto flex w-full max-w-120 flex-col items-center gap-5 self-center rounded-2xl border border-dashed border-transparency-white-t20 bg-primary-comfy-ink/70 px-6 py-8 text-center backdrop-blur-sm sm:px-10"
     :label="t('openjutsu.video.drop')"
     data-testid="openjutsu-empty"
     @file="emit('video', $event)"
@@ -21,13 +21,13 @@ const emit = defineEmits<{ video: [file: File] }>()
     <span
       class="flex size-11 items-center justify-center rounded-xl bg-transparency-white-t8 text-primary-warm-white"
     >
-      <Film class="size-5" aria-hidden="true" />
+      <Upload class="size-5" aria-hidden="true" />
     </span>
     <span class="flex flex-col gap-1">
       <span class="text-base font-medium text-primary-warm-white">
         {{ t('openjutsu.empty.title') }}
       </span>
-      <span class="text-xs/relaxed text-primary-warm-gray">
+      <span class="text-xs text-primary-warm-gray">
         {{ t('openjutsu.empty.hint') }}
       </span>
     </span>
