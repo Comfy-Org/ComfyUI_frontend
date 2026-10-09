@@ -29,7 +29,6 @@ export function useMaskEditor() {
         contentClass: 'mask-editor-dialog w-[90vw] h-[90vh] max-h-[90vh]',
         headerClass: 'p-2',
         bodyClass: 'flex min-h-0 flex-col p-0',
-        modal: true,
         maximizable: true,
         closable: true
       }

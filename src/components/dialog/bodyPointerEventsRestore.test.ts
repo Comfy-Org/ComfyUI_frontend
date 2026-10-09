@@ -65,8 +65,7 @@ function openModal(
   store.showDialog({
     key,
     title: key,
-    component,
-    dialogComponentProps: { modal: true }
+    component
   })
 }
 

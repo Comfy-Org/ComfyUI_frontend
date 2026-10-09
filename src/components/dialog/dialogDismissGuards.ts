@@ -1,7 +1,7 @@
 // Reka portals its dialogs / popovers / menus into the body. When a
-// nested Reka layer opens on top of a non-modal parent, the parent's
-// DismissableLayer sees the focus shift / pointer-down as "outside" and would
-// dismiss itself. These selectors cover the portaled roots so we can treat
+// separately rooted Reka layer opens on top of a dialog, the dialog's
+// DismissableLayer sees a pointer-down on it as "outside" and would dismiss
+// itself. These selectors cover the portaled roots so we can treat
 // interactions on them as inside.
 const REKA_PORTAL_SELECTORS =
   '[data-reka-popper-content-wrapper], [data-reka-dialog-content], [data-reka-menu-content], [data-reka-context-menu-content], [data-reka-nested-dialog-overlay], [role="dialog"], [role="menu"], [role="listbox"], [role="tooltip"]'
@@ -41,31 +41,6 @@ export function onRekaPointerDownOutside(
     return
   }
   if (options.dismissOnPointerDownOutside === false) {
-    event.preventDefault()
-  }
-}
-
-// Focus / interact-outside fires when focus moves to a sibling portal (a
-// nested dialog teleported to body). Without this guard a
-// non-modal Reka dialog would dismiss itself the moment a nested dialog
-// receives focus.
-//
-// A container dialog (e.g. Settings) that hosts nested confirm/edit dialogs can
-// also lose focus to an ordinary app element — not just a portal — when a
-// nested dialog closes and the element it focused was removed (deleting the
-// selected row). That programmatic focus shift is not a dismiss intent, so such
-// a dialog opts out of focus-outside dismissal entirely via
-// `dismissOnFocusOutside: false`; it still dismisses on escape or an outside
-// pointer.
-export function onRekaFocusOutside(
-  event: OutsideEvent,
-  options: { dismissOnFocusOutside?: boolean } = {}
-) {
-  if (options.dismissOnFocusOutside === false) {
-    event.preventDefault()
-    return
-  }
-  if (isInsideOverlay(event.detail.originalEvent.target)) {
     event.preventDefault()
   }
 }
