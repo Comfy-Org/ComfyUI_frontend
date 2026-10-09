@@ -182,9 +182,9 @@ describe('ComfyQueueButton', () => {
       const commandStore = useCommandStore()
 
       expect(screen.getByTestId('batch-count-edit')).toBeInTheDocument()
-      const trigger = screen.getByTestId('queue-mode-menu-trigger')
-      expect(trigger).toBeDisabled()
-      expect(trigger).toHaveAttribute('data-variant', 'secondary')
+      expect(
+        screen.queryByTestId('queue-mode-menu-trigger')
+      ).not.toBeInTheDocument()
       expect(useQueueSettingsStore().mode).toBe('disabled')
       const button = screen.getByTestId('queue-button')
       expect(button).toHaveTextContent(label)
