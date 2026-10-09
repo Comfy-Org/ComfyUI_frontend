@@ -8,6 +8,7 @@ type VisitedNode<K extends keyof Visitor> = Parameters<
 >[0]
 type Expression = VisitedNode<'LogicalExpression'>['left']
 type AstNode = Expression['parent']
+type Ternary = VisitedNode<'ConditionalExpression'>
 
 const CAPABILITY_SOURCES: ReadonlySet<string> = new Set([
   'useBillingCapabilities'
@@ -89,6 +90,12 @@ function isLiteral(node: AstNode): boolean {
     expression.type === 'Literal' ||
     (expression.type === 'Identifier' && expression.name === 'undefined')
   )
+}
+
+function literalTruthiness(node: AstNode): boolean | undefined {
+  if (!isLiteral(node)) return undefined
+  const expression = unwrap(node)
+  return expression.type === 'Literal' && Boolean(expression.value)
 }
 
 function stringLiteral(node: AstNode): string | undefined {
@@ -241,6 +248,75 @@ function oneSideIsLocal(
   )
 }
 
+function memberPath(node: AstNode): string | undefined {
+  const expression = unwrap(node)
+  if (expression.type === 'Identifier') return expression.name
+  if (expression.type !== 'MemberExpression' || expression.computed) {
+    return undefined
+  }
+  const object = memberPath(expression.object)
+  return object === undefined
+    ? undefined
+    : `${object}.${expression.property.name}`
+}
+
+interface LiteralDefault {
+  truthy: boolean
+  other: AstNode
+  isConsequent: boolean
+}
+
+function literalDefault({
+  consequent,
+  alternate
+}: Ternary): LiteralDefault | undefined {
+  const consequentTruthy = literalTruthiness(consequent)
+  if (consequentTruthy !== undefined) {
+    return { truthy: consequentTruthy, other: alternate, isConsequent: true }
+  }
+  const alternateTruthy = literalTruthiness(alternate)
+  return alternateTruthy === undefined
+    ? undefined
+    : { truthy: alternateTruthy, other: consequent, isConsequent: false }
+}
+
+// `isLoading ? false : cap` reads as `!isLoading && cap`, and
+// `isSubmitting ? true : !cap` as `isSubmitting || !cap`.
+function isNarrowedTernary(node: Ternary, isCapability: IsCapability): boolean {
+  const fallback = literalDefault(node)
+  if (!fallback || !isLocalUiState(node.test)) return false
+  return fallback.truthy
+    ? isDisabledWithoutCapability(fallback.other, isCapability)
+    : impliesCapability(fallback.other, isCapability)
+}
+
+function capabilityOwner(
+  node: AstNode,
+  isCapability: IsCapability
+): string | undefined {
+  const expression = unwrap(node)
+  if (expression.type !== 'MemberExpression' || expression.computed) {
+    return undefined
+  }
+  if (expression.property.name === 'value') {
+    return capabilityOwner(expression.object, isCapability)
+  }
+  return isCapability(expression) ? memberPath(expression.object) : undefined
+}
+
+// `caps ? caps.can_top_up : false` is `caps?.can_top_up ?? false`.
+function isPresenceDefault(node: Ternary, isCapability: IsCapability): boolean {
+  const fallback = literalDefault(node)
+  if (!fallback) return false
+  const negatedTest = negated(node.test)
+  const owner = capabilityOwner(fallback.other, isCapability)
+  return (
+    owner !== undefined &&
+    fallback.isConsequent === (negatedTest !== undefined) &&
+    memberPath(negatedTest ?? node.test) === owner
+  )
+}
+
 export const noCapabilityRecombination: Rule = {
   meta: {
     type: 'problem',
@@ -290,6 +366,19 @@ export const noCapabilityRecombination: Rule = {
       impliesCapability(node, isCapabilityValue) ||
       isDisabledWithoutCapability(node, isCapabilityValue)
 
+    const onlyDefaultsCapability = (node: Ternary): boolean =>
+      isNarrowedTernary(node, isCapabilityValue) ||
+      isPresenceDefault(node, isCapabilityReference)
+
+    const isUnchosenCapability = (node: Ternary): boolean =>
+      isLiteral(node.test) ||
+      !(
+        containsCapability(node.consequent) ||
+        containsCapability(node.alternate)
+      ) ||
+      onlyDefaultsCapability(node) ||
+      isInsidePendingFact(node)
+
     return {
       VariableDeclarator({ id, init }) {
         if (id.type === 'Identifier') {
@@ -323,16 +412,7 @@ export const noCapabilityRecombination: Rule = {
         })
       },
       ConditionalExpression(node) {
-        if (
-          isLiteral(node.test) ||
-          !(
-            containsCapability(node.consequent) ||
-            containsCapability(node.alternate)
-          ) ||
-          isInsidePendingFact(node)
-        ) {
-          return
-        }
+        if (isUnchosenCapability(node)) return
         context.report({ node, messageId: 'chosen' })
       }
     }

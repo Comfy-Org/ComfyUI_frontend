@@ -83,6 +83,37 @@ const locked = isSaving.value || !isValid.value || !canTopUp.value
 const { canTopUp } = useBillingCapabilities()
 const enabled = options.canTopUp || fallback
 `
+    },
+    {
+      name: 'a capability defaulted while loading',
+      code: `
+const { canTopUp } = useBillingCapabilities()
+const enabled = isLoading.value ? false : canTopUp.value
+`
+    },
+    {
+      name: 'a capability defaulted by negated or positive local state',
+      code: `
+const { canTopUp } = useBillingCapabilities()
+const a = !isSubmitting.value ? canTopUp.value : false
+const b = isValid.value ? canTopUp.value : undefined
+const c = isLoading.value ? null : canTopUp.value && !isSaving.value
+`
+    },
+    {
+      name: 'a disabled state forced while submitting',
+      code: `
+const { canTopUp } = useBillingCapabilities()
+const disabled = isSubmitting.value ? true : !canTopUp.value
+`
+    },
+    {
+      name: 'a capability defaulted while its source is absent',
+      code: `
+const a = capabilities.value ? capabilities.value.can_top_up : false
+const b = !capabilities.value ? false : capabilities.value.can_top_up
+const c = capabilities.value?.can_top_up ?? false
+`
     }
   ],
   invalid: [
@@ -199,6 +230,40 @@ const topUpAllowed = computed(() => canTopUp.value)
 const showTopUp = topUpAllowed.value && isPersonal.value
 `,
       errors: [{ messageId: 'combined', data: { operator: '&&' } }]
+    },
+    {
+      name: 'a capability defaulted by server-derived plan state',
+      code: `
+const { canInviteMembers } = useBillingCapabilities()
+const enabled = isPlanEnded.value ? false : canInviteMembers.value
+`,
+      errors: [{ messageId: 'chosen' }]
+    },
+    {
+      name: 'a local flag that grants through a ternary',
+      code: `
+const { canTopUp } = useBillingCapabilities()
+const a = isLoading.value ? true : canTopUp.value
+const b = isSubmitting.value ? false : !canTopUp.value
+`,
+      errors: [{ messageId: 'chosen' }, { messageId: 'chosen' }]
+    },
+    {
+      name: 'a capability chosen by another capability',
+      code: `
+const { canTopUp, canSubscribeSelfServe } = useBillingCapabilities()
+const a = canTopUp.value ? canSubscribeSelfServe.value : false
+const b = capabilities.value.can_a ? capabilities.value.can_b : false
+`,
+      errors: [{ messageId: 'chosen' }, { messageId: 'chosen' }]
+    },
+    {
+      name: 'a presence check of a different object or inverted polarity',
+      code: `
+const a = other.value ? capabilities.value.can_top_up : false
+const b = capabilities.value ? false : capabilities.value.can_top_up
+`,
+      errors: [{ messageId: 'chosen' }, { messageId: 'chosen' }]
     }
   ]
 })
