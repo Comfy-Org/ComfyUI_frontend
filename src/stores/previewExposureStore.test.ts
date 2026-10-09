@@ -14,20 +14,15 @@ import {
 vi.mock(import('@/platform/telemetry/assertFailureReporter'))
 
 describe(getPreviewExposureHostLocator, () => {
-  it('reports a host ID that cannot form a locator', () => {
+  it('encodes a delimiter-bearing host ID', () => {
     const host = fromAny<SubgraphNode, unknown>({
       graph: null,
       id: toNodeId('invalid:id')
     })
 
-    expect(getPreviewExposureHostLocator(host)).toBeNull()
-    expect(console.error).toHaveBeenCalledWith(
-      'Cannot create preview exposure host locator for node invalid:id'
-    )
-    expect(reportAssertFailure).toHaveBeenCalledWith(
-      'Cannot create preview exposure host locator',
-      { hostNodeId: 'invalid:id' }
-    )
+    expect(getPreviewExposureHostLocator(host)).toBe('~root:invalid%3Aid')
+    expect(console.error).not.toHaveBeenCalled()
+    expect(reportAssertFailure).not.toHaveBeenCalled()
   })
 })
 

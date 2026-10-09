@@ -21,6 +21,7 @@ function mount() {
   })
 }
 
+vi.mock(import('@/composables/auth/useCurrentUser'))
 describe('pasting files into the composer', () => {
   it('hands a pasted screenshot to the host as an attachment', async () => {
     const user = userEvent.setup()

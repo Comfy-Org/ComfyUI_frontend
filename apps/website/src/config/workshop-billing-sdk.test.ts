@@ -128,7 +128,7 @@ describe('workshopTopupCommand', () => {
   it('mints for the workspace the session currently holds', async () => {
     await openHostedCheckout()
 
-    expect(vi.mocked(workshopSessionClient.ensureFresh)).toHaveBeenCalledWith(
+    expect(workshopSessionClient.ensureFresh).toHaveBeenCalledWith(
       undefined,
       expect.objectContaining({ workspaceId: 'ws-1' })
     )

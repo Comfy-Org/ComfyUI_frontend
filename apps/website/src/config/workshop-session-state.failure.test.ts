@@ -83,7 +83,7 @@ describe('useWorkshopSession initialization failure', () => {
 
     await vi.waitFor(() =>
       expect(
-        vi.mocked(workshopIdentity.activate),
+        workshopIdentity.activate,
         'the latch must reopen so a later caller retries the activation'
       ).toHaveBeenCalledTimes(2)
     )
@@ -113,7 +113,7 @@ describe('useWorkshopSession initialization failure', () => {
     const session = sessionModule.useWorkshopSession()
     vi.mocked(workshopIdentity.deactivate).mockClear()
     await vi.waitFor(() =>
-      expect(vi.mocked(workshopSessionClient.remint)).toHaveBeenCalledOnce()
+      expect(workshopSessionClient.remint).toHaveBeenCalledOnce()
     )
     await vi.waitFor(() => expect(console.error).toHaveBeenCalledOnce())
 
@@ -127,7 +127,7 @@ describe('useWorkshopSession initialization failure', () => {
     ).toBeUndefined()
     expect(session.signedIn.value).toBe(false)
     expect(
-      vi.mocked(workshopIdentity.deactivate),
+      workshopIdentity.deactivate,
       'the failed attempt reaches deactivate(); the integration suite pins the storage effect'
     ).toHaveBeenCalledOnce()
   })
