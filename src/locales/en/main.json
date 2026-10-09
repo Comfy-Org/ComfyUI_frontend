@@ -3840,6 +3840,7 @@
     "roleMember": "Member",
     "createWorkspace": "Create a workspace",
     "maxWorkspacesReached": "You can only own 10 workspaces. Delete one to create a new one.",
+    "managedByOrganization": "Your organization manages your workspaces, so you can't create one.",
     "failedToSwitch": "Failed to switch workspace"
   },
   "selectionToolbox": {

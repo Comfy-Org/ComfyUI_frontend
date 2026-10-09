@@ -23,6 +23,7 @@ import type {
   BillingRail,
   CurrentWorkspaceResponse,
   ListMembersParams,
+  ListWorkspacesResponse,
   Member,
   PendingInvite as ApiPendingInvite,
   SubscriptionTier,
@@ -225,9 +226,24 @@ export const useTeamWorkspaceStore = defineStore('teamWorkspace', () => {
     () => workspaces.value.filter((w) => w.role === 'owner').length
   )
 
+  /** The server says an SSO organization manages this account's workspaces. */
+  const workspacesManagedByOrganization = ref(false)
+
   const canCreateWorkspace = computed(
-    () => ownedWorkspacesCount.value < MAX_OWNED_WORKSPACES
+    () =>
+      !workspacesManagedByOrganization.value &&
+      ownedWorkspacesCount.value < MAX_OWNED_WORKSPACES
   )
+
+  function applyWorkspaceList(response: ListWorkspacesResponse): void {
+    workspaces.value = sortWorkspaces(
+      response.workspaces.map(createWorkspaceState)
+    )
+    // Absent until ingest ships the field everywhere; only an explicit false refuses.
+    workspacesManagedByOrganization.value =
+      !
+      response.can_create_workspace
+  }
 
   const members = computed<WorkspaceMember[]>(
     () => activeWorkspace.value?.members ?? []
@@ -339,9 +355,7 @@ export const useTeamWorkspaceStore = defineStore('teamWorkspace', () => {
         if (isDesktopHostSignedIn()) {
           const response = await workspaceApi.list()
           if (isStaleIdentity(generation)) return
-          workspaces.value = sortWorkspaces(
-            response.workspaces.map(createWorkspaceState)
-          )
+          applyWorkspaceList(response)
           const hostWorkspaceId = desktopHostUser.value?.workspaceId
           if (!workspaces.value.some((w) => w.id === hostWorkspaceId)) {
             throw new NoWorkspaceAccessError('Desktop workspace not available')
@@ -374,9 +388,7 @@ export const useTeamWorkspaceStore = defineStore('teamWorkspace', () => {
           // Valid session exists - fetch workspace list and verify access
           const response = await workspaceApi.list()
           if (isStaleIdentity(generation)) return
-          workspaces.value = sortWorkspaces(
-            response.workspaces.map(createWorkspaceState)
-          )
+          applyWorkspaceList(response)
 
           if (workspaces.value.length === 0) {
             throw new NoWorkspaceAccessError('No workspaces available')
@@ -416,9 +428,7 @@ export const useTeamWorkspaceStore = defineStore('teamWorkspace', () => {
         // 2. No valid session - fetch workspaces and pick default
         const response = await workspaceApi.list()
         if (isStaleIdentity(generation)) return
-        workspaces.value = sortWorkspaces(
-          response.workspaces.map(createWorkspaceState)
-        )
+        applyWorkspaceList(response)
 
         if (workspaces.value.length === 0) {
           throw new NoWorkspaceAccessError('No workspaces available')
@@ -522,9 +532,7 @@ export const useTeamWorkspaceStore = defineStore('teamWorkspace', () => {
     try {
       const response = await workspaceApi.list()
       if (isStaleIdentity(generation)) return
-      workspaces.value = sortWorkspaces(
-        response.workspaces.map(createWorkspaceState)
-      )
+      applyWorkspaceList(response)
     } finally {
       if (!isStaleIdentity(generation)) {
         isFetchingWorkspaces.value = false
@@ -1099,6 +1107,7 @@ export const useTeamWorkspaceStore = defineStore('teamWorkspace', () => {
     initializationPromise = null
     initState.value = 'uninitialized'
     workspaces.value = []
+    workspacesManagedByOrganization.value = false
     mutableActiveWorkspaceId.value = null
     billingRailByWorkspaceId.value = {}
     error.value = null
@@ -1131,6 +1140,7 @@ export const useTeamWorkspaceStore = defineStore('teamWorkspace', () => {
     sharedWorkspaces,
     ownedWorkspacesCount,
     canCreateWorkspace,
+    workspacesManagedByOrganization,
     members,
     membersLoaded,
     isCurrentUserOriginalOwner,
