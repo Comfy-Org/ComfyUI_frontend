@@ -99,7 +99,8 @@ function setup({
   remembered = null as User | null,
   workspace = workspaceRoute(TEAM),
   workspaceId = undefined as string | undefined,
-  creationOutages = 0
+  creationOutages = 0,
+  creationRefusal = undefined as object | undefined
 } = {}) {
   const endpoint = createFakeWebSessionEndpoint({ state })
   const outage = { remaining: creationOutages }
@@ -124,6 +125,13 @@ function setup({
       return new Response(JSON.stringify({ code: 'unavailable' }), {
         status: 503
       })
+    }
+    if (
+      creationRefusal &&
+      init.method === 'POST' &&
+      url.pathname === '/api/auth/session'
+    ) {
+      return new Response(JSON.stringify(creationRefusal), { status: 403 })
     }
     if (url.pathname.startsWith('/api/billing/')) {
       return new Response(JSON.stringify({}))
@@ -395,6 +403,35 @@ describe('billing-web on the shared web session', () => {
       lookupB.resolve(answerB())
       await vi.waitFor(() => expect(outcome).toHaveBeenCalledWith(established))
       expect(session.scopeSource.getScope()?.workspaceId).toBe(scope)
+    }
+  )
+
+  it.for([
+    {
+      name: 'naming its organization',
+      body: { organization_id: 'org_acme' },
+      failure: { code: 'SSO_REQUIRED', organizationId: 'org_acme' }
+    },
+    {
+      name: 'without an organization',
+      body: {},
+      failure: { code: 'SSO_REQUIRED' }
+    }
+  ])(
+    'an account its SSO organization holds is refused as SSO_REQUIRED, $name',
+    async ({ body, failure }) => {
+      const { session } = setup({
+        state: { kind: 'dead', code: 'no_session' },
+        creationRefusal: { code: 'sso_required', message: 'use SSO', ...body }
+      })
+      await expect(session.settledPhase()).resolves.toBe('signed-out')
+      await session.signInPort.loadIdentity()
+
+      await expect(
+        session.signInPort.establish(firebaseUser('user-1'))
+      ).resolves.toEqual({ status: 'error', code: 'SSO_REQUIRED' })
+
+      expect(session.signInPort.failure.value).toEqual(failure)
     }
   )
 
