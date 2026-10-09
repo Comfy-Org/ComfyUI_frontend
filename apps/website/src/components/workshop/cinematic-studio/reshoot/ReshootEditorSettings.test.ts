@@ -41,9 +41,7 @@ describe('ReshootEditorSettings', () => {
     expect(
       screen.getByRole('button', { name: 'Change: street.mp4' })
     ).toBeVisible()
-    expect(screen.getByTestId('reshoot-clip-length')).toHaveTextContent(
-      '5.0 s'
-    )
+    expect(screen.getByTestId('reshoot-clip-length')).toHaveTextContent('5.0 s')
     expect(screen.queryByRole('button', { name: /^Remove/ })).toBeNull()
   })
 
