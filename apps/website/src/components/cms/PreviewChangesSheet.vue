@@ -25,13 +25,20 @@ const open = defineModel<boolean>('open', { required: true })
 const { t } = translationsFor(locale)
 const link =
   'grid w-full cursor-pointer gap-1 rounded-lg px-3 py-2 text-left text-sm hover:bg-admin-hover aria-[current=page]:bg-admin-line'
+
+// Focus the panel itself so no list entry looks selected on open.
+function focusPanel(event: Event) {
+  event.preventDefault()
+  if (event.target instanceof HTMLElement) event.target.focus()
+}
 </script>
 
 <template>
   <Sheet v-model:open="open">
     <AdminSheetContent
       :close-label="t('cmsAdmin.review.close')"
-      class="sm:max-w-sm"
+      class="outline-none sm:max-w-sm"
+      @open-auto-focus="focusPanel"
     >
       <div class="grid gap-1 border-b border-admin-line p-5 pr-14">
         <DialogTitle class="text-base font-medium">
