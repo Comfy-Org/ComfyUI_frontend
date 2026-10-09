@@ -8,8 +8,8 @@ import { useFeatureFlags } from '@/composables/useFeatureFlags'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { effectScope } from 'vue'
 
+import { useToast } from '@/components/ui/toast/toastStore'
 import { useTelemetry } from '@/platform/telemetry'
-import { useToastStore } from '@/platform/updates/common/toastStore'
 import { useSubscriptionDialog } from '@/platform/cloud/subscription/composables/useSubscriptionDialog'
 
 import type {
@@ -1152,10 +1152,10 @@ describe('useWorkspaceBilling', () => {
 
         expect(mockRail.openPaymentPortal).not.toHaveBeenCalled()
         expect(mockWorkspaceApi.getPaymentPortalUrl).not.toHaveBeenCalled()
-        expect(useToastStore().messagesToAdd).toEqual([
+        expect(useToast().toasts).toEqual([
           expect.objectContaining({
-            severity: 'warn',
-            detail:
+            kind: 'warning',
+            description:
               "Couldn't open the billing page. Allow pop-ups for this site and try again."
           })
         ])

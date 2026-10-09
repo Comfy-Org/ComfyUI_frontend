@@ -1,3 +1,4 @@
+import { useToast } from '@/components/ui/toast/toastStore'
 import userEvent from '@testing-library/user-event'
 import { render, screen } from '@testing-library/vue'
 import { fromPartial } from '@total-typescript/shoehorn'
@@ -8,7 +9,7 @@ import { createI18n } from 'vue-i18n'
 import { useNodeDragToCanvas } from '@/composables/node/useNodeDragToCanvas'
 import { useFeatureFlags } from '@/composables/useFeatureFlags'
 import { useSettingStore } from '@/platform/settings/settingStore'
-import { useToastStore } from '@/platform/updates/common/toastStore'
+
 import { useAssetDownloadStore } from '@/stores/assetDownloadStore'
 import { useModelStore } from '@/stores/modelStore'
 import type { ComfyModelDef } from '@/stores/modelStore'
@@ -405,7 +406,6 @@ describe('ModelLibrarySidebarTab', () => {
 
   describe('asset mode', () => {
     it('surfaces an error toast when the eager load fails on mount', async () => {
-      const error = vi.spyOn(console, 'error').mockImplementation(() => {})
       vi.mocked(useFeatureFlags().flags).assetsEnabled = true
       vi.mocked(useModelStore().loadModels).mockRejectedValueOnce(
         new Error('walk failed')
@@ -415,13 +415,12 @@ describe('ModelLibrarySidebarTab', () => {
       await nextTick()
       await nextTick()
 
-      expect(useToastStore().add).toHaveBeenCalledWith(
+      expect(useToast().toasts).toEqual([
         expect.objectContaining({
-          severity: 'error',
-          detail: 'sideToolbar.modelLibraryLoadFailed'
+          description: 'sideToolbar.modelLibraryLoadFailed',
+          kind: 'error'
         })
-      )
-      error.mockRestore()
+      ])
     })
 
     it('hides the load-all button and eager-loads models on mount', async () => {

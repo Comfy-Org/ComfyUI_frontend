@@ -9,6 +9,7 @@
       :model-value="editedTitle"
       :input-attrs="{ 'data-testid': 'node-title-input' }"
       @edit="onEdit"
+      @cancel="closeEditor"
     />
   </div>
 </template>
@@ -61,6 +62,10 @@ const onEdit = (newValue: string) => {
 
     app.canvas.setDirty(true, true)
   }
+  closeEditor()
+}
+
+function closeEditor() {
   showInput.value = false
   titleEditorStore.titleEditorTarget = null
   canvasStore.canvas!.allow_dragcanvas = previousCanvasDraggable.value

@@ -166,7 +166,7 @@ import { selectionEmphasisClass } from '@/components/rightSidePanel/errors/selec
 import { useI18n } from 'vue-i18n'
 import Button from '@/components/ui/button/Button.vue'
 import TransitionCollapse from '@/components/rightSidePanel/layout/TransitionCollapse.vue'
-import type { MissingNodeType } from '@/types/comfy'
+import type { MissingNodeType } from '@/platform/nodeReplacement/types'
 import type { SwapNodeGroup } from '@/components/rightSidePanel/errors/useErrorGroups'
 
 const { group, highlighted } = defineProps<{

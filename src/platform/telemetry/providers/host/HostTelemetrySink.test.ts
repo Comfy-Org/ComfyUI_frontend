@@ -354,6 +354,14 @@ describe('HostTelemetrySink', () => {
       }
     },
     {
+      name: TelemetryEvents.AGENT_STARTER_PROMPT_EXPOSURE,
+      track: (sink: HostTelemetrySink) =>
+        sink.trackAgentStarterPromptExposure({
+          '$feature/agent-starter-prompt-set': 'test'
+        }),
+      properties: { '$feature/agent-starter-prompt-set': 'test' }
+    },
+    {
       name: TelemetryEvents.AGENT_FREE_USE_NOTICE,
       track: (sink: HostTelemetrySink) =>
         sink.trackAgentFreeUseNotice({

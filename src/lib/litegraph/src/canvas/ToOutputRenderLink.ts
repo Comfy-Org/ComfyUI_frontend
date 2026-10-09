@@ -2,13 +2,12 @@ import type { LGraphNode } from '@/lib/litegraph/src/LGraphNode'
 import type { Reroute } from '@/lib/litegraph/src/Reroute'
 import type { CustomEventTarget } from '@/lib/litegraph/src/infrastructure/CustomEventTarget'
 import type { LinkConnectorEventMap } from '@/lib/litegraph/src/infrastructure/LinkConnectorEventMap'
+import type { Point, SlotIndex } from '@/lib/litegraph/src/interfaces'
 import type {
   INodeInputSlot,
-  INodeOutputSlot,
-  LinkNetwork,
-  Point,
-  SlotIndex
-} from '@/lib/litegraph/src/interfaces'
+  INodeOutputSlot
+} from '@/lib/litegraph/src/types/slots'
+import type { LinkNetwork } from '@/lib/litegraph/src/types/linkNetwork'
 import type { SubgraphInput } from '@/lib/litegraph/src/subgraph/SubgraphInput'
 import type { NodeLike } from '@/lib/litegraph/src/types/NodeLike'
 import { LinkDirection } from '@/lib/litegraph/src/types/globalEnums'

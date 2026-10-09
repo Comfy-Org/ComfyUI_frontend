@@ -1,9 +1,9 @@
+import { useToast } from '@/components/ui/toast/toastStore'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 
 import type { ComfyNodeDefImpl } from '@/stores/nodeDefStore'
 import { useNodeDragToCanvas } from './useNodeDragToCanvas'
 import { useCanvasStore } from '@/renderer/core/canvas/canvasStore'
-import { useToastStore } from '@/platform/updates/common/toastStore'
 import { LGraphNode } from '@/lib/litegraph/src/litegraph'
 import type { LGraphCanvas } from '@/lib/litegraph/src/litegraph'
 import { fromPartial } from '@total-typescript/shoehorn'
@@ -287,9 +287,6 @@ describe('useNodeDragToCanvas', () => {
       vi.mocked(useLitegraphService().addNodeOnGraph).mockReturnValue(
         placedNode
       )
-      const consoleErrorSpy = vi
-        .spyOn(console, 'error')
-        .mockImplementation(() => {})
 
       const { startDrag } = useNodeDragToCanvas()
       startDrag(mockNodeDef, {
@@ -305,13 +302,13 @@ describe('useNodeDragToCanvas', () => {
       )
 
       expect(mockSelectItems).toHaveBeenCalledWith([placedNode])
-      expect(useToastStore().add).toHaveBeenCalledWith(
+      expect(useToast().warning).toHaveBeenCalledWith(
+        expect.any(String),
         expect.objectContaining({
-          severity: 'warn',
-          detail: 'assetBrowser.failedToSetModelValue'
+          description: 'assetBrowser.failedToSetModelValue'
         })
       )
-      expect(consoleErrorSpy).toHaveBeenCalledWith(
+      expect(console.error).toHaveBeenCalledWith(
         expect.stringContaining('ckpt_name')
       )
     })
@@ -324,7 +321,6 @@ describe('useNodeDragToCanvas', () => {
         bottom: 500
       })
       mockConvertEventToCanvasOffset.mockReturnValue([150, 150])
-      vi.spyOn(console, 'error').mockImplementation(() => {})
 
       const { startDrag } = useNodeDragToCanvas()
       startDrag(mockNodeDef)
@@ -337,10 +333,10 @@ describe('useNodeDragToCanvas', () => {
         })
       )
 
-      expect(useToastStore().add).toHaveBeenCalledWith(
+      expect(useToast().error).toHaveBeenCalledWith(
+        expect.any(String),
         expect.objectContaining({
-          severity: 'error',
-          detail: 'assetBrowser.failedToCreateNode'
+          description: 'assetBrowser.failedToCreateNode'
         })
       )
     })
@@ -353,7 +349,6 @@ describe('useNodeDragToCanvas', () => {
         bottom: 500
       })
       mockConvertEventToCanvasOffset.mockReturnValue([150, 150])
-      vi.spyOn(console, 'error').mockImplementation(() => {})
 
       const { startDrag } = useNodeDragToCanvas()
       startDrag(mockNodeDef)

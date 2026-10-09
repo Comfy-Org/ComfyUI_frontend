@@ -1,8 +1,11 @@
 <template>
+  <!-- `manager-dialog` carries no styles; PackVersionBadge scopes its popover
+       to it via closest(). Removing it silently widens that boundary. -->
   <BaseModalLayout
     v-model:right-panel-open="isRightPanelOpen"
     :content-title="$t('manager.discoverCommunityContent')"
     :right-panel-title="$t('manager.nodePackInfo')"
+    size="panel"
     class="manager-dialog"
   >
     <template #leftPanelHeaderTitle>

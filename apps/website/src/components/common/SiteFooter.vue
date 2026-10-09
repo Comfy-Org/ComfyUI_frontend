@@ -5,10 +5,15 @@ import { externalLinks, getRoutes } from '@/config/routes'
 import { useFrameScrub } from '@/composables/useFrameScrub'
 import type { Locale } from '@/i18n/translations'
 import { translationsFor } from '@/i18n/translations'
+import type { LocaleAlternate } from '@/lib/hreflang'
 import FooterLinkColumn from './FooterLinkColumn.vue'
 import type { FooterLink } from './FooterLinkColumn.vue'
+import LanguageSwitcher from './LanguageSwitcher.vue'
 
-const { locale = 'en' } = defineProps<{ locale?: Locale }>()
+const { locale = 'en', alternates = [] } = defineProps<{
+  locale?: Locale
+  alternates?: readonly LocaleAlternate[]
+}>()
 const { t } = translationsFor(locale)
 const routes = getRoutes(locale)
 
@@ -189,7 +194,8 @@ const topColumns: { title: string; links: FooterLink[] }[] = [
       {
         label: t('footer.affiliateProgram'),
         href: routes.affiliates
-      }
+      },
+      { label: t('footer.changelog'), href: routes.changelog }
     ]
   },
   {
@@ -277,7 +283,10 @@ const contactColumn: { title: string; links: FooterLink[] } = {
         </div>
 
         <!-- Bottom bar -->
-        <div class="flex justify-center gap-6 lg:justify-end">
+        <div
+          class="flex flex-wrap items-center justify-center gap-6 lg:justify-end"
+        >
+          <LanguageSwitcher :locale :alternates />
           <p class="text-sm">
             {{ t('footer.location') }}
           </p>

@@ -1,3 +1,4 @@
+import { fetchRequests, respondToFetch } from '@comfyorg/test-utils/fetch'
 import { fromPartial } from '@total-typescript/shoehorn'
 import { render, screen, waitFor } from '@testing-library/vue'
 import type { User, UserCredential } from 'firebase/auth'
@@ -93,6 +94,10 @@ async function renderLoginView(
         path: '/oauth/consent',
         name: 'cloud-oauth-consent',
         component: { template: '<div />' }
+      },
+      {
+        path: '/cloud/oauth/consent',
+        redirect: (to) => ({ path: '/oauth/consent', query: to.query })
       }
     ]
   })
@@ -233,22 +238,10 @@ describe('CloudLoginView', () => {
   })
 })
 
-const discoverReplies = (body: unknown, status = 200) => {
-  const fetchMock = vi.fn<typeof fetch>(
-    async () =>
-      new Response(JSON.stringify(body), {
-        status,
-        headers: { 'Content-Type': 'application/json' }
-      })
-  )
-  vi.stubGlobal('fetch', fetchMock)
-  return fetchMock
-}
+const SSO_DISCOVER_URL = '/api/auth/sso/discover'
 
-const discoverCalls = (fetchMock: ReturnType<typeof discoverReplies>) =>
-  fetchMock.mock.calls.filter(([url]) =>
-    String(url).endsWith('/api/auth/sso/discover')
-  )
+const discoverReplies = (body: unknown, status = 200) =>
+  respondToFetch(SSO_DISCOVER_URL, () => Response.json(body, { status }))
 
 const startParams = (assign: Mock<(url: string | URL) => void>) => {
   const [target] = assign.mock.calls[0]
@@ -304,7 +297,7 @@ describe('CloudLoginView SSO', () => {
     })
 
     it('signs in with Firebase without asking ingest about SSO', async () => {
-      const fetchMock = discoverReplies({ sso: true })
+      discoverReplies({ sso: true })
       await renderLoginView(`/cloud/login?oauth_request_id=${OAUTH_REQUEST_ID}`)
 
       await signInWithPassword('ada@acme.com')
@@ -315,7 +308,7 @@ describe('CloudLoginView SSO', () => {
           'hunter22'
         )
       )
-      expect(discoverCalls(fetchMock)).toEqual([])
+      expect(fetchRequests(SSO_DISCOVER_URL)).toEqual([])
       expect(assign).not.toHaveBeenCalled()
     })
   })
@@ -361,7 +354,7 @@ describe('CloudLoginView SSO', () => {
 
       await waitFor(() => expect(assign).toHaveBeenCalledOnce())
       expect(startParams(assign).returnTo).toBe(
-        `/oauth/consent?oauth_request_id=${OAUTH_REQUEST_ID}`
+        `/cloud/oauth/consent?oauth_request_id=${OAUTH_REQUEST_ID}`
       )
     })
 
@@ -374,7 +367,7 @@ describe('CloudLoginView SSO', () => {
 
       await waitFor(() => expect(assign).toHaveBeenCalledOnce())
       expect(startParams(assign).returnTo).toBe(
-        `/oauth/consent?oauth_request_id=${OAUTH_REQUEST_ID}`
+        `/cloud/oauth/consent?oauth_request_id=${OAUTH_REQUEST_ID}`
       )
     })
 
@@ -429,7 +422,7 @@ describe('CloudLoginView SSO', () => {
         body: { code: 'INTERNAL_ERROR', message: 'down' }
       }
     ])('signs $name in with Firebase', async ({ status, body }) => {
-      const fetchMock = discoverReplies(body, status)
+      discoverReplies(body, status)
       await renderLoginView()
 
       await signInWithPassword('ada@example.com')
@@ -440,7 +433,7 @@ describe('CloudLoginView SSO', () => {
           'hunter22'
         )
       )
-      expect(discoverCalls(fetchMock)).toHaveLength(1)
+      expect(fetchRequests(SSO_DISCOVER_URL)).toHaveLength(1)
       expect(assign).not.toHaveBeenCalled()
     })
 
@@ -472,7 +465,8 @@ describe('CloudLoginView SSO', () => {
     })
 
     it('keeps one SSO check in flight across the SSO and password forms', async () => {
-      const fetchMock = vi.fn<typeof fetch>(
+      respondToFetch(
+        SSO_DISCOVER_URL,
         (_input, init) =>
           new Promise((_resolve, reject) =>
             init?.signal?.addEventListener('abort', () =>
@@ -480,13 +474,12 @@ describe('CloudLoginView SSO', () => {
             )
           )
       )
-      vi.stubGlobal('fetch', fetchMock)
       await renderLoginView()
 
       await continueWithSso('ada@acme.com')
       await signInWithPassword('ada@acme.com')
 
-      expect(discoverCalls(fetchMock)).toHaveLength(1)
+      expect(fetchRequests(SSO_DISCOVER_URL)).toHaveLength(1)
       expect(useAuthActions().signInWithEmail).not.toHaveBeenCalled()
     })
 
@@ -534,9 +527,8 @@ describe('CloudLoginView Firebase sign-in refused for SSO', () => {
     vi.mocked(useAuthActions().signInWithEmail).mockResolvedValueOnce(
       fromPartial<UserCredential>({})
     )
-    vi.stubGlobal(
-      'fetch',
-      vi.fn(async () => Response.json({ sso: false }))
+    vi.mocked(fetch).mockImplementation(async () =>
+      Response.json({ sso: false })
     )
     const user = userEvent.setup()
     await user.click(
@@ -577,7 +569,7 @@ describe('CloudLoginView Firebase sign-in refused for SSO', () => {
     {
       name: 'returns SSO to a pending OAuth consent before the previous page',
       url: `/cloud/login?previousFullPath=%2Fworkflows&oauth_request_id=${OAUTH_REQUEST_ID}`,
-      returnTo: `/oauth/consent?oauth_request_id=${OAUTH_REQUEST_ID}`
+      returnTo: `/cloud/oauth/consent?oauth_request_id=${OAUTH_REQUEST_ID}`
     }
   ])('with the flag on, $name', async ({ url, returnTo }) => {
     const flags = vi.mocked(useFeatureFlags().flags)

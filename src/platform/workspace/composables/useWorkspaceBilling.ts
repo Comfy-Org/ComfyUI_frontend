@@ -13,13 +13,13 @@ import type {
   PreviewSubscribeInput
 } from '@comfyorg/account-core/billing'
 
+import { useToast } from '@/components/ui/toast/toastStore'
 import { useFeatureFlags } from '@/composables/useFeatureFlags'
 import { t } from '@/i18n'
 import { useBillingPlans } from '@/platform/cloud/subscription/composables/useBillingPlans'
 import { useSubscriptionDialog } from '@/platform/cloud/subscription/composables/useSubscriptionDialog'
 import type { SubscriptionDialogOptions } from '@/platform/cloud/subscription/composables/useSubscriptionDialog'
 import { useTelemetry } from '@/platform/telemetry'
-import { useToastStore } from '@/platform/updates/common/toastStore'
 import { reportError } from '@/platform/telemetry/reportError'
 import { categorizeBillingApiError } from '@/platform/telemetry/utils/billingFailureCategory'
 import { createBillingPortalReporter } from '@/platform/telemetry/utils/billingPortalTelemetry'
@@ -469,15 +469,35 @@ export function useWorkspaceBilling(): WorkspaceBilling {
     options?: SubscribeOptions
   ): Promise<SettledSubscribeResponse> {
     const rail = useSubscriptionRail()
-    if (rail) {
+    const attemptStartedAt = options?.attemptStartedAt
+    if (rail?.subscriptionRouteAvailable) {
       const response = await onSubscriptionRail(() =>
         rail.subscribe(subscribeInputFrom(planSlug, options), {
-          callerStarted: options?.attemptStartedAt !== undefined
+          callerStarted: attemptStartedAt !== undefined
         })
       )
       // The SDK waited for the operation, so the refresh the legacy path fires
       // and forgets has already run on the rail.
       if (response !== DECLINED) return response
+      if (attemptStartedAt !== undefined) {
+        // The caller started this attempt on the rail; the legacy call is its own attempt.
+        telemetry?.trackBillingEvent({
+          operation: 'operation',
+          stage: 'failed',
+          outcome: 'failure',
+          operation_type: 'subscription',
+          billing_client: 'sdk',
+          failure_category: 'api_rejected',
+          duration_ms: Date.now() - attemptStartedAt
+        })
+        telemetry?.trackBillingEvent({
+          operation: 'operation',
+          stage: 'started',
+          outcome: 'pending',
+          operation_type: 'subscription',
+          billing_client: 'legacy'
+        })
+      }
     }
 
     isLoading.value = true
@@ -565,10 +585,8 @@ export function useWorkspaceBilling(): WorkspaceBilling {
   }
 
   function reportBillingTabBlocked(): void {
-    useToastStore().add({
-      severity: 'warn',
-      summary: t('g.warning'),
-      detail: t('subscription.billingTabBlocked')
+    useToast().warning(t('g.warning'), {
+      description: t('subscription.billingTabBlocked')
     })
   }
 
