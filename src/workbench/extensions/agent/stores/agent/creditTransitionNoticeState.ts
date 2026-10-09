@@ -4,11 +4,17 @@ export type CreditTransitionNoticePhase =
   | 'shown'
   | 'dismissed'
 
-export interface CreditTransitionNoticeState {
-  identity: string
-  scopedHasFunds: boolean
-  phase: CreditTransitionNoticePhase
-}
+export type CreditTransitionNoticeState =
+  | {
+      identity: string
+      scopedHasFunds: boolean
+      phase: 'idle' | 'dismissed'
+    }
+  | {
+      identity: string
+      scopedHasFunds: false
+      phase: 'armed' | 'shown'
+    }
 
 export type CreditTransitionNoticeEvent =
   | { type: 'scopedRead'; identity: string; scopedHasFunds: boolean }

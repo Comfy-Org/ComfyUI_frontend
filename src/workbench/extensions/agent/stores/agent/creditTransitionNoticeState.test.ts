@@ -21,10 +21,26 @@ const PHASES = [
 ] as const satisfies readonly CreditTransitionNoticePhase[]
 
 function episode(
+  phase: 'idle' | 'dismissed',
+  scopedHasFunds: boolean,
+  identity?: string
+): CreditTransitionNoticeState
+function episode(
+  phase: CreditTransitionNoticePhase,
+  scopedHasFunds: false,
+  identity?: string
+): CreditTransitionNoticeState
+function episode(
   phase: CreditTransitionNoticePhase,
   scopedHasFunds: boolean,
   identity = IDENTITY
 ): CreditTransitionNoticeState {
+  if (phase === 'armed' || phase === 'shown') {
+    if (scopedHasFunds) {
+      throw new Error(`${phase} requires exhausted scoped funds`)
+    }
+    return { identity, scopedHasFunds: false, phase }
+  }
   return { identity, scopedHasFunds, phase }
 }
 
@@ -43,18 +59,20 @@ describe('reduceCreditTransitionNotice', () => {
       }
     )
 
-    it.for(PHASES)(
-      'discards a %s episode belonging to another identity',
-      (phase) => {
-        expect(
-          reduceCreditTransitionNotice(episode(phase, true, OTHER), {
-            type: 'scopedRead',
-            identity: IDENTITY,
-            scopedHasFunds: false
-          })
-        ).toEqual(episode('idle', false))
-      }
-    )
+    it.for([
+      episode('idle', true, OTHER),
+      episode('armed', false, OTHER),
+      episode('shown', false, OTHER),
+      episode('dismissed', true, OTHER)
+    ])('discards a $phase episode belonging to another identity', (state) => {
+      expect(
+        reduceCreditTransitionNotice(state, {
+          type: 'scopedRead',
+          identity: IDENTITY,
+          scopedHasFunds: false
+        })
+      ).toEqual(episode('idle', false))
+    })
   })
 
   describe('scopedRead false', () => {
