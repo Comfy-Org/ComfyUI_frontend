@@ -196,6 +196,13 @@ describe('useNodeHelpContent', () => {
     const { renderedHelpHtml } = useNodeHelpContent(nodeRef)
     await flushPromises()
 
+    expect(fetch).toHaveBeenCalledTimes(2)
+    expect(fetch).toHaveBeenCalledWith(
+      '/extensions/test_module/docs/CustomNode/en.md'
+    )
+    expect(fetch).toHaveBeenCalledWith(
+      '/extensions/test_module/docs/CustomNode.md'
+    )
     expect(renderedHelpHtml.value).toContain('Fallback content')
   })
 

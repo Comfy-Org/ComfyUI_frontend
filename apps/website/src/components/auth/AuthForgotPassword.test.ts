@@ -66,9 +66,7 @@ describe('AuthForgotPassword', () => {
     expect((await screen.findByRole('alert')).textContent).toContain(
       'Password reset sent'
     )
-    expect(vi.mocked(sendWorkshopPasswordReset)).toHaveBeenCalledWith(
-      'user@example.com'
-    )
+    expect(sendWorkshopPasswordReset).toHaveBeenCalledWith('user@example.com')
     expect(toasts.value).toEqual([
       expect.objectContaining({
         kind: 'success',
@@ -164,7 +162,7 @@ describe('AuthForgotPassword', () => {
     expect((await screen.findByRole('alert')).textContent).toContain(
       'valid email'
     )
-    expect(vi.mocked(sendWorkshopPasswordReset)).not.toHaveBeenCalled()
+    expect(sendWorkshopPasswordReset).not.toHaveBeenCalled()
   })
 
   it('sends once: the button stays disabled after a confirmed send', async () => {
@@ -176,7 +174,7 @@ describe('AuthForgotPassword', () => {
     const send = screen.getByRole('button', { name: /send/i })
     expect(send.hasAttribute('disabled')).toBe(true)
     await clickSend()
-    expect(vi.mocked(sendWorkshopPasswordReset)).toHaveBeenCalledOnce()
+    expect(sendWorkshopPasswordReset).toHaveBeenCalledOnce()
   })
 
   it('blocks a double submit while a send is in flight', async () => {
@@ -192,7 +190,7 @@ describe('AuthForgotPassword', () => {
 
     release()
     await waitFor(() =>
-      expect(vi.mocked(sendWorkshopPasswordReset)).toHaveBeenCalledOnce()
+      expect(sendWorkshopPasswordReset).toHaveBeenCalledOnce()
     )
   })
 

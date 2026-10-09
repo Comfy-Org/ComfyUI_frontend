@@ -1,17 +1,16 @@
 <script setup lang="ts">
 import { computed } from 'vue'
-import { useI18n } from 'vue-i18n'
 import { cn } from '@comfyorg/tailwind-utils'
 import Button from '@/components/ui/button/Button.vue'
 import AccessibleTooltip from '@/components/ui/tooltip/AccessibleTooltip.vue'
-const { visible, nodeReferenceDisabledReason } = defineProps<{
+const { label, visible, nodeReferenceDisabledReason } = defineProps<{
+  label: string
   visible: boolean
   nodeReferenceDisabledReason?: string
 }>()
 const emit = defineEmits<{ selectNodes: [event: Event] }>()
-const { t } = useI18n()
 const placeholderHint = computed(() => {
-  const [text = '', mentionNodes = ''] = t('agent.placeholder').split('\n')
+  const [text = '', mentionNodes = ''] = label.split('\n')
   return { text, mentionNodes }
 })
 </script>
@@ -28,6 +27,7 @@ const placeholderHint = computed(() => {
   >
     <span>{{ placeholderHint.text }} </span>
     <AccessibleTooltip
+      v-if="placeholderHint.mentionNodes"
       :label="nodeReferenceDisabledReason ?? ''"
       :disabled="!nodeReferenceDisabledReason"
       :skip-delay-duration="0"

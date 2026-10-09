@@ -464,7 +464,7 @@ export type UsageSummary = {
 }
 
 /**
- * Present, with empty groups, buckets and breakdown, when the requested grouping has no data source yet. Render as unavailable, not as zero spend.
+ * Present, with empty groups, buckets and breakdown, when the requested grouping is not served for this workspace. Render as unavailable, not as zero spend.
  */
 export type UsageNotAvailable = {
   reason: 'no_attribution_source'
@@ -642,6 +642,10 @@ export type ToolCallSummary = {
    * This tool-call row's own primary key.
    */
   id: string
+  /**
+   * Mirrors agent_tool_calls.prompt_id at read time. This is the exact-attempt ownership signal an eval driver needs to prove which job a given turn submitted — a model-authored result string, workflow id, or URL in the assistant's final text is not equivalent evidence. It is parsed from the comfy-cli runner's stdout envelope and never cross-checked against the job table, so it is proof of turn-to-job submission only, not proof the job completed or that any output URL belongs to it; a consumer must still authenticate job detail and bind the artifact to this id. Absence does NOT prove no job was submitted: most tool calls never submit one, but a call that submitted a job and then errored (for example while polling) also omits this field, as does any row outside the history window.
+   */
+  job_id?: string
   started_at?: string
   /**
    * The WIRE status vocabulary (api/agent_events.schema.json's agent_tool_call), translated from the audit-row vocabulary (pending/running/ok/error) via ToolCallWireStatus — the same function the live agent_tool_call broadcast uses, so reloaded history and a live frame for the same call never disagree on the vocabulary. "running" never appears here: only terminal rows are queried, so a call still in flight when its turn died is omitted rather than shown as a perpetually in-progress chip.
@@ -1342,6 +1346,10 @@ export type SsoDiscoverResponse = {
    * Display name of the organization, when `sso` is true
    */
   organization_name?: string
+  /**
+   * When `sso` is true: whether the organization requires SSO (true) or only offers it (false, an organization in optional mode, whose people keep their other sign-ins). Absent means required.
+   */
+  required?: boolean
   /**
    * The email signs in through its organization's SSO
    */
@@ -2334,6 +2342,17 @@ export type OAuthConsentChallenge = {
    */
   client_display_name: string
   /**
+   * Whether the client requesting authorization is a seeded first-party
+   * client (`first_party`) or was created through RFC 7591 dynamic client
+   * registration (`dynamic`). Derived from the client_id: every dynamically
+   * registered client carries the `comfy-dyn-` prefix. `client_display_name`
+   * on a `dynamic` client is registrant-supplied and unverified; the consent
+   * UI must present it as such. Consumers must treat an absent value as
+   * `dynamic`.
+   *
+   */
+  client_provenance: 'first_party' | 'dynamic'
+  /**
    * Per-row CSRF token bound to this authorization request (not to the session). Must be echoed back on POST.
    */
   csrf_token: string
@@ -3012,6 +3031,44 @@ export type JobDetailResponse = {
    * Count of outputs classified as previewable media types (images, video, audio, 3D, text) — a subset of outputs_count (omitted for non-terminal states)
    */
   previewable_outputs_count?: number
+  /**
+   * 1-based position of this job among the caller's OWN jobs held
+   * behind the same concurrency cap (same user, workspace and auth
+   * method), in the dispatcher's admission order — i.e. the number of
+   * the caller's own capped jobs that will be admitted before this
+   * one, plus one. It is NOT a fleet-wide queue position and says
+   * nothing about other users' jobs. (For an admin reading someone
+   * else's job, the set is that job owner's, not the admin's — the
+   * same scoping `workspace_id`/`user_id` already describe.)
+   *
+   * Null unless `queue_reason` is `concurrency_limit`. May also be
+   * null in that state on the rare rows whose admission ordering
+   * cannot be determined (no recorded state-change timestamp), or if
+   * the count query fails — a missing position never fails the
+   * request.
+   *
+   */
+  queue_position?: number | null
+  /**
+   * Why a still-queued job has not started yet. Present only while
+   * `status` is `pending`; null for every other status.
+   *
+   * `status` deliberately folds every waiting state into `pending`
+   * (the frontend's filter categories depend on that), so this field
+   * is the one that tells the two kinds of waiting apart:
+   *
+   * - `concurrency_limit` — the job is held behind the caller's OWN
+   * per-user/per-auth-method concurrent-job cap. Nothing in the
+   * fleet is blocking it; the caller's other running jobs are.
+   * - `capacity` — the job is past that cap and admitted, and is now
+   * waiting for an inference worker to become free.
+   *
+   * Detail-only: this field is NOT present on the list view's
+   * `JobEntry`, because deriving `queue_position` for a page of jobs
+   * would cost one extra query per row.
+   *
+   */
+  queue_reason?: 'concurrency_limit' | 'capacity'
   /**
    * User-friendly job status
    */
@@ -9661,9 +9718,14 @@ export type GetBillingUsageTimeSeriesData = {
      * Third-Party Partner API, Comfy Cloud, Serverless) plus an
      * `unattributed` bucket that is always counted in the total.
      * `person` and `source` attribute spend to the member or to the API
-     * key (`spend_source`) that caused it; until a data source serves
-     * them the response is an empty series with `not_available` set.
-     * Group keys for those three carry a matching entry in `group_labels`.
+     * key (`spend_source`) that caused it, read from the usage ledger
+     * where the workspace is enabled for it (feature
+     * `usage_attribution_enabled`): owners see every member and every
+     * key, a member's `person` and `source` views hold only their own
+     * rows, and an `unattributed` group carries spend with no usable
+     * identity so the groups still sum to the total. Elsewhere the response is an empty series with
+     * `not_available` set. Group keys for those three carry a matching
+     * entry in `group_labels`.
      *
      */
     group_by?:
@@ -14614,7 +14676,7 @@ export type LeaveWorkspaceErrors = {
    */
   401: ErrorResponse
   /**
-   * Cannot leave as the only owner or cannot leave personal workspace
+   * Cannot leave as the only owner (`ONLY_OWNER`), cannot leave a personal workspace (`PERSONAL_WORKSPACE`), or `code` is `membership_managed_by_directory` with `message` "Your organization's admin manages membership" for an account the workspace's attached SSO organization holds.
    */
   403: ErrorResponse
   /**

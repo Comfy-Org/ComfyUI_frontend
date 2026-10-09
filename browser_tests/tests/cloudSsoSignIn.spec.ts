@@ -31,6 +31,7 @@ const APP_ROOT = new RegExp(
 const SSO_COPY = enMessages.auth.sso
 const OAUTH_REQUEST_ID = '550e8400-e29b-41d4-a716-446655440000'
 const CONSENT_CHALLENGE: OAuthConsentChallenge = {
+  client_provenance: 'first_party',
   oauth_request_id: OAUTH_REQUEST_ID,
   csrf_token: 'csrf-token',
   client_display_name: 'Comfy Desktop',
