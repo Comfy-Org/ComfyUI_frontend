@@ -93,6 +93,7 @@ jobs:
         run: pnpm --filter @comfyorg/website test:e2e --shard=${{ matrix.shardIndex }}/${{ matrix.shardTotal }}
         env:
           PLAYWRIGHT_BLOB_OUTPUT_DIR: ${{ github.workspace }}/apps/website/blob-report
+          PLAYWRIGHT_SNAPSHOT_UPDATES_DIR: ${{ github.workspace }}/apps/website/snapshot-updates
 
       - name: Upload blob report
         uses: actions/upload-artifact@v6
@@ -102,6 +103,18 @@ jobs:
           path: apps/website/blob-report/
           if-no-files-found: error
           retention-days: 1
+
+      # Actual images of failed screenshot assertions, laid out on their
+      # baseline paths, so pr-update-website-screenshots can commit them
+      # without rerunning the suite.
+      - name: Upload rewritten snapshots
+        uses: actions/upload-artifact@v6
+        if: ${{ !cancelled() }}
+        with:
+          name: website-snapshot-updates-${{ matrix.shardIndex }}
+          path: apps/website/snapshot-updates/
+          retention-days: 7
+          if-no-files-found: ignore
 
   website-e2e-report:
     needs: [changes, website-e2e-shard]

@@ -1,7 +1,7 @@
 import { describe, expect, it } from 'vitest'
 
-import type { HarvestableTest } from '@e2e/reporters/snapshotUpdatesReporter'
-import { collectSnapshotUpdates } from '@e2e/reporters/snapshotUpdatesReporter'
+import type { HarvestableTest } from './snapshotUpdatesReporter'
+import { collectSnapshotUpdates } from './snapshotUpdatesReporter'
 
 const baseDir = '/repo'
 const golden = `${baseDir}/browser_tests/tests/menu.spec.ts-snapshots/menu-open-chromium-linux.png`

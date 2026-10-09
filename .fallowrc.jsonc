@@ -29,7 +29,6 @@
       "entryPoints": [
         "apps/website/src/**/__mocks__/**/*.ts",
         "browser_tests/global{Setup,Teardown}.ts",
-        "browser_tests/reporters/*.ts",
         "playwright.session.config.ts",
         "src/**/__mocks__/**/*.ts"
       ],

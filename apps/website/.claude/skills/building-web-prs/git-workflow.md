@@ -153,7 +153,9 @@ the first failing assertion.
 - Screenshot comparisons fail after an intended visual change: baselines are
   named `*-visual-linux.png` and come from the Linux CI container. Never commit
   baselines generated on a Mac. Comment `/update-website-screenshots` on the
-  pull request; the workflow commits fresh baselines to the branch. Pull
+  pull request once its E2E run has finished; the workflow commits the images
+  that run already took for each failed assertion, without rerunning
+  Playwright (`/update-website-screenshots full` reruns instead). Pull
   afterwards, look at each changed image, and list them in the description.
 - The same test passes on re-run with no code change: re-run once with
   `gh run rerun <run-id> --failed`. A second flake on the same test is an

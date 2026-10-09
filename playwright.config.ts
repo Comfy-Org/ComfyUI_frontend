@@ -25,7 +25,7 @@ const reporters: ReporterDescription[] = [
   ...(snapshotUpdatesDir
     ? [
         [
-          './browser_tests/reporters/snapshotUpdatesReporter.ts',
+          './scripts/playwright/snapshotUpdatesReporter.ts',
           { outputDir: snapshotUpdatesDir }
         ] satisfies ReporterDescription
       ]

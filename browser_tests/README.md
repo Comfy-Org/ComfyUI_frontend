@@ -1019,7 +1019,7 @@ pnpm test:browser:local --update-snapshots
 2. Let the PR's `CI: Tests E2E` run finish. Every failed screenshot assertion
    (stale or missing baseline) already uploads its actual image as a
    `snapshot-updates-*` artifact, laid out on the baseline's path
-   (`browser_tests/reporters/snapshotUpdatesReporter.ts`).
+   (`scripts/playwright/snapshotUpdatesReporter.ts`, shared with the website suite).
 3. Add the **`New Browser Test Expectations`** label or comment
    `/update-playwright`. The workflow commits those images to the branch
    without rerunning Playwright.

@@ -1,0 +1,194 @@
+name: Commit Snapshot Updates
+description: >
+  Downloads the rewritten-snapshot artifacts produced by
+  harvest-snapshot-updates or stage-rewritten-snapshots, merges them into the
+  Playwright config directory, reports how much each baseline changed, and
+  commits and pushes the result to the PR branch.
+
+  Requires the PR branch to be checked out with a token that may push to it.
+
+inputs:
+  artifact-pattern:
+    description: Glob matching the artifacts to merge, e.g. snapshots-shard-*
+    required: true
+  config-dir:
+    description: Directory of the Playwright config, relative to the workspace
+    required: false
+    default: .
+  snapshot-paths:
+    description: Git pathspec that contains the baselines, e.g. browser_tests/
+    required: true
+  branch:
+    description: PR branch to push to
+    required: true
+  message:
+    description: First line of the commit message
+    required: false
+    default: '[automated] Update test expectations'
+  source-run-url:
+    description: E2E run the images were harvested from, when they were
+    required: false
+
+outputs:
+  has-changes:
+    description: '`true` when a commit was pushed'
+    value: ${{ steps.commit.outputs.has-changes }}
+  changed-count:
+    description: Number of baseline files in the commit
+    value: ${{ steps.commit.outputs.changed-count }}
+
+runs:
+  using: composite
+  steps:
+    - name: Download rewritten snapshots
+      uses: actions/download-artifact@v8
+      with:
+        pattern: ${{ inputs.artifact-pattern }}
+        path: ${{ runner.temp }}/snapshot-updates
+        merge-multiple: true
+
+    - name: Merge rewritten snapshots
+      shell: bash
+      env:
+        CONFIG_DIR: ${{ inputs.config-dir }}
+        DOWNLOAD_DIR: ${{ runner.temp }}/snapshot-updates
+      run: |
+        set -euo pipefail
+
+        if [ ! -d "$DOWNLOAD_DIR" ]; then
+          echo "No rewritten snapshots to merge"
+          exit 0
+        fi
+
+        count=$(find "$DOWNLOAD_DIR" -type f | wc -l)
+        echo "Merging ${count} rewritten snapshot(s) into ${CONFIG_DIR}/"
+        if [ "$count" -gt 0 ]; then
+          cp -v -r "$DOWNLOAD_DIR/." "$CONFIG_DIR/" | sed 's/^/  /'
+        fi
+
+    # Flag small rewrites that are likely text-rasterization noise rather than
+    # intentional visual changes.
+    - name: Report snapshot diff magnitudes
+      id: diff-report
+      shell: bash
+      env:
+        SNAPSHOT_PATHS: ${{ inputs.snapshot-paths }}
+        REPORT: ${{ runner.temp }}/diff-report.md
+      run: |
+        set -uo pipefail
+
+        : > "$REPORT"
+
+        mapfile -t changed < <(
+          git status --porcelain=v1 --untracked-files=all -- "$SNAPSHOT_PATHS" |
+            sed -e 's/^...//' -e 's/^"//' -e 's/"$//'
+        )
+        if [ "${#changed[@]}" -eq 0 ]; then
+          echo "No snapshot changes to measure"
+          exit 0
+        fi
+
+        if command -v compare >/dev/null 2>&1; then
+          echo "Measuring ${#changed[@]} rewritten snapshot(s) with ImageMagick"
+        else
+          echo "::warning::ImageMagick 'compare' unavailable; falling back to byte sizes, which cannot distinguish a real visual change from rasterization noise."
+        fi
+
+        small=0
+        {
+          echo "| snapshot | status | changed pixels |"
+          echo "| --- | --- | --- |"
+        } >> "$REPORT"
+
+        tmp_old="$(mktemp)"
+        for f in "${changed[@]}"; do
+          [ -f "$f" ] || continue
+
+          if ! git show "HEAD:$f" > "$tmp_old" 2>/dev/null; then
+            echo "| \`${f}\` | new | n/a |" >> "$REPORT"
+            continue
+          fi
+
+          px=''
+          if command -v compare >/dev/null 2>&1; then
+            px=$(compare -metric AE "$tmp_old" "$f" null: 2>&1 >/dev/null)
+            # Non-numeric means differing geometry or a decode failure.
+            case "$px" in
+              ''|*[!0-9]*) px='' ;;
+            esac
+          fi
+
+          if [ -n "$px" ]; then
+            echo "| \`${f}\` | modified | ${px} |" >> "$REPORT"
+            # The threshold is advisory because small changes can be valid.
+            if [ "$px" -gt 0 ] && [ "$px" -le 2000 ]; then
+              small=$((small + 1))
+            fi
+          else
+            old_b=$(wc -c < "$tmp_old" | tr -d ' ')
+            new_b=$(wc -c < "$f" | tr -d ' ')
+            echo "| \`${f}\` | modified | ${old_b}B -> ${new_b}B |" >> "$REPORT"
+          fi
+        done
+        rm -f "$tmp_old"
+
+        if [ "$small" -gt 0 ]; then
+          echo "::warning::${small} rewritten baseline(s) changed by <=2000 pixels. Screenshot capture is not bit-deterministic - small diffs are usually text rasterization noise, not an intended change. Confirm each rewrite corresponds to a test you expected to change before merging."
+        fi
+
+        cat "$REPORT"
+        {
+          echo "### Rewritten snapshots (${#changed[@]})"
+          echo
+          cat "$REPORT"
+        } >> "$GITHUB_STEP_SUMMARY"
+
+    - name: Commit updated expectations
+      id: commit
+      shell: bash
+      env:
+        SNAPSHOT_PATHS: ${{ inputs.snapshot-paths }}
+        TARGET_BRANCH: ${{ inputs.branch }}
+        MESSAGE: ${{ inputs.message }}
+        SOURCE_RUN_URL: ${{ inputs.source-run-url }}
+        REPORT: ${{ runner.temp }}/diff-report.md
+        COMMIT_MESSAGE_FILE: ${{ runner.temp }}/commit-msg.txt
+      run: |
+        set -euo pipefail
+
+        git config --global user.name 'github-actions'
+        git config --global user.email 'github-actions@github.com'
+
+        changed_count=$(git status --porcelain=v1 --untracked-files=all -- "$SNAPSHOT_PATHS" | wc -l)
+        echo "changed-count=${changed_count}" >> "$GITHUB_OUTPUT"
+        if [ "$changed_count" -eq 0 ]; then
+          echo "No changes to commit"
+          echo "has-changes=false" >> "$GITHUB_OUTPUT"
+          exit 0
+        fi
+        echo "has-changes=true" >> "$GITHUB_OUTPUT"
+
+        git add -- "$SNAPSHOT_PATHS"
+
+        # Use cat so backticks and file names remain literal.
+        {
+          echo "$MESSAGE"
+          if [ -n "$SOURCE_RUN_URL" ]; then
+            echo
+            echo "Taken from the failed screenshot assertions of ${SOURCE_RUN_URL}"
+            echo 'without rerunning Playwright.'
+          fi
+          if [ -s "$REPORT" ]; then
+            echo
+            cat "$REPORT"
+            echo
+            echo 'Screenshot capture is not bit-deterministic; small pixel'
+            echo 'deltas are usually text rasterization noise. Confirm each'
+            echo 'rewrite corresponds to a test expected to change.'
+          fi
+        } > "$COMMIT_MESSAGE_FILE"
+
+        git commit -F "$COMMIT_MESSAGE_FILE"
+
+        echo "Pushing ${changed_count} file(s) to ${TARGET_BRANCH}..."
+        git push origin "HEAD:refs/heads/${TARGET_BRANCH}"

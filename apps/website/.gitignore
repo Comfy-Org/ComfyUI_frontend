@@ -2,6 +2,7 @@ dist/
 .astro/
 test-results/
 playwright-report/
+snapshot-updates/
 results.json
 
 # Platform-specific Playwright snapshots (CI runs Linux)

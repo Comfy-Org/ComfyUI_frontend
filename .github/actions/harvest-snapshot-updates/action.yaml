@@ -1,0 +1,184 @@
+name: Harvest Snapshot Updates
+description: >
+  Reuses the screenshots a PR's E2E run already took. Every Playwright job in
+  that run uploads the actual image of each failed screenshot assertion, laid
+  out on its golden path relative to the Playwright config directory, as an
+  artifact named `<artifact-prefix>*` (see
+  scripts/playwright/snapshotUpdatesReporter.ts). This action locates the run
+  for the PR head, waits for it if it is still running, checks that every
+  Playwright job finished, downloads those artifacts and re-uploads the merged
+  tree as one artifact for commit-snapshot-updates.
+
+  Requires the PR branch to be checked out: the E2E workflow file is read from
+  it to confirm the branch uploads the artifacts at all. Needs `gh` on the
+  runner, so run it on a plain ubuntu job, not inside a container.
+
+inputs:
+  e2e-workflow:
+    description: E2E workflow file name, e.g. ci-tests-e2e.yaml
+    required: true
+  head-sha:
+    description: PR head commit the E2E run must belong to
+    required: true
+  artifact-prefix:
+    description: Prefix of the per-job artifacts the E2E run uploads
+    required: true
+  job-prefix:
+    description: >
+      Prefix of the job names that run Playwright in the E2E run. Every such
+      job must have concluded success or failure for the harvest to be
+      complete.
+    required: true
+  output-artifact:
+    description: Name of the artifact that receives the merged tree
+    required: true
+  requested-mode:
+    description: '`auto` harvests when possible; `full` always falls back'
+    required: false
+    default: auto
+  wait-minutes:
+    description: How long to wait for an in-progress E2E run
+    required: false
+    default: '45'
+  token:
+    description: Token with actions read access
+    required: true
+
+outputs:
+  mode:
+    description: >
+      `harvest` when the merged tree was uploaded, `none` when the E2E run
+      finished with no screenshot mismatches, `full` when the caller must
+      rerun Playwright with --update-snapshots instead.
+    value: ${{ steps.plan.outputs.mode }}
+  run-url:
+    description: The E2E run the images came from (empty when none was found)
+    value: ${{ steps.plan.outputs.run-url }}
+  count:
+    description: Number of harvested snapshot files
+    value: ${{ steps.download.outputs.count }}
+
+runs:
+  using: composite
+  steps:
+    - name: Locate the E2E run for the PR head
+      id: plan
+      shell: bash
+      env:
+        GH_TOKEN: ${{ inputs.token }}
+        E2E_WORKFLOW: ${{ inputs.e2e-workflow }}
+        HEAD_SHA: ${{ inputs.head-sha }}
+        ARTIFACT_PREFIX: ${{ inputs.artifact-prefix }}
+        JOB_PREFIX: ${{ inputs.job-prefix }}
+        REQUESTED_MODE: ${{ inputs.requested-mode }}
+        WAIT_MINUTES: ${{ inputs.wait-minutes }}
+      run: |
+        set -euo pipefail
+
+        fallback() {
+          echo "::notice::$1 Falling back to a full --update-snapshots rerun."
+          echo "mode=full" >> "$GITHUB_OUTPUT"
+          exit 0
+        }
+
+        if [ "$REQUESTED_MODE" = full ]; then
+          fallback "A full regeneration was requested."
+        fi
+
+        if ! grep -q -- "$ARTIFACT_PREFIX" ".github/workflows/${E2E_WORKFLOW}"; then
+          fallback "The E2E workflow on this branch does not upload rewritten snapshots."
+        fi
+
+        runs_api="repos/${GITHUB_REPOSITORY}/actions/workflows/${E2E_WORKFLOW}/runs"
+        run_id=$(gh api "${runs_api}?head_sha=${HEAD_SHA}&event=pull_request&per_page=20" \
+          --jq '[.workflow_runs[] | select(.conclusion != "cancelled" and .conclusion != "skipped")][0].id // empty')
+        if [ -z "$run_id" ]; then
+          fallback "No E2E run exists for ${HEAD_SHA}."
+        fi
+
+        run_url="${GITHUB_SERVER_URL}/${GITHUB_REPOSITORY}/actions/runs/${run_id}"
+        echo "run-url=${run_url}" >> "$GITHUB_OUTPUT"
+        echo "E2E run for ${HEAD_SHA}: ${run_url}"
+
+        status=$(gh run view "$run_id" --repo "$GITHUB_REPOSITORY" --json status --jq .status)
+        if [ "$status" != completed ]; then
+          echo "E2E run is ${status}; waiting up to ${WAIT_MINUTES} minutes for it to finish"
+          if ! timeout "${WAIT_MINUTES}m" gh run watch "$run_id" --repo "$GITHUB_REPOSITORY" --interval 30 > /dev/null; then
+            fallback "The E2E run did not finish within ${WAIT_MINUTES} minutes."
+          fi
+        fi
+
+        # Every Playwright job must have run to completion, or the harvest
+        # would silently miss the shards that died. A path-filtered run lists
+        # each matrix job once, as skipped.
+        e2e_jobs=$(gh api --paginate "repos/${GITHUB_REPOSITORY}/actions/runs/${run_id}/jobs?per_page=100" \
+          --jq '.jobs[] | "\(.conclusion)\t\(.name)"' |
+          awk -F'\t' -v prefix="$JOB_PREFIX" 'index($2, prefix) == 1')
+        if ! printf '%s\n' "$e2e_jobs" | grep -qE '^(success|failure)	'; then
+          fallback "The E2E run did not execute any ${JOB_PREFIX} jobs."
+        fi
+        if unfinished=$(printf '%s\n' "$e2e_jobs" | grep -vE '^(success|failure|skipped)	') && [ -n "$unfinished" ]; then
+          echo "$unfinished"
+          fallback "Some ${JOB_PREFIX} jobs in the E2E run did not finish."
+        fi
+
+        artifacts=$(gh api --paginate "repos/${GITHUB_REPOSITORY}/actions/runs/${run_id}/artifacts?per_page=100" \
+          --jq '.artifacts[] | "\(.expired)\t\(.name)"' |
+          awk -F'\t' -v prefix="$ARTIFACT_PREFIX" 'index($2, prefix) == 1')
+        if [ -z "$artifacts" ]; then
+          echo "::notice::The E2E run ${run_url} finished with no screenshot mismatches; nothing to update."
+          echo "mode=none" >> "$GITHUB_OUTPUT"
+          exit 0
+        fi
+        if ! printf '%s\n' "$artifacts" | grep -q '^false	'; then
+          fallback "The rewritten snapshots from the E2E run have expired."
+        fi
+
+        echo "Harvesting rewritten snapshots from ${run_url}:"
+        printf '%s\n' "$artifacts" | grep '^false	' | cut -f2
+        echo "mode=harvest" >> "$GITHUB_OUTPUT"
+
+    - name: Download rewritten snapshots
+      id: download
+      if: steps.plan.outputs.mode == 'harvest'
+      shell: bash
+      env:
+        GH_TOKEN: ${{ inputs.token }}
+        ARTIFACT_PREFIX: ${{ inputs.artifact-prefix }}
+        RUN_URL: ${{ steps.plan.outputs.run-url }}
+        DOWNLOAD_DIR: ${{ runner.temp }}/harvest-download
+        MERGED_DIR: ${{ runner.temp }}/harvested-snapshots
+      run: |
+        set -euo pipefail
+
+        gh run download "${RUN_URL##*/}" --repo "$GITHUB_REPOSITORY" \
+          --pattern "${ARTIFACT_PREFIX}*" --dir "$DOWNLOAD_DIR"
+
+        mkdir -p "$MERGED_DIR"
+        for artifact in "$DOWNLOAD_DIR"/*/; do
+          rsync -a --exclude manifest.json "$artifact" "$MERGED_DIR/"
+        done
+
+        count=$(find "$MERGED_DIR" -type f | wc -l)
+        if [ "$count" -eq 0 ]; then
+          echo "::error::The ${ARTIFACT_PREFIX}* artifacts were downloaded but contained no snapshot files"
+          exit 1
+        fi
+        echo "count=${count}" >> "$GITHUB_OUTPUT"
+        echo "Harvested ${count} rewritten snapshot(s)"
+
+        {
+          echo "### Snapshots harvested from [the PR's E2E run](${RUN_URL}) (${count})"
+          echo
+          echo "| snapshot | test |"
+          echo "| --- | --- |"
+          jq -r '.[] | "| `\(.snapshotPath)` | \(.test) |"' "$DOWNLOAD_DIR"/*/manifest.json
+        } >> "$GITHUB_STEP_SUMMARY"
+
+    - name: Upload harvested snapshots
+      if: steps.plan.outputs.mode == 'harvest'
+      uses: actions/upload-artifact@v6
+      with:
+        name: ${{ inputs.output-artifact }}
+        path: ${{ runner.temp }}/harvested-snapshots/
+        retention-days: 1
