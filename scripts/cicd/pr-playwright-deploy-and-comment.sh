@@ -124,7 +124,6 @@ parse_counts() {
 }
 
 count_screenshot_diffs() {
-    command -v jq > /dev/null 2>&1 || { echo 0; return; }
     find snapshot-updates -name manifest.json -exec cat {} + 2>/dev/null |
         jq -s 'map(length) | add // 0'
 }

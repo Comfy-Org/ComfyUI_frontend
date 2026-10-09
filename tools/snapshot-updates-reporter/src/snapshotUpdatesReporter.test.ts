@@ -69,11 +69,11 @@ describe('SnapshotUpdatesReporter', () => {
   afterAll(() => rmSync(project, { recursive: true, force: true }))
 
   it('copies the actual image of every snapshot that failed the final attempt onto its golden path', () => {
-    const manifest: { snapshotPath: string }[] = JSON.parse(
+    const manifest: string[] = JSON.parse(
       readFileSync(join(output, 'manifest.json'), 'utf8')
     )
 
-    expect(manifest.map((entry) => entry.snapshotPath).sort()).toEqual([
+    expect(manifest.sort()).toEqual([
       'tests/a.spec.ts-snapshots/missing.txt',
       'tests/a.spec.ts-snapshots/nested/second.txt',
       'tests/a.spec.ts-snapshots/stale.txt'

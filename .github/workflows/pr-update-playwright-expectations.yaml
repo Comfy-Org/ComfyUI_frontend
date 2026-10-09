@@ -92,7 +92,7 @@ jobs:
       actions: read
     outputs:
       mode: ${{ steps.harvest.outputs.mode }}
-      run-url: ${{ steps.harvest.outputs.run-url }}
+      run-id: ${{ steps.harvest.outputs.run-id }}
     steps:
       - name: Checkout repository
         uses: actions/checkout@v7
@@ -105,7 +105,6 @@ jobs:
           head-sha: ${{ needs.setup.outputs.head-sha }}
           artifact-prefix: snapshot-updates-
           job-prefix: playwright-tests
-          output-artifact: snapshots-shard-harvested
           comment-body: ${{ github.event.comment.body }}
           token: ${{ secrets.GITHUB_TOKEN }}
 
@@ -242,7 +241,7 @@ jobs:
         id: changed-snapshots
         uses: ./trusted/.github/actions/stage-rewritten-snapshots
         with:
-          artifact-name: snapshots-shard-${{ matrix.shard }}
+          artifact-name: snapshot-updates-shard-${{ matrix.shard }}
 
       # Reject test failures that produced no rewritten snapshots.
       - name: Verify shard did the work it claims
@@ -339,16 +338,16 @@ jobs:
         id: commit
         uses: ./trusted/.github/actions/commit-snapshot-updates
         with:
-          artifact-pattern: snapshots-shard-*
+          artifact-pattern: snapshot-updates-*
           snapshot-paths: browser_tests/
           branch: ${{ needs.setup.outputs.branch }}
           head-sha: ${{ needs.setup.outputs.head-sha }}
           message: '[automated] Update test expectations'
-          source-run-url: ${{ needs.harvest.outputs.mode == 'harvest' && needs.harvest.outputs.run-url || '' }}
+          run-id: ${{ needs.harvest.outputs.run-id }}
 
       - name: Add Done Reaction
         uses: peter-evans/create-or-update-comment@e8674b075228eee787fea43ef493e45ece1004c9 # v5.0.0
-        if: github.event_name == 'issue_comment' && (steps.commit.outputs.has-changes == 'true' || needs.harvest.outputs.mode == 'none')
+        if: github.event_name == 'issue_comment' && steps.commit.outputs.has-changes == 'true'
         with:
           comment-id: ${{ needs.setup.outputs.comment-id }}
           issue-number: ${{ needs.setup.outputs.pr-number }}

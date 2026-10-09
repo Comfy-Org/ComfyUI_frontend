@@ -1,15 +1,15 @@
 name: Commit Snapshot Updates
 description: >
-  Downloads the rewritten-snapshot artifacts produced by
-  harvest-snapshot-updates or stage-rewritten-snapshots, merges them into the
-  Playwright config directory, reports how much each baseline changed, and
+  Downloads the snapshot-update artifacts of an E2E run, or those
+  stage-rewritten-snapshots uploaded in the current run, merges their images
+  into the Playwright config directory, reports how much each baseline changed, and
   commits and pushes the result to the PR branch.
 
   Requires the PR branch to be checked out with a token that may push to it.
 
 inputs:
   artifact-pattern:
-    description: Glob matching the artifacts to merge, e.g. snapshots-shard-*
+    description: Glob matching the artifacts to merge, e.g. snapshot-updates-*
     required: true
   config-dir:
     description: Directory of the Playwright config, relative to the workspace
@@ -30,9 +30,10 @@ inputs:
     description: First line of the commit message
     required: false
     default: '[automated] Update test expectations'
-  source-run-url:
-    description: E2E run the images were harvested from, when they were
+  run-id:
+    description: E2E run to take the artifacts from; empty for the current run
     required: false
+    default: ''
 
 outputs:
   has-changes:
@@ -63,6 +64,8 @@ runs:
       uses: actions/download-artifact@v8
       with:
         pattern: ${{ inputs.artifact-pattern }}
+        run-id: ${{ inputs.run-id }}
+        github-token: ${{ inputs.run-id && github.token || '' }}
         path: ${{ runner.temp }}/snapshot-updates
         merge-multiple: true
 
@@ -160,7 +163,7 @@ runs:
         SNAPSHOT_PATHS: ${{ inputs.snapshot-paths }}
         TARGET_BRANCH: ${{ inputs.branch }}
         MESSAGE: ${{ inputs.message }}
-        SOURCE_RUN_URL: ${{ inputs.source-run-url }}
+        RUN_ID: ${{ inputs.run-id }}
         REPORT: ${{ runner.temp }}/diff-report.md
         COMMIT_MESSAGE_FILE: ${{ runner.temp }}/commit-msg.txt
       run: |
@@ -182,9 +185,9 @@ runs:
 
         {
           echo "$MESSAGE"
-          if [ -n "$SOURCE_RUN_URL" ]; then
+          if [ -n "$RUN_ID" ]; then
             echo
-            echo "Taken from the failed screenshot assertions of ${SOURCE_RUN_URL}"
+            echo "Taken from the failed screenshot assertions of ${GITHUB_SERVER_URL}/${GITHUB_REPOSITORY}/actions/runs/${RUN_ID}"
             echo 'without rerunning Playwright.'
           fi
           if [ -s "$REPORT" ]; then

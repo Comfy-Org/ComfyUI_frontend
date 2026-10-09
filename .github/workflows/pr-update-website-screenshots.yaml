@@ -101,7 +101,7 @@ jobs:
       actions: read
     outputs:
       mode: ${{ steps.harvest.outputs.mode }}
-      run-url: ${{ steps.harvest.outputs.run-url }}
+      run-id: ${{ steps.harvest.outputs.run-id }}
     steps:
       - uses: actions/checkout@v7
 
@@ -113,7 +113,6 @@ jobs:
           head-sha: ${{ needs.setup.outputs.head-sha }}
           artifact-prefix: website-snapshot-updates-
           job-prefix: website-e2e-shard
-          output-artifact: website-rewritten-snapshots-harvested
           comment-body: ${{ github.event.comment.body }}
           wait-minutes: '30'
           token: ${{ secrets.GITHUB_TOKEN }}
@@ -173,7 +172,7 @@ jobs:
         uses: ./trusted/.github/actions/stage-rewritten-snapshots
         with:
           config-dir: apps/website
-          artifact-name: website-rewritten-snapshots-full
+          artifact-name: website-snapshot-updates-full
 
       - name: Fail when the rerun did not pass
         if: steps.update-screenshots.outcome != 'success'
@@ -192,6 +191,7 @@ jobs:
       }}
     runs-on: ubuntu-latest
     permissions:
+      actions: read
       contents: read
       pull-requests: write
     outputs:
@@ -214,13 +214,13 @@ jobs:
         id: commit
         uses: ./trusted/.github/actions/commit-snapshot-updates
         with:
-          artifact-pattern: website-rewritten-snapshots-*
+          artifact-pattern: website-snapshot-updates-*
           config-dir: apps/website
           snapshot-paths: apps/website/e2e/
           branch: ${{ needs.setup.outputs.branch }}
           head-sha: ${{ needs.setup.outputs.head-sha }}
           message: '[automated] Update website screenshot expectations'
-          source-run-url: ${{ needs.harvest.outputs.mode == 'harvest' && needs.harvest.outputs.run-url || '' }}
+          run-id: ${{ needs.harvest.outputs.run-id }}
 
       - name: Remove label
         if: always() && github.event_name == 'pull_request'
@@ -262,15 +262,13 @@ jobs:
         id: content
         uses: actions/github-script@v9
         env:
-          HARVEST_MODE: ${{ needs.harvest.outputs.mode }}
-          HARVEST_RUN_URL: ${{ needs.harvest.outputs.run-url }}
+          HARVEST_RUN_ID: ${{ needs.harvest.outputs.run-id }}
           COMMIT_RESULT: ${{ needs.commit.result }}
           HAS_CHANGES: ${{ needs.commit.outputs.has-changes }}
           CHANGED_COUNT: ${{ needs.commit.outputs.changed-count }}
         with:
           script: |
-            const mode = process.env.HARVEST_MODE
-            const harvestRunUrl = process.env.HARVEST_RUN_URL
+            const harvestRunId = process.env.HARVEST_RUN_ID
             const committed = process.env.COMMIT_RESULT === 'success'
             const hasChanges = process.env.HAS_CHANGES === 'true'
             const changedCount = parseInt(process.env.CHANGED_COUNT) || 0
@@ -283,11 +281,6 @@ jobs:
                 '> [!CAUTION]',
                 `> Screenshot update failed. [View workflow run](${runUrl})`
               )
-            } else if (mode === 'none') {
-              lines.push(
-                '> [!TIP]',
-                `> The [E2E run](${harvestRunUrl}) for this commit has no screenshot diffs; nothing to update.`
-              )
             } else if (!hasChanges) {
               lines.push(
                 '> [!TIP]',
@@ -295,8 +288,8 @@ jobs:
               )
             } else {
               const s = changedCount === 1 ? '' : 's'
-              const source = mode === 'harvest'
-                ? ` taken from the [E2E run](${harvestRunUrl}) without rerunning Playwright`
+              const source = harvestRunId
+                ? ` taken from the [E2E run](${context.serverUrl}/${context.repo.owner}/${context.repo.repo}/actions/runs/${harvestRunId}) without rerunning Playwright`
                 : ''
               lines.push(
                 '> [!TIP]',

@@ -21,14 +21,11 @@ function snapshotPairs(attachments: TestResult['attachments']) {
 }
 
 function collectUpdates(lastResults: Map<TestCase, TestResult>) {
-  const updates = new Map<string, { actual: string; test: string }>()
+  const updates = new Map<string, string>()
   for (const [test, result] of lastResults) {
     if (test.outcome() !== 'unexpected') continue
     for (const { expected, actual } of snapshotPairs(result.attachments)) {
-      updates.set(path.relative(process.cwd(), expected), {
-        actual,
-        test: test.titlePath().filter(Boolean).join(' › ')
-      })
+      updates.set(path.relative(process.cwd(), expected), actual)
     }
   }
   return updates
@@ -43,7 +40,7 @@ export default class SnapshotUpdatesReporter implements Reporter {
 
   onEnd() {
     const updates = collectUpdates(this.lastResults)
-    for (const [snapshotPath, { actual }] of updates) {
+    for (const [snapshotPath, actual] of updates) {
       const destination = path.join(OUTPUT_DIR, snapshotPath)
       fs.mkdirSync(path.dirname(destination), { recursive: true })
       fs.copyFileSync(actual, destination)
@@ -51,14 +48,7 @@ export default class SnapshotUpdatesReporter implements Reporter {
     fs.mkdirSync(OUTPUT_DIR, { recursive: true })
     fs.writeFileSync(
       path.join(OUTPUT_DIR, 'manifest.json'),
-      JSON.stringify(
-        [...updates].map(([snapshotPath, { test }]) => ({
-          snapshotPath,
-          test
-        })),
-        null,
-        2
-      )
+      JSON.stringify([...updates.keys()], null, 2)
     )
   }
 

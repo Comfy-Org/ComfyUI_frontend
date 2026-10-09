@@ -1,11 +1,11 @@
 name: Harvest Snapshot Updates
 description: >
-  Reuses the screenshots a PR's E2E run already took. Every Playwright job in
-  that run uploads a `<artifact-prefix>*` artifact holding the actual image of
-  each failed screenshot assertion on its golden path, plus a manifest (see
-  tools/snapshot-updates-reporter). This action waits for the run for the PR
-  head, requires an artifact from every Playwright job that ran, and
-  re-uploads the merged images as one artifact for commit-snapshot-updates.
+  Decides whether a PR's E2E run already holds the screenshots to commit.
+  Every Playwright job in that run uploads a `<artifact-prefix>*` artifact
+  holding the actual image of each failed screenshot assertion on its golden
+  path, plus a manifest (see tools/snapshot-updates-reporter). This action
+  waits for the run for the PR head and requires an artifact from every
+  Playwright job that ran.
 
 inputs:
   e2e-workflow:
@@ -19,9 +19,6 @@ inputs:
     required: true
   job-prefix:
     description: Prefix of the job names that run Playwright in the E2E run
-    required: true
-  output-artifact:
-    description: Name of the artifact that receives the merged tree
     required: true
   comment-body:
     description: Triggering comment; `/<command> full` forces the fallback
@@ -38,13 +35,12 @@ inputs:
 outputs:
   mode:
     description: >
-      `harvest` when the merged tree was uploaded, `none` when the E2E run
-      had no screenshot mismatches, `full` when the caller must rerun
-      Playwright with --update-snapshots instead.
-    value: ${{ steps.plan.outputs.mode || steps.merge.outputs.mode }}
-  run-url:
-    description: The E2E run the images came from (empty when none was found)
-    value: ${{ steps.plan.outputs.run-url }}
+      `harvest` when the E2E run's artifacts can be committed, `full` when the
+      caller must rerun Playwright with --update-snapshots instead.
+    value: ${{ steps.plan.outputs.mode }}
+  run-id:
+    description: The E2E run to download the artifacts from, when harvesting
+    value: ${{ steps.plan.outputs.run-id }}
 
 runs:
   using: composite
@@ -79,10 +75,6 @@ runs:
           fallback "No E2E run exists for ${HEAD_SHA}."
         fi
         run_url="${GITHUB_SERVER_URL}/${GITHUB_REPOSITORY}/actions/runs/${run_id}"
-        {
-          echo "run-id=${run_id}"
-          echo "run-url=${run_url}"
-        } >> "$GITHUB_OUTPUT"
 
         if ! timeout "${WAIT_MINUTES}m" gh run watch "$run_id" --repo "$GITHUB_REPOSITORY" --interval 30 > /dev/null; then
           fallback "The E2E run ${run_url} did not finish within ${WAIT_MINUTES} minutes."
@@ -100,43 +92,7 @@ runs:
           fallback "${artifacts} of ${ran} ${JOB_PREFIX} jobs in ${run_url} left a usable ${ARTIFACT_PREFIX}* artifact."
         fi
 
-    - name: Download snapshot updates
-      if: steps.plan.outputs.mode != 'full'
-      uses: actions/download-artifact@v8
-      with:
-        run-id: ${{ steps.plan.outputs.run-id }}
-        github-token: ${{ inputs.token }}
-        pattern: ${{ inputs.artifact-prefix }}*
-        path: ${{ runner.temp }}/harvest-download
-
-    - name: Merge snapshot updates
-      id: merge
-      if: steps.plan.outputs.mode != 'full'
-      shell: bash
-      env:
-        DOWNLOAD_DIR: ${{ runner.temp }}/harvest-download
-        MERGED_DIR: ${{ runner.temp }}/harvested-snapshots
-      run: |
-        set -euo pipefail
-
-        count=$(jq -s 'map(length) | add' "$DOWNLOAD_DIR"/*/manifest.json)
-        if [ "$count" -eq 0 ]; then
-          echo "::notice::The E2E run finished with no screenshot mismatches; nothing to update."
-          echo "mode=none" >> "$GITHUB_OUTPUT"
-          exit 0
-        fi
-
-        mkdir -p "$MERGED_DIR"
-        for artifact in "$DOWNLOAD_DIR"/*/; do
-          rsync -a --exclude manifest.json "$artifact" "$MERGED_DIR/"
-        done
-        echo "Harvested ${count} snapshot(s)"
-        echo "mode=harvest" >> "$GITHUB_OUTPUT"
-
-    - name: Upload harvested snapshots
-      if: steps.merge.outputs.mode == 'harvest'
-      uses: actions/upload-artifact@v6
-      with:
-        name: ${{ inputs.output-artifact }}
-        path: ${{ runner.temp }}/harvested-snapshots/
-        retention-days: 1
+        {
+          echo "mode=harvest"
+          echo "run-id=${run_id}"
+        } >> "$GITHUB_OUTPUT"
