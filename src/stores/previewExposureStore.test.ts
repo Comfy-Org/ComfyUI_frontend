@@ -24,6 +24,22 @@ describe(getPreviewExposureHostLocator, () => {
     expect(console.error).not.toHaveBeenCalled()
     expect(reportAssertFailure).not.toHaveBeenCalled()
   })
+
+  it('reports a host whose graph ID cannot form a locator', () => {
+    const host = fromAny<SubgraphNode, unknown>({
+      graph: { isRootGraph: false, id: 'not-a-uuid' },
+      id: toNodeId(7)
+    })
+
+    expect(getPreviewExposureHostLocator(host)).toBeNull()
+    expect(console.error).toHaveBeenCalledWith(
+      'Cannot create preview exposure host locator for node 7'
+    )
+    expect(reportAssertFailure).toHaveBeenCalledWith(
+      'Cannot create preview exposure host locator',
+      { hostNodeId: '7' }
+    )
+  })
 })
 
 describe(usePreviewExposureStore, () => {
