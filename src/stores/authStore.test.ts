@@ -1927,6 +1927,20 @@ describe('useAuthStore', () => {
       expect((error as AuthStoreError).status).toBe(422)
     })
 
+    it('names the SSO organization when the server requires SSO', async () => {
+      vi.mocked(fetch).mockResolvedValueOnce(
+        Response.json(
+          { code: 'sso_required', message: 'x', organization_id: 'org_1' },
+          { status: 403 }
+        )
+      )
+
+      await expect(store.createCustomer()).rejects.toMatchObject({
+        name: 'SsoRequiredAuthError',
+        organizationId: 'org_1'
+      })
+    })
+
     it('throws when the response is ok but carries no customer id', async () => {
       vi.mocked(fetch).mockResolvedValueOnce(Response.json({}))
 
