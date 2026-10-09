@@ -324,11 +324,6 @@ const billingIdentity = computed(
     `${resolvedUserInfo.value?.id ?? 'anonymous'}:${teamWorkspaceStore.workspaceId ?? 'none'}`
 )
 
-/**
- * The exhaustion latch is scoped to one user and workspace, so switching
- * identity clears it. The credit-transition notice needs no reset here: its
- * episode carries the identity it belongs to.
- */
 watch(billingIdentity, () => {
   agentPanelStore.reportedExhaustionIdentity = null
 })
