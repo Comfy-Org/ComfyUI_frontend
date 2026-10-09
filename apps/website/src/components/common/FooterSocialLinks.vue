@@ -23,8 +23,8 @@ const socialLinks = (
 </script>
 
 <template>
-  <nav :aria-label="t('footer.social')">
-    <ul class="flex flex-wrap gap-5">
+  <nav :aria-label="t('footer.social')" class="shrink-0">
+    <ul class="flex gap-5">
       <li v-for="link in socialLinks" :key="link.href">
         <a
           :href="link.href"
