@@ -563,6 +563,7 @@
       "graphNote": "The node graph behind this deployment is read-only here. Open it on comfy.org or download the JSON to edit it in ComfyUI.",
       "openComfy": "Open on comfy.org",
       "download": "Download workflow JSON",
+      "downloadShort": "Download",
       "ratings": "Ratings & comments",
       "related": "Related workflows",
       "relatedAll": "Browse all",
@@ -622,7 +623,6 @@
       "connectionLost": "The run could not be checked. Reconnect to recover its current status.",
       "lostContact": "This page lost contact with the run. It may still be running on Cloud and using credits. Reconnect to see its current status.",
       "browserUnavailable": "Running workflows from this page is not available yet.",
-      "tryCloud": "Try in Cloud",
       "explore": "Explore the possibilities"
     },
     "catalogue": {
@@ -920,15 +920,18 @@
     "subtitle2": "Start from a community template or build from scratch.",
     "feature1": {
       "title": "Full Control with Nodes",
-      "description": "Build powerful AI pipelines by connecting nodes on an infinite canvas. Every model, parameter, and processing step is visible and adjustable."
+      "description": "Build powerful AI pipelines by connecting nodes on an infinite canvas. Every model, parameter, and processing step is visible and adjustable.",
+      "cta": "Download Desktop"
     },
     "feature2": {
-      "title": "App mode, a simplified view of your workflows",
-      "description": "If you are new to ComfyUI, get started with App Mode, a simplified view of your workflows. You can flip back to the node graph view anytime to go deeper."
+      "title": "Comfy Agent",
+      "description": "Describe what you want and Comfy Agent builds and runs the workflow for you.",
+      "cta": "Explore Comfy Agent"
     },
     "feature3": {
-      "title": "Community Workflows on Comfy Workflows",
-      "description": "Browse and remix thousands of community-shared workflows. Start from a proven template and customize it to your needs."
+      "title": "Comfy API",
+      "description": "Run Comfy workflows and models from your own app with one API.",
+      "cta": "Explore Comfy API"
     },
     "badgeHow": "HOW",
     "badgeWorks": "WORKS"
@@ -1492,6 +1495,7 @@
       },
       "standard": {
         "label": "STANDARD",
+        "whatsIncluded": "What's included:",
         "price": "$20",
         "yearlyPrice": "$16",
         "yearlyTotal": "$192",
@@ -1506,6 +1510,7 @@
       },
       "creator": {
         "label": "CREATOR",
+        "everythingInStandardPlus": "Everything in Standard, plus:",
         "price": "$35",
         "yearlyPrice": "$28",
         "yearlyTotal": "$336",
@@ -1520,6 +1525,7 @@
       },
       "pro": {
         "label": "PRO",
+        "everythingInCreatorPlus": "Everything in Creator, plus:",
         "price": "$100",
         "yearlyPrice": "$80",
         "yearlyTotal": "$960",
@@ -2401,7 +2407,27 @@
     "developerPlatform": "Developer Platform",
     "comfyRouter": "Comfy Router",
     "workshop": "Hub",
-    "comfyWorkshop": "Browse Models",
+    "hubModels": "Models",
+    "hubModelsDescription": "Run the latest AI models",
+    "hubSeedream5Pro": "Seedream 5.0 Pro",
+    "hubSeedance25": "Seedance 2.5",
+    "hubNanoBanana2": "Nano Banana 2",
+    "hubGptImage2": "GPT Image 2",
+    "hubAllModels": "All models",
+    "hubWorkflows": "Workflows",
+    "hubWorkflowsDescription": "Ready-made recipes for a task",
+    "hubImageToVideo": "Image to video",
+    "hubVideoFromReferences": "Video from references",
+    "hubMotionTransfer": "Motion transfer",
+    "hubEditSelectedRegion": "Edit selected region",
+    "hubAllWorkflows": "All workflows",
+    "hubApps": "Apps",
+    "hubAppsDescription": "Full tools built on Comfy",
+    "reshoot": "Re-shoot",
+    "hubAllApps": "All apps",
+    "featuredHubAlt": "Seedance 2.5 video: animals carry balloons spelling SEEDANCE 2.5 across a rainy street",
+    "featuredHubCta": "Try now",
+    "featuredHubCtaAria": "Try Seedance 2.5 reference to video in the Hub",
     "signIn": "Sign in",
     "signOut": "Log out",
     "accountMenu": "Account menu",
