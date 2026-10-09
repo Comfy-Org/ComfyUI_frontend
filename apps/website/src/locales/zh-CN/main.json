@@ -4761,6 +4761,21 @@
       "yourPalette": "你的色板",
       "edit": "编辑色板",
       "done": "完成"
+    },
+    "download": {
+      "label": "下载",
+      "locked": "运行后即可下载"
+    },
+    "zoom": {
+      "label": "缩放",
+      "in": "放大",
+      "out": "缩小",
+      "fit": "适应屏幕，当前 {n}%"
+    },
+    "compare": {
+      "label": "对比",
+      "before": "之前",
+      "after": "之后"
     }
   },
   "reshoot": {

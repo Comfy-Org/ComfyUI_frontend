@@ -5,25 +5,29 @@ import InfoTooltip from '@/components/ui/tooltip/InfoTooltip.vue'
 
 const {
   label,
+  min = 0,
+  max = 100,
+  step = 1,
+  unit = '',
   display,
-  min,
-  max,
-  step,
   hint,
   disabled = false
 } = defineProps<{
   label: string
-  display: string
-  min: number
-  max: number
-  step: number
+  min?: number
+  max?: number
+  step?: number
+  unit?: string
+  /** The value as shown, when it reads better than the number and unit. */
+  display?: string
   hint?: string
   disabled?: boolean
 }>()
 
 const value = defineModel<number>({ required: true })
 
-const fill = computed(() => ((value.value - min) / (max - min)) * 100)
+const fill = computed(() => ((value.value - min) / (max - min || 1)) * 100)
+const shown = computed(() => display ?? `${value.value}${unit}`)
 </script>
 
 <template>
@@ -50,7 +54,7 @@ const fill = computed(() => ((value.value - min) / (max - min)) * 100)
       </span>
     </span>
     <span class="relative font-mono text-primary-warm-white tabular-nums">
-      {{ display }}
+      {{ shown }}
     </span>
     <input
       v-model.number="value"
@@ -60,7 +64,7 @@ const fill = computed(() => ((value.value - min) / (max - min)) * 100)
       :step
       :disabled
       :aria-label="label"
-      :aria-valuetext="display"
+      :aria-valuetext="shown"
       class="absolute inset-0 cursor-ew-resize opacity-0 disabled:cursor-not-allowed"
     />
   </div>
