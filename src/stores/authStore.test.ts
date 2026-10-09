@@ -2092,11 +2092,9 @@ describe('useAuthStore', () => {
     })
 
     it('carries the HTTP status on a non-ok response', async () => {
-      mockFetch.mockResolvedValueOnce({
-        ok: false,
-        status: 422,
-        statusText: 'Unprocessable Entity'
-      })
+      mockFetch.mockResolvedValueOnce(
+        new Response(null, { status: 422, statusText: 'Unprocessable Entity' })
+      )
 
       const error = await store.createCustomer().catch((e: unknown) => e)
       expect(error).toBeInstanceOf(AuthStoreError)
