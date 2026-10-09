@@ -16,7 +16,7 @@ runs:
         echo "playwright-version=$PLAYWRIGHT_VERSION" >> $GITHUB_OUTPUT
 
     - name: Restore Playwright Browsers
-      uses: actions/cache/restore@v5 # v5.0.2
+      uses: actions/cache/restore@v6
       id: cache-playwright-browsers
       with:
         path: '~/.cache/ms-playwright'
@@ -55,7 +55,7 @@ runs:
 
     - name: Save Playwright Browsers
       if: steps.cache-playwright-browsers.outputs.cache-hit != 'true'
-      uses: actions/cache/save@v5 # v5.0.2
+      uses: actions/cache/save@v6
       with:
         path: '~/.cache/ms-playwright'
         key: ${{ runner.os }}-playwright-browsers-v2-${{ steps.detect-version.outputs.playwright-version }}

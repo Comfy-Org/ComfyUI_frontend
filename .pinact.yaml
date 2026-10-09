@@ -28,3 +28,6 @@ ignore_actions:
     ref: 'v\d+'
   - name: actions/github-script
     ref: 'v\d+'
+  # Reusable workflows pinned to a github-workflows main commit, which has no version tag.
+  - name: Comfy-Org/github-workflows/.*
+    ref: '[0-9a-f]{40}'
