@@ -5140,6 +5140,9 @@
       "paparazziMe": "Paparazzi me",
       "paparazziMeSummary": "Pick a star and a scene, add your face, and get a flash-lit paparazzi photo of the two of you.",
       "paparazziMeMeta": "Image · Nano Banana Pro",
+      "backgroundRemoval": "Background Removal",
+      "backgroundRemovalSummary": "Cut the subject out of a photo and put it on a clean background, or none at all.",
+      "backgroundRemovalMeta": "Image · Recraft Remove Background",
       "reshootMeta": "Video · MiniMax H3"
     },
     "stage": {

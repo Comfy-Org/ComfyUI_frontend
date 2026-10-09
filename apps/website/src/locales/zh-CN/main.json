@@ -4533,6 +4533,9 @@
       "paparazziMe": "狗仔偶遇",
       "paparazziMeSummary": "选一位明星和一个场景，加上你的脸，生成你们俩的闪光灯狗仔照。",
       "paparazziMeMeta": "图像 · Nano Banana Pro",
+      "backgroundRemoval": "背景移除",
+      "backgroundRemovalSummary": "将主体从照片中抠出，放在干净的背景上，或保留透明背景。",
+      "backgroundRemovalMeta": "图像 · Recraft Remove Background",
       "reshootMeta": "视频 · MiniMax H3"
     },
     "stage": {

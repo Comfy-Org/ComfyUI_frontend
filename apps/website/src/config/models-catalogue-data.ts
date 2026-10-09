@@ -66,7 +66,8 @@ const appModelSchema = presentationSchema.extend({
     'relight',
     'hand-product-swap',
     'sprite-sheet',
-    'paparazzi-me'
+    'paparazzi-me',
+    'background-removal'
   ]),
   routerId: z.never().optional(),
   workflowId: z.never().optional()

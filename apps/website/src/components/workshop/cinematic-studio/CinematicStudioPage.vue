@@ -37,11 +37,13 @@ import ReshootStudio from './reshoot/ReshootStudio.vue'
 import HandSwapStudio from '@/components/workshop/hand-product-swap/HandSwapStudio.vue'
 import SpriteSheetStudio from '@/components/workshop/sprite-sheet/SpriteSheetStudio.vue'
 import PaparazziStudio from '@/components/workshop/paparazzi-me/PaparazziStudio.vue'
+import BackgroundRemovalStudio from '@/components/workshop/background-removal/BackgroundRemovalStudio.vue'
 import { mc } from '@/lib/workshop/move-anything/copy'
 import { lc } from '@/lib/workshop/relight/copy'
 import { hc } from '@/lib/workshop/hand-product-swap/copy'
 import { spc } from '@/lib/workshop/sprite-sheet/copy'
 import { pc } from '@/lib/workshop/paparazzi-me/copy'
+import { brc } from '@/lib/workshop/background-removal/copy'
 import { isWorkshopModelShown } from '@/scripts/workshop-model-flags'
 
 const {
@@ -72,14 +74,16 @@ const APPS = [
   'relight',
   'hand-product-swap',
   'sprite-sheet',
-  'paparazzi-me'
+  'paparazzi-me',
+  'background-removal'
 ] as const
 const EDITOR_APPS: readonly WorkshopAppId[] = [
   'move-anything',
   'relight',
   'hand-product-swap',
   'sprite-sheet',
-  'paparazzi-me'
+  'paparazzi-me',
+  'background-removal'
 ]
 const reviewing = WORKSHOP_DEPLOY_ENV !== 'production'
 
@@ -176,6 +180,10 @@ const appOptions = computed(() =>
     {
       id: 'paparazzi-me',
       label: pc('paparazzi.title', locale)
+    },
+    {
+      id: 'background-removal',
+      label: brc('cutout.title', locale)
     }
   ].filter((option) =>
     shownApps.value.some((candidate) => candidate.appId === option.id)
@@ -249,6 +257,11 @@ function pickApp(id: string) {
     <HandSwapStudio v-else-if="app === 'hand-product-swap'" :layout :locale />
     <SpriteSheetStudio v-else-if="app === 'sprite-sheet'" :layout :locale />
     <PaparazziStudio v-else-if="app === 'paparazzi-me'" :layout :locale />
+    <BackgroundRemovalStudio
+      v-else-if="app === 'background-removal'"
+      :layout
+      :locale
+    />
     <CinematicStudioEditor
       v-else-if="editorShown"
       :models

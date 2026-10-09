@@ -14,6 +14,10 @@ describe('Workshop apps', () => {
       { appId: 'reshoot', href: '/hub/apps/reshoot/' },
       { appId: 'move-anything', href: '/hub/apps/move-anything/' },
       { appId: 'relight', href: '/hub/apps/relight/' },
+      {
+        appId: 'background-removal',
+        href: '/hub/apps/background-removal/'
+      },
       { appId: 'hand-product-swap', href: '/hub/apps/hand-product-swap/' },
       { appId: 'paparazzi-me', href: '/hub/apps/paparazzi-me/' },
       { appId: 'sprite-sheet', href: '/hub/apps/sprite-sheet/' }
@@ -28,6 +32,7 @@ describe('Workshop apps', () => {
       ['reshoot', 'reshoot'],
       ['move-anything', 'move-anything'],
       ['relight', 'relight'],
+      ['background-removal', 'background-removal'],
       ['hand-product-swap', 'hand-product-swap'],
       ['paparazzi-me', 'paparazzi-me'],
       ['sprite-sheet', 'sprite-sheet']

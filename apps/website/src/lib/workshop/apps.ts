@@ -12,7 +12,8 @@ const appRoutes = {
   relight: 'relight',
   'hand-product-swap': 'handProductSwap',
   'sprite-sheet': 'spriteSheet',
-  'paparazzi-me': 'paparazziMe'
+  'paparazzi-me': 'paparazziMe',
+  'background-removal': 'backgroundRemoval'
 } as const satisfies Record<WorkshopAppId, keyof ReturnType<typeof getRoutes>>
 
 export function workshopAppHref(app: WorkshopAppId, locale: Locale): string {
@@ -76,6 +77,12 @@ const appCopy = {
     summary: 'cinematic.hub.paparazziMeSummary',
     badge: 'cinematic.hub.prototype',
     meta: 'cinematic.hub.paparazziMeMeta'
+  },
+  'background-removal': {
+    name: 'cinematic.hub.backgroundRemoval',
+    summary: 'cinematic.hub.backgroundRemovalSummary',
+    badge: 'cinematic.hub.prototype',
+    meta: 'cinematic.hub.backgroundRemovalMeta'
   }
 } as const satisfies Record<
   WorkshopAppId,

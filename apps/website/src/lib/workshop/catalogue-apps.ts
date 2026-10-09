@@ -37,6 +37,11 @@ const copy = {
   paparazziMeTask: {
     en: 'Get snapped next to a star',
     'zh-CN': '和明星同框被拍'
+  },
+  backgroundRemovalName: { en: 'Background Removal', 'zh-CN': '背景移除' },
+  backgroundRemovalTask: {
+    en: 'Cut the subject out of a photo',
+    'zh-CN': '将主体从照片中抠出'
   }
 } as const satisfies Record<string, LocalizedText>
 

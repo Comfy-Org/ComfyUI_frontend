@@ -1891,7 +1891,7 @@ describe('CinematicStudio', () => {
       const tab = await screen.findByRole('button', { name: 'Apps' })
       expect(tab).toHaveAttribute('aria-pressed', 'true')
       const apps = screen.getAllByRole('listitem')
-      expect(apps, 'Apps that do not open yet stay off the Hub').toHaveLength(7)
+      expect(apps, 'Apps that do not open yet stay off the Hub').toHaveLength(8)
       const [
         firstApp,
         secondApp,
@@ -1899,7 +1899,8 @@ describe('CinematicStudio', () => {
         fourthApp,
         fifthApp,
         sixthApp,
-        seventhApp
+        seventhApp,
+        eighthApp
       ] = apps
       expect(
         within(firstApp).getByRole('link', { name: 'Cinematic Studio' })
@@ -1914,13 +1915,16 @@ describe('CinematicStudio', () => {
         within(fourthApp).getByRole('link', { name: 'Relight' })
       ).toHaveAttribute('href', '/hub/apps/relight/')
       expect(
-        within(fifthApp).getByRole('link', { name: 'Hand product swap' })
+        within(fifthApp).getByRole('link', { name: 'Background Removal' })
+      ).toHaveAttribute('href', '/hub/apps/background-removal/')
+      expect(
+        within(sixthApp).getByRole('link', { name: 'Hand product swap' })
       ).toHaveAttribute('href', '/hub/apps/hand-product-swap/')
       expect(
-        within(sixthApp).getByRole('link', { name: 'Paparazzi me' })
+        within(seventhApp).getByRole('link', { name: 'Paparazzi me' })
       ).toHaveAttribute('href', '/hub/apps/paparazzi-me/')
       expect(
-        within(seventhApp).getByRole('link', { name: 'Sprite Sheet Generator' })
+        within(eighthApp).getByRole('link', { name: 'Sprite Sheet Generator' })
       ).toHaveAttribute('href', '/hub/apps/sprite-sheet/')
     })
 

@@ -86,7 +86,8 @@ const appSchema = z
       'relight',
       'hand-product-swap',
       'sprite-sheet',
-      'paparazzi-me'
+      'paparazzi-me',
+      'background-removal'
     ])
   })
   .strict()

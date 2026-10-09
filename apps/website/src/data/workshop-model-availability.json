@@ -1,4 +1,8 @@
 {
+  "apps/background-removal": {
+    "flag": "workshop-background-removal-app-enabled",
+    "reason": "Background Removal is a front-end mock while its backend is built; shown only where PostHog turns it on."
+  },
   "apps/hand-product-swap": {
     "flag": "workshop-hand-product-swap-app-enabled",
     "reason": "Hand product swap is a front-end mock while its backend is built; shown only where PostHog turns it on."
