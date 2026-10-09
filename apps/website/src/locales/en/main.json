@@ -563,6 +563,7 @@
       "graphNote": "The node graph behind this deployment is read-only here. Open it on comfy.org or download the JSON to edit it in ComfyUI.",
       "openComfy": "Open on comfy.org",
       "download": "Download workflow JSON",
+      "downloadShort": "Download",
       "ratings": "Ratings & comments",
       "related": "Related workflows",
       "relatedAll": "Browse all",

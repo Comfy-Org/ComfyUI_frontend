@@ -72,7 +72,7 @@ describe('WorkflowPage header', () => {
       within(actions)
         .getAllByRole('link')
         .map((link) => [link.textContent.trim(), link.getAttribute('href')])
-    ).toEqual([['Download workflow JSON', template.downloadUrl]])
+    ).toEqual([['Download', template.downloadUrl]])
     expect(
       within(actions).getByRole('link', { name: 'Download workflow JSON' })
     ).toHaveAttribute('download')

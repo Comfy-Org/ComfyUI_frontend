@@ -4413,6 +4413,7 @@
       "comfyApp": "Comfy 应用",
       "customNodes": "需要自定义节点",
       "download": "下载工作流 JSON",
+      "downloadShort": "下载",
       "graph": "工作流",
       "graphNote": "此部署背后的节点图在这里为只读。可在 comfy.org 打开或下载 JSON 在 ComfyUI 中编辑。",
       "inputs": "输入",
