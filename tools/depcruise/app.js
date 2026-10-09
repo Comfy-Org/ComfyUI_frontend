@@ -66,6 +66,14 @@
       for (let s = from; s <= to; s++) edgesAt[s].push(e)
   })
   const edgeActive = states.map((_, s) => new Set(edgesAt[s]))
+  const degreeAt = edgesAt.map((list) => {
+    const degree = new Uint16Array(graph.nodes.length)
+    for (const e of list) {
+      degree[graph.edges[e][0]]++
+      degree[graph.edges[e][1]]++
+    }
+    return degree
+  })
   const knotName = (id) =>
     knots[id].role === 'main' ? 'main knot' : knots[id].label
   const knotSizeAt = (s, id) => states[s].knots.find((k) => k.id === id)?.size
@@ -89,6 +97,9 @@
     item.append(el('i', `sw ${role}`), ROLE_NAME[role])
     $('mapLegend').append(item)
   }
+  $('mapLegend').append(
+    el('span', null, 'Dot size: connections inside its knot')
+  )
   const SERIES = [
     ['total', 'Modules in any knot', (s) => steps[s].stats.modulesInKnots],
     ['main', 'Main knot', (s) => steps[s].stats.mainKnot || undefined]
@@ -249,6 +260,7 @@
   const DAMPING = 0.8
   const FRAME_MS = 1000 / 60
   const MIN_KNOT_SCALE = 0.18
+  const MAX_DOT_SCALE = 4
   const targetCache = new Map()
   function targetsAt(s) {
     if (targetCache.has(s)) return targetCache.get(s)
@@ -379,24 +391,34 @@
       )
 
     const r = Math.max(1.7, Math.min(3, mapW / 260))
-    const dot = (n, role, alpha) => {
+    const degreeFrom = degreeAt[shownFrom]
+    const degreeTo = degreeAt[current]
+    const radius = (degree) =>
+      degree === 0
+        ? r * 0.75
+        : r * Math.min(MAX_DOT_SCALE, 0.6 + 0.25 * Math.sqrt(degree))
+    const radiusNow = (n) =>
+      radius(degreeFrom[n]) + (radius(degreeTo[n]) - radius(degreeFrom[n])) * t
+    const dot = (n, role, alpha, size) => {
       ctx.globalAlpha = alpha
       ctx.fillStyle = color[role]
       ctx.beginPath()
-      ctx.arc(px(n), py(n), role === 'freed' ? r * 0.75 : r, 0, 7)
+      ctx.arc(px(n), py(n), size, 0, 7)
       ctx.fill()
     }
-    for (const freedPass of [true, false]) {
-      for (let n = 0; n < N; n++) {
-        const role = roleOf(to[n])
-        if (!role || (role === 'freed') !== freedPass) continue
-        dot(n, role, 1)
-      }
+    const knotted = []
+    for (let n = 0; n < N; n++) {
+      const role = roleOf(to[n])
+      if (role === 'freed') dot(n, role, 1, radiusNow(n))
+      else if (role) knotted.push(n)
     }
+    knotted.sort((a, b) => degreeTo[b] - degreeTo[a])
+    for (const n of knotted) dot(n, roleOf(to[n]), 1, radiusNow(n))
     if (t < 1) {
       for (let n = 0; n < N; n++) {
         const was = roleOf(from[n])
-        if (was && was !== roleOf(to[n])) dot(n, was, 1 - t)
+        if (was && was !== roleOf(to[n]))
+          dot(n, was, 1 - t, radius(degreeFrom[n]))
       }
     }
     ctx.globalAlpha = 1
@@ -408,7 +430,7 @@
     for (let n = 0; n < N; n++) {
       if (roleOf(before[n]) === roleOf(to[n]) || !roleOf(to[n])) continue
       ctx.beginPath()
-      ctx.arc(px(n), py(n), r + 1.5 + (1 - t) * 7, 0, 7)
+      ctx.arc(px(n), py(n), radiusNow(n) + 1.5 + (1 - t) * 7, 0, 7)
       ctx.stroke()
     }
     ctx.globalAlpha = 1
@@ -417,7 +439,7 @@
       ctx.strokeStyle = ink
       ctx.lineWidth = 2
       ctx.beginPath()
-      ctx.arc(px(hover), py(hover), r + 4, 0, 7)
+      ctx.arc(px(hover), py(hover), radiusNow(hover) + 3, 0, 7)
       ctx.stroke()
     }
   }
@@ -466,7 +488,7 @@
     const where =
       value === NOT_IN_KNOT
         ? 'Not in a cycle here'
-        : `In ${knotName(value)} (${fmt(knotSizeAt(current, value))} modules)`
+        : `In ${knotName(value)} (${fmt(knotSizeAt(current, value))} modules), ${plural(degreeAt[current][best], 'cyclic connection', 'cyclic connections')}`
     const freedAt = graph.nodes[best].states.find(
       ([s, v]) => s > 0 && s <= LAST && v === NOT_IN_KNOT
     )
