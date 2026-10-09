@@ -182,7 +182,12 @@ async function requestAuth() {
   return { headers: await useAuthStore().getWorkspaceAuthHeaderOrThrow() }
 }
 
-function handleAxiosError(err: unknown): never {
+type WorkspaceApiOperation = keyof typeof workspaceApi
+
+function handleAxiosError(
+  err: unknown,
+  operation: WorkspaceApiOperation
+): never {
   if (axios.isAxiosError(err)) {
     const status = err.response?.status
     const { code, message } = errorResponseFromBody(
@@ -190,14 +195,16 @@ function handleAxiosError(err: unknown): never {
       err.message
     )
     if (status === 403 && code === NO_WORKSPACE_ACCESS) {
-      throw new NoWorkspaceAccessError(message, status)
+      throw new NoWorkspaceAccessError(message, status, operation)
     }
     // Callers compare `code` against server-defined values, so the parser's
     // "no code reported" sentinel must stay out of that contract.
     throw new WorkspaceApiError(
       message,
       status,
-      code === UNKNOWN_ERROR_CODE ? undefined : code
+      code === UNKNOWN_ERROR_CODE ? undefined : code,
+      undefined,
+      operation
     )
   }
   throw err
@@ -217,7 +224,7 @@ export const workspaceApi = {
       )
       return response.data
     } catch (err) {
-      handleAxiosError(err)
+      handleAxiosError(err, 'list')
     }
   },
 
@@ -234,7 +241,7 @@ export const workspaceApi = {
       )
       return response.data
     } catch (err) {
-      handleAxiosError(err)
+      handleAxiosError(err, 'getCurrentWorkspace')
     }
   },
 
@@ -252,7 +259,7 @@ export const workspaceApi = {
       )
       return response.data
     } catch (err) {
-      handleAxiosError(err)
+      handleAxiosError(err, 'create')
     }
   },
 
@@ -273,7 +280,7 @@ export const workspaceApi = {
       )
       return response.data
     } catch (err) {
-      handleAxiosError(err)
+      handleAxiosError(err, 'update')
     }
   },
 
@@ -289,7 +296,7 @@ export const workspaceApi = {
         auth
       )
     } catch (err) {
-      handleAxiosError(err)
+      handleAxiosError(err, 'delete')
     }
   },
 
@@ -306,7 +313,7 @@ export const workspaceApi = {
         auth
       )
     } catch (err) {
-      handleAxiosError(err)
+      handleAxiosError(err, 'leave')
     }
   },
 
@@ -323,7 +330,7 @@ export const workspaceApi = {
       )
       return response.data
     } catch (err) {
-      handleAxiosError(err)
+      handleAxiosError(err, 'listMembers')
     }
   },
 
@@ -339,7 +346,7 @@ export const workspaceApi = {
         auth
       )
     } catch (err) {
-      handleAxiosError(err)
+      handleAxiosError(err, 'removeMember')
     }
   },
 
@@ -357,7 +364,7 @@ export const workspaceApi = {
       )
       return response.data
     } catch (err) {
-      handleAxiosError(err)
+      handleAxiosError(err, 'updateMemberRole')
     }
   },
 
@@ -374,7 +381,7 @@ export const workspaceApi = {
       )
       return response.data
     } catch (err) {
-      handleAxiosError(err)
+      handleAxiosError(err, 'listInvites')
     }
   },
 
@@ -392,7 +399,7 @@ export const workspaceApi = {
       )
       return response.data
     } catch (err) {
-      handleAxiosError(err)
+      handleAxiosError(err, 'createInvite')
     }
   },
 
@@ -408,7 +415,7 @@ export const workspaceApi = {
         auth
       )
     } catch (err) {
-      handleAxiosError(err)
+      handleAxiosError(err, 'revokeInvite')
     }
   },
 
@@ -424,7 +431,7 @@ export const workspaceApi = {
       )
       return response.data
     } catch (err) {
-      handleAxiosError(err)
+      handleAxiosError(err, 'resendInvite')
     }
   },
 
@@ -443,7 +450,7 @@ export const workspaceApi = {
       )
       return response.data
     } catch (err) {
-      handleAxiosError(err)
+      handleAxiosError(err, 'acceptInvite')
     }
   },
 
@@ -460,7 +467,7 @@ export const workspaceApi = {
       )
       return response.data
     } catch (err) {
-      handleAxiosError(err)
+      handleAxiosError(err, 'getBillingStatus')
     }
   },
 
@@ -477,7 +484,7 @@ export const workspaceApi = {
       )
       return response.data
     } catch (err) {
-      handleAxiosError(err)
+      handleAxiosError(err, 'getBillingBalance')
     }
   },
 
@@ -497,7 +504,7 @@ export const workspaceApi = {
         )
       return response.data
     } catch (err) {
-      handleAxiosError(err)
+      handleAxiosError(err, 'getBillingCapabilities')
     }
   },
 
@@ -514,7 +521,7 @@ export const workspaceApi = {
       )
       return response.data
     } catch (err) {
-      handleAxiosError(err)
+      handleAxiosError(err, 'getBillingPlans')
     }
   },
 
@@ -527,7 +534,7 @@ export const workspaceApi = {
       )
       return response.data
     } catch (err) {
-      handleAxiosError(err)
+      handleAxiosError(err, 'listSavedPaymentMethods')
     }
   },
 
@@ -552,7 +559,7 @@ export const workspaceApi = {
       )
       return response.data
     } catch (err) {
-      handleAxiosError(err)
+      handleAxiosError(err, 'previewSubscribe')
     }
   },
 
@@ -610,7 +617,7 @@ export const workspaceApi = {
       })
       return response.data
     } catch (err) {
-      handleAxiosError(err)
+      handleAxiosError(err, 'subscribe')
     }
   },
 
@@ -633,7 +640,7 @@ export const workspaceApi = {
         )
       return response.data
     } catch (err) {
-      handleAxiosError(err)
+      handleAxiosError(err, 'cancelSubscription')
     }
   },
 
@@ -651,7 +658,7 @@ export const workspaceApi = {
       )
       return zRetentionFlowResponse.parse(response.data)
     } catch (err) {
-      handleAxiosError(err)
+      handleAxiosError(err, 'prepareRetentionFlow')
     }
   },
 
@@ -669,7 +676,7 @@ export const workspaceApi = {
       )
       return zRetentionAcceptance.parse(response.data)
     } catch (err) {
-      handleAxiosError(err)
+      handleAxiosError(err, 'acceptRetentionOffer')
     }
   },
 
@@ -688,7 +695,7 @@ export const workspaceApi = {
         auth
       )
     } catch (err) {
-      handleAxiosError(err)
+      handleAxiosError(err, 'recordRetentionFlowEvent')
     }
   },
 
@@ -706,7 +713,7 @@ export const workspaceApi = {
       )
       return response.data
     } catch (err) {
-      handleAxiosError(err)
+      handleAxiosError(err, 'resubscribe')
     }
   },
 
@@ -726,7 +733,7 @@ export const workspaceApi = {
       )
       return response.data
     } catch (err) {
-      handleAxiosError(err)
+      handleAxiosError(err, 'getPaymentPortalUrl')
     }
   },
 
@@ -762,7 +769,7 @@ export const workspaceApi = {
       })
       return response.data
     } catch (err) {
-      handleAxiosError(err)
+      handleAxiosError(err, 'createTopup')
     }
   },
 
@@ -781,7 +788,7 @@ export const workspaceApi = {
       )
       return response.data
     } catch (err) {
-      handleAxiosError(err)
+      handleAxiosError(err, 'getBillingEvents')
     }
   },
 
@@ -798,7 +805,7 @@ export const workspaceApi = {
       )
       return response.data
     } catch (err) {
-      handleAxiosError(err)
+      handleAxiosError(err, 'getBillingOpStatus')
     }
   }
 }
