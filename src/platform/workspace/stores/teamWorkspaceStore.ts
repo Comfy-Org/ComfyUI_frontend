@@ -240,9 +240,7 @@ export const useTeamWorkspaceStore = defineStore('teamWorkspace', () => {
       response.workspaces.map(createWorkspaceState)
     )
     // Absent until ingest ships the field everywhere; only an explicit false refuses.
-    workspacesManagedByOrganization.value =
-      !
-      response.can_create_workspace
+    workspacesManagedByOrganization.value = !response.can_create_workspace
   }
 
   const members = computed<WorkspaceMember[]>(
