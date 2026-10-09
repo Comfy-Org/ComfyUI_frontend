@@ -3,7 +3,7 @@
   "issue": "FE-3037",
   "tool": "dependency-cruiser, repo .dependency-cruiser.json, `depcruise src`",
   "base": "7475c964f67419ead544bcdab2b98bc0da14e607",
-  "head": "70c0a86139dfa96b51eadeafed43f60c49e7096d",
+  "head": "85a816b0937cca7fe432894676d3f3b27d30c740",
   "notes": [
     "A knot is a strongly connected component of the src/ module graph with more than one module.",
     "Step 0 is the parent of the first FE-3037 commit; every later step is one commit on main.",
@@ -153,7 +153,7 @@
     {
       "id": 15,
       "parent": 0,
-      "bornAt": 81,
+      "bornAt": 89,
       "peak": 5,
       "role": "other",
       "fromMain": true,
@@ -162,7 +162,7 @@
     {
       "id": 16,
       "parent": 0,
-      "bornAt": 81,
+      "bornAt": 89,
       "peak": 5,
       "role": "other",
       "fromMain": true,
@@ -171,7 +171,7 @@
     {
       "id": 17,
       "parent": 0,
-      "bornAt": 84,
+      "bornAt": 92,
       "peak": 48,
       "role": "other",
       "fromMain": true,
@@ -180,7 +180,7 @@
     {
       "id": 18,
       "parent": 0,
-      "bornAt": 85,
+      "bornAt": 93,
       "peak": 49,
       "role": "other",
       "fromMain": true,
@@ -189,7 +189,7 @@
     {
       "id": 19,
       "parent": 17,
-      "bornAt": 88,
+      "bornAt": 96,
       "peak": 3,
       "role": "other",
       "fromMain": true,
@@ -8213,15 +8213,850 @@
         ],
         "status": "no-records"
       }
+    },
+    {
+      "index": 79,
+      "kind": "commit",
+      "parent": 78,
+      "sha": "a15cc51782933d53597a767aedb1cef546e24e35",
+      "short": "a15cc51782",
+      "date": "2026-10-09T14:29:23Z",
+      "subject": "FE-3342 fix(billing-web): offer Continue with SSO on an sso_required refusal",
+      "pr": 20632,
+      "fe3037": false,
+      "stats": {
+        "modules": 2492,
+        "imports": 11695,
+        "modulesInKnots": 511,
+        "largestKnot": 296,
+        "mainKnot": 296,
+        "secondKnot": 154,
+        "knotCount": 15,
+        "importsInKnots": 2121,
+        "noCircularWarnings": 1628
+      },
+      "knots": [
+        {
+          "id": 0,
+          "size": 296
+        },
+        {
+          "id": 9,
+          "size": 154
+        },
+        {
+          "id": 1,
+          "size": 28
+        },
+        {
+          "id": 8,
+          "size": 6
+        },
+        {
+          "id": 10,
+          "size": 5
+        },
+        {
+          "id": 13,
+          "size": 3
+        },
+        {
+          "id": 11,
+          "size": 3
+        },
+        {
+          "id": 2,
+          "size": 2
+        },
+        {
+          "id": 3,
+          "size": 2
+        },
+        {
+          "id": 12,
+          "size": 2
+        },
+        {
+          "id": 4,
+          "size": 2
+        },
+        {
+          "id": 5,
+          "size": 2
+        },
+        {
+          "id": 6,
+          "size": 2
+        },
+        {
+          "id": 14,
+          "size": 2
+        },
+        {
+          "id": 7,
+          "size": 2
+        }
+      ],
+      "delta": {
+        "freed": [],
+        "entangled": [],
+        "splits": []
+      },
+      "architecture": {
+        "workspacePackages": [
+          "account-core",
+          "account-ui",
+          "billing-contract",
+          "design-system",
+          "ingest-types",
+          "object-info-parser",
+          "registry-types",
+          "shared-frontend-utils",
+          "tailwind-utils",
+          "test-utils"
+        ],
+        "status": "no-records"
+      }
+    },
+    {
+      "index": 80,
+      "kind": "commit",
+      "parent": 79,
+      "sha": "5d0752358d42a5f59c257828dd09d60a0e765d4d",
+      "short": "5d0752358d",
+      "date": "2026-10-09T14:30:11Z",
+      "subject": "FE-3343 feat(workspace): open the SSO organization's workspace after an SSO sign-in",
+      "pr": 20634,
+      "fe3037": false,
+      "stats": {
+        "modules": 2492,
+        "imports": 11695,
+        "modulesInKnots": 511,
+        "largestKnot": 296,
+        "mainKnot": 296,
+        "secondKnot": 154,
+        "knotCount": 15,
+        "importsInKnots": 2121,
+        "noCircularWarnings": 1628
+      },
+      "knots": [
+        {
+          "id": 0,
+          "size": 296
+        },
+        {
+          "id": 9,
+          "size": 154
+        },
+        {
+          "id": 1,
+          "size": 28
+        },
+        {
+          "id": 8,
+          "size": 6
+        },
+        {
+          "id": 10,
+          "size": 5
+        },
+        {
+          "id": 13,
+          "size": 3
+        },
+        {
+          "id": 11,
+          "size": 3
+        },
+        {
+          "id": 2,
+          "size": 2
+        },
+        {
+          "id": 3,
+          "size": 2
+        },
+        {
+          "id": 12,
+          "size": 2
+        },
+        {
+          "id": 4,
+          "size": 2
+        },
+        {
+          "id": 5,
+          "size": 2
+        },
+        {
+          "id": 6,
+          "size": 2
+        },
+        {
+          "id": 14,
+          "size": 2
+        },
+        {
+          "id": 7,
+          "size": 2
+        }
+      ],
+      "delta": {
+        "freed": [],
+        "entangled": [],
+        "splits": []
+      },
+      "architecture": {
+        "workspacePackages": [
+          "account-core",
+          "account-ui",
+          "billing-contract",
+          "design-system",
+          "ingest-types",
+          "object-info-parser",
+          "registry-types",
+          "shared-frontend-utils",
+          "tailwind-utils",
+          "test-utils"
+        ],
+        "status": "no-records"
+      }
+    },
+    {
+      "index": 81,
+      "kind": "commit",
+      "parent": 80,
+      "sha": "3d8e7bb91b33aeb21a57f8d74d3e5d5966b22e89",
+      "short": "3d8e7bb91b",
+      "date": "2026-10-09T14:32:00Z",
+      "subject": "feat: add slash skill selection to Agent composer",
+      "pr": 20314,
+      "fe3037": false,
+      "stats": {
+        "modules": 2502,
+        "imports": 11749,
+        "modulesInKnots": 511,
+        "largestKnot": 296,
+        "mainKnot": 296,
+        "secondKnot": 154,
+        "knotCount": 15,
+        "importsInKnots": 2121,
+        "noCircularWarnings": 1628
+      },
+      "knots": [
+        {
+          "id": 0,
+          "size": 296
+        },
+        {
+          "id": 9,
+          "size": 154
+        },
+        {
+          "id": 1,
+          "size": 28
+        },
+        {
+          "id": 8,
+          "size": 6
+        },
+        {
+          "id": 10,
+          "size": 5
+        },
+        {
+          "id": 13,
+          "size": 3
+        },
+        {
+          "id": 11,
+          "size": 3
+        },
+        {
+          "id": 2,
+          "size": 2
+        },
+        {
+          "id": 3,
+          "size": 2
+        },
+        {
+          "id": 12,
+          "size": 2
+        },
+        {
+          "id": 4,
+          "size": 2
+        },
+        {
+          "id": 5,
+          "size": 2
+        },
+        {
+          "id": 6,
+          "size": 2
+        },
+        {
+          "id": 14,
+          "size": 2
+        },
+        {
+          "id": 7,
+          "size": 2
+        }
+      ],
+      "delta": {
+        "freed": [],
+        "entangled": [],
+        "splits": []
+      },
+      "architecture": {
+        "workspacePackages": [
+          "account-core",
+          "account-ui",
+          "billing-contract",
+          "design-system",
+          "ingest-types",
+          "object-info-parser",
+          "registry-types",
+          "shared-frontend-utils",
+          "tailwind-utils",
+          "test-utils"
+        ],
+        "status": "no-records"
+      }
+    },
+    {
+      "index": 82,
+      "kind": "commit",
+      "parent": 81,
+      "sha": "dcbefa02208af48cd0c5d28a8764f1c8f30a1282",
+      "short": "dcbefa0220",
+      "date": "2026-10-09T15:39:23Z",
+      "subject": "[chore] Update Ingest API types from cloud@4e01169",
+      "pr": 20646,
+      "fe3037": false,
+      "stats": {
+        "modules": 2502,
+        "imports": 11749,
+        "modulesInKnots": 511,
+        "largestKnot": 296,
+        "mainKnot": 296,
+        "secondKnot": 154,
+        "knotCount": 15,
+        "importsInKnots": 2121,
+        "noCircularWarnings": 1628
+      },
+      "knots": [
+        {
+          "id": 0,
+          "size": 296
+        },
+        {
+          "id": 9,
+          "size": 154
+        },
+        {
+          "id": 1,
+          "size": 28
+        },
+        {
+          "id": 8,
+          "size": 6
+        },
+        {
+          "id": 10,
+          "size": 5
+        },
+        {
+          "id": 13,
+          "size": 3
+        },
+        {
+          "id": 11,
+          "size": 3
+        },
+        {
+          "id": 2,
+          "size": 2
+        },
+        {
+          "id": 3,
+          "size": 2
+        },
+        {
+          "id": 12,
+          "size": 2
+        },
+        {
+          "id": 4,
+          "size": 2
+        },
+        {
+          "id": 5,
+          "size": 2
+        },
+        {
+          "id": 6,
+          "size": 2
+        },
+        {
+          "id": 14,
+          "size": 2
+        },
+        {
+          "id": 7,
+          "size": 2
+        }
+      ],
+      "delta": {
+        "freed": [],
+        "entangled": [],
+        "splits": []
+      },
+      "architecture": {
+        "workspacePackages": [
+          "account-core",
+          "account-ui",
+          "billing-contract",
+          "design-system",
+          "ingest-types",
+          "object-info-parser",
+          "registry-types",
+          "shared-frontend-utils",
+          "tailwind-utils",
+          "test-utils"
+        ],
+        "status": "no-records"
+      }
+    },
+    {
+      "index": 83,
+      "kind": "commit",
+      "parent": 82,
+      "sha": "206b0087cf7e48c672c8de2bdb944e5256c180f3",
+      "short": "206b0087cf",
+      "date": "2026-10-09T16:01:38Z",
+      "subject": "FE-3346 fix(billing-web): offer Continue with SSO when the shared session is refused sso_required",
+      "pr": 20649,
+      "fe3037": false,
+      "stats": {
+        "modules": 2502,
+        "imports": 11749,
+        "modulesInKnots": 511,
+        "largestKnot": 296,
+        "mainKnot": 296,
+        "secondKnot": 154,
+        "knotCount": 15,
+        "importsInKnots": 2121,
+        "noCircularWarnings": 1628
+      },
+      "knots": [
+        {
+          "id": 0,
+          "size": 296
+        },
+        {
+          "id": 9,
+          "size": 154
+        },
+        {
+          "id": 1,
+          "size": 28
+        },
+        {
+          "id": 8,
+          "size": 6
+        },
+        {
+          "id": 10,
+          "size": 5
+        },
+        {
+          "id": 13,
+          "size": 3
+        },
+        {
+          "id": 11,
+          "size": 3
+        },
+        {
+          "id": 2,
+          "size": 2
+        },
+        {
+          "id": 3,
+          "size": 2
+        },
+        {
+          "id": 12,
+          "size": 2
+        },
+        {
+          "id": 4,
+          "size": 2
+        },
+        {
+          "id": 5,
+          "size": 2
+        },
+        {
+          "id": 6,
+          "size": 2
+        },
+        {
+          "id": 14,
+          "size": 2
+        },
+        {
+          "id": 7,
+          "size": 2
+        }
+      ],
+      "delta": {
+        "freed": [],
+        "entangled": [],
+        "splits": []
+      },
+      "architecture": {
+        "workspacePackages": [
+          "account-core",
+          "account-ui",
+          "billing-contract",
+          "design-system",
+          "ingest-types",
+          "object-info-parser",
+          "registry-types",
+          "shared-frontend-utils",
+          "tailwind-utils",
+          "test-utils"
+        ],
+        "status": "no-records"
+      }
+    },
+    {
+      "index": 84,
+      "kind": "commit",
+      "parent": 83,
+      "sha": "bcee1acf0983aa31289fb5076429776a7351bf5e",
+      "short": "bcee1acf09",
+      "date": "2026-10-09T16:32:42Z",
+      "subject": "fix(website): show sitewide Comfy Agent banner on /platform and /events",
+      "pr": 20619,
+      "fe3037": false,
+      "stats": {
+        "modules": 2502,
+        "imports": 11749,
+        "modulesInKnots": 511,
+        "largestKnot": 296,
+        "mainKnot": 296,
+        "secondKnot": 154,
+        "knotCount": 15,
+        "importsInKnots": 2121,
+        "noCircularWarnings": 1628
+      },
+      "knots": [
+        {
+          "id": 0,
+          "size": 296
+        },
+        {
+          "id": 9,
+          "size": 154
+        },
+        {
+          "id": 1,
+          "size": 28
+        },
+        {
+          "id": 8,
+          "size": 6
+        },
+        {
+          "id": 10,
+          "size": 5
+        },
+        {
+          "id": 13,
+          "size": 3
+        },
+        {
+          "id": 11,
+          "size": 3
+        },
+        {
+          "id": 2,
+          "size": 2
+        },
+        {
+          "id": 3,
+          "size": 2
+        },
+        {
+          "id": 12,
+          "size": 2
+        },
+        {
+          "id": 4,
+          "size": 2
+        },
+        {
+          "id": 5,
+          "size": 2
+        },
+        {
+          "id": 6,
+          "size": 2
+        },
+        {
+          "id": 14,
+          "size": 2
+        },
+        {
+          "id": 7,
+          "size": 2
+        }
+      ],
+      "delta": {
+        "freed": [],
+        "entangled": [],
+        "splits": []
+      },
+      "architecture": {
+        "workspacePackages": [
+          "account-core",
+          "account-ui",
+          "billing-contract",
+          "design-system",
+          "ingest-types",
+          "object-info-parser",
+          "registry-types",
+          "shared-frontend-utils",
+          "tailwind-utils",
+          "test-utils"
+        ],
+        "status": "no-records"
+      }
+    },
+    {
+      "index": 85,
+      "kind": "commit",
+      "parent": 84,
+      "sha": "f5da1a971809216a2345b7e4f1053081bf1b2842",
+      "short": "f5da1a9718",
+      "date": "2026-10-09T16:33:06Z",
+      "subject": "fix(execution): land run outputs on agent-inserted nodes (PM-2037)",
+      "pr": 20601,
+      "fe3037": false,
+      "stats": {
+        "modules": 2502,
+        "imports": 11749,
+        "modulesInKnots": 511,
+        "largestKnot": 296,
+        "mainKnot": 296,
+        "secondKnot": 154,
+        "knotCount": 15,
+        "importsInKnots": 2121,
+        "noCircularWarnings": 1628
+      },
+      "knots": [
+        {
+          "id": 0,
+          "size": 296
+        },
+        {
+          "id": 9,
+          "size": 154
+        },
+        {
+          "id": 1,
+          "size": 28
+        },
+        {
+          "id": 8,
+          "size": 6
+        },
+        {
+          "id": 10,
+          "size": 5
+        },
+        {
+          "id": 13,
+          "size": 3
+        },
+        {
+          "id": 11,
+          "size": 3
+        },
+        {
+          "id": 2,
+          "size": 2
+        },
+        {
+          "id": 3,
+          "size": 2
+        },
+        {
+          "id": 12,
+          "size": 2
+        },
+        {
+          "id": 4,
+          "size": 2
+        },
+        {
+          "id": 5,
+          "size": 2
+        },
+        {
+          "id": 6,
+          "size": 2
+        },
+        {
+          "id": 14,
+          "size": 2
+        },
+        {
+          "id": 7,
+          "size": 2
+        }
+      ],
+      "delta": {
+        "freed": [],
+        "entangled": [],
+        "splits": []
+      },
+      "architecture": {
+        "workspacePackages": [
+          "account-core",
+          "account-ui",
+          "billing-contract",
+          "design-system",
+          "ingest-types",
+          "object-info-parser",
+          "registry-types",
+          "shared-frontend-utils",
+          "tailwind-utils",
+          "test-utils"
+        ],
+        "status": "no-records"
+      }
+    },
+    {
+      "index": 86,
+      "kind": "commit",
+      "parent": 85,
+      "sha": "85a816b0937cca7fe432894676d3f3b27d30c740",
+      "short": "85a816b093",
+      "date": "2026-10-09T17:14:34Z",
+      "subject": "FE-3345 feat(auth): show the SSO-required notice inline on Cloud sign-in pages",
+      "pr": 20647,
+      "fe3037": false,
+      "stats": {
+        "modules": 2505,
+        "imports": 11759,
+        "modulesInKnots": 513,
+        "largestKnot": 298,
+        "mainKnot": 298,
+        "secondKnot": 154,
+        "knotCount": 15,
+        "importsInKnots": 2125,
+        "noCircularWarnings": 1630
+      },
+      "knots": [
+        {
+          "id": 0,
+          "size": 298
+        },
+        {
+          "id": 9,
+          "size": 154
+        },
+        {
+          "id": 1,
+          "size": 28
+        },
+        {
+          "id": 8,
+          "size": 6
+        },
+        {
+          "id": 10,
+          "size": 5
+        },
+        {
+          "id": 13,
+          "size": 3
+        },
+        {
+          "id": 11,
+          "size": 3
+        },
+        {
+          "id": 2,
+          "size": 2
+        },
+        {
+          "id": 3,
+          "size": 2
+        },
+        {
+          "id": 12,
+          "size": 2
+        },
+        {
+          "id": 4,
+          "size": 2
+        },
+        {
+          "id": 5,
+          "size": 2
+        },
+        {
+          "id": 6,
+          "size": 2
+        },
+        {
+          "id": 14,
+          "size": 2
+        },
+        {
+          "id": 7,
+          "size": 2
+        }
+      ],
+      "delta": {
+        "freed": [],
+        "entangled": [
+          "platform/auth/sso/ssoRequiredInline.ts",
+          "platform/auth/sso/useContinueWithSso.ts"
+        ],
+        "splits": []
+      },
+      "architecture": {
+        "workspacePackages": [
+          "account-core",
+          "account-ui",
+          "billing-contract",
+          "design-system",
+          "ingest-types",
+          "object-info-parser",
+          "registry-types",
+          "shared-frontend-utils",
+          "tailwind-utils",
+          "test-utils"
+        ],
+        "status": "no-records"
+      }
     }
   ],
   "openPrs": {
     "label": "refactor-gordian-knot",
-    "fetchedAt": "2026-10-09T14:40:11.391Z",
-    "main": "70c0a86139dfa96b51eadeafed43f60c49e7096d",
+    "fetchedAt": "2026-10-09T17:40:10.367Z",
+    "main": "85a816b0937cca7fe432894676d3f3b27d30c740",
     "states": [
       {
-        "index": 79,
+        "index": 87,
         "kind": "pr",
         "parent": 71,
         "sha": "f1908f4bdd9a2e3b14764f7c9a3d63e06d718b4a",
@@ -8344,7 +9179,7 @@
         }
       },
       {
-        "index": 80,
+        "index": 88,
         "kind": "pr",
         "parent": 71,
         "sha": "dd32a979ac2ff2e894972ee88cff4267bfceeed9",
@@ -8451,7 +9286,7 @@
         }
       },
       {
-        "index": 81,
+        "index": 89,
         "kind": "pr",
         "parent": 71,
         "sha": "4e31bda28797f0c58642cebedbcd0d8ade93ecce",
@@ -8622,9 +9457,9 @@
         }
       },
       {
-        "index": 82,
+        "index": 90,
         "kind": "pr",
-        "parent": 81,
+        "parent": 89,
         "sha": "30e44c21793583f5741c8f6e7109dbf66ae94550",
         "short": "30e44c2179",
         "date": "2026-10-08T22:10:39Z",
@@ -8754,9 +9589,9 @@
         }
       },
       {
-        "index": 83,
+        "index": 91,
         "kind": "pr",
-        "parent": 79,
+        "parent": 87,
         "sha": "c72a6d5b270990b072962c49d178f005b1310469",
         "short": "c72a6d5b27",
         "date": "2026-09-27T23:13:02Z",
@@ -8877,9 +9712,9 @@
         }
       },
       {
-        "index": 84,
+        "index": 92,
         "kind": "pr",
-        "parent": 83,
+        "parent": 91,
         "sha": "79fa9488f7b79d62caeae96e6e9f40c838c7bc88",
         "short": "79fa9488f7",
         "date": "2026-09-28T00:31:49Z",
@@ -9064,9 +9899,9 @@
         }
       },
       {
-        "index": 85,
+        "index": 93,
         "kind": "pr",
-        "parent": 84,
+        "parent": 92,
         "sha": "6a802eca61eccfca4be4fedbe2f4a42781a0273c",
         "short": "6a802eca61",
         "date": "2026-09-28T02:09:00Z",
@@ -9228,9 +10063,9 @@
         }
       },
       {
-        "index": 86,
+        "index": 94,
         "kind": "pr",
-        "parent": 85,
+        "parent": 93,
         "sha": "2bca9fe2b22a58f7f666aab6356484870a0e69fa",
         "short": "2bca9fe2b2",
         "date": "2026-09-28T04:10:08Z",
@@ -9362,9 +10197,9 @@
         }
       },
       {
-        "index": 87,
+        "index": 95,
         "kind": "pr",
-        "parent": 86,
+        "parent": 94,
         "sha": "be7f95b456f3fc2ab0557500825a5bba0c03c0b4",
         "short": "be7f95b456",
         "date": "2026-09-28T04:56:04Z",
@@ -9463,9 +10298,9 @@
         }
       },
       {
-        "index": 88,
+        "index": 96,
         "kind": "pr",
-        "parent": 87,
+        "parent": 95,
         "sha": "240dfbeb985edd934a45f6883905c3aa853e5527",
         "short": "240dfbeb98",
         "date": "2026-10-08T22:20:05Z",
@@ -9567,7 +10402,7 @@
         }
       },
       {
-        "index": 89,
+        "index": 97,
         "kind": "pr",
         "parent": 72,
         "sha": "b1060fb11d6ad5d8123e65c8f023932408172aa2",
@@ -9934,9 +10769,9 @@
         }
       },
       {
-        "index": 90,
+        "index": 98,
         "kind": "pr",
-        "parent": 89,
+        "parent": 97,
         "sha": "dffd90c7deebd457c2293443f7cb9668a7220514",
         "short": "dffd90c7de",
         "date": "2026-10-09T09:21:22Z",
@@ -10478,9 +11313,9 @@
         }
       },
       {
-        "index": 91,
+        "index": 99,
         "kind": "pr",
-        "parent": 90,
+        "parent": 98,
         "sha": "afcc41d54ec8fe160cc043cac87472493d532337",
         "short": "afcc41d54e",
         "date": "2026-10-09T09:27:09Z",
@@ -11113,11 +11948,11 @@
         "headRefName": "drjkl/widgets-registry-split",
         "head": "f1908f4bdd9a2e3b14764f7c9a3d63e06d718b4a",
         "mergeBase": "18a9c4210382fab896a7e00c7db5b141cefadef6",
-        "behindMain": 7,
+        "behindMain": 15,
         "parentPr": null,
         "containsParentHead": true,
         "depth": 0,
-        "state": 79,
+        "state": 87,
         "baseState": 71
       },
       {
@@ -11127,7 +11962,7 @@
         "author": "DrJKL",
         "isDraft": false,
         "mergeable": "UNKNOWN",
-        "reviewDecision": null,
+        "reviewDecision": "APPROVED",
         "additions": 355,
         "deletions": 352,
         "changedFiles": 8,
@@ -11135,11 +11970,11 @@
         "headRefName": "drjkl/progress-text-previews-view",
         "head": "dd32a979ac2ff2e894972ee88cff4267bfceeed9",
         "mergeBase": "18a9c4210382fab896a7e00c7db5b141cefadef6",
-        "behindMain": 7,
+        "behindMain": 15,
         "parentPr": null,
         "containsParentHead": true,
         "depth": 0,
-        "state": 80,
+        "state": 88,
         "baseState": 71
       },
       {
@@ -11157,11 +11992,11 @@
         "headRefName": "drjkl/api-auth-provider",
         "head": "4e31bda28797f0c58642cebedbcd0d8ade93ecce",
         "mergeBase": "18a9c4210382fab896a7e00c7db5b141cefadef6",
-        "behindMain": 7,
+        "behindMain": 15,
         "parentPr": null,
         "containsParentHead": true,
         "depth": 0,
-        "state": 81,
+        "state": 89,
         "baseState": 71
       },
       {
@@ -11179,11 +12014,11 @@
         "headRefName": "drjkl/workspace-api-auth",
         "head": "30e44c21793583f5741c8f6e7109dbf66ae94550",
         "mergeBase": "18a9c4210382fab896a7e00c7db5b141cefadef6",
-        "behindMain": 7,
+        "behindMain": 15,
         "parentPr": 19118,
         "containsParentHead": true,
         "depth": 1,
-        "state": 82,
+        "state": 90,
         "baseState": 71
       },
       {
@@ -11201,11 +12036,11 @@
         "headRefName": "drjkl/dialog-service-split",
         "head": "c72a6d5b270990b072962c49d178f005b1310469",
         "mergeBase": "18a9c4210382fab896a7e00c7db5b141cefadef6",
-        "behindMain": 7,
+        "behindMain": 15,
         "parentPr": 19093,
         "containsParentHead": true,
         "depth": 1,
-        "state": 83,
+        "state": 91,
         "baseState": 71
       },
       {
@@ -11223,11 +12058,11 @@
         "headRefName": "drjkl/app-instance-leaf",
         "head": "79fa9488f7b79d62caeae96e6e9f40c838c7bc88",
         "mergeBase": "18a9c4210382fab896a7e00c7db5b141cefadef6",
-        "behindMain": 7,
+        "behindMain": 15,
         "parentPr": 19131,
         "containsParentHead": true,
         "depth": 2,
-        "state": 84,
+        "state": 92,
         "baseState": 71
       },
       {
@@ -11245,11 +12080,11 @@
         "headRefName": "drjkl/billing-layering",
         "head": "240dfbeb985edd934a45f6883905c3aa853e5527",
         "mergeBase": "18a9c4210382fab896a7e00c7db5b141cefadef6",
-        "behindMain": 7,
+        "behindMain": 15,
         "parentPr": 19189,
         "containsParentHead": true,
         "depth": 6,
-        "state": 88,
+        "state": 96,
         "baseState": 71
       },
       {
@@ -11267,11 +12102,11 @@
         "headRefName": "drjkl/comfy-types-leaf",
         "head": "6a802eca61eccfca4be4fedbe2f4a42781a0273c",
         "mergeBase": "18a9c4210382fab896a7e00c7db5b141cefadef6",
-        "behindMain": 7,
+        "behindMain": 15,
         "parentPr": 19143,
         "containsParentHead": true,
         "depth": 3,
-        "state": 85,
+        "state": 93,
         "baseState": 71
       },
       {
@@ -11289,11 +12124,11 @@
         "headRefName": "drjkl/workbench-cycles",
         "head": "2bca9fe2b22a58f7f666aab6356484870a0e69fa",
         "mergeBase": "18a9c4210382fab896a7e00c7db5b141cefadef6",
-        "behindMain": 7,
+        "behindMain": 15,
         "parentPr": 19153,
         "containsParentHead": true,
         "depth": 4,
-        "state": 86,
+        "state": 94,
         "baseState": 71
       },
       {
@@ -11311,11 +12146,11 @@
         "headRefName": "drjkl/app-small-cycles",
         "head": "be7f95b456f3fc2ab0557500825a5bba0c03c0b4",
         "mergeBase": "18a9c4210382fab896a7e00c7db5b141cefadef6",
-        "behindMain": 7,
+        "behindMain": 15,
         "parentPr": 19186,
         "containsParentHead": true,
         "depth": 5,
-        "state": 87,
+        "state": 95,
         "baseState": 71
       },
       {
@@ -11324,7 +12159,7 @@
         "url": "https://github.com/Comfy-Org/ComfyUI_frontend/pull/19768",
         "author": "christian-byrne",
         "isDraft": false,
-        "mergeable": "MERGEABLE",
+        "mergeable": "UNKNOWN",
         "reviewDecision": "CHANGES_REQUESTED",
         "additions": 2732,
         "deletions": 5,
@@ -11333,11 +12168,11 @@
         "headRefName": "feat/ddd-architecture-ratchet",
         "head": "b1060fb11d6ad5d8123e65c8f023932408172aa2",
         "mergeBase": "e3e1b1513fe0663cffaf0d60b964ef4ece93bd1e",
-        "behindMain": 6,
+        "behindMain": 14,
         "parentPr": null,
         "containsParentHead": true,
         "depth": 0,
-        "state": 89,
+        "state": 97,
         "baseState": 72
       },
       {
@@ -11355,11 +12190,11 @@
         "headRefName": "feat/ddd-classify-media-tools",
         "head": "dffd90c7deebd457c2293443f7cb9668a7220514",
         "mergeBase": "e3e1b1513fe0663cffaf0d60b964ef4ece93bd1e",
-        "behindMain": 6,
+        "behindMain": 14,
         "parentPr": 19768,
         "containsParentHead": true,
         "depth": 1,
-        "state": 90,
+        "state": 98,
         "baseState": 72
       },
       {
@@ -11377,11 +12212,11 @@
         "headRefName": "feat/ddd-classify-compositor",
         "head": "afcc41d54ec8fe160cc043cac87472493d532337",
         "mergeBase": "e3e1b1513fe0663cffaf0d60b964ef4ece93bd1e",
-        "behindMain": 6,
+        "behindMain": 14,
         "parentPr": 19855,
         "containsParentHead": true,
         "depth": 2,
-        "state": 91,
+        "state": 99,
         "baseState": 72
       }
     ]
