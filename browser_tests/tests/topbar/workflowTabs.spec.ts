@@ -297,9 +297,13 @@ test.describe('Workflow tabs', () => {
       }).toPass({ timeout: 5000 })
 
       const activeTabName = await topbar.getActiveTabName()
-      await scrollLeft.dispatchEvent('mousedown')
-      await expect(scrollRight).toBeEnabled()
-      await scrollLeft.dispatchEvent('mouseup')
+      await scrollLeft.hover()
+      await comfyPage.page.mouse.down()
+      try {
+        await expect(scrollRight).toBeEnabled()
+      } finally {
+        await comfyPage.page.mouse.up()
+      }
       await expect.poll(() => topbar.getActiveTabName()).toBe(activeTabName)
 
       await test.step('Keyboard overflow menu opens below its trigger', async () => {
@@ -317,6 +321,45 @@ test.describe('Workflow tabs', () => {
       })
     }
   )
+
+  test.describe('Touch overflow scrolling', { tag: ['@mobile'] }, () => {
+    test('tapping the right arrow scrolls the workflow tabs', async ({
+      comfyPage
+    }) => {
+      const topbar = comfyPage.menu.topbar
+
+      for (let i = 0; i < 5; i++) {
+        await topbar.newWorkflowButton.click()
+      }
+      await expect.poll(() => topbar.getTabNames()).toHaveLength(6)
+
+      const scrollContent = comfyPage.page.getByTestId('workflow-tabs-scroll')
+      const rightArrow = comfyPage.page.getByRole('button', {
+        name: /scroll right/i
+      })
+
+      await scrollContent.evaluate((element) => {
+        element.scrollLeft = 0
+        element.dispatchEvent(new Event('scroll'))
+      })
+      await expect(rightArrow).toBeEnabled()
+
+      const initialScrollLeft = await scrollContent.evaluate(
+        (element) => element.scrollLeft
+      )
+      await comfyPage.page.clock.install()
+      await rightArrow.tap()
+
+      await expect
+        .poll(() => scrollContent.evaluate((element) => element.scrollLeft))
+        .toBe(initialScrollLeft + 20)
+
+      await comfyPage.page.clock.fastForward(350)
+      await expect
+        .poll(() => scrollContent.evaluate((element) => element.scrollLeft))
+        .toBe(initialScrollLeft + 20)
+    })
+  })
 
   test.describe('Closing a modified workflow tab (FE-419)', () => {
     async function modifyActiveWorkflow(page: Page, activeTab: Locator) {
