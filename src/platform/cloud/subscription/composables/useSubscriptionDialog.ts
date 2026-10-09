@@ -118,7 +118,7 @@ export const useSubscriptionDialog = () => {
 
     const legacyPricingDialogProps = {
       size: 'full',
-      dismissableMask: false,
+      dismissOnPointerDownOutside: false,
       contentClass:
         'sm:max-w-7xl max-h-[90vh] rounded-2xl border border-border-default bg-secondary-background shadow-[0_25px_80px_rgba(5,6,12,0.45)]'
     } as const
@@ -196,7 +196,7 @@ export const useSubscriptionDialog = () => {
           size: 'full',
           // A scrim click mid-checkout would silently discard typed card
           // details and any pending 3DS state; the X is the only close.
-          dismissableMask: false,
+          dismissOnPointerDownOutside: false,
           contentClass:
             'w-fit max-w-[min(1280px,95vw)] sm:max-w-[min(1280px,95vw)] max-h-[90vh] rounded-2xl border border-border-default bg-secondary-background shadow-[0_25px_80px_rgba(5,6,12,0.45)]'
         }
