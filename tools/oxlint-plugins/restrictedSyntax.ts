@@ -1,3 +1,5 @@
+import qualityPlugin from '@comfyorg/code-quality/plugin'
+
 const ERROR_ASSERTION_MESSAGE =
   'Do not use Error type assertions. Use `instanceof Error` narrowing or `toError()` from @/utils/errorUtil instead. See issue #11429.'
 const DOM_INSPECTION_MESSAGE =
@@ -306,25 +308,8 @@ export const noDirectSelectionWrite = {
   }
 }
 
-export const noJsPrivateClassMembers = {
-  create(context: RuleContext) {
-    return {
-      PrivateIdentifier(node: Node) {
-        const parent = context.sourceCode.getAncestors(node).at(-1)
-        if (
-          parent?.type === 'PropertyDefinition' ||
-          parent?.type === 'MethodDefinition'
-        ) {
-          context.report({
-            node,
-            message:
-              'Do not use JavaScript hard-private class members. Use TypeScript private members instead.'
-          })
-        }
-      }
-    }
-  }
-}
+export const noJsPrivateClassMembers =
+  qualityPlugin.rules['no-js-private-class-members']
 
 interface MemberDeclaration extends Node {
   readonly key: Node

@@ -9,7 +9,7 @@
     "directory": "packages/code-quality"
   },
   "bin": {
-    "comfy-code-quality": "./dist/cli.js"
+    "comfy-code-quality": "./bin/comfy-code-quality.ts"
   },
   "files": [
     "dist"
@@ -24,6 +24,9 @@
     "./plugin": "./dist/plugin.js"
   },
   "publishConfig": {
+    "bin": {
+      "comfy-code-quality": "./dist/cli.js"
+    },
     "access": "public"
   },
   "scripts": {
