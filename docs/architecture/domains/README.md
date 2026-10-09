@@ -51,25 +51,24 @@ does not touch the exception ledger unless the file imports an enrolled
 domain's internal module. Renaming a baseline-enforced deep-import caller, such
 as a mask-editor caller, changes its fingerprint and needs a new
 `exactFingerprints` entry and `pnpm architecture:accept-baseline`.
-Inventory-only workflow-template callers do not. Imports between enrolled and unclassified
-code are `legacy`, and role direction is checked only when both files are
-enrolled. The census covers `src/**/*.{ts,tsx,vue}`; `browser_tests`,
+Inventory-only workflow-template callers do not. Imports between enrolled and
+unclassified code are `legacy`, and role direction is checked only when both
+files are enrolled. The census covers `src/**/*.{ts,tsx,vue}`; `browser_tests`,
 workspace packages, and other roots are not scanned.
 
 Do not edit `catalog.json`, `catalog.md`, or `baseline.json` by hand.
 `architecture:update` refuses baseline additions. The explicit acceptance
 command succeeds only when every baseline violation is owned by exactly one
-exception-ledger entry. Every newly admitted fingerprint must also appear
-verbatim in the owning entry; a broad historical prefix cannot authorize new
-debt. Baseline acceptance must never accompany unrelated product work.
-Exact fingerprints and historical prefix scopes are separate ledger fields;
-exact ownership wins when both could match, and exact matching never treats one
-occurrence suffix as a prefix of another.
+exception-ledger entry, which lists the fingerprint verbatim in
+`exactFingerprints`. Baseline acceptance must never accompany unrelated product
+work.
 `sunset` is review metadata for planned debt retirement; it does not make
 unrelated checks fail when the date passes.
-When recorded debt is removed, `architecture:check` requires an update and
-`architecture:update` deletes only the resolved fingerprints. This prevents a
-later reintroduction from inheriting stale baseline permission.
+When recorded debt is removed, `architecture:check` reports its fingerprints as
+stale in `exceptions.json`. Delete them from the ledger, then run
+`architecture:update`, which deletes only the resolved fingerprints from
+`baseline.json`. This prevents a later reintroduction from inheriting stale
+permission.
 
 Roles are enforced as dependency direction, not merely catalog metadata. Each
 role may import from the roles listed:
