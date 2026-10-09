@@ -4,6 +4,8 @@ import type { Directive } from 'vue'
 /** Shared modal stacking sequence; later registrations cover earlier ones. */
 export const MODAL_Z_KEY = 'modal'
 export const MODAL_Z_BASE = 1700
+/** Toasts stay above every modal layer, whichever opened first. */
+export const TOAST_Z_INDEX = 9999
 
 // Dialogs and other overlays open in any order, and each portals with the
 // same static z-1700 class. Registering an element with the shared ZIndex
