@@ -96,62 +96,46 @@ watchEffect((onCleanup) => {
   onCleanup(() => (document.body.style.overflow = previous))
 })
 
-const groups = computed<FacetSheetGroup[]>(() => [
-  ...(useCaseOptions.length
-    ? [
-        {
-          key: 'useCase',
-          label: t(
-            kind === 'workflows'
-              ? 'workshop.catalogue.categories'
-              : 'workshop.launch.label'
-          ),
-          options: useCaseOptions,
-          selected: useCases.value
-        }
-      ]
-    : []),
-  ...(inputOptions?.length
-    ? [
-        {
-          key: 'input',
-          label: t('workshop.filter.inputGroup'),
-          options: inputOptions,
-          selected: inputs.value
-        }
-      ]
-    : []),
-  ...(outputOptions?.length
-    ? [
-        {
-          key: 'output',
-          label: t('workshop.filter.outputGroup'),
-          options: outputOptions,
-          selected: outputs.value
-        }
-      ]
-    : []),
-  ...(modelOptions?.length
-    ? [
-        {
-          key: 'model',
-          label: t('workshop.hub.models'),
-          options: modelOptions,
-          selected: models.value
-        }
-      ]
-    : []),
-  ...(accessOptions?.length
-    ? [
-        {
-          key: 'access',
-          label: t('workshop.explorer.filter.label'),
-          options: accessOptions,
-          selected: access.value
-        }
-      ]
-    : [])
-])
+const useCaseLabel = t(
+  kind === 'workflows'
+    ? 'workshop.catalogue.categories'
+    : 'workshop.launch.label'
+)
+
+const groups = computed<FacetSheetGroup[]>(() =>
+  [
+    {
+      key: 'useCase',
+      label: useCaseLabel,
+      options: useCaseOptions,
+      selected: useCases.value
+    },
+    {
+      key: 'input',
+      label: t('workshop.filter.inputGroup'),
+      options: inputOptions ?? [],
+      selected: inputs.value
+    },
+    {
+      key: 'output',
+      label: t('workshop.filter.outputGroup'),
+      options: outputOptions ?? [],
+      selected: outputs.value
+    },
+    {
+      key: 'model',
+      label: t('workshop.hub.models'),
+      options: modelOptions ?? [],
+      selected: models.value
+    },
+    {
+      key: 'access',
+      label: t('workshop.explorer.filter.label'),
+      options: accessOptions ?? [],
+      selected: access.value
+    }
+  ].filter((group) => group.options.length > 0)
+)
 
 const selectedCount = computed(() =>
   groups.value.reduce((total, group) => total + group.selected.length, 0)
