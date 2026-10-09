@@ -3,7 +3,7 @@
   "issue": "FE-3037",
   "tool": "dependency-cruiser, repo .dependency-cruiser.json, `depcruise src`",
   "base": "7475c964f67419ead544bcdab2b98bc0da14e607",
-  "head": "0ef0276323b5819258571bbffe24af14af47dc2e",
+  "head": "9b91a0c8331da05cf9d92f408688d1e6b3d16561",
   "notes": [
     "A knot is a strongly connected component of the src/ module graph with more than one module.",
     "Step 0 is the parent of the first FE-3037 commit; every later step is one commit on main.",
@@ -134,7 +134,7 @@
     {
       "id": 13,
       "parent": 0,
-      "bornAt": 54,
+      "bornAt": 66,
       "peak": 3,
       "role": "other",
       "fromMain": true,
@@ -143,7 +143,7 @@
     {
       "id": 14,
       "parent": 0,
-      "bornAt": 54,
+      "bornAt": 66,
       "peak": 2,
       "role": "other",
       "fromMain": true,
@@ -152,110 +152,47 @@
     {
       "id": 15,
       "parent": 0,
-      "bornAt": 57,
-      "peak": 4,
+      "bornAt": 69,
+      "peak": 5,
       "role": "other",
       "fromMain": true,
-      "label": "workbench/extensions/agent"
+      "label": "platform"
     },
     {
       "id": 16,
       "parent": 0,
-      "bornAt": 58,
-      "peak": 4,
-      "role": "other",
-      "fromMain": true,
-      "label": "workbench/extensions/agent"
-    },
-    {
-      "id": 17,
-      "parent": 0,
-      "bornAt": 58,
-      "peak": 3,
-      "role": "other",
-      "fromMain": true,
-      "label": "composables"
-    },
-    {
-      "id": 18,
-      "parent": 0,
-      "bornAt": 58,
-      "peak": 2,
-      "role": "other",
-      "fromMain": true,
-      "label": "extensions"
-    },
-    {
-      "id": 19,
-      "parent": 0,
-      "bornAt": 61,
-      "peak": 48,
-      "role": "other",
-      "fromMain": true,
-      "label": "platform"
-    },
-    {
-      "id": 20,
-      "parent": 0,
-      "bornAt": 62,
-      "peak": 9,
-      "role": "other",
-      "fromMain": true,
-      "label": "platform"
-    },
-    {
-      "id": 21,
-      "parent": 0,
-      "bornAt": 62,
+      "bornAt": 69,
       "peak": 5,
       "role": "other",
       "fromMain": true,
       "label": "types"
     },
     {
-      "id": 22,
+      "id": 17,
       "parent": 0,
-      "bornAt": 62,
-      "peak": 5,
+      "bornAt": 72,
+      "peak": 48,
       "role": "other",
       "fromMain": true,
-      "label": "components"
+      "label": "platform"
     },
     {
-      "id": 23,
+      "id": 18,
       "parent": 0,
-      "bornAt": 62,
-      "peak": 4,
-      "role": "other",
-      "fromMain": true,
-      "label": "workbench/extensions/agent"
-    },
-    {
-      "id": 24,
-      "parent": 0,
-      "bornAt": 62,
-      "peak": 3,
-      "role": "other",
-      "fromMain": true,
-      "label": "composables"
-    },
-    {
-      "id": 25,
-      "parent": 0,
-      "bornAt": 62,
-      "peak": 2,
-      "role": "other",
-      "fromMain": true,
-      "label": "extensions"
-    },
-    {
-      "id": 26,
-      "parent": 0,
-      "bornAt": 63,
+      "bornAt": 73,
       "peak": 49,
       "role": "other",
       "fromMain": true,
       "label": "stores"
+    },
+    {
+      "id": 19,
+      "parent": 17,
+      "bornAt": 76,
+      "peak": 3,
+      "role": "other",
+      "fromMain": true,
+      "label": "platform/workspace"
     }
   ],
   "steps": [
@@ -4875,37 +4812,1692 @@
         "entangled": [],
         "splits": []
       }
+    },
+    {
+      "index": 54,
+      "kind": "commit",
+      "parent": 53,
+      "sha": "481b5a6043f99cef7900e15bd9ce06cfca99bb82",
+      "short": "481b5a6043",
+      "date": "2026-10-08T19:46:52Z",
+      "subject": "fix(paste): ignore clipboard node metadata left by an earlier copy",
+      "pr": 15884,
+      "fe3037": false,
+      "stats": {
+        "modules": 2477,
+        "imports": 11590,
+        "modulesInKnots": 632,
+        "largestKnot": 422,
+        "mainKnot": 422,
+        "secondKnot": 154,
+        "knotCount": 13,
+        "importsInKnots": 2454,
+        "noCircularWarnings": 1743
+      },
+      "knots": [
+        {
+          "id": 0,
+          "size": 422
+        },
+        {
+          "id": 9,
+          "size": 154
+        },
+        {
+          "id": 1,
+          "size": 28
+        },
+        {
+          "id": 8,
+          "size": 6
+        },
+        {
+          "id": 10,
+          "size": 5
+        },
+        {
+          "id": 11,
+          "size": 3
+        },
+        {
+          "id": 2,
+          "size": 2
+        },
+        {
+          "id": 3,
+          "size": 2
+        },
+        {
+          "id": 12,
+          "size": 2
+        },
+        {
+          "id": 4,
+          "size": 2
+        },
+        {
+          "id": 5,
+          "size": 2
+        },
+        {
+          "id": 6,
+          "size": 2
+        },
+        {
+          "id": 7,
+          "size": 2
+        }
+      ],
+      "delta": {
+        "freed": [],
+        "entangled": ["composables/useCopy.ts"],
+        "splits": []
+      }
+    },
+    {
+      "index": 55,
+      "kind": "commit",
+      "parent": 54,
+      "sha": "b209d37d76a79f6f962fcb1d1b4a53f88dca3b63",
+      "short": "b209d37d76",
+      "date": "2026-10-08T20:12:53Z",
+      "subject": "fix(telemetry): keep platform axes and desktop entry props across logout reset",
+      "pr": 13503,
+      "fe3037": false,
+      "stats": {
+        "modules": 2477,
+        "imports": 11590,
+        "modulesInKnots": 632,
+        "largestKnot": 422,
+        "mainKnot": 422,
+        "secondKnot": 154,
+        "knotCount": 13,
+        "importsInKnots": 2454,
+        "noCircularWarnings": 1743
+      },
+      "knots": [
+        {
+          "id": 0,
+          "size": 422
+        },
+        {
+          "id": 9,
+          "size": 154
+        },
+        {
+          "id": 1,
+          "size": 28
+        },
+        {
+          "id": 8,
+          "size": 6
+        },
+        {
+          "id": 10,
+          "size": 5
+        },
+        {
+          "id": 11,
+          "size": 3
+        },
+        {
+          "id": 2,
+          "size": 2
+        },
+        {
+          "id": 3,
+          "size": 2
+        },
+        {
+          "id": 12,
+          "size": 2
+        },
+        {
+          "id": 4,
+          "size": 2
+        },
+        {
+          "id": 5,
+          "size": 2
+        },
+        {
+          "id": 6,
+          "size": 2
+        },
+        {
+          "id": 7,
+          "size": 2
+        }
+      ],
+      "delta": {
+        "freed": [],
+        "entangled": [],
+        "splits": []
+      }
+    },
+    {
+      "index": 56,
+      "kind": "commit",
+      "parent": 55,
+      "sha": "e7316710a9b15e3a4bf45df07aff28ceb10b06c6",
+      "short": "e7316710a9",
+      "date": "2026-10-08T20:15:21Z",
+      "subject": "ci: bump cursor-review to github-workflows@06f835f",
+      "pr": 20505,
+      "fe3037": false,
+      "stats": {
+        "modules": 2477,
+        "imports": 11590,
+        "modulesInKnots": 632,
+        "largestKnot": 422,
+        "mainKnot": 422,
+        "secondKnot": 154,
+        "knotCount": 13,
+        "importsInKnots": 2454,
+        "noCircularWarnings": 1743
+      },
+      "knots": [
+        {
+          "id": 0,
+          "size": 422
+        },
+        {
+          "id": 9,
+          "size": 154
+        },
+        {
+          "id": 1,
+          "size": 28
+        },
+        {
+          "id": 8,
+          "size": 6
+        },
+        {
+          "id": 10,
+          "size": 5
+        },
+        {
+          "id": 11,
+          "size": 3
+        },
+        {
+          "id": 2,
+          "size": 2
+        },
+        {
+          "id": 3,
+          "size": 2
+        },
+        {
+          "id": 12,
+          "size": 2
+        },
+        {
+          "id": 4,
+          "size": 2
+        },
+        {
+          "id": 5,
+          "size": 2
+        },
+        {
+          "id": 6,
+          "size": 2
+        },
+        {
+          "id": 7,
+          "size": 2
+        }
+      ],
+      "delta": {
+        "freed": [],
+        "entangled": [],
+        "splits": []
+      }
+    },
+    {
+      "index": 57,
+      "kind": "commit",
+      "parent": 56,
+      "sha": "eaad63d7260ad1ceae6def39c2d97bf31c476555",
+      "short": "eaad63d726",
+      "date": "2026-10-08T20:41:51Z",
+      "subject": "fix(surveys): preserve pending feature usage",
+      "pr": 20581,
+      "fe3037": false,
+      "stats": {
+        "modules": 2477,
+        "imports": 11590,
+        "modulesInKnots": 632,
+        "largestKnot": 422,
+        "mainKnot": 422,
+        "secondKnot": 154,
+        "knotCount": 13,
+        "importsInKnots": 2454,
+        "noCircularWarnings": 1743
+      },
+      "knots": [
+        {
+          "id": 0,
+          "size": 422
+        },
+        {
+          "id": 9,
+          "size": 154
+        },
+        {
+          "id": 1,
+          "size": 28
+        },
+        {
+          "id": 8,
+          "size": 6
+        },
+        {
+          "id": 10,
+          "size": 5
+        },
+        {
+          "id": 11,
+          "size": 3
+        },
+        {
+          "id": 2,
+          "size": 2
+        },
+        {
+          "id": 3,
+          "size": 2
+        },
+        {
+          "id": 12,
+          "size": 2
+        },
+        {
+          "id": 4,
+          "size": 2
+        },
+        {
+          "id": 5,
+          "size": 2
+        },
+        {
+          "id": 6,
+          "size": 2
+        },
+        {
+          "id": 7,
+          "size": 2
+        }
+      ],
+      "delta": {
+        "freed": [],
+        "entangled": [],
+        "splits": []
+      }
+    },
+    {
+      "index": 58,
+      "kind": "commit",
+      "parent": 57,
+      "sha": "ad31b1ed7feb2c141f963d55e414b8f794fb2fa6",
+      "short": "ad31b1ed7f",
+      "date": "2026-10-08T20:58:58Z",
+      "subject": "fix(website): uppercase desktop nav category headings",
+      "pr": 20582,
+      "fe3037": false,
+      "stats": {
+        "modules": 2477,
+        "imports": 11590,
+        "modulesInKnots": 632,
+        "largestKnot": 422,
+        "mainKnot": 422,
+        "secondKnot": 154,
+        "knotCount": 13,
+        "importsInKnots": 2454,
+        "noCircularWarnings": 1743
+      },
+      "knots": [
+        {
+          "id": 0,
+          "size": 422
+        },
+        {
+          "id": 9,
+          "size": 154
+        },
+        {
+          "id": 1,
+          "size": 28
+        },
+        {
+          "id": 8,
+          "size": 6
+        },
+        {
+          "id": 10,
+          "size": 5
+        },
+        {
+          "id": 11,
+          "size": 3
+        },
+        {
+          "id": 2,
+          "size": 2
+        },
+        {
+          "id": 3,
+          "size": 2
+        },
+        {
+          "id": 12,
+          "size": 2
+        },
+        {
+          "id": 4,
+          "size": 2
+        },
+        {
+          "id": 5,
+          "size": 2
+        },
+        {
+          "id": 6,
+          "size": 2
+        },
+        {
+          "id": 7,
+          "size": 2
+        }
+      ],
+      "delta": {
+        "freed": [],
+        "entangled": [],
+        "splits": []
+      }
+    },
+    {
+      "index": 59,
+      "kind": "commit",
+      "parent": 58,
+      "sha": "9668c9f8047f4240628a9ba913d9b27188a6fb5e",
+      "short": "9668c9f804",
+      "date": "2026-10-08T21:00:32Z",
+      "subject": "fix(telemetry): instrument Vue directive failures and repair source maps",
+      "pr": 20000,
+      "fe3037": false,
+      "stats": {
+        "modules": 2478,
+        "imports": 11591,
+        "modulesInKnots": 632,
+        "largestKnot": 422,
+        "mainKnot": 422,
+        "secondKnot": 154,
+        "knotCount": 13,
+        "importsInKnots": 2454,
+        "noCircularWarnings": 1743
+      },
+      "knots": [
+        {
+          "id": 0,
+          "size": 422
+        },
+        {
+          "id": 9,
+          "size": 154
+        },
+        {
+          "id": 1,
+          "size": 28
+        },
+        {
+          "id": 8,
+          "size": 6
+        },
+        {
+          "id": 10,
+          "size": 5
+        },
+        {
+          "id": 11,
+          "size": 3
+        },
+        {
+          "id": 2,
+          "size": 2
+        },
+        {
+          "id": 3,
+          "size": 2
+        },
+        {
+          "id": 12,
+          "size": 2
+        },
+        {
+          "id": 4,
+          "size": 2
+        },
+        {
+          "id": 5,
+          "size": 2
+        },
+        {
+          "id": 6,
+          "size": 2
+        },
+        {
+          "id": 7,
+          "size": 2
+        }
+      ],
+      "delta": {
+        "freed": [],
+        "entangled": [],
+        "splits": []
+      }
+    },
+    {
+      "index": 60,
+      "kind": "commit",
+      "parent": 59,
+      "sha": "efdb54e71ab09bb11d531c8bf2bc3a4285609ada",
+      "short": "efdb54e71a",
+      "date": "2026-10-08T21:02:25Z",
+      "subject": "feat(deploy): hand the workflow to a coding agent as a Comfy API brief",
+      "pr": 17966,
+      "fe3037": false,
+      "stats": {
+        "modules": 2481,
+        "imports": 11607,
+        "modulesInKnots": 632,
+        "largestKnot": 422,
+        "mainKnot": 422,
+        "secondKnot": 154,
+        "knotCount": 13,
+        "importsInKnots": 2454,
+        "noCircularWarnings": 1743
+      },
+      "knots": [
+        {
+          "id": 0,
+          "size": 422
+        },
+        {
+          "id": 9,
+          "size": 154
+        },
+        {
+          "id": 1,
+          "size": 28
+        },
+        {
+          "id": 8,
+          "size": 6
+        },
+        {
+          "id": 10,
+          "size": 5
+        },
+        {
+          "id": 11,
+          "size": 3
+        },
+        {
+          "id": 2,
+          "size": 2
+        },
+        {
+          "id": 3,
+          "size": 2
+        },
+        {
+          "id": 12,
+          "size": 2
+        },
+        {
+          "id": 4,
+          "size": 2
+        },
+        {
+          "id": 5,
+          "size": 2
+        },
+        {
+          "id": 6,
+          "size": 2
+        },
+        {
+          "id": 7,
+          "size": 2
+        }
+      ],
+      "delta": {
+        "freed": [],
+        "entangled": [],
+        "splits": []
+      }
+    },
+    {
+      "index": 61,
+      "kind": "commit",
+      "parent": 60,
+      "sha": "559647b5da239413188f226434ff96c96d7fd0fe",
+      "short": "559647b5da",
+      "date": "2026-10-08T14:42:13-07:00",
+      "subject": "fix(agent): route promoted widgets through callbacks",
+      "pr": 19332,
+      "fe3037": false,
+      "stats": {
+        "modules": 2481,
+        "imports": 11607,
+        "modulesInKnots": 632,
+        "largestKnot": 422,
+        "mainKnot": 422,
+        "secondKnot": 154,
+        "knotCount": 13,
+        "importsInKnots": 2454,
+        "noCircularWarnings": 1743
+      },
+      "knots": [
+        {
+          "id": 0,
+          "size": 422
+        },
+        {
+          "id": 9,
+          "size": 154
+        },
+        {
+          "id": 1,
+          "size": 28
+        },
+        {
+          "id": 8,
+          "size": 6
+        },
+        {
+          "id": 10,
+          "size": 5
+        },
+        {
+          "id": 11,
+          "size": 3
+        },
+        {
+          "id": 2,
+          "size": 2
+        },
+        {
+          "id": 3,
+          "size": 2
+        },
+        {
+          "id": 12,
+          "size": 2
+        },
+        {
+          "id": 4,
+          "size": 2
+        },
+        {
+          "id": 5,
+          "size": 2
+        },
+        {
+          "id": 6,
+          "size": 2
+        },
+        {
+          "id": 7,
+          "size": 2
+        }
+      ],
+      "delta": {
+        "freed": [],
+        "entangled": [],
+        "splits": []
+      }
+    },
+    {
+      "index": 62,
+      "kind": "commit",
+      "parent": 61,
+      "sha": "ef9481abcec3f45b73396568818fc0ba976657a4",
+      "short": "ef9481abce",
+      "date": "2026-10-08T22:09:25Z",
+      "subject": "test: make the network guard the shared fetch mock",
+      "pr": 20499,
+      "fe3037": false,
+      "stats": {
+        "modules": 2481,
+        "imports": 11607,
+        "modulesInKnots": 632,
+        "largestKnot": 422,
+        "mainKnot": 422,
+        "secondKnot": 154,
+        "knotCount": 13,
+        "importsInKnots": 2454,
+        "noCircularWarnings": 1743
+      },
+      "knots": [
+        {
+          "id": 0,
+          "size": 422
+        },
+        {
+          "id": 9,
+          "size": 154
+        },
+        {
+          "id": 1,
+          "size": 28
+        },
+        {
+          "id": 8,
+          "size": 6
+        },
+        {
+          "id": 10,
+          "size": 5
+        },
+        {
+          "id": 11,
+          "size": 3
+        },
+        {
+          "id": 2,
+          "size": 2
+        },
+        {
+          "id": 3,
+          "size": 2
+        },
+        {
+          "id": 12,
+          "size": 2
+        },
+        {
+          "id": 4,
+          "size": 2
+        },
+        {
+          "id": 5,
+          "size": 2
+        },
+        {
+          "id": 6,
+          "size": 2
+        },
+        {
+          "id": 7,
+          "size": 2
+        }
+      ],
+      "delta": {
+        "freed": [],
+        "entangled": [],
+        "splits": []
+      }
+    },
+    {
+      "index": 63,
+      "kind": "commit",
+      "parent": 62,
+      "sha": "400f638ba1e9248a6913982fe6082e36eaf5e16d",
+      "short": "400f638ba1",
+      "date": "2026-10-08T23:11:02Z",
+      "subject": "FE-3267 chore(qa): build a Desktop QA frontend against one backend with --env",
+      "pr": 20589,
+      "fe3037": false,
+      "stats": {
+        "modules": 2481,
+        "imports": 11607,
+        "modulesInKnots": 632,
+        "largestKnot": 422,
+        "mainKnot": 422,
+        "secondKnot": 154,
+        "knotCount": 13,
+        "importsInKnots": 2454,
+        "noCircularWarnings": 1743
+      },
+      "knots": [
+        {
+          "id": 0,
+          "size": 422
+        },
+        {
+          "id": 9,
+          "size": 154
+        },
+        {
+          "id": 1,
+          "size": 28
+        },
+        {
+          "id": 8,
+          "size": 6
+        },
+        {
+          "id": 10,
+          "size": 5
+        },
+        {
+          "id": 11,
+          "size": 3
+        },
+        {
+          "id": 2,
+          "size": 2
+        },
+        {
+          "id": 3,
+          "size": 2
+        },
+        {
+          "id": 12,
+          "size": 2
+        },
+        {
+          "id": 4,
+          "size": 2
+        },
+        {
+          "id": 5,
+          "size": 2
+        },
+        {
+          "id": 6,
+          "size": 2
+        },
+        {
+          "id": 7,
+          "size": 2
+        }
+      ],
+      "delta": {
+        "freed": [],
+        "entangled": [],
+        "splits": []
+      }
+    },
+    {
+      "index": 64,
+      "kind": "commit",
+      "parent": 63,
+      "sha": "341dce21c1f575456d026f567f1015d15a52980b",
+      "short": "341dce21c1",
+      "date": "2026-10-08T23:11:22Z",
+      "subject": "FE-3326 fix(cloud): render dialogs on the Cloud sign-in pages in the dark theme",
+      "pr": 20590,
+      "fe3037": false,
+      "stats": {
+        "modules": 2482,
+        "imports": 11609,
+        "modulesInKnots": 632,
+        "largestKnot": 422,
+        "mainKnot": 422,
+        "secondKnot": 154,
+        "knotCount": 13,
+        "importsInKnots": 2454,
+        "noCircularWarnings": 1743
+      },
+      "knots": [
+        {
+          "id": 0,
+          "size": 422
+        },
+        {
+          "id": 9,
+          "size": 154
+        },
+        {
+          "id": 1,
+          "size": 28
+        },
+        {
+          "id": 8,
+          "size": 6
+        },
+        {
+          "id": 10,
+          "size": 5
+        },
+        {
+          "id": 11,
+          "size": 3
+        },
+        {
+          "id": 2,
+          "size": 2
+        },
+        {
+          "id": 3,
+          "size": 2
+        },
+        {
+          "id": 12,
+          "size": 2
+        },
+        {
+          "id": 4,
+          "size": 2
+        },
+        {
+          "id": 5,
+          "size": 2
+        },
+        {
+          "id": 6,
+          "size": 2
+        },
+        {
+          "id": 7,
+          "size": 2
+        }
+      ],
+      "delta": {
+        "freed": [],
+        "entangled": [],
+        "splits": []
+      }
+    },
+    {
+      "index": 65,
+      "kind": "commit",
+      "parent": 64,
+      "sha": "a6a494b65bd367b899b67fc21e8970cbfc507ed0",
+      "short": "a6a494b65b",
+      "date": "2026-10-08T23:29:25Z",
+      "subject": "chore(deps): bump actions/upload-pages-artifact from 3.0.1 to 5.0.0",
+      "pr": 15496,
+      "fe3037": false,
+      "stats": {
+        "modules": 2482,
+        "imports": 11609,
+        "modulesInKnots": 632,
+        "largestKnot": 422,
+        "mainKnot": 422,
+        "secondKnot": 154,
+        "knotCount": 13,
+        "importsInKnots": 2454,
+        "noCircularWarnings": 1743
+      },
+      "knots": [
+        {
+          "id": 0,
+          "size": 422
+        },
+        {
+          "id": 9,
+          "size": 154
+        },
+        {
+          "id": 1,
+          "size": 28
+        },
+        {
+          "id": 8,
+          "size": 6
+        },
+        {
+          "id": 10,
+          "size": 5
+        },
+        {
+          "id": 11,
+          "size": 3
+        },
+        {
+          "id": 2,
+          "size": 2
+        },
+        {
+          "id": 3,
+          "size": 2
+        },
+        {
+          "id": 12,
+          "size": 2
+        },
+        {
+          "id": 4,
+          "size": 2
+        },
+        {
+          "id": 5,
+          "size": 2
+        },
+        {
+          "id": 6,
+          "size": 2
+        },
+        {
+          "id": 7,
+          "size": 2
+        }
+      ],
+      "delta": {
+        "freed": [],
+        "entangled": [],
+        "splits": []
+      }
+    },
+    {
+      "index": 66,
+      "kind": "commit",
+      "parent": 65,
+      "sha": "9b91a0c8331da05cf9d92f408688d1e6b3d16561",
+      "short": "9b91a0c833",
+      "date": "2026-10-08T23:33:20Z",
+      "subject": "refactor: load extensions from the bootstrap step, not extensionService",
+      "pr": 19092,
+      "fe3037": true,
+      "stats": {
+        "modules": 2483,
+        "imports": 11612,
+        "modulesInKnots": 501,
+        "largestKnot": 286,
+        "mainKnot": 286,
+        "secondKnot": 154,
+        "knotCount": 15,
+        "importsInKnots": 2037,
+        "noCircularWarnings": 1510
+      },
+      "knots": [
+        {
+          "id": 0,
+          "size": 286
+        },
+        {
+          "id": 9,
+          "size": 154
+        },
+        {
+          "id": 1,
+          "size": 28
+        },
+        {
+          "id": 8,
+          "size": 6
+        },
+        {
+          "id": 10,
+          "size": 5
+        },
+        {
+          "id": 13,
+          "size": 3
+        },
+        {
+          "id": 11,
+          "size": 3
+        },
+        {
+          "id": 2,
+          "size": 2
+        },
+        {
+          "id": 3,
+          "size": 2
+        },
+        {
+          "id": 12,
+          "size": 2
+        },
+        {
+          "id": 4,
+          "size": 2
+        },
+        {
+          "id": 5,
+          "size": 2
+        },
+        {
+          "id": 6,
+          "size": 2
+        },
+        {
+          "id": 14,
+          "size": 2
+        },
+        {
+          "id": 7,
+          "size": 2
+        }
+      ],
+      "delta": {
+        "freed": [
+          "components/cameraAngle/CameraAngle.vue",
+          "components/cameraInfo/CameraInfo.vue",
+          "components/custom/widget/TemplateFilterControls.vue",
+          "components/custom/widget/WorkflowTemplateSelectorDialog.vue",
+          "components/load3d/Load3D.vue",
+          "components/load3d/Load3DAdvanced.vue",
+          "components/load3d/Load3DMenuBar.vue",
+          "components/load3d/Load3dViewerContent.vue",
+          "components/load3d/controls/ViewerControls.vue",
+          "components/load3d/controls/viewer/ViewerLightControls.vue",
+          "components/load3d/menubar/LightMenuGroup.vue",
+          "components/maskeditor/ImageLayerSettingsPanel.vue",
+          "components/maskeditor/MaskEditorContent.vue",
+          "components/maskeditor/PointerZone.vue",
+          "components/maskeditor/SidePanel.vue",
+          "components/maskeditor/ToolPanel.vue",
+          "components/maskeditor/dialog/TopBarHeader.vue",
+          "composables/maskeditor/useBrushDrawing.ts",
+          "composables/maskeditor/useBrushPersistence.ts",
+          "composables/maskeditor/useMaskEditor.ts",
+          "composables/maskeditor/useMaskEditorLoader.ts",
+          "composables/maskeditor/useMaskEditorSaver.ts",
+          "composables/maskeditor/useToolManager.ts",
+          "composables/useCameraAngle.ts",
+          "composables/useCameraInfo.ts",
+          "composables/useTemplateFiltering.ts",
+          "composables/useViewportNodeWiring.ts",
+          "composables/useWorkflowTemplateSelectorDialog.ts",
+          "extensions/core/agentPanel.ts",
+          "extensions/core/cameraAngle.ts",
+          "extensions/core/cameraAngle/CameraAngleViewport.ts",
+          "extensions/core/cameraInfo.ts",
+          "extensions/core/cameraInfo/CameraInfoViewport.ts",
+          "extensions/core/clipspace.ts",
+          "extensions/core/cloudBadges.ts",
+          "extensions/core/cloudFeedbackTopbarButton.ts",
+          "extensions/core/cloudRemoteConfig.ts",
+          "extensions/core/cloudSessionCookie.ts",
+          "extensions/core/contextMenuFilter.ts",
+          "extensions/core/createBoundingBoxes.ts",
+          "extensions/core/customWidgets.ts",
+          "extensions/core/dynamicPrompts.ts",
+          "extensions/core/editAttention.ts",
+          "extensions/core/electronAdapter.ts",
+          "extensions/core/groupNode.ts",
+          "extensions/core/groupOptions.ts",
+          "extensions/core/imageCompare.ts",
+          "extensions/core/imageCompositor.ts",
+          "extensions/core/imageCrop.ts",
+          "extensions/core/index.ts",
+          "extensions/core/layerEditor.ts",
+          "extensions/core/lightInfo.ts",
+          "extensions/core/load3d.ts",
+          "extensions/core/load3d/HDRIManager.ts",
+          "extensions/core/load3d/Load3DConfiguration.ts",
+          "extensions/core/load3d/Load3d.ts",
+          "extensions/core/load3d/LoaderManager.ts",
+          "extensions/core/load3d/MeshModelAdapter.ts",
+          "extensions/core/load3d/ModelAdapter.ts",
+          "extensions/core/load3d/PointCloudModelAdapter.ts",
+          "extensions/core/load3d/SceneManager.ts",
+          "extensions/core/load3d/SceneModelManager.ts",
+          "extensions/core/load3d/SplatModelAdapter.ts",
+          "extensions/core/load3d/Viewport3d.ts",
+          "extensions/core/load3d/createLoad3d.ts",
+          "extensions/core/load3d/createViewport3d.ts",
+          "extensions/core/load3d/exportMenuHelper.ts",
+          "extensions/core/load3d/load3dSerialize.ts",
+          "extensions/core/load3dAdvanced.ts",
+          "extensions/core/load3dLazy.ts",
+          "extensions/core/load3dPreviewExtensions.ts",
+          "extensions/core/maskeditor.ts",
+          "extensions/core/nodeTemplates.ts",
+          "extensions/core/noteNode.ts",
+          "extensions/core/painter.ts",
+          "extensions/core/previewAny.ts",
+          "extensions/core/rerouteNode.ts",
+          "extensions/core/saveImageExtraOutput.ts",
+          "extensions/core/saveMesh.ts",
+          "extensions/core/saveText.ts",
+          "extensions/core/selectionBorder.ts",
+          "extensions/core/simpleTouchSupport.ts",
+          "extensions/core/slotDefaultTypes.ts",
+          "extensions/core/slotDefaults.ts",
+          "extensions/core/textPreviewWidgets.ts",
+          "extensions/core/uploadAudio.ts",
+          "extensions/core/uploadImage.ts",
+          "extensions/core/webcamCapture.ts",
+          "extensions/core/widgetValuePropagation.ts",
+          "platform/assets/utils/assetPreviewUtil.ts",
+          "platform/assets/utils/assetUrlUtil.ts",
+          "platform/missingModel/folderPathCache.ts",
+          "platform/onboarding/onboardingTourStore.ts",
+          "platform/onboarding/useTourTriggers.ts",
+          "platform/settings/globalSettingsApi.ts",
+          "platform/support/feedbackDialog.ts",
+          "platform/workflow/sharing/components/OpenSharedWorkflowDialogContent.vue",
+          "platform/workflow/sharing/composables/useSharedWorkflowUrlLoader.ts",
+          "platform/workflow/templates/composables/useTemplateModelAvailability.ts",
+          "platform/workflow/templates/composables/useTemplateModelRowDownloads.ts",
+          "platform/workflow/templates/composables/useTemplateWorkflows.ts",
+          "platform/workflow/templates/services/templateInputService.ts",
+          "platform/workflow/templates/stores/partnerNodesEducationStore.ts",
+          "platform/workflow/templates/utils/templateModelMetadata.ts",
+          "platform/workflow/templates/utils/templateModelSetup.ts",
+          "renderer/extensions/compositor/composables/compositorSession.ts",
+          "renderer/extensions/firstRunTour/gettingStarted/firstRunEntry.ts",
+          "renderer/extensions/firstRunTour/roles/resolveTourRoles.ts",
+          "renderer/extensions/firstRunTour/roles/tourSequence.ts",
+          "renderer/extensions/firstRunTour/tour/cameraFraming.ts",
+          "renderer/extensions/firstRunTour/tour/canvasCoachTarget.ts",
+          "renderer/extensions/firstRunTour/tour/firstRunTourDefinition.ts",
+          "renderer/extensions/firstRunTour/tour/useFirstRunTourController.ts",
+          "renderer/extensions/layerEditor/components/LayerEditorContent.vue",
+          "renderer/extensions/layerEditor/composables/layerEditorDialog.ts",
+          "renderer/extensions/layerEditor/composables/useLayerEditor.ts",
+          "renderer/extensions/vueNodes/widgets/components/WidgetTextPreview.vue",
+          "renderer/extensions/vueNodes/widgets/utils/audioUtils.ts",
+          "services/audioService.ts",
+          "services/useNewUserService.ts",
+          "stores/modelStore.ts",
+          "types/index.ts",
+          "workbench/extensions/agent/composables/agent/useAgentConsent.ts",
+          "workbench/extensions/agent/crdt/docOpMinter.ts",
+          "workbench/extensions/agent/crdt/restoreOpMinter.ts",
+          "workbench/extensions/agent/services/agent/workflowTabActivityTracker.ts",
+          "workbench/extensions/agent/stores/agent/agentComposerStore.ts",
+          "workbench/extensions/agent/stores/agent/agentConsentStore.ts",
+          "workbench/extensions/agent/types/composerAttachment.ts",
+          "workbench/extensions/agent/types/composerPrompt.ts",
+          "workbench/extensions/agent/utils/composerPrompt.ts"
+        ],
+        "entangled": [],
+        "splits": [
+          {
+            "from": 0,
+            "into": [13, 14]
+          }
+        ]
+      }
     }
   ],
   "openPrs": {
     "label": "refactor-gordian-knot",
-    "fetchedAt": "2026-10-08T21:53:49.672Z",
-    "main": "0ef0276323b5819258571bbffe24af14af47dc2e",
+    "fetchedAt": "2026-10-09T00:21:22.729Z",
+    "main": "9b91a0c8331da05cf9d92f408688d1e6b3d16561",
     "states": [
       {
-        "index": 54,
+        "index": 67,
         "kind": "pr",
-        "parent": 53,
-        "sha": "d584c3bd23a12596bb15cf5b937475589da1ee68",
-        "short": "d584c3bd23",
-        "date": "2026-09-27T09:10:41Z",
-        "subject": "refactor: load extensions from the bootstrap step, not extensionService",
-        "pr": 19092,
+        "parent": 66,
+        "sha": "9536aff6c045a579eeb6b87b083bfdb432c96dc6",
+        "short": "9536aff6c0",
+        "date": "2026-10-09T00:11:12Z",
+        "subject": "refactor: split widget constructor type and value-control helpers out of scripts/widgets",
+        "pr": 19093,
         "stats": {
-          "modules": 2477,
-          "imports": 11586,
-          "modulesInKnots": 500,
-          "largestKnot": 285,
-          "mainKnot": 285,
+          "modules": 2485,
+          "imports": 11623,
+          "modulesInKnots": 486,
+          "largestKnot": 271,
+          "mainKnot": 271,
           "secondKnot": 154,
           "knotCount": 15,
-          "importsInKnots": 2034,
-          "noCircularWarnings": 1508
+          "importsInKnots": 2000,
+          "noCircularWarnings": 1492
         },
         "knots": [
           {
             "id": 0,
-            "size": 285
+            "size": 271
+          },
+          {
+            "id": 9,
+            "size": 154
+          },
+          {
+            "id": 1,
+            "size": 28
+          },
+          {
+            "id": 8,
+            "size": 6
+          },
+          {
+            "id": 10,
+            "size": 5
+          },
+          {
+            "id": 13,
+            "size": 3
+          },
+          {
+            "id": 11,
+            "size": 3
+          },
+          {
+            "id": 2,
+            "size": 2
+          },
+          {
+            "id": 3,
+            "size": 2
+          },
+          {
+            "id": 12,
+            "size": 2
+          },
+          {
+            "id": 4,
+            "size": 2
+          },
+          {
+            "id": 5,
+            "size": 2
+          },
+          {
+            "id": 6,
+            "size": 2
+          },
+          {
+            "id": 14,
+            "size": 2
+          },
+          {
+            "id": 7,
+            "size": 2
+          }
+        ],
+        "delta": {
+          "freed": [
+            "renderer/extensions/vueNodes/widgets/composables/useBooleanWidget.ts",
+            "renderer/extensions/vueNodes/widgets/composables/useBoundingBoxWidget.ts",
+            "renderer/extensions/vueNodes/widgets/composables/useBoundingBoxesWidget.ts",
+            "renderer/extensions/vueNodes/widgets/composables/useChartWidget.ts",
+            "renderer/extensions/vueNodes/widgets/composables/useColorWidget.ts",
+            "renderer/extensions/vueNodes/widgets/composables/useColorsWidget.ts",
+            "renderer/extensions/vueNodes/widgets/composables/useCompositorWidget.ts",
+            "renderer/extensions/vueNodes/widgets/composables/useCurveWidget.ts",
+            "renderer/extensions/vueNodes/widgets/composables/useGalleriaWidget.ts",
+            "renderer/extensions/vueNodes/widgets/composables/useImageCompareWidget.ts",
+            "renderer/extensions/vueNodes/widgets/composables/useLightInfoWidget.ts",
+            "renderer/extensions/vueNodes/widgets/composables/usePainterWidget.ts",
+            "renderer/extensions/vueNodes/widgets/composables/useRangeWidget.ts",
+            "renderer/extensions/vueNodes/widgets/composables/useResolutionPreviewWidget.ts",
+            "renderer/extensions/vueNodes/widgets/composables/useTextareaWidget.ts",
+            "renderer/extensions/vueNodes/widgets/composables/useVideoEditWidget.ts"
+          ],
+          "entangled": ["core/graph/widgets/valueControlWidgets.ts"],
+          "splits": []
+        }
+      },
+      {
+        "index": 68,
+        "kind": "pr",
+        "parent": 53,
+        "sha": "36ff059f048b607994c6c11bcc2ea32983ac3475",
+        "short": "36ff059f04",
+        "date": "2026-10-08T19:37:05Z",
+        "subject": "refactor: move progress text previews out of executionStore",
+        "pr": 19116,
+        "stats": {
+          "modules": 2477,
+          "imports": 11587,
+          "modulesInKnots": 628,
+          "largestKnot": 418,
+          "mainKnot": 418,
+          "secondKnot": 154,
+          "knotCount": 13,
+          "importsInKnots": 2442,
+          "noCircularWarnings": 1741
+        },
+        "knots": [
+          {
+            "id": 0,
+            "size": 418
+          },
+          {
+            "id": 9,
+            "size": 154
+          },
+          {
+            "id": 1,
+            "size": 28
+          },
+          {
+            "id": 8,
+            "size": 6
+          },
+          {
+            "id": 10,
+            "size": 5
+          },
+          {
+            "id": 11,
+            "size": 3
+          },
+          {
+            "id": 2,
+            "size": 2
+          },
+          {
+            "id": 3,
+            "size": 2
+          },
+          {
+            "id": 12,
+            "size": 2
+          },
+          {
+            "id": 4,
+            "size": 2
+          },
+          {
+            "id": 5,
+            "size": 2
+          },
+          {
+            "id": 6,
+            "size": 2
+          },
+          {
+            "id": 7,
+            "size": 2
+          }
+        ],
+        "delta": {
+          "freed": [
+            "components/graph/widgets/TextPreviewWidget.vue",
+            "composables/node/useNodeProgressText.ts",
+            "renderer/extensions/vueNodes/widgets/composables/useProgressTextWidget.ts"
+          ],
+          "entangled": [],
+          "splits": []
+        }
+      },
+      {
+        "index": 69,
+        "kind": "pr",
+        "parent": 61,
+        "sha": "05395c323d07fd802df2646844324fae298d04f2",
+        "short": "05395c323d",
+        "date": "2026-10-08T22:03:04Z",
+        "subject": "refactor: inject the api auth provider from the composition root",
+        "pr": 19118,
+        "stats": {
+          "modules": 2483,
+          "imports": 11614,
+          "modulesInKnots": 567,
+          "largestKnot": 347,
+          "mainKnot": 347,
+          "secondKnot": 154,
+          "knotCount": 15,
+          "importsInKnots": 2129,
+          "noCircularWarnings": 1512
+        },
+        "knots": [
+          {
+            "id": 0,
+            "size": 347
+          },
+          {
+            "id": 9,
+            "size": 154
+          },
+          {
+            "id": 1,
+            "size": 28
+          },
+          {
+            "id": 8,
+            "size": 6
+          },
+          {
+            "id": 10,
+            "size": 5
+          },
+          {
+            "id": 15,
+            "size": 5
+          },
+          {
+            "id": 16,
+            "size": 5
+          },
+          {
+            "id": 11,
+            "size": 3
+          },
+          {
+            "id": 2,
+            "size": 2
+          },
+          {
+            "id": 3,
+            "size": 2
+          },
+          {
+            "id": 12,
+            "size": 2
+          },
+          {
+            "id": 4,
+            "size": 2
+          },
+          {
+            "id": 5,
+            "size": 2
+          },
+          {
+            "id": 6,
+            "size": 2
+          },
+          {
+            "id": 7,
+            "size": 2
+          }
+        ],
+        "delta": {
+          "freed": [
+            "components/custom/widget/TemplateFilterControls.vue",
+            "components/dialog/content/ApiNodesSignInContent.vue",
+            "components/load3d/controls/viewer/ViewerLightControls.vue",
+            "components/load3d/menubar/LightMenuGroup.vue",
+            "composables/auth/useTurnstile.ts",
+            "composables/node/useNodeDragAndDrop.ts",
+            "composables/node/useNodePricing.ts",
+            "composables/useFeatureFlags.ts",
+            "composables/useTemplateFiltering.ts",
+            "extensions/core/load3d/LoaderManager.ts",
+            "extensions/core/load3d/MeshModelAdapter.ts",
+            "extensions/core/load3d/ModelAdapter.ts",
+            "extensions/core/load3d/PointCloudModelAdapter.ts",
+            "extensions/core/load3d/SceneModelManager.ts",
+            "extensions/core/load3d/SplatModelAdapter.ts",
+            "platform/assets/composables/useAssetsQuery.ts",
+            "platform/assets/schemas/assetMetadataSchema.ts",
+            "platform/assets/schemas/mediaAssetSchema.ts",
+            "platform/assets/services/assetService.ts",
+            "platform/assets/utils/assetUrlUtil.ts",
+            "platform/errorCatalog/executionErrorResolver.ts",
+            "platform/errorCatalog/promptErrorResolver.ts",
+            "platform/errorCatalog/runtimeErrorCopy.ts",
+            "platform/errorCatalog/types.ts",
+            "platform/errorCatalog/validationErrorResolver.ts",
+            "platform/missingModel/folderPathCache.ts",
+            "platform/nodeReplacement/nodeReplacementService.ts",
+            "platform/nodeReplacement/nodeReplacementStore.ts",
+            "platform/remoteConfig/refreshRemoteConfig.ts",
+            "platform/settings/missingWarningVisibility.ts",
+            "platform/settings/settingStore.ts",
+            "platform/workflow/core/utils/restoreDynamicGroupInputs.ts",
+            "platform/workflow/sharing/components/publish/ComfyHubDescribeStep.vue",
+            "platform/workflow/sharing/services/comfyHubService.ts",
+            "platform/workflow/templates/composables/useTemplateModelAvailability.ts",
+            "platform/workflow/templates/repositories/workflowTemplatesStore.ts",
+            "platform/workflow/templates/services/templateInputService.ts",
+            "platform/workflow/templates/stores/partnerNodesEducationStore.ts",
+            "platform/workspace/api/workspaceApiUrl.ts",
+            "scripts/metadata/parser.ts",
+            "scripts/pnginfo.ts",
+            "scripts/promotedWidgetControl.ts",
+            "services/audioService.ts",
+            "services/useNewUserService.ts",
+            "stores/assetDownloadStore.ts",
+            "stores/jobPreviewStore.ts",
+            "stores/modelStore.ts",
+            "stores/modelToNodeStore.ts",
+            "stores/resultItemParsing.ts",
+            "stores/systemStatsStore.ts",
+            "stores/userFileStore.ts",
+            "stores/workspace/rightSidePanelStore.ts",
+            "systems/badgeSystem.ts",
+            "utils/createAnnotatedPath.ts",
+            "utils/errorSeverityClassification.ts",
+            "utils/eventUtils.ts",
+            "utils/imageUtil.ts",
+            "utils/nodeOutputUtil.ts",
+            "utils/resultItem.ts",
+            "utils/resultItemUrl.ts",
+            "utils/syncUtil.ts",
+            "workbench/extensions/agent/types/composerAttachment.ts",
+            "workbench/extensions/agent/types/composerPrompt.ts",
+            "workbench/extensions/agent/utils/composerPrompt.ts",
+            "workbench/utils/nodeDefOrderingUtil.ts"
+          ],
+          "entangled": [],
+          "splits": [
+            {
+              "from": 0,
+              "into": [15, 16]
+            }
+          ]
+        }
+      },
+      {
+        "index": 70,
+        "kind": "pr",
+        "parent": 69,
+        "sha": "7eb8fa5d819116b8437e930002d5bc48d2364db9",
+        "short": "7eb8fa5d81",
+        "date": "2026-10-08T22:10:39Z",
+        "subject": "refactor: install workspace api credentials from the composition root",
+        "pr": 19121,
+        "stats": {
+          "modules": 2484,
+          "imports": 11616,
+          "modulesInKnots": 547,
+          "largestKnot": 327,
+          "mainKnot": 327,
+          "secondKnot": 154,
+          "knotCount": 15,
+          "importsInKnots": 2044,
+          "noCircularWarnings": 1466
+        },
+        "knots": [
+          {
+            "id": 0,
+            "size": 327
+          },
+          {
+            "id": 9,
+            "size": 154
+          },
+          {
+            "id": 1,
+            "size": 28
+          },
+          {
+            "id": 8,
+            "size": 6
+          },
+          {
+            "id": 10,
+            "size": 5
+          },
+          {
+            "id": 15,
+            "size": 5
+          },
+          {
+            "id": 16,
+            "size": 5
+          },
+          {
+            "id": 11,
+            "size": 3
+          },
+          {
+            "id": 2,
+            "size": 2
+          },
+          {
+            "id": 3,
+            "size": 2
+          },
+          {
+            "id": 12,
+            "size": 2
+          },
+          {
+            "id": 4,
+            "size": 2
+          },
+          {
+            "id": 5,
+            "size": 2
+          },
+          {
+            "id": 6,
+            "size": 2
+          },
+          {
+            "id": 7,
+            "size": 2
+          }
+        ],
+        "delta": {
+          "freed": [
+            "composables/billing/billingRail.ts",
+            "platform/cloud/subscription/composables/useSubscriptionCancellationWatcher.ts",
+            "platform/cloud/subscription/utils/billingPlanTelemetry.ts",
+            "platform/cloud/subscription/utils/planCreditGrant.ts",
+            "platform/cloud/subscription/utils/subscriptionCancellationTelemetry.ts",
+            "platform/workspace/api/workspaceApi.ts",
+            "platform/workspace/billing/customerAttention.ts",
+            "platform/workspace/billing/sdk/billingCapabilitiesView.ts",
+            "platform/workspace/billing/sdk/billingPlansView.ts",
+            "platform/workspace/billing/sdk/billingStatusView.ts",
+            "platform/workspace/billing/sdk/operationRecordView.ts",
+            "platform/workspace/billing/sdk/subscriptionOperationView.ts",
+            "platform/workspace/billing/sdk/topupOperationView.ts",
+            "platform/workspace/billing/subscribeInput.ts",
+            "platform/workspace/components/SubscriptionAddPaymentPreviewWorkspace.vue",
+            "platform/workspace/components/WorkspaceProfilePic.vue",
+            "platform/workspace/components/subscriptionPanelWorkspace.logic.ts",
+            "platform/workspace/composables/readOnRail.ts",
+            "platform/workspace/composables/useWorkspaceTierLabel.ts",
+            "platform/workspace/utils/pendingSubscriptionCheckout.ts"
+          ],
+          "entangled": [],
+          "splits": []
+        }
+      },
+      {
+        "index": 71,
+        "kind": "pr",
+        "parent": 53,
+        "sha": "994757a3922dd2b9134aff926a1a1535e53a297f",
+        "short": "994757a392",
+        "date": "2026-09-27T23:13:02Z",
+        "subject": "refactor: split feature dialogs out of dialogService",
+        "pr": 19131,
+        "stats": {
+          "modules": 2489,
+          "imports": 11636,
+          "modulesInKnots": 476,
+          "largestKnot": 261,
+          "mainKnot": 261,
+          "secondKnot": 154,
+          "knotCount": 15,
+          "importsInKnots": 1968,
+          "noCircularWarnings": 1449
+        },
+        "knots": [
+          {
+            "id": 0,
+            "size": 261
           },
           {
             "id": 9,
@@ -5060,10 +6652,22 @@
             "platform/missingModel/folderPathCache.ts",
             "platform/onboarding/onboardingTourStore.ts",
             "platform/onboarding/useTourTriggers.ts",
+            "platform/settings/composables/useSettingsDialog.ts",
             "platform/settings/globalSettingsApi.ts",
             "platform/support/feedbackDialog.ts",
             "platform/workflow/sharing/components/OpenSharedWorkflowDialogContent.vue",
+            "platform/workflow/sharing/components/profile/ComfyHubCreateProfileForm.vue",
+            "platform/workflow/sharing/components/publish/ComfyHubDescribeStep.vue",
+            "platform/workflow/sharing/components/publish/ComfyHubFinishStep.vue",
+            "platform/workflow/sharing/components/publish/ComfyHubPublishDialog.vue",
+            "platform/workflow/sharing/components/publish/ComfyHubPublishNav.vue",
+            "platform/workflow/sharing/components/publish/ComfyHubPublishWizardContent.vue",
+            "platform/workflow/sharing/composables/useComfyHubProfileGate.ts",
+            "platform/workflow/sharing/composables/useComfyHubPublishSubmission.ts",
+            "platform/workflow/sharing/composables/useComfyHubPublishWizard.ts",
             "platform/workflow/sharing/composables/useSharedWorkflowUrlLoader.ts",
+            "platform/workflow/sharing/services/comfyHubService.ts",
+            "platform/workflow/sharing/services/workflowShareService.ts",
             "platform/workflow/templates/composables/useTemplateModelAvailability.ts",
             "platform/workflow/templates/composables/useTemplateModelRowDownloads.ts",
             "platform/workflow/templates/composables/useTemplateWorkflows.ts",
@@ -5083,114 +6687,6 @@
             "renderer/extensions/layerEditor/composables/layerEditorDialog.ts",
             "renderer/extensions/layerEditor/composables/useLayerEditor.ts",
             "renderer/extensions/vueNodes/widgets/components/WidgetTextPreview.vue",
-            "renderer/extensions/vueNodes/widgets/utils/audioUtils.ts",
-            "services/audioService.ts",
-            "services/useNewUserService.ts",
-            "stores/modelStore.ts",
-            "types/index.ts",
-            "workbench/extensions/agent/composables/agent/useAgentConsent.ts",
-            "workbench/extensions/agent/crdt/docOpMinter.ts",
-            "workbench/extensions/agent/crdt/restoreOpMinter.ts",
-            "workbench/extensions/agent/services/agent/workflowTabActivityTracker.ts",
-            "workbench/extensions/agent/stores/agent/agentComposerStore.ts",
-            "workbench/extensions/agent/stores/agent/agentConsentStore.ts",
-            "workbench/extensions/agent/types/composerAttachment.ts",
-            "workbench/extensions/agent/types/composerPrompt.ts",
-            "workbench/extensions/agent/utils/composerPrompt.ts"
-          ],
-          "entangled": [],
-          "splits": [
-            {
-              "from": 0,
-              "into": [13, 14]
-            }
-          ]
-        }
-      },
-      {
-        "index": 55,
-        "kind": "pr",
-        "parent": 54,
-        "sha": "7d856b1db06d2fccb39d5c2aa1baca5b564ac3ac",
-        "short": "7d856b1db0",
-        "date": "2026-09-27T09:28:09Z",
-        "subject": "refactor: split widget constructor type and value-control helpers out of scripts/widgets",
-        "pr": 19093,
-        "stats": {
-          "modules": 2479,
-          "imports": 11597,
-          "modulesInKnots": 485,
-          "largestKnot": 270,
-          "mainKnot": 270,
-          "secondKnot": 154,
-          "knotCount": 15,
-          "importsInKnots": 1997,
-          "noCircularWarnings": 1491
-        },
-        "knots": [
-          {
-            "id": 0,
-            "size": 270
-          },
-          {
-            "id": 9,
-            "size": 154
-          },
-          {
-            "id": 1,
-            "size": 28
-          },
-          {
-            "id": 8,
-            "size": 6
-          },
-          {
-            "id": 10,
-            "size": 5
-          },
-          {
-            "id": 13,
-            "size": 3
-          },
-          {
-            "id": 11,
-            "size": 3
-          },
-          {
-            "id": 2,
-            "size": 2
-          },
-          {
-            "id": 3,
-            "size": 2
-          },
-          {
-            "id": 12,
-            "size": 2
-          },
-          {
-            "id": 4,
-            "size": 2
-          },
-          {
-            "id": 5,
-            "size": 2
-          },
-          {
-            "id": 6,
-            "size": 2
-          },
-          {
-            "id": 14,
-            "size": 2
-          },
-          {
-            "id": 7,
-            "size": 2
-          }
-        ],
-        "delta": {
-          "freed": [
             "renderer/extensions/vueNodes/widgets/composables/useBooleanWidget.ts",
             "renderer/extensions/vueNodes/widgets/composables/useBoundingBoxWidget.ts",
             "renderer/extensions/vueNodes/widgets/composables/useBoundingBoxesWidget.ts",
@@ -5206,1400 +6702,35 @@
             "renderer/extensions/vueNodes/widgets/composables/useRangeWidget.ts",
             "renderer/extensions/vueNodes/widgets/composables/useResolutionPreviewWidget.ts",
             "renderer/extensions/vueNodes/widgets/composables/useTextareaWidget.ts",
-            "renderer/extensions/vueNodes/widgets/composables/useVideoEditWidget.ts"
-          ],
-          "entangled": ["scripts/valueControlWidgets.ts"],
-          "splits": []
-        }
-      },
-      {
-        "index": 56,
-        "kind": "pr",
-        "parent": 53,
-        "sha": "36ff059f048b607994c6c11bcc2ea32983ac3475",
-        "short": "36ff059f04",
-        "date": "2026-10-08T19:37:05Z",
-        "subject": "refactor: move progress text previews out of executionStore",
-        "pr": 19116,
-        "stats": {
-          "modules": 2477,
-          "imports": 11587,
-          "modulesInKnots": 628,
-          "largestKnot": 418,
-          "mainKnot": 418,
-          "secondKnot": 154,
-          "knotCount": 13,
-          "importsInKnots": 2442,
-          "noCircularWarnings": 1741
-        },
-        "knots": [
-          {
-            "id": 0,
-            "size": 418
-          },
-          {
-            "id": 9,
-            "size": 154
-          },
-          {
-            "id": 1,
-            "size": 28
-          },
-          {
-            "id": 8,
-            "size": 6
-          },
-          {
-            "id": 10,
-            "size": 5
-          },
-          {
-            "id": 11,
-            "size": 3
-          },
-          {
-            "id": 2,
-            "size": 2
-          },
-          {
-            "id": 3,
-            "size": 2
-          },
-          {
-            "id": 12,
-            "size": 2
-          },
-          {
-            "id": 4,
-            "size": 2
-          },
-          {
-            "id": 5,
-            "size": 2
-          },
-          {
-            "id": 6,
-            "size": 2
-          },
-          {
-            "id": 7,
-            "size": 2
-          }
-        ],
-        "delta": {
-          "freed": [
-            "components/graph/widgets/TextPreviewWidget.vue",
-            "composables/node/useNodeProgressText.ts",
-            "renderer/extensions/vueNodes/widgets/composables/useProgressTextWidget.ts"
-          ],
-          "entangled": [],
-          "splits": []
-        }
-      },
-      {
-        "index": 57,
-        "kind": "base",
-        "parent": 53,
-        "sha": "0ba399c212af8cbdd95ac2d347e1030474baf291",
-        "short": "0ba399c212",
-        "date": "2026-09-27T06:19:55Z",
-        "subject": "fix(assets): open API-submitted jobs as workflows from the asset menu",
-        "pr": 13957,
-        "stats": {
-          "modules": 2299,
-          "imports": 10575,
-          "modulesInKnots": 967,
-          "largestKnot": 923,
-          "mainKnot": 923,
-          "secondKnot": 0,
-          "knotCount": 9,
-          "importsInKnots": 4261,
-          "noCircularWarnings": 2869
-        },
-        "knots": [
-          {
-            "id": 0,
-            "size": 923
-          },
-          {
-            "id": 1,
-            "size": 28
-          },
-          {
-            "id": 15,
-            "size": 4
-          },
-          {
-            "id": 2,
-            "size": 2
-          },
-          {
-            "id": 3,
-            "size": 2
-          },
-          {
-            "id": 4,
-            "size": 2
-          },
-          {
-            "id": 5,
-            "size": 2
-          },
-          {
-            "id": 6,
-            "size": 2
-          },
-          {
-            "id": 7,
-            "size": 2
-          }
-        ],
-        "delta": {
-          "freed": [
-            "lib/litegraph/src/idAllocation.ts",
-            "platform/workflow/templates/stores/partnerNodesEducationStore.ts",
-            "stores/entityIdStore.ts"
-          ],
-          "entangled": [
-            "components/bottomPanel/tabs/shortcuts/EssentialsPanel.vue",
-            "components/bottomPanel/tabs/shortcuts/ShortcutsList.vue",
-            "components/bottomPanel/tabs/shortcuts/ViewControlsPanel.vue",
-            "components/bottomPanel/tabs/terminal/LogsTerminal.vue",
-            "components/boundingBoxes/WidgetBoundingBoxes.vue",
-            "components/builder/useEmptyWorkflowDialog.ts",
-            "components/common/BackgroundImageUpload.vue",
-            "components/common/CustomizationDialog.vue",
-            "components/common/FormItem.vue",
-            "components/common/TreeExplorer.vue",
-            "components/common/TreeExplorerTreeNode.vue",
-            "components/common/TreeExplorerV2.vue",
-            "components/common/TreeExplorerV2Node.vue",
-            "components/common/WaveAudioPlayer.vue",
-            "components/curve/WidgetCurve.vue",
-            "components/dialog/content/error/FindIssueButton.vue",
-            "components/dialog/content/setting/AboutPanel.vue",
-            "components/dialog/content/setting/CreditsPanel.vue",
-            "components/dialog/content/setting/CurrentUserMessage.vue",
-            "components/dialog/content/setting/KeybindingPanel.vue",
-            "components/dialog/content/setting/UsageLogsTable.vue",
-            "components/dialog/content/setting/UserPanel.vue",
-            "components/dialog/content/setting/keybinding/KeybindingPresetToolbar.vue",
-            "components/dialog/content/signin/TurnstileWidget.vue",
-            "components/gradientslider/GradientSlider.vue",
-            "components/gradientslider/gradients.ts",
-            "components/graph/widgets/MultiSelectWidget.vue",
-            "components/imagecrop/WidgetImageCrop.vue",
-            "components/node/NodeHelpContent.vue",
-            "components/node/NodePreview.vue",
-            "components/node/NodePreviewCard.vue",
-            "components/node/NodePricingBadge.vue",
-            "components/node/NodeProviderBadge.vue",
-            "components/painter/WidgetPainter.vue",
-            "components/palette/WidgetColors.vue",
-            "components/queue/JobHistoryActionsMenu.vue",
-            "components/queue/dialogs/QueueClearHistoryDialog.vue",
-            "components/queue/job/JobAssetsList.vue",
-            "components/queue/job/JobContextMenu.vue",
-            "components/queue/job/JobDetailsHoverPopover.vue",
-            "components/queue/job/JobDetailsPopover.vue",
-            "components/queue/job/JobFilterActions.vue",
-            "components/queue/job/JobFilterTabs.vue",
-            "components/queue/job/buildVirtualJobRows.ts",
-            "components/queue/job/useJobErrorReporting.ts",
-            "components/queue/job/useQueueEstimates.ts",
-            "components/range/RangeEditor.vue",
-            "components/range/WidgetRange.vue",
-            "components/range/rangeUtils.ts",
-            "components/rightSidePanel/errors/missingResourceAbsorption.ts",
-            "components/searchbox/NodeSearchFilter.vue",
-            "components/sidebar/tabs/AppsSidebarTab.vue",
-            "components/sidebar/tabs/AssetsSidebarGridView.vue",
-            "components/sidebar/tabs/AssetsSidebarListView.vue",
-            "components/sidebar/tabs/AssetsSidebarTab.vue",
-            "components/sidebar/tabs/BaseWorkflowsSidebarTab.vue",
-            "components/sidebar/tabs/JobHistorySidebarTab.vue",
-            "components/sidebar/tabs/ModelLibrarySidebarTab.vue",
-            "components/sidebar/tabs/NodeLibrarySidebarTab.vue",
-            "components/sidebar/tabs/NodeLibrarySidebarTabV2.vue",
-            "components/sidebar/tabs/WorkflowsSidebarTab.vue",
-            "components/sidebar/tabs/modelLibrary/ModelPreview.vue",
-            "components/sidebar/tabs/modelLibrary/ModelTreeLeaf.vue",
-            "components/sidebar/tabs/nodeLibrary/AllNodesPanel.vue",
-            "components/sidebar/tabs/nodeLibrary/EssentialNodeCard.vue",
-            "components/sidebar/tabs/nodeLibrary/EssentialNodesPanel.vue",
-            "components/sidebar/tabs/nodeLibrary/NodeBookmarkTreeExplorer.vue",
-            "components/sidebar/tabs/nodeLibrary/NodeHelpPage.vue",
-            "components/sidebar/tabs/nodeLibrary/NodeTreeFolder.vue",
-            "components/sidebar/tabs/nodeLibrary/NodeTreeLeaf.vue",
-            "components/sidebar/tabs/queue/MediaLightbox.vue",
-            "components/sidebar/tabs/queue/ResultAudio.vue",
-            "components/sidebar/tabs/queue/ResultText.vue",
-            "components/sidebar/tabs/queue/ResultVideo.vue",
-            "components/sidebar/tabs/workflows/WorkflowTreeLeaf.vue",
-            "components/videoEdit/VideoEditPanel.vue",
-            "components/videoEdit/VideoFilmstripTrim.vue",
-            "components/videoEdit/WidgetVideoEdit.vue",
-            "composables/bottomPanelTabs/useCommandSubcategories.ts",
-            "composables/bottomPanelTabs/useLogsTerminal.ts",
-            "composables/bottomPanelTabs/useShortcutsTab.ts",
-            "composables/bottomPanelTabs/useTerminalTabs.ts",
-            "composables/boundingBoxes/useBoundingBoxes.ts",
-            "composables/element/useAbsolutePosition.ts",
-            "composables/graph/useCanvasRefresh.ts",
-            "composables/graph/useFrameNodes.ts",
-            "composables/graph/useNodeArrangement.ts",
-            "composables/graph/useNodeCustomization.ts",
-            "composables/graph/useSelectedNodeActions.ts",
-            "composables/graph/useSelectionOperations.ts",
-            "composables/graph/useSelectionState.ts",
-            "composables/maskeditor/imageWidgetAdapter.ts",
-            "composables/maskeditor/useImageLoader.ts",
-            "composables/node/canvasImagePreviewTypes.ts",
-            "composables/node/startModelNodeDragFromAsset.ts",
-            "composables/node/useNodeDragToCanvas.ts",
-            "composables/node/useNodeFileInput.ts",
-            "composables/node/useNodePaste.ts",
-            "composables/node/useNodePreviewAndDrag.ts",
-            "composables/painter/usePainter.ts",
-            "composables/queue/useJobList.ts",
-            "composables/queue/useJobMenu.ts",
-            "composables/queue/useQueueClearHistoryDialog.ts",
-            "composables/queue/useQueueFeatureFlags.ts",
-            "composables/queue/useQueueProgress.ts",
-            "composables/queue/useResultGallery.ts",
-            "composables/sidebarTabs/useAssetsSidebarTab.ts",
-            "composables/sidebarTabs/useJobHistorySidebarTab.ts",
-            "composables/sidebarTabs/useModelLibrarySidebarTab.ts",
-            "composables/sidebarTabs/useNodeLibrarySidebarTab.ts",
-            "composables/tree/useTreeFolderOperations.ts",
-            "composables/useEssentialTileNodeDef.ts",
-            "composables/useImageCrop.ts",
-            "composables/useNodeHelpContent.ts",
-            "composables/useRangeEditor.ts",
-            "composables/useTreeExpansion.ts",
-            "composables/useUpstreamValue.ts",
-            "composables/useVueFeatureFlags.ts",
-            "composables/useWaveAudioPlayer.ts",
-            "composables/video/useCropRatioLock.ts",
-            "composables/video/useTimelineScrub.ts",
-            "composables/video/useVideoEditModel.ts",
-            "composables/video/useVideoFilmstrip.ts",
-            "composables/video/useVideoSourceUrl.ts",
-            "config/billingWeb.ts",
-            "config/comfyApi.ts",
-            "config/firebase.ts",
-            "config/turnstile.ts",
-            "core/graph/subgraph/liftNodeErrorsToBoundary.ts",
-            "core/graph/subgraph/promotedInputWidget.ts",
-            "core/graph/subgraph/resolvePromotedWidgetSource.ts",
-            "core/graph/transferLinkPresentation.ts",
-            "core/graph/widgets/comboWidgetInventory.ts",
-            "core/graph/widgets/nodeWidgetValues.ts",
-            "extensions/core/load3d/GizmoManager.ts",
-            "extensions/core/load3d/load3dViewport.ts",
-            "extensions/core/nightlyBadges.ts",
-            "lib/litegraph/src/LGraphBadge.ts",
-            "lib/litegraph/src/LGraphButton.ts",
-            "lib/litegraph/src/contextMenuCompat.ts",
-            "lib/litegraph/src/infrastructure/ConstrainedSize.ts",
-            "lib/litegraph/src/infrastructure/Rectangle.ts",
-            "lib/litegraph/src/interfaces.ts",
-            "lib/litegraph/src/measure.ts",
-            "lib/litegraph/src/node/SlotBase.ts",
-            "platform/assets/components/AssetBrowserModal.vue",
-            "platform/assets/components/AssetCard.vue",
-            "platform/assets/components/AssetGrid.vue",
-            "platform/assets/components/Media3DTop.vue",
-            "platform/assets/components/MediaAssetCard.vue",
-            "platform/assets/components/MediaAssetContextMenu.vue",
-            "platform/assets/components/MediaAudioTop.vue",
-            "platform/assets/components/MediaImageTop.vue",
-            "platform/assets/components/MediaTextTop.vue",
-            "platform/assets/components/MediaVideoTop.vue",
-            "platform/assets/components/UploadModelConfirmation.vue",
-            "platform/assets/components/UploadModelDialog.vue",
-            "platform/assets/components/UploadModelProgress.vue",
-            "platform/assets/components/UploadModelUpgradeModal.vue",
-            "platform/assets/components/UploadModelUrlInput.vue",
-            "platform/assets/components/modelInfo/ModelInfoPanel.vue",
-            "platform/assets/composables/openModelLibraryBrowser.ts",
-            "platform/assets/composables/useAssetBrowser.ts",
-            "platform/assets/composables/useAssetDownload.ts",
-            "platform/assets/composables/useAssetGridSelection.ts",
-            "platform/assets/composables/useAssetSelection.ts",
-            "platform/assets/composables/useMediaAssetActions.ts",
-            "platform/assets/composables/useModelTypes.ts",
-            "platform/assets/composables/useModelUpload.ts",
-            "platform/assets/composables/useOutputStacks.ts",
-            "platform/assets/composables/useUploadModelWizard.ts",
-            "platform/assets/utils/assetDragUtil.ts",
-            "platform/assets/utils/clearDeletedAssetWidgetValues.ts",
-            "platform/assets/utils/clearNodePreviewCacheForValues.ts",
-            "platform/assets/utils/markDeletedAssetsAsMissingMedia.ts",
-            "platform/assets/utils/marqueeSelectionUtil.ts",
-            "platform/assets/utils/mediaIconUtil.ts",
-            "platform/assets/utils/outputAssetCountUtil.ts",
-            "platform/assets/utils/outputAssetUtil.ts",
-            "platform/assets/utils/resolveModelNodeFromAsset.ts",
-            "platform/auth/firebaseIdentity.ts",
-            "platform/canvas/minimapDecorationRegistry.ts",
-            "platform/cloud/churnkey/churnkeyClient.ts",
-            "platform/cloud/notification/components/CloudNotificationContent.vue",
-            "platform/cloud/subscription/components/CreditsTile.vue",
-            "platform/cloud/subscription/components/SubscriptionFooterLinks.vue",
-            "platform/cloud/subscription/composables/useSubscriptionActions.ts",
-            "platform/cloud/subscription/composables/useSubscriptionCredits.ts",
-            "platform/cloud/subscription/utils/paymentReturnUrl.ts",
-            "platform/cloud/subscription/utils/planDuration.ts",
-            "platform/cloud/subscription/utils/subscriptionCheckoutTracker.ts",
-            "platform/cloud/subscription/utils/tierBenefits.ts",
-            "platform/keybindings/presetService.ts",
-            "platform/missingMedia/missingMediaAssetResolver.ts",
-            "platform/missingMedia/missingMediaGrouping.ts",
-            "platform/missingMedia/types.ts",
-            "platform/missingModel/types.ts",
-            "platform/onboarding/coachmarkRegistry.ts",
-            "platform/onboarding/onboardingReplay.ts",
-            "platform/onboarding/onboardingTours.ts",
-            "platform/onboarding/tourState.ts",
-            "platform/secrets/api/secretsApi.ts",
-            "platform/secrets/components/SecretFormDialog.vue",
-            "platform/secrets/components/SecretsPanel.vue",
-            "platform/secrets/composables/useSecretForm.ts",
-            "platform/secrets/composables/useSecrets.ts",
-            "platform/settings/components/ColorPaletteMessage.vue",
-            "platform/settings/components/ExtensionPanel.vue",
-            "platform/settings/components/ServerConfigPanel.vue",
-            "platform/settings/components/SettingDialog.vue",
-            "platform/settings/components/SettingGroup.vue",
-            "platform/settings/components/SettingItem.vue",
-            "platform/settings/components/SettingsPanel.vue",
-            "platform/settings/composables/useSettingSearch.ts",
-            "platform/settings/composables/useSettingUI.ts",
-            "platform/telemetry/datadogRumBeforeSend.ts",
-            "platform/telemetry/hostTelemetryEnabled.ts",
-            "platform/telemetry/imageFailureDiagnostics.ts",
-            "platform/telemetry/index.ts",
-            "platform/telemetry/initDatadogRum.ts",
-            "platform/telemetry/nodeAdded/nodeAddSource.ts",
-            "platform/telemetry/perf/bootstrapTracer.ts",
-            "platform/telemetry/reportError.ts",
-            "platform/telemetry/searchQuery/useSearchQueryTracking.ts",
-            "platform/telemetry/utils/checkoutAttribution.ts",
-            "platform/telemetry/utils/getActionbarDockState.ts",
-            "platform/telemetry/utils/groupMissingNodesByPack.ts",
-            "platform/telemetry/utils/workflowExecutionContext.ts",
-            "platform/workflow/core/services/workflowActionsService.ts",
-            "platform/workflow/core/utils/workflowId.ts",
-            "platform/workflow/core/utils/workflowToClipboardItems.ts",
-            "platform/workflow/management/composables/useAppsSidebarTab.ts",
-            "platform/workflow/management/composables/useWorkflowsSidebarTab.ts",
-            "platform/workflow/sharing/types/shareTypes.ts",
-            "platform/workflow/utils/workflowExtractionUtil.ts",
-            "platform/workflow/validation/composables/useWorkflowValidation.ts",
-            "platform/workflow/validation/schemas/workflowSchema.ts",
-            "platform/workspace/api/partnerNodePolicyApi.ts",
-            "platform/workspace/billing/hostedBillingRoutes.ts",
-            "platform/workspace/billing/sdk/billingSdkTelemetry.ts",
-            "platform/workspace/components/SubscriptionPanelContentWorkspace.vue",
-            "platform/workspace/components/UnifiedStripePaymentSelector.vue",
-            "platform/workspace/components/dialogs/settings/BillingStatusBanner.vue",
-            "platform/workspace/components/dialogs/settings/MemberListItem.vue",
-            "platform/workspace/components/dialogs/settings/MembersPanelContent.vue",
-            "platform/workspace/components/dialogs/settings/PartnerNodeAccessPanel.vue",
-            "platform/workspace/components/dialogs/settings/PendingInvitesList.vue",
-            "platform/workspace/components/dialogs/settings/PlanCreditsPanelContent.vue",
-            "platform/workspace/components/dialogs/settings/WorkspaceMembersPanelContent.vue",
-            "platform/workspace/components/dialogs/settings/WorkspaceMenuButton.vue",
-            "platform/workspace/components/dialogs/settings/WorkspaceSettingsPanelContent.vue",
-            "platform/workspace/composables/useBillingBanner.ts",
-            "platform/workspace/composables/useHasSavedPaymentMethod.ts",
-            "platform/workspace/composables/useMembersPanel.ts",
-            "platform/workspace/composables/useResubscribe.ts",
-            "platform/workspace/composables/useTeamPlan.ts",
-            "platform/workspace/composables/useWorkspaceMenuItems.ts",
-            "platform/workspace/composables/useWorkspacePlanPricing.ts",
-            "platform/workspace/stores/partnerNodeGovernanceStore.ts",
-            "platform/workspace/utils/checkoutJourney.ts",
-            "renderer/core/canvas/interaction/canvasPointerEvent.ts",
-            "renderer/core/canvas/links/linkConnectorAdapter.ts",
-            "renderer/core/canvas/links/linkDropOrchestrator.ts",
-            "renderer/core/layout/slots/syncSlotOffsets.ts",
-            "renderer/core/layout/transform/graphRenderTransform.ts",
-            "renderer/core/layout/transform/useTransformState.ts",
-            "renderer/core/spatial/boundsCalculator.ts",
-            "renderer/core/thumbnail/graphThumbnailRenderer.ts",
-            "renderer/extensions/compositor/components/WidgetCompositor.vue",
-            "renderer/extensions/compositor/composables/compositorSave.ts",
-            "renderer/extensions/compositor/composables/compositorWidgets.ts",
-            "renderer/extensions/compositor/composables/useCompositorAutoSave.ts",
-            "renderer/extensions/compositor/composables/useCompositorEditor.ts",
-            "renderer/extensions/compositor/composables/useCompositorLayers.ts",
-            "renderer/extensions/compositor/composables/useCompositorPsdDownload.ts",
-            "renderer/extensions/firstRunTour/roles/heuristicRoles.ts",
-            "renderer/extensions/linearMode/AppInput.vue",
-            "renderer/extensions/minimap/data/MinimapDataSource.ts",
-            "renderer/extensions/minimap/minimapCanvasRenderer.ts",
-            "renderer/extensions/minimap/types.ts",
-            "renderer/extensions/vueNodes/components/InputSlot.vue",
-            "renderer/extensions/vueNodes/components/LGraphNodePreview.vue",
-            "renderer/extensions/vueNodes/components/NodeBadge.vue",
-            "renderer/extensions/vueNodes/components/NodeHeader.vue",
-            "renderer/extensions/vueNodes/components/NodeSlots.vue",
-            "renderer/extensions/vueNodes/components/OutputSlot.vue",
-            "renderer/extensions/vueNodes/components/SlotConnectionDot.vue",
-            "renderer/extensions/vueNodes/components/WidgetGrid.vue",
-            "renderer/extensions/vueNodes/composables/useNodeTooltips.ts",
-            "renderer/extensions/vueNodes/composables/useSlotLinkInteraction.ts",
-            "renderer/extensions/vueNodes/composables/useSlotLinkReveal.ts",
-            "renderer/extensions/vueNodes/composables/useVueNodeResizeTracking.ts",
-            "renderer/extensions/vueNodes/layout/ensureCorrectLayoutScale.ts",
-            "renderer/extensions/vueNodes/types/widgetGrid.ts",
-            "renderer/extensions/vueNodes/utils/eventUtils.ts",
-            "renderer/extensions/vueNodes/utils/linkedCoreMediaUtils.ts",
-            "renderer/extensions/vueNodes/utils/nodeDataUtils.ts",
-            "renderer/extensions/vueNodes/widgets/components/ValueControlButton.vue",
-            "renderer/extensions/vueNodes/widgets/components/ValueControlPopover.vue",
-            "renderer/extensions/vueNodes/widgets/components/WidgetButton.vue",
-            "renderer/extensions/vueNodes/widgets/components/WidgetChart.types.ts",
-            "renderer/extensions/vueNodes/widgets/components/WidgetChart.vue",
-            "renderer/extensions/vueNodes/widgets/components/WidgetColorPicker.vue",
-            "renderer/extensions/vueNodes/widgets/components/WidgetGalleria.vue",
-            "renderer/extensions/vueNodes/widgets/components/WidgetImageCompare.vue",
-            "renderer/extensions/vueNodes/widgets/components/WidgetInputNumber.vue",
-            "renderer/extensions/vueNodes/widgets/components/WidgetInputNumberGradientSlider.vue",
-            "renderer/extensions/vueNodes/widgets/components/WidgetInputNumberInput.vue",
-            "renderer/extensions/vueNodes/widgets/components/WidgetInputNumberSlider.vue",
-            "renderer/extensions/vueNodes/widgets/components/WidgetInputText.vue",
-            "renderer/extensions/vueNodes/widgets/components/WidgetLegacy.vue",
-            "renderer/extensions/vueNodes/widgets/components/WidgetMarkdown.vue",
-            "renderer/extensions/vueNodes/widgets/components/WidgetRecordAudio.vue",
-            "renderer/extensions/vueNodes/widgets/components/WidgetResolutionPreview.vue",
-            "renderer/extensions/vueNodes/widgets/components/WidgetSelect.vue",
-            "renderer/extensions/vueNodes/widgets/components/WidgetSelectDefault.vue",
-            "renderer/extensions/vueNodes/widgets/components/WidgetSelectDropdown.vue",
-            "renderer/extensions/vueNodes/widgets/components/WidgetTextarea.vue",
-            "renderer/extensions/vueNodes/widgets/components/WidgetToggleSwitch.vue",
-            "renderer/extensions/vueNodes/widgets/components/WidgetWithControl.vue",
-            "renderer/extensions/vueNodes/widgets/components/form/dropdown/FormDropdown.vue",
-            "renderer/extensions/vueNodes/widgets/components/form/dropdown/FormDropdownMenu.vue",
-            "renderer/extensions/vueNodes/widgets/components/form/dropdown/FormDropdownMenuFilter.vue",
-            "renderer/extensions/vueNodes/widgets/components/form/dropdown/FormDropdownMenuItem.vue",
-            "renderer/extensions/vueNodes/widgets/components/layout/WidgetLayoutField.vue",
-            "renderer/extensions/vueNodes/widgets/composables/audio/useAudioRecorder.ts",
-            "renderer/extensions/vueNodes/widgets/composables/useAssetWidgetData.ts",
-            "renderer/extensions/vueNodes/widgets/composables/useDismissOnCanvasGesture.ts",
-            "renderer/extensions/vueNodes/widgets/composables/useImageCompareImages.ts",
-            "renderer/extensions/vueNodes/widgets/composables/useWidgetSelectActions.ts",
-            "renderer/extensions/vueNodes/widgets/composables/useWidgetSelectItems.ts",
-            "renderer/extensions/vueNodes/widgets/registry/widgetRegistry.ts",
-            "renderer/extensions/vueNodes/widgets/utils/resolvePromotedWidget.ts",
-            "scripts/defaultGraph.ts",
-            "scripts/metadata/avif.ts",
-            "scripts/metadata/ebml.ts",
-            "scripts/metadata/gltf.ts",
-            "scripts/metadata/isobmff.ts",
-            "scripts/metadata/mp3.ts",
-            "scripts/metadata/ogg.ts",
-            "scripts/metadata/svg.ts",
-            "scripts/ui/components/asyncDialog.ts",
-            "scripts/ui/dialog.ts",
-            "scripts/ui/toggleSwitch.ts",
-            "scripts/valueControl.ts",
-            "services/nodeHelpService.ts",
-            "services/nodeOrganizationService.ts",
-            "services/subgraphPseudoWidgetCache.ts",
-            "stores/aboutPanelStore.ts",
-            "stores/agentNodeSelectionStore.ts",
-            "stores/assetExportStore.ts",
-            "stores/linkPresentationStore.ts",
-            "stores/linkStore.ts",
-            "stores/maskEditorDataStore.ts",
-            "stores/nodeBookmarkStore.ts",
-            "stores/rerouteStore.ts",
-            "stores/userStore.ts",
-            "stores/workspace/assetsSidebarBadgeStore.ts",
-            "stores/workspace/nodeHelpStore.ts",
-            "types/linkTopology.ts",
-            "types/metadataTypes.ts",
-            "utils/errorReportUtil.ts",
-            "utils/linkFixer.ts",
-            "utils/mathUtil.ts",
-            "utils/migration/migrateReroute.ts",
-            "utils/nodeDefUtil.ts",
-            "utils/nodeFilterUtil.ts",
-            "utils/positionBounds.ts",
-            "utils/queueDisplay.ts",
-            "utils/queueUtil.ts",
-            "utils/searchAndReplace.ts",
-            "utils/sessionFeatureFlagOverride.ts",
-            "utils/videoMetadataUtil.ts",
-            "utils/vintageClipboard.ts",
-            "workbench/extensions/agent/composables/agent/useComposer.ts",
-            "workbench/extensions/agent/crdt/layoutMintPort.ts",
-            "workbench/extensions/agent/crdt/linkMintPort.ts",
-            "workbench/extensions/agent/crdt/mintPortWiring.ts",
-            "workbench/utils/modelMetadataUtil.ts",
-            "workbench/utils/nodeHelpUtil.ts"
-          ],
-          "splits": [
-            {
-              "from": 0,
-              "into": [15]
-            }
-          ]
-        }
-      },
-      {
-        "index": 58,
-        "kind": "pr",
-        "parent": 57,
-        "sha": "f6f1b6d079666fd7962e108c123846f105dc9b86",
-        "short": "f6f1b6d079",
-        "date": "2026-09-27T19:28:04Z",
-        "subject": "refactor: inject the api auth provider from the composition root",
-        "pr": 19118,
-        "stats": {
-          "modules": 2316,
-          "imports": 10698,
-          "modulesInKnots": 447,
-          "largestKnot": 233,
-          "mainKnot": 233,
-          "secondKnot": 149,
-          "knotCount": 16,
-          "importsInKnots": 1785,
-          "noCircularWarnings": 1329
-        },
-        "knots": [
-          {
-            "id": 0,
-            "size": 233
-          },
-          {
-            "id": 9,
-            "size": 149
-          },
-          {
-            "id": 1,
-            "size": 28
-          },
-          {
-            "id": 8,
-            "size": 6
-          },
-          {
-            "id": 10,
-            "size": 5
-          },
-          {
-            "id": 16,
-            "size": 4
-          },
-          {
-            "id": 17,
-            "size": 3
-          },
-          {
-            "id": 11,
-            "size": 3
-          },
-          {
-            "id": 2,
-            "size": 2
-          },
-          {
-            "id": 3,
-            "size": 2
-          },
-          {
-            "id": 12,
-            "size": 2
-          },
-          {
-            "id": 4,
-            "size": 2
-          },
-          {
-            "id": 5,
-            "size": 2
-          },
-          {
-            "id": 6,
-            "size": 2
-          },
-          {
-            "id": 18,
-            "size": 2
-          },
-          {
-            "id": 7,
-            "size": 2
-          }
-        ],
-        "delta": {
-          "freed": [
-            "components/bottomPanel/tabs/shortcuts/EssentialsPanel.vue",
-            "components/bottomPanel/tabs/shortcuts/ShortcutsList.vue",
-            "components/bottomPanel/tabs/shortcuts/ViewControlsPanel.vue",
-            "components/bottomPanel/tabs/terminal/LogsTerminal.vue",
-            "components/boundingBoxes/WidgetBoundingBoxes.vue",
-            "components/builder/useEmptyWorkflowDialog.ts",
-            "components/cameraInfo/CameraInfo.vue",
-            "components/common/BackgroundImageUpload.vue",
-            "components/common/CustomizationDialog.vue",
-            "components/common/FormItem.vue",
-            "components/common/TreeExplorer.vue",
-            "components/common/TreeExplorerTreeNode.vue",
-            "components/common/TreeExplorerV2.vue",
-            "components/common/TreeExplorerV2Node.vue",
-            "components/common/WaveAudioPlayer.vue",
-            "components/curve/WidgetCurve.vue",
-            "components/custom/widget/TemplateFilterControls.vue",
-            "components/custom/widget/WorkflowTemplateSelectorDialog.vue",
-            "components/dialog/content/error/FindIssueButton.vue",
-            "components/dialog/content/setting/AboutPanel.vue",
-            "components/dialog/content/setting/CreditsPanel.vue",
-            "components/dialog/content/setting/CurrentUserMessage.vue",
-            "components/dialog/content/setting/KeybindingPanel.vue",
-            "components/dialog/content/setting/UsageLogsTable.vue",
-            "components/dialog/content/setting/UserPanel.vue",
-            "components/dialog/content/setting/keybinding/KeybindingPresetToolbar.vue",
-            "components/dialog/content/signin/TurnstileWidget.vue",
-            "components/gradientslider/GradientSlider.vue",
-            "components/gradientslider/gradients.ts",
-            "components/graph/widgets/MultiSelectWidget.vue",
-            "components/graph/widgets/TextPreviewWidget.vue",
-            "components/imagecrop/WidgetImageCrop.vue",
-            "components/load3d/Load3D.vue",
-            "components/load3d/Load3DAdvanced.vue",
-            "components/load3d/Load3DMenuBar.vue",
-            "components/load3d/Load3dViewerContent.vue",
-            "components/load3d/controls/ViewerControls.vue",
-            "components/load3d/controls/viewer/ViewerLightControls.vue",
-            "components/load3d/menubar/LightMenuGroup.vue",
-            "components/maskeditor/ImageLayerSettingsPanel.vue",
-            "components/maskeditor/MaskEditorContent.vue",
-            "components/maskeditor/PointerZone.vue",
-            "components/maskeditor/SidePanel.vue",
-            "components/maskeditor/ToolPanel.vue",
-            "components/maskeditor/dialog/TopBarHeader.vue",
-            "components/node/NodeHelpContent.vue",
-            "components/node/NodePreview.vue",
-            "components/node/NodePreviewCard.vue",
-            "components/node/NodePricingBadge.vue",
-            "components/node/NodeProviderBadge.vue",
-            "components/painter/WidgetPainter.vue",
-            "components/palette/WidgetColors.vue",
-            "components/queue/JobHistoryActionsMenu.vue",
-            "components/queue/dialogs/QueueClearHistoryDialog.vue",
-            "components/queue/job/JobAssetsList.vue",
-            "components/queue/job/JobContextMenu.vue",
-            "components/queue/job/JobDetailsHoverPopover.vue",
-            "components/queue/job/JobDetailsPopover.vue",
-            "components/queue/job/JobFilterActions.vue",
-            "components/queue/job/JobFilterTabs.vue",
-            "components/queue/job/buildVirtualJobRows.ts",
-            "components/queue/job/useJobErrorReporting.ts",
-            "components/queue/job/useQueueEstimates.ts",
-            "components/range/RangeEditor.vue",
-            "components/range/WidgetRange.vue",
-            "components/range/rangeUtils.ts",
-            "components/rightSidePanel/errors/missingResourceAbsorption.ts",
-            "components/searchbox/NodeSearchFilter.vue",
-            "components/sidebar/tabs/AppsSidebarTab.vue",
-            "components/sidebar/tabs/AssetsSidebarGridView.vue",
-            "components/sidebar/tabs/AssetsSidebarListView.vue",
-            "components/sidebar/tabs/AssetsSidebarTab.vue",
-            "components/sidebar/tabs/BaseWorkflowsSidebarTab.vue",
-            "components/sidebar/tabs/JobHistorySidebarTab.vue",
-            "components/sidebar/tabs/ModelLibrarySidebarTab.vue",
-            "components/sidebar/tabs/NodeLibrarySidebarTab.vue",
-            "components/sidebar/tabs/NodeLibrarySidebarTabV2.vue",
-            "components/sidebar/tabs/WorkflowsSidebarTab.vue",
-            "components/sidebar/tabs/modelLibrary/ModelPreview.vue",
-            "components/sidebar/tabs/modelLibrary/ModelTreeLeaf.vue",
-            "components/sidebar/tabs/nodeLibrary/AllNodesPanel.vue",
-            "components/sidebar/tabs/nodeLibrary/EssentialNodeCard.vue",
-            "components/sidebar/tabs/nodeLibrary/EssentialNodesPanel.vue",
-            "components/sidebar/tabs/nodeLibrary/NodeBookmarkTreeExplorer.vue",
-            "components/sidebar/tabs/nodeLibrary/NodeHelpPage.vue",
-            "components/sidebar/tabs/nodeLibrary/NodeTreeFolder.vue",
-            "components/sidebar/tabs/nodeLibrary/NodeTreeLeaf.vue",
-            "components/sidebar/tabs/queue/MediaLightbox.vue",
-            "components/sidebar/tabs/queue/ResultAudio.vue",
-            "components/sidebar/tabs/queue/ResultText.vue",
-            "components/sidebar/tabs/queue/ResultVideo.vue",
-            "components/sidebar/tabs/workflows/WorkflowTreeLeaf.vue",
-            "components/videoEdit/VideoEditPanel.vue",
-            "components/videoEdit/VideoFilmstripTrim.vue",
-            "components/videoEdit/WidgetVideoEdit.vue",
-            "composables/auth/useTurnstile.ts",
-            "composables/bottomPanelTabs/useCommandSubcategories.ts",
-            "composables/bottomPanelTabs/useLogsTerminal.ts",
-            "composables/bottomPanelTabs/useShortcutsTab.ts",
-            "composables/bottomPanelTabs/useTerminalTabs.ts",
-            "composables/boundingBoxes/useBoundingBoxes.ts",
-            "composables/element/useAbsolutePosition.ts",
-            "composables/graph/useCanvasRefresh.ts",
-            "composables/graph/useFrameNodes.ts",
-            "composables/graph/useNodeArrangement.ts",
-            "composables/graph/useNodeCustomization.ts",
-            "composables/graph/useSelectedNodeActions.ts",
-            "composables/graph/useSelectionOperations.ts",
-            "composables/graph/useSelectionState.ts",
-            "composables/maskeditor/imageWidgetAdapter.ts",
-            "composables/maskeditor/useBrushDrawing.ts",
-            "composables/maskeditor/useBrushPersistence.ts",
-            "composables/maskeditor/useImageLoader.ts",
-            "composables/maskeditor/useMaskEditor.ts",
-            "composables/maskeditor/useMaskEditorLoader.ts",
-            "composables/maskeditor/useMaskEditorSaver.ts",
-            "composables/maskeditor/useToolManager.ts",
-            "composables/node/canvasImagePreviewTypes.ts",
-            "composables/node/startModelNodeDragFromAsset.ts",
-            "composables/node/useNodeDragAndDrop.ts",
-            "composables/node/useNodeDragToCanvas.ts",
-            "composables/node/useNodeFileInput.ts",
-            "composables/node/useNodePaste.ts",
-            "composables/node/useNodePreviewAndDrag.ts",
-            "composables/node/useNodeProgressText.ts",
-            "composables/painter/usePainter.ts",
-            "composables/queue/useJobList.ts",
-            "composables/queue/useJobMenu.ts",
-            "composables/queue/useQueueClearHistoryDialog.ts",
-            "composables/queue/useQueueFeatureFlags.ts",
-            "composables/queue/useQueueProgress.ts",
-            "composables/queue/useResultGallery.ts",
-            "composables/sidebarTabs/useAssetsSidebarTab.ts",
-            "composables/sidebarTabs/useJobHistorySidebarTab.ts",
-            "composables/sidebarTabs/useModelLibrarySidebarTab.ts",
-            "composables/sidebarTabs/useNodeLibrarySidebarTab.ts",
-            "composables/tree/useTreeFolderOperations.ts",
-            "composables/useCameraInfo.ts",
-            "composables/useEssentialTileNodeDef.ts",
-            "composables/useFeatureFlags.ts",
-            "composables/useImageCrop.ts",
-            "composables/useNodeHelpContent.ts",
-            "composables/useRangeEditor.ts",
-            "composables/useTemplateFiltering.ts",
-            "composables/useTreeExpansion.ts",
-            "composables/useUpstreamValue.ts",
-            "composables/useVueFeatureFlags.ts",
-            "composables/useWaveAudioPlayer.ts",
-            "composables/useWorkflowTemplateSelectorDialog.ts",
-            "composables/video/useCropRatioLock.ts",
-            "composables/video/useTimelineScrub.ts",
-            "composables/video/useVideoEditModel.ts",
-            "composables/video/useVideoFilmstrip.ts",
-            "composables/video/useVideoSourceUrl.ts",
-            "config/billingWeb.ts",
-            "config/comfyApi.ts",
-            "config/firebase.ts",
-            "config/turnstile.ts",
-            "core/graph/subgraph/liftNodeErrorsToBoundary.ts",
-            "core/graph/subgraph/promotedInputWidget.ts",
-            "core/graph/subgraph/resolvePromotedWidgetSource.ts",
-            "core/graph/transferLinkPresentation.ts",
-            "core/graph/widgets/comboWidgetInventory.ts",
-            "core/graph/widgets/nodeWidgetValues.ts",
-            "extensions/core/agentPanel.ts",
-            "extensions/core/cameraInfo.ts",
-            "extensions/core/cameraInfo/CameraInfoViewport.ts",
-            "extensions/core/clipspace.ts",
-            "extensions/core/cloudBadges.ts",
-            "extensions/core/cloudFeedbackTopbarButton.ts",
-            "extensions/core/cloudRemoteConfig.ts",
-            "extensions/core/cloudSessionCookie.ts",
-            "extensions/core/contextMenuFilter.ts",
-            "extensions/core/createBoundingBoxes.ts",
-            "extensions/core/customWidgets.ts",
-            "extensions/core/dynamicPrompts.ts",
-            "extensions/core/editAttention.ts",
-            "extensions/core/electronAdapter.ts",
-            "extensions/core/groupNode.ts",
-            "extensions/core/groupOptions.ts",
-            "extensions/core/imageCompare.ts",
-            "extensions/core/imageCompositor.ts",
-            "extensions/core/imageCrop.ts",
-            "extensions/core/index.ts",
-            "extensions/core/layerEditor.ts",
-            "extensions/core/load3d.ts",
-            "extensions/core/load3d/GizmoManager.ts",
-            "extensions/core/load3d/HDRIManager.ts",
-            "extensions/core/load3d/Load3DConfiguration.ts",
-            "extensions/core/load3d/Load3d.ts",
-            "extensions/core/load3d/LoaderManager.ts",
-            "extensions/core/load3d/MeshModelAdapter.ts",
-            "extensions/core/load3d/ModelAdapter.ts",
-            "extensions/core/load3d/PointCloudModelAdapter.ts",
-            "extensions/core/load3d/SceneManager.ts",
-            "extensions/core/load3d/SceneModelManager.ts",
-            "extensions/core/load3d/SplatModelAdapter.ts",
-            "extensions/core/load3d/Viewport3d.ts",
-            "extensions/core/load3d/createLoad3d.ts",
-            "extensions/core/load3d/createViewport3d.ts",
-            "extensions/core/load3d/exportMenuHelper.ts",
-            "extensions/core/load3d/load3dSerialize.ts",
-            "extensions/core/load3d/load3dViewport.ts",
-            "extensions/core/load3dAdvanced.ts",
-            "extensions/core/load3dLazy.ts",
-            "extensions/core/load3dPreviewExtensions.ts",
-            "extensions/core/maskeditor.ts",
-            "extensions/core/nightlyBadges.ts",
-            "extensions/core/nodeTemplates.ts",
-            "extensions/core/noteNode.ts",
-            "extensions/core/painter.ts",
-            "extensions/core/previewAny.ts",
-            "extensions/core/rerouteNode.ts",
-            "extensions/core/saveImageExtraOutput.ts",
-            "extensions/core/saveMesh.ts",
-            "extensions/core/saveText.ts",
-            "extensions/core/selectionBorder.ts",
-            "extensions/core/simpleTouchSupport.ts",
-            "extensions/core/slotDefaults.ts",
-            "extensions/core/textPreviewWidgets.ts",
-            "extensions/core/uploadAudio.ts",
-            "extensions/core/uploadImage.ts",
-            "extensions/core/webcamCapture.ts",
-            "extensions/core/widgetValuePropagation.ts",
-            "lib/litegraph/src/LGraphBadge.ts",
-            "lib/litegraph/src/LGraphButton.ts",
-            "lib/litegraph/src/contextMenuCompat.ts",
-            "lib/litegraph/src/infrastructure/ConstrainedSize.ts",
-            "lib/litegraph/src/infrastructure/Rectangle.ts",
-            "lib/litegraph/src/interfaces.ts",
-            "lib/litegraph/src/measure.ts",
-            "lib/litegraph/src/node/SlotBase.ts",
-            "platform/assets/components/AssetBrowserModal.vue",
-            "platform/assets/components/AssetCard.vue",
-            "platform/assets/components/AssetGrid.vue",
-            "platform/assets/components/Media3DTop.vue",
-            "platform/assets/components/MediaAssetCard.vue",
-            "platform/assets/components/MediaAssetContextMenu.vue",
-            "platform/assets/components/MediaAudioTop.vue",
-            "platform/assets/components/MediaImageTop.vue",
-            "platform/assets/components/MediaTextTop.vue",
-            "platform/assets/components/MediaVideoTop.vue",
-            "platform/assets/components/UploadModelConfirmation.vue",
-            "platform/assets/components/UploadModelDialog.vue",
-            "platform/assets/components/UploadModelProgress.vue",
-            "platform/assets/components/UploadModelUpgradeModal.vue",
-            "platform/assets/components/UploadModelUrlInput.vue",
-            "platform/assets/components/modelInfo/ModelInfoPanel.vue",
-            "platform/assets/composables/openModelLibraryBrowser.ts",
-            "platform/assets/composables/useAssetBrowser.ts",
-            "platform/assets/composables/useAssetDownload.ts",
-            "platform/assets/composables/useAssetGridSelection.ts",
-            "platform/assets/composables/useAssetSelection.ts",
-            "platform/assets/composables/useAssetsQuery.ts",
-            "platform/assets/composables/useMediaAssetActions.ts",
-            "platform/assets/composables/useModelTypes.ts",
-            "platform/assets/composables/useModelUpload.ts",
-            "platform/assets/composables/useOutputStacks.ts",
-            "platform/assets/composables/useUploadModelWizard.ts",
-            "platform/assets/schemas/assetMetadataSchema.ts",
-            "platform/assets/schemas/mediaAssetSchema.ts",
-            "platform/assets/utils/assetDragUtil.ts",
-            "platform/assets/utils/assetPreviewUtil.ts",
-            "platform/assets/utils/assetUrlUtil.ts",
-            "platform/assets/utils/clearDeletedAssetWidgetValues.ts",
-            "platform/assets/utils/clearNodePreviewCacheForValues.ts",
-            "platform/assets/utils/markDeletedAssetsAsMissingMedia.ts",
-            "platform/assets/utils/marqueeSelectionUtil.ts",
-            "platform/assets/utils/mediaIconUtil.ts",
-            "platform/assets/utils/outputAssetCountUtil.ts",
-            "platform/assets/utils/outputAssetUtil.ts",
-            "platform/assets/utils/resolveModelNodeFromAsset.ts",
-            "platform/auth/firebaseIdentity.ts",
-            "platform/canvas/minimapDecorationRegistry.ts",
-            "platform/cloud/notification/components/CloudNotificationContent.vue",
-            "platform/cloud/subscription/components/CreditsTile.vue",
-            "platform/cloud/subscription/components/SubscriptionFooterLinks.vue",
-            "platform/cloud/subscription/composables/useSubscriptionActions.ts",
-            "platform/cloud/subscription/composables/useSubscriptionCredits.ts",
-            "platform/cloud/subscription/utils/paymentReturnUrl.ts",
-            "platform/cloud/subscription/utils/subscriptionCheckoutTracker.ts",
-            "platform/cloud/subscription/utils/tierBenefits.ts",
-            "platform/keybindings/presetService.ts",
-            "platform/missingMedia/missingMediaGrouping.ts",
-            "platform/missingMedia/types.ts",
-            "platform/missingModel/types.ts",
-            "platform/nodeReplacement/nodeReplacementService.ts",
-            "platform/onboarding/coachmarkRegistry.ts",
-            "platform/onboarding/onboardingReplay.ts",
-            "platform/onboarding/onboardingTourStore.ts",
-            "platform/onboarding/onboardingTours.ts",
-            "platform/onboarding/tourState.ts",
-            "platform/onboarding/useTourTriggers.ts",
-            "platform/remote/comfyui/execution/types.ts",
-            "platform/remote/comfyui/jobs/fetchJobs.ts",
-            "platform/remote/comfyui/jobs/jobTypes.ts",
-            "platform/remoteConfig/refreshRemoteConfig.ts",
-            "platform/secrets/api/secretsApi.ts",
-            "platform/secrets/components/SecretFormDialog.vue",
-            "platform/secrets/components/SecretsPanel.vue",
-            "platform/secrets/composables/useSecretForm.ts",
-            "platform/secrets/composables/useSecrets.ts",
-            "platform/settings/components/ColorPaletteMessage.vue",
-            "platform/settings/components/ExtensionPanel.vue",
-            "platform/settings/components/ServerConfigPanel.vue",
-            "platform/settings/components/SettingDialog.vue",
-            "platform/settings/components/SettingGroup.vue",
-            "platform/settings/components/SettingItem.vue",
-            "platform/settings/components/SettingsPanel.vue",
-            "platform/settings/composables/useSettingSearch.ts",
-            "platform/settings/composables/useSettingUI.ts",
-            "platform/settings/globalSettingsApi.ts",
-            "platform/support/feedbackDialog.ts",
-            "platform/tasks/services/taskService.ts",
-            "platform/telemetry/datadogRumBeforeSend.ts",
-            "platform/telemetry/hostTelemetryEnabled.ts",
-            "platform/telemetry/imageFailureDiagnostics.ts",
-            "platform/telemetry/index.ts",
-            "platform/telemetry/initDatadogRum.ts",
-            "platform/telemetry/nodeAdded/nodeAddSource.ts",
-            "platform/telemetry/perf/bootstrapTracer.ts",
-            "platform/telemetry/reportError.ts",
-            "platform/telemetry/searchQuery/useSearchQueryTracking.ts",
-            "platform/telemetry/utils/checkoutAttribution.ts",
-            "platform/telemetry/utils/getActionbarDockState.ts",
-            "platform/telemetry/utils/workflowExecutionContext.ts",
-            "platform/workflow/core/services/workflowActionsService.ts",
-            "platform/workflow/core/utils/workflowId.ts",
-            "platform/workflow/core/utils/workflowToClipboardItems.ts",
-            "platform/workflow/management/composables/useAppsSidebarTab.ts",
-            "platform/workflow/management/composables/useWorkflowsSidebarTab.ts",
-            "platform/workflow/sharing/components/OpenSharedWorkflowDialogContent.vue",
-            "platform/workflow/sharing/components/publish/ComfyHubDescribeStep.vue",
-            "platform/workflow/sharing/composables/useSharedWorkflowUrlLoader.ts",
-            "platform/workflow/sharing/services/comfyHubService.ts",
-            "platform/workflow/sharing/types/shareTypes.ts",
-            "platform/workflow/templates/composables/useTemplateWorkflows.ts",
-            "platform/workflow/templates/repositories/workflowTemplatesStore.ts",
-            "platform/workflow/templates/services/templateInputService.ts",
-            "platform/workflow/utils/workflowExtractionUtil.ts",
-            "platform/workflow/validation/composables/useWorkflowValidation.ts",
-            "platform/workflow/validation/schemas/workflowSchema.ts",
-            "platform/workspace/api/partnerNodePolicyApi.ts",
-            "platform/workspace/api/workspaceApiUrl.ts",
-            "platform/workspace/billing/hostedBillingRoutes.ts",
-            "platform/workspace/billing/sdk/billingSdkTelemetry.ts",
-            "platform/workspace/components/SubscriptionPanelContentWorkspace.vue",
-            "platform/workspace/components/UnifiedStripePaymentSelector.vue",
-            "platform/workspace/components/dialogs/settings/BillingStatusBanner.vue",
-            "platform/workspace/components/dialogs/settings/MemberListItem.vue",
-            "platform/workspace/components/dialogs/settings/MembersPanelContent.vue",
-            "platform/workspace/components/dialogs/settings/PartnerNodeAccessPanel.vue",
-            "platform/workspace/components/dialogs/settings/PendingInvitesList.vue",
-            "platform/workspace/components/dialogs/settings/PlanCreditsPanelContent.vue",
-            "platform/workspace/components/dialogs/settings/WorkspaceMembersPanelContent.vue",
-            "platform/workspace/components/dialogs/settings/WorkspaceMenuButton.vue",
-            "platform/workspace/components/dialogs/settings/WorkspaceSettingsPanelContent.vue",
-            "platform/workspace/composables/useBillingBanner.ts",
-            "platform/workspace/composables/useMembersPanel.ts",
-            "platform/workspace/composables/useResubscribe.ts",
-            "platform/workspace/composables/useTeamPlan.ts",
-            "platform/workspace/composables/useWorkspaceMenuItems.ts",
-            "platform/workspace/composables/useWorkspacePlanPricing.ts",
-            "platform/workspace/stores/partnerNodeGovernanceStore.ts",
-            "platform/workspace/utils/checkoutJourney.ts",
-            "renderer/core/canvas/interaction/canvasPointerEvent.ts",
-            "renderer/core/canvas/links/linkConnectorAdapter.ts",
-            "renderer/core/canvas/links/linkDropOrchestrator.ts",
-            "renderer/core/layout/slots/syncSlotOffsets.ts",
-            "renderer/core/layout/transform/graphRenderTransform.ts",
-            "renderer/core/layout/transform/useTransformState.ts",
-            "renderer/core/spatial/boundsCalculator.ts",
-            "renderer/extensions/compositor/components/WidgetCompositor.vue",
-            "renderer/extensions/compositor/composables/compositorSave.ts",
-            "renderer/extensions/compositor/composables/compositorSession.ts",
-            "renderer/extensions/compositor/composables/compositorWidgets.ts",
-            "renderer/extensions/compositor/composables/useCompositorAutoSave.ts",
-            "renderer/extensions/compositor/composables/useCompositorEditor.ts",
-            "renderer/extensions/compositor/composables/useCompositorLayers.ts",
-            "renderer/extensions/compositor/composables/useCompositorPsdDownload.ts",
-            "renderer/extensions/firstRunTour/gettingStarted/firstRunEntry.ts",
-            "renderer/extensions/firstRunTour/roles/heuristicRoles.ts",
-            "renderer/extensions/firstRunTour/roles/resolveTourRoles.ts",
-            "renderer/extensions/firstRunTour/roles/tourSequence.ts",
-            "renderer/extensions/firstRunTour/tour/cameraFraming.ts",
-            "renderer/extensions/firstRunTour/tour/canvasCoachTarget.ts",
-            "renderer/extensions/firstRunTour/tour/firstRunTourDefinition.ts",
-            "renderer/extensions/firstRunTour/tour/useFirstRunTourController.ts",
-            "renderer/extensions/layerEditor/components/LayerEditorContent.vue",
-            "renderer/extensions/layerEditor/composables/layerEditorDialog.ts",
-            "renderer/extensions/layerEditor/composables/useLayerEditor.ts",
-            "renderer/extensions/linearMode/AppInput.vue",
-            "renderer/extensions/minimap/types.ts",
-            "renderer/extensions/vueNodes/components/InputSlot.vue",
-            "renderer/extensions/vueNodes/components/LGraphNodePreview.vue",
-            "renderer/extensions/vueNodes/components/NodeBadge.vue",
-            "renderer/extensions/vueNodes/components/NodeHeader.vue",
-            "renderer/extensions/vueNodes/components/NodeSlots.vue",
-            "renderer/extensions/vueNodes/components/OutputSlot.vue",
-            "renderer/extensions/vueNodes/components/SlotConnectionDot.vue",
-            "renderer/extensions/vueNodes/components/WidgetGrid.vue",
-            "renderer/extensions/vueNodes/composables/useNodeTooltips.ts",
-            "renderer/extensions/vueNodes/composables/useSlotLinkInteraction.ts",
-            "renderer/extensions/vueNodes/composables/useSlotLinkReveal.ts",
-            "renderer/extensions/vueNodes/composables/useVueNodeResizeTracking.ts",
-            "renderer/extensions/vueNodes/layout/ensureCorrectLayoutScale.ts",
-            "renderer/extensions/vueNodes/types/widgetGrid.ts",
-            "renderer/extensions/vueNodes/utils/eventUtils.ts",
-            "renderer/extensions/vueNodes/utils/linkedCoreMediaUtils.ts",
-            "renderer/extensions/vueNodes/utils/nodeDataUtils.ts",
-            "renderer/extensions/vueNodes/widgets/components/ValueControlButton.vue",
-            "renderer/extensions/vueNodes/widgets/components/ValueControlPopover.vue",
-            "renderer/extensions/vueNodes/widgets/components/WidgetButton.vue",
-            "renderer/extensions/vueNodes/widgets/components/WidgetChart.types.ts",
-            "renderer/extensions/vueNodes/widgets/components/WidgetChart.vue",
-            "renderer/extensions/vueNodes/widgets/components/WidgetColorPicker.vue",
-            "renderer/extensions/vueNodes/widgets/components/WidgetGalleria.vue",
-            "renderer/extensions/vueNodes/widgets/components/WidgetImageCompare.vue",
-            "renderer/extensions/vueNodes/widgets/components/WidgetInputNumber.vue",
-            "renderer/extensions/vueNodes/widgets/components/WidgetInputNumberGradientSlider.vue",
-            "renderer/extensions/vueNodes/widgets/components/WidgetInputNumberInput.vue",
-            "renderer/extensions/vueNodes/widgets/components/WidgetInputNumberSlider.vue",
-            "renderer/extensions/vueNodes/widgets/components/WidgetInputText.vue",
-            "renderer/extensions/vueNodes/widgets/components/WidgetLegacy.vue",
-            "renderer/extensions/vueNodes/widgets/components/WidgetMarkdown.vue",
-            "renderer/extensions/vueNodes/widgets/components/WidgetRecordAudio.vue",
-            "renderer/extensions/vueNodes/widgets/components/WidgetResolutionPreview.vue",
-            "renderer/extensions/vueNodes/widgets/components/WidgetSelect.vue",
-            "renderer/extensions/vueNodes/widgets/components/WidgetSelectDefault.vue",
-            "renderer/extensions/vueNodes/widgets/components/WidgetSelectDropdown.vue",
-            "renderer/extensions/vueNodes/widgets/components/WidgetTextPreview.vue",
-            "renderer/extensions/vueNodes/widgets/components/WidgetTextarea.vue",
-            "renderer/extensions/vueNodes/widgets/components/WidgetToggleSwitch.vue",
-            "renderer/extensions/vueNodes/widgets/components/WidgetWithControl.vue",
-            "renderer/extensions/vueNodes/widgets/components/form/dropdown/FormDropdown.vue",
-            "renderer/extensions/vueNodes/widgets/components/form/dropdown/FormDropdownMenu.vue",
-            "renderer/extensions/vueNodes/widgets/components/form/dropdown/FormDropdownMenuFilter.vue",
-            "renderer/extensions/vueNodes/widgets/components/form/dropdown/FormDropdownMenuItem.vue",
-            "renderer/extensions/vueNodes/widgets/components/layout/WidgetLayoutField.vue",
-            "renderer/extensions/vueNodes/widgets/composables/audio/useAudioRecorder.ts",
-            "renderer/extensions/vueNodes/widgets/composables/useAssetWidgetData.ts",
-            "renderer/extensions/vueNodes/widgets/composables/useBooleanWidget.ts",
-            "renderer/extensions/vueNodes/widgets/composables/useBoundingBoxWidget.ts",
-            "renderer/extensions/vueNodes/widgets/composables/useBoundingBoxesWidget.ts",
-            "renderer/extensions/vueNodes/widgets/composables/useChartWidget.ts",
-            "renderer/extensions/vueNodes/widgets/composables/useColorWidget.ts",
-            "renderer/extensions/vueNodes/widgets/composables/useColorsWidget.ts",
-            "renderer/extensions/vueNodes/widgets/composables/useCompositorWidget.ts",
-            "renderer/extensions/vueNodes/widgets/composables/useCurveWidget.ts",
-            "renderer/extensions/vueNodes/widgets/composables/useDismissOnCanvasGesture.ts",
-            "renderer/extensions/vueNodes/widgets/composables/useGalleriaWidget.ts",
-            "renderer/extensions/vueNodes/widgets/composables/useImageCompareImages.ts",
-            "renderer/extensions/vueNodes/widgets/composables/useImageCompareWidget.ts",
-            "renderer/extensions/vueNodes/widgets/composables/usePainterWidget.ts",
-            "renderer/extensions/vueNodes/widgets/composables/useProgressTextWidget.ts",
-            "renderer/extensions/vueNodes/widgets/composables/useRangeWidget.ts",
-            "renderer/extensions/vueNodes/widgets/composables/useResolutionPreviewWidget.ts",
-            "renderer/extensions/vueNodes/widgets/composables/useTextareaWidget.ts",
             "renderer/extensions/vueNodes/widgets/composables/useVideoEditWidget.ts",
-            "renderer/extensions/vueNodes/widgets/composables/useWidgetSelectActions.ts",
-            "renderer/extensions/vueNodes/widgets/composables/useWidgetSelectItems.ts",
-            "renderer/extensions/vueNodes/widgets/registry/widgetRegistry.ts",
             "renderer/extensions/vueNodes/widgets/utils/audioUtils.ts",
-            "renderer/extensions/vueNodes/widgets/utils/resolvePromotedWidget.ts",
-            "scripts/api.ts",
-            "scripts/defaultGraph.ts",
-            "scripts/metadata/avif.ts",
-            "scripts/metadata/ebml.ts",
-            "scripts/metadata/gltf.ts",
-            "scripts/metadata/isobmff.ts",
-            "scripts/metadata/mp3.ts",
-            "scripts/metadata/ogg.ts",
-            "scripts/metadata/parser.ts",
-            "scripts/metadata/svg.ts",
-            "scripts/pnginfo.ts",
-            "scripts/valueControl.ts",
             "services/audioService.ts",
-            "services/nodeHelpService.ts",
-            "services/nodeOrganizationService.ts",
-            "services/subgraphPseudoWidgetCache.ts",
             "services/useNewUserService.ts",
-            "stores/aboutPanelStore.ts",
-            "stores/assetDownloadStore.ts",
-            "stores/assetExportStore.ts",
-            "stores/linkPresentationStore.ts",
-            "stores/linkStore.ts",
-            "stores/maskEditorDataStore.ts",
             "stores/modelStore.ts",
-            "stores/nodeBookmarkStore.ts",
-            "stores/rerouteStore.ts",
-            "stores/resultItemParsing.ts",
-            "stores/systemStatsStore.ts",
-            "stores/userStore.ts",
-            "stores/workspace/assetsSidebarBadgeStore.ts",
-            "stores/workspace/nodeHelpStore.ts",
-            "types/linkTopology.ts",
-            "types/metadataTypes.ts",
-            "utils/createAnnotatedPath.ts",
-            "utils/errorReportUtil.ts",
-            "utils/eventUtils.ts",
-            "utils/imageUtil.ts",
-            "utils/linkFixer.ts",
-            "utils/mathUtil.ts",
-            "utils/migration/migrateReroute.ts",
-            "utils/nodeDefUtil.ts",
-            "utils/nodeFilterUtil.ts",
-            "utils/nodeOutputUtil.ts",
-            "utils/positionBounds.ts",
-            "utils/queueDisplay.ts",
-            "utils/queueUtil.ts",
-            "utils/resultItem.ts",
-            "utils/resultItemUrl.ts",
-            "utils/searchAndReplace.ts",
-            "utils/sessionFeatureFlagOverride.ts",
-            "utils/syncUtil.ts",
-            "utils/videoMetadataUtil.ts",
-            "utils/vintageClipboard.ts",
+            "types/index.ts",
             "workbench/extensions/agent/composables/agent/useAgentConsent.ts",
-            "workbench/extensions/agent/crdt/layoutMintPort.ts",
-            "workbench/extensions/agent/crdt/linkMintPort.ts",
-            "workbench/extensions/agent/crdt/mintPortWiring.ts",
+            "workbench/extensions/agent/crdt/docOpMinter.ts",
+            "workbench/extensions/agent/crdt/restoreOpMinter.ts",
             "workbench/extensions/agent/services/agent/workflowTabActivityTracker.ts",
+            "workbench/extensions/agent/stores/agent/agentComposerStore.ts",
             "workbench/extensions/agent/stores/agent/agentConsentStore.ts",
-            "workbench/utils/modelMetadataUtil.ts",
-            "workbench/utils/nodeHelpUtil.ts"
-          ],
-          "entangled": [
-            "lib/litegraph/src/types/contextMenu.ts",
-            "lib/litegraph/src/types/linkNetwork.ts",
-            "lib/litegraph/src/types/panel.ts",
-            "lib/litegraph/src/types/slots.ts",
-            "scripts/valueControlWidgets.ts"
-          ],
-          "splits": [
-            {
-              "from": 0,
-              "into": [16, 17, 18]
-            }
-          ]
-        }
-      },
-      {
-        "index": 59,
-        "kind": "pr",
-        "parent": 58,
-        "sha": "67b6449601b55c96e78c4ff6b2ba65740f7da002",
-        "short": "67b6449601",
-        "date": "2026-09-27T20:41:45Z",
-        "subject": "refactor: install workspace api credentials from the composition root",
-        "pr": 19121,
-        "stats": {
-          "modules": 2317,
-          "imports": 10700,
-          "modulesInKnots": 428,
-          "largestKnot": 214,
-          "mainKnot": 214,
-          "secondKnot": 149,
-          "knotCount": 16,
-          "importsInKnots": 1704,
-          "noCircularWarnings": 1282
-        },
-        "knots": [
-          {
-            "id": 0,
-            "size": 214
-          },
-          {
-            "id": 9,
-            "size": 149
-          },
-          {
-            "id": 1,
-            "size": 28
-          },
-          {
-            "id": 8,
-            "size": 6
-          },
-          {
-            "id": 10,
-            "size": 5
-          },
-          {
-            "id": 16,
-            "size": 4
-          },
-          {
-            "id": 17,
-            "size": 3
-          },
-          {
-            "id": 11,
-            "size": 3
-          },
-          {
-            "id": 2,
-            "size": 2
-          },
-          {
-            "id": 3,
-            "size": 2
-          },
-          {
-            "id": 12,
-            "size": 2
-          },
-          {
-            "id": 4,
-            "size": 2
-          },
-          {
-            "id": 5,
-            "size": 2
-          },
-          {
-            "id": 6,
-            "size": 2
-          },
-          {
-            "id": 18,
-            "size": 2
-          },
-          {
-            "id": 7,
-            "size": 2
-          }
-        ],
-        "delta": {
-          "freed": [
-            "platform/cloud/churnkey/churnkeyClient.ts",
-            "platform/cloud/subscription/composables/useSubscriptionCancellationWatcher.ts",
-            "platform/cloud/subscription/utils/planDuration.ts",
-            "platform/cloud/subscription/utils/subscriptionCancellationTelemetry.ts",
-            "platform/workspace/api/workspaceApi.ts",
-            "platform/workspace/billing/customerAttention.ts",
-            "platform/workspace/billing/sdk/billingCapabilitiesView.ts",
-            "platform/workspace/billing/sdk/billingPlansView.ts",
-            "platform/workspace/billing/sdk/billingStatusView.ts",
-            "platform/workspace/billing/sdk/operationRecordView.ts",
-            "platform/workspace/billing/sdk/subscriptionOperationView.ts",
-            "platform/workspace/billing/sdk/topupOperationView.ts",
-            "platform/workspace/billing/subscribeInput.ts",
-            "platform/workspace/components/SubscriptionAddPaymentPreviewWorkspace.vue",
-            "platform/workspace/components/WorkspaceProfilePic.vue",
-            "platform/workspace/components/subscriptionPanelWorkspace.logic.ts",
-            "platform/workspace/composables/readOnRail.ts",
-            "platform/workspace/composables/useWorkspaceTierLabel.ts",
-            "platform/workspace/utils/pendingSubscriptionCheckout.ts"
-          ],
-          "entangled": [],
-          "splits": []
-        }
-      },
-      {
-        "index": 60,
-        "kind": "pr",
-        "parent": 55,
-        "sha": "994757a3922dd2b9134aff926a1a1535e53a297f",
-        "short": "994757a392",
-        "date": "2026-09-27T23:13:02Z",
-        "subject": "refactor: split feature dialogs out of dialogService",
-        "pr": 19131,
-        "stats": {
-          "modules": 2489,
-          "imports": 11636,
-          "modulesInKnots": 476,
-          "largestKnot": 261,
-          "mainKnot": 261,
-          "secondKnot": 154,
-          "knotCount": 15,
-          "importsInKnots": 1968,
-          "noCircularWarnings": 1449
-        },
-        "knots": [
-          {
-            "id": 0,
-            "size": 261
-          },
-          {
-            "id": 9,
-            "size": 154
-          },
-          {
-            "id": 1,
-            "size": 28
-          },
-          {
-            "id": 8,
-            "size": 6
-          },
-          {
-            "id": 10,
-            "size": 5
-          },
-          {
-            "id": 13,
-            "size": 3
-          },
-          {
-            "id": 11,
-            "size": 3
-          },
-          {
-            "id": 2,
-            "size": 2
-          },
-          {
-            "id": 3,
-            "size": 2
-          },
-          {
-            "id": 12,
-            "size": 2
-          },
-          {
-            "id": 4,
-            "size": 2
-          },
-          {
-            "id": 5,
-            "size": 2
-          },
-          {
-            "id": 6,
-            "size": 2
-          },
-          {
-            "id": 14,
-            "size": 2
-          },
-          {
-            "id": 7,
-            "size": 2
-          }
-        ],
-        "delta": {
-          "freed": [
-            "platform/settings/composables/useSettingsDialog.ts",
-            "platform/workflow/sharing/components/profile/ComfyHubCreateProfileForm.vue",
-            "platform/workflow/sharing/components/publish/ComfyHubDescribeStep.vue",
-            "platform/workflow/sharing/components/publish/ComfyHubFinishStep.vue",
-            "platform/workflow/sharing/components/publish/ComfyHubPublishDialog.vue",
-            "platform/workflow/sharing/components/publish/ComfyHubPublishNav.vue",
-            "platform/workflow/sharing/components/publish/ComfyHubPublishWizardContent.vue",
-            "platform/workflow/sharing/composables/useComfyHubProfileGate.ts",
-            "platform/workflow/sharing/composables/useComfyHubPublishSubmission.ts",
-            "platform/workflow/sharing/composables/useComfyHubPublishWizard.ts",
-            "platform/workflow/sharing/services/comfyHubService.ts",
-            "platform/workflow/sharing/services/workflowShareService.ts"
+            "workbench/extensions/agent/types/composerAttachment.ts",
+            "workbench/extensions/agent/types/composerPrompt.ts",
+            "workbench/extensions/agent/utils/composerPrompt.ts"
           ],
           "entangled": [
             "composables/auth/useAuthDialogs.ts",
             "composables/billing/useBillingDialogs.ts",
-            "platform/workspace/composables/useWorkspaceDialogs.ts"
+            "platform/workspace/composables/useWorkspaceDialogs.ts",
+            "scripts/valueControlWidgets.ts"
           ],
           "splits": []
         }
       },
       {
-        "index": 61,
+        "index": 72,
         "kind": "pr",
-        "parent": 60,
+        "parent": 71,
         "sha": "15a7e94be18c41731d6e58ee8d96cad7feaad3d1",
         "short": "15a7e94be1",
         "date": "2026-09-28T00:31:49Z",
@@ -6626,7 +6757,7 @@
             "size": 149
           },
           {
-            "id": 19,
+            "id": 17,
             "size": 48
           },
           {
@@ -6760,789 +6891,15 @@
           "splits": [
             {
               "from": 0,
-              "into": [19]
+              "into": [17]
             }
           ]
         }
       },
       {
-        "index": 62,
+        "index": 73,
         "kind": "pr",
-        "parent": 57,
-        "sha": "df65b2db525e6f698eb307c111586646d987cbd1",
-        "short": "df65b2db52",
-        "date": "2026-09-28T01:07:56Z",
-        "subject": "refactor: let billing rails announce refreshes instead of reading the context",
-        "pr": 19148,
-        "stats": {
-          "modules": 2332,
-          "imports": 10762,
-          "modulesInKnots": 324,
-          "largestKnot": 149,
-          "mainKnot": 91,
-          "secondKnot": 149,
-          "knotCount": 19,
-          "importsInKnots": 1288,
-          "noCircularWarnings": 971
-        },
-        "knots": [
-          {
-            "id": 9,
-            "size": 149
-          },
-          {
-            "id": 0,
-            "size": 91
-          },
-          {
-            "id": 1,
-            "size": 28
-          },
-          {
-            "id": 20,
-            "size": 9
-          },
-          {
-            "id": 8,
-            "size": 6
-          },
-          {
-            "id": 10,
-            "size": 5
-          },
-          {
-            "id": 21,
-            "size": 5
-          },
-          {
-            "id": 22,
-            "size": 5
-          },
-          {
-            "id": 23,
-            "size": 4
-          },
-          {
-            "id": 24,
-            "size": 3
-          },
-          {
-            "id": 11,
-            "size": 3
-          },
-          {
-            "id": 2,
-            "size": 2
-          },
-          {
-            "id": 3,
-            "size": 2
-          },
-          {
-            "id": 12,
-            "size": 2
-          },
-          {
-            "id": 4,
-            "size": 2
-          },
-          {
-            "id": 5,
-            "size": 2
-          },
-          {
-            "id": 6,
-            "size": 2
-          },
-          {
-            "id": 25,
-            "size": 2
-          },
-          {
-            "id": 7,
-            "size": 2
-          }
-        ],
-        "delta": {
-          "freed": [
-            "components/bottomPanel/tabs/shortcuts/EssentialsPanel.vue",
-            "components/bottomPanel/tabs/shortcuts/ShortcutsList.vue",
-            "components/bottomPanel/tabs/shortcuts/ViewControlsPanel.vue",
-            "components/bottomPanel/tabs/terminal/LogsTerminal.vue",
-            "components/boundingBoxes/WidgetBoundingBoxes.vue",
-            "components/builder/useEmptyWorkflowDialog.ts",
-            "components/cameraInfo/CameraInfo.vue",
-            "components/common/BackgroundImageUpload.vue",
-            "components/common/CustomizationDialog.vue",
-            "components/common/FormItem.vue",
-            "components/common/TreeExplorer.vue",
-            "components/common/TreeExplorerTreeNode.vue",
-            "components/common/TreeExplorerV2.vue",
-            "components/common/TreeExplorerV2Node.vue",
-            "components/common/WaveAudioPlayer.vue",
-            "components/curve/WidgetCurve.vue",
-            "components/custom/widget/TemplateFilterControls.vue",
-            "components/custom/widget/WorkflowTemplateSelectorDialog.vue",
-            "components/dialog/content/ApiNodesSignInContent.vue",
-            "components/dialog/content/ConfirmationDialogContent.vue",
-            "components/dialog/content/TopUpCreditsDialogContentLegacy.vue",
-            "components/dialog/content/error/FindIssueButton.vue",
-            "components/dialog/content/setting/AboutPanel.vue",
-            "components/dialog/content/setting/CreditsPanel.vue",
-            "components/dialog/content/setting/CurrentUserMessage.vue",
-            "components/dialog/content/setting/KeybindingPanel.vue",
-            "components/dialog/content/setting/UsageLogsTable.vue",
-            "components/dialog/content/setting/UserPanel.vue",
-            "components/dialog/content/setting/keybinding/KeybindingPresetToolbar.vue",
-            "components/dialog/content/signin/ApiKeyForm.vue",
-            "components/dialog/content/signin/SignUpForm.vue",
-            "components/dialog/content/signin/TurnstileWidget.vue",
-            "components/dialog/content/subscription/CancelSubscriptionDialogContent.vue",
-            "components/gradientslider/GradientSlider.vue",
-            "components/gradientslider/gradients.ts",
-            "components/graph/widgets/MultiSelectWidget.vue",
-            "components/graph/widgets/TextPreviewWidget.vue",
-            "components/imagecrop/WidgetImageCrop.vue",
-            "components/load3d/Load3D.vue",
-            "components/load3d/Load3DAdvanced.vue",
-            "components/load3d/Load3DMenuBar.vue",
-            "components/load3d/Load3dViewerContent.vue",
-            "components/load3d/controls/ViewerControls.vue",
-            "components/load3d/controls/viewer/ViewerLightControls.vue",
-            "components/load3d/menubar/LightMenuGroup.vue",
-            "components/maskeditor/ImageLayerSettingsPanel.vue",
-            "components/maskeditor/MaskEditorContent.vue",
-            "components/maskeditor/PointerZone.vue",
-            "components/maskeditor/SidePanel.vue",
-            "components/maskeditor/ToolPanel.vue",
-            "components/maskeditor/dialog/TopBarHeader.vue",
-            "components/node/NodeHelpContent.vue",
-            "components/node/NodePreview.vue",
-            "components/node/NodePreviewCard.vue",
-            "components/node/NodePricingBadge.vue",
-            "components/node/NodeProviderBadge.vue",
-            "components/painter/WidgetPainter.vue",
-            "components/palette/WidgetColors.vue",
-            "components/queue/JobHistoryActionsMenu.vue",
-            "components/queue/dialogs/QueueClearHistoryDialog.vue",
-            "components/queue/job/JobAssetsList.vue",
-            "components/queue/job/JobContextMenu.vue",
-            "components/queue/job/JobDetailsHoverPopover.vue",
-            "components/queue/job/JobDetailsPopover.vue",
-            "components/queue/job/JobFilterActions.vue",
-            "components/queue/job/JobFilterTabs.vue",
-            "components/queue/job/buildVirtualJobRows.ts",
-            "components/queue/job/useJobErrorReporting.ts",
-            "components/queue/job/useQueueEstimates.ts",
-            "components/range/RangeEditor.vue",
-            "components/range/WidgetRange.vue",
-            "components/range/rangeUtils.ts",
-            "components/rightSidePanel/errors/missingResourceAbsorption.ts",
-            "components/searchbox/NodeSearchFilter.vue",
-            "components/sidebar/tabs/AppsSidebarTab.vue",
-            "components/sidebar/tabs/AssetsSidebarGridView.vue",
-            "components/sidebar/tabs/AssetsSidebarListView.vue",
-            "components/sidebar/tabs/AssetsSidebarTab.vue",
-            "components/sidebar/tabs/BaseWorkflowsSidebarTab.vue",
-            "components/sidebar/tabs/JobHistorySidebarTab.vue",
-            "components/sidebar/tabs/ModelLibrarySidebarTab.vue",
-            "components/sidebar/tabs/NodeLibrarySidebarTab.vue",
-            "components/sidebar/tabs/NodeLibrarySidebarTabV2.vue",
-            "components/sidebar/tabs/WorkflowsSidebarTab.vue",
-            "components/sidebar/tabs/modelLibrary/ModelPreview.vue",
-            "components/sidebar/tabs/modelLibrary/ModelTreeLeaf.vue",
-            "components/sidebar/tabs/nodeLibrary/AllNodesPanel.vue",
-            "components/sidebar/tabs/nodeLibrary/EssentialNodeCard.vue",
-            "components/sidebar/tabs/nodeLibrary/EssentialNodesPanel.vue",
-            "components/sidebar/tabs/nodeLibrary/NodeBookmarkTreeExplorer.vue",
-            "components/sidebar/tabs/nodeLibrary/NodeHelpPage.vue",
-            "components/sidebar/tabs/nodeLibrary/NodeTreeFolder.vue",
-            "components/sidebar/tabs/nodeLibrary/NodeTreeLeaf.vue",
-            "components/sidebar/tabs/queue/MediaLightbox.vue",
-            "components/sidebar/tabs/queue/ResultAudio.vue",
-            "components/sidebar/tabs/queue/ResultText.vue",
-            "components/sidebar/tabs/queue/ResultVideo.vue",
-            "components/sidebar/tabs/workflows/WorkflowTreeLeaf.vue",
-            "components/topbar/CloudBadge.vue",
-            "components/topbar/TopbarBadge.vue",
-            "components/videoEdit/VideoEditPanel.vue",
-            "components/videoEdit/VideoFilmstripTrim.vue",
-            "components/videoEdit/WidgetVideoEdit.vue",
-            "composables/auth/useTurnstile.ts",
-            "composables/billing/topupBalanceRefresh.ts",
-            "composables/billing/types.ts",
-            "composables/billing/useBillingContext.ts",
-            "composables/billing/useBillingRouting.ts",
-            "composables/billing/useLegacyBilling.ts",
-            "composables/billing/usePartnerNodesRunGate.ts",
-            "composables/billing/usePendingTopup.ts",
-            "composables/bottomPanelTabs/useCommandSubcategories.ts",
-            "composables/bottomPanelTabs/useLogsTerminal.ts",
-            "composables/bottomPanelTabs/useShortcutsTab.ts",
-            "composables/bottomPanelTabs/useTerminalTabs.ts",
-            "composables/boundingBoxes/useBoundingBoxes.ts",
-            "composables/canvas/visibleCanvasViewport.ts",
-            "composables/element/useAbsolutePosition.ts",
-            "composables/element/useCanvasPositionConversion.ts",
-            "composables/graph/useCanvasRefresh.ts",
-            "composables/graph/useFrameNodes.ts",
-            "composables/graph/useNodeArrangement.ts",
-            "composables/graph/useNodeCustomization.ts",
-            "composables/graph/useSelectedNodeActions.ts",
-            "composables/graph/useSelectionOperations.ts",
-            "composables/graph/useSelectionState.ts",
-            "composables/maskeditor/imageWidgetAdapter.ts",
-            "composables/maskeditor/useBrushDrawing.ts",
-            "composables/maskeditor/useBrushPersistence.ts",
-            "composables/maskeditor/useImageLoader.ts",
-            "composables/maskeditor/useMaskEditor.ts",
-            "composables/maskeditor/useMaskEditorLoader.ts",
-            "composables/maskeditor/useMaskEditorSaver.ts",
-            "composables/maskeditor/useToolManager.ts",
-            "composables/node/canvasImagePreviewTypes.ts",
-            "composables/node/startModelNodeDragFromAsset.ts",
-            "composables/node/useNodeDragAndDrop.ts",
-            "composables/node/useNodeDragToCanvas.ts",
-            "composables/node/useNodeFileInput.ts",
-            "composables/node/useNodePaste.ts",
-            "composables/node/useNodePreviewAndDrag.ts",
-            "composables/node/useNodePricing.ts",
-            "composables/node/useNodeProgressText.ts",
-            "composables/node/usePartnerNodesInGraph.ts",
-            "composables/painter/usePainter.ts",
-            "composables/queue/useJobList.ts",
-            "composables/queue/useJobMenu.ts",
-            "composables/queue/useQueueClearHistoryDialog.ts",
-            "composables/queue/useQueueFeatureFlags.ts",
-            "composables/queue/useQueueProgress.ts",
-            "composables/queue/useResultGallery.ts",
-            "composables/sidebarTabs/useAssetsSidebarTab.ts",
-            "composables/sidebarTabs/useJobHistorySidebarTab.ts",
-            "composables/sidebarTabs/useModelLibrarySidebarTab.ts",
-            "composables/sidebarTabs/useNodeLibrarySidebarTab.ts",
-            "composables/tree/useTreeFolderOperations.ts",
-            "composables/useCameraInfo.ts",
-            "composables/useEssentialTileNodeDef.ts",
-            "composables/useFeatureFlags.ts",
-            "composables/useImageCrop.ts",
-            "composables/useNodeHelpContent.ts",
-            "composables/usePaste.ts",
-            "composables/useRangeEditor.ts",
-            "composables/useTemplateFiltering.ts",
-            "composables/useTreeExpansion.ts",
-            "composables/useUpstreamValue.ts",
-            "composables/useVueFeatureFlags.ts",
-            "composables/useWaveAudioPlayer.ts",
-            "composables/useWorkflowTemplateSelectorDialog.ts",
-            "composables/video/useCropRatioLock.ts",
-            "composables/video/useTimelineScrub.ts",
-            "composables/video/useVideoEditModel.ts",
-            "composables/video/useVideoFilmstrip.ts",
-            "composables/video/useVideoSourceUrl.ts",
-            "config/billingWeb.ts",
-            "config/comfyApi.ts",
-            "config/firebase.ts",
-            "config/turnstile.ts",
-            "core/graph/subgraph/liftNodeErrorsToBoundary.ts",
-            "core/graph/subgraph/promotedInputWidget.ts",
-            "core/graph/subgraph/resolvePromotedWidgetSource.ts",
-            "core/graph/transferLinkPresentation.ts",
-            "core/graph/widgets/comboWidgetInventory.ts",
-            "core/graph/widgets/nodeWidgetValues.ts",
-            "extensions/core/agentPanel.ts",
-            "extensions/core/cameraInfo.ts",
-            "extensions/core/cameraInfo/CameraInfoViewport.ts",
-            "extensions/core/clipspace.ts",
-            "extensions/core/cloudBadges.ts",
-            "extensions/core/cloudFeedbackTopbarButton.ts",
-            "extensions/core/cloudRemoteConfig.ts",
-            "extensions/core/cloudSessionCookie.ts",
-            "extensions/core/contextMenuFilter.ts",
-            "extensions/core/createBoundingBoxes.ts",
-            "extensions/core/customWidgets.ts",
-            "extensions/core/dynamicPrompts.ts",
-            "extensions/core/editAttention.ts",
-            "extensions/core/electronAdapter.ts",
-            "extensions/core/groupNode.ts",
-            "extensions/core/groupOptions.ts",
-            "extensions/core/imageCompare.ts",
-            "extensions/core/imageCompositor.ts",
-            "extensions/core/imageCrop.ts",
-            "extensions/core/index.ts",
-            "extensions/core/layerEditor.ts",
-            "extensions/core/load3d.ts",
-            "extensions/core/load3d/GizmoManager.ts",
-            "extensions/core/load3d/HDRIManager.ts",
-            "extensions/core/load3d/Load3DConfiguration.ts",
-            "extensions/core/load3d/Load3d.ts",
-            "extensions/core/load3d/Load3dUtils.ts",
-            "extensions/core/load3d/LoaderManager.ts",
-            "extensions/core/load3d/MeshModelAdapter.ts",
-            "extensions/core/load3d/ModelAdapter.ts",
-            "extensions/core/load3d/PointCloudModelAdapter.ts",
-            "extensions/core/load3d/SceneManager.ts",
-            "extensions/core/load3d/SceneModelManager.ts",
-            "extensions/core/load3d/SplatModelAdapter.ts",
-            "extensions/core/load3d/Viewport3d.ts",
-            "extensions/core/load3d/createLoad3d.ts",
-            "extensions/core/load3d/createViewport3d.ts",
-            "extensions/core/load3d/exportMenuHelper.ts",
-            "extensions/core/load3d/load3dSerialize.ts",
-            "extensions/core/load3d/load3dViewport.ts",
-            "extensions/core/load3dAdvanced.ts",
-            "extensions/core/load3dLazy.ts",
-            "extensions/core/load3dPreviewExtensions.ts",
-            "extensions/core/maskeditor.ts",
-            "extensions/core/nightlyBadges.ts",
-            "extensions/core/nodeTemplates.ts",
-            "extensions/core/noteNode.ts",
-            "extensions/core/painter.ts",
-            "extensions/core/previewAny.ts",
-            "extensions/core/rerouteNode.ts",
-            "extensions/core/saveImageExtraOutput.ts",
-            "extensions/core/saveMesh.ts",
-            "extensions/core/saveText.ts",
-            "extensions/core/selectionBorder.ts",
-            "extensions/core/simpleTouchSupport.ts",
-            "extensions/core/slotDefaults.ts",
-            "extensions/core/textPreviewWidgets.ts",
-            "extensions/core/uploadAudio.ts",
-            "extensions/core/uploadImage.ts",
-            "extensions/core/webcamCapture.ts",
-            "extensions/core/widgetValuePropagation.ts",
-            "lib/litegraph/src/LGraphBadge.ts",
-            "lib/litegraph/src/LGraphButton.ts",
-            "lib/litegraph/src/contextMenuCompat.ts",
-            "lib/litegraph/src/infrastructure/ConstrainedSize.ts",
-            "lib/litegraph/src/infrastructure/Rectangle.ts",
-            "lib/litegraph/src/interfaces.ts",
-            "lib/litegraph/src/measure.ts",
-            "lib/litegraph/src/node/SlotBase.ts",
-            "platform/assets/components/AssetBrowserModal.vue",
-            "platform/assets/components/AssetCard.vue",
-            "platform/assets/components/AssetGrid.vue",
-            "platform/assets/components/Media3DTop.vue",
-            "platform/assets/components/MediaAssetCard.vue",
-            "platform/assets/components/MediaAssetContextMenu.vue",
-            "platform/assets/components/MediaAudioTop.vue",
-            "platform/assets/components/MediaImageTop.vue",
-            "platform/assets/components/MediaTextTop.vue",
-            "platform/assets/components/MediaVideoTop.vue",
-            "platform/assets/components/UploadModelConfirmation.vue",
-            "platform/assets/components/UploadModelDialog.vue",
-            "platform/assets/components/UploadModelProgress.vue",
-            "platform/assets/components/UploadModelUpgradeModal.vue",
-            "platform/assets/components/UploadModelUrlInput.vue",
-            "platform/assets/components/modelInfo/ModelInfoPanel.vue",
-            "platform/assets/composables/openModelLibraryBrowser.ts",
-            "platform/assets/composables/useAssetBrowser.ts",
-            "platform/assets/composables/useAssetDownload.ts",
-            "platform/assets/composables/useAssetGridSelection.ts",
-            "platform/assets/composables/useAssetSelection.ts",
-            "platform/assets/composables/useAssetsQuery.ts",
-            "platform/assets/composables/useMediaAssetActions.ts",
-            "platform/assets/composables/useModelTypes.ts",
-            "platform/assets/composables/useModelUpload.ts",
-            "platform/assets/composables/useOutputStacks.ts",
-            "platform/assets/composables/useUploadModelWizard.ts",
-            "platform/assets/schemas/assetMetadataSchema.ts",
-            "platform/assets/schemas/mediaAssetSchema.ts",
-            "platform/assets/services/assetService.ts",
-            "platform/assets/utils/assetDragUtil.ts",
-            "platform/assets/utils/assetPreviewUtil.ts",
-            "platform/assets/utils/assetUrlUtil.ts",
-            "platform/assets/utils/clearDeletedAssetWidgetValues.ts",
-            "platform/assets/utils/clearNodePreviewCacheForValues.ts",
-            "platform/assets/utils/markDeletedAssetsAsMissingMedia.ts",
-            "platform/assets/utils/marqueeSelectionUtil.ts",
-            "platform/assets/utils/mediaIconUtil.ts",
-            "platform/assets/utils/outputAssetCountUtil.ts",
-            "platform/assets/utils/outputAssetUtil.ts",
-            "platform/assets/utils/resolveModelNodeFromAsset.ts",
-            "platform/auth/firebaseIdentity.ts",
-            "platform/canvas/minimapDecorationRegistry.ts",
-            "platform/cloud/churnkey/churnkeyClient.ts",
-            "platform/cloud/notification/components/CloudNotificationContent.vue",
-            "platform/cloud/subscription/components/CreditsTile.vue",
-            "platform/cloud/subscription/components/PricingTable.vue",
-            "platform/cloud/subscription/components/SubscriptionFooterLinks.vue",
-            "platform/cloud/subscription/composables/useAccountPreconditionDialog.ts",
-            "platform/cloud/subscription/composables/useBillingPlans.ts",
-            "platform/cloud/subscription/composables/useFreeTierQuota.ts",
-            "platform/cloud/subscription/composables/useSubscription.ts",
-            "platform/cloud/subscription/composables/useSubscriptionActions.ts",
-            "platform/cloud/subscription/composables/useSubscriptionCancellationWatcher.ts",
-            "platform/cloud/subscription/composables/useSubscriptionCredits.ts",
-            "platform/cloud/subscription/launchCancellationFlow.ts",
-            "platform/cloud/subscription/utils/paymentReturnUrl.ts",
-            "platform/cloud/subscription/utils/planDuration.ts",
-            "platform/cloud/subscription/utils/subscriptionCancellationTelemetry.ts",
-            "platform/cloud/subscription/utils/subscriptionCheckoutTracker.ts",
-            "platform/cloud/subscription/utils/subscriptionCheckoutUtil.ts",
-            "platform/cloud/subscription/utils/tierBenefits.ts",
-            "platform/errorCatalog/executionErrorResolver.ts",
-            "platform/errorCatalog/promptErrorResolver.ts",
-            "platform/errorCatalog/runtimeErrorCopy.ts",
-            "platform/errorCatalog/types.ts",
-            "platform/errorCatalog/validationErrorResolver.ts",
-            "platform/keybindings/keybindingService.ts",
-            "platform/keybindings/presetService.ts",
-            "platform/missingMedia/missingMediaAssetResolver.ts",
-            "platform/missingMedia/missingMediaGrouping.ts",
-            "platform/missingMedia/missingMediaPipeline.ts",
-            "platform/missingMedia/missingMediaScan.ts",
-            "platform/missingMedia/types.ts",
-            "platform/missingModel/types.ts",
-            "platform/nodeReplacement/missingNodeScan.ts",
-            "platform/nodeReplacement/nodeReplacementService.ts",
-            "platform/nodeReplacement/nodeReplacementStore.ts",
-            "platform/onboarding/coachmarkRegistry.ts",
-            "platform/onboarding/onboardingReplay.ts",
-            "platform/onboarding/onboardingTourStore.ts",
-            "platform/onboarding/onboardingTours.ts",
-            "platform/onboarding/tourState.ts",
-            "platform/onboarding/useTourTriggers.ts",
-            "platform/remote/comfyui/execution/types.ts",
-            "platform/remote/comfyui/jobs/fetchJobs.ts",
-            "platform/remote/comfyui/jobs/jobTypes.ts",
-            "platform/remoteConfig/refreshRemoteConfig.ts",
-            "platform/secrets/api/secretsApi.ts",
-            "platform/secrets/components/SecretFormDialog.vue",
-            "platform/secrets/components/SecretsPanel.vue",
-            "platform/secrets/composables/useSecretForm.ts",
-            "platform/secrets/composables/useSecrets.ts",
-            "platform/settings/components/ColorPaletteMessage.vue",
-            "platform/settings/components/ExtensionPanel.vue",
-            "platform/settings/components/ServerConfigPanel.vue",
-            "platform/settings/components/SettingDialog.vue",
-            "platform/settings/components/SettingGroup.vue",
-            "platform/settings/components/SettingItem.vue",
-            "platform/settings/components/SettingsPanel.vue",
-            "platform/settings/composables/useSettingSearch.ts",
-            "platform/settings/composables/useSettingUI.ts",
-            "platform/settings/composables/useSettingsDialog.ts",
-            "platform/settings/globalSettingsApi.ts",
-            "platform/settings/missingWarningVisibility.ts",
-            "platform/settings/settingStore.ts",
-            "platform/support/feedbackDialog.ts",
-            "platform/tasks/services/taskService.ts",
-            "platform/telemetry/datadogRumBeforeSend.ts",
-            "platform/telemetry/hostTelemetryEnabled.ts",
-            "platform/telemetry/imageFailureDiagnostics.ts",
-            "platform/telemetry/index.ts",
-            "platform/telemetry/initDatadogRum.ts",
-            "platform/telemetry/nodeAdded/installNodeAddedTelemetry.ts",
-            "platform/telemetry/nodeAdded/nodeAddSource.ts",
-            "platform/telemetry/perf/bootstrapTracer.ts",
-            "platform/telemetry/reportError.ts",
-            "platform/telemetry/searchQuery/useSearchQueryTracking.ts",
-            "platform/telemetry/utils/billingFailureCategory.ts",
-            "platform/telemetry/utils/checkoutAttribution.ts",
-            "platform/telemetry/utils/getActionbarDockState.ts",
-            "platform/telemetry/utils/groupMissingNodesByPack.ts",
-            "platform/telemetry/utils/workflowExecutionContext.ts",
-            "platform/workflow/core/services/workflowActionsService.ts",
-            "platform/workflow/core/utils/workflowId.ts",
-            "platform/workflow/core/utils/workflowToClipboardItems.ts",
-            "platform/workflow/management/composables/useAppsSidebarTab.ts",
-            "platform/workflow/management/composables/useWorkflowsSidebarTab.ts",
-            "platform/workflow/sharing/components/OpenSharedWorkflowDialogContent.vue",
-            "platform/workflow/sharing/components/profile/ComfyHubCreateProfileForm.vue",
-            "platform/workflow/sharing/components/publish/ComfyHubDescribeStep.vue",
-            "platform/workflow/sharing/components/publish/ComfyHubFinishStep.vue",
-            "platform/workflow/sharing/components/publish/ComfyHubPublishDialog.vue",
-            "platform/workflow/sharing/components/publish/ComfyHubPublishNav.vue",
-            "platform/workflow/sharing/components/publish/ComfyHubPublishWizardContent.vue",
-            "platform/workflow/sharing/composables/useComfyHubProfileGate.ts",
-            "platform/workflow/sharing/composables/useComfyHubPublishSubmission.ts",
-            "platform/workflow/sharing/composables/useComfyHubPublishWizard.ts",
-            "platform/workflow/sharing/composables/useSharedWorkflowUrlLoader.ts",
-            "platform/workflow/sharing/services/comfyHubService.ts",
-            "platform/workflow/sharing/services/workflowShareService.ts",
-            "platform/workflow/sharing/types/shareTypes.ts",
-            "platform/workflow/templates/composables/useTemplateWorkflows.ts",
-            "platform/workflow/templates/repositories/workflowTemplatesStore.ts",
-            "platform/workflow/templates/services/templateInputService.ts",
-            "platform/workflow/utils/workflowExtractionUtil.ts",
-            "platform/workflow/validation/composables/useWorkflowValidation.ts",
-            "platform/workflow/validation/schemas/workflowSchema.ts",
-            "platform/workspace/api/partnerNodePolicyApi.ts",
-            "platform/workspace/api/workspaceApi.ts",
-            "platform/workspace/api/workspaceApiUrl.ts",
-            "platform/workspace/billing/customerAttention.ts",
-            "platform/workspace/billing/hostedBillingRoutes.ts",
-            "platform/workspace/billing/openHostedBillingTab.ts",
-            "platform/workspace/billing/sdk/billingCapabilitiesView.ts",
-            "platform/workspace/billing/sdk/billingPlansView.ts",
-            "platform/workspace/billing/sdk/billingSdkStore.ts",
-            "platform/workspace/billing/sdk/billingSdkTelemetry.ts",
-            "platform/workspace/billing/sdk/billingStatusView.ts",
-            "platform/workspace/billing/sdk/operationRecordView.ts",
-            "platform/workspace/billing/sdk/subscriptionOperationView.ts",
-            "platform/workspace/billing/sdk/topupOperationView.ts",
-            "platform/workspace/billing/subscribeInput.ts",
-            "platform/workspace/components/InviteMembersForm.vue",
-            "platform/workspace/components/PricingTableWorkspace.vue",
-            "platform/workspace/components/SubscriptionAddPaymentPreviewWorkspace.vue",
-            "platform/workspace/components/SubscriptionPanelContentWorkspace.vue",
-            "platform/workspace/components/SubscriptionSuccessWorkspace.vue",
-            "platform/workspace/components/SubscriptionTransitionPreviewWorkspace.vue",
-            "platform/workspace/components/TopUpCreditsDialogContentWorkspace.vue",
-            "platform/workspace/components/UnifiedPricingTable.vue",
-            "platform/workspace/components/UnifiedStripePaymentSelector.vue",
-            "platform/workspace/components/WorkspaceProfilePic.vue",
-            "platform/workspace/components/dialogs/ChangeMemberRoleDialogContent.vue",
-            "platform/workspace/components/dialogs/CreateWorkspaceDialogContent.vue",
-            "platform/workspace/components/dialogs/DeleteWorkspaceDialogContent.vue",
-            "platform/workspace/components/dialogs/EditWorkspaceDialogContent.vue",
-            "platform/workspace/components/dialogs/InviteMemberDialogContent.vue",
-            "platform/workspace/components/dialogs/LeaveWorkspaceDialogContent.vue",
-            "platform/workspace/components/dialogs/RemoveMemberDialogContent.vue",
-            "platform/workspace/components/dialogs/RevokeInviteDialogContent.vue",
-            "platform/workspace/components/dialogs/SetMemberCreditLimitDialogContent.vue",
-            "platform/workspace/components/dialogs/TeamWorkspacesDialogContent.vue",
-            "platform/workspace/components/dialogs/settings/BillingStatusBanner.vue",
-            "platform/workspace/components/dialogs/settings/MemberListItem.vue",
-            "platform/workspace/components/dialogs/settings/MembersPanelContent.vue",
-            "platform/workspace/components/dialogs/settings/PartnerNodeAccessPanel.vue",
-            "platform/workspace/components/dialogs/settings/PendingInvitesList.vue",
-            "platform/workspace/components/dialogs/settings/PlanCreditsPanelContent.vue",
-            "platform/workspace/components/dialogs/settings/WorkspaceMembersPanelContent.vue",
-            "platform/workspace/components/dialogs/settings/WorkspaceMenuButton.vue",
-            "platform/workspace/components/dialogs/settings/WorkspaceSettingsPanelContent.vue",
-            "platform/workspace/components/subscriptionPanelWorkspace.logic.ts",
-            "platform/workspace/composables/readOnRail.ts",
-            "platform/workspace/composables/useBillingBanner.ts",
-            "platform/workspace/composables/useBillingCapabilities.ts",
-            "platform/workspace/composables/useBillingReadRail.ts",
-            "platform/workspace/composables/useDowngradeToPersonal.ts",
-            "platform/workspace/composables/useHasSavedPaymentMethod.ts",
-            "platform/workspace/composables/useMembersPanel.ts",
-            "platform/workspace/composables/useResubscribe.ts",
-            "platform/workspace/composables/useScheduledPlanChange.ts",
-            "platform/workspace/composables/useSubscriptionRail.ts",
-            "platform/workspace/composables/useTeamPlan.ts",
-            "platform/workspace/composables/useTopupOperation.ts",
-            "platform/workspace/composables/useWorkspaceBilling.ts",
-            "platform/workspace/composables/useWorkspaceMenuItems.ts",
-            "platform/workspace/composables/useWorkspacePlanPricing.ts",
-            "platform/workspace/composables/useWorkspaceSwitch.ts",
-            "platform/workspace/composables/useWorkspaceTierLabel.ts",
-            "platform/workspace/composables/useWorkspaceUI.ts",
-            "platform/workspace/stores/billingOperationStore.ts",
-            "platform/workspace/stores/partnerNodeGovernanceStore.ts",
-            "platform/workspace/utils/checkoutJourney.ts",
-            "platform/workspace/utils/pendingSubscriptionCheckout.ts",
-            "platform/workspace/utils/platformLink.ts",
-            "platform/workspace/utils/workspaceCheckoutTelemetry.ts",
-            "renderer/core/canvas/interaction/canvasInteractionMode.ts",
-            "renderer/core/canvas/interaction/canvasPointerEvent.ts",
-            "renderer/core/canvas/links/linkConnectorAdapter.ts",
-            "renderer/core/canvas/links/linkDropOrchestrator.ts",
-            "renderer/core/layout/slots/syncSlotOffsets.ts",
-            "renderer/core/layout/transform/graphRenderTransform.ts",
-            "renderer/core/layout/transform/useTransformState.ts",
-            "renderer/core/spatial/boundsCalculator.ts",
-            "renderer/core/thumbnail/graphThumbnailRenderer.ts",
-            "renderer/extensions/compositor/components/WidgetCompositor.vue",
-            "renderer/extensions/compositor/composables/compositorSave.ts",
-            "renderer/extensions/compositor/composables/compositorSession.ts",
-            "renderer/extensions/compositor/composables/compositorWidgets.ts",
-            "renderer/extensions/compositor/composables/useCompositorAutoSave.ts",
-            "renderer/extensions/compositor/composables/useCompositorEditor.ts",
-            "renderer/extensions/compositor/composables/useCompositorLayers.ts",
-            "renderer/extensions/compositor/composables/useCompositorPsdDownload.ts",
-            "renderer/extensions/firstRunTour/gettingStarted/firstRunEntry.ts",
-            "renderer/extensions/firstRunTour/roles/heuristicRoles.ts",
-            "renderer/extensions/firstRunTour/roles/resolveTourRoles.ts",
-            "renderer/extensions/firstRunTour/roles/tourSequence.ts",
-            "renderer/extensions/firstRunTour/tour/cameraFraming.ts",
-            "renderer/extensions/firstRunTour/tour/canvasCoachTarget.ts",
-            "renderer/extensions/firstRunTour/tour/firstRunTourDefinition.ts",
-            "renderer/extensions/firstRunTour/tour/useFirstRunTourController.ts",
-            "renderer/extensions/layerEditor/components/LayerEditorContent.vue",
-            "renderer/extensions/layerEditor/composables/layerEditorDialog.ts",
-            "renderer/extensions/layerEditor/composables/useLayerEditor.ts",
-            "renderer/extensions/linearMode/AppInput.vue",
-            "renderer/extensions/minimap/data/MinimapDataSource.ts",
-            "renderer/extensions/minimap/minimapCanvasRenderer.ts",
-            "renderer/extensions/minimap/types.ts",
-            "renderer/extensions/vueNodes/components/InputSlot.vue",
-            "renderer/extensions/vueNodes/components/LGraphNodePreview.vue",
-            "renderer/extensions/vueNodes/components/NodeBadge.vue",
-            "renderer/extensions/vueNodes/components/NodeHeader.vue",
-            "renderer/extensions/vueNodes/components/NodeSlots.vue",
-            "renderer/extensions/vueNodes/components/OutputSlot.vue",
-            "renderer/extensions/vueNodes/components/SlotConnectionDot.vue",
-            "renderer/extensions/vueNodes/components/WidgetGrid.vue",
-            "renderer/extensions/vueNodes/composables/useNodeTooltips.ts",
-            "renderer/extensions/vueNodes/composables/useSlotLinkInteraction.ts",
-            "renderer/extensions/vueNodes/composables/useSlotLinkReveal.ts",
-            "renderer/extensions/vueNodes/composables/useVueNodeResizeTracking.ts",
-            "renderer/extensions/vueNodes/layout/ensureCorrectLayoutScale.ts",
-            "renderer/extensions/vueNodes/types/widgetGrid.ts",
-            "renderer/extensions/vueNodes/utils/eventUtils.ts",
-            "renderer/extensions/vueNodes/utils/linkedCoreMediaUtils.ts",
-            "renderer/extensions/vueNodes/utils/nodeDataUtils.ts",
-            "renderer/extensions/vueNodes/widgets/components/ValueControlButton.vue",
-            "renderer/extensions/vueNodes/widgets/components/ValueControlPopover.vue",
-            "renderer/extensions/vueNodes/widgets/components/WidgetButton.vue",
-            "renderer/extensions/vueNodes/widgets/components/WidgetChart.types.ts",
-            "renderer/extensions/vueNodes/widgets/components/WidgetChart.vue",
-            "renderer/extensions/vueNodes/widgets/components/WidgetColorPicker.vue",
-            "renderer/extensions/vueNodes/widgets/components/WidgetGalleria.vue",
-            "renderer/extensions/vueNodes/widgets/components/WidgetImageCompare.vue",
-            "renderer/extensions/vueNodes/widgets/components/WidgetInputNumber.vue",
-            "renderer/extensions/vueNodes/widgets/components/WidgetInputNumberGradientSlider.vue",
-            "renderer/extensions/vueNodes/widgets/components/WidgetInputNumberInput.vue",
-            "renderer/extensions/vueNodes/widgets/components/WidgetInputNumberSlider.vue",
-            "renderer/extensions/vueNodes/widgets/components/WidgetInputText.vue",
-            "renderer/extensions/vueNodes/widgets/components/WidgetLegacy.vue",
-            "renderer/extensions/vueNodes/widgets/components/WidgetMarkdown.vue",
-            "renderer/extensions/vueNodes/widgets/components/WidgetRecordAudio.vue",
-            "renderer/extensions/vueNodes/widgets/components/WidgetResolutionPreview.vue",
-            "renderer/extensions/vueNodes/widgets/components/WidgetSelect.vue",
-            "renderer/extensions/vueNodes/widgets/components/WidgetSelectDefault.vue",
-            "renderer/extensions/vueNodes/widgets/components/WidgetSelectDropdown.vue",
-            "renderer/extensions/vueNodes/widgets/components/WidgetTextPreview.vue",
-            "renderer/extensions/vueNodes/widgets/components/WidgetTextarea.vue",
-            "renderer/extensions/vueNodes/widgets/components/WidgetToggleSwitch.vue",
-            "renderer/extensions/vueNodes/widgets/components/WidgetWithControl.vue",
-            "renderer/extensions/vueNodes/widgets/components/form/dropdown/FormDropdown.vue",
-            "renderer/extensions/vueNodes/widgets/components/form/dropdown/FormDropdownMenu.vue",
-            "renderer/extensions/vueNodes/widgets/components/form/dropdown/FormDropdownMenuFilter.vue",
-            "renderer/extensions/vueNodes/widgets/components/form/dropdown/FormDropdownMenuItem.vue",
-            "renderer/extensions/vueNodes/widgets/components/layout/WidgetLayoutField.vue",
-            "renderer/extensions/vueNodes/widgets/composables/audio/useAudioRecorder.ts",
-            "renderer/extensions/vueNodes/widgets/composables/useAssetWidgetData.ts",
-            "renderer/extensions/vueNodes/widgets/composables/useBooleanWidget.ts",
-            "renderer/extensions/vueNodes/widgets/composables/useBoundingBoxWidget.ts",
-            "renderer/extensions/vueNodes/widgets/composables/useBoundingBoxesWidget.ts",
-            "renderer/extensions/vueNodes/widgets/composables/useChartWidget.ts",
-            "renderer/extensions/vueNodes/widgets/composables/useColorWidget.ts",
-            "renderer/extensions/vueNodes/widgets/composables/useColorsWidget.ts",
-            "renderer/extensions/vueNodes/widgets/composables/useCompositorWidget.ts",
-            "renderer/extensions/vueNodes/widgets/composables/useCurveWidget.ts",
-            "renderer/extensions/vueNodes/widgets/composables/useDismissOnCanvasGesture.ts",
-            "renderer/extensions/vueNodes/widgets/composables/useFloatWidget.ts",
-            "renderer/extensions/vueNodes/widgets/composables/useGalleriaWidget.ts",
-            "renderer/extensions/vueNodes/widgets/composables/useImageCompareImages.ts",
-            "renderer/extensions/vueNodes/widgets/composables/useImageCompareWidget.ts",
-            "renderer/extensions/vueNodes/widgets/composables/useIntWidget.ts",
-            "renderer/extensions/vueNodes/widgets/composables/usePainterWidget.ts",
-            "renderer/extensions/vueNodes/widgets/composables/useProgressTextWidget.ts",
-            "renderer/extensions/vueNodes/widgets/composables/useRangeWidget.ts",
-            "renderer/extensions/vueNodes/widgets/composables/useResolutionPreviewWidget.ts",
-            "renderer/extensions/vueNodes/widgets/composables/useTextareaWidget.ts",
-            "renderer/extensions/vueNodes/widgets/composables/useVideoEditWidget.ts",
-            "renderer/extensions/vueNodes/widgets/composables/useWidgetSelectActions.ts",
-            "renderer/extensions/vueNodes/widgets/composables/useWidgetSelectItems.ts",
-            "renderer/extensions/vueNodes/widgets/registry/widgetRegistry.ts",
-            "renderer/extensions/vueNodes/widgets/utils/audioUtils.ts",
-            "renderer/extensions/vueNodes/widgets/utils/resolvePromotedWidget.ts",
-            "scripts/api.ts",
-            "scripts/app.ts",
-            "scripts/defaultGraph.ts",
-            "scripts/metadata/avif.ts",
-            "scripts/metadata/ebml.ts",
-            "scripts/metadata/gltf.ts",
-            "scripts/metadata/isobmff.ts",
-            "scripts/metadata/mp3.ts",
-            "scripts/metadata/ogg.ts",
-            "scripts/metadata/parser.ts",
-            "scripts/metadata/svg.ts",
-            "scripts/pnginfo.ts",
-            "scripts/promotedWidgetControl.ts",
-            "scripts/ui/dialog.ts",
-            "scripts/ui/toggleSwitch.ts",
-            "scripts/valueControl.ts",
-            "services/audioService.ts",
-            "services/customerEventsService.ts",
-            "services/nodeHelpService.ts",
-            "services/nodeOrganizationService.ts",
-            "services/subgraphPseudoWidgetCache.ts",
-            "services/subgraphService.ts",
-            "services/useNewUserService.ts",
-            "stores/aboutPanelStore.ts",
-            "stores/agentNodeSelectionStore.ts",
-            "stores/assetDownloadStore.ts",
-            "stores/assetExportStore.ts",
-            "stores/commandStore.ts",
-            "stores/jobPreviewStore.ts",
-            "stores/linkPresentationStore.ts",
-            "stores/linkStore.ts",
-            "stores/maskEditorDataStore.ts",
-            "stores/modelStore.ts",
-            "stores/modelToNodeStore.ts",
-            "stores/nodeBookmarkStore.ts",
-            "stores/rerouteStore.ts",
-            "stores/resultItemParsing.ts",
-            "stores/systemStatsStore.ts",
-            "stores/userFileStore.ts",
-            "stores/userStore.ts",
-            "stores/workspace/assetsSidebarBadgeStore.ts",
-            "stores/workspace/nodeHelpStore.ts",
-            "stores/workspace/rightSidePanelStore.ts",
-            "systems/badgeSystem.ts",
-            "types/linkTopology.ts",
-            "types/metadataTypes.ts",
-            "utils/createAnnotatedPath.ts",
-            "utils/errorReportUtil.ts",
-            "utils/eventUtils.ts",
-            "utils/executionUtil.ts",
-            "utils/imageUtil.ts",
-            "utils/linkFixer.ts",
-            "utils/mathUtil.ts",
-            "utils/migration/migrateReroute.ts",
-            "utils/nodeDefUtil.ts",
-            "utils/nodeFilterUtil.ts",
-            "utils/nodeOutputUtil.ts",
-            "utils/positionBounds.ts",
-            "utils/queueDisplay.ts",
-            "utils/queueUtil.ts",
-            "utils/resultItem.ts",
-            "utils/resultItemUrl.ts",
-            "utils/searchAndReplace.ts",
-            "utils/sessionFeatureFlagOverride.ts",
-            "utils/syncUtil.ts",
-            "utils/videoMetadataUtil.ts",
-            "utils/vintageClipboard.ts",
-            "workbench/eventHelpers.ts",
-            "workbench/extensions/agent/composables/agent/useAgentConsent.ts",
-            "workbench/extensions/agent/crdt/layoutMintPort.ts",
-            "workbench/extensions/agent/crdt/linkMintPort.ts",
-            "workbench/extensions/agent/crdt/mintPortWiring.ts",
-            "workbench/extensions/agent/services/agent/workflowTabActivityTracker.ts",
-            "workbench/extensions/agent/stores/agent/agentConsentStore.ts",
-            "workbench/extensions/agent/stores/agent/agentPanelStore.ts",
-            "workbench/utils/modelMetadataUtil.ts",
-            "workbench/utils/nodeDefOrderingUtil.ts",
-            "workbench/utils/nodeHelpUtil.ts"
-          ],
-          "entangled": [
-            "composables/auth/useAuthDialogs.ts",
-            "composables/billing/useBillingDialogs.ts",
-            "lib/litegraph/src/types/contextMenu.ts",
-            "lib/litegraph/src/types/linkNetwork.ts",
-            "lib/litegraph/src/types/panel.ts",
-            "lib/litegraph/src/types/slots.ts",
-            "platform/workspace/composables/useWorkspaceDialogs.ts",
-            "scripts/appInstance.ts",
-            "scripts/appRegistry.ts",
-            "scripts/clipspace.ts"
-          ],
-          "splits": [
-            {
-              "from": 0,
-              "into": [20, 21, 22, 23, 24, 25]
-            }
-          ]
-        }
-      },
-      {
-        "index": 63,
-        "kind": "pr",
-        "parent": 61,
+        "parent": 72,
         "sha": "701c1d8b385f1fd79c55bd3fbcc985b496040bc8",
         "short": "701c1d8b38",
         "date": "2026-09-28T02:09:00Z",
@@ -7569,11 +6926,11 @@
             "size": 58
           },
           {
-            "id": 26,
+            "id": 18,
             "size": 49
           },
           {
-            "id": 19,
+            "id": 17,
             "size": 48
           },
           {
@@ -7683,15 +7040,15 @@
           "splits": [
             {
               "from": 0,
-              "into": [26]
+              "into": [18]
             }
           ]
         }
       },
       {
-        "index": 64,
+        "index": 74,
         "kind": "pr",
-        "parent": 63,
+        "parent": 73,
         "sha": "1958fcdf59ae5a841baee170842186b9ddc51fda",
         "short": "1958fcdf59",
         "date": "2026-09-28T04:10:08Z",
@@ -7718,11 +7075,11 @@
             "size": 58
           },
           {
-            "id": 26,
+            "id": 18,
             "size": 49
           },
           {
-            "id": 19,
+            "id": 17,
             "size": 48
           },
           {
@@ -7808,9 +7165,9 @@
         }
       },
       {
-        "index": 65,
+        "index": 75,
         "kind": "pr",
-        "parent": 64,
+        "parent": 74,
         "sha": "55e2c0696f6c67dada79e1bbb43dbeaaf40dddba",
         "short": "55e2c0696f",
         "date": "2026-09-28T04:56:04Z",
@@ -7837,11 +7194,11 @@
             "size": 53
           },
           {
-            "id": 26,
+            "id": 18,
             "size": 49
           },
           {
-            "id": 19,
+            "id": 17,
             "size": 43
           },
           {
@@ -7894,33 +7251,122 @@
         }
       },
       {
-        "index": 66,
+        "index": 76,
         "kind": "pr",
-        "parent": 15,
-        "sha": "acb6f09f8f7e217109cd18fc4587e58456c68303",
-        "short": "acb6f09f8f",
-        "date": "2026-10-08T00:01:51Z",
+        "parent": 75,
+        "sha": "b3e92b8080b1639e9f841e2a1e6570b3ed2dfbbf",
+        "short": "b3e92b8080",
+        "date": "2026-10-08T22:20:05Z",
+        "subject": "refactor: let billing rails announce refreshes instead of reading the context",
+        "pr": 19148,
+        "stats": {
+          "modules": 2505,
+          "imports": 11712,
+          "modulesInKnots": 272,
+          "largestKnot": 154,
+          "mainKnot": 53,
+          "secondKnot": 154,
+          "knotCount": 6,
+          "importsInKnots": 1188,
+          "noCircularWarnings": 886
+        },
+        "knots": [
+          {
+            "id": 9,
+            "size": 154
+          },
+          {
+            "id": 0,
+            "size": 53
+          },
+          {
+            "id": 18,
+            "size": 49
+          },
+          {
+            "id": 17,
+            "size": 10
+          },
+          {
+            "id": 19,
+            "size": 3
+          },
+          {
+            "id": 13,
+            "size": 3
+          }
+        ],
+        "delta": {
+          "freed": [
+            "components/dialog/content/TopUpCreditsDialogContentLegacy.vue",
+            "components/dialog/content/subscription/CancelSubscriptionDialogContent.vue",
+            "composables/auth/useAuthActions.ts",
+            "composables/billing/useBillingContext.ts",
+            "composables/billing/useLegacyBilling.ts",
+            "platform/cloud/subscription/components/CancellationFlowDialogContent.vue",
+            "platform/cloud/subscription/components/PricingTable.vue",
+            "platform/cloud/subscription/components/RetentionOfferStep.vue",
+            "platform/cloud/subscription/composables/useBillingPlans.ts",
+            "platform/cloud/subscription/composables/useCancellationPlan.ts",
+            "platform/cloud/subscription/composables/useRetentionOffer.ts",
+            "platform/cloud/subscription/composables/useSubscription.ts",
+            "platform/cloud/subscription/launchCancellationFlow.ts",
+            "platform/workspace/billing/openHostedBillingTab.ts",
+            "platform/workspace/components/InviteMembersForm.vue",
+            "platform/workspace/components/PricingTableWorkspace.vue",
+            "platform/workspace/components/SubscriptionSuccessWorkspace.vue",
+            "platform/workspace/components/SubscriptionTransitionPreviewWorkspace.vue",
+            "platform/workspace/components/TopUpCreditsDialogContentWorkspace.vue",
+            "platform/workspace/components/UnifiedPricingTable.vue",
+            "platform/workspace/components/dialogs/InviteMemberDialogContent.vue",
+            "platform/workspace/components/dialogs/InviteWrongAccountDialogContent.vue",
+            "platform/workspace/components/dialogs/RemoveMemberDialogContent.vue",
+            "platform/workspace/components/dialogs/RevokeInviteDialogContent.vue",
+            "platform/workspace/composables/useDowngradeToPersonal.ts",
+            "platform/workspace/composables/useScheduledPlanChange.ts",
+            "platform/workspace/composables/useSubscriptionRail.ts",
+            "platform/workspace/composables/useTopupOperation.ts",
+            "platform/workspace/composables/useWorkspaceBilling.ts",
+            "platform/workspace/composables/useWorkspaceUI.ts",
+            "platform/workspace/stores/billingOperationStore.ts"
+          ],
+          "entangled": ["composables/billing/useSubscriptionPaywall.ts"],
+          "splits": [
+            {
+              "from": 17,
+              "into": [19]
+            }
+          ]
+        }
+      },
+      {
+        "index": 77,
+        "kind": "pr",
+        "parent": 62,
+        "sha": "f9a2b7446ee5190996e50796d8ec6bf87bd23401",
+        "short": "f9a2b7446e",
+        "date": "2026-10-08T22:48:22Z",
         "subject": "tool: add domain architecture census and ratchet",
         "pr": 19768,
         "stats": {
-          "modules": 2442,
-          "imports": 11384,
-          "modulesInKnots": 730,
-          "largestKnot": 519,
-          "mainKnot": 519,
-          "secondKnot": 160,
-          "knotCount": 11,
-          "importsInKnots": 2838,
-          "noCircularWarnings": 1963
+          "modules": 2481,
+          "imports": 11607,
+          "modulesInKnots": 632,
+          "largestKnot": 422,
+          "mainKnot": 422,
+          "secondKnot": 154,
+          "knotCount": 13,
+          "importsInKnots": 2454,
+          "noCircularWarnings": 1743
         },
         "knots": [
           {
             "id": 0,
-            "size": 519
+            "size": 422
           },
           {
             "id": 9,
-            "size": 160
+            "size": 154
           },
           {
             "id": 1,
@@ -7935,11 +7381,19 @@
             "size": 5
           },
           {
+            "id": 11,
+            "size": 3
+          },
+          {
             "id": 2,
             "size": 2
           },
           {
             "id": 3,
+            "size": 2
+          },
+          {
+            "id": 12,
             "size": 2
           },
           {
@@ -7966,9 +7420,9 @@
         }
       },
       {
-        "index": 67,
+        "index": 78,
         "kind": "pr",
-        "parent": 66,
+        "parent": 15,
         "sha": "a44a01294d2765111fcd794c71aa04d1b46fb18c",
         "short": "a44a01294d",
         "date": "2026-10-08T00:37:32Z",
@@ -8038,9 +7492,9 @@
         }
       },
       {
-        "index": 68,
+        "index": 79,
         "kind": "pr",
-        "parent": 67,
+        "parent": 78,
         "sha": "4b0a0304ef3e954ac22b5b8775302ca881e3fee7",
         "short": "4b0a0304ef",
         "date": "2026-10-08T00:34:58Z",
@@ -8112,48 +7566,26 @@
     ],
     "prs": [
       {
-        "number": 19092,
-        "title": "refactor: load extensions from the bootstrap step, not extensionService",
-        "url": "https://github.com/Comfy-Org/ComfyUI_frontend/pull/19092",
-        "author": "DrJKL",
-        "isDraft": false,
-        "mergeable": "MERGEABLE",
-        "reviewDecision": null,
-        "additions": 133,
-        "deletions": 127,
-        "changedFiles": 8,
-        "baseRefName": "main",
-        "headRefName": "drjkl/extension-loader-bootstrap",
-        "head": "d584c3bd23a12596bb15cf5b937475589da1ee68",
-        "mergeBase": "0ef0276323b5819258571bbffe24af14af47dc2e",
-        "behindMain": 0,
-        "parentPr": null,
-        "containsParentHead": true,
-        "depth": 0,
-        "state": 54,
-        "baseState": 53
-      },
-      {
         "number": 19093,
         "title": "refactor: split widget constructor type and value-control helpers out of scripts/widgets",
         "url": "https://github.com/Comfy-Org/ComfyUI_frontend/pull/19093",
         "author": "DrJKL",
         "isDraft": false,
         "mergeable": "MERGEABLE",
-        "reviewDecision": "APPROVED",
-        "additions": 238,
+        "reviewDecision": null,
+        "additions": 240,
         "deletions": 233,
         "changedFiles": 32,
-        "baseRefName": "drjkl/extension-loader-bootstrap",
+        "baseRefName": "main",
         "headRefName": "drjkl/widgets-registry-split",
-        "head": "7d856b1db06d2fccb39d5c2aa1baca5b564ac3ac",
-        "mergeBase": "0ef0276323b5819258571bbffe24af14af47dc2e",
+        "head": "9536aff6c045a579eeb6b87b083bfdb432c96dc6",
+        "mergeBase": "9b91a0c8331da05cf9d92f408688d1e6b3d16561",
         "behindMain": 0,
-        "parentPr": 19092,
+        "parentPr": null,
         "containsParentHead": true,
-        "depth": 1,
-        "state": 55,
-        "baseState": 53
+        "depth": 0,
+        "state": 67,
+        "baseState": 66
       },
       {
         "number": 19116,
@@ -8161,7 +7593,7 @@
         "url": "https://github.com/Comfy-Org/ComfyUI_frontend/pull/19116",
         "author": "DrJKL",
         "isDraft": false,
-        "mergeable": "MERGEABLE",
+        "mergeable": "UNKNOWN",
         "reviewDecision": null,
         "additions": 355,
         "deletions": 352,
@@ -8170,11 +7602,11 @@
         "headRefName": "drjkl/progress-text-previews-view",
         "head": "36ff059f048b607994c6c11bcc2ea32983ac3475",
         "mergeBase": "0ef0276323b5819258571bbffe24af14af47dc2e",
-        "behindMain": 0,
+        "behindMain": 13,
         "parentPr": null,
         "containsParentHead": true,
         "depth": 0,
-        "state": 56,
+        "state": 68,
         "baseState": 53
       },
       {
@@ -8183,21 +7615,21 @@
         "url": "https://github.com/Comfy-Org/ComfyUI_frontend/pull/19118",
         "author": "DrJKL",
         "isDraft": false,
-        "mergeable": "CONFLICTING",
+        "mergeable": "UNKNOWN",
         "reviewDecision": null,
-        "additions": 3012,
-        "deletions": 1725,
-        "changedFiles": 206,
-        "baseRefName": "drjkl/widgets-registry-split",
+        "additions": 178,
+        "deletions": 99,
+        "changedFiles": 10,
+        "baseRefName": "main",
         "headRefName": "drjkl/api-auth-provider",
-        "head": "f6f1b6d079666fd7962e108c123846f105dc9b86",
-        "mergeBase": "0ba399c212af8cbdd95ac2d347e1030474baf291",
-        "behindMain": 614,
-        "parentPr": 19093,
-        "containsParentHead": false,
-        "depth": 2,
-        "state": 58,
-        "baseState": 57
+        "head": "05395c323d07fd802df2646844324fae298d04f2",
+        "mergeBase": "559647b5da239413188f226434ff96c96d7fd0fe",
+        "behindMain": 5,
+        "parentPr": null,
+        "containsParentHead": true,
+        "depth": 0,
+        "state": 69,
+        "baseState": 61
       },
       {
         "number": 19121,
@@ -8207,19 +7639,19 @@
         "isDraft": false,
         "mergeable": "MERGEABLE",
         "reviewDecision": "APPROVED",
-        "additions": 78,
-        "deletions": 58,
+        "additions": 48,
+        "deletions": 7,
         "changedFiles": 5,
         "baseRefName": "drjkl/api-auth-provider",
         "headRefName": "drjkl/workspace-api-auth",
-        "head": "67b6449601b55c96e78c4ff6b2ba65740f7da002",
-        "mergeBase": "0ba399c212af8cbdd95ac2d347e1030474baf291",
-        "behindMain": 614,
+        "head": "7eb8fa5d819116b8437e930002d5bc48d2364db9",
+        "mergeBase": "559647b5da239413188f226434ff96c96d7fd0fe",
+        "behindMain": 5,
         "parentPr": 19118,
         "containsParentHead": true,
-        "depth": 3,
-        "state": 59,
-        "baseState": 57
+        "depth": 1,
+        "state": 70,
+        "baseState": 61
       },
       {
         "number": 19131,
@@ -8227,7 +7659,7 @@
         "url": "https://github.com/Comfy-Org/ComfyUI_frontend/pull/19131",
         "author": "DrJKL",
         "isDraft": false,
-        "mergeable": "MERGEABLE",
+        "mergeable": "UNKNOWN",
         "reviewDecision": null,
         "additions": 1380,
         "deletions": 1054,
@@ -8236,11 +7668,11 @@
         "headRefName": "drjkl/dialog-service-split",
         "head": "994757a3922dd2b9134aff926a1a1535e53a297f",
         "mergeBase": "0ef0276323b5819258571bbffe24af14af47dc2e",
-        "behindMain": 0,
+        "behindMain": 13,
         "parentPr": 19093,
-        "containsParentHead": true,
-        "depth": 2,
-        "state": 60,
+        "containsParentHead": false,
+        "depth": 1,
+        "state": 71,
         "baseState": 53
       },
       {
@@ -8258,11 +7690,11 @@
         "headRefName": "drjkl/app-instance-leaf",
         "head": "15a7e94be18c41731d6e58ee8d96cad7feaad3d1",
         "mergeBase": "0ef0276323b5819258571bbffe24af14af47dc2e",
-        "behindMain": 0,
+        "behindMain": 13,
         "parentPr": 19131,
         "containsParentHead": true,
-        "depth": 3,
-        "state": 61,
+        "depth": 2,
+        "state": 72,
         "baseState": 53
       },
       {
@@ -8271,21 +7703,21 @@
         "url": "https://github.com/Comfy-Org/ComfyUI_frontend/pull/19148",
         "author": "DrJKL",
         "isDraft": false,
-        "mergeable": "CONFLICTING",
+        "mergeable": "MERGEABLE",
         "reviewDecision": null,
-        "additions": 5510,
-        "deletions": 3841,
-        "changedFiles": 391,
-        "baseRefName": "drjkl/app-instance-leaf",
+        "additions": 491,
+        "deletions": 365,
+        "changedFiles": 40,
+        "baseRefName": "drjkl/app-small-cycles",
         "headRefName": "drjkl/billing-layering",
-        "head": "df65b2db525e6f698eb307c111586646d987cbd1",
-        "mergeBase": "0ba399c212af8cbdd95ac2d347e1030474baf291",
-        "behindMain": 614,
-        "parentPr": 19143,
-        "containsParentHead": false,
-        "depth": 4,
-        "state": 62,
-        "baseState": 57
+        "head": "b3e92b8080b1639e9f841e2a1e6570b3ed2dfbbf",
+        "mergeBase": "0ef0276323b5819258571bbffe24af14af47dc2e",
+        "behindMain": 13,
+        "parentPr": 19189,
+        "containsParentHead": true,
+        "depth": 6,
+        "state": 76,
+        "baseState": 53
       },
       {
         "number": 19153,
@@ -8302,11 +7734,11 @@
         "headRefName": "drjkl/comfy-types-leaf",
         "head": "701c1d8b385f1fd79c55bd3fbcc985b496040bc8",
         "mergeBase": "0ef0276323b5819258571bbffe24af14af47dc2e",
-        "behindMain": 0,
+        "behindMain": 13,
         "parentPr": 19143,
         "containsParentHead": true,
-        "depth": 4,
-        "state": 63,
+        "depth": 3,
+        "state": 73,
         "baseState": 53
       },
       {
@@ -8324,11 +7756,11 @@
         "headRefName": "drjkl/workbench-cycles",
         "head": "1958fcdf59ae5a841baee170842186b9ddc51fda",
         "mergeBase": "0ef0276323b5819258571bbffe24af14af47dc2e",
-        "behindMain": 0,
+        "behindMain": 13,
         "parentPr": 19153,
         "containsParentHead": true,
-        "depth": 5,
-        "state": 64,
+        "depth": 4,
+        "state": 74,
         "baseState": 53
       },
       {
@@ -8346,11 +7778,11 @@
         "headRefName": "drjkl/app-small-cycles",
         "head": "55e2c0696f6c67dada79e1bbb43dbeaaf40dddba",
         "mergeBase": "0ef0276323b5819258571bbffe24af14af47dc2e",
-        "behindMain": 0,
+        "behindMain": 13,
         "parentPr": 19186,
         "containsParentHead": true,
-        "depth": 6,
-        "state": 65,
+        "depth": 5,
+        "state": 75,
         "baseState": 53
       },
       {
@@ -8366,14 +7798,14 @@
         "changedFiles": 18,
         "baseRefName": "main",
         "headRefName": "feat/ddd-architecture-ratchet",
-        "head": "acb6f09f8f7e217109cd18fc4587e58456c68303",
-        "mergeBase": "dc556123bd1b548b726ce838b2f2b396779d28ff",
-        "behindMain": 38,
+        "head": "f9a2b7446ee5190996e50796d8ec6bf87bd23401",
+        "mergeBase": "ef9481abcec3f45b73396568818fc0ba976657a4",
+        "behindMain": 4,
         "parentPr": null,
         "containsParentHead": true,
         "depth": 0,
-        "state": 66,
-        "baseState": 15
+        "state": 77,
+        "baseState": 62
       },
       {
         "number": 19855,
@@ -8390,11 +7822,11 @@
         "headRefName": "feat/ddd-classify-media-tools",
         "head": "a44a01294d2765111fcd794c71aa04d1b46fb18c",
         "mergeBase": "dc556123bd1b548b726ce838b2f2b396779d28ff",
-        "behindMain": 38,
+        "behindMain": 51,
         "parentPr": 19768,
-        "containsParentHead": true,
+        "containsParentHead": false,
         "depth": 1,
-        "state": 67,
+        "state": 78,
         "baseState": 15
       },
       {
@@ -8412,11 +7844,11 @@
         "headRefName": "feat/ddd-classify-compositor",
         "head": "4b0a0304ef3e954ac22b5b8775302ca881e3fee7",
         "mergeBase": "dc556123bd1b548b726ce838b2f2b396779d28ff",
-        "behindMain": 38,
+        "behindMain": 51,
         "parentPr": 19855,
         "containsParentHead": true,
         "depth": 2,
-        "state": 68,
+        "state": 79,
         "baseState": 15
       }
     ]
