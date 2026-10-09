@@ -85,7 +85,7 @@ describe('Community workflow list provider', () => {
     expect(read).toHaveBeenCalledExactlyOnceWith('index.json', undefined)
   })
 
-  it.each([
+  it.for([
     'tag=portrait&pack=comfyui-kjnodes&model=flux.safetensors&task=image%20generation',
     'q=KJNODES%20FLUX%20portrait',
     'complexity=large&cluster=cluster-one'

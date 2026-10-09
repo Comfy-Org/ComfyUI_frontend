@@ -496,6 +496,9 @@ importers:
       '@comfyorg/fbx-exporter-three':
         specifier: ^1.0.1
         version: 1.0.1(@types/three@0.184.1)(three@0.184.0)
+      '@comfyorg/magic-patch-types':
+        specifier: workspace:*
+        version: link:packages/magic-patch-types
       '@comfyorg/object-info-parser':
         specifier: workspace:*
         version: link:packages/object-info-parser
@@ -1097,6 +1100,12 @@ importers:
       '@hey-api/openapi-ts':
         specifier: 0.97.3
         version: 0.97.3(magicast@0.5.3)(typescript@6.0.3)
+
+  packages/magic-patch-types:
+    dependencies:
+      zod:
+        specifier: 'catalog:'
+        version: 3.25.76
 
   packages/object-info-parser:
     dependencies:

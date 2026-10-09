@@ -1,0 +1,287 @@
+{
+  "openapi": "3.1.0",
+  "info": {
+    "title": "Magic Patch frontend contract",
+    "version": "0.1.0",
+    "description": "Proposed standalone gateway contract. Not served by the current health-only binary. Endpoint V3 and extension V2 are independent of this contract version."
+  },
+  "x-implementation-status": "draft-unwired",
+  "servers": [{ "url": "/api/magic-patch" }],
+  "security": [{ "existingSession": [] }],
+  "paths": {
+    "/requests": {
+      "post": {
+        "operationId": "createPatchRequest",
+        "description": "Resolve immutable source reference under canonical authenticated human account/workspace authority. One pack per intent. Idempotency replay preserves exact request and immutable inputs; conflicts return 409. Never take authority from browser headers or body.",
+        "parameters": [
+          {
+            "name": "Idempotency-Key",
+            "in": "header",
+            "required": true,
+            "schema": { "type": "string", "minLength": 1, "maxLength": 200 }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": { "$ref": "#/components/schemas/CreateRequest" }
+            }
+          }
+        },
+        "responses": {
+          "202": {
+            "description": "Request durably accepted; no execution or release-readiness claim",
+            "content": {
+              "application/json": {
+                "schema": { "$ref": "#/components/schemas/RequestStatus" }
+              }
+            }
+          },
+          "default": { "$ref": "#/components/responses/Error" }
+        }
+      },
+      "get": {
+        "operationId": "listPatchRequests",
+        "description": "Bounded listing of own unacknowledged intents, including terminal operations. Start each polling cycle without after. This is neither a snapshot nor a durable changes feed. next_cursor absent means this traversal ended, not that no conversion is pending.",
+        "parameters": [
+          {
+            "name": "limit",
+            "in": "query",
+            "schema": {
+              "type": "integer",
+              "minimum": 1,
+              "maximum": 100,
+              "default": 50
+            }
+          },
+          {
+            "name": "after",
+            "in": "query",
+            "schema": { "type": "string", "maxLength": 1024 }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Scoped page",
+            "content": {
+              "application/json": {
+                "schema": { "$ref": "#/components/schemas/RequestPage" }
+              }
+            }
+          },
+          "default": { "$ref": "#/components/responses/Error" }
+        }
+      }
+    },
+    "/requests/{request_id}": {
+      "parameters": [{ "$ref": "#/components/parameters/RequestID" }],
+      "get": {
+        "operationId": "getPatchRequest",
+        "description": "Own account/workspace intent only. Unknown or inaccessible IDs return 404 without exposing other subscribers.",
+        "responses": {
+          "200": {
+            "description": "Current requester and operation state",
+            "content": {
+              "application/json": {
+                "schema": { "$ref": "#/components/schemas/RequestStatus" }
+              }
+            }
+          },
+          "default": { "$ref": "#/components/responses/Error" }
+        }
+      }
+    },
+    "/requests/{request_id}/cancel": {
+      "parameters": [{ "$ref": "#/components/parameters/RequestID" }],
+      "post": {
+        "operationId": "cancelPatchRequest",
+        "description": "Idempotently withdraw this requester intent and prevent its delayed auto-pin/refresh. Does not cancel other subscribers. Worker cancellation may be requested only when no active subscribers remain and policy allows. Acknowledgement never proves stopped execution; no blind replacement workflow. A completed operation/release remains immutable.",
+        "responses": {
+          "200": {
+            "description": "Requester withdrawal/cancellation observation",
+            "content": {
+              "application/json": {
+                "schema": { "$ref": "#/components/schemas/CancellationStatus" }
+              }
+            }
+          },
+          "default": { "$ref": "#/components/responses/Error" }
+        }
+      }
+    },
+    "/requests/{request_id}/report": {
+      "parameters": [{ "$ref": "#/components/parameters/RequestID" }],
+      "get": {
+        "operationId": "getPatchRequestReport",
+        "description": "Authorized detached conversion report or explicitly incomplete service diagnostic; returns 409 while no report exists. Includes failed/rejected requests. Redact credentials/private logs; no arbitrary download URLs. Report byte identity is exact SHA256 of returned JSON bytes via X-Content-SHA256; clients verify before treating this as evidence. Report content schema remains REPORT_CONTRACT.md and requires a separate generated report model.",
+        "responses": {
+          "200": {
+            "description": "JSON report bytes",
+            "headers": {
+              "X-Content-SHA256": {
+                "required": true,
+                "schema": { "$ref": "#/components/schemas/Digest" }
+              }
+            },
+            "content": {
+              "application/json": { "schema": { "type": "object" } }
+            }
+          },
+          "default": { "$ref": "#/components/responses/Error" }
+        }
+      }
+    }
+  },
+  "components": {
+    "securitySchemes": {
+      "existingSession": {
+        "type": "apiKey",
+        "in": "cookie",
+        "name": "session",
+        "description": "Placeholder for the selected existing gateway session/security contract, not a new cookie definition. Preserve current credential validation, session CSRF/origin checks, canonical human actor and live workspace membership. Exact cookie/credential alternatives must be bound before route activation."
+      }
+    },
+    "parameters": {
+      "RequestID": {
+        "name": "request_id",
+        "in": "path",
+        "required": true,
+        "schema": { "type": "string", "pattern": "^[0-9a-f]{32}$" }
+      }
+    },
+    "responses": {
+      "Error": {
+        "description": "400 malformed; 401 unauthenticated; 403 unauthorized source/actor; 404 inaccessible request; 409 identity conflict/report unavailable; 429 quota; 503 unwired/indeterminate dependency; other 5xx possible. Reconcile exact idempotency key/request after a lost response before a new submission.",
+        "content": {
+          "application/json": {
+            "schema": { "$ref": "#/components/schemas/APIError" }
+          }
+        }
+      }
+    },
+    "schemas": {
+      "Digest": { "type": "string", "pattern": "^[0-9a-f]{64}$" },
+      "CreateRequest": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": ["source_ref", "entry_point", "pin_on_ready"],
+        "properties": {
+          "source_ref": {
+            "$ref": "#/components/schemas/Digest",
+            "description": "Immutable server-resolvable source descriptor identity; not caller-selected URL or source authority."
+          },
+          "entry_point": {
+            "type": "string",
+            "enum": ["workflow_load", "pack_pin", "private_upload"]
+          },
+          "pin_on_ready": { "type": "boolean" }
+        }
+      },
+      "RequestStatus": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "id",
+          "operation_id",
+          "state",
+          "operation_status",
+          "status_version"
+        ],
+        "properties": {
+          "id": { "type": "string", "pattern": "^[0-9a-f]{32}$" },
+          "operation_id": { "type": "string", "pattern": "^[0-9a-f]{32}$" },
+          "state": {
+            "type": "string",
+            "enum": [
+              "waiting_conversion",
+              "waiting_install",
+              "ready",
+              "failed",
+              "withdrawn"
+            ]
+          },
+          "operation_status": {
+            "type": "string",
+            "enum": [
+              "queued",
+              "running",
+              "completed",
+              "failed",
+              "rejected",
+              "cancelled"
+            ]
+          },
+          "status_version": {
+            "type": "integer",
+            "minimum": 1,
+            "description": "Monotonic requester projection version; clients reject older responses for this request."
+          },
+          "stage": {
+            "type": "string",
+            "enum": [
+              "queued",
+              "triage",
+              "conversion",
+              "qualification",
+              "publication",
+              "install"
+            ]
+          },
+          "estimated_seconds_remaining": {
+            "type": "integer",
+            "minimum": 0,
+            "description": "Triage estimate, absent before available; never proof of completion."
+          },
+          "release_id": {
+            "$ref": "#/components/schemas/Digest",
+            "description": "Present only after authoritative admission/publication acknowledgement."
+          },
+          "report_sha256": { "$ref": "#/components/schemas/Digest" },
+          "reason": { "type": "string", "maxLength": 2000 }
+        }
+      },
+      "RequestPage": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": ["requests"],
+        "properties": {
+          "requests": {
+            "type": "array",
+            "maxItems": 100,
+            "items": { "$ref": "#/components/schemas/RequestStatus" }
+          },
+          "next_cursor": { "type": "string", "maxLength": 1024 }
+        }
+      },
+      "CancellationStatus": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": ["request", "worker_cancellation"],
+        "properties": {
+          "request": { "$ref": "#/components/schemas/RequestStatus" },
+          "worker_cancellation": {
+            "type": "string",
+            "enum": [
+              "not_requested",
+              "requested",
+              "acknowledged",
+              "stopped",
+              "indeterminate"
+            ],
+            "description": "stopped requires authoritative observed worker/guest termination and cleanup evidence, not merely Temporal cancellation acknowledgement."
+          }
+        }
+      },
+      "APIError": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": ["code", "message"],
+        "properties": {
+          "code": { "type": "string" },
+          "message": { "type": "string", "maxLength": 2000 }
+        }
+      }
+    }
+  }
+}

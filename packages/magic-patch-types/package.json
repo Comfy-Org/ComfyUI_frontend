@@ -1,0 +1,13 @@
+{
+  "name": "@comfyorg/magic-patch-types",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "exports": {
+    ".": "./src/types.generated.ts",
+    "./zod": "./src/zod.generated.ts"
+  },
+  "dependencies": {
+    "zod": "catalog:"
+  }
+}

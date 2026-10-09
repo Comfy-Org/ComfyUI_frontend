@@ -98,7 +98,7 @@ describe('Cloud reference adaptation v1', () => {
     ).toBe(false)
   })
 
-  it.each(['wrong-original', 'duplicate', 'missing-pointer'])(
+  it.for(['wrong-original', 'duplicate', 'missing-pointer'])(
     'rejects an invalid change ledger: %s',
     async (problem) => {
       const change = metadata.cloud_adaptation.changes[0]
