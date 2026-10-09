@@ -16,6 +16,7 @@ import { useTemplateWorkflows } from './useTemplateWorkflows'
  * Supports URLs like:
  * - /?template=flux_simple (loads with default source)
  * - /?template=flux_simple&source=custom (loads from custom source)
+ * - /?template=flux_simple&source=all (core first, else the one pack providing it)
  * - /?template=flux_simple&mode=linear (loads template in linear mode)
  *
  * Input validation:

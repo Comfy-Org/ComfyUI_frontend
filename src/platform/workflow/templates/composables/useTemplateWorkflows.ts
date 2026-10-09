@@ -17,6 +17,7 @@ import type {
   TemplateInfo,
   WorkflowTemplates
 } from '@/platform/workflow/templates/types/template'
+import { templateKeyFor } from '@/platform/workflow/templates/utils/templateDisplay'
 import {
   resolveTemplateInputAssets,
   startMissingTemplateInputDownloads
@@ -37,6 +38,11 @@ import { useDialogStore } from '@/stores/dialogStore'
 import { prepareTemplateInputs } from '../services/templateInputService'
 
 type TemplateLoadResult = 'loaded' | 'graph-failed' | 'not-started'
+
+type TemplateSourceResolution =
+  | { status: 'found'; source: string }
+  | { status: 'missing' }
+  | { status: 'ambiguous'; sources: string[] }
 
 export type PreparedWorkflowTemplate = {
   id: string
@@ -151,8 +157,12 @@ export function useTemplateWorkflows() {
       .trim()
   }
 
-  function resolveTemplateSource(id: string, sourceModule: string) {
-    if (sourceModule !== 'all') return sourceModule
+  // `all` prefers core, then a single pack; a name shared by packs is not guessed.
+  function resolveTemplateSource(
+    id: string,
+    sourceModule: string
+  ): TemplateSourceResolution {
+    if (sourceModule !== 'all') return { status: 'found', source: sourceModule }
 
     const group = allTemplateGroups.value.find(
       (group) =>
@@ -162,10 +172,17 @@ export function useTemplateWorkflows() {
     const category = group?.modules.find(
       (module) => module.moduleName === 'all'
     )
-    const template = category?.templates.find(
-      (template) => template.name === id
+    const sources = new Set(
+      category?.templates
+        .filter((template) => template.name === id)
+        .map((template) => template.sourceModule ?? 'default')
     )
-    return template?.sourceModule
+    if (sources.has('default')) return { status: 'found', source: 'default' }
+    const [source, ...others] = sources
+    if (!source) return { status: 'missing' }
+    if (others.length)
+      return { status: 'ambiguous', sources: [...sources].sort() }
+    return { status: 'found', source }
   }
 
   function startTemplateInputDownloads(id: string, sourceModule: string) {
@@ -194,6 +211,19 @@ export function useTemplateWorkflows() {
 
   function showTemplateError(detail: string) {
     useToast().error(t('g.error'), { description: detail })
+  }
+
+  function resolveLoadSource(id: string, sourceModule: string) {
+    const resolution = resolveTemplateSource(id, sourceModule)
+    if (resolution.status === 'found') return resolution.source
+    showTemplateError(
+      resolution.status === 'missing'
+        ? t('templateWorkflows.error.templateNotFound', { templateName: id })
+        : t('templateWorkflows.error.templateAmbiguous', {
+            templateName: id,
+            sources: resolution.sources.join(', ')
+          })
+    )
   }
 
   function reportTemplateError(error: unknown) {
@@ -311,16 +341,9 @@ export function useTemplateWorkflows() {
 
   async function resolveTemplatePayload(
     id: string,
-    sourceModule: string,
+    source: string,
     signal: AbortSignal
   ) {
-    const source = resolveTemplateSource(id, sourceModule)
-    if (!source) {
-      showTemplateError(
-        t('templateWorkflows.error.templateNotFound', { templateName: id })
-      )
-      return null
-    }
     const data = await loadTemplateData(id, source, signal)
     signal.throwIfAborted()
     if (!data) {
@@ -338,13 +361,17 @@ export function useTemplateWorkflows() {
       showTemplateError(t('templateWorkflows.error.loading'))
       return null
     }
-    const controller = workflowTemplatesStore.startTemplateLoad(id)
+    const source = resolveLoadSource(id, sourceModule)
+    if (!source) return null
+    const controller = workflowTemplatesStore.startTemplateLoad(
+      templateKeyFor(id, source)
+    )
     if (!controller) return null
     ownedLoadController = controller
     try {
       const payload = await resolveTemplatePayload(
         id,
-        sourceModule,
+        source,
         controller.signal
       )
       if (!payload) {

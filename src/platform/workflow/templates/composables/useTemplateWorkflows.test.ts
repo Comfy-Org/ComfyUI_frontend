@@ -407,6 +407,79 @@ describe('useTemplateWorkflows', () => {
     expect(loadingTemplateId.value).toBe(null) // Should reset after loading
   })
 
+  describe('resolving a name in the "All" category', () => {
+    // Listed ahead of core so the core preference can't come from list order.
+    const addToAll = (name: string, sourceModule: string) =>
+      mockWorkflowTemplatesStore.groupedTemplates[0].modules[0].templates.unshift(
+        {
+          name,
+          sourceModule,
+          mediaType: 'image',
+          mediaSubtype: 'jpg',
+          description: name
+        }
+      )
+
+    it.for([
+      {
+        scenario: 'prefers the core template over a same-named pack template',
+        name: 'template1',
+        packs: ['pack-a'],
+        url: 'mock-file-url/templates/template1.json'
+      },
+      {
+        scenario: 'loads the only pack that provides the name',
+        name: 'decimate',
+        packs: ['pack-a'],
+        url: 'mock-api-url/workflow_templates/pack-a/decimate.json'
+      }
+    ])('$scenario', async ({ name, packs, url }) => {
+      mockWorkflowTemplatesStore.isLoaded = true
+      for (const pack of packs) addToAll(name, pack)
+      const { loader } = mountTemplateWorkflows()
+
+      expect(await loader.loadWorkflowTemplate(name, 'all')).toBe('loaded')
+      expect(fetch).toHaveBeenCalledExactlyOnceWith(url, {
+        signal: expect.any(AbortSignal)
+      })
+    })
+
+    it('does not guess between packs that share the name', async () => {
+      mockWorkflowTemplatesStore.isLoaded = true
+      addToAll('decimate', 'pack-a')
+      addToAll('decimate', 'pack-b')
+      const { loader } = mountTemplateWorkflows()
+
+      expect(await loader.loadWorkflowTemplate('decimate', 'all')).toBe(
+        'not-started'
+      )
+      expect(useToastStore().messagesToAdd).toEqual([
+        {
+          severity: 'error',
+          summary: i18n.global.t('g.error'),
+          detail: i18n.global.t('templateWorkflows.error.templateAmbiguous', {
+            templateName: 'decimate',
+            sources: 'pack-a, pack-b'
+          })
+        }
+      ])
+      expect(fetch).not.toHaveBeenCalled()
+    })
+  })
+
+  it('marks only the loading pack template as busy', async () => {
+    mockWorkflowTemplatesStore.isLoaded = true
+    const templateFetch = deferred<Response>()
+    vi.mocked(fetch).mockReturnValueOnce(templateFetch.promise)
+    const { loader } = mountTemplateWorkflows()
+
+    const load = loader.loadWorkflowTemplate('decimate', 'pack-b')
+
+    expect(loader.loadingTemplateId.value).toBe('pack-b/decimate')
+    templateFetch.resolve(Response.json({ workflow: 'data' }))
+    await load
+  })
+
   // 'all' is a category label, not a source: it resolves to the template's
   // real sourceModule, so only the resolved value decides authorization.
   it.for([
@@ -749,6 +822,7 @@ describe('useTemplateWorkflows', () => {
     mockWorkflowTemplatesStore.enhancedTemplates.push({
       name: 'video',
       sourceModule: 'default',
+      templateKey: 'video',
       description: 'Video editing',
       mediaType: 'image',
       mediaSubtype: 'webp',

@@ -11,6 +11,7 @@ import { useTelemetry } from '@/platform/telemetry'
 import { useSearchQueryTracking } from '@/platform/telemetry/searchQuery/useSearchQueryTracking'
 import { TemplateIncludeOnDistributionEnum } from '@/platform/workflow/templates/types/template'
 import type { TemplateInfo } from '@/platform/workflow/templates/types/template'
+import { getTemplateKey } from '@/platform/workflow/templates/utils/templateDisplay'
 import { useSystemStatsStore } from '@/stores/systemStatsStore'
 import { useTemplateRankingStore } from '@/stores/templateRankingStore'
 import { debounce } from 'es-toolkit/compat'
@@ -193,11 +194,14 @@ export function useTemplateFiltering<T extends TemplateInfo>(
       return visibleTemplates.value
     }
 
-    const templatesByName = new Map(
-      visibleTemplates.value.map((template) => [template.name, template])
+    const templatesByKey = new Map(
+      visibleTemplates.value.map((template) => [
+        getTemplateKey(template),
+        template
+      ])
     )
     return searchTemplates(searchIndex.value, searchQuery.value)
-      .map((name) => templatesByName.get(name))
+      .map((key) => templatesByKey.get(key))
       .filter((template): template is T => template !== undefined)
   })
 

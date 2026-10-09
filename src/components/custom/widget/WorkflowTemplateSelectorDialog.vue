@@ -215,14 +215,14 @@
           <!-- Actual Template Cards -->
           <CardContainer
             v-for="{ template, tags } in isLoading ? [] : displayTemplates"
-            :key="template.name"
+            :key="getTemplateKey(template)"
             ref="cardRefs"
             size="auto"
             variant="ghost"
             rounded="lg"
-            :data-testid="`template-workflow-${template.name}`"
+            :data-testid="`template-workflow-${getTemplateKey(template)}`"
             class="group/card h-full transition-colors hover:bg-secondary-background/50"
-            @mouseenter="hoveredTemplate = template.name"
+            @mouseenter="hoveredTemplate = getTemplateKey(template)"
             @mouseleave="hoveredTemplate = null"
             @click="onLoadWorkflow(template, $event)"
           >
@@ -241,12 +241,12 @@
                       )
                     "
                     :get-logo-url="workflowTemplatesStore.getLogoUrl"
-                    :is-hovered="hoveredTemplate === template.name"
+                    :is-hovered="hoveredTemplate === getTemplateKey(template)"
                     :hover-zoom="0"
                   >
                     <template #overlay>
                       <Spinner
-                        v-if="loadingTemplateId === template.name"
+                        v-if="loadingTemplateId === getTemplateKey(template)"
                         class="absolute inset-0 z-10 m-auto size-12"
                       />
                     </template>
@@ -495,6 +495,7 @@ import type {
 import { useWorkflowTemplatesStore } from '@/platform/workflow/templates/repositories/workflowTemplatesStore'
 import {
   filterTemplatesByType,
+  getTemplateKey,
   getTemplateTags,
   isAppTemplate
 } from '@/platform/workflow/templates/utils/templateDisplay'

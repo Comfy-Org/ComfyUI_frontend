@@ -584,6 +584,30 @@ describe('useTemplateFiltering', () => {
       expect(filteredCount.value).toBe(0)
     })
 
+    it('returns both custom templates that share a filename', async () => {
+      const templates = [
+        buildTemplate({
+          name: 'decimate',
+          title: 'Decimate Mesh',
+          sourceModule: 'pack-a',
+          templateKey: 'pack-a/decimate'
+        }),
+        buildTemplate({
+          name: 'decimate',
+          title: 'Decimate Mesh',
+          sourceModule: 'pack-b',
+          templateKey: 'pack-b/decimate'
+        })
+      ]
+
+      const { filteredTemplates } = await searchFor(templates, 'decimate')
+
+      expect(
+        filteredTemplates.value.map((template) => template.sourceModule)
+      ).toEqual(expect.arrayContaining(['pack-a', 'pack-b']))
+      expect(filteredTemplates.value).toHaveLength(2)
+    })
+
     it('matches the localized title the card displays', async () => {
       const templates = [
         buildTemplate({

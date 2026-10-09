@@ -48,7 +48,8 @@ const fixtures = vi.hoisted(() => {
     description: 'Inspect this workflow before opening it.',
     mediaType: 'image',
     mediaSubtype: 'webp',
-    sourceModule: 'default'
+    sourceModule: 'default',
+    templateKey: 'starter-detail'
   }
   const prepared = {
     id: template.name,

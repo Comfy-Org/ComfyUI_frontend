@@ -30,6 +30,8 @@ export interface TemplateInfo {
    */
   isApp?: boolean
   sourceModule?: string
+  /** Unique across packs: the name for core templates, `module/name` for custom ones. */
+  templateKey?: string
   tags?: string[]
   models?: string[]
   date?: string
