@@ -4,14 +4,12 @@ import { computed, useTemplateRef } from 'vue'
 import { cn } from '@comfyorg/tailwind-utils'
 
 const {
-  modelValue,
   min = 0,
   max = 100,
   step = 1,
   disabled = false,
   class: className
 } = defineProps<{
-  modelValue: number
   class?: string
   disabled?: boolean
   max?: number
@@ -19,18 +17,18 @@ const {
   step?: number
 }>()
 
-const emit = defineEmits<{ 'update:modelValue': [value: number] }>()
+const modelValue = defineModel<number>({ required: true })
 const root = useTemplateRef('root')
 
 const progress = computed(() =>
-  max === min ? 0 : (modelValue - min) / (max - min)
+  max === min ? 0 : (modelValue.value - min) / (max - min)
 )
 const dashOffset = computed(() => 75 * (1 - progress.value))
 
 function setValue(value: number) {
   if (disabled) return
   const stepped = Math.round((value - min) / step) * step + min
-  emit('update:modelValue', Math.min(max, Math.max(min, stepped)))
+  modelValue.value = Math.min(max, Math.max(min, stepped))
 }
 
 function updateFromPointer(event: PointerEvent) {
@@ -60,7 +58,7 @@ function onKeydown(event: KeyboardEvent) {
         : 0
   if (!direction) return
   event.preventDefault()
-  setValue(modelValue + direction * step)
+  setValue(modelValue.value + direction * step)
 }
 </script>
 
@@ -95,7 +93,7 @@ function onKeydown(event: KeyboardEvent) {
         stroke="currentColor"
         stroke-width="3"
         stroke-dasharray="75 25"
-        class="text-node-stroke"
+        class="text-secondary-background"
       />
       <circle
         data-testid="knob-value"
@@ -109,7 +107,7 @@ function onKeydown(event: KeyboardEvent) {
         stroke-linecap="round"
         stroke-dasharray="75 100"
         :stroke-dashoffset="dashOffset"
-        class="text-node-component-surface-highlight"
+        class="text-primary-background"
       />
     </svg>
   </div>
