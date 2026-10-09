@@ -49,9 +49,14 @@ subscription or resource that would stay true with no UI:
 - readiness and versions
 - server timestamps and error codes
 
-1. **A gate renders one server fact as received.** It does not combine the
-   fact with `&&`, `||`, `??`, a ternary, arithmetic, a comparison or a
-   helper. It also does not choose which fact answers the question.
+1. **The server fact alone decides entitlement.** A gate renders one server
+   fact as received. It does not combine that fact with another server fact
+   or a value derived from one (role, tier, plan state, seats, `isCloud`)
+   through `&&`, `||`, `??`, a ternary, arithmetic, a comparison or a helper.
+   It also does not choose which fact answers the question. Local, transient
+   UI state (loading, an in-flight request, form validity) may delay or
+   disable the control, as in `canTopUp && !isLoading`. It never grants
+   entitlement or stands in for a server field.
 2. **`isCloud` decides which build ships, not what a user may do.** Off
    Cloud, a local provider answers the same fact.
 3. **A failed read uses the default its contract names.** Never fall back to
