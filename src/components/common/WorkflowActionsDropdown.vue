@@ -12,9 +12,6 @@ import { useI18n } from 'vue-i18n'
 
 import Button from '@/components/ui/button/Button.vue'
 import Menu from '@/components/ui/menu/Menu.vue'
-import Tooltip from '@/components/ui/tooltip/Tooltip.vue'
-import TooltipContent from '@/components/ui/tooltip/TooltipContent.vue'
-import TooltipTrigger from '@/components/ui/tooltip/TooltipTrigger.vue'
 import { useNewMenuItemIndicator } from '@/composables/useNewMenuItemIndicator'
 import { useWorkflowActionsMenu } from '@/composables/useWorkflowActionsMenu'
 import { useKeybindingStore } from '@/platform/keybindings/keybindingStore'
@@ -111,6 +108,16 @@ function switchMode() {
   })
 }
 
+function segmentLabel(seg: ViewModeSegment) {
+  return seg.active
+    ? t('breadcrumbsMenu.activeModeWorkflowActions', { mode: seg.label })
+    : seg.switchLabel
+}
+
+function segmentTooltip(seg: ViewModeSegment) {
+  return seg.active ? t('breadcrumbsMenu.workflowActions') : seg.switchTooltip
+}
+
 function onSegmentClick(seg: ViewModeSegment, event: MouseEvent) {
   if (seg.active) return
   event.stopPropagation()
@@ -174,73 +181,53 @@ onMounted(async () => {
           class="flex items-center gap-1"
         >
           <div v-for="seg in orderedSegments" :key="seg.mode" class="flex">
-            <Tooltip>
-              <TooltipTrigger as-child>
-                <Button
-                  type="button"
-                  variant="textonly"
-                  size="unset"
-                  :aria-label="
-                    seg.active
-                      ? t('breadcrumbsMenu.activeModeWorkflowActions', {
-                          mode: seg.label
-                        })
-                      : seg.switchLabel
-                  "
-                  :aria-haspopup="seg.active ? 'menu' : undefined"
-                  :aria-expanded="seg.active ? dropdownOpen : undefined"
-                  :class="
-                    cn(
-                      'relative flex h-8 items-center gap-0 rounded-lg font-normal transition-[background-color,color,transform] duration-200',
-                      seg.displayActive
-                        ? 'bg-secondary-background pr-2 pl-2.5 text-base-foreground group-data-[state=open]:bg-secondary-background-hover group-data-[state=open]:shadow-interface hover:bg-secondary-background'
-                        : 'w-8 justify-center bg-transparent text-muted-foreground hover:bg-secondary-background hover:text-base-foreground'
-                    )
-                  "
-                  @click="onSegmentClick(seg, $event)"
-                  @keydown="onSegmentKeydown(seg, $event)"
-                >
-                  <i
-                    :class="cn('size-4 shrink-0', seg.icon)"
-                    aria-hidden="true"
-                  />
-                  <span
-                    :class="
-                      cn(
-                        'grid transition-[grid-template-columns,opacity] duration-200',
-                        seg.displayActive
-                          ? 'ml-1.5 grid-cols-[1fr] opacity-100'
-                          : 'grid-cols-[0fr] opacity-0'
-                      )
-                    "
-                  >
-                    <span
-                      class="flex min-w-0 items-center overflow-hidden text-sm leading-none whitespace-nowrap"
-                    >
-                      {{ seg.label }}
-                      <i
-                        class="ml-1 icon-[lucide--chevron-down] size-4 shrink-0 text-muted-foreground"
-                        aria-hidden="true"
-                      />
-                    </span>
-                  </span>
-                  <span
-                    v-if="seg.active && hasUnseenItems"
-                    aria-hidden="true"
-                    class="absolute -top-0.5 -right-0.5 size-2 rounded-full bg-primary-background"
-                  />
-                </Button>
-              </TooltipTrigger>
-              <TooltipContent
-                side="bottom"
-                :class="cn(!seg.active && 'w-max max-w-none')"
-                >{{
-                  seg.active
-                    ? t('breadcrumbsMenu.workflowActions')
-                    : seg.switchTooltip
-                }}</TooltipContent
+            <Button
+              :tooltip="segmentTooltip(seg)"
+              tooltip-side="bottom"
+              type="button"
+              variant="textonly"
+              size="unset"
+              :aria-label="segmentLabel(seg)"
+              :aria-haspopup="seg.active ? 'menu' : undefined"
+              :aria-expanded="seg.active ? dropdownOpen : undefined"
+              :class="
+                cn(
+                  'relative flex h-8 items-center gap-0 rounded-lg font-normal transition-[background-color,color,transform] duration-200',
+                  seg.displayActive
+                    ? 'bg-secondary-background pr-2 pl-2.5 text-base-foreground group-data-[state=open]:bg-secondary-background-hover group-data-[state=open]:shadow-interface hover:bg-secondary-background'
+                    : 'w-8 justify-center bg-transparent text-muted-foreground hover:bg-secondary-background hover:text-base-foreground'
+                )
+              "
+              @click="onSegmentClick(seg, $event)"
+              @keydown="onSegmentKeydown(seg, $event)"
+            >
+              <i :class="cn('size-4 shrink-0', seg.icon)" aria-hidden="true" />
+              <span
+                :class="
+                  cn(
+                    'grid transition-[grid-template-columns,opacity] duration-200',
+                    seg.displayActive
+                      ? 'ml-1.5 grid-cols-[1fr] opacity-100'
+                      : 'grid-cols-[0fr] opacity-0'
+                  )
+                "
               >
-            </Tooltip>
+                <span
+                  class="flex min-w-0 items-center overflow-hidden text-sm leading-none whitespace-nowrap"
+                >
+                  {{ seg.label }}
+                  <i
+                    class="ml-1 icon-[lucide--chevron-down] size-4 shrink-0 text-muted-foreground"
+                    aria-hidden="true"
+                  />
+                </span>
+              </span>
+              <span
+                v-if="seg.active && hasUnseenItems"
+                aria-hidden="true"
+                class="absolute -top-0.5 -right-0.5 size-2 rounded-full bg-primary-background"
+              />
+            </Button>
           </div>
         </TransitionGroup>
       </div>

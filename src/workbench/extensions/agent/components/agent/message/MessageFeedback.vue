@@ -7,11 +7,13 @@ import { cn } from '@comfyorg/tailwind-utils'
 import Button from '@/components/ui/button/Button.vue'
 import Menu from '@/components/ui/menu/Menu.vue'
 import type { MenuItem } from '@/components/ui/menu/types'
+import Tooltip from '@/components/ui/tooltip/Tooltip.vue'
+import TooltipContent from '@/components/ui/tooltip/TooltipContent.vue'
+import TooltipTrigger from '@/components/ui/tooltip/TooltipTrigger.vue'
 import { useAssetDownload } from '@/platform/assets/composables/useAssetDownload'
 import { renderMarkdownToHtml } from '@/utils/markdownRendererUtil'
 import { resolveReplyAssetDownload } from '../../../utils/resolveReplyAssetDownload'
 import type { ReplyAsset } from '../../../utils/replyAssets'
-import CopyButton from './CopyButton.vue'
 
 const { markdown, assets = [] } = defineProps<{
   markdown: string
@@ -103,17 +105,35 @@ async function downloadAssets(): Promise<void> {
     <div
       class="flex h-6 w-14 rounded-lg transition-colors hover:bg-secondary-background-hover hover:text-base-foreground has-data-[state=open]:bg-secondary-background-hover has-data-[state=open]:text-base-foreground"
     >
-      <CopyButton
-        :copied
-        size="unset"
-        :class="
-          cn(
-            'h-6 w-8 rounded-l-lg rounded-r-none focus-visible:z-10',
-            copied ? 'text-base-foreground' : 'text-inherit'
-          )
-        "
-        @click="copyPlainText()"
-      />
+      <Tooltip disable-closing-trigger>
+        <TooltipTrigger as-child>
+          <Button
+            type="button"
+            variant="muted-textonly"
+            size="unset"
+            :aria-label="copied ? t('agent.copied') : t('agent.copy')"
+            :class="
+              cn(
+                'h-6 w-8 rounded-l-lg rounded-r-none focus-visible:z-10',
+                copied ? 'text-base-foreground' : 'text-inherit'
+              )
+            "
+            @click="copyPlainText()"
+          >
+            <span
+              :class="
+                cn(
+                  'size-3',
+                  copied ? 'icon-[lucide--check]' : 'icon-[lucide--copy]'
+                )
+              "
+            />
+          </Button>
+        </TooltipTrigger>
+        <TooltipContent aria-label=" ">{{
+          copied ? t('agent.copied') : t('agent.copy')
+        }}</TooltipContent>
+      </Tooltip>
       <Menu
         :items="copyMenuItems"
         align="end"
