@@ -1785,18 +1785,10 @@
       "teamUsing": "团队使用",
       "using": "使用"
     },
-    "contact": {
-      "heading": "用 ComfyUI 创作了很酷的作品？<br><a href=\"https://docs.google.com/forms/d/1B6_RPQfhTyKvqHk9OO2bUn8z1Qgh6QIZsF3GNMiCXDw/preview\" target=\"_blank\" rel=\"noopener noreferrer\" class=\"text-primary-comfy-yellow underline\">提交</a>你的作品，展示在我们的网站和社交媒体上，让全球 ComfyUI 社区看到。",
-      "label": "联系"
-    },
     "detail": {
       "close": "关闭",
       "visitHub": "访问社区中心"
-    },
-    "heroSubtitle": "社区使用 ComfyUI 创作成果的一小部分展示。",
-    "heroTitleAfter": " 中构建、调整与创想",
-    "heroTitleBefore": "在 ",
-    "label": "画廊"
+    }
   },
   "geminiOmni": {
     "breadcrumb": {
@@ -1905,24 +1897,6 @@
     "banner": {
       "cta": "免费试用",
       "text": "Comfy Agent 现在可以在 ComfyUI 内部构建工作流。"
-    },
-    "cta": {
-      "heading": "Comfy 的全部内容，一处尽享。",
-      "primary": "打开 Comfy Cloud",
-      "secondary": "试用工作流"
-    },
-    "hero": {
-      "primary": "下载桌面版",
-      "secondary": "免费试用云端",
-      "title": "ComfyUI 全新内容",
-      "visualAlt": "Comfy"
-    },
-    "page": {
-      "description": "所有 ComfyUI 发布汇总：新模型、桌面版、云端、MCP、CLI 与核心引擎更新，以及逐一讲解的直播回放。",
-      "title": "发布：ComfyUI 的所有新内容"
-    },
-    "section": {
-      "title": "最新发布"
     }
   },
   "learning": {
@@ -2614,12 +2588,10 @@
     "featuredProductsCta": "立即探索",
     "featuredProductsCtaAria": "探索 Gemini Omni 1.1 Flash 版本",
     "featuredProductsTitle": "Gemini Omni 1.1 Flash",
-    "gallery": "画廊",
     "github": "GitHub",
     "home": "Comfy 首页",
     "instagram": "Instagram",
     "launchCloud": "免费试用云端",
-    "launches": "发布",
     "learning": "学习",
     "linkedin": "LinkedIn",
     "managedBuilds": "托管构建",
