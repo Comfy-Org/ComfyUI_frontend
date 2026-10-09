@@ -253,7 +253,9 @@ const columns: { title: string; links: FooterLink[]; splitLinks?: boolean }[] =
           </div>
         </div>
 
-        <div class="flex flex-wrap items-center justify-center gap-6">
+        <div
+          class="flex flex-wrap items-center justify-center gap-6 lg:shrink-0 lg:flex-nowrap"
+        >
           <LanguageSwitcher :locale :alternates />
           <p class="text-sm">
             {{ t('footer.location') }}
