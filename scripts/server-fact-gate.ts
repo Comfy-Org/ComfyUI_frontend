@@ -37,8 +37,22 @@ function lint(files: string[]) {
     { encoding: 'utf8', maxBuffer: 256 * 1024 * 1024, windowsHide: true }
   )
   if (result.error) throw result.error
-  const report: unknown = JSON.parse(result.stdout)
-  return oxlintReportSchema.parse(report).diagnostics
+  const parsed = oxlintReportSchema.safeParse(parseJson(result.stdout))
+  if (!parsed.success) {
+    console.error(
+      `server-facts: oxlint did not produce a report (exit ${result.status}).\n${result.stderr}${result.stdout}`
+    )
+    process.exit(2)
+  }
+  return parsed.data.diagnostics
+}
+
+function parseJson(text: string): unknown {
+  try {
+    return JSON.parse(text)
+  } catch {
+    return undefined
+  }
 }
 
 const diff = git([
