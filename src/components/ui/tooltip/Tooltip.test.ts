@@ -178,6 +178,8 @@ describe('Tooltip', () => {
     await user.hover(screen.getByRole('button', { name: 'Second' }))
 
     expect(screen.queryByRole('tooltip')).not.toBeInTheDocument()
+    await vi.advanceTimersByTimeAsync(400)
+    expect(await screen.findByRole('tooltip')).toHaveTextContent('Second tip')
   })
 
   it('closes when it becomes disabled while open', async () => {
