@@ -7,7 +7,7 @@ import { translationsFor } from '@/i18n/translations'
 import NewBadge from './NewBadge.vue'
 
 const { locale } = defineProps<{
-  item: Pick<NavColumnItem, 'label' | 'badge' | 'external' | 'icon'>
+  item: Pick<NavColumnItem, 'label' | 'badge' | 'external' | 'newTab' | 'icon'>
   locale: Locale
 }>()
 const { t } = translationsFor(locale)
@@ -22,7 +22,7 @@ const { t } = translationsFor(locale)
     />
     <span class="sr-only">
       {{ item.label
-      }}<template v-if="item.external">
+      }}<template v-if="item.external || item.newTab">
         ({{ t('nav.opensInNewTab') }})</template
       >
     </span>
@@ -36,7 +36,8 @@ const { t } = translationsFor(locale)
       :label="item.badge"
     />
     <ArrowUpRight
-      v-if="item.external"
+      v-if="item.external || item.newTab"
+      data-testid="opens-in-new-tab"
       class="size-4 text-primary-comfy-yellow"
     />
   </span>

@@ -1,10 +1,12 @@
 import { promotedInputSource } from '@/core/graph/subgraph/promotedInputWidget'
 import { resolveConcretePromotedWidget } from '@/core/graph/subgraph/resolveConcretePromotedWidget'
+import {
+  isValueControlWidget,
+  nextValueForLinkedTarget
+} from '@/core/graph/widgets/valueControl'
 import type { LGraphNode } from '@/lib/litegraph/src/litegraph'
 import type { IBaseWidget } from '@/lib/litegraph/src/types/widgets'
 import { useSettingStore } from '@/platform/settings/settingStore'
-
-import { isValueControlWidget, nextValueForLinkedTarget } from './valueControl'
 
 /**
  * A promoted subgraph host widget whose interior source widget is driven by a

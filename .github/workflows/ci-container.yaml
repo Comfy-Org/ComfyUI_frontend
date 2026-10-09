@@ -5,11 +5,19 @@ on:
     paths:
       - 'tools/ci-container/**'
       - '.github/workflows/ci-container.yaml'
+      - 'package.json'
+      - 'pnpm-lock.yaml'
+      - 'pnpm-workspace.yaml'
+      - '.nvmrc'
   push:
     branches: [main]
     paths:
       - 'tools/ci-container/**'
       - '.github/workflows/ci-container.yaml'
+      - 'package.json'
+      - 'pnpm-lock.yaml'
+      - 'pnpm-workspace.yaml'
+      - '.nvmrc'
   workflow_dispatch:
 
 permissions:
