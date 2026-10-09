@@ -88,12 +88,12 @@ describe('QueueOverlayHeader', () => {
     )
 
     expect(screen.queryByRole('menu')).not.toBeInTheDocument()
-    expect(vi.mocked(useSettingStore().setMany)).toHaveBeenCalledTimes(1)
-    expect(vi.mocked(useSettingStore().setMany)).toHaveBeenCalledWith({
+    expect(useSettingStore().setMany).toHaveBeenCalledTimes(1)
+    expect(useSettingStore().setMany).toHaveBeenCalledWith({
       'Comfy.Queue.QPOV2': false,
       'Comfy.Queue.History.Expanded': true
     })
-    expect(vi.mocked(useSettingStore().set)).not.toHaveBeenCalled()
+    expect(useSettingStore().set).not.toHaveBeenCalled()
     expect(useSidebarTabStore().activeSidebarTabId).toBe(null)
   })
 
@@ -109,12 +109,12 @@ describe('QueueOverlayHeader', () => {
     )
 
     expect(screen.queryByRole('menu')).not.toBeInTheDocument()
-    expect(vi.mocked(useSettingStore().set)).toHaveBeenCalledTimes(1)
-    expect(vi.mocked(useSettingStore().set)).toHaveBeenCalledWith(
+    expect(useSettingStore().set).toHaveBeenCalledTimes(1)
+    expect(useSettingStore().set).toHaveBeenCalledWith(
       'Comfy.Queue.QPOV2',
       true
     )
-    expect(vi.mocked(useSettingStore().setMany)).not.toHaveBeenCalled()
+    expect(useSettingStore().setMany).not.toHaveBeenCalled()
     expect(useSidebarTabStore().activeSidebarTabId).toBe('job-history')
   })
 
@@ -133,7 +133,7 @@ describe('QueueOverlayHeader', () => {
     )
 
     expect(screen.queryByRole('menu')).not.toBeInTheDocument()
-    expect(vi.mocked(useSettingStore().set)).toHaveBeenCalledWith(
+    expect(useSettingStore().set).toHaveBeenCalledWith(
       'Comfy.Queue.QPOV2',
       true
     )
@@ -154,7 +154,7 @@ describe('QueueOverlayHeader', () => {
     )
 
     expect(screen.queryByRole('menu')).not.toBeInTheDocument()
-    expect(vi.mocked(useSettingStore().setMany)).toHaveBeenCalledWith({
+    expect(useSettingStore().setMany).toHaveBeenCalledWith({
       'Comfy.Queue.QPOV2': false,
       'Comfy.Queue.History.Expanded': true
     })
@@ -170,8 +170,8 @@ describe('QueueOverlayHeader', () => {
       screen.getByRole('menuitemcheckbox', { name: 'Show run progress bar' })
     )
 
-    expect(vi.mocked(useSettingStore().set)).toHaveBeenCalledTimes(1)
-    expect(vi.mocked(useSettingStore().set)).toHaveBeenCalledWith(
+    expect(useSettingStore().set).toHaveBeenCalledTimes(1)
+    expect(useSettingStore().set).toHaveBeenCalledWith(
       'Comfy.Queue.ShowRunProgressBar',
       false
     )
