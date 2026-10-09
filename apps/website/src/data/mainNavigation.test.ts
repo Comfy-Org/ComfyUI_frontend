@@ -18,7 +18,7 @@ function hubOf(navigation: NavItem[]): NavItem {
 
 describe('getMainNavigation', () => {
   it.for(['en', 'zh-CN', 'ja'] as const)(
-    'links the Hub catalogue from the Hub Models column and under Products > Create, for %s',
+    'links the Hub catalogue from the Hub Models column only, not under Products > Create, for %s',
     (locale) => {
       const navigation = getMainNavigation(locale)
       const catalogue = getRoutes(locale).workshop
@@ -34,11 +34,7 @@ describe('getMainNavigation', () => {
         label: t('nav.hubAllModels', {}, { locale }),
         href: catalogue
       })
-      expect(create?.items).toContainEqual({
-        label: t('nav.comfyWorkshop', {}, { locale }),
-        href: catalogue,
-        badge: 'new'
-      })
+      expect(create?.items.map((item) => item.href)).not.toContain(catalogue)
     }
   )
 
@@ -203,7 +199,6 @@ describe('getMainNavigation', () => {
     ])
     expect(productsItem?.columns?.[0].items.map((item) => item.label)).toEqual([
       'Comfy Desktop',
-      'Browse Models',
       'Comfy Cloud',
       'Comfy Workflows'
     ])

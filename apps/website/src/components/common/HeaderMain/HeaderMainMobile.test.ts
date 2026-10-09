@@ -65,11 +65,12 @@ describe('HeaderMainMobile', () => {
     )
   })
 
-  it('offers Browse Models under Products', async () => {
+  it('leaves the models catalogue out of Products', async () => {
     const user = await openMenu()
     await user.click(screen.getByRole('button', { name: /^Products\b/i }))
 
-    expect(screen.getByRole('link', { name: /^Browse Models\b/i })).toBeTruthy()
+    expect(screen.getByRole('link', { name: 'Comfy Cloud' })).toBeTruthy()
+    expect(screen.queryByRole('link', { name: /^Browse Models\b/i })).toBeNull()
   })
 
   it('names each icon-only social link under Company', async () => {

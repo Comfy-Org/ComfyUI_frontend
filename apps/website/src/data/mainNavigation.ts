@@ -168,11 +168,6 @@ export function getMainNavigation(
           header: t('nav.colCreate'),
           items: [
             { label: t('nav.comfyLocal'), href: routes.download },
-            {
-              label: t('nav.comfyWorkshop'),
-              href: routes.workshop,
-              badge: 'new'
-            },
             { label: t('nav.comfyCloud'), href: routes.cloud },
             {
               label: t('nav.comfyHub'),
