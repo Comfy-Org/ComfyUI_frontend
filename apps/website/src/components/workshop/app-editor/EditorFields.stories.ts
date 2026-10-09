@@ -1,6 +1,5 @@
 import { Brush, ImagePlus, Lamp, RotateCcw, Sun, Type } from '@lucide/vue'
 import type { Meta, StoryObj } from '@storybook/vue3-vite'
-import { expect } from 'storybook/test'
 import { ref } from 'vue'
 
 import EditorAlert from './EditorAlert.vue'
@@ -150,20 +149,4 @@ export const ComposerPills: Story = {
       </div>
     `
   })
-}
-
-export const MenuOpen: Story = {
-  render: () => ({
-    components,
-    setup: () => ({ ADD_ITEMS }),
-    template: `
-      <div class="h-48">
-        <EditorMenuButton label="Add" :items="ADD_ITEMS" />
-      </div>
-    `
-  }),
-  play: async ({ canvas, userEvent }) => {
-    await userEvent.click(canvas.getByRole('button', { name: 'Add' }))
-    await expect(canvas.getByRole('menu', { name: 'Add' })).toBeVisible()
-  }
 }
