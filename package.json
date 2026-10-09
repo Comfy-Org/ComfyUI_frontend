@@ -15,6 +15,7 @@
     "build:types": "vite build --config vite.types.config.mts && tsx scripts/prepare-types.ts",
     "build:analyze": "cross-env ANALYZE_BUNDLE=true pnpm build",
     "build": "pnpm typecheck && vite build --config vite.config.mts",
+    "check:pending-server-facts": "tsx scripts/pending-server-facts.ts",
     "clean": "pnpm dlx rimraf dist dist-ssr coverage playwright-report blob-report test-results node_modules/.vite apps/billing-web/dist apps/website/dist",
     "clean:all": "pnpm clean && pnpm dlx rimraf node_modules",
     "container:start": "scripts/start-comfyui-e2e.sh",
