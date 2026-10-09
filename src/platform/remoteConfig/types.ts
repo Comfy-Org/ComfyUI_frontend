@@ -1,3 +1,4 @@
+import type { GetFeaturesResponses } from '@comfyorg/ingest-types'
 import type { PostHogConfig } from 'posthog-js'
 
 import type { TelemetryEventName } from '@/platform/telemetry/types'
@@ -109,6 +110,7 @@ export type RemoteConfig = {
   manager_survey_url?: string
   linear_toggle_enabled?: boolean
   'agent-in-app-experience'?: boolean
+  'agent-starter-prompt-set'?: GetFeaturesResponses[200]['agent-starter-prompt-set']
   'agent-free-use-message-placement'?: string
   partner_node_governance_enabled?: boolean
   /** Kill switch for the local partner-nodes run gate; defaults on client-side. */

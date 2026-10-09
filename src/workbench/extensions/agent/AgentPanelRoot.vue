@@ -71,6 +71,7 @@ import {
 import { useWorkspaceUI } from '@/platform/workspace/composables/useWorkspaceUI'
 
 import { useFreeUsePlacement } from './experiments/freeUsePlacement'
+import { useStarterPromptSet } from './experiments/starterPromptSet'
 import AgentPanel from './components/agent/AgentPanel.vue'
 import { agentBoundWorkflowIdKey } from './components/agent/agentBoundWorkflowId'
 import OnboardingCoach from './components/agent/OnboardingCoach.vue'
@@ -1208,6 +1209,11 @@ const { copy } = useClipboard({ legacy: true })
  * denominator — to the panel openers the hypothesis is about.
  */
 const { variant: freeUsePlacement } = useFreeUsePlacement()
+const {
+  assignment: starterPromptAssignment,
+  attributeExperiment: attributeStarterPromptExperiment,
+  expose: exposeStarterPromptSet
+} = useStarterPromptSet()
 
 function onFreeUseNotice(metadata: AgentFreeUseNoticeMetadata): void {
   useTelemetry()?.trackAgentFreeUseNotice(metadata)
@@ -1371,7 +1377,12 @@ const { submit: onSend } = useAgentDraftSubmission({
         client_message_id: meta.clientMessageId,
         input_method: meta.inputMethod,
         starter_prompt_id: meta.starterPrompt?.id ?? null,
-        starter_prompt_click_id: meta.starterPrompt?.clickId ?? null
+        starter_prompt_click_id: meta.starterPrompt?.clickId ?? null,
+        ...(meta.starterPrompt?.assignment
+          ? {
+              '$feature/agent-starter-prompt-set': meta.starterPrompt.assignment
+            }
+          : {})
       },
       origin:
         originContext === undefined ? null : { tabPath: originContext.tabPath }
@@ -1857,6 +1868,9 @@ async function onPanelDrop(event: DragEvent): Promise<void> {
       :paywall-presentation="paywallPresentation"
       :credits-exhausted="showStandingPaywall"
       :free-use-placement="freeUsePlacement"
+      :starter-prompt-assignment="starterPromptAssignment"
+      :attribute-starter-prompt-experiment="attributeStarterPromptExperiment"
+      @starter-prompt-rendered="exposeStarterPromptSet"
       @free-use-notice="onFreeUseNotice"
       @send="onSend"
       @stop="onStop"

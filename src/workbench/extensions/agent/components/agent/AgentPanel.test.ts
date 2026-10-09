@@ -3,6 +3,14 @@ import userEvent from '@testing-library/user-event'
 import { createPinia, setActivePinia } from 'pinia'
 import { beforeEach, describe, expect, it } from 'vitest'
 
+const distribution = vi.hoisted(() => ({ isCloud: false }))
+
+vi.mock(import('@/platform/distribution/types'), () => ({
+  get isCloud() {
+    return distribution.isCloud
+  }
+}))
+
 import { i18n } from '@/i18n'
 import type { TurnId } from '../../schemas/agentApiSchema'
 
@@ -31,7 +39,32 @@ function mount(isMaximized = false) {
 
 describe('AgentPanel', () => {
   beforeEach(() => {
+    distribution.isCloud = false
     localStorage.clear()
+  })
+
+  it('renders and forwards the treatment starter prompt exposure', () => {
+    distribution.isCloud = true
+    const { emitted } = render(AgentPanel, {
+      props: {
+        entries: [],
+        historyGroups,
+        starterPromptAssignment: 'test',
+        attributeStarterPromptExperiment: true
+      },
+      global: {
+        plugins: [i18n],
+        directives: { tooltip: {} },
+        stubs: { WorkflowSelectorChip: true }
+      }
+    })
+
+    expect(
+      screen.getByRole('button', {
+        name: i18n.global.t('agent.suggestedPrompts.treatment.cloud.0')
+      })
+    ).toBeVisible()
+    expect(emitted('starterPromptRendered')).toEqual([['test']])
   })
 
   it('shows the minimized run notice and disclaimer by default', () => {

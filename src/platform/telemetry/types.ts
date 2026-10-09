@@ -12,6 +12,8 @@
  * 3. Check dist/assets/*.js files contain no tracking code
  */
 
+import type { GetFeaturesResponses } from '@comfyorg/ingest-types'
+
 import type { TierKey } from '@/platform/cloud/subscription/constants/tierPricing'
 import type { BillingCycle } from '@/platform/cloud/subscription/utils/subscriptionTierRank'
 import type { AppMode } from '@/utils/appMode'
@@ -828,6 +830,17 @@ export type AgentStarterPromptId =
   | 'slot_4'
   | 'slot_5'
   | 'unregistered'
+export type AgentStarterPromptAssignment = NonNullable<
+  GetFeaturesResponses[200]['agent-starter-prompt-set']
+>
+interface AgentStarterPromptExperimentMetadata {
+  /**
+   * Assignment of the prompt set that rendered. Optional consumers omit it
+   * for QA overrides, unsupported locales, and surfaces rendered before
+   * authenticated config.
+   */
+  '$feature/agent-starter-prompt-set': AgentStarterPromptAssignment
+}
 /**
  * Where the free-use notice was placed, for the DES-1221 placement experiment.
  *
@@ -856,10 +869,10 @@ export interface AgentFreeUseNoticeMetadata extends Record<string, unknown> {
   action: 'shown' | 'dismissed' | 'learn_more_clicked'
   placement: AgentFreeUsePlacement
 }
-export interface AgentStarterPromptClickedMetadata extends Record<
-  string,
-  unknown
-> {
+export interface AgentStarterPromptClickedMetadata
+  extends
+    Record<string, unknown>,
+    Partial<AgentStarterPromptExperimentMetadata> {
   prompt_id: AgentStarterPromptId
   /** Slot position, so a reorder is visible rather than silently re-labelling. */
   prompt_index: number
@@ -889,7 +902,12 @@ export interface AgentStarterPromptClickedMetadata extends Record<
    */
   draft_was_empty: boolean
 }
-export interface AgentMessageSentMetadata extends Record<string, unknown> {
+export interface AgentStarterPromptExposureMetadata
+  extends Record<string, unknown>, AgentStarterPromptExperimentMetadata {}
+export interface AgentMessageSentMetadata
+  extends
+    Record<string, unknown>,
+    Partial<AgentStarterPromptExperimentMetadata> {
   attachment_count: number
   node_tag_count: number
   /**
@@ -1686,6 +1704,9 @@ export interface TelemetryProvider {
   trackAgentStarterPromptClicked?(
     metadata: AgentStarterPromptClickedMetadata
   ): void
+  trackAgentStarterPromptExposure?(
+    metadata: AgentStarterPromptExposureMetadata
+  ): void
   trackAgentFreeUseNotice?(metadata: AgentFreeUseNoticeMetadata): void
   trackAgentFreeUseExposure?(metadata: AgentFreeUseExposureMetadata): void
   trackAgentNodeTagged?(metadata: AgentNodeTaggedMetadata): void
@@ -1867,6 +1888,7 @@ export const TelemetryEvents = {
   AGENT_ONBOARDING_STEP: 'app:agent_onboarding_step',
   AGENT_MESSAGE_SENT: 'app:agent_message_sent',
   AGENT_STARTER_PROMPT_CLICKED: 'app:agent_starter_prompt_clicked',
+  AGENT_STARTER_PROMPT_EXPOSURE: 'app:agent_starter_prompt_exposure',
   AGENT_FREE_USE_NOTICE: 'app:agent_free_use_notice',
   AGENT_FREE_USE_EXPOSURE: 'app:agent_free_use_exposure',
   AGENT_NODE_TAGGED: 'app:agent_node_tagged',
