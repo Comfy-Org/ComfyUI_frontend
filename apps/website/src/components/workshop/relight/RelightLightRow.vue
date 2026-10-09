@@ -5,9 +5,9 @@ import { computed } from 'vue'
 
 import { cn } from '@comfyorg/tailwind-utils'
 
-import type { Locale } from '../../../i18n/translations'
-import { lc } from '../../../lib/workshop/relight/copy'
-import type { Light } from '../../../lib/workshop/relight/lights'
+import type { Locale } from '@/i18n/translations'
+import { lc } from '@/lib/workshop/relight/copy'
+import type { Light } from '@/lib/workshop/relight/lights'
 
 const {
   light,

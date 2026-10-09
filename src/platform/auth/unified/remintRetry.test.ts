@@ -2,11 +2,13 @@ import { useWorkspaceAuthStore } from '@/platform/workspace/stores/workspaceAuth
 import { stubAccountIdentityPort } from '@/utils/__tests__/stubAccountIdentityPort'
 import type { AxiosAdapter } from 'axios'
 import axios, { AxiosError } from 'axios'
-import { beforeEach, describe, expect, it, vi } from 'vitest'
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 
 import { useTelemetry } from '@/platform/telemetry'
 import { reportError } from '@/platform/telemetry/reportError'
 import { useFeatureFlags } from '@/composables/useFeatureFlags'
+import { SSO_REQUIRED_DIALOG_KEY } from '@/platform/auth/sso/ssoRequiredDialogKey'
+import { useDialogStore } from '@/stores/dialogStore'
 
 import {
   attachUnifiedRemintInterceptor,
@@ -240,7 +242,6 @@ describe('fetchWithUnifiedRemint', () => {
   })
 
   it('reports an unexpected re-mint throw as auth_unified_remint_unexpected and keeps the 401 fallback', async () => {
-    const consoleWarn = vi.spyOn(console, 'warn').mockImplementation(() => {})
     const thrown = new TypeError('Failed to fetch dynamically imported module')
     mockFetch.mockResolvedValueOnce(unauthorized)
     vi.mocked(useWorkspaceAuthStore().remintUnifiedOnce).mockRejectedValue(
@@ -268,7 +269,7 @@ describe('fetchWithUnifiedRemint', () => {
     expect(
       JSON.stringify(vi.mocked(reportError).mock.calls[0][1])
     ).not.toContain('secret-token')
-    expect(consoleWarn).not.toHaveBeenCalled()
+    expect(console.warn).not.toHaveBeenCalled()
     expect(
       useTelemetry()?.trackUnifiedAuthRetry
     ).toHaveBeenCalledExactlyOnceWith({
@@ -622,5 +623,137 @@ describe('attachUnifiedRemintInterceptor', () => {
     // Each request: initial 401 + one retry = 4 adapter calls, one re-mint each.
     expect(adapter).toHaveBeenCalledTimes(4)
     expect(useWorkspaceAuthStore().remintUnifiedOnce).toHaveBeenCalledTimes(2)
+  })
+})
+
+describe('an SSO refusal at the cloud request seams', () => {
+  const SSO_REFUSAL = { code: 'sso_required', message: 'use SSO' }
+
+  async function ssoScreenShown() {
+    await vi.dynamicImportSettled()
+    return useDialogStore().isDialogOpen(SSO_REQUIRED_DIALOG_KEY)
+  }
+
+  it.for([
+    { ssoEnabled: true, body: SSO_REFUSAL, shown: true },
+    { ssoEnabled: false, body: SSO_REFUSAL, shown: false },
+    {
+      ssoEnabled: true,
+      body: { code: 'FORBIDDEN', message: 'no' },
+      shown: false
+    }
+  ])(
+    'fetch returns the 403 $body.code as is; the SSO screen shows: $shown (sso_enabled $ssoEnabled)',
+    async ({ ssoEnabled, body, shown }) => {
+      vi.mocked(useFeatureFlags().flags).ssoEnabled = ssoEnabled
+      vi.stubGlobal(
+        'fetch',
+        vi.fn(async () => Response.json(body, { status: 403 }))
+      )
+
+      const response = await fetchWithUnifiedRemint('https://cloud/x', {}, true)
+
+      expect(response.status).toBe(403)
+      expect(await response.json()).toEqual(body)
+      expect(await ssoScreenShown()).toBe(shown)
+    }
+  )
+
+  it.for([
+    { ssoEnabled: true, shown: true },
+    { ssoEnabled: false, shown: false }
+  ])(
+    'axios rejects a 403 sso_required as is; the SSO screen shows: $shown (sso_enabled $ssoEnabled)',
+    async ({ ssoEnabled, shown }) => {
+      vi.mocked(useFeatureFlags().flags).ssoEnabled = ssoEnabled
+      const client = axios.create({
+        adapter: async (config) => {
+          throw new AxiosError(
+            'refused',
+            AxiosError.ERR_BAD_REQUEST,
+            config,
+            null,
+            {
+              data: SSO_REFUSAL,
+              status: 403,
+              statusText: '403',
+              headers: {},
+              config
+            }
+          )
+        }
+      })
+      attachUnifiedRemintInterceptor(client)
+
+      await expect(client.get('https://cloud/x')).rejects.toMatchObject({
+        response: { status: 403 }
+      })
+      expect(await ssoScreenShown()).toBe(shown)
+    }
+  )
+
+  describe('when presenting the SSO screen fails', () => {
+    const failure = new Error('sso screen unavailable')
+
+    beforeEach(() => {
+      Object.defineProperty(vi.mocked(useFeatureFlags().flags), 'ssoEnabled', {
+        configurable: true,
+        get: () => {
+          throw failure
+        }
+      })
+    })
+
+    afterEach(() => {
+      Object.defineProperty(vi.mocked(useFeatureFlags().flags), 'ssoEnabled', {
+        configurable: true,
+        writable: true,
+        value: false
+      })
+    })
+
+    it('fetch still returns the 403 and reports the failure', async () => {
+      vi.stubGlobal(
+        'fetch',
+        vi.fn(async () => Response.json(SSO_REFUSAL, { status: 403 }))
+      )
+
+      const response = await fetchWithUnifiedRemint('https://cloud/x', {}, true)
+
+      expect(response.status).toBe(403)
+      expect(reportError).toHaveBeenCalledWith(failure, {
+        surface: 'auth',
+        errorType: 'failure_presenting_sso_required'
+      })
+    })
+
+    it('axios still rejects with the 403 and reports the failure', async () => {
+      const client = axios.create({
+        adapter: async (config) => {
+          throw new AxiosError(
+            'refused',
+            AxiosError.ERR_BAD_REQUEST,
+            config,
+            null,
+            {
+              data: SSO_REFUSAL,
+              status: 403,
+              statusText: '403',
+              headers: {},
+              config
+            }
+          )
+        }
+      })
+      attachUnifiedRemintInterceptor(client)
+
+      await expect(client.get('https://cloud/x')).rejects.toMatchObject({
+        response: { status: 403 }
+      })
+      expect(reportError).toHaveBeenCalledWith(failure, {
+        surface: 'auth',
+        errorType: 'failure_presenting_sso_required'
+      })
+    })
   })
 })

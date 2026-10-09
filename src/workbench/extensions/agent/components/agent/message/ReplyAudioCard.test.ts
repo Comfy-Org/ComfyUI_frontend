@@ -48,9 +48,7 @@ describe('ReplyAudioCard', () => {
 
   beforeEach(() => {
     vi.mocked(api.apiURL).mockImplementation((route) => `http://x/api${route}`)
-    vi.mocked(api.fetchApi)
-      .mockReset()
-      .mockResolvedValue(new Response(new Blob(['x'])))
+    vi.mocked(api.fetchApi).mockResolvedValue(new Response(new Blob(['x'])))
     vi.spyOn(URL, 'createObjectURL').mockReturnValue('blob:mock')
     vi.spyOn(URL, 'revokeObjectURL').mockImplementation(() => {})
     anchorClick = vi

@@ -1,9 +1,9 @@
 <script setup lang="ts">
-import type { HandProductSwap } from '../../../composables/useHandProductSwap'
-import type { Locale } from '../../../i18n/translations'
-import { SWAP_CREDITS } from '../../../lib/workshop/hand-product-swap/contract'
-import { hc } from '../../../lib/workshop/hand-product-swap/copy'
-import EditorRun from '../app-editor/EditorRun.vue'
+import type { HandProductSwap } from '@/composables/useHandProductSwap'
+import type { Locale } from '@/i18n/translations'
+import { SWAP_CREDITS } from '@/lib/workshop/hand-product-swap/contract'
+import { hc } from '@/lib/workshop/hand-product-swap/copy'
+import EditorRun from '@/components/workshop/app-editor/EditorRun.vue'
 
 const {
   swap,

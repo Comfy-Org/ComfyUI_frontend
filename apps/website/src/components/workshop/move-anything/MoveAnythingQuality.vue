@@ -1,10 +1,10 @@
 <script setup lang="ts">
 import { Gauge } from '@lucide/vue'
 
-import type { Locale } from '../../../i18n/translations'
-import { mc } from '../../../lib/workshop/move-anything/copy'
-import type { MoveQuality } from '../../../lib/workshop/move-anything/mock-run'
-import EditorOutput from '../app-editor/EditorOutput.vue'
+import type { Locale } from '@/i18n/translations'
+import { mc } from '@/lib/workshop/move-anything/copy'
+import type { MoveQuality } from '@/lib/workshop/move-anything/mock-run'
+import EditorOutput from '@/components/workshop/app-editor/EditorOutput.vue'
 
 const {
   locale = 'en',

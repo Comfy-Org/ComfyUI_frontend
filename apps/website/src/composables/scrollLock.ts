@@ -1,4 +1,4 @@
-import { scrollTo, stopScroller, startScroller } from '../scripts/smoothScroll'
+import { scrollTo, stopScroller, startScroller } from '@/scripts/smoothScroll'
 
 let savedScrollY = 0
 let lockCount = 0

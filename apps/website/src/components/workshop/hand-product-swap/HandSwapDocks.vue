@@ -1,6 +1,6 @@
 <script setup lang="ts">
-import type { HandProductSwap } from '../../../composables/useHandProductSwap'
-import type { Locale } from '../../../i18n/translations'
+import type { HandProductSwap } from '@/composables/useHandProductSwap'
+import type { Locale } from '@/i18n/translations'
 import HandSwapComposer from './HandSwapComposer.vue'
 import HandSwapResultDock from './HandSwapResultDock.vue'
 

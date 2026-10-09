@@ -1,10 +1,10 @@
 <script setup lang="ts">
 import { Lightbulb, Sun } from '@lucide/vue'
 
-import type { Relight } from '../../../composables/useRelight'
-import type { Locale } from '../../../i18n/translations'
-import { lc } from '../../../lib/workshop/relight/copy'
-import EditorMenuButton from '../app-editor/EditorMenuButton.vue'
+import type { Relight } from '@/composables/useRelight'
+import type { Locale } from '@/i18n/translations'
+import { lc } from '@/lib/workshop/relight/copy'
+import EditorMenuButton from '@/components/workshop/app-editor/EditorMenuButton.vue'
 
 const {
   relight,

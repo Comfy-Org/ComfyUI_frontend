@@ -1,12 +1,12 @@
 <script setup lang="ts">
 import { computed } from 'vue'
 
-import type { HandProductSwap } from '../../../composables/useHandProductSwap'
-import type { Locale } from '../../../i18n/translations'
-import { hc } from '../../../lib/workshop/hand-product-swap/copy'
-import { HAND_EXAMPLE } from '../../../lib/workshop/hand-product-swap/examples'
-import EditorEmpty from '../app-editor/EditorEmpty.vue'
-import EditorResult from '../app-editor/EditorResult.vue'
+import type { HandProductSwap } from '@/composables/useHandProductSwap'
+import type { Locale } from '@/i18n/translations'
+import { hc } from '@/lib/workshop/hand-product-swap/copy'
+import { HAND_EXAMPLE } from '@/lib/workshop/hand-product-swap/examples'
+import EditorEmpty from '@/components/workshop/app-editor/EditorEmpty.vue'
+import EditorResult from '@/components/workshop/app-editor/EditorResult.vue'
 import HandSwapWorkspace from './HandSwapWorkspace.vue'
 
 const { swap, locale = 'en' } = defineProps<{

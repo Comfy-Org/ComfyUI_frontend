@@ -1,7 +1,7 @@
 import { describe, expect, it } from 'vitest'
 
-import { hubModelSlugs } from '../../config/hub-models'
-import { prepareModelPage } from '../../routes/models/model-page'
+import { hubModelSlugs } from '@/config/hub-models'
+import { prepareModelPage } from '@/routes/models/model-page'
 import { modelMetaDescription } from './model-meta-description'
 
 const MAX_LENGTH = 170

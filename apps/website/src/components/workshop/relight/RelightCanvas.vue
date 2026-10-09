@@ -6,15 +6,15 @@ import type {
   Light,
   RelightMask,
   RelightScene
-} from '../../../lib/workshop/relight/lights'
+} from '@/lib/workshop/relight/lights'
 import {
   fitImage,
   imageHeightMap,
   loadImage
-} from '../../../lib/workshop/relight/render-image'
-import type { RelightRenderer } from '../../../lib/workshop/relight/renderer'
-import { createRelightRenderer } from '../../../lib/workshop/relight/renderer'
-import { shadingUniforms } from '../../../lib/workshop/relight/shading'
+} from '@/lib/workshop/relight/render-image'
+import type { RelightRenderer } from '@/lib/workshop/relight/renderer'
+import { createRelightRenderer } from '@/lib/workshop/relight/renderer'
+import { shadingUniforms } from '@/lib/workshop/relight/shading'
 import RelightPreview from './RelightPreview.vue'
 
 const {

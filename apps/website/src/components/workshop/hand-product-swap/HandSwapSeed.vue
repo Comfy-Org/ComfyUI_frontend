@@ -1,8 +1,8 @@
 <script setup lang="ts">
-import type { HandProductSwap } from '../../../composables/useHandProductSwap'
-import type { Locale } from '../../../i18n/translations'
-import { hc } from '../../../lib/workshop/hand-product-swap/copy'
-import EditorSeedField from '../app-editor/EditorSeedField.vue'
+import type { HandProductSwap } from '@/composables/useHandProductSwap'
+import type { Locale } from '@/i18n/translations'
+import { hc } from '@/lib/workshop/hand-product-swap/copy'
+import EditorSeedField from '@/components/workshop/app-editor/EditorSeedField.vue'
 
 const { swap, locale = 'en' } = defineProps<{
   swap: HandProductSwap

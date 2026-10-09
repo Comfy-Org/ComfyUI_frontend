@@ -1,10 +1,10 @@
 <script setup lang="ts">
-import type { Locale } from '../../../i18n/translations'
-import { hc } from '../../../lib/workshop/hand-product-swap/copy'
-import type { SwapImage } from '../../../lib/workshop/hand-product-swap/examples'
-import { HAND_EXAMPLE } from '../../../lib/workshop/hand-product-swap/examples'
-import EditorDropZone from '../app-editor/EditorDropZone.vue'
-import EditorFrame from '../app-editor/EditorFrame.vue'
+import type { Locale } from '@/i18n/translations'
+import { hc } from '@/lib/workshop/hand-product-swap/copy'
+import type { SwapImage } from '@/lib/workshop/hand-product-swap/examples'
+import { HAND_EXAMPLE } from '@/lib/workshop/hand-product-swap/examples'
+import EditorDropZone from '@/components/workshop/app-editor/EditorDropZone.vue'
+import EditorFrame from '@/components/workshop/app-editor/EditorFrame.vue'
 
 const { hand, locale = 'en' } = defineProps<{
   hand: SwapImage

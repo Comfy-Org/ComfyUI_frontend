@@ -1,8 +1,8 @@
 <script setup lang="ts">
-import type { HandProductSwap } from '../../../composables/useHandProductSwap'
-import type { Locale } from '../../../i18n/translations'
-import { hc } from '../../../lib/workshop/hand-product-swap/copy'
-import EditorTray from '../app-editor/EditorTray.vue'
+import type { HandProductSwap } from '@/composables/useHandProductSwap'
+import type { Locale } from '@/i18n/translations'
+import { hc } from '@/lib/workshop/hand-product-swap/copy'
+import EditorTray from '@/components/workshop/app-editor/EditorTray.vue'
 import { SWAP_SECTIONS, sectionMeta } from './sections'
 
 const { swap, locale = 'en' } = defineProps<{

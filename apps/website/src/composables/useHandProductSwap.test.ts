@@ -2,15 +2,15 @@ import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import type { EffectScope } from 'vue'
 import { effectScope } from 'vue'
 
-import { HAND_EXAMPLE } from '../lib/workshop/hand-product-swap/examples'
-import { renderSwapImage } from '../lib/workshop/hand-product-swap/render-swap'
+import { HAND_EXAMPLE } from '@/lib/workshop/hand-product-swap/examples'
+import { renderSwapImage } from '@/lib/workshop/hand-product-swap/render-swap'
 import { useHandProductSwap } from './useHandProductSwap'
 
-vi.mock(import('../lib/workshop/hand-product-swap/render-swap'), () => ({
+vi.mock(import('@/lib/workshop/hand-product-swap/render-swap'), () => ({
   renderSwapImage: vi.fn(() => Promise.resolve('blob:swapped'))
 }))
 
-vi.mock(import('../lib/workshop/image-size'), () => ({
+vi.mock(import('@/lib/workshop/image-size'), () => ({
   imageSize: vi.fn(() => Promise.resolve({ width: 800, height: 1000 }))
 }))
 

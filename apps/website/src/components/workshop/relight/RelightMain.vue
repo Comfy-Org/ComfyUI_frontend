@@ -1,13 +1,13 @@
 <script setup lang="ts">
 import { computed } from 'vue'
 
-import type { Relight } from '../../../composables/useRelight'
-import type { Locale } from '../../../i18n/translations'
-import { lc } from '../../../lib/workshop/relight/copy'
-import { RELIGHT_EXAMPLE } from '../../../lib/workshop/relight/mock-run'
-import EditorEmpty from '../app-editor/EditorEmpty.vue'
-import EditorResult from '../app-editor/EditorResult.vue'
-import type { EditorView } from '../app-editor/view'
+import type { Relight } from '@/composables/useRelight'
+import type { Locale } from '@/i18n/translations'
+import { lc } from '@/lib/workshop/relight/copy'
+import { RELIGHT_EXAMPLE } from '@/lib/workshop/relight/mock-run'
+import EditorEmpty from '@/components/workshop/app-editor/EditorEmpty.vue'
+import EditorResult from '@/components/workshop/app-editor/EditorResult.vue'
+import type { EditorView } from '@/components/workshop/app-editor/view'
 import RelightWorkspace from './RelightWorkspace.vue'
 
 const {

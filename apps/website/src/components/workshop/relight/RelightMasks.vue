@@ -1,10 +1,10 @@
 <script setup lang="ts">
 import { computed, ref, useId } from 'vue'
 
-import type { Relight } from '../../../composables/useRelight'
-import type { Locale } from '../../../i18n/translations'
-import { lc } from '../../../lib/workshop/relight/copy'
-import EditorSelect from '../app-editor/EditorSelect.vue'
+import type { Relight } from '@/composables/useRelight'
+import type { Locale } from '@/i18n/translations'
+import { lc } from '@/lib/workshop/relight/copy'
+import EditorSelect from '@/components/workshop/app-editor/EditorSelect.vue'
 import RelightMaskRow from './RelightMaskRow.vue'
 
 const { relight, locale = 'en' } = defineProps<{

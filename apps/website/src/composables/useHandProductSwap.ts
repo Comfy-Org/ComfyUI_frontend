@@ -1,25 +1,25 @@
 import { tryOnScopeDispose } from '@vueuse/core'
 import { computed, ref, shallowRef } from 'vue'
 
-import type { Locale } from '../i18n/translations'
+import type { Locale } from '@/i18n/translations'
 import type {
   HandSwapResult,
   SwapProgress,
   SwapResolution
-} from '../lib/workshop/hand-product-swap/contract'
-import { hc } from '../lib/workshop/hand-product-swap/copy'
+} from '@/lib/workshop/hand-product-swap/contract'
+import { hc } from '@/lib/workshop/hand-product-swap/copy'
 import type {
   SwapImage,
   SwapProduct
-} from '../lib/workshop/hand-product-swap/examples'
+} from '@/lib/workshop/hand-product-swap/examples'
 import {
   EXAMPLE_PRODUCTS,
   HAND_EXAMPLE,
   OWN_PRODUCT_ID
-} from '../lib/workshop/hand-product-swap/examples'
-import * as history from '../lib/workshop/hand-product-swap/history'
-import { runHandSwap } from '../lib/workshop/hand-product-swap/mock-run'
-import { imageSize } from '../lib/workshop/image-size'
+} from '@/lib/workshop/hand-product-swap/examples'
+import * as history from '@/lib/workshop/hand-product-swap/history'
+import { runHandSwap } from '@/lib/workshop/hand-product-swap/mock-run'
+import { imageSize } from '@/lib/workshop/image-size'
 
 /** Everything undo and redo cover. */
 interface SwapSetup {

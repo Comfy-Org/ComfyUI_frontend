@@ -1,10 +1,10 @@
 <script setup lang="ts">
 import { computed } from 'vue'
 
-import type { HandProductSwap } from '../../../composables/useHandProductSwap'
-import type { Locale } from '../../../i18n/translations'
-import { hc } from '../../../lib/workshop/hand-product-swap/copy'
-import EditorTiles from '../app-editor/EditorTiles.vue'
+import type { HandProductSwap } from '@/composables/useHandProductSwap'
+import type { Locale } from '@/i18n/translations'
+import { hc } from '@/lib/workshop/hand-product-swap/copy'
+import EditorTiles from '@/components/workshop/app-editor/EditorTiles.vue'
 
 const { swap, locale = 'en' } = defineProps<{
   swap: HandProductSwap

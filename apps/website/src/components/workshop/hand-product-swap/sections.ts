@@ -3,8 +3,8 @@ import type { Component } from 'vue'
 import type {
   HandProductSwap,
   SwapTray
-} from '../../../composables/useHandProductSwap'
-import type { HandSwapCopyKey } from '../../../lib/workshop/hand-product-swap/copy'
+} from '@/composables/useHandProductSwap'
+import type { HandSwapCopyKey } from '@/lib/workshop/hand-product-swap/copy'
 import HandSwapProducts from './HandSwapProducts.vue'
 import HandSwapResolution from './HandSwapResolution.vue'
 import HandSwapSeed from './HandSwapSeed.vue'

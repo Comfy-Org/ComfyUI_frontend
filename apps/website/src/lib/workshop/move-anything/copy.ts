@@ -1,6 +1,4 @@
-import type { NamedValues } from '../../../i18n/interpolate'
-import { interpolate } from '../../../i18n/interpolate'
-import type { Locale, LocalizedText } from '../../../i18n/translations'
+import type { Locale, LocalizedText } from '@/i18n/translations'
 
 const copy = {
   'move.title': { en: 'Move anything', 'zh-CN': '随意移动' },
@@ -132,6 +130,8 @@ const copy = {
 
 export type MoveCopyKey = keyof typeof copy
 
+type NamedValues = Record<string, string | number>
+
 /** Move anything copy. A `one | many` entry picks by `n`. */
 export function mc(
   key: MoveCopyKey,
@@ -142,5 +142,7 @@ export function mc(
   const text = entry[locale] ?? entry.en
   const forms = text.split(' | ')
   const form = forms.length === 2 && named.n !== 1 ? forms[1] : forms[0]
-  return interpolate(form, named)
+  return form.replace(/\{(\w+)\}/g, (placeholder, name: string) =>
+    Object.hasOwn(named, name) ? String(named[name]) : placeholder
+  )
 }

@@ -1,8 +1,8 @@
 <script setup lang="ts">
-import type { Relight } from '../../../composables/useRelight'
-import type { Locale } from '../../../i18n/translations'
-import { lc } from '../../../lib/workshop/relight/copy'
-import EditorTray from '../app-editor/EditorTray.vue'
+import type { Relight } from '@/composables/useRelight'
+import type { Locale } from '@/i18n/translations'
+import { lc } from '@/lib/workshop/relight/copy'
+import EditorTray from '@/components/workshop/app-editor/EditorTray.vue'
 import RelightTools from './RelightTools.vue'
 import RelightTrayBody from './RelightTrayBody.vue'
 import { RELIGHT_TRAYS, sectionMeta } from './sections'

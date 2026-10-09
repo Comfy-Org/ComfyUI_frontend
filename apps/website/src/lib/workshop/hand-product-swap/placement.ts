@@ -1,4 +1,4 @@
-import type { Rect } from '../move-anything/arrange'
+import type { Rect } from '@/lib/workshop/move-anything/arrange'
 
 /** How much taller than the box a product may grow before it is shrunk. */
 const MAX_OVERHANG = 1.6

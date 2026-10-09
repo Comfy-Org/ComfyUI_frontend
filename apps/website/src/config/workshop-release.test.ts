@@ -65,6 +65,9 @@ describe('isWorkshopRoute', () => {
     expect(isWorkshopRoute('/models')).toBe(true)
     expect(isWorkshopRoute('/hub/models')).toBe(false)
     expect(isWorkshopRoute('/hub/models/')).toBe(false)
+    expect(isWorkshopRoute('/hub/models/local/')).toBe(false)
+    expect(isWorkshopRoute('/hub/models/local/4x-ultrasharp/')).toBe(false)
+    expect(isWorkshopRoute('/hub/models/local/llms.txt')).toBe(false)
 
     expect(isWorkshopRoute('/')).toBe(false)
     expect(isWorkshopRoute('/pricing')).toBe(false)

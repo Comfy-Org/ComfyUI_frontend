@@ -2,7 +2,7 @@ import userEvent from '@testing-library/user-event'
 import { render, screen } from '@testing-library/vue'
 import { describe, expect, it } from 'vitest'
 
-import type { HubTemplate } from '../../lib/hub/types'
+import type { HubTemplate } from '@/lib/hub/types'
 import HubWorkflowCard from './HubWorkflowCard.vue'
 
 const template: HubTemplate = {

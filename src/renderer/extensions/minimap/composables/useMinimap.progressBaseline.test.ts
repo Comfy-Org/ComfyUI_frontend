@@ -15,7 +15,7 @@ import { CustomEventTarget } from '@/lib/litegraph/src/infrastructure/CustomEven
 import type { LGraph, LGraphNode } from '@/lib/litegraph/src/litegraph'
 import { MinimapDataSource } from '@/renderer/extensions/minimap/data/MinimapDataSource'
 import { api } from '@/scripts/api'
-import { createMockCanvas2DContext } from '@/utils/__tests__/litegraphTestUtils'
+import { createMockCanvasRenderingContext2D } from '@/utils/__tests__/canvasTestUtils'
 
 interface HarnessCounters {
   digestNodeReads: number
@@ -229,7 +229,7 @@ async function runCell(
   }
 
   const { graph, nodes } = createGraph(graphSize, edgeCount)
-  const context = createMockCanvas2DContext()
+  const context = createMockCanvasRenderingContext2D()
   vi.mocked(context.clearRect).mockImplementation(() => {
     counters.canvasRedraws++
   })

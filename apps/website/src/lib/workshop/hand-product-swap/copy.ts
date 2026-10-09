@@ -1,6 +1,4 @@
-import type { NamedValues } from '../../../i18n/interpolate'
-import { interpolate } from '../../../i18n/interpolate'
-import type { Locale, LocalizedText } from '../../../i18n/translations'
+import type { Locale, LocalizedText } from '@/i18n/translations'
 
 const copy = {
   'swap.title': { en: 'Hand product swap', 'zh-CN': '手持产品替换' },
@@ -93,6 +91,8 @@ const copy = {
 
 export type HandSwapCopyKey = keyof typeof copy
 
+type NamedValues = Record<string, string | number>
+
 /** Hand product swap copy. */
 export function hc(
   key: HandSwapCopyKey,
@@ -100,5 +100,9 @@ export function hc(
   named: NamedValues = {}
 ): string {
   const entry: LocalizedText = copy[key]
-  return interpolate(entry[locale] ?? entry.en, named)
+  return (entry[locale] ?? entry.en).replace(
+    /\{(\w+)\}/g,
+    (placeholder, name: string) =>
+      Object.hasOwn(named, name) ? String(named[name]) : placeholder
+  )
 }

@@ -4,7 +4,7 @@ import { beforeEach, describe, expect, it, vi } from 'vitest'
 
 import HandSwapStudio from './HandSwapStudio.vue'
 
-vi.mock(import('../../../lib/workshop/hand-product-swap/render-swap'), () => ({
+vi.mock(import('@/lib/workshop/hand-product-swap/render-swap'), () => ({
   renderSwapImage: vi.fn(() => Promise.resolve(undefined))
 }))
 

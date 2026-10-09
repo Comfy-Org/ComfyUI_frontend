@@ -1,14 +1,14 @@
 <script setup lang="ts">
 import { computed } from 'vue'
 
-import type { HandProductSwap } from '../../../composables/useHandProductSwap'
-import type { Locale } from '../../../i18n/translations'
+import type { HandProductSwap } from '@/composables/useHandProductSwap'
+import type { Locale } from '@/i18n/translations'
 import {
   SWAP_RESOLUTIONS,
   outputSize
-} from '../../../lib/workshop/hand-product-swap/contract'
-import { hc } from '../../../lib/workshop/hand-product-swap/copy'
-import EditorOutput from '../app-editor/EditorOutput.vue'
+} from '@/lib/workshop/hand-product-swap/contract'
+import { hc } from '@/lib/workshop/hand-product-swap/copy'
+import EditorOutput from '@/components/workshop/app-editor/EditorOutput.vue'
 
 const {
   swap,

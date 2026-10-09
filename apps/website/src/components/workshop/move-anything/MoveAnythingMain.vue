@@ -1,15 +1,12 @@
 <script setup lang="ts">
 import { computed } from 'vue'
 
-import type {
-  MoveView,
-  useMoveAnything
-} from '../../../composables/useMoveAnything'
-import type { Locale } from '../../../i18n/translations'
-import { mc } from '../../../lib/workshop/move-anything/copy'
-import { MOVE_EXAMPLE } from '../../../lib/workshop/move-anything/mock-run'
-import EditorEmpty from '../app-editor/EditorEmpty.vue'
-import EditorResult from '../app-editor/EditorResult.vue'
+import type { MoveView, useMoveAnything } from '@/composables/useMoveAnything'
+import type { Locale } from '@/i18n/translations'
+import { mc } from '@/lib/workshop/move-anything/copy'
+import { MOVE_EXAMPLE } from '@/lib/workshop/move-anything/mock-run'
+import EditorEmpty from '@/components/workshop/app-editor/EditorEmpty.vue'
+import EditorResult from '@/components/workshop/app-editor/EditorResult.vue'
 import MoveAnythingWorkspace from './MoveAnythingWorkspace.vue'
 
 const {

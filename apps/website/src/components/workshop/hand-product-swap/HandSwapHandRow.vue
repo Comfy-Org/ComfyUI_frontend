@@ -1,8 +1,8 @@
 <script setup lang="ts">
-import type { Locale } from '../../../i18n/translations'
-import { hc } from '../../../lib/workshop/hand-product-swap/copy'
-import type { SwapImage } from '../../../lib/workshop/hand-product-swap/examples'
-import EditorUploadSlot from '../app-editor/EditorUploadSlot.vue'
+import type { Locale } from '@/i18n/translations'
+import { hc } from '@/lib/workshop/hand-product-swap/copy'
+import type { SwapImage } from '@/lib/workshop/hand-product-swap/examples'
+import EditorUploadSlot from '@/components/workshop/app-editor/EditorUploadSlot.vue'
 
 const { hand, locale = 'en' } = defineProps<{
   hand: SwapImage
