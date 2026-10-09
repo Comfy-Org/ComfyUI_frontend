@@ -173,6 +173,12 @@ describe('nodeIdentification', () => {
           subgraphUuid: null,
           rawId: 1.5,
           expectedLocator: '~root:1.5'
+        },
+        {
+          name: 'root id containing a literal escape sequence',
+          subgraphUuid: null,
+          rawId: 'a%3Ab:c',
+          expectedLocator: '~root:a%253Ab%3Ac'
         }
       ])('encodes $name', ({ subgraphUuid, rawId, expectedLocator }) => {
         const locatorId = createNodeLocatorId(subgraphUuid, rawId)
