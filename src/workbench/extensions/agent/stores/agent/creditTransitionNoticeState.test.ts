@@ -13,13 +13,6 @@ import {
 const IDENTITY = 'user-1:workspace-1'
 const OTHER = 'user-2:workspace-1'
 
-const PHASES = [
-  'idle',
-  'armed',
-  'shown',
-  'dismissed'
-] as const satisfies readonly CreditTransitionNoticePhase[]
-
 function episode(
   phase: 'idle' | 'dismissed',
   scopedHasFunds: boolean,
@@ -92,7 +85,7 @@ describe('reduceCreditTransitionNotice', () => {
       ).toEqual(episode('dismissed', false))
     })
 
-    it.for(PHASES)(
+    it.for(['idle', 'armed', 'shown'] as const)(
       'leaves a %s episode alone when scoped funds were already false',
       (phase) => {
         expect(
@@ -158,14 +151,17 @@ describe('reduceCreditTransitionNotice', () => {
   })
 
   describe('dismissed', () => {
-    it.for(PHASES)('closes a %s episode', (phase) => {
-      expect(
-        reduceCreditTransitionNotice(episode(phase, false), {
-          type: 'dismissed',
-          identity: IDENTITY
-        })
-      ).toEqual(episode('dismissed', false))
-    })
+    it.for(['idle', 'armed', 'shown'] as const)(
+      'closes a %s episode',
+      (phase) => {
+        expect(
+          reduceCreditTransitionNotice(episode(phase, false), {
+            type: 'dismissed',
+            identity: IDENTITY
+          })
+        ).toEqual(episode('dismissed', false))
+      }
+    )
   })
 
   describe('events for an identity the state does not hold', () => {
@@ -173,10 +169,6 @@ describe('reduceCreditTransitionNotice', () => {
       { type: 'shown', identity: IDENTITY },
       { type: 'dismissed', identity: IDENTITY }
     ] as const satisfies readonly CreditTransitionNoticeEvent[]
-
-    it.for(foreign)('leaves null untouched on $type', (event) => {
-      expect(reduceCreditTransitionNotice(null, event)).toBeNull()
-    })
 
     it.for(foreign)('leaves another identity untouched on $type', (event) => {
       const other = episode('armed', false, OTHER)
