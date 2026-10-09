@@ -1247,29 +1247,16 @@ describe('useWorkflowStore', () => {
 
       it('should preserve a colon-bearing subgraph host in the execution path', () => {
         const subgraphUuid = '11111111-2222-4333-8444-555555555555'
-        const hostId = toNodeId('insert:op:root:node:3')
-        const nodes: LGraph['nodes'] = []
-        const rootGraph = fromAny<LGraph, unknown>({
-          _nodes: nodes,
-          nodes,
-          getNodeById: (id: NodeId) =>
-            id === hostId ? (nodes[0] ?? null) : null
+        const subgraph = fromPartial<Subgraph>({ id: subgraphUuid })
+        vi.mocked(comfyApp).rootGraph = fromPartial<LGraph>({
+          _nodes: [
+            createMockLGraphNode({
+              id: toNodeId('insert:op:root:node:3'),
+              isSubgraphNode: () => true,
+              subgraph
+            })
+          ]
         })
-        const subgraph = fromAny<Subgraph, unknown>({
-          id: subgraphUuid,
-          rootGraph,
-          _nodes: [],
-          nodes: []
-        })
-        nodes.push(
-          createMockLGraphNode({
-            id: hostId,
-            isSubgraphNode: () => true,
-            subgraph
-          })
-        )
-        vi.mocked(comfyApp).rootGraph = rootGraph
-        store.activeSubgraph = subgraph
         vi.mocked(isSubgraph).mockImplementation(
           (graph): graph is Subgraph => graph === subgraph
         )
