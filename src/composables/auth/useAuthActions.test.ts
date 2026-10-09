@@ -1,5 +1,5 @@
 import { useDialogService } from '@/services/dialogService'
-import { useAuthStore } from '@/stores/authStore'
+import { SsoRequiredAuthError, useAuthStore } from '@/stores/authStore'
 import { useToastStore } from '@/platform/updates/common/toastStore'
 import { useWorkflowStore } from '@/platform/workflow/management/stores/workflowStore'
 import { FirebaseError } from 'firebase/app'
@@ -19,6 +19,7 @@ import type { ComfyWorkflow } from '@/platform/workflow/management/stores/workfl
 import { stubFirebaseAuthHarness } from '@/utils/__tests__/stubAccountIdentityPort'
 import { useWorkflowService } from '@/platform/workflow/core/services/workflowService'
 import { useBillingContext } from '@/composables/billing/useBillingContext'
+import { presentSsoRequired } from '@/platform/auth/sso/ssoRequired'
 
 vi.mock(import('firebase/auth'), { spy: true })
 
@@ -56,6 +57,7 @@ const accessErrorCodes = [
 ]
 
 vi.mock(import('@/i18n'))
+vi.mock(import('@/platform/auth/sso/ssoRequired'))
 
 vi.mock(import('@/platform/distribution/types'), () => ({
   get isCloud() {
@@ -430,6 +432,37 @@ describe('useAuthActions auth flow error telemetry', () => {
     expect(useTelemetry()?.trackAuthFailed).toHaveBeenCalledExactlyOnceWith({
       error_code: 'unknown',
       auth_action: 'email_sign_up'
+    })
+  })
+
+  describe('when the account must sign in with SSO', () => {
+    it('opens the SSO dialog and signs out instead of a failure toast', async () => {
+      vi.mocked(presentSsoRequired).mockReturnValueOnce(true)
+      vi.mocked(mockAuthStore.loginWithGoogle).mockRejectedValueOnce(
+        new SsoRequiredAuthError('org_1')
+      )
+      const { signInWithGoogle } = useAuthActions()
+
+      await expect(signInWithGoogle()).resolves.toBeUndefined()
+
+      expect(presentSsoRequired).toHaveBeenCalledWith(
+        expect.objectContaining({ organizationId: 'org_1' })
+      )
+      expect(mockAuthStore.logout).toHaveBeenCalledOnce()
+      expect(mockToastErrorHandler).not.toHaveBeenCalled()
+      expect(mockToastStore.add).not.toHaveBeenCalled()
+    })
+
+    it('keeps the failure toast while SSO is off', async () => {
+      vi.mocked(presentSsoRequired).mockReturnValueOnce(false)
+      const error = new SsoRequiredAuthError(undefined)
+      vi.mocked(mockAuthStore.loginWithGoogle).mockRejectedValueOnce(error)
+      const { signInWithGoogle } = useAuthActions()
+
+      await signInWithGoogle()
+
+      expect(mockToastErrorHandler).toHaveBeenCalledExactlyOnceWith(error)
+      expect(mockAuthStore.logout).not.toHaveBeenCalled()
     })
   })
 
