@@ -160,7 +160,8 @@ for (const { reducedMotion, paused } of [
       workflows: false,
       moveAnything: false,
       relight: false,
-      handProductSwap: false
+      handProductSwap: false,
+      spriteSheet: false
     })
     await page.emulateMedia({ reducedMotion })
     const posters: string[] = []
@@ -202,7 +203,8 @@ test('decodes a frame of each hub app card video while it plays', async ({
     workflows: false,
     moveAnything: false,
     relight: false,
-    handProductSwap: false
+    handProductSwap: false,
+    spriteSheet: false
   })
   await page.goto('/hub/apps/')
 
