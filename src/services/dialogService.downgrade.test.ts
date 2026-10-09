@@ -1,9 +1,10 @@
 import { computed } from 'vue'
 import { useBillingContext } from '@/composables/billing/useBillingContext'
+import { useToast } from '@/components/ui/toast/toastStore'
 import { assert, beforeEach, describe, expect, it, vi } from 'vitest'
 import type { Component } from 'vue'
 import type DowngradeContent from '@/platform/workspace/components/dialogs/DowngradeRemoveMembersDialogContent.vue'
-import { useToastStore } from '@/platform/updates/common/toastStore'
+
 import { useDialogStore } from '@/stores/dialogStore'
 /**
  * showDowngradeToPersonalDialog must refresh members before the no-members
@@ -393,12 +394,13 @@ describe('showDowngradeToPersonalDialog', () => {
 
     await useDialogService().showDowngradeToPersonalDialog(options)
 
-    expect(useToastStore().add).toHaveBeenCalledWith(
+    expect(useToast().toasts).toEqual([
       expect.objectContaining({
-        severity: 'error',
-        detail: 'Outstanding balance'
+        description: 'Outstanding balance',
+        kind: 'error',
+        title: 'subscription.downgrade.failed'
       })
-    )
+    ])
     expect(useDialogStore().showDialog).not.toHaveBeenCalled()
   })
 
@@ -408,9 +410,13 @@ describe('showDowngradeToPersonalDialog', () => {
 
     await useDialogService().showDowngradeToPersonalDialog(options)
 
-    expect(useToastStore().add).toHaveBeenCalledWith(
-      expect.objectContaining({ severity: 'error', detail: 'network' })
-    )
+    expect(useToast().toasts).toEqual([
+      expect.objectContaining({
+        description: 'network',
+        kind: 'error',
+        title: 'subscription.downgrade.failed'
+      })
+    ])
     expect(useDialogStore().showDialog).not.toHaveBeenCalled()
     expect(downgradeToPersonal).not.toHaveBeenCalled()
   })
@@ -420,12 +426,13 @@ describe('showDowngradeToPersonalDialog', () => {
 
     await useDialogService().showDowngradeToPersonalDialog(options)
 
-    expect(useToastStore().add).toHaveBeenCalledWith(
+    expect(useToast().toasts).toEqual([
       expect.objectContaining({
-        severity: 'error',
-        detail: 'Outstanding balance'
+        description: 'Outstanding balance',
+        kind: 'error',
+        title: 'subscription.downgrade.failed'
       })
-    )
+    ])
     expect(useDialogStore().showDialog).not.toHaveBeenCalled()
     expect(downgradeToPersonal).not.toHaveBeenCalled()
   })

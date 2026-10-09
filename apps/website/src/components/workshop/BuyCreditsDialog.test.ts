@@ -469,7 +469,7 @@ describe('BuyCreditsDialog', () => {
     await user.click(await screen.findByTestId('buy-credits-pack-50'))
     await user.click(screen.getByTestId('buy-credits-continue'))
     await vi.waitFor(() =>
-      expect(vi.mocked(refreshWorkshopCredits)).toHaveBeenCalledOnce()
+      expect(refreshWorkshopCredits).toHaveBeenCalledOnce()
     )
 
     const pack10 = screen.getByTestId('buy-credits-pack-10')
@@ -522,15 +522,12 @@ describe('BuyCreditsDialog', () => {
         'https://checkout.stripe.com/c/session_1'
       )
     )
-    expect(vi.mocked(useWorkshopSession().ensureFresh)).toHaveBeenCalledWith(
-      undefined,
-      {
-        workspaceId: 'workspace-1',
-        signal: expect.any(AbortSignal),
-        timeoutMs: 15_000
-      }
-    )
-    expect(vi.mocked(refreshWorkshopCredits)).toHaveBeenCalledWith({
+    expect(useWorkshopSession().ensureFresh).toHaveBeenCalledWith(undefined, {
+      workspaceId: 'workspace-1',
+      signal: expect.any(AbortSignal),
+      timeoutMs: 15_000
+    })
+    expect(refreshWorkshopCredits).toHaveBeenCalledWith({
       force: true
     })
     expect(
@@ -554,7 +551,7 @@ describe('BuyCreditsDialog', () => {
         window.location.origin
       ).toString()
     )
-    expect(vi.mocked(watchForTopUp)).not.toHaveBeenCalled()
+    expect(watchForTopUp).not.toHaveBeenCalled()
     expect(await screen.findByTestId('buy-credits-open-checkout')).toBeTruthy()
   })
 
@@ -573,10 +570,10 @@ describe('BuyCreditsDialog', () => {
 
     await vi.advanceTimersByTimeAsync(120_000)
     returnFromCheckout('another-attempt')
-    expect(vi.mocked(watchForTopUp)).not.toHaveBeenCalled()
+    expect(watchForTopUp).not.toHaveBeenCalled()
 
     returnFromCheckout()
-    expect(vi.mocked(watchForTopUp)).toHaveBeenCalledWith(topUpScope)
+    expect(watchForTopUp).toHaveBeenCalledWith(topUpScope)
   })
 
   it('restores an outstanding checkout when the dialog reopens', async () => {
@@ -598,7 +595,7 @@ describe('BuyCreditsDialog', () => {
     expect(fetch).toHaveBeenCalledOnce()
 
     returnFromCheckout()
-    expect(vi.mocked(watchForTopUp)).toHaveBeenCalledWith(topUpScope)
+    expect(watchForTopUp).toHaveBeenCalledWith(topUpScope)
   })
 
   it('discards an outstanding checkout when the dialog reopens in another workspace', async () => {
@@ -658,12 +655,12 @@ describe('BuyCreditsDialog', () => {
     expect(await screen.findByTestId('buy-credits-packs')).toBeTruthy()
 
     returnFromCheckout()
-    expect(vi.mocked(watchForTopUp)).not.toHaveBeenCalled()
+    expect(watchForTopUp).not.toHaveBeenCalled()
 
     auth.session.value = credential
     await nextTick()
 
-    expect(vi.mocked(watchForTopUp)).toHaveBeenCalledExactlyOnceWith(topUpScope)
+    expect(watchForTopUp).toHaveBeenCalledExactlyOnceWith(topUpScope)
   })
 
   it('opens the localized checkout handoff for Chinese', async () => {
@@ -693,7 +690,7 @@ describe('BuyCreditsDialog', () => {
       'https://checkout.stripe.com/c/session_1'
     )
     expect(link.getAttribute('rel')).toBe('opener')
-    expect(vi.mocked(watchForTopUp)).not.toHaveBeenCalled()
+    expect(watchForTopUp).not.toHaveBeenCalled()
   })
 
   it('uses the Cloud credits page only for an explicit rollout miss', async () => {
@@ -708,7 +705,7 @@ describe('BuyCreditsDialog', () => {
       expect(tab.location.assign).toHaveBeenCalledWith(WORKSHOP_CREDITS_URL)
     )
     expect(screen.queryByTestId('checkout-error')).toBeNull()
-    expect(vi.mocked(watchForTopUp)).not.toHaveBeenCalled()
+    expect(watchForTopUp).not.toHaveBeenCalled()
     expect(fetch).toHaveBeenCalledTimes(2)
     expect(captureWorkshopEvent).not.toHaveBeenCalled()
   })
@@ -872,7 +869,7 @@ describe('BuyCreditsDialog', () => {
 
     await user.click(await screen.findByTestId('buy-credits-continue'))
     await vi.waitFor(() =>
-      expect(vi.mocked(useWorkshopSession().ensureFresh)).toHaveBeenCalledOnce()
+      expect(useWorkshopSession().ensureFresh).toHaveBeenCalledOnce()
     )
     auth.session.value = {
       ...credential,
@@ -969,19 +966,16 @@ describe('BuyCreditsDialog', () => {
 
     await user.click(await screen.findByTestId('buy-credits-continue'))
     await vi.waitFor(() =>
-      expect(vi.mocked(useWorkshopSession().ensureFresh)).toHaveBeenCalled()
+      expect(useWorkshopSession().ensureFresh).toHaveBeenCalled()
     )
 
     view.unmount()
 
-    expect(vi.mocked(useWorkshopSession().ensureFresh)).toHaveBeenCalledWith(
-      undefined,
-      {
-        workspaceId: 'workspace-1',
-        signal: expect.objectContaining({ aborted: true }),
-        timeoutMs: 15_000
-      }
-    )
+    expect(useWorkshopSession().ensureFresh).toHaveBeenCalledWith(undefined, {
+      workspaceId: 'workspace-1',
+      signal: expect.objectContaining({ aborted: true }),
+      timeoutMs: 15_000
+    })
     expect(tab.close).toHaveBeenCalled()
     expect(captureWorkshopEvent).not.toHaveBeenCalled()
   })

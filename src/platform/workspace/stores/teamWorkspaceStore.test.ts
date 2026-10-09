@@ -294,6 +294,51 @@ describe('useTeamWorkspaceStore', () => {
       expect(store.activeWorkspaceId).toBe(mockTeamWorkspace.id)
     })
 
+    it.for([
+      {
+        name: "opens the server's default over the last-used workspace",
+        defaultId: mockTeamWorkspace.id,
+        lastUsed: mockPersonalWorkspace.id,
+        expected: mockTeamWorkspace.id
+      },
+      {
+        name: 'keeps the last-used workspace without a default',
+        defaultId: undefined,
+        lastUsed: mockTeamWorkspace.id,
+        expected: mockTeamWorkspace.id
+      },
+      {
+        name: "keeps a switch's target over the server's default",
+        defaultId: mockTeamWorkspace.id,
+        lastUsed: mockPersonalWorkspace.id,
+        switchTarget: mockPersonalWorkspace.id,
+        expected: mockPersonalWorkspace.id
+      },
+      {
+        name: 'ignores a default that is not in the list',
+        defaultId: 'ws-not-listed',
+        lastUsed: null,
+        expected: mockPersonalWorkspace.id
+      }
+    ])('$name', async ({ defaultId, lastUsed, switchTarget, expected }) => {
+      mockLocalStorage.getItem.mockReturnValue(lastUsed)
+      if (switchTarget) {
+        sessionStorage.setItem(
+          WORKSPACE_STORAGE_KEYS.SWITCH_TARGET_ID,
+          switchTarget
+        )
+      }
+      mockWorkspaceApi.list.mockResolvedValue({
+        workspaces: [mockPersonalWorkspace, mockTeamWorkspace],
+        ...(defaultId && { default_workspace_id: defaultId })
+      })
+
+      const store = useTeamWorkspaceStore()
+      await store.initialize()
+
+      expect(store.activeWorkspaceId).toBe(expected)
+    })
+
     it('falls back to personal if stored workspace not in list', async () => {
       mockLocalStorage.getItem.mockReturnValue('non-existent-workspace')
 
@@ -1254,6 +1299,26 @@ describe('useTeamWorkspaceStore', () => {
 
       expect(store.ownedWorkspacesCount).toBe(2)
     })
+
+    it.for([
+      { canCreate: false, expected: false },
+      { canCreate: true, expected: true },
+      { canCreate: undefined, expected: true }
+    ])(
+      'canCreateWorkspace follows the server (can_create_workspace: $canCreate)',
+      async ({ canCreate, expected }) => {
+        mockWorkspaceApi.list.mockResolvedValue({
+          workspaces: [mockPersonalWorkspace],
+          ...(canCreate !== undefined && { can_create_workspace: canCreate })
+        })
+
+        const store = useTeamWorkspaceStore()
+        await store.initialize()
+
+        expect(store.canCreateWorkspace).toBe(expected)
+        expect(store.workspacesManagedByOrganization).toBe(!expected)
+      }
+    )
 
     it('canCreateWorkspace respects limit', async () => {
       const manyWorkspaces = Array.from({ length: 10 }, (_, i) => ({
@@ -2267,7 +2332,7 @@ describe('useTeamWorkspaceStore', () => {
       const result = await store.acceptInvite('invite-token')
 
       expect(mockWorkspaceApi.list).toHaveBeenCalledTimes(1)
-      expect(vi.mocked(reportError)).toHaveBeenCalledWith(
+      expect(reportError).toHaveBeenCalledWith(
         expect.objectContaining({ status: 503 }),
         expect.objectContaining({
           errorType: 'error_refreshing_workspaces_after_invite_accept'

@@ -20,12 +20,13 @@ import { t } from '@/i18n'
 import { useTelemetry } from '@/platform/telemetry'
 import { isCloud } from '@/platform/distribution/types'
 import { useBillingContext } from '@/composables/billing/useBillingContext'
-import { useToastStore } from '@/platform/updates/common/toastStore'
+import { useToast } from '@/components/ui/toast/toastStore'
 import { useDialogStore } from '@/stores/dialogStore'
 import type { RunErrorMessageSource } from '@/platform/errorCatalog/types'
 import type { PromptError } from '@/platform/remote/comfyui/types'
 import { PromptExecutionError } from '@/scripts/api'
 import { tryExtractValidationError } from '@/utils/executionErrorUtil'
+import { getErrorMessage } from '@/utils/errorUtil'
 import type {
   DialogComponentProps,
   ShowDialogOptions
@@ -955,10 +956,8 @@ export const useDialogService = () => {
         return await downgradeToPersonal(options.planSlug)
       }
     } catch (error) {
-      useToastStore().add({
-        severity: 'error',
-        summary: t('subscription.downgrade.failed'),
-        detail: error instanceof Error ? error.message : t('g.unknownError')
+      useToast().error(t('subscription.downgrade.failed'), {
+        description: getErrorMessage(error) ?? t('g.unknownError')
       })
       return null
     }

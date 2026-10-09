@@ -272,7 +272,7 @@ export const zUsageSummary = z.object({
 })
 
 /**
- * Present, with empty groups, buckets and breakdown, when the requested grouping has no data source yet. Render as unavailable, not as zero spend.
+ * Present, with empty groups, buckets and breakdown, when the requested grouping is not served for this workspace. Render as unavailable, not as zero spend.
  */
 export const zUsageNotAvailable = z.object({
   reason: z.enum(['no_attribution_source'])
@@ -401,6 +401,7 @@ export const zToolCallSummary = z.object({
   error_code: z.string().optional(),
   finished_at: z.string().datetime().optional(),
   id: z.string(),
+  job_id: z.string().optional(),
   started_at: z.string().datetime().optional(),
   status: z.enum(['success', 'error']),
   tool_call_id: z.string(),
@@ -831,6 +832,7 @@ export const zSavedPaymentMethod = z.object({
 
 export const zSsoDiscoverResponse = z.object({
   organization_name: z.string().optional(),
+  required: z.boolean().optional(),
   sso: z.boolean()
 })
 
@@ -1496,6 +1498,7 @@ export const zOAuthConsentChallengeWorkspace = z.object({
  */
 export const zOAuthConsentChallenge = z.object({
   client_display_name: z.string(),
+  client_provenance: z.enum(['first_party', 'dynamic']),
   csrf_token: z.string(),
   oauth_request_id: z.string().uuid(),
   redirect_uri: z.string().url(),
@@ -1593,6 +1596,8 @@ export const zMediaBadRequestError = z.union([zErrorResponse, zMediaQueryError])
  * Paginated list of workspaces the authenticated user belongs to.
  */
 export const zListWorkspacesResponse = z.object({
+  can_create_workspace: z.boolean(),
+  default_workspace_id: z.string().optional(),
   workspaces: z.array(zWorkspaceWithRole)
 })
 
@@ -1870,6 +1875,8 @@ export const zJobDetailResponse = z.object({
   outputs_count: z.number().int().optional(),
   preview_output: z.record(z.unknown()).optional(),
   previewable_outputs_count: z.number().int().optional(),
+  queue_position: z.number().int().gte(1).nullish(),
+  queue_reason: z.enum(['concurrency_limit', 'capacity']).optional(),
   status: z.enum([
     'pending',
     'in_progress',
@@ -3365,6 +3372,16 @@ export const zAgentPendingAsk = z.union([
 export const zAgentMessage = z.object({
   content: z
     .object({
+      attachment_refs: z
+        .array(
+          z.object({
+            display_name: z.string().optional(),
+            id: z.string().optional(),
+            kind: z.string().optional(),
+            name: z.string().optional()
+          })
+        )
+        .optional(),
       tool_calls: z.array(zToolCallSummary).optional()
     })
     .optional(),
@@ -3659,6 +3676,16 @@ export const zAgentLlmMessagesBody = z.record(z.unknown())
  * The upstream LLM response, streamed back as Server-Sent Events (text/event-stream) chunk-by-chunk.
  */
 export const zAgentLlmMessagesResponse = z.string()
+
+/**
+ * An OTLP ExportTraceServiceRequest, optionally gzip-encoded (Content-Encoding gzip); at most 4 MiB encoded and decoded, and 4096 spans.
+ */
+export const zAgentLlmTracesBody = z.string()
+
+/**
+ * Accepted; the body is an empty OTLP ExportTraceServiceResponse.
+ */
+export const zAgentLlmTracesResponse = z.string()
 
 /**
  * The caller's run mode (the saved choice, or the default).

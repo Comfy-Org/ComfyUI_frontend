@@ -27,6 +27,10 @@ import {
   fetchWithUnifiedRemint,
   shouldRemintCloudRequest
 } from '@/platform/auth/unified/remintRetry'
+import {
+  AUTH_INIT_TIMEOUT_MS,
+  FETCH_RESPONSE_HEADERS_TIMEOUT_MS
+} from '@/scripts/apiTimeouts'
 import { getDevOverride } from '@/utils/devFeatureFlagOverride'
 import { getSessionOverride } from '@/utils/sessionFeatureFlagOverride'
 import { zeroUuid } from '@/utils/uuid'
@@ -34,10 +38,11 @@ import type {
   ModelFile,
   ModelFolderInfo
 } from '@/platform/assets/schemas/assetSchema'
+import { useToast } from '@/components/ui/toast/toastStore'
+import { t } from '@/i18n'
 import { isCloud } from '@/platform/distribution/types'
 import { addBreadcrumb } from '@sentry/vue'
 import { useTelemetry } from '@/platform/telemetry'
-import { useToastStore } from '@/platform/updates/common/toastStore'
 import type { components as ManagerComponents } from '@/workbench/extensions/manager/types/generatedManagerTypes'
 import type {
   AssetDownloadWsMessage,
@@ -171,8 +176,6 @@ interface QueuePromptRequestBody {
   front?: boolean
   number?: number
 }
-
-const FETCH_RESPONSE_HEADERS_TIMEOUT_MS = 60_000
 
 interface FetchApiOptions extends RequestInit {
   timeoutMs?: number | null
@@ -671,7 +674,7 @@ export class ComfyApi extends EventTarget {
 
   /**
    * Waits for Firebase auth to be initialized before proceeding.
-   * Includes 10-second timeout to prevent infinite hanging.
+   * Bounded by AUTH_INIT_TIMEOUT_MS to prevent infinite hanging.
    */
   private async waitForAuthInitialization(): Promise<void> {
     if (isCloud) {
@@ -684,10 +687,12 @@ export class ComfyApi extends EventTarget {
       try {
         await Promise.race([
           until(isInitialized).toBe(true),
-          promiseTimeout(10000)
+          promiseTimeout(AUTH_INIT_TIMEOUT_MS)
         ])
       } catch {
-        console.warn('Firebase auth initialization timeout after 10 seconds')
+        console.warn(
+          `Firebase auth initialization timeout after ${AUTH_INIT_TIMEOUT_MS / 1000} seconds`
+        )
       }
     }
   }
@@ -1930,6 +1935,7 @@ export class ComfyApi extends EventTarget {
    * @param {boolean} options.freeExecutionCache - If true, also frees execution cache
    */
   async freeMemory(options: { freeExecutionCache: boolean }) {
+    const toast = useToast()
     try {
       let mode = ''
       if (options.freeExecutionCache) {
@@ -1945,31 +1951,19 @@ export class ComfyApi extends EventTarget {
       })
 
       if (res.status === 200) {
-        if (options.freeExecutionCache) {
-          useToastStore().add({
-            severity: 'success',
-            summary: 'Models and Execution Cache have been cleared.',
-            life: 3000
-          })
-        } else {
-          useToastStore().add({
-            severity: 'success',
-            summary: 'Models have been unloaded.',
-            life: 3000
-          })
-        }
+        toast.success(
+          t(
+            options.freeExecutionCache
+              ? 'toastMessages.modelsAndCacheCleared'
+              : 'toastMessages.modelsUnloaded'
+          ),
+          { duration: 3000 }
+        )
       } else {
-        useToastStore().add({
-          severity: 'error',
-          summary:
-            'Unloading of models failed. Installed ComfyUI may be an outdated version.'
-        })
+        toast.error(t('toastMessages.unloadModelsFailed'))
       }
     } catch {
-      useToastStore().add({
-        severity: 'error',
-        summary: 'An error occurred while trying to unload models.'
-      })
+      toast.error(t('toastMessages.unloadModelsError'))
     }
   }
 
