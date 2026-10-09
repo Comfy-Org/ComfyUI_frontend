@@ -1,5 +1,4 @@
 import type { Meta, StoryObj } from '@storybook/vue3-vite'
-import { fn } from 'storybook/test'
 
 import EditorBusy from './EditorBusy.vue'
 import EditorFrame from './EditorFrame.vue'
@@ -54,7 +53,7 @@ export const Default: Story = {}
 export const Running: Story = {
   render: (args) => ({
     components: { EditorBusy, EditorFrame },
-    setup: () => ({ args, onCancel: fn() }),
+    setup: () => ({ args, onCancel: () => {} }),
     template: `
       <div class="size-full max-w-5xl">
         <EditorFrame :width="args.width" :height="args.height">

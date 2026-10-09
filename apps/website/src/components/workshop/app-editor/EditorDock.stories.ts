@@ -1,6 +1,5 @@
 import { Crop, Eraser, ImagePlus, Lamp, Type } from '@lucide/vue'
 import type { Meta, StoryObj } from '@storybook/vue3-vite'
-import { fn } from 'storybook/test'
 import { ref } from 'vue'
 
 import EditorCompareToggle from './EditorCompareToggle.vue'
@@ -51,8 +50,8 @@ export const Editing: Story = {
         tool,
         comparing,
         HISTORY_LABELS,
-        onUndo: fn(),
-        onRedo: fn(),
+        onUndo: () => {},
+        onRedo: () => {},
         TOOLS: [
           { id: 'light', label: 'Light', icon: Lamp },
           { id: 'crop', label: 'Crop', icon: Crop },
@@ -99,8 +98,8 @@ export const Result: Story = {
       return {
         args,
         view,
-        onEdit: fn(),
-        onAgain: fn(),
+        onEdit: () => {},
+        onAgain: () => {},
         labels: {
           compare: 'Compare',
           result: 'Result',
