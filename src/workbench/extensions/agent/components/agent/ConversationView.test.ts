@@ -87,6 +87,10 @@ function mountHarness() {
   return { store: useAgentConversationStore(), ...utils }
 }
 
+function dispatchResize(): void {
+  resizeCallbacks.forEach((callback) => callback())
+}
+
 describe('ConversationView', () => {
   beforeEach(() => {
     vi.mocked(useIntersectionObserver).mockImplementation(
@@ -185,6 +189,94 @@ describe('ConversationView', () => {
     expect(scrollTo).toHaveBeenCalled()
   })
 
+  it('keeps completed trace toggles anchored until the user returns to Latest', async () => {
+    const { store } = mountHarness()
+    store.recordUser(T, 'make a cat')
+    store.startTurn(T)
+    store.ingest(thinking('msg-1', 'pondering'))
+    store.ingest(delta('msg-1', 'Here is a cat'))
+    store.ingest(done('msg-1'))
+    await nextTick()
+    await nextTick()
+
+    const scroll = screen.getByTestId('agent-conversation-scroll')
+    let height = 1_000
+    Object.defineProperties(scroll, {
+      scrollHeight: { get: () => height },
+      scrollTop: { value: 500, writable: true },
+      clientHeight: { value: 500 }
+    })
+    const scrollTo = vi.fn()
+    Element.prototype.scrollTo = scrollTo
+    const summary = screen.getByRole('button', { name: /^worked/i })
+
+    await userEvent.click(summary)
+    expect(summary).toHaveAttribute('aria-expanded', 'true')
+    height = 1_200
+    dispatchResize()
+    await nextTick()
+    expect(scrollTo).not.toHaveBeenCalled()
+    expect(scroll.scrollTop).toBe(500)
+
+    await userEvent.click(summary)
+    expect(summary).toHaveAttribute('aria-expanded', 'false')
+    height = 1_000
+    dispatchResize()
+    await nextTick()
+    expect(scrollTo).not.toHaveBeenCalled()
+    expect(scroll.scrollTop).toBe(500)
+
+    await userEvent.click(summary)
+    expect(summary).toHaveAttribute('aria-expanded', 'true')
+    height = 2_000
+    dispatchResize()
+    await nextTick()
+    expect(scrollTo).not.toHaveBeenCalled()
+    expect(scroll.scrollTop).toBe(500)
+
+    await fireEvent.wheel(scroll)
+    scroll.scrollTop = 1_500
+    await fireEvent.scroll(scroll)
+    expect(scroll.scrollTop).toBe(1_500)
+
+    await userEvent.click(summary)
+    expect(summary).toHaveAttribute('aria-expanded', 'false')
+    height = 1_000
+    scroll.scrollTop = 500
+    dispatchResize()
+    await fireEvent.scroll(scroll)
+    await nextTick()
+    expect(scrollTo).not.toHaveBeenCalled()
+    expect(scroll.scrollTop).toBe(500)
+
+    const nextTurn = toTurnId('msg-2')
+    store.recordUser(nextTurn, 'make another cat')
+    store.startTurn(nextTurn)
+    store.ingest(delta('msg-2', 'More content'))
+    await nextTick()
+    await nextTick()
+    expect(screen.getByText('More content')).toBeInTheDocument()
+    height = 1_200
+    dispatchResize()
+    expect(scrollTo).not.toHaveBeenCalled()
+    expect(scroll.scrollTop).toBe(500)
+
+    await userEvent.click(screen.getByRole('button', { name: 'Latest' }))
+    scrollTo.mockClear()
+    height = 1_200
+    dispatchResize()
+    expect(scrollTo).toHaveBeenCalled()
+
+    await userEvent.click(summary)
+    scrollTo.mockClear()
+    await fireEvent.wheel(scroll)
+    scroll.scrollTop = 700
+    await fireEvent.scroll(scroll)
+    height = 1_400
+    dispatchResize()
+    expect(scrollTo).toHaveBeenCalledWith({ top: 900, behavior: 'instant' })
+  })
+
   it('starts a restored conversation at the latest message', async () => {
     const assistant = assistantMessage({
       parts: [{ type: 'text', text: 'latest reply', state: 'done' }]
@@ -222,14 +314,14 @@ describe('ConversationView', () => {
       clientHeight: { value: 500 }
     })
     await nextTick()
-    for (const callback of resizeCallbacks) callback()
-    for (const callback of resizeCallbacks) callback()
+    dispatchResize()
+    dispatchResize()
     scrollHeight = 1_200
     scrollTop = 490
     await userEvent.pointer([{ target: scrollContainer, keys: '[MouseLeft>]' }])
     await fireEvent.scroll(scrollContainer)
     scrollTo.mockClear()
-    for (const callback of resizeCallbacks) callback()
+    dispatchResize()
 
     store.ingest(delta('msg-1', 'Here is a cat'))
     await nextTick()
