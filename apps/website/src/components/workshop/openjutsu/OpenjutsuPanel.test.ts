@@ -30,30 +30,27 @@ describe('OpenjutsuPanel', () => {
   it.for([
     {
       slot: 'video',
-      action: 'Add the video to edit: dance.mp4',
+      action: 'Change: dance.mp4',
+      input: 'openjutsu-video-file',
       file: new File(['clip'], 'other.mp4', { type: 'video/mp4' })
     },
     {
-      slot: 'cast',
+      slot: 'character',
       action: 'Add a character reference',
+      input: 'cinematic-reference-cast',
       file: new File(['face'], 'face.png', { type: 'image/png' })
     }
   ] as const)(
-    'takes a new $slot from its reference button',
-    async ({ slot, action, file }) => {
+    'takes a new $slot from its upload',
+    async ({ slot, action, input, file }) => {
       const { emitted } = render(OpenjutsuPanel, {
         props: { ...models, videoName: 'dance.mp4' }
       })
 
       expect(screen.getByRole('button', { name: action })).toBeVisible()
-      await userEvent.upload(
-        screen.getByTestId(`cinematic-reference-${slot}`),
-        file
-      )
+      await userEvent.upload(screen.getByTestId(input), file)
 
-      expect(emitted(slot === 'video' ? 'video' : 'character')).toEqual([
-        [file]
-      ])
+      expect(emitted(slot)).toEqual([[file]])
     }
   )
 

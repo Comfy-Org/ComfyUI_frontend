@@ -10,6 +10,7 @@ import { translationsFor } from '@/i18n/translations'
 import type { StudioImage } from '@/lib/workshop/cinematic-studio/take-image'
 import type { SwapSize, SwapWindow } from '@/lib/workshop/openjutsu/clip'
 import { SWAP_SIZES } from '@/lib/workshop/openjutsu/clip'
+import EditorSourceTile from '@/components/workshop/app-editor/EditorSourceTile.vue'
 import OpenjutsuSeedField from './OpenjutsuSeedField.vue'
 
 /** The panel's fields, in the order a run needs them, once a video is chosen. */
@@ -60,13 +61,6 @@ function pickedFile(image: StudioImage | undefined) {
   return image instanceof File ? image : undefined
 }
 
-const video = computed({
-  get: (): StudioImage => ({ url: videoUrl, name: videoName ?? '' }),
-  set: (image) => {
-    const file = pickedFile(image)
-    if (file) emit('video', file)
-  }
-})
 const character = computed({
   get: (): StudioImage | undefined =>
     characterUrl ? { url: characterUrl, name: characterName ?? '' } : undefined,
@@ -89,6 +83,28 @@ const partSummary = computed(() =>
 
 <template>
   <div class="flex flex-col gap-3 pt-2">
+    <EditorSourceTile
+      kind="video"
+      :src="videoUrl"
+      :name="videoName"
+      :add-label="t('openjutsu.video.drop')"
+      :change-label="t('reshoot.clip.change')"
+      input-test-id="openjutsu-video-file"
+      @file="emit('video', $event)"
+    >
+      <button
+        v-if="partSummary"
+        type="button"
+        class="flex items-center gap-1.5 rounded-full bg-primary-comfy-ink/80 px-2.5 py-1 text-xs text-primary-warm-white tabular-nums transition hover:bg-primary-comfy-ink focus-visible:ring-2 focus-visible:ring-primary-comfy-yellow/50 focus-visible:outline-none"
+        data-testid="openjutsu-part"
+        @click="emit('trim')"
+      >
+        <Scissors class="size-3.5 shrink-0" aria-hidden="true" />
+        <span class="sr-only">{{ t('openjutsu.trim.edit') }}:</span>
+        {{ partSummary }}
+      </button>
+    </EditorSourceTile>
+
     <section class="flex flex-col gap-2">
       <label for="openjutsu-target" class="sr-only">
         {{ t('openjutsu.target.heading') }}
@@ -105,12 +121,6 @@ const partSummary = computed(() =>
         />
         <div class="flex items-center gap-2 pb-2.5 pl-2.5">
           <CinematicReferenceButton
-            v-model="video"
-            kind="video"
-            :removable="false"
-            :locale
-          />
-          <CinematicReferenceButton
             v-model="character"
             kind="cast"
             :removable="false"
@@ -118,17 +128,6 @@ const partSummary = computed(() =>
           />
         </div>
       </div>
-      <button
-        v-if="partSummary"
-        type="button"
-        class="flex w-fit items-center gap-1.5 rounded-sm px-1 text-xs text-primary-warm-gray tabular-nums transition hover:text-primary-warm-white focus-visible:ring-2 focus-visible:ring-primary-comfy-yellow/50 focus-visible:outline-none"
-        data-testid="openjutsu-part"
-        @click="emit('trim')"
-      >
-        <Scissors class="size-3.5 shrink-0" aria-hidden="true" />
-        <span class="sr-only">{{ t('openjutsu.trim.edit') }}:</span>
-        {{ partSummary }}
-      </button>
     </section>
 
     <div class="grid grid-cols-2 gap-2">
