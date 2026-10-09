@@ -142,8 +142,6 @@ const restTags = computed(() =>
     <div class="sm:px-8 lg:px-10">
       <ModelDetail :model />
 
-      <ModelCompare :model="page.model" :candidates="page.comparable ?? []" />
-
       <section
         v-if="showsWorkflows"
         aria-labelledby="model-workflows-heading"
@@ -198,6 +196,8 @@ const restTags = computed(() =>
           </li>
         </ul>
       </section>
+
+      <ModelCompare :model="page.model" :candidates="page.comparable ?? []" />
     </div>
   </div>
 </template>
