@@ -250,7 +250,7 @@ const contactColumn: { title: string; links: FooterLink[] } = {
 <template>
   <footer
     ref="footerRef"
-    class="bg-primary-comfy-ink px-6 py-8 text-primary-comfy-canvas lg:px-20"
+    class="bg-primary-comfy-ink px-6 py-8 text-primary-comfy-canvas in-data-workshop-editor:hidden lg:px-20"
   >
     <div
       class="grid gap-12 border-t border-primary-warm-gray pt-16 lg:grid-cols-2 lg:gap-4"

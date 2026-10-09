@@ -14,13 +14,15 @@ import type { Locale } from '@/i18n/translations'
 import {
   captureWorkshopEvent,
   useWorkshopAppsEnabled,
-  useWorkshopEnabled
+  useWorkshopEnabled,
+  useWorkshopFlag
 } from '@/scripts/posthog'
 import RunLeaveDialog from '@/components/workshop/RunLeaveDialog.vue'
 import WorkshopGate from '@/components/workshop/WorkshopGate.vue'
 import CinematicAppsHub from './CinematicAppsHub.vue'
 import CinematicScenarioMenu from './CinematicScenarioMenu.vue'
 import CinematicStudio from './CinematicStudio.vue'
+import CinematicStudioEditor from './CinematicStudioEditor.vue'
 import CinematicStudioPanel from './CinematicStudioPanel.vue'
 import ReshootStudio from './reshoot/ReshootStudio.vue'
 import { isWorkshopModelShown } from '@/scripts/workshop-model-flags'
@@ -50,8 +52,12 @@ const APPS = ['studio', 'reshoot'] as const
 const reviewing = WORKSHOP_DEPLOY_ENV !== 'production'
 
 const appsEnabled = useWorkshopAppsEnabled()
+const fullscreen = useWorkshopFlag('workshop-cinematic-fullscreen-enabled')
 const layout = ref('d')
 const app = ref<WorkshopAppId>(initialApp)
+const editorShown = computed(
+  () => fullscreen.value && app.value === 'studio' && layout.value === 'd'
+)
 const shownApps = computed(() =>
   apps.filter((candidate) => isWorkshopModelShown(candidate))
 )
@@ -165,6 +171,12 @@ function pickApp(id: string) {
   <WorkshopGate :allowed="studioEnabled">
     <CinematicAppsHub v-if="layout === 'hub'" :models="shownApps" :locale />
     <ReshootStudio v-else-if="app === 'reshoot'" :locale />
+    <CinematicStudioEditor
+      v-else-if="editorShown"
+      :models
+      :show-credits="false"
+      :locale
+    />
     <CinematicStudioPanel
       v-else-if="layout === 'd'"
       :models
@@ -180,6 +192,7 @@ function pickApp(id: string) {
       :layouts="layoutOptions"
       :app-heading="t('cinematic.ux.app')"
       :layout-heading="t('cinematic.ux.heading')"
+      :editor="editorShown"
       @update:app="pickApp"
       @update:layout="pickLayout"
     />
