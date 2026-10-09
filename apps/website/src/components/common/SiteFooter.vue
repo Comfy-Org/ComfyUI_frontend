@@ -236,7 +236,9 @@ const columnGroups: FooterColumn[][] = [
           {{ t('footer.tagline') }}
         </p>
 
-        <div class="flex flex-col items-center gap-4 lg:shrink-0 lg:items-end">
+        <div
+          class="flex flex-col items-center gap-4 text-primary-warm-gray lg:shrink-0 lg:items-end"
+        >
           <LanguageSwitcher :locale :alternates />
           <div class="flex flex-wrap justify-center gap-6 text-sm">
             <p>{{ t('footer.location') }}</p>
