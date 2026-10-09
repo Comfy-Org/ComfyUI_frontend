@@ -1,9 +1,11 @@
+const loraStackFilename = /^loras\.(?:0|[1-9]\d*)\.lora_name$/
+
 /**
  * Default mappings from model directories to loader nodes.
  *
  * Each entry maps a model folder (as it appears in the model browser)
  * to the node class that loads models from that folder and the
- * input key where the model name is inserted.
+ * input name or pattern used to select the model widget.
  *
  * An empty key ('') means the node auto-loads models without a widget
  * selector, so no widget value is assigned when the node is added.
@@ -12,10 +14,13 @@
  * "a/b/c" → "a/b" → "a", so registering a parent directory covers
  * all its children unless a more specific entry exists.
  *
- * Format: [modelDirectory, nodeClass, inputKey]
+ * Patterns enable the picker on every matching widget. Model drops populate
+ * the first matching widget.
+ *
+ * Format: [modelDirectory, nodeClass, inputNameOrPattern]
  */
 export const MODEL_NODE_MAPPINGS: ReadonlyArray<
-  readonly [string, string, string]
+  readonly [string, string, string | RegExp]
 > = [
   // Intentionally unmapped (widget values are model ids / HF repo ids, not
   // asset filenames): rmbg, florence2, LLM/Qwen-VL/*, qwen-tts, diffusers
@@ -33,6 +38,8 @@ export const MODEL_NODE_MAPPINGS: ReadonlyArray<
   ['checkpoints', 'ImageOnlyCheckpointLoader', 'ckpt_name'],
   ['loras', 'LoraLoader', 'lora_name'],
   ['loras', 'LoraLoaderModelOnly', 'lora_name'],
+  ['loras', 'LoadLoraModel', loraStackFilename],
+  ['loras', 'LoadLoraTextEncoder', loraStackFilename],
   ['vae', 'VAELoader', 'vae_name'],
   ['controlnet', 'ControlNetLoader', 'control_net_name'],
   ['diffusion_models', 'UNETLoader', 'unet_name'],
@@ -158,4 +165,4 @@ export const MODEL_NODE_MAPPINGS: ReadonlyArray<
 
   // ---- LTX-Video IC-LoRA (ComfyUI-LTXVideo) ----
   ['loras', 'LTXICLoRALoaderModelOnly', 'lora_name']
-] as const satisfies ReadonlyArray<readonly [string, string, string]>
+] as const satisfies ReadonlyArray<readonly [string, string, string | RegExp]>

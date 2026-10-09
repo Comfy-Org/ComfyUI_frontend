@@ -16,6 +16,7 @@ import { modelsUrlKind } from './models-url-registry'
 import {
   astroRedirects,
   isInternalDestination,
+  linkStaleSources,
   siteRedirects,
   toVercelRedirects
 } from './redirects'
@@ -126,7 +127,13 @@ describe('the redirect list', () => {
   })
 
   it('reaches every destination in one hop', () => {
-    const sourceSet = new Set<string>(sources)
+    // A row that leaves its slash form to a page never redirects that form,
+    // so landing on the page is the last hop.
+    const sourceSet = new Set<string>(
+      siteRedirects
+        .filter(({ slashFormIsPageBecause }) => !slashFormIsPageBecause)
+        .map(({ source }) => source)
+    )
     expect(
       siteRedirects.filter(
         ({ destination }) =>
@@ -205,6 +212,22 @@ describe('generated Vercel rules', () => {
     expect(find('/login/')).toBeUndefined()
   })
 
+  it.for([
+    { source: '/about', destination: en.about },
+    { source: '/zh-CN/about', destination: zh.about }
+  ])(
+    'sends only $source to $destination permanently, never the page itself',
+    ({ source, destination }) => {
+      expect(find(source)).toEqual({
+        source,
+        destination,
+        permanent: true
+      })
+      expect(find(`${source}/`)).toBeUndefined()
+      expect(destination).toBe(`${source}/`)
+    }
+  )
+
   it.for([en.minimax, zh.minimax, en.enterprise, zh.enterprise, en.pricing])(
     'leaves the destination %s unredirected',
     (path) => {
@@ -212,6 +235,20 @@ describe('generated Vercel rules', () => {
       expect(find(`${withoutSlash(path)}/`)).toBeUndefined()
     }
   )
+})
+
+describe('link-stale sources', () => {
+  it('leave out a bare source whose slash form is a page', () => {
+    expect(linkStaleSources).not.toContain('/about')
+    expect(linkStaleSources).not.toContain('/zh-CN/about')
+    expect(linkStaleSources).not.toContain('/login')
+  })
+
+  it('keep both slash forms of an ordinary redirect', () => {
+    expect(linkStaleSources).toEqual(
+      expect.arrayContaining(['/career', '/career/', '/press', '/press/'])
+    )
+  })
 })
 
 describe('Astro redirects', () => {

@@ -60,6 +60,9 @@ const config: KnipConfig = {
       // The snapshot reporter is loaded by `playwright test --reporter` in CI.
       ignoreDependencies: ['mime-types', '@comfyorg/snapshot-updates-reporter']
     },
+    'tools/architecture': {
+      project: ['src/**/*.ts']
+    },
     'tools/test-recorder': {
       project: ['src/**/*.ts']
     }

@@ -143,6 +143,16 @@ export const siteRedirects: readonly SiteRedirect[] = [
   { source: '/career', destination: '/careers/' },
   { source: '/privacy', destination: '/privacy-policy/' },
   { source: '/press', destination: '/about/' },
+  {
+    source: '/about',
+    destination: '/about/',
+    slashFormIsPageBecause: '/about/ is the About page'
+  },
+  {
+    source: '/zh-CN/about',
+    destination: '/zh-CN/about/',
+    slashFormIsPageBecause: '/zh-CN/about/ is the About page'
+  },
   { source: '/blog', destination: 'https://blog.comfy.org/' },
   { source: '/discord', destination: 'https://discord.com/invite/comfyorg' },
   {
@@ -237,6 +247,14 @@ export function toVercelRedirects(
     }))
   )
 }
+
+/**
+ * The redirect sources a link to a canonical (slashed) page must not match. A
+ * bare-only source such as `/about` is left out: its slash form is the page.
+ */
+export const linkStaleSources: readonly string[] = toVercelRedirects(
+  siteRedirects.filter(redirectsSlashForm)
+).map(({ source }) => source)
 
 /**
  * Astro renders each entry as a meta-refresh stub so `astro preview` and the
