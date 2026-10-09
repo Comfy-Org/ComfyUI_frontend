@@ -309,9 +309,7 @@ describe('MoveAnythingStudio', () => {
       'Ginger{Escape}'
     )
 
-    expect(
-      screen.queryByRole('textbox', { name: /^Rename/ })
-    ).toBeNull()
+    expect(screen.queryByRole('textbox', { name: /^Rename/ })).toBeNull()
     expect(kitten()).toHaveFocus()
   })
 
