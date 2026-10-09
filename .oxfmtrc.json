@@ -14,6 +14,7 @@
     "src/types/generatedManagerTypes.ts",
     "src/locales/**/*.json",
     "**/__fixtures__/**/*.json",
+    "src/platform/community/fixtures/cloud-reference-v1/*.json",
     "apps/website/src/content/**/*.mdx"
   ]
 }

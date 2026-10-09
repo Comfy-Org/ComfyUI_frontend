@@ -61,6 +61,18 @@
         )
       }}
     </span>
+    <div
+      v-if="tags.length"
+      class="flex flex-wrap gap-1 pb-2"
+      :title="tags.join(', ')"
+    >
+      <span
+        v-for="tag in tags.slice(0, 4)"
+        :key="tag"
+        class="max-w-full truncate rounded-sm bg-secondary-background px-2 py-1 text-xs text-muted-foreground"
+        >{{ tag }}</span
+      >
+    </div>
     <template #footer>
       <div class="flex min-h-12 items-center justify-between gap-2 px-3 py-2">
         <span class="text-xs text-muted-foreground">
@@ -96,13 +108,15 @@ const {
   isSelected = false,
   busy,
   blocked,
-  savingRevision
+  savingRevision,
+  tags = []
 } = defineProps<{
   revision: CloudNodeRegistryRevision
   isSelected?: boolean
   busy: boolean
   blocked: boolean
   savingRevision?: string
+  tags?: readonly string[]
 }>()
 defineEmits<{
   select: [revisionId: string]

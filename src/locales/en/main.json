@@ -1,4 +1,19 @@
 {
+  "community": {
+    "searchFacet": "Search {label}",
+    "refineFacet": "Showing {count} matches. Type to narrow the list.",
+    "title": "Community",
+    "packs": "Custom node packs",
+    "workflows": "Community workflows",
+    "corpus": "QA workflow collection",
+    "workflowTags": "Workflow tags",
+    "allTags": "All tags",
+    "tagsUnavailable": "Workflow tags are unavailable. Refresh to retry.",
+    "modelVerification": "Model verification evidence",
+    "cloudAdaptation": "Cloud adaptation ledger",
+    "openCloudAdapted": "Open Cloud-adapted graph",
+    "adaptationNotice": "Adapted model references do not certify rendering. Model availability, loader compatibility, and execution remain separate checks."
+  },
   "testWorkflowLibrary": {
     "title": "Test Workflow Library",
     "description": "Test collections available to your account and workspace, including workflows with unknown or unsupported nodes. Opening does not run or convert a graph.",

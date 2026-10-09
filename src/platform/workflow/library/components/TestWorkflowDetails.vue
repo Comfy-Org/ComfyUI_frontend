@@ -1,15 +1,28 @@
 <script setup lang="ts">
-import type { TestWorkflowDetail } from '@comfyorg/ingest-types/test-workflows'
+import { computed } from 'vue'
 import { useI18n } from 'vue-i18n'
 
 import Button from '@/components/ui/button/Button.vue'
+import type {
+  CommunityWorkflowDetail,
+  TestWorkflowGraphVariant
+} from '../utils/cloudWorkflowAdaptation'
+import { getCloudAdaptation } from '../utils/cloudWorkflowAdaptation'
 
 const { record, busy } = defineProps<{
-  record: TestWorkflowDetail
+  record: CommunityWorkflowDetail
   busy: boolean
 }>()
-const emit = defineEmits<{ open: []; variants: [cluster: string] }>()
+const emit = defineEmits<{
+  open: [variant: TestWorkflowGraphVariant]
+  variants: [cluster: string]
+}>()
 const { t } = useI18n()
+const cloudAdaptation = computed(() =>
+  record.community_cloud_adaptation_available
+    ? getCloudAdaptation(record)
+    : undefined
+)
 </script>
 
 <template>
@@ -18,9 +31,22 @@ const { t } = useI18n()
       {{ record.metadata.name }}
     </h3>
     <p class="m-0 wrap-break-word">{{ record.metadata.description }}</p>
-    <Button :disabled="busy" @click="emit('open')">{{
+    <Button :disabled="busy" @click="emit('open', 'original')">{{
       t('testWorkflowLibrary.openOriginal')
     }}</Button>
+    <Button
+      v-if="cloudAdaptation"
+      :disabled="busy"
+      variant="secondary"
+      @click="emit('open', 'cloud')"
+      >{{ t('community.openCloudAdapted') }}</Button
+    >
+    <p
+      v-if="record.metadata.cloud_adaptation !== undefined"
+      class="m-0 text-xs text-muted-foreground"
+    >
+      {{ t('community.adaptationNotice') }}
+    </p>
     <p class="m-0 text-xs text-muted-foreground">
       {{ t('testWorkflowLibrary.noAutomaticActions') }}
     </p>
@@ -106,8 +132,26 @@ const { t } = useI18n()
         <p class="text-xs text-muted-foreground">
           {{ model.loader }} · {{ model.location }}
         </p>
+        <details v-if="model.verification !== undefined">
+          <summary>{{ t('community.modelVerification') }}</summary>
+          <pre class="overflow-auto text-xs whitespace-pre-wrap">{{
+            JSON.stringify(model.verification, null, 2)
+          }}</pre>
+        </details>
       </div>
+      <details v-if="record.metadata.model_verification !== undefined">
+        <summary>{{ t('community.modelVerification') }}</summary>
+        <pre class="overflow-auto text-xs whitespace-pre-wrap">{{
+          JSON.stringify(record.metadata.model_verification, null, 2)
+        }}</pre>
+      </details>
     </section>
+    <details v-if="record.metadata.cloud_adaptation !== undefined">
+      <summary>{{ t('community.cloudAdaptation') }}</summary>
+      <pre class="overflow-auto text-xs whitespace-pre-wrap">{{
+        JSON.stringify(record.metadata.cloud_adaptation, null, 2)
+      }}</pre>
+    </details>
     <section
       v-if="record.metadata.prompts.length || record.metadata.example_prompt"
     >

@@ -13,9 +13,11 @@ export function cloudRegistryPacks(
   filter: string | null,
   query: string,
   version: string | undefined,
-  sort: string | undefined
+  sort: string | undefined,
+  tagsByRevision: ReadonlyMap<string, readonly string[]> = new Map(),
+  tag?: string
 ) {
-  const term = query.trim().toLowerCase()
+  const terms = query.trim().toLowerCase().split(/\s+/).filter(Boolean)
   const groups = groupBy(revisions, (revision) => revision.name)
   return Object.entries(groups)
     .flatMap(([name, entries]) => {
@@ -31,11 +33,12 @@ export function cloudRegistryPacks(
         if (filter === 'unpinned' && revision.pinned) return false
         if (filter === 'prepared' && !revision.prepared) return false
         if (filter === 'verified' && !revision.comfy_verified) return false
-        return (
-          !term ||
-          name.toLowerCase().includes(term) ||
-          revision.nodes.some((node) => node.toLowerCase().includes(term))
-        )
+        const tags = tagsByRevision.get(revision.revision_id) ?? []
+        if (tag && !tags.includes(tag)) return false
+        const text = [name, revision.pack_id, ...revision.nodes, ...tags]
+          .join(' ')
+          .toLowerCase()
+        return terms.every((term) => text.includes(term))
       })
       const preferred = matches.toSorted(
         (a, b) =>

@@ -43,6 +43,7 @@
       </div>
 
       <div ref="bottomToolbarRef" class="mt-auto" :class="groupClasses">
+        <SidebarCommunityButton v-if="isCloud" :is-small />
         <SidebarLogoutIcon
           v-if="userStore.isMultiUserServer"
           :is-small="isSmall"
@@ -101,6 +102,7 @@ import SidebarHelpCenterIcon from './SidebarHelpCenterIcon.vue'
 import SidebarIcon from './SidebarIcon.vue'
 import SidebarLogoutIcon from './SidebarLogoutIcon.vue'
 import SidebarTemplatesButton from './SidebarTemplatesButton.vue'
+import SidebarCommunityButton from './SidebarCommunityButton.vue'
 
 const {
   visibleTabIds,

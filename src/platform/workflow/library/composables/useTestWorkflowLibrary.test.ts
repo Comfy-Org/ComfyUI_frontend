@@ -5,6 +5,10 @@ import type {
 import { createHash, webcrypto } from 'node:crypto'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { effectScope, ref } from 'vue'
+import { zTestWorkflowImportMetadata } from '@comfyorg/ingest-types/test-workflows/zod'
+import cloudMetadata from '@/platform/community/fixtures/cloud-reference-v1/import.json'
+import cloudOriginal from '@/platform/community/fixtures/cloud-reference-v1/workflow.json?raw'
+import cloudAdapted from '@/platform/community/fixtures/cloud-reference-v1/workflow.cloud.json?raw'
 
 const mocks = vi.hoisted(() => ({
   fetch: vi.fn(),
@@ -140,6 +144,59 @@ describe('Test workflow library', () => {
     expect(mocks.fetch).toHaveBeenCalledOnce()
     owner.stop()
   })
+
+  it('opens the explicitly chosen adapted graph and keeps the immutable original separately openable', async () => {
+    const cloudRecord = {
+      ...detail,
+      summary: {
+        ...detail.summary,
+        workflow_sha256: cloudMetadata.workflow_sha256
+      },
+      metadata: zTestWorkflowImportMetadata.parse(cloudMetadata),
+      community_cloud_adaptation_available: true,
+      workflow_json: cloudOriginal,
+      community_cloud_workflow_json: cloudAdapted
+    }
+    mocks.fetch.mockImplementation(async () => response(cloudRecord))
+    const { library, owner } = setup()
+    library.collection.value = 'harvey-qa'
+    expect(await library.select(cloudMetadata.workflow_sha256)).toBe(true)
+    expect(mocks.handleFile).not.toHaveBeenCalled()
+    expect(await library.open('cloud')).toBe(true)
+    const cloudFile: File = mocks.handleFile.mock.calls[0][0]
+    expect(await cloudFile.text()).toBe(cloudAdapted)
+    expect(cloudFile.name).toContain('-cloud-')
+    expect(mocks.fetch).toHaveBeenLastCalledWith(
+      expect.stringContaining('include_cloud_workflow=true'),
+      expect.anything()
+    )
+    expect(await library.open()).toBe(true)
+    const originalFile: File = mocks.handleFile.mock.calls[1][0]
+    expect(await originalFile.text()).toBe(cloudOriginal)
+    owner.stop()
+  })
+
+  it('never falls back to original loading when an explicitly requested adaptation fails validation', async () => {
+    mocks.fetch.mockImplementation(async () =>
+      response({
+        ...detail,
+        summary: {
+          ...detail.summary,
+          workflow_sha256: cloudMetadata.workflow_sha256
+        },
+        metadata: zTestWorkflowImportMetadata.parse(cloudMetadata),
+        workflow_json: cloudOriginal,
+        community_cloud_workflow_json: cloudAdapted + ' '
+      })
+    )
+    const { library, owner } = setup()
+    library.collection.value = 'harvey-qa'
+    await library.select(cloudMetadata.workflow_sha256)
+    expect(await library.open('cloud')).toBe(false)
+    expect(mocks.handleFile).not.toHaveBeenCalled()
+    expect(library.state.value.phase).toBe('failed')
+    owner.stop()
+  })
   it('retains structured inputs and source evidence through the generated response validator', async () => {
     const source = '{\r\n"source":"unchanged observation"\r\n}\r\n'
     const extended: TestWorkflowDetail = {
@@ -149,6 +206,11 @@ describe('Test workflow library', () => {
       metadata: {
         ...detail.metadata,
         safety: { status: 'unreviewed' },
+        model_verification: { status: 'unresolved', inventory_sha256: null },
+        cloud_adaptation: {
+          status: 'blocked',
+          blocked_references: ['fixture']
+        },
         packs: [
           {
             node_type: 'UnknownCustomNode',
@@ -171,7 +233,11 @@ describe('Test workflow library', () => {
             name: 'fixture-model',
             loader: 'UnknownCustomNode',
             location: '/nodes/0/widgets_values/0',
-            identity: { status: 'unresolved' }
+            identity: { status: 'unresolved' },
+            verification: {
+              identity_status: 'unresolved',
+              execution: 'unverified'
+            }
           }
         ],
         required_inputs: [

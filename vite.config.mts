@@ -20,6 +20,7 @@ import { createHtmlPlugin } from 'vite-plugin-html'
 import vueDevTools from 'vite-plugin-vue-devtools'
 
 import { comfyAPIPlugin } from './build/plugins/comfyAPIPlugin.ts'
+import { communityCorpusPlugin } from './build/plugins/communityCorpusPlugin.ts'
 
 dotenvConfig()
 
@@ -421,6 +422,10 @@ export default defineConfig({
   },
 
   plugins: [
+    communityCorpusPlugin(
+      process.env.COMMUNITY_CORPUS_DIR,
+      DEV_SERVER_COMFYUI_URL
+    ),
     ...(!DISABLE_VUE_PLUGINS
       ? [vueDevTools(), vue(vuePluginOptions), createHtmlPlugin({})]
       : [vue(vuePluginOptions)]),

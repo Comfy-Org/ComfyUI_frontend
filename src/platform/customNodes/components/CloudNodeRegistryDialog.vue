@@ -1,6 +1,7 @@
 <template>
   <BaseModalLayout
     v-model:right-panel-open="isRightPanelOpen"
+    :size
     :content-title="
       $t(
         showUserNodes
@@ -31,6 +32,13 @@
         :debounce-time="0"
         class="max-w-96 flex-1"
       />
+      <CommunityFacetSelect
+        v-if="community && !showUserNodes"
+        v-model="tag"
+        :options="tagOptions"
+        :label="$t('community.workflowTags')"
+        class="min-w-32"
+      />
       <SingleSelect
         v-if="!showUserNodes"
         v-model="version"
@@ -44,7 +52,7 @@
         size="icon"
         :disabled="busy"
         :aria-label="$t('customNodePacks.registry.refresh')"
-        @click="load"
+        @click="refresh"
       >
         <i class="icon-[lucide--refresh-cw] size-4" />
       </Button>
@@ -53,6 +61,13 @@
       <div v-if="!showUserNodes" class="flex flex-col gap-2 px-6 pb-4">
         <p class="m-0 text-xs text-muted-foreground">
           {{ $t('customNodePacks.registry.description') }}
+        </p>
+        <p
+          v-if="tagsFailed"
+          role="status"
+          class="m-0 text-xs text-muted-foreground"
+        >
+          {{ $t('community.tagsUnavailable') }}
         </p>
         <div class="flex items-center justify-between gap-3">
           <span v-if="catalog" class="text-xs text-muted-foreground">{{
@@ -91,7 +106,7 @@
         :pin-busy="busy"
         :saving-revision="savingRevision"
         @pin="setPin"
-        @refresh="load"
+        @refresh="refresh"
       />
       <div v-else-if="!catalog && busy" role="status">
         {{ $t('customNodePacks.loading') }}
@@ -112,6 +127,7 @@
             :busy
             :blocked="state.phase === 'error'"
             :saving-revision="savingRevision"
+            :tags="tagsByRevision.get(item.displayRevision.revision_id)"
             @select="selectedRevisionId = $event"
             @pin="setPin"
           />
@@ -150,12 +166,24 @@ import { useCloudNodeRegistry } from '@/platform/customNodes/composables/useClou
 import { cloudRegistryPacks } from '@/platform/customNodes/utils/cloudRegistryView'
 import type { RegistryFilter } from '@/platform/customNodes/utils/cloudRegistryView'
 import { OnCloseKey } from '@/types/widgetTypes'
+import { loadCommunityWorkflowIndex } from '@/platform/community/services/communityWorkflowProvider'
+import type { CommunityWorkflowIndex } from '@/platform/community/services/communityWorkflowProvider'
+import { communityPackTags } from '@/platform/community/utils/communityPackTags'
+import CommunityFacetSelect from '@/platform/community/components/CommunityFacetSelect.vue'
 
 import CloudNodeRegistryCard from './CloudNodeRegistryCard.vue'
 import CloudNodeRegistryInfo from './CloudNodeRegistryInfo.vue'
 import CustomNodePacksDialog from './CustomNodePacksDialog.vue'
 
-const { onClose = () => {} } = defineProps<{ onClose?: () => void }>()
+const {
+  onClose = () => {},
+  size = 'lg',
+  community = false
+} = defineProps<{
+  onClose?: () => void
+  size?: 'lg' | 'full'
+  community?: boolean
+}>()
 provide(OnCloseKey, onClose)
 const { t } = useI18n()
 const { state, catalog, busy, load, setPin } = useCloudNodeRegistry()
@@ -164,6 +192,20 @@ const filter = ref<string | null>('all')
 const showUserNodes = computed(() => filter.value === 'user')
 const version = ref<string | undefined>('all')
 const sort = ref<string | undefined>('name')
+const tag = ref<string | undefined>('__community_all__')
+const workflowIndex = ref<CommunityWorkflowIndex>()
+const tagsFailed = ref(false)
+const tagsByRevision = computed(() =>
+  workflowIndex.value
+    ? communityPackTags(catalog.value?.revisions ?? [], workflowIndex.value)
+    : new Map<string, readonly string[]>()
+)
+const tagOptions = computed(() => [
+  { value: '__community_all__', name: t('community.allTags') },
+  ...[...new Set([...tagsByRevision.value.values()].flat())]
+    .sort()
+    .map((value) => ({ value, name: value }))
+])
 const selectedRevisionId = ref<string>()
 const selectedRevision = computed(() =>
   catalog.value?.revisions.find(
@@ -192,7 +234,9 @@ const packs = computed(() =>
     filter.value,
     query.value,
     version.value,
-    sort.value
+    sort.value,
+    tagsByRevision.value,
+    tag.value === '__community_all__' ? undefined : tag.value
   )
 )
 const navItems = computed(() => [
@@ -234,5 +278,19 @@ const gridStyle = {
   gap: '1rem',
   padding: '0.5rem'
 }
-onMounted(() => void load())
+async function refreshCommunityTags() {
+  if (community) {
+    try {
+      workflowIndex.value = await loadCommunityWorkflowIndex()
+      tagsFailed.value = !workflowIndex.value
+    } catch {
+      workflowIndex.value = undefined
+      tagsFailed.value = true
+    }
+  }
+}
+async function refresh() {
+  await Promise.all([load(), refreshCommunityTags()])
+}
+onMounted(refresh)
 </script>

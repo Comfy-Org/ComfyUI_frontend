@@ -15,8 +15,8 @@ vi.mock('@/platform/distribution/types', () => ({
   }
 }))
 
-vi.mock('../components/CloudNodeRegistryDialog.vue', () => ({
-  default: { name: 'CloudNodeRegistryDialog' }
+vi.mock('@/platform/community/components/CommunityDialog.vue', () => ({
+  default: { name: 'CommunityDialog' }
 }))
 
 vi.mock('@/services/dialogService', () => ({
@@ -86,12 +86,13 @@ describe('custom node dialogs', () => {
     )
   })
 
-  it('opens the pin-only registry browser on Cloud instead of the private upload manager', () => {
+  it('opens Community packs from the Cloud pack action and closes the same dialog', () => {
     mocks.isCloud = true
     useCustomNodePacksDialog().show()
     const options = mocks.showLayoutDialog.mock.calls[0][0]
-    expect(options.component.name).toBe('CloudNodeRegistryDialog')
+    expect(options.component.name).toBe('CommunityDialog')
+    expect(options.props.initialSection).toBe('packs')
     options.props.onClose()
-    expect(mocks.closeDialog).toHaveBeenCalledWith({ key: 'custom-node-packs' })
+    expect(mocks.closeDialog).toHaveBeenCalledWith({ key: 'community' })
   })
 })
