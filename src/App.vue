@@ -1,6 +1,7 @@
 <template>
   <router-view />
   <GlobalDialog />
+  <SessionReconnecting v-if="isCloud" />
   <div
     v-show="isLoading"
     ref="loadingOverlay"
@@ -23,7 +24,8 @@ import {
 import GlobalDialog from '@/components/dialog/GlobalDialog.vue'
 import { MODAL_Z_BASE, MODAL_Z_KEY } from '@/components/dialog/vRekaZIndex'
 import config from '@/config'
-import { isDesktop } from '@/platform/distribution/types'
+import SessionReconnecting from '@/platform/auth/session/components/SessionReconnecting.vue'
+import { isCloud, isDesktop } from '@/platform/distribution/types'
 import {
   reportPreloadError,
   reportResourceLoadError
@@ -81,17 +83,11 @@ onMounted(() => {
   window.addEventListener('vite:preloadError', (event) => {
     event.preventDefault()
     reportPreloadError(event.payload)
-    // Disabled: Third-party custom node extensions frequently trigger this toast
+    // No toast: third-party custom node extensions frequently trigger this
     // (e.g., bare "vue" imports, wrong relative paths to scripts/app.js, missing
     // core dependencies). These are plugin bugs, not ComfyUI core failures, but
     // the generic error message alarms users and offers no actionable guidance.
     // The reporter above still logs the details for developers to debug.
-    // useToastStore().add({
-    //   severity: 'error',
-    //   summary: t('g.preloadErrorTitle'),
-    //   detail: t('g.preloadError'),
-    //   life: 10000
-    // })
   })
 
   // Capture resource load failures (CSS, scripts) in non-localhost distributions

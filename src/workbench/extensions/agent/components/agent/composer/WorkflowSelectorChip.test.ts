@@ -69,6 +69,7 @@ const trigger = () =>
 describe('WorkflowSelectorChip', () => {
   it('names the active workflow on the trigger and lists every open tab', async () => {
     const { user } = renderChip()
+    expect(trigger()).toHaveClass('justify-start', 'text-left')
     expect(within(trigger()).getByText('portrait')).toBeVisible()
     expect(screen.getAllByRole('button')).toHaveLength(1)
 
@@ -195,13 +196,6 @@ describe('WorkflowSelectorChip', () => {
     expect(emptyTrigger).toHaveTextContent(
       'Select a workflow for agent to work in'
     )
-    expect(emptyTrigger).toHaveClass(
-      'border',
-      'border-white/15',
-      'bg-white/4.5',
-      'font-normal'
-    )
-    expect(emptyTrigger).not.toHaveClass('flex-1', 'font-medium')
     await user.hover(trigger())
     expect(
       await screen.findByRole('tooltip', { hidden: true })

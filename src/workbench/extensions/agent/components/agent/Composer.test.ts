@@ -1,5 +1,3 @@
-// @vitest-environment jsdom
-
 import type {
   WorkflowReference,
   WorkflowReferenceMetadata,
@@ -8,15 +6,19 @@ import type {
 import { useAgentComposerStore } from '../../stores/agent/agentComposerStore'
 import { render, screen, waitFor, within } from '@testing-library/vue'
 import userEvent from '@testing-library/user-event'
-import { beforeEach, describe, expect, it, vi } from 'vitest'
-import { defineComponent, h, nextTick, ref } from 'vue'
-import type { DirectiveBinding } from 'vue'
+import { assert, beforeEach, describe, expect, it, vi } from 'vitest'
+import { defineComponent, h, nextTick, ref, shallowRef } from 'vue'
+import type { DirectiveBinding, ShallowRef } from 'vue'
 import type { ComponentProps } from 'vue-component-type-helpers'
 
-import * as tooltipConfig from '@/composables/useTooltipConfig'
 import { i18n } from '@/i18n'
-import { useToastStore } from '@/platform/updates/common/toastStore'
+import { LGraph, LGraphNode } from '@/lib/litegraph/src/litegraph'
+import { consultEscapeOverride } from '@/platform/keybindings/escapeOverride'
+import { useToast } from '@/components/ui/toast/toastStore'
+import { useTelemetry } from '@/platform/telemetry'
+import { api } from '@/scripts/api'
 import { useAgentRunModeStore } from '../../stores/agent/agentRunModeStore'
+import type { AgentStarterPromptAttribution } from '../../utils/starterPrompts'
 import Composer from './Composer.vue'
 import { setupInlinePromptEditorDom } from './composer/inlinePromptEditorTestSetup'
 
@@ -32,10 +34,12 @@ const tooltipDirectiveStub = {
   }
 }
 
-const fetchApi = vi.hoisted(() =>
-  vi.fn<(route: string, init?: RequestInit) => Promise<Response>>()
-)
-vi.mock<unknown>(import('@/scripts/api'), () => ({ api: { fetchApi } }))
+vi.mock(import('@/scripts/api'))
+vi.mock(import('@/platform/telemetry'))
+const fetchApi = vi.mocked(api.fetchApi)
+const telemetryProvider = useTelemetry()
+assert.exists(telemetryProvider)
+const telemetry = vi.mocked(telemetryProvider)
 
 function jsonResponse(status: number, body: unknown): Response {
   return new Response(JSON.stringify(body), {
@@ -77,7 +81,9 @@ describe('Composer', () => {
     'sends an unmatched mention query with Enter: %s',
     async (text) => {
       const view = mount()
-      await userEvent.type(screen.getByRole('textbox'), `${text}{Enter}`)
+      await userEvent.click(screen.getByRole('textbox'))
+      await userEvent.paste(text)
+      await userEvent.keyboard('{Enter}')
       expect(view.emitted().send).toHaveLength(1)
     }
   )
@@ -86,18 +92,39 @@ describe('Composer', () => {
       nodeReferenceDisabledReason: 'Please select a workflow first',
       availableWorkflows: [{ id: 'ref', name: 'Reference' }]
     })
-    await userEvent.type(screen.getByRole('textbox'), '@{Enter}')
+    await userEvent.click(screen.getByRole('textbox'))
+    await userEvent.paste('@')
+    await userEvent.keyboard('{Enter}')
     expect(screen.getByRole('menuitem', { name: 'Reference' })).toBeVisible()
   })
   beforeEach(() => {
     vi.useRealTimers()
+    vi.stubGlobal(
+      'ResizeObserver',
+      class {
+        observe() {}
+        unobserve() {}
+        disconnect() {}
+      }
+    )
   })
 
   it('preserves new input on Enter while a previous send is submitting', async () => {
+    useAgentComposerStore().setText('Next draft')
     const { emitted } = mount({ submitting: true })
     const textbox = screen.getByRole('textbox')
-    await userEvent.type(textbox, 'Next draft{Enter}')
+    await userEvent.click(textbox)
+    await userEvent.keyboard('{Enter}')
     expect(useAgentComposerStore().draft).toBe('Next draft')
+    expect(emitted().send).toBeUndefined()
+  })
+
+  it('preserves new input on Enter without stopping an active run', async () => {
+    const { emitted } = mount({ streaming: true })
+    const textbox = screen.getByRole('textbox')
+    await userEvent.type(textbox, 'Next draft{Enter}')
+    expect(textbox).toHaveTextContent('Next draft')
+    expect(emitted().stop).toBeUndefined()
     expect(emitted().send).toBeUndefined()
   })
 
@@ -125,7 +152,8 @@ describe('Composer', () => {
     await userEvent.keyboard('{Escape}')
 
     const input = screen.getByRole('textbox')
-    await userEvent.type(input, '@')
+    await userEvent.click(input)
+    await userEvent.paste('@')
     const nodes = screen.getByRole('menuitem', { name: 'Nodes' })
     expect(nodes).toHaveAttribute('aria-disabled', 'true')
     expect(nodes).toHaveAccessibleDescription(reason)
@@ -140,7 +168,8 @@ describe('Composer', () => {
     const { rerender, emitted } = mount({
       getMentionNodes: () => [{ id: '7', title: 'KSampler' }]
     })
-    await userEvent.type(screen.getByRole('textbox'), '@')
+    await userEvent.click(screen.getByRole('textbox'))
+    await userEvent.paste('@')
     await userEvent.keyboard('{Enter}')
     expect(screen.getByRole('menuitem', { name: 'KSampler' })).toBeVisible()
     await rerender({
@@ -167,22 +196,45 @@ describe('Composer', () => {
     })
     expect(addNodes).toBeVisible()
     expect(addNodes).toContainHTML(
-      '<span class="icon-[lucide--mouse-pointer-click] size-[14px] shrink-0"></span>'
+      '<span class="icon-[lucide--mouse-pointer-click] size-3.5 shrink-0"></span>'
     )
     expect(
       text.compareDocumentPosition(addNodes) & Node.DOCUMENT_POSITION_FOLLOWING
     ).toBeTruthy()
   })
 
-  it('hides the empty-composer hint once typing begins', async () => {
-    mount()
-    const box = screen.getByRole('textbox')
+  it.for([
+    { tray: 'empty', attachments: [] },
+    {
+      tray: 'with an asset',
+      attachments: [{ id: 'asset', name: 'cat.png', ref: 'cat.png' }]
+    }
+  ])(
+    'hides the hint while typing and restores it after clearing (tray=$tray)',
+    async ({ attachments }) => {
+      const store = useAgentComposerStore()
+      store.replaceDraft({ text: '', workflowReferences: [], attachments })
+      const { emitted } = mount()
+      const box = screen.getByRole('textbox')
+      expect(
+        screen.getByRole('button', { name: 'mention nodes' })
+      ).toBeVisible()
 
-    await userEvent.type(box, 'hello')
+      await userEvent.click(box)
+      await userEvent.paste('hello')
 
-    expect(useAgentComposerStore().draft).toBe('hello')
-    expect(screen.queryByRole('button', { name: 'mention nodes' })).toBeNull()
-  })
+      expect(store.draft).toBe('hello')
+      expect(screen.queryByRole('button', { name: 'mention nodes' })).toBeNull()
+
+      await userEvent.keyboard('{Control>}a{/Control}{Backspace}')
+      expect(store.draft).toBe('')
+      await userEvent.click(
+        screen.getByRole('button', { name: 'mention nodes' })
+      )
+      expect(emitted().selectNodes).toHaveLength(1)
+      expect(store.attachments).toEqual(attachments)
+    }
+  )
 
   it('enters graph selection mode from the empty-composer hint', async () => {
     const getMentionNodes = vi.fn(() => [])
@@ -200,10 +252,21 @@ describe('Composer', () => {
     expect(getMentionNodes).not.toHaveBeenCalled()
   })
 
+  it('enters graph selection mode from a click on the empty-composer hint', async () => {
+    const { emitted } = mount({ getMentionNodes: vi.fn(() => []) })
+
+    await userEvent.click(screen.getByRole('button', { name: 'mention nodes' }))
+
+    expect(emitted().selectNodes).toHaveLength(1)
+    expect(screen.getByRole('textbox')).not.toHaveFocus()
+  })
+
   it('retains the draft on Enter while a workflow selection is saving', async () => {
+    useAgentComposerStore().setText('keep this draft')
     const { emitted, rerender } = mount({ workflowSelecting: true })
     const box = screen.getByRole('textbox')
-    await userEvent.type(box, 'keep this draft{Enter}')
+    await userEvent.click(box)
+    await userEvent.keyboard('{Enter}')
     expect(useAgentComposerStore().draft).toBe('keep this draft')
     expect(screen.getByRole('button', { name: 'Send' })).toBeDisabled()
     expect(emitted().send).toBeUndefined()
@@ -219,13 +282,8 @@ describe('Composer', () => {
     const send = screen.getByRole('button', { name: 'Send' })
     expect(send).toBeDisabled()
 
-    await userEvent.hover(send)
-    expect(
-      await screen.findByRole('tooltip', { hidden: true })
-    ).toHaveTextContent('Add a prompt to send')
-    await userEvent.unhover(send)
-
-    await userEvent.type(screen.getByRole('textbox'), 'hello')
+    await userEvent.click(screen.getByRole('textbox'))
+    await userEvent.paste('hello')
     expect(send).toBeEnabled()
 
     await userEvent.hover(send)
@@ -235,7 +293,6 @@ describe('Composer', () => {
   })
 
   it('renders without vue-i18n message compilation errors', async () => {
-    const consoleError = vi.spyOn(console, 'error').mockImplementation(() => {})
     mount({ canAttach: true, canOpenAssets: true })
 
     // The menu strings only compile once reka mounts the lazy menu content.
@@ -244,17 +301,14 @@ describe('Composer', () => {
 
     // Unescaped syntax characters (@, |, {) in a locale message compile to an
     // error and silently fall back to the raw string.
-    expect(consoleError.mock.calls.flat().join(' ')).not.toContain(
+    expect(vi.mocked(console.error).mock.calls.flat().join(' ')).not.toContain(
       'Message compilation error'
     )
-
-    consoleError.mockRestore()
   })
 
   it('emits trimmed text and leaves the draft for the submission owner', async () => {
+    useAgentComposerStore().setText('  make art  ')
     const { emitted } = mount()
-    const box = screen.getByRole('textbox')
-    await userEvent.type(box, '  make art  ')
     await userEvent.click(screen.getByRole('button', { name: 'Send' }))
     expect(emitted().send[0]).toEqual(['make art', []])
     expect(useAgentComposerStore().draft).toBe('  make art  ')
@@ -263,9 +317,12 @@ describe('Composer', () => {
   it('sends on Enter but not on Shift+Enter', async () => {
     const { emitted } = mount()
     const box = screen.getByRole('textbox')
-    await userEvent.type(box, 'one{Shift>}{Enter}{/Shift}two')
+    await userEvent.click(box)
+    await userEvent.paste('one')
+    await userEvent.keyboard('{Shift>}{Enter}{/Shift}')
+    await userEvent.paste('two')
     expect(emitted().send).toBeUndefined()
-    await userEvent.type(box, '{Enter}')
+    await userEvent.keyboard('{Enter}')
     expect(emitted().send).toHaveLength(1)
   })
 
@@ -293,11 +350,211 @@ describe('Composer', () => {
     expect(emitted().send).toBeUndefined()
   })
 
+  it('shows the Stop tooltip with the Esc shortcut while running', async () => {
+    mount({ streaming: true })
+    const stop = screen.getByRole('button', { name: 'Stop' })
+    await userEvent.hover(stop)
+    expect(
+      await screen.findByRole('tooltip', { hidden: true })
+    ).toHaveTextContent('Stop Esc')
+  })
+
+  it('emits stop on Escape while running and ignores Enter', async () => {
+    const { emitted } = mount({ submitting: true })
+    const box = screen.getByRole('textbox')
+    await userEvent.type(box, 'hello{Enter}')
+    expect(emitted().stop).toBeUndefined()
+    expect(emitted().send).toBeUndefined()
+
+    // An auto-repeated Escape is still contained by the registered override
+    // (which keybindHandler would otherwise let dispatch ExitSubgraph), but
+    // it doesn't itself trigger a stop.
+    const repeatedEscapeEvent = new KeyboardEvent('keydown', {
+      key: 'Escape',
+      repeat: true,
+      cancelable: true
+    })
+    expect(consultEscapeOverride(repeatedEscapeEvent)).toBe(true)
+    expect(repeatedEscapeEvent.defaultPrevented).toBe(true)
+    expect(emitted().stop).toBeUndefined()
+
+    await userEvent.type(box, '{Escape}')
+    expect(emitted().stop).toHaveLength(1)
+  })
+
+  it('stops the run on Escape after submitting by clicking Send with the mouse', async () => {
+    // A plain click moves focus onto the Send button (Chrome's behavior), so
+    // the event never reaches the editor-scoped keydown handler. This is
+    // exactly the case the registered Escape override exists for, so it's
+    // consulted directly rather than dispatched through the DOM - the same
+    // way `keybindHandler` consults it in the real app.
+    useAgentComposerStore().setText('run this')
+    const { rerender, emitted } = mount()
+
+    await userEvent.click(screen.getByRole('button', { name: 'Send' }))
+    expect(emitted().send).toHaveLength(1)
+
+    await rerender({ streaming: true })
+    const event = new KeyboardEvent('keydown', {
+      key: 'Escape',
+      cancelable: true
+    })
+    expect(consultEscapeOverride(event)).toBe(true)
+    expect(emitted().stop).toHaveLength(1)
+  })
+
+  it('stops the run on Escape after clicking Send without moving focus (Safari/Firefox)', async () => {
+    // Safari and Firefox don't move focus onto a plain-clicked <button> the
+    // way Chrome does, so simulate that by dispatching the click directly
+    // instead of going through userEvent.click(), which always focuses the
+    // element it clicks.
+    useAgentComposerStore().setText('run this')
+    const { rerender, emitted } = mount()
+
+    const sendButton = screen.getByRole('button', { name: 'Send' })
+    sendButton.dispatchEvent(
+      new MouseEvent('click', { bubbles: true, cancelable: true })
+    )
+    await nextTick()
+    expect(emitted().send).toHaveLength(1)
+    // oxlint-disable-next-line testing-library/no-node-access
+    expect(document.activeElement).toBe(document.body)
+
+    await rerender({ streaming: true })
+    const event = new KeyboardEvent('keydown', {
+      key: 'Escape',
+      cancelable: true
+    })
+    expect(consultEscapeOverride(event)).toBe(true)
+    expect(emitted().stop).toHaveLength(1)
+  })
+
+  it('does not stop the run on Escape once focus has left the composer entirely', async () => {
+    const onStop = vi.fn()
+    const Host = defineComponent({
+      setup: () => () =>
+        h('div', [
+          h(Composer, { hasWorkflowTarget: true, streaming: true, onStop }),
+          h('button', { type: 'button' }, 'Elsewhere on the page')
+        ])
+    })
+    render(Host, {
+      global: {
+        plugins: [i18n],
+        directives: { tooltip: tooltipDirectiveStub }
+      }
+    })
+    const box = screen.getByRole('textbox')
+    await userEvent.click(box)
+    await userEvent.click(
+      screen.getByRole('button', { name: 'Elsewhere on the page' })
+    )
+    const event = new KeyboardEvent('keydown', {
+      key: 'Escape',
+      cancelable: true
+    })
+    expect(consultEscapeOverride(event)).toBe(false)
+    expect(onStop).not.toHaveBeenCalled()
+  })
+
+  it('shows the Stop tooltip while submitting and stops on Escape while streaming', async () => {
+    const submitting = mount({ submitting: true })
+    await userEvent.hover(screen.getByRole('button', { name: 'Stop' }))
+    expect(
+      await screen.findByRole('tooltip', { hidden: true })
+    ).toHaveTextContent('Stop Esc')
+    submitting.unmount()
+
+    const { emitted } = mount({ streaming: true })
+    const box = screen.getByRole('textbox')
+    await userEvent.type(box, 'hello{Enter}')
+    expect(emitted().send).toBeUndefined()
+    expect(emitted().stop).toBeUndefined()
+    await userEvent.type(box, '{Escape}')
+    expect(emitted().stop).toHaveLength(1)
+  })
+
+  it('does not stop the run on Escape during IME composition', async () => {
+    const { emitted } = mount({ streaming: true })
+    const box = screen.getByRole('textbox')
+    box.focus()
+    const notCanceled = box.dispatchEvent(
+      new KeyboardEvent('keydown', {
+        key: 'Escape',
+        isComposing: true,
+        bubbles: true,
+        cancelable: true
+      })
+    )
+    expect(notCanceled).toBe(true)
+    expect(emitted().stop).toBeUndefined()
+  })
+
+  it('lets Escape close the mention list before it stops a run', async () => {
+    const { emitted } = mount({
+      streaming: true,
+      getMentionNodes: () => [{ id: '2', title: 'KSampler' }]
+    })
+    const box = screen.getByRole('textbox')
+    await userEvent.type(box, '@')
+    expect(screen.getByRole('menu')).toBeInTheDocument()
+    await userEvent.keyboard('{Escape}')
+    expect(screen.queryByRole('menu')).not.toBeInTheDocument()
+    expect(emitted().stop).toBeUndefined()
+    await userEvent.keyboard('{Escape}')
+    expect(emitted().stop).toHaveLength(1)
+  })
+
+  it('keeps handled Escapes inside the composer and lets idle Escape bubble', async () => {
+    const parentKeydown = vi.fn<(event: KeyboardEvent) => void>()
+    const escapesSeenByParent = () =>
+      parentKeydown.mock.calls.filter(([event]) => event.key === 'Escape')
+        .length
+    const onStop = vi.fn()
+    const mentionNodes = [{ id: '2', title: 'KSampler' }]
+    const streaming = ref(true)
+    const Host = defineComponent({
+      setup: () => () =>
+        h('div', { onKeydown: parentKeydown }, [
+          h(Composer, {
+            hasWorkflowTarget: true,
+            streaming: streaming.value,
+            getMentionNodes: () => mentionNodes,
+            onStop
+          })
+        ])
+    })
+    render(Host, {
+      global: {
+        plugins: [i18n],
+        directives: { tooltip: tooltipDirectiveStub }
+      }
+    })
+    const box = screen.getByRole('textbox')
+
+    await userEvent.type(box, '@')
+    expect(screen.getByRole('menu')).toBeInTheDocument()
+    await userEvent.keyboard('{Escape}')
+    expect(screen.queryByRole('menu')).not.toBeInTheDocument()
+    expect(onStop).not.toHaveBeenCalled()
+    expect(escapesSeenByParent()).toBe(0)
+
+    await userEvent.keyboard('{Escape}')
+    expect(onStop).toHaveBeenCalledTimes(1)
+    expect(escapesSeenByParent()).toBe(0)
+
+    streaming.value = false
+    await nextTick()
+    await userEvent.keyboard('{Escape}')
+    expect(onStop).toHaveBeenCalledTimes(1)
+    expect(escapesSeenByParent()).toBe(1)
+  })
+
   describe('run permissions popover', () => {
     beforeEach(() => {
       localStorage.clear()
-      fetchApi.mockReset()
-      fetchApi.mockImplementation(async () =>
+      vi.mocked(api.fetchApi).mockReset()
+      vi.mocked(api.fetchApi).mockImplementation(async () =>
         jsonResponse(404, { error: 'not found' })
       )
     })
@@ -311,28 +568,34 @@ describe('Composer', () => {
         await screen.findByText('Choose when the agent needs your consent')
       ).toBeInTheDocument()
       expect(
-        screen.getByRole('radio', { name: /Ask before a workflow runs/ })
+        screen.getByRole('menuitemradio', {
+          name: /Ask before a workflow runs/
+        })
       ).toBeChecked()
+      expect(screen.getAllByRole('menuitemradio')).toHaveLength(2)
       expect(
-        screen.getByRole('button', { name: 'Save changes' })
-      ).toBeDisabled()
-      expect(screen.getAllByRole('radio')).toHaveLength(2)
-      expect(
-        screen.queryByRole('radio', { name: /Auto-run with limits/ })
+        screen.queryByRole('menuitemradio', { name: /Auto-run with limits/ })
       ).not.toBeInTheDocument()
+
+      const menu = screen.getByRole('menu')
+      expect(within(menu).queryAllByRole('button')).toHaveLength(0)
+      expect(menu).toHaveAccessibleDescription(
+        'Choose when the agent needs your consent'
+      )
+      expect(menu).not.toContainElement(screen.getByRole('status'))
     })
 
-    it('saves auto mode and closes', async () => {
+    it('applies the picked mode without a separate save step', async () => {
+      telemetry.trackAgentRunModeChanged.mockClear()
       mount()
       const store = useAgentRunModeStore()
 
       await userEvent.click(screen.getByRole('button', { name: 'Ask' }))
       await userEvent.click(
-        await screen.findByRole('radio', { name: /Auto-run without approval/ })
+        await screen.findByRole('menuitemradio', {
+          name: /Auto-run without approval/
+        })
       )
-      const save = screen.getByRole('button', { name: 'Save changes' })
-      expect(save).toBeEnabled()
-      await userEvent.click(save)
       await vi.waitFor(() => expect(store.mode).toBe('auto'))
       await nextTick()
 
@@ -342,30 +605,174 @@ describe('Composer', () => {
       expect(
         await screen.findByRole('button', { name: 'Auto' })
       ).toBeInTheDocument()
-      expect(store.mode).toBe('auto')
       expect(store.creditLimit).toBeNull()
+      expect(
+        telemetry.trackAgentRunModeChanged
+      ).toHaveBeenCalledExactlyOnceWith({
+        from: 'ask_approval',
+        to: 'auto'
+      })
     })
 
-    it('keeps the popover open and reports a failed save', async () => {
+    it('rewrites the active mode when it is picked again', async () => {
+      mount()
+
+      await userEvent.click(screen.getByRole('button', { name: 'Ask' }))
+      await userEvent.click(
+        await screen.findByRole('menuitemradio', {
+          name: /Ask before a workflow runs/
+        })
+      )
+
+      expect(
+        screen.queryByText('Choose when the agent needs your consent')
+      ).toBeNull()
+      expect(
+        vi
+          .mocked(api.fetchApi)
+          .mock.calls.filter(([, init]) => init?.method === 'PUT')
+      ).toHaveLength(1)
+      expect(useAgentRunModeStore().mode).toBe('ask_approval')
+    })
+
+    it('keeps the popover open on the unchanged mode when the save fails', async () => {
+      telemetry.trackAgentRunModeChanged.mockClear()
       fetchApi.mockResolvedValueOnce(jsonResponse(500, { error: 'failed' }))
       mount()
 
       await userEvent.click(screen.getByRole('button', { name: 'Ask' }))
       await userEvent.click(
-        await screen.findByRole('radio', { name: /Auto-run without approval/ })
-      )
-      await userEvent.click(
-        screen.getByRole('button', { name: 'Save changes' })
+        await screen.findByRole('menuitemradio', {
+          name: /Auto-run without approval/
+        })
       )
 
       expect(
         await screen.findByText('Choose when the agent needs your consent')
       ).toBeInTheDocument()
       expect(useAgentRunModeStore().mode).toBe('ask_approval')
-      expect(useToastStore().messagesToAdd).toContainEqual({
-        severity: 'error',
-        detail: i18n.global.t('agent.runModeSaveFailed')
+      await vi.waitFor(() =>
+        expect(
+          screen.getByRole('menuitemradio', {
+            name: /Ask before a workflow runs/
+          })
+        ).toBeChecked()
+      )
+      expect(screen.getByRole('status')).toBeEmptyDOMElement()
+      expect(useToast().toasts).toContainEqual(
+        expect.objectContaining({
+          kind: 'error',
+          title: i18n.global.t('agent.runModeSaveFailed')
+        })
+      )
+      expect(telemetry.trackAgentRunModeChanged).not.toHaveBeenCalled()
+    })
+
+    it('blocks a second pick while the write is in flight', async () => {
+      let resolvePut!: (response: Response) => void
+      vi.mocked(api.fetchApi).mockReturnValueOnce(
+        new Promise<Response>((resolve) => {
+          resolvePut = resolve
+        })
+      )
+      mount()
+      const store = useAgentRunModeStore()
+
+      await userEvent.click(screen.getByRole('button', { name: 'Ask' }))
+      await userEvent.click(
+        await screen.findByRole('menuitemradio', {
+          name: /Auto-run without approval/
+        })
+      )
+
+      const ask = screen.getByRole('menuitemradio', {
+        name: /Ask before a workflow runs/
       })
+      const auto = screen.getByRole('menuitemradio', {
+        name: /Auto-run without approval/
+      })
+      expect(screen.getByRole('status')).toHaveTextContent('Saving')
+      expect(ask).toHaveAttribute('aria-disabled', 'true')
+      expect(auto).toHaveAttribute('aria-disabled', 'true')
+      expect(auto).toHaveAttribute('aria-busy', 'true')
+      expect(ask).not.toHaveAttribute('aria-busy')
+      expect(ask).toBeChecked()
+      await userEvent.click(ask)
+      expect(api.fetchApi).toHaveBeenCalledTimes(1)
+
+      resolvePut(jsonResponse(200, { mode: 'auto', credit_limit: null }))
+      await vi.waitFor(() => expect(store.mode).toBe('auto'))
+      expect(api.fetchApi).toHaveBeenCalledTimes(1)
+      expect(
+        screen.queryByText('Choose when the agent needs your consent')
+      ).toBeNull()
+    })
+
+    it('takes a retry after a failed save', async () => {
+      vi.mocked(api.fetchApi).mockResolvedValueOnce(
+        jsonResponse(500, { error: 'failed' })
+      )
+      mount()
+      const store = useAgentRunModeStore()
+
+      await userEvent.click(screen.getByRole('button', { name: 'Ask' }))
+      const auto = await screen.findByRole('menuitemradio', {
+        name: /Auto-run without approval/
+      })
+      await userEvent.click(auto)
+      await vi.waitFor(() => expect(auto).not.toHaveAttribute('aria-disabled'))
+
+      await userEvent.click(auto)
+      await vi.waitFor(() => expect(store.mode).toBe('auto'))
+      expect(api.fetchApi).toHaveBeenCalledTimes(2)
+    })
+
+    it('commits the focused mode on Enter', async () => {
+      mount()
+      const store = useAgentRunModeStore()
+
+      await userEvent.click(screen.getByRole('button', { name: 'Ask' }))
+      await screen.findByRole('menu')
+      screen
+        .getByRole('menuitemradio', {
+          name: /Auto-run without approval/
+        })
+        .focus()
+      await userEvent.keyboard('{Enter}')
+
+      await vi.waitFor(() => expect(store.mode).toBe('auto'))
+    })
+
+    it('keeps a re-picked mode when a slower load disagrees', async () => {
+      let resolveGet!: (response: Response) => void
+      const pendingGet = new Promise<Response>((resolve) => {
+        resolveGet = resolve
+      })
+      vi.mocked(api.fetchApi).mockImplementation(async (_route, init) =>
+        init?.method === 'PUT'
+          ? jsonResponse(200, { mode: 'auto', credit_limit: null })
+          : pendingGet
+      )
+      localStorage.setItem(
+        'Comfy.Agent.RunModePreference',
+        JSON.stringify({ mode: 'auto', credit_limit: null })
+      )
+      mount()
+      const store = useAgentRunModeStore()
+      const load = store.load()
+
+      await userEvent.click(screen.getByRole('button', { name: 'Auto' }))
+      await userEvent.click(
+        await screen.findByRole('menuitemradio', {
+          name: /Auto-run without approval/
+        })
+      )
+      resolveGet(
+        jsonResponse(200, { mode: 'ask_approval', credit_limit: null })
+      )
+      await load
+
+      expect(store.mode).toBe('auto')
     })
 
     it('keeps unlimited auto mode distinct from limited auto mode', async () => {
@@ -394,26 +801,66 @@ describe('Composer', () => {
         mount()
 
         const trigger = screen.getByRole('button', { name: triggerName })
-        expect(tooltipBindings.get(trigger)).toEqual(
-          tooltipConfig.buildAgentTooltipConfig(tooltipCopy)
-        )
+        expect(tooltipBindings.get(trigger)).toMatchObject({
+          value: tooltipCopy
+        })
       }
     )
 
-    it('discards an unsaved draft when the popover closes without saving', async () => {
+    it('leaves a menu reopened during the write open once it settles', async () => {
+      let resolvePut!: (response: Response) => void
+      vi.mocked(api.fetchApi).mockReturnValueOnce(
+        new Promise<Response>((resolve) => {
+          resolvePut = resolve
+        })
+      )
       mount()
       const store = useAgentRunModeStore()
 
       await userEvent.click(screen.getByRole('button', { name: 'Ask' }))
       await userEvent.click(
-        await screen.findByRole('radio', { name: /Auto-run without approval/ })
+        await screen.findByRole('menuitemradio', {
+          name: /Auto-run without approval/
+        })
       )
       await userEvent.keyboard('{Escape}')
-      expect(store.mode).toBe('ask_approval')
+      await waitFor(() =>
+        expect(
+          screen.queryByText('Choose when the agent needs your consent')
+        ).toBeNull()
+      )
 
       await userEvent.click(screen.getByRole('button', { name: 'Ask' }))
       expect(
-        await screen.findByRole('radio', { name: /Ask before a workflow runs/ })
+        await screen.findByText('Choose when the agent needs your consent')
+      ).toBeInTheDocument()
+
+      resolvePut(jsonResponse(200, { mode: 'auto', credit_limit: null }))
+      await vi.waitFor(() => expect(store.mode).toBe('auto'))
+      await nextTick()
+
+      expect(
+        screen.getByText('Choose when the agent needs your consent')
+      ).toBeInTheDocument()
+    })
+
+    it('reopens on the mode saved by the previous choice', async () => {
+      mount()
+      const store = useAgentRunModeStore()
+
+      await userEvent.click(screen.getByRole('button', { name: 'Ask' }))
+      await userEvent.click(
+        await screen.findByRole('menuitemradio', {
+          name: /Auto-run without approval/
+        })
+      )
+      await vi.waitFor(() => expect(store.mode).toBe('auto'))
+
+      await userEvent.click(await screen.findByRole('button', { name: 'Auto' }))
+      expect(
+        await screen.findByRole('menuitemradio', {
+          name: /Auto-run without approval/
+        })
       ).toBeChecked()
     })
   })
@@ -426,7 +873,8 @@ describe('Composer', () => {
     ]
 
     async function openReferenceRoot(text = '@') {
-      await userEvent.type(screen.getByRole('textbox'), text)
+      await userEvent.click(screen.getByRole('textbox'))
+      await userEvent.paste(text)
       return screen.getByRole('menu', { name: 'Add to prompt' })
     }
 
@@ -438,8 +886,7 @@ describe('Composer', () => {
       await userEvent.click(
         within(menu).getByRole('menuitem', { name: section })
       )
-      if (text !== '@')
-        await userEvent.type(screen.getByRole('textbox'), text.slice(1))
+      if (text !== '@') await userEvent.paste(text.slice(1))
       return screen.getByRole('menu', { name: 'Add to prompt' })
     }
 
@@ -464,13 +911,12 @@ describe('Composer', () => {
     })
 
     it('opens the Nodes submenu and lists matching nodes alphabetically', async () => {
-      mount({
-        getMentionNodes: () => [
-          { id: '3', title: 'VAE Decode' },
-          { id: '1', title: 'Alpha' },
-          { id: '2', title: 'KSampler' }
-        ]
-      })
+      const mentionNodes = [
+        { id: '3', title: 'VAE Decode' },
+        { id: '1', title: 'Alpha' },
+        { id: '2', title: 'KSampler' }
+      ]
+      mount({ getMentionNodes: () => mentionNodes })
 
       const menu = await openReferenceSection('Nodes')
 
@@ -479,7 +925,108 @@ describe('Composer', () => {
           .getAllByRole('menuitem')
           .map((item) => item.textContent.trim())
       ).toEqual(['Back', 'Alpha', 'KSampler', 'VAE Decode'])
+      expect(mentionNodes.map(({ title }) => title)).toEqual([
+        'VAE Decode',
+        'Alpha',
+        'KSampler'
+      ])
     })
+
+    it('loads current nodes when entering or re-entering the Nodes submenu', async () => {
+      const nodes = ref<typeof NODES>([])
+      mount({ getMentionNodes: () => nodes.value })
+      await openReferenceRoot()
+
+      nodes.value = [NODES[0]]
+      await userEvent.click(screen.getByRole('menuitem', { name: 'Nodes' }))
+      expect(screen.getByRole('menuitem', { name: 'KSampler' })).toBeVisible()
+
+      await userEvent.click(screen.getByRole('menuitem', { name: 'Back' }))
+      nodes.value = [NODES[2]]
+      await userEvent.click(screen.getByRole('menuitem', { name: 'Nodes' }))
+      expect(screen.getByRole('menuitem', { name: 'VAE Decode' })).toBeVisible()
+      expect(screen.queryByRole('menuitem', { name: 'KSampler' })).toBeNull()
+      expect(useAgentComposerStore().draft).toBe('@')
+    })
+
+    it('filters current nodes after the graph changes with the submenu open', async () => {
+      const nodes = ref([NODES[0]])
+      const { emitted } = mount({ getMentionNodes: () => nodes.value })
+      await openReferenceSection('Nodes')
+
+      nodes.value = [NODES[2]]
+      await userEvent.click(screen.getByRole('textbox'))
+      await userEvent.paste('vae')
+
+      expect(screen.getByRole('menuitem', { name: 'VAE Decode' })).toBeVisible()
+      expect(screen.queryByRole('menuitem', { name: 'KSampler' })).toBeNull()
+      expect(useAgentComposerStore().draft).toBe('@vae')
+      await userEvent.keyboard('{Enter}')
+      expect(emitted().mentionPick).toEqual([[NODES[2]]])
+      expect(emitted().send).toBeUndefined()
+    })
+
+    it.for<{
+      event: string
+      act: (graph: ShallowRef<LGraph>, node: LGraphNode) => void
+      labels: string[]
+    }>([
+      {
+        event: 'adding a node',
+        act: (graph) => graph.value.add(new LGraphNode('Alpha')),
+        labels: ['Back', 'Alpha', 'KSampler']
+      },
+      {
+        event: 'renaming a node',
+        act: (_graph, node) => {
+          node.title = 'Alpha'
+        },
+        labels: ['Back', 'Alpha']
+      },
+      {
+        event: 'removing a node',
+        act: (graph, node) => graph.value.remove(node),
+        labels: ['Back']
+      },
+      {
+        event: 'replacing the viewed graph',
+        act: (graph) => {
+          const replacement = new LGraph()
+          replacement.add(new LGraphNode('VAE Decode'))
+          graph.value = replacement
+        },
+        labels: ['Back', 'VAE Decode']
+      }
+    ])(
+      'updates the open Nodes submenu after $event without typing',
+      async ({ act, labels }) => {
+        const graph = shallowRef(new LGraph())
+        const node = new LGraphNode('KSampler')
+        graph.value.add(node)
+        const { emitted } = mount({
+          getMentionNodes: () =>
+            graph.value.nodes.map((item) => ({
+              id: String(item.id),
+              title: item.title
+            }))
+        })
+        await openReferenceSection('Nodes')
+        expect(screen.getByRole('menuitem', { name: 'KSampler' })).toBeVisible()
+
+        act(graph, node)
+
+        await waitFor(() =>
+          expect(
+            within(screen.getByRole('menu', { name: 'Add to prompt' }))
+              .getAllByRole('menuitem')
+              .map((item) => item.textContent.trim())
+          ).toEqual(labels)
+        )
+        expect(useAgentComposerStore().draft).toBe('@')
+        expect(emitted().mentionPick).toBeUndefined()
+        expect(emitted().send).toBeUndefined()
+      }
+    )
 
     // Re-picking a staged node is a no-op, so it drops out of the list.
     it('hides nodes already in the basket', async () => {
@@ -497,11 +1044,11 @@ describe('Composer', () => {
       expect(labels).toEqual(['Back', 'KSampler #7', 'VAE Decode'])
     })
 
-    // The staged node is only hidden from the picker, not from the duplicate
-    // check - its chip must still show the id that tells it apart from the
-    // same-titled node still in the graph.
     it('keeps disambiguating a staged node against its graph twin', async () => {
       const twin = { id: '11', title: NODES[0].title }
+      const store = useAgentComposerStore()
+      store.setNodeScope('workflow-a')
+      store.setNodes([NODES[0]])
       mount({
         getMentionNodes: () => [...NODES, twin],
         selectionTags: [NODES[0]]
@@ -509,7 +1056,12 @@ describe('Composer', () => {
 
       await openReferenceSection('Nodes')
 
-      expect(screen.getByText(`#${NODES[0].id}`)).toBeInTheDocument()
+      expect(screen.getByTestId('node-reference-chip')).toHaveTextContent(
+        'KSampler #5'
+      )
+      expect(
+        screen.queryByTestId('composer-node-section')
+      ).not.toBeInTheDocument()
     })
 
     it('keeps type-to-filter behavior inside the selected reference type', async () => {
@@ -587,7 +1139,8 @@ describe('Composer', () => {
       expect(screen.queryByRole('menu')).toBeNull()
 
       await userEvent.clear(screen.getByRole('textbox'))
-      await userEvent.type(screen.getByRole('textbox'), '@{Enter}')
+      await userEvent.paste('@')
+      await userEvent.keyboard('{Enter}')
       expect(screen.getByRole('menuitem', { name: 'VAE Decode' })).toBeVisible()
       await userEvent.keyboard('{ArrowDown}{Enter}')
       expect(emitted().mentionPick).toEqual([[NODES[0]]])
@@ -624,7 +1177,8 @@ describe('Composer', () => {
       async (suffix) => {
         mount({ availableWorkflows: [{ id: 'wf-water', name: 'Water world' }] })
         const textbox = screen.getByRole('textbox')
-        await userEvent.type(textbox, `Before @${suffix}`)
+        await userEvent.click(textbox)
+        await userEvent.paste(`Before @${suffix}`)
         await userEvent.pointer({
           keys: '[MouseLeft]',
           target: textbox,
@@ -637,7 +1191,7 @@ describe('Composer', () => {
         expect(useAgentComposerStore().draft).toBe(
           `Before  ${suffix.trimStart()}`
         )
-        await userEvent.keyboard('next ')
+        await userEvent.paste('next ')
         expect(useAgentComposerStore().draft).toBe(
           `Before  next ${suffix.trimStart()}`
         )
@@ -652,7 +1206,8 @@ describe('Composer', () => {
         availableWorkflows: [{ id: 'wf-water', name: 'Water world' }]
       })
       const textbox = screen.getByRole('textbox')
-      await userEvent.type(textbox, 'Compare @ with target')
+      await userEvent.click(textbox)
+      await userEvent.paste('Compare @ with target')
       await userEvent.pointer({
         keys: '[MouseLeft]',
         target: textbox,
@@ -744,7 +1299,8 @@ describe('Composer', () => {
       const { emitted } = mount({ getMentionNodes: () => NODES })
       const box = screen.getByRole('textbox')
 
-      await userEvent.type(box, 'hi @k')
+      await userEvent.click(box)
+      await userEvent.paste('hi @k')
       expect(screen.getByRole('menu')).toBeInTheDocument()
 
       await userEvent.keyboard('{Escape}')
@@ -757,7 +1313,8 @@ describe('Composer', () => {
     it('ignores an @ inside a word', async () => {
       mount({ getMentionNodes: () => NODES })
 
-      await userEvent.type(screen.getByRole('textbox'), 'email@k')
+      await userEvent.click(screen.getByRole('textbox'))
+      await userEvent.paste('email@k')
       expect(screen.queryByRole('menu')).toBeNull()
     })
 
@@ -765,7 +1322,8 @@ describe('Composer', () => {
       const { emitted } = mount({ getMentionNodes: () => NODES })
       const box = screen.getByRole('textbox')
 
-      await userEvent.type(box, '@k')
+      await userEvent.click(box)
+      await userEvent.paste('@k')
       expect(screen.getByRole('menu')).toBeInTheDocument()
 
       await userEvent.keyboard('{Shift>}{Enter}{/Shift}')
@@ -779,17 +1337,22 @@ describe('Composer', () => {
       mount({ getMentionNodes: () => NODES })
       const box = screen.getByRole('textbox')
 
-      await userEvent.type(box, '@k')
+      await userEvent.click(box)
+      await userEvent.paste('@k')
       expect(screen.getByRole('menu')).toBeInTheDocument()
 
-      await userEvent.keyboard('{Home}')
+      const selection = window.getSelection()
+      selection?.selectAllChildren(box)
+      selection?.collapseToStart()
+      document.dispatchEvent(new Event('selectionchange'))
       await waitFor(() => expect(screen.queryByRole('menu')).toBeNull())
     })
   })
 
   it('restores the typed draft after unmount and remount', async () => {
     const first = mount()
-    await userEvent.type(screen.getByRole('textbox'), 'keep me')
+    await userEvent.click(screen.getByRole('textbox'))
+    await userEvent.paste('keep me')
     first.unmount()
 
     mount()
@@ -877,12 +1440,13 @@ describe('Composer', () => {
       selectWorkflowReference: () => promise
     })
     const textbox = screen.getByRole('textbox')
-    await userEvent.type(textbox, 'Compare @')
+    await userEvent.click(textbox)
+    await userEvent.paste('Compare @')
     await userEvent.click(screen.getByRole('menuitem', { name: 'Workflows' }))
     await userEvent.click(
       screen.getByRole('menuitem', { name: /^Scratch\s*Unsaved$/ })
     )
-    await userEvent.type(textbox, ' more detail')
+    await userEvent.paste(' more detail')
     resolve({ id: 'saved-scratch', name: 'Scratch' })
     await promise
     await nextTick()
@@ -893,14 +1457,16 @@ describe('Composer', () => {
   it.for(['pointer', 'Enter', 'Space'])(
     'opens a staged workflow with %s without consuming the draft',
     async (interaction) => {
+      const store = useAgentComposerStore()
+      store.setText('Keep this prompt')
+      store.setNodeScope('workflow-a')
+      store.setNodes([{ id: '5', title: 'KSampler' }])
       const { emitted } = mount({
         workflowReferences: [
           { id: 'wf-1', name: 'Water world', textOffset: 0 }
         ],
         selectionTags: [{ id: '5', title: 'KSampler' }]
       })
-      const textarea = screen.getByRole('textbox')
-      await userEvent.type(textarea, 'Keep this prompt')
       const chip = screen.getByRole('button', { name: 'Open Water world' })
       if (interaction === 'pointer') await userEvent.click(chip)
       else {
@@ -911,20 +1477,21 @@ describe('Composer', () => {
       expect(emitted().openReferenceWorkflow).toEqual([['wf-1', 'Water world']])
       expect(emitted().removeWorkflowReference).toBeUndefined()
       expect(emitted().send).toBeUndefined()
-      expect(useAgentComposerStore().draft).toBe('Keep this prompt')
-      expect(screen.getByTestId('composer-node-section')).toHaveTextContent(
-        'KSampler'
+      expect(store.draft).toBe('Keep this prompt ')
+      expect(store.nodes).toEqual([{ id: '5', title: 'KSampler' }])
+      expect(screen.getByTestId('node-reference-chip')).toHaveTextContent(
+        'KSampler #5'
       )
     }
   )
 
   it('preserves unavailable references while editing and permits their removal', async () => {
+    useAgentComposerStore().setText('Keep this prompt')
     const { emitted } = mount({
       workflowReferences: [
-        { id: 'missing', name: 'Missing', textOffset: 0, unavailable: true }
+        { id: 'missing', name: 'Missing', textOffset: 16, unavailable: true }
       ]
     })
-    await userEvent.type(screen.getByRole('textbox'), 'Keep this prompt')
     const chip = screen.getByRole('button', { name: 'Missing (unavailable)' })
     expect(chip).toHaveAttribute('aria-disabled', 'true')
     expect(chip).toHaveAttribute(
@@ -947,14 +1514,13 @@ describe('Composer', () => {
   it.for(['pointer', 'keyboard'])(
     'removes only the chosen workflow with %s without navigating',
     async (interaction) => {
+      useAgentComposerStore().setText('Keep this prompt')
       const { emitted } = mount({
         workflowReferences: [
           { id: 'wf-1', name: 'Water world', textOffset: 0 },
           { id: 'wf-2', name: 'Portrait lighting', textOffset: 0 }
         ]
       })
-      const textarea = screen.getByRole('textbox')
-      await userEvent.type(textarea, 'Keep this prompt')
       const remove = screen.getByRole('button', {
         name: 'Remove Water world reference'
       })
@@ -968,6 +1534,70 @@ describe('Composer', () => {
       expect(emitted().openReferenceWorkflow).toBeUndefined()
       expect(emitted().send).toBeUndefined()
       expect(useAgentComposerStore().draft).toBe('Keep this prompt')
+    }
+  )
+
+  it.for([
+    {
+      direction: 'ArrowLeft',
+      key: '{ArrowLeft}',
+      insertedText: 'again ',
+      expectedText:
+        'again Before Unsaved Workflow between Unsaved Workflow (2) after',
+      expectedOffsets: [13, 22] as const
+    },
+    {
+      direction: 'ArrowRight',
+      key: '{ArrowRight}',
+      insertedText: ' again',
+      expectedText:
+        'Before Unsaved Workflow between Unsaved Workflow (2) after again',
+      expectedOffsets: [7, 16] as const
+    }
+  ])(
+    'keeps restored workflow chips when $direction collapses Select All',
+    async ({ key, insertedText, expectedText, expectedOffsets }) => {
+      useAgentComposerStore().replacePrompt({
+        text: 'Before  between  after',
+        workflowReferences: [
+          { id: 'wf-1', name: 'Unsaved Workflow', textOffset: 7 },
+          { id: 'wf-2', name: 'Unsaved Workflow (2)', textOffset: 16 }
+        ]
+      })
+      mount()
+      const store = useAgentComposerStore()
+      const epoch = store.promptEpoch
+      store.setNodeScope('workflows/Unsaved Workflow (3).json')
+      expect(store.promptEpoch).toBe(epoch)
+
+      const textbox = screen.getByRole('textbox')
+      expect(textbox).toHaveTextContent(
+        'Before Unsaved Workflow between Unsaved Workflow (2) after'
+      )
+      expect(
+        within(textbox).getAllByTestId('workflow-reference-chip')
+      ).toHaveLength(2)
+
+      await userEvent.click(textbox)
+      await userEvent.keyboard(`{Control>}a{/Control}${key}`)
+      await userEvent.keyboard(insertedText)
+
+      expect(textbox).toHaveTextContent(expectedText)
+      expect(
+        within(textbox).getAllByTestId('workflow-reference-chip')
+      ).toHaveLength(2)
+      expect(store.workflowReferences).toEqual([
+        {
+          id: 'wf-1',
+          name: 'Unsaved Workflow',
+          textOffset: expectedOffsets[0]
+        },
+        {
+          id: 'wf-2',
+          name: 'Unsaved Workflow (2)',
+          textOffset: expectedOffsets[1]
+        }
+      ])
     }
   )
 
@@ -1001,32 +1631,33 @@ describe('Composer', () => {
   })
 
   it('keeps normal text deletion when the caret is not at the start', async () => {
+    useAgentComposerStore().setText('text')
     const { emitted } = mount({
       workflowReferences: [{ id: 'wf-1', name: 'Water world', textOffset: 0 }]
     })
 
     const textarea = screen.getByRole('textbox')
-    await userEvent.type(textarea, 'text')
-    await userEvent.keyboard('{Backspace}')
+    await userEvent.click(textarea)
+    await userEvent.keyboard('{ArrowRight>4/}{Backspace}')
 
     expect(emitted().removeWorkflowReference).toBeUndefined()
     expect(useAgentComposerStore().draft).toBe('tex')
   })
 
-  it('keeps selected nodes in a dedicated section above the inline prompt', () => {
+  it('keeps selected nodes inline alongside workflow references', () => {
+    const store = useAgentComposerStore()
+    store.setNodeScope('workflow-a')
+    store.setNodes([{ id: '5', title: 'KSampler' }])
     mount({
-      selectionTags: [{ id: '5', title: 'KSampler' }],
+      selectionTags: store.nodes,
       workflowReferences: [{ id: 'wf-1', name: 'Water world', textOffset: 0 }]
     })
-
-    const nodeSection = screen.getByTestId('composer-node-section')
-    const inlineInput = screen.getByTestId('composer-inline-input')
-
-    expect(nodeSection).toHaveClass('border-b', 'p-3')
-    expect(nodeSection).toHaveTextContent('KSampler')
-    expect(nodeSection).not.toContainElement(screen.getByRole('textbox'))
-    expect(inlineInput).not.toHaveTextContent('KSampler')
-    expect(inlineInput).toHaveTextContent('Water world')
+    expect(
+      screen.queryByTestId('composer-node-section')
+    ).not.toBeInTheDocument()
+    expect(screen.getByRole('textbox')).toHaveTextContent(
+      'Water worldKSampler #5'
+    )
   })
 
   it('keeps added assets in a separate padded section above the prompt', async () => {
@@ -1079,9 +1710,11 @@ describe('Composer', () => {
       screen.getByRole('button', { name: 'Open Water world' })
     )
     expect(onOpenReferenceWorkflow).toHaveBeenCalledWith('wf-1', 'Water world')
-    expect(screen.getByTestId('composer-asset-section')).toHaveTextContent(
-      'cat.png'
-    )
+    expect(
+      within(screen.getByTestId('composer-asset-section')).getByRole('group', {
+        name: 'cat.png'
+      })
+    ).toBeVisible()
   })
 
   it('keeps the empty prompt hint visible when only nodes are selected', () => {
@@ -1141,83 +1774,51 @@ describe('Composer', () => {
     expect(getMentionNodes).not.toHaveBeenCalled()
   })
 
-  it('hides the id on a uniquely named selection chip', () => {
-    mount({ selectionTags: [{ id: '5', title: 'KSampler' }] })
-
-    expect(screen.getByText('KSampler')).toBeInTheDocument()
-    expect(screen.queryByText('#5')).not.toBeInTheDocument()
-  })
-
-  it('emits removeTag when a selection chip is removed', async () => {
-    const { emitted } = mount({
-      selectionTags: [{ id: '5', title: 'KSampler' }]
-    })
-
-    await userEvent.click(
-      screen.getByRole('button', { name: 'Remove KSampler #5 reference' })
-    )
-
-    expect(emitted().removeTag).toEqual([['5']])
-  })
-
-  it('builds the remove tooltip for a selection chip', () => {
-    mount({ selectionTags: [{ id: '5', title: 'KSampler' }] })
-
-    const removeButton = screen.getByRole('button', {
-      name: 'Remove KSampler #5 reference'
-    })
-    expect(tooltipBindings.get(removeButton)).toEqual(
-      tooltipConfig.buildAgentTooltipConfig('Remove')
-    )
-  })
-
-  it('renders a selection chip label as non-interactive context', () => {
-    mount({ selectionTags: [{ id: '5', title: 'KSampler' }] })
-
-    expect(screen.getByText('KSampler')).toBeVisible()
-    expect(
-      screen.queryByRole('button', { name: 'Show KSampler #5 on canvas' })
-    ).toBeNull()
-  })
-
-  // The remove button sits outside the focus trigger; removing a chip must not
-  // also fly the canvas to the node being removed.
-  it('removes a selection chip without focusing its node', async () => {
-    const { emitted } = mount({
-      selectionTags: [{ id: '5', title: 'KSampler' }]
-    })
-
-    await userEvent.click(
-      screen.getByRole('button', { name: 'Remove KSampler #5 reference' })
-    )
-
-    expect(emitted().removeTag).toEqual([['5']])
-    expect(emitted().focusTag).toBeUndefined()
-  })
-
-  it('shows the id on a lone selection chip with a graph title twin', () => {
-    const selected = { id: '5', title: 'KSampler' }
-    mount({
-      selectionTags: [selected],
-      getMentionNodes: () => [selected, { id: '7', title: 'KSampler' }]
-    })
-
-    expect(screen.getByText('KSampler')).toBeInTheDocument()
-    expect(screen.getByText('#5')).toBeInTheDocument()
-    expect(screen.queryByText('#7')).not.toBeInTheDocument()
-  })
-
-  it('shows ids when selection chips have duplicate titles', () => {
-    mount({
-      selectionTags: [
+  it.for([
+    {
+      label: 'unique title',
+      nodes: [{ id: '5', title: 'KSampler' }],
+      labels: ['KSampler #5']
+    },
+    {
+      label: 'duplicate titles',
+      nodes: [
         { id: '5', title: 'KSampler' },
         { id: '7', title: 'KSampler' }
-      ]
-    })
+      ],
+      labels: ['KSampler #5', 'KSampler #7']
+    }
+  ])(
+    'identifies inline nodes with $label by their IDs',
+    ({ nodes, labels }) => {
+      const store = useAgentComposerStore()
+      store.setNodeScope('workflow-a')
+      store.setNodes(nodes)
+      mount({ selectionTags: store.nodes })
+      expect(
+        screen
+          .getAllByTestId('node-reference-chip')
+          .map((chip) => chip.textContent)
+      ).toEqual(labels)
+      expect(
+        screen.queryByTestId('composer-node-section')
+      ).not.toBeInTheDocument()
+      expect(
+        screen.queryByRole('button', { name: 'Show KSampler #5 on canvas' })
+      ).toBeNull()
+    }
+  )
 
-    expect(screen.getAllByText('KSampler')).toHaveLength(2)
-    expect(screen.getByText('#5')).toBeInTheDocument()
-    expect(screen.getByText('#7')).toBeInTheDocument()
+  it('removes an inline node without focusing its canvas node', async () => {
+    const store = useAgentComposerStore()
+    store.setNodeScope('workflow-a')
+    store.setNodes([{ id: '5', title: 'KSampler' }])
+    const { emitted } = mount({ selectionTags: store.nodes })
+    await userEvent.click(screen.getByRole('textbox'))
+    await userEvent.keyboard('{Control>}a{/Control}{Backspace}')
+    expect(emitted().removeTag).toEqual([['5']])
+    expect(emitted().focusTag).toBeUndefined()
+    expect(store.nodes).toEqual([])
   })
 
   it('renders an attachment preview and removes it from the composer', async () => {
@@ -1239,7 +1840,9 @@ describe('Composer', () => {
       'https://example.com/cat.png'
     )
 
-    await userEvent.click(screen.getByRole('button', { name: 'Remove' }))
+    await userEvent.click(
+      screen.getByRole('button', { name: 'Remove cat.png' })
+    )
     expect(screen.queryByRole('img', { name: 'cat.png' })).toBeNull()
   })
 
@@ -1255,7 +1858,18 @@ describe('Composer', () => {
       })
       render(Host, { global: { plugins: [i18n] } })
       return {
-        insert: (text: string) => composer.value?.insert(text)
+        composer,
+        insert: (text: string, attribution?: AgentStarterPromptAttribution) =>
+          composer.value?.insert(
+            text,
+            attribution ?? {
+              promptId: 'slot_1',
+              promptIndex: 0,
+              promptCount: 5,
+              promptTextHash: 'deadbeef',
+              locale: 'en'
+            }
+          )
       }
     }
 
@@ -1270,6 +1884,18 @@ describe('Composer', () => {
       expect(useAgentComposerStore().draft).toBe('foo')
       expect(textarea).toHaveFocus()
       expect(focusSpy).toHaveBeenCalledOnce()
+    })
+
+    it('accepts unidentified suggestion inserts at the exposed boundary', async () => {
+      const { composer } = mountWithInsert()
+
+      composer.value?.insert('foo', undefined)
+      await nextTick()
+
+      const store = useAgentComposerStore()
+      expect(store.draft).toBe('foo')
+      expect(store.promptOrigin).toBe('suggestion')
+      expect(store.starterPrompt).toBeNull()
     })
   })
 })

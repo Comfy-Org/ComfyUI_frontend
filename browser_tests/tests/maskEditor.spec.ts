@@ -102,6 +102,10 @@ function getMinimumToolIconContrast(dialog: Locator): Promise<number> {
 }
 
 test.describe('Mask Editor', { tag: '@vue-nodes' }, () => {
+  test.beforeEach(async ({ comfyPage }) => {
+    await comfyPage.workflow.loadWorkflow('widgets/load_image_widget')
+  })
+
   test(
     'opens mask editor from image preview button',
     { tag: ['@smoke', '@screenshot'] },
@@ -151,7 +155,7 @@ test.describe('Mask Editor', { tag: '@vue-nodes' }, () => {
       await nodeHeader.click()
       await nodeHeader.click({ button: 'right' })
 
-      const contextMenu = comfyPage.page.locator('.p-contextmenu')
+      const contextMenu = comfyPage.page.getByRole('menu')
       await expect(contextMenu).toBeVisible()
 
       await contextMenu.getByText('Open in Mask Editor').click()

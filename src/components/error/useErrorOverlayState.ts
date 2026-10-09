@@ -2,6 +2,7 @@ import { computed } from 'vue'
 import { useI18n } from 'vue-i18n'
 import { storeToRefs } from 'pinia'
 
+import { isIssuesTabEnabled } from '@/platform/settings/missingWarningVisibility'
 import { useExecutionErrorStore } from '@/stores/executionErrorStore'
 import { useErrorGroups } from '@/components/rightSidePanel/errors/useErrorGroups'
 import type {
@@ -147,21 +148,25 @@ export function useErrorOverlayState() {
     swapNodeGroups
   } = useErrorGroups('')
 
+  const hasError = computed(() =>
+    allErrorGroups.value.some((group) => group.severity === 'error')
+  )
+
   const totalErrorCount = computed(() =>
     allErrorGroups.value.reduce((sum, group) => sum + group.count, 0)
   )
 
-  const multipleErrorCountLabel = computed(() =>
+  const multipleIssueCountLabel = computed(() =>
     t(
-      'errorOverlay.multipleErrorCount',
+      'errorOverlay.multipleIssueCount',
       { count: totalErrorCount.value },
       totalErrorCount.value
     )
   )
 
   const aggregateOverlayCopy = computed<OverlayCopy>(() => ({
-    title: multipleErrorCountLabel.value,
-    message: t('errorOverlay.multipleErrorsMessage')
+    title: multipleIssueCountLabel.value,
+    message: t('errorOverlay.multipleIssuesMessage')
   }))
 
   const overlayCopy = computed<OverlayCopy | undefined>(() => {
@@ -195,11 +200,13 @@ export function useErrorOverlayState() {
   const isVisible = computed(
     () =>
       isErrorOverlayOpen.value &&
+      isIssuesTabEnabled() &&
       totalErrorCount.value > 0 &&
       overlayMessage.value.trim().length > 0
   )
 
   return {
+    hasError,
     isVisible,
     overlayMessage,
     overlayTitle

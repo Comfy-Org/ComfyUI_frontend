@@ -1,6 +1,7 @@
 import { describe, expect, it, vi } from 'vitest'
 
-import { useToastStore } from '@/platform/updates/common/toastStore'
+import { useToast } from '@/components/ui/toast/toastStore'
+import { t } from '@/i18n'
 import { LiteGraph } from '@/lib/litegraph/src/litegraph'
 
 import type Load3d from './Load3d'
@@ -10,10 +11,7 @@ const { contextMenuMock } = vi.hoisted(() => ({
   contextMenuMock: vi.fn()
 }))
 
-vi.mock('@/i18n', () => ({
-  t: (key: string, vars?: Record<string, unknown>) =>
-    vars ? `${key}:${JSON.stringify(vars)}` : key
-}))
+vi.mock(import('@/i18n'))
 
 vi.mock(import('@/lib/litegraph/src/litegraph'), { spy: true })
 
@@ -108,19 +106,18 @@ describe('createExportMenuItems', () => {
       item.callback()
       await vi.waitFor(() => expect(exportModel).toHaveBeenCalledWith(value))
       await vi.waitFor(() =>
-        expect(useToastStore().add).toHaveBeenCalledWith(
-          expect.objectContaining({
-            severity: 'success',
-            summary: `toastMessages.exportSuccess:${JSON.stringify({ format: label })}`
-          })
+        expect(useToast().success).toHaveBeenCalledWith(
+          'toastMessages.exportSuccess'
         )
       )
-      expect(useToastStore().addAlert).not.toHaveBeenCalled()
+      expect(t).toHaveBeenCalledWith('toastMessages.exportSuccess', {
+        format: label
+      })
+      expect(useToast().warning).not.toHaveBeenCalled()
     }
   )
 
   it('shows an alert toast and logs when exportModel rejects', async () => {
-    const consoleError = vi.spyOn(console, 'error').mockImplementation(() => {})
     const exportModel = vi.fn().mockRejectedValue(new Error('boom'))
     const items = createExportMenuItems(makeLoad3d(exportModel))
     ;(items[1]!.callback as (...args: unknown[]) => void)(
@@ -136,14 +133,19 @@ describe('createExportMenuItems', () => {
     glb.callback()
 
     await vi.waitFor(() =>
-      expect(useToastStore().addAlert).toHaveBeenCalledWith(
-        `toastMessages.failedToExportModel:${JSON.stringify({ format: 'GLB' })}`
-      )
+      expect(useToast().toasts).toEqual([
+        expect.objectContaining({
+          kind: 'warning',
+          title: 'toastMessages.failedToExportModel'
+        })
+      ])
     )
-    expect(consoleError).toHaveBeenCalledWith(
+    expect(t).toHaveBeenCalledWith('toastMessages.failedToExportModel', {
+      format: 'GLB'
+    })
+    expect(console.error).toHaveBeenCalledWith(
       'Export failed:',
       expect.any(Error)
     )
-    expect(useToastStore().add).not.toHaveBeenCalled()
   })
 })

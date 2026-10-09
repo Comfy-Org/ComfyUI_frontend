@@ -16,27 +16,17 @@ vi.mock(import('@/platform/distribution/types'), () => ({
   }
 }))
 
-vi.mock(import('@/i18n'), () => ({
-  t: (k: string) => k
-}))
+import {
+  registerSettingDialogComponent,
+  useSettingsDialog
+} from '@/platform/settings/composables/useSettingsDialog'
 
-vi.mock<unknown>(import('@/platform/telemetry'), () => ({
-  useTelemetry: () => ({ trackEvent: vi.fn() })
-}))
-
-vi.mock<unknown>(import('@/composables/billing/useBillingContext'), () => ({
-  useBillingContext: () => ({
-    canAccessSubscriptionFeatures: { value: true },
-    isFreeTier: { value: false },
-    type: { value: 'legacy' }
-  })
-}))
-
-import { useSettingsDialog } from '@/platform/settings/composables/useSettingsDialog'
+const SettingDialogStub = { name: 'SettingDialogStub' }
 
 beforeEach(() => {
   useDialogStore().showDialog = showDialog
   vi.mocked(useDialogStore().closeDialog).mockImplementation(() => undefined)
+  registerSettingDialogComponent(SettingDialogStub)
 })
 
 describe('useSettingsDialog', () => {
@@ -75,6 +65,12 @@ describe('useSettingsDialog', () => {
     useSettingsDialog().show()
     const [args] = showDialog.mock.calls[0]
     expect(args.dialogComponentProps.overlayClass).toBe('p-8')
+  })
+
+  it('show() opens the registered dialog component', () => {
+    useSettingsDialog().show()
+    const [args] = showDialog.mock.calls[0]
+    expect(args.component).toBe(SettingDialogStub)
   })
 
   it('show(panel) forwards defaultPanel to the dialog props', () => {

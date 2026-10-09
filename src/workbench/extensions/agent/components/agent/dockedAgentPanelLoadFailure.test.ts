@@ -8,12 +8,8 @@ import { useAgentPanelStore } from '@/workbench/extensions/agent/stores/agent/ag
 
 import DockedAgentPanel from './DockedAgentPanel.vue'
 
-vi.mock(import('@/platform/telemetry/reportError'), () => ({
-  reportError: vi.fn()
-}))
-vi.mock<unknown>(import('@/platform/telemetry'), () => ({
-  useTelemetry: () => undefined
-}))
+vi.mock(import('@/platform/telemetry/reportError'))
+vi.mock(import('@/platform/telemetry'))
 
 // The mocked module factory throws, so the dynamic import itself rejects -
 // the chunk-load failure path, distinct from a runtime error inside a
@@ -47,6 +43,7 @@ describe('DockedAgentPanel chunk-load failure', () => {
     await screen.findByText('The agent panel failed to load.')
     screen.getByRole('complementary', { name: 'Comfy Agent' })
     expect(reportError).toHaveBeenCalledWith(expect.any(Error), {
+      surface: 'agent',
       errorType: 'agent_panel_load_failure'
     })
   })

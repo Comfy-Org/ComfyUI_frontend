@@ -1,8 +1,11 @@
+import { CHECKOUT_JOURNEY_EVENT_NAME_BY_PHASE } from '@comfyorg/account-core/billing'
 import type { OverridedMixpanel } from 'mixpanel-browser'
 import { omit } from 'es-toolkit'
 import { watch } from 'vue'
 
 import { useCurrentUser } from '@/composables/auth/useCurrentUser'
+import { reportError } from '@/platform/telemetry/reportError'
+import { whenStoresReady } from '@/platform/telemetry/storeReadiness'
 
 import type {
   AuthMetadata,
@@ -56,7 +59,10 @@ const DEFAULT_DISABLED_EVENTS = [
   TelemetryEvents.WORKFLOW_CREATED
 ] as const satisfies TelemetryEventName[]
 
-const TELEMETRY_EVENT_SET = new Set<string>(Object.values(TelemetryEvents))
+const TELEMETRY_EVENT_SET = new Set<string>([
+  ...Object.values(TelemetryEvents),
+  ...Object.values(CHECKOUT_JOURNEY_EVENT_NAME_BY_PHASE)
+])
 
 interface QueuedEvent {
   eventName: TelemetryEventName
@@ -107,11 +113,20 @@ export class MixpanelTelemetryProvider implements TelemetryProvider {
               loaded: () => {
                 this.isInitialized = true
                 this.flushEventQueue() // flush events that were queued while initializing
-                useCurrentUser().onUserResolved((user) => {
-                  if (this.mixpanel && user.id) {
-                    this.mixpanel.identify(user.id)
-                  }
-                })
+                void whenStoresReady()
+                  .then(() => {
+                    useCurrentUser().onUserResolved((user) => {
+                      if (this.mixpanel && user.id) {
+                        this.mixpanel.identify(user.id)
+                      }
+                    })
+                  })
+                  .catch((error) => {
+                    reportError(error, {
+                      surface: 'platform',
+                      errorType: 'mixpanel_user_identification_failure'
+                    })
+                  })
               }
             })
           })

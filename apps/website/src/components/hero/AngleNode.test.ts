@@ -1,11 +1,10 @@
-// @vitest-environment happy-dom
 import { render, screen } from '@testing-library/vue'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 
 import {
   FakeIntersectionObserver,
   stubIntersectionObserver
-} from '../../test/fakeIntersectionObserver'
+} from '@/test/fakeIntersectionObserver'
 import type * as CameraWidgetModule from './camera/CameraWidget'
 import type { CameraWidgetOptions } from './camera/types'
 import AngleNode from './AngleNode.vue'

@@ -4,12 +4,13 @@ import { Check } from '@lucide/vue'
 import { useCssVar, useElementVisibility } from '@vueuse/core'
 import { computed, onUnmounted, ref, useTemplateRef, watchEffect } from 'vue'
 
-import { prefersReducedMotion } from '../../composables/useReducedMotion'
-import type { Locale } from '../../i18n/translations'
-import { t } from '../../i18n/translations'
+import { prefersReducedMotion } from '@/composables/useReducedMotion'
+import type { Locale } from '@/i18n/translations'
+import { translationsFor } from '@/i18n/translations'
 import { mcpDemoPrompts, thumbUrls, visibleWindow } from './mcpDemoPrompts'
 
 const { locale = 'en' } = defineProps<{ locale?: Locale }>()
+const { t } = translationsFor(locale)
 
 const VISIBLE_CARDS = 5
 
@@ -18,8 +19,8 @@ const promptTextClass =
 const caretClass =
   'bg-primary-comfy-yellow animate-cursor-blink ml-0.5 inline-block h-5 w-2.25 translate-y-0.5'
 
-const generateLabel = t('mcp.hero.demoGenerate', locale)
-const idleStatus = t('mcp.hero.demoStatusIdle', locale)
+const generateLabel = t('mcp.hero.demoGenerate')
+const idleStatus = t('mcp.hero.demoStatusIdle')
 
 const index = ref(0)
 const cards = computed(() =>
@@ -29,7 +30,7 @@ const nextPrompt = computed(
   () => mcpDemoPrompts[(index.value + 1) % mcpDemoPrompts.length]
 )
 
-const typed = ref(t(nextPrompt.value.promptKey, locale))
+const typed = ref(t(nextPrompt.value.promptKey))
 const submitting = ref(false)
 const status = ref(idleStatus)
 
@@ -67,7 +68,7 @@ function schedule(step: () => void, ms: number) {
 }
 
 function typeNextPrompt() {
-  const text = t(nextPrompt.value.promptKey, locale)
+  const text = t(nextPrompt.value.promptKey)
   typed.value = ''
 
   let typedLength = 0
@@ -91,14 +92,12 @@ function typeNextPrompt() {
 
 function runTool() {
   const { via, toolKey } = nextPrompt.value
-  const tool = t(toolKey, locale)
+  const tool = t(toolKey)
 
   submitting.value = true
   status.value = via
-    ? t('mcp.hero.demoStatusBridging', locale)
-        .replace('{app}', via)
-        .replace('{tool}', tool)
-    : t('mcp.hero.demoStatusRunning', locale).replace('{tool}', tool)
+    ? t('mcp.hero.demoStatusBridging', { app: via, tool })
+    : t('mcp.hero.demoStatusRunning', { tool })
 
   schedule(commitCard, runToolMs.value)
 }
@@ -118,7 +117,7 @@ function restBeforeNextPrompt() {
 watchEffect(() => {
   clearTimeout(timer)
   if (prefersReducedMotion()) {
-    typed.value = t(nextPrompt.value.promptKey, locale)
+    typed.value = t(nextPrompt.value.promptKey)
     submitting.value = false
     status.value = idleStatus
     return
@@ -133,7 +132,7 @@ onUnmounted(() => clearTimeout(timer))
   <div ref="root" class="flex flex-col gap-6">
     <div
       data-testid="mcp-demo-panel"
-      class="rounded-5xl flex flex-col gap-6 bg-white/4 p-6 lg:p-8"
+      class="flex flex-col gap-6 rounded-5xl bg-white/4 p-6 lg:p-8"
     >
       <!-- Every prompt, caret included, is stacked in one grid cell so the
            panel is always as tall as the longest and typing cannot reflow
@@ -145,7 +144,7 @@ onUnmounted(() => clearTimeout(timer))
           aria-hidden="true"
           :class="cn(promptTextClass, 'invisible')"
         >
-          {{ t(prompt.promptKey, locale) }}<span :class="caretClass" />
+          {{ t(prompt.promptKey) }}<span :class="caretClass" />
         </p>
 
         <p :class="cn(promptTextClass, 'text-primary-comfy-canvas')">
@@ -168,7 +167,7 @@ onUnmounted(() => clearTimeout(timer))
           <div
             :class="
               cn(
-                'bg-primary-comfy-yellow shrink-0 rounded-2xl p-3 font-formula text-sm font-extrabold tracking-[0.7px] text-primary-comfy-ink uppercase transition-transform duration-100 lg:px-4',
+                'shrink-0 rounded-2xl bg-primary-comfy-yellow p-3 font-formula text-sm font-extrabold tracking-[0.7px] text-primary-comfy-ink uppercase transition-transform duration-100 lg:px-4',
                 submitting && 'scale-[0.97]'
               )
             "
@@ -239,9 +238,9 @@ onUnmounted(() => clearTimeout(timer))
 
           <div class="flex min-w-0 flex-1 flex-col gap-1">
             <p
-              class="text-primary-comfy-yellow line-clamp-2 font-formula text-xs font-extrabold tracking-[0.7px] uppercase lg:text-sm"
+              class="line-clamp-2 font-formula text-xs font-extrabold tracking-[0.7px] text-primary-comfy-yellow uppercase lg:text-sm"
             >
-              {{ t(card.toolKey, locale) }}
+              {{ t(card.toolKey) }}
             </p>
             <p
               class="truncate font-formula text-sm font-light text-primary-comfy-canvas"
@@ -254,13 +253,13 @@ onUnmounted(() => clearTimeout(timer))
             v-if="card.via"
             class="relative isolate hidden h-8 shrink-0 items-center justify-center overflow-visible bg-transparent px-3 font-formula text-xs font-extrabold tracking-[0.7px] text-white/60 uppercase before:absolute before:inset-0 before:-z-10 before:-skew-x-12 before:rounded-sm before:bg-white/20 lg:inline-flex lg:px-5 lg:text-sm"
           >
-            <span class="ppformula-text-center">
+            <span class="inline-block">
               {{ card.via }}
             </span>
           </span>
 
           <Check
-            class="text-primary-comfy-yellow hidden size-4 shrink-0 lg:block"
+            class="hidden size-4 shrink-0 text-primary-comfy-yellow lg:block"
             :stroke-width="2"
           />
         </div>

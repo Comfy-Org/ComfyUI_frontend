@@ -1,4 +1,5 @@
 import { SparkRenderer } from '@sparkjsdev/spark'
+import { fromAny } from '@total-typescript/shoehorn'
 import * as THREE from 'three'
 import type { OrbitControls } from 'three/examples/jsm/controls/OrbitControls'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
@@ -9,19 +10,20 @@ import { createRendererViewState } from '@/renderer/three/sharedWebGLRenderer'
 import type { EventManagerInterface } from './interfaces'
 import Load3dUtils from './Load3dUtils'
 import { SceneManager } from './SceneManager'
+import { QuadWireframeOverlay } from './quadWireframe/QuadWireframeManager'
 
 const { mockTextureLoad } = vi.hoisted(() => ({
   mockTextureLoad: vi.fn()
 }))
 
-vi.mock('./Load3dUtils', () => ({
-  default: {
+vi.mock(import('./Load3dUtils'), () => ({
+  default: fromAny({
     splitFilePath: vi.fn(),
     getResourceURL: vi.fn()
-  }
+  })
 }))
 
-vi.mock('three', { spy: true })
+vi.mock(import('three'), { spy: true })
 
 beforeEach(() => {
   function MockTextureLoader() {
@@ -30,9 +32,9 @@ beforeEach(() => {
   vi.spyOn(THREE, 'TextureLoader').mockImplementation(MockTextureLoader)
 })
 
-vi.mock('three/examples/jsm/controls/OrbitControls', () => {
+vi.mock(import('three/examples/jsm/controls/OrbitControls'), () => {
   class OrbitControls {}
-  return { OrbitControls }
+  return { OrbitControls: fromAny(OrbitControls) }
 })
 
 function makeMockRenderer(pixelRatio = 1): THREE.WebGLRenderer {
@@ -90,6 +92,8 @@ function makeView(
     width,
     height,
     beginRender: vi.fn(),
+    bindOutput: vi.fn(),
+    resolveOutput: vi.fn(),
     blit: vi.fn(),
     setSize: vi.fn()
   } as unknown as RendererView
@@ -183,6 +187,53 @@ describe('SceneManager', () => {
       expect(manager.currentBackgroundType).toBe('color')
       expect(manager.currentBackgroundColor).toBe('#282828')
       expect(manager.backgroundRenderMode).toBe('tiled')
+    })
+  })
+
+  describe('whenSplatsSorted', () => {
+    function stubSpark({ sortsFinish }: { sortsFinish: boolean }) {
+      const spark = manager.scene.children.find(
+        (child): child is SparkRenderer => child instanceof SparkRenderer
+      )!
+      const update = vi.fn(async () => {
+        spark.sorting = true
+        if (sortsFinish) {
+          setTimeout(() => {
+            spark.sorting = false
+            spark.sortDirty = false
+          }, 100)
+        }
+      })
+      Object.assign(spark, { update, sorting: false, sortDirty: false })
+      return { update }
+    }
+
+    async function settle(promise: Promise<void>, advanceMs: number) {
+      let settled = false
+      void promise.then(() => (settled = true))
+      await vi.advanceTimersByTimeAsync(advanceMs)
+      return settled
+    }
+
+    beforeEach(() => vi.useFakeTimers())
+
+    it('sorts for the capture camera and resolves only once sorting finishes', async () => {
+      const { update } = stubSpark({ sortsFinish: true })
+
+      const sorted = manager.whenSplatsSorted(camera)
+
+      expect(update).toHaveBeenCalledWith({ scene: manager.scene, camera })
+      expect(await settle(sorted, 50)).toBe(false)
+      expect(await settle(sorted, 100)).toBe(true)
+    })
+
+    it('gives up after the timeout when sorting never finishes', async () => {
+      stubSpark({ sortsFinish: false })
+
+      const sorted = manager.whenSplatsSorted(camera)
+
+      expect(await settle(sorted, 4_900)).toBe(false)
+      expect(await settle(sorted, 200)).toBe(true)
     })
   })
 
@@ -360,7 +411,6 @@ describe('SceneManager', () => {
     })
 
     it('on load failure, emits loading-end and falls back to a color background', async () => {
-      vi.spyOn(console, 'error').mockImplementation(() => {})
       vi.mocked(Load3dUtils.splitFilePath).mockReturnValue(['', 'bg.png'])
       vi.mocked(Load3dUtils.getResourceURL).mockReturnValue('/api/bg')
       mockTextureLoad.mockImplementation(
@@ -571,6 +621,26 @@ describe('SceneManager', () => {
       expect(manager.gridHelper.visible).toBe(true)
     })
 
+    it('keeps quad wireframe overlays out of the normal pass only', async () => {
+      const mesh = new THREE.Mesh(
+        new THREE.BoxGeometry(),
+        new THREE.MeshStandardMaterial()
+      )
+      const overlay = new QuadWireframeOverlay(new THREE.BufferGeometry())
+      mesh.add(overlay)
+      manager.scene.add(mesh)
+      const overlayVisiblePerRender: boolean[] = []
+      vi.mocked(renderer.render).mockImplementation(() => {
+        overlayVisiblePerRender.push(overlay.visible)
+      })
+
+      await manager.captureScene(100, 100)
+
+      expect(overlayVisiblePerRender.at(-1)).toBe(false)
+      expect(overlayVisiblePerRender.slice(0, -1)).not.toContain(false)
+      expect(overlay.visible).toBe(true)
+    })
+
     it('rejects when the renderer throws during capture', async () => {
       vi.mocked(renderer.render).mockImplementationOnce(() => {
         throw new Error('renderer fail')
@@ -579,6 +649,30 @@ describe('SceneManager', () => {
       await expect(manager.captureScene(100, 100)).rejects.toThrow(
         'renderer fail'
       )
+    })
+
+    it('restores hidden overlays when the normal pass throws', async () => {
+      const mesh = new THREE.Mesh(
+        new THREE.BoxGeometry(),
+        new THREE.MeshStandardMaterial()
+      )
+      const overlay = new QuadWireframeOverlay(new THREE.BufferGeometry())
+      mesh.add(overlay)
+      manager.scene.add(mesh)
+      manager.gridHelper.visible = true
+      let renders = 0
+      vi.mocked(renderer.render).mockImplementation(() => {
+        renders += 1
+        if (renders === 3) throw new Error('normal pass fail')
+      })
+
+      await expect(manager.captureScene(100, 100)).rejects.toThrow(
+        'normal pass fail'
+      )
+
+      expect(overlay.visible).toBe(true)
+      expect(manager.gridHelper.visible).toBe(true)
+      expect(mesh.material).toBeInstanceOf(THREE.MeshStandardMaterial)
     })
   })
 
@@ -624,14 +718,7 @@ function makeSceneManager(
   const view = makeView(renderer, viewSize?.width, viewSize?.height)
   const camera = cameraOverride ?? new THREE.PerspectiveCamera()
   const eventManager = makeMockEventManager()
-  const manager = new SceneManager(
-    view,
-    () => camera,
-    vi.fn() as unknown as () => InstanceType<
-      typeof import('three/examples/jsm/controls/OrbitControls').OrbitControls
-    >,
-    eventManager
-  )
+  const manager = new SceneManager(view, () => camera, vi.fn(), eventManager)
   return { manager, renderer, view, camera, eventManager }
 }
 
@@ -700,6 +787,73 @@ describe('SceneManager.captureScene', () => {
     expect(camera.right).toBe(5)
     expect(camera.top).toBe(5)
     expect(camera.bottom).toBe(-5)
+  })
+
+  it.for([
+    { activeSplats: 0, highPrecision: false },
+    { activeSplats: 1000, highPrecision: true }
+  ])(
+    'resolves every pass before reading pixels, through a temporary half-float target only for splat scenes (%o)',
+    async ({ activeSplats, highPrecision }) => {
+      const { manager, view, renderer } = makeSceneManager()
+      const spark = manager.scene.children.find(
+        (child) => child instanceof SparkRenderer
+      )
+      Object.assign(spark!, { activeSplats })
+      const dispose = vi.spyOn(THREE.WebGLRenderTarget.prototype, 'dispose')
+
+      await manager.captureScene(800, 600)
+
+      const targets = vi.mocked(view.bindOutput).mock.calls.map(([t]) => t)
+      expect(targets).toHaveLength(4)
+      expect(new Set(targets.slice(0, 3)).size).toBe(1)
+      expect(targets[0] instanceof THREE.WebGLRenderTarget).toBe(highPrecision)
+      expect(targets[3]).toBeNull()
+      const callSequence = [
+        ...vi
+          .mocked(view.resolveOutput)
+          .mock.invocationCallOrder.map((order) => ({
+            order,
+            call: 'resolve'
+          })),
+        ...vi
+          .mocked(renderer.domElement.toDataURL)
+          .mock.invocationCallOrder.map((order) => ({ order, call: 'read' }))
+      ]
+        .sort((a, b) => a.order - b.order)
+        .map(({ call }) => call)
+      expect(callSequence).toEqual([
+        'resolve',
+        'read',
+        'resolve',
+        'read',
+        'resolve',
+        'read'
+      ])
+      expect(dispose).toHaveBeenCalledTimes(highPrecision ? 1 : 0)
+    }
+  )
+
+  it('rebinds the canvas before disposing the temporary target when a pass throws', async () => {
+    const { manager, view, renderer } = makeSceneManager()
+    const spark = manager.scene.children.find(
+      (child) => child instanceof SparkRenderer
+    )
+    Object.assign(spark!, { activeSplats: 1000 })
+    vi.mocked(renderer.render).mockImplementation(() => {
+      throw new Error('GPU lost')
+    })
+    const dispose = vi.spyOn(THREE.WebGLRenderTarget.prototype, 'dispose')
+    dispose.mockClear()
+
+    await expect(manager.captureScene(800, 600)).rejects.toThrow('GPU lost')
+
+    const lastBind = vi.mocked(view.bindOutput).mock
+    expect(lastBind.lastCall?.[0]).toBeNull()
+    expect(dispose).toHaveBeenCalledOnce()
+    expect(lastBind.invocationCallOrder.at(-1)).toBeLessThan(
+      dispose.mock.invocationCallOrder[0]
+    )
   })
 
   it('disposes each temporary MeshNormalMaterial after the normal pass', async () => {

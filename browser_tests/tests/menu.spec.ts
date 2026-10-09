@@ -43,16 +43,30 @@ test.describe('Menu', { tag: '@ui' }, () => {
         .poll(() => comfyPage.menu.topbar.getTabNames())
         .toEqual(['Unsaved Workflow'])
     })
+
+    test('An outside click dismisses the menu and switches workflow', async ({
+      comfyPage
+    }) => {
+      const { topbar } = comfyPage.menu
+      const workflowName = `tempWorkflow-${test.info().title}`
+      await topbar.saveWorkflow(workflowName)
+      await topbar.newWorkflowButton.click()
+      await expect(topbar.getActiveTab()).toContainText('Unsaved Workflow')
+      const menu = await topbar.openTopbarMenu()
+
+      await topbar.getWorkflowTab(workflowName).click()
+
+      await expect(menu).toBeHidden()
+      await expect(topbar.getActiveTab()).toContainText(workflowName)
+    })
   })
 
   test.describe('Topbar submmenus', () => {
     test('@mobile Items fully visible on mobile screen width', async ({
       comfyPage
     }) => {
-      await comfyPage.menu.topbar.openTopbarMenu()
-      const topLevelMenuItem = comfyPage.page
-        .locator('a.p-menubar-item-link')
-        .first()
+      const menu = await comfyPage.menu.topbar.openTopbarMenu()
+      const topLevelMenuItem = menu.getByRole('menuitem').first()
       await expect
         .poll(() =>
           topLevelMenuItem.evaluate((el) => el.scrollWidth > el.clientWidth)
@@ -63,73 +77,31 @@ test.describe('Menu', { tag: '@ui' }, () => {
     test('Clicking on active state items does not close menu', async ({
       comfyPage
     }) => {
-      // Open the menu
-      await comfyPage.menu.topbar.openTopbarMenu()
-      const menu = comfyPage.page.locator('.comfy-command-menu')
-
-      // Navigate to View menu
-      const viewMenuItem = comfyPage.page.locator(
-        '.p-menubar-item-label:text-is("View")'
-      )
-      await viewMenuItem.hover()
-
-      // Wait for submenu to appear
-      const viewSubmenu = comfyPage.page
-        .locator('.p-tieredmenu-submenu:visible')
-        .first()
-      await viewSubmenu.waitFor({ state: 'visible' })
-
-      // Find Bottom Panel menu item
-      const bottomPanelMenuItem = viewSubmenu
-        .locator('.p-tieredmenu-item:has-text("Bottom Panel")')
-        .first()
-      const bottomPanelItem = bottomPanelMenuItem.locator(
-        '.p-menubar-item-label:text-is("Bottom Panel")'
-      )
-      await bottomPanelItem.waitFor({ state: 'visible' })
-
-      // Get checkmark icon element
-      const checkmark = bottomPanelMenuItem.locator('.pi-check')
-
-      // Check initial state of bottom panel (it's initially hidden)
+      const { topbar } = comfyPage.menu
+      const menu = await topbar.openTopbarMenu()
+      const viewSubmenu = await topbar.openSubmenu('View')
+      const bottomPanelItem = topbar.getMenuItem('Bottom Panel', viewSubmenu)
       const { bottomPanel } = comfyPage
       await expect(bottomPanel.root).toBeHidden()
+      await expect(bottomPanelItem).not.toBeChecked()
 
-      // Checkmark should be invisible initially (panel is hidden)
-      await expect(checkmark).toHaveClass(/invisible/)
+      await test.step('Show the panel without closing the menu', async () => {
+        await bottomPanelItem.click()
+        await expect(bottomPanel.root).toBeVisible()
+        await expect(bottomPanelItem).toBeChecked()
+        await expect(menu).toBeVisible()
+        await expect(viewSubmenu).toBeVisible()
+      })
 
-      await bottomPanelItem.click()
+      await test.step('Hide the panel without closing the menu', async () => {
+        await bottomPanelItem.click()
+        await expect(bottomPanel.root).toBeHidden()
+        await expect(bottomPanelItem).not.toBeChecked()
+        await expect(menu).toBeVisible()
+        await expect(viewSubmenu).toBeVisible()
+      })
 
-      // Verify menu is still visible after clicking
-      await expect(menu).toBeVisible()
-      await expect(viewSubmenu).toBeVisible()
-
-      // Verify bottom panel is now visible
-      await expect(bottomPanel.root).toBeVisible()
-
-      // Checkmark should now be visible (panel is shown)
-      await expect(checkmark).not.toHaveClass(/invisible/)
-
-      // Click Bottom Panel again to toggle it off
-      await bottomPanelItem.click()
-
-      // Verify menu is still visible after second click
-      await expect(menu).toBeVisible()
-      await expect(viewSubmenu).toBeVisible()
-
-      // Verify bottom panel is hidden again
-      await expect(bottomPanel.root).toBeHidden()
-
-      // Checkmark should be invisible again (panel is hidden)
-      await expect(checkmark).toHaveClass(/invisible/)
-
-      // Click in top-right corner to close menu (avoid hamburger menu at top-left)
-      const viewport = comfyPage.page.viewportSize()!
-      await comfyPage.page
-        .locator('body')
-        .click({ position: { x: viewport.width - 10, y: 10 } })
-
-      // Verify menu is now closed
+      await topbar.closeTopbarMenu()
       await expect(menu).toBeHidden()
     })
 
@@ -137,9 +109,10 @@ test.describe('Menu', { tag: '@ui' }, () => {
       await comfyPage.menu.topbar.openTopbarMenu()
       const workflowMenuItem = comfyPage.menu.topbar.getMenuItem('File')
       await workflowMenuItem.hover()
-      const exportTag = comfyPage.page.locator('.keybinding-tag', {
-        hasText: 'Ctrl + s'
-      })
+      const exportTag = comfyPage.menu.topbar
+        .getVisibleSubmenu()
+        .getByRole('menuitem', { name: 'Save', exact: true })
+        .getByText('Ctrl + s', { exact: true })
       await expect(exportTag).toHaveCount(1)
     })
 
@@ -197,9 +170,9 @@ test.describe('Menu', { tag: '@ui' }, () => {
       await expect(async () => {
         await expect(menu).toBeVisible()
         await expect(themeSubmenu).toBeVisible()
-        await expect(lightThemeItem.locator('.pi-check')).not.toHaveClass(
-          /invisible/
-        )
+        await expect(
+          lightThemeItem.getByTestId('menu-item-indicator')
+        ).not.toHaveClass(/invisible/)
       }).toPass({ timeout: 5000 })
 
       // Screenshot with light theme active
@@ -225,11 +198,11 @@ test.describe('Menu', { tag: '@ui' }, () => {
         await expect(menu).toBeVisible()
         await expect(themeItems2.submenu).toBeVisible()
         await expect(
-          themeItems2.darkTheme.locator('.pi-check')
+          themeItems2.darkTheme.getByTestId('menu-item-indicator')
         ).not.toHaveClass(/invisible/)
-        await expect(themeItems2.lightTheme.locator('.pi-check')).toHaveClass(
-          /invisible/
-        )
+        await expect(
+          themeItems2.lightTheme.getByTestId('menu-item-indicator')
+        ).toHaveClass(/invisible/)
       }).toPass({ timeout: 5000 })
 
       // Screenshot with dark theme active
@@ -243,6 +216,36 @@ test.describe('Menu', { tag: '@ui' }, () => {
       // Close menu
       await topbar.closeTopbarMenu()
     })
+  })
+
+  test('Toggles the focused Nodes 2.0 row with Enter and Space', async ({
+    comfyPage
+  }) => {
+    const { topbar } = comfyPage.menu
+    await topbar.openTopbarMenu()
+    const nodes2Toggle = comfyPage.page.getByRole('menuitemcheckbox', {
+      name: 'Nodes 2.0'
+    })
+
+    await topbar.menuRoot.focus()
+    await comfyPage.page.keyboard.press('n')
+    await expect
+      .poll(() => comfyPage.settings.getSetting('Comfy.VueNodes.Enabled'))
+      .toBe(false)
+
+    await topbar.focusMenuItem('Nodes 2.0')
+
+    await comfyPage.page.keyboard.press('Enter')
+    await expect
+      .poll(() => comfyPage.settings.getSetting('Comfy.VueNodes.Enabled'))
+      .toBe(true)
+    await expect(nodes2Toggle).toBeChecked()
+
+    await comfyPage.page.keyboard.press('Space')
+    await expect
+      .poll(() => comfyPage.settings.getSetting('Comfy.VueNodes.Enabled'))
+      .toBe(false)
+    await expect(nodes2Toggle).not.toBeChecked()
   })
 
   // Only test 'Top' to reduce test time.

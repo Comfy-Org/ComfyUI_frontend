@@ -174,6 +174,38 @@ test.describe('Vue Combo Widget', { tag: ['@vue-nodes', '@widget'] }, () => {
     await expect(viewport).toBeVisible()
   })
 
+  test('keeps the dropdown inside a viewport narrower than the combo', async ({
+    comfyPage
+  }) => {
+    await comfyPage.workflow.loadWorkflow('vueNodes/linked-int-widget')
+    await comfyPage.canvasOps.setScale(3)
+    const samplerCombo = comfyPage.vueNodes
+      .getNodeByTitle('KSampler')
+      .getByRole('combobox', { name: 'sampler_name', exact: true })
+    const comboBox = await getViewportBox(samplerCombo)
+    await comfyPage.page.setViewportSize({
+      width: Math.floor(comboBox.width / 2),
+      height: 720
+    })
+    await comfyPage.page.evaluate(
+      ([dx, dy]) => {
+        const { canvas } = window.app!
+        canvas.ds.offset[0] += dx / canvas.ds.scale
+        canvas.ds.offset[1] += dy / canvas.ds.scale
+        canvas.setDirty(true, true)
+      },
+      [100 - comboBox.x, 200 - comboBox.y]
+    )
+    await expect
+      .poll(async () => (await samplerCombo.boundingBox())?.x)
+      .toBeCloseTo(100, 0)
+    await samplerCombo.click({ position: { x: 20, y: 20 } })
+
+    await expect(
+      comfyPage.page.getByTestId('widget-select-default-overlay')
+    ).toBeInViewport({ ratio: 1 })
+  })
+
   test('closes the dropdown when clicking outside', async ({ comfyPage }) => {
     const viewport = await openSamplerDropdown(comfyPage)
 
@@ -273,6 +305,48 @@ test.describe('Vue Combo Widget', { tag: ['@vue-nodes', '@widget'] }, () => {
       .getNodeByTitle('KSampler')
       .getByRole('combobox', { name: 'scheduler', exact: true })
     await expect(schedulerComboAfterReload).toContainText('karras')
+  })
+
+  test('a combo value tracks undo and redo', async ({ comfyPage }) => {
+    await comfyPage.workflow.loadWorkflow('vueNodes/linked-int-widget')
+
+    const scheduler = async () => {
+      const ksampler = await comfyPage.nodeOps.getNodeRefByType('KSampler')
+      return (await ksampler.getWidgetByName('scheduler')).getValue()
+    }
+
+    const original =
+      await test.step('Selecting a combo value records history', async () => {
+        const original = await scheduler()
+        expect(original, 'fixture should start on a known scheduler').toBe(
+          'simple'
+        )
+
+        await comfyPage.vueNodes.selectComboOption(
+          'KSampler',
+          'scheduler',
+          'karras'
+        )
+        await expect.poll(scheduler).toBe('karras')
+        await expect.poll(() => comfyPage.workflow.getUndoQueueSize()).toBe(1)
+
+        return original
+      })
+
+    await test.step('Undo restores the original value', async () => {
+      await comfyPage.page.keyboard.press('ControlOrMeta+z')
+      await expect.poll(scheduler).toBe(original)
+    })
+
+    await test.step('Redo reapplies the selected value', async () => {
+      await comfyPage.page.keyboard.press('ControlOrMeta+Shift+z')
+      await expect.poll(scheduler).toBe('karras')
+    })
+
+    await test.step('Undo after redo restores the original value', async () => {
+      await comfyPage.page.keyboard.press('ControlOrMeta+z')
+      await expect.poll(scheduler).toBe(original)
+    })
   })
 
   test('Dropdown displays over Selection Toolbox', async ({ comfyPage }) => {

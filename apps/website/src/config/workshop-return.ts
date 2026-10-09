@@ -1,4 +1,6 @@
-import { safeInternalPath } from '@comfyorg/account/redirect'
+import { safeInternalPath } from '@comfyorg/account-core/redirect'
+
+import { getRoutes } from './routes'
 
 import type {
   WorkshopField,
@@ -6,7 +8,7 @@ import type {
   WorkshopFormValues
 } from './workshop-detail'
 
-const WORKSHOP_HOME = '/models/'
+const WORKSHOP_HOME = getRoutes().workshop
 
 /**
  * Where a visitor may be sent back to after sign-in or a purchase: a

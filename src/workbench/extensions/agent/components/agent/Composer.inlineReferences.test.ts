@@ -1,4 +1,3 @@
-// @vitest-environment jsdom
 import userEvent from '@testing-library/user-event'
 import { render, screen, waitFor, within } from '@testing-library/vue'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
@@ -29,6 +28,8 @@ function renderComposer() {
       return () =>
         h(Composer, {
           hasWorkflowTarget: true,
+          availableWorkflows: [{ id: 'wf-b', name: 'Reference B' }],
+          selectWorkflowReference: async ({ name }) => ({ id: 'wf-b', name }),
           selectionTags: selection.staged.value,
           onRemoveTag: selection.remove,
           onSend: send
@@ -44,59 +45,28 @@ function renderComposer() {
 describe('inline node and asset references', () => {
   beforeEach(() => vi.useRealTimers())
 
-  it('keeps upper-row removal and Undo synchronized with inline references', async () => {
+  it('keeps inline node deletion and Undo synchronized with selected context', async () => {
     const { store, selected, editor, send } = renderComposer()
     await userEvent.type(editor, 'Use ')
     selected.value = [{ id: '12', title: 'KSampler' }]
-    await waitFor(() => expect(editor.textContent).toBe('Use KSampler #12 '))
-    await userEvent.keyboard('with ')
+    await screen.findByTestId('node-reference-chip')
+    await userEvent.keyboard('{Backspace}{Backspace}')
+    expect(store.nodes).toEqual([])
+    expect(editor.textContent).toBe('Use ')
+    await userEvent.keyboard('{Control>}z{/Control}')
+    await screen.findByTestId('node-reference-chip')
+    expect(store.nodes).toEqual([{ id: '12', title: 'KSampler' }])
+    expect(
+      screen.queryByTestId('composer-node-section')
+    ).not.toBeInTheDocument()
+    await userEvent.keyboard(' with ')
     store.addAttachment({
       id: 'image',
       name: 'source.png',
       ref: 'uploaded.png'
     })
-    await waitFor(() =>
-      expect(editor.textContent).toBe('Use KSampler #12 with source.png ')
-    )
-
-    await userEvent.click(
-      screen.getByRole('button', { name: 'Remove KSampler #12 reference' })
-    )
-    await waitFor(() =>
-      expect(
-        screen.queryByTestId('composer-node-section')
-      ).not.toBeInTheDocument()
-    )
-    expect(editor.textContent).toBe('Use  with source.png ')
-    expect(store.nodes).toEqual([])
-    editor.focus()
-    await userEvent.keyboard('{Control>}z{/Control}')
-    await waitFor(() =>
-      expect(screen.getByTestId('composer-node-section')).toHaveTextContent(
-        'KSampler'
-      )
-    )
-    expect(editor.textContent).toBe('Use KSampler #12 with source.png ')
-
-    await userEvent.click(
-      within(screen.getByTestId('composer-asset-section')).getByRole('button', {
-        name: 'Remove'
-      })
-    )
-    await waitFor(() =>
-      expect(
-        screen.queryByTestId('composer-asset-section')
-      ).not.toBeInTheDocument()
-    )
-    expect(editor.textContent).toBe('Use KSampler #12 with  ')
-    editor.focus()
-    await userEvent.keyboard('{Control>}z{/Control}')
-    await waitFor(() =>
-      expect(screen.getByTestId('composer-asset-section')).toHaveTextContent(
-        'source.png'
-      )
-    )
-    expect(editor.textContent).toBe('Use KSampler #12 with source.png ')
+    store.referenceAttachment('image')
+    await screen.findByTestId('asset-reference-chip')
     await userEvent.click(screen.getByRole('button', { name: 'Send' }))
     expect(send).toHaveBeenCalledWith(
       'Use @[Node: KSampler #12] with @[Image: source.png]',
@@ -113,10 +83,11 @@ describe('inline node and asset references', () => {
       ref: '',
       uploading: true
     })
+    store.referenceAttachment('image')
     await screen.findByTestId('asset-reference-chip')
     await userEvent.click(
       within(screen.getByTestId('composer-asset-section')).getByRole('button', {
-        name: 'Remove'
+        name: 'Remove pending.png'
       })
     )
     store.updateAttachment('image', { ref: 'complete.png', uploading: false })
@@ -130,15 +101,8 @@ describe('inline node and asset references', () => {
     ).not.toBeInTheDocument()
     editor.focus()
     await userEvent.keyboard('{Control>}z{/Control}')
-    await screen.findByTestId('asset-reference-chip')
-    expect(store.attachments).toEqual([
-      {
-        id: 'image',
-        name: 'pending.png',
-        ref: 'complete.png',
-        uploading: false
-      }
-    ])
+    expect(screen.queryByTestId('asset-reference-chip')).not.toBeInTheDocument()
+    expect(store.attachments).toEqual([])
   })
 
   it('deletes a node from the sentence without restaging the selected canvas node', async () => {
@@ -160,10 +124,12 @@ describe('inline node and asset references', () => {
   it('copies mixed references as readable text and pastes text after a target change', async () => {
     const user = userEvent.setup()
     const { store, selected, editor } = renderComposer()
-    await user.type(editor, '参考 🐈 ')
+    await user.click(editor)
+    await user.paste('参考 🐈 ')
     selected.value = [{ id: '12', title: 'KSampler' }]
     await screen.findByTestId('node-reference-chip')
     store.addAttachment({ id: 'image', name: 'source.png', ref: 'source.png' })
+    store.referenceAttachment('image')
     await screen.findByTestId('asset-reference-chip')
     await user.keyboard('{Control>}a{/Control}')
     const clipboard = await user.copy()
@@ -194,5 +160,56 @@ describe('inline node and asset references', () => {
     expect(
       screen.queryByTestId('composer-node-section')
     ).not.toBeInTheDocument()
+  })
+
+  it.for([
+    {
+      via: 'the chip remove button',
+      remove: () =>
+        userEvent.click(
+          screen.getByRole('button', { name: 'Remove Reference B reference' })
+        )
+    },
+    {
+      via: 'Backspace beside the chip',
+      remove: () => userEvent.keyboard('{ArrowLeft}{Backspace}')
+    }
+  ])(
+    'leaves an empty draft after removing the only reference via $via',
+    async ({ remove }) => {
+      const { store, editor } = renderComposer()
+      await userEvent.click(editor)
+      await userEvent.paste('@')
+      await userEvent.click(
+        within(screen.getByRole('menu', { name: 'Add to prompt' })).getByRole(
+          'menuitem',
+          { name: 'Workflows' }
+        )
+      )
+      await userEvent.click(
+        within(screen.getByRole('menu', { name: 'Add to prompt' })).getByRole(
+          'menuitem',
+          { name: 'Reference B' }
+        )
+      )
+      await screen.findByTestId('workflow-reference-chip')
+      expect(editor.textContent).toBe('Reference B ')
+
+      await remove()
+      await waitFor(() =>
+        expect(
+          screen.queryByTestId('workflow-reference-chip')
+        ).not.toBeInTheDocument()
+      )
+      expect(editor.textContent).toBe('')
+      expect(store.prompt).toEqual({ text: '', references: [] })
+    }
+  )
+
+  it('keeps a typed leading space when no reference was inserted', async () => {
+    const { store, editor } = renderComposer()
+    await userEvent.type(editor, ' hello')
+    expect(editor.textContent).toBe(' hello')
+    expect(store.draft).toBe(' hello')
   })
 })

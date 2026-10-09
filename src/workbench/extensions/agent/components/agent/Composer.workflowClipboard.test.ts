@@ -1,4 +1,3 @@
-// @vitest-environment jsdom
 import userEvent from '@testing-library/user-event'
 import { render, screen, waitFor } from '@testing-library/vue'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
@@ -55,6 +54,7 @@ describe('workflow reference clipboard', () => {
         `${before}@[Workflow: Reference B]${after}`
       )
       if (operation === 'copy') await user.keyboard('{Backspace}')
+      await waitFor(() => expect(store.draft).toBe(''))
       await user.paste(clipboard)
       expect(store.draft).toBe(before + after)
       expect(store.workflowReferences).toEqual([reference])
@@ -85,7 +85,7 @@ describe('workflow reference clipboard', () => {
     expect(editor.textContent).toBe('')
     expect(store.workflowReferences).toEqual([])
 
-    await user.type(editor, 'New: ')
+    await user.paste('New: ')
     await user.paste(clipboard)
     expect(editor.textContent).toBe('New: Before 参考 🐈 between Missing after')
     expect(store.workflowReferences).toEqual([
@@ -104,28 +104,31 @@ describe('workflow reference clipboard', () => {
     const user = userEvent.setup()
     const { store, editor } = renderComposer()
     store.setNodeScope('target-A')
-    store.restorePrompt({
-      text: 'Use   ',
-      references: [
-        {
-          kind: 'workflow',
-          id: 'workflow-B',
-          name: 'Reference B',
-          textOffset: 4
-        },
-        {
-          kind: 'node',
-          scope: 'target-A',
-          node: { id: '12', title: 'Sampler' },
-          textOffset: 5
-        },
-        {
-          kind: 'asset',
-          attachment: { id: 'image', name: 'source.png', ref: 'source.png' },
-          textOffset: 6
-        }
-      ]
-    })
+    store.restorePrompt(
+      {
+        text: 'Use   ',
+        references: [
+          {
+            kind: 'workflow',
+            id: 'workflow-B',
+            name: 'Reference B',
+            textOffset: 4
+          },
+          {
+            kind: 'node',
+            scope: 'target-A',
+            node: { id: '12', title: 'Sampler' },
+            textOffset: 5
+          },
+          {
+            kind: 'asset',
+            attachment: { id: 'image', name: 'source.png', ref: 'source.png' },
+            textOffset: 6
+          }
+        ]
+      },
+      [{ id: 'image', name: 'source.png', ref: 'source.png' }]
+    )
     await screen.findByTestId('workflow-reference-chip')
     await user.click(editor)
     await user.keyboard('{Control>}a{/Control}')
@@ -287,7 +290,15 @@ describe('workflow reference clipboard', () => {
     async (html) => {
       const user = userEvent.setup()
       const { store, editor } = renderComposer()
-      await user.type(editor, 'Readable fallback')
+      store.replaceDraft({
+        text: 'Readable fallback',
+        workflowReferences: [],
+        attachments: []
+      })
+      await vi.waitFor(() =>
+        expect(editor.textContent).toBe('Readable fallback')
+      )
+      await user.click(editor)
       await user.keyboard('{Control>}a{/Control}')
       const clipboard = await user.copy()
       clipboard?.setData('text/html', html)

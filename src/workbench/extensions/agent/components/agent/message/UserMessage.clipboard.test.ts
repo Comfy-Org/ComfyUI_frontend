@@ -1,4 +1,3 @@
-// @vitest-environment jsdom
 import userEvent from '@testing-library/user-event'
 import { render, screen, waitFor } from '@testing-library/vue'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
@@ -89,7 +88,9 @@ describe('sent message workflow clipboard', () => {
       'Use @[Workflow: 参考 <B> 🐈]\n  @[Workflow: Missing]!\n@[Node: Sampler #12]\n@[File: notes.txt]'
     )
 
-    await user.type(editor, 'New: ')
+    await user.click(editor)
+    await user.paste('New: ')
+    expect(store.draft).toBe('New: ')
     await user.paste()
     expect(store.draft).toBe(
       'New: Use \n  !\n@[Node: Sampler #12]\n@[File: notes.txt]'

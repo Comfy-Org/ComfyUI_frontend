@@ -23,7 +23,7 @@
           side="bottom"
           align="start"
           :side-offset="8"
-          :class="panelClass"
+          :class="menuPanelClass"
         >
           <button
             v-for="c in categoryDefs"
@@ -31,11 +31,11 @@
             type="button"
             :class="
               cn(
-                rowClass,
-                'gap-2',
-                activeCategory === c.key && 'bg-button-active-surface'
+                menuButtonClass,
+                activeCategory === c.key && selectedMenuButtonClass
               )
             "
+            :aria-pressed="activeCategory === c.key"
             @click="selectCategory(c.key)"
           >
             <i :class="cn(c.icon, 'size-4')" />
@@ -167,13 +167,13 @@
             side="top"
             align="end"
             :side-offset="8"
-            :class="panelClass"
+            :class="menuPanelClass"
           >
             <button
               v-for="format in exportFormats"
               :key="format.value"
               type="button"
-              :class="rowClass"
+              :class="menuButtonClass"
               @click="onExport(format.value)"
             >
               {{ format.label }}
@@ -199,8 +199,7 @@ import LightMenuGroup from '@/components/load3d/menubar/LightMenuGroup.vue'
 import {
   chipClass,
   iconBtnClass,
-  panelClass,
-  rowClass,
+  menuPanelClass,
   tip
 } from '@/components/load3d/menubar/menuBarStyles'
 import ModelMenuGroup from '@/components/load3d/menubar/ModelMenuGroup.vue'
@@ -210,6 +209,10 @@ import { usePopoverExclusivity } from '@/components/load3d/menubar/usePopoverExc
 import ViewerControls from '@/components/load3d/controls/ViewerControls.vue'
 import Popover from '@/components/ui/popover/Popover.vue'
 import PopoverContent from '@/components/ui/popover/PopoverContent.vue'
+import {
+  menuButtonClass,
+  selectedMenuButtonClass
+} from '@/components/ui/menu/menuStyles'
 import { getExportFormatOptions } from '@/extensions/core/load3d/constants'
 import type { LGraphNode } from '@/lib/litegraph/src/LGraphNode'
 import type {

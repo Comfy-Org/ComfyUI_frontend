@@ -12,20 +12,26 @@ const contract = workshopContractSchema.parse({
 
 describe('Router output MIME discovery', () => {
   it('uses public asset headers to display extensionless raster output', async () => {
-    vi.stubGlobal('fetch', async (_url: unknown, options: RequestInit) => {
-      expect(options.method).toBe('HEAD')
-      expect(options.credentials).toBe('omit')
-      expect(options.redirect).toBe('error')
-      expect(options.referrerPolicy).toBe('no-referrer')
-      expect(new Headers(options.headers).has('Authorization')).toBe(false)
-      return new Response(null, {
-        headers: { 'Content-Type': 'IMAGE/WEBP; charset=binary' }
-      })
-    })
+    let requestSignal: AbortSignal | undefined
+    vi.mocked(globalThis.fetch).mockImplementation(
+      async (_url: unknown, options: RequestInit = {}) => {
+        expect(options.method).toBe('HEAD')
+        expect(options.credentials).toBe('omit')
+        expect(options.redirect).toBe('error')
+        expect(options.referrerPolicy).toBe('no-referrer')
+        expect(new Headers(options.headers).has('Authorization')).toBe(false)
+        requestSignal = options.signal ?? undefined
+        return new Response(null, {
+          headers: { 'Content-Type': 'IMAGE/WEBP; charset=binary' }
+        })
+      }
+    )
     const url = 'https://assets.example/generated?id=opaque'
+    const controller = new AbortController()
     const outputs = await parseRouterResponse(
       contract,
-      Response.json({ data: [{ url }], duplicate: url })
+      Response.json({ data: [{ url }], duplicate: url }),
+      controller.signal
     )
     try {
       expect(outputs.map(({ kind }) => kind)).toEqual(['image', 'text'])
@@ -33,6 +39,8 @@ describe('Router output MIME discovery', () => {
         url,
         fileName: 'fixture-native-1.webp'
       })
+      expect(requestSignal?.aborted).toBe(true)
+      expect(controller.signal.aborted).toBe(false)
     } finally {
       releaseRouterOutputs(outputs)
     }
@@ -41,9 +49,8 @@ describe('Router output MIME discovery', () => {
   it.for(['image/svg+xml', 'text/html', 'application/octet-stream'])(
     'keeps extensionless %s output inert when no preview can be rendered',
     async (mime) => {
-      vi.stubGlobal(
-        'fetch',
-        async (_url: unknown, options: RequestInit) =>
+      vi.mocked(globalThis.fetch).mockImplementation(
+        async (_url: unknown, options: RequestInit = {}) =>
           new Response(options.method === 'HEAD' ? null : '<svg/>', {
             headers: { 'Content-Type': mime }
           })
@@ -71,8 +78,7 @@ describe('Router output MIME discovery', () => {
   )
 
   it('preserves raster URLs, downloads known SVG, and never requests unsafe URLs', async () => {
-    const fetch = vi.fn(async () => new Response('<svg/>'))
-    vi.stubGlobal('fetch', fetch)
+    vi.mocked(fetch).mockResolvedValueOnce(new Response('<svg/>'))
     const outputs = await parseRouterResponse(
       contract,
       Response.json({
@@ -102,7 +108,7 @@ describe('Router output MIME discovery', () => {
   })
 
   it('preserves downloadable output when CORS or HEAD discovery fails', async () => {
-    vi.stubGlobal('fetch', async () => {
+    vi.mocked(globalThis.fetch).mockImplementation(async () => {
       throw new TypeError('Failed to fetch')
     })
     const url = 'https://assets.example/generated'
@@ -117,16 +123,18 @@ describe('Router output MIME discovery', () => {
   it('cancels discovery and releases inline output when the run is aborted', async () => {
     const controller = new AbortController()
     const started = Promise.withResolvers<void>()
-    vi.stubGlobal('fetch', (_url: unknown, options: RequestInit) => {
-      started.resolve()
-      return new Promise<Response>((_resolve, reject) => {
-        options.signal?.addEventListener(
-          'abort',
-          () => reject(options.signal?.reason),
-          { once: true }
-        )
-      })
-    })
+    vi.mocked(globalThis.fetch).mockImplementation(
+      (_url: unknown, options: RequestInit = {}) => {
+        started.resolve()
+        return new Promise<Response>((_resolve, reject) => {
+          options.signal?.addEventListener(
+            'abort',
+            () => reject(options.signal?.reason),
+            { once: true }
+          )
+        })
+      }
+    )
     const revoke = vi.spyOn(URL, 'revokeObjectURL')
     const parsed = parseRouterResponse(
       contract,
@@ -136,10 +144,9 @@ describe('Router output MIME discovery', () => {
       }),
       controller.signal
     )
-    const rejected = expect(parsed).rejects.toThrow('cancelled')
     await started.promise
     controller.abort(new Error('cancelled'))
-    await rejected
+    await expect(parsed).rejects.toThrow('cancelled')
     expect(revoke).toHaveBeenCalledOnce()
   })
 
@@ -148,21 +155,23 @@ describe('Router output MIME discovery', () => {
     const started = Promise.withResolvers<void>()
     let inFlight = 0
     let maximumInFlight = 0
-    vi.stubGlobal('fetch', (_url: unknown, options: RequestInit) => {
-      inFlight += 1
-      maximumInFlight = Math.max(maximumInFlight, inFlight)
-      if (inFlight === 4) started.resolve()
-      return new Promise<Response>((_resolve, reject) => {
-        options.signal?.addEventListener(
-          'abort',
-          () => {
-            inFlight -= 1
-            reject(options.signal?.reason)
-          },
-          { once: true }
-        )
-      })
-    })
+    vi.mocked(globalThis.fetch).mockImplementation(
+      (_url: unknown, options: RequestInit = {}) => {
+        inFlight += 1
+        maximumInFlight = Math.max(maximumInFlight, inFlight)
+        if (inFlight === 4) started.resolve()
+        return new Promise<Response>((_resolve, reject) => {
+          options.signal?.addEventListener(
+            'abort',
+            () => {
+              inFlight -= 1
+              reject(options.signal?.reason)
+            },
+            { once: true }
+          )
+        })
+      }
+    )
     const parsed = parseRouterResponse(
       contract,
       Response.json({

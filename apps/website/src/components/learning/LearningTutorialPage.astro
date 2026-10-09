@@ -2,24 +2,23 @@
 // Shared body for /learning/[category]/[slug] in every locale: the
 // locale-specific page files are thin wrappers so meta, breadcrumbs, and the
 // VideoObject JSON-LD stay defined once. Locale comes from the page's URL.
-import BaseLayout from '../../layouts/BaseLayout.astro'
-import CallToActionSection from '../common/CallToActionSection.vue'
+import BaseLayout from '@/layouts/BaseLayout.astro'
+import CallToActionSection from '@/components/common/CallToActionSection.vue'
 import LearningWatchPage from './LearningWatchPage.vue'
-import { externalLinks, localizeHref } from '../../config/routes'
-import type { LearningTutorial } from '../../data/learningTutorials'
+import { externalLinks, localizeHref } from '@/config/routes'
+import type { LearningTutorial } from '@/data/learningTutorials'
 import {
   learningCrumbs,
   tutorialDescription,
   tutorialMetaTitle,
   youtubeEmbedUrl
-} from '../../data/learningTutorials'
-import type { JsonLdNode } from '../../utils/jsonLd'
+} from '@/data/learningTutorials'
 import {
   absoluteUrl,
   jsonLdId,
   pageContext,
   videoObjectNode
-} from '../../utils/jsonLd'
+} from '@/utils/jsonLd'
 
 interface Props {
   tutorial: LearningTutorial
@@ -37,7 +36,7 @@ const title = tutorial.title[locale] || tutorial.title.en
 const description = tutorialDescription(tutorial, locale)
 const videoId = jsonLdId(url, 'video')
 
-const video: JsonLdNode = videoObjectNode({
+const video = videoObjectNode({
   siteUrl,
   id: videoId,
   pageUrl: url,
@@ -59,7 +58,6 @@ const breadcrumbs = [
   })),
   { name: title }
 ]
-
 ---
 
 <BaseLayout

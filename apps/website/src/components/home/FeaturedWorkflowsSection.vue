@@ -2,12 +2,13 @@
 import { useElementVisibility } from '@vueuse/core'
 import { ref, useTemplateRef, watch } from 'vue'
 
-import { useAutoAdvance } from '../../composables/useAutoAdvance'
-import { prefersReducedMotion } from '../../composables/useReducedMotion'
-import type { Locale } from '../../i18n/translations'
-import { t } from '../../i18n/translations'
+import { useAutoAdvance } from '@/composables/useAutoAdvance'
+import { prefersReducedMotion } from '@/composables/useReducedMotion'
+import type { Locale } from '@/i18n/translations'
+import { translationsFor } from '@/i18n/translations'
 
 const { locale = 'en' } = defineProps<{ locale?: Locale }>()
+const { t } = translationsFor(locale)
 
 interface Slide {
   title: string
@@ -130,13 +131,13 @@ watch([active, onScreen], ([current, visible], [previous]) => {
 </script>
 
 <template>
-  <section class="max-w-9xl mx-auto w-full p-6 md:py-10 lg:px-12">
+  <section class="mx-auto w-full max-w-9xl p-6 md:py-10 lg:px-12">
     <div
       ref="sectionRef"
-      class="relative h-[clamp(300px,44vw,520px)] rounded-[2.5rem] border-[1.5px] border-white/15"
+      class="relative h-[clamp(300px,44vw,520px)] rounded-5xl border-[1.5px] border-white/15"
       role="region"
       aria-roledescription="carousel"
-      :aria-label="t('featuredWorkflows.label', locale)"
+      :aria-label="t('featuredWorkflows.label')"
       @pointerenter="hovering = true"
       @pointerleave="((hovering = false), resume())"
     >
@@ -179,14 +180,14 @@ watch([active, onScreen], ([current, visible], [previous]) => {
             <a
               :href="slide.href"
               :aria-label="slide.title"
-              class="focus-visible:ring-primary-comfy-yellow absolute inset-0 z-10 focus-visible:ring-2 focus-visible:outline-none focus-visible:ring-inset"
+              class="absolute inset-0 z-10 focus-visible:ring-2 focus-visible:ring-primary-comfy-yellow focus-visible:outline-none focus-visible:ring-inset"
             />
 
             <div
               class="absolute top-3 left-3 z-20 rounded-[12px] bg-black/10 px-3.5 py-1.5 backdrop-blur-xs"
             >
               <span class="text-xs font-extrabold tracking-wide text-white">
-                {{ t('featuredWorkflows.label', locale) }}
+                {{ t('featuredWorkflows.label') }}
               </span>
             </div>
 
@@ -229,7 +230,7 @@ watch([active, onScreen], ([current, visible], [previous]) => {
         <button
           type="button"
           class="flex size-11 cursor-pointer items-center justify-center rounded-xl bg-white/10 text-white backdrop-blur-xs transition-colors hover:bg-white/20"
-          :aria-label="t('featuredWorkflows.prev', locale)"
+          :aria-label="t('featuredWorkflows.prev')"
           @click="pick(-1)"
         >
           <svg
@@ -250,7 +251,7 @@ watch([active, onScreen], ([current, visible], [previous]) => {
         <button
           type="button"
           class="flex size-11 cursor-pointer items-center justify-center rounded-xl bg-white/10 text-white backdrop-blur-xs transition-colors hover:bg-white/20"
-          :aria-label="t('featuredWorkflows.next', locale)"
+          :aria-label="t('featuredWorkflows.next')"
           @click="pick(1)"
         >
           <svg

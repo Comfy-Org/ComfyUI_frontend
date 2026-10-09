@@ -2,7 +2,6 @@ import { useCurrentUser } from '@/composables/auth/useCurrentUser'
 import { useErrorHandling } from '@/composables/useErrorHandling'
 import { legacyMenuCompat } from '@/lib/litegraph/src/contextMenuCompat'
 import { useSettingStore } from '@/platform/settings/settingStore'
-import { api } from '@/scripts/api'
 import { useCommandStore } from '@/stores/commandStore'
 import { useExtensionStore } from '@/stores/extensionStore'
 import { KeybindingImpl } from '@/platform/keybindings/keybinding'
@@ -15,19 +14,6 @@ import type { AuthUserInfo } from '@/types/authTypes'
 import { app } from '@/scripts/app'
 import type { ComfyApp } from '@/scripts/app'
 
-const INLINED_CLOUD_EXTENSIONS = new Set([
-  '/extensions/cloud/rum.js',
-  '/extensions/cloud/sentry.js'
-])
-
-export function shouldLoadExtension(
-  extension: string,
-  isCloudBuild: boolean
-): boolean {
-  if (extension.includes('extensions/core')) return false
-  return !isCloudBuild || !INLINED_CLOUD_EXTENSIONS.has(extension)
-}
-
 export const useExtensionService = () => {
   const extensionStore = useExtensionStore()
   const settingStore = useSettingStore()
@@ -37,35 +23,6 @@ export const useExtensionService = () => {
     wrapWithErrorHandlingAsync,
     toastErrorHandler
   } = useErrorHandling()
-
-  /**
-   * Loads all extensions from the API into the window in parallel
-   */
-  const loadExtensions = async () => {
-    extensionStore.loadDisabledExtensionNames(
-      settingStore.get('Comfy.Extension.Disabled')
-    )
-
-    const extensions = await api.getExtensions()
-
-    // Need to load core extensions first as some custom extensions
-    // may depend on them.
-    await import('../extensions/core/index')
-    extensionStore.captureCoreExtensions()
-    await Promise.all(
-      extensions
-        .filter((extension) =>
-          shouldLoadExtension(extension, __DISTRIBUTION__ === 'cloud')
-        )
-        .map(async (ext) => {
-          try {
-            await import(/* @vite-ignore */ api.fileURL(ext))
-          } catch (error) {
-            console.error('Error loading extension', ext, error)
-          }
-        })
-    )
-  }
 
   /**
    * Register an extension with the app
@@ -158,8 +115,7 @@ export const useExtensionService = () => {
     ? (...args: Rest) => R
     : T
 
-  type KnownExtensionMethods = Exclude<keyof ComfyExtension, number | symbol> &
-    string
+  type KnownExtensionMethods = Exclude<keyof ComfyExtension, number | symbol>
 
   type ComfyExtensionMethod<T extends KnownExtensionMethods> =
     ComfyExtension[T] extends (...args: unknown[]) => unknown
@@ -251,7 +207,6 @@ export const useExtensionService = () => {
   }
 
   return {
-    loadExtensions,
     registerExtension,
     invokeExtensions,
     invokeExtensionsAsync

@@ -1,14 +1,12 @@
 import { beforeEach, describe, expect, it } from 'vitest'
 
-import type { IContextMenuValue } from '@/lib/litegraph/src/interfaces'
+import type { IContextMenuValue } from '@/lib/litegraph/src/types/contextMenu'
 import type { LGraphCanvas, LGraphNode } from '@/lib/litegraph/src/litegraph'
 import { useExtensionService } from '@/services/extensionService'
 import { useExtensionStore } from '@/stores/extensionStore'
 import type { ComfyExtension } from '@/types/comfy'
-import {
-  createMockCanvas,
-  createMockLGraphNode
-} from '@/utils/__tests__/litegraphTestUtils'
+import { createMockLGraphNode } from '@/utils/__tests__/litegraphTestUtils'
+import { createMockCanvas } from '@/utils/__tests__/canvasTestUtils'
 
 describe('Context Menu Extension API', () => {
   let mockCanvas: LGraphCanvas

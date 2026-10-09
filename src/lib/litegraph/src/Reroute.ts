@@ -1,5 +1,7 @@
 import { moveRerouteLayout } from '@/renderer/core/layout/operations/graphLayoutAttachment'
 import { layoutStore } from '@/renderer/core/layout/store/layoutStore'
+import { isSelectedIn, setSelectedIn } from '@/core/selection/selectionStore'
+import { toSelectableKey } from '@/core/selection/selectionState'
 import { EMPTY_MEMBERSHIP, useRerouteStore } from '@/stores/rerouteStore'
 import type { RerouteMembership } from '@/stores/rerouteStore'
 import { UNASSIGNED_NODE_ID } from '@/types/nodeId'
@@ -34,15 +36,13 @@ import type { LinkId } from './LLink'
 import { createMutationView } from './infrastructure/createMutationView'
 import type {
   CanvasColour,
-  INodeInputSlot,
-  INodeOutputSlot,
-  LinkNetwork,
   LinkSegment,
   Point,
   Positionable,
-  ReadOnlyRect,
-  ReadonlyLinkNetwork
+  ReadOnlyRect
 } from './interfaces'
+import type { INodeInputSlot, INodeOutputSlot } from './types/slots'
+import type { LinkNetwork, ReadonlyLinkNetwork } from './types/linkNetwork'
 import { LiteGraph } from './litegraph'
 import { distance, isPointInRect } from './measure'
 import type { Serialisable, SerialisableReroute } from './types/serialisation'
@@ -197,7 +197,17 @@ export class Reroute
   }
 
   /** @inheritdoc */
-  selected?: boolean
+  get selected(): boolean {
+    return isSelectedIn(this._graphScope, toSelectableKey('reroute', this.id))
+  }
+
+  set selected(value: boolean | undefined) {
+    setSelectedIn(
+      this._graphScope,
+      toSelectableKey('reroute', this.id),
+      !!value
+    )
+  }
 
   private get membership(): RerouteMembership {
     return this._graphScope
@@ -476,7 +486,7 @@ export class Reroute
     const network = this.network.deref()
     if (!network) return
 
-    for (const linkId of [...this.floatingLinkIds]) {
+    for (const linkId of Array.from(this.floatingLinkIds)) {
       const floatingLink = network.floatingLinks.get(linkId)
       if (floatingLink) network.removeFloatingLink(floatingLink)
     }

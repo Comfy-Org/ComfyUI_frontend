@@ -1,6 +1,7 @@
 import { pick, zip } from 'es-toolkit/compat'
 
 import { downloadFile, openFileInNewTab } from '@/base/common/downloadUtil'
+import { visibleCanvasViewport } from '@/composables/canvas/visibleCanvasViewport'
 import { useSelectedLiteGraphItems } from '@/composables/canvas/useSelectedLiteGraphItems'
 import { useSubgraphOperations } from '@/composables/graph/useSubgraphOperations'
 import { useNodeAnimatedImage } from '@/composables/node/useNodeAnimatedImage'
@@ -39,7 +40,7 @@ import type {
 import type { IBaseWidget } from '@/lib/litegraph/src/types/widgets'
 import { toConcreteWidget } from '@/lib/litegraph/src/widgets/widgetMap'
 import { useSettingStore } from '@/platform/settings/settingStore'
-import { useToastStore } from '@/platform/updates/common/toastStore'
+import { useToast } from '@/components/ui/toast/toastStore'
 import { useWorkflowStore } from '@/platform/workflow/management/stores/workflowStore'
 import { createPromotedMultilineWidget } from '@/renderer/extensions/vueNodes/widgets/utils/multilineTextarea'
 import { useCanvasStore } from '@/renderer/core/canvas/canvasStore'
@@ -52,9 +53,16 @@ import type {
   InputSpec,
   OutputSpec
 } from '@/schemas/nodeDef/nodeDefSchemaV2'
-import type { ComfyNodeDef as ComfyNodeDefV1 } from '@/schemas/nodeDefSchema'
+import type {
+  ComfyNodeDef as ComfyNodeDefV1,
+  InputSpec as InputSpecV1
+} from '@/schemas/nodeDefSchema'
+import {
+  getInputSpecType,
+  zDynamicGroupInputSpec
+} from '@/schemas/nodeDefSchema'
 import { ComfyApp, app } from '@/scripts/app'
-import { $el } from '@/scripts/ui'
+import { $el } from '@/scripts/ui/utils'
 import { useExecutionStore } from '@/stores/executionStore'
 import { useNodeOutputStore } from '@/stores/nodeOutputStore'
 import { ComfyNodeDefImpl } from '@/stores/nodeDefStore'
@@ -70,11 +78,11 @@ import { parseNodeId } from '@/types/nodeId'
 import type { SerializedNodeId } from '@/types/nodeId'
 import { isBlueprintType } from '@/utils/blueprintUtils'
 import { markCoreMediaMenuCallback } from '@/utils/coreMediaMenuActionUtils'
+import { getErrorMessage } from '@/utils/errorUtil'
 import type { WidgetId } from '@/types/widgetId'
 import { normalizeI18nKey } from '@/utils/formatUtil'
 import {
   isAnimatedOutput,
-  isImageNode,
   isVideoNode,
   isVideoOutput,
   migrateWidgetsValues
@@ -82,7 +90,6 @@ import {
 import { getOrderedInputSpecs } from '@/workbench/utils/nodeDefOrderingUtil'
 
 import { useExtensionService } from './extensionService'
-import { useMaskEditor } from '@/composables/maskeditor/useMaskEditor'
 
 async function reencodeAsPngBlob(
   blob: Blob,
@@ -183,7 +190,7 @@ function getMinSize(node: LGraphNode) {
  */
 export const useLitegraphService = () => {
   const extensionService = useExtensionService()
-  const toastStore = useToastStore()
+  const toast = useToast()
   const widgetStore = useWidgetStore()
   const canvasStore = useCanvasStore()
   const { toggleSelectedNodesMode } = useSelectedLiteGraphItems()
@@ -276,6 +283,19 @@ export const useLitegraphService = () => {
     addInputWidget(node, inputSpec, { dynamic: true })
   }
 
+  function validateDynamicGroupWidgets(inputData: InputSpecV1, name: string) {
+    const { template } = zDynamicGroupInputSpec.parse(inputData)[1]
+    const fields = { ...template.required, ...template.optional }
+    for (const [field, spec] of Object.entries(fields)) {
+      if (
+        !widgetStore.widgets.has(spec[1]?.widgetType ?? getInputSpecType(spec))
+      )
+        throw new TypeError(
+          `DynamicGroup field '${name}.${field}' requires a registered widget`
+        )
+    }
+  }
+
   /**
    * @internal Add a widget to the node. For both primitive types and custom widgets
    * (unless `socketless`), an input socket is also added.
@@ -301,13 +321,11 @@ export const useLitegraphService = () => {
     const widgetConstructor = widgetStore.widgets.get(widgetInputSpec.type)
     if (!widgetConstructor || inputSpec.forceInput) return
 
+    const inputData = transformInputSpecV2ToV1(widgetInputSpec)
+    if (widgetInputSpec.type === 'COMFY_DYNAMICGROUP_V3')
+      validateDynamicGroupWidgets(inputData, inputName)
     const widgetsBefore = new Set(node.widgets ?? [])
-    const result = widgetConstructor(
-      node,
-      inputName,
-      transformInputSpecV2ToV1(widgetInputSpec),
-      app
-    )
+    const result = widgetConstructor(node, inputName, inputData, app)
     const wrappedResult = result && !('type' in result) ? result : undefined
     const { minWidth = 1, minHeight = 1 } = wrappedResult ?? {}
     const returnedWidget = result && 'type' in result ? result : result?.widget
@@ -351,9 +369,10 @@ export const useLitegraphService = () => {
    */
   function addInputs(node: LGraphNode, inputs: Record<string, InputSpec>) {
     // Use input_order if available to ensure consistent widget ordering
-    //@ts-expect-error was ComfyNode.nodeData as ComfyNodeDefImpl
-    const nodeDefImpl = node.constructor.nodeData as ComfyNodeDefImpl
-    const orderedInputSpecs = getOrderedInputSpecs(nodeDefImpl, inputs)
+    const orderedInputSpecs = getOrderedInputSpecs(
+      node.constructor.nodeData ?? {},
+      inputs
+    )
 
     // Create sockets and widgets in the determined order
     for (const inputSpec of orderedInputSpecs) addInputSocket(node, inputSpec)
@@ -679,10 +698,9 @@ export const useLitegraphService = () => {
                 throw error
               }
             } catch (error) {
-              toastStore.addAlert(
+              toast.warning(
                 t('toastMessages.errorCopyImage', {
-                  // @ts-expect-error fixme ts strict error
-                  error: error.message ?? error
+                  error: getErrorMessage(error) ?? t('g.unknownError')
                 })
               )
             }
@@ -749,15 +767,6 @@ export const useLitegraphService = () => {
             callback: markCoreMediaMenuCallback(() => {
               ComfyApp.pasteFromClipspace(this)
             }, 'input')
-          })
-        }
-
-        if (isImageNode(this)) {
-          options.push({
-            content: 'Open in MaskEditor | Image Canvas',
-            callback: markCoreMediaMenuCallback(() => {
-              useMaskEditor().openMaskEditor(this)
-            }, 'preview')
           })
         }
       }
@@ -865,8 +874,8 @@ export const useLitegraphService = () => {
     const origNodeOnKeyDown = node.prototype.onKeyDown
 
     node.prototype.onKeyDown = function (e) {
-      // @ts-expect-error fixme ts strict error
-      if (origNodeOnKeyDown && origNodeOnKeyDown.apply(this, e) === false) {
+      const originalResult: unknown = origNodeOnKeyDown?.call(this, e)
+      if (originalResult === false) {
         return false
       }
 
@@ -877,19 +886,16 @@ export const useLitegraphService = () => {
       let handled = false
 
       if (e.key === 'ArrowLeft' || e.key === 'ArrowRight') {
+        const imageIndex = this.imageIndex
+        if (imageIndex === undefined) return
         if (e.key === 'ArrowLeft') {
-          // @ts-expect-error fixme ts strict error
-          this.imageIndex -= 1
+          this.imageIndex = imageIndex - 1
         } else {
-          // @ts-expect-error fixme ts strict error
-          this.imageIndex += 1
+          this.imageIndex = imageIndex + 1
         }
-        // @ts-expect-error fixme ts strict error
         this.imageIndex %= this.imgs.length
 
-        // @ts-expect-error fixme ts strict error
         if (this.imageIndex < 0) {
-          // @ts-expect-error fixme ts strict error
           this.imageIndex = this.imgs.length + this.imageIndex
         }
         handled = true
@@ -956,11 +962,10 @@ export const useLitegraphService = () => {
   }
 
   function getCanvasCenter(): Point {
-    const dpi = Math.max(window.devicePixelRatio || 1, 1)
     if (!app.isGraphReady) return [0, 0]
     const visibleArea = app.canvas.ds.visible_area
     const [x, y, w, h] = visibleArea
-    return [x + w / dpi / 2, y + h / dpi / 2]
+    return [x + w / 2, y + h / 2]
   }
 
   function goToNode(nodeId: SerializedNodeId) {
@@ -998,7 +1003,9 @@ export const useLitegraphService = () => {
     const bounds = createBounds(nodes)
     if (!bounds) return
 
-    canvas.ds.fitToBounds(bounds)
+    canvas.ds.fitToBounds(bounds, {
+      viewport: visibleCanvasViewport(canvas)
+    })
     canvas.setDirty(true, true)
   }
 

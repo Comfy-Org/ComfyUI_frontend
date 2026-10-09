@@ -1,28 +1,33 @@
 <script setup lang="ts">
 import { Upload } from '@lucide/vue'
 import { useDropZone } from '@vueuse/core'
-import { computed, nextTick, ref, useTemplateRef } from 'vue'
+import { computed, nextTick, ref, useTemplateRef, watch } from 'vue'
 
 import { cn } from '@comfyorg/tailwind-utils'
 
-import type { FieldSchema, FileValue } from '../../config/workshop-playground'
-import type { Locale, TranslationKey } from '../../i18n/translations'
-import { t } from '../../i18n/translations'
+import type { FieldSchema, FileValue } from '@/config/workshop-playground'
+import { formatWorkshopUploadLimit } from '@/config/workshop-limits'
+import type { Locale, TranslationKey } from '@/i18n/translations'
+import { translationsFor } from '@/i18n/translations'
 import SelectedFileRow from './SelectedFileRow.vue'
 
 const {
   field,
   describedBy,
   invalid = false,
+  attention = false,
   disabled = false,
   locale = 'en'
 } = defineProps<{
   field: Extract<FieldSchema, { kind: 'file' }>
   describedBy?: string
   invalid?: boolean
+  /** Marks the chosen file a warning is about, without rejecting it. */
+  attention?: boolean
   disabled?: boolean
   locale?: Locale
 }>()
+const { t } = translationsFor(locale)
 const value = defineModel<FileValue | FileValue[]>()
 const selectedFiles = computed(() =>
   value.value === undefined
@@ -37,7 +42,24 @@ const imageOnly = computed(
     field.accept.every((type) => type.startsWith('image/'))
 )
 const limit = computed(() => (field.multiple ? field.maxItems : 1))
+
+// A full field has nothing left to take, and a drop zone under the files it
+// already holds reads as an upload still waiting to happen. Dropping onto the
+// files themselves still works: the zone is the whole group, not the label.
+const atCapacity = computed(
+  () => limit.value !== undefined && selectedFiles.value.length >= limit.value
+)
+const uploadLimit = computed(() =>
+  formatWorkshopUploadLimit(field.maxBytes, locale)
+)
 const rejection = ref<TranslationKey>()
+// Removing the only picture the example brought left the field empty with no
+// way back but the example card further down, which rewrites the whole form.
+const removed = ref<{
+  at: number
+  file: FileValue
+  left: readonly FileValue[]
+}>()
 const replacement = ref<number>()
 const input = useTemplateRef<HTMLInputElement>('input')
 const zone = useTemplateRef<HTMLElement>('zone')
@@ -53,15 +75,22 @@ const description = computed(
       .join(' ') || undefined
 )
 
+// A field that takes one file would be at capacity the moment it holds one, so
+// the singular copy only ever greets an empty field.
 const prompt = computed(() => {
-  const replacing = selectedFiles.value.length > 0 && !field.multiple
-  if (replacing)
-    return imageOnly.value
-      ? 'workshop.field.replaceOrDropImage'
-      : 'workshop.field.replaceOrDropFile'
-  return imageOnly.value
-    ? 'workshop.field.chooseOrDropImages'
-    : 'workshop.field.chooseOrDropFiles'
+  const allowed = field.multiple ? field.maxItems : undefined
+  if (allowed !== undefined && allowed > 1)
+    return t(
+      imageOnly.value
+        ? 'workshop.field.selectOrDropImages'
+        : 'workshop.field.selectOrDropFiles',
+      { count: allowed }
+    )
+  return t(
+    imageOnly.value
+      ? 'workshop.field.selectOrDropImage'
+      : 'workshop.field.selectOrDropFile'
+  )
 })
 
 const acceptedTypes = computed(() =>
@@ -79,7 +108,11 @@ const rejectionMessage = computed(() => {
   const unchanged = imageOnly.value
     ? 'workshop.field.imagesUnchanged'
     : 'workshop.field.filesUnchanged'
-  return `${t(rejection.value, locale).replace('{count}', String(limit.value))} ${t(unchanged, locale)}`
+  const named = {
+    limit: uploadLimit.value,
+    ...(limit.value === undefined ? {} : { count: limit.value })
+  }
+  return `${t(rejection.value, named)} ${t(unchanged)}`
 })
 
 function accepts(file: File): boolean {
@@ -122,6 +155,7 @@ function choose(files: File[], index?: number) {
           ? 'workshop.form.tooLarge'
           : undefined
   if (rejection.value) return
+  removed.value = undefined
   value.value = field.multiple ? next : next[0]
 }
 
@@ -142,12 +176,37 @@ function remove(index: number) {
   const remaining = selectedFiles.value.filter(
     (_, position) => position !== index
   )
+  removed.value = {
+    at: index,
+    file: selectedFiles.value[index],
+    left: remaining
+  }
   value.value = remaining.length
     ? field.multiple
       ? remaining
       : remaining[0]
     : undefined
   rejection.value = undefined
+}
+
+// The undo answers one removal. Anything that replaces the selection afterwards
+// — a new pick, or the form filling itself from an example — is what the reader
+// wants now, and putting the old file back would undo that instead.
+watch(selectedFiles, (files) => {
+  const undo = removed.value
+  if (!undo) return
+  const untouched =
+    files.length === undo.left.length &&
+    files.every((file, position) => file === undo.left[position])
+  if (!untouched) removed.value = undefined
+})
+
+function putBack() {
+  const undo = removed.value
+  if (!undo) return
+  const restored = selectedFiles.value.toSpliced(undo.at, 0, undo.file)
+  value.value = field.multiple ? restored : restored[0]
+  removed.value = undefined
 }
 </script>
 
@@ -158,22 +217,32 @@ function remove(index: number) {
     :aria-label="field.label"
     :class="
       cn(
-        'focus-within:ring-primary-comfy-yellow flex min-w-0 flex-col gap-3 rounded-2xl border border-dashed focus-within:ring-2',
-        dropZoneActive
-          ? 'border-primary-comfy-yellow'
-          : 'border-transparency-white-t20',
+        'flex min-w-0 flex-col gap-3 rounded-2xl has-focus-visible:ring-2 has-focus-visible:ring-primary-comfy-yellow',
         disabled && 'opacity-50'
       )
     "
   >
-    <ul
-      v-if="selectedFiles.length"
-      class="flex min-w-0 flex-col gap-2 px-3 pt-3"
+    <p
+      v-if="removed"
+      class="flex flex-wrap items-center gap-x-2 gap-y-1 text-xs text-primary-warm-gray"
+      data-testid="removed-file-undo"
     >
+      {{ t('workshop.field.removedFile', { name: removed.file.name }) }}
+      <button
+        type="button"
+        class="cursor-pointer font-medium text-primary-comfy-yellow underline underline-offset-2 disabled:cursor-not-allowed"
+        :disabled
+        @click="putBack"
+      >
+        {{ t('workshop.field.undoRemove') }}
+      </button>
+    </p>
+    <ul v-if="selectedFiles.length" class="flex min-w-0 flex-col gap-2">
       <SelectedFileRow
         v-for="(file, index) in selectedFiles"
         :key="index"
         :file
+        :attention
         :disabled
         :locale
         @replace="replace(index)"
@@ -181,20 +250,24 @@ function remove(index: number) {
       />
     </ul>
     <label
+      v-if="!atCapacity"
       :for="`field-${field.name}`"
       :class="
         cn(
-          'hover:bg-transparency-white-t4 flex min-h-20 cursor-pointer flex-col items-center justify-center gap-1 rounded-2xl text-xs text-primary-warm-gray',
+          'flex min-h-28 cursor-pointer flex-col items-center justify-center gap-2 rounded-2xl border border-dashed text-xs text-primary-warm-gray hover:bg-transparency-white-t4',
+          dropZoneActive
+            ? 'border-primary-comfy-yellow'
+            : 'border-transparency-white-t20',
           disabled && 'pointer-events-none'
         )
       "
       @click="replacement = undefined"
     >
       <Upload class="size-5" aria-hidden="true" />
-      <span>{{ t(prompt, locale) }}</span>
-      <span>
+      <span>{{ prompt }}</span>
+      <span class="text-2xs">
         <template v-if="acceptedTypes">{{ acceptedTypes }} · </template>
-        {{ t('workshop.field.uploadLimit', locale) }}
+        {{ t('workshop.field.uploadLimit', { limit: uploadLimit }) }}
       </span>
     </label>
     <input
@@ -217,7 +290,7 @@ function remove(index: number) {
       v-if="rejection"
       :id="`selection-error-${field.name}`"
       role="alert"
-      class="text-primary-comfy-red px-3 pb-3 text-xs"
+      class="px-3 pb-3 text-xs text-primary-comfy-red"
     >
       {{ rejectionMessage }}
     </p>

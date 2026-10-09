@@ -24,6 +24,10 @@ const fulfillJson = (body: UploadResponse) => ({
 })
 
 test.describe('Mask Editor load/save', { tag: '@vue-nodes' }, () => {
+  test.beforeEach(async ({ comfyPage }) => {
+    await comfyPage.workflow.loadWorkflow('widgets/load_image_widget')
+  })
+
   test('Save with drawn mask uploads non-empty mask data', async ({
     comfyPage,
     maskEditor

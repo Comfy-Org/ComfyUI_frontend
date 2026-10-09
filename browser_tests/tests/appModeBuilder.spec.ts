@@ -2,10 +2,7 @@ import {
   comfyPageFixture as test,
   comfyExpect as expect
 } from '@e2e/fixtures/ComfyPage'
-import {
-  dismissErrorOverlay,
-  enableErrorsOverlay
-} from '@e2e/fixtures/helpers/ErrorsTabHelper'
+import { dismissErrorOverlay } from '@e2e/fixtures/helpers/ErrorsTabHelper'
 import { ExecutionHelper } from '@e2e/fixtures/helpers/ExecutionHelper'
 
 test.describe('App mode builder selection', () => {
@@ -100,44 +97,49 @@ test.describe('App mode builder selection', () => {
     }
   )
 
-  test(
-    'Can not select a node with an error',
-    { tag: '@vue-nodes' },
-    async ({ comfyPage }) => {
-      test.slow()
-      await comfyPage.workflow.loadWorkflow('default')
-      await enableErrorsOverlay(comfyPage)
+  test.describe('With errors enabled', () => {
+    test.use({
+      initialSettings: { 'Comfy.RightSidePanel.ShowErrorsTab': true }
+    })
 
-      const [checkpointLoader] =
-        await comfyPage.nodeOps.getNodeRefsByTitle('Load Checkpoint')
-      await new ExecutionHelper(comfyPage).mockValidationFailure({
-        [String(checkpointLoader.id)]: {
-          class_type: 'CheckpointLoaderSimple',
-          dependent_outputs: [],
-          errors: [
-            {
-              type: 'value_not_in_list',
-              message: 'Value not in list',
-              details: '',
-              extra_info: { input_name: 'ckpt_name' }
-            }
-          ]
-        }
-      })
-      await comfyPage.runButton.click()
-      await dismissErrorOverlay(comfyPage)
+    test(
+      'Can not select a node with an error',
+      { tag: '@vue-nodes' },
+      async ({ comfyPage }) => {
+        test.slow()
+        await comfyPage.workflow.loadWorkflow('default')
 
-      const items = comfyPage.appMode.select.inputItems
-      await comfyPage.appMode.enterBuilder()
-      await comfyPage.appMode.steps.goToInputs()
-      await comfyPage.appMode.select.selectInputWidget(
-        'Load Checkpoint',
-        'ckpt_name'
-      )
+        const [checkpointLoader] =
+          await comfyPage.nodeOps.getNodeRefsByTitle('Load Checkpoint')
+        await new ExecutionHelper(comfyPage).mockValidationFailure({
+          [String(checkpointLoader.id)]: {
+            class_type: 'CheckpointLoaderSimple',
+            dependent_outputs: [],
+            errors: [
+              {
+                type: 'value_not_in_list',
+                message: 'Value not in list',
+                details: '',
+                extra_info: { input_name: 'ckpt_name' }
+              }
+            ]
+          }
+        })
+        await comfyPage.runButton.click()
+        await dismissErrorOverlay(comfyPage)
 
-      await expect(items).toHaveCount(0)
-    }
-  )
+        const items = comfyPage.appMode.select.inputItems
+        await comfyPage.appMode.enterBuilder()
+        await comfyPage.appMode.steps.goToInputs()
+        await comfyPage.appMode.select.selectInputWidget(
+          'Load Checkpoint',
+          'ckpt_name'
+        )
+
+        await expect(items).toHaveCount(0)
+      }
+    )
+  })
 
   test(
     'Can not select note nodes',

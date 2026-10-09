@@ -1,12 +1,18 @@
+// @vitest-environment node
+
 import type { AstroIntegrationLogger, HookParameters } from 'astro'
 import { mergeConfig, validateConfig } from 'astro/config'
 import { existsSync } from 'node:fs'
 import { mkdir, mkdtemp, readFile, rm, writeFile } from 'node:fs/promises'
 import { tmpdir } from 'node:os'
-import { join } from 'node:path'
+import { dirname, join } from 'node:path'
 import { pathToFileURL } from 'node:url'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { modelsBuildRoutes, workshopReleaseGate } from './workshop-release-gate'
+
+import { workshopModels } from '@/config/workshop-browse-content'
+
+const [{ slug: modelSlug }] = workshopModels
 
 let root: string
 const logger: AstroIntegrationLogger = {
@@ -45,13 +51,28 @@ function pluginNames(option: unknown): unknown[] {
     : []
 }
 
-async function buildDone() {
+const builtModelsRoutes = (patterns = modelsBuildRoutes(false)) =>
+  new Map(
+    patterns.map(({ pattern }) => [
+      pattern,
+      [pathToFileURL(`${root}${pattern}/index.html`)]
+    ])
+  )
+
+async function buildDone(
+  assets = builtModelsRoutes(),
+  modelsPages: string[] = []
+) {
   const hook = workshopReleaseGate().hooks['astro:build:done']
   if (!hook) throw new Error('Missing build hook')
   await hook({
     dir: pathToFileURL(`${root}/`),
-    pages: [{ pathname: '' }, { pathname: 'workshop/' }],
-    assets: new Map(),
+    pages: [
+      { pathname: '' },
+      { pathname: 'workshop/' },
+      ...modelsPages.map((pathname) => ({ pathname }))
+    ],
+    assets,
     logger
   })
 }
@@ -106,34 +127,49 @@ describe('Workshop release output', () => {
     )
   })
 
-  it('registers the original marketing entry when disabled and only approved Models routes when enabled', () => {
-    expect(modelsBuildRoutes(false)).toEqual([
-      {
-        pattern: '/models',
-        entrypoint: expect.stringContaining('/routes/models/showcase.astro')
-      }
+  it('builds every Models page either way and adds checkout only with Workshop', () => {
+    const disabled = modelsBuildRoutes(false)
+    expect(disabled.map((route) => route.pattern)).toEqual([
+      '/hub/models',
+      '/hub/models/[slug]',
+      '/hub/workflows',
+      '/hub/apps',
+      '/hub/workflows/[slug]',
+      '/hub/workflows/manifest.json',
+      '/models/showcase',
+      '/hub/apps/[app]',
+      '/cinematic-studio',
+      '/models/[...slug]/page.json',
+      '/models/catalogue.json'
     ])
     const enabled = modelsBuildRoutes(true)
     expect(enabled.map((route) => route.pattern)).toEqual([
-      '/models',
-      '/models/[slug]',
-      '/models/showcase'
+      ...disabled.map((route) => route.pattern),
+      '/checkout-opening',
+      '/zh-CN/checkout-opening',
+      '/checkout-return',
+      '/zh-CN/checkout-return'
     ])
-    expect(enabled[0].entrypoint).toContain('/routes/models/index.astro')
-    for (const route of enabled) expect(existsSync(route.entrypoint)).toBe(true)
+    for (const routes of [disabled, enabled]) {
+      expect(routes[0].entrypoint).toContain('/routes/models/index.astro')
+      for (const route of routes)
+        expect(existsSync(route.entrypoint)).toBe(true)
+    }
   })
 
-  it('preserves the established Models page and rejects ungated detail routes', async () => {
+  it('fails a build without Workshop that drops a Models page or ships a Workshop-only page', async () => {
     vi.stubEnv('WORKSHOP_IN_BUILD', '0')
-    await mkdir(join(root, 'models'), { recursive: true })
-    await writeFile(join(root, 'models/index.html'), 'Models marketing')
-    await buildDone()
-    expect(await readFile(join(root, 'models/index.html'), 'utf8')).toBe(
-      'Models marketing'
+    await expect(buildDone()).resolves.toBeUndefined()
+    const withoutModelPages = builtModelsRoutes()
+    withoutModelPages.delete('/hub/workflows/[slug]')
+    await expect(buildDone(withoutModelPages)).rejects.toThrow(
+      'Missing: /hub/workflows/[slug]. Workshop-only: none.'
     )
-    await mkdir(join(root, 'models/leaked-detail'))
-    await writeFile(join(root, 'models/leaked-detail/index.html'), 'Run')
-    await expect(buildDone()).rejects.toThrow('ungated Models route')
+    await expect(
+      buildDone(builtModelsRoutes(modelsBuildRoutes(true)))
+    ).rejects.toThrow(
+      'Missing: none. Workshop-only: /checkout-opening, /zh-CN/checkout-opening, /checkout-return, /zh-CN/checkout-return.'
+    )
   })
 
   it('removes only Workshop output when disabled, including repeated builds', async () => {
@@ -142,6 +178,57 @@ describe('Workshop release output', () => {
     expect(existsSync(join(root, 'workshop'))).toBe(false)
     expect(await readFile(join(root, 'index.html'), 'utf8')).toBe('Home')
     await expect(buildDone()).resolves.toBeUndefined()
+  })
+
+  it.for(['0', '1'])(
+    'rejects a built Models page the URL registry does not know (WORKSHOP_IN_BUILD=%s)',
+    async (value) => {
+      vi.stubEnv('WORKSHOP_IN_BUILD', value)
+      await expect(
+        buildDone(builtModelsRoutes(), [
+          'models/',
+          `models/${modelSlug}/`,
+          'hub/models/local/',
+          'hub/models/local/4x-ultrasharp/',
+          'hub/models/local/4x-ultrasharp.md',
+          'hub/models/local/llms.txt'
+        ])
+      ).resolves.toBeUndefined()
+      await expect(
+        buildDone(builtModelsRoutes(), ['models/unregistered/'])
+      ).rejects.toThrow(
+        'missing from models-url-registry.ts (/models/unregistered)'
+      )
+    }
+  )
+
+  it.for([
+    {
+      file: 'models/bfl--flux-2-max--generate-images/page.json',
+      content:
+        '{"related":[{"href":"/models/bfl--flux-2-pro--generate-images/"}]}'
+    },
+    {
+      file: 'models/catalogue.json',
+      content: '[{"href":"/models/bfl--flux-2-pro--generate-images/"}]'
+    },
+    {
+      file: 'index.md',
+      content:
+        '[Flux 2 Pro](https://comfy.org/models/bfl--flux-2-pro--generate-images/)'
+    }
+  ])('rejects an old model link in $file', async ({ file, content }) => {
+    vi.stubEnv('WORKSHOP_IN_BUILD', '1')
+    await mkdir(dirname(join(root, file)), { recursive: true })
+    await writeFile(
+      join(root, file),
+      content.replace('/models/bfl--flux-2-pro', '/hub/models/flux-2-pro')
+    )
+    await expect(buildDone()).resolves.toBeUndefined()
+    await writeFile(join(root, file), content)
+    await expect(buildDone()).rejects.toThrow(
+      `/${file} → /models/bfl--flux-2-pro--generate-images`
+    )
   })
 
   it('retires legacy Workshop output even when Models is enabled', async () => {

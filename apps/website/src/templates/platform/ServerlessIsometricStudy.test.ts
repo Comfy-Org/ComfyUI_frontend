@@ -1,13 +1,12 @@
-// @vitest-environment happy-dom
 import { render, screen } from '@testing-library/vue'
 import { beforeEach, expect, it, vi } from 'vitest'
 import { nextTick } from 'vue'
 
-import * as reducedMotion from '../../composables/useReducedMotion'
+import * as reducedMotion from '@/composables/useReducedMotion'
 import {
   setAllIntersecting,
   stubIntersectionObserver
-} from '../../test/fakeIntersectionObserver'
+} from '@/test/fakeIntersectionObserver'
 import ServerlessIsometricStudy from './ServerlessIsometricStudy.vue'
 
 beforeEach(() => {
@@ -17,7 +16,7 @@ beforeEach(() => {
 it('keeps the SVG illustration when canvas rendering is unavailable', () => {
   vi.spyOn(HTMLCanvasElement.prototype, 'getContext').mockReturnValue(null)
   render(ServerlessIsometricStudy)
-  // eslint-disable-next-line testing-library/no-node-access
+  // oxlint-disable-next-line testing-library/no-node-access
   expect(screen.getByRole('img').querySelector('svg rect')).not.toBeNull()
 })
 
@@ -62,7 +61,7 @@ it('replaces SVG tiles with a drawn canvas once its texture loads', async () => 
   expect(context.roundRect).toHaveBeenCalled()
   expect(context.fill).toHaveBeenCalled()
   const illustration = screen.getByRole('img')
-  // eslint-disable-next-line testing-library/no-node-access
+  // oxlint-disable-next-line testing-library/no-node-access
   expect(illustration.querySelector('svg rect')).toBeNull()
   unmount()
   context.createPattern.mockClear()

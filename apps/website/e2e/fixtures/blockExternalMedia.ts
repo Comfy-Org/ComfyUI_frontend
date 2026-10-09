@@ -1,19 +1,17 @@
 import { once } from 'node:events'
 import { readFileSync } from 'node:fs'
 import { createServer } from 'node:http'
-import { fileURLToPath } from 'node:url'
+import { join } from 'node:path'
 
 import type { Route } from '@playwright/test'
 import { test as base, expect } from '@playwright/test'
 
-function assetPath(relativePath: string) {
-  return fileURLToPath(new URL(relativePath, import.meta.url))
-}
+import { websiteRoot } from '@website/paths'
 
-const IMAGE_PLACEHOLDER = assetPath('../assets/placeholder-1x1.webp')
-const VIDEO_PLACEHOLDER = assetPath('../assets/placeholder.webm')
+const IMAGE_PLACEHOLDER = join(websiteRoot, 'e2e/assets/placeholder-1x1.webp')
+const VIDEO_PLACEHOLDER = join(websiteRoot, 'e2e/assets/placeholder.webm')
 const INTER_FONT = readFileSync(
-  assetPath('../assets/inter-latin.woff2')
+  join(websiteRoot, 'e2e/assets/inter-latin.woff2')
 ).toString('base64')
 
 const ANALYTICS_HOSTS = new Set([
@@ -23,12 +21,21 @@ const ANALYTICS_HOSTS = new Set([
   'cdp.customer.io'
 ])
 const EMBED_HOSTS = new Set([
+  'www.youtube.com',
   'www.youtube-nocookie.com',
   'demo.arcade.software'
 ])
 const SCRIPT_HOSTS = new Set(['js-na2.hsforms.net'])
+const GITHUB_ATTACHMENT_URLS = new Set([
+  'https://github.com/user-attachments/assets/07c6b3bf-9aa3-49b7-b8ad-1b4300802473',
+  'https://github.com/user-attachments/assets/916211b0-5da9-4c91-b817-bc898a36cfca',
+  'https://github.com/user-attachments/assets/f58091d4-909e-44e2-b0bc-5499a8f2b468',
+  'https://github.com/user-attachments/assets/049b928c-2366-4f47-8f8d-108133723658'
+])
 const MEDIA_PATTERNS = [
+  /^https:\/\/media\.comfy\.org\/website\/comfy-agent\/[^/?]+\.svg(?:\?.*)?$/i,
   /^https:\/\/(?:media|comfy-hub-assets)\.comfy\.org\/.*\.(?:webp|webm|mp4|png|jpg|jpeg|gif|avif|vtt)(?:\?.*)?$/i,
+  /^https:\/\/cloud\.comfy\.org\/templates\/[^/]+\.(?:webp|png|jpg|jpeg|gif|avif)(?:\?.*)?$/i,
   /^https:\/\/raw\.githubusercontent\.com\/Comfy-Org\/workflow_templates\/main\/templates\/.*\.(?:webp|webm|mp4|png|jpg|jpeg|gif|avif|vtt)(?:\?.*)?$/i,
   /^https:\/\/cdn\.jsdelivr\.net\/gh\/Comfy-Org\/workflow_templates@(?:main|[0-9a-f]{40})\/(?:input|output|templates)\/.*\.(?:webp|webm|mp4|png|jpg|jpeg|gif|avif|vtt)(?:\?.*)?$/i,
   /^https:\/\/assets\.sync\.so\/docs\/example-(?:audio\.wav|video\.mp4)$/i
@@ -94,6 +101,12 @@ const EXTERNAL_ROUTE_RULES: readonly ExternalRouteRule[] = [
       route.fulfill({ contentType: 'text/javascript', body: '' })
   },
   {
+    matches: (route, url) =>
+      route.request().resourceType() === 'image' &&
+      GITHUB_ATTACHMENT_URLS.has(url.href),
+    handle: fulfillMedia
+  },
+  {
     matches: (_route, url) => url.hostname === 'fonts.googleapis.com',
     handle: (route) =>
       route.fulfill({
@@ -115,6 +128,17 @@ const EXTERNAL_ROUTE_RULES: readonly ExternalRouteRule[] = [
   {
     matches: isNodeImage,
     handle: (route) => route.fulfill({ path: IMAGE_PLACEHOLDER })
+  },
+  {
+    matches: (_route, url) =>
+      url.hostname.endsWith('cloud.comfy.org') &&
+      url.pathname === '/api/features',
+    handle: (route) =>
+      route.fulfill({
+        contentType: 'application/json',
+        headers: { 'access-control-allow-origin': '*' },
+        body: '{}'
+      })
   }
 ]
 

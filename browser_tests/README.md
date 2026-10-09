@@ -22,6 +22,10 @@ to a section below.
 
 ## Prerequisites
 
+For real Cloud billing E2E setup and account prerequisites, see [Cloud billing E2E coverage](../docs/testing/cloud-billing-e2e.md).
+Its dedicated runner requires real authentication and a dedicated sandbox account;
+the live suite is excluded from the ordinary browser test configurations.
+
 **CRITICAL**: Start the ComfyUI backend with `--multi-user`:
 
 ```bash
@@ -116,15 +120,22 @@ TEST_COMFYUI_DIR=/path/to/your/ComfyUI
 ### Release API mocking
 
 By default all tests mock `api.comfy.org/releases` so release popups don't cover
-UI elements. To test real release data:
+UI elements. To supply a custom release response before the first app load:
 
 ```typescript
-await comfyPage.setup({ mockReleases: false })
+test.use({ mockReleases: false })
 ```
 
-See `tests/releaseNotifications.spec.ts` for release-specific tests.
+Install the replacement route in a test-scoped auto fixture that depends on
+`page`, before `comfyPage` boots. Disabling the default mock does not disable
+network isolation. See `fixtures/releaseNotificationFixture.ts` and
+`tests/releaseNotifications.spec.ts` for release-specific responses and request
+tracking.
 
 ### Network isolation
+
+The live Cloud routing infrastructure spec requires `openssl` on PATH to generate
+a disposable localhost TLS certificate; it does not use a live account.
 
 The shared fixtures allow HTTP and real WebSockets only to the configured
 frontend/backend origins: `PLAYWRIGHT_TEST_URL`, `PLAYWRIGHT_SETUP_API_URL`,
@@ -151,7 +162,7 @@ in a Docker container with networking disabled:
 ```bash
 pnpm install --frozen-lockfile
 VITE_USE_LEGACY_DEFAULT_GRAPH=true pnpm build
-docker pull ghcr.io/comfy-org/comfyui-ci-container:0.0.22
+docker pull ghcr.io/comfy-org/comfyui-ci-container:0.0.27
 scripts/test-browser-offline.sh --project=chromium errorDialog.spec.ts
 ```
 
@@ -325,6 +336,11 @@ for adding packs - see
 
 ## Writing Tests
 
+Design rules that hold at every test level (behavioral assertions, lowest
+proving level, table-driven variants, isolation, no sleeps) are in
+`docs/guidance/testing-principles.md`, which auto-loads for `*.spec.ts`. This
+guide covers the Playwright and ComfyUI mechanics.
+
 ### Golden rules
 
 1. **Look at existing tests first.** Search `tests/` for similar patterns.
@@ -456,6 +472,13 @@ properties in methods rather than rebuilding locators.
 - When multiple nodes share a title, disambiguate:
   `vueNodes.getNodeByTitle(name).nth(n)` — strict mode fails on ambiguous
   locators.
+- Never locate a toast by its copy with `getByText` or
+  `getByRole('alert' | 'status').filter({ hasText })`: `Toaster` repeats every
+  toast's text in live regions with those roles. Use
+  `comfyPage.toast.withText(text)` and its kind locators such as
+  `toastErrors`. Tests without `comfyPage` (`cloudAppFixture`, `agentTest`,
+  or a `page`-only test) destructure the `toast` fixture instead. Specs may
+  not construct a `ToastHelper`; lint allows only type imports.
 
 ### Node references over coordinates
 
@@ -552,6 +575,7 @@ where its tags place it:
 | `@perf`       | Runs in the perf project                               |
 | `@audit`      | Runs in the audit project                              |
 | `@cloud`      | Runs in the cloud project                              |
+| `@desktop`    | Runs against the desktop build                         |
 | `@oss`        | Excluded from the cloud project                        |
 
 Use `@mobile-ios` sparingly — only for regressions that reproduce under
@@ -560,6 +584,10 @@ WebKit engine does not expose embedded-WKWebView globals such as
 `window.webkit.messageHandlers`; inject them via `page.addInitScript()` and set the
 context `userAgent`. See `browser_tests/tests/cloudLoginIosWebview.spec.ts` for the
 reference pattern.
+
+The `@desktop` tag only selects the desktop project. Tests that need Electron
+APIs must import `desktopFixture` from `@e2e/fixtures/desktopFixture` to install
+the mocked bridge before the app starts.
 
 Organizational tags are used for manual `--grep` filtering (not project
 routing). Common ones in the suite: `@smoke`, `@slow`, `@screenshot`, `@canvas`,
@@ -725,6 +753,23 @@ PLAYWRIGHT_LOCAL=1 PLAYWRIGHT_TEST_URL=http://localhost:5173 DISTRIBUTION=cloud 
 
 Watch one: add `--headed -g <case id>`. Recorded gaps: `AGENT_REPLAY_TIMING=recorded`.
 
+The dev server above is fine for the replay cases, but it cannot run the two
+agent cases that assert the panel stays **hidden** while the product flag is off
+(`agentPanel.spec.ts` "does not expose the Ask Comfy Agent button" and
+`agentPanelLifecycle.spec.ts` "preserves the stored preference while the flag is
+off"). `setupFlagGate()` in `src/extensions/core/agentPanel.ts` force-enables the
+panel whenever `import.meta.env.MODE === 'development'`, so against `pnpm dev`
+both cases see the button and fail no matter what the flag mock says. CI does not
+hit this because it serves a built `frontend-dist-cloud` artifact. To run them
+locally, serve a production build instead:
+
+```bash
+DISTRIBUTION=cloud pnpm build:cloud
+# serve dist/ (e.g. ComfyUI --front-end-root <repo>/dist) and point the run at it
+PLAYWRIGHT_LOCAL=1 PLAYWRIGHT_TEST_URL=http://127.0.0.1:8188 DISTRIBUTION=cloud \
+  pnpm exec playwright test browser_tests/tests/agent/ --project=cloud
+```
+
 When a fix changes how the agent's turns affect the app (graph edits,
 CRDT frames, panel state), add a conversation replay case alongside the
 fix so the bug stays fixed:
@@ -781,17 +826,19 @@ await page.route('**/api/object_info', (route) =>
 The three generated-type packages are auto-generated from OpenAPI specs — prefer
 them for any mock targeting their endpoints:
 
-| Endpoint category                                   | Type source                                                                        |
-| --------------------------------------------------- | ---------------------------------------------------------------------------------- |
-| Cloud-only (hub, billing, workflows)                | `@comfyorg/ingest-types` (`packages/ingest-types`)                                 |
-| Registry (releases, nodes, publishers)              | `@comfyorg/registry-types` (`packages/registry-types`)                             |
-| Manager (queue tasks, packages)                     | `generatedManagerTypes.ts` (`src/workbench/extensions/manager/types/`)             |
-| Python backend (queue, history, settings, features) | Manual Zod schemas in `src/schemas/apiSchema.ts`                                   |
-| Node definitions                                    | `src/schemas/nodeDefSchema.ts`, `src/schemas/nodeDef/nodeDefSchemaV2.ts`           |
-| Templates                                           | `src/platform/workflow/templates/types/template.ts`                                |
-| Jobs API                                            | `src/platform/remote/comfyui/jobs/jobTypes.ts` (`zJobDetail`, `zJobsListResponse`) |
-| Workflow validation                                 | `src/platform/workflow/validation/schemas/workflowSchema.ts`                       |
-| Asset metadata                                      | `src/types/metadataTypes.ts`                                                       |
+| Endpoint category                                 | Type source                                                                        |
+| ------------------------------------------------- | ---------------------------------------------------------------------------------- |
+| Cloud-only (hub, billing, workflows)              | `@comfyorg/ingest-types` (`packages/ingest-types`)                                 |
+| Registry (releases, nodes, publishers)            | `@comfyorg/registry-types` (`packages/registry-types`)                             |
+| Manager (queue tasks, packages)                   | `generatedManagerTypes.ts` (`src/workbench/extensions/manager/types/`)             |
+| Local webserver responses that differ from ingest | `src/platform/remote/comfyui/types.ts`                                             |
+| WebSocket messages and custom-node outputs        | `src/platform/remote/comfyui/execution/types.ts`                                   |
+| Frontend settings                                 | `src/platform/settings/types.ts`                                                   |
+| Node definitions                                  | `src/schemas/nodeDefSchema.ts`, `src/schemas/nodeDef/nodeDefSchemaV2.ts`           |
+| Templates                                         | `src/platform/workflow/templates/types/template.ts`                                |
+| Jobs API                                          | `src/platform/remote/comfyui/jobs/jobTypes.ts` (`zJobDetail`, `zJobsListResponse`) |
+| Workflow validation                               | `src/platform/workflow/validation/schemas/workflowSchema.ts`                       |
+| Asset metadata                                    | `src/types/metadataTypes.ts`                                                       |
 
 ```typescript
 // ✅ Import the type and annotate mock data
@@ -973,6 +1020,14 @@ pnpm test:browser:local --update-snapshots
 3. CI generates and commits the Linux baselines.
 
 Fork PRs can't auto-commit screenshots — a maintainer commits them for you.
+
+### Canvas baselines: pin the viewport instead of re-baselining
+
+If a canvas screenshot diff is only a viewport translation (same image size,
+the whole graph shifted), the baseline is not stale: pin the pan/zoom in the
+test before the shot rather than regenerating. Regenerate only when the
+product changed, and open the diff to confirm the change is the one you made
+rather than a viewport shift.
 
 ## Debugging in CI
 

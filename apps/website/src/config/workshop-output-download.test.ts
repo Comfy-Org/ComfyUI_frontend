@@ -1,4 +1,3 @@
-// @vitest-environment happy-dom
 import { describe, expect, it, vi } from 'vitest'
 
 import { attachmentUrl, downloadOutput } from './workshop-output-download'
@@ -48,9 +47,6 @@ describe('attachmentUrl', () => {
 describe('downloadOutput', () => {
   it('downloads Cloud Storage output through an attachment URL without fetching it', async () => {
     const clicks = recordClicks()
-    const fetch = vi.fn<typeof globalThis.fetch>()
-    vi.stubGlobal('fetch', fetch)
-
     await downloadOutput(signed, 'grok.mp4')
 
     expect(fetch).not.toHaveBeenCalled()
@@ -69,7 +65,7 @@ describe('downloadOutput', () => {
     const open = vi.spyOn(window, 'open').mockReturnValue(null)
     const revoke = vi.spyOn(URL, 'revokeObjectURL').mockImplementation(() => {})
     const body = Promise.withResolvers<void>()
-    const fetch = vi.fn<typeof globalThis.fetch>().mockResolvedValue(
+    vi.mocked(fetch).mockResolvedValueOnce(
       new Response(
         new ReadableStream({
           async start(controller) {
@@ -81,7 +77,6 @@ describe('downloadOutput', () => {
         { headers: { 'Content-Type': 'video/mp4' } }
       )
     )
-    vi.stubGlobal('fetch', fetch)
     vi.spyOn(URL, 'createObjectURL').mockReturnValue(
       'blob:https://comfy.org/output'
     )
@@ -91,7 +86,7 @@ describe('downloadOutput', () => {
       'wan-video.mp4'
     )
     await vi.advanceTimersByTimeAsync(30_000)
-    expect(fetch.mock.lastCall?.[1]?.signal?.aborted).toBe(false)
+    expect(vi.mocked(fetch).mock.lastCall?.[1]?.signal?.aborted).toBe(false)
     expect(open).not.toHaveBeenCalled()
     expect(clicks).toEqual([])
     body.resolve()
@@ -115,8 +110,7 @@ describe('downloadOutput', () => {
     async (failure) => {
       const clicks = recordClicks()
       const response = Promise.withResolvers<Response>()
-      const fetch = vi.fn<typeof globalThis.fetch>(() => response.promise)
-      vi.stubGlobal('fetch', fetch)
+      vi.mocked(fetch).mockReturnValueOnce(response.promise)
       const open = vi.spyOn(window, 'open').mockReturnValue(null)
       const blob = vi.spyOn(URL, 'createObjectURL')
       const result = downloadOutput(
@@ -145,7 +139,7 @@ describe('downloadOutput', () => {
     vi.useFakeTimers()
     const clicks = recordClicks()
     const open = vi.spyOn(window, 'open').mockReturnValue(null)
-    const fetch = vi.fn<typeof globalThis.fetch>(
+    vi.mocked(fetch).mockImplementation(
       (_url, init) =>
         new Promise<Response>((_resolve, reject) => {
           init?.signal?.addEventListener(
@@ -155,14 +149,13 @@ describe('downloadOutput', () => {
           )
         })
     )
-    vi.stubGlobal('fetch', fetch)
     const result = downloadOutput('https://cdn.example.com/a.png', 'a.png')
     await vi.advanceTimersByTimeAsync(3_999)
     expect(open).not.toHaveBeenCalled()
-    expect(fetch.mock.lastCall?.[1]?.signal?.aborted).toBe(false)
+    expect(vi.mocked(fetch).mock.lastCall?.[1]?.signal?.aborted).toBe(false)
     await vi.advanceTimersByTimeAsync(1)
     await expect(result).resolves.toBe(false)
-    expect(fetch.mock.lastCall?.[1]?.signal?.aborted).toBe(true)
+    expect(vi.mocked(fetch).mock.lastCall?.[1]?.signal?.aborted).toBe(true)
     expect(open).toHaveBeenCalledWith(
       'https://cdn.example.com/a.png',
       '_blank',
@@ -174,17 +167,14 @@ describe('downloadOutput', () => {
   it('reports a late body failure without navigating away from the Models page', async () => {
     vi.useFakeTimers()
     const body = Promise.withResolvers<void>()
-    vi.stubGlobal(
-      'fetch',
-      vi.fn<typeof globalThis.fetch>().mockResolvedValue(
-        new Response(
-          new ReadableStream({
-            async start() {
-              await body.promise
-              throw new TypeError('Connection lost')
-            }
-          })
-        )
+    vi.mocked(fetch).mockResolvedValueOnce(
+      new Response(
+        new ReadableStream({
+          async start() {
+            await body.promise
+            throw new TypeError('Connection lost')
+          }
+        })
       )
     )
     const clicks = recordClicks()
@@ -202,8 +192,6 @@ describe('downloadOutput', () => {
     'downloads local output without a network request or popup: %s',
     async (url) => {
       const clicks = recordClicks()
-      const fetch = vi.fn<typeof globalThis.fetch>()
-      vi.stubGlobal('fetch', fetch)
       const open = vi.spyOn(window, 'open')
       await downloadOutput(url, 'output.png')
       expect(clicks).toEqual([

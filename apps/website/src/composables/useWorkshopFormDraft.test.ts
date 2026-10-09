@@ -1,12 +1,11 @@
-// @vitest-environment happy-dom
 import { render, screen, waitFor } from '@testing-library/vue'
 import { IDBFactory } from 'fake-indexeddb'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { defineComponent, h, ref } from 'vue'
 
-import * as storage from '../config/workshop-draft-storage'
-import { workshopExampleFile } from '../config/workshop-example-file'
-import type { FieldSchema, FormValues } from '../config/workshop-playground'
+import * as storage from '@/config/workshop-draft-storage'
+import { workshopExampleFile } from '@/config/workshop-example-file'
+import type { FieldSchema, FormValues } from '@/config/workshop-playground'
 import { useWorkshopFormDraft } from './useWorkshopFormDraft'
 
 const mediaKey = 'comfy-workshop-form:draft-test:media'

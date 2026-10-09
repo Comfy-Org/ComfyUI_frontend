@@ -3,12 +3,7 @@ import { beforeEach, describe, expect, it, vi } from 'vitest'
 
 describe('eventUtils', () => {
   describe('extractFilesFromDragEvent', () => {
-    let fetchSpy: ReturnType<typeof vi.fn>
-
-    beforeEach(() => {
-      fetchSpy = vi.fn()
-      vi.stubGlobal('fetch', fetchSpy)
-    })
+    beforeEach(() => {})
 
     it('should return empty array when no dataTransfer', async () => {
       const actual = await extractFilesFromDragEvent(new FakeDragEvent('drop'))
@@ -110,7 +105,7 @@ describe('eventUtils', () => {
       const imageBlob = new Blob([new Uint8Array([0x89, 0x50])], {
         type: 'image/png'
       })
-      fetchSpy.mockResolvedValue(new Response(imageBlob))
+      vi.mocked(fetch).mockResolvedValue(new Response(imageBlob))
 
       const dataTransfer = new DataTransfer()
       dataTransfer.setData('text/uri-list', uri)
@@ -119,7 +114,7 @@ describe('eventUtils', () => {
         new FakeDragEvent('drop', { dataTransfer })
       )
 
-      expect(fetchSpy).toHaveBeenCalledOnce()
+      expect(fetch).toHaveBeenCalledOnce()
       expect(actual).toHaveLength(1)
       expect(actual[0]).toBeInstanceOf(File)
       expect(actual[0].type).toBe('image/png')
@@ -130,7 +125,7 @@ describe('eventUtils', () => {
       const imageBlob = new Blob([new Uint8Array([0x89, 0x50])], {
         type: 'image/png'
       })
-      fetchSpy.mockResolvedValue(new Response(imageBlob))
+      vi.mocked(fetch).mockResolvedValue(new Response(imageBlob))
 
       const dataTransfer = new DataTransfer()
       dataTransfer.setData('text/x-moz-url', uri)
@@ -139,13 +134,57 @@ describe('eventUtils', () => {
         new FakeDragEvent('drop', { dataTransfer })
       )
 
-      expect(fetchSpy).toHaveBeenCalledOnce()
+      expect(fetch).toHaveBeenCalledOnce()
       expect(actual).toHaveLength(1)
     })
 
+    it.for([
+      {
+        response: 'a 404 JSON error',
+        status: 404,
+        contentType: 'application/json',
+        body: '{"code":"ASSET_NOT_FOUND","message":"Asset not found"}',
+        fileTypes: []
+      },
+      {
+        response: 'a 500 HTML error',
+        status: 500,
+        contentType: 'text/html',
+        body: '<html>Internal Server Error</html>',
+        fileTypes: []
+      },
+      {
+        response: 'a 200 workflow JSON',
+        status: 200,
+        contentType: 'application/json',
+        body: '{"nodes":[],"links":[],"version":0.4}',
+        fileTypes: ['application/json']
+      }
+    ])(
+      'yields files only for an OK response, given $response',
+      async ({ status, contentType, body, fileTypes }) => {
+        const uri = 'https://example.com/api/assets/asset-1/content'
+        vi.mocked(fetch).mockResolvedValue(
+          new Response(body, {
+            status,
+            headers: { 'content-type': contentType }
+          })
+        )
+
+        const dataTransfer = new DataTransfer()
+        dataTransfer.setData('text/uri-list', uri)
+
+        const actual = await extractFilesFromDragEvent(
+          new FakeDragEvent('drop', { dataTransfer })
+        )
+
+        expect(actual.map((file) => file.type)).toEqual(fileTypes)
+      }
+    )
+
     it('should return empty array when URI fetch fails', async () => {
       const uri = 'https://example.com/api/view?filename=test.png&type=input'
-      fetchSpy.mockRejectedValue(new TypeError('Failed to fetch'))
+      vi.mocked(fetch).mockRejectedValue(new TypeError('Failed to fetch'))
 
       const dataTransfer = new DataTransfer()
       dataTransfer.setData('text/uri-list', uri)

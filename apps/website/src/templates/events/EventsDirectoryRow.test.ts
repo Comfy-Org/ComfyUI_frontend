@@ -1,12 +1,11 @@
-// @vitest-environment happy-dom
 import userEvent from '@testing-library/user-event'
 import { render, screen } from '@testing-library/vue'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { nextTick } from 'vue'
 
-import type { ComfyEvent } from '../../data/events'
+import type { ComfyEvent } from '@/data/events'
 
-import { directoryRows } from '../../utils/eventsDirectory'
+import { directoryRows } from '@/utils/eventsDirectory'
 import EventsDirectoryRow from './EventsDirectoryRow.vue'
 
 const localized = (en: string) => ({ en, 'zh-CN': en })

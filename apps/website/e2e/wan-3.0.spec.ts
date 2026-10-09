@@ -1,8 +1,8 @@
 import { expect } from '@playwright/test'
 
-import { getRoutes } from '../src/config/routes'
-import { wan3Page } from '../src/data/wan3'
-import { t } from '../src/i18n/translations'
+import { getRoutes } from '@/config/routes'
+import { wan3Page } from '@/data/wan3'
+import { t } from '@/i18n/translations'
 import { test } from './fixtures/blockExternalMedia'
 import { waitForIsland } from './fixtures/islands'
 
@@ -14,7 +14,7 @@ const HERO_SECONDARY_CTA = t('wan3.hero.secondaryCta')
 const FAQ_HEADING = t('wan3.faq.heading')
 const RUN_OPTIONS_HEADING = t('wan3.runOptions.heading')
 const REVIEWS_HEADING = t('wan3.reviews.heading')
-const MODELS_ROUTE = getRoutes('en').models
+const MODELS_ROUTE = getRoutes('en').workshop
 const WAN3_TEMPLATE = 'https://cloud.comfy.org/?template=api_wan3_0_t2v'
 
 // Counts are the launch requirement rather than a snapshot of the config:
@@ -82,7 +82,7 @@ test.describe('Wan 3.0 launch page @smoke', () => {
   test('breadcrumb trail links to the models catalog', async ({ page }) => {
     const modelsCrumb = page
       .getByRole('navigation', { name: t('ui.breadcrumb') })
-      .getByRole('link', { name: t('models.breadcrumb.models') })
+      .getByRole('link', { name: t('workshop.model.breadcrumb') })
     await expect(modelsCrumb).toHaveAttribute('href', MODELS_ROUTE)
   })
 
@@ -102,10 +102,7 @@ test.describe('Wan 3.0 launch page @smoke', () => {
           'script[type="application/ld+json"]'
         )
       )
-      return (
-        scripts.find((s) => (s.textContent ?? '').includes('FAQPage'))
-          ?.textContent ?? null
-      )
+      return scripts.find((s) => s.text.includes('FAQPage'))?.text ?? null
     })
     expect(faqJsonLd, 'FAQ JSON-LD script').not.toBeNull()
     const graph = JSON.parse(faqJsonLd!)['@graph'] as {
@@ -162,14 +159,14 @@ test.describe('Wan 3.0 launch page — zh-CN', () => {
     const hero = page.locator('section').filter({
       has: page.getByRole('heading', {
         level: 1,
-        name: t('wan3.hero.title', 'zh-CN')
+        name: t('wan3.hero.title', {}, { locale: 'zh-CN' })
       })
     })
     await expect(hero.getByRole('link').first()).toContainText(/[一-鿿]/)
 
     const faq = page.getByRole('heading', {
       level: 2,
-      name: t('wan3.faq.heading', 'zh-CN')
+      name: t('wan3.faq.heading', {}, { locale: 'zh-CN' })
     })
     await faq.scrollIntoViewIfNeeded()
     await expect(faq).toBeVisible()
@@ -179,13 +176,20 @@ test.describe('Wan 3.0 launch page — zh-CN', () => {
     page
   }) => {
     const modelsCrumb = page
-      .getByRole('navigation', { name: t('ui.breadcrumb', 'zh-CN') })
-      .getByRole('link', { name: t('models.breadcrumb.models', 'zh-CN') })
-    await expect(modelsCrumb).toHaveAttribute('href', getRoutes('zh-CN').models)
+      .getByRole('navigation', {
+        name: t('ui.breadcrumb', {}, { locale: 'zh-CN' })
+      })
+      .getByRole('link', {
+        name: t('workshop.model.breadcrumb', {}, { locale: 'zh-CN' })
+      })
+    await expect(modelsCrumb).toHaveAttribute(
+      'href',
+      getRoutes('zh-CN').workshop
+    )
 
     const footerLink = page
       .locator('footer')
-      .getByRole('link', { name: t('footer.wan3', 'zh-CN') })
+      .getByRole('link', { name: t('footer.wan3', {}, { locale: 'zh-CN' }) })
     await expect(footerLink).toHaveAttribute('href', getRoutes('zh-CN').wan3)
   })
 })

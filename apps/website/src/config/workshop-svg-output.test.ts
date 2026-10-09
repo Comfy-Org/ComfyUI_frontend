@@ -1,3 +1,6 @@
+// @vitest-environment node
+
+import { respondToFetch } from '@comfyorg/test-utils/fetch'
 import { describe, expect, it, vi } from 'vitest'
 
 import { workshopContractSchema } from './workshop-contract'
@@ -59,15 +62,12 @@ describe('SVG output conversion', () => {
   it.for(['https://example.com/vector.svg', 'https://example.com/output/123'])(
     'rasterizes a provider JSON result at %s',
     async (url) => {
-      const localFetch = fetch
-      vi.stubGlobal('fetch', (input: RequestInfo | URL, init?: RequestInit) =>
-        String(input).startsWith('https:')
-          ? Promise.resolve(
-              new Response(init?.method === 'HEAD' ? null : svg, {
-                headers: { 'Content-Type': 'image/svg+xml' }
-              })
-            )
-          : localFetch(input, init)
+      respondToFetch(
+        /^https:/,
+        (_input, init) =>
+          new Response(init?.method === 'HEAD' ? null : svg, {
+            headers: { 'Content-Type': 'image/svg+xml' }
+          })
       )
       const outputs = await parseRouterResponse(
         contract,
@@ -150,8 +150,7 @@ describe('SVG output conversion', () => {
 
   it('keeps a link to oversized remote SVGs and cancels the reader', async () => {
     const cancel = vi.fn()
-    vi.stubGlobal(
-      'fetch',
+    vi.mocked(globalThis.fetch).mockImplementation(
       async () =>
         new Response(
           new ReadableStream({
@@ -183,7 +182,7 @@ describe('SVG output conversion', () => {
     'preserves a successful provider URL when SVG retrieval fails: %s',
     async (failure) => {
       const render = vi.fn(rasterize)
-      vi.stubGlobal('fetch', async () => {
+      vi.mocked(globalThis.fetch).mockImplementation(async () => {
         if (failure === 'network') throw new TypeError('Failed to fetch')
         if (failure === 'empty') return new Response('')
         if (failure === 'oversize')
@@ -215,7 +214,7 @@ describe('SVG output conversion', () => {
   it('falls back on a download deadline but preserves caller cancellation', async () => {
     const deadline = new AbortController()
     vi.spyOn(AbortSignal, 'timeout').mockReturnValue(deadline.signal)
-    vi.stubGlobal('fetch', async () => {
+    vi.mocked(globalThis.fetch).mockImplementation(async () => {
       deadline.abort(new DOMException('Timed out', 'TimeoutError'))
       throw deadline.signal.reason
     })
@@ -234,7 +233,7 @@ describe('SVG output conversion', () => {
     vi.spyOn(AbortSignal, 'timeout').mockReturnValue(
       new AbortController().signal
     )
-    vi.stubGlobal('fetch', async () => {
+    vi.mocked(globalThis.fetch).mockImplementation(async () => {
       caller.abort(reason)
       throw reason
     })
@@ -255,8 +254,6 @@ describe('SVG output conversion', () => {
   ])(
     'never turns unsafe SVG sources into fallback links: %s',
     async (source) => {
-      const fetch = vi.fn()
-      vi.stubGlobal('fetch', fetch)
       await expect(svgOutputs(source, 'vector.svg')).rejects.toThrow(
         'Unsafe SVG URL'
       )

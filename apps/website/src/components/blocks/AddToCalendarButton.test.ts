@@ -1,9 +1,8 @@
-// @vitest-environment happy-dom
 import userEvent from '@testing-library/user-event'
 import { render, screen } from '@testing-library/vue'
 import { describe, expect, it } from 'vitest'
 
-import type { CalendarEvent } from '../../utils/calendar'
+import type { CalendarEvent } from '@/utils/calendar'
 import AddToCalendarButton from './AddToCalendarButton.vue'
 
 const event: CalendarEvent = {

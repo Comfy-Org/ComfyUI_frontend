@@ -3,6 +3,7 @@ import { config as dotenvConfig } from 'dotenv'
 import MCR from 'monocart-coverage-reports'
 
 import { COVERAGE_OUTPUT_DIR } from '@e2e/coverageConfig'
+import { DEPLOY_ACTION_SEEN_SETTINGS } from '@e2e/fixtures/constants/workflowActions'
 import { networkIsolationFixture as base } from '@e2e/fixtures/networkIsolationFixture'
 import {
   ENTRY_PATHS,
@@ -37,11 +38,13 @@ import { assetPath } from '@e2e/fixtures/utils/paths'
 import { nextFrame, sleep } from '@e2e/fixtures/utils/timing'
 import { mockWorkspace, workspace } from '@e2e/fixtures/utils/workspaceMocks'
 import { VueNodeHelpers } from '@e2e/fixtures/VueNodeHelpers'
+import { resolveSetupApiUrl } from '@e2e/utils/e2eConfig'
 import { BottomPanel } from '@e2e/fixtures/components/BottomPanel'
 import { ComfyNodeSearchBox } from '@e2e/fixtures/components/ComfyNodeSearchBox'
 import { ComfyNodeSearchBoxV2 } from '@e2e/fixtures/components/ComfyNodeSearchBoxV2'
 import { ConfirmDialog } from '@e2e/fixtures/components/ConfirmDialog'
 import { ContextMenu } from '@e2e/fixtures/components/ContextMenu'
+import { CurrentUserPopover } from '@e2e/fixtures/components/CurrentUserPopover'
 import { MediaLightbox } from '@e2e/fixtures/components/MediaLightbox'
 import { QueuePanel } from '@e2e/fixtures/components/QueuePanel'
 import { SettingDialog } from '@e2e/fixtures/components/SettingDialog'
@@ -82,6 +85,7 @@ class ComfyPropertiesPanel {
   readonly searchBox: Locator
   readonly titleEditor: TitleEditor
   readonly toggleButton: Locator
+  readonly closeButton: Locator
 
   constructor(readonly page: Page) {
     this.root = page.getByTestId(TestIds.propertiesPanel.root)
@@ -89,6 +93,9 @@ class ComfyPropertiesPanel {
     this.searchBox = this.root.getByPlaceholder(/^Search/)
     this.titleEditor = new TitleEditor(this.root)
     this.toggleButton = page.getByRole('button', {
+      name: 'Toggle properties panel'
+    })
+    this.closeButton = this.root.getByRole('button', {
       name: 'Toggle properties panel'
     })
   }
@@ -247,6 +254,7 @@ export class ComfyPage {
   public readonly clipboard: ClipboardHelper
   public readonly workflow: WorkflowHelper
   public readonly contextMenu: ContextMenu
+  public readonly currentUserPopover: CurrentUserPopover
   public readonly toast: ToastHelper
   public readonly dragDrop: DragDropHelper
   public readonly featureFlags: FeatureFlagHelper
@@ -257,7 +265,6 @@ export class ComfyPage {
   public readonly assets: AssetsHelper
   public readonly modelLibrary: ModelLibraryHelper
   public readonly cloudAuth: CloudAuthHelper
-  public readonly visibleToasts: Locator
 
   /** Worker index to test user ID */
   public readonly userIds: string[] = []
@@ -275,7 +282,7 @@ export class ComfyPage {
     public readonly request: APIRequestContext
   ) {
     this.url = process.env.PLAYWRIGHT_TEST_URL || 'http://localhost:8188'
-    this.apiUrl = process.env.PLAYWRIGHT_SETUP_API_URL || this.url
+    this.apiUrl = resolveSetupApiUrl()
     this.canvas = page.locator('#graph-canvas')
     this.selectionToolbox = page.getByTestId(TestIds.selectionToolbox.root)
     this.widgetTextBox = page.getByPlaceholder('text').nth(1)
@@ -304,8 +311,8 @@ export class ComfyPage {
     this.clipboard = new ClipboardHelper(this.keyboard, page)
     this.workflow = new WorkflowHelper(this)
     this.contextMenu = new ContextMenu(page)
+    this.currentUserPopover = new CurrentUserPopover(page)
     this.toast = new ToastHelper(page)
-    this.visibleToasts = this.toast.visibleToasts
     this.dragDrop = new DragDropHelper(page)
     this.featureFlags = new FeatureFlagHelper(page)
     this.command = new CommandHelper(page)
@@ -371,6 +378,7 @@ export class ComfyPage {
           'Comfy.EnableTooltips': false,
           'Comfy.TutorialCompleted': true,
           [TOUR_SEEN_SETTING]: [...ENTRY_PATHS],
+          ...DEPLOY_ACTION_SEEN_SETTINGS,
           'Comfy.Queue.MaxHistoryItems': 64,
           'Comfy.SnapToGrid.GridSize': testComfySnapToGridGridSize,
           'Comfy.VersionCompatibility.DisableWarnings': true,
@@ -634,6 +642,8 @@ export const comfyPageFixture = base.extend<{
   initialLocalStorage: Record<string, string>
   initialSettings: Record<string, unknown>
   initialUrl: string | undefined
+  mockReleases: boolean
+  firebaseLogin: boolean
   comfyPage: ComfyPage
   comfyMouse: ComfyMouse
   comfyFiles: ComfyFiles
@@ -648,6 +658,9 @@ export const comfyPageFixture = base.extend<{
   // the fixture's defaults so per-test values win.
   initialSettings: [{}, { option: true }],
   initialUrl: [undefined, { option: true }],
+  mockReleases: [true, { option: true }],
+  // Set `false` to open a cloud tab that holds no Firebase login.
+  firebaseLogin: [true, { option: true }],
 
   page: async ({ page, browserName }, use) => {
     if (browserName !== 'chromium' || !COLLECT_COVERAGE) {
@@ -674,7 +687,9 @@ export const comfyPageFixture = base.extend<{
       initialFeatureFlags,
       initialLocalStorage,
       initialSettings,
-      initialUrl
+      initialUrl,
+      mockReleases,
+      firebaseLogin
     },
     use,
     testInfo
@@ -738,7 +753,8 @@ export const comfyPageFixture = base.extend<{
         await mockWorkspace(context, workspace('personal', 'owner'), [])
       }
       if (testInfo.tags.includes('@cloud') || testInfo.tags.includes('@auth')) {
-        await comfyPage.cloudAuth.mockAuth()
+        if (firebaseLogin) await comfyPage.cloudAuth.mockAuth()
+        else await comfyPage.cloudAuth.mockFirebaseEndpoints()
       }
 
       if (isCustomNodes) await installCustomNodeBlankStartup(page)
@@ -748,7 +764,11 @@ export const comfyPageFixture = base.extend<{
         await comfyPage.featureFlags.seedFlags(initialFeatureFlags)
       }
 
-      await comfyPage.setup({ initialLocalStorage, url: initialUrl })
+      await comfyPage.setup({
+        initialLocalStorage,
+        url: initialUrl,
+        mockReleases
+      })
 
       if (startupErrorCollector) {
         startupErrorCollector.stop()

@@ -70,6 +70,7 @@ export class AppModeHelper {
   public readonly vueNodeSwitchDontShowAgainCheckbox: Locator
   /** The main content area where outputs are displayed*/
   public readonly centerPanel: Locator
+  public readonly rightPanelResizeHandle: Locator
 
   constructor(private readonly comfyPage: ComfyPage) {
     this.mobile = new MobileAppHelper(comfyPage)
@@ -144,10 +145,26 @@ export class AppModeHelper {
       TestIds.appMode.vueNodeSwitchDontShowAgain
     )
     this.centerPanel = this.page.getByTestId(TestIds.linear.centerPanel)
+    this.rightPanelResizeHandle = this.page
+      .getByRole('separator')
+      .and(this.page.locator('[aria-controls="linearCenterPanel"]'))
   }
 
   private get page(): Page {
     return this.comfyPage.page
+  }
+
+  async resizeRightPanelBy(deltaX: number): Promise<void> {
+    const box = await this.rightPanelResizeHandle.boundingBox()
+    if (!box)
+      throw new Error('App mode right panel resize handle has no layout')
+
+    const x = box.x + box.width / 2
+    const y = box.y + box.height / 2
+    await this.page.mouse.move(x, y)
+    await this.page.mouse.down()
+    await this.page.mouse.move(x + deltaX, y, { steps: 10 })
+    await this.page.mouse.up()
   }
 
   async enableLinearMode() {
@@ -161,14 +178,7 @@ export class AppModeHelper {
 
   /** Enter builder mode via the "Workflow actions" dropdown. */
   async enterBuilder() {
-    // Wait for any workflow-tab popover to dismiss before clicking —
-    // the popover overlay can intercept the "Workflow actions" click.
-    // Best-effort: the popover may or may not exist; if it stays visible
-    // past the timeout we still proceed with the click.
-    await this.page
-      .locator('.workflow-popover-fade')
-      .waitFor({ state: 'hidden', timeout: 5000 })
-      .catch(() => {})
+    await this.comfyPage.menu.topbar.dismissWorkflowPopover()
 
     await this.workflowActions.trigger.click()
     await this.page

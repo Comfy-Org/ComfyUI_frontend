@@ -5,7 +5,9 @@ See @docs/guidance/\*.md for file-type-specific conventions (auto-loaded by glob
 - `docs/guidance/engineering.md` — general engineering guidelines, project philosophy, code-review checklist, external resource links
 - `docs/guidance/vue-components.md` — Vue 3 Composition API best practices
 - `docs/guidance/state-and-effects.md` — modelling a feature's state: one discriminated union, named events, a pure transition, effects reserved for synchronising outward
+- `docs/guidance/error-handling.md` — failure as data: return outcomes instead of throwing, convert at the untrusted call, validate before mutation, report once at the ownership boundary, when a throw is still right
 - `docs/guidance/typescript.md` — TypeScript type-safety rules
+- `docs/guidance/testing-principles.md` — test design rules that hold at every level: behavioral assertions, lowest proving level, N + M + 1 composition and table-driven cases with sparse filters, isolation, classical doubles, coverage as a gap finder, changing existing tests
 - `docs/guidance/vitest.md` — Vitest unit/component test conventions
 - `docs/guidance/playwright.md` — Playwright E2E conventions and API-mock typing table
 - `docs/guidance/storybook.md` — Storybook story patterns
@@ -89,6 +91,7 @@ Guardrails: agents must use `comfyPage` fixture (not bare `page`), never add `wa
 - `pnpm lint` / `pnpm lint:fix`: Lint (ESLint)
 - `pnpm format` / `pnpm format:check`: oxfmt
 - `pnpm typecheck`: Vue TSC type checking
+- `pnpm deps:audit`: Report `src/` import cycles with dependency-cruiser (warnings only, not a gate)
 - `pnpm storybook`: Start Storybook development server
 
 > **`vue-tsc` needs its own `node_modules` in the checkout.** `vue-tsc --noEmit`
@@ -104,10 +107,16 @@ Guardrails: agents must use `comfyPage` fixture (not bare `page`), never add `wa
 ## Development Workflow
 
 1. Make code changes
-2. Run relevant tests
-3. Run `pnpm typecheck`, `pnpm lint`, `pnpm format`
+2. Run the tests for what you changed: `pnpm test:unit path/to/file`
+3. Lint what you changed: `pnpm lint:unstaged:fix`
 4. Check if README updates are needed
 5. Suggest docs.comfy.org updates for user-facing changes
+
+Do not run repo-wide checks to verify your work: `pnpm lint`, `pnpm typecheck`,
+`pnpm knip`, `pnpm build`, or `pnpm test:unit` without a path. They load every
+core, and chained together they take minutes. The pre-commit hook already
+formats, lints, and typechecks what you stage, the pre-push hook runs knip, and
+CI runs everything.
 
 ## Git Conventions
 
@@ -170,7 +179,7 @@ Guardrails: agents must use `comfyPage` fixture (not bare `page`), never add `wa
   - Keep it extremely concise and information-dense
   - Don't use emojis or add excessive headers/sections
   - Follow the PR description template in the `.github/` folder.
-- Quality gates:
+- Quality gates, enforced by the git hooks and CI (see Development Workflow):
   - `pnpm lint`
   - `pnpm typecheck`
   - `pnpm knip`
@@ -208,10 +217,7 @@ See `docs/guidance/design-standards.md` for Figma file keys, section node IDs, a
 
 - Frameworks: Vitest (unit/component, happy-dom) and Playwright (E2E).
 - Locations: unit/component `src/**/*.test.ts`, E2E `browser_tests/**/*.spec.ts`, litegraph `src/lib/litegraph/test/`.
-- Do not write change detector tests, e.g. a test that just asserts that the defaults are certain values
-- Do not write tests that are dependent on non-behavioral features like utility classes or styles
-- Be parsimonious in testing, do not write redundant tests (see [composable tests](https://tidyfirst.substack.com/p/composable-tests))
-- [Don't Mock What You Don't Own](https://hynek.me/articles/what-to-mock-in-5-mins/)
+- Principles: `docs/guidance/testing-principles.md` (auto-loaded for `*.test.ts` and `*.spec.ts`). Behavioral tests, no change detectors, parameterized tables over copied bodies, mock only what you own, fewest tests that keep coverage.
 - Conventions: `docs/guidance/vitest.md` (unit/component), `docs/guidance/playwright.md` (E2E), and `docs/testing/*.md` for detailed patterns.
 
 ## Architecture Decision Records
