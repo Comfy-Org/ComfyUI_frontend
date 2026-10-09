@@ -24,6 +24,7 @@ import { defaultGraph } from '@/scripts/defaultGraph'
 import { useExecutionStore } from '@/stores/executionStore'
 import type { NodeExecutionId, NodeLocatorId } from '@/types/nodeIdentification'
 import {
+  appendLeafNodeExecutionId,
   createLeafNodeExecutionId,
   createLeafNodeLocatorId,
   createNodeExecutionId,
@@ -744,7 +745,10 @@ export const useWorkflowStore = defineStore('workflow', () => {
       return null
     }
 
-    return createNodeExecutionId([...path, localNodeId])
+    const parentExecutionId = createNodeExecutionId(path)
+    return parentExecutionId
+      ? appendLeafNodeExecutionId(parentExecutionId, localNodeId)
+      : null
   }
 
   return {

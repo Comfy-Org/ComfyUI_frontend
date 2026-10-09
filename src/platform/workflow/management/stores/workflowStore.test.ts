@@ -1215,6 +1215,21 @@ describe('useWorkflowStore', () => {
           'insert:0fbd38ecb13037d0b3b0ca78b8a20a5a:root:node:9'
         )
       })
+
+      it('should append an encoded subgraph leaf to its execution path', () => {
+        vi.mocked(isSubgraph).mockImplementation((obj): obj is Subgraph => {
+          return obj === store.activeSubgraph
+        })
+        const locatorId = createLeafNodeLocatorId(
+          'a1b2c3d4-e5f6-7890-abcd-ef1234567890',
+          'insert:abc123:root:node:5'
+        )
+        expect(locatorId).not.toBeNull()
+
+        const result = store.nodeLocatorIdToNodeExecutionId(locatorId!)
+
+        expect(result).toBe('123:insert:abc123:root:node:5')
+      })
     })
   })
 
