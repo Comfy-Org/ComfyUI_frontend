@@ -20,7 +20,9 @@ const config: KnipConfig = {
         '*.{js,ts,mts}',
         '!.claude/**',
         '!worktrees/**',
-        '!src/__ecs_matrix__/**'
+        '!src/__ecs_matrix__/**',
+        '!**/.vercel/**',
+        '!apps/website-storybook-mcp/public/**'
       ],
       ignore: ['scripts/registry-census/detection-proof/**']
     },
@@ -53,7 +55,11 @@ const config: KnipConfig = {
     },
     'apps/website': {
       // Models pages are registered by the release-gate integration.
-      entry: ['src/scripts/**/*.ts', 'src/routes/models/*.{astro,ts}'],
+      entry: [
+        'src/scripts/**/*.ts',
+        'src/routes/models/*.{astro,ts}',
+        'src/**/*.stories.ts'
+      ],
       // Executed by models-snippets.test.ts inside the generated Node examples.
       ignoreDependencies: ['mime-types']
     },
@@ -76,8 +82,6 @@ const config: KnipConfig = {
     'apps/website/src/types/rate-card/index.ts',
     'apps/website/src/types/rate-card/types.gen.ts',
     'apps/website/src/types/rate-card/zod.gen.ts',
-    // Marketing media tooling — adopted by pages in a follow-up PR
-    'apps/website/src/components/common/SiteVideo.vue',
     // Animated pill button — retained for reuse after the learning directory
     // switched to ButtonPill; no current consumer
     'apps/website/src/components/ui/button-mask/**',
