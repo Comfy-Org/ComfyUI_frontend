@@ -96,7 +96,8 @@ class AgentBillingFixture {
     this.status = {
       ...FUNDED_BILLING_STATUS,
       has_funds: hasFunds,
-      scoped_effective_has_funds: { agent: hasFunds }
+      scoped_effective_has_funds: { agent: hasFunds },
+      scoped_has_funds: { agent: hasFunds }
     }
   }
 
