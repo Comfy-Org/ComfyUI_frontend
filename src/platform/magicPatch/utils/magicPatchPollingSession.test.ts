@@ -141,6 +141,38 @@ describe('Magic Patch polling session', () => {
     session.dispose()
   })
 
+  it('resets capped backoff after success before an immediate coalesced rerun fails', async () => {
+    vi.useFakeTimers()
+    const list = vi
+      .fn()
+      .mockResolvedValue({ ok: false, code: 'request_failed' })
+    const session = createMagicPatchPollingSession({ list })
+    session.update(context)
+    await tick()
+    for (const delay of [5000, 10000, 20000]) {
+      await vi.advanceTimersByTimeAsync(delay)
+    }
+    expect(list).toHaveBeenCalledTimes(4)
+    const pendingSuccess = deferredPage()
+    list.mockReturnValueOnce(pendingSuccess.promise)
+    await vi.advanceTimersByTimeAsync(30000)
+    expect(list).toHaveBeenCalledTimes(5)
+    session.refreshNow()
+    pendingSuccess.resolve(success())
+    await tick()
+    expect(list).toHaveBeenCalledTimes(6)
+    expect(list.mock.calls[5][0]).toBeUndefined()
+    expect(session.getState()).toMatchObject({
+      phase: 'failed',
+      requests: { [request.id]: request }
+    })
+    await vi.advanceTimersByTimeAsync(4999)
+    expect(list).toHaveBeenCalledTimes(6)
+    await vi.advanceTimersByTimeAsync(1)
+    expect(list).toHaveBeenCalledTimes(7)
+    session.dispose()
+  })
+
   it('coalesces repeated explicit refreshes during a scan into one cursorless rerun', async () => {
     vi.useFakeTimers()
     const pending = deferredPage()

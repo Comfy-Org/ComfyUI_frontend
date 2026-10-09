@@ -73,18 +73,17 @@ export function createMagicPatchPollingSession(
       if (scheduling !== running) return
       scheduling = { phase: 'stopped' }
       if (!allowed()) return
-      if (running.rerun) {
-        schedule(0)
-      } else if (poller.getState().phase === 'failed') {
-        schedule(failureDelay)
-        failureDelay = Math.min(
-          failureDelay * 2,
-          magicPatchPollingSchedule.maximumFailureDelayMilliseconds
-        )
-      } else {
-        failureDelay = magicPatchPollingSchedule.intervalMilliseconds
-        schedule(failureDelay)
-      }
+      const failed = poller.getState().phase === 'failed'
+      const delay = failed
+        ? failureDelay
+        : magicPatchPollingSchedule.intervalMilliseconds
+      failureDelay = failed
+        ? Math.min(
+            failureDelay * 2,
+            magicPatchPollingSchedule.maximumFailureDelayMilliseconds
+          )
+        : magicPatchPollingSchedule.intervalMilliseconds
+      schedule(running.rerun ? 0 : delay)
     }
   }
 
