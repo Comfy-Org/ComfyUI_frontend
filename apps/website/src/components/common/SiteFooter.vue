@@ -231,7 +231,9 @@ const columnGroups: FooterColumn[][] = [
       >
         <div class="flex flex-col gap-6">
           <FooterSocialLinks :locale />
-          <p class="text-2xl font-medium tracking-wide uppercase lg:text-3xl">
+          <p
+            class="text-2xl font-medium tracking-wide text-primary-warm-gray uppercase lg:text-3xl"
+          >
             {{ t('footer.tagline') }}
           </p>
         </div>
