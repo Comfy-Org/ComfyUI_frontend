@@ -5383,6 +5383,11 @@
       "label": "Compare",
       "before": "Before",
       "after": "After"
+    },
+    "tools": "Shot tools",
+    "sheet": {
+      "expand": "Show shot settings",
+      "collapse": "Hide shot settings"
     }
   },
   "reshoot": {

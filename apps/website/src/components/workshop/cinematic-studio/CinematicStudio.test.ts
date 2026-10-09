@@ -139,6 +139,8 @@ async function chooseTakes(
 
 const generateButton = () => screen.getByTestId('cinematic-generate')
 
+const FULLSCREEN_FLAG = 'workshop-cinematic-fullscreen-enabled'
+
 describe('CinematicStudio', () => {
   beforeEach(() => {
     deploy.env = ''
@@ -146,7 +148,9 @@ describe('CinematicStudio', () => {
     vi.mocked(useWorkshopEnabled).mockReturnValue(computed(() => true))
     vi.mocked(useWorkshopEnabledSettled).mockReturnValue(computed(() => true))
     vi.mocked(useWorkshopAppsEnabled).mockReturnValue(computed(() => true))
-    vi.mocked(useWorkshopFlag).mockReturnValue(computed(() => true))
+    vi.mocked(useWorkshopFlag).mockImplementation((name) =>
+      computed(() => name !== FULLSCREEN_FLAG)
+    )
     const session = useWorkshopSession()
     session.session = computed(() => signedIn.value)
     vi.mocked(session.ensureFresh).mockResolvedValue({
@@ -1669,6 +1673,105 @@ describe('CinematicStudio', () => {
 
     await user.click(camera)
     expect(screen.queryByTestId('cinematic-picker')).toBeNull()
+  })
+
+  describe('full-screen editor flag', () => {
+    const editorAttribute = () =>
+      document.documentElement.hasAttribute('data-workshop-editor')
+
+    function renderPage(fullscreen: boolean) {
+      vi.mocked(useWorkshopFlag).mockImplementation((name) =>
+        computed(() => name !== FULLSCREEN_FLAG || fullscreen)
+      )
+      const page = render(CinematicStudioPage, {
+        props: { apps: appModels, models }
+      })
+      return { ...page, user: userEvent.setup() }
+    }
+
+    it('keeps the site page layout while the flag is off', async () => {
+      renderPage(false)
+
+      expect(
+        await screen.findByRole('complementary', { name: 'Shot settings' })
+      ).toBeInTheDocument()
+      expect(screen.getByRole('heading', { level: 1 })).toHaveTextContent(
+        'Cinematic Studio'
+      )
+      expect(screen.queryByTestId('apps-home')).toBeNull()
+      expect(editorAttribute()).toBe(false)
+    })
+
+    it('opens full screen on the editor shell while the flag is on, and hands the page back on leaving', async () => {
+      const { unmount } = renderPage(true)
+
+      expect(
+        await screen.findByRole('complementary', { name: 'Shot settings' })
+      ).toBeInTheDocument()
+      expect(screen.getByTestId('apps-home')).toBeInTheDocument()
+      expect(screen.getByTestId('apps-back')).toHaveAccessibleName(
+        'Back to apps'
+      )
+      expect(editorAttribute()).toBe(true)
+
+      unmount()
+
+      expect(editorAttribute()).toBe(false)
+    })
+
+    it('runs a shot from the floating panel and offers it in the header download', async () => {
+      vi.mocked(router_render).mockImplementation(async (slug) =>
+        rendered(slug)
+      )
+      const { user } = renderPage(true)
+      expect(
+        await screen.findByRole('button', { name: 'Download' })
+      ).toHaveAttribute('aria-disabled', 'true')
+
+      await user.type(screen.getByLabelText('Scene'), 'A diner at dawn')
+      await user.click(generateButton())
+
+      expect(await screen.findByAltText(/A diner at dawn/)).toBeInTheDocument()
+      expect(screen.queryByRole('button', { name: 'Download' })).toBeNull()
+      expect(
+        screen
+          .getAllByRole('link', { name: 'Download' })
+          .map((link) => link.getAttribute('download'))
+      ).toEqual(['shot.png', 'shot.png'])
+    })
+
+    it('anchors a picker beside the floating panel, centred on its row', async () => {
+      vi.spyOn(Element.prototype, 'getBoundingClientRect').mockImplementation(
+        function (this: Element) {
+          if (this.getAttribute('data-testid') === 'cinematic-picker')
+            return DOMRect.fromRect({ y: 0, height: 300 })
+          if (this.getAttribute('aria-expanded') === 'true')
+            return DOMRect.fromRect({ y: 400, height: 48 })
+          return DOMRect.fromRect({ y: 100, height: 1000 })
+        }
+      )
+      const { user } = renderPage(true)
+      const panel = await screen.findByRole('complementary', {
+        name: 'Shot settings'
+      })
+
+      await user.click(within(panel).getByRole('button', { name: /^Film/ }))
+      const picker = await screen.findByTestId('cinematic-picker')
+      await vi.waitFor(() =>
+        expect(picker.style.getPropertyValue('--anchor-top')).toBe('274px')
+      )
+      await user.click(
+        within(screen.getByRole('dialog', { name: 'Film' })).getByRole(
+          'radio',
+          { name: 'Daylight 250D' }
+        )
+      )
+
+      expect(screen.queryByRole('dialog')).toBeNull()
+      expect(
+        within(panel).getByRole('button', { name: /^Film.*Daylight 250D/ })
+      ).toBeInTheDocument()
+    })
   })
 
   describe('layout switch', () => {

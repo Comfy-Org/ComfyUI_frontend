@@ -4776,6 +4776,11 @@
       "label": "对比",
       "before": "之前",
       "after": "之后"
+    },
+    "tools": "镜头工具",
+    "sheet": {
+      "expand": "显示镜头设置",
+      "collapse": "隐藏镜头设置"
     }
   },
   "reshoot": {
