@@ -93,6 +93,16 @@
     // Public re-export of the ui/utils leaf; the comfyAPI shim only sees
     // declarations in ui.ts.
     { "file": "src/scripts/ui.ts", "exports": ["$el"] },
+    // Public re-exports of the value-control helpers; custom nodes import them
+    // from scripts/widgets.js.
+    {
+      "file": "src/scripts/widgets.ts",
+      "exports": [
+        "addValueControlWidget",
+        "addValueControlWidgets",
+        "updateControlWidgetLabel"
+      ]
+    },
     {
       "file": "src/scripts/ui/imagePreview.ts",
       "exports": ["createImageHost"]

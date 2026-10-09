@@ -1,8 +1,4 @@
 <template>
-  <div
-    ref="positionRef"
-    class="absolute bottom-0 left-1/2 -translate-x-1/2"
-  ></div>
   <Popover
     ref="popoverRef"
     side="top"
@@ -47,7 +43,6 @@ interface Props {
 const props = defineProps<Props>()
 const { thumbnailUrl, isActiveTab } = toRefs(props)
 const popoverRef = ref<InstanceType<typeof Popover> | null>(null)
-const positionRef = ref<HTMLElement | null>(null)
 let hideTimeout: ReturnType<typeof setTimeout> | null = null
 let showTimeout: ReturnType<typeof setTimeout> | null = null
 
@@ -61,10 +56,9 @@ const showPopover = (event: Event) => {
     showTimeout = null
   }
 
+  const target = event.currentTarget
   showTimeout = setTimeout(() => {
-    if (popoverRef.value && positionRef.value) {
-      popoverRef.value.show(event, positionRef.value)
-    }
+    popoverRef.value?.show(event, target)
   }, 200)
 }
 

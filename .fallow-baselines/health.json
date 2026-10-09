@@ -3226,7 +3226,7 @@
         "count": 1
       }
     },
-    "src/scripts/valueControl.ts": {
+    "src/core/graph/widgets/valueControl.ts": {
       "crap_moderate": {
         "count": 1
       }

@@ -22,9 +22,12 @@ export function useAgentHandoff(distribution: Distribution = DISTRIBUTION) {
   const modelToNodeStore = useModelToNodeStore()
   const { copyToClipboard } = useCopyToClipboard()
 
-  function modelInputsByLoader(): ReadonlyMap<string, readonly string[]> {
+  function modelInputsByLoader(): ReadonlyMap<
+    string,
+    readonly (string | RegExp)[]
+  > {
     modelToNodeStore.registerDefaults()
-    const inputs = new Map<string, string[]>()
+    const inputs = new Map<string, (string | RegExp)[]>()
     for (const providers of Object.values(modelToNodeStore.modelToNodeMap)) {
       for (const { nodeDef, key } of providers ?? []) {
         if (!key) continue
