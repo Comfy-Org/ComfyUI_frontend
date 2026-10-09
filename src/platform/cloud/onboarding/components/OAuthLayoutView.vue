@@ -7,8 +7,8 @@
       aria-hidden="true"
     />
     <RouterView />
-    <Toaster />
   </div>
+  <Toaster />
 </template>
 
 <script setup lang="ts">
