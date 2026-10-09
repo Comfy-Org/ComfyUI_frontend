@@ -59,10 +59,12 @@ export const withTheme = (Story: StoryFn, context: StoryContext) => {
   return Story(context.args, context)
 }
 
-const withTooltipProvider = () => ({
-  components: { TooltipProvider },
-  template: '<TooltipProvider><story /></TooltipProvider>'
-})
+function withTooltipProvider() {
+  return {
+    components: { TooltipProvider },
+    template: '<TooltipProvider><story /></TooltipProvider>'
+  }
+}
 
 const preview: Preview = {
   parameters: {

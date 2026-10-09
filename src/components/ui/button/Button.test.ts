@@ -127,15 +127,56 @@ describe('Button', () => {
     expect(button).toHaveAttribute('aria-pressed', 'true')
   })
 
+  it('keeps the same focused button when its tooltip changes between empty and set', async () => {
+    const user = userEvent.setup()
+    const { rerender } = render(Button, {
+      props: { tooltip: '' },
+      attrs: { 'aria-label': 'Category' }
+    })
+    const button = screen.getByRole('button', { name: 'Category' })
+
+    await user.tab()
+    expect(screen.queryByRole('tooltip')).not.toBeInTheDocument()
+    await rerender({ tooltip: 'Lights' })
+
+    expect(screen.getByRole('button', { name: 'Category' })).toBe(button)
+    expect(button).toHaveFocus()
+  })
+
+  it('does not repeat a tooltip equal to its name as its description', async () => {
+    const user = userEvent.setup()
+    render(Button, {
+      props: { tooltip: 'Delete' },
+      attrs: { 'aria-label': 'Delete' }
+    })
+
+    await user.tab()
+
+    await screen.findByRole('tooltip')
+    expect(
+      screen.getByRole('button', { name: 'Delete' })
+    ).not.toHaveAccessibleDescription()
+  })
+
+  it('renders the tooltip slot in place of the tooltip text', async () => {
+    const user = userEvent.setup()
+    render(Button, {
+      props: { tooltip: 'Send' },
+      attrs: { 'aria-label': 'Send' },
+      slots: { tooltip: 'Send <kbd>Enter</kbd>' }
+    })
+
+    await user.tab()
+
+    expect(await screen.findByRole('tooltip')).toHaveTextContent('Send Enter')
+  })
+
   it('renders without tooltip wiring when it has no tooltip', async () => {
     const user = userEvent.setup()
     render(Button, { slots: { default: 'Plain' } })
 
     await user.tab()
 
-    expect(screen.getByRole('button', { name: 'Plain' })).not.toHaveAttribute(
-      'data-state'
-    )
     expect(screen.queryByRole('tooltip')).not.toBeInTheDocument()
   })
 

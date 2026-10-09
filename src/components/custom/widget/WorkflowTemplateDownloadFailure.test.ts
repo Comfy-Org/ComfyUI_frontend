@@ -1,6 +1,6 @@
 import { render, screen } from '@testing-library/vue'
 import userEvent from '@testing-library/user-event'
-import { describe, expect, it, vi } from 'vitest'
+import { describe, expect, it } from 'vitest'
 import { createI18n } from 'vue-i18n'
 
 import WorkflowTemplateDownloadFailure from './WorkflowTemplateDownloadFailure.vue'
@@ -23,27 +23,34 @@ const i18n = createI18n({
   }
 })
 
+function renderFailure(reason: 'cancelled' | 'error') {
+  render(WorkflowTemplateDownloadFailure, {
+    props: {
+      rowName: 'model.safetensors',
+      state: { attempt: 1, reason, status: 'failed' }
+    },
+    global: { plugins: [i18n] }
+  })
+}
+
 describe('WorkflowTemplateDownloadFailure', () => {
-  it.for([
-    { reason: 'error', tooltip: 'Use Retry to try again.' },
-    { reason: 'cancelled', tooltip: undefined }
-  ] as const)(
-    'shows tooltip $tooltip on the badge of a $reason download',
-    async ({ reason, tooltip }) => {
-      vi.useFakeTimers()
-      const user = userEvent.setup({ advanceTimers: vi.advanceTimersByTime })
-      render(WorkflowTemplateDownloadFailure, {
-        props: {
-          rowName: 'model.safetensors',
-          state: { attempt: 1, reason, status: 'failed' }
-        },
-        global: { plugins: [i18n] }
-      })
+  it('shows the retry hint when hovering the badge of a failed download', async () => {
+    const user = userEvent.setup()
+    renderFailure('error')
 
-      await user.hover(screen.getByRole('status'))
-      await vi.advanceTimersByTimeAsync(1000)
+    await user.hover(screen.getByRole('status'))
 
-      expect(screen.queryByRole('tooltip')?.textContent.trim()).toBe(tooltip)
-    }
-  )
+    expect(await screen.findByRole('tooltip')).toHaveTextContent(
+      'Use Retry to try again.'
+    )
+  })
+
+  it('shows no tooltip when hovering the badge of a cancelled download', async () => {
+    const user = userEvent.setup()
+    renderFailure('cancelled')
+
+    await user.hover(screen.getByRole('status'))
+
+    expect(screen.queryByRole('tooltip')).not.toBeInTheDocument()
+  })
 })

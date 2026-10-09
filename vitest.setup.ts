@@ -9,6 +9,7 @@ import type { Plugin } from 'vue'
 
 import './vitest.network.setup'
 
+import { appTooltipProviderDefaults } from '@/components/ui/tooltip/tooltipConfig'
 import { clearRegisteredLiteGraphTypes } from '@/lib/litegraph/src/litegraphInstance'
 import { remoteConfigState } from '@/platform/remoteConfig/remoteConfig'
 import { StubPath2D } from '@/utils/__tests__/stubPath2D'
@@ -19,14 +20,13 @@ const requireFromTestingLibrary = createRequire(
 const { config }: { config: { global: { plugins: Plugin[] } } } =
   requireFromTestingLibrary('@vue/test-utils')
 
-const appTooltipProviderProps = {
-  delayDuration: 300,
+const testTooltipProviderProps = shallowReactive({
+  ...appTooltipProviderDefaults,
+  delayDuration: 0,
   skipDelayDuration: 300,
-  disableHoverableContent: true,
   disableClosingTrigger: undefined,
-  disabled: undefined,
-  ignoreNonKeyboardFocus: true
-}
+  disabled: undefined
+})
 
 const appShellTooltipProvider: Plugin = {
   install(app) {
@@ -34,7 +34,7 @@ const appShellTooltipProvider: Plugin = {
     if (typeof root === 'function' || !root.setup) return
     const setupRoot = root.setup
     root.setup = (props, ctx) => {
-      TooltipProvider.setup?.(shallowReactive(appTooltipProviderProps), ctx)
+      TooltipProvider.setup?.(testTooltipProviderProps, ctx)
       return setupRoot(props, ctx)
     }
   }

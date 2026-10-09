@@ -2,13 +2,14 @@
 import type { PrimitiveProps, TooltipContentProps } from 'reka-ui'
 import { Primitive } from 'reka-ui'
 import type { FunctionalComponent, HTMLAttributes } from 'vue'
+import { useAttrs } from 'vue'
 
 import { cn } from '@comfyorg/tailwind-utils'
 
 import type { ButtonVariants } from '@comfyorg/design-system/button.variants'
 import { buttonVariants } from '@comfyorg/design-system/button.variants'
 
-import ButtonTooltip from './ButtonTooltip.vue'
+import TextTooltip from '@/components/ui/tooltip/TextTooltip.vue'
 
 defineOptions({ inheritAttrs: false })
 
@@ -31,16 +32,27 @@ const {
   disabled = false
 } = defineProps<Props>()
 
+const attrs = useAttrs()
+
 const WithoutTooltip: FunctionalComponent = (_, { slots }) =>
   slots.default?.()[0]
+
+function ariaLabel() {
+  const label = attrs['aria-label']
+  return typeof label === 'string' ? label : undefined
+}
 </script>
 
 <template>
   <component
-    :is="tooltip ? ButtonTooltip : WithoutTooltip"
+    :is="tooltip === undefined ? WithoutTooltip : TextTooltip"
     :text="tooltip"
+    :label="ariaLabel()"
     :side="tooltipSide"
   >
+    <template v-if="$slots.tooltip" #content>
+      <slot name="tooltip" />
+    </template>
     <Primitive
       :as
       :as-child

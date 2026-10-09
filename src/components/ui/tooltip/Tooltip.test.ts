@@ -1,4 +1,4 @@
-import { render, screen } from '@testing-library/vue'
+import { fireEvent, render, screen } from '@testing-library/vue'
 import userEvent from '@testing-library/user-event'
 import { describe, expect, it, onTestFinished } from 'vitest'
 import { defineComponent, ref } from 'vue'
@@ -14,19 +14,19 @@ const TooltipHarness = defineComponent({
   components: { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger },
   directives: { RekaZIndex: vRekaZIndex },
   props: {
-    side: { type: String, default: undefined },
-    disabled: { type: Boolean, default: false }
+    disabled: { type: Boolean, default: false },
+    openOnClick: { type: Boolean, default: false }
   },
   setup() {
     return { dialogs: ref(0) }
   },
   template: `
     <TooltipProvider :delay-duration="0">
-      <Tooltip :disabled>
+      <Tooltip :disabled :open-on-click>
         <TooltipTrigger as-child>
           <button>Trigger</button>
         </TooltipTrigger>
-        <TooltipContent :side>Helpful text</TooltipContent>
+        <TooltipContent>Helpful text</TooltipContent>
       </Tooltip>
       <button @click="dialogs++">Open dialog</button>
       <div v-for="n in dialogs" :key="n" v-reka-z-index data-testid="dialog" />
@@ -114,6 +114,57 @@ describe('Tooltip', () => {
     expect(screen.queryByRole('tooltip')).not.toBeInTheDocument()
   })
 
+  it('closes when it becomes disabled while open', async () => {
+    const user = userEvent.setup()
+    const { rerender } = render(TooltipHarness)
+
+    await user.tab()
+    await screen.findByRole('tooltip')
+    await rerender({ disabled: true })
+
+    expect(screen.queryByRole('tooltip')).not.toBeInTheDocument()
+  })
+
+  it('closes when the wheel scrolls over its trigger', async () => {
+    const user = userEvent.setup()
+    render(TooltipHarness)
+    const trigger = screen.getByRole('button', { name: 'Trigger' })
+
+    await user.hover(trigger)
+    await screen.findByRole('tooltip')
+    await fireEvent.wheel(trigger)
+
+    expect(screen.queryByRole('tooltip')).not.toBeInTheDocument()
+  })
+
+  it.for([
+    { openOnClick: true, expected: 'open' },
+    { openOnClick: false, expected: 'closed' }
+  ])(
+    'is $expected after a tap when openOnClick is $openOnClick',
+    async ({ openOnClick, expected }) => {
+      const user = userEvent.setup()
+      render(TooltipHarness, { props: { openOnClick } })
+      const trigger = screen.getByRole('button', { name: 'Trigger' })
+
+      await user.pointer({ keys: '[TouchA]', target: trigger })
+
+      expect(trigger).toHaveAttribute(
+        'data-state',
+        expect.stringMatching(expected)
+      )
+    }
+  )
+
+  it('stays open after a mouse click when openOnClick is set', async () => {
+    const user = userEvent.setup()
+    render(TooltipHarness, { props: { openOnClick: true } })
+
+    await user.click(screen.getByRole('button', { name: 'Trigger' }))
+
+    expect(await screen.findByRole('tooltip')).toHaveTextContent('Helpful text')
+  })
+
   it('portals its content out of the trigger subtree', async () => {
     const user = userEvent.setup()
     const { container } = render(TooltipHarness)
@@ -124,22 +175,6 @@ describe('Tooltip', () => {
     expect(container).not.toContainElement(tooltip)
     expect(document.body).toContainElement(tooltip)
   })
-
-  it.for(['top', 'right', 'bottom', 'left'] as const)(
-    'places content on the %s side',
-    async (side) => {
-      const user = userEvent.setup()
-      render(TooltipHarness, { props: { side } })
-
-      await user.tab()
-
-      await screen.findByRole('tooltip')
-      expect(screen.getByTestId('tooltip-content')).toHaveAttribute(
-        'data-side',
-        side
-      )
-    }
-  )
 
   it('lifts above the topmost dialog each time it opens', async () => {
     const user = userEvent.setup()

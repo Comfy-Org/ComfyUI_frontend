@@ -39,7 +39,7 @@ function failureLabel(): string {
           {{ failureLabel() }}
         </Badge>
       </TooltipTrigger>
-      <TooltipContent side="top">
+      <TooltipContent>
         {{ t('templateWorkflows.detail.downloadFailedHint') }}
       </TooltipContent>
     </Tooltip>

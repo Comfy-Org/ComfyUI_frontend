@@ -3,18 +3,19 @@ import type { TooltipProviderProps } from 'reka-ui'
 import { TooltipProvider, useForwardProps } from 'reka-ui'
 import { computed } from 'vue'
 
+import { appTooltipProviderDefaults } from './tooltipConfig'
+
 const {
-  delayDuration = 300,
-  disableHoverableContent = true,
-  ignoreNonKeyboardFocus = true,
+  delayDuration = appTooltipProviderDefaults.delayDuration,
+  ignoreNonKeyboardFocus = appTooltipProviderDefaults.ignoreNonKeyboardFocus,
   ...restProps
-} = defineProps<TooltipProviderProps>()
+} = defineProps<Omit<TooltipProviderProps, 'disableHoverableContent'>>()
 const forwarded = useForwardProps(
   computed(() => ({
+    ...restProps,
     delayDuration,
-    disableHoverableContent,
     ignoreNonKeyboardFocus,
-    ...restProps
+    disableHoverableContent: appTooltipProviderDefaults.disableHoverableContent
   }))
 )
 </script>

@@ -32,7 +32,7 @@ const contentStyle = useModalLiftedZIndex(rootContext.open)
 
 <template>
   <TooltipPortal>
-    <div class="pointer-events-none">
+    <div v-if="rootContext.open.value" class="pointer-events-none">
       <TooltipContent
         v-bind="{ ...forwarded, ...$attrs }"
         data-slot="tooltip-content"

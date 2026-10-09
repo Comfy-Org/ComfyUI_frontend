@@ -106,8 +106,8 @@ can reach it. See `src/components/ui/tooltip/README.md` for other triggers.
   <Button
     variant="muted-textonly"
     size="icon"
-    :tooltip="$t('g.moreInformation')"
-    :aria-label="$t('g.moreInformation')"
+    :tooltip="$t('g.learnMore')"
+    :aria-label="$t('g.learnMore')"
   >
     <i class="icon-[lucide--info]" />
   </Button>
