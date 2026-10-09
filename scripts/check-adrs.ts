@@ -5,9 +5,6 @@ import { fileURLToPath } from 'node:url'
 
 const ADR_FILE_PATTERN =
   /^([A-Z][A-Z0-9]*(?:-[A-Z][A-Z0-9]*)*-\d{4})-([a-z0-9]+(?:-[a-z0-9]+)*)\.md$/
-const INDEX_ROW_PATTERN =
-  /^\| \[([A-Z][A-Z0-9]*(?:-[A-Z][A-Z0-9]*)*-\d{4})\]\(([^)]+\.md)\)\s*\| ([^|]+?)\s*\| (Proposed|Accepted|Rejected|Deprecated|Superseded)\s*\| (\d{4}-\d{2}-\d{2}) \|$/
-const INDEX_ROW_CANDIDATE_PATTERN = /^\|\s*\[[^\]]+\]\([^)]+\)\s*\|/
 const LEGACY_REFERENCE_PATTERN =
   /ADR(?:[- ]?\d{4}(?!-\d{2})|(?:-[A-Z][A-Z0-9]*)?\s*(?:\/\s*|\(\s*)\d{4}(?!-\d{2}))|(?:docs\/)?adr\/\d{4}-/
 
@@ -53,7 +50,7 @@ const getMetadata = (directory: string, filename: string): Adr => {
 export const validateAdrDirectory = (directory: string): void => {
   const entries = readdirSync(directory, { withFileTypes: true })
   const markdownFiles = entries
-    .filter((entry) => entry.isFile() && entry.name !== 'README.md')
+    .filter((entry) => entry.isFile())
     .map((entry) => entry.name)
   const invalidFiles = markdownFiles.filter(
     (filename) => !ADR_FILE_PATTERN.test(filename)
@@ -77,38 +74,6 @@ export const validateAdrDirectory = (directory: string): void => {
         `ADR companion directory has no matching ADR: ${companion.name}`
       )
     }
-  }
-
-  const indexLines = readFileSync(join(directory, 'README.md'), 'utf8').split(
-    '\n'
-  )
-  const indexRowCandidates = indexLines.filter((line) =>
-    INDEX_ROW_CANDIDATE_PATTERN.test(line)
-  )
-  const invalidIndexRows = indexRowCandidates.filter(
-    (line) => !INDEX_ROW_PATTERN.test(line)
-  )
-  if (invalidIndexRows.length) {
-    throw new Error(`Invalid ADR index rows:\n${invalidIndexRows.join('\n')}`)
-  }
-
-  const indexRows = indexRowCandidates
-    .map((line) => INDEX_ROW_PATTERN.exec(line))
-    .filter((match): match is RegExpExecArray => match !== null)
-    .map((match) => ({
-      date: match[5],
-      filename: match[2],
-      id: match[1],
-      status: match[4],
-      title: match[3]
-    }))
-  const expected = [...adrs].sort((left, right) =>
-    left.id.localeCompare(right.id)
-  )
-  if (JSON.stringify(indexRows) !== JSON.stringify(expected)) {
-    throw new Error(
-      'ADR index must contain every ADR exactly once, ordered by identifier, with matching title, status, and date'
-    )
   }
 }
 
@@ -147,5 +112,5 @@ if (
   const repositoryRoot = process.cwd()
   validateAdrDirectory(join(repositoryRoot, 'docs/adr'))
   checkLegacyReferences(repositoryRoot)
-  process.stdout.write('ADR naming and index validation passed\n')
+  process.stdout.write('ADR naming validation passed\n')
 }

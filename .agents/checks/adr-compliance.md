@@ -62,7 +62,7 @@ For all other ADRs, iterate through each file in `docs/adr/` and extract the cor
 
 ### How to Apply
 
-1. Read `docs/adr/README.md` to get the full ADR index
+1. List `docs/adr/` to get the full set of ADRs
 2. For each ADR, read the Decision and Consequences sections
 3. Check the diff against each ADR's constraints
 4. Only flag ACTUAL violations in changed code, not pre-existing patterns

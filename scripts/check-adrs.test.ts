@@ -18,10 +18,6 @@ const createFixture = (): string => {
     join(directory, 'ECS-0008-entity-component-system.md'),
     '# ADR-ECS-0008: Entity Component System\n\nDate: 2026-03-23\n\n## Status\n\nProposed\n'
   )
-  writeFileSync(
-    join(directory, 'README.md'),
-    '| [ECS-0008](ECS-0008-entity-component-system.md) | Entity Component System | Proposed | 2026-03-23 |\n'
-  )
   return directory
 }
 
@@ -32,7 +28,7 @@ afterEach(() => {
 })
 
 describe('validateAdrDirectory', () => {
-  test('accepts identifier-based ADRs with a matching index', () => {
+  test('accepts identifier-based ADRs', () => {
     expect(() => validateAdrDirectory(createFixture())).not.toThrow()
   })
 
@@ -45,33 +41,6 @@ describe('validateAdrDirectory', () => {
 
     expect(() => validateAdrDirectory(directory)).toThrow(
       'Invalid ADR filenames'
-    )
-  })
-
-  test('rejects index metadata that differs from the ADR', () => {
-    const directory = createFixture()
-    writeFileSync(
-      join(directory, 'README.md'),
-      '| [ECS-0008](ECS-0008-entity-component-system.md) | Wrong title | Proposed | 2026-03-23 |\n'
-    )
-
-    expect(() => validateAdrDirectory(directory)).toThrow(
-      'ADR index must contain every ADR exactly once'
-    )
-  })
-
-  test('rejects an additional legacy index row', () => {
-    const directory = createFixture()
-    writeFileSync(
-      join(directory, 'README.md'),
-      [
-        '| [ECS-0008](ECS-0008-entity-component-system.md) | Entity Component System | Proposed | 2026-03-23 |',
-        '| [0008](0008-entity) | Legacy duplicate | Proposed | 2026-03-23 |'
-      ].join('\n')
-    )
-
-    expect(() => validateAdrDirectory(directory)).toThrow(
-      'Invalid ADR index rows'
     )
   })
 })
