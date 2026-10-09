@@ -15,22 +15,14 @@ describe('workshopAppHref', () => {
     expect(
       workshopApps('en', appModels).map(({ thumbnail }) => thumbnail)
     ).toEqual(appModels.map((app) => app.thumbnail))
-  })
-
-  it('covers every app card with stills of its outcome, led by its own image', () => {
-    const thumbnails = workshopApps('en', appModels).map(
-      ({ thumbnail }) => thumbnail
-    )
-    expect(thumbnails.length).toBeGreaterThan(0)
-    expect(thumbnails.map((thumbnail) => thumbnail?.kind)).toEqual(
-      thumbnails.map(() => 'image')
-    )
     expect(
-      thumbnails.every((thumbnail) => (thumbnail?.frames?.length ?? 0) >= 3)
-    ).toBe(true)
-    expect(thumbnails.map((thumbnail) => thumbnail?.frames?.[0])).toEqual(
-      thumbnails.map((thumbnail) => thumbnail?.url)
-    )
+      workshopApps('en', appModels).find(({ key }) => key === 'reshoot')
+        ?.thumbnail
+    ).toEqual({
+      url: '/images/apps/reshoot/cover.mp4',
+      kind: 'video',
+      poster: '/images/apps/reshoot/poster.jpg'
+    })
   })
 })
 

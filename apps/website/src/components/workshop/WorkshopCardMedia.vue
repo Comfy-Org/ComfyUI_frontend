@@ -4,8 +4,6 @@ import { useTemplateRef } from 'vue'
 import { usePreviewVideo } from '@/composables/usePreviewVideo'
 import type { WorkshopModel } from '@/config/models-catalogue'
 
-import WorkshopCardFrames from './WorkshopCardFrames.vue'
-
 const { model } = defineProps<{
   model: Pick<WorkshopModel, 'name' | 'thumbnail'>
 }>()
@@ -28,10 +26,6 @@ const previewSrc = usePreviewVideo(video, () => model.thumbnail?.url)
     loop
     playsinline
     preload="metadata"
-  />
-  <WorkshopCardFrames
-    v-else-if="model.thumbnail?.frames"
-    :frames="model.thumbnail.frames"
   />
   <img
     v-else-if="model.thumbnail"

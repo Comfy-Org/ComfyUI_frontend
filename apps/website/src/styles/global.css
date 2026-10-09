@@ -281,22 +281,6 @@
   }
 }
 
-@keyframes cover-drift {
-  from {
-    transform: scale(1);
-  }
-
-  to {
-    transform: scale(1.06) translate3d(-1%, -0.5%, 0);
-  }
-}
-
-@utility animate-cover-drift {
-  @media (prefers-reduced-motion: no-preference) {
-    animation: cover-drift 6s ease-out forwards;
-  }
-}
-
 @keyframes platform-builder-float {
   0%,
   100% {

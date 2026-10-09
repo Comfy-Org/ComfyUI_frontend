@@ -25,34 +25,18 @@ const workshopUseCaseSchema = z.enum(WORKSHOP_USE_CASES)
 
 const STILL_IMAGE = /\.(?:avif|gif|jpe?g|png|webp)(?:[?#].*)?$/i
 
-/** An absolute URL, or a root-relative path to a file this site serves. */
-const assetUrlSchema = z.union([z.string().url(), z.string().regex(/^\/[^/]/)])
-
-const mediaAssetSchema = z
-  .object({
-    url: assetUrlSchema,
-    kind: mediaKindSchema,
-    /** A still shown in place of a video until it plays, or when it never does. */
-    poster: assetUrlSchema
-      .refine((url) => STILL_IMAGE.test(url), 'A poster must be a still image')
-      .optional(),
-    /** Stills of one subject a card cross-fades through, first frame first. */
-    frames: z
-      .array(
-        assetUrlSchema.refine(
-          (url) => STILL_IMAGE.test(url),
-          'A frame must be a still image'
-        )
-      )
-      .min(2)
-      .optional(),
-    /** The prompt that produced a sample, where the content side recorded one. */
-    prompt: z.string().optional()
-  })
-  .refine(
-    (asset) => asset.frames === undefined || asset.kind === 'image',
-    'Only an image thumbnail may cross-fade through frames'
-  )
+const mediaAssetSchema = z.object({
+  /** An absolute URL, or a root-relative path to a file this site serves. */
+  url: z.union([z.string().url(), z.string().regex(/^\/[^/]/)]),
+  kind: mediaKindSchema,
+  /** A still shown in place of a video until it plays, or when it never does. */
+  poster: z
+    .union([z.string().url(), z.string().regex(/^\/[^/]/)])
+    .refine((url) => STILL_IMAGE.test(url), 'A poster must be a still image')
+    .optional(),
+  /** The prompt that produced a sample, where the content side recorded one. */
+  prompt: z.string().optional()
+})
 
 /**
  * A worked example: the values to load into the form, and the output that run
@@ -166,17 +150,9 @@ export const workshopDisplaySchema = workshopDisplaySourceSchema
   .refine(
     (entry) =>
       entry.type === 'APP' ||
-      [entry.media.thumbnail, ...(entry.media.samples ?? [])]
-        .flatMap((asset) =>
-          asset
-            ? [
-                asset.url,
-                ...(asset.poster ? [asset.poster] : []),
-                ...(asset.frames ?? [])
-              ]
-            : []
-        )
-        .every((url) => !url.startsWith('/')),
+      [entry.media.thumbnail, ...(entry.media.samples ?? [])].every(
+        (asset) => asset === undefined || !asset.url.startsWith('/')
+      ),
     'Only app pages may use media this site serves; others use an absolute URL'
   )
   .refine(

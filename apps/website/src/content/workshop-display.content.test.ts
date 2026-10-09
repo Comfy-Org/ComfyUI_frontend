@@ -251,7 +251,11 @@ describe('the display overlay against the catalog', () => {
       [entry.media.thumbnail, ...(entry.media.samples ?? [])]
         .filter((asset) => asset !== undefined)
         .filter((asset) => asset.kind !== 'image')
-        .filter((asset) => new URL(asset.url).hostname.includes('raw.github'))
+        .filter((asset) =>
+          new URL(asset.url, 'https://comfy.org').hostname.includes(
+            'raw.github'
+          )
+        )
         .map((asset) => `${entry.id} ${asset.url}`)
     )
 
@@ -303,61 +307,13 @@ describe('the display overlay against the catalog', () => {
     }
   )
 
-  it.for([
-    {
-      thumbnail: {
-        url: 'https://cdn.test/a.webp',
-        kind: 'image',
-        frames: ['https://cdn.test/a.webp', 'https://cdn.test/b.jpg']
-      },
-      valid: true
-    },
-    {
-      thumbnail: {
-        url: 'https://cdn.test/a.webp',
-        kind: 'image',
-        frames: ['https://cdn.test/a.webp']
-      },
-      valid: false
-    },
-    {
-      thumbnail: {
-        url: 'https://cdn.test/a.webp',
-        kind: 'image',
-        frames: ['https://cdn.test/a.webp', 'https://cdn.test/b.mp4']
-      },
-      valid: false
-    },
-    {
-      thumbnail: {
-        url: 'https://cdn.test/a.mp4',
-        kind: 'video',
-        frames: ['https://cdn.test/a.webp', 'https://cdn.test/b.webp']
-      },
-      valid: false
-    },
-    {
-      thumbnail: {
-        url: 'https://cdn.test/a.webp',
-        kind: 'image',
-        frames: ['/images/a.webp', '/images/b.webp']
-      },
-      valid: false
-    }
-  ])(
-    'accepts frames only as two or more stills on an image ($thumbnail.frames)',
-    ({ thumbnail, valid }) => {
-      const entry = display.find((candidate) => candidate.type !== 'APP')
-      const withFrames = { ...entry, media: { ...entry?.media, thumbnail } }
-      expect(workshopDisplaySchema.safeParse(withFrames).success).toBe(valid)
-    }
-  )
-
   it('finds every site-relative asset in public/', () => {
     const publicDir = join(websiteRoot, 'public')
     const missing = display.flatMap((entry) =>
       [entry.media.thumbnail, ...(entry.media.samples ?? [])]
-        .flatMap((asset) => (asset ? [asset.url, ...(asset.frames ?? [])] : []))
+        .flatMap((asset) =>
+          asset ? [asset.url, ...(asset.poster ? [asset.poster] : [])] : []
+        )
         .filter((url) => url.startsWith('/'))
         .filter((url) => !existsSync(join(publicDir, url)))
     )

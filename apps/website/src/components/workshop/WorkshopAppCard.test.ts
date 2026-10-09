@@ -70,20 +70,4 @@ describe('WorkshopAppCard', () => {
       )
     }
   )
-
-  it('shows the frames of a thumbnail that has them instead of its still', () => {
-    const frames = ['/images/a.webp', '/images/b.webp']
-    render(WorkshopAppCard, {
-      props: {
-        app: { ...app, thumbnail: { url: frames[0], kind: 'image', frames } }
-      }
-    })
-
-    expect(
-      within(screen.getByTestId('app-card-artwork'))
-        .getAllByTestId('model-card-frame')
-        .map((frame) => frame.getAttribute('src'))
-    ).toEqual(frames)
-    expect(screen.queryByTestId('model-card-media')).toBeNull()
-  })
 })

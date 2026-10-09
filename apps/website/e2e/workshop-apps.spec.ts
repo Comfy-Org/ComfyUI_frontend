@@ -118,76 +118,64 @@ test('lists both apps on the hub apps page, on /hub/apps/ pages', async ({
   ).toHaveCount(0)
 })
 
-for (const { reducedMotion, frameCount } of [
-  { reducedMotion: 'no-preference', frameCount: 4 },
-  { reducedMotion: 'reduce', frameCount: 1 }
+const APP_MEDIA = '/images/apps'
+
+for (const { reducedMotion, paused } of [
+  { reducedMotion: 'no-preference', paused: false },
+  { reducedMotion: 'reduce', paused: true }
 ] as const) {
-  test(`covers each hub app card with ${frameCount} decoded frame(s) of its outcome with ${reducedMotion} motion`, async ({
+  test(`loads each hub app card's poster and keeps its video thumbnail ${paused ? 'held still' : 'playing'} with ${reducedMotion} motion`, async ({
     page,
     context
   }) => {
     await mockFlags(context, { apps: true, workflows: false })
     await page.emulateMedia({ reducedMotion })
+    const posters: string[] = []
+    page.on('requestfinished', (request) => {
+      if (request.url().endsWith('/poster.jpg'))
+        posters.push(new URL(request.url()).pathname)
+    })
     await page.goto('/hub/apps/')
 
-    const covers = page
+    const artwork = page
       .getByTestId('app-shelf')
-      .getByTestId('model-card-frames')
-    await expect(covers).toHaveCount(2)
-    await expect(
-      page.getByTestId('app-shelf').getByTestId('model-card-media')
-    ).toHaveCount(0)
+      .getByTestId('model-card-media')
+    await expect(artwork).toHaveCount(2)
+    await expect(artwork.nth(0)).toHaveAttribute(
+      'src',
+      `${APP_MEDIA}/cinematic-studio/cover.mp4`
+    )
+    await expect(artwork.nth(1)).toHaveAttribute(
+      'src',
+      `${APP_MEDIA}/reshoot/cover.mp4`
+    )
     await expect
-      .poll(() =>
-        covers.evaluateAll((elements) =>
-          elements.map(
-            (cover) =>
-              Array.from(
-                cover.querySelectorAll<HTMLImageElement>(
-                  '[data-testid="model-card-frame"]'
-                )
-              ).filter((image) => image.complete && image.naturalWidth > 0)
-                .length
-          )
-        )
-      )
-      .toEqual([frameCount, frameCount])
+      .poll(() => posters.toSorted())
+      .toEqual([
+        `${APP_MEDIA}/cinematic-studio/poster.jpg`,
+        `${APP_MEDIA}/reshoot/poster.jpg`
+      ])
+    await expect(artwork.nth(0)).toHaveJSProperty('paused', paused)
+    await expect(artwork.nth(1)).toHaveJSProperty('paused', paused)
   })
 }
 
-test('moves each hub app cover on to its next frame while it is on screen', async ({
+test('decodes a frame of each hub app card video while it plays', async ({
   page,
   context
 }) => {
   await mockFlags(context, { apps: true, workflows: false })
   await page.goto('/hub/apps/')
 
-  const covers = page.getByTestId('app-shelf').getByTestId('model-card-frames')
-  await expect(covers).toHaveCount(2)
-  const shownFrames = () =>
-    covers.evaluateAll((elements) =>
-      elements.map((cover) =>
-        Array.from(
-          cover.querySelectorAll<HTMLImageElement>(
-            '[data-testid="model-card-frame"]'
-          )
-        )
-          .find(
-            (image) =>
-              image.parentElement !== null &&
-              Number.parseFloat(getComputedStyle(image.parentElement).opacity) >
-                0.5
-          )
-          ?.getAttribute('src')
+  const artwork = page.getByTestId('app-shelf').getByTestId('model-card-media')
+  await expect(artwork).toHaveCount(2)
+  await expect
+    .poll(() =>
+      artwork.evaluateAll((videos: HTMLVideoElement[]) =>
+        videos.map((video) => video.videoWidth > 0 && video.readyState >= 2)
       )
     )
-  const first = await shownFrames()
-  await expect
-    .poll(async () => {
-      const now = await shownFrames()
-      return now.every((src, index) => src !== first[index])
-    })
-    .toBe(true)
+    .toEqual([true, true])
 })
 
 test('hides Re-shoot from the hub apps page and closes its page while its flag is off', async ({
