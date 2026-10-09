@@ -7,11 +7,13 @@ import Button from '@/components/ui/button/Button.vue'
 const {
   expanded = false,
   workflowName,
-  context
+  context,
+  hideIntro = false
 } = defineProps<{
   expanded?: boolean
   workflowName?: string
   context?: 'following' | 'mismatch' | 'unavailable'
+  hideIntro?: boolean
 }>()
 
 const emit = defineEmits<{ showTarget: [] }>()
@@ -28,7 +30,7 @@ const defaultNotice = computed(() =>
 
 <template>
   <div
-    v-if="context || !dismissed"
+    v-if="context || !(dismissed || hideIntro)"
     role="note"
     :aria-live="context ? 'polite' : undefined"
     class="relative flex items-start gap-2 overflow-hidden rounded-lg bg-base-background p-4 ring-1 ring-border-subtle before:absolute before:inset-y-0 before:left-0 before:w-1 before:bg-muted-background"

@@ -1,4 +1,5 @@
 import type { Meta, StoryObj } from '@storybook/vue3-vite'
+import { expect, userEvent, within } from 'storybook/test'
 
 import { toTurnId } from '../../schemas/agentApiSchema'
 import type { HistoryGroups } from '../../stores/agent/agentChatHistoryStore'
@@ -126,4 +127,50 @@ export const FreeUseAboveInput: Story = {
 export const FreeUseInsideInput: Story = {
   name: 'DES-1221 e / inside input',
   args: { freeUsePlacement: 'inside-input' }
+}
+
+/**
+ * DES-1224. The opening message adapts to what the agent knows about the
+ * canvas. a–c have not inspected the workflow; d–e have found a problem in it.
+ */
+export const GreetingEmptyCanvas: Story = {
+  name: 'DES-1224 a / empty canvas',
+  args: { userName: 'Jo', greeting: { kind: 'emptyCanvas' } }
+}
+
+export const GreetingWorkflowOpen: Story = {
+  name: 'DES-1224 b / workflow open, not inspected',
+  args: { userName: 'Jo', greeting: { kind: 'workflowOpen' } }
+}
+
+export const GreetingFirstOpen: Story = {
+  name: 'DES-1224 c / first open',
+  args: { userName: 'Jo', greeting: { kind: 'firstOpen' } }
+}
+
+const unconnectedInput = {
+  kind: 'unconnectedInput',
+  node: 'VAE Decode',
+  input: 'vae'
+} as const
+
+export const GreetingWorkflowAware: Story = {
+  name: 'DES-1224 d / workflow-aware',
+  args: { userName: 'Jo', greeting: unconnectedInput }
+}
+
+export const GreetingWorkflowAwareAsked: Story = {
+  name: 'DES-1224 e / workflow-aware, CTA pressed',
+  args: { userName: 'Jo', greeting: unconnectedInput },
+  play: async ({ canvasElement }) => {
+    const canvas = within(canvasElement)
+    const button = canvas.getByRole('button', { name: 'Ask about this input' })
+
+    await userEvent.click(button)
+
+    await expect(button).toBeDisabled()
+    await expect(canvas.getByRole('textbox')).toHaveTextContent(
+      'Why isn’t the vae input on VAE Decode connected, and what should go there?'
+    )
+  }
 }

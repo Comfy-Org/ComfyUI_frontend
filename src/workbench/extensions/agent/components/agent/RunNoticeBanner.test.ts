@@ -53,6 +53,26 @@ describe('RunNoticeBanner', () => {
     expect(screen.queryByRole('note')).toBeNull()
   })
 
+  it('hides the intro notice without persisting a dismissal', () => {
+    render(RunNoticeBanner, {
+      props: { workflowName: 'portrait', hideIntro: true },
+      global: { plugins: [i18n] }
+    })
+    expect(screen.queryByRole('note')).toBeNull()
+    expect(localStorage.getItem(STORAGE_KEY)).not.toBe('true')
+  })
+
+  it.for(['mismatch', 'unavailable'] as const)(
+    'still warns about a %s target when the intro is hidden',
+    (context) => {
+      render(RunNoticeBanner, {
+        props: { workflowName: 'portrait', context, hideIntro: true },
+        global: { plugins: [i18n] }
+      })
+      expect(screen.getByRole('note')).toBeInTheDocument()
+    }
+  )
+
   it('shows mismatch despite educational dismissal and preserves that dismissal when resolved', async () => {
     localStorage.setItem(STORAGE_KEY, 'true')
     const { rerender, emitted } = render(RunNoticeBanner, {

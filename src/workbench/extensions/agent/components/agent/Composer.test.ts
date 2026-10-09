@@ -7,7 +7,7 @@ import { useAgentComposerStore } from '../../stores/agent/agentComposerStore'
 import { render, screen, waitFor, within } from '@testing-library/vue'
 import userEvent from '@testing-library/user-event'
 import { assert, beforeEach, describe, expect, it, vi } from 'vitest'
-import { defineComponent, h, nextTick, ref, shallowRef } from 'vue'
+import { defineComponent, h, nextTick, onMounted, ref, shallowRef } from 'vue'
 import type { DirectiveBinding, ShallowRef } from 'vue'
 import type { ComponentProps } from 'vue-component-type-helpers'
 
@@ -1884,6 +1884,27 @@ describe('Composer', () => {
       expect(useAgentComposerStore().draft).toBe('foo')
       expect(textarea).toHaveFocus()
       expect(focusSpy).toHaveBeenCalledOnce()
+    })
+
+    it('focuses with the caret at the end when text arrives before the editor mounts', async () => {
+      const prompt = 'Help me improve this workflow'
+      const composer = ref<InstanceType<typeof Composer> | null>(null)
+      const PrefillsOnMount = defineComponent({
+        setup() {
+          onMounted(() => void composer.value?.insert(prompt))
+          return () => null
+        }
+      })
+      const Host = defineComponent({
+        setup: () => () => [h(PrefillsOnMount), h(Composer, { ref: composer })]
+      })
+      render(Host, { global: { plugins: [i18n] } })
+
+      await waitFor(() => expect(screen.getByRole('textbox')).toHaveFocus())
+      const selection = window.getSelection()
+      expect(selection?.isCollapsed).toBe(true)
+      expect(selection?.anchorNode?.textContent).toBe(prompt)
+      expect(selection?.anchorOffset).toBe(prompt.length)
     })
 
     it('accepts unidentified suggestion inserts at the exposed boundary', async () => {

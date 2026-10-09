@@ -7,12 +7,22 @@ import Button from '@/components/ui/button/Button.vue'
 import { FALLBACK_LOCALE } from '@/i18n'
 import { isCloud } from '@/platform/distribution/types'
 
+import type { AgentGreeting } from '../../types/proactiveGreeting'
 import type { AgentStarterPromptAttribution } from '../../utils/starterPrompts'
 import { starterPromptAttribution } from '../../utils/starterPrompts'
+import GreetingHeading from './GreetingHeading.vue'
+import ProactiveGreeting from './ProactiveGreeting.vue'
 
-const { userName } = defineProps<{ userName?: string }>()
+const { userName, greeting } = defineProps<{
+  userName?: string
+  greeting?: AgentGreeting
+}>()
 const emit = defineEmits<{
-  insert: [text: string, prompt: AgentStarterPromptAttribution]
+  insert: [
+    text: string,
+    prompt?: AgentStarterPromptAttribution,
+    fadeInAfterMs?: number
+  ]
 }>()
 
 const { t, te, tm, locale } = useI18n()
@@ -52,18 +62,25 @@ const promptIcons = [
 </script>
 
 <template>
-  <div class="flex h-full flex-col overflow-x-hidden overflow-y-auto px-4 py-8">
+  <ProactiveGreeting
+    v-if="greeting"
+    :key="JSON.stringify(greeting)"
+    :greeting
+    :user-name
+    @insert="
+      (text, fadeInAfterMs) => emit('insert', text, undefined, fadeInAfterMs)
+    "
+  />
+  <div
+    v-else
+    class="flex h-full flex-col overflow-x-hidden overflow-y-auto px-4 py-8"
+  >
     <div class="my-auto flex shrink-0 flex-col items-center gap-8 text-center">
-      <div
-        class="flex max-w-sm flex-col items-center pt-12 text-base/snug font-semibold tracking-tight text-base-foreground @min-[570px]:text-2xl/snug"
-      >
-        <p class="my-0">
-          {{ t('agent.greeting', { name: userName ?? t('agent.friend') }) }}
-        </p>
-        <p class="my-0">
-          {{ t('agent.greetingQuestion') }}
-        </p>
-      </div>
+      <GreetingHeading
+        class="pt-12"
+        :user-name
+        :title="t('agent.greetingQuestion')"
+      />
       <div
         data-testid="suggested-prompts"
         class="mx-auto flex w-full max-w-[608px] shrink-0 flex-wrap gap-2 @min-[460px]:justify-center"
