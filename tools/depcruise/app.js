@@ -345,6 +345,99 @@
     return moving
   }
 
+  // Domain colouring: each module takes its domain's colour, and every point
+  // of the map is shaded by the domain of the nearest module within reach,
+  // which draws Voronoi-like zones clipped to the occupied area.
+  const DOMAIN_COLORS = [
+    '#2a78d6',
+    '#eb6834',
+    '#1baf7a',
+    '#a35bd6',
+    '#d9a21b',
+    '#e0457b',
+    '#2fb3c4',
+    '#8d6e4f',
+    '#6c7bd8',
+    '#7fb03b'
+  ]
+  const domainColor = (id) =>
+    DOMAIN_COLORS[domainOrder.indexOf(id) % DOMAIN_COLORS.length]
+  const domainRgb = DOMAIN_COLORS.map((hex) =>
+    [1, 3, 5].map((i) => parseInt(hex.slice(i, i + 2), 16))
+  )
+  const nodeOfPath = new Map(graph.nodes.map((node, n) => [node.path, n]))
+  const domainNodeCache = new Map()
+  function domainNodesAt(s) {
+    if (domainNodeCache.has(s)) return domainNodeCache.get(s)
+    const of = new Int16Array(N).fill(-1)
+    for (const d of isMeasured(s) ? archOf(s).domains : []) {
+      const index = domainOrder.indexOf(d.id)
+      for (const path of d.paths) {
+        const n = nodeOfPath.get(path)
+        if (n !== undefined) of[n] = index
+      }
+    }
+    domainNodeCache.set(s, of)
+    return of
+  }
+  const ZONE_CELL = 4
+  const ZONE_REACH = 26
+  const ZONE_ALPHA = 64
+  const zoneCanvas = document.createElement('canvas')
+  function drawZones(ctx, values, domainOf) {
+    const buckets = new Map()
+    const key = (gx, gy) => gx * 65536 + gy
+    const xs = Float32Array.from(graph.nodes, (_, n) => px(n))
+    const ys = Float32Array.from(graph.nodes, (_, n) => py(n))
+    let any = false
+    for (let n = 0; n < N; n++) {
+      if (!roleOf(values[n])) continue
+      any ||= domainOf[n] >= 0
+      const k = key(
+        Math.floor(xs[n] / ZONE_REACH),
+        Math.floor(ys[n] / ZONE_REACH)
+      )
+      const list = buckets.get(k)
+      if (list) list.push(n)
+      else buckets.set(k, [n])
+    }
+    if (!any) return
+    const cols = Math.ceil(mapW / ZONE_CELL)
+    const rows = Math.ceil(mapH / ZONE_CELL)
+    const image = new ImageData(cols, rows)
+    for (let row = 0; row < rows; row++) {
+      const y = (row + 0.5) * ZONE_CELL
+      const gy = Math.floor(y / ZONE_REACH)
+      for (let col = 0; col < cols; col++) {
+        const x = (col + 0.5) * ZONE_CELL
+        const gx = Math.floor(x / ZONE_REACH)
+        let best = -1
+        let bestDist = ZONE_REACH * ZONE_REACH
+        for (let dx = -1; dx <= 1; dx++)
+          for (let dy = -1; dy <= 1; dy++)
+            for (const n of buckets.get(key(gx + dx, gy + dy)) ?? []) {
+              const d = (xs[n] - x) ** 2 + (ys[n] - y) ** 2
+              if (d < bestDist) {
+                bestDist = d
+                best = n
+              }
+            }
+        if (best < 0 || domainOf[best] < 0) continue
+        const rgb = domainRgb[domainOf[best] % domainRgb.length]
+        const i = (row * cols + col) * 4
+        image.data[i] = rgb[0]
+        image.data[i + 1] = rgb[1]
+        image.data[i + 2] = rgb[2]
+        image.data[i + 3] = ZONE_ALPHA
+      }
+    }
+    zoneCanvas.width = cols
+    zoneCanvas.height = rows
+    zoneCanvas.getContext('2d').putImageData(image, 0, 0)
+    ctx.imageSmoothingEnabled = true
+    ctx.drawImage(zoneCanvas, 0, 0, cols * ZONE_CELL, rows * ZONE_CELL)
+  }
+
   function drawMap() {
     const css = getComputedStyle(document.documentElement)
     const color = Object.fromEntries(
@@ -367,6 +460,10 @@
     const from = nodeState[shownFrom]
     const to = nodeState[current]
     const t = tween
+    const byDomain = mapMode === 'domains'
+    const domainOf = domainNodesAt(current)
+    const muted = css.getPropertyValue('--muted').trim()
+    if (byDomain) drawZones(ctx, to, domainOf)
 
     const strokeEdges = (list, values, alpha, skip) => {
       if (alpha <= 0) return
@@ -379,7 +476,7 @@
       ctx.lineWidth = 0.6
       ctx.globalAlpha = alpha
       for (const [role, es] of Object.entries(byRole)) {
-        ctx.strokeStyle = color[role]
+        ctx.strokeStyle = byDomain ? muted : color[role]
         ctx.beginPath()
         for (const e of es) {
           const [a, b] = graph.edges[e]
@@ -409,9 +506,17 @@
         : r * Math.min(MAX_DOT_SCALE, 0.6 + 0.25 * Math.sqrt(degree))
     const radiusNow = (n) =>
       radius(degreeFrom[n]) + (radius(degreeTo[n]) - radius(degreeFrom[n])) * t
+    const fillOf = (n, role) =>
+      !byDomain
+        ? color[role]
+        : domainOf[n] >= 0
+          ? DOMAIN_COLORS[domainOf[n] % DOMAIN_COLORS.length]
+          : role === 'freed'
+            ? color.freed
+            : muted
     const dot = (n, role, alpha, size) => {
       ctx.globalAlpha = alpha
-      ctx.fillStyle = color[role]
+      ctx.fillStyle = fillOf(n, role)
       ctx.beginPath()
       ctx.arc(px(n), py(n), size, 0, 7)
       ctx.fill()
@@ -424,7 +529,11 @@
     }
     knotted.sort((a, b) => degreeTo[b] - degreeTo[a])
     for (const n of knotted) dot(n, roleOf(to[n]), 1, radiusNow(n))
-    if (t < 1) {
+    if (byDomain)
+      for (let n = 0; n < N; n++)
+        if (domainOf[n] >= 0 && roleOf(to[n]))
+          dot(n, roleOf(to[n]), 1, radiusNow(n))
+    if (t < 1 && !byDomain) {
       for (let n = 0; n < N; n++) {
         const was = roleOf(from[n])
         if (was && was !== roleOf(to[n]))
@@ -506,7 +615,12 @@
     const when = by
       ? `. Freed on main by ${by.short}${by.pr ? ` (#${by.pr})` : ''}`
       : ''
-    showTip(ev, graph.nodes[best].path, where + when)
+    const domain = domainNodesAt(current)[best]
+    const owner =
+      domain >= 0
+        ? `. Domain: ${archOf(current).domains.find((d) => d.id === domainOrder[domain]).capability}`
+        : ''
+    showTip(ev, graph.nodes[best].path, where + when + owner)
   })
   canvas.addEventListener('pointerleave', () => {
     hover = -1
@@ -711,8 +825,6 @@
   domainLegend.id = 'domainLegend'
   domainLegend.hidden = true
   for (const [cls, label] of [
-    ['main', 'Domain'],
-    ['other', 'Ready to extract'],
     ['freed', 'Unclassified code'],
     ['legacy line', 'Import involving unclassified code'],
     ['second line', 'Forbidden import'],
@@ -722,8 +834,35 @@
     item.append(el('i', `sw ${cls}`), label)
     domainLegend.append(item)
   }
-  domainLegend.append(el('span', null, 'Circle area: files'))
+  domainLegend.append(
+    el('span', null, 'Circle colour: domain'),
+    el('span', null, 'Green outline: ready to extract'),
+    el('span', null, 'Circle area: files')
+  )
   $('mapLegend').after(domainLegend)
+  const zoneLegend = el('div', 'legend')
+  zoneLegend.id = 'zoneLegend'
+  zoneLegend.hidden = true
+  domainLegend.after(zoneLegend)
+  function drawZoneLegend() {
+    const domains = isMeasured(current) ? archOf(current).domains : []
+    zoneLegend.replaceChildren(
+      ...domains.map((d) => {
+        const item = el('span')
+        const sw = el('i', 'sw')
+        sw.style.background = domainColor(d.id)
+        item.append(sw, d.capability)
+        return item
+      }),
+      el(
+        'span',
+        null,
+        domains.length
+          ? 'Shading: domain of the nearest module'
+          : 'No domain records in this tree'
+      )
+    )
+  }
 
   function drawDomains() {
     const arch = archOf(current)
@@ -810,6 +949,7 @@
     )
     drawDomainProgress()
     drawDomainMap(t ? arch : null)
+    drawZoneLegend()
   }
 
   function drawDomainProgress() {
@@ -919,7 +1059,8 @@
         id: d.id,
         label: d.capability,
         files: d.files,
-        role: d.ready || d.extracted ? 'other' : 'main'
+        role: d.ready || d.extracted ? 'ready' : 'domain',
+        fill: domainColor(d.id)
       }))
     ]
     const radius = new Map(
@@ -959,6 +1100,7 @@
       const r = radius.get(node.id)
       const circle = mapItem(`node:${node.id}`, 1, 'circle')
       circle.setAttribute('class', node.role)
+      circle.style.fill = node.fill ?? ''
       circle.setAttribute('cx', x)
       circle.setAttribute('cy', y)
       circle.style.r = `${r}px`
@@ -995,24 +1137,49 @@
       $(tabId).setAttribute('aria-selected', String(key === name))
       $(panelId).hidden = key !== name
     }
-    const domainView = name === 'domains'
-    canvas.hidden = $('mapLegend').hidden = domainView
-    $('domainMap').toggleAttribute('hidden', !domainView)
-    $('domainLegend').hidden = !domainView
-    if (!domainView) drawMap()
+    mapMode = defaultMapMode(name)
+    applyMapMode()
   }
-  // The hash is `<tab>/<state>`, e.g. #domains/pr-19856 or #open-prs/42.
-  // The tab is left out when it is the state's default, so #42 and #pr-19856
-  // keep working; a tab alone, e.g. #domains, means the latest commit.
+
+  const MAP_MODES = ['knots', 'domains', 'graph']
+  let mapMode = 'knots'
+  const defaultMapMode = (tab) => (tab === 'domains' ? 'graph' : 'knots')
+  function applyMapMode() {
+    const graphView = mapMode === 'graph'
+    canvas.hidden = graphView
+    $('domainMap').toggleAttribute('hidden', !graphView)
+    $('mapLegend').hidden = mapMode !== 'knots'
+    zoneLegend.hidden = mapMode !== 'domains'
+    domainLegend.hidden = !graphView
+    for (const button of document.querySelectorAll('.mapmodes button'))
+      button.setAttribute(
+        'aria-pressed',
+        String(button.dataset.mode === mapMode)
+      )
+    if (!graphView) drawMap()
+  }
+  for (const button of document.querySelectorAll('.mapmodes button')) {
+    button.addEventListener('click', () => {
+      mapMode = button.dataset.mode
+      applyMapMode()
+      syncHash()
+    })
+  }
+  // The hash is `<tab>/<state>[/<map>]`, e.g. #domains/pr-19856 or
+  // #details/42/domains. Defaults are left out: the tab when it is the
+  // state's default, so #42 and #pr-19856 keep working, and the map view when
+  // it is the tab's. A tab alone, e.g. #domains, means the latest commit.
   const TAB_HASH = { details: 'details', prs: 'open-prs', domains: 'domains' }
   const defaultTab = (s) => (prOfState.has(s) ? 'prs' : 'details')
   function syncHash() {
     const pr = prOfState.get(current)
     const state = pr ? `pr-${pr.number}` : String(current)
     const hash =
-      activeTab === defaultTab(current)
-        ? state
-        : `${TAB_HASH[activeTab]}/${state}`
+      mapMode !== defaultMapMode(activeTab)
+        ? `${TAB_HASH[activeTab]}/${state}/${mapMode}`
+        : activeTab === defaultTab(current)
+          ? state
+          : `${TAB_HASH[activeTab]}/${state}`
     history.replaceState(null, '', `#${hash}`)
   }
   for (const name of Object.keys(TABS)) {
@@ -1221,6 +1388,11 @@
     const tab = Object.keys(TAB_HASH).find((key) => TAB_HASH[key] === parts[0])
     const s = stateFromHash(tab ? parts[1] : parts[0])
     selectTab(tab ?? defaultTab(s))
+    const mode = tab ? parts[2] : parts[1]
+    if (MAP_MODES.includes(mode)) {
+      mapMode = mode
+      applyMapMode()
+    }
     return s
   }
   addEventListener('hashchange', () => {

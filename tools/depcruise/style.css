@@ -615,11 +615,9 @@ ul.checks li.fail::before {
     opacity 0.6s,
     fill 0.6s;
 }
-#domainMap circle.main {
-  fill: var(--k-main);
-}
-#domainMap circle.other {
-  fill: var(--k-other);
+#domainMap circle.ready {
+  stroke: var(--k-other);
+  stroke-width: 5px;
 }
 #domainMap circle.freed {
   fill: var(--freed);
@@ -639,4 +637,27 @@ ul.checks li.fail::before {
   #domainMap text {
     transition: none;
   }
+}
+
+.mapmodes {
+  display: inline-flex;
+  margin-bottom: 8px;
+  border: 1px solid var(--rule);
+  border-radius: 4px;
+  overflow: hidden;
+}
+.mapmodes button {
+  border: 0;
+  border-radius: 0;
+  background: none;
+  color: var(--ink-2);
+  padding: 3px 10px;
+  font-size: 13px;
+}
+.mapmodes button + button {
+  border-left: 1px solid var(--rule);
+}
+.mapmodes button[aria-pressed='true'] {
+  background: var(--ink);
+  color: var(--bg);
 }

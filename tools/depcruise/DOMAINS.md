@@ -65,10 +65,15 @@ Built in the first version:
   stack), one card per domain with its counts and readiness checks, and
   "Progress by tree": main and every open pull request that has domain
   records, in stack order. Picking a row selects that state.
-- **Domain map.** While the Domains tab is open the module map is replaced by
-  a graph: domains on a ring around one node for all unclassified code,
+- **Map views.** The map has three views: Knots (the knot map), Domains (the
+  same modules coloured by domain, with every point shaded by the domain of
+  the nearest module within reach, which draws Voronoi-like zones clipped to
+  the occupied area), and Domain graph. The Domains tab opens the graph, the
+  other tabs the knot map; the URL hash keeps a non-default view, e.g.
+  `#details/pr-19856/domains`.
+- **Domain graph.** Domains on a ring around one node for all unclassified code,
   circle area by files, lines by import count, coloured allowed, legacy or
-  forbidden. Circles and lines animate between states.
+  forbidden; circle colour matches the Domains view and a green outline marks a domain ready to extract. Circles and lines animate between states.
 
 Next:
 
@@ -76,7 +81,6 @@ Next:
   imports and suppressions once main has domain records (after #19768
   merges), so merged pull requests show as steps like the knot lines.
 - Workspace package count and extraction milestones on the timeline.
-- Colour the knot map by domain, to show where knots and domains overlap.
 
 ## Open decisions
 

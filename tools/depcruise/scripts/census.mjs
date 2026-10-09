@@ -246,6 +246,7 @@ async function measure(tree, tool) {
       capability: record.capability,
       owners: record.owners,
       files: files.length,
+      paths: files.map((f) => f.replace(/^src\//, '')),
       roles: Object.fromEntries(
         ROLES.map((role) => [
           role,
