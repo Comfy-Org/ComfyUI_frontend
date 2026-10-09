@@ -15,6 +15,7 @@ import type {
 
 import { sentryBeforeSend } from './sentryBeforeSend'
 import {
+  REDACTION_SENTINEL,
   redactTelemetryUrls,
   redactTelemetryValues
 } from './redactTelemetryUrls'
@@ -25,8 +26,6 @@ type SentryTransactionEvent = Parameters<
   NonNullable<SentryOptions['beforeSendTransaction']>
 >[0]
 type SentrySpan = Parameters<NonNullable<SentryOptions['beforeSendSpan']>>[0]
-const REDACTED_QUERY_VALUE = '[Redacted]'
-
 function redactSentryEvent(event: ErrorEvent, hint: EventHint) {
   const filtered = sentryBeforeSend(event, hint)
   if (!filtered) return null
@@ -84,18 +83,18 @@ function redactSentryRequest(event: Event): void {
 type SentryQueryString = NonNullable<Event['request']>['query_string']
 
 function redactSentryQueryString(query: SentryQueryString): SentryQueryString {
-  if (typeof query === 'string') return query && REDACTED_QUERY_VALUE
+  if (typeof query === 'string') return query && REDACTION_SENTINEL
   if (Array.isArray(query)) {
     return query.map(([key, value]) => [
       redactTelemetryUrls(key),
-      value && REDACTED_QUERY_VALUE
+      value && REDACTION_SENTINEL
     ])
   }
   if (!query) return query
   return Object.fromEntries(
     Object.entries(query).map(([key, value]) => [
       redactTelemetryUrls(key),
-      value && REDACTED_QUERY_VALUE
+      value && REDACTION_SENTINEL
     ])
   )
 }
