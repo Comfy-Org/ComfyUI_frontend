@@ -164,6 +164,10 @@ function clearLastWorkspaceId(): void {
   }
 }
 
+/** An ingest deployed before `can_create_workspace` omits it; only an explicit false refuses. */
+type ListedWorkspaces = Omit<ListWorkspacesResponse, 'can_create_workspace'> &
+  Partial<Pick<ListWorkspacesResponse, 'can_create_workspace'>>
+
 const MAX_OWNED_WORKSPACES = 10
 const MAX_INIT_RETRIES = 3
 const BASE_RETRY_DELAY_MS = 1000
@@ -235,12 +239,12 @@ export const useTeamWorkspaceStore = defineStore('teamWorkspace', () => {
       ownedWorkspacesCount.value < MAX_OWNED_WORKSPACES
   )
 
-  function applyWorkspaceList(response: ListWorkspacesResponse): void {
+  function applyWorkspaceList(response: ListedWorkspaces): void {
     workspaces.value = sortWorkspaces(
       response.workspaces.map(createWorkspaceState)
     )
-    // Absent until ingest ships the field everywhere; only an explicit false refuses.
-    workspacesManagedByOrganization.value = !response.can_create_workspace
+    workspacesManagedByOrganization.value =
+      response.can_create_workspace === false
   }
 
   const members = computed<WorkspaceMember[]>(
