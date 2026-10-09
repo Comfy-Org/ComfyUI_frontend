@@ -726,7 +726,8 @@
       "needHelp": "Need Help?"
     },
     "toast": {
-      "close": "Close"
+      "close": "Close",
+      "viewportLabel": "Notifications ({hotkey})"
     },
     "hero": {
       "carouselLabel": "Featured models",

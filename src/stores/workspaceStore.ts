@@ -2,13 +2,18 @@ import { useMagicKeys } from '@vueuse/core'
 import { defineStore } from 'pinia'
 import { computed, ref } from 'vue'
 
+import { useToast } from '@/components/ui/toast/toastStore'
 import { useSettingStore } from '@/platform/settings/settingStore'
-import { useToastStore } from '@/platform/updates/common/toastStore'
+import { reportError } from '@/platform/telemetry/reportError'
 import { useWorkflowStore } from '@/platform/workflow/management/stores/workflowStore'
 import type { Settings } from '@/platform/settings/types'
 import { useColorPaletteService } from '@/services/colorPaletteService'
 import { useDialogService } from '@/services/dialogService'
-import type { SidebarTabExtension, ToastManager } from '@/types/extensionTypes'
+import type {
+  SidebarTabExtension,
+  ToastManager,
+  ToastMessageOptions
+} from '@/types/extensionTypes'
 import { renderMarkdownToHtml } from '@/utils/markdownRendererUtil'
 
 import { useApiKeyAuthStore } from './apiKeyAuthStore'
@@ -19,6 +24,19 @@ import { useQueueSettingsStore } from './queueSettingsStore'
 import { useBottomPanelStore } from './workspace/bottomPanelStore'
 import { useSidebarTabStore } from './workspace/sidebarTabStore'
 
+const legacySeverityKinds = new Map<
+  string,
+  'error' | 'info' | 'success' | 'warning'
+>([
+  ['contrast', 'info'],
+  ['error', 'error'],
+  ['info', 'info'],
+  ['secondary', 'info'],
+  ['success', 'success'],
+  ['warn', 'warning'],
+  ['warning', 'warning']
+])
+
 function workspaceStoreSetup() {
   const spinner = ref(false)
   const { shift: shiftDown } = useMagicKeys()
@@ -28,7 +46,41 @@ function workspaceStoreSetup() {
    */
   const focusMode = ref(false)
 
-  const toast = computed<ToastManager>(() => useToastStore())
+  const toastStore = useToast()
+  let reportedWarningSeverity = false
+  function reportWarningSeverity() {
+    if (reportedWarningSeverity) return
+    reportedWarningSeverity = true
+    reportError(new Error('toast.add received severity "warning"'), {
+      surface: 'platform',
+      errorType: 'deprecated_toast_warning_severity',
+      level: 'warning'
+    })
+  }
+  const toast: ToastManager = {
+    add: (message: ToastMessageOptions) => {
+      const severity: string = message.severity ?? 'info'
+      if (severity === 'warning') reportWarningSeverity()
+      const kind = legacySeverityKinds.get(severity)
+      if (!kind) {
+        console.error(`toast.add: unsupported severity "${severity}"`)
+        return
+      }
+      toastStore[kind](message.summary ?? message.detail ?? '', {
+        closable: message.closable,
+        description: message.summary === undefined ? undefined : message.detail,
+        duration: message.life || undefined
+      })
+    },
+    addAlert: (message) => toastStore.warning(message),
+    dismiss: toastStore.dismiss,
+    dismissAll: toastStore.dismissAll,
+    error: toastStore.error,
+    info: toastStore.info,
+    loading: toastStore.loading,
+    success: toastStore.success,
+    warning: toastStore.warning
+  }
   const queueSettings = computed(() => useQueueSettingsStore())
   const command = computed(() => ({
     commands: useCommandStore().commands,

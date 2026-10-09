@@ -300,7 +300,8 @@
       "troubleshooting": "常见原因："
     },
     "toast": {
-      "close": "关闭"
+      "close": "关闭",
+      "viewportLabel": "通知 ({hotkey})"
     },
     "turnstile": {
       "expired": "验证已过期。请重新完成验证。",

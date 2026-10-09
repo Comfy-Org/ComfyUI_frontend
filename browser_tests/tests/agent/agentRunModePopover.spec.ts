@@ -187,7 +187,7 @@ test.describe('Agent run permissions popover', { tag: '@cloud' }, () => {
 
     await test.step('the rejected pick keeps the menu, focus and old mode', async () => {
       await expect(
-        page.getByText(enMessages.agent.runModeSaveFailed)
+        comfyPage.toast.withText(enMessages.agent.runModeSaveFailed)
       ).toBeVisible()
       await expect(autoOption).toBeFocused()
       await expect(autoOption).not.toBeChecked()

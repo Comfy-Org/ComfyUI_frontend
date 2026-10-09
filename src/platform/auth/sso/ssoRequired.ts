@@ -10,7 +10,7 @@ import { useFeatureFlags } from '@/composables/useFeatureFlags'
 import { t } from '@/i18n'
 import { SSO_REQUIRED_DIALOG_KEY } from '@/platform/auth/sso/ssoRequiredDialogKey'
 import { reportError } from '@/platform/telemetry/reportError'
-import { useToastStore } from '@/platform/updates/common/toastStore'
+import { useToast } from '@/components/ui/toast/toastStore'
 import { useDialogStore } from '@/stores/dialogStore'
 
 export interface SsoRequiredContext {
@@ -62,10 +62,8 @@ export function presentSsoRequired(context: SsoRequiredContext = {}): boolean {
         surface: 'auth',
         errorType: 'failure_loading_sso_required_dialog'
       })
-      useToastStore().add({
-        severity: 'error',
-        summary: t('auth.sso.required.title'),
-        detail: t('auth.sso.required.body')
+      useToast().error(t('auth.sso.required.title'), {
+        description: t('auth.sso.required.body')
       })
     })
   return true
