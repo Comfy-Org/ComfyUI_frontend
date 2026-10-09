@@ -1078,19 +1078,23 @@ describe('useWorkflowStore', () => {
         expect(result).toBe('a1b2c3d4-e5f6-7890-abcd-ef1234567890:456')
       })
 
-      it('should return simple node ID for root graph nodes', () => {
-        store.activeSubgraph = undefined
-        const result = store.nodeIdToNodeLocatorId(toNodeId(123))
-        expect(result).toBe('123')
-      })
+      it.for([
+        { rawId: '', locatorId: '~root:' },
+        {
+          rawId: 'insert:0fbd38ecb13037d0b3b0ca78b8a20a5a:root:node:9',
+          locatorId:
+            '~root:insert%3A0fbd38ecb13037d0b3b0ca78b8a20a5a%3Aroot%3Anode%3A9'
+        }
+      ])(
+        'should key root node id $rawId under $locatorId',
+        ({ rawId, locatorId }) => {
+          store.activeSubgraph = undefined
+          const result = store.nodeIdToNodeLocatorId(toNodeId(rawId))
 
-      it('should keep an empty root node ID out of the null key space', () => {
-        store.activeSubgraph = undefined
-        const locatorId = store.nodeIdToNodeLocatorId(toNodeId(''))
-
-        expect(locatorId).toBe('~root:')
-        expect(store.nodeLocatorIdToNodeId(locatorId)).toBe('')
-      })
+          expect(result).toBe(locatorId)
+          expect(store.nodeLocatorIdToNodeId(result)).toBe(rawId)
+        }
+      )
 
       it('should use provided subgraph instead of active one', () => {
         const customSubgraphId = '11111111-2222-4333-8444-555555555555'
@@ -1229,6 +1233,42 @@ describe('useWorkflowStore', () => {
         const result = store.nodeLocatorIdToNodeExecutionId(locatorId!)
 
         expect(result).toBe('123:insert:abc123:root:node:5')
+      })
+
+      it('should preserve a colon-bearing subgraph host in the execution path', () => {
+        const subgraphUuid = '11111111-2222-4333-8444-555555555555'
+        const hostId = toNodeId('insert:op:root:node:3')
+        const nodes: LGraph['nodes'] = []
+        const rootGraph = fromAny<LGraph, unknown>({
+          _nodes: nodes,
+          nodes,
+          getNodeById: (id: NodeId) =>
+            id === hostId ? (nodes[0] ?? null) : null
+        })
+        const subgraph = fromAny<Subgraph, unknown>({
+          id: subgraphUuid,
+          rootGraph,
+          _nodes: [],
+          nodes: []
+        })
+        nodes.push(
+          createMockLGraphNode({
+            id: hostId,
+            isSubgraphNode: () => true,
+            subgraph
+          })
+        )
+        vi.mocked(comfyApp).rootGraph = rootGraph
+        store.activeSubgraph = subgraph
+        vi.mocked(isSubgraph).mockImplementation(
+          (graph): graph is Subgraph => graph === subgraph
+        )
+
+        expect(
+          store.nodeLocatorIdToNodeExecutionId(
+            createNodeLocatorId(subgraphUuid, toNodeId(7))
+          )
+        ).toBe('insert:op:root:node:3:7')
       })
     })
   })
