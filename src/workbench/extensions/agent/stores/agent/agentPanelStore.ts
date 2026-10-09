@@ -359,11 +359,6 @@ export const useAgentPanelStore = defineStore('agentPanel', () => {
     })
   }
 
-  /**
-   * True at most once per armed episode, so the caller reports the impression
-   * exactly once however often the notice remounts. Same contract as
-   * `claimPaywallImpression`: claim first, then report.
-   */
   function claimCreditTransitionNoticeImpression(identity: string): boolean {
     return dispatchCreditTransitionNotice({
       type: 'shown',
