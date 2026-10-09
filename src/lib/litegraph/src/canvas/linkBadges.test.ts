@@ -4,7 +4,7 @@ import type { Point, ReadOnlyRect } from '@/lib/litegraph/src/interfaces'
 import { LLink } from '@/lib/litegraph/src/LLink'
 import { toLinkId } from '@/types/linkId'
 import type { LinkPresentation } from '@/types/linkPresentation'
-import { createMockCanvasRenderingContext2D } from '@/utils/__tests__/litegraphTestUtils'
+import { createMockCanvasRenderingContext2D } from '@/utils/__tests__/canvasTestUtils'
 
 import {
   BADGE_GAP,
@@ -57,6 +57,7 @@ describe('linkBadgeText', () => {
       expected: 'Checkpoint'
     },
     { type: 'MODEL', presentation: {}, expected: 'MODEL' },
+    { type: ['IMAGE', 'MASK'], presentation: {}, expected: 'IMAGE,MASK' },
     { type: '', presentation: {}, expected: '*' },
     { type: -1, presentation: {}, expected: '*' }
   ] satisfies {

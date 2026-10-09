@@ -209,21 +209,7 @@
     </div>
 
     <!-- Video Estimate Help Popover -->
-    <Popover
-      ref="popover"
-      append-to="body"
-      :auto-z-index="true"
-      :base-z-index="1000"
-      :dismissable="true"
-      :close-on-escape="true"
-      unstyled
-      :pt="{
-        root: {
-          class:
-            'rounded-lg border border-interface-stroke bg-interface-panel-surface shadow-lg p-4 max-w-xs'
-        }
-      }"
-    >
+    <Popover ref="popover" align="start" content-class="max-w-sm p-4">
       <div class="flex flex-col gap-2">
         <p class="text-sm/normal text-base-foreground">
           {{ t('subscription.videoEstimateExplanation') }}
@@ -247,7 +233,7 @@
 <script setup lang="ts">
 import { cn } from '@comfyorg/tailwind-utils'
 import { storeToRefs } from 'pinia'
-import Popover from 'primevue/popover'
+import Popover from '@/components/common/ImperativePopover.vue'
 import { computed, ref } from 'vue'
 import { useI18n } from 'vue-i18n'
 
@@ -267,10 +253,13 @@ import type {
   TierPricing
 } from '@/platform/cloud/subscription/constants/tierPricing'
 import {
-  recordPendingSubscriptionCheckoutAttempt,
+  persistPendingSubscriptionCheckoutAttempt,
   withPendingCheckoutAttemptId
 } from '@/platform/cloud/subscription/utils/subscriptionCheckoutTracker'
-import { performSubscriptionCheckout } from '@/platform/cloud/subscription/utils/subscriptionCheckoutUtil'
+import {
+  performSubscriptionCheckout,
+  runReportedCheckoutAttempt
+} from '@/platform/cloud/subscription/utils/subscriptionCheckoutUtil'
 import { isPlanDowngrade } from '@/platform/cloud/subscription/utils/subscriptionTierRank'
 import type { BillingCycle } from '@/platform/cloud/subscription/utils/subscriptionTierRank'
 import { isCloud } from '@/platform/distribution/types'
@@ -279,6 +268,7 @@ import type {
   CheckoutAttributionMetadata,
   PaymentIntentSource
 } from '@/platform/telemetry/types'
+import { PaymentPopupBlockedError } from '@/platform/telemetry/utils/billingFailureCategory'
 import { useAuthStore } from '@/stores/authStore'
 import { useTeamWorkspaceStore } from '@/platform/workspace/stores/teamWorkspaceStore'
 
@@ -374,7 +364,8 @@ const isYearlySubscription = computed(
 const telemetry = useTelemetry()
 const { userId } = storeToRefs(useAuthStore())
 const workspaceStore = useTeamWorkspaceStore()
-const { accessBillingPortal, reportError } = useAuthActions()
+const { accessBillingPortal, accessBillingPortalDirect, reportError } =
+  useAuthActions()
 const { wrapWithErrorHandlingAsync } = useErrorHandling()
 
 const isLoading = ref(false)
@@ -501,31 +492,38 @@ const handleSubscribe = wrapWithErrorHandlingAsync(
             telemetry?.trackBeginCheckout(beginCheckoutMetadata)
           }
         } else {
-          const didOpenPortal = await accessBillingPortal(checkoutTier)
-          if (!didOpenPortal) {
-            return
-          }
-
-          const pendingAttempt = recordPendingSubscriptionCheckoutAttempt({
-            tier: targetPlan.tierKey,
-            cycle: targetPlan.billingCycle,
-            checkout_type: 'change',
-            owner_id: checkoutOwnerId,
-            workspace_id: checkoutWorkspaceId,
-            payment_intent_source: reason,
-            ...(previousPlan ? { previous_tier: previousPlan.tierKey } : {}),
-            ...(previousPlan
-              ? { previous_cycle: previousPlan.billingCycle }
-              : {})
-          })
-          if (beginCheckoutMetadata) {
-            telemetry?.trackBeginCheckout(
-              withPendingCheckoutAttemptId(
-                beginCheckoutMetadata,
-                pendingAttempt
-              )
-            )
-          }
+          await runReportedCheckoutAttempt(
+            {
+              tier: targetPlan.tierKey,
+              cycle: targetPlan.billingCycle,
+              checkout_type: 'change',
+              owner_id: checkoutOwnerId,
+              workspace_id: checkoutWorkspaceId,
+              payment_intent_source: reason,
+              ...(previousPlan
+                ? {
+                    previous_tier: previousPlan.tierKey,
+                    previous_cycle: previousPlan.billingCycle
+                  }
+                : {})
+            },
+            async (pendingAttempt) => {
+              if (!(await accessBillingPortalDirect(checkoutTier))) {
+                throw new PaymentPopupBlockedError(
+                  t('subscription.billingTabBlocked')
+                )
+              }
+              persistPendingSubscriptionCheckoutAttempt(pendingAttempt)
+              if (beginCheckoutMetadata) {
+                telemetry?.trackBeginCheckout(
+                  withPendingCheckoutAttemptId(
+                    beginCheckoutMetadata,
+                    pendingAttempt
+                  )
+                )
+              }
+            }
+          )
         }
       } else {
         // Failure telemetry now lives in performSubscriptionCheckout itself.

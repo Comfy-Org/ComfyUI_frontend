@@ -1,8 +1,8 @@
 <script setup lang="ts">
-import type { useMoveAnything } from '../../../composables/useMoveAnything'
-import type { Locale } from '../../../i18n/translations'
-import { mc } from '../../../lib/workshop/move-anything/copy'
-import EditorTool from '../app-editor/EditorTool.vue'
+import type { useMoveAnything } from '@/composables/useMoveAnything'
+import type { Locale } from '@/i18n/translations'
+import { mc } from '@/lib/workshop/move-anything/copy'
+import EditorTool from '@/components/workshop/app-editor/EditorTool.vue'
 import { MOVE_TOOLS } from './tools'
 
 const { move, locale = 'en' } = defineProps<{

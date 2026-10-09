@@ -1,8 +1,11 @@
 import { expect } from '@playwright/test'
 import type { Locator, Page } from '@playwright/test'
+import { escapeRegExp } from 'es-toolkit'
 
 import enMessages from '@/locales/en/main.json' with { type: 'json' }
 import frMessages from '@/locales/fr/main.json' with { type: 'json' }
+
+import { TestIds } from '@e2e/fixtures/selectors'
 
 export class AgentPanel {
   public readonly root: Locator
@@ -18,12 +21,14 @@ export class AgentPanel {
   public readonly workflowPicker: Locator
   public readonly fileInput: Locator
   public readonly composerAssetSection: Locator
+  public readonly scrollAssetsRight: Locator
   public readonly attachmentChips: Locator
   public readonly composer: Locator
   public readonly composerPromptArea: Locator
   public readonly sendButton: Locator
   public readonly stopButton: Locator
   public readonly creditsExhaustedPaywall: Locator
+  public readonly workSummary: Locator
   public readonly nodeSelectionBanner: Locator
   public readonly activityRows: Locator
 
@@ -35,9 +40,10 @@ export class AgentPanel {
       exact: true
     })
     this.closeButton = this.root
+      .locator('header')
       .getByRole('button', { name: enMessages.g.close, exact: true })
       .or(
-        this.root.getByRole('button', {
+        this.root.locator('header').getByRole('button', {
           name: frMessages.g.close,
           exact: true
         })
@@ -59,6 +65,9 @@ export class AgentPanel {
     })
     this.fileInput = this.root.getByTestId('agent-file-input')
     this.composerAssetSection = this.root.getByTestId('composer-asset-section')
+    this.scrollAssetsRight = this.root.getByRole('button', {
+      name: enMessages.g.scrollRight
+    })
     this.attachmentChips = this.root.getByTestId('agent-attachment-chip')
     this.composer = this.root.getByRole('textbox', { name: /^Describe ideas/ })
     this.composerPromptArea = this.root.getByTestId('composer-inline-input')
@@ -66,22 +75,82 @@ export class AgentPanel {
       name: enMessages.agent.send
     })
     this.stopButton = this.root.getByRole('button', {
-      name: enMessages.agent.stop
+      name: enMessages.agent.stop,
+      exact: true
     })
     this.creditsExhaustedPaywall = this.root.getByRole('alert').filter({
       hasText: enMessages.agent.paywall.title
     })
+    this.workSummary = this.root.getByRole('button', {
+      name: new RegExp(`^${escapeRegExp(enMessages.agent.worked)}`)
+    })
     this.nodeSelectionBanner = page.getByTestId('node-selection-mode-banner')
-    this.activityRows = this.root.getByRole('listitem')
+    this.activityRows = this.root
+      .getByTestId(TestIds.agent.activityTrace)
+      .getByRole('listitem')
+  }
+
+  async scrollAssetsToEnd(): Promise<void> {
+    const count = await this.attachmentChips.count()
+    for (
+      let step = 0;
+      step < count && (await this.scrollAssetsRight.isEnabled());
+      step++
+    ) {
+      const target = await this.composerAssetSection.evaluate((element) =>
+        Math.min(
+          element.scrollWidth - element.clientWidth,
+          element.scrollLeft + element.clientWidth
+        )
+      )
+      await this.scrollAssetsRight.click()
+      await expect
+        .poll(() =>
+          this.composerAssetSection.evaluate((element) => element.scrollLeft)
+        )
+        .toBeCloseTo(target, 0)
+    }
+    await expect(this.scrollAssetsRight).toBeDisabled()
   }
 
   activityRow(label: string): Locator {
     return this.activityRows.getByText(label, { exact: true })
   }
 
+  assetPreview(name: string): Locator {
+    return this.page.getByRole('dialog', { name, exact: true })
+  }
+
+  previewAssetButton(name: string): Locator {
+    return this.attachmentChip(name).getByRole('button', {
+      name: enMessages.agent.previewAsset.replace('{name}', name),
+      exact: true
+    })
+  }
+
+  async expectAttachmentFullyVisible(name: string): Promise<void> {
+    const tray = this.root.getByRole('region', {
+      name: enMessages.assetBrowser.assets,
+      exact: true
+    })
+    await expect
+      .poll(async () => {
+        const [card, viewport] = await Promise.all([
+          this.attachmentChip(name).boundingBox(),
+          tray.boundingBox()
+        ])
+        return (
+          !!card &&
+          !!viewport &&
+          card.y >= viewport.y &&
+          card.y + card.height <= viewport.y + viewport.height
+        )
+      })
+      .toBe(true)
+  }
+
   /**
-   * The composer attachment carrying `name`. Matches on the chip's own
-   * attribute rather than its text, which truncates at `max-w-32`.
+   * The composer attachment carrying `name`.
    *
    * `name` is a filename and may legitimately contain a quote or backslash, so
    * it is escaped for the double-quoted CSS string rather than interpolated
@@ -147,10 +216,31 @@ export class AgentPanel {
       .toEqual(expected)
   }
 
-  async selectWorkflow(name: string = 'Unsaved Workflow'): Promise<void> {
+  /**
+   * Picks the target without waiting for the picker label, which settles only
+   * once the target's save completes.
+   */
+  async chooseWorkflow(name: string = 'Unsaved Workflow'): Promise<void> {
     await this.workflowPicker.click()
     await this.page.getByRole('menuitemradio', { name, exact: true }).click()
+  }
+
+  async selectWorkflow(name: string = 'Unsaved Workflow'): Promise<void> {
+    await this.chooseWorkflow(name)
     await expect(this.workflowPicker).toHaveText(name)
+  }
+
+  async openWorkSummary(): Promise<void> {
+    await this.workSummary.click()
+    await expect(this.workSummary).toHaveAttribute('aria-expanded', 'true')
+  }
+
+  async reload(): Promise<void> {
+    await this.page.reload()
+    await expect(
+      this.page.getByTestId(TestIds.topbar.integratedTabBarActions)
+    ).toHaveAttribute('data-agent-gate-settled', 'true', { timeout: 30_000 })
+    await expect(this.root).toBeVisible({ timeout: 30_000 })
   }
 
   /** Clicks the empty bottom-left corner of the prompt area, below any text. */

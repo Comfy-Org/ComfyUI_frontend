@@ -496,6 +496,43 @@ test.describe('Automatic agent consent', { tag: ['@cloud', '@ui'] }, () => {
 })
 
 test.describe(
+  'Agent consent on the authenticated web session',
+  { tag: ['@cloud', '@ui'] },
+  () => {
+    test.use({
+      agentConsentAccepted: false,
+      agentConsentWebSession: true,
+      initialLocalStorage: {
+        'Comfy.AgentConsent.AutoShown.test-user-e2e.ws-personal': 'true'
+      }
+    })
+
+    // Source: https://github.com/Comfy-Org/ComfyUI_frontend/pull/19390
+    test('persists acceptance without a workspace bearer token', async ({
+      comfyPage
+    }) => {
+      const page = comfyPage.page
+      const dialog = page.getByRole('dialog', {
+        name: enMessages.agent.consent.title
+      })
+      const panel = page.locator('#agent-panel-root')
+
+      await requestConsentFromOpenPanel(page)
+      await expect(dialog).toBeVisible()
+      await dialog
+        .getByRole('button', { name: enMessages.agent.consent.accept })
+        .click()
+      await expect(dialog).toHaveCount(0)
+      await expect(panel).toBeVisible()
+
+      await comfyPage.workflow.reloadAndWaitForApp()
+      await expect(dialog).toHaveCount(0)
+      await expect(panel).toBeVisible()
+    })
+  }
+)
+
+test.describe(
   'Automatic agent consent in the first session',
   { tag: ['@cloud', '@ui'] },
   () => {

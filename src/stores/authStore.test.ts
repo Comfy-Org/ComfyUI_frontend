@@ -7,6 +7,7 @@ import type { Auth, User, UserCredential } from 'firebase/auth'
 import * as firebaseAuth from 'firebase/auth'
 import type { Mock } from 'vitest'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
+import { nextTick } from 'vue'
 
 import { useTelemetry } from '@/platform/telemetry'
 
@@ -30,6 +31,11 @@ import { useDialogService } from '@/services/dialogService'
 import { useWorkspaceAuthStore } from '@/platform/workspace/stores/workspaceAuthStore'
 import { api } from '@/scripts/api'
 import { AuthStoreError, useAuthStore } from '@/stores/authStore'
+import type { DesktopHostAuthState } from '@/platform/auth/desktopHost/desktopHostAuthBridge'
+import {
+  startDesktopHostSession,
+  stopDesktopHostSession
+} from '@/platform/auth/desktopHost/desktopHostSession'
 import { firebaseIdentity } from '@/platform/auth/firebaseIdentity'
 import type { IdentityObserver } from '@/utils/__tests__/stubAccountIdentityPort'
 import { replayIdentityPort } from '@/utils/__tests__/stubAccountIdentityPort'
@@ -1837,6 +1843,24 @@ describe('useAuthStore', () => {
       })
     })
 
+    it('sends cancel_subscription only when requested, and never with a target tier', async () => {
+      const bodyOf = () =>
+        mockFetch.mock.calls
+          .filter((call) => (call[0] as string).endsWith('/customers/billing'))
+          .map((call) => call[1]?.body as string | undefined)
+          .at(-1)
+
+      await store.accessBillingPortal(undefined, { cancelSubscription: true })
+      expect(JSON.parse(bodyOf()!)).toEqual({ cancel_subscription: true })
+
+      await expect(
+        store.accessBillingPortal('creator', { cancelSubscription: true })
+      ).rejects.toThrow(/target tier/)
+
+      await store.accessBillingPortal(undefined, { cancelSubscription: false })
+      expect(bodyOf()).toBeUndefined()
+    })
+
     it('should include target_tier in request body when targetTier provided', async () => {
       await store.accessBillingPortal('creator')
 
@@ -2751,6 +2775,252 @@ describe('useAuthStore in local/desktop distribution', () => {
       mintSpy,
       'mintAtLogin is gated on isCloud; local/desktop has no Cloud workspace JWT to mint'
     ).not.toHaveBeenCalled()
+  })
+
+  describe('with the Desktop host session', () => {
+    const hostBridge = (state: DesktopHostAuthState) => {
+      const listeners = new Set<(next: DesktopHostAuthState) => void>()
+      return {
+        getState: vi.fn(async () => state),
+        getWorkspaceToken: vi.fn(
+          async (_workspaceId: string): Promise<string | null> => 'host-token'
+        ),
+        requestSignIn: vi.fn(async () => state),
+        signOut: vi.fn(
+          async (): Promise<DesktopHostAuthState> => ({ status: 'signed_out' })
+        ),
+        onChanged: vi.fn((listener: (next: DesktopHostAuthState) => void) => {
+          listeners.add(listener)
+          return () => listeners.delete(listener)
+        }),
+        push: (next: DesktopHostAuthState) =>
+          listeners.forEach((listener) => listener(next))
+      }
+    }
+
+    beforeEach(() => {
+      vi.mocked(useApiKeyAuthStore().getAuthHeader).mockReturnValue({
+        'X-API-KEY': 'stored-key'
+      })
+    })
+
+    afterEach(() => stopDesktopHostSession())
+
+    it('uses the Desktop account over the Firebase user and stored API key', async () => {
+      const bridge = hostBridge({
+        status: 'signed_in',
+        userId: 'host-user',
+        email: 'host@example.com',
+        workspaceId: 'ws-host'
+      })
+      await startDesktopHostSession(bridge)
+
+      expect(store.isAuthenticated).toBe(true)
+      expect(store.userId).toBe('host-user')
+      expect(store.userEmail).toBe('host@example.com')
+      await expect(store.getWorkspaceAuthToken()).resolves.toBe('host-token')
+      await expect(store.getAuthToken()).resolves.toBe('host-token')
+      const hostHeader = { Authorization: 'Bearer host-token' }
+      await expect(store.getAuthHeader()).resolves.toEqual(hostHeader)
+      await expect(store.getUserAuthHeader()).resolves.toEqual(hostHeader)
+      await expect(store.getWorkspaceAuthHeader()).resolves.toEqual(hostHeader)
+      expect(bridge.getWorkspaceToken).toHaveBeenCalledWith('ws-host')
+      expect(mockUser.getIdToken).not.toHaveBeenCalled()
+    })
+
+    it("loads the host account's workspaces when Desktop signs in", async () => {
+      const initialize = vi
+        .spyOn(useTeamWorkspaceStore(), 'initialize')
+        .mockResolvedValue()
+      const bridge = hostBridge({ status: 'signed_out' })
+      await startDesktopHostSession(bridge)
+      expect(initialize).not.toHaveBeenCalled()
+
+      bridge.push({
+        status: 'signed_in',
+        userId: 'host-user',
+        workspaceId: 'ws-host'
+      })
+
+      await vi.waitFor(() => expect(initialize).toHaveBeenCalledOnce())
+    })
+
+    it("loads the host account's workspaces when Desktop signed in before the store started", async () => {
+      store.$dispose()
+      const initialize = vi
+        .spyOn(useTeamWorkspaceStore(), 'initialize')
+        .mockResolvedValue()
+      await startDesktopHostSession(
+        hostBridge({
+          status: 'signed_in',
+          userId: 'host-user',
+          workspaceId: 'ws-host'
+        })
+      )
+      await nextTick()
+      expect(initialize).not.toHaveBeenCalled()
+
+      useAuthStore()
+
+      expect(initialize).toHaveBeenCalledOnce()
+    })
+
+    it('drops workspaces loaded for the Firebase account when Desktop signs in', async () => {
+      const teams = useTeamWorkspaceStore()
+      teams.initState = 'ready'
+      const reset = vi.spyOn(teams, 'resetForIdentityChange')
+      const clearWorkspace = vi.spyOn(
+        useWorkspaceAuthStore(),
+        'clearWorkspaceContext'
+      )
+      const initialize = vi.spyOn(teams, 'initialize').mockResolvedValue()
+      const bridge = hostBridge({ status: 'signed_out' })
+      await startDesktopHostSession(bridge)
+
+      bridge.push({
+        status: 'signed_in',
+        userId: 'host-user',
+        workspaceId: 'ws-host'
+      })
+      await nextTick()
+
+      expect(clearWorkspace).toHaveBeenCalled()
+      expect(reset).toHaveBeenCalledOnce()
+      expect(reset.mock.invocationCallOrder[0]).toBeLessThan(
+        initialize.mock.invocationCallOrder[0]
+      )
+    })
+
+    it('has no workspace credential when no workspace is known', async () => {
+      const bridge = hostBridge({ status: 'signed_in', userId: 'host-user' })
+      await startDesktopHostSession(bridge)
+
+      await expect(store.getWorkspaceAuthToken()).resolves.toBeUndefined()
+      await expect(store.getAuthToken()).resolves.toBeUndefined()
+      await expect(store.getWorkspaceAuthHeader()).resolves.toBeNull()
+      expect(bridge.getWorkspaceToken).not.toHaveBeenCalled()
+    })
+
+    it('keeps the existing sign-in while no Desktop account is signed in', async () => {
+      const bridge = hostBridge({ status: 'signed_out' })
+      await startDesktopHostSession(bridge)
+
+      expect(store.isAuthenticated).toBe(true)
+      expect(store.userId).toBe('local-user-id')
+      await expect(store.getAuthToken()).resolves.toBe('mock-id-token')
+      expect(bridge.getWorkspaceToken).not.toHaveBeenCalled()
+    })
+
+    it('drops a token fetched for a workspace the tab switched away from', async () => {
+      const bridge = hostBridge({ status: 'signed_in', userId: 'host-user' })
+      let release: (token: string) => void = () => {}
+      bridge.getWorkspaceToken.mockReturnValueOnce(
+        new Promise((resolve) => {
+          release = resolve
+        })
+      )
+      await startDesktopHostSession(bridge)
+      Object.assign(useTeamWorkspaceStore(), { activeWorkspaceId: 'ws-a' })
+
+      const fetching = store.getWorkspaceAuthToken()
+      Object.assign(useTeamWorkspaceStore(), { activeWorkspaceId: 'ws-b' })
+      release('token-for-a')
+
+      await expect(fetching).resolves.toBeUndefined()
+    })
+
+    it.for([
+      { name: 'matches', hostWorkspace: 'ws-a', expected: 'host-token' },
+      { name: 'differs', hostWorkspace: 'ws-b', expected: undefined }
+    ])(
+      'uses the Desktop token for this tab only when its workspace $name',
+      async ({ hostWorkspace, expected }) => {
+        const bridge = hostBridge({ status: 'signed_in', userId: 'host-user' })
+        bridge.getWorkspaceToken.mockImplementation(async (workspaceId) =>
+          workspaceId === hostWorkspace ? 'host-token' : null
+        )
+        await startDesktopHostSession(bridge)
+        Object.assign(useTeamWorkspaceStore(), { activeWorkspaceId: 'ws-a' })
+
+        await expect(store.getWorkspaceAuthToken()).resolves.toBe(expected)
+        await expect(store.getWorkspaceAuthHeader()).resolves.toEqual(
+          expected ? { Authorization: `Bearer ${expected}` } : null
+        )
+        expect(bridge.getWorkspaceToken).toHaveBeenCalledWith('ws-a')
+      }
+    )
+
+    it('drops the previous account state when Desktop switches accounts', async () => {
+      const bridge = hostBridge({ status: 'signed_in', userId: 'host-a' })
+      await startDesktopHostSession(bridge)
+      const resetTeams = vi.spyOn(
+        useTeamWorkspaceStore(),
+        'resetForIdentityChange'
+      )
+      const clearWorkspace = vi.spyOn(
+        useWorkspaceAuthStore(),
+        'clearWorkspaceContext'
+      )
+      store.balance = fromPartial<NonNullable<typeof store.balance>>({
+        amount_micros: 5
+      })
+
+      bridge.push({ status: 'signed_in', userId: 'host-b' })
+      await nextTick()
+
+      expect(store.userId).toBe('host-b')
+      expect(resetTeams).toHaveBeenCalledOnce()
+      expect(clearWorkspace).toHaveBeenCalledOnce()
+      expect(store.balance).toBeNull()
+    })
+
+    it('signs Desktop out on logout and drops an earlier stored API key', async () => {
+      const apiKeyStore = useApiKeyAuthStore()
+      let storedKey: string | null = 'stored-key'
+      vi.mocked(apiKeyStore.getApiKey).mockImplementation(() => storedKey)
+      vi.mocked(apiKeyStore.clearStoredApiKey).mockImplementation(async () => {
+        storedKey = null
+      })
+      const bridge = hostBridge({ status: 'signed_in', userId: 'host-user' })
+      await startDesktopHostSession(bridge)
+
+      await store.logout()
+
+      expect(bridge.signOut).toHaveBeenCalledOnce()
+      expect(store.userId).not.toBe('host-user')
+      expect(apiKeyStore.clearStoredApiKey).toHaveBeenCalledOnce()
+      expect(apiKeyStore.getApiKey()).toBeNull()
+    })
+
+    it('keeps the stored API key on a logout that was not a Desktop host one', async () => {
+      const apiKeyStore = useApiKeyAuthStore()
+      vi.mocked(apiKeyStore.getApiKey).mockReturnValue('stored-key')
+      await startDesktopHostSession(hostBridge({ status: 'signed_out' }))
+
+      await store.logout()
+
+      expect(apiKeyStore.clearStoredApiKey).not.toHaveBeenCalled()
+    })
+
+    it('reports a failed logout when Desktop keeps its session', async () => {
+      const signedIn: DesktopHostAuthState = {
+        status: 'signed_in',
+        userId: 'host-user'
+      }
+      const bridge = hostBridge(signedIn)
+      bridge.signOut.mockResolvedValue(signedIn)
+      await startDesktopHostSession(bridge)
+
+      await expect(store.logout()).rejects.toBeInstanceOf(AuthStoreError)
+      expect(store.isAuthenticated).toBe(true)
+    })
+
+    it('keeps the Firebase user when Desktop does not share its session', async () => {
+      await startDesktopHostSession(hostBridge({ status: 'disabled' }))
+
+      expect(store.userId).toBe('local-user-id')
+      await expect(store.getAuthToken()).resolves.toBe('mock-id-token')
+    })
   })
 })
 

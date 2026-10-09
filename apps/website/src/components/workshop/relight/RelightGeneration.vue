@@ -2,12 +2,12 @@
 import { ChevronDown } from '@lucide/vue'
 import { computed } from 'vue'
 
-import type { Relight } from '../../../composables/useRelight'
-import type { Locale } from '../../../i18n/translations'
-import { lc } from '../../../lib/workshop/relight/copy'
-import EditorSelect from '../app-editor/EditorSelect.vue'
-import EditorSlider from '../app-editor/EditorSlider.vue'
-import EditorTextArea from '../app-editor/EditorTextArea.vue'
+import type { Relight } from '@/composables/useRelight'
+import type { Locale } from '@/i18n/translations'
+import { lc } from '@/lib/workshop/relight/copy'
+import EditorSelect from '@/components/workshop/app-editor/EditorSelect.vue'
+import EditorSlider from '@/components/workshop/app-editor/EditorSlider.vue'
+import EditorTextArea from '@/components/workshop/app-editor/EditorTextArea.vue'
 
 const { relight, locale = 'en' } = defineProps<{
   relight: Relight

@@ -1,9 +1,9 @@
 <script setup lang="ts">
-import type { Relight } from '../../../composables/useRelight'
-import type { Locale } from '../../../i18n/translations'
-import { lc } from '../../../lib/workshop/relight/copy'
-import EditorSlider from '../app-editor/EditorSlider.vue'
-import EditorSwitch from '../app-editor/EditorSwitch.vue'
+import type { Relight } from '@/composables/useRelight'
+import type { Locale } from '@/i18n/translations'
+import { lc } from '@/lib/workshop/relight/copy'
+import EditorSlider from '@/components/workshop/app-editor/EditorSlider.vue'
+import EditorSwitch from '@/components/workshop/app-editor/EditorSwitch.vue'
 import RelightSwatches from './RelightSwatches.vue'
 
 const { relight, locale = 'en' } = defineProps<{

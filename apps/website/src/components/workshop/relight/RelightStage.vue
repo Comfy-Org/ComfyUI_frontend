@@ -1,19 +1,19 @@
 <script setup lang="ts">
 import { ref, useTemplateRef } from 'vue'
 
-import type { RelightImage } from '../../../composables/useRelight'
-import type { Locale } from '../../../i18n/translations'
-import { lc } from '../../../lib/workshop/relight/copy'
+import type { RelightImage } from '@/composables/useRelight'
+import type { Locale } from '@/i18n/translations'
+import { lc } from '@/lib/workshop/relight/copy'
 import type {
   Light,
   RelightMask,
   RelightScene
-} from '../../../lib/workshop/relight/lights'
-import { moveLight } from '../../../lib/workshop/relight/lights'
-import { RELIGHT_EXAMPLE } from '../../../lib/workshop/relight/mock-run'
-import EditorFrame from '../app-editor/EditorFrame.vue'
-import EditorSplitLine from '../app-editor/EditorSplitLine.vue'
-import { pointerFraction } from '../app-editor/stage-geometry'
+} from '@/lib/workshop/relight/lights'
+import { moveLight } from '@/lib/workshop/relight/lights'
+import { RELIGHT_EXAMPLE } from '@/lib/workshop/relight/mock-run'
+import EditorFrame from '@/components/workshop/app-editor/EditorFrame.vue'
+import EditorSplitLine from '@/components/workshop/app-editor/EditorSplitLine.vue'
+import { pointerFraction } from '@/components/workshop/app-editor/stage-geometry'
 import RelightCanvas from './RelightCanvas.vue'
 import RelightLightDot from './RelightLightDot.vue'
 import RelightMaskOutline from './RelightMaskOutline.vue'

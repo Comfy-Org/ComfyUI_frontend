@@ -3,7 +3,7 @@ import type { Component } from 'vue'
 
 import { cn } from '@comfyorg/tailwind-utils'
 
-import CinematicTooltip from '../cinematic-studio/CinematicTooltip.vue'
+import CinematicTooltip from '@/components/workshop/cinematic-studio/CinematicTooltip.vue'
 
 defineOptions({ inheritAttrs: false })
 

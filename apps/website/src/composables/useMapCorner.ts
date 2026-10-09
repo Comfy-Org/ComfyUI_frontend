@@ -3,13 +3,13 @@ import { useElementSize, useEventListener } from '@vueuse/core'
 import type { MaybeRefOrGetter } from 'vue'
 import { computed, inject, ref, toValue, watch } from 'vue'
 
-import { FIT } from '../components/workshop/app-editor/zoom'
-import type { MapCorner } from '../lib/workshop/relight/map-corner'
+import { FIT } from '@/components/workshop/app-editor/zoom'
+import type { MapCorner } from '@/lib/workshop/relight/map-corner'
 import {
   MAP_INSET,
   handleBox,
   pickMapCorner
-} from '../lib/workshop/relight/map-corner'
+} from '@/lib/workshop/relight/map-corner'
 import { EDITOR_ZOOM } from './useEditorZoom'
 
 /**

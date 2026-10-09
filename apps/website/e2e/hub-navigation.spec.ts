@@ -1,3 +1,4 @@
+import type { Page } from '@playwright/test'
 import { expect } from '@playwright/test'
 
 import { test } from './fixtures/blockExternalMedia'
@@ -212,18 +213,110 @@ for (const width of [1440, 390]) {
   })
 }
 
-for (const { section, destination, query, filter } of [
+for (const { width, from, to } of [
+  { width: 1440, from: 'workflows', to: 'models' },
+  { width: 1440, from: 'workflows', to: 'apps' },
+  { width: 390, from: 'models', to: 'workflows' }
+] as const) {
+  test(`${from} to ${to} at ${width}px leaves the tabs where the reader clicked them`, async ({
+    page
+  }) => {
+    await page.setViewportSize({ width, height: 900 })
+    await page.goto(`/hub/${from}/`)
+    await expect(page.getByTestId(`catalogue-tab-${from}`)).toHaveAttribute(
+      'aria-current',
+      'page'
+    )
+    await page.getByRole('button', { name: 'Close', exact: true }).click()
+
+    const toolbar = page.getByTestId('workshop-toolbar')
+    const tabs = page.getByTestId('catalogue-tabs')
+    await expect(page.getByTestId('workshop-model-card').first()).toBeVisible()
+    // Far enough down that the toolbar has left the page and stuck under the
+    // header, which is the state the reader is in when a tab is a jump.
+    const stuck = await toolbar.evaluate((element) =>
+      Number.parseFloat(getComputedStyle(element).top)
+    )
+    await page.evaluate(() => window.scrollBy(0, 1200))
+    await expect
+      .poll(async () => (await toolbar.boundingBox())?.y)
+      .toBeCloseTo(stuck, 0)
+    const pinned = (await tabs.boundingBox())?.y
+    expect(pinned).toBeDefined()
+
+    await page.getByTestId(`catalogue-tab-${to}`).click()
+    await expect(page).toHaveURL(`/hub/${to}/`)
+    await expect(page.getByRole('heading', { level: 1 })).toHaveText(
+      `ComfyUI ${to}`
+    )
+
+    // The listing swaps under a control the reader is pointing at, so the
+    // control holds its place and the new listing starts beneath it. Landing
+    // at the top of the page would drop the tabs out from under the pointer.
+    await expect
+      .poll(async () => (await tabs.boundingBox())?.y)
+      .toBeCloseTo(pinned ?? 0, 0)
+    expect(await page.evaluate(() => window.scrollY)).toBeGreaterThan(0)
+
+    // A pinned toolbar reads the same anywhere further down the new listing,
+    // so pinned alone would also pass for a scroll measured against the page
+    // the reader left — and the two sections hold their toolbar at different
+    // heights. The page sits at the first scroll that pins it, so handing a
+    // few pixels back puts the toolbar into the flow again.
+    const landed = await toolbar.evaluate((element) =>
+      Number.parseFloat(getComputedStyle(element).top)
+    )
+    await page.evaluate(() => window.scrollBy(0, -4))
+    await expect
+      .poll(async () => (await toolbar.boundingBox())?.y)
+      .toBeGreaterThan(landed + 2)
+  })
+}
+
+test('switching tabs from the top of the page stays at the top', async ({
+  page
+}) => {
+  await page.goto('/hub/workflows/')
+  await expect(page.getByTestId('catalogue-tab-workflows')).toHaveAttribute(
+    'aria-current',
+    'page'
+  )
+  await page.getByTestId('catalogue-tab-models').click()
+  await expect(page).toHaveURL('/hub/models/')
+  await expect(page.getByRole('heading', { level: 1 })).toHaveText(
+    'ComfyUI models'
+  )
+  expect(await page.evaluate(() => window.scrollY)).toBe(0)
+})
+
+// Inside a category the tabs give up the whole row to the category's own title,
+// so the way to another hub section starts by leaving the category.
+async function leaveCategory(page: Page) {
+  await expect(page.getByTestId('catalogue-tabs')).toHaveCount(0)
+  await page.getByTestId('section-back').click()
+  await expect(page.getByTestId('catalogue-tabs')).toBeVisible()
+}
+
+async function expectTabs(page: Page) {
+  await expect(page.getByTestId('catalogue-tabs')).toBeVisible()
+}
+
+for (const { section, destination, query, filter, reachTabs } of [
   {
     section: 'models',
     destination: 'workflows',
     query: 'kling',
-    filter: 'useCase=generate-images'
+    // A use case is a category on models, so the tabs are not on the page.
+    filter: 'useCase=generate-images',
+    reachTabs: leaveCategory
   },
   {
     section: 'workflows',
     destination: 'models',
     query: 'material',
-    filter: 'category=product'
+    // A workflow category filter opens no category, so the tabs stay.
+    filter: 'category=product',
+    reachTabs: expectTabs
   }
 ]) {
   test(`the active ${section} tab resets its URL filters, including history`, async ({
@@ -235,6 +328,9 @@ for (const { section, destination, query, filter } of [
     const count = page.getByTestId('workshop-filter-count')
     await expect(search).toHaveValue(query)
     await expect(count).toHaveText('1')
+    await reachTabs(page)
+    // On models the back link already cleared the filters; what the tab click
+    // still has to do is reset the address.
     await page.getByTestId(`catalogue-tab-${section}`).click()
     await expect(page).toHaveURL(`/hub/${section}/`)
     await expect(search).toHaveValue('')
@@ -258,6 +354,7 @@ for (const { section, destination, query, filter } of [
     await page.goto(filtered)
     await expect(search).toHaveValue(query)
     await expect(count).toHaveText('1')
+    await reachTabs(page)
     await page.getByTestId(`catalogue-tab-${destination}`).click()
     await expect(page).toHaveURL(`/hub/${destination}/`)
     await expect(search).toHaveValue('')
@@ -298,6 +395,25 @@ test('the mobile menu closes and reopens after its Hub link navigates', async ({
   await expect(page.getByRole('heading', { level: 1 })).toBeVisible()
 })
 
+test('mobile search suggestions show a video model as a still frame', async ({
+  page
+}) => {
+  await page.setViewportSize({ width: 390, height: 900 })
+  await page.goto('/hub/models/')
+  const open = page.getByTestId('workshop-search-button')
+  await waitForIsland(page, open)
+  await open.click()
+  await page.getByTestId('workshop-search-sheet-input').fill('seedance')
+  const sheet = page.getByTestId('workshop-search-sheet')
+  await expect(sheet.getByTestId('workshop-search-model')).toHaveCount(4)
+  await expect(
+    sheet.getByTestId('workshop-search-model-video')
+  ).not.toHaveCount(0)
+  await expect(
+    sheet.locator('img[src*=".mp4"], img[src*=".webm"], img[src*=".mov"]')
+  ).toHaveCount(0)
+})
+
 test('keeps the current listing visible until a cold destination is ready', async ({
   page,
   context
@@ -333,4 +449,63 @@ test('keeps the current listing visible until a cold destination is ready', asyn
   await expect(page.getByRole('heading', { level: 1 })).toHaveText(
     'ComfyUI workflows'
   )
+})
+
+// The tabs and the search share one row. Inside a category the tabs are gone,
+// and the cap the search wears outside one has to go with them or the width
+// they held goes nowhere. The cap is read off the field rather than measured:
+// outside a category the shared row already holds the field under 480px, so a
+// measurement there cannot tell a dropped cap from a crowded row. Inside one,
+// the box says the width really went to the field and not nowhere.
+const SEARCH_CAP = '480px'
+const NO_CAP = 'none'
+const WIDER_THAN_CAP = 480
+
+function searchField(page: Page) {
+  return page.getByTestId('workshop-search-field')
+}
+
+async function expectSearchCap(page: Page, cap: string) {
+  const field = searchField(page)
+  await expect(field).toBeVisible()
+  await expect(field).toHaveCSS('max-width', cap)
+}
+
+async function searchWidth(page: Page) {
+  const box = await searchField(page).boundingBox()
+  if (!box) throw new Error('The search field has no box')
+  return box.width
+}
+
+test('a models category hands the search the width its tabs held', async ({
+  page
+}) => {
+  await page.goto('/hub/models/')
+  await expectSearchCap(page, SEARCH_CAP)
+  await expect(page.getByTestId('catalogue-tabs')).toBeVisible()
+
+  await page.goto('/hub/models/?useCase=generate-images')
+  await expect(page.getByTestId('catalogue-tabs')).toHaveCount(0)
+  await expectSearchCap(page, NO_CAP)
+  expect(await searchWidth(page)).toBeGreaterThan(WIDER_THAN_CAP)
+
+  await page.getByTestId('section-back').click()
+  await expect(page.getByTestId('catalogue-tabs')).toBeVisible()
+  await expectSearchCap(page, SEARCH_CAP)
+})
+
+test('browsing all workflows hands the search the width its tabs held', async ({
+  page
+}) => {
+  await page.goto('/hub/workflows/')
+  await expectSearchCap(page, SEARCH_CAP)
+
+  await page.getByRole('button', { name: 'Browse all workflows' }).click()
+  await expect(page.getByTestId('catalogue-tabs')).toHaveCount(0)
+  await expectSearchCap(page, NO_CAP)
+  expect(await searchWidth(page)).toBeGreaterThan(WIDER_THAN_CAP)
+
+  await page.getByTestId('section-back').click()
+  await expect(page.getByTestId('catalogue-tabs')).toBeVisible()
+  await expectSearchCap(page, SEARCH_CAP)
 })
