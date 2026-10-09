@@ -2572,6 +2572,13 @@ export type ListWorkspacesResponse = {
    *
    */
   can_create_workspace: boolean
+  /**
+   * The workspace the app should open on sign-in: the workspace of the
+   * SSO organization that manages the caller's account, when the caller
+   * is a member of it. Absent for accounts no SSO organization manages.
+   *
+   */
+  default_workspace_id?: string
   workspaces: Array<WorkspaceWithRole>
 }
 
@@ -5584,9 +5591,16 @@ export type AgentPendingAsk =
  */
 export type AgentMessage = {
   /**
-   * Message payload. User turns carry {text, attachments?, attachment_refs?, workflow_references?}. Attachments are the input-image filenames from the request. attachment_refs is the server's own resolution of those same filenames to library assets, as {name, id?, kind?} objects, and exists so a later turn in the thread can reach an earlier turn's file — clients should keep reading attachments. workflow_references is an optional array of explicit non-target references, each with workflow_id and name (an empty string when no name was supplied). An optional unavailable: true records that the reference could not be authorized at turn start, without distinguishing unknown IDs, inaccessible workflows, or lookup failures. These entries preserve the user's reference intent without exposing workflow content; the frontend restores reference chips from this metadata. The field is omitted when there are no references. Assistant turns carry {text} — the final answer text (or error copy on a failed turn). Omitted when empty (e.g. an assistant message still streaming). Per-turn token accounting is NOT included here; it is surfaced on the agent_message_done WebSocket broadcast. tool_calls is an optional array of ToolCallSummary, attached to an assistant message that has persisted terminal (ok/error) tool-call rows — it lets a chat reload render the tool history a turn produced instead of showing nothing until the next live turn. Omitted when the message has no such rows.
+   * Message payload. User turns carry {text, attachments?, attachment_refs?, workflow_references?}. Attachments are the input-image filenames from the request. attachment_refs is the server's own resolution of those same filenames to library assets, as {name, id?, kind?, display_name?} objects. display_name preserves the original user-facing filename when name is an opaque storage key. The sibling exists so a later turn in the thread can reach an earlier turn's file — clients should keep reading attachments. workflow_references is an optional array of explicit non-target references, each with workflow_id and name (an empty string when no name was supplied). An optional unavailable: true records that the reference could not be authorized at turn start, without distinguishing unknown IDs, inaccessible workflows, or lookup failures. These entries preserve the user's reference intent without exposing workflow content; the frontend restores reference chips from this metadata. The field is omitted when there are no references. Assistant turns carry {text} — the final answer text (or error copy on a failed turn). Omitted when empty (e.g. an assistant message still streaming). Per-turn token accounting is NOT included here; it is surfaced on the agent_message_done WebSocket broadcast. tool_calls is an optional array of ToolCallSummary, attached to an assistant message that has persisted terminal (ok/error) tool-call rows — it lets a chat reload render the tool history a turn produced instead of showing nothing until the next live turn. Omitted when the message has no such rows.
    */
   content?: {
+    attachment_refs?: Array<{
+      display_name?: string
+      id?: string
+      kind?: string
+      name?: string
+      [key: string]: unknown
+    }>
     tool_calls?: Array<ToolCallSummary>
     [key: string]: unknown
   }
