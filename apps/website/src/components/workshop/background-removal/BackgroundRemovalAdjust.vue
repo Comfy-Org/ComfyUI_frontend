@@ -1,16 +1,16 @@
 <script setup lang="ts">
 import { computed } from 'vue'
 
-import type { BackgroundRemoval } from '../../../composables/useBackgroundRemoval'
-import type { Locale } from '../../../i18n/translations'
-import type { AdjustTarget } from '../../../lib/workshop/background-removal/contract'
+import type { BackgroundRemoval } from '@/composables/useBackgroundRemoval'
+import type { Locale } from '@/i18n/translations'
+import type { AdjustTarget } from '@/lib/workshop/background-removal/contract'
 import {
   ADJUST_FILTERS,
   ADJUST_TARGETS
-} from '../../../lib/workshop/background-removal/contract'
-import { brc } from '../../../lib/workshop/background-removal/copy'
-import EditorSegmented from '../app-editor/EditorSegmented.vue'
-import EditorSlider from '../app-editor/EditorSlider.vue'
+} from '@/lib/workshop/background-removal/contract'
+import { brc } from '@/lib/workshop/background-removal/copy'
+import EditorSegmented from '@/components/workshop/app-editor/EditorSegmented.vue'
+import EditorSlider from '@/components/workshop/app-editor/EditorSlider.vue'
 
 const { cutout, locale = 'en' } = defineProps<{
   cutout: BackgroundRemoval

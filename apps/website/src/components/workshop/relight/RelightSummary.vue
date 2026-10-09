@@ -1,7 +1,7 @@
 <script setup lang="ts">
-import { useMoodThumbnails } from '../../../composables/useMoodThumbnails'
-import type { Relight } from '../../../composables/useRelight'
-import type { Locale } from '../../../i18n/translations'
+import { useMoodThumbnails } from '@/composables/useMoodThumbnails'
+import type { Relight } from '@/composables/useRelight'
+import type { Locale } from '@/i18n/translations'
 import { setupSummary } from './sections'
 
 const { relight, locale = 'en' } = defineProps<{

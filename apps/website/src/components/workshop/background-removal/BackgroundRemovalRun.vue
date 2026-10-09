@@ -2,15 +2,15 @@
 import { useNow } from '@vueuse/core'
 import { computed } from 'vue'
 
-import type { BackgroundRemoval } from '../../../composables/useBackgroundRemoval'
-import type { Locale } from '../../../i18n/translations'
-import { brc } from '../../../lib/workshop/background-removal/copy'
+import type { BackgroundRemoval } from '@/composables/useBackgroundRemoval'
+import type { Locale } from '@/i18n/translations'
+import { brc } from '@/lib/workshop/background-removal/copy'
 import {
   CUTOUT_CREDITS,
   CUTOUT_RUN_MS
-} from '../../../lib/workshop/background-removal/mock-run'
-import EditorRun from '../app-editor/EditorRun.vue'
-import { clockProgress } from '../app-editor/run-progress'
+} from '@/lib/workshop/background-removal/mock-run'
+import EditorRun from '@/components/workshop/app-editor/EditorRun.vue'
+import { clockProgress } from '@/components/workshop/app-editor/run-progress'
 
 const {
   cutout,

@@ -1,13 +1,13 @@
 <script setup lang="ts">
 import { computed } from 'vue'
 
-import type { BackgroundRemoval } from '../../../composables/useBackgroundRemoval'
-import type { Locale } from '../../../i18n/translations'
-import { brc } from '../../../lib/workshop/background-removal/copy'
-import { CUTOUT_EXAMPLE } from '../../../lib/workshop/background-removal/mask'
-import EditorEmpty from '../app-editor/EditorEmpty.vue'
-import EditorResult from '../app-editor/EditorResult.vue'
-import type { EditorView } from '../app-editor/view'
+import type { BackgroundRemoval } from '@/composables/useBackgroundRemoval'
+import type { Locale } from '@/i18n/translations'
+import { brc } from '@/lib/workshop/background-removal/copy'
+import { CUTOUT_EXAMPLE } from '@/lib/workshop/background-removal/mask'
+import EditorEmpty from '@/components/workshop/app-editor/EditorEmpty.vue'
+import EditorResult from '@/components/workshop/app-editor/EditorResult.vue'
+import type { EditorView } from '@/components/workshop/app-editor/view'
 import BackgroundRemovalWorkspace from './BackgroundRemovalWorkspace.vue'
 
 const {

@@ -2,23 +2,23 @@
 import { useNow } from '@vueuse/core'
 import { computed } from 'vue'
 
-import type { BackgroundRemoval } from '../../../composables/useBackgroundRemoval'
-import type { EditorImage } from '../../../composables/useEditorImage'
-import type { Locale } from '../../../i18n/translations'
+import type { BackgroundRemoval } from '@/composables/useBackgroundRemoval'
+import type { EditorImage } from '@/composables/useEditorImage'
+import type { Locale } from '@/i18n/translations'
 import {
   adjustFilter,
   blurBleed
-} from '../../../lib/workshop/background-removal/contract'
-import { brc } from '../../../lib/workshop/background-removal/copy'
+} from '@/lib/workshop/background-removal/contract'
+import { brc } from '@/lib/workshop/background-removal/copy'
 import {
   CUTOUT_EXAMPLE,
   subjectMaskImage
-} from '../../../lib/workshop/background-removal/mask'
-import { elapsedLabel } from '../../../lib/workshop/elapsed'
-import EditorBusy from '../app-editor/EditorBusy.vue'
-import EditorDropZone from '../app-editor/EditorDropZone.vue'
-import EditorFrame from '../app-editor/EditorFrame.vue'
-import EditorHint from '../app-editor/EditorHint.vue'
+} from '@/lib/workshop/background-removal/mask'
+import { elapsedLabel } from '@/lib/workshop/elapsed'
+import EditorBusy from '@/components/workshop/app-editor/EditorBusy.vue'
+import EditorDropZone from '@/components/workshop/app-editor/EditorDropZone.vue'
+import EditorFrame from '@/components/workshop/app-editor/EditorFrame.vue'
+import EditorHint from '@/components/workshop/app-editor/EditorHint.vue'
 import BackgroundRemovalSubject from './BackgroundRemovalSubject.vue'
 import { sectionMeta } from './sections'
 

@@ -1,9 +1,9 @@
 import { tryOnScopeDispose } from '@vueuse/core'
 import { computed, ref, shallowRef } from 'vue'
 
-import type { Locale } from '../i18n/translations'
-import { imageSize } from '../lib/workshop/image-size'
-import { lc } from '../lib/workshop/relight/copy'
+import type { Locale } from '@/i18n/translations'
+import { imageSize } from '@/lib/workshop/image-size'
+import { lc } from '@/lib/workshop/relight/copy'
 import type {
   Light,
   LightKind,
@@ -11,7 +11,7 @@ import type {
   RelightGeneration,
   RelightMask,
   RelightScene
-} from '../lib/workshop/relight/lights'
+} from '@/lib/workshop/relight/lights'
 import {
   DEFAULT_GENERATION,
   DEFAULT_SCENE,
@@ -20,15 +20,15 @@ import {
   moodScene,
   newLight,
   newMask
-} from '../lib/workshop/relight/lights'
-import type { RelightResult } from '../lib/workshop/relight/mock-run'
-import type { ShadowStyle } from '../lib/workshop/relight/shadows'
-import { shadowStyle, withShadowStyle } from '../lib/workshop/relight/shadows'
+} from '@/lib/workshop/relight/lights'
+import type { RelightResult } from '@/lib/workshop/relight/mock-run'
+import type { ShadowStyle } from '@/lib/workshop/relight/shadows'
+import { shadowStyle, withShadowStyle } from '@/lib/workshop/relight/shadows'
 import {
   RELIGHT_EXAMPLE,
   relightRequest,
   runRelight
-} from '../lib/workshop/relight/mock-run'
+} from '@/lib/workshop/relight/mock-run'
 
 export interface RelightImage {
   readonly url: string

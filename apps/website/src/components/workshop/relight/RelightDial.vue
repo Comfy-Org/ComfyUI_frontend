@@ -10,16 +10,12 @@ import {
 } from '@lucide/vue'
 import { computed, useId, useTemplateRef } from 'vue'
 
-import type { Locale } from '../../../i18n/translations'
-import { lc } from '../../../lib/workshop/relight/copy'
-import {
-  dialPoint,
-  fromDial,
-  nudgeDial
-} from '../../../lib/workshop/relight/dial'
-import type { Light } from '../../../lib/workshop/relight/lights'
-import { ORBIT_PRESETS, fromOrbit } from '../../../lib/workshop/relight/orbit'
-import EditorMenuButton from '../app-editor/EditorMenuButton.vue'
+import type { Locale } from '@/i18n/translations'
+import { lc } from '@/lib/workshop/relight/copy'
+import { dialPoint, fromDial, nudgeDial } from '@/lib/workshop/relight/dial'
+import type { Light } from '@/lib/workshop/relight/lights'
+import { ORBIT_PRESETS, fromOrbit } from '@/lib/workshop/relight/orbit'
+import EditorMenuButton from '@/components/workshop/app-editor/EditorMenuButton.vue'
 
 const { light, locale = 'en' } = defineProps<{
   light: Light

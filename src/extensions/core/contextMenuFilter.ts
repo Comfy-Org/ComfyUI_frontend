@@ -1,7 +1,7 @@
 import type {
   IContextMenuOptions,
   IContextMenuValue
-} from '@/lib/litegraph/src/interfaces'
+} from '@/lib/litegraph/src/types/contextMenu'
 import type { ContextMenu } from '@/lib/litegraph/src/litegraph'
 import {
   LGraphCanvas,

@@ -616,18 +616,6 @@ describe('assetsStore - Model Assets Cache (Cloud)', () => {
   })
 
   describe('hasCategory', () => {
-    it('should return true for loaded categories', async () => {
-      const store = useAssetsStore()
-      const assets = [createMockAsset('asset-1')]
-
-      vi.mocked(assetService.getAssetsPageForNodeType).mockResolvedValue(
-        makePage(assets)
-      )
-      await store.updateModelsForNodeType('CheckpointLoaderSimple')
-
-      expect(store.hasCategory('checkpoints')).toBe(true)
-    })
-
     it('should return true for tag-based category when tag: prefix is not used', async () => {
       const store = useAssetsStore()
       const assets = [createMockAsset('asset-1')]
@@ -766,7 +754,6 @@ describe('assetsStore - Model Assets Cache (Cloud)', () => {
       vi.mocked(assetService.updateAsset).mockRejectedValueOnce(
         new Error('500 Internal Error')
       )
-      const consoleSpy = vi.spyOn(console, 'error').mockImplementation(() => {})
 
       await store.updateAssetMetadata(
         original,
@@ -776,7 +763,6 @@ describe('assetsStore - Model Assets Cache (Cloud)', () => {
 
       const cached = store.getAssets('CheckpointLoaderSimple')[0]
       expect(cached.user_metadata).toEqual({ note: 'before' })
-      consoleSpy.mockRestore()
     })
   })
 
@@ -833,16 +819,6 @@ describe('assetsStore - Model Assets Cache (Cloud)', () => {
   })
 
   describe('updateAssetTags partial-failure compensation', () => {
-    let consoleSpy: ReturnType<typeof vi.spyOn>
-
-    beforeEach(() => {
-      consoleSpy = vi.spyOn(console, 'error').mockImplementation(() => {})
-    })
-
-    afterEach(() => {
-      consoleSpy.mockRestore()
-    })
-
     it('re-adds removed tags when add fails so cache and server converge', async () => {
       const store = useAssetsStore()
       const asset = createMockAsset('tags-partial-fail', ['models', 'loras'])

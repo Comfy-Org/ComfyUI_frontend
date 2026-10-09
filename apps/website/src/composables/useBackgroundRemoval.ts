@@ -6,14 +6,14 @@ import type {
   CutoutResult,
   CutoutSetup,
   ReplaceSetup
-} from '../lib/workshop/background-removal/contract'
+} from '@/lib/workshop/background-removal/contract'
 import {
   DEFAULT_SETUP,
   cutoutRequest,
   missingInput
-} from '../lib/workshop/background-removal/contract'
-import { CUTOUT_EXAMPLE } from '../lib/workshop/background-removal/mask'
-import { runCutout } from '../lib/workshop/background-removal/mock-run'
+} from '@/lib/workshop/background-removal/contract'
+import { CUTOUT_EXAMPLE } from '@/lib/workshop/background-removal/mask'
+import { runCutout } from '@/lib/workshop/background-removal/mock-run'
 import { useEditorImage } from './useEditorImage'
 import { useSnapshotHistory } from './useSnapshotHistory'
 

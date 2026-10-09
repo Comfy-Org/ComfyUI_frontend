@@ -6,13 +6,17 @@ import { computed, ref, watchEffect } from 'vue'
 import { resolveNodeDefText, t } from '@/i18n'
 import { promotedInputSource } from '@/core/graph/subgraph/promotedInputWidget'
 import { resolveConcretePromotedWidget } from '@/core/graph/subgraph/resolveConcretePromotedWidget'
+import { resolveDynamicInputSpec } from '@/core/graph/widgets/dynamicInputSpec'
 import {
   collectSearchableInputTypes,
   collectSearchableOutputTypes
 } from '@/schemas/nodeDef/searchableSlotTypes'
 import { LiteGraph } from '@/lib/litegraph/src/litegraph'
 import type { LGraphNode } from '@/lib/litegraph/src/litegraph'
-import { transformNodeDefV1ToV2 } from '@/schemas/nodeDef/migration'
+import {
+  transformNodeDefV1ToV2,
+  transformInputSpecV1ToV2
+} from '@/schemas/nodeDef/migration'
 import type {
   ComfyNodeDef as ComfyNodeDefV2,
   InputSpec as InputSpecV2,
@@ -26,7 +30,6 @@ import type {
 } from '@/schemas/nodeDefSchema'
 import { useSettingStore } from '@/platform/settings/settingStore'
 import { NodeSearchService } from '@/services/nodeSearchService'
-import { useSubgraphStore } from '@/stores/subgraphStore'
 import { NODE_TO_ESSENTIALS_CATEGORY } from '@/constants/essentialsNodes'
 import { CORE_NODE_MODULES, getNodeSource } from '@/types/nodeSource'
 import type { NodeSource } from '@/types/nodeSource'
@@ -311,7 +314,7 @@ interface BuildNodeDefTreeOptions {
 export function buildNodeDefTree(
   nodeDefs: ComfyNodeDefImpl[],
   options: BuildNodeDefTreeOptions = {}
-): TreeNode {
+): TreeNode<ComfyNodeDefImpl> {
   const { pathExtractor } = options
   const defaultPathExtractor = (nodeDef: ComfyNodeDefImpl) =>
     nodeDef.nodePath.split('/')
@@ -388,14 +391,21 @@ export const useNodeDefStore = defineStore('nodeDef', () => {
     }
   })
 
-  const nodeDefs = computed(() => {
-    const subgraphStore = useSubgraphStore()
-    // Blueprints first for discoverability in the node library sidebar
-    return [
-      ...subgraphStore.subgraphBlueprints,
-      ...Object.values(nodeDefsByName.value)
-    ]
-  })
+  const blueprintNodeDefs = ref<Map<string, ComfyNodeDefImpl>>(new Map())
+  const blueprintNodeDefsByName = computed<
+    ReadonlyMap<string, ComfyNodeDefImpl>
+  >(() => blueprintNodeDefs.value)
+  function registerBlueprintNodeDef(nodeDef: ComfyNodeDefImpl) {
+    blueprintNodeDefs.value.set(nodeDef.name, nodeDef)
+  }
+  function removeBlueprintNodeDef(name: string) {
+    blueprintNodeDefs.value.delete(name)
+  }
+  // Blueprints first for discoverability in the node library sidebar
+  const nodeDefs = computed(() => [
+    ...blueprintNodeDefs.value.values(),
+    ...Object.values(nodeDefsByName.value)
+  ])
   const nodeDataTypes = computed(() => {
     const types = new Set<string>()
     for (const nodeDef of nodeDefs.value) {
@@ -464,7 +474,20 @@ export const useNodeDefStore = defineStore('nodeDef', () => {
       const nodeDef = fromLGraphNode(node)
       if (!nodeDef) return undefined
 
-      return nodeDef.inputs[widgetName]
+      if (Object.hasOwn(nodeDef.inputs, widgetName))
+        return nodeDef.inputs[widgetName]
+      const resolved = resolveDynamicInputSpec(
+        nodeDef.input,
+        widgetName,
+        (name) => node.widgets?.find((widget) => widget.name === name)?.value
+      )
+      return (
+        resolved &&
+        transformInputSpecV1ToV2(resolved.spec, {
+          name: widgetName,
+          isOptional: resolved.isOptional
+        })
+      )
     }
     // A subgraph node's widget is a promoted input named after its slot; resolve
     // the interior source and read its real spec instead of fabricating one.
@@ -548,6 +571,7 @@ export const useNodeDefStore = defineStore('nodeDef', () => {
 
   return {
     nodeDefsByName,
+    blueprintNodeDefsByName,
     nodeDefsByDisplayName,
     allNodeDefsByName,
     allNodeDefsByDisplayName,
@@ -565,6 +589,8 @@ export const useNodeDefStore = defineStore('nodeDef', () => {
     updateNodeDefs,
     addNodeDef,
     removeNodeDef,
+    registerBlueprintNodeDef,
+    removeBlueprintNodeDef,
     getNodeDefByName,
     fromLGraphNode,
     getInputSpecForWidget,

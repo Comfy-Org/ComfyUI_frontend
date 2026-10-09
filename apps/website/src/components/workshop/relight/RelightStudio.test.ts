@@ -4,7 +4,7 @@ import { beforeEach, describe, expect, it, vi } from 'vitest'
 
 import RelightStudio from './RelightStudio.vue'
 
-vi.mock(import('../../../lib/workshop/relight/render-image'), () => ({
+vi.mock(import('@/lib/workshop/relight/render-image'), () => ({
   renderRelitImage: vi.fn(() => Promise.resolve(undefined)),
   renderMoodThumbnails: vi.fn(() => Promise.resolve(undefined))
 }))

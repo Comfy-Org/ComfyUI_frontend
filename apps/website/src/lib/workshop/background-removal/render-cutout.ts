@@ -1,4 +1,4 @@
-import { loadImage } from '../relight/render-image'
+import { loadImage } from '@/lib/workshop/relight/render-image'
 import type { CutoutRequest } from './contract'
 import { FORMAT_TYPES, adjustFilter, blurBleed } from './contract'
 import {

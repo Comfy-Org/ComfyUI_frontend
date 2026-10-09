@@ -1,8 +1,8 @@
 <script setup lang="ts">
-import type { BackgroundRemoval } from '../../../composables/useBackgroundRemoval'
-import type { Locale } from '../../../i18n/translations'
-import { brc } from '../../../lib/workshop/background-removal/copy'
-import EditorTray from '../app-editor/EditorTray.vue'
+import type { BackgroundRemoval } from '@/composables/useBackgroundRemoval'
+import type { Locale } from '@/i18n/translations'
+import { brc } from '@/lib/workshop/background-removal/copy'
+import EditorTray from '@/components/workshop/app-editor/EditorTray.vue'
 import BackgroundRemovalSeed from './BackgroundRemovalSeed.vue'
 import { CUTOUT_SECTIONS, sectionMeta } from './sections'
 

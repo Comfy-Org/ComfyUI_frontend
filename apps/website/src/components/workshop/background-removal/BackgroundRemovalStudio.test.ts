@@ -2,15 +2,12 @@ import { fireEvent, render, screen, within } from '@testing-library/vue'
 import userEvent from '@testing-library/user-event'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 
-import { renderCutout } from '../../../lib/workshop/background-removal/render-cutout'
+import { renderCutout } from '@/lib/workshop/background-removal/render-cutout'
 import BackgroundRemovalStudio from './BackgroundRemovalStudio.vue'
 
-vi.mock(
-  import('../../../lib/workshop/background-removal/render-cutout'),
-  () => ({
-    renderCutout: vi.fn(() => Promise.resolve('blob:cutout'))
-  })
-)
+vi.mock(import('@/lib/workshop/background-removal/render-cutout'), () => ({
+  renderCutout: vi.fn(() => Promise.resolve('blob:cutout'))
+}))
 
 function screenIsWide(wide: boolean) {
   vi.stubGlobal('matchMedia', (media: string) => ({

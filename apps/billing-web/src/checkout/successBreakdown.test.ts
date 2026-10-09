@@ -1,145 +1,182 @@
-import type { SubscriptionPreview } from '@comfyorg/account-core/billing'
+import type { BillingChargeBreakdown } from '@comfyorg/account-core/billing'
 
 import type { CheckoutPage } from '@/checkout/checkoutPage'
 import type { SuccessBreakdown } from '@/checkout/successBreakdown'
 import { successBreakdown } from '@/checkout/successBreakdown'
 import { createBillingI18n } from '@/i18n'
-import { previewOf, succeededOperation } from '@/test/fakeBillingClient'
+import { succeededOperation } from '@/test/fakeBillingClient'
 
 const { t } = createBillingI18n().global
 
-const context = {
-  workspace: 'Comfy Studios',
-  tierName: (tier: SubscriptionPreview['new_plan']['tier']) =>
-    t(`hosted.tier.${tier}`),
-  t,
-  locale: 'en'
-}
-
-const PRO_MONTHLY = {
-  slug: 'pro_monthly',
-  tier: 'PRO',
-  duration: 'MONTHLY',
-  price_cents: 10_000,
-  credits_cents: 0,
-  seat_summary: {
-    seat_count: 1,
-    total_cost_cents: 10_000,
-    total_credits_cents: 0
-  }
-} as const satisfies SubscriptionPreview['new_plan']
-
-function quoteOf(overrides: Partial<SubscriptionPreview>): SubscriptionPreview {
-  return previewOf({
-    currency: 'usd',
-    new_plan: PRO_MONTHLY,
-    amount_due_cents: 10_000,
-    cost_today_cents: 10_000,
-    ...overrides
-  })
-}
-
-const ownPay: CheckoutPage = { kind: 'terminal', attribution: 'started' }
+const context = { t, locale: 'en' }
 
 function settled(
   attribution: 'started' | 'returned' | 'settled',
-  amountChargedCents?: number
+  chargeBreakdown?: BillingChargeBreakdown
 ): CheckoutPage {
   const operation = {
     ...succeededOperation('op_paid'),
-    receipt: { amountChargedCents, creditsAdded: 21_100 }
+    receipt: {
+      amountChargedCents: chargeBreakdown?.amount_charged_cents ?? 10_000,
+      creditsAdded: 21_100,
+      ...(chargeBreakdown === undefined ? {} : { chargeBreakdown })
+    }
   }
+  return { kind: 'terminal', attribution, operation }
+}
+
+function charged(
+  overrides: Partial<BillingChargeBreakdown>
+): BillingChargeBreakdown {
   return {
-    kind: 'terminal',
-    attribution,
-    operation,
-    plan: { tier: 'PRO', duration: 'MONTHLY', price_cents: 10_000n }
+    amount_charged_cents: 8_000,
+    currency: 'usd',
+    prorated: false,
+    reasons: [],
+    ...overrides
   }
+}
+
+const PROMO = charged({
+  amount_charged_cents: 7_750,
+  reasons: [
+    {
+      kind: 'promo_code',
+      amount_cents: 2_000,
+      discount: {
+        kind: 'promotion',
+        code: 'SAVE20',
+        name: 'Save 20%',
+        duration: 'once',
+        term: 'first_month'
+      }
+    },
+    { kind: 'account_balance', amount_cents: 250 }
+  ]
+})
+
+const PROMO_ROWS: SuccessBreakdown = {
+  deductions: [
+    { label: 'Save 20%', amount: '−$20.00', subline: 'First month' },
+    {
+      label: 'Account balance',
+      amount: '−$2.50',
+      subline: 'Credit already on your account'
+    }
+  ],
+  paidToday: { label: 'Paid today', amount: '$77.50', sublines: [] }
 }
 
 describe('successBreakdown', () => {
   it.for<{
     name: string
     page: CheckoutPage
-    quote?: SubscriptionPreview
     breakdown: SuccessBreakdown | undefined
   }>([
     {
-      name: 'in-page Pay with a promo code entered at checkout',
-      page: ownPay,
-      quote: quoteOf({
-        amount_due_cents: 8_000,
-        promotion_code: 'SAVE20',
-        discounts: [
-          {
-            kind: 'promotion',
-            code: 'SAVE20',
-            name: 'Save 20%',
-            amount_off_cents: 2_000,
-            duration: 'once'
-          }
-        ]
-      }),
+      name: 'no breakdown reported: the card stays as is',
+      page: settled('started'),
+      breakdown: undefined
+    },
+    {
+      name: 'a promo code and the account balance, in the server order',
+      page: settled('started', PROMO),
+      breakdown: PROMO_ROWS
+    },
+    {
+      name: 'a provider return reads the same rows from the op status',
+      page: settled('returned', PROMO),
+      breakdown: PROMO_ROWS
+    },
+    {
+      name: 'a discount the subscription already holds, unnamed',
+      page: settled(
+        'started',
+        charged({
+          amount_charged_cents: 7_500,
+          reasons: [
+            {
+              kind: 'subscription_discount',
+              amount_cents: 2_500,
+              discount: {
+                kind: 'promotion',
+                code: 'LOYAL',
+                duration: 'repeating'
+              }
+            }
+          ]
+        })
+      ),
+      breakdown: {
+        deductions: [{ label: 'Promo code', amount: '−$25.00' }],
+        paidToday: { label: 'Paid today', amount: '$75.00', sublines: [] }
+      }
+    },
+    {
+      name: 'a promo reason with its term in months',
+      page: settled(
+        'started',
+        charged({
+          reasons: [
+            {
+              kind: 'promo_code',
+              amount_cents: 2_000,
+              discount: {
+                kind: 'promotion',
+                code: 'LOYAL',
+                name: 'Loyalty',
+                duration: 'repeating',
+                duration_in_months: 3,
+                term: 'months'
+              }
+            }
+          ]
+        })
+      ),
       breakdown: {
         deductions: [
-          { label: 'Save 20%', amount: '−$20.00', subline: 'First month' }
+          { label: 'Loyalty', amount: '−$20.00', subline: 'For 3 months' }
         ],
         paidToday: { label: 'Paid today', amount: '$80.00', sublines: [] }
       }
     },
     {
-      name: 'in-page Pay under a discount the subscription already holds',
-      page: ownPay,
-      quote: quoteOf({
-        amount_due_cents: 7_500,
-        discounts: [
-          {
-            kind: 'promotion',
-            code: 'LOYAL',
-            name: 'Loyalty',
-            amount_off_cents: 2_500,
-            duration: 'repeating',
-            duration_in_months: 3
-          }
-        ]
-      }),
-      breakdown: {
-        deductions: [
-          { label: 'Loyalty', amount: '−$25.00', subline: 'For 3 months' }
-        ],
-        paidToday: { label: 'Paid today', amount: '$75.00', sublines: [] }
-      }
-    },
-    {
-      name: 'in-page Pay partly covered by the account balance',
-      page: ownPay,
-      quote: quoteOf({ amount_due_cents: 9_000, balance_applied_cents: 1_000 }),
+      name: 'a one-time code on a monthly plan change covers this payment only',
+      page: settled(
+        'started',
+        charged({
+          reasons: [
+            {
+              kind: 'promo_code',
+              amount_cents: 2_000,
+              discount: {
+                kind: 'promotion',
+                code: 'SWITCH20',
+                name: 'Switch offer',
+                duration: 'once',
+                term: 'this_payment'
+              }
+            }
+          ]
+        })
+      ),
       breakdown: {
         deductions: [
           {
-            label: 'Account balance',
-            amount: '−$10.00',
-            subline: 'Credit already on your account'
+            label: 'Switch offer',
+            amount: '−$20.00',
+            subline: 'This payment only'
           }
         ],
-        paidToday: { label: 'Paid today', amount: '$90.00', sublines: [] }
+        paidToday: { label: 'Paid today', amount: '$80.00', sublines: [] }
       }
     },
     {
-      name: 'a prorated upgrade: no itemized rows, only the paid amount and why',
-      page: ownPay,
-      quote: quoteOf({
-        transition_type: 'upgrade',
-        proration_at: '2026-07-10T09:30:00.000Z',
-        current_plan: {
-          ...PRO_MONTHLY,
-          slug: 'standard_monthly',
-          tier: 'STANDARD'
-        },
-        amount_due_cents: 4_321,
-        cost_today_cents: 4_321,
-        balance_applied_cents: 0
-      }),
+      name: 'prorated: no itemized rows, only the paid amount and why',
+      page: settled(
+        'started',
+        charged({ amount_charged_cents: 4_321, prorated: true })
+      ),
       breakdown: {
         deductions: [],
         paidToday: {
@@ -150,86 +187,31 @@ describe('successBreakdown', () => {
       }
     },
     {
-      name: 'paid today matches the plan rate: the card stays as is',
-      page: ownPay,
-      quote: quoteOf({}),
-      breakdown: undefined
-    },
-    {
-      name: 'a plan-level discounted rate charged in full',
-      page: ownPay,
-      quote: quoteOf({
-        new_plan: { ...PRO_MONTHLY, list_price_cents: 12_000 },
-        discounts: [{ kind: 'plan', code: 'ANNUAL', amount_off_cents: 2_000 }]
-      }),
-      breakdown: undefined
-    },
-    {
-      name: 'a scheduled change that charges nothing today',
-      page: ownPay,
-      quote: quoteOf({
-        is_immediate: false,
-        transition_type: 'downgrade',
-        amount_due_cents: 0,
-        cost_today_cents: 0
-      }),
-      breakdown: undefined
-    },
-    {
-      name: 'in-page Pay whose finished op reported the charge',
-      page: settled('started', 7_900),
-      quote: quoteOf({
-        amount_due_cents: 8_000,
-        promotion_code: 'SAVE20',
-        discounts: [
-          {
-            kind: 'promotion',
-            code: 'SAVE20',
-            name: 'Save 20%',
-            amount_off_cents: 2_000
-          }
-        ]
-      }),
+      name: 'a charge equal to the plan price still shows the reported rows',
+      page: settled(
+        'started',
+        charged({
+          amount_charged_cents: 10_000,
+          reasons: [{ kind: 'account_balance', amount_cents: 500 }]
+        })
+      ),
       breakdown: {
-        deductions: [{ label: 'Save 20%', amount: '−$20.00' }],
-        paidToday: { label: 'Paid today', amount: '$79.00', sublines: [] }
-      }
-    },
-    {
-      name: 'a provider return reads only the op status: Paid today alone',
-      page: settled('returned', 8_000),
-      quote: quoteOf({
-        amount_due_cents: 8_000,
-        promotion_code: 'SAVE20',
-        discounts: [
+        deductions: [
           {
-            kind: 'promotion',
-            code: 'SAVE20',
-            amount_off_cents: 2_000
+            label: 'Account balance',
+            amount: '−$5.00',
+            subline: 'Credit already on your account'
           }
-        ]
-      }),
-      breakdown: {
-        deductions: [],
-        paidToday: { label: 'Paid today', amount: '$80.00', sublines: [] }
+        ],
+        paidToday: { label: 'Paid today', amount: '$100.00', sublines: [] }
       }
-    },
-    {
-      name: 'a provider return charged the plan rate',
-      page: settled('returned', 10_000),
-      breakdown: undefined
-    },
-    {
-      name: 'a provider return whose op does not report the charge',
-      page: settled('returned'),
-      breakdown: undefined
     },
     {
       name: 'a payment this page did not send is not a Success',
-      page: settled('settled', 8_000),
+      page: settled('settled', PROMO),
       breakdown: undefined
     }
-  ])('$name', ({ page, quote, breakdown }) => {
-    expect(successBreakdown(page, quote, context)).toEqual(breakdown)
+  ])('$name', ({ page, breakdown }) => {
+    expect(successBreakdown(page, context)).toEqual(breakdown)
   })
 })

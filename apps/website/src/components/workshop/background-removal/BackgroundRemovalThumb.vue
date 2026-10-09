@@ -1,7 +1,7 @@
 <script setup lang="ts">
-import type { EditorImage } from '../../../composables/useEditorImage'
-import type { CutoutSetup } from '../../../lib/workshop/background-removal/contract'
-import EditorChecker from '../app-editor/EditorChecker.vue'
+import type { EditorImage } from '@/composables/useEditorImage'
+import type { CutoutSetup } from '@/lib/workshop/background-removal/contract'
+import EditorChecker from '@/components/workshop/app-editor/EditorChecker.vue'
 import BackgroundRemovalSubject from './BackgroundRemovalSubject.vue'
 
 const { setup, image } = defineProps<{

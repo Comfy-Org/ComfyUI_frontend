@@ -1,6 +1,4 @@
-import type { NamedValues } from '../../../i18n/interpolate'
-import { interpolate } from '../../../i18n/interpolate'
-import type { Locale, LocalizedText } from '../../../i18n/translations'
+import type { Locale, LocalizedText } from '@/i18n/translations'
 
 const copy = {
   'cutout.title': { en: 'Background Removal', 'zh-CN': '背景移除' },
@@ -155,6 +153,8 @@ const copy = {
 
 export type CutoutCopyKey = keyof typeof copy
 
+type NamedValues = Record<string, string | number>
+
 /** Background Removal copy. */
 export function brc(
   key: CutoutCopyKey,
@@ -162,5 +162,9 @@ export function brc(
   named: NamedValues = {}
 ): string {
   const entry: LocalizedText = copy[key]
-  return interpolate(entry[locale] ?? entry.en, named)
+  return (entry[locale] ?? entry.en).replace(
+    /\{(\w+)\}/g,
+    (placeholder, name: string) =>
+      Object.hasOwn(named, name) ? String(named[name]) : placeholder
+  )
 }

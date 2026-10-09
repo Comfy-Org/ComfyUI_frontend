@@ -3,7 +3,7 @@ import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 
 import { useBackgroundRemoval } from './useBackgroundRemoval'
 
-vi.mock(import('../lib/workshop/background-removal/render-cutout'), () => ({
+vi.mock(import('@/lib/workshop/background-removal/render-cutout'), () => ({
   renderCutout: vi.fn(() => Promise.resolve('blob:cutout'))
 }))
 

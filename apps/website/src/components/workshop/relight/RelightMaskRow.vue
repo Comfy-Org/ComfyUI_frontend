@@ -3,7 +3,7 @@ import { Eye, EyeOff, Trash2 } from '@lucide/vue'
 
 import { cn } from '@comfyorg/tailwind-utils'
 
-import EditorIconButton from '../app-editor/EditorIconButton.vue'
+import EditorIconButton from '@/components/workshop/app-editor/EditorIconButton.vue'
 
 const { label, checked, shown, labels } = defineProps<{
   label: string

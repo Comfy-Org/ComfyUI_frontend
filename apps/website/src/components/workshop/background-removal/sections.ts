@@ -3,12 +3,12 @@ import type { Component } from 'vue'
 import type {
   BackgroundRemoval,
   CutoutTray
-} from '../../../composables/useBackgroundRemoval'
-import type { Locale } from '../../../i18n/translations'
-import type { CutoutBackground } from '../../../lib/workshop/background-removal/contract'
-import { backgroundSwatch } from '../../../lib/workshop/background-removal/contract'
-import type { CutoutCopyKey } from '../../../lib/workshop/background-removal/copy'
-import { brc } from '../../../lib/workshop/background-removal/copy'
+} from '@/composables/useBackgroundRemoval'
+import type { Locale } from '@/i18n/translations'
+import type { CutoutBackground } from '@/lib/workshop/background-removal/contract'
+import { backgroundSwatch } from '@/lib/workshop/background-removal/contract'
+import type { CutoutCopyKey } from '@/lib/workshop/background-removal/copy'
+import { brc } from '@/lib/workshop/background-removal/copy'
 import BackgroundRemovalAdvanced from './BackgroundRemovalAdvanced.vue'
 import BackgroundRemovalBackgrounds from './BackgroundRemovalBackgrounds.vue'
 import BackgroundRemovalFormat from './BackgroundRemovalFormat.vue'

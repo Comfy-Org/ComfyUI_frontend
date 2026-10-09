@@ -1,8 +1,8 @@
 <script setup lang="ts">
-import type { BackgroundRemoval } from '../../../composables/useBackgroundRemoval'
-import type { Locale } from '../../../i18n/translations'
-import { brc } from '../../../lib/workshop/background-removal/copy'
-import EditorSlider from '../app-editor/EditorSlider.vue'
+import type { BackgroundRemoval } from '@/composables/useBackgroundRemoval'
+import type { Locale } from '@/i18n/translations'
+import { brc } from '@/lib/workshop/background-removal/copy'
+import EditorSlider from '@/components/workshop/app-editor/EditorSlider.vue'
 
 const { cutout, locale = 'en' } = defineProps<{
   cutout: BackgroundRemoval

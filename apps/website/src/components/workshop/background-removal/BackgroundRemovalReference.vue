@@ -3,7 +3,7 @@ import { Plus, X } from '@lucide/vue'
 
 import { cn } from '@comfyorg/tailwind-utils'
 
-import EditorUploadSlot from '../app-editor/EditorUploadSlot.vue'
+import EditorUploadSlot from '@/components/workshop/app-editor/EditorUploadSlot.vue'
 
 const { url, label, removeLabel } = defineProps<{
   url?: string

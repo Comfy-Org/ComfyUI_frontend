@@ -1,17 +1,17 @@
 <script setup lang="ts">
 import { computed } from 'vue'
 
-import { useMoodThumbnails } from '../../../composables/useMoodThumbnails'
-import type { Relight } from '../../../composables/useRelight'
-import type { Locale } from '../../../i18n/translations'
-import { lc } from '../../../lib/workshop/relight/copy'
-import type { MoodId } from '../../../lib/workshop/relight/lights'
+import { useMoodThumbnails } from '@/composables/useMoodThumbnails'
+import type { Relight } from '@/composables/useRelight'
+import type { Locale } from '@/i18n/translations'
+import { lc } from '@/lib/workshop/relight/copy'
+import type { MoodId } from '@/lib/workshop/relight/lights'
 import {
   MOOD_IDS,
   MOOD_LABELS,
   moodLights
-} from '../../../lib/workshop/relight/lights'
-import EditorTiles from '../app-editor/EditorTiles.vue'
+} from '@/lib/workshop/relight/lights'
+import EditorTiles from '@/components/workshop/app-editor/EditorTiles.vue'
 import RelightPreview from './RelightPreview.vue'
 
 const { relight, locale = 'en' } = defineProps<{

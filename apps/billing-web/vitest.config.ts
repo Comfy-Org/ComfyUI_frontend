@@ -21,7 +21,8 @@ export default defineConfig({
     restoreMocks: true,
     unstubEnvs: true,
     unstubGlobals: true,
-    setupFiles: ['./src/test/setup.ts'],
+    silent: 'passed-only',
+    setupFiles: ['../../vitest.console.setup.ts', './src/test/setup.ts'],
     coverage: {
       provider: 'v8',
       reporter: ['text', 'lcov'],

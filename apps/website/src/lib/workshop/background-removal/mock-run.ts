@@ -1,4 +1,4 @@
-import { mockRenderJob } from '../mock-job'
+import { mockRenderJob } from '@/lib/workshop/mock-job'
 import type { CutoutMode, CutoutRequest, CutoutResult } from './contract'
 import { renderCutout } from './render-cutout'
 

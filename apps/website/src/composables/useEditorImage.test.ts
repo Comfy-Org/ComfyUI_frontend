@@ -1,10 +1,10 @@
 import { effectScope } from 'vue'
 import { describe, expect, it, vi } from 'vitest'
 
-import { imageSize } from '../lib/workshop/image-size'
+import { imageSize } from '@/lib/workshop/image-size'
 import { useEditorImage } from './useEditorImage'
 
-vi.mock(import('../lib/workshop/image-size'), () => ({
+vi.mock(import('@/lib/workshop/image-size'), () => ({
   imageSize: vi.fn()
 }))
 

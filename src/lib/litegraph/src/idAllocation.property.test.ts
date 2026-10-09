@@ -1,11 +1,17 @@
 import * as fc from 'fast-check'
-import { describe, it } from 'vitest'
+import { describe, expect, it, vi } from 'vitest'
+
+import { toLinkId } from '@/types/linkId'
+import { toRerouteId } from '@/types/rerouteId'
 
 import {
   AGENT_RESERVED_BIT,
   CRDT_DISJOINT_FLOOR,
   createLGraphState,
-  mintNodeId
+  mintGroupId,
+  mintLinkId,
+  mintNodeId,
+  mintRerouteId
 } from '@/lib/litegraph/src/idAllocation'
 
 /**
@@ -53,10 +59,10 @@ describe('idAllocation has no collision avoidance against a concurrent external 
           agent.lastNodeId = lastObservedId
 
           const frontendIds = Array.from({ length: mintCount }, () =>
-            Number(mintNodeId(frontend))
+            Number(mintNodeId(frontend, 'sequential', new Set()))
           )
           const agentIds = Array.from({ length: mintCount }, () =>
-            Number(mintNodeId(agent))
+            Number(mintNodeId(agent, 'sequential', new Set()))
           )
 
           return frontendIds.every((id, index) => id === agentIds[index])
@@ -97,7 +103,9 @@ describe("mintNodeId's 'crdt-disjoint' mode never collides with a simulated agen
           const frontend = createLGraphState()
           frontend.lastNodeId = lastObservedId
 
-          const frontendMintedId = BigInt(mintNodeId(frontend, 'crdt-disjoint'))
+          const frontendMintedId = BigInt(
+            mintNodeId(frontend, 'crdt-disjoint', new Set())
+          )
 
           return frontendMintedId !== agentId
         }
@@ -113,7 +121,7 @@ describe("mintNodeId's 'crdt-disjoint' mode never collides with a simulated agen
         (mintCount, agentIds) => {
           const frontend = createLGraphState()
           const frontendIds = Array.from({ length: mintCount }, () =>
-            BigInt(mintNodeId(frontend, 'crdt-disjoint'))
+            BigInt(mintNodeId(frontend, 'crdt-disjoint', new Set()))
           )
           const agentIdSet = new Set(agentIds)
           return frontendIds.every((id) => !agentIdSet.has(id))
@@ -140,7 +148,7 @@ describe("mintNodeId's 'crdt-disjoint' mode never collides with a simulated agen
       fc.property(fc.integer({ min: 1, max: 50 }), (mintCount) => {
         const frontend = createLGraphState()
         const ids = Array.from({ length: mintCount }, () =>
-          BigInt(mintNodeId(frontend, 'crdt-disjoint'))
+          BigInt(mintNodeId(frontend, 'crdt-disjoint', new Set()))
         )
 
         return ids.every(
@@ -154,14 +162,83 @@ describe("mintNodeId's 'crdt-disjoint' mode never collides with a simulated agen
   })
 
   it('never repeats an id across a run of local crdt-disjoint mints', () => {
-    fc.assert(
-      fc.property(fc.integer({ min: 2, max: 50 }), (mintCount) => {
-        const frontend = createLGraphState()
-        const ids = Array.from({ length: mintCount }, () =>
-          BigInt(mintNodeId(frontend, 'crdt-disjoint'))
-        )
+    const frontend = createLGraphState()
+    vi.spyOn(Math, 'random').mockReturnValue(0.25)
+    const first = mintNodeId(frontend, 'crdt-disjoint', new Set())
+    const second = mintNodeId(
+      frontend,
+      'crdt-disjoint',
+      new Set([Number(first)])
+    )
 
-        return new Set(ids).size === ids.length
+    expect(second).not.toBe(first)
+    expect(BigInt(second) & AGENT_RESERVED_BIT).toBe(0n)
+    expect(BigInt(second) & CRDT_DISJOINT_FLOOR).not.toBe(0n)
+  })
+})
+
+describe('sequential minting survives a counter raised into the reserved mint range', () => {
+  const reservedRangeHighWaterMark = (): fc.Arbitrary<number> =>
+    fc.integer({
+      min: Number(AGENT_RESERVED_BIT),
+      max: Number.MAX_SAFE_INTEGER - 2
+    })
+
+  const minters = [
+    {
+      name: 'node',
+      mint: (lastId: number, reserved: ReadonlySet<number>) => {
+        const state = createLGraphState()
+        state.lastNodeId = lastId
+        return Number(mintNodeId(state, 'sequential', reserved))
+      }
+    },
+    {
+      name: 'link',
+      mint: (lastId: number, reserved: ReadonlySet<number>) => {
+        const state = createLGraphState()
+        state.lastLinkId = toLinkId(lastId)
+        return Number(mintLinkId(state, reserved))
+      }
+    },
+    {
+      name: 'group',
+      mint: (lastId: number, reserved: ReadonlySet<number>) => {
+        const state = createLGraphState()
+        state.lastGroupId = lastId
+        return Number(mintGroupId(state, reserved))
+      }
+    },
+    {
+      name: 'reroute',
+      mint: (lastId: number, reserved: ReadonlySet<number>) => {
+        const state = createLGraphState()
+        state.lastRerouteId = toRerouteId(lastId)
+        return Number(mintRerouteId(state, reserved))
+      }
+    }
+  ] as const
+
+  it.for(minters)('mints the final safe $name id', ({ mint }) => {
+    expect(mint(Number.MAX_SAFE_INTEGER - 1, new Set())).toBe(
+      Number.MAX_SAFE_INTEGER
+    )
+  })
+
+  it('mints a node ID above any reserved-range high-water mark', () => {
+    const mint = minters[0].mint
+    fc.assert(
+      fc.property(reservedRangeHighWaterMark(), (lastId) => {
+        expect(mint(lastId, new Set())).toBe(lastId + 1)
+      })
+    )
+  })
+
+  it('recovers the next node ID when the successor is reserved', () => {
+    const mint = minters[0].mint
+    fc.assert(
+      fc.property(reservedRangeHighWaterMark(), (lastId) => {
+        expect(mint(lastId, new Set([lastId + 1]))).toBe(lastId + 2)
       })
     )
   })

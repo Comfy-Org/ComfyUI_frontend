@@ -1,7 +1,7 @@
 import { tryOnScopeDispose } from '@vueuse/core'
 import { shallowRef } from 'vue'
 
-import { imageSize } from '../lib/workshop/image-size'
+import { imageSize } from '@/lib/workshop/image-size'
 
 export interface EditorImage {
   readonly url: string

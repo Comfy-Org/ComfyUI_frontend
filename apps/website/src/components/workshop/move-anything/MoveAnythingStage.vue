@@ -2,24 +2,27 @@
 import { cn } from '@comfyorg/tailwind-utils'
 import { ref, useTemplateRef } from 'vue'
 
-import type { Locale } from '../../../i18n/translations'
+import type { Locale } from '@/i18n/translations'
 import type {
   Corner,
   MoveObject,
   Rect
-} from '../../../lib/workshop/move-anything/arrange'
+} from '@/lib/workshop/move-anything/arrange'
 import {
   MIN_SIZE,
   isMoved,
   moveRect,
   rectBetween,
   resizeRect
-} from '../../../lib/workshop/move-anything/arrange'
-import { mc } from '../../../lib/workshop/move-anything/copy'
-import { MOVE_EXAMPLE } from '../../../lib/workshop/move-anything/mock-run'
-import type { MoveImage, MoveTool } from '../../../composables/useMoveAnything'
-import EditorFrame from '../app-editor/EditorFrame.vue'
-import { pointerFraction, rectStyle } from '../app-editor/stage-geometry'
+} from '@/lib/workshop/move-anything/arrange'
+import { mc } from '@/lib/workshop/move-anything/copy'
+import { MOVE_EXAMPLE } from '@/lib/workshop/move-anything/mock-run'
+import type { MoveImage, MoveTool } from '@/composables/useMoveAnything'
+import EditorFrame from '@/components/workshop/app-editor/EditorFrame.vue'
+import {
+  pointerFraction,
+  rectStyle
+} from '@/components/workshop/app-editor/stage-geometry'
 import MoveAnythingBox from './MoveAnythingBox.vue'
 import MoveAnythingDetecting from './MoveAnythingDetecting.vue'
 import MoveAnythingOutlines from './MoveAnythingOutlines.vue'

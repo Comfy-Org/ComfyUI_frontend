@@ -1,5 +1,5 @@
-import type { RateCard, StorageRate } from '../types/rate-card'
-import { zRateCard } from '../types/rate-card/zod.gen'
+import type { RateCard, StorageRate } from '@/types/rate-card'
+import { zRateCard } from '@/types/rate-card/zod.gen'
 
 import type { StorageLabelKey } from './rateCardChecks'
 import { STORAGE_TYPE_LABEL_KEYS } from './rateCardChecks'

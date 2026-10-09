@@ -1,4 +1,4 @@
-import { $el } from '../ui'
+import { $el } from './utils'
 
 interface ToggleSwitchItem {
   text: string

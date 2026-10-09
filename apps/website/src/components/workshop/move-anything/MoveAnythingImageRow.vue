@@ -1,9 +1,9 @@
 <script setup lang="ts">
 import { useTemplateRef } from 'vue'
 
-import type { MoveImage } from '../../../composables/useMoveAnything'
-import type { Locale } from '../../../i18n/translations'
-import { mc } from '../../../lib/workshop/move-anything/copy'
+import type { MoveImage } from '@/composables/useMoveAnything'
+import type { Locale } from '@/i18n/translations'
+import { mc } from '@/lib/workshop/move-anything/copy'
 
 const { image, locale = 'en' } = defineProps<{
   image: MoveImage

@@ -22,6 +22,7 @@ const bridgeState = vi.hoisted(() => {
     })
 
     resubscribe = vi.fn()
+    reconnect = vi.fn()
     reconcile = vi.fn()
     destroy = vi.fn()
     subscribedWorkflowId: string | null = null
@@ -441,7 +442,7 @@ describe('a human edit made while the document connection is down', () => {
 
     clientState.transportUp = true
     apiState.target.dispatchEvent(new Event('reconnected'))
-    expect(bridge().resubscribe).toHaveBeenCalledTimes(1)
+    expect(bridge().reconnect).toHaveBeenCalledOnce()
     expect(clientState.sent).toHaveLength(0)
   })
 

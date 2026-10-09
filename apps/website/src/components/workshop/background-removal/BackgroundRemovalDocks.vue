@@ -1,9 +1,9 @@
 <script setup lang="ts">
-import type { BackgroundRemoval } from '../../../composables/useBackgroundRemoval'
-import type { Locale } from '../../../i18n/translations'
-import { brc } from '../../../lib/workshop/background-removal/copy'
-import EditorResultDock from '../app-editor/EditorResultDock.vue'
-import type { EditorView } from '../app-editor/view'
+import type { BackgroundRemoval } from '@/composables/useBackgroundRemoval'
+import type { Locale } from '@/i18n/translations'
+import { brc } from '@/lib/workshop/background-removal/copy'
+import EditorResultDock from '@/components/workshop/app-editor/EditorResultDock.vue'
+import type { EditorView } from '@/components/workshop/app-editor/view'
 import BackgroundRemovalDock from './BackgroundRemovalDock.vue'
 
 const {

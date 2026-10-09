@@ -1,13 +1,9 @@
 import { watchDebounced } from '@vueuse/core'
 import { shallowRef } from 'vue'
 
-import type {
-  Light,
-  MoodId,
-  RelightScene
-} from '../lib/workshop/relight/lights'
-import { MOOD_IDS, moodLights } from '../lib/workshop/relight/lights'
-import { renderMoodThumbnails } from '../lib/workshop/relight/render-image'
+import type { Light, MoodId, RelightScene } from '@/lib/workshop/relight/lights'
+import { MOOD_IDS, moodLights } from '@/lib/workshop/relight/lights'
+import { renderMoodThumbnails } from '@/lib/workshop/relight/render-image'
 
 type Thumbnails = Partial<Record<MoodId, string>>
 

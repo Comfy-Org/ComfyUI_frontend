@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { subjectMaskImage } from '../../../lib/workshop/background-removal/mask'
+import { subjectMaskImage } from '@/lib/workshop/background-removal/mask'
 
 const { url } = defineProps<{ url: string }>()
 </script>

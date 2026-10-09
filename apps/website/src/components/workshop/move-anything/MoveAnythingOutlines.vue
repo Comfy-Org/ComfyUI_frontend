@@ -1,11 +1,8 @@
 <script setup lang="ts">
 import { cn } from '@comfyorg/tailwind-utils'
 
-import type {
-  MoveObject,
-  Rect
-} from '../../../lib/workshop/move-anything/arrange'
-import { isMoved } from '../../../lib/workshop/move-anything/arrange'
+import type { MoveObject, Rect } from '@/lib/workshop/move-anything/arrange'
+import { isMoved } from '@/lib/workshop/move-anything/arrange'
 
 const { objects, selected } = defineProps<{
   objects: readonly MoveObject[]

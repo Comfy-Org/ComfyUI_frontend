@@ -1,25 +1,26 @@
 <script setup lang="ts">
+import { translationsFor } from '@/i18n/translations'
 import { computed, ref } from 'vue'
 
 import { cn } from '@comfyorg/tailwind-utils'
 
-import type { BackgroundRemoval } from '../../../composables/useBackgroundRemoval'
-import type { Locale } from '../../../i18n/translations'
+import type { BackgroundRemoval } from '@/composables/useBackgroundRemoval'
+import type { Locale } from '@/i18n/translations'
 import {
   BACKGROUND_SWATCHES,
   backgroundSwatch,
   swatchBackground
-} from '../../../lib/workshop/background-removal/contract'
-import { brc } from '../../../lib/workshop/background-removal/copy'
-import { tc } from '../../../lib/workshop/cinematic-studio/copy'
-import EditorChecker from '../app-editor/EditorChecker.vue'
-import EditorColorPicker from '../app-editor/EditorColorPicker.vue'
-import EditorPopover from '../app-editor/EditorPopover.vue'
+} from '@/lib/workshop/background-removal/contract'
+import { brc } from '@/lib/workshop/background-removal/copy'
+import EditorChecker from '@/components/workshop/app-editor/EditorChecker.vue'
+import EditorColorPicker from '@/components/workshop/app-editor/EditorColorPicker.vue'
+import EditorPopover from '@/components/workshop/app-editor/EditorPopover.vue'
 
 const { cutout, locale = 'en' } = defineProps<{
   cutout: BackgroundRemoval
   locale?: Locale
 }>()
+const { t } = translationsFor(locale)
 
 const { setup } = cutout
 const picking = ref(false)
@@ -96,15 +97,15 @@ const swatchClass = (checked: boolean) =>
     <EditorPopover
       v-if="picking"
       :title="brc('cutout.swatch.custom', locale)"
-      :close-label="tc('cinematic.picker.close', locale)"
+      :close-label="t('cinematic.picker.close')"
       @close="picking = false"
     >
       <EditorColorPicker
         :model-value="customColor"
         :labels="{
-          shade: tc('cinematic.colors.shade', locale),
-          hue: tc('cinematic.colors.hue', locale),
-          hex: tc('cinematic.colors.hex', locale)
+          shade: t('cinematic.colors.shade'),
+          hue: t('cinematic.colors.hue'),
+          hex: t('cinematic.colors.hex')
         }"
         @update:model-value="pickCustom"
       />

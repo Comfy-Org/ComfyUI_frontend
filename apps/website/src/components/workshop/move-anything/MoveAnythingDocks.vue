@@ -1,11 +1,8 @@
 <script setup lang="ts">
-import type {
-  MoveView,
-  useMoveAnything
-} from '../../../composables/useMoveAnything'
-import type { Locale } from '../../../i18n/translations'
-import { mc } from '../../../lib/workshop/move-anything/copy'
-import EditorResultDock from '../app-editor/EditorResultDock.vue'
+import type { MoveView, useMoveAnything } from '@/composables/useMoveAnything'
+import type { Locale } from '@/i18n/translations'
+import { mc } from '@/lib/workshop/move-anything/copy'
+import EditorResultDock from '@/components/workshop/app-editor/EditorResultDock.vue'
 import MoveAnythingDock from './MoveAnythingDock.vue'
 import MoveAnythingTools from './MoveAnythingTools.vue'
 

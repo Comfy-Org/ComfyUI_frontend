@@ -2,11 +2,11 @@
 import { Cpu } from '@lucide/vue'
 import { useId } from 'vue'
 
-import type { BackgroundRemoval } from '../../../composables/useBackgroundRemoval'
-import type { Locale } from '../../../i18n/translations'
-import { REPLACE_MODELS } from '../../../lib/workshop/background-removal/contract'
-import { brc } from '../../../lib/workshop/background-removal/copy'
-import EditorOutput from '../app-editor/EditorOutput.vue'
+import type { BackgroundRemoval } from '@/composables/useBackgroundRemoval'
+import type { Locale } from '@/i18n/translations'
+import { REPLACE_MODELS } from '@/lib/workshop/background-removal/contract'
+import { brc } from '@/lib/workshop/background-removal/copy'
+import EditorOutput from '@/components/workshop/app-editor/EditorOutput.vue'
 import BackgroundRemovalReference from './BackgroundRemovalReference.vue'
 import { modelName } from './model-name'
 

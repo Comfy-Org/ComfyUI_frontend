@@ -1,6 +1,6 @@
 <script setup lang="ts">
-import type { BackgroundRemoval } from '../../../composables/useBackgroundRemoval'
-import type { Locale } from '../../../i18n/translations'
+import type { BackgroundRemoval } from '@/composables/useBackgroundRemoval'
+import type { Locale } from '@/i18n/translations'
 import BackgroundRemovalThumb from './BackgroundRemovalThumb.vue'
 import { setupSummary } from './sections'
 

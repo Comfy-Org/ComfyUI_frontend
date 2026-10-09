@@ -1,10 +1,10 @@
 <script setup lang="ts">
+import { translationsFor } from '@/i18n/translations'
 import type {
   AspectRatio,
   Resolution
-} from '../../../lib/workshop/cinematic-studio/catalog'
-import type { Locale } from '../../../i18n/translations'
-import { tc } from '../../../lib/workshop/cinematic-studio/copy'
+} from '@/lib/workshop/cinematic-studio/catalog'
+import type { Locale } from '@/i18n/translations'
 import { framedStyle } from './aspect-style'
 import { SEGMENT_TRIGGER_CLASS } from './cinematic-menu-trigger'
 import CinematicMenu from './CinematicMenu.vue'
@@ -15,6 +15,7 @@ const { locale = 'en', aspects } = defineProps<{
   /** The frames the chosen model can make; every frame when absent. */
   aspects?: readonly AspectRatio[]
 }>()
+const { t } = translationsFor(locale)
 
 const aspect = defineModel<AspectRatio>('aspect', { required: true })
 const resolution = defineModel<Resolution>('resolution', { required: true })
@@ -39,13 +40,13 @@ const {
 <template>
   <div
     role="group"
-    :aria-label="tc('cinematic.composer.format', locale)"
+    :aria-label="t('cinematic.composer.format')"
     class="flex h-9 shrink-0 items-center overflow-hidden rounded-xl text-[13px] whitespace-nowrap ring-1 ring-transparency-white-t8 ring-inset"
   >
     <CinematicMenu
       v-model="aspectValue"
       :options="aspectOptions"
-      :heading="tc('cinematic.output.aspect', locale)"
+      :heading="t('cinematic.output.aspect')"
       :trigger-class="SEGMENT_TRIGGER_CLASS"
       tooltip
     >
@@ -61,7 +62,7 @@ const {
     <CinematicMenu
       v-model="resolutionValue"
       :options="resolutionOptions"
-      :heading="tc('cinematic.output.resolution', locale)"
+      :heading="t('cinematic.output.resolution')"
       :trigger-class="SEGMENT_TRIGGER_CLASS"
       tooltip
     >
@@ -71,7 +72,7 @@ const {
     <CinematicMenu
       v-model="takesValue"
       :options="takeOptions"
-      :heading="tc('cinematic.output.takes', locale)"
+      :heading="t('cinematic.output.takes')"
       :trigger-class="SEGMENT_TRIGGER_CLASS"
       tooltip
     >

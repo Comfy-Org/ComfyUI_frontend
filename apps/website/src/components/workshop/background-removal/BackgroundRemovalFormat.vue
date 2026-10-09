@@ -1,11 +1,11 @@
 <script setup lang="ts">
 import { FileImage } from '@lucide/vue'
 
-import type { BackgroundRemoval } from '../../../composables/useBackgroundRemoval'
-import type { Locale } from '../../../i18n/translations'
-import { CUTOUT_FORMATS } from '../../../lib/workshop/background-removal/contract'
-import { brc } from '../../../lib/workshop/background-removal/copy'
-import EditorOutput from '../app-editor/EditorOutput.vue'
+import type { BackgroundRemoval } from '@/composables/useBackgroundRemoval'
+import type { Locale } from '@/i18n/translations'
+import { CUTOUT_FORMATS } from '@/lib/workshop/background-removal/contract'
+import { brc } from '@/lib/workshop/background-removal/copy'
+import EditorOutput from '@/components/workshop/app-editor/EditorOutput.vue'
 
 const {
   cutout,

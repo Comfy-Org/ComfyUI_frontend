@@ -57,7 +57,7 @@ describe('FormDropdownMenu', () => {
       global: globalConfig
     })
 
-    // eslint-disable-next-line testing-library/no-container, testing-library/no-node-access
+    // oxlint-disable-next-line testing-library/no-container, testing-library/no-node-access
     const emptyIcon = container.querySelector('[class*="lucide--circle-off"]')
     expect(emptyIcon).not.toBeNull()
   })
