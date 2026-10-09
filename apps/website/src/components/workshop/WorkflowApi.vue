@@ -140,6 +140,7 @@ const facts = computed(() => {
           :href="keyHref"
           target="_blank"
           rel="noopener"
+          variant="secondary"
           class="w-full justify-between"
           data-testid="api-get-key"
           @click="emit('getKey')"
@@ -156,13 +157,13 @@ const facts = computed(() => {
         </Button>
         <Button
           v-if="request"
-          variant="outline"
+          variant="secondaryOutline"
           class="w-full justify-between"
           @click="downloadGraph"
         >
           <template #prepend>
             <span
-              class="inline-flex size-6 items-center justify-center rounded-full bg-primary-comfy-yellow/15 text-xs font-bold"
+              class="inline-flex size-6 items-center justify-center rounded-full bg-primary-warm-white/15 text-xs font-bold"
               aria-hidden="true"
               >2</span
             >

@@ -98,7 +98,7 @@ function captureWorkflowDownload() {
           as="a"
           :href="downloadUrl"
           download
-          variant="outline"
+          variant="secondaryOutline"
           class="h-auto min-h-11 max-w-full whitespace-normal"
           :aria-label="t('workshop.workflow.download')"
           @click="captureWorkflowDownload"
