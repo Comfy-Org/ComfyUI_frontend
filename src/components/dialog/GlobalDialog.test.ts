@@ -241,6 +241,48 @@ describe('GlobalDialog', () => {
     expect(store.isDialogOpen('reka-esc-default')).toBe(false)
   })
 
+  it('closes only the active dialog on Escape when dialogs are stacked', async () => {
+    mountDialog()
+    const store = useDialogStore()
+    const user = userEvent.setup()
+
+    store.showDialog({
+      key: 'reka-esc-lower',
+      title: 'Lower',
+      component: Body,
+      priority: 1
+    })
+    await screen.findByRole('dialog', { name: 'Lower' })
+    store.showDialog({
+      key: 'reka-esc-active',
+      title: 'Active',
+      component: Body,
+      priority: 2
+    })
+
+    await waitFor(() =>
+      expect(screen.getAllByRole('dialog', { hidden: true })).toHaveLength(2)
+    )
+    await user.keyboard('{Escape}')
+
+    expect(store.isDialogOpen('reka-esc-active')).toBe(false)
+    expect(store.isDialogOpen('reka-esc-lower')).toBe(true)
+
+    store.showDialog({
+      key: 'reka-esc-active',
+      title: 'Active',
+      component: Body
+    })
+    await screen.findByRole('dialog', { name: 'Active', hidden: true })
+    store.riseDialog({ key: 'reka-esc-lower' })
+    await user.keyboard('{Escape}')
+
+    expect(
+      store.isDialogOpen('reka-esc-active'),
+      'Escape must not close a dialog after another one was brought to front'
+    ).toBe(true)
+  })
+
   it('does not close on Escape when closable is false', async () => {
     mountDialog()
     const store = useDialogStore()

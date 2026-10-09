@@ -29,7 +29,6 @@ export function useDeployToComfyApiDialog() {
       },
       dialogComponentProps: {
         dismissableMask: true,
-        closeOnEscape: true,
         modal: true,
         headless: true,
         overlayClass: 'bg-black/55',
