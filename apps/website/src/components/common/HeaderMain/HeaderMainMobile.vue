@@ -174,6 +174,14 @@ onUnmounted(() => {
                       <NavLinkContent :item="link" :locale="locale" />
                     </Button>
                   </div>
+                  <Button
+                    v-if="column.allLink"
+                    :href="column.allLink.href"
+                    variant="link"
+                    as="a"
+                  >
+                    {{ column.allLink.label }}
+                  </Button>
                 </div>
               </div>
             </div>

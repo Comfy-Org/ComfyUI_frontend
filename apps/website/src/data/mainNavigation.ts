@@ -22,6 +22,7 @@ export type NavColumn = {
   header?: string
   description?: string
   items: NavColumnItem[]
+  allLink?: Pick<NavColumnItem, 'label' | 'href'>
   placement?: 'footer'
 }
 
@@ -96,8 +97,17 @@ export function getMainNavigation(
               label: t('nav.hubSeedream5Pro'),
               href: `${routes.workshop}seedream-5-0-pro-text-to-image/`
             },
-            { label: t('nav.hubSeedance25'), href: seedance25Href }
-          ]
+            { label: t('nav.hubSeedance25'), href: seedance25Href },
+            {
+              label: t('nav.hubNanoBanana2'),
+              href: `${routes.workshop}nano-banana-2-image-edit/`
+            },
+            {
+              label: t('nav.hubGptImage2'),
+              href: `${routes.workshop}gpt-image-2-text-to-image/`
+            }
+          ],
+          allLink: { label: t('nav.hubAllModels'), href: routes.workshop }
         },
         ...when(hubSections.workflows, {
           header: t('nav.hubWorkflows'),
@@ -110,8 +120,20 @@ export function getMainNavigation(
             {
               label: t('nav.hubVideoFromReferences'),
               href: `${routes.hubWorkflows}video-from-references/`
+            },
+            {
+              label: t('nav.hubMotionTransfer'),
+              href: `${routes.hubWorkflows}motion-transfer/`
+            },
+            {
+              label: t('nav.hubEditSelectedRegion'),
+              href: `${routes.hubWorkflows}edit-selected-region/`
             }
-          ]
+          ],
+          allLink: {
+            label: t('nav.hubAllWorkflows'),
+            href: routes.hubWorkflows
+          }
         }),
         ...when(hubSections.apps, {
           header: t('nav.hubApps'),
@@ -123,23 +145,9 @@ export function getMainNavigation(
               newTab: true
             },
             { label: t('nav.reshoot'), href: routes.reshoot, newTab: true }
-          ]
-        }),
-        {
-          header: t('nav.hubBrowse'),
-          placement: 'footer',
-          items: [
-            { label: t('nav.hubAllModels'), href: routes.workshop },
-            ...when(hubSections.workflows, {
-              label: t('nav.hubAllWorkflows'),
-              href: routes.hubWorkflows
-            }),
-            ...when(hubSections.apps, {
-              label: t('nav.hubAllApps'),
-              href: routes.hubApps
-            })
-          ]
-        }
+          ],
+          allLink: { label: t('nav.hubAllApps'), href: routes.hubApps }
+        })
       ]
     },
     {

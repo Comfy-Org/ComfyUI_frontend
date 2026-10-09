@@ -41,22 +41,41 @@ describe('HeaderMainDesktop', () => {
     ).toEqual([])
     expect(linksIn('Models')).toEqual([
       ['Seedream 5.0 Pro', '/hub/models/seedream-5-0-pro-text-to-image/'],
-      ['Seedance 2.5', '/hub/models/seedance-2-5-reference-to-video/']
+      ['Seedance 2.5', '/hub/models/seedance-2-5-reference-to-video/'],
+      ['Nano Banana 2', '/hub/models/nano-banana-2-image-edit/'],
+      ['GPT Image 2', '/hub/models/gpt-image-2-text-to-image/']
     ])
     expect(linksIn('Workflows')).toEqual([
       ['Image to video', '/hub/workflows/image-to-video/'],
-      ['Video from references', '/hub/workflows/video-from-references/']
+      ['Video from references', '/hub/workflows/video-from-references/'],
+      ['Motion transfer', '/hub/workflows/motion-transfer/'],
+      ['Edit selected region', '/hub/workflows/edit-selected-region/']
     ])
     expect(linksIn('Apps')).toEqual([
       ['Cinematic Studio', '/hub/apps/cinematic-studio/'],
       ['Re-shoot', '/hub/apps/reshoot/']
     ])
-    expect(linksIn('Browse')).toEqual([
-      ['All models', '/hub/models/'],
-      ['All workflows', '/hub/workflows/'],
-      ['All apps', '/hub/apps/']
-    ])
   })
+
+  it.for([
+    { name: 'All models', href: '/hub/models/', column: 'Models' },
+    { name: 'All workflows', href: '/hub/workflows/', column: 'Workflows' },
+    { name: 'All apps', href: '/hub/apps/', column: 'Apps' }
+  ])(
+    'ends the $column column with $name, linking to $href in this tab',
+    async ({ name, href, column }) => {
+      const menu = await openHub()
+      const allLink = menu.getByRole('link', { name })
+      const examples = menu.getByRole('list', { name: column })
+
+      expect(allLink).toHaveAttribute('href', href)
+      expect(allLink).not.toHaveAttribute('target')
+      expect(
+        examples.compareDocumentPosition(allLink) &
+          Node.DOCUMENT_POSITION_FOLLOWING
+      ).toBeTruthy()
+    }
+  )
 
   it('features Seedance 2.5 with a Try now link to its model page', async () => {
     const menu = await openHub()
@@ -69,27 +88,26 @@ describe('HeaderMainDesktop', () => {
     expect(menu.getByText('Try now')).toBeVisible()
   })
 
-  it('opens each app in a tab of its own, and the apps list in this one', async () => {
-    const menu = await openHub()
-
-    for (const name of ['Cinematic Studio', 'Re-shoot']) {
+  it.for(['Cinematic Studio', 'Re-shoot'])(
+    'opens the %s app in a tab of its own',
+    async (name) => {
+      const menu = await openHub()
       const link = menu.getByRole('link', { name })
+
       expect(link).toHaveAttribute('target', '_blank')
       expect(link).toHaveAttribute('rel', 'noopener')
     }
-    for (const name of ['All apps', 'Seedance 2.5'])
-      expect(menu.getByRole('link', { name })).not.toHaveAttribute('target')
-  })
+  )
 
-  it('leaves the sections that are off out of the columns and the Browse row', async () => {
+  it('leaves the sections that are off and their All links out of the menu', async () => {
     const menu = await openHub({ workflows: false, apps: false })
 
     expect(menu.queryByRole('list', { name: 'Workflows' })).toBeNull()
     expect(menu.queryByRole('list', { name: 'Apps' })).toBeNull()
     expect(
-      within(menu.getByRole('list', { name: 'Browse' }))
-        .getAllByRole('link')
-        .map((link) => link.textContent.trim())
+      ['All models', 'All workflows', 'All apps'].filter((name) =>
+        menu.queryByRole('link', { name })
+      )
     ).toEqual(['All models'])
   })
 

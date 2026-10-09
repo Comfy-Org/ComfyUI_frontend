@@ -1,6 +1,7 @@
 <script setup lang="ts">
 import { cn } from '@comfyorg/tailwind-utils'
 
+import Button from '@/components/ui/button/Button.vue'
 import NavigationMenuLink from '@/components/ui/navigation-menu/NavigationMenuLink.vue'
 
 import { isHrefActive } from '@/composables/useCurrentPath'
@@ -61,5 +62,16 @@ defineProps<{
         </NavigationMenuLink>
       </li>
     </ul>
+    <div v-if="column.allLink" class="mt-auto pl-2">
+      <Button
+        as="a"
+        variant="link"
+        size="sm"
+        class="md:text-xs"
+        :href="column.allLink.href"
+      >
+        {{ column.allLink.label }}
+      </Button>
+    </div>
   </li>
 </template>

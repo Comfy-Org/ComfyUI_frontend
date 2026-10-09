@@ -22,7 +22,7 @@ describe('HeaderMainMobile', () => {
     expect(screen.getByRole('button', { name: /^Enterprise\b/i })).toBeTruthy()
   })
 
-  it('drills into the described Hub columns and Browse links, opening apps in a tab of their own', async () => {
+  it('drills into the described Hub columns, each ending with its All link', async () => {
     const user = await openMenu()
     await user.click(screen.getByRole('button', { name: /^Hub\b/i }))
 
@@ -33,24 +33,26 @@ describe('HeaderMainMobile', () => {
         'Workflows',
         'Ready-made recipes for a task',
         'Apps',
-        'Full tools built on Comfy',
-        'Browse'
+        'Full tools built on Comfy'
       ].filter((text) => !screen.queryByText(text, { exact: true }))
     ).toEqual([])
     expect(
-      [
-        'Seedream 5.0 Pro',
-        'All models',
-        'Image to video',
-        'All workflows',
-        'Re-shoot',
-        'All apps'
-      ].map((name) => screen.getByRole('link', { name }).getAttribute('href'))
+      screen
+        .getAllByRole('link')
+        .map((link) => link.getAttribute('href'))
+        .filter((href) => href?.startsWith('/hub/'))
     ).toEqual([
       '/hub/models/seedream-5-0-pro-text-to-image/',
+      '/hub/models/seedance-2-5-reference-to-video/',
+      '/hub/models/nano-banana-2-image-edit/',
+      '/hub/models/gpt-image-2-text-to-image/',
       '/hub/models/',
       '/hub/workflows/image-to-video/',
+      '/hub/workflows/video-from-references/',
+      '/hub/workflows/motion-transfer/',
+      '/hub/workflows/edit-selected-region/',
       '/hub/workflows/',
+      '/hub/apps/cinematic-studio/',
       '/hub/apps/reshoot/',
       '/hub/apps/'
     ])
