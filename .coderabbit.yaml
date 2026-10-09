@@ -5,6 +5,8 @@ reviews:
   profile: assertive
   high_level_summary: false
   request_changes_workflow: true
+  path_filters:
+    - '!apps/website/**'
   # Without this, a review that never happened (rate limit, internal error)
   # still reports green, so an unreviewed PR is indistinguishable from a
   # cleanly reviewed one.
