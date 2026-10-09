@@ -158,10 +158,14 @@ export type WorkflowWorkshopModel = WorkshopPresentation & {
   readonly categoryLabel?: { readonly en: string; readonly 'zh-CN': string }
   readonly categoryOrder?: number
   readonly categoryHighlight?: boolean
+  /** Category ids that older shared links used for this category. */
+  readonly categoryAliases?: readonly string[]
   readonly type: 'CLOUD' | 'SERVERLESS'
   readonly workflowId: string
   readonly routerId?: never
   readonly category?: string
+  /** The media a visitor brings: an upload's kind, or text for a prompt alone. */
+  readonly inputKinds?: readonly Modality[]
   readonly models?: readonly string[]
   readonly author?: string
 }

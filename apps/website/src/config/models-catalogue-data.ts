@@ -53,6 +53,8 @@ export const workflowModelSchema = presentationSchema.extend({
   categoryLabel: z.object({ en: z.string(), 'zh-CN': z.string() }).optional(),
   categoryOrder: z.number().optional(),
   categoryHighlight: z.boolean().optional(),
+  categoryAliases: z.array(z.string()).optional(),
+  inputKinds: z.array(z.enum(MODALITIES)).optional(),
   models: z.array(z.string()).optional(),
   author: z.string().optional()
 })
