@@ -467,7 +467,7 @@ describe('ModelsCatalogue', () => {
     expect(screen.queryByTestId('browse-all-end')).toBeNull()
   })
 
-  it('leaves the API key link and the API docs to the section below the catalogue', async () => {
+  it('opens the models page on its own hero', async () => {
     render(ModelsCatalogue, {
       props: { models: launchModels, section: 'models' }
     })
@@ -477,14 +477,6 @@ describe('ModelsCatalogue', () => {
         name: 'Get an API key'
       })
     ).toBeNull()
-    expect(
-      within(screen.getByTestId('model-access-partner'))
-        .getAllByRole('link')
-        .map((link) => link.getAttribute('href'))
-    ).toEqual([
-      'https://platform.comfy.org/profile/api-keys?onboarding=router',
-      'https://docs.comfy.org/development/comfy-router/quickstart#comfy-router-quickstart'
-    ])
     expect(screen.queryByTestId('workshop-hero')).toBeNull()
   })
 
@@ -495,7 +487,6 @@ describe('ModelsCatalogue', () => {
 
     await screen.findByTestId('workflow-catalogue')
     expect(screen.queryByTestId('models-hub-hero')).toBeNull()
-    expect(screen.queryByTestId('model-access')).toBeNull()
   })
 
   it('lists the catalogue apps in the apps section, each on its own page', async () => {

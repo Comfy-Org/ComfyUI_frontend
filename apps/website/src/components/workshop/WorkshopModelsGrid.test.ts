@@ -473,7 +473,7 @@ describe('WorkshopModelsGrid', () => {
     }
     const hub = [...models, wan, launch]
 
-    it('opens on the hero, the whole catalogue, then the ways in and a model family', () => {
+    it('opens on the hero and then the whole catalogue', () => {
       vi.stubEnv('PUBLIC_WORKSHOP_ROUTER_RUN', '1')
       render(WorkshopModelsGrid, { props: { models: hub } })
 
@@ -497,29 +497,6 @@ describe('WorkshopModelsGrid', () => {
         screen.queryByRole('heading', { level: 2, name: 'Trending' })
       ).toBeNull()
       expect(cardNames()).toHaveLength(hub.length)
-      expect(
-        screen
-          .getByTestId('workshop-models-grid')
-          .compareDocumentPosition(screen.getByTestId('model-access')) &
-          Node.DOCUMENT_POSITION_FOLLOWING
-      ).toBe(Node.DOCUMENT_POSITION_FOLLOWING)
-      expect(
-        within(screen.getByTestId('model-access-open')).getByText(
-          'Browse open weights'
-        )
-      ).toBeTruthy()
-      expect(screen.getByTestId('model-access-open').getAttribute('href')).toBe(
-        '/hub/models/local/'
-      )
-      const family = screen.getByRole('region', {
-        name: 'Explore model families'
-      })
-      expect(
-        within(family).getByRole('link', { name: 'Wan 3.0' })
-      ).toHaveAttribute('href', '/hub/models/?q=Wan+3.0')
-      expect(
-        within(family).getByRole('link', { name: 'Wan 2.2 (open)' })
-      ).toHaveAttribute('href', '/hub/models/local/')
     })
 
     it.for([
@@ -528,7 +505,7 @@ describe('WorkshopModelsGrid', () => {
       { narrowing: 'a tab', address: '/hub/models/?tab=video' },
       { narrowing: 'a way to use it', address: '/hub/models/?use=api' }
     ])(
-      'keeps the hero and its sections for $narrowing and scrolls to the results',
+      'keeps the hero for $narrowing and scrolls to the results',
       async ({ address }) => {
         const scrollIntoView = vi
           .spyOn(HTMLElement.prototype, 'scrollIntoView')
@@ -539,8 +516,6 @@ describe('WorkshopModelsGrid', () => {
         await nextTick()
 
         expect(screen.getByTestId('models-hub-hero')).toBeTruthy()
-        expect(screen.getByTestId('model-access')).toBeTruthy()
-        expect(screen.getByTestId('model-family')).toBeTruthy()
         await vi.waitFor(() =>
           expect(scrollIntoView.mock.contexts).toContain(
             screen.getByRole('heading', { level: 2, name: /\d+$/ })

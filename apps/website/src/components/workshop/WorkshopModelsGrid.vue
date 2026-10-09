@@ -62,8 +62,6 @@ import WorkshopModelsResults from '@/components/workshop/WorkshopModelsResults.v
 import CompareDialog from '@/components/workshop/explorer/compare/CompareDialog.vue'
 import CompareTray from '@/components/workshop/explorer/compare/CompareTray.vue'
 import ModelTabs from '@/components/workshop/explorer/ModelTabs.vue'
-import ModelAccessSection from '@/components/workshop/models-hub/ModelAccessSection.vue'
-import ModelFamilySection from '@/components/workshop/models-hub/ModelFamilySection.vue'
 import ModelsExploreHero from '@/components/workshop/models-hub/ModelsExploreHero.vue'
 import CatalogueShowMore from './CatalogueShowMore.vue'
 import WorkshopSearchField from './WorkshopSearchField.vue'
@@ -390,14 +388,6 @@ function rememberModel(model: WorkshopModel, event: MouseEvent) {
             />
           </div>
         </div>
-      </div>
-
-      <div
-        class="mt-20 flex flex-col gap-14 max-sm:mt-14 max-sm:gap-10"
-        data-testid="models-hub-more"
-      >
-        <ModelAccessSection :locale />
-        <ModelFamilySection :models :locale />
       </div>
     </div>
 

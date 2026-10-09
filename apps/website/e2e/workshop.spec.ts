@@ -107,35 +107,14 @@ test.describe('Models catalog', () => {
     await expect(page).toHaveURL(new URL(href, page.url()).href)
   })
 
-  test('opens open weights and the Wan family from the default view', async ({
+  test('sends Browse open weights to the local models page', async ({
     page
   }) => {
     await page.goto('/hub/models/')
-    await expect(
-      page
-        .getByTestId('model-access-partner')
-        .getByRole('link', { name: 'Get an API key' })
-    ).toHaveAttribute('href', /onboarding=router/)
-    await expect(
-      page.getByRole('link', { name: 'Explore the Wan family' })
-    ).toHaveAttribute('href', '/hub/models/?q=Wan')
-    await expect(
-      page.getByTestId('model-family').getByRole('link', { name: /\(open\)/ })
-    ).not.toHaveCount(0)
-    for (const pill of await page
-      .getByTestId('model-family')
-      .getByRole('link', { name: /\(open\)/ })
-      .all())
-      await expect(pill).toHaveAttribute('href', '/hub/models/local/')
-
     await expect(page.getByTestId('models-all-link')).toHaveAttribute(
       'href',
       '/hub/models/local/'
     )
-
-    await page.getByTestId('model-access-open').click()
-
-    await expect(page).toHaveURL(/\/hub\/models\/local\/$/)
   })
 
   test('answers questions about AI models in ComfyUI', async ({ page }) => {
@@ -277,7 +256,7 @@ test.describe('Models catalog', () => {
     await expect(catalogueHeading(page)).toHaveText(/^All models \d+$/)
   })
 
-  test('the Hub models listing opens on the whole catalogue in pages, then the ways in', async ({
+  test('the Hub models listing opens on the whole catalogue in pages', async ({
     page
   }) => {
     await page.goto('/hub/models/')
@@ -294,18 +273,6 @@ test.describe('Models catalog', () => {
     await expect(cards).toHaveCount(Math.min(24, promisedCount))
     await showEveryPage(page)
     await expect(cards).toHaveCount(promisedCount)
-
-    const more = page.getByTestId('models-hub-more')
-    await expect(more.getByRole('heading', { level: 2 })).toHaveText([
-      'Choose how you access models',
-      'Explore model families'
-    ])
-    const [gridBox, moreBox] = await Promise.all([
-      page.getByTestId('workshop-models-grid').boundingBox(),
-      more.boundingBox()
-    ])
-    if (!gridBox || !moreBox) throw new Error('the page did not lay out')
-    expect(moreBox.y).toBeGreaterThan(gridBox.y + gridBox.height)
   })
 
   test('every model by provider waits behind a closed disclosure', async ({
