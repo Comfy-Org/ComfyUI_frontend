@@ -449,7 +449,7 @@ describe('useAuthActions auth flow error telemetry', () => {
       )
       expect(mockAuthStore.logout).toHaveBeenCalledOnce()
       expect(mockToastErrorHandler).not.toHaveBeenCalled()
-      expect(mockToastStore.add).not.toHaveBeenCalled()
+      expect(useToast().toasts).toEqual([])
     })
 
     it('keeps the failure toast while SSO is off', async () => {
