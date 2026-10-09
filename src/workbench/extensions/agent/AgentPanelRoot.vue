@@ -2014,20 +2014,18 @@ async function onPanelDrop(event: DragEvent): Promise<void> {
       @copy-history="onCopyMarkdown"
     >
       <template #instrument>
-        <div
-          v-if="showCreditTransitionNotice"
-          class="mx-auto w-full max-w-[640px] px-4 pt-3"
-        >
-          <AgentCreditTransitionNotice
-            data-testid="agent-credit-transition-notice"
-            @shown="onCreditTransitionNoticeShown"
-            @dismiss="onDismissCreditTransitionNotice"
-          />
-        </div>
         <CrdtDevPanel
           v-if="isCrdtDevPanelEnabled"
           :status="crdtStatus"
           :snapshot="crdtDebugSnapshot"
+        />
+      </template>
+      <template #composerNotice>
+        <AgentCreditTransitionNotice
+          v-if="showCreditTransitionNotice"
+          data-testid="agent-credit-transition-notice"
+          @shown="onCreditTransitionNoticeShown"
+          @dismiss="onDismissCreditTransitionNotice"
         />
       </template>
     </AgentPanel>

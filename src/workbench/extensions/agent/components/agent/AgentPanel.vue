@@ -487,6 +487,7 @@ defineExpose({ addAttachment, updateAttachment, removeAttachment })
       <slot name="instrument" />
       <footer class="shrink-0 py-3">
         <div class="mx-auto flex w-full max-w-[640px] flex-col gap-4 px-4">
+          <slot name="composerNotice" />
           <AgentPaywallCard
             v-if="creditsExhausted"
             data-testid="agent-credits-exhausted-paywall"
