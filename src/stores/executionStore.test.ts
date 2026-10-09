@@ -125,13 +125,11 @@ function createPromptNode(title: string, classType: string) {
 const TEST_SUBGRAPH_UUID = 'a1b2c3d4-e5f6-7890-abcd-ef1234567890'
 
 function createTestSubgraph(...nodeIds: number[]) {
-  const nodes = nodeIds.map((id) => createMockLGraphNode({ id }))
+  const nodes = nodeIds.map((id) => createMockLGraphNode({ id: toNodeId(id) }))
   return {
     id: TEST_SUBGRAPH_UUID,
     nodes,
-    getNodeById: vi.fn(
-      (id) => nodes.find((node) => String(node.id) === String(id)) ?? null
-    )
+    getNodeById: (id: string) => nodes.find((node) => node.id === id) ?? null
   }
 }
 
