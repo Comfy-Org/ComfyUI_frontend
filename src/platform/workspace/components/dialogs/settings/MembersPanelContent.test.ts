@@ -1,4 +1,4 @@
-import { render, screen, within } from '@testing-library/vue'
+import { render, screen, waitFor, within } from '@testing-library/vue'
 import userEvent from '@testing-library/user-event'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { computed, ref } from 'vue'
@@ -482,6 +482,21 @@ describe('MembersPanelContent', () => {
   })
 
   describe('pending invites tab', () => {
+    it('hides loaded pending invites when permission is revoked', async () => {
+      mockActiveView.value = 'pending'
+      mockFilteredPendingInvites.value = [createInvite()]
+      renderComponent()
+      expect(screen.getByText('invitee@example.com')).toBeInTheDocument()
+
+      mockPermissions.value.canViewPendingInvites = false
+
+      await waitFor(() =>
+        expect(
+          screen.queryByText('invitee@example.com')
+        ).not.toBeInTheDocument()
+      )
+    })
+
     it('shows pending tab button when configured', () => {
       mockPendingInvites.value = [createInvite({ token: 'tok-1' })]
       renderComponent()
@@ -863,6 +878,16 @@ describe('MembersPanelContent', () => {
     })
 
     it('names the query when no member matches the search', () => {
+      mockSearchQuery.value = 'nobody'
+      renderComponent()
+      expect(screen.getByText('No members match "nobody"')).toBeInTheDocument()
+    })
+
+    it('shows no-match copy for personal workspaces with several members and one seat', () => {
+      mockIsInPersonalWorkspace.value = true
+      mockMaxSeats.value = 1
+      mockHasMultipleMembers.value = true
+      mockMembers.value = [createMember({ id: '1' }), createMember({ id: '2' })]
       mockSearchQuery.value = 'nobody'
       renderComponent()
       expect(screen.getByText('No members match "nobody"')).toBeInTheDocument()

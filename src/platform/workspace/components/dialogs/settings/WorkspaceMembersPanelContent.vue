@@ -15,7 +15,7 @@
 </template>
 
 <script setup lang="ts">
-import { computed, ref, watch } from 'vue'
+import { computed, reactive, watch } from 'vue'
 
 import Button from '@/components/ui/button/Button.vue'
 import { isCloud } from '@/platform/distribution/types'
@@ -32,23 +32,44 @@ const canViewPendingInvites = computed(() =>
   isCloud ? canManageMembers.value : permissions.value.canViewPendingInvites
 )
 
-const loadFailed = ref(false)
+const failed = reactive({ members: false, invites: false })
+const requests = { members: 0, invites: 0 }
+const loaders = { members: fetchMembers, invites: fetchPendingInvites }
+const loadFailed = computed(
+  () => failed.members || (canViewPendingInvites.value && failed.invites)
+)
 
-async function load() {
+async function loadResource(resource: keyof typeof loaders) {
   const workspaceId = workspaceStore.activeWorkspaceId
-  loadFailed.value = false
-  const results = await Promise.allSettled([
-    fetchMembers(),
-    ...(canViewPendingInvites.value ? [fetchPendingInvites()] : [])
-  ])
-  if (workspaceId === workspaceStore.activeWorkspaceId) {
-    loadFailed.value = results.some((result) => result.status === 'rejected')
+  const request = ++requests[resource]
+  failed[resource] = false
+  const [result] = await Promise.allSettled([loaders[resource]()])
+  if (
+    workspaceId === workspaceStore.activeWorkspaceId &&
+    request === requests[resource]
+  ) {
+    failed[resource] = result.status === 'rejected'
   }
 }
 
+function loadInvites() {
+  if (canViewPendingInvites.value) return loadResource('invites')
+  ++requests.invites
+  failed.invites = false
+}
+
+function load() {
+  return Promise.all([loadResource('members'), loadInvites()])
+}
+
+watch(
+  () => workspaceStore.activeWorkspaceId,
+  () => void loadResource('members'),
+  { immediate: true }
+)
 watch(
   [() => workspaceStore.activeWorkspaceId, canViewPendingInvites],
-  () => void load(),
+  () => void loadInvites(),
   { immediate: true }
 )
 </script>

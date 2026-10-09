@@ -206,7 +206,7 @@
 
           <!-- Pending Invites -->
           <PendingInvitesList
-            v-if="activeView === 'pending'"
+            v-if="activeView === 'pending' && permissions.canViewPendingInvites"
             :invites="filteredPendingInvites"
             :grid-cols="uiConfig.pendingGridCols"
             :search-query="searchQuery"
@@ -349,7 +349,12 @@ const emptyStateMessage = computed(() => {
   if (!uiConfig.value.showMembersList) return null
   if (!membersLoaded.value) return null
   if (activeView.value !== 'active') return null
-  if (isInPersonalWorkspace.value && maxSeats.value === 1) return null
+  if (
+    isInPersonalWorkspace.value &&
+    maxSeats.value === 1 &&
+    !hasMultipleMembers.value
+  )
+    return null
   if (filteredMembers.value.length > 0) return null
 
   const query = searchQuery.value.trim()

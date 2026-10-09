@@ -1152,19 +1152,29 @@ describe('useMembersPanel', () => {
       expect(panel.isPlanEnded.value).toBe(false)
     })
 
-    it('keeps the ended treatment when the backend collapses the seat limit', async () => {
-      mockIsTeamPlan.value = false
-      mockMaxSeats.value = 1
-      mockSubscriptionStatus.value = 'ended'
-      mockSubscription.value = { tier: 'ENTERPRISE', isCancelled: false }
-      useBillingCapabilities().canInviteMembers = computed(() => false)
-      const panel = await setup()
-      expect(panel.isPlanEnded.value).toBe(true)
-      expect(panel.isSalesManagedPlan.value).toBe(true)
-      expect(panel.showInviteButton.value).toBe(false)
-      expect(panel.isInviteDisabled.value).toBe(true)
-      expect(panel.uiConfig.value.showMembersList).toBe(true)
-    })
+    it.for([true, false])(
+      'renders the server invite permission %s for an ended plan with collapsed seats',
+      async (canInvite) => {
+        mockIsTeamPlan.value = false
+        mockMaxSeats.value = 1
+        mockSubscriptionStatus.value = 'ended'
+        mockSubscription.value = { tier: 'ENTERPRISE', isCancelled: false }
+        useBillingCapabilities().canInviteMembers = computed(() => canInvite)
+        const panel = await setup()
+        expect(panel.isPlanEnded.value).toBe(true)
+        expect(panel.isSalesManagedPlan.value).toBe(true)
+        expect(panel.showInviteButton.value).toBe(canInvite)
+        expect(panel.isInviteDisabled.value).toBe(!canInvite)
+        expect(panel.uiConfig.value.showMembersList).toBe(true)
+        panel.handleInviteMember()
+        expect(useDialogService().showInviteMemberDialog).toHaveBeenCalledTimes(
+          canInvite ? 1 : 0
+        )
+        expect(
+          useDialogService().showInviteMemberUpsellDialog
+        ).not.toHaveBeenCalled()
+      }
+    )
 
     // A lapsed personal workspace is seatless and outside the ended
     // treatment; an Invite button that can never enable must not appear.
