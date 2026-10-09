@@ -57,6 +57,8 @@ The Dockerfile verifies the ComfyUI release tag against `COMFYUI_COMMIT` and
 pins the Playwright release tag. Update `COMFYUI_VERSION` and `COMFYUI_COMMIT`
 together when upgrading the backend. It supplies Python 3.12, CPU PyTorch,
 Node 26.10.0, Corepack 0.36.0, fonts, and `wait-for-it`.
+The supported release platform is Linux amd64. The Python lock targets that
+platform; arm64 builds fail before dependency installation.
 ComfyUI lives at `/ComfyUI`, the Python environment at `/opt/venv`, and the
 default working directory is `/app`. The image runs as `pwuser`.
 
@@ -97,9 +99,24 @@ All 40,549 retained regular files in `/ComfyUI` and `/opt/venv` matched the
 baseline byte-for-byte. A model-free `EmptyImage` → `SaveImage` prompt also
 produced the expected image dimensions and RGB pixels in both images.
 
-Some build dependencies float, so rebuilding the same Dockerfile can produce
-different output. Validation prints the Python dependency versions and tests
-the resulting image. This import does not upgrade the backend or browsers.
+## Update Python dependencies
+
+`requirements.lock` pins the backend's transitive Python dependencies and CPU
+PyTorch wheels with hashes. Installation rejects unlisted wheel bytes and
+checks dependency compatibility. The initial lock preserves the validated
+candidate's installed versions. Base image tags and apt packages still float,
+so this is not a byte-reproducible image build.
+
+Use uv 0.12.9 to regenerate the lock from the Dockerfile's `COMFYUI_COMMIT`:
+
+```bash
+bash tools/ci-container/lock.sh
+```
+
+The command retains existing pins where compatible. To upgrade one dependency,
+pass `--upgrade-package NAME`; use `--upgrade` for a full refresh. Review the
+lock diff, then rebuild and run the candidate validator. Backend upgrades must
+update the lock in the same PR.
 
 Publishing and adoption remain separate work under
 [FE-3237](https://linear.app/comfyorg/issue/FE-3237). Existing consumers continue
