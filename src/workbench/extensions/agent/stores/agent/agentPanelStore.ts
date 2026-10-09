@@ -1,7 +1,7 @@
 import { useEventListener, useLocalStorage, useWindowSize } from '@vueuse/core'
 import { clamp } from 'es-toolkit'
 import { defineStore } from 'pinia'
-import { computed, ref, shallowRef, toRaw, watch } from 'vue'
+import { computed, readonly, ref, shallowRef, toRaw, watch } from 'vue'
 
 import {
   SIDEBAR_MIN_WIDTH,
@@ -16,7 +16,10 @@ import type { ComfyWorkflow } from '@/platform/workflow/management/stores/comfyW
 import { useWorkflowStore } from '@/platform/workflow/management/stores/workflowStore'
 import { api } from '@/scripts/api'
 
-import type { CreditTransitionNoticeState } from './creditTransitionNoticeState'
+import type {
+  CreditTransitionNoticeEvent,
+  CreditTransitionNoticeState
+} from './creditTransitionNoticeState'
 import { reduceCreditTransitionNotice } from './creditTransitionNoticeState'
 
 const PANEL_MIN_WIDTH = 420
@@ -86,7 +89,9 @@ export const useAgentPanelStore = defineStore('agentPanel', () => {
    * `null` before any scoped balance has been observed. Keyed by identity, so
    * switching user or workspace invalidates it without an explicit reset.
    */
-  const creditTransitionNotice = ref<CreditTransitionNoticeState | null>(null)
+  const creditTransitionNotice = shallowRef<CreditTransitionNoticeState | null>(
+    null
+  )
   const dismissedSelectionSignature = ref<string | null>(null)
   const workflowStore = useWorkflowStore()
   const targetTracking = ref<TargetTracking>({ mode: 'uninitialized' })
@@ -335,15 +340,24 @@ export const useAgentPanelStore = defineStore('agentPanel', () => {
     if (!maximized.value) draggedWidth.value = PANEL_MIN_WIDTH
   }
 
+  function dispatchCreditTransitionNotice(
+    event: CreditTransitionNoticeEvent
+  ): boolean {
+    const before = creditTransitionNotice.value
+    creditTransitionNotice.value = reduceCreditTransitionNotice(before, event)
+    return creditTransitionNotice.value !== before
+  }
+
   /** Records a defined Agent-scoped funds read against `identity`. */
   function observeAgentScopedFunds(
     identity: string,
     scopedHasFunds: boolean
   ): void {
-    creditTransitionNotice.value = reduceCreditTransitionNotice(
-      creditTransitionNotice.value,
-      { type: 'scopedRead', identity, scopedHasFunds }
-    )
+    dispatchCreditTransitionNotice({
+      type: 'scopedRead',
+      identity,
+      scopedHasFunds
+    })
   }
 
   /**
@@ -352,20 +366,14 @@ export const useAgentPanelStore = defineStore('agentPanel', () => {
    * `claimPaywallImpression`: claim first, then report.
    */
   function claimCreditTransitionNoticeImpression(identity: string): boolean {
-    const next = reduceCreditTransitionNotice(creditTransitionNotice.value, {
+    return dispatchCreditTransitionNotice({
       type: 'shown',
       identity
     })
-    if (next === creditTransitionNotice.value) return false
-    creditTransitionNotice.value = next
-    return true
   }
 
   function dismissCreditTransitionNotice(identity: string): void {
-    creditTransitionNotice.value = reduceCreditTransitionNotice(
-      creditTransitionNotice.value,
-      { type: 'dismissed', identity }
-    )
+    dispatchCreditTransitionNotice({ type: 'dismissed', identity })
   }
 
   return {
@@ -379,7 +387,7 @@ export const useAgentPanelStore = defineStore('agentPanel', () => {
     interruptHistorySelection,
     flagsSettled,
     reportedExhaustionIdentity,
-    creditTransitionNotice,
+    creditTransitionNotice: readonly(creditTransitionNotice),
     observeAgentScopedFunds,
     claimCreditTransitionNoticeImpression,
     dismissCreditTransitionNotice,
