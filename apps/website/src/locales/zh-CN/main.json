@@ -3186,7 +3186,6 @@
     "comfyApi": {
       "heading": "Comfy API 定价",
       "subtitle": "Comfy API 是独立于你的 Comfy Cloud 套餐之外的产品，面向以编程方式构建于 Comfy Cloud 平台之上的团队。GPU 时间与存储按秒计费；下方列出了各套餐的版本、部署与并发限制。",
-      "metricColumn": "限制项",
       "metric": {
         "releases": "版本总数上限",
         "deployments": "部署总数上限",
@@ -3367,7 +3366,7 @@
         },
         "allowance": {
           "title": "每月免费额度",
-          "description": "每个工作区每月都会获得免费的 Comfy Agent 积分。免费额度会优先使用，于每月 1 日（UTC）重置，未用完的额度不会结转。"
+          "description": "每个工作区每月可免费使用价值 {allowance} 的 Comfy Agent。免费额度会优先使用，于每月 1 日（UTC）重置，未用完的额度不会结转。"
         },
         "credits": {
           "title": "使用 Comfy Credits 计费",
@@ -3377,15 +3376,24 @@
           "title": "工作流运行",
           "description": "Agent 运行的工作流与你自己运行的计费方式完全相同，不额外收费，并遵循你所在方案的运行时长和任务限制。"
         },
-        "messages": {
-          "title": "不限消息数量",
-          "description": "消息数量没有上限，用量仅受积分限制：余额为零时，Agent 会暂停，直到你充值。"
-        },
         "model": {
           "title": "模型",
           "description": "由 Comfy 为你选择模型，暂不支持使用你自己的 LLM 密钥。"
+        },
+        "queue": {
+          "title": "不限消息数量",
+          "description": "发送消息的数量没有上限。超出方案限额时，新任务会排队等待而不会失败。积分用完后，Agent 会暂停，直到你充值。"
         }
-      }
+      },
+      "metric": {
+        "allowance": "每月免费 Agent 积分",
+        "tasksPerMember": "每位成员同时运行的 Agent 任务数",
+        "requestsPerWorkspace": "每个工作区同时处理的 Agent 请求数"
+      },
+      "enterpriseNote": "Enterprise 方案享有更高的 Agent 限额。"
+    },
+    "planLimits": {
+      "metricColumn": "限制"
     }
   },
   "privacy": {

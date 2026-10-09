@@ -1634,7 +1634,6 @@
     "comfyApi": {
       "heading": "Comfy API pricing",
       "subtitle": "Comfy API is a separate product from your Comfy Cloud plan, for teams building on Comfy Cloud programmatically. GPU time and storage are billed by the second; release, deployment, and concurrency limits apply to each plan below.",
-      "metricColumn": "Limit",
       "metric": {
         "releases": "Total releases limit",
         "deployments": "Total deployments limit",
@@ -1670,7 +1669,7 @@
         },
         "allowance": {
           "title": "Free monthly allowance",
-          "description": "Every workspace gets free Comfy Agent credits each month. The allowance is used first, resets on the 1st of each month (UTC), and unused credits do not roll over."
+          "description": "Every workspace gets {allowance} of free Comfy Agent usage each month. It is used first, resets on the 1st of each month (UTC), and unused credits do not roll over."
         },
         "credits": {
           "title": "Billed in Comfy Credits",
@@ -1680,15 +1679,24 @@
           "title": "Workflow runs",
           "description": "Workflows the agent runs are charged exactly like runs you start yourself, with no surcharge, and follow your plan's runtime and job limits."
         },
-        "messages": {
-          "title": "No message cap",
-          "description": "There is no limit on the number of messages. Usage is limited only by your credits: when your balance reaches zero, the agent pauses until you add more."
-        },
         "model": {
           "title": "Model",
           "description": "Comfy picks the model for you. Bringing your own LLM key is not supported yet."
+        },
+        "queue": {
+          "title": "No message cap",
+          "description": "There is no limit on how many messages you send. Past your plan's limits, new tasks wait in line instead of failing. When your credits run out, the agent pauses until you add more."
         }
-      }
+      },
+      "metric": {
+        "allowance": "Free Agent credits per month",
+        "tasksPerMember": "Agent tasks at once, per member",
+        "requestsPerWorkspace": "Agent requests at once, per workspace"
+      },
+      "enterpriseNote": "Enterprise plans get higher Agent limits."
+    },
+    "planLimits": {
+      "metricColumn": "Limit"
     }
   },
   "player": {
