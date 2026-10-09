@@ -59,3 +59,55 @@ export function expiredTickets(
     unknown: entries.flatMap(([ticket, state]) => (state ? [] : [ticket]))
   }
 }
+
+export type CheckMode = 'online' | 'offline'
+
+type Preflight =
+  | { kind: 'pass'; message: string }
+  | { kind: 'fail'; lines: string[] }
+  | { kind: 'query'; apiKey: string }
+
+export function preflight({
+  mode,
+  tickets,
+  nonLiteral,
+  readApiKey
+}: {
+  mode: CheckMode
+  tickets: readonly string[]
+  nonLiteral: readonly string[]
+  readApiKey: () => string | undefined
+}): Preflight {
+  if (nonLiteral.length) {
+    return {
+      kind: 'fail',
+      lines: [
+        "pendingServerFact needs a 'BE-<number>' string literal as its first argument so its expiry can be checked:",
+        ...nonLiteral.map((location) => `  ${location}`)
+      ]
+    }
+  }
+  if (!tickets.length) {
+    return {
+      kind: 'pass',
+      message: 'No pendingServerFact call sites. Nothing to check.'
+    }
+  }
+  if (mode === 'offline') {
+    return {
+      kind: 'pass',
+      message: `${tickets.length} pendingServerFact ticket(s) are well-formed; expiry is checked by the scheduled job on main.`
+    }
+  }
+  const apiKey = readApiKey()
+  if (!apiKey) {
+    return {
+      kind: 'fail',
+      lines: [
+        `Found ${tickets.length} pendingServerFact ticket(s) (${tickets.join(', ')}) but LINEAR_API_KEY is not set.`,
+        'Set the LINEAR_API_KEY secret so their expiry can be checked.'
+      ]
+    }
+  }
+  return { kind: 'query', apiKey }
+}

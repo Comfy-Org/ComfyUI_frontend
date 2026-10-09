@@ -3,8 +3,69 @@ import { describe, expect, it } from 'vitest'
 import {
   expiredTickets,
   extractTickets,
-  indexIssueStates
+  indexIssueStates,
+  preflight
 } from './pendingServerFacts'
+
+const keyMustNotBeRead = () => {
+  throw new Error('LINEAR_API_KEY was read')
+}
+
+describe('preflight', () => {
+  it('passes well-formed tickets offline without reading the key', () => {
+    expect(
+      preflight({
+        mode: 'offline',
+        tickets: ['BE-1', 'BE-2'],
+        nonLiteral: [],
+        readApiKey: keyMustNotBeRead
+      })
+    ).toEqual({
+      kind: 'pass',
+      message:
+        '2 pendingServerFact ticket(s) are well-formed; expiry is checked by the scheduled job on main.'
+    })
+  })
+
+  it.for(['offline', 'online'] as const)(
+    'fails a non-literal ticket in %s mode',
+    (mode) => {
+      expect(
+        preflight({
+          mode,
+          tickets: ['BE-1'],
+          nonLiteral: ['src/a.ts:3'],
+          readApiKey: () => 'key'
+        })
+      ).toMatchObject({
+        kind: 'fail',
+        lines: expect.arrayContaining(['  src/a.ts:3'])
+      })
+    }
+  )
+
+  it('fails closed online when tickets exist and the key is missing', () => {
+    expect(
+      preflight({
+        mode: 'online',
+        tickets: ['BE-1'],
+        nonLiteral: [],
+        readApiKey: () => undefined
+      })
+    ).toMatchObject({ kind: 'fail' })
+  })
+
+  it('queries Linear online with the key', () => {
+    expect(
+      preflight({
+        mode: 'online',
+        tickets: ['BE-1'],
+        nonLiteral: [],
+        readApiKey: () => 'key'
+      })
+    ).toEqual({ kind: 'query', apiKey: 'key' })
+  })
+})
 
 describe('extractTickets', () => {
   it.for([

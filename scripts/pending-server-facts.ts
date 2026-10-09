@@ -2,12 +2,13 @@ import { execFileSync } from 'node:child_process'
 import { readFileSync } from 'node:fs'
 import { z } from 'zod'
 
-import type { IssueNode, IssueState } from './pendingServerFacts'
+import type { CheckMode, IssueNode, IssueState } from './pendingServerFacts'
 import {
   ISSUE_STATES_QUERY,
   expiredTickets,
   extractTickets,
-  indexIssueStates
+  indexIssueStates,
+  preflight
 } from './pendingServerFacts'
 
 const SOURCE_PATHSPECS = [
@@ -92,28 +93,23 @@ for (const file of listSourceFiles()) {
   }
 }
 
-if (nonLiteral.length) {
-  fail([
-    "pendingServerFact needs a 'BE-<number>' string literal as its first argument so its expiry can be checked:",
-    ...nonLiteral.map((location) => `  ${location}`)
-  ])
-}
-
 const tickets = [...referencesByTicket.keys()].sort()
-if (!tickets.length) {
-  process.stdout.write('No pendingServerFact call sites. Nothing to check.\n')
+const mode: CheckMode = process.argv.includes('--offline')
+  ? 'offline'
+  : 'online'
+const outcome = preflight({
+  mode,
+  tickets,
+  nonLiteral,
+  readApiKey: () => process.env.LINEAR_API_KEY
+})
+if (outcome.kind === 'fail') fail(outcome.lines)
+if (outcome.kind === 'pass') {
+  process.stdout.write(`${outcome.message}\n`)
   process.exit(0)
 }
 
-const apiKey = process.env.LINEAR_API_KEY
-if (!apiKey) {
-  fail([
-    `Found ${tickets.length} pendingServerFact ticket(s) (${tickets.join(', ')}) but LINEAR_API_KEY is not set.`,
-    'Set the LINEAR_API_KEY secret so their expiry can be checked.'
-  ])
-}
-
-const fetched = await fetchIssueStates(apiKey, tickets)
+const fetched = await fetchIssueStates(outcome.apiKey, tickets)
 if (!fetched.ok) fail([fetched.reason])
 
 const { closed, unknown } = expiredTickets(fetched.states)
