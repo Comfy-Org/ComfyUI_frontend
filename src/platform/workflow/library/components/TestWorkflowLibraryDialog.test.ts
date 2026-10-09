@@ -5,6 +5,10 @@ import { createHash, webcrypto } from 'node:crypto'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { ref } from 'vue'
 import { createI18n } from 'vue-i18n'
+import { zTestWorkflowImportMetadata } from '@comfyorg/ingest-types/test-workflows/zod'
+import cloudMetadata from '@/platform/community/fixtures/cloud-reference-v1/import.json'
+import cloudOriginal from '@/platform/community/fixtures/cloud-reference-v1/workflow.json?raw'
+import cloudAdapted from '@/platform/community/fixtures/cloud-reference-v1/workflow.cloud.json?raw'
 
 import messages from '@/locales/en/main.json'
 import TestWorkflowLibraryDialog from './TestWorkflowLibraryDialog.vue'
@@ -125,6 +129,56 @@ beforeEach(() => {
 })
 
 describe('Test workflow library UI', () => {
+  it('offers both graph choices without promoting reference adaptation to execution verification', async () => {
+    const cloudRecord = {
+      ...detail,
+      summary: {
+        ...detail.summary,
+        workflow_sha256: cloudMetadata.workflow_sha256
+      },
+      metadata: zTestWorkflowImportMetadata.parse(cloudMetadata),
+      community_cloud_adaptation_available: true
+    }
+    const baseline = mocks.fetch.getMockImplementation()
+    mocks.fetch.mockImplementation(async (route: string) => {
+      if (route.includes('include_workflow=true'))
+        return response({
+          ...cloudRecord,
+          workflow_json: cloudOriginal,
+          community_cloud_workflow_json: cloudAdapted
+        })
+      if (route.includes(`/entries/${cloudMetadata.workflow_sha256}`))
+        return response(cloudRecord)
+      if (route.includes('/entries?'))
+        return response({
+          entries: [cloudRecord.summary],
+          total: 1,
+          unresolved: 1,
+          verified: 0,
+          next_cursor: ''
+        })
+      return baseline?.(route)
+    })
+    const user = userEvent.setup()
+    const result = renderLibrary()
+    await user.click(await chooseCollection(user))
+    expect(
+      await screen.findByRole('button', { name: 'Open original graph' })
+    ).toBeEnabled()
+    for (const observation of screen.getAllByText('Execution not verified'))
+      expect(observation).toBeVisible()
+    expect(
+      screen.getByText(messages.community.adaptationNotice)
+    ).toBeInTheDocument()
+    expect(mocks.handleFile).not.toHaveBeenCalled()
+    await user.click(
+      screen.getByRole('button', { name: 'Open Cloud-adapted graph' })
+    )
+    await waitFor(() => expect(mocks.handleFile).toHaveBeenCalledOnce())
+    const file: File = mocks.handleFile.mock.calls[0][0]
+    expect(await file.text()).toBe(cloudAdapted)
+    await waitFor(() => expect(result.emitted().close).toHaveLength(1))
+  })
   it('browses unknown-node details without requesting original graphs or executing them', async () => {
     const user = userEvent.setup()
     renderLibrary()

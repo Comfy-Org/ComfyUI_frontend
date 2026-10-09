@@ -109,6 +109,7 @@ export const apiKeyAuthFixture = base.extend<{
         occupied_seats: 1,
         subscription_status: 'active',
         subscription_tier: 'TEAM',
+        scheduled_change: null,
         team_credit_stop: null
       } satisfies BillingStatusResponse)
     )

@@ -2,7 +2,7 @@ import { useDialogService } from '@/services/dialogService'
 import { useDialogStore } from '@/stores/dialogStore'
 
 import CustomNodePacksDialog from '../components/CustomNodePacksDialog.vue'
-import CloudNodeRegistryDialog from '../components/CloudNodeRegistryDialog.vue'
+import { useCommunityDialog } from '@/platform/community/composables/useCommunityDialog'
 import { isCloud } from '@/platform/distribution/types'
 
 const DIALOG_KEY = 'custom-node-packs'
@@ -11,21 +11,23 @@ const DIALOG_KEY = 'custom-node-packs'
 export function useCustomNodePacksDialog() {
   const dialogService = useDialogService()
   const dialogStore = useDialogStore()
+  const community = useCommunityDialog()
 
-  const hide = () => dialogStore.closeDialog({ key: DIALOG_KEY })
+  const hide = () =>
+    isCloud ? community.hide() : dialogStore.closeDialog({ key: DIALOG_KEY })
 
   const show = () => {
+    if (isCloud) return community.show('packs')
     dialogService.showLayoutDialog({
       key: DIALOG_KEY,
-      component: isCloud ? CloudNodeRegistryDialog : CustomNodePacksDialog,
+      component: CustomNodePacksDialog,
       props: { onClose: hide },
       dialogComponentProps: {
         renderer: 'reka',
         modal: true,
-        size: isCloud ? 'full' : 'md',
-        contentClass: isCloud
-          ? 'w-[90vw] max-w-[1724px] sm:max-w-[1724px] h-[80vh] max-h-[1026px] rounded-2xl overflow-hidden'
-          : 'w-[680px] max-w-[90vw] max-h-[calc(100dvh-1rem)] overflow-y-auto rounded-2xl sm:max-w-[680px]'
+        size: 'md',
+        contentClass:
+          'w-[680px] max-w-[90vw] max-h-[calc(100dvh-1rem)] overflow-y-auto rounded-2xl sm:max-w-[680px]'
       }
     })
   }

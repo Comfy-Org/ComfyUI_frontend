@@ -1,13 +1,11 @@
 import type {
   ListTestWorkflowEntriesData,
   TestWorkflowCollections,
-  TestWorkflowDetail,
   TestWorkflowFacets,
   TestWorkflowPage
 } from '@comfyorg/ingest-types/test-workflows'
 import {
   zTestWorkflowCollections,
-  zTestWorkflowDetail,
   zTestWorkflowFacets,
   zTestWorkflowPage
 } from '@comfyorg/ingest-types/test-workflows/zod'
@@ -18,6 +16,16 @@ import { useNodeAccountScope } from '@/platform/customNodes/composables/useNodeA
 import { reportError } from '@/platform/telemetry/reportError'
 import { api } from '@/scripts/api'
 import { app } from '@/scripts/app'
+import type {
+  CommunityWorkflowDetail,
+  TestWorkflowGraphVariant
+} from '../utils/cloudWorkflowAdaptation'
+import {
+  getCloudAdaptation,
+  verifyCloudWorkflow,
+  workflowDigest,
+  zCommunityWorkflowDetail
+} from '../utils/cloudWorkflowAdaptation'
 
 type Filters = NonNullable<ListTestWorkflowEntriesData['query']>
 type Data = {
@@ -25,7 +33,7 @@ type Data = {
   collectionsTruncated: boolean
   page: TestWorkflowPage | null
   facets: TestWorkflowFacets | null
-  selected: TestWorkflowDetail | null
+  selected: CommunityWorkflowDetail | null
 }
 type State =
   | { phase: 'idle' | 'ready' | 'loading'; data: Data }
@@ -39,7 +47,11 @@ const empty = (): Data => ({
   selected: null
 })
 
-export function useTestWorkflowLibrary() {
+export function useTestWorkflowLibrary(
+  fetchLibrary: typeof api.fetchApi = (route, options) =>
+    api.fetchApi(route, options)
+) {
+  const request = createRequest(fetchLibrary)
   const identity = useNodeAccountScope()
   const state = shallowRef<State>({ phase: 'idle', data: empty() })
   const collection = ref('')
@@ -154,7 +166,7 @@ export function useTestWorkflowLibrary() {
     return command(async (signal) => {
       const selected = await request(
         `${root(id)}/entries/${encodeURIComponent(hash)}`,
-        zTestWorkflowDetail,
+        zCommunityWorkflowDetail,
         signal
       )
       if (
@@ -166,16 +178,20 @@ export function useTestWorkflowLibrary() {
     })
   }
 
-  async function open() {
+  async function open(variant: TestWorkflowGraphVariant = 'original') {
     const hash = state.value.data.selected?.summary.workflow_sha256
     if (!hash) return false
     const id = collection.value
     const previous = state.value.data
     const scope = identity.capture()
     return command(async (signal) => {
+      const query =
+        variant === 'cloud'
+          ? 'include_workflow=true&include_cloud_workflow=true'
+          : 'include_workflow=true'
       const record = await request(
-        `${root(id)}/entries/${encodeURIComponent(hash)}?include_workflow=true`,
-        zTestWorkflowDetail,
+        `${root(id)}/entries/${encodeURIComponent(hash)}?${query}`,
+        zCommunityWorkflowDetail,
         signal
       )
       if (signal.aborted || !identity.current(scope))
@@ -186,21 +202,25 @@ export function useTestWorkflowLibrary() {
         record.metadata.workflow_sha256 !== hash
       )
         throw new LibraryRequestError(0)
-      const digest = await crypto.subtle.digest(
-        'SHA-256',
-        new TextEncoder().encode(record.workflow_json)
-      )
-      const actual = Array.from(new Uint8Array(digest), (value) =>
-        value.toString(16).padStart(2, '0')
-      ).join('')
-      if (actual !== hash || signal.aborted || !identity.current(scope))
+      const graph =
+        variant === 'cloud'
+          ? record.community_cloud_workflow_json
+          : record.workflow_json
+      if (!graph) throw new LibraryRequestError(0)
+      const valid =
+        variant === 'cloud'
+          ? await verifyCloudWorkflow(record, record.workflow_json, graph)
+          : (await workflowDigest(graph)) === hash
+      if (!valid || signal.aborted || !identity.current(scope))
         throw new LibraryRequestError(0)
+      const suffix =
+        variant === 'cloud'
+          ? `-cloud-${getCloudAdaptation(record)?.workflow_sha256.slice(0, 12)}`
+          : ''
       await app.handleFile(
-        new File(
-          [record.workflow_json],
-          `test-workflow-${hash.slice(0, 12)}.json`,
-          { type: 'application/json' }
-        )
+        new File([graph], `test-workflow-${hash.slice(0, 12)}${suffix}.json`, {
+          type: 'application/json'
+        })
       )
       return { ...previous, selected: record }
     })
@@ -233,14 +253,16 @@ class LibraryRequestError extends Error {
   }
 }
 
-async function request<T>(
-  route: string,
-  schema: ZodType<T>,
-  signal: AbortSignal
-): Promise<T> {
-  const response = await api.fetchApi(route, { signal, cache: 'no-store' })
-  if (!response.ok) throw new LibraryRequestError(response.status)
-  const result = schema.safeParse(await response.json())
-  if (!result.success) throw new LibraryRequestError(0)
-  return result.data
+function createRequest(fetchLibrary: typeof api.fetchApi) {
+  return async function request<T>(
+    route: string,
+    schema: ZodType<T>,
+    signal: AbortSignal
+  ): Promise<T> {
+    const response = await fetchLibrary(route, { signal, cache: 'no-store' })
+    if (!response.ok) throw new LibraryRequestError(response.status)
+    const result = schema.safeParse(await response.json())
+    if (!result.success) throw new LibraryRequestError(0)
+    return result.data
+  }
 }

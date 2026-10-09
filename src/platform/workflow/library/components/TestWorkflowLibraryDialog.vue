@@ -1,17 +1,27 @@
 <script setup lang="ts">
-import { computed, onMounted, ref } from 'vue'
+import { computed, onMounted, ref, provide } from 'vue'
 import { useI18n } from 'vue-i18n'
 
 import Button from '@/components/ui/button/Button.vue'
 import SearchInput from '@/components/ui/search-input/SearchInput.vue'
 import SingleSelect from '@/components/ui/single-select/SingleSelect.vue'
+import CommunityFacetSelect from '@/platform/community/components/CommunityFacetSelect.vue'
 import BaseModalLayout from '@/components/widget/layout/BaseModalLayout.vue'
+import type { api } from '@/scripts/api'
+import { OnCloseKey } from '@/types/widgetTypes'
 import { useTestWorkflowLibrary } from '../composables/useTestWorkflowLibrary'
+import type { TestWorkflowGraphVariant } from '../utils/cloudWorkflowAdaptation'
 import TestWorkflowDetails from './TestWorkflowDetails.vue'
+import TestWorkflowCard from './TestWorkflowCard.vue'
 
 const emit = defineEmits<{ close: [] }>()
+const { size = 'lg', fetchLibrary } = defineProps<{
+  size?: 'lg' | 'full'
+  fetchLibrary?: typeof api.fetchApi
+}>()
+provide(OnCloseKey, () => emit('close'))
 const { t } = useI18n()
-const library = useTestWorkflowLibrary()
+const library = useTestWorkflowLibrary(fetchLibrary)
 const { data, state, busy, collection } = library
 const query = ref('')
 const tag = ref<string>()
@@ -29,7 +39,7 @@ const rightOpen = computed({
 const collections = computed(() =>
   data.value.collections.map((item) => ({
     value: item.id,
-    name: `${item.id} (${item.count})`
+    name: `${item.id === 'harvey-qa' ? t('community.corpus') : item.id} (${item.count})`
   }))
 )
 const choices = (values: string[] = []) =>
@@ -85,6 +95,7 @@ function selectComplexity(value: string | undefined) {
     value === 'small' || value === 'medium' || value === 'large'
       ? value
       : undefined
+  void search()
 }
 function variants(value: string) {
   cluster.value = value
@@ -94,8 +105,8 @@ function clearCluster() {
   cluster.value = ''
   void search()
 }
-async function open() {
-  if (await library.open()) emit('close')
+async function open(variant: TestWorkflowGraphVariant) {
+  if (await library.open(variant)) emit('close')
 }
 onMounted(library.initialize)
 </script>
@@ -104,8 +115,8 @@ onMounted(library.initialize)
   <BaseModalLayout
     v-model:right-panel-open="rightOpen"
     data-testid="test-workflow-library"
-    size="full"
-    :content-title="t('testWorkflowLibrary.title')"
+    :size
+    :content-title="t('community.workflows')"
     :right-panel-title="t('testWorkflowLibrary.details')"
   >
     <template #header>
@@ -133,29 +144,33 @@ onMounted(library.initialize)
           @update:model-value="choose"
         />
         <div class="grid grid-cols-2 gap-2 lg:grid-cols-5">
-          <SingleSelect
+          <CommunityFacetSelect
             v-model="tag"
             :options="tags"
             :label="t('testWorkflowLibrary.tags')"
             :disabled="busy"
+            @update:model-value="search"
           />
-          <SingleSelect
+          <CommunityFacetSelect
             v-model="task"
             :options="tasks"
             :label="t('testWorkflowLibrary.tasks')"
             :disabled="busy"
+            @update:model-value="search"
           />
-          <SingleSelect
+          <CommunityFacetSelect
             v-model="pack"
             :options="packs"
             :label="t('testWorkflowLibrary.packs')"
             :disabled="busy"
+            @update:model-value="search"
           />
-          <SingleSelect
+          <CommunityFacetSelect
             v-model="model"
             :options="models"
             :label="t('testWorkflowLibrary.models')"
             :disabled="busy"
+            @update:model-value="search"
           />
           <SingleSelect
             :model-value="complexity"
@@ -219,40 +234,17 @@ onMounted(library.initialize)
     </template>
     <template #content>
       <div class="grid grid-cols-1 gap-3 sm:grid-cols-2 xl:grid-cols-3">
-        <button
+        <TestWorkflowCard
           v-for="entry in data.page?.entries ?? []"
           :key="entry.workflow_sha256"
           :data-testid="`test-workflow-entry-${entry.workflow_sha256}`"
-          type="button"
-          :disabled="busy"
-          :aria-pressed="
-            entry.workflow_sha256 === data.selected?.summary.workflow_sha256
+          :entry
+          :busy
+          :selected="
+            data.selected?.summary.workflow_sha256 === entry.workflow_sha256
           "
-          class="flex min-h-36 flex-col gap-2 rounded-lg border border-border-default bg-secondary-background p-4 text-left hover:bg-interface-menu-component-surface-hovered focus-visible:outline-2 focus-visible:outline-offset-2"
-          @click="library.select(entry.workflow_sha256)"
-        >
-          <span class="text-sm font-semibold wrap-break-word">{{
-            entry.name
-          }}</span>
-          <span class="line-clamp-3 text-xs text-muted-foreground">{{
-            entry.description
-          }}</span>
-          <span class="text-xs text-muted-foreground">{{
-            t('testWorkflowLibrary.nodeCount', { count: entry.node_count })
-          }}</span>
-          <span v-if="entry.unresolved_pack_count" class="text-xs">{{
-            t('testWorkflowLibrary.unresolvedPacks', {
-              count: entry.unresolved_pack_count
-            })
-          }}</span>
-          <span class="text-xs text-muted-foreground">{{
-            t(
-              entry.verified
-                ? 'testWorkflowLibrary.verified'
-                : 'testWorkflowLibrary.notVerified'
-            )
-          }}</span>
-        </button>
+          @select="library.select"
+        />
       </div>
       <p v-if="data.page && !data.page.entries.length">
         {{ t('testWorkflowLibrary.noMatches') }}

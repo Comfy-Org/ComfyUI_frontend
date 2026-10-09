@@ -11,6 +11,8 @@ import { TestIds } from '@e2e/fixtures/selectors'
 
 export type TestWorkflowLibraryProbeInput = {
   collection: TestWorkflowCollections['collections'][number]
+  collectionLabel?: string
+  transport?: 'service' | 'static'
   entry: Pick<TestWorkflowSummary, 'name' | 'workflow_sha256' | 'node_count'>
   nodes: readonly Pick<ISerialisedNode, 'id' | 'type'>[]
   nodeTypes: TestWorkflowImportMetadata['node_types']
@@ -33,15 +35,22 @@ export async function probeTestWorkflowLibrary(
     const url = new URL(request.url())
     if (request.method() === 'POST' && url.pathname === '/api/prompt')
       promptPosts += 1
-    if (!url.pathname.startsWith('/api/test-workflow-library/')) return
+    if (
+      !url.pathname.startsWith('/api/test-workflow-library/') &&
+      !url.pathname.startsWith('/api/community-corpus/')
+    )
+      return
     requests.push({
       path: url.pathname,
-      original: url.searchParams.get('include_workflow') === 'true',
+      original:
+        url.searchParams.get('include_workflow') === 'true' ||
+        url.pathname.endsWith('/workflow.json'),
       cursor: Boolean(url.searchParams.get('cursor')),
       limit: url.searchParams.get('limit')
     })
   }
   page.on('request', observe)
+  let paginated = false
   try {
     const originalNodes = await page.evaluate(() =>
       window
@@ -51,20 +60,20 @@ export async function probeTestWorkflowLibrary(
         }))
         .toSorted((a, b) => a.id.localeCompare(b.id))
     )
-    const workflows = page.getByTestId(TestIds.sidebar.workflows)
-    if (!(await workflows.isVisible()))
-      await page.getByTestId(TestIds.sidebar.tabButton('workflows')).click()
-    const entryButton = workflows.getByRole('button', {
-      name: 'Test Workflow Library',
-      exact: true
-    })
+    const entryButton = page.getByTestId('community-tab-button')
     await expect(entryButton).toBeVisible()
-    await expect(entryButton).toHaveText('Test Workflow Library')
+    await expect(entryButton).toHaveAccessibleName('Community')
     await entryButton.click()
+    await expect(
+      page.getByRole('tab', { name: 'Custom node packs', exact: true })
+    ).toBeVisible()
+    await page
+      .getByRole('tab', { name: 'Community workflows', exact: true })
+      .click()
     const library = page.getByTestId(TestIds.testWorkflowLibrary.root)
     await expect(library).toBeVisible()
     const collection = library.getByRole('combobox', { name: 'Collection' })
-    const collectionName = `${input.collection.id} (${input.collection.count})`
+    const collectionName = `${input.collectionLabel ?? input.collection.id} (${input.collection.count})`
     await expect(collection).toBeEnabled()
     if ((await collection.innerText()).trim() !== collectionName) {
       await collection.click()
@@ -76,13 +85,30 @@ export async function probeTestWorkflowLibrary(
       library.getByRole('button', { name: 'Search', exact: true })
     ).toBeEnabled()
     if (input.collection.count > 24) {
+      const entries = library.locator('[data-testid^="test-workflow-entry-"]')
+      await expect(entries).toHaveCount(24)
+      const firstPage = await entries.evaluateAll((items) =>
+        items.map((item) => item.getAttribute('data-testid'))
+      )
       const next = library.getByRole('button', {
         name: 'Next page',
         exact: true
       })
       await expect(next).toBeEnabled()
       await next.click()
-      await expect.poll(() => requests.some(({ cursor }) => cursor)).toBe(true)
+      if (input.transport === 'static')
+        await expect
+          .poll(() =>
+            entries.evaluateAll((items) =>
+              items.map((item) => item.getAttribute('data-testid'))
+            )
+          )
+          .not.toEqual(firstPage)
+      else
+        await expect
+          .poll(() => requests.some(({ cursor }) => cursor))
+          .toBe(true)
+      paginated = true
       const first = library.getByRole('button', {
         name: 'Back to first page',
         exact: true
@@ -102,6 +128,9 @@ export async function probeTestWorkflowLibrary(
     await expect(selected).toBeVisible()
     if (input.tag) {
       await library.getByRole('combobox', { name: 'Tags', exact: true }).click()
+      await page
+        .getByRole('combobox', { name: 'Search Tags', exact: true })
+        .fill(input.tag)
       await page.getByRole('option', { name: input.tag, exact: true }).click()
       await library.getByRole('button', { name: 'Search', exact: true }).click()
       await expect(selected).toBeVisible()
@@ -160,7 +189,7 @@ export async function probeTestWorkflowLibrary(
       workflow_sha256: input.entry.workflow_sha256,
       loadedNodes: expectedNodes,
       originalRequests: requests.filter(({ original }) => original).length,
-      paginated: requests.some(({ cursor }) => cursor),
+      paginated,
       promptPosts,
       missingNodeWarningVisible,
       requests

@@ -111,19 +111,6 @@
             />
           </TabPanel>
         </div>
-        <div
-          v-if="isCloud"
-          class="flex shrink-0 flex-col border-t border-border-default px-4 py-3"
-        >
-          <Button
-            variant="secondary"
-            class="justify-start gap-3"
-            @click="handleUploadPack"
-          >
-            <i class="icon-[lucide--package] size-5 text-muted-foreground" />
-            {{ $t('customNodePacks.customNodes') }}
-          </Button>
-        </div>
       </div>
     </template>
   </SidebarTabTemplate>
@@ -153,8 +140,6 @@ import SearchInput from '@/components/ui/search-input/SearchInput.vue'
 import Button from '@/components/ui/button/Button.vue'
 import { useFeatureFlags } from '@/composables/useFeatureFlags'
 import { useNodeDragToCanvas } from '@/composables/node/useNodeDragToCanvas'
-import { useCustomNodePacksDialog } from '@/platform/customNodes/composables/useCustomNodePacksDialog'
-import { isCloud } from '@/platform/distribution/types'
 import { usePerTabState } from '@/composables/usePerTabState'
 import { ESSENTIAL_SECTIONS } from '@/constants/essentialsNodes'
 import { useSearchQueryTracking } from '@/platform/telemetry/searchQuery/useSearchQueryTracking'
@@ -489,12 +474,6 @@ const tabs = computed<Array<{ value: TabId; label: string }>>(() => {
     allNodesTab
   ]
 })
-
-const customNodePacksDialog = useCustomNodePacksDialog()
-
-function handleUploadPack() {
-  customNodePacksDialog.show()
-}
 
 onMounted(() => {
   searchBoxRef.value?.focus()
