@@ -1593,6 +1593,7 @@ export const zMediaBadRequestError = z.union([zErrorResponse, zMediaQueryError])
  * Paginated list of workspaces the authenticated user belongs to.
  */
 export const zListWorkspacesResponse = z.object({
+  can_create_workspace: z.boolean(),
   workspaces: z.array(zWorkspaceWithRole)
 })
 
@@ -3659,6 +3660,16 @@ export const zAgentLlmMessagesBody = z.record(z.unknown())
  * The upstream LLM response, streamed back as Server-Sent Events (text/event-stream) chunk-by-chunk.
  */
 export const zAgentLlmMessagesResponse = z.string()
+
+/**
+ * An OTLP ExportTraceServiceRequest, optionally gzip-encoded (Content-Encoding gzip); at most 4 MiB encoded and decoded, and 4096 spans.
+ */
+export const zAgentLlmTracesBody = z.string()
+
+/**
+ * Accepted; the body is an empty OTLP ExportTraceServiceResponse.
+ */
+export const zAgentLlmTracesResponse = z.string()
 
 /**
  * The caller's run mode (the saved choice, or the default).
