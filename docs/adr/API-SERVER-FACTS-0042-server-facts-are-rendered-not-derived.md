@@ -71,15 +71,18 @@ subscription or resource that would stay true with no UI:
 Presentation stays on the client: formatting, translation, sorting, layout,
 and local UI state such as loading, open panels and form validation.
 
-The rule is enforced by checks that fail, not by prose:
+The rule is to be enforced by checks that fail, not by prose. None of
+them ships with this ADR; each lands in its own change, tracked under
+FE-3349 (TDD "Server-fact guardrails"):
 
-- oxlint rules on changed lines
-- a checked-in agent write hook
-- an approve gate
-- orthogonality tests on every gate a PR touches
-- the `pendingServerFact` expiry check
+- oxlint rules gated on changed lines in the required lint check: the
+  authoritative block (FE-3351)
+- a checked-in agent write hook and an approve hook: an advisory first line
+  that fails open (FE-3352, FE-3353)
+- the `pendingServerFact` bridge and its expiry check (FE-3354)
+- orthogonality tests on every gate a PR touches (FE-3355)
 
-The TDD "Server-fact guardrails" tracks these checks (FE-3349).
+Until those land, this ADR and the `AGENTS.md` line are the only guidance.
 
 ### Alternatives considered
 
@@ -90,7 +93,8 @@ The TDD "Server-fact guardrails" tracks these checks (FE-3349).
   framing.
 - **Opaque `ServerFact<T>` types now.** Deferred: it is the strongest
   guarantee, but about 15 billing surfaces and other domains have to migrate
-  first. Lint holds the line in the meantime.
+  first. The planned lint gate (FE-3351) is meant to hold the line in the
+  meantime.
 - **Server-driven UI.** Rejected for now: out of scope for the capabilities
   API.
 
