@@ -34,14 +34,15 @@ for (const viewport of viewports) {
 
     if (viewport.desktopNavigation) {
       await expect(desktopLinks).toBeVisible()
-      const hub = desktopLinks.getByRole('button', { name: /^Hub/ })
+      const hub = desktopLinks.getByRole('button', { name: 'Hub', exact: true })
       await waitForIsland(page, hub)
-      await hub.hover()
+      await hub.click()
       await expect(
         navigation
           .getByTestId('nav-dropdown')
-          .getByRole('link', { name: /^Explore the Hub/ })
-      ).toHaveAttribute('href', '/hub/')
+          .getByRole('link', { name: 'All models' })
+      ).toHaveAttribute('href', '/hub/models/')
+      await hub.press('Escape')
       await expect(
         desktopLinks.getByRole('button', { name: 'Products', exact: true })
       ).toBeVisible()
@@ -56,16 +57,17 @@ for (const viewport of viewports) {
       await menuButton.click()
       const menu = page.getByRole('dialog', { name: 'Menu' })
       await expect(menu).toBeVisible()
+      await menu.getByRole('button', { name: /^Hub\b/ }).click()
+      await expect(
+        menu.getByRole('link', { name: 'All models' })
+      ).toHaveAttribute('href', '/hub/models/')
+      await menu.getByRole('button', { name: 'Back' }).click()
       await expect(
         menu.getByRole('button', { name: /^Products\b/ })
       ).toBeVisible()
       await expect(
         menu.getByRole('button', { name: /^Enterprise\b/ })
       ).toBeVisible()
-      await menu.getByRole('button', { name: /^Hub/ }).click()
-      await expect(
-        menu.getByRole('link', { name: /^Explore the Hub/ })
-      ).toHaveAttribute('href', '/hub/')
     }
 
     await expect(
