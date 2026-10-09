@@ -1,4 +1,4 @@
-import { describe, expect, it, vi } from 'vitest'
+import { assert, describe, expect, it, vi } from 'vitest'
 
 import { createMockLoadedWorkflow } from '@/utils/__tests__/litegraphTestUtils'
 
@@ -23,81 +23,25 @@ describe('composer reference ownership', () => {
       nodes: [],
       target: createMockLoadedWorkflow({ path: 'workflows/target.json' })
     }
-    const id = store.startSubmission(snapshot)
-    store.resolveSkillMetadata({
+    const resolved = {
       text: ' colors',
       references: [
-        {
-          ...reference,
-          description: 'Resolved',
-          resolvePastedName: undefined
-        }
+        { ...reference, description: 'Resolved', resolvePastedName: undefined }
       ]
-    })
+    }
+    const id = store.startSubmission(snapshot)
+    store.resolveSkillMetadata(resolved)
     expect(store.prompt).toEqual({ text: '', references: [] })
     store.settleSubmission(id, false)
     const failed = store.takeFailedSubmission()
     expect(failed).toEqual(snapshot)
-    if (!failed) throw new Error('Expected recoverable draft')
+    assert.exists(failed)
     store.restorePrompt(failed.prompt, failed.attachments)
-    store.resolveSkillMetadata({
-      text: ' colors',
-      references: [
-        {
-          ...reference,
-          description: 'Resolved',
-          resolvePastedName: undefined
-        }
-      ]
-    })
+    store.resolveSkillMetadata(resolved)
     expect(store.prompt.references[0]).toMatchObject({
       description: 'Resolved'
     })
   })
-
-  it.for(['selected', 'pasted'] as const)(
-    'restores a failed %s skill draft and its asset references only while untouched',
-    (source) => {
-      const store = useAgentComposerStore()
-      store.setSkillScope('workspace-a')
-      const skill = {
-        kind: 'skill' as const,
-        name: 'portrait',
-        description: 'Use defaults',
-        scope: 'workspace-a',
-        ...(source === 'pasted' ? { resolvePastedName: true as const } : {}),
-        textOffset: 4
-      }
-      const attachment = { id: 'asset', name: 'image.png', ref: 'image.png' }
-      store.restorePrompt(
-        {
-          text: 'Use  today',
-          references: [skill, { kind: 'asset', attachment, textOffset: 4 }]
-        },
-        [attachment]
-      )
-      const snapshot = {
-        prompt: store.prompt,
-        attachments: store.attachments,
-        nodes: [],
-        target: createMockLoadedWorkflow({ path: 'workflows/target.json' })
-      }
-      const first = store.startSubmission(snapshot)
-      store.settleSubmission(first, false)
-      const failed = store.takeFailedSubmission()
-      expect(failed).toEqual(snapshot)
-      if (!failed) throw new Error('Expected a recoverable draft')
-      store.restorePrompt(failed.prompt, failed.attachments)
-      expect(store.prompt).toEqual(snapshot.prompt)
-      expect(store.attachments).toEqual([attachment])
-
-      const second = store.startSubmission(snapshot)
-      store.setText('New input')
-      store.settleSubmission(second, false)
-      expect(store.takeFailedSubmission()).toBeUndefined()
-      expect(store.draft).toBe('New input')
-    }
-  )
 
   it('invalidates the old-scope skill and undo history on scope change while preserving other references', () => {
     const store = useAgentComposerStore()

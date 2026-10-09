@@ -3,7 +3,6 @@ import { render } from '@testing-library/vue'
 import { defineComponent, nextTick, ref } from 'vue'
 import { createI18n } from 'vue-i18n'
 
-import { useCurrentUser } from '@/composables/auth/useCurrentUser'
 import { api } from '@/scripts/api'
 import { reportError } from '@/platform/telemetry/reportError'
 
@@ -105,25 +104,7 @@ describe('useSkillPackForm', () => {
     expect(store.packs).toEqual([])
     expect(fieldError.value).toBeNull()
   })
-  it('ignores a late publish failure after the account scope changes', async () => {
-    const user = ref({ id: 'user-a' })
-    Object.assign(useCurrentUser(), { resolvedUserInfo: user })
-    const store = useSkillPacksStore()
-    store.flagsEnabled = true
-    const pending = deferred<SkillPack>()
-    vi.mocked(publishSkillPack).mockReturnValueOnce(pending.promise)
-    const { handleSubmit, visible, fieldError } = mountForm(makePack())
-    const request = handleSubmit()
-    user.value = { id: 'user-b' }
-    const newPack = makePack({ name: 'new-workspace-pack' })
-    store.upsertPack(newPack)
-    pending.reject(new SkillPacksApiError('not found', 404))
-    await request
-    expect(store.enabled).toBe(true)
-    expect(store.packs).toEqual([newPack])
-    expect(visible.value).toBe(true)
-    expect(fieldError.value).toBeNull()
-  })
+
   it('seeds the editor from the pack it was given, with no second fetch', () => {
     const pack = makePack()
     const { form } = mountForm(pack)

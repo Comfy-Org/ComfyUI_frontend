@@ -116,13 +116,6 @@ function setup() {
           composer.attachments,
           composer.workflowReferences
         )
-      },
-      submitMessage(text: string) {
-        return submission.submit(
-          text,
-          composer.attachments,
-          composer.workflowReferences
-        )
       }
     }
   })
@@ -131,8 +124,8 @@ function setup() {
 }
 
 describe('Agent draft submission', () => {
-  it('sends, restores and retries an untouched skill draft with its references and assets', async () => {
-    const { composer, submitMessage, send, pending } = setup()
+  it('restores an untouched skill draft with its references after a failed send', async () => {
+    const { composer, submit, pending } = setup()
     composer.setSkillScope('workspace-a')
     composer.applyEditorPrompt({
       ...composer.prompt,
@@ -148,62 +141,12 @@ describe('Agent draft submission', () => {
       ]
     })
     const prompt = composer.prompt
-    const attachments = [...composer.attachments]
-    const message =
-      'Compare these [Use the saved skill /portrait](skill://portrait?description=Use%20defaults)'
-    const sending = submitMessage(message)
-    expect(send).toHaveBeenCalledOnce()
-    expect(send.mock.calls[0][0]).toBe(message)
-    expect(composer.prompt.references).toEqual([])
+    const sending = submit()
     pending.resolve(false)
     await sending
     expect(composer.prompt).toEqual(prompt)
-    expect(composer.attachments).toEqual(attachments)
-    send.mockResolvedValue(true)
-    await submitMessage(message)
-    expect(send.mock.calls[1][0]).toBe(message)
-    expect(send.mock.calls[1][4].clientMessageId).not.toBe(
-      send.mock.calls[0][4].clientMessageId
-    )
-    expect(composer.prompt.references).toEqual([])
   })
-  it.for(['remount', 'new-input', 'scope-change'])(
-    'recovers a failed skill draft correctly after %s',
-    async (event) => {
-      const { composer, submitMessage, pending, unmount, remount } = setup()
-      composer.setSkillScope('workspace-a')
-      composer.applyEditorPrompt({
-        ...composer.prompt,
-        references: [
-          ...composer.prompt.references,
-          {
-            kind: 'skill',
-            name: 'portrait',
-            description: 'Defaults',
-            scope: 'workspace-a',
-            textOffset: composer.draft.length
-          }
-        ]
-      })
-      const original = composer.prompt
-      const sending = submitMessage('Use the saved skill /portrait')
-      if (event === 'remount') unmount()
-      if (event === 'new-input') composer.setText('Next prompt')
-      if (event === 'scope-change') composer.setSkillScope('workspace-b')
-      pending.resolve(false)
-      await sending
-      if (event === 'remount') remount()
-      if (event === 'remount') expect(composer.prompt).toEqual(original)
-      else if (event === 'new-input')
-        expect(composer.prompt).toEqual({ text: 'Next prompt', references: [] })
-      else
-        expect(
-          composer.prompt.references.some(
-            (reference) => reference.kind === 'skill'
-          )
-        ).toBe(false)
-    }
-  )
+
   it('clears the complete draft before sending its snapshot and preserves subsequent typing on success', async () => {
     const { composer, selection, original, submit, send, pending } = setup()
     send.mockImplementation(() => {

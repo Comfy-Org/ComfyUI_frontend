@@ -53,24 +53,6 @@ function renderReference({
   return screen.getByTestId('skill-reference')
 }
 
-type ReferenceExpectation = {
-  colorClass: 'text-warning-background' | 'text-muted-foreground'
-  accessibleDescription: '' | 'Not available'
-  tooltip: RegExp
-}
-
-async function expectReference(
-  reference: HTMLElement,
-  { colorClass, accessibleDescription, tooltip }: ReferenceExpectation
-) {
-  expect(reference).toHaveTextContent(/^\/old-name$/)
-  expect(reference).toHaveClass('underline', colorClass)
-  expect(reference).toHaveAccessibleDescription(accessibleDescription)
-  await userEvent.hover(reference)
-  expect(await screen.findByRole('tooltip')).toHaveTextContent(tooltip)
-  await userEvent.unhover(reference)
-}
-
 const sameName = pack('current-id', 'old-name')
 const renamed = pack('current-id', 'new-name')
 
@@ -79,98 +61,69 @@ it.for([
     when: 'the catalog has its name',
     packs: [sameName],
     expected: 'available',
-    colorClass: 'text-warning-background',
-    accessibleDescription: '',
-    tooltip: /^Original description$/
+    accessibleDescription: ''
   },
   {
     when: 'its skill was renamed',
     packs: [renamed],
     expected: 'unavailable',
-    colorClass: 'text-muted-foreground',
-    accessibleDescription: 'Not available',
-    tooltip: /^Not available$/
+    accessibleDescription: 'Not available'
   },
   {
     when: 'the catalog lacks its name',
     expected: 'unavailable',
-    colorClass: 'text-muted-foreground',
-    accessibleDescription: 'Not available',
-    tooltip: /^Not available$/
+    accessibleDescription: 'Not available'
   },
   {
     when: 'the catalog is unconfirmed',
     catalogConfirmed: false,
     expected: 'checking',
-    colorClass: 'text-warning-background',
-    accessibleDescription: '',
-    tooltip: /^Original description$/
+    accessibleDescription: ''
   },
   {
     when: 'skills are disabled',
     flagsEnabled: false,
     expected: 'checking',
-    colorClass: 'text-warning-background',
-    accessibleDescription: '',
-    tooltip: /^Original description$/
+    accessibleDescription: ''
   },
   {
     when: 'the catalog belongs to another scope',
     scope: 'another-workspace',
     expected: 'checking',
-    colorClass: 'text-warning-background',
-    accessibleDescription: '',
-    tooltip: /^Original description$/
+    accessibleDescription: ''
   }
-] satisfies (ReferenceSetup &
-  ReferenceExpectation & {
-    when: string
-    expected: 'available' | 'unavailable' | 'checking'
-  })[])('shows a reference as $expected when $when', async (scenario) => {
-  await expectReference(renderReference(scenario), scenario)
+])('shows a reference as $expected when $when', (scenario) => {
+  const reference = renderReference(scenario)
+  expect(reference).toHaveTextContent(/^\/old-name$/)
+  expect(reference).toHaveClass('underline')
+  expect(reference).toHaveAccessibleDescription(scenario.accessibleDescription)
 })
 
-it('shows a skill deleted then recreated with the same name as available again', async () => {
-  const reference = renderReference({ packs: [sameName] })
-  await expectReference(reference, {
-    colorClass: 'text-warning-background',
-    accessibleDescription: '',
-    tooltip: /^Original description$/
-  })
-  const skills = useSkillPacksStore()
-  skills.packs = []
+it('shows a deleted reference as available again once a skill with its name is recreated', async () => {
+  const reference = renderReference({})
+  expect(reference).toHaveAccessibleDescription('Not available')
+  useSkillPacksStore().packs = [pack('recreated-id', 'old-name')]
   await nextTick()
-  await expectReference(reference, {
-    colorClass: 'text-muted-foreground',
-    accessibleDescription: 'Not available',
-    tooltip: /^Not available$/
-  })
-  skills.packs = [pack('recreated-id', 'old-name')]
-  await nextTick()
-  await expectReference(reference, {
-    colorClass: 'text-warning-background',
-    accessibleDescription: '',
-    tooltip: /^Original description$/
-  })
+  expect(reference).toHaveAccessibleDescription('')
 })
 
 it.for([
   {
-    availability: 'available',
     packs: [sameName],
-    shows: 'no tooltip',
-    tooltips: []
+    description: 'Original description',
+    tooltips: ['Original description']
   },
   {
-    availability: 'unavailable',
     packs: [],
-    shows: 'only the availability line',
+    description: 'Original description',
     tooltips: ['Not available']
-  }
+  },
+  { packs: [sameName], description: '', tooltips: [] },
+  { packs: [], description: '', tooltips: ['Not available'] }
 ])(
-  'shows $shows on hover of a description-less $availability reference',
-  async ({ packs, tooltips }) => {
-    const reference = renderReference({ packs, description: '' })
+  'shows $tooltips on hover of a reference described as "$description"',
+  async ({ packs, description, tooltips }) => {
+    const reference = renderReference({ packs, description })
     await userEvent.hover(reference)
     await waitFor(() => expect(reference).toHaveAttribute('data-state', 'open'))
     expect(

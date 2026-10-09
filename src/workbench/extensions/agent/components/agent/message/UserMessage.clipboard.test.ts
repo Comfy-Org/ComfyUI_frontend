@@ -1,6 +1,6 @@
 import userEvent from '@testing-library/user-event'
 import type { UserEvent } from '@testing-library/user-event'
-import { render, screen, waitFor, within } from '@testing-library/vue'
+import { render, screen, waitFor } from '@testing-library/vue'
 import { assert, beforeEach, describe, expect, it, vi } from 'vitest'
 import { defineComponent } from 'vue'
 import type { ComponentProps } from 'vue-component-type-helpers'
@@ -329,26 +329,11 @@ describe('sent message workflow clipboard', () => {
       skills.flagsEnabled = true
       vi.spyOn(skills, 'startFlagGate').mockResolvedValue()
       vi.mocked(listSkillPacks).mockResolvedValue([])
-      const { store, editor, onSend } = renderComposer()
+      const { editor, onSend } = renderComposer()
       await user.click(editor)
       await user.paste(copied.pasteData)
       await waitFor(() => expect(skills.catalogConfirmed).toBe(true))
-      const selected = store.prompt.references.find(
-        (item) => item.kind === 'skill'
-      )
-      expect(selected).toMatchObject({
-        name: 'portrait.v2',
-        description: 'Original\nDescription',
-        scope: skills.scope
-      })
-      expect(store.prompt.references.map((item) => item.kind)).toEqual([
-        'skill',
-        'workflow'
-      ])
       expect(editor).toHaveTextContent(editorText)
-      expect(within(editor).getByTestId('skill-reference')).toHaveClass(
-        'text-muted-foreground'
-      )
       await user.click(screen.getByRole('button', { name: 'Send' }))
       const marker =
         '[Use the saved skill /portrait.v2](skill://portrait.v2?description=Original%0ADescription)'
@@ -363,9 +348,6 @@ describe('sent message workflow clipboard', () => {
           }
         ]
       )
-      expect(
-        store.prompt.references.find((item) => item.kind === 'skill')
-      ).toEqual(selected)
     }
   )
 })

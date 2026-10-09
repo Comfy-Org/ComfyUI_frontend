@@ -9,7 +9,6 @@ import { nextTick } from 'vue'
 import { useTelemetry } from '@/platform/telemetry'
 import { listSkillPacks } from '@/platform/skills/api/skillsApi'
 import { useSkillPacksStore } from '@/platform/skills/stores/skillPacksStore'
-import { serializeSkillReference } from '../../utils/skillReferenceText'
 vi.mock(import('@/composables/auth/useCurrentUser'))
 vi.mock(import('@/platform/skills/api/skillsApi'), { spy: true })
 import { reportError } from '@/platform/telemetry/reportError'
@@ -387,15 +386,15 @@ describe('useAgentSession (v1 composition root)', () => {
       emit: (raw: unknown) => void
     }) => void | Promise<void>
     firstEndEvent: unknown
+    listings: number
   }>([
     {
-      kind: 'reference',
-      content: serializeSkillReference({
-        name: 'portrait',
-        description: 'Original'
-      }),
+      kind: 'skill reference',
+      content:
+        '[Use the saved skill /portrait](skill://portrait?description=Original)',
       duringTurn: ({ emit }) => emitDeltaBurst(emit, 3),
-      firstEndEvent: done('msg-1')
+      firstEndEvent: done('msg-1'),
+      listings: 2
     },
     {
       kind: 'load_skill',
@@ -415,47 +414,52 @@ describe('useAgentSession (v1 composition root)', () => {
         )
         emitDeltaBurst(emit, 3)
       },
-      firstEndEvent: done('msg-1')
+      firstEndEvent: done('msg-1'),
+      listings: 2
     },
     {
-      kind: 'cancel',
-      content: serializeSkillReference({
-        name: 'portrait',
-        description: 'Original'
-      }),
+      kind: 'cancelled',
+      content:
+        '[Use the saved skill /portrait](skill://portrait?description=Original)',
       duringTurn: async ({ session, emit }) => {
         emitDeltaBurst(emit, 3)
         await session.stopTurn()
       },
-      firstEndEvent: done('msg-1')
+      firstEndEvent: done('msg-1'),
+      listings: 2
     },
     {
-      kind: 'error',
-      content: serializeSkillReference({
-        name: 'portrait',
-        description: 'Original'
-      }),
+      kind: 'errored',
+      content:
+        '[Use the saved skill /portrait](skill://portrait?description=Original)',
       duringTurn: ({ emit }) => emitDeltaBurst(emit, 3),
       firstEndEvent: {
         type: 'agent_message_done',
         data: { message_id: 'msg-1' }
-      }
+      },
+      listings: 2
     },
     {
-      kind: 'background',
-      content: serializeSkillReference({
-        name: 'portrait',
-        description: 'Original'
-      }),
+      kind: 'backgrounded',
+      content:
+        '[Use the saved skill /portrait](skill://portrait?description=Original)',
       duringTurn: ({ session, emit }) => {
         emitDeltaBurst(emit, 3)
         session.newChat()
       },
-      firstEndEvent: done('msg-1')
+      firstEndEvent: done('msg-1'),
+      listings: 2
+    },
+    {
+      kind: 'unrelated',
+      content: 'ordinary text',
+      duringTurn: ({ emit }) => emitDeltaBurst(emit, 3),
+      firstEndEvent: done('msg-1'),
+      listings: 1
     }
   ])(
-    'refreshes saved skills once after a live $kind turn ends',
-    async ({ content, duringTurn, firstEndEvent }) => {
+    'lists saved skills $listings times in all around a live $kind turn, ignoring a duplicate end event',
+    async ({ content, duringTurn, firstEndEvent, listings }) => {
       const skills = useSkillPacksStore()
       skills.flagsEnabled = true
       vi.mocked(listSkillPacks).mockResolvedValue([])
@@ -468,41 +472,21 @@ describe('useAgentSession (v1 composition root)', () => {
       expect(listSkillPacks).toHaveBeenCalledOnce()
       emit(firstEndEvent)
       await Promise.resolve()
-      expect(listSkillPacks).toHaveBeenCalledTimes(2)
+      expect(listSkillPacks).toHaveBeenCalledTimes(listings)
       emit(done('msg-1'))
       await Promise.resolve()
-      expect(listSkillPacks).toHaveBeenCalledTimes(2)
+      expect(listSkillPacks).toHaveBeenCalledTimes(listings)
       session.stop()
     }
   )
-
-  it('does not refresh saved skills after a live turn without a skill reference or load_skill call ends', async () => {
-    const skills = useSkillPacksStore()
-    skills.flagsEnabled = true
-    vi.mocked(listSkillPacks).mockResolvedValue([])
-    await skills.refreshPacks()
-    const { source, emit } = fakeEvents()
-    const session = useAgentSession({ rest: fakeRest(), events: source })
-    session.start()
-    await session.sendMessage('ordinary text')
-    emitDeltaBurst(emit, 3)
-    expect(listSkillPacks).toHaveBeenCalledOnce()
-    emit(done('msg-1'))
-    emit(done('msg-1'))
-    await Promise.resolve()
-    expect(listSkillPacks).toHaveBeenCalledOnce()
-    session.stop()
-  })
 
   it('refreshes a referenced turn recovered as failed only once', async () => {
     const skills = useSkillPacksStore()
     skills.flagsEnabled = true
     vi.mocked(listSkillPacks).mockResolvedValue([])
     await skills.refreshPacks()
-    const text = serializeSkillReference({
-      name: 'portrait',
-      description: 'Original'
-    })
+    const text =
+      '[Use the saved skill /portrait](skill://portrait?description=Original)'
     const rest = fakeRest({
       getMessages: vi.fn(
         async (): Promise<AgentMessages> => [
@@ -4431,54 +4415,20 @@ describe('useAgentSession (v1 composition root)', () => {
     })
   })
 
-  it.for<{
-    outcome: string
-    postMessage: AgentRestClient['postMessage']
-    accepted: boolean
-  }>([
-    {
-      outcome: 'accepted',
-      postMessage: async () => ({
-        thread_id: 'th-1',
-        message_id: 'msg-1',
-        workflow_id: 'wf-1'
-      }),
-      accepted: true
-    },
-    {
-      outcome: 'failed',
-      postMessage: async () => {
-        throw new Error('Unavailable')
-      },
-      accepted: false
-    }
-  ])(
-    'uses existing message content for skill invocation and retains its display when the send is $outcome',
-    async ({ postMessage, accepted }) => {
-      const rest = fakeRest({ postMessage: vi.fn(postMessage) })
-      const session = useAgentSession({ rest, events: fakeEvents().source })
-      session.start()
-      const content =
-        '[Use the saved skill /portrait](skill://portrait?description=Use%20defaults) render it'
-      expect(await session.sendMessage(content)).toBe(accepted)
-      expect(vi.mocked(rest.postMessage).mock.calls[0][1]).toEqual({
-        content,
-        workflowReferences: [],
-        selection: undefined,
-        attachments: undefined
-      })
-      expect(useAgentConversationStore().entries[0]).toMatchObject({
-        role: 'user',
-        text: ' render it',
-        skillReference: {
-          name: 'portrait',
-          description: 'Use defaults',
-          textOffset: 0,
-          workflowIndex: 0
-        }
-      })
-    }
-  )
+  it('sends a skill invocation unchanged as ordinary message content', async () => {
+    const rest = fakeRest()
+    const session = useAgentSession({ rest, events: fakeEvents().source })
+    session.start()
+    const content =
+      '[Use the saved skill /portrait](skill://portrait?description=Use%20defaults) render it'
+    expect(await session.sendMessage(content)).toBe(true)
+    expect(vi.mocked(rest.postMessage).mock.calls[0][1]).toEqual({
+      content,
+      workflowReferences: [],
+      selection: undefined,
+      attachments: undefined
+    })
+  })
 
   it('(h3) sends workflow references separately and keeps them in the local turn', async () => {
     const rest = fakeRest()

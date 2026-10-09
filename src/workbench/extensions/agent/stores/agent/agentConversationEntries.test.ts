@@ -3,6 +3,7 @@ import { describe, expect, it } from 'vitest'
 import type { TurnId } from '../../schemas/agentApiSchema'
 import { zAgentWsEvent } from '../../schemas/agentApiSchema'
 import type { AgentChatEvent } from '../../services/agent/agentEventTransport'
+import type { WorkflowReference } from '../../types/workflowReference'
 import { useAgentConversationStore } from './agentConversationStore'
 
 const done = (id: string): AgentChatEvent =>
@@ -15,32 +16,82 @@ const T1 = 't1' as TurnId
 const T2 = 't2' as TurnId
 
 describe('agentConversationStore entries (user + assistant interleave)', () => {
-  it('retains a selected skill while a turn is stashed and resumed without a persisted user row', () => {
-    const store = useAgentConversationStore()
-    store.setThreadId('th')
-    store.recordUser(
-      T1,
-      '[Use the saved skill /portrait](skill://portrait?description=Defaults) render it'
-    )
-    store.startTurn(T1)
-    store.stashActiveTurn()
-    store.hydrate([])
-    store.resumeBackgroundTurn()
-    expect(store.entries[0]).toMatchObject({
-      role: 'user',
-      text: ' render it',
-      skillReference: {
-        name: 'portrait',
-        description: 'Defaults',
-        textOffset: 0
+  it.for<{
+    source: string
+    arrange: (
+      store: ReturnType<typeof useAgentConversationStore>,
+      marker: string
+    ) => void
+    workflowReferences?: WorkflowReference[]
+  }>([
+    {
+      source: 'a live turn',
+      arrange: (store, marker) => {
+        store.recordUser(T1, `${marker} render it`, undefined, undefined, [
+          { id: 'wf', name: 'Reference', textOffset: marker.length }
+        ])
+        store.startTurn(T1)
+      },
+      workflowReferences: [{ id: 'wf', name: 'Reference', textOffset: 0 }]
+    },
+    {
+      source: 'history',
+      arrange: (store, marker) =>
+        store.hydrate([
+          {
+            id: 'row',
+            thread_id: 'th',
+            seq: 1,
+            turn_id: T1,
+            status: 'complete',
+            role: 'user',
+            content: {
+              text: `${marker}[Reference](workflow://wf) render it`,
+              workflow_references: [{ workflow_id: 'wf', name: 'Reference' }]
+            }
+          }
+        ]),
+      workflowReferences: [{ id: 'wf', name: 'Reference', textOffset: 0 }]
+    },
+    {
+      source: 'a failed send',
+      arrange: (store, marker) =>
+        store.recordFailedSend(T1, `${marker} render it`, 'Send failed')
+    },
+    {
+      source: 'a turn resumed without a persisted user row',
+      arrange: (store, marker) => {
+        store.setThreadId('th')
+        store.recordUser(T1, `${marker} render it`)
+        store.startTurn(T1)
+        store.stashActiveTurn()
+        store.hydrate([])
+        store.resumeBackgroundTurn()
       }
-    })
-    store.reset()
-    store.recordUser(T1, '/portrait plain text')
-    store.startTurn(T1)
-    expect(store.entries[0]).toMatchObject({ text: '/portrait plain text' })
-    expect(store.entries[0]).not.toHaveProperty('skillReference')
-  })
+    }
+  ])(
+    'restores the same sent skill from $source',
+    ({ arrange, workflowReferences }) => {
+      const store = useAgentConversationStore()
+      arrange(
+        store,
+        '[Use the saved skill /portrait](skill://portrait?description=Use%20defaults)'
+      )
+      expect(store.entries[0]).toEqual({
+        id: T1,
+        role: 'user',
+        text: ' render it',
+        workflowReferences,
+        skillReference: {
+          name: 'portrait',
+          description: 'Use defaults',
+          textOffset: 0,
+          workflowIndex: 0
+        }
+      })
+    }
+  )
+
   it('pairs each recorded user prompt before its assistant turn, in order', () => {
     const store = useAgentConversationStore()
     store.recordUser(T1, 'first prompt')

@@ -2,8 +2,7 @@ import { describe, expect, it } from 'vitest'
 
 import { useAgentComposerStore } from '../stores/agent/agentComposerStore'
 import { agentMessageText } from './agentMessageText'
-import { parseSkillReferenceText } from './skillReferenceText'
-import type { ComposerPrompt } from '../types/composerPrompt'
+import type { ComposerPrompt, ComposerReference } from '../types/composerPrompt'
 import {
   composerPromptForSend,
   composerPromptForSubmission,
@@ -11,48 +10,40 @@ import {
 } from './composerPrompt'
 
 describe('composer prompt boundaries', () => {
-  it('submits the reference’s own name and description without changing snapshots or adjacent workflow order', () => {
+  it('submits the skill as a link among node, asset and workflow references and shifts later workflow offsets', () => {
     const prompt: ComposerPrompt = {
-      text: 'Use  now',
+      text: 'Use  and.',
       references: [
         {
-          kind: 'skill',
-          name: 'old',
-          description: 'Original description',
-          scope: 'scope',
+          kind: 'node',
+          scope: 'target',
+          node: { id: '12', title: 'KSampler' },
           textOffset: 4
         },
-        { kind: 'workflow', id: 'workflow', name: 'Reference', textOffset: 4 }
+        {
+          kind: 'skill',
+          name: 'portrait',
+          description: 'Defaults',
+          scope: 'user/workspace',
+          textOffset: 4
+        },
+        { kind: 'workflow', id: 'wf', name: 'Reference', textOffset: 4 },
+        {
+          kind: 'asset',
+          attachment: { id: 'asset', name: 'image.png', ref: 'uploaded.png' },
+          textOffset: 8
+        }
       ]
     }
     const original = structuredClone(prompt)
-    const submitted = composerPromptForSubmission(prompt)
-    const marker =
-      '[Use the saved skill /old](skill://old?description=Original%20description)'
-    expect(submitted).toEqual({
-      text: `Use ${marker} now`,
-      workflowReferences: [
-        { id: 'workflow', name: 'Reference', textOffset: 4 + marker.length }
-      ]
-    })
-    expect(
-      parseSkillReferenceText(submitted.text, submitted.workflowReferences)
-    ).toEqual({
-      text: 'Use  now',
-      workflowReferences: [
-        { id: 'workflow', name: 'Reference', textOffset: 4 }
-      ],
-      skillReference: {
-        name: 'old',
-        description: 'Original description',
-        textOffset: 4,
-        workflowIndex: 0
-      }
+    expect(composerPromptForSubmission(prompt)).toEqual({
+      text: 'Use @[Node: KSampler #12][Use the saved skill /portrait](skill://portrait?description=Defaults) and@[Image: image.png].',
+      workflowReferences: [{ id: 'wf', name: 'Reference', textOffset: 95 }]
     })
     expect(prompt).toEqual(original)
   })
 
-  it('keeps pending pasted-name resolution draft-only while preserving the display snapshot', () => {
+  it('drops draft-only paste resolution from the sent skill snapshot', () => {
     const snapshot = composerPromptForSend({
       text: ' colors',
       references: [
@@ -72,42 +63,32 @@ describe('composer prompt boundaries', () => {
       textOffset: 0,
       workflowIndex: 0
     })
-    expect(snapshot.skillReference).not.toHaveProperty('resolvePastedName')
   })
 
-  it.for<{
-    order: string
-    references: ComposerPrompt['references']
-    rendered: string
-    kinds: ComposerPrompt['references'][number]['kind'][]
-  }>([
+  const skill: ComposerReference = {
+    kind: 'skill',
+    name: 'portrait',
+    description: 'Use defaults',
+    scope: 'scope',
+    textOffset: 0
+  }
+  const workflow: ComposerReference = {
+    kind: 'workflow',
+    id: 'workflow',
+    name: 'Reference',
+    textOffset: 0
+  }
+
+  it.for([
     {
       order: 'skill-first',
-      references: [
-        {
-          kind: 'skill',
-          name: 'portrait',
-          description: 'Use defaults',
-          scope: 'scope',
-          textOffset: 0
-        },
-        { kind: 'workflow', id: 'workflow', name: 'Reference', textOffset: 0 }
-      ],
+      references: [skill, workflow],
       rendered: '/portrait@[Workflow: Reference]',
       kinds: ['skill', 'workflow']
     },
     {
       order: 'workflow-first',
-      references: [
-        { kind: 'workflow', id: 'workflow', name: 'Reference', textOffset: 0 },
-        {
-          kind: 'skill',
-          name: 'portrait',
-          description: 'Use defaults',
-          scope: 'scope',
-          textOffset: 0
-        }
-      ],
+      references: [workflow, skill],
       rendered: '@[Workflow: Reference]/portrait',
       kinds: ['workflow', 'skill']
     }
@@ -124,38 +105,7 @@ describe('composer prompt boundaries', () => {
       expect(store.prompt.references.map((item) => item.kind)).toEqual(kinds)
     }
   )
-  it('retains skill identity and its adjusted position without expanding it to ordinary prompt text', () => {
-    const asset = {
-      kind: 'asset' as const,
-      attachment: { id: 'asset', name: 'image.png', ref: 'image.png' },
-      textOffset: 0
-    }
-    expect(
-      composerPromptForSend({
-        text: ' then render',
-        references: [
-          asset,
-          asset,
-          {
-            kind: 'skill',
-            name: 'portrait',
-            description: 'Use portrait defaults',
-            scope: 'user/workspace',
-            textOffset: 6
-          }
-        ]
-      })
-    ).toEqual({
-      text: '@[Image: image.png]@[Image: image.png] then render',
-      workflowReferences: [],
-      skillReference: {
-        name: 'portrait',
-        description: 'Use portrait defaults',
-        textOffset: 44,
-        workflowIndex: 0
-      }
-    })
-  })
+
   it('expands node and asset labels while retaining the workflow position', () => {
     const prompt: ComposerPrompt = {
       text: 'Use  with  in .',

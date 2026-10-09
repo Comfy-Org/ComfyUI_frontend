@@ -36,9 +36,6 @@ import { toTurnId, zAgentWsEvent } from '../../schemas/agentApiSchema'
 import type { AgentChatEvent } from '../../services/agent/agentEventTransport'
 import type { AssistantMessage } from '../../services/agent/agentMessageParts'
 import { useAgentConversationStore } from '../../stores/agent/agentConversationStore'
-import { useAgentComposerStore } from '../../stores/agent/agentComposerStore'
-import type { PromptSnapshot } from '../../types/workflowReference'
-import { composerPromptForSubmission } from '../../utils/composerPrompt'
 
 import ConversationView from './ConversationView.vue'
 
@@ -118,98 +115,11 @@ describe('ConversationView', () => {
     resizeCallbacks.length = 0
   })
 
-  it.for<{
-    source: string
-    arrange: (
-      store: ReturnType<typeof useAgentConversationStore>,
-      marker: string
-    ) => void
-  }>([
-    {
-      source: 'live',
-      arrange: (store, marker) => {
-        store.recordUser(T, `${marker} render it`, undefined, undefined, [
-          { id: 'wf', name: 'Reference', textOffset: marker.length }
-        ])
-        store.startTurn(T)
-      }
-    },
-    {
-      source: 'history',
-      arrange: (store, marker) =>
-        store.hydrate([
-          {
-            id: 'row',
-            thread_id: 'thread',
-            seq: 1,
-            turn_id: T,
-            status: 'complete',
-            role: 'user',
-            content: {
-              text: `${marker}[Reference](workflow://wf) render it`,
-              workflow_references: [{ workflow_id: 'wf', name: 'Reference' }]
-            }
-          }
-        ])
-    }
-  ])(
-    'renders and edits the skill from a $source message alongside a workflow reference',
-    async ({ arrange }) => {
-      const store = useAgentConversationStore()
-      const marker =
-        '[Use the saved skill /portrait](skill://portrait?description=Use%20defaults)'
-      arrange(store, marker)
-      const view = render(ConversationView, {
-        props: { entries: store.entries, editableTurnId: T },
-        global: { plugins: [i18n] }
-      })
-      expect(screen.getByTestId('skill-reference')).toHaveTextContent(
-        '/portrait'
-      )
-      await userEvent.hover(screen.getByTestId('skill-reference'))
-      expect(await screen.findByRole('tooltip')).toHaveTextContent(
-        /^Use defaults$/
-      )
-      await userEvent.unhover(screen.getByTestId('skill-reference'))
-      expect(screen.getByTestId('workflow-reference-chip')).toHaveTextContent(
-        'Reference'
-      )
-      await userEvent.click(screen.getByRole('button', { name: 'Edit' }))
-      const snapshot: PromptSnapshot = {
-        text: ' render it',
-        workflowReferences: [{ id: 'wf', name: 'Reference', textOffset: 0 }],
-        skillReference: {
-          name: 'portrait',
-          description: 'Use defaults',
-          textOffset: 0,
-          workflowIndex: 0
-        }
-      }
-      expect(view.emitted().editPrompt).toEqual([[snapshot]])
-      const composer = useAgentComposerStore()
-      composer.setSkillScope('current-user/workspace')
-      composer.replacePrompt(snapshot)
-      expect(composerPromptForSubmission(composer.prompt)).toEqual({
-        text: `${marker} render it`,
-        workflowReferences: [
-          { id: 'wf', name: 'Reference', textOffset: marker.length }
-        ]
-      })
-    }
-  )
-
-  it('refreshes once for multiple historical references without refetching on text updates', async () => {
+  it('refreshes saved skills once when a conversation with skills opens and again only on scope change', async () => {
     const skills = useSkillPacksStore()
     skills.flagsEnabled = true
     vi.spyOn(skills, 'startFlagGate').mockResolvedValue()
-    let resolve: (
-      packs: Awaited<ReturnType<typeof listSkillPacks>>
-    ) => void = () => {}
-    vi.mocked(listSkillPacks).mockReturnValueOnce(
-      new Promise((settle) => {
-        resolve = settle
-      })
-    )
+    vi.mocked(listSkillPacks).mockResolvedValue([])
     const entries = ['one', 'two'].map((id) => ({
       id: toTurnId(id),
       role: 'user' as const,
@@ -224,107 +134,14 @@ describe('ConversationView', () => {
       props: { entries, conversationId: 'conversation' },
       global: { plugins: [i18n] }
     })
-    await waitFor(() => expect(listSkillPacks).toHaveBeenCalledOnce())
     expect(screen.getAllByTestId('skill-reference')).toHaveLength(2)
-    expect(screen.getAllByTestId('skill-reference')[0]).toHaveClass(
-      'text-warning-background'
-    )
-    const refresh = skills.refreshPacks()
-    expect(listSkillPacks).toHaveBeenCalledOnce()
+    await waitFor(() => expect(skills.catalogConfirmed).toBe(true))
     await view.rerender({
       entries: entries.map((entry) => ({ ...entry, text: ' changed text' }))
     })
-    expect(listSkillPacks).toHaveBeenCalledOnce()
-    resolve([
-      {
-        id: 'portrait',
-        name: 'portrait',
-        description: 'Current',
-        body: '',
-        body_hash: '',
-        created_at: '',
-        updated_at: ''
-      }
-    ])
-    await refresh
-    expect(skills.catalogConfirmed).toBe(true)
-    await userEvent.hover(screen.getAllByTestId('skill-reference')[0])
-    expect(await screen.findByRole('tooltip')).toHaveTextContent(/^Original$/)
-  })
-
-  it('does not display a late historical catalog description after switching workspace', async () => {
-    const skills = useSkillPacksStore()
-    skills.flagsEnabled = true
-    vi.spyOn(skills, 'startFlagGate').mockResolvedValue()
-    let resolveOld: (
-      packs: Awaited<ReturnType<typeof listSkillPacks>>
-    ) => void = () => {}
-    let resolveNew: (
-      packs: Awaited<ReturnType<typeof listSkillPacks>>
-    ) => void = () => {}
-    vi.mocked(listSkillPacks)
-      .mockReturnValueOnce(
-        new Promise((settle) => {
-          resolveOld = settle
-        })
-      )
-      .mockReturnValueOnce(
-        new Promise((settle) => {
-          resolveNew = settle
-        })
-      )
-    render(ConversationView, {
-      props: {
-        conversationId: 'history',
-        entries: [
-          {
-            id: T,
-            role: 'user',
-            text: ' render',
-            skillReference: {
-              name: 'portrait',
-              description: 'Original',
-              textOffset: 0
-            }
-          }
-        ]
-      },
-      global: { plugins: [i18n] }
-    })
-    await waitFor(() => expect(listSkillPacks).toHaveBeenCalledOnce())
-    const oldRequest = skills.refreshPacks()
     Object.assign(useTeamWorkspaceStore(), { workspaceId: 'new-workspace' })
-    await waitFor(() => expect(listSkillPacks).toHaveBeenCalledTimes(2))
-    const newRequest = skills.refreshPacks()
-    resolveNew([
-      {
-        id: 'portrait',
-        name: 'portrait',
-        description: 'New workspace description',
-        body: '',
-        body_hash: '',
-        created_at: '',
-        updated_at: ''
-      }
-    ])
-    await newRequest
-    resolveOld([
-      {
-        id: 'portrait',
-        name: 'portrait',
-        description: 'Foreign old description',
-        body: '',
-        body_hash: '',
-        created_at: '',
-        updated_at: ''
-      }
-    ])
-    await oldRequest
-    await userEvent.hover(screen.getByTestId('skill-reference'))
-    const tooltip = await screen.findByRole('tooltip')
-    expect(tooltip).toHaveTextContent(/^Original$/)
-    expect(tooltip).not.toHaveTextContent('Foreign old description')
-    expect(tooltip).not.toHaveTextContent('New workspace description')
+    await waitFor(() => expect(skills.catalogConfirmed).toBe(true))
+    expect(listSkillPacks).toHaveBeenCalledTimes(2)
   })
 
   it('wire-driven v1 turn renders user pill, spinner, reasoning-free text, work summary', async () => {

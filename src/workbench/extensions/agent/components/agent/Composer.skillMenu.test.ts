@@ -96,21 +96,6 @@ describe('Composer skill menu description', () => {
     ])
   })
 
-  it('has no per-row info button', async () => {
-    await openMenu('/')
-    expect(
-      within(screen.getByRole('menu', { name: 'Skills' })).queryByRole('button')
-    ).toBeNull()
-  })
-
-  it('highlights and describes nothing after a bare slash', async () => {
-    await openMenu('/')
-    await elapse(DESCRIPTION_DELAY_MS * 2)
-    expect(shownDescription(LANDSCAPE)).toBeNull()
-    expect(shownDescription(PORTRAIT)).toBeNull()
-    expect(skillRow('landscape')).toHaveAttribute('data-active', 'false')
-  })
-
   it.for([
     { input: 'typing a filter', keys: 'po', description: PORTRAIT },
     { input: 'an arrow key', keys: '{ArrowDown}', description: LANDSCAPE }
@@ -129,8 +114,11 @@ describe('Composer skill menu description', () => {
     }
   )
 
-  it('clears the highlight and description when the filter is deleted back to a bare slash', async () => {
+  it('describes nothing at a bare slash, including after deleting a filter back to it', async () => {
     const { user } = await openMenu('/')
+    await elapse(DESCRIPTION_DELAY_MS * 2)
+    expect(shownDescription(LANDSCAPE)).toBeNull()
+    expect(shownDescription(PORTRAIT)).toBeNull()
     await user.keyboard('po')
     await elapse(INPUT_SETTLE_MS + DESCRIPTION_DELAY_MS)
     expect(shownDescription(PORTRAIT)).toBeVisible()
@@ -174,22 +162,6 @@ describe('Composer skill menu description', () => {
     expect(shownDescription(PORTRAIT)).toBeNull()
   })
 
-  it('keeps a hovered description open while the pointer is on it', async () => {
-    const { user } = await openMenu('/')
-    await user.hover(skillRow('portrait'))
-    await elapse(DESCRIPTION_DELAY_MS)
-    const description = shownDescription(PORTRAIT)
-    assert.exists(description)
-
-    await user.hover(description)
-    await elapse(HOVER_CLOSE_DELAY_MS * 2)
-    expect(shownDescription(PORTRAIT)).toBeVisible()
-
-    await user.unhover(description)
-    await elapse(HOVER_CLOSE_DELAY_MS)
-    expect(shownDescription(PORTRAIT)).toBeNull()
-  })
-
   it('does not describe a skill when the caret returns to an existing slash query', async () => {
     const { user } = await openMenu('/')
     await user.keyboard('po hello')
@@ -225,7 +197,7 @@ describe('Composer skill menu description', () => {
       closeDescription: (user: UserEvent) => user.hover(skillRow('landscape'))
     }
   ])(
-    'returns focus to the prompt when a focused description closes because $cause',
+    'keeps a hovered description open under the pointer and returns focus to the prompt when it closes because $cause',
     async ({ closeDescription }) => {
       const { user } = await openMenu('/')
       await user.hover(skillRow('portrait'))
@@ -233,6 +205,8 @@ describe('Composer skill menu description', () => {
       const description = shownDescription(PORTRAIT)
       assert.exists(description)
       await user.click(description)
+      await elapse(HOVER_CLOSE_DELAY_MS * 2)
+      expect(description).toBeVisible()
       expect(description).toHaveFocus()
 
       await closeDescription(user, description)
@@ -241,16 +215,6 @@ describe('Composer skill menu description', () => {
       expect(screen.getByRole('menu', { name: 'Skills' })).toBeVisible()
     }
   )
-
-  it('closes the menu when focus moves from the description to another composer control', async () => {
-    const { user } = await describePortrait()
-    const description = shownDescription(PORTRAIT)
-    assert.exists(description)
-    await user.click(description)
-    await user.click(screen.getByRole('button', { name: 'Add to prompt' }))
-    expect(screen.queryByRole('menu', { name: 'Skills' })).toBeNull()
-    expect(shownDescription(PORTRAIT)).toBeNull()
-  })
 
   it.for([
     {
@@ -273,7 +237,7 @@ describe('Composer skill menu description', () => {
     }
   )
 
-  it('lets the description be focused for selection without closing the menu or changing the draft', async () => {
+  it('lets the description be focused for selection and keeps the menu open when focus returns to the prompt', async () => {
     const { user, composer } = await describePortrait()
     const description = shownDescription(PORTRAIT)
     assert.exists(description)
@@ -286,8 +250,14 @@ describe('Composer skill menu description', () => {
 
     await user.click(screen.getByRole('textbox'))
     expect(screen.getByRole('menu', { name: 'Skills' })).toBeVisible()
+  })
+
+  it('closes the menu when focus moves from the description to another composer control', async () => {
+    const { user } = await describePortrait()
+    const description = shownDescription(PORTRAIT)
+    assert.exists(description)
     await user.click(description)
-    await user.click(document.body)
+    await user.click(screen.getByRole('button', { name: 'Add to prompt' }))
     expect(screen.queryByRole('menu', { name: 'Skills' })).toBeNull()
     expect(shownDescription(PORTRAIT)).toBeNull()
   })
