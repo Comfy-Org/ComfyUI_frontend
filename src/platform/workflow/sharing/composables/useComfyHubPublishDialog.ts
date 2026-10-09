@@ -38,8 +38,8 @@ export function useComfyHubPublishDialog() {
       component: ComfyHubPublishDialog,
       props: {
         onClose: hide,
-        // Falls through to the BaseModalLayout root — keeps the e2e
-        // publish-dialog selector working without the PrimeVue pt hook.
+        // Falls through to the BaseModalLayout root for the e2e
+        // publish-dialog selector.
         'data-testid': 'publish-dialog'
       },
       dialogComponentProps: {
