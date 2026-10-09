@@ -9,7 +9,6 @@ export interface DialogComponentProps {
   /** Class applied to the content wrapper on the non-headless path. */
   bodyClass?: HTMLAttributes['class']
   closable?: boolean
-  closeOnEscape?: boolean
   /** Class applied to the Reka-UI `DialogContent` element. */
   contentClass?: HTMLAttributes['class']
   dismissableMask?: boolean
@@ -99,8 +98,8 @@ export const useDialogStore = defineStore('dialog', () => {
   const dialogStack: Ref<DialogInstance[]> = ref([])
 
   /**
-   * The key of the currently active (top-most) dialog.
-   * Only the active dialog can be closed with the ESC key.
+   * The key of the currently active (top-most) dialog, the only one Escape
+   * dismisses.
    */
   const activeKey = ref<string | null>(null)
 
@@ -129,7 +128,6 @@ export const useDialogStore = defineStore('dialog', () => {
       const [dialog] = dialogStack.value.splice(index, 1)
       insertDialogByPriority(dialog)
       activeKey.value = dialogKey
-      updateCloseOnEscapeStates()
     }
   }
 
@@ -157,7 +155,6 @@ export const useDialogStore = defineStore('dialog', () => {
           : null
     }
 
-    updateCloseOnEscapeStates()
     if (removed) notifyRemoved(targetDialog)
   }
 
@@ -188,7 +185,6 @@ export const useDialogStore = defineStore('dialog', () => {
         maximizable: false,
         modal: true,
         closable: true,
-        closeOnEscape: true,
         dismissableMask: true,
         ...options.dialogComponentProps,
         maximized: options.dialogComponentProps?.maximized ?? false
@@ -197,27 +193,9 @@ export const useDialogStore = defineStore('dialog', () => {
 
     insertDialogByPriority(dialog)
     activeKey.value = options.key
-    updateCloseOnEscapeStates()
     notifyRemoved(evicted)
 
     return dialog
-  }
-
-  /**
-   * Ensures only the top-most dialog in the stack can be closed with the Escape key.
-   * Each stacked dialog renders its own Reka root, so every one of them would
-   * otherwise react to the same Escape press.
-   */
-  function updateCloseOnEscapeStates() {
-    const topDialog = dialogStack.value.find((d) => d.key === activeKey.value)
-    const topClosable = topDialog?.dialogComponentProps.closable
-
-    dialogStack.value.forEach((dialog) => {
-      dialog.dialogComponentProps = {
-        ...dialog.dialogComponentProps,
-        closeOnEscape: dialog === topDialog && !!topClosable
-      }
-    })
   }
 
   function showDialog<
@@ -280,7 +258,6 @@ export const useDialogStore = defineStore('dialog', () => {
         ...dialog.dialogComponentProps,
         ...options.dialogComponentProps
       }
-      updateCloseOnEscapeStates()
     }
 
     return true

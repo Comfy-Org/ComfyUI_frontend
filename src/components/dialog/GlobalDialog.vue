@@ -25,7 +25,8 @@
           @open-auto-focus="(e) => onRekaOpenAutoFocus(e, item.key)"
           @escape-key-down="
             (e) =>
-              item.dialogComponentProps.closeOnEscape === false &&
+              (dialogStore.activeKey !== item.key ||
+                item.dialogComponentProps.closable === false) &&
               e.preventDefault()
           "
           @pointer-down-outside="

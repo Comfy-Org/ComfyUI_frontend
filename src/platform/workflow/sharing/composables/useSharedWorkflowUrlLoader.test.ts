@@ -293,7 +293,6 @@ describe('useSharedWorkflowUrlLoader', () => {
       contentProps: { openingAction: 'copy-and-open' }
     })
     expect(dialogInstance.dialogComponentProps.closable).toBeUndefined()
-    expect(dialogInstance.dialogComponentProps.closeOnEscape).toBeUndefined()
     expect(dialogInstance.dialogComponentProps.dismissableMask).toBeUndefined()
     expect(useDialogStore().closeDialog).not.toHaveBeenCalled()
 
