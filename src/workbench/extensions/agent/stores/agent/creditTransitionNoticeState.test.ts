@@ -118,20 +118,14 @@ describe('reduceCreditTransitionNotice', () => {
   })
 
   describe('shown', () => {
-    it('claims the impression once, from armed only', () => {
+    it('claims the impression from an armed episode', () => {
       const armed = episode('armed', false)
-      const reported = reduceCreditTransitionNotice(armed, {
+      const shown = reduceCreditTransitionNotice(armed, {
         type: 'shown',
         identity: IDENTITY
       })
 
-      expect(reported).toEqual(episode('reported', false))
-      expect(
-        reduceCreditTransitionNotice(reported, {
-          type: 'shown',
-          identity: IDENTITY
-        })
-      ).toBe(reported)
+      expect(shown).toEqual(episode('reported', false))
     })
 
     it.for(['idle', 'reported', 'dismissed'] as const)(
