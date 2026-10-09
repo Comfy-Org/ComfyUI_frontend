@@ -1,6 +1,11 @@
 import type { LGraphNode } from '@/lib/litegraph/src/litegraph'
 import type { IBaseWidget } from '@/lib/litegraph/src/types/widgets'
 import { dynamicWidgets } from '@/core/graph/widgets/dynamicWidgets'
+import {
+  addValueControlWidget as _addValueControlWidget,
+  addValueControlWidgets as _addValueControlWidgets,
+  updateControlWidgetLabel as _updateControlWidgetLabel
+} from '@/core/graph/widgets/valueControlWidgets'
 import { useBooleanWidget } from '@/renderer/extensions/vueNodes/widgets/composables/useBooleanWidget'
 import { useBoundingBoxWidget } from '@/renderer/extensions/vueNodes/widgets/composables/useBoundingBoxWidget'
 import { useCurveWidget } from '@/renderer/extensions/vueNodes/widgets/composables/useCurveWidget'
@@ -104,3 +109,7 @@ export function isValidWidgetType(
 ): key is keyof typeof ComfyWidgets {
   return typeof key === 'string' && Object.hasOwn(ComfyWidgets, key)
 }
+
+export const addValueControlWidget = _addValueControlWidget
+export const addValueControlWidgets = _addValueControlWidgets
+export const updateControlWidgetLabel = _updateControlWidgetLabel
