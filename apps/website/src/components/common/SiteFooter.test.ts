@@ -10,14 +10,17 @@ const agentAlternates: LocaleAlternate[] = [
   { locale: 'zh-CN', path: '/zh-CN/agent/' }
 ]
 
-const socialHrefs: readonly (string | null)[] = [
-  externalLinks.github,
-  externalLinks.discord,
-  externalLinks.x,
-  externalLinks.youtube,
-  externalLinks.linkedin,
-  externalLinks.instagram
-]
+const socialChannels = [
+  ['GitHub', externalLinks.github],
+  ['Discord', externalLinks.discord],
+  ['X', externalLinks.x],
+  ['YouTube', externalLinks.youtube],
+  ['LinkedIn', externalLinks.linkedin],
+  ['Instagram', externalLinks.instagram]
+] as const
+const socialHrefs: readonly (string | null)[] = socialChannels.map(
+  ([, href]) => href
+)
 
 describe('SiteFooter', () => {
   it.for([
@@ -133,11 +136,11 @@ describe('SiteFooter', () => {
   })
 
   it.for([
-    ['en', 'Follow Comfy'],
-    ['zh-CN', '关注 Comfy']
+    ['en', 'Follow Comfy', 'opens in new tab'],
+    ['zh-CN', '关注 Comfy', '在新标签页中打开']
   ] as const)(
     'shows the social channels as icon links opening in a new tab (%s)',
-    ([locale, name]) => {
+    ([locale, name, newTab]) => {
       render(SiteFooter, { props: { locale } })
 
       const links = within(
@@ -145,12 +148,19 @@ describe('SiteFooter', () => {
       ).getAllByRole('link')
       expect(
         links.map((link) => [
+          link.textContent.replace(/\s+/g, ' ').trim(),
           link.getAttribute('href'),
           link.getAttribute('target'),
-          link.getAttribute('rel'),
-          link.textContent.trim().length > 0
+          link.getAttribute('rel')
         ])
-      ).toEqual(socialHrefs.map((href) => [href, '_blank', 'noopener', true]))
+      ).toEqual(
+        socialChannels.map(([label, href]) => [
+          `${label} (${newTab})`,
+          href,
+          '_blank',
+          'noopener'
+        ])
+      )
     }
   )
 
