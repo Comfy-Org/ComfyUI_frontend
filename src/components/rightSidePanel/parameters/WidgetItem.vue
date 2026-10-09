@@ -101,7 +101,7 @@ const simplifiedWidget = computed((): SimplifiedWidget => {
     label: widgetState?.label ?? widget.label,
     options: { ...baseOptions, disabled },
     callback:
-      widgetType.toLowerCase() === 'button'
+      typeof widgetType === 'string' && widgetType.toLowerCase() === 'button'
         ? (value) =>
             widget.callback?.(value, canvasStore.canvas ?? undefined, node)
         : undefined,
