@@ -19,10 +19,7 @@ import { defaultGraph, defaultGraphJSON } from '@/scripts/defaultGraph'
 import { useExecutionStore } from '@/stores/executionStore'
 import { toNodeId } from '@/types/nodeId'
 import type { NodeId } from '@/types/nodeId'
-import {
-  createLeafNodeLocatorId,
-  createNodeLocatorId
-} from '@/types/nodeIdentification'
+import { createNodeLocatorId } from '@/types/nodeIdentification'
 import { isValidUuid } from '@/utils/formatUtil'
 import { syncEntities } from '@/utils/syncUtil'
 import { isSubgraph } from '@/utils/typeGuardUtil'
@@ -1164,9 +1161,9 @@ describe('useWorkflowStore', () => {
 
       it('should decode an encoded root-leaf locator to its node id', () => {
         // insert_workflow remaps every inserted node to
-        // `insert:<opId>:root:node:<originalId>` and createLeafNodeLocatorId
+        // `insert:<opId>:root:node:<originalId>` and createNodeLocatorId
         // encodes that colon-bearing local id without changing its value.
-        const locatorId = createLeafNodeLocatorId(
+        const locatorId = createNodeLocatorId(
           null,
           'insert:0fbd38ecb13037d0b3b0ca78b8a20a5a:root:node:9'
         )
@@ -1210,7 +1207,7 @@ describe('useWorkflowStore', () => {
       })
 
       it('should mint a leaf execution id from an encoded root-leaf locator', () => {
-        const locatorId = createLeafNodeLocatorId(
+        const locatorId = createNodeLocatorId(
           null,
           'insert:0fbd38ecb13037d0b3b0ca78b8a20a5a:root:node:9'
         )
@@ -1224,13 +1221,12 @@ describe('useWorkflowStore', () => {
         vi.mocked(isSubgraph).mockImplementation((obj): obj is Subgraph => {
           return obj === store.activeSubgraph
         })
-        const locatorId = createLeafNodeLocatorId(
+        const locatorId = createNodeLocatorId(
           'a1b2c3d4-e5f6-7890-abcd-ef1234567890',
           'insert:abc123:root:node:5'
         )
-        expect(locatorId).not.toBeNull()
 
-        const result = store.nodeLocatorIdToNodeExecutionId(locatorId!)
+        const result = store.nodeLocatorIdToNodeExecutionId(locatorId)
 
         expect(result).toBe('123:insert:abc123:root:node:5')
       })

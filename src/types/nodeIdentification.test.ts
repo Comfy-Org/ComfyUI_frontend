@@ -6,7 +6,6 @@ import {
   appendLeafNodeExecutionId,
   compareExecutionId,
   createLeafNodeExecutionId,
-  createLeafNodeLocatorId,
   createNodeExecutionId,
   createNodeLocatorId,
   getAncestorExecutionIds,
@@ -141,13 +140,13 @@ describe('nodeIdentification', () => {
       })
     })
 
-    describe('createLeafNodeLocatorId', () => {
+    describe('createNodeLocatorId encoded forms', () => {
       it('behaves like createNodeLocatorId for an ordinary, colon-free root id', () => {
-        expect(createLeafNodeLocatorId(null, toNodeId(123))).toBe('123')
+        expect(createNodeLocatorId(null, toNodeId(123))).toBe('123')
       })
 
       it('behaves like createNodeLocatorId for an ordinary subgraph-nested id', () => {
-        expect(createLeafNodeLocatorId(validUuid, toNodeId(123))).toBe(
+        expect(createNodeLocatorId(validUuid, toNodeId(123))).toBe(
           validNodeLocatorId
         )
       })
@@ -159,7 +158,7 @@ describe('nodeIdentification', () => {
         expect(createNodeLocatorId(null, toNodeId(rawId))).toBe(
           '~root:insert%3Aabc123%3Aroot%3Anode%3A5'
         )
-        const locatorId = createLeafNodeLocatorId(null, rawId)
+        const locatorId = createNodeLocatorId(null, rawId)
         assert.exists(locatorId)
         expect(locatorId).toBe('~root:insert%3Aabc123%3Aroot%3Anode%3A5')
         expect(parseNodeLocatorId(locatorId)).toEqual({
@@ -170,7 +169,7 @@ describe('nodeIdentification', () => {
 
       it('encodes a colon-bearing subgraph-local id', () => {
         const rawId = 'insert:abc123:root:node:5'
-        const locatorId = createLeafNodeLocatorId(validUuid, rawId)
+        const locatorId = createNodeLocatorId(validUuid, rawId)
         assert.exists(locatorId)
         expect(locatorId).toBe(
           `~subgraph:${validUuid}:insert%3Aabc123%3Aroot%3Anode%3A5`
@@ -183,7 +182,7 @@ describe('nodeIdentification', () => {
 
       it('keeps a root id shaped like a subgraph locator in a separate key space', () => {
         const rawId = `${validUuid}:123`
-        const rootLocator = createLeafNodeLocatorId(null, rawId)
+        const rootLocator = createNodeLocatorId(null, rawId)
         assert.exists(rootLocator)
         const subgraphLocator = createNodeLocatorId(validUuid, toNodeId(123))
 
@@ -196,7 +195,7 @@ describe('nodeIdentification', () => {
       })
 
       it('encodes an empty root id instead of collapsing it to null', () => {
-        const locatorId = createLeafNodeLocatorId(null, '')
+        const locatorId = createNodeLocatorId(null, '')
 
         expect(locatorId).toBe('~root:')
         expect(parseNodeLocatorId(locatorId)).toEqual({
@@ -206,7 +205,7 @@ describe('nodeIdentification', () => {
       })
 
       it('encodes a non-integer numeric root id instead of collapsing it to null', () => {
-        const locatorId = createLeafNodeLocatorId(null, 1.5)
+        const locatorId = createNodeLocatorId(null, 1.5)
 
         expect(locatorId).toBe('~root:1.5')
         expect(parseNodeLocatorId(locatorId)).toEqual({

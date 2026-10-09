@@ -8,7 +8,6 @@ import { LGraphEventMode } from '@/lib/litegraph/src/types/globalEnums'
 import type { NodeExecutionId, NodeLocatorId } from '@/types/nodeIdentification'
 import {
   createLeafNodeExecutionId,
-  createLeafNodeLocatorId,
   createNodeExecutionId,
   createNodeLocatorId,
   getParentExecutionIds,
@@ -44,17 +43,14 @@ export function subgraphIdFromState(
 /**
  * The locator id for a node described by its shell state.
  *
- * `createLeafNodeLocatorId` preserves ordinary IDs and encodes delimiter-
+ * `createNodeLocatorId` preserves ordinary IDs and encodes delimiter-
  * bearing IDs so root and subgraph locator key spaces stay distinct.
  */
 export function locatorIdFromState(
   state: Pick<NodeState, 'id' | 'graphId'>,
   rootGraphId: UUID | undefined
 ): NodeLocatorId | null {
-  return createLeafNodeLocatorId(
-    subgraphIdFromState(state, rootGraphId),
-    state.id
-  )
+  return createNodeLocatorId(subgraphIdFromState(state, rootGraphId), state.id)
 }
 
 function parseNodeIdPath(path: string[]): NodeId[] | null {
@@ -724,7 +720,7 @@ export function executionIdToNodeLocatorId(
   if (!resolved) return undefined
 
   const subgraphUuid = resolved.graph === rootGraph ? null : resolved.graph.id
-  return createLeafNodeLocatorId(subgraphUuid, resolved.node.id) ?? undefined
+  return createNodeLocatorId(subgraphUuid, resolved.node.id)
 }
 
 /**

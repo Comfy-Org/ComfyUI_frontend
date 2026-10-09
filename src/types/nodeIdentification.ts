@@ -131,7 +131,8 @@ export function parseNodeLocatorId(id: string): ParsedNodeLocatorId | null {
  * Create a NodeLocatorId from components
  * @param subgraphUuid The UUID of the immediate containing subgraph
  * @param localNodeId The local node ID within that subgraph
- * @returns A properly formatted NodeLocatorId
+ * @returns A locator that encodes local IDs that are not plain segments, or
+ * `null` when the containing subgraph ID is not a UUID
  */
 export function createNodeLocatorId(
   subgraphUuid: string | null,
@@ -156,30 +157,6 @@ export function createNodeLocatorId(
     : (`${ENCODED_ROOT_LOCATOR_PREFIX}${encodedNodeId}` as NodeLocatorId)
 }
 
-/**
- * Create a `NodeLocatorId` from components, encoding local IDs that contain
- * the locator delimiter.
- *
- * `createNodeLocatorId` rejects a colon in `localNodeId` because colon is
- * the delimiter between the subgraph UUID and the local id. That is the
- * right contract for ordinary nodes, but inserted workflows can carry colons
- * in their raw IDs. A tagged encoding keeps those IDs distinct from genuine
- * `<subgraph UUID>:<local ID>` locators.
- */
-export function createLeafNodeLocatorId(
-  subgraphUuid: null,
-  localNodeId: SerializedNodeId
-): NodeLocatorId
-export function createLeafNodeLocatorId(
-  subgraphUuid: string | null,
-  localNodeId: SerializedNodeId
-): NodeLocatorId | null
-export function createLeafNodeLocatorId(
-  subgraphUuid: string | null,
-  localNodeId: SerializedNodeId
-): NodeLocatorId | null {
-  return createNodeLocatorId(subgraphUuid, localNodeId)
-}
 /**
  * Parse a NodeExecutionId into its component node IDs
  * @param id The NodeExecutionId to parse

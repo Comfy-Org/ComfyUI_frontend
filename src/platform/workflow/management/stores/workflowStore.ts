@@ -25,7 +25,7 @@ import { useExecutionStore } from '@/stores/executionStore'
 import type { NodeExecutionId, NodeLocatorId } from '@/types/nodeIdentification'
 import {
   createLeafNodeExecutionId,
-  createLeafNodeLocatorId,
+  createNodeLocatorId,
   parseNodeExecutionId,
   parseNodeLocatorId,
   tryNormalizeNodeExecutionId
@@ -647,10 +647,10 @@ export const useWorkflowStore = defineStore('workflow', () => {
   ): NodeLocatorId => {
     const targetSubgraph = subgraph ?? activeSubgraph.value
     if (!targetSubgraph) {
-      return createLeafNodeLocatorId(null, nodeId)
+      return createNodeLocatorId(null, nodeId)
     }
 
-    return createLeafNodeLocatorId(targetSubgraph.id, nodeId)!
+    return createNodeLocatorId(targetSubgraph.id, nodeId)
   }
   /**
    * Convert a node to a NodeLocatorId
@@ -660,9 +660,9 @@ export const useWorkflowStore = defineStore('workflow', () => {
    */
   const nodeToNodeLocatorId = (node: LGraphNode): NodeLocatorId => {
     if (isSubgraph(node.graph))
-      return createLeafNodeLocatorId(node.graph.id, node.id)!
+      return createNodeLocatorId(node.graph.id, node.id)
     // Root graph: see nodeIdToNodeLocatorId on colon-bearing raw ids.
-    return createLeafNodeLocatorId(null, node.id)
+    return createNodeLocatorId(null, node.id)
   }
 
   /**
