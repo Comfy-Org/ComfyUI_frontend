@@ -17,6 +17,7 @@ permissions:
 concurrency:
   group: publish-ci-container
   cancel-in-progress: false
+  queue: max
 
 jobs:
   publish:
