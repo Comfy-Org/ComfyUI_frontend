@@ -214,12 +214,9 @@ function dynamicComboWidget(
     node.widgets.splice(insertionPoint, 0, ...addedWidgets)
     syncNodeWidgetOrder(node)
     if (inputInsertionPoint === 0) {
-      if (
-        addedWidgets.length === 0 &&
-        node.inputs.length !== startingInputLength
-      )
-        //input is inputOnly, but lacks an insertion point
-        throw new Error('Failed to find input socket for ' + widget.name)
+      // During initial construction the combo's own socket is added only
+      // after its widget constructor returns. Keep any option sockets in the
+      // current layout so that outer pass can finish constructing the combo.
       const result = commitMutatedInputs(node, previous, inputLinks)
       if (!result.ok) return
       restoreRemovedValues(value, addedWidgetNames)
