@@ -8,13 +8,10 @@ import type {
 } from '@/lib/litegraph/src/types/widgets'
 import { useSettingStore } from '@/platform/settings/settingStore'
 import type { InputSpec } from '@/schemas/nodeDefSchema'
-import {
-  isValueControlMode,
-  nextValueForLinkedTarget
-} from '@/scripts/valueControl'
 import { CONTROL_OPTIONS } from '@/types/simplifiedWidget'
 
 import { IS_CONTROL_WIDGET } from './controlWidgetMarker'
+import { isValueControlMode, nextValueForLinkedTarget } from './valueControl'
 
 function controlValueRunBefore() {
   return useSettingStore().get('Comfy.WidgetControlMode') === 'before'

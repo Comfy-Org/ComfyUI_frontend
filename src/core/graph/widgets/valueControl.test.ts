@@ -2,7 +2,7 @@ import { describe, expect, it, vi } from 'vitest'
 
 import type { IBaseWidget } from '@/lib/litegraph/src/types/widgets'
 
-import { IS_CONTROL_WIDGET } from '@/core/graph/widgets/controlWidgetMarker'
+import { IS_CONTROL_WIDGET } from './controlWidgetMarker'
 import {
   computeNextControlledValue,
   isValueControlWidget
