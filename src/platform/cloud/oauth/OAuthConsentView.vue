@@ -42,7 +42,7 @@
               {{ t('oauth.consent.unverifiedBadge') }}
             </Badge>
             <p
-              class="m-0 text-xs text-muted"
+              class="m-0 text-xs wrap-anywhere text-muted"
               data-testid="client-unverified-notice"
             >
               {{
