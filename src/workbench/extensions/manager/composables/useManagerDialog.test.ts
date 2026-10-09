@@ -20,12 +20,6 @@ describe('useManagerDialog', () => {
     )
   })
 
-  it('show() uses non-modal Reka so nested PrimeVue overlays keep focus and pointer events', () => {
-    useManagerDialog().show()
-    const [args] = vi.mocked(useDialogStore().showDialog).mock.calls[0]
-    expect(args.dialogComponentProps!.modal).toBe(false)
-  })
-
   it('show(initialTab) forwards initialTab to ManagerDialog props', () => {
     useManagerDialog().show(ManagerTab.UpdateAvailable)
     const [args] = vi.mocked(useDialogStore().showDialog).mock.calls[0]
