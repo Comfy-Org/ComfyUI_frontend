@@ -4,7 +4,6 @@
   "id": "mask-editor",
   "capability": "Mask editor",
   "description": "Mask editing UI, drawing operations, editor state, and the core extension contract.",
-  "expectedFileCount": 85,
   "modules": [
     { "path": "src/extensions/core/maskeditor/**", "role": "domain" },
     { "path": "src/composables/maskeditor/**", "role": "application" },

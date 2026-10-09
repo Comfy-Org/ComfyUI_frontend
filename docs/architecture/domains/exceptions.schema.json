@@ -18,8 +18,7 @@
           "rationale",
           "sunset",
           "removalCriteria",
-          "exactFingerprints",
-          "fingerprintPrefixes"
+          "exactFingerprints"
         ],
         "properties": {
           "id": { "type": "string", "pattern": "^DDD-EX-[0-9]{3}$" },
@@ -29,11 +28,7 @@
           "removalCriteria": { "type": "string", "minLength": 1 },
           "exactFingerprints": {
             "type": "array",
-            "uniqueItems": true,
-            "items": { "type": "string", "minLength": 1 }
-          },
-          "fingerprintPrefixes": {
-            "type": "array",
+            "minItems": 1,
             "uniqueItems": true,
             "items": { "type": "string", "minLength": 1 }
           }

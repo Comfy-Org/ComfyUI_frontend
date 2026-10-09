@@ -7,7 +7,7 @@ import {
 } from 'node:fs'
 import { tmpdir } from 'node:os'
 import { join } from 'node:path'
-import { afterEach, describe, expect, test } from 'vitest'
+import { afterEach, describe, expect, test, vi } from 'vitest'
 
 import type { ArchitectureException, DomainRecord, Violation } from './check'
 import {
@@ -39,7 +39,6 @@ const domain = (
   id,
   capability: id,
   description: `${id} fixture`,
-  expectedFileCount: 1,
   modules: paths.map((path) => ({ path, role: 'domain' })),
   publicEntryPoints: [],
   owners: ['@owner'],
@@ -63,7 +62,6 @@ const exception = (
   rationale: 'Fixture debt',
   sunset: '2027-01-01',
   removalCriteria: 'Classify the fixture',
-  fingerprintPrefixes: ['unclassified-module:'],
   ...options
 })
 
@@ -80,9 +78,7 @@ const createConfiguredRepository = (): string => {
     'docs/architecture/domains/exceptions.json': JSON.stringify({
       $schema: './exceptions.schema.json',
       schemaVersion: 1,
-      exceptions: [
-        exception({ fingerprintPrefixes: ['anonymous-suppression:'] })
-      ]
+      exceptions: []
     }),
     'docs/architecture/domains/baseline.json': JSON.stringify({
       schemaVersion: 1,
@@ -265,7 +261,6 @@ describe('censusRepository', () => {
       'src/domains/images/presentation.ts': 'export const view = 1'
     })
     const record = domain('images', [], {
-      expectedFileCount: 2,
       modules: [
         { path: 'src/domains/images/domain.ts', role: 'domain' },
         {
@@ -293,7 +288,6 @@ describe('censusRepository accounting and suppressions', () => {
         "import { useImages } from './application'\nexport const view = useImages"
     })
     const record = domain('images', [], {
-      expectedFileCount: 2,
       modules: [
         { path: 'src/domains/images/application.ts', role: 'application' },
         {
@@ -482,7 +476,10 @@ describe('configuration validation', () => {
     const root = createConfiguredRepository()
     const ledgerPath = join(root, 'docs/architecture/domains/exceptions.json')
     const ledger = JSON.parse(readFileSync(ledgerPath, 'utf8'))
-    ledger.exceptions.push(ledger.exceptions[0])
+    ledger.exceptions.push(
+      exception({ exactFingerprints: ['first'] }),
+      exception({ exactFingerprints: ['second'] })
+    )
     writeFileSync(ledgerPath, JSON.stringify(ledger))
     expect(() => loadArchitectureConfiguration(root)).toThrow(
       'Exception ids must be unique'
@@ -595,14 +592,10 @@ describe('baseline and exception controls', () => {
       exceptionId: 'DDD-EX-001',
       kind: 'named-suppression'
     }
-    const wrongExistingId = exception({
-      id: 'DDD-EX-001',
-      fingerprintPrefixes: ['unclassified-module:']
-    })
+    const wrongExistingId = exception({ id: 'DDD-EX-001' })
     const accidentalOwner = exception({
       id: 'DDD-EX-004',
-      exactFingerprints: [named.fingerprint],
-      fingerprintPrefixes: []
+      exactFingerprints: [named.fingerprint]
     })
     expect(() =>
       validateExceptionCoverage([named], [wrongExistingId, accidentalOwner])
@@ -610,15 +603,14 @@ describe('baseline and exception controls', () => {
 
     const exactOwner = exception({
       id: 'DDD-EX-001',
-      exactFingerprints: [named.fingerprint],
-      fingerprintPrefixes: []
+      exactFingerprints: [named.fingerprint]
     })
     expect(() => validateExceptionCoverage([named], [exactOwner])).not.toThrow()
   })
 })
 
 describe('baseline admission and catalog stability', () => {
-  test('acceptance requires exact coverage instead of a historical prefix', () => {
+  test('acceptance requires exact ledger coverage for new debt', () => {
     const root = createConfiguredRepository()
     runArchitectureCheck(root, 'update')
     writeFileSync(
@@ -633,8 +625,12 @@ describe('baseline admission and catalog stability', () => {
     )
     const ledgerPath = join(root, 'docs/architecture/domains/exceptions.json')
     const ledger = JSON.parse(readFileSync(ledgerPath, 'utf8'))
-    ledger.exceptions[0].exactFingerprints.push(
-      'anonymous-suppression:src/new.ts:comfy/no-restricted-paths#1'
+    ledger.exceptions.push(
+      exception({
+        exactFingerprints: [
+          'anonymous-suppression:src/new.ts:comfy/no-restricted-paths#1'
+        ]
+      })
     )
     writeFileSync(ledgerPath, JSON.stringify(ledger))
     runArchitectureCheck(root, 'accept-baseline')
@@ -670,6 +666,60 @@ describe('baseline admission and catalog stability', () => {
     expect(() => runArchitectureCheck(root, 'check')).not.toThrow()
   })
 
+  test('report prints the census while the ledger is stale', () => {
+    const root = createConfiguredRepository()
+    const ledgerPath = join(root, 'docs/architecture/domains/exceptions.json')
+    const ledger = JSON.parse(readFileSync(ledgerPath, 'utf8'))
+    ledger.exceptions.push(
+      exception({
+        exactFingerprints: [
+          'anonymous-suppression:src/resolved.ts:comfy/no-restricted-paths#1'
+        ]
+      })
+    )
+    writeFileSync(ledgerPath, JSON.stringify(ledger))
+    const write = vi.spyOn(process.stdout, 'write').mockReturnValue(true)
+    runArchitectureCheck(root, 'report')
+    expect(write).toHaveBeenCalledWith(expect.stringContaining('denominators'))
+  })
+
+  test('accept-baseline refuses error-maturity violations', () => {
+    const root = createConfiguredRepository()
+    const recordPath = join(
+      root,
+      'docs/architecture/domains/records/images.domain.json'
+    )
+    const record = JSON.parse(readFileSync(recordPath, 'utf8'))
+    record.modules = [
+      { path: 'src/domains/images/index.ts', role: 'domain' },
+      { path: 'src/domains/images/view.ts', role: 'presentation' }
+    ]
+    writeFileSync(recordPath, JSON.stringify(record))
+    writeFileSync(
+      join(root, 'src/domains/images/view.ts'),
+      'export const view = 1'
+    )
+    writeFileSync(
+      join(root, 'src/domains/images/index.ts'),
+      "export { view } from './view'"
+    )
+    expect(() => runArchitectureCheck(root, 'accept-baseline')).toThrow(
+      'cannot accept 1 error-maturity violation(s)'
+    )
+  })
+
+  test('rejects a malformed baseline file', () => {
+    const root = createConfiguredRepository()
+    runArchitectureCheck(root, 'update')
+    writeFileSync(
+      join(root, 'docs/architecture/domains/baseline.json'),
+      JSON.stringify({})
+    )
+    expect(() => runArchitectureCheck(root, 'check')).toThrow(
+      'baseline.json must be { schemaVersion: 1, violations }'
+    )
+  })
+
   test('check and update reject stale exact debt ownership', () => {
     const root = createConfiguredRepository()
     runArchitectureCheck(root, 'update')
@@ -677,7 +727,7 @@ describe('baseline admission and catalog stability', () => {
       'anonymous-suppression:src/resolved.ts:comfy/no-restricted-paths#1'
     const ledgerPath = join(root, 'docs/architecture/domains/exceptions.json')
     const ledger = JSON.parse(readFileSync(ledgerPath, 'utf8'))
-    ledger.exceptions[0].exactFingerprints.push(resolved)
+    ledger.exceptions.push(exception({ exactFingerprints: [resolved] }))
     writeFileSync(ledgerPath, JSON.stringify(ledger))
     const baselinePath = join(root, 'docs/architecture/domains/baseline.json')
     writeFileSync(
@@ -703,15 +753,13 @@ describe('baseline admission and catalog stability', () => {
     )
     const ledgerPath = join(root, 'docs/architecture/domains/exceptions.json')
     const ledger = JSON.parse(readFileSync(ledgerPath, 'utf8'))
-    ledger.exceptions[0].exactFingerprints.push(kept, resolved)
+    ledger.exceptions.push(exception({ exactFingerprints: [kept] }))
     writeFileSync(ledgerPath, JSON.stringify(ledger))
     const baselinePath = join(root, 'docs/architecture/domains/baseline.json')
     writeFileSync(
       baselinePath,
       JSON.stringify({ schemaVersion: 1, violations: [kept, resolved] })
     )
-    ledger.exceptions[0].exactFingerprints = [kept]
-    writeFileSync(ledgerPath, JSON.stringify(ledger))
     runArchitectureCheck(root, 'update')
     expect(JSON.parse(readFileSync(baselinePath, 'utf8')).violations).toEqual([
       kept
@@ -726,15 +774,10 @@ describe('baseline admission and catalog stability', () => {
     )
     const record = JSON.parse(readFileSync(recordPath, 'utf8'))
     record.publicEntryPoints = []
-    record.enforcement.deepImports = 'baseline'
     writeFileSync(recordPath, JSON.stringify(record))
     const fingerprint =
       'deep-import:images:src/consumer.ts->src/domains/images/index.ts#1'
     const baselinePath = join(root, 'docs/architecture/domains/baseline.json')
-    const ledgerPath = join(root, 'docs/architecture/domains/exceptions.json')
-    const ledger = JSON.parse(readFileSync(ledgerPath, 'utf8'))
-    ledger.exceptions[0].fingerprintPrefixes = ['deep-import:images:']
-    writeFileSync(ledgerPath, JSON.stringify(ledger))
     runArchitectureCheck(root, 'update')
     writeFileSync(
       join(root, 'src/consumer.ts'),

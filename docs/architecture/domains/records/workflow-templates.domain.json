@@ -4,7 +4,6 @@
   "id": "workflow-templates",
   "capability": "Workflow templates",
   "description": "Template discovery, ranking, metadata, education, and thumbnail presentation.",
-  "expectedFileCount": 26,
   "modules": [
     { "path": "src/platform/workflow/templates/types/**", "role": "domain" },
     { "path": "src/platform/workflow/templates/schemas/**", "role": "domain" },

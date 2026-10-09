@@ -19,8 +19,7 @@
         "deep-import:mask-editor:src/composables/useCoreCommands.ts->src/stores/maskEditorStore.ts#1",
         "deep-import:mask-editor:src/extensions/core/index.ts->src/extensions/core/maskeditor.ts#1",
         "deep-import:mask-editor:src/renderer/extensions/vueNodes/components/ImagePreview.vue->src/composables/maskeditor/useMaskEditor.ts#1"
-      ],
-      "fingerprintPrefixes": ["deep-import:mask-editor:"]
+      ]
     },
     {
       "id": "DDD-EX-004",
@@ -50,8 +49,7 @@
         "anonymous-suppression:src/workbench/extensions/agent/AgentPanelRoot.vue:comfy/no-restricted-paths#1",
         "anonymous-suppression:src/workbench/extensions/agent/AgentPanelRoot.vue:comfy/no-restricted-paths#2",
         "anonymous-suppression:src/workbench/extensions/agent/crdt/loadImageLivePreview.test.ts:comfy/no-restricted-paths#1"
-      ],
-      "fingerprintPrefixes": ["anonymous-suppression:"]
+      ]
     },
     {
       "id": "DDD-EX-005",
@@ -64,8 +62,7 @@
         "forbidden-edge:mask-editor->mask-editor:src/composables/maskeditor/useMaskEditor.test.ts->src/components/maskeditor/dialog/TopBarHeader.vue#1",
         "forbidden-edge:mask-editor->mask-editor:src/composables/maskeditor/useMaskEditor.ts->src/components/maskeditor/MaskEditorContent.vue#1",
         "forbidden-edge:mask-editor->mask-editor:src/composables/maskeditor/useMaskEditor.ts->src/components/maskeditor/dialog/TopBarHeader.vue#1"
-      ],
-      "fingerprintPrefixes": []
+      ]
     }
   ]
 }

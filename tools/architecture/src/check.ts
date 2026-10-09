@@ -1,6 +1,7 @@
 import { existsSync, readFileSync, readdirSync, writeFileSync } from 'node:fs'
 import { dirname, join, relative, resolve } from 'node:path'
 import { fileURLToPath } from 'node:url'
+import { parseArgs } from 'node:util'
 
 import { markdownTable } from 'markdown-table'
 import {
@@ -43,7 +44,6 @@ export interface DomainRecord {
   id: string
   capability: string
   description: string
-  expectedFileCount: number
   modules: DomainModule[]
   publicEntryPoints: string[]
   owners: string[]
@@ -65,7 +65,6 @@ export interface ArchitectureException {
   rationale: string
   sunset: string
   removalCriteria: string
-  fingerprintPrefixes: string[]
 }
 
 export type ViolationKind =
@@ -137,7 +136,6 @@ const DOMAIN_KEYS = [
   'id',
   'capability',
   'description',
-  'expectedFileCount',
   'modules',
   'publicEntryPoints',
   'owners',
@@ -154,8 +152,7 @@ const EXCEPTION_KEYS = [
   'owner',
   'rationale',
   'sunset',
-  'removalCriteria',
-  'fingerprintPrefixes'
+  'removalCriteria'
 ]
 
 const toPosix = (value: string): string => value.replaceAll('\\', '/')
@@ -333,6 +330,7 @@ const suppressionViolations = (
 
 const eslintComments = (filename: string, source: string): string[] =>
   scriptBodies(filename, source).flatMap(({ body, kind }) => {
+    if (!body.includes('-disable')) return []
     const sourceFile = createSourceFile(
       filename,
       body,
@@ -579,8 +577,6 @@ const validateDomainShape = (
     record.description
   ].every(Boolean)
   const contractValid = [
-    Number.isInteger(record.expectedFileCount),
-    Number(record.expectedFileCount) > 0,
     record.modules?.length,
     record.characterizationScenarios?.length,
     record.compatibilityPromises?.length
@@ -771,15 +767,11 @@ const validateException = (
   if (!isObject(value)) throw new Error(`${label} is invalid`)
   exactKeys(value, EXCEPTION_KEYS, label)
   const exception = value as Partial<ArchitectureException>
-  const prefixes = uniqueStrings(
-    exception.fingerprintPrefixes,
-    `${label}.fingerprintPrefixes`
-  )
   const exact = uniqueStrings(
     exception.exactFingerprints,
     `${label}.exactFingerprints`
   )
-  if (!validExceptionMetadata(exception) || ![...prefixes, ...exact].length)
+  if (!validExceptionMetadata(exception) || !exact.length)
     throw new Error(`${label} does not match exceptions.schema.json`)
   return exception as ArchitectureException
 }
@@ -892,7 +884,10 @@ export const validateExceptionCoverage = (
     )
     if (matches.length !== 1) {
       throw new Error(
-        `${violation.fingerprint} must match exactly one owned exception`
+        `${violation.fingerprint} must match exactly one owned exception. ` +
+          'Remove the import or use a public entry point, or add the ' +
+          "fingerprint to one exception's exactFingerprints and run " +
+          'pnpm architecture:accept-baseline.'
       )
     }
     if (violation.exceptionId && matches[0].id !== violation.exceptionId) {
@@ -923,10 +918,7 @@ const validateNewBaselineCoverage = (
 }
 
 const stableJson = (value: unknown): string =>
-  `${JSON.stringify(value, null, 2).replace(
-    /"fingerprintPrefixes": \[\n\s+"([^"]+)"\n\s+\]/g,
-    '"fingerprintPrefixes": ["$1"]'
-  )}\n`
+  `${JSON.stringify(value, null, 2)}\n`
 
 const stableCatalog = (
   records: DomainRecord[],
@@ -1008,7 +1000,8 @@ const report = (census: Census) => {
   }
 }
 
-type ArchitectureMode = 'accept-baseline' | 'check' | 'report' | 'update'
+const MODES = ['accept-baseline', 'check', 'report', 'update'] as const
+type ArchitectureMode = (typeof MODES)[number]
 
 const synchronizeCatalog = (
   repositoryRoot: string,
@@ -1044,18 +1037,28 @@ const generatedFileMatches = (filename: string, expected: string): boolean => {
   )
 }
 
+const loadBaseline = (baselinePath: string): string[] => {
+  const value: unknown = JSON.parse(readFileSync(baselinePath, 'utf8'))
+  if (!isObject(value) || value.schemaVersion !== 1)
+    throw new Error('baseline.json must be { schemaVersion: 1, violations }')
+  exactKeys(value, ['schemaVersion', 'violations'], 'baseline.json')
+  return uniqueStrings(value.violations, 'baseline.json violations')
+}
+
 const acceptBaseline = (
   baselinePath: string,
   census: Census,
   exceptions: ArchitectureException[]
 ): void => {
-  const recorded = existsSync(baselinePath)
-    ? (
-        JSON.parse(readFileSync(baselinePath, 'utf8')) as {
-          violations: string[]
-        }
-      ).violations
-    : []
+  const errors = census.violations.filter(
+    ({ maturity }) => maturity === 'error'
+  )
+  if (errors.length)
+    throw new Error(
+      `Architecture accept-baseline cannot accept ${errors.length} error-maturity violation(s):\n` +
+        errors.map(({ detail }) => `- ${detail}`).join('\n')
+    )
+  const recorded = existsSync(baselinePath) ? loadBaseline(baselinePath) : []
   const recordedSet = new Set(recorded)
   validateNewBaselineCoverage(
     census.violations.filter(
@@ -1076,17 +1079,13 @@ const acceptBaseline = (
 const enforceBaseline = (
   baselinePath: string,
   census: Census,
+  currentFingerprints: Set<string>,
   mode: ArchitectureMode,
   exceptions: ArchitectureException[]
 ): void => {
-  const recorded: { violations: string[] } = JSON.parse(
-    readFileSync(baselinePath, 'utf8')
-  )
-  const current = new Set(
-    census.violations.map(({ fingerprint }) => fingerprint)
-  )
-  for (const fingerprint of recorded.violations) {
-    if (mode === 'update' && !current.has(fingerprint)) continue
+  const recorded = loadBaseline(baselinePath)
+  for (const fingerprint of recorded) {
+    if (mode === 'update' && !currentFingerprints.has(fingerprint)) continue
     const owners = exceptions.filter(({ exactFingerprints }) =>
       exactFingerprints.includes(fingerprint)
     )
@@ -1095,7 +1094,7 @@ const enforceBaseline = (
         `${fingerprint} in baseline.json requires exact owned exception coverage`
       )
   }
-  const failures = findRatchetFailures(census.violations, recorded.violations)
+  const failures = findRatchetFailures(census.violations, recorded)
   if (failures.length)
     throw new Error(
       `Architecture ratchet found ${failures.length} new violation(s). ` +
@@ -1112,10 +1111,10 @@ const enforceBaseline = (
       .filter(({ maturity }) => maturity === 'baseline')
       .map(({ fingerprint }) => fingerprint)
   )
-  const retained = recorded.violations.filter((fingerprint) =>
+  const retained = recorded.filter((fingerprint) =>
     currentBaseline.has(fingerprint)
   )
-  const resolved = recorded.violations.length - retained.length
+  const resolved = recorded.length - retained.length
   if (!resolved) return
   if (mode === 'update') {
     writeFileSync(
@@ -1135,6 +1134,10 @@ export const runArchitectureCheck = (
 ): void => {
   const { records, exceptions } = loadArchitectureConfiguration(repositoryRoot)
   const census = censusRepository(repositoryRoot, records)
+  if (mode === 'report') {
+    process.stdout.write(stableJson(report(census)))
+    return
+  }
   validateExceptionCoverage(census.violations, exceptions)
   const currentFingerprints = new Set(
     census.violations.map(({ fingerprint }) => fingerprint)
@@ -1146,13 +1149,10 @@ export const runArchitectureCheck = (
   )
   if (staleOwned.length)
     throw new Error(
-      `exceptions.json has ${staleOwned.length} stale exact fingerprint(s):\n` +
+      `exceptions.json has ${staleOwned.length} stale exact fingerprint(s). ` +
+        'Delete each from its exception, then run pnpm architecture:update.\n' +
         staleOwned.map((fingerprint) => `- ${fingerprint}`).join('\n')
     )
-  if (mode === 'report') {
-    process.stdout.write(stableJson(report(census)))
-    return
-  }
 
   const directory = synchronizeCatalog(
     repositoryRoot,
@@ -1165,20 +1165,27 @@ export const runArchitectureCheck = (
     acceptBaseline(baselinePath, census, exceptions)
     return
   }
-  enforceBaseline(baselinePath, census, mode, exceptions)
+  enforceBaseline(baselinePath, census, currentFingerprints, mode, exceptions)
 }
 
 if (
   process.argv[1] &&
   fileURLToPath(import.meta.url) === resolve(process.argv[1])
 ) {
-  const mode = process.argv.includes('--accept-baseline')
-    ? 'accept-baseline'
-    : process.argv.includes('--report')
-      ? 'report'
-      : process.argv.includes('--update')
-        ? 'update'
-        : 'check'
+  const { values } = parseArgs({
+    options: {
+      'accept-baseline': { type: 'boolean' },
+      check: { type: 'boolean' },
+      report: { type: 'boolean' },
+      update: { type: 'boolean' }
+    }
+  })
+  const modes = MODES.filter((mode) => values[mode])
+  if (modes.length !== 1)
+    throw new Error(
+      `Pass exactly one of ${MODES.map((mode) => `--${mode}`).join(', ')}`
+    )
+  const [mode] = modes
   runArchitectureCheck(process.cwd(), mode)
   if (mode !== 'report') process.stdout.write(`Architecture ${mode} passed\n`)
 }

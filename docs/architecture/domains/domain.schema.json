@@ -9,7 +9,6 @@
     "id",
     "capability",
     "description",
-    "expectedFileCount",
     "modules",
     "publicEntryPoints",
     "owners",
@@ -26,7 +25,6 @@
     "id": { "type": "string", "pattern": "^[a-z][a-z0-9-]*$" },
     "capability": { "type": "string", "minLength": 1 },
     "description": { "type": "string", "minLength": 1 },
-    "expectedFileCount": { "type": "integer", "minimum": 1 },
     "modules": {
       "type": "array",
       "minItems": 1,
