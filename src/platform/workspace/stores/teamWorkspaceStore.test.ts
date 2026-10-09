@@ -1,3 +1,7 @@
+import type {
+  ListInvitesResponse,
+  ListMembersResponse
+} from '@comfyorg/ingest-types'
 import { computed, nextTick } from 'vue'
 
 import { reportError } from '@/platform/telemetry/reportError'
@@ -136,6 +140,14 @@ const mockMemberWorkspace = {
   role: 'member' as const,
   created_at: '2026-03-01T00:00:00Z',
   joined_at: '2026-03-01T00:00:00Z'
+}
+
+function deferred<T>() {
+  let resolve!: (value: T) => void
+  const promise = new Promise<T>((resolvePromise) => {
+    resolve = resolvePromise
+  })
+  return { promise, resolve }
 }
 
 function expectCleanupBeforeContextAndReload(): void {
@@ -292,6 +304,51 @@ describe('useTeamWorkspaceStore', () => {
       await store.initialize()
 
       expect(store.activeWorkspaceId).toBe(mockTeamWorkspace.id)
+    })
+
+    it.for([
+      {
+        name: "opens the server's default over the last-used workspace",
+        defaultId: mockTeamWorkspace.id,
+        lastUsed: mockPersonalWorkspace.id,
+        expected: mockTeamWorkspace.id
+      },
+      {
+        name: 'keeps the last-used workspace without a default',
+        defaultId: undefined,
+        lastUsed: mockTeamWorkspace.id,
+        expected: mockTeamWorkspace.id
+      },
+      {
+        name: "keeps a switch's target over the server's default",
+        defaultId: mockTeamWorkspace.id,
+        lastUsed: mockPersonalWorkspace.id,
+        switchTarget: mockPersonalWorkspace.id,
+        expected: mockPersonalWorkspace.id
+      },
+      {
+        name: 'ignores a default that is not in the list',
+        defaultId: 'ws-not-listed',
+        lastUsed: null,
+        expected: mockPersonalWorkspace.id
+      }
+    ])('$name', async ({ defaultId, lastUsed, switchTarget, expected }) => {
+      mockLocalStorage.getItem.mockReturnValue(lastUsed)
+      if (switchTarget) {
+        sessionStorage.setItem(
+          WORKSPACE_STORAGE_KEYS.SWITCH_TARGET_ID,
+          switchTarget
+        )
+      }
+      mockWorkspaceApi.list.mockResolvedValue({
+        workspaces: [mockPersonalWorkspace, mockTeamWorkspace],
+        ...(defaultId && { default_workspace_id: defaultId })
+      })
+
+      const store = useTeamWorkspaceStore()
+      await store.initialize()
+
+      expect(store.activeWorkspaceId).toBe(expected)
     })
 
     it('falls back to personal if stored workspace not in list', async () => {
@@ -1297,6 +1354,146 @@ describe('useTeamWorkspaceStore', () => {
     })
   })
 
+  describe('overlapping member and invite reads', () => {
+    const memberResponse: ListMembersResponse = {
+      members: [
+        {
+          id: 'new-member',
+          name: 'New Member',
+          email: 'new-member@test.com',
+          joined_at: '2026-01-01T00:00:00Z',
+          role: 'member',
+          is_original_owner: false
+        }
+      ],
+      pagination: { offset: 0, limit: 100, total: 7, has_more: false }
+    }
+    const inviteResponse: ListInvitesResponse = {
+      invites: [
+        {
+          id: 'new-invite',
+          email: 'new-invite@test.com',
+          token: 'new-token',
+          invited_at: '2026-01-01T00:00:00Z',
+          expires_at: '2026-01-08T00:00:00Z'
+        }
+      ]
+    }
+
+    it('retains newest member rows and pagination when the older response arrives last', async () => {
+      const firstResponse = deferred<ListMembersResponse>()
+      mockWorkspaceApi.listMembers.mockReturnValueOnce(firstResponse.promise)
+      mockWorkspaceApi.listMembers.mockResolvedValueOnce(memberResponse)
+      const store = useTeamWorkspaceStore()
+      await store.initialize()
+
+      const first = store.fetchMembers()
+      await store.fetchMembers()
+      firstResponse.resolve({
+        members: [],
+        pagination: { offset: 0, limit: 100, total: 0, has_more: false }
+      })
+      await expect(first).resolves.toEqual([])
+
+      expect(store.members).toEqual([
+        expect.objectContaining({ id: 'new-member' })
+      ])
+      expect(store.activeWorkspace?.totalMembers).toBe(7)
+      expect(store.membersLoaded).toBe(true)
+    })
+
+    it('retains newest pending invites when the older response arrives last', async () => {
+      const firstResponse = deferred<ListInvitesResponse>()
+      mockWorkspaceApi.listInvites.mockReturnValueOnce(firstResponse.promise)
+      mockWorkspaceApi.listInvites.mockResolvedValueOnce(inviteResponse)
+      const store = useTeamWorkspaceStore()
+      await store.initialize()
+
+      const first = store.fetchPendingInvites()
+      await store.fetchPendingInvites()
+      firstResponse.resolve({ invites: [] })
+      await expect(first).resolves.toEqual([])
+
+      expect(store.pendingInvites).toEqual([
+        expect.objectContaining({ id: 'new-invite' })
+      ])
+      expect(store.pendingInvitesLoaded).toBe(true)
+    })
+
+    it('allows overlapping member and invite reads to update their own resource independently', async () => {
+      const membersResponse = deferred<ListMembersResponse>()
+      const invitesResponse = deferred<ListInvitesResponse>()
+      mockWorkspaceApi.listMembers.mockReturnValueOnce(membersResponse.promise)
+      mockWorkspaceApi.listInvites.mockReturnValueOnce(invitesResponse.promise)
+      const store = useTeamWorkspaceStore()
+      await store.initialize()
+
+      const members = store.fetchMembers()
+      const invites = store.fetchPendingInvites()
+      invitesResponse.resolve(inviteResponse)
+      await invites
+      membersResponse.resolve(memberResponse)
+      await members
+
+      expect(store.members).toEqual([
+        expect.objectContaining({ id: 'new-member' })
+      ])
+      expect(store.activeWorkspace?.totalMembers).toBe(7)
+      expect(store.pendingInvites).toEqual([
+        expect.objectContaining({ id: 'new-invite' })
+      ])
+    })
+
+    it('retries ensureMembersLoaded after its read was superseded by a failed direct fetch', async () => {
+      const firstResponse = deferred<ListMembersResponse>()
+      mockWorkspaceApi.listMembers.mockReturnValueOnce(firstResponse.promise)
+      mockWorkspaceApi.listMembers.mockRejectedValueOnce(
+        new Error('newest read failed')
+      )
+      mockWorkspaceApi.listMembers.mockResolvedValueOnce(memberResponse)
+      const store = useTeamWorkspaceStore()
+      await store.initialize()
+
+      const initial = store.ensureMembersLoaded()
+      await expect(store.fetchMembers()).rejects.toThrow('newest read failed')
+      firstResponse.resolve(memberResponse)
+      await initial
+      expect(store.membersLoaded).toBe(false)
+
+      await store.ensureMembersLoaded()
+
+      expect(store.members).toEqual([
+        expect.objectContaining({ id: 'new-member' })
+      ])
+      expect(store.activeWorkspace?.totalMembers).toBe(7)
+      expect(store.membersLoaded).toBe(true)
+      expect(mockWorkspaceApi.listMembers).toHaveBeenCalledTimes(3)
+    })
+
+    it('ignores reads from a previous identity even when the active workspace ID is reused', async () => {
+      const membersResponse = deferred<ListMembersResponse>()
+      const invitesResponse = deferred<ListInvitesResponse>()
+      mockWorkspaceApi.listMembers.mockReturnValueOnce(membersResponse.promise)
+      mockWorkspaceApi.listInvites.mockReturnValueOnce(invitesResponse.promise)
+      const store = useTeamWorkspaceStore()
+      await store.initialize()
+      const workspaceId = store.activeWorkspaceId
+
+      const members = store.fetchMembers()
+      const invites = store.fetchPendingInvites()
+      store.resetForIdentityChange()
+      await store.initialize()
+      expect(store.activeWorkspaceId).toBe(workspaceId)
+      membersResponse.resolve(memberResponse)
+      invitesResponse.resolve(inviteResponse)
+      await Promise.all([members, invites])
+
+      expect(store.members).toEqual([])
+      expect(store.activeWorkspace?.totalMembers).toBeUndefined()
+      expect(store.pendingInvites).toEqual([])
+    })
+  })
+
   describe('member actions', () => {
     it('fetchMembers updates active workspace members', async () => {
       const mockMembers = [
@@ -2287,7 +2484,7 @@ describe('useTeamWorkspaceStore', () => {
       const result = await store.acceptInvite('invite-token')
 
       expect(mockWorkspaceApi.list).toHaveBeenCalledTimes(1)
-      expect(vi.mocked(reportError)).toHaveBeenCalledWith(
+      expect(reportError).toHaveBeenCalledWith(
         expect.objectContaining({ status: 503 }),
         expect.objectContaining({
           errorType: 'error_refreshing_workspaces_after_invite_accept'
