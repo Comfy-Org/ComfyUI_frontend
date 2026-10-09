@@ -1741,6 +1741,22 @@ describe('AgentPanelRoot Agent credit transition notice', () => {
     expect(await screen.findByTestId(NOTICE)).toBeInTheDocument()
   })
 
+  it('observes the scoped balance again after the billing identity changes', async () => {
+    const accountId = ref('account-a')
+    useCurrentUser().resolvedUserInfo = computed(() => ({
+      id: accountId.value
+    }))
+    paywallAgentScopedHasFunds.value = true
+    render(AgentPanelRoot, { global: { plugins: [i18n] } })
+    await screen.findByRole('textbox')
+
+    accountId.value = 'account-b'
+    await nextTick()
+    paywallAgentScopedHasFunds.value = false
+
+    expect(await screen.findByTestId(NOTICE)).toBeInTheDocument()
+  })
+
   it('reports a new impression when the scoped balance refills and runs out again', async () => {
     paywallAgentScopedHasFunds.value = true
     render(AgentPanelRoot, { global: { plugins: [i18n] } })
