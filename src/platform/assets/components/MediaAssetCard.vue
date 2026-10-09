@@ -300,6 +300,7 @@ const adaptedAsset = computed(() => {
             : ''),
     preview_url: asset.preview_url,
     preview_id: asset.preview_id,
+    user_metadata: asset.user_metadata,
     size: asset.size,
     tags: asset.tags || [],
     created_at: asset.created_at,

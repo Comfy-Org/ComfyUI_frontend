@@ -2,7 +2,10 @@ import { toValue, watch } from 'vue'
 
 import type { AssetItem } from '@/platform/assets/schemas/assetSchema'
 import { attachPreview } from '@/platform/assets/utils/attachPreview'
-import { getAssetFileUrl } from '@/platform/assets/utils/assetUrlUtil'
+import {
+  getAssetFileUrl,
+  getGeneratedPreviewUrl
+} from '@/platform/assets/utils/assetUrlUtil'
 import { reportError } from '@/platform/telemetry/reportError'
 import type { PagedList } from '@/utils/pagedList'
 import { isHdrImageFilename } from '@/utils/hdrFormatUtil'
@@ -38,18 +41,18 @@ async function generatePreview(asset: AssetItem, list: PagedList<AssetItem>) {
   try {
     const blob = await renderHdrThumbnail(getAssetFileUrl(asset), asset.name)
     await attachPreview(asset, blob)
-    await list.invalidate()
   } catch (error) {
     reportError(error, {
       errorType: 'error_generating_asset_preview',
       surface: 'assets'
     })
+  } finally {
+    await list.invalidate()
   }
 }
 
 function lacksHdrPreview(asset: AssetItem): boolean {
-  const hasSeparatePreview = !!asset.preview_id && asset.preview_id !== asset.id
-  return !hasSeparatePreview && isHdrImageFilename(asset.name)
+  return !getGeneratedPreviewUrl(asset) && isHdrImageFilename(asset.name)
 }
 
 export function generatePreviewsForNewAssets(list: PagedList<AssetItem>) {

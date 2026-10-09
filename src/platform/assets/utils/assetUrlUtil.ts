@@ -92,7 +92,9 @@ export function getAssetFileUrl(
 }
 
 export function getGeneratedPreviewUrl(
-  asset: Pick<AssetItem, 'preview_id' | 'preview_url'>
+  asset: Pick<AssetItem, 'id' | 'user_metadata' | 'preview_id' | 'preview_url'>
 ): string {
-  return (asset.preview_id && asset.preview_url) || ''
+  const { preview_id, preview_url } = asset
+  if (!preview_id || preview_id === getAssetContentId(asset)) return ''
+  return preview_url || ''
 }
