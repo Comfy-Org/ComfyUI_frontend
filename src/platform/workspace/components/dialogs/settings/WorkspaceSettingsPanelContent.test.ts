@@ -12,6 +12,7 @@ const { mockBannerMounted, mockBannerUnmounted } = vi.hoisted(() => ({
 }))
 
 vi.mock(import('@/platform/workspace/composables/useWorkspaceUI'))
+vi.mock(import('@/platform/workspace/composables/useBillingCapabilities'))
 
 const BillingStatusBanner = defineComponent({
   setup() {
