@@ -8,9 +8,21 @@
     "composite": true,
     "resolveJsonModule": true,
     "esModuleInterop": true,
+    "types": ["vite/client"],
     "paths": {
-      "@/*": ["./src/*"]
+      "@/*": ["./src/*"],
+      "astro:env/client": ["./.storybook/astroEnv.ts"]
     }
   },
-  "include": ["src/**/*.stories.ts"]
+  "include": [
+    ".storybook/**/*.ts",
+    "src/components/blocks/**/*.stories.ts",
+    "src/components/common/**/*.stories.ts",
+    "src/components/ui/**/*.stories.ts",
+    "src/components/product/**/*.stories.ts",
+    "src/templates/**/*.stories.ts",
+    "src/storybook/**/*.stories.ts",
+    "src/env.d.ts",
+    ".astro/**/*.d.ts"
+  ]
 }

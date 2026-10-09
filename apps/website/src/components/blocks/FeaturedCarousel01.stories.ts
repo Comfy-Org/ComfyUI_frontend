@@ -1,9 +1,9 @@
 import type { Meta, StoryObj } from '@storybook/vue3-vite'
+import { expect, userEvent, within } from 'storybook/test'
 
 import FeaturedCarousel01 from './FeaturedCarousel01.vue'
 
-const sampleImage =
-  'https://images.unsplash.com/photo-1451187580459-43490279c0fa?auto=format&fit=crop&w=1600&q=80'
+const sampleImage = '/images/mcp/mcp-thumb-keyart.webp'
 
 const meta: Meta<typeof FeaturedCarousel01> = {
   title: 'Website/Blocks/FeaturedCarousel01',
@@ -36,7 +36,37 @@ const meta: Meta<typeof FeaturedCarousel01> = {
 export default meta
 type Story = StoryObj<typeof meta>
 
-export const Default: Story = {}
+export const Default: Story = {
+  play: async ({ canvasElement }) => {
+    const canvas = within(canvasElement)
+    const firstLink = canvas.getByRole('link', {
+      name: 'LTX x Comfy: Open world models in production'
+    })
+    const secondLink = canvasElement.querySelector(
+      'a[aria-label="Comfy MCP: Live demo & Q&A"]'
+    )
+
+    await expect(firstLink.parentElement).toHaveAttribute(
+      'aria-hidden',
+      'false'
+    )
+    await userEvent.click(
+      canvas.getByRole('button', { name: 'Next featured event' })
+    )
+    await expect(firstLink.parentElement).toHaveAttribute('aria-hidden', 'true')
+    await expect(secondLink?.parentElement).toHaveAttribute(
+      'aria-hidden',
+      'false'
+    )
+    await userEvent.click(
+      canvas.getByRole('button', { name: 'Previous featured event' })
+    )
+    await expect(firstLink.parentElement).toHaveAttribute(
+      'aria-hidden',
+      'false'
+    )
+  }
+}
 
 export const SingleSlide: Story = {
   args: {
@@ -68,5 +98,11 @@ export const TitleHidden: Story = {
         title: 'Comfy MCP: Live demo & Q&A'
       }
     ]
+  }
+}
+
+export const Mobile: Story = {
+  globals: {
+    viewport: { value: 'mobile1', isRotated: false }
   }
 }
