@@ -1,0 +1,41 @@
+name: 'CI: Code Quality Package'
+
+on:
+  pull_request:
+    paths:
+      - 'packages/code-quality/**'
+      - 'pnpm-lock.yaml'
+      - '.github/workflows/ci-code-quality.yaml'
+  push:
+    branches: [main]
+    paths:
+      - 'packages/code-quality/**'
+      - 'pnpm-lock.yaml'
+      - '.github/workflows/ci-code-quality.yaml'
+
+permissions:
+  contents: read
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  package:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    strategy:
+      fail-fast: false
+      matrix:
+        manager: [npm, pnpm]
+    steps:
+      - uses: actions/checkout@v7
+      - uses: ./.github/actions/setup-frontend
+      - run: pnpm --filter @comfyorg/code-quality check
+      - run: pnpm --filter @comfyorg/code-quality test:coverage
+      - run: pnpm --filter @comfyorg/code-quality smoke:pack ${{ matrix.manager }}
+      - uses: actions/upload-artifact@v6
+        if: always()
+        with:
+          name: code-quality-coverage-${{ matrix.manager }}
+          path: packages/code-quality/coverage

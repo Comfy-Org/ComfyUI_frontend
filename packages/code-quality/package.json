@@ -1,0 +1,67 @@
+{
+  "name": "@comfyorg/code-quality",
+  "version": "0.1.0-alpha.0",
+  "description": "Pinned Comfy code-quality tools and reusable policy",
+  "license": "GPL-3.0-only",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/Comfy-Org/ComfyUI_frontend.git",
+    "directory": "packages/code-quality"
+  },
+  "bin": {
+    "comfy-code-quality": "./dist/cli.js"
+  },
+  "files": [
+    "dist"
+  ],
+  "type": "module",
+  "exports": {
+    "./eslint": "./dist/eslint.js",
+    "./format": "./dist/format.js",
+    "./oxlint.json": "./dist/presets/oxlint.json",
+    "./fallow.json": "./dist/presets/fallow.json",
+    "./package.json": "./package.json",
+    "./plugin": "./dist/plugin.js"
+  },
+  "publishConfig": {
+    "access": "public"
+  },
+  "scripts": {
+    "build": "tsc -p tsconfig.build.json && tsx scripts/build.ts",
+    "prepack": "pnpm run build",
+    "typecheck": "tsc --noEmit",
+    "test": "vitest run",
+    "test:coverage": "vitest run --coverage",
+    "format": "oxfmt --write",
+    "format:check": "oxfmt --check",
+    "lint": "oxlint --deny-warnings src tests",
+    "check": "pnpm build && pnpm typecheck && pnpm lint && pnpm format:check && pnpm test",
+    "smoke:pack": "tsx scripts/smokePack.ts"
+  },
+  "dependencies": {
+    "@vitest/eslint-plugin": "1.6.27",
+    "eslint": "10.10.0",
+    "eslint-config-prettier": "10.1.8",
+    "eslint-plugin-import-x": "4.17.1",
+    "eslint-plugin-oxlint": "1.77.0",
+    "eslint-plugin-playwright": "2.11.0",
+    "eslint-plugin-vue": "10.10.0",
+    "fallow": "3.24.1",
+    "oxfmt": "0.59.0",
+    "oxlint": "1.77.0",
+    "oxlint-tsgolint": "7.0.2001",
+    "prettier": "3.5.3",
+    "typescript": "6.0.3",
+    "typescript-eslint": "8.69.0",
+    "vue-eslint-parser": "10.4.1"
+  },
+  "devDependencies": {
+    "@types/node": "catalog:",
+    "@vitest/coverage-v8": "catalog:",
+    "tsx": "catalog:",
+    "vitest": "catalog:"
+  },
+  "engines": {
+    "node": "^22.13.0 || >=24.0.0"
+  }
+}
