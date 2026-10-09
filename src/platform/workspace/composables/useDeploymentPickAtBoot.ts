@@ -1,5 +1,5 @@
 import { t } from '@/i18n'
-import { useToastStore } from '@/platform/updates/common/toastStore'
+import { useToast } from '@/components/ui/toast/toastStore'
 import { useDeploymentPickStore } from '@/platform/workspace/stores/deploymentPickStore'
 
 /**
@@ -13,10 +13,8 @@ export async function useDeploymentPickAtBoot(): Promise<void> {
   const store = useDeploymentPickStore()
   await store.loadOnce()
   if (store.goneDeployment !== 'pick') return
-  useToastStore().add({
-    severity: 'warn',
-    summary: t('deploymentSwitcher.pickGone'),
-    detail: t('deploymentSwitcher.pickGoneDetail'),
-    life: 10000
+  useToast().warning(t('deploymentSwitcher.pickGone'), {
+    description: t('deploymentSwitcher.pickGoneDetail'),
+    duration: 10000
   })
 }

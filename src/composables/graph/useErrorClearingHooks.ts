@@ -21,6 +21,7 @@ import {
 import type { LGraphTriggerEvent } from '@/lib/litegraph/src/types/graphTriggers'
 import { ChangeTracker } from '@/scripts/changeTracker'
 import { assetService } from '@/platform/assets/services/assetService'
+import { isCloud } from '@/platform/distribution/types'
 import type { MissingMediaCandidate } from '@/platform/missingMedia/types'
 import type { MissingModelCandidate } from '@/platform/missingModel/types'
 import {

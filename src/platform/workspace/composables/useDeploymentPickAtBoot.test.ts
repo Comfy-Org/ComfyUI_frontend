@@ -2,7 +2,7 @@ import { describe, expect, it, vi } from 'vitest'
 
 import type { WorkspaceDeploymentList } from '@/platform/workspace/api/workspaceApi'
 
-import { useToastStore } from '@/platform/updates/common/toastStore'
+import { useToast } from '@/components/ui/toast/toastStore'
 import { workspaceApi } from '@/platform/workspace/api/workspaceApi'
 import { useDeploymentPickStore } from '@/platform/workspace/stores/deploymentPickStore'
 import { useTeamWorkspaceStore } from '@/platform/workspace/stores/teamWorkspaceStore'
@@ -36,14 +36,14 @@ describe('useDeploymentPickAtBoot', () => {
     await useDeploymentPickAtBoot()
 
     expect(useDeploymentPickStore().bootDeployment).toBeNull()
-    expect(useToastStore().messagesToAdd).toEqual([
-      {
-        severity: 'warn',
-        summary: 'The deployment you picked no longer exists.',
-        detail:
+    expect(useToast().toasts).toEqual([
+      expect.objectContaining({
+        kind: 'warning',
+        title: 'The deployment you picked no longer exists.',
+        description:
           'This browser now runs on Comfy Cloud. Pick a deployment again from the account menu to use one.',
-        life: 10000
-      }
+        duration: 10000
+      })
     ])
   })
 
@@ -69,7 +69,7 @@ describe('useDeploymentPickAtBoot', () => {
       await useDeploymentPickAtBoot()
 
       expect(useDeploymentPickStore().isVisible).toBe(true)
-      expect(useToastStore().messagesToAdd).toEqual([])
+      expect(useToast().toasts).toEqual([])
     }
   )
 })

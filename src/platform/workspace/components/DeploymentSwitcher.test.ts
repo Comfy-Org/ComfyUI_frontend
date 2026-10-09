@@ -7,7 +7,7 @@ import { createI18n } from 'vue-i18n'
 import type { WorkspaceDeploymentList } from '@/platform/workspace/api/workspaceApi'
 
 import enMessages from '@/locales/en/main.json'
-import { useToastStore } from '@/platform/updates/common/toastStore'
+import { useToast } from '@/components/ui/toast/toastStore'
 import { WorkspaceApiError } from '@/platform/workspace/api/workspaceApi'
 import { useDeploymentPickStore } from '@/platform/workspace/stores/deploymentPickStore'
 import { useTeamWorkspaceStore } from '@/platform/workspace/stores/teamWorkspaceStore'
@@ -375,10 +375,10 @@ describe('DeploymentSwitcher', () => {
     await userEvent.click(screen.getByTestId(`deployment-row-${D2}`))
 
     await waitFor(() =>
-      expect(useToastStore().messagesToAdd).toContainEqual(
+      expect(useToast().toasts).toContainEqual(
         expect.objectContaining({
-          severity: 'error',
-          detail: "deployment is not one of this workspace's"
+          kind: 'error',
+          description: "deployment is not one of this workspace's"
         })
       )
     )
@@ -540,7 +540,7 @@ describe('DeploymentSwitcher', () => {
     expect(screen.getByTestId(`deployment-row-${D1}`)).not.toHaveTextContent(
       'Workspace default'
     )
-    expect(useToastStore().messagesToAdd).toEqual([])
+    expect(useToast().toasts).toEqual([])
     expect(reload).not.toHaveBeenCalled()
   })
 
