@@ -2572,6 +2572,13 @@ export type ListWorkspacesResponse = {
    *
    */
   can_create_workspace: boolean
+  /**
+   * The workspace the app should open on sign-in: the workspace of the
+   * SSO organization that manages the caller's account, when the caller
+   * is a member of it. Absent for accounts no SSO organization manages.
+   *
+   */
+  default_workspace_id?: string
   workspaces: Array<WorkspaceWithRole>
 }
 
@@ -4954,6 +4961,10 @@ export type BillingCapabilities = {
   can_change_seats: boolean
   can_downgrade_to_personal: boolean
   can_invite_members: boolean
+  /**
+   * Workspace owner may manage members independently of seat quantity and subscription lifecycle. Individual target restrictions still apply.
+   */
+  can_manage_members: boolean
   can_reactivate: boolean
   /**
    * Stripe-billed only; false within 1 hour of the change.
@@ -5584,9 +5595,16 @@ export type AgentPendingAsk =
  */
 export type AgentMessage = {
   /**
-   * Message payload. User turns carry {text, attachments?, attachment_refs?, workflow_references?}. Attachments are the input-image filenames from the request. attachment_refs is the server's own resolution of those same filenames to library assets, as {name, id?, kind?} objects, and exists so a later turn in the thread can reach an earlier turn's file — clients should keep reading attachments. workflow_references is an optional array of explicit non-target references, each with workflow_id and name (an empty string when no name was supplied). An optional unavailable: true records that the reference could not be authorized at turn start, without distinguishing unknown IDs, inaccessible workflows, or lookup failures. These entries preserve the user's reference intent without exposing workflow content; the frontend restores reference chips from this metadata. The field is omitted when there are no references. Assistant turns carry {text} — the final answer text (or error copy on a failed turn). Omitted when empty (e.g. an assistant message still streaming). Per-turn token accounting is NOT included here; it is surfaced on the agent_message_done WebSocket broadcast. tool_calls is an optional array of ToolCallSummary, attached to an assistant message that has persisted terminal (ok/error) tool-call rows — it lets a chat reload render the tool history a turn produced instead of showing nothing until the next live turn. Omitted when the message has no such rows.
+   * Message payload. User turns carry {text, attachments?, attachment_refs?, workflow_references?}. Attachments are the input-image filenames from the request. attachment_refs is the server's own resolution of those same filenames to library assets, as {name, id?, kind?, display_name?} objects. display_name preserves the original user-facing filename when name is an opaque storage key. To bound denormalized data, repeated entries with the same name carry display_name only on the first occurrence; clients should apply it to every entry sharing that name. The sibling exists so a later turn in the thread can reach an earlier turn's file — clients should keep reading attachments. workflow_references is an optional array of explicit non-target references, each with workflow_id and name (an empty string when no name was supplied). An optional unavailable: true records that the reference could not be authorized at turn start, without distinguishing unknown IDs, inaccessible workflows, or lookup failures. These entries preserve the user's reference intent without exposing workflow content; the frontend restores reference chips from this metadata. The field is omitted when there are no references. Assistant turns carry {text} — the final answer text (or error copy on a failed turn). Omitted when empty (e.g. an assistant message still streaming). Per-turn token accounting is NOT included here; it is surfaced on the agent_message_done WebSocket broadcast. tool_calls is an optional array of ToolCallSummary, attached to an assistant message that has persisted terminal (ok/error) tool-call rows — it lets a chat reload render the tool history a turn produced instead of showing nothing until the next live turn. Omitted when the message has no such rows.
    */
   content?: {
+    attachment_refs?: Array<{
+      display_name?: string
+      id?: string
+      kind?: string
+      name?: string
+      [key: string]: unknown
+    }>
     tool_calls?: Array<ToolCallSummary>
     [key: string]: unknown
   }
@@ -7222,7 +7240,7 @@ export type CreateAssetData = {
      */
     name?: string
     /**
-     * Optional preview asset ID. If not provided, images will use their own ID as preview.
+     * Optional preview asset ID. Must be your own asset in this workspace; anything else (including a catalog asset, another user's published asset, or an ID that does not exist) is refused with 400 `INVALID_PREVIEW_ID`. If not provided, images will use their own ID as preview.
      */
     preview_id?: string
     /**
@@ -7241,7 +7259,7 @@ export type CreateAssetData = {
 
 export type CreateAssetErrors = {
   /**
-   * Invalid request (bad file, invalid content type, etc.)
+   * Invalid request (bad file, invalid content type, etc.), or `INVALID_PREVIEW_ID` when `preview_id` is not your own asset in this workspace
    */
   400: ErrorResponse
   /**
@@ -7397,7 +7415,7 @@ export type UpdateAssetData = {
      */
     name?: string
     /**
-     * Updated preview asset ID
+     * Updated preview asset ID. Must be your own asset in this workspace.
      */
     preview_id?: string
     /**
@@ -7434,8 +7452,9 @@ export type UpdateAssetErrors = {
   403: ForbiddenError
   /**
    * Asset not found — returned both when the asset being updated does
-   * not exist and when `preview_id` does not reference an asset
-   * accessible to the caller.
+   * not exist and when `preview_id` is not your own asset in this
+   * workspace (a catalog asset or another user's published asset
+   * does not qualify).
    *
    */
   404: ErrorResponse
@@ -7632,7 +7651,7 @@ export type AddAssetTagsResponse =
 export type CreateAssetDownloadData = {
   body: {
     /**
-     * Optional preview asset ID to associate with the downloaded asset
+     * Optional preview asset ID to associate with the downloaded asset. Must be your own asset in this workspace; otherwise the request is refused with 400 `INVALID_PREVIEW_ID`.
      */
     preview_id?: string
     /**
@@ -7657,7 +7676,7 @@ export type CreateAssetDownloadData = {
 
 export type CreateAssetDownloadErrors = {
   /**
-   * Invalid URL or unsupported source
+   * Invalid URL or unsupported source, or `INVALID_PREVIEW_ID` when `preview_id` is not your own asset in this workspace
    */
   400: ErrorResponse
   /**

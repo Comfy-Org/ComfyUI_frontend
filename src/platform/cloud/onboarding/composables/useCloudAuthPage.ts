@@ -8,6 +8,7 @@ import { useFeatureFlags } from '@/composables/useFeatureFlags'
 import { useSessionCookie } from '@/platform/auth/session/useSessionCookie'
 import { useSocialSignIn } from '@/platform/auth/social/useSocialSignIn'
 import { presentSsoRequired } from '@/platform/auth/sso/ssoRequired'
+import { useSsoRequiredInlineHost } from '@/platform/auth/sso/ssoRequiredInline'
 import { resolveSsoReturnTo } from '@/platform/cloud/onboarding/composables/useSsoSignIn'
 import { usePostAuthRedirect } from '@/platform/cloud/onboarding/composables/usePostAuthRedirect'
 import { SSO_ENTRY_OPEN_QUERY } from '@/platform/cloud/onboarding/sso/ssoEntryQuery'
@@ -28,6 +29,7 @@ export function useCloudAuthPage(options: {
   const route = useRoute()
   const router = useRouter()
   const { flags } = useFeatureFlags()
+  const { notice: ssoRequiredNotice } = useSsoRequiredInlineHost()
   const authError = ref('')
   const authMode = ref<AuthMode>(
     flags.ssoEnabled && route.query.sso === SSO_ENTRY_OPEN_QUERY.sso
@@ -66,6 +68,7 @@ export function useCloudAuthPage(options: {
   return {
     authError,
     authMode,
+    ssoRequiredNotice,
     onAuthSuccess,
     /** Snapshots, not refs: neither can change while the page is mounted. */
     isSecureContext: globalThis.isSecureContext,

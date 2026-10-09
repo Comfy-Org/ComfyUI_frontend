@@ -1597,6 +1597,7 @@ export const zMediaBadRequestError = z.union([zErrorResponse, zMediaQueryError])
  */
 export const zListWorkspacesResponse = z.object({
   can_create_workspace: z.boolean(),
+  default_workspace_id: z.string().optional(),
   workspaces: z.array(zWorkspaceWithRole)
 })
 
@@ -2979,6 +2980,7 @@ export const zBillingCapabilities = z.object({
   can_change_seats: z.boolean(),
   can_downgrade_to_personal: z.boolean(),
   can_invite_members: z.boolean(),
+  can_manage_members: z.boolean(),
   can_reactivate: z.boolean(),
   can_revert_scheduled_change: z.boolean(),
   can_subscribe_self_serve: z.boolean(),
@@ -3371,6 +3373,16 @@ export const zAgentPendingAsk = z.union([
 export const zAgentMessage = z.object({
   content: z
     .object({
+      attachment_refs: z
+        .array(
+          z.object({
+            display_name: z.string().optional(),
+            id: z.string().optional(),
+            kind: z.string().optional(),
+            name: z.string().optional()
+          })
+        )
+        .optional(),
       tool_calls: z.array(zToolCallSummary).optional()
     })
     .optional(),

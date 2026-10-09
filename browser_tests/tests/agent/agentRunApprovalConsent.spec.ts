@@ -1,6 +1,5 @@
 import type { Locator, Page, WebSocketRoute } from '@playwright/test'
 import { expect } from '@playwright/test'
-import { createI18n } from 'vue-i18n'
 
 import type { WidgetCatalog, WorkflowJSON } from '@comfyorg/comfy-multi-player'
 import type { AgentRunMode } from '@comfyorg/ingest-types'
@@ -17,6 +16,7 @@ import { HostDoc } from '@e2e/fixtures/agentConversationHostDoc'
 import type { HostFrame } from '@e2e/fixtures/agentConversationHostDoc'
 import { AgentPanel } from '@e2e/fixtures/components/AgentPanel'
 import { jsonRoute } from '@e2e/fixtures/utils/jsonRoute'
+import { AGENT_COMPOSER_LABEL } from '@e2e/fixtures/utils/agentComposerLabel'
 
 // The consent contract this suite pins (fire-2, PM-1494 / PM-1450, slack-18):
 // a run_approval ask blocks the run on the user's explicit answer. The server
@@ -39,11 +39,6 @@ const SEND_LABEL = enMessages.agent.send
 const CARD_LEAD = enMessages.agent.runApproval.leadBound
 const RUN_LABEL = enMessages.agent.runApproval.run
 const CANCEL_LABEL = enMessages.agent.runApproval.cancel
-const COMPOSER_LABEL = createI18n({
-  legacy: false,
-  locale: 'en',
-  messages: { en: enMessages }
-}).global.t('agent.placeholder')
 
 const ids = { thread_id: THREAD_ID, message_id: MESSAGE_ID }
 
@@ -195,7 +190,7 @@ async function startTurn(
   await expect(picker).toHaveText('Unsaved Workflow')
   await expect.poll(() => socket !== null).toBe(true)
 
-  await panel.getByRole('textbox', { name: COMPOSER_LABEL }).fill(prompt)
+  await panel.getByRole('textbox', { name: AGENT_COMPOSER_LABEL }).fill(prompt)
   await panel.getByRole('button', { name: SEND_LABEL }).click()
   await expect(panel.getByText(prompt).first()).toBeVisible()
   return { panel, send, answers: () => answerCalls }

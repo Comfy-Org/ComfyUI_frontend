@@ -172,7 +172,7 @@ import { PromptExecutionError, api } from './api'
 import type { ComfyApi } from './api'
 import { defaultGraph } from './defaultGraph'
 import { importA1111 } from './pnginfo'
-import { applyPromotedWidgetControl } from './promotedWidgetControl'
+import { applyPromotedWidgetControl } from '@/core/graph/subgraph/promotedWidgetControl'
 import { ComfyUI } from './ui'
 import { $el } from './ui/utils'
 import { ComfyAppMenu } from './ui/menu/index'
@@ -374,7 +374,10 @@ export class ComfyApp {
     return this.rootGraphRef.value
   }
 
-  /** Whether the root graph has been initialized. Safe to check without triggering error logs. */
+  /**
+   * Whether the root graph has been initialized. Safe to check without
+   * triggering error logs, and reactive, so it can be watched.
+   */
   get isGraphReady(): boolean {
     return !!this.rootGraphRef.value
   }
