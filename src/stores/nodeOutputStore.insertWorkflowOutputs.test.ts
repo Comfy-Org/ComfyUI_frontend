@@ -1,4 +1,4 @@
-import { describe, expect, it, vi } from 'vitest'
+import { assert, describe, expect, it, vi } from 'vitest'
 
 import { LGraph, LGraphNode } from '@/lib/litegraph/src/litegraph'
 import type { ExecutedWsMessage } from '@/platform/remote/comfyui/execution/types'
@@ -35,18 +35,17 @@ function addRootSaveImageNode(rawNodeId: string) {
   return node
 }
 
-/** What app.ts's `executed` listener does with the frame. */
-function deliverExecutedFrame(rawNodeId: string) {
+function setOutputsByRawExecutionId(rawNodeId: string) {
   const executionId = tryNormalizeNodeExecutionId(rawNodeId)
-  expect(executionId).not.toBeNull()
-  useNodeOutputStore().setNodeOutputsByExecutionId(executionId!, OUTPUT)
+  assert.exists(executionId)
+  useNodeOutputStore().setNodeOutputsByExecutionId(executionId, OUTPUT)
 }
 
 describe('nodeOutputStore: outputs for insert_workflow-remapped node ids', () => {
   it('lands an executed output on a node with a plain numeric id', () => {
     const node = addRootSaveImageNode('9')
 
-    deliverExecutedFrame('9')
+    setOutputsByRawExecutionId('9')
 
     expect(useNodeOutputStore().getNodeOutputs(node)).toEqual(OUTPUT)
   })
@@ -59,7 +58,7 @@ describe('nodeOutputStore: outputs for insert_workflow-remapped node ids', () =>
     // empty while the image appeared in the chat panel.
     const node = addRootSaveImageNode(REMAPPED_ID)
 
-    deliverExecutedFrame(REMAPPED_ID)
+    setOutputsByRawExecutionId(REMAPPED_ID)
 
     expect(useNodeOutputStore().getNodeOutputs(node)).toEqual(OUTPUT)
   })
@@ -67,7 +66,7 @@ describe('nodeOutputStore: outputs for insert_workflow-remapped node ids', () =>
   it('resolves the image URL for an agent-inserted node', () => {
     const node = addRootSaveImageNode(REMAPPED_ID)
 
-    deliverExecutedFrame(REMAPPED_ID)
+    setOutputsByRawExecutionId(REMAPPED_ID)
 
     const urls = useNodeOutputStore().getNodeImageUrls(node)
     expect(urls).toHaveLength(1)
@@ -88,7 +87,7 @@ describe('nodeOutputStore: outputs for insert_workflow-remapped node ids', () =>
       nodePreviewImages: {}
     })
 
-    deliverExecutedFrame(String(first.id))
+    setOutputsByRawExecutionId(String(first.id))
 
     const store = useNodeOutputStore()
     expect(store.getNodeOutputs(first)).toEqual(OUTPUT)
