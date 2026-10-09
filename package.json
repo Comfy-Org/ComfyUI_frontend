@@ -20,9 +20,8 @@
     "container:start": "scripts/start-comfyui-e2e.sh",
     "size:collect": "tsx scripts/size-collect.ts",
     "collect-i18n": "pnpm exec playwright test --config=playwright.i18n.config.ts",
-    "dev:cloud": "pnpm dev:cloud:test",
+    "dev:cloud": "cross-env DEV_SERVER_COMFYUI_URL=https://testcloud.comfy.org/ vite --config vite.config.mts",
     "dev:cloud:billing-web": "cross-env DEV_SERVER_COMFYUI_URL=https://testcloud.comfy.org/ VITE_BILLING_WEB_URL=http://localhost:5174 pnpm --parallel --filter @comfyorg/comfyui-frontend --filter @comfyorg/billing-web run dev",
-    "dev:cloud:test": "cross-env DEV_SERVER_COMFYUI_URL=https://testcloud.comfy.org/ vite --config vite.config.mts",
     "dev:cloud:staging": "cross-env DEV_SERVER_COMFYUI_URL=https://stagingcloud.comfy.org/ vite --config vite.config.mts",
     "dev:cloud:prod": "cross-env DEV_SERVER_COMFYUI_URL=https://cloud.comfy.org/ vite --config vite.config.mts",
     "dev:cloud:crdt": "cross-env DEV_SERVER_COMFYUI_URL=https://testcloud.comfy.org/ VITE_AGENT_CRDT_FOLLOWER=true vite --config vite.config.mts --port 6273 --strictPort",
@@ -78,9 +77,7 @@
     "typecheck:workspaces": "pnpm --recursive --if-present typecheck",
     "typecheck:website": "pnpm --filter @comfyorg/website run typecheck",
     "zipdist": "tsx scripts/zipdist.ts",
-    "test:custom-nodes:local": "start-server-and-test backend:custom-nodes http-get://127.0.0.1:8288/system_stats dev:custom-nodes http-get://localhost:5173 test:custom-nodes",
-    "backend:custom-nodes": "sh -c 'cd \"${TEST_COMFYUI_DIR:?point at your ComfyUI checkout (README Prerequisites)}\"; cp \"$OLDPWD/browser_tests/assets/plain_video.mp4\" input/ || { echo \"could not stage plain_video.mp4 into $PWD/input - the curated VHS workflow cannot run without it\" >&2; exit 1; }; PY=python3; [ -x venv/bin/python ] && PY=venv/bin/python; [ -x .venv/bin/python ] && PY=.venv/bin/python; \"$PY\" main.py --port 8288 --multi-user --cache-none'",
-    "dev:custom-nodes": "cross-env DEV_SERVER_COMFYUI_URL=http://127.0.0.1:8288 vite --config vite.config.mts --strictPort"
+    "test:custom-nodes:local": "start-server-and-test 'cd \"${TEST_COMFYUI_DIR:?point at your ComfyUI checkout (README Prerequisites)}\"; cp \"$OLDPWD/browser_tests/assets/plain_video.mp4\" input/ || { echo \"could not stage plain_video.mp4 into $PWD/input - the curated VHS workflow cannot run without it\" >&2; exit 1; }; PY=python3; [ -x venv/bin/python ] && PY=venv/bin/python; [ -x .venv/bin/python ] && PY=.venv/bin/python; \"$PY\" main.py --port 8288 --multi-user --cache-none' http-get://127.0.0.1:8288/system_stats 'cross-env DEV_SERVER_COMFYUI_URL=http://127.0.0.1:8288 vite --config vite.config.mts --strictPort' http-get://localhost:5173 test:custom-nodes"
   },
   "dependencies": {
     "@alloc/quick-lru": "catalog:",
