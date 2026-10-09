@@ -40,9 +40,6 @@ function applyMask(mask?: string) {
     :options="lightOptions"
     @update:model-value="(id) => (selected = id)"
   />
-  <p v-else class="px-1 text-xs text-primary-warm-gray">
-    {{ lc('relight.masks.noLights', locale) }}
-  </p>
   <div
     v-if="target"
     role="radiogroup"
@@ -71,7 +68,7 @@ function applyMask(mask?: string) {
     />
   </div>
   <form class="flex flex-col gap-1.5 px-1" @submit.prevent="create">
-    <label :for="subjectId" class="text-xs text-primary-warm-gray">{{
+    <label :for="subjectId" class="sr-only">{{
       lc('relight.masks.subject', locale)
     }}</label>
     <div class="flex gap-1.5">
