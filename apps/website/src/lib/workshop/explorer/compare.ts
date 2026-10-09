@@ -8,7 +8,7 @@ import { accessBadgeKey, accessFor } from './model-access'
 export const MAX_COMPARED = 4
 export const MIN_COMPARED = 2
 /** The compare view's models, kept in the address as `?compare=a,b`. */
-export const COMPARE_PARAM = 'compare'
+const COMPARE_PARAM = 'compare'
 
 export function canCompare(model: WorkshopModel): boolean {
   return accessFor(model).length > 0 && !model.incompleteReason
