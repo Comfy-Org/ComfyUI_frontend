@@ -85,7 +85,7 @@ describe('ReshootEditorSettings', () => {
       '42{Tab}'
     )
 
-    expect(emitted('update:prompt')?.at(-1)).toEqual(['a stone wall'])
+    expect(emitted('update:prompt').at(-1)).toEqual(['a stone wall'])
     expect(emitted('update:seed')).toEqual([[42]])
   })
 
