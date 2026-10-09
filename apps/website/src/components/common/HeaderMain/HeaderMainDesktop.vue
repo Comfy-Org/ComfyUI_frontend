@@ -33,6 +33,18 @@ function ownsPath(navItem: NavItem, path: string): boolean {
   )
 }
 
+function columnsAt(navItem: NavItem, placement: 'main' | 'footer') {
+  return (navItem.columns ?? []).filter(
+    (column) => (column.placement ?? 'main') === placement
+  )
+}
+
+function columnGap(navItem: NavItem): string {
+  return navItem.columns?.some((column) => column.description)
+    ? 'gap-10'
+    : 'gap-16'
+}
+
 function isNavItemActive(navItem: NavItem, path: string): boolean {
   if (ownsPath(navItem, path)) return true
   if (!navItem.columns) return false
@@ -65,24 +77,13 @@ function isNavItemActive(navItem: NavItem, path: string): boolean {
           </NavigationMenuTrigger>
           <NavigationMenuContent class="w-auto" data-testid="nav-dropdown">
             <div class="w-max">
-              <ul
-                :class="
-                  cn(
-                    'flex',
-                    navItem.columns.some((column) => column.description)
-                      ? 'gap-10'
-                      : 'gap-16'
-                  )
-                "
-              >
+              <ul :class="cn('flex', columnGap(navItem))">
                 <NavFeaturedCard
                   v-if="navItem.featured"
                   :featured="navItem.featured"
                 />
                 <NavColumn
-                  v-for="(column, columnIndex) in navItem.columns.filter(
-                    (column) => column.placement !== 'footer'
-                  )"
+                  v-for="(column, columnIndex) in columnsAt(navItem, 'main')"
                   :key="column.header ?? columnIndex"
                   :column="column"
                   :locale="locale"
@@ -90,17 +91,11 @@ function isNavItemActive(navItem: NavItem, path: string): boolean {
                 />
               </ul>
               <ul
-                v-if="
-                  navItem.columns.some(
-                    (column) => column.placement === 'footer'
-                  )
-                "
+                v-if="columnsAt(navItem, 'footer').length"
                 class="mt-6 border-t border-primary-warm-gray/20 pt-5"
               >
                 <NavColumn
-                  v-for="(column, columnIndex) in navItem.columns.filter(
-                    (column) => column.placement === 'footer'
-                  )"
+                  v-for="(column, columnIndex) in columnsAt(navItem, 'footer')"
                   :key="column.header ?? columnIndex"
                   :column="column"
                   :locale="locale"

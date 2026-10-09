@@ -16,6 +16,7 @@ import {
 } from '@/config/indexing'
 import { isWorkshopInBuild } from '@/config/workshop-release'
 import { appModels } from '@/config/workshop-app-content'
+import type { HubApp } from '@/data/mainNavigation'
 import {
   hreflangAlternates,
   localeAlternates,
@@ -136,6 +137,10 @@ const structuredData = head.emitStructuredData
       ...(extraJsonLd ?? [])
     )
   : undefined
+const hubApps: HubApp[] = appModels.map(({ appId, flag }) => ({
+  appId,
+  ...(flag && { flag })
+}))
 ---
 
 <!doctype html>
@@ -322,9 +327,7 @@ const structuredData = head.emitStructuredData
         locale={locale}
         github-stars={githubStars}
         workshop-in-build={isWorkshopInBuild()}
-        hub-apps={appModels.map(({ appId, flag }) =>
-          flag ? { appId, flag } : { appId }
-        )}
+        hub-apps={hubApps}
         client:load
       />
     )}
