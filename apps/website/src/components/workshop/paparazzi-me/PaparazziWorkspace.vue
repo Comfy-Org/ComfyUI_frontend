@@ -2,12 +2,12 @@
 import { useNow } from '@vueuse/core'
 import { computed } from 'vue'
 
-import type { PaparazziMe } from '../../../composables/usePaparazziMe'
-import type { Locale } from '../../../i18n/translations'
-import { elapsedLabel } from '../../../lib/workshop/elapsed'
-import { pc } from '../../../lib/workshop/paparazzi-me/copy'
-import EditorBusy from '../app-editor/EditorBusy.vue'
-import EditorHint from '../app-editor/EditorHint.vue'
+import type { PaparazziMe } from '@/composables/usePaparazziMe'
+import type { Locale } from '@/i18n/translations'
+import { elapsedLabel } from '@/lib/workshop/elapsed'
+import { pc } from '@/lib/workshop/paparazzi-me/copy'
+import EditorBusy from '@/components/workshop/app-editor/EditorBusy.vue'
+import EditorHint from '@/components/workshop/app-editor/EditorHint.vue'
 import PaparazziStage from './PaparazziStage.vue'
 import { runProgress, sceneName } from './sections'
 

@@ -1,9 +1,11 @@
 // The banner centres its column inside a frame of one height, so a summary
 // that runs to two lines pushes the buttons under it down by a line and they
-// move as the carousel turns. A catalogue summary is written for the model
-// page, where the room is there; these are the same models said short enough
-// to stand on one line at the banner's measure. A model with no line here
-// keeps its own summary, which the banner clamps rather than wraps.
+// move as the carousel turns. A page summary (src/data/workshop-model-summaries.json
+// or the catalogue) is written for the model page, where the room is there;
+// these are the same models said short enough to stand on one line at the
+// banner's measure, and they win over the page summary on the banner only. A
+// model with no line here keeps its own summary, which the banner clamps
+// rather than wraps.
 const BANNER_SUMMARIES: Record<string, string> = {
   'openai--gpt-image-2--generate-images':
     'Generates or edits an image, and renders text unusually well.',

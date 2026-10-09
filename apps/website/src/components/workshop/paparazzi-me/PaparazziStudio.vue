@@ -1,17 +1,17 @@
 <script setup lang="ts">
+import { translationsFor } from '@/i18n/translations'
 import { computed } from 'vue'
 
-import { usePaparazziMe } from '../../../composables/usePaparazziMe'
-import { useResultDownload } from '../../../composables/useResultDownload'
-import { reportStudioBusy } from '../../../composables/useStudioSwitchGuard'
-import type { Locale } from '../../../i18n/translations'
-import { workshopAppRepo } from '../../../lib/workshop/apps'
-import { tc } from '../../../lib/workshop/cinematic-studio/copy'
-import { pc } from '../../../lib/workshop/paparazzi-me/copy'
-import AppEditorShell from '../app-editor/AppEditorShell.vue'
-import EditorAlert from '../app-editor/EditorAlert.vue'
-import EditorPicker from '../app-editor/EditorPicker.vue'
-import { useImagePaste } from '../app-editor/useImagePaste'
+import { usePaparazziMe } from '@/composables/usePaparazziMe'
+import { useResultDownload } from '@/composables/useResultDownload'
+import { reportStudioBusy } from '@/composables/useStudioSwitchGuard'
+import type { Locale } from '@/i18n/translations'
+import { workshopAppRepo } from '@/lib/workshop/apps'
+import { pc } from '@/lib/workshop/paparazzi-me/copy'
+import AppEditorShell from '@/components/workshop/app-editor/AppEditorShell.vue'
+import EditorAlert from '@/components/workshop/app-editor/EditorAlert.vue'
+import EditorPicker from '@/components/workshop/app-editor/EditorPicker.vue'
+import { useImagePaste } from '@/components/workshop/app-editor/useImagePaste'
 import PaparazziDocks from './PaparazziDocks.vue'
 import PaparazziHistory from './PaparazziHistory.vue'
 import PaparazziMain from './PaparazziMain.vue'
@@ -26,6 +26,7 @@ const { locale = 'en', layout = 'd' } = defineProps<{
   /** The review menu's layout: `e` keeps the bottom dock, else a side panel. */
   layout?: string
 }>()
+const { t } = translationsFor(locale)
 
 const paparazzi = usePaparazziMe()
 const { phase, pickerOpen } = paparazzi
@@ -65,7 +66,7 @@ const panelLabels = {
       <EditorPicker
         v-if="panel && pickerOpen"
         :title="pc('paparazzi.scene.pick', locale)"
-        :close-label="tc('cinematic.picker.close', locale)"
+        :close-label="t('cinematic.picker.close')"
         @close="paparazzi.closePicker"
       >
         <PaparazziSceneGrid

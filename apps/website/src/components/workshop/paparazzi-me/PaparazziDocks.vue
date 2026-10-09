@@ -1,6 +1,6 @@
 <script setup lang="ts">
-import type { PaparazziMe } from '../../../composables/usePaparazziMe'
-import type { Locale } from '../../../i18n/translations'
+import type { PaparazziMe } from '@/composables/usePaparazziMe'
+import type { Locale } from '@/i18n/translations'
 import PaparazziChips from './PaparazziChips.vue'
 import PaparazziResultDock from './PaparazziResultDock.vue'
 

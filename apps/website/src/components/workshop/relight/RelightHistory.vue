@@ -1,8 +1,8 @@
 <script setup lang="ts">
-import type { Relight } from '../../../composables/useRelight'
-import type { Locale } from '../../../i18n/translations'
-import { lc } from '../../../lib/workshop/relight/copy'
-import EditorHistory from '../app-editor/EditorHistory.vue'
+import type { Relight } from '@/composables/useRelight'
+import type { Locale } from '@/i18n/translations'
+import { lc } from '@/lib/workshop/relight/copy'
+import EditorHistory from '@/components/workshop/app-editor/EditorHistory.vue'
 
 const { relight, locale = 'en' } = defineProps<{
   relight: Relight

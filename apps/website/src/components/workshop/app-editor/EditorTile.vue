@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import { cn } from '@comfyorg/tailwind-utils'
 
-import CinematicCheckBadge from '../cinematic-studio/CinematicCheckBadge.vue'
+import CinematicCheckBadge from '@/components/workshop/cinematic-studio/CinematicCheckBadge.vue'
 import type { TileAspect } from './tile-classes'
 import { TILE_ASPECT, tileCaption } from './tile-classes'
 

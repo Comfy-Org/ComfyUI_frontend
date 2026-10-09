@@ -1,15 +1,12 @@
 <script setup lang="ts">
 import { computed } from 'vue'
 
-import type { PaparazziMe } from '../../../composables/usePaparazziMe'
-import type { Locale } from '../../../i18n/translations'
-import { pc } from '../../../lib/workshop/paparazzi-me/copy'
-import type { Resolution } from '../../../lib/workshop/paparazzi-me/setup'
-import {
-  RESOLUTIONS,
-  outputSize
-} from '../../../lib/workshop/paparazzi-me/setup'
-import EditorOutput from '../app-editor/EditorOutput.vue'
+import type { PaparazziMe } from '@/composables/usePaparazziMe'
+import type { Locale } from '@/i18n/translations'
+import { pc } from '@/lib/workshop/paparazzi-me/copy'
+import type { Resolution } from '@/lib/workshop/paparazzi-me/setup'
+import { RESOLUTIONS, outputSize } from '@/lib/workshop/paparazzi-me/setup'
+import EditorOutput from '@/components/workshop/app-editor/EditorOutput.vue'
 
 const {
   paparazzi,

@@ -1,9 +1,6 @@
 <script setup lang="ts">
-import type { Light, RelightScene } from '../../../lib/workshop/relight/lights'
-import {
-  previewGlows,
-  previewShade
-} from '../../../lib/workshop/relight/preview'
+import type { Light, RelightScene } from '@/lib/workshop/relight/lights'
+import { previewGlows, previewShade } from '@/lib/workshop/relight/preview'
 
 const {
   lights,

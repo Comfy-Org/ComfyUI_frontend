@@ -6,19 +6,19 @@ import type {
   SortOrder,
   UseCase,
   WorkshopModel
-} from '../../config/models-catalogue'
+} from '@/config/models-catalogue'
 import {
   USE_CASES,
   filterWorkshopModels,
   sortWorkshopModels,
   useCasesFor
-} from '../../config/models-catalogue'
-import { OTHER_FORMAT_USE_CASES } from '../../config/workshop-sections'
-import type { Locale, TranslationKey } from '../../i18n/translations'
-import { t } from '../../i18n/translations'
-import { groupModels } from '../../config/model-family'
-import { SHELF_CARD } from '../../lib/workshop/card-layout'
-import { rememberShelfOnClick } from '../../lib/workshop/shelf-memory'
+} from '@/config/models-catalogue'
+import { OTHER_FORMAT_USE_CASES } from '@/config/workshop-sections'
+import type { Locale, TranslationKey } from '@/i18n/translations'
+import { translationsFor } from '@/i18n/translations'
+import { groupModels } from '@/config/model-family'
+import { SHELF_CARD } from '@/lib/workshop/card-layout'
+import { rememberShelfOnClick } from '@/lib/workshop/shelf-memory'
 import CardRow from './CardRow.vue'
 import WorkshopModelCard from './WorkshopModelCard.vue'
 
@@ -35,6 +35,7 @@ const {
   sort?: SortOrder
   locale?: Locale
 }>()
+const { t } = translationsFor(locale)
 
 const emit = defineEmits<{ open: [UseCase | 'other'] }>()
 
@@ -108,7 +109,7 @@ function rememberModel(
               :data-testid="`section-${section.useCase}-open`"
               @click="emit('open', section.useCase)"
             >
-              {{ t(labelKey[section.useCase], locale) }}
+              {{ t(labelKey[section.useCase]) }}
             </button>
           </h2>
         </template>
@@ -122,7 +123,7 @@ function rememberModel(
             @click="emit('open', section.useCase)"
           >
             <span class="tabular-nums">
-              {{ t('workshop.sections.seeAll', locale, { n: section.total }) }}
+              {{ t('workshop.sections.seeAll', { n: section.total }) }}
             </span>
             <ChevronRight
               class="size-4 transition-transform group-hover:translate-x-0.5"
@@ -159,7 +160,7 @@ function rememberModel(
               data-testid="section-other-formats-open"
               @click="emit('open', 'other')"
             >
-              {{ t('workshop.sections.otherFormats', locale) }}
+              {{ t('workshop.sections.otherFormats') }}
             </button>
           </h2>
         </template>
@@ -174,7 +175,7 @@ function rememberModel(
           >
             <span class="tabular-nums">
               {{
-                t('workshop.sections.seeAll', locale, {
+                t('workshop.sections.seeAll', {
                   n: otherFormats.length
                 })
               }}
@@ -209,7 +210,7 @@ function rememberModel(
         id="section-other"
         class="mb-5 flex items-baseline gap-2 text-xl font-medium text-primary-warm-white"
       >
-        {{ t('workshop.filter.other', locale) }}
+        {{ t('workshop.filter.other') }}
         <span class="text-sm text-primary-warm-gray tabular-nums">
           {{ unplaced.length }}
         </span>

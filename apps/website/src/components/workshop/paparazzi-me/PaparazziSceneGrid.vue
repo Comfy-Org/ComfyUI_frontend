@@ -1,10 +1,10 @@
 <script setup lang="ts">
 import { computed } from 'vue'
 
-import type { PaparazziMe } from '../../../composables/usePaparazziMe'
-import type { Locale } from '../../../i18n/translations'
-import { pc } from '../../../lib/workshop/paparazzi-me/copy'
-import EditorTiles from '../app-editor/EditorTiles.vue'
+import type { PaparazziMe } from '@/composables/usePaparazziMe'
+import type { Locale } from '@/i18n/translations'
+import { pc } from '@/lib/workshop/paparazzi-me/copy'
+import EditorTiles from '@/components/workshop/app-editor/EditorTiles.vue'
 
 const { paparazzi, locale = 'en' } = defineProps<{
   paparazzi: PaparazziMe

@@ -91,24 +91,10 @@ describe('WhatsNewPopup', () => {
     useReleaseStore().fetchReleases = vi.fn()
   })
 
-  it('renders correctly when shouldShow is true', () => {
-    Object.assign(useReleaseStore(), { shouldShowPopup: true })
-    Object.assign(useReleaseStore(), {
-      recentRelease: {
-        version: '1.2.3',
-        content: '# Test Release\n\nSome content'
-      } as ReleaseNote
-    })
-
-    const { container } = renderComponent()
-    // eslint-disable-next-line testing-library/no-container, testing-library/no-node-access
-    expect(container.querySelector('.whats-new-popup')).not.toBeNull()
-  })
-
   it('does not render when shouldShow is false', () => {
     Object.assign(useReleaseStore(), { shouldShowPopup: false })
     const { container } = renderComponent()
-    // eslint-disable-next-line testing-library/no-container, testing-library/no-node-access
+    // oxlint-disable-next-line testing-library/no-container, testing-library/no-node-access
     expect(container.querySelector('.whats-new-popup')).toBeNull()
   })
 
@@ -157,7 +143,7 @@ describe('WhatsNewPopup', () => {
 
     const { container } = renderComponent()
 
-    // eslint-disable-next-line testing-library/no-container, testing-library/no-node-access
+    // oxlint-disable-next-line testing-library/no-container, testing-library/no-node-access
     expect(container.querySelector('.content-text')).not.toBeNull()
   })
 

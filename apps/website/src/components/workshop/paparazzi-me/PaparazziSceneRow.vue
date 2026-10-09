@@ -1,10 +1,10 @@
 <script setup lang="ts">
 import { ImageOff } from '@lucide/vue'
 
-import type { PaparazziMe } from '../../../composables/usePaparazziMe'
-import type { Locale } from '../../../i18n/translations'
-import { pc } from '../../../lib/workshop/paparazzi-me/copy'
-import EditorPickerRow from '../app-editor/EditorPickerRow.vue'
+import type { PaparazziMe } from '@/composables/usePaparazziMe'
+import type { Locale } from '@/i18n/translations'
+import { pc } from '@/lib/workshop/paparazzi-me/copy'
+import EditorPickerRow from '@/components/workshop/app-editor/EditorPickerRow.vue'
 import { sceneName, sceneThumb } from './sections'
 
 const { paparazzi, locale = 'en' } = defineProps<{

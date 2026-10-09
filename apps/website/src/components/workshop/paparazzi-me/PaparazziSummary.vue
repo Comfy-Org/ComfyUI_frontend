@@ -1,6 +1,6 @@
 <script setup lang="ts">
-import type { PaparazziMe } from '../../../composables/usePaparazziMe'
-import type { Locale } from '../../../i18n/translations'
+import type { PaparazziMe } from '@/composables/usePaparazziMe'
+import type { Locale } from '@/i18n/translations'
 import { sceneThumb, setupSummary } from './sections'
 
 const { paparazzi, locale = 'en' } = defineProps<{

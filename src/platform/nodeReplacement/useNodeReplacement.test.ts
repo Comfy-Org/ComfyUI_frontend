@@ -16,7 +16,7 @@ import { NodeSlotType } from '@/lib/litegraph/src/types/globalEnums'
 import { useLinkStore } from '@/stores/linkStore'
 import { usePreviewExposureStore } from '@/stores/previewExposureStore'
 import { useWidgetValueStore } from '@/stores/widgetValueStore'
-import type { MissingNodeType } from '@/types/comfy'
+import type { MissingNodeType } from '@/platform/nodeReplacement/types'
 import { toOwningGraphId, toRootGraphId } from '@/types/graphScopeId'
 import { toLinkId } from '@/types/linkId'
 import { toNodeId } from '@/types/nodeId'
@@ -548,7 +548,6 @@ describe('useNodeReplacement', () => {
       vi.mocked(LiteGraph.createNode).mockReturnValue(
         createNewNode([{ name: 'in', link: null }])
       )
-      vi.spyOn(console, 'error').mockImplementation(() => {})
 
       const result = useNodeReplacement().replaceNodesInPlace([
         makeMissingNodeType('OldNode', {
@@ -632,7 +631,6 @@ describe('useNodeReplacement', () => {
         code: 'duplicate-target',
         message: 'forced'
       })
-      vi.spyOn(console, 'error').mockImplementation(() => {})
 
       const result = useNodeReplacement().replaceNodesInPlace([
         makeMissingNodeType('OldNode', {
@@ -668,7 +666,6 @@ describe('useNodeReplacement', () => {
       vi.mocked(collectAllNodes).mockReturnValue([placeholder])
       const newNode = createNewNode([], [{ name: 'removed', links: null }])
       vi.mocked(LiteGraph.createNode).mockReturnValue(newNode)
-      vi.spyOn(console, 'error').mockImplementation(() => {})
       const staleWidgetId = widgetId(GRAPH_ID, toNodeId(1), 'stale')
       useWidgetValueStore().registerWidget(staleWidgetId, {
         type: 'number',
@@ -818,7 +815,6 @@ describe('useNodeReplacement', () => {
         vi.mocked(LiteGraph.createNode).mockReturnValue(createNewNode())
         vi.mocked(canTransferReplacementOwnership).mockReturnValue(canTransfer)
         vi.mocked(transferReplacementOwnership).mockReturnValue(didTransfer)
-        vi.spyOn(console, 'error').mockImplementation(() => {})
 
         const result = useNodeReplacement().replaceNodesInPlace([
           makeMissingNodeType('OldNode', {
@@ -1875,7 +1871,6 @@ describe('useNodeReplacement', () => {
       vi.mocked(collectAllNodes).mockReturnValue([placeholder])
       const newNode = createNewNode()
       vi.mocked(LiteGraph.createNode).mockReturnValue(newNode)
-      vi.spyOn(console, 'error').mockImplementation(() => {})
 
       useNodeReplacement().replaceNodesInPlace([
         makeMissingNodeType('OldType', {

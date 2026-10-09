@@ -1,9 +1,9 @@
 <script setup lang="ts">
-import type { PaparazziMe } from '../../../composables/usePaparazziMe'
-import type { Locale } from '../../../i18n/translations'
-import { pc } from '../../../lib/workshop/paparazzi-me/copy'
-import EditorDropZone from '../app-editor/EditorDropZone.vue'
-import EditorUploadSlot from '../app-editor/EditorUploadSlot.vue'
+import type { PaparazziMe } from '@/composables/usePaparazziMe'
+import type { Locale } from '@/i18n/translations'
+import { pc } from '@/lib/workshop/paparazzi-me/copy'
+import EditorDropZone from '@/components/workshop/app-editor/EditorDropZone.vue'
+import EditorUploadSlot from '@/components/workshop/app-editor/EditorUploadSlot.vue'
 
 const { paparazzi, locale = 'en' } = defineProps<{
   paparazzi: PaparazziMe

@@ -1,7 +1,7 @@
 <script setup lang="ts">
-import type { PaparazziMe } from '../../../composables/usePaparazziMe'
-import type { Locale } from '../../../i18n/translations'
-import EditorPanelRow from '../app-editor/EditorPanelRow.vue'
+import type { PaparazziMe } from '@/composables/usePaparazziMe'
+import type { Locale } from '@/i18n/translations'
+import EditorPanelRow from '@/components/workshop/app-editor/EditorPanelRow.vue'
 import PaparazziFaceRow from './PaparazziFaceRow.vue'
 import PaparazziResolution from './PaparazziResolution.vue'
 import PaparazziSceneRow from './PaparazziSceneRow.vue'

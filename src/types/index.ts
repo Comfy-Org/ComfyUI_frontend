@@ -1,4 +1,6 @@
 import type { ComfyDesktop2Bridge } from '@comfyorg/comfyui-desktop-bridge-types'
+
+import type { DesktopHostAuthBridge } from '@/platform/auth/desktopHost/desktopHostAuthBridge'
 import type {
   GetEmbeddingsResponse as EmbeddingsResponse,
   GetExtensionsResponse as ExtensionsResponse
@@ -133,6 +135,6 @@ declare global {
      */
     __comfyDesktop2Remote?: boolean
 
-    __comfyDesktop2?: ComfyDesktop2Bridge
+    __comfyDesktop2?: ComfyDesktop2Bridge & { Auth?: DesktopHostAuthBridge }
   }
 }

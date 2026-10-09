@@ -2,15 +2,15 @@
 import { ArrowRight, Search } from '@lucide/vue'
 import { computed, ref, useId } from 'vue'
 
-import type { PaparazziMe } from '../../../composables/usePaparazziMe'
-import type { Locale } from '../../../i18n/translations'
-import { pc } from '../../../lib/workshop/paparazzi-me/copy'
-import type { Star } from '../../../lib/workshop/paparazzi-me/setup'
+import type { PaparazziMe } from '@/composables/usePaparazziMe'
+import type { Locale } from '@/i18n/translations'
+import { pc } from '@/lib/workshop/paparazzi-me/copy'
+import type { Star } from '@/lib/workshop/paparazzi-me/setup'
 import {
   STARS,
   hasCelebrity,
   matchStars
-} from '../../../lib/workshop/paparazzi-me/setup'
+} from '@/lib/workshop/paparazzi-me/setup'
 import PaparazziStarOption from './PaparazziStarOption.vue'
 
 const { paparazzi, locale = 'en' } = defineProps<{

@@ -2,16 +2,16 @@ import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import type { EffectScope } from 'vue'
 import { effectScope } from 'vue'
 
-import { PAPARAZZI_EXAMPLE } from '../lib/workshop/paparazzi-me/mock-run'
-import { renderPaparazziImage } from '../lib/workshop/paparazzi-me/render'
-import { SCENE_PLACES } from '../lib/workshop/paparazzi-me/scenes'
-import { DEFAULT_SETUP, nextSeed } from '../lib/workshop/paparazzi-me/setup'
+import { PAPARAZZI_EXAMPLE } from '@/lib/workshop/paparazzi-me/mock-run'
+import { renderPaparazziImage } from '@/lib/workshop/paparazzi-me/render'
+import { SCENE_PLACES } from '@/lib/workshop/paparazzi-me/scenes'
+import { DEFAULT_SETUP, nextSeed } from '@/lib/workshop/paparazzi-me/setup'
 import { usePaparazziMe } from './usePaparazziMe'
 
-vi.mock(import('../lib/workshop/paparazzi-me/render'), () => ({
+vi.mock(import('@/lib/workshop/paparazzi-me/render'), () => ({
   renderPaparazziImage: vi.fn(() => Promise.resolve(undefined))
 }))
-vi.mock(import('../lib/workshop/image-size'), () => ({
+vi.mock(import('@/lib/workshop/image-size'), () => ({
   imageSize: vi.fn(() => Promise.resolve({ width: 900, height: 600 }))
 }))
 

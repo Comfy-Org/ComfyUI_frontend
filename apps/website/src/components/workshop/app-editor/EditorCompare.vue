@@ -1,8 +1,8 @@
 <script setup lang="ts">
+import { translationsFor } from '@/i18n/translations'
 import { ref } from 'vue'
 
-import type { Locale } from '../../../i18n/translations'
-import { tc } from '../../../lib/workshop/cinematic-studio/copy'
+import type { Locale } from '@/i18n/translations'
 
 import EditorFrame from './EditorFrame.vue'
 import EditorSplitLine from './EditorSplitLine.vue'
@@ -30,6 +30,7 @@ const {
   height: number
   locale?: Locale
 }>()
+const { t } = translationsFor(locale)
 
 const split = ref(50)
 </script>
@@ -46,8 +47,8 @@ const split = ref(50)
       />
       <EditorSplitLine
         v-model="split"
-        :before-label="beforeLabel ?? tc('cinematic.compare.before', locale)"
-        :after-label="afterLabel ?? tc('cinematic.compare.after', locale)"
+        :before-label="beforeLabel ?? t('cinematic.compare.before')"
+        :after-label="afterLabel ?? t('cinematic.compare.after')"
         :slider-label="sliderLabel"
       />
     </div>

@@ -1,14 +1,11 @@
 import type { Component } from 'vue'
 
-import type {
-  PaparazziMe,
-  PaparazziTray
-} from '../../../composables/usePaparazziMe'
-import type { Locale } from '../../../i18n/translations'
-import type { PaparazziCopyKey } from '../../../lib/workshop/paparazzi-me/copy'
-import { pc } from '../../../lib/workshop/paparazzi-me/copy'
-import { PAPARAZZI_RUN_MS } from '../../../lib/workshop/paparazzi-me/mock-run'
-import type { RunProgress } from '../app-editor/run-progress'
+import type { PaparazziMe, PaparazziTray } from '@/composables/usePaparazziMe'
+import type { Locale } from '@/i18n/translations'
+import type { PaparazziCopyKey } from '@/lib/workshop/paparazzi-me/copy'
+import { pc } from '@/lib/workshop/paparazzi-me/copy'
+import { PAPARAZZI_RUN_MS } from '@/lib/workshop/paparazzi-me/mock-run'
+import type { RunProgress } from '@/components/workshop/app-editor/run-progress'
 import PaparazziFaceRow from './PaparazziFaceRow.vue'
 import PaparazziSceneGrid from './PaparazziSceneGrid.vue'
 import PaparazziSeed from './PaparazziSeed.vue'

@@ -5,12 +5,12 @@ import { mergeConfig, validateConfig } from 'astro/config'
 import { existsSync } from 'node:fs'
 import { mkdir, mkdtemp, readFile, rm, writeFile } from 'node:fs/promises'
 import { tmpdir } from 'node:os'
-import { join } from 'node:path'
+import { dirname, join } from 'node:path'
 import { pathToFileURL } from 'node:url'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { modelsBuildRoutes, workshopReleaseGate } from './workshop-release-gate'
 
-import { workshopModels } from '../config/workshop-browse-content'
+import { workshopModels } from '@/config/workshop-browse-content'
 
 const [{ slug: modelSlug }] = workshopModels
 
@@ -185,7 +185,14 @@ describe('Workshop release output', () => {
     async (value) => {
       vi.stubEnv('WORKSHOP_IN_BUILD', value)
       await expect(
-        buildDone(builtModelsRoutes(), ['models/', `models/${modelSlug}/`])
+        buildDone(builtModelsRoutes(), [
+          'models/',
+          `models/${modelSlug}/`,
+          'hub/models/local/',
+          'hub/models/local/4x-ultrasharp/',
+          'hub/models/local/4x-ultrasharp.md',
+          'hub/models/local/llms.txt'
+        ])
       ).resolves.toBeUndefined()
       await expect(
         buildDone(builtModelsRoutes(), ['models/unregistered/'])
@@ -212,7 +219,7 @@ describe('Workshop release output', () => {
     }
   ])('rejects an old model link in $file', async ({ file, content }) => {
     vi.stubEnv('WORKSHOP_IN_BUILD', '1')
-    await mkdir(join(root, file, '..'), { recursive: true })
+    await mkdir(dirname(join(root, file)), { recursive: true })
     await writeFile(
       join(root, file),
       content.replace('/models/bfl--flux-2-pro', '/hub/models/flux-2-pro')

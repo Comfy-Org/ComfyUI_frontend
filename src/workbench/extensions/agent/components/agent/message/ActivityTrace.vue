@@ -40,9 +40,9 @@ function labelOf(row: Extract<ActivityRow, { kind: 'tool' }>): string {
     const label =
       row.state === 'streaming'
         ? 'agent.toolLoadingSkill'
-        : row.ok
-          ? 'agent.toolLoadedSkill'
-          : 'agent.toolFailedSkill'
+        : row.ok === false
+          ? 'agent.toolFailedSkill'
+          : 'agent.toolLoadedSkill'
     return t(label, { skill: row.skill })
   }
   return toolLabel(row.name, row.state, t)
@@ -52,13 +52,20 @@ function labelOf(row: Extract<ActivityRow, { kind: 'tool' }>): string {
 // recognisable as unchanged by its contents.
 function rowSignature(row: ActivityRow): string {
   return row.kind === 'tool'
-    ? `tool:${row.name}:${row.skill}:${row.state}:${row.ok}:${row.count}`
+    ? JSON.stringify([
+        'tool',
+        row.name,
+        row.skill,
+        row.state,
+        row.ok,
+        row.count
+      ])
     : `think:${row.state}:${row.text}`
 }
 </script>
 
 <template>
-  <div role="list" class="flex flex-col">
+  <div role="list" data-testid="agent-activity-trace" class="flex flex-col">
     <div
       v-for="(row, index) in rows"
       :key="index"
@@ -86,7 +93,9 @@ function rowSignature(row: ActivityRow): string {
           >{{ row.text || t('agent.thinking') }}</span
         >
         <template v-else>
-          <span :class="labelClass(row.state)">{{ labelOf(row) }}</span>
+          <span :class="cn(labelClass(row.state), 'truncate')">{{
+            labelOf(row)
+          }}</span>
           <span
             v-if="row.count > 1"
             class="mt-0.5 shrink-0 text-xs text-muted-foreground"

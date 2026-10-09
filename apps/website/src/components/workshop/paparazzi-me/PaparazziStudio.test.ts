@@ -4,10 +4,10 @@ import { beforeEach, describe, expect, it, vi } from 'vitest'
 
 import PaparazziStudio from './PaparazziStudio.vue'
 
-vi.mock(import('../../../lib/workshop/paparazzi-me/render'), () => ({
+vi.mock(import('@/lib/workshop/paparazzi-me/render'), () => ({
   renderPaparazziImage: vi.fn(() => Promise.resolve(undefined))
 }))
-vi.mock(import('../../../lib/workshop/image-size'), () => ({
+vi.mock(import('@/lib/workshop/image-size'), () => ({
   imageSize: vi.fn(() => Promise.resolve({ width: 900, height: 600 }))
 }))
 

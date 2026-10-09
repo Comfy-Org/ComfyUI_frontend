@@ -74,6 +74,13 @@ if (hasHostTelemetryBridge) {
   initHostTelemetry()
 }
 
+const desktopHostAuth = isCloud ? undefined : window.__comfyDesktop2?.Auth
+if (desktopHostAuth) {
+  const { startDesktopHostSession } =
+    await import('@/platform/auth/desktopHost/desktopHostSession')
+  await startDesktopHostSession(desktopHostAuth)
+}
+
 const ComfyUIPreset = definePreset(Aura, {
   semantic: {
     primary: (Aura as { primitive: { blue: PaletteDesignToken } }).primitive
@@ -134,11 +141,6 @@ app.directive('tooltip', Tooltip)
 app
   .use(router)
   .use(PrimeVue, {
-    pt: {
-      popover: {
-        root: { 'aria-modal': false }
-      }
-    },
     zIndex: {
       modal: 1800,
       overlay: 1800,

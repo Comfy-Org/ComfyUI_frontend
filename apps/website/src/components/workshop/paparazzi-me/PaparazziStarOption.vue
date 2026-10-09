@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import { cn } from '@comfyorg/tailwind-utils'
 
-import { initialsOf } from '../../../lib/workshop/initials'
+import { initialsOf } from '@/lib/workshop/initials'
 
 const { name, roleLabel, active, selected } = defineProps<{
   name: string

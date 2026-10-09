@@ -1,11 +1,11 @@
 <script setup lang="ts">
 import { Crosshair, Lightbulb, Orbit } from '@lucide/vue'
 
-import type { Relight } from '../../../composables/useRelight'
-import type { Locale } from '../../../i18n/translations'
-import { lc } from '../../../lib/workshop/relight/copy'
-import EditorCompareToggle from '../app-editor/EditorCompareToggle.vue'
-import EditorTool from '../app-editor/EditorTool.vue'
+import type { Relight } from '@/composables/useRelight'
+import type { Locale } from '@/i18n/translations'
+import { lc } from '@/lib/workshop/relight/copy'
+import EditorCompareToggle from '@/components/workshop/app-editor/EditorCompareToggle.vue'
+import EditorTool from '@/components/workshop/app-editor/EditorTool.vue'
 
 const { relight, locale = 'en' } = defineProps<{
   relight: Relight

@@ -2,15 +2,15 @@
 import { useNow } from '@vueuse/core'
 import { computed } from 'vue'
 
-import type { Relight } from '../../../composables/useRelight'
-import type { Locale } from '../../../i18n/translations'
-import { lc } from '../../../lib/workshop/relight/copy'
+import type { Relight } from '@/composables/useRelight'
+import type { Locale } from '@/i18n/translations'
+import { lc } from '@/lib/workshop/relight/copy'
 import {
   RELIGHT_CREDITS,
   RELIGHT_RUN_MS
-} from '../../../lib/workshop/relight/mock-run'
-import EditorRun from '../app-editor/EditorRun.vue'
-import { clockProgress } from '../app-editor/run-progress'
+} from '@/lib/workshop/relight/mock-run'
+import EditorRun from '@/components/workshop/app-editor/EditorRun.vue'
+import { clockProgress } from '@/components/workshop/app-editor/run-progress'
 
 const {
   relight,

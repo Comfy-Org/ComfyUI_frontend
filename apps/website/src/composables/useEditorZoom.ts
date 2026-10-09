@@ -2,7 +2,7 @@ import { useEventListener } from '@vueuse/core'
 import type { InjectionKey, ShallowRef } from 'vue'
 import { computed, shallowRef } from 'vue'
 
-import type { ZoomView } from '../components/workshop/app-editor/zoom'
+import type { ZoomView } from '@/components/workshop/app-editor/zoom'
 import {
   FIT,
   panBy,
@@ -10,7 +10,7 @@ import {
   wheelFactor,
   zoomAt,
   zoomPercent
-} from '../components/workshop/app-editor/zoom'
+} from '@/components/workshop/app-editor/zoom'
 
 const TYPING = 'input, textarea, select, [contenteditable="true"]'
 const CONTROLS = 'button, a, input, textarea, select, label, [role]'

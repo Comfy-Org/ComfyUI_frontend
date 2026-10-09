@@ -1,8 +1,8 @@
 <script setup lang="ts">
-import type { PaparazziMe } from '../../../composables/usePaparazziMe'
-import type { Locale } from '../../../i18n/translations'
-import { pc } from '../../../lib/workshop/paparazzi-me/copy'
-import EditorTray from '../app-editor/EditorTray.vue'
+import type { PaparazziMe } from '@/composables/usePaparazziMe'
+import type { Locale } from '@/i18n/translations'
+import { pc } from '@/lib/workshop/paparazzi-me/copy'
+import EditorTray from '@/components/workshop/app-editor/EditorTray.vue'
 import { PAPARAZZI_SECTIONS, sectionMeta } from './sections'
 
 const { paparazzi, locale = 'en' } = defineProps<{

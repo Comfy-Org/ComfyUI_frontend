@@ -1,9 +1,10 @@
 <script setup lang="ts">
-import SectionHeader from '../../components/common/SectionHeader.vue'
-import type { Locale, TranslationKey } from '../../i18n/translations'
-import { t } from '../../i18n/translations'
+import SectionHeader from '@/components/common/SectionHeader.vue'
+import type { Locale, TranslationKey } from '@/i18n/translations'
+import { translationsFor } from '@/i18n/translations'
 
 const { locale = 'en' } = defineProps<{ locale?: Locale }>()
+const { t } = translationsFor(locale)
 
 // Every claim maps to a documented surface: the --json envelope, the
 // `comfy --json discover` contract dump, and workflow-file runs
@@ -37,15 +38,11 @@ const features: {
 
 <template>
   <section class="mx-auto max-w-9xl px-6 py-16 lg:py-24">
-    <SectionHeader
-      max-width="xl"
-      :label="t('cli.agents.label', locale)"
-      align="start"
-    >
-      {{ t('cli.agents.heading', locale) }}
+    <SectionHeader max-width="xl" :label="t('cli.agents.label')" align="start">
+      {{ t('cli.agents.heading') }}
       <template #subtitle>
         <p class="mt-4 max-w-xl text-sm text-smoke-700 lg:text-base">
-          {{ t('cli.agents.subtitle', locale) }}
+          {{ t('cli.agents.subtitle') }}
         </p>
       </template>
     </SectionHeader>
@@ -62,10 +59,10 @@ const features: {
           {{ feature.command }}
         </p>
         <h3 class="text-2xl font-light text-primary-comfy-canvas">
-          {{ t(feature.titleKey, locale) }}
+          {{ t(feature.titleKey) }}
         </h3>
         <p class="text-sm text-primary-comfy-canvas/70">
-          {{ t(feature.descriptionKey, locale) }}
+          {{ t(feature.descriptionKey) }}
         </p>
       </article>
     </div>

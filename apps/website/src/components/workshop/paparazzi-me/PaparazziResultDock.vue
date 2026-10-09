@@ -1,12 +1,12 @@
 <script setup lang="ts">
 import { ChevronLeft, RefreshCw } from '@lucide/vue'
 
-import type { PaparazziMe } from '../../../composables/usePaparazziMe'
-import type { Locale } from '../../../i18n/translations'
-import { pc } from '../../../lib/workshop/paparazzi-me/copy'
-import EditorCompareToggle from '../app-editor/EditorCompareToggle.vue'
-import EditorDivider from '../app-editor/EditorDivider.vue'
-import EditorTool from '../app-editor/EditorTool.vue'
+import type { PaparazziMe } from '@/composables/usePaparazziMe'
+import type { Locale } from '@/i18n/translations'
+import { pc } from '@/lib/workshop/paparazzi-me/copy'
+import EditorCompareToggle from '@/components/workshop/app-editor/EditorCompareToggle.vue'
+import EditorDivider from '@/components/workshop/app-editor/EditorDivider.vue'
+import EditorTool from '@/components/workshop/app-editor/EditorTool.vue'
 
 const { paparazzi, locale = 'en' } = defineProps<{
   paparazzi: PaparazziMe

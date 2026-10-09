@@ -5,12 +5,12 @@ import type {
   MoveImage,
   MoveTool,
   useMoveAnything
-} from '../../../composables/useMoveAnything'
-import type { Locale } from '../../../i18n/translations'
-import { mc } from '../../../lib/workshop/move-anything/copy'
-import EditorChip from '../app-editor/EditorChip.vue'
-import EditorDivider from '../app-editor/EditorDivider.vue'
-import EditorTool from '../app-editor/EditorTool.vue'
+} from '@/composables/useMoveAnything'
+import type { Locale } from '@/i18n/translations'
+import { mc } from '@/lib/workshop/move-anything/copy'
+import EditorChip from '@/components/workshop/app-editor/EditorChip.vue'
+import EditorDivider from '@/components/workshop/app-editor/EditorDivider.vue'
+import EditorTool from '@/components/workshop/app-editor/EditorTool.vue'
 import MoveAnythingQuality from './MoveAnythingQuality.vue'
 import MoveAnythingRun from './MoveAnythingRun.vue'
 import { MOVE_TOOLS } from './tools'

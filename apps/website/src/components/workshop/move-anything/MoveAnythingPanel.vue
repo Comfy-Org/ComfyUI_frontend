@@ -1,14 +1,11 @@
 <script setup lang="ts">
-import type {
-  MoveImage,
-  useMoveAnything
-} from '../../../composables/useMoveAnything'
-import type { Locale } from '../../../i18n/translations'
-import { mc } from '../../../lib/workshop/move-anything/copy'
-import EditorCollapsible from '../app-editor/EditorCollapsible.vue'
-import EditorPanelRow from '../app-editor/EditorPanelRow.vue'
-import EditorSeedField from '../app-editor/EditorSeedField.vue'
-import EditorTextArea from '../app-editor/EditorTextArea.vue'
+import type { MoveImage, useMoveAnything } from '@/composables/useMoveAnything'
+import type { Locale } from '@/i18n/translations'
+import { mc } from '@/lib/workshop/move-anything/copy'
+import EditorCollapsible from '@/components/workshop/app-editor/EditorCollapsible.vue'
+import EditorPanelRow from '@/components/workshop/app-editor/EditorPanelRow.vue'
+import EditorSeedField from '@/components/workshop/app-editor/EditorSeedField.vue'
+import EditorTextArea from '@/components/workshop/app-editor/EditorTextArea.vue'
 import MoveAnythingImageRow from './MoveAnythingImageRow.vue'
 import MoveAnythingQuality from './MoveAnythingQuality.vue'
 

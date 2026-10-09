@@ -2,10 +2,10 @@
 import { ImageOff } from '@lucide/vue'
 import { computed } from 'vue'
 
-import type { PaparazziMe } from '../../../composables/usePaparazziMe'
-import type { Locale } from '../../../i18n/translations'
-import { pc } from '../../../lib/workshop/paparazzi-me/copy'
-import EditorFrame from '../app-editor/EditorFrame.vue'
+import type { PaparazziMe } from '@/composables/usePaparazziMe'
+import type { Locale } from '@/i18n/translations'
+import { pc } from '@/lib/workshop/paparazzi-me/copy'
+import EditorFrame from '@/components/workshop/app-editor/EditorFrame.vue'
 import { sceneName } from './sections'
 
 const { paparazzi, locale = 'en' } = defineProps<{

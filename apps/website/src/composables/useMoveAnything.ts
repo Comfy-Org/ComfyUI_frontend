@@ -1,12 +1,12 @@
 import { tryOnScopeDispose } from '@vueuse/core'
 import { computed, ref, shallowRef } from 'vue'
 
-import type { Locale } from '../i18n/translations'
-import { imageSize } from '../lib/workshop/image-size'
-import type { MoveObject, Rect } from '../lib/workshop/move-anything/arrange'
-import { MAX_OBJECTS, isMoved } from '../lib/workshop/move-anything/arrange'
-import { mc } from '../lib/workshop/move-anything/copy'
-import type { KnownShape } from '../lib/workshop/move-anything/shapes'
+import type { Locale } from '@/i18n/translations'
+import { imageSize } from '@/lib/workshop/image-size'
+import type { MoveObject, Rect } from '@/lib/workshop/move-anything/arrange'
+import { MAX_OBJECTS, isMoved } from '@/lib/workshop/move-anything/arrange'
+import { mc } from '@/lib/workshop/move-anything/copy'
+import type { KnownShape } from '@/lib/workshop/move-anything/shapes'
 import {
   EXAMPLE_SHAPES,
   blobAround,
@@ -15,12 +15,12 @@ import {
   roundedBoxPath,
   shapeAt,
   shapeForBox
-} from '../lib/workshop/move-anything/shapes'
+} from '@/lib/workshop/move-anything/shapes'
 import type {
   MoveQuality,
   MoveResult
-} from '../lib/workshop/move-anything/mock-run'
-import { MOVE_EXAMPLE, runMove } from '../lib/workshop/move-anything/mock-run'
+} from '@/lib/workshop/move-anything/mock-run'
+import { MOVE_EXAMPLE, runMove } from '@/lib/workshop/move-anything/mock-run'
 
 export interface MoveImage {
   readonly url: string

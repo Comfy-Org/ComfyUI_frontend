@@ -1,24 +1,24 @@
 import { tryOnScopeDispose } from '@vueuse/core'
 import { computed, ref, shallowRef } from 'vue'
 
-import { imageSize } from '../lib/workshop/image-size'
+import { imageSize } from '@/lib/workshop/image-size'
 import type {
   PaparazziResult,
   PaparazziSearch,
   SceneCandidate
-} from '../lib/workshop/paparazzi-me/contract'
-import { paparazziRequest } from '../lib/workshop/paparazzi-me/contract'
+} from '@/lib/workshop/paparazzi-me/contract'
+import { paparazziRequest } from '@/lib/workshop/paparazzi-me/contract'
 import {
   PAPARAZZI_EXAMPLE,
   runPaparazzi
-} from '../lib/workshop/paparazzi-me/mock-run'
-import { lookUp, searchScenes } from '../lib/workshop/paparazzi-me/mock-search'
-import type { PaparazziSetup } from '../lib/workshop/paparazzi-me/setup'
+} from '@/lib/workshop/paparazzi-me/mock-run'
+import { lookUp, searchScenes } from '@/lib/workshop/paparazzi-me/mock-search'
+import type { PaparazziSetup } from '@/lib/workshop/paparazzi-me/setup'
 import {
   DEFAULT_SETUP,
   hasCelebrity,
   nextSeed
-} from '../lib/workshop/paparazzi-me/setup'
+} from '@/lib/workshop/paparazzi-me/setup'
 import { useCinematicPopover } from './useCinematicPopover'
 
 interface PaparazziImage {

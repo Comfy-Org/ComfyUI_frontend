@@ -2,12 +2,12 @@
 import { Copy, MoreHorizontal, Trash2 } from '@lucide/vue'
 import { computed } from 'vue'
 
-import type { Relight } from '../../../composables/useRelight'
-import type { Locale } from '../../../i18n/translations'
-import { lc } from '../../../lib/workshop/relight/copy'
-import type { Light } from '../../../lib/workshop/relight/lights'
-import EditorMenuButton from '../app-editor/EditorMenuButton.vue'
-import EditorSegmented from '../app-editor/EditorSegmented.vue'
+import type { Relight } from '@/composables/useRelight'
+import type { Locale } from '@/i18n/translations'
+import { lc } from '@/lib/workshop/relight/copy'
+import type { Light } from '@/lib/workshop/relight/lights'
+import EditorMenuButton from '@/components/workshop/app-editor/EditorMenuButton.vue'
+import EditorSegmented from '@/components/workshop/app-editor/EditorSegmented.vue'
 
 const {
   relight,

@@ -1,4 +1,4 @@
-import { mockJob } from '../mock-job'
+import { mockJob } from '@/lib/workshop/mock-job'
 import type { PaparazziRequest, PaparazziResult } from './contract'
 import { lookUp, placeOfToken } from './mock-search'
 import type { FaceCrop } from './render'

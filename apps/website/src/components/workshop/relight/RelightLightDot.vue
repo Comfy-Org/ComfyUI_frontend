@@ -3,8 +3,8 @@ import { computed, useId } from 'vue'
 
 import { cn } from '@comfyorg/tailwind-utils'
 
-import type { Light } from '../../../lib/workshop/relight/lights'
-import { nudgeFor } from '../../../lib/workshop/nudge'
+import type { Light } from '@/lib/workshop/relight/lights'
+import { nudgeFor } from '@/lib/workshop/nudge'
 
 const {
   light,

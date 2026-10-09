@@ -1,16 +1,15 @@
 <script setup lang="ts">
+import { translationsFor } from '@/i18n/translations'
 import { ChevronLeft } from '@lucide/vue'
 import { useMediaQuery } from '@vueuse/core'
 import { provide, useSlots, useTemplateRef } from 'vue'
 
 import { cn } from '@comfyorg/tailwind-utils'
 
-import { EDITOR_ZOOM, useEditorZoom } from '../../../composables/useEditorZoom'
-import { getRoutes } from '../../../config/routes'
-import type { Locale } from '../../../i18n/translations'
-import { t } from '../../../i18n/translations'
-import { tc } from '../../../lib/workshop/cinematic-studio/copy'
-import AppRepoLink from '../cinematic-studio/AppRepoLink.vue'
+import { EDITOR_ZOOM, useEditorZoom } from '@/composables/useEditorZoom'
+import { getRoutes } from '@/config/routes'
+import type { Locale } from '@/i18n/translations'
+import AppRepoLink from '@/components/workshop/cinematic-studio/AppRepoLink.vue'
 import EditorDock from './EditorDock.vue'
 import EditorDownload from './EditorDownload.vue'
 import EditorFloatingPanel from './EditorFloatingPanel.vue'
@@ -37,6 +36,7 @@ const {
   download?: { href: string; name: string }
   locale?: Locale
 }>()
+const { t } = translationsFor(locale)
 
 const slots = useSlots()
 const wide = useMediaQuery('(min-width: 768px)')
@@ -83,7 +83,7 @@ const { frame } = zoom
           <span class="h-4 w-px bg-transparency-white-t20" aria-hidden="true" />
           <a
             :href="getRoutes(locale).hubApps"
-            :aria-label="tc('cinematic.backToApps', locale)"
+            :aria-label="t('cinematic.backToApps')"
             data-testid="apps-back"
             class="flex size-9 shrink-0 items-center justify-center rounded-full text-primary-warm-gray transition hover:bg-transparency-white-t8 hover:text-primary-warm-white focus-visible:ring-3 focus-visible:ring-primary-comfy-yellow/50 focus-visible:outline-none"
           >
@@ -95,7 +95,7 @@ const { frame } = zoom
           <span
             class="shrink-0 rounded-full border border-transparency-white-t20 px-1.5 font-mono text-[9px] tracking-wider text-primary-comfy-canvas uppercase"
           >
-            {{ tc('cinematic.beta', locale) }}
+            {{ t('cinematic.beta') }}
           </span>
         </div>
         <span class="flex-1" />

@@ -3,9 +3,9 @@ import { computed, ref, useTemplateRef } from 'vue'
 
 import { cn } from '@comfyorg/tailwind-utils'
 
-import type { Locale } from '../../../i18n/translations'
-import { lc } from '../../../lib/workshop/relight/copy'
-import type { LightMapView } from '../../../lib/workshop/relight/light-map'
+import type { Locale } from '@/i18n/translations'
+import { lc } from '@/lib/workshop/relight/copy'
+import type { LightMapView } from '@/lib/workshop/relight/light-map'
 import {
   MAP_CENTER,
   MAP_RIM,
@@ -13,8 +13,8 @@ import {
   mapPoint,
   mapValue,
   nudgeMap
-} from '../../../lib/workshop/relight/light-map'
-import type { Light } from '../../../lib/workshop/relight/lights'
+} from '@/lib/workshop/relight/light-map'
+import type { Light } from '@/lib/workshop/relight/lights'
 
 const {
   view,

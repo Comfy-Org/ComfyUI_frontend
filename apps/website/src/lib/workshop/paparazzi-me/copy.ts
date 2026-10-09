@@ -1,6 +1,4 @@
-import type { NamedValues } from '../../../i18n/interpolate'
-import { interpolate } from '../../../i18n/interpolate'
-import type { Locale, LocalizedText } from '../../../i18n/translations'
+import type { Locale, LocalizedText } from '@/i18n/translations'
 
 const copy = {
   'paparazzi.title': { en: 'Paparazzi me', 'zh-CN': '狗仔偶遇' },
@@ -148,6 +146,8 @@ const copy = {
 
 export type PaparazziCopyKey = keyof typeof copy
 
+type NamedValues = Record<string, string | number>
+
 /** Paparazzi me copy. A `one | many` entry picks by `n`. */
 export function pc(
   key: PaparazziCopyKey,
@@ -156,5 +156,9 @@ export function pc(
 ): string {
   const entry: LocalizedText = copy[key]
   const [one, many = one] = (entry[locale] ?? entry.en).split(' | ')
-  return interpolate(named.n === 1 ? one : many, named)
+  return (named.n === 1 ? one : many).replace(
+    /\{(\w+)\}/g,
+    (placeholder, name: string) =>
+      Object.hasOwn(named, name) ? String(named[name]) : placeholder
+  )
 }

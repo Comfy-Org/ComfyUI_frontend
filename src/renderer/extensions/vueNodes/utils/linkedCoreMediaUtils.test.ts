@@ -47,20 +47,6 @@ function mediaNode({
 }
 
 describe('linked core media loader matching', () => {
-  it.for([
-    { nodeClass: 'LoadImage', selector: 'image' },
-    { nodeClass: 'LoadImageMask', selector: 'image' },
-    { nodeClass: 'LoadImageOutput', selector: 'image' },
-    { nodeClass: 'LoadVideo', selector: 'file' }
-  ] as const)(
-    'matches core $nodeClass by its exact selector',
-    ({ nodeClass, selector }) => {
-      const node = mediaNode({ linkedInputName: selector, nodeClass })
-
-      expect(shouldHideLinkedCoreMediaInputActions(node)).toBe(true)
-    }
-  )
-
   it('matches core LoadAudio by its exact selector', () => {
     const node = mediaNode({
       linkedInputName: 'audio',

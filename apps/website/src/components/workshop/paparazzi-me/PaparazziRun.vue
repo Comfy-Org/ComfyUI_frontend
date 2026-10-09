@@ -1,11 +1,11 @@
 <script setup lang="ts">
 import { useNow } from '@vueuse/core'
 
-import type { PaparazziMe } from '../../../composables/usePaparazziMe'
-import type { Locale } from '../../../i18n/translations'
-import { pc } from '../../../lib/workshop/paparazzi-me/copy'
-import { PAPARAZZI_CREDITS } from '../../../lib/workshop/paparazzi-me/mock-run'
-import EditorRun from '../app-editor/EditorRun.vue'
+import type { PaparazziMe } from '@/composables/usePaparazziMe'
+import type { Locale } from '@/i18n/translations'
+import { pc } from '@/lib/workshop/paparazzi-me/copy'
+import { PAPARAZZI_CREDITS } from '@/lib/workshop/paparazzi-me/mock-run'
+import EditorRun from '@/components/workshop/app-editor/EditorRun.vue'
 import { runProgress } from './sections'
 
 const {
