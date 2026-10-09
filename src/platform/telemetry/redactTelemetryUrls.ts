@@ -137,7 +137,7 @@ function consumeExcessClosingBracket(
   return false
 }
 
-const REDACTION_SENTINEL = '[Redacted]'
+export const REDACTION_SENTINEL = '[Redacted]'
 const MAX_REDACTION_DEPTH = 32
 const MAX_REDACTION_NODES = 1_000
 
