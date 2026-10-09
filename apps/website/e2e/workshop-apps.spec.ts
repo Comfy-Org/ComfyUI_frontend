@@ -851,7 +851,11 @@ test('makes a sprite sheet of the example from the floating panel', async ({
   const panel = app.getByRole('complementary', {
     name: 'Sprite sheet settings'
   })
-  await expect(panel).toContainText('explorer.webp')
+  await expect(
+    panel.getByRole('button', {
+      name: 'Replace the character: explorer.webp'
+    })
+  ).toBeVisible()
 
   await panel.getByRole('textbox', { name: 'Animation' }).fill('dancing')
   await panel.getByTestId('sprite-picker-style').click()

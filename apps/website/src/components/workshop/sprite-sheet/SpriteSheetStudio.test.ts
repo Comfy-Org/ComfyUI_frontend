@@ -175,18 +175,50 @@ describe('SpriteSheetStudio', () => {
       })
     )
 
-    expect(await within(panel()).findByText('knight.png')).toBeInTheDocument()
+    expect(
+      await within(panel()).findByRole('button', {
+        name: 'Replace the character: knight.png'
+      })
+    ).toBeInTheDocument()
   })
 
-  it('replaces the character with an image dropped on its row', async () => {
+  it('shows the character alone at the top of the panel, replaceable but never removable', async () => {
+    await openExample()
+    const source = within(panel()).getAllByRole('button')[0]
+
+    expect(source).toHaveAccessibleName('Replace the character: explorer.webp')
+    expect(within(panel()).queryByRole('button', { name: /Remove/ })).toBeNull()
+  })
+
+  it('replaces the character with an image dropped on its tile', async () => {
     await openExample()
     const file = new File(['png'], 'robot.png', { type: 'image/png' })
 
-    await fireEvent.drop(screen.getByTestId('sprite-character'), {
-      dataTransfer: { files: [file] }
-    })
+    await fireEvent.drop(
+      within(panel()).getByRole('button', {
+        name: 'Replace the character: explorer.webp'
+      }),
+      { dataTransfer: { files: [file] } }
+    )
 
-    expect(await within(panel()).findByText('robot.png')).toBeInTheDocument()
+    expect(
+      await within(panel()).findByRole('button', {
+        name: 'Replace the character: robot.png'
+      })
+    ).toBeInTheDocument()
+  })
+
+  it('replaces the character with an image chosen from the tile', async () => {
+    const user = await openExample()
+    const file = new File(['png'], 'wizard.png', { type: 'image/png' })
+
+    await user.upload(screen.getByTestId('sprite-character-file'), file)
+
+    expect(
+      await within(panel()).findByRole('button', {
+        name: 'Replace the character: wizard.png'
+      })
+    ).toBeInTheDocument()
   })
 
   it('opens every setting as a tray in the bottom composer', async () => {

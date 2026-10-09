@@ -16,24 +16,18 @@ const copy = {
   },
   'sprite.empty.upload': { en: 'Choose a character', 'zh-CN': '选择角色' },
   'sprite.empty.example': { en: 'Try the example', 'zh-CN': '试用示例' },
-  'sprite.character': { en: 'Character', 'zh-CN': '角色' },
   'sprite.character.size': {
     en: '{width} × {height}',
     'zh-CN': '{width} × {height}'
   },
-  'sprite.character.change': { en: 'Replace', 'zh-CN': '替换' },
   'sprite.character.changeLabel': {
     en: 'Replace the character',
     'zh-CN': '替换角色'
   },
-  'sprite.character.drop': {
-    en: 'Drop or paste an image to replace the character',
-    'zh-CN': '拖入或粘贴图片以替换角色'
-  },
   'sprite.animation': { en: 'Animation', 'zh-CN': '动画' },
   'sprite.animation.placeholder': {
-    en: 'e.g. dancing, soft blink…',
-    'zh-CN': '例如：跳舞、轻轻眨眼…'
+    en: 'Describe how the character moves, e.g. dancing, a soft blink…',
+    'zh-CN': '描述角色如何动起来，例如：跳舞、轻轻眨眼…'
   },
   'sprite.animation.none': { en: 'Not set', 'zh-CN': '未填写' },
   'sprite.style': { en: 'Style', 'zh-CN': '风格' },
