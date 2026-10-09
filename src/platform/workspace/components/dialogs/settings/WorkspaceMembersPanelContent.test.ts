@@ -130,43 +130,62 @@ describe('WorkspaceMembersPanelContent', () => {
     expect(workspaceStore.fetchMembers).toHaveBeenCalledTimes(1)
   })
 
-  it.for([true, false])(
-    'keeps the latest member result when overlapping loads finish backwards (failure: %s)',
-    async (latestFails) => {
-      const initial =
-        deferred<Awaited<ReturnType<typeof workspaceStore.fetchMembers>>>()
-      vi.mocked(workspaceStore.fetchMembers).mockReturnValueOnce(
-        initial.promise
-      )
-      vi.mocked(workspaceStore.fetchPendingInvites).mockRejectedValueOnce(
-        new Error('invites failed')
-      )
-      if (latestFails) {
-        vi.mocked(workspaceStore.fetchMembers).mockRejectedValueOnce(
-          new Error('retry failed')
-        )
-      }
+  it('keeps a failed retry visible after an older member request succeeds', async () => {
+    const initial =
+      deferred<Awaited<ReturnType<typeof workspaceStore.fetchMembers>>>()
+    vi.mocked(workspaceStore.fetchMembers).mockReturnValueOnce(initial.promise)
+    vi.mocked(workspaceStore.fetchPendingInvites).mockRejectedValueOnce(
+      new Error('invites failed')
+    )
+    vi.mocked(workspaceStore.fetchMembers).mockRejectedValueOnce(
+      new Error('retry failed')
+    )
 
-      renderComponent()
-      await screen.findByText('workspacePanel.members.loadFailed')
-      await userEvent.click(screen.getByRole('button', { name: 'g.retry' }))
-      await waitFor(() => {
-        expect(workspaceStore.fetchMembers).toHaveBeenCalledTimes(2)
-        expect(
-          screen.queryByText('workspacePanel.members.loadFailed') !== null
-        ).toBe(latestFails)
-      })
-
-      if (latestFails) initial.resolve([])
-      else initial.reject(new Error('stale failure'))
-      await initial.promise.catch(() => {})
-      await nextTick()
-
+    renderComponent()
+    await screen.findByText('workspacePanel.members.loadFailed')
+    await userEvent.click(screen.getByRole('button', { name: 'g.retry' }))
+    await waitFor(() => {
+      expect(workspaceStore.fetchMembers).toHaveBeenCalledTimes(2)
       expect(
-        screen.queryByText('workspacePanel.members.loadFailed') !== null
-      ).toBe(latestFails)
-    }
-  )
+        screen.getByText('workspacePanel.members.loadFailed')
+      ).toBeInTheDocument()
+    })
+
+    initial.resolve([])
+    await initial.promise
+    await nextTick()
+
+    expect(
+      screen.getByText('workspacePanel.members.loadFailed')
+    ).toBeInTheDocument()
+  })
+
+  it('keeps a successful retry clear after an older member request fails', async () => {
+    const initial =
+      deferred<Awaited<ReturnType<typeof workspaceStore.fetchMembers>>>()
+    vi.mocked(workspaceStore.fetchMembers).mockReturnValueOnce(initial.promise)
+    vi.mocked(workspaceStore.fetchPendingInvites).mockRejectedValueOnce(
+      new Error('invites failed')
+    )
+
+    renderComponent()
+    await screen.findByText('workspacePanel.members.loadFailed')
+    await userEvent.click(screen.getByRole('button', { name: 'g.retry' }))
+    await waitFor(() => {
+      expect(workspaceStore.fetchMembers).toHaveBeenCalledTimes(2)
+      expect(
+        screen.queryByText('workspacePanel.members.loadFailed')
+      ).not.toBeInTheDocument()
+    })
+
+    initial.reject(new Error('stale failure'))
+    await initial.promise.catch(() => {})
+    await nextTick()
+
+    expect(
+      screen.queryByText('workspacePanel.members.loadFailed')
+    ).not.toBeInTheDocument()
+  })
 
   it('preserves a member failure when a later invite-only load succeeds', async () => {
     const canManage = ref(false)
