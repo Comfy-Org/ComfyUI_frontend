@@ -1,0 +1,47 @@
+<script setup lang="ts">
+import { externalLinks } from '@/config/routes'
+import type { Locale } from '@/i18n/translations'
+import { translationsFor } from '@/i18n/translations'
+
+const { locale } = defineProps<{ locale: Locale }>()
+const { t } = translationsFor(locale)
+
+const socialLinks = (
+  [
+    ['nav.github', externalLinks.github, 'github'],
+    ['nav.discord', externalLinks.discord, 'discord'],
+    ['nav.x', externalLinks.x, 'x'],
+    ['nav.youtube', externalLinks.youtube, 'youtube'],
+    ['nav.linkedin', externalLinks.linkedin, 'linkedin'],
+    ['nav.instagram', externalLinks.instagram, 'instagram']
+  ] as const
+).map(([key, href, icon]) => ({
+  label: t(key),
+  href,
+  icon: `/icons/social/${icon}.svg`
+}))
+</script>
+
+<template>
+  <nav :aria-label="t('footer.social')">
+    <ul class="flex flex-wrap gap-2">
+      <li v-for="link in socialLinks" :key="link.href">
+        <a
+          :href="link.href"
+          target="_blank"
+          rel="noopener"
+          class="flex size-10 items-center justify-center rounded-full border border-primary-comfy-canvas transition-colors hover:border-primary-warm-white hover:text-primary-warm-white"
+        >
+          <span
+            class="block size-4 icon-mask"
+            :style="{ maskImage: `url('${link.icon}')` }"
+            aria-hidden="true"
+          />
+          <span class="sr-only">
+            {{ link.label }} ({{ t('nav.opensInNewTab') }})
+          </span>
+        </a>
+      </li>
+    </ul>
+  </nav>
+</template>

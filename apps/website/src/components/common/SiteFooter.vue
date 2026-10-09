@@ -8,6 +8,7 @@ import { translationsFor } from '@/i18n/translations'
 import type { LocaleAlternate } from '@/lib/hreflang'
 import FooterLinkColumn from './FooterLinkColumn.vue'
 import type { FooterLink } from './FooterLinkColumn.vue'
+import FooterSocialLinks from './FooterSocialLinks.vue'
 import LanguageSwitcher from './LanguageSwitcher.vue'
 
 const { locale = 'en', alternates = [] } = defineProps<{
@@ -36,7 +37,7 @@ useFrameScrub(canvasRef, {
   })
 })
 
-const topColumns: { title: string; links: FooterLink[] }[] = [
+const columns: { title: string; links: FooterLink[] }[] = [
   {
     title: t('footer.products'),
     links: [
@@ -157,38 +158,8 @@ const topColumns: { title: string; links: FooterLink[] }[] = [
         external: true
       },
       {
-        label: t('nav.discord'),
-        href: externalLinks.discord,
-        external: true
-      },
-      {
-        label: t('nav.github'),
-        href: externalLinks.github,
-        external: true
-      },
-      {
         label: t('nav.docs'),
         href: externalLinks.docs,
-        external: true
-      },
-      {
-        label: t('nav.youtube'),
-        href: externalLinks.youtube,
-        external: true
-      },
-      {
-        label: t('nav.instagram'),
-        href: externalLinks.instagram,
-        external: true
-      },
-      {
-        label: t('nav.x'),
-        href: externalLinks.x,
-        external: true
-      },
-      {
-        label: t('nav.linkedin'),
-        href: externalLinks.linkedin,
         external: true
       },
       {
@@ -222,29 +193,28 @@ const topColumns: { title: string; links: FooterLink[] }[] = [
         external: true
       }
     ]
+  },
+  {
+    title: t('footer.contact'),
+    links: [
+      { label: t('footer.sales'), href: routes.contact },
+      {
+        label: t('footer.support'),
+        href: externalLinks.support,
+        external: true
+      },
+      {
+        label: t('footer.cloudStatus'),
+        href: externalLinks.cloudStatus,
+        external: true
+      },
+      {
+        label: t('footer.press'),
+        href: 'mailto:press@comfy.org'
+      }
+    ]
   }
 ]
-
-const contactColumn: { title: string; links: FooterLink[] } = {
-  title: t('footer.contact'),
-  links: [
-    { label: t('footer.sales'), href: routes.contact },
-    {
-      label: t('footer.support'),
-      href: externalLinks.support,
-      external: true
-    },
-    {
-      label: t('footer.cloudStatus'),
-      href: externalLinks.cloudStatus,
-      external: true
-    },
-    {
-      label: t('footer.press'),
-      href: 'mailto:press@comfy.org'
-    }
-  ]
-}
 </script>
 
 <template>
@@ -253,36 +223,29 @@ const contactColumn: { title: string; links: FooterLink[] } = {
     class="bg-primary-comfy-ink px-6 py-8 text-primary-comfy-canvas lg:px-20"
   >
     <div
-      class="grid gap-12 border-t border-primary-warm-gray pt-16 lg:grid-cols-2 lg:gap-4"
+      class="grid gap-12 border-t border-primary-warm-gray pt-16 lg:grid-cols-4 lg:gap-x-6"
     >
-      <!-- Tagline -->
-      <p class="text-2xl font-medium tracking-wide uppercase lg:text-3xl">
-        {{ t('footer.tagline') }}
-      </p>
+      <div class="flex flex-col gap-8">
+        <p class="text-2xl font-medium tracking-wide uppercase">
+          {{ t('footer.tagline') }}
+        </p>
+        <FooterSocialLinks :locale />
+      </div>
 
-      <!-- Link columns -->
-      <div class="flex flex-col gap-12 lg:row-span-2 lg:justify-between">
-        <div class="flex flex-col gap-12">
-          <div
-            class="grid grid-cols-1 gap-12 lg:grid-cols-3 xl:grid-cols-5 xl:gap-x-6"
-          >
-            <FooterLinkColumn
-              v-for="column in topColumns"
-              :key="column.title"
-              :title="column.title"
-              :links="column.links"
-            />
-          </div>
-
-          <div class="grid grid-cols-1 gap-12">
-            <FooterLinkColumn
-              :title="contactColumn.title"
-              :links="contactColumn.links"
-            />
-          </div>
+      <div
+        class="flex flex-col gap-12 lg:col-span-3 lg:row-span-2 lg:justify-between"
+      >
+        <div
+          class="grid grid-cols-1 gap-12 lg:grid-cols-3 xl:grid-cols-6 xl:gap-x-4"
+        >
+          <FooterLinkColumn
+            v-for="column in columns"
+            :key="column.title"
+            :title="column.title"
+            :links="column.links"
+          />
         </div>
 
-        <!-- Bottom bar -->
         <div
           class="flex flex-wrap items-center justify-center gap-6 lg:justify-end"
         >
@@ -294,7 +257,6 @@ const contactColumn: { title: string; links: FooterLink[] } = {
         </div>
       </div>
 
-      <!-- Logo -->
       <canvas ref="canvasRef" class="pointer-events-none size-52 lg:mt-28" />
     </div>
   </footer>

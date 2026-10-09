@@ -123,6 +123,51 @@ describe('SiteFooter', () => {
     ])
   })
 
+  it.for([
+    ['en', 'Follow Comfy'],
+    ['zh-CN', '关注 Comfy']
+  ] as const)(
+    'shows the social channels as icon links under the tagline (%s)',
+    ([locale, name]) => {
+      render(SiteFooter, { props: { locale } })
+
+      const links = within(
+        screen.getByRole('navigation', { name })
+      ).getAllByRole('link')
+      expect(links.map((link) => link.getAttribute('href'))).toEqual([
+        externalLinks.github,
+        externalLinks.discord,
+        externalLinks.x,
+        externalLinks.youtube,
+        externalLinks.linkedin,
+        externalLinks.instagram
+      ])
+      for (const link of links) {
+        expect(link.getAttribute('target')).toBe('_blank')
+        expect(link.getAttribute('rel')).toBe('noopener')
+        expect(link).toHaveAccessibleName()
+      }
+    }
+  )
+
+  it('lists no social channel as a text link in Resources', () => {
+    render(SiteFooter)
+
+    const hrefs = within(screen.getByRole('navigation', { name: 'Resources' }))
+      .getAllByRole('link')
+      .map((link) => link.getAttribute('href'))
+    for (const href of [
+      externalLinks.github,
+      externalLinks.discord,
+      externalLinks.x,
+      externalLinks.youtube,
+      externalLinks.linkedin,
+      externalLinks.instagram
+    ]) {
+      expect(hrefs).not.toContain(href)
+    }
+  })
+
   it('keeps Docs in Resources, opening in a new tab', () => {
     render(SiteFooter)
 
