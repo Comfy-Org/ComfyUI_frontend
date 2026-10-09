@@ -1774,6 +1774,112 @@ describe('CinematicStudio', () => {
     })
   })
 
+  describe('full-screen starting input', () => {
+    const sourceModel = videoModels.find((option) => option.video?.sourceVideo)!
+    const frameModel = videoModels.find(
+      (option) => option.firstFrameSlug && !option.video?.sourceVideo
+    )!
+
+    async function renderEditor(video?: CinematicModel) {
+      vi.mocked(useWorkshopFlag).mockImplementation(() => computed(() => true))
+      vi.mocked(router_render).mockImplementation(async (slug) =>
+        rendered(slug)
+      )
+      render(CinematicStudioPage, {
+        props: { apps: appModels, models: video ? [...models, video] : models }
+      })
+      const user = userEvent.setup()
+      const panel = await screen.findByRole('complementary', {
+        name: 'Shot settings'
+      })
+      if (video)
+        await user.click(within(panel).getByRole('button', { name: 'Video' }))
+      return { user, panel }
+    }
+
+    it.for([
+      {
+        name: 'source video',
+        video: () => sourceModel,
+        kind: 'video',
+        add: 'Add the video to edit',
+        file: new File(['clip'], 'clip.mp4', { type: 'video/mp4' }),
+        slug: () => sourceModel.slug
+      },
+      {
+        name: 'first frame',
+        video: () => frameModel,
+        kind: 'firstFrame',
+        add: 'Add a starting frame',
+        file: new File(['frame'], 'frame.png', { type: 'image/png' }),
+        slug: () => frameModel.firstFrameSlug
+      }
+    ])(
+      'puts the $name alone above the scene box and runs the shot from it',
+      async ({ video, kind, add, file, slug }) => {
+        const { user, panel } = await renderEditor(video())
+
+        expect(within(panel).getByRole('button', { name: add })).toBeVisible()
+        expect(screen.queryByTestId(`cinematic-reference-${kind}`)).toBeNull()
+
+        await user.upload(screen.getByTestId(`cinematic-start-${kind}`), file)
+        expect(
+          within(panel).getByRole('button', { name: `Change: ${file.name}` })
+        ).toBeVisible()
+        await user.type(screen.getByLabelText('Scene'), 'A diner at dawn')
+        await user.click(generateButton())
+
+        await vi.waitFor(() => expect(router_render).toHaveBeenCalledOnce())
+        const call = vi.mocked(router_render).mock.calls[0]
+        expect(call[0]).toBe(slug())
+        expect(sent(call).references).toContain(file)
+      }
+    )
+
+    it('keeps the ending frame in the scene box and removes an optional first frame from its tile', async () => {
+      const { user, panel } = await renderEditor(frameModel)
+      await user.upload(
+        screen.getByTestId('cinematic-start-firstFrame'),
+        new File(['frame'], 'frame.png', { type: 'image/png' })
+      )
+      expect(
+        screen.getByTestId('cinematic-reference-lastFrame')
+      ).toBeInTheDocument()
+
+      await user.click(
+        within(panel).getByRole('button', {
+          name: 'Remove reference: Starting frame'
+        })
+      )
+
+      expect(
+        within(panel).getByRole('button', { name: 'Add a starting frame' })
+      ).toBeVisible()
+    })
+
+    it('keeps a required source video replaceable but not removable', async () => {
+      const { user, panel } = await renderEditor(sourceModel)
+      await user.upload(
+        screen.getByTestId('cinematic-start-video'),
+        new File(['clip'], 'clip.mp4', { type: 'video/mp4' })
+      )
+
+      expect(
+        within(panel).getByRole('button', { name: 'Change: clip.mp4' })
+      ).toBeVisible()
+      expect(
+        within(panel).queryByRole('button', { name: /^Remove reference/ })
+      ).toBeNull()
+    })
+
+    it('shows no starting tile for a still, whose character stays in the scene box', async () => {
+      await renderEditor()
+
+      expect(screen.queryByTestId(/^cinematic-start-/)).toBeNull()
+      expect(screen.getByTestId('cinematic-reference-cast')).toBeInTheDocument()
+    })
+  })
+
   describe('layout switch', () => {
     const panel = () =>
       screen.queryByRole('complementary', { name: 'Shot settings' })
