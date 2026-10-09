@@ -6,8 +6,6 @@ import type {
 } from '@comfyorg/ingest-types'
 import type { Page, Route } from '@playwright/test'
 
-import type { RemoteConfig } from '@/platform/remoteConfig/types'
-
 import type { SettingDialog } from '@e2e/fixtures/components/SettingDialog'
 import { jsonRoute } from '@e2e/fixtures/utils/jsonRoute'
 
@@ -17,12 +15,6 @@ import { jsonRoute } from '@e2e/fixtures/utils/jsonRoute'
  * in-memory `/secrets` backend and the open-the-Secrets-panel helper, so the
  * spec files hold only the behavioral flow.
  */
-
-// `/api/features` is the remote-config source. Enabling user secrets is what
-// surfaces the Secrets settings panel for a signed-in user.
-export const SECRETS_BOOT_FEATURES = {
-  user_secrets_enabled: true
-} satisfies RemoteConfig
 
 // TutorialCompleted suppresses the new-user template browser, whose modal
 // overlay (z-1700) would otherwise intercept clicks on the settings dialog.
