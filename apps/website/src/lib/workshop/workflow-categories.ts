@@ -1,6 +1,6 @@
 import type { WorkflowWorkshopModel } from '@/config/models-catalogue'
 
-export const WORKFLOW_CATEGORY_PARAM = 'category'
+const WORKFLOW_CATEGORY_PARAM = 'category'
 export const ALL_WORKFLOWS = 'all'
 
 export interface WorkflowCategory {
