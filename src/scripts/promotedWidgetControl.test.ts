@@ -9,7 +9,7 @@ import {
 } from '@/lib/litegraph/src/subgraph/__fixtures__/subgraphHelpers'
 import { useWidgetValueStore } from '@/stores/widgetValueStore'
 
-import { IS_CONTROL_WIDGET } from './controlWidgetMarker'
+import { IS_CONTROL_WIDGET } from '@/core/graph/widgets/controlWidgetMarker'
 import { applyPromotedWidgetControl } from './promotedWidgetControl'
 
 class SeedNode extends LGraphNode {

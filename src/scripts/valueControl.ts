@@ -7,7 +7,7 @@ import { findComboValueIndex } from '@/lib/litegraph/src/utils/widget'
 import type { ControlOptions } from '@/types/simplifiedWidget'
 import { isControlOption } from '@/types/simplifiedWidget'
 
-import { IS_CONTROL_WIDGET } from './controlWidgetMarker'
+import { IS_CONTROL_WIDGET } from '@/core/graph/widgets/controlWidgetMarker'
 
 type ValueControlMode = ControlOptions | 'increment-wrap'
 
