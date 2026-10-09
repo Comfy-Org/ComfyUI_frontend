@@ -15,9 +15,9 @@ const { initialSection = 'packs', onClose = () => {} } = defineProps<{
 }>()
 const section = ref(initialSection)
 const fetchLibrary =
-  import.meta.env.VITE_COMMUNITY_WORKFLOW_SOURCE === 'service'
-    ? (route: string, options?: RequestInit) => api.fetchApi(route, options)
-    : createCommunityWorkflowRequest()
+  import.meta.env.VITE_COMMUNITY_WORKFLOW_SOURCE === 'static'
+    ? createCommunityWorkflowRequest()
+    : (route: string, options?: RequestInit) => api.fetchApi(route, options)
 provide(OnCloseKey, onClose)
 </script>
 
