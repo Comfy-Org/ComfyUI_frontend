@@ -313,8 +313,7 @@ import { useRightSidePanelStore } from '@/stores/workspace/rightSidePanelStore'
 import { isVideoOutput } from '@/utils/litegraphUtil'
 import {
   getNodeByLocatorId,
-  locatorIdFromState,
-  subgraphIdFromState
+  locatorIdFromState
 } from '@/utils/graphTraversalUtil'
 import { cn } from '@comfyorg/tailwind-utils'
 import { toNodeId } from '@/types/nodeId'
@@ -637,11 +636,6 @@ const handleEnterSubgraph = () => {
 
 const nodeOutputs = useNodeOutputStore()
 
-const nodeOutputLocatorId = computed(() => {
-  const subgraphId = subgraphIdFromState(nodeData, canvasStore.rootGraphId)
-  return subgraphId ? `${subgraphId}:${nodeData.id}` : nodeData.id
-})
-
 function resolveLGraphNode() {
   const locatorId = nodeLocatorId.value
   if (!locatorId) return null
@@ -723,7 +717,8 @@ const hasVideoEditWidget = computed(() =>
 )
 
 const nodeMedia = computed(() => {
-  const newOutputs = nodeOutputs.nodeOutputs[nodeOutputLocatorId.value]
+  const locatorId = nodeLocatorId.value
+  const newOutputs = locatorId ? nodeOutputs.nodeOutputs[locatorId] : undefined
   const node = lgraphNode.value
 
   if (

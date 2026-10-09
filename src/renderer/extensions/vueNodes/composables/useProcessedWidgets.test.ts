@@ -20,7 +20,6 @@ import { useLinkStore } from '@/stores/linkStore'
 import { useWidgetValueStore } from '@/stores/widgetValueStore'
 import type { WidgetRenderState } from '@/stores/widgetValueStore'
 import {
-  createLeafNodeLocatorId,
   createNodeExecutionId,
   createNodeLocatorId
 } from '@/types/nodeIdentification'
@@ -583,7 +582,7 @@ describe('computeProcessedWidgets', () => {
     const [processed] = processWidgets({ widgetIds: [id], nodeId })
 
     expect(processed.simplified.nodeLocatorId).toBe(
-      createLeafNodeLocatorId(null, nodeId)
+      createNodeLocatorId(null, nodeId)
     )
   })
 
