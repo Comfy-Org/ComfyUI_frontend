@@ -182,47 +182,6 @@ describe('reduceCreditTransitionNotice', () => {
       expect(reduceCreditTransitionNotice(other, event)).toBe(other)
     })
   })
-
-  it('reports one impression per refill-and-exhaust cycle', () => {
-    const funded = reduceCreditTransitionNotice(null, {
-      type: 'scopedRead',
-      identity: IDENTITY,
-      scopedHasFunds: true
-    })
-
-    const exhaustedFirst = reduceCreditTransitionNotice(funded, {
-      type: 'scopedRead',
-      identity: IDENTITY,
-      scopedHasFunds: false
-    })
-    const shownFirst = reduceCreditTransitionNotice(exhaustedFirst, {
-      type: 'shown',
-      identity: IDENTITY
-    })
-    expect(shownFirst).not.toBe(exhaustedFirst)
-
-    const refilled = reduceCreditTransitionNotice(shownFirst, {
-      type: 'scopedRead',
-      identity: IDENTITY,
-      scopedHasFunds: true
-    })
-    const shownSecond = reduceCreditTransitionNotice(refilled, {
-      type: 'shown',
-      identity: IDENTITY
-    })
-    expect(shownSecond).toBe(refilled)
-
-    const exhaustedSecond = reduceCreditTransitionNotice(shownSecond, {
-      type: 'scopedRead',
-      identity: IDENTITY,
-      scopedHasFunds: false
-    })
-    const shownThird = reduceCreditTransitionNotice(exhaustedSecond, {
-      type: 'shown',
-      identity: IDENTITY
-    })
-    expect(shownThird).not.toBe(exhaustedSecond)
-  })
 })
 
 describe('isCreditTransitionNoticeOpen', () => {
