@@ -328,10 +328,6 @@ watch(billingIdentity, () => {
   agentPanelStore.reportedExhaustionIdentity = null
 })
 
-// Feeds the notice episode every defined scoped read, and nothing else. The
-// first-read guard, the once-per-episode impression, the refill re-arm and the
-// dismissal all live in the pure transition behind this store action, while
-// `agentHasFunds` keeps total exhaustion on the existing paywall path.
 watch(
   [billingIdentity, agentScopedHasFunds],
   ([identity, scopedHasFunds]) => {
