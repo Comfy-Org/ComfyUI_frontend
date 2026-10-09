@@ -1,4 +1,4 @@
-import { describe, expect, it } from 'vitest'
+import { describe, expect, it, vi } from 'vitest'
 
 import { useAssetSelectionStore } from './useAssetSelectionStore'
 
@@ -125,6 +125,45 @@ describe('useAssetSelectionStore', () => {
       store.addToSelection('asset-2')
       expect(store.selectedIdsArray).toContain('asset-1')
       expect(store.selectedIdsArray).toContain('asset-2')
+    })
+  })
+
+  describe('getSelectedAt', () => {
+    it('keeps the original join time when another asset is added later', () => {
+      vi.spyOn(Date, 'now').mockReturnValue(1_000)
+      const store = useAssetSelectionStore()
+      store.addToSelection('video-a')
+
+      vi.spyOn(Date, 'now').mockReturnValue(5_000)
+      store.addToSelection('video-b')
+
+      expect(store.getSelectedAt('video-a')).toBe(1_000)
+      expect(store.getSelectedAt('video-b')).toBe(5_000)
+    })
+
+    it('stamps assets added in one selection with the same join time', () => {
+      vi.spyOn(Date, 'now').mockReturnValue(2_000)
+      const store = useAssetSelectionStore()
+      store.addToSelection('video-a')
+
+      vi.spyOn(Date, 'now').mockReturnValue(8_000)
+      store.setSelection(['video-a', 'video-b', 'video-c'])
+
+      expect(store.getSelectedAt('video-a')).toBe(2_000)
+      expect(store.getSelectedAt('video-b')).toBe(8_000)
+      expect(store.getSelectedAt('video-c')).toBe(8_000)
+    })
+
+    it('forgets the join time when an asset is deselected or the group is cleared', () => {
+      const store = useAssetSelectionStore()
+      store.setSelection(['video-a', 'video-b'])
+      store.removeFromSelection('video-a')
+
+      expect(store.getSelectedAt('video-a')).toBe(null)
+      expect(store.getSelectedAt('video-b')).not.toBe(null)
+
+      store.clearSelection()
+      expect(store.getSelectedAt('video-b')).toBe(null)
     })
   })
 })
