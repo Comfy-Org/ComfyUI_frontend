@@ -72,11 +72,14 @@ describe('BackendSimulator frame scripting', () => {
   })
 
   it('leaves the metadata scope clean after each frame', () => {
-    const { sent, simulator } = harness()
+    const { sent, simulator, execution } = harness()
     const scoped = simulator.prompt('job-a', { workflowId: 'wf-a' })
-    const legacy = simulator.prompt('job-b')
 
-    simulator.play([scoped.start(), legacy.start()])
+    simulator.play([scoped.start()])
+    // Straight through `execution`, outside any scope. Going through a second
+    // prompt masked the defect, because that prompt opened its own scope and
+    // set the metadata itself, so a scope that never restored still passed.
+    execution.executionStart('job-b')
 
     expect(sent[0].data.workflow_id).toBe('wf-a')
     expect(sent[1].data).not.toHaveProperty('workflow_id')
@@ -113,78 +116,6 @@ describe('BackendSimulator frame scripting', () => {
     expect(sent[0].data.workflow_id).toBe('wf-a')
     expect(sent[1].type).toBe('status')
     expect(sent[1].data).not.toHaveProperty('workflow_id')
-  })
-
-  it('keeps the workflow id scope open across awaits', async () => {
-    const { sent, execution } = harness()
-
-    await execution.withWorkflowId('wf-a', async () => {
-      execution.executionStart('job-a')
-      await Promise.resolve()
-      execution.executionSuccess('job-a')
-    })
-    execution.executionStart('job-b')
-
-    expect(sent.map((frame) => frame.data.workflow_id)).toEqual([
-      'wf-a',
-      'wf-a',
-      undefined
-    ])
-  })
-
-  it('refuses a second scope while an async one is still in flight', async () => {
-    const { execution } = harness()
-    let release!: () => void
-    const blocked = new Promise<void>((resolve) => {
-      release = resolve
-    })
-
-    const scope = execution.withWorkflowId('wf-a', () => blocked)
-    expect(() => execution.withWorkflowId('wf-b', () => {})).toThrow(
-      /in flight/
-    )
-
-    release()
-    await scope
-
-    expect(() => execution.withWorkflowId('wf-b', () => {})).not.toThrow()
-  })
-
-  it('refuses a scope nested inside another scope', () => {
-    const { execution } = harness()
-
-    // Nesting slipped past the in-flight guard entirely, because the flag was
-    // only raised *after* `fn()` returned. Two live scopes cannot be attributed
-    // to their prompts, so the second one throws wherever it is opened from.
-    expect(() =>
-      execution.withWorkflowId('wf-a', () =>
-        execution.withWorkflowId('wf-b', () => {})
-      )
-    ).toThrow(/already in flight/)
-  })
-
-  it('does not resurrect a closed scope when a nested async one settles', async () => {
-    const { sent, execution } = harness()
-    let release!: () => void
-    const blocked = new Promise<void>((resolve) => {
-      release = resolve
-    })
-
-    // The shape the nesting hole produced: the inner scope's `finally` restored
-    // its own saved value, bringing the already-closed outer scope back to life
-    // and stamping every later frame `wf-a` for the rest of the test. Before the
-    // guard this emitted `[undefined, 'wf-a']`.
-    expect(() =>
-      execution.withWorkflowId('wf-a', () => {
-        void execution.withWorkflowId('wf-b', () => blocked)
-      })
-    ).toThrow(/already in flight/)
-
-    release()
-    await blocked
-    execution.executionStart('job-after')
-
-    expect(sent.map((frame) => frame.data.workflow_id)).toEqual([undefined])
   })
 
   it('duplicates a frame', () => {

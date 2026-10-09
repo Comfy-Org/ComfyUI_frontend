@@ -11,14 +11,6 @@ import { createMockJob } from '@e2e/fixtures/helpers/AssetsHelper'
 
 const PROMPT_ROUTE_PATTERN = /\/api\/prompt$/
 
-function isPromiseLike(value: unknown): value is PromiseLike<unknown> {
-  return (
-    typeof value === 'object' &&
-    value !== null &&
-    typeof (value as PromiseLike<unknown>).then === 'function'
-  )
-}
-
 type RunOptions = {
   nodeErrors?: Record<string, NodeError>
   onPromptRequest?: (requestBody: unknown) => void | Promise<void>
@@ -54,7 +46,6 @@ export function buildKSamplerError(
 export class ExecutionHelper {
   private jobCounter = 0
   private metadata: Record<string, unknown> | undefined
-  private scopeOpen = false
   private readonly completedJobs: RawJobListItem[] = []
   private readonly page: ComfyPage['page']
   private readonly command: ComfyPage['command']
@@ -85,10 +76,10 @@ export class ExecutionHelper {
    * messages. Leave `workflowId` undefined to emit frames the way a core build
    * without that support does — the legacy backend profile.
    */
-  withWorkflowId<T>(workflowId: string | undefined, fn: () => T): T {
-    return this.withMetadata(
+  withWorkflowId(workflowId: string | undefined, send: () => void): void {
+    this.withMetadata(
       workflowId === undefined ? undefined : { workflow_id: workflowId },
-      fn
+      send
     )
   }
 
@@ -120,44 +111,25 @@ export class ExecutionHelper {
    * or script the prompts as separate synchronous frames via
    * `BackendSimulator`.
    */
-  withMetadata<T>(
+  /**
+   * Stamp `metadata` on every eligible JSON frame sent inside `send`.
+   *
+   * Synchronous on purpose. The only caller sends one frame, and an async
+   * callback was the shape that let an outer scope come back to life and stamp
+   * every later frame for the rest of a test. Script prompts as separate
+   * frames through `BackendSimulator` instead of awaiting inside a scope.
+   */
+  withMetadata(
     metadata: Record<string, unknown> | undefined,
-    fn: () => T
-  ): T {
-    if (this.scopeOpen) {
-      throw new Error(
-        'ExecutionHelper: a metadata scope is already in flight. ' +
-          'Await it before opening another one, and do not nest them.'
-      )
-    }
-
+    send: () => void
+  ): void {
     const previous = this.metadata
     this.metadata = metadata
-    // Set before `fn` runs, so a scope opened synchronously inside it is
-    // rejected too. Setting it afterwards only caught the overlapping-async
-    // case and left nesting — the strictly worse one — unguarded.
-    this.scopeOpen = true
-    const restore = () => {
-      this.scopeOpen = false
+    try {
+      send()
+    } finally {
       this.metadata = previous
     }
-
-    let result: T
-    try {
-      result = fn()
-    } catch (error) {
-      restore()
-      throw error
-    }
-
-    if (!isPromiseLike(result)) {
-      restore()
-      return result
-    }
-
-    // Cast: `T` is promise-like here, and the returned promise settles with the
-    // same value or rejection, only after the scope has been restored.
-    return Promise.resolve(result).finally(restore) as T
   }
 
   /**
