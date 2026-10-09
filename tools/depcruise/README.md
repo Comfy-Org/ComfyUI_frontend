@@ -14,7 +14,7 @@ node tools/depcruise/scripts/open-prs.mjs <workDir> <head>   # optional: open PR
 node tools/depcruise/scripts/build-data.mjs <workDir>
 ```
 
-Current data: `7475c964f6..9b91a0c833` (67 commits).
+Current data: `7475c964f6..18a9c42103` (72 commits).
 
 Publish to https://gordian-knot-comfyui.vercel.app (ComfyUI Vercel team members only), after `pnpm dlx vercel@62 login`:
 

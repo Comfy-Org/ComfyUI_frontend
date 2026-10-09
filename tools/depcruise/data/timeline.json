@@ -3,7 +3,7 @@
   "issue": "FE-3037",
   "tool": "dependency-cruiser, repo .dependency-cruiser.json, `depcruise src`",
   "base": "7475c964f67419ead544bcdab2b98bc0da14e607",
-  "head": "9b91a0c8331da05cf9d92f408688d1e6b3d16561",
+  "head": "18a9c4210382fab896a7e00c7db5b141cefadef6",
   "notes": [
     "A knot is a strongly connected component of the src/ module graph with more than one module.",
     "Step 0 is the parent of the first FE-3037 commit; every later step is one commit on main.",
@@ -152,7 +152,7 @@
     {
       "id": 15,
       "parent": 0,
-      "bornAt": 69,
+      "bornAt": 74,
       "peak": 5,
       "role": "other",
       "fromMain": true,
@@ -161,7 +161,7 @@
     {
       "id": 16,
       "parent": 0,
-      "bornAt": 69,
+      "bornAt": 74,
       "peak": 5,
       "role": "other",
       "fromMain": true,
@@ -170,7 +170,7 @@
     {
       "id": 17,
       "parent": 0,
-      "bornAt": 72,
+      "bornAt": 77,
       "peak": 48,
       "role": "other",
       "fromMain": true,
@@ -179,7 +179,7 @@
     {
       "id": 18,
       "parent": 0,
-      "bornAt": 73,
+      "bornAt": 78,
       "peak": 49,
       "role": "other",
       "fromMain": true,
@@ -188,7 +188,7 @@
     {
       "id": 19,
       "parent": 17,
-      "bornAt": 76,
+      "bornAt": 81,
       "peak": 3,
       "role": "other",
       "fromMain": true,
@@ -6010,37 +6010,493 @@
           }
         ]
       }
+    },
+    {
+      "index": 67,
+      "kind": "commit",
+      "parent": 66,
+      "sha": "e2f3d6f9ac4a51640de301614b35c4c16784c081",
+      "short": "e2f3d6f9ac",
+      "date": "2026-10-09T00:36:39Z",
+      "subject": "FE-3329 fix(auth): send an sso_required refusal at customer creation to SSO",
+      "pr": 20595,
+      "fe3037": false,
+      "stats": {
+        "modules": 2483,
+        "imports": 11613,
+        "modulesInKnots": 501,
+        "largestKnot": 286,
+        "mainKnot": 286,
+        "secondKnot": 154,
+        "knotCount": 15,
+        "importsInKnots": 2038,
+        "noCircularWarnings": 1510
+      },
+      "knots": [
+        {
+          "id": 0,
+          "size": 286
+        },
+        {
+          "id": 9,
+          "size": 154
+        },
+        {
+          "id": 1,
+          "size": 28
+        },
+        {
+          "id": 8,
+          "size": 6
+        },
+        {
+          "id": 10,
+          "size": 5
+        },
+        {
+          "id": 13,
+          "size": 3
+        },
+        {
+          "id": 11,
+          "size": 3
+        },
+        {
+          "id": 2,
+          "size": 2
+        },
+        {
+          "id": 3,
+          "size": 2
+        },
+        {
+          "id": 12,
+          "size": 2
+        },
+        {
+          "id": 4,
+          "size": 2
+        },
+        {
+          "id": 5,
+          "size": 2
+        },
+        {
+          "id": 6,
+          "size": 2
+        },
+        {
+          "id": 14,
+          "size": 2
+        },
+        {
+          "id": 7,
+          "size": 2
+        }
+      ],
+      "delta": {
+        "freed": [],
+        "entangled": [],
+        "splits": []
+      }
+    },
+    {
+      "index": 68,
+      "kind": "commit",
+      "parent": 67,
+      "sha": "8bcbd9f3cd912fe28e21d05b02439f71591d250d",
+      "short": "8bcbd9f3cd",
+      "date": "2026-10-09T01:11:16Z",
+      "subject": "fix(agent): stop a run-mode change from overtaking a message already sent",
+      "pr": 18706,
+      "fe3037": false,
+      "stats": {
+        "modules": 2485,
+        "imports": 11617,
+        "modulesInKnots": 501,
+        "largestKnot": 286,
+        "mainKnot": 286,
+        "secondKnot": 154,
+        "knotCount": 15,
+        "importsInKnots": 2038,
+        "noCircularWarnings": 1510
+      },
+      "knots": [
+        {
+          "id": 0,
+          "size": 286
+        },
+        {
+          "id": 9,
+          "size": 154
+        },
+        {
+          "id": 1,
+          "size": 28
+        },
+        {
+          "id": 8,
+          "size": 6
+        },
+        {
+          "id": 10,
+          "size": 5
+        },
+        {
+          "id": 13,
+          "size": 3
+        },
+        {
+          "id": 11,
+          "size": 3
+        },
+        {
+          "id": 2,
+          "size": 2
+        },
+        {
+          "id": 3,
+          "size": 2
+        },
+        {
+          "id": 12,
+          "size": 2
+        },
+        {
+          "id": 4,
+          "size": 2
+        },
+        {
+          "id": 5,
+          "size": 2
+        },
+        {
+          "id": 6,
+          "size": 2
+        },
+        {
+          "id": 14,
+          "size": 2
+        },
+        {
+          "id": 7,
+          "size": 2
+        }
+      ],
+      "delta": {
+        "freed": [],
+        "entangled": [],
+        "splits": []
+      }
+    },
+    {
+      "index": 69,
+      "kind": "commit",
+      "parent": 68,
+      "sha": "6e5d1b09e610c829a2486cbce3a3a1e866b02f02",
+      "short": "6e5d1b09e6",
+      "date": "2026-10-09T01:17:27Z",
+      "subject": "FE-3330 fix(workspace): hide the lone Active members tab when there is no Pending tab",
+      "pr": 20597,
+      "fe3037": false,
+      "stats": {
+        "modules": 2485,
+        "imports": 11617,
+        "modulesInKnots": 501,
+        "largestKnot": 286,
+        "mainKnot": 286,
+        "secondKnot": 154,
+        "knotCount": 15,
+        "importsInKnots": 2038,
+        "noCircularWarnings": 1510
+      },
+      "knots": [
+        {
+          "id": 0,
+          "size": 286
+        },
+        {
+          "id": 9,
+          "size": 154
+        },
+        {
+          "id": 1,
+          "size": 28
+        },
+        {
+          "id": 8,
+          "size": 6
+        },
+        {
+          "id": 10,
+          "size": 5
+        },
+        {
+          "id": 13,
+          "size": 3
+        },
+        {
+          "id": 11,
+          "size": 3
+        },
+        {
+          "id": 2,
+          "size": 2
+        },
+        {
+          "id": 3,
+          "size": 2
+        },
+        {
+          "id": 12,
+          "size": 2
+        },
+        {
+          "id": 4,
+          "size": 2
+        },
+        {
+          "id": 5,
+          "size": 2
+        },
+        {
+          "id": 6,
+          "size": 2
+        },
+        {
+          "id": 14,
+          "size": 2
+        },
+        {
+          "id": 7,
+          "size": 2
+        }
+      ],
+      "delta": {
+        "freed": [],
+        "entangled": [],
+        "splits": []
+      }
+    },
+    {
+      "index": 70,
+      "kind": "commit",
+      "parent": 69,
+      "sha": "ad519d7d089aa11eb37e036366b739a2f0f50104",
+      "short": "ad519d7d08",
+      "date": "2026-10-09T01:27:58Z",
+      "subject": "FE-3331 feat(workspace): disable creating a workspace when an SSO organization manages them",
+      "pr": 20600,
+      "fe3037": false,
+      "stats": {
+        "modules": 2485,
+        "imports": 11617,
+        "modulesInKnots": 501,
+        "largestKnot": 286,
+        "mainKnot": 286,
+        "secondKnot": 154,
+        "knotCount": 15,
+        "importsInKnots": 2038,
+        "noCircularWarnings": 1510
+      },
+      "knots": [
+        {
+          "id": 0,
+          "size": 286
+        },
+        {
+          "id": 9,
+          "size": 154
+        },
+        {
+          "id": 1,
+          "size": 28
+        },
+        {
+          "id": 8,
+          "size": 6
+        },
+        {
+          "id": 10,
+          "size": 5
+        },
+        {
+          "id": 13,
+          "size": 3
+        },
+        {
+          "id": 11,
+          "size": 3
+        },
+        {
+          "id": 2,
+          "size": 2
+        },
+        {
+          "id": 3,
+          "size": 2
+        },
+        {
+          "id": 12,
+          "size": 2
+        },
+        {
+          "id": 4,
+          "size": 2
+        },
+        {
+          "id": 5,
+          "size": 2
+        },
+        {
+          "id": 6,
+          "size": 2
+        },
+        {
+          "id": 14,
+          "size": 2
+        },
+        {
+          "id": 7,
+          "size": 2
+        }
+      ],
+      "delta": {
+        "freed": [],
+        "entangled": [],
+        "splits": []
+      }
+    },
+    {
+      "index": 71,
+      "kind": "commit",
+      "parent": 70,
+      "sha": "18a9c4210382fab896a7e00c7db5b141cefadef6",
+      "short": "18a9c42103",
+      "date": "2026-10-09T01:30:07Z",
+      "subject": "[Phase 6a] Replace PrimeVue Toast with design-system toast",
+      "pr": 16313,
+      "fe3037": false,
+      "stats": {
+        "modules": 2491,
+        "imports": 11687,
+        "modulesInKnots": 511,
+        "largestKnot": 296,
+        "mainKnot": 296,
+        "secondKnot": 154,
+        "knotCount": 15,
+        "importsInKnots": 2121,
+        "noCircularWarnings": 1628
+      },
+      "knots": [
+        {
+          "id": 0,
+          "size": 296
+        },
+        {
+          "id": 9,
+          "size": 154
+        },
+        {
+          "id": 1,
+          "size": 28
+        },
+        {
+          "id": 8,
+          "size": 6
+        },
+        {
+          "id": 10,
+          "size": 5
+        },
+        {
+          "id": 13,
+          "size": 3
+        },
+        {
+          "id": 11,
+          "size": 3
+        },
+        {
+          "id": 2,
+          "size": 2
+        },
+        {
+          "id": 3,
+          "size": 2
+        },
+        {
+          "id": 12,
+          "size": 2
+        },
+        {
+          "id": 4,
+          "size": 2
+        },
+        {
+          "id": 5,
+          "size": 2
+        },
+        {
+          "id": 6,
+          "size": 2
+        },
+        {
+          "id": 14,
+          "size": 2
+        },
+        {
+          "id": 7,
+          "size": 2
+        }
+      ],
+      "delta": {
+        "freed": [],
+        "entangled": [
+          "base/common/downloadUtil.ts",
+          "components/ui/toast/toastStore.ts",
+          "composables/useCopyToClipboard.ts",
+          "composables/useErrorHandling.ts",
+          "platform/workflow/sharing/components/publish/ComfyHubExamplesStep.vue",
+          "platform/workflow/sharing/components/publish/ComfyHubThumbnailStep.vue",
+          "platform/workflow/sharing/utils/validateFileSize.ts",
+          "platform/workflow/validation/composables/useWorkflowValidation.ts",
+          "platform/workspace/components/dialogs/DowngradeRemoveMembersDialogContent.vue",
+          "services/uploadTempFile.ts"
+        ],
+        "splits": []
+      }
     }
   ],
   "openPrs": {
     "label": "refactor-gordian-knot",
-    "fetchedAt": "2026-10-09T00:21:22.729Z",
-    "main": "9b91a0c8331da05cf9d92f408688d1e6b3d16561",
+    "fetchedAt": "2026-10-09T02:40:20.499Z",
+    "main": "18a9c4210382fab896a7e00c7db5b141cefadef6",
     "states": [
       {
-        "index": 67,
+        "index": 72,
         "kind": "pr",
-        "parent": 66,
-        "sha": "9536aff6c045a579eeb6b87b083bfdb432c96dc6",
-        "short": "9536aff6c0",
-        "date": "2026-10-09T00:11:12Z",
+        "parent": 71,
+        "sha": "f1908f4bdd9a2e3b14764f7c9a3d63e06d718b4a",
+        "short": "f1908f4bdd",
+        "date": "2026-10-09T01:43:14Z",
         "subject": "refactor: split widget constructor type and value-control helpers out of scripts/widgets",
         "pr": 19093,
         "stats": {
-          "modules": 2485,
-          "imports": 11623,
-          "modulesInKnots": 486,
-          "largestKnot": 271,
-          "mainKnot": 271,
+          "modules": 2493,
+          "imports": 11699,
+          "modulesInKnots": 496,
+          "largestKnot": 281,
+          "mainKnot": 281,
           "secondKnot": 154,
           "knotCount": 15,
-          "importsInKnots": 2000,
-          "noCircularWarnings": 1492
+          "importsInKnots": 2085,
+          "noCircularWarnings": 1610
         },
         "knots": [
           {
             "id": 0,
-            "size": 271
+            "size": 281
           },
           {
             "id": 9,
@@ -6118,12 +6574,15 @@
             "renderer/extensions/vueNodes/widgets/composables/useTextareaWidget.ts",
             "renderer/extensions/vueNodes/widgets/composables/useVideoEditWidget.ts"
           ],
-          "entangled": ["core/graph/widgets/valueControlWidgets.ts"],
+          "entangled": [
+            "core/graph/subgraph/promotedWidgetControl.ts",
+            "core/graph/widgets/valueControlWidgets.ts"
+          ],
           "splits": []
         }
       },
       {
-        "index": 68,
+        "index": 73,
         "kind": "pr",
         "parent": 53,
         "sha": "36ff059f048b607994c6c11bcc2ea32983ac3475",
@@ -6207,29 +6666,29 @@
         }
       },
       {
-        "index": 69,
+        "index": 74,
         "kind": "pr",
-        "parent": 61,
-        "sha": "05395c323d07fd802df2646844324fae298d04f2",
-        "short": "05395c323d",
-        "date": "2026-10-08T22:03:04Z",
+        "parent": 71,
+        "sha": "4e31bda28797f0c58642cebedbcd0d8ade93ecce",
+        "short": "4e31bda287",
+        "date": "2026-10-09T02:19:56Z",
         "subject": "refactor: inject the api auth provider from the composition root",
         "pr": 19118,
         "stats": {
-          "modules": 2483,
-          "imports": 11614,
-          "modulesInKnots": 567,
-          "largestKnot": 347,
-          "mainKnot": 347,
+          "modules": 2494,
+          "imports": 11697,
+          "modulesInKnots": 457,
+          "largestKnot": 232,
+          "mainKnot": 232,
           "secondKnot": 154,
-          "knotCount": 15,
-          "importsInKnots": 2129,
-          "noCircularWarnings": 1512
+          "knotCount": 17,
+          "importsInKnots": 1811,
+          "noCircularWarnings": 1341
         },
         "knots": [
           {
             "id": 0,
-            "size": 347
+            "size": 232
           },
           {
             "id": 9,
@@ -6254,6 +6713,10 @@
           {
             "id": 16,
             "size": 5
+          },
+          {
+            "id": 13,
+            "size": 3
           },
           {
             "id": 11,
@@ -6284,38 +6747,34 @@
             "size": 2
           },
           {
+            "id": 14,
+            "size": 2
+          },
+          {
             "id": 7,
             "size": 2
           }
         ],
         "delta": {
           "freed": [
-            "components/custom/widget/TemplateFilterControls.vue",
+            "base/common/downloadUtil.ts",
             "components/dialog/content/ApiNodesSignInContent.vue",
-            "components/load3d/controls/viewer/ViewerLightControls.vue",
-            "components/load3d/menubar/LightMenuGroup.vue",
+            "components/ui/toast/toastStore.ts",
             "composables/auth/useTurnstile.ts",
             "composables/node/useNodeDragAndDrop.ts",
             "composables/node/useNodePricing.ts",
+            "composables/useCopyToClipboard.ts",
+            "composables/useErrorHandling.ts",
             "composables/useFeatureFlags.ts",
-            "composables/useTemplateFiltering.ts",
-            "extensions/core/load3d/LoaderManager.ts",
-            "extensions/core/load3d/MeshModelAdapter.ts",
-            "extensions/core/load3d/ModelAdapter.ts",
-            "extensions/core/load3d/PointCloudModelAdapter.ts",
-            "extensions/core/load3d/SceneModelManager.ts",
-            "extensions/core/load3d/SplatModelAdapter.ts",
             "platform/assets/composables/useAssetsQuery.ts",
             "platform/assets/schemas/assetMetadataSchema.ts",
             "platform/assets/schemas/mediaAssetSchema.ts",
             "platform/assets/services/assetService.ts",
-            "platform/assets/utils/assetUrlUtil.ts",
             "platform/errorCatalog/executionErrorResolver.ts",
             "platform/errorCatalog/promptErrorResolver.ts",
             "platform/errorCatalog/runtimeErrorCopy.ts",
             "platform/errorCatalog/types.ts",
             "platform/errorCatalog/validationErrorResolver.ts",
-            "platform/missingModel/folderPathCache.ts",
             "platform/nodeReplacement/nodeReplacementService.ts",
             "platform/nodeReplacement/nodeReplacementStore.ts",
             "platform/remoteConfig/refreshRemoteConfig.ts",
@@ -6323,20 +6782,20 @@
             "platform/settings/settingStore.ts",
             "platform/workflow/core/utils/restoreDynamicGroupInputs.ts",
             "platform/workflow/sharing/components/publish/ComfyHubDescribeStep.vue",
+            "platform/workflow/sharing/components/publish/ComfyHubExamplesStep.vue",
+            "platform/workflow/sharing/components/publish/ComfyHubThumbnailStep.vue",
             "platform/workflow/sharing/services/comfyHubService.ts",
-            "platform/workflow/templates/composables/useTemplateModelAvailability.ts",
+            "platform/workflow/sharing/utils/validateFileSize.ts",
             "platform/workflow/templates/repositories/workflowTemplatesStore.ts",
-            "platform/workflow/templates/services/templateInputService.ts",
-            "platform/workflow/templates/stores/partnerNodesEducationStore.ts",
+            "platform/workflow/validation/composables/useWorkflowValidation.ts",
             "platform/workspace/api/workspaceApiUrl.ts",
+            "platform/workspace/components/dialogs/DowngradeRemoveMembersDialogContent.vue",
             "scripts/metadata/parser.ts",
             "scripts/pnginfo.ts",
             "scripts/promotedWidgetControl.ts",
-            "services/audioService.ts",
-            "services/useNewUserService.ts",
+            "services/uploadTempFile.ts",
             "stores/assetDownloadStore.ts",
             "stores/jobPreviewStore.ts",
-            "stores/modelStore.ts",
             "stores/modelToNodeStore.ts",
             "stores/resultItemParsing.ts",
             "stores/systemStatsStore.ts",
@@ -6351,9 +6810,6 @@
             "utils/resultItem.ts",
             "utils/resultItemUrl.ts",
             "utils/syncUtil.ts",
-            "workbench/extensions/agent/types/composerAttachment.ts",
-            "workbench/extensions/agent/types/composerPrompt.ts",
-            "workbench/extensions/agent/utils/composerPrompt.ts",
             "workbench/utils/nodeDefOrderingUtil.ts"
           ],
           "entangled": [],
@@ -6366,29 +6822,29 @@
         }
       },
       {
-        "index": 70,
+        "index": 75,
         "kind": "pr",
-        "parent": 69,
-        "sha": "7eb8fa5d819116b8437e930002d5bc48d2364db9",
-        "short": "7eb8fa5d81",
+        "parent": 74,
+        "sha": "30e44c21793583f5741c8f6e7109dbf66ae94550",
+        "short": "30e44c2179",
         "date": "2026-10-08T22:10:39Z",
         "subject": "refactor: install workspace api credentials from the composition root",
         "pr": 19121,
         "stats": {
-          "modules": 2484,
-          "imports": 11616,
-          "modulesInKnots": 547,
-          "largestKnot": 327,
-          "mainKnot": 327,
+          "modules": 2495,
+          "imports": 11699,
+          "modulesInKnots": 437,
+          "largestKnot": 212,
+          "mainKnot": 212,
           "secondKnot": 154,
-          "knotCount": 15,
-          "importsInKnots": 2044,
-          "noCircularWarnings": 1466
+          "knotCount": 17,
+          "importsInKnots": 1726,
+          "noCircularWarnings": 1291
         },
         "knots": [
           {
             "id": 0,
-            "size": 327
+            "size": 212
           },
           {
             "id": 9,
@@ -6413,6 +6869,10 @@
           {
             "id": 16,
             "size": 5
+          },
+          {
+            "id": 13,
+            "size": 3
           },
           {
             "id": 11,
@@ -6440,6 +6900,10 @@
           },
           {
             "id": 6,
+            "size": 2
+          },
+          {
+            "id": 14,
             "size": 2
           },
           {
@@ -6475,29 +6939,29 @@
         }
       },
       {
-        "index": 71,
+        "index": 76,
         "kind": "pr",
-        "parent": 53,
-        "sha": "994757a3922dd2b9134aff926a1a1535e53a297f",
-        "short": "994757a392",
+        "parent": 72,
+        "sha": "c72a6d5b270990b072962c49d178f005b1310469",
+        "short": "c72a6d5b27",
         "date": "2026-09-27T23:13:02Z",
         "subject": "refactor: split feature dialogs out of dialogService",
         "pr": 19131,
         "stats": {
-          "modules": 2489,
-          "imports": 11636,
-          "modulesInKnots": 476,
-          "largestKnot": 261,
-          "mainKnot": 261,
+          "modules": 2503,
+          "imports": 11738,
+          "modulesInKnots": 484,
+          "largestKnot": 269,
+          "mainKnot": 269,
           "secondKnot": 154,
           "knotCount": 15,
-          "importsInKnots": 1968,
-          "noCircularWarnings": 1449
+          "importsInKnots": 2046,
+          "noCircularWarnings": 1558
         },
         "knots": [
           {
             "id": 0,
-            "size": 261
+            "size": 269
           },
           {
             "id": 9,
@@ -6558,194 +7022,49 @@
         ],
         "delta": {
           "freed": [
-            "components/cameraAngle/CameraAngle.vue",
-            "components/cameraInfo/CameraInfo.vue",
-            "components/custom/widget/TemplateFilterControls.vue",
-            "components/custom/widget/WorkflowTemplateSelectorDialog.vue",
-            "components/load3d/Load3D.vue",
-            "components/load3d/Load3DAdvanced.vue",
-            "components/load3d/Load3DMenuBar.vue",
-            "components/load3d/Load3dViewerContent.vue",
-            "components/load3d/controls/ViewerControls.vue",
-            "components/load3d/controls/viewer/ViewerLightControls.vue",
-            "components/load3d/menubar/LightMenuGroup.vue",
-            "components/maskeditor/ImageLayerSettingsPanel.vue",
-            "components/maskeditor/MaskEditorContent.vue",
-            "components/maskeditor/PointerZone.vue",
-            "components/maskeditor/SidePanel.vue",
-            "components/maskeditor/ToolPanel.vue",
-            "components/maskeditor/dialog/TopBarHeader.vue",
-            "composables/maskeditor/useBrushDrawing.ts",
-            "composables/maskeditor/useBrushPersistence.ts",
-            "composables/maskeditor/useMaskEditor.ts",
-            "composables/maskeditor/useMaskEditorLoader.ts",
-            "composables/maskeditor/useMaskEditorSaver.ts",
-            "composables/maskeditor/useToolManager.ts",
-            "composables/useCameraAngle.ts",
-            "composables/useCameraInfo.ts",
-            "composables/useTemplateFiltering.ts",
-            "composables/useViewportNodeWiring.ts",
-            "composables/useWorkflowTemplateSelectorDialog.ts",
-            "extensions/core/agentPanel.ts",
-            "extensions/core/cameraAngle.ts",
-            "extensions/core/cameraAngle/CameraAngleViewport.ts",
-            "extensions/core/cameraInfo.ts",
-            "extensions/core/cameraInfo/CameraInfoViewport.ts",
-            "extensions/core/clipspace.ts",
-            "extensions/core/cloudBadges.ts",
-            "extensions/core/cloudFeedbackTopbarButton.ts",
-            "extensions/core/cloudRemoteConfig.ts",
-            "extensions/core/cloudSessionCookie.ts",
-            "extensions/core/contextMenuFilter.ts",
-            "extensions/core/createBoundingBoxes.ts",
-            "extensions/core/customWidgets.ts",
-            "extensions/core/dynamicPrompts.ts",
-            "extensions/core/editAttention.ts",
-            "extensions/core/electronAdapter.ts",
-            "extensions/core/groupNode.ts",
-            "extensions/core/groupOptions.ts",
-            "extensions/core/imageCompare.ts",
-            "extensions/core/imageCompositor.ts",
-            "extensions/core/imageCrop.ts",
-            "extensions/core/index.ts",
-            "extensions/core/layerEditor.ts",
-            "extensions/core/lightInfo.ts",
-            "extensions/core/load3d.ts",
-            "extensions/core/load3d/HDRIManager.ts",
-            "extensions/core/load3d/Load3DConfiguration.ts",
-            "extensions/core/load3d/Load3d.ts",
-            "extensions/core/load3d/LoaderManager.ts",
-            "extensions/core/load3d/MeshModelAdapter.ts",
-            "extensions/core/load3d/ModelAdapter.ts",
-            "extensions/core/load3d/PointCloudModelAdapter.ts",
-            "extensions/core/load3d/SceneManager.ts",
-            "extensions/core/load3d/SceneModelManager.ts",
-            "extensions/core/load3d/SplatModelAdapter.ts",
-            "extensions/core/load3d/Viewport3d.ts",
-            "extensions/core/load3d/createLoad3d.ts",
-            "extensions/core/load3d/createViewport3d.ts",
-            "extensions/core/load3d/exportMenuHelper.ts",
-            "extensions/core/load3d/load3dSerialize.ts",
-            "extensions/core/load3dAdvanced.ts",
-            "extensions/core/load3dLazy.ts",
-            "extensions/core/load3dPreviewExtensions.ts",
-            "extensions/core/maskeditor.ts",
-            "extensions/core/nodeTemplates.ts",
-            "extensions/core/noteNode.ts",
-            "extensions/core/painter.ts",
-            "extensions/core/previewAny.ts",
-            "extensions/core/rerouteNode.ts",
-            "extensions/core/saveImageExtraOutput.ts",
-            "extensions/core/saveMesh.ts",
-            "extensions/core/saveText.ts",
-            "extensions/core/selectionBorder.ts",
-            "extensions/core/simpleTouchSupport.ts",
-            "extensions/core/slotDefaultTypes.ts",
-            "extensions/core/slotDefaults.ts",
-            "extensions/core/textPreviewWidgets.ts",
-            "extensions/core/uploadAudio.ts",
-            "extensions/core/uploadImage.ts",
-            "extensions/core/webcamCapture.ts",
-            "extensions/core/widgetValuePropagation.ts",
-            "platform/assets/utils/assetPreviewUtil.ts",
-            "platform/assets/utils/assetUrlUtil.ts",
-            "platform/missingModel/folderPathCache.ts",
-            "platform/onboarding/onboardingTourStore.ts",
-            "platform/onboarding/useTourTriggers.ts",
             "platform/settings/composables/useSettingsDialog.ts",
-            "platform/settings/globalSettingsApi.ts",
-            "platform/support/feedbackDialog.ts",
-            "platform/workflow/sharing/components/OpenSharedWorkflowDialogContent.vue",
             "platform/workflow/sharing/components/profile/ComfyHubCreateProfileForm.vue",
             "platform/workflow/sharing/components/publish/ComfyHubDescribeStep.vue",
+            "platform/workflow/sharing/components/publish/ComfyHubExamplesStep.vue",
             "platform/workflow/sharing/components/publish/ComfyHubFinishStep.vue",
             "platform/workflow/sharing/components/publish/ComfyHubPublishDialog.vue",
             "platform/workflow/sharing/components/publish/ComfyHubPublishNav.vue",
             "platform/workflow/sharing/components/publish/ComfyHubPublishWizardContent.vue",
+            "platform/workflow/sharing/components/publish/ComfyHubThumbnailStep.vue",
             "platform/workflow/sharing/composables/useComfyHubProfileGate.ts",
             "platform/workflow/sharing/composables/useComfyHubPublishSubmission.ts",
             "platform/workflow/sharing/composables/useComfyHubPublishWizard.ts",
-            "platform/workflow/sharing/composables/useSharedWorkflowUrlLoader.ts",
             "platform/workflow/sharing/services/comfyHubService.ts",
             "platform/workflow/sharing/services/workflowShareService.ts",
-            "platform/workflow/templates/composables/useTemplateModelAvailability.ts",
-            "platform/workflow/templates/composables/useTemplateModelRowDownloads.ts",
-            "platform/workflow/templates/composables/useTemplateWorkflows.ts",
-            "platform/workflow/templates/services/templateInputService.ts",
-            "platform/workflow/templates/stores/partnerNodesEducationStore.ts",
-            "platform/workflow/templates/utils/templateModelMetadata.ts",
-            "platform/workflow/templates/utils/templateModelSetup.ts",
-            "renderer/extensions/compositor/composables/compositorSession.ts",
-            "renderer/extensions/firstRunTour/gettingStarted/firstRunEntry.ts",
-            "renderer/extensions/firstRunTour/roles/resolveTourRoles.ts",
-            "renderer/extensions/firstRunTour/roles/tourSequence.ts",
-            "renderer/extensions/firstRunTour/tour/cameraFraming.ts",
-            "renderer/extensions/firstRunTour/tour/canvasCoachTarget.ts",
-            "renderer/extensions/firstRunTour/tour/firstRunTourDefinition.ts",
-            "renderer/extensions/firstRunTour/tour/useFirstRunTourController.ts",
-            "renderer/extensions/layerEditor/components/LayerEditorContent.vue",
-            "renderer/extensions/layerEditor/composables/layerEditorDialog.ts",
-            "renderer/extensions/layerEditor/composables/useLayerEditor.ts",
-            "renderer/extensions/vueNodes/widgets/components/WidgetTextPreview.vue",
-            "renderer/extensions/vueNodes/widgets/composables/useBooleanWidget.ts",
-            "renderer/extensions/vueNodes/widgets/composables/useBoundingBoxWidget.ts",
-            "renderer/extensions/vueNodes/widgets/composables/useBoundingBoxesWidget.ts",
-            "renderer/extensions/vueNodes/widgets/composables/useChartWidget.ts",
-            "renderer/extensions/vueNodes/widgets/composables/useColorWidget.ts",
-            "renderer/extensions/vueNodes/widgets/composables/useColorsWidget.ts",
-            "renderer/extensions/vueNodes/widgets/composables/useCompositorWidget.ts",
-            "renderer/extensions/vueNodes/widgets/composables/useCurveWidget.ts",
-            "renderer/extensions/vueNodes/widgets/composables/useGalleriaWidget.ts",
-            "renderer/extensions/vueNodes/widgets/composables/useImageCompareWidget.ts",
-            "renderer/extensions/vueNodes/widgets/composables/useLightInfoWidget.ts",
-            "renderer/extensions/vueNodes/widgets/composables/usePainterWidget.ts",
-            "renderer/extensions/vueNodes/widgets/composables/useRangeWidget.ts",
-            "renderer/extensions/vueNodes/widgets/composables/useResolutionPreviewWidget.ts",
-            "renderer/extensions/vueNodes/widgets/composables/useTextareaWidget.ts",
-            "renderer/extensions/vueNodes/widgets/composables/useVideoEditWidget.ts",
-            "renderer/extensions/vueNodes/widgets/utils/audioUtils.ts",
-            "services/audioService.ts",
-            "services/useNewUserService.ts",
-            "stores/modelStore.ts",
-            "types/index.ts",
-            "workbench/extensions/agent/composables/agent/useAgentConsent.ts",
-            "workbench/extensions/agent/crdt/docOpMinter.ts",
-            "workbench/extensions/agent/crdt/restoreOpMinter.ts",
-            "workbench/extensions/agent/services/agent/workflowTabActivityTracker.ts",
-            "workbench/extensions/agent/stores/agent/agentComposerStore.ts",
-            "workbench/extensions/agent/stores/agent/agentConsentStore.ts",
-            "workbench/extensions/agent/types/composerAttachment.ts",
-            "workbench/extensions/agent/types/composerPrompt.ts",
-            "workbench/extensions/agent/utils/composerPrompt.ts"
+            "platform/workflow/sharing/utils/validateFileSize.ts"
           ],
           "entangled": [
             "composables/auth/useAuthDialogs.ts",
             "composables/billing/useBillingDialogs.ts",
-            "platform/workspace/composables/useWorkspaceDialogs.ts",
-            "scripts/valueControlWidgets.ts"
+            "platform/workspace/composables/useWorkspaceDialogs.ts"
           ],
           "splits": []
         }
       },
       {
-        "index": 72,
+        "index": 77,
         "kind": "pr",
-        "parent": 71,
-        "sha": "15a7e94be18c41731d6e58ee8d96cad7feaad3d1",
-        "short": "15a7e94be1",
+        "parent": 76,
+        "sha": "79fa9488f7b79d62caeae96e6e9f40c838c7bc88",
+        "short": "79fa9488f7",
         "date": "2026-09-28T00:31:49Z",
         "subject": "refactor: read the app singleton through useApp() below scripts/app",
         "pr": 19143,
         "stats": {
-          "modules": 2492,
-          "imports": 11658,
-          "modulesInKnots": 412,
+          "modules": 2506,
+          "imports": 11760,
+          "modulesInKnots": 417,
           "largestKnot": 154,
-          "mainKnot": 149,
+          "mainKnot": 154,
           "secondKnot": 154,
           "knotCount": 16,
-          "importsInKnots": 1641,
-          "noCircularWarnings": 1180
+          "importsInKnots": 1686,
+          "noCircularWarnings": 1246
         },
         "knots": [
           {
@@ -6754,7 +7073,7 @@
           },
           {
             "id": 0,
-            "size": 149
+            "size": 154
           },
           {
             "id": 17,
@@ -6829,7 +7148,9 @@
             "composables/element/useCanvasPositionConversion.ts",
             "composables/node/useNodePricing.ts",
             "composables/node/usePartnerNodesInGraph.ts",
+            "composables/useCopy.ts",
             "composables/usePaste.ts",
+            "core/graph/subgraph/promotedWidgetControl.ts",
             "extensions/core/load3d/Load3dUtils.ts",
             "platform/cloud/subscription/composables/useAccountPreconditionDialog.ts",
             "platform/cloud/subscription/composables/useFreeTierQuota.ts",
@@ -6848,6 +7169,7 @@
             "platform/telemetry/utils/billingFailureCategory.ts",
             "platform/telemetry/utils/billingPortalTelemetry.ts",
             "platform/workflow/core/utils/restoreDynamicGroupInputs.ts",
+            "platform/workflow/validation/composables/useWorkflowValidation.ts",
             "platform/workspace/billing/customerAttention.ts",
             "platform/workspace/billing/sdk/billingCapabilitiesView.ts",
             "platform/workspace/billing/sdk/billingPlansView.ts",
@@ -6859,6 +7181,7 @@
             "platform/workspace/components/dialogs/ChangeMemberRoleDialogContent.vue",
             "platform/workspace/components/dialogs/CreateWorkspaceDialogContent.vue",
             "platform/workspace/components/dialogs/DeleteWorkspaceDialogContent.vue",
+            "platform/workspace/components/dialogs/DowngradeRemoveMembersDialogContent.vue",
             "platform/workspace/components/dialogs/EditWorkspaceDialogContent.vue",
             "platform/workspace/components/dialogs/LeaveWorkspaceDialogContent.vue",
             "platform/workspace/components/dialogs/SetMemberCreditLimitDialogContent.vue",
@@ -6874,10 +7197,9 @@
             "scripts/app.ts",
             "scripts/metadata/parser.ts",
             "scripts/pnginfo.ts",
-            "scripts/promotedWidgetControl.ts",
             "services/customerEventsService.ts",
             "services/subgraphService.ts",
-            "stores/commandStore.ts",
+            "services/uploadTempFile.ts",
             "systems/badgeSystem.ts",
             "utils/eventUtils.ts",
             "utils/executionUtil.ts",
@@ -6897,24 +7219,24 @@
         }
       },
       {
-        "index": 73,
+        "index": 78,
         "kind": "pr",
-        "parent": 72,
-        "sha": "701c1d8b385f1fd79c55bd3fbcc985b496040bc8",
-        "short": "701c1d8b38",
+        "parent": 77,
+        "sha": "6a802eca61eccfca4be4fedbe2f4a42781a0273c",
+        "short": "6a802eca61",
         "date": "2026-09-28T02:09:00Z",
         "subject": "refactor: make types/comfy a leaf of the app runtime",
         "pr": 19153,
         "stats": {
-          "modules": 2494,
-          "imports": 11660,
-          "modulesInKnots": 370,
+          "modules": 2508,
+          "imports": 11762,
+          "modulesInKnots": 375,
           "largestKnot": 154,
-          "mainKnot": 58,
+          "mainKnot": 63,
           "secondKnot": 154,
           "knotCount": 17,
-          "importsInKnots": 1420,
-          "noCircularWarnings": 1027
+          "importsInKnots": 1441,
+          "noCircularWarnings": 1046
         },
         "knots": [
           {
@@ -6923,7 +7245,7 @@
           },
           {
             "id": 0,
-            "size": 58
+            "size": 63
           },
           {
             "id": 18,
@@ -6990,6 +7312,7 @@
           "freed": [
             "composables/node/useNodeDragAndDrop.ts",
             "composables/useRunButtonTelemetry.ts",
+            "core/graph/widgets/valueControlWidgets.ts",
             "platform/assets/composables/useAssetBrowserDialog.ts",
             "platform/assets/composables/useAssetsQuery.ts",
             "platform/assets/schemas/assetMetadataSchema.ts",
@@ -7015,7 +7338,6 @@
             "renderer/extensions/vueNodes/widgets/utils/multilineTextarea.ts",
             "scripts/errorNodeWidgets.ts",
             "scripts/ui/imagePreview.ts",
-            "scripts/valueControlWidgets.ts",
             "services/colorPaletteService.ts",
             "stores/assetDownloadStore.ts",
             "stores/extensionStore.ts",
@@ -7046,24 +7368,24 @@
         }
       },
       {
-        "index": 74,
+        "index": 79,
         "kind": "pr",
-        "parent": 73,
-        "sha": "1958fcdf59ae5a841baee170842186b9ddc51fda",
-        "short": "1958fcdf59",
+        "parent": 78,
+        "sha": "2bca9fe2b22a58f7f666aab6356484870a0e69fa",
+        "short": "2bca9fe2b2",
         "date": "2026-09-28T04:10:08Z",
         "subject": "refactor: break the workbench import cycles",
         "pr": 19186,
         "stats": {
-          "modules": 2496,
-          "imports": 11667,
-          "modulesInKnots": 340,
+          "modules": 2510,
+          "imports": 11769,
+          "modulesInKnots": 345,
           "largestKnot": 154,
-          "mainKnot": 58,
+          "mainKnot": 63,
           "secondKnot": 154,
           "knotCount": 15,
-          "importsInKnots": 1347,
-          "noCircularWarnings": 981
+          "importsInKnots": 1368,
+          "noCircularWarnings": 1000
         },
         "knots": [
           {
@@ -7072,7 +7394,7 @@
           },
           {
             "id": 0,
-            "size": 58
+            "size": 63
           },
           {
             "id": 18,
@@ -7165,24 +7487,24 @@
         }
       },
       {
-        "index": 75,
+        "index": 80,
         "kind": "pr",
-        "parent": 74,
-        "sha": "55e2c0696f6c67dada79e1bbb43dbeaaf40dddba",
-        "short": "55e2c0696f",
+        "parent": 79,
+        "sha": "be7f95b456f3fc2ab0557500825a5bba0c03c0b4",
+        "short": "be7f95b456",
         "date": "2026-09-28T04:56:04Z",
         "subject": "refactor: break the small app import cycles",
         "pr": 19189,
         "stats": {
-          "modules": 2502,
-          "imports": 11705,
-          "modulesInKnots": 302,
+          "modules": 2516,
+          "imports": 11807,
+          "modulesInKnots": 307,
           "largestKnot": 154,
-          "mainKnot": 53,
+          "mainKnot": 58,
           "secondKnot": 154,
           "knotCount": 5,
-          "importsInKnots": 1288,
-          "noCircularWarnings": 951
+          "importsInKnots": 1309,
+          "noCircularWarnings": 970
         },
         "knots": [
           {
@@ -7191,7 +7513,7 @@
           },
           {
             "id": 0,
-            "size": 53
+            "size": 58
           },
           {
             "id": 18,
@@ -7251,24 +7573,24 @@
         }
       },
       {
-        "index": 76,
+        "index": 81,
         "kind": "pr",
-        "parent": 75,
-        "sha": "b3e92b8080b1639e9f841e2a1e6570b3ed2dfbbf",
-        "short": "b3e92b8080",
+        "parent": 80,
+        "sha": "240dfbeb985edd934a45f6883905c3aa853e5527",
+        "short": "240dfbeb98",
         "date": "2026-10-08T22:20:05Z",
         "subject": "refactor: let billing rails announce refreshes instead of reading the context",
         "pr": 19148,
         "stats": {
-          "modules": 2505,
-          "imports": 11712,
-          "modulesInKnots": 272,
+          "modules": 2519,
+          "imports": 11814,
+          "modulesInKnots": 277,
           "largestKnot": 154,
-          "mainKnot": 53,
+          "mainKnot": 58,
           "secondKnot": 154,
           "knotCount": 6,
-          "importsInKnots": 1188,
-          "noCircularWarnings": 886
+          "importsInKnots": 1209,
+          "noCircularWarnings": 905
         },
         "knots": [
           {
@@ -7277,7 +7599,7 @@
           },
           {
             "id": 0,
-            "size": 53
+            "size": 58
           },
           {
             "id": 18,
@@ -7340,7 +7662,7 @@
         }
       },
       {
-        "index": 77,
+        "index": 82,
         "kind": "pr",
         "parent": 62,
         "sha": "f9a2b7446ee5190996e50796d8ec6bf87bd23401",
@@ -7420,7 +7742,7 @@
         }
       },
       {
-        "index": 78,
+        "index": 83,
         "kind": "pr",
         "parent": 15,
         "sha": "a44a01294d2765111fcd794c71aa04d1b46fb18c",
@@ -7492,9 +7814,9 @@
         }
       },
       {
-        "index": 79,
+        "index": 84,
         "kind": "pr",
-        "parent": 78,
+        "parent": 83,
         "sha": "4b0a0304ef3e954ac22b5b8775302ca881e3fee7",
         "short": "4b0a0304ef",
         "date": "2026-10-08T00:34:58Z",
@@ -7573,19 +7895,19 @@
         "isDraft": false,
         "mergeable": "MERGEABLE",
         "reviewDecision": null,
-        "additions": 240,
-        "deletions": 233,
-        "changedFiles": 32,
+        "additions": 285,
+        "deletions": 243,
+        "changedFiles": 43,
         "baseRefName": "main",
         "headRefName": "drjkl/widgets-registry-split",
-        "head": "9536aff6c045a579eeb6b87b083bfdb432c96dc6",
-        "mergeBase": "9b91a0c8331da05cf9d92f408688d1e6b3d16561",
+        "head": "f1908f4bdd9a2e3b14764f7c9a3d63e06d718b4a",
+        "mergeBase": "18a9c4210382fab896a7e00c7db5b141cefadef6",
         "behindMain": 0,
         "parentPr": null,
         "containsParentHead": true,
         "depth": 0,
-        "state": 67,
-        "baseState": 66
+        "state": 72,
+        "baseState": 71
       },
       {
         "number": 19116,
@@ -7593,7 +7915,7 @@
         "url": "https://github.com/Comfy-Org/ComfyUI_frontend/pull/19116",
         "author": "DrJKL",
         "isDraft": false,
-        "mergeable": "UNKNOWN",
+        "mergeable": "MERGEABLE",
         "reviewDecision": null,
         "additions": 355,
         "deletions": 352,
@@ -7602,11 +7924,11 @@
         "headRefName": "drjkl/progress-text-previews-view",
         "head": "36ff059f048b607994c6c11bcc2ea32983ac3475",
         "mergeBase": "0ef0276323b5819258571bbffe24af14af47dc2e",
-        "behindMain": 13,
+        "behindMain": 18,
         "parentPr": null,
         "containsParentHead": true,
         "depth": 0,
-        "state": 68,
+        "state": 73,
         "baseState": 53
       },
       {
@@ -7615,21 +7937,21 @@
         "url": "https://github.com/Comfy-Org/ComfyUI_frontend/pull/19118",
         "author": "DrJKL",
         "isDraft": false,
-        "mergeable": "UNKNOWN",
+        "mergeable": "MERGEABLE",
         "reviewDecision": null,
-        "additions": 178,
-        "deletions": 99,
-        "changedFiles": 10,
+        "additions": 197,
+        "deletions": 118,
+        "changedFiles": 13,
         "baseRefName": "main",
         "headRefName": "drjkl/api-auth-provider",
-        "head": "05395c323d07fd802df2646844324fae298d04f2",
-        "mergeBase": "559647b5da239413188f226434ff96c96d7fd0fe",
-        "behindMain": 5,
+        "head": "4e31bda28797f0c58642cebedbcd0d8ade93ecce",
+        "mergeBase": "18a9c4210382fab896a7e00c7db5b141cefadef6",
+        "behindMain": 0,
         "parentPr": null,
         "containsParentHead": true,
         "depth": 0,
-        "state": 69,
-        "baseState": 61
+        "state": 74,
+        "baseState": 71
       },
       {
         "number": 19121,
@@ -7644,14 +7966,14 @@
         "changedFiles": 5,
         "baseRefName": "drjkl/api-auth-provider",
         "headRefName": "drjkl/workspace-api-auth",
-        "head": "7eb8fa5d819116b8437e930002d5bc48d2364db9",
-        "mergeBase": "559647b5da239413188f226434ff96c96d7fd0fe",
-        "behindMain": 5,
+        "head": "30e44c21793583f5741c8f6e7109dbf66ae94550",
+        "mergeBase": "18a9c4210382fab896a7e00c7db5b141cefadef6",
+        "behindMain": 0,
         "parentPr": 19118,
         "containsParentHead": true,
         "depth": 1,
-        "state": 70,
-        "baseState": 61
+        "state": 75,
+        "baseState": 71
       },
       {
         "number": 19131,
@@ -7659,21 +7981,21 @@
         "url": "https://github.com/Comfy-Org/ComfyUI_frontend/pull/19131",
         "author": "DrJKL",
         "isDraft": false,
-        "mergeable": "UNKNOWN",
+        "mergeable": "MERGEABLE",
         "reviewDecision": null,
-        "additions": 1380,
-        "deletions": 1054,
+        "additions": 1379,
+        "deletions": 1053,
         "changedFiles": 81,
         "baseRefName": "drjkl/widgets-registry-split",
         "headRefName": "drjkl/dialog-service-split",
-        "head": "994757a3922dd2b9134aff926a1a1535e53a297f",
-        "mergeBase": "0ef0276323b5819258571bbffe24af14af47dc2e",
-        "behindMain": 13,
+        "head": "c72a6d5b270990b072962c49d178f005b1310469",
+        "mergeBase": "18a9c4210382fab896a7e00c7db5b141cefadef6",
+        "behindMain": 0,
         "parentPr": 19093,
-        "containsParentHead": false,
+        "containsParentHead": true,
         "depth": 1,
-        "state": 71,
-        "baseState": 53
+        "state": 76,
+        "baseState": 71
       },
       {
         "number": 19143,
@@ -7688,14 +8010,14 @@
         "changedFiles": 58,
         "baseRefName": "drjkl/dialog-service-split",
         "headRefName": "drjkl/app-instance-leaf",
-        "head": "15a7e94be18c41731d6e58ee8d96cad7feaad3d1",
-        "mergeBase": "0ef0276323b5819258571bbffe24af14af47dc2e",
-        "behindMain": 13,
+        "head": "79fa9488f7b79d62caeae96e6e9f40c838c7bc88",
+        "mergeBase": "18a9c4210382fab896a7e00c7db5b141cefadef6",
+        "behindMain": 0,
         "parentPr": 19131,
         "containsParentHead": true,
         "depth": 2,
-        "state": 72,
-        "baseState": 53
+        "state": 77,
+        "baseState": 71
       },
       {
         "number": 19148,
@@ -7710,14 +8032,14 @@
         "changedFiles": 40,
         "baseRefName": "drjkl/app-small-cycles",
         "headRefName": "drjkl/billing-layering",
-        "head": "b3e92b8080b1639e9f841e2a1e6570b3ed2dfbbf",
-        "mergeBase": "0ef0276323b5819258571bbffe24af14af47dc2e",
-        "behindMain": 13,
+        "head": "240dfbeb985edd934a45f6883905c3aa853e5527",
+        "mergeBase": "18a9c4210382fab896a7e00c7db5b141cefadef6",
+        "behindMain": 0,
         "parentPr": 19189,
         "containsParentHead": true,
         "depth": 6,
-        "state": 76,
-        "baseState": 53
+        "state": 81,
+        "baseState": 71
       },
       {
         "number": 19153,
@@ -7732,14 +8054,14 @@
         "changedFiles": 25,
         "baseRefName": "drjkl/app-instance-leaf",
         "headRefName": "drjkl/comfy-types-leaf",
-        "head": "701c1d8b385f1fd79c55bd3fbcc985b496040bc8",
-        "mergeBase": "0ef0276323b5819258571bbffe24af14af47dc2e",
-        "behindMain": 13,
+        "head": "6a802eca61eccfca4be4fedbe2f4a42781a0273c",
+        "mergeBase": "18a9c4210382fab896a7e00c7db5b141cefadef6",
+        "behindMain": 0,
         "parentPr": 19143,
         "containsParentHead": true,
         "depth": 3,
-        "state": 73,
-        "baseState": 53
+        "state": 78,
+        "baseState": 71
       },
       {
         "number": 19186,
@@ -7749,19 +8071,19 @@
         "isDraft": false,
         "mergeable": "MERGEABLE",
         "reviewDecision": null,
-        "additions": 327,
-        "deletions": 220,
+        "additions": 320,
+        "deletions": 214,
         "changedFiles": 24,
         "baseRefName": "drjkl/comfy-types-leaf",
         "headRefName": "drjkl/workbench-cycles",
-        "head": "1958fcdf59ae5a841baee170842186b9ddc51fda",
-        "mergeBase": "0ef0276323b5819258571bbffe24af14af47dc2e",
-        "behindMain": 13,
+        "head": "2bca9fe2b22a58f7f666aab6356484870a0e69fa",
+        "mergeBase": "18a9c4210382fab896a7e00c7db5b141cefadef6",
+        "behindMain": 0,
         "parentPr": 19153,
         "containsParentHead": true,
         "depth": 4,
-        "state": 74,
-        "baseState": 53
+        "state": 79,
+        "baseState": 71
       },
       {
         "number": 19189,
@@ -7771,19 +8093,19 @@
         "isDraft": false,
         "mergeable": "MERGEABLE",
         "reviewDecision": null,
-        "additions": 890,
-        "deletions": 836,
-        "changedFiles": 153,
+        "additions": 889,
+        "deletions": 835,
+        "changedFiles": 154,
         "baseRefName": "drjkl/workbench-cycles",
         "headRefName": "drjkl/app-small-cycles",
-        "head": "55e2c0696f6c67dada79e1bbb43dbeaaf40dddba",
-        "mergeBase": "0ef0276323b5819258571bbffe24af14af47dc2e",
-        "behindMain": 13,
+        "head": "be7f95b456f3fc2ab0557500825a5bba0c03c0b4",
+        "mergeBase": "18a9c4210382fab896a7e00c7db5b141cefadef6",
+        "behindMain": 0,
         "parentPr": 19186,
         "containsParentHead": true,
         "depth": 5,
-        "state": 75,
-        "baseState": 53
+        "state": 80,
+        "baseState": 71
       },
       {
         "number": 19768,
@@ -7800,11 +8122,11 @@
         "headRefName": "feat/ddd-architecture-ratchet",
         "head": "f9a2b7446ee5190996e50796d8ec6bf87bd23401",
         "mergeBase": "ef9481abcec3f45b73396568818fc0ba976657a4",
-        "behindMain": 4,
+        "behindMain": 9,
         "parentPr": null,
         "containsParentHead": true,
         "depth": 0,
-        "state": 77,
+        "state": 82,
         "baseState": 62
       },
       {
@@ -7822,11 +8144,11 @@
         "headRefName": "feat/ddd-classify-media-tools",
         "head": "a44a01294d2765111fcd794c71aa04d1b46fb18c",
         "mergeBase": "dc556123bd1b548b726ce838b2f2b396779d28ff",
-        "behindMain": 51,
+        "behindMain": 56,
         "parentPr": 19768,
         "containsParentHead": false,
         "depth": 1,
-        "state": 78,
+        "state": 83,
         "baseState": 15
       },
       {
@@ -7844,11 +8166,11 @@
         "headRefName": "feat/ddd-classify-compositor",
         "head": "4b0a0304ef3e954ac22b5b8775302ca881e3fee7",
         "mergeBase": "dc556123bd1b548b726ce838b2f2b396779d28ff",
-        "behindMain": 51,
+        "behindMain": 56,
         "parentPr": 19855,
         "containsParentHead": true,
         "depth": 2,
-        "state": 79,
+        "state": 84,
         "baseState": 15
       }
     ]
