@@ -2,41 +2,41 @@
   <div class="flex h-full items-center justify-center p-8">
     <div class="max-w-[100vw] lg:w-96">
       <div class="rounded-lg bg-charcoal-500 p-4">
-        <Skeleton width="60%" height="1.125rem" class="mb-2" />
-        <Skeleton width="90%" height="1rem" class="mb-2" />
-        <Skeleton width="80%" height="1rem" />
+        <Skeleton class="mb-2 h-4.5 w-3/5" />
+        <Skeleton class="mb-2 h-4 w-9/10" />
+        <Skeleton class="h-4 w-4/5" />
       </div>
 
       <div class="mt-6 mb-8 flex flex-col gap-4">
-        <Skeleton width="45%" height="1.5rem" class="my-0" />
+        <Skeleton class="my-0 h-6 w-9/20" />
         <div class="flex items-center">
-          <Skeleton width="25%" height="1rem" class="mr-1" />
-          <Skeleton width="20%" height="1rem" />
+          <Skeleton class="mr-1 h-4 w-1/4" />
+          <Skeleton class="h-4 w-1/5" />
         </div>
       </div>
 
       <div class="mb-8">
-        <Skeleton width="20%" height="1rem" class="mb-2" />
-        <Skeleton width="100%" height="2.5rem" class="mb-4" />
-        <Skeleton width="25%" height="1rem" class="mb-4" />
-        <Skeleton width="100%" height="2.5rem" class="mb-6" />
-        <Skeleton width="80%" height="1rem" class="mb-4" />
-        <Skeleton width="100%" height="2.5rem" />
+        <Skeleton class="mb-2 h-4 w-1/5" />
+        <Skeleton class="mb-4 h-10 w-full" />
+        <Skeleton class="mb-4 h-4 w-1/4" />
+        <Skeleton class="mb-6 h-10 w-full" />
+        <Skeleton class="mb-4 h-4 w-4/5" />
+        <Skeleton class="h-10 w-full" />
       </div>
 
       <div class="my-8 flex items-center">
         <div class="flex-1 border-t border-gray-300"></div>
-        <Skeleton width="30%" height="1rem" class="mx-4" />
+        <Skeleton class="mx-4 h-4 w-3/10" />
         <div class="flex-1 border-t border-gray-300"></div>
       </div>
 
       <div class="flex flex-col gap-6">
-        <Skeleton width="100%" height="2.5rem" />
-        <Skeleton width="100%" height="2.5rem" />
+        <Skeleton class="h-10 w-full" />
+        <Skeleton class="h-10 w-full" />
       </div>
 
       <div class="mt-5">
-        <Skeleton width="70%" height="0.875rem" />
+        <Skeleton class="h-3.5 w-7/10" />
       </div>
     </div>
   </div>

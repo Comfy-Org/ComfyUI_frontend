@@ -7,44 +7,44 @@
     <div class="flex w-full items-center justify-between px-4 py-3">
       <div class="flex items-center">
         <div class="flex size-6 items-center justify-center">
-          <Skeleton shape="circle" width="1.5rem" height="1.5rem" />
+          <Skeleton class="size-6 rounded-full" />
         </div>
-        <Skeleton width="5rem" height="1rem" class="ml-2" />
+        <Skeleton class="ml-2 h-4 w-20" />
       </div>
-      <Skeleton width="4rem" height="1.75rem" border-radius="0.75rem" />
+      <Skeleton class="h-7 w-16 rounded-xl" />
     </div>
 
     <!-- Card content with icon on left and text on right -->
     <div class="flex flex-1 p-4">
       <!-- Left icon - 64x64 -->
       <div class="mr-4 shrink-0">
-        <Skeleton width="4rem" height="4rem" border-radius="0.5rem" />
+        <Skeleton class="size-16 rounded-lg" />
       </div>
 
       <!-- Right content -->
       <div class="flex flex-1 flex-col overflow-hidden">
         <!-- Title -->
-        <Skeleton width="80%" height="1rem" class="mb-2" />
+        <Skeleton class="mb-2 h-4 w-4/5" />
 
         <!-- Description -->
         <div class="mb-3">
-          <Skeleton width="100%" height="0.75rem" class="mb-1" />
-          <Skeleton width="95%" height="0.75rem" class="mb-1" />
-          <Skeleton width="90%" height="0.75rem" />
+          <Skeleton class="mb-1 h-3 w-full" />
+          <Skeleton class="mb-1 h-3 w-19/20" />
+          <Skeleton class="h-3 w-9/10" />
         </div>
 
         <!-- Tags/Badges -->
         <div class="flex gap-2">
-          <Skeleton width="4rem" height="1.5rem" border-radius="0.75rem" />
-          <Skeleton width="5rem" height="1.5rem" border-radius="0.75rem" />
+          <Skeleton class="h-6 w-16 rounded-xl" />
+          <Skeleton class="h-6 w-20 rounded-xl" />
         </div>
       </div>
     </div>
 
     <!-- Card footer - similar to header -->
     <div class="flex w-full items-center justify-between px-5 py-4">
-      <Skeleton width="4rem" height="0.8rem" />
-      <Skeleton width="6rem" height="0.8rem" />
+      <Skeleton class="h-3 w-16" />
+      <Skeleton class="h-3 w-24" />
     </div>
   </div>
 </template>

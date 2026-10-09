@@ -78,7 +78,7 @@
       class="flex items-center gap-2 px-4 py-2"
     >
       <i class="icon-[lucide--coins] text-sm text-credit" />
-      <Skeleton v-if="isLoading" width="4rem" height="1.25rem" class="w-full" />
+      <Skeleton v-if="isLoading" class="h-5 w-16" />
       <span v-else class="text-base font-semibold text-base-foreground">{{
         formattedBalance
       }}</span>

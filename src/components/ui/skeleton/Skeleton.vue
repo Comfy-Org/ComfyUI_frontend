@@ -1,40 +1,16 @@
 <script setup lang="ts">
 import type { HTMLAttributes } from 'vue'
-import { computed } from 'vue'
 
 import { cn } from '@comfyorg/tailwind-utils'
 
-const {
-  class: className,
-  width,
-  height,
-  borderRadius,
-  shape
-} = defineProps<{
-  borderRadius?: string
+const { class: className } = defineProps<{
   class?: HTMLAttributes['class']
-  height?: string
-  shape?: 'circle' | 'rectangle'
-  width?: string
 }>()
-
-const style = computed(() => ({
-  width,
-  height,
-  borderRadius: shape === 'circle' ? '50%' : borderRadius
-}))
 </script>
 
 <template>
   <div
     data-slot="skeleton"
-    :class="
-      cn(
-        'animate-pulse bg-secondary-background',
-        shape === 'circle' ? 'rounded-full' : 'rounded-md',
-        className
-      )
-    "
-    :style
+    :class="cn('animate-pulse rounded-md bg-secondary-background', className)"
   />
 </template>
