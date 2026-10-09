@@ -45,6 +45,10 @@ const config: KnipConfig = {
       project: ['src/**/*.{js,ts}']
     },
     'packages/ingest-types': {
+      entry: [
+        'scripts/generate-test-workflow-spec.ts',
+        'test-workflows.config.ts'
+      ],
       project: ['src/**/*.{js,ts}']
     },
     'apps/website': {

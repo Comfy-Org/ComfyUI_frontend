@@ -5,9 +5,12 @@
   "type": "module",
   "exports": {
     ".": "./src/index.ts",
-    "./zod": "./src/zod.gen.ts"
+    "./zod": "./src/zod.gen.ts",
+    "./test-workflows": "./src/test-workflows/index.ts",
+    "./test-workflows/zod": "./src/test-workflows/zod.gen.ts"
   },
   "scripts": {
+    "generate:test-workflows": "openapi-ts -f test-workflows.config.ts && oxfmt --write src/test-workflows test-workflows.openapi.yaml",
     "generate": "openapi-ts && node -e \"const fs=require('fs'); ['src/zod.gen.ts'].forEach(f => fs.writeFileSync(f, fs.readFileSync(f,'utf8').replaceAll(\\\"from 'zod/v3'\\\", \\\"from 'zod'\\\")));\""
   },
   "dependencies": {

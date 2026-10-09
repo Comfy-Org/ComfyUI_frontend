@@ -1,0 +1,138 @@
+<script setup lang="ts">
+import type { TestWorkflowDetail } from '@comfyorg/ingest-types/test-workflows'
+import { useI18n } from 'vue-i18n'
+
+import Button from '@/components/ui/button/Button.vue'
+
+const { record, busy } = defineProps<{
+  record: TestWorkflowDetail
+  busy: boolean
+}>()
+const emit = defineEmits<{ open: []; variants: [cluster: string] }>()
+const { t } = useI18n()
+</script>
+
+<template>
+  <div class="flex flex-col gap-4 p-6 text-sm">
+    <h3 class="m-0 text-base font-semibold wrap-break-word">
+      {{ record.metadata.name }}
+    </h3>
+    <p class="m-0 wrap-break-word">{{ record.metadata.description }}</p>
+    <Button :disabled="busy" @click="emit('open')">{{
+      t('testWorkflowLibrary.openOriginal')
+    }}</Button>
+    <p class="m-0 text-xs text-muted-foreground">
+      {{ t('testWorkflowLibrary.noAutomaticActions') }}
+    </p>
+    <Button disabled variant="secondary">{{
+      t('testWorkflowLibrary.magicPatch')
+    }}</Button>
+    <p class="m-0 text-xs text-muted-foreground">
+      {{ t('testWorkflowLibrary.converterUnavailable') }}
+    </p>
+    <section>
+      <h4 class="mb-2 font-semibold">
+        {{ t('testWorkflowLibrary.readiness') }}
+      </h4>
+      <p>{{ record.metadata.readiness.status }}</p>
+      <p class="text-xs text-muted-foreground">
+        {{ t('testWorkflowLibrary.notVerified') }}
+      </p>
+      <ul class="list-inside list-disc">
+        <li
+          v-for="(note, index) in record.metadata.readiness.notes"
+          :key="index"
+        >
+          {{ note }}
+        </li>
+        <li
+          v-for="(input, index) in record.metadata.required_inputs"
+          :key="`input-${index}`"
+        >
+          {{ input }}
+        </li>
+      </ul>
+    </section>
+    <section>
+      <h4 class="mb-2 font-semibold">{{ t('testWorkflowLibrary.nodes') }}</h4>
+      <ul class="list-inside list-disc wrap-break-word">
+        <li v-for="type in record.metadata.node_types" :key="type">
+          {{ type }}
+        </li>
+      </ul>
+    </section>
+    <section>
+      <h4 class="mb-2 font-semibold">{{ t('testWorkflowLibrary.packs') }}</h4>
+      <div
+        v-for="(pack, index) in record.metadata.packs"
+        :key="index"
+        class="mb-3 wrap-break-word"
+      >
+        <p>{{ pack.node_type }} · {{ pack.resolution }}</p>
+        <p
+          v-for="(candidate, candidateIndex) in pack.candidates"
+          :key="candidateIndex"
+          class="text-xs text-muted-foreground"
+        >
+          {{ candidate.pack_id }} {{ candidate.owner }}
+          {{ candidate.repository }}
+        </p>
+      </div>
+    </section>
+    <section>
+      <h4 class="mb-2 font-semibold">{{ t('testWorkflowLibrary.models') }}</h4>
+      <p class="text-xs text-muted-foreground">
+        {{ t('testWorkflowLibrary.modelReferencesOnly') }}
+      </p>
+      <div
+        v-for="(model, index) in record.metadata.models"
+        :key="index"
+        class="mb-3 wrap-break-word"
+      >
+        <p>{{ model.kind }} · {{ model.name }}</p>
+        <p class="text-xs text-muted-foreground">
+          {{ model.loader }} · {{ model.location }}
+        </p>
+      </div>
+    </section>
+    <section
+      v-if="record.metadata.prompts.length || record.metadata.example_prompt"
+    >
+      <h4 class="mb-2 font-semibold">{{ t('testWorkflowLibrary.prompts') }}</h4>
+      <p
+        v-if="record.metadata.example_prompt"
+        class="wrap-break-word whitespace-pre-wrap"
+      >
+        {{ record.metadata.example_prompt }}
+      </p>
+      <p
+        v-for="(prompt, index) in record.metadata.prompts"
+        :key="index"
+        class="wrap-break-word whitespace-pre-wrap"
+      >
+        {{ prompt.text }}
+      </p>
+    </section>
+    <section>
+      <h4 class="mb-2 font-semibold">
+        {{ t('testWorkflowLibrary.provenance') }}
+      </h4>
+      <p class="wrap-break-word">{{ record.metadata.provenance.source }}</p>
+      <p class="wrap-break-word">{{ record.metadata.provenance.license }}</p>
+      <pre class="overflow-auto text-xs whitespace-pre-wrap">{{
+        JSON.stringify(record.metadata.provenance, null, 2)
+      }}</pre>
+      <p class="text-xs break-all text-muted-foreground">
+        {{ record.summary.workflow_sha256 }}
+      </p>
+    </section>
+    <Button
+      v-if="record.metadata.structural_cluster"
+      variant="secondary"
+      :disabled="busy"
+      @click="emit('variants', record.metadata.structural_cluster)"
+    >
+      {{ t('testWorkflowLibrary.variants') }}
+    </Button>
+  </div>
+</template>

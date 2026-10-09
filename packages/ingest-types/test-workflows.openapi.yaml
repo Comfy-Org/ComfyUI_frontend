@@ -1,0 +1,525 @@
+openapi: 3.0.3
+info:
+  title: Comfy Cloud Test Workflow Library
+  version: 1.0.0
+paths:
+  /api/test-workflow-library/collections:
+    get:
+      tags:
+        - test-workflow-library
+      operationId: listTestWorkflowCollections
+      summary: List private test workflow collections
+      responses:
+        '200':
+          description: Authenticated account/workspace collections, maximum 100
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/TestWorkflowCollections'
+        '401':
+          description: Authentication required
+        '500':
+          description: Storage unavailable
+  /api/test-workflow-library/collections/{collection}/entries:
+    parameters:
+      - $ref: '#/components/parameters/TestWorkflowCollection'
+    get:
+      tags:
+        - test-workflow-library
+      operationId: listTestWorkflowEntries
+      summary: Search a private test workflow collection without graph bodies
+      parameters:
+        - name: limit
+          in: query
+          schema:
+            type: integer
+            minimum: 1
+            maximum: 50
+            default: 24
+        - name: cursor
+          in: query
+          schema:
+            type: string
+            maxLength: 512
+        - name: q
+          in: query
+          schema:
+            type: string
+            maxLength: 200
+        - name: tag
+          in: query
+          schema:
+            type: string
+            maxLength: 128
+        - name: task
+          in: query
+          schema:
+            type: string
+            maxLength: 128
+        - name: pack
+          in: query
+          schema:
+            type: string
+            maxLength: 2000
+        - name: model
+          in: query
+          schema:
+            type: string
+            maxLength: 2000
+        - name: complexity
+          in: query
+          schema:
+            type: string
+            enum:
+              - small
+              - medium
+              - large
+        - name: cluster
+          in: query
+          schema:
+            type: string
+            maxLength: 128
+      responses:
+        '200':
+          description: Bounded summary page; imported readiness is not execution proof
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/TestWorkflowPage'
+        '400':
+          description: Invalid collection, filters or stale cursor
+        '401':
+          description: Authentication required
+        '500':
+          description: Storage unavailable
+  /api/test-workflow-library/collections/{collection}/facets:
+    parameters:
+      - $ref: '#/components/parameters/TestWorkflowCollection'
+    get:
+      tags:
+        - test-workflow-library
+      operationId: getTestWorkflowFacets
+      summary: Bounded facet choices for the authenticated collection
+      responses:
+        '200':
+          description: Maximum 100 values per facet, truncation indicated
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/TestWorkflowFacets'
+        '400':
+          description: Invalid collection
+        '401':
+          description: Authentication required
+        '500':
+          description: Storage unavailable
+  /api/test-workflow-library/collections/{collection}/entries/{workflow_sha256}:
+    parameters:
+      - $ref: '#/components/parameters/TestWorkflowCollection'
+      - name: workflow_sha256
+        in: path
+        required: true
+        schema:
+          type: string
+          pattern: ^[a-f0-9]{64}$
+    get:
+      tags:
+        - test-workflow-library
+      operationId: getTestWorkflowEntry
+      summary: Read one original UI graph and its associated import metadata
+      parameters:
+        - name: include_workflow
+          in: query
+          schema:
+            type: boolean
+            default: false
+      responses:
+        '200':
+          description: Exact original UTF-8 graph text, not a rewritten runnable variant
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/TestWorkflowDetail'
+        '400':
+          description: Invalid identifier
+        '401':
+          description: Authentication required
+        '404':
+          description: Not found in authenticated scope
+        '500':
+          description: Storage unavailable
+    put:
+      tags:
+        - test-workflow-library
+      operationId: importTestWorkflowEntry
+      summary: Idempotently import an original graph into a private collection
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/TestWorkflowImportRequest'
+      responses:
+        '200':
+          description: Duplicate or metadata-only update
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/TestWorkflowImportResult'
+        '201':
+          description: Imported original graph
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/TestWorkflowImportResult'
+        '400':
+          description: Invalid graph format, hash, metadata or identifier
+        '401':
+          description: Authentication required
+        '409':
+          description: Metadata changed; expected digest missing or stale
+        '413':
+          description: Graph or metadata exceeds bounded import size
+        '500':
+          description: Storage unavailable
+components:
+  schemas:
+    TestWorkflowCollections:
+      type: object
+      required:
+        - collections
+        - truncated
+      properties:
+        collections:
+          type: array
+          items:
+            type: object
+            required:
+              - id
+              - count
+            properties:
+              id:
+                type: string
+              count:
+                type: integer
+        truncated:
+          type: boolean
+    TestWorkflowPackReference:
+      type: object
+      required:
+        - node_type
+        - resolution
+        - candidates
+      properties:
+        node_type:
+          type: string
+          maxLength: 500
+        resolution:
+          type: string
+          enum:
+            - recorded
+            - ambiguous
+            - unknown
+        candidates:
+          type: array
+          maxItems: 16
+          items:
+            type: object
+            properties:
+              pack_id:
+                type: string
+                maxLength: 500
+              repository:
+                type: string
+                maxLength: 2000
+              owner:
+                type: string
+                maxLength: 200
+    TestWorkflowModelReference:
+      type: object
+      required:
+        - kind
+        - name
+        - loader
+        - location
+      properties:
+        kind:
+          type: string
+          enum:
+            - checkpoint
+            - unet
+            - lora
+            - vae
+            - clip
+            - controlnet
+            - upscaler
+            - other
+        name:
+          type: string
+          maxLength: 2000
+        loader:
+          type: string
+          maxLength: 500
+        location:
+          type: string
+          maxLength: 2000
+    TestWorkflowImportMetadata:
+      type: object
+      required:
+        - schema_version
+        - workflow_sha256
+        - name
+        - description
+        - tags
+        - tasks
+        - node_types
+        - packs
+        - models
+        - prompts
+        - structural_cluster
+        - required_inputs
+        - readiness
+        - provenance
+      properties:
+        schema_version:
+          type: integer
+          enum:
+            - 1
+        workflow_sha256:
+          type: string
+          pattern: ^[a-f0-9]{64}$
+        name:
+          type: string
+          minLength: 1
+          maxLength: 200
+        description:
+          type: string
+          maxLength: 2000
+        tags:
+          type: array
+          maxItems: 64
+          items:
+            type: string
+            maxLength: 128
+        tasks:
+          type: array
+          maxItems: 16
+          items:
+            type: string
+            maxLength: 128
+        node_types:
+          type: array
+          maxItems: 2000
+          items:
+            type: string
+            maxLength: 500
+        packs:
+          type: array
+          maxItems: 2000
+          items:
+            $ref: '#/components/schemas/TestWorkflowPackReference'
+        models:
+          type: array
+          maxItems: 2000
+          items:
+            $ref: '#/components/schemas/TestWorkflowModelReference'
+        prompts:
+          type: array
+          maxItems: 1000
+          items:
+            type: object
+            required:
+              - text
+              - location
+            properties:
+              text:
+                type: string
+                maxLength: 16000
+              location:
+                type: string
+                maxLength: 2000
+        example_prompt:
+          type: string
+          maxLength: 16000
+        structural_cluster:
+          type: string
+          maxLength: 128
+        required_inputs:
+          type: array
+          maxItems: 1000
+          items:
+            type: string
+            maxLength: 2000
+        readiness:
+          type: object
+          required:
+            - status
+            - notes
+          properties:
+            status:
+              type: string
+              enum:
+                - unknown
+                - needs-inputs
+                - unsupported
+            notes:
+              type: array
+              maxItems: 100
+              items:
+                type: string
+                maxLength: 2000
+        provenance:
+          type: object
+          required:
+            - source
+            - license
+          properties:
+            source:
+              type: string
+              maxLength: 2000
+            license:
+              type: string
+              maxLength: 2000
+          additionalProperties: true
+        classification:
+          type: object
+          additionalProperties: true
+    TestWorkflowImportRequest:
+      type: object
+      required:
+        - workflow_json
+        - metadata
+      additionalProperties: false
+      properties:
+        workflow_json:
+          type: string
+          description: Exact original UTF-8 graph bytes as text
+        metadata:
+          $ref: '#/components/schemas/TestWorkflowImportMetadata'
+        expected_metadata_sha256:
+          type: string
+          pattern: ^[a-f0-9]{64}$
+    TestWorkflowSummary:
+      type: object
+      required:
+        - workflow_sha256
+        - metadata_sha256
+        - name
+        - description
+        - tags
+        - tasks
+        - structural_cluster
+        - node_count
+        - unresolved_pack_count
+        - verified
+      properties:
+        workflow_sha256:
+          type: string
+        metadata_sha256:
+          type: string
+        name:
+          type: string
+        description:
+          type: string
+        tags:
+          type: array
+          items:
+            type: string
+        tasks:
+          type: array
+          items:
+            type: string
+        structural_cluster:
+          type: string
+        node_count:
+          type: integer
+        unresolved_pack_count:
+          type: integer
+        verified:
+          type: boolean
+          description: Never inferred from imported metadata
+    TestWorkflowPage:
+      type: object
+      required:
+        - entries
+        - total
+        - verified
+        - unresolved
+        - next_cursor
+      properties:
+        entries:
+          type: array
+          items:
+            $ref: '#/components/schemas/TestWorkflowSummary'
+        total:
+          type: integer
+        verified:
+          type: integer
+        unresolved:
+          type: integer
+        next_cursor:
+          type: string
+    TestWorkflowFacets:
+      type: object
+      required:
+        - tags
+        - tasks
+        - packs
+        - models
+        - truncated
+      properties:
+        tags:
+          type: array
+          items:
+            type: string
+        tasks:
+          type: array
+          items:
+            type: string
+        packs:
+          type: array
+          items:
+            type: string
+        models:
+          type: array
+          items:
+            type: string
+        truncated:
+          type: boolean
+    TestWorkflowDetail:
+      type: object
+      required:
+        - summary
+        - metadata
+      properties:
+        summary:
+          $ref: '#/components/schemas/TestWorkflowSummary'
+        metadata:
+          $ref: '#/components/schemas/TestWorkflowImportMetadata'
+        workflow_json:
+          type: string
+    TestWorkflowImportResult:
+      type: object
+      required:
+        - outcome
+        - workflow_sha256
+        - metadata_sha256
+      properties:
+        outcome:
+          type: string
+          enum:
+            - imported
+            - duplicate
+            - updated
+        workflow_sha256:
+          type: string
+        metadata_sha256:
+          type: string
+  parameters:
+    TestWorkflowCollection:
+      name: collection
+      in: path
+      required: true
+      schema:
+        type: string
+        pattern: ^[a-z0-9][a-z0-9_-]{0,63}$
