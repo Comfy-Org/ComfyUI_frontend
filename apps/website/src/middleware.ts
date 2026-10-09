@@ -136,7 +136,7 @@ function selectPreview(context: APIContext) {
   return context.redirect(context.url.pathname + context.url.search, 303)
 }
 
-export const onRequest = defineMiddleware(async (context, next) => {
+const handle = defineMiddleware(async (context, next) => {
   context.locals.t = translationsFor(resolveLocale(context.currentLocale)).t
   const admin = isAdmin(context.url.pathname)
   if (context.isPrerendered) return admin ? denied(404) : next()
@@ -160,4 +160,19 @@ export const onRequest = defineMiddleware(async (context, next) => {
     response.headers.set('X-Comfy-Content-Source', 'cms')
   }
   return response
+})
+
+// TEMPORARY: show the failure on the demo preview to diagnose a Vercel-only 500.
+export const onRequest = defineMiddleware(async (context, next) => {
+  try {
+    const response = await handle(context, next)
+    if (!response) throw new Error('Middleware returned no response')
+    return response
+  } catch (error) {
+    if (!demoMode()) throw error
+    return new Response(
+      `Demo error\n${error instanceof Error ? error.stack : String(error)}`,
+      { status: 500, headers: { 'Content-Type': 'text/plain' } }
+    )
+  }
 })
