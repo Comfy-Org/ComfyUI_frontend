@@ -1161,9 +1161,6 @@ describe('useWorkflowStore', () => {
       })
 
       it('should decode an encoded root-leaf locator to its node id', () => {
-        // insert_workflow remaps every inserted node to
-        // `insert:<opId>:root:node:<originalId>` and createNodeLocatorId
-        // encodes that colon-bearing local id without changing its value.
         const locatorId = createNodeLocatorId(
           null,
           'insert:0fbd38ecb13037d0b3b0ca78b8a20a5a:root:node:9'
