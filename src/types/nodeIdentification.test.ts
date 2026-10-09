@@ -131,9 +131,13 @@ describe('nodeIdentification', () => {
         expect(isNodeLocatorId(result)).toBe(true)
       })
 
-      it('should return null for node ID segments with separators', () => {
-        expect(createNodeLocatorId(validUuid, toNodeId('node:1'))).toBeNull()
-        expect(createNodeLocatorId(null, toNodeId('node:1'))).toBeNull()
+      it('encodes node ID segments with separators', () => {
+        expect(createNodeLocatorId(validUuid, toNodeId('node:1'))).toBe(
+          `~subgraph:${validUuid}:node%3A1`
+        )
+        expect(createNodeLocatorId(null, toNodeId('node:1'))).toBe(
+          '~root:node%3A1'
+        )
       })
     })
 
@@ -152,7 +156,9 @@ describe('nodeIdentification', () => {
         // comfy-multi-player's insert_workflow remaps every inserted node's
         // id to a derived string with colons unrelated to subgraph scoping.
         const rawId = 'insert:abc123:root:node:5'
-        expect(createNodeLocatorId(null, toNodeId(rawId))).toBeNull()
+        expect(createNodeLocatorId(null, toNodeId(rawId))).toBe(
+          '~root:insert%3Aabc123%3Aroot%3Anode%3A5'
+        )
         const locatorId = createLeafNodeLocatorId(null, rawId)
         assert.exists(locatorId)
         expect(locatorId).toBe('~root:insert%3Aabc123%3Aroot%3Anode%3A5')

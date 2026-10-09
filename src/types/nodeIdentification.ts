@@ -135,19 +135,25 @@ export function parseNodeLocatorId(id: string): ParsedNodeLocatorId | null {
  */
 export function createNodeLocatorId(
   subgraphUuid: string | null,
-  localNodeId: NodeId
+  localNodeId: SerializedNodeId
 ): NodeLocatorId
 export function createNodeLocatorId(
   subgraphUuid: string | null,
-  localNodeId: NodeId
+  localNodeId: SerializedNodeId
 ): NodeLocatorId | null {
   const nodeId = requireNodeIdSegment(localNodeId)
-  if (!nodeId) return null
   if (subgraphUuid && !UUID_PATTERN.test(subgraphUuid)) return null
 
-  if (!subgraphUuid) return String(nodeId) as NodeLocatorId
+  if (nodeId) {
+    if (!subgraphUuid) return String(nodeId) as NodeLocatorId
 
-  return `${subgraphUuid}:${nodeId}` as NodeLocatorId
+    return `${subgraphUuid}:${nodeId}` as NodeLocatorId
+  }
+
+  const encodedNodeId = encodeURIComponent(String(localNodeId))
+  return subgraphUuid
+    ? (`${ENCODED_SUBGRAPH_LOCATOR_PREFIX}${subgraphUuid}:${encodedNodeId}` as NodeLocatorId)
+    : (`${ENCODED_ROOT_LOCATOR_PREFIX}${encodedNodeId}` as NodeLocatorId)
 }
 
 /**
@@ -172,16 +178,7 @@ export function createLeafNodeLocatorId(
   subgraphUuid: string | null,
   localNodeId: SerializedNodeId
 ): NodeLocatorId | null {
-  const strictNodeId = requireNodeIdSegment(localNodeId)
-  if (strictNodeId) return createNodeLocatorId(subgraphUuid, strictNodeId)
-
-  const encodedNodeId = encodeURIComponent(String(localNodeId))
-  if (!subgraphUuid) {
-    return `${ENCODED_ROOT_LOCATOR_PREFIX}${encodedNodeId}` as NodeLocatorId
-  }
-  if (!UUID_PATTERN.test(subgraphUuid)) return null
-
-  return `${ENCODED_SUBGRAPH_LOCATOR_PREFIX}${subgraphUuid}:${encodedNodeId}` as NodeLocatorId
+  return createNodeLocatorId(subgraphUuid, localNodeId)
 }
 /**
  * Parse a NodeExecutionId into its component node IDs
