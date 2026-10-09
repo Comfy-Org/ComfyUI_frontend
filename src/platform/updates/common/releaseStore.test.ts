@@ -1,5 +1,5 @@
 import { fromPartial } from '@total-typescript/shoehorn'
-import { createSharedComposable, until, useStorage } from '@vueuse/core'
+import { createSharedComposable, useStorage } from '@vueuse/core'
 import { compare } from 'semver'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { ref } from 'vue'
@@ -352,6 +352,19 @@ describe('useReleaseStore', () => {
       expect(store.isLoading).toBe(false)
     })
 
+    it('should fetch normally with --disable-partner-nodes, which keeps the frontend online', async () => {
+      const store = useReleaseStore()
+      const releaseService = useReleaseService()
+      const systemStatsStore = useSystemStatsStore()
+      systemStatsStore.systemStats!.system.argv = ['--disable-partner-nodes']
+      vi.mocked(releaseService.getReleases).mockResolvedValue([mockRelease])
+
+      await store.initialize()
+
+      expect(releaseService.getReleases).toHaveBeenCalled()
+      expect(store.releases).toEqual([mockRelease])
+    })
+
     it('should fetch normally when --disable-api-nodes is not present', async () => {
       const store = useReleaseStore()
       const releaseService = useReleaseService()
@@ -432,9 +445,16 @@ describe('useReleaseStore', () => {
       systemStatsStore.isInitialized = false
       vi.mocked(releaseService.getReleases).mockResolvedValue([mockRelease])
 
-      await store.initialize()
+      const initPromise = store.initialize()
+      await Promise.resolve()
+      expect(releaseService.getReleases).not.toHaveBeenCalled()
 
-      expect(vi.mocked(until)).toHaveBeenCalled()
+      systemStatsStore.systemStats = fromPartial({
+        system: { comfyui_version: '1.0.0', argv: [] }
+      })
+      systemStatsStore.isInitialized = true
+      await initPromise
+
       expect(releaseService.getReleases).toHaveBeenCalled()
     })
 
@@ -452,12 +472,53 @@ describe('useReleaseStore', () => {
     })
   })
 
-  describe('--disable-api-nodes argument handling', () => {
-    it('should skip fetchReleases when --disable-api-nodes is present', async () => {
+  describe('offline argument handling', () => {
+    it.for(['--offline', '--disable-api-nodes'])(
+      'should skip fetchReleases when %s is present',
+      async (arg) => {
+        const store = useReleaseStore()
+        const releaseService = useReleaseService()
+        const systemStatsStore = useSystemStatsStore()
+        systemStatsStore.systemStats!.system.argv = [arg]
+
+        await store.fetchReleases()
+
+        expect(releaseService.getReleases).not.toHaveBeenCalled()
+        expect(store.isLoading).toBe(false)
+      }
+    )
+
+    it('should skip fetchReleases when --offline only arrives once system stats load', async () => {
       const store = useReleaseStore()
       const releaseService = useReleaseService()
       const systemStatsStore = useSystemStatsStore()
-      systemStatsStore.systemStats!.system.argv = ['--disable-api-nodes']
+      systemStatsStore.systemStats = null
+      systemStatsStore.isInitialized = false
+
+      const fetchPromise = store.fetchReleases()
+      await Promise.resolve()
+      expect(releaseService.getReleases).not.toHaveBeenCalled()
+
+      systemStatsStore.systemStats = fromPartial({
+        system: { comfyui_version: '1.0.0', argv: ['--offline'] }
+      })
+      systemStatsStore.isInitialized = true
+      await fetchPromise
+
+      expect(releaseService.getReleases).not.toHaveBeenCalled()
+      expect(store.isLoading).toBe(false)
+    })
+
+    it('should skip fetchReleases when --offline is among other args', async () => {
+      const store = useReleaseStore()
+      const releaseService = useReleaseService()
+      const systemStatsStore = useSystemStatsStore()
+      systemStatsStore.systemStats!.system.argv = [
+        '--port',
+        '8080',
+        '--offline',
+        '--verbose'
+      ]
 
       await store.fetchReleases()
 
@@ -517,10 +578,16 @@ describe('useReleaseStore', () => {
       systemStatsStore.systemStats = null
       systemStatsStore.isInitialized = false
       vi.mocked(releaseService.getReleases).mockResolvedValue([mockRelease])
+      vi.useFakeTimers()
 
-      await store.fetchReleases()
+      try {
+        const fetchPromise = store.fetchReleases()
+        await vi.advanceTimersByTimeAsync(10_000)
+        await fetchPromise
+      } finally {
+        vi.useRealTimers()
+      }
 
-      expect(until).toHaveBeenCalled()
       expect(releaseService.getReleases).toHaveBeenCalled()
     })
   })
