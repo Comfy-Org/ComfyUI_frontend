@@ -18,10 +18,16 @@ async function openHub(hubSections: HubSections = ALL_SECTIONS) {
 }
 
 describe('HeaderMainDesktop', () => {
-  it('renders Hub, Products and Enterprise at the top level', () => {
-    render(HeaderMainDesktop)
-    for (const name of [/^Hub\b/, /^Products\b/, /^Enterprise\b/])
+  it.for([/^Hub\b/, /^Products\b/, /^Enterprise\b/])(
+    'renders %s as a top-level menu',
+    (name) => {
+      render(HeaderMainDesktop)
       expect(screen.getByRole('button', { name })).toBeTruthy()
+    }
+  )
+
+  it('has no top-level Community menu', () => {
+    render(HeaderMainDesktop)
     expect(screen.queryByRole('button', { name: /community/i })).toBeNull()
   })
 
