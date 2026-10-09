@@ -1098,17 +1098,19 @@ describe('graphTraversalUtil', () => {
           { id: toNodeId(rawId), graphId: ROOT_GRAPH_ID },
           ROOT_GRAPH_ID
         )
-        expect(locatorId).toBe(rawId)
+        expect(locatorId).toBe('~root:insert%3Aabc123%3Aroot%3Anode%3A5')
       })
 
-      it('still rejects a colon-bearing id when the node really is subgraph-owned (no regression)', () => {
+      it('encodes a colon-bearing id when the node is subgraph-owned', () => {
         const subgraphUuid = 'a1b2c3d4-e5f6-7890-abcd-ef1234567890'
         const rawId = 'insert:abc123:root:node:5'
         const locatorId = locatorIdFromState(
           { id: toNodeId(rawId), graphId: subgraphUuid },
           ROOT_GRAPH_ID
         )
-        expect(locatorId).toBeNull()
+        expect(locatorId).toBe(
+          `~subgraph:${subgraphUuid}:insert%3Aabc123%3Aroot%3Anode%3A5`
+        )
       })
     })
 
@@ -1790,7 +1792,9 @@ describe('graphTraversalUtil', () => {
       // Image node stayed empty while the image appeared in chat.
       const graph = createMockGraph([createMockNode(REMAPPED_ID)])
 
-      expect(executionIdToNodeLocatorId(graph, REMAPPED_ID)).toBe(REMAPPED_ID)
+      expect(executionIdToNodeLocatorId(graph, REMAPPED_ID)).toBe(
+        `~root:${encodeURIComponent(REMAPPED_ID)}`
+      )
     })
 
     it('still returns undefined for a colon-bearing id no node on the graph carries', () => {

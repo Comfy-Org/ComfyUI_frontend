@@ -27,7 +27,6 @@ import {
   createLeafNodeExecutionId,
   createLeafNodeLocatorId,
   createNodeExecutionId,
-  createNodeLocatorId,
   parseNodeExecutionId,
   parseNodeLocatorId
 } from '@/types/nodeIdentification'
@@ -639,12 +638,8 @@ export const useWorkflowStore = defineStore('workflow', () => {
    * @param subgraph The subgraph containing the node (defaults to active subgraph)
    * @returns The NodeLocatorId (for root graph nodes, returns the node ID as-is)
    *
-   * A root-graph node keeps its raw id even when that id contains a colon
-   * which is not a subgraph-scope prefix (`insert_workflow`'s remapped ids,
-   * `insert:<opId>:root:node:<originalId>`). The strict mint returns null
-   * there, so every store keyed on this locator — node outputs above all —
-   * looked an agent-inserted node up under a key nothing ever wrote
-   * (PM-2037/PM-1826/PM-1668, same id class as PM-1580).
+   * Delimiter-bearing local IDs use an encoded locator so root and subgraph
+   * nodes cannot collide in locator-keyed stores.
    */
   const nodeIdToNodeLocatorId = (
     nodeId: NodeId,
@@ -656,7 +651,7 @@ export const useWorkflowStore = defineStore('workflow', () => {
       return createLeafNodeLocatorId(null, nodeId)!
     }
 
-    return createNodeLocatorId(targetSubgraph.id, nodeId)
+    return createLeafNodeLocatorId(targetSubgraph.id, nodeId)!
   }
   /**
    * Convert a node to a NodeLocatorId
@@ -666,7 +661,7 @@ export const useWorkflowStore = defineStore('workflow', () => {
    */
   const nodeToNodeLocatorId = (node: LGraphNode): NodeLocatorId => {
     if (isSubgraph(node.graph))
-      return createNodeLocatorId(node.graph.id, node.id)
+      return createLeafNodeLocatorId(node.graph.id, node.id)!
     // Root graph: see nodeIdToNodeLocatorId on colon-bearing raw ids.
     return createLeafNodeLocatorId(null, node.id)!
   }
@@ -680,10 +675,8 @@ export const useWorkflowStore = defineStore('workflow', () => {
     const parsed = parseNodeLocatorId(locatorId)
     if (parsed) return parsed.localNodeId
 
-    // Root-graph locator minted whole by createLeafNodeLocatorId because its
-    // raw id itself contains a colon that isn't a subgraph-scope prefix
-    // (insert_workflow's remapped ids, PM-2037/PM-1580). There is no
-    // subgraph prefix to strip, so the locator IS the node id.
+    // Retain compatibility with locators created before delimiter-bearing
+    // local IDs gained an encoded representation.
     return parseNodeId(locatorId) ?? toNodeId(String(locatorId))
   }
 
@@ -709,7 +702,7 @@ export const useWorkflowStore = defineStore('workflow', () => {
 
     // If no subgraph UUID, this is a root graph node
     if (!subgraphUuid) {
-      return createNodeExecutionId([localNodeId])
+      return createLeafNodeExecutionId(localNodeId)
     }
 
     // Find the path from root to the subgraph with this UUID

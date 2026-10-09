@@ -1150,17 +1150,18 @@ describe('useWorkflowStore', () => {
         expect(stringResult).toBe('node_1')
       })
 
-      it('should return the whole locator as the node id for an unparseable root-leaf locator', () => {
+      it('should decode an encoded root-leaf locator to its node id', () => {
         // insert_workflow remaps every inserted node to
         // `insert:<opId>:root:node:<originalId>` and createLeafNodeLocatorId
-        // keeps that whole, colon-bearing id as the locator (PM-2037). There
-        // is no subgraph UUID to strip, so the locator IS the node id.
+        // encodes that colon-bearing local id without changing its value.
         const locatorId = createLeafNodeLocatorId(
           null,
           'insert:0fbd38ecb13037d0b3b0ca78b8a20a5a:root:node:9'
         )!
         const result = store.nodeLocatorIdToNodeId(locatorId)
-        expect(result).toBe(locatorId)
+        expect(result).toBe(
+          'insert:0fbd38ecb13037d0b3b0ca78b8a20a5a:root:node:9'
+        )
       })
     })
 
@@ -1196,13 +1197,15 @@ describe('useWorkflowStore', () => {
         expect(result).toBeNull()
       })
 
-      it('should mint a leaf execution id for an unparseable root-leaf locator', () => {
+      it('should mint a leaf execution id from an encoded root-leaf locator', () => {
         const locatorId = createLeafNodeLocatorId(
           null,
           'insert:0fbd38ecb13037d0b3b0ca78b8a20a5a:root:node:9'
         )!
         const result = store.nodeLocatorIdToNodeExecutionId(locatorId)
-        expect(result).toBe(locatorId)
+        expect(result).toBe(
+          'insert:0fbd38ecb13037d0b3b0ca78b8a20a5a:root:node:9'
+        )
       })
     })
   })

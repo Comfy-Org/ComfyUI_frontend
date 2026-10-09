@@ -44,11 +44,8 @@ export function subgraphIdFromState(
 /**
  * The locator id for a node described by its shell state.
  *
- * A root-owned node has no ancestor path to encode, so its raw id can be
- * kept whole even when it contains a colon that isn't a subgraph-scope
- * prefix (comfy-multi-player's insert_workflow remapped ids, PM-1580) — see
- * `createLeafNodeLocatorId`. A node that IS meant to live inside a subgraph
- * still goes through the strict, delimiter-aware path.
+ * `createLeafNodeLocatorId` preserves ordinary IDs and encodes delimiter-
+ * bearing IDs so root and subgraph locator key spaces stay distinct.
  */
 export function locatorIdFromState(
   state: Pick<NodeState, 'id' | 'graphId'>,
@@ -671,9 +668,8 @@ export function getNodeByLocatorId(
     // parseNodeLocatorId's delimiter-aware format rejects a locator id
     // whose local id itself contains a colon that isn't a subgraph-scope
     // prefix (comfy-multi-player's insert_workflow remapped ids, PM-1580).
-    // createLeafNodeLocatorId keeps such an id whole instead of splitting
-    // it into `<subgraphUuid>:<id>`, so there is no subgraph prefix to
-    // strip here either: resolve it directly against the root graph.
+    // Legacy callers can still supply an unencoded leaf ID. Resolve it
+    // directly against the root graph when strict locator parsing fails.
     const leafNodeId = parseNodeId(locatorId)
     return leafNodeId ? rootGraph.getNodeById(leafNodeId) || null : null
   }

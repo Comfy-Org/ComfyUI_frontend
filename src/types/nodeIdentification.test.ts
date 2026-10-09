@@ -1,4 +1,4 @@
-import { describe, expect, it } from 'vitest'
+import { assert, describe, expect, it } from 'vitest'
 
 import { toNodeId } from '@/types/nodeId'
 import type { NodeId } from '@/types/nodeId'
@@ -147,20 +147,44 @@ describe('nodeIdentification', () => {
         )
       })
 
-      it('keeps a colon-bearing root-level id whole instead of rejecting it (PM-1580)', () => {
+      it('encodes a colon-bearing root-level id without colliding with a subgraph locator', () => {
         // comfy-multi-player's insert_workflow remaps every inserted node's
         // id to a derived string with colons unrelated to subgraph scoping.
         const rawId = 'insert:abc123:root:node:5'
         expect(createNodeLocatorId(null, toNodeId(rawId))).toBeNull()
-        expect(createLeafNodeLocatorId(null, rawId)).toBe(rawId)
+        const locatorId = createLeafNodeLocatorId(null, rawId)
+        assert.exists(locatorId)
+        expect(locatorId).toBe('~root:insert%3Aabc123%3Aroot%3Anode%3A5')
+        expect(parseNodeLocatorId(locatorId)).toEqual({
+          subgraphUuid: null,
+          localNodeId: rawId
+        })
       })
 
-      it('still rejects a colon-bearing id when it really is subgraph-nested', () => {
-        // There is no subgraph UUID to disambiguate a colon-bearing id from
-        // in the root-level case, but a node that IS scoped to a subgraph
-        // still goes through the strict, delimiter-aware path.
+      it('encodes a colon-bearing subgraph-local id', () => {
         const rawId = 'insert:abc123:root:node:5'
-        expect(createLeafNodeLocatorId(validUuid, rawId)).toBeNull()
+        const locatorId = createLeafNodeLocatorId(validUuid, rawId)
+        expect(locatorId).toBe(
+          `~subgraph:${validUuid}:insert%3Aabc123%3Aroot%3Anode%3A5`
+        )
+        expect(parseNodeLocatorId(locatorId!)).toEqual({
+          subgraphUuid: validUuid,
+          localNodeId: rawId
+        })
+      })
+
+      it('keeps a root id shaped like a subgraph locator in a separate key space', () => {
+        const rawId = `${validUuid}:123`
+        const rootLocator = createLeafNodeLocatorId(null, rawId)
+        assert.exists(rootLocator)
+        const subgraphLocator = createNodeLocatorId(validUuid, toNodeId(123))
+
+        expect(rootLocator).toBe(`~root:${encodeURIComponent(rawId)}`)
+        expect(rootLocator).not.toBe(subgraphLocator)
+        expect(parseNodeLocatorId(rootLocator)).toEqual({
+          subgraphUuid: null,
+          localNodeId: rawId
+        })
       })
 
       it('returns null for an empty id', () => {
