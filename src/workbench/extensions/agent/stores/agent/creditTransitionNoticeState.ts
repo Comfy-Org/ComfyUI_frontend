@@ -49,56 +49,17 @@ export type CreditTransitionNoticeEvent =
   /** The user closed the notice. */
   | { type: 'dismissed'; identity: string }
 
-/**
- * Funds returned, so re-arm for the next handoff and let it report again -
- * unless this user already closed the notice, which outlives the refill.
- */
-function refilled(
-  state: CreditTransitionNoticeState
-): CreditTransitionNoticeState {
-  const dismissed = state.phase === 'dismissed'
-  return {
-    ...state,
-    scopedHasFunds: true,
-    phase: dismissed ? 'dismissed' : 'idle'
-  }
-}
-
-/**
- * The falling edge, and only from an observed `true`. A second `false` read is
- * not a second handoff, and a closed notice does not reopen on one.
- */
-function exhausted(
-  state: CreditTransitionNoticeState
-): CreditTransitionNoticeState {
-  const arms = state.scopedHasFunds && state.phase !== 'dismissed'
-  return {
-    ...state,
-    scopedHasFunds: false,
-    phase: arms ? 'armed' : state.phase
-  }
-}
-
 function reduceScopedRead(
   state: CreditTransitionNoticeState | null,
   identity: string,
   scopedHasFunds: boolean
 ): CreditTransitionNoticeState {
-  // A first read, or the first read after an identity switch, starts a fresh
-  // episode and witnesses no handoff.
-  const fresh = state === null || state.identity !== identity
-  if (fresh) return { identity, scopedHasFunds, phase: 'idle' }
-  return scopedHasFunds ? refilled(state) : exhausted(state)
-}
-
-/**
- * Only an armed episode owes an impression; a re-render of one already
- * reported, or of a closed one, owes nothing.
- */
-function reduceShown(
-  state: CreditTransitionNoticeState
-): CreditTransitionNoticeState {
-  return state.phase === 'armed' ? { ...state, phase: 'reported' } : state
+  if (state === null || state.identity !== identity)
+    return { identity, scopedHasFunds, phase: 'idle' }
+  if (state.phase === 'dismissed') return { ...state, scopedHasFunds }
+  if (scopedHasFunds) return { ...state, scopedHasFunds, phase: 'idle' }
+  const phase = state.scopedHasFunds ? 'armed' : state.phase
+  return { ...state, scopedHasFunds, phase }
 }
 
 /**
@@ -117,8 +78,14 @@ export function reduceCreditTransitionNotice(
   if (event.type === 'scopedRead')
     return reduceScopedRead(state, event.identity, event.scopedHasFunds)
   if (state === null || state.identity !== event.identity) return state
-  if (event.type === 'shown') return reduceShown(state)
-  return { ...state, phase: 'dismissed' }
+  switch (event.type) {
+    case 'shown':
+      return state.phase === 'armed' ? { ...state, phase: 'reported' } : state
+    case 'dismissed':
+      return { ...state, phase: 'dismissed' }
+    default:
+      return event satisfies never
+  }
 }
 
 /**
