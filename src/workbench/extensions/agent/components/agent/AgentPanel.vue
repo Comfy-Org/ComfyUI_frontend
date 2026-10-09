@@ -503,6 +503,7 @@ defineExpose({ addAttachment, updateAttachment, removeAttachment })
             :expanded="isMaximized"
             :workflow-name="workflowDetached ? undefined : activeTab?.name"
             :context="targetNotice"
+            :hide-intro="greeting !== undefined"
             @show-target="emit('showTarget')"
           />
           <FreeUseNotice
