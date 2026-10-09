@@ -153,6 +153,39 @@ describe('Composer', () => {
     expect(emitted().mentionPick).toBeUndefined()
   })
 
+  it.for([
+    {
+      entryPoint: 'placeholder hint',
+      open: async () => {},
+      target: () => screen.getByRole('button', { name: 'mention nodes' })
+    },
+    {
+      entryPoint: 'add menu',
+      open: () =>
+        userEvent.click(screen.getByRole('button', { name: 'Add to prompt' })),
+      target: () => screen.getByRole('menuitem', { name: 'Nodes' })
+    },
+    {
+      entryPoint: 'mention menu',
+      open: async () => {
+        await userEvent.click(screen.getByRole('textbox'))
+        await userEvent.paste('@')
+      },
+      target: () => screen.getByRole('menuitem', { name: 'Nodes' })
+    }
+  ])(
+    'shows why nodes are blocked in a tooltip on the $entryPoint',
+    async ({ open, target }) => {
+      const reason = 'Please select a workflow first'
+      mount({ nodeReferenceDisabledReason: reason })
+
+      await open()
+      await userEvent.hover(target())
+
+      expect(await screen.findByRole('tooltip')).toHaveTextContent(reason)
+    }
+  )
+
   it('invalidates an open Nodes submenu when the viewed workflow becomes ineligible', async () => {
     const { rerender, emitted } = mount({
       getMentionNodes: () => [{ id: '7', title: 'KSampler' }]

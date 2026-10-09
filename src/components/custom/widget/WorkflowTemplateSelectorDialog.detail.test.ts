@@ -330,7 +330,6 @@ function renderDialog() {
         },
         TemplateFilterControls: true,
         AsyncSearchInput: true,
-        AccessibleTooltip: { template: '<div><slot /></div>' },
         Tag: { props: ['label'], template: '<span>{{ label }}</span>' }
       }
     }

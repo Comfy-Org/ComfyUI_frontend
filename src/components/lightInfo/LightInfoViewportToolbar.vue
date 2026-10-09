@@ -4,76 +4,96 @@
       class="pointer-events-auto flex h-10 items-center gap-1 bg-interface-menu-surface px-2"
       @wheel.stop
     >
-      <button
-        v-tooltip.bottom="tip(gizmosLabel)"
-        type="button"
-        :class="actionClass(gizmosOn)"
-        :aria-pressed="gizmosOn"
-        :aria-label="gizmosLabel"
-        @click="gizmosOn = !gizmosOn"
-      >
-        <i
-          :class="
-            cn(
-              'size-4',
-              gizmosOn ? 'icon-[lucide--eye]' : 'icon-[lucide--eye-off]'
-            )
-          "
-        />
-        <span v-if="!compact">{{ gizmosLabel }}</span>
-      </button>
+      <Tooltip>
+        <TooltipTrigger as-child>
+          <button
+            type="button"
+            :class="actionClass(gizmosOn)"
+            :aria-pressed="gizmosOn"
+            :aria-label="gizmosLabel"
+            @click="gizmosOn = !gizmosOn"
+          >
+            <i
+              :class="
+                cn(
+                  'size-4',
+                  gizmosOn ? 'icon-[lucide--eye]' : 'icon-[lucide--eye-off]'
+                )
+              "
+            />
+            <span v-if="!compact">{{ gizmosLabel }}</span>
+          </button>
+        </TooltipTrigger>
+        <TooltipContent side="bottom">{{ gizmosLabel }}</TooltipContent>
+      </Tooltip>
       <div class="mx-1 h-5 w-px shrink-0 bg-interface-menu-stroke" />
-      <button
-        v-for="option in transformGizmoOptions"
-        :key="option.value"
-        v-tooltip.bottom="tip($t(option.labelKey))"
-        type="button"
-        :disabled="!option.enabled"
-        :aria-pressed="effectiveTransformGizmoMode === option.value"
-        :aria-label="$t(option.labelKey)"
-        :class="
-          cn(
-            actionClass(effectiveTransformGizmoMode === option.value),
-            !option.enabled && 'cursor-not-allowed opacity-40'
-          )
-        "
-        @click="transformGizmoMode = option.value"
-      >
-        <i :class="cn('size-4', option.icon)" />
-        <span v-if="!compact">{{ $t(option.labelKey) }}</span>
-      </button>
+      <Tooltip v-for="option in transformGizmoOptions" :key="option.value">
+        <TooltipTrigger as-child>
+          <button
+            type="button"
+            :disabled="!option.enabled"
+            :aria-pressed="effectiveTransformGizmoMode === option.value"
+            :aria-label="$t(option.labelKey)"
+            :class="
+              cn(
+                actionClass(effectiveTransformGizmoMode === option.value),
+                !option.enabled && 'cursor-not-allowed opacity-40'
+              )
+            "
+            @click="transformGizmoMode = option.value"
+          >
+            <i :class="cn('size-4', option.icon)" />
+            <span v-if="!compact">{{ $t(option.labelKey) }}</span>
+          </button>
+        </TooltipTrigger>
+        <TooltipContent side="bottom">{{ $t(option.labelKey) }}</TooltipContent>
+      </Tooltip>
     </div>
     <div class="flex-1" />
     <div
       class="pointer-events-auto flex h-10 items-center justify-end gap-1 bg-interface-menu-surface px-2"
       @wheel.stop
     >
-      <button
-        v-tooltip.top="tip($t('load3d.outputView'))"
-        type="button"
-        :class="iconBtnClass"
-        :aria-label="$t('load3d.outputView')"
-        @click="emit('resetView')"
-      >
-        <i class="icon-[lucide--focus] size-4" />
-      </button>
-      <button
-        v-tooltip.top="tip(cameraLockLabel)"
-        type="button"
-        :class="cn(iconBtnClass, cameraLocked && 'bg-button-active-surface')"
-        :aria-pressed="cameraLocked"
-        :aria-label="cameraLockLabel"
-        @click="cameraLocked = !cameraLocked"
-      >
-        <i
-          :class="
-            cn(
-              'size-4',
-              cameraLocked ? 'icon-[lucide--lock]' : 'icon-[lucide--lock-open]'
-            )
-          "
-        />
-      </button>
+      <Tooltip>
+        <TooltipTrigger as-child>
+          <button
+            type="button"
+            :class="iconBtnClass"
+            :aria-label="$t('load3d.outputView')"
+            @click="emit('resetView')"
+          >
+            <i class="icon-[lucide--focus] size-4" />
+          </button>
+        </TooltipTrigger>
+        <TooltipContent side="top">{{
+          $t('load3d.outputView')
+        }}</TooltipContent>
+      </Tooltip>
+      <Tooltip>
+        <TooltipTrigger as-child>
+          <button
+            type="button"
+            :class="
+              cn(iconBtnClass, cameraLocked && 'bg-button-active-surface')
+            "
+            :aria-pressed="cameraLocked"
+            :aria-label="cameraLockLabel"
+            @click="cameraLocked = !cameraLocked"
+          >
+            <i
+              :class="
+                cn(
+                  'size-4',
+                  cameraLocked
+                    ? 'icon-[lucide--lock]'
+                    : 'icon-[lucide--lock-open]'
+                )
+              "
+            />
+          </button>
+        </TooltipTrigger>
+        <TooltipContent side="top">{{ cameraLockLabel }}</TooltipContent>
+      </Tooltip>
     </div>
   </div>
 </template>
@@ -84,9 +104,11 @@ import { useI18n } from 'vue-i18n'
 
 import {
   actionClass,
-  iconBtnClass,
-  tip
+  iconBtnClass
 } from '@/components/load3d/menubar/menuBarStyles'
+import Tooltip from '@/components/ui/tooltip/Tooltip.vue'
+import TooltipContent from '@/components/ui/tooltip/TooltipContent.vue'
+import TooltipTrigger from '@/components/ui/tooltip/TooltipTrigger.vue'
 import type { LightTransformGizmoMode } from '@/extensions/core/lightInfo/LightInfoViewport'
 import {
   lightPositionApplies,

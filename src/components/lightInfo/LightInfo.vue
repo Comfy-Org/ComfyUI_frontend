@@ -37,7 +37,7 @@
         <Button
           v-for="(light, index) in lights"
           :key="index"
-          v-tooltip.top="tip($t(LIGHT_TYPE_LABEL_KEYS[light.type]))"
+          :tooltip="$t(LIGHT_TYPE_LABEL_KEYS[light.type])"
           variant="textonly"
           size="unset"
           :aria-pressed="index === selectedIndex"
@@ -57,7 +57,7 @@
           {{ chipNumber(index) }}
         </Button>
         <Button
-          v-tooltip.top="tip($t('lightInfo.addLight'))"
+          :tooltip="$t('lightInfo.addLight')"
           variant="textonly"
           size="unset"
           :class="iconBtnClass"
@@ -68,7 +68,7 @@
         </Button>
         <Button
           v-if="selectedLight"
-          v-tooltip.top="tip($t('lightInfo.removeLight'))"
+          :tooltip="$t('lightInfo.removeLight')"
           variant="textonly"
           size="unset"
           :class="iconBtnClass"
@@ -99,8 +99,7 @@ import { computed, onMounted, onUnmounted, ref, shallowRef, watch } from 'vue'
 
 import {
   chipClass,
-  iconBtnClass,
-  tip
+  iconBtnClass
 } from '@/components/load3d/menubar/menuBarStyles'
 import Button from '@/components/ui/button/Button.vue'
 import type { LightTransformGizmoMode } from '@/extensions/core/lightInfo/LightInfoViewport'
