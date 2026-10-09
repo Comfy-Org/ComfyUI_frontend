@@ -1,4 +1,4 @@
-<script setup lang="ts" generic="T extends string = UseCase">
+<script setup lang="ts">
 import { ChevronDown, ListFilter } from '@lucide/vue'
 import {
   computed,
@@ -33,14 +33,12 @@ const WorkshopFilterPanel = defineAsyncComponent(
 )
 
 const {
-  useCaseOptions,
   modelOptions,
   accessOptions,
   resultCount,
   kind = 'models',
   locale = 'en'
 } = defineProps<{
-  useCaseOptions: readonly FacetMenuOption<T>[]
   /** The models the listing runs on, where it stands on more than its own. */
   modelOptions?: readonly FacetMenuOption<string>[]
   /** How a model can be used: run here, called by API, or downloaded. */
@@ -52,7 +50,6 @@ const {
 }>()
 const { t } = translationsFor(locale)
 
-const useCases = defineModel<T[]>('useCases', { required: true })
 const models = defineModel<string[]>('models', { default: () => [] })
 const access = defineModel<ModelAccess[]>('access', { default: () => [] })
 
@@ -90,16 +87,6 @@ watchEffect((onCleanup) => {
 })
 
 const groups = computed<FacetSheetGroup[]>(() => [
-  {
-    key: 'useCase',
-    label: t(
-      kind === 'workflows'
-        ? 'workshop.catalogue.categories'
-        : 'workshop.launch.label'
-    ),
-    options: useCaseOptions,
-    selected: useCases.value
-  },
   ...(modelOptions?.length
     ? [
         {
@@ -132,13 +119,10 @@ const label = computed(() =>
 
 function toggle(facet: string, value: string) {
   if (facet === 'model') models.value = toggleIn(models.value, value)
-  else if (facet === 'access')
-    access.value = toggleOption(accessOptions, access.value, value)
-  else useCases.value = toggleOption(useCaseOptions, useCases.value, value)
+  else access.value = toggleOption(accessOptions, access.value, value)
 }
 
 function clearAll() {
-  useCases.value = []
   models.value = []
   access.value = []
 }

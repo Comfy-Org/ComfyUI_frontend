@@ -61,14 +61,18 @@ function openWeightCards() {
   return screen.queryAllByTestId('open-weight-model-card')
 }
 
-async function pickUseCase(
+async function chooseTab(
   user: ReturnType<typeof userEvent.setup>,
   name: string
 ) {
-  if (!screen.queryByRole('dialog', { name: 'Filter' }))
-    await user.click(screen.getByRole('button', { name: 'Filter' }))
-  const dialog = await screen.findByRole('dialog', { name: 'Filter' })
-  await user.click(within(dialog).getByRole('button', { name }))
+  await user.click(screen.getByRole('tab', { name }))
+}
+
+function chip(name: string) {
+  return within(screen.getByRole('group', { name: 'Use cases' })).getByRole(
+    'button',
+    { name }
+  )
 }
 
 function catalogueHeading() {
@@ -127,7 +131,7 @@ describe('WorkshopModelsGrid', () => {
     expect(screen.queryByTestId('workshop-search-panel')).toBeNull()
   })
 
-  it('opens the use case the address names, with no way back to leave', async () => {
+  it('opens the use case the address names on its tab, with no way back to leave', async () => {
     history.replaceState(null, '', '/models/?useCase=edit-images')
     const user = userEvent.setup()
     render(WorkshopModelsGrid, { props: { models } })
@@ -135,18 +139,48 @@ describe('WorkshopModelsGrid', () => {
     expect(
       await screen.findByRole('heading', { level: 2, name: 'Edit images 1' })
     ).toBeTruthy()
+    expect(screen.getByRole('tab', { name: 'Image' })).toHaveAttribute(
+      'aria-selected',
+      'true'
+    )
+    expect(chip('Edit 1')).toHaveAttribute('aria-pressed', 'true')
     expect(cardNames()).toEqual([expect.stringContaining('Flux')])
     expect(openWeightCards()).toEqual([])
     expect(screen.queryByRole('button', { name: /Back to/ })).toBeNull()
 
-    await user.click(screen.getByRole('button', { name: 'Filter' }))
-    const dialog = await screen.findByRole('dialog', { name: 'Filter' })
-    await user.click(within(dialog).getByTestId('workshop-filter-clear'))
+    await chooseTab(user, 'All')
     expect(catalogueHeading()).toHaveTextContent('3')
     expect(cardNames()).toHaveLength(3)
   })
 
-  it('brings the catalogue heading into view as a category opens, without leaving the page', async () => {
+  it.for([
+    { useCase: 'generate-videos', tab: 'Video' },
+    { useCase: 'audio', tab: 'Audio' }
+  ])(
+    'opens the tab a deep-linked $useCase belongs to',
+    async ({ useCase, tab }) => {
+      const audio: WorkshopModel = {
+        ...models[0],
+        slug: 'speech',
+        name: 'Speech',
+        href: '/models/speech/',
+        modality: 'audio',
+        task: 'text-to-audio'
+      }
+      history.replaceState(null, '', `/models/?useCase=${useCase}`)
+      render(WorkshopModelsGrid, { props: { models: [...models, audio] } })
+
+      await waitFor(() =>
+        expect(screen.getByRole('tab', { name: tab })).toHaveAttribute(
+          'aria-selected',
+          'true'
+        )
+      )
+      expect(cardNames()).toHaveLength(1)
+    }
+  )
+
+  it('brings the catalogue heading into view as a use case opens, without leaving the page', async () => {
     const scrollTo = vi
       .spyOn(window, 'scrollTo')
       .mockImplementation(() => undefined)
@@ -160,9 +194,10 @@ describe('WorkshopModelsGrid', () => {
     const user = userEvent.setup()
     render(WorkshopModelsGrid, { props: { models } })
     await nextTick()
+    await chooseTab(user, 'Image')
     expect(scrollIntoView).not.toHaveBeenCalled()
 
-    await pickUseCase(user, 'Edit images 1')
+    await user.click(chip('Edit 1'))
     await vi.waitFor(() =>
       expect(scrollIntoView.mock.contexts).toContain(
         screen.getByRole('heading', { level: 2, name: 'Edit images 1' })
@@ -172,43 +207,72 @@ describe('WorkshopModelsGrid', () => {
     expect(screen.getByTestId('models-hub-hero')).toBeTruthy()
   })
 
-  it('filters by use case from the filter menu', async () => {
+  it('shows use-case chips only inside a type that splits by task, and only those with results', async () => {
     const user = userEvent.setup()
     render(WorkshopModelsGrid, { props: { models } })
+    expect(screen.queryByRole('group', { name: 'Use cases' })).toBeNull()
 
-    await user.click(screen.getByRole('button', { name: 'Filter' }))
-    const dialog = await screen.findByRole('dialog', { name: 'Filter' })
-    await user.click(
-      within(dialog).getByRole('button', { name: 'Edit images 1' })
-    )
-    expect(cardNames()).toEqual([expect.stringContaining('Flux')])
-
-    await user.click(
-      screen.getAllByRole('button', { name: 'Clear filters' })[0]
-    )
-    expect(cardNames()).toHaveLength(3)
+    await chooseTab(user, 'Video')
+    expect(
+      within(screen.getByRole('group', { name: 'Use cases' }))
+        .getAllByRole('button')
+        .map((button) => button.textContent.replace(/\s+/g, ' ').trim())
+    ).toEqual(['All', 'Generate 1'])
   })
 
-  it('clears the filters back to the whole catalogue', async () => {
+  it('narrows a tab by its chips, several at once, and lets go of one', async () => {
+    const restyle: WorkshopModel = {
+      ...models[0],
+      slug: 'restyle',
+      name: 'Restyle',
+      href: '/models/restyle/',
+      task: 'video-to-video'
+    }
+    const user = userEvent.setup()
+    render(WorkshopModelsGrid, { props: { models: [...models, restyle] } })
+    await chooseTab(user, 'Video')
+
+    await user.click(chip('Edit video 1'))
+    expect(cardNames()).toEqual([expect.stringContaining('Restyle')])
+    expect(
+      screen.getByRole('heading', { level: 2, name: 'Edit videos 1' })
+    ).toBeTruthy()
+
+    await user.click(chip('Generate 1'))
+    expect(cardNames()).toHaveLength(2)
+
+    await user.click(chip('Edit video 1'))
+    expect(cardNames()).toEqual([expect.stringContaining('Kling AI')])
+
+    await user.click(chip('All'))
+    expect(chip('Generate 1')).toHaveAttribute('aria-pressed', 'false')
+    expect(cardNames()).toHaveLength(2)
+  })
+
+  it('keeps a chip the next tab also offers and lets go of one it does not', async () => {
+    const user = userEvent.setup()
+    render(WorkshopModelsGrid, { props: { models } })
+    await chooseTab(user, 'Image')
+    await user.click(chip('Edit 1'))
+
+    await chooseTab(user, 'Edit')
+    expect(chip('Images 1')).toHaveAttribute('aria-pressed', 'true')
+
+    await chooseTab(user, 'Video')
+    expect(chip('All')).toHaveAttribute('aria-pressed', 'true')
+    expect(cardNames()).toEqual([expect.stringContaining('Kling AI')])
+  })
+
+  it('keeps use cases out of the filter menu', async () => {
     const user = userEvent.setup()
     render(WorkshopModelsGrid, { props: { models } })
 
-    await user.click(screen.getByRole('button', { name: 'Filter' }))
-    const dialog = await screen.findByRole('dialog', { name: 'Filter' })
-    await user.click(
-      within(dialog).getByRole('button', { name: 'Edit images 1' })
-    )
-    await user.click(within(dialog).getByTestId('workshop-filter-clear'))
-
+    await user.click(screen.getByTestId('workshop-filter'))
+    const dialog = await screen.findByRole('dialog')
     expect(
-      screen.getByRole('heading', {
-        level: 2,
-        name: 'All models 3'
-      })
-    ).toBeTruthy()
-    expect(screen.getByTestId('models-hub-hero')).toBeTruthy()
-    expect(cardNames()).toHaveLength(3)
-    expect(openWeightCards()).toEqual([])
+      within(dialog).queryByRole('button', { name: /Edit images/ })
+    ).toBeNull()
+    expect(within(dialog).getByRole('button', { name: /^API / })).toBeTruthy()
   })
 
   it('finds no open-weight models when the visitor searches for one', async () => {
@@ -232,83 +296,6 @@ describe('WorkshopModelsGrid', () => {
     expect(link).toHaveAttribute('href', '/hub/models/local/')
   })
 
-  // A shelf and the filter are the same choice: opening "Edit images" has to
-  // leave the menu saying so, or the reader sees a narrowed grid with nothing
-  // anywhere to say what narrowed it.
-  it('opens a shelf as the filter it is', async () => {
-    const user = userEvent.setup()
-    render(WorkshopModelsGrid, { props: { models } })
-
-    await pickUseCase(user, 'Edit images 1')
-    await user.keyboard('{Escape}')
-    expect(
-      screen.getByRole('heading', { level: 2, name: /Edit images/ })
-    ).toBeTruthy()
-    expect(screen.getByTestId('workshop-filter-count')).toHaveTextContent('1')
-
-    await user.click(screen.getByRole('button', { name: 'Filter' }))
-    const dialog = await screen.findByRole('dialog', { name: 'Filter' })
-    expect(
-      within(dialog).getByRole('button', { name: 'Edit images 1' })
-    ).toHaveAttribute('aria-pressed', 'true')
-    expect(within(dialog).getByText('1 selected')).toBeTruthy()
-  })
-
-  it('counts what the menu narrowed by, and lets go of it from the menu', async () => {
-    const user = userEvent.setup()
-    render(WorkshopModelsGrid, { props: { models } })
-
-    await user.click(screen.getByRole('button', { name: 'Filter' }))
-    const dialog = await screen.findByRole('dialog', { name: 'Filter' })
-    await user.click(
-      within(dialog).getByRole('button', { name: 'Edit images 1' })
-    )
-    expect(screen.getByTestId('workshop-filter-count')).toHaveTextContent('1')
-
-    await user.click(
-      within(dialog).getByRole('button', { name: 'Edit images 1' })
-    )
-    expect(screen.queryByTestId('workshop-filter-count')).toBeNull()
-    expect(cardNames()).toHaveLength(3)
-  })
-
-  // Letting go of one choice must not take the others with it, which a test
-  // that only ever sets one would never catch.
-  it('lets go of one use case and leaves the rest alone', async () => {
-    const user = userEvent.setup()
-    render(WorkshopModelsGrid, { props: { models } })
-
-    await user.click(screen.getByRole('button', { name: 'Filter' }))
-    const dialog = await screen.findByRole('dialog', { name: 'Filter' })
-    await user.click(
-      within(dialog).getByRole('button', { name: 'Edit images 1' })
-    )
-    await user.click(
-      within(dialog).getByRole('button', { name: 'Generate videos 1' })
-    )
-    expect(screen.getByTestId('workshop-filter-count')).toHaveTextContent('2')
-
-    await user.click(
-      within(dialog).getByRole('button', { name: 'Edit images 1' })
-    )
-    expect(screen.getByTestId('workshop-filter-count')).toHaveTextContent('1')
-    expect(cardNames()).toEqual([expect.stringContaining('Kling AI')])
-  })
-
-  it('adds a menu choice to the shelf already open', async () => {
-    const user = userEvent.setup()
-    render(WorkshopModelsGrid, { props: { models } })
-
-    await pickUseCase(user, 'Edit images 1')
-    await pickUseCase(user, 'Generate videos 1')
-
-    expect(screen.getByTestId('workshop-filter-count')).toHaveTextContent('2')
-    expect(cardNames()).toHaveLength(2)
-    expect(cardNames()).toEqual(
-      expect.arrayContaining([expect.stringContaining('Kling AI')])
-    )
-  })
-
   // Coming back from a model, a browser can restore this page from its cache
   // with the shelf still open, so the reader lands on a narrowed catalogue the
   // address does not name. Reported by Eric: back should reach all models.
@@ -318,8 +305,8 @@ describe('WorkshopModelsGrid', () => {
       const user = userEvent.setup()
       render(WorkshopModelsGrid, { props: { models, initialSearch } })
 
-      await pickUseCase(user, 'Edit images 1')
-      expect(screen.getByTestId('workshop-filter-count')).toHaveTextContent('1')
+      await chooseTab(user, 'Image')
+      await user.click(chip('Edit 1'))
 
       // A different shelf in the address, so a handler that only emptied the
       // selection would fail here rather than pass by coincidence.
@@ -335,7 +322,7 @@ describe('WorkshopModelsGrid', () => {
           name: /Generate videos/
         })
       ).toBeTruthy()
-      expect(screen.getByTestId('workshop-filter-count')).toHaveTextContent('1')
+      expect(chip('Generate 1')).toHaveAttribute('aria-pressed', 'true')
       expect(cardNames()).toEqual([expect.stringContaining('Kling AI')])
     }
   )
@@ -346,31 +333,13 @@ describe('WorkshopModelsGrid', () => {
     const user = userEvent.setup()
     render(WorkshopModelsGrid, { props: { models } })
 
-    await pickUseCase(user, 'Edit images 1')
+    await chooseTab(user, 'Image')
+    await user.click(chip('Edit 1'))
     window.dispatchEvent(new Event('pageshow'))
 
     await waitFor(() =>
-      expect(screen.getByTestId('workshop-filter-count')).toHaveTextContent('1')
+      expect(chip('Edit 1')).toHaveAttribute('aria-pressed', 'true')
     )
-  })
-
-  it('narrows the use-case menu with its search box', async () => {
-    const user = userEvent.setup()
-    render(WorkshopModelsGrid, { props: { models } })
-
-    await user.click(screen.getByRole('button', { name: 'Filter' }))
-    const dialog = await screen.findByRole('dialog', { name: 'Filter' })
-    await user.type(
-      within(dialog).getByRole('searchbox', { name: 'Search…' }),
-      'video'
-    )
-    expect(
-      within(dialog).queryByRole('button', { name: 'Edit images 1' })
-    ).toBeNull()
-    await user.click(
-      within(dialog).getByRole('button', { name: 'Generate videos 1' })
-    )
-    expect(cardNames()).toEqual([expect.stringContaining('Kling AI')])
   })
 
   it('sorts by recommendation by default and by name on request', async () => {
@@ -635,11 +604,10 @@ describe('WorkshopModelsGrid', () => {
 
     async function chooseAccess(...labels: string[]) {
       const user = userEvent.setup()
-      await user.click(screen.getByRole('button', { name: 'Filter' }))
-      const dialog = await screen.findByRole('dialog', { name: 'Filter' })
-      await user.click(
-        within(dialog).getByRole('tab', { name: 'How you use it' })
-      )
+      await user.click(screen.getByRole('button', { name: 'How you use it' }))
+      const dialog = await screen.findByRole('dialog', {
+        name: 'How you use it'
+      })
       for (const label of labels)
         await user.click(
           within(dialog).getByRole('button', { name: new RegExp(`^${label} `) })
@@ -719,11 +687,10 @@ describe('WorkshopModelsGrid', () => {
       expect(screen.getByTestId('workshop-filter-count')).toHaveTextContent('1')
 
       const user = userEvent.setup()
-      await user.click(screen.getByRole('button', { name: /^Filter/ }))
-      const dialog = await screen.findByRole('dialog', { name: 'Filter' })
-      await user.click(
-        within(dialog).getByRole('tab', { name: /^How you use it/ })
-      )
+      await user.click(screen.getByRole('button', { name: /^How you use it/ }))
+      const dialog = await screen.findByRole('dialog', {
+        name: 'How you use it'
+      })
       await user.click(within(dialog).getByRole('button', { name: /^API / }))
       expect(location.search).toBe('?use=run%2Capi')
       await user.click(within(dialog).getByTestId('workshop-filter-clear'))

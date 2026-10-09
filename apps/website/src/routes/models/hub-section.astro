@@ -1,6 +1,8 @@
 ---
 import BaseLayout from '@/layouts/BaseLayout.astro'
 import ModelsPage from '@/components/workshop/ModelsPage.vue'
+import DesignDecisions from '@/components/workshop/design-decisions/DesignDecisions.vue'
+import { isProductionBuild } from '@/config/build-env'
 import type { HubSection } from '@/lib/workshop/hub-section'
 import ModelsShowcase from '@/components/models/ModelsShowcase.astro'
 import {
@@ -39,6 +41,11 @@ const copy = HUB_SECTION_COPY[section]
   >
     <ModelsShowcase slot="fallback" />
   </ModelsPage>
+  <DesignDecisions
+    enabled={!isProductionBuild()}
+    client:idle
+    transition:persist="design-decisions"
+  />
   <noscript>
     <ModelsShowcase />
   </noscript>

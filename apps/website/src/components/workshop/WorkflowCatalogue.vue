@@ -15,6 +15,7 @@ import { usePagedList } from '@/composables/usePagedList'
 import { HUB_TOOLBAR_ID } from '@/scripts/hubToolbar'
 import { CARD_GRID } from '@/lib/workshop/card-layout'
 import CatalogueShowMore from './CatalogueShowMore.vue'
+import CatalogueUseCaseChips from './CatalogueUseCaseChips.vue'
 import type { FilterChip } from './WorkshopFilterChips.vue'
 import WorkshopFilterChips from './WorkshopFilterChips.vue'
 import WorkshopFilterMenu from './WorkshopFilterMenu.vue'
@@ -117,33 +118,21 @@ const { shown, total, hasMore, showMore } = usePagedList(visible)
 
 // What narrowed the list stays legible next to it, so a reader can take one
 // choice off without reopening the menu that made it.
-const chips = computed<FilterChip[]>(() => [
-  ...selected.value.map((id) => ({
-    key: `use:${id}`,
-    label: options.value.find((option) => option.value === id)?.label ?? id
-  })),
-  ...runsOn.value.map((name) => ({
-    key: `model:${name}`,
+const chips = computed<FilterChip[]>(() =>
+  runsOn.value.map((name) => ({
+    key: name,
     label: t('workshop.filter.runsOn', { model: name })
   }))
-])
+)
 
-function removeChip(key: string) {
-  const [kind, ...rest] = key.split(':')
-  const value = rest.join(':')
-  if (kind === 'use')
-    selected.value = selected.value.filter((id) => id !== value)
-  else runsOn.value = runsOn.value.filter((name) => name !== value)
-}
-
-function clearFilters() {
-  selected.value = []
-  runsOn.value = []
+function removeChip(name: string) {
+  runsOn.value = runsOn.value.filter((value) => value !== name)
 }
 
 function clear() {
   query.value = ''
-  clearFilters()
+  selected.value = []
+  runsOn.value = []
 }
 </script>
 
@@ -167,10 +156,8 @@ function clear() {
         />
         <WorkshopFilterMenu
           ref="filterMenu"
-          v-model:use-cases="selected"
           v-model:models="runsOn"
           kind="workflows"
-          :use-case-options="options"
           :model-options="modelOptions"
           :result-count="visible.length"
           :locale
@@ -182,13 +169,21 @@ function clear() {
           :locale
         />
       </div>
+      <CatalogueUseCaseChips
+        v-model="selected"
+        :options
+        :label="t('workshop.catalogue.categories')"
+        :locale
+        class="basis-full"
+        data-design-decision="workflows-chips"
+      />
     </div>
 
     <WorkshopFilterChips
       :chips
       :locale
       @remove="removeChip"
-      @clear="clearFilters"
+      @clear="runsOn = []"
       @emptied="filterMenu?.focus()"
     />
 

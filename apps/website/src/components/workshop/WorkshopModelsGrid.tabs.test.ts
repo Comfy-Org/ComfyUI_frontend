@@ -174,11 +174,10 @@ describe('WorkshopModelsGrid category tabs', () => {
     )
     expect(hostedNames()).toEqual(['Sharp Upscaler'])
 
-    await user.click(screen.getByRole('button', { name: 'Filter' }))
-    const dialog = await screen.findByRole('dialog', { name: 'Filter' })
-    await user.click(
-      within(dialog).getByRole('tab', { name: 'How you use it' })
-    )
+    await user.click(screen.getByRole('button', { name: 'How you use it' }))
+    const dialog = await screen.findByRole('dialog', {
+      name: 'How you use it'
+    })
     await user.click(within(dialog).getByRole('button', { name: /^Run here / }))
     expect(hostedNames()).toEqual([])
     expect(screen.getByText('No models match')).toBeTruthy()

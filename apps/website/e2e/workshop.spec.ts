@@ -343,18 +343,24 @@ test.describe('Models catalog', () => {
     await expect(firstLink).toBeVisible()
   })
 
-  test('an opened shelf reads as a chosen filter', async ({ page }) => {
+  test('an opened shelf reads as a chosen chip on its tab', async ({
+    page
+  }) => {
     await page.goto('/hub/models/?useCase=generate-videos')
     await expect(
       page.getByRole('heading', { level: 2, name: /Generate videos/ })
     ).toBeVisible()
-    await expect(page.getByTestId('workshop-filter-count')).toHaveText('1')
-    await page.getByTestId('workshop-filter').click()
-    await expect(page.getByTestId('workshop-filter-applied')).toHaveText(
-      '1 selected'
+    const tabs = page.getByRole('tablist', { name: 'Model categories' })
+    await expect(tabs.getByRole('tab', { name: /^Video/ })).toHaveAttribute(
+      'aria-selected',
+      'true'
     )
-    await page.getByTestId('workshop-filter-clear').click()
+    await expect(
+      page.getByTestId('use-case-chip-generate-videos')
+    ).toHaveAttribute('aria-pressed', 'true')
+    await tabs.getByRole('tab', { name: /^All/ }).click()
     await expect(catalogueHeading(page)).toHaveText(/^All models \d+$/)
+    await expect(page.getByTestId('catalogue-use-case-chips')).toHaveCount(0)
   })
 
   test('a model page returns to the shelf it was opened from', async ({
@@ -384,7 +390,9 @@ test.describe('Models catalog', () => {
     await expect(
       page.getByRole('heading', { level: 2, name: 'Generate videos' })
     ).toBeVisible()
-    await expect(page.getByTestId('workshop-filter-count')).toHaveText('1')
+    await expect(
+      page.getByTestId('use-case-chip-generate-videos')
+    ).toHaveAttribute('aria-pressed', 'true')
   })
 
   test('a model page returns to the category tab it was opened from', async ({
@@ -537,25 +545,26 @@ test.describe('Models catalog', () => {
     )
   })
 
-  test('the use-case filter actually narrows the catalog', async ({ page }) => {
+  test('the use-case chips actually narrow the catalog', async ({ page }) => {
     await page.goto('/hub/models/')
     const all = await catalogueCount(page)
     expect(all).toBeGreaterThan(0)
-    await page.getByTestId('workshop-filter').click()
-    await page.getByTestId('filter-useCase-edit-images').click()
+    const tabs = page.getByRole('tablist', { name: 'Model categories' })
+    await tabs.getByRole('tab', { name: /^Image/ }).click()
+    await expect(catalogueHeading(page)).toHaveText(/^Image models \d+$/)
+    const image = await catalogueCount(page)
+    await page.getByTestId('use-case-chip-edit-images').click()
     const cards = page
       .getByTestId('workshop-models-grid')
       .getByTestId('workshop-model-card')
     await expect(cards.first()).toBeVisible()
     await expect(catalogueHeading(page)).toHaveText(/^Edit images \d+$/)
     const narrowed = await catalogueCount(page)
-    expect(narrowed).toBeLessThan(all)
-    await expect(page.getByTestId('workshop-filter-applied')).toHaveText(
-      '1 selected'
+    expect(narrowed).toBeLessThan(image)
+    await expect(page.getByTestId('use-case-chip-edit-images')).toContainText(
+      String(narrowed)
     )
-    await expect(page.getByTestId('workshop-filter-count')).toHaveText('1')
 
-    await page.keyboard.press('Escape')
     await showEveryPage(page)
     await expect(cards).toHaveCount(narrowed)
     await expect(
@@ -569,8 +578,7 @@ test.describe('Models catalog', () => {
       )
     ).toHaveCount(0)
 
-    await page.getByTestId('workshop-filter').click()
-    await page.getByTestId('workshop-filter-clear').click()
+    await tabs.getByRole('tab', { name: /^All/ }).click()
     await expect(catalogueHeading(page)).toHaveText(`All models ${all}`)
     await expect(cards).toHaveCount(Math.min(12, all))
   })
@@ -612,7 +620,6 @@ test.describe('Models catalog', () => {
     await page.goto('/hub/models/')
     await expect(page.getByTestId('workshop-models-grid')).toBeVisible()
     await page.getByTestId('workshop-filter').click()
-    await page.getByTestId('workshop-facet-access').click()
     await expect(page.getByTestId('filter-access-download')).toHaveCount(0)
 
     await page.getByTestId('filter-access-api').click()

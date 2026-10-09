@@ -186,7 +186,6 @@ describe('ModelsCatalogue', () => {
     render(ModelsCatalogue, {
       props: { models: launchModels, section: 'workflows' }
     })
-    await user.click(await screen.findByRole('button', { name: 'Filter' }))
     await user.click(
       await screen.findByRole('button', { name: 'Edit & clean up photos 1' })
     )

@@ -204,6 +204,15 @@
       "text": "Text",
       "more": "More categories"
     },
+    "useCaseChip": {
+      "label": "Use cases",
+      "generate": "Generate",
+      "edit": "Edit",
+      "animateImage": "Animate an image",
+      "editVideo": "Edit video",
+      "images": "Images",
+      "videos": "Videos"
+    },
     "input": {
       "title": "Input"
     },
@@ -5816,5 +5825,28 @@
     "loading": "Loading the latest release notes…",
     "introduction": "The latest ComfyUI features, improvements, and fixes, updated from Comfy docs.",
     "retry": "Try again"
+  },
+  "designDecisions": {
+    "button": "Design decisions",
+    "title": "Design decisions",
+    "close": "Close design decisions",
+    "dot": "Design decision {n}",
+    "footer": "Measured after launch with hub_filter_changed and hub_item_clicked (analytics PR #20538).",
+    "models": {
+      "sidebar": {
+        "title": "Sidebar by type",
+        "body": "The sidebar groups models by what they make (Image, Video, Audio, 3D, Edit, Upscale, LLM) with counts, so the first choice is the format. Use cases that only repeated these types (Generate images ≈ Image, Text ≈ LLM…) are no longer a separate filter."
+      },
+      "chips": {
+        "title": "Use-case chips inside a type",
+        "body": "Inside a type, chips split it by task (Video → Generate · Animate an image · Edit video). They only show tasks that exist in that type and only chips with results, so a combination never ends empty. Why visible: visitors look for tasks — Google and in-site searches are task phrases (image to video, face swap, upscale), and only about a third of catalogue visitors open a model (23.7k of 69k in 30 days). Use cases were hidden in the Filters menu; they now live in one visible place."
+      }
+    },
+    "workflows": {
+      "chips": {
+        "title": "Category chips",
+        "body": "Workflow categories are tasks (Create & edit videos, Animate characters, Product photos & ads, Upscale & restore, Edit & clean up photos), so they sit as always-visible chips with counts instead of inside Filters. Workflows get most of the traffic (85k Google clicks to /workflows vs 2.5k to /models) and the top pages are task pages: Image to video (580 visitors in 30 days), Video from references (228), Motion transfer (180). Chips combine with Runs on and search."
+      }
+    }
   }
 }

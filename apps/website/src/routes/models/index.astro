@@ -2,6 +2,8 @@
 import BaseLayout from '@/layouts/BaseLayout.astro'
 import { workshopModels } from '@/config/workshop-browse-content'
 import ModelsPage from '@/components/workshop/ModelsPage.vue'
+import DesignDecisions from '@/components/workshop/design-decisions/DesignDecisions.vue'
+import { isProductionBuild } from '@/config/build-env'
 import ModelsShowcase from '@/components/models/ModelsShowcase.astro'
 import FAQSection from '@/components/common/FAQSection.vue'
 import { pageContext } from '@/utils/jsonLd'
@@ -49,6 +51,11 @@ const jsonLd = modelsHubJsonLd({
   >
     <ModelsShowcase slot="fallback" />
   </ModelsPage>
+  <DesignDecisions
+    enabled={!isProductionBuild()}
+    client:idle
+    transition:persist="design-decisions"
+  />
   <section
     aria-labelledby="models-directory-heading"
     class="mx-auto max-w-10xl px-6 pb-16 max-sm:pb-10 lg:px-8 lg:pb-24"

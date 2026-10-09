@@ -23,7 +23,6 @@ import type {
 import {
   parseCatalogSearch,
   SORT_ORDERS,
-  USE_CASES,
   countByUseCase,
   sortWorkshopModels
 } from '@/config/models-catalogue'
@@ -42,7 +41,13 @@ import {
   parseAccess
 } from '@/lib/workshop/explorer/model-access'
 import { useCompareSelection } from '@/lib/workshop/explorer/compare-selection'
-import { hostedInTab } from '@/lib/workshop/explorer/model-tabs'
+import type { ModelTab } from '@/lib/workshop/explorer/model-tabs'
+import {
+  hostedInTab,
+  tabForUseCases,
+  tabUseCases,
+  useCasesInTab
+} from '@/lib/workshop/explorer/model-tabs'
 import { modelTabCounts } from '@/lib/workshop/explorer/model-tab-counts'
 import { useModelTab } from '@/lib/workshop/explorer/model-tab-address'
 import { rememberListOnClick } from '@/lib/workshop/shelf-memory'
@@ -50,7 +55,6 @@ import { modelsListReturn } from '@/lib/workshop/models-list-return'
 import { MODELS_CATALOGUE_ID } from '@/lib/workshop/models-hub'
 import { openedUseCases, shelfOf } from '@/lib/workshop/shelf-use-cases'
 import { sectionTitleKeyFor } from '@/lib/workshop/section-title'
-import { useCaseLabelKey } from '@/lib/workshop/use-case-label'
 import type { FacetMenuOption } from './WorkshopFilterMenu.vue'
 import WorkshopFilterMenu from './WorkshopFilterMenu.vue'
 import WorkshopModelsEmpty from '@/components/workshop/WorkshopModelsEmpty.vue'
@@ -62,6 +66,7 @@ import ModelAccessSection from '@/components/workshop/models-hub/ModelAccessSect
 import ModelFamilySection from '@/components/workshop/models-hub/ModelFamilySection.vue'
 import ModelsExploreHero from '@/components/workshop/models-hub/ModelsExploreHero.vue'
 import CatalogueShowMore from './CatalogueShowMore.vue'
+import CatalogueUseCaseChips from './CatalogueUseCaseChips.vue'
 import WorkshopSearchField from './WorkshopSearchField.vue'
 import WorkshopSortMenu from './WorkshopSortMenu.vue'
 
@@ -94,12 +99,21 @@ let scrollReady = false
 function readAddress(search: string) {
   const initial = parseCatalogSearch(search)
   query.value = initial.query ?? ''
-  selectedUseCases.value = openedUseCases(initial.useCase ?? 'all')
+  const opened = openedUseCases(initial.useCase ?? 'all')
+  readTab(search)
+  const implied = tabForUseCases(opened, tab.value)
+  if ((tabCounts.value.get(implied) ?? 0) > 0) tab.value = implied
+  selectedUseCases.value =
+    tab.value === 'all' ? opened : useCasesInTab(opened, tab.value)
   legacyModalities.value = [...initial.modalities]
   legacyProviders.value = [...initial.providers]
   legacyCapabilities.value = [...initial.capabilities]
   selectedAccess.value = parseAccess(search)
-  readTab(search)
+}
+
+function selectTab(next: ModelTab) {
+  tab.value = next
+  selectedUseCases.value = useCasesInTab(selectedUseCases.value, next)
 }
 
 watch(selectedAccess, (value) => {
@@ -138,13 +152,30 @@ const {
 const toolbar = useTemplateRef<HTMLElement>('toolbar')
 const heading = useTemplateRef<HTMLElement>('heading')
 
-const useCaseOptions = computed<FacetMenuOption[]>(() => {
-  const counts = countByUseCase(models)
-  return USE_CASES.filter((value) => counts[value] > 0).map((value) => ({
-    value,
-    label: t(useCaseLabelKey[value]),
-    count: counts[value]
-  }))
+const useCaseChips = computed<FacetMenuOption[]>(() => {
+  const counts = countByUseCase(
+    models.filter(
+      (model) =>
+        hostedInTab(model, tab.value) &&
+        offersAccess(accessFor(model), selectedAccess.value)
+    )
+  )
+  return (tabUseCases[tab.value] ?? [])
+    .filter(({ useCase }) => counts[useCase] > 0)
+    .map(({ useCase, labelKey }) => ({
+      value: useCase,
+      label: t(labelKey),
+      count: counts[useCase]
+    }))
+})
+
+watch(useCaseChips, (chips) => {
+  if (tab.value === 'all') return
+  const offered = selectedUseCases.value.filter((useCase) =>
+    chips.some((chip) => chip.value === useCase)
+  )
+  if (offered.length !== selectedUseCases.value.length)
+    selectedUseCases.value = offered
 })
 
 const accessOptions = computed<FacetMenuOption<ModelAccess>[]>(() =>
@@ -219,10 +250,6 @@ function clearFilters() {
   legacyCapabilities.value = []
 }
 
-function applyUseCases(values: UseCase[]) {
-  selectedUseCases.value = values
-}
-
 function rememberModel(model: WorkshopModel, event: MouseEvent) {
   if (!model.href) return
   const list = modelsListReturn(
@@ -258,11 +285,13 @@ function rememberModel(model: WorkshopModel, event: MouseEvent) {
       <div class="flex flex-col lg:flex-row lg:items-start lg:gap-10">
         <div class="max-lg:contents lg:sticky lg:top-26 lg:w-58 lg:shrink-0">
           <ModelTabs
-            v-model="tab"
+            :model-value="tab"
             :panel-id="TAB_PANEL_ID"
             :counts="tabCounts"
             :locale
             class="max-lg:order-1"
+            data-design-decision="models-sidebar"
+            @update:model-value="selectTab"
           />
           <a
             :href="getRoutes(locale).models"
@@ -298,12 +327,9 @@ function rememberModel(model: WorkshopModel, event: MouseEvent) {
               >
                 <WorkshopFilterMenu
                   v-model:access="selectedAccess"
-                  :use-cases="selectedUseCases"
-                  :use-case-options="useCaseOptions"
                   :access-options="accessOptions"
                   :result-count
                   :locale
-                  @update:use-cases="applyUseCases"
                 />
 
                 <WorkshopSortMenu
@@ -313,6 +339,14 @@ function rememberModel(model: WorkshopModel, event: MouseEvent) {
                 />
               </div>
             </div>
+            <CatalogueUseCaseChips
+              v-model="selectedUseCases"
+              :options="useCaseChips"
+              :label="t('workshop.useCaseChip.label')"
+              :locale
+              class="basis-full"
+              data-design-decision="models-chips"
+            />
           </div>
 
           <div
