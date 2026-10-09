@@ -118,25 +118,22 @@ export function useMembersPanel() {
     useTeamPlan()
   const subscriptionDialog = useSubscriptionDialog()
   const { maxSeats, occupiedSeats } = useBillingContext()
-  const { canChangeSeats, canInviteMembers } = useBillingCapabilities()
+  const { canManageMembers, canInviteMembers } = useBillingCapabilities()
 
   const { isPlanEnded, isSalesManagedPlan, isEnterprisePlan } = usePlanEnded()
 
   const permissions = computed(() => {
-    const canManageMembers =
-      hasMemberSeats.value &&
-      (isCloud ? canChangeSeats.value : workspaceRole.value === 'owner')
-    const canManageInvites =
-      hasMemberSeats.value &&
-      (isCloud ? canInviteMembers.value : workspaceRole.value === 'owner')
+    const canManage = isCloud
+      ? canManageMembers.value
+      : hasMemberSeats.value && workspaceRole.value === 'owner'
 
     return {
       ...workspacePermissions.value,
-      canViewOtherMembers: hasMemberSeats.value,
-      canViewPendingInvites: canManageInvites,
-      canInviteMembers: canManageInvites,
-      canManageInvites,
-      canManageMembers
+      canViewOtherMembers: hasMemberSeats.value || canManage,
+      canViewPendingInvites: canManage,
+      canInviteMembers: isCloud ? canInviteMembers.value : canManage,
+      canManageInvites: canManage,
+      canManageMembers: canManage
     }
   })
 
@@ -144,7 +141,11 @@ export function useMembersPanel() {
     // An ended plan keeps the members-table presentation: the collapsed
     // seat limit (see isPlanEnded) must not demote the page to the seatless
     // layout, or the roster and the banner's context disappear together.
-    if (!hasMemberSeats.value && !isPlanEnded.value) {
+    if (
+      !hasMemberSeats.value &&
+      !isPlanEnded.value &&
+      !permissions.value.canManageMembers
+    ) {
       return {
         ...workspaceUiConfig.value,
         showMembersList: false,
@@ -158,7 +159,7 @@ export function useMembersPanel() {
       }
     }
 
-    if (workspaceRole.value === 'owner') {
+    if (isCloud ? canManageMembers.value : workspaceRole.value === 'owner') {
       return {
         ...workspaceUiConfig.value,
         showMembersList: true,
@@ -195,21 +196,12 @@ export function useMembersPanel() {
 
   const showViewTabs = computed(
     () =>
-      hasMemberSeats.value &&
+      (hasMemberSeats.value || permissions.value.canManageMembers) &&
       (hasMultipleMembers.value || pendingInvites.value.length > 0)
   )
 
-  // On the real ended payload can_invite_members stays TRUE — the server
-  // grants it from the owner role alone (ResolveBillingWritePermissions),
-  // and the disabled state carries the denial. The second disjunct is the
-  // guarantee for any rail that resolves the capability false: an owner
-  // keeps a visible, disabled control with the banner carrying the route
-  // back. Members stay hidden (role denial).
   const showInviteButton = computed(() =>
-    isCloud
-      ? canInviteMembers.value ||
-        (isPlanEnded.value && permissions.value.canManageSubscription)
-      : workspaceRole.value === 'owner'
+    isCloud ? canInviteMembers.value : workspaceRole.value === 'owner'
   )
 
   const isMemberLimitReached = computed(
@@ -220,18 +212,20 @@ export function useMembersPanel() {
       occupiedSeats.value >= maxSeats.value
   )
 
-  const isInviteDisabled = computed(
-    () =>
-      isPlanLoading.value ||
-      !permissions.value.canInviteMembers ||
-      isPlanEnded.value ||
-      maxSeats.value === null ||
-      occupiedSeats.value === null ||
-      !hasMemberSeats.value ||
-      isMemberLimitReached.value
+  const isInviteDisabled = computed(() =>
+    isCloud
+      ? !canInviteMembers.value
+      : isPlanLoading.value ||
+        !permissions.value.canInviteMembers ||
+        isPlanEnded.value ||
+        maxSeats.value === null ||
+        occupiedSeats.value === null ||
+        !hasMemberSeats.value ||
+        isMemberLimitReached.value
   )
 
   const inviteTooltip = computed(() => {
+    if (isCloud) return null
     if (!hasMemberSeats.value) return null
     if (maxSeats.value === null || occupiedSeats.value === null) return null
     if (!isMemberLimitReached.value) return null
@@ -239,8 +233,11 @@ export function useMembersPanel() {
   })
 
   function handleInviteMember() {
-    if (isCloud ? !canInviteMembers.value : workspaceRole.value !== 'owner')
+    if (isCloud) {
+      if (canInviteMembers.value) void showInviteMemberDialog()
       return
+    }
+    if (workspaceRole.value !== 'owner') return
     if (
       isPlanLoading.value ||
       maxSeats.value === null ||

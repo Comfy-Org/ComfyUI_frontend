@@ -168,7 +168,11 @@
 
           <!-- Active Members -->
           <template v-if="activeView === 'active'">
-            <template v-if="isInPersonalWorkspace && maxSeats === 1">
+            <template
+              v-if="
+                isInPersonalWorkspace && maxSeats === 1 && !hasMultipleMembers
+              "
+            >
               <MemberListItem
                 :member="personalWorkspaceMember"
                 :is-current-user="true"

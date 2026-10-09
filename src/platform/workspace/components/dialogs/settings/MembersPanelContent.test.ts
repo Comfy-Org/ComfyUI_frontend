@@ -591,16 +591,28 @@ describe('MembersPanelContent', () => {
     })
   })
 
-  it('renders fetched personal members while seat capacity is unresolved', () => {
-    mockIsInPersonalWorkspace.value = true
-    mockMaxSeats.value = null
-    mockFilteredMembers.value = [createMember({ name: 'Alice' })]
+  it.for([
+    { maxSeats: null, upsells: 0 },
+    { maxSeats: 1, upsells: 1 }
+  ])(
+    'renders fetched personal members with seat limit $maxSeats',
+    ({ maxSeats, upsells }) => {
+      mockIsInPersonalWorkspace.value = true
+      mockMaxSeats.value = maxSeats
+      mockFilteredMembers.value = [
+        createMember({ id: 'alice', name: 'Alice' }),
+        createMember({ id: 'bob', name: 'Bob' })
+      ]
 
-    renderComponent()
+      renderComponent()
 
-    expect(screen.getByText('Alice')).toBeTruthy()
-    expect(screen.queryByText('workspacePanel.members.upsellBanner')).toBeNull()
-  })
+      expect(screen.getByText('Alice')).toBeTruthy()
+      expect(screen.getByText('Bob')).toBeTruthy()
+      expect(
+        screen.queryAllByText('workspacePanel.members.upsellBanner')
+      ).toHaveLength(upsells)
+    }
+  )
 
   describe('ended treatment gate (DES-1200)', () => {
     it('shows the resume banner once a team plan has ended', () => {
@@ -866,6 +878,7 @@ describe('MembersPanelContent', () => {
     it('shows the personal row instead of empty copy on a single-seat plan', () => {
       mockMaxSeats.value = 1
       mockIsInPersonalWorkspace.value = true
+      mockHasMultipleMembers.value = false
       renderComponent()
       expect(screen.getByText('Owner User')).toBeInTheDocument()
       expect(screen.queryByText('No members')).not.toBeInTheDocument()

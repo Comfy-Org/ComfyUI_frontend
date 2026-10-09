@@ -1,14 +1,17 @@
 import { render, screen, waitFor } from '@testing-library/vue'
 import userEvent from '@testing-library/user-event'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
-import { computed } from 'vue'
+import { computed, ref } from 'vue'
 import { createI18n } from 'vue-i18n'
 
+import { useBillingCapabilities } from '@/platform/workspace/composables/useBillingCapabilities'
 import { useWorkspaceUI } from '@/platform/workspace/composables/useWorkspaceUI'
 import { useTeamWorkspaceStore } from '@/platform/workspace/stores/teamWorkspaceStore'
 
 import WorkspaceMembersPanelContent from './WorkspaceMembersPanelContent.vue'
 
+vi.mock(import('@/platform/distribution/types'), () => ({ isCloud: true }))
+vi.mock(import('@/platform/workspace/composables/useBillingCapabilities'))
 vi.mock(import('@/platform/workspace/composables/useWorkspaceUI'))
 
 const stubs = {
@@ -33,6 +36,7 @@ describe('WorkspaceMembersPanelContent', () => {
   let workspaceStore: ReturnType<typeof useTeamWorkspaceStore>
 
   beforeEach(() => {
+    useBillingCapabilities().canManageMembers = computed(() => true)
     const workspaceUI = vi.mocked(useWorkspaceUI())
     workspaceUI.workspaceRole = computed(() => 'owner')
     const ownerPermissions = workspaceUI.permissions.value
@@ -80,6 +84,7 @@ describe('WorkspaceMembersPanelContent', () => {
       ...permissions,
       canViewPendingInvites: false
     }))
+    useBillingCapabilities().canManageMembers = computed(() => false)
     vi.mocked(workspaceStore.fetchPendingInvites).mockRejectedValue(
       new Error('403')
     )
@@ -92,6 +97,26 @@ describe('WorkspaceMembersPanelContent', () => {
     expect(
       screen.queryByText('workspacePanel.members.loadFailed')
     ).not.toBeInTheDocument()
+  })
+
+  it('loads personal-owner pending invites once management resolves', async () => {
+    const canManage = ref(false)
+    useBillingCapabilities().canManageMembers = computed(() => canManage.value)
+    const workspaceUI = vi.mocked(useWorkspaceUI())
+    const permissions = workspaceUI.permissions.value
+    workspaceUI.permissions = computed(() => ({
+      ...permissions,
+      canViewPendingInvites: false
+    }))
+
+    renderComponent()
+    expect(workspaceStore.fetchPendingInvites).not.toHaveBeenCalled()
+
+    canManage.value = true
+
+    await waitFor(() =>
+      expect(workspaceStore.fetchPendingInvites).toHaveBeenCalledTimes(1)
+    )
   })
 
   it('shows no error state when both fetches succeed', async () => {

@@ -1,3 +1,4 @@
+import type { PendingInvite } from '@comfyorg/ingest-types'
 import { expect } from '@playwright/test'
 
 import type { Member } from '@/platform/workspace/api/workspaceApi'
@@ -9,10 +10,13 @@ import {
   DEFAULT_TEAM_MEMBERS,
   MEMBER_JANE,
   MEMBER_JOHN,
+  TEAM_BILLING_STATUS,
+  TEAM_WORKSPACE,
   VIEWER
 } from '@e2e/fixtures/data/cloudWorkspace'
 import { CloudWorkspaceMockHelper } from '@e2e/fixtures/helpers/CloudWorkspaceMockHelper'
 import { workspace } from '@e2e/fixtures/utils/workspaceMocks'
+import { jsonRoute } from '@e2e/fixtures/utils/jsonRoute'
 
 // Drives a raw `page` (not the `comfyPage` fixture) so the cloud app boots
 // against fully mocked endpoints; `comfyPage` would try to reach the OSS
@@ -21,12 +25,78 @@ import { workspace } from '@e2e/fixtures/utils/workspaceMocks'
 const APP_URL = process.env.PLAYWRIGHT_TEST_URL || 'http://localhost:8188'
 
 test.describe('Members plan gating', { tag: '@cloud' }, () => {
+  test('full workspace keeps member and pending-invite management', async ({
+    page,
+    toast
+  }) => {
+    await new CloudWorkspaceMockHelper(page).setup(
+      DEFAULT_TEAM_MEMBERS,
+      TEAM_WORKSPACE,
+      { ...TEAM_BILLING_STATUS, occupied_seats: 30 },
+      {
+        can_manage_members: true,
+        can_invite_members: false,
+        can_change_seats: false
+      }
+    )
+    const invites: PendingInvite[] = Array.from({ length: 26 }, (_, index) => ({
+      id: `invite-${index}`,
+      email: `pending-${index}@test.comfy.org`,
+      invited_at: '2026-01-01T00:00:00Z',
+      expires_at: '2099-01-01T00:00:00Z',
+      token: `token-${index}`
+    }))
+    await page.route('**/api/workspace/invites', (route) =>
+      route.fulfill(jsonRoute({ invites }))
+    )
+    await page.route('**/api/workspace/invites/invite-0/resend', (route) =>
+      route.fulfill(jsonRoute(invites[0]))
+    )
+    const members = new MembersSettingsPanel(page)
+    await members.open(APP_URL)
+
+    await expect(
+      members.content.getByRole('button', { name: 'Invite member' })
+    ).toHaveCount(0)
+    await members.menuButton(members.memberRow(MEMBER_JANE.email)).click()
+    await members.openChangeRoleSubmenu()
+    await page
+      .getByRole('menuitemradio', { name: 'Owner', exact: true })
+      .click()
+    await expect(
+      page.getByRole('heading', { name: 'Make Jane an owner?' })
+    ).toBeVisible()
+    await page.getByRole('button', { name: 'Cancel', exact: true }).click()
+
+    await members.content.getByRole('button', { name: 'Pending (26)' }).click()
+    const inviteRow = members.memberRow(invites[0].email)
+    await expect(inviteRow).toBeVisible()
+    await members.menuButton(inviteRow).click()
+    await page.getByRole('menuitem', { name: 'Resend invite' }).click()
+    await expect(toast.withText('Invite resent')).toBeVisible()
+    await members.menuButton(inviteRow).click()
+    await page.getByRole('menuitem', { name: 'Cancel invite' }).click()
+    await expect(
+      page.getByRole('heading', { name: 'Uninvite this person?' })
+    ).toBeVisible()
+  })
+
   test('personal workspace with a Team plan gets member management', async ({
     page
   }) => {
     await new CloudWorkspaceMockHelper(page).setup(
       DEFAULT_TEAM_MEMBERS,
       workspace('personal', 'owner')
+    )
+    const invite: PendingInvite = {
+      id: 'personal-invite',
+      email: 'personal-pending@test.comfy.org',
+      invited_at: '2026-01-01T00:00:00Z',
+      expires_at: '2099-01-01T00:00:00Z',
+      token: 'personal-invite-token'
+    }
+    await page.route('**/api/workspace/invites', (route) =>
+      route.fulfill(jsonRoute({ invites: [invite] }))
     )
     const members = new MembersSettingsPanel(page)
     await members.open(APP_URL)
@@ -46,6 +116,9 @@ test.describe('Members plan gating', { tag: '@cloud' }, () => {
     await expect(
       members.menuButton(members.memberRow(CREATOR.email))
     ).toHaveCount(0)
+
+    await content.getByRole('button', { name: 'Pending (1)' }).click()
+    await expect(content.getByText(invite.email, { exact: true })).toBeVisible()
 
     await inviteButton.click()
     await expect(

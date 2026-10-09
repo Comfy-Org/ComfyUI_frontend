@@ -15,9 +15,11 @@
 </template>
 
 <script setup lang="ts">
-import { onMounted, ref } from 'vue'
+import { computed, ref, watch } from 'vue'
 
 import Button from '@/components/ui/button/Button.vue'
+import { isCloud } from '@/platform/distribution/types'
+import { useBillingCapabilities } from '@/platform/workspace/composables/useBillingCapabilities'
 import MembersPanelContent from '@/platform/workspace/components/dialogs/settings/MembersPanelContent.vue'
 import { useWorkspaceUI } from '@/platform/workspace/composables/useWorkspaceUI'
 import { useTeamWorkspaceStore } from '@/platform/workspace/stores/teamWorkspaceStore'
@@ -25,19 +27,28 @@ import { useTeamWorkspaceStore } from '@/platform/workspace/stores/teamWorkspace
 const workspaceStore = useTeamWorkspaceStore()
 const { fetchMembers, fetchPendingInvites } = workspaceStore
 const { workspaceRole, permissions } = useWorkspaceUI()
+const { canManageMembers } = useBillingCapabilities()
+const canViewPendingInvites = computed(() =>
+  isCloud ? canManageMembers.value : permissions.value.canViewPendingInvites
+)
 
 const loadFailed = ref(false)
 
 async function load() {
+  const workspaceId = workspaceStore.activeWorkspaceId
   loadFailed.value = false
   const results = await Promise.allSettled([
     fetchMembers(),
-    ...(permissions.value.canViewPendingInvites ? [fetchPendingInvites()] : [])
+    ...(canViewPendingInvites.value ? [fetchPendingInvites()] : [])
   ])
-  loadFailed.value = results.some((result) => result.status === 'rejected')
+  if (workspaceId === workspaceStore.activeWorkspaceId) {
+    loadFailed.value = results.some((result) => result.status === 'rejected')
+  }
 }
 
-onMounted(() => {
-  void load()
-})
+watch(
+  [() => workspaceStore.activeWorkspaceId, canViewPendingInvites],
+  () => void load(),
+  { immediate: true }
+)
 </script>
