@@ -20,6 +20,7 @@ interface Subscription {
   isCancelled: boolean
   endDate: string | null
   tier?: SubscriptionInfo['tier']
+  duration?: SubscriptionInfo['duration']
   scheduledChange?: SubscriptionInfo['scheduledChange']
 }
 
@@ -148,7 +149,7 @@ const i18n = createI18n({
             memberBody: 'You can run workflows until then.',
             personalTitle: 'Your {plan} plan ends on {date}',
             personalBody:
-              "You won't be charged again. Resume your plan to keep your monthly credits.",
+              "You won't be charged again. Resume your plan to keep getting credits.",
             enterpriseTitle: 'Your Enterprise plan ends on {date}',
             enterpriseBody:
               'Members keep full access until then. Reach out to our sales team to extend.',
@@ -162,8 +163,7 @@ const i18n = createI18n({
             teamMemberBody: 'Ask your workspace owner to resubscribe.',
             personalTitle: 'Your {plan} plan ended on {date}',
             personalTitleNoDate: 'Your {plan} plan has ended',
-            personalBody:
-              'Resubscribe to run workflows and get monthly credits again.',
+            personalBody: 'Resubscribe to run workflows and get credits again.',
             enterpriseTitle: 'Your Enterprise plan ended on {date}',
             enterpriseBody: 'Contact sales to start a new Enterprise plan.',
             planTitle: 'Your plan ended on {date}',
@@ -813,42 +813,229 @@ describe('BillingStatusBanner', () => {
       }
     }
 
-    it.for([
-      {
-        personal: false,
-        renewalDate: '2026-10-01T00:00:00Z',
-        body: 'Your team has used all its credits. Add more credits or wait until credits refill on October 1, 2026.'
-      },
-      {
-        personal: false,
-        renewalDate: null,
-        body: 'Your team has used all its credits. Add more credits.'
-      },
-      {
-        personal: true,
-        renewalDate: '2026-10-01T00:00:00Z',
-        body: "You've used all your credits. Add more credits or wait until credits refill on October 1, 2026."
-      },
-      {
-        personal: true,
-        renewalDate: null,
-        body: "You've used all your credits. Add more credits."
-      }
-    ])(
-      'words out of credits for the audience (personal: $personal, date: $renewalDate)',
-      async ({ personal, renewalDate, body }) => {
-        if (personal) personalPlan()
-        state.renewalDate = renewalDate
-        state.subscription = { ...state.subscription!, hasFunds: false }
-        renderBanner()
+    describe('out of credits', () => {
+      const NOW = new Date('2026-10-08T12:00:00Z')
+      const DAY = 24 * 60 * 60 * 1000
 
-        expect(screen.getByRole('status')).toHaveTextContent(body)
-        await userEvent.click(
-          screen.getByRole('button', { name: 'Add credits' })
+      beforeEach(() => {
+        vi.setSystemTime(NOW)
+      })
+
+      const HOUR = 60 * 60 * 1000
+      const inDays = (days: number) => new Date(NOW.getTime() + days * DAY)
+      const iso = (date: Date) => date.toISOString()
+
+      it.for([
+        {
+          case: 'monthly team, refill in 20 days',
+          workspaceType: 'team',
+          isTeamPlan: true,
+          tier: 'TEAM',
+          duration: 'MONTHLY',
+          renewalDate: iso(inDays(20)),
+          body: 'Your team has used all its credits. Add more credits or wait until credits refill on October 28.'
+        },
+        {
+          case: 'monthly team, refill just past 31 days',
+          workspaceType: 'team',
+          isTeamPlan: true,
+          tier: 'TEAM',
+          duration: 'MONTHLY',
+          renewalDate: iso(new Date(inDays(31).getTime() + HOUR)),
+          body: 'Your team has used all its credits. Add more credits or wait until credits refill on November 8.'
+        },
+        {
+          case: 'monthly team, refill date already past',
+          workspaceType: 'team',
+          isTeamPlan: true,
+          tier: 'TEAM',
+          duration: 'MONTHLY',
+          renewalDate: iso(inDays(-2)),
+          body: 'Your team has used all its credits. Add more credits.'
+        },
+        {
+          case: 'monthly team, no refill date',
+          workspaceType: 'team',
+          isTeamPlan: true,
+          tier: 'TEAM',
+          duration: 'MONTHLY',
+          renewalDate: null,
+          body: 'Your team has used all its credits. Add more credits.'
+        },
+        {
+          case: 'annual team, refill in 20 days',
+          workspaceType: 'team',
+          isTeamPlan: true,
+          tier: 'TEAM',
+          duration: 'ANNUAL',
+          renewalDate: iso(inDays(20)),
+          body: 'Your team has used all its credits. Add more credits or wait until credits refill on October 28, 2026.'
+        },
+        {
+          case: 'annual team, refill in exactly 31 days',
+          workspaceType: 'team',
+          isTeamPlan: true,
+          tier: 'TEAM',
+          duration: 'ANNUAL',
+          renewalDate: iso(inDays(31)),
+          body: 'Your team has used all its credits. Add more credits or wait until credits refill on November 8, 2026.'
+        },
+        {
+          case: 'annual team, refill just past 31 days',
+          workspaceType: 'team',
+          isTeamPlan: true,
+          tier: 'TEAM',
+          duration: 'ANNUAL',
+          renewalDate: iso(new Date(inDays(31).getTime() + HOUR)),
+          body: 'Your team has used all its credits. Add more credits.'
+        },
+        {
+          case: 'annual team, refill in 5 months',
+          workspaceType: 'team',
+          isTeamPlan: true,
+          tier: 'TEAM',
+          duration: 'ANNUAL',
+          renewalDate: iso(inDays(150)),
+          body: 'Your team has used all its credits. Add more credits.'
+        },
+        {
+          case: 'monthly personal, refill in 10 days',
+          workspaceType: 'personal',
+          isTeamPlan: false,
+          tier: 'PRO',
+          duration: 'MONTHLY',
+          renewalDate: iso(inDays(10)),
+          body: "You've used all your credits. Add more credits or wait until credits refill on October 18."
+        },
+        {
+          case: 'annual personal, refill in 5 months',
+          workspaceType: 'personal',
+          isTeamPlan: false,
+          tier: 'PRO',
+          duration: 'ANNUAL',
+          renewalDate: iso(inDays(150)),
+          body: "You've used all your credits. Add more credits."
+        },
+        {
+          case: 'Founders Edition, no duration, refill in 10 days',
+          workspaceType: 'personal',
+          isTeamPlan: false,
+          tier: 'FOUNDERS_EDITION',
+          duration: null,
+          renewalDate: iso(inDays(10)),
+          body: "You've used all your credits. Add more credits or wait until credits refill on October 18."
+        },
+        {
+          case: 'paid plan with no duration, refill in 10 days',
+          workspaceType: 'personal',
+          isTeamPlan: false,
+          tier: 'PRO',
+          duration: null,
+          renewalDate: iso(inDays(10)),
+          body: "You've used all your credits. Add more credits."
+        }
+      ] as const)(
+        'words out of credits for the owner ($case)',
+        async ({
+          workspaceType,
+          isTeamPlan,
+          tier,
+          duration,
+          renewalDate,
+          body
+        }) => {
+          state.workspaceType = workspaceType
+          state.isTeamPlan = isTeamPlan
+          state.renewalDate = renewalDate
+          state.subscription = {
+            ...state.subscription!,
+            tier,
+            duration,
+            hasFunds: false
+          }
+          renderBanner()
+
+          expect(screen.getByRole('status')).toHaveTextContent(body)
+          await userEvent.click(
+            screen.getByRole('button', { name: 'Add credits' })
+          )
+          expect(useDialogService().showTopUpCreditsDialog).toHaveBeenCalled()
+        }
+      )
+
+      it.for([
+        {
+          case: 'monthly, refill in 10 days',
+          duration: 'MONTHLY',
+          renewalDate: iso(inDays(10)),
+          body: 'Your team has used all its credits. Ask your workspace owner to add more credits or wait until credits refill on October 18.'
+        },
+        {
+          case: 'annual, refill in 5 months',
+          duration: 'ANNUAL',
+          renewalDate: iso(inDays(150)),
+          body: 'Your team has used all its credits. Ask your workspace owner to add more credits.'
+        }
+      ] as const)(
+        'words out of credits for a member ($case)',
+        ({ duration, renewalDate, body }) => {
+          state.canManageSubscription = false
+          state.renewalDate = renewalDate
+          state.subscription = {
+            ...state.subscription!,
+            duration,
+            hasFunds: false
+          }
+          renderBanner()
+
+          expect(screen.getByRole('status')).toHaveTextContent(body)
+        }
+      )
+
+      it('starts suggesting the wait when an annual refill enters the window while open', async () => {
+        state.workspaceType = 'team'
+        state.isTeamPlan = true
+        state.renewalDate = iso(new Date(inDays(31).getTime() + 90_000))
+        state.subscription = {
+          ...state.subscription!,
+          tier: 'TEAM',
+          duration: 'ANNUAL',
+          hasFunds: false
+        }
+        renderBanner()
+        expect(screen.getByRole('status')).toHaveTextContent(
+          'Your team has used all its credits. Add more credits.'
         )
-        expect(useDialogService().showTopUpCreditsDialog).toHaveBeenCalled()
-      }
-    )
+
+        await vi.advanceTimersByTimeAsync(2 * 60_000)
+
+        expect(screen.getByRole('status')).toHaveTextContent(
+          'Your team has used all its credits. Add more credits or wait until credits refill on November 8, 2026.'
+        )
+      })
+
+      it('drops the suggestion when the refill date passes while open', async () => {
+        state.workspaceType = 'team'
+        state.isTeamPlan = true
+        state.renewalDate = iso(new Date(NOW.getTime() + 30_000))
+        state.subscription = {
+          ...state.subscription!,
+          tier: 'TEAM',
+          duration: 'MONTHLY',
+          hasFunds: false
+        }
+        renderBanner()
+        expect(screen.getByRole('status')).toHaveTextContent(
+          'Your team has used all its credits. Add more credits or wait until credits refill on October 8.'
+        )
+
+        await vi.advanceTimersByTimeAsync(2 * 60_000)
+
+        expect(screen.getByRole('status')).toHaveTextContent(
+          'Your team has used all its credits. Add more credits.'
+        )
+      })
+    })
 
     it.for([
       {
@@ -859,12 +1046,12 @@ describe('BillingStatusBanner', () => {
       {
         tier: 'PRO',
         title: 'Your Pro plan ends on August 1, 2026',
-        body: "You won't be charged again. Resume your plan to keep your monthly credits."
+        body: "You won't be charged again. Resume your plan to keep getting credits."
       },
       {
         tier: 'FOUNDERS_EDITION',
         title: "Your Founder's Edition plan ends on August 1, 2026",
-        body: "You won't be charged again. Resume your plan to keep your monthly credits."
+        body: "You won't be charged again. Resume your plan to keep getting credits."
       }
     ] as const)(
       'words the ending notice for $title',
@@ -897,7 +1084,7 @@ describe('BillingStatusBanner', () => {
 
         expect(screen.getByRole('status')).toHaveTextContent(title)
         expect(screen.getByRole('status')).toHaveTextContent(
-          'Resubscribe to run workflows and get monthly credits again.'
+          'Resubscribe to run workflows and get credits again.'
         )
         await userEvent.click(
           screen.getByRole('button', { name: 'Resubscribe' })

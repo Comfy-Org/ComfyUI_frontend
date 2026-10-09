@@ -89,6 +89,7 @@
 
 <script setup lang="ts">
 import { cn } from '@comfyorg/tailwind-utils'
+import { useTimestamp } from '@vueuse/core'
 import { computed } from 'vue'
 import { useI18n } from 'vue-i18n'
 
@@ -144,12 +145,48 @@ const canManage = computed(() => permissions.value.canManageSubscription)
 const isEnterprisePlan = computed(
   () => subscription.value?.tier === 'ENTERPRISE'
 )
-function longDate(raw: string | null | undefined): string {
+function parseDate(raw: string | null | undefined): Date | null {
   const date = raw ? new Date(raw) : null
-  if (!date || Number.isNaN(date.getTime())) return ''
-  return d(date, { year: 'numeric', month: 'long', day: 'numeric' })
+  return date && !Number.isNaN(date.getTime()) ? date : null
 }
-const cycleResetDate = computed(() => longDate(renewalDate.value))
+function longDate(
+  raw: string | null | undefined,
+  { withYear = true }: { withYear?: boolean } = {}
+): string {
+  const date = parseDate(raw)
+  if (!date) return ''
+  return withYear
+    ? d(date, { year: 'numeric', month: 'long', day: 'numeric' })
+    : d(date, { month: 'long', day: 'numeric' })
+}
+// "Or wait until credits refill" depends on the plan's cadence, which the
+// server states as `duration`. A monthly plan (and Founders Edition, a fixed
+// monthly grant with no duration) refills every cycle, so the suggestion always
+// holds and its date drops the year. An annual plan is granted the year up
+// front and refills at renewal, so the suggestion only holds within a month of
+// it, and its date keeps the year (DES-1088). With no known cadence, or a date
+// that has already passed, there is nothing to tell the user to wait for.
+// The panel can stay open across the window's edges, so this reads a ticking
+// clock rather than Date.now(), which a computed would never re-read.
+const ANNUAL_REFILL_SUGGESTION_WINDOW_MS = 31 * 24 * 60 * 60 * 1000
+const now = useTimestamp({ interval: 60_000 })
+const refillSuggestionDate = computed(() => {
+  const date = parseDate(renewalDate.value)
+  if (!date) return ''
+  const untilRefill = date.getTime() - now.value
+  if (untilRefill <= 0) return ''
+  const sub = subscription.value
+  const refillsMonthly =
+    sub?.duration === 'MONTHLY' ||
+    (!sub?.duration && sub?.tier === 'FOUNDERS_EDITION')
+  if (refillsMonthly) return longDate(renewalDate.value, { withYear: false })
+  if (
+    sub?.duration === 'ANNUAL' &&
+    untilRefill <= ANNUAL_REFILL_SUGGESTION_WINDOW_MS
+  )
+    return longDate(renewalDate.value)
+  return ''
+})
 const planEndDate = computed(() => longDate(subscription.value?.endDate))
 const planName = computed(() => formatTierName(subscription.value?.tier, false))
 
@@ -274,7 +311,9 @@ const planEndedView = (): BannerView => {
 }
 
 const outOfCreditsBody = (key: string, noDateKey: string): string =>
-  cycleResetDate.value ? t(key, { date: cycleResetDate.value }) : t(noDateKey)
+  refillSuggestionDate.value
+    ? t(key, { date: refillSuggestionDate.value })
+    : t(noDateKey)
 
 // An owner who cannot top up only reaches this once the plan has ended, which
 // the plan ended notice covers, so that case shows nothing.
