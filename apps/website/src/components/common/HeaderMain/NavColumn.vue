@@ -1,5 +1,6 @@
 <script setup lang="ts">
 import { cn } from '@comfyorg/tailwind-utils'
+import { ArrowRight } from '@lucide/vue'
 
 import Button from '@/components/ui/button/Button.vue'
 import NavigationMenuLink from '@/components/ui/navigation-menu/NavigationMenuLink.vue'
@@ -63,14 +64,11 @@ defineProps<{
       </li>
     </ul>
     <div v-if="column.allLink" class="mt-auto pl-2">
-      <Button
-        as="a"
-        variant="link"
-        size="sm"
-        class="md:text-xs"
-        :href="column.allLink.href"
-      >
+      <Button as="a" variant="link" size="sm" :href="column.allLink.href">
         {{ column.allLink.label }}
+        <template #append>
+          <ArrowRight class="size-4" aria-hidden="true" />
+        </template>
       </Button>
     </div>
   </li>
