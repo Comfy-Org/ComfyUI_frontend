@@ -101,16 +101,21 @@ export function useEditorZoom(
     if (before) zoomAround(after / before, (c.x + d.x) / 2, (c.y + d.y) / 2)
   }
 
+  function trackTouch(event: PointerEvent) {
+    if (event.pointerType === 'touch' && touches.size < 2)
+      touches.set(event.pointerId, { x: event.clientX, y: event.clientY })
+  }
+
+  function grabs(event: PointerEvent, el: HTMLElement) {
+    if (view.value.scale === 1) return false
+    return spaceHeld || event.button === 1 || onBackdrop(event.target, el)
+  }
+
   function onPointerDown(event: PointerEvent) {
     const el = frame.value
     if (!el) return
-    if (event.pointerType === 'touch' && touches.size < 2)
-      touches.set(event.pointerId, { x: event.clientX, y: event.clientY })
-    const zoomed = view.value.scale !== 1
-    const grab =
-      zoomed &&
-      (spaceHeld || event.button === 1 || onBackdrop(event.target, el))
-    if (touches.size < 2 && !grab) return
+    trackTouch(event)
+    if (touches.size < 2 && !grabs(event, el)) return
     event.preventDefault()
     event.stopPropagation()
     if (touches.size < 2) panning = { x: event.clientX, y: event.clientY }
