@@ -5636,8 +5636,8 @@
     "greetingQuestion": "What do you want to make?",
     "proactiveGreeting": {
       "emptyCanvas": {
-        "title": "What would you like to do next?",
-        "description": "Pick up where you left off. Or ask the agent for help with something new."
+        "title": "Have something in mind?",
+        "description": "Tell Comfy Agent what you'd like to create."
       },
       "workflowOpen": {
         "title": "Ask a question or describe a change.",
