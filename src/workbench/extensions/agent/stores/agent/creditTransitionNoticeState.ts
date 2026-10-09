@@ -5,19 +5,14 @@ export type CreditTransitionNoticePhase =
   | 'dismissed'
 
 export interface CreditTransitionNoticeState {
-  /** The `user:workspace` pair this episode belongs to. */
   identity: string
-  /** Last defined Agent-scoped funds read seen for `identity`. */
   scopedHasFunds: boolean
   phase: CreditTransitionNoticePhase
 }
 
 export type CreditTransitionNoticeEvent =
-  /** A defined Agent-scoped funds read. Undefined reads never reach here. */
   | { type: 'scopedRead'; identity: string; scopedHasFunds: boolean }
-  /** The notice reached the screen and telemetry is available to record it. */
   | { type: 'shown'; identity: string }
-  /** The user closed the notice. */
   | { type: 'dismissed'; identity: string }
 
 function reduceScopedRead(
