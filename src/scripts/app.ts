@@ -1413,8 +1413,6 @@ export class ComfyApp {
         })
       }
 
-      useSubgraphService().loadSubgraphs(graphData)
-
       await useExtensionService().invokeExtensionsAsync(
         'beforeConfigureGraph',
         graphData,
@@ -1550,6 +1548,22 @@ export class ComfyApp {
     let resourceScanLoadCompleted = false
     try {
       try {
+        // From this point through configure there are no awaits: claim the
+        // graph immediately before replacing any shared graph state.
+        this.commitGraphLoad(loadId)
+
+        if (clean) {
+          // Reset canvas context before configuring a new graph so subgraph UI
+          // state from the previous workflow cannot leak into the newly loaded
+          // one, and so `clean()` can clear the root graph even when the user is
+          // currently inside a subgraph.
+          this.canvas.setGraph(this.rootGraph)
+          withGraphIntentSource('load', () => this.clean())
+        }
+
+        // Subgraph registration mutates the shared root graph, so it belongs
+        // after the ownership commit and after the outgoing graph is cleared.
+        useSubgraphService().loadSubgraphs(graphData)
         this.rootGraph.configure(graphData as ISerialisedGraph)
 
         // Save original renderer version before scaling (it gets modified during scaling)
@@ -1568,7 +1582,6 @@ export class ComfyApp {
           )
         }
 
-        this.commitGraphLoad(loadId)
         const preservesPendingCamera =
           !restore_view &&
           workflow !== null &&

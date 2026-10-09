@@ -738,6 +738,23 @@ describe('ComfyApp', () => {
       expect(clean).not.toHaveBeenCalled()
     })
 
+    it('cleans the outgoing workflow at the winning load commit boundary', async () => {
+      app.canvasElRef.value = document.createElement('canvas')
+      const graph = new LGraph()
+      Reflect.set(app, 'rootGraphInternal', graph)
+      const setGraph = vi.fn()
+      Reflect.set(mockCanvas, 'setGraph', setGraph)
+      const clean = vi.spyOn(app, 'clean')
+      const missingNodesStore = useMissingNodesErrorStore()
+      missingNodesStore.setMissingNodeTypes(['OutgoingMissingNode'])
+
+      await app.loadGraphData(createWorkflowGraphData(), true)
+
+      expect(setGraph).toHaveBeenCalledWith(graph)
+      expect(clean).toHaveBeenCalledOnce()
+      expect(missingNodesStore.missingNodesError).toBeNull()
+    })
+
     it('does not bind an older load’s workflow to a newer load’s graph', async () => {
       app.canvasElRef.value = document.createElement('canvas')
       Reflect.set(app, 'rootGraphInternal', new LGraph())

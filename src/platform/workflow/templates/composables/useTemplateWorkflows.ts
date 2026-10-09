@@ -229,7 +229,8 @@ export function useTemplateWorkflows() {
         { openSource: 'template' }
       )
       if (loadedWorkflow === false) return 'graph-failed'
-      if (loadedWorkflow === undefined) return 'not-started'
+      if (loadedWorkflow === undefined || loadedWorkflow === 'superseded')
+        return 'not-started'
 
       updateTemplateEducation(template?.isPartnerNode, loadedWorkflow)
       if (sourceModule === 'default') trackFeatureUsed()
