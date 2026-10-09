@@ -62,6 +62,28 @@ function getMediaUrl(
   return `/api/view?${params}`
 }
 
+function isOutputOfKind(filename: string, kind: AssetKind): boolean {
+  if (kind === 'image' && isHdrImageFilename(filename)) return true
+  return getMediaTypeFromFilename(filename) === assetKindToMediaType(kind)
+}
+
+function getOutputPath(asset: AssetItem, kind: AssetKind): string {
+  const filename = getAssetUrlFilename(asset)
+  const subfolder =
+    kind === 'mesh'
+      ? getOutputAssetMetadata(asset.user_metadata)?.subfolder
+      : undefined
+  return subfolder ? `${subfolder}/${filename}` : filename
+}
+
+function getOutputPreviewUrl(asset: AssetItem, kind: AssetKind): string {
+  if (kind === 'mesh') return ''
+  if (isHdrImageFilename(asset.name)) return getGeneratedPreviewUrl(asset)
+  return (
+    asset.preview_url || getMediaUrl(getAssetUrlFilename(asset), 'output', kind)
+  )
+}
+
 export interface UseWidgetSelectItemsOptions {
   values: MaybeRefOrGetter<unknown[] | undefined>
   getOptionLabel: MaybeRefOrGetter<
@@ -202,9 +224,8 @@ export function useWidgetSelectItems(options: UseWidgetSelectItemsOptions) {
 
   const outputItems = computed<FormDropdownItem[]>(() => {
     const kind = toValue(options.assetKind)
-    if (!['image', 'video', 'audio', 'mesh'].includes(kind ?? '')) return []
+    if (!kind || !['image', 'video', 'audio', 'mesh'].includes(kind)) return []
 
-    const targetMediaType = assetKindToMediaType(kind!)
     const seen = new Set<string>()
     const items: FormDropdownItem[] = []
     const labelFn = toValue(options.getOptionLabel)
@@ -221,31 +242,14 @@ export function useWidgetSelectItems(options: UseWidgetSelectItemsOptions) {
 
     const missing = missingMediaValues.value
     for (const asset of assets) {
-      const isHdr = kind === 'image' && isHdrImageFilename(asset.name)
-      if (!isHdr && getMediaTypeFromFilename(asset.name) !== targetMediaType)
-        continue
-      if (seen.has(asset.id)) continue
+      if (!isOutputOfKind(asset.name, kind) || seen.has(asset.id)) continue
       seen.add(asset.id)
-      const filenameForUrl = getAssetUrlFilename(asset)
-      const subfolder =
-        kind === 'mesh'
-          ? getOutputAssetMetadata(asset.user_metadata)?.subfolder
-          : undefined
-      const pathWithSubfolder = subfolder
-        ? `${subfolder}/${filenameForUrl}`
-        : filenameForUrl
-      const annotatedPath = `${pathWithSubfolder} [output]`
+      const annotatedPath = `${getOutputPath(asset, kind)} [output]`
       if (missing.has(annotatedPath)) continue
       const displayLabel = `${getAssetDisplayFilename(asset)} [output]`
       items.push({
         id: `output-${asset.id}`,
-        preview_url:
-          kind === 'mesh'
-            ? ''
-            : isHdr
-              ? getGeneratedPreviewUrl(asset)
-              : asset.preview_url ||
-                getMediaUrl(filenameForUrl, 'output', kind),
+        preview_url: getOutputPreviewUrl(asset, kind),
         name: annotatedPath,
         label: getDisplayLabel(displayLabel, labelFn)
       })

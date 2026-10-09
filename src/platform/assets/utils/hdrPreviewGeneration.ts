@@ -47,9 +47,17 @@ async function generatePreview(asset: AssetItem, list: PagedList<AssetItem>) {
   }
 }
 
+function lacksHdrPreview(asset: AssetItem): boolean {
+  const hasSeparatePreview = !!asset.preview_id && asset.preview_id !== asset.id
+  return !hasSeparatePreview && isHdrImageFilename(asset.name)
+}
+
 export function generatePreviewsForNewAssets(list: PagedList<AssetItem>) {
   const handledIds = new Set<string>()
   let newestPreexisting: number | undefined
+
+  const isNewUnhandled = (asset: AssetItem, since: number) =>
+    !handledIds.has(asset.id) && Date.parse(asset.created_at) > since
 
   watch(
     [() => [...toValue(list.items)], () => toValue(list.hasMore)],
@@ -62,14 +70,9 @@ export function generatePreviewsForNewAssets(list: PagedList<AssetItem>) {
         return
       }
 
+      const since = newestPreexisting
       for (const asset of items) {
-        if (handledIds.has(asset.id)) continue
-        if (Date.parse(asset.created_at) <= newestPreexisting) continue
-        if (
-          (asset.preview_id && asset.preview_id !== asset.id) ||
-          !isHdrImageFilename(asset.name)
-        )
-          continue
+        if (!isNewUnhandled(asset, since) || !lacksHdrPreview(asset)) continue
         handledIds.add(asset.id)
         void generatePreview(asset, list)
       }
