@@ -18,6 +18,7 @@ const copy = {
     'zh-CN': 'PNG、JPG 或 WebP。保留主体，移除背景。'
   },
   'cutout.empty.upload': { en: 'Choose a photo', 'zh-CN': '选择照片' },
+  'cutout.image.change': { en: 'Change photo', 'zh-CN': '更换照片' },
   'cutout.empty.example': { en: 'Try the example', 'zh-CN': '试用示例' },
   'cutout.hint': {
     en: 'Pick a background, then run',
@@ -51,8 +52,9 @@ const copy = {
     'zh-CN': '新背景'
   },
   'cutout.replace.placeholder': {
-    en: 'Describe the background you want to generate',
-    'zh-CN': '描述你想生成的背景'
+    en: 'Describe the new background, e.g. a sunlit marble kitchen counter. Or add a reference image below.',
+    'zh-CN':
+      '描述新背景，例如：洒满阳光的大理石厨房台面。也可以在下方添加参考图。'
   },
   'cutout.replace.reference': {
     en: 'Add a reference image',
