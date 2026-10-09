@@ -113,21 +113,20 @@ const nodeColor = computed<NodeColorOption['name'] | null>({
     <div
       class="grid grid-cols-5 justify-items-center gap-1 rounded-lg border-none bg-secondary-background p-1"
     >
-      <button
-        v-for="option of colorOptions"
-        :key="option.name"
-        :class="
-          cn(
-            'flex size-8 cursor-pointer items-center justify-center rounded-lg border-0 bg-transparent text-left ring-0 outline-0',
-            option.name === nodeColor
-              ? 'bg-interface-menu-component-surface-selected'
-              : 'hover:bg-interface-menu-component-surface-selected'
-          )
-        "
-        @click="nodeColor = option.name"
-      >
-        <Tooltip>
-          <TooltipTrigger as-child>
+      <Tooltip v-for="option of colorOptions" :key="option.name">
+        <TooltipTrigger as-child>
+          <button
+            :aria-label="option.localizedName()"
+            :class="
+              cn(
+                'flex size-8 cursor-pointer items-center justify-center rounded-lg border-0 bg-transparent text-left ring-0 outline-0',
+                option.name === nodeColor
+                  ? 'bg-interface-menu-component-surface-selected'
+                  : 'hover:bg-interface-menu-component-surface-selected'
+              )
+            "
+            @click="nodeColor = option.name"
+          >
             <div
               :class="cn('size-4 rounded-full ring-2 ring-gray-500/10')"
               :style="{
@@ -143,10 +142,10 @@ const nodeColor = computed<NodeColorOption['name'] | null>({
               }"
               :data-testid="option.name"
             />
-          </TooltipTrigger>
-          <TooltipContent>{{ option.localizedName() }}</TooltipContent>
-        </Tooltip>
-      </button>
+          </button>
+        </TooltipTrigger>
+        <TooltipContent>{{ option.localizedName() }}</TooltipContent>
+      </Tooltip>
     </div>
   </LayoutField>
 </template>
