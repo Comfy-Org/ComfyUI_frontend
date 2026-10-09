@@ -1576,7 +1576,6 @@ describe('AgentPanelRoot paywall telemetry', () => {
   })
 })
 
-/** The scoped-balance handoff, distinct from total Agent funding exhaustion. */
 describe('AgentPanelRoot Agent credit transition notice', () => {
   const NOTICE = 'agent-credit-transition-notice'
 
