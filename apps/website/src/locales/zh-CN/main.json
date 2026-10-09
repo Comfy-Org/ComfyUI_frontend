@@ -4508,6 +4508,9 @@
       "relight": "重新布光",
       "relightSummary": "在照片上放置新的光源，模型会重绘阴影与高光，同时保留主体。",
       "relightMeta": "图像 · Beeble SwitchX",
+      "backgroundRemoval": "背景移除",
+      "backgroundRemovalSummary": "将主体从照片中抠出，放在干净的背景上，或保留透明背景。",
+      "backgroundRemovalMeta": "图像 · Recraft Remove Background",
       "reshootMeta": "视频 · MiniMax H3"
     },
     "stage": {

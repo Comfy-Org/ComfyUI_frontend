@@ -15,3 +15,23 @@ export function mockJob<T>(
     })
   })
 }
+
+/**
+ * A stand-in for a backend job that answers with an image drawn in the
+ * browser: starts `render` at once, settles with its object URL after
+ * `delayMs`, and releases that URL when `signal` aborts first.
+ */
+export async function mockRenderJob(
+  render: () => Promise<string | undefined>,
+  signal: AbortSignal,
+  delayMs: number
+): Promise<string | undefined> {
+  const rendered = render().catch(() => undefined)
+  try {
+    await mockJob(undefined, signal, delayMs)
+  } catch (error) {
+    void rendered.then((url) => url && URL.revokeObjectURL(url))
+    throw error
+  }
+  return rendered
+}

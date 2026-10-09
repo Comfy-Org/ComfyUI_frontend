@@ -4763,6 +4763,16 @@
       "permanent": true
     },
     {
+      "source": "/models/apps/background-removal",
+      "destination": "/hub/apps/background-removal/",
+      "permanent": true
+    },
+    {
+      "source": "/models/apps/background-removal/",
+      "destination": "/hub/apps/background-removal/",
+      "permanent": true
+    },
+    {
       "source": "/models/apps/cinematic-studio",
       "destination": "/hub/apps/cinematic-studio/",
       "permanent": true

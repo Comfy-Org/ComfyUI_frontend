@@ -9,7 +9,8 @@ const appRoutes = {
   studio: 'cinematicStudio',
   reshoot: 'reshoot',
   'move-anything': 'moveAnything',
-  relight: 'relight'
+  relight: 'relight',
+  'background-removal': 'backgroundRemoval'
 } as const satisfies Record<WorkshopAppId, keyof ReturnType<typeof getRoutes>>
 
 export function workshopAppHref(app: WorkshopAppId, locale: Locale): string {
@@ -55,6 +56,12 @@ const appCopy = {
     summary: 'cinematic.hub.relightSummary',
     badge: 'cinematic.hub.prototype',
     meta: 'cinematic.hub.relightMeta'
+  },
+  'background-removal': {
+    name: 'cinematic.hub.backgroundRemoval',
+    summary: 'cinematic.hub.backgroundRemovalSummary',
+    badge: 'cinematic.hub.prototype',
+    meta: 'cinematic.hub.backgroundRemovalMeta'
   }
 } as const satisfies Record<
   WorkshopAppId,

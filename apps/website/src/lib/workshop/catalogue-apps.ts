@@ -22,7 +22,12 @@ const copy = {
     'zh-CN': '重新摆放照片中的物体'
   },
   relightName: { en: 'Relight', 'zh-CN': '重新布光' },
-  relightTask: { en: 'Light a photo again', 'zh-CN': '为照片重新打光' }
+  relightTask: { en: 'Light a photo again', 'zh-CN': '为照片重新打光' },
+  backgroundRemovalName: { en: 'Background Removal', 'zh-CN': '背景移除' },
+  backgroundRemovalTask: {
+    en: 'Cut the subject out of a photo',
+    'zh-CN': '将主体从照片中抠出'
+  }
 } as const satisfies Record<string, LocalizedText>
 
 export function ac(key: keyof typeof copy, locale: Locale = 'en'): string {

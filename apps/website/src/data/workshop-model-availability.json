@@ -1,4 +1,8 @@
 {
+  "apps/background-removal": {
+    "flag": "workshop-background-removal-app-enabled",
+    "reason": "Background Removal is a front-end mock while its backend is built; shown only where PostHog turns it on."
+  },
   "apps/move-anything": {
     "flag": "workshop-move-anything-app-enabled",
     "reason": "Move anything is a front-end mock while its backend is built; shown only where PostHog turns it on."
