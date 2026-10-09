@@ -2,16 +2,16 @@
 import { translationsFor } from '@/i18n/translations'
 import { ArrowUpRight } from '@lucide/vue'
 
-import { cn } from '@comfyorg/tailwind-utils'
-
+import { externalLinks } from '@/config/routes'
 import type { Locale } from '@/i18n/translations'
 import { captureWorkshopEvent } from '@/scripts/posthog'
 
 const {
-  repo,
+  repo = externalLinks.githubOrg,
   locale = 'en',
   appSlug
 } = defineProps<{
+  /** The app's own repository; until it exists the link opens Comfy's GitHub. */
   repo?: string
   locale?: Locale
   /** The app this link belongs to, for the click's analytics. */
@@ -20,7 +20,7 @@ const {
 const { t } = translationsFor(locale)
 
 function captureClick() {
-  if (!repo || !appSlug) return
+  if (!appSlug) return
   captureWorkshopEvent({
     name: 'github_clicked',
     properties: { app_slug: appSlug, page_type: 'app' }
@@ -29,26 +29,18 @@ function captureClick() {
 </script>
 
 <template>
-  <component
-    :is="repo ? 'a' : 'span'"
+  <a
     :href="repo"
-    :target="repo && '_blank'"
-    :rel="repo && 'noopener noreferrer'"
-    :class="
-      cn(
-        'inline-flex h-9 shrink-0 items-center gap-2 rounded-xl border px-3.5 text-sm font-medium',
-        repo
-          ? 'border-transparency-white-t20 bg-transparency-white-t4 text-primary-warm-white transition hover:border-primary-comfy-yellow hover:text-primary-comfy-yellow focus-visible:ring-3 focus-visible:ring-primary-comfy-yellow/50 focus-visible:outline-none'
-          : 'border-transparency-white-t8 text-primary-warm-gray'
-      )
-    "
+    target="_blank"
+    rel="noopener noreferrer"
+    class="inline-flex h-9 shrink-0 items-center gap-2 rounded-xl border border-transparency-white-t20 bg-transparency-white-t4 px-3.5 text-sm font-medium text-primary-warm-white transition hover:border-primary-comfy-yellow hover:text-primary-comfy-yellow focus-visible:ring-3 focus-visible:ring-primary-comfy-yellow/50 focus-visible:outline-none"
     @click="captureClick"
   >
     <span
       class="size-4 icon-mask mask-[url('/icons/social/github.svg')]"
       aria-hidden="true"
     />
-    {{ t(repo ? 'cinematic.repo.view' : 'cinematic.repo.soon') }}
-    <ArrowUpRight v-if="repo" class="size-3.5" aria-hidden="true" />
-  </component>
+    {{ t('cinematic.repo.view') }}
+    <ArrowUpRight class="size-3.5" aria-hidden="true" />
+  </a>
 </template>
