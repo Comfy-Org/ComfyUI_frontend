@@ -1783,7 +1783,7 @@ describe('graphTraversalUtil', () => {
       const graph = createMockGraph([createMockNode(REMAPPED_ID)])
 
       expect(executionIdToNodeLocatorId(graph, REMAPPED_ID)).toBe(
-        `~root:${encodeURIComponent(REMAPPED_ID)}`
+        '~root:insert%3A0fbd38ecb13037d0b3b0ca78b8a20a5a%3Aroot%3Anode%3A9'
       )
     })
 
