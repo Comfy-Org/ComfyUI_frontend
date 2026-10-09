@@ -5309,5 +5309,127 @@
       "mediaLabel": "建筑可视化工作流演示",
       "contactHeading": "告诉我们您需要制作什么。"
     }
+  },
+  "vfxV2": {
+    "comfy": {
+      "badge": "视觉特效",
+      "heroTitle": "为制作流程而构建的\n视觉特效工作流。",
+      "heroDescription": "在可查看、可扩展的工作流中移除物体、制作遮罩、重塑视频风格并提升镜头分辨率。在本地运行 ComfyUI，或接入现有制作流程。",
+      "primaryCta": "探索特效工作流",
+      "contactHeading": "将 Comfy 接入工作室制作流程。",
+      "contactButton": "联系 COMFY"
+    },
+    "agency": {
+      "badge": "特效制作服务",
+      "heroTitle": "带来特效项目需求。\n寻找制作合作伙伴。",
+      "heroDescription": "向 Comfy 介绍镜头或项目需求。我们将一起讨论制作要求，以及适合该项目的创意制作合作伙伴。",
+      "primaryCta": "讨论项目需求",
+      "contactHeading": "解决镜头难题，完成项目交付。",
+      "processHeading": "从项目需求到制作方案。",
+      "steps": {
+        "1": {
+          "title": "项目需求",
+          "description": "介绍创意目标、原始素材、交付内容和时间安排。"
+        },
+        "2": {
+          "title": "匹配合作伙伴",
+          "description": "Comfy 与你共同梳理要求，并讨论合适的创意制作合作伙伴。"
+        },
+        "3": {
+          "title": "明确范围",
+          "description": "商定制作方式、职责、里程碑和商务条款。"
+        },
+        "4": {
+          "title": "制作交付",
+          "description": "约定的团队按照项目范围和评审流程开展制作。"
+        }
+      },
+      "examplesHeading": "看看工作流能做什么。",
+      "examplesDescription": "以下为已发布的 Comfy 工作流示例。制作团队的项目案例将在范围讨论阶段介绍。",
+      "intakeNote": "项目咨询将先由 Comfy 接收。我们会与你讨论需求和合作伙伴匹配。"
+    },
+    "shared": {
+      "secondaryCta": "了解制作方式"
+    },
+    "proof": {
+      "label": "特效工作流实例",
+      "upscale": "镜头超分辨率",
+      "upscaleDescription": "对比原始画面与提升分辨率后的结果。",
+      "cleanplate": "物体移除",
+      "cleanplateDescription": "遮罩目标物体，通过 LTX 重建背景净板。",
+      "restyling": "视频风格重塑",
+      "restylingDescription": "探索已发布的 MiniMax 视频风格重塑工作流。",
+      "compareHint": "移动分隔线，对比处理前后的效果。",
+      "demoLabel": "已发布的工作流示例"
+    },
+    "workflows": {
+      "heading": "下一个镜头的工作流起点。",
+      "description": "打开节点图，查看各个步骤，并根据你的素材进行调整。",
+      "featured": "精选视觉特效工作流"
+    },
+    "pipeline": {
+      "heading": "融入工作室的制作方式。",
+      "1": {
+        "title": "工作站与渲染基础设施",
+        "description": "在自有硬件上运行 ComfyUI。与技术团队一起规划共享基础设施和部署方式。"
+      },
+      "2": {
+        "title": "在节点图中掌控流程",
+        "description": "查看模型、遮罩、参数和处理步骤。随着镜头需求变化，持续调整工作流。"
+      },
+      "3": {
+        "title": "API 与 SDK",
+        "description": "通过代码运行工作流节点图，并接入现有工具。Comfy SDK 可用于 Cloud 或自行托管的 ComfyUI。"
+      },
+      "4": {
+        "title": "自定义节点与 DCC 工具",
+        "description": "通过自定义节点和社区集成扩展制作流程。根据工作室的工具与要求评估每项集成。"
+      },
+      "download": "在本地运行 COMFYUI",
+      "sdk": "了解 SDK",
+      "platform": "开发者平台"
+    },
+    "learning": {
+      "heading": "深入了解工作流。",
+      "description": "准备开始制作时，可跟随净板和天空替换教程逐步操作。"
+    },
+    "production": {
+      "eyebrow": "MANAGED BUILDS",
+      "heading": "统一的已批准环境。\n供整个团队使用。",
+      "body": "固定 ComfyUI 版本、节点、模型和依赖。无论在哪里制作，团队都能使用一致的构建环境。",
+      "features": {
+        "1": "私有节点与模型",
+        "2": "支持的服务商密钥与现有合同",
+        "3": "通过公司身份分配构建环境"
+      },
+      "releasesLabel": "COMFYUI 版本",
+      "environmentsLabel": "PYTHON · PYTORCH · CUDA",
+      "nodesLabel": "自定义节点",
+      "modelsLabel": "模型",
+      "privateNodes": "studio-nodes（私有）",
+      "privateModel": "brand-lora（私有）",
+      "pinnedLabel": "已固定",
+      "moreOptionsLabel": "更多选项",
+      "nodesUnit": "个节点",
+      "modelsUnit": "个模型",
+      "cta": "讨论 MANAGED BUILDS",
+      "detailsHeading": "需要时，再了解\n制作细节。",
+      "details": {
+        "licensing": {
+          "question": "模型许可与商业使用",
+          "answer": "查看 MiniMax 商业许可方案，并向 Comfy 咨询其他本地模型的服务商条款。模型使用权取决于具体模型和用途。"
+        },
+        "capacity": {
+          "question": "部署、容量与支持",
+          "answer": "讨论 Cloud、开发者平台或自有基础设施方案。专用容量、入驻支持、技术支持和响应承诺将在企业协议中明确。"
+        },
+        "security": {
+          "question": "身份管理与安全审查",
+          "answer": "与 Comfy 讨论公司身份、已批准构建的访问权限、私有素材和工作室安全要求。围绕部署方案确定审查范围。"
+        }
+      },
+      "enterprise": "查看企业方案详情",
+      "licensing": "MINIMAX 许可"
+    }
   }
 }

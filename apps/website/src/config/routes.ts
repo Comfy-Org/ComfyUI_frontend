@@ -29,6 +29,8 @@ const baseRoutes = {
   agencyFilmAnimation: '/agency-led/film-animation/',
   agencyArchitecturalVisualization: '/agency-led/architectural-visualization/',
   vfx: '/vfx/',
+  vfxV2: '/vfx/v2/',
+  agencyVfxV2: '/agency-led/vfx/v2/',
   advertising: '/advertising/',
   filmAnimation: '/film-animation/',
   architecturalVisualization: '/architectural-visualization/',

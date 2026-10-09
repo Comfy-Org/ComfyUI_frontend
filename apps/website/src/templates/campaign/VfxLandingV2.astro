@@ -1,0 +1,229 @@
+---
+import BaseLayout from '@/layouts/BaseLayout.astro'
+import VfxProofHero from '@/components/campaign/VfxProofHero.vue'
+import AgencyEngagementTimeline from '@/components/campaign/AgencyEngagementTimeline.vue'
+import VfxProductionPanel from '@/templates/campaign/VfxProductionPanel.astro'
+import SocialProofBarSection from '@/components/common/SocialProofBarSection.vue'
+import SectionIntro01 from '@/components/blocks/SectionIntro01.vue'
+import FeatureRows01 from '@/components/blocks/FeatureRows01.vue'
+import BenefitsGrid01 from '@/components/blocks/BenefitsGrid01.vue'
+import FeaturedWorkflowsSection from '@/components/home/FeaturedWorkflowsSection.vue'
+import HubWorkflowCard from '@/components/hub/HubWorkflowCard.vue'
+import BrandButton from '@/components/common/BrandButton.vue'
+import CallToActionSection from '@/components/common/CallToActionSection.vue'
+import { vfxWorkflows } from '@/data/vfxWorkflows'
+import { vfxContent } from '@/data/vfx'
+import { getCustomerVideoStory } from '@/data/customerVideos'
+import { getRoutes, externalLinks } from '@/config/routes'
+import { pageContext } from '@/utils/jsonLd'
+
+interface Props {
+  agency?: boolean
+}
+const { agency = false } = Astro.props
+const { locale } = pageContext(
+  Astro.site,
+  Astro.url.pathname,
+  Astro.currentLocale
+)
+const { t } = Astro.locals
+const routes = getRoutes(locale)
+const prefix = agency ? 'vfxV2.agency' : 'vfxV2.comfy'
+const contactHref = `${routes.contact}?interest=vfx${agency ? '&campaign_type=agency-led' : ''}&landing_version=v2`
+const { examples } = vfxContent(locale)
+const story = getCustomerVideoStory('black-math')
+const benefits = ([1, 2, 3, 4] as const).map((id) => ({
+  id: `pipeline-${id}`,
+  title: t(`vfxV2.pipeline.${id}.title`),
+  description: t(`vfxV2.pipeline.${id}.description`)
+}))
+---
+
+<BaseLayout
+  title={t(agency ? 'agency.vfx.metaTitle' : 'vfx.meta.title')}
+  description={t(`${prefix}.heroDescription`)}
+  ogImage={vfxWorkflows[5].template.thumbnails[0]}
+  hideAnnouncementBanner
+>
+  <div data-vfx-v2 data-agency-v2={agency ? 'vfx' : undefined}>
+    <VfxProofHero
+      locale={locale}
+      agency={agency}
+      primaryHref={agency ? contactHref : '#workflows'}
+      data-campaign-hero
+      client:load
+    />
+    {agency && <p
+      class="mx-auto max-w-9xl px-6 pb-6 text-sm text-primary-comfy-canvas/70 lg:px-16"
+    >
+      {t('vfxV2.agency.intakeNote')}
+    </p>}
+    <SocialProofBarSection agencyPartners={agency} />
+    {agency && <div id="approach" class="scroll-mt-28">
+      <SectionIntro01
+        heading={t('vfxV2.agency.examplesHeading')}
+        subtitle={t('vfxV2.agency.examplesDescription')}
+        class="pb-0 lg:pb-0"
+      />
+      <FeatureRows01 locale={locale} rows={examples} client:visible />
+      <AgencyEngagementTimeline locale={locale} />
+    </div>}
+    <div id="workflows" class="scroll-mt-28">
+      <SectionIntro01
+        heading={t('vfxV2.workflows.heading')}
+        subtitle={t('vfxV2.workflows.description')}
+        class="pb-0 lg:pb-0"
+      />
+      <FeaturedWorkflowsSection
+        locale={locale}
+        showAuthors={false}
+        alignWithGrid
+        strongScrim
+        label={t('vfxV2.workflows.featured')}
+        items={[
+          {
+            title: t('vfx.workflows.storyboard'),
+            href: 'https://comfy.org/workflows/f4e29143100c-f4e29143100c/',
+            media:
+              'https://media.comfy.org/hub-media/video/34ea9f1a-1aac-4c6f-af48-b88cf154ec9b.mp4',
+            mediaType: 'video',
+            poster:
+              'https://media.comfy.org/hub-media/posters/34ea9f1a-1aac-4c6f-af48-b88cf154ec9b.jpg',
+            tags: ['Seedance 2.0', t('vfx.workflows.storyboarding')],
+            models: ['Seedance']
+          },
+          ...vfxWorkflows.slice(1, 3).map(({ template, href }) => ({
+            title: template.title,
+            href,
+            media: template.thumbnails[0],
+            mediaType: 'image' as const,
+            tags: template.tags,
+            models: template.models
+          }))
+        ]}
+        client:visible
+      />
+      <section class="mx-auto max-w-9xl px-6 pb-12 lg:pb-16">
+        <div class="grid grid-cols-1 gap-5 sm:grid-cols-2 lg:grid-cols-3">
+          {vfxWorkflows.map((workflow) => (
+            <HubWorkflowCard
+              {...workflow}
+              locale={locale}
+              tryNowLabel={t('vfx.workflows.tryNow')}
+              showTypeBadge={false}
+              showAuthor={false}
+              showAction={false}
+              providerBadgeAtTop
+              class="[&_h3]:right-5 [&_h3]:text-base [&_h3]:sm:text-lg [&_h3]:lg:text-xl"
+              client:visible
+            />
+          ))}
+        </div>
+        <div class="mt-10 flex justify-center">
+          <BrandButton
+            href="https://comfy.org/workflows/tag/visual-effects/"
+            variant="outline"
+            class="uppercase"
+          >
+            {t('vfx.workflows.browse')}
+          </BrandButton>
+        </div>
+      </section>
+    </div>
+    {!agency && <div id="approach" class="scroll-mt-28">
+      <BenefitsGrid01
+        heading={t('vfxV2.pipeline.heading')}
+        numbered={false}
+        benefits={benefits}
+      />
+      <div
+        class="mx-auto flex max-w-9xl flex-wrap justify-center gap-4 px-6 pb-12"
+      >
+        <BrandButton href={routes.download} variant="outline" class="uppercase"
+          >{t('vfxV2.pipeline.download')}</BrandButton
+        >
+        <BrandButton
+          href={externalLinks.docsSdk}
+          variant="outline"
+          class="uppercase"
+          >{t('vfxV2.pipeline.sdk')}</BrandButton
+        >
+        <BrandButton href={routes.platform} variant="outline" class="uppercase"
+          >{t('vfxV2.pipeline.platform')}</BrandButton
+        >
+      </div>
+      <FeatureRows01
+        locale={locale}
+        heading={t('vfx.proof.heading')}
+        rows={[
+          {
+            id: story.slug,
+            title: t('vfx.proof.title'),
+            description: t('vfx.proof.description'),
+            media: {
+              type: 'video',
+              src: story.videoSrc,
+              poster: story.poster,
+              tracks: story.captions,
+              alt: t('vfx.proof.title')
+            }
+          }
+        ]}
+        client:visible
+      />
+    </div>}
+    <div id="studio" class="scroll-mt-28">
+      <VfxProductionPanel locale={locale} contactHref={contactHref} />
+      <div class="flex flex-wrap justify-center gap-4 px-6 pb-10">
+        <BrandButton
+          href={routes.enterprise}
+          variant="outline"
+          class="uppercase"
+          >{t('vfxV2.production.enterprise')}</BrandButton
+        >
+        <BrandButton
+          href={routes.minimaxLicense}
+          variant="outline"
+          class="uppercase"
+          >{t('vfxV2.production.licensing')}</BrandButton
+        >
+      </div>
+    </div>
+    {!agency && (
+      <>
+        <SectionIntro01
+          heading={t('vfxV2.learning.heading')}
+          subtitle={t('vfxV2.learning.description')}
+          class="pb-0 lg:pb-0"
+        />
+        <FeatureRows01 locale={locale} rows={examples} client:visible />
+      </>
+    )}
+    <div class="[&_a]:uppercase">
+      <CallToActionSection
+        locale={locale}
+        headingKey={`${prefix}.contactHeading`}
+        primaryLabelKey={
+          agency ? 'vfxV2.agency.primaryCta' : 'vfxV2.comfy.contactButton'
+        }
+        primaryHref={contactHref}
+      />
+    </div>
+  </div>
+</BaseLayout>
+
+<script>
+  import { mountAgencyCampaign, mountVfxCampaign } from '@/scripts/vfx-campaign'
+
+  let cleanup: (() => void) | undefined
+  document.addEventListener('astro:page-load', () => {
+    cleanup?.()
+    const root = document.querySelector<HTMLElement>('[data-vfx-v2]')
+    cleanup = root
+      ? root.dataset.agencyV2
+        ? mountAgencyCampaign(root, 'vfx')
+        : mountVfxCampaign(root)
+      : undefined
+  })
+  document.addEventListener('astro:before-swap', () => cleanup?.())
+</script>
