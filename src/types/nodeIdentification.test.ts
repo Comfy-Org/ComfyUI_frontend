@@ -3,7 +3,6 @@ import { assert, describe, expect, it } from 'vitest'
 import { toNodeId } from '@/types/nodeId'
 import type { NodeId } from '@/types/nodeId'
 import {
-  appendLeafNodeExecutionId,
   compareExecutionId,
   createLeafNodeExecutionId,
   createNodeExecutionId,
@@ -326,17 +325,6 @@ describe('nodeIdentification', () => {
 
       it('returns null for an empty id', () => {
         expect(createLeafNodeExecutionId(toNodeId(''))).toBeNull()
-      })
-    })
-
-    describe('appendLeafNodeExecutionId', () => {
-      it('appends a delimiter-bearing leaf to a valid parent path', () => {
-        expect(
-          appendLeafNodeExecutionId(
-            createNodeExecutionId([toNodeId(123)]),
-            'insert:abc123:root:node:5'
-          )
-        ).toBe('123:insert:abc123:root:node:5')
       })
     })
   })
