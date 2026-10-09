@@ -336,6 +336,12 @@ function removeAttachment(id: string): void {
   composerRef.value?.removeAttachment(id)
 }
 
+function onSuggestionInsert(
+  ...args: Parameters<InstanceType<typeof Composer>['insert']>
+): void {
+  void composerRef.value?.insert(...args)
+}
+
 function onComposerSend(
   text: string,
   attachments: ComposerAttachment[],
@@ -452,11 +458,7 @@ defineExpose({ addAttachment, updateAttachment, removeAttachment })
           v-if="!entries.length"
           :greeting
           :user-name
-          @insert="
-            (text, prompt) => {
-              void composerRef?.insert(text, prompt)
-            }
-          "
+          @insert="onSuggestionInsert"
         />
         <ConversationView
           v-else

@@ -18,7 +18,11 @@ const { userName, greeting } = defineProps<{
   greeting?: AgentGreeting
 }>()
 const emit = defineEmits<{
-  insert: [text: string, prompt?: AgentStarterPromptAttribution]
+  insert: [
+    text: string,
+    prompt?: AgentStarterPromptAttribution,
+    fadeInAfterMs?: number
+  ]
 }>()
 
 const { t, te, tm, locale } = useI18n()
@@ -62,7 +66,9 @@ const promptIcons = [
     v-if="greeting"
     :greeting
     :user-name
-    @insert="emit('insert', $event)"
+    @insert="
+      (text, fadeInAfterMs) => emit('insert', text, undefined, fadeInAfterMs)
+    "
   />
   <div
     v-else

@@ -187,6 +187,7 @@ function onEditorSelectionChange(): void {
 }
 
 function onComposerKeydown(event: KeyboardEvent): void {
+  endPrefillFade()
   if (handleMentionKeydown(event)) return
   if (event.key === 'Enter') onEnter(event)
   if (
@@ -305,10 +306,26 @@ onUnmounted(() => {
   unregisterEscapeOverride?.()
 })
 
+const prefillFadeMs = ref<number | null>(null)
+const prefillFade = computed(() =>
+  prefillFadeMs.value === null
+    ? {}
+    : {
+        class: 'agent-talk-fade',
+        style: { '--talk-delay': `${prefillFadeMs.value}ms` }
+      }
+)
+
+function endPrefillFade(): void {
+  prefillFadeMs.value = null
+}
+
 async function insert(
   text: string,
-  starterPrompt?: AgentStarterPromptAttribution
+  starterPrompt?: AgentStarterPromptAttribution,
+  fadeInAfterMs?: number
 ): Promise<void> {
+  prefillFadeMs.value = fadeInAfterMs ?? null
   composer.insert(text, starterPrompt)
   await nextTick()
   editorRef.value?.focusAtEnd()
@@ -426,7 +443,11 @@ defineExpose({
           {{ t('agent.savingWorkflow') }}
         </div>
         <div class="grid flex-1">
-          <div class="col-start-1 row-start-1 flex flex-col">
+          <div
+            class="col-start-1 row-start-1 flex flex-col"
+            v-bind="prefillFade"
+            @animationend.self="endPrefillFade"
+          >
             <InlinePromptEditor
               ref="editorRef"
               :model-value="composer.prompt.value"
