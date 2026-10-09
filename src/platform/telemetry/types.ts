@@ -869,6 +869,12 @@ export interface AgentMessageSentMetadata extends Record<string, unknown> {
 export interface AgentNodeTaggedMetadata extends Record<string, unknown> {
   source: 'mention_picker'
 }
+export interface AgentAttachButtonClickedMetadata extends Record<
+  string,
+  unknown
+> {
+  method: 'menu' | 'drag_drop'
+}
 export interface AgentWorkflowAppliedMetadata extends Record<string, unknown> {
   workflow_id: string
   target: 'active_tab_switch' | 'active_tab_open'
@@ -1630,7 +1636,9 @@ export interface TelemetryProvider {
   trackAgentFreeUseNotice?(metadata: AgentFreeUseNoticeMetadata): void
   trackAgentFreeUseExposure?(metadata: AgentFreeUseExposureMetadata): void
   trackAgentNodeTagged?(metadata: AgentNodeTaggedMetadata): void
-  trackAgentAttachButtonClicked?(): void
+  trackAgentAttachButtonClicked?(
+    metadata?: AgentAttachButtonClickedMetadata
+  ): void
   trackAgentWorkflowApplied?(metadata: AgentWorkflowAppliedMetadata): void
   trackAgentError?(metadata: AgentErrorMetadata): void
   trackAgentConsentNotOffered?(metadata: AgentConsentNotOfferedMetadata): void

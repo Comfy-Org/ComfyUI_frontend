@@ -1,5 +1,6 @@
 import type {
   AddCreditsClickMetadata,
+  AgentAttachButtonClickedMetadata,
   AgentConsentNotOfferedMetadata,
   AgentConsentOfferExitedMetadata,
   AgentConsentResolvedMetadata,
@@ -430,8 +431,12 @@ export class TelemetryRegistry implements TelemetryDispatcher {
     this.dispatch((provider) => provider.trackAgentNodeTagged?.(metadata))
   }
 
-  trackAgentAttachButtonClicked(): void {
-    this.dispatch((provider) => provider.trackAgentAttachButtonClicked?.())
+  trackAgentAttachButtonClicked(
+    metadata: AgentAttachButtonClickedMetadata = { method: 'menu' }
+  ): void {
+    this.dispatch((provider) =>
+      provider.trackAgentAttachButtonClicked?.(metadata)
+    )
   }
 
   trackAgentWorkflowApplied(metadata: AgentWorkflowAppliedMetadata): void {
