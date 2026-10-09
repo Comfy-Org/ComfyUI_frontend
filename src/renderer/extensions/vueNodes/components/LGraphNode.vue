@@ -611,8 +611,6 @@ const handleEnterSubgraph = () => {
 
 const nodeOutputs = useNodeOutputStore()
 
-const nodeOutputLocatorId = nodeLocatorId
-
 function resolveLGraphNode() {
   const locatorId = nodeLocatorId.value
   if (!locatorId) return null
@@ -694,7 +692,7 @@ const hasVideoEditWidget = computed(() =>
 )
 
 const nodeMedia = computed(() => {
-  const locatorId = nodeOutputLocatorId.value
+  const locatorId = nodeLocatorId.value
   const newOutputs = locatorId ? nodeOutputs.nodeOutputs[locatorId] : undefined
   const node = lgraphNode.value
 
