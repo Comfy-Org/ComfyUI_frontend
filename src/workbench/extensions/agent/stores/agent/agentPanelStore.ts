@@ -84,11 +84,6 @@ export const useAgentPanelStore = defineStore('agentPanel', () => {
    */
   const reservedWorkspaceWidth = ref(SIDE_TOOLBAR_WIDTH + SIDEBAR_MIN_WIDTH)
   const reportedExhaustionIdentity = ref<string | null>(null)
-  /**
-   * The credit-transition notice episode for the current billing identity, or
-   * `null` before any scoped balance has been observed. Keyed by identity, so
-   * switching user or workspace invalidates it without an explicit reset.
-   */
   const creditTransitionNotice = shallowRef<CreditTransitionNoticeState | null>(
     null
   )
