@@ -42,9 +42,6 @@ export function subgraphIdFromState(
 
 /**
  * The locator id for a node described by its shell state.
- *
- * `createNodeLocatorId` preserves ordinary IDs and encodes delimiter-
- * bearing IDs so root and subgraph locator key spaces stay distinct.
  */
 export function locatorIdFromState(
   state: Pick<NodeState, 'id' | 'graphId'>,
