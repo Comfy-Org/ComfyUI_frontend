@@ -1,8 +1,5 @@
 <script setup lang="ts">
-import { ref } from 'vue'
-
 import { externalLinks, getRoutes } from '@/config/routes'
-import { useFrameScrub } from '@/composables/useFrameScrub'
 import type { Locale } from '@/i18n/translations'
 import { translationsFor } from '@/i18n/translations'
 import type { LocaleAlternate } from '@/lib/hreflang'
@@ -17,25 +14,6 @@ const { locale = 'en', alternates = [] } = defineProps<{
 }>()
 const { t } = translationsFor(locale)
 const routes = getRoutes(locale)
-
-const footerRef = ref<HTMLElement>()
-const canvasRef = ref<HTMLCanvasElement>()
-
-const frameUrls = Array.from({ length: 75 }, (_, i) => {
-  const index = String(i).padStart(5, '0')
-  return `https://media.comfy.org/website/homepage/footer-logo-seq/seq-footer_${index}.webp`
-})
-
-useFrameScrub(canvasRef, {
-  urls: frameUrls,
-  scrollTrigger: (canvas) => ({
-    trigger: canvas,
-    start: 'top bottom',
-    endTrigger: footerRef.value,
-    end: 'bottom bottom',
-    scrub: 1
-  })
-})
 
 type FooterColumn = { title: string; links: FooterLink[] }
 
@@ -231,7 +209,6 @@ const columnGroups: FooterColumn[][] = [
 
 <template>
   <footer
-    ref="footerRef"
     class="bg-primary-comfy-ink px-6 py-8 text-primary-comfy-canvas lg:px-20"
   >
     <div class="flex flex-col gap-16 border-t border-primary-warm-gray pt-16">
@@ -253,16 +230,10 @@ const columnGroups: FooterColumn[][] = [
         class="flex flex-col gap-12 lg:flex-row lg:items-end lg:justify-between"
       >
         <div class="flex flex-col gap-8 lg:flex-row lg:items-center lg:gap-12">
-          <canvas
-            ref="canvasRef"
-            class="pointer-events-none size-52 shrink-0"
-          />
-          <div class="flex flex-col gap-8">
-            <p class="text-2xl font-medium tracking-wide uppercase lg:text-3xl">
-              {{ t('footer.tagline') }}
-            </p>
-            <FooterSocialLinks :locale />
-          </div>
+          <FooterSocialLinks :locale />
+          <p class="text-2xl font-medium tracking-wide uppercase lg:text-3xl">
+            {{ t('footer.tagline') }}
+          </p>
         </div>
 
         <div
