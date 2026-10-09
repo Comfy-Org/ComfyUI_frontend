@@ -336,4 +336,36 @@ describe('executionStore terminal-job recovery', () => {
     expect(store.nodeProgressStatesByJob[jobId]).toBeUndefined()
     expect(store.queuedJobs[jobId]).toBeUndefined()
   })
+
+  it('unsticks a tab whose job never reported progress', () => {
+    // The gap the tracked set had: execution_start sets the tab to Running, so
+    // a job whose terminal frame was dropped before any progress_state arrived
+    // was in no tracked collection and its badge stayed Running for the
+    // session.
+    // Must be a background job: a visible one is tracked through activeJobId,
+    // which execution_start only sets for the workflow in front.
+    const jobId = 'job-no-progress'
+    store.registerJobWorkflowIdMapping(jobId, WORKFLOW_B_ID)
+    store.storeJob({
+      nodes: ['1'],
+      id: jobId,
+      promptOutput: { '1': { inputs: {}, class_type: 'TestNode' } },
+      workflow: workflowB,
+      mode: 'graph'
+    })
+    fire('execution_start', {
+      prompt_id: jobId,
+      workflow_id: WORKFLOW_B_ID,
+      timestamp: 1
+    })
+    expect(store.getWorkflowStatus(workflowB)).toBe('running')
+    expect(
+      store.activeJobId,
+      'B is behind, so it must not be adopted'
+    ).toBeNull()
+
+    store.reconcileTerminalJobs(new Set(), new Set([jobId]))
+
+    expect(store.getWorkflowStatus(workflowB)).toBeUndefined()
+  })
 })

@@ -11,10 +11,7 @@ import type {
   WorkflowExecutionFailureReason,
   WorkflowExecutionIntent
 } from '@/platform/telemetry/types'
-import type {
-  ComfyWorkflow,
-  LoadedComfyWorkflow
-} from '@/platform/workflow/management/stores/workflowStore'
+import type { ComfyWorkflow } from '@/platform/workflow/management/stores/workflowStore'
 import { useWorkflowStore } from '@/platform/workflow/management/stores/workflowStore'
 import type {
   ComfyApiWorkflow,
@@ -537,7 +534,11 @@ export const useExecutionStore = defineStore('execution', () => {
     })
     const workflow = jobIdToWorkflow.get(jobId)
     if (workflow) clearWorkflowStatus(workflow)
-    if (activeJobId.value) clearInitializationByJobId(activeJobId.value)
+    // This job's flag, not the visible job's. Before the gate existed a
+    // background interrupt also set activeJobId so the two coincided; now
+    // clearing activeJobId's flag wipes the visible run's "waiting for a
+    // machine" state and leaves the interrupted job's own flag set.
+    clearInitializationByJobId(jobId)
     if (!messageMatchesActiveWorkflow(jobId, e.detail.workflow_id)) {
       // The job is finished either way, so its own records have to be released
       // or they leak for the lifetime of the session. Only the shared UI state
@@ -724,8 +725,14 @@ export const useExecutionStore = defineStore('execution', () => {
    * take unrelated features down with it.
    */
   function activeWorkflowGraphId(): string | null {
-    const active: Partial<LoadedComfyWorkflow> | null =
-      workflowStore.activeWorkflow
+    // Typed by what is read rather than as a Partial of the whole workflow:
+    // both states are declared present on LoadedComfyWorkflow and the running
+    // store does not always honour that, and this is read from a watcher and a
+    // computed, so a missing state has to return null rather than throw.
+    const active: {
+      activeState?: { id?: string }
+      initialState?: { id?: string }
+    } | null = workflowStore.activeWorkflow
     if (!active) return null
     return active.activeState?.id ?? active.initialState?.id ?? null
   }
@@ -1065,36 +1072,17 @@ export const useExecutionStore = defineStore('execution', () => {
    * Idempotent.
    */
   function evictTerminalJob(jobId: JobId) {
-    if (!jobId) return
-
-    if (jobId in nodeProgressStatesByJob.value) {
-      const map = { ...nodeProgressStatesByJob.value }
-      delete map[jobId]
-      nodeProgressStatesByJob.value = map
-    }
-
-    // Before the queuedJobs entry goes: clearTextPreviewsForJob reads the job's
-    // node list out of it and returns early if it is already gone, so clearing
-    // after the delete removed nothing and left the progress_text widget on the
-    // node, which is the thing this eviction path exists to fix.
-    clearTextPreviewsForJob(jobId)
+    // Read before releasing: the release nulls activeJobId when it names this
+    // job, so asking afterwards always says no.
+    const isActive = activeJobId.value === jobId
 
     // A dropped terminal frame left the workflow marked running forever, since
     // handleExecutionStart set that and nothing else resets it.
     const evictedWorkflow = jobIdToWorkflow.get(jobId)
     if (evictedWorkflow) clearWorkflowStatus(evictedWorkflow)
-    jobIdToWorkflow.delete(jobId)
 
-    if (jobId in queuedJobs.value) {
-      const next = { ...queuedJobs.value }
-      delete next[jobId]
-      queuedJobs.value = next
-    }
-
-    useJobPreviewStore().clearPreview(jobId)
+    releaseFinishedJobRecords(jobId)
     clearInitializationByJobId(jobId)
-
-    const isActive = activeJobId.value === jobId
     // Only clear the shared mirror when it still belongs to the evicted job,
     // otherwise evicting an old job would blank a live run's progress.
     if (isActive || mirrorOwnerJobId() === jobId) {
@@ -1131,18 +1119,12 @@ export const useExecutionStore = defineStore('execution', () => {
     // this feature already shipped once, so defer to the same resolver the
     // handlers use, and require ownership to be resolvable rather than adopting
     // a job we cannot place.
-    const jobIds = Object.keys(nodeProgressStatesByJob.value)
-    let matchedJobId: JobId | null = null
-    for (let i = jobIds.length - 1; i >= 0; i--) {
-      const jobId = jobIds[i]
-      if (
-        canResolveWorkflowOwnership(jobId, undefined) &&
-        messageMatchesActiveWorkflow(jobId, undefined)
-      ) {
-        matchedJobId = jobId
-        break
-      }
-    }
+    const matchedJobId =
+      Object.keys(nodeProgressStatesByJob.value).findLast(
+        (jobId) =>
+          canResolveWorkflowOwnership(jobId, undefined) &&
+          messageMatchesActiveWorkflow(jobId, undefined)
+      ) ?? null
 
     if (matchedJobId) {
       nodeProgressStates.value =
@@ -1170,12 +1152,7 @@ export const useExecutionStore = defineStore('execution', () => {
     _executingNodeProgress.value = null
   }
 
-  watch(
-    () => workflowStore.activeWorkflow,
-    () => {
-      reconcileMirrorForActiveWorkflow()
-    }
-  )
+  watch(() => workflowStore.activeWorkflow, reconcileMirrorForActiveWorkflow)
 
   /**
    * Reconcile tracked per-job state against the backend's authoritative job
@@ -1189,8 +1166,13 @@ export const useExecutionStore = defineStore('execution', () => {
     activeJobIds: Set<JobId>,
     terminalJobIds: Set<JobId>
   ) {
+    // queuedJobs covers the case the other three miss: a background job that
+    // got execution_start, so its tab reads Running, but no progress_state
+    // before its terminal frame was dropped. Without it that badge stays
+    // Running until the tab closes.
     const tracked = new Set<JobId>([
       ...Object.keys(nodeProgressStatesByJob.value),
+      ...Object.keys(queuedJobs.value),
       ...initializingJobIds.value
     ])
     if (activeJobId.value) tracked.add(activeJobId.value)
@@ -1245,16 +1227,16 @@ export const useExecutionStore = defineStore('execution', () => {
     }
   }
 
-  /**
-   * Reset execution-related state after a run completes or is stopped.
-   */
   function releaseFinishedJobRecords(jobId: JobId) {
-    if (jobId in queuedJobs.value) delete queuedJobs.value[jobId]
-    if (jobId in nodeProgressStatesByJob.value) {
-      const map = { ...nodeProgressStatesByJob.value }
-      delete map[jobId]
-      nodeProgressStatesByJob.value = map
-    }
+    // Must precede the queuedJobs delete: clearTextPreviewsForJob reads the
+    // job's node list out of that entry and returns early once it is gone, so
+    // clearing afterwards silently removes nothing. (It is also a no-op when
+    // this runs for a background job, since it only touches the front tab.)
+    clearTextPreviewsForJob(jobId)
+    delete queuedJobs.value[jobId]
+    const byJob = { ...nodeProgressStatesByJob.value }
+    delete byJob[jobId]
+    nodeProgressStatesByJob.value = byJob
     jobIdToWorkflow.delete(jobId)
     useJobPreviewStore().clearPreview(jobId)
     // This runs for a job whose tab is not in front, so activeJobId naming it
@@ -1264,6 +1246,9 @@ export const useExecutionStore = defineStore('execution', () => {
     if (activeJobId.value === jobId) activeJobId.value = null
   }
 
+  /**
+   * Reset execution-related state after a run completes or is stopped.
+   */
   function resetExecutionState(jobIdParam?: JobId | null) {
     cancelPendingProgressUpdates()
 
@@ -1271,15 +1256,7 @@ export const useExecutionStore = defineStore('execution', () => {
     nodeProgressStates.value = {}
     const jobId = jobIdParam ?? activeJobId.value ?? null
     const runErrorKey = jobId ? runErrorKeyForJob(jobId) : undefined
-    if (jobId) {
-      const map = { ...nodeProgressStatesByJob.value }
-      delete map[jobId]
-      nodeProgressStatesByJob.value = map
-      useJobPreviewStore().clearPreview(jobId)
-      jobIdToWorkflow.delete(jobId)
-      clearTextPreviewsForJob(jobId)
-    }
-    if (jobId) delete queuedJobs.value[jobId]
+    if (jobId) releaseFinishedJobRecords(jobId)
     activeJobId.value = null
     _executingNodeProgress.value = null
     executionErrorStore.clearPromptError(runErrorKey)
@@ -1518,7 +1495,6 @@ export const useExecutionStore = defineStore('execution', () => {
     clearInitializationByJobIds,
     reconcileInitializingJobs,
     reconcileTerminalJobs,
-    reconcileMirrorForActiveWorkflow,
     clearActiveJobIfStale,
     bindExecutionEvents,
     unbindExecutionEvents,
