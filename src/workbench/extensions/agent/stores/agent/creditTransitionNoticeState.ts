@@ -1,7 +1,7 @@
 export type CreditTransitionNoticePhase =
   | 'idle'
   | 'armed'
-  | 'reported'
+  | 'shown'
   | 'dismissed'
 
 export interface CreditTransitionNoticeState {
@@ -37,7 +37,7 @@ export function reduceCreditTransitionNotice(
   if (state === null || state.identity !== event.identity) return state
   switch (event.type) {
     case 'shown':
-      return state.phase === 'armed' ? { ...state, phase: 'reported' } : state
+      return state.phase === 'armed' ? { ...state, phase: 'shown' } : state
     case 'dismissed':
       return { ...state, phase: 'dismissed' }
     default:
@@ -45,10 +45,10 @@ export function reduceCreditTransitionNotice(
   }
 }
 
-export function isCreditTransitionNoticeOpen(
+export function isCreditTransitionNoticeShown(
   state: CreditTransitionNoticeState | null,
   identity: string
 ): boolean {
   if (state === null || state.identity !== identity) return false
-  return state.phase === 'armed' || state.phase === 'reported'
+  return state.phase === 'armed' || state.phase === 'shown'
 }

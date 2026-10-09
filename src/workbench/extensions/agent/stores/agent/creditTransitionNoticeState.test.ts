@@ -6,7 +6,7 @@ import type {
   CreditTransitionNoticeState
 } from './creditTransitionNoticeState'
 import {
-  isCreditTransitionNoticeOpen,
+  isCreditTransitionNoticeShown,
   reduceCreditTransitionNotice
 } from './creditTransitionNoticeState'
 
@@ -16,7 +16,7 @@ const OTHER = 'user-2:workspace-1'
 const PHASES = [
   'idle',
   'armed',
-  'reported',
+  'shown',
   'dismissed'
 ] as const satisfies readonly CreditTransitionNoticePhase[]
 
@@ -93,7 +93,7 @@ describe('reduceCreditTransitionNotice', () => {
   })
 
   describe('scopedRead true', () => {
-    it.for(['idle', 'armed', 'reported'] as const)(
+    it.for(['idle', 'armed', 'shown'] as const)(
       're-arms a %s episode for the next handoff',
       (phase) => {
         expect(
@@ -125,10 +125,10 @@ describe('reduceCreditTransitionNotice', () => {
         identity: IDENTITY
       })
 
-      expect(shown).toEqual(episode('reported', false))
+      expect(shown).toEqual(episode('shown', false))
     })
 
-    it.for(['idle', 'reported', 'dismissed'] as const)(
+    it.for(['idle', 'shown', 'dismissed'] as const)(
       'returns a %s episode untouched',
       (phase) => {
         const state = episode(phase, false)
@@ -172,25 +172,25 @@ describe('reduceCreditTransitionNotice', () => {
   })
 })
 
-describe('isCreditTransitionNoticeOpen', () => {
+describe('isCreditTransitionNoticeShown', () => {
   it.for([
     { phase: 'idle', open: false },
     { phase: 'armed', open: true },
-    { phase: 'reported', open: true },
+    { phase: 'shown', open: true },
     { phase: 'dismissed', open: false }
   ] as const)('is $open while $phase', ({ phase, open }) => {
-    expect(isCreditTransitionNoticeOpen(episode(phase, false), IDENTITY)).toBe(
+    expect(isCreditTransitionNoticeShown(episode(phase, false), IDENTITY)).toBe(
       open
     )
   })
 
   it('is closed before any scoped balance is observed', () => {
-    expect(isCreditTransitionNoticeOpen(null, IDENTITY)).toBe(false)
+    expect(isCreditTransitionNoticeShown(null, IDENTITY)).toBe(false)
   })
 
   it('is closed for an episode belonging to another identity', () => {
     expect(
-      isCreditTransitionNoticeOpen(episode('armed', false, OTHER), IDENTITY)
+      isCreditTransitionNoticeShown(episode('armed', false, OTHER), IDENTITY)
     ).toBe(false)
   })
 })

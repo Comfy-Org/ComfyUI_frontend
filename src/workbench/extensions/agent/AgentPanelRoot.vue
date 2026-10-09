@@ -134,7 +134,7 @@ import {
 } from './utils/sessionTitle'
 import { useAgentComposerStore } from './stores/agent/agentComposerStore'
 import { useAgentConsentStore } from './stores/agent/agentConsentStore'
-import { isCreditTransitionNoticeOpen } from './stores/agent/creditTransitionNoticeState'
+import { isCreditTransitionNoticeShown } from './stores/agent/creditTransitionNoticeState'
 import { useAgentPanelStore } from './stores/agent/agentPanelStore'
 import { useAgentGraphActivityStore } from './stores/agent/agentGraphActivityStore'
 import {
@@ -348,7 +348,7 @@ watch(
 
 const showCreditTransitionNotice = computed(
   () =>
-    isCreditTransitionNoticeOpen(
+    isCreditTransitionNoticeShown(
       agentPanelStore.creditTransitionNotice,
       billingIdentity.value
     ) &&
