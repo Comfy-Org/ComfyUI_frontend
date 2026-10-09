@@ -24,7 +24,11 @@ API, including when `VITE_COMMUNITY_WORKFLOW_SOURCE` is unset. Set it to
 `static` explicitly to select HARVEY's isolated QA list. Static assets are
 separate from the frontend build and stay out of git and the public asset
 directory. Pack tags use the separately prepared private index selected by
-the server-only `COMMUNITY_CORPUS_DIR` setting in either workflow mode.
+the server-only `COMMUNITY_CORPUS_DIR` setting in either workflow mode. This
+optional transport also requires `COMMUNITY_CORPUS_COLLECTION` and the reviewed
+exact index digest in `COMMUNITY_CORPUS_INDEX_SHA256`. Missing bindings fail closed.
+The default service-only deployment needs none of these settings; pack search
+and revision details work without an index, while pack tags show unavailable.
 The existing service contract serves originals only; adapted loading currently
 uses the static provider. The frozen 411 release contains no adapted graphs.
 
@@ -47,8 +51,11 @@ model-name-size), giving a 3,276-workflow prepared union. Their complete graph
 and source metadata files remain retained with exclusion receipts. These are
 import constraints, not render results. Expanded AI descriptions are unreviewed
 observations; pending descriptions and unsupported nodes remain included.
-Select `temp/community-union` as `COMMUNITY_CORPUS_DIR` only after preparation
-and validation pass. The live application rollout is separate.
+The prepared union remains offline. Per-record admission does not establish
+aggregate account quota or authorize an expanded import. The private transport
+requires its entire index to match an admitted, readable native collection;
+preparation alone cannot authorize serving this union. Live enlargement and
+application rollout are separate.
 
 The original expanded archive is retained with SHA256
 `bdad967c042399f38ee8bcfe2466dc79c7b22a318b86a4995a1b93a70030a59a`.
@@ -118,7 +125,9 @@ From the frontend checkout:
 
 ```sh
 pnpm exec tsx scripts/community/verify-corpus.ts "$HANDOFF/temp/community-union"
-COMMUNITY_CORPUS_DIR="$HANDOFF/temp/community-union" \
+COMMUNITY_CORPUS_DIR="$HANDOFF/temp/community-corpus" \
+COMMUNITY_CORPUS_COLLECTION=harvey-human-qa \
+COMMUNITY_CORPUS_INDEX_SHA256="$REVIEWED_INDEX_SHA256" \
 VITE_COMMUNITY_WORKFLOW_SOURCE=static VITE_LOCAL_CLOUD_AUTH=true \
 DEV_SERVER_COMFYUI_URL=http://127.0.0.1:5175 DISTRIBUTION=cloud \
   pnpm dev --host 127.0.0.1 --port 5192 --strictPort
@@ -133,10 +142,21 @@ authentication still verifies the account. Use `VITE_COMMUNITY_WORKFLOW_SOURCE=s
 to retain the live backend collection while testing the new Community navigation.
 The current public site's 411 records are unchanged.
 
+Set `REVIEWED_INDEX_SHA256` to the independently reviewed SHA256 of that exact
+index, and select the corresponding native collection explicitly. These are
+server-only configuration values, never browser-selected grants.
+
 The QA middleware serves only index/detail/original/adapted JSON paths beneath
-`/api/community-corpus`. It forwards the caller's authentication to the configured
-backend's workflow-library collections endpoint before serving every asset. Anonymous requests
-receive 401. Existing backend authorization failures are retained. It runs in
+`/api/community-corpus`. For every request it forwards the caller's existing
+authentication and workspace context to the configured native backend. A
+successful generic collection listing is insufficient: the exact selected
+collection must appear, and its scoped entry endpoint must grant the read.
+Bounded native cursor pages must match the reviewed index's complete unique
+workflow ID set before any private bytes are returned. The index digest is
+checked on every request, and graph/detail paths must belong to that set.
+No authorization decision is cached across requests or users. Missing grants,
+denied reads, changed snapshots and backend failures return no private bytes.
+Anonymous requests receive 401. Native 401/403 failures are retained. It runs in
 Vite dev and preview; deployments must provide the same authenticated asset
 route, or select the workflow-library service. It is never copied into `dist`.
 
