@@ -2,6 +2,7 @@ import { render, screen, within } from '@testing-library/vue'
 import { describe, expect, it } from 'vitest'
 
 import { externalLinks, getRoutes } from '@/config/routes'
+import { translationsFor } from '@/i18n/translations'
 import type { LocaleAlternate } from '@/lib/hreflang'
 import SiteFooter from './SiteFooter.vue'
 
@@ -12,18 +13,20 @@ const agentAlternates: LocaleAlternate[] = [
 
 describe('SiteFooter', () => {
   it.for([
-    ['en', 'Changelog', 'Resources'],
-    ['zh-CN', '更新日志', '资源'],
-    ['ja', 'Changelog', 'Resources']
+    ['en', 'Changelog'],
+    ['zh-CN', '更新日志'],
+    ['ja', 'Changelog']
   ] as const)(
     'links the live changelog last in footer Resources (%s)',
-    ([locale, name, resources]) => {
+    ([locale, name]) => {
       render(SiteFooter, { props: { locale } })
       const links = screen.getAllByRole('link', { name })
       expect(links.map((link) => link.getAttribute('href'))).toEqual(
         Array(links.length).fill('/changelog/')
       )
-      const columns = screen.getAllByRole('navigation', { name: resources })
+      const columns = screen.getAllByRole('navigation', {
+        name: translationsFor(locale).t('footer.resources')
+      })
       expect(
         columns.map((column) =>
           within(column).getAllByRole('link').at(-1)?.textContent.trim()
