@@ -7,6 +7,12 @@ import {
   validMutation
 } from '@/lib/cms/admin'
 
+function returnPath(value: FormDataEntryValue | null) {
+  return typeof value === 'string' && /^\/(?![/\\])[^\s]*$/.test(value)
+    ? value
+    : '/hub/models/'
+}
+
 function previewAction(context: APIContext, body: FormData) {
   const action = body.get('action')
   if (action === 'exit' || body.get('view') === 'LIVE')
@@ -26,38 +32,60 @@ function previewAction(context: APIContext, body: FormData) {
       cookieOptions(context)
     )
   }
-  return context.redirect('/hub/models/', 303)
+  return context.redirect(returnPath(body.get('return_to')), 303)
+}
+
+interface SiteCommand {
+  path: string
+  payload: Record<string, unknown>
+}
+
+function submissionReviews(body: FormData, field: string, status: string) {
+  const entries = body.getAll(field).map(String)
+  if (!entries.every((entry) => /^[a-zA-Z0-9_-]+:[a-zA-Z0-9_.-]+$/.test(entry)))
+    return undefined
+  return entries.map((entry): SiteCommand => {
+    const [shareID, versionID] = entry.split(':')
+    return {
+      path: `/admin/api/site/submissions/${shareID}/review`,
+      payload: { version_id: versionID, status }
+    }
+  })
 }
 
 function publication(body: FormData) {
   const action = body.get('action')
   if (action === 'publish') {
+    const approvals = submissionReviews(body, 'approve', 'approved')
+    if (!approvals) return new Response('Invalid submission', { status: 400 })
     return {
-      path: '/admin/api/site/publish',
-      payload: {
-        draft_id: Number(body.get('draft_id')),
-        generation: Number(body.get('generation'))
-      },
-      destination: '/admin/publish/'
+      commands: [
+        ...approvals,
+        {
+          path: '/admin/api/site/publish',
+          payload: {
+            draft_id: Number(body.get('draft_id')),
+            generation: Number(body.get('generation'))
+          }
+        }
+      ],
+      destination: '/admin/history/'
     }
   } else if (action === 'revert') {
     return {
-      path: '/admin/api/site/revert',
-      payload: { live_id: Number(body.get('live_id')) },
-      destination: '/admin/publish/'
+      commands: [
+        {
+          path: '/admin/api/site/revert',
+          payload: { live_id: Number(body.get('live_id')) }
+        }
+      ],
+      destination: '/admin/history/'
     }
-  } else if (action === 'approve' || action === 'reject') {
-    const shareID = body.get('share_id')
-    if (typeof shareID !== 'string' || !/^[a-zA-Z0-9_-]+$/.test(shareID))
+  } else if (action === 'reject') {
+    const rejections = submissionReviews(body, 'submission', 'rejected')
+    if (!rejections?.length)
       return new Response('Invalid submission', { status: 400 })
-    return {
-      path: `/admin/api/site/submissions/${shareID}/review`,
-      payload: {
-        version_id: body.get('version_id'),
-        status: action === 'approve' ? 'approved' : 'rejected'
-      },
-      destination: '/admin/approvals/'
-    }
+    return { commands: rejections, destination: '/admin/' }
   } else return new Response('Unknown action', { status: 400 })
 }
 
@@ -75,20 +103,21 @@ export const POST: APIRoute = async (context) => {
     return new Response('Confirmation required', { status: 400 })
   const command = publication(body)
   if (command instanceof Response) return command
-  const { path, payload, destination } = command
-  const response = await siteAPI(path, session.credential, {
-    method: 'POST',
-    body: JSON.stringify(payload)
-  })
-  if (!response.ok)
-    return new Response(
-      response.status === 409
-        ? 'Content changed. Reload and review before trying again.'
-        : 'Action failed.',
-      {
-        status: response.status,
-        headers: { 'Cache-Control': 'private, no-store' }
-      }
-    )
-  return context.redirect(destination, 303)
+  for (const { path, payload } of command.commands) {
+    const response = await siteAPI(path, session.credential, {
+      method: 'POST',
+      body: JSON.stringify(payload)
+    })
+    if (!response.ok)
+      return new Response(
+        response.status === 409
+          ? 'Content changed. Reload and review before trying again.'
+          : 'Action failed.',
+        {
+          status: response.status,
+          headers: { 'Cache-Control': 'private, no-store' }
+        }
+      )
+  }
+  return context.redirect(command.destination, 303)
 }

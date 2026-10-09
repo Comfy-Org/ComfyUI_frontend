@@ -1,0 +1,87 @@
+---
+import { cn } from '@comfyorg/tailwind-utils'
+import BaseLayout from '@/layouts/BaseLayout.astro'
+
+interface Props {
+  current: 'draft' | 'content' | 'history'
+  draftCount: number
+  contentCount: number
+}
+const { current, draftCount, contentCount } = Astro.props
+const session = Astro.locals.site
+if (!session) return new Response('Not found', { status: 404 })
+const t = Astro.locals.t
+const latest = session.review.history.find(
+  (event) => event.action === 'PUBLISH' || event.action === 'REVERT'
+)
+const links = [
+  { key: 'draft', href: '/admin/', count: draftCount, hot: draftCount > 0 },
+  { key: 'content', href: '/admin/content/', count: contentCount, hot: false },
+  { key: 'history', href: '/admin/history/', count: undefined, hot: false }
+] as const
+---
+
+<BaseLayout title={t('cmsAdmin.title')} minimal noindex>
+  <div
+    class="mx-auto grid max-w-7xl grid-cols-[minmax(0,1fr)] gap-8 px-6 pb-20 lg:grid-cols-[14rem_minmax(0,1fr)] lg:px-8"
+  >
+    <aside class="flex flex-col gap-6 lg:sticky lg:top-6 lg:self-start">
+      <p class="text-sm text-primary-comfy-canvas">{t('cmsAdmin.title')}</p>
+      <nav
+        aria-label={t('cmsAdmin.nav.label')}
+        class="-mx-2 flex gap-1 overflow-x-auto lg:flex-col"
+      >
+        {links.map((link) => <a
+          href={link.href}
+          aria-current={current === link.key ? 'page' : undefined}
+          class={cn(
+            'flex items-center justify-between gap-3 rounded-xl px-3 py-2.5 text-sm whitespace-nowrap transition-colors hover:bg-transparency-white-t4 hover:text-primary-warm-white focus-visible:outline-2 focus-visible:outline-primary-comfy-yellow',
+            current === link.key
+              ? 'bg-transparency-white-t8 text-primary-warm-white'
+              : 'text-primary-comfy-canvas'
+          )}
+        >
+          {t(`cmsAdmin.nav.${link.key}`)}
+          {link.count !== undefined && <span
+            class={cn(
+              'rounded-full px-2 text-xs tabular-nums',
+              link.hot
+                ? 'bg-primary-comfy-yellow font-semibold text-primary-comfy-ink'
+                : 'bg-transparency-white-t8'
+            )}
+            >{link.count}</span
+          >}
+        </a>)}
+        {Astro.locals.siteLocalAccess && <a
+          href="/admin/testers"
+          class="rounded-xl px-3 py-2.5 text-sm whitespace-nowrap text-primary-comfy-canvas hover:text-primary-warm-white"
+          >{t('cmsTesters.title')}</a
+        >}
+      </nav>
+      <div
+        class="hidden gap-1 rounded-2xl border border-transparency-white-t8 p-4 text-sm lg:grid"
+      >
+        <p
+          class="flex items-center gap-2 font-semibold text-primary-warm-white"
+        >
+          <span
+            class="size-2 rounded-full bg-primary-comfy-yellow"
+            aria-hidden="true"
+          ></span>
+          {t('cmsAdmin.live', { revision: session.review.live.revision_id })}
+        </p>
+        {latest && <p class="text-xs text-primary-comfy-canvas">
+          {t('cmsAdmin.history.by', { actor: latest.actor_uid })}
+        </p>}
+        <a
+          href="/hub/models/"
+          class="mt-2 text-xs text-primary-comfy-canvas underline-offset-4 hover:text-primary-comfy-yellow hover:underline"
+          >{t('cmsAdmin.liveSite')} →</a
+        >
+      </div>
+    </aside>
+    <section class="min-w-0">
+      <slot />
+    </section>
+  </div>
+</BaseLayout>

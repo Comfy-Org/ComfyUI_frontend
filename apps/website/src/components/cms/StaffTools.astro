@@ -8,7 +8,7 @@ const t = Astro.locals.t
 
 {!adminPage && (staff || local) && <a
   data-astro-reload
-  href={staff ? '/admin/changes/' : '/admin/local-access'}
+  href={staff ? '/admin/' : '/admin/local-access'}
   class="fixed right-6 bottom-6 z-40 flex items-center gap-3 rounded-full border border-primary-comfy-yellow/30 bg-primary-comfy-yellow px-5 py-3 text-sm text-primary-comfy-ink shadow-lg transition-transform hover:-translate-y-1 focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-primary-comfy-yellow"
 >
   <svg

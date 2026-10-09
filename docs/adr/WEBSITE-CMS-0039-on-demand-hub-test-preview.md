@@ -51,15 +51,20 @@ local-development ingest authentication to the public internet.
 ## Consequences
 
 This is a local review implementation, not a production cutover or complete CMS.
-CMS mode now adds server-protected `/admin/` review, changes, publication history
-and legacy workflow approvals. Staff session credentials are verified by ingest
+CMS mode now adds a server-protected `/admin/` console with one Draft queue
+(catalog changes and legacy workflow submissions together), All content, and
+publication history with rollback. Publishing approves the included workflow
+submissions, then publishes the Draft; catalog changes still publish together
+until the backend can exclude single records. Staff session credentials are verified by ingest
 on every request; cookies select Draft/Live and an effective visibility clock
 but do not grant permissions. Mutation forms enforce Origin/CSRF and use native
 navigation so client islands do not retain a previous selection. Draft Preview
-shows a yellow full-width banner with timewarp/NOW, locale links and EXIT.
+shows a slim yellow bar with Draft/Live, a time picker that can jump to
+scheduled launches, language, a list of the Draft's changes, and Exit.
 Staff enter through a floating button and review in a sidebar/action-area layout
-using the regular website tokens. Field-level JSON-path diffs omit edit metadata
-and align array items rather than dumping whole records. The local-only sign-in
+using the regular website tokens. Changes are grouped by the field an editor recognises,
+showing before and after values and highlighting added list items, rather than
+dumping whole records or JSON paths. The local-only sign-in
 page shares the website layout and remains inaccessible to forwarded visitors.
 Direct-loopback local review can use an isolated local staff account; that
 helper rejects forwarded requests and cannot be used on Vercel.
