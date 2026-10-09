@@ -251,7 +251,11 @@ describe('the display overlay against the catalog', () => {
       [entry.media.thumbnail, ...(entry.media.samples ?? [])]
         .filter((asset) => asset !== undefined)
         .filter((asset) => asset.kind !== 'image')
-        .filter((asset) => new URL(asset.url).hostname.includes('raw.github'))
+        .filter((asset) =>
+          new URL(asset.url, 'https://comfy.org').hostname.includes(
+            'raw.github'
+          )
+        )
         .map((asset) => `${entry.id} ${asset.url}`)
     )
 
@@ -307,8 +311,10 @@ describe('the display overlay against the catalog', () => {
     const publicDir = join(websiteRoot, 'public')
     const missing = display.flatMap((entry) =>
       [entry.media.thumbnail, ...(entry.media.samples ?? [])]
-        .filter((asset) => asset?.url.startsWith('/'))
-        .map((asset) => asset?.url ?? '')
+        .flatMap((asset) =>
+          asset ? [asset.url, ...(asset.poster ? [asset.poster] : [])] : []
+        )
+        .filter((url) => url.startsWith('/'))
         .filter((url) => !existsSync(join(publicDir, url)))
     )
 
