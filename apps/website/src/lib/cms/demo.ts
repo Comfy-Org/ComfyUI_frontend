@@ -1,5 +1,7 @@
+import { randomUUID } from 'node:crypto'
+
 import type { SeedEntry } from './mock-ingest'
-import { createMockIngest } from './mock-ingest'
+import { MOCK_CREDENTIAL, createMockIngest } from './mock-ingest'
 
 /**
  * The shareable design demo: a preview build whose site API is the in-memory
@@ -10,25 +12,45 @@ export const demoMode = () =>
   process.env.SITE_CATALOG_DEMO === '1' &&
   process.env.VERCEL_ENV !== 'production'
 
-let ingest: ReturnType<typeof createMockIngest> | undefined
+type Ingest = ReturnType<typeof createMockIngest>
 
-async function demoIngest() {
-  if (!ingest) {
+const MAX_SANDBOXES = 200
+const sandboxes = new Map<string, Ingest>()
+let seed: SeedEntry[] | undefined
+
+async function demoSeed() {
+  if (!seed) {
     const { entries } = await import('@website/scripts/export-cms-seed')
     // Through JSON, exactly as `pnpm dev:cms` hands the mock its seed file.
-    const seed: SeedEntry[] = JSON.parse(JSON.stringify(entries))
-    ingest = createMockIngest(seed)
+    seed = JSON.parse(JSON.stringify(entries)) as SeedEntry[]
   }
+  return seed
+}
+
+/** Each visitor signs in to a sandbox of their own, so one person publishing
+ * does not empty the Draft for the next person who opens the link. */
+export const newDemoCredential = () => `${MOCK_CREDENTIAL}.${randomUUID()}`
+
+async function sandboxFor(authorization: string | null) {
+  const key = authorization?.replace(/^Bearer /, '') ?? ''
+  const known = sandboxes.get(key)
+  if (known) return known
+  const ingest = createMockIngest(await demoSeed())
+  if (sandboxes.size >= MAX_SANDBOXES)
+    sandboxes.delete(sandboxes.keys().next().value ?? '')
+  sandboxes.set(key, ingest)
   return ingest
 }
 
 export async function catalogFetch(url: URL, init: RequestInit = {}) {
   if (!demoMode()) return fetch(url, init)
-  const route = await demoIngest()
+  const authorization = new Headers(init.headers).get('authorization')
+  const valid = authorization?.startsWith(`Bearer ${MOCK_CREDENTIAL}.`)
+  const route = await sandboxFor(valid ? authorization : null)
   const [status, body] = route(
     init.method ?? 'GET',
     url,
-    new Headers(init.headers).get('authorization'),
+    valid ? `Bearer ${MOCK_CREDENTIAL}` : authorization,
     typeof init.body === 'string' ? init.body : ''
   )
   return new Response(body === undefined ? null : JSON.stringify(body), {

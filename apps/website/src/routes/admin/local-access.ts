@@ -1,8 +1,7 @@
 import { readFile } from 'node:fs/promises'
 import type { APIRoute, APIContext } from 'astro'
 import { z } from 'astro/zod'
-import { demoMode } from '@/lib/cms/demo'
-import { MOCK_CREDENTIAL } from '@/lib/cms/mock-ingest'
+import { demoMode, newDemoCredential } from '@/lib/cms/demo'
 import { TESTER_COOKIE } from '@/lib/cms/testers'
 import {
   SESSION_COOKIE,
@@ -32,7 +31,7 @@ export function isLocalAccess(
 }
 
 async function localCredential() {
-  if (demoMode()) return MOCK_CREDENTIAL
+  if (demoMode()) return newDemoCredential()
   let data: unknown
   try {
     data = JSON.parse(
