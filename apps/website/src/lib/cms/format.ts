@@ -1,4 +1,5 @@
 import type { Locale } from '@/i18n/translations'
+import type { QueueChange } from './queue'
 
 export function formatUtc(value: string, locale: Locale) {
   return `${new Date(value).toLocaleString(locale, {
@@ -25,4 +26,73 @@ export function humanizeField(field: string) {
     .trim()
     .toLowerCase()
   return words.charAt(0).toUpperCase() + words.slice(1)
+}
+
+export const LISTING_KINDS = ['MODEL', 'WORKFLOW', 'APP'] as const
+export type ListingFilter = (typeof LISTING_KINDS)[number] | 'ALL'
+
+export function matchesListing(
+  filter: ListingFilter,
+  query: string,
+  kind: string,
+  searchable: (string | undefined)[]
+) {
+  const needle = query.trim().toLowerCase()
+  const kindMatches = filter === 'ALL' || kind === filter
+  return (
+    kindMatches &&
+    (!needle || searchable.join(' ').toLowerCase().includes(needle))
+  )
+}
+
+export function kindCounts(kinds: string[]): Record<ListingFilter, number> {
+  const count = (kind: string) => kinds.filter((each) => each === kind).length
+  return {
+    ALL: kinds.length,
+    MODEL: count('MODEL'),
+    WORKFLOW: count('WORKFLOW'),
+    APP: count('APP')
+  }
+}
+
+export const isFuture = (value: string | undefined, now = Date.now()) =>
+  value !== undefined && Date.parse(value) > now
+
+export interface DraftPageChange {
+  id: string
+  title: string
+  change: QueueChange
+  slug: string
+  visibleFrom?: string
+}
+
+export interface PreviewChange {
+  id: string
+  title: string
+  change: QueueChange
+  page: string
+  detail: string
+  launch?: string
+}
+
+export const pageOf = (slug: string) => slug.replace(/\/?$/, '/')
+
+export function previewChanges(
+  changes: DraftPageChange[],
+  clock: number,
+  describeLaunch: (at: string) => string
+): PreviewChange[] {
+  return changes.map((change) => {
+    const launch = isFuture(change.visibleFrom, clock)
+      ? change.visibleFrom
+      : undefined
+    return {
+      id: change.id,
+      title: change.title,
+      change: change.change,
+      page: pageOf(change.slug),
+      detail: launch ? describeLaunch(launch) : change.slug,
+      launch
+    }
+  })
 }

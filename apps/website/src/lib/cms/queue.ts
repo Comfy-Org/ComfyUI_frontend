@@ -24,7 +24,7 @@ interface QueueBase {
   thumbnail?: string
 }
 
-interface CatalogQueueItem extends QueueBase {
+export interface CatalogQueueItem extends QueueBase {
   source: 'catalog'
   kind: ContentCatalogRecord['kind']
   slug: string
