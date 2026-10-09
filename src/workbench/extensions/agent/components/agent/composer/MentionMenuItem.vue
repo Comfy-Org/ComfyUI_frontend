@@ -1,9 +1,11 @@
 <script setup lang="ts">
-import { computed } from 'vue'
+import { computed, useTemplateRef } from 'vue'
 import { cn } from '@comfyorg/tailwind-utils'
 import AccessibleTooltip from '@/components/ui/tooltip/AccessibleTooltip.vue'
 import type { useAgentMentionPicker } from '../../../composables/agent/useAgentMentionPicker'
+import type { SkillReferenceMetadata } from '../../../types/skillReference'
 import AssetThumbnail from './AssetThumbnail.vue'
+import SkillMenuDescription from './SkillMenuDescription.vue'
 
 type MentionMatch = ReturnType<
   typeof useAgentMentionPicker
@@ -14,7 +16,9 @@ const {
   active,
   disabled,
   nodeReferenceDisabledReason,
-  duplicateNodeTitles
+  duplicateNodeTitles,
+  describedSkill,
+  descriptionId
 } = defineProps<{
   match: MentionMatch
   index: number
@@ -22,8 +26,22 @@ const {
   disabled: boolean
   nodeReferenceDisabledReason?: string
   duplicateNodeTitles: Set<string>
+  describedSkill?: SkillReferenceMetadata
+  descriptionId?: string
 }>()
-const emit = defineEmits<{ highlight: []; pick: [] }>()
+const emit = defineEmits<{
+  highlight: []
+  pick: []
+  descriptionEnter: []
+  descriptionLeave: []
+  descriptionFocusout: [event: FocusEvent]
+  descriptionReleaseFocus: []
+  descriptionDismiss: []
+}>()
+const row = useTemplateRef<HTMLDivElement>('row')
+const description = computed(() =>
+  active && descriptionId ? describedSkill : undefined
+)
 const disabledReason = computed(() =>
   match.kind === 'node' || (match.kind === 'section' && match.id === 'nodes')
     ? nodeReferenceDisabledReason
@@ -58,10 +76,12 @@ const nodeId = computed(() =>
     <template #trigger>
       <div
         :id="`agent-reference-item-${index}`"
+        ref="row"
         :aria-disabled="disabled || undefined"
         :aria-description="disabledReason"
+        :aria-describedby="description ? descriptionId : undefined"
         role="menuitem"
-        :aria-label="asset ? match.label : undefined"
+        :aria-label="asset || match.kind === 'skill' ? match.label : undefined"
         :data-active="active"
         :class="
           cn(
@@ -82,6 +102,17 @@ const nodeId = computed(() =>
           class="size-5 shrink-0"
         />
         <span class="min-w-0 flex-1 truncate">{{ match.label }}</span>
+        <SkillMenuDescription
+          v-if="description && descriptionId"
+          :id="descriptionId"
+          :skill="description"
+          :anchor="row"
+          @enter="emit('descriptionEnter')"
+          @leave="emit('descriptionLeave')"
+          @focusout="emit('descriptionFocusout', $event)"
+          @release-focus="emit('descriptionReleaseFocus')"
+          @dismiss="emit('descriptionDismiss')"
+        />
         <span v-if="unsavedWorkflow" class="text-xs text-muted-foreground">{{
           $t('agent.unsavedWorkflow')
         }}</span>

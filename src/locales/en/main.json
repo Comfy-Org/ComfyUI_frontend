@@ -5651,7 +5651,14 @@
     "gotIt": "Got it",
     "greeting": "Hello {name},",
     "greetingQuestion": "What do you want to make?",
-    "placeholder": "Describe ideas, {'@'} to reference workflows, drag in media asset and files, or\nmention nodes",
+    "placeholder": "Describe ideas, / use skills, {'@'} add references, drag in assets",
+    "placeholderWithoutSkills": "Describe ideas, {'@'} add references, drag in assets",
+    "skills": "Skills",
+    "typeToSearch": "type to search",
+    "skillNotAvailable": "Not available",
+    "skillsLoading": "Loading skills…",
+    "skillsLoadError": "Could not load skills. Try again.",
+    "noSkillsFound": "No skills found",
     "suggestedPrompts": {
       "cloud": [
         "Generate a character sheet of an astronaut",
