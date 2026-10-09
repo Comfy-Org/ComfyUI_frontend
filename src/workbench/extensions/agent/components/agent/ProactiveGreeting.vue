@@ -1,19 +1,21 @@
 <script setup lang="ts">
-import { computed, onMounted, ref } from 'vue'
+import { computed, onMounted } from 'vue'
 import { useI18n } from 'vue-i18n'
 
 import Button from '@/components/ui/button/Button.vue'
 
 import GreetingHeading from './GreetingHeading.vue'
-import RevealLine from './RevealLine.vue'
+import SpokenText from './SpokenText.vue'
 
+import { useAgentComposerStore } from '../../stores/agent/agentComposerStore'
 import type { AgentGreeting } from '../../types/proactiveGreeting'
+import { speechTiming } from '../../utils/speechTiming'
 
 const { greeting, userName } = defineProps<{
   greeting: AgentGreeting
   userName?: string
 }>()
-const emit = defineEmits<{ insert: [text: string] }>()
+const emit = defineEmits<{ insert: [text: string, fadeInAfterMs?: number] }>()
 
 const { t } = useI18n()
 
@@ -23,17 +25,34 @@ const params = computed(() =>
     ? { node: greeting.node, input: greeting.input }
     : {}
 )
+const title = computed(() => t(`${key.value}.title`))
+const description = computed(() => t(`${key.value}.description`, params.value))
 
-const asked = ref(false)
+const timing = computed(() => {
+  const { starts, next } = speechTiming([
+    { text: t('agent.greeting', { name: userName ?? t('agent.friend') }) },
+    { text: title.value, pauseBeforeMs: 250 },
+    { text: description.value, pauseBeforeMs: 150 }
+  ])
+  return {
+    intro: starts[0],
+    title: starts[1],
+    description: starts[2],
+    followUp: next + 100
+  }
+})
+
+const composerStore = useAgentComposerStore()
+const prompt = computed(() => t(`${key.value}.prompt`, params.value))
+const asked = computed(() => composerStore.draft.includes(prompt.value))
 
 function onAsk(): void {
-  asked.value = true
-  emit('insert', t(`${key.value}.prompt`, params.value))
+  emit('insert', prompt.value)
 }
 
 onMounted(() => {
   if (greeting.kind === 'workflowOpen' || greeting.kind === 'firstOpen')
-    emit('insert', t(`${key.value}.prompt`))
+    emit('insert', prompt.value, timing.value.followUp)
 })
 </script>
 
@@ -43,14 +62,16 @@ onMounted(() => {
       class="mx-auto my-auto flex w-full max-w-88 shrink-0 flex-col items-center gap-4 pt-12 text-center"
     >
       <div class="flex flex-col items-center gap-2">
-        <GreetingHeading reveal :user-name :title="t(`${key}.title`)" />
+        <GreetingHeading :user-name :title :timing />
         <p class="my-0 text-sm/5 text-muted-foreground">
-          <RevealLine :index="2">
-            {{ t(`${key}.description`, params) }}
-          </RevealLine>
+          <SpokenText :text="description" :start-ms="timing.description" />
         </p>
       </div>
-      <RevealLine v-if="greeting.kind === 'unconnectedInput'" :index="3">
+      <span
+        v-if="greeting.kind === 'unconnectedInput'"
+        class="agent-talk-word"
+        :style="{ '--talk-delay': `${timing.followUp}ms` }"
+      >
         <Button
           type="button"
           variant="inverted"
@@ -58,13 +79,9 @@ onMounted(() => {
           :disabled="asked"
           @click="onAsk"
         >
-          <i
-            class="icon-[lucide--circle-question-mark] size-3 shrink-0"
-            aria-hidden="true"
-          />
           {{ t(`${key}.action`) }}
         </Button>
-      </RevealLine>
+      </span>
     </div>
   </div>
 </template>
