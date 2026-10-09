@@ -17,6 +17,7 @@
       "enablers": ["fallow"],
       "entryPoints": [
         "**/.storybook/{main,preview}.ts",
+        "apps/website/src/**/*.mdx",
         "apps/website/src/scripts/**/*.ts",
         "packages/ingest-types/openapi-ts.config.ts",
         "scripts/**/*.{js,ts}"
@@ -39,6 +40,8 @@
   "ignorePatterns": [
     // Static assets, not analyzable source.
     "public/**",
+    "**/.vercel/**",
+    "apps/website-storybook-mcp/public/**",
     // Devtools browser-extension artifacts, loaded dynamically (mirrors knip).
     "tools/devtools/**",
     // Storybook-only mocks, reached through Storybook's vite alias, not the prod graph.
@@ -59,7 +62,10 @@
     "eslint-plugin-testing-library",
     "postcss-html",
     // Executed by models-snippets.test.ts inside the generated Node examples.
-    "mime-types"
+    "mime-types",
+    // Loaded by the marketing Storybook addon configuration.
+    "@storybook/addon-a11y",
+    "@storybook/addon-designs"
   ],
 
   "ignoreUnresolvedImports": [

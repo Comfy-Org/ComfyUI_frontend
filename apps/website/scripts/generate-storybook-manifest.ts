@@ -105,55 +105,61 @@ function capabilities(component: string): string[] {
   ].sort()
 }
 
+const coverageRules: Array<[RegExp, CoverageDisposition, string]> = [
+  [
+    /\/icons\//,
+    'icon',
+    'Decorative implementation asset; catalog through its owning control.'
+  ],
+  [
+    /Hubspot|Embed|Arcade/,
+    'integration',
+    'External integration boundary; verify in its owning page or integration test.'
+  ],
+  [
+    /\/templates\//,
+    'template-local',
+    'Template-specific section; compose from cataloged blocks before promoting.'
+  ],
+  [
+    /\/ui\/.*(Content|Description|Footer|Header|Item|Link|List|Overlay|Title|Trigger|Viewport|Close)\.vue$/,
+    'compound-part',
+    'Compound component part documented through its cataloged root composition.'
+  ],
+  [
+    /\/(common|ui)\//,
+    'reusable-candidate',
+    'Shared location indicates reuse potential; requires an explicit contract before promotion.'
+  ]
+]
+
 function classifyUncatalogued(source: string): {
   disposition: CoverageDisposition
   reason: string
 } {
-  if (source.includes('/icons/')) {
-    return {
-      disposition: 'icon',
-      reason:
-        'Decorative implementation asset; catalog through its owning control.'
-    }
-  }
-  if (/Hubspot|Embed|Arcade/.test(source)) {
-    return {
-      disposition: 'integration',
-      reason:
-        'External integration boundary; verify in its owning page or integration test.'
-    }
-  }
-  if (source.includes('/templates/')) {
-    return {
-      disposition: 'template-local',
-      reason:
-        'Template-specific section; compose from cataloged blocks before promoting.'
-    }
-  }
-  if (
-    source.includes('/ui/') &&
-    /(Content|Description|Footer|Header|Item|Link|List|Overlay|Title|Trigger|Viewport|Close)\.vue$/.test(
-      source
-    )
-  ) {
-    return {
-      disposition: 'compound-part',
-      reason:
-        'Compound component part documented through its cataloged root composition.'
-    }
-  }
-  if (source.includes('/common/') || source.includes('/ui/')) {
-    return {
-      disposition: 'reusable-candidate',
-      reason:
-        'Shared location indicates reuse potential; requires an explicit contract before promotion.'
-    }
-  }
+  const rule = coverageRules.find(([pattern]) => pattern.test(source))
+  if (rule) return { disposition: rule[1], reason: rule[2] }
   return {
     disposition: 'page-local',
     reason:
       'Feature or page-specific section; not an independent design-system primitive.'
   }
+}
+
+function catalogStatus(
+  needsTests: boolean,
+  stable: boolean
+): ComponentManifestEntry['status'] {
+  if (needsTests) return 'needs-tests'
+  return stable ? 'stable' : 'documented'
+}
+
+function catalogLimitations(needsTests: boolean): string[] {
+  return needsTests
+    ? [
+        'Excluded from browser tests because the Vitest importer fails before render.'
+      ]
+    : []
 }
 
 async function manifestEntry(
@@ -170,7 +176,13 @@ async function manifestEntry(
     ([, exportName]) => exportName
   )
 
-  if (!title || !componentImport || exports.length === 0) {
+  if (!title) {
+    throw new Error(`Missing Storybook title in ${storyFile}`)
+  }
+  if (!componentImport) {
+    throw new Error(`Missing component import in ${storyFile}`)
+  }
+  if (exports.length === 0) {
     throw new Error(`Unable to derive Storybook metadata from ${storyFile}`)
   }
 
@@ -187,15 +199,11 @@ async function manifestEntry(
     source,
     storyFile: relative(websiteRoot, storyFile),
     title,
-    status: needsTests ? 'needs-tests' : stable ? 'stable' : 'documented',
+    status: catalogStatus(needsTests, stable),
     category: title.split('/').slice(1, -1).join('/').toLowerCase(),
     capabilities: capabilities(component),
     testEligible: !needsTests,
-    limitations: needsTests
-      ? [
-          'Excluded from browser tests because the Vitest importer fails before render.'
-        ]
-      : [],
+    limitations: catalogLimitations(needsTests),
     provenance: {
       implementation: 'shipped-website',
       figma: figmaUrl,
@@ -210,7 +218,7 @@ async function manifestEntry(
       hasResponsiveStories: exports.some((name) =>
         /Mobile|Desktop|Tablet/.test(name)
       ),
-      compositionSafe: stable && !needsTests
+      compositionSafe: catalogStatus(needsTests, stable) === 'stable'
     },
     stories: exports.map((exportName) => ({
       exportName,
