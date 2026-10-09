@@ -13,6 +13,7 @@ const copy = {
     'zh-CN': 'PNG、JPG 或 WebP。每张照片最多 4 盏灯。'
   },
   'relight.empty.upload': { en: 'Choose a photo', 'zh-CN': '选择照片' },
+  'relight.photo.change': { en: 'Change photo', 'zh-CN': '更换照片' },
   'relight.empty.example': { en: 'Try the example', 'zh-CN': '试用示例' },
   'relight.tool.add': { en: 'Add light', 'zh-CN': '添加灯光' },
   'relight.tool.undo': { en: 'Undo', 'zh-CN': '撤销' },
@@ -57,7 +58,6 @@ const copy = {
   'relight.mood.moonlight': { en: 'Moonlight', 'zh-CN': '月光' },
   'relight.lights': { en: 'Lights', 'zh-CN': '灯光' },
   'relight.lights.count': { en: '{n} of {max}', 'zh-CN': '{n} / {max}' },
-  'relight.lights.empty': { en: 'No lights yet.', 'zh-CN': '还没有灯光。' },
   'relight.light.key': { en: 'Key', 'zh-CN': '主光' },
   'relight.light.fill': { en: 'Fill', 'zh-CN': '补光' },
   'relight.light.warmKey': { en: 'Warm key', 'zh-CN': '暖色主光' },
@@ -136,14 +136,10 @@ const copy = {
     'zh-CN': '{name}的照射范围'
   },
   'relight.masks.whole': { en: 'Whole image', 'zh-CN': '整张图片' },
-  'relight.masks.noLights': {
-    en: 'Add a light to keep it inside a mask.',
-    'zh-CN': '添加一盏灯光后可将其限制在蒙版内。'
-  },
   'relight.masks.subject': { en: 'Subject', 'zh-CN': '主体' },
   'relight.masks.subjectPlaceholder': {
-    en: 'Person, sky…',
-    'zh-CN': '人物、天空…'
+    en: 'What to mask, e.g. person, sky',
+    'zh-CN': '要遮罩的对象，例如人物、天空'
   },
   'relight.masks.create': { en: 'Create mask', 'zh-CN': '创建蒙版' },
   'relight.mask.subject': { en: 'Subject', 'zh-CN': '主体' },
@@ -162,8 +158,8 @@ const copy = {
     'zh-CN': '描述（可选）'
   },
   'relight.generation.promptPlaceholder': {
-    en: 'Softer shadow transitions, natural reflections…',
-    'zh-CN': '更柔和的阴影过渡，自然的反射…'
+    en: 'Optional: describe the finish, e.g. softer shadow transitions, natural reflections',
+    'zh-CN': '可选：描述想要的效果，例如更柔和的阴影过渡、自然的反射'
   },
   'relight.generation.strength': {
     en: 'Change strength',

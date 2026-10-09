@@ -6,7 +6,8 @@ import RelightStudio from './RelightStudio.vue'
 
 vi.mock(import('@/lib/workshop/relight/render-image'), () => ({
   renderRelitImage: vi.fn(() => Promise.resolve(undefined)),
-  renderMoodThumbnails: vi.fn(() => Promise.resolve(undefined))
+  renderMoodThumbnails: vi.fn(() => Promise.resolve(undefined)),
+  loadImage: vi.fn(() => Promise.resolve(undefined))
 }))
 
 function screenIsWide(wide: boolean) {
@@ -309,9 +310,7 @@ describe('RelightStudio', () => {
 
   it('picks a mood from its tile, replacing the lights, and undoes it', async () => {
     const user = await openExample()
-    const moods = within(section('Mood')).getByRole('radiogroup', {
-      name: 'Mood'
-    })
+    const moods = within(panel()).getByRole('radiogroup', { name: 'Mood' })
     expect(within(moods).getByRole('radio', { name: 'Sunset' })).toBeChecked()
 
     await user.click(within(moods).getByRole('radio', { name: 'Neon' }))
@@ -371,13 +370,81 @@ describe('RelightStudio', () => {
     }
   )
 
-  it('keeps the seed as a row of the panel, outside Generation', async () => {
-    await openExample()
+  it('replaces the photo from the tile at the top of the panel, without a way to empty it', async () => {
+    vi.stubGlobal(
+      'Image',
+      class {
+        naturalWidth = 800
+        naturalHeight = 600
+        onload?: () => void
+        set src(_url: string) {
+          queueMicrotask(() => this.onload?.())
+        }
+      }
+    )
+    const user = await openExample()
+    const photo = new File(['x'], 'portrait.png', { type: 'image/png' })
+
+    await user.upload(screen.getByTestId('relight-photo-file'), photo)
+
     expect(
-      within(panel()).getByRole('button', { name: /^Generation/ })
-    ).toHaveAttribute('aria-expanded', 'false')
+      await within(panel()).findByRole('button', {
+        name: 'Change photo: portrait.png'
+      })
+    ).toBeVisible()
+    expect(within(panel()).getByRole('radio', { name: 'Studio' })).toBeChecked()
     expect(
-      within(panel()).getByRole('spinbutton', { name: 'Seed' })
+      within(panel()).queryByRole('button', { name: /^Remove/ })
+    ).toBeNull()
+    await user.click(
+      within(panel()).getByRole('button', {
+        name: 'Where to generate: Whole image'
+      })
+    )
+    expect(
+      (await screen.findAllByRole('menuitemradio')).map((item) =>
+        item.textContent.trim()
+      )
+    ).toEqual(['Whole image'])
+  })
+
+  it('edits the direction, change strength, area and seed without a Generation section', async () => {
+    const user = await openExample()
+    expect(
+      within(panel()).queryByRole('button', { name: /^Generation/ })
+    ).toBeNull()
+
+    await user.type(
+      within(panel()).getByRole('textbox', { name: 'Direction (optional)' }),
+      'golden glow'
+    )
+    expect(undo()).toBeEnabled()
+    await fireEvent.update(
+      within(panel()).getByRole('slider', { name: 'Change strength' }),
+      '70'
+    )
+    expect(
+      within(panel()).getByRole('slider', { name: 'Change strength' })
+    ).toHaveValue('70')
+    const seed = within(panel()).getByRole('spinbutton', { name: 'Seed' })
+    await user.clear(seed)
+    await user.type(seed, '42{Tab}')
+    expect(seed).toHaveValue(42)
+    await user.click(within(panel()).getByRole('button', { name: 'New seed' }))
+    expect(seed).not.toHaveValue(42)
+
+    await user.click(
+      within(panel()).getByRole('button', {
+        name: 'Where to generate: Whole image'
+      })
+    )
+    await user.click(
+      await screen.findByRole('menuitemradio', { name: 'Masked area' })
+    )
+    expect(
+      within(panel()).getByRole('button', {
+        name: 'Where to generate: Masked area'
+      })
     ).toBeVisible()
   })
 
