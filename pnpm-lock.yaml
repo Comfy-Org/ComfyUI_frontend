@@ -1492,12 +1492,12 @@ importers:
 
   tools/architecture:
     dependencies:
-      markdown-table:
-        specifier: 'catalog:'
-        version: 3.0.4
       typescript:
         specifier: 'catalog:'
         version: 6.0.3
+      zod:
+        specifier: 'catalog:'
+        version: 3.25.76
     devDependencies:
       '@types/node':
         specifier: 'catalog:'

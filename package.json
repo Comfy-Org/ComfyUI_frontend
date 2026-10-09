@@ -8,10 +8,9 @@
   "repository": "https://github.com/Comfy-Org/ComfyUI_frontend",
   "type": "module",
   "scripts": {
-    "architecture:check": "tsx tools/architecture/src/check.ts --check",
-    "architecture:accept-baseline": "tsx tools/architecture/src/check.ts --accept-baseline",
-    "architecture:report": "tsx tools/architecture/src/check.ts --report",
-    "architecture:update": "tsx tools/architecture/src/check.ts --update",
+    "architecture:catalog": "tsx tools/architecture/src/cli.ts --catalog",
+    "architecture:check": "tsx tools/architecture/src/cli.ts --check",
+    "architecture:update": "tsx tools/architecture/src/cli.ts --update",
     "adr:check": "tsx scripts/check-adrs.ts",
     "build:cloud": "cross-env DISTRIBUTION=cloud vite build --config vite.config.mts",
     "build:desktop-dist": "cross-env DISTRIBUTION=desktop vite build --config vite.config.mts",

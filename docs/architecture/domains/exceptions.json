@@ -1,26 +1,5 @@
 {
-  "$schema": "./exceptions.schema.json",
-  "schemaVersion": 1,
   "exceptions": [
-    {
-      "id": "DDD-EX-003",
-      "owner": "@Comfy-Org/comfy_frontend_devs",
-      "rationale": "Mask-editor callers predate a declared public entry point.",
-      "sunset": "2027-01-31",
-      "removalCriteria": "Publish focused mask-editor entry points and migrate every recorded external caller.",
-      "exactFingerprints": [
-        "deep-import:mask-editor:src/components/builder/AppModeWidgetList.vue->src/composables/maskeditor/useMaskEditor.ts#1",
-        "deep-import:mask-editor:src/components/builder/useLoaderDropIndicator.ts->src/composables/maskeditor/useMaskEditorLoader.ts#1",
-        "deep-import:mask-editor:src/composables/painter/usePainter.test.ts->src/composables/maskeditor/StrokeProcessor.ts#1",
-        "deep-import:mask-editor:src/composables/painter/usePainter.ts->src/composables/maskeditor/StrokeProcessor.ts#1",
-        "deep-import:mask-editor:src/composables/painter/usePainter.ts->src/composables/maskeditor/brushUtils.ts#1",
-        "deep-import:mask-editor:src/composables/painter/usePainter.ts->src/extensions/core/maskeditor/types.ts#1",
-        "deep-import:mask-editor:src/composables/useCoreCommands.selectOnly.test.ts->src/stores/maskEditorStore.ts#1",
-        "deep-import:mask-editor:src/composables/useCoreCommands.ts->src/stores/maskEditorStore.ts#1",
-        "deep-import:mask-editor:src/extensions/core/index.ts->src/extensions/core/maskeditor.ts#1",
-        "deep-import:mask-editor:src/renderer/extensions/vueNodes/components/ImagePreview.vue->src/composables/maskeditor/useMaskEditor.ts#1"
-      ]
-    },
     {
       "id": "DDD-EX-004",
       "owner": "@Comfy-Org/comfy_frontend_devs",
@@ -49,19 +28,6 @@
         "anonymous-suppression:src/workbench/extensions/agent/AgentPanelRoot.vue:comfy/no-restricted-paths#1",
         "anonymous-suppression:src/workbench/extensions/agent/AgentPanelRoot.vue:comfy/no-restricted-paths#2",
         "anonymous-suppression:src/workbench/extensions/agent/crdt/loadImageLivePreview.test.ts:comfy/no-restricted-paths#1"
-      ]
-    },
-    {
-      "id": "DDD-EX-005",
-      "owner": "@Comfy-Org/comfy_frontend_devs",
-      "rationale": "The mask-editor application composable currently renders two presentation components while its orchestration boundary is extracted.",
-      "sunset": "2027-01-31",
-      "removalCriteria": "Move presentation composition out of useMaskEditor and remove the four characterized dependency occurrences.",
-      "exactFingerprints": [
-        "forbidden-edge:mask-editor->mask-editor:src/composables/maskeditor/useMaskEditor.test.ts->src/components/maskeditor/MaskEditorContent.vue#1",
-        "forbidden-edge:mask-editor->mask-editor:src/composables/maskeditor/useMaskEditor.test.ts->src/components/maskeditor/dialog/TopBarHeader.vue#1",
-        "forbidden-edge:mask-editor->mask-editor:src/composables/maskeditor/useMaskEditor.ts->src/components/maskeditor/MaskEditorContent.vue#1",
-        "forbidden-edge:mask-editor->mask-editor:src/composables/maskeditor/useMaskEditor.ts->src/components/maskeditor/dialog/TopBarHeader.vue#1"
       ]
     }
   ]

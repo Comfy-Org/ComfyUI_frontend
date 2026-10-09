@@ -1,25 +1,46 @@
 {
-  "$schema": "../domain.schema.json",
-  "schemaVersion": 1,
   "id": "mask-editor",
   "capability": "Mask editor",
   "description": "Mask editing UI, drawing operations, editor state, and the core extension contract.",
   "modules": [
-    { "path": "src/extensions/core/maskeditor/**", "role": "domain" },
-    { "path": "src/composables/maskeditor/**", "role": "application" },
-    { "path": "src/stores/maskEditorStore.ts", "role": "application" },
-    { "path": "src/stores/maskEditorDataStore.ts", "role": "application" },
-    { "path": "src/stores/maskEditorStore.test.ts", "role": "application" },
-    { "path": "src/stores/maskEditorDataStore.test.ts", "role": "application" },
-    { "path": "src/components/maskeditor/**", "role": "presentation" },
-    { "path": "src/extensions/core/maskeditor.ts", "role": "integration" },
+    {
+      "path": "src/extensions/core/maskeditor/**",
+      "role": "domain"
+    },
+    {
+      "path": "src/composables/maskeditor/**",
+      "role": "application"
+    },
+    {
+      "path": "src/stores/maskEditorStore.ts",
+      "role": "application"
+    },
+    {
+      "path": "src/stores/maskEditorDataStore.ts",
+      "role": "application"
+    },
+    {
+      "path": "src/stores/maskEditorStore.test.ts",
+      "role": "application"
+    },
+    {
+      "path": "src/stores/maskEditorDataStore.test.ts",
+      "role": "application"
+    },
+    {
+      "path": "src/components/maskeditor/**",
+      "role": "presentation"
+    },
+    {
+      "path": "src/extensions/core/maskeditor.ts",
+      "role": "integration"
+    },
     {
       "path": "src/extensions/core/maskeditor.test.ts",
       "role": "integration"
     }
   ],
   "publicEntryPoints": [],
-  "owners": ["@trsommer", "@jtydhr88", "@Comfy-Org/comfy_frontend_devs"],
   "allowedDependencies": [],
   "allowedConsumers": [],
   "characterizationScenarios": [
@@ -43,5 +64,5 @@
     "The core extension remains the host integration seam for opening the editor.",
     "Image widget values and layer output remain covered by loader and saver characterization tests."
   ],
-  "enforcement": { "deepImports": "baseline", "dependencies": "baseline" }
+  "deepImports": "enforced"
 }

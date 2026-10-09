@@ -1,13 +1,20 @@
 {
-  "$schema": "../domain.schema.json",
-  "schemaVersion": 1,
   "id": "workflow-templates",
   "capability": "Workflow templates",
   "description": "Template discovery, ranking, metadata, education, and thumbnail presentation.",
   "modules": [
-    { "path": "src/platform/workflow/templates/types/**", "role": "domain" },
-    { "path": "src/platform/workflow/templates/schemas/**", "role": "domain" },
-    { "path": "src/platform/workflow/templates/utils/**", "role": "domain" },
+    {
+      "path": "src/platform/workflow/templates/types/**",
+      "role": "domain"
+    },
+    {
+      "path": "src/platform/workflow/templates/schemas/**",
+      "role": "domain"
+    },
+    {
+      "path": "src/platform/workflow/templates/utils/**",
+      "role": "domain"
+    },
     {
       "path": "src/platform/workflow/templates/composables/**",
       "role": "application"
@@ -24,14 +31,12 @@
       "path": "src/platform/workflow/templates/repositories/**",
       "role": "infrastructure"
     },
-    { "path": "src/components/templates/**", "role": "presentation" }
+    {
+      "path": "src/components/templates/**",
+      "role": "presentation"
+    }
   ],
   "publicEntryPoints": [],
-  "owners": [
-    "@christian-byrne",
-    "@comfyui-wiki",
-    "@Comfy-Org/comfy_frontend_devs"
-  ],
   "allowedDependencies": [],
   "allowedConsumers": [],
   "characterizationScenarios": [
@@ -55,5 +60,5 @@
     "Template data is validated before it reaches presentation code.",
     "Distribution eligibility and ranking remain host-independent domain policy."
   ],
-  "enforcement": { "deepImports": "inventory", "dependencies": "error" }
+  "deepImports": "inventory"
 }
