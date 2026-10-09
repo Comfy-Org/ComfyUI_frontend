@@ -212,7 +212,7 @@ const columnGroups: FooterColumn[][] = [
     class="bg-primary-comfy-ink px-6 py-8 text-primary-comfy-canvas lg:px-20"
   >
     <div class="flex flex-col gap-16 border-t border-primary-warm-gray pt-16">
-      <div class="grid grid-cols-1 gap-12 lg:grid-cols-4 lg:gap-x-6">
+      <div class="grid grid-cols-2 gap-x-6 gap-y-12 lg:grid-cols-4">
         <div
           v-for="group in columnGroups"
           :key="group[0].title"
