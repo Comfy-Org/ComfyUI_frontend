@@ -1,4 +1,6 @@
 <script setup lang="ts">
+import { cn } from '@comfyorg/tailwind-utils'
+
 import NavigationMenuLink from '@/components/ui/navigation-menu/NavigationMenuLink.vue'
 
 import { isHrefActive } from '@/composables/useCurrentPath'
@@ -18,17 +20,31 @@ defineProps<{
 <template>
   <li
     :class="
-      layout === 'row' ? 'flex items-center gap-8' : 'flex flex-col space-y-4'
+      cn(
+        layout === 'row'
+          ? 'flex items-center gap-8'
+          : 'flex flex-col space-y-4',
+        column.description && 'w-60'
+      )
     "
   >
-    <p
-      v-if="column.header"
-      class="font-formula text-xs font-medium text-primary-warm-gray uppercase"
-      :class="layout === 'row' ? '' : 'pl-2'"
+    <div v-if="column.header" :class="layout === 'row' ? '' : 'pl-2'">
+      <p
+        class="font-formula text-xs font-medium text-primary-warm-gray uppercase"
+      >
+        {{ column.header }}
+      </p>
+      <p
+        v-if="column.description"
+        class="mt-1 text-sm whitespace-nowrap text-primary-warm-gray"
+      >
+        {{ column.description }}
+      </p>
+    </div>
+    <ul
+      :aria-label="column.header"
+      :class="layout === 'row' ? 'flex items-center gap-1' : 'flex flex-col'"
     >
-      {{ column.header }}
-    </p>
-    <ul :class="layout === 'row' ? 'flex items-center gap-1' : 'flex flex-col'">
       <li v-for="item in column.items" :key="item.label">
         <NavigationMenuLink
           as-child

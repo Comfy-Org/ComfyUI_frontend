@@ -22,17 +22,26 @@ describe('HeaderMainMobile', () => {
     expect(screen.getByRole('button', { name: /^Enterprise\b/i })).toBeTruthy()
   })
 
-  it('drills into the Hub columns, opening apps in a tab of their own', async () => {
+  it('drills into the described Hub columns and Browse links, opening apps in a tab of their own', async () => {
     const user = await openMenu()
     await user.click(screen.getByRole('button', { name: /^Hub\b/i }))
 
-    for (const header of ['Models', 'Workflows', 'Apps'])
-      expect(screen.getByText(header, { exact: true })).toBeVisible()
+    expect(
+      [
+        'Models',
+        'Run the latest AI models',
+        'Workflows',
+        'Ready-made recipes for a task',
+        'Apps',
+        'Full tools built on Comfy',
+        'Browse'
+      ].filter((text) => !screen.queryByText(text, { exact: true }))
+    ).toEqual([])
     expect(
       [
         'Seedream 5.0 Pro',
         'All models',
-        'Turn an image into a video',
+        'Image to video',
         'All workflows',
         'Re-shoot',
         'All apps'

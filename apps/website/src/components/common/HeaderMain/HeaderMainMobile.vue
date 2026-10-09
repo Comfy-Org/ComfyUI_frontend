@@ -143,12 +143,19 @@ onUnmounted(() => {
                   :key="column.header ?? columnIndex"
                   class="flex flex-col gap-y-3"
                 >
-                  <p
-                    v-if="column.header"
-                    class="text-base font-bold tracking-wider text-primary-warm-gray uppercase"
-                  >
-                    {{ column.header }}
-                  </p>
+                  <div v-if="column.header">
+                    <p
+                      class="text-base font-bold tracking-wider text-primary-warm-gray uppercase"
+                    >
+                      {{ column.header }}
+                    </p>
+                    <p
+                      v-if="column.description"
+                      class="mt-1 text-sm text-primary-warm-gray"
+                    >
+                      {{ column.description }}
+                    </p>
+                  </div>
                   <div
                     :class="
                       column.items.every((link) => link.icon)

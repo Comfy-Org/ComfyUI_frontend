@@ -25,34 +25,48 @@ describe('HeaderMainDesktop', () => {
     expect(screen.queryByRole('button', { name: /community/i })).toBeNull()
   })
 
-  it('opens the Hub as Models, Workflows and Apps', async () => {
+  it('opens the Hub as described Models, Workflows and Apps columns', async () => {
     const menu = await openHub()
+    const linksIn = (list: string) =>
+      within(menu.getByRole('list', { name: list }))
+        .getAllByRole('link')
+        .map((link) => [link.textContent.trim(), link.getAttribute('href')])
 
-    for (const header of ['Models', 'Workflows', 'Apps'])
-      expect(menu.getByText(header, { exact: true })).toBeVisible()
     expect(
       [
-        'Seedream 5.0 Pro',
-        'Seedance 2.5',
-        'All models',
-        'Turn an image into a video',
-        'Create a video from references',
-        'All workflows',
-        'Cinematic Studio',
-        'Re-shoot',
-        'All apps'
-      ].map((name) => menu.getByRole('link', { name }).getAttribute('href'))
-    ).toEqual([
-      '/hub/models/seedream-5-0-pro-text-to-image/',
-      '/hub/models/seedance-2-5-reference-to-video/',
-      '/hub/models/',
-      '/hub/workflows/image-to-video/',
-      '/hub/workflows/video-from-references/',
-      '/hub/workflows/',
-      '/hub/apps/cinematic-studio/',
-      '/hub/apps/reshoot/',
-      '/hub/apps/'
+        'Run the latest AI models',
+        'Ready-made recipes for a task',
+        'Full tools built on Comfy'
+      ].filter((description) => !menu.queryByText(description))
+    ).toEqual([])
+    expect(linksIn('Models')).toEqual([
+      ['Seedream 5.0 Pro', '/hub/models/seedream-5-0-pro-text-to-image/'],
+      ['Seedance 2.5', '/hub/models/seedance-2-5-reference-to-video/']
     ])
+    expect(linksIn('Workflows')).toEqual([
+      ['Image to video', '/hub/workflows/image-to-video/'],
+      ['Video from references', '/hub/workflows/video-from-references/']
+    ])
+    expect(linksIn('Apps')).toEqual([
+      ['Cinematic Studio', '/hub/apps/cinematic-studio/'],
+      ['Re-shoot', '/hub/apps/reshoot/']
+    ])
+    expect(linksIn('Browse')).toEqual([
+      ['All models', '/hub/models/'],
+      ['All workflows', '/hub/workflows/'],
+      ['All apps', '/hub/apps/']
+    ])
+  })
+
+  it('features Seedance 2.5 with a Try now link to its model page', async () => {
+    const menu = await openHub()
+
+    expect(
+      menu.getByRole('link', {
+        name: 'Try Seedance 2.5 reference to video in the Hub'
+      })
+    ).toHaveAttribute('href', '/hub/models/seedance-2-5-reference-to-video/')
+    expect(menu.getByText('Try now')).toBeVisible()
   })
 
   it('opens each app in a tab of its own, and the apps list in this one', async () => {
@@ -67,12 +81,16 @@ describe('HeaderMainDesktop', () => {
       expect(menu.getByRole('link', { name })).not.toHaveAttribute('target')
   })
 
-  it('hides the Hub columns whose sections are off', async () => {
+  it('leaves the sections that are off out of the columns and the Browse row', async () => {
     const menu = await openHub({ workflows: false, apps: false })
 
-    expect(menu.getByRole('link', { name: 'All models' })).toBeVisible()
-    expect(menu.queryByRole('link', { name: 'All workflows' })).toBeNull()
-    expect(menu.queryByRole('link', { name: 'All apps' })).toBeNull()
+    expect(menu.queryByRole('list', { name: 'Workflows' })).toBeNull()
+    expect(menu.queryByRole('list', { name: 'Apps' })).toBeNull()
+    expect(
+      within(menu.getByRole('list', { name: 'Browse' }))
+        .getAllByRole('link')
+        .map((link) => link.textContent.trim())
+    ).toEqual(['All models'])
   })
 
   it.for([

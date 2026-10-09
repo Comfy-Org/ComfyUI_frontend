@@ -5,7 +5,7 @@ import hubWorkflowNames from '@/config/hub-workflow-names.json' with { type: 'js
 import { modelPageUrls } from '@/config/model-urls'
 import { getRoutes } from '@/config/routes'
 import { t } from '@/i18n/translations'
-import type { HubSections, NavItem } from './mainNavigation'
+import type { HubSections, NavColumn, NavItem } from './mainNavigation'
 import { getMainNavigation } from './mainNavigation'
 
 const ALL_SECTIONS: HubSections = { workflows: true, apps: true }
@@ -16,9 +16,17 @@ function hubOf(navigation: NavItem[]): NavItem {
   return hub
 }
 
+function columnsOf(item: NavItem): NavColumn[] {
+  return (item.columns ?? []).filter((column) => column.placement !== 'footer')
+}
+
+function browseRowOf(item: NavItem): NavColumn | undefined {
+  return item.columns?.find((column) => column.placement === 'footer')
+}
+
 describe('getMainNavigation', () => {
   it.for(['en', 'zh-CN', 'ja'] as const)(
-    'links the Hub catalogue from the Hub menu and under Products > Create, for %s',
+    'links the Hub catalogue from the Hub Browse row and under Products > Create, for %s',
     (locale) => {
       const navigation = getMainNavigation(locale)
       const catalogue = getRoutes(locale).workshop
@@ -30,10 +38,9 @@ describe('getMainNavigation', () => {
 
       expect(catalogue).toBe('/hub/models/')
       expect(navigation[0].label).toBe(t('nav.workshop', {}, { locale }))
-      expect(navigation[0].columns?.[0].items.at(-1)).toEqual({
+      expect(browseRowOf(navigation[0])?.items).toContainEqual({
         label: t('nav.hubAllModels', {}, { locale }),
-        href: catalogue,
-        seeAll: true
+        href: catalogue
       })
       expect(create?.items).toContainEqual({
         label: t('nav.comfyWorkshop', {}, { locale }),
@@ -44,114 +51,133 @@ describe('getMainNavigation', () => {
   )
 
   it.for([
-    { sections: { workflows: false, apps: false }, headers: ['Models'] },
+    {
+      sections: { workflows: false, apps: false },
+      headers: ['Models'],
+      browse: ['All models']
+    },
     {
       sections: { workflows: true, apps: false },
-      headers: ['Models', 'Workflows']
+      headers: ['Models', 'Workflows'],
+      browse: ['All models', 'All workflows']
     },
-    { sections: { workflows: false, apps: true }, headers: ['Models', 'Apps'] },
-    { sections: ALL_SECTIONS, headers: ['Models', 'Workflows', 'Apps'] }
+    {
+      sections: { workflows: false, apps: true },
+      headers: ['Models', 'Apps'],
+      browse: ['All models', 'All apps']
+    },
+    {
+      sections: ALL_SECTIONS,
+      headers: ['Models', 'Workflows', 'Apps'],
+      browse: ['All models', 'All workflows', 'All apps']
+    }
   ])(
-    'opens the Hub as one column per section that is on, showing $headers',
-    ({ sections, headers }) => {
+    'opens the Hub with columns $headers and a Browse row of $browse',
+    ({ sections, headers, browse }) => {
       const hub = hubOf(getMainNavigation('en', sections))
 
       expect(hub.href).toBeUndefined()
-      expect(hub.columns?.map((column) => column.header)).toEqual(headers)
+      expect(columnsOf(hub).map((column) => column.header)).toEqual(headers)
+      expect(browseRowOf(hub)?.header).toBe('Browse')
+      expect(browseRowOf(hub)?.items.map(({ label }) => label)).toEqual(browse)
       expect(hub.activePathPrefix).toBe('/hub/')
     }
   )
 
-  it('shows two examples and an All link in each Hub column', () => {
+  it('describes each Hub column and lists two examples in it', () => {
     const hub = hubOf(getMainNavigation('en', ALL_SECTIONS))
 
     expect(
-      hub.columns?.map(({ items }) =>
-        items.map(({ label, href, seeAll, newTab }) => ({
-          label,
-          href,
-          seeAll,
-          newTab
-        }))
-      )
+      columnsOf(hub).map(({ description, items }) => ({
+        description,
+        items: items.map(({ label, href, newTab }) => ({ label, href, newTab }))
+      }))
     ).toEqual([
-      [
-        {
-          label: 'Seedream 5.0 Pro',
-          href: '/hub/models/seedream-5-0-pro-text-to-image/',
-          seeAll: undefined,
-          newTab: undefined
-        },
-        {
-          label: 'Seedance 2.5',
-          href: '/hub/models/seedance-2-5-reference-to-video/',
-          seeAll: undefined,
-          newTab: undefined
-        },
-        {
-          label: 'All models',
-          href: '/hub/models/',
-          seeAll: true,
-          newTab: undefined
-        }
-      ],
-      [
-        {
-          label: 'Turn an image into a video',
-          href: '/hub/workflows/image-to-video/',
-          seeAll: undefined,
-          newTab: undefined
-        },
-        {
-          label: 'Create a video from references',
-          href: '/hub/workflows/video-from-references/',
-          seeAll: undefined,
-          newTab: undefined
-        },
-        {
-          label: 'All workflows',
-          href: '/hub/workflows/',
-          seeAll: true,
-          newTab: undefined
-        }
-      ],
-      [
-        {
-          label: 'Cinematic Studio',
-          href: '/hub/apps/cinematic-studio/',
-          seeAll: undefined,
-          newTab: true
-        },
-        {
-          label: 'Re-shoot',
-          href: '/hub/apps/reshoot/',
-          seeAll: undefined,
-          newTab: true
-        },
-        {
-          label: 'All apps',
-          href: '/hub/apps/',
-          seeAll: true,
-          newTab: undefined
-        }
-      ]
+      {
+        description: 'Run the latest AI models',
+        items: [
+          {
+            label: 'Seedream 5.0 Pro',
+            href: '/hub/models/seedream-5-0-pro-text-to-image/',
+            newTab: undefined
+          },
+          {
+            label: 'Seedance 2.5',
+            href: '/hub/models/seedance-2-5-reference-to-video/',
+            newTab: undefined
+          }
+        ]
+      },
+      {
+        description: 'Ready-made recipes for a task',
+        items: [
+          {
+            label: 'Image to video',
+            href: '/hub/workflows/image-to-video/',
+            newTab: undefined
+          },
+          {
+            label: 'Video from references',
+            href: '/hub/workflows/video-from-references/',
+            newTab: undefined
+          }
+        ]
+      },
+      {
+        description: 'Full tools built on Comfy',
+        items: [
+          {
+            label: 'Cinematic Studio',
+            href: '/hub/apps/cinematic-studio/',
+            newTab: true
+          },
+          { label: 'Re-shoot', href: '/hub/apps/reshoot/', newTab: true }
+        ]
+      }
     ])
   })
 
-  it('links the Hub examples to pages the site builds', () => {
+  it('links every Hub entry to a page the site builds', () => {
     const hub = hubOf(getMainNavigation('en', ALL_SECTIONS))
     const built = new Set([
+      '/hub/models/',
+      '/hub/workflows/',
+      '/hub/apps/',
       ...modelPageUrls.map(({ newSlug }) => `/hub/models/${newSlug}/`),
       ...hubWorkflowNames.map((name) => `/hub/workflows/${name}/`),
       ...hubAppNames.map((name) => `/hub/apps/${name}/`)
     ])
-    const examples = (hub.columns ?? [])
-      .flatMap((column) => column.items)
-      .filter((item) => !item.seeAll)
+    const hrefs = [
+      ...(hub.columns ?? []).flatMap((column) =>
+        column.items.map(({ href }) => href)
+      ),
+      hub.featured?.cta.href
+    ]
 
-    expect(examples).toHaveLength(6)
-    for (const { href } of examples) expect(built).toContain(href)
+    expect(hrefs).toHaveLength(10)
+    expect(hrefs.filter((href) => !href || !built.has(href))).toEqual([])
   })
+
+  it.for(['en', 'zh-CN'] as const)(
+    'features Seedance 2.5 in the Hub menu, linking to its model page, for %s',
+    (locale) => {
+      const featured = getMainNavigation(locale)[0].featured
+
+      expect(featured).toEqual(
+        expect.objectContaining({
+          title: 'Seedance 2.5',
+          imageSrc:
+            'https://media.comfy.org/website/seedance-2.5/balloons-poster.webp',
+          videoSrc:
+            'https://media.comfy.org/website/seedance-2.5/balloons.webm',
+          cta: expect.objectContaining({
+            label: t('nav.featuredHubCta', {}, { locale }),
+            href: '/hub/models/seedance-2-5-reference-to-video/'
+          })
+        })
+      )
+    }
+  )
 
   it('does not expose Models as a top-level navigation item', () => {
     const labels = getMainNavigation('en').map((item) => item.label)

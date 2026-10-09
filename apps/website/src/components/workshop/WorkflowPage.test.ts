@@ -128,19 +128,21 @@ describe('WorkflowPage header', () => {
     })
   })
 
-  it('reports no clicks while Workflows access is off', async () => {
-    vi.mocked(useWorkshopEnabled).mockReturnValue(readonly(ref(true)))
-    vi.mocked(useWorkshopWorkflowsEnabled).mockReturnValue(readonly(ref(false)))
-    mount()
-    const visitor = userEvent.setup()
-    for (const name of ['Try in Cloud', 'Download workflow JSON']) {
+  it.for([{ name: 'Try in Cloud' }, { name: 'Download workflow JSON' }])(
+    'reports no clicks for $name while Workflows access is off',
+    async ({ name }) => {
+      vi.mocked(useWorkshopEnabled).mockReturnValue(readonly(ref(true)))
+      vi.mocked(useWorkshopWorkflowsEnabled).mockReturnValue(
+        readonly(ref(false))
+      )
+      mount()
       const link = screen.getByRole('link', { name })
       link.addEventListener('click', (click) => click.preventDefault(), {
         once: true
       })
-      await visitor.click(link)
-    }
+      await userEvent.setup().click(link)
 
-    expect(captureWorkshopEvent).not.toHaveBeenCalled()
-  })
+      expect(captureWorkshopEvent).not.toHaveBeenCalled()
+    }
+  )
 })

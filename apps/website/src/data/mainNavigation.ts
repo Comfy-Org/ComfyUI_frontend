@@ -9,7 +9,6 @@ export type NavColumnItem = {
   badge?: 'new' | 'beta'
   external?: boolean
   newTab?: boolean
-  seeAll?: boolean
 }
 
 export function navLinkTarget(
@@ -21,6 +20,7 @@ export function navLinkTarget(
 
 export type NavColumn = {
   header?: string
+  description?: string
   items: NavColumnItem[]
   placement?: 'footer'
 }
@@ -69,72 +69,77 @@ export function getMainNavigation(
 ): NavItem[] {
   const { t } = translationsFor(locale)
   const routes = getRoutes(locale)
-  const when = (shown: boolean, columns: NavColumn[]) => (shown ? columns : [])
+  const when = <T>(shown: boolean, entry: T): T[] => (shown ? [entry] : [])
+  const seedance25Href = `${routes.workshop}seedance-2-5-reference-to-video/`
   return [
     {
       label: t('nav.workshop'),
       activePathPrefix: '/hub/',
+      featured: {
+        imageSrc:
+          'https://media.comfy.org/website/seedance-2.5/balloons-poster.webp',
+        videoSrc: 'https://media.comfy.org/website/seedance-2.5/balloons.webm',
+        imageAlt: t('nav.featuredHubAlt'),
+        title: t('nav.hubSeedance25'),
+        cta: {
+          label: t('nav.featuredHubCta'),
+          ariaLabel: t('nav.featuredHubCtaAria'),
+          href: seedance25Href
+        }
+      },
       columns: [
         {
           header: t('nav.hubModels'),
+          description: t('nav.hubModelsDescription'),
           items: [
             {
               label: t('nav.hubSeedream5Pro'),
               href: `${routes.workshop}seedream-5-0-pro-text-to-image/`
             },
-            {
-              label: t('nav.hubSeedance25'),
-              href: `${routes.workshop}seedance-2-5-reference-to-video/`
-            },
-            {
-              label: t('nav.hubAllModels'),
-              href: routes.workshop,
-              seeAll: true
-            }
+            { label: t('nav.hubSeedance25'), href: seedance25Href }
           ]
         },
-        ...when(hubSections.workflows, [
-          {
-            header: t('nav.hubWorkflows'),
-            items: [
-              {
-                label: t('nav.hubImageToVideo'),
-                href: `${routes.hubWorkflows}image-to-video/`
-              },
-              {
-                label: t('nav.hubVideoFromReferences'),
-                href: `${routes.hubWorkflows}video-from-references/`
-              },
-              {
-                label: t('nav.hubAllWorkflows'),
-                href: routes.hubWorkflows,
-                seeAll: true
-              }
-            ]
-          }
-        ]),
-        ...when(hubSections.apps, [
-          {
-            header: t('nav.hubApps'),
-            items: [
-              {
-                label: t('nav.cinematicStudio'),
-                href: routes.cinematicStudio,
-                newTab: true
-              },
-              {
-                label: t('nav.reshoot'),
-                href: routes.reshoot,
-                newTab: true
-              },
-              {
-                label: t('nav.hubAllApps'),
-                href: routes.hubApps,
-                seeAll: true
-              }
-            ]
-          }
-        ])
+        ...when(hubSections.workflows, {
+          header: t('nav.hubWorkflows'),
+          description: t('nav.hubWorkflowsDescription'),
+          items: [
+            {
+              label: t('nav.hubImageToVideo'),
+              href: `${routes.hubWorkflows}image-to-video/`
+            },
+            {
+              label: t('nav.hubVideoFromReferences'),
+              href: `${routes.hubWorkflows}video-from-references/`
+            }
+          ]
+        }),
+        ...when(hubSections.apps, {
+          header: t('nav.hubApps'),
+          description: t('nav.hubAppsDescription'),
+          items: [
+            {
+              label: t('nav.cinematicStudio'),
+              href: routes.cinematicStudio,
+              newTab: true
+            },
+            { label: t('nav.reshoot'), href: routes.reshoot, newTab: true }
+          ]
+        }),
+        {
+          header: t('nav.hubBrowse'),
+          placement: 'footer',
+          items: [
+            { label: t('nav.hubAllModels'), href: routes.workshop },
+            ...when(hubSections.workflows, {
+              label: t('nav.hubAllWorkflows'),
+              href: routes.hubWorkflows
+            }),
+            ...when(hubSections.apps, {
+              label: t('nav.hubAllApps'),
+              href: routes.hubApps
+            })
+          ]
+        }
       ]
     },
     {
