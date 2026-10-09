@@ -3,12 +3,12 @@ import { assert, describe, expect, it, vi } from 'vitest'
 import { reportError } from '@/platform/telemetry/reportError'
 import { api } from '@/scripts/api'
 
-import type { ExtensionLoadFailure } from './extensionService'
+import type { ExtensionLoadFailure } from './extensionLoader'
 import {
+  loadExtensions,
   reportExtensionLoadFailures,
-  shouldLoadExtension,
-  useExtensionService
-} from './extensionService'
+  shouldLoadExtension
+} from './extensionLoader'
 
 vi.mock(import('@/platform/telemetry/reportError'))
 
@@ -113,7 +113,7 @@ describe('extension loading', () => {
         '/extensions/pack-b/main.js'
       ])
 
-      await useExtensionService().loadExtensions()
+      await loadExtensions()
 
       expect(reportError).toHaveBeenCalledOnce()
       const [cause, options] = vi.mocked(reportError).mock.calls[0]
@@ -128,7 +128,7 @@ describe('extension loading', () => {
     it('stays silent when no custom extensions are listed', async () => {
       vi.spyOn(api, 'getExtensions').mockResolvedValue([])
 
-      await useExtensionService().loadExtensions()
+      await loadExtensions()
 
       expect(reportError).not.toHaveBeenCalled()
     })
@@ -139,7 +139,7 @@ describe('extension loading', () => {
         '/extensions/pack-a/main.js'
       ])
 
-      await useExtensionService().loadExtensions()
+      await loadExtensions()
 
       const [cause] = vi.mocked(reportError).mock.calls[0]
       assert(cause instanceof Error)
@@ -154,7 +154,7 @@ describe('extension loading', () => {
         '/extensions/pack-a/main.js'
       ])
 
-      await useExtensionService().loadExtensions()
+      await loadExtensions()
 
       expect(mark.mock.calls.map(([name]) => name)).toEqual([
         'bootstrap/extensions-load-core:start',

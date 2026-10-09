@@ -41,6 +41,7 @@ import type {
   PostMessageInput
 } from '../../services/agent/agentRestClient'
 import { useAgentConversationStore } from '../../stores/agent/agentConversationStore'
+import { useAgentSendGateStore } from '../../stores/agent/agentSendGateStore'
 import { useAgentWorkflowTabBindingStore } from '../../stores/agent/agentWorkflowTabBindingStore'
 
 import type { SelectedNode } from './useCanvasSelection'
@@ -5901,6 +5902,50 @@ describe('useAgentSession (v1 composition root)', () => {
     ])
     expect(session.notices.value).toHaveLength(0)
   })
+
+  // PM-1660: the gate has to be taken in sendMessage, before performSend
+  // awaits prepareWorkflow(), and released however the POST settles. Without
+  // these two cases the wiring can be removed or moved into the success branch
+  // with every agent unit suite still green — only the @cloud spec notices,
+  // and only on the success path.
+  it.for([
+    ['resolves', (resolve: () => void) => resolve()],
+    ['rejects', (_resolve: () => void, reject: () => void) => reject()]
+  ] as const)(
+    'holds the send gate from send until the POST %s, across New Chat',
+    async ([, settlePost]) => {
+      let settle: () => void = () => {}
+      const postMessage = vi.fn(
+        () =>
+          new Promise<AgentTurnAccepted>((resolve, reject) => {
+            settle = () =>
+              settlePost(
+                () =>
+                  resolve({
+                    thread_id: 'th-1',
+                    message_id: 'msg-1',
+                    workflow_id: 'wf-1'
+                  }),
+                () => reject(new Error('post failed'))
+              )
+          })
+      )
+      const rest = fakeRest({ postMessage })
+      const session = useAgentSession({ rest, events: fakeEvents().source })
+      session.start()
+      const gate = useAgentSendGateStore()
+
+      const sent = session.sendMessage('go')
+      await vi.waitFor(() => expect(postMessage).toHaveBeenCalled())
+      session.newChat('new_chat_button')
+
+      expect(gate.isSending).toBe(true)
+      settle()
+      await sent
+
+      expect(gate.isSending).toBe(false)
+    }
+  )
 })
 
 describe('thread resume (B17)', () => {

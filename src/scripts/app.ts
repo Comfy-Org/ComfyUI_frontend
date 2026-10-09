@@ -17,7 +17,7 @@ import { resolveDynamicInputSpec } from '@/core/graph/widgets/dynamicInputSpec'
 import { setBackendNodeText, st, t } from '@/i18n'
 import { normalizeI18nKey } from '@/utils/formatUtil'
 import { ChangeTracker } from '@/scripts/changeTracker'
-import type { IContextMenuValue } from '@/lib/litegraph/src/interfaces'
+import type { IContextMenuValue } from '@/lib/litegraph/src/types/contextMenu'
 import { withGraphIntentSource } from '@/lib/litegraph/src/graphIntents'
 import { createMutationView } from '@/lib/litegraph/src/infrastructure/createMutationView'
 import {
@@ -72,8 +72,9 @@ import { toNodeId } from '@/types/nodeId'
 import { zNodePackMetadata } from '@/platform/workflow/validation/schemas/workflowSchema'
 import type { NodeId, SerializedNodeId } from '@/types/nodeId'
 import {
+  buildSubgraphExecutionPaths,
   collectSubgraphDefinitions,
-  buildSubgraphExecutionPaths
+  parseFlattenableSubgraphDefinitions
 } from '@/platform/workflow/core/utils/workflowFlattening'
 import type { FlattenableWorkflowNode } from '@/platform/workflow/core/utils/workflowFlattening'
 import type {
@@ -1003,9 +1004,6 @@ export class ComfyApp {
     await useWorkspaceStore().workflow.syncWorkflows()
     //Doesn't need to block. Blueprints will load async
     void useSubgraphStore().fetchSubgraphs()
-    await bootstrapTracer.settle('bootstrap/extensions-load', () =>
-      useExtensionService().loadExtensions()
-    )
 
     this.addProcessKeyHandler()
     this.addConfigureHandler()
@@ -1459,7 +1457,9 @@ export class ComfyApp {
 
       collectMissingNodes(graphData.nodes)
       const subgraphDefs = collectSubgraphDefinitions(
-        graphData.definitions?.subgraphs ?? []
+        parseFlattenableSubgraphDefinitions(
+          graphData.definitions?.subgraphs ?? []
+        )
       )
       const subgraphContainerIdMap = buildSubgraphExecutionPaths(
         graphData.nodes,

@@ -262,6 +262,7 @@ vi.mock<unknown>(
 /** The reads the checkout takes off the rail, as the store answers them. */
 interface SubscriptionRailStub {
   subscriptionActionUrl: string | null
+  subscriptionRouteAvailable: boolean
   subscriptionActionOperation?: RailOperation
   getOperation: (opId: string) => RailOperation | undefined
   openPaymentPortal?: (
@@ -280,6 +281,7 @@ function railStub(
 ): SubscriptionRailStub {
   return {
     subscriptionActionUrl: null,
+    subscriptionRouteAvailable: true,
     getOperation: () => undefined,
     ...overrides
   }
@@ -3347,12 +3349,59 @@ describe('useSubscriptionCheckout', () => {
         stage: 'started',
         outcome: 'pending',
         operation_type: 'subscription',
+        billing_client: 'legacy',
         tier: 'team',
         cycle: 'monthly',
         checkout_type: 'new',
         payment_intent_source: undefined
       })
     })
+
+    it.for([
+      { rail: 'off', routes: true, billingClient: 'legacy' },
+      { rail: 'on', routes: true, billingClient: 'sdk' },
+      { rail: 'on', routes: false, billingClient: 'legacy' }
+    ] as const)(
+      'names the $billingClient client on its own start and success while the rail is $rail (routes served: $routes)',
+      async ({ rail, routes, billingClient }) => {
+        mockSubscriptionRail.value =
+          rail === 'on'
+            ? railStub({ subscriptionRouteAvailable: routes })
+            : null
+        const checkout = await setup()
+        await checkout.handleSubscribeTeamClick({
+          stop: {
+            id: 'team_700',
+            usd: 700,
+            credits: 147_700,
+            discountedUsd: 665
+          },
+          billingCycle: 'monthly'
+        })
+        mockSubscribe.mockResolvedValueOnce({
+          status: 'subscribed',
+          billing_op_id: 'op-team-1'
+        })
+
+        await checkout.handleTeamSubscribe()
+
+        const operationEvents = (
+          vi.mocked(useTelemetry()?.trackBillingEvent)?.mock.calls ?? []
+        )
+          .map(([event]) => event)
+          .filter((event) => event.operation === 'operation')
+        expect(operationEvents).toEqual([
+          expect.objectContaining({
+            stage: 'started',
+            billing_client: billingClient
+          }),
+          expect.objectContaining({
+            stage: 'succeeded',
+            billing_client: billingClient
+          })
+        ])
+      }
+    )
 
     it('subscribes with the team plan slug, stop id and billing cycle', async () => {
       const checkout = await setup()
@@ -4756,6 +4805,7 @@ describe('useSubscriptionCheckout', () => {
         stage: 'started',
         outcome: 'pending',
         operation_type: 'subscription',
+        billing_client: 'legacy',
         tier: 'standard',
         cycle: 'yearly',
         checkout_type: 'new',

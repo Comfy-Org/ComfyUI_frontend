@@ -49,6 +49,7 @@ import type { AssistantMessage } from '../../services/agent/agentMessageParts'
 import { normalizeAgentTranscript } from '../../services/agent/agentTranscript'
 import type { LiveTurn } from '../../stores/agent/agentConversationStore'
 import { useAgentConversationStore } from '../../stores/agent/agentConversationStore'
+import { useAgentSendGateStore } from '../../stores/agent/agentSendGateStore'
 import { useAgentWorkflowTabBindingStore } from '../../stores/agent/agentWorkflowTabBindingStore'
 import type { WorkflowReference } from '../../types/workflowReference'
 import { serializeWorkflowReferences } from '../../utils/workflowReferenceText'
@@ -383,6 +384,7 @@ export function useAgentSession(deps: AgentSessionDeps) {
   clearLegacyAgentStorage()
 
   const conversationStore = useAgentConversationStore()
+  const sendGateStore = useAgentSendGateStore()
   const skillPacks = useSkillPacksStore()
   const skillTurnUsage = new Map<string, { scope: string; used: boolean }>()
   watch(
@@ -1265,6 +1267,7 @@ export function useAgentSession(deps: AgentSessionDeps) {
     }
     promptEditState.value = { phase: 'idle' }
     sending.value = true
+    const releaseSendGate = sendGateStore.begin()
     sendInFlight = true
     stopPendingAck = null
     try {
@@ -1280,6 +1283,7 @@ export function useAgentSession(deps: AgentSessionDeps) {
       return sent
     } finally {
       sending.value = false
+      releaseSendGate()
       sendInFlight = false
     }
   }
