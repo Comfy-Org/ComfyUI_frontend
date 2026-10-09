@@ -83,6 +83,16 @@
       "permanent": true
     },
     {
+      "source": "/about",
+      "destination": "/about/",
+      "permanent": true
+    },
+    {
+      "source": "/zh-CN/about",
+      "destination": "/zh-CN/about/",
+      "permanent": true
+    },
+    {
       "source": "/blog",
       "destination": "https://blog.comfy.org/",
       "permanent": true
