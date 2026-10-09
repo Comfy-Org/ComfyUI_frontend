@@ -11,6 +11,9 @@ import type {
   WorkspaceMember
 } from '../../../stores/teamWorkspaceStore'
 
+const mockDistribution = vi.hoisted(() => ({ isCloud: true }))
+vi.mock(import('@/platform/distribution/types'), () => mockDistribution)
+
 const mockHandleResendInvite = vi.fn()
 const mockHandleRevokeInvite = vi.fn()
 const mockMemberMenuItems = vi.fn(() => [])
@@ -243,6 +246,7 @@ function createInvite(
 
 describe('MembersPanelContent', () => {
   beforeEach(() => {
+    mockDistribution.isCloud = true
     mockMemberMenuItems.mockReturnValue([])
     mockMembers.value = []
     mockTotalMembers.value = null
@@ -393,6 +397,45 @@ describe('MembersPanelContent', () => {
       renderComponent()
 
       expect(screen.queryByLabelText('workspace-menu-stub')).toBeNull()
+    })
+
+    it.for([
+      { maxSeats: 1, ended: false },
+      { maxSeats: 73, ended: true }
+    ])(
+      'hides other loaded members when visibility is denied ($maxSeats seats, ended: $ended)',
+      ({ maxSeats, ended }) => {
+        mockMaxSeats.value = maxSeats
+        mockIsPlanEnded.value = ended
+        mockIsInPersonalWorkspace.value = true
+        mockPermissions.value.canViewOtherMembers = false
+        mockPermissions.value.canManageMembers = false
+        mockFilteredMembers.value = [
+          createMember({
+            id: 'self',
+            name: 'Owner User',
+            email: 'owner@example.com'
+          }),
+          createMember({ id: 'alice', name: 'Alice' }),
+          createMember({ id: 'bob', name: 'Bob' })
+        ]
+
+        renderComponent()
+
+        expect(screen.getByText('Owner User')).toBeInTheDocument()
+        expect(screen.queryByText('Alice')).not.toBeInTheDocument()
+        expect(screen.queryByText('Bob')).not.toBeInTheDocument()
+      }
+    )
+
+    it('preserves loaded desktop rows when workspace visibility defaults are false', () => {
+      mockDistribution.isCloud = false
+      mockPermissions.value.canViewOtherMembers = false
+      mockFilteredMembers.value = [createMember({ name: 'Alice' })]
+
+      renderComponent()
+
+      expect(screen.getByText('Alice')).toBeInTheDocument()
     })
 
     it('keeps rendering members while seat capacity is unresolved', () => {

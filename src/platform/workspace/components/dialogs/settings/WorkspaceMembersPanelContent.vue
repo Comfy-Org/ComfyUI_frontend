@@ -18,18 +18,17 @@
 import { computed, reactive, watch } from 'vue'
 
 import Button from '@/components/ui/button/Button.vue'
-import { isCloud } from '@/platform/distribution/types'
-import { useBillingCapabilities } from '@/platform/workspace/composables/useBillingCapabilities'
+import { useMembersPanel } from '@/platform/workspace/composables/useMembersPanel'
 import MembersPanelContent from '@/platform/workspace/components/dialogs/settings/MembersPanelContent.vue'
 import { useWorkspaceUI } from '@/platform/workspace/composables/useWorkspaceUI'
 import { useTeamWorkspaceStore } from '@/platform/workspace/stores/teamWorkspaceStore'
 
 const workspaceStore = useTeamWorkspaceStore()
 const { fetchMembers, fetchPendingInvites } = workspaceStore
-const { workspaceRole, permissions } = useWorkspaceUI()
-const { canManageMembers } = useBillingCapabilities()
-const canViewPendingInvites = computed(() =>
-  isCloud ? canManageMembers.value : permissions.value.canViewPendingInvites
+const { workspaceRole } = useWorkspaceUI()
+const { permissions } = useMembersPanel()
+const canViewPendingInvites = computed(
+  () => permissions.value.canViewPendingInvites
 )
 
 const failed = reactive({ members: false, invites: false })

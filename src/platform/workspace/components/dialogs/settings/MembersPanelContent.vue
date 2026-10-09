@@ -184,7 +184,7 @@
 
             <template v-else>
               <MemberListItem
-                v-for="member in filteredMembers"
+                v-for="member in visibleMembers"
                 :key="member.id"
                 :member="member"
                 :is-current-user="isCurrentUser(member)"
@@ -281,6 +281,7 @@ import MemberUpsellBanner from '@/platform/workspace/components/dialogs/settings
 import PendingInvitesList from '@/platform/workspace/components/dialogs/settings/PendingInvitesList.vue'
 import { ENTERPRISE_URL } from '@/platform/cloud/subscription/constants/tierPricing'
 import { useMembersPanel } from '@/platform/workspace/composables/useMembersPanel'
+import { isCloud } from '@/platform/distribution/types'
 import { cn } from '@comfyorg/tailwind-utils'
 
 const TEAM_PLAN_REQUEST_URL =
@@ -345,6 +346,12 @@ const showsEndedUpsell = computed(
   () => isPlanEnded.value && !isInPersonalWorkspace.value
 )
 
+const visibleMembers = computed(() =>
+  !isCloud || permissions.value.canViewOtherMembers
+    ? filteredMembers.value
+    : filteredMembers.value.filter(isCurrentUser)
+)
+
 const emptyStateMessage = computed(() => {
   if (!uiConfig.value.showMembersList) return null
   if (!membersLoaded.value) return null
@@ -355,7 +362,7 @@ const emptyStateMessage = computed(() => {
     !hasMultipleMembers.value
   )
     return null
-  if (filteredMembers.value.length > 0) return null
+  if (visibleMembers.value.length > 0) return null
 
   const query = searchQuery.value.trim()
   return query

@@ -109,7 +109,7 @@ describe('createCapabilitiesReader', () => {
     }
   )
 
-  it('accepts older capabilities without granting member management', async () => {
+  it('rejects capabilities missing member management permission', async () => {
     const legacyCapabilities: Record<string, unknown> = { ...CAPABILITIES }
     delete legacyCapabilities.can_manage_members
     const { scopeSource } = fakeSession()
@@ -121,10 +121,11 @@ describe('createCapabilitiesReader', () => {
       scopeSource
     }).read()
 
-    expect(result.status).toBe('ok')
-    if (result.status !== 'ok') return
-    expect(result.value.capabilities.can_manage_members).toBe(false)
-    expect(result.value.capabilities.can_top_up).toBe(true)
+    expect(result).toEqual({
+      status: 'error',
+      code: 'MALFORMED_RESPONSE',
+      httpStatus: 200
+    })
   })
 
   it.for([null, 'true', 1, {}])(

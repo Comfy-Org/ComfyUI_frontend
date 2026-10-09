@@ -129,7 +129,9 @@ export function useMembersPanel() {
 
     return {
       ...workspacePermissions.value,
-      canViewOtherMembers: hasMemberSeats.value || canManage,
+      canViewOtherMembers: isCloud
+        ? canManage
+        : hasMemberSeats.value || canManage,
       canViewPendingInvites: canManage,
       canInviteMembers: isCloud ? canInviteMembers.value : canManage,
       canManageInvites: canManage,
@@ -138,13 +140,12 @@ export function useMembersPanel() {
   })
 
   const uiConfig = computed(() => {
-    // An ended plan keeps the members-table presentation: the collapsed
-    // seat limit (see isPlanEnded) must not demote the page to the seatless
-    // layout, or the roster and the banner's context disappear together.
     if (
-      !hasMemberSeats.value &&
-      !isPlanEnded.value &&
-      !permissions.value.canManageMembers
+      isCloud
+        ? !permissions.value.canManageMembers
+        : !hasMemberSeats.value &&
+          !isPlanEnded.value &&
+          !permissions.value.canManageMembers
     ) {
       return {
         ...workspaceUiConfig.value,
@@ -196,7 +197,9 @@ export function useMembersPanel() {
 
   const showViewTabs = computed(
     () =>
-      (hasMemberSeats.value || permissions.value.canManageMembers) &&
+      (isCloud
+        ? permissions.value.canViewPendingInvites
+        : hasMemberSeats.value || permissions.value.canManageMembers) &&
       (hasMultipleMembers.value || pendingInvites.value.length > 0)
   )
 

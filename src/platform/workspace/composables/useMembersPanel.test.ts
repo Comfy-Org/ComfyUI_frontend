@@ -335,7 +335,8 @@ function setOriginalOwner(id = 'creator-1') {
 
 vi.mock(import('@/platform/workspace/composables/useWorkspaceUI'))
 
-vi.mock(import('@/platform/distribution/types'), () => ({ isCloud: true }))
+const mockDistribution = vi.hoisted(() => ({ isCloud: true }))
+vi.mock(import('@/platform/distribution/types'), () => mockDistribution)
 
 vi.mock(import('@/platform/workspace/composables/useBillingCapabilities'))
 
@@ -355,6 +356,7 @@ describe('useMembersPanel', () => {
   let pinia: Pinia
 
   beforeEach(() => {
+    mockDistribution.isCloud = true
     const workspaceUI = vi.mocked(useWorkspaceUI())
     const defaultPermissions = workspaceUI.permissions.value
     workspaceUI.permissions = computed(() => ({
@@ -519,6 +521,84 @@ describe('useMembersPanel', () => {
       expect(panel.uiConfig.value.showPendingTab).toBe(true)
       expect(panel.uiConfig.value.showRoleColumn).toBe(true)
     })
+
+    it.for([
+      { canManage: true, maxSeats: 1, status: 'active' as const },
+      { canManage: true, maxSeats: 1, status: 'ended' as const },
+      { canManage: false, maxSeats: 73, status: 'active' as const },
+      { canManage: false, maxSeats: 73, status: 'ended' as const }
+    ])(
+      'uses server management visibility with $canManage permission, $maxSeats seats and $status status',
+      async ({ canManage, maxSeats, status }) => {
+        useBillingCapabilities().canManageMembers = computed(() => canManage)
+        mockMaxSeats.value = maxSeats
+        mockSubscriptionStatus.value = status
+        mockMembers.value = [createMember(), createMember({ id: 'member-2' })]
+        mockPendingInvites.value = [createInvite()]
+
+        const panel = await setup()
+
+        expect(panel.permissions.value.canViewOtherMembers).toBe(canManage)
+        expect(panel.permissions.value.canViewPendingInvites).toBe(canManage)
+        expect(panel.uiConfig.value.showMembersList).toBe(canManage)
+        expect(panel.uiConfig.value.showPendingTab).toBe(canManage)
+        expect(panel.uiConfig.value.showRoleColumn).toBe(canManage)
+        expect(panel.showSearch.value).toBe(canManage)
+        expect(panel.showViewTabs.value).toBe(canManage)
+      }
+    )
+
+    it.for([
+      {
+        role: 'owner' as const,
+        maxSeats: 1,
+        status: 'active' as const,
+        canManage: false,
+        showMembers: false,
+        showTabs: false
+      },
+      {
+        role: 'owner' as const,
+        maxSeats: 1,
+        status: 'ended' as const,
+        canManage: false,
+        showMembers: true,
+        showTabs: false
+      },
+      {
+        role: 'owner' as const,
+        maxSeats: 73,
+        status: 'active' as const,
+        canManage: true,
+        showMembers: true,
+        showTabs: true
+      },
+      {
+        role: 'member' as const,
+        maxSeats: 73,
+        status: 'active' as const,
+        canManage: false,
+        showMembers: true,
+        showTabs: true
+      }
+    ])(
+      'preserves desktop $role visibility with $maxSeats seats and $status status',
+      async ({ role, maxSeats, status, canManage, showMembers, showTabs }) => {
+        mockDistribution.isCloud = false
+        mockWorkspaceRole.value = role
+        mockMaxSeats.value = maxSeats
+        mockSubscriptionStatus.value = status
+        useBillingCapabilities().canManageMembers = computed(() => !canManage)
+        mockMembers.value = [createMember(), createMember({ id: 'member-2' })]
+        mockPendingInvites.value = [createInvite()]
+
+        const panel = await setup()
+
+        expect(panel.permissions.value.canManageMembers).toBe(canManage)
+        expect(panel.uiConfig.value.showMembersList).toBe(showMembers)
+        expect(panel.showViewTabs.value).toBe(showTabs)
+      }
+    )
 
     it('preserves the credit column layout for a Team owner', async () => {
       mockUiConfig.value = {

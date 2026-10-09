@@ -14,6 +14,14 @@ vi.mock(import('@/platform/distribution/types'), () => ({ isCloud: true }))
 vi.mock(import('@/platform/workspace/composables/useBillingCapabilities'))
 vi.mock(import('@/platform/workspace/composables/useWorkspaceUI'))
 
+vi.mock(import('@/composables/auth/useCurrentUser'))
+vi.mock(import('@/composables/billing/useBillingContext'))
+vi.mock(import('@/composables/useFeatureFlags'))
+vi.mock(import('@/services/dialogService'))
+vi.mock(
+  import('@/platform/cloud/subscription/composables/useSubscriptionDialog')
+)
+
 const stubs = {
   MembersPanelContent: { template: '<div data-testid="members-body" />' }
 }
@@ -58,6 +66,27 @@ describe('WorkspaceMembersPanelContent', () => {
     vi.mocked(workspaceStore.fetchMembers).mockResolvedValue([])
     vi.mocked(workspaceStore.fetchPendingInvites).mockResolvedValue([])
   })
+
+  it.for([true, false])(
+    'uses the members-panel permission when workspace role defaults disagree (management: %s)',
+    async (canManage) => {
+      useBillingCapabilities().canManageMembers = computed(() => canManage)
+      const workspaceUI = vi.mocked(useWorkspaceUI())
+      const rolePermissions = workspaceUI.permissions.value
+      workspaceUI.permissions = computed(() => ({
+        ...rolePermissions,
+        canViewPendingInvites: !canManage
+      }))
+
+      renderComponent()
+      await nextTick()
+
+      expect(workspaceStore.fetchMembers).toHaveBeenCalledTimes(1)
+      expect(workspaceStore.fetchPendingInvites).toHaveBeenCalledTimes(
+        canManage ? 1 : 0
+      )
+    }
+  )
 
   it('fetches members and pending invites on mount', () => {
     renderComponent()
