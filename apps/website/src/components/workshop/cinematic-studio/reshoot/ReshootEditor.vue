@@ -8,10 +8,10 @@ import { workshopAppRepo } from '@/lib/workshop/apps'
 import type { Locale } from '@/i18n/translations'
 import type { ReshootSound, ReshootView } from './output'
 import ReshootEditorDock from './ReshootEditorDock.vue'
+import ReshootEditorSettings from './ReshootEditorSettings.vue'
 import ReshootEditorStage from './ReshootEditorStage.vue'
 import ReshootExamples from './ReshootExamples.vue'
 import ReshootRun from './ReshootRun.vue'
-import ReshootSettings from './ReshootSettings.vue'
 import ReshootUpload from './ReshootUpload.vue'
 
 /** Re-shoot on the full-screen editor: the same state, framed by the kit. */
@@ -158,7 +158,7 @@ onBeforeUnmount(() =>
 
     <template v-if="picked" #panel>
       <div class="flex flex-col gap-6 pt-3 pb-4 md:pt-2">
-        <ReshootSettings
+        <ReshootEditorSettings
           v-model:upload="upload"
           v-model:aspect="aspect"
           v-model:size="size"
@@ -183,9 +183,6 @@ onBeforeUnmount(() =>
           :locale
           @pick="reshoot.pick()"
         />
-        <p class="text-[11px] text-primary-warm-gray/80">
-          {{ t('reshoot.credit') }}
-        </p>
       </div>
     </template>
     <template v-if="picked" #panel-peek>
@@ -212,6 +209,7 @@ onBeforeUnmount(() =>
         :can-generate="canGenerate"
         :price-note="priceNote"
         :workspace-name="session?.workspace.name"
+        quiet
         :locale
         @analyze="reshoot.analyze"
         @generate="reshoot.generate"
