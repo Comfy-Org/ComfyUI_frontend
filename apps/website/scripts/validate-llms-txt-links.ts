@@ -1,6 +1,7 @@
 import { existsSync, readFileSync, readdirSync } from 'node:fs'
 import { join, relative, sep } from 'node:path'
 
+import { linkStaleSources } from '@/config/redirects'
 import {
   findStaleLinks,
   isLinkedFile,
@@ -41,13 +42,6 @@ function isServed(pathname: string): boolean {
   return isWorkflowsAppPath(pathname) || existsSync(distFileFor(pathname))
 }
 
-function redirectSources(): string[] {
-  const vercel = JSON.parse(
-    readFileSync(join(process.cwd(), 'vercel.json'), 'utf8')
-  ) as { redirects: { source: string }[] }
-  return vercel.redirects.map(({ source }) => source)
-}
-
 /** `dist/llms-full.txt` plus every `llms.txt` the build wrote, root first. */
 function builtLlmsFiles(): string[] {
   const sectionFiles = sectionLlmsFiles(
@@ -67,7 +61,7 @@ function main(): void {
     process.exit(1)
   }
 
-  const checks = { redirectSources: redirectSources(), isServed, canonicalFor }
+  const checks = { redirectSources: linkStaleSources, isServed, canonicalFor }
   const files = builtLlmsFiles()
   const failures = files.flatMap((file) =>
     findStaleLinks(readFileSync(file, 'utf8'), checks).map(
