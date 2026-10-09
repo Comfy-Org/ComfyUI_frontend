@@ -35,12 +35,8 @@ function episode(
   scopedHasFunds: boolean,
   identity = IDENTITY
 ): CreditTransitionNoticeState {
-  if (phase === 'armed' || phase === 'shown') {
-    if (scopedHasFunds) {
-      throw new Error(`${phase} requires exhausted scoped funds`)
-    }
+  if (phase === 'armed' || phase === 'shown')
     return { identity, scopedHasFunds: false, phase }
-  }
   return { identity, scopedHasFunds, phase }
 }
 
