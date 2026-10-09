@@ -66,7 +66,7 @@ export function findVersionDrift(files: WorkflowFile[]): string[] {
 if (import.meta.main) {
   const root = '.github'
   const files = readdirSync(root, { recursive: true, encoding: 'utf8' })
-    .filter((file) => /\.ya?ml$/.test(file))
+    .filter((file) => /^(workflows|actions)\/.*\.ya?ml$/.test(file))
     .map((file) => ({
       path: join(root, file),
       contents: readFileSync(join(root, file), 'utf8')
