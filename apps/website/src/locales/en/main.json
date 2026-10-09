@@ -5598,7 +5598,12 @@
     "tryAgain": "Try again",
     "noWebgl": "This preview needs WebGL2, which this browser does not offer.",
     "play": "Play",
-    "pause": "Pause"
+    "pause": "Pause",
+    "tools": "Take views",
+    "sheet": {
+      "expand": "Show re-shoot settings",
+      "collapse": "Hide re-shoot settings"
+    }
   },
   "changelog": {
     "meta": {

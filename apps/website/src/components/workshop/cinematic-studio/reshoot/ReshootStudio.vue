@@ -6,8 +6,10 @@ import { useCinematicLeaveGuard } from '@/composables/useCinematicLeaveGuard'
 import { useReshoot } from '@/composables/useReshoot'
 import { reportStudioBusy } from '@/composables/useStudioSwitchGuard'
 import type { Locale } from '@/i18n/translations'
+import { useWorkshopFlag } from '@/scripts/posthog'
 import RunLeaveDialog from '@/components/workshop/RunLeaveDialog.vue'
 import AppsBackLink from '@/components/workshop/cinematic-studio/AppsBackLink.vue'
+import ReshootEditor from './ReshootEditor.vue'
 import ReshootHeader from './ReshootHeader.vue'
 import ReshootExamples from './ReshootExamples.vue'
 import ReshootSide from './ReshootSide.vue'
@@ -16,6 +18,8 @@ import ReshootUpload from './ReshootUpload.vue'
 
 const { locale = 'en' } = defineProps<{ locale?: Locale }>()
 const { t } = translationsFor(locale)
+
+const fullScreen = useWorkshopFlag('workshop-reshoot-fullscreen-enabled')
 
 // Reading the scene and every take run on the Comfy app proxy. The scene is
 // read as soon as a clip is picked; the camera is then aimed against a live
@@ -62,7 +66,9 @@ const { leavingTo, leave, stay } = useCinematicLeaveGuard(
 </script>
 
 <template>
+  <ReshootEditor v-if="fullScreen" :reshoot :locale />
   <div
+    v-else
     class="mx-auto mb-12 flex w-full max-w-10xl flex-col gap-4 px-4 pt-6 sm:px-8 lg:mb-20 lg:px-14"
     data-testid="reshoot"
   >
@@ -153,11 +159,11 @@ const { leavingTo, leave, stay } = useCinematicLeaveGuard(
       class="mt-6"
       @pick="reshoot.pick()"
     />
-    <RunLeaveDialog
-      :open="leavingTo !== undefined"
-      :locale
-      @update:open="(value: boolean) => !value && stay()"
-      @leave="leave"
-    />
   </div>
+  <RunLeaveDialog
+    :open="leavingTo !== undefined"
+    :locale
+    @update:open="(value: boolean) => !value && stay()"
+    @leave="leave"
+  />
 </template>
