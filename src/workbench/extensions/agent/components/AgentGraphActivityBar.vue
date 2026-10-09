@@ -50,8 +50,9 @@ const liveNodes = computed(() => {
   if (!state || !canvas) return []
   return state.nodeIds.flatMap((nodeId) => {
     const locator = createNodeLocatorId(null, nodeId)
+    if (!locator) return []
     const node = getNodeByLocatorId(app.rootGraph, locator)
-    return locator && node?.graph === canvas.graph ? [node] : []
+    return node?.graph === canvas.graph ? [node] : []
   })
 })
 
