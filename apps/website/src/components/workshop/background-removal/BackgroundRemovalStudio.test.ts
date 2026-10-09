@@ -37,14 +37,15 @@ async function openExample(layout?: string) {
 
 const panel = () =>
   screen.getByRole('complementary', { name: 'Background Removal settings' })
-const section = (name: string) => within(panel()).getByRole('region', { name })
-const tile = (name: string) =>
-  within(section('Background')).getByRole('radio', { name })
+const tile = (name: string) => within(panel()).getByRole('radio', { name })
 const undo = () => screen.getByRole('button', { name: 'Undo' })
 
 describe('BackgroundRemovalStudio', () => {
   it('removes the background from the panel and opens the result on Compare', async () => {
     const user = await openExample()
+    expect(
+      within(panel()).getByRole('button', { name: /^Change photo: / })
+    ).toBeVisible()
     expect(tile('Transparent')).toBeChecked()
     expect(undo()).toBeDisabled()
     expect(screen.getByRole('button', { name: 'Download' })).toHaveAttribute(
@@ -56,11 +57,9 @@ describe('BackgroundRemovalStudio', () => {
     await user.click(
       within(panel()).getByRole('button', { name: 'Format: PNG' })
     )
-    await user.click(
-      screen.getByRole('menuitemradio', { name: 'WebP Smaller file' })
-    )
+    await user.click(screen.getByRole('menuitemradio', { name: /^WebP/ }))
     expect(
-      within(panel()).getByRole('button', { name: /^Background\s*Lilac/ })
+      within(panel()).getByRole('button', { name: 'Format: WebP' })
     ).toBeVisible()
 
     await user.click(within(panel()).getByTestId('background-removal-run'))
@@ -106,28 +105,30 @@ describe('BackgroundRemovalStudio', () => {
     expect(tile('White')).toBeChecked()
   })
 
-  it('keeps only the edge softness in the collapsed Advanced section, and no seed outside Replace', async () => {
+  it('shows the edge softness in the panel without a section, and no seed outside Replace', async () => {
     const user = await openExample()
-    expect(
-      within(panel()).queryByRole('slider', { name: 'Edge softness' })
-    ).toBeNull()
+    expect(within(panel()).queryByRole('region')).toBeNull()
     expect(
       within(panel()).queryByRole('spinbutton', { name: 'Seed' })
     ).toBeNull()
 
-    await user.click(within(panel()).getByRole('button', { name: /^Advanced/ }))
-    const edge = within(section('Advanced')).getByRole('slider', {
-      name: 'Edge softness'
-    })
+    const edge = within(panel()).getByRole('slider', { name: 'Edge softness' })
+    await fireEvent.update(edge, '35')
+    await fireEvent.update(edge, '60')
+    await user.click(within(panel()).getByTestId('background-removal-run'))
+    expect(vi.mocked(renderCutout)).toHaveBeenCalledWith(
+      expect.objectContaining({ edgeSoftness: 60 })
+    )
+  })
+
+  it('undoes an edge softness change', async () => {
+    const user = await openExample()
+    const edge = within(panel()).getByRole('slider', { name: 'Edge softness' })
     await fireEvent.update(edge, '35')
     await fireEvent.update(edge, '60')
 
-    expect(
-      within(panel()).getByRole('button', { name: /^Advanced\s*Edge 60%/ })
-    ).toBeVisible()
     await user.click(undo())
     expect(edge).toHaveValue('20')
-    expect(within(section('Advanced')).getAllByRole('slider')).toHaveLength(1)
   })
 
   it('picks a custom colour from the last swatch', async () => {
@@ -141,9 +142,6 @@ describe('BackgroundRemovalStudio', () => {
 
     expect(tile('Custom colour')).toBeChecked()
     expect(tile('Transparent')).not.toBeChecked()
-    expect(
-      within(panel()).getByRole('button', { name: /^Background\s*#336699/ })
-    ).toBeVisible()
     await user.click(within(panel()).getByTestId('background-removal-run'))
     expect(vi.mocked(renderCutout)).toHaveBeenCalledWith(
       expect.objectContaining({
@@ -152,11 +150,9 @@ describe('BackgroundRemovalStudio', () => {
     )
   })
 
-  it('replaces the background from a description, with the seed as a row of its own', async () => {
+  it('replaces the background from the prompt box, with model and seed in the format bar', async () => {
     const user = await openExample()
-    await user.click(
-      within(section('Background')).getByRole('radio', { name: 'Replace' })
-    )
+    await user.click(tile('Replace'))
     const run = within(panel()).getByTestId('background-removal-run')
     expect(run).toHaveTextContent('Add a prompt or reference')
     expect(run).toHaveAttribute(
@@ -165,21 +161,23 @@ describe('BackgroundRemovalStudio', () => {
     )
     expect(run).toBeDisabled()
     expect(
-      within(section('Background')).queryByText(/Add a prompt or reference/)
-    ).toBeNull()
-    const seed = within(panel()).getByRole('spinbutton', { name: 'Seed' })
-    expect(section('Background')).not.toContainElement(seed)
+      within(panel()).getAllByText(/Add a prompt or reference/)
+    ).toHaveLength(1)
+    expect(
+      within(panel()).getByRole('spinbutton', { name: 'Seed' })
+    ).toHaveValue(42)
+    expect(
+      within(panel()).getByRole('button', { name: 'Add a reference image' })
+    ).toBeVisible()
 
     await user.click(
-      within(section('Background')).getByRole('button', { name: 'Model: Auto' })
+      within(panel()).getByRole('button', { name: 'Model: Auto' })
     )
     await user.click(
       screen.getByRole('menuitemradio', { name: 'Seedream 4.5' })
     )
     await user.type(
-      within(section('Background')).getByRole('textbox', {
-        name: 'New background'
-      }),
+      within(panel()).getByRole('textbox', { name: 'New background' }),
       'a terracotta wall'
     )
     expect(run).toBeEnabled()
@@ -205,25 +203,16 @@ describe('BackgroundRemovalStudio', () => {
 
   it('adjusts the chosen layer live on the photo and sends the values', async () => {
     const user = await openExample()
-    await user.click(
-      within(section('Background')).getByRole('radio', { name: 'Adjust' })
-    )
-    await user.click(
-      within(section('Background')).getByRole('radio', { name: 'Foreground' })
-    )
+    await user.click(tile('Adjust'))
+    await user.click(tile('Foreground'))
     await fireEvent.update(
-      within(section('Background')).getByRole('slider', { name: 'Grayscale' }),
+      within(panel()).getByRole('slider', { name: 'Grayscale' }),
       '40'
     )
 
     expect(screen.getByTestId('background-removal-foreground')).toHaveStyle({
       filter: 'grayscale(40%)'
     })
-    expect(
-      within(panel()).getByRole('button', {
-        name: /^Background\s*Adjust · Foreground/
-      })
-    ).toBeVisible()
     await user.click(within(panel()).getByTestId('background-removal-run'))
     expect(vi.mocked(renderCutout)).toHaveBeenCalledWith(
       expect.objectContaining({
@@ -282,7 +271,7 @@ describe('BackgroundRemovalStudio', () => {
       within(panel()).getByRole('button', { name: 'Show all settings' })
     )
 
-    expect(section('Background')).toBeVisible()
+    expect(tile('Transparent')).toBeVisible()
   })
 
   it.for([
