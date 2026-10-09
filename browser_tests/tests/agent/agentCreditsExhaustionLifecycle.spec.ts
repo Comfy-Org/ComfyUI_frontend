@@ -99,7 +99,7 @@ test.describe(
  */
 test.describe(
   'Agent credit-transition notice',
-  { tag: ['@cloud', '@ui'] },
+  { tag: ['@cloud', '@screenshot', '@ui'] },
   () => {
     test.use({
       connectWebSocketToServer: false,
