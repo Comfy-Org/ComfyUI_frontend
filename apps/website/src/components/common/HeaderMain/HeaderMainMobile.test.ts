@@ -7,7 +7,7 @@ import HeaderMainMobile from './HeaderMainMobile.vue'
 async function openMenu() {
   const user = userEvent.setup()
   render(HeaderMainMobile, {
-    props: { hubSections: { workflows: true, apps: true } }
+    props: { hubSections: { workflows: true, apps: true, reshoot: true } }
   })
   await user.click(screen.getByRole('button', { name: 'Toggle menu' }))
   return user

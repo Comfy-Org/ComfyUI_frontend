@@ -1,3 +1,4 @@
+import type { AppWorkshopModel } from '@/config/models-catalogue'
 import { externalLinks, getRoutes } from '@/config/routes'
 import type { Locale } from '@/i18n/translations'
 import { translationsFor } from '@/i18n/translations'
@@ -57,12 +58,20 @@ export type NavItem =
       activePathPrefix?: never
     }
 
+/** A built Hub app and the PostHog flag it is shown behind, if any. */
+export type HubApp = Pick<AppWorkshopModel, 'appId' | 'flag'>
+
 export type HubSections = {
   workflows: boolean
   apps: boolean
+  reshoot: boolean
 }
 
-export const NO_HUB_SECTIONS: HubSections = { workflows: false, apps: false }
+export const NO_HUB_SECTIONS: HubSections = {
+  workflows: false,
+  apps: false,
+  reshoot: false
+}
 
 export function getMainNavigation(
   locale: Locale,
@@ -144,7 +153,11 @@ export function getMainNavigation(
               href: routes.cinematicStudio,
               newTab: true
             },
-            { label: t('nav.reshoot'), href: routes.reshoot, newTab: true }
+            ...when(hubSections.reshoot, {
+              label: t('nav.reshoot'),
+              href: routes.reshoot,
+              newTab: true
+            })
           ],
           allLink: { label: t('nav.hubAllApps'), href: routes.hubApps }
         })

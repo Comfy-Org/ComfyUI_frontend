@@ -15,6 +15,7 @@ import {
   isNoindexPathname
 } from '@/config/indexing'
 import { isWorkshopInBuild } from '@/config/workshop-release'
+import { appModels } from '@/config/workshop-app-content'
 import {
   hreflangAlternates,
   localeAlternates,
@@ -321,6 +322,9 @@ const structuredData = head.emitStructuredData
         locale={locale}
         github-stars={githubStars}
         workshop-in-build={isWorkshopInBuild()}
+        hub-apps={appModels.map(({ appId, flag }) =>
+          flag ? { appId, flag } : { appId }
+        )}
         client:load
       />
     )}

@@ -28,6 +28,8 @@ import {
   useWorkshopEnabled,
   useWorkshopWorkflowsEnabled
 } from '@/scripts/posthog.ts'
+import { isWorkshopModelShown } from '@/scripts/workshop-model-flags.ts'
+import type { HubApp, HubSections } from '@/data/mainNavigation.ts'
 import GitHubStarBadge from '@/components/common/GitHubStarBadge.vue'
 import HeaderMainDesktop from './HeaderMainDesktop.vue'
 import HeaderMainMobile from './HeaderMainMobile.vue'
@@ -37,11 +39,13 @@ import Button from '@/components/ui/button/Button.vue'
 const {
   locale = 'en',
   githubStars = '',
-  workshopInBuild = false
+  workshopInBuild = false,
+  hubApps = []
 } = defineProps<{
   locale?: Locale
   githubStars?: string
   workshopInBuild?: boolean
+  hubApps?: readonly HubApp[]
 }>()
 const { t } = translationsFor(locale)
 const routes = getRoutes(locale)
@@ -53,9 +57,13 @@ const showWorkshop = computed(
 )
 const workflowsEnabled = useWorkshopWorkflowsEnabled()
 const appsEnabled = useWorkshopAppsEnabled()
-const hubSections = computed(() => ({
-  workflows: workflowsEnabled.value,
-  apps: appsEnabled.value
+const hubSections = computed<HubSections>(() => ({
+  workflows: showWorkshop.value && workflowsEnabled.value,
+  apps: showWorkshop.value && appsEnabled.value,
+  reshoot:
+    showWorkshop.value &&
+    appsEnabled.value &&
+    hubApps.some((app) => app.appId === 'reshoot' && isWorkshopModelShown(app))
 }))
 const showAccount = computed(
   () => showWorkshop.value && workshopAuthEnabled.value

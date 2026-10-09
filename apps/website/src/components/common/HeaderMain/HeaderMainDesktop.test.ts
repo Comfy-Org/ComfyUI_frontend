@@ -6,7 +6,11 @@ import { nextTick } from 'vue'
 import type { HubSections } from '@/data/mainNavigation'
 import HeaderMainDesktop from './HeaderMainDesktop.vue'
 
-const ALL_SECTIONS: HubSections = { workflows: true, apps: true }
+const ALL_SECTIONS: HubSections = {
+  workflows: true,
+  apps: true,
+  reshoot: true
+}
 
 async function openHub(hubSections: HubSections = ALL_SECTIONS) {
   history.replaceState(null, '', '/pricing')
@@ -106,7 +110,11 @@ describe('HeaderMainDesktop', () => {
   )
 
   it('leaves the sections that are off and their All links out of the menu', async () => {
-    const menu = await openHub({ workflows: false, apps: false })
+    const menu = await openHub({
+      workflows: false,
+      apps: false,
+      reshoot: false
+    })
 
     expect(menu.queryByRole('list', { name: 'Workflows' })).toBeNull()
     expect(menu.queryByRole('list', { name: 'Apps' })).toBeNull()

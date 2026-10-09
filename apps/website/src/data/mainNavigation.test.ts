@@ -8,7 +8,11 @@ import { t } from '@/i18n/translations'
 import type { HubSections, NavItem } from './mainNavigation'
 import { getMainNavigation } from './mainNavigation'
 
-const ALL_SECTIONS: HubSections = { workflows: true, apps: true }
+const ALL_SECTIONS: HubSections = {
+  workflows: true,
+  apps: true,
+  reshoot: true
+}
 
 function hubOf(navigation: NavItem[]): NavItem {
   const hub = navigation[0]
@@ -39,12 +43,18 @@ describe('getMainNavigation', () => {
   )
 
   it.for([
-    { sections: { workflows: false, apps: false }, headers: ['Models'] },
     {
-      sections: { workflows: true, apps: false },
+      sections: { workflows: false, apps: false, reshoot: false },
+      headers: ['Models']
+    },
+    {
+      sections: { workflows: true, apps: false, reshoot: false },
       headers: ['Models', 'Workflows']
     },
-    { sections: { workflows: false, apps: true }, headers: ['Models', 'Apps'] },
+    {
+      sections: { workflows: false, apps: true, reshoot: true },
+      headers: ['Models', 'Apps']
+    },
     { sections: ALL_SECTIONS, headers: ['Models', 'Workflows', 'Apps'] }
   ])(
     'opens the Hub as one column per section that is on, showing $headers',
@@ -137,6 +147,19 @@ describe('getMainNavigation', () => {
       }
     ])
   })
+
+  it.for([
+    { reshoot: true, apps: ['Cinematic Studio', 'Re-shoot'] },
+    { reshoot: false, apps: ['Cinematic Studio'] }
+  ])(
+    'lists Re-shoot in the Apps column only when its flag is on: $reshoot',
+    ({ reshoot, apps }) => {
+      const hub = hubOf(getMainNavigation('en', { ...ALL_SECTIONS, reshoot }))
+      const appsColumn = hub.columns?.find((column) => column.header === 'Apps')
+
+      expect(appsColumn?.items.map((item) => item.label)).toEqual(apps)
+    }
+  )
 
   it('links every Hub entry to a page the site builds', () => {
     const hub = hubOf(getMainNavigation('en', ALL_SECTIONS))
