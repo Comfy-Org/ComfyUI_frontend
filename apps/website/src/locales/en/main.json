@@ -5614,18 +5614,9 @@
       "hint": "Any length. You pick 5–15 seconds of it; one continuous shot works best.",
       "detail": "{seconds} s · swapping {used} s"
     },
-    "character": {
-      "heading": "New character",
-      "drop": "Add a character image",
-      "hint": "One image: a clear full view or a character sheet.",
-      "detail": "Replaces the person you name below",
-      "upload": "Upload",
-      "change": "Choose another character image"
-    },
     "target": {
       "heading": "Who to replace",
-      "placeholder": "e.g. the man in the purple shirt",
-      "hint": "Describe one person so they cannot be confused with anyone else in the shot.",
+      "placeholder": "Who to replace? Describe one person so no one else in the shot matches, e.g. the man in the purple shirt.",
       "help": "The swap follows this description, not a click on the picture. Say what sets the person apart: clothing, position, hair."
     },
     "seed": {
@@ -5675,9 +5666,7 @@
     "size": {
       "label": "Quality",
       "768p": "768p · sharper",
-      "480p": "480p · faster",
-      "saved": "Saves at {width}×{height}, the same shape as your video.",
-      "shape": "The result always keeps your video's shape."
+      "480p": "480p · faster"
     },
     "run": "Swap character",
     "tools": "Result views",

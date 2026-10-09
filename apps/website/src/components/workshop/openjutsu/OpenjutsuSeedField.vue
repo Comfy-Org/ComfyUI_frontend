@@ -27,25 +27,22 @@ function shuffle() {
 </script>
 
 <template>
-  <div class="flex items-center gap-1">
-    <div class="flex h-8 min-w-0 flex-1 items-center gap-2 px-1">
-      <label
-        :for="id"
-        data-field-label
-        class="w-24 shrink-0 text-xs text-primary-warm-gray"
-        >{{ label }}</label
-      >
-      <input
-        :id
-        :value="seed ?? ''"
-        type="number"
-        min="0"
-        step="1"
-        :placeholder="randomLabel"
-        class="h-8 min-w-0 flex-1 rounded-lg bg-transparency-white-t4 px-2.5 text-xs text-primary-warm-white tabular-nums placeholder:text-primary-warm-gray/60 focus-visible:ring-2 focus-visible:ring-primary-comfy-yellow/50 focus-visible:outline-none disabled:opacity-40"
-        @change="onChange"
-      />
-    </div>
+  <div
+    class="flex h-10 items-center gap-1 rounded-xl border border-transparency-white-t8 pr-1 pl-3 hover:border-transparency-white-t20"
+  >
+    <label :for="id" class="shrink-0 text-sm text-primary-warm-gray">{{
+      label
+    }}</label>
+    <input
+      :id
+      :value="seed ?? ''"
+      type="number"
+      min="0"
+      step="1"
+      :placeholder="randomLabel"
+      class="h-8 min-w-0 flex-1 bg-transparent px-1 text-sm text-primary-warm-white tabular-nums outline-none placeholder:text-primary-warm-gray/60 focus-visible:ring-2 focus-visible:ring-primary-comfy-yellow/50"
+      @change="onChange"
+    />
     <EditorIconButton :icon="Dices" :label="shuffleLabel" @click="shuffle" />
   </div>
 </template>

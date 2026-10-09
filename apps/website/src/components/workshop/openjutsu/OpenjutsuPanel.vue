@@ -1,22 +1,16 @@
 <script setup lang="ts">
-import { Scissors } from '@lucide/vue'
+import { ChevronDown, Maximize, Scissors } from '@lucide/vue'
 import { computed } from 'vue'
 
-import EditorDropZone from '@/components/workshop/app-editor/EditorDropZone.vue'
-import EditorPanelRow from '@/components/workshop/app-editor/EditorPanelRow.vue'
-import EditorSelect from '@/components/workshop/app-editor/EditorSelect.vue'
-import EditorTextArea from '@/components/workshop/app-editor/EditorTextArea.vue'
-import EditorTiles from '@/components/workshop/app-editor/EditorTiles.vue'
+import { FORMAT_TRIGGER_CLASS } from '@/components/workshop/cinematic-studio/cinematic-menu-trigger'
+import CinematicMenu from '@/components/workshop/cinematic-studio/CinematicMenu.vue'
+import CinematicReferenceButton from '@/components/workshop/cinematic-studio/CinematicReferenceButton.vue'
 import type { Locale } from '@/i18n/translations'
 import { translationsFor } from '@/i18n/translations'
-import type {
-  SwapCanvas,
-  SwapSize,
-  SwapWindow
-} from '@/lib/workshop/openjutsu/clip'
+import type { StudioImage } from '@/lib/workshop/cinematic-studio/take-image'
+import type { SwapSize, SwapWindow } from '@/lib/workshop/openjutsu/clip'
 import { SWAP_SIZES } from '@/lib/workshop/openjutsu/clip'
 import OpenjutsuSeedField from './OpenjutsuSeedField.vue'
-import OpenjutsuVideoInput from './OpenjutsuVideoInput.vue'
 
 /** The panel's fields, in the order a run needs them, once a video is chosen. */
 const {
@@ -25,7 +19,6 @@ const {
   clipSeconds,
   range,
   partSeconds,
-  savedSize,
   characterUrl,
   characterName,
   locale = 'en'
@@ -35,8 +28,6 @@ const {
   clipSeconds?: number
   range?: SwapWindow
   partSeconds?: number
-  /** The frame the result is saved at. */
-  savedSize?: SwapCanvas
   characterUrl?: string
   characterName?: string
   locale?: Locale
@@ -57,8 +48,35 @@ const sizes = SWAP_SIZES.map((id) => ({
   id,
   label: t(`openjutsu.size.${id}`)
 }))
+const sizeValue = computed({
+  get: () => size.value,
+  set: (id: string) => {
+    const picked = SWAP_SIZES.find((option) => option === id)
+    if (picked) size.value = picked
+  }
+})
 
-const videoDetail = computed(() =>
+function pickedFile(image: StudioImage | undefined) {
+  return image instanceof File ? image : undefined
+}
+
+const video = computed({
+  get: (): StudioImage => ({ url: videoUrl, name: videoName ?? '' }),
+  set: (image) => {
+    const file = pickedFile(image)
+    if (file) emit('video', file)
+  }
+})
+const character = computed({
+  get: (): StudioImage | undefined =>
+    characterUrl ? { url: characterUrl, name: characterName ?? '' } : undefined,
+  set: (image) => {
+    const file = pickedFile(image)
+    if (file) emit('character', file)
+  }
+})
+
+const partSummary = computed(() =>
   clipSeconds === undefined || range === undefined || partSeconds === undefined
     ? undefined
     : t('openjutsu.trim.summary', {
@@ -68,130 +86,74 @@ const videoDetail = computed(() =>
         total: clipSeconds.toFixed(1)
       })
 )
-
-const characterTiles = computed(() =>
-  characterUrl
-    ? [{ id: 'character', label: characterName ?? '', src: characterUrl }]
-    : []
-)
-const characterUpload = computed(() =>
-  characterUrl
-    ? {
-        label: t('openjutsu.character.change'),
-        caption: t('reshoot.clip.change'),
-        inputTestId: 'openjutsu-character-file'
-      }
-    : {
-        label: t('openjutsu.character.drop'),
-        caption: t('openjutsu.character.upload'),
-        inputTestId: 'openjutsu-character-file'
-      }
-)
 </script>
 
 <template>
-  <div
-    role="group"
-    :aria-label="t('openjutsu.video.heading')"
-    class="flex items-center gap-3 px-1 pt-2 pb-1"
-    data-testid="openjutsu-video-row"
-  >
-    <video
-      :src="videoUrl"
-      muted
-      playsinline
-      preload="metadata"
-      aria-hidden="true"
-      class="size-10 shrink-0 rounded-lg bg-primary-comfy-ink object-cover"
-    />
-    <span class="flex min-w-0 flex-1 flex-col">
-      <span class="truncate text-xs text-primary-warm-white">
-        {{ videoName }}
-      </span>
+  <div class="flex flex-col gap-3 pt-2">
+    <section class="flex flex-col gap-2">
+      <label for="openjutsu-target" class="sr-only">
+        {{ t('openjutsu.target.heading') }}
+      </label>
+      <div
+        class="flex flex-col overflow-hidden rounded-2xl border border-transparency-white-t20 bg-transparency-white-t4 focus-within:border-primary-warm-white/60"
+      >
+        <textarea
+          id="openjutsu-target"
+          v-model="target"
+          rows="4"
+          :placeholder="t('openjutsu.target.placeholder')"
+          class="h-28 resize-none bg-transparent px-3.5 py-3 text-sm leading-relaxed text-primary-warm-white outline-none placeholder:text-primary-warm-gray"
+        />
+        <div class="flex items-center gap-2 pb-2.5 pl-2.5">
+          <CinematicReferenceButton
+            v-model="video"
+            kind="video"
+            :removable="false"
+            :locale
+          />
+          <CinematicReferenceButton
+            v-model="character"
+            kind="cast"
+            :removable="false"
+            :locale
+          />
+        </div>
+      </div>
       <button
-        v-if="videoDetail"
+        v-if="partSummary"
         type="button"
-        class="flex w-fit items-start gap-1 rounded-sm text-left text-[11px]/snug text-primary-warm-gray tabular-nums transition hover:text-primary-warm-white focus-visible:ring-2 focus-visible:ring-primary-comfy-yellow/50 focus-visible:outline-none"
+        class="flex w-fit items-center gap-1.5 rounded-sm px-1 text-xs text-primary-warm-gray tabular-nums transition hover:text-primary-warm-white focus-visible:ring-2 focus-visible:ring-primary-comfy-yellow/50 focus-visible:outline-none"
         data-testid="openjutsu-part"
         @click="emit('trim')"
       >
-        <Scissors class="mt-0.5 size-3 shrink-0" aria-hidden="true" />
-        <span>
-          <span class="sr-only">{{ t('openjutsu.trim.edit') }}:</span>
-          {{ videoDetail }}
-        </span>
+        <Scissors class="size-3.5 shrink-0" aria-hidden="true" />
+        <span class="sr-only">{{ t('openjutsu.trim.edit') }}:</span>
+        {{ partSummary }}
       </button>
-    </span>
-    <OpenjutsuVideoInput
-      :label="t('reshoot.clip.replace')"
-      class="flex h-7 shrink-0 items-center rounded-full bg-transparency-white-t8 px-3 text-xs text-primary-warm-white hover:bg-transparency-white-t20"
-      @file="emit('video', $event)"
-    >
-      {{ t('reshoot.clip.change') }}
-    </OpenjutsuVideoInput>
-  </div>
+    </section>
 
-  <EditorPanelRow>
-    <EditorDropZone
-      class="flex flex-col gap-2 rounded-xl"
-      @file="emit('character', $event)"
-    >
-      <h2 class="px-1 text-xs text-primary-warm-gray">
-        {{ t('openjutsu.character.heading') }}
-      </h2>
-      <EditorTiles
-        :model-value="characterUrl ? 'character' : undefined"
-        :label="t('openjutsu.character.heading')"
-        :options="characterTiles"
-        aspect="square"
-        :upload="characterUpload"
-        @upload="emit('character', $event)"
+    <div class="grid grid-cols-2 gap-2">
+      <CinematicMenu
+        v-model="sizeValue"
+        :options="sizes"
+        :heading="t('openjutsu.size.label')"
+        side="top"
+        tooltip
+        :trigger-class="FORMAT_TRIGGER_CLASS"
+      >
+        <Maximize class="size-3.5 text-primary-warm-gray" aria-hidden="true" />
+        <span class="flex-1 text-left">{{ size }}</span>
+        <ChevronDown
+          class="size-3.5 text-primary-warm-gray"
+          aria-hidden="true"
+        />
+      </CinematicMenu>
+      <OpenjutsuSeedField
+        v-model="seed"
+        :label="t('reshoot.seed.label')"
+        :random-label="t('reshoot.seed.random')"
+        :shuffle-label="t('openjutsu.seed.shuffle')"
       />
-      <p class="px-1 text-[11px]/snug text-primary-warm-gray">
-        {{
-          characterUrl
-            ? t('openjutsu.character.detail')
-            : t('openjutsu.character.hint')
-        }}
-      </p>
-    </EditorDropZone>
-  </EditorPanelRow>
-
-  <EditorPanelRow>
-    <EditorTextArea
-      v-model="target"
-      :label="t('openjutsu.target.heading')"
-      :placeholder="t('openjutsu.target.placeholder')"
-    />
-    <p class="px-1 text-[11px]/snug text-primary-warm-gray">
-      {{ t('openjutsu.target.hint') }}
-    </p>
-  </EditorPanelRow>
-
-  <EditorPanelRow>
-    <EditorSelect
-      v-model="size"
-      :label="t('openjutsu.size.label')"
-      :options="sizes"
-    />
-    <p
-      class="px-1 text-[11px]/snug text-primary-warm-gray"
-      data-testid="openjutsu-saved-size"
-    >
-      {{
-        savedSize
-          ? t('openjutsu.size.saved', {
-              width: savedSize.width,
-              height: savedSize.height
-            })
-          : t('openjutsu.size.shape')
-      }}
-    </p>
-    <OpenjutsuSeedField
-      v-model="seed"
-      :label="t('reshoot.seed.label')"
-      :random-label="t('reshoot.seed.random')"
-      :shuffle-label="t('openjutsu.seed.shuffle')"
-    />
-  </EditorPanelRow>
+    </div>
+  </div>
 </template>

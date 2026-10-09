@@ -7,7 +7,7 @@ import OpenjutsuPanel from './OpenjutsuPanel.vue'
 const models = { target: '', size: '768p' as const, videoUrl: 'blob:clip' }
 
 describe('OpenjutsuPanel', () => {
-  it('shows the chosen video with the part to swap, and the way to trim or change it', async () => {
+  it('shows the part being swapped and opens the trim from it', async () => {
     const { emitted } = render(OpenjutsuPanel, {
       props: {
         ...models,
@@ -17,55 +17,69 @@ describe('OpenjutsuPanel', () => {
         partSeconds: 6
       }
     })
-    const other = new File(['other'], 'other.mp4', { type: 'video/mp4' })
 
-    expect(screen.getByText('dance.mp4')).toBeVisible()
     await userEvent.click(
       screen.getByRole('button', {
         name: 'Trim: Swapping 2.0 – 8.0 s (6.0 s of 20.0 s)'
       })
     )
-    await userEvent.upload(screen.getByLabelText('Choose another clip'), other)
 
     expect(emitted('trim')).toHaveLength(1)
-    expect(emitted('video')).toEqual([[other]])
   })
 
-  it('takes a character image from an upload tile', async () => {
-    const { emitted } = render(OpenjutsuPanel, { props: models })
-    const face = new File(['face'], 'face.png', { type: 'image/png' })
+  it.for([
+    {
+      slot: 'video',
+      action: 'Add the video to edit: dance.mp4',
+      file: new File(['clip'], 'other.mp4', { type: 'video/mp4' })
+    },
+    {
+      slot: 'cast',
+      action: 'Add a character reference',
+      file: new File(['face'], 'face.png', { type: 'image/png' })
+    }
+  ] as const)(
+    'takes a new $slot from its reference button',
+    async ({ slot, action, file }) => {
+      const { emitted } = render(OpenjutsuPanel, {
+        props: { ...models, videoName: 'dance.mp4' }
+      })
 
-    expect(
-      screen.getByRole('button', { name: 'Add a character image' })
-    ).toBeVisible()
-    await userEvent.upload(screen.getByTestId('openjutsu-character-file'), face)
+      expect(screen.getByRole('button', { name: action })).toBeVisible()
+      await userEvent.upload(
+        screen.getByTestId(`cinematic-reference-${slot}`),
+        file
+      )
 
-    expect(emitted('character')).toEqual([[face]])
-  })
+      expect(emitted(slot === 'video' ? 'video' : 'character')).toEqual([
+        [file]
+      ])
+    }
+  )
 
-  it('shows the chosen character as a tile beside a tile to change it', async () => {
-    const { emitted } = render(OpenjutsuPanel, {
+  it('keeps the chosen inputs without a way to empty them', () => {
+    render(OpenjutsuPanel, {
       props: { ...models, characterUrl: 'blob:face', characterName: 'face.png' }
     })
-    const other = new File(['other'], 'other.png', { type: 'image/png' })
 
-    expect(screen.getByRole('radio', { name: 'face.png' })).toBeChecked()
     expect(
-      screen.getByRole('button', { name: 'Choose another character image' })
+      screen.getByRole('button', {
+        name: 'Add a character reference: face.png'
+      })
     ).toBeVisible()
-    await userEvent.upload(
-      screen.getByTestId('openjutsu-character-file'),
-      other
-    )
-
-    expect(emitted('character')).toEqual([[other]])
+    expect(screen.queryByRole('button', { name: /^Remove/ })).toBeNull()
   })
 
   it('edits who to replace, the quality and a fixed seed', async () => {
     const { emitted } = render(OpenjutsuPanel, { props: models })
 
     await userEvent.type(screen.getByLabelText('Who to replace'), 'the man')
-    await userEvent.selectOptions(screen.getByLabelText('Quality'), '480p')
+    await userEvent.click(
+      screen.getByRole('button', { name: 'Quality: 768p · sharper' })
+    )
+    await userEvent.click(
+      await screen.findByRole('menuitemradio', { name: /480p/ })
+    )
     await userEvent.type(screen.getByLabelText('Seed'), '42{Tab}')
 
     expect(emitted('update:target').at(-1)).toEqual(['the man'])
