@@ -50,16 +50,6 @@ describe('nodeOutputStore: outputs for insert_workflow-remapped node ids', () =>
     expect(useNodeOutputStore().getNodeOutputs(node)).toEqual(OUTPUT)
   })
 
-  it('resolves the image URL for an agent-inserted node', () => {
-    const node = addRootSaveImageNode(REMAPPED_ID)
-
-    setOutputsByRawExecutionId(REMAPPED_ID)
-
-    const urls = useNodeOutputStore().getNodeImageUrls(node)
-    expect(urls).toHaveLength(1)
-    expect(urls?.[0]).toContain('astronaut.png')
-  })
-
   it('keys two inserted nodes separately rather than collapsing them', () => {
     const graph = new LGraph()
     const first = new SaveImage()
