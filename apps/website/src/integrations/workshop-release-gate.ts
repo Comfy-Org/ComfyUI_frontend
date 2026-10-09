@@ -119,7 +119,10 @@ function installCmsRoutes(
     ['/admin/session', 'session.ts'],
     ['/admin/local-access', 'local-access.astro'],
     ['/admin/local-session', 'local-access.ts'],
-    ['/admin/actions', 'actions.ts']
+    ['/admin/actions', 'actions.ts'],
+    ...(process.env.SITE_CATALOG_DEMO === '1'
+      ? [['/500', 'demo-error.astro']]
+      : [])
   ]) {
     injectRoute({
       pattern,

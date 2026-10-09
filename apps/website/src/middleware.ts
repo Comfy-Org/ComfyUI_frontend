@@ -136,27 +136,14 @@ function selectPreview(context: APIContext) {
   return context.redirect(context.url.pathname + context.url.search, 303)
 }
 
-function staffAccess(context: APIContext) {
+export const onRequest = defineMiddleware(async (context, next) => {
+  context.locals.t = translationsFor(resolveLocale(context.currentLocale)).t
+  const admin = isAdmin(context.url.pathname)
+  if (context.isPrerendered) return admin ? denied(404) : next()
   const cms = Boolean(process.env.SITE_CATALOG_API_URL)
   context.locals.siteDemo = cms && demoMode()
   context.locals.siteLocalAccess =
     cms && (isLocalAccess(context) || context.locals.siteDemo)
-  return cms
-}
-
-function markPrivate(response: Response) {
-  // Private test preview, not the production cache policy.
-  response.headers.set('Cache-Control', 'private, no-store')
-  response.headers.set('X-Robots-Tag', 'noindex, nofollow')
-  response.headers.set('X-Comfy-Content-Source', 'cms')
-  return response
-}
-
-const handle = defineMiddleware(async (context, next) => {
-  context.locals.t = translationsFor(resolveLocale(context.currentLocale)).t
-  const admin = isAdmin(context.url.pathname)
-  if (context.isPrerendered) return admin ? denied(404) : next()
-  const cms = staffAccess(context)
   const signIn = isSignIn(context)
   if (cms && !signIn) {
     const failure = await authenticate(context)
@@ -166,20 +153,11 @@ const handle = defineMiddleware(async (context, next) => {
   const selection = selectPreview(context)
   if (selection) return selection
   const response = await next()
-  return cms ? markPrivate(response) : response
-})
-
-// TEMPORARY: show the failure on the demo preview to diagnose a Vercel-only 500.
-export const onRequest = defineMiddleware(async (context, next) => {
-  try {
-    const response = await handle(context, next)
-    if (!response) throw new Error('Middleware returned no response')
-    return response
-  } catch (error) {
-    if (!demoMode()) throw error
-    return new Response(
-      `Demo error\n${error instanceof Error ? error.stack : String(error)}`,
-      { status: 500, headers: { 'Content-Type': 'text/plain' } }
-    )
+  if (cms) {
+    // Private test preview, not the production cache policy.
+    response.headers.set('Cache-Control', 'private, no-store')
+    response.headers.set('X-Robots-Tag', 'noindex, nofollow')
+    response.headers.set('X-Comfy-Content-Source', 'cms')
   }
+  return response
 })
