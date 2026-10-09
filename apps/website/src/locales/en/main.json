@@ -5451,9 +5451,11 @@
     },
     "prompt": {
       "dialogue": "The model also generates new audio: if your video has dialogue, prompt the lines here so the new generation retains it better.",
-      "placeholder": "e.g. a stone wall behind her, more wheat to the left"
+      "placeholder": "e.g. a stone wall behind her, more wheat to the left",
+      "box": "What the new view reveals (optional), e.g. a stone wall behind her, more wheat to the left. If the clip has dialogue, write the lines here so the new audio keeps them."
     },
     "clip": {
+      "seconds": "{seconds} s",
       "length": "This clip is {seconds} s long. Use one between 5 and 15 seconds.",
       "change": "Change",
       "ready": "Scene read",

@@ -15,6 +15,7 @@ const {
   canGenerate,
   priceNote,
   workspaceName,
+  quiet = false,
   locale = 'en'
 } = defineProps<{
   depth: DepthState
@@ -24,6 +25,8 @@ const {
   canGenerate: boolean
   priceNote?: string
   workspaceName?: string
+  /** Leaves out the notes on reading the scene and aiming while it renders. */
+  quiet?: boolean
   locale?: Locale
 }>()
 const { t } = translationsFor(locale)
@@ -60,7 +63,7 @@ const failed = computed(() => !!error && !ready.value && !analyzing.value)
       </Button>
     </div>
     <p
-      v-else-if="ready || analyzing"
+      v-else-if="!quiet && (ready || analyzing)"
       class="text-center text-[11px] text-primary-warm-gray"
     >
       {{ t(ready ? 'reshoot.generate.note' : 'reshoot.generate.wait') }}
