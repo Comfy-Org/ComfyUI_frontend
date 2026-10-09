@@ -45,11 +45,6 @@ export function reduceCreditTransitionNotice(
   }
 }
 
-/**
- * Whether the notice should render for `identity` on this episode alone. The
- * caller still applies the billing trust gate and the funds signals, which are
- * live reads rather than episode state.
- */
 export function isCreditTransitionNoticeOpen(
   state: CreditTransitionNoticeState | null,
   identity: string
