@@ -94,10 +94,6 @@ class AgentBillingFixture {
       }
     | undefined
 
-  setAgentFunds(hasFunds: boolean): void {
-    this.setFundingState(hasFunds ? 'funded' : 'exhausted')
-  }
-
   setFundingState(state: AgentFundingState): void {
     switch (state) {
       case 'funded':
