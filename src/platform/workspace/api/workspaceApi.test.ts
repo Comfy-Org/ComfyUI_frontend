@@ -525,6 +525,7 @@ describe('workspaceApi', () => {
           can_reactivate: true,
           can_change_seats: true,
           can_invite_members: true,
+          can_manage_members: true,
           can_downgrade_to_personal: false
         }
       }
