@@ -43,11 +43,6 @@ function setOutputsByRawExecutionId(rawNodeId: string) {
 
 describe('nodeOutputStore: outputs for insert_workflow-remapped node ids', () => {
   it('regression: lands an executed output on an agent-inserted node (PM-2037)', () => {
-    // Before the fix the write side (`executionIdToNodeLocatorId`) read the
-    // id as a 5-segment subgraph path and resolved nothing, and the read side
-    // (`nodeToNodeLocatorId`) minted null for the same id — so the run
-    // produced the image, the frame named this node, and the node stayed
-    // empty while the image appeared in the chat panel.
     const node = addRootSaveImageNode(REMAPPED_ID)
 
     setOutputsByRawExecutionId(REMAPPED_ID)
