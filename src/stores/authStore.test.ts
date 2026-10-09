@@ -2092,15 +2092,27 @@ describe('useAuthStore', () => {
     })
 
     it('carries the HTTP status on a non-ok response', async () => {
-      mockFetch.mockResolvedValueOnce({
-        ok: false,
-        status: 422,
-        statusText: 'Unprocessable Entity'
-      })
+      mockFetch.mockResolvedValueOnce(
+        new Response(null, { status: 422, statusText: 'Unprocessable Entity' })
+      )
 
       const error = await store.createCustomer().catch((e: unknown) => e)
       expect(error).toBeInstanceOf(AuthStoreError)
       expect((error as AuthStoreError).status).toBe(422)
+    })
+
+    it('names the SSO organization when the server requires SSO', async () => {
+      vi.mocked(fetch).mockResolvedValueOnce(
+        Response.json(
+          { code: 'sso_required', message: 'x', organization_id: 'org_1' },
+          { status: 403 }
+        )
+      )
+
+      await expect(store.createCustomer()).rejects.toMatchObject({
+        name: 'SsoRequiredAuthError',
+        organizationId: 'org_1'
+      })
     })
 
     it('throws when the response is ok but carries no customer id', async () => {
