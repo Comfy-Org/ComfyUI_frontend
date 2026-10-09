@@ -1,7 +1,7 @@
 import { assert, describe, expect, it } from 'vitest'
 
 import type { AgentMessages } from '../../schemas/agentApiSchema'
-import { toTurnId } from '../../schemas/agentApiSchema'
+import { toTurnId, zAgentMessages } from '../../schemas/agentApiSchema'
 import { normalizeAgentTranscript } from './agentTranscript'
 
 const row = (
@@ -21,6 +21,36 @@ const row = (
 })
 
 describe('normalizeAgentTranscript', () => {
+  it('restores a skill and adjacent workflow references in their original order from message text', () => {
+    const message = row(1, 'user', 'turn-a', '', 'row-1')
+    message.content = {
+      text: 'Use [A](workflow://wf-a)[Use the saved skill /portrait](skill://portrait?description=Use%20defaults)[B](workflow://wf-b) today',
+      workflow_references: [
+        { workflow_id: 'wf-a', name: 'A' },
+        { workflow_id: 'wf-b', name: 'B' }
+      ]
+    }
+    const transcript = normalizeAgentTranscript([message])
+    expect(transcript.userTexts.get(toTurnId('turn-a'))).toBe('Use  today')
+    expect(transcript.userWorkflowReferences.get(toTurnId('turn-a'))).toEqual([
+      { id: 'wf-a', name: 'A', textOffset: 4 },
+      { id: 'wf-b', name: 'B', textOffset: 4 }
+    ])
+    expect(transcript).toMatchObject({
+      userSkillReferences: new Map([
+        [
+          'turn-a',
+          {
+            name: 'portrait',
+            description: 'Use defaults',
+            textOffset: 4,
+            workflowIndex: 1
+          }
+        ]
+      ])
+    })
+  })
+
   it('restores inline reference positions from the persisted message text', () => {
     const message = row(1, 'user', 'turn-a', '', 'row-1')
     message.content = {
@@ -397,6 +427,55 @@ describe('normalizeAgentTranscript', () => {
     ])
   })
 
+  it('restores a persisted skill name', () => {
+    const message = row(1, 'assistant', 'turn-a', 'Done', 'row-1')
+    message.content = {
+      tool_calls: [
+        {
+          id: 'audit-row-uuid-1',
+          tool_call_id: 'call-1',
+          tool_name: 'load_skill',
+          status: 'success',
+          skill: 'comfy-director'
+        }
+      ]
+    }
+
+    const parsed = zAgentMessages.parse([message])
+
+    expect(normalizeAgentTranscript(parsed).messages[0].parts[0]).toMatchObject(
+      {
+        skill: 'comfy-director'
+      }
+    )
+  })
+
+  it('retains a persisted tool call with a null skill', () => {
+    const message = row(1, 'assistant', 'turn-a', 'Done', 'row-1')
+    message.content = {
+      tool_calls: [
+        {
+          id: 'audit-row-uuid-1',
+          tool_call_id: 'call-1',
+          tool_name: 'load_skill',
+          status: 'success',
+          skill: null
+        }
+      ]
+    }
+
+    const parsed = zAgentMessages.parse([message])
+
+    expect(normalizeAgentTranscript(parsed).messages[0].parts[0]).toEqual({
+      type: 'tool',
+      callId: 'call-1',
+      name: 'load_skill',
+      state: 'done',
+      ok: true,
+      durationMs: undefined
+    })
+  })
+
   it('keys callId on tool_call_id, matching what live frames key on', () => {
     const message = row(1, 'assistant', 'turn-a', 'Done', 'row-1')
     message.content = {
@@ -540,6 +619,101 @@ describe('normalizeAgentTranscript', () => {
       { type: 'runApproval', askId: 'ask-1' }
     ])
     expect(transcript.pending?.messageId).toBe('row-1')
+  })
+
+  // PM-1776 / PM-1682: the counterpart of the clamp above. A server row that
+  // is still `streaming` is the best snapshot signal available to a client
+  // hydrating mid-turn, so it restores a live turn, ask or no ask.
+  it('restores a row the server still reports as streaming as the live turn', () => {
+    const message = row(1, 'assistant', 'turn-a', '', 'row-1')
+    message.status = 'streaming'
+
+    const transcript = normalizeAgentTranscript([message])
+
+    expect(transcript.pending?.messageId).toBe('row-1')
+    expect(transcript.messages[0].streaming).toBe(true)
+  })
+
+  // The pair below fixes which trailing row counts as "a later turn started".
+  // `StartTurn` writes a turn's user and assistant rows in one transaction, so
+  // a started turn always has an assistant row; a trailing row without one
+  // belongs to no turn the server ever began, and treating it as one would put
+  // the thread back in PM-1776's state -- no indicator, and a send answered
+  // with 409.
+  it('keeps a streaming row that only a later assistant-less row follows', () => {
+    const live = row(1, 'assistant', 'turn-a', '', 'row-1')
+    live.status = 'streaming'
+
+    const transcript = normalizeAgentTranscript([
+      live,
+      row(2, 'user', 'turn-b', 'next', 'row-2')
+    ])
+
+    expect(transcript.pending?.messageId).toBe('row-1')
+    expect(transcript.messages[0].streaming).toBe(true)
+  })
+
+  it('ignores a streaming row an older turn left behind', () => {
+    const stale = row(1, 'assistant', 'turn-a', '', 'row-1')
+    stale.status = 'streaming'
+
+    const transcript = normalizeAgentTranscript([
+      stale,
+      row(2, 'user', 'turn-b', 'next', 'row-2'),
+      row(3, 'assistant', 'turn-b', 'all done', 'row-3')
+    ])
+
+    expect(transcript.pending).toBeUndefined()
+    expect(transcript.messages.map((message) => message.streaming)).toEqual([
+      false,
+      false
+    ])
+  })
+
+  // A turn's own later row retires it just as a later turn does. Rows of one
+  // turn share a message, so the turn-level check above cannot see this: the
+  // stale row's `pending` still points at the message the newest turn owns.
+  it('ignores a streaming row a later row of the same turn completed', () => {
+    const started = row(1, 'assistant', 'turn-a', '', 'row-1')
+    started.status = 'streaming'
+
+    const transcript = normalizeAgentTranscript([
+      started,
+      row(2, 'assistant', 'turn-a', 'all done', 'row-2')
+    ])
+
+    expect(transcript.pending).toBeUndefined()
+    expect(transcript.messages[0].streaming).toBe(false)
+    expect(transcript.messages[0].parts).toEqual([
+      { type: 'text', text: 'all done', state: 'done' }
+    ])
+  })
+
+  // Only a transport can resolve an ask, and a demoted row is not getting one.
+  // Kept, the card renders enabled and answering it posts against a turn that
+  // is no longer active -- a button that silently does nothing.
+  it('drops the approval card from a streaming row a later turn retired', () => {
+    const asked = row(1, 'assistant', 'turn-a', '', 'row-1')
+    asked.status = 'streaming'
+    asked.pending_ask = {
+      message_id: 'row-1',
+      ask_id: 'ask-1',
+      kind: 'run_approval',
+      prompt: 'Run it?',
+      options: [],
+      min_selections: 1,
+      max_selections: 1,
+      allow_other: false
+    }
+
+    const transcript = normalizeAgentTranscript([
+      asked,
+      row(2, 'user', 'turn-b', 'next', 'row-2'),
+      row(3, 'assistant', 'turn-b', 'all done', 'row-3')
+    ])
+
+    expect(transcript.pending).toBeUndefined()
+    expect(transcript.messages[0].parts).toEqual([])
   })
 
   it.for(['success', 'error'] as const)(

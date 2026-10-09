@@ -1,8 +1,8 @@
-import type { RouterWorkshopModel } from '../src/config/models-catalogue'
+import type { RouterWorkshopModel } from '@/config/models-catalogue'
 import {
   authoredWorkshopModels,
   workshopModels
-} from '../src/config/workshop-browse-content'
+} from '@/config/workshop-browse-content'
 import type { MediaKind } from './router-model-artifacts'
 
 type RouterModelSelection = {

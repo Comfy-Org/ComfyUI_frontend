@@ -42,6 +42,19 @@
           <span class="text-xs">{{ $t('hdrViewer.hdrImage') }}</span>
         </div>
       </Button>
+      <div
+        v-if="canExportOutputs"
+        class="invisible absolute top-2 right-2 group-focus-within:visible group-hover:visible"
+      >
+        <button
+          :class="actionButtonClass"
+          :title="$t('g.downloadImages')"
+          :aria-label="$t('g.downloadImages')"
+          @click="handleExportOutputs"
+        >
+          <i class="icon-[lucide--folder-down] size-4" />
+        </button>
+      </div>
     </div>
 
     <!-- Gallery View (Image Wrapper) -->
@@ -215,9 +228,10 @@ import { downloadFile } from '@/base/common/downloadUtil'
 import Button from '@/components/ui/button/Button.vue'
 import Skeleton from '@/components/ui/skeleton/Skeleton.vue'
 import { useMaskEditor } from '@/composables/maskeditor/useMaskEditor'
+import { useNodeOutputsExport } from '@/platform/assets/composables/useNodeOutputsExport'
 import { useTelemetry } from '@/platform/telemetry'
 import { describeImageLoadFailure } from '@/platform/telemetry/imageFailureDiagnostics'
-import { useToastStore } from '@/platform/updates/common/toastStore'
+import { useToast } from '@/components/ui/toast/toastStore'
 import { openHdrViewer } from '@/services/hdrViewerService'
 import { useNodeOutputStore } from '@/stores/nodeOutputStore'
 import type { NodeId } from '@/types/nodeId'
@@ -240,7 +254,8 @@ const { imageUrls, nodeId } = defineProps<ImagePreviewProps>()
 const { t } = useI18n()
 const maskEditor = useMaskEditor()
 const nodeOutputStore = useNodeOutputStore()
-const toastStore = useToastStore()
+const { hasMultipleOutputs, showOutputsExportDialog } = useNodeOutputsExport()
+const toast = useToast()
 
 const actionButtonClass =
   'flex h-8 min-h-8 cursor-pointer items-center justify-center rounded-lg border-0 bg-base-foreground p-2 text-base-background shadow-interface transition-colors duration-200 hover:bg-base-foreground/90 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-base-foreground focus-visible:ring-offset-2'
@@ -276,6 +291,10 @@ const currentImageUrl = computed(() => imageUrls[currentIndex.value] ?? '')
 const currentImageIsHdr = computed(() => isHdrImageUrl(currentImageUrl.value))
 const gridImageUrls = computed(() => imageUrls.map(getGridThumbnailUrl))
 const hasMultipleImages = computed(() => imageUrls.length > 1)
+const canExportOutputs = computed(() => {
+  const node = nodeId ? resolveNode(nodeId) : undefined
+  return !!node && hasMultipleOutputs(node)
+})
 const imageAltText = computed(() =>
   t('g.viewImageOfTotal', {
     index: currentIndex.value + 1,
@@ -370,12 +389,17 @@ function handleDownload() {
   try {
     downloadFile(currentImageUrl.value)
   } catch {
-    toastStore.add({
-      severity: 'error',
-      summary: t('g.error'),
-      detail: t('g.failedToDownloadImage')
+    toast.error(t('g.error'), {
+      description: t('g.failedToDownloadImage')
     })
   }
+}
+
+function handleExportOutputs() {
+  if (!nodeId) return
+  const node = resolveNode(nodeId)
+  if (!node) return
+  showOutputsExportDialog(node)
 }
 
 function setCurrentIndex(index: number) {

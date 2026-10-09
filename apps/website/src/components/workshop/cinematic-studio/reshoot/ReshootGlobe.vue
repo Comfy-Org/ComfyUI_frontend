@@ -1,4 +1,5 @@
 <script setup lang="ts">
+import { translationsFor } from '@/i18n/translations'
 import { ChevronDown, ChevronLeft, ChevronRight, ChevronUp } from '@lucide/vue'
 import { computed, ref } from 'vue'
 
@@ -7,16 +8,15 @@ import { cn } from '@comfyorg/tailwind-utils'
 import type {
   ReshootCamera,
   ReshootZone
-} from '../../../../lib/workshop/cinematic-studio/reshoot'
-import { clampAxis } from '../../../../lib/workshop/cinematic-studio/reshoot'
+} from '@/lib/workshop/cinematic-studio/reshoot'
+import { clampAxis } from '@/lib/workshop/cinematic-studio/reshoot'
 import {
   GLOBE_FLATTEN,
   distanceScale,
   globePoint,
   zoneArcs
-} from '../../../../lib/workshop/cinematic-studio/reshoot-globe'
-import { rc } from '../../../../lib/workshop/cinematic-studio/reshoot-copy'
-import type { Locale } from '../../../../i18n/translations'
+} from '@/lib/workshop/cinematic-studio/reshoot-globe'
+import type { Locale } from '@/i18n/translations'
 
 const {
   clip,
@@ -29,6 +29,7 @@ const {
   disabled?: boolean
   locale?: Locale
 }>()
+const { t } = translationsFor(locale)
 
 const emit = defineEmits<{ aim: [patch: Partial<ReshootCamera>] }>()
 
@@ -65,7 +66,7 @@ const cone = computed(() => {
 })
 const label = computed(
   () =>
-    `${rc('reshoot.aim.globe', locale)}: ${camera.azimuth}°, ${camera.elevation}°, ${camera.distance.toFixed(2)}`
+    `${t('reshoot.aim.globe')}: ${camera.azimuth}°, ${camera.elevation}°, ${camera.distance.toFixed(2)}`
 )
 
 const dragFrom = ref<{ x: number; y: number; tilts: boolean }>()
@@ -275,7 +276,7 @@ function key(event: KeyboardEvent) {
       type="button"
       tabindex="-1"
       :disabled
-      :aria-label="rc(nudgeButton.label, locale)"
+      :aria-label="t(nudgeButton.label)"
       :class="
         cn(
           'absolute grid size-7 place-items-center rounded-full text-primary-warm-gray hover:bg-transparency-white-t8 hover:text-primary-warm-white disabled:pointer-events-none',

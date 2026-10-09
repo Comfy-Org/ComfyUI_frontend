@@ -1,3 +1,4 @@
+import type { BillingTelemetryFailure } from '@comfyorg/account-core/billing'
 import { storeToRefs } from 'pinia'
 import { computed } from 'vue'
 
@@ -6,16 +7,20 @@ import { useBillingContext } from '@/composables/billing/useBillingContext'
 import { getComfyPlatformBaseUrl } from '@/config/comfyApi'
 import { t } from '@/i18n'
 import type { TierKey } from '@/platform/cloud/subscription/constants/tierPricing'
+import type { PaymentIntentSource } from '@/platform/telemetry/types'
 import { toTierKey } from '@/platform/cloud/subscription/constants/tierPricing'
 import type { BillingCycle } from '@/platform/cloud/subscription/utils/subscriptionTierRank'
 import { isCloud } from '@/platform/distribution/types'
 import { useTelemetry } from '@/platform/telemetry'
-import type { BillingFailure } from '@/platform/telemetry/types'
 import { categorizeBillingApiError } from '@/platform/telemetry/utils/billingFailureCategory'
 import type { PreviewSubscribeResponse } from '@/platform/workspace/api/workspaceApi'
 import type { SettledSubscribeResponse } from '@/platform/workspace/billing/sdk/subscriptionOperationView'
-import { SettledOperationError } from '@/platform/workspace/billing/sdk/subscriptionOperationView'
+import {
+  SettledOperationError,
+  billingClientOf
+} from '@/platform/workspace/billing/sdk/subscriptionOperationView'
 import { useBillingCapabilities } from '@/platform/workspace/composables/useBillingCapabilities'
+import { useSubscriptionRail } from '@/platform/workspace/composables/useSubscriptionRail'
 import { useWorkspaceUI } from '@/platform/workspace/composables/useWorkspaceUI'
 import { useBillingOperationStore } from '@/platform/workspace/stores/billingOperationStore'
 import { useTeamWorkspaceStore } from '@/platform/workspace/stores/teamWorkspaceStore'
@@ -30,6 +35,15 @@ export interface DowngradePreview {
   /** Cancelled subscription + a real plan change: the BE requires
    *  `confirm_reactivation` on the subscribe call or it rejects the change. */
   requiresReactivationConfirmation: boolean
+}
+
+interface DowngradeTelemetryAttempt {
+  startedAt: number
+  memberRemovalCount: number
+  memberRemovalFailures: number
+  targetTier?: TierKey
+  targetCycle?: BillingCycle
+  checkoutStartedAt?: number
 }
 
 /** Thrown by `downgradeToPersonal` when the billing authority requires
@@ -58,7 +72,9 @@ export class ReactivationAmountChangedError extends Error {
  * The removal-email and an atomic downgrade endpoint are backend-owned future
  * work; until then the frontend orchestrates the two steps non-atomically.
  */
-export function useDowngradeToPersonal() {
+export function useDowngradeToPersonal({
+  paymentIntentSource
+}: { paymentIntentSource?: PaymentIntentSource } = {}) {
   const workspaceStore = useTeamWorkspaceStore()
   const { members } = storeToRefs(workspaceStore)
   const { subscribe, previewSubscribe, subscription, fetchStatus } =
@@ -68,6 +84,7 @@ export function useDowngradeToPersonal() {
   const { permissions } = useWorkspaceUI()
   const { canDowngradeToPersonal } = useBillingCapabilities()
   const telemetry = useTelemetry()
+  let activeTelemetryAttempt: DowngradeTelemetryAttempt | undefined
 
   const removableMembers = computed(() => {
     const hasFlag = members.value.some((m) => m.isOriginalOwner)
@@ -151,20 +168,24 @@ export function useDowngradeToPersonal() {
     ensureCanDowngrade()
 
     const membersToRemove = removableMembers.value
-    let memberRemovalFailures = 0
-    let targetTier: TierKey | undefined
-    let targetCycle: BillingCycle | undefined
-    let telemetryFailure: BillingFailure | undefined
-    let checkoutStartedAt: number | undefined
+    const telemetryAttempt = activeTelemetryAttempt ?? {
+      startedAt: Date.now(),
+      memberRemovalCount: membersToRemove.length,
+      memberRemovalFailures: 0
+    }
+    let telemetryFailure: BillingTelemetryFailure | undefined
 
-    const downgradeStartedAt = Date.now()
-    telemetry?.trackBillingEvent({
-      operation: 'downgrade_to_personal',
-      stage: 'started',
-      outcome: 'pending',
-      member_removal_count: membersToRemove.length,
-      member_removal_failures: 0
-    })
+    if (!activeTelemetryAttempt) {
+      activeTelemetryAttempt = telemetryAttempt
+      telemetry?.trackBillingEvent({
+        operation: 'downgrade_to_personal',
+        stage: 'started',
+        outcome: 'pending',
+        member_removal_count: telemetryAttempt.memberRemovalCount,
+        member_removal_failures: 0,
+        payment_intent_source: paymentIntentSource
+      })
+    }
 
     function trackSucceeded(operationObserved: boolean) {
       const now = Date.now()
@@ -172,20 +193,22 @@ export function useDowngradeToPersonal() {
         operation: 'downgrade_to_personal',
         stage: 'succeeded',
         outcome: 'success',
-        member_removal_count: membersToRemove.length,
-        member_removal_failures: memberRemovalFailures,
-        target_tier: targetTier,
-        duration_ms: now - downgradeStartedAt
+        member_removal_count: telemetryAttempt.memberRemovalCount,
+        member_removal_failures: telemetryAttempt.memberRemovalFailures,
+        target_tier: telemetryAttempt.targetTier,
+        payment_intent_source: paymentIntentSource,
+        duration_ms: now - telemetryAttempt.startedAt
       })
-      if (checkoutStartedAt === undefined) return
+      if (telemetryAttempt.checkoutStartedAt === undefined) return
       telemetry?.trackBillingEvent({
         operation: 'subscription_checkout',
         stage: 'succeeded',
         outcome: 'success',
-        tier: targetTier,
-        cycle: targetCycle,
+        tier: telemetryAttempt.targetTier,
+        cycle: telemetryAttempt.targetCycle,
         checkout_type: 'change',
-        duration_ms: now - checkoutStartedAt
+        payment_intent_source: paymentIntentSource,
+        duration_ms: now - telemetryAttempt.checkoutStartedAt
       })
       if (operationObserved) return
       telemetry?.trackBillingEvent({
@@ -193,10 +216,12 @@ export function useDowngradeToPersonal() {
         stage: 'succeeded',
         outcome: 'success',
         operation_type: 'subscription',
-        tier: targetTier,
-        cycle: targetCycle,
+        billing_client: billingClientOf(useSubscriptionRail()),
+        tier: telemetryAttempt.targetTier,
+        cycle: telemetryAttempt.targetCycle,
         checkout_type: 'change',
-        duration_ms: now - checkoutStartedAt
+        payment_intent_source: paymentIntentSource,
+        duration_ms: now - telemetryAttempt.checkoutStartedAt
       })
     }
 
@@ -215,10 +240,10 @@ export function useDowngradeToPersonal() {
       const newPlan = Object.hasOwn(preview, 'new_plan')
         ? preview.new_plan
         : undefined
-      targetTier = newPlan?.tier
+      telemetryAttempt.targetTier = newPlan?.tier
         ? (toTierKey(newPlan.tier) ?? undefined)
         : undefined
-      targetCycle = newPlan
+      telemetryAttempt.targetCycle = newPlan
         ? newPlan.duration === 'ANNUAL'
           ? 'yearly'
           : 'monthly'
@@ -232,17 +257,9 @@ export function useDowngradeToPersonal() {
       await fetchStatus()
       if (requiresReactivationConfirmation(preview)) {
         if (!confirmReactivation) {
-          telemetryFailure = {
-            failure_category: 'validation',
-            error_code: 'reactivation_not_confirmed'
-          }
           throw new ReactivationConfirmationRequiredError(preview)
         }
         if (preview.cost_today_cents !== confirmedChargeCents) {
-          telemetryFailure = {
-            failure_category: 'validation',
-            error_code: 'reactivation_amount_changed'
-          }
           throw new ReactivationAmountChangedError(preview)
         }
       }
@@ -252,7 +269,7 @@ export function useDowngradeToPersonal() {
         try {
           await workspaceStore.removeMember(member.id)
         } catch (error) {
-          memberRemovalFailures += 1
+          telemetryAttempt.memberRemovalFailures += 1
           telemetryFailure = {
             failure_category: categorizeBillingApiError(error),
             error_code: 'member_removal_failed'
@@ -267,24 +284,29 @@ export function useDowngradeToPersonal() {
       }
 
       ensureCanDowngrade()
-      checkoutStartedAt = Date.now()
-      telemetry?.trackBillingEvent({
-        operation: 'subscription_checkout',
-        stage: 'started',
-        outcome: 'pending',
-        tier: targetTier,
-        cycle: targetCycle,
-        checkout_type: 'change'
-      })
-      telemetry?.trackBillingEvent({
-        operation: 'operation',
-        stage: 'started',
-        outcome: 'pending',
-        operation_type: 'subscription',
-        tier: targetTier,
-        cycle: targetCycle,
-        checkout_type: 'change'
-      })
+      if (telemetryAttempt.checkoutStartedAt === undefined) {
+        telemetryAttempt.checkoutStartedAt = Date.now()
+        telemetry?.trackBillingEvent({
+          operation: 'subscription_checkout',
+          stage: 'started',
+          outcome: 'pending',
+          tier: telemetryAttempt.targetTier,
+          cycle: telemetryAttempt.targetCycle,
+          checkout_type: 'change',
+          payment_intent_source: paymentIntentSource
+        })
+        telemetry?.trackBillingEvent({
+          operation: 'operation',
+          stage: 'started',
+          outcome: 'pending',
+          operation_type: 'subscription',
+          billing_client: billingClientOf(useSubscriptionRail()),
+          tier: telemetryAttempt.targetTier,
+          cycle: telemetryAttempt.targetCycle,
+          checkout_type: 'change',
+          payment_intent_source: paymentIntentSource
+        })
+      }
       let response: SettledSubscribeResponse | void
       try {
         response = await subscribe(planSlug, {
@@ -292,17 +314,13 @@ export function useDowngradeToPersonal() {
           cancelUrl: `${getComfyPlatformBaseUrl()}/payment/failed`,
           confirmReactivation,
           ...(preview.proration_at && { prorationAt: preview.proration_at }),
-          attemptStartedAt: checkoutStartedAt
+          attemptStartedAt: telemetryAttempt.checkoutStartedAt
         })
       } catch (error) {
         if (
           !confirmReactivation &&
           hasErrorCode(error, 'REACTIVATION_CONFIRMATION_REQUIRED')
         ) {
-          telemetryFailure = {
-            failure_category: 'validation',
-            error_code: 'reactivation_not_confirmed'
-          }
           throw new ReactivationConfirmationRequiredError(preview)
         }
         throw error
@@ -313,7 +331,7 @@ export function useDowngradeToPersonal() {
           error_code: 'missing_checkout_response'
         }
         throw new Error(
-          membersToRemove.length > 0
+          telemetryAttempt.memberRemovalCount > 0
             ? t('subscription.downgrade.failedAfterMemberRemoval')
             : t('subscription.downgrade.failed')
         )
@@ -339,18 +357,20 @@ export function useDowngradeToPersonal() {
           response.billing_op_id,
           'subscription',
           {
-            tier: targetTier,
-            cycle: targetCycle,
+            tier: telemetryAttempt.targetTier,
+            cycle: telemetryAttempt.targetCycle,
             checkoutType: 'change',
+            paymentIntentSource,
             downgradeToPersonal: {
-              memberRemovalCount: membersToRemove.length,
-              memberRemovalFailures,
-              targetTier,
-              startedAt: downgradeStartedAt
+              memberRemovalCount: telemetryAttempt.memberRemovalCount,
+              memberRemovalFailures: telemetryAttempt.memberRemovalFailures,
+              targetTier: telemetryAttempt.targetTier,
+              startedAt: telemetryAttempt.startedAt
             },
-            attemptStartedAt: checkoutStartedAt
+            attemptStartedAt: telemetryAttempt.checkoutStartedAt
           }
         )
+        activeTelemetryAttempt = undefined
         return null
       }
 
@@ -359,24 +379,33 @@ export function useDowngradeToPersonal() {
           response.billing_op_id,
           'subscription',
           {
-            tier: targetTier,
-            cycle: targetCycle,
+            tier: telemetryAttempt.targetTier,
+            cycle: telemetryAttempt.targetCycle,
             checkoutType: 'change',
+            paymentIntentSource,
             downgradeToPersonal: {
-              memberRemovalCount: membersToRemove.length,
-              memberRemovalFailures,
-              targetTier,
-              startedAt: downgradeStartedAt
+              memberRemovalCount: telemetryAttempt.memberRemovalCount,
+              memberRemovalFailures: telemetryAttempt.memberRemovalFailures,
+              targetTier: telemetryAttempt.targetTier,
+              startedAt: telemetryAttempt.startedAt
             },
-            attemptStartedAt: checkoutStartedAt
+            attemptStartedAt: telemetryAttempt.checkoutStartedAt
           }
         )
+        activeTelemetryAttempt = undefined
         return null
       }
 
       trackSucceeded(response.operationObserved === true)
+      activeTelemetryAttempt = undefined
       return { preview, response }
     } catch (error) {
+      if (
+        error instanceof ReactivationConfirmationRequiredError ||
+        error instanceof ReactivationAmountChangedError
+      ) {
+        throw error
+      }
       const failure = telemetryFailure ?? {
         failure_category: categorizeBillingApiError(error)
       }
@@ -385,22 +414,24 @@ export function useDowngradeToPersonal() {
         operation: 'downgrade_to_personal',
         stage: 'failed',
         outcome: 'failure',
-        member_removal_count: membersToRemove.length,
-        member_removal_failures: memberRemovalFailures,
-        target_tier: targetTier,
+        member_removal_count: telemetryAttempt.memberRemovalCount,
+        member_removal_failures: telemetryAttempt.memberRemovalFailures,
+        target_tier: telemetryAttempt.targetTier,
+        payment_intent_source: paymentIntentSource,
         ...failure,
-        duration_ms: now - downgradeStartedAt
+        duration_ms: now - telemetryAttempt.startedAt
       })
-      if (checkoutStartedAt !== undefined) {
+      if (telemetryAttempt.checkoutStartedAt !== undefined) {
         telemetry?.trackBillingEvent({
           operation: 'subscription_checkout',
           stage: 'failed',
           outcome: 'failure',
-          tier: targetTier,
-          cycle: targetCycle,
+          tier: telemetryAttempt.targetTier,
+          cycle: telemetryAttempt.targetCycle,
           checkout_type: 'change',
+          payment_intent_source: paymentIntentSource,
           ...failure,
-          duration_ms: now - checkoutStartedAt
+          duration_ms: now - telemetryAttempt.checkoutStartedAt
         })
         if (!(error instanceof SettledOperationError)) {
           telemetry?.trackBillingEvent({
@@ -408,14 +439,17 @@ export function useDowngradeToPersonal() {
             stage: 'failed',
             outcome: 'failure',
             operation_type: 'subscription',
-            tier: targetTier,
-            cycle: targetCycle,
+            billing_client: billingClientOf(useSubscriptionRail()),
+            tier: telemetryAttempt.targetTier,
+            cycle: telemetryAttempt.targetCycle,
             checkout_type: 'change',
+            payment_intent_source: paymentIntentSource,
             ...failure,
-            duration_ms: now - checkoutStartedAt
+            duration_ms: now - telemetryAttempt.checkoutStartedAt
           })
         }
       }
+      activeTelemetryAttempt = undefined
       throw error
     }
   }

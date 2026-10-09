@@ -7,6 +7,10 @@
 import { render, screen } from '@testing-library/vue'
 import { createMemoryHistory } from 'vue-router'
 
+import type { BillingTelemetryEvent } from '@comfyorg/account-core/billing'
+import { respondToFetch } from '@comfyorg/test-utils/fetch'
+
+import type * as ControllerModule from '@/auth/useSignInController'
 import type { SignInPort } from '@/auth/useSignInController'
 import type * as AuthModule from '@/session/billingWebAuth'
 import type * as ClientModule from '@/session/billingWebClient'
@@ -83,7 +87,7 @@ function recordingFetch(
   perUser: Record<string, unknown>
 ) {
   const sent: SentRequest[] = []
-  const fetchImpl = vi.fn<typeof fetch>(async (input, init = {}) => {
+  const fetchImpl: typeof fetch = async (input, init = {}) => {
     const url = String(input)
     sent.push({
       method: init.method ?? 'GET',
@@ -104,7 +108,7 @@ function recordingFetch(
         ? MINTED
         : {}
     return new Response(JSON.stringify(body))
-  })
+  }
   return { sent, fetchImpl }
 }
 
@@ -114,20 +118,33 @@ async function signInThenCallBilling(
     readonly session: typeof SessionModule
     readonly client: typeof ClientModule
     readonly signIn: (port?: SignInPort) => Promise<void>
+    readonly useSignInController: typeof ControllerModule.useSignInController
+    readonly events: () => BillingTelemetryEvent[]
   }) => Promise<void>
 ) {
   vi.resetModules()
-  const [auth, session, client, { useSignInController }] = await Promise.all([
+  const [
+    auth,
+    session,
+    client,
+    { useSignInController },
+    { billingWebTelemetry }
+  ] = await Promise.all([
     import('@/session/billingWebAuth'),
     import('@/session/billingWebSession'),
     import('@/session/billingWebClient'),
-    import('@/auth/useSignInController')
+    import('@/auth/useSignInController'),
+    import('@/telemetry/billingWebTelemetry')
   ])
+  const track = vi
+    .spyOn(billingWebTelemetry, 'trackBillingEvent')
+    .mockImplementation(() => undefined)
+  const events = () => track.mock.calls.map(([event]) => event)
   const signIn = (port?: SignInPort) =>
     new Promise<void>((resolve) => {
       useSignInController(resolve, port)
     })
-  await run({ auth, session, client, signIn })
+  await run({ auth, session, client, signIn, useSignInController, events })
 }
 
 async function mainRequests(): Promise<SentRequest[]> {
@@ -135,7 +152,7 @@ async function mainRequests(): Promise<SentRequest[]> {
     { firebase_config: FIREBASE_CONFIG },
     {}
   )
-  vi.stubGlobal('fetch', fetchImpl)
+  vi.mocked(fetch).mockImplementation(fetchImpl)
   await signInThenCallBilling(async ({ session, client, signIn }) => {
     await signIn()
     await client
@@ -219,7 +236,7 @@ describe('billing-web with unified_web_session off', () => {
         { firebase_config: FIREBASE_CONFIG, ...probe },
         perUser
       )
-      vi.stubGlobal('fetch', fetchImpl)
+      vi.mocked(fetch).mockImplementation(fetchImpl)
 
       await signInThenCallBilling(async ({ auth, signIn }) => {
         await signIn(auth.billingWebSignInPort())
@@ -251,7 +268,7 @@ describe('billing-web with unified_web_session off, after sign-in', () => {
       { firebase_config: FIREBASE_CONFIG },
       {}
     )
-    vi.stubGlobal('fetch', fetchImpl)
+    vi.mocked(fetch).mockImplementation(fetchImpl)
     await signInThenCallBilling(async ({ auth, signIn }) => {
       await signIn(auth.billingWebSignInPort())
       const signedInCount = sent.length
@@ -296,6 +313,62 @@ describe('billing-web with unified_web_session off, after sign-in', () => {
   })
 })
 
+describe('billing-web with unified_web_session off, as a funnel', () => {
+  it('reports a restored sign-in as established on the session client', async () => {
+    const { fetchImpl } = recordingFetch(
+      { firebase_config: FIREBASE_CONFIG },
+      {}
+    )
+    vi.mocked(fetch).mockImplementation(fetchImpl)
+
+    await signInThenCallBilling(async ({ auth, signIn, events }) => {
+      await signIn(auth.billingWebSignInPort())
+
+      expect(events()).toEqual([
+        {
+          operation: 'web_session',
+          stage: 'established',
+          outcome: 'pending',
+          origin: 'restored',
+          mode: 'session-client'
+        }
+      ])
+    })
+  })
+
+  it('reports a refused mint as sign-in required and failed with the refusal’s code', async () => {
+    respondToFetch(`${CLOUD}/api/features`, () =>
+      Response.json({ firebase_config: FIREBASE_CONFIG })
+    )
+    respondToFetch(
+      `${CLOUD}/api/auth/token`,
+      () => new Response('{}', { status: 403 })
+    )
+
+    await signInThenCallBilling(
+      async ({ auth, useSignInController, events }) => {
+        useSignInController(() => undefined, auth.billingWebSignInPort())
+
+        await vi.waitFor(() => expect(events()).toHaveLength(2))
+        expect(events()).toEqual([
+          {
+            operation: 'web_session',
+            stage: 'signin_required',
+            outcome: 'pending',
+            reason: 'refused'
+          },
+          {
+            operation: 'web_session',
+            stage: 'failed',
+            outcome: 'pending',
+            error_code: 'ACCESS_DENIED'
+          }
+        ])
+      }
+    )
+  })
+})
+
 const ENTRY = '/v1/subscription?product=comfyui&return_to=comfyui_workspace'
 const UNAVAILABLE = 'Sign-in is unavailable right now.'
 
@@ -315,10 +388,7 @@ async function renderApp() {
 describe('billing-web first render with unified_web_session undecided', () => {
   it('routes and shows main’s "sign-in unavailable" notice without waiting for the flag', async () => {
     vi.useFakeTimers({ toFake: ['setTimeout', 'clearTimeout'] })
-    vi.stubGlobal(
-      'fetch',
-      vi.fn<typeof fetch>(() => new Promise<Response>(() => {}))
-    )
+    vi.mocked(fetch).mockImplementation(() => new Promise<Response>(() => {}))
     vi.resetModules()
 
     const router = await renderApp()
@@ -328,28 +398,28 @@ describe('billing-web first render with unified_web_session undecided', () => {
     expect(h.initializeApp).not.toHaveBeenCalled()
   })
 
-  it('takes the session-client path at the cap when the flag read hangs, and never swaps', async () => {
+  it('takes the session-client path only once the flag read times out, and never swaps', async () => {
     vi.useFakeTimers({ toFake: ['setTimeout', 'clearTimeout'] })
     const { sent, fetchImpl } = recordingFetch(
       { firebase_config: FIREBASE_CONFIG, web_session_probe: true },
       {}
     )
     let answerFlag: (response: Response) => void = () => undefined
-    vi.stubGlobal(
-      'fetch',
-      vi.fn<typeof fetch>((input, init) =>
-        init?.credentials === 'include'
-          ? new Promise<Response>((resolve) => {
-              answerFlag = resolve
-            })
-          : fetchImpl(input, init)
-      )
+    vi.mocked(fetch).mockImplementation((input, init) =>
+      init?.credentials === 'include'
+        ? new Promise<Response>((resolve, reject) => {
+            answerFlag = resolve
+            init.signal?.addEventListener('abort', () =>
+              reject(new DOMException('Aborted', 'AbortError'))
+            )
+          })
+        : fetchImpl(input, init)
     )
     vi.resetModules()
 
     const router = await renderApp()
     expect(screen.getByText(UNAVAILABLE)).toBeInTheDocument()
-    await vi.advanceTimersByTimeAsync(799)
+    await vi.advanceTimersByTimeAsync(3999)
     expect(h.initializeApp).not.toHaveBeenCalled()
 
     await vi.advanceTimersByTimeAsync(1)
@@ -364,12 +434,12 @@ describe('billing-web first render with unified_web_session undecided', () => {
     expect(h.initializeApp).toHaveBeenCalledOnce()
   })
 
-  it('does not wait for the cap when the probe is false', async () => {
+  it('does not wait for the flag read when the probe is false', async () => {
     const { fetchImpl } = recordingFetch(
       { firebase_config: FIREBASE_CONFIG, web_session_probe: false },
       {}
     )
-    vi.stubGlobal('fetch', fetchImpl)
+    vi.mocked(fetch).mockImplementation(fetchImpl)
     vi.resetModules()
 
     await renderApp()

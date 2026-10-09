@@ -3,7 +3,7 @@ import { computed, ref } from 'vue'
 import { useI18n } from 'vue-i18n'
 
 import Loader from '@/components/loader/Loader.vue'
-import HoneyToast from '@/components/honeyToast/HoneyToast.vue'
+import ToastPanel from '@/components/ui/toast/ToastPanel.vue'
 import Button from '@/components/ui/button/Button.vue'
 import type { AssetExport } from '@/stores/assetExportStore'
 import { useAssetExportStore } from '@/stores/assetExportStore'
@@ -18,6 +18,9 @@ const isExpanded = ref(false)
 const exportJobs = computed(() => assetExportStore.exportList)
 const failedJobs = computed(() =>
   assetExportStore.finishedExports.filter((e) => e.status === 'failed')
+)
+const cancelledJobs = computed(() =>
+  assetExportStore.finishedExports.filter((e) => e.status === 'cancelled')
 )
 
 const isInProgress = computed(() => assetExportStore.hasActiveExports)
@@ -38,14 +41,21 @@ const footerLabel = computed(() => {
   if (isInProgress.value) return currentJobName.value
   if (failedJobs.value.length > 0)
     return t('exportToast.exportFailed', { count: failedJobs.value.length })
+  if (cancelledJobs.value.length > 0) return t('electronFileDownload.cancelled')
   return t('exportToast.allExportsCompleted')
 })
+
+const announcement = computed(() =>
+  isInProgress.value ? t('exportToast.exportingAssets') : footerLabel.value
+)
 
 const footerIconClass = computed(() => {
   if (isInProgress.value)
     return 'icon-[lucide--loader-circle] animate-spin text-muted-foreground'
   if (failedJobs.value.length > 0)
     return 'icon-[lucide--circle-alert] text-destructive-background'
+  if (cancelledJobs.value.length > 0)
+    return 'icon-[lucide--circle-x] text-muted-foreground'
   return 'icon-[lucide--check-circle] text-jade-600'
 })
 
@@ -66,7 +76,7 @@ function closeDialog() {
 </script>
 
 <template>
-  <HoneyToast v-model:expanded="isExpanded" :visible>
+  <ToastPanel v-model:expanded="isExpanded" :visible :announcement>
     <template #default>
       <div
         class="flex h-12 items-center justify-between border-b border-border-default px-4"
@@ -145,6 +155,11 @@ function closeDialog() {
                     class="icon-[lucide--download] size-4 text-success-background"
                   />
                 </Button>
+              </template>
+              <template v-else-if="job.status === 'cancelled'">
+                <span class="text-xs text-muted-foreground">
+                  {{ t('electronFileDownload.cancelled') }}
+                </span>
               </template>
               <template v-else-if="job.status === 'running'">
                 <Loader size="sm" class="text-base-foreground" />
@@ -249,5 +264,5 @@ function closeDialog() {
         </div>
       </div>
     </template>
-  </HoneyToast>
+  </ToastPanel>
 </template>

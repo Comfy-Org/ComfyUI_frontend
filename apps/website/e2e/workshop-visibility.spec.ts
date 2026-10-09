@@ -1,7 +1,7 @@
 import type { BrowserContext, Page } from '@playwright/test'
 import { expect } from '@playwright/test'
 
-import { getRoutes } from '../src/config/routes'
+import { getRoutes } from '@/config/routes'
 import { test } from './fixtures/blockExternalMedia'
 import { waitForIsland } from './fixtures/islands'
 import { publishedModelSlugs } from './fixtures/modelsCatalogue'
@@ -73,9 +73,6 @@ test('shows model content without Run when PostHog is unavailable', async ({
 }) => {
   const accountRequests = recordAccountRequests(context)
   await page.goto('/')
-  await expect(
-    page.getByRole('link', { name: 'Hub', exact: true })
-  ).toHaveCount(0)
   await expect(page.getByTestId('model-discovery')).toHaveCount(0)
   await expect(
     page.getByRole('link', { name: 'Sign in', exact: true })
@@ -121,9 +118,19 @@ async function expectHubHeadingAndDirectory(page: Page) {
   await expect(page.getByRole('heading', { level: 1 })).toHaveText(
     'ComfyUI models'
   )
-  await expect(
-    page.getByTestId('models-directory').getByRole('link')
-  ).toHaveCount(publishedModelSlugs.size)
+  const directory = page.getByTestId('models-directory')
+  // Every model stays in the page while the index is folded away, which is what
+  // the index is there for, and the fold is what a reader meets first.
+  await expect(directory.locator('a')).toHaveCount(publishedModelSlugs.size)
+  await expect(directory.getByRole('link')).toHaveCount(0)
+  await openDirectory(page)
+  await expect(directory.getByRole('link')).toHaveCount(
+    publishedModelSlugs.size
+  )
+}
+
+async function openDirectory(page: Page) {
+  await page.getByTestId('models-directory-toggle').click()
 }
 
 test('/hub/models/ keeps its heading and model links when the catalogue fails', async ({
@@ -151,6 +158,7 @@ test.describe('without JavaScript', () => {
     page
   }) => {
     await page.goto('/hub/models/')
+    await openDirectory(page)
     const link = page
       .getByTestId('models-directory')
       .getByRole('link', { name: MODEL_NAME, exact: true })
@@ -167,6 +175,7 @@ test.describe('without JavaScript', () => {
       await expect(page.getByTestId('workshop-loading')).toBeHidden()
       await expect(page.getByTestId('models-load-error')).toHaveCount(0)
       await expect(page.getByTestId('workshop-search')).toHaveCount(0)
+      await openDirectory(page)
       await expect(
         page.getByRole('link', { name: /Grok Imagine/i }).first()
       ).toBeVisible()

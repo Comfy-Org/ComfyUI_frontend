@@ -6,8 +6,8 @@ import { computed, defineComponent, nextTick, ref } from 'vue'
 
 import type { SubscriptionInfo } from '@/composables/billing/types'
 import { i18n } from '@/i18n'
-import { api } from '@/scripts/api'
 import { WORKSPACE_INSET_RIGHT } from '@/composables/useWorkspaceInset'
+import { api } from '@/scripts/api'
 import { reportError } from '@/platform/telemetry/reportError'
 import type { TurnId } from '@/workbench/extensions/agent/schemas/agentApiSchema'
 import { useAgentConversationStore } from '@/workbench/extensions/agent/stores/agent/agentConversationStore'
@@ -133,7 +133,10 @@ describe('DockedAgentPanel', () => {
     const runMode = useAgentRunModeStore()
     await vi.waitFor(() => expect(runMode.mode).toBe('auto_limited'))
     expect(runMode.creditLimit).toBe(25)
-    expect(fetchApi).toHaveBeenCalledWith('/agent/run-mode', { method: 'GET' })
+    expect(fetchApi).toHaveBeenCalledWith(
+      '/agent/run-mode',
+      expect.objectContaining({ method: 'GET' })
+    )
   })
 
   it('reports non-404 run mode load failures', async () => {
@@ -149,12 +152,34 @@ describe('DockedAgentPanel', () => {
     )
   })
 
-  it('renders nothing while the panel is closed', () => {
+  it('publishes its width for portaled overlays only while docked', async () => {
+    const store = openPanel()
+    renderPanel()
+
+    expect(
+      document.documentElement.style.getPropertyValue(WORKSPACE_INSET_RIGHT)
+    ).toBe(`${store.width}px`)
+
+    store.isOpen = false
+    await nextTick()
+
+    expect(
+      document.documentElement.style.getPropertyValue(WORKSPACE_INSET_RIGHT)
+    ).toBe('0px')
+  })
+
+  it('does not mount the Agent root until the panel opens', async () => {
     const store = openPanel()
     store.isOpen = false
     renderPanel()
 
     expect(screen.queryByTestId('docked-agent-panel')).toBeNull()
+    expect(screen.queryByTestId('agent-panel-root-stub')).toBeNull()
+
+    store.isOpen = true
+    await nextTick()
+
+    expect(await screen.findByTestId('agent-panel-root-stub')).toBeTruthy()
   })
 
   it('renders nothing while the feature is disabled', () => {

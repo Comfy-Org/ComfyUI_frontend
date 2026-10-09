@@ -1,41 +1,42 @@
 ---
 import { ClientRouter } from 'astro:transitions'
 import Analytics from '@vercel/analytics/astro'
-import '../styles/global.css'
-import SiteFooter from '../components/common/SiteFooter.vue'
-import GoogleTagManager from '../components/common/GoogleTagManager.astro'
-import HeaderMain from '../components/common/HeaderMain/HeaderMain.vue'
-import AnnouncementBanner from '../templates/drops/AnnouncementBanner.vue'
-import { bannerConfig, getBannerData } from '../config/banner'
-import { getRoutes } from '../config/routes'
+import '@/styles/global.css'
+import SiteFooter from '@/components/common/SiteFooter.vue'
+import GoogleTagManager from '@/components/common/GoogleTagManager.astro'
+import HeaderMain from '@/components/common/HeaderMain/HeaderMain.vue'
+import AnnouncementBanner from '@/templates/drops/AnnouncementBanner.vue'
+import type { BannerConfig } from '@/config/banner'
+import { activeBannerFor, bannerConfig, getBannerData } from '@/config/banner'
+import { getRoutes } from '@/config/routes'
 import {
   headIndexing,
   isIndexableBuild,
   isNoindexPathname
-} from '../config/indexing'
-import { isWorkshopInBuild } from '../config/workshop-release'
+} from '@/config/indexing'
+import { isWorkshopInBuild } from '@/config/workshop-release'
 import {
   hreflangAlternates,
+  localeAlternates,
   ogLocale,
   ogLocaleAlternates
-} from '../lib/hreflang'
-import { markdownTwinPath } from '../lib/markdown-twin-path'
-import { isHrefActive } from '../composables/useCurrentPath'
+} from '@/lib/hreflang'
+import { markdownTwinPath } from '@/lib/markdown-twin-path'
+import { isHrefActive } from '@/composables/useCurrentPath'
 import {
   BANNER_DISMISS_ATTR,
   BANNER_STORAGE_KEY,
-  createBannerVersion,
-  evaluateBannerVisibility
-} from '../utils/banner'
-import { fetchGitHubStars, formatStarCount } from '../utils/github'
+  createBannerVersion
+} from '@/utils/banner'
+import { fetchGitHubStars, formatStarCount } from '@/utils/github'
 import {
   DEFAULT_OG_IMAGE,
   buildPageGraph,
   pageContext,
   webPageName
-} from '../utils/jsonLd'
-import type { Crumb, JsonLdNode, WebPageType } from '../utils/jsonLd'
-import JsonLdGraph from '../components/common/JsonLdGraph.astro'
+} from '@/utils/jsonLd'
+import type { Crumb, JsonLdNode, WebPageType } from '@/utils/jsonLd'
+import JsonLdGraph from '@/components/common/JsonLdGraph.astro'
 
 type PPFormulaFace =
   'Light' | 'Regular' | 'Medium' | 'Semibold' | 'Bold' | 'NarrowSemibold'
@@ -56,6 +57,7 @@ interface Props {
   extraJsonLd?: (JsonLdNode | null | undefined)[]
   minimal?: boolean
   hideAnnouncementBanner?: boolean
+  banner?: BannerConfig
   /** PP Formula faces this page renders above the fold beyond the site-wide set. */
   preloadFonts?: readonly PPFormulaFace[]
 }
@@ -75,6 +77,7 @@ const {
   extraJsonLd,
   minimal = false,
   hideAnnouncementBanner = false,
+  banner,
   preloadFonts = []
 } = Astro.props
 
@@ -92,6 +95,7 @@ const head = headIndexing({
   pageNoindex: shouldNoindex,
   indexableBuild: isIndexableBuild()
 })
+const languageAlternates = localeAlternates(canonicalURL.pathname)
 const alternates = head.emitAlternates
   ? hreflangAlternates(canonicalURL.pathname, canonicalURL.origin)
   : []
@@ -104,14 +108,15 @@ const githubStars = rawStars ? formatStarCount(rawStars) : ''
 // Announcement banner — build-time visibility gate + content-hash version key.
 // A promo never advertises the page you are already on, so the banner is
 // suppressed when its CTA points at the current path.
-const bannerData = getBannerData(bannerConfig, locale)
+const activeBanner = activeBannerFor(banner, {
+  currentLocale: locale,
+  currentSection: 'sitewide',
+  now: new Date()
+})
+const bannerData = getBannerData(activeBanner ?? bannerConfig, locale)
 const bannerVisible =
   !hideAnnouncementBanner &&
-  evaluateBannerVisibility(bannerConfig, {
-    currentLocale: locale,
-    currentSection: 'sitewide',
-    now: new Date()
-  }) &&
+  activeBanner !== undefined &&
   !isHrefActive(bannerData.link?.href ?? '', Astro.url.pathname)
 const bannerVersion = createBannerVersion(bannerData, locale)
 
@@ -328,21 +333,25 @@ const structuredData = head.emitStructuredData
       <slot />
     </main>
     {!minimal && (
-      <SiteFooter locale={locale} client:visible={{ rootMargin: '200px' }} />
+      <SiteFooter
+        locale={locale}
+        alternates={languageAlternates}
+        client:visible={{ rootMargin: '200px' }}
+      />
     )}
 
     <Analytics />
 
     <script>
-      import { initSmoothScroll, cancelScroll } from '../scripts/smoothScroll'
-      import { ScrollTrigger } from '../scripts/gsapSetup'
-      import { initPostHog, capturePageview } from '../scripts/posthog'
-      import { reifyMediaElements } from '../scripts/reifyMediaElements'
+      import { initSmoothScroll, cancelScroll } from '@/scripts/smoothScroll'
+      import { ScrollTrigger } from '@/scripts/gsapSetup'
+      import { initPostHog, capturePageview } from '@/scripts/posthog'
+      import { reifyMediaElements } from '@/scripts/reifyMediaElements'
       import {
         BANNER_DISMISS_ATTR,
         BANNER_STORAGE_KEY,
         toClosedBanners
-      } from '../utils/banner'
+      } from '@/utils/banner'
 
       initSmoothScroll()
 

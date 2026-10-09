@@ -1,7 +1,7 @@
 import { describe, expect, it } from 'vitest'
 
-import { resolveModelRouterRender } from '../../../config/router-render'
-import { getAuthoredRouterWorkshopModelDetail } from '../../../config/workshop-router-content'
+import { resolveModelRouterRender } from '@/config/router-render'
+import { getAuthoredRouterWorkshopModelDetail } from '@/config/workshop-router-content'
 import {
   contractAspects,
   frameParameters,

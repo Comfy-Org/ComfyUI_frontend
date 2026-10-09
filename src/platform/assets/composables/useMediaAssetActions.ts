@@ -1,5 +1,5 @@
 import { uniqBy } from 'es-toolkit'
-import { useToast } from 'primevue/usetoast'
+import { useToast } from '@/components/ui/toast/toastStore'
 import { inject } from 'vue'
 import { useI18n } from 'vue-i18n'
 
@@ -37,12 +37,11 @@ import { createAnnotatedPath } from '@/utils/createAnnotatedPath'
 import { detectNodeTypeFromFilename } from '@/utils/loaderNodeUtil'
 import { isResultItemType } from '@/utils/typeGuardUtil'
 
-import { useAssetExportStore } from '@/stores/assetExportStore'
-
 import type { AssetId, AssetItem } from '../schemas/assetSchema'
 import { MediaAssetKey } from '../schemas/mediaAssetSchema'
 import { assetService } from '../services/assetService'
 import { useAssetDownload } from './useAssetDownload'
+import { useAssetZipExport } from './useAssetZipExport'
 import type { AssetDownload } from './useAssetDownload'
 
 const EXCLUDED_TAGS = new Set(['models', 'input', 'output'])
@@ -101,12 +100,14 @@ export function useMediaAssetActions() {
   const litegraphService = useLitegraphService()
   const nodeDefStore = useNodeDefStore()
   const { downloadFiles } = useAssetDownload()
+  const { startZipExport } = useAssetZipExport()
 
   /**
    * Download one or more assets.
-   * In cloud mode, creates a ZIP export via the backend when called with
-   * 2+ assets or with any asset whose job has `outputCount > 1`.
-   * In OSS mode, downloads each file directly, expanding grouped assets
+   * When the assets system is enabled, creates a ZIP export via the
+   * backend when called with 2+ assets or with any asset whose job has
+   * `outputCount > 1`.
+   * Otherwise downloads each file directly, expanding grouped assets
    * (`outputCount > 1`) into their individual outputs.
    * With no argument, uses the asset from `MediaAssetKey` context.
    */
@@ -120,7 +121,10 @@ export function useMediaAssetActions() {
       return typeof count === 'number' && count > 1
     })
 
-    if (isCloud && (targetAssets.length > 1 || hasMultiOutputJobs)) {
+    if (
+      flags.assetsEnabled &&
+      (targetAssets.length > 1 || hasMultiOutputJobs)
+    ) {
       void downloadAssetsAsZip(targetAssets)
       return
     }
@@ -185,51 +189,46 @@ export function useMediaAssetActions() {
   }
 
   async function downloadAssetsAsZip(assets: AssetItem[]) {
-    const assetExportStore = useAssetExportStore()
+    const jobIds: string[] = []
+    const assetIds: string[] = []
+    const namesByJobId = new Map<string, Set<string>>()
+    const wholeJobIds = new Set<string>()
 
-    try {
-      const jobIds: string[] = []
-      const assetIds: string[] = []
-      const namesByJobId = new Map<string, Set<string>>()
-      const wholeJobIds = new Set<string>()
-      const fileCount = getTotalAssetOutputCount(assets)
-
-      for (const asset of assets) {
-        const assetType = getAssetType(asset)
-        const metadata = getOutputAssetMetadata(asset.user_metadata)
-        if (assetType === 'output' || (assetType === 'temp' && metadata)) {
-          const jobId = metadata?.jobId || asset.id
-          if (!jobIds.includes(jobId)) {
-            jobIds.push(jobId)
-          }
-          // When outputCount is set, the asset is a job-level selection
-          // from the gallery and the user wants all outputs for that job.
-          if (metadata?.outputCount != null) {
-            wholeJobIds.add(jobId)
-          } else if (metadata?.jobId && asset.name) {
-            const names = namesByJobId.get(metadata.jobId) ?? new Set<string>()
-            names.add(asset.name)
-            namesByJobId.set(metadata.jobId, names)
-          }
-        } else {
-          assetIds.push(asset.id)
+    for (const asset of assets) {
+      const assetType = getAssetType(asset)
+      const metadata = getOutputAssetMetadata(asset.user_metadata)
+      const jobId = metadata?.jobId
+      if (jobId && (assetType === 'output' || assetType === 'temp')) {
+        if (!jobIds.includes(jobId)) {
+          jobIds.push(jobId)
         }
+        // When outputCount is set, the asset is a job-level selection
+        // from the gallery and the user wants all outputs for that job.
+        if (metadata.outputCount != null) {
+          wholeJobIds.add(jobId)
+        } else if (asset.name) {
+          const names = namesByJobId.get(jobId) ?? new Set<string>()
+          names.add(asset.name)
+          namesByJobId.set(jobId, names)
+        }
+      } else {
+        assetIds.push(asset.id)
       }
+    }
 
-      // A job-level selection outranks any name filter a sibling child of the
-      // same job contributed, whichever order they were selected in.
-      const jobAssetNameFilters = Object.fromEntries(
-        [...namesByJobId]
-          .filter(([jobId]) => !wholeJobIds.has(jobId))
-          .map(([jobId, names]): [string, string[]] => [jobId, [...names]])
-      )
+    // A job-level selection outranks any name filter a sibling child of the
+    // same job contributed, whichever order they were selected in.
+    const jobAssetNameFilters = Object.fromEntries(
+      [...namesByJobId]
+        .filter(([jobId]) => !wholeJobIds.has(jobId))
+        .map(([jobId, names]): [string, string[]] => [jobId, [...names]])
+    )
 
-      const spansMultipleJobs = jobIds.length > 1
-      const namingStrategy = spansMultipleJobs
-        ? 'group_by_job_time'
-        : 'preserve'
+    const spansMultipleJobs = jobIds.length > 1
+    const namingStrategy = spansMultipleJobs ? 'group_by_job_time' : 'preserve'
 
-      const result = await assetService.createAssetExport({
+    await startZipExport(
+      {
         ...(jobIds.length > 0 ? { job_ids: jobIds } : {}),
         ...(assetIds.length > 0 ? { asset_ids: assetIds } : {}),
         ...(Object.keys(jobAssetNameFilters).length > 0
@@ -237,28 +236,9 @@ export function useMediaAssetActions() {
           : {}),
         naming_strategy: namingStrategy,
         include_previews: true
-      })
-
-      assetExportStore.trackExport(result.task_id)
-
-      toast.add({
-        severity: 'info',
-        summary: t('exportToast.exportStarted'),
-        detail: t(
-          'mediaAsset.selection.exportStarted',
-          { count: fileCount },
-          fileCount
-        ),
-        life: 3000
-      })
-    } catch (error) {
-      console.error('Failed to create asset export:', error)
-      toast.add({
-        severity: 'error',
-        summary: t('g.error'),
-        detail: t('exportToast.exportFailedSingle')
-      })
-    }
+      },
+      getTotalAssetOutputCount(assets)
+    )
   }
 
   const copyJobId = async (asset?: AssetItem) => {
@@ -271,11 +251,9 @@ export function useMediaAssetActions() {
       (getAssetType(targetAsset) === 'output' ? targetAsset.id : undefined)
 
     if (!jobId) {
-      toast.add({
-        severity: 'warn',
-        summary: t('g.warning'),
-        detail: t('mediaAsset.noJobIdFound'),
-        life: 2000
+      toast.warning(t('g.warning'), {
+        description: t('mediaAsset.noJobIdFound'),
+        duration: 2000
       })
       return
     }
@@ -297,11 +275,9 @@ export function useMediaAssetActions() {
     )
 
     if (!nodeType || !widgetName) {
-      toast.add({
-        severity: 'warn',
-        summary: t('g.warning'),
-        detail: t('mediaAsset.unsupportedFileType'),
-        life: 2000
+      toast.warning(t('g.warning'), {
+        description: t('mediaAsset.unsupportedFileType'),
+        duration: 2000
       })
       return
     }
@@ -315,10 +291,8 @@ export function useMediaAssetActions() {
     )
 
     if (!node) {
-      toast.add({
-        severity: 'error',
-        summary: t('g.error'),
-        detail: t('mediaAsset.failedToCreateNode')
+      toast.error(t('g.error'), {
+        description: t('mediaAsset.failedToCreateNode')
       })
       return
     }
@@ -332,11 +306,9 @@ export function useMediaAssetActions() {
     }
     node.graph?.setDirtyCanvas(true, true)
 
-    toast.add({
-      severity: 'success',
-      summary: t('g.success'),
-      detail: t('mediaAsset.nodeAddedToWorkflow', { nodeType }),
-      life: 2000
+    toast.success(t('g.success'), {
+      description: t('mediaAsset.nodeAddedToWorkflow', { nodeType }),
+      duration: 2000
     })
   }
 
@@ -394,18 +366,14 @@ export function useMediaAssetActions() {
     const result = await openAssetWorkflow(targetAsset)
 
     if (!result.success) {
-      toast.add({
-        severity: 'warn',
-        summary: t('g.warning'),
-        detail: result.error || t('mediaAsset.noWorkflowDataFound'),
-        life: 2000
+      toast.warning(t('g.warning'), {
+        description: result.error || t('mediaAsset.noWorkflowDataFound'),
+        duration: 2000
       })
     } else {
-      toast.add({
-        severity: 'success',
-        summary: t('g.success'),
-        detail: t('mediaAsset.workflowOpenedInNewTab'),
-        life: 2000
+      toast.success(t('g.success'), {
+        description: t('mediaAsset.workflowOpenedInNewTab'),
+        duration: 2000
       })
     }
   }
@@ -430,19 +398,15 @@ export function useMediaAssetActions() {
     if (result.cancelled) return
 
     if (!result.success) {
-      const isNoWorkflow = result.error?.includes('No workflow')
-      toast.add({
-        severity: isNoWorkflow ? 'warn' : 'error',
-        summary: isNoWorkflow ? t('g.warning') : t('g.error'),
-        detail: result.error || t('mediaAsset.failedToExportWorkflow'),
-        life: 3000
+      const kind = result.error?.includes('No workflow') ? 'warning' : 'error'
+      toast[kind](t(`g.${kind}`), {
+        description: result.error || t('mediaAsset.failedToExportWorkflow'),
+        duration: 3000
       })
     } else {
-      toast.add({
-        severity: 'success',
-        summary: t('g.success'),
-        detail: t('mediaAsset.workflowExportedSuccessfully'),
-        life: 2000
+      toast.success(t('g.success'), {
+        description: t('mediaAsset.workflowExportedSuccessfully'),
+        duration: 2000
       })
     }
   }
@@ -495,29 +459,23 @@ export function useMediaAssetActions() {
     }
 
     if (failed === 0) {
-      toast.add({
-        severity: 'success',
-        summary: t('g.success'),
-        detail: t('mediaAsset.selection.nodesAddedToWorkflow', {
+      toast.success(t('g.success'), {
+        description: t('mediaAsset.selection.nodesAddedToWorkflow', {
           count: succeeded
         }),
-        life: 2000
+        duration: 2000
       })
     } else if (succeeded === 0) {
-      toast.add({
-        severity: 'error',
-        summary: t('g.error'),
-        detail: t('mediaAsset.selection.failedToAddNodes')
+      toast.error(t('g.error'), {
+        description: t('mediaAsset.selection.failedToAddNodes')
       })
     } else {
-      toast.add({
-        severity: 'warn',
-        summary: t('g.warning'),
-        detail: t('mediaAsset.selection.partialAddNodesSuccess', {
+      toast.warning(t('g.warning'), {
+        description: t('mediaAsset.selection.partialAddNodesSuccess', {
           succeeded,
           failed
         }),
-        life: 3000
+        duration: 3000
       })
     }
   }
@@ -544,28 +502,24 @@ export function useMediaAssetActions() {
     }
 
     if (failed === 0) {
-      toast.add({
-        severity: 'success',
-        summary: t('g.success'),
-        detail: t('mediaAsset.selection.workflowsOpened', { count: succeeded }),
-        life: 2000
+      toast.success(t('g.success'), {
+        description: t('mediaAsset.selection.workflowsOpened', {
+          count: succeeded
+        }),
+        duration: 2000
       })
     } else if (succeeded === 0) {
-      toast.add({
-        severity: 'warn',
-        summary: t('g.warning'),
-        detail: t('mediaAsset.selection.noWorkflowsFound'),
-        life: 3000
+      toast.warning(t('g.warning'), {
+        description: t('mediaAsset.selection.noWorkflowsFound'),
+        duration: 3000
       })
     } else {
-      toast.add({
-        severity: 'warn',
-        summary: t('g.warning'),
-        detail: t('mediaAsset.selection.partialWorkflowsOpened', {
+      toast.warning(t('g.warning'), {
+        description: t('mediaAsset.selection.partialWorkflowsOpened', {
           succeeded,
           failed
         }),
-        life: 3000
+        duration: 3000
       })
     }
   }
@@ -599,30 +553,24 @@ export function useMediaAssetActions() {
     if (succeeded === 0 && failed === 0) return
 
     if (failed === 0) {
-      toast.add({
-        severity: 'success',
-        summary: t('g.success'),
-        detail: t('mediaAsset.selection.workflowsExported', {
+      toast.success(t('g.success'), {
+        description: t('mediaAsset.selection.workflowsExported', {
           count: succeeded
         }),
-        life: 2000
+        duration: 2000
       })
     } else if (succeeded === 0) {
-      toast.add({
-        severity: 'warn',
-        summary: t('g.warning'),
-        detail: t('mediaAsset.selection.noWorkflowsToExport'),
-        life: 3000
+      toast.warning(t('g.warning'), {
+        description: t('mediaAsset.selection.noWorkflowsToExport'),
+        duration: 3000
       })
     } else {
-      toast.add({
-        severity: 'warn',
-        summary: t('g.warning'),
-        detail: t('mediaAsset.selection.partialWorkflowsExported', {
+      toast.warning(t('g.warning'), {
+        description: t('mediaAsset.selection.partialWorkflowsExported', {
           succeeded,
           failed
         }),
-        life: 3000
+        duration: 3000
       })
     }
   }
@@ -823,11 +771,11 @@ export function useMediaAssetActions() {
       }
     }
 
-    const severity =
+    const outcome =
       failedDeletions.length === 0
         ? 'success'
         : deletedJobCount || deletedAssetCount
-          ? 'warn'
+          ? 'warning'
           : 'error'
 
     const resultMessages: string[] = []
@@ -846,11 +794,9 @@ export function useMediaAssetActions() {
       )
     }
 
-    toast.add({
-      detail: resultMessages.join('\n'),
-      life: severity === 'success' ? 2000 : 5000,
-      severity,
-      summary: t(`mediaAsset.assetDelete.${severity}`)
+    toast[outcome](t(`mediaAsset.assetDelete.${outcome}`), {
+      description: resultMessages.join('\n'),
+      duration: outcome === 'success' ? 2000 : 5000
     })
     return true
   }

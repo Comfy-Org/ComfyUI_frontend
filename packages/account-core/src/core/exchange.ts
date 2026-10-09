@@ -9,10 +9,15 @@
  */
 import { zExchangeTokenResponse } from '@comfyorg/ingest-types/zod'
 
+import {
+  isSsoRequiredRefusal,
+  ssoRequiredOrganizationId
+} from './ssoRequired.js'
 import type {
   AccountCredential,
   AccountUser,
   SessionErrorCode,
+  SessionFailure,
   SessionResult
 } from './sessionContracts.js'
 
@@ -24,6 +29,28 @@ function codeForResponse(status: number): SessionErrorCode {
   if (status === 403) return 'ACCESS_DENIED'
   if (status === 404) return 'WORKSPACE_NOT_FOUND'
   return 'TOKEN_EXCHANGE_FAILED'
+}
+
+type Refusal = Pick<SessionFailure, 'code' | 'organizationId'>
+
+/** Only a 403's body is read: it tells an SSO refusal from any other. */
+async function refusalFor(
+  response: Response,
+  signal: AbortSignal
+): Promise<Refusal> {
+  const code = codeForResponse(response.status)
+  if (code !== 'ACCESS_DENIED') return { code }
+  let body: unknown
+  try {
+    body = await abortable(response.json(), signal)
+  } catch {
+    return { code }
+  }
+  if (!isSsoRequiredRefusal(response.status, body)) return { code }
+  const organizationId = ssoRequiredOrganizationId(body)
+  return organizationId === undefined
+    ? { code: 'SSO_REQUIRED' }
+    : { code: 'SSO_REQUIRED', organizationId }
 }
 
 export function abortable<T>(
@@ -110,7 +137,7 @@ export async function exchangeToken(
     if (!response.ok) {
       return {
         status: 'error',
-        code: codeForResponse(response.status),
+        ...(await refusalFor(response, controller.signal)),
         httpStatus: response.status
       }
     }

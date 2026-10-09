@@ -2,6 +2,7 @@ import { describe, expect, it, vi } from 'vitest'
 
 import type { FakeWebSessionState } from '../testing.js'
 import { createFakeWebSessionEndpoint, fakeWebSessionUser } from '../testing.js'
+import { COMFY_CLIENT } from './requestAuth.js'
 import type { WebSessionOptions } from './webSession.js'
 import {
   createWebSession,
@@ -25,10 +26,22 @@ function respondWith(status: number, body: string | null): typeof fetch {
   return vi.fn<typeof fetch>(async () => new Response(body, { status }))
 }
 
+function heldUntilAborted(answered: Promise<Response>): typeof fetch {
+  return vi.fn<typeof fetch>(
+    (_input, init) =>
+      new Promise<Response>((resolve, reject) => {
+        init?.signal?.addEventListener('abort', () => {
+          reject(new DOMException('aborted', 'AbortError'))
+        })
+        void answered.then(resolve)
+      })
+  )
+}
+
 const errorBody = (code: string) => JSON.stringify({ code, message: code })
 
 const revokeAll = (o: WebSessionOptions, csrfToken = 'fake-csrf-token') =>
-  revokeAllWebSessions(o, csrfToken, async () => 'id-token')
+  revokeAllWebSessions(o, csrfToken)
 
 const ENDPOINTS = [
   { name: 'read', call: (o: WebSessionOptions) => readWebSession(o) },
@@ -86,6 +99,12 @@ describe('web session status mapping', () => {
     },
     {
       status: 403,
+      body: errorBody('sso_required'),
+      code: 'SSO_REQUIRED',
+      server: 'sso_required'
+    },
+    {
+      status: 403,
       body: errorBody('origin_not_allowed'),
       code: 'SESSION_REQUEST_REFUSED',
       server: 'origin_not_allowed'
@@ -128,6 +147,26 @@ describe('web session status mapping', () => {
       })
     }
   )
+
+  it('keeps the organization an sso_required refusal names', async () => {
+    const result = await readWebSession(
+      optionsFor(
+        respondWith(
+          403,
+          JSON.stringify({
+            code: 'sso_required',
+            message: 'use SSO',
+            organization_id: 'org_acme'
+          })
+        )
+      )
+    )
+
+    expect(result).toMatchObject({
+      code: 'SSO_REQUIRED',
+      organizationId: 'org_acme'
+    })
+  })
 
   it.for([
     { name: '429 edge rate limit', status: 429, body: errorBody('no_session') },
@@ -193,6 +232,83 @@ describe('web session status mapping', () => {
       code: 'SESSION_UNAVAILABLE',
       retryable: true
     })
+  })
+
+  it('a read that outruns timeoutMs is transient', async () => {
+    const read = readWebSession({
+      apiBaseUrl: API,
+      fetchImpl: heldUntilAborted(new Promise(() => {})),
+      timeoutMs: 5000
+    })
+
+    await vi.advanceTimersByTimeAsync(5000)
+
+    expect(await read).toEqual({
+      status: 'error',
+      code: 'SESSION_UNAVAILABLE',
+      retryable: true
+    })
+  })
+
+  it('a 401 whose body outruns timeoutMs is transient, never a sign-out', async () => {
+    const fetchImpl = vi.fn<typeof fetch>(
+      async (_input, init) =>
+        new Response(
+          new ReadableStream({
+            start(body) {
+              init?.signal?.addEventListener('abort', () => {
+                body.error(new DOMException('aborted', 'AbortError'))
+              })
+            }
+          }),
+          { status: 401 }
+        )
+    )
+    const read = readWebSession({ apiBaseUrl: API, fetchImpl, timeoutMs: 5000 })
+
+    await vi.advanceTimersByTimeAsync(5000)
+
+    expect(await read).toEqual({
+      status: 'error',
+      code: 'SESSION_UNAVAILABLE',
+      retryable: true
+    })
+  })
+
+  it('a caller abort still ends a read that has a timeout', async () => {
+    const caller = new AbortController()
+    const read = readWebSession({
+      apiBaseUrl: API,
+      fetchImpl: heldUntilAborted(new Promise(() => {})),
+      signal: caller.signal,
+      timeoutMs: 5000
+    })
+
+    caller.abort()
+
+    expect(await read).toMatchObject({ code: 'SESSION_UNAVAILABLE' })
+  })
+
+  it('waits for a slow read when no timeoutMs is given', async () => {
+    const endpoint = fakeEndpoint({ kind: 'live', user: fakeWebSessionUser() })
+    let answer = () => {}
+    const answered = new Promise<void>((resolve) => {
+      answer = resolve
+    })
+    const read = readWebSession(
+      optionsFor(
+        heldUntilAborted(
+          answered.then(() =>
+            endpoint.fetch(`${API}/auth/session`, { method: 'GET' })
+          )
+        )
+      )
+    )
+
+    await vi.advanceTimersByTimeAsync(10 * 60_000)
+    answer()
+
+    expect(await read).toMatchObject({ status: 'ok' })
   })
 
   it.for(ENDPOINTS)('$name maps a revoked session', async ({ call }) => {
@@ -265,6 +381,27 @@ describe('web session requests', () => {
       }
     })
   })
+
+  it.for([
+    { reported: true, expected: true },
+    { reported: false, expected: false },
+    { reported: undefined, expected: undefined }
+  ])(
+    'reads has_personal_workspace $reported as $expected',
+    async ({ reported, expected }) => {
+      const endpoint = fakeEndpoint({
+        kind: 'live',
+        user: fakeWebSessionUser({ hasPersonalWorkspace: reported })
+      })
+
+      const result = await readWebSession(optionsFor(endpoint.fetch))
+
+      expect(result.status === 'ok' && result.session.user).toHaveProperty(
+        'hasPersonalWorkspace',
+        expected
+      )
+    }
+  )
 
   it('reports IDENTITY_CHANGED when the session belongs to another user', async () => {
     const endpoint = fakeEndpoint({
@@ -391,19 +528,24 @@ describe('revoke-all', () => {
     })
   })
 
-  it('sends the identity proof and CSRF token to the revoke-all route', async () => {
+  it('revokes with the session cookie alone: client header and CSRF token, no bearer', async () => {
     const endpoint = fakeEndpoint({ kind: 'live', user: fakeWebSessionUser() })
 
-    await revokeAll(optionsFor(endpoint.fetch))
+    const result = await revokeAll(optionsFor(endpoint.fetch))
 
-    expect(endpoint.requests[0]).toMatchObject({
-      method: 'POST',
-      path: '/api/auth/sessions/revoke-all',
-      headers: {
-        authorization: 'Bearer id-token',
-        'x-csrf-token': 'fake-csrf-token'
+    expect(result).toEqual({ status: 'ok' })
+    expect(endpoint.requests).toEqual([
+      {
+        method: 'POST',
+        path: '/api/auth/sessions/revoke-all',
+        credentials: 'include',
+        cache: undefined,
+        headers: {
+          'x-comfy-client': COMFY_CLIENT,
+          'x-csrf-token': 'fake-csrf-token'
+        }
       }
-    })
+    ])
   })
 
   it('ends the session, so the next read is SESSION_REVOKED', async () => {

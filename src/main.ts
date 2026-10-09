@@ -1,10 +1,10 @@
 import { definePreset } from '@primevue/themes'
 import Aura from '@primevue/themes/aura'
+import type { PaletteDesignToken } from '@primevue/themes/aura'
 import { captureMessage } from '@sentry/vue'
 import { createPinia } from 'pinia'
 import 'primeicons/primeicons.css'
 import PrimeVue from 'primevue/config'
-import ToastService from 'primevue/toastservice'
 import Tooltip from 'primevue/tooltip'
 import { createApp } from 'vue'
 
@@ -12,6 +12,7 @@ import { setAssertReporter } from '@/base/assert'
 import { flushProxyWidgetMigration } from '@/core/graph/subgraph/migration/proxyWidgetMigration'
 import { autoExposeKnownPreviewNodes } from '@/core/graph/subgraph/promotionUtils'
 import { LGraph } from '@/lib/litegraph/src/litegraph'
+import { installCloudApiAuth } from '@/platform/auth/cloudApiAuthProvider'
 import { firebaseIdentity } from '@/platform/auth/firebaseIdentity'
 import {
   configValueOrDefault,
@@ -30,7 +31,7 @@ import '@/lib/litegraph/public/css/litegraph.css'
 import router from '@/router'
 import { isDesktop, isNightly } from '@/platform/distribution/types'
 import { stripPaymentReturnParams } from '@/platform/cloud/subscription/utils/paymentReturnUrl'
-import { useToastStore } from '@/platform/updates/common/toastStore'
+import { useToast } from '@/components/ui/toast/toastStore'
 import { useBootstrapStore } from '@/stores/bootstrapStore'
 
 import App from './App.vue'
@@ -41,7 +42,10 @@ import { i18n } from './i18n'
 const isCloud = __DISTRIBUTION__ === 'cloud'
 const hasHostTelemetryBridge = Boolean(window.__comfyDesktop2?.Telemetry)
 
-if (isCloud) stripPaymentReturnParams()
+if (isCloud) {
+  stripPaymentReturnParams()
+  installCloudApiAuth()
+}
 
 bootstrapTracer.armWatchdog()
 
@@ -73,10 +77,17 @@ if (hasHostTelemetryBridge) {
   initHostTelemetry()
 }
 
+const desktopHostAuth = isCloud ? undefined : window.__comfyDesktop2?.Auth
+if (desktopHostAuth) {
+  const { startDesktopHostSession } =
+    await import('@/platform/auth/desktopHost/desktopHostSession')
+  await startDesktopHostSession(desktopHostAuth)
+}
+
 const ComfyUIPreset = definePreset(Aura, {
   semantic: {
-    // @ts-expect-error fixme ts strict error
-    primary: Aura['primitive'].blue
+    primary: (Aura as { primitive: { blue: PaletteDesignToken } }).primitive
+      .blue
   }
 })
 
@@ -119,11 +130,7 @@ setAssertReporter(
       reportAssertFailure(message, context)
     }
     if (isNightly) {
-      useToastStore(pinia).add({
-        severity: 'warn',
-        summary: 'Assertion failed',
-        detail: message
-      })
+      useToast(pinia).warning('Assertion failed', { description: message })
     }
   },
   { forwardsToRum: isCloud }
@@ -133,11 +140,6 @@ app.directive('tooltip', Tooltip)
 app
   .use(router)
   .use(PrimeVue, {
-    pt: {
-      popover: {
-        root: { 'aria-modal': false }
-      }
-    },
     zIndex: {
       modal: 1800,
       overlay: 1800,
@@ -160,7 +162,6 @@ app
       }
     }
   })
-  .use(ToastService)
   .use(pinia)
   .use(i18n)
 

@@ -2,7 +2,7 @@ import { nextTick } from 'vue'
 
 import Load3D from '@/components/load3d/Load3D.vue'
 import Load3DViewerContent from '@/components/load3d/Load3dViewerContent.vue'
-import { LOAD3D_VIEWER_CONTENT_CLASS } from '@/components/load3d/load3dViewerDialog'
+import { LOAD3D_VIEWER_DIALOG_PROPS } from '@/components/load3d/load3dViewerDialog'
 import {
   getLoad3dOutputCache,
   getLoad3dSceneRevision,
@@ -27,15 +27,17 @@ import {
   SUPPORTED_EXTENSIONS_ACCEPT
 } from '@/extensions/core/load3d/constants'
 import { snapshotLoad3dState } from '@/extensions/core/load3d/load3dSerialize'
+import type { Model3DOutput } from '@/extensions/core/load3d/model3dOutput'
+import { readModel3DOutput } from '@/extensions/core/load3d/model3dOutput'
 import Load3dUtils from '@/extensions/core/load3d/Load3dUtils'
 import { t } from '@/i18n'
 import type { LGraphNode } from '@/lib/litegraph/src/LGraphNode'
-import type { IContextMenuValue } from '@/lib/litegraph/src/interfaces'
+import type { IContextMenuValue } from '@/lib/litegraph/src/types/contextMenu'
 import type {
   INumericWidget,
   IStringWidget
 } from '@/lib/litegraph/src/types/widgets'
-import { useToastStore } from '@/platform/updates/common/toastStore'
+import { useToast } from '@/components/ui/toast/toastStore'
 import type {
   NodeExecutionOutput,
   NodeOutputWith
@@ -52,9 +54,6 @@ const MAX_STALE_CAPTURE_RETRIES = 2
 
 type Load3dPreviewOutput = NodeOutputWith<{
   result?: [string?, CameraState?, string?, Matrix?, Matrix?]
-}>
-type Preview3DAdvancedOutput = NodeOutputWith<{
-  result?: [string?, CameraState?, Model3DInfo?]
 }>
 import type { CustomInputSpec } from '@/schemas/nodeDef/nodeDefSchemaV2'
 import { api } from '@/scripts/api'
@@ -95,7 +94,7 @@ async function handleModelUpload(files: FileList, node: LGraphNode) {
     const uploadPath = await Load3dUtils.uploadFile(files[0], subfolder)
 
     if (!uploadPath) {
-      useToastStore().addAlert(t('toastMessages.fileUploadFailed'))
+      useToast().warning(t('toastMessages.fileUploadFailed'))
       return
     }
 
@@ -110,7 +109,7 @@ async function handleModelUpload(files: FileList, node: LGraphNode) {
       try {
         await load3d.loadModel(modelUrl)
       } catch {
-        useToastStore().addAlert(t('toastMessages.failedToLoadModel'))
+        useToast().warning(t('toastMessages.failedToLoadModel'))
       }
     })
 
@@ -125,7 +124,7 @@ async function handleModelUpload(files: FileList, node: LGraphNode) {
     markLoad3dSceneDirty(node)
   } catch (error) {
     console.error('Model upload failed:', error)
-    useToastStore().addAlert(t('toastMessages.fileUploadFailed'))
+    useToast().warning(t('toastMessages.fileUploadFailed'))
   }
 }
 
@@ -143,7 +142,7 @@ async function handleResourcesUpload(files: FileList, node: LGraphNode) {
     markLoad3dSceneDirty(node)
   } catch (error) {
     console.error('Extra resources upload failed:', error)
-    useToastStore().addAlert(t('toastMessages.extraResourcesUploadFailed'))
+    useToast().warning(t('toastMessages.extraResourcesUploadFailed'))
   }
 }
 
@@ -286,10 +285,7 @@ useExtensionService().registerExtension({
           component: Load3DViewerContent,
           props: props,
           dialogComponentProps: {
-            renderer: 'reka',
-            size: 'full',
-            contentClass: LOAD3D_VIEWER_CONTENT_CLASS,
-            maximizable: true,
+            ...LOAD3D_VIEWER_DIALOG_PROPS,
             onClose: async () => {
               await useLoad3dService().handleViewerClose(props.node)
             }
@@ -569,8 +565,9 @@ useExtensionService().registerExtension({
     nodeData: ComfyNodeDef
   ) {
     if ('Preview3D' === nodeData.name) {
-      // @ts-expect-error InputSpec is not typed correctly
-      nodeData.input.required.image = ['PREVIEW_3D']
+      const input = (nodeData.input ??= {})
+      const required = (input.required ??= {})
+      required.image = ['PREVIEW_3D']
     }
   },
 
@@ -669,7 +666,7 @@ useExtensionService().registerExtension({
           if (!filePath) {
             const msg = t('toastMessages.unableToGetModelFilePath')
             console.error(msg)
-            useToastStore().addAlert(msg)
+            useToast().warning(msg)
           }
 
           const cameraState = result?.[1]
@@ -723,23 +720,21 @@ useExtensionService().registerExtension({
 function applyPreview3DAdvancedResult(
   node: LGraphNode,
   load3d: Load3d,
-  result: NonNullable<Preview3DAdvancedOutput['result']>,
+  reported: Model3DOutput,
   loadFolder: LoadFolder,
   comfyClass: string
 ): void {
-  const filePath = result[0]
-  if (!filePath) return
-
-  const normalizedPath = filePath.replaceAll('\\', '/')
+  const normalizedPath = reported.filePath.replaceAll('\\', '/')
+  const folder = reported.folder ?? loadFolder
   node.properties['Last Time Model File'] = normalizedPath
+  node.properties['Last Time Model Folder'] = folder
 
   const config = new Load3DConfiguration(load3d, node.properties)
-  config.configureForSaveMesh(loadFolder, normalizedPath, {
+  config.configureForSaveMesh(folder, normalizedPath, {
     silentOnNotFound: true
   })
 
-  const cameraState = result[1]
-  const modelTransform = result[2]?.[0]
+  const { cameraState, modelTransform } = reported
   if (!cameraState && !modelTransform) return
 
   const targetGeneration = load3d.currentLoadGeneration
@@ -770,8 +765,8 @@ function createPreview3DAdvancedExtension(
       nodeOutputs: Record<NodeLocatorId, NodeExecutionOutput>
     ) {
       for (const [locatorId, output] of Object.entries(nodeOutputs)) {
-        const result = (output as Preview3DAdvancedOutput).result
-        if (!result?.[0]) continue
+        const reported = readModel3DOutput(output)
+        if (!reported) continue
 
         const node = getNodeByLocatorId(app.rootGraph, locatorId)
         if (!node || node.constructor.comfyClass !== comfyClass) continue
@@ -780,7 +775,7 @@ function createPreview3DAdvancedExtension(
           applyPreview3DAdvancedResult(
             node,
             load3d,
-            result,
+            reported,
             loadFolder,
             comfyClass
           )
@@ -815,8 +810,14 @@ function createPreview3DAdvancedExtension(
         const lastTimeModelFile = node.properties['Last Time Model File']
         if (!lastTimeModelFile) return
 
+        const lastTimeModelFolder = node.properties['Last Time Model Folder']
+        const folder =
+          lastTimeModelFolder === 'temp' || lastTimeModelFolder === 'output'
+            ? lastTimeModelFolder
+            : loadFolder
+
         const config = new Load3DConfiguration(load3d, node.properties)
-        config.configureForSaveMesh(loadFolder, lastTimeModelFile as string, {
+        config.configureForSaveMesh(folder, lastTimeModelFile as string, {
           silentOnNotFound: true
         })
 
@@ -895,21 +896,21 @@ function createPreview3DAdvancedExtension(
           }
         }
 
-        node.onExecuted = function (output: Preview3DAdvancedOutput) {
+        node.onExecuted = function (output: NodeExecutionOutput) {
           onExecuted?.call(this, output)
 
-          const result = output.result
-          if (!result?.[0]) {
+          const reported = readModel3DOutput(output)
+          if (!reported) {
             const msg = t('toastMessages.unableToGetModelFilePath')
             console.error(msg)
-            useToastStore().addAlert(msg)
+            useToast().warning(msg)
             return
           }
 
           applyPreview3DAdvancedResult(
             node,
             resolveLoad3d(),
-            result,
+            reported,
             loadFolder,
             comfyClass
           )

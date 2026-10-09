@@ -139,9 +139,9 @@ describe('PackEnableToggle', () => {
     vi.mocked(useComfyManagerStore().isPackEnabled).mockReturnValue(true)
     renderComponent()
 
-    expect(
-      vi.mocked(useComfyManagerStore().isPackEnabled)
-    ).toHaveBeenCalledWith(mockNodePack.id)
+    expect(useComfyManagerStore().isPackEnabled).toHaveBeenCalledWith(
+      mockNodePack.id
+    )
   })
 
   it('sets toggle to on when pack is enabled', () => {
@@ -164,7 +164,7 @@ describe('PackEnableToggle', () => {
 
     await user.click(screen.getByRole('switch'))
 
-    expect(vi.mocked(useComfyManagerStore().enablePack)).toHaveBeenCalledWith(
+    expect(useComfyManagerStore().enablePack).toHaveBeenCalledWith(
       expect.objectContaining({
         id: mockNodePack.id,
         version: mockNodePack.latest_version.version
@@ -178,7 +178,7 @@ describe('PackEnableToggle', () => {
 
     await user.click(screen.getByRole('switch'))
 
-    expect(vi.mocked(useComfyManagerStore().disablePack)).toHaveBeenCalledWith(
+    expect(useComfyManagerStore().disablePack).toHaveBeenCalledWith(
       expect.objectContaining({
         id: mockNodePack.id,
         version: mockNodePack.latest_version.version
@@ -250,7 +250,7 @@ describe('PackEnableToggle', () => {
       vi.mocked(useComfyManagerStore().isPackEnabled).mockReturnValue(true)
       const { container } = renderComponent()
 
-      // eslint-disable-next-line testing-library/no-container, testing-library/no-node-access
+      // oxlint-disable-next-line testing-library/no-container, testing-library/no-node-access
       const warningIcon = container.querySelector(
         '.icon-\\[lucide--triangle-alert\\]'
       )
@@ -264,7 +264,7 @@ describe('PackEnableToggle', () => {
       vi.mocked(useComfyManagerStore().isPackEnabled).mockReturnValue(true)
       const { container } = renderComponent()
 
-      // eslint-disable-next-line testing-library/no-container, testing-library/no-node-access
+      // oxlint-disable-next-line testing-library/no-container, testing-library/no-node-access
       const warningIcon = container.querySelector(
         '.icon-\\[lucide--triangle-alert\\]'
       )

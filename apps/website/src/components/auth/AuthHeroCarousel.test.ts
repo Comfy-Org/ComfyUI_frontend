@@ -4,11 +4,11 @@ import { beforeEach, describe, expect, it, vi } from 'vitest'
 
 import { nextTick } from 'vue'
 
-import type { HeroSlide } from '../../config/hero-slides'
+import type { HeroSlide } from '@/config/hero-slides'
 
 const slides = vi.hoisted(() => ({ value: [] as HeroSlide[] }))
 
-vi.mock(import('../../config/hero-slides'), () => ({
+vi.mock(import('@/config/hero-slides'), () => ({
   PROVIDER_ICON: {
     gemini: '/icons/gemini.svg',
     kling: '/icons/kling.svg',

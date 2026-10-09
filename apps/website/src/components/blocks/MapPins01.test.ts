@@ -189,14 +189,13 @@ describe('MapPins01', () => {
     leafletState.closePopupCalls.splice(0)
     leafletState.flyState.moves = true
     fetchSignal = undefined
-    vi.stubGlobal(
-      'fetch',
-      vi.fn(async (_input: RequestInfo | URL, init?: RequestInit) => {
+    vi.mocked(fetch).mockImplementation(
+      async (_input: RequestInfo | URL, init?: RequestInit) => {
         fetchSignal = init?.signal
         return new Response(
           JSON.stringify({ type: 'FeatureCollection', features: [] })
         )
-      })
+      }
     )
   })
 

@@ -1,3 +1,5 @@
+import { isSsoRequiredRefusal } from '@comfyorg/account-core/sso'
+
 import { useCurrentUser } from '@/composables/auth/useCurrentUser'
 import { useFeatureFlags } from '@/composables/useFeatureFlags'
 import { useCloudWebSessionStore } from '@/platform/auth/session/cloudWebSessionStore'
@@ -9,6 +11,10 @@ import { useAuthStore } from '@/stores/authStore'
 interface InFlightCreateSession {
   ownerUid: string | null
   promise: Promise<void>
+}
+
+class SsoRequiredSessionError extends Error {
+  readonly code = 'SSO_REQUIRED'
 }
 
 let inFlightCreateSession: InFlightCreateSession | null = null
@@ -34,10 +40,13 @@ export const useSessionCookie = () => {
     })
   }
 
-  const readSessionError = async (response: Response): Promise<string> => {
+  const readSessionError = async (response: Response): Promise<Error> => {
     const errorData: unknown = await response.json().catch(() => null)
     const message = (errorData as { message?: unknown } | null)?.message
-    return typeof message === 'string' ? message : response.statusText
+    const text = typeof message === 'string' ? message : response.statusText
+    return isSsoRequiredRefusal(response.status, errorData)
+      ? new SsoRequiredSessionError(text)
+      : new Error(text)
   }
 
   const getSessionHeaderOrThrow = async (): Promise<Record<string, string>> => {
@@ -64,7 +73,7 @@ export const useSessionCookie = () => {
     const response = await createSessionWithHeader(authHeader)
 
     if (!response.ok) {
-      throw new Error(await readSessionError(response))
+      throw await readSessionError(response)
     }
   }
 
@@ -144,6 +153,21 @@ export const useSessionCookie = () => {
     }
   }
 
+  /** After an interactive sign-in: whether ingest refused its session for SSO. */
+  const sessionRequiresSso = async (): Promise<boolean> => {
+    if (!isCloud || isApiKeyOnWebSession()) return false
+    const webSession = useCloudWebSessionStore()
+    if (webSession.start()) {
+      return (await webSession.whenSessionCreated()) === 'SSO_REQUIRED'
+    }
+    try {
+      await establishSession(currentOwnerUidOrThrow(), false)
+      return false
+    } catch (error) {
+      return error instanceof SsoRequiredSessionError
+    }
+  }
+
   const createSessionOrThrow = async (): Promise<void> => {
     if (!isCloud) return
     const webSession = useCloudWebSessionStore()
@@ -171,7 +195,7 @@ export const useSessionCookie = () => {
           })
 
           if (!response.ok) {
-            throw new Error(await readSessionError(response))
+            throw await readSessionError(response)
           }
           confirmedSessionOwnerUid = null
         })
@@ -205,6 +229,7 @@ export const useSessionCookie = () => {
   return {
     createSession,
     createSessionOrThrow,
+    sessionRequiresSso,
     ensureSessionCookie,
     deleteSession
   }

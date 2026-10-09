@@ -1,4 +1,5 @@
 import { useBillingCapabilities } from '@/platform/workspace/composables/useBillingCapabilities'
+import { useToast } from '@/components/ui/toast/toastStore'
 import { useDialogService } from '@/services/dialogService'
 import { getActivePinia } from 'pinia'
 import type { Pinia } from 'pinia'
@@ -218,8 +219,6 @@ describe('sortPendingInvites', () => {
   })
 })
 
-const mockToastAdd = vi.fn()
-
 const {
   mockMaxSeats,
   mockOccupiedSeats,
@@ -333,13 +332,6 @@ function setOriginalOwner(id = 'creator-1') {
     createMember({ id, role: 'owner', isOriginalOwner: true })
   ]
 }
-
-vi.mock<unknown>(
-  import('primevue/usetoast'), // oxlint-disable-line comfy/no-primevue-imports
-  () => ({
-    useToast: () => ({ add: mockToastAdd })
-  })
-)
 
 vi.mock(import('@/platform/workspace/composables/useWorkspaceUI'))
 
@@ -669,11 +661,9 @@ describe('useMembersPanel', () => {
       const panel = await setup()
       await panel.handleResendInvite(createInvite({ id: 'inv-1' }))
       expect(workspaceStore.resendInvite).toHaveBeenCalledWith('inv-1')
-      expect(mockToastAdd).toHaveBeenCalledWith(
-        expect.objectContaining({
-          severity: 'success',
-          summary: 'workspacePanel.toast.inviteResent'
-        })
+      expect(useToast().success).toHaveBeenCalledWith(
+        'workspacePanel.toast.inviteResent',
+        { duration: 2000 }
       )
     })
 
@@ -683,11 +673,8 @@ describe('useMembersPanel', () => {
       )
       const panel = await setup()
       await panel.handleResendInvite(createInvite({ id: 'inv-1' }))
-      expect(mockToastAdd).toHaveBeenCalledWith(
-        expect.objectContaining({
-          severity: 'error',
-          summary: 'workspacePanel.toast.inviteResendFailed'
-        })
+      expect(useToast().error).toHaveBeenCalledWith(
+        'workspacePanel.toast.inviteResendFailed'
       )
     })
   })
@@ -753,7 +740,7 @@ describe('useMembersPanel', () => {
   })
 
   describe('memberMenuItems', () => {
-    it('builds a Change role submenu with the current role checked', async () => {
+    it('builds a Change role radio group with the current role selected', async () => {
       const panel = await setup()
       const items = panel.memberMenuItems(createMember({ role: 'member' }))
 
@@ -763,35 +750,32 @@ describe('useMembersPanel', () => {
         'workspacePanel.members.actions.removeMember'
       ])
 
-      const roleItems = items[0].items ?? []
-      expect(roleItems.map((i) => i.label)).toEqual([
+      const roleGroup = items[0].radioGroup
+      expect(roleGroup?.options.map((i) => i.label)).toEqual([
         'workspaceSwitcher.roleOwner',
         'workspaceSwitcher.roleMember'
       ])
-      expect(roleItems.map((i) => i.checked)).toEqual([false, true])
+      expect(roleGroup?.value).toBe('member')
     })
 
     it('omits Set credit limit for owner rows', async () => {
       const panel = await setup()
       const items = panel.memberMenuItems(createMember({ role: 'owner' }))
-      const roleItems = items[0].items ?? []
+      const roleGroup = items[0].radioGroup
 
       expect(items.map((item) => item.label)).toEqual([
         'workspacePanel.members.actions.changeRole',
         'workspacePanel.members.actions.removeMember'
       ])
-      expect(roleItems.map((i) => i.checked)).toEqual([true, false])
+      expect(roleGroup?.value).toBe('owner')
     })
 
     it('routes submenu selection to the change-role dialog', async () => {
       const panel = await setup()
       const member = createMember({ id: 'mem-9', role: 'member' })
-      const ownerItem = (panel.memberMenuItems(member)[0].items ?? [])[0]
+      const ownerItem = panel.memberMenuItems(member)[0].radioGroup?.options[0]
 
-      ownerItem.command?.({
-        originalEvent: new Event('click'),
-        item: ownerItem
-      })
+      ownerItem?.command()
 
       expect(
         useDialogService().showChangeMemberRoleDialog
@@ -1119,7 +1103,7 @@ describe('useMembersPanel', () => {
     })
 
     // The ended treatment is team-scoped: a lapsed personal subscription is
-    // the upgrade banner's state, not "Your team plan has ended".
+    // the upgrade banner's state, not "Your Team plan has ended".
     it('keeps a lapsed personal plan out of the team-ended treatment', async () => {
       mockIsTeamPlan.value = false
       mockMaxSeats.value = 1

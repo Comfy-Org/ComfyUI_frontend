@@ -1,5 +1,5 @@
 import { getActivePinia } from 'pinia'
-import { render, screen } from '@testing-library/vue'
+import { cleanup, render, screen } from '@testing-library/vue'
 import type { RenderOptions } from '@testing-library/vue'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { nextTick } from 'vue'
@@ -11,6 +11,7 @@ import { useSettingStore } from '@/platform/settings/settingStore'
 import { useReleaseStore } from '@/platform/updates/common/releaseStore'
 import { useWorkflowStore } from '@/platform/workflow/management/stores/workflowStore'
 import { useCanvasStore } from '@/renderer/core/canvas/canvasStore'
+import { api } from '@/scripts/api'
 import { app } from '@/scripts/app'
 import { IS_CONTROL_WIDGET } from '@/scripts/controlWidgetMarker'
 import { useBootstrapStore } from '@/stores/bootstrapStore'
@@ -118,6 +119,10 @@ vi.mock<unknown>(import('@/scripts/app'), () => {
 
 vi.mock<unknown>(import('@/scripts/changeTracker'), () => ({
   ChangeTracker: { init: vi.fn() }
+}))
+
+vi.mock(import('@/services/extensionLoader'), () => ({
+  loadExtensions: vi.fn(async () => {})
 }))
 
 vi.mock<unknown>(import('@/services/useNewUserService'), () => ({
@@ -240,6 +245,29 @@ describe('GraphCanvas first-run tour wiring', () => {
       'image_to_image',
       undefined
     )
+  })
+})
+
+describe('GraphCanvas legacy settings bridge', () => {
+  it('replays setting changes on the legacy settings dialog', async () => {
+    await mountGraphCanvas()
+
+    expect(app.ui.settings.dispatchChange).toHaveBeenCalledWith(
+      'Comfy.Locale',
+      expect.anything(),
+      undefined
+    )
+  })
+
+  it('stops replaying after unmount', async () => {
+    await mountGraphCanvas()
+    cleanup()
+    vi.mocked(app.ui.settings.dispatchChange).mockClear()
+    vi.spyOn(api, 'storeSetting').mockResolvedValue(new Response())
+
+    await useSettingStore().set('Comfy.Locale', 'zh')
+
+    expect(app.ui.settings.dispatchChange).not.toHaveBeenCalled()
   })
 })
 
