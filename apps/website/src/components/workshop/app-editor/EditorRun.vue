@@ -19,7 +19,8 @@ const {
   missingHint
 } = defineProps<{
   label: string
-  credits: string
+  /** What the run costs, as a chip on the button; omitted when the app says it elsewhere. */
+  credits?: string
   cancelLabel: string
   running: boolean
   disabled?: boolean
@@ -69,6 +70,7 @@ const emit = defineEmits<{ run: []; cancel: [] }>()
     <template v-else>
       {{ label }}
       <span
+        v-if="credits"
         class="rounded-full bg-primary-comfy-ink/10 px-2 py-0.5 text-[11px] font-medium"
         >{{ credits }}</span
       >

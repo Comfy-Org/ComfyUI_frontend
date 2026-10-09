@@ -5646,7 +5646,8 @@
       "queued": "Waiting for a server",
       "running": "Swapping the character",
       "fetching": "Fetching the result",
-      "note": "This can take several minutes. The first run after a quiet spell also loads the model."
+      "note": "This can take several minutes. The first run after a quiet spell also loads the model.",
+      "elapsed": "{time} elapsed"
     },
     "take": {
       "name": "Take {n}",
@@ -5673,6 +5674,18 @@
       "480p": "480p · faster",
       "saved": "Saves at {width}×{height}, the same shape as your video.",
       "shape": "The result always keeps your video's shape."
+    },
+    "run": "Swap character",
+    "tools": "Result views",
+    "sheet": {
+      "expand": "Show swap settings",
+      "collapse": "Hide swap settings"
+    },
+    "compare": {
+      "slider": "Drag to compare the source and the result"
+    },
+    "peek": {
+      "seconds": "{seconds} s"
     }
   }
 }
