@@ -198,8 +198,9 @@ describe('MoveAnythingStudio', () => {
   it('detects the example things and moves one from the side panel layout, with its tools floating over the photo', async () => {
     screenIsWide(true)
     const user = await openExample()
-    expect(panel()).toHaveTextContent('kitten.jpg')
-    expect(panel()).toHaveTextContent('1043 × 693')
+    expect(
+      within(panel()).getByRole('button', { name: 'Change photo: kitten.jpg' })
+    ).toBeVisible()
     const tools = screen.getByRole('toolbar', { name: 'Move anything tools' })
     expect(
       within(tools).getByRole('group', { name: 'History' })
@@ -308,37 +309,65 @@ describe('MoveAnythingStudio', () => {
       'Ginger{Escape}'
     )
 
-    expect(screen.queryByRole('textbox')).toBeNull()
+    expect(
+      screen.queryByRole('textbox', { name: /^Rename/ })
+    ).toBeNull()
     expect(kitten()).toHaveFocus()
   })
 
-  it('shows quality and a shuffleable seed as rows of the panel, and the scene description under Advanced', async () => {
+  it('leads the panel with the photo alone, then one scene box, then quality and seed, with no helper text', async () => {
     screenIsWide(true)
     const user = await openExample()
+    expect(within(panel()).queryByText('1043 × 693')).toBeNull()
+    expect(
+      within(panel()).queryByRole('button', { name: 'Advanced' })
+    ).toBeNull()
+    const scene = within(panel()).getByRole('textbox', {
+      name: 'Describe the scene (optional)'
+    })
+    expect(scene).toHaveAttribute(
+      'placeholder',
+      expect.stringContaining('e.g. a sunlit windowsill')
+    )
+    await user.type(scene, 'A kitchen counter')
+    expect(scene).toHaveValue('A kitchen counter')
+
     const seed = within(panel()).getByRole('spinbutton', { name: 'Seed' })
     expect(seed).toHaveValue(42)
-    expect(
-      within(panel()).getByRole('button', { name: 'Quality: Fast' })
-    ).toBeVisible()
-    expect(
-      within(panel()).queryByRole('region', { name: 'Quality' })
-    ).toBeNull()
-    expect(
-      within(panel()).queryByRole('textbox', {
-        name: 'Describe the scene (optional)'
-      })
-    ).toBeNull()
-
     vi.spyOn(Math, 'random').mockReturnValue(0.5)
     await user.click(within(panel()).getByRole('button', { name: 'New seed' }))
     expect(seed).toHaveValue(500_000_000)
+    await user.clear(seed)
+    await user.type(seed, '7')
+    await user.tab()
+    expect(seed).toHaveValue(7)
+  })
 
-    await user.click(within(panel()).getByRole('button', { name: 'Advanced' }))
+  it('swaps the photo from the source tile at the top of the panel', async () => {
+    screenIsWide(true)
+    vi.stubGlobal(
+      'Image',
+      class {
+        naturalWidth = 800
+        naturalHeight = 600
+        onload?: () => void
+        set src(_url: string) {
+          queueMicrotask(() => this.onload?.())
+        }
+      }
+    )
+    const user = await openExample()
+
+    await user.upload(
+      screen.getByTestId('move-image-file'),
+      new File(['x'], 'desk.png', { type: 'image/png' })
+    )
+
     expect(
-      within(panel()).getByRole('textbox', {
-        name: 'Describe the scene (optional)'
+      await within(panel()).findByRole('button', {
+        name: 'Change photo: desk.png'
       })
-    ).toHaveValue('')
+    ).toBeVisible()
   })
 
   it('opens on phones as a sheet with a one-line summary and the run button', async () => {

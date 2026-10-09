@@ -65,12 +65,6 @@ const copy = {
     en: 'About a minute, keeps finer detail',
     'zh-CN': '约 1 分钟，保留更多细节'
   },
-  'move.image.size': {
-    en: '{width} × {height}',
-    'zh-CN': '{width} × {height}'
-  },
-  'move.image.change': { en: 'Change', 'zh-CN': '更换' },
-  'move.advanced': { en: 'Advanced', 'zh-CN': '高级' },
   'move.seed': { en: 'Seed', 'zh-CN': '种子' },
   'move.seed.shuffle': { en: 'New seed', 'zh-CN': '换一个种子' },
   'move.prompt': {
@@ -78,8 +72,8 @@ const copy = {
     'zh-CN': '描述场景（可选）'
   },
   'move.prompt.placeholder': {
-    en: 'A sunlit windowsill, soft shadows…',
-    'zh-CN': '阳光照射的窗台，柔和的阴影…'
+    en: 'Optional: describe the scene so the moved things blend in, e.g. a sunlit windowsill with soft shadows',
+    'zh-CN': '可选：描述场景，让移动后的物体更自然，例如：阳光照射的窗台，柔和的阴影'
   },
   'move.summary': {
     en: '{n} object · {moved} moved · {quality} | {n} objects · {moved} moved · {quality}',
