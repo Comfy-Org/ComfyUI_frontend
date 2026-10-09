@@ -1020,9 +1020,10 @@ pnpm test:browser:local --update-snapshots
    (stale or missing baseline) already uploads its actual image as a
    `snapshot-updates-*` artifact, laid out on the baseline's path
    (`scripts/playwright/snapshotUpdatesReporter.ts`, shared with the website suite).
-3. Add the **`New Browser Test Expectations`** label or comment
-   `/update-playwright`. The workflow commits those images to the branch
-   without rerunning Playwright.
+3. Add the **`New Browser Test Expectations`** label, comment
+   `/update-playwright`, or tick the "Update Playwright expectations"
+   checkbox in the Playwright section of the PR report comment. The workflow
+   commits those images to the branch without rerunning Playwright.
 
 The workflow only reruns the `@screenshot` suite with `--update-snapshots`
 when it has nothing to harvest: no E2E run for the head commit, a run whose

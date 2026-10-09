@@ -17,17 +17,21 @@ on:
   pull_request:
     types: [labeled]
   issue_comment:
-    types: [created]
+    types: [created, edited]
 
-# github.ref is the default branch for issue_comment events. Both triggers use
-# the PR number because they push snapshots to the same branch.
+# github.ref is the default branch for issue_comment events. All triggers use
+# the PR number because they push snapshots to the same branch. Runs queue
+# rather than cancel: every bot edit of the PR report comment creates a
+# (skipped) run in this group, which must not abort an update in flight.
 concurrency:
   group: ${{ github.workflow }}-${{ github.event.issue.number || github.event.number || github.ref }}
-  cancel-in-progress: true
+  cancel-in-progress: false
 
 jobs:
   setup:
     runs-on: ubuntu-latest
+    # Trigger: (1) label, (2) /slash-command, or (3) the "Update Playwright
+    # expectations" checkbox in the Playwright section of the PR report
     if: >
       ( github.event_name == 'pull_request' && github.event.label.name == 'New Browser Test Expectations' ) ||
       ( github.event.issue.pull_request &&
@@ -37,7 +41,13 @@ jobs:
           github.event.comment.author_association == 'MEMBER' ||
           github.event.comment.author_association == 'COLLABORATOR'
         ) &&
-        startsWith(github.event.comment.body, '/update-playwright') )
+        startsWith(github.event.comment.body, '/update-playwright') ) ||
+      ( github.event.issue.pull_request &&
+        github.event_name == 'issue_comment' &&
+        github.event.comment.user.login == 'github-actions[bot]' &&
+        github.actor != 'github-actions[bot]' &&
+        contains(github.event.comment.body, '<!-- PLAYWRIGHT_E2E_STATUS -->') &&
+        contains(github.event.comment.body, '- [x] Update Playwright expectations') )
     outputs:
       pr-number: ${{ steps.pr-info.outputs.pr-number }}
       branch: ${{ steps.pr-info.outputs.branch }}
@@ -45,6 +55,23 @@ jobs:
       requested-mode: ${{ steps.pr-info.outputs.requested-mode }}
       comment-id: ${{ steps.find-update-comment.outputs.comment-id }}
     steps:
+      # Anyone who can edit the bot's comment can tick the box; only
+      # collaborators may push baselines.
+      - name: Verify sender permissions
+        if: >
+          github.event_name == 'issue_comment' &&
+          contains(github.event.comment.body, '<!-- PLAYWRIGHT_E2E_STATUS -->')
+        uses: actions/github-script@v9
+        with:
+          script: |
+            const { data } = await github.rest.repos.getCollaboratorPermissionLevel({
+              ...context.repo,
+              username: context.actor
+            })
+            if (!['admin', 'write'].includes(data.permission)) {
+              core.setFailed(`User ${context.actor} does not have write access`)
+            }
+
       - name: Get PR info
         id: pr-info
         env:

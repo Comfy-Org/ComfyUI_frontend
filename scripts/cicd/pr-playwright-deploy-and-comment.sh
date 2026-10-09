@@ -48,6 +48,12 @@ fi
 
 # Configuration
 COMMENT_MARKER="<!-- PLAYWRIGHT_TEST_STATUS -->"
+# Identifies the section to pr-update-playwright-expectations, which runs when
+# a collaborator ticks the "Update Playwright expectations" checkbox below it.
+STATUS_MARKER="<!-- PLAYWRIGHT_E2E_STATUS -->"
+# Per-shard manifests written by scripts/playwright/snapshotUpdatesReporter.ts,
+# downloaded from the snapshot-updates-* artifacts of this run.
+SNAPSHOT_UPDATES_DIR="${SNAPSHOT_UPDATES_DIR:-snapshot-updates}"
 # Use dot notation for artifact names (as Playwright creates them)
 BROWSERS="chromium chromium-2x chromium-0.5x mobile-chrome"
 
@@ -123,6 +129,14 @@ parse_counts() {
     fi
 }
 
+# Counts the screenshots the E2E run rewrote, i.e. the failed screenshot
+# assertions whose actual image is ready to commit.
+count_screenshot_diffs() {
+    command -v jq > /dev/null 2>&1 || { echo 0; return; }
+    find "$SNAPSHOT_UPDATES_DIR" -name manifest.json -exec cat {} + 2>/dev/null |
+        jq -s 'map(length) | add // 0'
+}
+
 # Builds the " (✅ x / ❌ x / ⚠️ x / ⏭️ x)" suffix for a report line, or "" when there's no total.
 counts_suffix() {
     read -r passed failed flaky skipped total <<< "$(parse_counts "$1")"
@@ -173,10 +187,12 @@ if [ "$STATUS" = "starting" ]; then
     # When writing to SUMMARY_FILE, omit the standalone marker (the upsert
     # action uses its own section delimiters).
     if [ -n "${SUMMARY_FILE:-}" ]; then
-        comment="## 🎭 Playwright: ⏳ Running..."
+        comment="## 🎭 Playwright: ⏳ Running...
+$STATUS_MARKER"
     else
         comment="$COMMENT_MARKER
-## 🎭 Playwright: ⏳ Running..."
+## 🎭 Playwright: ⏳ Running...
+$STATUS_MARKER"
     fi
     post_comment "$comment"
     
@@ -309,10 +325,12 @@ else
     # Generate compact single-line comment (omit standalone marker when writing
     # to SUMMARY_FILE — the upsert action adds its own section delimiters).
     if [ -n "${SUMMARY_FILE:-}" ]; then
-        comment="## 🎭 Playwright: $status_icon $total_passed passed, $total_failed failed$flaky_note"
+        comment="## 🎭 Playwright: $status_icon $total_passed passed, $total_failed failed$flaky_note
+$STATUS_MARKER"
     else
         comment="$COMMENT_MARKER
-## 🎭 Playwright: $status_icon $total_passed passed, $total_failed failed$flaky_note"
+## 🎭 Playwright: $status_icon $total_passed passed, $total_failed failed$flaky_note
+$STATUS_MARKER"
     fi
 
     # Extract and display failed tests from all browsers (flaky tests are treated as passing)
@@ -350,6 +368,16 @@ $test_line"
         done
     fi
     
+    # Offer to commit the rewritten screenshots the run already captured.
+    screenshot_diffs=$(count_screenshot_diffs)
+    if [ "${screenshot_diffs:-0}" -gt 0 ]; then
+        diff_plural="s"
+        [ "$screenshot_diffs" -eq 1 ] && diff_plural=""
+        comment="$comment
+
+- [ ] Update Playwright expectations ($screenshot_diffs screenshot diff$diff_plural)"
+    fi
+
     # Add browser reports in collapsible section
     comment="$comment
 
