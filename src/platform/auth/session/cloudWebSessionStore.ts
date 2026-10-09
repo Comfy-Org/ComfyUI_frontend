@@ -42,6 +42,7 @@ import { t } from '@/i18n'
 import { isCloud } from '@/platform/distribution/types'
 import { firebaseIdentity } from '@/platform/auth/firebaseIdentity'
 import { presentSsoRequired } from '@/platform/auth/sso/ssoRequired'
+import { webSessionUser } from '@/platform/auth/session/webSessionUser'
 import {
   clearInteractiveSignIn,
   markInteractiveSignIn,
@@ -59,7 +60,7 @@ import {
 } from '@/platform/auth/session/webSessionFetch'
 import { useTelemetry } from '@/platform/telemetry'
 import { reportError } from '@/platform/telemetry/reportError'
-import { useToastStore } from '@/platform/updates/common/toastStore'
+import { useToast } from '@/components/ui/toast/toastStore'
 import { useTeamWorkspaceStore } from '@/platform/workspace/stores/teamWorkspaceStore'
 import { useWorkspaceAuthStore } from '@/platform/workspace/stores/workspaceAuthStore'
 import { api } from '@/scripts/api'
@@ -136,19 +137,18 @@ function resetForAccountChange(change: WebSessionAccountChange): void {
   useTeamWorkspaceStore().resetForIdentityChange()
   void api.resetSocket()
   if (change.reason !== 'user_changed') return
-  useToastStore().add({
-    severity: 'info',
-    summary: t('auth.accountChanged.title'),
-    detail: t('auth.accountChanged.detail', {
+  useToast().info(t('auth.accountChanged.title'), {
+    description: t('auth.accountChanged.detail', {
       email: change.session.user.email
     }),
-    life: 8000
+    duration: 8000
   })
 }
 
 function teamWorkspaceId(): string | undefined {
-  const workspace = useWorkspaceAuthStore().currentWorkspace
-  return workspace?.type === 'team' ? workspace.id : undefined
+  const { currentWorkspace, deniedWorkspaceId } = useWorkspaceAuthStore()
+  if (currentWorkspace?.type === 'team') return currentWorkspace.id
+  return deniedWorkspaceId ?? undefined
 }
 
 function sessionOptions(): WebSessionOptions {
@@ -301,6 +301,8 @@ export const useCloudWebSessionStore = defineStore('cloudWebSession', () => {
     identity = session
     session.subscribe((next) => {
       state.value = next
+      webSessionUser.value =
+        next.phase === 'signed_in' ? next.session.user : undefined
       followSsoHint(next)
     })
     const mint = createSessionTokenMint({

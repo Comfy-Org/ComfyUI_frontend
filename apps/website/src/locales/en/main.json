@@ -563,6 +563,7 @@
       "graphNote": "The node graph behind this deployment is read-only here. Open it on comfy.org or download the JSON to edit it in ComfyUI.",
       "openComfy": "Open on comfy.org",
       "download": "Download workflow JSON",
+      "downloadShort": "Download",
       "ratings": "Ratings & comments",
       "related": "Related workflows",
       "relatedAll": "Browse all",
@@ -622,7 +623,6 @@
       "connectionLost": "The run could not be checked. Reconnect to recover its current status.",
       "lostContact": "This page lost contact with the run. It may still be running on Cloud and using credits. Reconnect to see its current status.",
       "browserUnavailable": "Running workflows from this page is not available yet.",
-      "tryCloud": "Try in Cloud",
       "explore": "Explore the possibilities"
     },
     "catalogue": {
@@ -726,7 +726,8 @@
       "needHelp": "Need Help?"
     },
     "toast": {
-      "close": "Close"
+      "close": "Close",
+      "viewportLabel": "Notifications ({hotkey})"
     },
     "hero": {
       "carouselLabel": "Featured models",
@@ -1562,7 +1563,7 @@
       "importModels": "Import your own models",
       "longRuntime": "Longer workflow runtime (up to 1 hr)",
       "inviteMembers": "Invite members",
-      "inviteMembersUpTo50": "Invite members up to 50",
+      "inviteMembersUpTo50": "Invite up to 50 members",
       "concurrentWorkflows": "Members can run workflows concurrently",
       "sharedCreditPool": "Shared credit pool for all members",
       "roleBasedPermissions": "Role-based permissions"
@@ -2394,11 +2395,33 @@
     "featuredCommunityCtaAria": "Watch the Product Photography demo",
     "featuredCompanyTitle": "Customer story: Black Math",
     "featuredCompanyAlt": "Black Math customer story image",
+    "featuredEnterpriseAlt": "MiniMax commercial license video",
+    "opensInNewTab": "opens in new tab",
     "featuredCompanyCtaAria": "Watch the Black Math customer story",
     "developerPlatform": "Developer Platform",
     "comfyRouter": "Comfy Router",
     "workshop": "Hub",
-    "comfyWorkshop": "Browse Models",
+    "hubModels": "Models",
+    "hubModelsDescription": "Run the latest AI models",
+    "hubSeedream5Pro": "Seedream 5.0 Pro",
+    "hubSeedance25": "Seedance 2.5",
+    "hubNanoBanana2": "Nano Banana 2",
+    "hubGptImage2": "GPT Image 2",
+    "hubAllModels": "All models",
+    "hubWorkflows": "Workflows",
+    "hubWorkflowsDescription": "Ready-made recipes for a task",
+    "hubImageToVideo": "Image to video",
+    "hubVideoFromReferences": "Video from references",
+    "hubMotionTransfer": "Motion transfer",
+    "hubEditSelectedRegion": "Edit selected region",
+    "hubAllWorkflows": "All workflows",
+    "hubApps": "Apps",
+    "hubAppsDescription": "Full tools built on Comfy",
+    "reshoot": "Re-shoot",
+    "hubAllApps": "All apps",
+    "featuredHubAlt": "Seedance 2.5 video: animals carry balloons spelling SEEDANCE 2.5 across a rainy street",
+    "featuredHubCta": "Try now",
+    "featuredHubCtaAria": "Try Seedance 2.5 reference to video in the Hub",
     "signIn": "Sign in",
     "signOut": "Log out",
     "accountMenu": "Account menu",
@@ -2421,7 +2444,19 @@
     "upgrade": "Upgrade",
     "addCredits": "Add credits",
     "upgradeToAddCredits": "Upgrade to add credits",
-    "cinematicStudio": "Cinematic Studio"
+    "cinematicStudio": "Cinematic Studio",
+    "enterprise": "Enterprise",
+    "comfyApi": "Comfy API",
+    "comfySdks": "Comfy SDKs",
+    "builds": "Builds",
+    "teamBilling": "Team Billing",
+    "commercialLicensing": "Commercial Licensing",
+    "contactSales": "Contact Sales",
+    "colCreate": "Create",
+    "colAutomate": "Automate",
+    "colBuild": "Build",
+    "colResources": "Resources",
+    "colUpdates": "Updates"
   },
   "breadcrumb": {
     "agent": "Comfy Agent",
@@ -2461,6 +2496,7 @@
     "workflows": "Workflows",
     "useCases": "Use Cases",
     "location": "San Francisco, USA",
+    "language": "Language",
     "enterpriseMsa": "Enterprise MSA",
     "flux3": "Flux 3",
     "wanAnimate2": "Wan Animate 2",
@@ -2469,8 +2505,10 @@
     "wan3": "Wan 3.0",
     "chatgptImage25": "ChatGPT Images 2.5",
     "qwenImage21": "Qwen-Image 2.1",
+    "nanoBanana": "Nano Banana 2.1",
     "cloudNodes": "Comfy Cloud Nodes",
-    "modelCatalogue": "ComfyUI Models"
+    "modelCatalogue": "ComfyUI Models",
+    "changelog": "Changelog"
   },
   "privacy": {
     "intro": {
@@ -4078,7 +4116,9 @@
       "description": "Google's newest Gemini image model, now in Comfy. Give it a prompt and references, and it returns an image at up to 4K. It works anywhere Nano Banana 2 does, with a new thinking level and a lower price.",
       "tagTextToImage": "Text to Image",
       "tagImageEditing": "Image Editing",
-      "tagPartnerNode": "Partner Node"
+      "tagPartnerNode": "Partner Node",
+      "primaryCta": "RUN NANO BANANA 2.1",
+      "secondaryCta": "READ THE GUIDE"
     },
     "showcase": {
       "photography": {
@@ -5564,5 +5604,18 @@
     "noWebgl": "This preview needs WebGL2, which this browser does not offer.",
     "play": "Play",
     "pause": "Pause"
+  },
+  "changelog": {
+    "meta": {
+      "title": "Changelog - Comfy",
+      "description": "The latest ComfyUI features, improvements, and fixes from Comfy docs."
+    },
+    "title": "Changelog",
+    "viewDocs": "VIEW DOCS",
+    "saved": "Showing saved release notes. The latest updates could not be loaded.",
+    "unavailable": "Release notes could not be loaded.",
+    "loading": "Loading the latest release notes…",
+    "introduction": "The latest ComfyUI features, improvements, and fixes, updated from Comfy docs.",
+    "retry": "Try again"
   }
 }

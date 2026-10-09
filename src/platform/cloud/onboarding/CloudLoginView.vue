@@ -27,6 +27,12 @@
       {{ t(ssoErrorKey) }}
     </Message>
 
+    <CloudSsoRequiredNotice
+      v-if="ssoRequiredNotice"
+      v-bind="ssoRequiredNotice"
+      class="mt-4"
+    />
+
     <div class="mt-12 flex flex-col gap-4 xl:gap-6">
       <template v-if="authMode !== 'email'">
         <CloudSocialAuthButtons
@@ -37,7 +43,7 @@
           @github="signInWithGithub"
         />
 
-        <template v-if="flags.ssoEnabled">
+        <template v-if="flags.ssoEnabled && !ssoRequiredNotice">
           <CloudSsoSignIn
             v-if="authMode === 'sso'"
             :state="ssoState"
@@ -97,6 +103,7 @@ import { useAuthActions } from '@/composables/auth/useAuthActions'
 import { useFeatureFlags } from '@/composables/useFeatureFlags'
 import CloudSignInForm from '@/platform/cloud/onboarding/components/CloudSignInForm.vue'
 import CloudSocialAuthButtons from '@/platform/cloud/onboarding/components/CloudSocialAuthButtons.vue'
+import CloudSsoRequiredNotice from '@/platform/cloud/onboarding/components/CloudSsoRequiredNotice.vue'
 import CloudSsoSignIn from '@/platform/cloud/onboarding/components/CloudSsoSignIn.vue'
 import { useCloudAuthPage } from '@/platform/cloud/onboarding/composables/useCloudAuthPage'
 import { useSsoSignIn } from '@/platform/cloud/onboarding/composables/useSsoSignIn'
@@ -123,6 +130,7 @@ const freeRunsSuffix = computed(() => {
 const {
   authError,
   authMode,
+  ssoRequiredNotice,
   onAuthSuccess,
   isSecureContext,
   showGoogleSsoInAppBrowserNotice,

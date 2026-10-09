@@ -415,20 +415,56 @@ export type UsageTimeSeries = {
   summary: UsageSummary
 }
 
+/**
+ * Current remaining balance, mirroring /billing/balance. Every amount is CENTS of `currency`; the `*_micros` names are a misnomer kept for wire compatibility.
+ */
 export type UsageBalance = {
+  /**
+   * The total remaining balance. Cents of `currency`, the same value as `amount_micros`, which is misnamed. A fractional `number`, deliberately not the integer-cents convention other `*_cents` fields in this spec use -- do not decode it as an integer.
+   */
+  amount_cents?: number
+  /**
+   * DEPRECATED misnomer: this value is CENTS, not micros. Divide by 100. Use `amount_cents`. The total remaining balance.
+   *
+   * @deprecated
+   */
   amount_micros?: number
+  /**
+   * The remaining balance from cloud credits (subscription). Cents of `currency`, the same value as `cloud_credit_balance_micros`, which is misnamed. A fractional `number`, deliberately not the integer-cents convention other `*_cents` fields in this spec use -- do not decode it as an integer.
+   */
+  cloud_credit_balance_cents?: number
+  /**
+   * DEPRECATED misnomer: this value is CENTS, not micros. Divide by 100. Use `cloud_credit_balance_cents`. The remaining balance from cloud credits (subscription).
+   *
+   * @deprecated
+   */
   cloud_credit_balance_micros?: number
   currency?: string
+  /**
+   * The remaining balance from prepaid commits (top-ups). Cents of `currency`, the same value as `prepaid_balance_micros`, which is misnamed. A fractional `number`, deliberately not the integer-cents convention other `*_cents` fields in this spec use -- do not decode it as an integer.
+   */
+  prepaid_balance_cents?: number
+  /**
+   * DEPRECATED misnomer: this value is CENTS, not micros. Divide by 100. Use `prepaid_balance_cents`. The remaining balance from prepaid commits (top-ups).
+   *
+   * @deprecated
+   */
   prepaid_balance_micros?: number
 }
 
+/**
+ * Mixed units, deliberately. `spend_micros` here (and `cost_micros` on UsageBucket / UsageBreakdownRow) is genuinely MICROS -- 1/1,000,000 of the currency unit -- because it comes from Metronome's usage figures. The `balance` breakdown below is CENTS, and its `*_micros` names are a misnomer; use its `*_cents` fields.
+ */
 export type UsageSummary = {
   balance?: UsageBalance
+  /**
+   * Total gross spend over the range, in microamount (1/1,000,000 of the currency unit). Genuinely micros, unlike the balance breakdown.
+   */
   spend_micros: number
 }
 
 /**
- * Present, with empty groups, buckets and breakdown, when the requested grouping has no data source yet. Render as unavailable, not as zero spend.
+ * Present, with empty groups, buckets and breakdown, when the requested grouping is not served for this workspace. Render as unavailable, not as zero spend.
  */
 export type UsageNotAvailable = {
   reason: 'no_attribution_source'
@@ -606,6 +642,10 @@ export type ToolCallSummary = {
    * This tool-call row's own primary key.
    */
   id: string
+  /**
+   * Mirrors agent_tool_calls.prompt_id at read time. This is the exact-attempt ownership signal an eval driver needs to prove which job a given turn submitted — a model-authored result string, workflow id, or URL in the assistant's final text is not equivalent evidence. It is parsed from the comfy-cli runner's stdout envelope and never cross-checked against the job table, so it is proof of turn-to-job submission only, not proof the job completed or that any output URL belongs to it; a consumer must still authenticate job detail and bind the artifact to this id. Absence does NOT prove no job was submitted: most tool calls never submit one, but a call that submitted a job and then errored (for example while polling) also omits this field, as does any row outside the history window.
+   */
+  job_id?: string
   started_at?: string
   /**
    * The WIRE status vocabulary (api/agent_events.schema.json's agent_tool_call), translated from the audit-row vocabulary (pending/running/ok/error) via ToolCallWireStatus — the same function the live agent_tool_call broadcast uses, so reloaded history and a live frame for the same call never disagree on the vocabulary. "running" never appears here: only terminal rows are queried, so a call still in flight when its turn died is omitted rather than shown as a perpetually in-progress chip.
@@ -1306,6 +1346,10 @@ export type SsoDiscoverResponse = {
    * Display name of the organization, when `sso` is true
    */
   organization_name?: string
+  /**
+   * When `sso` is true: whether the organization requires SSO (true) or only offers it (false, an organization in optional mode, whose people keep their other sign-ins). Absent means required.
+   */
+  required?: boolean
   /**
    * The email signs in through its organization's SSO
    */
@@ -2298,6 +2342,17 @@ export type OAuthConsentChallenge = {
    */
   client_display_name: string
   /**
+   * Whether the client requesting authorization is a seeded first-party
+   * client (`first_party`) or was created through RFC 7591 dynamic client
+   * registration (`dynamic`). Derived from the client_id: every dynamically
+   * registered client carries the `comfy-dyn-` prefix. `client_display_name`
+   * on a `dynamic` client is registrant-supplied and unverified; the consent
+   * UI must present it as such. Consumers must treat an absent value as
+   * `dynamic`.
+   *
+   */
+  client_provenance: 'first_party' | 'dynamic'
+  /**
    * Per-row CSRF token bound to this authorization request (not to the session). Must be echoed back on POST.
    */
   csrf_token: string
@@ -2507,6 +2562,23 @@ export type MediaBadRequestError = ErrorResponse | MediaQueryError
  * Paginated list of workspaces the authenticated user belongs to.
  */
 export type ListWorkspacesResponse = {
+  /**
+   * Whether `POST /api/workspaces` accepts this account. False for an
+   * account an SSO organization holds (its email is on the
+   * organization's verified domains): the organization manages its
+   * workspaces, and signing in again does not change it. Lets a client
+   * disable workspace creation up front instead of after the request
+   * is refused with 403 `FORBIDDEN`.
+   *
+   */
+  can_create_workspace: boolean
+  /**
+   * The workspace the app should open on sign-in: the workspace of the
+   * SSO organization that manages the caller's account, when the caller
+   * is a member of it. Absent for accounts no SSO organization manages.
+   *
+   */
+  default_workspace_id?: string
   workspaces: Array<WorkspaceWithRole>
 }
 
@@ -2966,6 +3038,44 @@ export type JobDetailResponse = {
    * Count of outputs classified as previewable media types (images, video, audio, 3D, text) — a subset of outputs_count (omitted for non-terminal states)
    */
   previewable_outputs_count?: number
+  /**
+   * 1-based position of this job among the caller's OWN jobs held
+   * behind the same concurrency cap (same user, workspace and auth
+   * method), in the dispatcher's admission order — i.e. the number of
+   * the caller's own capped jobs that will be admitted before this
+   * one, plus one. It is NOT a fleet-wide queue position and says
+   * nothing about other users' jobs. (For an admin reading someone
+   * else's job, the set is that job owner's, not the admin's — the
+   * same scoping `workspace_id`/`user_id` already describe.)
+   *
+   * Null unless `queue_reason` is `concurrency_limit`. May also be
+   * null in that state on the rare rows whose admission ordering
+   * cannot be determined (no recorded state-change timestamp), or if
+   * the count query fails — a missing position never fails the
+   * request.
+   *
+   */
+  queue_position?: number | null
+  /**
+   * Why a still-queued job has not started yet. Present only while
+   * `status` is `pending`; null for every other status.
+   *
+   * `status` deliberately folds every waiting state into `pending`
+   * (the frontend's filter categories depend on that), so this field
+   * is the one that tells the two kinds of waiting apart:
+   *
+   * - `concurrency_limit` — the job is held behind the caller's OWN
+   * per-user/per-auth-method concurrent-job cap. Nothing in the
+   * fleet is blocking it; the caller's other running jobs are.
+   * - `capacity` — the job is past that cap and admitted, and is now
+   * waiting for an inference worker to become free.
+   *
+   * Detail-only: this field is NOT present on the list view's
+   * `JobEntry`, because deriving `queue_position` for a page of jobs
+   * would cost one extra query per row.
+   *
+   */
+  queue_reason?: 'concurrency_limit' | 'capacity'
   /**
    * User-friendly job status
    */
@@ -4442,6 +4552,19 @@ export type BillingOpStatusResponse = {
     | 'failed_retryable'
     | 'succeeded'
     | 'reconciliation_needed'
+  /**
+   * true exactly when POST /api/billing/ops/{id}/cancel would deliver
+   * the abandon for this caller: a pending plan change or initial
+   * subscription whose workflow is waiting on the customer's
+   * authentication. An already-canceled operation is false even though
+   * the cancel call still answers 200 for it. Decided by the same
+   * check the cancel endpoint runs, so clients must not derive it from
+   * status, phase or authentication_state. false for terminal
+   * operations, other operation types and callers who may not cancel.
+   * Absent when it could not be determined; absent means no claim.
+   *
+   */
+  cancelable?: boolean
   charge_breakdown?: BillingOpChargeBreakdown
   /**
    * When the operation completed (success or failure)
@@ -4536,14 +4659,51 @@ export type BillingOpStatusResponse = {
 
 /**
  * Display only. The plan the operation targets; for a scheduled change,
- * the plan it switches to at period end. Present only for succeeded
- * plan changes, initial subscriptions and resubscribes. Visible to any
- * workspace member who can read the operation.
+ * the plan it switches to at period end. Present for plan changes,
+ * initial subscriptions and resubscribes in every status (pending,
+ * failed and succeeded alike), so a recovered pending operation can be
+ * labelled with its own plan. Absent when the target plan could not be
+ * resolved. Visible to any workspace member who can read the operation.
+ * tier and the price fields are absent when the server cannot describe
+ * the plan, as for the retired seat-based Team plans, whose rows carry a
+ * personal tier and whose price depends on the workspace's seats.
  *
  */
 export type BillingOpReceiptPlan = {
+  /**
+   * ISO 4217 currency of price_cents, lowercase (e.g. usd). Present
+   * exactly when price_cents is present.
+   *
+   */
+  currency?: string
   duration: SubscriptionDuration
+  /**
+   * price_cents divided by 12 and rounded half up to the nearest cent,
+   * as on the subscribe preview's new_plan. Display only. Present
+   * exactly when price_cents is present on an ANNUAL plan.
+   *
+   */
+  monthly_price_cents?: number
+  /**
+   * The plan's recurring price for one billing period, at
+   * team_credit_stop_id for a per-credit Team plan: a whole year for
+   * ANNUAL. The same figure as new_plan.price_cents on the subscribe
+   * preview, before tax, promotions, account balance and proration,
+   * so it is not what the operation charged; amount_charged_cents is.
+   * Present together with currency, and absent when the plan could
+   * not be priced, including the retired seat-based Team plans.
+   *
+   */
+  price_cents?: number
   slug: string
+  /**
+   * The per-credit Team credit stop the operation targets (e.g.
+   * team_200). Absent for personal plans and for Team plans without a
+   * credit stop.
+   *
+   */
+  team_credit_stop_id?: string
+  tier?: SubscriptionTier
 }
 
 /**
@@ -4801,6 +4961,10 @@ export type BillingCapabilities = {
   can_change_seats: boolean
   can_downgrade_to_personal: boolean
   can_invite_members: boolean
+  /**
+   * Workspace owner may manage members independently of seat quantity and subscription lifecycle. Individual target restrictions still apply.
+   */
+  can_manage_members: boolean
   can_reactivate: boolean
   /**
    * Stripe-billed only; false within 1 hour of the change.
@@ -4811,15 +4975,27 @@ export type BillingCapabilities = {
 }
 
 /**
- * Current credit balance and usage details for a workspace.
+ * Current credit balance and usage details for a workspace. Every amount here is CENTS of `currency`. The `*_micros` fields are a misnamed legacy set kept for wire compatibility; the `*_cents` fields beside them carry the identical values under honest names. `amount_micros` stays required and `amount_cents` is optional so existing strict clients are unaffected.
  */
 export type BillingBalanceResponse = {
   /**
-   * The total remaining balance in microamount (1/1,000,000 of the currency unit)
+   * The total remaining balance. Cents of `currency`, the same value as `amount_micros`, which is misnamed. A fractional `number`, deliberately not the integer-cents convention other `*_cents` fields in this spec use -- do not decode it as an integer.
+   */
+  amount_cents?: number
+  /**
+   * DEPRECATED misnomer: this value is CENTS, not micros. Divide by 100. Use `amount_cents`. The total remaining balance.
+   *
+   * @deprecated
    */
   amount_micros: number
   /**
-   * The remaining balance from cloud credits in microamount
+   * The remaining balance from cloud credits (subscription). Cents of `currency`, the same value as `cloud_credit_balance_micros`, which is misnamed. A fractional `number`, deliberately not the integer-cents convention other `*_cents` fields in this spec use -- do not decode it as an integer.
+   */
+  cloud_credit_balance_cents?: number
+  /**
+   * DEPRECATED misnomer: this value is CENTS, not micros. Divide by 100. Use `cloud_credit_balance_cents`. The remaining balance from cloud credits (subscription).
+   *
+   * @deprecated
    */
   cloud_credit_balance_micros?: number
   /**
@@ -4827,15 +5003,37 @@ export type BillingBalanceResponse = {
    */
   currency: string
   /**
-   * The effective balance (total balance minus pending charges). Can be negative if pending charges exceed the balance.
+   * False when pending charges could not be read. effective_balance_* and pending_charges_* are then omitted, because total minus an unread pending amount would overstate spendable credit. Present on every 200: the zero-balance response for an unprovisioned workspace reports true, because no draft-invoice read happened there to fail. Treat an absent flag as "server predates this field", not as false.
+   */
+  effective_balance_authoritative?: boolean
+  /**
+   * The total balance minus pending charges; negative when charges exceed credit. Cents of `currency`, the same value as `effective_balance_micros`, which is misnamed. A fractional `number`, deliberately not the integer-cents convention other `*_cents` fields in this spec use -- do not decode it as an integer.
+   */
+  effective_balance_cents?: number
+  /**
+   * DEPRECATED misnomer: this value is CENTS, not micros. Divide by 100. Use `effective_balance_cents`. The total balance minus pending charges; negative when charges exceed credit.
+   *
+   * @deprecated
    */
   effective_balance_micros?: number
   /**
-   * The total amount of pending/unbilled charges from draft invoices in microamount
+   * Pending/unbilled charges from draft invoices. Cents of `currency`, the same value as `pending_charges_micros`, which is misnamed. A fractional `number`, deliberately not the integer-cents convention other `*_cents` fields in this spec use -- do not decode it as an integer.
+   */
+  pending_charges_cents?: number
+  /**
+   * DEPRECATED misnomer: this value is CENTS, not micros. Divide by 100. Use `pending_charges_cents`. Pending/unbilled charges from draft invoices.
+   *
+   * @deprecated
    */
   pending_charges_micros?: number
   /**
-   * The remaining balance from prepaid commits in microamount
+   * The remaining balance from prepaid commits (top-ups). Cents of `currency`, the same value as `prepaid_balance_micros`, which is misnamed. A fractional `number`, deliberately not the integer-cents convention other `*_cents` fields in this spec use -- do not decode it as an integer.
+   */
+  prepaid_balance_cents?: number
+  /**
+   * DEPRECATED misnomer: this value is CENTS, not micros. Divide by 100. Use `prepaid_balance_cents`. The remaining balance from prepaid commits (top-ups).
+   *
+   * @deprecated
    */
   prepaid_balance_micros?: number
 }
@@ -5199,6 +5397,14 @@ export type AgentPostMessageRequest = {
    */
   attachments?: Array<string>
   /**
+   * The client's live ComfyUI WebSocket clientId (the `sid` the server hands back on the socket's first status message). Local runs the agent submits on the caller's behalf are submitted under this id, so ComfyUI addresses their execution events — node highlights, progress and outputs — to this client instead of to the short-lived CLI socket that submitted them. Additive and advisory; omitting it restores the previous behaviour, where an agent-started run leaves the canvas with no execution feedback. Ignored on the cloud target, which fans execution events out per user/workspace regardless of submitter. A value that could not be a ComfyUI socket id is DROPPED, not rejected — no turn fails over it — so an id longer than 128 bytes, or one containing whitespace or non-printable characters, or one starting with `-`, is accepted with 202 and behaves exactly like omitting the field. Surrounding whitespace is trimmed.
+   */
+  client_id?: string
+  /**
+   * Client-generated identifier for this send attempt. The frontend emits the same value on app:agent_message_sent; the agent echoes it on agent_turn_started so accepted turns can be joined to their originating sends without using timestamp proximity. Retries mint a new value. Older clients may omit it.
+   */
+  client_message_id?: string
+  /**
    * The user's message.
    */
   content: string
@@ -5389,9 +5595,16 @@ export type AgentPendingAsk =
  */
 export type AgentMessage = {
   /**
-   * Message payload. User turns carry {text, attachments?, attachment_refs?, workflow_references?}. Attachments are the input-image filenames from the request. attachment_refs is the server's own resolution of those same filenames to library assets, as {name, id?, kind?} objects, and exists so a later turn in the thread can reach an earlier turn's file — clients should keep reading attachments. workflow_references is an optional array of explicit non-target references, each with workflow_id and name (an empty string when no name was supplied). An optional unavailable: true records that the reference could not be authorized at turn start, without distinguishing unknown IDs, inaccessible workflows, or lookup failures. These entries preserve the user's reference intent without exposing workflow content; the frontend restores reference chips from this metadata. The field is omitted when there are no references. Assistant turns carry {text} — the final answer text (or error copy on a failed turn). Omitted when empty (e.g. an assistant message still streaming). Per-turn token accounting is NOT included here; it is surfaced on the agent_message_done WebSocket broadcast. tool_calls is an optional array of ToolCallSummary, attached to an assistant message that has persisted terminal (ok/error) tool-call rows — it lets a chat reload render the tool history a turn produced instead of showing nothing until the next live turn. Omitted when the message has no such rows.
+   * Message payload. User turns carry {text, attachments?, attachment_refs?, workflow_references?}. Attachments are the input-image filenames from the request. attachment_refs is the server's own resolution of those same filenames to library assets, as {name, id?, kind?, display_name?} objects. display_name preserves the original user-facing filename when name is an opaque storage key. To bound denormalized data, repeated entries with the same name carry display_name only on the first occurrence; clients should apply it to every entry sharing that name. The sibling exists so a later turn in the thread can reach an earlier turn's file — clients should keep reading attachments. workflow_references is an optional array of explicit non-target references, each with workflow_id and name (an empty string when no name was supplied). An optional unavailable: true records that the reference could not be authorized at turn start, without distinguishing unknown IDs, inaccessible workflows, or lookup failures. These entries preserve the user's reference intent without exposing workflow content; the frontend restores reference chips from this metadata. The field is omitted when there are no references. Assistant turns carry {text} — the final answer text (or error copy on a failed turn). Omitted when empty (e.g. an assistant message still streaming). Per-turn token accounting is NOT included here; it is surfaced on the agent_message_done WebSocket broadcast. tool_calls is an optional array of ToolCallSummary, attached to an assistant message that has persisted terminal (ok/error) tool-call rows — it lets a chat reload render the tool history a turn produced instead of showing nothing until the next live turn. Omitted when the message has no such rows.
    */
   content?: {
+    attachment_refs?: Array<{
+      display_name?: string
+      id?: string
+      kind?: string
+      name?: string
+      [key: string]: unknown
+    }>
     tool_calls?: Array<ToolCallSummary>
     [key: string]: unknown
   }
@@ -6185,6 +6398,68 @@ export type AgentLlmMessagesResponses = {
 export type AgentLlmMessagesResponse =
   AgentLlmMessagesResponses[keyof AgentLlmMessagesResponses]
 
+export type AgentLlmTracesData = {
+  /**
+   * An OTLP ExportTraceServiceRequest, optionally gzip-encoded (Content-Encoding gzip); at most 4 MiB encoded and decoded, and 4096 spans.
+   */
+  body: Blob | File
+  path?: never
+  query?: never
+  url: '/api/agent/llm/v1/traces'
+}
+
+export type AgentLlmTracesErrors = {
+  /**
+   * Malformed export, or Langfuse rejected it (not retryable).
+   */
+  400: ErrorResponse
+  /**
+   * Unauthorized
+   */
+  401: ErrorResponse
+  /**
+   * A refused request that changes data. For a web session, `code` is `csrf_invalid` (no `X-CSRF-Token`, or not the session's), `workspace_access_denied` (the selected workspace is unknown, deleted, or the user is not a member; the three look the same), `no_workspace_access` (the account has no personal workspace and is a member of no live workspace), `origin_not_allowed` or `cross_site_request`; see the `WebSessionAuth` scheme. For any credential, `sso_required` means an SSO organization holds the account (its email is on the organization's verified domains) and the credential is not an SSO sign-in, or the workspace is an SSO organization's and the account is not on its domains or the credential is not an SSO sign-in; `organization_id`, when present, names the organization to sign in with. `FORBIDDEN` is the route's own authorization check failing, such as an unverified email, or, on `POST /api/workspaces`, an account an SSO organization holds (its organization manages its workspaces; signing in again does not change it). A credential this route does not take gets AuthTypeNotAllowedError instead, and so does the session while `web_session_enabled` is off for the user, unless the operation says it takes the session whatever the flag.
+   */
+  403: ForbiddenError
+  /**
+   * The agent in-app experience is disabled for this caller (FlagAgentInAppExperience off), or the relay is not enabled on the agent service (AGENT_LOCAL_TRACES off).
+   */
+  404: ErrorResponse
+  /**
+   * The export exceeds 4 MiB or 4096 spans.
+   */
+  413: ErrorResponse
+  /**
+   * Not application/x-protobuf, or an unsupported Content-Encoding.
+   */
+  415: ErrorResponse
+  /**
+   * The caller's trace rate limit is exhausted.
+   */
+  429: ErrorResponse
+  /**
+   * The agent service or Langfuse is unavailable (retryable).
+   */
+  502: ErrorResponse
+  /**
+   * The agent proxy is not configured to forward safely (a non-local agent service URL with no shared machine-to-machine secret).
+   */
+  503: ErrorResponse
+}
+
+export type AgentLlmTracesError =
+  AgentLlmTracesErrors[keyof AgentLlmTracesErrors]
+
+export type AgentLlmTracesResponses = {
+  /**
+   * Accepted; the body is an empty OTLP ExportTraceServiceResponse.
+   */
+  200: Blob | File
+}
+
+export type AgentLlmTracesResponse =
+  AgentLlmTracesResponses[keyof AgentLlmTracesResponses]
+
 export type AgentGetRunModeData = {
   body?: never
   path?: never
@@ -6965,7 +7240,7 @@ export type CreateAssetData = {
      */
     name?: string
     /**
-     * Optional preview asset ID. If not provided, images will use their own ID as preview.
+     * Optional preview asset ID. Must be your own asset in this workspace; anything else (including a catalog asset, another user's published asset, or an ID that does not exist) is refused with 400 `INVALID_PREVIEW_ID`. If not provided, images will use their own ID as preview.
      */
     preview_id?: string
     /**
@@ -6984,7 +7259,7 @@ export type CreateAssetData = {
 
 export type CreateAssetErrors = {
   /**
-   * Invalid request (bad file, invalid content type, etc.)
+   * Invalid request (bad file, invalid content type, etc.), or `INVALID_PREVIEW_ID` when `preview_id` is not your own asset in this workspace
    */
   400: ErrorResponse
   /**
@@ -7140,7 +7415,7 @@ export type UpdateAssetData = {
      */
     name?: string
     /**
-     * Updated preview asset ID
+     * Updated preview asset ID. Must be your own asset in this workspace.
      */
     preview_id?: string
     /**
@@ -7177,8 +7452,9 @@ export type UpdateAssetErrors = {
   403: ForbiddenError
   /**
    * Asset not found — returned both when the asset being updated does
-   * not exist and when `preview_id` does not reference an asset
-   * accessible to the caller.
+   * not exist and when `preview_id` is not your own asset in this
+   * workspace (a catalog asset or another user's published asset
+   * does not qualify).
    *
    */
   404: ErrorResponse
@@ -7375,7 +7651,7 @@ export type AddAssetTagsResponse =
 export type CreateAssetDownloadData = {
   body: {
     /**
-     * Optional preview asset ID to associate with the downloaded asset
+     * Optional preview asset ID to associate with the downloaded asset. Must be your own asset in this workspace; otherwise the request is refused with 400 `INVALID_PREVIEW_ID`.
      */
     preview_id?: string
     /**
@@ -7400,7 +7676,7 @@ export type CreateAssetDownloadData = {
 
 export type CreateAssetDownloadErrors = {
   /**
-   * Invalid URL or unsupported source
+   * Invalid URL or unsupported source, or `INVALID_PREVIEW_ID` when `preview_id` is not your own asset in this workspace
    */
   400: ErrorResponse
   /**
@@ -9461,9 +9737,14 @@ export type GetBillingUsageTimeSeriesData = {
      * Third-Party Partner API, Comfy Cloud, Serverless) plus an
      * `unattributed` bucket that is always counted in the total.
      * `person` and `source` attribute spend to the member or to the API
-     * key (`spend_source`) that caused it; until a data source serves
-     * them the response is an empty series with `not_available` set.
-     * Group keys for those three carry a matching entry in `group_labels`.
+     * key (`spend_source`) that caused it, read from the usage ledger
+     * where the workspace is enabled for it (feature
+     * `usage_attribution_enabled`): owners see every member and every
+     * key, a member's `person` and `source` views hold only their own
+     * rows, and an `unattributed` group carries spend with no usable
+     * identity so the groups still sum to the total. Elsewhere the response is an empty series with
+     * `not_available` set. Group keys for those three carry a matching
+     * entry in `group_labels`.
      *
      */
     group_by?:
@@ -9759,6 +10040,10 @@ export type GetFeaturesResponses = {
       | 'near-composer'
       | 'above-input'
       | 'inside-input'
+    /**
+     * Authenticated assignment for the Agent starter-prompt experiment. Current Cloud responses include it and default to control when the caller is unauthenticated, evaluation is unavailable, or no treatment is assigned. It remains optional in the client contract so older environments and partial feature fixtures fail closed. Reading this field does not constitute experiment exposure; the frontend emits the custom exposure event only after rendering the starter prompt surface.
+     */
+    'agent-starter-prompt-set'?: 'control' | 'test'
     /**
      * Origin of the billing-web deployment paired with this Cloud environment (e.g. https://billing.comfy.org). Absent when BILLING_WEB_URL is not configured on the server, so a client can tell "not configured" from "configured as empty".
      */
@@ -11470,11 +11755,13 @@ export type GetNodeInfoData = {
   path?: never
   query?: {
     /**
-     * Also list the caller's own imported models (assets tagged `models`)
-     * in the model dropdown of the directory each one installs under, so
-     * a client that validates widget values against this catalog accepts
-     * a model the user imported. Off by default: the frontend reads
-     * imported models through the asset browser instead.
+     * Also list the models the caller can run that the models config
+     * does not: their own imported models and the public model assets the
+     * asset library shows them (assets tagged `models`), each in the model
+     * dropdown of the directory it installs under, so a client that
+     * validates widget values against this catalog accepts a model that
+     * would run. Off by default: the frontend reads these models through
+     * the asset browser instead.
      *
      */
     include_user_models?: boolean
@@ -14408,7 +14695,7 @@ export type LeaveWorkspaceErrors = {
    */
   401: ErrorResponse
   /**
-   * Cannot leave as the only owner or cannot leave personal workspace
+   * Cannot leave as the only owner (`ONLY_OWNER`), cannot leave a personal workspace (`PERSONAL_WORKSPACE`), or `code` is `membership_managed_by_directory` with `message` "Your organization's admin manages membership" for an account the workspace's attached SSO organization holds.
    */
   403: ErrorResponse
   /**

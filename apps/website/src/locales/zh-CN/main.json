@@ -300,7 +300,8 @@
       "troubleshooting": "常见原因："
     },
     "toast": {
-      "close": "关闭"
+      "close": "关闭",
+      "viewportLabel": "通知 ({hotkey})"
     },
     "turnstile": {
       "expired": "验证已过期。请重新完成验证。",
@@ -1749,12 +1750,14 @@
     "enterpriseMsa": "Enterprise MSA",
     "flux3": "Flux 3",
     "geminiOmni": "Gemini Omni 1.1 Flash",
+    "language": "语言",
     "location": "美国旧金山",
     "ltx": "LTX 2.5",
     "minimaxH3": "MiniMax H3",
     "minimaxLicense": "MiniMax 商业许可",
     "minimaxMusic3": "MiniMax Music 3",
     "models": "模型",
+    "nanoBanana": "Nano Banana 2.1",
     "press": "媒体",
     "privacyPolicy": "隐私政策",
     "products": "产品",
@@ -1770,7 +1773,8 @@
     "wan3": "Wan 3.0",
     "wanAnimate2": "Wan Animate 2",
     "workflows": "工作流",
-    "modelCatalogue": "ComfyUI 模型"
+    "modelCatalogue": "ComfyUI 模型",
+    "changelog": "更新日志"
   },
   "g": {
     "error": "错误",
@@ -2581,7 +2585,6 @@
     "comfyEnterprise": "Comfy 企业版",
     "comfyHub": "Comfy Workflows",
     "comfyLocal": "Comfy 桌面版",
-    "comfyWorkshop": "浏览模型",
     "community": "社区",
     "company": "公司",
     "contact": "联系我们",
@@ -2604,6 +2607,8 @@
     "featuredCommunityCtaAria": "观看产品摄影演示",
     "featuredCommunityTitle": "产品摄影",
     "featuredCompanyAlt": "Black Math 客户故事图片",
+    "featuredEnterpriseAlt": "MiniMax 商业授权视频",
+    "opensInNewTab": "在新标签页中打开",
     "featuredCompanyCtaAria": "观看 Black Math 客户故事",
     "featuredCompanyTitle": "客户故事：Black Math",
     "featuredProductsAlt": "Gemini Omni 1.1 Flash 视频：穴居人遇见未来",
@@ -2640,6 +2645,27 @@
     "upgrade": "升级",
     "upgradeToAddCredits": "升级以添加积分",
     "workshop": "Hub",
+    "hubModels": "模型",
+    "hubModelsDescription": "运行最新的 AI 模型",
+    "hubSeedream5Pro": "Seedream 5.0 Pro",
+    "hubSeedance25": "Seedance 2.5",
+    "hubNanoBanana2": "Nano Banana 2",
+    "hubGptImage2": "GPT Image 2",
+    "hubAllModels": "全部模型",
+    "hubWorkflows": "工作流",
+    "hubWorkflowsDescription": "针对任务的现成方案",
+    "hubImageToVideo": "图像转视频",
+    "hubVideoFromReferences": "参考生成视频",
+    "hubMotionTransfer": "运动迁移",
+    "hubEditSelectedRegion": "编辑选定区域",
+    "hubAllWorkflows": "全部工作流",
+    "hubApps": "应用",
+    "hubAppsDescription": "基于 Comfy 构建的完整工具",
+    "reshoot": "重拍",
+    "hubAllApps": "全部应用",
+    "featuredHubAlt": "Seedance 2.5 视频：动物们举着拼出 SEEDANCE 2.5 的气球穿过雨中街道",
+    "featuredHubCta": "立即试用",
+    "featuredHubCtaAria": "在 Hub 中试用 Seedance 2.5 参考生成视频",
     "workspaceSettings": "工作区设置",
     "workspaceSwitchError": "无法切换工作区。请检查网络连接后重试。",
     "workspaces": "工作区",
@@ -2648,7 +2674,19 @@
     "workspacesLoading": "正在加载工作区…",
     "x": "X",
     "youtube": "YouTube",
-    "cinematicStudio": "电影工作室"
+    "cinematicStudio": "电影工作室",
+    "enterprise": "企业版",
+    "comfyApi": "Comfy API",
+    "comfySdks": "Comfy SDKs",
+    "builds": "构建",
+    "teamBilling": "团队账单",
+    "commercialLicensing": "商业授权",
+    "contactSales": "联系销售",
+    "colCreate": "创作",
+    "colAutomate": "自动化",
+    "colBuild": "构建",
+    "colResources": "资源",
+    "colUpdates": "动态"
   },
   "payment": {
     "failed": {
@@ -3519,7 +3557,9 @@
       "description": "Google 最新的 Gemini 图像模型，现已登陆 Comfy。给它一个提示词和参考图，它就能返回最高 4K 分辨率的图像。它可以在 Nano Banana 2 适用的任何地方使用，并新增思考等级，价格更低。",
       "tagTextToImage": "文生图",
       "tagImageEditing": "图像编辑",
-      "tagPartnerNode": "合作伙伴节点"
+      "tagPartnerNode": "合作伙伴节点",
+      "primaryCta": "运行 Nano Banana 2.1",
+      "secondaryCta": "查看教程"
     },
     "showcase": {
       "photography": {
@@ -4372,6 +4412,7 @@
       "comfyApp": "Comfy 应用",
       "customNodes": "需要自定义节点",
       "download": "下载工作流 JSON",
+      "downloadShort": "下载",
       "graph": "工作流",
       "graphNote": "此部署背后的节点图在这里为只读。可在 comfy.org 打开或下载 JSON 在 ComfyUI 中编辑。",
       "inputs": "输入",
@@ -4438,7 +4479,6 @@
       "connectionLost": "无法查看运行状态。请重新连接以获取最新状态。",
       "lostContact": "此页面与运行失去了联系。它可能仍在 Cloud 上运行并消耗积分。请重新连接以查看最新状态。",
       "browserUnavailable": "暂不支持从此页面运行工作流。",
-      "tryCloud": "在 Cloud 中体验",
       "explore": "探索更多可能"
     },
     "catalogue": {
@@ -4957,5 +4997,18 @@
     "noWebgl": "此预览需要 WebGL2，当前浏览器不支持。",
     "play": "播放",
     "pause": "暂停"
+  },
+  "changelog": {
+    "meta": {
+      "title": "更新日志 - Comfy",
+      "description": "来自 Comfy 文档的 ComfyUI 最新功能、改进和修复。"
+    },
+    "title": "更新日志",
+    "viewDocs": "查看文档",
+    "saved": "正在显示已保存的更新日志。无法加载最新更新。",
+    "unavailable": "无法加载更新日志。",
+    "loading": "正在加载最新更新日志…",
+    "introduction": "ComfyUI 的最新功能、改进和修复，来自 Comfy 文档。",
+    "retry": "重试"
   }
 }

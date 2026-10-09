@@ -7,7 +7,7 @@ import { useImageUploadWidget } from '@/renderer/extensions/vueNodes/widgets/com
 import { LGraphNode } from '@/lib/litegraph/src/litegraph'
 import type { IComboWidget } from '@/lib/litegraph/src/types/widgets'
 import type { ResultItem } from '@/platform/remote/comfyui/execution/types'
-import { useToastStore } from '@/platform/updates/common/toastStore'
+import { useToast } from '@/components/ui/toast/toastStore'
 import type { InputSpec } from '@/schemas/nodeDefSchema'
 import type { useNodeImageUpload } from '@/composables/node/useNodeImageUpload'
 
@@ -164,18 +164,18 @@ describe('useImageUploadWidget', () => {
       ])
     ).toBe(true)
 
-    expect(useToastStore().addAlert).toHaveBeenCalledWith(
+    expect(useToast().warning).toHaveBeenCalledWith(
       'g.videoFilenameExtensionRequired'
     )
 
-    vi.mocked(useToastStore().addAlert).mockClear()
+    vi.mocked(useToast().warning).mockClear()
 
     expect(
       mocks.capturedUploadOptions?.onReject?.([
         new File([], 'image.png', { type: 'image/png' })
       ])
     ).toBe(false)
-    expect(useToastStore().addAlert).not.toHaveBeenCalled()
+    expect(useToast().warning).not.toHaveBeenCalled()
   })
 
   it('previews the combo value once the initial frame runs', () => {

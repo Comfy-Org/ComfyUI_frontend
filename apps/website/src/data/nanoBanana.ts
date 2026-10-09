@@ -2,7 +2,10 @@ import type { ModelLaunchPage } from '@/templates/model-launch/types'
 
 const nanoBananaLinks = {
   cloud:
-    'https://cloud.comfy.org/?utm_source=comfy.org&utm_medium=referral&utm_campaign=nano-banana'
+    'https://cloud.comfy.org/?utm_source=comfy.org&utm_medium=referral&utm_campaign=nano-banana',
+  run: 'https://cloud.comfy.org/?template=api_nano_banana_2_1_t2i&utm_source=comfy.org&utm_medium=referral&utm_campaign=nano-banana',
+  guide:
+    'https://docs.comfy.org/development/comfy-router/models/google/gemini-nano-banana-2-1/code#use-gemini-nano-banana-2-1-with-comfy-router'
 } as const
 
 const mediaBase = 'https://media.comfy.org/website/nano-banana'
@@ -148,7 +151,17 @@ export const nanoBananaPage: ModelLaunchPage = {
       'nanoBanana.hero.tagTextToImage',
       'nanoBanana.hero.tagImageEditing',
       'nanoBanana.hero.tagPartnerNode'
-    ]
+    ],
+    primaryCta: {
+      labelKey: 'nanoBanana.hero.primaryCta',
+      href: nanoBananaLinks.run,
+      target: '_blank'
+    },
+    secondaryCta: {
+      labelKey: 'nanoBanana.hero.secondaryCta',
+      href: nanoBananaLinks.guide,
+      target: '_blank'
+    }
   },
   showcases: [
     {

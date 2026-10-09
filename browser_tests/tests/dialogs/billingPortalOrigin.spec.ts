@@ -154,7 +154,8 @@ test.describe('Billing portal origin (#19892)', { tag: '@cloud' }, () => {
   })
 
   test('opens nothing and reports the refusal for a look-alike portal host', async ({
-    page
+    page,
+    toast
   }) => {
     test.setTimeout(60_000)
     const portalOpens = await setupRefusedPlanChange(page, LOOK_ALIKE_PORTAL)
@@ -163,7 +164,7 @@ test.describe('Billing portal origin (#19892)', { tag: '@cloud' }, () => {
 
     // The customer still gets the server's own guidance, which is what tells
     // them what to do; the rejected host never reaches a tab.
-    await expect(page.getByText(PAYMENT_REQUIRED.message)).toBeVisible()
+    await expect(toast.withText(PAYMENT_REQUIRED.message)).toBeVisible()
     expect(await portalOpens()).toEqual([])
   })
 })

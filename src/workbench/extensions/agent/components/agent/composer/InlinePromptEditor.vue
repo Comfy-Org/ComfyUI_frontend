@@ -6,16 +6,19 @@ import { closeHistory, history, redo, undo } from '@tiptap/pm/history'
 import { keymap } from '@tiptap/pm/keymap'
 import { EditorState, TextSelection } from '@tiptap/pm/state'
 import { Decoration, DecorationSet, EditorView } from '@tiptap/pm/view'
-import { onBeforeUnmount, onMounted, useTemplateRef, watch } from 'vue'
+import {
+  getCurrentInstance,
+  h,
+  onBeforeUnmount,
+  onMounted,
+  render,
+  useTemplateRef,
+  watch
+} from 'vue'
 import { default as DOMPurify } from 'dompurify'
 import { useI18n } from 'vue-i18n'
 
-import { buttonVariants } from '@comfyorg/design-system/button.variants'
-import {
-  tagRemoveButtonVariants,
-  tagVariants
-} from '@comfyorg/design-system/tag.variants'
-import { cn } from '@comfyorg/tailwind-utils'
+import { useSkillPacksStore } from '@/platform/skills/stores/skillPacksStore'
 
 import type { ComposerPrompt } from '../../../types/composerPrompt'
 import {
@@ -31,8 +34,18 @@ import {
 import { selectedNodeKey } from '../../../composables/agent/useCanvasSelection'
 import type { PromptEditor } from '../../../types/promptEditor'
 import type { WorkflowReferenceMetadata } from '../../../types/workflowReference'
+import type { SkillReferenceMetadata } from '../../../types/skillReference'
+import InlineAssetReference from './InlineAssetReference.vue'
+import {
+  inlineReferenceChipClass,
+  inlineReferenceRemoveAnchorClass,
+  inlineReferenceRemoveBadgeClass,
+  inlineReferenceRemoveButtonClass
+} from './inlineReferenceChipStyles'
+import ComposerSkillReference from './ComposerSkillReference.vue'
 import {
   inlinePromptSchema,
+  pastedSkillCommand,
   promptDocument,
   promptDocumentPosition,
   promptInsertionPoint,
@@ -47,32 +60,41 @@ const {
   expanded = false,
   activeDescendant,
   historyEpoch = 0,
-  editableWorkflowId
+  editableWorkflowId,
+  skillScope = '',
+  searchHint
 } = defineProps<{
   label: string
   expanded?: boolean
   activeDescendant?: string
   historyEpoch?: number
   editableWorkflowId?: string
+  skillScope?: string
+  searchHint?: string
 }>()
 const model = defineModel<ComposerPrompt>({
   default: () => ({ text: '', references: [] })
 })
 const emit = defineEmits<{
   input: []
+  resolveSkillMetadata: [prompt: ComposerPrompt]
   selectionChange: []
   keydown: [event: KeyboardEvent]
   keyup: [event: KeyboardEvent]
   click: []
-  blur: []
+  blur: [event: FocusEvent]
   attachFiles: [files: File[]]
   openReferenceWorkflow: [id: string, name: string]
   removeWorkflowReference: [id: string]
   removeNodeReference: [id: string]
+  highlightAssets: [ids: string[]]
 }>()
 const { t } = useI18n()
+const skillPacks = useSkillPacksStore()
+const appContext = getCurrentInstance()?.appContext
 const host = useTemplateRef<HTMLDivElement>('host')
 let view: EditorView | undefined
+const activeAssetReferences = new Map<HTMLElement, string>()
 const insertions = new Set<{ from: number; to: number }>()
 const plugins = [
   history(),
@@ -123,10 +145,34 @@ function referenceClipboardText(node: Node): string {
   const reference = promptNodeReference(node, 0)
   if (!reference) return ''
   const name = composerReferenceName(reference)
+  if (reference.kind === 'skill') return `/${name}`
   if (reference.kind === 'workflow') return `@[Workflow: ${name}]`
   return reference.kind === 'node'
     ? nodeReferenceText(name)
     : assetReferenceText(name)
+}
+
+function resolvePastedSkillDescription(): void {
+  if (!view || !skillPacks.enabled || !skillPacks.catalogConfirmed) return
+  const transaction = view.state.tr
+  view.state.doc.forEach((node, position) => {
+    if (!node.attrs.resolvePastedName || node.attrs.scope !== skillPacks.scope)
+      return
+    const pack = skillPacks.packs.find((pack) => pack.name === node.attrs.name)
+    if (pack) {
+      transaction.setNodeMarkup(position, undefined, {
+        ...node.attrs,
+        description: pack.description,
+        resolvePastedName: false
+      })
+    }
+  })
+  if (transaction.docChanged)
+    view.dispatch(
+      transaction
+        .setMeta('addToHistory', false)
+        .setMeta('resolveSkillMetadata', true)
+    )
 }
 
 function insertPastedContent(
@@ -136,11 +182,51 @@ function insertPastedContent(
   text: string
 ): void {
   const { state } = editor
-  const hasWorkflows = slice.content.content.some(
-    (node) => node.type === inlinePromptSchema.nodes.workflow
+  const hasReferences = slice.content.content.some(
+    (node) =>
+      node.type === inlinePromptSchema.nodes.workflow ||
+      node.type === inlinePromptSchema.nodes.skill
   )
-  if (!hasWorkflows) {
-    editor.dispatch(state.tr.insertText(text).scrollIntoView())
+  let hasSkill = false
+  state.doc.forEach((node, position) => {
+    if (
+      node.type === inlinePromptSchema.nodes.skill &&
+      (position < state.selection.from || position >= state.selection.to)
+    )
+      hasSkill = true
+  })
+  if (!hasReferences) {
+    const leading = pastedSkillCommand(state.doc, state.selection.from, text)
+    if (leading && !hasSkill && skillPacks.enabled) {
+      const { name, suffix } = leading
+      const pack = skillPacks.catalogConfirmed
+        ? skillPacks.packs.find((pack) => pack.name === name)
+        : undefined
+      const description = pack?.description ?? ''
+      const node = inlinePromptSchema.nodes.skill.create({
+        name,
+        description,
+        scope: skillScope,
+        resolvePastedName: !pack
+      })
+      const content = [node]
+      if (suffix) content.push(inlinePromptSchema.text(suffix))
+      editor.dispatch(
+        closeHistory(state.tr)
+          .replaceSelection(new Slice(Fragment.from(content), 0, 0))
+          .setMeta('paste', true)
+          .setMeta('uiEvent', 'paste')
+          .scrollIntoView()
+      )
+    } else
+      editor.dispatch(
+        closeHistory(state.tr)
+          .insertText(text)
+          .setMeta('paste', true)
+          .setMeta('uiEvent', 'paste')
+          .scrollIntoView()
+      )
+    editor.dispatch(closeHistory(editor.state.tr))
     return
   }
   const usedIds = new Set([editableWorkflowId])
@@ -159,6 +245,16 @@ function insertPastedContent(
     { preserveWhitespace: 'full' }
   )
   const content = pasted.content.content.map((node) => {
+    if (node.type === inlinePromptSchema.nodes.skill) {
+      if (hasSkill || !skillPacks.enabled)
+        return inlinePromptSchema.text(referenceClipboardText(node))
+      hasSkill = true
+      return inlinePromptSchema.nodes.skill.create({
+        name: node.attrs.name,
+        description: node.attrs.description,
+        scope: skillScope
+      })
+    }
     if (node.type !== inlinePromptSchema.nodes.workflow) return node
     if (usedIds.has(node.attrs.id))
       return inlinePromptSchema.text(referenceClipboardText(node))
@@ -166,29 +262,110 @@ function insertPastedContent(
     return node
   })
   editor.dispatch(
-    state.tr
+    closeHistory(state.tr)
       .replaceSelection(new Slice(Fragment.from(content), 0, 0))
       .setMeta('paste', true)
       .setMeta('uiEvent', 'paste')
       .scrollIntoView()
   )
+  editor.dispatch(closeHistory(editor.state.tr))
 }
 
-function passiveReferenceView(node: Node, iconClass: string) {
+function searchHintDom(): HTMLElement {
+  const hint = document.createElement('span')
+  hint.className = 'pointer-events-none text-muted-foreground select-none'
+  hint.setAttribute('aria-hidden', 'true')
+  hint.textContent = searchHint ?? ''
+  return hint
+}
+
+function assetReferenceView(
+  node: Node,
+  editor: EditorView,
+  getPos: () => number | undefined
+) {
   const dom = document.createElement('span')
   const reference = promptNodeReference(node, 0)
-  if (!reference) return { dom }
+  if (reference?.kind !== 'asset') return { dom }
+  dom.contentEditable = 'false'
+  dom.className =
+    'inline-flex rounded-sm align-middle ring-offset-base-background [&.ProseMirror-selectednode]:ring-2 [&.ProseMirror-selectednode]:ring-base-foreground [&.ProseMirror-selectednode]:ring-offset-1'
+  const vnode = h(InlineAssetReference, {
+    name: reference.attachment.name,
+    previewUrl: reference.attachment.previewUrl,
+    mediaKind: reference.attachment.mediaKind,
+    removeLabel: t('agent.removeAssetReference', {
+      name: reference.attachment.name
+    }),
+    onHighlight: (active: boolean) => {
+      if (active) activeAssetReferences.set(dom, reference.attachment.id)
+      else if (!activeAssetReferences.delete(dom)) return
+      emit('highlightAssets', [...new Set(activeAssetReferences.values())])
+    },
+    onRemove: () => {
+      const position = getPos()
+      if (position === undefined) return
+      editor.dispatch(deleteReference(editor.state, position, node))
+      editor.focus()
+    }
+  })
+  vnode.appContext = appContext ?? null
+  render(vnode, dom)
+  return {
+    dom,
+    stopEvent: () => true,
+    ignoreMutation: () => true,
+    destroy: () => render(null, dom)
+  }
+}
+
+function nodeReferenceView(
+  node: Node,
+  editor: EditorView,
+  getPos: () => number | undefined
+) {
+  const dom = document.createElement('span')
+  const reference = promptNodeReference(node, 0)
+  if (reference?.kind !== 'node') return { dom }
   dom.contentEditable = 'false'
   dom.dataset.testid = `${reference.kind}-reference-chip`
-  dom.className = cn(tagVariants(), 'align-middle')
+  dom.className = inlineReferenceChipClass
+  dom.tabIndex = 0
   const icon = document.createElement('span')
-  icon.className = `${iconClass} size-3 shrink-0`
+  icon.className = 'icon-[comfy--node] size-3 shrink-0'
   icon.setAttribute('aria-hidden', 'true')
   const label = document.createElement('span')
   label.className = 'min-w-0 max-w-56 truncate'
-  label.textContent = composerReferenceName(reference)
+  label.textContent = reference.node.title
   dom.append(icon, label)
-  return { dom, ignoreMutation: () => true }
+  const id = document.createElement('span')
+  id.className = 'shrink-0 text-muted-foreground'
+  id.textContent = ` #${reference.node.id}`
+  const remove = document.createElement('button')
+  remove.type = 'button'
+  remove.setAttribute(
+    'aria-label',
+    t('agent.removeNodeLabel', { node: composerReferenceName(reference) })
+  )
+  const removeAnchor = document.createElement('span')
+  removeAnchor.className = inlineReferenceRemoveAnchorClass
+  remove.className = inlineReferenceRemoveButtonClass
+  const badge = document.createElement('span')
+  badge.className = inlineReferenceRemoveBadgeClass
+  const cross = document.createElement('span')
+  cross.className = 'icon-[lucide--x] size-2'
+  cross.setAttribute('aria-hidden', 'true')
+  badge.append(cross)
+  remove.append(badge)
+  remove.onclick = () => {
+    const position = getPos()
+    if (position === undefined) return
+    editor.dispatch(deleteReference(editor.state, position, node))
+    editor.focus()
+  }
+  removeAnchor.append(remove)
+  dom.append(id, removeAnchor)
+  return { dom, stopEvent: () => true, ignoreMutation: () => true }
 }
 
 onMounted(() => {
@@ -208,7 +385,15 @@ onMounted(() => {
         'text-base-foreground w-full flex-1 cursor-text p-3 font-inter text-[14px]/5 font-normal wrap-anywhere whitespace-pre-wrap outline-none'
     }),
     decorations(state) {
-      if (state.selection.empty) return null
+      if (state.selection.empty) {
+        if (!searchHint) return null
+        return DecorationSet.create(state.doc, [
+          Decoration.widget(state.selection.from, () => searchHintDom(), {
+            side: 1,
+            key: `search-hint:${searchHint}`
+          })
+        ])
+      }
       const decorations: Decoration[] = []
       state.doc.nodesBetween(
         state.selection.from,
@@ -229,12 +414,13 @@ onMounted(() => {
       const previousReferences = promptDraft(view.state.doc).references
       const nextReferences = promptDraft(transaction.doc).references
       if (
-        previousReferences.length !== nextReferences.length ||
-        previousReferences.some(
-          (reference, index) =>
-            composerReferenceKey(reference) !==
-            composerReferenceKey(nextReferences[index])
-        )
+        !transaction.getMeta('resolveSkillMetadata') &&
+        (previousReferences.length !== nextReferences.length ||
+          previousReferences.some(
+            (reference, index) =>
+              composerReferenceKey(reference) !==
+              composerReferenceKey(nextReferences[index])
+          ))
       )
         closeHistory(transaction)
       for (const insertion of insertions) {
@@ -248,7 +434,9 @@ onMounted(() => {
       view.updateState(view.state.apply(transaction))
       if (transaction.docChanged) {
         const draft = promptDraft(view.state.doc)
-        model.value = draft
+        if (transaction.getMeta('resolveSkillMetadata'))
+          emit('resolveSkillMetadata', draft)
+        else model.value = draft
         for (const previous of previousReferences) {
           if (
             draft.references.some(
@@ -263,10 +451,11 @@ onMounted(() => {
           if (previous.kind === 'node')
             emit('removeNodeReference', selectedNodeKey(previous.node))
         }
-        emit('input')
+        if (!transaction.getMeta('resolveSkillMetadata')) emit('input')
       }
       if (transaction.selectionSet || transaction.docChanged)
         emit('selectionChange')
+      resolvePastedSkillDescription()
     },
     handleKeyDown(editor, event) {
       emit('keydown', event)
@@ -305,8 +494,8 @@ onMounted(() => {
         emit('click')
         return false
       },
-      blur: () => {
-        emit('blur')
+      blur: (_view, event) => {
+        emit('blur', event)
         return false
       }
     },
@@ -317,8 +506,6 @@ onMounted(() => {
       const files = attachableClipboardFiles(clipboard)
       const text = clipboard.getData('text/plain')
       const attachmentsOnly = clipboard.files.length > 0 && text === ''
-      // Attaching rewrites the prompt through the store, so the document edit
-      // has to land first or the editor overwrites the staged attachment.
       if (!attachmentsOnly) insertPastedContent(editor, clipboard, slice, text)
       if (files.length > 0) emit('attachFiles', files)
       return true
@@ -328,8 +515,25 @@ onMounted(() => {
         referenceClipboardText(node)
       ),
     nodeViews: {
-      node: (node) => passiveReferenceView(node, 'icon-[comfy--node]'),
-      asset: (node) => passiveReferenceView(node, 'icon-[lucide--paperclip]'),
+      skill(node) {
+        const dom = document.createElement('span')
+        const reference = promptNodeReference(node, 0)
+        if (reference?.kind !== 'skill') return { dom }
+        dom.contentEditable = 'false'
+        dom.className =
+          'rounded-sm [&.ProseMirror-selectednode]:ring-2 [&.ProseMirror-selectednode]:ring-base-foreground'
+        const vnode = h(ComposerSkillReference, { skill: reference })
+        vnode.appContext = appContext ?? null
+        render(vnode, dom)
+        return {
+          dom,
+          stopEvent: () => true,
+          ignoreMutation: () => true,
+          destroy: () => render(null, dom)
+        }
+      },
+      node: (node, editor, getPos) => nodeReferenceView(node, editor, getPos),
+      asset: assetReferenceView,
       workflow(node, editor, getPos) {
         const id: unknown = node.attrs.id
         const name: unknown = node.attrs.name
@@ -337,10 +541,7 @@ onMounted(() => {
         if (typeof id !== 'string' || typeof name !== 'string') return { dom }
         dom.contentEditable = 'false'
         dom.dataset.testid = 'workflow-reference-chip'
-        dom.className = cn(
-          tagVariants({ interactive: true, removable: true }),
-          'group/workflow align-middle'
-        )
+        dom.className = inlineReferenceChipClass
         const open = document.createElement('button')
         open.type = 'button'
         open.tabIndex = 0
@@ -372,21 +573,16 @@ onMounted(() => {
           if (!unavailable) emit('openReferenceWorkflow', id, name)
         }
         const removeAnchor = document.createElement('span')
-        removeAnchor.className = 'relative inline-block h-4 w-0 align-middle'
+        removeAnchor.className = inlineReferenceRemoveAnchorClass
         const remove = document.createElement('button')
         remove.type = 'button'
         remove.setAttribute(
           'aria-label',
           t('agent.removeWorkflowReference', { name })
         )
-        remove.className = cn(
-          buttonVariants({ variant: 'textonly', size: 'icon-sm' }),
-          tagRemoveButtonVariants(),
-          'pointer-events-none absolute -top-2 -right-2 z-10 flex size-5 cursor-pointer items-center justify-center rounded-full p-0 text-base-foreground opacity-0 transition-opacity group-focus-within/workflow:pointer-events-auto group-focus-within/workflow:opacity-100 group-hover/workflow:pointer-events-auto group-hover/workflow:opacity-100 touch:pointer-events-auto touch:opacity-100'
-        )
+        remove.className = inlineReferenceRemoveButtonClass
         const badge = document.createElement('span')
-        badge.className =
-          'flex size-3 items-center justify-center rounded-full bg-base-background ring-1 ring-border-default hover:bg-secondary-background-hover'
+        badge.className = inlineReferenceRemoveBadgeClass
         const cross = document.createElement('span')
         cross.className = 'icon-[lucide--x] size-2'
         badge.append(cross)
@@ -395,6 +591,7 @@ onMounted(() => {
           const position = getPos()
           if (position === undefined) return
           editor.dispatch(deleteReference(editor.state, position, node))
+          editor.focus()
         }
         removeAnchor.append(remove)
         dom.append(open, removeAnchor)
@@ -442,8 +639,12 @@ watch(
 )
 
 watch(
-  () => [label, expanded, activeDescendant],
+  () => [label, expanded, activeDescendant, searchHint],
   () => view?.setProps({})
+)
+watch(
+  [() => skillPacks.catalogConfirmed, () => skillPacks.packs],
+  resolvePastedSkillDescription
 )
 onBeforeUnmount(() => {
   insertions.clear()
@@ -510,6 +711,40 @@ function captureInsertion(from?: number, to?: number) {
   }
 }
 
+function selectSkill(
+  reference: SkillReferenceMetadata,
+  from: number,
+  to: number
+): void {
+  if (!view) return
+  const position = promptDocumentPosition(view.state.doc, from)
+  // Text offsets exclude atoms. Preserve the live caret so a following reference
+  // at the query's end offset is not included in the replacement.
+  const end =
+    promptTextOffset(view.state.doc, view.state.selection.to) === to
+      ? view.state.selection.to
+      : promptDocumentPosition(view.state.doc, to)
+  const node = inlinePromptSchema.nodes.skill.create({
+    ...reference,
+    scope: skillScope
+  })
+  const transaction = view.state.tr.replaceWith(position, end, node)
+  const after = position + node.nodeSize
+  if (!transaction.doc.nodeAt(after)?.text?.startsWith(' '))
+    transaction.insertText(' ', after)
+  transaction.setSelection(TextSelection.create(transaction.doc, after + 1))
+  const previous: number[] = []
+  transaction.doc.forEach((item, offset) => {
+    if (item.type === inlinePromptSchema.nodes.skill && offset !== position)
+      previous.push(offset)
+  })
+  // Remove the prior skill in this transaction so one undo restores its identity.
+  for (const offset of previous.reverse())
+    transaction.delete(offset, offset + 1)
+  view.dispatch(transaction.scrollIntoView())
+  view.focus()
+}
+
 defineExpose({
   insertionPoint: () =>
     view
@@ -518,6 +753,7 @@ defineExpose({
   focus: () => view?.focus(),
   selection,
   replaceText,
+  selectSkill,
   captureInsertion
 } satisfies PromptEditor)
 </script>
