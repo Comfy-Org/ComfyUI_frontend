@@ -149,8 +149,8 @@ export function billingWebSignInPort(): SignInPort {
     user: computed(() =>
       mode.value ? decidedPort(mode.value).user.value : null
     ),
-    failureCode: computed(() =>
-      mode.value ? decidedPort(mode.value).failureCode.value : undefined
+    failure: computed(() =>
+      mode.value ? decidedPort(mode.value).failure.value : undefined
     ),
     loadIdentity: async () => decidedPort(await decideMode()).loadIdentity(),
     establish: async (user) => {
