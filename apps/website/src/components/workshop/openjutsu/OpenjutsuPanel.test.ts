@@ -20,7 +20,7 @@ describe('OpenjutsuPanel', () => {
 
     await userEvent.click(
       screen.getByRole('button', {
-        name: 'Trim: Swapping 2.0 – 8.0 s (6.0 s of 20.0 s)'
+        name: 'Trim: 2.0–8.0 s of 20.0 s'
       })
     )
 

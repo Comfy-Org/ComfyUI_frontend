@@ -30,9 +30,7 @@ function shuffle() {
   <div
     class="flex h-10 items-center gap-1 rounded-xl border border-transparency-white-t8 pr-1 pl-3 hover:border-transparency-white-t20"
   >
-    <label :for="id" class="shrink-0 text-sm text-primary-warm-gray">{{
-      label
-    }}</label>
+    <label :for="id" class="sr-only">{{ label }}</label>
     <input
       :id
       :value="seed ?? ''"

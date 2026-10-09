@@ -82,7 +82,6 @@ const partSummary = computed(() =>
     : t('openjutsu.trim.summary', {
         from: range.start.toFixed(1),
         to: (range.start + partSeconds).toFixed(1),
-        seconds: partSeconds.toFixed(1),
         total: clipSeconds.toFixed(1)
       })
 )
@@ -151,7 +150,7 @@ const partSummary = computed(() =>
       <OpenjutsuSeedField
         v-model="seed"
         :label="t('reshoot.seed.label')"
-        :random-label="t('reshoot.seed.random')"
+        :random-label="t('openjutsu.seed.placeholder')"
         :shuffle-label="t('openjutsu.seed.shuffle')"
       />
     </div>

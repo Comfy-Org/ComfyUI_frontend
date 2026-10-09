@@ -5620,11 +5620,12 @@
       "help": "The swap follows this description, not a click on the picture. Say what sets the person apart: clothing, position, hair."
     },
     "seed": {
-      "shuffle": "Pick a random seed"
+      "shuffle": "Pick a random seed",
+      "placeholder": "Random seed"
     },
     "trim": {
       "edit": "Trim",
-      "summary": "Swapping {from} – {to} s ({seconds} s of {total} s)"
+      "summary": "{from}–{to} s of {total} s"
     },
     "needs": {
       "video": "Add a video to start",

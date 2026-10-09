@@ -5013,11 +5013,12 @@
       "help": "替换依据这段描述，而不是在画面上点选。请说明此人的特征：衣着、位置、发型。"
     },
     "seed": {
-      "shuffle": "随机选取种子"
+      "shuffle": "随机选取种子",
+      "placeholder": "随机种子"
     },
     "trim": {
       "edit": "裁剪",
-      "summary": "替换 {from} – {to} 秒（共 {total} 秒中的 {seconds} 秒）"
+      "summary": "{from}–{to} 秒（共 {total} 秒）"
     },
     "needs": {
       "video": "先添加一段视频",
