@@ -225,16 +225,6 @@ const columns: { title: string; links: FooterLink[]; splitLinks?: boolean }[] =
     class="bg-primary-comfy-ink px-6 py-8 text-primary-comfy-canvas lg:px-20"
   >
     <div class="flex flex-col gap-16 border-t border-primary-warm-gray pt-16">
-      <div class="flex flex-col gap-8 lg:flex-row lg:items-center lg:gap-12">
-        <canvas ref="canvasRef" class="pointer-events-none size-52 shrink-0" />
-        <div class="flex flex-col gap-8">
-          <p class="text-2xl font-medium tracking-wide uppercase lg:text-3xl">
-            {{ t('footer.tagline') }}
-          </p>
-          <FooterSocialLinks :locale />
-        </div>
-      </div>
-
       <div
         class="grid grid-cols-1 gap-12 lg:grid-cols-4 xl:grid-cols-7 xl:gap-x-6"
       >
@@ -248,13 +238,28 @@ const columns: { title: string; links: FooterLink[]; splitLinks?: boolean }[] =
       </div>
 
       <div
-        class="flex flex-wrap items-center justify-center gap-6 lg:justify-end"
+        class="flex flex-col gap-12 lg:flex-row lg:items-end lg:justify-between"
       >
-        <LanguageSwitcher :locale :alternates />
-        <p class="text-sm">
-          {{ t('footer.location') }}
-        </p>
-        <p class="text-sm">&copy; {{ new Date().getFullYear() }} Comfy Org</p>
+        <div class="flex flex-col gap-8 lg:flex-row lg:items-center lg:gap-12">
+          <canvas
+            ref="canvasRef"
+            class="pointer-events-none size-52 shrink-0"
+          />
+          <div class="flex flex-col gap-8">
+            <p class="text-2xl font-medium tracking-wide uppercase lg:text-3xl">
+              {{ t('footer.tagline') }}
+            </p>
+            <FooterSocialLinks :locale />
+          </div>
+        </div>
+
+        <div class="flex flex-wrap items-center justify-center gap-6">
+          <LanguageSwitcher :locale :alternates />
+          <p class="text-sm">
+            {{ t('footer.location') }}
+          </p>
+          <p class="text-sm">&copy; {{ new Date().getFullYear() }} Comfy Org</p>
+        </div>
       </div>
     </div>
   </footer>
