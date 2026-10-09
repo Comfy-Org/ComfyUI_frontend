@@ -38,7 +38,10 @@
           )
         "
       >
-        <div v-if="showViewTabs" class="flex items-center gap-2">
+        <div
+          v-if="showViewTabs && uiConfig.showPendingTab"
+          class="flex items-center gap-2"
+        >
           <Button
             :variant="activeView === 'active' ? 'secondary' : 'muted-textonly'"
             size="lg"
