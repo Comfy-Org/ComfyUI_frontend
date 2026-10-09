@@ -154,20 +154,25 @@ const meta: Meta<
         if (url && objectUrls.delete(url)) URL.revokeObjectURL(url)
       }
 
+      function show(url: string, size: Awaited<ReturnType<typeof imageSize>>) {
+        release(source.value?.url)
+        if (size) {
+          stage.value = { kind: 'editing', source: { url, ...size } }
+          return
+        }
+        release(url)
+        stage.value = {
+          kind: 'editing',
+          source: EXAMPLE,
+          notice: 'That file is not an image we can read.'
+        }
+      }
+
       async function open(file: File) {
         const url = URL.createObjectURL(file)
         objectUrls.add(url)
         const size = await imageSize(url)
-        if (!objectUrls.has(url)) return
-        if (!size) release(url)
-        release(source.value?.url)
-        stage.value = size
-          ? { kind: 'editing', source: { url, ...size } }
-          : {
-              kind: 'editing',
-              source: EXAMPLE,
-              notice: 'That file is not an image we can read.'
-            }
+        if (objectUrls.has(url)) show(url, size)
       }
 
       async function run() {
