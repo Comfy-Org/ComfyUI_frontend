@@ -17,6 +17,7 @@ import { HostDoc } from '@e2e/fixtures/agentConversationHostDoc'
 import type { HostFrame } from '@e2e/fixtures/agentConversationHostDoc'
 import { AgentPanel } from '@e2e/fixtures/components/AgentPanel'
 import { jsonRoute } from '@e2e/fixtures/utils/jsonRoute'
+import { AGENT_COMPOSER_LABEL } from '@e2e/fixtures/utils/agentComposerLabel'
 
 const WORKFLOW_ID = 'b4d7e1f2-8a3c-4d5e-9f60-7a1b2c3d4e5f'
 const THREAD_ID = 'd8c7b6a5-9e1f-4a2b-8c3d-4e5f6a7b8c9d'
@@ -28,7 +29,6 @@ const SEED: WorkflowJSON = { nodes: [], links: [] }
 const SEND_LABEL = enMessages.agent.send
 const STOP_LABEL = enMessages.agent.stop
 const WORKING_LABEL = enMessages.agent.working
-const COMPOSER_LABEL = /^Describe ideas/
 
 const ids = { thread_id: THREAD_ID, message_id: MESSAGE_ID }
 
@@ -167,7 +167,7 @@ async function startTurn(page: Page, prompt: string): Promise<Turn> {
   await expect(picker).toHaveText('Unsaved Workflow')
   await expect.poll(() => socket !== null).toBe(true)
 
-  await panel.getByRole('textbox', { name: COMPOSER_LABEL }).fill(prompt)
+  await panel.getByRole('textbox', { name: AGENT_COMPOSER_LABEL }).fill(prompt)
   await panel.getByRole('button', { name: SEND_LABEL }).click()
   await expect(panel.getByText(prompt).first()).toBeVisible()
   return { panel, send }

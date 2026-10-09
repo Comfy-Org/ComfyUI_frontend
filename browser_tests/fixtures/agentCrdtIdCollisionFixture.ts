@@ -60,6 +60,7 @@ import { AgentPanel } from '@e2e/fixtures/components/AgentPanel'
 import { Topbar } from '@e2e/fixtures/components/Topbar'
 import { VueNodeHelpers } from '@e2e/fixtures/VueNodeHelpers'
 import { jsonRoute } from '@e2e/fixtures/utils/jsonRoute'
+import { AGENT_COMPOSER_LABEL } from '@e2e/fixtures/utils/agentComposerLabel'
 
 const WORKFLOW_ID = 'a2f6e9c4-9b7d-4a3d-9e12-idcollision01'
 /** The one node the doc starts with — duplicating it triggers the collision. */
@@ -68,7 +69,6 @@ const SUBSCRIBE_TIMEOUT = 15_000
 const THREAD_ID = 'e9a2f3d1-7c44-4b2e-9a01-idcollision01'
 const MESSAGE_ID = 'id-collision-repro-message-0'
 const SEND_LABEL = enMessages.agent.send
-const COMPOSER_LABEL = /^Describe ideas/
 
 const CATALOG: WidgetCatalog = {
   types: {
@@ -254,7 +254,9 @@ export class IdCollisionHarness {
 
   private async sendMinimalPrompt(): Promise<void> {
     const content = 'id-collision repro: bind the doc'
-    const composer = this.panel.getByRole('textbox', { name: COMPOSER_LABEL })
+    const composer = this.panel.getByRole('textbox', {
+      name: AGENT_COMPOSER_LABEL
+    })
     await composer.fill(content)
     await this.panel.getByRole('button', { name: SEND_LABEL }).click()
     await expect(this.panel.getByText(content).first()).toBeVisible()

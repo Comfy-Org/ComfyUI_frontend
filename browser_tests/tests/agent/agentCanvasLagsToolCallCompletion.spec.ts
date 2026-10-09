@@ -18,6 +18,7 @@ import type { HostFrame } from '@e2e/fixtures/agentConversationHostDoc'
 import { AgentPanel } from '@e2e/fixtures/components/AgentPanel'
 import { VueNodeHelpers } from '@e2e/fixtures/VueNodeHelpers'
 import { jsonRoute } from '@e2e/fixtures/utils/jsonRoute'
+import { AGENT_COMPOSER_LABEL } from '@e2e/fixtures/utils/agentComposerLabel'
 
 /**
  * Repro for PM-1575 / PM-1576 (stagingcloud, 2026-09): every agent tool call
@@ -91,7 +92,6 @@ const CATALOG: WidgetCatalog = {
 const SEED: WorkflowJSON = { nodes: [], links: [] }
 
 const SEND_LABEL = enMessages.agent.send
-const COMPOSER_LABEL = /^Describe ideas/
 
 /** The follower's `doc_subscribe` payload for the workflow under test, or null. */
 function subscribeStateVectorOf(raw: Buffer | string): string | null {
@@ -248,7 +248,7 @@ async function driveThroughToolCallDone(
 
   await expect.poll(() => socket !== null).toBe(true)
 
-  const composer = panel.getByRole('textbox', { name: COMPOSER_LABEL })
+  const composer = panel.getByRole('textbox', { name: AGENT_COMPOSER_LABEL })
   await composer.fill('Add a note to the canvas.')
   await panel.getByRole('button', { name: SEND_LABEL }).click()
   await expect(

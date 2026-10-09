@@ -61,6 +61,13 @@ it.for([
     when: 'the catalog has its name',
     packs: [sameName],
     expected: 'available',
+    accessibleDescription: 'Original description'
+  },
+  {
+    when: 'it has no description',
+    packs: [sameName],
+    description: '',
+    expected: 'available',
     accessibleDescription: ''
   },
   {
@@ -78,19 +85,19 @@ it.for([
     when: 'the catalog is unconfirmed',
     catalogConfirmed: false,
     expected: 'checking',
-    accessibleDescription: ''
+    accessibleDescription: 'Original description'
   },
   {
     when: 'skills are disabled',
     flagsEnabled: false,
     expected: 'checking',
-    accessibleDescription: ''
+    accessibleDescription: 'Original description'
   },
   {
     when: 'the catalog belongs to another scope',
     scope: 'another-workspace',
     expected: 'checking',
-    accessibleDescription: ''
+    accessibleDescription: 'Original description'
   }
 ])('shows a reference as $expected when $when', (scenario) => {
   const reference = renderReference(scenario)
@@ -104,7 +111,7 @@ it('shows a deleted reference as available again once a skill with its name is r
   expect(reference).toHaveAccessibleDescription('Not available')
   useSkillPacksStore().packs = [pack('recreated-id', 'old-name')]
   await nextTick()
-  expect(reference).toHaveAccessibleDescription('')
+  expect(reference).toHaveAccessibleDescription('Original description')
 })
 
 it.for([

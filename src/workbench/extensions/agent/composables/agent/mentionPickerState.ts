@@ -46,8 +46,8 @@ function initialActiveIndex(
   query: string,
   firstMatchIndex: number
 ): number {
-  if (query !== '' || section === 'root') return Math.max(0, firstMatchIndex)
-  return section === 'skills' ? -1 : 0
+  if (section === 'skills') return query === '' ? -1 : firstMatchIndex
+  return query !== '' || section === 'root' ? Math.max(0, firstMatchIndex) : 0
 }
 
 function movedActiveIndex(

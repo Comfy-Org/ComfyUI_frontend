@@ -224,6 +224,12 @@ export const useAgentConversationStore = defineStore(
     const userTags = ref(new Map<TurnId, string[]>())
     const userWorkflowReferences = ref(new Map<TurnId, WorkflowReference[]>())
     const userSkillReferences = ref(new Map<TurnId, SkillReference>())
+    /**
+     * Skill names in the last loaded history; each load replaces it, and live
+     * turns never add to it. Marks when an opened conversation needs the
+     * saved-skill catalog its references are shown against.
+     */
+    const historySkillNames = shallowRef<readonly string[]>([])
     const attachmentNamesByThread = new Map<string, Map<string, string>>()
     const latestWorkflowId = ref<string>()
     const resolvedPaywallIds = ref(new Set<TurnId>())
@@ -1059,6 +1065,7 @@ export const useAgentConversationStore = defineStore(
       userTags.value = new Map()
       userWorkflowReferences.value = new Map()
       userSkillReferences.value = new Map()
+      historySkillNames.value = []
       latestWorkflowId.value = undefined
       resolvedPaywallIds.value = new Set()
       dropAttachmentPreviews()
@@ -1117,6 +1124,11 @@ export const useAgentConversationStore = defineStore(
       userTags.value = new Map()
       userWorkflowReferences.value = transcript.userWorkflowReferences
       userSkillReferences.value = transcript.userSkillReferences
+      historySkillNames.value = [
+        ...new Set(
+          [...transcript.userSkillReferences.values()].map(({ name }) => name)
+        )
+      ]
       latestWorkflowId.value = transcript.latestWorkflowId
       hydratedMessageIds = transcript.rowIds
       hydratedTurnIds = new Map(
@@ -1293,6 +1305,7 @@ export const useAgentConversationStore = defineStore(
       dropBackgroundTurns,
       liveTurns,
       turnUsesSkill,
+      historySkillNames,
       settleTurn,
       reset,
       hydrate

@@ -155,7 +155,8 @@ describe('mention picker transitions', () => {
 
   it.for([
     { query: '', firstMatchIndex: 0, activeIndex: -1 },
-    { query: 'por', firstMatchIndex: 0, activeIndex: 0 }
+    { query: 'por', firstMatchIndex: 0, activeIndex: 0 },
+    { query: 'zzz', firstMatchIndex: -1, activeIndex: -1 }
   ])(
     'highlights $activeIndex for a slash query of "$query"',
     ({ query, firstMatchIndex, activeIndex }) => {

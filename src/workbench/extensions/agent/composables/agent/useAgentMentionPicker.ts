@@ -286,7 +286,11 @@ export function useAgentMentionPicker(options: MentionPickerOptions) {
       const index = getMentionMatches('skills', state.query).findIndex(
         (match) => match.id === selected?.name
       )
-      dispatchMention({ type: 'highlighted', index: Math.max(0, index) })
+      dispatchMention({
+        type: 'highlighted',
+        index:
+          index >= 0 ? index : firstMentionMatchIndex('skills', state.query)
+      })
     },
     { flush: 'sync' }
   )

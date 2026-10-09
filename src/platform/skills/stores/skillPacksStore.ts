@@ -139,8 +139,10 @@ export const useSkillPacksStore = defineStore('skillPacks', () => {
     return requestScope === scope.value
   }
 
+  // Syncs first: a backend change has no reactive source, so a response may be
+  // the first to notice it and must move the store to the new scope.
   function isSuperseded(generation: number, requestScope: string): boolean {
-    return generation !== fetchGeneration || requestScope !== currentScope()
+    return !isCurrentScope(requestScope) || generation !== fetchGeneration
   }
 
   function applyCatalog(nextPacks: SkillPack[]): void {

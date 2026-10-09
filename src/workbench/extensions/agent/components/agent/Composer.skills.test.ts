@@ -158,6 +158,48 @@ describe('Composer skill selection', () => {
     }
   )
 
+  it('highlights nothing for a slash query without matches until arrows reach a skill that appears', async () => {
+    const { skills } = mount()
+    await type('/zzz')
+    await waitFor(() => expect(skills.loading).toBe(false))
+    const textbox = screen.getByRole('textbox')
+    expect(screen.getByRole('status')).toHaveTextContent('No skills found')
+    expect(textbox).not.toHaveAttribute('aria-activedescendant')
+
+    skills.upsertPack(pack('zzz-sketch', 'Sketch it'))
+    await screen.findByRole('menuitem', { name: 'zzz-sketch' })
+    expect(textbox).not.toHaveAttribute('aria-activedescendant')
+    await userEvent.keyboard('{ArrowDown}')
+    expect(textbox).toHaveAttribute(
+      'aria-activedescendant',
+      'agent-reference-item-0'
+    )
+    await userEvent.keyboard('{Enter}')
+    expect(screen.getByTestId('skill-reference')).toHaveTextContent(
+      '/zzz-sketch'
+    )
+  })
+
+  it('highlights nothing once a refresh removes the only highlighted match', async () => {
+    const resolve = pendingListing()
+    const { composer } = mount()
+    await type('/por')
+    const textbox = screen.getByRole('textbox')
+    expect(textbox).toHaveAttribute(
+      'aria-activedescendant',
+      'agent-reference-item-0'
+    )
+    resolve([pack('landscape', 'Compose a landscape')])
+    expect(await screen.findByRole('status')).toHaveTextContent(
+      'No skills found'
+    )
+    expect(textbox).not.toHaveAttribute('aria-activedescendant')
+    await userEvent.keyboard('{ArrowDown}{Enter}')
+    expect(textbox).not.toHaveAttribute('aria-activedescendant')
+    expect(composer.prompt.references).toEqual([])
+    expect(composer.draft).toBe('/por')
+  })
+
   it('shows loading, then a retryable error, in the skills menu', async () => {
     let reject: (reason: unknown) => void = () => {}
     vi.mocked(listSkillPacks).mockReturnValueOnce(
@@ -289,7 +331,7 @@ describe('Composer skill selection', () => {
     }
   )
 
-  it('shows only the description when hovering an underlined inline reference', async () => {
+  it('describes an underlined inline reference to assistive technology and shows only the description on hover', async () => {
     mount()
     await type('/por')
     await userEvent.keyboard('{Enter}')
@@ -299,7 +341,7 @@ describe('Composer skill selection', () => {
       'cursor-pointer',
       'text-warning-background'
     )
-    expect(reference).not.toHaveAttribute('aria-description')
+    expect(reference).toHaveAccessibleDescription(PORTRAIT)
     await userEvent.hover(reference)
     expect(await screen.findByRole('tooltip')).toHaveTextContent(
       /^Compose a portrait\s+Keep the subject recognizable$/
@@ -368,7 +410,7 @@ describe('Composer skill selection', () => {
 
     skills.upsertPack(pack('portrait', 'New description'))
     await waitFor(() => expect(skill).toHaveClass('text-warning-background'))
-    expect(skill).not.toHaveAttribute('aria-description')
+    expect(skill).toHaveAccessibleDescription(PORTRAIT)
     expect(composer.prompt.references).toMatchObject([
       { name: 'portrait', description: PORTRAIT }
     ])

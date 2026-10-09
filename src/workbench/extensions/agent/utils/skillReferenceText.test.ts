@@ -55,6 +55,41 @@ describe('skill references in ordinary message content', () => {
   })
 
   it.for([
+    {
+      lone: 'high surrogate',
+      description: 'Keep \uD83D details',
+      encoded: 'Keep%20%EF%BF%BD%20details',
+      restored: 'Keep � details'
+    },
+    {
+      lone: 'low surrogate',
+      description: 'Keep \uDE00 details',
+      encoded: 'Keep%20%EF%BF%BD%20details',
+      restored: 'Keep � details'
+    },
+    {
+      lone: 'reversed surrogate pair',
+      description: '\uDE00\uD83D🖼️',
+      encoded: '%EF%BF%BD%EF%BF%BD%F0%9F%96%BC%EF%B8%8F',
+      restored: '��🖼️'
+    }
+  ])(
+    'serializes a description with a $lone and roundtrips its well-formed form',
+    ({ description, encoded, restored }) => {
+      const content = serializeSkillReference({ name: 'portrait', description })
+      expect(content).toBe(
+        `[Use the saved skill /portrait](skill://portrait?description=${encoded})`
+      )
+      expect(parseSkillReferenceText(content).skillReference).toEqual({
+        name: 'portrait',
+        description: restored,
+        textOffset: 0,
+        workflowIndex: 0
+      })
+    }
+  )
+
+  it.for([
     '/portrait render it',
     '[portrait](skill://portrait)',
     '[Use the saved skill /portrait](https://portrait?description=Use%20defaults)',

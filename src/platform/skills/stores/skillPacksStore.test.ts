@@ -45,10 +45,12 @@ function makePack(overrides: Partial<SkillPack> = {}): SkillPack {
 
 function deferredCatalog() {
   let resolve: (packs: SkillPack[]) => void = () => {}
-  const promise = new Promise<SkillPack[]>((settle) => {
+  let reject: (error: unknown) => void = () => {}
+  const promise = new Promise<SkillPack[]>((settle, fail) => {
     resolve = settle
+    reject = fail
   })
-  return { promise, resolve }
+  return { promise, resolve, reject }
 }
 
 describe('skillPacksStore', () => {
@@ -251,6 +253,38 @@ describe('skillPacksStore', () => {
       store.upsertPack(makePack({ name: 'old-scope-crud' }), oldScope)
       expect(store.catalogConfirmed).toBe(false)
       expect(store.packs).toEqual([])
+    }
+  )
+
+  it.for<{
+    outcome: string
+    settle: (listing: ReturnType<typeof deferredCatalog>) => void
+  }>([
+    {
+      outcome: 'returns',
+      settle: (listing) => listing.resolve([makePack({ name: 'old-backend' })])
+    },
+    {
+      outcome: 'fails',
+      settle: (listing) => listing.reject(new SkillPacksApiError('down', 503))
+    }
+  ])(
+    'moves to the new backend scope when a listing from the old backend $outcome',
+    async ({ settle }) => {
+      const store = useSkillPacksStore()
+      vi.mocked(listSkillPacks).mockResolvedValueOnce([makePack()])
+      await store.fetchPacks()
+      const oldScope = store.scope
+      const listing = deferredCatalog()
+      vi.mocked(listSkillPacks).mockReturnValueOnce(listing.promise)
+      const request = store.fetchPacks()
+      vi.mocked(api.apiURL).mockImplementation((route) => `/other${route}`)
+      settle(listing)
+      await request
+      expect(store.scope).not.toBe(oldScope)
+      expect(store.catalogConfirmed).toBe(false)
+      expect(store.packs).toEqual([])
+      expect(store.loading).toBe(false)
     }
   )
 

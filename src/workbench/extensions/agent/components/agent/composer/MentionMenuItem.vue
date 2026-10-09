@@ -36,6 +36,7 @@ const emit = defineEmits<{
   descriptionLeave: []
   descriptionFocusout: [event: FocusEvent]
   descriptionReleaseFocus: []
+  descriptionDismiss: []
 }>()
 const row = useTemplateRef<HTMLDivElement>('row')
 const description = computed(() =>
@@ -110,6 +111,7 @@ const nodeId = computed(() =>
           @leave="emit('descriptionLeave')"
           @focusout="emit('descriptionFocusout', $event)"
           @release-focus="emit('descriptionReleaseFocus')"
+          @dismiss="emit('descriptionDismiss')"
         />
         <span v-if="unsavedWorkflow" class="text-xs text-muted-foreground">{{
           $t('agent.unsavedWorkflow')

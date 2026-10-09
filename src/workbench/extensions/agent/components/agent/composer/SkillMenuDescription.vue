@@ -15,6 +15,7 @@ const emit = defineEmits<{
   leave: []
   focusout: [event: FocusEvent]
   releaseFocus: []
+  dismiss: []
 }>()
 
 const card = useTemplateRef<HTMLDivElement>('card')
@@ -44,6 +45,7 @@ onBeforeUnmount(() => {
           tabindex="-1"
           class="w-62.5 max-w-[calc(100vw-2rem)] rounded-[10px] border border-border-subtle bg-base-background p-2.5 text-xs/4 font-normal wrap-anywhere whitespace-pre-wrap text-muted-foreground shadow-md outline-none select-text"
           @focusout="emit('focusout', $event)"
+          @keydown.esc.stop="emit('dismiss')"
         >
           {{ skill.description }}
         </div>

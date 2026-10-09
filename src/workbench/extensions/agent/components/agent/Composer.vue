@@ -287,6 +287,11 @@ function onDescriptionFocusOut(event: FocusEvent): void {
   closeMention()
 }
 
+function onDescriptionDismiss(): void {
+  closeMention()
+  focusEditor()
+}
+
 const HIGHLIGHT_KEYS = ['ArrowDown', 'ArrowUp']
 
 function requestKeyboardDescription(event: KeyboardEvent): void {
@@ -499,6 +504,7 @@ defineExpose({
         @description-leave="leaveDescription"
         @description-focusout="onDescriptionFocusOut"
         @description-release-focus="focusEditor"
+        @description-dismiss="onDescriptionDismiss"
       />
       <MentionMenuStatus
         v-if="!mentionHasResults"

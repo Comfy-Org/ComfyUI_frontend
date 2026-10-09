@@ -20,7 +20,11 @@ const { t } = useI18n()
       :data-skill-name="skill.name"
       :data-skill-description="skill.description"
       tabindex="0"
-      :aria-description="unavailable ? t('agent.skillNotAvailable') : undefined"
+      :aria-description="
+        unavailable
+          ? t('agent.skillNotAvailable')
+          : skill.description || undefined
+      "
       :class="
         cn(
           'cursor-pointer underline underline-offset-2',

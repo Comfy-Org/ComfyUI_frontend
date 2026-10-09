@@ -11,8 +11,14 @@ import type {
   WorkflowReference
 } from '../types/workflowReference'
 
+// encodeURIComponent throws on an unpaired UTF-16 surrogate. The ES2023 lib
+// has no String#toWellFormed, so this applies the same U+FFFD replacement.
+const LONE_SURROGATE =
+  /[\uD800-\uDBFF](?![\uDC00-\uDFFF])|(?<![\uD800-\uDBFF])[\uDC00-\uDFFF]/g
+
 export function serializeSkillReference(skill: SkillReferenceMetadata): string {
-  const description = encodeURIComponent(skill.description)
+  const wellFormed = skill.description.replace(LONE_SURROGATE, '�')
+  const description = encodeURIComponent(wellFormed)
     .replaceAll('(', '%28')
     .replaceAll(')', '%29')
   return `[Use the saved skill /${skill.name}](skill://${skill.name}?description=${description})`

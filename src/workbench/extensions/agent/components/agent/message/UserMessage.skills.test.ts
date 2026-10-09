@@ -26,6 +26,9 @@ it('renders a sent skill with its own description beside workflows and returns i
   const bubble = screen.getByTestId('user-message-bubble')
   const skill = within(bubble).getByTestId('skill-reference')
   expect(skill).toHaveTextContent(/^\/portrait$/)
+  expect(skill).toHaveAccessibleDescription(
+    'Compose a portrait\nPreserve the subject'
+  )
   await userEvent.hover(skill)
   expect(await screen.findByRole('tooltip')).toHaveTextContent(
     /^Compose a portrait\s+Preserve the subject$/

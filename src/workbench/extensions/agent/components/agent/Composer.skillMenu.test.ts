@@ -252,6 +252,19 @@ describe('Composer skill menu description', () => {
     expect(screen.getByRole('menu', { name: 'Skills' })).toBeVisible()
   })
 
+  it('closes the menu and returns focus to the prompt on Escape in a focused description', async () => {
+    const { user, composer } = await describePortrait()
+    const description = shownDescription(PORTRAIT)
+    assert.exists(description)
+    await user.click(description)
+    await user.keyboard('{Escape}')
+    expect(screen.queryByRole('menu', { name: 'Skills' })).toBeNull()
+    expect(shownDescription(PORTRAIT)).toBeNull()
+    expect(screen.getByRole('textbox')).toHaveFocus()
+    expect(composer.draft).toBe('/')
+    expect(composer.prompt.references).toEqual([])
+  })
+
   it('closes the menu when focus moves from the description to another composer control', async () => {
     const { user } = await describePortrait()
     const description = shownDescription(PORTRAIT)
