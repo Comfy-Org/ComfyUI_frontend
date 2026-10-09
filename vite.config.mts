@@ -424,7 +424,11 @@ export default defineConfig({
   plugins: [
     communityCorpusPlugin(
       process.env.COMMUNITY_CORPUS_DIR,
-      DEV_SERVER_COMFYUI_URL
+      DEV_SERVER_COMFYUI_URL,
+      {
+        collection: process.env.COMMUNITY_CORPUS_COLLECTION,
+        indexSha256: process.env.COMMUNITY_CORPUS_INDEX_SHA256
+      }
     ),
     ...(!DISABLE_VUE_PLUGINS
       ? [vueDevTools(), vue(vuePluginOptions), createHtmlPlugin({})]
