@@ -9,7 +9,7 @@ import { contentDiff } from './diff'
 
 export type QueueChange = 'new' | 'updated' | 'removed'
 
-export interface FieldGroup {
+interface FieldGroup {
   field: string
   before?: unknown
   after?: unknown
@@ -24,7 +24,7 @@ interface QueueBase {
   thumbnail?: string
 }
 
-export interface CatalogQueueItem extends QueueBase {
+interface CatalogQueueItem extends QueueBase {
   source: 'catalog'
   kind: ContentCatalogRecord['kind']
   slug: string
@@ -65,7 +65,7 @@ function fieldValue(record: ContentCatalogRecord | undefined, field: string) {
   return envelope[field]
 }
 
-export function groupFields(
+function groupFields(
   before: ContentCatalogRecord | undefined,
   after: ContentCatalogRecord | undefined
 ): FieldGroup[] {
