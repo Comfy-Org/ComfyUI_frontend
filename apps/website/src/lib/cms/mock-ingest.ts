@@ -214,9 +214,9 @@ export function createMockIngest(seed: SeedEntry[]) {
     return (writes[path] ?? notFound)(body)
   }
   return (
-    method: string,
+    method: string | undefined,
     url: URL,
-    authorization: string | null,
+    authorization: string | null | undefined,
     raw: string
   ): Reply => {
     if (url.pathname === '/api/v1/catalog/items')
