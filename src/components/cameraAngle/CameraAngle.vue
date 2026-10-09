@@ -7,47 +7,38 @@
     @pointerdown.capture="openPreset = null"
   >
     <template #top>
-      <Tooltip
+      <Button
         v-for="option in viewModeOptions"
         :key="option.value"
-        :disabled="!option.tooltip"
+        variant="textonly"
+        size="unset"
+        :tooltip="option.tooltip"
+        tooltip-side="bottom"
+        type="button"
+        :class="actionClass(viewMode === option.value)"
+        :aria-pressed="viewMode === option.value"
+        :aria-label="option.label"
+        @click="setViewMode(option.value)"
       >
-        <TooltipTrigger as-child>
-          <button
-            type="button"
-            :class="actionClass(viewMode === option.value)"
-            :aria-pressed="viewMode === option.value"
-            :aria-label="option.label"
-            @click="setViewMode(option.value)"
-          >
-            <i :class="cn('size-4', option.icon)" />
-            <span v-if="!compact">{{ option.label }}</span>
-          </button>
-        </TooltipTrigger>
-        <TooltipContent side="bottom">{{ option.tooltip }}</TooltipContent>
-      </Tooltip>
+        <i :class="cn('size-4', option.icon)" />
+        <span v-if="!compact">{{ option.label }}</span>
+      </Button>
       <div class="mx-1 h-5 w-px shrink-0 bg-interface-menu-stroke" />
-      <Tooltip :disabled="!previewLabel">
-        <TooltipTrigger as-child>
-          <button
-            type="button"
-            :disabled="viewMode === 'object'"
-            :class="
-              cn(
-                actionClass(viewMode === 'camera' && previewVisible),
-                viewMode === 'object' && 'cursor-not-allowed opacity-40'
-              )
-            "
-            :aria-pressed="viewMode === 'camera' && previewVisible"
-            :aria-label="previewLabel"
-            @click="setPreviewVisible(!previewVisible)"
-          >
-            <i class="icon-[lucide--picture-in-picture-2] size-4" />
-            <span v-if="!compact">{{ $t('cameraAngle.preview') }}</span>
-          </button>
-        </TooltipTrigger>
-        <TooltipContent side="bottom">{{ previewLabel }}</TooltipContent>
-      </Tooltip>
+      <Button
+        variant="textonly"
+        size="unset"
+        :tooltip="previewLabel"
+        tooltip-side="bottom"
+        type="button"
+        :disabled="viewMode === 'object'"
+        :class="actionClass(viewMode === 'camera' && previewVisible)"
+        :aria-pressed="viewMode === 'camera' && previewVisible"
+        :aria-label="previewLabel"
+        @click="setPreviewVisible(!previewVisible)"
+      >
+        <i class="icon-[lucide--picture-in-picture-2] size-4" />
+        <span v-if="!compact">{{ $t('cameraAngle.preview') }}</span>
+      </Button>
       <span
         class="ml-auto min-w-0 truncate text-xs text-muted-foreground"
         :title="prompt"
@@ -99,16 +90,16 @@ import {
 import type { Ref } from 'vue'
 import { useI18n } from 'vue-i18n'
 
+import { cn } from '@comfyorg/tailwind-utils'
+
 import ViewportWidgetShell from '@/components/load3d/ViewportWidgetShell.vue'
 import { actionClass } from '@/components/load3d/menubar/menuBarStyles'
+import Button from '@/components/ui/button/Button.vue'
 import Select from '@/components/ui/select/Select.vue'
 import SelectContent from '@/components/ui/select/SelectContent.vue'
 import SelectItem from '@/components/ui/select/SelectItem.vue'
 import SelectTrigger from '@/components/ui/select/SelectTrigger.vue'
 import SelectValue from '@/components/ui/select/SelectValue.vue'
-import Tooltip from '@/components/ui/tooltip/Tooltip.vue'
-import TooltipContent from '@/components/ui/tooltip/TooltipContent.vue'
-import TooltipTrigger from '@/components/ui/tooltip/TooltipTrigger.vue'
 import { useCameraAngle } from '@/composables/useCameraAngle'
 import {
   DISTANCE_TERMS,
@@ -128,7 +119,6 @@ import { useCanvasStore } from '@/renderer/core/canvas/canvasStore'
 import { app } from '@/scripts/app'
 import type { SimplifiedWidget } from '@/types/simplifiedWidget'
 import { getNodeByLocatorId } from '@/utils/graphTraversalUtil'
-import { cn } from '@comfyorg/tailwind-utils'
 
 const { widget } = defineProps<{
   widget: SimplifiedWidget

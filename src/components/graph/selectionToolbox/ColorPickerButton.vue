@@ -25,26 +25,26 @@
         type="single"
         @update:model-value="applyColorName"
       >
-        <ToggleGroupItem
+        <TextTooltip
           v-for="option in colorOptions"
           :key="option.name"
-          :value="option.name"
-          :aria-label="option.localizedName"
-          class="px-1 py-2"
+          :text="option.localizedName"
+          :label="option.localizedName"
         >
-          <Tooltip>
-            <TooltipTrigger as-child>
-              <i
-                class="pi pi-circle-fill"
-                :style="{
-                  color: isLightTheme ? option.value.light : option.value.dark
-                }"
-                :data-testid="option.name"
-              />
-            </TooltipTrigger>
-            <TooltipContent>{{ option.localizedName }}</TooltipContent>
-          </Tooltip>
-        </ToggleGroupItem>
+          <ToggleGroupItem
+            :value="option.name"
+            :aria-label="option.localizedName"
+            class="px-1 py-2 aria-pressed:bg-secondary-background aria-pressed:text-base-foreground"
+          >
+            <i
+              class="pi pi-circle-fill"
+              :style="{
+                color: isLightTheme ? option.value.light : option.value.dark
+              }"
+              :data-testid="option.name"
+            />
+          </ToggleGroupItem>
+        </TextTooltip>
       </ToggleGroup>
     </div>
   </div>
@@ -57,10 +57,8 @@ import { computed, ref, watch } from 'vue'
 import { useI18n } from 'vue-i18n'
 
 import Button from '@/components/ui/button/Button.vue'
-import Tooltip from '@/components/ui/tooltip/Tooltip.vue'
-import TooltipContent from '@/components/ui/tooltip/TooltipContent.vue'
-import TooltipTrigger from '@/components/ui/tooltip/TooltipTrigger.vue'
 import { ToggleGroup, ToggleGroupItem } from '@/components/ui/toggle-group'
+import TextTooltip from '@/components/ui/tooltip/TextTooltip.vue'
 import type {
   ColorOption as CanvasColorOption,
   LiteGraphCanvasEvent,

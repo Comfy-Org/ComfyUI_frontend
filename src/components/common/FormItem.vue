@@ -13,7 +13,7 @@
           <TooltipTrigger as-child>
             <i class="pi pi-info-circle bg-transparent" />
           </TooltipTrigger>
-          <TooltipContent side="right">{{ props.item.tooltip }}</TooltipContent>
+          <TooltipContent>{{ props.item.tooltip }}</TooltipContent>
         </Tooltip>
         <slot name="name-suffix" />
       </span>

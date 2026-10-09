@@ -4,7 +4,7 @@
     tooltip-side="right"
     :class="
       cn(
-        'side-bar-button h-(--sidebar-item-height) w-(--sidebar-width) shrink-0 cursor-pointer rounded-none border-none p-2 text-xs',
+        'side-bar-button h-(--sidebar-item-height) w-(--sidebar-width) shrink-0 rounded-none p-2 text-xs',
         selected && 'side-bar-button-selected'
       )
     "
@@ -56,6 +56,7 @@ import type { Component } from 'vue'
 import Button from '@/components/ui/button/Button.vue'
 import { st } from '@/i18n'
 import { cn } from '@comfyorg/tailwind-utils'
+
 const {
   icon = '',
   selected = false,
@@ -105,9 +106,5 @@ const computedTooltip = computed(() => {
 .side-bar-button:hover {
   background-color: var(--interface-panel-hover-surface);
   color: var(--content-hover-fg);
-}
-
-.side-bar-button-selected .side-bar-button-icon {
-  font-size: var(--sidebar-icon-size) !important;
 }
 </style>

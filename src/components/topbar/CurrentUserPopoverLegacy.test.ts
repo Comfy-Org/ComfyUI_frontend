@@ -447,6 +447,16 @@ describe('CurrentUserPopoverLegacy', () => {
       expect(screen.queryByTestId('workspace-switcher-panel')).toBeNull()
     })
 
+    it('closes the keyboard-opened workspace name tooltip on Escape', async () => {
+      const { user } = renderComponent(readyWorkspaceState)
+
+      screen.getByTestId('workspace-switcher-trigger').focus()
+      expect(await screen.findByRole('tooltip')).toBeInTheDocument()
+
+      await user.keyboard('{Escape}')
+      expect(screen.queryByRole('tooltip')).toBeNull()
+    })
+
     it('keeps credits visible but hides top-up for workspace members', () => {
       mockCanAccessSubscriptionFeatures.value = false
       useBillingCapabilities().canTopUp = computed(() => false)

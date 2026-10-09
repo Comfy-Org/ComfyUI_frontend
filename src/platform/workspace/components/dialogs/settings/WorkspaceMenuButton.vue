@@ -3,7 +3,6 @@
     <template #trigger>
       <Button
         :tooltip="$t('g.moreOptions')"
-        tooltip-side="right"
         variant="muted-textonly"
         size="icon-lg"
         :aria-label="$t('g.moreOptions')"

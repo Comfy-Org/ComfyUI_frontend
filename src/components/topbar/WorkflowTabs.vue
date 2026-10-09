@@ -72,7 +72,6 @@
     />
     <Button
       :tooltip="$t('sideToolbar.newBlankWorkflow')"
-      tooltip-side="right"
       class="new-blank-workflow-button no-drag shrink-0 self-center rounded-lg"
       variant="muted-textonly"
       size="icon"
@@ -98,7 +97,6 @@
       <Button
         v-if="isCloud || isNightly"
         :tooltip="$t('actionbar.feedbackTooltip')"
-        tooltip-side="right"
         variant="muted-textonly"
         size="icon"
         class="size-6 shrink-0 rounded-sm p-0"

@@ -81,6 +81,19 @@ describe('ColorPickerButton', () => {
     expect(screen.queryByTestId('noColor')).not.toBeInTheDocument()
   })
 
+  it('shows a swatch name when the swatch gets keyboard focus', async () => {
+    setCanvasSelection([createMockPositionable()])
+    const { user } = renderComponent()
+    const pickerButton = screen.getByRole('button', { name: 'Color' })
+
+    await user.click(pickerButton)
+    await user.unhover(pickerButton)
+    await user.tab()
+
+    expect(screen.getByRole('button', { name: 'No Color' })).toHaveFocus()
+    expect(await screen.findByRole('tooltip')).toHaveTextContent('No Color')
+  })
+
   it('clears the color when the active swatch is selected again', async () => {
     const group = new LGraphGroup()
     setCanvasSelection([group])

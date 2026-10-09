@@ -299,6 +299,7 @@ describe('UserMessage', () => {
     await user.click(copyButton)
 
     expect(clipboard.copy).toHaveBeenCalledWith('make it cinematic')
+    expect(screen.getByRole('tooltip')).toBeInTheDocument()
   })
 
   it('copies a reference-only message with readable workflow names', async () => {

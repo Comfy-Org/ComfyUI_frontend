@@ -1,14 +1,13 @@
 <script setup lang="ts">
-import Tooltip from '@/components/ui/tooltip/Tooltip.vue'
-import TooltipContent from '@/components/ui/tooltip/TooltipContent.vue'
-import TooltipTrigger from '@/components/ui/tooltip/TooltipTrigger.vue'
-
 import { useIntersectionObserver } from '@vueuse/core'
 import { computed, inject, ref, watch } from 'vue'
 import { useI18n } from 'vue-i18n'
 
 import { cn } from '@comfyorg/tailwind-utils'
 
+import Tooltip from '@/components/ui/tooltip/Tooltip.vue'
+import TooltipContent from '@/components/ui/tooltip/TooltipContent.vue'
+import TooltipTrigger from '@/components/ui/tooltip/TooltipTrigger.vue'
 import {
   findServerPreviewUrl,
   isAssetPreviewSupported
@@ -203,7 +202,7 @@ function handleVideoLoad(event: Event) {
             {{ label ?? name }}
           </span>
         </TooltipTrigger>
-        <TooltipContent side="right">{{ label ?? name }}</TooltipContent>
+        <TooltipContent>{{ label ?? name }}</TooltipContent>
       </Tooltip>
       <!-- Meta Data -->
       <span v-if="actualDimensions" class="block text-xs text-muted-foreground">

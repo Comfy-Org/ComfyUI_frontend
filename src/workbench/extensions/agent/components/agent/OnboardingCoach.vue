@@ -262,10 +262,10 @@ useEventListener(
       >
         <span
           aria-hidden="true"
-          class="size-0 border-y-4 border-r-4 border-y-transparent border-r-node-component-tooltip-border"
+          class="size-0 border-y-4 border-r-4 border-y-transparent border-r-border-default"
         />
         <div
-          class="rounded-md border border-node-component-tooltip-border bg-node-component-tooltip-surface px-2 py-1 text-xs leading-none wrap-break-word whitespace-pre-line text-node-component-tooltip shadow-none"
+          class="rounded-md border border-border-default bg-base-background px-3 py-2 text-xs/tight wrap-break-word whitespace-pre-line text-base-foreground shadow-interface"
         >
           {{ step.tooltip }}
         </div>

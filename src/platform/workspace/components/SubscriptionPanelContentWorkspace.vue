@@ -144,7 +144,6 @@
                   <template #trigger>
                     <Button
                       :tooltip="$t('g.moreOptions')"
-                      tooltip-side="right"
                       variant="secondary"
                       size="icon-lg"
                       icon="icon-[lucide--ellipsis]"
@@ -203,7 +202,6 @@
                   <template #trigger>
                     <Button
                       :tooltip="$t('g.moreOptions')"
-                      tooltip-side="right"
                       variant="secondary"
                       size="icon-lg"
                       icon="icon-[lucide--ellipsis]"
@@ -305,7 +303,6 @@
                   <template #trigger>
                     <Button
                       :tooltip="$t('g.moreOptions')"
-                      tooltip-side="right"
                       variant="secondary"
                       size="icon-lg"
                       icon="icon-[lucide--ellipsis]"

@@ -53,32 +53,32 @@
               canSelectInputs && !row.widget.simplified.options?.disabled
             "
           >
-            <Tooltip
-              :disabled="!row.widget.tooltip"
-              :delay-duration="tooltipDelay"
-            >
+            <Tooltip :disabled="!row.widget.tooltipText">
               <TooltipTrigger as-child>
-                <component
-                  :is="row.widget.vueComponent"
-                  :model-value="row.widget.simplified.value"
-                  :widget="row.widget.simplified"
-                  :node-id
-                  :node-type
-                  :invalid="row.widget.hasError"
-                  :aria-invalid="row.widget.hasError || undefined"
-                  :class="
-                    cn(
-                      'col-span-2',
-                      row.widget.hasError && 'font-bold text-node-stroke-error'
-                    )
-                  "
-                  @update:model-value="row.widget.updateHandler"
-                  @contextmenu="row.widget.handleContextMenu"
-                  @removed="restoreRowFocus"
-                />
+                <div class="col-span-2 grid grid-cols-subgrid">
+                  <component
+                    :is="row.widget.vueComponent"
+                    :model-value="row.widget.simplified.value"
+                    :widget="row.widget.simplified"
+                    :node-id
+                    :node-type
+                    :invalid="row.widget.hasError"
+                    :aria-invalid="row.widget.hasError || undefined"
+                    :class="
+                      cn(
+                        'col-span-2',
+                        row.widget.hasError &&
+                          'font-bold text-node-stroke-error'
+                      )
+                    "
+                    @update:model-value="row.widget.updateHandler"
+                    @contextmenu="row.widget.handleContextMenu"
+                    @removed="restoreRowFocus"
+                  />
+                </div>
               </TooltipTrigger>
               <TooltipContent side="left">{{
-                row.widget.tooltip
+                row.widget.tooltipText
               }}</TooltipContent>
             </Tooltip>
           </AppInput>
@@ -94,7 +94,6 @@ import { computed, nextTick, useTemplateRef, watch } from 'vue'
 import Tooltip from '@/components/ui/tooltip/Tooltip.vue'
 import TooltipContent from '@/components/ui/tooltip/TooltipContent.vue'
 import TooltipTrigger from '@/components/ui/tooltip/TooltipTrigger.vue'
-import { useSettingStore } from '@/platform/settings/settingStore'
 import { useCanvasStore } from '@/renderer/core/canvas/canvasStore'
 import { syncSlotOffsets } from '@/renderer/core/layout/slots/syncSlotOffsets'
 import AppInput from '@/renderer/extensions/linearMode/AppInput.vue'
@@ -106,10 +105,6 @@ import { cn } from '@comfyorg/tailwind-utils'
 
 import InputSlot from './InputSlot.vue'
 
-const settingStore = useSettingStore()
-const tooltipDelay = computed(() =>
-  settingStore.get('LiteGraph.Node.TooltipDelay')
-)
 const grid = useTemplateRef<HTMLElement>('grid')
 
 const isConvertedWidgetType = (type: string) =>

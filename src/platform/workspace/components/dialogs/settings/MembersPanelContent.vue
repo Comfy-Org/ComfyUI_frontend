@@ -86,7 +86,7 @@
                 </Button>
               </span>
             </TooltipTrigger>
-            <TooltipContent side="right">{{
+            <TooltipContent>{{
               inviteTooltip || $t('workspacePanel.inviteMember')
             }}</TooltipContent>
           </Tooltip>

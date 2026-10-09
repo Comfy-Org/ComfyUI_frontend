@@ -71,13 +71,13 @@ export interface ProcessedWidget extends WidgetGridItem {
   handleContextMenu: (e: PointerEvent) => void
   hasError: boolean
   hasLayoutSize: boolean
-  tooltip: string
+  tooltipText: string
   updateHandler: (value: WidgetValue) => void
   widgetId: WidgetId
 }
 
 export interface WidgetUiCallbacks {
-  getTooltip: (widget: WidgetTooltipSource, fullVal?: string) => string
+  getTooltipText: (widget: WidgetTooltipSource, fullValue?: string) => string
   handleNodeRightClick: (e: PointerEvent, nodeId: NodeId) => void
 }
 
@@ -421,13 +421,13 @@ function processWidget(
       : undefined
   }
 
-  const valueTooltip =
+  const fullValue =
     isTooltipValueType(type) && String(value).length > 10
       ? String(value)
       : undefined
-  const tooltip = ctx.ui.getTooltip(
+  const tooltipText = ctx.ui.getTooltipText(
     { name: widgetState.name, tooltip: renderState?.tooltip },
-    valueTooltip
+    fullValue
   )
   const handleContextMenu = (e: PointerEvent) => {
     e.preventDefault()
@@ -461,7 +461,7 @@ function processWidget(
     visible,
     suppressedByConnection: visibility?.suppression.byConnection ?? false,
     updateHandler,
-    tooltip,
+    tooltipText,
     slotMetadata: slotInfo
   }
 }

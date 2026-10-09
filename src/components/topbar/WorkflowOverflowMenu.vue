@@ -4,7 +4,6 @@
       <template #trigger>
         <Button
           :tooltip="$t('g.moreWorkflows')"
-          tooltip-side="right"
           variant="muted-textonly"
           size="icon"
           :aria-label="$t('g.moreWorkflows')"

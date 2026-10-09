@@ -1,44 +1,39 @@
 <template>
-  <Tooltip>
-    <TooltipTrigger as-child>
-      <button
-        :class="actionClass(false)"
-        type="button"
-        :aria-label="compact ? t('load3d.menuBar.switchProjection') : undefined"
-        @click="switchCamera"
-      >
-        <i class="icon-[lucide--camera] size-4" />
-        <span v-if="!compact">{{ cameraTypeLabel }}</span>
-      </button>
-    </TooltipTrigger>
-    <TooltipContent side="bottom">{{
-      t('load3d.menuBar.switchProjection')
-    }}</TooltipContent>
-  </Tooltip>
+  <Button
+    variant="textonly"
+    size="unset"
+    :tooltip="t('load3d.menuBar.switchProjection')"
+    tooltip-side="bottom"
+    :class="actionClass(false)"
+    type="button"
+    :aria-label="compact ? t('load3d.menuBar.switchProjection') : undefined"
+    @click="switchCamera"
+  >
+    <i class="icon-[lucide--camera] size-4" />
+    <span v-if="!compact">{{ cameraTypeLabel }}</span>
+  </Button>
 
-  <Tooltip v-if="hasCustomUp">
-    <TooltipTrigger as-child>
-      <button
-        :class="actionClass(false)"
-        type="button"
-        :aria-label="compact ? upActionLabel : undefined"
-        @click="toggleUp"
-      >
-        <i
-          :class="
-            cn(
-              useCustomUp
-                ? 'icon-[lucide--compass]'
-                : 'icon-[lucide--rotate-ccw]',
-              'size-4'
-            )
-          "
-        />
-        <span v-if="!compact">{{ upLabel }}</span>
-      </button>
-    </TooltipTrigger>
-    <TooltipContent side="bottom">{{ upActionLabel }}</TooltipContent>
-  </Tooltip>
+  <Button
+    v-if="hasCustomUp"
+    variant="textonly"
+    size="unset"
+    :tooltip="upActionLabel"
+    tooltip-side="bottom"
+    :class="actionClass(false)"
+    type="button"
+    :aria-label="compact ? upActionLabel : undefined"
+    @click="toggleUp"
+  >
+    <i
+      :class="
+        cn(
+          useCustomUp ? 'icon-[lucide--compass]' : 'icon-[lucide--rotate-ccw]',
+          'size-4'
+        )
+      "
+    />
+    <span v-if="!compact">{{ upLabel }}</span>
+  </Button>
 
   <Popover v-if="isPerspective" v-model:open="fovOpen">
     <PopoverTrigger as-child>
@@ -77,24 +72,22 @@
 </template>
 
 <script setup lang="ts">
+import { PopoverTrigger } from 'reka-ui'
 import { computed } from 'vue'
 import { useI18n } from 'vue-i18n'
+
+import { cn } from '@comfyorg/tailwind-utils'
 
 import {
   actionClass,
   formPanelClass
 } from '@/components/load3d/menubar/menuBarStyles'
 import { usePopoverExclusivity } from '@/components/load3d/menubar/usePopoverExclusivity'
+import Button from '@/components/ui/button/Button.vue'
 import Popover from '@/components/ui/popover/Popover.vue'
 import PopoverContent from '@/components/ui/popover/PopoverContent.vue'
 import Slider from '@/components/ui/slider/Slider.vue'
-import Button from '@/components/ui/button/Button.vue'
-import Tooltip from '@/components/ui/tooltip/Tooltip.vue'
-import TooltipContent from '@/components/ui/tooltip/TooltipContent.vue'
-import TooltipTrigger from '@/components/ui/tooltip/TooltipTrigger.vue'
 import type { CameraConfig } from '@/extensions/core/load3d/interfaces'
-import { cn } from '@comfyorg/tailwind-utils'
-import { PopoverTrigger } from 'reka-ui'
 
 const { compact = false } = defineProps<{
   compact?: boolean

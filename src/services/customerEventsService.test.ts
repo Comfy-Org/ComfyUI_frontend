@@ -451,50 +451,6 @@ describe('useCustomerEventsService', () => {
     })
   })
 
-  describe('getTooltipContent', () => {
-    it('should generate HTML tooltip content for all parameters', () => {
-      const event = {
-        event_id: 'test',
-        event_type: 'api_usage_completed',
-        params: {
-          transaction_id: 'txn-123',
-          duration: 5000,
-          status: 'completed'
-        },
-        createdAt: '2024-01-01T10:00:00Z'
-      }
-
-      const result = service.getTooltipContent(event)
-
-      expect(result).toContain('Transaction Id: txn-123')
-      expect(result).toContain('Duration: 5,000')
-      expect(result).toContain('Status: completed')
-      expect(result).toContain('\n')
-    })
-
-    it('should return empty string when no parameters', () => {
-      const event = {
-        event_id: 'test',
-        event_type: 'account_created',
-        params: {},
-        createdAt: '2024-01-01T10:00:00Z'
-      }
-
-      expect(service.getTooltipContent(event)).toBe('')
-    })
-
-    it('should handle undefined params', () => {
-      const event = {
-        event_id: 'test',
-        event_type: 'account_created',
-        params: undefined,
-        createdAt: '2024-01-01T10:00:00Z'
-      }
-
-      expect(service.getTooltipContent(event)).toBe('')
-    })
-  })
-
   describe('formatJsonKey', () => {
     it('should format keys correctly', () => {
       expect(service.formatJsonKey('transaction_id')).toBe('Transaction Id')

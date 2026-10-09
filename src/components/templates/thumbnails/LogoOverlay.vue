@@ -9,21 +9,14 @@
       data-testid="logo-pill"
       class="flex items-center gap-1"
     >
-      <Tooltip
-        v-for="badge in logo.badges"
-        :key="badge.provider"
-        :open="openTooltip === `${logo.key}:${badge.provider}`"
-        :delay-duration="0"
-        disable-closing-trigger
-        @update:open="setTooltipOpen(`${logo.key}:${badge.provider}`, $event)"
-      >
+      <Tooltip v-for="badge in logo.badges" :key="badge.provider" open-on-click>
         <TooltipTrigger as-child>
           <button
             type="button"
             :aria-label="badge.provider"
             data-testid="logo-badge"
             class="flex size-7 cursor-pointer items-center justify-center rounded-full border-none bg-black/30 p-0 backdrop-blur-[20px] focus-visible:ring-1 focus-visible:ring-white focus-visible:outline-none"
-            @click.stop="setTooltipOpen(`${logo.key}:${badge.provider}`, true)"
+            @click.stop
           >
             <i
               v-if="badge.iconClass"
@@ -44,20 +37,14 @@
         </TooltipTrigger>
         <TooltipContent>{{ badge.provider }}</TooltipContent>
       </Tooltip>
-      <Tooltip
-        v-if="logo.extraProviders.length"
-        :open="openTooltip === `${logo.key}:extra`"
-        :delay-duration="0"
-        disable-closing-trigger
-        @update:open="setTooltipOpen(`${logo.key}:extra`, $event)"
-      >
+      <Tooltip v-if="logo.extraProviders.length" open-on-click>
         <TooltipTrigger as-child>
           <button
             type="button"
             :aria-label="logo.extraProviders.join(', ')"
             data-testid="logo-extra"
             class="flex h-7 min-w-7 cursor-pointer items-center justify-center rounded-full border-none bg-black/30 px-1.5 text-xs font-medium text-white backdrop-blur-[20px] focus-visible:ring-1 focus-visible:ring-white focus-visible:outline-none"
-            @click.stop="setTooltipOpen(`${logo.key}:extra`, true)"
+            @click.stop
           >
             +{{ logo.extraProviders.length }}
           </button>
@@ -90,12 +77,6 @@ const {
 }>()
 
 const failedLogos = ref(new Set<string>())
-const openTooltip = ref<string | null>(null)
-
-function setTooltipOpen(key: string, open: boolean) {
-  if (open) openTooltip.value = key
-  else if (openTooltip.value === key) openTooltip.value = null
-}
 
 function onImageError(provider: string) {
   failedLogos.value = new Set([...failedLogos.value, provider])

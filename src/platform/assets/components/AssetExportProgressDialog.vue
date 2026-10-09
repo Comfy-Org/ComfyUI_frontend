@@ -1,14 +1,13 @@
 <script setup lang="ts">
-import Tooltip from '@/components/ui/tooltip/Tooltip.vue'
-import TooltipContent from '@/components/ui/tooltip/TooltipContent.vue'
-import TooltipTrigger from '@/components/ui/tooltip/TooltipTrigger.vue'
-
 import { computed, ref } from 'vue'
 import { useI18n } from 'vue-i18n'
 
 import Loader from '@/components/loader/Loader.vue'
 import ToastPanel from '@/components/ui/toast/ToastPanel.vue'
 import Button from '@/components/ui/button/Button.vue'
+import Tooltip from '@/components/ui/tooltip/Tooltip.vue'
+import TooltipContent from '@/components/ui/tooltip/TooltipContent.vue'
+import TooltipTrigger from '@/components/ui/tooltip/TooltipTrigger.vue'
 import type { AssetExport } from '@/stores/assetExportStore'
 import { useAssetExportStore } from '@/stores/assetExportStore'
 import { cn } from '@comfyorg/tailwind-utils'
@@ -198,7 +197,7 @@ function closeDialog() {
             <TooltipTrigger as-child>
               <i :class="cn('size-4 shrink-0', footerIconClass)" />
             </TooltipTrigger>
-            <TooltipContent class="z-10000">{{ footerLabel }}</TooltipContent>
+            <TooltipContent>{{ footerLabel }}</TooltipContent>
           </Tooltip>
           <span
             :class="

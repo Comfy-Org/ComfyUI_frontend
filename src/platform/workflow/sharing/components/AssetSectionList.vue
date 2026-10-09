@@ -52,7 +52,7 @@
                   {{ item.name }}
                 </span>
               </TooltipTrigger>
-              <TooltipContent side="right">{{ item.name }}</TooltipContent>
+              <TooltipContent>{{ item.name }}</TooltipContent>
             </Tooltip>
             <span
               v-if="item.in_library"
@@ -68,10 +68,6 @@
 </template>
 
 <script setup lang="ts">
-import Tooltip from '@/components/ui/tooltip/Tooltip.vue'
-import TooltipContent from '@/components/ui/tooltip/TooltipContent.vue'
-import TooltipTrigger from '@/components/ui/tooltip/TooltipTrigger.vue'
-
 import {
   CollapsibleContent,
   CollapsibleRoot,
@@ -82,6 +78,9 @@ import type { AssetInfo } from '@comfyorg/ingest-types'
 import ShareAssetThumbnail from '@/platform/workflow/sharing/components/ShareAssetThumbnail.vue'
 import { useAssetSections } from '@/platform/workflow/sharing/composables/useAssetSections'
 import Button from '@/components/ui/button/Button.vue'
+import Tooltip from '@/components/ui/tooltip/Tooltip.vue'
+import TooltipContent from '@/components/ui/tooltip/TooltipContent.vue'
+import TooltipTrigger from '@/components/ui/tooltip/TooltipTrigger.vue'
 import { cn } from '@comfyorg/tailwind-utils'
 
 const { items } = defineProps<{

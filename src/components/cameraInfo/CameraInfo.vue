@@ -6,80 +6,66 @@
     @mouseleave="handleMouseLeave"
   >
     <template #top>
-      <Tooltip>
-        <TooltipTrigger as-child>
-          <button
-            type="button"
-            :disabled="lookingThrough"
-            :class="
-              cn(
-                actionClass(!lookingThrough && gizmosOn),
-                lookingThrough && 'cursor-not-allowed opacity-40'
-              )
-            "
-            :aria-pressed="!lookingThrough && gizmosOn"
-            :aria-label="compact ? gizmosLabel : undefined"
-            @click="toggleGizmos"
-          >
-            <i
-              :class="
-                cn(
-                  'size-4',
-                  gizmosOn ? 'icon-[lucide--eye]' : 'icon-[lucide--eye-off]'
-                )
-              "
-            />
-            <span v-if="!compact">{{ gizmosLabel }}</span>
-          </button>
-        </TooltipTrigger>
-        <TooltipContent side="bottom">{{ gizmosLabel }}</TooltipContent>
-      </Tooltip>
+      <Button
+        variant="textonly"
+        size="unset"
+        :tooltip="gizmosLabel"
+        tooltip-side="bottom"
+        type="button"
+        :disabled="lookingThrough"
+        :class="actionClass(!lookingThrough && gizmosOn)"
+        :aria-pressed="!lookingThrough && gizmosOn"
+        :aria-label="compact ? gizmosLabel : undefined"
+        @click="toggleGizmos"
+      >
+        <i
+          :class="
+            cn(
+              'size-4',
+              gizmosOn ? 'icon-[lucide--eye]' : 'icon-[lucide--eye-off]'
+            )
+          "
+        />
+        <span v-if="!compact">{{ gizmosLabel }}</span>
+      </Button>
       <div class="mx-1 h-5 w-px shrink-0 bg-interface-menu-stroke" />
-      <Tooltip v-for="option in transformGizmoOptions" :key="option.value">
-        <TooltipTrigger as-child>
-          <button
-            type="button"
-            :disabled="lookingThrough || !option.enabled"
-            :aria-pressed="
-              !lookingThrough && effectiveTransformGizmoMode === option.value
-            "
-            :aria-label="compact ? $t(option.labelKey) : undefined"
-            :class="
-              cn(
-                actionClass(
-                  !lookingThrough &&
-                    effectiveTransformGizmoMode === option.value
-                ),
-                (lookingThrough || !option.enabled) &&
-                  'cursor-not-allowed opacity-40'
-              )
-            "
-            @click="selectTransformGizmo(option.value)"
-          >
-            <i :class="cn('size-4', option.icon)" />
-            <span v-if="!compact">{{ $t(option.labelKey) }}</span>
-          </button>
-        </TooltipTrigger>
-        <TooltipContent side="bottom">{{ $t(option.labelKey) }}</TooltipContent>
-      </Tooltip>
+      <Button
+        v-for="option in transformGizmoOptions"
+        :key="option.value"
+        variant="textonly"
+        size="unset"
+        :tooltip="$t(option.labelKey)"
+        tooltip-side="bottom"
+        type="button"
+        :disabled="lookingThrough || !option.enabled"
+        :aria-pressed="
+          !lookingThrough && effectiveTransformGizmoMode === option.value
+        "
+        :aria-label="compact ? $t(option.labelKey) : undefined"
+        :class="
+          actionClass(
+            !lookingThrough && effectiveTransformGizmoMode === option.value
+          )
+        "
+        @click="selectTransformGizmo(option.value)"
+      >
+        <i :class="cn('size-4', option.icon)" />
+        <span v-if="!compact">{{ $t(option.labelKey) }}</span>
+      </Button>
     </template>
     <template #bottom>
-      <Tooltip>
-        <TooltipTrigger as-child>
-          <button
-            type="button"
-            :class="
-              cn(iconBtnClass, lookingThrough && 'bg-button-active-surface')
-            "
-            :aria-pressed="lookingThrough"
-            :aria-label="lookThroughLabel"
-            @click="toggleLookThrough"
-          >
-            <i class="icon-[lucide--video] size-4" />
-          </button>
-        </TooltipTrigger>
-        <TooltipContent>{{ lookThroughLabel }}</TooltipContent>
-      </Tooltip>
+      <Button
+        variant="textonly"
+        size="icon"
+        :tooltip="lookThroughLabel"
+        type="button"
+        :class="cn(lookingThrough && 'bg-button-active-surface')"
+        :aria-pressed="lookingThrough"
+        :aria-label="lookThroughLabel"
+        @click="toggleLookThrough"
+      >
+        <i class="icon-[lucide--video] size-4" />
+      </Button>
     </template>
   </ViewportWidgetShell>
 </template>
@@ -97,14 +83,11 @@ import {
 import type { Ref } from 'vue'
 import { useI18n } from 'vue-i18n'
 
+import { cn } from '@comfyorg/tailwind-utils'
+
 import ViewportWidgetShell from '@/components/load3d/ViewportWidgetShell.vue'
-import {
-  actionClass,
-  iconBtnClass
-} from '@/components/load3d/menubar/menuBarStyles'
-import Tooltip from '@/components/ui/tooltip/Tooltip.vue'
-import TooltipContent from '@/components/ui/tooltip/TooltipContent.vue'
-import TooltipTrigger from '@/components/ui/tooltip/TooltipTrigger.vue'
+import { actionClass } from '@/components/load3d/menubar/menuBarStyles'
+import Button from '@/components/ui/button/Button.vue'
 import { useCameraInfo } from '@/composables/useCameraInfo'
 import type { TransformGizmoMode } from '@/extensions/core/cameraInfo/CameraInfoViewport'
 import type { LGraphNode } from '@/lib/litegraph/src/LGraphNode'
@@ -112,7 +95,6 @@ import type { ComponentWidget } from '@/scripts/domWidget'
 import type { NodeId } from '@/types/nodeId'
 import type { SimplifiedWidget } from '@/types/simplifiedWidget'
 import { resolveNode } from '@/utils/litegraphUtil'
-import { cn } from '@comfyorg/tailwind-utils'
 
 const { widget, nodeId } = defineProps<{
   widget: ComponentWidget<string[]> | SimplifiedWidget

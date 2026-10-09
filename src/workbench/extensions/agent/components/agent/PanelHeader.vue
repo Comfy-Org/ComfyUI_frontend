@@ -62,7 +62,6 @@ const sizeToggleLabel = computed(() =>
         tooltip-side="bottom"
         variant="muted-textonly"
         size="icon"
-        class="rounded-xl hover:text-base-foreground focus-visible:ring-2 focus-visible:ring-primary-background"
         :aria-label="t('agent.newChat')"
         @click="emit('newChat')"
       >
@@ -73,7 +72,6 @@ const sizeToggleLabel = computed(() =>
         tooltip-side="bottom"
         variant="muted-textonly"
         size="icon"
-        class="rounded-xl hover:text-base-foreground focus-visible:ring-2 focus-visible:ring-primary-background"
         :aria-label="sizeToggleLabel"
         @click="emit('toggleSize')"
       >
@@ -84,7 +82,6 @@ const sizeToggleLabel = computed(() =>
         tooltip-side="bottom"
         variant="muted-textonly"
         size="icon"
-        class="rounded-xl hover:text-base-foreground focus-visible:ring-2 focus-visible:ring-primary-background"
         :aria-label="t('agent.close')"
         @click="emit('close')"
       >

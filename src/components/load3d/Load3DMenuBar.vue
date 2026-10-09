@@ -10,7 +10,7 @@
           <Button
             variant="textonly"
             size="unset"
-            :tooltip="compact ? activeLabel : undefined"
+            :tooltip="compact ? activeLabel : ''"
             tooltip-side="bottom"
             :class="chipClass"
             type="button"
@@ -135,39 +135,34 @@
           v-if="enableViewer && node"
           :node="node as LGraphNode"
         />
-        <Tooltip v-if="canFitToViewer">
-          <TooltipTrigger as-child>
-            <button
-              :class="iconBtnClass"
-              type="button"
-              :aria-label="t('load3d.fitToViewer')"
-              @click="emit('fitToViewer')"
-            >
-              <i class="icon-[lucide--scan] size-4" />
-            </button>
-          </TooltipTrigger>
-          <TooltipContent>{{ t('load3d.fitToViewer') }}</TooltipContent>
-        </Tooltip>
-        <Tooltip v-if="canCenterCameraOnModel">
-          <TooltipTrigger as-child>
-            <button
-              :class="iconBtnClass"
-              type="button"
-              :aria-label="t('load3d.centerCameraOnModel')"
-              @click="emit('centerCamera')"
-            >
-              <i class="icon-[lucide--crosshair] size-4" />
-            </button>
-          </TooltipTrigger>
-          <TooltipContent>{{ t('load3d.centerCameraOnModel') }}</TooltipContent>
-        </Tooltip>
+        <Button
+          v-if="canFitToViewer"
+          variant="textonly"
+          size="icon"
+          :tooltip="t('load3d.fitToViewer')"
+          type="button"
+          :aria-label="t('load3d.fitToViewer')"
+          @click="emit('fitToViewer')"
+        >
+          <i class="icon-[lucide--scan] size-4" />
+        </Button>
+        <Button
+          v-if="canCenterCameraOnModel"
+          variant="textonly"
+          size="icon"
+          :tooltip="t('load3d.centerCameraOnModel')"
+          type="button"
+          :aria-label="t('load3d.centerCameraOnModel')"
+          @click="emit('centerCamera')"
+        >
+          <i class="icon-[lucide--crosshair] size-4" />
+        </Button>
         <Popover v-if="canExport" v-model:open="exportOpen">
           <PopoverTrigger as-child>
             <Button
               variant="textonly"
-              size="unset"
+              size="icon"
               :tooltip="t('load3d.export')"
-              :class="iconBtnClass"
               type="button"
               :aria-label="t('load3d.export')"
             >
@@ -197,15 +192,12 @@
 </template>
 
 <script setup lang="ts">
-import Button from '@/components/ui/button/Button.vue'
-import Tooltip from '@/components/ui/tooltip/Tooltip.vue'
-import TooltipContent from '@/components/ui/tooltip/TooltipContent.vue'
-import TooltipTrigger from '@/components/ui/tooltip/TooltipTrigger.vue'
-
 import { useElementSize } from '@vueuse/core'
 import { PopoverTrigger } from 'reka-ui'
 import { computed, ref, watch } from 'vue'
 import { useI18n } from 'vue-i18n'
+
+import { cn } from '@comfyorg/tailwind-utils'
 
 import AnimationMenuStrip from '@/components/load3d/menubar/AnimationMenuStrip.vue'
 import CameraMenuGroup from '@/components/load3d/menubar/CameraMenuGroup.vue'
@@ -214,7 +206,6 @@ import HdriMenuGroup from '@/components/load3d/menubar/HdriMenuGroup.vue'
 import LightMenuGroup from '@/components/load3d/menubar/LightMenuGroup.vue'
 import {
   chipClass,
-  iconBtnClass,
   menuPanelClass
 } from '@/components/load3d/menubar/menuBarStyles'
 import ModelMenuGroup from '@/components/load3d/menubar/ModelMenuGroup.vue'
@@ -222,6 +213,7 @@ import RecordMenuControl from '@/components/load3d/menubar/RecordMenuControl.vue
 import SceneMenuGroup from '@/components/load3d/menubar/SceneMenuGroup.vue'
 import { usePopoverExclusivity } from '@/components/load3d/menubar/usePopoverExclusivity'
 import ViewerControls from '@/components/load3d/controls/ViewerControls.vue'
+import Button from '@/components/ui/button/Button.vue'
 import Popover from '@/components/ui/popover/Popover.vue'
 import PopoverContent from '@/components/ui/popover/PopoverContent.vue'
 import {
@@ -239,7 +231,6 @@ import type {
   ModelConfig,
   SceneConfig
 } from '@/extensions/core/load3d/interfaces'
-import { cn } from '@comfyorg/tailwind-utils'
 
 const {
   animations = [],

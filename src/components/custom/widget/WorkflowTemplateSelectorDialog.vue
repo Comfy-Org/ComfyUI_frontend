@@ -325,18 +325,13 @@
                       shape="square"
                       class="bg-charcoal-500/50 opacity-80"
                     />
-                    <Tooltip
-                      v-if="tags.hidden.length"
-                      :open="openTagsTooltip === template.name"
-                      disable-closing-trigger
-                      @update:open="setTagsTooltipOpen(template.name, $event)"
-                    >
+                    <Tooltip v-if="tags.hidden.length" open-on-click>
                       <TooltipTrigger as-child>
                         <button
                           type="button"
                           :aria-label="tags.hidden.join(', ')"
                           class="cursor-pointer rounded-sm border-none bg-transparent p-0 focus-visible:ring-1 focus-visible:ring-base-foreground focus-visible:outline-none"
-                          @click.stop="openTagsTooltip = template.name"
+                          @click.stop
                         >
                           <Tag
                             :label="`+${tags.hidden.length}`"
@@ -544,12 +539,6 @@ const { onClose: originalOnClose, initialCategory = 'all' } = defineProps<{
 // Track session time for telemetry
 const sessionStartTime = ref<number>(0)
 const templateWasSelected = ref(false)
-const openTagsTooltip = ref<string | null>(null)
-
-function setTagsTooltipOpen(templateName: string, open: boolean) {
-  if (open) openTagsTooltip.value = templateName
-  else if (openTagsTooltip.value === templateName) openTagsTooltip.value = null
-}
 const detailPreviewHovered = ref(false)
 
 onMounted(() => {

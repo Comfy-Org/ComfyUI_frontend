@@ -238,12 +238,10 @@ import type { Ref } from 'vue'
 import {
   computed,
   getCurrentInstance,
-  h,
   nextTick,
   onMounted,
   onUnmounted,
-  ref,
-  render
+  ref
 } from 'vue'
 
 import SearchFilterChip from '@/components/common/SearchFilterChip.vue'
@@ -252,7 +250,7 @@ import SearchInput from '@/components/ui/search-input/SearchInput.vue'
 import TreeExplorer from '@/components/common/TreeExplorer.vue'
 import TreeExplorerTreeNode from '@/components/common/TreeExplorerTreeNode.vue'
 import NodePreview from '@/components/node/NodePreview.vue'
-import TooltipProvider from '@/components/ui/tooltip/TooltipProvider.vue'
+import { renderNodePreview } from '@/components/node/renderNodePreview'
 import NodeSearchFilter from '@/components/searchbox/NodeSearchFilter.vue'
 import SidebarTabTemplate from '@/components/sidebar/tabs/SidebarTabTemplate.vue'
 import SidebarTopArea from '@/components/sidebar/tabs/SidebarTopArea.vue'
@@ -400,18 +398,8 @@ const renderedRoot = computed<TreeExplorerNode<ComfyNodeDefImpl>>(() => {
       children,
       draggable: node.leaf,
       renderDragPreview(container) {
-        const nodeDef = node.data
-        if (!nodeDef) return
-        const vnode = h(
-          TooltipProvider,
-          { disabled: true },
-          { default: () => h(NodePreview, { nodeDef }) }
-        )
-        vnode.appContext = appContext
-        render(vnode, container)
-        return () => {
-          render(null, container)
-        }
+        if (!node.data) return
+        return renderNodePreview(container, node.data, appContext)
       },
       handleClick(e: MouseEvent) {
         const nodeDef = this.data

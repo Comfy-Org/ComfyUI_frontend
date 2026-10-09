@@ -22,20 +22,6 @@ vi.mock<unknown>(
 )
 
 vi.mock<unknown>(
-  import('@/renderer/extensions/vueNodes/composables/useNodeTooltips'),
-  async () => {
-    const { ref } = await import('vue')
-    return {
-      useNodeTooltips: () => ({
-        getOutputSlotTooltip: () => '',
-        tooltipsEnabled: ref(true),
-        tooltipDelay: ref(0)
-      })
-    }
-  }
-)
-
-vi.mock<unknown>(
   import('@/renderer/extensions/vueNodes/composables/useSlotLinkInteraction'),
   () => ({
     useSlotLinkInteraction: () => ({ onPointerDown: vi.fn() })
@@ -66,7 +52,6 @@ function renderOutputSlot(slotData: Partial<INodeSlot>, index = 0) {
     },
     global: {
       plugins: [i18n],
-      directives: { tooltip: {} },
       stubs: { SlotConnectionDot: SlotConnectionDotStub }
     }
   })

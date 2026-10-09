@@ -27,7 +27,7 @@
             :aria-label="$t('load3d.lightIntensity')"
             @click="toggleLightIntensity"
           >
-            <i class="icon-[lucide--sun] text-lg text-base-foreground" />
+            <i class="icon-[lucide--sun] size-5 text-base-foreground" />
           </Button>
         </TooltipTrigger>
         <TooltipContent side="right">{{
@@ -56,10 +56,10 @@
 import { computed, ref } from 'vue'
 
 import Button from '@/components/ui/button/Button.vue'
+import Slider from '@/components/ui/slider/Slider.vue'
 import Tooltip from '@/components/ui/tooltip/Tooltip.vue'
 import TooltipContent from '@/components/ui/tooltip/TooltipContent.vue'
 import TooltipTrigger from '@/components/ui/tooltip/TooltipTrigger.vue'
-import Slider from '@/components/ui/slider/Slider.vue'
 import { useDismissableOverlay } from '@/composables/useDismissableOverlay'
 import type {
   HDRIConfig,

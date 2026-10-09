@@ -13,7 +13,7 @@ vi.mock(import('@/components/actionbar/ComfyRunButton'), async () => {
   const { defineComponent } = await import('vue')
   return {
     default: defineComponent({
-      template: '<button type="button">Run</button>'
+      template: '<button type="button">Run</button><span />'
     })
   }
 })
@@ -42,8 +42,7 @@ const renderActionbar = (showRunProgressBar: boolean) => {
         QueueInlineProgress: true
       },
       directives: {
-        coachmark: vCoachmark,
-        tooltip: () => {}
+        coachmark: vCoachmark
       }
     }
   })

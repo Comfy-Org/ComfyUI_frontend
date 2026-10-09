@@ -38,7 +38,7 @@
           </Button>
         </div>
         <!-- Node Title -->
-        <Tooltip :disabled="!tooltipText" :delay-duration="tooltipDelay">
+        <Tooltip :disabled="!tooltipText">
           <TooltipTrigger as-child>
             <div
               class="flex min-w-0 flex-1 items-center gap-2"
@@ -76,15 +76,14 @@
 </template>
 
 <script setup lang="ts">
-import Tooltip from '@/components/ui/tooltip/Tooltip.vue'
-import TooltipContent from '@/components/ui/tooltip/TooltipContent.vue'
-import TooltipTrigger from '@/components/ui/tooltip/TooltipTrigger.vue'
-
 import { computed, onErrorCaptured, ref } from 'vue'
 
 import EditableText from '@/components/common/EditableText.vue'
 import CreditBadge from '@/components/node/CreditBadge.vue'
 import Button from '@/components/ui/button/Button.vue'
+import Tooltip from '@/components/ui/tooltip/Tooltip.vue'
+import TooltipContent from '@/components/ui/tooltip/TooltipContent.vue'
+import TooltipTrigger from '@/components/ui/tooltip/TooltipTrigger.vue'
 import type { NodeState } from '@/types/nodeState'
 import { useErrorHandling } from '@/composables/useErrorHandling'
 import { st } from '@/i18n'
@@ -122,9 +121,7 @@ onErrorCaptured((error) => {
 // Editing state
 const isEditing = ref(false)
 
-const { getNodeDescription, tooltipDelay } = useNodeTooltips(
-  nodeData?.type || ''
-)
+const { getNodeDescription } = useNodeTooltips(nodeData?.type || '')
 
 const tooltipText = computed(() =>
   isEditing.value ? '' : getNodeDescription.value

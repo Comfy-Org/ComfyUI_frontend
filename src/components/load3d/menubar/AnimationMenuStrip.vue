@@ -4,26 +4,20 @@
     data-testid="load3d-animation-strip"
     @wheel.stop
   >
-    <Tooltip>
-      <TooltipTrigger as-child>
-        <button
-          :class="iconBtnClass"
-          type="button"
-          :aria-label="playLabel"
-          @click="playing = !playing"
-        >
-          <i
-            :class="
-              cn(
-                playing ? 'icon-[lucide--pause]' : 'icon-[lucide--play]',
-                'size-4'
-              )
-            "
-          />
-        </button>
-      </TooltipTrigger>
-      <TooltipContent>{{ playLabel }}</TooltipContent>
-    </Tooltip>
+    <Button
+      variant="textonly"
+      size="icon"
+      :tooltip="playLabel"
+      type="button"
+      :aria-label="playLabel"
+      @click="playing = !playing"
+    >
+      <i
+        :class="
+          cn(playing ? 'icon-[lucide--pause]' : 'icon-[lucide--play]', 'size-4')
+        "
+      />
+    </Button>
 
     <Slider
       :model-value="[animationProgress]"
@@ -127,13 +121,15 @@ import { PopoverTrigger } from 'reka-ui'
 import { computed } from 'vue'
 import { useI18n } from 'vue-i18n'
 
+import { cn } from '@comfyorg/tailwind-utils'
+
 import { formatAnimationTime } from '@/components/load3d/formatAnimationTime'
 import {
   chipClass,
-  iconBtnClass,
   menuPanelClass
 } from '@/components/load3d/menubar/menuBarStyles'
 import { usePopoverExclusivity } from '@/components/load3d/menubar/usePopoverExclusivity'
+import Button from '@/components/ui/button/Button.vue'
 import Popover from '@/components/ui/popover/Popover.vue'
 import PopoverContent from '@/components/ui/popover/PopoverContent.vue'
 import {
@@ -141,12 +137,7 @@ import {
   selectedMenuButtonClass
 } from '@/components/ui/menu/menuStyles'
 import Slider from '@/components/ui/slider/Slider.vue'
-import Button from '@/components/ui/button/Button.vue'
-import Tooltip from '@/components/ui/tooltip/Tooltip.vue'
-import TooltipContent from '@/components/ui/tooltip/TooltipContent.vue'
-import TooltipTrigger from '@/components/ui/tooltip/TooltipTrigger.vue'
 import type { AnimationItem } from '@/extensions/core/load3d/interfaces'
-import { cn } from '@comfyorg/tailwind-utils'
 
 const {
   animations = [],

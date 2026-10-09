@@ -27,7 +27,7 @@ const placeholderHint = computed(() => {
   >
     <span>{{ placeholderHint.text }} </span>
     <Button
-      :tooltip="nodeReferenceDisabledReason"
+      :tooltip="nodeReferenceDisabledReason ?? ''"
       type="button"
       variant="link"
       size="unset"

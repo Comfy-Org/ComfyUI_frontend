@@ -296,13 +296,16 @@ describe('PartnerNodesEducationCard', () => {
     expect(partnerBtn).toHaveAccessibleName(copy.mutePartner)
   })
 
-  it('gives the partner information button an accessible name', async () => {
+  it('explains partner nodes when the information button is tapped', async () => {
     renderCard()
     loadPaidTemplate('paid-wf')
     await nextTick()
 
-    expect(
-      screen.getByRole('button', { name: copy.tooltip })
-    ).toBeInTheDocument()
+    await userEvent.pointer({
+      keys: '[TouchA]',
+      target: screen.getByRole('button', { name: copy.tooltip })
+    })
+
+    expect(await screen.findByRole('tooltip')).toHaveTextContent(copy.tooltip)
   })
 })

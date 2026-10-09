@@ -40,7 +40,6 @@
             <Button
               v-if="isEmailProvider"
               :tooltip="$t('userSettings.updatePassword')"
-              tooltip-side="right"
               variant="muted-textonly"
               size="icon-sm"
               :aria-label="$t('userSettings.updatePassword')"

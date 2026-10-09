@@ -9,7 +9,7 @@ import { widgetId } from '@/types/widgetId'
 const GRAPH_ID = 'graph-widget-rename'
 
 const noopUi = {
-  getTooltip: () => '',
+  getTooltipText: () => '',
   handleNodeRightClick: () => {}
 }
 

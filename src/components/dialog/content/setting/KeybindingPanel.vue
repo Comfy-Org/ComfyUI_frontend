@@ -79,7 +79,6 @@
 
     <Button
       :tooltip="$t('g.resetAllKeybindingsTooltip')"
-      tooltip-side="right"
       class="mt-4 w-full"
       variant="destructive-textonly"
       @click="resetAllKeybindings"

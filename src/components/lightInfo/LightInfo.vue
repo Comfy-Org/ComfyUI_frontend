@@ -59,8 +59,7 @@
         <Button
           :tooltip="$t('lightInfo.addLight')"
           variant="textonly"
-          size="unset"
-          :class="iconBtnClass"
+          size="icon"
           :aria-label="$t('lightInfo.addLight')"
           @click="addLight('directional')"
         >
@@ -70,8 +69,7 @@
           v-if="selectedLight"
           :tooltip="$t('lightInfo.removeLight')"
           variant="textonly"
-          size="unset"
-          :class="iconBtnClass"
+          size="icon"
           :aria-label="$t('lightInfo.removeLight')"
           @click="removeSelectedLight"
         >
@@ -97,17 +95,15 @@
 import { useElementSize } from '@vueuse/core'
 import { computed, onMounted, onUnmounted, ref, shallowRef, watch } from 'vue'
 
-import {
-  chipClass,
-  iconBtnClass
-} from '@/components/load3d/menubar/menuBarStyles'
+import { cn } from '@comfyorg/tailwind-utils'
+
+import { chipClass } from '@/components/load3d/menubar/menuBarStyles'
 import Button from '@/components/ui/button/Button.vue'
 import type { LightTransformGizmoMode } from '@/extensions/core/lightInfo/LightInfoViewport'
 import { LIGHT_TYPE_LABEL_KEYS } from '@/extensions/core/lightInfo/types'
 import type { LGraphNode } from '@/lib/litegraph/src/LGraphNode'
 import type { NodeId } from '@/types/nodeId'
 import { resolveNode } from '@/utils/litegraphUtil'
-import { cn } from '@comfyorg/tailwind-utils'
 
 import LightInfoLightEditor from './LightInfoLightEditor.vue'
 import LightInfoViewportToolbar from './LightInfoViewportToolbar.vue'

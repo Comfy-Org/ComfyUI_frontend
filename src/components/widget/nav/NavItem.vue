@@ -1,12 +1,15 @@
 <template>
-  <Tooltip :disabled="!isOverflowing || !tooltipText">
+  <Tooltip :disabled="!isOverflowing">
     <TooltipTrigger as-child>
       <div
-        class="flex cursor-pointer items-center-safe gap-2 rounded-md px-4 py-3 text-sm text-base-foreground transition-colors select-none"
+        v-bind="$attrs"
         :class="
-          active
-            ? 'bg-interface-menu-component-surface-selected'
-            : 'hover:bg-interface-menu-component-surface-hovered'
+          cn(
+            'flex cursor-pointer items-center-safe gap-2 rounded-md px-4 py-3 text-sm text-base-foreground transition-colors select-none',
+            active
+              ? 'bg-interface-menu-component-surface-selected'
+              : 'hover:bg-interface-menu-component-surface-hovered'
+          )
         "
         role="button"
         @mouseenter="checkOverflow"
@@ -15,7 +18,7 @@
         <NavIcon v-if="icon" :icon="icon" />
         <i
           v-else
-          class="icon-[lucide--folder] shrink-0 text-xs text-base-foreground"
+          class="icon-[lucide--folder] size-3.5 shrink-0 text-base-foreground"
         />
         <span ref="textRef" class="min-w-0 truncate">
           <slot />
@@ -41,17 +44,18 @@
 </template>
 
 <script setup lang="ts">
-import Tooltip from '@/components/ui/tooltip/Tooltip.vue'
-import TooltipContent from '@/components/ui/tooltip/TooltipContent.vue'
-import TooltipTrigger from '@/components/ui/tooltip/TooltipTrigger.vue'
-
 import { computed, ref } from 'vue'
 
 import StatusBadge from '@/components/common/StatusBadge.vue'
+import Tooltip from '@/components/ui/tooltip/Tooltip.vue'
+import TooltipContent from '@/components/ui/tooltip/TooltipContent.vue'
+import TooltipTrigger from '@/components/ui/tooltip/TooltipTrigger.vue'
 import type { NavItemData } from '@/types/navTypes'
 import { cn } from '@comfyorg/tailwind-utils'
 
 import NavIcon from './NavIcon.vue'
+
+defineOptions({ inheritAttrs: false })
 
 const { icon, badge, suffixIcon, active, onClick } = defineProps<{
   icon: NavItemData['icon']

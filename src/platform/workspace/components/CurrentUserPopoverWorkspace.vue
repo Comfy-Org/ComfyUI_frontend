@@ -38,7 +38,10 @@
         </span>
       </div>
       <template v-else>
-        <Tooltip :disabled="!workspaceName">
+        <Tooltip
+          v-model:open="isWorkspaceNameTooltipOpen"
+          :disabled="!workspaceName"
+        >
           <TooltipTrigger as-child>
             <button
               ref="workspaceSwitcherTrigger"
@@ -49,7 +52,7 @@
               aria-controls="workspace-switcher-panel"
               data-testid="workspace-switcher-trigger"
               @click="toggleWorkspaceSwitcher"
-              @keydown.escape.stop="isWorkspaceSwitcherOpen = false"
+              @keydown.escape.stop="closeWorkspaceSwitcherFromKeyboard"
             >
               <div class="flex w-0 flex-1 items-center gap-2">
                 <WorkspaceProfilePic
@@ -66,7 +69,7 @@
               />
             </button>
           </TooltipTrigger>
-          <TooltipContent side="right">{{ workspaceName }}</TooltipContent>
+          <TooltipContent>{{ workspaceName }}</TooltipContent>
         </Tooltip>
 
         <div
@@ -100,7 +103,6 @@
       }}</span>
       <Button
         :tooltip="$t('credits.unified.tooltip')"
-        tooltip-side="right"
         variant="muted-textonly"
         size="icon-sm"
         class="mr-auto"
@@ -301,6 +303,7 @@ const { permissions, canReactivatePlan, canOpenPricingSurface } =
   useWorkspaceUI()
 const { canTopUp, canSubscribeSelfServe } = useBillingCapabilities()
 const isWorkspaceSwitcherOpen = ref(false)
+const isWorkspaceNameTooltipOpen = ref(false)
 const workspaceSwitcherTrigger = useTemplateRef('workspaceSwitcherTrigger')
 const workspaceSwitcherPanel = useTemplateRef('workspaceSwitcherPanel')
 
@@ -467,6 +470,11 @@ const handleCreateWorkspace = () => {
 
 const toggleWorkspaceSwitcher = () => {
   isWorkspaceSwitcherOpen.value = !isWorkspaceSwitcherOpen.value
+}
+
+const closeWorkspaceSwitcherFromKeyboard = () => {
+  isWorkspaceSwitcherOpen.value = false
+  isWorkspaceNameTooltipOpen.value = false
 }
 
 const refreshBalance = () => {

@@ -1,6 +1,6 @@
 <template>
   <div v-if="renderError" class="node-error p-1 text-xs text-red-500">⚠️</div>
-  <Tooltip v-else :disabled="!tooltipText" :delay-duration="tooltipDelay">
+  <Tooltip v-else :disabled="!tooltipText">
     <TooltipTrigger as-child>
       <div
         :class="slotWrapperClass"
@@ -34,16 +34,13 @@
 </template>
 
 <script setup lang="ts">
+import { computed, onErrorCaptured, ref } from 'vue'
+
 import Tooltip from '@/components/ui/tooltip/Tooltip.vue'
 import TooltipContent from '@/components/ui/tooltip/TooltipContent.vue'
 import TooltipTrigger from '@/components/ui/tooltip/TooltipTrigger.vue'
-
-import { computed, onErrorCaptured, ref } from 'vue'
-import { useI18n } from 'vue-i18n'
-
 import { useErrorHandling } from '@/composables/useErrorHandling'
 import type { INodeSlot } from '@/lib/litegraph/src/litegraph'
-import { RenderShape } from '@/lib/litegraph/src/types/globalEnums'
 import { useSlotLinkDragUIState } from '@/renderer/core/canvas/links/slotLinkDragUIState'
 import { getSlotKey } from '@/renderer/core/layout/slots/slotIdentifier'
 import { useNodeTooltips } from '@/renderer/extensions/vueNodes/composables/useNodeTooltips'
@@ -66,8 +63,6 @@ interface OutputSlotProps {
 
 const props = defineProps<OutputSlotProps>()
 
-const { t } = useI18n()
-
 const hasNoLabel = computed(
   () => !props.slotData.localized_name && props.slotData.name === ''
 )
@@ -77,21 +72,10 @@ const renderError = ref<string | null>(null)
 
 const { toastErrorHandler } = useErrorHandling()
 
-const { getOutputSlotTooltip, tooltipsEnabled, tooltipDelay } = useNodeTooltips(
-  props.nodeType || ''
+const { getOutputSlotTooltip } = useNodeTooltips(props.nodeType || '')
+const tooltipText = computed(() =>
+  getOutputSlotTooltip(props.slotData, props.index)
 )
-
-const tooltipText = computed(() => {
-  if (!tooltipsEnabled.value) return ''
-  const slotName = props.slotData.name || ''
-  const tooltipText = getOutputSlotTooltip(props.index)
-  const fallbackText = tooltipText || `Output: ${slotName}`
-  const iterativeSuffix =
-    props.slotData.shape === RenderShape.GRID
-      ? ` ${t('vueNodesSlot.iterative')}`
-      : ''
-  return fallbackText + iterativeSuffix
-})
 
 const { revealLinks, unrevealLinks } = useSlotLinkReveal({
   nodeId: props.nodeId,

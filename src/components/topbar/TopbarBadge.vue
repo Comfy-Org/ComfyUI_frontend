@@ -81,7 +81,7 @@
         </div>
       </div>
     </TooltipTrigger>
-    <TooltipContent side="right">{{ badge.tooltip }}</TooltipContent>
+    <TooltipContent>{{ badge.tooltip }}</TooltipContent>
   </Tooltip>
 </template>
 <script setup lang="ts">

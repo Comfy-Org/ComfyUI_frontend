@@ -63,7 +63,7 @@
             <TableCell>
               <Button
                 v-if="customerEventService.hasAdditionalInfo(event)"
-                :tooltip="tooltipContentMap.get(event.event_id ?? '')"
+                :tooltip="additionalInfoTooltip(event)"
                 variant="textonly"
                 size="icon-sm"
                 :aria-label="$t('credits.additionalInfo')"
@@ -87,7 +87,7 @@
 </template>
 
 <script setup lang="ts">
-import { computed, ref, watch } from 'vue'
+import { ref, watch } from 'vue'
 import { useI18n } from 'vue-i18n'
 
 import Button from '@/components/ui/button/Button.vue'
@@ -136,15 +136,14 @@ function eventAmount(event: AuditLog) {
   return typeof value === 'number' && Number.isFinite(value) ? value : undefined
 }
 
-const tooltipContentMap = computed(() => {
-  const map = new Map<string, string>()
-  events.value.forEach((event) => {
-    if (customerEventService.hasAdditionalInfo(event) && event.event_id) {
-      map.set(event.event_id, customerEventService.getTooltipContent(event))
-    }
-  })
-  return map
-})
+function additionalInfoTooltip(event: AuditLog) {
+  return Object.entries(event.params ?? {})
+    .map(
+      ([key, value]) =>
+        `${customerEventService.formatJsonKey(key)}: ${customerEventService.formatJsonValue(value)}`
+    )
+    .join('\n')
+}
 
 // A billing-route flip can overlap two loads against different backends; only
 // the latest may mutate state, so a superseded response is discarded.

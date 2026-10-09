@@ -1,6 +1,6 @@
 <template>
   <div v-if="renderError" class="node-error p-1 text-xs text-red-500">⚠️</div>
-  <Tooltip v-else :disabled="!tooltipText" :delay-duration="tooltipDelay">
+  <Tooltip v-else :disabled="!tooltipText">
     <TooltipTrigger as-child>
       <div
         :aria-label="standalone ? accessibleName : undefined"
@@ -65,14 +65,12 @@
 </template>
 
 <script setup lang="ts">
+import { computed, onErrorCaptured, ref } from 'vue'
+
+import EditableText from '@/components/common/EditableText.vue'
 import Tooltip from '@/components/ui/tooltip/Tooltip.vue'
 import TooltipContent from '@/components/ui/tooltip/TooltipContent.vue'
 import TooltipTrigger from '@/components/ui/tooltip/TooltipTrigger.vue'
-
-import { computed, onErrorCaptured, ref } from 'vue'
-import { useI18n } from 'vue-i18n'
-
-import EditableText from '@/components/common/EditableText.vue'
 import { useErrorHandling } from '@/composables/useErrorHandling'
 import type { INodeSlot } from '@/lib/litegraph/src/litegraph'
 import { useCanvasStore } from '@/renderer/core/canvas/canvasStore'
@@ -101,7 +99,6 @@ interface InputSlotProps {
 }
 
 const props = defineProps<InputSlotProps>()
-const { t } = useI18n()
 
 const hasNoLabel = computed(
   () =>
@@ -120,18 +117,8 @@ const accessibleName = computed(
 const renderError = ref<string | null>(null)
 const { toastErrorHandler } = useErrorHandling()
 
-const { getInputSlotTooltip, tooltipsEnabled, tooltipDelay } = useNodeTooltips(
-  props.nodeType || ''
-)
-
-const tooltipText = computed(() => {
-  if (!tooltipsEnabled.value) return ''
-  const inputName = props.slotData.name || ''
-  const displayName = props.slotData.localized_name || inputName
-  const tooltipText = getInputSlotTooltip(inputName)
-  const fallbackText = tooltipText || t('g.inputTooltip', { name: displayName })
-  return fallbackText
-})
+const { getInputSlotTooltip } = useNodeTooltips(props.nodeType || '')
+const tooltipText = computed(() => getInputSlotTooltip(props.slotData))
 
 const { revealLinks, unrevealLinks } = useSlotLinkReveal({
   nodeId: props.nodeId,

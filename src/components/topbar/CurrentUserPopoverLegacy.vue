@@ -29,7 +29,7 @@
     </div>
 
     <div v-if="showWorkspaceSwitcher" class="relative">
-      <Tooltip>
+      <Tooltip v-model:open="isWorkspaceTooltipOpen">
         <TooltipTrigger as-child>
           <Button
             ref="workspaceSwitcherTrigger"
@@ -40,7 +40,7 @@
             aria-controls="workspace-switcher-panel"
             data-testid="workspace-switcher-trigger"
             @click="isWorkspaceSwitcherOpen = !isWorkspaceSwitcherOpen"
-            @keydown.escape.stop="isWorkspaceSwitcherOpen = false"
+            @keydown.escape.stop="closeWorkspaceSwitcherAndTooltip"
           >
             <div class="flex w-0 flex-1 items-center gap-2">
               <WorkspaceProfilePic
@@ -57,7 +57,7 @@
             />
           </Button>
         </TooltipTrigger>
-        <TooltipContent side="right">{{ workspaceName }}</TooltipContent>
+        <TooltipContent>{{ workspaceName }}</TooltipContent>
       </Tooltip>
 
       <div
@@ -84,7 +84,6 @@
       }}</span>
       <Button
         :tooltip="$t('credits.unified.tooltip')"
-        tooltip-side="right"
         variant="muted-textonly"
         size="icon-sm"
         class="mr-auto"
@@ -208,6 +207,13 @@ const { initState, workspaces, workspaceName } = storeToRefs(
   useTeamWorkspaceStore()
 )
 const isWorkspaceSwitcherOpen = ref(false)
+const isWorkspaceTooltipOpen = ref(false)
+
+function closeWorkspaceSwitcherAndTooltip() {
+  isWorkspaceSwitcherOpen.value = false
+  isWorkspaceTooltipOpen.value = false
+}
+
 const workspaceSwitcherTrigger = useTemplateRef('workspaceSwitcherTrigger')
 const workspaceSwitcherPanel = useTemplateRef('workspaceSwitcherPanel')
 

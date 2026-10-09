@@ -19,22 +19,21 @@
             </template>
           </Badge>
         </TooltipTrigger>
-        <TooltipContent side="right">{{ $t('g.experimental') }}</TooltipContent>
+        <TooltipContent>{{ $t('g.experimental') }}</TooltipContent>
       </Tooltip>
     </template>
   </FormItem>
 </template>
 
 <script setup lang="ts">
-import Tooltip from '@/components/ui/tooltip/Tooltip.vue'
-import TooltipContent from '@/components/ui/tooltip/TooltipContent.vue'
-import TooltipTrigger from '@/components/ui/tooltip/TooltipTrigger.vue'
-
 import { computed } from 'vue'
 import { useI18n } from 'vue-i18n'
 
 import FormItem from '@/components/common/FormItem.vue'
 import Badge from '@/components/ui/badge/Badge.vue'
+import Tooltip from '@/components/ui/tooltip/Tooltip.vue'
+import TooltipContent from '@/components/ui/tooltip/TooltipContent.vue'
+import TooltipTrigger from '@/components/ui/tooltip/TooltipTrigger.vue'
 import { st } from '@/i18n'
 import { useSettingStore } from '@/platform/settings/settingStore'
 import type {

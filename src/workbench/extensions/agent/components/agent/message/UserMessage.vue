@@ -6,9 +6,6 @@ import { useI18n } from 'vue-i18n'
 import { cn } from '@comfyorg/tailwind-utils'
 import Button from '@/components/ui/button/Button.vue'
 import Tag from '@/components/chip/Tag.vue'
-import Tooltip from '@/components/ui/tooltip/Tooltip.vue'
-import TooltipContent from '@/components/ui/tooltip/TooltipContent.vue'
-import TooltipTrigger from '@/components/ui/tooltip/TooltipTrigger.vue'
 import { iconForMediaType } from '@/platform/assets/utils/mediaIconUtil'
 import { api } from '@/scripts/api'
 import { getMediaTypeFromFilename } from '@/utils/formatUtil'
@@ -22,6 +19,7 @@ import type { ReplyAsset } from '../../../utils/replyAssets'
 import { isReplyAssetKind } from '../../../utils/replyAssets'
 import { agentMessageText } from '../../../utils/agentMessageText'
 import { workflowReferenceParts } from '../../../utils/workflowReferenceParts'
+import CopyButton from './CopyButton.vue'
 import ReplyAssetGroup from './ReplyAssetGroup.vue'
 import {
   selectedUserMessageClipboard,
@@ -252,30 +250,12 @@ function gridAsset(item: UserAttachment): ReplyAsset | undefined {
       >
         <span class="icon-[lucide--pencil] size-3" />
       </Button>
-      <Tooltip disable-closing-trigger>
-        <TooltipTrigger as-child>
-          <Button
-            type="button"
-            variant="muted-textonly"
-            size="icon-sm"
-            :aria-label="copied ? t('agent.copied') : t('agent.copy')"
-            class="size-6 rounded-lg"
-            @click="copyMessage"
-          >
-            <span
-              :class="
-                cn(
-                  'size-3',
-                  copied ? 'icon-[lucide--check]' : 'icon-[lucide--copy]'
-                )
-              "
-            />
-          </Button>
-        </TooltipTrigger>
-        <TooltipContent>{{
-          copied ? t('agent.copied') : t('agent.copy')
-        }}</TooltipContent>
-      </Tooltip>
+      <CopyButton
+        :copied
+        size="icon-sm"
+        class="size-6 rounded-lg"
+        @click="copyMessage"
+      />
     </div>
   </div>
 </template>

@@ -48,9 +48,7 @@
                   :aria-label="option.conflictMessage"
                 />
               </TooltipTrigger>
-              <TooltipContent side="right">{{
-                option.conflictMessage
-              }}</TooltipContent>
+              <TooltipContent>{{ option.conflictMessage }}</TooltipContent>
             </Tooltip>
             <VerifiedIcon v-else :size="20" class="relative right-0.5" />
             <span>{{ option.label }}</span>

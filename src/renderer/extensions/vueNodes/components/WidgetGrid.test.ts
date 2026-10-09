@@ -1,7 +1,14 @@
 import userEvent from '@testing-library/user-event'
-import { render, screen, within } from '@testing-library/vue'
+import { render, screen, waitFor, within } from '@testing-library/vue'
 import { fromPartial } from '@total-typescript/shoehorn'
-import { computed, defineComponent, h, markRaw, ref } from 'vue'
+import {
+  computed,
+  defineAsyncComponent,
+  defineComponent,
+  h,
+  markRaw,
+  ref
+} from 'vue'
 import { assert, beforeEach, describe, expect, it, vi } from 'vitest'
 import { createI18n } from 'vue-i18n'
 
@@ -64,6 +71,11 @@ const WidgetStub = markRaw(
   })
 )
 
+const AttrsDroppingWidgetStub = defineComponent({
+  inheritAttrs: false,
+  template: '<div><input data-testid="widget-control" /></div>'
+})
+
 const InputSlotStub = defineComponent({
   props: {
     index: { type: Number, required: true },
@@ -115,7 +127,6 @@ function renderGrid(processedWidgets: WidgetGridItem[], syncLayout = true) {
           messages: { en: { g: { inputTooltip: 'Input: {name}' } } }
         })
       ],
-      directives: { tooltip: {} },
       stubs: { AppInput: AppInputStub }
     }
   })
@@ -301,7 +312,6 @@ describe('WidgetGrid', () => {
       render(Host, {
         global: {
           plugins: [testI18n],
-          directives: { tooltip: {} },
           stubs: { AppInput: AppInputStub, InputSlot: InputSlotStub }
         }
       })
@@ -373,7 +383,7 @@ describe('WidgetGrid', () => {
     expect(screen.getAllByTestId('widget-control')).toHaveLength(2)
   })
 
-  it('shows widget tooltips when AppInput has fragment roots', async () => {
+  it('anchors widget tooltips to async widgets that drop attrs inside fragment-root AppInputs', async () => {
     const user = userEvent.setup()
     render(WidgetGrid, {
       props: {
@@ -382,7 +392,10 @@ describe('WidgetGrid', () => {
         processedWidgets: [
           {
             ...widget('seed', 'number', 0),
-            tooltip: 'Widget value'
+            tooltipText: 'Widget value',
+            vueComponent: markRaw(
+              defineAsyncComponent(async () => AttrsDroppingWidgetStub)
+            )
           }
         ]
       },
@@ -394,9 +407,12 @@ describe('WidgetGrid', () => {
       }
     })
 
-    await user.hover(screen.getByTestId('widget-control'))
+    await user.hover(await screen.findByTestId('widget-control'))
 
     expect(await screen.findByRole('tooltip')).toHaveTextContent('Widget value')
+    await waitFor(() =>
+      expect(screen.getByTestId('tooltip-content').style.animation).toBe('')
+    )
   })
 
   it('passes execution errors to the widget control API', () => {

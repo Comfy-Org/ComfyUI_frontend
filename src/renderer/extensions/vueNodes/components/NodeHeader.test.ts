@@ -35,14 +35,11 @@ const setupMockStores = () => {
   const settingStore = useSettingStore()
   const nodeDefStore = useNodeDefStore()
 
-  // Mock tooltip delay setting
   vi.spyOn(settingStore, 'get').mockImplementation(
     <K extends keyof Settings>(key: K): Settings[K] => {
       switch (key) {
         case 'Comfy.EnableTooltips':
           return true as Settings[K]
-        case 'LiteGraph.Node.TooltipDelay':
-          return 0 as Settings[K]
         default:
           return undefined as Settings[K]
       }
@@ -210,6 +207,7 @@ describe('NodeHeader.vue', () => {
       expect(await screen.findByRole('tooltip')).toBeInTheDocument()
 
       await user.dblClick(screen.getByTestId('node-title'))
+      await user.unhover(screen.getByTestId('node-title'))
       await user.hover(screen.getByTestId('node-title'))
 
       expect(screen.getByTestId('node-title-input')).toBeInTheDocument()

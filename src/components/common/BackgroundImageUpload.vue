@@ -7,7 +7,6 @@
     />
     <Button
       :tooltip="$t('g.upload')"
-      tooltip-side="right"
       variant="secondary"
       size="sm"
       :aria-label="$t('g.upload')"
@@ -18,7 +17,6 @@
     </Button>
     <Button
       :tooltip="$t('g.clear')"
-      tooltip-side="right"
       variant="destructive"
       size="sm"
       :aria-label="$t('g.clear')"

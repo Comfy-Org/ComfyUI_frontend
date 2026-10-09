@@ -43,7 +43,7 @@
                 class="icon-[lucide--triangle-alert] shrink-0 text-warning-background"
               />
             </TooltipTrigger>
-            <TooltipContent side="right">{{
+            <TooltipContent>{{
               $t('g.browserReservedKeybindingTooltip')
             }}</TooltipContent>
           </Tooltip>
@@ -70,7 +70,6 @@
           <Button
             v-if="command.keybindings.length === 1"
             :tooltip="$t('g.edit')"
-            tooltip-side="right"
             variant="textonly"
             size="icon"
             :aria-label="$t('g.edit')"
@@ -80,7 +79,6 @@
           </Button>
           <Button
             :tooltip="$t('g.addNewKeybinding')"
-            tooltip-side="right"
             variant="textonly"
             size="icon"
             :aria-label="$t('g.addNewKeybinding')"
@@ -90,7 +88,6 @@
           </Button>
           <Button
             :tooltip="$t('g.reset')"
-            tooltip-side="right"
             variant="textonly"
             size="icon"
             :aria-label="$t('g.reset')"
@@ -101,7 +98,6 @@
           </Button>
           <Button
             :tooltip="$t('g.delete')"
-            tooltip-side="right"
             variant="textonly"
             size="icon"
             :aria-label="$t('g.delete')"
@@ -133,7 +129,6 @@
           <div class="flex flex-row">
             <Button
               :tooltip="$t('g.edit')"
-              tooltip-side="right"
               variant="textonly"
               size="icon"
               :aria-label="$t('g.edit')"
@@ -143,7 +138,6 @@
             </Button>
             <Button
               :tooltip="$t('g.removeKeybinding')"
-              tooltip-side="right"
               variant="textonly"
               size="icon"
               :aria-label="$t('g.removeKeybinding')"

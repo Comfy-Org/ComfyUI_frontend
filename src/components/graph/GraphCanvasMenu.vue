@@ -27,9 +27,9 @@
         <div class="h-[27px] w-px self-center bg-node-divider" />
 
         <Button
-          :tooltip="fitViewTooltip"
+          :tooltip="fitViewLabel"
           variant="secondary"
-          :aria-label="fitViewTooltip"
+          :aria-label="fitViewLabel"
           :style="stringifiedMinimapStyles.buttonStyles"
           class="size-8 bg-transparent p-0 hover:bg-interface-button-hover-surface"
           @click="() => commandStore.execute('Comfy.Canvas.FitView')"
@@ -60,9 +60,9 @@
         <div class="h-[27px] w-px self-center bg-node-divider" />
 
         <Button
-          :tooltip="minimapTooltip"
+          :tooltip="minimapLabel"
           variant="secondary"
-          :aria-label="minimapTooltip"
+          :aria-label="minimapLabel"
           data-testid="toggle-minimap-button"
           :style="stringifiedMinimapStyles.buttonStyles"
           :class="
@@ -165,12 +165,12 @@ const minimapCommandText = computed(() =>
 )
 
 // Computed properties for tooltip and aria-label texts
-const fitViewTooltip = computed(() => {
+const fitViewLabel = computed(() => {
   const label = t('graphCanvasMenu.fitView')
   const shortcut = fitViewCommandText.value
   return shortcut ? `${label} (${shortcut})` : label
 })
-const minimapTooltip = computed(() => {
+const minimapLabel = computed(() => {
   const label = settingStore.get('Comfy.Minimap.Visible')
     ? t('zoomControls.hideMinimap')
     : t('zoomControls.showMinimap')

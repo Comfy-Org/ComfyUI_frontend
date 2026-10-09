@@ -32,7 +32,7 @@ export interface WidgetGridItem {
    * socket-only (no control) instead of disappearing entirely.
    */
   suppressedByConnection?: boolean
-  tooltip?: string
+  tooltipText?: string
   updateHandler?: (value: WidgetValue) => void
   widgetId?: WidgetId
 }

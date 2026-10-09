@@ -1,39 +1,33 @@
 <template>
-  <Tooltip>
-    <TooltipTrigger as-child>
-      <button
-        :class="actionClass(showGrid)"
-        :aria-pressed="showGrid"
-        type="button"
-        :aria-label="compact ? t('load3d.menuBar.showGrid') : undefined"
-        @click="toggleGrid"
-      >
-        <i class="icon-[lucide--grid-3x3] size-4" />
-        <span v-if="!compact">{{ t('load3d.menuBar.showGrid') }}</span>
-      </button>
-    </TooltipTrigger>
-    <TooltipContent side="bottom">{{
-      t('load3d.menuBar.showGrid')
-    }}</TooltipContent>
-  </Tooltip>
+  <Button
+    variant="textonly"
+    size="unset"
+    :tooltip="t('load3d.menuBar.showGrid')"
+    tooltip-side="bottom"
+    :class="actionClass(showGrid)"
+    :aria-pressed="showGrid"
+    type="button"
+    :aria-label="compact ? t('load3d.menuBar.showGrid') : undefined"
+    @click="toggleGrid"
+  >
+    <i class="icon-[lucide--grid-3x3] size-4" />
+    <span v-if="!compact">{{ t('load3d.menuBar.showGrid') }}</span>
+  </Button>
 
   <template v-if="!hasImage && !hdriActive">
-    <Tooltip>
-      <TooltipTrigger as-child>
-        <button
-          :class="actionClass(false)"
-          type="button"
-          :aria-label="compact ? t('load3d.menuBar.bgColor') : undefined"
-          @click="colorRef?.click()"
-        >
-          <i class="icon-[lucide--palette] size-4" />
-          <span v-if="!compact">{{ t('load3d.menuBar.bgColor') }}</span>
-        </button>
-      </TooltipTrigger>
-      <TooltipContent side="bottom">{{
-        t('load3d.menuBar.bgColor')
-      }}</TooltipContent>
-    </Tooltip>
+    <Button
+      variant="textonly"
+      size="unset"
+      :tooltip="t('load3d.menuBar.bgColor')"
+      tooltip-side="bottom"
+      :class="actionClass(false)"
+      type="button"
+      :aria-label="compact ? t('load3d.menuBar.bgColor') : undefined"
+      @click="colorRef?.click()"
+    >
+      <i class="icon-[lucide--palette] size-4" />
+      <span v-if="!compact">{{ t('load3d.menuBar.bgColor') }}</span>
+    </Button>
     <input
       ref="colorRef"
       type="color"
@@ -42,22 +36,19 @@
       @input="setBackgroundColor"
     />
     <template v-if="canUseBackgroundImage">
-      <Tooltip>
-        <TooltipTrigger as-child>
-          <button
-            :class="actionClass(false)"
-            type="button"
-            :aria-label="compact ? t('load3d.menuBar.bgImage') : undefined"
-            @click="bgImageRef?.click()"
-          >
-            <i class="icon-[lucide--image] size-4" />
-            <span v-if="!compact">{{ t('load3d.menuBar.bgImage') }}</span>
-          </button>
-        </TooltipTrigger>
-        <TooltipContent side="bottom">{{
-          t('load3d.menuBar.bgImage')
-        }}</TooltipContent>
-      </Tooltip>
+      <Button
+        variant="textonly"
+        size="unset"
+        :tooltip="t('load3d.menuBar.bgImage')"
+        tooltip-side="bottom"
+        :class="actionClass(false)"
+        type="button"
+        :aria-label="compact ? t('load3d.menuBar.bgImage') : undefined"
+        @click="bgImageRef?.click()"
+      >
+        <i class="icon-[lucide--image] size-4" />
+        <span v-if="!compact">{{ t('load3d.menuBar.bgImage') }}</span>
+      </Button>
       <input
         ref="bgImageRef"
         type="file"
@@ -70,23 +61,20 @@
   </template>
 
   <template v-if="hasImage">
-    <Tooltip>
-      <TooltipTrigger as-child>
-        <button
-          :class="actionClass(isPanorama)"
-          :aria-pressed="isPanorama"
-          type="button"
-          :aria-label="compact ? t('load3d.menuBar.panorama') : undefined"
-          @click="togglePanorama"
-        >
-          <i class="icon-[lucide--globe] size-4" />
-          <span v-if="!compact">{{ t('load3d.menuBar.panorama') }}</span>
-        </button>
-      </TooltipTrigger>
-      <TooltipContent side="bottom">{{
-        t('load3d.menuBar.panorama')
-      }}</TooltipContent>
-    </Tooltip>
+    <Button
+      variant="textonly"
+      size="unset"
+      :tooltip="t('load3d.menuBar.panorama')"
+      tooltip-side="bottom"
+      :class="actionClass(isPanorama)"
+      :aria-pressed="isPanorama"
+      type="button"
+      :aria-label="compact ? t('load3d.menuBar.panorama') : undefined"
+      @click="togglePanorama"
+    >
+      <i class="icon-[lucide--globe] size-4" />
+      <span v-if="!compact">{{ t('load3d.menuBar.panorama') }}</span>
+    </Button>
     <Popover v-if="isPanorama" v-model:open="fovOpen">
       <PopoverTrigger as-child>
         <Button
@@ -123,48 +111,39 @@
         </div>
       </PopoverContent>
     </Popover>
-    <Tooltip>
-      <TooltipTrigger as-child>
-        <button
-          :class="actionClass(false)"
-          type="button"
-          :aria-label="
-            compact ? t('load3d.menuBar.removeBackground') : undefined
-          "
-          @click="removeBackgroundImage"
-        >
-          <i class="icon-[lucide--x] size-4" />
-          <span v-if="!compact">{{
-            t('load3d.menuBar.removeBackground')
-          }}</span>
-        </button>
-      </TooltipTrigger>
-      <TooltipContent side="bottom">{{
-        t('load3d.menuBar.removeBackground')
-      }}</TooltipContent>
-    </Tooltip>
+    <Button
+      variant="textonly"
+      size="unset"
+      :tooltip="t('load3d.menuBar.removeBackground')"
+      tooltip-side="bottom"
+      :class="actionClass(false)"
+      type="button"
+      :aria-label="compact ? t('load3d.menuBar.removeBackground') : undefined"
+      @click="removeBackgroundImage"
+    >
+      <i class="icon-[lucide--x] size-4" />
+      <span v-if="!compact">{{ t('load3d.menuBar.removeBackground') }}</span>
+    </Button>
   </template>
 </template>
 
 <script setup lang="ts">
+import { PopoverTrigger } from 'reka-ui'
 import { computed, ref } from 'vue'
 import { useI18n } from 'vue-i18n'
+
+import { cn } from '@comfyorg/tailwind-utils'
 
 import {
   actionClass,
   formPanelClass
 } from '@/components/load3d/menubar/menuBarStyles'
 import { usePopoverExclusivity } from '@/components/load3d/menubar/usePopoverExclusivity'
+import Button from '@/components/ui/button/Button.vue'
 import Popover from '@/components/ui/popover/Popover.vue'
 import PopoverContent from '@/components/ui/popover/PopoverContent.vue'
 import Slider from '@/components/ui/slider/Slider.vue'
-import Button from '@/components/ui/button/Button.vue'
-import Tooltip from '@/components/ui/tooltip/Tooltip.vue'
-import TooltipContent from '@/components/ui/tooltip/TooltipContent.vue'
-import TooltipTrigger from '@/components/ui/tooltip/TooltipTrigger.vue'
 import type { SceneConfig } from '@/extensions/core/load3d/interfaces'
-import { cn } from '@comfyorg/tailwind-utils'
-import { PopoverTrigger } from 'reka-ui'
 
 const {
   compact = false,

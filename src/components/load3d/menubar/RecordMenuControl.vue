@@ -1,18 +1,17 @@
 <template>
-  <Tooltip v-if="isRecording">
-    <TooltipTrigger as-child>
-      <button
-        :class="chipClass"
-        type="button"
-        :aria-label="t('load3d.menuBar.stopRecording')"
-        @click="emit('stopRecording')"
-      >
-        <span class="size-2 animate-pulse rounded-full bg-red-500" />
-        <span v-if="!compact">{{ t('load3d.menuBar.recording') }}</span>
-      </button>
-    </TooltipTrigger>
-    <TooltipContent>{{ t('load3d.menuBar.stopRecording') }}</TooltipContent>
-  </Tooltip>
+  <Button
+    v-if="isRecording"
+    variant="textonly"
+    size="unset"
+    :tooltip="t('load3d.menuBar.stopRecording')"
+    :class="chipClass"
+    type="button"
+    :aria-label="t('load3d.menuBar.stopRecording')"
+    @click="emit('stopRecording')"
+  >
+    <span class="size-2 animate-pulse rounded-full bg-red-500" />
+    <span v-if="!compact">{{ t('load3d.menuBar.recording') }}</span>
+  </Button>
 
   <div
     v-else-if="hasRecording"
@@ -24,7 +23,7 @@
           variant="textonly"
           size="unset"
           :tooltip="t('load3d.menuBar.videoRecordingTooltip')"
-          class="flex items-center gap-1.5 rounded-md border-0 bg-transparent px-1 py-0.5 text-sm text-base-foreground transition-colors outline-none hover:bg-button-hover-surface focus-visible:ring-1 focus-visible:ring-border-default"
+          class="gap-1.5 px-1 py-0.5"
           type="button"
           :aria-label="t('load3d.menuBar.videoRecordingTooltip')"
           data-testid="load3d-recording-duration"
@@ -61,43 +60,35 @@
         </button>
       </PopoverContent>
     </Popover>
-    <Tooltip>
-      <TooltipTrigger as-child>
-        <button
-          class="flex size-6 items-center justify-center rounded-md border-0 bg-transparent text-base-foreground transition-colors outline-none hover:bg-button-hover-surface focus-visible:ring-1 focus-visible:ring-border-default"
-          type="button"
-          :aria-label="t('load3d.menuBar.deleteRecording')"
-          @click="emit('clearRecording')"
-        >
-          <i class="icon-[lucide--x] size-3.5" />
-        </button>
-      </TooltipTrigger>
-      <TooltipContent>{{ t('load3d.menuBar.deleteRecording') }}</TooltipContent>
-    </Tooltip>
+    <Button
+      variant="textonly"
+      size="unset"
+      :tooltip="t('load3d.menuBar.deleteRecording')"
+      class="size-6"
+      type="button"
+      :aria-label="t('load3d.menuBar.deleteRecording')"
+      @click="emit('clearRecording')"
+    >
+      <i class="icon-[lucide--x] size-3.5" />
+    </Button>
   </div>
 
-  <Tooltip v-else>
-    <TooltipTrigger as-child>
-      <button
-        :class="chipClass"
-        type="button"
-        :aria-label="compact ? t('load3d.menuBar.record') : undefined"
-        @click="emit('startRecording')"
-      >
-        <i class="icon-[lucide--video] size-4" />
-        <span v-if="!compact">{{ t('load3d.menuBar.record') }}</span>
-      </button>
-    </TooltipTrigger>
-    <TooltipContent>{{ t('load3d.menuBar.record') }}</TooltipContent>
-  </Tooltip>
+  <Button
+    v-else
+    variant="textonly"
+    size="unset"
+    :tooltip="t('load3d.menuBar.record')"
+    :class="chipClass"
+    type="button"
+    :aria-label="compact ? t('load3d.menuBar.record') : undefined"
+    @click="emit('startRecording')"
+  >
+    <i class="icon-[lucide--video] size-4" />
+    <span v-if="!compact">{{ t('load3d.menuBar.record') }}</span>
+  </Button>
 </template>
 
 <script setup lang="ts">
-import Button from '@/components/ui/button/Button.vue'
-import Tooltip from '@/components/ui/tooltip/Tooltip.vue'
-import TooltipContent from '@/components/ui/tooltip/TooltipContent.vue'
-import TooltipTrigger from '@/components/ui/tooltip/TooltipTrigger.vue'
-
 import { PopoverTrigger } from 'reka-ui'
 import { useI18n } from 'vue-i18n'
 
@@ -106,6 +97,7 @@ import {
   menuPanelClass
 } from '@/components/load3d/menubar/menuBarStyles'
 import { usePopoverExclusivity } from '@/components/load3d/menubar/usePopoverExclusivity'
+import Button from '@/components/ui/button/Button.vue'
 import Popover from '@/components/ui/popover/Popover.vue'
 import PopoverContent from '@/components/ui/popover/PopoverContent.vue'
 import { menuButtonClass } from '@/components/ui/menu/menuStyles'

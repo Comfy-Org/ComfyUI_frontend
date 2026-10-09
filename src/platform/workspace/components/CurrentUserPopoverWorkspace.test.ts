@@ -240,6 +240,21 @@ describe('CurrentUserPopoverWorkspace', () => {
     ).not.toBeInTheDocument()
   })
 
+  it('dismisses the keyboard-opened workspace name tooltip on Escape', async () => {
+    const user = userEvent.setup()
+    renderComponent('team')
+
+    await user.tab()
+    expect(screen.getByTestId('workspace-switcher-trigger')).toHaveFocus()
+    expect(await screen.findByRole('tooltip')).toHaveTextContent(
+      'Team Workspace'
+    )
+
+    await user.keyboard('{Escape}')
+
+    expect(screen.queryByRole('tooltip')).not.toBeInTheDocument()
+  })
+
   it('keeps account actions available without workspace context', () => {
     renderComponent('personal', true)
 

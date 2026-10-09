@@ -71,39 +71,36 @@
     </PopoverContent>
   </Popover>
 
-  <Tooltip v-if="hasSkeleton">
-    <TooltipTrigger as-child>
-      <button
-        :class="actionClass(showSkeleton)"
-        :aria-pressed="showSkeleton"
-        type="button"
-        :aria-label="compact ? t('load3d.menuBar.skeleton') : undefined"
-        @click="toggleSkeleton"
-      >
-        <i class="icon-[lucide--bone] size-4" />
-        <span v-if="!compact">{{ t('load3d.menuBar.skeleton') }}</span>
-      </button>
-    </TooltipTrigger>
-    <TooltipContent side="bottom">{{
-      t('load3d.menuBar.skeleton')
-    }}</TooltipContent>
-  </Tooltip>
+  <Button
+    v-if="hasSkeleton"
+    variant="textonly"
+    size="unset"
+    :tooltip="t('load3d.menuBar.skeleton')"
+    tooltip-side="bottom"
+    :class="actionClass(showSkeleton)"
+    :aria-pressed="showSkeleton"
+    type="button"
+    :aria-label="compact ? t('load3d.menuBar.skeleton') : undefined"
+    @click="toggleSkeleton"
+  >
+    <i class="icon-[lucide--bone] size-4" />
+    <span v-if="!compact">{{ t('load3d.menuBar.skeleton') }}</span>
+  </Button>
 </template>
 
 <script setup lang="ts">
-import Button from '@/components/ui/button/Button.vue'
-import Tooltip from '@/components/ui/tooltip/Tooltip.vue'
-import TooltipContent from '@/components/ui/tooltip/TooltipContent.vue'
-import TooltipTrigger from '@/components/ui/tooltip/TooltipTrigger.vue'
-
+import { PopoverTrigger } from 'reka-ui'
 import { computed } from 'vue'
 import { useI18n } from 'vue-i18n'
+
+import { cn } from '@comfyorg/tailwind-utils'
 
 import {
   actionClass,
   menuPanelClass
 } from '@/components/load3d/menubar/menuBarStyles'
 import { usePopoverExclusivity } from '@/components/load3d/menubar/usePopoverExclusivity'
+import Button from '@/components/ui/button/Button.vue'
 import Popover from '@/components/ui/popover/Popover.vue'
 import PopoverContent from '@/components/ui/popover/PopoverContent.vue'
 import {
@@ -115,8 +112,6 @@ import type {
   ModelConfig,
   UpDirection
 } from '@/extensions/core/load3d/interfaces'
-import { cn } from '@comfyorg/tailwind-utils'
-import { PopoverTrigger } from 'reka-ui'
 
 const {
   compact = false,

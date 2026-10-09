@@ -8,11 +8,6 @@ import { useSidebarTabStore } from '@/stores/workspace/sidebarTabStore'
 
 import QueueOverlayHeader from './QueueOverlayHeader.vue'
 
-const tooltipDirectiveStub = {
-  mounted: vi.fn(),
-  updated: vi.fn()
-}
-
 const renderHeader = (props = {}) =>
   render(QueueOverlayHeader, {
     props: {
@@ -21,8 +16,7 @@ const renderHeader = (props = {}) =>
       ...props
     },
     global: {
-      plugins: [i18n],
-      directives: { tooltip: tooltipDirectiveStub }
+      plugins: [i18n]
     }
   })
 

@@ -18,7 +18,6 @@
       <Button
         v-if="row.url"
         :tooltip="copyLabel(row.id)"
-        tooltip-side="right"
         variant="muted-textonly"
         size="icon-lg"
         class="shrink-0"

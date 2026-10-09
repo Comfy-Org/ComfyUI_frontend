@@ -1,6 +1,5 @@
 <template>
   <Button
-    v-if="isVisible"
     :tooltip="$t('commands.Comfy_PublishSubgraph.label')"
     variant="muted-textonly"
     :aria-label="$t('commands.Comfy_PublishSubgraph.label')"
@@ -11,20 +10,8 @@
 </template>
 
 <script setup lang="ts">
-import { computed } from 'vue'
-
 import Button from '@/components/ui/button/Button.vue'
-import { SubgraphNode } from '@/lib/litegraph/src/litegraph'
-import { useCanvasStore } from '@/renderer/core/canvas/canvasStore'
 import { useCommandStore } from '@/stores/commandStore'
 
 const commandStore = useCommandStore()
-const canvasStore = useCanvasStore()
-
-const isVisible = computed(() => {
-  return (
-    canvasStore.selectedItems?.length === 1 &&
-    canvasStore.selectedItems[0] instanceof SubgraphNode
-  )
-})
 </script>

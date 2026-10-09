@@ -5,7 +5,6 @@
   >
     <Button
       :tooltip="$t('menu.showMenu')"
-      tooltip-side="right"
       variant="muted-textonly"
       size="lg"
       :aria-label="$t('menu.showMenu')"

@@ -1,12 +1,11 @@
 <script setup lang="ts">
-import Tooltip from '@/components/ui/tooltip/Tooltip.vue'
-import TooltipContent from '@/components/ui/tooltip/TooltipContent.vue'
-import TooltipTrigger from '@/components/ui/tooltip/TooltipTrigger.vue'
-
 import { computed } from 'vue'
 import { useI18n } from 'vue-i18n'
 
 import ScrubableNumberInput from '@/components/common/ScrubableNumberInput.vue'
+import Tooltip from '@/components/ui/tooltip/Tooltip.vue'
+import TooltipContent from '@/components/ui/tooltip/TooltipContent.vue'
+import TooltipTrigger from '@/components/ui/tooltip/TooltipTrigger.vue'
 import { evaluateInput } from '@/lib/litegraph/src/utils/widget'
 import type { SimplifiedWidget } from '@/types/simplifiedWidget'
 import { useWidgetHeight } from '@/types/widgetTypes'
@@ -191,7 +190,7 @@ const inputAriaAttrs = computed(() => ({
           <slot />
         </ScrubableNumberInput>
       </TooltipTrigger>
-      <TooltipContent side="right">{{ buttonTooltip }}</TooltipContent>
+      <TooltipContent>{{ buttonTooltip }}</TooltipContent>
     </Tooltip>
   </WidgetLayoutField>
 </template>

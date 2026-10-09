@@ -30,7 +30,6 @@
       <template v-else>
         <Button
           :tooltip="editLabel"
-          tooltip-side="right"
           variant="muted-textonly"
           size="icon-sm"
           :aria-label="editLabel"
@@ -41,7 +40,6 @@
         </Button>
         <Button
           :tooltip="deleteLabel"
-          tooltip-side="right"
           variant="muted-textonly"
           size="icon-sm"
           :aria-label="deleteLabel"

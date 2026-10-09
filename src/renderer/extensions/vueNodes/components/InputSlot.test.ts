@@ -1,11 +1,11 @@
 import { getActivePinia } from 'pinia'
 import { describe, expect, it, vi } from 'vitest'
 import { defineComponent } from 'vue'
-import { createI18n } from 'vue-i18n'
 
 import { render, screen } from '@testing-library/vue'
 import userEvent from '@testing-library/user-event'
 
+import { i18n } from '@/i18n'
 import type { INodeSlot } from '@/lib/litegraph/src/litegraph'
 import { useSettingStore } from '@/platform/settings/settingStore'
 import type { Settings } from '@/platform/settings/types'
@@ -51,11 +51,6 @@ const SlotConnectionDotStub = defineComponent({
   name: 'SlotConnectionDot',
   template: '<div />'
 })
-const i18n = createI18n({
-  legacy: false,
-  locale: 'en',
-  messages: { en: { g: { inputTooltip: 'Translated input: {name}' } } }
-})
 
 const nodeDef: ComfyNodeDef = {
   name: 'TestInputSlot',
@@ -81,11 +76,8 @@ function renderInputSlot(
   const pinia = getActivePinia()!
   const settingStore = useSettingStore(pinia)
   vi.spyOn(settingStore, 'get').mockImplementation(
-    <K extends keyof Settings>(key: K): Settings[K] => {
-      if (key === 'Comfy.EnableTooltips') return true as Settings[K]
-      if (key === 'LiteGraph.Node.TooltipDelay') return 0 as Settings[K]
-      return undefined as Settings[K]
-    }
+    <K extends keyof Settings>(key: K): Settings[K] =>
+      (key === 'Comfy.EnableTooltips' ? true : undefined) as Settings[K]
   )
   useNodeDefStore(pinia).addNodeDef(nodeDef)
   render(InputSlot, {
@@ -154,7 +146,7 @@ describe('InputSlot', () => {
 
     await user.hover(screen.getByText('Localized Count'))
     expect(await screen.findByRole('tooltip')).toHaveTextContent(
-      'Translated input: Localized Count'
+      'Input: Localized Count'
     )
   })
 })

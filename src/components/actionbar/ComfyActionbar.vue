@@ -37,11 +37,7 @@
           <i class="icon-[lucide--x] size-4" />
         </Button>
         <Button
-          :tooltip="
-            isQueuePanelV2Enabled
-              ? t('sideToolbar.queueProgressOverlay.viewJobHistory')
-              : t('sideToolbar.queueProgressOverlay.expandCollapsedQueue')
-          "
+          :tooltip="queueToggleLabel"
           tooltip-side="bottom"
           variant="secondary"
           size="md"
@@ -64,13 +60,7 @@
             variant="dot"
             class="pointer-events-none absolute -top-0.5 -right-0.5 animate-pulse"
           />
-          <span class="sr-only">
-            {{
-              isQueuePanelV2Enabled
-                ? t('sideToolbar.queueProgressOverlay.viewJobHistory')
-                : t('sideToolbar.queueProgressOverlay.expandCollapsedQueue')
-            }}
-          </span>
+          <span class="sr-only">{{ queueToggleLabel }}</span>
         </Button>
         <ContextMenu ref="queueContextMenu" :model="queueContextMenuItems" />
       </div>
@@ -366,6 +356,13 @@ watch(isDragging, (dragging) => {
   }
 })
 
+const queueToggleLabel = computed(() =>
+  t(
+    isQueuePanelV2Enabled.value
+      ? 'sideToolbar.queueProgressOverlay.viewJobHistory'
+      : 'sideToolbar.queueProgressOverlay.expandCollapsedQueue'
+  )
+)
 const activeJobsLabel = computed(() => {
   const count = activeJobsCount.value
   return t(

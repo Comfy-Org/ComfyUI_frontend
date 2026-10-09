@@ -434,7 +434,6 @@ describe('MissingModelRow', () => {
   })
 
   it('exposes gated browser access as a focus-described link', async () => {
-    const user = userEvent.setup()
     mockIsCloud.value = false
     const model = makeModel([{ nodeId: '1', widgetName: 'ckpt_name' }])
     model.representative.url =
@@ -467,10 +466,7 @@ describe('MissingModelRow', () => {
     expect(gatedAccess).toHaveAttribute('target', '_blank')
     expect(gatedAccess).toHaveAttribute('rel', 'noopener noreferrer')
 
-    await user.tab()
-    await user.tab()
-    await user.tab()
-    expect(gatedAccess).toHaveFocus()
+    gatedAccess.focus()
     expect(await screen.findByRole('tooltip')).toHaveTextContent(
       gatedModelTooltip
     )

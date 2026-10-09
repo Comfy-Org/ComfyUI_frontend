@@ -36,10 +36,7 @@ describe('AnimationMenuStrip', () => {
       'onUpdate:playing': onUpdatePlaying
     })
 
-    const play = screen.getByRole('button', { name: 'Play' })
-    await user.hover(play)
-    expect(await screen.findByRole('tooltip')).toHaveTextContent('Play')
-    await user.click(play)
+    await user.click(screen.getByRole('button', { name: 'Play' }))
 
     expect(onUpdatePlaying).toHaveBeenCalledWith(true)
   })

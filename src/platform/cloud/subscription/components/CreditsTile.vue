@@ -122,7 +122,6 @@
             {{ $t('subscription.additionalCredits') }}
             <Button
               :tooltip="$t('subscription.additionalCreditsTooltip')"
-              tooltip-side="right"
               variant="muted-textonly"
               size="icon-sm"
               :aria-label="$t('subscription.additionalCreditsInfo')"
@@ -163,7 +162,6 @@
             {{ $t('subscription.additionalCredits') }}
             <Button
               :tooltip="$t('subscription.additionalCreditsTooltip')"
-              tooltip-side="right"
               variant="muted-textonly"
               size="icon-sm"
               :aria-label="$t('subscription.additionalCreditsInfo')"

@@ -81,22 +81,14 @@
 </template>
 
 <script setup lang="ts">
-import {
-  computed,
-  getCurrentInstance,
-  h,
-  nextTick,
-  ref,
-  render,
-  watch
-} from 'vue'
+import { computed, getCurrentInstance, nextTick, ref, watch } from 'vue'
 import { useI18n } from 'vue-i18n'
 
 import FolderCustomizationDialog from '@/components/common/CustomizationDialog.vue'
 import TreeExplorer from '@/components/common/TreeExplorer.vue'
 import TreeExplorerTreeNode from '@/components/common/TreeExplorerTreeNode.vue'
 import NodePreview from '@/components/node/NodePreview.vue'
-import TooltipProvider from '@/components/ui/tooltip/TooltipProvider.vue'
+import { renderNodePreview } from '@/components/node/renderNodePreview'
 import Badge from '@/components/ui/badge/Badge.vue'
 import Button from '@/components/ui/button/Button.vue'
 import { useTreeExpansion } from '@/composables/useTreeExpansion'
@@ -240,18 +232,8 @@ const renderedBookmarkedRoot = computed<TreeExplorerNode<ComfyNodeDefImpl>>(
           }
         },
         renderDragPreview(container) {
-          const nodeDef = node.data
-          if (!nodeDef) return
-          const vnode = h(
-            TooltipProvider,
-            { disabled: true },
-            { default: () => h(NodePreview, { nodeDef }) }
-          )
-          vnode.appContext = appContext
-          render(vnode, container)
-          return () => {
-            render(null, container)
-          }
+          if (!node.data) return
+          return renderNodePreview(container, node.data, appContext)
         },
         droppable: !node.leaf,
         async handleDrop(data: TreeExplorerDragAndDropData<ComfyNodeDefImpl>) {

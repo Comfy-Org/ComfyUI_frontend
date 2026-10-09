@@ -29,26 +29,50 @@
               :label="t('partnerNodesEducation.sliderLabel')"
               class="relative z-2 -mb-5 flex-1 rounded-t-xl"
             >
-              <PartnerNodesAudioButton
+              <Button
+                variant="textonly"
+                size="icon"
                 class="absolute bottom-2 left-2 size-7 rounded-full bg-black/40 text-white backdrop-blur-sm hover:bg-black/60 hover:text-white"
-                :label="
+                :aria-label="
                   audibleSide === 'open'
                     ? t('partnerNodesEducation.muteOpen')
                     : t('partnerNodesEducation.unmuteOpen')
                 "
-                :active="audibleSide === 'open'"
                 @click="toggleAudio('open')"
-              />
-              <PartnerNodesAudioButton
+              >
+                <i
+                  :class="
+                    cn(
+                      'size-4',
+                      audibleSide === 'open'
+                        ? 'icon-[lucide--volume-2]'
+                        : 'icon-[lucide--volume-x]'
+                    )
+                  "
+                />
+              </Button>
+              <Button
+                variant="textonly"
+                size="icon"
                 class="absolute right-2 bottom-2 size-7 rounded-full bg-black/40 text-white backdrop-blur-sm hover:bg-black/60 hover:text-white"
-                :label="
+                :aria-label="
                   audibleSide === 'partner'
                     ? t('partnerNodesEducation.mutePartner')
                     : t('partnerNodesEducation.unmutePartner')
                 "
-                :active="audibleSide === 'partner'"
                 @click="toggleAudio('partner')"
-              />
+              >
+                <i
+                  :class="
+                    cn(
+                      'size-4',
+                      audibleSide === 'partner'
+                        ? 'icon-[lucide--volume-2]'
+                        : 'icon-[lucide--volume-x]'
+                    )
+                  "
+                />
+              </Button>
 
               <Button
                 variant="textonly"
@@ -80,13 +104,12 @@
                 <span class="text-xs font-semibold text-white">
                   {{ t('partnerNodesEducation.partnerTab') }}
                 </span>
-                <Tooltip v-model:open="infoTooltipOpen" disable-closing-trigger>
+                <Tooltip open-on-click>
                   <TooltipTrigger as-child>
                     <button
                       type="button"
                       :aria-label="t('partnerNodesEducation.tooltip')"
                       class="flex items-center text-white/60 hover:text-white"
-                      @click.stop="infoTooltipOpen = true"
                     >
                       <i class="icon-[lucide--info] size-3" />
                     </button>
@@ -120,13 +143,49 @@
             </div>
 
             <div class="flex flex-col gap-2">
-              <PartnerNodesComparisonRow
+              <div
                 v-for="row in comparisonRows"
                 :key="row.key"
-                :label="t(`partnerNodesEducation.benefits.${row.key}`)"
-                :open="row.open"
-                :partner="row.partner"
-              />
+                class="flex items-center pr-4.5"
+              >
+                <span class="flex-1 text-sm/snug text-text-secondary">
+                  {{ t(`partnerNodesEducation.benefits.${row.key}`) }}
+                </span>
+                <span
+                  v-for="column in [
+                    {
+                      label: t('partnerNodesEducation.openHeader'),
+                      included: row.open
+                    },
+                    {
+                      label: t('partnerNodesEducation.partnerHeader'),
+                      included: row.partner
+                    }
+                  ]"
+                  :key="column.label"
+                  class="flex w-15 justify-center"
+                >
+                  <i
+                    :class="
+                      cn(
+                        'size-4',
+                        column.included
+                          ? 'icon-[lucide--check] text-brand-yellow'
+                          : 'icon-[lucide--minus] text-muted-foreground'
+                      )
+                    "
+                    aria-hidden="true"
+                  />
+                  <span class="sr-only">
+                    {{ column.label }}:
+                    {{
+                      column.included
+                        ? t('partnerNodesEducation.included')
+                        : t('partnerNodesEducation.notIncluded')
+                    }}
+                  </span>
+                </span>
+              </div>
             </div>
 
             <Button
@@ -151,8 +210,6 @@ import { storeToRefs } from 'pinia'
 import { computed, ref, useId, useTemplateRef, watch } from 'vue'
 import { useI18n } from 'vue-i18n'
 
-import PartnerNodesAudioButton from '@/components/actionbar/PartnerNodesAudioButton.vue'
-import PartnerNodesComparisonRow from '@/components/actionbar/PartnerNodesComparisonRow.vue'
 import VideoCompareSlider from '@/components/common/VideoCompareSlider.vue'
 import Button from '@/components/ui/button/Button.vue'
 import Tooltip from '@/components/ui/tooltip/Tooltip.vue'
@@ -163,6 +220,7 @@ import { usePartnerNodesInGraph } from '@/composables/node/usePartnerNodesInGrap
 import { useDialogService } from '@/services/dialogService'
 import { usePartnerNodesEducationStore } from '@/platform/workflow/templates/stores/partnerNodesEducationStore'
 import { useWorkflowStore } from '@/platform/workflow/management/stores/workflowStore'
+import { cn } from '@comfyorg/tailwind-utils'
 
 interface ComparisonRow {
   key: string
@@ -186,7 +244,6 @@ const { t } = useI18n()
 const pitchId = useId()
 
 const slider = useTemplateRef<InstanceType<typeof VideoCompareSlider>>('slider')
-const infoTooltipOpen = ref(false)
 const audibleSide = ref<'open' | 'partner' | null>(null)
 
 function toggleAudio(side: 'open' | 'partner') {
