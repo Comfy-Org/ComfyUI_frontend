@@ -212,29 +212,29 @@ const columnGroups: FooterColumn[][] = [
     class="bg-primary-comfy-ink px-6 py-8 text-primary-comfy-canvas lg:px-20"
   >
     <div class="flex flex-col gap-16 border-t border-primary-warm-gray pt-16">
-      <div class="flex flex-col gap-10">
-        <FooterSocialLinks :locale />
-        <div class="grid grid-cols-1 gap-12 lg:grid-cols-4 lg:gap-x-6">
-          <div
-            v-for="group in columnGroups"
-            :key="group[0].title"
-            class="flex flex-col gap-12"
-          >
-            <FooterLinkColumn
-              v-for="column in group"
-              :key="column.title"
-              :title="column.title"
-              :links="column.links"
-            />
-          </div>
+      <div class="grid grid-cols-1 gap-12 lg:grid-cols-4 lg:gap-x-6">
+        <div
+          v-for="group in columnGroups"
+          :key="group[0].title"
+          class="flex flex-col gap-12"
+        >
+          <FooterLinkColumn
+            v-for="column in group"
+            :key="column.title"
+            :title="column.title"
+            :links="column.links"
+          />
         </div>
       </div>
       <div
         class="flex flex-col gap-12 lg:flex-row lg:items-end lg:justify-between"
       >
-        <p class="text-2xl font-medium tracking-wide uppercase lg:text-3xl">
-          {{ t('footer.tagline') }}
-        </p>
+        <div class="flex flex-col gap-6">
+          <FooterSocialLinks :locale />
+          <p class="text-2xl font-medium tracking-wide uppercase lg:text-3xl">
+            {{ t('footer.tagline') }}
+          </p>
+        </div>
 
         <div
           class="flex flex-col items-center gap-4 text-primary-warm-gray lg:shrink-0 lg:items-end"
