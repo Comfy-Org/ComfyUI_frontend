@@ -99,9 +99,13 @@ for (const file of builtFiles) {
   if (canonical !== undefined) canonicals.set(route, canonical)
 }
 const sitemap = sitemapAlternates()
+const renderedLinks = [...pageLanguageLinks.values()].flat()
 const errors = [
   ...auditBuiltSite({ pages, canonicals, sitemap, origin: ORIGIN }),
-  ...auditLanguageLinks(pageLanguageLinks, ORIGIN)
+  ...auditLanguageLinks(pageLanguageLinks, ORIGIN),
+  ...(renderedLinks.length === 0
+    ? ['no page rendered a language link, so none of them were checked']
+    : [])
 ]
 
 const withCluster = [...pages.values()].filter((list) => list.length > 0).length
@@ -110,6 +114,7 @@ const withCluster = [...pages.values()].filter((list) => list.length > 0).length
 console.warn(
   `[hreflang] ${files.length} pages built, ${withCluster} in a language cluster, ` +
     `${files.length - withCluster} standalone, ` +
+    `${renderedLinks.length} rendered language links checked, ` +
     `${[...(sitemap?.values() ?? [])].filter((list) => list.length > 0).length} sitemap entries with alternates.`
 )
 
