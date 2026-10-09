@@ -406,6 +406,38 @@ test.describe('Footer @smoke', () => {
     }
   })
 
+  test('social channels are icon links that open in a new tab', async ({
+    page
+  }) => {
+    const social = page
+      .locator('footer')
+      .getByRole('navigation', { name: 'Follow Comfy' })
+    await social.scrollIntoViewIfNeeded()
+    await expect(social).toBeVisible()
+
+    const links = social.getByRole('link')
+    await expect(links).toHaveText([
+      'GitHub (opens in new tab)',
+      'Discord (opens in new tab)',
+      'X (opens in new tab)',
+      'YouTube (opens in new tab)',
+      'LinkedIn (opens in new tab)',
+      'Instagram (opens in new tab)'
+    ])
+    for (const link of await links.all()) {
+      await expect(link).toHaveAttribute('href', /^https:\/\//)
+      await expect(link).toHaveAttribute('target', '_blank')
+    }
+    await expect(
+      page
+        .locator('footer')
+        .getByRole('navigation', { name: 'Resources' })
+        .getByRole('link', {
+          name: /Discord|GitHub|YouTube|Instagram|LinkedIn/
+        })
+    ).toHaveCount(0)
+  })
+
   test('copyright text is visible', async ({ page }) => {
     await expect(
       page.locator('footer').getByText(/© \d{4} Comfy Org/)
