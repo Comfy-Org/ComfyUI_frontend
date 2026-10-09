@@ -260,7 +260,7 @@ describe('useNodeDragToCanvas', () => {
 
       const { startDrag } = useNodeDragToCanvas()
       startDrag(mockNodeDef, {
-        widgetValues: { ckpt_name: 'model.safetensors' }
+        widgetValues: [{ selector: 'ckpt_name', value: 'model.safetensors' }]
       })
 
       document.dispatchEvent(
@@ -272,6 +272,47 @@ describe('useNodeDragToCanvas', () => {
       )
 
       expect(widget.value).toBe('model.safetensors')
+    })
+
+    it('should apply a pattern selection to the first matching widget', () => {
+      mockCanvas.canvas.getBoundingClientRect.mockReturnValue({
+        left: 0,
+        right: 500,
+        top: 0,
+        bottom: 500
+      })
+      mockConvertEventToCanvasOffset.mockReturnValue([150, 150])
+      const strength = { name: 'loras.0.strength', value: 0.5 }
+      const first = { name: 'loras.0.lora_name', value: 'A.safetensors' }
+      const second = { name: 'loras.1.lora_name', value: 'B.safetensors' }
+      mockAddNodeOnGraph.mockReturnValue({
+        id: 1,
+        widgets: [strength, first, second]
+      })
+
+      const { startDrag } = useNodeDragToCanvas()
+      startDrag(mockNodeDef, {
+        widgetValues: [
+          {
+            selector: /^loras\.(?:0|[1-9]\d*)\.lora_name$/,
+            value: 'C.safetensors'
+          }
+        ]
+      })
+
+      document.dispatchEvent(
+        new PointerEvent('pointerup', {
+          clientX: 250,
+          clientY: 250,
+          bubbles: true
+        })
+      )
+
+      expect([strength.value, first.value, second.value]).toEqual([
+        0.5,
+        'C.safetensors',
+        'B.safetensors'
+      ])
     })
 
     it('should warn but still place the node when a requested widget is missing', () => {
@@ -290,7 +331,7 @@ describe('useNodeDragToCanvas', () => {
 
       const { startDrag } = useNodeDragToCanvas()
       startDrag(mockNodeDef, {
-        widgetValues: { ckpt_name: 'model.safetensors' }
+        widgetValues: [{ selector: 'ckpt_name', value: 'model.safetensors' }]
       })
 
       document.dispatchEvent(

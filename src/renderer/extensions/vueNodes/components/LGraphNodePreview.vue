@@ -51,6 +51,8 @@ import { toNodeId } from '@/types/nodeId'
 import type { NodeState } from '@/types/nodeState'
 import type { WidgetValue } from '@/types/simplifiedWidget'
 import { zeroUuid } from '@/utils/uuid'
+import { matchesWidgetName } from '@/utils/widgetBinding'
+import type { WidgetValueBinding } from '@/utils/widgetBinding'
 import { cn } from '@comfyorg/tailwind-utils'
 
 const {
@@ -60,7 +62,7 @@ const {
 } = defineProps<{
   nodeDef: ComfyNodeDefV2
   position?: 'absolute' | 'relative'
-  widgetValues?: Record<string, string>
+  widgetValues?: readonly WidgetValueBinding[]
 }>()
 
 const widgetStore = useWidgetStore()
@@ -109,18 +111,32 @@ const nodeData = computed<NodeState>(() => ({
   properties: {}
 }))
 
+const widgetInputs = computed(() =>
+  Object.entries(nodeDef.inputs || {}).filter(([, input]) =>
+    widgetStore.inputIsWidget(input)
+  )
+)
+
+const resolvedWidgetValues = computed(() =>
+  Object.fromEntries(
+    (widgetValues ?? []).flatMap(({ selector, value }) => {
+      const input = widgetInputs.value.find(([name]) =>
+        matchesWidgetName(name, selector)
+      )
+      return input ? [[input[0], value]] : []
+    })
+  )
+)
+
 const previewWidgets = computed<WidgetGridItem[]>(() =>
-  Object.entries(nodeDef.inputs || {})
-    .filter(
-      ([, input]) =>
-        widgetStore.inputIsWidget(input) && !input.hidden && !input.advanced
-    )
+  widgetInputs.value
+    .filter(([, input]) => !input.hidden && !input.advanced)
     .map(([name, input]) => {
       const comboValues =
         input.type === 'COMBO' && Array.isArray(input.options)
           ? input.options
           : undefined
-      const leadValue = widgetValues?.[name]
+      const leadValue = resolvedWidgetValues.value[name]
       const value = (leadValue ??
         input.default ??
         comboValues?.[0] ??
