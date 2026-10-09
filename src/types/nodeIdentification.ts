@@ -13,7 +13,8 @@ interface ParsedNodeLocatorId {
 
 function decodeNodeId(value: string): NodeId | null {
   try {
-    return toNodeId(decodeURIComponent(value))
+    const decoded = decodeURIComponent(value)
+    return encodeURIComponent(decoded) === value ? toNodeId(decoded) : null
   } catch {
     return null
   }

@@ -115,6 +115,14 @@ describe('nodeIdentification', () => {
         expect(parseNodeLocatorId(`${validUuid}:node:1`)).toBeNull()
         expect(parseNodeLocatorId('')).toBeNull()
       })
+
+      it.for(['~root:insert:op', '~root:%69nsert%3Aop'])(
+        'rejects non-canonical encoded locator %s',
+        (locatorId) => {
+          expect(parseNodeLocatorId(locatorId)).toBeNull()
+          expect(isNodeLocatorId(locatorId)).toBe(false)
+        }
+      )
     })
 
     describe('createNodeLocatorId', () => {
