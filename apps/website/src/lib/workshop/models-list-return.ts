@@ -33,6 +33,12 @@ const accessListKey: Record<ModelAccess, TranslationKey> = {
   api: 'workshop.modelsHub.back.access.api'
 }
 
+/** A tab the chosen use cases already open on needs no address of its own. */
+function addressesTab(tab: ModelTab, useCases: readonly UseCase[]): boolean {
+  if (tab === 'all') return false
+  return !useCases.length || tabForUseCases(useCases, 'all') !== tab
+}
+
 /**
  * The Models list as the visitor narrowed it, addressed and named for the
  * way back from a model opened in it: the search first, then the category,
@@ -48,8 +54,7 @@ export function modelsListReturn(
   const params = new URLSearchParams(
     catalogSearch({ query: needle, useCase: shelf })
   )
-  const impliedTab = useCases.length > 0 && tabForUseCases(useCases, 'all')
-  if (tab !== 'all' && tab !== impliedTab) params.set(MODEL_TAB_PARAM, tab)
+  if (addressesTab(tab, useCases)) params.set(MODEL_TAB_PARAM, tab)
   if (access.length) params.set(ACCESS_PARAM, access.join(','))
   const search = params.toString()
   const href = `${getRoutes(locale).workshop}${search ? `?${search}` : ''}`
