@@ -31,16 +31,13 @@ describe('WorkflowMoreLikeThis', () => {
     vi.mocked(useWorkshopFlag).mockImplementation((flag) =>
       readonly(ref(flag !== 'off-flag'))
     )
-    vi.stubGlobal(
-      'fetch',
-      vi.fn(async () =>
-        Response.json([
-          entry('remove-background', 'edit-images'),
-          entry('restore-portrait', 'edit-images'),
-          entry('hidden-one', 'edit-images', 'off-flag'),
-          entry('upscale-video', 'edit-videos')
-        ])
-      )
+    vi.mocked(fetch).mockImplementation(async () =>
+      Response.json([
+        entry('remove-background', 'edit-images'),
+        entry('restore-portrait', 'edit-images'),
+        entry('hidden-one', 'edit-images', 'off-flag'),
+        entry('upscale-video', 'edit-videos')
+      ])
     )
     render(WorkflowMoreLikeThis, { props: { model } })
 
@@ -53,11 +50,10 @@ describe('WorkflowMoreLikeThis', () => {
   })
 
   it('shows nothing when the catalogue cannot be read', async () => {
-    const read = vi.fn(async () => Response.error())
-    vi.stubGlobal('fetch', read)
+    vi.mocked(fetch).mockImplementation(async () => Response.error())
     render(WorkflowMoreLikeThis, { props: { model } })
 
-    await vi.waitFor(() => expect(read).toHaveBeenCalled())
+    await vi.waitFor(() => expect(fetch).toHaveBeenCalled())
     expect(screen.queryByRole('region')).toBeNull()
   })
 })

@@ -41,10 +41,7 @@ const mount = (selected = model) =>
 
 // The More like this row reads the catalogue; nothing here reaches the network.
 beforeEach(() => {
-  vi.stubGlobal(
-    'fetch',
-    vi.fn(async () => Response.error())
-  )
+  vi.mocked(fetch).mockImplementation(async () => Response.error())
 })
 
 describe('WorkflowPage header', () => {
