@@ -1,13 +1,3 @@
-// An agent-inserted workflow's nodes carry comfy-multi-player's remapped ids
-// (`insert:<opId>:root:node:<originalId>`, remap.ts). The prompt is keyed
-// verbatim by canvas node id (`executionUtil.graphToPrompt`), so every
-// `executed` frame for such a graph names one of those ids — whether the run
-// was started by the agent or by the user pressing Run.
-//
-// This suite drives the real `nodeOutputStore` with the real
-// `graphTraversalUtil`, which is what the other nodeOutputStore suites stub
-// out, and asserts the outcome the user sees: the output reaches the node.
-// PM-2037 / PM-1826 / PM-1668.
 import { describe, expect, it, vi } from 'vitest'
 
 import { LGraph, LGraphNode } from '@/lib/litegraph/src/litegraph'
