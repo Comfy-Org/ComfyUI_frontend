@@ -19,10 +19,12 @@ values are compared without JavaScript rounding. The original remains
 available for Magic Patch regression. Adaptation does not certify rendering.
 Verification observations and blocked references remain inspectable.
 
-The default workflow source is HARVEY's static QA list. Set
-`VITE_COMMUNITY_WORKFLOW_SOURCE=service` at build time to use the existing
-authenticated workflow-library API. Static assets are separate from the
-frontend build and stay out of git and the public asset directory.
+The default workflow source is the existing authenticated workflow-library
+API, including when `VITE_COMMUNITY_WORKFLOW_SOURCE` is unset. Set it to
+`static` explicitly to select HARVEY's isolated QA list. Static assets are
+separate from the frontend build and stay out of git and the public asset
+directory. Pack tags use the separately prepared private index selected by
+the server-only `COMMUNITY_CORPUS_DIR` setting in either workflow mode.
 The existing service contract serves originals only; adapted loading currently
 uses the static provider. The frozen 411 release contains no adapted graphs.
 

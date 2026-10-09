@@ -35,6 +35,7 @@ vi.mock('@/platform/customNodes/composables/useNodeAccountScope', () => ({
 const raw =
   '{\r\n"nodes":[{"id":1,"type":"UnknownCustomNode"}],"links":[]\r\n}\r\n'
 const hash = createHash('sha256').update(raw).digest('hex')
+const libraryRoot = '/test-workflow-library/collections/harvey-human-qa'
 const entry = {
   workflow_sha256: hash,
   metadata_sha256: 'b'.repeat(64),
@@ -77,8 +78,32 @@ beforeEach(() => {
     if (route === '/customnodes/registry') return Response.json(catalog)
     if (route.endsWith('index.json')) return Response.json({ entries: [entry] })
     if (route.endsWith('workflow.json')) return new Response(raw)
+    if (route === '/test-workflow-library/collections')
+      return Response.json({
+        collections: [{ id: 'harvey-human-qa', count: 1 }],
+        truncated: false
+      })
+    if (route.endsWith('/facets'))
+      return Response.json({
+        tags: entry.tags,
+        tasks: entry.tasks,
+        packs: entry.packs,
+        models: entry.models,
+        truncated: false
+      })
+    if (route.startsWith(`${libraryRoot}/entries?`))
+      return Response.json({
+        entries: [entry],
+        total: 1,
+        unresolved: 1,
+        verified: 0,
+        next_cursor: ''
+      })
     return Response.json({
       summary: entry,
+      ...(route.includes('include_workflow=true')
+        ? { workflow_json: raw }
+        : {}),
       metadata: {
         schema_version: 1,
         workflow_sha256: hash,
@@ -106,45 +131,64 @@ beforeEach(() => {
   mocks.handleFile.mockResolvedValue(undefined)
 })
 
-it('switches between pack and workflow browsing, retains filters, and opens the selected original through the loader', async () => {
-  const user = userEvent.setup()
-  const close = vi.fn()
-  render(CommunityDialog, {
-    props: { onClose: close },
-    global: {
-      plugins: [
-        createI18n({ legacy: false, locale: 'en', messages: { en: messages } })
-      ],
-      directives: { tooltip: {} },
-      stubs: {
-        VirtualGrid: {
-          props: ['items'],
-          template:
-            '<div><slot v-for="item in items" name="item" :item="item" /></div>'
+it.for([undefined, 'service', 'static'])(
+  'switches sections, retains filters, and opens the original with source %s',
+  async (source) => {
+    vi.stubEnv('VITE_COMMUNITY_WORKFLOW_SOURCE', source)
+    const user = userEvent.setup()
+    const close = vi.fn()
+    render(CommunityDialog, {
+      props: { onClose: close },
+      global: {
+        plugins: [
+          createI18n({
+            legacy: false,
+            locale: 'en',
+            messages: { en: messages }
+          })
+        ],
+        directives: { tooltip: {} },
+        stubs: {
+          VirtualGrid: {
+            props: ['items'],
+            template:
+              '<div><slot v-for="item in items" name="item" :item="item" /></div>'
+          }
         }
       }
-    }
-  })
-  expect(
-    await screen.findByRole('button', { name: 'View Example details' })
-  ).toBeVisible()
-  const packSearch = screen.getByRole('combobox', {
-    name: messages.customNodePacks.registry.search
-  })
-  await user.type(packSearch, 'portrait')
-  await user.click(screen.getByRole('tab', { name: 'Community workflows' }))
-  await user.click(await screen.findByRole('button', { name: entry.name }))
-  await user.click(
-    await screen.findByRole('button', { name: 'Open original graph' })
-  )
-  await waitFor(() => expect(mocks.handleFile).toHaveBeenCalledOnce())
-  const file: File = mocks.handleFile.mock.calls[0][0]
-  expect(await file.text()).toBe(raw)
-  expect(close).toHaveBeenCalledOnce()
-  await user.click(screen.getByRole('tab', { name: 'Custom node packs' }))
-  expect(
-    screen.getByRole('combobox', {
+    })
+    expect(
+      await screen.findByRole('button', { name: 'View Example details' })
+    ).toBeVisible()
+    const packSearch = screen.getByRole('combobox', {
       name: messages.customNodePacks.registry.search
     })
-  ).toHaveValue('portrait')
-})
+    await user.type(packSearch, 'portrait')
+    await user.click(screen.getByRole('tab', { name: 'Community workflows' }))
+    await user.click(await screen.findByRole('button', { name: entry.name }))
+    await user.click(
+      await screen.findByRole('button', { name: 'Open original graph' })
+    )
+    await waitFor(() => expect(mocks.handleFile).toHaveBeenCalledOnce())
+    const file: File = mocks.handleFile.mock.calls[0][0]
+    expect(await file.text()).toBe(raw)
+    expect(close).toHaveBeenCalledOnce()
+    const routes = mocks.fetch.mock.calls.map(([route]) => route)
+    if (source === 'static') {
+      expect(routes).toContain(`/community-corpus/${hash}/workflow.json`)
+      expect(routes).not.toContain('/test-workflow-library/collections')
+    } else {
+      expect(routes).toContain('/test-workflow-library/collections')
+      expect(routes).toContain(
+        `${libraryRoot}/entries/${hash}?include_workflow=true`
+      )
+      expect(routes).not.toContain(`/community-corpus/${hash}/workflow.json`)
+    }
+    await user.click(screen.getByRole('tab', { name: 'Custom node packs' }))
+    expect(
+      screen.getByRole('combobox', {
+        name: messages.customNodePacks.registry.search
+      })
+    ).toHaveValue('portrait')
+  }
+)
