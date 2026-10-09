@@ -35,10 +35,7 @@
       <!-- Loading State -->
       <Skeleton
         v-if="showLoader && !videoError"
-        class="absolute inset-0 size-full"
-        border-radius="5px"
-        width="100%"
-        height="100%"
+        class="absolute inset-0 size-full rounded-md"
       />
 
       <!-- Main Video -->

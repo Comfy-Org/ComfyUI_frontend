@@ -92,12 +92,7 @@
 
     <div v-if="!accountActionsOnly" class="flex items-center gap-2 px-4 py-2">
       <i class="icon-[lucide--coins] text-sm text-credit" />
-      <Skeleton
-        v-if="isLoadingBalance"
-        width="4rem"
-        height="1.25rem"
-        class="w-full"
-      />
+      <Skeleton v-if="isLoadingBalance" class="h-5 w-16" />
       <span v-else class="text-base font-semibold text-base-foreground">{{
         displayedCredits
       }}</span>

@@ -4,12 +4,7 @@
     class="relative flex size-full items-center justify-center overflow-hidden"
     :class="containerClass"
   >
-    <Skeleton
-      v-if="!isImageLoaded"
-      width="100%"
-      height="100%"
-      class="absolute inset-0"
-    />
+    <Skeleton v-if="!isImageLoaded" class="absolute inset-0 size-full" />
     <img
       v-if="cachedSrc"
       :src="cachedSrc"

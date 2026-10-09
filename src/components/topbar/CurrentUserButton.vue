@@ -17,12 +17,7 @@
           )
         "
       >
-        <Skeleton
-          v-if="showWorkspaceSkeleton"
-          shape="circle"
-          width="32px"
-          height="32px"
-        />
+        <Skeleton v-if="showWorkspaceSkeleton" class="size-8 rounded-full" />
         <WorkspaceProfilePic
           v-else-if="showWorkspaceIcon"
           :workspace-name="workspaceName"
