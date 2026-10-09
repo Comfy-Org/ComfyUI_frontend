@@ -1091,6 +1091,8 @@ export const useExecutionStore = defineStore('execution', () => {
     if (next) jobIdToSessionWorkflowPath.value = next
   }
 
+  workflowStore.registerSessionWorkflowPathRewriter(rewriteSessionWorkflowPaths)
+
   /**
    * Register or update a mapping from job ID to workflow ID.
    */
