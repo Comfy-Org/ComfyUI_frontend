@@ -50,11 +50,8 @@ const launchModels: WorkshopModel[] = [
     href: '/models/workflows/change-material/',
     workflowCount: 1,
     capabilities: [],
-    category: 'product',
-    categoryLabel: {
-      en: 'Create product photos & ads',
-      'zh-CN': '制作产品照片与广告'
-    },
+    category: 'image-to-image',
+    categoryLabel: { en: 'Image to image', 'zh-CN': '图生图' },
     models: ['Qwen Image Edit'],
     modality: 'image'
   },
@@ -66,8 +63,8 @@ const launchModels: WorkshopModel[] = [
     href: '/models/workflows/remove-background/',
     workflowCount: 1,
     capabilities: [],
-    category: 'cleanup',
-    categoryLabel: { en: 'Edit & clean up photos', 'zh-CN': '编辑与修整照片' },
+    category: 'tools',
+    categoryLabel: { en: 'Control & tools', 'zh-CN': '控制与工具' },
     models: ['BiRefNet'],
     modality: 'image'
   },
@@ -186,9 +183,8 @@ describe('ModelsCatalogue', () => {
     render(ModelsCatalogue, {
       props: { models: launchModels, section: 'workflows' }
     })
-    await user.click(await screen.findByRole('button', { name: 'Filters' }))
     await user.click(
-      await screen.findByRole('button', { name: 'Edit & clean up photos 1' })
+      await screen.findByRole('tab', { name: 'Control & tools' })
     )
     expect(
       screen.getByRole('link', { name: /Remove an image background/ })

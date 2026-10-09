@@ -23,6 +23,12 @@ export const DESIGN_DECISIONS: readonly DesignDecision[] = [
     bodyKey: 'designDecisions.models.filters.body'
   },
   {
+    anchor: 'workflows-sidebar',
+    page: 'workflows',
+    titleKey: 'designDecisions.workflows.sidebar.title',
+    bodyKey: 'designDecisions.workflows.sidebar.body'
+  },
+  {
     anchor: 'workflows-filters',
     page: 'workflows',
     titleKey: 'designDecisions.workflows.filters.title',

@@ -188,7 +188,7 @@ for (const { section, query, filter } of [
   {
     section: 'workflows' as const,
     query: 'material',
-    filter: 'category=product'
+    filter: 'output=image'
   }
 ]) {
   test(`leaving filtered ${section} through the Hub does not carry its filters back`, async ({

@@ -14,7 +14,7 @@ import type { ComponentExposed } from 'vue-component-type-helpers'
 import { cn } from '@comfyorg/tailwind-utils'
 
 import { useVisualViewport } from '@/composables/useVisualViewport'
-import type { UseCase } from '@/config/models-catalogue'
+import type { Modality, UseCase } from '@/config/models-catalogue'
 import type { Locale } from '@/i18n/translations'
 import { translationsFor } from '@/i18n/translations'
 import type { ModelAccess } from '@/lib/workshop/explorer/model-access'
@@ -32,18 +32,24 @@ const WorkshopFilterPanel = defineAsyncComponent(
 )
 
 const {
-  useCaseOptions,
+  useCaseOptions = [],
   modelOptions,
   accessOptions,
+  inputOptions,
+  outputOptions,
   resultCount,
   kind = 'models',
   locale = 'en'
 } = defineProps<{
-  useCaseOptions: readonly FacetMenuOption<T>[]
+  useCaseOptions?: readonly FacetMenuOption<T>[]
   /** The models the listing runs on, where it stands on more than its own. */
   modelOptions?: readonly FacetMenuOption<string>[]
   /** How a model can be used: run here, called by API, or downloaded. */
   accessOptions?: readonly FacetMenuOption<ModelAccess>[]
+  /** The media a workflow starts from. */
+  inputOptions?: readonly FacetMenuOption<Modality>[]
+  /** The media a workflow makes. */
+  outputOptions?: readonly FacetMenuOption<Modality>[]
   /** What the catalogue holds under the current choices, for the way out. */
   resultCount: number
   kind?: 'models' | 'workflows'
@@ -51,9 +57,11 @@ const {
 }>()
 const { t } = translationsFor(locale)
 
-const useCases = defineModel<T[]>('useCases', { required: true })
+const useCases = defineModel<T[]>('useCases', { default: () => [] })
 const models = defineModel<string[]>('models', { default: () => [] })
 const access = defineModel<ModelAccess[]>('access', { default: () => [] })
+const inputs = defineModel<Modality[]>('inputs', { default: () => [] })
+const outputs = defineModel<Modality[]>('outputs', { default: () => [] })
 
 const open = ref(false)
 // A dropdown anchored to a crowded toolbar leaves a phone no room, so there
@@ -103,6 +111,26 @@ const groups = computed<FacetSheetGroup[]>(() => [
         }
       ]
     : []),
+  ...(inputOptions?.length
+    ? [
+        {
+          key: 'input',
+          label: t('workshop.filter.inputGroup'),
+          options: inputOptions,
+          selected: inputs.value
+        }
+      ]
+    : []),
+  ...(outputOptions?.length
+    ? [
+        {
+          key: 'output',
+          label: t('workshop.filter.outputGroup'),
+          options: outputOptions,
+          selected: outputs.value
+        }
+      ]
+    : []),
   ...(modelOptions?.length
     ? [
         {
@@ -135,6 +163,10 @@ function toggle(facet: string, value: string) {
   if (facet === 'model') models.value = toggleIn(models.value, value)
   else if (facet === 'access')
     access.value = toggleOption(accessOptions, access.value, value)
+  else if (facet === 'input')
+    inputs.value = toggleOption(inputOptions, inputs.value, value)
+  else if (facet === 'output')
+    outputs.value = toggleOption(outputOptions, outputs.value, value)
   else useCases.value = toggleOption(useCaseOptions, useCases.value, value)
 }
 
@@ -142,6 +174,8 @@ function clearAll() {
   useCases.value = []
   models.value = []
   access.value = []
+  inputs.value = []
+  outputs.value = []
 }
 
 defineExpose({ focus: () => trigger.value?.focus() })

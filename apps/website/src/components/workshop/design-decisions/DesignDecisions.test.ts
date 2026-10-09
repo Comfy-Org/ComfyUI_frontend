@@ -65,7 +65,8 @@ describe('DesignDecisions', () => {
     expect(screen.queryByRole('complementary')).toBeNull()
   })
 
-  it('lists the workflows decision on the workflows page', async () => {
+  it('lists the workflows decisions on the workflows page', async () => {
+    addAnchor('workflows-sidebar')
     addAnchor('workflows-filters')
     const user = userEvent.setup()
     render(DesignDecisions, { props: { enabled: true } })
@@ -75,6 +76,6 @@ describe('DesignDecisions', () => {
       within(screen.getByRole('complementary'))
         .getAllByRole('heading', { level: 3 })
         .map((heading) => heading.textContent)
-    ).toEqual(['Categories inside Filters'])
+    ).toEqual(['Sidebar by category', 'Input, output and model inside Filters'])
   })
 })

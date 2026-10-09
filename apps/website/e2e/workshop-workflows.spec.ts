@@ -110,18 +110,33 @@ test('workflow launch groups lead to the existing shared form', async ({
     expect(response.ok()).toBe(true)
     expect(response.headers()['content-type']).toContain(type)
   }
-  await page.goto('/hub/workflows/?category=product')
-  await expect(
-    page.getByRole('heading', { level: 1, name: 'Workflows' })
-  ).toBeVisible()
-  await expect(page.getByTestId('workshop-filter-count')).toHaveText('1')
-  const filtered = page.getByTestId('workflow-grid')
-  await expect(
-    filtered.getByRole('link', { name: /Change a material/ })
-  ).toBeVisible()
-  await expect(
-    filtered.getByRole('link', { name: /Remove an image background/ })
-  ).toHaveCount(0)
+  const categories = page.getByRole('tablist', { name: 'Workflow categories' })
+  for (const { search, tab, shows, hides } of [
+    {
+      search: '?category=product',
+      tab: 'Product & ads',
+      shows: /Put your product in a new scene/,
+      hides: /Change a material/
+    },
+    {
+      search: '?category=cleanup',
+      tab: 'Image to image',
+      shows: /Change a material/,
+      hides: /Remove an image background/
+    }
+  ]) {
+    await page.goto(`/hub/workflows/${search}`)
+    await expect(
+      page.getByRole('heading', { level: 1, name: 'Workflows' })
+    ).toBeVisible()
+    await expect(categories.getByRole('tab', { name: tab })).toHaveAttribute(
+      'aria-selected',
+      'true'
+    )
+    const filtered = page.getByTestId('workflow-grid')
+    await expect(filtered.getByRole('link', { name: shows })).toBeVisible()
+    await expect(filtered.getByRole('link', { name: hides })).toHaveCount(0)
+  }
 })
 
 test('the workflow graph waits for its section, names its subgraphs, and zooms from its controls', async ({
@@ -237,18 +252,14 @@ test('cold workflow filters focus their controls and respect dismissal while loa
   }
   await page.keyboard.type('video')
   await expect(search).toHaveValue('video')
-  await expect(
-    dialog.getByRole('button', { name: 'Create & edit videos 6' })
-  ).toBeVisible()
-  await expect(
-    dialog.getByRole('button', { name: 'Upscale & restore 6' })
-  ).toHaveCount(0)
+  await expect(dialog.getByRole('button', { name: 'Video 7' })).toBeVisible()
+  await expect(dialog.getByRole('button', { name: /^Image / })).toHaveCount(0)
   await search.press('Escape')
   await expect(dialog).toHaveCount(0)
   await expect(trigger).toBeFocused()
 })
 
-test('workflow search and category filters share the mobile controls @mobile', async ({
+test('workflow search and categories share the mobile controls @mobile', async ({
   page,
   context
 }) => {
@@ -256,9 +267,11 @@ test('workflow search and category filters share the mobile controls @mobile', a
   await page.goto('/hub/')
   await page.getByTestId('explore-door-workflows').click()
   await expect(page).toHaveURL('/hub/workflows/')
-  await page.getByTestId('workshop-filter').click()
-  await page.getByRole('button', { name: 'Upscale & restore 6' }).click()
-  await page.getByRole('button', { name: 'Show 6 workflows' }).click()
+  await page
+    .getByRole('tablist', { name: 'Workflow categories' })
+    .getByRole('tab', { name: 'Upscale & restore' })
+    .click()
+  await expect(page).toHaveURL('/hub/workflows/?category=upscale')
   await expect(
     page.getByTestId('workflow-grid').getByTestId('workshop-model-card')
   ).toHaveCount(6)
@@ -332,6 +345,39 @@ test('the workflows half narrows to the model it runs on, from the menu and from
   await expect(page).toHaveURL('/hub/workflows/?model=LTX-2.3')
   await expect(page.getByTestId('workshop-filter-count')).toHaveText('1')
   await expect(outcomes).toHaveCount(7)
+})
+
+test('the workflows narrow by what they start from and what they make, from the menu and from a shared link', async ({
+  page,
+  context
+}) => {
+  await mockWorkflowVisibility(context, true)
+  await page.goto('/hub/workflows/')
+  const outcomes = page
+    .getByTestId('workflow-grid')
+    .getByTestId('workshop-model-card')
+  await expect(outcomes).toHaveCount(12)
+
+  await page.getByTestId('workshop-filter').click()
+  const dialog = page.getByRole('dialog', { name: 'Filters' })
+  await expect(dialog.getByRole('tab')).toHaveText(['Input', 'Output', 'Model'])
+  await dialog.getByRole('tab', { name: 'Output' }).click()
+  await dialog.getByRole('button', { name: 'Image 16' }).click()
+  await expect(page.getByTestId('workshop-filter-chips')).toContainText(
+    'Image output'
+  )
+  await expect(page.getByTestId('catalogue-show-more-count')).toHaveText(
+    'Showing 12 of 16'
+  )
+
+  await expect(dialog.getByRole('tab')).toHaveText([/^Output/, 'Model'])
+
+  await page.goto('/hub/workflows/?input=audio')
+  await expect(page.getByTestId('workshop-filter-count')).toHaveText('1')
+  await expect(outcomes).toHaveCount(2)
+  await expect(
+    page.getByRole('link', { name: /Make your character talk/ })
+  ).toBeVisible()
 })
 
 test('keeps an old catalogue link for the Workflows tab on the models catalogue while workflows are off', async ({

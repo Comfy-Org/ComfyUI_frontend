@@ -62,7 +62,10 @@
       "runsOn": "Runs on {model}",
       "outputGroup": "Output",
       "capabilityGroup": "Capabilities",
-      "search": "Search…"
+      "search": "Search…",
+      "inputGroup": "Input",
+      "inputChip": "{media} input",
+      "outputChip": "{media} output"
     },
     "result": "{count} model",
     "results": "{count} models",
@@ -681,7 +684,8 @@
       "showWorkflows": "Show {n} workflows",
       "heading": "ComfyUI models",
       "directory": "All models by provider",
-      "directoryCount": "{count} models"
+      "directoryCount": "{count} models",
+      "categoriesLabel": "Workflow categories"
     },
     "assets": {
       "title": "Your assets",
@@ -5846,9 +5850,13 @@
       }
     },
     "workflows": {
+      "sidebar": {
+        "title": "Sidebar by category",
+        "body": "The sidebar lists the workflow categories from Charlene's proposal (Image to image, Image to video, Video to video, Product & ads…) with counts, the same way the Models sidebar lists types. Only categories with at least one workflow appear. Each card keeps its own use-case label, so a category never hides what a workflow actually does."
+      },
       "filters": {
-        "title": "Categories inside Filters",
-        "body": "Categories (Create & edit videos, Animate characters, Product photos & ads, Upscale & restore, Edit & clean up photos) sit in the Filters menu next to Runs on. In the last 30 days about 7% of Workflows visitors opened a filter and under 2% picked a category, so they don't earn permanent space above the grid. Selected ones show as removable chips."
+        "title": "Input, output and model inside Filters",
+        "body": "Filters keeps the production tabs and adds Input (what you start from) and Output (what you get), read from each workflow's uploads and results, next to Model. A choice that every listed workflow shares is not offered, since it would narrow nothing. In the last 30 days about 7% of Workflows visitors opened a filter, so these stay in the menu rather than above the grid. Selected ones show as removable chips."
       }
     }
   }

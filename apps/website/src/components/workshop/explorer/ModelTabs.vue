@@ -20,6 +20,16 @@ import type { ModelTabCounts } from '@/lib/workshop/explorer/model-tab-counts'
 import { shownTabGroups } from '@/lib/workshop/explorer/model-tab-counts'
 import type { ModelTab } from '@/lib/workshop/explorer/model-tabs'
 import { modelTabLabelKey } from '@/lib/workshop/explorer/model-tabs'
+import {
+  SIDEBAR_COUNT,
+  SIDEBAR_FRAME,
+  SIDEBAR_ICON,
+  SIDEBAR_LABEL,
+  SIDEBAR_LIST,
+  SIDEBAR_TAB,
+  SIDEBAR_TAB_SELECTED,
+  sidebarTargetIndex
+} from '@/lib/workshop/sidebar-tab-classes'
 
 const {
   panelId,
@@ -50,27 +60,13 @@ const icon: Record<ModelTab, Component> = {
   llm: BookOpen
 }
 
-function targetIndex(key: string, index: number, length: number) {
-  switch (key) {
-    case 'Home':
-      return 0
-    case 'End':
-      return length - 1
-    case vertical.value ? 'ArrowUp' : 'ArrowLeft':
-      return (index - 1 + length) % length
-    case vertical.value ? 'ArrowDown' : 'ArrowRight':
-      return (index + 1) % length
-    default:
-      return undefined
-  }
-}
-
 function onKeydown(event: KeyboardEvent) {
   const order = tabs.value
-  const index = targetIndex(
+  const index = sidebarTargetIndex(
     event.key,
     order.indexOf(selected.value),
-    order.length
+    order.length,
+    vertical.value
   )
   if (index === undefined) return
   event.preventDefault()
@@ -81,15 +77,13 @@ function onKeydown(event: KeyboardEvent) {
 </script>
 
 <template>
-  <div
-    class="-mx-1 mb-8 overflow-x-auto px-1 py-1 max-sm:mb-4 lg:mx-0 lg:mb-0 lg:overflow-visible lg:px-0 lg:pt-4"
-  >
+  <div :class="SIDEBAR_FRAME">
     <div
       ref="list"
       role="tablist"
       :aria-label="t('workshop.explorer.tabs.label')"
       :aria-orientation="vertical ? 'vertical' : 'horizontal'"
-      class="inline-flex items-center gap-0.5 rounded-full bg-hub-surface p-1 lg:flex lg:flex-col lg:items-stretch lg:gap-6 lg:rounded-none lg:bg-transparent lg:p-0"
+      :class="SIDEBAR_LIST"
       data-testid="model-tabs"
       @keydown="onKeydown"
     >
@@ -116,28 +110,18 @@ function onKeydown(event: KeyboardEvent) {
           :data-tab="tab"
           :aria-selected="tab === selected"
           :tabindex="tab === selected ? 0 : -1"
-          :class="
-            cn(
-              'inline-flex h-9 shrink-0 cursor-pointer items-center gap-1.5 rounded-full px-3 text-[13px] font-medium whitespace-nowrap text-primary-comfy-canvas transition-colors outline-none hover:bg-transparency-white-t4 focus-visible:ring-3 focus-visible:ring-primary-comfy-yellow/50 lg:w-full lg:gap-2.5 lg:rounded-xl lg:text-sm',
-              tab === selected &&
-                'bg-transparency-white-t8 font-semibold text-primary-warm-white hover:bg-transparency-white-t8'
-            )
-          "
+          :class="cn(SIDEBAR_TAB, tab === selected && SIDEBAR_TAB_SELECTED)"
           @click="selected = tab"
         >
-          <component
-            :is="icon[tab]"
-            class="size-3.5 shrink-0 text-primary-warm-white lg:size-4"
-            aria-hidden="true"
-          />
-          <span class="lg:min-w-0 lg:flex-1 lg:truncate lg:text-left">
+          <component :is="icon[tab]" :class="SIDEBAR_ICON" aria-hidden="true" />
+          <span :class="SIDEBAR_LABEL">
             {{ t(modelTabLabelKey[tab]) }}
           </span>
           <span
             aria-hidden="true"
             :class="
               cn(
-                'text-[13px] font-medium text-primary-warm-gray tabular-nums',
+                SIDEBAR_COUNT,
                 tab === selected && 'lg:text-primary-comfy-canvas'
               )
             "
