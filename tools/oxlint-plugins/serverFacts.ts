@@ -133,6 +133,22 @@ function isCapabilitySourceCall(node: AstNode | null): boolean {
   )
 }
 
+type ObjectPattern = Extract<
+  VisitedNode<'VariableDeclarator'>['id'],
+  { type: 'ObjectPattern' }
+>
+
+function destructuredCapabilities(pattern: ObjectPattern): string[] {
+  return pattern.properties.flatMap((property) =>
+    property.type === 'Property' &&
+    property.key.type === 'Identifier' &&
+    CAPABILITY_BINDING.test(property.key.name) &&
+    property.value.type === 'Identifier'
+      ? [property.value.name]
+      : []
+  )
+}
+
 export const noCapabilityRecombination: Rule = {
   meta: {
     type: 'problem',
@@ -161,17 +177,16 @@ export const noCapabilityRecombination: Rule = {
       )
     }
 
+    const isCapabilitySource = (init: AstNode | null): boolean =>
+      isCapabilitySourceCall(init) ||
+      (init !== null && capabilityObjects.has(factName(init) ?? ''))
+
     const containsCapability = (node: AstNode): boolean =>
       !isPendingFactCall(node) &&
       (isCapabilityReference(node) || childNodes(node).some(containsCapability))
 
     return {
-      VariableDeclarator(node) {
-        const { id, init } = node
-        const fromSource =
-          isCapabilitySourceCall(init) ||
-          (init !== null && capabilityObjects.has(factName(init) ?? ''))
-
+      VariableDeclarator({ id, init }) {
         if (id.type === 'Identifier') {
           if (isCapabilitySourceCall(init)) capabilityObjects.add(id.name)
           else if (init && containsCapability(init)) {
@@ -179,16 +194,9 @@ export const noCapabilityRecombination: Rule = {
           }
           return
         }
-        if (id.type !== 'ObjectPattern' || !fromSource) return
-        for (const property of id.properties) {
-          if (
-            property.type === 'Property' &&
-            property.key.type === 'Identifier' &&
-            CAPABILITY_BINDING.test(property.key.name) &&
-            property.value.type === 'Identifier'
-          ) {
-            capabilityBindings.add(property.value.name)
-          }
+        if (id.type !== 'ObjectPattern' || !isCapabilitySource(init)) return
+        for (const name of destructuredCapabilities(id)) {
+          capabilityBindings.add(name)
         }
       },
       LogicalExpression(node) {
