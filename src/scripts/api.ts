@@ -105,7 +105,12 @@ interface QueuePromptRequestBody {
    * metadata header on binary previews). An older server ignores the field
    * rather than rejecting the prompt.
    *
-   * Two limits worth knowing, since the contract is the server's and not ours:
+   * Two limits worth knowing, since the contract is the server's and not ours.
+   * A third thing worth knowing is that the two backends disagree: core merges
+   * as `{**workflow_metadata, **data}`, so a frame's own fields win, while the
+   * Cloud gateway assigns `prompt_id` and `workflow_id` after the fact, so the
+   * backend wins. Do not rely on either order; the routing ids that arrive are
+   * authoritative whichever side set them.
    *
    * - `status` and `logs` frames have no `prompt_id`, so they are never
    *   stamped and a consumer still needs the `prompt_id`-to-workflow mapping.

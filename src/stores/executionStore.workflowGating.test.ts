@@ -360,6 +360,34 @@ describe('executionStore workflow gating', () => {
       expect(store.activeJobId).toBe('job-a')
     })
 
+    // Read out of Comfy-Org/cloud at 968df21: a user cancel is synthesised by
+    // the gateway rather than forwarded from the worker, so it arrives as
+    // { synthetic, reason, prompt_id, workflow_id } with none of the node
+    // fields core always sends. Raised in review on #20045.
+    it('handles a gateway-synthesised cancel with no node fields', () => {
+      queueJobFrom('job-b', workflowB)
+      fire('progress_state', {
+        prompt_id: 'job-b',
+        workflow_id: WORKFLOW_B_ID,
+        nodes: { '1': nodeState('job-b', '1', 'running', 4) }
+      })
+      // Without this the release assertion below passes vacuously.
+      expect(store.nodeProgressStatesByJob['job-b']).toBeDefined()
+
+      fire('execution_interrupted', {
+        prompt_id: 'job-b',
+        workflow_id: WORKFLOW_B_ID,
+        synthetic: true,
+        reason: 'Job cancelled by user'
+      })
+
+      expect(store.activeJobId, 'the visible run is untouched').toBe('job-a')
+      expect(
+        store.nodeProgressStatesByJob['job-b'],
+        "the cancelled job's own records are still released"
+      ).toBeUndefined()
+    })
+
     it('execution_error from another workflow leaves active state alone but clears its initializing flag', () => {
       queueJobFrom('job-b', workflowB)
       // Without this the job is never initializing, so the assertion below

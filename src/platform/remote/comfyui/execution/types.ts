@@ -85,9 +85,18 @@ export interface ExecutionCachedWsMessage extends ExecutionWsMessageBase {
   nodes: NodeId[]
 }
 export interface ExecutionInterruptedWsMessage extends ExecutionWsMessageBase {
-  node_id: NodeId
-  node_type: string
-  executed: NodeId[]
+  /**
+   * Optional because a user cancel on Cloud is synthesised by the gateway
+   * rather than forwarded from the worker, and carries only `synthetic`,
+   * `reason` and the routing ids. Core always sends all three.
+   */
+  node_id?: NodeId
+  node_type?: string
+  executed?: NodeId[]
+  /** Cloud only, set on a gateway-synthesised cancel. */
+  synthetic?: boolean
+  /** Cloud only, the human-readable cancel reason. */
+  reason?: string
 }
 export interface ExecutionErrorWsMessage extends ExecutionWsMessageBase {
   node_id?: NodeId | null
