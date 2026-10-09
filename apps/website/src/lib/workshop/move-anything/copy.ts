@@ -73,7 +73,8 @@ const copy = {
   },
   'move.prompt.placeholder': {
     en: 'Optional: describe the scene so the moved things blend in, e.g. a sunlit windowsill with soft shadows',
-    'zh-CN': '可选：描述场景，让移动后的物体更自然，例如：阳光照射的窗台，柔和的阴影'
+    'zh-CN':
+      '可选：描述场景，让移动后的物体更自然，例如：阳光照射的窗台，柔和的阴影'
   },
   'move.summary': {
     en: '{n} object · {moved} moved · {quality} | {n} objects · {moved} moved · {quality}',
