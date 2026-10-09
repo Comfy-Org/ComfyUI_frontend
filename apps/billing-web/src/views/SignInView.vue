@@ -6,13 +6,13 @@ import { useRoute, useRouter } from 'vue-router'
 
 import type { SessionErrorCode } from '@comfyorg/account-core/session'
 import { buildReturnUrl } from '@comfyorg/billing-contract'
-import { buttonVariants } from '@comfyorg/design-system/button.variants'
 import SocialAuthButtons from '@comfyorg/account-ui/auth/SocialAuthButtons'
 
 import { safeReturnTo } from '@/auth/returnTo'
 import { useSignInController } from '@/auth/useSignInController'
 import { useSsoRequiredRefusal } from '@/auth/useSsoRequiredRefusal'
 import SessionFailureAction from '@/components/auth/SessionFailureAction.vue'
+import SessionRefusalNotice from '@/components/auth/SessionRefusalNotice.vue'
 import SignInEmailForm from '@/components/auth/SignInEmailForm.vue'
 import { useHostedCopy } from '@/composables/useHostedCopy'
 import { BILLING_WEB_ENV } from '@/config/env'
@@ -138,11 +138,8 @@ const {
   organizationId: ssoOrganizationId,
   returnTo: computed(() => new URL(route.fullPath, window.location.origin).href)
 })
-const ssoBody = computed(() =>
-  ssoEmail.value
-    ? t('auth.sso.required.bodyWithEmail', { email: ssoEmail.value })
-    : t('auth.sso.required.body')
-)
+
+const leavingPage = computed(() => leaving.value || leavingForSso.value)
 
 const linkButtonClass =
   'cursor-pointer self-center border-none bg-transparent p-0 text-sm text-muted-foreground underline transition-colors hover:text-base-foreground disabled:cursor-not-allowed disabled:opacity-50'
@@ -154,7 +151,7 @@ const alertClass = 'rounded-lg bg-base-background p-3 text-sm'
     class="dark-theme fixed inset-0 overflow-auto bg-charcoal-950 px-4 py-6 font-inter sm:px-6 sm:py-10"
   >
     <section
-      v-if="!leaving && !leavingForSso"
+      v-if="!leavingPage"
       class="mx-auto flex w-full max-w-md flex-col rounded-2xl border border-border-subtle bg-secondary-background p-8 shadow-2xl shadow-black/35"
       :aria-busy="busy"
     >
@@ -237,37 +234,13 @@ const alertClass = 'rounded-lg bg-base-background p-3 text-sm'
         </div>
 
         <template v-if="sessionFailed">
-          <template v-if="ssoOffered">
-            <div role="alert" :class="cn(alertClass, 'text-base-foreground')">
-              <p class="m-0 font-semibold">
-                {{ t('auth.sso.required.title') }}
-              </p>
-              <p class="mt-1 mb-0 text-muted-foreground">{{ ssoBody }}</p>
-            </div>
-            <button
-              type="button"
-              :class="
-                cn(buttonVariants({ variant: 'primary', size: 'lg' }), 'w-full')
-              "
-              @click="continueWithSso"
-            >
-              {{ t('auth.sso.continueWithSso') }}
-            </button>
-            <div
-              v-if="signOutFailed"
-              role="alert"
-              :class="cn(alertClass, 'text-destructive-background')"
-            >
-              {{ t('auth.errors.generic') }}
-            </div>
-          </template>
-          <div
-            v-else
-            role="alert"
-            :class="cn(alertClass, 'text-destructive-background')"
-          >
-            {{ sessionErrorMessage }}
-          </div>
+          <SessionRefusalNotice
+            :sso-offered="ssoOffered"
+            :email="ssoEmail"
+            :sign-out-failed="signOutFailed"
+            :message="sessionErrorMessage"
+            @continue-with-sso="continueWithSso"
+          />
           <SessionFailureAction
             :class="linkButtonClass"
             :return-link="appReturnLink"
