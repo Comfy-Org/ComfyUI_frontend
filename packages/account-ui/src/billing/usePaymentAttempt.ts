@@ -12,15 +12,17 @@ import type { Ref } from 'vue'
 import type {
   BillingOperationKind,
   BillingOperationState,
+  CheckoutMethodKind,
   EmbeddedChallengePort,
   HostPaymentStep,
-  PaymentProjection
-} from '@comfyorg/account/billing'
+  PaymentProjection,
+  PendingBillingOperation
+} from '@comfyorg/account-core/billing'
 import {
   driveEmbeddedChallenge,
   isTerminal,
   projectPaymentStep
-} from '@comfyorg/account/billing'
+} from '@comfyorg/account-core/billing'
 
 import type { BillingClient } from './billingClient'
 import { useBillingOperation } from './useBillingOperation'
@@ -37,6 +39,13 @@ export interface PaymentNavigation {
   readonly navigationMode?: OpenUrlMode
   /** Absent leaves an embedded challenge parked until the host switches it hosted. */
   readonly challengePort?: EmbeddedChallengePort
+  /**
+   * Whether a continuation the server offers runs without a click. A host
+   * that declines one runs it later through `continueVerification`.
+   */
+  readonly autoContinue?: (state: PendingBillingOperation) => boolean
+  /** The method the customer chose, reported with the hosted step it leads to. */
+  readonly methodKind?: () => CheckoutMethodKind | undefined
 }
 
 export interface PaymentAttempt {
@@ -65,12 +74,30 @@ function continuationKey(
     : undefined
 }
 
+/** A non-card method finishes its challenge on the provider's site. */
+function leavesForProvider(
+  state: PendingBillingOperation,
+  method: CheckoutMethodKind | undefined
+): boolean {
+  return (
+    state.challenge?.status === 'required' &&
+    method !== undefined &&
+    method !== 'card'
+  )
+}
+
 export function usePaymentAttempt(
   kind: BillingOperationKind,
   client: Pick<BillingClient, 'lifecycle'>,
   navigation: PaymentNavigation
 ): PaymentAttempt {
-  const { openUrl, navigationMode = 'new_tab', challengePort } = navigation
+  const {
+    openUrl,
+    navigationMode = 'new_tab',
+    challengePort,
+    autoContinue = () => true,
+    methodKind = () => undefined
+  } = navigation
   const tracked = useBillingOperation({ kind }, client)
   const dismissedId = ref<string>()
   const hostStep = ref<HostPaymentStep>('select')
@@ -86,17 +113,36 @@ export function usePaymentAttempt(
     projectPaymentStep(operation.value, hostStep.value)
   )
 
+  function openHostedStep(
+    state: PendingBillingOperation,
+    method: CheckoutMethodKind | undefined
+  ) {
+    if (state.actionUrl === undefined) return
+    client.lifecycle.reportHostedStepOpened(
+      state.id,
+      navigationMode === 'redirect' ? 'redirect' : 'new_tab',
+      method
+    )
+    openUrl(state.actionUrl, navigationMode)
+  }
+
+  function driveChallenge(
+    state: PendingBillingOperation,
+    method: CheckoutMethodKind | undefined
+  ) {
+    if (challengePort === undefined) return
+    if (leavesForProvider(state, method)) {
+      client.lifecycle.reportHostedStepOpened(state.id, 'redirect', method)
+    }
+    void driveEmbeddedChallenge(client.lifecycle, state.id, challengePort)
+  }
+
   function continueVerification() {
     const state = operation.value
     if (state?.phase !== 'pending') return
-    if (state.presentation === 'hosted') {
-      if (state.actionUrl !== undefined) {
-        openUrl(state.actionUrl, navigationMode)
-      }
-      return
-    }
-    if (challengePort === undefined) return
-    void driveEmbeddedChallenge(client.lifecycle, state.id, challengePort)
+    const method = methodKind()
+    if (state.presentation === 'hosted') openHostedStep(state, method)
+    else driveChallenge(state, method)
   }
 
   // Once per continuation the server offers; a resumed operation is not
@@ -104,7 +150,13 @@ export function usePaymentAttempt(
   watch(
     () => continuationKey(operation.value),
     (key) => {
-      if (key !== undefined) continueVerification()
+      const state = operation.value
+      if (
+        key !== undefined &&
+        state?.phase === 'pending' &&
+        autoContinue(state)
+      )
+        continueVerification()
     }
   )
 

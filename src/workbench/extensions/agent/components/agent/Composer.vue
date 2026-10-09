@@ -1,31 +1,28 @@
 <script setup lang="ts">
 import {
-  DropdownMenuContent,
-  DropdownMenuItem,
-  DropdownMenuPortal,
-  DropdownMenuRoot,
-  DropdownMenuSeparator,
-  DropdownMenuSub,
-  DropdownMenuSubContent,
-  DropdownMenuSubTrigger,
-  DropdownMenuTrigger
-} from 'reka-ui'
-import { computed, inject, nextTick, ref, useTemplateRef, watch } from 'vue'
-import type { Ref } from 'vue'
+  computed,
+  nextTick,
+  onMounted,
+  onUnmounted,
+  ref,
+  useTemplateRef,
+  watch
+} from 'vue'
 import { useI18n } from 'vue-i18n'
 
 import Button from '@/components/ui/button/Button.vue'
 import AccessibleTooltip from '@/components/ui/tooltip/AccessibleTooltip.vue'
-import { buildTooltipConfig } from '@/composables/useTooltipConfig'
+import { registerEscapeOverride } from '@/platform/keybindings/escapeOverride'
+import type { AgentStopMethod } from '@/platform/telemetry/types'
 
 import InlinePromptEditor from './composer/InlinePromptEditor.vue'
 import { composerPromptForSend } from '../../utils/composerPrompt'
+import type { AgentStarterPromptAttribution } from '../../utils/starterPrompts'
 import { useAgentMentionPicker } from '../../composables/agent/useAgentMentionPicker'
 import { useWorkflowReferencePicker } from '../../composables/agent/useWorkflowReferencePicker'
-import type { ComposerAttachment } from '../../composables/agent/useComposer'
+import type { ComposerAttachment } from '../../types/composerAttachment'
 import { useComposer } from '../../composables/agent/useComposer'
 import type { SelectedNode } from '../../composables/agent/useCanvasSelection'
-import { selectedNodeKey } from '../../composables/agent/useCanvasSelection'
 import type {
   PromptSnapshot,
   WorkflowReference,
@@ -34,7 +31,10 @@ import type {
 } from '../../types/workflowReference'
 import { cn } from '@comfyorg/tailwind-utils'
 
-import AttachmentChip from './composer/AttachmentChip.vue'
+import AssetTray from './composer/AssetTray.vue'
+import ComposerAddMenu from './composer/ComposerAddMenu.vue'
+import ComposerPlaceholder from './composer/ComposerPlaceholder.vue'
+import MentionMenuItem from './composer/MentionMenuItem.vue'
 import RunModePopover from './composer/RunModePopover.vue'
 
 const {
@@ -72,8 +72,9 @@ const emit = defineEmits<{
     attachments: ComposerAttachment[],
     workflowReferences?: WorkflowReference[]
   ]
-  stop: []
+  stop: [method: AgentStopMethod]
   attach: []
+  attachFiles: [files: File[]]
   openAssets: []
   selectNodes: []
   removeTag: [id: string]
@@ -85,13 +86,7 @@ const emit = defineEmits<{
 }>()
 const { t } = useI18n()
 
-const assetDragActive = inject<Readonly<Ref<boolean>>>(
-  'agentAssetDragActive',
-  ref(false)
-)
-
-const duplicateIdClass =
-  'shrink-0 rounded-full bg-interface-menu-keybind-surface-default px-1 py-0.5 font-mono text-xs/4 font-medium text-base-foreground'
+const running = computed(() => streaming || submitting)
 
 const composer = useComposer({
   onSend: (text, attachments) => {
@@ -123,16 +118,21 @@ const composer = useComposer({
       )
     } else emit('send', text, attachments)
   },
-  isStreaming: () => streaming,
-  onStop: () => emit('stop')
+  isRunning: () => running.value,
+  onStop: () => emit('stop', 'button')
 })
 
 const editorRef =
   useTemplateRef<InstanceType<typeof InlinePromptEditor>>('editorRef')
 const { workflowReferences } = composer
+const showPlaceholderHint = computed(
+  () => !composer.draft.value && !composer.prompt.value.references.length
+)
 
-const workflowSubmenuOpen = ref(false)
-const addMenuOpen = ref(false)
+const highlightedAssetIds = ref<string[]>([])
+const uploadingAttachmentCount = computed(
+  () => composer.attachments.value.filter((item) => item.uploading).length
+)
 
 const { eligibleWorkflows, selectWorkflow } = useWorkflowReferencePicker({
   editor: () => editorRef.value,
@@ -150,10 +150,8 @@ const {
   mentionVisible,
   mentionHasResults,
   graphDupes,
-  tagDupes,
   syncMention,
   pickMention,
-  isNodeReferenceDisabled,
   isMentionDisabled,
   onComposerKeydown: handleMentionKeydown,
   onComposerKeyup,
@@ -164,11 +162,13 @@ const {
   editor: () => editorRef.value,
   selectionTags: () => selectionTags,
   workflows: () => eligibleWorkflows.value,
+  assets: () => composer.attachments.value,
   nodeReferenceDisabledReason: () => nodeReferenceDisabledReason,
   workflowSelecting: () => workflowSelecting,
   getMentionNodes: () => getMentionNodes(),
   selectWorkflow,
   pickNode: (node) => emit('mentionPick', node),
+  pickAsset: (asset) => composer.referenceAttachment(asset.id),
   requestWorkflows: () => emit('requestWorkflowReferences')
 })
 
@@ -180,14 +180,6 @@ function onSelectNodes(event: Event): void {
   emit('selectNodes')
 }
 
-function onWorkflowSubmenuOpenChange(open: boolean): void {
-  if (open && !workflowSelecting) emit('requestWorkflowReferences')
-}
-
-async function pickWorkflow(workflow: WorkflowReferenceOption): Promise<void> {
-  if (await selectWorkflow(workflow)) addMenuOpen.value = false
-}
-
 function onEditorSelectionChange(): void {
   const point = editorRef.value?.insertionPoint()
   if (point) composer.setInsertionPoint(point)
@@ -195,7 +187,18 @@ function onEditorSelectionChange(): void {
 }
 
 function onComposerKeydown(event: KeyboardEvent): void {
-  if (!handleMentionKeydown(event) && event.key === 'Enter') onEnter(event)
+  if (handleMentionKeydown(event)) return
+  if (event.key === 'Enter') onEnter(event)
+  if (
+    event.key === 'Escape' &&
+    running.value &&
+    !event.isComposing &&
+    !event.repeat
+  ) {
+    event.preventDefault()
+    event.stopPropagation()
+    emit('stop', 'escape')
+  }
 }
 
 const mentionListRef = useTemplateRef<HTMLDivElement>('mentionListRef')
@@ -206,31 +209,107 @@ watch(mentionActive, async () => {
     ?.scrollIntoView?.({ block: 'nearest' })
 })
 
-const placeholderHint = computed(() => {
-  const [text = '', mentionNodes = ''] = t('agent.placeholder').split('\n')
-  return { text, mentionNodes }
-})
-
 function onEnter(event: KeyboardEvent): void {
   if (event.isComposing || event.shiftKey) return
   event.preventDefault()
+  if (running.value) return
   composer.submit()
 }
 
-const running = computed(() => streaming || submitting)
 const primaryActionTooltip = computed(() =>
-  composer.canSend.value
-    ? t('agent.send')
-    : t('agent.addPromptToSend', 'Add a prompt to send')
+  running.value ? t('agent.stop') : t('agent.send')
+)
+const primaryActionVariant = computed(() =>
+  running.value ? 'secondary' : 'inverted'
+)
+const primaryActionDisabled = computed(
+  () => !running.value && (workflowSelecting || !composer.canSend.value)
+)
+const activeMentionDescendant = computed(() =>
+  mentionVisible.value
+    ? `agent-reference-item-${mentionActive.value}`
+    : undefined
+)
+const emptyMentionLabel = computed(() =>
+  t(
+    mentionSection.value === 'workflows'
+      ? 'agent.noWorkflowsToReference'
+      : 'agent.noNodesToReference'
+  )
+)
+const primaryActionShortcut = computed(() =>
+  running.value ? t('agent.stopShortcut') : undefined
 )
 
 function onPrimaryAction(): void {
-  if (running.value) emit('stop')
+  if (running.value) emit('stop', 'button')
   else composer.submit()
 }
 
-function insert(text: string): void {
-  composer.insert(text)
+const composerContainerRef = useTemplateRef<HTMLDivElement>(
+  'composerContainerRef'
+)
+
+// The prompt editor only forwards `keydown` while it (the ProseMirror
+// contenteditable) itself has focus, so pressing Escape after submitting via
+// Enter is caught there (see the editor-scoped handler above). Clicking Send
+// with the mouse doesn't reliably leave focus in a place a container-scoped
+// listener would see: Chrome moves it onto the button, but Safari and
+// Firefox leave it on <body> without moving it at all, so a plain pointer
+// click can leave the next Escape with nothing inside the composer in its
+// bubble path.
+//
+// For that case this registers into `keybindingService`'s Escape override
+// hook instead of adding another DOM listener: `platform/` can't import from
+// `workbench/`, so it can't see this component's `running` state directly,
+// but `keybindHandler` consults whatever is registered here before it would
+// dispatch the default Escape keybinding (`Comfy.Graph.ExitSubgraph`). This
+// handler decides whether to act by checking focus directly rather than
+// relying on the event's bubble path: it fires while focus is inside this
+// composer, or nowhere in particular (the Safari/Firefox click case), but
+// stays out of the way once focus has genuinely moved elsewhere on the page
+// (see the "once focus has left the composer entirely" test).
+//
+// This is one of several places that establish Escape ownership in this
+// app: `useKeybindingService`'s own bailouts for `[role="menu"]` targets and
+// open dialogs run before this override is even consulted
+// (src/platform/keybindings/keybindingService.ts), the mention picker closes
+// itself first via stopPropagation (useAgentMentionPicker.ts's
+// onComposerKeydown), select has its own stopEscapeToDocument
+// (packages/design-system/src/select.variants.ts), and the capture-phase
+// document listeners in OnboardingCoach.vue and TourSpotlight.vue let a
+// full-screen overlay pre-empt everything else. This handler only ever runs
+// when none of those more specific handlers claimed the event first.
+function handleEscapeOverride(event: KeyboardEvent): boolean {
+  if (event.key !== 'Escape' || !running.value || event.isComposing)
+    return false
+  if (event.defaultPrevented) return false
+
+  const active = document.activeElement
+  const focusedElsewhere =
+    active !== null &&
+    active !== document.body &&
+    !composerContainerRef.value?.contains(active)
+  if (focusedElsewhere) return false
+
+  event.preventDefault()
+  if (!event.repeat) emit('stop', 'escape')
+  return true
+}
+
+let unregisterEscapeOverride: (() => void) | undefined
+onMounted(() => {
+  unregisterEscapeOverride = registerEscapeOverride(handleEscapeOverride)
+})
+onUnmounted(() => {
+  unregisterEscapeOverride?.()
+})
+
+function insert(
+  text: string,
+  starterPrompt?: AgentStarterPromptAttribution
+): void {
+  composer.insert(text, starterPrompt)
   editorRef.value?.focus()
 }
 
@@ -250,7 +329,10 @@ defineExpose({
 
 <template>
   <div
-    class="relative flex flex-col rounded-lg border border-border-default bg-base-background"
+    id="agent-composer"
+    ref="composerContainerRef"
+    data-testid="agent-composer"
+    class="relative flex min-w-0 flex-col rounded-lg border border-border-subtle bg-base-background"
   >
     <div
       v-if="mentionVisible"
@@ -259,7 +341,7 @@ defineExpose({
       data-testid="agent-reference-menu"
       role="menu"
       :aria-label="t('agent.addToPrompt')"
-      class="absolute inset-x-0 bottom-full z-1100 mb-[-35px] max-h-64 overflow-y-auto rounded-lg border border-border-subtle bg-secondary-background p-1 font-inter shadow-md"
+      class="absolute inset-x-0 bottom-full z-1100 -mb-8.75 max-h-64 overflow-y-auto rounded-lg border border-border-subtle bg-secondary-background p-1 font-inter shadow-md"
       @mousedown.prevent
     >
       <div
@@ -268,78 +350,24 @@ defineExpose({
       >
         {{ t('agent.reference') }}
       </div>
-      <AccessibleTooltip
+      <MentionMenuItem
         v-for="(match, index) in mentionMatches"
         :key="`${match.kind}:${match.id}`"
-        :label="nodeReferenceDisabledReason ?? ''"
-        :disabled="!isNodeReferenceDisabled(match)"
-        :skip-delay-duration="0"
-        disable-hoverable-content
-        :collision-padding="8"
-      >
-        <template #trigger>
-          <div
-            :id="`agent-reference-item-${index}`"
-            :aria-disabled="isMentionDisabled(match) || undefined"
-            :aria-description="
-              isNodeReferenceDisabled(match)
-                ? nodeReferenceDisabledReason
-                : undefined
-            "
-            role="menuitem"
-            :data-active="index === mentionActive"
-            :class="
-              cn(
-                'flex h-7 w-full cursor-pointer items-center gap-1.5 rounded-lg px-1.5 py-1 text-xs font-normal text-base-foreground outline-none aria-disabled:cursor-not-allowed aria-disabled:opacity-50',
-                index === mentionActive && 'bg-secondary-background-hover'
-              )
-            "
-            @mouseenter="highlightMention(index)"
-            @click="pickMention(match)"
-          >
-            <span
-              v-if="match.kind === 'section' && match.id === 'nodes'"
-              class="icon-[comfy--node] size-3.5 shrink-0"
-            />
-            <span
-              v-else-if="match.kind === 'section' && match.id === 'workflows'"
-              class="icon-[comfy--workflow] size-3.5 shrink-0"
-            />
-            <span
-              v-else-if="match.kind === 'back'"
-              class="icon-[lucide--chevron-left] size-4 shrink-0"
-            />
-            <span class="min-w-0 flex-1 truncate">{{ match.label }}</span>
-            <span
-              v-if="
-                match.kind === 'workflow' && match.workflow.id === undefined
-              "
-              class="text-xs text-muted-foreground"
-              >{{ t('agent.unsavedWorkflow') }}</span
-            >
-            <span
-              v-if="match.kind === 'node' && graphDupes.has(match.node.title)"
-              :class="cn(duplicateIdClass, 'ml-auto')"
-            >
-              #{{ match.node.id }}
-            </span>
-            <span
-              v-if="match.kind === 'section'"
-              class="icon-[lucide--chevron-right] size-4 shrink-0"
-            />
-          </div>
-        </template>
-      </AccessibleTooltip>
+        :match
+        :index
+        :active="index === mentionActive"
+        :disabled="isMentionDisabled(match)"
+        :node-reference-disabled-reason
+        :duplicate-node-titles="graphDupes"
+        @highlight="highlightMention(index)"
+        @pick="pickMention(match)"
+      />
       <div
         v-if="!mentionHasResults"
         role="status"
         class="px-2 py-1 text-xs text-muted-foreground"
       >
-        {{
-          mentionSection === 'workflows'
-            ? t('agent.noWorkflowsToReference')
-            : t('agent.noNodesToReference')
-        }}
+        {{ emptyMentionLabel }}
       </div>
     </div>
 
@@ -350,271 +378,107 @@ defineExpose({
       <slot name="header" />
     </div>
 
+    <slot name="aboveInput" />
+
     <div
-      :class="
-        cn(
-          'relative flex flex-col border transition-colors',
-          assetDragActive
-            ? 'h-28 rounded-lg border-dashed border-component-node-border bg-secondary-background'
-            : 'min-h-28 rounded-lg border-border-default bg-secondary-background focus-within:border-muted-foreground'
-        )
-      "
+      data-testid="composer-input-box"
+      class="relative -m-px flex max-h-[50dvh] min-h-28 min-w-0 flex-col rounded-lg border border-border-subtle bg-secondary-background transition-colors focus-within:border-muted-foreground"
     >
-      <div
-        v-if="assetDragActive"
-        role="status"
-        class="absolute inset-px z-20 flex flex-col items-center justify-center gap-2 rounded-lg bg-secondary-background font-inter text-[14px] leading-[normal] font-normal text-muted-foreground"
-      >
-        <span
-          aria-hidden="true"
-          class="icon-[lucide--upload] size-6 shrink-0 text-muted-foreground"
-        />
-        <span>{{ t('agent.dragAndDropAssets') }}</span>
-      </div>
-      <div
-        v-if="selectionTags.length"
-        data-testid="composer-node-section"
-        class="flex flex-wrap items-center gap-2 border-b border-border-default p-3"
-      >
-        <span
-          v-for="tag in selectionTags"
-          :key="selectedNodeKey(tag)"
-          class="inline-flex h-7 items-center gap-1 rounded-lg border border-border-default bg-secondary-background-hover px-2.5 text-xs/4 font-medium text-base-foreground transition-colors hover:bg-tertiary-background-hover"
-        >
-          <span class="flex items-center gap-1">
-            <span class="icon-[comfy--node] size-3.5 text-muted-foreground" />
-            <span class="max-w-40 truncate">{{ tag.title }}</span>
-            <span
-              v-if="graphDupes.has(tag.title) || tagDupes.has(tag.title)"
-              :class="duplicateIdClass"
-              >#{{ tag.id }}</span
-            >
-          </span>
-          <button
-            v-tooltip.top="buildTooltipConfig(t('agent.remove'))"
-            type="button"
-            :aria-label="
-              t('agent.removeNodeLabel', { node: `${tag.title} #${tag.id}` })
-            "
-            class="flex size-3.5 cursor-pointer items-center justify-center text-muted-foreground transition-colors hover:text-base-foreground"
-            @click.stop="emit('removeTag', selectedNodeKey(tag))"
-          >
-            <span class="icon-[lucide--x] size-3.5 shrink-0" />
-          </button>
-        </span>
-      </div>
+      <slot name="insideInput" />
+      <AssetTray
+        v-if="composer.attachments.value.length"
+        :attachments="composer.attachments.value"
+        :highlighted-ids="highlightedAssetIds"
+        @remove="composer.removeAttachment"
+      />
 
       <div
-        v-if="composer.attachments.value.length"
-        data-testid="composer-asset-section"
-        class="flex flex-wrap gap-2 p-3"
+        data-testid="composer-upload-status"
+        aria-live="polite"
+        aria-atomic="true"
+        :class="
+          cn(
+            'flex shrink-0 items-center gap-1 text-xs text-muted-foreground',
+            uploadingAttachmentCount > 0 && 'px-3 pb-2'
+          )
+        "
       >
-        <AttachmentChip
-          v-for="item in composer.attachments.value"
-          :key="item.id"
-          :name="item.name"
-          :preview-url="item.previewUrl"
-          :uploading="item.uploading"
-          @remove="composer.removeReference(`asset:${item.id}`)"
-        />
+        <template v-if="uploadingAttachmentCount > 0">
+          <span
+            aria-hidden="true"
+            class="icon-[lucide--loader-circle] size-3 animate-spin"
+          />
+          {{ t('agent.uploadingAttachments', uploadingAttachmentCount) }}
+        </template>
       </div>
 
       <div
         data-testid="composer-inline-input"
-        class="max-h-100 min-h-16 overflow-x-hidden overflow-y-auto p-3"
+        class="flex max-h-100 min-h-16 flex-col overflow-x-hidden overflow-y-auto"
       >
         <div
           v-if="workflowSelecting"
           role="status"
-          class="mb-1 flex items-center gap-1 text-xs text-muted-foreground"
+          class="-mb-2 flex items-center gap-1 px-3 pt-3 text-xs text-muted-foreground"
         >
           <span class="icon-[lucide--loader-circle] size-3 animate-spin" />
           {{ t('agent.savingWorkflow') }}
         </div>
-        <div class="relative min-h-7">
-          <InlinePromptEditor
-            ref="editorRef"
-            :model-value="composer.prompt.value"
-            :label="t('agent.placeholder')"
-            :expanded="mentionVisible"
-            :active-descendant="
-              mentionVisible
-                ? `agent-reference-item-${mentionActive}`
-                : undefined
-            "
-            :history-epoch="composer.promptEpoch.value"
-            :editable-workflow-id
-            @keydown="onComposerKeydown"
-            @update:model-value="composer.applyEditorPrompt"
-            @keyup="onComposerKeyup"
-            @input="syncMention"
-            @selection-change="onEditorSelectionChange"
-            @click="syncMention"
-            @blur="closeMention()"
-            @open-reference-workflow="
-              (id, name) => emit('openReferenceWorkflow', id, name)
-            "
-            @remove-node-reference="emit('removeTag', $event)"
-            @remove-workflow-reference="emit('removeWorkflowReference', $event)"
-          />
-
-          <div
-            v-if="
-              !composer.draft.value && !composer.prompt.value.references.length
-            "
-            class="pointer-events-none relative z-10 -mt-7 font-inter text-[14px]/[20px] font-normal text-muted-foreground"
-          >
-            <span>{{ placeholderHint.text }} </span>
-            <AccessibleTooltip
-              :label="nodeReferenceDisabledReason ?? ''"
-              :disabled="!nodeReferenceDisabledReason"
-              :skip-delay-duration="0"
-              disable-hoverable-content
-              :collision-padding="8"
-            >
-              <template #trigger>
-                <button
-                  type="button"
-                  :aria-disabled="!!nodeReferenceDisabledReason || undefined"
-                  :aria-description="nodeReferenceDisabledReason"
-                  class="pointer-events-auto -ml-1 inline-flex h-[20px] shrink-0 cursor-pointer items-center gap-[4px] rounded-lg px-[4px] align-top text-[14px]/[20px] text-muted-foreground transition-colors hover:text-base-foreground focus-visible:text-base-foreground focus-visible:outline-1 focus-visible:outline-base-foreground aria-disabled:cursor-not-allowed aria-disabled:opacity-50"
-                  @click="onSelectNodes"
-                >
-                  <span
-                    class="icon-[lucide--mouse-pointer-click] size-[14px] shrink-0"
-                  />
-                  <span
-                    class="underline decoration-dashed underline-offset-2"
-                    >{{ placeholderHint.mentionNodes }}</span
-                  >
-                </button>
-              </template>
-            </AccessibleTooltip>
+        <div class="grid flex-1">
+          <div class="col-start-1 row-start-1 flex flex-col">
+            <InlinePromptEditor
+              ref="editorRef"
+              :model-value="composer.prompt.value"
+              :label="t('agent.placeholder')"
+              :expanded="mentionVisible"
+              :active-descendant="activeMentionDescendant"
+              :history-epoch="composer.promptEpoch.value"
+              :editable-workflow-id
+              @keydown="onComposerKeydown"
+              @update:model-value="composer.applyEditorPrompt"
+              @keyup="onComposerKeyup"
+              @input="syncMention"
+              @selection-change="onEditorSelectionChange"
+              @click="syncMention"
+              @blur="closeMention()"
+              @attach-files="emit('attachFiles', $event)"
+              @open-reference-workflow="
+                (id, name) => emit('openReferenceWorkflow', id, name)
+              "
+              @remove-node-reference="emit('removeTag', $event)"
+              @highlight-assets="highlightedAssetIds = $event"
+              @remove-workflow-reference="
+                emit('removeWorkflowReference', $event)
+              "
+            />
           </div>
+
+          <ComposerPlaceholder
+            :visible="showPlaceholderHint"
+            :node-reference-disabled-reason
+            @select-nodes="onSelectNodes"
+          />
         </div>
       </div>
 
-      <div class="flex items-center justify-between px-3 py-2">
-        <DropdownMenuRoot v-model:open="addMenuOpen">
-          <DropdownMenuTrigger
-            v-tooltip.top="buildTooltipConfig(t('agent.addToPrompt'))"
-            :aria-label="t('agent.addToPrompt')"
-            class="flex size-8 cursor-pointer items-center justify-center rounded-xl text-muted-foreground transition-colors hover:bg-secondary-background-hover hover:text-base-foreground"
-          >
-            <span class="icon-[lucide--plus] size-4" />
-          </DropdownMenuTrigger>
-          <DropdownMenuPortal>
-            <DropdownMenuContent
-              side="top"
-              align="start"
-              :side-offset="4"
-              class="agent-scope z-1100 box-border w-max min-w-[186px] rounded-lg border border-border-subtle bg-secondary-background p-1 font-inter shadow-lg"
-            >
-              <AccessibleTooltip
-                :label="nodeReferenceDisabledReason ?? ''"
-                :disabled="!nodeReferenceDisabledReason"
-                :skip-delay-duration="0"
-                disable-hoverable-content
-                :collision-padding="8"
-              >
-                <template #trigger>
-                  <DropdownMenuItem
-                    :disabled="!!nodeReferenceDisabledReason"
-                    :aria-description="nodeReferenceDisabledReason"
-                    class="mb-0.5 box-border flex h-7 w-full cursor-pointer items-center gap-1.5 rounded-lg px-1.5 py-1 text-[14px]/5 font-normal text-base-foreground outline-none aria-disabled:cursor-not-allowed aria-disabled:opacity-50 data-highlighted:bg-secondary-background-hover"
-                    @select="onSelectNodes"
-                  >
-                    <span class="icon-[comfy--node] size-4 shrink-0" />
-                    <span class="whitespace-nowrap">
-                      {{ t('agent.nodes') }}
-                    </span>
-                  </DropdownMenuItem>
-                </template>
-              </AccessibleTooltip>
-              <DropdownMenuSub
-                v-model:open="workflowSubmenuOpen"
-                @update:open="onWorkflowSubmenuOpenChange"
-              >
-                <DropdownMenuSubTrigger
-                  class="mb-0.5 box-border flex h-7 w-full cursor-pointer items-center gap-1.5 rounded-lg px-1.5 py-1 text-[14px]/5 font-normal text-base-foreground outline-none data-highlighted:bg-secondary-background-hover"
-                >
-                  <span class="icon-[comfy--workflow] size-4 shrink-0" />
-                  <span class="flex-1 text-left whitespace-nowrap">
-                    {{ t('agent.workflows') }}
-                  </span>
-                  <span class="icon-[lucide--chevron-right] size-4 shrink-0" />
-                </DropdownMenuSubTrigger>
-                <DropdownMenuPortal>
-                  <DropdownMenuSubContent
-                    :side-offset="4"
-                    class="agent-scope z-1100 box-border max-h-64 min-w-[186px] overflow-y-auto rounded-lg border border-border-subtle bg-secondary-background p-1 font-inter shadow-lg"
-                  >
-                    <DropdownMenuItem
-                      class="mb-0.5 box-border flex h-7 w-full cursor-pointer items-center gap-1.5 rounded-lg px-1.5 py-1 text-[14px]/5 font-normal text-base-foreground outline-none data-highlighted:bg-secondary-background-hover"
-                      @select.prevent="workflowSubmenuOpen = false"
-                    >
-                      <span
-                        class="icon-[lucide--chevron-left] size-4 shrink-0"
-                      />
-                      <span>{{ t('g.back') }}</span>
-                    </DropdownMenuItem>
-                    <DropdownMenuItem
-                      v-for="workflow in eligibleWorkflows"
-                      :key="workflow.id ?? workflow.tabPath"
-                      :disabled="workflowSelecting"
-                      class="box-border flex h-7 w-full cursor-pointer items-center gap-1.5 rounded-lg px-1.5 py-1 text-[14px]/5 font-normal text-base-foreground outline-none data-highlighted:bg-secondary-background-hover"
-                      @select.prevent="pickWorkflow(workflow)"
-                    >
-                      <span class="icon-[comfy--workflow] size-4 shrink-0" />
-                      <span class="max-w-64 truncate">{{ workflow.name }}</span>
-                      <span
-                        v-if="workflow.id === undefined"
-                        class="text-xs text-muted-foreground"
-                        >{{ t('agent.unsavedWorkflow') }}</span
-                      >
-                    </DropdownMenuItem>
-                    <div
-                      v-if="eligibleWorkflows.length === 0"
-                      class="px-2 py-1 text-xs text-muted-foreground"
-                    >
-                      {{ t('agent.noWorkflowsToReference') }}
-                    </div>
-                  </DropdownMenuSubContent>
-                </DropdownMenuPortal>
-              </DropdownMenuSub>
-              <DropdownMenuItem
-                v-if="canOpenAssets"
-                class="box-border flex h-7 w-full cursor-pointer items-center gap-1.5 rounded-lg px-1.5 py-1 text-[14px]/5 font-normal text-base-foreground outline-none data-highlighted:bg-secondary-background-hover"
-                @select="emit('openAssets')"
-              >
-                <span class="icon-[comfy--image-ai-edit] size-4 shrink-0" />
-                <span class="whitespace-nowrap">
-                  {{ t('agent.addFromAssets') }}
-                </span>
-              </DropdownMenuItem>
-              <DropdownMenuSeparator
-                v-if="canAttach && canOpenAssets"
-                class="mt-0 mb-px h-px bg-border-subtle"
-              />
-              <DropdownMenuItem
-                v-if="canAttach"
-                class="box-border flex h-7 w-full cursor-pointer items-center gap-1.5 rounded-lg px-1.5 py-1 text-[14px]/5 font-normal text-base-foreground outline-none data-highlighted:bg-secondary-background-hover"
-                @select="emit('attach')"
-              >
-                <span class="icon-[lucide--paperclip] size-4 shrink-0" />
-                <span class="whitespace-nowrap">{{
-                  t('agent.attachFiles')
-                }}</span>
-              </DropdownMenuItem>
-            </DropdownMenuContent>
-          </DropdownMenuPortal>
-        </DropdownMenuRoot>
+      <div class="flex shrink-0 items-center justify-between px-3 py-2">
+        <ComposerAddMenu
+          :can-attach
+          :can-open-assets
+          :node-reference-disabled-reason
+          :workflows="eligibleWorkflows"
+          :workflow-selecting
+          :select-workflow="selectWorkflow"
+          @select-nodes="onSelectNodes"
+          @attach="emit('attach')"
+          @open-assets="emit('openAssets')"
+          @request-workflow-references="emit('requestWorkflowReferences')"
+        />
 
         <div class="flex items-center gap-1">
           <RunModePopover />
           <AccessibleTooltip
             :label="primaryActionTooltip"
-            :disabled="running"
             :skip-delay-duration="0"
             disable-hoverable-content
             :collision-padding="8"
@@ -622,25 +486,21 @@ defineExpose({
             <template #trigger>
               <Button
                 type="button"
-                :variant="running ? 'secondary' : 'inverted'"
+                :variant="primaryActionVariant"
                 size="icon"
-                :aria-label="running ? t('agent.stop') : t('agent.send')"
-                :disabled="
-                  !running && (workflowSelecting || !composer.canSend.value)
-                "
+                :aria-label="primaryActionTooltip"
+                :disabled="primaryActionDisabled"
                 @click="onPrimaryAction"
               >
-                <span
-                  :class="
-                    cn(
-                      'size-4',
-                      running
-                        ? 'icon-[lucide--square]'
-                        : 'icon-[lucide--arrow-up]'
-                    )
-                  "
-                />
+                <i-lucide:square v-if="running" class="size-4" />
+                <i-lucide:arrow-up v-else class="size-4" />
               </Button>
+            </template>
+            <template #content>
+              {{ primaryActionTooltip }}
+              <span v-if="primaryActionShortcut" class="ml-1 opacity-50">{{
+                primaryActionShortcut
+              }}</span>
             </template>
           </AccessibleTooltip>
         </div>

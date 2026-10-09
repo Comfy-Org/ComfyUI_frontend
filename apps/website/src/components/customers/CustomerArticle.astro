@@ -1,8 +1,8 @@
 ---
 import { render } from 'astro:content'
 
-import type { Locale } from '../../i18n/translations'
-import type { CustomerStoryEntry } from '../../utils/customers'
+import type { Locale } from '@/i18n/translations'
+import type { CustomerStoryEntry } from '@/utils/customers'
 import ArticleNav from './ArticleNav.vue'
 import AtAGlance from './content/AtAGlance.astro'
 import AuthorBio from './content/AuthorBio.astro'
@@ -68,11 +68,9 @@ const contentComponents = {
 
     <div class="flex-1">
       <Content components={contentComponents} />
-      {
-        entry.data.readMore && (
-          <ReadMore href={entry.data.readMore} locale={locale} />
-        )
-      }
+      {entry.data.readMore && (
+        <ReadMore href={entry.data.readMore} locale={locale} />
+      )}
     </div>
   </div>
 </section>

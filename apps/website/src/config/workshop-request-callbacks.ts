@@ -2,7 +2,7 @@ import { z } from 'astro/zod'
 
 import type { WorkshopCreatorForm } from './workshop-creator-form'
 import type {
-  EncodedWorkshopFile,
+  PreparedWorkshopFile,
   WorkshopRequestInputs
 } from './workshop-creator-request'
 import { WorkshopRouterError } from './workshop-router-errors'
@@ -48,7 +48,11 @@ function withoutIndexed(values: Values, prefix: string): Values {
   )
 }
 
-function dataUrl(file: EncodedWorkshopFile): string {
+function dataUrl(file: PreparedWorkshopFile): string {
+  if (!('data' in file))
+    throw new WorkshopRouterError('validation', null, {
+      request_body: 'rejected'
+    })
   return `data:${file.mimeType};base64,${file.data}`
 }
 
@@ -63,8 +67,9 @@ function seedance({
   values,
   files
 }: WorkshopRequestInputs): Record<string, unknown> {
-  const { prompt, first_frame_url, last_frame_url, ...rest } = values
+  const { prompt, first_frame_url, last_frame_url, video_url, ...rest } = values
   const body = withoutIndexed(rest, 'reference_image_url')
+  const videoUrls = typeof video_url === 'string' ? [video_url] : []
   const first = files.first_frame ?? []
   const last = files.last_frame ?? []
   const references = files.reference_images ?? []
@@ -101,6 +106,11 @@ function seedance({
         type: 'image_url',
         role,
         image_url: { url }
+      })),
+      ...videoUrls.map((url) => ({
+        type: 'video_url',
+        role: 'reference_video',
+        video_url: { url }
       }))
     ]
   }
@@ -117,9 +127,15 @@ function gemini({
         role: 'user',
         parts: [
           { text: values.prompt },
-          ...(files.images ?? []).map((file) => ({
-            inlineData: { data: file.data, mimeType: file.mimeType }
-          }))
+          ...(files.images ?? []).map((file) =>
+            'data' in file
+              ? {
+                  inlineData: { data: file.data, mimeType: file.mimeType }
+                }
+              : {
+                  fileData: { fileUri: file.url, mimeType: file.mimeType }
+                }
+          )
         ]
       }
     ],
@@ -173,7 +189,11 @@ function veo({
     throw new WorkshopRouterError('validation', null, {
       [lastFrame && !image ? 'first_frame' : 'reference_images']: 'rejected'
     })
-  function encoded(file: EncodedWorkshopFile) {
+  function encoded(file: PreparedWorkshopFile) {
+    if (!('data' in file))
+      throw new WorkshopRouterError('validation', null, {
+        request_body: 'rejected'
+      })
     return { bytesBase64Encoded: file.data, mimeType: file.mimeType }
   }
   return {
@@ -279,6 +299,12 @@ export function prepareWorkshopRequestCallback(
   const { values, files } = context
   switch (request.callback) {
     case 'flat':
+      return { ...values }
+    case 'gpt-image':
+      if ((files.images ?? []).length)
+        throw new WorkshopRouterError('validation', null, {
+          images: 'rejected'
+        })
       return { ...values }
     case 'ideogram': {
       const { prompt, ...rest } = values

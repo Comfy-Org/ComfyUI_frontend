@@ -19,34 +19,14 @@ vi.mock(import('@/platform/distribution/types'), () => ({
   }
 }))
 
-const mockShowPricingTable = vi.fn()
-
-vi.mock<unknown>(
-  import('@/platform/cloud/subscription/composables/useSubscriptionDialog'),
-  () => ({
-    useSubscriptionDialog: vi.fn(() => ({
-      showPricingTable: mockShowPricingTable
-    }))
-  })
+vi.mock(
+  import('@/platform/cloud/subscription/composables/useSubscriptionDialog')
 )
 
 vi.mock(import('@/composables/billing/useBillingContext'))
 vi.mock(
   import('@/platform/cloud/subscription/composables/useSubscribeCtaPresence')
 )
-
-vi.mock(import('firebase/app'), () => ({
-  initializeApp: vi.fn(),
-  getApp: vi.fn()
-}))
-
-vi.mock<unknown>(import('firebase/auth'), () => ({
-  getAuth: vi.fn(),
-  setPersistence: vi.fn(),
-  browserLocalPersistence: {},
-  onAuthStateChanged: vi.fn(),
-  signOut: vi.fn()
-}))
 
 function renderComponent(promptMounted = computed(() => false)) {
   const billing = useBillingContext()

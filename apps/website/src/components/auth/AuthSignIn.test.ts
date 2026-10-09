@@ -1,51 +1,73 @@
 import { render, screen, waitFor } from '@testing-library/vue'
 import userEvent from '@testing-library/user-event'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
+import { computed, readonly, ref } from 'vue'
 
-import { AUTH_ERROR_MESSAGES } from '@comfyorg/account/firebaseAuthError'
+import type { User, UserCredential } from 'firebase/auth'
+
+import type { PopupSignInOptions } from '@comfyorg/account-core/firebase'
+
+import type {
+  AccountCredential,
+  SessionResult
+} from '@comfyorg/account-core/session'
 import type {
   TurnstileApi,
   TurnstileRenderOptions
-} from '@comfyorg/account/turnstileScript'
+} from '@comfyorg/account-core/turnstileScript'
 
-import { removeAllToasts, useAuthToasts } from '../../config/auth-toast-state'
+import { dismissAllAuthToasts, useAuthToasts } from '@/config/auth-toast-state'
+import {
+  testCredential,
+  testFirebaseUser
+} from '@/config/__fixtures__/workshopSessionFakes'
+import {
+  isNewWorkshopUser,
+  isWorkshopProvisioningError,
+  provisionWorkshopCustomer,
+  signInWorkshopWithEmail,
+  signInWorkshopWithGitHub,
+  signInWorkshopWithGoogle,
+  signOutWorkshop,
+  signUpWorkshopWithEmail
+} from '@/config/workshop-firebase'
+import { useWorkshopSession } from '@/config/workshop-session-state'
+import { ssoStartUrlFor, warmSsoStartFlag } from '@/config/workshop-sso'
+import { t } from '@/i18n/translations'
+import {
+  captureAuthCompleted,
+  captureAuthFailed,
+  captureSignupOpened,
+  useWorkshopAuthFlag,
+  useWorkshopTurnstileMode
+} from '@/scripts/posthog'
 import AuthSignIn from './AuthSignIn.vue'
 import AuthToast from './AuthToast.vue'
 
 const handles = vi.hoisted(() => ({
-  flag: undefined as { value: boolean } | undefined,
-  user: undefined as { value: unknown } | undefined,
-  session: undefined as { value: unknown } | undefined,
-  identitySettled: undefined as { value: boolean } | undefined,
-  chunkFails: false,
-  ensureFresh: vi.fn(),
-  google: vi.fn(),
-  github: vi.fn(),
-  emailSignIn: vi.fn(),
-  emailSignUp: vi.fn(),
-  provision: vi.fn(),
-  signOut: vi.fn(),
   turnstileReset: vi.fn(),
-  isProvisioningError: vi.fn(),
-  isNewUser: vi.fn(),
-  captureAuthCompleted: vi.fn(),
-  captureAuthFailed: vi.fn(),
-  captureSignupOpened: vi.fn(),
   embedded: false
 }))
 
-vi.mock<unknown>(import('../../scripts/posthog'), async () => {
-  const { ref } = await import('vue')
-  const flag = ref(true)
-  handles.flag = flag
-  return {
-    useWorkshopAuthFlag: () => flag,
-    useWorkshopTurnstileMode: () => ref('shadow'),
-    captureAuthCompleted: handles.captureAuthCompleted,
-    captureAuthFailed: handles.captureAuthFailed,
-    captureSignupOpened: handles.captureSignupOpened
-  }
-})
+vi.mock(import('@/scripts/posthog'))
+vi.mock(import('@/config/workshop-firebase'))
+vi.mock(import('@/config/workshop-session-state'))
+vi.mock(import('@/config/workshop-sso'))
+
+const authFlag = ref(true)
+const authUser = ref<User | null>(null)
+const session = ref<ReturnType<typeof useWorkshopSession>['session']['value']>()
+const settled = ref(true)
+
+const accountCredential: AccountCredential = {
+  token: 'workspace-jwt',
+  expiresAt: Date.now() + 60_000,
+  uid: 'user-1',
+  workspace: { id: 'workspace-1', name: 'Personal', type: 'personal' },
+  role: 'owner',
+  permissions: []
+}
+const okSession: SessionResult = { status: 'ok', session: accountCredential }
 
 const turnstileApi = vi.hoisted(
   () =>
@@ -56,11 +78,11 @@ const turnstileApi = vi.hoisted(
     }) satisfies TurnstileApi
 )
 
-vi.mock(import('@comfyorg/account/turnstileScript'), () => ({
+vi.mock(import('@comfyorg/account-core/turnstileScript'), () => ({
   loadTurnstile: () => Promise.resolve(turnstileApi)
 }))
 
-vi.mock<unknown>(import('@comfyorg/account/webviewDetection'), () => ({
+vi.mock(import('@comfyorg/account-core/webviewDetection'), () => ({
   isEmbeddedWebView: () => handles.embedded
 }))
 
@@ -82,64 +104,27 @@ const inChina = vi.hoisted(() => ({
   }
 }))
 const isInChina = vi.hoisted(() => vi.fn())
-vi.mock<unknown>(import('@comfyorg/shared-frontend-utils/networkUtil'), () => ({
+vi.mock(import('@comfyorg/account-ui/auth/regionProbe'), () => ({
   isInChina
 }))
 
-vi.mock<unknown>(import('../../config/workshop-firebase'), () => {
-  if (handles.chunkFails) {
-    throw new TypeError('Failed to fetch dynamically imported module')
-  }
-  return {
-    signInWorkshopWithGoogle: handles.google,
-    signInWorkshopWithGitHub: handles.github,
-    signInWorkshopWithEmail: handles.emailSignIn,
-    signUpWorkshopWithEmail: handles.emailSignUp,
-    provisionWorkshopCustomer: handles.provision,
-    signOutWorkshop: handles.signOut,
-    isWorkshopProvisioningError: handles.isProvisioningError,
-    isNewWorkshopUser: handles.isNewUser
-  }
-})
-
-vi.mock<unknown>(import('../../config/workshop-session-state'), async () => {
-  const { ref } = await import('vue')
-  const user = ref(null)
-  const session = ref(undefined)
-  const settled = ref(true)
-  handles.user = user
-  handles.session = session
-  handles.identitySettled = settled
-  return {
-    useWorkshopSession: () => ({
-      user,
-      session,
-      settled,
-      ensureFresh: handles.ensureFresh
-    })
-  }
-})
-
-const { messages: toasts } = useAuthToasts()
+const { toasts } = useAuthToasts()
 const replace = vi.fn<(url: string | URL) => void>()
 const assign = vi.fn<(url: string | URL) => void>()
 
 beforeEach(() => {
-  handles.flag!.value = true
-  handles.user!.value = null
-  handles.session!.value = undefined
-  handles.identitySettled!.value = true
-  handles.chunkFails = false
-  handles.ensureFresh.mockReset().mockResolvedValue({
-    status: 'ok',
-    session: { token: 'workspace-jwt' }
-  })
-  handles.google.mockReset()
-  handles.github.mockReset()
-  handles.emailSignIn.mockReset()
-  handles.emailSignUp.mockReset()
-  handles.provision.mockReset().mockResolvedValue(undefined)
-  handles.signOut.mockReset().mockResolvedValue(undefined)
+  vi.mocked(useWorkshopAuthFlag).mockReturnValue(readonly(authFlag))
+  vi.mocked(useWorkshopTurnstileMode).mockReturnValue(readonly(ref('shadow')))
+  const state = useWorkshopSession()
+  state.user = computed(() => authUser.value)
+  state.session = computed(() => session.value)
+  state.settled = computed(() => settled.value)
+  authFlag.value = true
+  authUser.value = null
+  session.value = undefined
+  settled.value = true
+  vi.mocked(useWorkshopSession().ensureFresh).mockResolvedValue(okSession)
+  vi.mocked(ssoStartUrlFor).mockReset().mockResolvedValue(undefined)
   handles.turnstileReset.mockReset()
   turnstileApi.render.mockImplementation(
     (_container: string | HTMLElement, options: TurnstileRenderOptions) => {
@@ -147,18 +132,13 @@ beforeEach(() => {
       return 'widget-id'
     }
   )
-  handles.isProvisioningError.mockReset().mockReturnValue(false)
-  handles.isNewUser.mockReset().mockReturnValue(false)
-  handles.captureAuthCompleted.mockClear()
-  handles.captureAuthFailed.mockClear()
-  handles.captureSignupOpened.mockClear()
   handles.embedded = false
   inChina.value = false
   inChina.pending = undefined
   isInChina
     .mockReset()
     .mockImplementation(() => inChina.pending ?? Promise.resolve(inChina.value))
-  removeAllToasts()
+  dismissAllAuthToasts()
   window.history.replaceState({}, '', '/')
   replace.mockReset()
   assign.mockReset()
@@ -176,17 +156,17 @@ const openEmailForm = (user: ReturnType<typeof userEvent.setup>) =>
 
 describe('AuthSignIn', () => {
   it('does not render sign-in controls when the auth flag is off', () => {
-    handles.flag!.value = false
+    authFlag.value = false
     render(AuthSignIn)
 
     expect(screen.queryByRole('button')).toBeNull()
   })
 
   it('renders sign-in controls when the flag turns on after mount', async () => {
-    handles.flag!.value = false
+    authFlag.value = false
     render(AuthSignIn)
 
-    handles.flag!.value = true
+    authFlag.value = true
 
     expect(
       await screen.findByRole('button', { name: /^sign in with google$/i })
@@ -194,7 +174,7 @@ describe('AuthSignIn', () => {
   })
 
   it('holds the mode links while an attempt is pending, so an abandoned attempt cannot sign the visitor in', async () => {
-    handles.google.mockReturnValue(new Promise(() => {}))
+    vi.mocked(signInWorkshopWithGoogle).mockReturnValue(new Promise(() => {}))
     window.history.replaceState({}, '', '/login/')
     render(AuthSignIn)
 
@@ -216,28 +196,40 @@ describe('AuthSignIn', () => {
   })
 
   it('leaves for the homepage once a fresh sign-in has a session', async () => {
-    handles.google.mockResolvedValue({
-      user: { uid: 'user-1', email: 'user@example.com', displayName: null }
-    })
+    vi.mocked(signInWorkshopWithGoogle).mockResolvedValue(
+      testCredential(
+        testFirebaseUser({
+          uid: 'user-1',
+          email: 'user@example.com',
+          displayName: null
+        })
+      )
+    )
     render(AuthSignIn)
 
     await clickGoogle()
 
     await waitFor(() => expect(replace).toHaveBeenCalledWith('/'))
-    expect(handles.ensureFresh).toHaveBeenCalledWith(
+    expect(useWorkshopSession().ensureFresh).toHaveBeenCalledWith(
       expect.objectContaining({ uid: 'user-1' })
     )
   })
 
   it('leaves once the session client publishes the credential, even before the mint promise settles', async () => {
-    handles.google.mockResolvedValue({
-      user: { uid: 'user-1', email: 'user@example.com', displayName: null }
-    })
+    vi.mocked(signInWorkshopWithGoogle).mockResolvedValue(
+      testCredential(
+        testFirebaseUser({
+          uid: 'user-1',
+          email: 'user@example.com',
+          displayName: null
+        })
+      )
+    )
     // The real client publishes to subscribers first and resolves after.
-    handles.ensureFresh.mockImplementation(async () => {
-      handles.session!.value = { token: 'workspace-jwt' }
+    vi.mocked(useWorkshopSession().ensureFresh).mockImplementation(async () => {
+      session.value = accountCredential
       await new Promise((resolve) => setTimeout(resolve, 0))
-      return { status: 'ok', session: { token: 'workspace-jwt' } }
+      return { status: 'ok', session: accountCredential }
     })
     render(AuthSignIn)
 
@@ -248,16 +240,20 @@ describe('AuthSignIn', () => {
   })
 
   it('sends a returning visitor away when the session arrives through the client, not the mint promise', async () => {
-    handles.identitySettled!.value = false
-    handles.ensureFresh.mockImplementation(async () => {
-      handles.session!.value = { token: 'workspace-jwt' }
+    settled.value = false
+    vi.mocked(useWorkshopSession().ensureFresh).mockImplementation(async () => {
+      session.value = accountCredential
       await new Promise((resolve) => setTimeout(resolve, 0))
-      return { status: 'ok', session: { token: 'workspace-jwt' } }
+      return { status: 'ok', session: accountCredential }
     })
     render(AuthSignIn)
 
-    handles.user!.value = { uid: 'user-1', email: 'a@b.co', displayName: null }
-    handles.identitySettled!.value = true
+    authUser.value = testFirebaseUser({
+      uid: 'user-1',
+      email: 'a@b.co',
+      displayName: null
+    })
+    settled.value = true
 
     await waitFor(() => expect(replace).toHaveBeenCalledWith('/'))
     expect(
@@ -272,9 +268,15 @@ describe('AuthSignIn', () => {
       '',
       '/login/?returnTo=%2Fworkshop%2Fmodels%2Fexample%2F'
     )
-    handles.google.mockResolvedValue({
-      user: { uid: 'user-1', email: 'user@example.com', displayName: null }
-    })
+    vi.mocked(signInWorkshopWithGoogle).mockResolvedValue(
+      testCredential(
+        testFirebaseUser({
+          uid: 'user-1',
+          email: 'user@example.com',
+          displayName: null
+        })
+      )
+    )
     render(AuthSignIn)
 
     await clickGoogle()
@@ -287,11 +289,11 @@ describe('AuthSignIn', () => {
   it('sends an already-signed-in visitor away without a panel', async () => {
     render(AuthSignIn)
 
-    handles.user!.value = {
+    authUser.value = testFirebaseUser({
       uid: 'user-1',
       email: 'a@b.co',
       displayName: null
-    }
+    })
 
     await waitFor(() => expect(replace).toHaveBeenCalledWith('/'))
     expect(
@@ -304,11 +306,11 @@ describe('AuthSignIn', () => {
     window.history.replaceState({}, '', '/login/?switchAccount=1')
     render(AuthSignIn)
 
-    handles.user!.value = {
+    authUser.value = testFirebaseUser({
       uid: 'user-1',
       email: 'a@b.co',
       displayName: null
-    }
+    })
 
     expect(
       await screen.findByRole('button', { name: /^sign in with google$/i })
@@ -318,11 +320,11 @@ describe('AuthSignIn', () => {
       replace,
       'the cloud guard skips the redirect on switchAccount'
     ).not.toHaveBeenCalled()
-    expect(handles.ensureFresh).not.toHaveBeenCalled()
+    expect(useWorkshopSession().ensureFresh).not.toHaveBeenCalled()
   })
 
   it('raises a warning toast when the visitor dismisses the pop-up', async () => {
-    handles.github.mockRejectedValue({
+    vi.mocked(signInWorkshopWithGitHub).mockRejectedValue({
       code: 'auth/popup-closed-by-user',
       message: 'x'
     })
@@ -334,14 +336,14 @@ describe('AuthSignIn', () => {
       .click(screen.getByRole('button', { name: /^sign in with github$/i }))
 
     const alert = await screen.findByRole('alert')
-    expect(alert.getAttribute('data-severity')).toBe('warn')
+    expect(toasts.value[0].kind).toBe('warning')
     expect(alert.textContent).toContain('Warning')
     expect(alert.textContent).toContain(
-      AUTH_ERROR_MESSAGES['auth/popup-closed-by-user']
+      t('auth.errors.auth/popup-closed-by-user', {}, { locale: 'en' })
     )
     expect(toasts.value).toHaveLength(1)
     expect(
-      handles.captureAuthFailed,
+      captureAuthFailed,
       'the failure joins the cloud funnel under the same action vocabulary'
     ).toHaveBeenCalledWith({
       error_code: 'auth/popup-closed-by-user',
@@ -350,18 +352,18 @@ describe('AuthSignIn', () => {
   })
 
   it('reports a sign-up page open and names sign-up actions in failures', async () => {
-    handles.google.mockRejectedValue(new Error('not a firebase error'))
+    vi.mocked(signInWorkshopWithGoogle).mockRejectedValue(
+      new Error('not a firebase error')
+    )
     render(AuthSignIn, { props: { mode: 'signUp' } })
 
-    await waitFor(() =>
-      expect(handles.captureSignupOpened).toHaveBeenCalledOnce()
-    )
+    await waitFor(() => expect(captureSignupOpened).toHaveBeenCalledOnce())
     await userEvent
       .setup()
       .click(screen.getByRole('button', { name: /sign up with google/i }))
 
     await waitFor(() =>
-      expect(handles.captureAuthFailed).toHaveBeenCalledWith({
+      expect(captureAuthFailed).toHaveBeenCalledWith({
         error_code: 'unknown',
         auth_action: 'google_sign_up'
       })
@@ -369,32 +371,36 @@ describe('AuthSignIn', () => {
   })
 
   it('reports the sign-up open only once the flag lets the page show', async () => {
-    handles.flag!.value = false
+    authFlag.value = false
     render(AuthSignIn, { props: { mode: 'signUp' } })
     await new Promise((resolve) => setTimeout(resolve, 0))
 
     expect(
-      handles.captureSignupOpened,
+      captureSignupOpened,
       'the cloud app reports the open when its page renders, not for a blank one'
     ).not.toHaveBeenCalled()
 
-    handles.flag!.value = true
-    await waitFor(() =>
-      expect(handles.captureSignupOpened).toHaveBeenCalledOnce()
-    )
+    authFlag.value = true
+    await waitFor(() => expect(captureSignupOpened).toHaveBeenCalledOnce())
   })
 
   it("reports a completed social sign-in with the cloud app's metadata", async () => {
-    handles.google.mockResolvedValue({
-      user: { uid: 'user-1', email: 'user@example.com', displayName: null }
-    })
-    handles.isNewUser.mockReturnValue(true)
+    vi.mocked(signInWorkshopWithGoogle).mockResolvedValue(
+      testCredential(
+        testFirebaseUser({
+          uid: 'user-1',
+          email: 'user@example.com',
+          displayName: null
+        })
+      )
+    )
+    vi.mocked(isNewWorkshopUser).mockReturnValue(true)
     render(AuthSignIn)
 
     await clickGoogle()
 
     await waitFor(() =>
-      expect(handles.captureAuthCompleted).toHaveBeenCalledWith({
+      expect(captureAuthCompleted).toHaveBeenCalledWith({
         method: 'google',
         is_new_user: true,
         user_id: 'user-1'
@@ -403,9 +409,15 @@ describe('AuthSignIn', () => {
   })
 
   it('reports an email sign-in as an existing user and an email sign-up as a new one', async () => {
-    handles.emailSignIn.mockResolvedValue({
-      user: { uid: 'user-1', email: 'user@example.com', displayName: null }
-    })
+    vi.mocked(signInWorkshopWithEmail).mockResolvedValue(
+      testCredential(
+        testFirebaseUser({
+          uid: 'user-1',
+          email: 'user@example.com',
+          displayName: null
+        })
+      )
+    )
     render(AuthSignIn)
     const user = userEvent.setup()
 
@@ -415,22 +427,28 @@ describe('AuthSignIn', () => {
     await user.click(screen.getByRole('button', { name: /^sign in$/i }))
 
     await waitFor(() =>
-      expect(handles.captureAuthCompleted).toHaveBeenCalledWith({
+      expect(captureAuthCompleted).toHaveBeenCalledWith({
         method: 'email',
         is_new_user: false,
         user_id: 'user-1'
       })
     )
     expect(
-      handles.isNewUser,
+      isNewWorkshopUser,
       'the cloud app hard-codes the answer for email; the provider is never asked'
     ).not.toHaveBeenCalled()
   })
 
   it('reports a sign-up page completion as a new user regardless of the provider answer', async () => {
-    handles.github.mockResolvedValue({
-      user: { uid: 'user-2', email: null, displayName: 'Octo' }
-    })
+    vi.mocked(signInWorkshopWithGitHub).mockResolvedValue(
+      testCredential(
+        testFirebaseUser({
+          uid: 'user-2',
+          email: null,
+          displayName: 'Octo'
+        })
+      )
+    )
     render(AuthSignIn, { props: { mode: 'signUp' } })
 
     await userEvent
@@ -438,7 +456,7 @@ describe('AuthSignIn', () => {
       .click(screen.getByRole('button', { name: /sign up with github/i }))
 
     await waitFor(() =>
-      expect(handles.captureAuthCompleted).toHaveBeenCalledWith({
+      expect(captureAuthCompleted).toHaveBeenCalledWith({
         method: 'github',
         is_new_user: true,
         user_id: 'user-2'
@@ -448,22 +466,30 @@ describe('AuthSignIn', () => {
 
   it('does not report a completion when provisioning fails after the popup', async () => {
     const failure = {
-      user: { uid: 'user-1', email: 'a@b.co', displayName: null }
+      user: testFirebaseUser({
+        uid: 'user-1',
+        email: 'a@b.co',
+        displayName: null
+      })
     }
-    handles.isProvisioningError.mockImplementation((error) => error === failure)
-    handles.google.mockResolvedValue({ user: failure.user })
-    handles.provision.mockRejectedValue(failure)
+    vi.mocked(isWorkshopProvisioningError).mockReturnValue(true)
+    vi.mocked(signInWorkshopWithGoogle).mockResolvedValue(
+      testCredential(failure.user)
+    )
+    vi.mocked(provisionWorkshopCustomer).mockRejectedValue(failure)
     render(AuthSignIn)
 
     await clickGoogle()
 
     await screen.findByRole('alert')
-    expect(handles.captureAuthCompleted).not.toHaveBeenCalled()
+    expect(captureAuthCompleted).not.toHaveBeenCalled()
   })
 
   it('skips telemetry and the session mint when the flag turns off while sign-in is pending', async () => {
-    let resolvePopup: ((value: unknown) => void) | undefined
-    handles.google.mockReturnValue(
+    let resolvePopup:
+      | ((value: UserCredential | PromiseLike<UserCredential>) => void)
+      | undefined
+    vi.mocked(signInWorkshopWithGoogle).mockReturnValue(
       new Promise((resolve) => {
         resolvePopup = resolve
       })
@@ -471,27 +497,35 @@ describe('AuthSignIn', () => {
     render(AuthSignIn)
 
     await clickGoogle()
-    await waitFor(() => expect(handles.google).toHaveBeenCalledOnce())
+    await waitFor(() => expect(signInWorkshopWithGoogle).toHaveBeenCalledOnce())
 
-    handles.flag!.value = false
-    resolvePopup!({
-      user: { uid: 'uid-1', email: 'user@example.com', displayName: null }
-    })
+    authFlag.value = false
+    resolvePopup!(
+      testCredential(
+        testFirebaseUser({
+          uid: 'uid-1',
+          email: 'user@example.com',
+          displayName: null
+        })
+      )
+    )
     await new Promise((resolve) => setTimeout(resolve, 0))
 
     expect(
-      handles.captureAuthCompleted,
+      captureAuthCompleted,
       'a flag disabled mid-flight must stop post-auth telemetry'
     ).not.toHaveBeenCalled()
     expect(
-      handles.ensureFresh,
+      useWorkshopSession().ensureFresh,
       'and must not mint or persist a workspace session'
     ).not.toHaveBeenCalled()
   })
 
   it('does not provision when the flag turns off during the popup', async () => {
-    let resolvePopup: ((value: unknown) => void) | undefined
-    handles.google.mockReturnValue(
+    let resolvePopup:
+      | ((value: UserCredential | PromiseLike<UserCredential>) => void)
+      | undefined
+    vi.mocked(signInWorkshopWithGoogle).mockReturnValue(
       new Promise((resolve) => {
         resolvePopup = resolve
       })
@@ -499,24 +533,32 @@ describe('AuthSignIn', () => {
     render(AuthSignIn)
 
     await clickGoogle()
-    await waitFor(() => expect(handles.google).toHaveBeenCalledOnce())
+    await waitFor(() => expect(signInWorkshopWithGoogle).toHaveBeenCalledOnce())
 
-    handles.flag!.value = false
-    resolvePopup!({
-      user: { uid: 'uid-1', email: 'user@example.com', displayName: null }
-    })
+    authFlag.value = false
+    resolvePopup!(
+      testCredential(
+        testFirebaseUser({
+          uid: 'uid-1',
+          email: 'user@example.com',
+          displayName: null
+        })
+      )
+    )
     await new Promise((resolve) => setTimeout(resolve, 0))
 
     expect(
-      handles.provision,
+      provisionWorkshopCustomer,
       'a disable during the popup must stop provisioning before it fires'
     ).not.toHaveBeenCalled()
-    expect(handles.captureAuthCompleted).not.toHaveBeenCalled()
+    expect(captureAuthCompleted).not.toHaveBeenCalled()
   })
 
   it('abandons the attempt on an off->on flag flicker during the popup', async () => {
-    let resolvePopup: ((value: unknown) => void) | undefined
-    handles.google.mockReturnValue(
+    let resolvePopup:
+      | ((value: UserCredential | PromiseLike<UserCredential>) => void)
+      | undefined
+    vi.mocked(signInWorkshopWithGoogle).mockReturnValue(
       new Promise((resolve) => {
         resolvePopup = resolve
       })
@@ -524,30 +566,42 @@ describe('AuthSignIn', () => {
     render(AuthSignIn)
 
     await clickGoogle()
-    await waitFor(() => expect(handles.google).toHaveBeenCalledOnce())
+    await waitFor(() => expect(signInWorkshopWithGoogle).toHaveBeenCalledOnce())
 
     // A live boolean would pass (on at resolution); the generation must not.
-    handles.flag!.value = false
-    handles.flag!.value = true
-    resolvePopup!({
-      user: { uid: 'uid-1', email: 'user@example.com', displayName: null }
-    })
+    authFlag.value = false
+    authFlag.value = true
+    resolvePopup!(
+      testCredential(
+        testFirebaseUser({
+          uid: 'uid-1',
+          email: 'user@example.com',
+          displayName: null
+        })
+      )
+    )
     await new Promise((resolve) => setTimeout(resolve, 0))
 
     expect(
-      handles.provision,
+      provisionWorkshopCustomer,
       'an off->on flicker must still abandon the attempt'
     ).not.toHaveBeenCalled()
-    expect(handles.captureAuthCompleted).not.toHaveBeenCalled()
+    expect(captureAuthCompleted).not.toHaveBeenCalled()
   })
 
   it('keeps an email user signed in with the inline message when provisioning fails', async () => {
     const failure = {
-      user: { uid: 'user-1', email: 'user@example.com', displayName: null }
+      user: testFirebaseUser({
+        uid: 'user-1',
+        email: 'user@example.com',
+        displayName: null
+      })
     }
-    handles.isProvisioningError.mockImplementation((error) => error === failure)
-    handles.emailSignIn.mockResolvedValue({ user: failure.user })
-    handles.provision.mockRejectedValue(failure)
+    vi.mocked(isWorkshopProvisioningError).mockReturnValue(true)
+    vi.mocked(signInWorkshopWithEmail).mockResolvedValue(
+      testCredential(failure.user)
+    )
+    vi.mocked(provisionWorkshopCustomer).mockRejectedValue(failure)
     render(AuthSignIn)
     render(AuthToast)
     const user = userEvent.setup()
@@ -566,7 +620,9 @@ describe('AuthSignIn', () => {
   })
 
   it('drops a second email submit while the first is still pending', async () => {
-    handles.emailSignIn.mockImplementation(() => new Promise(() => {}))
+    vi.mocked(signInWorkshopWithEmail).mockImplementation(
+      () => new Promise(() => {})
+    )
     render(AuthSignIn)
     const user = userEvent.setup()
 
@@ -577,15 +633,21 @@ describe('AuthSignIn', () => {
     await user.click(submit)
     await user.click(submit)
 
-    await waitFor(() => expect(handles.emailSignIn).toHaveBeenCalledOnce())
+    await waitFor(() => expect(signInWorkshopWithEmail).toHaveBeenCalledOnce())
   })
 
   it('recovers from an abandoned attempt so a later restore still signs in', async () => {
     let resolveProvision: (() => void) | undefined
-    handles.google.mockResolvedValue({
-      user: { uid: 'user-1', email: 'user@example.com', displayName: null }
-    })
-    handles.provision.mockReturnValue(
+    vi.mocked(signInWorkshopWithGoogle).mockResolvedValue(
+      testCredential(
+        testFirebaseUser({
+          uid: 'user-1',
+          email: 'user@example.com',
+          displayName: null
+        })
+      )
+    )
+    vi.mocked(provisionWorkshopCustomer).mockReturnValue(
       new Promise<void>((resolve) => {
         resolveProvision = resolve
       })
@@ -593,19 +655,21 @@ describe('AuthSignIn', () => {
     render(AuthSignIn)
 
     await clickGoogle()
-    await waitFor(() => expect(handles.provision).toHaveBeenCalledOnce())
+    await waitFor(() =>
+      expect(provisionWorkshopCustomer).toHaveBeenCalledOnce()
+    )
 
-    handles.flag!.value = false
+    authFlag.value = false
     resolveProvision!()
     await new Promise((resolve) => setTimeout(resolve, 0))
-    expect(handles.captureAuthCompleted).not.toHaveBeenCalled()
+    expect(captureAuthCompleted).not.toHaveBeenCalled()
 
-    handles.flag!.value = true
-    handles.user!.value = {
+    authFlag.value = true
+    authUser.value = testFirebaseUser({
       uid: 'user-1',
       email: 'user@example.com',
       displayName: null
-    }
+    })
 
     // A stuck attempt would swallow the restore; recovery lets it mint away.
     await waitFor(() => expect(replace).toHaveBeenCalledWith('/'))
@@ -613,14 +677,26 @@ describe('AuthSignIn', () => {
 
   it('reports no failure and publishes no toast when provisioning rejects after the flag turned off', async () => {
     let rejectProvision: ((reason: unknown) => void) | undefined
-    const failure = {
-      user: { uid: 'user-1', email: 'a@b.co', displayName: null }
-    }
-    handles.isProvisioningError.mockImplementation((error) => error === failure)
-    handles.google.mockResolvedValue({
-      user: { uid: 'user-1', email: 'a@b.co', displayName: null }
-    })
-    handles.provision.mockReturnValue(
+    const failure = testCredential(
+      testFirebaseUser({
+        uid: 'user-1',
+        email: 'a@b.co',
+        displayName: null
+      })
+    )
+    vi.mocked(isWorkshopProvisioningError).mockImplementation(
+      (error) => error === failure
+    )
+    vi.mocked(signInWorkshopWithGoogle).mockResolvedValue(
+      testCredential(
+        testFirebaseUser({
+          uid: 'user-1',
+          email: 'a@b.co',
+          displayName: null
+        })
+      )
+    )
+    vi.mocked(provisionWorkshopCustomer).mockReturnValue(
       new Promise<void>((_resolve, reject) => {
         rejectProvision = reject
       })
@@ -629,18 +705,20 @@ describe('AuthSignIn', () => {
     render(AuthToast)
 
     await clickGoogle()
-    await waitFor(() => expect(handles.provision).toHaveBeenCalledOnce())
+    await waitFor(() =>
+      expect(provisionWorkshopCustomer).toHaveBeenCalledOnce()
+    )
 
-    handles.flag!.value = false
+    authFlag.value = false
     rejectProvision!(failure)
     await new Promise((resolve) => setTimeout(resolve, 0))
 
-    expect(handles.captureAuthFailed).not.toHaveBeenCalled()
+    expect(captureAuthFailed).not.toHaveBeenCalled()
     expect(toasts.value).toHaveLength(0)
   })
 
   it('toasts the signup-blocked copy when the popup reports the blocked token', async () => {
-    handles.google.mockRejectedValue({
+    vi.mocked(signInWorkshopWithGoogle).mockRejectedValue({
       code: 'auth/internal-error',
       message: 'Firebase: SIGNUP_BLOCKED (auth/internal-error).'
     })
@@ -663,7 +741,7 @@ describe('AuthSignIn', () => {
   })
 
   it('holds the form until Firebase has settled, then shows it to a signed-out visitor', async () => {
-    handles.identitySettled!.value = false
+    settled.value = false
     render(AuthSignIn)
 
     expect(screen.getByTestId('auth-initializing')).toBeTruthy()
@@ -672,7 +750,7 @@ describe('AuthSignIn', () => {
       'painting the form before auth settles flashes it at a returning signed-in visitor'
     ).toBeNull()
 
-    handles.identitySettled!.value = true
+    settled.value = true
 
     expect(
       await screen.findByRole('button', { name: /^sign in with google$/i })
@@ -681,26 +759,34 @@ describe('AuthSignIn', () => {
   })
 
   it('never paints the form for a returning signed-in visitor on the way out', async () => {
-    handles.identitySettled!.value = false
+    settled.value = false
     render(AuthSignIn)
 
-    handles.user!.value = { uid: 'user-1', email: 'a@b.co', displayName: null }
-    handles.identitySettled!.value = true
+    authUser.value = testFirebaseUser({
+      uid: 'user-1',
+      email: 'a@b.co',
+      displayName: null
+    })
+    settled.value = true
 
     await waitFor(() => expect(replace).toHaveBeenCalledWith('/'))
     expect(screen.queryByRole('button')).toBeNull()
   })
 
   it('shows the form with the session-failure banner when a returning visitor cannot mint', async () => {
-    handles.identitySettled!.value = false
-    handles.ensureFresh.mockResolvedValueOnce({
+    settled.value = false
+    vi.mocked(useWorkshopSession().ensureFresh).mockResolvedValueOnce({
       status: 'error',
-      reason: 'network'
+      code: 'TOKEN_EXCHANGE_FAILED'
     })
     render(AuthSignIn)
 
-    handles.user!.value = { uid: 'user-1', email: 'a@b.co', displayName: null }
-    handles.identitySettled!.value = true
+    authUser.value = testFirebaseUser({
+      uid: 'user-1',
+      email: 'a@b.co',
+      displayName: null
+    })
+    settled.value = true
 
     expect(
       await screen.findByRole('button', { name: 'Retry session' })
@@ -710,7 +796,7 @@ describe('AuthSignIn', () => {
 
   describe('when auth never initializes', () => {
     it('shows the same copy when Firebase never settles', async () => {
-      handles.identitySettled!.value = false
+      settled.value = false
       render(AuthSignIn)
 
       await vi.advanceTimersByTimeAsync(16_000)
@@ -722,7 +808,7 @@ describe('AuthSignIn', () => {
     })
 
     it('shows nothing when PostHog answered that the flag is off', async () => {
-      handles.flag!.value = false
+      authFlag.value = false
       render(AuthSignIn)
 
       await vi.advanceTimersByTimeAsync(16_000)
@@ -767,7 +853,9 @@ describe('AuthSignIn', () => {
   })
 
   it('shows the pop-up progress line and holds every option while the pop-up is open', async () => {
-    handles.google.mockImplementation(() => new Promise(() => {}))
+    vi.mocked(signInWorkshopWithGoogle).mockImplementation(
+      () => new Promise(() => {})
+    )
     render(AuthSignIn)
 
     await clickGoogle()
@@ -788,10 +876,18 @@ describe('AuthSignIn', () => {
   })
 
   it('says it is signing you in from the moment the pop-up closes until the page leaves', async () => {
-    handles.google.mockResolvedValue({
-      user: { uid: 'user-1', email: 'user@example.com', displayName: null }
-    })
-    handles.ensureFresh.mockImplementation(() => new Promise(() => {}))
+    vi.mocked(signInWorkshopWithGoogle).mockResolvedValue(
+      testCredential(
+        testFirebaseUser({
+          uid: 'user-1',
+          email: 'user@example.com',
+          displayName: null
+        })
+      )
+    )
+    vi.mocked(useWorkshopSession().ensureFresh).mockImplementation(
+      () => new Promise(() => {})
+    )
     render(AuthSignIn)
 
     await clickGoogle()
@@ -801,10 +897,18 @@ describe('AuthSignIn', () => {
   })
 
   it('says it is creating the account on the sign-up page', async () => {
-    handles.github.mockResolvedValue({
-      user: { uid: 'user-2', email: null, displayName: 'Octo' }
-    })
-    handles.ensureFresh.mockImplementation(() => new Promise(() => {}))
+    vi.mocked(signInWorkshopWithGitHub).mockResolvedValue(
+      testCredential(
+        testFirebaseUser({
+          uid: 'user-2',
+          email: null,
+          displayName: 'Octo'
+        })
+      )
+    )
+    vi.mocked(useWorkshopSession().ensureFresh).mockImplementation(
+      () => new Promise(() => {})
+    )
     render(AuthSignIn, { props: { mode: 'signUp' } })
 
     await userEvent
@@ -818,7 +922,7 @@ describe('AuthSignIn', () => {
     render(AuthSignIn)
     await screen.findByRole('button', { name: /^sign in with google$/i })
 
-    expect(handles.captureSignupOpened).not.toHaveBeenCalled()
+    expect(captureSignupOpened).not.toHaveBeenCalled()
   })
 
   it('warns about Google sign-in only inside an in-app browser', async () => {
@@ -838,7 +942,7 @@ describe('AuthSignIn', () => {
   })
 
   it("raises one sticky error toast with the cloud app's own line when an email sign-in fails", async () => {
-    handles.emailSignIn.mockRejectedValue({
+    vi.mocked(signInWorkshopWithEmail).mockRejectedValue({
       code: 'auth/user-not-found',
       message: 'x'
     })
@@ -852,17 +956,17 @@ describe('AuthSignIn', () => {
     await user.click(screen.getByRole('button', { name: /^sign in$/i }))
 
     const alert = await screen.findByRole('alert')
-    expect(alert.getAttribute('data-severity')).toBe('error')
+    expect(toasts.value[0].kind).toBe('error')
     expect(
       alert.textContent,
-      'the cloud app names the code; the website reads the same line'
-    ).toContain(AUTH_ERROR_MESSAGES['auth/user-not-found'])
-    expect(toasts.value[0].life).toBeUndefined()
+      'user-not-found collapses to the neutral invalid-credential line so the toast never confirms whether the email has an account'
+    ).toContain(t('auth.errors.auth/invalid-credential', {}, { locale: 'en' }))
+    expect(toasts.value[0].duration).toBe(Number.POSITIVE_INFINITY)
     expect(replace).not.toHaveBeenCalled()
   })
 
   it('names this host in the unauthorized-domain toast', async () => {
-    handles.google.mockRejectedValue({
+    vi.mocked(signInWorkshopWithGoogle).mockRejectedValue({
       code: 'auth/unauthorized-domain',
       message: 'x'
     })
@@ -877,7 +981,7 @@ describe('AuthSignIn', () => {
   })
 
   it('discards a spent Turnstile token when email signup fails', async () => {
-    handles.emailSignUp.mockRejectedValue({
+    vi.mocked(signUpWorkshopWithEmail).mockRejectedValue({
       code: 'auth/network-request-failed',
       message: 'x'
     })
@@ -890,8 +994,8 @@ describe('AuthSignIn', () => {
     await user.type(screen.getByLabelText('Confirm Password'), 'Password1!')
     await user.click(screen.getByRole('button', { name: /^sign up$/i }))
 
-    await waitFor(() => expect(handles.emailSignUp).toHaveBeenCalledOnce())
-    expect(handles.emailSignUp).toHaveBeenCalledWith(
+    await waitFor(() => expect(signUpWorkshopWithEmail).toHaveBeenCalledOnce())
+    expect(signUpWorkshopWithEmail).toHaveBeenCalledWith(
       'user@example.com',
       'Password1!',
       'cf-token'
@@ -900,7 +1004,9 @@ describe('AuthSignIn', () => {
   })
 
   it('shows email-appropriate progress copy while an email sign-in is pending', async () => {
-    handles.emailSignIn.mockImplementation(() => new Promise(() => {}))
+    vi.mocked(signInWorkshopWithEmail).mockImplementation(
+      () => new Promise(() => {})
+    )
     render(AuthSignIn)
     const user = userEvent.setup()
 
@@ -909,7 +1015,7 @@ describe('AuthSignIn', () => {
     await user.type(screen.getByLabelText('Password'), 'Password1!')
     await user.click(screen.getByRole('button', { name: /^sign in$/i }))
 
-    await waitFor(() => expect(handles.emailSignIn).toHaveBeenCalledOnce())
+    await waitFor(() => expect(signInWorkshopWithEmail).toHaveBeenCalledOnce())
     expect(
       screen.queryByText(/pop-up window/i),
       'no pop-up exists in the email flow; the copy must not tell users to look for one'
@@ -1003,8 +1109,10 @@ describe('AuthSignIn', () => {
     const failure = {
       user: { email: 'user@example.com', displayName: null }
     }
-    handles.isProvisioningError.mockImplementation((error) => error === failure)
-    handles.google.mockRejectedValue(failure)
+    vi.mocked(isWorkshopProvisioningError).mockImplementation(
+      (error) => error === failure
+    )
+    vi.mocked(signInWorkshopWithGoogle).mockRejectedValue(failure)
     render(AuthSignIn)
 
     await clickGoogle()
@@ -1017,12 +1125,18 @@ describe('AuthSignIn', () => {
   })
 
   it('offers a retry inline when session minting fails, then leaves once it succeeds', async () => {
-    handles.google.mockResolvedValue({
-      user: { uid: 'user-1', email: 'user@example.com', displayName: null }
-    })
-    handles.ensureFresh.mockResolvedValueOnce({
+    vi.mocked(signInWorkshopWithGoogle).mockResolvedValue(
+      testCredential(
+        testFirebaseUser({
+          uid: 'user-1',
+          email: 'user@example.com',
+          displayName: null
+        })
+      )
+    )
+    vi.mocked(useWorkshopSession().ensureFresh).mockResolvedValueOnce({
       status: 'error',
-      reason: 'network'
+      code: 'TOKEN_EXCHANGE_FAILED'
     })
     render(AuthSignIn)
 
@@ -1040,82 +1154,65 @@ describe('AuthSignIn', () => {
   })
 
   it('clears the session-failure banner once a later refresh recovers', async () => {
-    handles.google.mockResolvedValue({
-      user: { uid: 'user-1', email: 'user@example.com', displayName: null }
-    })
-    handles.ensureFresh.mockResolvedValueOnce({
+    vi.mocked(signInWorkshopWithGoogle).mockResolvedValue(
+      testCredential(
+        testFirebaseUser({
+          uid: 'user-1',
+          email: 'user@example.com',
+          displayName: null
+        })
+      )
+    )
+    vi.mocked(useWorkshopSession().ensureFresh).mockResolvedValueOnce({
       status: 'error',
-      reason: 'network'
+      code: 'TOKEN_EXCHANGE_FAILED'
     })
     render(AuthSignIn)
 
     await clickGoogle()
     await screen.findByRole('button', { name: 'Retry session' })
 
-    handles.session!.value = { token: 'workspace-jwt' }
+    session.value = accountCredential
 
     await waitFor(() =>
       expect(screen.queryByRole('button', { name: 'Retry session' })).toBeNull()
     )
     expect(screen.queryByRole('alert')).toBeNull()
   })
-
-  it('leaves the buttons usable when the Firebase chunk fails to load on a click', async () => {
-    const staticFlag = handles.flag
-    handles.chunkFails = true
-    vi.resetModules()
-    const { default: FreshAuthSignIn } = await import('./AuthSignIn.vue')
-    const { useAuthToasts: useFreshToasts } =
-      await import('../../config/auth-toast-state')
-    const fresh = useFreshToasts().messages
-    handles.flag!.value = true
-    try {
-      render(FreshAuthSignIn)
-      const button = screen.getByRole('button', {
-        name: /^sign in with google$/i
-      }) as HTMLButtonElement
-      await userEvent.setup().click(button)
-
-      await waitFor(() => expect(fresh.value).toHaveLength(1))
-      expect(fresh.value[0].detail).toBe(AUTH_ERROR_MESSAGES.generic)
-      expect(
-        button.disabled,
-        'a failed chunk load must not strand the page in pending'
-      ).toBe(false)
-    } finally {
-      handles.chunkFails = false
-      vi.resetModules()
-      handles.flag = staticFlag
-    }
-  })
 })
 
 describe('AuthSignIn controller lifecycle', () => {
-  const socialUser = {
-    user: { uid: 'user-1', email: 'user@example.com', displayName: null }
-  }
+  const socialUser = testCredential(
+    testFirebaseUser({
+      uid: 'user-1',
+      email: 'user@example.com',
+      displayName: null
+    })
+  )
   const flush = () => vi.advanceTimersByTimeAsync(0)
   const googleButton = () =>
     screen.getByRole('button', { name: /^sign in with google$/i })
 
   it('does not leave the page when the flag turns off during the mint, even once the session client publishes the credential', async () => {
     let publishAndResolveMint: (() => void) | undefined
-    handles.google.mockResolvedValue(socialUser)
-    handles.ensureFresh.mockImplementation(
+    vi.mocked(signInWorkshopWithGoogle).mockResolvedValue(socialUser)
+    vi.mocked(useWorkshopSession().ensureFresh).mockImplementation(
       () =>
         new Promise((resolve) => {
           publishAndResolveMint = () => {
-            handles.session!.value = { token: 'workspace-jwt' }
-            resolve({ status: 'ok', session: { token: 'workspace-jwt' } })
+            session.value = accountCredential
+            resolve({ status: 'ok', session: accountCredential })
           }
         })
     )
     render(AuthSignIn)
 
     await clickGoogle()
-    await waitFor(() => expect(handles.ensureFresh).toHaveBeenCalledOnce())
+    await waitFor(() =>
+      expect(useWorkshopSession().ensureFresh).toHaveBeenCalledOnce()
+    )
 
-    handles.flag!.value = false
+    authFlag.value = false
     publishAndResolveMint!()
     await flush()
 
@@ -1126,39 +1223,57 @@ describe('AuthSignIn controller lifecycle', () => {
   })
 
   it('reports no completion for an attempt abandoned during the mint', async () => {
-    let resolveMint: ((value: unknown) => void) | undefined
-    handles.google.mockResolvedValue(socialUser)
-    handles.ensureFresh.mockImplementation(
+    let resolveMint:
+      | ((
+          value:
+            | SessionResult
+            | PromiseLike<SessionResult | undefined>
+            | undefined
+        ) => void)
+      | undefined
+    vi.mocked(signInWorkshopWithGoogle).mockResolvedValue(socialUser)
+    vi.mocked(useWorkshopSession().ensureFresh).mockImplementation(
       () => new Promise((resolve) => (resolveMint = resolve))
     )
     render(AuthSignIn)
 
     await clickGoogle()
-    await waitFor(() => expect(handles.ensureFresh).toHaveBeenCalledOnce())
+    await waitFor(() =>
+      expect(useWorkshopSession().ensureFresh).toHaveBeenCalledOnce()
+    )
 
-    handles.flag!.value = false
-    resolveMint!({ status: 'ok', session: { token: 'workspace-jwt' } })
+    authFlag.value = false
+    resolveMint!({ status: 'ok', session: accountCredential })
     await flush()
 
     expect(
-      handles.captureAuthCompleted,
+      captureAuthCompleted,
       'an attempt abandoned mid-mint must emit no auth_completed'
     ).not.toHaveBeenCalled()
   })
 
   it('does not mint or redirect after the component unmounts mid-mint', async () => {
-    let resolveMint: ((value: unknown) => void) | undefined
-    handles.google.mockResolvedValue(socialUser)
-    handles.ensureFresh.mockImplementation(
+    let resolveMint:
+      | ((
+          value:
+            | SessionResult
+            | PromiseLike<SessionResult | undefined>
+            | undefined
+        ) => void)
+      | undefined
+    vi.mocked(signInWorkshopWithGoogle).mockResolvedValue(socialUser)
+    vi.mocked(useWorkshopSession().ensureFresh).mockImplementation(
       () => new Promise((resolve) => (resolveMint = resolve))
     )
     const { unmount } = render(AuthSignIn)
 
     await clickGoogle()
-    await waitFor(() => expect(handles.ensureFresh).toHaveBeenCalledOnce())
+    await waitFor(() =>
+      expect(useWorkshopSession().ensureFresh).toHaveBeenCalledOnce()
+    )
 
     unmount()
-    resolveMint!({ status: 'ok', session: { token: 'workspace-jwt' } })
+    resolveMint!({ status: 'ok', session: accountCredential })
     await flush()
 
     expect(
@@ -1169,77 +1284,87 @@ describe('AuthSignIn controller lifecycle', () => {
 
   it('stops the flow after the component unmounts mid-provisioning', async () => {
     let resolveProvision: (() => void) | undefined
-    handles.google.mockResolvedValue(socialUser)
-    handles.provision.mockReturnValue(
+    vi.mocked(signInWorkshopWithGoogle).mockResolvedValue(socialUser)
+    vi.mocked(provisionWorkshopCustomer).mockReturnValue(
       new Promise<void>((resolve) => (resolveProvision = resolve))
     )
     const { unmount } = render(AuthSignIn)
 
     await clickGoogle()
-    await waitFor(() => expect(handles.provision).toHaveBeenCalledOnce())
+    await waitFor(() =>
+      expect(provisionWorkshopCustomer).toHaveBeenCalledOnce()
+    )
 
     unmount()
     resolveProvision!()
     await flush()
 
     expect(
-      handles.captureAuthCompleted,
+      captureAuthCompleted,
       'provisioning completing after teardown must not continue the flow'
     ).not.toHaveBeenCalled()
     expect(
-      handles.ensureFresh,
+      useWorkshopSession().ensureFresh,
       'and must not mint a session for a torn-down attempt'
     ).not.toHaveBeenCalled()
   })
 
   it('stops the flow after the component unmounts mid-popup', async () => {
-    let resolvePopup: ((value: unknown) => void) | undefined
-    handles.google.mockReturnValue(
+    let resolvePopup:
+      | ((value: UserCredential | PromiseLike<UserCredential>) => void)
+      | undefined
+    vi.mocked(signInWorkshopWithGoogle).mockReturnValue(
       new Promise((resolve) => (resolvePopup = resolve))
     )
     const { unmount } = render(AuthSignIn)
 
     await clickGoogle()
-    await waitFor(() => expect(handles.google).toHaveBeenCalledOnce())
+    await waitFor(() => expect(signInWorkshopWithGoogle).toHaveBeenCalledOnce())
 
     unmount()
     resolvePopup!(socialUser)
     await flush()
 
     expect(
-      handles.provision,
+      provisionWorkshopCustomer,
       'a popup resolving after teardown must not provision'
     ).not.toHaveBeenCalled()
-    expect(handles.captureAuthCompleted).not.toHaveBeenCalled()
+    expect(captureAuthCompleted).not.toHaveBeenCalled()
   })
 
   it('signs the Firebase identity out once when the flag turns off after authentication', async () => {
-    let resolvePopup: ((value: unknown) => void) | undefined
-    handles.google.mockReturnValue(
+    let resolvePopup:
+      | ((value: UserCredential | PromiseLike<UserCredential>) => void)
+      | undefined
+    vi.mocked(signInWorkshopWithGoogle).mockReturnValue(
       new Promise((resolve) => (resolvePopup = resolve))
     )
     render(AuthSignIn)
 
     await clickGoogle()
-    await waitFor(() => expect(handles.google).toHaveBeenCalledOnce())
+    await waitFor(() => expect(signInWorkshopWithGoogle).toHaveBeenCalledOnce())
 
-    handles.flag!.value = false
+    authFlag.value = false
     resolvePopup!(socialUser)
     await flush()
 
     expect(
-      handles.signOut,
+      signOutWorkshop,
       'abandoning after Firebase auth succeeded must roll the persisted identity back'
     ).toHaveBeenCalledOnce()
   })
 
   it('re-enables the controls when a non-interactive step hangs past its deadline', async () => {
-    handles.google.mockResolvedValue(socialUser)
-    handles.provision.mockReturnValue(new Promise<void>(() => {}))
+    vi.mocked(signInWorkshopWithGoogle).mockResolvedValue(socialUser)
+    vi.mocked(provisionWorkshopCustomer).mockReturnValue(
+      new Promise<void>(() => {})
+    )
     render(AuthSignIn)
 
     await clickGoogle()
-    await waitFor(() => expect(handles.provision).toHaveBeenCalledOnce())
+    await waitFor(() =>
+      expect(provisionWorkshopCustomer).toHaveBeenCalledOnce()
+    )
     expect(googleButton()).toHaveProperty('disabled', true)
 
     await vi.advanceTimersByTimeAsync(16_000)
@@ -1251,12 +1376,16 @@ describe('AuthSignIn controller lifecycle', () => {
   })
 
   it('keeps the identity and offers a retry when provisioning outruns its deadline, instead of signing out', async () => {
-    handles.google.mockResolvedValue(socialUser)
-    handles.provision.mockReturnValue(new Promise<void>(() => {}))
+    vi.mocked(signInWorkshopWithGoogle).mockResolvedValue(socialUser)
+    vi.mocked(provisionWorkshopCustomer).mockReturnValue(
+      new Promise<void>(() => {})
+    )
     render(AuthSignIn)
 
     await clickGoogle()
-    await waitFor(() => expect(handles.provision).toHaveBeenCalledOnce())
+    await waitFor(() =>
+      expect(provisionWorkshopCustomer).toHaveBeenCalledOnce()
+    )
 
     await vi.advanceTimersByTimeAsync(16_000)
 
@@ -1265,12 +1394,12 @@ describe('AuthSignIn controller lifecycle', () => {
       'a slow-but-valid provider keeps the user signed in and says setup did not finish'
     ).toContain('account setup did not finish')
     expect(
-      handles.signOut,
+      signOutWorkshop,
       'a provisioning timeout must not tear the fresh identity down like a full sign-out'
     ).not.toHaveBeenCalled()
     expect(replace).not.toHaveBeenCalled()
     expect(
-      handles.captureAuthCompleted,
+      captureAuthCompleted,
       'a timeout is not a completion'
     ).not.toHaveBeenCalled()
     expect(
@@ -1280,25 +1409,27 @@ describe('AuthSignIn controller lifecycle', () => {
   })
 
   it('frees the controls even when the post-authentication rollback sign-out rejects', async () => {
-    let resolvePopup: ((value: unknown) => void) | undefined
-    handles.google.mockReturnValue(
+    let resolvePopup:
+      | ((value: UserCredential | PromiseLike<UserCredential>) => void)
+      | undefined
+    vi.mocked(signInWorkshopWithGoogle).mockReturnValue(
       new Promise((resolve) => (resolvePopup = resolve))
     )
-    handles.signOut.mockRejectedValue(new Error('sign-out failed'))
+    vi.mocked(signOutWorkshop).mockRejectedValue(new Error('sign-out failed'))
     render(AuthSignIn)
 
     await clickGoogle()
-    await waitFor(() => expect(handles.google).toHaveBeenCalledOnce())
+    await waitFor(() => expect(signInWorkshopWithGoogle).toHaveBeenCalledOnce())
 
-    handles.flag!.value = false
+    authFlag.value = false
     resolvePopup!(socialUser)
     await flush()
 
-    handles.flag!.value = true
+    authFlag.value = true
     await flush()
 
     expect(
-      handles.signOut,
+      signOutWorkshop,
       'abandoning after auth rolls the persisted identity back once'
     ).toHaveBeenCalledOnce()
     expect(
@@ -1309,14 +1440,16 @@ describe('AuthSignIn controller lifecycle', () => {
 
   it('discards a provisioning result that settles after the deadline', async () => {
     let resolveProvision: (() => void) | undefined
-    handles.google.mockResolvedValue(socialUser)
-    handles.provision.mockReturnValue(
+    vi.mocked(signInWorkshopWithGoogle).mockResolvedValue(socialUser)
+    vi.mocked(provisionWorkshopCustomer).mockReturnValue(
       new Promise<void>((resolve) => (resolveProvision = resolve))
     )
     render(AuthSignIn)
 
     await clickGoogle()
-    await waitFor(() => expect(handles.provision).toHaveBeenCalledOnce())
+    await waitFor(() =>
+      expect(provisionWorkshopCustomer).toHaveBeenCalledOnce()
+    )
 
     await vi.advanceTimersByTimeAsync(16_000)
     expect(
@@ -1328,44 +1461,53 @@ describe('AuthSignIn controller lifecycle', () => {
     await flush()
 
     expect(
-      handles.captureAuthCompleted,
+      captureAuthCompleted,
       'a provisioning result settling after the deadline must not continue the flow'
     ).not.toHaveBeenCalled()
     expect(
-      handles.ensureFresh,
+      useWorkshopSession().ensureFresh,
       'and must not mint a session for the abandoned attempt'
     ).not.toHaveBeenCalled()
     expect(
       replace,
       'and must not redirect an abandoned attempt'
     ).not.toHaveBeenCalled()
-    expect(handles.session!.value).toBeUndefined()
+    expect(session.value).toBeUndefined()
   })
 
   it('recovers the controls with a message when a prior rollback sign-out never settles', async () => {
     const events: string[] = []
-    let resolveMint: ((value: unknown) => void) | undefined
-    handles.google.mockImplementation(() => {
+    let resolveMint:
+      | ((
+          value:
+            | SessionResult
+            | PromiseLike<SessionResult | undefined>
+            | undefined
+        ) => void)
+      | undefined
+    vi.mocked(signInWorkshopWithGoogle).mockImplementation(() => {
       events.push('authenticate')
       return Promise.resolve(socialUser)
     })
-    handles.ensureFresh.mockImplementationOnce(
+    vi.mocked(useWorkshopSession().ensureFresh).mockImplementationOnce(
       () => new Promise((resolve) => (resolveMint = resolve))
     )
     // The abandoned attempt's rollback sign-out hangs and never settles.
-    handles.signOut.mockReturnValue(new Promise<void>(() => {}))
+    vi.mocked(signOutWorkshop).mockReturnValue(new Promise<void>(() => {}))
     render(AuthSignIn)
 
     await clickGoogle()
-    await waitFor(() => expect(handles.ensureFresh).toHaveBeenCalledOnce())
+    await waitFor(() =>
+      expect(useWorkshopSession().ensureFresh).toHaveBeenCalledOnce()
+    )
 
-    handles.flag!.value = false
-    resolveMint!({ status: 'ok', session: { token: 'workspace-jwt' } })
+    authFlag.value = false
+    resolveMint!({ status: 'ok', session: accountCredential })
     await flush()
-    await waitFor(() => expect(handles.signOut).toHaveBeenCalledOnce())
+    await waitFor(() => expect(signOutWorkshop).toHaveBeenCalledOnce())
 
     // The first attempt's own bounded rollback wait recovers its controls.
-    handles.flag!.value = true
+    authFlag.value = true
     await vi.advanceTimersByTimeAsync(16_000)
     await waitFor(() =>
       expect(googleButton()).toHaveProperty('disabled', false)
@@ -1395,18 +1537,25 @@ describe('AuthSignIn controller lifecycle', () => {
   it('serializes a rollback sign-out that outran its deadline before the retry authenticates, so the stale sign-out cannot clear the new identity', async () => {
     const events: string[] = []
     let resolveSignOut: (() => void) | undefined
-    let resolveMint: ((value: unknown) => void) | undefined
-    handles.google.mockImplementation(() => {
+    let resolveMint:
+      | ((
+          value:
+            | SessionResult
+            | PromiseLike<SessionResult | undefined>
+            | undefined
+        ) => void)
+      | undefined
+    vi.mocked(signInWorkshopWithGoogle).mockImplementation(() => {
       events.push('authenticate')
       return Promise.resolve(socialUser)
     })
     // First attempt authenticates, then the flag flips off during the mint, so
     // it is abandoned after an identity was persisted; its rollback sign-out
     // then hangs past its own deadline.
-    handles.ensureFresh.mockImplementationOnce(
+    vi.mocked(useWorkshopSession().ensureFresh).mockImplementationOnce(
       () => new Promise((resolve) => (resolveMint = resolve))
     )
-    handles.signOut.mockReturnValue(
+    vi.mocked(signOutWorkshop).mockReturnValue(
       new Promise<void>((resolve) => {
         resolveSignOut = () => {
           events.push('signOut:settled')
@@ -1417,16 +1566,18 @@ describe('AuthSignIn controller lifecycle', () => {
     render(AuthSignIn)
 
     await clickGoogle()
-    await waitFor(() => expect(handles.ensureFresh).toHaveBeenCalledOnce())
+    await waitFor(() =>
+      expect(useWorkshopSession().ensureFresh).toHaveBeenCalledOnce()
+    )
 
-    handles.flag!.value = false
-    resolveMint!({ status: 'ok', session: { token: 'workspace-jwt' } })
+    authFlag.value = false
+    resolveMint!({ status: 'ok', session: accountCredential })
     await flush()
-    await waitFor(() => expect(handles.signOut).toHaveBeenCalledOnce())
+    await waitFor(() => expect(signOutWorkshop).toHaveBeenCalledOnce())
 
     // The sign-out outruns its own deadline; the controls recover even though
     // the rollback is still in flight — the deadline's benefit is preserved.
-    handles.flag!.value = true
+    authFlag.value = true
     await vi.advanceTimersByTimeAsync(16_000)
     expect(
       googleButton(),
@@ -1451,13 +1602,15 @@ describe('AuthSignIn controller lifecycle', () => {
       "the retry's authentication is ordered strictly after the stale sign-out settles, or that sign-out would clear the new attempt's identity"
     ).toEqual(['authenticate', 'signOut:settled', 'authenticate'])
     expect(
-      handles.signOut,
+      signOutWorkshop,
       'the new attempt must not be signed out by the abandoned attempt'
     ).toHaveBeenCalledOnce()
   })
 
   it('bounds a hung email sign-in and surfaces a message on recovery', async () => {
-    handles.emailSignIn.mockImplementation(() => new Promise(() => {}))
+    vi.mocked(signInWorkshopWithEmail).mockImplementation(
+      () => new Promise(() => {})
+    )
     render(AuthSignIn)
     render(AuthToast)
     const user = userEvent.setup()
@@ -1466,7 +1619,7 @@ describe('AuthSignIn controller lifecycle', () => {
     await user.type(screen.getByLabelText('Email'), 'user@example.com')
     await user.type(screen.getByLabelText('Password'), 'Password1!')
     await user.click(screen.getByRole('button', { name: /^sign in$/i }))
-    await waitFor(() => expect(handles.emailSignIn).toHaveBeenCalledOnce())
+    await waitFor(() => expect(signInWorkshopWithEmail).toHaveBeenCalledOnce())
 
     await vi.advanceTimersByTimeAsync(16_000)
 
@@ -1474,7 +1627,9 @@ describe('AuthSignIn controller lifecycle', () => {
       toasts.value,
       'a hung email request recovers with a message rather than silently re-enabling'
     ).toHaveLength(1)
-    expect(toasts.value[0].detail).toBe(AUTH_ERROR_MESSAGES.generic)
+    expect(toasts.value[0].description).toBe(
+      t('auth.errors.generic', {}, { locale: 'en' })
+    )
     expect(
       screen.getByRole('button', { name: /^sign in$/i }),
       'a bounded email request frees the controls at its deadline'
@@ -1482,12 +1637,12 @@ describe('AuthSignIn controller lifecycle', () => {
   })
 
   it('leaves the user-driven social popup wait unbounded past the operation deadline', async () => {
-    handles.google.mockReturnValue(new Promise(() => {}))
+    vi.mocked(signInWorkshopWithGoogle).mockReturnValue(new Promise(() => {}))
     render(AuthSignIn)
     render(AuthToast)
 
     await clickGoogle()
-    await waitFor(() => expect(handles.google).toHaveBeenCalledOnce())
+    await waitFor(() => expect(signInWorkshopWithGoogle).toHaveBeenCalledOnce())
 
     await vi.advanceTimersByTimeAsync(16_000)
 
@@ -1499,6 +1654,99 @@ describe('AuthSignIn controller lifecycle', () => {
       toasts.value,
       'an unbounded popup wait surfaces no timeout message'
     ).toHaveLength(0)
+  })
+})
+
+describe('AuthSignIn when a closed pop-up’s result arrives late', () => {
+  const googleUser = testCredential(
+    testFirebaseUser({
+      uid: 'google-user',
+      email: 'google@example.com',
+      displayName: null
+    })
+  )
+  const googleButton = () =>
+    screen.getByRole('button', { name: /^sign in with google$/i })
+
+  /**
+   * The package reports the closed popup by rejecting; the options the page
+   * passed are what it would use for a result that still arrives.
+   */
+  function dismissedPopup() {
+    let options: PopupSignInOptions | undefined
+    vi.mocked(signInWorkshopWithGoogle).mockImplementationOnce((given) => {
+      options = given
+      return Promise.reject({
+        code: 'auth/popup-closed-by-user',
+        message: 'closed'
+      })
+    })
+    return {
+      options: () => options,
+      /** Firebase saves the identity before the popup promise resolves. */
+      finishLate() {
+        const credential = Promise.resolve().then(() => {
+          authUser.value = googleUser.user
+          return googleUser
+        })
+        options?.onResumed?.(credential)
+      }
+    }
+  }
+
+  beforeEach(() => {
+    vi.mocked(provisionWorkshopCustomer).mockResolvedValue()
+  })
+
+  it('finishes a late result through the usual sign-in: provisioning, session, then home', async () => {
+    const popup = dismissedPopup()
+    render(AuthSignIn)
+    render(AuthToast)
+    await clickGoogle()
+    await screen.findByRole('alert')
+    expect(googleButton()).toHaveProperty('disabled', false)
+
+    popup.finishLate()
+
+    await waitFor(() =>
+      expect(googleButton(), 'the page is signing in again').toHaveProperty(
+        'disabled',
+        true
+      )
+    )
+    await waitFor(() => expect(replace).toHaveBeenCalledWith('/'))
+    expect(provisionWorkshopCustomer).toHaveBeenCalledWith(googleUser)
+    expect(captureAuthCompleted).toHaveBeenCalledOnce()
+  })
+
+  it('declines a late result while another sign-in is under way', async () => {
+    const popup = dismissedPopup()
+    vi.mocked(signInWorkshopWithEmail).mockReturnValue(new Promise(() => {}))
+    const user = userEvent.setup()
+    render(AuthSignIn)
+    await clickGoogle()
+    await waitFor(() => expect(popup.options()?.keepLateResult?.()).toBe(true))
+
+    await openEmailForm(user)
+    await user.type(screen.getByLabelText('Email'), 'user@example.com')
+    await user.type(screen.getByLabelText('Password'), 'Password1!')
+    await user.click(screen.getByRole('button', { name: /^sign in$/i }))
+
+    expect(popup.options()?.keepLateResult?.()).toBe(false)
+  })
+
+  it('keeps a late result only while the page and the rollout still want it', async () => {
+    const popup = dismissedPopup()
+    const { unmount } = render(AuthSignIn)
+    await clickGoogle()
+    await waitFor(() => expect(popup.options()?.keepLateResult?.()).toBe(true))
+
+    authFlag.value = false
+    await waitFor(() => expect(popup.options()?.keepLateResult?.()).toBe(false))
+    authFlag.value = true
+    await waitFor(() => expect(googleButton()).toBeTruthy())
+    unmount()
+    expect(popup.options()?.keepLateResult?.()).toBe(false)
   })
 })
 
@@ -1579,7 +1827,7 @@ describe('AuthSignIn region gate', () => {
   })
 
   it('does not probe the region while the flag keeps the page hidden', async () => {
-    handles.flag!.value = false
+    authFlag.value = false
     render(AuthSignIn, { props: { mode: 'signUp' } })
     await new Promise((resolve) => setTimeout(resolve, 0))
 
@@ -1588,7 +1836,7 @@ describe('AuthSignIn region gate', () => {
       "cloud's signup view is never mounted behind the router; a hidden page must not reach the geo edge"
     ).not.toHaveBeenCalled()
 
-    handles.flag!.value = true
+    authFlag.value = true
     await waitFor(() => expect(isInChina).toHaveBeenCalledOnce())
   })
 
@@ -1624,5 +1872,85 @@ describe('AuthSignIn insecure context', () => {
         Object.defineProperty(window, 'isSecureContext', descriptor)
       else delete (window as { isSecureContext?: boolean }).isSecureContext
     }
+  })
+})
+
+describe('AuthSignIn enterprise SSO', () => {
+  const SSO_START =
+    'https://cloud.example/api/auth/sso/start?email=ada%40acme.com&return_to=%2Fcloud%2Fuser-check'
+
+  const submitEmail = async (mode: 'signIn' | 'signUp') => {
+    render(AuthSignIn, { props: { mode } })
+    const user = userEvent.setup()
+    await openEmailForm(user)
+    await user.type(screen.getByLabelText('Email'), 'ada@acme.com')
+    await user.type(screen.getByLabelText('Password'), 'Password1!')
+    if (mode === 'signUp')
+      await user.type(screen.getByLabelText('Confirm Password'), 'Password1!')
+    await user.click(
+      screen.getByRole('button', {
+        name: mode === 'signUp' ? /^sign up$/i : /^sign in$/i
+      })
+    )
+  }
+
+  const firebaseEmail = {
+    signIn: signInWorkshopWithEmail,
+    signUp: signUpWorkshopWithEmail
+  } as const
+
+  it.for(['signIn', 'signUp'] as const)(
+    'starts the SSO flag read when the %s panel opens, before any submit',
+    (mode) => {
+      vi.mocked(warmSsoStartFlag).mockClear()
+
+      render(AuthSignIn, { props: { mode } })
+
+      expect(warmSsoStartFlag).toHaveBeenCalledOnce()
+      expect(ssoStartUrlFor).not.toHaveBeenCalled()
+    }
+  )
+
+  it.for(['signIn', 'signUp'] as const)(
+    "sends an SSO email on %s to Cloud's SSO start instead of Firebase",
+    async (mode) => {
+      vi.mocked(ssoStartUrlFor).mockResolvedValue(SSO_START)
+
+      await submitEmail(mode)
+
+      await waitFor(() => expect(assign).toHaveBeenCalledWith(SSO_START))
+      expect(ssoStartUrlFor).toHaveBeenCalledWith('ada@acme.com')
+      expect(firebaseEmail[mode]).not.toHaveBeenCalled()
+      expect(
+        screen.getByText("Continuing to your organization's sign-in…")
+      ).toBeTruthy()
+    }
+  )
+
+  it.for(['signIn', 'signUp'] as const)(
+    'signs in with Firebase on %s when the email has no SSO start',
+    async (mode) => {
+      vi.mocked(firebaseEmail[mode]).mockReturnValue(new Promise(() => {}))
+
+      await submitEmail(mode)
+
+      await waitFor(() => expect(firebaseEmail[mode]).toHaveBeenCalledOnce())
+      expect(ssoStartUrlFor).toHaveBeenCalledWith('ada@acme.com')
+      expect(assign).not.toHaveBeenCalled()
+    }
+  )
+
+  it('gives back live controls when the visitor returns from Cloud through the back-forward cache', async () => {
+    vi.mocked(ssoStartUrlFor).mockResolvedValue(SSO_START)
+    await submitEmail('signIn')
+    await waitFor(() => expect(assign).toHaveBeenCalledOnce())
+    const submit = screen.getByRole('button', { name: /^sign in$/i })
+    expect(submit.hasAttribute('disabled')).toBe(true)
+
+    const restored = new Event('pageshow')
+    Object.defineProperty(restored, 'persisted', { value: true })
+    window.dispatchEvent(restored)
+
+    await waitFor(() => expect(submit.hasAttribute('disabled')).toBe(false))
   })
 })

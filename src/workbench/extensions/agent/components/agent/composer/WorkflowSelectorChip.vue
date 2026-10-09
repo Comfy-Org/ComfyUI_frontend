@@ -1,18 +1,19 @@
 <script setup lang="ts">
 import { cn } from '@comfyorg/tailwind-utils'
 import {
-  DropdownMenuContent,
   DropdownMenuItemIndicator,
   DropdownMenuPortal,
   DropdownMenuRadioGroup,
-  DropdownMenuRadioItem,
   DropdownMenuRoot,
   DropdownMenuTrigger
 } from 'reka-ui'
 import { computed, nextTick, ref, useTemplateRef, watch } from 'vue'
 import { useI18n } from 'vue-i18n'
 
+import Button from '@/components/ui/button/Button.vue'
 import Input from '@/components/ui/input/Input.vue'
+import MenuContent from '@/components/ui/menu/MenuContent.vue'
+import MenuRadioItem from '@/components/ui/menu/MenuRadioItem.vue'
 import AccessibleTooltip from '@/components/ui/tooltip/AccessibleTooltip.vue'
 import { useWorkflowTabActivityStore } from '@/stores/workflowTabActivityStore'
 
@@ -123,16 +124,16 @@ function onSearchKeydown(event: KeyboardEvent): void {
       >
         <template #trigger>
           <DropdownMenuTrigger as-child>
-            <button
+            <Button
               type="button"
+              :variant="current ? 'textonly' : 'outline'"
+              size="unset"
               :disabled
               :aria-label="t('agent.switchWorkflow')"
               :class="
                 cn(
-                  'group inline-flex h-7 min-w-0 cursor-pointer items-center gap-2 rounded-lg px-2.5 text-xs/4 font-normal text-base-foreground transition-colors hover:bg-secondary-background-hover disabled:cursor-not-allowed disabled:opacity-50',
-                  current
-                    ? 'flex-1'
-                    : 'border border-border-default bg-secondary-background'
+                  'group h-7 min-w-0 justify-start gap-2 px-2.5 text-left text-xs/4 font-normal',
+                  current && 'flex-1'
                 )
               "
             >
@@ -145,7 +146,7 @@ function onSearchKeydown(event: KeyboardEvent): void {
               <span
                 v-else
                 data-testid="workflow-selector-icon"
-                class="icon-[comfy--workflow] size-3.5 shrink-0 text-muted-foreground group-hover:text-base-foreground"
+                class="icon-[comfy--workflow] size-4 shrink-0 text-muted-foreground group-hover:text-base-foreground"
               />
               <span class="min-w-0 truncate">{{
                 current?.name ?? t('agent.selectWorkflowForAgent')
@@ -157,17 +158,18 @@ function onSearchKeydown(event: KeyboardEvent): void {
               >
                 <span class="size-[7px] rounded-full bg-base-foreground" />
               </span>
-            </button>
+            </Button>
           </DropdownMenuTrigger>
         </template>
       </AccessibleTooltip>
       <DropdownMenuPortal>
-        <DropdownMenuContent
+        <MenuContent
           side="top"
           align="start"
           :side-offset="8"
           :reference="composerReference"
-          class="agent-scope z-1100 box-border w-(--reka-dropdown-menu-trigger-width) overflow-hidden rounded-lg border border-border-subtle bg-secondary-background p-1 font-inter shadow-lg"
+          width="trigger"
+          class="agent-scope"
         >
           <Input
             ref="searchInput"
@@ -192,17 +194,16 @@ function onSearchKeydown(event: KeyboardEvent): void {
               <div
                 v-if="section.label"
                 aria-hidden="true"
-                class="px-1.5 py-1 text-[11px]/4 font-medium text-muted-foreground"
+                class="px-1.5 py-1 text-[11px]/4 text-muted-foreground"
               >
                 {{ section.label }}
               </div>
-              <DropdownMenuRadioItem
+              <MenuRadioItem
                 v-for="tab in section.tabs"
                 :key="tab.path"
                 :value="tab.path"
                 :disabled="disabled || selectingTabPath !== null"
                 :aria-busy="selectingTabPath === tab.path || undefined"
-                class="box-border flex h-7 w-full cursor-pointer items-center gap-1.5 rounded-lg px-1.5 py-1 text-[14px]/5 font-normal text-base-foreground outline-none data-highlighted:bg-secondary-background-hover"
                 @select.prevent
               >
                 <span
@@ -250,14 +251,14 @@ function onSearchKeydown(event: KeyboardEvent): void {
                   >
                     <span
                       aria-hidden="true"
-                      class="icon-[comfy--comfy-c] size-2.5 text-brand-yellow"
+                      class="icon-[lucide--check] size-3.5"
                     />
                   </DropdownMenuItemIndicator>
                 </span>
-              </DropdownMenuRadioItem>
+              </MenuRadioItem>
             </div>
           </DropdownMenuRadioGroup>
-        </DropdownMenuContent>
+        </MenuContent>
       </DropdownMenuPortal>
     </DropdownMenuRoot>
   </div>

@@ -4,12 +4,13 @@ import { storeToRefs } from 'pinia'
 import { computed, ref, useId, watch } from 'vue'
 import { useI18n } from 'vue-i18n'
 
+import Button from '@/components/ui/button/Button.vue'
 import { useAgentTargetNavigation } from '../../../composables/agent/useAgentTargetNavigation'
 import { useAgentPanelStore } from '../../../stores/agent/agentPanelStore'
 import { useWorkflowService } from '@/platform/workflow/core/services/workflowService'
 import { useWorkflowStore } from '@/platform/workflow/management/stores/workflowStore'
 import type { ComfyWorkflowJSON } from '@/platform/workflow/validation/schemas/workflowSchema'
-import { useToastStore } from '@/platform/updates/common/toastStore'
+import { useToast } from '@/components/ui/toast/toastStore'
 import { api } from '@/scripts/api'
 import { reportError } from '@/platform/telemetry/reportError'
 import { useAgentWorkflowTabBindingStore } from '../../../stores/agent/agentWorkflowTabBindingStore'
@@ -25,7 +26,7 @@ const { t } = useI18n()
 const workflowStore = useWorkflowStore()
 const workflowService = useWorkflowService()
 const bindingStore = useAgentWorkflowTabBindingStore()
-const toast = useToastStore()
+const toast = useToast()
 const { enabled: agentEnabled } = storeToRefs(useAgentPanelStore())
 const targetNavigation = useAgentTargetNavigation()
 
@@ -68,24 +69,25 @@ async function open(): Promise<void> {
       await targetNavigation.navigate({ workflowId, locatorId })
     } catch (error) {
       if (!(error instanceof AgentTargetNavigationError))
-        reportError(error, { errorType: 'agent_target_navigation_failure' })
-      toast.add({
-        severity: 'warn',
-        detail: t('agent.targetNavigationUnavailable'),
-        life: 5000
-      })
+        reportError(error, {
+          surface: 'agent',
+          errorType: 'agent_target_navigation_failure'
+        })
+      toast.warning(t('agent.targetNavigationUnavailable'), { duration: 5000 })
     }
   }
 }
 </script>
 
 <template>
-  <button
+  <Button
     v-if="agentEnabled && tab"
     type="button"
+    variant="outline"
+    size="unset"
     :aria-label="t('agent.openWorkflowTab', { name: label })"
     :aria-describedby="nodeCount === undefined ? undefined : nodeCountId"
-    class="flex h-[53px] w-full cursor-pointer items-center gap-2.5 rounded-lg border border-component-node-border px-3 py-2.5 text-left transition-colors hover:bg-secondary-background-hover"
+    class="h-[53px] w-full justify-start gap-2.5 border-component-node-border px-3 py-2.5 text-left whitespace-normal"
     @click="open"
   >
     <span
@@ -99,9 +101,7 @@ async function open(): Promise<void> {
       data-testid="workflow-link-content"
       class="flex min-w-0 flex-1 flex-col gap-0.5"
     >
-      <span class="truncate text-sm/4 font-medium text-base-foreground">{{
-        label
-      }}</span>
+      <span class="truncate text-sm/4 text-base-foreground">{{ label }}</span>
       <span
         v-if="nodeCount !== undefined"
         :id="nodeCountId"
@@ -115,5 +115,5 @@ async function open(): Promise<void> {
       data-testid="workflow-link-navigation"
       class="icon-[lucide--arrow-right] size-4 shrink-0 text-muted-foreground"
     />
-  </button>
+  </Button>
 </template>

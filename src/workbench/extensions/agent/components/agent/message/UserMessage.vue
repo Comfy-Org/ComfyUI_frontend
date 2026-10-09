@@ -4,6 +4,8 @@ import { computed, useTemplateRef } from 'vue'
 import { useI18n } from 'vue-i18n'
 
 import { cn } from '@comfyorg/tailwind-utils'
+import Button from '@/components/ui/button/Button.vue'
+import Tag from '@/components/chip/Tag.vue'
 import AccessibleTooltip from '@/components/ui/tooltip/AccessibleTooltip.vue'
 import { iconForMediaType } from '@/platform/assets/utils/mediaIconUtil'
 import { api } from '@/scripts/api'
@@ -15,6 +17,7 @@ import type {
   WorkflowReference
 } from '../../../types/workflowReference'
 import type { ReplyAsset } from '../../../utils/replyAssets'
+import { isReplyAssetKind } from '../../../utils/replyAssets'
 import { agentMessageText } from '../../../utils/agentMessageText'
 import { workflowReferenceParts } from '../../../utils/workflowReferenceParts'
 import ReplyAssetGroup from './ReplyAssetGroup.vue'
@@ -119,37 +122,46 @@ const splitAttachments = computed(() => {
   const grid: ReplyAsset[] = []
   const plain: UserAttachment[] = []
   for (const item of attachments) {
-    const kind = getMediaTypeFromFilename(item.name)
-    const url = item.ref
-      ? api.apiURL(`/view?filename=${encodeURIComponent(item.ref)}&type=input`)
-      : item.previewUrl
-    if (
-      url &&
-      (kind === 'image' ||
-        kind === 'video' ||
-        kind === 'audio' ||
-        kind === '3D')
-    ) {
-      grid.push({ url, filename: item.name, kind })
-    } else {
-      plain.push(item)
-    }
+    const asset = gridAsset(item)
+    if (asset) grid.push(asset)
+    else plain.push(item)
   }
   return { grid, plain }
 })
+
+function gridAsset(item: UserAttachment): ReplyAsset | undefined {
+  const kind = item.kind ?? getMediaTypeFromFilename(item.name)
+  if (!isReplyAssetKind(kind)) return undefined
+  const url =
+    item.previewUrl ??
+    (item.ref
+      ? api.apiURL(`/view?filename=${encodeURIComponent(item.ref)}&type=input`)
+      : undefined)
+  if (!url) return undefined
+  const filename = item.ref ?? item.name
+  return {
+    url,
+    filename,
+    kind,
+    label: filename === item.name ? undefined : item.name
+  }
+}
 </script>
 
 <template>
   <div class="group flex flex-col items-end gap-2 pl-16" @copy="copySelection">
     <div v-if="tags.length" class="flex flex-wrap justify-end gap-1">
-      <span
+      <Tag
         v-for="(tag, index) in tags"
         :key="`${tag}:${index}`"
-        class="inline-flex items-center gap-1 rounded-xl bg-secondary-background px-1.5 py-0.5 text-xs text-muted-foreground"
+        :label="tag"
+        shape="rounded"
+        class="max-w-48"
       >
-        <span class="icon-[lucide--at-sign] size-3 shrink-0" />
-        <span class="max-w-40 truncate">{{ tag }}</span>
-      </span>
+        <template #icon>
+          <span class="icon-[lucide--at-sign] size-3 shrink-0" />
+        </template>
+      </Tag>
     </div>
     <div v-if="splitAttachments.grid.length" class="w-full">
       <ReplyAssetGroup :assets="splitAttachments.grid" />
@@ -181,13 +193,14 @@ const splitAttachments = computed(() => {
       v-if="text || workflowReferences.length"
       ref="bubble"
       data-testid="user-message-bubble"
-      class="w-fit max-w-full rounded-lg border border-component-node-border bg-secondary-background px-2.5 py-1.5 text-sm/5 font-normal wrap-break-word whitespace-pre-wrap text-muted-foreground"
+      class="w-fit max-w-full rounded-lg bg-secondary-background px-2.5 py-1.5 text-sm/5 font-normal wrap-break-word whitespace-pre-wrap text-muted-foreground"
     >
       <template v-for="(part, index) in promptParts" :key="index">
-        <span
+        <Tag
           v-if="part.type === 'workflow'"
-          role="button"
-          tabindex="0"
+          interactive
+          :label="part.reference.name"
+          class="-my-0.5 max-w-64 align-middle"
           :aria-label="
             part.reference.unavailable
               ? t('agent.unavailableWorkflowReference', {
@@ -212,23 +225,18 @@ const splitAttachments = computed(() => {
               ? t('agent.workflowReferenceUnavailableReason')
               : undefined
           "
-          class="inline cursor-pointer rounded-sm bg-primary-background/30 box-decoration-clone px-1 py-0.5 font-inter text-xs/[15px] font-normal break-all whitespace-normal text-primary-background-hover ring-1 ring-primary-background/30 ring-inset focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-primary-background aria-disabled:cursor-not-allowed aria-disabled:opacity-50"
           @click="openReference(part.reference)"
-          @keydown.enter.prevent="openReference(part.reference)"
-          @keydown.space.prevent
-          @keyup.space.prevent="openReference(part.reference)"
         >
-          <span
-            class="mr-1 icon-[comfy--workflow] inline-block size-3 align-middle"
-          />
-          <span>{{ part.reference.name }}</span>
-        </span>
+          <template #icon>
+            <span class="icon-[comfy--workflow] size-3 shrink-0" />
+          </template>
+        </Tag>
         <template v-else>{{ part.text }}</template>
       </template>
     </div>
     <div
       v-if="readableText"
-      class="flex text-muted-foreground opacity-0 transition-opacity group-hover:opacity-100 focus-within:opacity-100 touch:opacity-100"
+      class="pointer-events-none flex text-muted-foreground opacity-0 transition-opacity group-hover:pointer-events-auto group-hover:opacity-100 focus-within:pointer-events-auto focus-within:opacity-100 touch:pointer-events-auto touch:opacity-100"
     >
       <AccessibleTooltip
         v-if="editable && (text || workflowReferences.length)"
@@ -238,14 +246,16 @@ const splitAttachments = computed(() => {
         :collision-padding="8"
       >
         <template #trigger>
-          <button
+          <Button
             type="button"
+            variant="muted-textonly"
+            size="icon-sm"
             :aria-label="t('g.edit')"
-            class="flex size-6 cursor-pointer items-center justify-center rounded-lg p-1 transition-colors hover:bg-secondary-background-hover hover:text-base-foreground"
+            class="size-6 rounded-lg"
             @click="emit('edit', { text, workflowReferences })"
           >
             <span class="icon-[lucide--pencil] size-3" />
-          </button>
+          </Button>
         </template>
       </AccessibleTooltip>
       <AccessibleTooltip
@@ -255,10 +265,12 @@ const splitAttachments = computed(() => {
         :collision-padding="8"
       >
         <template #trigger>
-          <button
+          <Button
             type="button"
+            variant="muted-textonly"
+            size="icon-sm"
             :aria-label="copied ? t('agent.copied') : t('agent.copy')"
-            class="flex size-6 cursor-pointer items-center justify-center rounded-lg p-1 transition-colors hover:bg-secondary-background-hover hover:text-base-foreground"
+            class="size-6 rounded-lg"
             @click="copyMessage"
           >
             <span
@@ -269,7 +281,7 @@ const splitAttachments = computed(() => {
                 )
               "
             />
-          </button>
+          </Button>
         </template>
       </AccessibleTooltip>
     </div>

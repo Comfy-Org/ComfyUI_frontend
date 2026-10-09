@@ -11,7 +11,7 @@ import {
 import type { MissingModelWorkflowData } from '@/platform/missingModel/missingModelScan'
 import type { MissingModelCandidate } from '@/platform/missingModel/types'
 import { reportError } from '@/platform/telemetry/reportError'
-import { useToastStore } from '@/platform/updates/common/toastStore'
+import { useToast } from '@/components/ui/toast/toastStore'
 import { updatePendingWarnings } from '@/platform/workflow/core/utils/pendingWarnings'
 import type { ComfyWorkflow } from '@/platform/workflow/management/stores/comfyWorkflow'
 import type { ModelFile } from '@/platform/workflow/validation/schemas/workflowSchema'
@@ -19,7 +19,7 @@ import { api } from '@/scripts/api'
 import { useExecutionErrorStore } from '@/stores/executionErrorStore'
 import { useModelToNodeStore } from '@/stores/modelToNodeStore'
 import { useWorkspaceStore } from '@/stores/workspaceStore'
-import type { MissingNodeType } from '@/types/comfy'
+import type { MissingNodeType } from '@/platform/nodeReplacement/types'
 import {
   getNodeByExecutionId,
   isCandidateScopeActive,
@@ -44,6 +44,7 @@ interface RunMissingModelPipelineOptions {
   graphData: MissingModelWorkflowData
   missingModelStore: MissingModelPipelineStore
   missingNodeTypes?: MissingNodeType[]
+  onVerified?: (candidates: MissingModelCandidate[]) => void
   silent?: boolean
 }
 
@@ -108,7 +109,8 @@ export async function runMissingModelPipeline({
   graphData,
   missingModelStore,
   missingNodeTypes,
-  silent = false
+  silent = false,
+  onVerified
 }: RunMissingModelPipelineOptions): Promise<MissingModelPipelineResult> {
   const controller = missingModelStore.createVerificationAbortController()
 
@@ -151,6 +153,7 @@ export async function runMissingModelPipeline({
 
   if (!enrichedCandidates.length) {
     clearMissingModels(activeWf, silent)
+    onVerified?.([])
     return { missingModels, confirmedCandidates }
   }
 
@@ -160,7 +163,7 @@ export async function runMissingModelPipeline({
     if (candidate.nodeId == null) return true
     const node = getNodeByExecutionId(graph, String(candidate.nodeId))
     const widget = node?.widgets?.find((w) => w.name === candidate.widgetName)
-    return !widget || widget.value === candidate.name
+    return widget?.value === candidate.name
   }
   const surfaceActiveCandidates = () => {
     const confirmed = enrichedCandidates.filter(
@@ -168,6 +171,11 @@ export async function runMissingModelPipeline({
     )
     useExecutionErrorStore().surfaceMissingModels(confirmed, { silent })
     cacheModelCandidates(activeWf, confirmed)
+    onVerified?.(
+      enrichedCandidates.filter(
+        (c) => isCandidateScopeActive(graph, c) && isStillSelected(c)
+      )
+    )
   }
   const reportVerificationFailure = (err: unknown) => {
     if (controller.signal.aborted) return
@@ -175,15 +183,17 @@ export async function runMissingModelPipeline({
       '[Missing Model Pipeline] Missing model verification failed:',
       err
     )
-    reportError(err, { errorType: 'missing_model_verification_failed' })
-    useToastStore().add({
-      severity: 'warn',
-      summary: st(
+    reportError(err, {
+      surface: 'assets',
+      errorType: 'missing_model_verification_failed'
+    })
+    useToast().warning(
+      st(
         'toastMessages.missingModelVerificationFailed',
         'Failed to verify missing models. Some models may not be shown in the Issues tab.'
       ),
-      life: 5000
-    })
+      { duration: 5000 }
+    )
   }
 
   if (isCloud) {
@@ -197,7 +207,7 @@ export async function runMissingModelPipeline({
   }
 
   if (!confirmedCandidates.length && !hasDeferredCandidates) {
-    clearMissingModels(activeWf, silent)
+    surfaceActiveCandidates()
     return { missingModels, confirmedCandidates }
   }
 
@@ -211,7 +221,7 @@ export async function runMissingModelPipeline({
         isMissingCandidateActive(graph, c)
       )
       if (!hasActiveMissing) {
-        clearMissingModels(activeWf, silent)
+        surfaceActiveCandidates()
         return
       }
       const verifiedDownloadableCandidates = enrichedCandidates

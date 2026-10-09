@@ -1,4 +1,4 @@
-import type { HubTab } from '../../composables/useHubStore'
+import type { HubTab } from '@/composables/useHubStore'
 
 export interface TabbableTemplate {
   readonly isApp?: boolean

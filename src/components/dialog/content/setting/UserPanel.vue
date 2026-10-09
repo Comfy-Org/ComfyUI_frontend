@@ -45,23 +45,23 @@
               }"
               variant="muted-textonly"
               size="icon-sm"
-              @click="dialogService.showUpdatePasswordDialog()"
+              :aria-label="$t('userSettings.updatePassword')"
+              @click="onUpdatePassword"
             >
               <i class="pi pi-pen-to-square" />
             </Button>
           </div>
         </div>
 
-        <ProgressSpinner
-          v-if="loading"
-          class="mt-4 size-8"
-          style="--pc-spinner-color: #000"
-        />
+        <Spinner v-if="loading" class="mt-4 size-8" />
         <div v-else class="mt-4 flex flex-col gap-2">
-          <Button class="w-32" variant="secondary" @click="handleSignOut">
-            <i class="pi pi-sign-out" />
-            {{ $t('auth.signOut.signOut') }}
-          </Button>
+          <div class="flex flex-wrap items-center gap-2">
+            <Button class="w-32" variant="secondary" @click="handleSignOut">
+              <i class="pi pi-sign-out" />
+              {{ $t('auth.signOut.signOut') }}
+            </Button>
+            <SignOutEverywhereButton />
+          </div>
           <i18n-t
             v-if="!isApiKeyLogin"
             keypath="auth.deleteAccount.contactSupport"
@@ -93,19 +93,25 @@
 </template>
 
 <script setup lang="ts">
-import ProgressSpinner from 'primevue/progressspinner'
+import { useI18n } from 'vue-i18n'
+import { useRouter } from 'vue-router'
 
 import UserAvatar from '@/components/common/UserAvatar.vue'
 import Button from '@/components/ui/button/Button.vue'
+import Spinner from '@/components/ui/spinner/Spinner.vue'
 import { useCurrentUser } from '@/composables/auth/useCurrentUser'
+import SignOutEverywhereButton from '@/platform/auth/session/components/SignOutEverywhereButton.vue'
 import { useDialogService } from '@/services/dialogService'
 
+const { t } = useI18n()
+const router = useRouter()
 const dialogService = useDialogService()
 const {
   loading,
   isLoggedIn,
   isApiKeyLogin,
   isEmailProvider,
+  needsFirebaseSignIn,
   userDisplayName,
   userEmail,
   userPhotoUrl,
@@ -114,4 +120,23 @@ const {
   handleSignOut,
   handleSignIn
 } = useCurrentUser()
+async function onUpdatePassword() {
+  if (!needsFirebaseSignIn.value) {
+    await dialogService.showUpdatePasswordDialog()
+    return
+  }
+  const confirmed = await dialogService.confirm({
+    title: t('auth.reauthRequired.title'),
+    message: t('auth.reauthRequired.message')
+  })
+  if (!confirmed) return
+  const { href } = router.resolve({
+    name: 'cloud-login',
+    query: {
+      switchAccount: 'true',
+      previousFullPath: encodeURIComponent(router.currentRoute.value.fullPath)
+    }
+  })
+  window.location.assign(href)
+}
 </script>

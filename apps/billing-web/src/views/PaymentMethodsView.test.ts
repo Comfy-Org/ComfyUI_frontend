@@ -3,13 +3,15 @@ import { render, screen } from '@testing-library/vue'
 import { createMemoryHistory, createRouter } from 'vue-router'
 import type { Router } from 'vue-router'
 
-import type { SavedPaymentMethod } from '@comfyorg/account/billing'
+import type { SavedPaymentMethod } from '@comfyorg/account-core/billing'
 import { BILLING_CLIENT_KEY } from '@comfyorg/account-ui/billing'
 import { parseBillingEntry } from '@comfyorg/billing-contract'
 
 import { recordBillingEntry } from '@/entry/billingEntry'
 import { createBillingI18n } from '@/i18n'
 import { createFakeBillingClient } from '@/test/fakeBillingClient'
+import type { FakeBillingClientOptions } from '@/test/fakeBillingClient'
+import { trackedBillingEvents } from '@/test/trackedBillingEvents'
 import PaymentMethodsView from '@/views/PaymentMethodsView.vue'
 
 const SURFACE_PATH = '/v1/payment-methods'
@@ -22,13 +24,17 @@ const SAVED_CARDS: SavedPaymentMethod[] = [
   { id: 'pm_3', is_default: false, type: 'us_bank_account' }
 ]
 
-async function renderPaymentMethods(query: string) {
+async function renderPaymentMethods(
+  query: string,
+  options: FakeBillingClientOptions = {}
+) {
   const router = createRouter({
     history: createMemoryHistory(),
     routes: [{ path: SURFACE_PATH, component: PaymentMethodsView }]
   })
   const fake = createFakeBillingClient({
-    paymentMethods: { status: 'ok', value: SAVED_CARDS }
+    paymentMethods: { status: 'ok', value: SAVED_CARDS },
+    ...options
   })
   await router.push(`${SURFACE_PATH}?${query}`)
   await router.isReady()
@@ -99,5 +105,68 @@ describe('PaymentMethodsView', () => {
       `${SURFACE_PATH}?${ENTRY_QUERY}`
     )
     expect(await screen.findByText('visa •••• 4242')).toBeInTheDocument()
+  })
+
+  describe('portal telemetry', () => {
+    it('reports the portal opening on the payment methods', async () => {
+      stubNavigation()
+      const sent = trackedBillingEvents()
+      await renderPaymentMethods(ENTRY_QUERY)
+
+      await userEvent.click(
+        await screen.findByRole('button', { name: 'Manage payment methods' })
+      )
+
+      expect(sent()).toEqual([
+        {
+          operation: 'portal',
+          stage: 'opened',
+          outcome: 'pending',
+          target: 'payment_methods',
+          billing_client: 'sdk'
+        }
+      ])
+    })
+
+    it('reports a portal it could not open as a failed open', async () => {
+      const sent = trackedBillingEvents()
+      await renderPaymentMethods(ENTRY_QUERY, {
+        portal: { status: 'error', code: 'NOT_FOUND', httpStatus: 404 }
+      })
+
+      await userEvent.click(
+        await screen.findByRole('button', { name: 'Manage payment methods' })
+      )
+
+      await vi.waitFor(() => {
+        expect(sent()).toEqual([
+          {
+            operation: 'portal',
+            stage: 'failed',
+            outcome: 'failure',
+            target: 'payment_methods',
+            billing_client: 'sdk',
+            failure_category: 'api_rejected'
+          }
+        ])
+      })
+    })
+
+    it('reports the return from the portal once', async () => {
+      const sent = trackedBillingEvents()
+      const fake = await renderPaymentMethods(`${ENTRY_QUERY}&portal=return`)
+
+      await portalReturnHandled(fake.router)
+
+      expect(sent()).toEqual([
+        {
+          operation: 'portal',
+          stage: 'returned',
+          outcome: 'pending',
+          target: 'payment_methods',
+          billing_client: 'sdk'
+        }
+      ])
+    })
   })
 })

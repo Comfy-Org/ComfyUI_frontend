@@ -1,39 +1,32 @@
 import { beforeEach, describe, expect, it } from 'vitest'
 
 import {
-  addToast,
-  removeAllToasts,
-  removeToast,
+  authToast,
+  dismissAllAuthToasts,
+  dismissAuthToast,
   useAuthToasts
 } from './auth-toast-state'
 
-const { messages } = useAuthToasts()
+const { toasts } = useAuthToasts()
 
-beforeEach(removeAllToasts)
+beforeEach(dismissAllAuthToasts)
 
 describe('auth toast list', () => {
-  it('gives each message its own id and keeps duplicates', () => {
-    const first = addToast({ severity: 'error', summary: 'Error', detail: 'x' })
-    const second = addToast({
-      severity: 'error',
-      summary: 'Error',
-      detail: 'x'
-    })
+  it('gives each toast its own id and keeps duplicates', () => {
+    const first = authToast.error('Error', { description: 'x' })
+    const second = authToast.error('Error', { description: 'x' })
 
-    expect(second.id).not.toBe(first.id)
-    expect(
-      messages.value.map((message) => message.id),
-      'PrimeVue does not de-duplicate identical toasts, so neither does this list'
-    ).toEqual([first.id, second.id])
+    expect(second).not.toBe(first)
+    expect(toasts.value.map((toast) => toast.id)).toEqual([first, second])
   })
 
-  it('removes exactly the message asked for and ignores unknown ids', () => {
-    const kept = addToast({ severity: 'success', summary: 'Ok', detail: 'y' })
-    const gone = addToast({ severity: 'warn', summary: 'Warn', detail: 'z' })
+  it('dismisses exactly the toast asked for and ignores unknown ids', () => {
+    const kept = authToast.success('Ok')
+    const gone = authToast.warning('Warning')
 
-    removeToast(gone.id)
-    removeToast(999_999)
+    dismissAuthToast(gone)
+    dismissAuthToast(999_999)
 
-    expect(messages.value).toEqual([kept])
+    expect(toasts.value.map((toast) => toast.id)).toEqual([kept])
   })
 })

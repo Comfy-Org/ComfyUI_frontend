@@ -2,7 +2,7 @@ import type {
   BillingOperationTelemetryEvent,
   BillingResult,
   BillingSession
-} from '@comfyorg/account/billing'
+} from '@comfyorg/account-core/billing'
 import {
   BILLING_STATUS_ROUTE,
   CAPABILITIES_ROUTE,
@@ -12,11 +12,11 @@ import {
   TOPUP_ROUTE,
   operationPointerKey,
   operationRoute
-} from '@comfyorg/account/billing'
+} from '@comfyorg/account-core/billing'
 import type {
   AccountCredential,
   SessionSnapshot
-} from '@comfyorg/account/session'
+} from '@comfyorg/account-core/session'
 import { describe, expect, it, onTestFinished, vi } from 'vitest'
 
 import type { BillingSdk, BillingSdkOptions } from './createBillingSdk'
@@ -61,6 +61,7 @@ const CAPABILITIES = {
     can_downgrade_to_personal: false,
     can_invite_members: false,
     can_reactivate: false,
+    can_revert_scheduled_change: false,
     can_subscribe_self_serve: false,
     can_top_up: true
   },
@@ -176,6 +177,7 @@ function harness(overrides: Partial<BillingSdkOptions> = {}) {
       removeItem: (key) => void storage.delete(key)
     },
     embeddedCheckoutAvailable: () => false,
+    hostedDestination: () => 'stripe',
     onTelemetry: (event) => events.push(event),
     challengePort: async () => undefined,
     fetchImpl,
@@ -255,6 +257,19 @@ describe('createBillingSdk', () => {
       })
     }
   )
+
+  it('hands the host destination to the operation it routes hosted', async () => {
+    const { sdk } = harness({ hostedDestination: () => 'billing_web' })
+
+    void sdk.topup.createTopupCheckout({ amountCents: 1000 })
+
+    await vi.waitFor(() =>
+      expect(sdk.lifecycle.get('op-1')).toMatchObject({
+        presentation: 'hosted',
+        hostedDestination: 'billing_web'
+      })
+    )
+  })
 
   it('keeps the tab pointer in the supplied storage while the operation is open', async () => {
     const { sdk, storage, requireChallenge } = harness()

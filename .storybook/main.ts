@@ -4,12 +4,22 @@ import { FileSystemIconLoader } from 'unplugin-icons/loaders'
 import IconsResolver from 'unplugin-icons/resolver'
 import Icons from 'unplugin-icons/vite'
 import Components from 'unplugin-vue-components/vite'
-import type { InlineConfig } from 'vite'
+import type { Alias, AliasOptions, InlineConfig } from 'vite'
+
+function withoutAppSrcAlias(alias: AliasOptions = []): Alias[] {
+  const entries = Array.isArray(alias)
+    ? alias
+    : Object.entries(alias).map(([find, replacement]) => ({
+        find,
+        replacement
+      }))
+  return entries.filter(({ find }) => find !== '@')
+}
 
 const config: StorybookConfig = {
   stories: [
     '../src/**/*.stories.@(js|jsx|mjs|ts|tsx)',
-    '../apps/website/src/components/blocks/**/*.stories.@(js|jsx|mjs|ts|tsx)'
+    '../apps/website/src/**/*.stories.@(js|jsx|mjs|ts|tsx)'
   ],
   staticDirs: ['../public', '../apps/website/public'],
   addons: ['@storybook/addon-docs', '@storybook/addon-mcp'],
@@ -41,6 +51,11 @@ const config: StorybookConfig = {
           (plugin) =>
             !plugin.name.includes('import-map') && plugin.name !== 'vite:vue'
         )
+    }
+
+    config.resolve = {
+      ...config.resolve,
+      alias: withoutAppSrcAlias(config.resolve?.alias)
     }
 
     return mergeConfig(config, {
@@ -76,10 +91,15 @@ const config: StorybookConfig = {
         allowedHosts: true
       },
       resolve: {
+        tsconfigPaths: true,
         alias: [
           {
             find: '@comfyorg/website',
             replacement: process.cwd() + '/apps/website'
+          },
+          {
+            find: 'astro:env/client',
+            replacement: process.cwd() + '/apps/website/src/test/astroEnv.ts'
           },
           {
             find: /^\/animations\//,
@@ -149,10 +169,6 @@ const config: StorybookConfig = {
             replacement:
               process.cwd() +
               '/packages/shared-frontend-utils/src/networkUtil.ts'
-          },
-          {
-            find: '@',
-            replacement: process.cwd() + '/src'
           }
         ]
       },

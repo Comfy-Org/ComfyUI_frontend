@@ -1,5 +1,5 @@
 /**
- * The Workshop's one composition of `@comfyorg/account/billing`, mirroring
+ * The Workshop's one composition of `@comfyorg/account-core/billing`, mirroring
  * the cloud app's `createBillingSdk`: the session-backed transport, the
  * readers over it, the operation lifecycle, and the top-up command. Every
  * constructor call lives here, so a change to their options is a one-file
@@ -7,7 +7,10 @@
  * dialog never constructs it — and nothing reaches sessionStorage on a
  * server render.
  */
-import type { BillingSession, TopupCommand } from '@comfyorg/account/billing'
+import type {
+  BillingSession,
+  TopupCommand
+} from '@comfyorg/account-core/billing'
 import {
   createBillingOperationLifecycle,
   createBillingStatusReader,
@@ -16,7 +19,7 @@ import {
   createSessionBillingTransport,
   createTopupCommand,
   sessionBillingScopeSource
-} from '@comfyorg/account/billing'
+} from '@comfyorg/account-core/billing'
 
 import { workshopSessionClient } from './workshop-account'
 import { WORKSHOP_CLOUD_BASE_URL } from './workshop-env'

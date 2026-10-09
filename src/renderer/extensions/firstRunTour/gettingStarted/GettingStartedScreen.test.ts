@@ -1,5 +1,4 @@
 import { useWorkflowTemplatesStore } from '@/platform/workflow/templates/repositories/workflowTemplatesStore'
-import { useToastStore } from '@/platform/updates/common/toastStore'
 import { getActivePinia } from 'pinia'
 import userEvent from '@testing-library/user-event'
 import { render, screen, waitFor } from '@testing-library/vue'
@@ -9,24 +8,25 @@ import { nextTick } from 'vue'
 import { createI18n } from 'vue-i18n'
 
 import enMessages from '@/locales/en/main.json' with { type: 'json' }
+import type { useTemplateWorkflows } from '@/platform/workflow/templates/composables/useTemplateWorkflows'
 import { useDialogStore } from '@/stores/dialogStore'
 
 import { CURATED_TEMPLATE_IDS, FALLBACK_TEMPLATE_IDS } from './tutorialCards'
 
 const mocks = vi.hoisted(() => ({
   dismiss: vi.fn(),
-  beginTour: vi.fn(),
-  loadTemplate: vi.fn(),
+  dismissIntoTour: vi.fn(),
+  loadTemplate:
+    vi.fn<ReturnType<typeof useTemplateWorkflows>['loadWorkflowTemplate']>(),
 
   loadingTemplateId: { value: null as string | null }
 }))
 
 vi.mock<unknown>(import('./firstRunEntry'), () => ({
-  useFirstRunEntry: () => ({ dismissGettingStarted: mocks.dismiss })
-}))
-
-vi.mock<unknown>(import('../tour/useFirstRunTourController'), () => ({
-  useFirstRunTourController: () => ({ beginTour: mocks.beginTour })
+  useFirstRunEntry: () => ({
+    dismissGettingStarted: mocks.dismiss,
+    dismissIntoFirstRunTour: mocks.dismissIntoTour
+  })
 }))
 
 vi.mock<unknown>(
@@ -76,7 +76,6 @@ async function renderScreen({
 }
 
 beforeEach(() => {
-  vi.mocked(useToastStore().add).mockImplementation(() => undefined)
   vi.mocked(useWorkflowTemplatesStore().getTemplateByName).mockImplementation(
     (name) =>
       useWorkflowTemplatesStore().enhancedTemplates.find(
@@ -91,11 +90,11 @@ describe('GettingStartedScreen', () => {
     Object.assign(useWorkflowTemplatesStore(), {
       enhancedTemplates: CURATED_TEMPLATE_IDS.map((name) => ({ name }))
     })
-    mocks.loadTemplate.mockResolvedValue(true)
+    mocks.loadTemplate.mockResolvedValue('loaded')
     vi.mocked(
       useWorkflowTemplatesStore().loadWorkflowTemplates
     ).mockResolvedValue(undefined)
-    mocks.beginTour.mockResolvedValue(true)
+    mocks.dismissIntoTour.mockResolvedValue(undefined)
     mocks.loadingTemplateId.value = null
   })
 
@@ -116,8 +115,8 @@ describe('GettingStartedScreen', () => {
         'default'
       )
     )
-    expect(mocks.beginTour).toHaveBeenCalledWith(CURATED_TEMPLATE_IDS[0])
-    expect(mocks.dismiss).toHaveBeenCalled()
+    expect(mocks.dismissIntoTour).toHaveBeenCalledWith(CURATED_TEMPLATE_IDS[0])
+    expect(mocks.dismiss).not.toHaveBeenCalled()
   })
 
   it('ignores a second pick while one is still loading', async () => {
@@ -134,30 +133,16 @@ describe('GettingStartedScreen', () => {
     ).not.toHaveBeenCalled()
   })
 
-  it('leaves the user on the loaded graph when the template has no tour', async () => {
-    mocks.beginTour.mockResolvedValue(false)
-    await renderScreen()
-
-    await pickFirstTemplate()
-
-    await waitFor(() => expect(mocks.beginTour).toHaveBeenCalled())
-    expect(
-      mocks.dismiss,
-      'the graph is loaded and usable, so the takeover must not strand the user on it'
-    ).toHaveBeenCalled()
-  })
-
   it('keeps the click handler from rejecting when the tour cannot start', async () => {
-    mocks.beginTour.mockRejectedValue(new Error('tour unavailable'))
+    mocks.dismissIntoTour.mockRejectedValue(new Error('tour unavailable'))
     const rejections: unknown[] = []
     const onRejection = (reason: unknown) => rejections.push(reason)
     process.on('unhandledRejection', onRejection)
-    vi.spyOn(console, 'error').mockImplementation(() => {})
     await renderScreen()
 
     await pickFirstTemplate()
 
-    await waitFor(() => expect(mocks.beginTour).toHaveBeenCalled())
+    await waitFor(() => expect(mocks.dismissIntoTour).toHaveBeenCalled())
     await new Promise((resolve) => setImmediate(resolve))
     process.off('unhandledRejection', onRejection)
 
@@ -286,21 +271,25 @@ describe('GettingStartedScreen', () => {
   })
 
   describe('failures', () => {
-    it('surfaces a failed template load and keeps the screen up to retry', async () => {
-      mocks.loadTemplate.mockResolvedValue(false)
-      await renderScreen()
+    it.for(['not-started', 'graph-failed'] as const)(
+      'surfaces a %s template load and keeps the screen up to retry',
+      async (result) => {
+        mocks.loadTemplate.mockResolvedValue(result)
+        await renderScreen()
 
-      await pickFirstTemplate()
+        await pickFirstTemplate()
 
-      await waitFor(() =>
-        expect(vi.mocked(useToastStore().add)).toHaveBeenCalled()
-      )
-      expect(
-        mocks.dismiss,
-        'A failed load must not dismiss the screen; the user would be left on a bare canvas'
-      ).not.toHaveBeenCalled()
-      expect(screen.getByText(enMessages.gettingStarted.retry)).toBeTruthy()
-    })
+        expect(
+          await screen.findByText(enMessages.gettingStarted.templateFailed)
+        ).toBeVisible()
+        expect(
+          mocks.dismissIntoTour,
+          'A failed load must not dismiss the screen; the user would be left on a bare canvas'
+        ).not.toHaveBeenCalled()
+        expect(mocks.dismiss).not.toHaveBeenCalled()
+        expect(screen.getByText(enMessages.gettingStarted.retry)).toBeTruthy()
+      }
+    )
 
     it('retries a catalog load that resolved without loading anything', async () => {
       useWorkflowTemplatesStore().isLoaded = false
@@ -322,7 +311,7 @@ describe('GettingStartedScreen', () => {
       await userEvent.click(retry)
 
       expect(
-        vi.mocked(useWorkflowTemplatesStore().loadWorkflowTemplates),
+        useWorkflowTemplatesStore().loadWorkflowTemplates,
         'The store swallows fetch errors and resolves with isLoaded false, so a failed catalog must be detected without a rejection'
       ).toHaveBeenCalledTimes(2)
       await waitFor(() =>

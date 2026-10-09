@@ -5,16 +5,18 @@ import { createI18n } from 'vue-i18n'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 
 import { useBillingContext } from '@/composables/billing/useBillingContext'
+import * as distributionModule from '@/platform/distribution/types'
 import { useMissingMediaStore } from '@/platform/missingMedia/missingMediaStore'
 import type { MissingMediaCandidate } from '@/platform/missingMedia/types'
 import { useMissingModelStore } from '@/platform/missingModel/missingModelStore'
 import type { MissingModelCandidate } from '@/platform/missingModel/types'
 import { useMissingNodesErrorStore } from '@/platform/nodeReplacement/missingNodesErrorStore'
-import type { NodeError } from '@/schemas/apiSchema'
+import type { NodeError } from '@/platform/remote/comfyui/types'
 import LinearControls from '@/renderer/extensions/linearMode/LinearControls.vue'
 import { LINEAR_RUN_ERROR_WARNING_DESCRIPTION_ID } from '@/renderer/extensions/linearMode/linearRunErrorWarningIds'
 import { useAppModeStore } from '@/stores/appModeStore'
 import { useExecutionErrorStore } from '@/stores/executionErrorStore'
+import { useTemplateInputDownloadStore } from '@/stores/templateInputDownloadStore'
 import { toNodeId } from '@/types/nodeId'
 
 const overlayMock = vi.hoisted(() => ({
@@ -22,7 +24,11 @@ const overlayMock = vi.hoisted(() => ({
   overlayTitle: 'Required input missing'
 }))
 
+const distributionMock = vi.hoisted(() => ({ isCloud: true }))
+
 vi.mock(import('@/composables/billing/useBillingContext'))
+
+vi.mock(import('@/platform/distribution/types'), { spy: true })
 
 vi.mock<unknown>(import('@/components/error/useErrorOverlayState'), () => ({
   useErrorOverlayState: () => ({
@@ -41,6 +47,11 @@ const i18n = createI18n({
           goto: 'Show errors in graph'
         },
         mobileNoWorkflow: 'No workflow',
+        inputDownloads: {
+          downloading:
+            'Downloading {count} starter input | Downloading {count} starter inputs',
+          finalizing: 'Preparing downloaded starter inputs'
+        },
         runCount: 'Run count',
         viewJob: 'View job'
       },
@@ -97,15 +108,18 @@ function renderControls({
   hasError = false,
   missingResource,
   canRunWorkflows = true,
+  showsSubscribeToRunPrompt = false,
   mobile = false
 }: {
   hasError?: boolean
   missingResource?: MissingResource
   canRunWorkflows?: boolean
+  showsSubscribeToRunPrompt?: boolean
   mobile?: boolean
 } = {}) {
   const billing = useBillingContext()
   billing.canRunWorkflows = computed(() => canRunWorkflows)
+  billing.showsSubscribeToRunPrompt = computed(() => showsSubscribeToRunPrompt)
   vi.mocked(useBillingContext).mockReturnValue(billing)
 
   const pinia = getActivePinia()!
@@ -132,11 +146,11 @@ function renderControls({
         AppModeWidgetList: true,
         Loader: true,
         PartnerNodesList: true,
-        Popover: {
-          template: '<div><slot name="button" /><slot /></div>'
-        },
         ScrubableNumberInput: true,
-        SubscribeToRunButton: true
+        FreeTierQuota: true,
+        SubscribeToRunButton: {
+          template: '<button data-testid="subscribe-to-run-button" />'
+        }
       }
     }
   })
@@ -158,8 +172,111 @@ function clearMissingResource(resource: MissingResource) {
 
 describe('LinearControls', () => {
   beforeEach(() => {
+    distributionMock.isCloud = true
+    vi.spyOn(distributionModule, 'isCloud', 'get').mockImplementation(
+      () => distributionMock.isCloud
+    )
+    useTemplateInputDownloadStore().clear()
     overlayMock.overlayMessage = 'KSampler is missing a required input: model'
     overlayMock.overlayTitle = 'Required input missing'
+  })
+
+  it('shows an indeterminate bar when a download reports no progress', () => {
+    useTemplateInputDownloadStore().updateProgress({
+      downloadId: 'download-1',
+      filename: missingMediaCandidate.name,
+      progress: Number.NaN,
+      status: 'downloading',
+      templateInputs: [{ templateId: 'template-a', assetId: 'asset-a' }]
+    })
+
+    renderControls({ missingResource: 'media' })
+
+    const status = screen.getByTestId('linear-input-download-status')
+    expect(within(status).getByRole('progressbar')).not.toHaveAttribute(
+      'aria-valuenow'
+    )
+    expect(screen.getByRole('button', { name: 'Run' })).toBeDisabled()
+  })
+
+  it('reports finalizing once a download completes, with Run still blocked', () => {
+    useTemplateInputDownloadStore().updateProgress({
+      downloadId: 'download-1',
+      filename: missingMediaCandidate.name,
+      progress: 1,
+      status: 'completed',
+      templateInputs: [{ templateId: 'template-a', assetId: 'asset-a' }]
+    })
+
+    renderControls({ missingResource: 'media' })
+
+    const status = screen.getByTestId('linear-input-download-status')
+    expect(status).toHaveTextContent('Preparing downloaded starter inputs')
+    expect(screen.getByRole('button', { name: 'Run' })).toBeDisabled()
+  })
+
+  it('shows required template input progress and blocks Run until graph hydration', () => {
+    useTemplateInputDownloadStore().updateProgress({
+      downloadId: 'download-1',
+      filename: missingMediaCandidate.name,
+      progress: 0.42,
+      status: 'downloading',
+      templateInputs: [{ templateId: 'template-a', assetId: 'asset-a' }]
+    })
+
+    renderControls({ missingResource: 'media' })
+
+    const status = screen.getByTestId('linear-input-download-status')
+    expect(status).toHaveTextContent('Downloading 1 starter input')
+    expect(within(status).getByRole('progressbar')).toHaveAttribute(
+      'aria-valuenow',
+      '42'
+    )
+    expect(screen.getByRole('button', { name: 'Run' })).toBeDisabled()
+  })
+
+  it.for([
+    { label: 'desktop', mobile: false },
+    { label: 'mobile', mobile: true }
+  ])(
+    'replaces the run button with the subscribe prompt in $label controls on Cloud',
+    ({ mobile }) => {
+      renderControls({ showsSubscribeToRunPrompt: true, mobile })
+
+      expect(screen.getByTestId('subscribe-to-run-button')).toBeInTheDocument()
+      expect(
+        screen.queryByRole('button', { name: 'Run' })
+      ).not.toBeInTheDocument()
+    }
+  )
+
+  it.for([
+    { label: 'desktop', mobile: false },
+    { label: 'mobile', mobile: true }
+  ])(
+    'keeps the run button instead of the subscribe prompt in $label controls off Cloud',
+    ({ mobile }) => {
+      distributionMock.isCloud = false
+
+      renderControls({ showsSubscribeToRunPrompt: true, mobile })
+
+      expect(screen.getByRole('button', { name: 'Run' })).toBeInTheDocument()
+      expect(
+        screen.queryByTestId('subscribe-to-run-button')
+      ).not.toBeInTheDocument()
+    }
+  )
+
+  it.for([
+    { label: 'desktop', mobile: false },
+    { label: 'mobile', mobile: true }
+  ])('renders Run as the inverted button in $label controls', ({ mobile }) => {
+    renderControls({ mobile })
+
+    expect(screen.getByRole('button', { name: 'Run' })).toHaveAttribute(
+      'data-variant',
+      'inverted'
+    )
   })
 
   it.for([

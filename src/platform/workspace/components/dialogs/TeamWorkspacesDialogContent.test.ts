@@ -1,8 +1,9 @@
 import type { Pinia } from 'pinia'
+import { useToast } from '@/components/ui/toast/toastStore'
 import { getActivePinia } from 'pinia'
 import { useDialogStore } from '@/stores/dialogStore'
-/* eslint-disable testing-library/no-container */
-/* eslint-disable testing-library/no-node-access */
+/* oxlint-disable testing-library/no-container */
+/* oxlint-disable testing-library/no-node-access */
 import { render } from '@testing-library/vue'
 import userEvent from '@testing-library/user-event'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
@@ -16,20 +17,10 @@ import TeamWorkspacesDialogContent from './TeamWorkspacesDialogContent.vue'
 const flushPromises = () =>
   new Promise<void>((resolve) => setTimeout(resolve, 0))
 
-const mockToastAdd = vi.fn()
 const mockSwitchWorkspace = vi.fn()
 
 let pinia: Pinia
 let workspaceStore: ReturnType<typeof useTeamWorkspaceStore>
-
-vi.mock<unknown>(
-  import('primevue/usetoast'), // eslint-disable-line primevue-removal/no-imports
-  () => ({
-    useToast: () => ({
-      add: mockToastAdd
-    })
-  })
-)
 
 vi.mock(import('@/platform/workspace/composables/useWorkspaceSwitch'), () => ({
   useWorkspaceSwitch: () => ({
@@ -55,13 +46,6 @@ const i18n = createI18n({
   fallbackWarn: false
 })
 
-const ButtonStub = {
-  name: 'Button',
-  template:
-    '<button :disabled="disabled" :data-loading="loading" @click="$emit(\'click\')"><slot /></button>',
-  props: ['disabled', 'loading', 'variant', 'size']
-}
-
 function mountComponent(props: Record<string, unknown> = {}) {
   const user = userEvent.setup()
   const { container } = render(TeamWorkspacesDialogContent, {
@@ -69,7 +53,6 @@ function mountComponent(props: Record<string, unknown> = {}) {
     global: {
       plugins: [pinia, i18n],
       stubs: {
-        Button: ButtonStub,
         WorkspaceProfilePic: true
       }
     }
@@ -108,7 +91,9 @@ function createTeamWorkspace({
     subscriptionPlan: null,
     subscriptionTier,
     members: [],
-    pendingInvites: []
+    pendingInvites: [],
+    membersLoaded: true,
+    pendingInvitesLoaded: true
   }
 }
 
@@ -204,11 +189,9 @@ describe('TeamWorkspacesDialogContent', () => {
       await flushPromises()
 
       expect(useDialogStore().closeDialog).not.toHaveBeenCalled()
-      expect(mockToastAdd).toHaveBeenCalledWith(
-        expect.objectContaining({
-          severity: 'error',
-          detail: 'Network error'
-        })
+      expect(useToast().error).toHaveBeenCalledWith(
+        'workspaceSwitcher.failedToSwitch',
+        { description: 'Network error' }
       )
     })
   })
@@ -299,11 +282,9 @@ describe('TeamWorkspacesDialogContent', () => {
 
       await typeAndCreate(container, user, 'New Team')
 
-      expect(mockToastAdd).toHaveBeenCalledWith(
-        expect.objectContaining({
-          severity: 'error',
-          detail: 'Limit reached'
-        })
+      expect(useToast().error).toHaveBeenCalledWith(
+        'workspacePanel.toast.failedToCreateWorkspace',
+        { description: 'Limit reached' }
       )
       expect(useDialogStore().closeDialog).not.toHaveBeenCalled()
     })
@@ -322,11 +303,9 @@ describe('TeamWorkspacesDialogContent', () => {
       await typeAndCreate(container, user, 'New Team')
 
       expect(workspaceStore.createWorkspace).toHaveBeenCalledWith('New Team')
-      expect(mockToastAdd).toHaveBeenCalledWith(
-        expect.objectContaining({
-          severity: 'error',
-          detail: 'Setup failed'
-        })
+      expect(useToast().error).toHaveBeenCalledWith(
+        'teamWorkspacesDialog.confirmCallbackFailed',
+        { description: 'Setup failed' }
       )
       expect(useDialogStore().closeDialog).toHaveBeenCalledWith({
         key: 'team-workspaces'
@@ -361,7 +340,7 @@ describe('TeamWorkspacesDialogContent', () => {
 
       await typeAndCreate(container, user, 'New Team')
 
-      expect(findCreateButton(container).dataset.loading).toBe('false')
+      expect(findCreateButton(container)).not.toHaveAttribute('aria-busy')
     })
 
     it('resets loading state after onConfirm fails', async () => {
@@ -377,7 +356,7 @@ describe('TeamWorkspacesDialogContent', () => {
 
       await typeAndCreate(container, user, 'New Team')
 
-      expect(findCreateButton(container).dataset.loading).toBe('false')
+      expect(findCreateButton(container)).not.toHaveAttribute('aria-busy')
     })
   })
 

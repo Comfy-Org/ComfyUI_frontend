@@ -1,0 +1,355 @@
+import type { SubscriptionCommandResult } from '@comfyorg/account-core/billing'
+import { describe, expect, it } from 'vitest'
+
+import { categorizeBillingApiError } from '@/platform/telemetry/utils/billingFailureCategory'
+import { WorkspaceApiError } from '@/platform/workspace/api/workspaceApi'
+
+import {
+  failedOperation,
+  serverCode,
+  settledOperation
+} from './billingSdkTestUtils'
+import {
+  SettledOperationError,
+  projectCancelOperationResult,
+  projectPaymentPortalResult,
+  projectSubscribeResult,
+  projectSubscriptionResult
+} from './subscriptionOperationView'
+
+describe('projectSubscriptionResult', () => {
+  it('reports a settled command as done, with its operation observed', () => {
+    const result: SubscriptionCommandResult = {
+      status: 'ok',
+      value: { phase: 'succeeded', operation: settledOperation('succeeded') }
+    }
+
+    expect(projectSubscriptionResult(result)).toEqual({
+      status: 'ok',
+      value: { operationObserved: true }
+    })
+  })
+
+  it('reports a request the server refused as already satisfied, with no operation observed', () => {
+    expect(
+      projectSubscriptionResult({ status: 'ok', value: { phase: 'succeeded' } })
+    ).toEqual({ status: 'ok', value: { operationObserved: false } })
+  })
+
+  it.for([
+    {
+      phase: 'failed',
+      operation: failedOperation(),
+      detail:
+        'Your bank declined this payment. Try another payment method or contact your bank.'
+    },
+    {
+      phase: 'failed',
+      operation: { ...failedOperation(), declineReason: 'insufficient_funds' },
+      detail:
+        'This payment method has insufficient funds. Try another payment method or contact your bank.'
+    },
+    {
+      phase: 'failed',
+      operation: {
+        ...failedOperation(),
+        declineReason: 'authentication_failed'
+      },
+      detail: "We couldn't complete payment verification. Please try again."
+    },
+    {
+      phase: 'failed',
+      operation: {
+        ...failedOperation(),
+        declineReason: 'authentication_required'
+      },
+      detail: "We couldn't complete payment verification. Please try again."
+    },
+    {
+      phase: 'failed',
+      operation: {
+        ...failedOperation(),
+        declineReason: 'payment_not_completed'
+      },
+      detail: "We couldn't complete payment verification. Please try again."
+    },
+    {
+      phase: 'timed_out',
+      operation: settledOperation('timed_out'),
+      detail: "We couldn't update your subscription. Please try again."
+    },
+    {
+      phase: 'reconciliation_needed',
+      operation: settledOperation('reconciliation_needed'),
+      detail: "We couldn't update your subscription. Please try again."
+    }
+  ] as const)(
+    'reports a $phase operation as a settled failure with a sentence for the customer',
+    ({ phase, operation, detail }) => {
+      const outcome = projectSubscriptionResult({
+        status: 'ok',
+        value: { phase, operation }
+      })
+
+      expect(outcome).toMatchObject({ status: 'error' })
+      const error = outcome.status === 'error' ? outcome.error : undefined
+      expect(error).toBeInstanceOf(SettledOperationError)
+      expect(error).toMatchObject({
+        message: detail,
+        code: phase,
+        billingOpId: 'op-1'
+      })
+    }
+  )
+
+  it.for([
+    {
+      phase: 'failed',
+      operation: failedOperation('subscription'),
+      category: 'provider_decline'
+    },
+    {
+      phase: 'failed',
+      operation: failedOperation('cancel'),
+      category: 'api_rejected'
+    },
+    {
+      phase: 'timed_out',
+      operation: settledOperation('timed_out', 'subscription'),
+      category: 'poll_timeout'
+    },
+    {
+      phase: 'reconciliation_needed',
+      operation: settledOperation('reconciliation_needed', 'subscription'),
+      category: 'reconciliation_needed'
+    }
+  ] as const)(
+    'categorizes a $phase $operation.kind settle as $category, as the lifecycle reported it',
+    ({ phase, operation, category }) => {
+      const outcome = projectSubscriptionResult({
+        status: 'ok',
+        value: { phase, operation }
+      })
+
+      const error = outcome.status === 'error' ? outcome.error : undefined
+      expect(categorizeBillingApiError(error)).toBe(category)
+    }
+  )
+
+  it('hands a missing route back so the caller keeps its legacy path', () => {
+    expect(
+      projectSubscriptionResult({
+        status: 'error',
+        code: 'NOT_FOUND',
+        httpStatus: 404
+      })
+    ).toEqual({ status: 'unavailable' })
+  })
+
+  it.for([
+    [
+      { status: 'error', code: 'REQUEST_FAILED', httpStatus: 503 },
+      {
+        status: 503,
+        code: 'REQUEST_FAILED',
+        message: "We couldn't update your subscription. Please try again."
+      }
+    ],
+    [
+      {
+        status: 'error',
+        code: 'CONFLICT',
+        httpStatus: 409,
+        serverCode: serverCode('SUBSCRIPTION_LOCKED')
+      },
+      {
+        status: 409,
+        code: 'SUBSCRIPTION_LOCKED',
+        message: "We couldn't update your subscription. Please try again."
+      }
+    ],
+    [
+      {
+        status: 'error',
+        code: 'REQUEST_FAILED',
+        httpStatus: 400,
+        serverCode: serverCode('SUBSCRIPTION_CHANGE_IN_PROGRESS'),
+        serverMessage: 'a subscription change is already in progress'
+      },
+      {
+        status: 400,
+        code: 'SUBSCRIPTION_CHANGE_IN_PROGRESS',
+        message: 'a subscription change is already in progress'
+      }
+    ],
+    [
+      { status: 'error', code: 'SUPERSEDED' },
+      {
+        status: undefined,
+        code: 'SUPERSEDED',
+        message: "We couldn't update your subscription. Please try again."
+      }
+    ],
+    [
+      { status: 'error', code: 'OPERATION_ALREADY_PENDING' },
+      {
+        status: undefined,
+        code: 'OPERATION_ALREADY_PENDING',
+        message:
+          'A payment you started earlier is still going through. It has to finish before you can choose a different plan.'
+      }
+    ]
+  ] as const)(
+    'surfaces %o as a workspace error the caller still owns',
+    ([failure, expected]) => {
+      const outcome = projectSubscriptionResult(failure)
+
+      expect(outcome.status).toBe('error')
+      const error = outcome.status === 'error' ? outcome.error : undefined
+      expect(error).toBeInstanceOf(WorkspaceApiError)
+      expect(error).not.toBeInstanceOf(SettledOperationError)
+      expect(error).toMatchObject(expected)
+    }
+  )
+})
+
+describe('projectSubscribeResult', () => {
+  it.for([
+    { issuedStatus: 'subscribed', requiredPayment: false },
+    { issuedStatus: 'pending_payment', requiredPayment: true },
+    { issuedStatus: 'needs_payment_method', requiredPayment: true },
+    { issuedStatus: undefined, requiredPayment: true }
+  ] as const)(
+    'reports a subscribe issued as $issuedStatus as subscribed, requiredPayment $requiredPayment',
+    ({ issuedStatus, requiredPayment }) => {
+      expect(
+        projectSubscribeResult({
+          status: 'ok',
+          value: {
+            phase: 'succeeded',
+            operation: settledOperation('succeeded', 'subscription'),
+            ...(issuedStatus === undefined ? {} : { issuedStatus })
+          }
+        })
+      ).toEqual({
+        status: 'ok',
+        value: {
+          billing_op_id: 'op-1',
+          status: 'subscribed',
+          requiredPayment,
+          operationObserved: true
+        }
+      })
+    }
+  )
+
+  it.for([
+    {
+      phase: 'failed',
+      operation: failedOperation('subscription'),
+      detail:
+        'Your bank declined this payment. Try another payment method or contact your bank.'
+    },
+    {
+      phase: 'timed_out',
+      operation: settledOperation('timed_out', 'subscription'),
+      detail: "We couldn't update your subscription. Please try again."
+    }
+  ] as const)(
+    'reports a $phase subscribe as a settled failure with a sentence for the customer',
+    ({ phase, operation, detail }) => {
+      const outcome = projectSubscribeResult({
+        status: 'ok',
+        value: { phase, operation }
+      })
+
+      expect(outcome).toMatchObject({ status: 'error' })
+      const error = outcome.status === 'error' ? outcome.error : undefined
+      expect(error).toBeInstanceOf(SettledOperationError)
+      expect(error).toMatchObject({
+        message: detail,
+        code: phase,
+        billingOpId: 'op-1'
+      })
+    }
+  )
+})
+
+describe('projectPaymentPortalResult', () => {
+  it('hands back the portal URL the host opens', () => {
+    expect(
+      projectPaymentPortalResult({
+        status: 'ok',
+        value: { url: 'https://portal.example/session' }
+      })
+    ).toEqual({ status: 'ok', value: 'https://portal.example/session' })
+  })
+
+  it('hands a missing route back so the caller keeps its legacy path', () => {
+    expect(
+      projectPaymentPortalResult({
+        status: 'error',
+        code: 'NOT_FOUND',
+        httpStatus: 404
+      })
+    ).toEqual({ status: 'unavailable' })
+  })
+
+  it('surfaces a refusal as a workspace error', () => {
+    const outcome = projectPaymentPortalResult({
+      status: 'error',
+      code: 'ACCESS_DENIED',
+      httpStatus: 403
+    })
+
+    expect(outcome.status).toBe('error')
+    expect(
+      outcome.status === 'error' ? outcome.error : undefined
+    ).toMatchObject({
+      status: 403,
+      code: 'ACCESS_DENIED',
+      message: "We couldn't update your subscription. Please try again."
+    })
+  })
+})
+
+describe('projectCancelOperationResult', () => {
+  it.for(['canceled', 'cancel_requested'] as const)(
+    'reports a cancel the server took (%s) as done',
+    (status) => {
+      expect(projectCancelOperationResult({ status })).toEqual({
+        status: 'ok',
+        value: undefined
+      })
+    }
+  )
+
+  it.for([
+    {
+      result: { status: 'not_canceled', code: 'PAYMENT_IN_FLIGHT' },
+      message: "This payment is already processing and can't be canceled."
+    },
+    {
+      result: { status: 'not_canceled', code: 'NOT_CANCELABLE' },
+      message: 'This payment can no longer be canceled.'
+    },
+    {
+      result: {
+        status: 'error',
+        code: 'REQUEST_FAILED',
+        httpStatus: 502,
+        serverMessage: 'Billing is briefly unavailable.'
+      },
+      message: "We couldn't cancel this payment. Please try again."
+    }
+  ] as const)(
+    'surfaces a cancel that did not happen in our own copy, never the server text ($result.code)',
+    ({ result, message }) => {
+      const outcome = projectCancelOperationResult(result)
+
+      expect(
+        outcome.status === 'error' ? outcome.error.message : undefined
+      ).toBe(message)
+    }
+  )
+})

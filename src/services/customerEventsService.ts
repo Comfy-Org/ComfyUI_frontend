@@ -2,6 +2,7 @@ import type { AxiosError, AxiosResponse } from 'axios'
 import axios from 'axios'
 import { ref, watch } from 'vue'
 
+import { webSessionResourceHeader } from '@/platform/auth/session/webSessionFetch'
 import { attachUnifiedRemintInterceptor } from '@/platform/auth/unified/remintRetry'
 import { getComfyApiBaseUrl } from '@/config/comfyApi'
 import { d, t } from '@/i18n'
@@ -212,10 +213,25 @@ export const useCustomerEventsService = () => {
     const authStore = useAuthStore()
     const requestOwner = authStore.currentUserIdentity()
     const requestId = ++latestRequestId
+    if (!authStore.hasPersonalWorkspace) {
+      isLoading.value = false
+      error.value = t('toastMessages.noPersonalWorkspace')
+      return null
+    }
     isLoading.value = true
     error.value = null
 
-    const authHeaders = await authStore.getUserAuthHeader()
+    let authHeaders
+    try {
+      authHeaders =
+        (await webSessionResourceHeader()) ??
+        (await authStore.getUserAuthHeader())
+    } catch (err) {
+      if (requestId !== latestRequestId) return null
+      isLoading.value = false
+      error.value = describeRequestError(err, errorContext)
+      return null
+    }
     if (requestId !== latestRequestId) {
       return null
     }

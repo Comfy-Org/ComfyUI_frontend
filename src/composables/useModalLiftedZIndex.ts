@@ -1,6 +1,8 @@
 import { ZIndex } from '@primeuix/utils/zindex'
-import type { Ref } from 'vue'
-import { computed } from 'vue'
+import type { InjectionKey, Ref } from 'vue'
+import { computed, inject } from 'vue'
+
+export const overlayZIndexKey: InjectionKey<number> = Symbol('overlayZIndex')
 
 // Shared base for @primeuix's auto-incrementing 'modal' z-index counter.
 const MODAL_BASE_Z_INDEX = 1700
@@ -13,9 +15,10 @@ const MODAL_BASE_Z_INDEX = 1700
  * dialog so the content isn't hidden behind the dialog or its scrim.
  */
 export function useModalLiftedZIndex(open: Ref<boolean>) {
+  const parentZIndex = inject(overlayZIndexKey, 0)
   return computed(() => {
     if (!open.value) return undefined
-    const topZIndex = ZIndex.getCurrent('modal')
+    const topZIndex = Math.max(ZIndex.getCurrent('modal'), parentZIndex)
     return topZIndex >= MODAL_BASE_Z_INDEX
       ? { zIndex: topZIndex + 1 }
       : undefined

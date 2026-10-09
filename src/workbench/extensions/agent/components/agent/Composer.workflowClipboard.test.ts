@@ -54,6 +54,7 @@ describe('workflow reference clipboard', () => {
         `${before}@[Workflow: Reference B]${after}`
       )
       if (operation === 'copy') await user.keyboard('{Backspace}')
+      await waitFor(() => expect(store.draft).toBe(''))
       await user.paste(clipboard)
       expect(store.draft).toBe(before + after)
       expect(store.workflowReferences).toEqual([reference])
@@ -103,28 +104,31 @@ describe('workflow reference clipboard', () => {
     const user = userEvent.setup()
     const { store, editor } = renderComposer()
     store.setNodeScope('target-A')
-    store.restorePrompt({
-      text: 'Use   ',
-      references: [
-        {
-          kind: 'workflow',
-          id: 'workflow-B',
-          name: 'Reference B',
-          textOffset: 4
-        },
-        {
-          kind: 'node',
-          scope: 'target-A',
-          node: { id: '12', title: 'Sampler' },
-          textOffset: 5
-        },
-        {
-          kind: 'asset',
-          attachment: { id: 'image', name: 'source.png', ref: 'source.png' },
-          textOffset: 6
-        }
-      ]
-    })
+    store.restorePrompt(
+      {
+        text: 'Use   ',
+        references: [
+          {
+            kind: 'workflow',
+            id: 'workflow-B',
+            name: 'Reference B',
+            textOffset: 4
+          },
+          {
+            kind: 'node',
+            scope: 'target-A',
+            node: { id: '12', title: 'Sampler' },
+            textOffset: 5
+          },
+          {
+            kind: 'asset',
+            attachment: { id: 'image', name: 'source.png', ref: 'source.png' },
+            textOffset: 6
+          }
+        ]
+      },
+      [{ id: 'image', name: 'source.png', ref: 'source.png' }]
+    )
     await screen.findByTestId('workflow-reference-chip')
     await user.click(editor)
     await user.keyboard('{Control>}a{/Control}')

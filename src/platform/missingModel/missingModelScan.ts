@@ -1,17 +1,28 @@
-import type { ModelFile } from '@/platform/workflow/validation/schemas/workflowSchema'
+import type {
+  DeclaredModelFile,
+  ModelFile
+} from '@/platform/workflow/validation/schemas/workflowSchema'
 import { getComboWidgetInventory } from '@/core/graph/widgets/comboWidgetInventory'
 import type { FlattenableWorkflowGraph } from '@/platform/workflow/core/utils/workflowFlattening'
 import { flattenWorkflowNodes } from '@/platform/workflow/core/utils/workflowFlattening'
+import {
+  getSelectedModelsMetadata,
+  isInactiveWorkflowNodeMode,
+  isNodeAndAncestorsActive
+} from '@/platform/workflow/core/utils/modelRequirements'
 import type { MissingModelCandidate, MissingModelViewModel } from './types'
 import { getAssetFilename } from '@/platform/assets/utils/assetMetadataUtils'
 import type { AssetItem } from '@/platform/assets/schemas/assetSchema'
-// eslint-disable-next-line import-x/no-restricted-paths
-import { getSelectedModelsMetadata } from '@/workbench/utils/modelMetadataUtil'
 import {
   inputForWidget,
   promotedInputWidgets
 } from '@/core/graph/subgraph/promotedInputWidget'
 import { resolvePromotedWidgetSource } from '@/core/graph/subgraph/resolvePromotedWidgetSource'
+import {
+  buildPromotedWidgetExecutionSources,
+  resolveActivePromotedWidgetConsumers
+} from '@/core/graph/subgraph/resolveConcretePromotedWidget'
+import type { PromotedWidgetExecutionSource } from '@/core/graph/subgraph/promotedWidgetTypes'
 import type { LGraph } from '@/lib/litegraph/src/LGraph'
 import type { LGraphNode } from '@/lib/litegraph/src/LGraphNode'
 import type {
@@ -25,9 +36,7 @@ import {
   getExecutionIdByNode,
   isExecutionPathActive
 } from '@/utils/graphTraversalUtil'
-import { LGraphEventMode } from '@/lib/litegraph/src/types/globalEnums'
 import { resolveComboValues } from '@/utils/litegraphUtil'
-import { getParentExecutionIds } from '@/types/nodeIdentification'
 
 export type MissingModelWorkflowData = FlattenableWorkflowGraph & {
   models?: ModelFile[]
@@ -98,16 +107,13 @@ function isAssetWidget(widget: IBaseWidget): widget is IAssetWidget {
   return widget.type === 'asset'
 }
 
-function isInactiveMode(mode: number | undefined): boolean {
-  return mode === LGraphEventMode.NEVER || mode === LGraphEventMode.BYPASS
-}
-
 interface ModelWidgetScanTarget {
   executionId: NodeExecutionId
   nodeType: string
   candidateWidgetName: string
   definitionWidgetName: string
   sourceExecutionId?: NodeExecutionId
+  promotedSources?: PromotedWidgetExecutionSource[]
   valueWidget: IBaseWidget
   definitionWidget: IBaseWidget
   embeddedModels?: ModelFile[]
@@ -154,7 +160,7 @@ export function scanAllModelCandidates(
   const candidates: MissingModelCandidate[] = []
 
   for (const node of allNodes) {
-    if (isInactiveMode(node.mode)) continue
+    if (isInactiveWorkflowNodeMode(node.mode)) continue
 
     candidates.push(
       ...scanNodeModelCandidates(
@@ -205,11 +211,13 @@ export function scanNodeModelCandidates(
       candidate = scanComboWidget(target, isAssetSupported, getDirectory)
     }
 
-    if (candidate) {
-      candidates.push(
-        enrichCandidateFromNodeProperties(candidate, target.embeddedModels)
-      )
+    if (!candidate) continue
+    if (target.promotedSources) {
+      candidate.promotedSources = target.promotedSources
     }
+    candidates.push(
+      enrichCandidateFromNodeProperties(candidate, target.embeddedModels)
+    )
   }
 
   return candidates
@@ -243,7 +251,18 @@ function getModelWidgetScanTarget(
   const source = resolvePromotedWidgetSource(rootGraph, node, widget)
   const sourceExecutionId = source?.sourceExecutionId
   if (!sourceExecutionId) return null
-  if (!isExecutionPathActive(rootGraph, sourceExecutionId)) return null
+  const consumers = resolveActivePromotedWidgetConsumers(node, widget.name)
+  const promotedSources = buildPromotedWidgetExecutionSources(
+    executionId,
+    consumers
+  )
+  if (
+    !promotedSources.some((source) =>
+      isExecutionPathActive(rootGraph, source.executionId)
+    )
+  ) {
+    return null
+  }
 
   return {
     executionId,
@@ -251,6 +270,7 @@ function getModelWidgetScanTarget(
     candidateWidgetName: widget.name,
     definitionWidgetName: source.sourceWidgetName,
     sourceExecutionId,
+    promotedSources,
     valueWidget: widget,
     definitionWidget: source.sourceWidget,
     embeddedModels: getEmbeddedModels(source.sourceNode)
@@ -385,7 +405,7 @@ export function enrichWithEmbeddedMetadata(
     else candidatesByKey.set(nameKey, [c])
   }
 
-  const deduped: ModelFile[] = []
+  const deduped: DeclaredModelFile[] = []
   const enrichedKeys = new Set<string>()
   for (const model of embeddedModels) {
     const dedupeKey = `${model.name}::${model.directory}`
@@ -415,8 +435,9 @@ export function enrichWithEmbeddedMetadata(
 function collectEmbeddedModels(
   allNodes: ReturnType<typeof flattenWorkflowNodes>,
   graphData: MissingModelWorkflowData
-): ModelFile[] {
-  const result: ModelFile[] = []
+): DeclaredModelFile[] {
+  // Node entries only name a model; enrichment fills each field where present.
+  const result: DeclaredModelFile[] = []
   const nodesById = new Map(allNodes.map((node) => [String(node.id), node]))
 
   for (const node of allNodes) {
@@ -431,23 +452,6 @@ function collectEmbeddedModels(
   if (graphData.models?.length) result.push(...graphData.models)
 
   return result
-}
-
-function isNodeAndAncestorsActive(
-  node: ReturnType<typeof flattenWorkflowNodes>[number],
-  nodesById: ReadonlyMap<
-    string,
-    ReturnType<typeof flattenWorkflowNodes>[number]
-  >
-): boolean {
-  if (isInactiveMode(node.mode)) return false
-
-  for (const ancestorId of getParentExecutionIds(String(node.id))) {
-    const ancestor = nodesById.get(ancestorId)
-    if (isInactiveMode(ancestor?.mode)) return false
-  }
-
-  return true
 }
 
 interface AssetVerifier {

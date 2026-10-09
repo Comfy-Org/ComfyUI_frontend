@@ -24,7 +24,7 @@ import type {
 } from '@/extensions/core/load3d/interfaces'
 import { t } from '@/i18n'
 import type { LGraphNode } from '@/lib/litegraph/src/LGraphNode'
-import { useToastStore } from '@/platform/updates/common/toastStore'
+import { useToast } from '@/components/ui/toast/toastStore'
 import { api } from '@/scripts/api'
 import { useLoad3dService } from '@/services/load3dService'
 
@@ -166,8 +166,10 @@ export const useLoad3dViewer = (node?: LGraphNode) => {
       load3d.setBackgroundColor(newColor)
     } catch (error) {
       console.error('Error updating background color:', error)
-      useToastStore().addAlert(
-        t('toastMessages.failedToUpdateBackgroundColor', { color: newColor })
+      useToast().warning(
+        t('toastMessages.failedToUpdateBackgroundColor', {
+          color: newColor
+        })
       )
     }
   })
@@ -178,8 +180,10 @@ export const useLoad3dViewer = (node?: LGraphNode) => {
       load3d.toggleGrid(newValue)
     } catch (error) {
       console.error('Error toggling grid:', error)
-      useToastStore().addAlert(
-        t('toastMessages.failedToToggleGrid', { show: newValue ? 'on' : 'off' })
+      useToast().warning(
+        t('toastMessages.failedToToggleGrid', {
+          show: newValue ? 'on' : 'off'
+        })
       )
     }
   })
@@ -190,8 +194,10 @@ export const useLoad3dViewer = (node?: LGraphNode) => {
       load3d.toggleCamera(newCameraType)
     } catch (error) {
       console.error('Error toggling camera:', error)
-      useToastStore().addAlert(
-        t('toastMessages.failedToToggleCamera', { camera: newCameraType })
+      useToast().warning(
+        t('toastMessages.failedToToggleCamera', {
+          camera: newCameraType
+        })
       )
     }
   })
@@ -202,9 +208,7 @@ export const useLoad3dViewer = (node?: LGraphNode) => {
       load3d.setFOV(newFov)
     } catch (error) {
       console.error('Error updating FOV:', error)
-      useToastStore().addAlert(
-        t('toastMessages.failedToUpdateFOV', { fov: newFov })
-      )
+      useToast().warning(t('toastMessages.failedToUpdateFOV', { fov: newFov }))
     }
   })
 
@@ -214,8 +218,10 @@ export const useLoad3dViewer = (node?: LGraphNode) => {
       load3d.setLightIntensity(newValue)
     } catch (error) {
       console.error('Error updating light intensity:', error)
-      useToastStore().addAlert(
-        t('toastMessages.failedToUpdateLightIntensity', { intensity: newValue })
+      useToast().warning(
+        t('toastMessages.failedToUpdateLightIntensity', {
+          intensity: newValue
+        })
       )
     }
   })
@@ -227,7 +233,7 @@ export const useLoad3dViewer = (node?: LGraphNode) => {
       hasBackgroundImage.value = !!newValue
     } catch (error) {
       console.error('Error updating background image:', error)
-      useToastStore().addAlert(t('toastMessages.failedToUpdateBackgroundImage'))
+      useToast().warning(t('toastMessages.failedToUpdateBackgroundImage'))
     }
   })
 
@@ -237,7 +243,7 @@ export const useLoad3dViewer = (node?: LGraphNode) => {
       load3d.setBackgroundRenderMode(newValue)
     } catch (error) {
       console.error('Error updating background render mode:', error)
-      useToastStore().addAlert(
+      useToast().warning(
         t('toastMessages.failedToUpdateBackgroundRenderMode', {
           mode: newValue
         })
@@ -251,8 +257,10 @@ export const useLoad3dViewer = (node?: LGraphNode) => {
       load3d.setUpDirection(newValue)
     } catch (error) {
       console.error('Error updating up direction:', error)
-      useToastStore().addAlert(
-        t('toastMessages.failedToUpdateUpDirection', { direction: newValue })
+      useToast().warning(
+        t('toastMessages.failedToUpdateUpDirection', {
+          direction: newValue
+        })
       )
     }
   })
@@ -263,8 +271,10 @@ export const useLoad3dViewer = (node?: LGraphNode) => {
       load3d.setMaterialMode(newValue)
     } catch (error) {
       console.error('Error updating material mode:', error)
-      useToastStore().addAlert(
-        t('toastMessages.failedToUpdateMaterialMode', { mode: newValue })
+      useToast().warning(
+        t('toastMessages.failedToUpdateMaterialMode', {
+          mode: newValue
+        })
       )
     }
   })
@@ -460,9 +470,7 @@ export const useLoad3dViewer = (node?: LGraphNode) => {
       setupAnimationEvents()
     } catch (error) {
       console.error('Error initializing Load3d viewer:', error)
-      useToastStore().addAlert(
-        t('toastMessages.failedToInitializeLoad3dViewer')
-      )
+      useToast().warning(t('toastMessages.failedToInitializeLoad3dViewer'))
     }
   }
 
@@ -495,18 +503,21 @@ export const useLoad3dViewer = (node?: LGraphNode) => {
         load3d.updateStatusMouseOnViewer(true)
       }
 
-      await load3d.loadModel(modelUrl)
+      // Viewer-lifetime setup belongs to instance creation, not to this
+      // request: a concurrent initializeStandaloneViewer() call reuses the
+      // instance through loadStandaloneModel() and can supersede this load.
+      isPreview.value = true
+      setupAnimationEvents()
+
+      const accepted = await load3d.loadModel(modelUrl)
+      if (!accepted) return
       currentModelUrl = modelUrl
       restoreStandaloneConfig(modelUrl)
       captureAdapterFlags(load3d)
-
-      isPreview.value = true
-
-      setupAnimationEvents()
       persistStandaloneThumbnail(modelUrl)
     } catch (error) {
       console.error('Error initializing standalone 3D viewer:', error)
-      useToastStore().addAlert(t('toastMessages.failedToLoadModel'))
+      useToast().warning(t('toastMessages.failedToLoadModel'))
     }
   }
 
@@ -531,14 +542,15 @@ export const useLoad3dViewer = (node?: LGraphNode) => {
 
     try {
       saveStandaloneConfig()
-      await load3d.loadModel(modelUrl)
+      const accepted = await load3d.loadModel(modelUrl)
+      if (!accepted) return
       currentModelUrl = modelUrl
       restoreStandaloneConfig(modelUrl)
       captureAdapterFlags(load3d)
       persistStandaloneThumbnail(modelUrl)
     } catch (error) {
       console.error('Error loading model in standalone viewer:', error)
-      useToastStore().addAlert('Failed to load 3D model')
+      useToast().warning(t('toastMessages.failedToLoadModel'))
     }
   }
 
@@ -600,8 +612,10 @@ export const useLoad3dViewer = (node?: LGraphNode) => {
       await load3d.exportModel(format)
     } catch (error) {
       console.error('Error exporting model:', error)
-      useToastStore().addAlert(
-        t('toastMessages.failedToExportModel', { format: format.toUpperCase() })
+      useToast().warning(
+        t('toastMessages.failedToExportModel', {
+          format: format.toUpperCase()
+        })
       )
     }
   }
@@ -771,7 +785,7 @@ export const useLoad3dViewer = (node?: LGraphNode) => {
     }
 
     if (!load3d) {
-      useToastStore().addAlert(t('toastMessages.no3dScene'))
+      useToast().warning(t('toastMessages.no3dScene'))
       return
     }
 
@@ -788,7 +802,7 @@ export const useLoad3dViewer = (node?: LGraphNode) => {
       }
     } catch (error) {
       console.error('Error uploading background image:', error)
-      useToastStore().addAlert(t('toastMessages.failedToUploadBackgroundImage'))
+      useToast().warning(t('toastMessages.failedToUploadBackgroundImage'))
     }
   }
 
@@ -799,7 +813,7 @@ export const useLoad3dViewer = (node?: LGraphNode) => {
    */
   const handleModelDrop = async (file: File) => {
     if (!load3d) {
-      useToastStore().addAlert(t('toastMessages.no3dScene'))
+      useToast().warning(t('toastMessages.no3dScene'))
       return
     }
 
@@ -810,7 +824,7 @@ export const useLoad3dViewer = (node?: LGraphNode) => {
       )
 
       if (!uploadedPath) {
-        useToastStore().addAlert(t('toastMessages.fileUploadFailed'))
+        useToast().warning(t('toastMessages.fileUploadFailed'))
         return
       }
 
@@ -821,7 +835,8 @@ export const useLoad3dViewer = (node?: LGraphNode) => {
         )
       )
 
-      await load3d.loadModel(modelUrl)
+      const accepted = await load3d.loadModel(modelUrl)
+      if (!accepted) return
 
       captureAdapterFlags(load3d)
 
@@ -835,7 +850,7 @@ export const useLoad3dViewer = (node?: LGraphNode) => {
       }
     } catch (error) {
       console.error('Model drop failed:', error)
-      useToastStore().addAlert(t('toastMessages.failedToLoadModel'))
+      useToast().warning(t('toastMessages.failedToLoadModel'))
     }
   }
 

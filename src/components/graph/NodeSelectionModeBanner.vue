@@ -1,13 +1,22 @@
 <script setup lang="ts">
+import { useEventListener } from '@vueuse/core'
 import { useI18n } from 'vue-i18n'
 
+import CanvasBanner from '@/components/graph/CanvasBanner.vue'
 import Button from '@/components/ui/button/Button.vue'
 import { useCanvasInteractions } from '@/renderer/core/canvas/useCanvasInteractions'
-import { useAgentNodeSelectionStore } from '@/stores/agentNodeSelectionStore'
+import { useCanvasStore } from '@/renderer/core/canvas/canvasStore'
+import { useDialogStore } from '@/stores/dialogStore'
 
 const { t } = useI18n()
 const canvasInteractions = useCanvasInteractions()
-const agentNodeSelectionStore = useAgentNodeSelectionStore()
+const canvasStore = useCanvasStore()
+const dialogStore = useDialogStore()
+
+useEventListener(window, 'keydown', (event: KeyboardEvent) => {
+  if (event.key === 'Escape' && dialogStore.dialogStack.length === 0)
+    canvasStore.stopNodePicking()
+})
 </script>
 
 <template>
@@ -15,33 +24,32 @@ const agentNodeSelectionStore = useAgentNodeSelectionStore()
     class="pointer-events-none absolute top-4 left-1/2 z-40 -translate-x-1/2"
   >
     <Transition
-      enter-active-class="transition-[transform,opacity] duration-150 ease-out"
+      enter-active-class="transition-[transform,opacity] delay-300 duration-150 ease-out"
       leave-active-class="transition-[transform,opacity] duration-150 ease-out"
       enter-from-class="-translate-y-full opacity-0"
       leave-to-class="-translate-y-full opacity-0"
     >
-      <div
-        v-if="agentNodeSelectionStore.isBannerVisible"
+      <CanvasBanner
+        v-if="canvasStore.isPickingNodes"
         data-testid="node-selection-mode-banner"
-        class="pointer-events-auto flex max-w-lg items-center gap-8 rounded-lg border border-l-4 border-interface-stroke border-l-primary-background bg-interface-panel-surface p-4 shadow-interface"
+        accent="border-l-primary-background"
+        class="max-w-lg"
         @wheel="canvasInteractions.forwardEventToCanvas"
       >
-        <div class="flex flex-col">
-          <span class="text-sm font-medium text-base-foreground">
-            {{ t('agent.nodeSelection.bannerTitle') }}
-          </span>
-          <span class="text-sm text-muted-foreground">
-            {{ t('agent.nodeSelection.bannerSubtitle') }}
-          </span>
-        </div>
-        <Button
-          variant="secondary"
-          size="sm"
-          @click="agentNodeSelectionStore.exit()"
-        >
-          {{ t('agent.nodeSelection.exit') }}
-        </Button>
-      </div>
+        <template #title>{{ t('agent.nodeSelection.bannerTitle') }}</template>
+        <template #description>
+          {{ t('agent.nodeSelection.bannerSubtitle') }}
+        </template>
+        <template #actions>
+          <Button
+            variant="secondary"
+            size="sm"
+            @click="canvasStore.stopNodePicking()"
+          >
+            {{ t('agent.nodeSelection.exit') }}
+          </Button>
+        </template>
+      </CanvasBanner>
     </Transition>
   </div>
 </template>

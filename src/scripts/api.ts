@@ -1,3 +1,14 @@
+import type {
+  GetEmbeddingsResponse,
+  GetExtensionsResponse,
+  GetI18nResponse,
+  PostAssetsFromWorkflowResponse
+} from '@comfyorg/ingest-types'
+import {
+  zGetEmbeddingsResponse,
+  zGetExtensionsResponse,
+  zPostAssetsFromWorkflowResponse
+} from '@comfyorg/ingest-types/zod'
 import { promiseTimeout, until } from '@vueuse/core'
 import axios from 'axios'
 import { storeToRefs } from 'pinia'
@@ -7,25 +18,34 @@ import { ref } from 'vue'
 
 import defaultClientFeatureFlags from '@/config/clientFeatureFlags.json' with { type: 'json' }
 import {
+  authCredentialOf,
+  notifyAuthCredential
+} from '@/platform/auth/authCredential'
+import { scopeMediaRoute } from '@/platform/auth/session/sessionMediaUrl'
+import { webSessionRequests } from '@/platform/auth/session/webSessionFetch'
+import {
   fetchWithUnifiedRemint,
   shouldRemintCloudRequest
 } from '@/platform/auth/unified/remintRetry'
+import {
+  AUTH_INIT_TIMEOUT_MS,
+  FETCH_RESPONSE_HEADERS_TIMEOUT_MS
+} from '@/scripts/apiTimeouts'
 import { getDevOverride } from '@/utils/devFeatureFlagOverride'
 import { getSessionOverride } from '@/utils/sessionFeatureFlagOverride'
 import type {
   ModelFile,
   ModelFolderInfo
 } from '@/platform/assets/schemas/assetSchema'
+import { useToast } from '@/components/ui/toast/toastStore'
+import { t } from '@/i18n'
 import { isCloud } from '@/platform/distribution/types'
 import { addBreadcrumb } from '@sentry/vue'
 import { useTelemetry } from '@/platform/telemetry'
-import { useToastStore } from '@/platform/updates/common/toastStore'
+import type { components as ManagerComponents } from '@/workbench/extensions/manager/types/generatedManagerTypes'
 import type {
-  ShareableAssetsResponse,
   AssetDownloadWsMessage,
   AssetExportWsMessage,
-  CustomNodesI18n,
-  EmbeddingsResponse,
   ExecutedWsMessage,
   ExecutingWsMessage,
   ExecutionCachedWsMessage,
@@ -33,27 +53,24 @@ import type {
   ExecutionInterruptedWsMessage,
   ExecutionStartWsMessage,
   ExecutionSuccessWsMessage,
-  ExtensionsResponse,
   FeatureFlagsWsMessage,
   LogsRawResponse,
   LogsWsMessage,
   NotificationWsMessage,
-  PreviewMethod,
   ProgressStateWsMessage,
   ProgressTextWsMessage,
   ProgressWsMessage,
-  PromptResponse,
-  Settings,
   StatusWsMessage,
-  StatusWsMessageStatus,
+  StatusWsMessageStatus
+} from '@/platform/remote/comfyui/execution/types'
+import type {
+  PromptFailureResponse,
+  PromptResponse,
   SystemStats,
-  User,
+  UserConfigResponse,
   UserDataFullInfo
-} from '@/schemas/apiSchema'
-import {
-  zEmbeddingsResponse,
-  zShareableAssetsResponse
-} from '@/schemas/apiSchema'
+} from '@/platform/remote/comfyui/types'
+import type { PreviewMethod, Settings } from '@/platform/settings/types'
 import type {
   TemplateIncludeOnDistributionEnum,
   WorkflowTemplates
@@ -70,7 +87,7 @@ import type {
 } from '@/platform/remote/comfyui/jobs/jobTypes'
 import type { ComfyNodeDef } from '@/schemas/nodeDefSchema'
 import type { useAuthStore } from '@/stores/authStore'
-import type { AuthHeader } from '@/types/authTypes'
+import type { AuthCredential, AuthHeader, AuthScheme } from '@/types/authTypes'
 import type { NodeExecutionId } from '@/types/nodeIdentification'
 import {
   fetchHistory,
@@ -78,6 +95,8 @@ import {
   fetchJobDetail,
   fetchQueue
 } from '@/platform/remote/comfyui/jobs/fetchJobs'
+
+const SERVER_FEATURE_FLAGS_TIMEOUT_MS = 5_000
 
 interface QueuePromptRequestBody {
   client_id: string
@@ -133,10 +152,13 @@ interface QueuePromptRequestBody {
   number?: number
 }
 
-const FETCH_RESPONSE_HEADERS_TIMEOUT_MS = 60_000
-
 interface FetchApiOptions extends RequestInit {
   timeoutMs?: number | null
+  onAuthHeader?: (attached: boolean) => void
+  /** Reports which auth path was taken, independent of onAuthHeader's attached/not boolean. */
+  onAuthScheme?: (scheme: AuthScheme) => void
+  /** Reports the kind of credential sent, to tell a missing token from a wrong one. */
+  onAuthCredential?: (credential: AuthCredential) => void
 }
 
 const FETCH_ROUTE_GROUPS = new Set([
@@ -257,7 +279,10 @@ interface BackendApiCalls {
 }
 
 /** Dictionary of all api calls */
-interface ApiCalls extends BackendApiCalls, FrontendApiCalls {}
+interface ApiCalls extends BackendApiCalls, FrontendApiCalls {
+  'cm-task-started': ManagerComponents['schemas']['MessageTaskStarted']
+  'cm-task-completed': ManagerComponents['schemas']['MessageTaskDone']
+}
 
 /** Used to create a discriminating union on type value. */
 interface ApiMessage<T extends keyof ApiCalls> {
@@ -331,6 +356,8 @@ export type GlobalSubgraphData = {
   essentials_category?: string
 }
 
+type WebSessionSend = (url: string, init: RequestInit) => Promise<Response>
+
 function addHeaderEntry(headers: HeadersInit, key: string, value: string) {
   if (Array.isArray(headers)) {
     headers.push([key, value])
@@ -375,10 +402,10 @@ export interface ComfyApi extends EventTarget {
 }
 
 export class PromptExecutionError extends Error {
-  response: PromptResponse
+  response: PromptFailureResponse
   status?: number
 
-  constructor(response: PromptResponse, status?: number) {
+  constructor(response: PromptFailureResponse, status?: number) {
     super('Prompt execution failed')
     this.response = response
     this.status = status
@@ -386,11 +413,21 @@ export class PromptExecutionError extends Error {
 
   override toString() {
     let message = ''
-    if (typeof this.response.error === 'string') {
-      message += this.response.error
-    } else if (this.response.error) {
-      message +=
-        this.response.error.message + ': ' + this.response.error.details
+    const error = this.response.error
+    if (typeof error === 'string') {
+      message += error
+    } else if (typeof error === 'object' && error !== null) {
+      const errorMessage = 'message' in error ? error.message : undefined
+      const errorDetails = 'details' in error ? error.details : undefined
+      if (typeof errorMessage === 'string') {
+        message += errorMessage
+        if (typeof errorDetails === 'string') {
+          message += ': ' + errorDetails
+        }
+      }
+    }
+    if (!message && typeof this.response.message === 'string') {
+      message += this.response.message
     }
 
     for (const [_, nodeError] of Object.entries(
@@ -398,7 +435,8 @@ export class PromptExecutionError extends Error {
     )) {
       message += '\n' + nodeError.class_type + ':'
       for (const errorReason of nodeError.errors) {
-        message += '\n    - ' + errorReason.message + ': ' + errorReason.details
+        message += '\n    - ' + errorReason.message
+        if (errorReason.details) message += ': ' + errorReason.details
       }
     }
 
@@ -464,6 +502,17 @@ export class ComfyApi extends EventTarget {
   serverFeatureFlags = ref<Record<string, unknown>>({})
 
   /**
+   * Whether feature-flag negotiation for the current socket has settled: the
+   * server delivered a map, or delivery was abandoned (5s timeout, or the
+   * socket closed first). Not monotonic: each replacement socket resets it to
+   * false, so it can flip repeatedly while a connection is reconnecting. True
+   * does not imply the map is non-empty, and after {@link resetSocket}
+   * {@link serverFeatureFlags} still holds the previous identity's map until
+   * the next `feature_flags` message replaces it.
+   */
+  serverFeatureFlagsSettled = ref(false)
+
+  /**
    * The auth token for the comfy org account if the user is logged in.
    * This is only used for {@link queuePrompt} now. It is not directly
    * passed as parameter to the function because some custom nodes are hijacking
@@ -496,6 +545,14 @@ export class ComfyApi extends EventTarget {
   }
 
   apiURL(route: string): string {
+    const requests = webSessionRequests()
+    return this.unscopedApiURL(
+      requests ? scopeMediaRoute(route, requests.workspaceId()) : route
+    )
+  }
+
+  /** For requests whose headers already name the workspace. */
+  private unscopedApiURL(route: string): string {
     if (route.startsWith('/api')) return this.api_base + route
     return this.api_base + '/api' + route
   }
@@ -521,9 +578,70 @@ export class ComfyApi extends EventTarget {
     }
   }
 
+  private async getWebSessionSend(): Promise<WebSessionSend | undefined> {
+    const requests = webSessionRequests()
+    if (!requests) return undefined
+    const scope = await requests.scope()
+    return scope && ((url, init) => requests.send(url, init, scope))
+  }
+
+  /** Sends a same-origin request on the web session; undefined when this tab is not on it. */
+  async fetchOnWebSession(
+    url: string,
+    init: RequestInit
+  ): Promise<Response | undefined> {
+    const send = await this.getWebSessionSend()
+    return send?.(url, init)
+  }
+
+  /**
+   * Adds today's token header, reporting the scheme that was actually used and
+   * whether a 401 may be re-minted.
+   *
+   * The scheme is returned rather than assumed by the caller because this helper
+   * is the only place that knows whether a header was obtained: it reports
+   * `authHeader !== null` through `onAuthHeader` and attaches nothing when auth
+   * is unavailable. A caller that announced `cloud-auth-header` on entry to this
+   * path would misreport exactly the unauthenticated case PM-1802 is about.
+   */
+  private async addCloudAuthHeader(
+    headers: HeadersInit,
+    onAuthHeader: FetchApiOptions['onAuthHeader']
+  ): Promise<{
+    scheme: AuthScheme
+    credential: AuthCredential
+    unifiedRetryOn401: boolean
+  }> {
+    // Get Firebase JWT token if user is logged in
+    const getAuthHeaderIfAvailable = async (): Promise<AuthHeader | null> => {
+      try {
+        const authStore = await this.getAuthStore()
+        return authStore ? await authStore.getAuthHeader() : null
+      } catch (error) {
+        console.warn('Failed to get auth header:', error)
+        return null
+      }
+    }
+
+    const authHeader = await getAuthHeaderIfAvailable()
+    onAuthHeader?.(authHeader !== null)
+    if (!authHeader) {
+      return { scheme: 'none', credential: 'none', unifiedRetryOn401: false }
+    }
+
+    for (const [key, value] of Object.entries(authHeader)) {
+      addHeaderEntry(headers, key, value)
+    }
+    return {
+      scheme: 'cloud-auth-header',
+      credential: authCredentialOf(authHeader),
+      unifiedRetryOn401: await shouldRemintCloudRequest()
+    }
+  }
+
   /**
    * Waits for Firebase auth to be initialized before proceeding.
-   * Includes 10-second timeout to prevent infinite hanging.
+   * Bounded by AUTH_INIT_TIMEOUT_MS to prevent infinite hanging.
    */
   private async waitForAuthInitialization(): Promise<void> {
     if (isCloud) {
@@ -536,42 +654,45 @@ export class ComfyApi extends EventTarget {
       try {
         await Promise.race([
           until(isInitialized).toBe(true),
-          promiseTimeout(10000)
+          promiseTimeout(AUTH_INIT_TIMEOUT_MS)
         ])
       } catch {
-        console.warn('Firebase auth initialization timeout after 10 seconds')
+        console.warn(
+          `Firebase auth initialization timeout after ${AUTH_INIT_TIMEOUT_MS / 1000} seconds`
+        )
       }
     }
   }
 
   async fetchApi(route: string, options?: FetchApiOptions) {
-    const { timeoutMs = FETCH_RESPONSE_HEADERS_TIMEOUT_MS, ...requestOptions } =
-      options ?? {}
+    const {
+      timeoutMs = FETCH_RESPONSE_HEADERS_TIMEOUT_MS,
+      onAuthHeader,
+      onAuthScheme,
+      onAuthCredential,
+      ...requestOptions
+    } = options ?? {}
     const headers: HeadersInit = requestOptions.headers ?? {}
     let unifiedRetryOn401 = false
+    let sendOnWebSession: WebSessionSend | undefined
 
     if (isCloud) {
       await this.waitForAuthInitialization()
-
-      // Get Firebase JWT token if user is logged in
-      const getAuthHeaderIfAvailable = async (): Promise<AuthHeader | null> => {
-        try {
-          const authStore = await this.getAuthStore()
-          return authStore ? await authStore.getAuthHeader() : null
-        } catch (error) {
-          console.warn('Failed to get auth header:', error)
-          return null
-        }
+      sendOnWebSession = await this.getWebSessionSend()
+      if (sendOnWebSession) {
+        onAuthHeader?.(true)
+        onAuthScheme?.('web-session')
+        notifyAuthCredential(onAuthCredential, 'session-cookie')
+      } else {
+        const cloudAuth = await this.addCloudAuthHeader(headers, onAuthHeader)
+        unifiedRetryOn401 = cloudAuth.unifiedRetryOn401
+        onAuthScheme?.(cloudAuth.scheme)
+        notifyAuthCredential(onAuthCredential, cloudAuth.credential)
       }
-
-      const authHeader = await getAuthHeaderIfAvailable()
-
-      if (authHeader) {
-        for (const [key, value] of Object.entries(authHeader)) {
-          addHeaderEntry(headers, key, value)
-        }
-        unifiedRetryOn401 = await shouldRemintCloudRequest()
-      }
+    } else {
+      onAuthHeader?.(false)
+      onAuthScheme?.('none')
+      notifyAuthCredential(onAuthCredential, 'none')
     }
 
     addHeaderEntry(headers, 'Comfy-User', this.user)
@@ -608,17 +729,60 @@ export class ComfyApi extends EventTarget {
         ? AbortSignal.any([requestOptions.signal, timeout.controller.signal])
         : (requestOptions.signal ?? timeout?.controller.signal)
 
-    return fetchWithUnifiedRemint(
-      this.apiURL(route),
-      {
-        cache: 'no-cache',
-        ...requestOptions,
-        headers,
-        signal
-      },
-      unifiedRetryOn401
-    ).finally(() => {
+    let retryTimeoutId: ReturnType<typeof setTimeout> | undefined
+    const retrySignalLifecycle = timeout
+      ? {
+          clearInitialTimeout: () => {
+            if (timeoutId !== undefined) clearTimeout(timeoutId)
+          },
+          createSignal: () => {
+            const retryController = new AbortController()
+            retryTimeoutId = setTimeout(() => {
+              const method = (requestOptions.method ?? 'GET').toUpperCase()
+              const routeTemplate = getFetchRouteTemplate(route)
+
+              addBreadcrumb({
+                category: 'fetch',
+                message: `Timeout on ${method} ${routeTemplate}`,
+                level: 'warning',
+                data: { timeout_ms: timeout.duration }
+              })
+
+              useTelemetry()?.trackFetchTimeout({
+                route: routeTemplate,
+                method,
+                timeout_ms: timeout.duration
+              })
+
+              retryController.abort(
+                new DOMException('Fetch timeout', 'TimeoutError')
+              )
+            }, timeout.duration)
+
+            return requestOptions.signal
+              ? AbortSignal.any([requestOptions.signal, retryController.signal])
+              : retryController.signal
+          }
+        }
+      : undefined
+
+    const init: RequestInit = {
+      cache: 'no-cache',
+      ...requestOptions,
+      headers,
+      signal
+    }
+    const response = sendOnWebSession
+      ? sendOnWebSession(this.unscopedApiURL(route), init)
+      : fetchWithUnifiedRemint(
+          this.apiURL(route),
+          init,
+          unifiedRetryOn401,
+          retrySignalLifecycle
+        )
+    return response.finally(() => {
       if (timeoutId !== undefined) clearTimeout(timeoutId)
+      if (retryTimeoutId !== undefined) clearTimeout(retryTimeoutId)
     })
   }
 
@@ -771,10 +935,35 @@ export class ComfyApi extends EventTarget {
         const resp = await this.fetchApi('/prompt')
         const status = (await resp.json()) as StatusWsMessageStatus
         this.dispatchCustomEvent('status', status)
-      } catch (error) {
+      } catch {
         this.dispatchCustomEvent('status', null)
       }
     }, 1000)
+  }
+
+  /** False when the web session is on and no one is signed in to open it. */
+  private async addSocketAuth(params: URLSearchParams): Promise<boolean> {
+    const requests = webSessionRequests()
+    const sessionScope = requests && (await requests.scope())
+    if (sessionScope?.workspaceId) {
+      params.set('workspace_id', sessionScope.workspaceId)
+    }
+    if (sessionScope) return true
+
+    // Get auth token and set cloud params if available
+    // Uses workspace token (if enabled) or Firebase token
+    try {
+      const authStore = await this.getAuthStore()
+      const authToken = await authStore?.getAuthToken()
+      if (authToken) {
+        params.set('token', authToken)
+      }
+    } catch (error) {
+      void trackWsTokenUnavailable()
+      // Continue without auth token if there's an error
+      console.warn('Could not get auth token for WebSocket connection:', error)
+    }
+    return !requests || params.has('token')
   }
 
   /**
@@ -797,24 +986,7 @@ export class ComfyApi extends EventTarget {
       params.set('clientId', existingSession)
     }
 
-    // Get auth token and set cloud params if available
-    // Uses workspace token (if enabled) or Firebase token
-    if (isCloud) {
-      try {
-        const authStore = await this.getAuthStore()
-        const authToken = await authStore?.getAuthToken()
-        if (authToken) {
-          params.set('token', authToken)
-        }
-      } catch (error) {
-        void trackWsTokenUnavailable()
-        // Continue without auth token if there's an error
-        console.warn(
-          'Could not get auth token for WebSocket connection:',
-          error
-        )
-      }
-    }
+    if (isCloud && !(await this.addSocketAuth(params))) return
 
     const protocol = window.location.protocol === 'https:' ? 'wss' : 'ws'
     const baseUrl = `${protocol}://${this.api_host}${this.api_base}/ws`
@@ -828,7 +1000,15 @@ export class ComfyApi extends EventTarget {
 
     const socket = new WebSocket(wsUrl)
     this.socket = socket
+    this.serverFeatureFlagsSettled.value = false
     socket.binaryType = 'arraybuffer'
+
+    // Armed before `open` so a socket that never opens still settles.
+    const settleTimer = setTimeout(() => {
+      if (this.socket === socket && !this.serverFeatureFlagsSettled.value) {
+        this.serverFeatureFlagsSettled.value = true
+      }
+    }, SERVER_FEATURE_FLAGS_TIMEOUT_MS)
 
     socket.addEventListener('open', () => {
       opened = true
@@ -861,6 +1041,8 @@ export class ComfyApi extends EventTarget {
       // A replaced socket (e.g. after resetSocket on an account switch) must
       // not reconnect; only the active socket owns the reconnect lifecycle.
       if (this.socket !== socket) return
+      this.serverFeatureFlagsSettled.value = true
+      clearTimeout(settleTimer)
       setTimeout(async () => {
         if (this.socket !== socket) return
         this.socket = null
@@ -1005,6 +1187,7 @@ export class ComfyApi extends EventTarget {
               break
             case 'feature_flags':
               this.serverFeatureFlags.value = msg.data
+              this.serverFeatureFlagsSettled.value = true
               this.dispatchCustomEvent('feature_flags', msg.data)
               break
             default:
@@ -1028,8 +1211,8 @@ export class ComfyApi extends EventTarget {
   /**
    * Initialises sockets and realtime updates
    */
-  init() {
-    this.createSocket()
+  async init() {
+    await this.createSocket()
   }
 
   /**
@@ -1039,16 +1222,32 @@ export class ComfyApi extends EventTarget {
    * events over a handshake that was authenticated as that account.
    */
   async resetSocket(): Promise<void> {
-    const previous = this.socket
-    // Detach before closing so the previous socket's close handler sees it is
-    // no longer the active socket and does not start a competing reconnect.
-    this.socket = null
     // Clear every handshake identity source: createSocket() reads the client id
     // from window.name (mirrored in session storage), not this.clientId, so the
     // next connect must not inherit the prior account's id.
     this.clientId = undefined
     window.name = ''
     sessionStorage.removeItem('clientId')
+    await this.replaceSocket()
+  }
+
+  /**
+   * Re-handshakes the socket for the same account, keeping its client id, so
+   * a new web session workspace takes effect. Does nothing before init().
+   */
+  async reconnectSocket(): Promise<void> {
+    if (this.socketGeneration === 0) return
+    await this.replaceSocket()
+  }
+
+  private async replaceSocket(): Promise<void> {
+    const previous = this.socket
+    // serverFeatureFlags deliberately keeps the previous map: clearing it would
+    // downgrade every serverSupportsFeature() caller until the next delivery.
+    this.serverFeatureFlagsSettled.value = false
+    // Detach before closing so the previous socket's close handler sees it is
+    // no longer the active socket and does not start a competing reconnect.
+    this.socket = null
     if (previous && previous.readyState !== WebSocket.CLOSED) {
       try {
         previous.close()
@@ -1065,9 +1264,9 @@ export class ComfyApi extends EventTarget {
   /**
    * Gets a list of extension urls
    */
-  async getExtensions(): Promise<ExtensionsResponse> {
+  async getExtensions(): Promise<GetExtensionsResponse> {
     const resp = await this.fetchApi('/extensions', { cache: 'no-store' })
-    return await resp.json()
+    return zGetExtensionsResponse.parse(await resp.json())
   }
 
   /**
@@ -1111,12 +1310,12 @@ export class ComfyApi extends EventTarget {
    * Gets a list of embedding names
    * @throws When the request fails or the response does not match the schema
    */
-  async getEmbeddings(): Promise<EmbeddingsResponse> {
+  async getEmbeddings(): Promise<GetEmbeddingsResponse> {
     const resp = await this.fetchApi('/embeddings', { cache: 'no-store' })
     if (!resp.ok) {
       throw new Error(`Failed to fetch /embeddings: ${resp.status}`)
     }
-    return zEmbeddingsResponse.parse(await resp.json())
+    return zGetEmbeddingsResponse.parse(await resp.json())
   }
 
   /**
@@ -1201,7 +1400,7 @@ export class ComfyApi extends EventTarget {
   async getShareableAssets(
     prompt: ComfyApiWorkflow,
     options?: { owned?: boolean }
-  ): Promise<ShareableAssetsResponse> {
+  ): Promise<PostAssetsFromWorkflowResponse> {
     const body: Record<string, unknown> = { workflow_api_json: prompt }
     if (options?.owned !== undefined) {
       body.owned = options.owned
@@ -1215,7 +1414,7 @@ export class ComfyApi extends EventTarget {
       throw new Error(`Failed to fetch shareable assets: ${res.status}`)
     }
     const data = await res.json()
-    return zShareableAssetsResponse.parse(data)
+    return zPostAssetsFromWorkflowResponse.parse(data)
   }
 
   /**
@@ -1449,7 +1648,7 @@ export class ComfyApi extends EventTarget {
   /**
    * Gets user configuration data and where data should be stored
    */
-  async getUserConfig(): Promise<User> {
+  async getUserConfig(): Promise<UserConfigResponse> {
     return (await this.fetchApi('/users')).json()
   }
 
@@ -1476,7 +1675,16 @@ export class ComfyApi extends EventTarget {
     const resp = await this.fetchApi('/settings')
 
     if (resp.status == 401) {
-      throw new UnauthorizedError(resp.statusText)
+      // `statusText` is ALWAYS empty over HTTP/2 — the protocol carries no
+      // reason phrase — and cloud.comfy.org is HTTP/2. Passing it straight
+      // through produced `new UnauthorizedError('')`, which the global
+      // onerror handler reported to Sentry as the untitled group
+      // "Error: No error message": 165,890 events in 14 days across 25,417
+      // users, all of them unactionable because nothing in the event said
+      // which request had failed.
+      throw new UnauthorizedError(
+        `Failed to load settings: 401 ${resp.statusText || 'Unauthorized'}`
+      )
     }
     return await resp.json()
   }
@@ -1543,7 +1751,7 @@ export class ComfyApi extends EventTarget {
       `/userdata/${encodeURIComponent(file)}?overwrite=${options.overwrite}&full_info=${options.full_info}`,
       {
         method: 'POST',
-        body: options?.stringify ? JSON.stringify(data) : (data as BodyInit),
+        body: options.stringify ? JSON.stringify(data) : (data as BodyInit),
         ...options
       }
     )
@@ -1578,7 +1786,7 @@ export class ComfyApi extends EventTarget {
     options = { overwrite: false }
   ) {
     const resp = await this.fetchApi(
-      `/userdata/${encodeURIComponent(source)}/move/${encodeURIComponent(dest)}?overwrite=${options?.overwrite}`,
+      `/userdata/${encodeURIComponent(source)}/move/${encodeURIComponent(dest)}?overwrite=${options.overwrite}`,
       {
         method: 'POST'
       }
@@ -1607,8 +1815,14 @@ export class ComfyApi extends EventTarget {
         `Failed to fetch global subgraph '${id}': ${resp.status} ${resp.statusText}`
       )
     }
-    const subgraph: GlobalSubgraphData = await resp.json()
-    if (!subgraph?.data) {
+    const subgraph: unknown = await resp.json()
+    if (
+      typeof subgraph !== 'object' ||
+      subgraph === null ||
+      !('data' in subgraph) ||
+      typeof subgraph.data !== 'string' ||
+      !subgraph.data
+    ) {
       throw new Error(`Global subgraph '${id}' returned empty data`)
     }
     return subgraph.data
@@ -1626,9 +1840,8 @@ export class ComfyApi extends EventTarget {
   async getLogs(): Promise<string> {
     const url = isCloud ? this.apiURL('/logs') : this.internalURL('/logs')
     const { data } = await axios.get<unknown>(url)
-    return typeof data === 'string'
-      ? data
-      : (JSON.stringify(data, null, 2) ?? '')
+    if (typeof data === 'string') return data
+    return data === undefined ? '' : JSON.stringify(data, null, 2)
   }
 
   async getRawLogs(): Promise<LogsRawResponse> {
@@ -1663,6 +1876,7 @@ export class ComfyApi extends EventTarget {
    * @param {boolean} options.freeExecutionCache - If true, also frees execution cache
    */
   async freeMemory(options: { freeExecutionCache: boolean }) {
+    const toast = useToast()
     try {
       let mode = ''
       if (options.freeExecutionCache) {
@@ -1678,31 +1892,19 @@ export class ComfyApi extends EventTarget {
       })
 
       if (res.status === 200) {
-        if (options.freeExecutionCache) {
-          useToastStore().add({
-            severity: 'success',
-            summary: 'Models and Execution Cache have been cleared.',
-            life: 3000
-          })
-        } else {
-          useToastStore().add({
-            severity: 'success',
-            summary: 'Models have been unloaded.',
-            life: 3000
-          })
-        }
+        toast.success(
+          t(
+            options.freeExecutionCache
+              ? 'toastMessages.modelsAndCacheCleared'
+              : 'toastMessages.modelsUnloaded'
+          ),
+          { duration: 3000 }
+        )
       } else {
-        useToastStore().add({
-          severity: 'error',
-          summary:
-            'Unloading of models failed. Installed ComfyUI may be an outdated version.'
-        })
+        toast.error(t('toastMessages.unloadModelsFailed'))
       }
-    } catch (error) {
-      useToastStore().add({
-        severity: 'error',
-        summary: 'An error occurred while trying to unload models.'
-      })
+    } catch {
+      toast.error(t('toastMessages.unloadModelsError'))
     }
   }
 
@@ -1711,7 +1913,7 @@ export class ComfyApi extends EventTarget {
    *
    * @returns The custom nodes i18n data
    */
-  async getCustomNodesI18n(): Promise<CustomNodesI18n> {
+  async getCustomNodesI18n(): Promise<GetI18nResponse> {
     return (await axios.get(this.apiURL('/i18n'))).data
   }
 

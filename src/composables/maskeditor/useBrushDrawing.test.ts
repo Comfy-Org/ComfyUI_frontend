@@ -63,9 +63,7 @@ vi.mock(import('./useBrushAdjustment'), () => ({
   })
 }))
 
-vi.mock<unknown>(import('@/scripts/app'), () => ({
-  app: { registerExtension: vi.fn() }
-}))
+vi.mock(import('@/scripts/app'))
 
 import { useGPUResources } from './useGPUResources'
 import { useBrushDrawing } from './useBrushDrawing'
@@ -183,15 +181,13 @@ describe('startDrawing', () => {
 describe('startDrawing error handling', () => {
   it('catches initShape errors and resets drawing state', async () => {
     mockStoreDef.maskCtx = null
-    const consoleSpy = vi.spyOn(console, 'error').mockImplementation(() => {})
     const { startDrawing } = setup()
     await startDrawing(makePointerEvent(50, 50))
-    expect(consoleSpy).toHaveBeenCalledWith(
+    expect(console.error).toHaveBeenCalledWith(
       '[useBrushDrawing] Failed to start drawing:',
       expect.any(Error)
     )
     expect(mockStoreDef.maskCtx).toBeNull()
-    consoleSpy.mockRestore()
   })
 })
 

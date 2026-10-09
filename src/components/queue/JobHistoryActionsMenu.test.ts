@@ -3,12 +3,9 @@ import { render, screen } from '@testing-library/vue'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 
 import JobHistoryActionsMenu from '@/components/queue/JobHistoryActionsMenu.vue'
-import { popoverCloseSpy } from '@/components/ui/__mocks__/popoverMockState'
 import { i18n } from '@/i18n'
 import { useSettingStore } from '@/platform/settings/settingStore'
 import { useSidebarTabStore } from '@/stores/workspace/sidebarTabStore'
-
-vi.mock(import('@/components/ui/Popover.vue'))
 
 vi.mock(import('@/platform/distribution/types'), () => ({
   isCloud: false
@@ -41,10 +38,13 @@ describe('JobHistoryActionsMenu', () => {
 
     renderMenu()
 
-    await user.click(screen.getByTestId('show-run-progress-bar-action'))
+    await user.click(screen.getByRole('button', { name: 'More options' }))
+    await user.click(
+      screen.getByRole('menuitemcheckbox', { name: 'Show run progress bar' })
+    )
 
-    expect(vi.mocked(useSettingStore().set)).toHaveBeenCalledTimes(1)
-    expect(vi.mocked(useSettingStore().set)).toHaveBeenCalledWith(
+    expect(useSettingStore().set).toHaveBeenCalledTimes(1)
+    expect(useSettingStore().set).toHaveBeenCalledWith(
       'Comfy.Queue.ShowRunProgressBar',
       false
     )
@@ -56,15 +56,18 @@ describe('JobHistoryActionsMenu', () => {
 
     renderMenu()
 
-    await user.click(screen.getByTestId('docked-job-history-action'))
+    await user.click(screen.getByRole('button', { name: 'More options' }))
+    await user.click(
+      screen.getByRole('menuitemcheckbox', { name: 'Docked Job History' })
+    )
 
-    expect(popoverCloseSpy).toHaveBeenCalledTimes(1)
-    expect(vi.mocked(useSettingStore().set)).toHaveBeenCalledTimes(1)
-    expect(vi.mocked(useSettingStore().set)).toHaveBeenCalledWith(
+    expect(screen.queryByRole('menu')).not.toBeInTheDocument()
+    expect(useSettingStore().set).toHaveBeenCalledTimes(1)
+    expect(useSettingStore().set).toHaveBeenCalledWith(
       'Comfy.Queue.QPOV2',
       true
     )
-    expect(vi.mocked(useSettingStore().setMany)).not.toHaveBeenCalled()
+    expect(useSettingStore().setMany).not.toHaveBeenCalled()
     expect(useSidebarTabStore().activeSidebarTabId).toBe('job-history')
   })
 
@@ -80,9 +83,12 @@ describe('JobHistoryActionsMenu', () => {
       }
     })
 
-    await user.click(screen.getByTestId('clear-history-action'))
+    await user.click(screen.getByRole('button', { name: 'More options' }))
+    await user.click(
+      screen.getByRole('menuitem', { name: 'Clear job history' })
+    )
 
-    expect(popoverCloseSpy).toHaveBeenCalledTimes(1)
+    expect(screen.queryByRole('menu')).not.toBeInTheDocument()
     expect(clearHistorySpy).toHaveBeenCalledOnce()
   })
 })

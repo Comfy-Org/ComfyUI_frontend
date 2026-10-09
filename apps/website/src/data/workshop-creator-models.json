@@ -1,6 +1,8 @@
 {
   "models": {
-    "beeble/switchx": { "family": "flat" },
+    "beeble/switchx": {
+      "family": "flat"
+    },
     "bfl/flux-3-video": {
       "family": "bfl-video"
     },
@@ -9,6 +11,12 @@
     },
     "bria/image-edit-expand": {
       "family": "bria-expand"
+    },
+    "byteplus/dreamina-seedance-2-0-260128": {
+      "family": "seedance",
+      "options": {
+        "mode": "mixed"
+      }
     },
     "byteplus/dreamina-seedance-2-0-fast-260128": {
       "family": "seedance",
@@ -28,9 +36,6 @@
         "mode": "mixed"
       }
     },
-    "byteplus/seed-audio-1.0": {
-      "family": "flat"
-    },
     "byteplus/seed-2-0-lite-260228": {
       "family": "text-input"
     },
@@ -40,23 +45,11 @@
     "byteplus/seed-2-0-pro-260328": {
       "family": "text-input"
     },
-    "byteplus/seed-audio-1.0-multilingual": {
+    "byteplus/seed-audio-1.0": {
       "family": "flat"
     },
-    "byteplus/seedance-1-0-lite-i2v-250428": {
-      "family": "seedance",
-      "options": {
-        "mode": "image"
-      }
-    },
-    "byteplus/seedance-1-0-lite-t2v-250428": {
-      "family": "seedance",
-      "options": {
-        "mode": "text"
-      }
-    },
-    "byteplus/seedream-3-0-t2i-250415": {
-      "family": "seedream"
+    "byteplus/seed-audio-1.0-multilingual": {
+      "family": "flat"
     },
     "byteplus/seedream-4-0-250828": {
       "family": "seedream"
@@ -87,12 +80,6 @@
     },
     "kling/kling-3.0-turbo": {
       "family": "nested-settings"
-    },
-    "kling/kling-v1": {
-      "family": "flat"
-    },
-    "kling/kling-v1-5": {
-      "family": "flat"
     },
     "kling/kling-v2-5-turbo": {
       "family": "flat"
@@ -144,11 +131,15 @@
     },
     "luma_2/uni-1": {
       "family": "luma-image",
-      "options": { "agents": true }
+      "options": {
+        "agents": true
+      }
     },
     "luma_2/uni-1-max": {
       "family": "luma-image",
-      "options": { "agents": true }
+      "options": {
+        "agents": true
+      }
     },
     "meshy/animations": {
       "family": "flat"
@@ -158,6 +149,15 @@
     },
     "meshy/rigging": {
       "family": "meshy-source"
+    },
+    "openai/gpt-image-2": {
+      "family": "gpt-image"
+    },
+    "openai/gpt-image-2.5-flare": {
+      "family": "gpt-image"
+    },
+    "openai/gpt-image-2.5-sunburst": {
+      "family": "gpt-image"
     },
     "qwen/qwen-image-3.0": {
       "family": "qwen-image"

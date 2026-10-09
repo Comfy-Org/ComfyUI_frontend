@@ -7,18 +7,20 @@ import { vi } from 'vitest'
 
 import type {
   BillingHttpResponse,
+  BillingOperationTelemetryEvent,
   BillingOpStatus,
   BillingRequest,
   BillingResult,
   BillingStatusData,
   BillingTransport
-} from '@comfyorg/account/billing'
+} from '@comfyorg/account-core/billing'
 import {
   OPERATION_POLL_TIMING,
   PAYMENT_METHODS_ROUTE,
   PLANS_ROUTE,
   TOPUP_ROUTE,
   createBillingCommands,
+  createBillingEventsReader,
   createBillingOperationLifecycle,
   createBillingStatusReader,
   createCapabilitiesReader,
@@ -28,12 +30,12 @@ import {
   createTopupCommand,
   operationRoute,
   sessionBillingScopeSource
-} from '@comfyorg/account/billing'
+} from '@comfyorg/account-core/billing'
 import type {
   AccountCredential,
   SessionClient,
   SessionSnapshot
-} from '@comfyorg/account/session'
+} from '@comfyorg/account-core/session'
 
 import type { BillingClient } from '../billingClient'
 
@@ -81,7 +83,7 @@ function fakeSession() {
       listeners.add(listener)
       return () => listeners.delete(listener)
     },
-    attachIdentity: outsideBillingContract('attachIdentity'),
+    dispose: outsideBillingContract('dispose'),
     getToken: outsideBillingContract('getToken'),
     ensureFresh: outsideBillingContract('ensureFresh'),
     remint: outsideBillingContract('remint'),
@@ -92,7 +94,7 @@ function fakeSession() {
     session,
     moveTo(workspace: AccountCredential['workspace']) {
       snapshot = authenticated(credential(workspace))
-      for (const listener of [...listeners]) listener(snapshot)
+      for (const listener of Array.from(listeners)) listener(snapshot)
     }
   }
 }
@@ -113,6 +115,7 @@ export const CAPABILITIES = {
   can_downgrade_to_personal: false,
   can_invite_members: false,
   can_reactivate: false,
+  can_revert_scheduled_change: false,
   can_subscribe_self_serve: true,
   can_top_up: true
 }
@@ -236,11 +239,14 @@ export function createBillingHarness(options: HarnessOptions = {}) {
   const statusReader = createBillingStatusReader(readerOptions)
   const plans = createPlansReader(readerOptions)
   const paymentMethods = createPaymentMethodsReader(readerOptions)
+  const events = createBillingEventsReader(readerOptions)
+  const telemetry: BillingOperationTelemetryEvent[] = []
   const lifecycle = createBillingOperationLifecycle({
     transport,
     scopeSource,
     statusReader,
-    embeddedCheckoutAvailable: () => options.embedded === true
+    embeddedCheckoutAvailable: () => options.embedded === true,
+    onTelemetry: (event) => telemetry.push(event)
   })
   let attempts = 0
   const idempotencyKey = () => `key-${++attempts}`
@@ -251,6 +257,7 @@ export function createBillingHarness(options: HarnessOptions = {}) {
     status: statusReader,
     plans,
     paymentMethods,
+    events,
     topup: createTopupCommand({
       transport,
       lifecycle,
@@ -304,6 +311,7 @@ export function createBillingHarness(options: HarnessOptions = {}) {
     calls,
     answer,
     routes,
+    telemetry,
     /** Moves the host to another workspace, as the switcher does. */
     moveToWorkspace: (id: string) =>
       host.moveTo({ id, name: 'Team', type: 'team' })

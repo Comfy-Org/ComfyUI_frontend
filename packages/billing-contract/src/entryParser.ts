@@ -4,32 +4,49 @@
  * product may add analytics noise without breaking the app; everything the
  * contract names is validated, because this is untrusted input.
  */
-import type { BillingIntent, BillingProduct } from './contract'
+import type {
+  BillingIntent,
+  BillingProduct,
+  BillingSource
+} from './contract.js'
 import {
   BILLING_CONTRACT_VERSION,
   isBillingIntent,
-  isBillingProduct
-} from './contract'
+  isBillingProduct,
+  isBillingSource
+} from './contract.js'
 import type {
   InvalidIdentifierCode,
   OptionalEntryKey,
   OptionalEntryValues
-} from './entryFields'
+} from './entryFields.js'
 import {
+  ENTRY_PARAM_AMOUNT,
   ENTRY_PARAM_PRODUCT,
   ENTRY_PARAM_RETURN_TO,
-  OPTIONAL_ENTRY_FIELDS
-} from './entryFields'
-import { isContractIdentifier } from './identifiers'
-import type { ReturnTarget } from './returnTargets'
-import { isReturnTarget } from './returnTargets'
-import { CONTRACT_PARSE_BASE, parseUrl } from './url'
+  ENTRY_PARAM_SOURCE,
+  OPTIONAL_ENTRY_FIELDS,
+  readEntryAmountCents
+} from './entryFields.js'
+import { isContractIdentifier } from './identifiers.js'
+import type { ReturnTarget } from './returnTargets.js'
+import { isReturnTarget } from './returnTargets.js'
+import { CONTRACT_PARSE_BASE, parseUrl } from './url.js'
 
 export interface BillingEntry extends OptionalEntryValues {
   readonly version: typeof BILLING_CONTRACT_VERSION
   readonly intent: BillingIntent
   readonly product: BillingProduct
   readonly returnTo: ReturnTarget
+  readonly source?: BillingSource
+  /**
+   * A `promo` value outside the identifier charset, exactly as the link
+   * carried it. Checkout shows it refused in the field; it never reaches a
+   * URL and never voids the rest of the request.
+   */
+  readonly unreadablePromotionCode?: string
+  /** The credit amount a top-up asks for, in whole cents. */
+  readonly amountCents?: number
 }
 
 export type BillingEntryErrorCode =
@@ -37,6 +54,7 @@ export type BillingEntryErrorCode =
   | 'UNKNOWN_INTENT'
   | 'UNKNOWN_PRODUCT'
   | 'UNKNOWN_RETURN_TARGET'
+  | 'INVALID_AMOUNT'
   | InvalidIdentifierCode
 
 export type BillingEntryResult =
@@ -59,19 +77,33 @@ function parseRoute(pathname: string): RouteResult {
   return { status: 'ok', intent }
 }
 
+type OptionalFields = OptionalEntryValues &
+  Pick<BillingEntry, 'unreadablePromotionCode'>
+
 type OptionalFieldsResult =
-  | { readonly status: 'ok'; readonly values: OptionalEntryValues }
+  | { readonly status: 'ok'; readonly values: OptionalFields }
   | { readonly status: 'error'; readonly code: InvalidIdentifierCode }
 
+/** A promo code only prefills a field, so an unreadable one is the field's error, not the link's. */
 function parseOptionalFields(params: URLSearchParams): OptionalFieldsResult {
   const values: Partial<Record<OptionalEntryKey, string>> = {}
+  let unreadablePromotionCode: string | undefined
   for (const field of OPTIONAL_ENTRY_FIELDS) {
     const raw = params.get(field.param)
     if (raw === null) continue
-    if (!isContractIdentifier(raw)) return { status: 'error', code: field.code }
-    values[field.key] = raw
+    if (isContractIdentifier(raw)) values[field.key] = raw
+    else if (field.key === 'promotionCode') unreadablePromotionCode = raw
+    else return { status: 'error', code: field.code }
   }
-  return { status: 'ok', values }
+  return {
+    status: 'ok',
+    values: {
+      ...values,
+      ...(unreadablePromotionCode === undefined
+        ? {}
+        : { unreadablePromotionCode })
+    }
+  }
 }
 
 /**
@@ -98,6 +130,14 @@ export function parseBillingEntry(url: string | URL): BillingEntryResult {
   const optional = parseOptionalFields(parsed.searchParams)
   if (optional.status === 'error') return optional
 
+  const rawAmount = parsed.searchParams.get(ENTRY_PARAM_AMOUNT)
+  const amountCents =
+    rawAmount === null ? undefined : readEntryAmountCents(rawAmount)
+  if (rawAmount !== null && amountCents === undefined)
+    return { status: 'error', code: 'INVALID_AMOUNT' }
+
+  const source = parsed.searchParams.get(ENTRY_PARAM_SOURCE)
+
   return {
     status: 'ok',
     entry: {
@@ -105,7 +145,9 @@ export function parseBillingEntry(url: string | URL): BillingEntryResult {
       intent: route.intent,
       product,
       returnTo,
-      ...optional.values
+      ...optional.values,
+      ...(isBillingSource(source) ? { source } : {}),
+      ...(amountCents === undefined ? {} : { amountCents })
     }
   }
 }
