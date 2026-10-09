@@ -105,6 +105,17 @@ function setup({
   const endpoint = createFakeWebSessionEndpoint({ state })
   const outage = { remaining: creationOutages }
   const sent: SentRequest[] = []
+  function refuseCreation(): Response | undefined {
+    if (outage.remaining > 0) {
+      outage.remaining -= 1
+      return new Response(JSON.stringify({ code: 'unavailable' }), {
+        status: 503
+      })
+    }
+    return creationRefusal
+      ? new Response(JSON.stringify(creationRefusal), { status: 403 })
+      : undefined
+  }
   const fetchImpl = vi.fn<typeof fetch>(async (input, init = {}) => {
     const url = new URL(String(input))
     sent.push({
@@ -116,22 +127,9 @@ function setup({
       )
     })
     if (url.pathname === '/api/workspaces/current') return workspace()
-    if (
-      init.method === 'POST' &&
-      url.pathname === '/api/auth/session' &&
-      outage.remaining > 0
-    ) {
-      outage.remaining -= 1
-      return new Response(JSON.stringify({ code: 'unavailable' }), {
-        status: 503
-      })
-    }
-    if (
-      creationRefusal &&
-      init.method === 'POST' &&
-      url.pathname === '/api/auth/session'
-    ) {
-      return new Response(JSON.stringify(creationRefusal), { status: 403 })
+    if (init.method === 'POST' && url.pathname === '/api/auth/session') {
+      const refused = refuseCreation()
+      if (refused) return refused
     }
     if (url.pathname.startsWith('/api/billing/')) {
       return new Response(JSON.stringify({}))
