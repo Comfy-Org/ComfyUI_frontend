@@ -264,6 +264,24 @@ test.describe('Mask Editor', { tag: '@vue-nodes' }, () => {
     await expect(dialog).toBeHidden()
   })
 
+  test('maximize fills the viewport and restore returns to the framed size', async ({
+    comfyPage,
+    maskEditor
+  }) => {
+    const dialog = await maskEditor.openDialog()
+    const viewportWidth = await comfyPage.page.evaluate(() => window.innerWidth)
+    const width = async () => (await dialog.boundingBox())?.width ?? 0
+
+    const framedWidth = await width()
+    expect(framedWidth).toBeLessThan(viewportWidth * 0.95)
+
+    await dialog.getByRole('button', { name: 'Maximize dialog' }).click()
+    await expect.poll(width).toBeGreaterThan(viewportWidth - 24)
+
+    await dialog.getByRole('button', { name: 'Restore dialog' }).click()
+    await expect.poll(width).toBeCloseTo(framedWidth, 0)
+  })
+
   test('invert button inverts the mask', async ({ maskEditor }) => {
     const dialog = await maskEditor.openDialog()
 

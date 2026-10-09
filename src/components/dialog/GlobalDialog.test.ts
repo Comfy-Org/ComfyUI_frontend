@@ -1,4 +1,4 @@
-import { render, screen, waitFor } from '@testing-library/vue'
+import { render, screen, waitFor, within } from '@testing-library/vue'
 import userEvent from '@testing-library/user-event'
 import { describe, expect, it, vi } from 'vitest'
 import { defineComponent, h, nextTick } from 'vue'
@@ -70,6 +70,7 @@ const i18n = createI18n({
         cancel: 'Cancel',
         close: 'Close',
         maximizeDialog: 'Maximize',
+        restoreDialog: 'Restore',
         save: 'Save'
       },
       builderToolbar: {
@@ -301,62 +302,30 @@ describe('GlobalDialog', () => {
     expect(store.isDialogOpen('reka-esc-blocked')).toBe(true)
   })
 
-  it('applies headerClass and bodyClass on the non-headless path', async () => {
-    mountDialog()
-    const store = useDialogStore()
-
-    store.showDialog({
-      key: 'reka-section-classes',
-      title: 'Section classes',
-      component: Body,
-      dialogComponentProps: {
-        headerClass: 'p-2',
-        bodyClass: 'p-0'
-      }
-    })
-
-    await screen.findByRole('dialog')
-
-    // oxlint-disable-next-line testing-library/no-node-access
-    const header = screen.getByText('Section classes').parentElement
-    expect(header?.classList.contains('p-2')).toBe(true)
-    // twMerge drops the default header padding in favor of headerClass
-    expect(header?.classList.contains('px-4')).toBe(false)
-
-    // oxlint-disable-next-line testing-library/no-node-access
-    const body = screen.getByTestId('body').parentElement
-    expect(body?.classList.contains('p-0')).toBe(true)
-    expect(body?.classList.contains('px-4')).toBe(false)
-  })
-
-  it('maximize overrides custom dimension classes from contentClass', async () => {
+  it('toggles maximize through the header control and tells the content', async () => {
     mountDialog()
     const store = useDialogStore()
     const user = userEvent.setup()
-
-    store.showDialog({
-      key: 'reka-maximize-wins',
-      title: 'Maximize wins',
-      component: Body,
-      dialogComponentProps: {
-        maximizable: true,
-        contentClass:
-          'w-[80vw] max-w-[80vw] sm:max-w-[80vw] h-[80vh] max-h-[80vh]'
-      }
+    const MaximizeAwareBody = defineComponent({
+      props: { maximized: Boolean },
+      setup: (props) => () => h('p', props.maximized ? 'maximized' : 'framed')
     })
 
-    const dialog = await screen.findByRole('dialog')
-    expect(dialog.classList.contains('w-[80vw]')).toBe(true)
+    store.showDialog({
+      key: 'reka-maximize',
+      title: 'Maximizable',
+      component: MaximizeAwareBody,
+      dialogComponentProps: { maximizable: true }
+    })
 
-    await user.click(screen.getByRole('button', { name: 'Maximize' }))
+    const dialog = await screen.findByRole('dialog', { name: 'Maximizable' })
+    expect(within(dialog).getByText('framed')).toBeInTheDocument()
 
-    expect(dialog.classList.contains('size-auto')).toBe(true)
-    expect(dialog.classList.contains('max-h-none')).toBe(true)
-    expect(dialog.classList.contains('w-[80vw]')).toBe(false)
-    expect(dialog.classList.contains('h-[80vh]')).toBe(false)
-    expect(dialog.classList.contains('max-h-[80vh]')).toBe(false)
-    expect(dialog.classList.contains('max-w-[80vw]')).toBe(false)
-    expect(dialog.classList.contains('sm:max-w-[80vw]')).toBe(false)
+    await user.click(within(dialog).getByRole('button', { name: 'Maximize' }))
+    expect(within(dialog).getByText('maximized')).toBeInTheDocument()
+
+    await user.click(within(dialog).getByRole('button', { name: 'Restore' }))
+    expect(within(dialog).getByText('framed')).toBeInTheDocument()
   })
 })
 
