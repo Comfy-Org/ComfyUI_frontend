@@ -724,17 +724,23 @@ export const useExecutionStore = defineStore('execution', () => {
    * computed now — so a missing state has to return null rather than throw and
    * take unrelated features down with it.
    */
+  /**
+   * Graph id of a workflow: the id carried by the workflow's own JSON, which
+   * every copy of that content shares, so it identifies the content and not
+   * the tab holding it.
+   *
+   * Both states are nullable on ComfyWorkflow and this is read from a watcher
+   * and a computed, so an unloaded workflow returns undefined rather than
+   * throwing.
+   */
+  function graphIdOf(
+    workflow: ComfyWorkflow | null | undefined
+  ): string | undefined {
+    return workflow?.activeState?.id ?? workflow?.initialState?.id
+  }
+
   function activeWorkflowGraphId(): string | null {
-    // Typed by what is read rather than as a Partial of the whole workflow:
-    // both states are declared present on LoadedComfyWorkflow and the running
-    // store does not always honour that, and this is read from a watcher and a
-    // computed, so a missing state has to return null rather than throw.
-    const active: {
-      activeState?: { id?: string }
-      initialState?: { id?: string }
-    } | null = workflowStore.activeWorkflow
-    if (!active) return null
-    return active.activeState?.id ?? active.initialState?.id ?? null
+    return graphIdOf(workflowStore.activeWorkflow) ?? null
   }
 
   /**
@@ -841,7 +847,7 @@ export const useExecutionStore = defineStore('execution', () => {
    */
   function openWorkflowPathForGraph(graphId: WorkflowId): string | undefined {
     const matches = workflowStore.openWorkflows.filter(
-      (w) => (w.activeState?.id ?? w.initialState?.id) === graphId
+      (w) => graphIdOf(w) === graphId
     )
     return matches.length === 1 ? matches[0].path : undefined
   }
@@ -860,10 +866,7 @@ export const useExecutionStore = defineStore('execution', () => {
    */
   function runErrorKeyForJob(jobId: string): string | null {
     const workflow = jobIdToWorkflow.get(jobId)
-    const graphId =
-      workflow?.activeState?.id ??
-      workflow?.initialState?.id ??
-      jobIdToWorkflowId.value.get(jobId)
+    const graphId = graphIdOf(workflow) ?? jobIdToWorkflowId.value.get(jobId)
     if (graphId === undefined) return null
 
     const path =
@@ -1282,21 +1285,21 @@ export const useExecutionStore = defineStore('execution', () => {
    * visible graph. Without this gate a finished job writes its output onto the
    * same-numbered node of whatever tab is in front.
    */
-  function frameBelongsToVisibleWorkflow(
-    promptId: string | undefined,
+  function belongsToActiveWorkflow(
+    jobId: JobId | undefined,
     workflowId: string | undefined
   ): boolean {
-    if (!promptId) return true
-    if (canResolveWorkflowOwnership(promptId, workflowId)) {
-      return messageMatchesActiveWorkflow(promptId, workflowId)
+    if (!jobId) return true
+    if (canResolveWorkflowOwnership(jobId, workflowId)) {
+      return messageMatchesActiveWorkflow(jobId, workflowId)
     }
-    return !activeJobId.value || promptId === activeJobId.value
+    return !activeJobId.value || jobId === activeJobId.value
   }
 
   function handleProgressText(e: CustomEvent<ProgressTextWsMessage>) {
     const { nodeId, text, prompt_id, workflow_id } = e.detail
     if (!text || !nodeId) return
-    if (!frameBelongsToVisibleWorkflow(prompt_id, workflow_id)) return
+    if (!belongsToActiveWorkflow(prompt_id, workflow_id)) return
 
     const currentId = getNodeIdIfExecuting(nodeId)
     if (!currentId) return
@@ -1348,7 +1351,7 @@ export const useExecutionStore = defineStore('execution', () => {
     queuedJob.shareId = workflow.shareId
     queuedJob.viewMode = mode
     queuedJob.isAppMode = isAppModeValue(mode)
-    const wid = workflow.activeState?.id ?? workflow.initialState?.id
+    const wid = graphIdOf(workflow)
     if (wid) {
       jobIdToWorkflowId.value.set(id, wid)
     }
@@ -1511,6 +1514,6 @@ export const useExecutionStore = defineStore('execution', () => {
     getWorkflowStatus,
     clearWorkflowStatus,
     rewriteSessionWorkflowPaths,
-    frameBelongsToVisibleWorkflow
+    belongsToActiveWorkflow
   }
 })

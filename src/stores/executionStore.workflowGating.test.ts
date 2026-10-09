@@ -1033,12 +1033,10 @@ describe('executionStore workflow gating', () => {
 
       useWorkflowStore().activeWorkflow = workflowACopy
 
-      expect(store.frameBelongsToVisibleWorkflow('job-a', WORKFLOW_A_ID)).toBe(
-        false
+      expect(store.belongsToActiveWorkflow('job-a', WORKFLOW_A_ID)).toBe(false)
+      expect(store.belongsToActiveWorkflow('job-copy', WORKFLOW_A_ID)).toBe(
+        true
       )
-      expect(
-        store.frameBelongsToVisibleWorkflow('job-copy', WORKFLOW_A_ID)
-      ).toBe(true)
     })
 
     it('does not project a foreign job progress onto the copy', () => {
@@ -1088,9 +1086,7 @@ describe('executionStore workflow gating', () => {
 
       // The copy's graph id is identical, so the id leg would say yes.
       useWorkflowStore().activeWorkflow = workflowACopy
-      expect(store.frameBelongsToVisibleWorkflow('job-a', WORKFLOW_A_ID)).toBe(
-        false
-      )
+      expect(store.belongsToActiveWorkflow('job-a', WORKFLOW_A_ID)).toBe(false)
     })
 
     it('falls back to the session path when no instance is known', () => {
@@ -1099,13 +1095,13 @@ describe('executionStore workflow gating', () => {
       store.ensureSessionWorkflowPath('job-pathonly', workflowACopy.path)
 
       expect(
-        store.frameBelongsToVisibleWorkflow('job-pathonly', WORKFLOW_A_ID),
+        store.belongsToActiveWorkflow('job-pathonly', WORKFLOW_A_ID),
         'the path says the copy owns it, even though the graph id matches A'
       ).toBe(false)
       useWorkflowStore().activeWorkflow = workflowACopy
-      expect(
-        store.frameBelongsToVisibleWorkflow('job-pathonly', WORKFLOW_A_ID)
-      ).toBe(true)
+      expect(store.belongsToActiveWorkflow('job-pathonly', WORKFLOW_A_ID)).toBe(
+        true
+      )
     })
 
     it('falls back to the graph id when neither instance nor path is known', () => {
@@ -1113,10 +1109,10 @@ describe('executionStore workflow gating', () => {
       store.registerJobWorkflowIdMapping('job-elsewhere', WORKFLOW_B_ID)
 
       expect(
-        store.frameBelongsToVisibleWorkflow('job-elsewhere', WORKFLOW_B_ID)
+        store.belongsToActiveWorkflow('job-elsewhere', WORKFLOW_B_ID)
       ).toBe(false)
       expect(
-        store.frameBelongsToVisibleWorkflow('job-elsewhere', WORKFLOW_A_ID)
+        store.belongsToActiveWorkflow('job-elsewhere', WORKFLOW_A_ID)
       ).toBe(true)
     })
 
@@ -1125,9 +1121,7 @@ describe('executionStore workflow gating', () => {
 
       // A job from another browser session: no mapping, no frame id. Keeping
       // this permissive is what preserves single-tab behaviour.
-      expect(
-        store.frameBelongsToVisibleWorkflow('job-unknown', undefined)
-      ).toBe(true)
+      expect(store.belongsToActiveWorkflow('job-unknown', undefined)).toBe(true)
     })
 
     it('does not give a running job to the copy that Save As creates', () => {
@@ -1145,13 +1139,9 @@ describe('executionStore workflow gating', () => {
       })
       useWorkflowStore().activeWorkflow = savedAs
 
-      expect(store.frameBelongsToVisibleWorkflow('job-a', WORKFLOW_A_ID)).toBe(
-        false
-      )
+      expect(store.belongsToActiveWorkflow('job-a', WORKFLOW_A_ID)).toBe(false)
       useWorkflowStore().activeWorkflow = workflowA
-      expect(store.frameBelongsToVisibleWorkflow('job-a', WORKFLOW_A_ID)).toBe(
-        true
-      )
+      expect(store.belongsToActiveWorkflow('job-a', WORKFLOW_A_ID)).toBe(true)
     })
   })
 
@@ -1228,9 +1218,7 @@ describe('executionStore workflow gating', () => {
       // The instance is the resolver's first leg, so a frame it can place must
       // not be reported as unresolvable by the other rule, or one gate accepts
       // the frame while the other rejects it.
-      expect(store.frameBelongsToVisibleWorkflow('job-a', undefined)).toBe(
-        false
-      )
+      expect(store.belongsToActiveWorkflow('job-a', undefined)).toBe(false)
     })
 
     it('does not leave activeJobId naming a finished background job', () => {

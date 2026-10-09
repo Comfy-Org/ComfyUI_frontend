@@ -907,7 +907,7 @@ export class ComfyApp {
       // a job finishing in another tab would otherwise write its result onto
       // the same-numbered node of the tab in front.
       if (
-        !useExecutionStore().frameBelongsToVisibleWorkflow(
+        !useExecutionStore().belongsToActiveWorkflow(
           detail.prompt_id,
           detail.workflow_id
         )
