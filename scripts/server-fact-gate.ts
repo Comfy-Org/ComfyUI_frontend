@@ -1,16 +1,12 @@
-import { execFileSync, spawnSync } from 'node:child_process'
+import { execFileSync } from 'node:child_process'
 import { readFileSync } from 'node:fs'
-import path from 'node:path'
 
 import {
   changedRanges,
-  findingsOnChangedLines,
-  isGatedPath,
-  oxlintReportSchema
+  findingsInFiles,
+  isGatedPath
 } from './server-fact-gate-core'
-
-const CONFIG = 'tools/oxlint-plugins/serverFacts.oxlintrc.json'
-const oxlintEntry = path.resolve('node_modules/oxlint/bin/oxlint')
+import { SERVER_FACT_CONFIG, lintServerFacts } from './server-fact-oxlint'
 
 function git(args: string[]): string {
   return execFileSync('git', args, {
@@ -30,31 +26,6 @@ function diffArgs(argv: string[]): string[] {
   return [git(['merge-base', base, 'HEAD']).trim()]
 }
 
-function lint(files: string[]) {
-  const result = spawnSync(
-    process.execPath,
-    [oxlintEntry, '-c', CONFIG, '--format', 'json', ...files],
-    { encoding: 'utf8', maxBuffer: 256 * 1024 * 1024, windowsHide: true }
-  )
-  if (result.error) throw result.error
-  const parsed = oxlintReportSchema.safeParse(parseJson(result.stdout))
-  if (!parsed.success) {
-    console.error(
-      `server-facts: oxlint did not produce a report (exit ${result.status}).\n${result.stderr}${result.stdout}`
-    )
-    process.exit(2)
-  }
-  return parsed.data.diagnostics
-}
-
-function parseJson(text: string): unknown {
-  try {
-    return JSON.parse(text)
-  } catch {
-    return undefined
-  }
-}
-
 const diff = git([
   '-c',
   'core.quotePath=false',
@@ -68,15 +39,17 @@ const diff = git([
 const rangesByFile = new Map(
   [...changedRanges(diff)].filter(([file]) => isGatedPath(file))
 )
-const files = [...rangesByFile.keys()]
-const diagnostics = files.length === 0 ? [] : lint(files)
+const lint = lintServerFacts([...rangesByFile.keys()], {
+  cwd: process.cwd(),
+  config: SERVER_FACT_CONFIG
+})
+if (!lint.ok) {
+  console.error(`server-facts: ${lint.detail}`)
+  process.exit(2)
+}
 
-const findings = files.flatMap((file) =>
-  findingsOnChangedLines(
-    diagnostics.filter((diagnostic) => diagnostic.filename === file),
-    rangesByFile.get(file) ?? [],
-    readFileSync(file, 'utf8')
-  )
+const findings = findingsInFiles(rangesByFile, lint.diagnostics, (file) =>
+  readFileSync(file, 'utf8')
 )
 
 for (const { filename, line, message } of findings) {
@@ -84,5 +57,5 @@ for (const { filename, line, message } of findings) {
 }
 if (findings.length > 0) process.exit(1)
 console.log(
-  `server-facts: no findings on changed lines in ${files.length} file(s)`
+  `server-facts: no findings on changed lines in ${rangesByFile.size} file(s)`
 )

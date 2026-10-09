@@ -58,7 +58,7 @@ const EQUALITY_OPERATORS: ReadonlySet<string> = new Set([
 const ROLE_FALLBACK_OPERATORS: ReadonlySet<string> = new Set(['??', '||'])
 const SERVER_MESSAGE_NAME = /message$/i
 
-const GUIDANCE =
+export const GUIDANCE =
   "Render the server fact as received. If the UI needs a fact the API does not emit, open a backend ticket and wrap the interim expression in pendingServerFact('BE-xxxx', ...). See docs/adr/API-SERVER-FACTS-0042-server-facts-are-rendered-not-derived.md"
 
 function unwrap(node: AstNode): AstNode {
