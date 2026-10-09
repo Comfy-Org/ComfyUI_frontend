@@ -729,6 +729,45 @@ describe('LGraphNode', () => {
     ).not.toBeInTheDocument()
   })
 
+  it.for([
+    {
+      titleMode: TitleMode.NORMAL_TITLE,
+      transform: 'translate(100px, 20px)',
+      nodeHeight: '130px',
+      resizedHeight: 470,
+      headerColor: '#ff0000'
+    },
+    {
+      titleMode: TitleMode.NO_TITLE,
+      transform: 'translate(100px, 50px)',
+      nodeHeight: '100px',
+      resizedHeight: 500,
+      headerColor: ''
+    }
+  ])(
+    'reserves the title band only when the title is rendered (title mode $titleMode)',
+    ({ titleMode, transform, nodeHeight, resizedHeight, headerColor }) => {
+      const { container } = renderLGraphNode({
+        nodeData: { ...mockNodeData, titleMode, color: '#ff0000' }
+      })
+      const root = getNodeRoot(container)
+
+      expect(root.style.transform).toBe(transform)
+      expect(root.style.getPropertyValue('--node-height')).toBe(nodeHeight)
+      expect(
+        screen.getByTestId('node-inner-wrapper').style.backgroundColor
+      ).toBe(headerColor)
+
+      mockData.resizeCallback?.(
+        { size: { width: 300, height: 500 }, position: { x: 10, y: 20 } },
+        root
+      )
+      expect(vi.mocked(resizeNodeLayout).mock.calls.at(-1)?.[1].height).toBe(
+        resizedHeight
+      )
+    }
+  )
+
   describe('Reroute node sizing', () => {
     it('should not enforce minimum width for reroute nodes', () => {
       const { container: rerouteContainer } = renderLGraphNode({

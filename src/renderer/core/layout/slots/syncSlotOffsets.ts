@@ -1,6 +1,6 @@
-import { LiteGraph } from '@/lib/litegraph/src/litegraph'
 import { layoutStore } from '@/renderer/core/layout/store/layoutStore'
 import type { SlotOffset, SlotOffsetMode } from '@/renderer/core/layout/types'
+import { getRenderedTitleHeight } from '@/renderer/core/layout/utils/nodeSizeUtil'
 import type { NodeId } from '@/types/nodeId'
 import { parseSlotId } from '@/types/slotId'
 import type { UUID } from '@/utils/uuid'
@@ -26,6 +26,7 @@ export function syncSlotOffsets(
     : 0
   if (scale <= 0) return
 
+  const titleHeight = getRenderedTitleHeight(nodeElement)
   const offsets: SlotOffset[] = []
   for (const slotElement of slotElements) {
     const slotId = parseSlotId(slotElement.dataset.slotKey ?? '')
@@ -46,7 +47,7 @@ export function syncSlotOffsets(
               : nodeElement.offsetWidth,
         y:
           (slotRect.top + slotRect.height / 2 - nodeRect.y) / scale -
-          LiteGraph.NODE_TITLE_HEIGHT
+          titleHeight
       }
     })
   }
