@@ -6,6 +6,31 @@ const UUID_PATTERN =
 const ENCODED_ROOT_LOCATOR_PREFIX = '~root:'
 const ENCODED_SUBGRAPH_LOCATOR_PREFIX = '~subgraph:'
 
+interface ParsedNodeLocatorId {
+  subgraphUuid: string | null
+  localNodeId: NodeId
+}
+
+function decodeNodeId(value: string): NodeId | null {
+  try {
+    return toNodeId(decodeURIComponent(value))
+  } catch {
+    return null
+  }
+}
+
+function parseEncodedSubgraphLocator(id: string): ParsedNodeLocatorId | null {
+  const encodedLocator = id.slice(ENCODED_SUBGRAPH_LOCATOR_PREFIX.length)
+  const separatorIndex = encodedLocator.indexOf(':')
+  if (separatorIndex === -1) return null
+
+  const subgraphUuid = encodedLocator.slice(0, separatorIndex)
+  if (!UUID_PATTERN.test(subgraphUuid)) return null
+
+  const localNodeId = decodeNodeId(encodedLocator.slice(separatorIndex + 1))
+  return localNodeId !== null ? { subgraphUuid, localNodeId } : null
+}
+
 /**
  * A globally unique identifier for nodes that maintains consistency across
  * multiple instances of the same subgraph.
@@ -70,39 +95,16 @@ export function isNodeExecutionId(value: unknown): value is NodeExecutionId {
  * @param id The NodeLocatorId to parse
  * @returns The subgraph UUID and local node ID, or null if invalid
  */
-export function parseNodeLocatorId(
-  id: string
-): { subgraphUuid: string | null; localNodeId: NodeId } | null {
+export function parseNodeLocatorId(id: string): ParsedNodeLocatorId | null {
   if (id.startsWith(ENCODED_ROOT_LOCATOR_PREFIX)) {
-    const encodedNodeId = id.slice(ENCODED_ROOT_LOCATOR_PREFIX.length)
-    try {
-      return {
-        subgraphUuid: null,
-        localNodeId: toNodeId(decodeURIComponent(encodedNodeId))
-      }
-    } catch {
-      return null
-    }
+    const localNodeId = decodeNodeId(
+      id.slice(ENCODED_ROOT_LOCATOR_PREFIX.length)
+    )
+    return localNodeId !== null ? { subgraphUuid: null, localNodeId } : null
   }
 
   if (id.startsWith(ENCODED_SUBGRAPH_LOCATOR_PREFIX)) {
-    const encodedLocator = id.slice(ENCODED_SUBGRAPH_LOCATOR_PREFIX.length)
-    const separatorIndex = encodedLocator.indexOf(':')
-    if (separatorIndex === -1) return null
-
-    const subgraphUuid = encodedLocator.slice(0, separatorIndex)
-    if (!UUID_PATTERN.test(subgraphUuid)) return null
-
-    try {
-      return {
-        subgraphUuid,
-        localNodeId: toNodeId(
-          decodeURIComponent(encodedLocator.slice(separatorIndex + 1))
-        )
-      }
-    } catch {
-      return null
-    }
+    return parseEncodedSubgraphLocator(id)
   }
 
   const parts = id.split(':')
