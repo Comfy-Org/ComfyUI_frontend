@@ -1,4 +1,12 @@
-# Setting test expectation screenshots for Playwright
+# Setting test expectation screenshots for Playwright.
+#
+# The PR's own `CI: Tests E2E` run already captured the actual image of every
+# failed screenshot assertion and uploaded them, laid out on their golden
+# paths, as `snapshot-updates-*` artifacts (see
+# browser_tests/reporters/snapshotUpdatesReporter.ts). The `harvest` job
+# commits those instead of rerunning Playwright. It falls back to a full
+# `--update-snapshots` rerun when that run is missing, did not finish, or
+# predates the harvest artifacts; `/update-playwright full` forces the rerun.
 name: 'PR: Update Playwright Expectations'
 
 on:
@@ -29,16 +37,32 @@ jobs:
     outputs:
       pr-number: ${{ steps.pr-info.outputs.pr-number }}
       branch: ${{ steps.pr-info.outputs.branch }}
+      head-sha: ${{ steps.pr-info.outputs.head-sha }}
+      requested-mode: ${{ steps.pr-info.outputs.requested-mode }}
       comment-id: ${{ steps.find-update-comment.outputs.comment-id }}
-      container-image: ${{ steps.container-image.outputs.image }}
     steps:
       - name: Get PR info
         id: pr-info
-        run: |
-          echo "pr-number=${{ github.event.number || github.event.issue.number }}" >> $GITHUB_OUTPUT
-          echo "branch=$(gh pr view ${{ github.event.number || github.event.issue.number }} --repo ${{ github.repository }} --json headRefName --jq '.headRefName')" >> $GITHUB_OUTPUT
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          PR_NUMBER: ${{ github.event.number || github.event.issue.number }}
+          COMMENT_BODY: ${{ github.event.comment.body }}
+        run: |
+          set -euo pipefail
+
+          {
+            echo "pr-number=${PR_NUMBER}"
+            gh pr view "$PR_NUMBER" --repo "$GITHUB_REPOSITORY" \
+              --json headRefName,headRefOid \
+              --jq '"branch=\(.headRefName)\nhead-sha=\(.headRefOid)"'
+          } >> "$GITHUB_OUTPUT"
+
+          # `/update-playwright full` skips the harvest and reruns the suite.
+          if printf '%s\n' "$COMMENT_BODY" | head -1 | grep -qE '^/update-playwright[[:space:]]+full([[:space:]]|$)'; then
+            echo "requested-mode=full" >> "$GITHUB_OUTPUT"
+          else
+            echo "requested-mode=auto" >> "$GITHUB_OUTPUT"
+          fi
 
       - name: Find Update Comment
         uses: peter-evans/find-comment@b30e6a3c0ed37e7c023ccd3f1db5c6c0b0c23aad # v4.0.0
@@ -58,10 +82,172 @@ jobs:
           edit-mode: replace
           reactions: eyes
 
+  # Reuse the screenshots the PR's E2E run already took. Outputs `mode`:
+  #   harvest - rewritten snapshots were downloaded and re-uploaded as
+  #             `snapshots-shard-harvested` for merge-and-commit
+  #   none    - the E2E run finished with no screenshot mismatches
+  #   full    - nothing usable; rerun Playwright with --update-snapshots
+  harvest:
+    needs: setup
+    runs-on: ubuntu-latest
+    timeout-minutes: 60
+    permissions:
+      contents: read
+      actions: read
+    outputs:
+      mode: ${{ steps.plan.outputs.mode }}
+      run-url: ${{ steps.plan.outputs.run-url }}
+    steps:
       - name: Checkout repository
         uses: actions/checkout@v7
         with:
-          ref: ${{ steps.pr-info.outputs.branch }}
+          ref: ${{ needs.setup.outputs.branch }}
+
+      # Other workflow changes still come from the default branch on this path.
+      - name: Warn when this workflow differs from the default branch
+        if: github.event_name == 'issue_comment'
+        shell: bash
+        env:
+          DEFAULT_BRANCH: ${{ github.event.repository.default_branch }}
+        run: |
+          set -euo pipefail
+
+          workflow='.github/workflows/pr-update-playwright-expectations.yaml'
+
+          if ! git fetch --depth=1 origin "$DEFAULT_BRANCH"; then
+            echo "::notice::Could not fetch ${DEFAULT_BRANCH}; skipping workflow drift check"
+            exit 0
+          fi
+
+          if ! git diff --quiet FETCH_HEAD -- "$workflow"; then
+            echo "::warning::This PR modifies ${workflow}, but /update-playwright runs the ${DEFAULT_BRANCH} copy of it. Only the container image is taken from the PR; other changes to this workflow are NOT in effect for this run. Use the 'New Browser Test Expectations' label instead to run the PR's own copy."
+          fi
+
+      - name: Locate the E2E run for the PR head
+        id: plan
+        shell: bash
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          HEAD_SHA: ${{ needs.setup.outputs.head-sha }}
+          REQUESTED_MODE: ${{ needs.setup.outputs.requested-mode }}
+        run: |
+          set -euo pipefail
+
+          fallback() {
+            echo "::notice::$1 Falling back to a full --update-snapshots rerun."
+            echo "mode=full" >> "$GITHUB_OUTPUT"
+            exit 0
+          }
+
+          if [ "$REQUESTED_MODE" = full ]; then
+            fallback "A full regeneration was requested."
+          fi
+
+          if ! grep -q 'snapshot-updates-' .github/workflows/ci-tests-e2e.yaml; then
+            fallback "The E2E workflow on this branch does not upload rewritten snapshots."
+          fi
+
+          runs_api="repos/${GITHUB_REPOSITORY}/actions/workflows/ci-tests-e2e.yaml/runs"
+          run_id=$(gh api "${runs_api}?head_sha=${HEAD_SHA}&event=pull_request&per_page=20" \
+            --jq '[.workflow_runs[] | select(.conclusion != "cancelled" and .conclusion != "skipped")][0].id // empty')
+          if [ -z "$run_id" ]; then
+            fallback "No E2E run exists for ${HEAD_SHA}."
+          fi
+
+          run_url="${GITHUB_SERVER_URL}/${GITHUB_REPOSITORY}/actions/runs/${run_id}"
+          echo "run-url=${run_url}" >> "$GITHUB_OUTPUT"
+          echo "E2E run for ${HEAD_SHA}: ${run_url}"
+
+          status=$(gh run view "$run_id" --repo "$GITHUB_REPOSITORY" --json status --jq .status)
+          if [ "$status" != completed ]; then
+            echo "E2E run is ${status}; waiting for it to finish"
+            if ! timeout 45m gh run watch "$run_id" --repo "$GITHUB_REPOSITORY" --interval 30 > /dev/null; then
+              fallback "The E2E run did not finish within 45 minutes."
+            fi
+          fi
+
+          # Every Playwright job must have run to completion, or the harvest
+          # would silently miss the shards that died. A path-filtered run
+          # lists each matrix job once, as skipped.
+          e2e_jobs=$(gh api --paginate "repos/${GITHUB_REPOSITORY}/actions/runs/${run_id}/jobs?per_page=100" \
+            --jq '.jobs[] | select(.name | startswith("playwright-tests")) | "\(.conclusion)\t\(.name)"')
+          if ! printf '%s\n' "$e2e_jobs" | grep -qE '^(success|failure)	'; then
+            fallback "The E2E run did not execute any Playwright jobs."
+          fi
+          if unfinished=$(printf '%s\n' "$e2e_jobs" | grep -vE '^(success|failure|skipped)	') && [ -n "$unfinished" ]; then
+            echo "$unfinished"
+            fallback "Some Playwright jobs in the E2E run did not finish."
+          fi
+
+          artifacts=$(gh api --paginate "repos/${GITHUB_REPOSITORY}/actions/runs/${run_id}/artifacts?per_page=100" \
+            --jq '.artifacts[] | select(.name | startswith("snapshot-updates-")) | "\(.expired)\t\(.name)"')
+          if [ -z "$artifacts" ]; then
+            echo "::notice::The E2E run ${run_url} finished with no screenshot mismatches; nothing to update."
+            echo "mode=none" >> "$GITHUB_OUTPUT"
+            exit 0
+          fi
+          if ! printf '%s\n' "$artifacts" | grep -q '^false	'; then
+            fallback "The rewritten snapshots from the E2E run have expired."
+          fi
+
+          echo "Harvesting rewritten snapshots from ${run_url}:"
+          printf '%s\n' "$artifacts" | grep '^false	' | cut -f2
+          echo "mode=harvest" >> "$GITHUB_OUTPUT"
+
+      - name: Download rewritten snapshots
+        if: steps.plan.outputs.mode == 'harvest'
+        shell: bash
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          RUN_URL: ${{ steps.plan.outputs.run-url }}
+        run: |
+          set -euo pipefail
+
+          gh run download "${RUN_URL##*/}" --repo "$GITHUB_REPOSITORY" \
+            --pattern 'snapshot-updates-*' --dir ./harvested
+
+          # Artifacts hold `browser_tests/...` (paths relative to the Playwright
+          # config); merge-and-commit expects paths relative to browser_tests/.
+          mkdir -p /tmp/changed_snapshots_shard
+          for artifact in ./harvested/snapshot-updates-*/; do
+            [ -d "${artifact}browser_tests" ] || continue
+            cp -r "${artifact}browser_tests/." /tmp/changed_snapshots_shard/
+          done
+
+          file_count=$(find /tmp/changed_snapshots_shard -type f | wc -l)
+          if [ "$file_count" -eq 0 ]; then
+            echo "::error::snapshot-updates artifacts were downloaded but contained no snapshot files"
+            exit 1
+          fi
+          echo "Harvested ${file_count} rewritten snapshot(s)"
+
+          {
+            echo "### Snapshots harvested from [the PR's E2E run](${RUN_URL}) (${file_count})"
+            echo
+            echo "| snapshot | test |"
+            echo "| --- | --- |"
+            jq -r '.[] | "| `\(.snapshotPath)` | \(.test) |"' ./harvested/snapshot-updates-*/manifest.json
+          } >> "$GITHUB_STEP_SUMMARY"
+
+      - name: Upload harvested snapshots
+        if: steps.plan.outputs.mode == 'harvest'
+        uses: actions/upload-artifact@v6
+        with:
+          name: snapshots-shard-harvested
+          path: /tmp/changed_snapshots_shard/
+          retention-days: 1
+
+  build:
+    needs: [setup, harvest]
+    if: needs.harvest.outputs.mode == 'full'
+    runs-on: ubuntu-latest
+    outputs:
+      container-image: ${{ steps.container-image.outputs.image }}
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v7
+        with:
+          ref: ${{ needs.setup.outputs.branch }}
 
       # issue_comment loads this workflow from the default branch. Resolve the
       # image from the checked-out PR so regenerated snapshots match its CI.
@@ -91,26 +277,6 @@ jobs:
           echo "Regenerating snapshots with ${images[0]} (resolved from the PR branch)"
           echo "image=${images[0]}" >> "$GITHUB_OUTPUT"
 
-      # Other workflow changes still come from the default branch on this path.
-      - name: Warn when this workflow differs from the default branch
-        if: github.event_name == 'issue_comment'
-        shell: bash
-        env:
-          DEFAULT_BRANCH: ${{ github.event.repository.default_branch }}
-        run: |
-          set -euo pipefail
-
-          workflow='.github/workflows/pr-update-playwright-expectations.yaml'
-
-          if ! git fetch --depth=1 origin "$DEFAULT_BRANCH"; then
-            echo "::notice::Could not fetch ${DEFAULT_BRANCH}; skipping workflow drift check"
-            exit 0
-          fi
-
-          if ! git diff --quiet FETCH_HEAD -- "$workflow"; then
-            echo "::warning::This PR modifies ${workflow}, but /update-playwright runs the ${DEFAULT_BRANCH} copy of it. Only the container image is taken from the PR; other changes to this workflow are NOT in effect for this run. Use the 'New Browser Test Expectations' label instead to run the PR's own copy."
-          fi
-
       - name: Setup frontend
         uses: ./.github/actions/setup-frontend
         with:
@@ -130,10 +296,10 @@ jobs:
   # Shards 1-4 run against the plain build; the `cloud` leg runs @cloud
   # tests against the frontend-dist-cloud build.
   update-snapshots-sharded:
-    needs: setup
+    needs: [setup, build]
     runs-on: ubuntu-latest
     container:
-      image: ${{ needs.setup.outputs.container-image }}
+      image: ${{ needs.build.outputs.container-image }}
       credentials:
         username: ${{ github.actor }}
         password: ${{ secrets.GITHUB_TOKEN }}
@@ -280,9 +446,19 @@ jobs:
           path: ./playwright-report/
           retention-days: 30
 
-  # Merge snapshots and commit
+  # Merge snapshots and commit. Runs after the harvest alone, or after the
+  # full rerun when the harvest fell back to it.
   merge-and-commit:
-    needs: [setup, update-snapshots-sharded]
+    needs: [setup, harvest, build, update-snapshots-sharded]
+    if: >-
+      ${{
+        !cancelled() &&
+        needs.setup.result == 'success' &&
+        needs.harvest.result == 'success' &&
+        needs.build.result != 'failure' &&
+        needs.build.result != 'cancelled' &&
+        (needs.update-snapshots-sharded.result == 'success' || needs.update-snapshots-sharded.result == 'skipped')
+      }}
     runs-on: ubuntu-latest
     steps:
       - name: Checkout repository
@@ -463,6 +639,8 @@ jobs:
         id: commit
         env:
           TARGET_BRANCH: ${{ needs.setup.outputs.branch }}
+          HARVEST_MODE: ${{ needs.harvest.outputs.mode }}
+          HARVEST_RUN_URL: ${{ needs.harvest.outputs.run-url }}
         run: |
           git config --global user.name 'github-actions'
           git config --global user.email 'github-actions@github.com'
@@ -484,6 +662,11 @@ jobs:
           # Use cat so backticks and file names remain literal.
           {
             echo '[automated] Update test expectations'
+            if [ "$HARVEST_MODE" = harvest ]; then
+              echo
+              echo "Taken from the failed screenshot assertions of ${HARVEST_RUN_URL}"
+              echo 'without rerunning Playwright.'
+            fi
             if [ -s /tmp/diff-report.md ]; then
               echo
               cat /tmp/diff-report.md
@@ -503,7 +686,7 @@ jobs:
 
       - name: Add Done Reaction
         uses: peter-evans/create-or-update-comment@e8674b075228eee787fea43ef493e45ece1004c9 # v5.0.0
-        if: github.event_name == 'issue_comment' && steps.commit.outputs.has-changes == 'true'
+        if: github.event_name == 'issue_comment' && (steps.commit.outputs.has-changes == 'true' || needs.harvest.outputs.mode == 'none')
         with:
           comment-id: ${{ needs.setup.outputs.comment-id }}
           issue-number: ${{ needs.setup.outputs.pr-number }}

@@ -63,6 +63,7 @@ coverage/
 /test-results/
 /playwright-report/
 /blob-report/
+/snapshot-updates/
 /playwright/.cache/
 browser_tests/**/*-win32.png
 browser_tests/**/*-darwin.png

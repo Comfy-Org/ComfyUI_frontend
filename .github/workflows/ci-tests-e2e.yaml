@@ -205,6 +205,7 @@ jobs:
         run: pnpm exec playwright test --project=chromium --shard=${{ matrix.shardIndex }}/${{ matrix.shardTotal }}
         env:
           PLAYWRIGHT_BLOB_OUTPUT_DIR: ./blob-report
+          PLAYWRIGHT_SNAPSHOT_UPDATES_DIR: ./snapshot-updates
           COLLECT_COVERAGE: 'true'
 
       - name: Upload blob report
@@ -214,6 +215,18 @@ jobs:
           name: blob-report-chromium-${{ matrix.shardIndex }}
           path: blob-report/
           retention-days: 1
+
+      # Actual images of failed screenshot assertions, laid out on their golden
+      # paths, so pr-update-playwright-expectations can commit them without
+      # rerunning the suite.
+      - name: Upload rewritten snapshots
+        uses: actions/upload-artifact@b7c566a772e6b6bfb58ed0dc250532a479d7789f # v6.0.0
+        if: ${{ !cancelled() }}
+        with:
+          name: snapshot-updates-chromium-${{ matrix.shardIndex }}
+          path: snapshot-updates/
+          retention-days: 7
+          if-no-files-found: ignore
 
       - name: Upload shard coverage data
         if: always()
@@ -269,6 +282,7 @@ jobs:
         run: pnpm exec playwright test --project=cloud --shard=${{ matrix.shardIndex }}/${{ matrix.shardTotal }}
         env:
           PLAYWRIGHT_BLOB_OUTPUT_DIR: ./blob-report
+          PLAYWRIGHT_SNAPSHOT_UPDATES_DIR: ./snapshot-updates
 
       - name: Upload blob report
         uses: actions/upload-artifact@b7c566a772e6b6bfb58ed0dc250532a479d7789f # v6.0.0
@@ -277,6 +291,18 @@ jobs:
           name: blob-report-cloud-${{ matrix.shardIndex }}
           path: blob-report/
           retention-days: 1
+
+      # Actual images of failed screenshot assertions, laid out on their golden
+      # paths, so pr-update-playwright-expectations can commit them without
+      # rerunning the suite.
+      - name: Upload rewritten snapshots
+        uses: actions/upload-artifact@b7c566a772e6b6bfb58ed0dc250532a479d7789f # v6.0.0
+        if: ${{ !cancelled() }}
+        with:
+          name: snapshot-updates-cloud-${{ matrix.shardIndex }}
+          path: snapshot-updates/
+          retention-days: 7
+          if-no-files-found: ignore
 
   playwright-tests:
     # Ideally, each shard runs test in 6 minutes, but allow up to 30 minutes
@@ -329,6 +355,19 @@ jobs:
         run: pnpm exec playwright test --project=${{ matrix.browser }}
         env:
           PLAYWRIGHT_BLOB_OUTPUT_DIR: ./blob-report
+          PLAYWRIGHT_SNAPSHOT_UPDATES_DIR: ./snapshot-updates
+
+      # Actual images of failed screenshot assertions, laid out on their golden
+      # paths, so pr-update-playwright-expectations can commit them without
+      # rerunning the suite.
+      - name: Upload rewritten snapshots
+        uses: actions/upload-artifact@b7c566a772e6b6bfb58ed0dc250532a479d7789f # v6.0.0
+        if: ${{ !cancelled() }}
+        with:
+          name: snapshot-updates-${{ matrix.browser }}
+          path: snapshot-updates/
+          retention-days: 7
+          if-no-files-found: ignore
 
       - name: Generate HTML and JSON reports
         if: always()
