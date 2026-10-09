@@ -115,7 +115,12 @@ const canToggle = (item: QueueItem) => canApply && item.source === 'submission'
       :description="t('cmsAdmin.draft.help')"
     >
       <template #actions>
-        <AdminButton href="/hub/models/?preview=DRAFT" :icon="Eye">
+        <AdminButton
+          href="/hub/models/?preview=DRAFT"
+          target="_blank"
+          rel="noopener"
+          :icon="Eye"
+        >
           {{ t('cmsAdmin.previewDraft') }}
         </AdminButton>
         <AdminButton

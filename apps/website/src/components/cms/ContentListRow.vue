@@ -53,6 +53,8 @@ const meta = [t(`cmsAdmin.kind.${row.kind}`), row.provider]
       <AdminTooltip :content="t('cmsAdmin.content.view')">
         <AdminButton
           :href="pageOf(row.slug)"
+          target="_blank"
+          rel="noopener"
           variant="ghost"
           size="icon"
           :aria-label="t('cmsAdmin.content.view')"

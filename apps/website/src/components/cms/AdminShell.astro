@@ -5,9 +5,9 @@ import StatusLabel from '@/components/cms/ui/StatusLabel.vue'
 import BaseLayout from '@/layouts/BaseLayout.astro'
 
 interface Props {
-  current: 'draft' | 'content' | 'history'
-  draftCount: number
-  contentCount: number
+  current: 'draft' | 'content' | 'history' | 'testers'
+  draftCount?: number
+  contentCount?: number
 }
 const { current, draftCount, contentCount } = Astro.props
 const session = Astro.locals.site
@@ -69,7 +69,15 @@ const item =
             >
               {t('cmsAdmin.nav.tools')}
             </p>
-            <a href="/admin/testers" class={item}>
+            <a
+              href="/admin/testers"
+              aria-current={current === 'testers' ? 'page' : undefined}
+              class={cn(
+                item,
+                current === 'testers' &&
+                  'bg-admin-line text-admin-fg [&_svg]:text-admin-fg'
+              )}
+            >
               <Users aria-hidden="true" />
               {t('cmsTesters.title')}
             </a>
@@ -93,6 +101,8 @@ const item =
         </p>}
         <a
           href="/hub/models/"
+          target="_blank"
+          rel="noopener"
           class="mt-1 inline-flex items-center gap-1.5 text-xs text-admin-muted hover:text-admin-fg"
         >
           {t('cmsAdmin.liveSite')}
@@ -101,7 +111,7 @@ const item =
       </div>
     </aside>
     <section class="min-w-0 px-4 py-6 sm:px-8 lg:py-8">
-      <div class="max-w-[100rem]">
+      <div class="max-w-10xl">
         <slot />
       </div>
     </section>

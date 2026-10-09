@@ -21,6 +21,8 @@ const pagePreview = `${item.slug.replace(/\/?$/, '/')}?preview=DRAFT`
   <AdminButton
     v-if="item.change !== 'removed'"
     :href="pagePreview"
+    target="_blank"
+    rel="noopener"
     class="w-fit"
     :icon="Eye"
   >
