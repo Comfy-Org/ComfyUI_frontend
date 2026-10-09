@@ -27,6 +27,7 @@ import type { HostFrame } from '@e2e/fixtures/agentConversationHostDoc'
 import { AgentPanel } from '@e2e/fixtures/components/AgentPanel'
 import { VueNodeHelpers } from '@e2e/fixtures/VueNodeHelpers'
 import { jsonRoute } from '@e2e/fixtures/utils/jsonRoute'
+import { emptyAgentThreadPage } from '@e2e/fixtures/utils/agentThreadPage'
 import { loadSeedIntoActiveTab } from '@e2e/fixtures/utils/seedActiveTab'
 
 /**
@@ -215,7 +216,7 @@ async function driveThroughDocReset(
   }
 
   await page.route('**/api/agent/threads', (route) =>
-    route.fulfill(jsonRoute({ threads: [] }))
+    route.fulfill(jsonRoute(emptyAgentThreadPage()))
   )
   await page.route('**/api/agent/threads/*/messages', (route) => {
     if (route.request().method() === 'POST') {
