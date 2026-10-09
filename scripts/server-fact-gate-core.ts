@@ -35,11 +35,16 @@ export interface Finding {
 const GATED_PATH = /^(?:src|apps\/[^/]+\/src)\/.*\.(?:ts|vue)$/
 const UNGATED_PATH =
   /\.(?:test|spec|stories)\.ts$|(?:^|\/)__mocks__\/|(?:^|\/)storybook\//
+const ESCAPING_PATH = /^\/|(?:^|\/)\.\.(?:\/|$)/
 const NEW_FILE_HEADER = /^\+\+\+ (?:b\/(.+)|\/dev\/null)$/
 const HUNK_HEADER = /^@@ -\d+(?:,\d+)? \+(\d+)(?:,(\d+))? @@/
 
 export function isGatedPath(path: string): boolean {
-  return GATED_PATH.test(path) && !UNGATED_PATH.test(path)
+  return (
+    GATED_PATH.test(path) &&
+    !UNGATED_PATH.test(path) &&
+    !ESCAPING_PATH.test(path)
+  )
 }
 
 export function changedRanges(diffText: string): Map<string, ChangedRange[]> {

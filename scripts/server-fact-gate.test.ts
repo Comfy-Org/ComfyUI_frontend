@@ -1,5 +1,6 @@
 import { execFileSync, spawnSync } from 'node:child_process'
 import {
+  existsSync,
   mkdirSync,
   mkdtempSync,
   rmSync,
@@ -11,6 +12,7 @@ import path from 'node:path'
 import { afterEach, describe, expect, it } from 'vitest'
 
 import type { ChangedRange } from './server-fact-gate-core'
+import { lintSnapshot } from './server-fact-oxlint'
 import {
   changedRanges,
   findingsOnChangedLines,
@@ -135,9 +137,42 @@ describe('isGatedPath', () => {
     ['src/storybook/mocks/useBillingCapabilities.ts', false],
     ['browser_tests/fixtures/billing.ts', false],
     ['packages/account-core/src/index.ts', false],
-    ['src/locales/en/main.json', false]
+    ['src/locales/en/main.json', false],
+    ['src/../../outside.ts', false],
+    ['src/a/../../../outside.vue', false],
+    ['apps/website/src/../../../outside.ts', false],
+    ['/src/outside.ts', false]
   ] as const)('gates %s: %s', ([file, gated]) => {
     expect(isGatedPath(file)).toBe(gated)
+  })
+})
+
+describe('lintSnapshot', () => {
+  let outsideDir: string | undefined
+
+  afterEach(() => {
+    if (outsideDir) rmSync(outsideDir, { recursive: true, force: true })
+    outsideDir = undefined
+  })
+
+  it.for([
+    [
+      'a relative path that climbs out',
+      (dir: string) => `src/../../${path.basename(dir)}/escaped.ts`
+    ],
+    ['an absolute path', (dir: string) => path.join(dir, 'escaped.ts')]
+  ] as const)('refuses %s without writing it', ([, fileIn]) => {
+    const dir = mkdtempSync(path.join(tmpdir(), 'server-fact-outside-'))
+    outsideDir = dir
+    const file = fileIn(dir)
+
+    const outcome = lintSnapshot(new Map([[file, 'export const a = 1']]))
+
+    expect(outcome).toEqual({
+      ok: false,
+      detail: `${file} resolves outside the snapshot`
+    })
+    expect(existsSync(path.join(dir, 'escaped.ts'))).toBe(false)
   })
 })
 

@@ -44,8 +44,14 @@ export function lintSnapshot(
 ): LintOutcome {
   const mirror = mkdtempSync(path.join(tmpdir(), 'server-facts-'))
   try {
+    const escaping = [...contents.keys()].find(
+      (file) => !isInside(mirror, path.resolve(mirror, file))
+    )
+    if (escaping !== undefined) {
+      return { ok: false, detail: `${escaping} resolves outside the snapshot` }
+    }
     for (const [file, text] of contents) {
-      const target = path.join(mirror, file)
+      const target = path.resolve(mirror, file)
       mkdirSync(path.dirname(target), { recursive: true })
       writeFileSync(target, text)
     }
@@ -53,6 +59,15 @@ export function lintSnapshot(
   } finally {
     rmSync(mirror, { recursive: true, force: true })
   }
+}
+
+function isInside(root: string, target: string): boolean {
+  const relative = path.relative(root, target)
+  return (
+    relative !== '' &&
+    !path.isAbsolute(relative) &&
+    relative.split(path.sep)[0] !== '..'
+  )
 }
 
 function parseJson(text: string): unknown {
