@@ -439,6 +439,7 @@ const mockedInExpectAutofixFixture = `import { expect, it, vi } from 'vitest'
 
 const store = { save: vi.fn() }
 const active: typeof store | undefined = undefined
+const holder: { store: typeof store } | undefined = undefined
 const fallback = { save: vi.fn() }
 
 it('passes each subject to expect without vi.mocked', () => {
@@ -446,6 +447,8 @@ it('passes each subject to expect without vi.mocked', () => {
   expect(vi.mocked(store).save).toHaveBeenCalled()
   expect(vi.mocked(active ?? fallback)).toBe(fallback)
   expect(vi.mocked(active ?? fallback).save).toHaveBeenCalled()
+  expect(vi.mocked(holder?.store).save).toHaveBeenCalled()
+  expect(vi.mocked(holder?.store!).save).toHaveBeenCalled()
   expect(vi.mocked((store.save, fallback.save))).toBe(fallback.save)
   expect(vi.mocked(store.save).mock.calls).toEqual([])
 })
@@ -455,6 +458,7 @@ const mockedInExpectAutofixed = `import { expect, it, vi } from 'vitest'
 
 const store = { save: vi.fn() }
 const active: typeof store | undefined = undefined
+const holder: { store: typeof store } | undefined = undefined
 const fallback = { save: vi.fn() }
 
 it('passes each subject to expect without vi.mocked', () => {
@@ -462,6 +466,8 @@ it('passes each subject to expect without vi.mocked', () => {
   expect(store.save).toHaveBeenCalled()
   expect(active ?? fallback).toBe(fallback)
   expect((active ?? fallback).save).toHaveBeenCalled()
+  expect((holder?.store).save).toHaveBeenCalled()
+  expect((holder?.store!).save).toHaveBeenCalled()
   expect((store.save, fallback.save)).toBe(fallback.save)
   expect(vi.mocked(store.save).mock.calls).toEqual([])
 })

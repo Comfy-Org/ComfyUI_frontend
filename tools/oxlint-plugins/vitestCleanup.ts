@@ -781,7 +781,6 @@ function isExpectCall(context: RuleContext, call: CallExpression): boolean {
 
 const PARENTHESIS_FREE_SUBJECTS = new Set([
   'CallExpression',
-  'ChainExpression',
   'Identifier',
   'MemberExpression',
   'TSNonNullExpression'
