@@ -22,6 +22,7 @@ describe('hub model addresses', () => {
     expect([
       routes.cinematicStudio,
       routes.moveAnything,
+      routes.paparazziMe,
       routes.relight,
       routes.reshoot
     ]).toEqual(hubAppSlugs.map(hubAppHref))

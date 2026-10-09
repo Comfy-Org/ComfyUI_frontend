@@ -73,7 +73,8 @@ const appTasks = {
   studio: 'studioTask',
   reshoot: 'reshootTask',
   'move-anything': 'moveAnythingTask',
-  relight: 'relightTask'
+  relight: 'relightTask',
+  'paparazzi-me': 'paparazziMeTask'
 } as const satisfies Record<AppWorkshopModel['appId'], Parameters<typeof ac>[0]>
 const appCards = computed<readonly CatalogueApp[]>(() =>
   apps.value.map((app) => ({
