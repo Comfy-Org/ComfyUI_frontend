@@ -1,3 +1,4 @@
+import type { PlanFeatureGroup } from '@/data/pricingPlans'
 import type { TranslationKey } from '@/i18n/translations'
 
 export interface ComfyApiPlanLimits {
@@ -38,3 +39,31 @@ export const comfyApiPlanLimits: readonly ComfyApiPlanLimits[] = [
     maxWorkerConcurrency: 20
   }
 ]
+
+export function comfyApiFeatureGroup(planId: string): PlanFeatureGroup {
+  const limits = comfyApiPlanLimits.find((plan) => plan.id === planId)
+  return {
+    titleKey: 'pricing.comfyApi.cardTitle',
+    features: limits
+      ? [
+          {
+            text: 'pricing.comfyApi.cardFeature.releases',
+            params: { count: limits.totalReleasesLimit }
+          },
+          {
+            text: 'pricing.comfyApi.cardFeature.deployments',
+            params: { count: limits.totalDeploymentsLimit }
+          },
+          {
+            text: 'pricing.comfyApi.cardFeature.concurrency',
+            params: { count: limits.maxWorkerConcurrency }
+          }
+        ]
+      : [
+          {
+            text: 'pricing.comfyApi.cardFeature.notIncluded',
+            status: 'excluded'
+          }
+        ]
+  }
+}

@@ -1552,7 +1552,7 @@
     "creditsLabelYearly": "credits per year",
     "banner": {
       "title": "Start Comfy Cloud for free. Upgrade when ready.",
-      "subtitle": "5 free runs on real GPUs — no credit card required.",
+      "subtitle": "5 free runs on real GPUs and free Comfy Agent credits every month — no credit card required.",
       "cta": "TRY FREE"
     },
     "feature": {
@@ -1641,7 +1641,14 @@
         "concurrency": "Max worker concurrency (per deployment)"
       },
       "enterpriseNote": "Enterprise limits are determined by your contract.",
-      "learnMore": "Learn More"
+      "learnMore": "Learn More",
+      "cardTitle": "Comfy API",
+      "cardFeature": {
+        "releases": "{count} releases",
+        "deployments": "{count} deployments",
+        "concurrency": "Up to {count} workers per deployment",
+        "notIncluded": "Comfy API access"
+      }
     },
     "minimaxLicense": {
       "heading": "MiniMax license pricing",
@@ -1651,6 +1658,37 @@
     "cycle": {
       "monthly": "monthly",
       "yearly": "yearly"
+    },
+    "agent": {
+      "heading": "Comfy Agent",
+      "subtitle": "Build and run workflows by describing what you want. Comfy Agent works on every plan and comes with free credits each month.",
+      "learnMore": "Learn More",
+      "limit": {
+        "availability": {
+          "title": "Available on every plan",
+          "description": "Any Comfy Cloud account can use Comfy Agent. It is not locked to a specific plan: all you need is a free agent allowance or a positive credit balance."
+        },
+        "allowance": {
+          "title": "Free monthly allowance",
+          "description": "Every workspace gets free Comfy Agent credits each month. The allowance is used first, resets on the 1st of each month (UTC), and unused credits do not roll over."
+        },
+        "credits": {
+          "title": "Billed in Comfy Credits",
+          "description": "Once the free allowance is used up, Comfy Agent draws on your Comfy Credits for LLM tokens, at the same rates as LLM Partner Nodes. On the Team plan, usage comes from the shared credit pool."
+        },
+        "runs": {
+          "title": "Workflow runs",
+          "description": "Workflows the agent runs are charged exactly like runs you start yourself, with no surcharge, and follow your plan's runtime and job limits."
+        },
+        "messages": {
+          "title": "No message cap",
+          "description": "There is no limit on the number of messages. Usage is limited only by your credits: when your balance reaches zero, the agent pauses until you add more."
+        },
+        "model": {
+          "title": "Model",
+          "description": "Comfy picks the model for you. Bringing your own LLM key is not supported yet."
+        }
+      }
     }
   },
   "player": {

@@ -4,6 +4,7 @@ import type { Locale, TranslationKey } from '@/i18n/translations'
 import { cn } from '@comfyorg/tailwind-utils'
 import { computed, ref, useSlots } from 'vue'
 
+import { comfyApiFeatureGroup } from '@/data/comfyApiPlanLimits'
 import { pricingPlans } from '@/data/pricingPlans'
 import type { BillingCycle, PricingPlan } from '@/data/pricingPlans'
 import { translationsFor } from '@/i18n/translations'
@@ -90,7 +91,7 @@ const planCards = computed(() =>
     creditsKey: displayCreditsKey(plan),
     creditsLabel: creditsLabelFor(plan),
     estimateKey: displayEstimateKey(plan),
-    features: plan.features
+    featureGroups: [{ features: plan.features }, comfyApiFeatureGroup(plan.id)]
   }))
 )
 </script>
@@ -151,7 +152,7 @@ const planCards = computed(() =>
           creditsKey,
           creditsLabel,
           estimateKey,
-          features
+          featureGroups
         } in planCards"
         :key="plan.id"
         class="row-span-7 grid grid-rows-subgrid"
@@ -176,8 +177,8 @@ const planCards = computed(() =>
           :locale
         />
 
-        <div v-if="features.length" class="mt-8">
-          <PricingPlanFeatureList :features="[{ features }]" :locale />
+        <div class="mt-8">
+          <PricingPlanFeatureList :features="featureGroups" :locale />
         </div>
 
         <PricingCredits

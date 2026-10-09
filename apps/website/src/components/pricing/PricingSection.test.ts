@@ -105,3 +105,31 @@ describe('PricingSection credit allotment copy', () => {
     expect(screen.queryAllByText('每月积分')).toHaveLength(0)
   })
 })
+
+describe('PricingSection Comfy API limits', () => {
+  it.for([
+    {
+      plan: 'Pro',
+      releases: '10 releases',
+      workers: 'Up to 10 workers per deployment'
+    },
+    {
+      plan: 'Team',
+      releases: '40 releases',
+      workers: 'Up to 20 workers per deployment'
+    }
+  ])('lists the $plan plan limits in its card', ({ releases, workers }) => {
+    render(PricingSection)
+
+    expect(screen.getByText(releases)).toBeTruthy()
+    expect(screen.getByText(workers)).toBeTruthy()
+  })
+
+  it('gives every plan card, Team included, a Comfy API group', () => {
+    render(PricingSection)
+
+    expect(screen.getAllByText('Comfy API')).toHaveLength(
+      pricingPlans.length + 1
+    )
+  })
+})

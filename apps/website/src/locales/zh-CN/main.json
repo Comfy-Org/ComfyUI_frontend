@@ -3164,7 +3164,7 @@
     },
     "banner": {
       "cta": "免费试用",
-      "subtitle": "在真实 GPU 上免费运行 5 次 — 无需信用卡。",
+      "subtitle": "在真实 GPU 上免费运行 5 次，每月还有免费的 Comfy Agent 积分 — 无需信用卡。",
       "title": "免费开始使用 Comfy Cloud，准备好了再升级。"
     },
     "creditsLabel": "每月积分",
@@ -3193,7 +3193,14 @@
         "concurrency": "最大工作节点并发数（每个部署）"
       },
       "enterpriseNote": "企业版的限制由合同约定。",
-      "learnMore": "了解更多"
+      "learnMore": "了解更多",
+      "cardTitle": "Comfy API",
+      "cardFeature": {
+        "releases": "{count} 个发布版本",
+        "deployments": "{count} 个部署",
+        "concurrency": "每个部署最多 {count} 个 worker",
+        "notIncluded": "Comfy API 访问"
+      }
     },
     "feature": {
       "addCredits": "可随时增加积分",
@@ -3348,6 +3355,37 @@
     "cycle": {
       "monthly": "按月",
       "yearly": "按年"
+    },
+    "agent": {
+      "heading": "Comfy Agent",
+      "subtitle": "描述你想要的效果，即可构建并运行工作流。Comfy Agent 适用于所有方案，并且每月附赠免费积分。",
+      "learnMore": "了解更多",
+      "limit": {
+        "availability": {
+          "title": "所有方案均可使用",
+          "description": "任何 Comfy Cloud 账户都可以使用 Comfy Agent，不限定特定方案：只需有免费 Agent 额度或积分余额大于零即可。"
+        },
+        "allowance": {
+          "title": "每月免费额度",
+          "description": "每个工作区每月都会获得免费的 Comfy Agent 积分。免费额度会优先使用，于每月 1 日（UTC）重置，未用完的额度不会结转。"
+        },
+        "credits": {
+          "title": "使用 Comfy Credits 计费",
+          "description": "免费额度用完后，Comfy Agent 会消耗你的 Comfy Credits 来支付 LLM token 费用，费率与 LLM Partner Nodes 相同。在 Team 方案中，用量从共享积分池中扣除。"
+        },
+        "runs": {
+          "title": "工作流运行",
+          "description": "Agent 运行的工作流与你自己运行的计费方式完全相同，不额外收费，并遵循你所在方案的运行时长和任务限制。"
+        },
+        "messages": {
+          "title": "不限消息数量",
+          "description": "消息数量没有上限，用量仅受积分限制：余额为零时，Agent 会暂停，直到你充值。"
+        },
+        "model": {
+          "title": "模型",
+          "description": "由 Comfy 为你选择模型，暂不支持使用你自己的 LLM 密钥。"
+        }
+      }
     }
   },
   "privacy": {
