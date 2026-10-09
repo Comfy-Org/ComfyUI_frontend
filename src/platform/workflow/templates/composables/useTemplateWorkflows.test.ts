@@ -141,9 +141,8 @@ describe('useTemplateWorkflows', () => {
   let mockWorkflowTemplatesStore: MockWorkflowTemplatesStore
 
   beforeEach(() => {
-    vi.stubGlobal(
-      'fetch',
-      vi.fn(async () => Response.json(loadableWorkflow))
+    vi.mocked(fetch).mockImplementation(async () =>
+      Response.json(loadableWorkflow)
     )
     mockIsCloud.value = true
     mockDistributionIsCloud.value = false

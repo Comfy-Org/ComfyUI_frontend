@@ -51,6 +51,10 @@ import {
   setRevealedLinks
 } from './canvas/linkRevealState'
 import { SelectedItemsView } from './canvas/SelectedItemsView'
+import {
+  CANVAS_CLIPBOARD_ID_KEY,
+  CANVAS_CLIPBOARD_KEY
+} from './canvas/clipboardStorage'
 import type { ContextMenu } from './ContextMenu'
 import { createCursorCache } from './cursorCache'
 import { DragAndScale } from './DragAndScale'
@@ -107,34 +111,39 @@ import { Rectangle } from './infrastructure/Rectangle'
 import type {
   CanvasColour,
   ColorOption,
-  ConnectingLink,
-  ContextMenuDivElement,
   DefaultConnectionColors,
   Dictionary,
   Direction,
-  IBoundaryNodes,
   IColorable,
-  IContextMenuOptions,
-  IContextMenuValue,
-  INodeInputSlot,
-  INodeOutputSlot,
   INodeSlot,
-  INodeSlotContextItem,
   ISlotType,
   LinkSegment,
-  NewNodePosition,
   NullableProperties,
-  Panel,
-  PanelButton,
-  PanelWidget,
-  PanelWidgetCallback,
-  PanelWidgetOptions,
   Point,
   Positionable,
   ReadOnlyRect,
   Rect,
   Size
 } from './interfaces'
+import type {
+  ConnectingLink,
+  INodeInputSlot,
+  INodeOutputSlot,
+  INodeSlotContextItem
+} from './types/slots'
+import type {
+  ContextMenuDivElement,
+  IContextMenuOptions,
+  IContextMenuValue
+} from './types/contextMenu'
+import type { IBoundaryNodes, NewNodePosition } from './utils/arrange'
+import type {
+  Panel,
+  PanelButton,
+  PanelWidget,
+  PanelWidgetCallback,
+  PanelWidgetOptions
+} from './types/panel'
 import { LiteGraph } from './litegraph'
 import {
   containsRect,
@@ -4299,8 +4308,8 @@ export class LGraphCanvas implements CustomEventDispatcher<LGraphCanvasEventMap>
    */
   copyToClipboard(items?: Iterable<Positionable>): string {
     const serializedData = JSON.stringify(this._serializeItems(items))
-    localStorage.setItem('litegrapheditor_clipboard', serializedData)
-    localStorage.setItem('litegrapheditor_clipboard_id', createUuidv4())
+    localStorage.setItem(CANVAS_CLIPBOARD_KEY, serializedData)
+    localStorage.setItem(CANVAS_CLIPBOARD_ID_KEY, createUuidv4())
     return serializedData
   }
 
@@ -4333,7 +4342,7 @@ export class LGraphCanvas implements CustomEventDispatcher<LGraphCanvasEventMap>
   _pasteFromClipboard(
     options: IPasteFromClipboardOptions = {}
   ): ClipboardPasteResult | undefined {
-    const data = localStorage.getItem('litegrapheditor_clipboard')
+    const data = localStorage.getItem(CANVAS_CLIPBOARD_KEY)
     if (!data) return
     return this._deserializeItems(JSON.parse(data), options)
   }
