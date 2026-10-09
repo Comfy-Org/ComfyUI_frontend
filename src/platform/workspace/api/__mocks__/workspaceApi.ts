@@ -15,7 +15,7 @@ export class WorkspaceApiError extends Error {
 
 export const workspaceApi = vi.mockObject<typeof realWorkspaceApi>(
   {
-    list: async () => ({ workspaces: [] }),
+    list: async () => ({ workspaces: [], can_create_workspace: true }),
     getCurrentWorkspace: async () => ({
       id: 'workspace-1',
       name: 'Personal',
