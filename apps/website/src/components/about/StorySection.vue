@@ -1,4 +1,5 @@
 <script setup lang="ts">
+import NodeBadge from '@/components/common/NodeBadge.vue'
 import type { Locale } from '@/i18n/translations'
 
 import { translationsFor } from '@/i18n/translations'
@@ -42,7 +43,14 @@ const investors = [
     <div
       class="mx-auto mt-16 max-w-5xl rounded-4xl border border-white/10 bg-black/30 p-8 lg:p-12"
     >
-      <div class="inline-flex items-center">
+      <NodeBadge
+        v-if="locale === 'ja'"
+        :segments="[{ text: t('about.story.investorsLabel') }]"
+        size-class="h-12"
+        text-class="text-lg"
+        segment-class="px-3"
+      />
+      <div v-else class="inline-flex items-center">
         <!-- OUR badge (shorter) -->
         <div class="relative z-10 flex h-9 items-center">
           <img src="/icons/node-left.svg" alt="" class="h-full w-auto" />

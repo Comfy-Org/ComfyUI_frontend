@@ -94,8 +94,11 @@ including the title, description and comma-separated keywords under
 builds links with `getRoutes(locale)`.
 
 Chinese publishes every route that is not English-only. Japanese publishes
-only the routes listed for `ja` in `PARTIAL_LOCALE_ROUTES` in
+the home, about, download, cloud, platform, and pricing pages. Its routes are
+listed for `ja` in `PARTIAL_LOCALE_ROUTES` in
 `src/config/locales.ts`; add a route there to publish its Japanese page.
+Pricing FAQs use the current English list and fall back per question when a
+translation is missing, so new billing information remains available.
 
 Most other pages still have a hand-copied twin under `src/pages/zh-CN/`. To
 move one into `[...locale]/`, move the English page there, put its literal

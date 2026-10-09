@@ -10,7 +10,11 @@ describe('localeHasRoute', () => {
     { locale: 'zh-CN', route: '/', served: true },
     { locale: 'zh-CN', route: '/cli', served: true },
     { locale: 'ja', route: '/', served: true },
-    { locale: 'ja', route: '/pricing', served: false },
+    { locale: 'ja', route: '/about/', served: true },
+    { locale: 'ja', route: '/download', served: true },
+    { locale: 'ja', route: '/cloud/', served: true },
+    { locale: 'ja', route: '/platform', served: true },
+    { locale: 'ja', route: '/pricing', served: true },
     { locale: 'ja', route: '/cli', served: false },
     { locale: 'ja', route: '/mcp', served: false }
   ] as const)('$locale serves $route: $served', ({ locale, route, served }) => {

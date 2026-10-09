@@ -15,19 +15,31 @@ const values: {
   bodyKey: TranslationKey
 }[] = [
   {
-    segments: [{ text: 'SHIP' }, { text: 'IT' }],
+    segments:
+      locale === 'ja'
+        ? [{ text: t('about.values.card1.title') }]
+        : [{ text: 'SHIP' }, { text: 'IT' }],
     bodyKey: 'about.values.card1.body'
   },
   {
-    segments: [{ text: 'SHARE' }, { text: 'IT' }],
+    segments:
+      locale === 'ja'
+        ? [{ text: t('about.values.card2.title') }]
+        : [{ text: 'SHARE' }, { text: 'IT' }],
     bodyKey: 'about.values.card2.body'
   },
   {
-    segments: [{ text: 'OPEN-SOURCE' }, { text: 'IT' }],
+    segments:
+      locale === 'ja'
+        ? [{ text: t('about.values.card3.title') }]
+        : [{ text: 'OPEN-SOURCE' }, { text: 'IT' }],
     bodyKey: 'about.values.card3.body'
   },
   {
-    segments: [{ text: 'RESPECT' }, { text: 'THE CRAFT' }],
+    segments:
+      locale === 'ja'
+        ? [{ text: t('about.values.card4.title') }]
+        : [{ text: 'RESPECT' }, { text: 'THE CRAFT' }],
     bodyKey: 'about.values.card4.body'
   }
 ]

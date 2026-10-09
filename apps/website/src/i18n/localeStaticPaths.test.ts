@@ -5,6 +5,10 @@ import { localePageFiles, localeStaticPaths } from './localeStaticPaths'
 describe('localeStaticPaths', () => {
   it.for([
     { routePattern: '/[...locale]', locales: [undefined, 'zh-CN', 'ja'] },
+    {
+      routePattern: '/[...locale]/pricing',
+      locales: [undefined, 'zh-CN', 'ja']
+    },
     { routePattern: '/[...locale]/careers', locales: [undefined, 'zh-CN'] },
     { routePattern: '/[...locale]/terms-of-service', locales: [undefined] }
   ])(
@@ -31,7 +35,7 @@ describe('localePageFiles', () => {
     ],
     [
       '[...locale]/cloud/index.astro',
-      ['cloud/index.astro', 'zh-CN/cloud/index.astro']
+      ['cloud/index.astro', 'zh-CN/cloud/index.astro', 'ja/cloud/index.astro']
     ],
     ['careers.astro', ['careers.astro']]
   ] as const)('expands %s', ([file, served]) => {

@@ -55,7 +55,7 @@ export function withRouteSlash(route: string): string {
 }
 
 const PARTIAL_LOCALE_ROUTES: Partial<Record<Locale, ReadonlySet<string>>> = {
-  ja: new Set(['/'])
+  ja: new Set(['/', '/about', '/download', '/cloud', '/platform', '/pricing'])
 }
 
 export function localeHasRoute(locale: Locale, route: string): boolean {

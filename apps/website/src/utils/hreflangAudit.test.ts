@@ -82,10 +82,10 @@ function canonicalsFor(pages: ReadonlyMap<string, Alternate[]>) {
 }
 
 /** A built site with one clustered page pair and one English-only page. */
-function healthySite() {
+function healthySite(path = '/cli/') {
   const pages = new Map<string, Alternate[]>([
-    ['/about/', cluster('/about/')],
-    ['/zh-CN/about/', cluster('/about/')],
+    [path, cluster(path)],
+    [`/zh-CN${path}`, cluster(path)],
     ['/affiliates/', []]
   ])
   return {
@@ -124,7 +124,7 @@ describe('auditBuiltSite', () => {
 
   it('rejects a translated page and sitemap that omit every alternate', () => {
     const pages = new Map<string, Alternate[]>([
-      ['/about/', []],
+      ['/cli/', []],
       ['/affiliates/', []]
     ])
     const errors = auditBuiltSite({
@@ -137,18 +137,18 @@ describe('auditBuiltSite', () => {
     expect(errors).toHaveLength(6)
     expect(errors).toEqual(
       expect.arrayContaining([
-        '/about/: page expects en -> https://comfy.org/about/, but does not declare it',
-        '/about/: page expects zh-CN -> https://comfy.org/zh-CN/about/, but does not declare it',
-        '/about/: page expects x-default -> https://comfy.org/about/, but does not declare it',
-        '/about/: sitemap expects en -> https://comfy.org/about/, but does not declare it',
-        '/about/: sitemap expects zh-CN -> https://comfy.org/zh-CN/about/, but does not declare it',
-        '/about/: sitemap expects x-default -> https://comfy.org/about/, but does not declare it'
+        '/cli/: page expects en -> https://comfy.org/cli/, but does not declare it',
+        '/cli/: page expects zh-CN -> https://comfy.org/zh-CN/cli/, but does not declare it',
+        '/cli/: page expects x-default -> https://comfy.org/cli/, but does not declare it',
+        '/cli/: sitemap expects en -> https://comfy.org/cli/, but does not declare it',
+        '/cli/: sitemap expects zh-CN -> https://comfy.org/zh-CN/cli/, but does not declare it',
+        '/cli/: sitemap expects x-default -> https://comfy.org/cli/, but does not declare it'
       ])
     )
   })
 
   it('rejects an omitted sitemap entry even when the page has no alternates', () => {
-    const pages = new Map<string, Alternate[]>([['/about/', []]])
+    const pages = new Map<string, Alternate[]>([['/cli/', []]])
 
     expect(
       auditBuiltSite({
@@ -158,10 +158,10 @@ describe('auditBuiltSite', () => {
         sitemap: new Map()
       })
     ).toEqual([
-      '/about/: page expects en -> https://comfy.org/about/, but does not declare it',
-      '/about/: page expects zh-CN -> https://comfy.org/zh-CN/about/, but does not declare it',
-      '/about/: page expects x-default -> https://comfy.org/about/, but does not declare it',
-      '/about/: language cluster missing from sitemap'
+      '/cli/: page expects en -> https://comfy.org/cli/, but does not declare it',
+      '/cli/: page expects zh-CN -> https://comfy.org/zh-CN/cli/, but does not declare it',
+      '/cli/: page expects x-default -> https://comfy.org/cli/, but does not declare it',
+      '/cli/: language cluster missing from sitemap'
     ])
   })
 
@@ -205,96 +205,96 @@ describe('auditBuiltSite', () => {
     // is satisfied; only the labels are wrong. Google would be told the English
     // page is the Chinese one.
     const site = healthySite()
-    site.pages.set('/about/', [
-      { hreflang: 'en', href: `${ORIGIN}/zh-CN/about/` },
-      { hreflang: 'zh-CN', href: `${ORIGIN}/about/` },
-      { hreflang: 'x-default', href: `${ORIGIN}/about/` }
+    site.pages.set('/cli/', [
+      { hreflang: 'en', href: `${ORIGIN}/zh-CN/cli/` },
+      { hreflang: 'zh-CN', href: `${ORIGIN}/cli/` },
+      { hreflang: 'x-default', href: `${ORIGIN}/cli/` }
     ])
 
     expect(auditBuiltSite(site)).toEqual([
-      '/about/: page expects en -> https://comfy.org/about/, but does not declare it',
-      '/about/: page expects zh-CN -> https://comfy.org/zh-CN/about/, but does not declare it'
+      '/cli/: page expects en -> https://comfy.org/cli/, but does not declare it',
+      '/cli/: page expects zh-CN -> https://comfy.org/zh-CN/cli/, but does not declare it'
     ])
   })
 
   it('rejects a clustered page the sitemap leaves out', () => {
     const site = healthySite()
-    site.sitemap.delete('/zh-CN/about/')
+    site.sitemap.delete('/zh-CN/cli/')
 
     expect(auditBuiltSite(site)).toEqual([
-      '/zh-CN/about/: language cluster missing from sitemap'
+      '/zh-CN/cli/: language cluster missing from sitemap'
     ])
   })
 
   it('rejects an alternate pointing at a page that was not built', () => {
     const site = healthySite()
-    site.pages.set('/about/', cluster('/about/'))
-    site.pages.delete('/zh-CN/about/')
-    site.sitemap.delete('/zh-CN/about/')
+    site.pages.set('/cli/', cluster('/cli/'))
+    site.pages.delete('/zh-CN/cli/')
+    site.sitemap.delete('/zh-CN/cli/')
 
     expect(auditBuiltSite(site)).toEqual([
-      '/about/: alternate zh-CN -> /zh-CN/about/ was not built (404)'
+      '/cli/: alternate zh-CN -> /zh-CN/cli/ was not built (404)'
     ])
   })
 
   it('rejects a required locale omitted from the build and both clusters', () => {
     const site = healthySite()
-    site.pages.delete('/zh-CN/about/')
-    site.sitemap.delete('/zh-CN/about/')
-    const english = cluster('/about/').filter(
+    site.pages.delete('/zh-CN/cli/')
+    site.sitemap.delete('/zh-CN/cli/')
+    const english = cluster('/cli/').filter(
       ({ hreflang }) => hreflang !== 'zh-CN'
     )
-    site.pages.set('/about/', english)
-    site.sitemap.set('/about/', english)
+    site.pages.set('/cli/', english)
+    site.sitemap.set('/cli/', english)
 
     expect(auditBuiltSite(site)).toEqual([
-      '/about/: page expects zh-CN -> https://comfy.org/zh-CN/about/, but does not declare it',
-      '/about/: sitemap expects zh-CN -> https://comfy.org/zh-CN/about/, but does not declare it'
+      '/cli/: page expects zh-CN -> https://comfy.org/zh-CN/cli/, but does not declare it',
+      '/cli/: sitemap expects zh-CN -> https://comfy.org/zh-CN/cli/, but does not declare it'
     ])
   })
 
   it('rejects the same hreflang emitted twice on one page', () => {
     const site = healthySite()
-    site.pages.set('/about/', [
-      ...cluster('/about/'),
-      { hreflang: 'en', href: `${ORIGIN}/about/` }
+    site.pages.set('/cli/', [
+      ...cluster('/cli/'),
+      { hreflang: 'en', href: `${ORIGIN}/cli/` }
     ])
 
     expect(auditBuiltSite(site)).toEqual([
-      '/about/: page declares hreflang="en" more than once'
+      '/cli/: page declares hreflang="en" more than once'
     ])
   })
 
   it('rejects a one-way cluster', () => {
     const site = healthySite()
-    site.pages.set('/zh-CN/about/', [])
-    site.sitemap.set('/zh-CN/about/', [])
+    site.pages.set('/zh-CN/cli/', [])
+    site.sitemap.set('/zh-CN/cli/', [])
 
     expect(auditBuiltSite(site)).toEqual([
-      '/zh-CN/about/: page expects en -> https://comfy.org/about/, but does not declare it',
-      '/zh-CN/about/: page expects zh-CN -> https://comfy.org/zh-CN/about/, but does not declare it',
-      '/zh-CN/about/: page expects x-default -> https://comfy.org/about/, but does not declare it',
-      '/about/: lists /zh-CN/about/, which does not list it back',
-      '/zh-CN/about/: sitemap expects en -> https://comfy.org/about/, but does not declare it',
-      '/zh-CN/about/: sitemap expects zh-CN -> https://comfy.org/zh-CN/about/, but does not declare it',
-      '/zh-CN/about/: sitemap expects x-default -> https://comfy.org/about/, but does not declare it'
+      '/zh-CN/cli/: page expects en -> https://comfy.org/cli/, but does not declare it',
+      '/zh-CN/cli/: page expects zh-CN -> https://comfy.org/zh-CN/cli/, but does not declare it',
+      '/zh-CN/cli/: page expects x-default -> https://comfy.org/cli/, but does not declare it',
+      '/cli/: lists /zh-CN/cli/, which does not list it back',
+      '/zh-CN/cli/: sitemap expects en -> https://comfy.org/cli/, but does not declare it',
+      '/zh-CN/cli/: sitemap expects zh-CN -> https://comfy.org/zh-CN/cli/, but does not declare it',
+      '/zh-CN/cli/: sitemap expects x-default -> https://comfy.org/cli/, but does not declare it'
     ])
   })
 
   it('rejects an alternate on another origin', () => {
     const site = healthySite()
-    site.pages.set('/about/', [
-      { hreflang: 'en', href: `${ORIGIN}/about/` },
-      { hreflang: 'zh-CN', href: 'https://www.comfy.org/zh-CN/about/' },
-      { hreflang: 'x-default', href: `${ORIGIN}/about/` }
+    site.pages.set('/cli/', [
+      { hreflang: 'en', href: `${ORIGIN}/cli/` },
+      { hreflang: 'zh-CN', href: 'https://www.comfy.org/zh-CN/cli/' },
+      { hreflang: 'x-default', href: `${ORIGIN}/cli/` }
     ])
 
     expect(auditBuiltSite(site)).toEqual([
-      '/about/: page alternate zh-CN points off-origin (https://www.comfy.org/zh-CN/about/)',
-      '/about/: page expects zh-CN -> https://comfy.org/zh-CN/about/, but does not declare it',
+      '/cli/: page alternate zh-CN points off-origin (https://www.comfy.org/zh-CN/cli/)',
+      '/cli/: page expects zh-CN -> https://comfy.org/zh-CN/cli/, but does not declare it',
       // The twin still points here, so losing the link back breaks reciprocity
       // too. Asserting the exact list is what makes that visible.
-      '/zh-CN/about/: lists /about/, which does not list it back'
+      '/zh-CN/cli/: lists /cli/, which does not list it back'
     ])
   })
 
@@ -320,26 +320,26 @@ describe('auditBuiltSite', () => {
     // The language SET still matches the page exactly, so comparing names alone
     // accepts this. It tells Google the English URL is the Chinese one.
     const site = healthySite()
-    site.sitemap.set('/about/', [
-      { hreflang: 'en', href: `${ORIGIN}/about/` },
-      { hreflang: 'zh-CN', href: `${ORIGIN}/about/` },
-      { hreflang: 'x-default', href: `${ORIGIN}/about/` }
+    site.sitemap.set('/cli/', [
+      { hreflang: 'en', href: `${ORIGIN}/cli/` },
+      { hreflang: 'zh-CN', href: `${ORIGIN}/cli/` },
+      { hreflang: 'x-default', href: `${ORIGIN}/cli/` }
     ])
 
     expect(auditBuiltSite(site)).toEqual([
-      '/about/: sitemap expects zh-CN -> https://comfy.org/zh-CN/about/, but does not declare it'
+      '/cli/: sitemap expects zh-CN -> https://comfy.org/zh-CN/cli/, but does not declare it'
     ])
   })
 
   it('rejects a language repeated inside one sitemap entry', () => {
     const site = healthySite()
-    site.sitemap.set('/about/', [
-      ...cluster('/about/'),
-      { hreflang: 'en', href: `${ORIGIN}/about/` }
+    site.sitemap.set('/cli/', [
+      ...cluster('/cli/'),
+      { hreflang: 'en', href: `${ORIGIN}/cli/` }
     ])
 
     expect(auditBuiltSite(site)).toEqual([
-      '/about/: sitemap declares hreflang="en" more than once'
+      '/cli/: sitemap declares hreflang="en" more than once'
     ])
   })
 
@@ -348,13 +348,13 @@ describe('auditBuiltSite', () => {
     // comparison sees no disagreement, and pointed at a page that does exist,
     // so neither the built check nor reciprocity fires. Nothing else can see it.
     const site = healthySite()
-    const ja = { hreflang: 'ja', href: `${ORIGIN}/zh-CN/about/` }
-    site.pages.set('/about/', [...cluster('/about/'), ja])
-    site.sitemap.set('/about/', [...cluster('/about/'), ja])
+    const ja = { hreflang: 'ja', href: `${ORIGIN}/zh-CN/cli/` }
+    site.pages.set('/cli/', [...cluster('/cli/'), ja])
+    site.sitemap.set('/cli/', [...cluster('/cli/'), ja])
 
     expect(auditBuiltSite(site)).toEqual([
-      '/about/: page declares hreflang="ja", which is not one of en, zh-CN, x-default',
-      '/about/: sitemap declares hreflang="ja", which is not one of en, zh-CN, x-default'
+      '/cli/: page declares hreflang="ja", which is not one of en, zh-CN, x-default',
+      '/cli/: sitemap declares hreflang="ja", which is not one of en, zh-CN, x-default'
     ])
   })
 
@@ -371,18 +371,18 @@ describe('auditBuiltSite', () => {
     // The other direction of the same drift: the sitemap dropping x-default
     // while the pages keep emitting it.
     const site = healthySite()
-    site.sitemap.set('/about/', cluster('/about/').slice(0, 2))
+    site.sitemap.set('/cli/', cluster('/cli/').slice(0, 2))
 
     expect(auditBuiltSite(site)).toEqual([
-      '/about/: sitemap expects x-default -> https://comfy.org/about/, but does not declare it',
-      '/about/: page advertises x-default that the sitemap does not'
+      '/cli/: sitemap expects x-default -> https://comfy.org/cli/, but does not declare it',
+      '/cli/: page advertises x-default that the sitemap does not'
     ])
   })
 })
 
 describe('canonical URLs', () => {
   it('requires a canonical when an indexable page omits every alternate', () => {
-    const pages = new Map<string, Alternate[]>([['/about/', []]])
+    const pages = new Map<string, Alternate[]>([['/cli/', []]])
 
     expect(
       auditBuiltSite({
@@ -392,44 +392,44 @@ describe('canonical URLs', () => {
         sitemap: new Map(pages)
       })
     ).toEqual([
-      '/about/: canonical must be https://comfy.org/about/',
-      '/about/: page expects en -> https://comfy.org/about/, but does not declare it',
-      '/about/: page expects zh-CN -> https://comfy.org/zh-CN/about/, but does not declare it',
-      '/about/: page expects x-default -> https://comfy.org/about/, but does not declare it',
-      '/about/: sitemap expects en -> https://comfy.org/about/, but does not declare it',
-      '/about/: sitemap expects zh-CN -> https://comfy.org/zh-CN/about/, but does not declare it',
-      '/about/: sitemap expects x-default -> https://comfy.org/about/, but does not declare it'
+      '/cli/: canonical must be https://comfy.org/cli/',
+      '/cli/: page expects en -> https://comfy.org/cli/, but does not declare it',
+      '/cli/: page expects zh-CN -> https://comfy.org/zh-CN/cli/, but does not declare it',
+      '/cli/: page expects x-default -> https://comfy.org/cli/, but does not declare it',
+      '/cli/: sitemap expects en -> https://comfy.org/cli/, but does not declare it',
+      '/cli/: sitemap expects zh-CN -> https://comfy.org/zh-CN/cli/, but does not declare it',
+      '/cli/: sitemap expects x-default -> https://comfy.org/cli/, but does not declare it'
     ])
   })
 
   it.for([
     {
       name: 'another origin',
-      canonical: 'https://other.example/zh-CN/about/'
+      canonical: 'https://other.example/zh-CN/cli/'
     },
     {
       name: 'query string',
-      canonical: 'https://comfy.org/zh-CN/about/?preview=true'
+      canonical: 'https://comfy.org/zh-CN/cli/?preview=true'
     },
     {
       name: 'fragment',
-      canonical: 'https://comfy.org/zh-CN/about/#section'
+      canonical: 'https://comfy.org/zh-CN/cli/#section'
     }
   ])('rejects $name on a clustered page', ({ canonical }) => {
     const site = healthySite()
-    site.canonicals.set('/zh-CN/about/', canonical)
+    site.canonicals.set('/zh-CN/cli/', canonical)
 
     expect(auditBuiltSite(site)).toEqual([
-      '/zh-CN/about/: canonical must be https://comfy.org/zh-CN/about/'
+      '/zh-CN/cli/: canonical must be https://comfy.org/zh-CN/cli/'
     ])
   })
 
   it('rejects a missing canonical link on a clustered page', () => {
     const site = healthySite()
-    site.canonicals.delete('/zh-CN/about/')
+    site.canonicals.delete('/zh-CN/cli/')
 
     expect(auditBuiltSite(site)).toEqual([
-      '/zh-CN/about/: canonical must be https://comfy.org/zh-CN/about/'
+      '/zh-CN/cli/: canonical must be https://comfy.org/zh-CN/cli/'
     ])
   })
 
@@ -546,7 +546,7 @@ describe('sitemapChunkNames', () => {
 
 describe('Japanese publication', () => {
   it('requires a built Japanese page in the page and sitemap clusters', () => {
-    const site = healthySite()
+    const site = healthySite('/about/')
     site.pages.set('/ja/about/', [])
     site.canonicals.set('/ja/about/', `${ORIGIN}/ja/about/`)
 

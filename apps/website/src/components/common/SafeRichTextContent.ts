@@ -1,5 +1,8 @@
 import { parseFragment } from 'parse5'
 import type { DefaultTreeAdapterTypes } from 'parse5'
+import { NON_DEFAULT_LOCALE_PREFIXES } from '@/config/locales'
+import type { Locale } from '@/config/locales'
+import { localizeHref } from '@/config/routes'
 import { defineComponent, h } from 'vue'
 import type { PropType } from 'vue'
 
@@ -42,6 +45,27 @@ function sanitizeClass(value: string): string | undefined {
   return classes.length ? classes.join(' ') : undefined
 }
 
+function createLocalePolicy(props: { locale: Locale }) {
+  return {
+    ...policy,
+    attrs: (element: DefaultTreeAdapterTypes.Element) => {
+      const sanitized = policy.attrs(element)
+      if (sanitized.href) {
+        sanitized.href = localizeRichTextHref(sanitized.href, props.locale)
+      }
+      return sanitized
+    }
+  }
+}
+
+function localizeRichTextHref(href: string, locale: Locale): string {
+  const pathname = new URL(href, HREF_BASE).pathname
+  const hasLocalePrefix = NON_DEFAULT_LOCALE_PREFIXES.some(
+    (prefix) => pathname === prefix || pathname.startsWith(`${prefix}/`)
+  )
+  return hasLocalePrefix ? href : localizeHref(href, locale)
+}
+
 function sanitizeAttrs(
   element: DefaultTreeAdapterTypes.Element
 ): Record<string, string> {
@@ -74,12 +98,14 @@ export default defineComponent({
   inheritAttrs: false,
   props: {
     html: { type: String, required: true },
+    locale: { type: String as PropType<Locale>, default: 'en' },
     as: {
       type: String as PropType<RichTextRootTag>,
       default: 'span'
     }
   },
   setup(props, { attrs }) {
+    const policy = createLocalePolicy(props)
     return () =>
       h(
         props.as,

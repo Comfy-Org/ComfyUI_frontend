@@ -3,6 +3,7 @@ import { getCollection, render } from 'astro:content'
 
 import type { Locale } from '@/i18n/translations'
 import FaqLink from './FaqLink.astro'
+import { selectFaqEntries } from './pricingFaq'
 
 interface Props {
   locale?: Locale
@@ -12,10 +13,7 @@ interface Props {
 const { locale = 'en', category = 'pricing' } = Astro.props
 const { t } = Astro.locals
 
-const entries = await getCollection('faq', (entry) =>
-  entry.id.startsWith(`${category}/${locale}/`)
-)
-entries.sort((a, b) => a.data.order - b.data.order)
+const entries = selectFaqEntries(await getCollection('faq'), category, locale)
 
 const items = await Promise.all(
   entries.map(async (entry) => ({

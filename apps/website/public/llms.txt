@@ -20,6 +20,8 @@ Studios, brands, and schools building with Comfy include Series Entertainment, M
 
 Languages: comfy.org is published in English and Simplified Chinese, with a Japanese home page at https://comfy.org/ja/. Nearly every page has a twin under /zh-CN/ (for example https://comfy.org/zh-CN/cli/); the affiliate pages, the enterprise MSA, the terms of service, and the model files directory are English only. Comfy Workflows is published in 11 languages (English, 简体中文, 繁體中文, Español, Français, 日本語, 한국어, Português, Русский, العربية, and Türkçe). The docs are published in English, Chinese, Japanese, and Korean.
 
+Current Japanese coverage includes the home page, About, Download, Cloud, Platform, and Pricing under https://comfy.org/ja/.
+
 ## Names and spelling
 
 - **ComfyUI** (one word, capital UI) is the open-source node-graph engine. **Comfy** is the company behind it (Comfy Org, `Comfy-Org` on GitHub) and the product family built on it.
@@ -328,6 +330,11 @@ Languages: comfy.org is published in English and Simplified Chinese, with a Japa
 ## 日本語 (Japanese)
 
 - [ホーム](https://comfy.org/ja/): Comfyの日本語トップページ：あらゆるモデル、パラメータ、出力を自在にコントロールできるビジュアルプロフェッショナル向けAIクリエーションエンジン。
+- [Comfyについて](https://comfy.org/ja/about/): Comfyのチーム、ミッション、価値観。
+- [ダウンロード](https://comfy.org/ja/download/): Windows、macOS、Linux向けのComfyUI。
+- [Comfy Cloud](https://comfy.org/ja/cloud/): ブラウザでワークフローを実行。
+- [開発者プラットフォーム](https://comfy.org/ja/platform/): Comfy API、Comfy Router、Builder。
+- [料金](https://comfy.org/ja/pricing/): プラン、クレジット、API料金、請求に関するよくある質問。
 
 ## Optional
 

@@ -27,6 +27,7 @@ describe('SafeRichText', () => {
   it('drops active content, unsafe attributes, and unsafe URLs', () => {
     render(SafeRichText, {
       props: {
+        locale: 'ja',
         html: '<script>alert(1)</script><img src=x onerror=alert(1)><a href="javascript:alert(1)" onclick="alert(1)">Link</a><span class="whitespace-nowrap unknown" style="color:red">Text</span>'
       }
     })
@@ -40,6 +41,28 @@ describe('SafeRichText', () => {
     expect(screen.getByText('Text').className).toBe('whitespace-nowrap')
     expect(screen.getByText('Text').hasAttribute('style')).toBe(false)
   })
+
+  it.for([
+    ['/pricing/#faq', '/ja/pricing/#faq'],
+    ['/download/?source=faq', '/ja/download/?source=faq'],
+    ['/enterprise/', '/enterprise/'],
+    ['/zh-CN/pricing/#faq', '/zh-CN/pricing/#faq'],
+    ['/ja/pricing/', '/ja/pricing/'],
+    ['https://docs.comfy.org/pricing/', 'https://docs.comfy.org/pricing/'],
+    ['mailto:support@comfy.org', 'mailto:support@comfy.org']
+  ])(
+    'keeps the right destination for %s in Japanese',
+    ([href, destination]) => {
+      render(SafeRichText, {
+        props: { html: `<a href="${href}">More</a>`, locale: 'ja' }
+      })
+
+      expect(screen.getByRole('link', { name: 'More' })).toHaveAttribute(
+        'href',
+        destination
+      )
+    }
+  )
 
   it.for([
     ['protocol-relative URL', '//evil.example'],
