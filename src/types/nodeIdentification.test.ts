@@ -187,8 +187,24 @@ describe('nodeIdentification', () => {
         })
       })
 
-      it('returns null for an empty id', () => {
-        expect(createLeafNodeLocatorId(null, '')).toBeNull()
+      it('encodes an empty root id instead of collapsing it to null', () => {
+        const locatorId = createLeafNodeLocatorId(null, '')
+
+        expect(locatorId).toBe('~root:')
+        expect(parseNodeLocatorId(locatorId)).toEqual({
+          subgraphUuid: null,
+          localNodeId: ''
+        })
+      })
+
+      it('encodes a non-integer numeric root id instead of collapsing it to null', () => {
+        const locatorId = createLeafNodeLocatorId(null, 1.5)
+
+        expect(locatorId).toBe('~root:1.5')
+        expect(parseNodeLocatorId(locatorId)).toEqual({
+          subgraphUuid: null,
+          localNodeId: '1.5'
+        })
       })
     })
   })

@@ -1084,6 +1084,14 @@ describe('useWorkflowStore', () => {
         expect(result).toBe('123')
       })
 
+      it('should keep an empty root node ID out of the null key space', () => {
+        store.activeSubgraph = undefined
+        const locatorId = store.nodeIdToNodeLocatorId(toNodeId(''))
+
+        expect(locatorId).toBe('~root:')
+        expect(store.nodeLocatorIdToNodeId(locatorId)).toBe('')
+      })
+
       it('should use provided subgraph instead of active one', () => {
         const customSubgraphId = '11111111-2222-4333-8444-555555555555'
         const customSubgraph = fromPartial<Subgraph>({
@@ -1157,7 +1165,7 @@ describe('useWorkflowStore', () => {
         const locatorId = createLeafNodeLocatorId(
           null,
           'insert:0fbd38ecb13037d0b3b0ca78b8a20a5a:root:node:9'
-        )!
+        )
         const result = store.nodeLocatorIdToNodeId(locatorId)
         expect(result).toBe(
           'insert:0fbd38ecb13037d0b3b0ca78b8a20a5a:root:node:9'
@@ -1201,7 +1209,7 @@ describe('useWorkflowStore', () => {
         const locatorId = createLeafNodeLocatorId(
           null,
           'insert:0fbd38ecb13037d0b3b0ca78b8a20a5a:root:node:9'
-        )!
+        )
         const result = store.nodeLocatorIdToNodeExecutionId(locatorId)
         expect(result).toBe(
           'insert:0fbd38ecb13037d0b3b0ca78b8a20a5a:root:node:9'

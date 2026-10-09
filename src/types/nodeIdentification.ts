@@ -1,4 +1,4 @@
-import { parseNodeId } from '@/types/nodeId'
+import { parseNodeId, toNodeId } from '@/types/nodeId'
 import type { NodeId, SerializedNodeId } from '@/types/nodeId'
 
 const UUID_PATTERN =
@@ -76,8 +76,10 @@ export function parseNodeLocatorId(
   if (id.startsWith(ENCODED_ROOT_LOCATOR_PREFIX)) {
     const encodedNodeId = id.slice(ENCODED_ROOT_LOCATOR_PREFIX.length)
     try {
-      const localNodeId = parseNodeId(decodeURIComponent(encodedNodeId))
-      return localNodeId ? { subgraphUuid: null, localNodeId } : null
+      return {
+        subgraphUuid: null,
+        localNodeId: toNodeId(decodeURIComponent(encodedNodeId))
+      }
     } catch {
       return null
     }
@@ -92,10 +94,12 @@ export function parseNodeLocatorId(
     if (!UUID_PATTERN.test(subgraphUuid)) return null
 
     try {
-      const localNodeId = parseNodeId(
-        decodeURIComponent(encodedLocator.slice(separatorIndex + 1))
-      )
-      return localNodeId ? { subgraphUuid, localNodeId } : null
+      return {
+        subgraphUuid,
+        localNodeId: toNodeId(
+          decodeURIComponent(encodedLocator.slice(separatorIndex + 1))
+        )
+      }
     } catch {
       return null
     }
@@ -155,16 +159,21 @@ export function createNodeLocatorId(
  * `<subgraph UUID>:<local ID>` locators.
  */
 export function createLeafNodeLocatorId(
+  subgraphUuid: null,
+  localNodeId: SerializedNodeId
+): NodeLocatorId
+export function createLeafNodeLocatorId(
+  subgraphUuid: string | null,
+  localNodeId: SerializedNodeId
+): NodeLocatorId | null
+export function createLeafNodeLocatorId(
   subgraphUuid: string | null,
   localNodeId: SerializedNodeId
 ): NodeLocatorId | null {
   const strictNodeId = requireNodeIdSegment(localNodeId)
   if (strictNodeId) return createNodeLocatorId(subgraphUuid, strictNodeId)
 
-  const bareNodeId = parseNodeId(localNodeId)
-  if (!bareNodeId) return null
-
-  const encodedNodeId = encodeURIComponent(String(bareNodeId))
+  const encodedNodeId = encodeURIComponent(String(localNodeId))
   if (!subgraphUuid) {
     return `${ENCODED_ROOT_LOCATOR_PREFIX}${encodedNodeId}` as NodeLocatorId
   }

@@ -647,8 +647,7 @@ export const useWorkflowStore = defineStore('workflow', () => {
   ): NodeLocatorId => {
     const targetSubgraph = subgraph ?? activeSubgraph.value
     if (!targetSubgraph) {
-      // Node is in the root graph, return the node ID as-is
-      return createLeafNodeLocatorId(null, nodeId)!
+      return createLeafNodeLocatorId(null, nodeId)
     }
 
     return createLeafNodeLocatorId(targetSubgraph.id, nodeId)!
@@ -663,7 +662,7 @@ export const useWorkflowStore = defineStore('workflow', () => {
     if (isSubgraph(node.graph))
       return createLeafNodeLocatorId(node.graph.id, node.id)!
     // Root graph: see nodeIdToNodeLocatorId on colon-bearing raw ids.
-    return createLeafNodeLocatorId(null, node.id)!
+    return createLeafNodeLocatorId(null, node.id)
   }
 
   /**
