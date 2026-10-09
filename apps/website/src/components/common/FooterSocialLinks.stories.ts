@@ -6,6 +6,7 @@ const meta: Meta<typeof FooterSocialLinks> = {
   title: 'Website/Common/FooterSocialLinks',
   component: FooterSocialLinks,
   tags: ['autodocs'],
+  args: { locale: 'en' },
   decorators: [
     () => ({
       template:
@@ -17,6 +18,4 @@ const meta: Meta<typeof FooterSocialLinks> = {
 export default meta
 type Story = StoryObj<typeof meta>
 
-export const Default: Story = {
-  args: { locale: 'en' }
-}
+export const Default: Story = {}

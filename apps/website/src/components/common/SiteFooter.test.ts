@@ -10,6 +10,15 @@ const agentAlternates: LocaleAlternate[] = [
   { locale: 'zh-CN', path: '/zh-CN/agent/' }
 ]
 
+const socialHrefs: readonly (string | null)[] = [
+  externalLinks.github,
+  externalLinks.discord,
+  externalLinks.x,
+  externalLinks.youtube,
+  externalLinks.linkedin,
+  externalLinks.instagram
+]
+
 describe('SiteFooter', () => {
   it.for([
     ['en', 'Changelog', 'Resources'],
@@ -127,26 +136,21 @@ describe('SiteFooter', () => {
     ['en', 'Follow Comfy'],
     ['zh-CN', '关注 Comfy']
   ] as const)(
-    'shows the social channels as icon links under the tagline (%s)',
+    'shows the social channels as icon links opening in a new tab (%s)',
     ([locale, name]) => {
       render(SiteFooter, { props: { locale } })
 
       const links = within(
         screen.getByRole('navigation', { name })
       ).getAllByRole('link')
-      expect(links.map((link) => link.getAttribute('href'))).toEqual([
-        externalLinks.github,
-        externalLinks.discord,
-        externalLinks.x,
-        externalLinks.youtube,
-        externalLinks.linkedin,
-        externalLinks.instagram
-      ])
-      for (const link of links) {
-        expect(link.getAttribute('target')).toBe('_blank')
-        expect(link.getAttribute('rel')).toBe('noopener')
-        expect(link).toHaveAccessibleName()
-      }
+      expect(
+        links.map((link) => [
+          link.getAttribute('href'),
+          link.getAttribute('target'),
+          link.getAttribute('rel'),
+          link.textContent.trim().length > 0
+        ])
+      ).toEqual(socialHrefs.map((href) => [href, '_blank', 'noopener', true]))
     }
   )
 
@@ -156,16 +160,7 @@ describe('SiteFooter', () => {
     const hrefs = within(screen.getByRole('navigation', { name: 'Resources' }))
       .getAllByRole('link')
       .map((link) => link.getAttribute('href'))
-    for (const href of [
-      externalLinks.github,
-      externalLinks.discord,
-      externalLinks.x,
-      externalLinks.youtube,
-      externalLinks.linkedin,
-      externalLinks.instagram
-    ]) {
-      expect(hrefs).not.toContain(href)
-    }
+    expect(hrefs.filter((href) => socialHrefs.includes(href))).toEqual([])
   })
 
   it('keeps Docs in Resources, opening in a new tab', () => {
