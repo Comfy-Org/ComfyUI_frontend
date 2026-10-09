@@ -137,6 +137,9 @@ function useBillingCapabilitiesInternal() {
   const canChangeSeats = computed(
     () => isCloud && (capabilities.value?.can_change_seats ?? false)
   )
+  const canManageMembers = computed(
+    () => isCloud && (capabilities.value?.can_manage_members ?? false)
+  )
   const canInviteMembers = computed(
     () => isCloud && (capabilities.value?.can_invite_members ?? false)
   )
@@ -472,6 +475,7 @@ function useBillingCapabilitiesInternal() {
     canReactivate,
     canChangeSeats,
     canInviteMembers,
+    canManageMembers,
     canDowngradeToPersonal,
     isReady,
     hasResolvedCapabilities,
