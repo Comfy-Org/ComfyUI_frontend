@@ -43,8 +43,8 @@ interface VercelRedirect {
 const MINIMAX_TEMPORARY_BECAUSE =
   '/minimax/ is a live namespace (the license pages sit under it); the page owner signs off before both locales go permanent together'
 
-const RETIRED_PAGE_TEMPORARY_BECAUSE =
-  'retired, may return: restoring the page means reverting its deletion, and a permanent redirect would stay cached'
+const PARKED_PAGE_TEMPORARY_BECAUSE =
+  'parked, may return: the page is kept as src/pages/_gallery.astro or _launches.astro (and the zh-CN twins)'
 
 const SUPPORTED_MODELS_PATH = '/p/supported-models'
 
@@ -195,42 +195,42 @@ export const siteRedirects: readonly SiteRedirect[] = [
   {
     source: '/gallery',
     destination: '/customers/',
-    temporaryBecause: RETIRED_PAGE_TEMPORARY_BECAUSE
+    temporaryBecause: PARKED_PAGE_TEMPORARY_BECAUSE
   },
   {
     source: '/gallery.md',
     destination: '/customers.md',
-    temporaryBecause: RETIRED_PAGE_TEMPORARY_BECAUSE
+    temporaryBecause: PARKED_PAGE_TEMPORARY_BECAUSE
   },
   {
     source: '/zh-CN/gallery',
     destination: '/zh-CN/customers/',
-    temporaryBecause: RETIRED_PAGE_TEMPORARY_BECAUSE
+    temporaryBecause: PARKED_PAGE_TEMPORARY_BECAUSE
   },
   {
     source: '/zh-CN/gallery.md',
     destination: '/zh-CN/customers.md',
-    temporaryBecause: RETIRED_PAGE_TEMPORARY_BECAUSE
+    temporaryBecause: PARKED_PAGE_TEMPORARY_BECAUSE
   },
   {
     source: '/launches',
     destination: '/events/',
-    temporaryBecause: RETIRED_PAGE_TEMPORARY_BECAUSE
+    temporaryBecause: PARKED_PAGE_TEMPORARY_BECAUSE
   },
   {
     source: '/launches.md',
     destination: '/events.md',
-    temporaryBecause: RETIRED_PAGE_TEMPORARY_BECAUSE
+    temporaryBecause: PARKED_PAGE_TEMPORARY_BECAUSE
   },
   {
     source: '/zh-CN/launches',
     destination: '/zh-CN/events/',
-    temporaryBecause: RETIRED_PAGE_TEMPORARY_BECAUSE
+    temporaryBecause: PARKED_PAGE_TEMPORARY_BECAUSE
   },
   {
     source: '/zh-CN/launches.md',
     destination: '/zh-CN/events.md',
-    temporaryBecause: RETIRED_PAGE_TEMPORARY_BECAUSE
+    temporaryBecause: PARKED_PAGE_TEMPORARY_BECAUSE
   },
   { source: '/api', destination: '/platform/' },
   { source: '/zh-CN/api', destination: '/zh-CN/platform/' },

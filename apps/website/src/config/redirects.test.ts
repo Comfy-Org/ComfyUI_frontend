@@ -27,7 +27,9 @@ const astroFiles = (dir: string): string[] =>
   readdirSync(dir, { withFileTypes: true }).flatMap((entry) => {
     const full = join(dir, entry.name)
     if (entry.isDirectory()) return astroFiles(full)
-    return entry.name.endsWith('.astro') ? [full] : []
+    return entry.name.endsWith('.astro') && !entry.name.startsWith('_')
+      ? [full]
+      : []
   })
 
 const builtPages = new Set([
@@ -226,7 +228,7 @@ describe('generated Vercel rules', () => {
   )
 })
 
-describe('the retired pages', () => {
+describe('the parked pages', () => {
   it.for([
     ['/gallery', '/customers/'],
     ['/zh-CN/gallery', '/zh-CN/customers/'],

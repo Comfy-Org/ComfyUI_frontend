@@ -1718,6 +1718,10 @@
     }
   },
   "gallery": {
+    "label": "GALLERY",
+    "heroTitleBefore": "Built, Tweaked, and Dreamed in ",
+    "heroTitleAfter": "",
+    "heroSubtitle": "A small glimpse of what’s being created with ComfyUI by the community.",
     "card": {
       "by": "By",
       "and": "and",
@@ -1727,6 +1731,10 @@
     "detail": {
       "close": "Close",
       "visitHub": "VISIT COMMUNITY HUB"
+    },
+    "contact": {
+      "label": "CONTACT",
+      "heading": "Built something cool with ComfyUI?<br> <a href=\"https://docs.google.com/forms/d/1B6_RPQfhTyKvqHk9OO2bUn8z1Qgh6QIZsF3GNMiCXDw/preview\" target=\"_blank\" rel=\"noopener noreferrer\" class=\"text-primary-comfy-yellow underline\">Submit</a> your work to be featured on our website and socials and get seen by the global ComfyUI community."
     }
   },
   "about": {
@@ -2335,6 +2343,7 @@
     "managedBuilds": "Managed Builds",
     "comfyHub": "Comfy Workflows",
     "fdct": "Forward Deployed Creatives",
+    "gallery": "Gallery",
     "learning": "Learning",
     "blogs": "Blog",
     "github": "GitHub",
@@ -2345,6 +2354,7 @@
     "careers": "Careers",
     "brand": "Brand",
     "customerStories": "Customer Stories",
+    "launches": "Launches",
     "events": "Events",
     "downloadLocal": "DOWNLOAD DESKTOP",
     "launchCloud": "TRY CLOUD FOR FREE",
@@ -3544,9 +3554,27 @@
     }
   },
   "launches": {
+    "page": {
+      "title": "Launches: Everything New in ComfyUI",
+      "description": "Every ComfyUI launch in one place: new models, desktop, cloud, MCP, CLI, and core engine releases, with the livestreams that walk through them."
+    },
+    "hero": {
+      "title": "Everything new in ComfyUI",
+      "primary": "Download Desktop",
+      "secondary": "Try Cloud for free",
+      "visualAlt": "Comfy"
+    },
     "banner": {
       "text": "Comfy Agent can now build workflows inside ComfyUI.",
       "cta": "Try It for Free"
+    },
+    "cta": {
+      "heading": "Everything Comfy ships. All in one place.",
+      "primary": "Open Comfy Cloud",
+      "secondary": "Try Workflow"
+    },
+    "section": {
+      "title": "Latest Launches"
     }
   },
   "ltx": {
