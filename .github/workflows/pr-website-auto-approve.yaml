@@ -1,0 +1,47 @@
+# Auto-approve website-only pull requests from explicitly trusted authors.
+#
+# Security boundary:
+# - pull_request_target reads this workflow from the trusted base branch.
+# - automation is checked out from the repository's protected default branch;
+#   pull request code is never executed.
+# - the script rejects other base branches and forks, re-fetches the live PR,
+#   verifies the exact head SHA, requires every changed path to be under
+#   apps/website/**, and verifies the PAT owner.
+name: 'PR: Website Auto-Approve'
+
+on:
+  pull_request_target:
+    types: [opened, reopened, synchronize, ready_for_review, edited]
+
+permissions:
+  contents: read
+
+concurrency:
+  group: website-auto-approve-${{ github.event.pull_request.number }}
+  cancel-in-progress: true
+
+jobs:
+  approve:
+    if: github.event.pull_request.draft == false
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - name: Checkout trusted base automation
+        uses: actions/checkout@d23441a48e516b6c34aea4fa41551a30e30af803 # v6.1.0
+        with:
+          ref: refs/heads/${{ github.event.repository.default_branch }}
+          persist-credentials: false
+          sparse-checkout: .github/scripts
+
+      - name: Approve eligible website pull request
+        env:
+          GITHUB_REPOSITORY: ${{ github.repository }}
+          PR_HEAD_SHA: ${{ github.event.pull_request.head.sha }}
+          PR_NUMBER: ${{ github.event.pull_request.number }}
+          WEBSITE_APPROVAL_BASE_REF: ${{ github.event.repository.default_branch }}
+          WEBSITE_APPROVAL_TOKEN: ${{ secrets.WEBSITE_APPROVAL_TOKEN }}
+          WEBSITE_APPROVER_LOGIN: webreviewer-bot
+          # This is intentionally checked in: changing who can receive an
+          # automatic approval must itself pass normal repository review.
+          WEBSITE_AUTO_APPROVE_AUTHORS: '["bertfy"]'
+        run: node .github/scripts/website-auto-approve.mjs
