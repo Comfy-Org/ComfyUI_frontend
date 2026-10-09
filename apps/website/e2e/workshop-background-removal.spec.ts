@@ -57,7 +57,7 @@ test('removes the background of the example from the floating panel', async ({
   await expect(download).toHaveAttribute('href', /^blob:/)
   await expect(download).toHaveAttribute('download', 'potted-plant-cutout.webp')
   expect((await download.boundingBox())?.y).toBe(
-    (await app.getByText('GitHub · Coming soon').boundingBox())?.y
+    (await app.getByRole('link', { name: 'View on GitHub' }).boundingBox())?.y
   )
   const split = app.getByRole('slider', {
     name: 'Drag to compare the original and the result'

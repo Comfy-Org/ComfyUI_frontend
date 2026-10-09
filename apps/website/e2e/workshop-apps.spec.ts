@@ -127,7 +127,7 @@ test('lists every app on the hub apps page, on /hub/apps/ pages', async ({
   )
   const shelf = page.getByTestId('app-shelf')
   const cards = shelf.getByRole('link')
-  await expect(cards).toHaveCount(5)
+  await expect(cards).toHaveCount(6)
   await expect(cards.nth(0)).toHaveAttribute(
     'href',
     '/hub/apps/cinematic-studio/'
@@ -226,7 +226,7 @@ test('hides Re-shoot from the hub apps page and closes its page while its flag i
   await mockFlags(context, { apps: true, workflows: false, reshoot: false })
   await page.goto('/hub/apps/')
   const cards = page.getByTestId('app-shelf').getByRole('link')
-  await expect(cards).toHaveCount(4)
+  await expect(cards).toHaveCount(5)
   await expect(cards.nth(0)).toHaveAttribute(
     'href',
     '/hub/apps/cinematic-studio/'
@@ -271,7 +271,9 @@ async function expectDownloadBesideGitHub(app: Locator) {
   const download = await app
     .getByRole('link', { name: 'Download' })
     .boundingBox()
-  const github = await app.getByText('GitHub · Coming soon').boundingBox()
+  const github = await app
+    .getByRole('link', { name: 'View on GitHub' })
+    .boundingBox()
   if (!download || !github) throw new Error('no header buttons')
   expect(download.y).toBe(github.y)
   expect(download.x - (github.x + github.width)).toBeLessThanOrEqual(8)
