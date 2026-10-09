@@ -43,8 +43,8 @@ interface VercelRedirect {
 const MINIMAX_TEMPORARY_BECAUSE =
   '/minimax/ is a live namespace (the license pages sit under it); the page owner signs off before both locales go permanent together'
 
-const PARKED_PAGE_TEMPORARY_BECAUSE =
-  'parked, may return: the page is kept as src/pages/_gallery.astro or _launches.astro (and the zh-CN twins)'
+const RETIRED_PAGE_TEMPORARY_BECAUSE =
+  'retired, may return: the gallery and launches pages can be restored from git history'
 
 const SUPPORTED_MODELS_PATH = '/p/supported-models'
 
@@ -205,42 +205,42 @@ export const siteRedirects: readonly SiteRedirect[] = [
   {
     source: '/gallery',
     destination: '/customers/',
-    temporaryBecause: PARKED_PAGE_TEMPORARY_BECAUSE
+    temporaryBecause: RETIRED_PAGE_TEMPORARY_BECAUSE
   },
   {
     source: '/gallery.md',
     destination: '/customers.md',
-    temporaryBecause: PARKED_PAGE_TEMPORARY_BECAUSE
+    temporaryBecause: RETIRED_PAGE_TEMPORARY_BECAUSE
   },
   {
     source: '/zh-CN/gallery',
     destination: '/zh-CN/customers/',
-    temporaryBecause: PARKED_PAGE_TEMPORARY_BECAUSE
+    temporaryBecause: RETIRED_PAGE_TEMPORARY_BECAUSE
   },
   {
     source: '/zh-CN/gallery.md',
     destination: '/zh-CN/customers.md',
-    temporaryBecause: PARKED_PAGE_TEMPORARY_BECAUSE
+    temporaryBecause: RETIRED_PAGE_TEMPORARY_BECAUSE
   },
   {
     source: '/launches',
     destination: '/events/',
-    temporaryBecause: PARKED_PAGE_TEMPORARY_BECAUSE
+    temporaryBecause: RETIRED_PAGE_TEMPORARY_BECAUSE
   },
   {
     source: '/launches.md',
     destination: '/events.md',
-    temporaryBecause: PARKED_PAGE_TEMPORARY_BECAUSE
+    temporaryBecause: RETIRED_PAGE_TEMPORARY_BECAUSE
   },
   {
     source: '/zh-CN/launches',
     destination: '/zh-CN/events/',
-    temporaryBecause: PARKED_PAGE_TEMPORARY_BECAUSE
+    temporaryBecause: RETIRED_PAGE_TEMPORARY_BECAUSE
   },
   {
     source: '/zh-CN/launches.md',
     destination: '/zh-CN/events.md',
-    temporaryBecause: PARKED_PAGE_TEMPORARY_BECAUSE
+    temporaryBecause: RETIRED_PAGE_TEMPORARY_BECAUSE
   },
   { source: '/api', destination: '/platform/' },
   { source: '/zh-CN/api', destination: '/zh-CN/platform/' },

@@ -220,9 +220,7 @@ describe('the emitter agrees with the page tree', () => {
     readdirSync(dir, { withFileTypes: true }).flatMap((entry) => {
       const full = join(dir, entry.name)
       if (entry.isDirectory()) return astroFiles(full)
-      return entry.name.endsWith('.astro') && !entry.name.startsWith('_')
-        ? [full]
-        : []
+      return entry.name.endsWith('.astro') ? [full] : []
     })
 
   const redirected = new Set(
