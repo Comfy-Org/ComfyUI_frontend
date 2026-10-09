@@ -54,43 +54,49 @@
         :class="cn(selectContentClass, 'min-w-(--reka-combobox-trigger-width)')"
         @keydown="onContentKeydown"
       >
-        <div class="px-2 pt-2">
-          <div
-            class="flex items-center gap-2 rounded-lg border border-solid border-border-default px-3 py-1.5"
-          >
-            <i class="icon-[lucide--search] text-muted-foreground" />
-            <ComboboxInput
-              v-model="searchQuery"
-              :aria-label="t('g.search')"
-              :placeholder="searchPlaceholder ?? t('g.search')"
-              class="w-full border-none bg-transparent text-sm outline-none"
-            />
-          </div>
-        </div>
-        <ComboboxViewport
-          :style="{ maxHeight: `min(${listMaxHeight}, 50vh)` }"
-          class="scrollbar-custom w-full"
+        <FocusScope
+          class="contents"
+          @mount-auto-focus.prevent
+          @unmount-auto-focus.prevent
         >
-          <ComboboxItem
-            v-for="opt in filteredOptions"
-            :key="opt.value"
-            :value="opt"
-            :class="selectItemVariants({ layout: 'single' })"
-          >
-            <span class="truncate">{{ opt.name }}</span>
-            <ComboboxItemIndicator
-              class="flex shrink-0 items-center justify-center"
+          <div class="px-2 pt-2">
+            <div
+              class="flex items-center gap-2 rounded-lg border border-solid border-border-default px-3 py-1.5"
             >
-              <i
-                class="icon-[lucide--check] text-base-foreground"
-                aria-hidden="true"
+              <i class="icon-[lucide--search] text-muted-foreground" />
+              <ComboboxInput
+                v-model="searchQuery"
+                :aria-label="t('g.search')"
+                :placeholder="searchPlaceholder ?? t('g.search')"
+                class="w-full border-none bg-transparent text-sm outline-none"
               />
-            </ComboboxItemIndicator>
-          </ComboboxItem>
-          <ComboboxEmpty :class="selectEmptyMessageClass">
-            {{ t('g.noResultsFound') }}
-          </ComboboxEmpty>
-        </ComboboxViewport>
+            </div>
+          </div>
+          <ComboboxViewport
+            :style="{ maxHeight: `min(${listMaxHeight}, 50vh)` }"
+            class="scrollbar-custom w-full"
+          >
+            <ComboboxItem
+              v-for="opt in filteredOptions"
+              :key="opt.value"
+              :value="opt"
+              :class="selectItemVariants({ layout: 'single' })"
+            >
+              <span class="truncate">{{ opt.name }}</span>
+              <ComboboxItemIndicator
+                class="flex shrink-0 items-center justify-center"
+              >
+                <i
+                  class="icon-[lucide--check] text-base-foreground"
+                  aria-hidden="true"
+                />
+              </ComboboxItemIndicator>
+            </ComboboxItem>
+            <ComboboxEmpty :class="selectEmptyMessageClass">
+              {{ t('g.noResultsFound') }}
+            </ComboboxEmpty>
+          </ComboboxViewport>
+        </FocusScope>
       </ComboboxContent>
     </ComboboxPortal>
   </ComboboxRoot>
@@ -109,7 +115,8 @@ import {
   ComboboxPortal,
   ComboboxRoot,
   ComboboxTrigger,
-  ComboboxViewport
+  ComboboxViewport,
+  FocusScope
 } from 'reka-ui'
 import { computed, ref, useTemplateRef, watch } from 'vue'
 import type { StyleValue } from 'vue'
