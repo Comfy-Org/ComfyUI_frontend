@@ -1004,9 +1004,6 @@ export class ComfyApp {
     await useWorkspaceStore().workflow.syncWorkflows()
     //Doesn't need to block. Blueprints will load async
     void useSubgraphStore().fetchSubgraphs()
-    await bootstrapTracer.settle('bootstrap/extensions-load', () =>
-      useExtensionService().loadExtensions()
-    )
 
     this.addProcessKeyHandler()
     this.addConfigureHandler()
