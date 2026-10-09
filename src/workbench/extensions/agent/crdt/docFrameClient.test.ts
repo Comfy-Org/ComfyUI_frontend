@@ -1,3 +1,4 @@
+import { SCHEMA_VERSION } from '@comfyorg/comfy-multi-player'
 import { describe, expect, it, vi } from 'vitest'
 import * as Y from 'yjs'
 
@@ -112,7 +113,8 @@ describe('doc frame client', () => {
           v: 1,
           workflow_id: 'wf-1',
           state_vector_b64: encodeBase64(stateVector),
-          supports_reseed: true
+          supports_reseed: true,
+          schema_version: SCHEMA_VERSION
         }
       },
       {

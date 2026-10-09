@@ -1,4 +1,4 @@
-import { mint } from '@comfyorg/comfy-multi-player'
+import { SCHEMA_VERSION,mint } from '@comfyorg/comfy-multi-player'
 import { describe, expect, it, vi } from 'vitest'
 import * as Y from 'yjs'
 
@@ -295,7 +295,8 @@ describe('layout follower bridge: stale-schema reseed', () => {
       v: 1,
       workflow_id: 'wf-1',
       state_vector_b64: 'AA==',
-      supports_reseed: true
+      supports_reseed: true,
+      schema_version: SCHEMA_VERSION
     })
   })
 
