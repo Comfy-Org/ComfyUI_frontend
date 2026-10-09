@@ -665,6 +665,46 @@
     "switchToOutputs": "Passa alle Uscite",
     "viewApp": "Visualizza app"
   },
+  "cameraAngle": {
+    "cameraView": "Fotocamera",
+    "cameraViewTooltip": "Sposta la fotocamera attorno al soggetto",
+    "faces": {
+      "back": "DIETRO",
+      "bottom": "SOTTO",
+      "left": "SINISTRA",
+      "right": "DESTRA",
+      "top": "SOPRA"
+    },
+    "hidePreview": "Nascondi anteprima dell'inquadratura",
+    "horizontal": {
+      "back": "Dietro",
+      "backLeft": "Dietro a sinistra",
+      "backRight": "Dietro a destra",
+      "front": "Davanti",
+      "frontLeft": "Davanti a sinistra",
+      "frontRight": "Davanti a destra",
+      "left": "Lato sinistro",
+      "right": "Lato destro"
+    },
+    "horizontalLabel": "Angolo orizzontale",
+    "objectView": "Oggetto",
+    "objectViewTooltip": "Guarda attraverso la fotocamera e ruota il soggetto",
+    "preview": "Anteprima",
+    "showPreview": "Mostra anteprima dell'inquadratura",
+    "vertical": {
+      "elevated": "Elevato",
+      "eyeLevel": "All'altezza degli occhi",
+      "highAngle": "Angolazione dall'alto",
+      "lowAngle": "Angolazione dal basso"
+    },
+    "verticalLabel": "Angolo verticale",
+    "zoom": {
+      "closeUp": "Primo piano",
+      "medium": "Campo medio",
+      "wide": "Campo lungo"
+    },
+    "zoomLabel": "Dimensione dell'inquadratura"
+  },
   "clipboard": {
     "errorMessage": "Copia negli appunti non riuscita",
     "errorNotSupported": "API degli appunti non supportata dal tuo browser",
@@ -1737,7 +1777,8 @@
     "exportingAssets": "Esportazione risorse",
     "noExportsInQueue": "Nessuna esportazione {filter} in coda",
     "preparingExport": "Preparazione esportazione...",
-    "retryDownload": "Riprova download"
+    "retryDownload": "Riprova download",
+    "unsupportedDownloadUrl": "URL di download dell'esportazione non supportato"
   },
   "feedback": {
     "title": "Condividi feedback"
@@ -3658,7 +3699,8 @@
     "importingModels": "Importazione modelli",
     "noImportsInQueue": "Nessun {filter} in coda",
     "pending": "In attesa",
-    "progressCount": "{completed} di {total}"
+    "progressCount": "{completed} di {total}",
+    "taskUnavailable": "L'attività di download non è più disponibile."
   },
   "queue": {
     "completedIn": "Completato in {duration}",
@@ -4937,6 +4979,7 @@
     "failedToFetchBalance": "Impossibile recuperare il saldo: {error}",
     "failedToFetchLogs": "Impossibile recuperare i log del server",
     "failedToFetchSubscription": "Impossibile recuperare lo stato dell'abbonamento: {error}",
+    "failedToInitializeCameraAngleViewer": "Impossibile inizializzare il visualizzatore dell'angolo della fotocamera. Prova a ricaricare la pagina.",
     "failedToInitializeCameraInfoViewer": "Impossibile inizializzare il visualizzatore delle informazioni della fotocamera. Prova a ricaricare la pagina.",
     "failedToInitializeLoad3dViewer": "Impossibile inizializzare il visualizzatore 3D",
     "failedToInitiateCreditPurchase": "Impossibile avviare l'acquisto di crediti: {error}",
@@ -5342,6 +5385,7 @@
     "menu": {
       "creatorCannotLeave": "Il creatore del workspace non può lasciare il workspace che ha creato",
       "deleteWorkspace": "Elimina Workspace",
+      "deleteWorkspaceAfterPlanEndsTooltip": "Puoi eliminare questo spazio di lavoro dopo la fine del tuo piano il {date}",
       "deleteWorkspaceDisabledTooltip": "Annulla prima l'abbonamento attivo del workspace",
       "editWorkspace": "Modifica dettagli workspace",
       "leaveWorkspace": "Lascia Workspace"

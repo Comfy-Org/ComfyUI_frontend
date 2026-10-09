@@ -665,6 +665,46 @@
     "switchToOutputs": "Çıktılara Geç",
     "viewApp": "Uygulamayı görüntüle"
   },
+  "cameraAngle": {
+    "cameraView": "Kamera",
+    "cameraViewTooltip": "Kamerayı öznenin etrafında hareket ettirin",
+    "faces": {
+      "back": "ARKA",
+      "bottom": "ALT",
+      "left": "SOL",
+      "right": "SAĞ",
+      "top": "ÜST"
+    },
+    "hidePreview": "Çekim önizlemesini gizle",
+    "horizontal": {
+      "back": "Arka",
+      "backLeft": "Arka sol",
+      "backRight": "Arka sağ",
+      "front": "Ön",
+      "frontLeft": "Ön sol",
+      "frontRight": "Ön sağ",
+      "left": "Sol taraf",
+      "right": "Sağ taraf"
+    },
+    "horizontalLabel": "Yatay açı",
+    "objectView": "Nesne",
+    "objectViewTooltip": "Kameranın içinden bakın ve özneyi döndürün",
+    "preview": "Önizleme",
+    "showPreview": "Çekim önizlemesini göster",
+    "vertical": {
+      "elevated": "Yükseltilmiş",
+      "eyeLevel": "Göz hizası",
+      "highAngle": "Yüksek açı",
+      "lowAngle": "Alçak açı"
+    },
+    "verticalLabel": "Dikey açı",
+    "zoom": {
+      "closeUp": "Yakın plan",
+      "medium": "Orta plan",
+      "wide": "Geniş plan"
+    },
+    "zoomLabel": "Çekim boyutu"
+  },
   "clipboard": {
     "errorMessage": "Panoya kopyalanamadı",
     "errorNotSupported": "Pano API'si tarayıcınızda desteklenmiyor",
@@ -1737,7 +1777,8 @@
     "exportingAssets": "Varlıklar dışa aktarılıyor",
     "noExportsInQueue": "Kuyrukta {filter} dışa aktarma yok",
     "preparingExport": "Dışa aktarım hazırlanıyor...",
-    "retryDownload": "İndirmeyi tekrar dene"
+    "retryDownload": "İndirmeyi tekrar dene",
+    "unsupportedDownloadUrl": "Desteklenmeyen dışa aktarma indirme URL'si"
   },
   "feedback": {
     "title": "Geri Bildirim Paylaş"
@@ -3658,7 +3699,8 @@
     "importingModels": "Modeller İçe Aktarılıyor",
     "noImportsInQueue": "Kuyrukta {filter} yok",
     "pending": "Beklemede",
-    "progressCount": "{completed} / {total}"
+    "progressCount": "{completed} / {total}",
+    "taskUnavailable": "İndirme görevi artık kullanılamıyor."
   },
   "queue": {
     "completedIn": "{duration} içinde tamamlandı",
@@ -4937,6 +4979,7 @@
     "failedToFetchBalance": "Bakiye alınamadı: {error}",
     "failedToFetchLogs": "Sunucu günlükleri alınamadı",
     "failedToFetchSubscription": "Abonelik durumu alınamadı: {error}",
+    "failedToInitializeCameraAngleViewer": "Kamera Açısı görüntüleyicisi başlatılamadı. Sayfayı yeniden yüklemeyi deneyin.",
     "failedToInitializeCameraInfoViewer": "Kamera Bilgisi görüntüleyicisi başlatılamadı. Sayfayı yeniden yüklemeyi deneyin.",
     "failedToInitializeLoad3dViewer": "3D Görüntüleyici başlatılamadı",
     "failedToInitiateCreditPurchase": "Kredi satın alma başlatılamadı: {error}",
@@ -5342,6 +5385,7 @@
     "menu": {
       "creatorCannotLeave": "Çalışma alanını oluşturan kişi, oluşturduğu çalışma alanından ayrılamaz",
       "deleteWorkspace": "Çalışma Alanını Sil",
+      "deleteWorkspaceAfterPlanEndsTooltip": "Bu çalışma alanını, planınız {date} tarihinde sona erdikten sonra silebilirsiniz",
       "deleteWorkspaceDisabledTooltip": "Önce çalışma alanınızın aktif aboneliğini iptal edin",
       "editWorkspace": "Çalışma alanı detaylarını düzenle",
       "leaveWorkspace": "Çalışma Alanından Ayrıl"

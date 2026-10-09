@@ -665,6 +665,46 @@
     "switchToOutputs": "מעבר לפלטים",
     "viewApp": "הצגת היישום"
   },
+  "cameraAngle": {
+    "cameraView": "מצלמה",
+    "cameraViewTooltip": "הזזת המצלמה סביב הנושא",
+    "faces": {
+      "back": "אחור",
+      "bottom": "תחתון",
+      "left": "שמאל",
+      "right": "ימין",
+      "top": "עליון"
+    },
+    "hidePreview": "הסתר תצוגה מקדימה של השוט",
+    "horizontal": {
+      "back": "מאחור",
+      "backLeft": "מאחור משמאל",
+      "backRight": "מאחור מימין",
+      "front": "מלפנים",
+      "frontLeft": "מלפנים משמאל",
+      "frontRight": "מלפנים מימין",
+      "left": "צד שמאל",
+      "right": "צד ימין"
+    },
+    "horizontalLabel": "זווית אופקית",
+    "objectView": "אובייקט",
+    "objectViewTooltip": "הסתכלות דרך המצלמה וסיבוב הנושא",
+    "preview": "תצוגה מקדימה",
+    "showPreview": "הצג תצוגה מקדימה של השוט",
+    "vertical": {
+      "elevated": "מוגבה",
+      "eyeLevel": "גובה העיניים",
+      "highAngle": "זווית גבוהה",
+      "lowAngle": "זווית נמוכה"
+    },
+    "verticalLabel": "זווית אנכית",
+    "zoom": {
+      "closeUp": "תקריב",
+      "medium": "שוט בינוני",
+      "wide": "שוט רחב"
+    },
+    "zoomLabel": "גודל שוט"
+  },
   "clipboard": {
     "errorMessage": "ההעתקה ללוח נכשלה",
     "errorNotSupported": "ה-API של הלוח אינו נתמך בדפדפן שלך",
@@ -1737,7 +1777,8 @@
     "exportingAssets": "מייצא נכסים",
     "noExportsInQueue": "אין ייצואי {filter} בתור",
     "preparingExport": "מכין ייצוא...",
-    "retryDownload": "נסה להוריד שוב"
+    "retryDownload": "נסה להוריד שוב",
+    "unsupportedDownloadUrl": "כתובת URL להורדת ייצוא אינה נתמכת"
   },
   "feedback": {
     "title": "שתף משוב"
@@ -3658,7 +3699,8 @@
     "importingModels": "מייבא מודלים",
     "noImportsInQueue": "אין {filter} בתור",
     "pending": "ממתין",
-    "progressCount": "{completed} מתוך {total}"
+    "progressCount": "{completed} מתוך {total}",
+    "taskUnavailable": "משימת ההורדה אינה זמינה עוד."
   },
   "queue": {
     "completedIn": "הסתיים תוך {duration}",
@@ -4937,6 +4979,7 @@
     "failedToFetchBalance": "אחזור היתרה נכשל: {error}",
     "failedToFetchLogs": "אחזור יומני השרת נכשל",
     "failedToFetchSubscription": "אחזור סטטוס המנוי נכשל: {error}",
+    "failedToInitializeCameraAngleViewer": "אתחול מציג זווית המצלמה נכשל. נסו לטעון מחדש את הדף.",
     "failedToInitializeCameraInfoViewer": "אתחול מציג פרטי המצלמה נכשל. נסה לרענן את הדף.",
     "failedToInitializeLoad3dViewer": "אתחול מציג התלת-ממד נכשל",
     "failedToInitiateCreditPurchase": "יזימת רכישת הקרדיטים נכשלה: {error}",
@@ -5342,6 +5385,7 @@
     "menu": {
       "creatorCannotLeave": "יוצר סביבת העבודה לא יכול לעזוב את סביבת העבודה שיצר",
       "deleteWorkspace": "מחיקת סביבת העבודה",
+      "deleteWorkspaceAfterPlanEndsTooltip": "ניתן למחוק סביבת עבודה זו לאחר שהתוכנית שלך תסתיים ב־{date}",
       "deleteWorkspaceDisabledTooltip": "בטל תחילה את המנוי הפעיל של סביבת העבודה שלך",
       "editWorkspace": "עריכת פרטי סביבת העבודה",
       "leaveWorkspace": "עזיבת סביבת העבודה"

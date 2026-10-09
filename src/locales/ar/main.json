@@ -665,6 +665,46 @@
     "switchToOutputs": "الانتقال إلى المخرجات",
     "viewApp": "عرض التطبيق"
   },
+  "cameraAngle": {
+    "cameraView": "الكاميرا",
+    "cameraViewTooltip": "حرّك الكاميرا حول الموضوع",
+    "faces": {
+      "back": "خلف",
+      "bottom": "أسفل",
+      "left": "يسار",
+      "right": "يمين",
+      "top": "أعلى"
+    },
+    "hidePreview": "إخفاء معاينة اللقطة",
+    "horizontal": {
+      "back": "خلفي",
+      "backLeft": "خلفي أيسر",
+      "backRight": "خلفي أيمن",
+      "front": "أمامي",
+      "frontLeft": "أمامي أيسر",
+      "frontRight": "أمامي أيمن",
+      "left": "الجانب الأيسر",
+      "right": "الجانب الأيمن"
+    },
+    "horizontalLabel": "الزاوية الأفقية",
+    "objectView": "العنصر",
+    "objectViewTooltip": "انظر عبر الكاميرا وأدر الموضوع",
+    "preview": "معاينة",
+    "showPreview": "إظهار معاينة اللقطة",
+    "vertical": {
+      "elevated": "مرتفع",
+      "eyeLevel": "مستوى العين",
+      "highAngle": "زاوية عالية",
+      "lowAngle": "زاوية منخفضة"
+    },
+    "verticalLabel": "الزاوية الرأسية",
+    "zoom": {
+      "closeUp": "لقطة مقرّبة",
+      "medium": "لقطة متوسطة",
+      "wide": "لقطة واسعة"
+    },
+    "zoomLabel": "حجم اللقطة"
+  },
   "clipboard": {
     "errorMessage": "فشل النسخ إلى الحافظة",
     "errorNotSupported": "API الحافظة غير مدعوم في متصفحك",
@@ -1737,7 +1777,8 @@
     "exportingAssets": "جاري تصدير العناصر",
     "noExportsInQueue": "لا يوجد {filter} عمليات تصدير في قائمة الانتظار",
     "preparingExport": "جاري تجهيز التصدير...",
-    "retryDownload": "إعادة محاولة التحميل"
+    "retryDownload": "إعادة محاولة التحميل",
+    "unsupportedDownloadUrl": "عنوان URL لتنزيل التصدير غير مدعوم"
   },
   "feedback": {
     "title": "مشاركة الملاحظات"
@@ -3658,7 +3699,8 @@
     "importingModels": "جاري استيراد النماذج",
     "noImportsInQueue": "لا يوجد {filter} في قائمة الانتظار",
     "pending": "قيد الانتظار",
-    "progressCount": "{completed} من {total}"
+    "progressCount": "{completed} من {total}",
+    "taskUnavailable": "لم تعد مهمة التنزيل متاحة."
   },
   "queue": {
     "completedIn": "انتهى في {duration}",
@@ -4937,6 +4979,7 @@
     "failedToFetchBalance": "فشل في جلب الرصيد: {error}",
     "failedToFetchLogs": "فشل في جلب سجلات الخادم",
     "failedToFetchSubscription": "فشل في جلب حالة الاشتراك: {error}",
+    "failedToInitializeCameraAngleViewer": "تعذّر تهيئة عارض زاوية الكاميرا. حاول إعادة تحميل الصفحة.",
     "failedToInitializeCameraInfoViewer": "تعذّر تهيئة عارض معلومات الكاميرا. حاول إعادة تحميل الصفحة.",
     "failedToInitializeLoad3dViewer": "فشل في تهيئة عارض ثلاثي الأبعاد",
     "failedToInitiateCreditPurchase": "فشل في بدء شراء الرصيد: {error}",
@@ -5342,6 +5385,7 @@
     "menu": {
       "creatorCannotLeave": "لا يمكن لمنشئ مساحة العمل مغادرة المساحة التي أنشأها",
       "deleteWorkspace": "حذف مساحة العمل",
+      "deleteWorkspaceAfterPlanEndsTooltip": "يمكنك حذف مساحة العمل هذه بعد انتهاء خطتك في {date}",
       "deleteWorkspaceDisabledTooltip": "يرجى إلغاء الاشتراك النشط لمساحة العمل أولاً",
       "editWorkspace": "تعديل تفاصيل مساحة العمل",
       "leaveWorkspace": "مغادرة مساحة العمل"

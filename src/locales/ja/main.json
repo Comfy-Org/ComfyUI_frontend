@@ -665,6 +665,46 @@
     "switchToOutputs": "出力に切り替え",
     "viewApp": "アプリを表示"
   },
+  "cameraAngle": {
+    "cameraView": "カメラ",
+    "cameraViewTooltip": "被写体の周りでカメラを移動します",
+    "faces": {
+      "back": "背面",
+      "bottom": "下",
+      "left": "左",
+      "right": "右",
+      "top": "上"
+    },
+    "hidePreview": "ショットプレビューを非表示",
+    "horizontal": {
+      "back": "背面",
+      "backLeft": "左後方",
+      "backRight": "右後方",
+      "front": "正面",
+      "frontLeft": "左前方",
+      "frontRight": "右前方",
+      "left": "左側",
+      "right": "右側"
+    },
+    "horizontalLabel": "水平角度",
+    "objectView": "オブジェクト",
+    "objectViewTooltip": "カメラを通して見ながら被写体を回転します",
+    "preview": "プレビュー",
+    "showPreview": "ショットプレビューを表示",
+    "vertical": {
+      "elevated": "やや上方",
+      "eyeLevel": "目線の高さ",
+      "highAngle": "ハイアングル",
+      "lowAngle": "ローアングル"
+    },
+    "verticalLabel": "垂直角度",
+    "zoom": {
+      "closeUp": "クローズアップ",
+      "medium": "ミディアムショット",
+      "wide": "ワイドショット"
+    },
+    "zoomLabel": "ショットサイズ"
+  },
   "clipboard": {
     "errorMessage": "クリップボードへのコピーに失敗しました",
     "errorNotSupported": "お使いのブラウザではクリップボードAPIがサポートされていません",
@@ -1737,7 +1777,8 @@
     "exportingAssets": "アセットをエクスポート中",
     "noExportsInQueue": "キューに{filter}エクスポートはありません",
     "preparingExport": "エクスポートを準備中...",
-    "retryDownload": "ダウンロードを再試行"
+    "retryDownload": "ダウンロードを再試行",
+    "unsupportedDownloadUrl": "サポートされていないエクスポートダウンロードURL"
   },
   "feedback": {
     "title": "フィードバックを共有"
@@ -3658,7 +3699,8 @@
     "importingModels": "モデルをインポート中",
     "noImportsInQueue": "キューに{filter}はありません",
     "pending": "保留中",
-    "progressCount": "{total}件中{completed}件"
+    "progressCount": "{total}件中{completed}件",
+    "taskUnavailable": "ダウンロードタスクは利用できなくなりました。"
   },
   "queue": {
     "completedIn": "{duration}で完了",
@@ -4937,6 +4979,7 @@
     "failedToFetchBalance": "残高の取得に失敗しました: {error}",
     "failedToFetchLogs": "サーバーログの取得に失敗しました",
     "failedToFetchSubscription": "サブスクリプションステータスの取得に失敗しました: {error}",
+    "failedToInitializeCameraAngleViewer": "カメラアングルビューアの初期化に失敗しました。ページを再読み込みしてください。",
     "failedToInitializeCameraInfoViewer": "カメラ情報ビューアーの初期化に失敗しました。ページを再読み込みしてください。",
     "failedToInitializeLoad3dViewer": "3Dビューアの初期化に失敗しました",
     "failedToInitiateCreditPurchase": "クレジット購入の開始に失敗しました: {error}",
@@ -5342,6 +5385,7 @@
     "menu": {
       "creatorCannotLeave": "ワークスペースの作成者は、自分が作成したワークスペースを退出できません",
       "deleteWorkspace": "ワークスペースを削除",
+      "deleteWorkspaceAfterPlanEndsTooltip": "プランが{date}に終了した後、このワークスペースを削除できます",
       "deleteWorkspaceDisabledTooltip": "まずワークスペースの有効なサブスクリプションをキャンセルしてください",
       "editWorkspace": "ワークスペースの詳細を編集",
       "leaveWorkspace": "ワークスペースを退出"
