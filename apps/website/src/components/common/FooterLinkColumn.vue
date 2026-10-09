@@ -1,34 +1,20 @@
 <script setup lang="ts">
-import { cn } from '@comfyorg/tailwind-utils'
-
 export interface FooterLink {
   label: string
   href: string
   external?: boolean
 }
 
-const {
-  title,
-  links,
-  splitLinks = false
-} = defineProps<{
+const { title, links } = defineProps<{
   title: string
   links: FooterLink[]
-  splitLinks?: boolean
 }>()
 </script>
 
 <template>
-  <nav
-    :aria-label="title"
-    :class="cn('flex flex-col gap-4', splitLinks && 'lg:col-span-2')"
-  >
+  <nav :aria-label="title" class="flex flex-col gap-4">
     <h3 class="text-sm font-bold">{{ title }}</h3>
-    <div
-      :class="
-        cn('flex flex-col', splitLinks && 'block lg:columns-2 lg:gap-x-6')
-      "
-    >
+    <div class="flex flex-col">
       <a
         v-for="link in links"
         :key="link.href"
