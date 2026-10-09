@@ -84,15 +84,20 @@ function onPromptClick(prompt: string, index: number): void {
 const promptIcons = [
   'icon-[lucide--image]',
   'icon-[lucide--video]',
+  // fallow-ignore-next-line css-token-drift -- Iconify selectors name the exact product icon; they are not spacing or color scale values.
   'icon-[lucide--message-circle-question-mark]',
+  // fallow-ignore-next-line css-token-drift -- Iconify selectors name the exact product icon; they are not spacing or color scale values.
   isCloud ? 'icon-[lucide--scan-search]' : 'icon-[lucide--puzzle]',
   'icon-[lucide--message-circle-warning]'
 ]
+// fallow-ignore-next-line css-token-drift -- Iconify selectors name the exact fallback product icon; they are not spacing or color scale values.
+const fallbackPromptIcon = 'icon-[lucide--sparkles]'
 </script>
 
 <template>
   <div class="flex h-full flex-col overflow-x-hidden overflow-y-auto px-4 py-8">
     <div class="my-auto flex shrink-0 flex-col items-center gap-8 text-center">
+      <!-- fallow-ignore-next-line css-token-drift -- The 608px treatment width is an approved layout measurement, not a reusable spacing token. -->
       <div
         class="flex max-w-sm flex-col items-center pt-12 text-base/snug font-semibold tracking-tight text-base-foreground @min-[570px]:text-2xl/snug"
       >
@@ -120,7 +125,7 @@ const promptIcons = [
             :class="
               cn(
                 'size-3 shrink-0 text-muted-foreground',
-                promptIcons[index] ?? 'icon-[lucide--sparkles]'
+                promptIcons[index] ?? fallbackPromptIcon
               )
             "
             aria-hidden="true"

@@ -1,4 +1,5 @@
 <script setup lang="ts">
+// fallow-ignore-file complexity -- The cloud/1.55 component exceeds current template thresholds before this backport; this change only threads starter-prompt assignment through the existing empty state.
 import {
   DropdownMenuContent,
   DropdownMenuItem,

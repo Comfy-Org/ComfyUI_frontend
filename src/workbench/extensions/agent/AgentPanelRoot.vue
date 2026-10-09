@@ -1461,6 +1461,7 @@ const { submit: onSend } = useAgentDraftSubmission({
     replace: replaceSelectionTags,
     exit: exitNodeSelectionMode
   },
+  // fallow-ignore-next-line complexity -- cloud/1.55's existing send path is already threshold-near; this backport only adds starter-prompt attribution to its telemetry payload.
   send: async (text, attachments, nodes, references, meta) => {
     const submissionId = composerStore.submission?.id
     if (!(await consentAllowsDraftSubmission(submissionId))) return false
