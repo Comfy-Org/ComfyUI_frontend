@@ -27,7 +27,7 @@ function pauseBeforeAutoplayLimit({ currentTarget }: Event) {
     <a
       :href="featured.cta.href"
       :aria-label="featured.cta.ariaLabel"
-      class="relative flex flex-col"
+      class="group/pill-trigger relative flex flex-col"
     >
       <video
         v-if="featured.videoSrc"
