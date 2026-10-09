@@ -396,6 +396,7 @@
     {
       "files": ["**/*.test.{ts,tsx}"],
       "rules": {
+        "comfy/no-mocked-in-expect": "error",
         "comfy/no-module-scope-vitest-mocks": "error",
         "comfy/no-persistent-litegraph-registration": "error",
         "comfy/no-redundant-console-spy": "error",
