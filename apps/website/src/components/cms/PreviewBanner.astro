@@ -22,10 +22,11 @@ const changes = session
   : []
 ---
 
-{session && preview?.view === 'DRAFT' && (
+{session && preview && (
   <PreviewBar
     client:load
     csrf={session.csrf}
+    view={preview.view}
     now={preview.now}
     changes={changes}
     pathname={Astro.url.pathname}

@@ -15,8 +15,7 @@ function returnPath(value: FormDataEntryValue | null) {
 
 function previewAction(context: APIContext, body: FormData) {
   const action = body.get('action')
-  if (action === 'exit' || body.get('view') === 'LIVE')
-    context.cookies.delete(CONTEXT_COOKIE, { path: '/' })
+  if (action === 'exit') context.cookies.delete(CONTEXT_COOKIE, { path: '/' })
   else {
     const preview = parsePreview(
       JSON.stringify({

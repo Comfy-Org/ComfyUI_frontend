@@ -24,6 +24,7 @@
   },
   "cmsAdmin": {
     "title": "Hub admin",
+    "subtitle": "Comfy content",
     "localReview": "Local admin",
     "localHelp": "Open the admin with the staff account for this local review. No production account or data is changed.",
     "openAdmin": "Open Hub admin",
@@ -167,6 +168,8 @@
       "mode": "Draft preview",
       "changes": "{count} unpublished change | {count} unpublished changes",
       "timeTravel": "time travel on",
+      "liveMode": "Live site",
+      "liveSummary": "What visitors see now",
       "draftTab": "Draft",
       "liveTab": "Live",
       "modeLabel": "Show draft or live",

@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import { Eye, Globe, List, X } from '@lucide/vue'
-import { computed, ref } from 'vue'
+import { computed, onBeforeUnmount, onMounted, ref, useTemplateRef } from 'vue'
 
 import PreviewChangesSheet from '@/components/cms/PreviewChangesSheet.vue'
 import PreviewForm from '@/components/cms/PreviewForm.vue'
@@ -16,12 +16,14 @@ import { formatUtc, isFuture, pageOf, previewChanges } from '@/lib/cms/format'
 
 const {
   csrf,
+  view = 'DRAFT',
   now,
   changes,
   pathname,
   locale = 'en'
 } = defineProps<{
   csrf: string
+  view?: 'DRAFT' | 'LIVE'
   now?: string
   changes: DraftPageChange[]
   pathname: string
@@ -54,9 +56,19 @@ const languages = [
   { code: 'zh-CN', label: '中文', href: `/zh-CN${basePath}` }
 ]
 const languageCode = locale === 'zh-CN' ? '中' : 'EN'
+const views = [
+  { value: 'DRAFT', label: t('cmsAdmin.preview.draftTab') },
+  { value: 'LIVE', label: t('cmsAdmin.preview.liveTab') }
+] as const
 const summary = computed(() =>
   [
-    t('cmsAdmin.preview.changes', { count: changes.length }, changes.length),
+    view === 'LIVE'
+      ? t('cmsAdmin.preview.liveSummary')
+      : t(
+          'cmsAdmin.preview.changes',
+          { count: changes.length },
+          changes.length
+        ),
     now ? t('cmsAdmin.preview.timeTravel') : ''
   ]
     .filter(Boolean)
@@ -64,14 +76,33 @@ const summary = computed(() =>
 )
 const changesOpen = ref(false)
 
+// The site header is also sticky; publish this bar's height so the header
+// docks underneath it instead of sliding over it.
+const bar = useTemplateRef('bar')
+let observer: ResizeObserver | undefined
+onMounted(() => {
+  observer = new ResizeObserver(([entry]) =>
+    document.documentElement.style.setProperty(
+      '--cms-preview-offset',
+      `${entry.borderBoxSize[0].blockSize}px`
+    )
+  )
+  if (bar.value) observer.observe(bar.value)
+})
+onBeforeUnmount(() => {
+  observer?.disconnect()
+  document.documentElement.style.removeProperty('--cms-preview-offset')
+})
+
 const pill = adminButtonVariants({ class: 'data-[state=open]:bg-admin-hover' })
 </script>
 
 <template>
   <div
+    ref="bar"
     role="region"
     :aria-label="t('cmsAdmin.preview.label')"
-    class="sticky top-0 z-50 border-b border-admin-line bg-admin-chrome font-admin text-admin-fg"
+    class="sticky top-0 z-60 border-b border-admin-line bg-admin-chrome font-admin text-admin-fg"
   >
     <div class="flex flex-wrap items-center gap-2 px-4 py-2 lg:px-6">
       <p class="mr-auto flex items-center gap-2.5 text-sm">
@@ -81,7 +112,13 @@ const pill = adminButtonVariants({ class: 'data-[state=open]:bg-admin-hover' })
         >
           <Eye class="size-3.5" />
         </span>
-        <span class="font-medium">{{ t('cmsAdmin.preview.mode') }}</span>
+        <span class="font-medium">{{
+          t(
+            view === 'LIVE'
+              ? 'cmsAdmin.preview.liveMode'
+              : 'cmsAdmin.preview.mode'
+          )
+        }}</span>
         <span class="hidden text-xs text-admin-muted sm:inline">
           {{ summary }}
         </span>
@@ -95,19 +132,23 @@ const pill = adminButtonVariants({ class: 'data-[state=open]:bg-admin-hover' })
         :aria-label="t('cmsAdmin.preview.modeLabel')"
         class="inline-flex gap-1 rounded-lg border border-admin-field p-0.5"
       >
-        <span
-          aria-current="true"
-          class="inline-flex h-6.5 items-center rounded-md bg-admin-selected px-2.5 text-xs font-medium"
-        >
-          {{ t('cmsAdmin.preview.draftTab') }}
-        </span>
-        <button
-          name="view"
-          value="LIVE"
-          class="inline-flex h-6.5 cursor-pointer items-center rounded-md px-2.5 text-xs font-medium text-admin-muted hover:text-admin-fg"
-        >
-          {{ t('cmsAdmin.preview.liveTab') }}
-        </button>
+        <template v-for="option in views" :key="option.value">
+          <span
+            v-if="option.value === view"
+            aria-current="true"
+            class="inline-flex h-6.5 items-center rounded-md bg-admin-selected px-2.5 text-xs font-medium"
+          >
+            {{ option.label }}
+          </span>
+          <button
+            v-else
+            name="view"
+            :value="option.value"
+            class="inline-flex h-6.5 cursor-pointer items-center rounded-md px-2.5 text-xs font-medium text-admin-muted hover:text-admin-fg"
+          >
+            {{ option.label }}
+          </button>
+        </template>
       </PreviewForm>
 
       <PreviewTimePicker

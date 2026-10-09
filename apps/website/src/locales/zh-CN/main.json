@@ -24,6 +24,7 @@
   },
   "cmsAdmin": {
     "title": "Hub 管理",
+    "subtitle": "Comfy 内容管理",
     "localReview": "本地管理",
     "localHelp": "使用本地审核专用的员工账号打开管理后台，不会更改生产账号或数据。",
     "openAdmin": "打开 Hub 管理",
@@ -167,6 +168,8 @@
       "mode": "草稿预览",
       "changes": "{count} 项未发布更改",
       "timeTravel": "时间穿越已开启",
+      "liveMode": "线上站点",
+      "liveSummary": "访客当前看到的内容",
       "draftTab": "草稿",
       "liveTab": "线上",
       "modeLabel": "显示草稿或线上",

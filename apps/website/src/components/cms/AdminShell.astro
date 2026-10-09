@@ -37,9 +37,22 @@ const item =
     <aside
       class="flex flex-col gap-4 border-b border-admin-line bg-admin-chrome px-3 py-3 lg:sticky lg:top-0 lg:h-screen lg:border-r lg:border-b-0"
     >
-      <p class="px-2 pt-1 text-sm font-medium text-admin-muted">
-        {t('cmsAdmin.title')}
-      </p>
+      <a
+        href="/admin/"
+        class="flex items-center gap-2.5 rounded-lg px-1.5 py-1 focus-visible:outline-2 focus-visible:outline-admin-fg"
+      >
+        <img
+          src="/icons/comfyicon.svg"
+          alt=""
+          class="size-8 shrink-0 rounded-lg shadow-admin-popover"
+        />
+        <span class="grid leading-tight">
+          <span class="font-formula text-base font-semibold tracking-tight">
+            {t('cmsAdmin.title')}
+          </span>
+          <span class="text-xs text-admin-muted">{t('cmsAdmin.subtitle')}</span>
+        </span>
+      </a>
       <nav
         aria-label={t('cmsAdmin.nav.label')}
         class="flex gap-1 overflow-x-auto lg:flex-col"
