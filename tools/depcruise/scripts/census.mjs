@@ -128,7 +128,8 @@ function runMeasure(tree, tool) {
     maxBuffer: 1 << 28
   })
   if (result.status === 0) return { result: JSON.parse(result.stdout) }
-  return { error: (result.stderr || result.stdout).trim().split('\n')[0] }
+  const lines = (result.stderr || result.stdout).trim().split('\n')
+  return { error: lines.find((l) => /^\w*Error\b/.test(l)) ?? lines[0] }
 }
 
 for (const [index, sha] of shas.entries()) {

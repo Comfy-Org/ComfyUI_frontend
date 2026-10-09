@@ -15,7 +15,7 @@ node tools/depcruise/scripts/census.mjs <workDir> [toolRef]  # optional: domain 
 node tools/depcruise/scripts/build-data.mjs <workDir>
 ```
 
-Current data: `7475c964f6..85a816b093` (87 commits).
+Current data: `7475c964f6..b23c0d71f1` (96 commits).
 
 Publish to https://gordian-knot-comfyui.vercel.app (ComfyUI Vercel team members only), after `pnpm dlx vercel@62 login`:
 
