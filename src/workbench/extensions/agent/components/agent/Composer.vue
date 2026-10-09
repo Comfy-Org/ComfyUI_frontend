@@ -305,12 +305,13 @@ onUnmounted(() => {
   unregisterEscapeOverride?.()
 })
 
-function insert(
+async function insert(
   text: string,
   starterPrompt?: AgentStarterPromptAttribution
-): void {
+): Promise<void> {
   composer.insert(text, starterPrompt)
-  editorRef.value?.focus()
+  await nextTick()
+  editorRef.value?.focusAtEnd()
 }
 
 function replaceDraft(prompt: PromptSnapshot): void {

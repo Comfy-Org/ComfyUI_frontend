@@ -590,6 +590,13 @@ defineExpose({
       ? promptInsertionPoint(view.state.doc, view.state.selection.head)
       : { textOffset: 0, referenceIndex: 0 },
   focus: () => view?.focus(),
+  focusAtEnd: () => {
+    if (!view) return
+    view.dispatch(
+      view.state.tr.setSelection(TextSelection.atEnd(view.state.doc))
+    )
+    view.focus()
+  },
   selection,
   replaceText,
   captureInsertion
