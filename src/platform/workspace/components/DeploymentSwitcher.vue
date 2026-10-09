@@ -109,7 +109,7 @@ import DeploymentSwitcherOwnerFooter from '@/platform/workspace/components/Deplo
 import DeploymentSwitcherList from '@/platform/workspace/components/DeploymentSwitcherList.vue'
 import { useDeploymentLabels } from '@/platform/workspace/composables/useDeploymentLabels'
 import { useDeploymentPickStore } from '@/platform/workspace/stores/deploymentPickStore'
-import { useToastStore } from '@/platform/updates/common/toastStore'
+import { useToast } from '@/components/ui/toast/toastStore'
 
 const { t } = useI18n()
 const store = useDeploymentPickStore()
@@ -192,12 +192,7 @@ const canSetPicked = computed(
 function report(summary: string, refusal: string | null) {
   if (refusal === null) return
   isOpen.value = false
-  useToastStore().add({
-    severity: 'error',
-    summary,
-    detail: refusal,
-    life: 8000
-  })
+  useToast().error(summary, { description: refusal, duration: 8000 })
 }
 
 async function choose(deploymentId: string | null) {
