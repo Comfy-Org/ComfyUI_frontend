@@ -3,7 +3,6 @@ import { render, screen, within } from '@testing-library/vue'
 import { assert, describe, expect, it, vi } from 'vitest'
 import { readonly, ref } from 'vue'
 
-import { WORKSHOP_CLOUD_BASE_URL } from '@/config/workshop-env'
 import { workflowDetailsBySlug } from '@/config/workshop-workflow-content'
 import {
   captureWorkshopEvent,
@@ -63,7 +62,7 @@ describe('WorkflowPage header', () => {
     for (const name of template.models) expect(hero).not.toHaveTextContent(name)
   })
 
-  it('leads with Try in Cloud, then the download, and no run action up top', () => {
+  it('offers only the download up top, leaving the run to the form', () => {
     mount()
 
     const actions = within(screen.getByTestId('workflow-hero')).getByTestId(
@@ -72,27 +71,13 @@ describe('WorkflowPage header', () => {
     expect(
       within(actions)
         .getAllByRole('link')
-        .map((link) => [
-          link.textContent.trim(),
-          link.getAttribute('href'),
-          link.getAttribute('data-variant')
-        ])
-    ).toEqual([
-      [
-        'Try in Cloud',
-        `${WORKSHOP_CLOUD_BASE_URL}/?template=${encodeURIComponent(template.id)}`,
-        'default'
-      ],
-      ['Download workflow JSON', template.downloadUrl, 'outline']
-    ])
-    expect(
-      within(actions).getByRole('link', { name: 'Try in Cloud' })
-    ).toHaveAttribute('target', '_blank')
+        .map((link) => [link.textContent.trim(), link.getAttribute('href')])
+    ).toEqual([['Download workflow JSON', template.downloadUrl]])
     expect(
       within(actions).getByRole('link', { name: 'Download workflow JSON' })
     ).toHaveAttribute('download')
     expect(within(actions).queryByRole('button')).toBeNull()
-    expect(within(actions).queryByText(/run here|sign in/i)).toBeNull()
+    expect(within(actions).queryByText(/cloud|run|sign in/i)).toBeNull()
   })
 
   it('offers no actions for a workflow with no template', () => {
@@ -104,14 +89,11 @@ describe('WorkflowPage header', () => {
     expect(screen.queryByTestId('workflow-actions')).toBeNull()
   })
 
-  it.for([
-    { name: 'Try in Cloud', event: 'try_in_cloud_clicked' },
-    { name: 'Download workflow JSON', event: 'workflow_download_clicked' }
-  ])('reports $event once access is enabled', async ({ name, event }) => {
+  it('reports the download once access is enabled', async () => {
     vi.mocked(useWorkshopEnabled).mockReturnValue(readonly(ref(true)))
     vi.mocked(useWorkshopWorkflowsEnabled).mockReturnValue(readonly(ref(true)))
     mount()
-    const link = screen.getByRole('link', { name })
+    const link = screen.getByRole('link', { name: 'Download workflow JSON' })
     link.addEventListener('click', (click) => click.preventDefault(), {
       once: true
     })
@@ -119,7 +101,7 @@ describe('WorkflowPage header', () => {
     await userEvent.setup().click(link)
 
     expect(captureWorkshopEvent).toHaveBeenCalledWith({
-      name: event,
+      name: 'workflow_download_clicked',
       properties: expect.objectContaining({
         model_slug: model.slug,
         page_type: 'workflow',
@@ -128,21 +110,16 @@ describe('WorkflowPage header', () => {
     })
   })
 
-  it.for([{ name: 'Try in Cloud' }, { name: 'Download workflow JSON' }])(
-    'reports no clicks for $name while Workflows access is off',
-    async ({ name }) => {
-      vi.mocked(useWorkshopEnabled).mockReturnValue(readonly(ref(true)))
-      vi.mocked(useWorkshopWorkflowsEnabled).mockReturnValue(
-        readonly(ref(false))
-      )
-      mount()
-      const link = screen.getByRole('link', { name })
-      link.addEventListener('click', (click) => click.preventDefault(), {
-        once: true
-      })
-      await userEvent.setup().click(link)
+  it('reports no download while Workflows access is off', async () => {
+    vi.mocked(useWorkshopEnabled).mockReturnValue(readonly(ref(true)))
+    vi.mocked(useWorkshopWorkflowsEnabled).mockReturnValue(readonly(ref(false)))
+    mount()
+    const link = screen.getByRole('link', { name: 'Download workflow JSON' })
+    link.addEventListener('click', (click) => click.preventDefault(), {
+      once: true
+    })
+    await userEvent.setup().click(link)
 
-      expect(captureWorkshopEvent).not.toHaveBeenCalled()
-    }
-  )
+    expect(captureWorkshopEvent).not.toHaveBeenCalled()
+  })
 })

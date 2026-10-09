@@ -4479,7 +4479,6 @@
       "connectionLost": "无法查看运行状态。请重新连接以获取最新状态。",
       "lostContact": "此页面与运行失去了联系。它可能仍在 Cloud 上运行并消耗积分。请重新连接以查看最新状态。",
       "browserUnavailable": "暂不支持从此页面运行工作流。",
-      "tryCloud": "在 Cloud 中体验",
       "explore": "探索更多可能"
     },
     "catalogue": {

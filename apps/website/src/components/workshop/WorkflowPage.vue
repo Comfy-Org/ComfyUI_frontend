@@ -6,7 +6,6 @@ import Button from '@/components/ui/button/Button.vue'
 import type { WorkflowWorkshopModelDetail } from '@/config/models-catalogue'
 import { useCaseFor } from '@/config/models-catalogue'
 import { getRoutes } from '@/config/routes'
-import { WORKSHOP_CLOUD_BASE_URL } from '@/config/workshop-env'
 import { useWorkshopSession } from '@/config/workshop-session-state'
 import { useCaseLabelKey } from '@/lib/workshop/use-case-label'
 import { t } from '@/i18n/translations'
@@ -45,22 +44,11 @@ const shelf = computed(() => {
 const pillClass =
   'inline-flex h-7 items-center rounded-full border border-transparency-white-t20 px-3 text-xs leading-none text-primary-comfy-canvas transition-colors hover:border-primary-comfy-yellow hover:text-primary-comfy-yellow'
 
-const template = model.workflow.template
-const cloudHref = template
-  ? `${WORKSHOP_CLOUD_BASE_URL}/?template=${encodeURIComponent(template.id)}`
-  : undefined
+const downloadUrl = model.workflow.template?.downloadUrl
 
 const enabled = useWorkshopEnabled()
 const workflowsEnabled = useWorkshopWorkflowsEnabled()
 const modelAnalytics = workshopModelAnalytics(model)
-
-function captureTryInCloud() {
-  if (enabled.value && workflowsEnabled.value)
-    captureWorkshopEvent({
-      name: 'try_in_cloud_clicked',
-      properties: modelAnalytics
-    })
-}
 
 function captureWorkflowDownload() {
   if (enabled.value && workflowsEnabled.value)
@@ -101,23 +89,13 @@ function captureWorkflowDownload() {
         {{ model.summary }}
       </p>
       <div
-        v-if="cloudHref"
+        v-if="downloadUrl"
         class="mt-6 flex flex-wrap items-center gap-2"
         data-testid="workflow-actions"
       >
         <Button
           as="a"
-          :href="cloudHref"
-          target="_blank"
-          rel="noopener"
-          variant="default"
-          @click="captureTryInCloud"
-          >{{ t('workshop.workflow.tryCloud') }}</Button
-        >
-        <Button
-          v-if="template?.downloadUrl"
-          as="a"
-          :href="template.downloadUrl"
+          :href="downloadUrl"
           download
           variant="outline"
           @click="captureWorkflowDownload"

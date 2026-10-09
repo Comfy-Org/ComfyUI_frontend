@@ -622,7 +622,6 @@
       "connectionLost": "The run could not be checked. Reconnect to recover its current status.",
       "lostContact": "This page lost contact with the run. It may still be running on Cloud and using credits. Reconnect to see its current status.",
       "browserUnavailable": "Running workflows from this page is not available yet.",
-      "tryCloud": "Try in Cloud",
       "explore": "Explore the possibilities"
     },
     "catalogue": {

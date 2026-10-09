@@ -160,7 +160,7 @@ export type WorkshopAnalyticsEvent =
       properties: WorkshopModelAnalytics & { output_kind: RunOutput['kind'] }
     }
   | {
-      name: 'try_in_cloud_clicked' | 'workflow_download_clicked'
+      name: 'workflow_download_clicked'
       properties: WorkshopModelAnalytics
     }
   | {
