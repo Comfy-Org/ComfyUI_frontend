@@ -21,6 +21,8 @@ type FailureCode =
   | 'transport_indeterminate'
   | 'report_mismatch'
   | 'response_too_large'
+  | 'response_too_fragmented'
+  | 'response_timeout'
 type MagicPatchResult<T> =
   | { ok: true; value: T }
   | { ok: false; error: { code: FailureCode; status?: number } }
@@ -65,17 +67,33 @@ export function createMagicPatchClient<Scope>(
       void response.body?.cancel().catch(() => {})
       throw cause
     }
-    return { response, current: () => scopeGuard.current(captured), check }
+    return {
+      response,
+      current: () => scopeGuard.current(captured),
+      check,
+      signal: options.signal
+    }
   }
 
   async function readBytes(
-    call: { response: Response; check: () => void },
+    call: {
+      response: Response
+      check: () => void
+      signal: RequestInit['signal']
+    },
     maximum: number
   ): Promise<Uint8Array<ArrayBuffer>> {
     const reader = call.response.body?.getReader()
     const chunks: Uint8Array[] = []
     let length = 0
-    try {
+    let interruption: { cause: unknown } | undefined
+    let timer: ReturnType<typeof setTimeout> | undefined
+    let onAbort: (() => void) | undefined
+    const checkRead = () => {
+      if (interruption) throw interruption.cause
+      call.check()
+    }
+    const consume = async () => {
       call.check()
       const declared = call.response.headers.get('Content-Length')
       if (
@@ -85,10 +103,13 @@ export function createMagicPatchClient<Scope>(
       )
         throw new MagicPatchProtocolError('response_too_large')
       if (reader) {
+        let reads = 0
         while (true) {
-          call.check()
+          checkRead()
+          if (++reads > magicPatchResponseLimits.streamReads)
+            throw new MagicPatchProtocolError('response_too_fragmented')
           const { done, value } = await reader.read()
-          call.check()
+          checkRead()
           if (done) break
           if (value.byteLength > maximum - length)
             throw new MagicPatchProtocolError('response_too_large')
@@ -103,10 +124,38 @@ export function createMagicPatchClient<Scope>(
         offset += chunk.byteLength
       }
       return bytes
+    }
+    try {
+      call.check()
+      const interrupted = new Promise<never>((_, reject) => {
+        const stop = (cause: unknown) => {
+          if (interruption) return
+          interruption = { cause }
+          reject(cause)
+          void reader?.cancel().catch(() => {})
+        }
+        timer = setTimeout(
+          () => stop(new MagicPatchProtocolError('response_timeout')),
+          magicPatchResponseLimits.bodyMilliseconds
+        )
+        onAbort = () => {
+          try {
+            call.check()
+          } catch (cause) {
+            stop(cause)
+            return
+          }
+          stop(new MagicPatchProtocolError('transport_indeterminate'))
+        }
+        call.signal?.addEventListener('abort', onAbort, { once: true })
+      })
+      return await Promise.race([consume(), interrupted])
     } catch (cause) {
       void reader?.cancel().catch(() => {})
       throw cause
     } finally {
+      if (timer !== undefined) clearTimeout(timer)
+      if (onAbort) call.signal?.removeEventListener('abort', onAbort)
       reader?.releaseLock()
     }
   }

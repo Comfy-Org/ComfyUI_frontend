@@ -340,3 +340,81 @@ describe('Magic Patch response byte limits v1', () => {
     expect(cancel).toHaveBeenCalledTimes(1)
   })
 })
+
+describe('Magic Patch body consumption policy v2', () => {
+  it.for(['empty', 'one-byte'] as const)(
+    'stops excessive %s stream fragmentation before parse',
+    async (kind) => {
+      let reads = 0
+      const cancel = vi.fn()
+      const body = new ReadableStream<Uint8Array>(
+        {
+          pull(controller) {
+            if (++reads <= 16384) {
+              controller.enqueue(
+                kind === 'empty' ? new Uint8Array() : new Uint8Array([32])
+              )
+            } else {
+              controller.enqueue(new TextEncoder().encode('{"requests":[]}'))
+              controller.close()
+            }
+          },
+          cancel
+        },
+        { highWaterMark: 0 }
+      )
+      const client = createMagicPatchClient(
+        async () => new Response(body),
+        () => true,
+        scopeGuard
+      )
+      await expect(client.list()).resolves.toMatchObject({
+        ok: false,
+        error: { code: 'response_too_fragmented' }
+      })
+      expect(reads).toBe(16384)
+      expect(cancel).toHaveBeenCalledTimes(1)
+    }
+  )
+
+  it('ends a stalled body at its own deadline and cancels the reader', async () => {
+    vi.useFakeTimers()
+    const cancel = vi.fn(() => new Promise<void>(() => {}))
+    const body = new ReadableStream<Uint8Array>({ cancel })
+    const client = createMagicPatchClient(
+      async () => new Response(body),
+      () => true,
+      scopeGuard
+    )
+    const pending = client.list()
+    await vi.advanceTimersByTimeAsync(10000)
+    await expect(pending).resolves.toMatchObject({
+      ok: false,
+      error: { code: 'response_timeout' }
+    })
+    expect(cancel).toHaveBeenCalledTimes(1)
+  })
+
+  it('unblocks a pending read on caller abort even when injected transport ignores its signal', async () => {
+    const cancel = vi.fn()
+    const pull = vi.fn()
+    const body = new ReadableStream<Uint8Array>(
+      { pull, cancel },
+      { highWaterMark: 0 }
+    )
+    const client = createMagicPatchClient(
+      async () => new Response(body),
+      () => true,
+      scopeGuard
+    )
+    const controller = new AbortController()
+    const pending = client.list(undefined, controller.signal)
+    await vi.waitFor(() => expect(pull).toHaveBeenCalledTimes(1))
+    controller.abort()
+    await expect(pending).resolves.toMatchObject({
+      ok: false,
+      error: { code: 'transport_indeterminate' }
+    })
+    expect(cancel).toHaveBeenCalledTimes(1)
+  })
+})
