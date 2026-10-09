@@ -279,8 +279,10 @@ export function createUnifiedBillingSession(deps: UnifiedBillingSessionDeps) {
     user: computed(() =>
       state.value.phase === 'signed_in' ? state.value.session.user : null
     ),
-    failureCode: computed(() =>
-      workspace.value?.status === 'error' ? workspace.value.code : undefined
+    failure: computed(() =>
+      workspace.value?.status === 'error'
+        ? { code: workspace.value.code }
+        : undefined
     ),
     loadIdentity: async () =>
       (await settledPhase()) === 'signed-out' ? deps.loadFirebase() : undefined,
