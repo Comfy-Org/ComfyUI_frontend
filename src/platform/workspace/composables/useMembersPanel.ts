@@ -141,15 +141,17 @@ export function useMembersPanel() {
 
   const hasMultipleMembers = computed(() => members.value.length > 1)
 
+  const showMinimalMemberLayout = computed(() =>
+    isCloud
+      ? !membersLoaded.value ||
+        (isInPersonalWorkspace.value && members.value.length === 1)
+      : !hasMemberSeats.value &&
+        !isPlanEnded.value &&
+        !permissions.value.canManageMembers
+  )
+
   const uiConfig = computed(() => {
-    if (
-      isCloud
-        ? !membersLoaded.value ||
-          (isInPersonalWorkspace.value && members.value.length === 1)
-        : !hasMemberSeats.value &&
-          !isPlanEnded.value &&
-          !permissions.value.canManageMembers
-    ) {
+    if (showMinimalMemberLayout.value) {
       return {
         ...workspaceUiConfig.value,
         showMembersList: false,
@@ -241,6 +243,10 @@ export function useMembersPanel() {
       if (canInviteMembers.value) void showInviteMemberDialog()
       return
     }
+    handleDesktopInviteMember()
+  }
+
+  function handleDesktopInviteMember() {
     if (workspaceRole.value !== 'owner') return
     if (
       isPlanLoading.value ||
