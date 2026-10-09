@@ -4783,6 +4783,16 @@
       "permanent": true
     },
     {
+      "source": "/models/apps/relight",
+      "destination": "/hub/apps/relight/",
+      "permanent": true
+    },
+    {
+      "source": "/models/apps/relight/",
+      "destination": "/hub/apps/relight/",
+      "permanent": true
+    },
+    {
       "source": "/models/apps/reshoot",
       "destination": "/hub/apps/reshoot/",
       "permanent": true

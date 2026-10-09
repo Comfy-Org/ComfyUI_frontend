@@ -4505,6 +4505,9 @@
       "moveAnything": "随意移动",
       "moveAnythingSummary": "把照片中的物体拖到新位置，模型会围绕它们重建画面。",
       "moveAnythingMeta": "图像 · Qwen Image 2.1",
+      "relight": "重新布光",
+      "relightSummary": "在照片上放置新的光源，模型会重绘阴影与高光，同时保留主体。",
+      "relightMeta": "图像 · Beeble SwitchX",
       "reshootMeta": "视频 · MiniMax H3"
     },
     "stage": {
@@ -4760,6 +4763,7 @@
       "fit": "适应屏幕，当前 {n}%"
     },
     "compare": {
+      "label": "对比",
       "before": "之前",
       "after": "之后"
     }

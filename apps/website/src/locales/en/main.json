@@ -5112,6 +5112,9 @@
       "moveAnything": "Move anything",
       "moveAnythingSummary": "Drag the things in a photo somewhere new, and the model rebuilds the scene around them.",
       "moveAnythingMeta": "Image · Qwen Image 2.1",
+      "relight": "Relight",
+      "relightSummary": "Place new lights on a photo, and the model redraws its shadows and highlights while keeping the subject.",
+      "relightMeta": "Image · Beeble SwitchX",
       "reshootMeta": "Video · MiniMax H3"
     },
     "stage": {
@@ -5367,6 +5370,7 @@
       "fit": "Fit to screen, now {n}%"
     },
     "compare": {
+      "label": "Compare",
       "before": "Before",
       "after": "After"
     }
