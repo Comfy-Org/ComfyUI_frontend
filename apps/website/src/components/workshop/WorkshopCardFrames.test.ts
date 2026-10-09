@@ -1,4 +1,4 @@
-import { render, screen } from '@testing-library/vue'
+import { fireEvent, render, screen } from '@testing-library/vue'
 import { nextTick } from 'vue'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 
@@ -16,6 +16,14 @@ vi.mock(import('@/composables/useReducedMotion'), () => ({
 
 const FRAME_MS = 3200
 const frames = ['/covers/a.webp', '/covers/b.webp', '/covers/c.webp']
+
+async function loadFrames() {
+  await Promise.all(
+    screen
+      .getAllByTestId('model-card-frame')
+      .map((frame) => fireEvent.load(frame))
+  )
+}
 
 function shownFrame() {
   const shown = screen
@@ -54,6 +62,7 @@ describe('WorkshopCardFrames', () => {
     'shows $shown after $steps frame(s) on screen, looping back to the first',
     async ({ steps, shown }) => {
       render(WorkshopCardFrames, { props: { frames } })
+      await loadFrames()
       await setAllIntersecting(true)
 
       await vi.advanceTimersByTimeAsync(FRAME_MS * steps)
@@ -65,7 +74,18 @@ describe('WorkshopCardFrames', () => {
 
   it('holds its frame while off screen', async () => {
     render(WorkshopCardFrames, { props: { frames } })
+    await loadFrames()
     await setAllIntersecting(false)
+
+    await vi.advanceTimersByTimeAsync(FRAME_MS * 2)
+    await nextTick()
+
+    expect(shownFrame()).toBe(frames[0])
+  })
+
+  it('waits on the current frame until the next one has loaded', async () => {
+    render(WorkshopCardFrames, { props: { frames } })
+    await setAllIntersecting(true)
 
     await vi.advanceTimersByTimeAsync(FRAME_MS * 2)
     await nextTick()

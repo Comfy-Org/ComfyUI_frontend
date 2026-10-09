@@ -23,12 +23,16 @@ const playing = computed(
 )
 
 const active = ref(0)
+const loaded = ref<ReadonlySet<number>>(new Set())
+const markLoaded = (index: number) =>
+  (loaded.value = new Set(loaded.value).add(index))
 const previous = computed(
   () => (active.value + frames.length - 1) % frames.length
 )
 const { pause, resume } = useIntervalFn(
   () => {
-    active.value = (active.value + 1) % frames.length
+    const next = (active.value + 1) % frames.length
+    if (loaded.value.has(next)) active.value = next
   },
   FRAME_MS,
   { immediate: false }
@@ -67,6 +71,7 @@ watch(playing, (play) => (play ? resume() : pause()), { immediate: true })
         data-testid="model-card-frame"
         loading="lazy"
         decoding="async"
+        @load="markLoaded(index)"
         draggable="false"
       />
     </div>
