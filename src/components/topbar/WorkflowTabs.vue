@@ -113,6 +113,7 @@
 
 <script setup lang="ts">
 import { cn } from '@comfyorg/tailwind-utils'
+import { useResizeObserver } from '@vueuse/core'
 import { computed, nextTick, ref, watch } from 'vue'
 
 import AgentEntryButton from '@/components/topbar/AgentEntryButton.vue'
@@ -260,7 +261,12 @@ async function revealActiveTab() {
 }
 
 const { isOverflowing, checkOverflow } = useOverflowObserver(tabStripRef, {
-  onCheck: () => void revealActiveTab()
+  useResizeObserver: false
+})
+
+useResizeObserver(tabStripRef, () => {
+  checkOverflow()
+  void revealActiveTab()
 })
 
 watch(
@@ -275,5 +281,6 @@ watch(
 function handleTabResize(event: TransitionEvent) {
   if (event.propertyName !== 'flex-shrink') return
   checkOverflow()
+  void revealActiveTab()
 }
 </script>

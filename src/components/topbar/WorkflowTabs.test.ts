@@ -60,26 +60,22 @@ vi.mock(import('@/composables/useWorkflowStatusDismissal'), () => ({
   useWorkflowStatusDismissal: vi.fn()
 }))
 
-vi.mock<unknown>(
-  import('@/composables/element/useOverflowObserver'),
-  async () => {
-    const { ref } = await import('vue')
-    return {
-      useOverflowObserver: (
-        _element: unknown,
-        options?: { onCheck?: (isOverflowing: boolean) => void }
-      ) => {
-        const isOverflowing = ref(false)
-        const observer = {
-          isOverflowing,
-          checkOverflow: vi.fn(() => options?.onCheck?.(isOverflowing.value))
-        }
-        overflowObservers.push(observer)
-        return observer
+vi.mock(import('@/composables/element/useOverflowObserver'), async () => {
+  const { readonly, ref } = await import('vue')
+  return {
+    useOverflowObserver: () => {
+      const isOverflowing = ref(false)
+      const checkOverflow: Mock<() => void> = vi.fn()
+      overflowObservers.push({ isOverflowing, checkOverflow })
+      return {
+        isOverflowing: readonly(isOverflowing),
+        disposed: readonly(ref(false)),
+        checkOverflow,
+        dispose: vi.fn()
       }
     }
   }
-)
+})
 
 vi.mock(import('@/platform/workflow/core/services/workflowService'))
 
@@ -715,7 +711,7 @@ describe('WorkflowTabs scrolling', () => {
 
       tabStrip.dispatchEvent(event)
 
-      expect(scrollBy).toHaveBeenCalledWith({ left: expectedLeft })
+      expect(scrollBy).toHaveBeenCalledExactlyOnceWith({ left: expectedLeft })
       expect(event.defaultPrevented).toBe(true)
     }
   )
@@ -756,29 +752,7 @@ describe('WorkflowTabs scrolling', () => {
     }
   )
 
-  it('reveals the active tab when the tab list overflows', async () => {
-    const workflowStore = useWorkflowStore()
-    const workflow = await workflowStore.createTemporary('active.json').load()
-    const scrollIntoView = vi.spyOn(HTMLElement.prototype, 'scrollIntoView')
-    renderComponent()
-    await waitFor(() => expect(overflowObservers).toHaveLength(1))
-    workflowStore.attachWorkflow(workflow, 0)
-    workflowStore.activeWorkflow = workflow
-    await nextTick()
-
-    overflowObservers[0].isOverflowing.value = true
-    await nextTick()
-    await nextTick()
-
-    await waitFor(() => {
-      expect(scrollIntoView).toHaveBeenCalledWith({
-        block: 'nearest',
-        inline: 'nearest'
-      })
-    })
-  })
-
-  it('reveals the active tab after every overflow measurement', async () => {
+  it('does not reveal the active tab after unrelated overflow measurements', async () => {
     const workflowStore = useWorkflowStore()
     const workflow = await workflowStore.createTemporary('active.json').load()
     const scrollIntoView = vi.spyOn(HTMLElement.prototype, 'scrollIntoView')
@@ -794,11 +768,13 @@ describe('WorkflowTabs scrolling', () => {
 
     scrollIntoView.mockClear()
     overflowObservers[0].checkOverflow.mockClear()
+    overflowObservers[0].isOverflowing.value = true
 
     overflowObservers[0].checkOverflow()
-    await waitFor(() => expect(scrollIntoView).toHaveBeenCalledOnce())
     overflowObservers[0].checkOverflow()
-    await waitFor(() => expect(scrollIntoView).toHaveBeenCalledTimes(2))
+    await nextTick()
+
+    expect(scrollIntoView).not.toHaveBeenCalled()
 
     unmount()
   })

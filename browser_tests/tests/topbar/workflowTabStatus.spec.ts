@@ -124,24 +124,38 @@ test.describe('Workflow tab status indicator', () => {
     await expect(backgroundTab.getByRole('img')).toHaveCount(0)
   })
 
-  test('keeps a compact inactive status visible on hover', async ({
+  test('keeps the manually scrolled position after a background status change', async ({
     comfyPage,
     getWebSocket
   }) => {
     await comfyPage.page.setViewportSize({ width: 800, height: 720 })
     const ws = await getWebSocket()
-    const { backgroundTab } = await runOnBackgroundTab(comfyPage, ws)
+    const { exec, jobId, backgroundTab } = await runOnBackgroundTab(
+      comfyPage,
+      ws
+    )
     const topbar = comfyPage.menu.topbar
     await topbar.openBlankWorkflows(9)
-    await expect(topbar.tabs.first()).not.toBeInViewport({ ratio: 1 })
+    await topbar.tabs.evaluateAll((tabs) =>
+      Promise.all(
+        tabs.flatMap((tab) =>
+          tab.getAnimations().map((animation) => animation.finished)
+        )
+      )
+    )
+    await comfyPage.nextFrame()
+    await topbar.tabStrip.evaluate((strip) => {
+      strip.scrollLeft = 0
+    })
+    await expect(backgroundTab).toBeInViewport({ ratio: 1 })
+    await expect(topbar.getActiveTab()).not.toBeInViewport({ ratio: 1 })
 
-    await backgroundTab.hover()
+    exec.executionSuccess(jobId)
 
     await expect(
-      backgroundTab.getByRole('img', { name: 'Running' })
+      backgroundTab.getByRole('img', { name: 'Completed' })
     ).toBeVisible()
-    await expect(
-      backgroundTab.getByTestId(TestIds.topbar.closeWorkflowButton)
-    ).toBeHidden()
+    await expect(backgroundTab).toBeInViewport({ ratio: 1 })
+    await expect(topbar.getActiveTab()).not.toBeInViewport({ ratio: 1 })
   })
 })

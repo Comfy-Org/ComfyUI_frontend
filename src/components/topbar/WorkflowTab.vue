@@ -102,12 +102,6 @@
             class="icon-[lucide--x] size-4"
           />
         </Button>
-        <WorkflowTabPopover
-          ref="popoverRef"
-          :workflow-filename="workflowOption.workflow.filename"
-          :thumbnail-url="thumbnailUrl"
-          :is-active-tab="isActiveTab"
-        />
       </div>
     </ContextMenuTrigger>
     <ContextMenuPortal>
@@ -116,6 +110,12 @@
       </ContextMenuContent>
     </ContextMenuPortal>
   </ContextMenuRoot>
+  <WorkflowTabPopover
+    ref="popoverRef"
+    :workflow-filename="workflowOption.workflow.filename"
+    :thumbnail-url="thumbnailUrl"
+    :is-active-tab="isActiveTab"
+  />
 </template>
 
 <script setup lang="ts">
@@ -270,14 +270,16 @@ const workflowStatusLabel = computed(() =>
     : undefined
 )
 
-const revealsCloseOnHover = computed(() => isActiveTab.value || !compact)
-
 const hasStatusIndicator = computed(
   () =>
     isAgentEditing.value ||
     showUnseenAgentDot.value ||
     workflowStatus.value !== undefined ||
     shouldShowUnsavedIndicator.value
+)
+
+const revealsCloseOnHover = computed(
+  () => isActiveTab.value || !compact || !hasStatusIndicator.value
 )
 
 const thumbnailUrl = computed(() => {

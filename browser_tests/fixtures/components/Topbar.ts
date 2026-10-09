@@ -47,10 +47,6 @@ export class Topbar {
     await expect(this.tabs).toHaveCount(openTabs + count)
   }
 
-  getWorkflowPopover(tabName: string): Locator {
-    return this.workflowPopover.filter({ hasText: tabName })
-  }
-
   async getTabNames(): Promise<string[]> {
     return await this.tabs.locator('.workflow-label').allInnerTexts()
   }

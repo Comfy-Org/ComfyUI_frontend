@@ -284,6 +284,14 @@ describe('WorkflowTab - agent activity indicators', () => {
 })
 
 describe('WorkflowTab - close button', () => {
+  it('reveals Close on a compact inactive tab without a status indicator', () => {
+    renderTab({ compact: true })
+
+    expect(screen.getByTestId('close-workflow-button')).toHaveClass(
+      'group-hover/tab:visible'
+    )
+  })
+
   it('keeps the close button hidden while an active status indicator shows', async () => {
     renderTab({ activeWorkflowKey: 'test-key' })
     useWorkflowTabActivityStore().setEditing('/workflows/test.json')
@@ -310,9 +318,7 @@ describe('WorkflowTab - close button', () => {
   })
 })
 
-describe('WorkflowTab - Agent target', () => {
-  const targetLabel = 'Agent target for this chat'
-
+describe('WorkflowTab - compact', () => {
   it('keeps the mode icon on the active compact tab', () => {
     renderTab({
       workflowOption: makeWorkflowOption({ initialMode: 'app' }),
@@ -322,6 +328,10 @@ describe('WorkflowTab - Agent target', () => {
 
     expect(screen.getByTestId('workflow-mode-icon')).toBeVisible()
   })
+})
+
+describe('WorkflowTab - Agent target', () => {
+  const targetLabel = 'Agent target for this chat'
 
   it('keeps the target, status, and filename visible in a compact mode tab', async () => {
     const workflowOption = makeWorkflowOption({ initialMode: 'app' })
