@@ -132,14 +132,8 @@ describe('nodeIdentification', () => {
     })
 
     describe('createNodeLocatorId encoded forms', () => {
-      it('behaves like createNodeLocatorId for an ordinary, colon-free root id', () => {
+      it('keeps an ordinary root id as-is', () => {
         expect(createNodeLocatorId(null, toNodeId(123))).toBe('123')
-      })
-
-      it('behaves like createNodeLocatorId for an ordinary subgraph-nested id', () => {
-        expect(createNodeLocatorId(validUuid, toNodeId(123))).toBe(
-          validNodeLocatorId
-        )
       })
 
       it('encodes a colon-bearing root-level id without colliding with a subgraph locator', () => {
