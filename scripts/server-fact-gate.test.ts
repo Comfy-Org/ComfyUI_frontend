@@ -1,4 +1,14 @@
-import { describe, expect, it } from 'vitest'
+import { execFileSync, spawnSync } from 'node:child_process'
+import {
+  mkdirSync,
+  mkdtempSync,
+  rmSync,
+  symlinkSync,
+  writeFileSync
+} from 'node:fs'
+import { tmpdir } from 'node:os'
+import path from 'node:path'
+import { afterEach, describe, expect, it } from 'vitest'
 
 import type { ChangedRange } from './server-fact-gate-core'
 import {
@@ -89,8 +99,18 @@ describe('findingsOnChangedLines', () => {
       [4]
     ],
     [
-      'a deletion right after a finding ends',
+      'a deletion on the boundary just before a finding starts',
+      [{ kind: 'deleted', after: 3 }],
+      [4]
+    ],
+    [
+      'a deletion on the boundary just after a finding ends, even when the finding already existed',
       [{ kind: 'deleted', after: 5 }],
+      [4]
+    ],
+    [
+      'no finding for a deletion one line away from either boundary',
+      [{ kind: 'deleted', after: 2 }],
       []
     ]
   ])('reports %s', ([, ranges, expectedLines]) => {
@@ -116,7 +136,80 @@ describe('isGatedPath', () => {
     ['browser_tests/fixtures/billing.ts', false],
     ['packages/account-core/src/index.ts', false],
     ['src/locales/en/main.json', false]
-  ] as const)('gates %s: %s', ([path, gated]) => {
-    expect(isGatedPath(path)).toBe(gated)
+  ] as const)('gates %s: %s', ([file, gated]) => {
+    expect(isGatedPath(file)).toBe(gated)
+  })
+})
+
+describe('server-fact gate on a real diff', () => {
+  const repoRoot = path.resolve(import.meta.dirname, '..')
+  const gatedFile = 'src/useInvite.ts'
+  let workDir: string | undefined
+
+  afterEach(() => {
+    if (workDir) rmSync(workDir, { recursive: true, force: true })
+    workDir = undefined
+  })
+
+  function runGateAfterEdit(before: string[], after: string[]) {
+    const dir = mkdtempSync(path.join(tmpdir(), 'server-fact-gate-'))
+    workDir = dir
+    const run = (...args: string[]) =>
+      execFileSync('git', args, { cwd: dir, stdio: 'ignore' })
+    run('init', '-q')
+    run('config', 'user.email', 'gate@test.invalid')
+    run('config', 'user.name', 'gate')
+    for (const linked of ['node_modules', 'tools']) {
+      symlinkSync(path.join(repoRoot, linked), path.join(dir, linked))
+    }
+    writeFileSync(path.join(dir, '.git/info/exclude'), 'node_modules\ntools\n')
+    mkdirSync(path.join(dir, 'src'))
+    writeFileSync(path.join(dir, gatedFile), before.join('\n'))
+    run('add', '.')
+    run('commit', '-q', '-m', 'base')
+    writeFileSync(path.join(dir, gatedFile), after.join('\n'))
+    return spawnSync(
+      path.join(repoRoot, 'node_modules/.bin/tsx'),
+      [path.join(repoRoot, 'scripts/server-fact-gate.ts'), '--base', 'HEAD'],
+      { cwd: dir, encoding: 'utf8' }
+    )
+  }
+
+  it('reports a recombination exposed by deleting only its pendingServerFact wrapper lines', () => {
+    const wrapped = [
+      'const { canInviteMembers } = useBillingCapabilities()',
+      'export const canInvite =',
+      '  pendingServerFact(',
+      "    'BE-1',",
+      '    canInviteMembers.value || isPlanEnded.value',
+      '  )',
+      'export const ready = true',
+      ''
+    ]
+    const unwrapped = wrapped.filter(
+      (line) => !/pendingServerFact|BE-1|^ {2}\)$/.test(line)
+    )
+
+    const result = runGateAfterEdit(wrapped, unwrapped)
+
+    expect(result.stderr).toContain(`${gatedFile}:3 `)
+    expect(result.status).toBe(1)
+  })
+
+  it('passes an existing finding when the only deletion is a line away from it', () => {
+    const before = [
+      'const { canInviteMembers } = useBillingCapabilities()',
+      'export const canInvite =',
+      '  canInviteMembers.value || isPlanEnded.value',
+      'export const ready = true',
+      'export const unused = false',
+      ''
+    ]
+    const after = before.filter((line) => !line.includes('unused'))
+
+    const result = runGateAfterEdit(before, after)
+
+    expect(result.stderr).toBe('')
+    expect(result.status).toBe(0)
   })
 })

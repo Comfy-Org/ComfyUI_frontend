@@ -70,12 +70,13 @@ export function changedRanges(diffText: string): Map<string, ChangedRange[]> {
   return ranges
 }
 
-// A deletion inside a multi-line expression (for example unwrapping a
-// pendingServerFact call) changes that expression without adding a line.
+// A deletion sits between new lines `after` and `after + 1`. Unwrapping a
+// pendingServerFact call deletes lines at the edges of the expression it
+// wrapped, so a deletion on either boundary of a finding counts as touching it.
 function touches(range: ChangedRange, first: number, last: number): boolean {
   return range.kind === 'added'
     ? first <= range.end && last >= range.start
-    : first <= range.after && last > range.after
+    : first <= range.after + 1 && last >= range.after
 }
 
 export function findingsOnChangedLines(
