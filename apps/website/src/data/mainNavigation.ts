@@ -1,3 +1,4 @@
+import type { AppWorkshopModel } from '@/config/models-catalogue'
 import { externalLinks, getRoutes } from '@/config/routes'
 import type { Locale } from '@/i18n/translations'
 import { translationsFor } from '@/i18n/translations'
@@ -8,11 +9,21 @@ export type NavColumnItem = {
   icon?: string
   badge?: 'new' | 'beta'
   external?: boolean
+  newTab?: boolean
+}
+
+export function navLinkTarget(
+  item: Pick<NavColumnItem, 'external' | 'newTab'>
+): { target?: '_blank'; rel?: string } {
+  if (item.external) return { target: '_blank', rel: 'noopener noreferrer' }
+  return item.newTab ? { target: '_blank', rel: 'noopener' } : {}
 }
 
 export type NavColumn = {
   header?: string
+  description?: string
   items: NavColumnItem[]
+  allLink?: Pick<NavColumnItem, 'label' | 'href'>
   placement?: 'footer'
 }
 
@@ -34,6 +45,7 @@ export type NavItem =
       label: string
       columns: NavColumn[]
       featured?: NavFeatured
+      activePathPrefix?: string
       badge?: 'new'
       href?: never
     }
@@ -43,15 +55,113 @@ export type NavItem =
       badge?: 'new'
       columns?: never
       featured?: never
+      activePathPrefix?: never
     }
 
-export function getMainNavigation(locale: Locale): NavItem[] {
+/** A built Hub app and the PostHog flag it is shown behind, if any. */
+export type HubApp = Pick<AppWorkshopModel, 'appId' | 'flag'>
+
+export type HubSections = {
+  workflows: boolean
+  apps: boolean
+  reshoot: boolean
+}
+
+export const NO_HUB_SECTIONS: HubSections = {
+  workflows: false,
+  apps: false,
+  reshoot: false
+}
+
+export function getMainNavigation(
+  locale: Locale,
+  hubSections: HubSections = NO_HUB_SECTIONS
+): NavItem[] {
   const { t } = translationsFor(locale)
   const routes = getRoutes(locale)
+  const when = <T>(shown: boolean, entry: T): T[] => (shown ? [entry] : [])
+  const seedance25Href = `${routes.workshop}seedance-2-5-reference-to-video/`
   return [
     {
       label: t('nav.workshop'),
-      href: routes.workshop
+      activePathPrefix: '/hub/',
+      featured: {
+        imageSrc:
+          'https://media.comfy.org/website/seedance-2.5/balloons-poster.webp',
+        videoSrc: 'https://media.comfy.org/website/seedance-2.5/balloons.webm',
+        imageAlt: t('nav.featuredHubAlt'),
+        title: t('nav.hubSeedance25'),
+        cta: {
+          label: t('nav.featuredHubCta'),
+          ariaLabel: t('nav.featuredHubCtaAria'),
+          href: seedance25Href
+        }
+      },
+      columns: [
+        {
+          header: t('nav.hubModels'),
+          description: t('nav.hubModelsDescription'),
+          items: [
+            {
+              label: t('nav.hubSeedream5Pro'),
+              href: `${routes.workshop}seedream-5-0-pro-text-to-image/`
+            },
+            { label: t('nav.hubSeedance25'), href: seedance25Href },
+            {
+              label: t('nav.hubNanoBanana2'),
+              href: `${routes.workshop}nano-banana-2-image-edit/`
+            },
+            {
+              label: t('nav.hubGptImage2'),
+              href: `${routes.workshop}gpt-image-2-text-to-image/`
+            }
+          ],
+          allLink: { label: t('nav.hubAllModels'), href: routes.workshop }
+        },
+        ...when(hubSections.workflows, {
+          header: t('nav.hubWorkflows'),
+          description: t('nav.hubWorkflowsDescription'),
+          items: [
+            {
+              label: t('nav.hubImageToVideo'),
+              href: `${routes.hubWorkflows}image-to-video/`
+            },
+            {
+              label: t('nav.hubVideoFromReferences'),
+              href: `${routes.hubWorkflows}video-from-references/`
+            },
+            {
+              label: t('nav.hubMotionTransfer'),
+              href: `${routes.hubWorkflows}motion-transfer/`
+            },
+            {
+              label: t('nav.hubEditSelectedRegion'),
+              href: `${routes.hubWorkflows}edit-selected-region/`
+            }
+          ],
+          allLink: {
+            label: t('nav.hubAllWorkflows'),
+            href: routes.hubWorkflows
+          }
+        }),
+        ...when(hubSections.apps, {
+          header: t('nav.hubApps'),
+          description: t('nav.hubAppsDescription'),
+          items: [
+            {
+              label: t('nav.cinematicStudio'),
+              href: routes.cinematicStudio,
+              newTab: true
+            },
+            ...when(hubSections.reshoot, {
+              label: t('nav.reshoot'),
+              href: routes.reshoot,
+              newTab: true
+            })
+          ],
+          allLink: { label: t('nav.hubAllApps'), href: routes.hubApps }
+        })
+      ]
     },
     {
       label: t('nav.products'),
@@ -71,11 +181,6 @@ export function getMainNavigation(locale: Locale): NavItem[] {
           header: t('nav.colCreate'),
           items: [
             { label: t('nav.comfyLocal'), href: routes.download },
-            {
-              label: t('nav.comfyWorkshop'),
-              href: routes.workshop,
-              badge: 'new'
-            },
             { label: t('nav.comfyCloud'), href: routes.cloud },
             {
               label: t('nav.comfyHub'),

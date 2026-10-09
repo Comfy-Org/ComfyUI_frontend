@@ -14,7 +14,9 @@ export function startModelLoaderDrag(
   filename: string,
   source: NodeAddSource = 'sidebar_drag'
 ) {
-  const widgetValues = provider.key ? { [provider.key]: filename } : undefined
+  const widgetValues = provider.key
+    ? [{ selector: provider.key, value: filename }]
+    : undefined
   useNodeDragToCanvas().startDrag(provider.nodeDef, { widgetValues, source })
 }
 
