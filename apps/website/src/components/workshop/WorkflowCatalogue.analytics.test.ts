@@ -159,6 +159,34 @@ describe('WorkflowCatalogue analytics', () => {
     ])
   })
 
+  it('keeps the category row for a workflow whose category is empty', async () => {
+    const user = userEvent.setup()
+    render(WorkflowCatalogue, {
+      props: { models: [...models, workflow('loose', '', 1, ['SeedVR2'])] }
+    })
+
+    await user.click(
+      within(screen.getByTestId('workflow-category-')).getAllByTestId(
+        'workshop-model-card'
+      )[0]
+    )
+
+    expect(events('hub_item_clicked')).toEqual([
+      {
+        name: 'hub_item_clicked',
+        properties: {
+          surface: 'workflows',
+          kind: 'workflow',
+          slug: 'workflows/loose',
+          source: 'category_row',
+          position: 0,
+          row: ''
+        }
+      }
+    ])
+    expect(events('hub_search_performed')).toEqual([])
+  })
+
   it('reports a workflow opened from the search results with the search', async () => {
     const user = userEvent.setup()
     render(WorkflowCatalogue, { props: { models } })

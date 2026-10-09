@@ -85,11 +85,11 @@ onMounted(() =>
 )
 
 function openWorkflow(model: WorkshopModel, position: number, row?: string) {
-  if (!row) submitSearch()
+  if (row === undefined) submitSearch()
   captureHubItemClick(hubItemOf(model), {
     surface: 'workflows',
     position,
-    ...(row
+    ...(row !== undefined
       ? { source: 'category_row', row }
       : { source: 'results_grid', ...hubActiveQuery(query.value) })
   })
