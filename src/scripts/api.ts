@@ -522,7 +522,11 @@ export class ComfyApi extends EventTarget {
     }
   }
 
-  async fetchApi(route: string, options?: RequestInit) {
+  async fetchApi(
+    route: string,
+    options?: RequestInit,
+    beforeDispatch?: () => void
+  ) {
     const headers: HeadersInit = options?.headers ?? {}
     let unifiedRetryOn401 = false
 
@@ -554,7 +558,8 @@ export class ComfyApi extends EventTarget {
     return fetchWithUnifiedRemint(
       this.apiURL(route),
       { cache: 'no-cache', ...options, headers },
-      unifiedRetryOn401
+      unifiedRetryOn401,
+      beforeDispatch
     )
   }
 

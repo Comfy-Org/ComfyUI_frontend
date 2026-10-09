@@ -10,6 +10,7 @@ import type { ZodType } from 'zod'
 import { ZodError } from 'zod'
 
 import { reportError } from '@/platform/telemetry/reportError'
+import { magicPatchResponseLimits } from './magicPatchResponseLimits'
 
 type FailureCode =
   | 'unavailable'
@@ -19,6 +20,7 @@ type FailureCode =
   | 'request_failed'
   | 'transport_indeterminate'
   | 'report_mismatch'
+  | 'response_too_large'
 type MagicPatchResult<T> =
   | { ok: true; value: T }
   | { ok: false; error: { code: FailureCode; status?: number } }
@@ -37,18 +39,83 @@ class MagicPatchRequestError extends Error {
 }
 
 export function createMagicPatchClient<Scope>(
-  fetchApi: (route: string, options: RequestInit) => Promise<Response>,
+  fetchApi: (
+    route: string,
+    options: RequestInit,
+    beforeDispatch: () => void
+  ) => Promise<Response>,
   available: () => boolean,
   scopeGuard: { capture: () => Scope; current: (captured: Scope) => boolean }
 ) {
   async function request(route: string, options: RequestInit) {
     if (!available()) throw new MagicPatchRequestError(503)
     const captured = scopeGuard.capture()
-    if (!scopeGuard.current(captured))
-      throw new MagicPatchProtocolError('scope_changed')
-    const response = await fetchApi(`/magic-patch${route}`, options)
-    if (!response.ok) throw new MagicPatchRequestError(response.status)
-    return { response, current: () => scopeGuard.current(captured) }
+    const check = () => {
+      if (!scopeGuard.current(captured))
+        throw new MagicPatchProtocolError('scope_changed')
+      if (!available()) throw new MagicPatchRequestError(503)
+      options.signal?.throwIfAborted()
+    }
+    check()
+    const response = await fetchApi(`/magic-patch${route}`, options, check)
+    try {
+      check()
+      if (!response.ok) throw new MagicPatchRequestError(response.status)
+    } catch (cause) {
+      void response.body?.cancel().catch(() => {})
+      throw cause
+    }
+    return { response, current: () => scopeGuard.current(captured), check }
+  }
+
+  async function readBytes(
+    call: { response: Response; check: () => void },
+    maximum: number
+  ): Promise<Uint8Array<ArrayBuffer>> {
+    const reader = call.response.body?.getReader()
+    const chunks: Uint8Array[] = []
+    let length = 0
+    try {
+      call.check()
+      const declared = call.response.headers.get('Content-Length')
+      if (
+        declared !== null &&
+        /^\d+$/.test(declared) &&
+        Number(declared) > maximum
+      )
+        throw new MagicPatchProtocolError('response_too_large')
+      if (reader) {
+        while (true) {
+          call.check()
+          const { done, value } = await reader.read()
+          call.check()
+          if (done) break
+          if (value.byteLength > maximum - length)
+            throw new MagicPatchProtocolError('response_too_large')
+          length += value.byteLength
+          if (value.byteLength) chunks.push(value)
+        }
+      }
+      const bytes = new Uint8Array(length)
+      let offset = 0
+      for (const chunk of chunks) {
+        bytes.set(chunk, offset)
+        offset += chunk.byteLength
+      }
+      return bytes
+    } catch (cause) {
+      void reader?.cancel().catch(() => {})
+      throw cause
+    } finally {
+      reader?.releaseLock()
+    }
+  }
+
+  async function readJSON(
+    call: Parameters<typeof readBytes>[0]
+  ): Promise<unknown> {
+    const bytes = await readBytes(call, magicPatchResponseLimits.jsonBytes)
+    return JSON.parse(new TextDecoder('utf-8', { fatal: true }).decode(bytes))
   }
 
   function finish<T>(call: { current: () => boolean }, value: T): T {
@@ -85,10 +152,7 @@ export function createMagicPatchClient<Scope>(
       body: JSON.stringify(body),
       signal
     })
-    return finish(
-      response,
-      zRequestStatus.parse(await response.response.json())
-    )
+    return finish(response, zRequestStatus.parse(await readJSON(response)))
   }
 
   async function list(after?: string, signal?: AbortSignal) {
@@ -101,12 +165,12 @@ export function createMagicPatchClient<Scope>(
       method: 'GET',
       signal
     })
-    return finish(response, zRequestPage.parse(await response.response.json()))
+    return finish(response, zRequestPage.parse(await readJSON(response)))
   }
 
   async function status(id: RequestStatus['id'], signal?: AbortSignal) {
     const response = await request(requestPath(id), { method: 'GET', signal })
-    const value = zRequestStatus.parse(await response.response.json())
+    const value = zRequestStatus.parse(await readJSON(response))
     if (value.id !== id) throw new MagicPatchProtocolError('invalid_response')
     return finish(response, value)
   }
@@ -116,7 +180,7 @@ export function createMagicPatchClient<Scope>(
       method: 'POST',
       signal
     })
-    const value = zCancellationStatus.parse(await response.response.json())
+    const value = zCancellationStatus.parse(await readJSON(response))
     if (value.request.id !== id)
       throw new MagicPatchProtocolError('invalid_response')
     return finish(response, value)
@@ -133,9 +197,13 @@ export function createMagicPatchClient<Scope>(
       signal
     })
     if (response.response.headers.get('X-Content-SHA256') !== expectedDigest) {
+      void response.response.body?.cancel().catch(() => {})
       throw new MagicPatchProtocolError('report_mismatch')
     }
-    const bytes = await response.response.arrayBuffer()
+    const bytes = await readBytes(
+      response,
+      magicPatchResponseLimits.reportBytes
+    )
     const digest = await crypto.subtle.digest('SHA-256', bytes)
     const actual = Array.from(new Uint8Array(digest), (value) =>
       value.toString(16).padStart(2, '0')

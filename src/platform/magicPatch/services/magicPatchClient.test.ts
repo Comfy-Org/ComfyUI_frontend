@@ -118,7 +118,8 @@ describe('Magic Patch client', () => {
           'Content-Type': 'application/json',
           'Idempotency-Key': 'stable-token'
         }
-      })
+      }),
+      expect.any(Function)
     )
   })
 
@@ -159,7 +160,8 @@ describe('Magic Patch client', () => {
     })
     expect(transport).toHaveBeenCalledWith(
       '/magic-patch/requests?limit=50&after=a%26b%3D1',
-      expect.objectContaining({ method: 'GET' })
+      expect.objectContaining({ method: 'GET' }),
+      expect.any(Function)
     )
   })
 
@@ -210,5 +212,131 @@ describe('Magic Patch client', () => {
     await expect(
       client.report(request.id, 'e'.repeat(64))
     ).resolves.toMatchObject({ ok: false, error: { code: 'report_mismatch' } })
+  })
+})
+
+describe('Magic Patch response byte limits v1', () => {
+  it('rejects declared oversized JSON without reading its body', async () => {
+    const cancel = vi.fn()
+    const body = new ReadableStream<Uint8Array>({ cancel })
+    const client = createMagicPatchClient(
+      async () =>
+        new Response(body, {
+          headers: { 'Content-Length': String(1024 * 1024 + 1) }
+        }),
+      () => true,
+      scopeGuard
+    )
+    await expect(client.list()).resolves.toMatchObject({
+      ok: false,
+      error: { code: 'response_too_large' }
+    })
+    expect(cancel).toHaveBeenCalledTimes(1)
+  })
+
+  it.for(['absent', 'understated'] as const)(
+    'bounds streamed JSON with %s content length',
+    async (length) => {
+      const cancel = vi.fn()
+      const bytes = new TextEncoder().encode(
+        '{"requests":[]}' + ' '.repeat(1024 * 1024)
+      )
+      const body = new ReadableStream<Uint8Array>({
+        start(controller) {
+          controller.enqueue(bytes)
+        },
+        cancel
+      })
+      const client = createMagicPatchClient(
+        async () =>
+          new Response(body, {
+            headers: length === 'understated' ? { 'Content-Length': '1' } : {}
+          }),
+        () => true,
+        scopeGuard
+      )
+      await expect(client.list()).resolves.toMatchObject({
+        ok: false,
+        error: { code: 'response_too_large' }
+      })
+      expect(cancel).toHaveBeenCalledTimes(1)
+    }
+  )
+
+  it('bounds report bytes before hashing and parsing', async () => {
+    const cancel = vi.fn()
+    const bytes = new TextEncoder().encode('{}' + ' '.repeat(8 * 1024 * 1024))
+    const digest = createHash('sha256').update(bytes).digest('hex')
+    const body = new ReadableStream<Uint8Array>({
+      start(controller) {
+        controller.enqueue(bytes)
+      },
+      cancel
+    })
+    const hash = vi.spyOn(crypto.subtle, 'digest')
+    const client = createMagicPatchClient(
+      async () =>
+        new Response(body, {
+          headers: { 'X-Content-SHA256': digest }
+        }),
+      () => true,
+      scopeGuard
+    )
+    await expect(client.report(request.id, digest)).resolves.toMatchObject({
+      ok: false,
+      error: { code: 'response_too_large' }
+    })
+    expect(cancel).toHaveBeenCalledTimes(1)
+    expect(hash).not.toHaveBeenCalled()
+  })
+
+  it('accepts JSON at the exact byte ceiling across chunks', async () => {
+    const prefix = new TextEncoder().encode('{"requests":[]}')
+    const bytes = new Uint8Array(1024 * 1024).fill(32)
+    bytes.set(prefix)
+    const body = new ReadableStream<Uint8Array>({
+      start(controller) {
+        controller.enqueue(bytes.subarray(0, 100))
+        controller.enqueue(bytes.subarray(100))
+        controller.close()
+      }
+    })
+    const client = createMagicPatchClient(
+      async () => new Response(body),
+      () => true,
+      scopeGuard
+    )
+    await expect(client.list()).resolves.toEqual({
+      ok: true,
+      value: { requests: [] }
+    })
+  })
+
+  it('cancels a response when the scope changes during streaming', async () => {
+    let generation = 1
+    const cancel = vi.fn()
+    const body = new ReadableStream<Uint8Array>(
+      {
+        pull(controller) {
+          generation = 2
+          controller.enqueue(new TextEncoder().encode('{"requests":[]}'))
+        },
+        cancel
+      },
+      { highWaterMark: 0 }
+    )
+    const client = createMagicPatchClient(
+      async () => new Response(body),
+      () => true,
+      {
+        capture: () => generation,
+        current: (captured) => captured === generation
+      }
+    )
+    await expect(client.list()).resolves.toMatchObject({
+      ok: false,
+      error: { code: 'scope_changed' }
+    })
+    expect(cancel).toHaveBeenCalledTimes(1)
   })
 })

@@ -108,12 +108,14 @@ function fetchRequestHeaders(
 export async function fetchWithUnifiedRemint(
   input: RequestInfo | URL,
   init: RequestInit,
-  shouldRetryOn401: boolean
+  shouldRetryOn401: boolean,
+  beforeDispatch?: () => void
 ): Promise<Response> {
   const retryInput =
     shouldRetryOn401 && input instanceof Request && input.body !== null
       ? input.clone()
       : input
+  beforeDispatch?.()
   const response = await fetch(input, init)
   if (!shouldRetryOn401 || response.status !== 401) {
     return response
@@ -142,6 +144,7 @@ export async function fetchWithUnifiedRemint(
 
   const headers = requestHeaders
   headers.set('Authorization', `Bearer ${token}`)
+  beforeDispatch?.()
   try {
     const retryResponse = await fetch(retryInput, { ...init, headers })
     trackRetryResponse('fetch', retryResponse.status)
