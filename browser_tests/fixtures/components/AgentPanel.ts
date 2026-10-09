@@ -241,6 +241,7 @@ export class AgentPanel {
     await this.chooseWorkflow(name)
     await expect(this.workflowPicker).toHaveText(name)
     await this.page.mouse.move(0, 0)
+    await this.workflowPicker.blur()
     await expect(
       this.page
         .locator('.p-tooltip, [role="tooltip"]')
