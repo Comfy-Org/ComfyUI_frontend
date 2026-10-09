@@ -27,8 +27,8 @@ import {
   useWidgetValueStore
 } from '@/stores/widgetValueStore'
 import {
-  createLeafNodeLocatorId,
-  createNodeExecutionId
+  createNodeExecutionId,
+  createNodeLocatorId
 } from '@/types/nodeIdentification'
 import type { NodeExecutionId, NodeLocatorId } from '@/types/nodeIdentification'
 import type { NodeId } from '@/types/nodeId'
@@ -355,11 +355,9 @@ function widgetNodeLocatorId(
     if (sourceLocator) return sourceLocator
   }
   if (!bareWidgetId) return undefined
-  return (
-    createLeafNodeLocatorId(
-      subgraphIdFromState(ctx.nodeData, ctx.rootGraphId),
-      bareWidgetId
-    ) ?? undefined
+  return createNodeLocatorId(
+    subgraphIdFromState(ctx.nodeData, ctx.rootGraphId),
+    bareWidgetId
   )
 }
 
