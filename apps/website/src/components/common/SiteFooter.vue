@@ -236,14 +236,12 @@ const columnGroups: FooterColumn[][] = [
           </p>
         </div>
 
-        <div
-          class="flex flex-wrap items-center justify-center gap-6 lg:shrink-0 lg:flex-nowrap"
-        >
+        <div class="flex flex-col items-center gap-4 lg:shrink-0 lg:items-end">
           <LanguageSwitcher :locale :alternates />
-          <p class="text-sm">
-            {{ t('footer.location') }}
-          </p>
-          <p class="text-sm">&copy; {{ new Date().getFullYear() }} Comfy Org</p>
+          <div class="flex flex-wrap justify-center gap-6 text-sm">
+            <p>{{ t('footer.location') }}</p>
+            <p>&copy; {{ new Date().getFullYear() }} Comfy Org</p>
+          </div>
         </div>
       </div>
     </div>
