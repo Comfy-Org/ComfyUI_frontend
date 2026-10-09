@@ -1,7 +1,7 @@
 import { useBillingCapabilities } from '@/platform/workspace/composables/useBillingCapabilities'
 import { getActivePinia } from 'pinia'
 import { useBillingOperationStore } from '@/platform/workspace/stores/billingOperationStore'
-import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
+import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { computed, ref } from 'vue'
 
 import { useCurrentUser } from '@/composables/auth/useCurrentUser'
@@ -171,10 +171,6 @@ describe('useDowngradeToPersonal', () => {
     }
     useBillingCapabilities().canDowngradeToPersonal = computed(() => true)
     windowOpen = vi.spyOn(window, 'open').mockReturnValue({} as Window)
-  })
-
-  afterEach(() => {
-    windowOpen.mockRestore()
   })
 
   describe('removableMembers / hasOtherMembers', () => {
@@ -908,6 +904,28 @@ describe('useDowngradeToPersonal', () => {
         fromTeamMembersPanel('downgrade_to_personal', 'succeeded'),
         fromTeamMembersPanel('subscription_checkout', 'succeeded'),
         fromTeamMembersPanel('operation', 'succeeded')
+      ])
+    })
+
+    it('names the client that runs the downgrade on its own operation events', async () => {
+      mockMembers.value = teamWithOwnerAnd('m1')
+      const { downgradeToPersonal } = useDowngradeToPersonal({
+        paymentIntentSource: 'team_members_panel'
+      })
+
+      await downgradeToPersonal('founder-monthly')
+
+      const trackBillingEvent = useTelemetry()?.trackBillingEvent
+      if (!trackBillingEvent) throw new Error('telemetry not mocked')
+      expect(
+        vi
+          .mocked(trackBillingEvent)
+          .mock.calls.map(([event]) => event)
+          .filter((event) => event.operation === 'operation')
+          .map((event) => [event.stage, event.billing_client])
+      ).toEqual([
+        ['started', 'legacy'],
+        ['succeeded', 'legacy']
       ])
     })
 

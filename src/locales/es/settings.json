@@ -339,10 +339,6 @@
     "name": "Mostrar actualizaciones de versión",
     "tooltip": "Mostrar actualizaciones para nuevos modelos y funciones principales nuevas."
   },
-  "Comfy_Pointer_ClickBufferTime": {
-    "name": "Retraso de deriva del clic del puntero",
-    "tooltip": "Después de presionar un botón del puntero, este es el tiempo máximo (en milisegundos) que se puede ignorar el movimiento del puntero.\n\nAyuda a prevenir que los objetos sean movidos involuntariamente si el puntero se mueve al hacer clic."
-  },
   "Comfy_Pointer_ClickDrift": {
     "name": "Deriva del clic del puntero (distancia máxima)",
     "tooltip": "Si el puntero se mueve más de esta distancia mientras se mantiene presionado un botón, se considera arrastrar (en lugar de hacer clic).\n\nAyuda a prevenir que los objetos sean movidos involuntariamente si el puntero se mueve al hacer clic."

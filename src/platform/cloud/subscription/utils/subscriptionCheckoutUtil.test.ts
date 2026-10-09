@@ -74,8 +74,6 @@ vi.mock(import('./checkoutAttributionLoader'), () => ({
   loadCheckoutAttributionModule: mockLoadCheckoutAttributionModule
 }))
 
-global.fetch = vi.fn()
-
 vi.mock(import('@/platform/auth/session/webSessionFetch'), { spy: true })
 
 type Distribution = 'desktop' | 'localhost' | 'cloud'
@@ -96,7 +94,6 @@ function createDeferred<T>() {
 }
 
 beforeEach(() => {
-  vi.mocked(webSessionResourceHeader).mockReset()
   vi.mocked(webSessionResourceHeader).mockResolvedValue(undefined)
   Object.assign(useAuthStore(), { userId: 'user-123' })
   vi.mocked(useAuthStore().getFirebaseAuthHeader).mockResolvedValue({

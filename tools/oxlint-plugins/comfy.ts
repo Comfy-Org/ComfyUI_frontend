@@ -26,12 +26,15 @@ import type {
   noPrimeVueImports as NoPrimeVueImports,
   noStaticallyDisabledTest as NoStaticallyDisabledTest,
   noUnitTestFilesInBrowserTests as NoUnitTestFilesInBrowserTests,
-  noUnsafeErrorAssertion as NoUnsafeErrorAssertion
+  noUnsafeErrorAssertion as NoUnsafeErrorAssertion,
+  noVitestMockMethodNames as NoVitestMockMethodNames
 } from './restrictedSyntax'
 import type {
   noImportActual as NoImportActual,
   noModuleScopeVitestMocks as NoModuleScopeVitestMocks,
   noPersistentLiteGraphRegistration as NoPersistentLiteGraphRegistration,
+  noRedundantConsoleSpy as NoRedundantConsoleSpy,
+  noRedundantFetchStub as NoRedundantFetchStub,
   noRedundantLiteGraphCleanup as NoRedundantLiteGraphCleanup,
   noRedundantVitestCleanup as NoRedundantVitestCleanup
 } from './vitestCleanup'
@@ -77,7 +80,8 @@ const {
   noPrimeVueImports,
   noStaticallyDisabledTest,
   noUnitTestFilesInBrowserTests,
-  noUnsafeErrorAssertion
+  noUnsafeErrorAssertion,
+  noVitestMockMethodNames
 } = requireFrom('./restrictedSyntax.ts') as {
   noDeprecatedApiSchema: typeof NoDeprecatedApiSchema
   noDirectSelectionWrite: typeof NoDirectSelectionWrite
@@ -92,17 +96,22 @@ const {
   noStaticallyDisabledTest: typeof NoStaticallyDisabledTest
   noUnitTestFilesInBrowserTests: typeof NoUnitTestFilesInBrowserTests
   noUnsafeErrorAssertion: typeof NoUnsafeErrorAssertion
+  noVitestMockMethodNames: typeof NoVitestMockMethodNames
 }
 const {
   noImportActual,
   noModuleScopeVitestMocks,
   noPersistentLiteGraphRegistration,
+  noRedundantConsoleSpy,
+  noRedundantFetchStub,
   noRedundantLiteGraphCleanup,
   noRedundantVitestCleanup
 } = requireFrom('./vitestCleanup.ts') as {
   noImportActual: typeof NoImportActual
   noModuleScopeVitestMocks: typeof NoModuleScopeVitestMocks
   noPersistentLiteGraphRegistration: typeof NoPersistentLiteGraphRegistration
+  noRedundantConsoleSpy: typeof NoRedundantConsoleSpy
+  noRedundantFetchStub: typeof NoRedundantFetchStub
   noRedundantLiteGraphCleanup: typeof NoRedundantLiteGraphCleanup
   noRedundantVitestCleanup: typeof NoRedundantVitestCleanup
 }
@@ -131,6 +140,8 @@ export default {
     'no-primevue-imports': noPrimeVueImports,
     'no-render-in-watch-effect': noRenderInWatchEffect,
     'no-statically-disabled-test': noStaticallyDisabledTest,
+    'no-redundant-console-spy': noRedundantConsoleSpy,
+    'no-redundant-fetch-stub': noRedundantFetchStub,
     'no-redundant-litegraph-cleanup': noRedundantLiteGraphCleanup,
     'no-redundant-vitest-cleanup': noRedundantVitestCleanup,
     'no-relative-packages': noRelativePackages,
@@ -139,6 +150,7 @@ export default {
     'no-unit-test-files-in-browser-tests': noUnitTestFilesInBrowserTests,
     'no-unsafe-error-assertion': noUnsafeErrorAssertion,
     'no-useless-path-segments': noUselessPathSegments,
+    'no-vitest-mock-method-names': noVitestMockMethodNames,
     'prefer-initial-settings': preferInitialSettings,
     'use-global-pinia': useGlobalPinia
   }

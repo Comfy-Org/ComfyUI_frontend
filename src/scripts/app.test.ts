@@ -1,10 +1,15 @@
 import { fromAny, fromPartial } from '@total-typescript/shoehorn'
+import { ComfyApp, app as singletonApp } from './app'
 import { useTeamWorkspaceStore } from '@/platform/workspace/stores/teamWorkspaceStore'
 import { useSubgraphNavigationStore } from '@/stores/subgraphNavigationStore'
 import { useNodeOutputStore } from '@/stores/nodeOutputStore'
 import { useToastStore } from '@/platform/updates/common/toastStore'
 import { useSettingStore } from '@/platform/settings/settingStore'
 import { useAuthStore } from '@/stores/authStore'
+import {
+  startDesktopHostSession,
+  stopDesktopHostSession
+} from '@/platform/auth/desktopHost/desktopHostSession'
 import { useApiKeyAuthStore } from '@/stores/apiKeyAuthStore'
 import {
   afterEach,
@@ -59,7 +64,6 @@ import { useNodeReplacement } from '@/platform/nodeReplacement/useNodeReplacemen
 import type { NodeReplacement } from '@/platform/nodeReplacement/types'
 import type { NodeExecutionOutput } from '@/platform/remote/comfyui/execution/types'
 import type { NodeError } from '@/platform/remote/comfyui/types'
-import { ComfyApp, app as singletonApp } from './app'
 import * as litegraphUtil from '@/utils/litegraphUtil'
 import { createNode, executeWidgetsCallback } from '@/utils/litegraphUtil'
 import { graphToPrompt } from '@/utils/executionUtil'
@@ -969,6 +973,39 @@ describe('ComfyApp', () => {
       resolveToken('workspace-token')
       await expect(submission).resolves.toBe(true)
       expect(queuePrompt).toHaveBeenCalledOnce()
+    })
+
+    it('sends only the Desktop host credential, never a stored personal key', async () => {
+      prepareEmptyPromptQueue()
+      await startDesktopHostSession({
+        getState: async () => ({ status: 'signed_in', userId: 'host-user' }),
+        getWorkspaceToken: async () => 'host-token',
+        requestSignIn: async () => ({
+          status: 'signed_in',
+          userId: 'host-user'
+        }),
+        signOut: async () => ({ status: 'signed_out' }),
+        onChanged: () => () => {}
+      })
+      vi.mocked(useApiKeyAuthStore().getApiKey).mockReturnValue('stored-key')
+      Object.assign(useApiKeyAuthStore(), { isAuthenticated: true })
+      vi.mocked(useAuthStore().getWorkspaceAuthToken).mockResolvedValueOnce(
+        'host-token'
+      )
+      const queuePrompt = vi
+        .spyOn(api, 'queuePrompt')
+        .mockImplementation(() => {
+          expect(api.authToken).toBe('host-token')
+          expect(api.apiKey).toBeUndefined()
+          return Promise.resolve({ prompt_id: 'job-1' })
+        })
+
+      try {
+        await expect(app.queuePrompt(0)).resolves.toBe(true)
+        expect(queuePrompt).toHaveBeenCalledOnce()
+      } finally {
+        stopDesktopHostSession()
+      }
     })
 
     it('waits for a workspace switch before selecting the billing context', async () => {
@@ -3651,9 +3688,6 @@ describe('ComfyApp', () => {
       ['an invalid structure', '[]'],
       ['invalid JSON', '{invalid']
     ])('shows one error for %s', async ([, workflow]) => {
-      const consoleError = vi
-        .spyOn(console, 'error')
-        .mockImplementation(() => {})
       vi.mocked(getWorkflowDataFromFile).mockResolvedValue({ workflow })
 
       await app.handleFile(createTestFile('broken.json', 'application/json'))
@@ -3662,7 +3696,6 @@ describe('ComfyApp', () => {
       expect(useToastStore().addAlert).toHaveBeenCalledWith(
         'Unable to find workflow in broken.json'
       )
-      consoleError.mockRestore()
     })
 
     it.for([

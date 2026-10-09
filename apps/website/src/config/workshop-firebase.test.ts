@@ -1,5 +1,5 @@
 import type { UserCredential } from 'firebase/auth'
-import { beforeEach, describe, expect, it, vi } from 'vitest'
+import { describe, expect, it, vi } from 'vitest'
 
 import { captureSignupRollbackFailure } from '@/scripts/posthog'
 import {
@@ -101,9 +101,8 @@ describe('signUpWorkshopWithEmail rollback reporting', () => {
     h.createUserWithEmail.mockResolvedValue({
       user: { delete: deleteFn, getIdToken: async () => 'jwt' }
     })
-    vi.stubGlobal(
-      'fetch',
-      vi.fn(async () => new Response(null, { status: 500 }))
+    vi.mocked(fetch).mockImplementation(
+      async () => new Response(null, { status: 500 })
     )
   }
 
@@ -163,10 +162,6 @@ describe('popup sign-in', () => {
 describe('social sign-in provisioning boundary', () => {
   const user = { uid: 'u1', email: 'a@b.co', getIdToken: async () => 'jwt' }
 
-  beforeEach(() => {
-    h.signInWithGoogle.mockReset()
-  })
-
   it('rethrows a popup failure untouched, so the caller sees the Firebase code', async () => {
     const popupFailure = { code: 'auth/popup-closed-by-user', message: 'x' }
     h.signInWithGoogle.mockRejectedValue(popupFailure)
@@ -175,9 +170,8 @@ describe('social sign-in provisioning boundary', () => {
   })
 
   it('wraps a provisioning failure with the signed-in user and the original cause', async () => {
-    vi.stubGlobal(
-      'fetch',
-      vi.fn(async () => new Response(null, { status: 500 }))
+    vi.mocked(fetch).mockImplementation(
+      async () => new Response(null, { status: 500 })
     )
 
     const failure = await provisionWorkshopCustomer({

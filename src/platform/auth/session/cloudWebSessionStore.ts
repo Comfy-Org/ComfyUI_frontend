@@ -42,6 +42,7 @@ import { t } from '@/i18n'
 import { isCloud } from '@/platform/distribution/types'
 import { firebaseIdentity } from '@/platform/auth/firebaseIdentity'
 import { presentSsoRequired } from '@/platform/auth/sso/ssoRequired'
+import { webSessionUser } from '@/platform/auth/session/webSessionUser'
 import {
   clearInteractiveSignIn,
   markInteractiveSignIn,
@@ -147,8 +148,9 @@ function resetForAccountChange(change: WebSessionAccountChange): void {
 }
 
 function teamWorkspaceId(): string | undefined {
-  const workspace = useWorkspaceAuthStore().currentWorkspace
-  return workspace?.type === 'team' ? workspace.id : undefined
+  const { currentWorkspace, deniedWorkspaceId } = useWorkspaceAuthStore()
+  if (currentWorkspace?.type === 'team') return currentWorkspace.id
+  return deniedWorkspaceId ?? undefined
 }
 
 function sessionOptions(): WebSessionOptions {
@@ -223,6 +225,15 @@ export const useCloudWebSessionStore = defineStore('cloudWebSession', () => {
     }
   )
 
+  // A unified credential from a token-rail fallback would adopt a sibling's
+  // token and overwrite the workspace this tab's session requests carry.
+  watch(
+    () => signedInUser.value?.id,
+    (userId) => {
+      if (userId) useWorkspaceAuthStore().clearUnifiedContext()
+    }
+  )
+
   const reconnecting = shallowRef(false)
   const readsFailing = computed(
     () => 'failures' in state.value && state.value.failures > 0
@@ -292,6 +303,8 @@ export const useCloudWebSessionStore = defineStore('cloudWebSession', () => {
     identity = session
     session.subscribe((next) => {
       state.value = next
+      webSessionUser.value =
+        next.phase === 'signed_in' ? next.session.user : undefined
       followSsoHint(next)
     })
     const mint = createSessionTokenMint({

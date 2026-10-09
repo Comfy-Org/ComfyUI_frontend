@@ -8,13 +8,14 @@
       <h2 class="m-0 text-sm font-normal text-base-foreground">
         {{ t('auth.sso.required.title') }}
       </h2>
-      <button
-        class="cursor-pointer rounded-sm border-none bg-transparent p-0 text-muted-foreground transition-colors hover:text-base-foreground focus-visible:ring-1 focus-visible:ring-border-default focus-visible:outline-none"
+      <Button
+        size="icon"
+        variant="muted-textonly"
         :aria-label="t('g.close')"
         @click="dismiss"
       >
         <i class="icon-[lucide--x] size-4" />
-      </button>
+      </Button>
     </div>
 
     <p class="m-0 p-4 text-sm text-muted-foreground">
@@ -32,6 +33,7 @@
       <Button
         variant="secondary"
         size="lg"
+        autofocus
         :loading="leaving"
         @click="continueWithSso"
       >
@@ -51,13 +53,15 @@ import { ssoStartUrl } from '@comfyorg/account-core/sso'
 import Button from '@/components/ui/button/Button.vue'
 import { useErrorHandling } from '@/composables/useErrorHandling'
 import { SSO_REQUIRED_DIALOG_KEY } from '@/platform/auth/sso/ssoRequiredDialogKey'
+import { toSsoReturnPath } from '@/platform/auth/sso/ssoReturnPath'
 import { SSO_ENTRY_OPEN_QUERY } from '@/platform/cloud/onboarding/sso/ssoEntryQuery'
 import { useAuthStore } from '@/stores/authStore'
 import { useDialogStore } from '@/stores/dialogStore'
 
-const { email, returnTo } = defineProps<{
+const { email, returnTo, organizationId } = defineProps<{
   email?: string
   returnTo?: string
+  organizationId?: string
 }>()
 
 const { t } = useI18n()
@@ -73,15 +77,22 @@ function dismiss() {
 }
 
 function destination(): string {
+  const back = {
+    returnTo: toSsoReturnPath(returnTo ?? router.currentRoute.value.fullPath),
+    origin: window.location.origin
+  }
+  if (organizationId) {
+    return ssoStartUrl({
+      organizationId,
+      email: knownEmail.value ?? undefined,
+      ...back
+    })
+  }
   if (!knownEmail.value) {
     return router.resolve({ name: 'cloud-login', query: SSO_ENTRY_OPEN_QUERY })
       .href
   }
-  return ssoStartUrl({
-    email: knownEmail.value,
-    returnTo: returnTo ?? router.currentRoute.value.fullPath,
-    origin: window.location.origin
-  })
+  return ssoStartUrl({ email: knownEmail.value, ...back })
 }
 
 async function continueWithSso() {
