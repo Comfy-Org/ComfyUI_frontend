@@ -6,9 +6,9 @@ const value = defineModel<number>({ required: true })
 const id = useId()
 
 function wholeNumber(raw: string) {
-  const next = Math.round(Number(raw))
-  return raw.trim() !== '' && Number.isFinite(next) && next >= 0
-    ? next
+  const parsed = Number(raw)
+  return raw.trim() !== '' && Number.isFinite(parsed) && parsed >= 0
+    ? Math.round(parsed)
     : undefined
 }
 

@@ -31,6 +31,7 @@ describe('EditorNumberField', () => {
 
   it.for([
     { typed: '-3', what: 'a negative number' },
+    { typed: '-0.4', what: 'a negative fraction' },
     { typed: '{Backspace}', what: 'an empty field' }
   ])('puts the last good number back after $what', async ({ typed }) => {
     const { value, input } = renderField()
