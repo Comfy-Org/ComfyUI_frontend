@@ -15,6 +15,7 @@ import type {
   AgentMessageFeedbackMetadata,
   AgentMessageSentMetadata,
   AgentStarterPromptClickedMetadata,
+  AgentStarterPromptExposureMetadata,
   AgentNodeTaggedMetadata,
   AgentOnboardingNotShownMetadata,
   AgentPanelClosedMetadata,
@@ -363,6 +364,12 @@ export class HostTelemetrySink implements TelemetryProvider {
     metadata: AgentStarterPromptClickedMetadata
   ): void {
     this.capture(TelemetryEvents.AGENT_STARTER_PROMPT_CLICKED, metadata)
+  }
+
+  trackAgentStarterPromptExposure(
+    metadata: AgentStarterPromptExposureMetadata
+  ): void {
+    this.capture(TelemetryEvents.AGENT_STARTER_PROMPT_EXPOSURE, metadata)
   }
 
   trackAgentFreeUseNotice(metadata: AgentFreeUseNoticeMetadata): void {

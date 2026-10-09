@@ -4,6 +4,7 @@ import { useTelemetry } from '@/platform/telemetry'
 
 import { useAgentComposerStore } from '../../stores/agent/agentComposerStore'
 import type { AgentStarterPromptAttribution } from '../../utils/starterPrompts'
+import { starterPromptAttribution } from '../../utils/starterPrompts'
 import type { ComposerAttachment } from '../../types/composerAttachment'
 import { useComposer } from './useComposer'
 
@@ -170,6 +171,21 @@ describe('useComposer', () => {
     expect(store.promptOrigin).toBe('suggestion')
     expect(store.starterPrompt).toBeNull()
     expect(telemetry.trackAgentStarterPromptClicked).not.toHaveBeenCalled()
+  })
+
+  it('omits experiment properties when prompt attribution has no assignment', () => {
+    const { composer } = setup()
+
+    composer.insert(
+      'QA treatment',
+      starterPromptAttribution('QA treatment', 1, 5, 'en')
+    )
+
+    const [[event]] = telemetry.trackAgentStarterPromptClicked.mock.calls
+    expect(event).not.toHaveProperty('$feature/agent-starter-prompt-set')
+    expect(useAgentComposerStore().starterPrompt).not.toHaveProperty(
+      'assignment'
+    )
   })
 
   it('a recreated composer rehydrates the pending draft and attachments', () => {

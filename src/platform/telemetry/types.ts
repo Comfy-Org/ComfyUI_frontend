@@ -16,7 +16,7 @@ import {
   AUTH_TELEMETRY_EVENT,
   SESSION_TELEMETRY_EVENT
 } from '@comfyorg/account-core/telemetry'
-import type { AgentRunMode } from '@comfyorg/ingest-types'
+import type { AgentRunMode, GetFeaturesResponses } from '@comfyorg/ingest-types'
 import type {
   AuthErrorMetadata,
   AuthFlowAction,
@@ -815,6 +815,12 @@ export type AgentStarterPromptId =
   | 'slot_4'
   | 'slot_5'
   | 'unregistered'
+export type AgentStarterPromptAssignment = NonNullable<
+  GetFeaturesResponses[200]['agent-starter-prompt-set']
+>
+interface AgentStarterPromptExperimentMetadata {
+  '$feature/agent-starter-prompt-set': AgentStarterPromptAssignment
+}
 /**
  * Where the free-use notice was placed, for the DES-1221 placement experiment.
  *
@@ -843,10 +849,10 @@ export interface AgentFreeUseNoticeMetadata extends Record<string, unknown> {
   action: 'shown' | 'dismissed' | 'learn_more_clicked'
   placement: AgentFreeUsePlacement
 }
-export interface AgentStarterPromptClickedMetadata extends Record<
-  string,
-  unknown
-> {
+export interface AgentStarterPromptClickedMetadata
+  extends
+    Record<string, unknown>,
+    Partial<AgentStarterPromptExperimentMetadata> {
   prompt_id: AgentStarterPromptId
   prompt_index: number
   prompt_count: number
@@ -855,7 +861,12 @@ export interface AgentStarterPromptClickedMetadata extends Record<
   click_id: string
   draft_was_empty: boolean
 }
-export interface AgentMessageSentMetadata extends Record<string, unknown> {
+export interface AgentStarterPromptExposureMetadata
+  extends Record<string, unknown>, AgentStarterPromptExperimentMetadata {}
+export interface AgentMessageSentMetadata
+  extends
+    Record<string, unknown>,
+    Partial<AgentStarterPromptExperimentMetadata> {
   attachment_count: number
   node_tag_count: number
   thread_id: string | null
@@ -1694,6 +1705,9 @@ export interface TelemetryProvider {
   trackAgentStarterPromptClicked?(
     metadata: AgentStarterPromptClickedMetadata
   ): void
+  trackAgentStarterPromptExposure?(
+    metadata: AgentStarterPromptExposureMetadata
+  ): void
   trackAgentFreeUseNotice?(metadata: AgentFreeUseNoticeMetadata): void
   trackAgentFreeUseExposure?(metadata: AgentFreeUseExposureMetadata): void
   trackAgentNodeTagged?(metadata: AgentNodeTaggedMetadata): void
@@ -1886,6 +1900,7 @@ export const TelemetryEvents = {
   AGENT_CONSENT_RESOLVED: 'app:agent_consent_resolved',
   AGENT_MESSAGE_SENT: 'app:agent_message_sent',
   AGENT_STARTER_PROMPT_CLICKED: 'app:agent_starter_prompt_clicked',
+  AGENT_STARTER_PROMPT_EXPOSURE: 'app:agent_starter_prompt_exposure',
   AGENT_FREE_USE_NOTICE: 'app:agent_free_use_notice',
   AGENT_FREE_USE_EXPOSURE: 'app:agent_free_use_exposure',
   AGENT_NODE_TAGGED: 'app:agent_node_tagged',

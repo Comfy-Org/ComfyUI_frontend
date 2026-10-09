@@ -14,6 +14,14 @@ vi.hoisted(() => {
   }
 })
 
+const distribution = vi.hoisted(() => ({ isCloud: false }))
+
+vi.mock(import('@/platform/distribution/types'), () => ({
+  get isCloud() {
+    return distribution.isCloud
+  }
+}))
+
 import { i18n } from '@/i18n'
 import { toTurnId } from '../../schemas/agentApiSchema'
 import type { WorkflowReference } from '../../types/workflowReference'
@@ -76,8 +84,33 @@ function mount(isMaximized = false) {
 
 describe('AgentPanel', () => {
   beforeEach(() => {
+    distribution.isCloud = false
     vi.useRealTimers()
     localStorage.clear()
+  })
+
+  it('renders and forwards the treatment starter prompt exposure', () => {
+    distribution.isCloud = true
+    const { emitted } = render(AgentPanel, {
+      props: {
+        entries: [],
+        historyGroups: createHistoryGroups(),
+        starterPromptAssignment: 'test',
+        attributeStarterPromptExperiment: true
+      },
+      global: {
+        plugins: [i18n],
+        directives: { tooltip: {} },
+        stubs: { WorkflowSelectorChip: true }
+      }
+    })
+
+    expect(
+      screen.getByRole('button', {
+        name: i18n.global.t('agent.suggestedPrompts.treatment.cloud.0')
+      })
+    ).toBeVisible()
+    expect(emitted('starterPromptRendered')).toEqual([['test']])
   })
 
   it('passes the editable workflow into the minimized run notice', () => {
