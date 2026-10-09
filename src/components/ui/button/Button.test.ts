@@ -129,6 +129,78 @@ describe('Button', () => {
     expect(onClick).not.toHaveBeenCalled()
   })
 
+  it('blocks middle-button activation for a loading anchor', () => {
+    const onAuxclick = vi.fn()
+    render(Button, {
+      props: { as: 'a', loading: true },
+      attrs: { href: '#destination', onAuxclick },
+      slots: { default: 'Open' }
+    })
+
+    const link = screen.getByRole('link', { name: 'Open' })
+    const auxclick = new MouseEvent('auxclick', {
+      bubbles: true,
+      cancelable: true,
+      button: 1
+    })
+    expect(link.dispatchEvent(auxclick)).toBe(false)
+    expect(onAuxclick).not.toHaveBeenCalled()
+  })
+
+  it('blocks middle-button activation for a disabled anchor', () => {
+    const onAuxclick = vi.fn()
+    render(Button, {
+      props: { as: 'a', disabled: true },
+      attrs: { href: '#destination', onAuxclick },
+      slots: { default: 'Open' }
+    })
+
+    const link = screen.getByRole('link', { name: 'Open' })
+    const auxclick = new MouseEvent('auxclick', {
+      bubbles: true,
+      cancelable: true,
+      button: 1
+    })
+    expect(link.dispatchEvent(auxclick)).toBe(false)
+    expect(onAuxclick).not.toHaveBeenCalled()
+  })
+
+  it('allows middle-button activation on an enabled anchor', () => {
+    const onAuxclick = vi.fn()
+    render(Button, {
+      props: { as: 'a' },
+      attrs: { href: '#destination', onAuxclick },
+      slots: { default: 'Open' }
+    })
+
+    const link = screen.getByRole('link', { name: 'Open' })
+    const auxclick = new MouseEvent('auxclick', {
+      bubbles: true,
+      cancelable: true,
+      button: 1
+    })
+    expect(link.dispatchEvent(auxclick)).toBe(true)
+    expect(onAuxclick).toHaveBeenCalledTimes(1)
+  })
+
+  it('does not intercept other auxclick buttons while loading', () => {
+    const onAuxclick = vi.fn()
+    render(Button, {
+      props: { as: 'a', loading: true },
+      attrs: { href: '#destination', onAuxclick },
+      slots: { default: 'Open' }
+    })
+
+    const link = screen.getByRole('link', { name: 'Open' })
+    const auxclick = new MouseEvent('auxclick', {
+      bubbles: true,
+      cancelable: true,
+      button: 2
+    })
+    expect(link.dispatchEvent(auxclick)).toBe(true)
+    expect(onAuxclick).toHaveBeenCalledTimes(1)
+  })
+
   it('disables the button when disabled prop is true', () => {
     render(Button, {
       props: { disabled: true },
