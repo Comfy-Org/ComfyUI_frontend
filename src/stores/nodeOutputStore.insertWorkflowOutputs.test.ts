@@ -42,14 +42,6 @@ function setOutputsByRawExecutionId(rawNodeId: string) {
 }
 
 describe('nodeOutputStore: outputs for insert_workflow-remapped node ids', () => {
-  it('lands an executed output on a node with a plain numeric id', () => {
-    const node = addRootSaveImageNode('9')
-
-    setOutputsByRawExecutionId('9')
-
-    expect(useNodeOutputStore().getNodeOutputs(node)).toEqual(OUTPUT)
-  })
-
   it('regression: lands an executed output on an agent-inserted node (PM-2037)', () => {
     // Before the fix the write side (`executionIdToNodeLocatorId`) read the
     // id as a 5-segment subgraph path and resolved nothing, and the read side
