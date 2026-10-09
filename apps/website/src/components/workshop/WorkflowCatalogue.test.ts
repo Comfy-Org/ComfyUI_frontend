@@ -115,7 +115,8 @@ describe('workflow catalogue ordering and shared links', () => {
     const user = userEvent.setup()
     render(WorkflowCatalogue, { props: { models } })
     await user.click(screen.getByTestId('workshop-filter'))
-    await user.click(await screen.findByTestId('filter-model-SeedVR2'))
+    await user.click(await screen.findByRole('tab', { name: /^Model/ }))
+    await user.click(screen.getByTestId('filter-model-SeedVR2'))
     expect(visibleOutcomes()).toEqual([
       '/models/workflows/connect/',
       '/models/workflows/restore/'
@@ -153,7 +154,8 @@ describe('workflow catalogue ordering and shared links', () => {
     render(WorkflowCatalogue, { props: { models } })
     await user.click(screen.getByTestId('workshop-filter'))
     await user.click(await screen.findByTestId('filter-useCase-video'))
-    await user.click(await screen.findByTestId('filter-model-SeedVR2'))
+    await user.click(await screen.findByRole('tab', { name: /^Model/ }))
+    await user.click(screen.getByTestId('filter-model-SeedVR2'))
 
     await user.click(screen.getByRole('button', { name: 'Remove video' }))
     expect(screen.getByTestId('workshop-filter-chips')).toHaveTextContent(
@@ -174,7 +176,8 @@ describe('workflow catalogue ordering and shared links', () => {
     )
 
     await user.click(screen.getByTestId('workshop-filter'))
-    await user.click(await screen.findByTestId('filter-model-SeedVR2'))
+    await user.click(await screen.findByRole('tab', { name: /^Model/ }))
+    await user.click(screen.getByTestId('filter-model-SeedVR2'))
     expect(visibleOutcomes()).toEqual(['/models/workflows/connect/'])
 
     await user.click(screen.getByTestId('workshop-filter-chips-clear'))
@@ -189,7 +192,8 @@ describe('workflow catalogue ordering and shared links', () => {
     const user = userEvent.setup()
     render(WorkflowCatalogue, { props: { models } })
     await user.click(screen.getByTestId('workshop-filter'))
-    await user.click(await screen.findByTestId('filter-model-SeedVR2'))
+    await user.click(await screen.findByRole('tab', { name: /^Model/ }))
+    await user.click(screen.getByTestId('filter-model-SeedVR2'))
     expect(screen.getByTestId('workshop-filter-chips')).toHaveTextContent(
       'Runs on SeedVR2'
     )

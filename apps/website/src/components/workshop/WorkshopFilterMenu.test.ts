@@ -41,7 +41,7 @@ describe('WorkshopFilterMenu', () => {
     const useCase = await within(dialog).findByRole('button', {
       name: 'Generate images 4'
     })
-    expect(within(dialog).queryByRole('searchbox')).toBeNull()
+    expect(within(dialog).getByRole('searchbox')).toBeVisible()
     useCase.focus()
     await user.keyboard(' ')
     expect(useCase.getAttribute('aria-pressed')).toBe('true')
@@ -67,17 +67,9 @@ describe('WorkshopFilterMenu', () => {
     )
   })
 
-  it('offers a search box once the options are too many to scan', async () => {
+  it('narrows a facet with its search box', async () => {
     const user = userEvent.setup()
-    const { useCases } = mountMenu([
-      ...useCaseOptions,
-      { value: 'edit-images', label: 'Edit images', count: 1 },
-      { value: 'generate-videos', label: 'Generate videos', count: 1 },
-      { value: 'animate-images', label: 'Animate images', count: 1 },
-      { value: 'edit-videos', label: 'Edit videos', count: 1 },
-      { value: 'audio', label: 'Audio', count: 1 },
-      { value: 'text', label: 'Text', count: 1 }
-    ])
+    const { useCases } = mountMenu()
 
     await user.click(screen.getByTestId('workshop-filter'))
     await user.type(
@@ -126,9 +118,12 @@ describe('WorkshopFilterMenu', () => {
     const dialog = await screen.findByRole('dialog', { name: 'Filters' })
     expect(
       within(dialog)
-        .getAllByRole('heading', { level: 3 })
-        .map((heading) => heading.textContent.trim())
+        .getAllByRole('tab')
+        .map((tab) => tab.textContent.trim())
     ).toEqual(['Use cases', 'How you use it'])
+    await user.click(
+      within(dialog).getByRole('tab', { name: 'How you use it' })
+    )
     await user.click(screen.getByTestId('filter-access-api'))
     expect(access.value).toEqual(['api'])
     expect(screen.getByTestId('workshop-filter-count')).toHaveTextContent('1')

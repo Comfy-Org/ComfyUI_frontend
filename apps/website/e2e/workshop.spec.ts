@@ -568,6 +568,7 @@ test.describe('Models catalog', () => {
     await expect(grid.getByTestId('open-weight-model-card')).toHaveCount(0)
     await expect(page.getByTestId('workshop-filter-count')).toHaveText('1')
     await page.getByTestId('workshop-filter').click()
+    await page.getByTestId('workshop-facet-access').click()
     await expect(page.getByTestId('filter-access-download')).toHaveCount(0)
     await expect(page.getByTestId('filter-access-api')).toHaveAttribute(
       'aria-pressed',

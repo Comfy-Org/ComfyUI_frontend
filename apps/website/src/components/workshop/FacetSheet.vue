@@ -9,7 +9,6 @@ import type { SheetRest } from '@/composables/useBottomSheet'
 import { heightAt, restAt } from '@/composables/useBottomSheet'
 import { prefersReducedMotion } from '@/composables/useReducedMotion'
 import { useVisualViewport } from '@/composables/useVisualViewport'
-import FacetSections from './FacetSections.vue'
 import FacetTabs from './FacetTabs.vue'
 
 interface FacetSheetOption {
@@ -51,16 +50,6 @@ const emit = defineEmits<{
   clearAll: []
   close: []
 }>()
-
-const SEARCHABLE_FROM = 8
-
-// A short list reads at a glance, so it stands in sections with no search;
-// a long one keeps a tab per group and a way to find an option by name.
-const stacked = computed(
-  () =>
-    groups.reduce((total, group) => total + group.options.length, 0) <
-    SEARCHABLE_FROM
-)
 
 const selectedCount = computed(() =>
   groups.reduce((total, group) => total + group.selected.length, 0)
@@ -195,14 +184,7 @@ function cancelDrag(event: PointerEvent) {
       </div>
     </div>
 
-    <FacetSections
-      v-if="stacked"
-      :groups
-      :no-matches="labels.noMatches"
-      @toggle="(key, value) => emit('toggle', key, value)"
-    />
     <FacetTabs
-      v-else
       :groups
       :search-label="labels.search"
       :no-matches="labels.noMatches"

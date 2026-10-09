@@ -123,7 +123,7 @@ describe('FacetSheet', () => {
     expect(await screen.findByRole('region', { name: 'Provider' })).toBeTruthy()
   })
 
-  it('lays a short list out in headed sections with no search', async () => {
+  it('keeps a tab and a search per group however short the lists are', async () => {
     const user = userEvent.setup()
     const { emitted } = render(FacetSheet, {
       props: {
@@ -136,13 +136,11 @@ describe('FacetSheet', () => {
       }
     })
 
-    expect(screen.queryByRole('searchbox')).toBeNull()
-    expect(screen.queryByRole('tablist')).toBeNull()
     expect(
-      screen
-        .getAllByRole('heading', { level: 3 })
-        .map((heading) => heading.textContent.trim())
-    ).toEqual(['Provider', 'Media'])
+      screen.getAllByRole('tab').map((tab) => tab.textContent.trim())
+    ).toEqual(['Provider 1', 'Media 1'])
+    expect(screen.getByRole('searchbox')).toBeVisible()
+    await user.click(screen.getByRole('tab', { name: /^Media/ }))
     await user.click(screen.getByRole('button', { name: 'Video 3' }))
     expect(emitted('toggle')).toEqual([['media', 'video']])
   })

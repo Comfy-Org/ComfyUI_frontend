@@ -609,6 +609,9 @@ describe('WorkshopModelsGrid', () => {
       const user = userEvent.setup()
       await user.click(screen.getByRole('button', { name: 'Filters' }))
       const dialog = await screen.findByRole('dialog', { name: 'Filters' })
+      await user.click(
+        within(dialog).getByRole('tab', { name: /^How you use it/ })
+      )
       for (const label of labels)
         await user.click(
           within(dialog).getByRole('button', { name: new RegExp(`^${label} `) })
