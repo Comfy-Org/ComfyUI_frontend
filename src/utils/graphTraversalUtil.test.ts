@@ -694,6 +694,20 @@ describe('graphTraversalUtil', () => {
 
         expect(getNodeByExecutionId(graph, remappedNodeId)).toBe(targetNode)
       })
+
+      it('finds an interior node below a colon-bearing subgraph host id', () => {
+        const targetNode = createMockNode('7')
+        const subgraph = createMockSubgraph('sub-uuid', [targetNode])
+        const host = createMockNode(remappedNodeId, {
+          isSubgraph: true,
+          subgraph
+        })
+        const graph = createMockGraph([host])
+
+        expect(getNodeByExecutionId(graph, `${remappedNodeId}:7`)).toBe(
+          targetNode
+        )
+      })
     })
 
     describe('getExecutionIdByNode', () => {
@@ -1830,6 +1844,21 @@ describe('graphTraversalUtil', () => {
 
       expect(executionIdToNodeLocatorId(graph, '123:999')).toBe(
         '~root:123%3A999'
+      )
+    })
+
+    it('resolves an interior node below a colon-bearing subgraph host id', () => {
+      const subgraphUuid = 'a1b2c3d4-e5f6-7890-abcd-ef1234567890'
+      const interior = createMockNode('7')
+      const subgraph = createMockSubgraph(subgraphUuid, [interior])
+      const host = createMockNode(REMAPPED_ID, {
+        isSubgraph: true,
+        subgraph
+      })
+      const graph = createMockGraph([host])
+
+      expect(executionIdToNodeLocatorId(graph, `${REMAPPED_ID}:7`)).toBe(
+        `${subgraphUuid}:7`
       )
     })
   })

@@ -439,6 +439,18 @@ export function getNodeByExecutionId(
   rootGraph: LGraph,
   executionId: string
 ): LGraphNode | null {
+  return resolveExecutionNode(rootGraph, executionId)?.node ?? null
+}
+
+interface ResolvedExecutionNode {
+  graph: LGraph | Subgraph
+  node: LGraphNode
+}
+
+function resolveExecutionNode(
+  rootGraph: LGraph,
+  executionId: string
+): ResolvedExecutionNode | null {
   const localNodeId = getLocalNodeIdFromExecutionId(executionId)
   if (!localNodeId) return null
 
@@ -449,16 +461,41 @@ export function getNodeByExecutionId(
   if (!parsedLocalNodeId) return null
 
   if (subgraphPath.length === 0) {
-    return rootGraph.getNodeById(parsedLocalNodeId) || null
+    const node = rootGraph.getNodeById(parsedLocalNodeId)
+    return node ? { graph: rootGraph, node } : null
   }
 
-  // Traverse to the target subgraph
   const targetGraph = traverseSubgraphPath(rootGraph, subgraphPath)
   const nestedNode = targetGraph?.getNodeById(parsedLocalNodeId)
-  if (nestedNode) return nestedNode
+  if (targetGraph && nestedNode) return { graph: targetGraph, node: nestedNode }
 
-  const rootNodeId = parseNodeId(executionId)
-  return rootNodeId ? rootGraph.getNodeById(rootNodeId) || null : null
+  return resolveExecutionNodeByLongestPrefix(rootGraph, executionId)
+}
+
+function resolveExecutionNodeByLongestPrefix(
+  graph: LGraph | Subgraph,
+  remainingPath: string
+): ResolvedExecutionNode | null {
+  const candidates = graph.nodes
+    .filter((node) => {
+      const nodeId = String(node.id)
+      return remainingPath === nodeId || remainingPath.startsWith(`${nodeId}:`)
+    })
+    .sort((left, right) => String(right.id).length - String(left.id).length)
+
+  for (const node of candidates) {
+    const nodeId = String(node.id)
+    if (remainingPath === nodeId) return { graph, node }
+    if (!isSubgraphNode(node)) continue
+
+    const nestedNode = resolveExecutionNodeByLongestPrefix(
+      node.subgraph,
+      remainingPath.slice(nodeId.length + 1)
+    )
+    if (nestedNode) return nestedNode
+  }
+
+  return null
 }
 
 /**
@@ -710,40 +747,12 @@ export function executionIdToNodeLocatorId(
     return createNodeLocatorId(null, localNodeId)
   }
 
-  // It's an execution node ID — resolve subgraph path
   if (!rootGraph) return undefined
-  const parts = nodeIdStr.split(':')
-  const localNodeId = parts.at(-1)!
-  const subgraphPath = parts.slice(0, -1)
+  const resolved = resolveExecutionNode(rootGraph, nodeIdStr)
+  if (!resolved) return undefined
 
-  const targetGraph = traverseSubgraphPath(rootGraph, subgraphPath)
-  const parsedLocalNodeId = parseNodeId(localNodeId)
-  if (
-    targetGraph &&
-    parsedLocalNodeId &&
-    targetGraph.getNodeById(parsedLocalNodeId)
-  ) {
-    return createNodeLocatorId(targetGraph.id, parsedLocalNodeId)
-  }
-
-  // No subgraph path resolved — the colons may belong to the node's OWN id.
-  // comfy-multi-player's `insert_workflow` remaps every inserted node to
-  // `insert:<opId>:root:node:<originalId>` (remap.ts) and puts it on the root
-  // graph, so splitting that id on `:` asks for a subgraph node named
-  // `insert` and finds none. Returning undefined there silently discarded
-  // whatever the caller keyed on the id — including an `executed` frame's
-  // outputs, which is why an agent-inserted Save Image node stayed empty
-  // while the image appeared in chat (PM-2037/PM-1826/PM-1668; same id class
-  // as PM-1580 and #20437).
-  //
-  // Only ever a fallback, and only for an id a node really carries, so a
-  // genuine subgraph execution path keeps its existing meaning.
-  const wholeNodeId = parseNodeId(nodeIdStr)
-  if (wholeNodeId && rootGraph.getNodeById(wholeNodeId)) {
-    return createLeafNodeLocatorId(null, wholeNodeId)
-  }
-
-  return undefined
+  const subgraphUuid = resolved.graph === rootGraph ? null : resolved.graph.id
+  return createLeafNodeLocatorId(subgraphUuid, resolved.node.id) ?? undefined
 }
 
 /**
