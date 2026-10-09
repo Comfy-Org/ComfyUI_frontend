@@ -389,6 +389,7 @@ function enterTopupJourney(): void {
 onMounted(enterTopupJourney)
 useCheckoutJourneyExit()
 const {
+  billingClient,
   isAddingCredits,
   topupOperation,
   topup,
@@ -623,7 +624,8 @@ async function handleBuy() {
       operation: 'operation',
       stage: 'started',
       outcome: 'pending',
-      operation_type: 'topup'
+      operation_type: 'topup',
+      billing_client: billingClient
     })
 
     const submittingJourney = getActiveCheckoutJourney()
@@ -796,6 +798,7 @@ function reportTerminal(
   telemetry?.trackBillingEvent({
     operation: 'operation',
     operation_type: 'topup',
+    billing_client: billingClient,
     ...terminal,
     ...attempt
   })

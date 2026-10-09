@@ -6,7 +6,11 @@ import { expectDialogBoundsWithDockedPanel } from '@e2e/fixtures/utils/workspace
 
 test.describe('Dialog layout with a docked Agent panel', () => {
   for (const { viewportWidth, x, outcome } of [
-    { viewportWidth: 1440, x: 8, outcome: 'covers the panel from the gutter' },
+    {
+      viewportWidth: 1440,
+      x: 72,
+      outcome: 'centres on the viewport when it cannot fit beside the panel'
+    },
     { viewportWidth: 1920, x: 50, outcome: 'centres beside the panel' }
   ]) {
     test.describe(`at a ${viewportWidth}px viewport`, () => {
@@ -30,7 +34,7 @@ test.describe('Dialog layout with a docked Agent panel', () => {
   test.describe('at the sm breakpoint', () => {
     test.use({ viewport: { width: 640, height: 800 } })
 
-    test('a size-variant dialog keeps its width and stops at the gutter', async ({
+    test('a size-variant dialog keeps its width and centres on the viewport', async ({
       comfyPage
     }) => {
       await comfyPage.page.evaluate(() => {
@@ -47,7 +51,7 @@ test.describe('Dialog layout with a docked Agent panel', () => {
       await expectDialogBoundsWithDockedPanel(
         comfyPage.page,
         comfyPage.confirmDialog.root,
-        { panelWidth: 420, x: 8 }
+        { panelWidth: 420, x: 32 }
       )
     })
   })

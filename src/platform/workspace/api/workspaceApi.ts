@@ -9,7 +9,6 @@ import type {
   BillingStatusResponse,
   CancelSubscriptionRequest,
   CancelSubscriptionResponse,
-  ChurnkeyAuthResponse,
   CreateInviteRequest,
   CreateTopupRequest,
   CreateTopupResponse,
@@ -28,6 +27,10 @@ import type {
   RenewalInvoice,
   ResubscribeRequest,
   ResubscribeResponse,
+  RetentionAcceptance,
+  RetentionAcceptRequest,
+  RetentionFlowEventRequest,
+  RetentionFlowResponse,
   SavedPaymentMethod,
   ScheduledPlanChange,
   SubscribeRequest,
@@ -39,6 +42,10 @@ import type {
   UpdateWorkspaceRequest,
   WorkspaceWithRole
 } from '@comfyorg/ingest-types'
+import {
+  zRetentionAcceptance,
+  zRetentionFlowResponse
+} from '@comfyorg/ingest-types/zod'
 import axios from 'axios'
 
 import {
@@ -47,7 +54,6 @@ import {
 } from '@/platform/auth/session/webSessionFetch'
 import { useTelemetry } from '@/platform/telemetry'
 import { attachUnifiedRemintInterceptor } from '@/platform/auth/unified/remintRetry'
-import { churnkeyAuthResponseSchema } from '@/platform/cloud/churnkey/churnkeyAuthSchema'
 import {
   UNKNOWN_ERROR_CODE,
   errorResponseFromBody
@@ -638,14 +644,56 @@ export const workspaceApi = {
     }
   },
 
-  async getChurnkeyAuth(): Promise<ChurnkeyAuthResponse> {
+  /**
+   * Prepare a cancellation session and any retention offer for its owner
+   * POST /api/billing/retention/prepare
+   */
+  async prepareRetentionFlow(): Promise<RetentionFlowResponse> {
     const auth = await requestAuth()
     try {
-      const response = await workspaceApiClient.get<unknown>(
-        workspaceApiUrl('/billing/churnkey/auth'),
+      const response = await workspaceApiClient.post<unknown>(
+        workspaceApiUrl('/billing/retention/prepare'),
+        {},
+        { ...auth, timeout: 5_000 }
+      )
+      return zRetentionFlowResponse.parse(response.data)
+    } catch (err) {
+      handleAxiosError(err)
+    }
+  },
+
+  /**
+   * Accept the offer bound to a cancellation session
+   * POST /api/billing/retention/accept
+   */
+  async acceptRetentionOffer(sessionId: string): Promise<RetentionAcceptance> {
+    const auth = await requestAuth()
+    try {
+      const response = await workspaceApiClient.post<unknown>(
+        workspaceApiUrl('/billing/retention/accept'),
+        { session_id: sessionId } satisfies RetentionAcceptRequest,
         auth
       )
-      return churnkeyAuthResponseSchema.parse(response.data)
+      return zRetentionAcceptance.parse(response.data)
+    } catch (err) {
+      handleAxiosError(err)
+    }
+  },
+
+  /**
+   * Record that a cancellation session opened, or displayed its offer
+   * POST /api/billing/retention/events
+   */
+  async recordRetentionFlowEvent(
+    request: RetentionFlowEventRequest
+  ): Promise<void> {
+    const auth = await requestAuth()
+    try {
+      await workspaceApiClient.post(
+        workspaceApiUrl('/billing/retention/events'),
+        request,
+        auth
+      )
     } catch (err) {
       handleAxiosError(err, 'getChurnkeyAuth')
     }

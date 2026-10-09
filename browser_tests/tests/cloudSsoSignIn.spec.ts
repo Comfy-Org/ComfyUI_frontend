@@ -4,7 +4,7 @@ import type { Page, Request } from '@playwright/test'
 import type { ErrorResponse, SsoDiscoverResponse } from '@comfyorg/ingest-types'
 
 import enMessages from '@/locales/en/main.json' with { type: 'json' }
-import type { RemoteConfig } from '@/platform/remoteConfig/types'
+import type { OAuthConsentChallenge } from '@/platform/cloud/oauth/oauthApi'
 import type { operations } from '@/types/comfyRegistryTypes'
 
 import {
@@ -23,13 +23,31 @@ import {
   mockCloudBoot,
   preselectCloudUser
 } from '@e2e/fixtures/utils/cloudBootMocks'
-import { jsonRoute } from '@e2e/fixtures/utils/jsonRoute'
 
 const APP_URL = process.env.PLAYWRIGHT_TEST_URL || 'http://localhost:8188'
 const APP_ROOT = new RegExp(
   `^${APP_URL.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')}/?(\\?.*)?$`
 )
 const SSO_COPY = enMessages.auth.sso
+const OAUTH_REQUEST_ID = '550e8400-e29b-41d4-a716-446655440000'
+const CONSENT_CHALLENGE: OAuthConsentChallenge = {
+  client_provenance: 'first_party',
+  oauth_request_id: OAUTH_REQUEST_ID,
+  csrf_token: 'csrf-token',
+  client_display_name: 'Comfy Desktop',
+  resource_display_name: 'Comfy Cloud',
+  redirect_uri: 'http://127.0.0.1:50632/callback',
+  client_application_type: 'native',
+  scopes: ['comfy-cloud:user:read'],
+  workspaces: [
+    {
+      id: 'personal-workspace',
+      name: 'Personal',
+      type: 'personal',
+      role: 'owner'
+    }
+  ]
+}
 type CreateCustomerResponse =
   operations['createCustomer']['responses']['201']['content']['application/json']
 
@@ -38,9 +56,8 @@ function isPath(request: Request, pathname: string) {
 }
 
 /**
- * The cloud login page's SSO entry, with `sso_enabled` patched into the
- * backend's own `/api/features` answer and ingest's SSO endpoints mocked at
- * the network layer. Ingest's `/api/auth/sso/start` answers with a redirect
+ * The cloud login page's SSO entry, with `sso_enabled` served as the remote
+ * config and ingest's SSO endpoints mocked at the network layer. Ingest's `/api/auth/sso/start` answers with a redirect
  * to WorkOS; here it is fulfilled in place so the navigation is observed and
  * never followed.
  */
@@ -68,13 +85,7 @@ const test = comfyPageFixture.extend<{
   page: async ({ page, ssoEnabled, discoverRequests, ssoStarts }, use) => {
     void discoverRequests
     void ssoStarts
-    await mockCloudBoot(page, { features: {} })
-    await page.route('**/api/features', async (route) => {
-      const backendFeatures: RemoteConfig = await (await route.fetch()).json()
-      await route.fulfill(
-        jsonRoute({ ...backendFeatures, sso_enabled: ssoEnabled })
-      )
-    })
+    await mockCloudBoot(page, { features: { sso_enabled: ssoEnabled } })
     await preselectCloudUser(page)
     await page.route('**/customers', (route) => {
       if (route.request().method() !== 'POST') return route.fallback()
@@ -87,7 +98,6 @@ const test = comfyPageFixture.extend<{
       route.fulfill({ status: 200, contentType: 'text/html', body: '' })
     )
     await use(page)
-    await page.unrouteAll({ behavior: 'wait' })
   },
   cloudAuth: async ({ page }, use) => {
     await use(new CloudAuthHelper(page))
@@ -187,6 +197,65 @@ test.describe('Cloud login SSO entry', { tag: ['@cloud', '@ui'] }, () => {
       expect(ssoStarts).toHaveLength(1)
     })
 
+    test('an SSO sign-in for a pending OAuth request returns to a consent page the server serves', async ({
+      page
+    }) => {
+      await answerDiscover(page, 200, SSO_DISCOVERED)
+      await page.route('**/api/auth/sso/start**', (route) => {
+        const returnTo = new URL(route.request().url()).searchParams.get(
+          'return_to'
+        )
+        // Playwright does not route requests that follow a redirect, so the
+        // IdP round trip ends in a fresh navigation to return_to instead.
+        const target = new URL(returnTo ?? '/', APP_URL).toString()
+        return route.fulfill({
+          status: 200,
+          contentType: 'text/html',
+          body: `<script>location.replace(${JSON.stringify(target)})</script>`
+        })
+      })
+      // The server serves the SPA as a page only at /cloud/oauth/consent and
+      // answers a document load of /oauth/consent with a JSON 404.
+      await page.route('**/oauth/consent**', async (route) => {
+        const request = route.request()
+        if (request.resourceType() !== 'document') return route.fallback()
+        const path = new URL(request.url()).pathname.replace(/\/+$/, '')
+        if (path === '/cloud/oauth/consent') {
+          const app = await route.fetch({ url: `${APP_URL}/` })
+          return route.fulfill({ response: app })
+        }
+        return route.fulfill({
+          status: 404,
+          json: { code: 'NOT_FOUND', message: 'Not Found' }
+        })
+      })
+      await page.route('**/oauth/authorize?**', (route) =>
+        route.request().resourceType() === 'document'
+          ? route.fallback()
+          : route.fulfill({ status: 200, json: CONSENT_CHALLENGE })
+      )
+
+      await page.goto(`${APP_URL}/?oauth_request_id=${OAUTH_REQUEST_ID}`)
+      await expect(page).toHaveURL(/\/cloud\/login/)
+      await page.getByRole('button', { name: SSO_COPY.continueWithSso }).click()
+      await page.locator('#cloud-sso-email').fill(SSO_EMAIL)
+      await page
+        .getByRole('button', { name: SSO_COPY.submit, exact: true })
+        .click()
+
+      await expect(
+        page.getByRole('heading', {
+          name: enMessages.oauth.consent.title.replace(
+            '{client}',
+            CONSENT_CHALLENGE.client_display_name
+          )
+        })
+      ).toBeVisible()
+      expect(new URL(page.url()).searchParams.get('oauth_request_id')).toBe(
+        OAUTH_REQUEST_ID
+      )
+    })
+
     test('an email that does not use SSO stays on the login page with the not-SSO message', async ({
       page,
       ssoStarts
@@ -229,6 +298,29 @@ test.describe('Cloud login SSO entry', { tag: ['@cloud', '@ui'] }, () => {
         /\/cloud\/login\?.*sso_error=SSO_ORG_DISABLED/
       )
       await expect(page.getByText(SSO_COPY.errors.orgDisabled)).toBeVisible()
+    })
+
+    test('a customer record refused with sso_required opens the SSO dialog, not a failure toast', async ({
+      page,
+      cloudAuth
+    }) => {
+      await answerDiscover(page, 200, NOT_SSO)
+      await cloudAuth.mockLiveEmailSignIn()
+      await page.route('**/customers', (route) =>
+        route.request().method() === 'POST'
+          ? route.fulfill({ status: 403, json: SSO_REQUIRED })
+          : route.fallback()
+      )
+
+      await signInWithEmail(page)
+
+      await expect(
+        page
+          .getByRole('dialog')
+          .getByRole('heading', { name: SSO_COPY.required.title })
+      ).toBeVisible()
+      await expect(page.getByText(/Failed to create customer/)).toHaveCount(0)
+      await expect(page).toHaveURL(/\/cloud\/login/)
     })
 
     test('a Firebase sign-in ingest refuses with sso_required opens the SSO dialog', async ({

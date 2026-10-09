@@ -15,6 +15,7 @@ import { useErrorHandling } from '@/composables/useErrorHandling'
 import type { ErrorRecoveryStrategy } from '@/composables/useErrorHandling'
 import { st, t } from '@/i18n'
 import enMessages from '@/locales/en/main.json' with { type: 'json' }
+import { presentSsoRequired } from '@/platform/auth/sso/ssoRequired'
 import { isCloud } from '@/platform/distribution/types'
 import { useTelemetry } from '@/platform/telemetry'
 import type { AuthFlowAction } from '@/platform/telemetry/types'
@@ -28,7 +29,7 @@ import { useWorkflowService } from '@/platform/workflow/core/services/workflowSe
 import { useWorkflowStore } from '@/platform/workflow/management/stores/workflowStore'
 import { usePendingTopup } from '@/composables/billing/usePendingTopup'
 import { useDialogService } from '@/services/dialogService'
-import { useAuthStore } from '@/stores/authStore'
+import { SsoRequiredAuthError, useAuthStore } from '@/stores/authStore'
 import type {
   BillingPortalTargetTier,
   SocialSignInOptions
@@ -72,7 +73,20 @@ export const useAuthActions = () => {
       reportError(error)
     }
 
+  /** Sends an account its SSO organization refused to SSO instead of a failure toast. */
+  const presentSsoRefusal = (error: SsoRequiredAuthError): boolean => {
+    const presented = presentSsoRequired({
+      email: authStore.userEmail ?? undefined,
+      organizationId: error.organizationId
+    })
+    if (presented) void authStore.logout().catch(toastErrorHandler)
+    return presented
+  }
+
   const reportError = (error: unknown) => {
+    if (error instanceof SsoRequiredAuthError && presentSsoRefusal(error)) {
+      return
+    }
     const classification = classifyAuthError(error)
     // Ref: https://firebase.google.com/docs/auth/admin/errors
     const severity = severityForAuthError(classification)

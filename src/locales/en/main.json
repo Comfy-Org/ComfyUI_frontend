@@ -2637,6 +2637,11 @@
     }
   },
   "auth": {
+    "desktopHost": {
+      "continueInBrowser": "Finish signing in in your browser",
+      "signInFailed": "Sign-in didn't finish. Try again.",
+      "signOutFailed": "Comfy Desktop is still signed in. Finish or cancel any running install, then sign out again."
+    },
     "showPassword": "Show password",
     "hidePassword": "Hide password",
     "apiKey": {
@@ -2724,6 +2729,7 @@
         "notConfigured": "Single sign-on isn't set up for your organization. Contact your administrator.",
         "orgDisabled": "Single sign-on is turned off for your organization. Contact your administrator.",
         "orgNotAttached": "Your organization's Comfy workspace isn't set up yet. Contact your administrator.",
+        "emailDomainNotAllowed": "Your organization's sign-in returned an email outside its domains. Ask your administrator to use your work email in the directory.",
         "orgMismatch": "You signed in to a different organization than the one for this email. Try again with your work account.",
         "suspended": "Your organization has removed your access. Contact your administrator.",
         "accountDeleted": "This account is scheduled for deletion. If this is a mistake, email support{'@'}comfy.org.",
@@ -2945,6 +2951,9 @@
     "subscriptionSuccess": "Subscription updated successfully",
     "subscriptionFailed": "Subscription update failed",
     "subscriptionFailedDetail": "We couldn't update your subscription. Please try again.",
+    "cancelPaymentFailed": "We couldn't cancel this payment. Please try again.",
+    "cancelPaymentInFlight": "This payment is already processing and can't be canceled.",
+    "cancelPaymentNotCancelable": "This payment can no longer be canceled.",
     "operationAlreadyPendingDetail": "A payment you started earlier is still going through. It has to finish before you can choose a different plan.",
     "subscriptionTimeout": "Subscription verification timed out",
     "topupProcessing": "Processing payment — adding credits...",
@@ -3009,19 +3018,45 @@
       "description": "You won't be charged again. Your features remain active until {date}.",
       "descriptionWithoutDate": "You won't be charged again. Your features remain active until the end of your billing period."
     },
-    "cancelSuccess": "Subscription cancelled successfully",
     "cancelDialog": {
-      "title": "Cancel subscription",
-      "description": "Your access continues until {date}. You won't be charged again, and your workspace and credits will be preserved. You can resubscribe anytime.",
-      "endOfBillingPeriod": "end of billing period",
+      "endOfBillingPeriod": "the end of your billing period",
       "finishOnStripe": "Your subscription isn't cancelled yet. Finish cancelling on the Stripe page that just opened. Until you do, your plan will renew as usual.",
-      "keepSubscription": "Keep subscription",
-      "confirmCancel": "Cancel subscription",
       "failed": "Failed to cancel subscription",
-      "workspaceChanged": "Your active workspace changed. Switch back and try again.",
-      "offerUnavailable": "This option isn't available. Please choose another option.",
-      "discountApplied": "Your discount has been applied, so this subscription wasn't canceled. Close this window to see your updated plan.",
-      "discountRefreshFailed": "Your discount was applied. Refresh the page to see your updated plan."
+      "workspaceChanged": "Your active workspace changed. Switch back and try again."
+    },
+    "retentionOffer": {
+      "title": "Before you go",
+      "subtitle": "Here's an offer while you decide",
+      "stayOnPlan": "Stay on {plan}",
+      "percentOff": "{percent}% off",
+      "perMonth": "/mo",
+      "term": "for your next payment, then {regular}/mo | for your next {months} payments, then {regular}/mo",
+      "keepCreditsAndLoRAs": "Keep your {credits} monthly credits, custom LoRAs, and everything else in {plan}.",
+      "keepCredits": "Keep your {credits} monthly credits and everything else in {plan}.",
+      "keepEverything": "Keep everything in your {plan} plan.",
+      "finePrint": "One-time offer. After 1 renewal, {plan} returns to {regular}/mo. Cancel anytime. | One-time offer. After {months} renewals, {plan} returns to {regular}/mo. Cancel anytime.",
+      "accept": "Keep {plan} and save {percent}%",
+      "appliedTitle": "You're staying on {plan}",
+      "appliedBody": "{percent}% off is applied to your next payment, starting {date}. | {percent}% off is applied to your next {months} payments, starting {date}.",
+      "nextPayments": "Next payment | Next {months} payments",
+      "appliedBadge": "Applied",
+      "pricePerMonth": "{price}/mo",
+      "savings": "You'll save {savings} on this payment. | You'll save {savings} across these {months} payments.",
+      "renewsAt": "Renews at {regular} on {date}.",
+      "failedTitle": "We couldn't apply your discount",
+      "failedBody": "Something went wrong on our end, and your {plan} plan hasn't changed. Try again, or continue cancelling.",
+      "declinedBody": "Your {plan} plan hasn't changed. You can keep it at its current price or continue cancelling.",
+      "expiredTitle": "This offer is no longer available",
+      "expiredBody": "It expired, or your plan changed since it was made. Close and reopen cancellation to see your current options.",
+      "supportCode": "If this keeps happening, contact support with code DISCOUNT_NOT_APPLIED.",
+      "tryAgain": "Try again",
+      "unconfirmedTitle": "Your discount isn't confirmed yet",
+      "unconfirmedBody": "Your discount may still be applying. Check again in a moment before you make another billing change.",
+      "failed": "We couldn't apply this offer, and your plan hasn't changed. You can still cancel.",
+      "unconfirmed": "We're still confirming your discount. Check again in a moment, or contact support if this doesn't clear up.",
+      "checkAgain": "Check again",
+      "pendingToast": "Your discount is still being confirmed. Check your plan before making another billing change.",
+      "refreshFailed": "Your discount was applied. Refresh the page to see your updated plan."
     },
     "downgrade": {
       "title": "Change to {plan} plan?",
@@ -3272,6 +3307,7 @@
     },
     "preview": {
       "completeVerification": "Complete verification",
+      "cancelPaymentAndRetry": "Cancel payment and try again",
       "pendingVerificationDetail": "A payment you started earlier still needs your attention. Completing it activates the plan you chose then. You can choose a different plan once it finishes.",
       "completePayment": "Complete your payment",
       "parkedCheckoutDetail": "Your earlier checkout is still waiting for a payment method. Complete your payment to activate this plan.",
@@ -3372,6 +3408,54 @@
       "sendInvites": "Send invites",
       "promoApplied": "{code} applied.",
       "promoRenews": "Renews at {amount} on {date}"
+    },
+    "cancelFlow": {
+      "keepPlan": "Keep my plan",
+      "continueCancelling": "Continue cancelling",
+      "done": "Done",
+      "genericPlanName": "Comfy Cloud",
+      "survey": {
+        "title": "Why are you cancelling?",
+        "subtitle": "Optional, but it helps make Comfy Cloud better.",
+        "reasons": {
+          "tooExpensive": "Too expensive",
+          "notUsingEnough": "Not using it enough",
+          "missingFeatures": "Missing features or models",
+          "switchingTools": "Switching to another tool",
+          "somethingElse": "Something else"
+        },
+        "commentLabel": "Anything else you want to share? (optional)",
+        "commentPlaceholder": "Tell us anything"
+      },
+      "confirm": {
+        "title": "Cancel your plan?",
+        "description": "Your {plan} plan stays active until {date}, and you won't be charged again. You can resubscribe anytime.",
+        "loseAccess": "After {date}, you'll lose access to:",
+        "cancelPlan": "Cancel my plan",
+        "features": {
+          "gpus": {
+            "title": "Cloud GPUs",
+            "description": "RTX 6000 Pro hardware, nothing to set up."
+          },
+          "models": {
+            "title": "Every model, one balance",
+            "description": "Open-source and partner models side by side."
+          },
+          "customNodes": {
+            "title": "Custom nodes, ready",
+            "description": "The nodes behind ~90% of community workflows."
+          },
+          "credits": {
+            "monthly": "{credits} monthly credits",
+            "yearly": "{credits} yearly credits",
+            "generic": "Monthly credits",
+            "description": "Your credits stop refilling."
+          }
+        }
+      },
+      "cancelled": {
+        "title": "Your plan is cancelled"
+      }
     }
   },
   "userSettings": {
@@ -3713,6 +3797,7 @@
     "roleMember": "Member",
     "createWorkspace": "Create a workspace",
     "maxWorkspacesReached": "You can only own 10 workspaces. Delete one to create a new one.",
+    "managedByOrganization": "Your organization manages your workspaces, so you can't create one.",
     "failedToSwitch": "Failed to switch workspace"
   },
   "selectionToolbox": {
@@ -5144,6 +5229,8 @@
     "inviteFailed": "Failed to Accept Invite",
     "inviteSsoUnavailable": "Ask your admin to add you",
     "inviteSsoUnavailableDetail": "Invite links can't be accepted from an SSO account yet. Ask a workspace admin to add you to the workspace directly.",
+    "inviteDirectoryManaged": "Your organization's admin manages membership",
+    "inviteDirectoryManagedDetail": "This workspace's members are managed through your organization's directory, so invite links can't be used to join it. Ask your organization's admin to add you.",
     "viewWorkspace": "View workspace",
     "switchFailed": "Failed to switch workspace. Please try again.",
     "deepLinkStayed": "Couldn't open that workspace. You're still in {workspaceName}."
