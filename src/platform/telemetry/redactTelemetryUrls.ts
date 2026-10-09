@@ -8,6 +8,12 @@ export function redactTelemetryUrls(text: string): string {
 
 const MAX_REDACTABLE_TEXT_LENGTH = 16_384
 const ABSOLUTE_URL_START = /(?:https?:)?\/\/[^\s"'<>?#]+/.source
+/**
+ * The root-relative alternative starts at a non-digit, or at a digit followed
+ * by a second path character. That keeps `/v?token=…` and `/a/b?token=…`
+ * redacted while leaving a bare fraction such as `1/2?x` as ordinary text, so
+ * non-URL messages keep their Sentry grouping.
+ */
 const ROOT_RELATIVE_URL_START =
   /(?<!\d)\/(?!\/|https?:\/\/)(?:[A-Za-z._~%-]|\d(?:[A-Za-z0-9._~%/-]|(?=[?#]))|(?=[?#]))[A-Za-z0-9._~%/-]*/
     .source
@@ -20,12 +26,6 @@ const SPACED_QUERY_URL_PATTERN = new RegExp(
   'gi'
 )
 
-/**
- * The root-relative alternative starts at a non-digit, or at a digit followed
- * by a second path character. That keeps `/v?token=…` and `/a/b?token=…`
- * redacted while leaving a bare fraction such as `1/2?x` as ordinary text, so
- * non-URL messages keep their Sentry grouping.
- */
 const URL_TOKEN_PATTERN = new RegExp(
   `(?:${ABSOLUTE_URL_START}|${ROOT_RELATIVE_URL_START})[^\\s"'<>]*|${RELATIVE_URL_START}(?:\\?[^\\s"'<>]*=[^\\s"'<>]*|#[^\\s"'<>]+)`,
   'gi'
