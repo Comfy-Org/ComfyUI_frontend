@@ -9,13 +9,6 @@ import type { AgentPanel } from '@e2e/fixtures/components/AgentPanel'
 import { webSocketFixture } from '@e2e/fixtures/ws'
 import { agentTest } from '@e2e/tests/agent/agentPanelMocks'
 
-/**
- * - `funded` — workspace and Agent-scoped funding both available.
- * - `exhausted` — no funding at all, which raises the standing paywall.
- * - `scopedExhausted` — the free Agent-scoped grant alone is gone while the
- *   workspace balance still funds Agent activity. This is the transition the
- *   credit notice exists for, and it is not a paywall state.
- */
 type AgentFundingState = 'funded' | 'exhausted' | 'scopedExhausted'
 
 class AgentCreditsLifecycleFixture {
