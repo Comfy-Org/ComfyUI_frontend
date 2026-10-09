@@ -1,7 +1,7 @@
 import { render } from '@testing-library/vue'
-import { beforeEach, describe, expect, it, vi } from 'vitest'
+import { beforeEach, describe, expect, it } from 'vitest'
 import { useDialogStore } from '@/stores/dialogStore'
-import { useToastStore } from '@/platform/updates/common/toastStore'
+import { useToast } from '@/components/ui/toast/toastStore'
 import { createI18n } from 'vue-i18n'
 
 import type { LGraphNode } from '@/lib/litegraph/src/LGraphNode'
@@ -38,10 +38,6 @@ function mountComposable(): ReturnType<typeof useCompositorEditor> {
   return composable
 }
 
-beforeEach(() => {
-  vi.mocked(useToastStore().add).mockImplementation(() => undefined)
-})
-
 describe('useCompositorEditor', () => {
   const node = { id: toNodeId(1) } as unknown as LGraphNode
 
@@ -52,12 +48,9 @@ describe('useCompositorEditor', () => {
   it('shows a toast and keeps the dialog closed without cached layers', () => {
     mountComposable().openCompositorEditor(node)
 
-    expect(useToastStore().add).toHaveBeenCalledWith(
-      expect.objectContaining({
-        severity: 'info',
-        summary: 'Layer editor',
-        detail: 'Run the workflow first'
-      })
+    expect(useToast().info).toHaveBeenCalledWith(
+      'Layer editor',
+      expect.objectContaining({ description: 'Run the workflow first' })
     )
     expect(useDialogStore().showDialog).not.toHaveBeenCalled()
   })
@@ -69,12 +62,9 @@ describe('useCompositorEditor', () => {
 
     mountComposable().openCompositorEditor(node)
 
-    expect(useToastStore().add).toHaveBeenCalledWith(
-      expect.objectContaining({
-        severity: 'info',
-        summary: 'Layer editor',
-        detail: 'Run the workflow first'
-      })
+    expect(useToast().info).toHaveBeenCalledWith(
+      'Layer editor',
+      expect.objectContaining({ description: 'Run the workflow first' })
     )
     expect(useDialogStore().showDialog).not.toHaveBeenCalled()
   })
@@ -88,7 +78,7 @@ describe('useCompositorEditor', () => {
 
     mountComposable().openCompositorEditor(node)
 
-    expect(useToastStore().add).not.toHaveBeenCalled()
+    expect(useToast().toasts).toEqual([])
     expect(useDialogStore().showDialog).toHaveBeenCalledWith(
       expect.objectContaining({
         key: 'global-layer-editor',

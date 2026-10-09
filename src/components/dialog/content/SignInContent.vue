@@ -187,6 +187,7 @@ import { isEmbeddedWebView } from '@comfyorg/account-core/webviewDetection'
 import Button from '@/components/ui/button/Button.vue'
 import Message from '@/components/ui/message/Message.vue'
 import Skeleton from '@/components/ui/skeleton/Skeleton.vue'
+import { useToast } from '@/components/ui/toast/toastStore'
 import { useAuthActions } from '@/composables/auth/useAuthActions'
 import { useSocialSignIn } from '@/platform/auth/social/useSocialSignIn'
 import { getComfyPlatformBaseUrl } from '@/config/comfyApi'
@@ -200,7 +201,6 @@ import {
   requestDesktopHostSignIn
 } from '@/platform/auth/desktopHost/desktopHostSession'
 import { isCloud } from '@/platform/distribution/types'
-import { useToastStore } from '@/platform/updates/common/toastStore'
 import { isHostWhitelisted, normalizeHost } from '@/utils/hostWhitelist'
 
 import ApiKeyForm from './signin/ApiKeyForm.vue'
@@ -221,21 +221,13 @@ const showGoogleSsoInAppBrowserNotice = isEmbeddedWebView()
 const desktopHostSso = isDesktopHostSessionActive()
 
 const signInWithDesktopHost = async () => {
-  const toastStore = useToastStore()
-  toastStore.add({
-    severity: 'info',
-    summary: t('auth.desktopHost.continueInBrowser'),
-    life: 6000
-  })
+  const toast = useToast()
+  toast.info(t('auth.desktopHost.continueInBrowser'), { duration: 6000 })
   if (await requestDesktopHostSignIn()) {
     onSuccess()
     return
   }
-  toastStore.add({
-    severity: 'error',
-    summary: t('auth.desktopHost.signInFailed'),
-    life: 6000
-  })
+  toast.error(t('auth.desktopHost.signInFailed'), { duration: 6000 })
 }
 const comfyPlatformBaseUrl = computed(() =>
   configValueOrDefault(

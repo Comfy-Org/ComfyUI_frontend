@@ -16,7 +16,7 @@ import type {
   TurnstileRenderOptions
 } from '@comfyorg/account-core/turnstileScript'
 
-import { removeAllToasts, useAuthToasts } from '@/config/auth-toast-state'
+import { dismissAllAuthToasts, useAuthToasts } from '@/config/auth-toast-state'
 import {
   testCredential,
   testFirebaseUser
@@ -108,7 +108,7 @@ vi.mock(import('@comfyorg/account-ui/auth/regionProbe'), () => ({
   isInChina
 }))
 
-const { messages: toasts } = useAuthToasts()
+const { toasts } = useAuthToasts()
 const replace = vi.fn<(url: string | URL) => void>()
 const assign = vi.fn<(url: string | URL) => void>()
 
@@ -138,7 +138,7 @@ beforeEach(() => {
   isInChina
     .mockReset()
     .mockImplementation(() => inChina.pending ?? Promise.resolve(inChina.value))
-  removeAllToasts()
+  dismissAllAuthToasts()
   window.history.replaceState({}, '', '/')
   replace.mockReset()
   assign.mockReset()
@@ -336,7 +336,7 @@ describe('AuthSignIn', () => {
       .click(screen.getByRole('button', { name: /^sign in with github$/i }))
 
     const alert = await screen.findByRole('alert')
-    expect(alert.getAttribute('data-severity')).toBe('warn')
+    expect(toasts.value[0].kind).toBe('warning')
     expect(alert.textContent).toContain('Warning')
     expect(alert.textContent).toContain(
       t('auth.errors.auth/popup-closed-by-user', {}, { locale: 'en' })
@@ -956,12 +956,12 @@ describe('AuthSignIn', () => {
     await user.click(screen.getByRole('button', { name: /^sign in$/i }))
 
     const alert = await screen.findByRole('alert')
-    expect(alert.getAttribute('data-severity')).toBe('error')
+    expect(toasts.value[0].kind).toBe('error')
     expect(
       alert.textContent,
       'user-not-found collapses to the neutral invalid-credential line so the toast never confirms whether the email has an account'
     ).toContain(t('auth.errors.auth/invalid-credential', {}, { locale: 'en' }))
-    expect(toasts.value[0].life).toBeUndefined()
+    expect(toasts.value[0].duration).toBe(Number.POSITIVE_INFINITY)
     expect(replace).not.toHaveBeenCalled()
   })
 
@@ -1627,7 +1627,7 @@ describe('AuthSignIn controller lifecycle', () => {
       toasts.value,
       'a hung email request recovers with a message rather than silently re-enabling'
     ).toHaveLength(1)
-    expect(toasts.value[0].detail).toBe(
+    expect(toasts.value[0].description).toBe(
       t('auth.errors.generic', {}, { locale: 'en' })
     )
     expect(

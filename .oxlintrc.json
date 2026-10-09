@@ -800,6 +800,12 @@
                 "name": "@playwright/test",
                 "importNames": ["test"],
                 "message": "Use `comfyPageFixture as test` from the ComfyPage fixture module instead of raw `test` from '@playwright/test'."
+              },
+              {
+                "name": "@e2e/fixtures/helpers/ToastHelper",
+                "importNames": ["ToastHelper"],
+                "allowTypeImports": true,
+                "message": "Use `comfyPage.toast`, or the `toast` fixture in tests without `comfyPage`, instead of constructing a ToastHelper."
               }
             ],
             "patterns": [

@@ -2,6 +2,7 @@ import { useEventListener, useResizeObserver } from '@vueuse/core'
 import _ from 'es-toolkit/compat'
 import { reactive, unref, shallowRef } from 'vue'
 
+import { useToast } from '@/components/ui/toast/toastStore'
 import { partnerRunGateBlocksAutoQueue } from '@/composables/billing/usePartnerNodesRunGate'
 import { useCanvasPositionConversion } from '@/composables/element/useCanvasPositionConversion'
 import { normalizeCameraState } from '@/renderer/core/canvas/cameraState'
@@ -53,7 +54,6 @@ import type {
   WorkflowOpenSource,
   WorkflowQueueIntent
 } from '@/platform/telemetry/types'
-import { useToastStore } from '@/platform/updates/common/toastStore'
 import { MIME_ASSET_INFO } from '@/platform/assets/schemas/mediaAssetSchema'
 import { restoreDynamicGroupInputs } from '@/platform/workflow/core/utils/restoreDynamicGroupInputs'
 import { updatePendingWarnings } from '@/platform/workflow/core/utils/pendingWarnings'
@@ -66,7 +66,8 @@ import type { LoadedComfyWorkflow } from '@/platform/workflow/management/stores/
 import { useWorkflowValidation } from '@/platform/workflow/validation/composables/useWorkflowValidation'
 import type {
   ComfyApiWorkflow,
-  ComfyWorkflowJSON
+  ComfyWorkflowJSON,
+  WorkflowJSON04
 } from '@/platform/workflow/validation/schemas/workflowSchema'
 import { toNodeId } from '@/types/nodeId'
 import { zNodePackMetadata } from '@/platform/workflow/validation/schemas/workflowSchema'
@@ -119,11 +120,9 @@ import { useWidgetStore } from '@/stores/widgetStore'
 import { useWidgetValueStore } from '@/stores/widgetValueStore'
 import { useWorkspaceStore } from '@/stores/workspaceStore'
 import type { ComfyExtension } from '@/types/comfy'
-import type {
-  ExtensionManager,
-  ToastMessageOptions
-} from '@/types/extensionTypes'
+import type { ExtensionManager } from '@/types/extensionTypes'
 import type { NodeExecutionId } from '@/types/nodeIdentification'
+import { getErrorMessage } from '@/utils/errorUtil'
 import { normalizePromptError } from '@/utils/executionErrorUtil'
 import { graphToPrompt, unwrapExportedWidgetValue } from '@/utils/executionUtil'
 import { parseJsonWithNonFinite } from '@/utils/jsonUtil'
@@ -164,6 +163,7 @@ import {
 } from '@/utils/objectUrlUtil'
 import {
   findLegacyRerouteNodes,
+  migrateLegacyRerouteNodes,
   noNativeReroutes
 } from '@/utils/migration/migrateReroute'
 import { deserialiseAndCreate } from '@/utils/vintageClipboard'
@@ -777,7 +777,7 @@ export class ComfyApp {
               surface: 'graph',
               errorType: 'asset_drop_load_failure'
             })
-            useToastStore().addAlert(t('toastMessages.assetDropFailed'))
+            useToast().warning(t('toastMessages.assetDropFailed'))
           }
           return
         }
@@ -823,7 +823,11 @@ export class ComfyApp {
         }
         useWorkflowService().showPendingWarnings()
       } catch (error: unknown) {
-        useToastStore().addAlert(t('toastMessages.dropFileError', { error }))
+        useToast().warning(
+          t('toastMessages.dropFileError', {
+            error: getErrorMessage(error) ?? t('g.unknownError')
+          })
+        )
       }
     })
 
@@ -1004,9 +1008,6 @@ export class ComfyApp {
     await useWorkspaceStore().workflow.syncWorkflows()
     //Doesn't need to block. Blueprints will load async
     void useSubgraphStore().fetchSubgraphs()
-    await bootstrapTracer.settle('bootstrap/extensions-load', () =>
-      useExtensionService().loadExtensions()
-    )
 
     this.addProcessKeyHandler()
     this.addConfigureHandler()
@@ -1021,10 +1022,8 @@ export class ComfyApp {
         useSubgraphService().registerNewSubgraph(subgraph, data)
       } catch (err) {
         console.error('Failed to register subgraph', err)
-        useToastStore().add({
-          severity: 'error',
-          summary: 'Failed to register subgraph',
-          detail: err instanceof Error ? err.message : String(err)
+        useToast().error(t('toastMessages.failedToRegisterSubgraph'), {
+          description: getErrorMessage(err) ?? t('g.unknownError')
         })
       }
     })
@@ -1395,10 +1394,26 @@ export class ComfyApp {
         findLegacyRerouteNodes(graphData).length &&
         noNativeReroutes(graphData)
       ) {
-        useToastStore().add({
-          group: 'reroute-migration',
-          severity: 'warn'
-        })
+        const toast = useToast()
+        const migrationToastId = toast.warning(
+          t('toastMessages.migrateToLitegraphReroute'),
+          {
+            action: {
+              label: t('g.migrate'),
+              onClick: async () => {
+                await this.loadGraphData(
+                  migrateLegacyRerouteNodes(
+                    this.rootGraph.serialize() as unknown as WorkflowJSON04
+                  ),
+                  false,
+                  false,
+                  useWorkflowStore().activeWorkflow
+                )
+                toast.dismiss(migrationToastId)
+              }
+            }
+          }
+        )
       }
 
       useSubgraphService().loadSubgraphs(graphData)
@@ -2164,7 +2179,7 @@ export class ComfyApp {
   }
 
   showErrorOnFileLoad(file: File) {
-    useToastStore().addAlert(
+    useToast().warning(
       t('toastMessages.fileLoadError', { fileName: file.name })
     )
   }
@@ -2302,16 +2317,14 @@ export class ComfyApp {
       )
       switch (outcome) {
         case 'core-nodes-unavailable':
-          useToastStore().addAlert(t('toastMessages.a1111CoreNodesUnavailable'))
+          useToast().warning(t('toastMessages.a1111CoreNodesUnavailable'))
           return
         case 'not-a1111':
           this.showErrorOnFileLoad(file)
           return
         case 'imported-without-embeddings':
-          useToastStore().add({
-            severity: 'warn',
-            summary: t('g.warning'),
-            detail: t('toastMessages.a1111EmbeddingsUnavailable')
+          useToast().warning(t('g.warning'), {
+            description: t('toastMessages.a1111EmbeddingsUnavailable')
           })
           break
         case 'imported':
@@ -2773,38 +2786,31 @@ export class ComfyApp {
    * Refresh combo list on whole nodes
    */
   async refreshComboInNodes() {
-    const requestToastMessage: ToastMessageOptions = {
-      severity: 'info',
-      summary: t('g.update'),
-      detail: t('toastMessages.updateRequested')
-    }
-    if (this.vueAppReady) {
-      useToastStore().add(requestToastMessage)
-    }
+    const requestToastId = this.vueAppReady
+      ? useToast().info(t('g.update'), {
+          description: t('toastMessages.updateRequested')
+        })
+      : undefined
 
     try {
       await this.reloadNodeDefs()
 
       if (this.vueAppReady) {
-        useToastStore().add({
-          severity: 'success',
-          summary: t('g.updated'),
-          detail: t('toastMessages.nodeDefinitionsUpdated'),
-          life: 1000
+        useToast().success(t('g.updated'), {
+          description: t('toastMessages.nodeDefinitionsUpdated'),
+          duration: 1000
         })
       }
     } catch (error) {
       if (this.vueAppReady) {
-        useToastStore().add({
-          severity: 'error',
-          summary: t('g.error'),
-          detail: t('toastMessages.nodeDefinitionsUpdateFailed')
+        useToast().error(t('g.error'), {
+          description: t('toastMessages.nodeDefinitionsUpdateFailed')
         })
       }
       throw error
     } finally {
-      if (this.vueAppReady) {
-        useToastStore().remove(requestToastMessage)
+      if (requestToastId !== undefined) {
+        useToast().dismiss(requestToastId)
       }
     }
   }

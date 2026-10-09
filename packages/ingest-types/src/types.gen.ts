@@ -2543,6 +2543,16 @@ export type MediaBadRequestError = ErrorResponse | MediaQueryError
  * Paginated list of workspaces the authenticated user belongs to.
  */
 export type ListWorkspacesResponse = {
+  /**
+   * Whether `POST /api/workspaces` accepts this account. False for an
+   * account an SSO organization holds (its email is on the
+   * organization's verified domains): the organization manages its
+   * workspaces, and signing in again does not change it. Lets a client
+   * disable workspace creation up front instead of after the request
+   * is refused with 403 `FORBIDDEN`.
+   *
+   */
+  can_create_workspace: boolean
   workspaces: Array<WorkspaceWithRole>
 }
 
@@ -6312,6 +6322,68 @@ export type AgentLlmMessagesResponses = {
 
 export type AgentLlmMessagesResponse =
   AgentLlmMessagesResponses[keyof AgentLlmMessagesResponses]
+
+export type AgentLlmTracesData = {
+  /**
+   * An OTLP ExportTraceServiceRequest, optionally gzip-encoded (Content-Encoding gzip); at most 4 MiB encoded and decoded, and 4096 spans.
+   */
+  body: Blob | File
+  path?: never
+  query?: never
+  url: '/api/agent/llm/v1/traces'
+}
+
+export type AgentLlmTracesErrors = {
+  /**
+   * Malformed export, or Langfuse rejected it (not retryable).
+   */
+  400: ErrorResponse
+  /**
+   * Unauthorized
+   */
+  401: ErrorResponse
+  /**
+   * A refused request that changes data. For a web session, `code` is `csrf_invalid` (no `X-CSRF-Token`, or not the session's), `workspace_access_denied` (the selected workspace is unknown, deleted, or the user is not a member; the three look the same), `no_workspace_access` (the account has no personal workspace and is a member of no live workspace), `origin_not_allowed` or `cross_site_request`; see the `WebSessionAuth` scheme. For any credential, `sso_required` means an SSO organization holds the account (its email is on the organization's verified domains) and the credential is not an SSO sign-in, or the workspace is an SSO organization's and the account is not on its domains or the credential is not an SSO sign-in; `organization_id`, when present, names the organization to sign in with. `FORBIDDEN` is the route's own authorization check failing, such as an unverified email, or, on `POST /api/workspaces`, an account an SSO organization holds (its organization manages its workspaces; signing in again does not change it). A credential this route does not take gets AuthTypeNotAllowedError instead, and so does the session while `web_session_enabled` is off for the user, unless the operation says it takes the session whatever the flag.
+   */
+  403: ForbiddenError
+  /**
+   * The agent in-app experience is disabled for this caller (FlagAgentInAppExperience off), or the relay is not enabled on the agent service (AGENT_LOCAL_TRACES off).
+   */
+  404: ErrorResponse
+  /**
+   * The export exceeds 4 MiB or 4096 spans.
+   */
+  413: ErrorResponse
+  /**
+   * Not application/x-protobuf, or an unsupported Content-Encoding.
+   */
+  415: ErrorResponse
+  /**
+   * The caller's trace rate limit is exhausted.
+   */
+  429: ErrorResponse
+  /**
+   * The agent service or Langfuse is unavailable (retryable).
+   */
+  502: ErrorResponse
+  /**
+   * The agent proxy is not configured to forward safely (a non-local agent service URL with no shared machine-to-machine secret).
+   */
+  503: ErrorResponse
+}
+
+export type AgentLlmTracesError =
+  AgentLlmTracesErrors[keyof AgentLlmTracesErrors]
+
+export type AgentLlmTracesResponses = {
+  /**
+   * Accepted; the body is an empty OTLP ExportTraceServiceResponse.
+   */
+  200: Blob | File
+}
+
+export type AgentLlmTracesResponse =
+  AgentLlmTracesResponses[keyof AgentLlmTracesResponses]
 
 export type AgentGetRunModeData = {
   body?: never
@@ -11602,11 +11674,13 @@ export type GetNodeInfoData = {
   path?: never
   query?: {
     /**
-     * Also list the caller's own imported models (assets tagged `models`)
-     * in the model dropdown of the directory each one installs under, so
-     * a client that validates widget values against this catalog accepts
-     * a model the user imported. Off by default: the frontend reads
-     * imported models through the asset browser instead.
+     * Also list the models the caller can run that the models config
+     * does not: their own imported models and the public model assets the
+     * asset library shows them (assets tagged `models`), each in the model
+     * dropdown of the directory it installs under, so a client that
+     * validates widget values against this catalog accepts a model that
+     * would run. Off by default: the frontend reads these models through
+     * the asset browser instead.
      *
      */
     include_user_models?: boolean
