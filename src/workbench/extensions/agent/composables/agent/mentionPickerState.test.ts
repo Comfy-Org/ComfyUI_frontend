@@ -153,6 +153,57 @@ describe('mention picker transitions', () => {
     ).toEqual({ ...filteredNodes, activeIndex: 0 })
   })
 
+  it.for([
+    { query: '', firstMatchIndex: 0, activeIndex: -1 },
+    { query: 'por', firstMatchIndex: 0, activeIndex: 0 },
+    { query: 'zzz', firstMatchIndex: -1, activeIndex: -1 }
+  ])(
+    'highlights $activeIndex for a slash query of "$query"',
+    ({ query, firstMatchIndex, activeIndex }) => {
+      expect(
+        transitionMentionPicker(
+          { status: 'closed' },
+          {
+            type: 'queryChanged',
+            start: 0,
+            query,
+            firstMatchIndex,
+            trigger: '/'
+          }
+        )
+      ).toEqual({
+        status: 'open',
+        section: 'skills',
+        start: 0,
+        query,
+        activeIndex
+      })
+    }
+  )
+
+  it.for([
+    { direction: 1, activeIndex: 0 },
+    { direction: -1, activeIndex: 2 }
+  ] as const)(
+    'moves from no highlight in direction $direction to row $activeIndex',
+    ({ direction, activeIndex }) => {
+      const unhighlighted: MentionPickerState = {
+        status: 'open',
+        section: 'skills',
+        start: 0,
+        query: '',
+        activeIndex: -1
+      }
+      expect(
+        transitionMentionPicker(unhighlighted, {
+          type: 'highlightMoved',
+          direction,
+          disabled: [false, false, false]
+        })
+      ).toEqual({ ...unhighlighted, activeIndex })
+    }
+  )
+
   it.for<MentionPickerEvent>([
     { type: 'sectionSelected', section: 'nodes' },
     { type: 'back' },

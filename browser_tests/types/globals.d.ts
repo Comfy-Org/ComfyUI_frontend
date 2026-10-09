@@ -1,3 +1,5 @@
+import '@/types'
+
 import type { LGraph } from '@/lib/litegraph/src/LGraph'
 import type { LGraphBadge as LGraphBadgeClass } from '@/lib/litegraph/src/LGraphBadge'
 import type { LGraphNode } from '@/lib/litegraph/src/LGraphNode'

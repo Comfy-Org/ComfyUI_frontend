@@ -75,37 +75,34 @@ async function answerFeatures(
 function stubCloud(state: FakeWebSessionState, overrides: CloudOverrides = {}) {
   const endpoint = createFakeWebSessionEndpoint({ state })
   const sent: { path: string; workspace: string | null }[] = []
-  vi.stubGlobal(
-    'fetch',
-    vi.fn<typeof fetch>(async (input, init = {}) => {
-      const { pathname } = new URL(String(input))
-      const workspace = new Headers(init.headers).get('X-Comfy-Workspace-ID')
-      sent.push({ path: pathname, workspace })
-      if (pathname === '/api/features')
-        return answerFeatures(init, overrides.credentialedFeaturesDelayMs)
-      if (pathname === '/api/workspaces/current' && overrides.workspace) {
-        return overrides.workspace()
-      }
-      if (
-        pathname === '/api/auth/session' &&
-        init.method === 'POST' &&
-        overrides.createSession
-      ) {
-        return overrides.createSession()
-      }
-      if (pathname === '/api/workspaces/current') {
-        return new Response(
-          JSON.stringify({
-            auth_method: 'session',
-            id: 'ws-team',
-            name: 'Team',
-            type: 'team'
-          })
-        )
-      }
-      return endpoint.fetch(input, init)
-    })
-  )
+  vi.mocked(fetch).mockImplementation(async (input, init = {}) => {
+    const { pathname } = new URL(String(input))
+    const workspace = new Headers(init.headers).get('X-Comfy-Workspace-ID')
+    sent.push({ path: pathname, workspace })
+    if (pathname === '/api/features')
+      return answerFeatures(init, overrides.credentialedFeaturesDelayMs)
+    if (pathname === '/api/workspaces/current' && overrides.workspace) {
+      return overrides.workspace()
+    }
+    if (
+      pathname === '/api/auth/session' &&
+      init.method === 'POST' &&
+      overrides.createSession
+    ) {
+      return overrides.createSession()
+    }
+    if (pathname === '/api/workspaces/current') {
+      return new Response(
+        JSON.stringify({
+          auth_method: 'session',
+          id: 'ws-team',
+          name: 'Team',
+          type: 'team'
+        })
+      )
+    }
+    return endpoint.fetch(input, init)
+  })
   return sent
 }
 

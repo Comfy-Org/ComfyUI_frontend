@@ -168,7 +168,8 @@ test.describe('Member role change (Members tab)', { tag: '@cloud' }, () => {
   })
 
   test('promoting a member re-sorts the row under the creator and stays demotable', async ({
-    page
+    page,
+    toast
   }) => {
     const state = await new CloudWorkspaceMockHelper(page).setup()
     const members = new MembersSettingsPanel(page)
@@ -191,7 +192,7 @@ test.describe('Member role change (Members tab)', { tag: '@cloud' }, () => {
       .click()
     await page.getByRole('button', { name: 'Make owner' }).click()
 
-    await expect(page.getByText('Role updated')).toBeVisible()
+    await expect(toast.withText('Role updated')).toBeVisible()
     await expect(janeRow.getByText('Owner', { exact: true })).toBeVisible()
     await expect(emails).toHaveText([
       CREATOR.email,
@@ -245,7 +246,8 @@ test.describe('Member role change (Members tab)', { tag: '@cloud' }, () => {
   })
 
   test('failed role change keeps the dialog open with an error toast', async ({
-    page
+    page,
+    toast
   }) => {
     await new CloudWorkspaceMockHelper(page).setup()
     // Override the member route so PATCH fails after boot succeeds.
@@ -266,7 +268,11 @@ test.describe('Member role change (Members tab)', { tag: '@cloud' }, () => {
     await page.getByRole('button', { name: 'Make owner' }).click()
 
     // US10 — error toast, dialog stays open, role unchanged.
-    await expect(page.getByText('Failed to update role')).toBeVisible()
+    await expect(
+      toast.toastErrors.filter({
+        hasText: 'Failed to update role'
+      })
+    ).toBeVisible()
     await expect(
       page.getByRole('heading', { name: 'Make Jane an owner?' })
     ).toBeVisible()

@@ -25,6 +25,7 @@ import { onMounted, onUnmounted, shallowRef } from 'vue'
 import { useI18n } from 'vue-i18n'
 
 import CancelSubscriptionDialogContent from '@/components/dialog/content/subscription/CancelSubscriptionDialogContent.vue'
+import { useToast } from '@/components/ui/toast/toastStore'
 import { useBillingContext } from '@/composables/billing/useBillingContext'
 import CancellationSurveyStep from '@/platform/cloud/subscription/components/CancellationSurveyStep.vue'
 import RetentionOfferStep from '@/platform/cloud/subscription/components/RetentionOfferStep.vue'
@@ -36,7 +37,6 @@ import {
   getSubscriptionCancellationMetadata
 } from '@/platform/cloud/subscription/utils/subscriptionCancellationTelemetry'
 import { useTelemetry } from '@/platform/telemetry'
-import { useToastStore } from '@/platform/updates/common/toastStore'
 import { useDialogStore } from '@/stores/dialogStore'
 
 type CancellationFlowStep = 'survey' | 'offer' | 'confirm'
@@ -117,10 +117,8 @@ function onOfferDecision(outcome: RetentionOfferOutcome) {
   }
   keptByOffer = outcome === 'retained' || outcome === 'pending'
   if (outcome === 'pending')
-    useToastStore().add({
-      severity: 'warn',
-      summary: t('subscription.retentionOffer.pendingToast'),
-      life: 10000
+    useToast().warning(t('subscription.retentionOffer.pendingToast'), {
+      duration: 10000
     })
   closeFlow()
 }

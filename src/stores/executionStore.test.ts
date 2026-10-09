@@ -122,6 +122,17 @@ function createPromptNode(title: string, classType: string) {
   }
 }
 
+const TEST_SUBGRAPH_UUID = 'a1b2c3d4-e5f6-7890-abcd-ef1234567890'
+
+function createTestSubgraph(...nodeIds: number[]) {
+  const nodes = nodeIds.map((id) => createMockLGraphNode({ id: toNodeId(id) }))
+  return {
+    id: TEST_SUBGRAPH_UUID,
+    nodes,
+    getNodeById: (id: string) => nodes.find((node) => node.id === id) ?? null
+  }
+}
+
 describe('useExecutionStore - NodeLocatorId conversions', () => {
   let store: ReturnType<typeof useExecutionStore>
 
@@ -134,10 +145,7 @@ describe('useExecutionStore - NodeLocatorId conversions', () => {
   describe('executionIdToNodeLocatorId', () => {
     it('should convert execution ID to NodeLocatorId', () => {
       // Mock subgraph structure
-      const mockSubgraph = {
-        id: 'a1b2c3d4-e5f6-7890-abcd-ef1234567890',
-        nodes: []
-      }
+      const mockSubgraph = createTestSubgraph(456)
 
       const mockNode = createMockLGraphNode({
         id: 123,
@@ -198,7 +206,7 @@ describe('useExecutionStore - NodeLocatorId conversions', () => {
       const result = store.nodeLocatorIdToExecutionId(locatorId)
 
       expect(
-        vi.mocked(useWorkflowStore().nodeLocatorIdToNodeExecutionId)
+        useWorkflowStore().nodeLocatorIdToNodeExecutionId
       ).toHaveBeenCalledWith(locatorId)
       expect(result).toBe(mockExecutionId)
     })
@@ -227,10 +235,7 @@ describe('useExecutionStore - nodeLocationProgressStates caching', () => {
   })
 
   it('should resolve execution IDs to locator IDs for subgraph nodes', () => {
-    const mockSubgraph = {
-      id: 'a1b2c3d4-e5f6-7890-abcd-ef1234567890',
-      nodes: []
-    }
+    const mockSubgraph = createTestSubgraph(456)
     const mockNode = createMockLGraphNode({
       id: 123,
       isSubgraphNode: () => true,
@@ -263,10 +268,7 @@ describe('useExecutionStore - nodeLocationProgressStates caching', () => {
   })
 
   it('should not re-traverse graph for same execution IDs across progress updates', () => {
-    const mockSubgraph = {
-      id: 'a1b2c3d4-e5f6-7890-abcd-ef1234567890',
-      nodes: []
-    }
+    const mockSubgraph = createTestSubgraph(456)
     const mockNode = createMockLGraphNode({
       id: 123,
       isSubgraphNode: () => true,
@@ -315,10 +317,7 @@ describe('useExecutionStore - nodeLocationProgressStates caching', () => {
   })
 
   it('should correctly resolve multiple sibling nodes in the same subgraph', () => {
-    const mockSubgraph = {
-      id: 'a1b2c3d4-e5f6-7890-abcd-ef1234567890',
-      nodes: []
-    }
+    const mockSubgraph = createTestSubgraph(456, 789)
     const mockNode = createMockLGraphNode({
       id: 123,
       isSubgraphNode: () => true,
@@ -1372,9 +1371,9 @@ describe('useExecutionStore - progress_text startup guard', () => {
       fireProgressText({ nodeId: toNodeId('1:2'), text: 'warming up' })
     ).not.toThrow()
 
-    expect(
-      vi.mocked(useWorkflowStore().executionIdToCurrentId)
-    ).toHaveBeenCalledWith('1:2')
+    expect(useWorkflowStore().executionIdToCurrentId).toHaveBeenCalledWith(
+      '1:2'
+    )
     expect(mockShowTextPreview).not.toHaveBeenCalled()
   })
 })
@@ -1523,11 +1522,7 @@ describe('useExecutionErrorStore - Node Error Lookups', () => {
 
     it('should return node error by locator ID for subgraph node', () => {
       const subgraphUuid = 'a1b2c3d4-e5f6-7890-abcd-ef1234567890'
-      const mockSubgraph = {
-        id: subgraphUuid,
-        getNodeById: vi.fn(),
-        nodes: []
-      }
+      const mockSubgraph = createTestSubgraph(456)
 
       const mockNode = createMockLGraphNode({
         id: 123,

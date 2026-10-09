@@ -2,6 +2,7 @@ import { useEventListener, whenever } from '@vueuse/core'
 import { defineStore } from 'pinia'
 import { computed, ref, shallowRef } from 'vue'
 
+import { useToast } from '@/components/ui/toast/toastStore'
 import { useAppMode } from '@/composables/useAppMode'
 import { visibleCanvasViewport } from '@/composables/canvas/visibleCanvasViewport'
 
@@ -110,11 +111,13 @@ export const useCanvasStore = defineStore('canvas', () => {
   const isInSubgraph = ref(false)
   const isGhostPlacing = ref(false)
   const isPickingNodes = ref(false)
+  const toast = useToast()
 
   function startNodePicking(): void {
     const currentCanvas = canvas.value
     if (!currentCanvas || isPickingNodes.value) return
     isPickingNodes.value = true
+    toast.held = true
     const selected = [...currentCanvas.selectedItems]
     const bounds = createPositionBounds(
       selected.length ? selected : (currentCanvas.graph?.nodes ?? []),
@@ -130,6 +133,7 @@ export const useCanvasStore = defineStore('canvas', () => {
   function stopNodePicking(): undefined {
     if (!isPickingNodes.value) return
     isPickingNodes.value = false
+    toast.held = false
     canvas.value?.deselectAll()
   }
 

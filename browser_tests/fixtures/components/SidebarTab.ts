@@ -4,6 +4,7 @@ import { expect } from '@playwright/test'
 import type { ComfyMouse } from '@e2e/fixtures/ComfyMouse'
 import type { WorkspaceStore } from '@e2e/types/globals'
 import { TestIds } from '@e2e/fixtures/selectors'
+import { ToastHelper } from '@e2e/fixtures/helpers/ToastHelper'
 
 export class SidebarTab {
   public readonly tabButton: Locator
@@ -389,6 +390,8 @@ export class AssetsSidebarTab extends SidebarTab {
   // --- Loading ---
   public readonly skeletonLoaders: Locator
 
+  private readonly toast: ToastHelper
+
   constructor(public override readonly page: Page) {
     super(page, 'assets')
     this.generatedTab = page.getByRole('tab', { name: 'Generated' })
@@ -447,6 +450,7 @@ export class AssetsSidebarTab extends SidebarTab {
     this.skeletonLoaders = page.locator(
       '.sidebar-content-container .animate-pulse'
     )
+    this.toast = new ToastHelper(page)
   }
 
   emptyStateTitle(title: string) {
@@ -485,7 +489,7 @@ export class AssetsSidebarTab extends SidebarTab {
 
   override async open({ waitForAssets = true } = {}) {
     // Remove any toast notifications that may overlay the sidebar button
-    await this.dismissToasts()
+    await this.toast.closeToasts()
     await super.open()
     await this.generatedTab.waitFor({ state: 'visible' })
     if (waitForAssets) {
@@ -493,26 +497,14 @@ export class AssetsSidebarTab extends SidebarTab {
     }
   }
 
-  /** Dismiss all visible toast notifications by clicking their close buttons. */
-  async dismissToasts() {
-    const closeButtons = this.page.locator('.p-toast-close-button')
-    for (const btn of await closeButtons.all()) {
-      await btn.click().catch(() => {})
-    }
-    // Wait for all toast elements to fully animate out and detach from DOM
-    await expect(this.page.locator('.p-toast-message'))
-      .toHaveCount(0)
-      .catch(() => {})
-  }
-
   async switchToImported() {
-    await this.dismissToasts()
+    await this.toast.closeToasts()
     await this.importedTab.click()
     await expect(this.importedTab).toHaveAttribute('aria-selected', 'true')
   }
 
   async switchToGenerated() {
-    await this.dismissToasts()
+    await this.toast.closeToasts()
     await this.generatedTab.click()
     await expect(this.generatedTab).toHaveAttribute('aria-selected', 'true')
   }
@@ -539,7 +531,7 @@ export class AssetsSidebarTab extends SidebarTab {
   }
 
   async openSettingsMenu() {
-    await this.dismissToasts()
+    await this.toast.closeToasts()
     await this.settingsButton.click()
     await expect(
       this.listViewOption
@@ -562,7 +554,7 @@ export class AssetsSidebarTab extends SidebarTab {
   }
 
   async openFilterMenu() {
-    await this.dismissToasts()
+    await this.toast.closeToasts()
     await this.filterButton.click()
     await expect(this.mediaTypeFilterMenuItem).toBeVisible()
   }

@@ -151,7 +151,6 @@ test.describe('Desktop dropdown @interaction', () => {
     const dropdown = nav.getByTestId('nav-dropdown')
     for (const item of [
       'Comfy Desktop',
-      'Browse Models',
       'Comfy Cloud',
       'Comfy Agent',
       'Developer Platform',
@@ -373,11 +372,11 @@ test.describe('Mobile menu @mobile', () => {
 
     const menu = page.getByRole('dialog')
     await menu.getByRole('button', { name: 'Products' }).click()
-    const models = menu.getByRole('link', { name: 'Browse Models' })
+    const platform = menu.getByRole('link', { name: 'Developer Platform' })
     const agent = menu.getByRole('link', { name: 'Comfy Agent' })
     await expect(agent).toBeVisible()
     await settleAnimations(menu)
-    const first = await badgePlacement(models, 'Browse Models')
+    const first = await badgePlacement(platform, 'Developer Platform')
     const second = await badgePlacement(agent, 'Comfy Agent')
 
     expect(first.gap).toBeGreaterThan(0)

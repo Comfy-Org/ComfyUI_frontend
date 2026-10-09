@@ -51,6 +51,10 @@ import {
   setRevealedLinks
 } from './canvas/linkRevealState'
 import { SelectedItemsView } from './canvas/SelectedItemsView'
+import {
+  CANVAS_CLIPBOARD_ID_KEY,
+  CANVAS_CLIPBOARD_KEY
+} from './canvas/clipboardStorage'
 import type { ContextMenu } from './ContextMenu'
 import { createCursorCache } from './cursorCache'
 import { DragAndScale } from './DragAndScale'
@@ -4304,8 +4308,8 @@ export class LGraphCanvas implements CustomEventDispatcher<LGraphCanvasEventMap>
    */
   copyToClipboard(items?: Iterable<Positionable>): string {
     const serializedData = JSON.stringify(this._serializeItems(items))
-    localStorage.setItem('litegrapheditor_clipboard', serializedData)
-    localStorage.setItem('litegrapheditor_clipboard_id', createUuidv4())
+    localStorage.setItem(CANVAS_CLIPBOARD_KEY, serializedData)
+    localStorage.setItem(CANVAS_CLIPBOARD_ID_KEY, createUuidv4())
     return serializedData
   }
 
@@ -4338,7 +4342,7 @@ export class LGraphCanvas implements CustomEventDispatcher<LGraphCanvasEventMap>
   _pasteFromClipboard(
     options: IPasteFromClipboardOptions = {}
   ): ClipboardPasteResult | undefined {
-    const data = localStorage.getItem('litegrapheditor_clipboard')
+    const data = localStorage.getItem(CANVAS_CLIPBOARD_KEY)
     if (!data) return
     return this._deserializeItems(JSON.parse(data), options)
   }

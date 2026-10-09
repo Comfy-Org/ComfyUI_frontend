@@ -101,6 +101,7 @@
     "@astrojs/mdx": "catalog:",
     "@astrojs/vue": "catalog:",
     "@comfyorg/sdk": "catalog:",
+    "@comfyorg/test-utils": "workspace:*",
     "@hey-api/openapi-ts": "0.97.3",
     "@playwright/test": "catalog:",
     "@storybook/vue3-vite": "catalog:",

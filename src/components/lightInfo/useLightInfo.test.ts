@@ -1,12 +1,12 @@
 import { fromAny } from '@total-typescript/shoehorn'
 import { assert, beforeEach, describe, expect, it, vi } from 'vitest'
 
+import { useToast } from '@/components/ui/toast/toastStore'
 import { LightInfoViewport } from '@/extensions/core/lightInfo/LightInfoViewport'
 import type { LightInfoViewportOptions } from '@/extensions/core/lightInfo/LightInfoViewport'
 import { createDefaultLight } from '@/extensions/core/lightInfo/types'
 import type { LightInfoEntry } from '@/extensions/core/lightInfo/types'
 import type { LGraphNode } from '@/lib/litegraph/src/LGraphNode'
-import { useToastStore } from '@/platform/updates/common/toastStore'
 import { useWidgetValueStore } from '@/stores/widgetValueStore'
 import { toNodeId } from '@/types/nodeId'
 import { widgetId } from '@/types/widgetId'
@@ -174,10 +174,10 @@ describe('useLightInfo widget boundary', () => {
 
     useWidgetValueStore().setValue(editorId, [createDefaultLight('point')])
 
-    expect(useToastStore().messagesToAdd).toEqual([
+    expect(useToast().toasts).toEqual([
       expect.objectContaining({
-        detail:
-          'Failed to initialize Light Info viewer. Try reloading the page.'
+        kind: 'warning',
+        title: 'Failed to initialize Light Info viewer. Try reloading the page.'
       })
     ])
     expect(light.lights.value).toHaveLength(0)
