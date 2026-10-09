@@ -15,14 +15,18 @@ describe('workshopAppHref', () => {
     expect(
       workshopApps('en', appModels).map(({ thumbnail }) => thumbnail)
     ).toEqual(appModels.map((app) => app.thumbnail))
-    expect(
-      workshopApps('en', appModels).find(({ key }) => key === 'reshoot')
-        ?.thumbnail
-    ).toEqual({
-      url: 'https://media.comfy.org/website/workshop/apps/reshoot/thumbnail-480.mp4',
-      kind: 'video',
-      poster: 'https://media.comfy.org/website/workshop/apps/reshoot/poster.jpg'
-    })
+  })
+
+  it('covers every app card with stills of its outcome, led by its own image', () => {
+    const thumbnails = workshopApps('en', appModels).map(
+      ({ thumbnail }) => thumbnail
+    )
+    expect(thumbnails.length).toBeGreaterThan(0)
+    for (const thumbnail of thumbnails) {
+      expect(thumbnail?.kind).toBe('image')
+      expect(thumbnail?.frames?.length).toBeGreaterThanOrEqual(3)
+      expect(thumbnail?.frames?.[0]).toBe(thumbnail?.url)
+    }
   })
 })
 

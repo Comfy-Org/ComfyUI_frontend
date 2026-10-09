@@ -29,7 +29,8 @@ const presentationSchema = z.object({
     .object({
       url: z.string(),
       kind: z.enum(['image', 'video', 'audio']),
-      poster: z.string().optional()
+      poster: z.string().optional(),
+      frames: z.array(z.string()).optional()
     })
     .optional(),
   useCases: z.array(z.enum(USE_CASES)).optional(),
