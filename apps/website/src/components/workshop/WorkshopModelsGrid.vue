@@ -112,7 +112,8 @@ function readAddress(search: string) {
 
 function selectTab(next: ModelTab) {
   tab.value = next
-  selectedUseCases.value = useCasesInTab(selectedUseCases.value, next)
+  selectedUseCases.value =
+    next === 'all' ? [] : useCasesInTab(selectedUseCases.value, next)
 }
 
 watch(selectedAccess, (value) => {
@@ -166,6 +167,13 @@ const useCaseOptions = computed<FacetMenuOption[]>(() => {
       label: t(labelKey),
       count: counts[useCase]
     }))
+})
+
+watch(selectedUseCases, (selected) => {
+  if (tab.value !== 'all') return
+  const implied = tabForUseCases(selected, 'all')
+  if (implied !== 'all' && (tabCounts.value.get(implied) ?? 0) > 0)
+    tab.value = implied
 })
 
 watch(useCaseOptions, (options) => {

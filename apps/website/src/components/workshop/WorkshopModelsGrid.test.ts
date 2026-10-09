@@ -226,7 +226,10 @@ describe('WorkshopModelsGrid', () => {
   it('lists in the filter menu only the tasks of the chosen type that have results', async () => {
     const user = userEvent.setup()
     render(WorkshopModelsGrid, { props: { models } })
-    expect(await offeredUseCases(user)).toEqual([])
+    expect(await offeredUseCases(user)).toEqual([
+      'filter-useCase-edit-images',
+      'filter-useCase-generate-videos'
+    ])
 
     await chooseTab(user, 'Video')
     expect(await offeredUseCases(user)).toEqual([
@@ -235,6 +238,21 @@ describe('WorkshopModelsGrid', () => {
 
     await chooseTab(user, 'Edit')
     expect(await offeredUseCases(user)).toEqual(['filter-useCase-edit-images'])
+  })
+
+  it('moves the sidebar to the type of a use case chosen on All', async () => {
+    const user = userEvent.setup()
+    render(WorkshopModelsGrid, { props: { models } })
+
+    await user.click(await useCase(user, 'Generate videos 1'))
+
+    expect(screen.getByRole('tab', { name: /^Video/ })).toHaveAttribute(
+      'aria-selected',
+      'true'
+    )
+    expect(
+      screen.getByRole('heading', { level: 2, name: 'Generate videos 1' })
+    ).toBeTruthy()
   })
 
   it('narrows a tab by its use cases, several at once, and lets go of one', async () => {
@@ -641,10 +659,10 @@ describe('WorkshopModelsGrid', () => {
       ).toBeNull()
     })
 
-    it('hides the Filters menu while no choice would narrow the list', () => {
+    it('offers the Filters menu on All, with every use case that has results', () => {
       render(WorkshopModelsGrid, { props: { models } })
 
-      expect(screen.queryByRole('button', { name: 'Filters' })).toBeNull()
+      expect(screen.getByRole('button', { name: 'Filters' })).toBeTruthy()
     })
 
     it.for([

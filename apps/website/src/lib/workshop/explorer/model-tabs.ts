@@ -1,6 +1,7 @@
 import type { UseCase, WorkshopModel } from '@/config/models-catalogue'
 import { modalityOf, useCasesFor } from '@/config/models-catalogue'
 import type { TranslationKey } from '@/i18n/translations'
+import { useCaseLabelKey } from '@/lib/workshop/use-case-label'
 
 export const MODEL_TABS = [
   'all',
@@ -34,6 +35,18 @@ interface TabUseCase {
 
 /** The tasks a tab splits into; a tab that is already one task has none. */
 export const tabUseCases: Partial<Record<ModelTab, readonly TabUseCase[]>> = {
+  all: (
+    [
+      'generate-images',
+      'edit-images',
+      'generate-videos',
+      'animate-images',
+      'edit-videos',
+      'audio',
+      '3d',
+      'text'
+    ] as const
+  ).map((useCase) => ({ useCase, labelKey: useCaseLabelKey[useCase] })),
   image: [
     { useCase: 'generate-images', labelKey: 'workshop.useCaseOption.generate' },
     { useCase: 'edit-images', labelKey: 'workshop.useCaseOption.edit' }
@@ -74,15 +87,21 @@ export function useCasesInTab(
 }
 
 /**
- * The tab a deep-linked selection opens on: the one named, while it offers
- * every chosen use case, else the one a lone use case belongs to.
+ * The tab a selection belongs on: the one named, while that type offers every
+ * chosen use case, else the one type all of them share. A selection spread
+ * over several types stays where it is.
  */
 export function tabForUseCases(
   selected: readonly UseCase[],
   named: ModelTab
 ): ModelTab {
-  if (useCasesInTab(selected, named).length === selected.length) return named
-  return selected.length === 1 ? TAB_OF_USE_CASE[selected[0]] : named
+  if (
+    named !== 'all' &&
+    useCasesInTab(selected, named).length === selected.length
+  )
+    return named
+  const tabs = new Set(selected.map((useCase) => TAB_OF_USE_CASE[useCase]))
+  return tabs.size === 1 ? [...tabs][0] : named
 }
 
 const MEDIA_OF_TAB = {
