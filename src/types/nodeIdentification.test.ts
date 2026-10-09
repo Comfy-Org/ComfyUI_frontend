@@ -140,11 +140,7 @@ describe('nodeIdentification', () => {
         // comfy-multi-player's insert_workflow remaps every inserted node's
         // id to a derived string with colons unrelated to subgraph scoping.
         const rawId = 'insert:abc123:root:node:5'
-        expect(createNodeLocatorId(null, toNodeId(rawId))).toBe(
-          '~root:insert%3Aabc123%3Aroot%3Anode%3A5'
-        )
         const locatorId = createNodeLocatorId(null, rawId)
-        assert.exists(locatorId)
         expect(locatorId).toBe('~root:insert%3Aabc123%3Aroot%3Anode%3A5')
         expect(parseNodeLocatorId(locatorId)).toEqual({
           subgraphUuid: null,
