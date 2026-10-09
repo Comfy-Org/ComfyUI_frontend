@@ -1215,6 +1215,14 @@ describe('useWorkflowStore', () => {
         expect(result).toBeNull()
       })
 
+      it('should return null for an unparseable locator', () => {
+        const locatorId = fromAny<NodeLocatorId, string>(
+          '~subgraph:not-a-uuid:5'
+        )
+
+        expect(store.nodeLocatorIdToNodeExecutionId(locatorId)).toBeNull()
+      })
+
       it('should mint a leaf execution id from an encoded root-leaf locator', () => {
         const locatorId = createNodeLocatorId(
           null,

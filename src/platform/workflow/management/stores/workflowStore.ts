@@ -680,12 +680,7 @@ export const useWorkflowStore = defineStore('workflow', () => {
     targetSubgraph?: Subgraph
   ): NodeExecutionId | null => {
     const parsed = parseNodeLocatorId(locatorId)
-    if (!parsed) {
-      // Same leaf-locator case as nodeLocatorIdToNodeId above: no subgraph
-      // to resolve against, so mint a leaf execution id from the whole
-      // locator instead of discarding it.
-      return createLeafNodeExecutionId(locatorId)
-    }
+    if (!parsed) return null
 
     const { subgraphUuid, localNodeId } = parsed
 
