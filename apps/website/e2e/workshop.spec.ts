@@ -117,19 +117,17 @@ test.describe('Models catalog', () => {
     )
   })
 
-  test('answers questions about AI models in ComfyUI', async ({ page }) => {
+  test('leaves questions about AI models off the Models page', async ({
+    page
+  }) => {
     await page.goto('/hub/models/')
-    const question = page.getByRole('button', {
-      name: 'What does day-zero support mean?'
-    })
-    await waitForIsland(page, question)
-    await question.click()
-    await expect(question).toHaveAttribute('aria-expanded', 'true')
+    await expect(page.getByTestId('models-directory')).toBeVisible()
     await expect(
-      page.getByText('a newly released model can be used in ComfyUI', {
-        exact: false
-      })
-    ).toBeVisible()
+      page.getByRole('heading', { name: 'AI models in ComfyUI' })
+    ).toHaveCount(0)
+    await expect(
+      page.getByRole('button', { name: 'What does day-zero support mean?' })
+    ).toHaveCount(0)
   })
 
   test('switches between the curated recommendation and alphabetical order', async ({

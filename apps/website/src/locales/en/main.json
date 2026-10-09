@@ -810,33 +810,6 @@
         "wanDescription": "Open and hosted video models from Alibaba.",
         "wanExplore": "Explore the Wan family"
       },
-      "faqHeading": "AI models in ComfyUI",
-      "faq": {
-        "1": {
-          "q": "What does day-zero support mean?",
-          "a": "It means a newly released model can be used in ComfyUI as soon as its supported integration is available."
-        },
-        "2": {
-          "q": "Is ComfyUI free?",
-          "a": "ComfyUI Desktop is free to run on your own hardware. Cloud and partner services have separate usage terms."
-        },
-        "3": {
-          "q": "Do partner models need separate accounts?",
-          "a": "Account and billing requirements depend on the partner integration used by a workflow."
-        },
-        "4": {
-          "q": "What VRAM do open models need?",
-          "a": "Requirements vary by model, resolution, precision, and workflow. Quantized variants can reduce memory use."
-        },
-        "5": {
-          "q": "Can I run these models through an API?",
-          "a": "Comfy API can turn supported workflows into production endpoints."
-        },
-        "6": {
-          "q": "Can I use these models commercially, and where are they available?",
-          "a": "Commercial-use rights are model-specific. Local availability means you can run a model on your own hardware, but it does not grant commercial rights—review that model’s license and restrictions. Comfy Cloud availability depends on the models supported there and their applicable terms. Organizations that need negotiated terms, indemnity, or other contractual assurances should contact Comfy Enterprise to discuss a commercial agreement."
-        }
-      },
       "back": {
         "search": "results for “{query}”",
         "tab": {
