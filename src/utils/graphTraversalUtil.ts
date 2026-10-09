@@ -667,11 +667,6 @@ export function getNodeByLocatorId(
 ): LGraphNode | null {
   const parsedIds = parseNodeLocatorId(locatorId)
   if (!parsedIds) {
-    // parseNodeLocatorId's delimiter-aware format rejects a locator id
-    // whose local id itself contains a colon that isn't a subgraph-scope
-    // prefix (comfy-multi-player's insert_workflow remapped ids, PM-1580).
-    // Legacy callers can still supply an unencoded leaf ID. Resolve it
-    // directly against the root graph when strict locator parsing fails.
     const leafNodeId = parseNodeId(locatorId)
     return leafNodeId ? rootGraph.getNodeById(leafNodeId) || null : null
   }
