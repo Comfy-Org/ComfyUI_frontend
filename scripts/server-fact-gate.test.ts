@@ -204,8 +204,14 @@ describe('server-fact gate on a real diff', () => {
     run('commit', '-q', '-m', 'base')
     writeFileSync(path.join(dir, gatedFile), after.join('\n'))
     return spawnSync(
-      path.join(repoRoot, 'node_modules/.bin/tsx'),
-      [path.join(repoRoot, 'scripts/server-fact-gate.ts'), '--base', 'HEAD'],
+      process.execPath,
+      [
+        '--import',
+        'tsx',
+        path.join(repoRoot, 'scripts/server-fact-gate.ts'),
+        '--base',
+        'HEAD'
+      ],
       { cwd: dir, encoding: 'utf8' }
     )
   }
