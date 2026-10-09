@@ -726,7 +726,8 @@
       "needHelp": "Need Help?"
     },
     "toast": {
-      "close": "Close"
+      "close": "Close",
+      "viewportLabel": "Notifications ({hotkey})"
     },
     "hero": {
       "carouselLabel": "Featured models",
@@ -2475,6 +2476,7 @@
     "workflows": "Workflows",
     "useCases": "Use Cases",
     "location": "San Francisco, USA",
+    "language": "Language",
     "enterpriseMsa": "Enterprise MSA",
     "flux3": "Flux 3",
     "wanAnimate2": "Wan Animate 2",

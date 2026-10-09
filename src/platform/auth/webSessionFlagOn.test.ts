@@ -61,7 +61,7 @@ import { useTelemetry } from '@/platform/telemetry'
 import { reportError } from '@/platform/telemetry/reportError'
 import { refreshRemoteConfig } from '@/platform/remoteConfig/refreshRemoteConfig'
 import { remoteConfig } from '@/platform/remoteConfig/remoteConfig'
-import { useToastStore } from '@/platform/updates/common/toastStore'
+import { useToast } from '@/components/ui/toast/toastStore'
 import { workspaceApi } from '@/platform/workspace/api/workspaceApi'
 import { NoWorkspaceAccessError } from '@/platform/workspace/api/workspaceApiError'
 import {
@@ -580,10 +580,10 @@ describe('cloud app on the shared web session (unified_web_session on)', () => {
     expect(
       sessionStorage.getItem(WORKSPACE_STORAGE_KEYS.CURRENT_WORKSPACE)
     ).toBeNull()
-    expect(useToastStore().messagesToAdd).toEqual([
+    expect(useToast().toasts).toEqual([
       expect.objectContaining({
-        severity: 'info',
-        detail: expect.stringContaining('user-b@example.com')
+        kind: 'info',
+        description: expect.stringContaining('user-b@example.com')
       })
     ])
   })
@@ -894,7 +894,8 @@ describe('cloud API requests on the shared web session', () => {
       workspaces: [
         { ...LISTED, id: 'ws-personal', name: 'Personal', type: 'personal' },
         { ...LISTED, id: 'ws-team', name: 'Team', type: 'team' }
-      ]
+      ],
+      can_create_workspace: true
     })
 
     await useTeamWorkspaceStore().initialize()
@@ -3576,9 +3577,10 @@ describe('an SSO session with no Firebase login reaching Firebase-only paths', (
       await router.push(`/user-select?desktop_login_code=${desktopCode}`)
 
       const { path, query } = router.currentRoute.value
-      const ssoNotice = useToastStore().messagesToAdd.filter(
-        ({ summary }) =>
-          summary === "Desktop sign-in isn't available for SSO accounts yet"
+      const ssoNotice = useToast().toasts.filter(
+        (toast) =>
+          'title' in toast &&
+          toast.title === "Desktop sign-in isn't available for SSO accounts yet"
       )
       expect({
         path,

@@ -23,6 +23,7 @@ import type {
   BillingRail,
   CurrentWorkspaceResponse,
   ListMembersParams,
+  ListWorkspacesResponse,
   Member,
   PendingInvite as ApiPendingInvite,
   SubscriptionTier,
@@ -163,6 +164,10 @@ function clearLastWorkspaceId(): void {
   }
 }
 
+/** An ingest deployed before `can_create_workspace` omits it; only an explicit false refuses. */
+type ListedWorkspaces = Omit<ListWorkspacesResponse, 'can_create_workspace'> &
+  Partial<Pick<ListWorkspacesResponse, 'can_create_workspace'>>
+
 const MAX_OWNED_WORKSPACES = 10
 const MAX_INIT_RETRIES = 3
 const BASE_RETRY_DELAY_MS = 1000
@@ -225,9 +230,22 @@ export const useTeamWorkspaceStore = defineStore('teamWorkspace', () => {
     () => workspaces.value.filter((w) => w.role === 'owner').length
   )
 
+  /** The server says an SSO organization manages this account's workspaces. */
+  const workspacesManagedByOrganization = ref(false)
+
   const canCreateWorkspace = computed(
-    () => ownedWorkspacesCount.value < MAX_OWNED_WORKSPACES
+    () =>
+      !workspacesManagedByOrganization.value &&
+      ownedWorkspacesCount.value < MAX_OWNED_WORKSPACES
   )
+
+  function applyWorkspaceList(response: ListedWorkspaces): void {
+    workspaces.value = sortWorkspaces(
+      response.workspaces.map(createWorkspaceState)
+    )
+    workspacesManagedByOrganization.value =
+      response.can_create_workspace === false
+  }
 
   const members = computed<WorkspaceMember[]>(
     () => activeWorkspace.value?.members ?? []
@@ -339,9 +357,7 @@ export const useTeamWorkspaceStore = defineStore('teamWorkspace', () => {
         if (isDesktopHostSignedIn()) {
           const response = await workspaceApi.list()
           if (isStaleIdentity(generation)) return
-          workspaces.value = sortWorkspaces(
-            response.workspaces.map(createWorkspaceState)
-          )
+          applyWorkspaceList(response)
           const hostWorkspaceId = desktopHostUser.value?.workspaceId
           if (!workspaces.value.some((w) => w.id === hostWorkspaceId)) {
             throw new NoWorkspaceAccessError('Desktop workspace not available')
@@ -374,9 +390,7 @@ export const useTeamWorkspaceStore = defineStore('teamWorkspace', () => {
           // Valid session exists - fetch workspace list and verify access
           const response = await workspaceApi.list()
           if (isStaleIdentity(generation)) return
-          workspaces.value = sortWorkspaces(
-            response.workspaces.map(createWorkspaceState)
-          )
+          applyWorkspaceList(response)
 
           if (workspaces.value.length === 0) {
             throw new NoWorkspaceAccessError('No workspaces available')
@@ -416,9 +430,7 @@ export const useTeamWorkspaceStore = defineStore('teamWorkspace', () => {
         // 2. No valid session - fetch workspaces and pick default
         const response = await workspaceApi.list()
         if (isStaleIdentity(generation)) return
-        workspaces.value = sortWorkspaces(
-          response.workspaces.map(createWorkspaceState)
-        )
+        applyWorkspaceList(response)
 
         if (workspaces.value.length === 0) {
           throw new NoWorkspaceAccessError('No workspaces available')
@@ -522,9 +534,7 @@ export const useTeamWorkspaceStore = defineStore('teamWorkspace', () => {
     try {
       const response = await workspaceApi.list()
       if (isStaleIdentity(generation)) return
-      workspaces.value = sortWorkspaces(
-        response.workspaces.map(createWorkspaceState)
-      )
+      applyWorkspaceList(response)
     } finally {
       if (!isStaleIdentity(generation)) {
         isFetchingWorkspaces.value = false
@@ -1099,6 +1109,7 @@ export const useTeamWorkspaceStore = defineStore('teamWorkspace', () => {
     initializationPromise = null
     initState.value = 'uninitialized'
     workspaces.value = []
+    workspacesManagedByOrganization.value = false
     mutableActiveWorkspaceId.value = null
     billingRailByWorkspaceId.value = {}
     error.value = null
@@ -1131,6 +1142,7 @@ export const useTeamWorkspaceStore = defineStore('teamWorkspace', () => {
     sharedWorkspaces,
     ownedWorkspacesCount,
     canCreateWorkspace,
+    workspacesManagedByOrganization,
     members,
     membersLoaded,
     isCurrentUserOriginalOwner,
