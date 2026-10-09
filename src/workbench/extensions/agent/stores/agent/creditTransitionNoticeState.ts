@@ -62,15 +62,6 @@ function reduceScopedRead(
   return { ...state, scopedHasFunds, phase }
 }
 
-/**
- * `null` means no scoped balance has been observed yet, which is why a `false`
- * first read cannot arm the notice: with no prior `true` there is no handoff to
- * have witnessed, only a user who was already out of scoped credit.
- *
- * `shown` and `dismissed` for an identity this state does not hold return it
- * untouched. Both originate from the rendered notice, which only renders for
- * the armed identity, so that case is unreachable rather than merely unlikely.
- */
 export function reduceCreditTransitionNotice(
   state: CreditTransitionNoticeState | null,
   event: CreditTransitionNoticeEvent
