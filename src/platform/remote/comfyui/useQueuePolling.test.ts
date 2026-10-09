@@ -30,21 +30,13 @@ describe('useQueuePolling', () => {
     expect(store.update).not.toHaveBeenCalled()
   })
 
-  it('polls when activeJobsCount is exactly 1', async () => {
+  // The 2 row is what keeps this from being narrowed back to `=== 1`: polling
+  // with several jobs in flight is how per-job progress recovers when a
+  // terminal WebSocket frame is dropped.
+  it.for([1, 2])('polls when activeJobsCount is %i', async (count) => {
     mountUseQueuePolling()
 
-    Object.assign(store, { activeJobsCount: 1 })
-    await vi.advanceTimersByTimeAsync(8_000)
-
-    expect(store.update).toHaveBeenCalledOnce()
-  })
-
-  // Polling with several jobs in flight is what recovers per-job progress when
-  // a terminal WebSocket frame is dropped, so it must not be limited to one.
-  it('polls when activeJobsCount > 1', async () => {
-    mountUseQueuePolling()
-
-    Object.assign(store, { activeJobsCount: 2 })
+    Object.assign(store, { activeJobsCount: count })
     await vi.advanceTimersByTimeAsync(8_000)
 
     expect(store.update).toHaveBeenCalledOnce()

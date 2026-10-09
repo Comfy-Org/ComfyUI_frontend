@@ -3,15 +3,9 @@ import { z } from 'zod'
 import { zNodeId } from '@/platform/workflow/validation/schemas/workflowSchema'
 import type { TaskStatus } from '@/platform/tasks/services/taskService'
 import { resultItemType } from '@/schemas/resultItemTypeSchema'
+import type { WorkflowId } from '@/platform/workflow/validation/schemas/workflowSchema'
 
 export type JobId = string
-/**
- * The id of the workflow a prompt was queued from. Present on execution
- * messages only when the server knows it — core omits the field entirely for a
- * workflow with no id, and a server without `workflow_metadata` support never
- * sends it, so every consumer must treat it as optional.
- */
-type WorkflowId = string
 
 export const zResultItem = z.object({
   filename: z.string().optional(),

@@ -99,26 +99,22 @@ interface QueuePromptRequestBody {
   prompt: ComfyApiWorkflow
   partial_execution_targets?: NodeExecutionId[]
   /**
-   * Opaque key/values the server echoes back on the WebSocket while this
-   * prompt runs. `workflow_id` is the only key the frontend relies on; the
-   * server never interprets the contents. Omitted when the workflow has no id.
+   * Echoed back by the server on every WebSocket frame this prompt produces
+   * that carries a `prompt_id` (ComfyUI#16763 for JSON frames, #16809 for the
+   * metadata header on binary previews). An older server ignores the field
+   * rather than rejecting the prompt.
    *
-   * Three limits of the echo, so a reader does not assume more than the server
-   * gives. Added by ComfyUI#16763, merged 2026-10-06; an older server ignores
-   * the field rather than rejecting the prompt:
+   * Two limits worth knowing, since the contract is the server's and not ours:
    *
-   * - Only JSON frames whose `data` object carries a `prompt_id` are stamped.
-   *   `status` and `logs` have none, and binary preview frames are not objects,
-   *   so none of those arrive stamped. A consumer still needs the
-   *   `prompt_id`-to-workflow mapping for those.
-   * - A frame's own fields win on collision (`{**workflow_metadata, **data}`),
-   *   so these values cannot override a frame's routing fields.
-   * - The cap is 256 characters of the server's JSON serialisation of this
-   *   object, not 256 bytes of content: the `{"...": "..."}` punctuation counts,
-   *   and non-ASCII characters are escaped to `\\uXXXX` before measuring, so
-   *   they cost six characters each.
+   * - `status` and `logs` frames have no `prompt_id`, so they are never
+   *   stamped and a consumer still needs the `prompt_id`-to-workflow mapping.
+   * - A value the server cannot use is dropped rather than rejected: over 256
+   *   characters of its own JSON serialisation, not 256 bytes of content, with
+   *   non-ASCII escaped to `\\uXXXX` first. The server then falls back to
+   *   `extra_data.extra_pnginfo.workflow.id`, so omitting this field does not
+   *   keep frames unstamped.
    */
-  workflow_metadata?: Record<string, string>
+  workflow_metadata?: { workflow_id: string }
 
   extra_data: {
     extra_pnginfo: {
@@ -1386,11 +1382,12 @@ export class ComfyApi extends EventTarget {
       }),
       // `LGraph.serialize()` returns `id` unfiltered and `LGraph._id` defaults
       // to the all-zero sentinel, which the codebase treats as "no id yet" and
-      // replaces on load (`adoptRootGraphId`) and on clear. A bare truthiness
-      // check ships that sentinel as a real routing key, so every workflow
-      // still carrying it would share one and WS frames could be attributed to
-      // the wrong workflow. Shape is already constrained upstream — the loaded
-      // schema is `z.string().uuid()` and the only other producer is
+      // replaces on load (`adoptRootGraphId`) and on clear, so it is not a
+      // routing key and is not sent as one. This does not keep it off the wire:
+      // the same graph goes out under `extra_pnginfo` and the server falls back
+      // to the id there, which is why `executionStore` also discards the
+      // sentinel on the way in. Shape is already constrained upstream — the
+      // loaded schema is `z.string().uuid()` and the only other producer is
       // `createUuidv4()` — so the sentinel is the one value to exclude here.
       ...(workflow.id &&
         workflow.id !== zeroUuid && {

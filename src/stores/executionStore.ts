@@ -46,6 +46,7 @@ import { isAppModeValue } from '@/utils/appMode'
 import { classifyCloudValidationError } from '@/utils/executionErrorUtil'
 import { executionIdToNodeLocatorId } from '@/utils/graphTraversalUtil'
 import { createRafCoalescer } from '@/utils/rafBatch'
+import { zeroUuid } from '@/utils/uuid'
 
 type RuntimeExecutionError = Omit<
   ExecutionErrorWsMessage,
@@ -765,10 +766,23 @@ export const useExecutionStore = defineStore('execution', () => {
    * to be consulted first. QA hit this with three unsaved copies of the default
    * graph, where every tab rendered every other tab's outputs.
    */
+  /**
+   * The all-zero sentinel is `LGraph._id`'s default, which the codebase reads
+   * as "no id yet" and replaces on configure and on clear. Treating it as a
+   * real id would make every workflow still carrying it match every other one
+   * on the graph-id leg, which is the leak this gate exists to stop. The queue
+   * side does not send it, but core falls back to the id inside
+   * `extra_pnginfo.workflow`, so it still arrives on the wire.
+   */
+  function workflowIdOrUndefined(id: string | undefined): string | undefined {
+    return !id || id === zeroUuid ? undefined : id
+  }
+
   function messageMatchesActiveWorkflow(
     jobId: JobId,
-    messageWorkflowId: string | undefined
+    rawMessageWorkflowId: string | undefined
   ): boolean {
+    const messageWorkflowId = workflowIdOrUndefined(rawMessageWorkflowId)
     const activeWorkflow = workflowStore.activeWorkflow
     if (!activeWorkflow) return true
 
@@ -782,9 +796,11 @@ export const useExecutionStore = defineStore('execution', () => {
       return mappedPath === activeWorkflow.path
     }
 
-    const activeId = activeWorkflowGraphId()
+    const activeId = workflowIdOrUndefined(activeWorkflowGraphId() ?? undefined)
     if (activeId) {
-      const ownerId = messageWorkflowId || jobIdToWorkflowId.value.get(jobId)
+      const ownerId =
+        messageWorkflowId ??
+        workflowIdOrUndefined(jobIdToWorkflowId.value.get(jobId))
       if (ownerId) return ownerId === activeId
     }
 
@@ -802,12 +818,12 @@ export const useExecutionStore = defineStore('execution', () => {
     jobId: JobId,
     messageWorkflowId: string | undefined
   ): boolean {
-    // Must list every map messageMatchesActiveWorkflow consults, or the two
-    // disagree about the same frame: the instance is that resolver's first and
-    // strongest leg, and leaving it out here made a frame resolvable by one
-    // rule and unresolvable by the other.
+    // Must list every map messageMatchesActiveWorkflow consults, and reject the
+    // same ids it rejects, or the two disagree about the same frame: the
+    // instance is that resolver's first and strongest leg, and leaving it out
+    // here made a frame resolvable by one rule and unresolvable by the other.
     return (
-      Boolean(messageWorkflowId) ||
+      workflowIdOrUndefined(messageWorkflowId) !== undefined ||
       jobIdToWorkflowInstanceId.has(jobId) ||
       jobIdToWorkflowId.value.has(jobId) ||
       jobIdToSessionWorkflowPath.value.has(jobId)

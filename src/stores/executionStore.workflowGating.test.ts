@@ -8,6 +8,7 @@ import { useWorkflowStore } from '@/platform/workflow/management/stores/workflow
 import { api } from '@/scripts/api'
 import { useExecutionStore } from '@/stores/executionStore'
 import { useNodeOutputStore } from '@/stores/nodeOutputStore'
+import { zeroUuid } from '@/utils/uuid'
 
 /**
  * Workflow-ownership gating for execution WebSocket messages.
@@ -1142,6 +1143,20 @@ describe('executionStore workflow gating', () => {
       expect(store.belongsToActiveWorkflow('job-a', WORKFLOW_A_ID)).toBe(false)
       useWorkflowStore().activeWorkflow = workflowA
       expect(store.belongsToActiveWorkflow('job-a', WORKFLOW_A_ID)).toBe(true)
+    })
+
+    // Raised in review on #20045. The queue side refuses to send the sentinel
+    // as workflow_metadata, but merged core falls back to the id inside
+    // extra_pnginfo.workflow, so a graph still on LGraph's default id has it
+    // stamped onto its frames anyway. Compared as a real id it matches nothing,
+    // so the tab's own frames were rejected.
+    it('does not reject a frame whose only id is the all-zero sentinel', () => {
+      useWorkflowStore().activeWorkflow = workflowA
+
+      expect(
+        store.belongsToActiveWorkflow('job-fresh-graph', zeroUuid),
+        'the sentinel is not an id, so it cannot be grounds for rejection'
+      ).toBe(true)
     })
   })
 

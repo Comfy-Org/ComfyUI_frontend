@@ -8,6 +8,7 @@ import type {
   TaskType
 } from '@/platform/remote/comfyui/jobs/jobTypes'
 import type {
+  JobId,
   StatusWsMessageStatus,
   TaskOutput
 } from '@/platform/remote/comfyui/execution/types'
@@ -330,9 +331,15 @@ export const useQueueStore = defineStore('queue', () => {
         api.getHistory(maxHistoryItems.value)
       ])
 
-      // Shared by the queue and history branches below.
-
-      let activeJobIds: Set<string> | null = null
+      // Shared by the queue and history branches below. `null` means the queue
+      // fetch failed, which is not the same as an empty queue.
+      const activeJobIds: Set<JobId> | null =
+        queueResult.status === 'fulfilled'
+          ? new Set([
+              ...queueResult.value.Running.map((j) => j.id),
+              ...queueResult.value.Pending.map((j) => j.id)
+            ])
+          : null
 
       if (queueResult.status === 'fulfilled') {
         const queue = queueResult.value
@@ -349,14 +356,12 @@ export const useQueueStore = defineStore('queue', () => {
             executionStore.registerJobWorkflowIdMapping(jobIdString, workflowId)
           }
         })
-
-        activeJobIds = new Set([
-          ...queue.Running.map((j) => j.id),
-          ...queue.Pending.map((j) => j.id)
-        ])
-        executionStore.reconcileInitializingJobs(activeJobIds)
       } else {
         console.error('Failed to fetch queue:', queueResult.reason)
+      }
+
+      if (activeJobIds) {
+        useExecutionStore().reconcileInitializingJobs(activeJobIds)
       }
 
       if (historyResult.status === 'fulfilled') {
@@ -366,7 +371,7 @@ export const useQueueStore = defineStore('queue', () => {
         // A job the backend has moved to history while we still hold progress
         // state for it lost its terminal WebSocket frame. Evicting it here is
         // the only path that unsticks node progress in that case.
-        if (history.length > 0 && activeJobIds) {
+        if (activeJobIds) {
           const terminalJobIds = new Set(history.map((j) => j.id))
           useExecutionStore().reconcileTerminalJobs(
             activeJobIds,

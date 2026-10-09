@@ -1,3 +1,4 @@
+import type { MockInstance } from 'vitest'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 
 import type {
@@ -34,15 +35,13 @@ function workflow(id?: string): ComfyWorkflowJSON {
   }
 }
 
-function sentBody(
-  fetchApiSpy: ReturnType<typeof vi.spyOn>
-): Record<string, unknown> {
-  const [, init] = fetchApiSpy.mock.calls[0] as [string, RequestInit]
-  return JSON.parse(String(init.body)) as Record<string, unknown>
+function sentBody(fetchApiSpy: MockInstance<typeof api.fetchApi>) {
+  const [, init] = fetchApiSpy.mock.calls[0]
+  return JSON.parse(String(init?.body)) as Record<string, unknown>
 }
 
 describe('api.queuePrompt workflow_metadata', () => {
-  let fetchApiSpy: ReturnType<typeof vi.spyOn>
+  let fetchApiSpy: MockInstance<typeof api.fetchApi>
 
   beforeEach(() => {
     fetchApiSpy = vi.spyOn(api, 'fetchApi').mockResolvedValue(promptResponse())
@@ -59,24 +58,17 @@ describe('api.queuePrompt workflow_metadata', () => {
     })
   })
 
-  it('omits the field entirely when the workflow has no id', async () => {
+  // The sentinel row earns its place: `LGraph._id` defaults to `zeroUuid` and
+  // `LGraph.serialize()` returns it unfiltered, so a bare truthiness check
+  // ships it as a routing key. The rest of the codebase already reads it as
+  // "no id yet" (`ensureNonZeroUuid`).
+  it.for([
+    ['no id', undefined],
+    ['the all-zero id sentinel', zeroUuid]
+  ] as const)('omits the field for %s', async ([, id]) => {
     await api.queuePrompt(0, {
       output: EMPTY_PROMPT,
-      workflow: workflow(undefined)
-    })
-
-    expect(sentBody(fetchApiSpy)).not.toHaveProperty('workflow_metadata')
-  })
-
-  it('omits the field for the all-zero id sentinel', async () => {
-    // `LGraph._id` defaults to `zeroUuid` and `LGraph.serialize()` returns it
-    // unfiltered, so a bare truthiness check shipped the sentinel as a real
-    // routing key — and every workflow still carrying it would have shared one,
-    // which is how a WS frame gets attributed to the wrong workflow. The rest of
-    // the codebase already treats it as "no id yet" (`ensureNonZeroUuid`).
-    await api.queuePrompt(0, {
-      output: EMPTY_PROMPT,
-      workflow: workflow(zeroUuid)
+      workflow: workflow(id)
     })
 
     expect(sentBody(fetchApiSpy)).not.toHaveProperty('workflow_metadata')
@@ -88,9 +80,8 @@ describe('api.queuePrompt workflow_metadata', () => {
       workflow: workflow(WORKFLOW_ID)
     })
 
-    const body = sentBody(fetchApiSpy) as {
-      extra_data: { extra_pnginfo: { workflow: { id?: string } } }
-    }
-    expect(body.extra_data.extra_pnginfo.workflow.id).toBe(WORKFLOW_ID)
+    expect(sentBody(fetchApiSpy)).toMatchObject({
+      extra_data: { extra_pnginfo: { workflow: { id: WORKFLOW_ID } } }
+    })
   })
 })
