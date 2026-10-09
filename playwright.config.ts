@@ -1,7 +1,4 @@
-import type {
-  PlaywrightTestConfig,
-  ReporterDescription
-} from '@playwright/test'
+import type { PlaywrightTestConfig } from '@playwright/test'
 import { defineConfig, devices } from '@playwright/test'
 
 const distribution = process.env.DISTRIBUTION
@@ -16,21 +13,6 @@ Object.assign(globalThis, {
         : 'localhost',
   __IS_NIGHTLY__: process.env.IS_NIGHTLY === 'true'
 })
-
-// CI harvests the actual image of every failed screenshot assertion so the
-// expectations workflow can commit them without rerunning the suite.
-const snapshotUpdatesDir = process.env.PLAYWRIGHT_SNAPSHOT_UPDATES_DIR
-const reporters: ReporterDescription[] = [
-  process.env.PLAYWRIGHT_BLOB_OUTPUT_DIR ? ['blob'] : ['html'],
-  ...(snapshotUpdatesDir
-    ? [
-        [
-          './scripts/playwright/snapshotUpdatesReporter.ts',
-          { outputDir: snapshotUpdatesDir }
-        ] satisfies ReporterDescription
-      ]
-    : [])
-]
 
 const maybeLocalOptions: PlaywrightTestConfig = process.env.PLAYWRIGHT_LOCAL
   ? {
@@ -73,7 +55,7 @@ export default defineConfig({
   ],
   fullyParallel: true,
   forbidOnly: !!process.env.CI,
-  reporter: reporters,
+  reporter: process.env.PLAYWRIGHT_BLOB_OUTPUT_DIR ? 'blob' : 'html',
   ...maybeLocalOptions,
 
   globalSetup:

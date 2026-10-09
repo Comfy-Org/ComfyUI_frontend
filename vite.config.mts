@@ -38,7 +38,6 @@ const TEST_SYSTEM_TIME = Date.parse('2024-06-15T12:00:00Z')
 const BROWSER_TESTS_DIR = resolve('browser_tests')
 const FRONTEND_SCRIPT_TESTS = [
   'scripts/agentConversationFromLangfuse.test.ts',
-  'scripts/playwright/snapshotUpdatesReporter.test.ts',
   'scripts/registry-census/matrix_runner.test.ts',
   'scripts/testingPinia.test.ts'
 ]

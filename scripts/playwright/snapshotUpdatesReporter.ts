@@ -1,70 +1,32 @@
 import fs from 'node:fs'
 import path from 'node:path'
 
-import type { Reporter, Suite, TestResult } from '@playwright/test/reporter'
+import type { Reporter, TestCase, TestResult } from '@playwright/test/reporter'
 
-type Attachment = TestResult['attachments'][number]
+const OUTPUT_DIR = 'snapshot-updates'
+const SNAPSHOT_ATTACHMENT = /^(.*)-(expected|actual)(\.[^.]+)?$/
 
-export interface HarvestableTest {
-  titlePath(): string[]
-  outcome(): 'skipped' | 'expected' | 'unexpected' | 'flaky'
-  results: ReadonlyArray<{ attachments: ReadonlyArray<Attachment> }>
-}
-
-export interface SnapshotUpdate {
-  snapshotPath: string
-  actualPath: string
-  test: string
-}
-
-const SNAPSHOT_ATTACHMENT = /^(.*)-(expected|actual|diff|previous)(\.[^.]+)?$/
-
-function groupSnapshotAttachments(
-  attachments: ReadonlyArray<Attachment>
-): Map<string, Partial<Record<'expected' | 'actual', string>>> {
-  const groups = new Map<
-    string,
-    Partial<Record<'expected' | 'actual', string>>
-  >()
-  for (const attachment of attachments) {
-    if (!attachment.path) continue
-    const match = attachment.name.match(SNAPSHOT_ATTACHMENT)
-    if (!match) continue
+function snapshotPairs(attachments: TestResult['attachments']) {
+  const pairs = new Map<string, { expected?: string; actual?: string }>()
+  for (const { name, path: file } of attachments) {
+    const match = name.match(SNAPSHOT_ATTACHMENT)
+    if (!match || !file) continue
     const [, prefix, kind, ext = ''] = match
-    if (kind !== 'expected' && kind !== 'actual') continue
-    const key = prefix + ext
-    groups.set(key, { ...groups.get(key), [kind]: attachment.path })
+    pairs.set(prefix + ext, { ...pairs.get(prefix + ext), [kind]: file })
   }
-  return groups
-}
-
-function isInside(baseDir: string, filePath: string): boolean {
-  const relative = path.relative(baseDir, filePath)
-  return (
-    relative !== '' && !relative.startsWith('..') && !path.isAbsolute(relative)
+  return [...pairs.values()].filter(
+    (pair): pair is { expected: string; actual: string } =>
+      !!pair.expected && !!pair.actual
   )
 }
 
-export function collectSnapshotUpdates(
-  tests: Iterable<HarvestableTest>,
-  baseDir: string
-): SnapshotUpdate[] {
-  const updates: SnapshotUpdate[] = []
-  for (const test of tests) {
+function collectUpdates(lastResults: Map<TestCase, TestResult>) {
+  const updates = new Map<string, { actual: string; test: string }>()
+  for (const [test, result] of lastResults) {
     if (test.outcome() !== 'unexpected') continue
-    const lastResult = test.results.at(-1)
-    if (!lastResult) continue
-    for (const group of groupSnapshotAttachments(
-      lastResult.attachments
-    ).values()) {
-      if (!group.expected || !group.actual) continue
-      if (!isInside(baseDir, group.expected)) continue
-      updates.push({
-        snapshotPath: path
-          .relative(baseDir, group.expected)
-          .split(path.sep)
-          .join('/'),
-        actualPath: group.actual,
+    for (const { expected, actual } of snapshotPairs(result.attachments)) {
+      updates.set(path.relative(process.cwd(), expected), {
+        actual,
         test: test.titlePath().filter(Boolean).join(' › ')
       })
     }
@@ -73,39 +35,27 @@ export function collectSnapshotUpdates(
 }
 
 export default class SnapshotUpdatesReporter implements Reporter {
-  private readonly baseDir: string
-  private readonly outputDir: string
-  private suite: Suite | undefined
+  private readonly lastResults = new Map<TestCase, TestResult>()
 
-  constructor(options: { outputDir?: string; configDir?: string } = {}) {
-    this.baseDir = options.configDir ?? process.cwd()
-    this.outputDir = path.resolve(
-      this.baseDir,
-      options.outputDir ?? 'snapshot-updates'
-    )
-  }
-
-  onBegin(_config: unknown, suite: Suite) {
-    this.suite = suite
-    fs.rmSync(this.outputDir, { recursive: true, force: true })
+  onTestEnd(test: TestCase, result: TestResult) {
+    this.lastResults.set(test, result)
   }
 
   onEnd() {
-    const updates = collectSnapshotUpdates(
-      this.suite?.allTests() ?? [],
-      this.baseDir
-    )
-    if (updates.length === 0) return
-
-    for (const update of updates) {
-      const destination = path.join(this.outputDir, update.snapshotPath)
+    const updates = collectUpdates(this.lastResults)
+    for (const [snapshotPath, { actual }] of updates) {
+      const destination = path.join(OUTPUT_DIR, snapshotPath)
       fs.mkdirSync(path.dirname(destination), { recursive: true })
-      fs.copyFileSync(update.actualPath, destination)
+      fs.copyFileSync(actual, destination)
     }
+    fs.mkdirSync(OUTPUT_DIR, { recursive: true })
     fs.writeFileSync(
-      path.join(this.outputDir, 'manifest.json'),
+      path.join(OUTPUT_DIR, 'manifest.json'),
       JSON.stringify(
-        updates.map(({ snapshotPath, test }) => ({ snapshotPath, test })),
+        [...updates].map(([snapshotPath, { test }]) => ({
+          snapshotPath,
+          test
+        })),
         null,
         2
       )

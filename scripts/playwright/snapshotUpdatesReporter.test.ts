@@ -1,164 +1,91 @@
-import { describe, expect, it } from 'vitest'
+import { spawnSync } from 'node:child_process'
+import {
+  mkdirSync,
+  mkdtempSync,
+  readFileSync,
+  rmSync,
+  symlinkSync,
+  writeFileSync
+} from 'node:fs'
+import { tmpdir } from 'node:os'
+import { join } from 'node:path'
 
-import type { HarvestableTest } from './snapshotUpdatesReporter'
-import { collectSnapshotUpdates } from './snapshotUpdatesReporter'
+import { afterAll, describe, expect, it } from 'vitest'
 
-const baseDir = '/repo'
-const golden = `${baseDir}/browser_tests/tests/menu.spec.ts-snapshots/menu-open-chromium-linux.png`
-const actual = `${baseDir}/test-results/menu-open/menu-open-chromium-linux-actual.png`
+const ROOT = join(import.meta.dirname, '../..')
+const REPORTER = join(import.meta.dirname, 'snapshotUpdatesReporter.ts')
 
-type Attachment = HarvestableTest['results'][number]['attachments'][number]
+const SPEC = `
+import { expect, test } from '@playwright/test'
 
-function pngAttachment(name: string, path: string): Attachment {
-  return { name, contentType: 'image/png', path }
+test('stale', () => expect('new').toMatchSnapshot('stale.txt'))
+test('missing', () => expect('created').toMatchSnapshot('missing.txt'))
+test('one stale of two', () => {
+  expect.soft('same').toMatchSnapshot('fresh.txt')
+  expect.soft('changed').toMatchSnapshot(['nested', 'second.txt'])
+})
+test('flaky', ({}, info) =>
+  expect(info.retry === 0 ? 'bad' : 'same').toMatchSnapshot('flaky.txt'))
+test('unrelated failure', () => expect(1).toBe(2))
+test('expected failure', () => {
+  test.fail()
+  expect('new').toMatchSnapshot('expected-failure.txt')
+})
+`
+
+const SNAPSHOTS: Record<string, string> = {
+  'stale.txt': 'old',
+  'fresh.txt': 'same',
+  'nested/second.txt': 'old',
+  'flaky.txt': 'same',
+  'expected-failure.txt': 'old'
 }
 
-function mismatch(base: string, expectedPath: string, actualPath: string) {
-  return [
-    pngAttachment(`${base}-expected.png`, expectedPath),
-    pngAttachment(`${base}-actual.png`, actualPath),
-    pngAttachment(`${base}-diff.png`, `${actualPath}.diff`)
-  ]
+function runSuite() {
+  const project = mkdtempSync(join(tmpdir(), 'snapshot-updates-'))
+  symlinkSync(join(ROOT, 'node_modules'), join(project, 'node_modules'))
+  writeFileSync(
+    join(project, 'playwright.config.ts'),
+    `export default { testDir: 'tests', retries: 1, snapshotPathTemplate: '{testDir}/{testFileName}-snapshots/{arg}{ext}' }`
+  )
+  mkdirSync(join(project, 'tests/a.spec.ts-snapshots/nested'), {
+    recursive: true
+  })
+  writeFileSync(join(project, 'tests/a.spec.ts'), SPEC)
+  for (const [name, content] of Object.entries(SNAPSHOTS))
+    writeFileSync(join(project, 'tests/a.spec.ts-snapshots', name), content)
+
+  spawnSync(
+    join(ROOT, 'node_modules/.bin/playwright'),
+    ['test', `--reporter=${REPORTER}`],
+    { cwd: project, encoding: 'utf8' }
+  )
+  return project
 }
 
-function testCase({
-  outcome = 'unexpected',
-  results,
-  titles = ['', 'chromium', 'menu.spec.ts', 'opens the menu']
-}: {
-  outcome?: ReturnType<HarvestableTest['outcome']>
-  results: Attachment[][]
-  titles?: string[]
-}): HarvestableTest {
-  return {
-    titlePath: () => titles,
-    outcome: () => outcome,
-    results: results.map((attachments) => ({ attachments }))
-  }
-}
+describe('SnapshotUpdatesReporter', () => {
+  const project = runSuite()
+  const output = join(project, 'snapshot-updates')
+  afterAll(() => rmSync(project, { recursive: true, force: true }))
 
-describe('collectSnapshotUpdates', () => {
-  it('maps the actual image of a failed assertion onto its golden path', () => {
-    const updates = collectSnapshotUpdates(
-      [
-        testCase({
-          results: [mismatch('menu-open-chromium-linux', golden, actual)]
-        })
-      ],
-      baseDir
+  it('copies the actual image of every snapshot that failed the final attempt onto its golden path', () => {
+    const manifest: { snapshotPath: string }[] = JSON.parse(
+      readFileSync(join(output, 'manifest.json'), 'utf8')
     )
 
-    expect(updates).toEqual([
-      {
-        snapshotPath:
-          'browser_tests/tests/menu.spec.ts-snapshots/menu-open-chromium-linux.png',
-        actualPath: actual,
-        test: 'chromium › menu.spec.ts › opens the menu'
-      }
+    expect(manifest.map((entry) => entry.snapshotPath).sort()).toEqual([
+      'tests/a.spec.ts-snapshots/missing.txt',
+      'tests/a.spec.ts-snapshots/nested/second.txt',
+      'tests/a.spec.ts-snapshots/stale.txt'
     ])
-  })
-
-  it('collects every mismatched snapshot of one test', () => {
-    const second = golden.replace('menu-open', 'menu-closed')
-    const updates = collectSnapshotUpdates(
-      [
-        testCase({
-          results: [
-            [
-              ...mismatch('menu-open-chromium-linux', golden, actual),
-              ...mismatch('menu-closed-chromium-linux', second, `${actual}.2`)
-            ]
-          ]
-        })
-      ],
-      baseDir
-    )
-
-    expect(updates.map((update) => update.snapshotPath)).toEqual([
-      'browser_tests/tests/menu.spec.ts-snapshots/menu-open-chromium-linux.png',
-      'browser_tests/tests/menu.spec.ts-snapshots/menu-closed-chromium-linux.png'
-    ])
-  })
-
-  it('reads only the last attempt of a test', () => {
-    const retried = `${actual}.retry1`
-    const updates = collectSnapshotUpdates(
-      [
-        testCase({
-          results: [
-            mismatch('menu-open-chromium-linux', golden, actual),
-            mismatch('menu-open-chromium-linux', golden, retried)
-          ]
-        })
-      ],
-      baseDir
-    )
-
-    expect(updates.map((update) => update.actualPath)).toEqual([retried])
-  })
-
-  it.for<{
-    name: string
-    test: HarvestableTest
-  }>([
-    {
-      name: 'a flaky test that passed on retry',
-      test: testCase({
-        outcome: 'flaky',
-        results: [mismatch('menu-open-chromium-linux', golden, actual), []]
-      })
-    },
-    {
-      name: 'a failure expected by test.fail()',
-      test: testCase({
-        outcome: 'expected',
-        results: [mismatch('menu-open-chromium-linux', golden, actual)]
-      })
-    },
-    {
-      name: 'a failure without an expected attachment',
-      test: testCase({
-        results: [
-          [pngAttachment('menu-open-chromium-linux-actual.png', actual)]
-        ]
-      })
-    },
-    {
-      name: 'an expected attachment outside the repository',
-      test: testCase({
-        results: [
-          mismatch(
-            'menu-open-chromium-linux',
-            '/elsewhere/menu-open-chromium-linux.png',
-            actual
-          )
-        ]
-      })
-    },
-    {
-      name: 'attachments without a file path',
-      test: testCase({
-        results: [
-          [
-            {
-              name: 'menu-open-chromium-linux-expected.png',
-              contentType: 'image/png',
-              body: Buffer.from('')
-            },
-            {
-              name: 'menu-open-chromium-linux-actual.png',
-              contentType: 'image/png',
-              body: Buffer.from('')
-            }
-          ]
-        ]
-      })
-    },
-    {
-      name: 'a failure with no results',
-      test: testCase({ results: [] })
-    }
-  ])('ignores $name', ({ test }) => {
-    expect(collectSnapshotUpdates([test], baseDir)).toEqual([])
+    expect(
+      readFileSync(join(output, 'tests/a.spec.ts-snapshots/stale.txt'), 'utf8')
+    ).toBe('new')
+    expect(
+      readFileSync(
+        join(output, 'tests/a.spec.ts-snapshots/missing.txt'),
+        'utf8'
+      )
+    ).toBe('created')
   })
 })
