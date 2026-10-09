@@ -109,6 +109,64 @@ beforeEach(() => {
 })
 
 describe('Test workflow library', () => {
+  it('retains structured inputs and source evidence through the generated response validator', async () => {
+    const source = '{\r\n"source":"unchanged observation"\r\n}\r\n'
+    const extended: TestWorkflowDetail = {
+      ...detail,
+      source_metadata_json: source,
+      source_metadata_sha256: createHash('sha256').update(source).digest('hex'),
+      metadata: {
+        ...detail.metadata,
+        safety: { status: 'unreviewed' },
+        packs: [
+          {
+            node_type: 'UnknownCustomNode',
+            resolution: 'recorded',
+            evidence: { location: '/nodes/0' },
+            candidates: [
+              {
+                pack_id: '',
+                owner: '',
+                repository: '',
+                legacy_reference: 'Unresolved source reference',
+                observation: 'not authority'
+              }
+            ]
+          }
+        ],
+        models: [
+          {
+            kind: 'other',
+            name: 'fixture-model',
+            loader: 'UnknownCustomNode',
+            location: '/nodes/0/widgets_values/0',
+            identity: { status: 'unresolved' }
+          }
+        ],
+        required_inputs: [
+          {
+            node_type: 'UnknownCustomNode',
+            location: '/nodes/0',
+            availability: 'unverified',
+            recorded_widgets: ['external-input'],
+            evidence: { kind: 'captured' }
+          }
+        ],
+        provenance: {
+          ...detail.metadata.provenance,
+          capture: { sha256: hash }
+        },
+        readiness: { ...detail.metadata.readiness, observation: 'not executed' }
+      }
+    }
+    mocks.fetch.mockResolvedValueOnce(response(extended))
+    const { library, owner } = setup()
+    library.collection.value = 'corpus-pilot'
+    expect(await library.select(hash)).toBe(true)
+    expect(library.data.value.selected).toEqual(extended)
+    expect(mocks.handleFile).not.toHaveBeenCalled()
+    owner.stop()
+  })
   it('loads summaries in bounded pages, including unsupported graphs without auto-execution', async () => {
     const { library, owner } = setup()
     expect(await library.initialize()).toBe(true)

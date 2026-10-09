@@ -29,8 +29,10 @@ export type {
   TestWorkflowImportMetadata,
   TestWorkflowImportRequest,
   TestWorkflowImportResult,
+  TestWorkflowInputReference,
   TestWorkflowModelReference,
   TestWorkflowPackReference,
   TestWorkflowPage,
+  TestWorkflowPromptReference,
   TestWorkflowSummary
 } from './types.gen'

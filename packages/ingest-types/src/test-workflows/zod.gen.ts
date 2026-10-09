@@ -12,71 +12,94 @@ export const zTestWorkflowCollections = z.object({
   truncated: z.boolean()
 })
 
-export const zTestWorkflowPackReference = z.object({
-  node_type: z.string().max(500),
-  resolution: z.enum(['recorded', 'ambiguous', 'unknown']),
-  candidates: z
-    .array(
-      z.object({
-        pack_id: z.string().max(500).optional(),
-        repository: z.string().max(2000).optional(),
-        owner: z.string().max(200).optional()
-      })
-    )
-    .max(16)
-})
+export const zTestWorkflowPackReference = z
+  .object({
+    node_type: z.string().max(500),
+    resolution: z.enum(['recorded', 'ambiguous', 'unknown']),
+    candidates: z
+      .array(
+        z
+          .object({
+            pack_id: z.string().max(500).optional(),
+            repository: z.string().max(2000).optional(),
+            owner: z.string().max(200).optional(),
+            legacy_reference: z.string().max(2000).optional()
+          })
+          .passthrough()
+      )
+      .max(16)
+  })
+  .passthrough()
 
-export const zTestWorkflowModelReference = z.object({
-  kind: z.enum([
-    'checkpoint',
-    'unet',
-    'lora',
-    'vae',
-    'clip',
-    'controlnet',
-    'upscaler',
-    'other'
-  ]),
-  name: z.string().max(2000),
-  loader: z.string().max(500),
-  location: z.string().max(2000)
-})
+export const zTestWorkflowModelReference = z
+  .object({
+    kind: z.enum([
+      'checkpoint',
+      'unet',
+      'lora',
+      'vae',
+      'clip',
+      'controlnet',
+      'upscaler',
+      'other'
+    ]),
+    name: z.string().max(2000),
+    loader: z.string().max(500),
+    location: z.string().max(2000)
+  })
+  .passthrough()
 
-export const zTestWorkflowImportMetadata = z.object({
-  schema_version: z.literal(1),
-  workflow_sha256: z.string().regex(/^[a-f0-9]{64}$/),
-  name: z.string().min(1).max(200),
-  description: z.string().max(2000),
-  tags: z.array(z.string().max(128)).max(64),
-  tasks: z.array(z.string().max(128)).max(16),
-  node_types: z.array(z.string().max(500)).max(2000),
-  packs: z.array(zTestWorkflowPackReference).max(2000),
-  models: z.array(zTestWorkflowModelReference).max(2000),
-  prompts: z
-    .array(
-      z.object({
-        text: z.string().max(16000),
-        location: z.string().max(2000)
+export const zTestWorkflowPromptReference = z
+  .object({
+    text: z.string().max(16000),
+    location: z.string().max(2000)
+  })
+  .passthrough()
+
+export const zTestWorkflowInputReference = z
+  .object({
+    node_type: z.string().max(500),
+    location: z.string().max(2000),
+    availability: z.enum(['unverified', 'missing', 'provided']),
+    recorded_widgets: z.unknown().optional()
+  })
+  .passthrough()
+
+export const zTestWorkflowImportMetadata = z
+  .object({
+    schema_version: z.literal(1),
+    workflow_sha256: z.string().regex(/^[a-f0-9]{64}$/),
+    name: z.string().min(1).max(200),
+    description: z.string().max(2000),
+    tags: z.array(z.string().max(128)).max(64),
+    tasks: z.array(z.string().max(128)).max(16),
+    node_types: z.array(z.string().max(500)).max(2000),
+    packs: z.array(zTestWorkflowPackReference).max(2000),
+    models: z.array(zTestWorkflowModelReference).max(2000),
+    prompts: z.array(zTestWorkflowPromptReference).max(1000),
+    example_prompt: z.string().max(16000).optional(),
+    structural_cluster: z.string().max(128),
+    required_inputs: z.array(zTestWorkflowInputReference).max(1000),
+    readiness: z
+      .object({
+        status: z.enum(['unknown', 'needs-inputs', 'unsupported']),
+        notes: z.array(z.string().max(2000)).max(100)
       })
-    )
-    .max(1000),
-  example_prompt: z.string().max(16000).optional(),
-  structural_cluster: z.string().max(128),
-  required_inputs: z.array(z.string().max(2000)).max(1000),
-  readiness: z.object({
-    status: z.enum(['unknown', 'needs-inputs', 'unsupported']),
-    notes: z.array(z.string().max(2000)).max(100)
-  }),
-  provenance: z.object({
-    source: z.string().max(2000),
-    license: z.string().max(2000)
-  }),
-  classification: z.record(z.unknown()).optional()
-})
+      .passthrough(),
+    provenance: z
+      .object({
+        source: z.string().max(2000),
+        license: z.string().max(2000)
+      })
+      .passthrough(),
+    classification: z.record(z.unknown()).optional()
+  })
+  .passthrough()
 
 export const zTestWorkflowImportRequest = z.object({
   workflow_json: z.string(),
   metadata: zTestWorkflowImportMetadata,
+  source_metadata_json: z.string().max(262144).optional(),
   expected_metadata_sha256: z
     .string()
     .regex(/^[a-f0-9]{64}$/)
@@ -115,7 +138,9 @@ export const zTestWorkflowFacets = z.object({
 export const zTestWorkflowDetail = z.object({
   summary: zTestWorkflowSummary,
   metadata: zTestWorkflowImportMetadata,
-  workflow_json: z.string().optional()
+  workflow_json: z.string().optional(),
+  source_metadata_json: z.string().optional(),
+  source_metadata_sha256: z.string().optional()
 })
 
 export const zTestWorkflowImportResult = z.object({

@@ -34,6 +34,8 @@
     "modelReferencesOnly": "These are recorded names and locations, not verified weights or a download request.",
     "prompts": "Prompts",
     "provenance": "Source and license",
+    "sourceMetadata": "Original import metadata and evidence",
+    "sourceMetadataNotice": "Preserved source observations, not an ownership, safety, or execution certificate.",
     "variants": "Browse structural variants",
     "clearCluster": "Clear structural-variant filter"
   },

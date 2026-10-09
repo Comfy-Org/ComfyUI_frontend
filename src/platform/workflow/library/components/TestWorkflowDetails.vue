@@ -49,7 +49,14 @@ const { t } = useI18n()
           v-for="(input, index) in record.metadata.required_inputs"
           :key="`input-${index}`"
         >
-          {{ input }}
+          <span>{{ input.node_type }} · {{ input.availability }}</span>
+          <p class="text-xs break-all text-muted-foreground">
+            {{ input.location }}
+          </p>
+          <pre
+            v-if="input.recorded_widgets !== undefined"
+            class="overflow-auto text-xs whitespace-pre-wrap"
+            >{{ JSON.stringify(input.recorded_widgets, null, 2) }}</pre>
         </li>
       </ul>
     </section>
@@ -75,7 +82,7 @@ const { t } = useI18n()
           class="text-xs text-muted-foreground"
         >
           {{ candidate.pack_id }} {{ candidate.owner }}
-          {{ candidate.repository }}
+          {{ candidate.repository }} {{ candidate.legacy_reference }}
         </p>
       </div>
     </section>
@@ -126,6 +133,18 @@ const { t } = useI18n()
         {{ record.summary.workflow_sha256 }}
       </p>
     </section>
+    <details v-if="record.source_metadata_json !== undefined">
+      <summary>{{ t('testWorkflowLibrary.sourceMetadata') }}</summary>
+      <p class="text-xs text-muted-foreground">
+        {{ t('testWorkflowLibrary.sourceMetadataNotice') }}
+      </p>
+      <p class="text-xs break-all text-muted-foreground">
+        {{ record.source_metadata_sha256 }}
+      </p>
+      <pre class="max-h-80 overflow-auto text-xs whitespace-pre-wrap">{{
+        record.source_metadata_json
+      }}</pre>
+    </details>
     <Button
       v-if="record.metadata.structural_cluster"
       variant="secondary"

@@ -10,7 +10,18 @@ export default defineConfig({
       compatibilityVersion: 3,
       definitions: true,
       requests: false,
-      responses: false
+      responses: false,
+      '~resolvers': {
+        object(ctx) {
+          if (
+            ctx.schema.additionalProperties?.type === 'unknown' &&
+            ctx.schema.properties &&
+            Object.keys(ctx.schema.properties).length
+          ) {
+            return ctx.nodes.base(ctx).attr('passthrough').call()
+          }
+        }
+      }
     }
   ]
 })

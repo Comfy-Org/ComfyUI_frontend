@@ -59,7 +59,14 @@ const detail: TestWorkflowDetail = {
     models: [],
     prompts: [],
     structural_cluster: 'cluster-one',
-    required_inputs: ['A test input'],
+    required_inputs: [
+      {
+        node_type: 'UnknownCustomNode',
+        location: '/nodes/0',
+        availability: 'unverified',
+        recorded_widgets: ['A test input']
+      }
+    ],
     readiness: { status: 'unsupported', notes: ['Implementation is unknown'] },
     provenance: { source: 'synthetic fixture', license: 'test-only' }
   }
@@ -125,6 +132,8 @@ describe('Test workflow library UI', () => {
     await user.click(entry)
     expect(await screen.findByText('UnknownCustomNode')).toBeVisible()
     expect(screen.getByText('Implementation is unknown')).toBeVisible()
+    expect(screen.getByText('UnknownCustomNode · unverified')).toBeVisible()
+    expect(screen.getByText('/nodes/0')).toBeVisible()
     expect(screen.getByText('test-only')).toBeVisible()
     expect(
       screen.getByRole('button', { name: 'MagicPatch conversion' })

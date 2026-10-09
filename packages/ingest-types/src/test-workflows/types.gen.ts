@@ -19,7 +19,13 @@ export type TestWorkflowPackReference = {
     pack_id?: string
     repository?: string
     owner?: string
+    /**
+     * Unresolved original string reference; not an ownership assertion
+     */
+    legacy_reference?: string
+    [key: string]: unknown
   }>
+  [key: string]: unknown
 }
 
 export type TestWorkflowModelReference = {
@@ -35,6 +41,21 @@ export type TestWorkflowModelReference = {
   name: string
   loader: string
   location: string
+  [key: string]: unknown
+}
+
+export type TestWorkflowPromptReference = {
+  text: string
+  location: string
+  [key: string]: unknown
+}
+
+export type TestWorkflowInputReference = {
+  node_type: string
+  location: string
+  availability: 'unverified' | 'missing' | 'provided'
+  recorded_widgets?: unknown
+  [key: string]: unknown
 }
 
 export type TestWorkflowImportMetadata = {
@@ -47,16 +68,14 @@ export type TestWorkflowImportMetadata = {
   node_types: Array<string>
   packs: Array<TestWorkflowPackReference>
   models: Array<TestWorkflowModelReference>
-  prompts: Array<{
-    text: string
-    location: string
-  }>
+  prompts: Array<TestWorkflowPromptReference>
   example_prompt?: string
   structural_cluster: string
-  required_inputs: Array<string>
+  required_inputs: Array<TestWorkflowInputReference>
   readiness: {
     status: 'unknown' | 'needs-inputs' | 'unsupported'
     notes: Array<string>
+    [key: string]: unknown
   }
   provenance: {
     source: string
@@ -66,6 +85,7 @@ export type TestWorkflowImportMetadata = {
   classification?: {
     [key: string]: unknown
   }
+  [key: string]: unknown
 }
 
 export type TestWorkflowImportRequest = {
@@ -74,6 +94,10 @@ export type TestWorkflowImportRequest = {
    */
   workflow_json: string
   metadata: TestWorkflowImportMetadata
+  /**
+   * Exact original UTF-8 import.json; normalization is validated and the original bytes retained
+   */
+  source_metadata_json?: string
   expected_metadata_sha256?: string
 }
 
@@ -113,6 +137,14 @@ export type TestWorkflowDetail = {
   summary: TestWorkflowSummary
   metadata: TestWorkflowImportMetadata
   workflow_json?: string
+  /**
+   * Exact original import.json when supplied
+   */
+  source_metadata_json?: string
+  /**
+   * Server-computed SHA256 of original import.json
+   */
+  source_metadata_sha256?: string
 }
 
 export type TestWorkflowImportResult = {
@@ -143,7 +175,7 @@ export type ListTestWorkflowCollectionsErrors = {
 
 export type ListTestWorkflowCollectionsResponses = {
   /**
-   * Authenticated account/workspace collections, maximum 100
+   * Authenticated private and operator-selected staff-read collections, maximum 100
    */
   200: TestWorkflowCollections
 }
@@ -290,11 +322,15 @@ export type ImportTestWorkflowEntryErrors = {
    */
   401: unknown
   /**
+   * Operator-published collection is read-only for this account
+   */
+  403: unknown
+  /**
    * Metadata changed; expected digest missing or stale
    */
   409: unknown
   /**
-   * Graph or metadata exceeds bounded import size
+   * Graph, metadata or aggregate account library quota exceeds storage policy
    */
   413: unknown
   /**

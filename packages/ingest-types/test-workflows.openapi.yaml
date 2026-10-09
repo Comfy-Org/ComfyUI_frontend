@@ -8,10 +8,12 @@ paths:
       tags:
         - test-workflow-library
       operationId: listTestWorkflowCollections
-      summary: List private test workflow collections
+      summary: List permitted test workflow collections
       responses:
         '200':
-          description: Authenticated account/workspace collections, maximum 100
+          description:
+            Authenticated private and operator-selected staff-read collections,
+            maximum 100
           content:
             application/json:
               schema:
@@ -27,7 +29,7 @@ paths:
       tags:
         - test-workflow-library
       operationId: listTestWorkflowEntries
-      summary: Search a private test workflow collection without graph bodies
+      summary: Search a permitted test workflow collection without graph bodies
       parameters:
         - name: limit
           in: query
@@ -176,10 +178,14 @@ paths:
           description: Invalid graph format, hash, metadata or identifier
         '401':
           description: Authentication required
+        '403':
+          description: Operator-published collection is read-only for this account
         '409':
           description: Metadata changed; expected digest missing or stale
         '413':
-          description: Graph or metadata exceeds bounded import size
+          description:
+            Graph, metadata or aggregate account library quota exceeds storage
+            policy
         '500':
           description: Storage unavailable
 components:
@@ -206,6 +212,7 @@ components:
           type: boolean
     TestWorkflowPackReference:
       type: object
+      additionalProperties: true
       required:
         - node_type
         - resolution
@@ -225,6 +232,7 @@ components:
           maxItems: 16
           items:
             type: object
+            additionalProperties: true
             properties:
               pack_id:
                 type: string
@@ -235,8 +243,13 @@ components:
               owner:
                 type: string
                 maxLength: 200
+              legacy_reference:
+                type: string
+                maxLength: 2000
+                description: Unresolved original string reference; not an ownership assertion
     TestWorkflowModelReference:
       type: object
+      additionalProperties: true
       required:
         - kind
         - name
@@ -263,8 +276,43 @@ components:
         location:
           type: string
           maxLength: 2000
+    TestWorkflowPromptReference:
+      type: object
+      additionalProperties: true
+      required:
+        - text
+        - location
+      properties:
+        text:
+          type: string
+          maxLength: 16000
+        location:
+          type: string
+          maxLength: 2000
+    TestWorkflowInputReference:
+      type: object
+      additionalProperties: true
+      required:
+        - node_type
+        - location
+        - availability
+      properties:
+        node_type:
+          type: string
+          maxLength: 500
+        location:
+          type: string
+          maxLength: 2000
+        availability:
+          type: string
+          enum:
+            - unverified
+            - missing
+            - provided
+        recorded_widgets: {}
     TestWorkflowImportMetadata:
       type: object
+      additionalProperties: true
       required:
         - schema_version
         - workflow_sha256
@@ -327,17 +375,7 @@ components:
           type: array
           maxItems: 1000
           items:
-            type: object
-            required:
-              - text
-              - location
-            properties:
-              text:
-                type: string
-                maxLength: 16000
-              location:
-                type: string
-                maxLength: 2000
+            $ref: '#/components/schemas/TestWorkflowPromptReference'
         example_prompt:
           type: string
           maxLength: 16000
@@ -348,10 +386,10 @@ components:
           type: array
           maxItems: 1000
           items:
-            type: string
-            maxLength: 2000
+            $ref: '#/components/schemas/TestWorkflowInputReference'
         readiness:
           type: object
+          additionalProperties: true
           required:
             - status
             - notes
@@ -396,6 +434,12 @@ components:
           description: Exact original UTF-8 graph bytes as text
         metadata:
           $ref: '#/components/schemas/TestWorkflowImportMetadata'
+        source_metadata_json:
+          type: string
+          maxLength: 262144
+          description:
+            Exact original UTF-8 import.json; normalization is validated and
+            the original bytes retained
         expected_metadata_sha256:
           type: string
           pattern: ^[a-f0-9]{64}$
@@ -498,6 +542,12 @@ components:
           $ref: '#/components/schemas/TestWorkflowImportMetadata'
         workflow_json:
           type: string
+        source_metadata_json:
+          type: string
+          description: Exact original import.json when supplied
+        source_metadata_sha256:
+          type: string
+          description: Server-computed SHA256 of original import.json
     TestWorkflowImportResult:
       type: object
       required:
