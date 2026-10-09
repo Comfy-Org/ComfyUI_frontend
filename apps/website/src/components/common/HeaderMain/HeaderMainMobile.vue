@@ -7,7 +7,7 @@ import {
   getMainNavigation,
   navLinkTarget
 } from '@/data/mainNavigation'
-import type { HubMenuPreviews, HubSections } from '@/data/mainNavigation'
+import type { HubSections } from '@/data/mainNavigation'
 import { getRoutes } from '@/config/routes.ts'
 import { lockScroll, unlockScroll } from '@/composables/scrollLock'
 import type { Locale } from '@/i18n/translations.ts'
@@ -22,20 +22,13 @@ import SheetTrigger from '@/components/ui/sheet/SheetTrigger.vue'
 import Button from '@/components/ui/button/Button.vue'
 import { cn } from '@comfyorg/tailwind-utils'
 
-const {
-  locale = 'en',
-  hubSections = NO_HUB_SECTIONS,
-  hubPreviews
-} = defineProps<{
+const { locale = 'en', hubSections = NO_HUB_SECTIONS } = defineProps<{
   locale?: Locale
   hubSections?: HubSections
-  hubPreviews?: HubMenuPreviews
 }>()
 const { t } = translationsFor(locale)
 const routes = getRoutes(locale)
-const mainNavigation = computed(() =>
-  getMainNavigation(locale, hubSections, hubPreviews)
-)
+const mainNavigation = computed(() => getMainNavigation(locale, hubSections))
 
 const isOpen = ref(false)
 const activeSection = ref<string | null>(null)
@@ -150,18 +143,19 @@ onUnmounted(() => {
                   :key="column.header ?? columnIndex"
                   class="flex flex-col gap-y-3"
                 >
-                  <p
-                    v-if="column.header"
-                    class="text-base font-bold tracking-wider text-primary-warm-gray uppercase"
-                  >
-                    {{ column.header }}
-                  </p>
-                  <p
-                    v-if="column.description"
-                    class="-mt-2 text-sm text-primary-warm-gray"
-                  >
-                    {{ column.description }}
-                  </p>
+                  <div v-if="column.header">
+                    <p
+                      class="text-base font-bold tracking-wider text-primary-warm-gray uppercase"
+                    >
+                      {{ column.header }}
+                    </p>
+                    <p
+                      v-if="column.description"
+                      class="mt-1 text-xs text-primary-warm-gray"
+                    >
+                      {{ column.description }}
+                    </p>
+                  </div>
                   <div
                     :class="
                       column.items.every((link) => link.icon)
@@ -175,28 +169,20 @@ onUnmounted(() => {
                       :href="link.href"
                       variant="nav"
                       as="a"
-                      class="max-w-full [&>span]:min-w-0"
                       v-bind="navLinkTarget(link)"
                     >
                       <NavLinkContent :item="link" :locale="locale" />
                     </Button>
                   </div>
+                  <Button
+                    v-if="column.allLink"
+                    :href="column.allLink.href"
+                    variant="link"
+                    as="a"
+                  >
+                    {{ column.allLink.label }}
+                  </Button>
                 </div>
-                <Button
-                  v-if="activeItem.exploreLink"
-                  :href="activeItem.exploreLink.href"
-                  variant="nav"
-                  as="a"
-                  data-testid="nav-explore-link"
-                >
-                  <NavLinkContent
-                    :item="{
-                      label: activeItem.exploreLink.label,
-                      seeAll: true
-                    }"
-                    :locale="locale"
-                  />
-                </Button>
               </div>
             </div>
             <div

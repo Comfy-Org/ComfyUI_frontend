@@ -1,13 +1,13 @@
 <script setup lang="ts">
 import { cn } from '@comfyorg/tailwind-utils'
 
+import Button from '@/components/ui/button/Button.vue'
 import NavigationMenuLink from '@/components/ui/navigation-menu/NavigationMenuLink.vue'
 
 import { isHrefActive } from '@/composables/useCurrentPath'
 import type { NavColumn } from '@/data/mainNavigation'
 import { navLinkTarget } from '@/data/mainNavigation'
 import type { Locale } from '@/i18n/translations'
-import NavColumnHeading from './NavColumnHeading.vue'
 import NavLinkContent from './NavLinkContent.vue'
 
 defineProps<{
@@ -21,18 +21,30 @@ defineProps<{
 <template>
   <li
     :class="
-      layout === 'row' ? 'flex items-center gap-8' : 'flex flex-col space-y-4'
+      cn(
+        layout === 'row'
+          ? 'flex items-center gap-8'
+          : 'flex flex-col space-y-4',
+        column.description && 'w-60'
+      )
     "
   >
-    <NavColumnHeading :column :layout />
+    <div v-if="column.header" :class="layout === 'row' ? '' : 'pl-2'">
+      <p
+        class="font-formula text-xs font-medium text-primary-warm-gray uppercase"
+      >
+        {{ column.header }}
+      </p>
+      <p
+        v-if="column.description"
+        class="mt-1 text-xs whitespace-nowrap text-primary-warm-gray"
+      >
+        {{ column.description }}
+      </p>
+    </div>
     <ul
-      :class="
-        cn(
-          'flex',
-          layout === 'row' ? 'items-center gap-1' : 'flex-col',
-          column.kind && 'w-64 gap-1'
-        )
-      "
+      :aria-label="column.header"
+      :class="layout === 'row' ? 'flex items-center gap-1' : 'flex flex-col'"
     >
       <li v-for="item in column.items" :key="item.label">
         <NavigationMenuLink
@@ -43,12 +55,23 @@ defineProps<{
           <a
             :href="item.href"
             v-bind="navLinkTarget(item)"
-            :class="cn('whitespace-nowrap', column.kind && 'min-w-0')"
+            class="whitespace-nowrap"
           >
             <NavLinkContent :item="item" :locale="locale" />
           </a>
         </NavigationMenuLink>
       </li>
     </ul>
+    <div v-if="column.allLink" class="mt-auto pl-2">
+      <Button
+        as="a"
+        variant="link"
+        size="sm"
+        class="md:text-xs"
+        :href="column.allLink.href"
+      >
+        {{ column.allLink.label }}
+      </Button>
+    </div>
   </li>
 </template>

@@ -12,27 +12,17 @@ import { navigationMenuTriggerStyle } from '@/components/ui/navigation-menu/navi
 
 import { isHrefActive, useCurrentPath } from '@/composables/useCurrentPath'
 import { NO_HUB_SECTIONS, getMainNavigation } from '@/data/mainNavigation'
-import type {
-  HubMenuPreviews,
-  HubSections,
-  NavItem
-} from '@/data/mainNavigation'
+import type { HubSections, NavItem } from '@/data/mainNavigation'
 import type { Locale } from '@/i18n/translations'
-import NavDropdownBody from './NavDropdownBody.vue'
+import NavColumn from './NavColumn.vue'
+import NavFeaturedCard from './NavFeaturedCard.vue'
 import NewBadge from './NewBadge.vue'
 
-const {
-  locale = 'en',
-  hubSections = NO_HUB_SECTIONS,
-  hubPreviews
-} = defineProps<{
+const { locale = 'en', hubSections = NO_HUB_SECTIONS } = defineProps<{
   locale?: Locale
   hubSections?: HubSections
-  hubPreviews?: HubMenuPreviews
 }>()
-const mainNavigation = computed(() =>
-  getMainNavigation(locale, hubSections, hubPreviews)
-)
+const mainNavigation = computed(() => getMainNavigation(locale, hubSections))
 const currentPath = useCurrentPath()
 
 function ownsPath(navItem: NavItem, path: string): boolean {
@@ -74,13 +64,42 @@ function isNavItemActive(navItem: NavItem, path: string): boolean {
             </span>
           </NavigationMenuTrigger>
           <NavigationMenuContent class="w-auto" data-testid="nav-dropdown">
-            <NavDropdownBody
-              :columns="navItem.columns"
-              :featured="navItem.featured"
-              :explore-link="navItem.exploreLink"
-              :locale
-              :current-path="currentPath"
-            />
+            <div class="w-max">
+              <ul class="flex gap-16">
+                <NavFeaturedCard
+                  v-if="navItem.featured"
+                  :featured="navItem.featured"
+                />
+                <NavColumn
+                  v-for="(column, columnIndex) in navItem.columns.filter(
+                    (column) => column.placement !== 'footer'
+                  )"
+                  :key="column.header ?? columnIndex"
+                  :column="column"
+                  :locale="locale"
+                  :current-path="currentPath"
+                />
+              </ul>
+              <ul
+                v-if="
+                  navItem.columns.some(
+                    (column) => column.placement === 'footer'
+                  )
+                "
+                class="mt-6 border-t border-primary-warm-gray/20 pt-5"
+              >
+                <NavColumn
+                  v-for="(column, columnIndex) in navItem.columns.filter(
+                    (column) => column.placement === 'footer'
+                  )"
+                  :key="column.header ?? columnIndex"
+                  :column="column"
+                  :locale="locale"
+                  :current-path="currentPath"
+                  layout="row"
+                />
+              </ul>
+            </div>
           </NavigationMenuContent>
         </template>
         <NavigationMenuLink

@@ -105,10 +105,6 @@ const alternates = head.emitAlternates
 const openGraphLocale = ogLocale(locale)
 const openGraphLocaleAlternates = ogLocaleAlternates(locale, alternates)
 const ogImageURL = new URL(ogImage, Astro.site ?? 'https://comfy.org')
-const hubPreviews =
-  isWorkshopInBuild() && !minimal && !bare
-    ? (await import('@/lib/hub/menu-previews')).hubMenuPreviews(locale)
-    : undefined
 const rawStars = await fetchGitHubStars('Comfy-Org', 'ComfyUI')
 const githubStars = rawStars ? formatStarCount(rawStars) : ''
 
@@ -329,7 +325,6 @@ const structuredData = head.emitStructuredData
         locale={locale}
         github-stars={githubStars}
         workshop-in-build={isWorkshopInBuild()}
-        hub-previews={hubPreviews}
         client:load
       />
     )}

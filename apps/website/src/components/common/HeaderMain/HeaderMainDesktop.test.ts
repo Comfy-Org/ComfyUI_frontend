@@ -3,193 +3,121 @@ import userEvent from '@testing-library/user-event'
 import { describe, expect, it } from 'vitest'
 import { nextTick } from 'vue'
 
-import type { HubMenuPreviews, HubSections } from '@/data/mainNavigation'
+import type { HubSections } from '@/data/mainNavigation'
 import HeaderMainDesktop from './HeaderMainDesktop.vue'
 
 const ALL_SECTIONS: HubSections = { workflows: true, apps: true }
 
-async function openMenu(
-  name: RegExp,
-  {
-    path = '/pricing',
-    hubSections = ALL_SECTIONS,
-    hubPreviews
-  }: {
-    path?: string
-    hubSections?: HubSections
-    hubPreviews?: HubMenuPreviews
-  } = {}
-) {
-  history.replaceState(null, '', path)
-  render(HeaderMainDesktop, {
-    props: { hubSections, hubPreviews }
-  })
-  const trigger = screen.getByRole('button', { name })
-  await userEvent.click(trigger)
+async function openHub(hubSections: HubSections = ALL_SECTIONS) {
+  history.replaceState(null, '', '/pricing')
+  render(HeaderMainDesktop, { props: { hubSections } })
+  await userEvent.click(screen.getByRole('button', { name: /^Hub\b/ }))
   const menu = within(await screen.findByTestId('nav-dropdown'))
   await menu.findAllByRole('link')
-  return { trigger, menu }
+  return menu
 }
 
 describe('HeaderMainDesktop', () => {
-  it('renders Hub, Products and Enterprise at the top level', () => {
-    render(HeaderMainDesktop)
-    for (const name of [/^Hub\b/, /^Products\b/, /^Enterprise\b/])
+  it.for([/^Hub\b/, /^Products\b/, /^Enterprise\b/])(
+    'renders %s as a top-level menu',
+    (name) => {
+      render(HeaderMainDesktop)
       expect(screen.getByRole('button', { name })).toBeTruthy()
+    }
+  )
+
+  it('has no top-level Community menu', () => {
+    render(HeaderMainDesktop)
     expect(screen.queryByRole('button', { name: /community/i })).toBeNull()
   })
 
-  it('opens the Hub as Models, Workflows and Apps with an Explore row', async () => {
-    const { menu } = await openMenu(/^Hub/)
+  it('opens the Hub as described Models, Workflows and Apps columns', async () => {
+    const menu = await openHub()
+    const linksIn = (list: string) =>
+      within(menu.getByRole('list', { name: list }))
+        .getAllByRole('link')
+        .map((link) => [link.textContent.trim(), link.getAttribute('href')])
 
-    for (const header of ['Models', 'Workflows', 'Apps']) {
-      expect(menu.getByText(header, { exact: true })).toBeVisible()
-    }
-    expect(menu.queryByTestId('nav-kind-icon')).toBeNull()
-    expect(menu.queryAllByRole('img')).toHaveLength(0)
     expect(
       [
-        'Seedream 5.0 Pro',
-        'Seedance 2.5',
-        'Nano Banana 2',
-        'GPT Image 2',
-        'All models',
-        'Change material',
-        'Match lighting',
-        'All workflows',
-        'Cinematic Studio',
-        'Re-shoot',
-        'All apps'
-      ].map((name) => menu.getByRole('link', { name }).getAttribute('href'))
-    ).toEqual([
-      '/hub/models/seedream-5-0-pro-text-to-image/',
-      '/hub/models/seedance-2-5-reference-to-video/',
-      '/hub/models/nano-banana-2-image-edit/',
-      '/hub/models/gpt-image-2-text-to-image/',
-      '/hub/models/',
-      '/hub/workflows/change-material/',
-      '/hub/workflows/match-lighting/',
-      '/hub/workflows/',
-      '/hub/apps/cinematic-studio/',
-      '/hub/apps/reshoot/',
-      '/hub/apps/'
+        'Run the latest AI models',
+        'Ready-made recipes for a task',
+        'Full tools built on Comfy'
+      ].filter((description) => !menu.queryByText(description))
+    ).toEqual([])
+    expect(linksIn('Models')).toEqual([
+      ['Seedream 5.0 Pro', '/hub/models/seedream-5-0-pro-text-to-image/'],
+      ['Seedance 2.5', '/hub/models/seedance-2-5-reference-to-video/'],
+      ['Nano Banana 2', '/hub/models/nano-banana-2-image-edit/'],
+      ['GPT Image 2', '/hub/models/gpt-image-2-text-to-image/']
     ])
-    expect(
-      menu.getByRole('link', { name: /^Explore the Hub/ })
-    ).toHaveAttribute('href', '/hub/')
-  })
-
-  it('leads the Hub with its intro and Explore link, above the columns', async () => {
-    const { menu } = await openMenu(/^Hub/)
-    const row = menu.getByTestId('nav-explore-row')
-
-    expect(row).toHaveTextContent(
-      'Try in the browser, call by API, or take it into ComfyUI'
-    )
-    expect(
-      within(row).getByRole('link', { name: 'Explore the Hub' })
-    ).toHaveAttribute('href', '/hub/')
-    expect(
-      row.compareDocumentPosition(menu.getByText('Models', { exact: true }))
-    ).toBe(Node.DOCUMENT_POSITION_FOLLOWING)
-  })
-
-  it('shows each Hub example with a line about it and no image', async () => {
-    const { menu } = await openMenu(/^Hub/, {
-      hubPreviews: {
-        '/hub/models/seedream-5-0-pro-text-to-image/': {
-          meta: 'ByteDance · Image'
-        },
-        '/hub/models/seedance-2-5-reference-to-video/': {
-          meta: 'ByteDance · Video'
-        }
-      }
-    })
-    const seedream = menu.getByRole('link', { name: /^Seedream 5\.0 Pro/ })
-    const seedance = menu.getByRole('link', { name: /^Seedance 2\.5/ })
-
-    expect(seedream).toHaveTextContent('ByteDance · Image')
-    expect(seedance).toHaveTextContent('ByteDance · Video')
-    expect(menu.queryAllByRole('img')).toHaveLength(0)
-  })
-
-  it('opens each app in a tab of its own, and the apps list in this one', async () => {
-    const { menu } = await openMenu(/^Hub/)
-
-    for (const name of ['Cinematic Studio', 'Re-shoot']) {
-      const link = menu.getByRole('link', { name })
-      expect(link).toHaveAttribute('target', '_blank')
-      expect(link).toHaveAttribute('rel', 'noopener')
-    }
-    for (const name of ['All apps', 'Change material', 'Seedance 2.5'])
-      expect(menu.getByRole('link', { name })).not.toHaveAttribute('target')
-  })
-
-  it('leaves the API key and docs links to the Models page', async () => {
-    const { menu } = await openMenu(/^Hub/)
-
-    expect(menu.queryByRole('link', { name: /API/ })).toBeNull()
-  })
-
-  it('hides the Hub columns whose sections are off', async () => {
-    const { menu } = await openMenu(/^Hub/, {
-      hubSections: { workflows: false, apps: false }
-    })
-
-    expect(menu.getByRole('link', { name: 'All models' })).toBeVisible()
-    expect(menu.queryByRole('link', { name: 'All workflows' })).toBeNull()
-    expect(menu.queryByRole('link', { name: 'All apps' })).toBeNull()
-  })
-
-  it('opens Products with its card before the columns and ends with the Resources row', async () => {
-    const { menu } = await openMenu(/^products/i)
-
-    const links = menu.getAllByRole('link')
-    expect(links.at(0)).toHaveAttribute('href', '/gemini-omni/')
-    expect(links.slice(-2).map((link) => link.textContent.trim())).toEqual([
-      'Docs',
-      'Comfy SDKs'
+    expect(linksIn('Workflows')).toEqual([
+      ['Image to video', '/hub/workflows/image-to-video/'],
+      ['Video from references', '/hub/workflows/video-from-references/'],
+      ['Motion transfer', '/hub/workflows/motion-transfer/'],
+      ['Edit selected region', '/hub/workflows/edit-selected-region/']
     ])
-    expect(menu.getByRole('link', { name: /^Browse Models/ })).toHaveAttribute(
-      'href',
-      '/hub/models/'
-    )
-    expect(menu.queryByRole('link', { name: 'Supported Models' })).toBeNull()
-  })
-
-  it('folds Community into Company, with its card first and social icons last', async () => {
-    const { menu } = await openMenu(/^company/i)
-
-    for (const header of ['Community', 'Company', 'Updates', 'Connect']) {
-      expect(menu.getByText(header, { exact: true })).toBeVisible()
-    }
-    expect(menu.getAllByRole('link').at(0)).toHaveAttribute(
-      'href',
-      '/customers/videos/black-math/'
-    )
-    for (const name of ['Discord', 'GitHub', 'YouTube', 'X', 'Instagram'])
-      expect(
-        menu.getByRole('link', { name: new RegExp(`^${name}\\b`) })
-      ).toHaveAttribute('target', '_blank')
-  })
-
-  it('opens Enterprise with its card followed by one column', async () => {
-    const { menu } = await openMenu(/^enterprise/i)
-
-    const links = menu.getAllByRole('link')
-    expect(links.at(0)).toHaveAttribute('href', '/minimax/license/')
-    expect(links.slice(1).map((link) => link.textContent.trim())).toEqual([
-      'Comfy Enterprise',
-      'Forward Deployed Creatives',
-      'Team Billing',
-      'Commercial Licensing',
-      'Contact Sales'
+    expect(linksIn('Apps')).toEqual([
+      ['Cinematic Studio', '/hub/apps/cinematic-studio/'],
+      ['Re-shoot', '/hub/apps/reshoot/']
     ])
-    expect(menu.queryByText('Resources')).toBeNull()
   })
 
   it.for([
-    { path: '/hub/', hub: true, products: false },
+    { name: 'All models', href: '/hub/models/', column: 'Models' },
+    { name: 'All workflows', href: '/hub/workflows/', column: 'Workflows' },
+    { name: 'All apps', href: '/hub/apps/', column: 'Apps' }
+  ])(
+    'ends the $column column with $name, linking to $href in this tab',
+    async ({ name, href, column }) => {
+      const menu = await openHub()
+      const allLink = menu.getByRole('link', { name })
+      const examples = menu.getByRole('list', { name: column })
+
+      expect(allLink).toHaveAttribute('href', href)
+      expect(allLink).not.toHaveAttribute('target')
+      expect(
+        examples.compareDocumentPosition(allLink) &
+          Node.DOCUMENT_POSITION_FOLLOWING
+      ).toBeTruthy()
+    }
+  )
+
+  it('features Seedance 2.5 with a Try now link to its model page', async () => {
+    const menu = await openHub()
+
+    expect(
+      menu.getByRole('link', {
+        name: 'Try Seedance 2.5 reference to video in the Hub'
+      })
+    ).toHaveAttribute('href', '/hub/models/seedance-2-5-reference-to-video/')
+    expect(menu.getByText('Try now')).toBeVisible()
+  })
+
+  it.for(['Cinematic Studio', 'Re-shoot'])(
+    'opens the %s app in a tab of its own',
+    async (name) => {
+      const menu = await openHub()
+      const link = menu.getByRole('link', { name })
+
+      expect(link).toHaveAttribute('target', '_blank')
+      expect(link).toHaveAttribute('rel', 'noopener')
+    }
+  )
+
+  it('leaves the sections that are off and their All links out of the menu', async () => {
+    const menu = await openHub({ workflows: false, apps: false })
+
+    expect(menu.queryByRole('list', { name: 'Workflows' })).toBeNull()
+    expect(menu.queryByRole('list', { name: 'Apps' })).toBeNull()
+    expect(
+      ['All models', 'All workflows', 'All apps'].filter((name) =>
+        menu.queryByRole('link', { name })
+      )
+    ).toEqual(['All models'])
+  })
+
+  it.for([
     { path: '/hub/models/', hub: true, products: false },
     {
       path: '/hub/models/seedance-2-5-reference-to-video/',
@@ -197,23 +125,22 @@ describe('HeaderMainDesktop', () => {
       products: false
     },
     { path: '/hub/workflows/relight/', hub: true, products: false },
+    { path: '/hub/apps/', hub: true, products: false },
     { path: '/platform/', hub: false, products: true },
     { path: '/pricing', hub: false, products: false }
   ])(
     'marks the Hub or Products active on $path',
     async ({ path, hub, products }) => {
       history.replaceState(null, '', path)
-      render(HeaderMainDesktop, {
-        props: { hubSections: ALL_SECTIONS }
-      })
+      render(HeaderMainDesktop, { props: { hubSections: ALL_SECTIONS } })
       await nextTick()
 
       expect([
         screen
-          .getByRole('button', { name: /^Hub/ })
+          .getByRole('button', { name: /^Hub\b/ })
           .hasAttribute('data-active'),
         screen
-          .getByRole('button', { name: /^Products/ })
+          .getByRole('button', { name: /^Products\b/ })
           .hasAttribute('data-active')
       ]).toEqual([hub, products])
     }

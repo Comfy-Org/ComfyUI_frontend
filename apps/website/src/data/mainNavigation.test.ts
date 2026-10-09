@@ -1,4 +1,4 @@
-import { assert, describe, expect, it } from 'vitest'
+import { describe, expect, it } from 'vitest'
 
 import hubAppNames from '@/config/hub-app-names.json' with { type: 'json' }
 import hubWorkflowNames from '@/config/hub-workflow-names.json' with { type: 'json' }
@@ -10,45 +10,33 @@ import { getMainNavigation } from './mainNavigation'
 
 const ALL_SECTIONS: HubSections = { workflows: true, apps: true }
 
-function hrefsOf(item: NavItem): string[] {
-  if (!item.columns) return [item.href]
-  return [
-    ...item.columns.flatMap((column) => column.items.map(({ href }) => href)),
-    ...(item.exploreLink ? [item.exploreLink.href] : [])
-  ]
-}
-
-function findItem(navigation: NavItem[], label: string): NavItem {
-  const item = navigation.find((entry) => entry.label === label)
-  if (!item) throw new Error(`${label} is missing from the navigation`)
-  return item
+function hubOf(navigation: NavItem[]): NavItem {
+  const hub = navigation[0]
+  expect(hub.label).toBe('Hub')
+  return hub
 }
 
 describe('getMainNavigation', () => {
   it.for(['en', 'zh-CN', 'ja'] as const)(
-    'links the Hub catalogue from the Hub menu and under Products > Create, for %s',
+    'links the Hub catalogue from the Hub Models column and under Products > Create, for %s',
     (locale) => {
-      const navigation = getMainNavigation(locale, ALL_SECTIONS)
-      const { hubExplore, hubApps, hubWorkflows, workshop } = getRoutes(locale)
+      const navigation = getMainNavigation(locale)
+      const catalogue = getRoutes(locale).workshop
       const create = navigation
         .find((item) => item.label === t('nav.products', {}, { locale }))
         ?.columns?.find(
           (column) => column.header === t('nav.colCreate', {}, { locale })
         )
 
-      expect([hubExplore, hubApps, hubWorkflows, workshop]).toEqual([
-        '/hub/',
-        '/hub/apps/',
-        '/hub/workflows/',
-        '/hub/models/'
-      ])
+      expect(catalogue).toBe('/hub/models/')
       expect(navigation[0].label).toBe(t('nav.workshop', {}, { locale }))
-      expect(hrefsOf(navigation[0])).toEqual(
-        expect.arrayContaining([hubExplore, hubApps, hubWorkflows, workshop])
-      )
+      expect(navigation[0].columns?.[0].allLink).toEqual({
+        label: t('nav.hubAllModels', {}, { locale }),
+        href: catalogue
+      })
       expect(create?.items).toContainEqual({
         label: t('nav.comfyWorkshop', {}, { locale }),
-        href: workshop,
+        href: catalogue,
         badge: 'new'
       })
     }
@@ -63,133 +51,139 @@ describe('getMainNavigation', () => {
     { sections: { workflows: false, apps: true }, headers: ['Models', 'Apps'] },
     { sections: ALL_SECTIONS, headers: ['Models', 'Workflows', 'Apps'] }
   ])(
-    'opens the Hub as one column per format, showing $headers',
+    'opens the Hub as one column per section that is on, showing $headers',
     ({ sections, headers }) => {
-      const hub = findItem(getMainNavigation('en', sections), 'Hub')
+      const hub = hubOf(getMainNavigation('en', sections))
 
       expect(hub.href).toBeUndefined()
-      expect(hub.badge).toBe('new')
       expect(hub.columns?.map((column) => column.header)).toEqual(headers)
-      expect(hub.exploreLink).toEqual({
-        label: 'Explore the Hub',
-        intro: 'Try in the browser, call by API, or take it into ComfyUI',
-        href: '/hub/'
-      })
       expect(hub.activePathPrefix).toBe('/hub/')
     }
   )
 
-  it('shows two examples and an All link in each Hub column', () => {
-    const hub = findItem(getMainNavigation('en', ALL_SECTIONS), 'Hub')
-    const routes = getRoutes('en')
+  it('describes each Hub column, lists its examples and ends it with an All link', () => {
+    const hub = hubOf(getMainNavigation('en', ALL_SECTIONS))
 
     expect(
-      hub.columns?.map(({ kind, description, items }) => ({
-        kind,
+      hub.columns?.map(({ description, items, allLink }) => ({
         description,
-        items: items.map(({ label, href, seeAll }) => ({ label, href, seeAll }))
+        items: items.map(({ label, href, newTab }) => ({
+          label,
+          href,
+          newTab
+        })),
+        allLink
       }))
     ).toEqual([
       {
-        kind: 'model',
-        description: 'Run, call by API or download',
+        description: 'Run the latest AI models',
         items: [
           {
             label: 'Seedream 5.0 Pro',
             href: '/hub/models/seedream-5-0-pro-text-to-image/',
-            seeAll: undefined
+            newTab: undefined
           },
           {
             label: 'Seedance 2.5',
             href: '/hub/models/seedance-2-5-reference-to-video/',
-            seeAll: undefined
+            newTab: undefined
           },
           {
             label: 'Nano Banana 2',
             href: '/hub/models/nano-banana-2-image-edit/',
-            seeAll: undefined
+            newTab: undefined
           },
           {
             label: 'GPT Image 2',
             href: '/hub/models/gpt-image-2-text-to-image/',
-            seeAll: undefined
-          },
-          { label: 'All models', href: routes.workshop, seeAll: true }
-        ]
+            newTab: undefined
+          }
+        ],
+        allLink: { label: 'All models', href: '/hub/models/' }
       },
       {
-        kind: 'workflow',
-        description: 'Open one and make it yours',
+        description: 'Ready-made recipes for a task',
         items: [
           {
-            label: 'Change material',
-            href: '/hub/workflows/change-material/',
-            seeAll: undefined
+            label: 'Image to video',
+            href: '/hub/workflows/image-to-video/',
+            newTab: undefined
           },
           {
-            label: 'Match lighting',
-            href: '/hub/workflows/match-lighting/',
-            seeAll: undefined
+            label: 'Video from references',
+            href: '/hub/workflows/video-from-references/',
+            newTab: undefined
           },
-          { label: 'All workflows', href: routes.hubWorkflows, seeAll: true }
-        ]
+          {
+            label: 'Motion transfer',
+            href: '/hub/workflows/motion-transfer/',
+            newTab: undefined
+          },
+          {
+            label: 'Edit selected region',
+            href: '/hub/workflows/edit-selected-region/',
+            newTab: undefined
+          }
+        ],
+        allLink: { label: 'All workflows', href: '/hub/workflows/' }
       },
       {
-        kind: 'app',
-        description: 'One job each, no nodes',
+        description: 'Full tools built on Comfy',
         items: [
           {
             label: 'Cinematic Studio',
-            href: routes.cinematicStudio,
-            seeAll: undefined
+            href: '/hub/apps/cinematic-studio/',
+            newTab: true
           },
-          { label: 'Re-shoot', href: routes.reshoot, seeAll: undefined },
-          { label: 'All apps', href: routes.hubApps, seeAll: true }
-        ]
+          { label: 'Re-shoot', href: '/hub/apps/reshoot/', newTab: true }
+        ],
+        allLink: { label: 'All apps', href: '/hub/apps/' }
       }
     ])
   })
 
-  it('shows a catalogue preview beside each Hub example, never beside an All link', () => {
-    const preview = { meta: 'M' }
-    const hub = findItem(
-      getMainNavigation('en', ALL_SECTIONS, {
-        '/hub/models/seedance-2-5-reference-to-video/': preview,
-        '/hub/models/': preview,
-        '/hub/apps/reshoot/': { meta: 'Only a summary' }
-      }),
-      'Hub'
-    )
-    const previews = Object.fromEntries(
-      (hub.columns ?? [])
-        .flatMap((column) => column.items)
-        .map(({ href, meta }) => [href, { meta }])
-    )
-
-    expect(previews['/hub/models/seedance-2-5-reference-to-video/']).toEqual(
-      preview
-    )
-    expect(previews['/hub/apps/reshoot/']).toEqual({ meta: 'Only a summary' })
-    expect(previews['/hub/models/seedream-5-0-pro-text-to-image/']).toEqual({
-      meta: undefined
-    })
-    expect(previews['/hub/models/']).toEqual({ meta: undefined })
-  })
-
-  it('links the Hub examples to pages the site builds', () => {
-    const hub = findItem(getMainNavigation('en', ALL_SECTIONS), 'Hub')
+  it('links every Hub entry to a page the site builds', () => {
+    const hub = hubOf(getMainNavigation('en', ALL_SECTIONS))
     const built = new Set([
+      '/hub/models/',
+      '/hub/workflows/',
+      '/hub/apps/',
       ...modelPageUrls.map(({ newSlug }) => `/hub/models/${newSlug}/`),
       ...hubWorkflowNames.map((name) => `/hub/workflows/${name}/`),
       ...hubAppNames.map((name) => `/hub/apps/${name}/`)
     ])
-    const examples = (hub.columns ?? [])
-      .flatMap((column) => column.items)
-      .filter((item) => !item.seeAll)
+    const hrefs = [
+      ...(hub.columns ?? []).flatMap((column) => [
+        ...column.items.map(({ href }) => href),
+        column.allLink?.href
+      ]),
+      hub.featured?.cta.href
+    ]
 
-    expect(examples).toHaveLength(8)
-    for (const { href } of examples) expect(built).toContain(href)
+    expect(hrefs).toHaveLength(14)
+    expect(hrefs.filter((href) => !href || !built.has(href))).toEqual([])
   })
+
+  it.for(['en', 'zh-CN'] as const)(
+    'features Seedance 2.5 in the Hub menu, linking to its model page, for %s',
+    (locale) => {
+      const featured = getMainNavigation(locale)[0].featured
+
+      expect(featured).toEqual(
+        expect.objectContaining({
+          title: 'Seedance 2.5',
+          imageSrc:
+            'https://media.comfy.org/website/seedance-2.5/balloons-poster.webp',
+          videoSrc:
+            'https://media.comfy.org/website/seedance-2.5/balloons.webm',
+          cta: expect.objectContaining({
+            label: t('nav.featuredHubCta', {}, { locale }),
+            href: '/hub/models/seedance-2-5-reference-to-video/'
+          })
+        })
+      )
+    }
+  )
 
   it('does not expose Models as a top-level navigation item', () => {
     const labels = getMainNavigation('en').map((item) => item.label)
@@ -240,9 +234,8 @@ describe('getMainNavigation', () => {
       const products = getMainNavigation(locale)
         .find((item) => item.label === t('nav.products', {}, { locale }))
         ?.columns?.flatMap((column) => column.items)
-      assert(products, 'Products menu is missing')
       const badgeOf = (href: string) => {
-        const entry = products.find((item) => item.href === href)
+        const entry = products?.find((item) => item.href === href)
         expect(entry).toBeDefined()
         return entry?.badge
       }

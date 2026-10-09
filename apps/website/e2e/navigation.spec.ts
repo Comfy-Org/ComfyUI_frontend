@@ -121,7 +121,7 @@ test.describe('Desktop navigation @smoke', () => {
     }
   })
 
-  test('NEW badge shows on Hub only', async ({ page }) => {
+  test('no top-level item carries a NEW badge', async ({ page }) => {
     await page.setViewportSize({ width: 1600, height: 900 })
     const nav = page.getByRole('navigation', { name: 'Main navigation' })
     const desktopLinks = nav.getByTestId('desktop-nav-links')
@@ -131,12 +131,7 @@ test.describe('Desktop navigation @smoke', () => {
         desktopLinks.getByText(label, { exact: true }).first()
       ).toBeVisible()
     }
-    await expect(
-      desktopLinks
-        .getByRole('button', { name: 'Hub' })
-        .getByText('NEW', { exact: true })
-    ).toBeVisible()
-    await expect(desktopLinks.getByText('NEW', { exact: true })).toHaveCount(1)
+    await expect(desktopLinks.getByText('NEW', { exact: true })).toHaveCount(0)
   })
 
   test('CTA buttons are visible', async ({ page }) => {
@@ -227,7 +222,7 @@ test.describe('Desktop dropdown @interaction', () => {
     })
   }
 
-  test('hovering HUB shows the Explore row, then the Models examples with their meta lines', async ({
+  test('hovering HUB shows the featured launch, then each column with its line and its All link', async ({
     page
   }) => {
     const nav = page.getByRole('navigation', { name: 'Main navigation' })
@@ -238,27 +233,22 @@ test.describe('Desktop dropdown @interaction', () => {
     await hubButton.hover()
 
     const dropdown = nav.getByTestId('nav-dropdown')
+    await expect(dropdown.getByText('Run the latest AI models')).toBeVisible()
     await expect(
-      dropdown.getByText('Run, call by API or download')
-    ).toBeVisible()
-    await expect(dropdown.getByTestId('nav-explore-row')).toContainText(
-      'Try in the browser, call by API, or take it into ComfyUI'
-    )
-    const seedream = dropdown.getByRole('link', { name: /^Seedream 5\.0 Pro/ })
-    await expect(seedream).toHaveAttribute(
-      'href',
-      '/hub/models/seedream-5-0-pro-text-to-image/'
-    )
-    await expect(seedream).toContainText('ByteDance · Image')
-    await expect(dropdown.getByRole('img')).toHaveCount(0)
-    await expect(dropdown.locator('video')).toHaveCount(0)
+      dropdown.getByRole('link', {
+        name: 'Try Seedance 2.5 reference to video in the Hub'
+      })
+    ).toHaveAttribute('href', '/hub/models/seedance-2-5-reference-to-video/')
+    await expect(
+      dropdown.getByRole('link', { name: /^Seedream 5\.0 Pro/ })
+    ).toHaveAttribute('href', '/hub/models/seedream-5-0-pro-text-to-image/')
     await expect(
       dropdown.getByRole('link', { name: 'All models' })
     ).toHaveAttribute('href', '/hub/models/')
-    await expect(dropdown.getByRole('link', { name: /API/ })).toHaveCount(0)
+    await expect(dropdown.getByTestId('nav-explore-row')).toHaveCount(0)
     await expect(
       dropdown.getByRole('link', { name: /^Explore the Hub/ })
-    ).toHaveAttribute('href', '/hub/')
+    ).toHaveCount(0)
   })
 
   const PANEL_EDGE_GAP = 10
@@ -455,21 +445,16 @@ test.describe('Mobile menu @mobile', () => {
     }
   })
 
-  test('NEW badge shows on Hub only', async ({ page }) => {
+  test('no top-level item carries a NEW badge', async ({ page }) => {
     await page.getByRole('button', { name: 'Toggle menu' }).click()
 
     const menu = page.getByRole('dialog')
 
-    await expect(
-      menu
-        .getByRole('button', { name: 'Hub' })
-        .getByText('NEW', { exact: true })
-    ).toBeVisible()
     await expect(menu.getByRole('button', { name: 'Products' })).toBeVisible()
-    await expect(menu.getByText('NEW', { exact: true })).toHaveCount(1)
+    await expect(menu.getByText('NEW', { exact: true })).toHaveCount(0)
   })
 
-  test('Hub drill-down shows the examples without images and ends with the Explore link', async ({
+  test('Hub drill-down shows the examples without images or meta lines, each column with its All link', async ({
     page
   }) => {
     await page.getByRole('button', { name: 'Toggle menu' }).click()
@@ -478,7 +463,7 @@ test.describe('Mobile menu @mobile', () => {
     await menu.getByRole('button', { name: 'Hub' }).click()
 
     const seedream = menu.getByRole('link', { name: /^Seedream 5\.0 Pro/ })
-    await expect(seedream).toContainText('ByteDance · Image')
+    await expect(seedream).toHaveText('Seedream 5.0 Pro')
     await expect(seedream.getByRole('img')).toHaveCount(0)
 
     await expect(
@@ -486,7 +471,7 @@ test.describe('Mobile menu @mobile', () => {
     ).toHaveAttribute('href', '/hub/models/')
     await expect(
       menu.getByRole('link', { name: /^Explore the Hub/ })
-    ).toHaveAttribute('href', '/hub/')
+    ).toHaveCount(0)
   })
 
   test('Company drill-down folds in Community and names each social icon link', async ({

@@ -227,12 +227,10 @@ test('the mobile menu closes and reopens after its Hub link navigates', async ({
   const menu = page.getByRole('dialog', { name: 'Menu' })
   await expect(menu).toBeVisible()
   await menu.getByRole('button', { name: /^Hub/ }).click()
-  await menu.getByRole('link', { name: /^Explore the Hub/ }).click()
-  await expect(page).toHaveURL('/hub/')
+  await menu.getByRole('link', { name: 'All models' }).click()
+  await expect(page).toHaveURL('/hub/models/')
   await expect(menu).toBeHidden()
-  await expect(page.getByRole('heading', { level: 1 })).toHaveText(
-    'What do you want to make?'
-  )
+  await expect(page.getByRole('heading', { level: 1 })).toHaveText('Models')
   await waitForIsland(page, toggle)
   await expect(toggle).toHaveAttribute('aria-expanded', 'false')
   await toggle.click()
