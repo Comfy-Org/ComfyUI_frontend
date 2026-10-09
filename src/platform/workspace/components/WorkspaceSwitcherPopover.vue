@@ -114,7 +114,11 @@
             {{ $t('workspaceSwitcher.createWorkspace') }}
           </span>
           <span v-else class="text-sm text-muted-foreground">
-            {{ $t('workspaceSwitcher.maxWorkspacesReached') }}
+            {{
+              workspacesManagedByOrganization
+                ? $t('workspaceSwitcher.managedByOrganization')
+                : $t('workspaceSwitcher.maxWorkspacesReached')
+            }}
           </span>
         </div>
       </div>
@@ -172,6 +176,7 @@ const {
   workspaceId,
   workspaces,
   canCreateWorkspace,
+  workspacesManagedByOrganization,
   isFetchingWorkspaces,
   isSwitching
 } = storeToRefs(workspaceStore)

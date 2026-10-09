@@ -62,13 +62,6 @@ vi.mock<unknown>(
     })
   })
 )
-vi.mock<unknown>(
-  import('primevue/usetoast'), // oxlint-disable-line comfy/no-primevue-imports
-  () => ({
-    useToast: () => ({ add: vi.fn(), remove: vi.fn(), removeGroup: vi.fn() })
-  })
-)
-
 const CREDENTIAL: AccountCredential = {
   token: 'workspace-jwt',
   expiresAt: Date.now() + 60 * 60 * 1000,

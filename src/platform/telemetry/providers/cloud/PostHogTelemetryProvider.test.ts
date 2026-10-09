@@ -669,6 +669,20 @@ describe('PostHogTelemetryProvider', () => {
       )
     })
 
+    it('captures starter prompt exposure with its assignment', async () => {
+      const provider = createProvider()
+      await vi.dynamicImportSettled()
+
+      provider.trackAgentStarterPromptExposure({
+        '$feature/agent-starter-prompt-set': 'test'
+      })
+
+      expect(hoisted.mockCapture).toHaveBeenCalledWith(
+        TelemetryEvents.AGENT_STARTER_PROMPT_EXPOSURE,
+        { '$feature/agent-starter-prompt-set': 'test' }
+      )
+    })
+
     it('captures free-use notice interactions with their placement', async () => {
       const provider = createProvider()
       await vi.dynamicImportSettled()

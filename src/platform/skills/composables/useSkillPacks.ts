@@ -3,7 +3,7 @@ import { ref } from 'vue'
 import { useI18n } from 'vue-i18n'
 
 import { reportError } from '@/platform/telemetry/reportError'
-import { useToastStore } from '@/platform/updates/common/toastStore'
+import { useToast } from '@/components/ui/toast/toastStore'
 
 import {
   deleteSkillPack as deleteSkillPackApi,
@@ -14,7 +14,7 @@ import type { SkillPack } from '../types'
 
 export function useSkillPacks() {
   const { t } = useI18n()
-  const toastStore = useToastStore()
+  const toast = useToast()
   const store = useSkillPacksStore()
   const { packs, loading, hasLoaded } = storeToRefs(store)
 
@@ -22,10 +22,8 @@ export function useSkillPacks() {
 
   function reportUnexpected(error: unknown, errorType: string) {
     reportError(error, { errorType, surface: 'agent' })
-    toastStore.add({
-      severity: 'error',
-      summary: t('g.error'),
-      detail:
+    toast.error(t('g.error'), {
+      description:
         error instanceof SkillPacksApiError
           ? error.message
           : t('g.unknownError')

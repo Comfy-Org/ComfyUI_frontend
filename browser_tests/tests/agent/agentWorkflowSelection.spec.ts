@@ -544,6 +544,7 @@ test.describe(
 
     test('keeps the failed selection open and allows retry without a naming dialog', async ({
       page,
+      toast,
       workflowSelection
     }) => {
       await new AgentPanel(page).open()
@@ -563,7 +564,7 @@ test.describe(
       await expect(row).toBeEnabled()
       await expect(row).toBeChecked()
       await expect(
-        page.getByText(enMessages.shareWorkflow.saveFailedTitle)
+        toast.withText(enMessages.shareWorkflow.saveFailedTitle)
       ).toBeVisible()
       await expect(composer).toHaveText('Keep this draft')
       await row.click()

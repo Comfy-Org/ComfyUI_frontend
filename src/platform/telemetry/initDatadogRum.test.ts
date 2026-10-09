@@ -233,10 +233,10 @@ describe('initDatadogRum', () => {
   it('tracks manual refreshes only once RUM is initialized', async () => {
     await initDatadogRum('localhost')
 
-    expect(vi.mocked(trackUserManualRefresh)).not.toHaveBeenCalled()
+    expect(trackUserManualRefresh).not.toHaveBeenCalled()
 
     await initDatadogRum('cloud.comfy.org')
 
-    expect(vi.mocked(trackUserManualRefresh)).toHaveBeenCalledOnce()
+    expect(trackUserManualRefresh).toHaveBeenCalledOnce()
   })
 })
