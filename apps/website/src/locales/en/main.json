@@ -5137,6 +5137,9 @@
       "spriteSheet": "Sprite Sheet Generator",
       "spriteSheetSummary": "Turn one character into a game-ready sprite sheet: pick a style and a motion, and the model draws every frame.",
       "spriteSheetMeta": "Image · Nano Banana Pro",
+      "paparazziMe": "Paparazzi me",
+      "paparazziMeSummary": "Pick a star and a scene, add your face, and get a flash-lit paparazzi photo of the two of you.",
+      "paparazziMeMeta": "Image · Nano Banana Pro",
       "reshootMeta": "Video · MiniMax H3"
     },
     "stage": {

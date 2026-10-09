@@ -32,6 +32,11 @@ const copy = {
   spriteSheetTask: {
     en: 'Animate a character for a game',
     'zh-CN': '为游戏制作角色动画'
+  },
+  paparazziMeName: { en: 'Paparazzi me', 'zh-CN': '狗仔偶遇' },
+  paparazziMeTask: {
+    en: 'Get snapped next to a star',
+    'zh-CN': '和明星同框被拍'
   }
 } as const satisfies Record<string, LocalizedText>
 

@@ -4530,6 +4530,9 @@
       "spriteSheet": "精灵图生成器",
       "spriteSheetSummary": "把一个角色变成可直接用于游戏的精灵图：选择风格和动作，模型会绘制每一帧。",
       "spriteSheetMeta": "图像 · Nano Banana Pro",
+      "paparazziMe": "狗仔偶遇",
+      "paparazziMeSummary": "选一位明星和一个场景，加上你的脸，生成你们俩的闪光灯狗仔照。",
+      "paparazziMeMeta": "图像 · Nano Banana Pro",
       "reshootMeta": "视频 · MiniMax H3"
     },
     "stage": {

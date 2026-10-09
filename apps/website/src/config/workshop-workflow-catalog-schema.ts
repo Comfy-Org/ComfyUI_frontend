@@ -85,7 +85,8 @@ const appSchema = z
       'move-anything',
       'relight',
       'hand-product-swap',
-      'sprite-sheet'
+      'sprite-sheet',
+      'paparazzi-me'
     ])
   })
   .strict()

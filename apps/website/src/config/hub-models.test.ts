@@ -23,6 +23,7 @@ describe('hub model addresses', () => {
       routes.cinematicStudio,
       routes.handProductSwap,
       routes.moveAnything,
+      routes.paparazziMe,
       routes.relight,
       routes.reshoot,
       routes.spriteSheet

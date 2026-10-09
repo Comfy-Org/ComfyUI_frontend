@@ -176,6 +176,7 @@ export type AppWorkshopModel = WorkshopPresentation & {
     | 'relight'
     | 'hand-product-swap'
     | 'sprite-sheet'
+    | 'paparazzi-me'
   readonly routerId?: never
   readonly workflowId?: never
 }

@@ -7,6 +7,10 @@
     "flag": "workshop-move-anything-app-enabled",
     "reason": "Move anything is a front-end mock while its backend is built; shown only where PostHog turns it on."
   },
+  "apps/paparazzi-me": {
+    "flag": "workshop-paparazzi-me-app-enabled",
+    "reason": "Paparazzi me is a front-end mock while its backend is built; shown only where PostHog turns it on."
+  },
   "apps/relight": {
     "flag": "workshop-relight-app-enabled",
     "reason": "Relight is a front-end mock while its backend is built; shown only where PostHog turns it on."

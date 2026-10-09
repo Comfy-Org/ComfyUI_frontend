@@ -10,7 +10,8 @@ describe('workshopAppHref', () => {
     { app: 'move-anything', href: '/hub/apps/move-anything/' },
     { app: 'relight', href: '/hub/apps/relight/' },
     { app: 'hand-product-swap', href: '/hub/apps/hand-product-swap/' },
-    { app: 'sprite-sheet', href: '/hub/apps/sprite-sheet/' }
+    { app: 'sprite-sheet', href: '/hub/apps/sprite-sheet/' },
+    { app: 'paparazzi-me', href: '/hub/apps/paparazzi-me/' }
   ] as const)('puts $app at $href', ({ app, href }) => {
     expect(workshopAppHref(app, 'en')).toBe(href)
   })
