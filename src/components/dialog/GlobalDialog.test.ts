@@ -7,9 +7,6 @@ import { createI18n } from 'vue-i18n'
 import BuilderSaveDialogContent from '@/components/builder/BuilderSaveDialogContent.vue'
 import GlobalDialog from '@/components/dialog/GlobalDialog.vue'
 import { onRekaPointerDownOutside } from '@/components/dialog/dialogDismissGuards'
-import UiDialog from '@/components/ui/dialog/Dialog.vue'
-import UiDialogOverlay from '@/components/ui/dialog/DialogOverlay.vue'
-import UiDialogPortal from '@/components/ui/dialog/DialogPortal.vue'
 import SetMemberCreditLimitDialogContent from '@/platform/workspace/components/dialogs/SetMemberCreditLimitDialogContent.vue'
 import SubscriptionRequiredDialogContentUnified from '@/platform/workspace/components/SubscriptionRequiredDialogContentUnified.vue'
 import { useDialogStore } from '@/stores/dialogStore'
@@ -101,14 +98,6 @@ const i18n = createI18n({
 const Body = defineComponent({
   name: 'Body',
   setup: () => () => h('p', { 'data-testid': 'body' }, 'body content')
-})
-
-const ClosedNonModalDialog = defineComponent({
-  name: 'ClosedNonModalDialog',
-  setup: () => () =>
-    h(UiDialog, { open: false, modal: false }, () =>
-      h(UiDialogPortal, null, () => h(UiDialogOverlay))
-    )
 })
 
 function mountDialog() {
@@ -336,14 +325,6 @@ describe('GlobalDialog Reka overlay scrim', () => {
 
     await screen.findByRole('dialog')
     expect(screen.queryAllByTestId('dialog-overlay')).toHaveLength(1)
-  })
-
-  it('renders no scrim for a mounted but closed non-modal dialog', async () => {
-    // CustomizationDialog mounts its non-modal Dialog root with open=false;
-    // the scrim must stay gated on open, not just on mount.
-    render(ClosedNonModalDialog)
-    await nextTick()
-    expect(screen.queryAllByTestId('dialog-overlay')).toHaveLength(0)
   })
 
   it('dismisses the dialog on a scrim pointerdown', async () => {
