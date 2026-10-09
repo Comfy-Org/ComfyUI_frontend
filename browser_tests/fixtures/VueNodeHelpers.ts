@@ -279,10 +279,6 @@ export class VueNodeHelpers {
       .filter({ has: widgetLabel })
   }
 
-  getVisibleWidgetTooltip(): Locator {
-    return this.page.getByRole('tooltip')
-  }
-
   /**
    * Select an option from a combo widget on a node.
    */

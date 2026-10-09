@@ -8,7 +8,7 @@ import { Tooltip } from '@e2e/fixtures/components/Tooltip'
 test.describe('Design-system tooltip', { tag: '@canvas' }, () => {
   test.use({ initialSettings: { 'Comfy.Graph.CanvasMenu': true } })
 
-  test('opens on hover, describes its trigger, and closes when the pointer leaves', async ({
+  test('opens on hover without repeating the button name as a description, and closes when the pointer leaves', async ({
     comfyPage
   }) => {
     const menu = new GraphCanvasMenu(comfyPage.page)
@@ -17,9 +17,9 @@ test.describe('Design-system tooltip', { tag: '@canvas' }, () => {
     await menu.fitViewButton.hover()
 
     await expect(tooltip).toBeVisible()
-    await expect(menu.fitViewButton).toHaveAccessibleDescription(/^Fit View/)
+    await expect(menu.fitViewButton).toHaveAccessibleDescription('')
 
-    await comfyPage.canvas.hover({ position: { x: 300, y: 300 } })
+    await comfyPage.canvasOps.moveMouseToEmptyArea()
     await expect(tooltip).toBeHidden()
   })
 
@@ -41,15 +41,19 @@ test.describe('Design-system tooltip', { tag: '@canvas' }, () => {
     const menu = new GraphCanvasMenu(comfyPage.page)
     const tooltip = new Tooltip(comfyPage.page).named(/Minimap/)
 
-    await menu.zoomControlsButton.focus()
-    await comfyPage.page.keyboard.press('Tab')
+    await test.step('keyboard focus opens the tooltip', async () => {
+      await menu.zoomControlsButton.focus()
+      await comfyPage.page.keyboard.press('Tab')
 
-    await expect(menu.minimapButton).toBeFocused()
-    await expect(tooltip).toBeVisible()
+      await expect(menu.minimapButton).toBeFocused()
+      await expect(tooltip).toBeVisible()
+    })
 
-    await comfyPage.page.keyboard.press('Escape')
-    await expect(tooltip).toBeHidden()
-    await expect(menu.minimapButton).toBeFocused()
+    await test.step('Escape closes it and keeps focus', async () => {
+      await comfyPage.page.keyboard.press('Escape')
+      await expect(tooltip).toBeHidden()
+      await expect(menu.minimapButton).toBeFocused()
+    })
   })
 
   test('shares one app-level provider, so a neighbouring tooltip skips the open delay', async ({

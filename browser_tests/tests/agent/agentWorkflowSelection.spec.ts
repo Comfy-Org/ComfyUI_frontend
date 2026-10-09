@@ -4,6 +4,7 @@ import enMessages from '@/locales/en/main.json' with { type: 'json' }
 
 import { agentTest } from '@e2e/fixtures/agentPanelFixture'
 import { AgentPanel } from '@e2e/fixtures/components/AgentPanel'
+import { Tooltip } from '@e2e/fixtures/components/Tooltip'
 import { Topbar } from '@e2e/fixtures/components/Topbar'
 import { workflowSelectionTest } from '@e2e/fixtures/agentWorkflowSelectionFixture'
 
@@ -246,7 +247,7 @@ test.describe(
         '{workflowName}',
         'Unsaved Workflow'
       )
-      const tooltip = page.getByRole('tooltip', { name: reason, exact: true })
+      const tooltip = new Tooltip(page).named(reason)
       const inline = panel.getByRole('button', {
         name: 'mention nodes'
       })
@@ -437,7 +438,7 @@ test.describe(
       })
       await expect(targetMarker).toBeVisible()
       await targetMarker.hover()
-      await expect(page.getByRole('tooltip')).toHaveText(
+      await expect(new Tooltip(page).open).toHaveText(
         enMessages.agent.targetForThisChat
       )
       await expect(
@@ -445,7 +446,7 @@ test.describe(
       ).toBeVisible()
       await expect(targetMarker).toBeVisible()
       await targetTab.getByRole('button', { name: enMessages.g.close }).hover()
-      await expect(page.getByRole('tooltip')).toHaveCount(0)
+      await expect(new Tooltip(page).open).toHaveCount(0)
       await testInfo.attach('agent-target-active', {
         body: await page.getByTestId('topbar-workflow-tabs').screenshot({
           path: testInfo.outputPath('agent-target-active.png')

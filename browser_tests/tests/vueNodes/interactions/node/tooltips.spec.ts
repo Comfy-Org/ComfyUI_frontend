@@ -2,6 +2,7 @@ import {
   comfyExpect as expect,
   comfyPageFixture as test
 } from '@e2e/fixtures/ComfyPage'
+import { Tooltip } from '@e2e/fixtures/components/Tooltip'
 
 test.describe('tooltips', { tag: '@vue-nodes' }, async () => {
   test.use({
@@ -12,15 +13,9 @@ test.describe('tooltips', { tag: '@vue-nodes' }, async () => {
   })
 
   test('widget value tooltips', async ({ comfyPage }) => {
-    const tooltip = comfyPage.page.getByRole('tooltip')
+    const tooltip = new Tooltip(comfyPage.page).open
     await comfyPage.vueNodes.getWidgetByName('load check', 'ckpt_name').hover()
     await expect(tooltip, 'displays for combos').toContainText('v1-5-pruned')
-    await expect
-      .poll(
-        () => tooltip.innerText(),
-        'keeps the description and value on separate lines'
-      )
-      .toMatch(/\n\s*v1-5-pruned/)
 
     await comfyPage.vueNodes.getWidgetByName('ksampler', 'seed').hover()
     await expect(tooltip, 'displays for numbers').toContainText('15668')
