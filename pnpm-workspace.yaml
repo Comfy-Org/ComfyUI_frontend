@@ -186,6 +186,7 @@ allowBuilds:
   vue-demi: false
 
 overrides:
+  '@comfyorg/code-quality>prettier': 3.5.3
   vite: 'catalog:'
   '@tiptap/pm': 3.31.0
   prettier: 3.9.5

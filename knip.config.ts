@@ -24,6 +24,11 @@ const config: KnipConfig = {
       ],
       ignore: ['scripts/registry-census/detection-proof/**']
     },
+    'packages/code-quality': {
+      entry: ['src/{cli,eslint,format,plugin}.ts'],
+      project: ['src/**/*.ts', 'scripts/**/*.ts', 'tests/**/*.ts'],
+      ignoreDependencies: ['fallow', 'prettier']
+    },
     'packages/account-core': {
       project: ['src/**/*.{js,ts}']
     },
