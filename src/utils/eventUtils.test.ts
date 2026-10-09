@@ -101,6 +101,30 @@ describe('fetchDroppedAsset', () => {
     expect(file?.name).toBe('real name.png')
   })
 
+  /* decodeURIComponent throws on a malformed escape, and it runs inside the
+     fetch's try block — so one bad byte in a storage URL used to discard a blob
+     that had already downloaded fine and report it as a failed retrieval. */
+  it('keeps the file when the storage path has a malformed escape', async () => {
+    stubFetch('https://storage/bucket/%E0%A4%A')
+    const file = await fetchDroppedAsset({
+      name: 'display label',
+      uri: 'https://api/assets/abc/content',
+      ref: 'cat.png'
+    })
+    expect(file?.name).toBe('cat.png')
+  })
+
+  it('still yields a file when only the malformed segment could name it', async () => {
+    stubFetch('https://storage/bucket/%E0%A4%A.png')
+    const file = await fetchDroppedAsset({
+      name: 'fallback.bin',
+      uri: 'https://api/assets/abc/content',
+      ref: 'bare-ref'
+    })
+    expect(file).toBeDefined()
+    expect(file?.name).toBe('%E0%A4%A.png')
+  })
+
   it('falls back to the display label when nothing else carries an extension', async () => {
     stubFetch('https://storage/bucket/deadbeef')
     const file = await fetchDroppedAsset({

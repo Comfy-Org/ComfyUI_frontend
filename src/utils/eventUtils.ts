@@ -32,6 +32,24 @@ export function getDroppedAsset(
     : undefined
 }
 
+/**
+ * Last path segment, percent-decoded when it can be.
+ *
+ * `decodeURIComponent` throws on a malformed escape like `%E0%A4%A`, and this
+ * runs inside the fetch's try block — so one bad byte in a URL discarded a
+ * blob that had already downloaded fine and reported it to the user as a
+ * failed retrieval. The raw segment is a worse name, not a reason to drop the
+ * file.
+ */
+function decodedBasename(pathname: string): string {
+  const segment = pathname.split('/').pop() || ''
+  try {
+    return decodeURIComponent(segment)
+  } catch {
+    return segment
+  }
+}
+
 export async function fetchDroppedAsset(
   { name, uri, ref }: DroppedAsset,
   signal?: AbortSignal
@@ -52,7 +70,7 @@ export async function fetchDroppedAsset(
     const named = [
       resolvedUrl.searchParams.get('filename'),
       ref,
-      decodeURIComponent(resolvedUrl.pathname.split('/').pop() || ''),
+      decodedBasename(resolvedUrl.pathname),
       name
     ].find((candidate) => candidate && /\.[a-z0-9]{1,8}$/i.test(candidate))
     return new File([blob], named || name, { type: blob.type })

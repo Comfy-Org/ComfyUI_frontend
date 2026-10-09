@@ -151,9 +151,11 @@ describe('AGENT_ATTACH_ACCEPT', () => {
     expect(offered).toContain('.md')
     expect(offered).toContain('.glb')
     expect(offered).not.toContain('.usdz')
-    for (const extension of offered) {
-      expect(isAgentAttachable(fileNamed(`sample${extension}`))).toBe(true)
-    }
+    expect(
+      offered.filter(
+        (extension) => !isAgentAttachable(fileNamed(`sample${extension}`))
+      )
+    ).toEqual([])
   })
 })
 
