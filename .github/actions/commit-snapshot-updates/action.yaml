@@ -74,19 +74,11 @@ runs:
       run: |
         set -euo pipefail
 
-        if [ ! -d "$DOWNLOAD_DIR" ]; then
-          echo "No rewritten snapshots to merge"
-          exit 0
+        if [ -d "$DOWNLOAD_DIR" ]; then
+          rsync -a --prune-empty-dirs --include='*/' --include='**-snapshots/**.png' --exclude='*' \
+            "$DOWNLOAD_DIR/" "$CONFIG_DIR/"
         fi
 
-        count=$(find "$DOWNLOAD_DIR" -type f | wc -l)
-        echo "Merging ${count} rewritten snapshot(s) into ${CONFIG_DIR}/"
-        if [ "$count" -gt 0 ]; then
-          cp -v -r "$DOWNLOAD_DIR/." "$CONFIG_DIR/" | sed 's/^/  /'
-        fi
-
-    # Flag small rewrites that are likely text-rasterization noise rather than
-    # intentional visual changes.
     - name: Report snapshot diff magnitudes
       id: diff-report
       shell: bash
@@ -139,7 +131,6 @@ runs:
 
           if [ -n "$px" ]; then
             echo "| \`${f}\` | modified | ${px} |" >> "$REPORT"
-            # The threshold is advisory because small changes can be valid.
             if [ "$px" -gt 0 ] && [ "$px" -le 2000 ]; then
               small=$((small + 1))
             fi
@@ -189,7 +180,6 @@ runs:
 
         git add -- "$SNAPSHOT_PATHS"
 
-        # Use cat so backticks and file names remain literal.
         {
           echo "$MESSAGE"
           if [ -n "$SOURCE_RUN_URL" ]; then

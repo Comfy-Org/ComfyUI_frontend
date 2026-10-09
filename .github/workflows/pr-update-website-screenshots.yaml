@@ -1,17 +1,3 @@
-# Updating screenshot baselines for apps/website.
-#
-# The PR's own `CI: Website E2E` run already captured the actual image of
-# every failed screenshot assertion and uploaded them, laid out on their
-# baseline paths, as `website-snapshot-updates-*` artifacts (see
-# scripts/playwright/snapshotUpdatesReporter.ts). The `harvest` job commits
-# those instead of rerunning Playwright. It falls back to a full
-# `--update-snapshots` rerun when that run is missing, did not finish, or
-# predates the harvest artifacts; `/update-website-screenshots full` forces
-# the rerun.
-#
-# pr-update-playwright-expectations.yaml is the same pipeline for the
-# frontend; both are built from the harvest-snapshot-updates,
-# stage-rewritten-snapshots and commit-snapshot-updates actions.
 name: 'PR: Update Website Screenshots'
 
 on:
@@ -19,10 +5,6 @@ on:
     types: [labeled]
   issue_comment:
     types: [created, edited]
-
-concurrency:
-  group: ${{ github.workflow }}-${{ github.event.issue.number || github.event.pull_request.number || github.ref }}
-  cancel-in-progress: false
 
 jobs:
   setup:
@@ -47,12 +29,12 @@ jobs:
         github.event.comment.user.login == 'github-actions[bot]' &&
         github.actor != 'github-actions[bot]' &&
         contains(github.event.comment.body, '<!-- WEBSITE_E2E_STATUS -->') &&
-        contains(github.event.comment.body, '- [x] Update website screenshots') )
+        contains(github.event.comment.body, '- [x] Update website screenshots') &&
+        !contains(github.event.changes.body.from, '- [x] Update website screenshots') )
     outputs:
       pr-number: ${{ steps.pr-info.outputs.pr-number }}
       branch: ${{ steps.pr-info.outputs.branch }}
       head-sha: ${{ steps.pr-info.outputs.head-sha }}
-      requested-mode: ${{ steps.pr-info.outputs.requested-mode }}
     steps:
       - name: Verify sender permissions
         if: >
@@ -74,7 +56,6 @@ jobs:
         uses: actions/github-script@v9
         env:
           PR_NUMBER: ${{ github.event.number || github.event.issue.number }}
-          COMMENT_BODY: ${{ github.event.comment.body }}
         with:
           script: |
             const prNumber = Number(process.env.PR_NUMBER)
@@ -85,10 +66,6 @@ jobs:
             core.setOutput('pr-number', prNumber)
             core.setOutput('branch', pr.head.ref)
             core.setOutput('head-sha', pr.head.sha)
-            // `/update-website-screenshots full` skips the harvest and reruns the suite.
-            const firstLine = (process.env.COMMENT_BODY ?? '').split('\n')[0]
-            const full = /^\/update-website-screenshots\s+full(\s|$)/.test(firstLine)
-            core.setOutput('requested-mode', full ? 'full' : 'auto')
 
   post-starting-comment:
     needs: setup
@@ -117,6 +94,8 @@ jobs:
     needs: setup
     runs-on: ubuntu-latest
     timeout-minutes: 45
+    concurrency:
+      group: ${{ github.workflow }}-${{ needs.setup.outputs.pr-number }}
     permissions:
       contents: read
       actions: read
@@ -125,8 +104,6 @@ jobs:
       run-url: ${{ steps.harvest.outputs.run-url }}
     steps:
       - uses: actions/checkout@v7
-        with:
-          ref: ${{ needs.setup.outputs.branch }}
 
       - name: Harvest rewritten screenshots from the E2E run
         id: harvest
@@ -137,7 +114,7 @@ jobs:
           artifact-prefix: website-snapshot-updates-
           job-prefix: website-e2e-shard
           output-artifact: website-rewritten-snapshots-harvested
-          requested-mode: ${{ needs.setup.outputs.requested-mode }}
+          comment-body: ${{ github.event.comment.body }}
           wait-minutes: '30'
           token: ${{ secrets.GITHUB_TOKEN }}
 
@@ -183,9 +160,17 @@ jobs:
           path: apps/website/playwright-report/
           retention-days: 14
 
+      - name: Checkout snapshot actions from the trusted ref
+        if: steps.update-screenshots.outcome == 'success'
+        uses: actions/checkout@v7
+        with:
+          path: trusted
+          sparse-checkout: .github/actions
+          persist-credentials: false
+
       - name: Stage rewritten screenshots
         if: steps.update-screenshots.outcome == 'success'
-        uses: ./.github/actions/stage-rewritten-snapshots
+        uses: ./trusted/.github/actions/stage-rewritten-snapshots
         with:
           config-dir: apps/website
           artifact-name: website-rewritten-snapshots-full
@@ -218,9 +203,16 @@ jobs:
           ref: ${{ needs.setup.outputs.branch }}
           token: ${{ secrets.PR_GH_TOKEN }}
 
+      - name: Checkout snapshot actions from the trusted ref
+        uses: actions/checkout@v7
+        with:
+          path: trusted
+          sparse-checkout: .github/actions
+          persist-credentials: false
+
       - name: Commit updated screenshots
         id: commit
-        uses: ./.github/actions/commit-snapshot-updates
+        uses: ./trusted/.github/actions/commit-snapshot-updates
         with:
           artifact-pattern: website-rewritten-snapshots-*
           config-dir: apps/website

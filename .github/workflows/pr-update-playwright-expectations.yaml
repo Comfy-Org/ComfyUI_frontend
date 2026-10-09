@@ -1,16 +1,4 @@
-# Setting test expectation screenshots for Playwright.
-#
-# The PR's own `CI: Tests E2E` run already captured the actual image of every
-# failed screenshot assertion and uploaded them, laid out on their golden
-# paths, as `snapshot-updates-*` artifacts (see
-# scripts/playwright/snapshotUpdatesReporter.ts). The `harvest` job commits
-# those instead of rerunning Playwright. It falls back to a full
-# `--update-snapshots` rerun when that run is missing, did not finish, or
-# predates the harvest artifacts; `/update-playwright full` forces the rerun.
-#
-# pr-update-website-screenshots.yaml is the same pipeline for apps/website;
-# both are built from the harvest-snapshot-updates, stage-rewritten-snapshots
-# and commit-snapshot-updates actions.
+# Setting test expectation screenshots for Playwright
 name: 'PR: Update Playwright Expectations'
 
 on:
@@ -19,19 +7,9 @@ on:
   issue_comment:
     types: [created, edited]
 
-# github.ref is the default branch for issue_comment events. All triggers use
-# the PR number because they push snapshots to the same branch. Runs queue
-# rather than cancel: every bot edit of the PR report comment creates a
-# (skipped) run in this group, which must not abort an update in flight.
-concurrency:
-  group: ${{ github.workflow }}-${{ github.event.issue.number || github.event.number || github.ref }}
-  cancel-in-progress: false
-
 jobs:
   setup:
     runs-on: ubuntu-latest
-    # Trigger: (1) label, (2) /slash-command, or (3) the "Update Playwright
-    # expectations" checkbox in the Playwright section of the PR report
     if: >
       ( github.event_name == 'pull_request' && github.event.label.name == 'New Browser Test Expectations' ) ||
       ( github.event.issue.pull_request &&
@@ -46,21 +24,19 @@ jobs:
         github.event_name == 'issue_comment' &&
         github.event.comment.user.login == 'github-actions[bot]' &&
         github.actor != 'github-actions[bot]' &&
-        contains(github.event.comment.body, '<!-- PLAYWRIGHT_E2E_STATUS -->') &&
-        contains(github.event.comment.body, '- [x] Update Playwright expectations') )
+        contains(github.event.comment.body, '<!-- section:playwright:start -->') &&
+        contains(github.event.comment.body, '- [x] Update Playwright expectations') &&
+        !contains(github.event.changes.body.from, '- [x] Update Playwright expectations') )
     outputs:
       pr-number: ${{ steps.pr-info.outputs.pr-number }}
       branch: ${{ steps.pr-info.outputs.branch }}
       head-sha: ${{ steps.pr-info.outputs.head-sha }}
-      requested-mode: ${{ steps.pr-info.outputs.requested-mode }}
       comment-id: ${{ steps.find-update-comment.outputs.comment-id }}
     steps:
-      # Anyone who can edit the bot's comment can tick the box; only
-      # collaborators may push baselines.
       - name: Verify sender permissions
         if: >
           github.event_name == 'issue_comment' &&
-          contains(github.event.comment.body, '<!-- PLAYWRIGHT_E2E_STATUS -->')
+          contains(github.event.comment.body, '<!-- section:playwright:start -->')
         uses: actions/github-script@v9
         with:
           script: |
@@ -77,7 +53,6 @@ jobs:
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           PR_NUMBER: ${{ github.event.number || github.event.issue.number }}
-          COMMENT_BODY: ${{ github.event.comment.body }}
         run: |
           set -euo pipefail
 
@@ -87,13 +62,6 @@ jobs:
               --json headRefName,headRefOid \
               --jq '"branch=\(.headRefName)\nhead-sha=\(.headRefOid)"'
           } >> "$GITHUB_OUTPUT"
-
-          # `/update-playwright full` skips the harvest and reruns the suite.
-          if printf '%s\n' "$COMMENT_BODY" | head -1 | grep -qE '^/update-playwright[[:space:]]+full([[:space:]]|$)'; then
-            echo "requested-mode=full" >> "$GITHUB_OUTPUT"
-          else
-            echo "requested-mode=auto" >> "$GITHUB_OUTPUT"
-          fi
 
       - name: Find Update Comment
         uses: peter-evans/find-comment@b30e6a3c0ed37e7c023ccd3f1db5c6c0b0c23aad # v4.0.0
@@ -117,6 +85,8 @@ jobs:
     needs: setup
     runs-on: ubuntu-latest
     timeout-minutes: 60
+    concurrency:
+      group: ${{ github.workflow }}-${{ needs.setup.outputs.pr-number }}
     permissions:
       contents: read
       actions: read
@@ -126,28 +96,6 @@ jobs:
     steps:
       - name: Checkout repository
         uses: actions/checkout@v7
-        with:
-          ref: ${{ needs.setup.outputs.branch }}
-
-      # Other workflow changes still come from the default branch on this path.
-      - name: Warn when this workflow differs from the default branch
-        if: github.event_name == 'issue_comment'
-        shell: bash
-        env:
-          DEFAULT_BRANCH: ${{ github.event.repository.default_branch }}
-        run: |
-          set -euo pipefail
-
-          workflow='.github/workflows/pr-update-playwright-expectations.yaml'
-
-          if ! git fetch --depth=1 origin "$DEFAULT_BRANCH"; then
-            echo "::notice::Could not fetch ${DEFAULT_BRANCH}; skipping workflow drift check"
-            exit 0
-          fi
-
-          if ! git diff --quiet FETCH_HEAD -- "$workflow"; then
-            echo "::warning::This PR modifies ${workflow}, but /update-playwright runs the ${DEFAULT_BRANCH} copy of it. Only the container image is taken from the PR; other changes to this workflow are NOT in effect for this run. Use the 'New Browser Test Expectations' label instead to run the PR's own copy."
-          fi
 
       - name: Harvest rewritten snapshots from the E2E run
         id: harvest
@@ -158,13 +106,15 @@ jobs:
           artifact-prefix: snapshot-updates-
           job-prefix: playwright-tests
           output-artifact: snapshots-shard-harvested
-          requested-mode: ${{ needs.setup.outputs.requested-mode }}
+          comment-body: ${{ github.event.comment.body }}
           token: ${{ secrets.GITHUB_TOKEN }}
 
   build:
     needs: [setup, harvest]
     if: needs.harvest.outputs.mode == 'full'
     runs-on: ubuntu-latest
+    permissions:
+      contents: read
     outputs:
       container-image: ${{ steps.container-image.outputs.image }}
     steps:
@@ -200,6 +150,26 @@ jobs:
 
           echo "Regenerating snapshots with ${images[0]} (resolved from the PR branch)"
           echo "image=${images[0]}" >> "$GITHUB_OUTPUT"
+
+      # Other workflow changes still come from the default branch on this path.
+      - name: Warn when this workflow differs from the default branch
+        if: github.event_name == 'issue_comment'
+        shell: bash
+        env:
+          DEFAULT_BRANCH: ${{ github.event.repository.default_branch }}
+        run: |
+          set -euo pipefail
+
+          workflow='.github/workflows/pr-update-playwright-expectations.yaml'
+
+          if ! git fetch --depth=1 origin "$DEFAULT_BRANCH"; then
+            echo "::notice::Could not fetch ${DEFAULT_BRANCH}; skipping workflow drift check"
+            exit 0
+          fi
+
+          if ! git diff --quiet FETCH_HEAD -- "$workflow"; then
+            echo "::warning::This PR modifies ${workflow}, but /update-playwright runs the ${DEFAULT_BRANCH} copy of it. Only the container image is taken from the PR; other changes to this workflow are NOT in effect for this run. Use the 'New Browser Test Expectations' label instead to run the PR's own copy."
+          fi
 
       - name: Setup frontend
         uses: ./.github/actions/setup-frontend
@@ -261,9 +231,16 @@ jobs:
         run: pnpm exec playwright test --update-snapshots --reporter=json,html --grep @screenshot ${{ matrix.shard == 'cloud' && '--project=cloud' || format('--grep-invert @cloud --shard={0}/4', matrix.shard) }}
         continue-on-error: true
 
+      - name: Checkout snapshot actions from the trusted ref
+        uses: actions/checkout@v7
+        with:
+          path: trusted
+          sparse-checkout: .github/actions
+          persist-credentials: false
+
       - name: Stage changed snapshot files
         id: changed-snapshots
-        uses: ./.github/actions/stage-rewritten-snapshots
+        uses: ./trusted/.github/actions/stage-rewritten-snapshots
         with:
           artifact-name: snapshots-shard-${{ matrix.shard }}
 
@@ -332,8 +309,6 @@ jobs:
           path: ./playwright-report/
           retention-days: 30
 
-  # Merge snapshots and commit. Runs after the harvest alone, or after the
-  # full rerun when the harvest fell back to it.
   merge-and-commit:
     needs: [setup, harvest, build, update-snapshots-sharded]
     if: >-
@@ -353,9 +328,16 @@ jobs:
           ref: ${{ needs.setup.outputs.branch }}
           token: ${{ secrets.PR_GH_TOKEN }}
 
+      - name: Checkout snapshot actions from the trusted ref
+        uses: actions/checkout@v7
+        with:
+          path: trusted
+          sparse-checkout: .github/actions
+          persist-credentials: false
+
       - name: Commit updated expectations
         id: commit
-        uses: ./.github/actions/commit-snapshot-updates
+        uses: ./trusted/.github/actions/commit-snapshot-updates
         with:
           artifact-pattern: snapshots-shard-*
           snapshot-paths: browser_tests/
