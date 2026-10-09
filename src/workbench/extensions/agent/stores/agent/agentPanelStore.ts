@@ -348,7 +348,6 @@ export const useAgentPanelStore = defineStore('agentPanel', () => {
     return creditTransitionNotice.value !== before
   }
 
-  /** Records a defined Agent-scoped funds read against `identity`. */
   function observeAgentScopedFunds(
     identity: string,
     scopedHasFunds: boolean
