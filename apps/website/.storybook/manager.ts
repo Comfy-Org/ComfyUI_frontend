@@ -1,7 +1,7 @@
 import { addons } from 'storybook/manager-api'
 import { create } from 'storybook/theming'
-import { defaultConfig } from 'storybook-addon-tag-badges/manager-helpers';
-import type { TagBadgeParameters } from 'storybook-addon-tag-badges/manager-helpers';
+import { defaultConfig } from 'storybook-addon-tag-badges/manager-helpers'
+import type { TagBadgeParameters } from 'storybook-addon-tag-badges/manager-helpers'
 
 const comfyTheme = create({
   base: 'dark',
