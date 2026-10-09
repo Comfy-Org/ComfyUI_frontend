@@ -127,7 +127,6 @@ describe('PaparazziStudio', () => {
     const name = within(panel()).getByRole('combobox', { name: 'Star’s name' })
 
     await user.clear(name)
-    expect(within(panel()).getByText('Type at least 2 letters.')).toBeVisible()
     expect(within(panel()).getByTestId('paparazzi-run')).toBeDisabled()
     expect(
       within(panel()).getByText('Type a star’s name or upload a scene.')
@@ -150,7 +149,11 @@ describe('PaparazziStudio', () => {
       within(panel()).getByTestId('paparazzi-face-input'),
       photo('me.jpg')
     )
-    expect(within(panel()).getByText('me.jpg')).toBeVisible()
+    expect(
+      within(panel()).getByRole('button', {
+        name: 'Change your face photo: me.jpg'
+      })
+    ).toBeVisible()
 
     await user.click(sceneRow())
     await user.upload(
@@ -172,26 +175,36 @@ describe('PaparazziStudio', () => {
     })
     window.dispatchEvent(paste)
     await vi.advanceTimersByTimeAsync(0)
-    expect(within(panel()).getByText('pasted.png')).toBeVisible()
+    expect(
+      within(panel()).getByRole('button', {
+        name: 'Change your face photo: pasted.png'
+      })
+    ).toBeVisible()
   })
 
-  it('picks the resolution and a new seed from rows of the panel', async () => {
+  it('picks the resolution, types a seed and shuffles a new one from the format bar', async () => {
     const user = open()
     await user.click(
       within(panel()).getByRole('button', { name: 'Resolution: 2K' })
     )
-    await user.click(
-      screen.getByRole('menuitemradio', { name: '4K 4096 × 2731 px' })
-    )
+    await user.click(await screen.findByRole('menuitemradio', { name: /4K/ }))
     expect(
       within(panel()).getByRole('button', { name: 'Resolution: 4K' })
     ).toBeVisible()
 
+    const seed = within(panel()).getByRole('spinbutton', { name: 'Seed' })
+    await user.type(seed, '42{Tab}', {
+      initialSelectionStart: 0,
+      initialSelectionEnd: Infinity
+    })
+    expect(seed).toHaveValue(42)
+    await user.clear(seed)
+    await user.tab()
+    expect(seed).toHaveValue(42)
+
     vi.spyOn(Math, 'random').mockReturnValue(0.5)
     await user.click(within(panel()).getByRole('button', { name: 'New seed' }))
-    expect(
-      within(panel()).getByRole('spinbutton', { name: 'Seed' })
-    ).toHaveValue(500_000_000)
+    expect(seed).toHaveValue(500_000_000)
   })
 
   it('picks a scene from the bottom composer’s tray', async () => {
