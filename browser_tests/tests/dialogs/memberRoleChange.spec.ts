@@ -12,6 +12,7 @@ import {
   MEMBER_JOHN,
   TEAM_BILLING_STATUS,
   TEAM_WORKSPACE,
+  TEAM_MEMBER_WORKSPACE,
   VIEWER
 } from '@e2e/fixtures/data/cloudWorkspace'
 import { CloudWorkspaceMockHelper } from '@e2e/fixtures/helpers/CloudWorkspaceMockHelper'
@@ -79,6 +80,45 @@ test.describe('Members plan gating', { tag: '@cloud' }, () => {
     await expect(
       page.getByRole('heading', { name: 'Uninvite this person?' })
     ).toBeVisible()
+  })
+
+  test('team member can view and search the returned roster without management controls', async ({
+    page
+  }) => {
+    await new CloudWorkspaceMockHelper(page).setup(
+      DEFAULT_TEAM_MEMBERS.map((member) =>
+        member.id === VIEWER.id ? { ...member, role: 'member' } : member
+      ),
+      TEAM_MEMBER_WORKSPACE,
+      TEAM_BILLING_STATUS,
+      { can_manage_members: false, can_invite_members: false }
+    )
+    const members = new MembersSettingsPanel(page)
+    await members.open(APP_URL)
+    const { content } = members
+
+    await expect(
+      content.getByText(MEMBER_JANE.email, { exact: true })
+    ).toBeVisible()
+    await expect(content.getByText('Role', { exact: true })).toBeVisible()
+    await expect(content.getByRole('button', { name: /^Pending/ })).toHaveCount(
+      0
+    )
+    await expect(
+      content.getByRole('button', { name: 'Invite member' })
+    ).toHaveCount(0)
+    await expect(
+      members.menuButton(members.memberRow(MEMBER_JANE.email))
+    ).toHaveCount(0)
+    const search = content.getByRole('combobox')
+    await expect(search).toBeVisible()
+    await search.fill(MEMBER_JANE.email)
+    await expect(
+      content.getByText(MEMBER_JANE.email, { exact: true })
+    ).toBeVisible()
+    await expect(
+      content.getByText(MEMBER_JOHN.email, { exact: true })
+    ).toHaveCount(0)
   })
 
   test('personal workspace with a Team plan gets member management', async ({

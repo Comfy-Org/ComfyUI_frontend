@@ -96,7 +96,10 @@
         <div class="min-h-0 flex-1 overflow-y-auto" @scroll="handlePanelScroll">
           <!-- Table Header with Tab Buttons and Column Headers -->
           <div
-            v-if="uiConfig.showMembersList && showViewTabs"
+            v-if="
+              uiConfig.showMembersList &&
+              (showViewTabs || (isCloud && hasMultipleMembers))
+            "
             :class="
               cn(
                 'sticky -top-px z-10 grid w-full items-center bg-base-background px-2 pt-[calc(--spacing(2)+1px)] pb-2',
@@ -184,7 +187,7 @@
 
             <template v-else>
               <MemberListItem
-                v-for="member in visibleMembers"
+                v-for="member in filteredMembers"
                 :key="member.id"
                 :member="member"
                 :is-current-user="isCurrentUser(member)"
@@ -346,12 +349,6 @@ const showsEndedUpsell = computed(
   () => isPlanEnded.value && !isInPersonalWorkspace.value
 )
 
-const visibleMembers = computed(() =>
-  !isCloud || permissions.value.canViewOtherMembers
-    ? filteredMembers.value
-    : filteredMembers.value.filter(isCurrentUser)
-)
-
 const emptyStateMessage = computed(() => {
   if (!uiConfig.value.showMembersList) return null
   if (!membersLoaded.value) return null
@@ -362,7 +359,7 @@ const emptyStateMessage = computed(() => {
     !hasMultipleMembers.value
   )
     return null
-  if (visibleMembers.value.length > 0) return null
+  if (filteredMembers.value.length > 0) return null
 
   const query = searchQuery.value.trim()
   return query

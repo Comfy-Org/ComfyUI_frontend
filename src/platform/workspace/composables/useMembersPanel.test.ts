@@ -528,7 +528,7 @@ describe('useMembersPanel', () => {
       { canManage: false, maxSeats: 73, status: 'active' as const },
       { canManage: false, maxSeats: 73, status: 'ended' as const }
     ])(
-      'uses server management visibility with $canManage permission, $maxSeats seats and $status status',
+      'renders a successful roster with $canManage management, $maxSeats seats and $status status',
       async ({ canManage, maxSeats, status }) => {
         useBillingCapabilities().canManageMembers = computed(() => canManage)
         mockMaxSeats.value = maxSeats
@@ -538,13 +538,14 @@ describe('useMembersPanel', () => {
 
         const panel = await setup()
 
-        expect(panel.permissions.value.canViewOtherMembers).toBe(canManage)
+        expect(panel.permissions.value.canViewOtherMembers).toBe(true)
         expect(panel.permissions.value.canViewPendingInvites).toBe(canManage)
-        expect(panel.uiConfig.value.showMembersList).toBe(canManage)
+        expect(panel.uiConfig.value.showMembersList).toBe(true)
         expect(panel.uiConfig.value.showPendingTab).toBe(canManage)
-        expect(panel.uiConfig.value.showRoleColumn).toBe(canManage)
-        expect(panel.showSearch.value).toBe(canManage)
+        expect(panel.uiConfig.value.showRoleColumn).toBe(true)
+        expect(panel.showSearch.value).toBe(true)
         expect(panel.showViewTabs.value).toBe(canManage)
+        expect(panel.memberMenuItems(createMember()).length > 0).toBe(canManage)
       }
     )
 
@@ -600,6 +601,60 @@ describe('useMembersPanel', () => {
       }
     )
 
+    it.for([false, true])(
+      'uses read readiness for roster visibility (members loaded: %s)',
+      async (loaded) => {
+        workspaceType = 'personal'
+        updateWorkspaceStore()
+        workspaceStore.workspaces[0] = {
+          ...workspaceStore.workspaces[0],
+          membersLoaded: loaded
+        }
+        useBillingCapabilities().canManageMembers = computed(() => false)
+        const panel = await setup()
+
+        expect(panel.permissions.value.canViewOtherMembers).toBe(loaded)
+        expect(panel.uiConfig.value.showMembersList).toBe(loaded)
+        expect(panel.showSearch.value).toBe(false)
+      }
+    )
+
+    it.for([false, true])(
+      'keeps pending invitations available independently of personal roster readiness (loaded: %s)',
+      async (loaded) => {
+        mockMembers.value = [
+          createMember({ role: 'owner', email: 'owner@example.com' })
+        ]
+        mockPendingInvites.value = [createInvite()]
+        workspaceStore.workspaces[0] = {
+          ...workspaceStore.workspaces[0],
+          membersLoaded: loaded
+        }
+        const panel = await setup()
+
+        expect(panel.uiConfig.value.showMembersList).toBe(false)
+        expect(panel.permissions.value.canViewPendingInvites).toBe(true)
+        expect(panel.uiConfig.value.showPendingTab).toBe(true)
+        expect(panel.showViewTabs.value).toBe(true)
+      }
+    )
+
+    it('keeps a successful personal single-member roster minimal regardless of seats or management', async () => {
+      workspaceType = 'personal'
+      mockMembers.value = [
+        createMember({ role: 'owner', email: 'owner@example.com' })
+      ]
+      mockMaxSeats.value = 73
+      useBillingCapabilities().canManageMembers = computed(() => true)
+      const panel = await setup()
+
+      expect(panel.permissions.value.canViewOtherMembers).toBe(true)
+      expect(panel.uiConfig.value.showMembersList).toBe(false)
+      expect(panel.uiConfig.value.showRoleColumn).toBe(false)
+      expect(panel.showSearch.value).toBe(false)
+      expect(panel.showViewTabs.value).toBe(false)
+    })
+
     it('preserves the credit column layout for a Team owner', async () => {
       mockUiConfig.value = {
         ...mockUiConfig.value,
@@ -620,6 +675,9 @@ describe('useMembersPanel', () => {
     })
 
     it('uses the single-user member layout for a personal plan', async () => {
+      mockMembers.value = [
+        createMember({ role: 'owner', email: 'owner@example.com' })
+      ]
       useBillingCapabilities().canManageMembers = computed(() => false)
       useBillingCapabilities().canInviteMembers = computed(() => false)
       mockIsTeamPlan.value = false
@@ -1036,14 +1094,14 @@ describe('useMembersPanel', () => {
       expect(panel.showViewTabs.value).toBe(true)
     })
 
-    it('hides Team member controls for a personal plan', async () => {
+    it('shows a successfully returned personal roster without management controls', async () => {
       useBillingCapabilities().canManageMembers = computed(() => false)
       mockIsTeamPlan.value = false
       mockMaxSeats.value = 1
       mockMembers.value = [createMember(), createMember({ id: '2' })]
       const panel = await setup()
       expect(panel.showViewTabs.value).toBe(false)
-      expect(panel.showSearch.value).toBe(false)
+      expect(panel.showSearch.value).toBe(true)
     })
   })
 

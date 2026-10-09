@@ -403,13 +403,17 @@ describe('MembersPanelContent', () => {
       { maxSeats: 1, ended: false },
       { maxSeats: 73, ended: true }
     ])(
-      'hides other loaded members when visibility is denied ($maxSeats seats, ended: $ended)',
+      'renders the returned roster without management ($maxSeats seats, ended: $ended)',
       ({ maxSeats, ended }) => {
         mockMaxSeats.value = maxSeats
         mockIsPlanEnded.value = ended
         mockIsInPersonalWorkspace.value = true
-        mockPermissions.value.canViewOtherMembers = false
+        mockPermissions.value.canViewOtherMembers = true
         mockPermissions.value.canManageMembers = false
+        mockPermissions.value.canViewPendingInvites = false
+        mockShowViewTabs.value = false
+        mockUiConfig.value.showRoleColumn = true
+        mockUiConfig.value.showPendingTab = false
         mockFilteredMembers.value = [
           createMember({
             id: 'self',
@@ -423,8 +427,14 @@ describe('MembersPanelContent', () => {
         renderComponent()
 
         expect(screen.getByText('Owner User')).toBeInTheDocument()
-        expect(screen.queryByText('Alice')).not.toBeInTheDocument()
-        expect(screen.queryByText('Bob')).not.toBeInTheDocument()
+        expect(screen.getByText('Alice')).toBeInTheDocument()
+        expect(screen.getByText('Bob')).toBeInTheDocument()
+        expect(
+          screen.getByText('workspacePanel.members.columns.role')
+        ).toBeInTheDocument()
+        expect(
+          screen.queryByRole('button', { name: /Pending/ })
+        ).not.toBeInTheDocument()
       }
     )
 
@@ -1041,6 +1051,7 @@ describe('MembersPanelContent', () => {
     })
 
     it('hides the view tabs for a lone owner', () => {
+      mockHasMultipleMembers.value = false
       mockShowViewTabs.value = false
       renderComponent()
       expect(

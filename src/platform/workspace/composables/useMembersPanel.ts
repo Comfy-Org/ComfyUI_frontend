@@ -130,7 +130,7 @@ export function useMembersPanel() {
     return {
       ...workspacePermissions.value,
       canViewOtherMembers: isCloud
-        ? canManage
+        ? membersLoaded.value
         : hasMemberSeats.value || canManage,
       canViewPendingInvites: canManage,
       canInviteMembers: isCloud ? canInviteMembers.value : canManage,
@@ -139,10 +139,13 @@ export function useMembersPanel() {
     }
   })
 
+  const hasMultipleMembers = computed(() => members.value.length > 1)
+
   const uiConfig = computed(() => {
     if (
       isCloud
-        ? !permissions.value.canManageMembers
+        ? !membersLoaded.value ||
+          (isInPersonalWorkspace.value && members.value.length === 1)
         : !hasMemberSeats.value &&
           !isPlanEnded.value &&
           !permissions.value.canManageMembers
@@ -150,7 +153,7 @@ export function useMembersPanel() {
       return {
         ...workspaceUiConfig.value,
         showMembersList: false,
-        showPendingTab: false,
+        showPendingTab: isCloud && permissions.value.canViewPendingInvites,
         showSearch: false,
         showRoleColumn: false,
         showCreditsColumn: false,
@@ -188,8 +191,6 @@ export function useMembersPanel() {
       headerGridCols: 'grid-cols-[1fr_auto]'
     }
   })
-
-  const hasMultipleMembers = computed(() => members.value.length > 1)
 
   const showSearch = computed(
     () => uiConfig.value.showSearch && hasMultipleMembers.value
