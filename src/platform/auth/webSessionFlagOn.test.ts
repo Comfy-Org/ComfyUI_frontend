@@ -64,6 +64,7 @@ import { refreshRemoteConfig } from '@/platform/remoteConfig/refreshRemoteConfig
 import { remoteConfig } from '@/platform/remoteConfig/remoteConfig'
 import { useToast } from '@/components/ui/toast/toastStore'
 import { workspaceApi } from '@/platform/workspace/api/workspaceApi'
+import { installWorkspaceApiAuth } from '@/platform/workspace/api/workspaceApiAuth'
 import { NoWorkspaceAccessError } from '@/platform/workspace/api/workspaceApiError'
 import {
   getGlobalSetting,
@@ -180,6 +181,7 @@ await import('@/extensions/core/cloudSessionCookie')
 const { default: router } = await import('@/router')
 
 installCloudApiAuth()
+installWorkspaceApiAuth()
 
 const TEN_MINUTES_MS = 10 * 60 * 1000
 
