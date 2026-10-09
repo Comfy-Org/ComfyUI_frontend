@@ -65,7 +65,16 @@ function isNavItemActive(navItem: NavItem, path: string): boolean {
           </NavigationMenuTrigger>
           <NavigationMenuContent class="w-auto" data-testid="nav-dropdown">
             <div class="w-max">
-              <ul class="flex gap-16">
+              <ul
+                :class="
+                  cn(
+                    'flex',
+                    navItem.columns.some((column) => column.description)
+                      ? 'gap-10'
+                      : 'gap-16'
+                  )
+                "
+              >
                 <NavFeaturedCard
                   v-if="navItem.featured"
                   :featured="navItem.featured"
