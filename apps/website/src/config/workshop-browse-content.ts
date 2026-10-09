@@ -223,6 +223,11 @@ export function modelSummaryFor(
     : undefined
 }
 
+function resolutionsFor(catalogId: string) {
+  const resolutions = resolutionsIn(workshopContract(catalogId)?.inputSchema)
+  return resolutions.length ? { resolutions } : {}
+}
+
 const browseModels: readonly RouterWorkshopModel[] = contentSources.map(
   ({ entry, overlay, binding, record }) => {
     const useCases = [
@@ -247,9 +252,6 @@ const browseModels: readonly RouterWorkshopModel[] = contentSources.map(
       )?.size
     })
     const provider = providerName(entry.provider)
-    const resolutions = resolutionsIn(
-      workshopContract(record.catalogId)?.inputSchema
-    )
     const summary = modelSummaryFor(
       editorialSummaries.get(slug),
       entry.description,
@@ -269,7 +271,7 @@ const browseModels: readonly RouterWorkshopModel[] = contentSources.map(
       task: taskForUseCases(useCases),
       useCases,
       capabilities: entry.tags,
-      ...(resolutions.length ? { resolutions } : {}),
+      ...resolutionsFor(record.catalogId),
       ...(thumbnail
         ? {
             thumbnailUrl: thumbnail.url,

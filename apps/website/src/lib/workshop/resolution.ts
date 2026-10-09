@@ -34,26 +34,31 @@ export function normalizeResolution(raw: string): Resolution | undefined {
   return RESOLUTIONS.find((resolution) => resolution === label)
 }
 
+function resolutionOptions(node: object, key: string | undefined) {
+  const options = 'enum' in node ? node.enum : undefined
+  if (!key || !RESOLUTION_KEYS.has(key) || !Array.isArray(options)) return []
+  return options.flatMap((option) =>
+    typeof option === 'string' ? (normalizeResolution(option) ?? []) : []
+  )
+}
+
+function collect(
+  node: unknown,
+  key: string | undefined,
+  found: Set<Resolution>
+) {
+  if (!node || typeof node !== 'object') return
+  for (const resolution of resolutionOptions(node, key)) found.add(resolution)
+  const children = Array.isArray(node)
+    ? node.map((child): [undefined, unknown] => [undefined, child])
+    : Object.entries(node)
+  for (const [childKey, child] of children) collect(child, childKey, found)
+}
+
 /** The resolutions a Router input schema offers, highest first. */
 export function resolutionsIn(schema: unknown): Resolution[] {
   const found = new Set<Resolution>()
-  const walk = (node: unknown, key?: string) => {
-    if (!node || typeof node !== 'object') return
-    if (Array.isArray(node)) {
-      for (const item of node) walk(item)
-      return
-    }
-    const entries = Object.entries(node)
-    const options = (node as { enum?: unknown }).enum
-    if (key && RESOLUTION_KEYS.has(key) && Array.isArray(options))
-      for (const option of options) {
-        const resolution =
-          typeof option === 'string' ? normalizeResolution(option) : undefined
-        if (resolution) found.add(resolution)
-      }
-    for (const [childKey, child] of entries) walk(child, childKey)
-  }
-  walk(schema)
+  collect(schema, undefined, found)
   return RESOLUTIONS.filter((resolution) => found.has(resolution))
 }
 

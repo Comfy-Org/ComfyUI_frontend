@@ -23,7 +23,6 @@ import type {
 } from '@/config/models-catalogue'
 import {
   parseCatalogSearch,
-  SORT_ORDERS,
   countByUseCase,
   sortWorkshopModels
 } from '@/config/models-catalogue'
@@ -57,9 +56,7 @@ import { MODELS_CATALOGUE_ID } from '@/lib/workshop/models-hub'
 import { shelfOf } from '@/lib/workshop/shelf-use-cases'
 import { sectionTitleKeyFor } from '@/lib/workshop/section-title'
 import type { FacetMenuOption } from './WorkshopFilterMenu.vue'
-import WorkshopFilterMenu from './WorkshopFilterMenu.vue'
-import BestForMenu from '@/components/workshop/models-hub/BestForMenu.vue'
-import ResolutionMenu from '@/components/workshop/models-hub/ResolutionMenu.vue'
+import ModelsToolbarMenus from '@/components/workshop/models-hub/ModelsToolbarMenus.vue'
 import type { Resolution } from '@/lib/workshop/resolution'
 import {
   parseResolution,
@@ -74,7 +71,6 @@ import ModelTabs from '@/components/workshop/explorer/ModelTabs.vue'
 import ModelsExploreHero from '@/components/workshop/models-hub/ModelsExploreHero.vue'
 import CatalogueShowMore from './CatalogueShowMore.vue'
 import WorkshopSearchField from './WorkshopSearchField.vue'
-import WorkshopSortMenu from './WorkshopSortMenu.vue'
 
 const CompareView = defineAsyncComponent(
   () => import('@/components/workshop/explorer/compare/CompareView.vue')
@@ -382,36 +378,17 @@ function rememberModel(model: WorkshopModel, event: MouseEvent) {
               class="min-w-0 flex-1 sm:min-w-48"
             />
 
-            <div
-              class="flex items-center gap-2 max-sm:order-last max-sm:-mx-1 max-sm:basis-full max-sm:overflow-x-auto max-sm:px-1"
-              data-testid="workshop-dropdowns"
-            >
-              <BestForMenu
-                v-if="useCaseOptions.length"
-                v-model="selectedUseCases"
-                :options="useCaseOptions"
-                :locale
-                data-design-decision="models-filters"
-              />
-              <ResolutionMenu
-                v-if="resolutionOptions.length"
-                v-model="selectedResolution"
-                :options="resolutionOptions"
-                :locale
-              />
-            </div>
-
-            <div class="flex items-center gap-2" data-testid="workshop-filters">
-              <WorkshopFilterMenu
-                v-if="accessOptions.length"
-                v-model:access="selectedAccess"
-                :access-options="accessOptions"
-                :result-count
-                :locale
-              />
-
-              <WorkshopSortMenu v-model="sort" :orders="SORT_ORDERS" :locale />
-            </div>
+            <ModelsToolbarMenus
+              v-model:use-cases="selectedUseCases"
+              v-model:resolution="selectedResolution"
+              v-model:access="selectedAccess"
+              v-model:sort="sort"
+              :use-case-options
+              :resolution-options
+              :access-options
+              :result-count
+              :locale
+            />
           </div>
 
           <div
