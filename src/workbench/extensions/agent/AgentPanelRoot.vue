@@ -24,6 +24,7 @@ import type {
   AgentFreeUseNoticeMetadata,
   AgentPaywallSurface,
   AgentRunApprovalDecision,
+  AgentStarterPromptAssignment,
   AgentStopMethod
 } from '@/platform/telemetry/types'
 import { useSettingStore } from '@/platform/settings/settingStore'
@@ -1440,6 +1441,14 @@ async function consentAllowsDraftSubmission(
   return consentAccepted.value || (await consentAllowsSubmission(submissionId))
 }
 
+function starterPromptFeatureProperty(
+  assignment: AgentStarterPromptAssignment | undefined
+): Partial<
+  Record<'$feature/agent-starter-prompt-set', AgentStarterPromptAssignment>
+> {
+  return assignment ? { '$feature/agent-starter-prompt-set': assignment } : {}
+}
+
 const { submit: onSend } = useAgentDraftSubmission({
   canSubmit: () => !workflowSelecting.value && !isSending.value,
   onSubmit: agentPanelStore.retainWorkflowTarget,
@@ -1466,11 +1475,7 @@ const { submit: onSend } = useAgentDraftSubmission({
       input_method: meta.inputMethod,
       starter_prompt_id: meta.starterPrompt?.id ?? null,
       starter_prompt_click_id: meta.starterPrompt?.clickId ?? null,
-      ...(meta.starterPrompt?.assignment
-        ? {
-            '$feature/agent-starter-prompt-set': meta.starterPrompt.assignment
-          }
-        : {})
+      ...starterPromptFeatureProperty(meta.starterPrompt?.assignment)
     })
     const selectionWorkflow = selectedTarget.value
     return sendMessage(
