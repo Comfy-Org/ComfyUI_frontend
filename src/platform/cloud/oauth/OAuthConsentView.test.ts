@@ -43,6 +43,11 @@ const i18n = createI18n({
           redirectNotice: "You'll be redirected to",
           appTypeNative: 'Native app',
           appTypeWeb: 'Web app',
+          unverifiedBadge: 'Unverified app',
+          unverifiedNotice:
+            'The name above was provided by the app developer. After you continue, your browser will be sent to {host}.',
+          unverifiedNoticeNoHost:
+            'The name above was provided by the app developer and has not been verified by Comfy.',
           errorExpired:
             'This consent request has expired or has already been used.',
           errorScopeBroadening: SCOPE_BROADENING,
@@ -72,6 +77,7 @@ const challenge: OAuthConsentChallenge = {
   oauth_request_id: '550e8400-e29b-41d4-a716-446655440000',
   csrf_token: 'csrf-token',
   client_display_name: 'Comfy Desktop',
+  client_provenance: 'first_party',
   resource_display_name: 'Comfy Cloud',
   redirect_uri: 'http://127.0.0.1:50632/cb',
   client_application_type: 'native',
@@ -129,6 +135,56 @@ describe('OAuthConsentView', () => {
     renderConsent({ client_display_name: 'Anthropic Verified ✓' })
     expect(screen.getByTestId('client-icon')).toHaveClass(
       'icon-[lucide--app-window]'
+    )
+  })
+
+  it('does not mark a first-party client as unverified', () => {
+    renderConsent()
+    expect(screen.queryByTestId('client-unverified')).not.toBeInTheDocument()
+    expect(
+      screen.queryByTestId('client-unverified-notice')
+    ).not.toBeInTheDocument()
+  })
+
+  it.for([
+    {
+      case: 'a dynamically registered client',
+      overrides: { client_provenance: 'dynamic' },
+      notice:
+        'The name above was provided by the app developer. After you continue, your browser will be sent to chatgpt.com.'
+    },
+    {
+      case: 'a client from a backend that omits provenance',
+      overrides: { client_provenance: undefined },
+      notice:
+        'The name above was provided by the app developer. After you continue, your browser will be sent to chatgpt.com.'
+    },
+    {
+      case: 'a dynamically registered client with a loopback redirect',
+      overrides: {
+        client_provenance: 'dynamic',
+        redirect_uri: 'http://127.0.0.1:50632/cb'
+      },
+      notice:
+        'The name above was provided by the app developer and has not been verified by Comfy.'
+    }
+  ] satisfies {
+    case: string
+    overrides: Partial<OAuthConsentChallenge>
+    notice: string
+  }[])('marks $case as unverified', ({ overrides, notice }) => {
+    renderConsent({
+      client_display_name: 'ChatGPT Connector',
+      redirect_uri: 'https://chatgpt.com/connector/oauth/abc123',
+      ...overrides
+    })
+
+    expect(screen.getByText('ChatGPT Connector wants access')).toBeVisible()
+    expect(screen.getByTestId('client-unverified')).toHaveTextContent(
+      'Unverified app'
+    )
+    expect(screen.getByTestId('client-unverified-notice')).toHaveTextContent(
+      notice
     )
   })
 

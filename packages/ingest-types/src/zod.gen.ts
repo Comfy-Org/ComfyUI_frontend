@@ -831,6 +831,7 @@ export const zSavedPaymentMethod = z.object({
 
 export const zSsoDiscoverResponse = z.object({
   organization_name: z.string().optional(),
+  required: z.boolean().optional(),
   sso: z.boolean()
 })
 
@@ -1496,6 +1497,7 @@ export const zOAuthConsentChallengeWorkspace = z.object({
  */
 export const zOAuthConsentChallenge = z.object({
   client_display_name: z.string(),
+  client_provenance: z.enum(['first_party', 'dynamic']),
   csrf_token: z.string(),
   oauth_request_id: z.string().uuid(),
   redirect_uri: z.string().url(),

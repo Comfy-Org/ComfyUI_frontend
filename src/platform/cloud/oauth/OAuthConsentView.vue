@@ -33,6 +33,27 @@
               })
             }}
           </h1>
+          <template v-if="!isFirstPartyClient(challenge)">
+            <Badge
+              variant="compact"
+              severity="warning"
+              data-testid="client-unverified"
+            >
+              {{ t('oauth.consent.unverifiedBadge') }}
+            </Badge>
+            <p
+              class="m-0 text-xs text-muted"
+              data-testid="client-unverified-notice"
+            >
+              {{
+                destinationHost
+                  ? t('oauth.consent.unverifiedNotice', {
+                      host: destinationHost
+                    })
+                  : t('oauth.consent.unverifiedNoticeNoHost')
+              }}
+            </p>
+          </template>
           <p class="m-0 text-sm text-muted">
             {{ t('oauth.consent.subtitle', { resource: resourceName }) }}
           </p>
@@ -183,10 +204,13 @@ import { computed, onMounted, ref } from 'vue'
 import { useI18n } from 'vue-i18n'
 import { useRoute } from 'vue-router'
 
+import Badge from '@/components/ui/badge/Badge.vue'
 import Button from '@/components/ui/button/Button.vue'
 import {
   OAuthApiError,
   fetchOAuthConsentChallenge,
+  isFirstPartyClient,
+  redirectHost,
   submitOAuthConsentDecision
 } from '@/platform/cloud/oauth/oauthApi'
 import type {
@@ -224,6 +248,10 @@ const resourceName = computed(
   () =>
     challenge.value?.resource_display_name ??
     t('oauth.consent.resourceFallback')
+)
+
+const destinationHost = computed(() =>
+  redirectHost(challenge.value?.redirect_uri)
 )
 
 const selectedWorkspaceIsValid = computed(() =>

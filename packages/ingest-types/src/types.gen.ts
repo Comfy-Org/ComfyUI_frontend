@@ -1343,6 +1343,10 @@ export type SsoDiscoverResponse = {
    */
   organization_name?: string
   /**
+   * When `sso` is true: whether the organization requires SSO (true) or only offers it (false, an organization in optional mode, whose people keep their other sign-ins). Absent means required.
+   */
+  required?: boolean
+  /**
    * The email signs in through its organization's SSO
    */
   sso: boolean
@@ -2333,6 +2337,17 @@ export type OAuthConsentChallenge = {
    * Human-readable name of the OAuth client requesting authorization, from oauth_clients.display_name.
    */
   client_display_name: string
+  /**
+   * Whether the client requesting authorization is a seeded first-party
+   * client (`first_party`) or was created through RFC 7591 dynamic client
+   * registration (`dynamic`). Derived from the client_id: every dynamically
+   * registered client carries the `comfy-dyn-` prefix. `client_display_name`
+   * on a `dynamic` client is registrant-supplied and unverified; the consent
+   * UI must present it as such. Consumers must treat an absent value as
+   * `dynamic`.
+   *
+   */
+  client_provenance: 'first_party' | 'dynamic'
   /**
    * Per-row CSRF token bound to this authorization request (not to the session). Must be echoed back on POST.
    */
@@ -14614,7 +14629,7 @@ export type LeaveWorkspaceErrors = {
    */
   401: ErrorResponse
   /**
-   * Cannot leave as the only owner or cannot leave personal workspace
+   * Cannot leave as the only owner (`ONLY_OWNER`), cannot leave a personal workspace (`PERSONAL_WORKSPACE`), or `code` is `membership_managed_by_directory` with `message` "Your organization's admin manages membership" for an account the workspace's attached SSO organization holds.
    */
   403: ErrorResponse
   /**
