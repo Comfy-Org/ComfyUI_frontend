@@ -154,12 +154,12 @@ test.describe(
         )
       })
 
-      await test.step('the free-use notice is gone and no paywall replaces it', async () => {
+      await test.step('the transition notice replaces free-use copy without a paywall', async () => {
         await expect(freeUseNotice).toHaveCount(0)
         await expect(agentPanel.creditsExhaustedPaywall).toHaveCount(0)
         await expect(agentPanel.sendButton).toBeVisible()
         await expect(composerFooter).toHaveScreenshot(
-          'agent-composer-free-use-notice-suppressed.png'
+          'agent-credit-transition-composer-stack.png'
         )
       })
 
