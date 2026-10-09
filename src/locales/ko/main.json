@@ -5185,6 +5185,13 @@
     },
     "invite": "초대",
     "inviteLimitReached": "최대 {count}명의 구성원 한도에 도달했습니다",
+    "inviteLinks": {
+      "copied": "복사됨!",
+      "copyAll": "초대 링크 복사 | 모든 링크 복사 ({count})",
+      "copyLink": "초대 링크 복사",
+      "sentLead": "각 초대에는 직접 공유할 수 있는 개인 링크가 있습니다:",
+      "sentTitle": "초대 {count}건 전송됨 | 초대 {count}건 전송됨"
+    },
     "inviteMember": "멤버 초대",
     "inviteMemberDialog": {
       "failedCount": "{count}개의 초대를 보낼 수 없습니다. 다시 시도하세요.",
@@ -5212,6 +5219,7 @@
       "actions": {
         "cancelInvite": "초대 취소",
         "changeRole": "역할 변경",
+        "copyInviteLink": "초대 링크 복사",
         "removeMember": "멤버 제거",
         "resendInvite": "초대 다시 보내기",
         "setCreditLimit": "크레딧 한도 설정"

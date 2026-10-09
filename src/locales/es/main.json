@@ -5185,6 +5185,13 @@
     },
     "invite": "Invitar",
     "inviteLimitReached": "Has alcanzado el máximo de {count} miembros",
+    "inviteLinks": {
+      "copied": "¡Copiado!",
+      "copyAll": "Copiar enlace de invitación | Copiar todos los enlaces ({count})",
+      "copyLink": "Copiar enlace de invitación",
+      "sentLead": "Cada invitación tiene un enlace personal que puedes compartir directamente:",
+      "sentTitle": "{count} invitación enviada | {count} invitaciones enviadas"
+    },
     "inviteMember": "Invitar miembro",
     "inviteMemberDialog": {
       "failedCount": "No se pudo enviar {count} invitación. Intenta de nuevo. | No se pudieron enviar {count} invitaciones. Intenta de nuevo.",
@@ -5212,6 +5219,7 @@
       "actions": {
         "cancelInvite": "Cancelar invitación",
         "changeRole": "Cambiar rol",
+        "copyInviteLink": "Copiar enlace de invitación",
         "removeMember": "Eliminar miembro",
         "resendInvite": "Reenviar invitación",
         "setCreditLimit": "Establecer límite de crédito"

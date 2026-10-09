@@ -5185,6 +5185,13 @@
     },
     "invite": "הזמנה",
     "inviteLimitReached": "הגעת למקסימום של {count} חברים",
+    "inviteLinks": {
+      "copied": "הועתק!",
+      "copyAll": "העתקת קישור הזמנה | העתקת כל הקישורים ({count})",
+      "copyLink": "העתקת קישור הזמנה",
+      "sentLead": "לכל הזמנה יש קישור אישי שאפשר לשתף ישירות:",
+      "sentTitle": "{count} הזמנה נשלחה | {count} הזמנות נשלחו"
+    },
     "inviteMember": "הזמנת חבר",
     "inviteMemberDialog": {
       "failedCount": "לא ניתן היה לשלוח {count} הזמנה. נסה שוב. | לא ניתן היה לשלוח {count} הזמנות. נסה שוב.",
@@ -5212,6 +5219,7 @@
       "actions": {
         "cancelInvite": "בטל הזמנה",
         "changeRole": "שנה תפקיד",
+        "copyInviteLink": "העתקת קישור הזמנה",
         "removeMember": "הסרת החבר",
         "resendInvite": "שלח הזמנה מחדש",
         "setCreditLimit": "הגדר מגבלת קרדיטים"

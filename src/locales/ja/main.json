@@ -5185,6 +5185,13 @@
     },
     "invite": "招待",
     "inviteLimitReached": "メンバー数が上限の{count}人に達しました",
+    "inviteLinks": {
+      "copied": "コピーしました！",
+      "copyAll": "招待リンクをコピー | すべてのリンクをコピー（{count}件）",
+      "copyLink": "招待リンクをコピー",
+      "sentLead": "各招待には、直接共有できる個別リンクがあります：",
+      "sentTitle": "招待を{count}件送信済み | 招待を{count}件送信済み"
+    },
     "inviteMember": "メンバーを招待",
     "inviteMemberDialog": {
       "failedCount": "{count} 件の招待を送信できませんでした。再試行してください。",
@@ -5212,6 +5219,7 @@
       "actions": {
         "cancelInvite": "招待をキャンセル",
         "changeRole": "役割を変更",
+        "copyInviteLink": "招待リンクをコピー",
         "removeMember": "メンバーを削除",
         "resendInvite": "招待を再送信",
         "setCreditLimit": "クレジット上限を設定"

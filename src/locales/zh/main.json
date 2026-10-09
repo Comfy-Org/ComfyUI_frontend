@@ -5185,6 +5185,13 @@
     },
     "invite": "邀请",
     "inviteLimitReached": "您已达到 {count} 名成员的上限",
+    "inviteLinks": {
+      "copied": "已复制！",
+      "copyAll": "复制邀请链接 | 复制全部链接（{count}）",
+      "copyLink": "复制邀请链接",
+      "sentLead": "每个邀请都有可直接分享的专属链接：",
+      "sentTitle": "已发送 {count} 个邀请 | 已发送 {count} 个邀请"
+    },
     "inviteMember": "邀请成员",
     "inviteMemberDialog": {
       "failedCount": "无法发送 {count} 个邀请，请重试。",
@@ -5212,6 +5219,7 @@
       "actions": {
         "cancelInvite": "取消邀请",
         "changeRole": "更改角色",
+        "copyInviteLink": "复制邀请链接",
         "removeMember": "移除成员",
         "resendInvite": "重新发送邀请",
         "setCreditLimit": "设置积分上限"
