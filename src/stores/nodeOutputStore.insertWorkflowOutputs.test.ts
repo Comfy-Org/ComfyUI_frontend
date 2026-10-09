@@ -27,11 +27,9 @@ function addRootSaveImageNode(rawNodeId: string) {
   const node = new SaveImage()
   node.id = toNodeId(rawNodeId)
   graph.add(node)
-  Object.assign(app, {
-    rootGraph: graph,
-    nodeOutputs: {},
-    nodePreviewImages: {}
-  })
+  vi.spyOn(app, 'rootGraph', 'get').mockReturnValue(graph)
+  vi.spyOn(app, 'nodeOutputs', 'get').mockReturnValue({})
+  app.nodePreviewImages = {}
   return node
 }
 
@@ -58,11 +56,9 @@ describe('nodeOutputStore: outputs for insert_workflow-remapped node ids', () =>
     second.id = toNodeId('insert:0fbd38ecb13037d0b3b0ca78b8a20a5a:root:node:10')
     graph.add(first)
     graph.add(second)
-    Object.assign(app, {
-      rootGraph: graph,
-      nodeOutputs: {},
-      nodePreviewImages: {}
-    })
+    vi.spyOn(app, 'rootGraph', 'get').mockReturnValue(graph)
+    vi.spyOn(app, 'nodeOutputs', 'get').mockReturnValue({})
+    app.nodePreviewImages = {}
 
     setOutputsByRawExecutionId(String(first.id))
 

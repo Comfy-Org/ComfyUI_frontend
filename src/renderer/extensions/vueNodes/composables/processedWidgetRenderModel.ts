@@ -27,8 +27,8 @@ import {
   useWidgetValueStore
 } from '@/stores/widgetValueStore'
 import {
-  createLeafNodeLocatorId,
-  createNodeExecutionId
+  createNodeExecutionId,
+  createNodeLocatorId
 } from '@/types/nodeIdentification'
 import type { NodeExecutionId, NodeLocatorId } from '@/types/nodeIdentification'
 import type { NodeId } from '@/types/nodeId'
@@ -363,7 +363,7 @@ function widgetNodeLocatorId(
   // prefix to collide with, so it can be kept whole (comfy-multi-player's
   // insert_workflow remapped ids, PM-1580) via the leaf-tolerant path.
   if (subgraphId && bareWidgetId.includes(':')) return undefined
-  return createLeafNodeLocatorId(subgraphId, bareWidgetId) ?? undefined
+  return createNodeLocatorId(subgraphId, bareWidgetId)
 }
 
 interface WidgetProcessingContext {

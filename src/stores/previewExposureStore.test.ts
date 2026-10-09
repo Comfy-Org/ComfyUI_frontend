@@ -16,7 +16,7 @@ describe(getPreviewExposureHostLocator, () => {
       graph: null,
       id: toNodeId('invalid:id')
     })
-    const error = vi.spyOn(console, 'error').mockImplementation(() => {})
+    vi.spyOn(console, 'error').mockImplementation(() => {})
 
     expect(getPreviewExposureHostLocator(host)).toBe('~root:invalid%3Aid')
     expect(console.error).not.toHaveBeenCalled()
