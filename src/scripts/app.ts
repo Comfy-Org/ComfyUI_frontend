@@ -1397,6 +1397,7 @@ export class ComfyApp {
       if (!this.ownsGraphLoad(loadId)) {
         return this.rejectSupersededGraphLoad()
       }
+      const subgraphTypes = useSubgraphService().normalizeSubgraphs(graphData)
       // Only show the reroute migration warning if the workflow does not have native
       // reroutes. Merging reroute network has great complexity, and it is not supported
       // for now.
@@ -1436,7 +1437,10 @@ export class ComfyApp {
           return
         }
         for (const n of nodes) {
-          if (!(n.type in LiteGraph.registered_node_types)) {
+          if (
+            !(n.type in LiteGraph.registered_node_types) &&
+            !subgraphTypes.has(n.type)
+          ) {
             // Always sanitize so configure() can handle unregistered types,
             // but only report as missing if the node is active.
             const isMuted =
@@ -1548,8 +1552,6 @@ export class ComfyApp {
     let resourceScanLoadCompleted = false
     try {
       try {
-        // From this point through configure there are no awaits: claim the
-        // graph immediately before replacing any shared graph state.
         this.commitGraphLoad(loadId)
 
         if (clean) {
@@ -1561,8 +1563,6 @@ export class ComfyApp {
           withGraphIntentSource('load', () => this.clean())
         }
 
-        // Subgraph registration mutates the shared root graph, so it belongs
-        // after the ownership commit and after the outgoing graph is cleared.
         useSubgraphService().loadSubgraphs(graphData)
         this.rootGraph.configure(graphData as ISerialisedGraph)
 

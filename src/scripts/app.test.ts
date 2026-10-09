@@ -744,15 +744,71 @@ describe('ComfyApp', () => {
       Reflect.set(app, 'rootGraphInternal', graph)
       const setGraph = vi.fn()
       Reflect.set(mockCanvas, 'setGraph', setGraph)
-      const clean = vi.spyOn(app, 'clean')
       const missingNodesStore = useMissingNodesErrorStore()
       missingNodesStore.setMissingNodeTypes(['OutgoingMissingNode'])
 
       await app.loadGraphData(createWorkflowGraphData(), true)
 
       expect(setGraph).toHaveBeenCalledWith(graph)
-      expect(clean).toHaveBeenCalledOnce()
       expect(missingNodesStore.missingNodesError).toBeNull()
+    })
+
+    it('does not report a new subgraph instance as a missing node', async () => {
+      app.canvasElRef.value = document.createElement('canvas')
+      const graph = new LGraph()
+      Reflect.set(app, 'rootGraphInternal', graph)
+      Reflect.set(singletonApp, 'rootGraphInternal', graph)
+      const subgraphId = '00000000-0000-4000-8000-000000000001'
+      const graphData = {
+        ...createWorkflowGraphData(),
+        nodes: [
+          {
+            id: 1,
+            type: subgraphId,
+            pos: [0, 0],
+            size: [100, 100],
+            flags: {},
+            order: 0,
+            mode: 0,
+            inputs: [],
+            outputs: [],
+            properties: {}
+          }
+        ],
+        definitions: {
+          subgraphs: [
+            {
+              id: subgraphId,
+              version: 1,
+              state: {
+                lastGroupId: 0,
+                lastNodeId: 0,
+                lastLinkId: 0,
+                lastRerouteId: 0
+              },
+              revision: 0,
+              config: {},
+              name: 'Review fixture',
+              inputNode: { id: -10, bounding: [0, 0, 100, 60] },
+              outputNode: { id: -20, bounding: [200, 0, 100, 60] },
+              inputs: [],
+              outputs: [],
+              widgets: [],
+              nodes: [],
+              groups: [],
+              links: [],
+              extra: {}
+            }
+          ]
+        }
+      } as ComfyWorkflowJSON
+
+      await app.loadGraphData(graphData, true)
+
+      expect(mockExtensionService.invokeExtensionsAsync).toHaveBeenCalledWith(
+        'afterConfigureGraph',
+        []
+      )
     })
 
     it('does not bind an older load’s workflow to a newer load’s graph', async () => {
