@@ -37,7 +37,8 @@ import {
   isCandidateScopeActive,
   isExecutionPathActive,
   isMissingCandidateActive,
-  findSubgraphNodePathById
+  findSubgraphNodePathById,
+  executionIdToNodeLocatorId
 } from '@/utils/graphTraversalUtil'
 import { LGraphEventMode } from '@/lib/litegraph/src/types/globalEnums'
 import { toNodeId } from '@/types/nodeId'
@@ -1746,6 +1747,62 @@ describe('graphTraversalUtil', () => {
 
         expect(executionIds).toEqual(['2:10', '2:11'])
       })
+    })
+  })
+
+  describe('executionIdToNodeLocatorId', () => {
+    const REMAPPED_ID = 'insert:0fbd38ecb13037d0b3b0ca78b8a20a5a:root:node:9'
+
+    it('resolves a bare root node id', () => {
+      const graph = createMockGraph([createMockNode('9')])
+
+      expect(executionIdToNodeLocatorId(graph, '9')).toBe('9')
+    })
+
+    it('resolves a genuine subgraph execution path', () => {
+      const subgraphUuid = 'a1b2c3d4-e5f6-7890-abcd-ef1234567890'
+      const interior = createMockNode('999')
+      const subgraph = createMockSubgraph(subgraphUuid, [interior])
+      const host = createMockNode('123', { isSubgraph: true, subgraph })
+      const graph = createMockGraph([host])
+
+      expect(executionIdToNodeLocatorId(graph, '123:999')).toBe(
+        `${subgraphUuid}:999`
+      )
+    })
+
+    it('regression: keeps an insert_workflow-remapped root id whole instead of reading it as a subgraph path (PM-2037)', () => {
+      // comfy-multi-player remaps every node an `insert_workflow` carries to
+      // `insert:<opId>:root:node:<originalId>` (remap.ts), and the node lands
+      // directly on the root graph. Split on ':' this asks for a subgraph node
+      // called `insert`, finds none, and returns undefined — which silently
+      // discarded the `executed` frame's outputs, so an agent-inserted Save
+      // Image node stayed empty while the image appeared in chat.
+      const graph = createMockGraph([createMockNode(REMAPPED_ID)])
+
+      expect(executionIdToNodeLocatorId(graph, REMAPPED_ID)).toBe(REMAPPED_ID)
+    })
+
+    it('still returns undefined for a colon-bearing id no node on the graph carries', () => {
+      const graph = createMockGraph([createMockNode('9')])
+
+      expect(executionIdToNodeLocatorId(graph, REMAPPED_ID)).toBeUndefined()
+    })
+
+    it('keeps the subgraph-path reading when both readings are available', () => {
+      // The whole-id match is a FALLBACK: a resolvable subgraph path keeps the
+      // meaning it has always had, even if some root node also carries the
+      // path as a literal id.
+      const subgraphUuid = 'a1b2c3d4-e5f6-7890-abcd-ef1234567890'
+      const interior = createMockNode('999')
+      const subgraph = createMockSubgraph(subgraphUuid, [interior])
+      const host = createMockNode('123', { isSubgraph: true, subgraph })
+      const literal = createMockNode('123:999')
+      const graph = createMockGraph([host, literal])
+
+      expect(executionIdToNodeLocatorId(graph, '123:999')).toBe(
+        `${subgraphUuid}:999`
+      )
     })
   })
 })

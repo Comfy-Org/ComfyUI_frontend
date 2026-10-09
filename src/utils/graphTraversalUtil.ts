@@ -720,12 +720,29 @@ export function executionIdToNodeLocatorId(
   const subgraphPath = parts.slice(0, -1)
 
   const targetGraph = traverseSubgraphPath(rootGraph, subgraphPath)
-  if (!targetGraph) return undefined
-
   const parsedLocalNodeId = parseNodeId(localNodeId)
-  if (!parsedLocalNodeId) return undefined
+  if (targetGraph && parsedLocalNodeId) {
+    return createNodeLocatorId(targetGraph.id, parsedLocalNodeId)
+  }
 
-  return createNodeLocatorId(targetGraph.id, parsedLocalNodeId)
+  // No subgraph path resolved — the colons may belong to the node's OWN id.
+  // comfy-multi-player's `insert_workflow` remaps every inserted node to
+  // `insert:<opId>:root:node:<originalId>` (remap.ts) and puts it on the root
+  // graph, so splitting that id on `:` asks for a subgraph node named
+  // `insert` and finds none. Returning undefined there silently discarded
+  // whatever the caller keyed on the id — including an `executed` frame's
+  // outputs, which is why an agent-inserted Save Image node stayed empty
+  // while the image appeared in chat (PM-2037/PM-1826/PM-1668; same id class
+  // as PM-1580 and #20437).
+  //
+  // Only ever a fallback, and only for an id a node really carries, so a
+  // genuine subgraph execution path keeps its existing meaning.
+  const wholeNodeId = parseNodeId(nodeIdStr)
+  if (wholeNodeId && rootGraph.getNodeById(wholeNodeId)) {
+    return createLeafNodeLocatorId(null, wholeNodeId) ?? undefined
+  }
+
+  return undefined
 }
 
 /**

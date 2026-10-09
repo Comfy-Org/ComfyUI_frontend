@@ -24,6 +24,7 @@ import { defaultGraph } from '@/scripts/defaultGraph'
 import { useExecutionStore } from '@/stores/executionStore'
 import type { NodeExecutionId, NodeLocatorId } from '@/types/nodeIdentification'
 import {
+  createLeafNodeLocatorId,
   createNodeExecutionId,
   createNodeLocatorId,
   parseNodeExecutionId,
@@ -636,6 +637,13 @@ export const useWorkflowStore = defineStore('workflow', () => {
    * @param nodeId The local node ID
    * @param subgraph The subgraph containing the node (defaults to active subgraph)
    * @returns The NodeLocatorId (for root graph nodes, returns the node ID as-is)
+   *
+   * A root-graph node keeps its raw id even when that id contains a colon
+   * which is not a subgraph-scope prefix (`insert_workflow`'s remapped ids,
+   * `insert:<opId>:root:node:<originalId>`). The strict mint returns null
+   * there, so every store keyed on this locator — node outputs above all —
+   * looked an agent-inserted node up under a key nothing ever wrote
+   * (PM-2037/PM-1826/PM-1668, same id class as PM-1580).
    */
   const nodeIdToNodeLocatorId = (
     nodeId: NodeId,
@@ -644,7 +652,7 @@ export const useWorkflowStore = defineStore('workflow', () => {
     const targetSubgraph = subgraph ?? activeSubgraph.value
     if (!targetSubgraph) {
       // Node is in the root graph, return the node ID as-is
-      return createNodeLocatorId(null, nodeId)
+      return createLeafNodeLocatorId(null, nodeId)!
     }
 
     return createNodeLocatorId(targetSubgraph.id, nodeId)
@@ -658,7 +666,8 @@ export const useWorkflowStore = defineStore('workflow', () => {
   const nodeToNodeLocatorId = (node: LGraphNode): NodeLocatorId => {
     if (isSubgraph(node.graph))
       return createNodeLocatorId(node.graph.id, node.id)
-    return createNodeLocatorId(null, node.id)
+    // Root graph: see nodeIdToNodeLocatorId on colon-bearing raw ids.
+    return createLeafNodeLocatorId(null, node.id)!
   }
 
   /**
