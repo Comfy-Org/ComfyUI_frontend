@@ -278,7 +278,7 @@ describe('billing-web on the shared web session', () => {
 
       await expect(session.settledPhase()).resolves.toBe('error')
 
-      expect(session.signInPort.failureCode.value).toBe(failure)
+      expect(session.signInPort.failure.value?.code).toBe(failure)
       expect(session.billedScope.value).toBeUndefined()
       await expect(session.signInPort.loadIdentity()).resolves.toBeUndefined()
       expect(firebase.loadFirebase).not.toHaveBeenCalled()
