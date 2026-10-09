@@ -216,20 +216,6 @@ export function createLeafNodeExecutionId(
   return bare ? (bare as unknown as NodeExecutionId) : null
 }
 
-/**
- * Append a local leaf ID to an existing execution path, tolerating delimiters
- * in the leaf when the resulting backend execution ID remains valid.
- */
-export function appendLeafNodeExecutionId(
-  parentExecutionId: NodeExecutionId,
-  childNodeId: SerializedNodeId
-): NodeExecutionId | null {
-  const leafExecutionId = createLeafNodeExecutionId(childNodeId)
-  return leafExecutionId
-    ? nodeExecutionIdFromString(`${parentExecutionId}:${leafExecutionId}`)
-    : null
-}
-
 export function tryNormalizeNodeExecutionId(
   value: string | number
 ): NodeExecutionId | null {
