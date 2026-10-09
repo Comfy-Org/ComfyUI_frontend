@@ -22,6 +22,12 @@
       {{ t('auth.login.insecureContextWarning') }}
     </Message>
 
+    <CloudSsoRequiredNotice
+      v-if="ssoRequiredNotice"
+      v-bind="ssoRequiredNotice"
+      class="mt-4"
+    />
+
     <div class="mt-12 flex flex-col gap-4 xl:gap-6">
       <template v-if="authMode !== 'email'">
         <CloudSocialAuthButtons
@@ -98,6 +104,7 @@ import Skeleton from '@/components/ui/skeleton/Skeleton.vue'
 import { useAuthActions } from '@/composables/auth/useAuthActions'
 import { useFeatureFlags } from '@/composables/useFeatureFlags'
 import CloudSocialAuthButtons from '@/platform/cloud/onboarding/components/CloudSocialAuthButtons.vue'
+import CloudSsoRequiredNotice from '@/platform/cloud/onboarding/components/CloudSsoRequiredNotice.vue'
 import { useCloudAuthPage } from '@/platform/cloud/onboarding/composables/useCloudAuthPage'
 import { useFreeTierOnboarding } from '@/platform/cloud/onboarding/composables/useFreeTierOnboarding'
 import { useSsoSignIn } from '@/platform/cloud/onboarding/composables/useSsoSignIn'
@@ -121,6 +128,7 @@ const { isFreeTierEnabled } = useFreeTierOnboarding()
 const {
   authError,
   authMode,
+  ssoRequiredNotice,
   onAuthSuccess,
   isSecureContext,
   showGoogleSsoInAppBrowserNotice,

@@ -1,5 +1,8 @@
 import { useWorkflowStore } from '@/platform/workflow/management/stores/workflowStore'
-import type { LoadedComfyWorkflow } from '@/platform/workflow/management/stores/comfyWorkflow'
+import type {
+  ComfyWorkflow,
+  LoadedComfyWorkflow
+} from '@/platform/workflow/management/stores/comfyWorkflow'
 import { fromPartial } from '@total-typescript/shoehorn'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { nextTick } from 'vue'
@@ -8,6 +11,7 @@ import { useAppMode } from '@/composables/useAppMode'
 import { useTelemetry } from '@/platform/telemetry'
 import { app } from '@/scripts/app'
 import { api } from '@/scripts/api'
+import { defaultGraph } from '@/scripts/defaultGraph'
 import { MAX_PROGRESS_JOBS, useExecutionStore } from '@/stores/executionStore'
 import { useExecutionErrorStore } from '@/stores/executionErrorStore'
 import { useMissingNodesErrorStore } from '@/platform/nodeReplacement/missingNodesErrorStore'
@@ -16,17 +20,7 @@ import {
   createNodeLocatorId
 } from '@/types/nodeIdentification'
 import { executionIdToNodeLocatorId } from '@/utils/graphTraversalUtil'
-import type { LGraphCanvas } from '@/lib/litegraph/src/LGraphCanvas'
 import type { NodeProgressState } from '@/platform/remote/comfyui/execution/types'
-
-const { mockRemoveTextPreview, mockShowTextPreview } = await vi.hoisted(
-  async () => {
-    return {
-      mockRemoveTextPreview: vi.fn(),
-      mockShowTextPreview: vi.fn()
-    }
-  }
-)
 
 const defaultWorkflowExecutionIntent = {
   trigger_source: 'unknown'
@@ -47,13 +41,6 @@ vi.mock(import('@/platform/telemetry'))
 declare global {
   interface Window {}
 }
-
-vi.mock<unknown>(import('@/composables/node/useNodeProgressText'), () => ({
-  useNodeProgressText: () => ({
-    removeTextPreview: mockRemoveTextPreview,
-    showTextPreview: mockShowTextPreview
-  })
-}))
 
 /**
  * Captures event handlers registered via api.addEventListener so tests
@@ -122,6 +109,17 @@ function createPromptNode(title: string, classType: string) {
   }
 }
 
+const TEST_SUBGRAPH_UUID = 'a1b2c3d4-e5f6-7890-abcd-ef1234567890'
+
+function createTestSubgraph(...nodeIds: number[]) {
+  const nodes = nodeIds.map((id) => createMockLGraphNode({ id: toNodeId(id) }))
+  return {
+    id: TEST_SUBGRAPH_UUID,
+    nodes,
+    getNodeById: (id: string) => nodes.find((node) => node.id === id) ?? null
+  }
+}
+
 describe('useExecutionStore - NodeLocatorId conversions', () => {
   let store: ReturnType<typeof useExecutionStore>
 
@@ -134,10 +132,7 @@ describe('useExecutionStore - NodeLocatorId conversions', () => {
   describe('executionIdToNodeLocatorId', () => {
     it('should convert execution ID to NodeLocatorId', () => {
       // Mock subgraph structure
-      const mockSubgraph = {
-        id: 'a1b2c3d4-e5f6-7890-abcd-ef1234567890',
-        nodes: []
-      }
+      const mockSubgraph = createTestSubgraph(456)
 
       const mockNode = createMockLGraphNode({
         id: 123,
@@ -227,10 +222,7 @@ describe('useExecutionStore - nodeLocationProgressStates caching', () => {
   })
 
   it('should resolve execution IDs to locator IDs for subgraph nodes', () => {
-    const mockSubgraph = {
-      id: 'a1b2c3d4-e5f6-7890-abcd-ef1234567890',
-      nodes: []
-    }
+    const mockSubgraph = createTestSubgraph(456)
     const mockNode = createMockLGraphNode({
       id: 123,
       isSubgraphNode: () => true,
@@ -263,10 +255,7 @@ describe('useExecutionStore - nodeLocationProgressStates caching', () => {
   })
 
   it('should not re-traverse graph for same execution IDs across progress updates', () => {
-    const mockSubgraph = {
-      id: 'a1b2c3d4-e5f6-7890-abcd-ef1234567890',
-      nodes: []
-    }
+    const mockSubgraph = createTestSubgraph(456)
     const mockNode = createMockLGraphNode({
       id: 123,
       isSubgraphNode: () => true,
@@ -315,10 +304,7 @@ describe('useExecutionStore - nodeLocationProgressStates caching', () => {
   })
 
   it('should correctly resolve multiple sibling nodes in the same subgraph', () => {
-    const mockSubgraph = {
-      id: 'a1b2c3d4-e5f6-7890-abcd-ef1234567890',
-      nodes: []
-    }
+    const mockSubgraph = createTestSubgraph(456, 789)
     const mockNode = createMockLGraphNode({
       id: 123,
       isSubgraphNode: () => true,
@@ -1312,172 +1298,59 @@ describe('useExecutionStore - clearActiveJobIfStale', () => {
   })
 })
 
-describe('useExecutionStore - progress_text startup guard', () => {
+describe('session workflow paths on workflow rename', () => {
   let store: ReturnType<typeof useExecutionStore>
 
-  function fireProgressText(detail: {
-    nodeId: string
-    text: string
-    prompt_id?: string
-  }) {
-    const handler = apiEventHandlers.get('progress_text')
-    if (!handler) throw new Error('progress_text handler not bound')
-    handler(new CustomEvent('progress_text', { detail }))
+  beforeEach(() => {
+    store = useExecutionStore()
+  })
+
+  async function renameWorkflow(workflow: ComfyWorkflow, newPath: string) {
+    vi.spyOn(workflow, 'rename').mockImplementation(async (renamedPath) => {
+      workflow.path = renamedPath
+      return workflow
+    })
+    await useWorkflowStore().renameWorkflow(workflow, newPath)
   }
 
-  beforeEach(() => {
-    apiEventHandlers.clear()
-    store = useExecutionStore()
-    store.bindExecutionEvents()
+  it('rewrites every job of the renamed workflow instance', async () => {
+    const renamed = useWorkflowStore().createTemporary('old.app.json')
+    const other = useWorkflowStore().createTemporary('keep.app.json')
+    store.ensureSessionWorkflowPath('job-1', renamed.path, renamed.instanceId)
+    store.ensureSessionWorkflowPath('job-2', other.path, other.instanceId)
+    store.ensureSessionWorkflowPath('job-3', renamed.path, renamed.instanceId)
+
+    await renameWorkflow(renamed, 'workflows/new.app.json')
+
+    expect(Object.fromEntries(store.jobIdToSessionWorkflowPath)).toEqual({
+      'job-1': 'workflows/new.app.json',
+      'job-2': 'workflows/keep.app.json',
+      'job-3': 'workflows/new.app.json'
+    })
   })
 
-  it('should ignore progress_text before the canvas is initialized', async () => {
-    const { useCanvasStore } =
-      await import('@/renderer/core/canvas/canvasStore')
-    useCanvasStore().canvas = null
+  it('does not rewrite jobs of another workflow sharing the path and graph id', async () => {
+    const graph = { ...defaultGraph, id: 'duplicate-workflow-id' }
+    const older = useWorkflowStore().createTemporary('Unsaved.json', graph)
+    const newer = useWorkflowStore().createTemporary('Unsaved.json', graph)
+    store.ensureSessionWorkflowPath('job-old', older.path, older.instanceId)
+    store.ensureSessionWorkflowPath('job-new', older.path, newer.instanceId)
 
-    expect(() =>
-      fireProgressText({
-        nodeId: toNodeId('1'),
-        text: 'warming up'
-      })
-    ).not.toThrow()
+    await renameWorkflow(newer, 'workflows/saved.app.json')
 
-    expect(mockShowTextPreview).not.toHaveBeenCalled()
+    expect(Object.fromEntries(store.jobIdToSessionWorkflowPath)).toEqual({
+      'job-old': older.path,
+      'job-new': 'workflows/saved.app.json'
+    })
   })
 
-  it('should call showTextPreview when canvas is available', async () => {
-    const mockNode = createMockLGraphNode({ id: 1 })
-    const { useCanvasStore } =
-      await import('@/renderer/core/canvas/canvasStore')
-    useCanvasStore().canvas = {
-      graph: { getNodeById: vi.fn(() => mockNode) }
-    } as unknown as LGraphCanvas
-
-    fireProgressText({ nodeId: toNodeId('1'), text: 'warming up' })
-
-    expect(mockShowTextPreview).toHaveBeenCalledWith(mockNode, 'warming up')
-  })
-  it('should ignore nested progress_text when the execution ID cannot be mapped', async () => {
-    const { useCanvasStore } =
-      await import('@/renderer/core/canvas/canvasStore')
-    useCanvasStore().canvas = {
-      graph: { getNodeById: vi.fn() }
-    } as unknown as LGraphCanvas
-    vi.mocked(useWorkflowStore().executionIdToCurrentId).mockReturnValue(
-      undefined
-    )
-
-    expect(() =>
-      fireProgressText({ nodeId: toNodeId('1:2'), text: 'warming up' })
-    ).not.toThrow()
-
-    expect(useWorkflowStore().executionIdToCurrentId).toHaveBeenCalledWith(
-      '1:2'
-    )
-    expect(mockShowTextPreview).not.toHaveBeenCalled()
-  })
-})
-
-describe('rewriteSessionWorkflowPaths', () => {
-  let store: ReturnType<typeof useExecutionStore>
-
-  beforeEach(() => {
-    store = useExecutionStore()
-  })
-
-  it('rewrites all entries associated with the workflow instance', () => {
-    store.ensureSessionWorkflowPath(
-      'job-1',
-      'workflows/old.app.json',
-      'instance-A'
-    )
-    store.ensureSessionWorkflowPath(
-      'job-2',
-      'workflows/keep.app.json',
-      'instance-B'
-    )
-    store.ensureSessionWorkflowPath(
-      'job-3',
-      'workflows/old.app.json',
-      'instance-A'
-    )
-
-    store.rewriteSessionWorkflowPaths('instance-A', 'workflows/new.app.json')
-
-    expect(store.jobIdToSessionWorkflowPath.get('job-1')).toBe(
-      'workflows/new.app.json'
-    )
-    expect(store.jobIdToSessionWorkflowPath.get('job-2')).toBe(
-      'workflows/keep.app.json'
-    )
-    expect(store.jobIdToSessionWorkflowPath.get('job-3')).toBe(
-      'workflows/new.app.json'
-    )
-  })
-
-  it('only rewrites entries matching the workflow instance', () => {
-    store.ensureSessionWorkflowPath(
-      'job-1',
-      'workflows/old.app.json',
-      'instance-A'
-    )
-    store.ensureSessionWorkflowPath(
-      'job-2',
-      'workflows/old.app.json',
-      'instance-B'
-    )
-
-    store.rewriteSessionWorkflowPaths('instance-A', 'workflows/new.app.json')
-
-    expect(store.jobIdToSessionWorkflowPath.get('job-1')).toBe(
-      'workflows/new.app.json'
-    )
-    expect(store.jobIdToSessionWorkflowPath.get('job-2')).toBe(
-      'workflows/old.app.json'
-    )
-  })
-
-  it('does not rewrite entries from a different workflow sharing the same temp path', () => {
-    store.ensureSessionWorkflowPath(
-      'job-old',
-      'workflows/Unsaved Workflow.json',
-      'instance-OLD'
-    )
-    store.ensureSessionWorkflowPath(
-      'job-new',
-      'workflows/Unsaved Workflow.json',
-      'instance-NEW'
-    )
-
-    store.rewriteSessionWorkflowPaths(
-      'instance-NEW',
-      'workflows/saved.app.json'
-    )
-
-    expect(store.jobIdToSessionWorkflowPath.get('job-old')).toBe(
-      'workflows/Unsaved Workflow.json'
-    )
-    expect(store.jobIdToSessionWorkflowPath.get('job-new')).toBe(
-      'workflows/saved.app.json'
-    )
-  })
-
-  it('does not trigger reactivity when no entries match', () => {
+  it('keeps the same map when no job belongs to the renamed workflow', async () => {
+    const renamed = useWorkflowStore().createTemporary('old.app.json')
     store.ensureSessionWorkflowPath('job-1', 'workflows/keep.app.json')
     const originalMap = store.jobIdToSessionWorkflowPath
 
-    store.rewriteSessionWorkflowPaths('instance-A', 'workflows/new.app.json')
+    await renameWorkflow(renamed, 'workflows/new.app.json')
 
-    expect(store.jobIdToSessionWorkflowPath).toBe(originalMap)
-  })
-
-  it('handles empty map', () => {
-    const originalMap = store.jobIdToSessionWorkflowPath
-
-    store.rewriteSessionWorkflowPaths('instance-A', 'workflows/new.app.json')
-
-    expect(store.jobIdToSessionWorkflowPath.size).toBe(0)
     expect(store.jobIdToSessionWorkflowPath).toBe(originalMap)
   })
 })
@@ -1523,11 +1396,7 @@ describe('useExecutionErrorStore - Node Error Lookups', () => {
 
     it('should return node error by locator ID for subgraph node', () => {
       const subgraphUuid = 'a1b2c3d4-e5f6-7890-abcd-ef1234567890'
-      const mockSubgraph = {
-        id: subgraphUuid,
-        getNodeById: vi.fn(),
-        nodes: []
-      }
+      const mockSubgraph = createTestSubgraph(456)
 
       const mockNode = createMockLGraphNode({
         id: 123,
@@ -2453,82 +2322,29 @@ describe('useExecutionStore - WebSocket event handlers', () => {
         traceback: []
       }
     }
-  ])('removes progress text after $event', async ({ event, detail }) => {
-    const node = createMockLGraphNode({ id: 1 })
-    const { useCanvasStore } =
-      await import('@/renderer/core/canvas/canvasStore')
-    useCanvasStore().canvas = fromPartial<LGraphCanvas>({
-      graph: { getNodeById: vi.fn(() => node) }
-    })
-    const workflow = createQueuedWorkflow()
-    useWorkflowStore().activeWorkflow = workflow
-    vi.mocked(useWorkflowStore().executionIdToCurrentId).mockReturnValue('1')
-    store.storeJob({
-      nodes: ['1'],
-      id: 'job-1',
-      promptOutput: { '1': createPromptNode('Node', 'Node') },
-      workflow,
-      mode: 'graph'
-    })
-    fire('execution_start', { prompt_id: 'job-1', timestamp: 0 })
+  ])(
+    'notifies job reset listeners with the job after $event',
+    ({ event, detail }) => {
+      const onJobReset = vi.fn()
+      store.onJobReset(onJobReset)
+      const workflow = createQueuedWorkflow()
+      store.storeJob({
+        nodes: ['1'],
+        id: 'job-1',
+        promptOutput: { '1': createPromptNode('Node', 'Node') },
+        workflow,
+        mode: 'graph'
+      })
+      fire('execution_start', { prompt_id: 'job-1', timestamp: 0 })
 
-    fire(event, detail)
+      fire(event, detail)
 
-    expect(mockRemoveTextPreview).toHaveBeenCalledWith(node)
-  })
-
-  it('preserves progress text in another workflow with the same node ID', async () => {
-    const node = createMockLGraphNode({ id: 1 })
-    const { useCanvasStore } =
-      await import('@/renderer/core/canvas/canvasStore')
-    useCanvasStore().canvas = fromPartial<LGraphCanvas>({
-      graph: { getNodeById: vi.fn(() => node) }
-    })
-    const workflow = createQueuedWorkflow('workflows/finished.json')
-    store.storeJob({
-      nodes: ['1'],
-      id: 'job-1',
-      promptOutput: { '1': createPromptNode('Node', 'Node') },
-      workflow,
-      mode: 'graph'
-    })
-    fire('execution_start', { prompt_id: 'job-1', timestamp: 0 })
-    useWorkflowStore().activeWorkflow = createQueuedWorkflow(
-      'workflows/other.json'
-    )
-    vi.mocked(useWorkflowStore().executionIdToCurrentId).mockReturnValue('1')
-
-    fire('execution_success', { prompt_id: 'job-1', timestamp: 1 })
-
-    expect(mockRemoveTextPreview).not.toHaveBeenCalled()
-    expect(store.queuedJobs['job-1']).toBeUndefined()
-  })
-
-  it('preserves progress text when the executed node is outside the viewed subgraph', async () => {
-    const node = createMockLGraphNode({ id: 1 })
-    const { useCanvasStore } =
-      await import('@/renderer/core/canvas/canvasStore')
-    useCanvasStore().canvas = fromPartial<LGraphCanvas>({
-      graph: { getNodeById: vi.fn(() => node) }
-    })
-    const workflow = createQueuedWorkflow()
-    useWorkflowStore().activeWorkflow = workflow
-    vi.mocked(useWorkflowStore().executionIdToCurrentId).mockReturnValue(
-      undefined
-    )
-    store.storeJob({
-      nodes: ['1'],
-      id: 'job-1',
-      promptOutput: { '1': createPromptNode('Node', 'Node') },
-      workflow,
-      mode: 'graph'
-    })
-    fire('execution_start', { prompt_id: 'job-1', timestamp: 0 })
-
-    fire('execution_success', { prompt_id: 'job-1', timestamp: 1 })
-
-    expect(mockRemoveTextPreview).not.toHaveBeenCalled()
-  })
+      expect(onJobReset).toHaveBeenCalledExactlyOnceWith(
+        expect.objectContaining({ workflow })
+      )
+      expect(store.queuedJobs['job-1']).toBeUndefined()
+    }
+  )
 
   describe('executed', () => {
     it('marks the executed node as done on the active job', () => {
@@ -2887,8 +2703,7 @@ describe('useExecutionStore - WebSocket event handlers', () => {
         'executing',
         'progress',
         'progress_state',
-        'execution_error',
-        'progress_text'
+        'execution_error'
       ]
 
       store.unbindExecutionEvents()

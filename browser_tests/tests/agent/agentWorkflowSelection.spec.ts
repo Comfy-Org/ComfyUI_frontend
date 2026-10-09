@@ -248,31 +248,23 @@ test.describe(
         'Unsaved Workflow'
       )
       const tooltip = new Tooltip(page).named(reason)
-      const inline = panel.getByRole('button', {
-        name: 'mention nodes'
+      const addToPrompt = panel.getByRole('button', {
+        name: enMessages.agent.addToPrompt
       })
-      await expect(inline).toHaveAttribute('aria-disabled', 'true')
-      await expect(inline).toHaveAccessibleDescription(reason)
-      await inline.hover()
-      await expect(tooltip).toBeVisible()
-
-      await panel
-        .getByRole('button', { name: enMessages.agent.addToPrompt })
-        .click()
+      await addToPrompt.click()
       const plusNodes = page.getByRole('menuitem', {
         name: enMessages.agent.nodes,
         exact: true
       })
       await expect(plusNodes).toHaveAttribute('aria-disabled', 'true')
+      await expect(plusNodes).toHaveAccessibleDescription(reason)
       await plusNodes.hover()
       await expect(tooltip).toBeVisible()
       await page.keyboard.press('Escape')
       await expect(tooltip).toBeHidden()
       await page.keyboard.press('Escape')
       await expect(plusNodes).toBeHidden()
-      await expect(
-        panel.getByRole('button', { name: enMessages.agent.addToPrompt })
-      ).toBeFocused()
+      await expect(addToPrompt).toBeFocused()
 
       await composer.fill('@')
       const nodes = panel.getByRole('menuitem', {
@@ -293,7 +285,7 @@ test.describe(
       await composer.press('Escape')
       await composer.press('ControlOrMeta+a')
       await composer.press('Backspace')
-      await expect(inline).toBeVisible()
+      await expect(addToPrompt).toBeVisible()
       expect(workflowSelection.postedMessages).toHaveLength(1)
 
       await panel
@@ -304,19 +296,26 @@ test.describe(
         .click()
       await expect.poll(() => workflowSelection.savedPaths.length).toBe(1)
       workflowSelection.finishSave(true)
-      await expect(inline).not.toHaveAttribute('aria-disabled', 'true')
+      await addToPrompt.click()
+      await expect(plusNodes).not.toHaveAttribute('aria-disabled', 'true')
+      await page.keyboard.press('Escape')
+      await expect(plusNodes).toBeHidden()
       await page
         .getByRole('button', {
           name: enMessages.sideToolbar.newBlankWorkflow,
           exact: true
         })
         .click()
-      await expect(inline).toHaveAttribute('aria-disabled', 'true')
-      await expect(inline).toHaveAccessibleDescription(
+      await addToPrompt.click()
+      await expect(plusNodes).toHaveAttribute('aria-disabled', 'true')
+      await expect(plusNodes).toHaveAccessibleDescription(
         /Switch to .+ to add nodes\./
       )
+      await page.keyboard.press('Escape')
+      await expect(plusNodes).toBeHidden()
       await page.getByTestId('workflow-tab').first().click()
-      await expect(inline).not.toHaveAttribute('aria-disabled', 'true')
+      await addToPrompt.click()
+      await expect(plusNodes).not.toHaveAttribute('aria-disabled', 'true')
     })
 
     test('shows headerless search results when the current tab is filtered out', async ({

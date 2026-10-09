@@ -33,6 +33,8 @@ import { setupInlinePromptEditorDom } from './composer/inlinePromptEditorTestSet
 
 setupInlinePromptEditorDom()
 
+vi.mock(import('@/composables/auth/useCurrentUser'))
+
 function createHistoryGroups() {
   return {
     current: [],

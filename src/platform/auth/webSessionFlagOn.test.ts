@@ -57,12 +57,14 @@ import {
   webSessionResourceHeader,
   webSessionSend
 } from '@/platform/auth/session/webSessionFetch'
+import { installCloudApiAuth } from '@/platform/auth/cloudApiAuthProvider'
 import { useTelemetry } from '@/platform/telemetry'
 import { reportError } from '@/platform/telemetry/reportError'
 import { refreshRemoteConfig } from '@/platform/remoteConfig/refreshRemoteConfig'
 import { remoteConfig } from '@/platform/remoteConfig/remoteConfig'
 import { useToast } from '@/components/ui/toast/toastStore'
 import { workspaceApi } from '@/platform/workspace/api/workspaceApi'
+import { installWorkspaceApiAuth } from '@/platform/workspace/api/workspaceApiAuth'
 import { NoWorkspaceAccessError } from '@/platform/workspace/api/workspaceApiError'
 import {
   getGlobalSetting,
@@ -177,6 +179,9 @@ vi.mock(import('@/platform/telemetry/reportError'))
 
 await import('@/extensions/core/cloudSessionCookie')
 const { default: router } = await import('@/router')
+
+installCloudApiAuth()
+installWorkspaceApiAuth()
 
 const TEN_MINUTES_MS = 10 * 60 * 1000
 
@@ -656,6 +661,7 @@ function capabilitiesResponse({
       can_revert_scheduled_change: false,
       can_change_seats: false,
       can_invite_members: false,
+      can_manage_members: false,
       can_downgrade_to_personal: false
     },
     rollout_defaults_applied: {

@@ -8,6 +8,7 @@ import { computed, nextTick, onBeforeUnmount, ref, watch } from 'vue'
 import { useI18n } from 'vue-i18n'
 
 import Button from '@/components/ui/button/Button.vue'
+import { useSkillPacksStore } from '@/platform/skills/stores/skillPacksStore'
 
 import { cn } from '@comfyorg/tailwind-utils'
 
@@ -16,6 +17,7 @@ import type {
   AgentPaywallAction,
   AgentPaywallPresentation
 } from '@/workbench/extensions/agent/services/agent/agentPaywallPresentation'
+import { useAgentConversationStore } from '../../stores/agent/agentConversationStore'
 import type { ConversationEntry } from '../../stores/agent/agentConversationStore'
 import type { TurnId } from '../../schemas/agentApiSchema'
 import type { PromptSnapshot } from '../../types/workflowReference'
@@ -47,6 +49,27 @@ const emit = defineEmits<{
 }>()
 
 const { t } = useI18n()
+const skills = useSkillPacksStore()
+const conversation = useAgentConversationStore()
+const hasSkills = computed(() =>
+  entries.some((entry) => entry.role === 'user' && entry.skillReference)
+)
+function refreshSkills(): void {
+  void skills.startFlagGate({ fetch: false })
+  if (skills.enabled) void skills.refreshPacks()
+}
+// Opening a conversation refreshes the catalog its skills are shown against.
+// A live turn's first skill doesn't: the session refreshes when it ends.
+watch(
+  () => conversation.historySkillNames,
+  (names) => {
+    if (names.length) refreshSkills()
+  },
+  { immediate: true }
+)
+watch([() => skills.enabled, () => skills.scope], () => {
+  if (hasSkills.value) refreshSkills()
+})
 
 const scrollContainer = ref<HTMLElement>()
 const content = ref<HTMLElement>()
@@ -216,6 +239,7 @@ watch(
               :attachments="entry.attachments"
               :tags="entry.tags"
               :workflow-references="entry.workflowReferences"
+              :skill-reference="entry.skillReference"
               :editable="entry.id === editableTurnId"
               @edit="emit('editPrompt', $event)"
               @open-reference-workflow="

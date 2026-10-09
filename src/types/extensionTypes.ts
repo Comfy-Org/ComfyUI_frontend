@@ -1,6 +1,7 @@
 import type { Component } from 'vue'
 
 import type { ToastId } from '@/types/toastId'
+import type { ToastAction, ToastOptions } from '@/types/toastOptions'
 
 import type { useWorkflowStore } from '@/platform/workflow/management/stores/workflowStore'
 import type { ExecutionErrorWsMessage } from '@/platform/remote/comfyui/execution/types'
@@ -50,18 +51,7 @@ export type BottomPanelExtension =
   | VueBottomPanelExtension
   | CustomBottomPanelExtension
 
-export interface ToastAction {
-  label: string
-  onClick: () => unknown
-}
-
-export interface ToastOptions {
-  action?: ToastAction
-  closable?: boolean
-  description?: string
-  duration?: number
-  id?: ToastId
-}
+export type { ToastAction, ToastOptions }
 
 /**
  * @deprecated Use `toast.success/error/info/warning/loading(title, options)`.
