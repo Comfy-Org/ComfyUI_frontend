@@ -127,12 +127,7 @@ function onKeydown(event: KeyboardEvent) {
         >
           <component
             :is="icon[tab]"
-            :class="
-              cn(
-                'size-3.5 shrink-0 lg:size-4',
-                tab === selected && 'text-primary-comfy-yellow'
-              )
-            "
+            class="size-3.5 shrink-0 text-primary-warm-white lg:size-4"
             aria-hidden="true"
           />
           <span class="lg:min-w-0 lg:flex-1 lg:truncate lg:text-left">
