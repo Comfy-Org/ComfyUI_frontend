@@ -289,7 +289,9 @@ test('moves a thing from the Move anything side panel and shows the result', asy
   const panel = app.getByRole('complementary', {
     name: 'Move anything settings'
   })
-  await expect(panel).toContainText('kitten.jpg')
+  await expect(
+    panel.getByRole('button', { name: 'Change photo: kitten.jpg' })
+  ).toBeVisible()
   await expectPanelWidth(panel)
   await expect(generate).toBeDisabled()
   await kitten.focus()
