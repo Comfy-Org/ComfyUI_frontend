@@ -180,8 +180,6 @@ describe('useStarterPromptSet', () => {
     ({ readOverride }) => {
       authenticatedRemoteConfigState.value = 'authenticated'
       remoteConfig.value = { [STARTER_PROMPT_SET_FLAG]: 'test' }
-      vi.mocked(getSessionOverride).mockReturnValue(undefined)
-      vi.mocked(getDevOverride).mockReturnValue(undefined)
       vi.mocked(readOverride).mockReturnValue(null)
 
       const { assignment, attributeExperiment, expose } = useStarterPromptSet()
