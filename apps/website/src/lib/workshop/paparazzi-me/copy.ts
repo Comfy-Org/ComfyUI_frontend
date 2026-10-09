@@ -22,19 +22,11 @@ const copy = {
   'paparazzi.star': { en: 'Star', 'zh-CN': '明星' },
   'paparazzi.star.label': { en: 'Star’s name', 'zh-CN': '明星姓名' },
   'paparazzi.star.placeholder': {
-    en: 'Type a name, like Nova Reyes',
-    'zh-CN': '输入姓名，例如 Nova Reyes'
+    en: 'Find a star, like Nova Reyes',
+    'zh-CN': '查找明星，例如 Nova Reyes'
   },
   'paparazzi.star.find': { en: 'Find photos', 'zh-CN': '查找照片' },
   'paparazzi.star.suggestions': { en: 'Suggestions', 'zh-CN': '推荐' },
-  'paparazzi.star.hint': {
-    en: 'We look up paparazzi photos of them. Upload a scene to use your own.',
-    'zh-CN': '我们会查找 TA 的狗仔照片。也可以上传你自己的场景。'
-  },
-  'paparazzi.star.short': {
-    en: 'Type at least 2 letters.',
-    'zh-CN': '请至少输入 2 个字符。'
-  },
   'paparazzi.star.film': { en: 'Film star', 'zh-CN': '电影明星' },
   'paparazzi.star.music': { en: 'Singer', 'zh-CN': '歌手' },
   'paparazzi.star.tv': { en: 'TV host', 'zh-CN': '电视主持人' },

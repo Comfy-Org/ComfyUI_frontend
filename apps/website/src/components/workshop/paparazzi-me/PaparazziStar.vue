@@ -28,11 +28,6 @@ const suggestions = computed(() =>
     ? STARS
     : matchStars(query.value)
 )
-const note = computed(() =>
-  hasCelebrity(query.value)
-    ? pc('paparazzi.star.hint', locale)
-    : pc('paparazzi.star.short', locale)
-)
 const searching = computed(() => search.value.kind === 'searching')
 const expanded = computed(() => open.value && suggestions.value.length > 0)
 
@@ -64,13 +59,13 @@ function choose() {
 </script>
 
 <template>
-  <div class="flex flex-col gap-2 px-1">
-    <label :for="id" class="text-xs text-primary-warm-gray">{{
+  <div class="flex flex-col gap-2">
+    <label :for="id" class="sr-only">{{
       pc('paparazzi.star.label', locale)
     }}</label>
     <div class="relative">
       <Search
-        class="pointer-events-none absolute top-1/2 left-2.5 size-3.5 -translate-y-1/2 text-primary-warm-gray"
+        class="pointer-events-none absolute top-1/2 left-3 size-3.5 -translate-y-1/2 text-primary-warm-gray"
         aria-hidden="true"
       />
       <input
@@ -84,7 +79,7 @@ function choose() {
         :aria-controls="`${id}-list`"
         :aria-activedescendant="expanded ? `${id}-${active}` : undefined"
         :placeholder="pc('paparazzi.star.placeholder', locale)"
-        class="h-9 w-full rounded-lg bg-transparency-white-t4 pr-10 pl-8 text-[13px] text-primary-warm-white placeholder:text-primary-warm-gray/60 focus-visible:ring-2 focus-visible:ring-primary-comfy-yellow/50 focus-visible:outline-none disabled:opacity-40"
+        class="h-10 w-full rounded-xl border border-transparency-white-t8 bg-transparent pr-10 pl-8.5 text-sm text-primary-warm-white placeholder:text-primary-warm-gray/60 hover:border-transparency-white-t20 focus-visible:ring-2 focus-visible:ring-primary-comfy-yellow/50 focus-visible:outline-none disabled:opacity-40"
         @input="type"
         @focus="open = true"
         @blur="open = false"
@@ -126,6 +121,5 @@ function choose() {
         @pick="pick(star)"
       />
     </ul>
-    <p v-if="note" class="text-[11px] text-primary-warm-gray">{{ note }}</p>
   </div>
 </template>

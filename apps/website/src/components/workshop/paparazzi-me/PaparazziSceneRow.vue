@@ -20,7 +20,6 @@ const { pickerOpen } = paparazzi
     :label="pc('paparazzi.scene', locale)"
     :value="sceneName(paparazzi, locale)"
     :expanded="pickerOpen"
-    label-above
     data-testid="paparazzi-scene-row"
     @toggle="paparazzi.openPicker"
   >
