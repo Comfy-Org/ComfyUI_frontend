@@ -1,4 +1,4 @@
-import { render, screen } from '@testing-library/vue'
+import { render, screen, waitFor } from '@testing-library/vue'
 import userEvent from '@testing-library/user-event'
 import { describe, expect, it, vi } from 'vitest'
 
@@ -143,20 +143,44 @@ describe('Button', () => {
     expect(button).toHaveFocus()
   })
 
-  it('does not repeat a tooltip equal to its name as its description', async () => {
-    const user = userEvent.setup()
-    render(Button, {
-      props: { tooltip: 'Delete' },
-      attrs: { 'aria-label': 'Delete' }
-    })
+  it.for([
+    {
+      name: 'its aria-label',
+      attrs: { 'aria-label': 'Delete' },
+      slot: '<i class="icon-[lucide--trash]" />',
+      tooltip: 'Delete',
+      description: ''
+    },
+    {
+      name: 'its text',
+      attrs: {},
+      slot: 'Run',
+      tooltip: 'Run',
+      description: ''
+    },
+    {
+      name: 'neither',
+      attrs: {},
+      slot: 'Run',
+      tooltip: 'Run the workflow',
+      description: 'Run the workflow'
+    }
+  ])(
+    'describes itself with "$description" when the tooltip repeats $name',
+    async ({ attrs, slot, tooltip, description }) => {
+      const user = userEvent.setup()
+      render(Button, { props: { tooltip }, attrs, slots: { default: slot } })
 
-    await user.tab()
+      await user.tab()
 
-    await screen.findByRole('tooltip')
-    expect(
-      screen.getByRole('button', { name: 'Delete' })
-    ).not.toHaveAccessibleDescription()
-  })
+      await screen.findByRole('tooltip')
+      await waitFor(() =>
+        expect(screen.getByRole('button')).toHaveAccessibleDescription(
+          description
+        )
+      )
+    }
+  )
 
   it('renders the tooltip slot in place of the tooltip text', async () => {
     const user = userEvent.setup()

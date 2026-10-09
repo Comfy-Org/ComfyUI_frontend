@@ -5,9 +5,8 @@ import Tooltip from './Tooltip.vue'
 import TooltipContent from './TooltipContent.vue'
 import TooltipTrigger from './TooltipTrigger.vue'
 
-const { text, side, label } = defineProps<{
+const { text, side } = defineProps<{
   text: string
-  label?: string
   side?: TooltipContentProps['side']
 }>()
 </script>
@@ -17,7 +16,7 @@ const { text, side, label } = defineProps<{
     <TooltipTrigger as-child>
       <slot />
     </TooltipTrigger>
-    <TooltipContent :side :aria-label="text === label ? ' ' : text">
+    <TooltipContent :side>
       <slot name="content">{{ text }}</slot>
     </TooltipContent>
   </Tooltip>

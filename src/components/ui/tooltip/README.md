@@ -34,8 +34,6 @@ Give a `Button` a tooltip with props:
 
 - `tooltipSide` defaults to `top`.
 - Attributes, listeners and focus still go to the rendered `<button>`.
-- A tooltip equal to the button's `aria-label` is not repeated as its
-  accessible description.
 - Use the `#tooltip` slot for formatted content, such as a shortcut hint. The
   `tooltip` prop must still be set.
 - `tooltip=""` keeps the tooltip wiring and disables it; `undefined` renders a
@@ -70,9 +68,12 @@ Compose the parts. The trigger child must render a single element:
 ## Behaviour
 
 - Hovering or keyboard focus opens the tooltip; pointer-caused focus,
-  touch and a pressed mouse button do not.
+  touch and moving in with a mouse button held, such as a link drag, do not.
 - The tooltip closes when the pointer leaves, on click, on Escape, and on any
-  wheel scroll, even one the canvas stops from propagating.
+  wheel scroll while its trigger is hovered, even one the canvas stops from
+  propagating. A scroll during the open delay cancels it.
+- Content that matches the trigger's accessible name (its `aria-label`, or
+  its text) is not repeated as the trigger's description.
 - `TooltipTrigger` opens on `pointerenter` as well as reka's `pointermove`,
   because trigger content such as node widgets can stop `pointermove` from
   bubbling.

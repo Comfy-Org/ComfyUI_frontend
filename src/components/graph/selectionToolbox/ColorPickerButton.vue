@@ -29,7 +29,6 @@
           v-for="option in colorOptions"
           :key="option.name"
           :text="option.localizedName"
-          :label="option.localizedName"
         >
           <ToggleGroupItem
             :value="option.name"

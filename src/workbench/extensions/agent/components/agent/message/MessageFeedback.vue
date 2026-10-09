@@ -130,7 +130,7 @@ async function downloadAssets(): Promise<void> {
             />
           </Button>
         </TooltipTrigger>
-        <TooltipContent aria-label=" ">{{
+        <TooltipContent>{{
           copied ? t('agent.copied') : t('agent.copy')
         }}</TooltipContent>
       </Tooltip>
