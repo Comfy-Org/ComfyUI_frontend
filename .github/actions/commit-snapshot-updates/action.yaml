@@ -75,7 +75,7 @@ runs:
         set -euo pipefail
 
         if [ -d "$DOWNLOAD_DIR" ]; then
-          rsync -a --prune-empty-dirs --include='*/' --include='**-snapshots/**.png' --exclude='*' \
+          rsync -a --ignore-times --prune-empty-dirs --include='*/' --include='**-snapshots/**.png' --exclude='*' \
             "$DOWNLOAD_DIR/" "$CONFIG_DIR/"
         fi
 
