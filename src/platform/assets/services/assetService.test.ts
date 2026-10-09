@@ -293,9 +293,7 @@ describe(assetService.uploadAssetFromBase64, () => {
   })
 
   it('rejects when the upload response is invalid', async () => {
-    const fetchSpy = vi
-      .spyOn(globalThis, 'fetch')
-      .mockResolvedValueOnce(new Response('hello'))
+    vi.mocked(fetch).mockResolvedValueOnce(new Response('hello'))
     fetchApiMock.mockResolvedValueOnce(buildResponse({ id: 'missing-name' }))
 
     await expect(
@@ -305,13 +303,11 @@ describe(assetService.uploadAssetFromBase64, () => {
         tags: ['input']
       })
     ).rejects.toThrow('Failed to upload asset')
-    fetchSpy.mockRestore()
+    vi.mocked(fetch).mockRestore()
   })
 
   it('rejects upload responses with a non-boolean created_new', async () => {
-    const fetchSpy = vi
-      .spyOn(globalThis, 'fetch')
-      .mockResolvedValueOnce(new Response('hello'))
+    vi.mocked(fetch).mockResolvedValueOnce(new Response('hello'))
     fetchApiMock.mockResolvedValueOnce(
       buildResponse({
         ...validAsset({ id: 'uploaded-input', tags: ['input'] }),
@@ -326,7 +322,7 @@ describe(assetService.uploadAssetFromBase64, () => {
         tags: ['input']
       })
     ).rejects.toThrow('Failed to upload asset')
-    fetchSpy.mockRestore()
+    vi.mocked(fetch).mockRestore()
   })
 })
 

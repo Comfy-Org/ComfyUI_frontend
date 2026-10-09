@@ -105,6 +105,10 @@ vi.mock<unknown>(import('@/scripts/changeTracker'), () => ({
   ChangeTracker: { init: vi.fn() }
 }))
 
+vi.mock(import('@/services/extensionLoader'), () => ({
+  loadExtensions: vi.fn(async () => {})
+}))
+
 vi.mock<unknown>(import('@/services/useNewUserService'), () => ({
   useNewUserService: () => ({
     initializeIfNewUser: vi.fn(),

@@ -10,17 +10,14 @@ it('keeps a 4 MiB upload alive past 60 seconds and aborts it at 94 seconds', asy
     vi.useRealTimers()
   })
   let signal: AbortSignal | null | undefined
-  vi.stubGlobal(
-    'fetch',
-    vi.fn<typeof fetch>((_input, init) => {
-      signal = init?.signal
-      return new Promise<Response>((_resolve, reject) => {
-        signal?.addEventListener('abort', () => reject(signal?.reason), {
-          once: true
-        })
+  vi.mocked(fetch).mockImplementation((_input, init) => {
+    signal = init?.signal
+    return new Promise<Response>((_resolve, reject) => {
+      signal?.addEventListener('abort', () => reject(signal?.reason), {
+        once: true
       })
     })
-  )
+  })
   const client = createAgentRestClient()
   const chips = new Map<string, ComposerAttachment>()
   const onError = vi.fn()

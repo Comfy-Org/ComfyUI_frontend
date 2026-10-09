@@ -186,14 +186,11 @@ function installFetchRecorder(features: Record<string, unknown>) {
     }
   }
 
-  vi.stubGlobal(
-    'fetch',
-    vi.fn<typeof fetch>(async (input, init) => {
-      const request = recordRequest(input, init)
-      all.push(request)
-      return respond(request)
-    })
-  )
+  vi.mocked(fetch).mockImplementation(async (input, init) => {
+    const request = recordRequest(input, init)
+    all.push(request)
+    return respond(request)
+  })
 
   return { all }
 }

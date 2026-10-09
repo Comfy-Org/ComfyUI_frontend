@@ -1255,6 +1255,26 @@ describe('useTeamWorkspaceStore', () => {
       expect(store.ownedWorkspacesCount).toBe(2)
     })
 
+    it.for([
+      { canCreate: false, expected: false },
+      { canCreate: true, expected: true },
+      { canCreate: undefined, expected: true }
+    ])(
+      'canCreateWorkspace follows the server (can_create_workspace: $canCreate)',
+      async ({ canCreate, expected }) => {
+        mockWorkspaceApi.list.mockResolvedValue({
+          workspaces: [mockPersonalWorkspace],
+          ...(canCreate !== undefined && { can_create_workspace: canCreate })
+        })
+
+        const store = useTeamWorkspaceStore()
+        await store.initialize()
+
+        expect(store.canCreateWorkspace).toBe(expected)
+        expect(store.workspacesManagedByOrganization).toBe(!expected)
+      }
+    )
+
     it('canCreateWorkspace respects limit', async () => {
       const manyWorkspaces = Array.from({ length: 10 }, (_, i) => ({
         id: `ws-owned-${i}`,
@@ -2386,6 +2406,25 @@ describe('useTeamWorkspaceStore', () => {
 
       await vi.waitFor(() => expect(mockWorkspaceApi.list).toHaveBeenCalled())
       await nextTick()
+      expect(store.activeWorkspaceId).toBeNull()
+    })
+
+    it('reports a failed refresh and keeps no active workspace', async () => {
+      const store = useTeamWorkspaceStore()
+      await store.initialize()
+      const failure = new Error('list failed')
+      mockWorkspaceApi.list.mockRejectedValue(failure)
+
+      pushHostState(hostOn(mockMemberWorkspace.id))
+
+      await vi.waitFor(() =>
+        expect(reportError).toHaveBeenCalledWith(
+          failure,
+          expect.objectContaining({
+            errorType: 'error_refreshing_workspaces_for_desktop_host'
+          })
+        )
+      )
       expect(store.activeWorkspaceId).toBeNull()
     })
 

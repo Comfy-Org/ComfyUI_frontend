@@ -8,7 +8,7 @@ import { i18n } from '@/i18n'
 import { useSettingStore } from '@/platform/settings/settingStore'
 import { useFeatureUsageTracker } from '@/platform/surveys/useFeatureUsageTracker'
 import { reportError } from '@/platform/telemetry/reportError'
-import { useToastStore } from '@/platform/updates/common/toastStore'
+import { useToast } from '@/components/ui/toast/toastStore'
 import { api } from '@/scripts/api'
 import { app } from '@/scripts/app'
 import { useTemplateWorkflows } from '@/platform/workflow/templates/composables/useTemplateWorkflows'
@@ -141,9 +141,8 @@ describe('useTemplateWorkflows', () => {
   let mockWorkflowTemplatesStore: MockWorkflowTemplatesStore
 
   beforeEach(() => {
-    vi.stubGlobal(
-      'fetch',
-      vi.fn(async () => Response.json(loadableWorkflow))
+    vi.mocked(fetch).mockImplementation(async () =>
+      Response.json(loadableWorkflow)
     )
     mockIsCloud.value = true
     mockDistributionIsCloud.value = false
@@ -222,12 +221,12 @@ describe('useTemplateWorkflows', () => {
       'not-started'
     )
 
-    expect(useToastStore().messagesToAdd).toEqual([
-      {
-        severity: 'error',
-        summary: i18n.global.t('g.error'),
-        detail: i18n.global.t('templateWorkflows.error.loading')
-      }
+    expect(useToast().toasts).toEqual([
+      expect.objectContaining({
+        kind: 'error',
+        title: i18n.global.t('g.error'),
+        description: i18n.global.t('templateWorkflows.error.loading')
+      })
     ])
     expect(fetch).not.toHaveBeenCalled()
     expect(app.loadGraphData).not.toHaveBeenCalled()
@@ -253,14 +252,14 @@ describe('useTemplateWorkflows', () => {
       'not-started'
     )
 
-    expect(useToastStore().messagesToAdd).toEqual([
-      {
-        severity: 'error',
-        summary: i18n.global.t('g.error'),
-        detail: i18n.global.t('templateWorkflows.error.templateNotFound', {
+    expect(useToast().toasts).toEqual([
+      expect.objectContaining({
+        kind: 'error',
+        title: i18n.global.t('g.error'),
+        description: i18n.global.t('templateWorkflows.error.templateNotFound', {
           templateName: 'missing'
         })
-      }
+      })
     ])
     expect(fetch).not.toHaveBeenCalled()
     expect(app.loadGraphData).not.toHaveBeenCalled()
@@ -614,11 +613,13 @@ describe('useTemplateWorkflows', () => {
       expect.stringContaining('Failed to fetch workflow template'),
       { surface: 'graph', errorType: 'error_fetching_workflow_template' }
     )
-    expect(useToastStore().messagesToAdd).toContainEqual({
-      severity: 'error',
-      summary: i18n.global.t('g.error'),
-      detail: i18n.global.t('templateWorkflows.error.loading')
-    })
+    expect(useToast().toasts).toContainEqual(
+      expect.objectContaining({
+        kind: 'error',
+        title: i18n.global.t('g.error'),
+        description: i18n.global.t('templateWorkflows.error.loading')
+      })
+    )
   })
 
   it('opens a workflow that only satisfies the legacy load contract', async () => {
@@ -875,6 +876,55 @@ describe('useTemplateWorkflows', () => {
     )
   })
 
+  it.for([
+    {
+      name: 'the upload succeeds',
+      settle: (download: ReturnType<typeof deferred<Response>>) =>
+        download.resolve(new Response('video'))
+    },
+    {
+      name: 'the download fails',
+      settle: (download: ReturnType<typeof deferred<Response>>) =>
+        download.resolve(Promise.reject(new Error('offline')))
+    }
+  ])(
+    'shows the media progress toast only while samples upload when $name',
+    async ({ settle }) => {
+      const graph = addVideoTemplate()
+      const download = deferred<Response>()
+      const started = deferred<void>()
+      vi.mocked(fetch).mockImplementation((url) => {
+        if (String(url).startsWith('mock-internal-url'))
+          return Promise.resolve(Response.json([]))
+        if (String(url).endsWith('.mp4')) {
+          started.resolve()
+          return download.promise
+        }
+        return Promise.resolve(Response.json(graph))
+      })
+      vi.mocked(api.fetchApi).mockResolvedValue(
+        Response.json({ name: 'kitten_cop (1).mp4', type: 'input' })
+      )
+      const { loader } = mountTemplateWorkflows()
+      const result = loader.loadWorkflowTemplate('video', 'default')
+      await started.promise
+
+      expect(useToast().toasts).toEqual([
+        expect.objectContaining({
+          kind: 'loading',
+          title: i18n.global.t('templateWorkflows.preparingMedia')
+        })
+      ])
+
+      settle(download)
+
+      expect(await result).toBe('loaded')
+      expect(useToast().toasts).not.toContainEqual(
+        expect.objectContaining({ kind: 'loading' })
+      )
+    }
+  )
+
   it.for([null, 'main'])(
     'opens a template without downloading unversioned samples (revision: %s)',
     async (revision) => {
@@ -893,9 +943,7 @@ describe('useTemplateWorkflows', () => {
         { openSource: 'template' }
       )
       expect(fetch).toHaveBeenCalledTimes(1)
-      expect(useToastStore().messagesToAdd).not.toContainEqual(
-        expect.objectContaining({ severity: 'info' })
-      )
+      expect(useToast().toasts).toEqual([])
     }
   )
 
@@ -940,8 +988,8 @@ describe('useTemplateWorkflows', () => {
       )
       expect(fetch).toHaveBeenCalledTimes(1)
       expect(api.fetchApi).not.toHaveBeenCalled()
-      expect(useToastStore().messagesToAdd).not.toContainEqual(
-        expect.objectContaining({ severity: 'error' })
+      expect(useToast().toasts).not.toContainEqual(
+        expect.objectContaining({ kind: 'error' })
       )
     }
   )
@@ -994,10 +1042,10 @@ describe('useTemplateWorkflows', () => {
       )
       expect(app.reloadNodeDefs).not.toHaveBeenCalled()
       expect(useDialogStore().closeDialog).toHaveBeenCalled()
-      expect(useToastStore().messagesToAdd).toContainEqual(
+      expect(useToast().toasts).toContainEqual(
         expect.objectContaining({
-          severity: 'warn',
-          detail: expect.stringContaining('choose your own files')
+          kind: 'warning',
+          description: expect.stringContaining('choose your own files')
         })
       )
     }
@@ -1029,10 +1077,10 @@ describe('useTemplateWorkflows', () => {
     )
     expect(fetch).toHaveBeenCalledTimes(1)
     expect(api.fetchApi).not.toHaveBeenCalled()
-    expect(useToastStore().messagesToAdd).toContainEqual(
+    expect(useToast().toasts).toContainEqual(
       expect.objectContaining({
-        severity: 'warn',
-        detail: expect.stringContaining('choose your own files')
+        kind: 'warning',
+        description: expect.stringContaining('choose your own files')
       })
     )
   })
@@ -1127,10 +1175,10 @@ describe('useTemplateWorkflows', () => {
       surface: 'graph',
       errorType: 'error_loading_template'
     })
-    expect(useToastStore().messagesToAdd).toEqual([
+    expect(useToast().toasts).toEqual([
       expect.objectContaining({
-        severity: 'error',
-        detail: i18n.global.t('templateWorkflows.error.loading')
+        kind: 'error',
+        description: i18n.global.t('templateWorkflows.error.loading')
       })
     ])
     expect(second).toBe('not-started')
@@ -1161,7 +1209,7 @@ describe('useTemplateWorkflows', () => {
     expect(await second).toBe('loaded')
     expect(app.loadGraphData).toHaveBeenCalledOnce()
     expect(nextLoader.loadingTemplateId.value).toBeNull()
-    expect(useToastStore().messagesToAdd).toEqual([])
+    expect(useToast().toasts).toEqual([])
   })
 
   it('does not open the workflow when the loader unmounts while fetching the template', async () => {
@@ -1225,7 +1273,7 @@ describe('useTemplateWorkflows', () => {
       expect(requestSignal?.aborted).toBe(true)
       expect(loader.loadingTemplateId.value).toBeNull()
       expect(app.loadGraphData).not.toHaveBeenCalled()
-      expect(useToastStore().messagesToAdd).toEqual([])
+      expect(useToast().toasts).toEqual([])
     }
   )
 
@@ -1270,11 +1318,9 @@ describe('useTemplateWorkflows', () => {
       expect(await first).toBe('not-started')
 
       expect(app.loadGraphData).toHaveBeenCalledTimes(1)
-      expect(
-        useToastStore().messagesToAdd.filter(
-          (message) => message.severity === 'error'
-        )
-      ).toEqual([])
+      expect(useToast().toasts).not.toContainEqual(
+        expect.objectContaining({ kind: 'error' })
+      )
     }
   )
 
@@ -1326,11 +1372,9 @@ describe('useTemplateWorkflows', () => {
       expect(await first).toBe('not-started')
 
       expect(app.loadGraphData).toHaveBeenCalledTimes(1)
-      expect(
-        useToastStore().messagesToAdd.filter(
-          (message) => message.severity === 'error'
-        )
-      ).toEqual([])
+      expect(useToast().toasts).not.toContainEqual(
+        expect.objectContaining({ kind: 'error' })
+      )
     }
   )
 
