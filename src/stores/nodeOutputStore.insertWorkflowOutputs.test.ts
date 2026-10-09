@@ -1,0 +1,69 @@
+import { assert, describe, expect, it, vi } from 'vitest'
+
+import { LGraph, LGraphNode } from '@/lib/litegraph/src/litegraph'
+import type { ExecutedWsMessage } from '@/platform/remote/comfyui/execution/types'
+import { app } from '@/scripts/app'
+import { useNodeOutputStore } from '@/stores/nodeOutputStore'
+import { toNodeId } from '@/types/nodeId'
+import { tryNormalizeNodeExecutionId } from '@/types/nodeIdentification'
+
+vi.mock(import('@/scripts/app'))
+
+const REMAPPED_ID = 'insert:0fbd38ecb13037d0b3b0ca78b8a20a5a:root:node:9'
+
+const OUTPUT: ExecutedWsMessage['output'] = {
+  images: [{ filename: 'astronaut.png', subfolder: '', type: 'output' }]
+}
+
+class SaveImage extends LGraphNode {
+  constructor() {
+    super('SaveImage')
+    this.addInput('images', 'IMAGE')
+  }
+}
+
+function addRootSaveImageNode(rawNodeId: string) {
+  const graph = new LGraph()
+  const node = new SaveImage()
+  node.id = toNodeId(rawNodeId)
+  graph.add(node)
+  vi.spyOn(app, 'rootGraph', 'get').mockReturnValue(graph)
+  vi.spyOn(app, 'nodeOutputs', 'get').mockReturnValue({})
+  app.nodePreviewImages = {}
+  return node
+}
+
+function setOutputsByRawExecutionId(rawNodeId: string) {
+  const executionId = tryNormalizeNodeExecutionId(rawNodeId)
+  assert.exists(executionId)
+  useNodeOutputStore().setNodeOutputsByExecutionId(executionId, OUTPUT)
+}
+
+describe('nodeOutputStore: outputs for insert_workflow-remapped node ids', () => {
+  it('regression: lands an executed output on an agent-inserted node (PM-2037)', () => {
+    const node = addRootSaveImageNode(REMAPPED_ID)
+
+    setOutputsByRawExecutionId(REMAPPED_ID)
+
+    expect(useNodeOutputStore().getNodeOutputs(node)).toEqual(OUTPUT)
+  })
+
+  it('keys two inserted nodes separately rather than collapsing them', () => {
+    const graph = new LGraph()
+    const first = new SaveImage()
+    first.id = toNodeId(REMAPPED_ID)
+    const second = new SaveImage()
+    second.id = toNodeId('insert:0fbd38ecb13037d0b3b0ca78b8a20a5a:root:node:10')
+    graph.add(first)
+    graph.add(second)
+    vi.spyOn(app, 'rootGraph', 'get').mockReturnValue(graph)
+    vi.spyOn(app, 'nodeOutputs', 'get').mockReturnValue({})
+    app.nodePreviewImages = {}
+
+    setOutputsByRawExecutionId(String(first.id))
+
+    const store = useNodeOutputStore()
+    expect(store.getNodeOutputs(first)).toEqual(OUTPUT)
+    expect(store.getNodeOutputs(second)).toBeUndefined()
+  })
+})
