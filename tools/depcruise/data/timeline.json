@@ -3,7 +3,7 @@
   "issue": "FE-3037",
   "tool": "dependency-cruiser, repo .dependency-cruiser.json, `depcruise src`",
   "base": "7475c964f67419ead544bcdab2b98bc0da14e607",
-  "head": "e3e1b1513fe0663cffaf0d60b964ef4ece93bd1e",
+  "head": "f9be289d9b15dd19df1326004a382d1fff624cb9",
   "notes": [
     "A knot is a strongly connected component of the src/ module graph with more than one module.",
     "Step 0 is the parent of the first FE-3037 commit; every later step is one commit on main.",
@@ -152,7 +152,7 @@
     {
       "id": 15,
       "parent": 0,
-      "bornAt": 75,
+      "bornAt": 78,
       "peak": 5,
       "role": "other",
       "fromMain": true,
@@ -161,7 +161,7 @@
     {
       "id": 16,
       "parent": 0,
-      "bornAt": 75,
+      "bornAt": 78,
       "peak": 5,
       "role": "other",
       "fromMain": true,
@@ -170,7 +170,7 @@
     {
       "id": 17,
       "parent": 0,
-      "bornAt": 78,
+      "bornAt": 81,
       "peak": 48,
       "role": "other",
       "fromMain": true,
@@ -179,7 +179,7 @@
     {
       "id": 18,
       "parent": 0,
-      "bornAt": 79,
+      "bornAt": 82,
       "peak": 49,
       "role": "other",
       "fromMain": true,
@@ -188,7 +188,7 @@
     {
       "id": 19,
       "parent": 17,
-      "bornAt": 82,
+      "bornAt": 85,
       "peak": 3,
       "role": "other",
       "fromMain": true,
@@ -6555,15 +6555,282 @@
         "entangled": [],
         "splits": []
       }
+    },
+    {
+      "index": 73,
+      "kind": "commit",
+      "parent": 72,
+      "sha": "2df273eba61476df129984a423cd686634622d3a",
+      "short": "2df273eba6",
+      "date": "2026-10-08T23:27:08-07:00",
+      "subject": "feat(agent): run starter prompt set experiment",
+      "pr": 20272,
+      "fe3037": false,
+      "stats": {
+        "modules": 2492,
+        "imports": 11694,
+        "modulesInKnots": 511,
+        "largestKnot": 296,
+        "mainKnot": 296,
+        "secondKnot": 154,
+        "knotCount": 15,
+        "importsInKnots": 2121,
+        "noCircularWarnings": 1628
+      },
+      "knots": [
+        {
+          "id": 0,
+          "size": 296
+        },
+        {
+          "id": 9,
+          "size": 154
+        },
+        {
+          "id": 1,
+          "size": 28
+        },
+        {
+          "id": 8,
+          "size": 6
+        },
+        {
+          "id": 10,
+          "size": 5
+        },
+        {
+          "id": 13,
+          "size": 3
+        },
+        {
+          "id": 11,
+          "size": 3
+        },
+        {
+          "id": 2,
+          "size": 2
+        },
+        {
+          "id": 3,
+          "size": 2
+        },
+        {
+          "id": 12,
+          "size": 2
+        },
+        {
+          "id": 4,
+          "size": 2
+        },
+        {
+          "id": 5,
+          "size": 2
+        },
+        {
+          "id": 6,
+          "size": 2
+        },
+        {
+          "id": 14,
+          "size": 2
+        },
+        {
+          "id": 7,
+          "size": 2
+        }
+      ],
+      "delta": {
+        "freed": [],
+        "entangled": [],
+        "splits": []
+      }
+    },
+    {
+      "index": 74,
+      "kind": "commit",
+      "parent": 73,
+      "sha": "f5e2dddc56b60c0cf4f10c48c41d750ae6e9e31d",
+      "short": "f5e2dddc56",
+      "date": "2026-10-09T06:05:54Z",
+      "subject": "fix: anchor popovers correctly inside transformed nodes",
+      "pr": 20592,
+      "fe3037": false,
+      "stats": {
+        "modules": 2492,
+        "imports": 11695,
+        "modulesInKnots": 511,
+        "largestKnot": 296,
+        "mainKnot": 296,
+        "secondKnot": 154,
+        "knotCount": 15,
+        "importsInKnots": 2121,
+        "noCircularWarnings": 1628
+      },
+      "knots": [
+        {
+          "id": 0,
+          "size": 296
+        },
+        {
+          "id": 9,
+          "size": 154
+        },
+        {
+          "id": 1,
+          "size": 28
+        },
+        {
+          "id": 8,
+          "size": 6
+        },
+        {
+          "id": 10,
+          "size": 5
+        },
+        {
+          "id": 13,
+          "size": 3
+        },
+        {
+          "id": 11,
+          "size": 3
+        },
+        {
+          "id": 2,
+          "size": 2
+        },
+        {
+          "id": 3,
+          "size": 2
+        },
+        {
+          "id": 12,
+          "size": 2
+        },
+        {
+          "id": 4,
+          "size": 2
+        },
+        {
+          "id": 5,
+          "size": 2
+        },
+        {
+          "id": 6,
+          "size": 2
+        },
+        {
+          "id": 14,
+          "size": 2
+        },
+        {
+          "id": 7,
+          "size": 2
+        }
+      ],
+      "delta": {
+        "freed": [],
+        "entangled": [],
+        "splits": []
+      }
+    },
+    {
+      "index": 75,
+      "kind": "commit",
+      "parent": 74,
+      "sha": "f9be289d9b15dd19df1326004a382d1fff624cb9",
+      "short": "f9be289d9b",
+      "date": "2026-10-09T07:03:32Z",
+      "subject": "test: pass mocks to expect without vi.mocked",
+      "pr": 20501,
+      "fe3037": false,
+      "stats": {
+        "modules": 2492,
+        "imports": 11695,
+        "modulesInKnots": 511,
+        "largestKnot": 296,
+        "mainKnot": 296,
+        "secondKnot": 154,
+        "knotCount": 15,
+        "importsInKnots": 2121,
+        "noCircularWarnings": 1628
+      },
+      "knots": [
+        {
+          "id": 0,
+          "size": 296
+        },
+        {
+          "id": 9,
+          "size": 154
+        },
+        {
+          "id": 1,
+          "size": 28
+        },
+        {
+          "id": 8,
+          "size": 6
+        },
+        {
+          "id": 10,
+          "size": 5
+        },
+        {
+          "id": 13,
+          "size": 3
+        },
+        {
+          "id": 11,
+          "size": 3
+        },
+        {
+          "id": 2,
+          "size": 2
+        },
+        {
+          "id": 3,
+          "size": 2
+        },
+        {
+          "id": 12,
+          "size": 2
+        },
+        {
+          "id": 4,
+          "size": 2
+        },
+        {
+          "id": 5,
+          "size": 2
+        },
+        {
+          "id": 6,
+          "size": 2
+        },
+        {
+          "id": 14,
+          "size": 2
+        },
+        {
+          "id": 7,
+          "size": 2
+        }
+      ],
+      "delta": {
+        "freed": [],
+        "entangled": [],
+        "splits": []
+      }
     }
   ],
   "openPrs": {
     "label": "refactor-gordian-knot",
-    "fetchedAt": "2026-10-09T05:39:59.518Z",
-    "main": "e3e1b1513fe0663cffaf0d60b964ef4ece93bd1e",
+    "fetchedAt": "2026-10-09T08:40:00.499Z",
+    "main": "f9be289d9b15dd19df1326004a382d1fff624cb9",
     "states": [
       {
-        "index": 73,
+        "index": 76,
         "kind": "pr",
         "parent": 71,
         "sha": "f1908f4bdd9a2e3b14764f7c9a3d63e06d718b4a",
@@ -6671,7 +6938,7 @@
         }
       },
       {
-        "index": 74,
+        "index": 77,
         "kind": "pr",
         "parent": 71,
         "sha": "dd32a979ac2ff2e894972ee88cff4267bfceeed9",
@@ -6763,7 +7030,7 @@
         }
       },
       {
-        "index": 75,
+        "index": 78,
         "kind": "pr",
         "parent": 71,
         "sha": "4e31bda28797f0c58642cebedbcd0d8ade93ecce",
@@ -6919,9 +7186,9 @@
         }
       },
       {
-        "index": 76,
+        "index": 79,
         "kind": "pr",
-        "parent": 75,
+        "parent": 78,
         "sha": "30e44c21793583f5741c8f6e7109dbf66ae94550",
         "short": "30e44c2179",
         "date": "2026-10-08T22:10:39Z",
@@ -7036,9 +7303,9 @@
         }
       },
       {
-        "index": 77,
+        "index": 80,
         "kind": "pr",
-        "parent": 73,
+        "parent": 76,
         "sha": "c72a6d5b270990b072962c49d178f005b1310469",
         "short": "c72a6d5b27",
         "date": "2026-09-27T23:13:02Z",
@@ -7144,9 +7411,9 @@
         }
       },
       {
-        "index": 78,
+        "index": 81,
         "kind": "pr",
-        "parent": 77,
+        "parent": 80,
         "sha": "79fa9488f7b79d62caeae96e6e9f40c838c7bc88",
         "short": "79fa9488f7",
         "date": "2026-09-28T00:31:49Z",
@@ -7316,9 +7583,9 @@
         }
       },
       {
-        "index": 79,
+        "index": 82,
         "kind": "pr",
-        "parent": 78,
+        "parent": 81,
         "sha": "6a802eca61eccfca4be4fedbe2f4a42781a0273c",
         "short": "6a802eca61",
         "date": "2026-09-28T02:09:00Z",
@@ -7465,9 +7732,9 @@
         }
       },
       {
-        "index": 80,
+        "index": 83,
         "kind": "pr",
-        "parent": 79,
+        "parent": 82,
         "sha": "2bca9fe2b22a58f7f666aab6356484870a0e69fa",
         "short": "2bca9fe2b2",
         "date": "2026-09-28T04:10:08Z",
@@ -7584,9 +7851,9 @@
         }
       },
       {
-        "index": 81,
+        "index": 84,
         "kind": "pr",
-        "parent": 80,
+        "parent": 83,
         "sha": "be7f95b456f3fc2ab0557500825a5bba0c03c0b4",
         "short": "be7f95b456",
         "date": "2026-09-28T04:56:04Z",
@@ -7670,9 +7937,9 @@
         }
       },
       {
-        "index": 82,
+        "index": 85,
         "kind": "pr",
-        "parent": 81,
+        "parent": 84,
         "sha": "240dfbeb985edd934a45f6883905c3aa853e5527",
         "short": "240dfbeb98",
         "date": "2026-10-08T22:20:05Z",
@@ -7759,7 +8026,7 @@
         }
       },
       {
-        "index": 83,
+        "index": 86,
         "kind": "pr",
         "parent": 72,
         "sha": "b1060fb11d6ad5d8123e65c8f023932408172aa2",
@@ -7847,33 +8114,33 @@
         }
       },
       {
-        "index": 84,
+        "index": 87,
         "kind": "pr",
-        "parent": 15,
-        "sha": "a44a01294d2765111fcd794c71aa04d1b46fb18c",
-        "short": "a44a01294d",
-        "date": "2026-10-08T00:37:32Z",
+        "parent": 86,
+        "sha": "176b725eb98c7a8859d948730f477b08a4c22779",
+        "short": "176b725eb9",
+        "date": "2026-10-09T05:54:23Z",
         "subject": "feat: classify image crop, compare, and painter domains",
         "pr": 19855,
         "stats": {
-          "modules": 2442,
-          "imports": 11384,
-          "modulesInKnots": 730,
-          "largestKnot": 519,
-          "mainKnot": 519,
-          "secondKnot": 160,
-          "knotCount": 11,
-          "importsInKnots": 2838,
-          "noCircularWarnings": 1963
+          "modules": 2491,
+          "imports": 11687,
+          "modulesInKnots": 511,
+          "largestKnot": 296,
+          "mainKnot": 296,
+          "secondKnot": 154,
+          "knotCount": 15,
+          "importsInKnots": 2121,
+          "noCircularWarnings": 1628
         },
         "knots": [
           {
             "id": 0,
-            "size": 519
+            "size": 296
           },
           {
             "id": 9,
-            "size": 160
+            "size": 154
           },
           {
             "id": 1,
@@ -7888,11 +8155,23 @@
             "size": 5
           },
           {
+            "id": 13,
+            "size": 3
+          },
+          {
+            "id": 11,
+            "size": 3
+          },
+          {
             "id": 2,
             "size": 2
           },
           {
             "id": 3,
+            "size": 2
+          },
+          {
+            "id": 12,
             "size": 2
           },
           {
@@ -7908,6 +8187,10 @@
             "size": 2
           },
           {
+            "id": 14,
+            "size": 2
+          },
+          {
             "id": 7,
             "size": 2
           }
@@ -7919,9 +8202,9 @@
         }
       },
       {
-        "index": 85,
+        "index": 88,
         "kind": "pr",
-        "parent": 84,
+        "parent": 15,
         "sha": "4b0a0304ef3e954ac22b5b8775302ca881e3fee7",
         "short": "4b0a0304ef",
         "date": "2026-10-08T00:34:58Z",
@@ -7998,7 +8281,7 @@
         "url": "https://github.com/Comfy-Org/ComfyUI_frontend/pull/19093",
         "author": "DrJKL",
         "isDraft": false,
-        "mergeable": "MERGEABLE",
+        "mergeable": "UNKNOWN",
         "reviewDecision": null,
         "additions": 285,
         "deletions": 243,
@@ -8007,11 +8290,11 @@
         "headRefName": "drjkl/widgets-registry-split",
         "head": "f1908f4bdd9a2e3b14764f7c9a3d63e06d718b4a",
         "mergeBase": "18a9c4210382fab896a7e00c7db5b141cefadef6",
-        "behindMain": 1,
+        "behindMain": 4,
         "parentPr": null,
         "containsParentHead": true,
         "depth": 0,
-        "state": 73,
+        "state": 76,
         "baseState": 71
       },
       {
@@ -8020,7 +8303,7 @@
         "url": "https://github.com/Comfy-Org/ComfyUI_frontend/pull/19116",
         "author": "DrJKL",
         "isDraft": false,
-        "mergeable": "MERGEABLE",
+        "mergeable": "UNKNOWN",
         "reviewDecision": null,
         "additions": 355,
         "deletions": 352,
@@ -8029,11 +8312,11 @@
         "headRefName": "drjkl/progress-text-previews-view",
         "head": "dd32a979ac2ff2e894972ee88cff4267bfceeed9",
         "mergeBase": "18a9c4210382fab896a7e00c7db5b141cefadef6",
-        "behindMain": 1,
+        "behindMain": 4,
         "parentPr": null,
         "containsParentHead": true,
         "depth": 0,
-        "state": 74,
+        "state": 77,
         "baseState": 71
       },
       {
@@ -8051,11 +8334,11 @@
         "headRefName": "drjkl/api-auth-provider",
         "head": "4e31bda28797f0c58642cebedbcd0d8ade93ecce",
         "mergeBase": "18a9c4210382fab896a7e00c7db5b141cefadef6",
-        "behindMain": 1,
+        "behindMain": 4,
         "parentPr": null,
         "containsParentHead": true,
         "depth": 0,
-        "state": 75,
+        "state": 78,
         "baseState": 71
       },
       {
@@ -8073,11 +8356,11 @@
         "headRefName": "drjkl/workspace-api-auth",
         "head": "30e44c21793583f5741c8f6e7109dbf66ae94550",
         "mergeBase": "18a9c4210382fab896a7e00c7db5b141cefadef6",
-        "behindMain": 1,
+        "behindMain": 4,
         "parentPr": 19118,
         "containsParentHead": true,
         "depth": 1,
-        "state": 76,
+        "state": 79,
         "baseState": 71
       },
       {
@@ -8095,11 +8378,11 @@
         "headRefName": "drjkl/dialog-service-split",
         "head": "c72a6d5b270990b072962c49d178f005b1310469",
         "mergeBase": "18a9c4210382fab896a7e00c7db5b141cefadef6",
-        "behindMain": 1,
+        "behindMain": 4,
         "parentPr": 19093,
         "containsParentHead": true,
         "depth": 1,
-        "state": 77,
+        "state": 80,
         "baseState": 71
       },
       {
@@ -8117,11 +8400,11 @@
         "headRefName": "drjkl/app-instance-leaf",
         "head": "79fa9488f7b79d62caeae96e6e9f40c838c7bc88",
         "mergeBase": "18a9c4210382fab896a7e00c7db5b141cefadef6",
-        "behindMain": 1,
+        "behindMain": 4,
         "parentPr": 19131,
         "containsParentHead": true,
         "depth": 2,
-        "state": 78,
+        "state": 81,
         "baseState": 71
       },
       {
@@ -8139,11 +8422,11 @@
         "headRefName": "drjkl/billing-layering",
         "head": "240dfbeb985edd934a45f6883905c3aa853e5527",
         "mergeBase": "18a9c4210382fab896a7e00c7db5b141cefadef6",
-        "behindMain": 1,
+        "behindMain": 4,
         "parentPr": 19189,
         "containsParentHead": true,
         "depth": 6,
-        "state": 82,
+        "state": 85,
         "baseState": 71
       },
       {
@@ -8161,11 +8444,11 @@
         "headRefName": "drjkl/comfy-types-leaf",
         "head": "6a802eca61eccfca4be4fedbe2f4a42781a0273c",
         "mergeBase": "18a9c4210382fab896a7e00c7db5b141cefadef6",
-        "behindMain": 1,
+        "behindMain": 4,
         "parentPr": 19143,
         "containsParentHead": true,
         "depth": 3,
-        "state": 79,
+        "state": 82,
         "baseState": 71
       },
       {
@@ -8183,11 +8466,11 @@
         "headRefName": "drjkl/workbench-cycles",
         "head": "2bca9fe2b22a58f7f666aab6356484870a0e69fa",
         "mergeBase": "18a9c4210382fab896a7e00c7db5b141cefadef6",
-        "behindMain": 1,
+        "behindMain": 4,
         "parentPr": 19153,
         "containsParentHead": true,
         "depth": 4,
-        "state": 80,
+        "state": 83,
         "baseState": 71
       },
       {
@@ -8205,11 +8488,11 @@
         "headRefName": "drjkl/app-small-cycles",
         "head": "be7f95b456f3fc2ab0557500825a5bba0c03c0b4",
         "mergeBase": "18a9c4210382fab896a7e00c7db5b141cefadef6",
-        "behindMain": 1,
+        "behindMain": 4,
         "parentPr": 19186,
         "containsParentHead": true,
         "depth": 5,
-        "state": 81,
+        "state": 84,
         "baseState": 71
       },
       {
@@ -8227,11 +8510,11 @@
         "headRefName": "feat/ddd-architecture-ratchet",
         "head": "b1060fb11d6ad5d8123e65c8f023932408172aa2",
         "mergeBase": "e3e1b1513fe0663cffaf0d60b964ef4ece93bd1e",
-        "behindMain": 0,
+        "behindMain": 3,
         "parentPr": null,
         "containsParentHead": true,
         "depth": 0,
-        "state": 83,
+        "state": 86,
         "baseState": 72
       },
       {
@@ -8240,21 +8523,21 @@
         "url": "https://github.com/Comfy-Org/ComfyUI_frontend/pull/19855",
         "author": "christian-byrne",
         "isDraft": false,
-        "mergeable": "CONFLICTING",
+        "mergeable": "MERGEABLE",
         "reviewDecision": "CHANGES_REQUESTED",
-        "additions": 490,
-        "deletions": 19,
+        "additions": 469,
+        "deletions": 16,
         "changedFiles": 12,
         "baseRefName": "feat/ddd-architecture-ratchet",
         "headRefName": "feat/ddd-classify-media-tools",
-        "head": "a44a01294d2765111fcd794c71aa04d1b46fb18c",
-        "mergeBase": "dc556123bd1b548b726ce838b2f2b396779d28ff",
-        "behindMain": 57,
+        "head": "176b725eb98c7a8859d948730f477b08a4c22779",
+        "mergeBase": "e3e1b1513fe0663cffaf0d60b964ef4ece93bd1e",
+        "behindMain": 3,
         "parentPr": 19768,
-        "containsParentHead": false,
+        "containsParentHead": true,
         "depth": 1,
-        "state": 84,
-        "baseState": 15
+        "state": 87,
+        "baseState": 72
       },
       {
         "number": 19856,
@@ -8262,7 +8545,7 @@
         "url": "https://github.com/Comfy-Org/ComfyUI_frontend/pull/19856",
         "author": "christian-byrne",
         "isDraft": false,
-        "mergeable": "MERGEABLE",
+        "mergeable": "UNKNOWN",
         "reviewDecision": null,
         "additions": 223,
         "deletions": 6,
@@ -8271,11 +8554,11 @@
         "headRefName": "feat/ddd-classify-compositor",
         "head": "4b0a0304ef3e954ac22b5b8775302ca881e3fee7",
         "mergeBase": "dc556123bd1b548b726ce838b2f2b396779d28ff",
-        "behindMain": 57,
+        "behindMain": 60,
         "parentPr": 19855,
-        "containsParentHead": true,
+        "containsParentHead": false,
         "depth": 2,
-        "state": 85,
+        "state": 88,
         "baseState": 15
       }
     ]
