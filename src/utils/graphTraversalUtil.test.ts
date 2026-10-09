@@ -618,6 +618,9 @@ describe('graphTraversalUtil', () => {
     })
 
     describe('getNodeByExecutionId', () => {
+      const remappedNodeId =
+        'insert:0fbd38ecb13037d0b3b0ca78b8a20a5a:root:node:9'
+
       it('should find node in root graph', () => {
         const nodes = [createMockNode('123'), createMockNode('456')]
 
@@ -683,6 +686,13 @@ describe('graphTraversalUtil', () => {
         const graph = createMockGraph([createMockNode('123')])
         const found = getNodeByExecutionId(graph, '')
         expect(found).toBeNull()
+      })
+
+      it('finds a root node whose id contains execution path delimiters', () => {
+        const targetNode = createMockNode(remappedNodeId)
+        const graph = createMockGraph([targetNode])
+
+        expect(getNodeByExecutionId(graph, remappedNodeId)).toBe(targetNode)
       })
     })
 

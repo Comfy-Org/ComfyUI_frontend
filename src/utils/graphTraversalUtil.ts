@@ -457,10 +457,11 @@ export function getNodeByExecutionId(
 
   // Traverse to the target subgraph
   const targetGraph = traverseSubgraphPath(rootGraph, subgraphPath)
-  if (!targetGraph) return null
+  const nestedNode = targetGraph?.getNodeById(parsedLocalNodeId)
+  if (nestedNode) return nestedNode
 
-  // Get the node from the target graph
-  return targetGraph.getNodeById(parsedLocalNodeId) || null
+  const rootNodeId = parseNodeId(executionId)
+  return rootNodeId ? rootGraph.getNodeById(rootNodeId) || null : null
 }
 
 /**
