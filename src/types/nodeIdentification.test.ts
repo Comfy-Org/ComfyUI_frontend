@@ -129,15 +129,6 @@ describe('nodeIdentification', () => {
         expect(result).toBe(`${validUuid}:node_1`)
         expect(isNodeLocatorId(result)).toBe(true)
       })
-
-      it('encodes node ID segments with separators', () => {
-        expect(createNodeLocatorId(validUuid, toNodeId('node:1'))).toBe(
-          `~subgraph:${validUuid}:node%3A1`
-        )
-        expect(createNodeLocatorId(null, toNodeId('node:1'))).toBe(
-          '~root:node%3A1'
-        )
-      })
     })
 
     describe('createNodeLocatorId encoded forms', () => {
