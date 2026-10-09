@@ -5522,7 +5522,16 @@
         "Explain the selected nodes",
         "Help me install the missing nodes for this workflow",
         "Fix the errors in this workflow"
-      ]
+      ],
+      "treatment": {
+        "cloud": [
+          "Create a product image from a text prompt",
+          "Build an image-to-video workflow",
+          "Explain how a ComfyUI workflow works",
+          "Find the best workflow for a specific task",
+          "Diagnose and fix errors in a workflow"
+        ]
+      }
     },
     "attach": "Attach a file",
     "attachFiles": "Upload images or files",

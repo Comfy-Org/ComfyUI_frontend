@@ -27,6 +27,7 @@ import type {
   AgentRunApprovalShownMetadata,
   AgentRunModeChangedMetadata,
   AgentStarterPromptClickedMetadata,
+  AgentStarterPromptExposureMetadata,
   AgentStopClickedMetadata,
   AgentThreadStartedMetadata,
   AgentWorkflowBoundMetadata,
@@ -437,6 +438,14 @@ export class TelemetryRegistry implements TelemetryDispatcher {
   ): void {
     this.dispatch((provider) =>
       provider.trackAgentStarterPromptClicked?.(metadata)
+    )
+  }
+
+  trackAgentStarterPromptExposure(
+    metadata: AgentStarterPromptExposureMetadata
+  ): void {
+    this.dispatch((provider) =>
+      provider.trackAgentStarterPromptExposure?.(metadata)
     )
   }
 
