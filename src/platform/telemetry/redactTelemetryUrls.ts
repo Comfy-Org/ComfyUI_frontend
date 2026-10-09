@@ -9,7 +9,7 @@ export function redactTelemetryUrls(text: string): string {
 const MAX_REDACTABLE_TEXT_LENGTH = 16_384
 const ABSOLUTE_URL_START = /(?:https?:)?\/\/[^\s"'<>?#]+/.source
 const ROOT_RELATIVE_URL_START =
-  /(?<!\d)\/(?!\/|https?:\/\/)(?:[A-Za-z._~%-]|\d(?:[A-Za-z0-9._~%-]|(?=[?#]))|(?=[?#]))[A-Za-z0-9._~%/-]*/
+  /(?<!\d)\/(?!\/|https?:\/\/)(?:[A-Za-z._~%-]|\d(?:[A-Za-z0-9._~%/-]|(?=[?#]))|(?=[?#]))[A-Za-z0-9._~%/-]*/
     .source
 const RELATIVE_URL_START =
   /(?<![A-Za-z0-9._~%/-])(?!\d+\/\d+[?#])[A-Za-z0-9_~%-]+(?:[./][A-Za-z0-9._~%-]+)*/
