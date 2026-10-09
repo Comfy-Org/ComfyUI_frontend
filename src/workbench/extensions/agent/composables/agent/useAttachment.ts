@@ -84,6 +84,17 @@ async function withDeadline<T>(
 
 let stagedCount = 0
 
+function fileUploadKey(file: File): string {
+  return `${file.name}:${file.size}:${file.lastModified}`
+}
+
+async function fileContentHash(file: File): Promise<string> {
+  const digest = await crypto.subtle.digest('SHA-256', await file.arrayBuffer())
+  return Array.from(new Uint8Array(digest))
+    .map((byte) => byte.toString(16).padStart(2, '0'))
+    .join('')
+}
+
 function attachmentMediaKind(file: File): MediaKind {
   if (hasImageType(file)) return 'image'
   if (hasVideoType(file)) return 'video'
@@ -119,7 +130,18 @@ export function useAttachment(options: UseAttachmentOptions) {
   const inFlight = new Map<string, AbortController>()
   const cancelled = new Set<string>()
   const waiting: Array<() => void> = []
+  const uploaded = new Map<string, Map<string, UploadResult>>()
+  const contentHashes = new WeakMap<File, Promise<string>>()
+  let uploadGeneration = 0
   let activeUploads = 0
+
+  function contentHashFor(file: File): Promise<string> {
+    const cached = contentHashes.get(file)
+    if (cached) return cached
+    const hash = fileContentHash(file)
+    contentHashes.set(file, hash)
+    return hash
+  }
 
   function stage(name: string, sourceKey?: string): string | undefined {
     const id = `upload-${++stagedCount}:${name}`
@@ -195,6 +217,39 @@ export function useAttachment(options: UseAttachmentOptions) {
     }
   }
 
+  async function resolveUpload(id: string, file: File): Promise<UploadResult> {
+    const key = fileUploadKey(file)
+    const contentHash = contentHashFor(file)
+    if (uploaded.has(key)) {
+      const hash = await contentHash
+      const cachedResult = uploaded.get(key)?.get(hash)
+      if (cancelled.has(id)) throw new DOMException('Aborted', 'AbortError')
+      if (cachedResult) return cachedResult
+    }
+
+    const generation = uploadGeneration
+    const controller = new AbortController()
+    inFlight.set(id, controller)
+    const result = await withDeadline(
+      options.upload(file, controller.signal),
+      options.uploadTimeoutMs ?? uploadDeadlineMs(file),
+      () => controller.abort()
+    )
+    const hash = await contentHash
+    if (cancelled.has(id)) throw new DOMException('Aborted', 'AbortError')
+    if (generation === uploadGeneration) {
+      const cachedResults = uploaded.get(key) ?? new Map<string, UploadResult>()
+      cachedResults.set(hash, result)
+      uploaded.set(key, cachedResults)
+    }
+    return result
+  }
+
+  function forgetUploads(): void {
+    uploaded.clear()
+    uploadGeneration += 1
+  }
+
   async function uploadStagedFile(id: string, file: File): Promise<boolean> {
     if (activeUploads === MAX_CONCURRENT_UPLOADS)
       await new Promise<void>((resolve) => waiting.push(resolve))
@@ -207,13 +262,7 @@ export function useAttachment(options: UseAttachmentOptions) {
         mediaKind,
         ...localPreview(file, mediaKind)
       })
-      const controller = new AbortController()
-      inFlight.set(id, controller)
-      const result = await withDeadline(
-        options.upload(file, controller.signal),
-        options.uploadTimeoutMs ?? uploadDeadlineMs(file),
-        () => controller.abort()
-      )
+      const result = await resolveUpload(id, file)
       options.update(id, {
         ref: result.ref,
         ...uploadedPreview(mediaKind, result.url),
@@ -305,5 +354,11 @@ export function useAttachment(options: UseAttachmentOptions) {
     return uploaded > 0
   }
 
-  return { addDeferredFile, addFiles, cancelUpload, cancelAllUploads }
+  return {
+    addDeferredFile,
+    addFiles,
+    cancelUpload,
+    cancelAllUploads,
+    forgetUploads
+  }
 }

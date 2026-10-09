@@ -4,8 +4,8 @@ import { computed, nextTick, ref, watch } from 'vue'
 
 import { useErrorHandling } from '@/composables/useErrorHandling'
 import { t } from '@/i18n'
+import { useToast } from '@/components/ui/toast/toastStore'
 import { reportError } from '@/platform/telemetry/reportError'
-import { useToastStore } from '@/platform/updates/common/toastStore'
 import { AuthStoreError, useAuthStore } from '@/stores/authStore'
 import type { ApiKeyAuthHeader } from '@/types/authTypes'
 import type { operations } from '@/types/comfyRegistryTypes'
@@ -22,7 +22,7 @@ const isRejectedApiKey = (error: unknown) =>
 export const useApiKeyAuthStore = defineStore('apiKeyAuth', () => {
   const authStore = useAuthStore()
   const apiKey = useLocalStorage<string | null>(STORAGE_KEY, null)
-  const toastStore = useToastStore()
+  const toast = useToast()
   const { wrapWithErrorHandlingAsync, toastErrorHandler } = useErrorHandling()
 
   const currentUser = ref<ComfyApiUser | null>(null)
@@ -67,10 +67,8 @@ export const useApiKeyAuthStore = defineStore('apiKeyAuth', () => {
 
   const showErrorToast = (error: unknown) => {
     if (error instanceof Error && error.message === 'STORAGE_FAILED') {
-      toastStore.add({
-        severity: 'error',
-        summary: t('auth.apiKey.storageFailed'),
-        detail: t('auth.apiKey.storageFailedDetail')
+      toast.error(t('auth.apiKey.storageFailed'), {
+        description: t('auth.apiKey.storageFailedDetail')
       })
     } else {
       toastErrorHandler(error)
@@ -79,22 +77,18 @@ export const useApiKeyAuthStore = defineStore('apiKeyAuth', () => {
 
   const storeApiKey = wrapWithErrorHandlingAsync(async (newApiKey: string) => {
     apiKey.value = newApiKey
-    toastStore.add({
-      severity: 'success',
-      summary: t('auth.apiKey.stored'),
-      detail: t('auth.apiKey.storedDetail'),
-      life: 5000
+    toast.success(t('auth.apiKey.stored'), {
+      description: t('auth.apiKey.storedDetail'),
+      duration: 5000
     })
     return true
   }, showErrorToast)
 
   const clearStoredApiKey = wrapWithErrorHandlingAsync(async () => {
     apiKey.value = null
-    toastStore.add({
-      severity: 'success',
-      summary: t('auth.apiKey.cleared'),
-      detail: t('auth.apiKey.clearedDetail'),
-      life: 5000
+    toast.success(t('auth.apiKey.cleared'), {
+      description: t('auth.apiKey.clearedDetail'),
+      duration: 5000
     })
     return true
   }, showErrorToast)

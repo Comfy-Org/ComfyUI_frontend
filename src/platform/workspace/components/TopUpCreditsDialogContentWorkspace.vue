@@ -293,7 +293,7 @@ import {
   getTopupAmountPreset,
   TOPUP_AMOUNT_PRESETS_USD
 } from '@comfyorg/account-core/billing'
-import { useToast } from 'primevue/usetoast'
+import { useToast } from '@/components/ui/toast/toastStore'
 import { computed, onMounted, ref, watch } from 'vue'
 import { useI18n } from 'vue-i18n'
 
@@ -333,6 +333,7 @@ import {
 import { api } from '@/scripts/api'
 import { useAuthStore } from '@/stores/authStore'
 import { useDialogStore } from '@/stores/dialogStore'
+import { getErrorMessage } from '@/utils/errorUtil'
 import { cn } from '@comfyorg/tailwind-utils'
 
 const { isInsufficientCredits = false, source } = defineProps<{
@@ -374,6 +375,7 @@ function enterTopupJourney(): void {
 onMounted(enterTopupJourney)
 useCheckoutJourneyExit()
 const {
+  billingClient,
   isAddingCredits,
   topupOperation,
   topup,
@@ -586,7 +588,8 @@ async function handleBuy() {
       operation: 'operation',
       stage: 'started',
       outcome: 'pending',
-      operation_type: 'topup'
+      operation_type: 'topup',
+      billing_client: billingClient
     })
 
     const submittingJourney = getActiveCheckoutJourney()
@@ -631,11 +634,7 @@ async function handleBuy() {
       ) {
         clearCheckoutJourney()
       }
-      toast.add({
-        severity: 'success',
-        summary: t('credits.topUp.purchaseSuccess'),
-        life: 5000
-      })
+      toast.success(t('credits.topUp.purchaseSuccess'), { duration: 5000 })
       await Promise.allSettled([fetchBalance(), fetchStatus()])
       if (!isCurrentAttempt()) return
       handleClose(false)
@@ -658,10 +657,8 @@ async function handleBuy() {
         })
     } else {
       if (isCurrentAttempt()) paymentSubmitted.value = false
-      toast.add({
-        severity: 'error',
-        summary: t('credits.topUp.purchaseError'),
-        detail: t('credits.topUp.unknownError')
+      toast.error(t('credits.topUp.purchaseError'), {
+        description: t('credits.topUp.unknownError')
       })
     }
   } catch (error) {
@@ -690,10 +687,8 @@ function reportPurchaseError(
     },
     billingOpId
   )
-  toast.add({
-    severity: 'error',
-    summary: t('credits.topUp.purchaseError'),
-    detail: purchaseErrorDetail(error)
+  toast.error(t('credits.topUp.purchaseError'), {
+    description: purchaseErrorDetail(error)
   })
 }
 
@@ -759,6 +754,7 @@ function reportTerminal(
   telemetry?.trackBillingEvent({
     operation: 'operation',
     operation_type: 'topup',
+    billing_client: billingClient,
     ...terminal,
     ...attempt
   })
@@ -775,8 +771,7 @@ function purchaseErrorDetail(error?: unknown): string {
     return t('credits.topUp.changeInProgressError')
   }
   return t('credits.topUp.purchaseErrorDetail', {
-    error:
-      error instanceof Error ? error.message : t('credits.topUp.unknownError')
+    error: getErrorMessage(error) ?? t('credits.topUp.unknownError')
   })
 }
 </script>

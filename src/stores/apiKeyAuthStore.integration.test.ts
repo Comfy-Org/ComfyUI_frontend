@@ -1,3 +1,4 @@
+import { respondToFetch } from '@comfyorg/test-utils/fetch'
 import type { User } from 'firebase/auth'
 import * as firebaseAuth from 'firebase/auth'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
@@ -6,7 +7,7 @@ import { reportError } from '@/platform/telemetry/reportError'
 import { useApiKeyAuthStore } from '@/stores/apiKeyAuthStore'
 import { AuthStoreError, useAuthStore } from '@/stores/authStore'
 
-const mockFetch = vi.fn()
+const CUSTOMERS_URL = /\/customers$/
 
 vi.mock(import('firebase/auth'))
 
@@ -31,12 +32,9 @@ vi.mock(import('@/services/dialogService'))
 describe('API key authentication initialization', () => {
   beforeEach(() => {
     localStorage.clear()
-    vi.stubGlobal('fetch', mockFetch)
-    mockFetch.mockResolvedValue({
-      ok: true,
-      statusText: 'OK',
-      json: () => Promise.resolve({ id: 'test-customer-id' })
-    })
+    respondToFetch(CUSTOMERS_URL, () =>
+      Response.json({ id: 'test-customer-id' })
+    )
 
     vi.mocked(firebaseAuth.onAuthStateChanged).mockImplementation(
       (_, callback) => {
@@ -47,29 +45,25 @@ describe('API key authentication initialization', () => {
     vi.mocked(firebaseAuth.onIdTokenChanged).mockReturnValue(vi.fn())
   })
 
-  const customerResponse = (id: string) => ({
-    ok: true,
-    statusText: 'OK',
-    json: () => Promise.resolve({ id })
-  })
+  const customerResponse = (id: string) => Response.json({ id })
 
   const settleQueuedTasks = () => new Promise((resolve) => setTimeout(resolve))
 
   const initializeStoreWithPendingLookup = async () => {
     let settleLookup!: {
-      resolve: (response: unknown) => void
+      resolve: (response: Response) => void
       reject: (reason: Error) => void
     }
-    mockFetch.mockImplementationOnce(
+    vi.mocked(fetch).mockImplementationOnce(
       () =>
-        new Promise((resolve, reject) => {
+        new Promise<Response>((resolve, reject) => {
           settleLookup = { resolve, reject }
         })
     )
     localStorage.setItem('comfy_api_key', 'key-a')
     useAuthStore()
     const apiKeyStore = useApiKeyAuthStore()
-    await vi.waitFor(() => expect(mockFetch).toHaveBeenCalledOnce())
+    await vi.waitFor(() => expect(fetch).toHaveBeenCalledOnce())
     return { apiKeyStore, ...settleLookup }
   }
 
@@ -79,11 +73,11 @@ describe('API key authentication initialization', () => {
 
     const apiKeyStore = useApiKeyAuthStore()
 
-    await vi.waitFor(() => expect(mockFetch).toHaveBeenCalledOnce())
+    await vi.waitFor(() => expect(fetch).toHaveBeenCalledOnce())
 
     expect(apiKeyStore.getApiKey()).toBe('persisted-api-key')
     expect(apiKeyStore.currentUser).toEqual({ id: 'test-customer-id' })
-    expect(mockFetch).toHaveBeenCalledWith(
+    expect(fetch).toHaveBeenCalledWith(
       expect.stringContaining('/customers'),
       expect.objectContaining({
         headers: expect.objectContaining({
@@ -105,8 +99,8 @@ describe('API key authentication initialization', () => {
     )
     await settleQueuedTasks()
 
-    expect(mockFetch).toHaveBeenCalledOnce()
-    expect(mockFetch).toHaveBeenCalledWith(
+    expect(fetch).toHaveBeenCalledOnce()
+    expect(fetch).toHaveBeenCalledWith(
       expect.stringContaining('/customers'),
       expect.objectContaining({
         headers: expect.objectContaining({ 'X-API-KEY': 'key-b' })
@@ -153,7 +147,7 @@ describe('API key authentication initialization', () => {
 
     expect(apiKeyStore.currentUser).toBeNull()
     expect(apiKeyStore.getApiKey()).toBeNull()
-    expect(mockFetch).toHaveBeenCalledOnce()
+    expect(fetch).toHaveBeenCalledOnce()
   })
 
   describe('customer creation failure telemetry', () => {

@@ -76,10 +76,7 @@ describe('supervise state', () => {
 
 describe('waitForStartup', () => {
   it('returns a child failure without waiting for HTTP readiness', async () => {
-    vi.stubGlobal(
-      'fetch',
-      vi.fn(() => new Promise<Response>(() => {}))
-    )
+    vi.mocked(fetch).mockImplementation(() => new Promise<Response>(() => {}))
     let stopped = false
     let requestExit: (code: number) => void = () => {}
     const exitRequested = new Promise<number>((resolve) => {
@@ -106,8 +103,7 @@ describe('waitForStartup', () => {
   })
 
   it('preserves a fatal exit when HTTP becomes ready at the same boundary', async () => {
-    vi.stubGlobal(
-      'fetch',
+    vi.mocked(fetch).mockImplementation(
       vi
         .fn<typeof fetch>()
         .mockResolvedValue(new Response(null, { status: 200 }))

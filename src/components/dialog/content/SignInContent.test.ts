@@ -4,6 +4,7 @@ import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { createI18n } from 'vue-i18n'
 
 import SignInContent from '@/components/dialog/content/SignInContent.vue'
+import { useToast } from '@/components/ui/toast/toastStore'
 import { useAuthActions } from '@/composables/auth/useAuthActions'
 import type { DesktopHostAuthState } from '@/platform/auth/desktopHost/desktopHostAuthBridge'
 import {
@@ -313,25 +314,52 @@ describe('SignInContent', () => {
     {
       name: 'closes once Desktop signs in',
       result: { status: 'signed_in', userId: 'sso-user' } as const,
-      succeeded: true
+      succeeded: true,
+      toasts: [
+        {
+          duration: 6000,
+          kind: 'info',
+          title: 'Finish signing in in your browser'
+        }
+      ]
     },
     {
       name: 'stays open when the sign-in does not finish',
       result: { status: 'signed_out' } as const,
-      succeeded: false
+      succeeded: false,
+      toasts: [
+        {
+          duration: 6000,
+          kind: 'info',
+          title: 'Finish signing in in your browser'
+        },
+        { duration: 6000, kind: 'error', title: 'Sign-in did not finish' }
+      ]
     }
-  ])('SSO through Comfy Desktop $name', async ({ result, succeeded }) => {
-    const user = userEvent.setup()
-    const bridge = desktopHostBridge(result)
-    await startDesktopHostSession(bridge)
-    const onSuccess = vi.fn()
-    renderSignInContent(onSuccess)
+  ])(
+    'SSO through Comfy Desktop $name',
+    async ({ result, succeeded, toasts }) => {
+      const user = userEvent.setup()
+      const bridge = desktopHostBridge(result)
+      await startDesktopHostSession(bridge)
+      const onSuccess = vi.fn()
+      renderSignInContent(onSuccess)
 
-    await user.click(screen.getByRole('button', { name: 'Continue with SSO' }))
+      await user.click(
+        screen.getByRole('button', { name: 'Continue with SSO' })
+      )
 
-    await waitFor(() => expect(bridge.requestSignIn).toHaveBeenCalledOnce())
-    await waitFor(() =>
-      expect(onSuccess).toHaveBeenCalledTimes(succeeded ? 1 : 0)
-    )
-  })
+      await waitFor(() => expect(bridge.requestSignIn).toHaveBeenCalledOnce())
+      await waitFor(() =>
+        expect(onSuccess).toHaveBeenCalledTimes(succeeded ? 1 : 0)
+      )
+      expect(
+        useToast().toasts.map(({ duration, kind, title }) => ({
+          duration,
+          kind,
+          title
+        }))
+      ).toEqual(toasts)
+    }
+  )
 })

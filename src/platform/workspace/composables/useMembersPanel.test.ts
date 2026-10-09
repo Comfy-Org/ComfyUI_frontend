@@ -1,4 +1,5 @@
 import { useBillingCapabilities } from '@/platform/workspace/composables/useBillingCapabilities'
+import { useToast } from '@/components/ui/toast/toastStore'
 import { useDialogService } from '@/services/dialogService'
 import { getActivePinia } from 'pinia'
 import type { Pinia } from 'pinia'
@@ -218,8 +219,6 @@ describe('sortPendingInvites', () => {
   })
 })
 
-const mockToastAdd = vi.fn()
-
 const {
   mockMaxSeats,
   mockOccupiedSeats,
@@ -333,13 +332,6 @@ function setOriginalOwner(id = 'creator-1') {
     createMember({ id, role: 'owner', isOriginalOwner: true })
   ]
 }
-
-vi.mock<unknown>(
-  import('primevue/usetoast'), // oxlint-disable-line comfy/no-primevue-imports
-  () => ({
-    useToast: () => ({ add: mockToastAdd })
-  })
-)
 
 vi.mock(import('@/platform/workspace/composables/useWorkspaceUI'))
 
@@ -669,11 +661,9 @@ describe('useMembersPanel', () => {
       const panel = await setup()
       await panel.handleResendInvite(createInvite({ id: 'inv-1' }))
       expect(workspaceStore.resendInvite).toHaveBeenCalledWith('inv-1')
-      expect(mockToastAdd).toHaveBeenCalledWith(
-        expect.objectContaining({
-          severity: 'success',
-          summary: 'workspacePanel.toast.inviteResent'
-        })
+      expect(useToast().success).toHaveBeenCalledWith(
+        'workspacePanel.toast.inviteResent',
+        { duration: 2000 }
       )
     })
 
@@ -683,11 +673,8 @@ describe('useMembersPanel', () => {
       )
       const panel = await setup()
       await panel.handleResendInvite(createInvite({ id: 'inv-1' }))
-      expect(mockToastAdd).toHaveBeenCalledWith(
-        expect.objectContaining({
-          severity: 'error',
-          summary: 'workspacePanel.toast.inviteResendFailed'
-        })
+      expect(useToast().error).toHaveBeenCalledWith(
+        'workspacePanel.toast.inviteResendFailed'
       )
     })
   })

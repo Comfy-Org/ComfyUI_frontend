@@ -726,7 +726,8 @@
       "needHelp": "Need Help?"
     },
     "toast": {
-      "close": "Close"
+      "close": "Close",
+      "viewportLabel": "Notifications ({hotkey})"
     },
     "hero": {
       "carouselLabel": "Featured models",
@@ -2394,6 +2395,8 @@
     "featuredCommunityCtaAria": "Watch the Product Photography demo",
     "featuredCompanyTitle": "Customer story: Black Math",
     "featuredCompanyAlt": "Black Math customer story image",
+    "featuredEnterpriseAlt": "MiniMax commercial license video",
+    "opensInNewTab": "opens in new tab",
     "featuredCompanyCtaAria": "Watch the Black Math customer story",
     "developerPlatform": "Developer Platform",
     "comfyRouter": "Comfy Router",
@@ -2421,7 +2424,19 @@
     "upgrade": "Upgrade",
     "addCredits": "Add credits",
     "upgradeToAddCredits": "Upgrade to add credits",
-    "cinematicStudio": "Cinematic Studio"
+    "cinematicStudio": "Cinematic Studio",
+    "enterprise": "Enterprise",
+    "comfyApi": "Comfy API",
+    "comfySdks": "Comfy SDKs",
+    "builds": "Builds",
+    "teamBilling": "Team Billing",
+    "commercialLicensing": "Commercial Licensing",
+    "contactSales": "Contact Sales",
+    "colCreate": "Create",
+    "colAutomate": "Automate",
+    "colBuild": "Build",
+    "colResources": "Resources",
+    "colUpdates": "Updates"
   },
   "breadcrumb": {
     "agent": "Comfy Agent",

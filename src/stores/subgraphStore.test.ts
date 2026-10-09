@@ -8,6 +8,7 @@ import {
   createTestSubgraph,
   createTestSubgraphNode
 } from '@/lib/litegraph/src/subgraph/__fixtures__/subgraphHelpers'
+import { useToast } from '@/components/ui/toast/toastStore'
 import type { ExportedSubgraph } from '@/lib/litegraph/src/types/serialisation'
 import { reportError } from '@/platform/telemetry/reportError'
 import { TemplateIncludeOnDistributionEnum } from '@/platform/workflow/templates/types/template'
@@ -322,6 +323,9 @@ describe('useSubgraphStore', () => {
       surface: 'graph',
       context: { failedBlueprintCount: 1 }
     })
+    expect(useToast().toasts).toEqual([
+      expect.objectContaining({ description: 'Network error', kind: 'error' })
+    ])
     expect(useNodeDefStore().blueprintNodeDefsByName.size).toBe(0)
   })
 

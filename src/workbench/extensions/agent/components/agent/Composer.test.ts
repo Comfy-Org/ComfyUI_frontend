@@ -14,8 +14,8 @@ import type { ComponentProps } from 'vue-component-type-helpers'
 import { i18n } from '@/i18n'
 import { LGraph, LGraphNode } from '@/lib/litegraph/src/litegraph'
 import { consultEscapeOverride } from '@/platform/keybindings/escapeOverride'
+import { useToast } from '@/components/ui/toast/toastStore'
 import { useTelemetry } from '@/platform/telemetry'
-import { useToastStore } from '@/platform/updates/common/toastStore'
 import { api } from '@/scripts/api'
 import { useAgentRunModeStore } from '../../stores/agent/agentRunModeStore'
 import type { AgentStarterPromptAttribution } from '../../utils/starterPrompts'
@@ -659,10 +659,12 @@ describe('Composer', () => {
         ).toBeChecked()
       )
       expect(screen.getByRole('status')).toBeEmptyDOMElement()
-      expect(useToastStore().messagesToAdd).toContainEqual({
-        severity: 'error',
-        detail: i18n.global.t('agent.runModeSaveFailed')
-      })
+      expect(useToast().toasts).toContainEqual(
+        expect.objectContaining({
+          kind: 'error',
+          title: i18n.global.t('agent.runModeSaveFailed')
+        })
+      )
       expect(telemetry.trackAgentRunModeChanged).not.toHaveBeenCalled()
     })
 
