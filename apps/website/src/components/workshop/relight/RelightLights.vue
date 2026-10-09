@@ -74,7 +74,4 @@ function step(event: KeyboardEvent) {
       />
     </li>
   </ul>
-  <p v-else class="px-1 text-xs text-primary-warm-gray">
-    {{ lc('relight.lights.empty', locale) }}
-  </p>
 </template>
