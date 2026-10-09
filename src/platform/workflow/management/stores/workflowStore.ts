@@ -21,7 +21,6 @@ import { useWorkflowThumbnail } from '@/renderer/core/thumbnail/useWorkflowThumb
 import { api } from '@/scripts/api'
 import { app as comfyApp } from '@/scripts/app'
 import { defaultGraph } from '@/scripts/defaultGraph'
-import { useExecutionStore } from '@/stores/executionStore'
 import type { NodeExecutionId, NodeLocatorId } from '@/types/nodeIdentification'
 import {
   appendLeafNodeExecutionId,
@@ -507,6 +506,7 @@ export const useWorkflowStore = defineStore('workflow', () => {
       const draftStore = useWorkflowDraftStoreV2()
 
       await workflow.rename(newPath)
+      const { useExecutionStore } = await import('@/stores/executionStore')
       useExecutionStore().rewriteSessionWorkflowPaths(
         workflow.instanceId,
         workflow.path
