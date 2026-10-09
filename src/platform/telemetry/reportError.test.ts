@@ -64,6 +64,7 @@ describe('reportError', () => {
 
   it('tags Sentry and Datadog with the resolved canary bucket', async () => {
     mockFrontendBucket.value = 'canary'
+    installDesktopBridge()
     const { reportError } = await loadReportError()
     const error = new Error('boom')
 
@@ -82,10 +83,15 @@ describe('reportError', () => {
       expect.anything(),
       expect.objectContaining({ bucket: 'canary' })
     )
+    expect(captureDesktopException).toHaveBeenCalledWith(
+      expect.anything(),
+      expect.objectContaining({ bucket: 'canary' })
+    )
   })
 
   it('never lets a caller tag override the resolved bucket', async () => {
     mockFrontendBucket.value = 'canary'
+    installDesktopBridge()
     const { reportError } = await loadReportError()
     const error = new Error('boom')
 
@@ -100,6 +106,10 @@ describe('reportError', () => {
       expect.objectContaining({
         tags: expect.objectContaining({ bucket: 'canary' })
       })
+    )
+    expect(captureDesktopException).toHaveBeenCalledWith(
+      expect.anything(),
+      expect.objectContaining({ bucket: 'canary' })
     )
   })
 
