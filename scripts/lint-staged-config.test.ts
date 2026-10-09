@@ -106,7 +106,9 @@ describe('lint-staged config', () => {
       const commands = [lintStaged([fileName])].flat()
 
       expect(
-        commands.filter((command) => command.startsWith('pnpm lint:server'))
+        commands.filter(
+          (command) => command === 'pnpm lint:server-facts --staged'
+        )
       ).toEqual(expected)
     }
   )
