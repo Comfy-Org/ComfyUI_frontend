@@ -156,6 +156,25 @@ function setLastWorkspaceId(workspaceId: string): void {
   }
 }
 
+/** The workspace a switch reloads into, read once by the next initialization. */
+function setSwitchTargetId(workspaceId: string): void {
+  try {
+    sessionStorage.setItem(WORKSPACE_STORAGE_KEYS.SWITCH_TARGET_ID, workspaceId)
+  } catch {
+    console.warn('Failed to persist the workspace switch target')
+  }
+}
+
+function takeSwitchTargetId(): string | null {
+  try {
+    const id = sessionStorage.getItem(WORKSPACE_STORAGE_KEYS.SWITCH_TARGET_ID)
+    sessionStorage.removeItem(WORKSPACE_STORAGE_KEYS.SWITCH_TARGET_ID)
+    return id
+  } catch {
+    return null
+  }
+}
+
 function clearLastWorkspaceId(): void {
   try {
     localStorage.removeItem(WORKSPACE_STORAGE_KEYS.LAST_WORKSPACE_ID)
@@ -439,13 +458,16 @@ export const useTeamWorkspaceStore = defineStore('teamWorkspace', () => {
           throw new NoWorkspaceAccessError('No workspaces available')
         }
 
-        // 3. Determine target workspace (priority: the server's default >
-        // localStorage > personal)
+        // 3. Determine target workspace (priority: a switch's target >
+        // the server's default > localStorage > personal)
         const listed = (id: string | null | undefined): id is string =>
           !!id && workspaces.value.some((w) => w.id === id)
         let targetWorkspaceId: string | null =
-          [response.default_workspace_id, getLastWorkspaceId()].find(listed) ??
-          null
+          [
+            takeSwitchTargetId(),
+            response.default_workspace_id,
+            getLastWorkspaceId()
+          ].find(listed) ?? null
 
         if (!targetWorkspaceId) {
           const personal = workspaces.value.find((w) => w.type === 'personal')
@@ -619,6 +641,7 @@ export const useTeamWorkspaceStore = defineStore('teamWorkspace', () => {
       prepareWorkflowWorkspaceTransition()
       workspaceAuthStore.clearWorkspaceContext()
       setLastWorkspaceId(workspaceId)
+      setSwitchTargetId(workspaceId)
 
       // Reload to reinitialize with new workspace
       window.location.reload()

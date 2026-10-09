@@ -308,13 +308,26 @@ describe('useTeamWorkspaceStore', () => {
         expected: mockTeamWorkspace.id
       },
       {
+        name: "keeps a switch's target over the server's default",
+        defaultId: mockTeamWorkspace.id,
+        lastUsed: mockPersonalWorkspace.id,
+        switchTarget: mockPersonalWorkspace.id,
+        expected: mockPersonalWorkspace.id
+      },
+      {
         name: 'ignores a default that is not in the list',
         defaultId: 'ws-not-listed',
         lastUsed: null,
         expected: mockPersonalWorkspace.id
       }
-    ])('$name', async ({ defaultId, lastUsed, expected }) => {
+    ])('$name', async ({ defaultId, lastUsed, switchTarget, expected }) => {
       mockLocalStorage.getItem.mockReturnValue(lastUsed)
+      if (switchTarget) {
+        sessionStorage.setItem(
+          WORKSPACE_STORAGE_KEYS.SWITCH_TARGET_ID,
+          switchTarget
+        )
+      }
       mockWorkspaceApi.list.mockResolvedValue({
         workspaces: [mockPersonalWorkspace, mockTeamWorkspace],
         ...(defaultId && { default_workspace_id: defaultId })
