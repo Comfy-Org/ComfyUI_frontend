@@ -13,6 +13,7 @@ import { workshopClientBoundary } from './workshop-client-boundary'
 import {
   HUB_APPS_PATH,
   HUB_MODELS_PATH,
+  HUB_PATH,
   HUB_WORKFLOWS_PATH,
   oldModelLinks
 } from '@/config/hub-models'
@@ -43,6 +44,7 @@ const WORKSHOP_ONLY_ROUTES = [
 
 export function modelsBuildRoutes(enabled: boolean) {
   return [
+    { pattern: HUB_PATH, entrypoint: entry('hub-section.astro') },
     { pattern: HUB_MODELS_PATH, entrypoint: entry('index.astro') },
     { pattern: `${HUB_MODELS_PATH}/[slug]`, entrypoint: entry('[slug].astro') },
     { pattern: HUB_WORKFLOWS_PATH, entrypoint: entry('hub-section.astro') },

@@ -14,10 +14,11 @@ import type { ComponentExposed } from 'vue-component-type-helpers'
 import { cn } from '@comfyorg/tailwind-utils'
 
 import { useVisualViewport } from '@/composables/useVisualViewport'
-import type { UseCase } from '@/config/models-catalogue'
+import type { Modality, UseCase } from '@/config/models-catalogue'
 import type { Locale } from '@/i18n/translations'
 import { translationsFor } from '@/i18n/translations'
-import { filterLabel } from '@/lib/workshop/filter-label'
+import type { ModelAccess } from '@/lib/workshop/explorer/model-access'
+import { toggleIn, toggleOption } from '@/lib/workshop/facet-toggle'
 import type { FacetSheetGroup } from './FacetSheet.vue'
 
 export interface FacetMenuOption<T extends string = UseCase> {
@@ -31,15 +32,24 @@ const WorkshopFilterPanel = defineAsyncComponent(
 )
 
 const {
-  useCaseOptions,
+  useCaseOptions = [],
   modelOptions,
+  accessOptions,
+  inputOptions,
+  outputOptions,
   resultCount,
   kind = 'models',
   locale = 'en'
 } = defineProps<{
-  useCaseOptions: readonly FacetMenuOption<T>[]
+  useCaseOptions?: readonly FacetMenuOption<T>[]
   /** The models the listing runs on, where it stands on more than its own. */
   modelOptions?: readonly FacetMenuOption<string>[]
+  /** How a model can be used: run here, called by API, or downloaded. */
+  accessOptions?: readonly FacetMenuOption<ModelAccess>[]
+  /** The media a workflow starts from. */
+  inputOptions?: readonly FacetMenuOption<Modality>[]
+  /** The media a workflow makes. */
+  outputOptions?: readonly FacetMenuOption<Modality>[]
   /** What the catalogue holds under the current choices, for the way out. */
   resultCount: number
   kind?: 'models' | 'workflows'
@@ -47,8 +57,11 @@ const {
 }>()
 const { t } = translationsFor(locale)
 
-const useCases = defineModel<T[]>('useCases', { required: true })
+const useCases = defineModel<T[]>('useCases', { default: () => [] })
 const models = defineModel<string[]>('models', { default: () => [] })
+const access = defineModel<ModelAccess[]>('access', { default: () => [] })
+const inputs = defineModel<Modality[]>('inputs', { default: () => [] })
+const outputs = defineModel<Modality[]>('outputs', { default: () => [] })
 
 const open = ref(false)
 // A dropdown anchored to a crowded toolbar leaves a phone no room, so there
@@ -83,60 +96,76 @@ watchEffect((onCleanup) => {
   onCleanup(() => (document.body.style.overflow = previous))
 })
 
-const groups = computed<FacetSheetGroup[]>(() => [
-  {
-    key: 'useCase',
-    label: t(
-      kind === 'workflows'
-        ? 'workshop.catalogue.categories'
-        : 'workshop.launch.label'
-    ),
-    options: useCaseOptions,
-    selected: useCases.value
-  },
-  ...(modelOptions?.length
-    ? [
-        {
-          key: 'model',
-          label: t('workshop.hub.models'),
-          options: modelOptions,
-          selected: models.value
-        }
-      ]
-    : [])
-])
+const useCaseLabel = t(
+  kind === 'workflows'
+    ? 'workshop.catalogue.categories'
+    : 'workshop.launch.label'
+)
+
+const groups = computed<FacetSheetGroup[]>(() =>
+  [
+    {
+      key: 'useCase',
+      label: useCaseLabel,
+      options: useCaseOptions,
+      selected: useCases.value
+    },
+    {
+      key: 'input',
+      label: t('workshop.filter.inputGroup'),
+      options: inputOptions ?? [],
+      selected: inputs.value
+    },
+    {
+      key: 'output',
+      label: t('workshop.filter.outputGroup'),
+      options: outputOptions ?? [],
+      selected: outputs.value
+    },
+    {
+      key: 'model',
+      label: t('workshop.hub.models'),
+      options: modelOptions ?? [],
+      selected: models.value
+    },
+    {
+      key: 'access',
+      label: t('workshop.explorer.filter.label'),
+      options: accessOptions ?? [],
+      selected: access.value
+    }
+  ].filter((group) => group.options.length > 0)
+)
 
 const selectedCount = computed(() =>
   groups.value.reduce((total, group) => total + group.selected.length, 0)
 )
 
-const label = computed(() =>
-  filterLabel(groups.value, t('workshop.filter.label'))
-)
+const label = t('workshop.filter.label')
 
 function toggle(facet: string, value: string) {
-  if (facet === 'model') {
-    models.value = models.value.includes(value)
-      ? models.value.filter((item) => item !== value)
-      : [...models.value, value]
-    return
-  }
-  const useCase = useCaseOptions.find((option) => option.value === value)?.value
-  if (!useCase) return
-  useCases.value = useCases.value.includes(useCase)
-    ? useCases.value.filter((item) => item !== useCase)
-    : [...useCases.value, useCase]
+  if (facet === 'model') models.value = toggleIn(models.value, value)
+  else if (facet === 'access')
+    access.value = toggleOption(accessOptions, access.value, value)
+  else if (facet === 'input')
+    inputs.value = toggleOption(inputOptions, inputs.value, value)
+  else if (facet === 'output')
+    outputs.value = toggleOption(outputOptions, outputs.value, value)
+  else useCases.value = toggleOption(useCaseOptions, useCases.value, value)
 }
 
 function clearAll() {
   useCases.value = []
   models.value = []
+  access.value = []
+  inputs.value = []
+  outputs.value = []
 }
 
 defineExpose({ focus: () => trigger.value?.focus() })
 
 const sheetLabels = computed(() => ({
-  title: label.value,
+  title: label,
   search: t('workshop.filter.search'),
   noMatches: t('workshop.filter.noMatches'),
   applied: (n: number) => t('workshop.filter.applied', { n }),

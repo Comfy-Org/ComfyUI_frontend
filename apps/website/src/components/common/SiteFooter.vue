@@ -1,10 +1,12 @@
 <script setup lang="ts">
+import { cn } from '@comfyorg/tailwind-utils'
 import { ref } from 'vue'
 
 import { externalLinks, getRoutes } from '@/config/routes'
 import { useFrameScrub } from '@/composables/useFrameScrub'
 import type { Locale } from '@/i18n/translations'
 import { translationsFor } from '@/i18n/translations'
+import { getSocialLinks } from '@/data/socialLinks'
 import type { LocaleAlternate } from '@/lib/hreflang'
 import FooterLinkColumn from './FooterLinkColumn.vue'
 import type { FooterLink } from './FooterLinkColumn.vue'
@@ -157,38 +159,8 @@ const topColumns: { title: string; links: FooterLink[] }[] = [
         external: true
       },
       {
-        label: t('nav.discord'),
-        href: externalLinks.discord,
-        external: true
-      },
-      {
-        label: t('nav.github'),
-        href: externalLinks.github,
-        external: true
-      },
-      {
         label: t('nav.docs'),
         href: externalLinks.docs,
-        external: true
-      },
-      {
-        label: t('nav.youtube'),
-        href: externalLinks.youtube,
-        external: true
-      },
-      {
-        label: t('nav.instagram'),
-        href: externalLinks.instagram,
-        external: true
-      },
-      {
-        label: t('nav.x'),
-        href: externalLinks.x,
-        external: true
-      },
-      {
-        label: t('nav.linkedin'),
-        href: externalLinks.linkedin,
         external: true
       },
       {
@@ -225,6 +197,8 @@ const topColumns: { title: string; links: FooterLink[] }[] = [
   }
 ]
 
+const socialLinks = getSocialLinks(locale)
+
 const contactColumn: { title: string; links: FooterLink[] } = {
   title: t('footer.contact'),
   links: [
@@ -253,12 +227,34 @@ const contactColumn: { title: string; links: FooterLink[] } = {
     class="bg-primary-comfy-ink px-6 py-8 text-primary-comfy-canvas lg:px-20"
   >
     <div
-      class="grid gap-12 border-t border-primary-warm-gray pt-16 lg:grid-cols-2 lg:gap-4"
+      class="grid gap-12 border-t border-primary-warm-gray pt-16 lg:grid-cols-[auto_minmax(0,1fr)] lg:gap-12"
     >
-      <!-- Tagline -->
-      <p class="text-2xl font-medium tracking-wide uppercase lg:text-3xl">
-        {{ t('footer.tagline') }}
-      </p>
+      <div class="flex flex-col gap-8">
+        <p
+          class="text-2xl font-medium tracking-wide uppercase lg:max-w-80 lg:text-xl"
+        >
+          {{ t('footer.tagline') }}
+        </p>
+        <nav :aria-label="t('footer.social')">
+          <ul class="flex flex-wrap gap-2">
+            <li v-for="link in socialLinks" :key="link.href">
+              <a
+                :href="link.href"
+                target="_blank"
+                rel="noopener noreferrer"
+                :aria-label="link.label"
+                :title="link.label"
+                class="grid size-11 place-items-center rounded-full border border-transparency-white-t20 text-primary-comfy-canvas transition-colors outline-none hover:border-primary-comfy-yellow hover:text-primary-comfy-yellow focus-visible:ring-3 focus-visible:ring-primary-comfy-yellow/50"
+              >
+                <span
+                  :class="cn('size-4.5 icon-mask', link.icon)"
+                  aria-hidden="true"
+                />
+              </a>
+            </li>
+          </ul>
+        </nav>
+      </div>
 
       <!-- Link columns -->
       <div class="flex flex-col gap-12 lg:row-span-2 lg:justify-between">

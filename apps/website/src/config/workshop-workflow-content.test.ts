@@ -108,17 +108,84 @@ describe('curated workflow pages', () => {
     }
   )
 
-  it('publishes six outcomes in each launch category', () => {
+  it('files every published workflow under one listed category', () => {
     expect(
-      Object.groupBy(workflows, (workflow) => workflow.category ?? '')
-    ).toMatchObject({
-      videos: { length: 6 },
-      characters: { length: 6 },
-      product: { length: 6 },
-      upscale: { length: 6 },
-      cleanup: { length: 6 }
+      Object.fromEntries(
+        Object.entries(
+          Object.groupBy(workflows, (workflow) => workflow.category ?? '')
+        ).map(([category, listed]) => [category, listed?.length])
+      )
+    ).toEqual({
+      'image-to-image': 6,
+      'image-to-video': 2,
+      'reference-to-video': 2,
+      'video-to-video': 5,
+      upscale: 6,
+      audio: 2,
+      characters: 1,
+      product: 4,
+      tools: 2
     })
+    expect(categories.map((category) => category.id)).toEqual([
+      'image-to-image',
+      'image-to-video',
+      'reference-to-video',
+      'video-to-video',
+      'upscale',
+      'audio',
+      'characters',
+      'product',
+      'tools'
+    ])
     expect(workflows).toHaveLength(30)
+  })
+
+  it.for([
+    {
+      slug: 'workflows/edit-selected-region',
+      inputs: ['image'],
+      output: 'image'
+    },
+    { slug: 'workflows/upscale-video', inputs: ['video'], output: 'video' },
+    {
+      slug: 'workflows/motion-transfer',
+      inputs: ['image', 'video'],
+      output: 'video'
+    },
+    {
+      slug: 'workflows/talking-character',
+      inputs: ['image', 'audio'],
+      output: 'video'
+    },
+    {
+      slug: 'workflows/character-turnaround',
+      inputs: ['image'],
+      output: 'image'
+    }
+  ])(
+    'reads $slug as $inputs in, $output out from its uploads and results',
+    ({ slug, inputs, output }) => {
+      const model = workflows.find((workflow) => workflow.slug === slug)
+      expect(model).toMatchObject({ inputKinds: inputs, modality: output })
+    }
+  )
+
+  it('starts a workflow with no visible upload from text', () => {
+    const [projected] = workflowPagesFor(
+      [
+        {
+          ...page,
+          inputs: Object.fromEntries(
+            Object.entries(page.inputs ?? {}).map(([name, input]) => [
+              name,
+              input.control === 'media' ? { ...input, hidden: true } : input
+            ])
+          )
+        }
+      ],
+      workflowCatalog
+    )
+    expect(projected.model.inputKinds).toEqual(['text'])
   })
 
   it.for(categories)('highlights one published workflow in $id', (category) => {

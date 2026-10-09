@@ -1,6 +1,10 @@
 <script setup lang="ts">
-import { Download, ExternalLink, Play } from '@lucide/vue'
-import { useEventListener, useMounted, useTimestamp } from '@vueuse/core'
+import {
+  useElementVisibility,
+  useEventListener,
+  useMounted,
+  useTimestamp
+} from '@vueuse/core'
 import {
   computed,
   effectScope,
@@ -9,22 +13,18 @@ import {
   onUnmounted,
   ref,
   shallowRef,
-  useSlots,
+  useTemplateRef,
   watch
 } from 'vue'
 
 import { cn } from '@comfyorg/tailwind-utils'
 
-import Button from '@/components/ui/button/Button.vue'
-import CopyTextButton from '@/components/ui/copy-text-button/CopyTextButton.vue'
 import { useWorkshopFormDraft } from '@/composables/useWorkshopFormDraft'
 import { useWorkshopDelivery } from '@/composables/useWorkshopDelivery'
 import { sameFormValues } from '@/lib/workshop/form-values'
 import { validateWorkshopMediaInputs } from '@/config/workshop-media-validation'
-import { leaveForSignIn } from '@/config/workshop-return'
 import { useSignInHref } from '@/composables/useSignInHref'
 import { usePersonalWorkspaceSwitch } from '@/composables/usePersonalWorkspaceSwitch'
-import { useTablist } from '@/composables/useTablist'
 import type { WorkshopModelDetail } from '@/config/models-catalogue'
 import type { SnippetLanguage } from '@/config/models-snippets'
 import type {
@@ -61,7 +61,9 @@ import { retainRunHistory } from '@/config/workshop-run-history'
 import { reportWorkshopRun } from '@/config/workshop-run-state'
 import { modelDocsHref } from '@/lib/workshop/model-docs'
 import { linkLeavingPage } from '@/lib/workshop/leaving-link'
+import { pagePaths } from '@/lib/workshop/page-paths'
 import { routerSavesAssets } from '@/lib/workshop/asset-saving'
+import { scrollToSection } from '@/lib/workshop/scroll-to-section'
 import type { WorkshopSession } from '@/config/workshop-session-state'
 import {
   stopWorkshopSession,
@@ -92,50 +94,33 @@ import PlaygroundForm from './PlaygroundForm.vue'
 import PlaygroundOutput from './PlaygroundOutput.vue'
 import ExampleReplaceDialog from './ExampleReplaceDialog.vue'
 import RunLeaveDialog from './RunLeaveDialog.vue'
-import ModelSupport from './ModelSupport.vue'
 import SavedAssetsStrip from './SavedAssetsStrip.vue'
+import ModelSamples from '@/components/workshop/model-detail/ModelSamples.vue'
+import ModelApiHeading from '@/components/workshop/model-detail/ModelApiHeading.vue'
+import PlaygroundInputHeader from '@/components/workshop/model-detail/PlaygroundInputHeader.vue'
+import RunGateAction from '@/components/workshop/model-detail/RunGateAction.vue'
+import RunRequestMeta from '@/components/workshop/model-detail/RunRequestMeta.vue'
 import { WORKSHOP_LEAVE_RUNNING } from '@/config/workshop-router-queue'
 import { WORKSHOP_ASSETS_URL } from '@/config/workshop-env'
 
-const {
-  model,
-  locale = 'en',
-  clone
-} = defineProps<{
+const { model, locale = 'en' } = defineProps<{
   model: WorkshopModelDetail
   locale?: Locale
-  clone?: { href: string }
-  /** Names the form's groups as numbered steps and keeps the result in view
-   * while they are filled in. The workflow pages ask for it; a model page has
-   * a shorter form that reads fine as one list. */
 }>()
 const { t } = translationsFor(locale)
 
-const slots = useSlots()
 const modelAnalytics = workshopModelAnalytics(model)
 const frameRatio = frameRatioRule(model.slug)
-
-type Section = 'playground' | 'details' | 'api'
-const sections = computed<readonly Section[]>(() =>
-  slots.details ? ['playground', 'details', 'api'] : ['playground', 'api']
-)
-const sectionLabel: Record<Section, TranslationKey> = {
-  playground: 'workshop.model.tabs.playground',
-  details: 'workshop.model.tabs.details',
-  api: 'workshop.model.tabs.api'
-}
-
-const activeSection = ref<Section>('playground')
-const { onKeydown: onTabKeydown } = useTablist(
-  () => sections.value,
-  activeSection
-)
+const sectionClass = 'scroll-mt-24 lg:scroll-mt-32'
 
 const initialPageState = initialWorkshopPageState(model)
 const examples = initialPageState.examples
-// A workflow page describes one workflow, so the model's other examples would
-// be beside the point there.
-const showsExamples = computed(() => !slots.details && examples.length > 0)
+const runsHere = pagePaths(model).run
+const apiSectionClass = cn(
+  sectionClass,
+  (runsHere || examples.length > 0) &&
+    'mt-16 border-t border-transparency-white-t8 pt-12'
+)
 const firstExample = initialPageState.firstExample
 const activeExample = ref<PlaygroundExample | undefined>(
   initialPageState.activeExample
@@ -284,8 +269,10 @@ watch(
   },
   { once: true }
 )
-watch([activeSection, workshopEnabled], ([section, enabled]) => {
-  if (enabled && section === 'api') {
+const apiSection = useTemplateRef<HTMLElement>('apiSection')
+const apiInView = useElementVisibility(apiSection)
+watch([apiInView, workshopEnabled], ([inView, enabled]) => {
+  if (enabled && inView) {
     captureWorkshopEvent({ name: 'api_viewed', properties: modelAnalytics })
   }
 })
@@ -303,14 +290,7 @@ function captureSnippetCopy(language: SnippetLanguage) {
       properties: { ...modelAnalytics, snippet_language: language }
     })
 }
-const canRunModel = computed(
-  () =>
-    !model.incompleteReason &&
-    import.meta.env.PUBLIC_WORKSHOP_ROUTER_RUN === '1' &&
-    !!model.execution &&
-    !activeExample.value?.fields &&
-    !clone
-)
+const canRunModel = computed(() => runsHere && !activeExample.value?.fields)
 const flagOffGate = computed(() =>
   workshopEnabledSettled.value ? 'rollingOut' : 'resolving'
 )
@@ -499,9 +479,6 @@ interface ActiveRun {
 let activeRun: ActiveRun | undefined
 const credentialFailures = new WeakSet<ActiveRun>()
 const delivery = useWorkshopDelivery()
-watch(activeSection, (section) => {
-  if (section !== 'playground') delivery.cancel()
-})
 let pendingRequest: { fingerprint: string; key: string } | undefined
 const uploadUrl = createWorkshopUrlUploader()
 
@@ -722,7 +699,6 @@ function finishRun(result: RouterRenderResult, attempt: ActiveRun): void {
     discarded.flatMap((run) => [run.output, ...run.attachments])
   )
   delivery.start(attempt.analytics, result.requestId, output)
-  if (activeSection.value !== 'playground') delivery.cancel()
   runState.value = transition(runState.value, {
     type: 'complete',
     at: Date.now(),
@@ -848,7 +824,6 @@ function applyExample(example: PlaygroundExample) {
   }
   activeExampleId.value = example.id
   runState.value = { status: 'example', output: exampleOutput(example) }
-  activeSection.value = 'playground'
 }
 
 // An example overwrites the whole form, so where there is writing to lose the
@@ -871,355 +846,180 @@ function replaceWithExample() {
 }
 
 function useInCode() {
-  activeSection.value = 'api'
+  scrollToSection('api')
+}
+const offersNativeJson = computed(
+  () =>
+    !!model.execution &&
+    model.execution.inputs === undefined &&
+    !activeExample.value?.fields
+)
+const showsOutput = computed(
+  () =>
+    (mounted.value && workshopEnabled.value) || runState.value.status !== 'idle'
+)
+const showsRunMeta = computed(
+  () => runState.value.status === 'succeeded' || !!requestId.value
+)
+const policyMessage = computed(() =>
+  refusesRealFaces(model.slug) ? t('workshop.error.policyRealFaces') : undefined
+)
+const memberWorkspace = computed(() =>
+  session.value?.role === 'member' ? session.value.workspace.name : undefined
+)
+
+function retry() {
+  if (gate.value === 'ready') void run()
+  else reset()
 }
 </script>
 
 <template>
-  <div class="flex flex-col gap-10" data-testid="model-detail">
-    <div
-      class="flex items-center gap-8 border-b border-transparency-white-t8 max-sm:gap-5"
-    >
-      <div
-        role="tablist"
-        :aria-label="t('workshop.title')"
-        class="scrollbar-hide flex min-w-0 gap-8 overflow-x-auto max-sm:gap-5"
-        data-testid="model-tabs"
-        @keydown="onTabKeydown"
-      >
-        <button
-          v-for="section in sections"
-          :id="`tab-${section}`"
-          :key="section"
-          type="button"
-          role="tab"
-          :aria-selected="section === activeSection"
-          :aria-controls="`panel-${section}`"
-          :tabindex="section === activeSection ? 0 : -1"
-          :data-testid="`tab-${section}`"
-          :class="
-            cn(
-              'cursor-pointer border-b-2 pb-3 text-sm font-bold tracking-wider uppercase transition-colors',
-              section === activeSection
-                ? 'border-primary-comfy-yellow text-primary-warm-white'
-                : 'border-transparent text-primary-warm-gray hover:text-primary-warm-white'
-            )
-          "
-          @click="activeSection = section"
-        >
-          {{ t(sectionLabel[section]) }}
-        </button>
-      </div>
-      <a
-        v-if="docsHref"
-        :href="docsHref"
-        target="_blank"
-        rel="noopener noreferrer"
-        class="ml-auto inline-flex shrink-0 items-center gap-1.5 pb-3 text-sm leading-none font-bold tracking-wider whitespace-nowrap text-primary-warm-white uppercase transition-colors hover:text-primary-comfy-yellow"
-        data-testid="model-docs-link"
-      >
-        {{ t('workshop.hub.docs') }}
-        <ExternalLink class="size-4" aria-hidden="true" />
-      </a>
-    </div>
-
+  <div class="flex flex-col" data-testid="model-detail">
     <section
-      v-if="activeSection === 'playground'"
-      id="panel-playground"
-      role="tabpanel"
-      aria-labelledby="tab-playground"
-      class="grid gap-8 lg:grid-cols-12"
-      data-testid="playground-tab"
+      v-if="runsHere"
+      id="playground"
+      aria-labelledby="playground-heading"
+      :class="sectionClass"
+      data-testid="playground-section"
     >
-      <div
-        class="flex min-w-0 flex-col rounded-2xl border border-transparency-white-t8 bg-transparency-white-t4 lg:col-span-5"
-        data-testid="playground-input"
-      >
-        <header
-          class="flex items-center justify-between border-b border-transparency-white-t8 px-5 py-3 text-xs font-bold tracking-wider text-primary-comfy-canvas uppercase"
+      <h2 id="playground-heading" class="sr-only">
+        {{ t('workshop.model.tabs.playground') }}
+      </h2>
+      <div class="grid gap-8 lg:grid-cols-12">
+        <div
+          class="flex min-w-0 flex-col rounded-2xl border border-transparency-white-t8 bg-transparency-white-t4 lg:col-span-5"
+          data-testid="playground-input"
         >
-          <span>{{ t('workshop.input.title') }}</span>
-          <button
-            v-if="
-              model.execution &&
-              model.execution.inputs === undefined &&
-              !activeExample?.fields
-            "
-            type="button"
-            :aria-pressed="nativeJson"
+          <PlaygroundInputHeader
+            v-model:native-json="nativeJson"
+            :offers-native-json
             :disabled="inputsLocked"
-            class="cursor-pointer rounded-sm px-2 py-1 hover:bg-transparency-white-t8 disabled:cursor-not-allowed"
-            @click="nativeJson = !nativeJson"
-          >
-            {{ t('workshop.form.nativeJson') }}
-          </button>
-        </header>
+            :locale
+          />
 
-        <!-- Loading an example rewrites every field at once, so the form
+          <!-- Loading an example rewrites every field at once, so the form
           settles in instead of snapping. -->
-        <div
-          :key="activeExampleId"
-          class="flex animate-soft-in flex-col gap-6 p-5"
-        >
-          <ModelSupport
-            v-if="model.incompleteReason"
-            :reason="model.incompleteReason"
-            variant="notice"
-            :locale
-          />
-          <PlaygroundForm
-            v-model="values"
-            :schema
-            :errors
-            :frame-ratio
-            :locale
-            :disabled="inputsLocked"
-            :file-uploads-disabled="!mounted"
-          />
-          <p
-            v-if="restoreFailed"
-            role="status"
-            class="text-sm text-primary-warm-gray"
+          <div
+            :key="activeExampleId"
+            class="flex animate-soft-in flex-col gap-6 p-5"
           >
-            {{ t('workshop.form.draftRestoreFailed') }}
-          </p>
-        </div>
+            <PlaygroundForm
+              v-model="values"
+              :schema
+              :errors
+              :frame-ratio
+              :locale
+              :disabled="inputsLocked"
+              :file-uploads-disabled="!mounted"
+            />
+            <p
+              v-if="restoreFailed"
+              role="status"
+              class="text-sm text-primary-warm-gray"
+            >
+              {{ t('workshop.form.draftRestoreFailed') }}
+            </p>
+          </div>
 
-        <!-- Run follows the form down the page, so a long list of inputs never
+          <!-- Run follows the form down the page, so a long list of inputs never
           pushes it past the bottom of a laptop screen. -->
-        <div
-          class="sticky bottom-0 z-10 mt-auto flex flex-col gap-2 rounded-b-2xl border-t border-transparency-white-t8 bg-page/85 p-3 backdrop-blur-sm"
-        >
-          <Button
-            v-if="gate === 'signedOut'"
-            as="a"
-            :href="signInHref"
-            size="lg"
-            class="w-full px-5"
-            data-testid="run-button"
-            data-gate="signedOut"
-            @click="leaveForSignIn($event, signInHref)"
+          <div
+            class="sticky bottom-0 z-10 mt-auto flex flex-col gap-2 rounded-b-2xl border-t border-transparency-white-t8 bg-page/85 p-3 backdrop-blur-sm"
           >
-            {{ t('workshop.run.signIn') }}
-          </Button>
-          <!-- The MVP rail (DES-1015): buying happens on platform, in a new
-               tab, so this page and its inputs stay alive and the return is a
-               balance re-read. Naming the workspace is what makes topping up
-               the wrong wallet visible before it happens. -->
-          <template v-else-if="gate === 'noCredits'">
-            <p
-              class="mb-2 text-sm font-bold text-content-secondary"
-              data-testid="gate-note"
-            >
-              {{
-                t('workshop.error.noCreditsCloud', {
-                  workspace: session?.workspace.name ?? ''
-                })
-              }}
-            </p>
-            <Button
-              size="lg"
-              class="w-full px-5"
-              data-testid="run-button"
-              data-gate="noCredits"
-              @click="requestWorkshopBuyCredits"
-            >
-              {{ t('workshop.run.buyCredits') }}
-            </Button>
-          </template>
-          <template v-else-if="gate === 'memberNoCredits'">
-            <div class="mb-2 flex flex-col gap-1" data-testid="gate-note">
-              <p class="text-sm font-bold text-content-secondary">
-                {{ t('workshop.error.creditsTitle') }}
-              </p>
-              <p class="text-xs text-content-secondary">
-                {{
-                  t('workshop.error.memberNoCredits', {
-                    workspace: session?.workspace.name ?? ''
-                  })
-                }}
-              </p>
-            </div>
-            <Button
-              variant="outline"
-              size="lg"
-              class="w-full px-5"
-              :disabled="personalSwitchPending"
-              data-testid="run-button"
-              data-gate="memberNoCredits"
-              @click="switchToPersonal"
-            >
-              {{
-                t(
-                  personalSwitchPending
-                    ? 'workshop.run.preparingSession'
-                    : 'workshop.run.switchPersonal'
-                )
-              }}
-            </Button>
-            <p
-              v-if="personalSwitchError"
-              class="text-xs text-red-400"
-              role="alert"
-            >
-              {{ t('nav.workspaceSwitchError') }}
-            </p>
-          </template>
-          <p
-            v-else-if="gate === 'rollingOut'"
-            class="flex min-h-14 flex-wrap items-center justify-center gap-x-1.5 px-2 text-center text-xs text-content-secondary sm:text-sm"
-            data-testid="run-rollout-note"
-          >
-            {{ t('workshop.run.rollingOut') }}
-            <button
-              type="button"
-              class="cursor-pointer font-bold text-primary-warm-white underline underline-offset-2 hover:text-primary-comfy-yellow"
-              @click="activeSection = 'api'"
-            >
-              {{ t('workshop.run.rollingOutApi') }}
-            </button>
-          </p>
-          <Button
-            v-else-if="gate === 'ready'"
-            size="lg"
-            class="w-full px-5"
-            data-testid="run-button"
-            data-gate="ready"
-            @click="isRunning ? cancelRun() : run()"
-          >
-            <template v-if="!isRunning" #prepend>
-              <Play class="size-5 fill-current" aria-hidden="true" />
-            </template>
-            {{ t(isRunning ? 'workshop.run.cancel' : 'workshop.run.run') }}
-          </Button>
-          <Button
-            v-else
-            size="lg"
-            class="h-auto min-h-14 w-full px-5 py-3 text-center whitespace-normal"
-            disabled
-            data-testid="run-button"
-            :data-gate="gate"
-          >
-            {{ t(blockedRunLabel) }}
-          </Button>
-        </div>
-      </div>
-
-      <div
-        class="flex min-w-0 flex-col gap-4 lg:sticky lg:top-26 lg:col-span-7 lg:self-start"
-      >
-        <PlaygroundOutput
-          v-if="(mounted && workshopEnabled) || runState.status !== 'idle'"
-          v-model:revealed="revealed"
-          :state="runState"
-          :earlier
-          :attachments
-          :now
-          :modality="model.modality"
-          :locale
-          :policy-message="
-            refusesRealFaces(model.slug)
-              ? t('workshop.error.policyRealFaces')
-              : undefined
-          "
-          :member-workspace="
-            session?.role === 'member' ? session.workspace.name : undefined
-          "
-          @switch-personal="switchToPersonal"
-          @buy-credits="requestWorkshopBuyCredits"
-          @retry="gate === 'ready' ? run() : reset()"
-          @use-in-code="useInCode"
-          @download="captureOutputDownload"
-          @delivery="delivery.settle"
-          @playback-started="delivery.beginPlayback"
-        />
-        <div
-          v-if="runState.status === 'succeeded' || requestId"
-          class="flex flex-col gap-1"
-        >
-          <p
-            v-if="showsExpiry"
-            class="text-xs text-primary-warm-gray"
-            data-testid="output-expires"
-          >
-            {{ t('workshop.output.expires') }}
-          </p>
-          <!-- The id is for the rare conversation with support, so it keeps
-            to itself and the copy comes to hand when the reader reaches for
-            it. A screen that cannot hover keeps the button in view. -->
-          <div v-if="requestId" class="group/request flex items-center gap-1">
-            <p
-              class="text-2xs break-all text-primary-warm-gray/70"
-              data-testid="router-request-id"
-            >
-              {{ t('workshop.run.requestId') }} {{ requestId }}
-            </p>
-            <CopyTextButton
-              :value="requestId"
-              :label="t('workshop.run.copyRequestId')"
-              :copied-label="t('workshop.api.copied')"
-              icon-class="size-3.5"
-              class="h-7 min-w-7 rounded-lg px-1.5 transition-opacity can-hover:opacity-0 can-hover:group-focus-within/request:opacity-100 can-hover:group-hover/request:opacity-100"
+            <RunGateAction
+              :gate
+              :sign-in-href="signInHref"
+              :workspace-name="session?.workspace.name"
+              :switch-pending="personalSwitchPending"
+              :switch-failed="personalSwitchError"
+              :running="isRunning"
+              :blocked-label="blockedRunLabel"
+              :locale
+              @buy-credits="requestWorkshopBuyCredits"
+              @switch-personal="switchToPersonal"
+              @show-api="scrollToSection('api')"
+              @run="run"
+              @cancel="cancelRun"
             />
           </div>
         </div>
 
-        <SavedAssetsStrip
-          v-if="savedAssetsFor"
-          :key="`${savedAssetsFor.key.uid}:${savedAssetsFor.key.workspace.id}`"
-          :model-id="savedAssetsFor.modelId"
-          :active-request-id="requestId"
-          :token="historyToken"
-          :locale
-          @save-failed="saveFailed = $event"
-        />
-
-        <!-- Once the result is in view, taking the workflow home is the other
-          thing to do with it, and it should not shout over the run's own
-          buttons. -->
-        <a
-          v-if="clone"
-          :href="clone.href"
-          download
-          class="inline-flex w-fit items-center gap-2 self-end text-xs text-primary-warm-gray transition-colors hover:text-primary-warm-white"
-          data-testid="clone-button"
+        <div
+          class="flex min-w-0 flex-col gap-4 lg:sticky lg:top-26 lg:col-span-7 lg:self-start"
         >
-          <Download class="size-3.5" aria-hidden="true" />
-          {{ t('workshop.workflow.cloneCta') }}
-        </a>
+          <PlaygroundOutput
+            v-if="showsOutput"
+            v-model:revealed="revealed"
+            :state="runState"
+            :earlier
+            :attachments
+            :now
+            :modality="model.modality"
+            compact
+            :locale
+            :policy-message
+            :member-workspace
+            @switch-personal="switchToPersonal"
+            @buy-credits="requestWorkshopBuyCredits"
+            @retry="retry"
+            @use-in-code="useInCode"
+            @download="captureOutputDownload"
+            @delivery="delivery.settle"
+            @playback-started="delivery.beginPlayback"
+          />
+          <RunRequestMeta
+            v-if="showsRunMeta"
+            :shows-expiry="showsExpiry"
+            :request-id="requestId"
+            :locale
+          />
+
+          <SavedAssetsStrip
+            v-if="savedAssetsFor"
+            :key="`${savedAssetsFor.key.uid}:${savedAssetsFor.key.workspace.id}`"
+            :model-id="savedAssetsFor.modelId"
+            :active-request-id="requestId"
+            :token="historyToken"
+            :locale
+            @save-failed="saveFailed = $event"
+          />
+        </div>
+      </div>
+
+      <div v-if="examples.length" class="pt-6" data-testid="examples-section">
+        <ExamplesTab
+          :examples
+          :gallery-label="model.name"
+          :active-id="activeExampleId"
+          :locale
+          @open="openExample"
+        />
       </div>
     </section>
 
-    <section
-      v-if="showsExamples && activeSection === 'playground'"
-      class="pt-6"
-      data-testid="examples-section"
-    >
-      <ExamplesTab
-        :examples
-        :gallery-label="model.name"
-        :active-id="activeExampleId"
-        :locale
-        @open="openExample"
-      />
-    </section>
+    <ModelSamples
+      v-else-if="examples.length"
+      v-model:revealed="revealed"
+      :class="sectionClass"
+      :state="runState"
+      :now
+      :examples
+      :model
+      :active-id="activeExampleId"
+      :locale
+      @open="openExample"
+      @download="captureOutputDownload"
+    />
 
     <section
-      v-if="activeSection === 'details'"
-      id="panel-details"
-      role="tabpanel"
-      aria-labelledby="tab-details"
-      data-testid="details-tab"
+      id="api"
+      ref="apiSection"
+      aria-labelledby="api-heading"
+      :class="apiSectionClass"
+      data-testid="api-section"
     >
-      <slot name="details" />
-    </section>
-
-    <section
-      v-if="activeSection === 'api'"
-      id="panel-api"
-      role="tabpanel"
-      aria-labelledby="tab-api"
-    >
+      <ModelApiHeading :docs-href :locale />
       <ApiTab
         :contract="model.execution"
         :values

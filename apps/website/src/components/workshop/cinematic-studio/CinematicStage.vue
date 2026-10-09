@@ -76,9 +76,6 @@ const otherModel = computed(() => {
     :aria-label="t('cinematic.stage.label')"
   >
     <template v-if="current">
-      <h1 class="sr-only">
-        {{ t('cinematic.title') }}
-      </h1>
       <div
         data-testid="cinematic-take-column"
         class="flex max-w-5xl flex-col gap-3"

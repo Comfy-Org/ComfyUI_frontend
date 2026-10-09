@@ -1,7 +1,9 @@
 <script setup lang="ts">
 import { ArrowRight } from '@lucide/vue'
+import { useMounted } from '@vueuse/core'
 import { computed } from 'vue'
 
+import Button from '@/components/ui/button/Button.vue'
 import { catalogSearch, useCaseFor } from '@/config/models-catalogue'
 import { getRoutes } from '@/config/routes'
 import type {
@@ -9,10 +11,16 @@ import type {
   WorkshopModel
 } from '@/config/models-catalogue'
 import { formForContract } from '@/config/workshop-contract'
+import { pagePaths } from '@/lib/workshop/page-paths'
 import { t } from '@/i18n/translations'
-import CatalogueBackLink from './CatalogueBackLink.vue'
+import { useWorkshopWorkflowsEnabled } from '@/scripts/posthog'
+import { SHELF_CARD } from '@/lib/workshop/card-layout'
+import CardRow from './CardRow.vue'
+import DetailTrail from './DetailTrail.vue'
 import ModelPrice from './ModelPrice.vue'
 import ModelDetail from './ModelDetail.vue'
+import ModelCompare from './model-detail/ModelCompare.vue'
+import ModelPaths from './model-detail/ModelPaths.vue'
 import ModelStatus from './ModelStatus.vue'
 import ModelSupport from './ModelSupport.vue'
 import TagOverflow from './TagOverflow.vue'
@@ -31,6 +39,8 @@ const { page } = defineProps<{
     successor?: WorkshopModel
     priceEstimate?: string
     useCaseLabel?: string
+    workflows: readonly WorkshopModel[]
+    comparable?: readonly WorkshopModel[]
     shownTags: readonly ModelTag[]
     restTags: readonly ModelTag[]
     restTagCount: number
@@ -42,7 +52,13 @@ const model = computed(() =>
     ? { ...page.model, form: formForContract(page.model.execution) }
     : page.model
 )
+const paths = computed(() => pagePaths(page.model))
 const modelUseCase = computed(() => useCaseFor(page.model))
+const mounted = useMounted()
+const workflowsEnabled = useWorkshopWorkflowsEnabled()
+const showsWorkflows = computed(
+  () => mounted.value && workflowsEnabled.value && page.workflows.length > 0
+)
 const pillClass =
   'inline-flex h-7 items-center rounded-full border border-transparency-white-t20 px-3 text-xs leading-none text-primary-comfy-canvas transition-colors hover:border-primary-comfy-yellow hover:text-primary-comfy-yellow'
 const restTags = computed(() =>
@@ -55,8 +71,8 @@ const restTags = computed(() =>
 
 <template>
   <div class="mx-auto max-w-10xl px-6 py-10 lg:px-8 lg:py-14">
-    <div class="mb-8 sm:px-8 lg:px-10">
-      <CatalogueBackLink />
+    <div class="mb-8 sm:px-8 lg:px-10" data-testid="model-trail">
+      <DetailTrail section="models" :name="page.model.name" />
     </div>
     <header class="mb-12 sm:mx-8 lg:mx-10" data-testid="model-hero">
       <div
@@ -91,6 +107,7 @@ const restTags = computed(() =>
           >
             {{ page.model.summary }}
           </p>
+          <ModelPaths :paths class="mt-1" />
         </div>
 
         <div class="flex flex-col gap-4 lg:items-end">
@@ -126,6 +143,31 @@ const restTags = computed(() =>
       <ModelDetail :model />
 
       <section
+        v-if="showsWorkflows"
+        aria-labelledby="model-workflows-heading"
+        class="mt-24 border-t border-transparency-white-t8 pt-12"
+        data-testid="model-workflows"
+      >
+        <CardRow>
+          <template #heading>
+            <h2
+              id="model-workflows-heading"
+              class="text-2xl font-bold text-primary-comfy-canvas"
+            >
+              {{ t('workshop.model.usedBy', { name: page.model.name }) }}
+            </h2>
+          </template>
+          <li
+            v-for="workflow in page.workflows"
+            :key="workflow.slug"
+            :class="SHELF_CARD"
+          >
+            <WorkshopModelCard :model="workflow" />
+          </li>
+        </CardRow>
+      </section>
+
+      <section
         class="mt-24 border-t border-transparency-white-t8 pt-12"
         data-testid="related-models"
       >
@@ -133,9 +175,10 @@ const restTags = computed(() =>
           <h2 class="text-2xl font-bold text-primary-comfy-canvas">
             {{ page.relatedHeading }}
           </h2>
-          <a
+          <Button
             :href="routes.workshop"
-            class="inline-flex items-center gap-2 text-sm font-bold tracking-wider text-primary-comfy-yellow uppercase hover:underline"
+            variant="link"
+            :append-icon="ArrowRight"
           >
             <span class="sm:hidden">{{
               t('workshop.model.browseAllShort')
@@ -143,8 +186,7 @@ const restTags = computed(() =>
             <span class="max-sm:hidden">{{
               t('workshop.model.browseAll')
             }}</span>
-            <ArrowRight class="size-4 shrink-0" aria-hidden="true" />
-          </a>
+          </Button>
         </div>
         <ul
           class="grid grid-cols-1 gap-6 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4"
@@ -154,6 +196,8 @@ const restTags = computed(() =>
           </li>
         </ul>
       </section>
+
+      <ModelCompare :model="page.model" :candidates="page.comparable ?? []" />
     </div>
   </div>
 </template>

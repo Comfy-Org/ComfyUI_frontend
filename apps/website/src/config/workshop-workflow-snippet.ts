@@ -137,10 +137,12 @@ export function workflowTypeScript(plan: WorkflowSdkPlan): string {
   ].join('\n')
 }
 
+export const PYTHON_SDK_INSTALL = 'pip install comfy-sdk==0.4.0'
+
 export function workflowPython(plan: WorkflowSdkPlan): string {
   const literal = (value: string) => JSON.stringify(value)
   return [
-    '# Python 3.10+: pip install comfy-sdk==0.4.0',
+    `# Python 3.10+: ${PYTHON_SDK_INSTALL}`,
     'import os',
     '',
     'from comfy_sdk import Comfy',
@@ -163,4 +165,25 @@ export function workflowPython(plan: WorkflowSdkPlan): string {
       '    output.to_file(output.name)'
     ])
   ].join('\n')
+}
+
+export interface SnippetGraphFold {
+  readonly start: number
+  readonly end: number
+}
+
+const GRAPH_OPENING = /(\(|')\{$/
+const GRAPH_CLOSING = /^\}/
+
+export function snippetGraphFold(
+  lines: readonly string[],
+  previewLines = 1
+): SnippetGraphFold | undefined {
+  const opening = lines.findIndex((line) => GRAPH_OPENING.test(line))
+  if (opening < 0) return undefined
+  const end = lines.findIndex(
+    (line, index) => index > opening && GRAPH_CLOSING.test(line)
+  )
+  const start = opening + 1 + previewLines
+  return end > start ? { start, end } : undefined
 }

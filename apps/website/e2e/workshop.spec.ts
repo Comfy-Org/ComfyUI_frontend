@@ -1,8 +1,24 @@
 import { readFileSync } from 'node:fs'
 import { expect } from '@playwright/test'
+import type { Page } from '@playwright/test'
 
 import { MODEL_PATH, test } from './fixtures/modelsAccount'
 import { waitForIsland } from './fixtures/islands'
+
+function catalogueHeading(page: Page) {
+  return page.locator('#models-catalogue')
+}
+
+async function catalogueCount(page: Page) {
+  const heading = catalogueHeading(page)
+  await expect(heading).toHaveText(/\d+\s*$/)
+  return Number((await heading.innerText()).match(/(\d+)\s*$/)?.[1])
+}
+
+async function showEveryPage(page: Page) {
+  const more = page.getByTestId('catalogue-show-more')
+  while (await more.isVisible()) await more.click()
+}
 
 test.describe('Retired prototype routes', () => {
   test.beforeEach(async ({ page }) => {
@@ -13,11 +29,11 @@ test.describe('Retired prototype routes', () => {
 
   test('ignores old stored and query layout overrides', async ({ page }) => {
     await page.goto('/hub/models/?version=v2')
-    await expect(page.getByTestId('workshop-sections')).toBeVisible()
+    await expect(page.getByTestId('workshop-models-grid')).toBeVisible()
     await expect(page.getByTestId('workshop-hub')).toHaveCount(0)
     await expect(page.getByTestId('workshop-tabs')).toHaveCount(0)
     await page.reload()
-    await expect(page.getByTestId('workshop-sections')).toBeVisible()
+    await expect(page.getByTestId('workshop-models-grid')).toBeVisible()
   })
 
   test('does not serve retired workflow or Workshop pages', async ({
@@ -28,7 +44,7 @@ test.describe('Retired prototype routes', () => {
     await expect(page.getByTestId('model-detail')).toHaveCount(0)
     const workshop = await page.goto('/workshop/')
     expect(workshop?.status()).toBe(404)
-    await expect(page.getByTestId('workshop-sections')).toHaveCount(0)
+    await expect(page.getByTestId('workshop-models-grid')).toHaveCount(0)
   })
 })
 
@@ -44,13 +60,13 @@ test.describe('Hub pages', () => {
       path: 'hub/workflows',
       title:
         'ComfyUI Workflows: Multi-Step AI Image &amp; Video Workflows - Comfy',
-      heading: 'ComfyUI workflows',
+      heading: 'Workflows',
       noindex: true
     },
     {
       path: 'hub/apps',
       title: 'ComfyUI Apps: Creative Tools Built from Workflows - Comfy',
-      heading: 'ComfyUI apps',
+      heading: 'Apps',
       noindex: true
     }
   ])
@@ -69,85 +85,69 @@ test.describe('Hub pages', () => {
 })
 
 test.describe('Models catalog', () => {
-  test('opens the featured model from the full banner surface', async ({
-    page
-  }) => {
+  test('opens the latest launch from the hero', async ({ page }) => {
     await page.goto('/hub/models/')
-    const slide = page.getByTestId('featured-slide')
-    const href = await page
-      .getByTestId('featured-slide-link')
-      .getAttribute('href')
-    const bounds = await slide.boundingBox()
-    if (!href || !bounds) throw new Error('Featured slide is not clickable')
+    const hero = page.getByTestId('models-hub-hero')
+    await expect(
+      hero.getByRole('heading', { level: 1, name: 'Models', exact: true })
+    ).toBeVisible()
+    await expect(page.getByTestId('workshop-heading')).toHaveCount(0)
+    const card = hero.getByTestId('models-hub-latest')
+    await expect(card).toContainText('Latest launch')
+    const latest = card.getByTestId('models-hub-latest-title')
+    const href = await latest.getAttribute('href')
+    if (!href) throw new Error('The latest launch has no page')
+    await expect(card.getByTestId('models-hub-latest-try')).toHaveAttribute(
+      'href',
+      href
+    )
 
-    await slide.click({ position: { x: bounds.width - 24, y: 24 } })
+    await latest.click()
 
     await expect(page).toHaveURL(new URL(href, page.url()).href)
   })
 
-  test('opens the model from the banner beside the pagination bars', async ({
+  test('sends Browse open weights to the local models page', async ({
     page
   }) => {
-    await page.setViewportSize({ width: 1280, height: 900 })
     await page.goto('/hub/models/')
-    const strip = page.getByTestId('featured-pagination')
-    const card = page.getByTestId('featured-slide')
-    const href = await page
-      .getByTestId('featured-slide-link')
-      .getAttribute('href')
-    const [bars, area] = [await strip.boundingBox(), await card.boundingBox()]
-    if (!href || !bars || !area)
-      throw new Error('Featured banner is not laid out')
-
-    // The strip spans the card so the bars can share the room, which puts a
-    // wide empty stretch of it over the link.
-    await page.mouse.click(area.x + area.width - 80, bars.y + bars.height / 2)
-
-    await expect(page).toHaveURL(new URL(href, page.url()).href)
+    await expect(page.getByTestId('models-all-link')).toHaveAttribute(
+      'href',
+      '/hub/models/local/'
+    )
   })
 
-  test('keeps every pagination bar inside the banner on a phone', async ({
+  test('leaves questions about AI models off the Models page', async ({
     page
   }) => {
-    await page.setViewportSize({ width: 390, height: 844 })
     await page.goto('/hub/models/')
-    const strip = page.getByTestId('featured-pagination')
-    const card = page.getByTestId('featured-slide')
-    const [bars, card_] = [await strip.boundingBox(), await card.boundingBox()]
-    if (!bars || !card_) throw new Error('Featured banner is not laid out')
-    expect(bars.x + bars.width).toBeLessThanOrEqual(card_.x + card_.width)
-    expect(bars.x).toBeGreaterThanOrEqual(card_.x)
+    await expect(page.getByTestId('models-directory')).toBeVisible()
+    await expect(
+      page.getByRole('heading', { name: 'AI models in ComfyUI' })
+    ).toHaveCount(0)
+    await expect(
+      page.getByRole('button', { name: 'What does day-zero support mean?' })
+    ).toHaveCount(0)
   })
 
   test('switches between the curated recommendation and alphabetical order', async ({
     page
   }) => {
-    await page.goto('/hub/models/')
-    const sections = page.getByTestId('workshop-sections')
-    await expect(sections).toBeVisible()
     const sort = page.getByTestId('workshop-sort')
-    await expect(sort).toContainText('Most popular')
-    async function recommendedIn(section: string, count: number) {
-      return page
-        .getByTestId(`section-${section}`)
-        .getByTestId('workshop-model-card')
-        .evaluateAll(
-          (cards, limit) =>
-            cards
-              .slice(0, limit)
-              .map((card) => card.getAttribute('href') ?? ''),
-          count
-        )
-    }
     const leading = page
-      .getByTestId('section-generate-images')
+      .getByTestId('workshop-models-grid')
       .getByTestId('workshop-model-card')
-    await expect(leading.first()).toBeVisible()
-    const rowCount = await leading.count()
-    expect(rowCount).toBeGreaterThanOrEqual(6)
-    const recommended = await leading.evaluateAll((cards) =>
-      cards.slice(0, 6).map((card) => card.getAttribute('href') ?? '')
-    )
+    async function recommendedIn(useCase: string, count: number) {
+      await page.goto(`/hub/models/?useCase=${useCase}`)
+      await expect(sort).toContainText('Most popular')
+      await expect(leading.first()).toBeVisible()
+      return leading.evaluateAll(
+        (cards, limit) =>
+          cards.slice(0, limit).map((card) => card.getAttribute('href') ?? ''),
+        count
+      )
+    }
+    const recommended = await recommendedIn('generate-images', 6)
     expect(recommended).toEqual([
       '/hub/models/seedream-5-0-pro-text-to-image/',
       '/hub/models/gpt-image-2-text-to-image/',
@@ -171,7 +171,7 @@ test.describe('Models catalog', () => {
       '/hub/models/wan-3-0-image-to-video/',
       '/hub/models/wan-3-0-reference-to-video/'
     ])
-    expect(await recommendedIn('other-formats', 1)).toEqual([
+    expect(await recommendedIn('other', 1)).toEqual([
       '/hub/models/seed-audio-1-0-text-to-speech/'
     ])
     expect(await recommendedIn('edit-videos', 6)).toEqual([
@@ -190,6 +190,9 @@ test.describe('Models catalog', () => {
       '/hub/models/seedream-4-5-image-edit/'
     ])
 
+    await page.goto('/hub/models/?useCase=generate-images')
+    await expect(leading.first()).toBeVisible()
+    const rowCount = await leading.count()
     await sort.click()
     await page.getByTestId('sort-name').click()
     await expect(sort).toContainText('Name A to Z')
@@ -200,10 +203,12 @@ test.describe('Models catalog', () => {
           .allTextContents()
         return (
           names.length === rowCount &&
-          names.every(
-            (name, index) =>
-              index === 0 || names[index - 1].localeCompare(name) <= 0
-          )
+          names
+            .slice(0, 8)
+            .every(
+              (name, index) =>
+                index === 0 || names[index - 1].localeCompare(name) <= 0
+            )
         )
       })
       .toBe(true)
@@ -228,7 +233,7 @@ test.describe('Models catalog', () => {
     page
   }) => {
     await page.goto('/hub/models/')
-    await expect(page.getByTestId('workshop-sections')).toBeVisible()
+    await expect(catalogueHeading(page)).toHaveText(/^All models \d+$/)
     const cards = page
       .getByTestId('workshop-models-grid')
       .getByTestId('workshop-model-card')
@@ -246,111 +251,65 @@ test.describe('Models catalog', () => {
     await page
       .getByRole('button', { name: 'Clear filters', exact: true })
       .click()
-    await expect(page.getByTestId('workshop-sections')).toBeVisible()
+    await expect(catalogueHeading(page)).toHaveText(/^All models \d+$/)
   })
 
-  test('category rows drill into the promised number of models', async ({
+  test('the Hub models listing opens on the whole catalogue in pages', async ({
     page
   }) => {
     await page.goto('/hub/models/')
-    const sections = page.getByTestId('workshop-sections')
-    await expect(sections).toBeVisible()
-    const videos = page.getByTestId('section-generate-videos')
-    const rowLabel = (
-      await videos.getByRole('heading', { level: 2 }).innerText()
-    ).trim()
-    const seeAll = await videos
-      .getByTestId('section-generate-videos-see-all')
-      .innerText()
-    const promisedCount = Number(seeAll.match(/(\d+)/)?.[1])
-    expect(promisedCount).toBeGreaterThan(0)
-    await videos.getByTestId('section-generate-videos-open').click()
+    await expect(page.getByTestId('section-trending')).toHaveCount(0)
+    await expect(page.getByTestId('section-back')).toHaveCount(0)
+    const promisedCount = await catalogueCount(page)
+    expect(promisedCount).toBeGreaterThan(48)
     const cards = page
       .getByTestId('workshop-models-grid')
       .getByTestId('workshop-model-card')
-    await expect(sections).toHaveCount(0)
+    await expect(cards).toHaveCount(48)
+
+    await page.getByTestId('catalogue-show-more').click()
+    await expect(cards).toHaveCount(Math.min(96, promisedCount))
+    await showEveryPage(page)
     await expect(cards).toHaveCount(promisedCount)
-    await expect(page.getByTestId('workshop-hero')).toHaveCount(0)
-    await expect(
-      page.getByRole('heading', { level: 2, name: rowLabel })
-    ).toBeVisible()
-    await page
-      .getByRole('button', { name: 'Back to all categories', exact: true })
-      .click()
-    await expect(sections).toBeVisible()
-    await expect(page.getByTestId('workshop-hero')).toBeVisible()
   })
 
-  // A row loads eight whatever its total says, so a row holding fewer than
-  // eight cards is showing its whole shelf and has nothing left to open.
-  test('a shelf showing everything stops promising more', async ({ page }) => {
+  test('every model by provider waits behind a closed disclosure', async ({
+    page
+  }) => {
     await page.goto('/hub/models/')
-    const sections = page.getByTestId('workshop-sections')
-    await expect(sections).toBeVisible()
-    await expect(
-      sections.getByTestId('workshop-model-card').first()
-    ).toBeVisible()
-    const shelves = sections
-      .locator('[data-testid^="section-"]')
-      .filter({ has: page.getByTestId('workshop-model-card') })
-    const count = await shelves.count()
-    expect(count).toBeGreaterThan(1)
-
-    let complete = 0
-    for (let index = 0; index < count; index++) {
-      const shelf = shelves.nth(index)
-      if ((await shelf.getByTestId('workshop-model-card').count()) >= 8)
-        continue
-      complete++
-      await expect(shelf.locator('[data-testid$="-see-all"]')).toHaveCount(0)
-    }
-    expect(complete).toBeGreaterThan(0)
+    const directory = page.getByTestId('models-directory')
+    const toggle = directory.getByTestId('models-directory-toggle')
+    await expect(toggle).toContainText('All models by provider')
+    const firstLink = directory.getByRole('link').first()
+    await expect(firstLink).toBeHidden()
+    await toggle.click()
+    await expect(firstLink).toBeVisible()
   })
 
-  test('the rows listing opens the whole catalogue', async ({ page }) => {
-    await page.goto('/hub/models/')
-    await page.getByTestId('browse-all-end').click()
-
-    await expect(page.getByTestId('workshop-sections')).toHaveCount(0)
-    const heading = page.getByRole('heading', {
-      level: 2,
-      name: /^All models \d+$/
-    })
-    await expect(heading).toBeVisible()
-    const promisedCount = Number(
-      (await heading.innerText()).match(/(\d+)\s*$/)?.[1]
-    )
-    expect(promisedCount).toBeGreaterThan(0)
-    await expect(
-      page
-        .getByTestId('workshop-models-grid')
-        .getByTestId('workshop-model-card')
-    ).toHaveCount(promisedCount)
-
-    await page.getByTestId('section-back').click()
-    await expect(page.getByTestId('workshop-sections')).toBeVisible()
-  })
-
-  test('an opened shelf reads as a chosen filter', async ({ page }) => {
-    await page.goto('/hub/models/')
-    await page.getByTestId('section-generate-videos-open').click()
+  test('an opened shelf reads as a chosen filter on its tab', async ({
+    page
+  }) => {
+    await page.goto('/hub/models/?useCase=generate-videos')
     await expect(
       page.getByRole('heading', { level: 2, name: /Generate videos/ })
     ).toBeVisible()
-    await expect(page.getByTestId('workshop-filter-count')).toHaveText('1')
-    await page.getByTestId('workshop-filter').click()
-    await expect(page.getByTestId('workshop-filter-applied')).toHaveText(
-      '1 selected'
+    const tabs = page.getByRole('tablist', { name: 'Model categories' })
+    await expect(tabs.getByRole('tab', { name: /^Video/ })).toHaveAttribute(
+      'aria-selected',
+      'true'
     )
-    await page.getByTestId('workshop-filter-clear').click()
-    await expect(page.getByTestId('workshop-sections')).toBeVisible()
+    await expect(page.getByTestId('best-for-count')).toHaveText('1')
+    await page.getByTestId('best-for-menu').click()
+    const chosen = page.getByTestId('best-for-generate-videos')
+    await expect(chosen).toHaveAttribute('aria-checked', 'true')
+    await chosen.click()
+    await expect(catalogueHeading(page)).toHaveText(/^Video models \d+$/)
   })
 
   test('a model page returns to the shelf it was opened from', async ({
     page
   }) => {
-    await page.goto('/hub/models/')
-    await page.getByTestId('section-generate-videos-open').click()
+    await page.goto('/hub/models/?useCase=generate-videos')
     await expect(
       page.getByRole('heading', { level: 2, name: 'Generate videos' })
     ).toBeVisible()
@@ -360,8 +319,12 @@ test.describe('Models catalog', () => {
       .first()
       .click()
 
-    const back = page.getByTestId('model-back')
-    await expect(back).toHaveText('Back to Generate videos')
+    const crumbs = page.getByRole('navigation', { name: 'Breadcrumb' })
+    await expect(crumbs.getByRole('link')).toHaveText([
+      'Hub',
+      'Generate videos'
+    ])
+    const back = crumbs.getByTestId('detail-list')
     await expect(back).toHaveAttribute(
       'href',
       '/hub/models/?useCase=generate-videos'
@@ -370,14 +333,68 @@ test.describe('Models catalog', () => {
     await expect(
       page.getByRole('heading', { level: 2, name: 'Generate videos' })
     ).toBeVisible()
-    await expect(page.getByTestId('workshop-sections')).toHaveCount(0)
+    await expect(page.getByTestId('best-for-count')).toHaveText('1')
+  })
+
+  test('a model page returns to the category tab it was opened from', async ({
+    page
+  }) => {
+    await page.goto('/hub/models/?tab=video')
+    await page
+      .getByTestId('workshop-models-grid')
+      .getByTestId('workshop-model-card')
+      .first()
+      .click()
+
+    const back = page.getByTestId('detail-list')
+    await expect(back).toHaveText('Video models')
+    await back.click()
+    await expect(page).toHaveURL(/\/hub\/models\/\?tab=video$/)
+  })
+
+  test('a model page opened from the Hub returns to the Hub', async ({
+    page
+  }) => {
+    await page.goto('/hub/')
+    const result = page
+      .getByTestId('explore-results')
+      .locator('a[href^="/hub/models/"]')
+      .first()
+    await waitForIsland(page, result)
+    await result.click()
+
+    const crumbs = page.getByRole('navigation', { name: 'Breadcrumb' })
+    await expect(crumbs.getByRole('link')).toHaveText(['Hub', 'Models'])
+    await expect(crumbs.getByTestId('detail-hub')).toHaveAttribute(
+      'href',
+      '/hub/'
+    )
+  })
+
+  test('@mobile a model page leads back to its list in one short link', async ({
+    page
+  }) => {
+    await page.goto('/hub/models/?tab=video')
+    await page
+      .getByTestId('workshop-models-grid')
+      .getByTestId('workshop-model-card')
+      .first()
+      .click()
+
+    await expect(
+      page.getByRole('navigation', { name: 'Breadcrumb' })
+    ).toBeHidden()
+    const back = page.getByTestId('detail-back')
+    await expect(back).toHaveText('Video models')
+    await back.click()
+    await expect(page).toHaveURL(/\/hub\/models\/\?tab=video$/)
   })
 
   test('the search field stays put as the results swap under it', async ({
     page
   }) => {
     await page.goto('/hub/models/')
-    await expect(page.getByTestId('workshop-sections')).toBeVisible()
+    await expect(page.getByTestId('workshop-models-grid')).toBeVisible()
     await page.evaluate(() => window.scrollTo(0, 700))
     const search = page.getByTestId('workshop-search')
 
@@ -393,7 +410,7 @@ test.describe('Models catalog', () => {
     const searching = await search.boundingBox()
 
     await search.fill('')
-    await expect(page.getByTestId('workshop-sections')).toBeVisible()
+    await expect(catalogueHeading(page)).toHaveText(/^All models \d+$/)
     if (!searching)
       throw new Error('the search field was never on screen to measure')
     await expect
@@ -404,8 +421,7 @@ test.describe('Models catalog', () => {
   test('the category heading stays clear of the nav while searching', async ({
     page
   }) => {
-    await page.goto('/hub/models/')
-    await page.getByTestId('section-generate-videos-open').click()
+    await page.goto('/hub/models/?useCase=generate-videos')
     const heading = page.getByRole('heading', {
       level: 2,
       name: 'Generate videos'
@@ -472,16 +488,30 @@ test.describe('Models catalog', () => {
 
   test('the use-case filter actually narrows the catalog', async ({ page }) => {
     await page.goto('/hub/models/')
-    await expect(page.getByTestId('workshop-sections')).toBeVisible()
-    const all = await page.getByTestId('workshop-model-card').count()
+    const all = await catalogueCount(page)
     expect(all).toBeGreaterThan(0)
-    await page.getByTestId('workshop-filter').click()
-    await page.getByTestId('filter-useCase-edit-images').click()
+    const tabs = page.getByRole('tablist', { name: 'Model categories' })
+    await tabs.getByRole('tab', { name: /^Image/ }).click()
+    await expect(catalogueHeading(page)).toHaveText(/^Image models \d+$/)
+    const image = await catalogueCount(page)
+    await page.getByTestId('best-for-menu').click()
+    await page.getByTestId('best-for-edit-images').click()
     const cards = page
       .getByTestId('workshop-models-grid')
       .getByTestId('workshop-model-card')
     await expect(cards.first()).toBeVisible()
-    expect(await cards.count()).toBeLessThan(all)
+    await expect(catalogueHeading(page)).toHaveText(/^Edit images \d+$/)
+    const narrowed = await catalogueCount(page)
+    expect(narrowed).toBeLessThan(image)
+    await expect(page.getByTestId('best-for-edit-images')).toContainText(
+      String(narrowed)
+    )
+    await expect(page.getByTestId('best-for-count')).toHaveText('1')
+    await expect(page).toHaveURL(/[?&]useCase=edit-images/)
+
+    await page.keyboard.press('Escape')
+    await showEveryPage(page)
+    await expect(cards).toHaveCount(narrowed)
     await expect(
       page.locator(
         '[data-testid="workshop-model-card"][href="/hub/models/nano-banana-2-image-edit/"]'
@@ -492,12 +522,180 @@ test.describe('Models catalog', () => {
         '[data-testid="workshop-model-card"][href="/hub/models/flux-2-max-text-to-image/"]'
       )
     ).toHaveCount(0)
-    await expect(page.getByTestId('workshop-filter-applied')).toHaveText(
-      '1 selected'
+
+    await tabs.getByRole('tab', { name: /^All/ }).click()
+    await expect(catalogueHeading(page)).toHaveText(`All models ${all}`)
+    await expect(cards).toHaveCount(Math.min(48, all))
+  })
+
+  test('the resolution menu keeps the models that offer it and stays in the address', async ({
+    page
+  }) => {
+    await page.goto('/hub/models/')
+    const all = await catalogueCount(page)
+    await page.getByTestId('resolution-menu').click()
+    const menu = page.getByRole('menu')
+    await expect(menu.getByRole('menuitemradio').first()).toHaveAccessibleName(
+      'All resolutions'
     )
+    await menu.getByTestId('resolution-1080p').click()
+    await expect(page).toHaveURL(/[?&]resolution=1080p/)
+    await expect(page.getByTestId('resolution-menu')).toContainText('1080p')
+    await expect(catalogueHeading(page)).not.toHaveText(
+      new RegExp(`\\D${all}$`)
+    )
+    const narrowed = await catalogueCount(page)
+    expect(narrowed).toBeGreaterThan(0)
+    expect(narrowed).toBeLessThan(all)
+
+    await page.reload()
+    await expect(page.getByTestId('resolution-menu')).toContainText('1080p')
+    await expect(catalogueHeading(page)).toHaveText(new RegExp(`${narrowed}$`))
+  })
+
+  test('model cards leave Run and API to the model page', async ({ page }) => {
+    await page.goto('/hub/models/')
+    const card = page.getByTestId('workshop-model-card').first()
+    await expect(card).toBeVisible()
+    await expect(card.getByText(/^(Run|API)$/)).toHaveCount(0)
+  })
+
+  test('compares hosted models side by side from a link that survives a reload', async ({
+    page
+  }) => {
+    await page.goto('/hub/models/')
+    const toggles = page.getByRole('checkbox', { name: /^Compare / })
+    await expect(toggles.first()).toBeVisible()
+    await toggles.nth(0).check()
+    await toggles.nth(1).check()
+
+    await page.getByTestId('compare-tray').getByTestId('compare-open').click()
+    const view = page.getByTestId('compare-view')
+    await expect(
+      view.getByRole('heading', { level: 2, name: /^Compare 2 models/ })
+    ).toBeVisible()
+    await expect(page).toHaveURL(/[?&]compare=[^&,]+,[^&,]+/)
+    await expect(view.getByTestId('compare-model-link')).toHaveCount(2)
+    await expect(view.getByTestId('compare-thumbnail')).toHaveCount(2)
+    await expect(page.getByTestId('compare-tray')).toHaveCount(0)
+
+    await page.reload()
+    await expect(view.getByRole('columnheader')).toHaveCount(2)
+
+    await view.getByTestId('compare-add').click()
+    await expect(view).toHaveCount(0)
+    await expect(page).not.toHaveURL(/compare=/)
+    await expect(page.getByTestId('compare-open')).toHaveText(
+      'Compare 2 models'
+    )
+  })
+
+  test('sets four image models side by side on the same prompts', async ({
+    page
+  }) => {
+    await page.goto(
+      '/hub/models/?compare=byteplus--seedream-5-pro--generate-images,openai--gpt-image-2--generate-images,vertexai--gemini-nano-banana-2--generate-images,bfl--flux-2-pro--generate-images'
+    )
+    const view = page.getByTestId('compare-view')
+    await expect(view.getByRole('columnheader')).toHaveCount(4)
+    const types = view.getByRole('group', { name: 'Prompt types' })
+    await expect(types.getByRole('button')).toHaveText([
+      'All',
+      'Portraits',
+      'Product',
+      'Illustration',
+      'Typography',
+      'Fusion & detail'
+    ])
+    await types.getByRole('button', { name: 'Typography' }).click()
+    const rows = view.getByTestId('compare-prompt-row')
+    await expect(rows).toHaveCount(1)
+    await expect(rows.getByRole('img')).toHaveCount(4)
+    await expect(
+      rows.getByRole('img', {
+        name: /^Seedream 5\.0 Pro .* output for: A vintage travel poster/
+      })
+    ).toBeVisible()
+  })
+
+  test('a model page sets itself beside a model with the same task', async ({
+    page
+  }) => {
+    await page.goto('/hub/models/seedream-5-0-pro-text-to-image/')
+    const section = page.getByTestId('model-compare')
+    await expect(
+      section.getByRole('heading', { level: 2, name: 'How it compares' })
+    ).toBeVisible()
+    const chips = section
+      .getByRole('group', { name: 'Compare with' })
+      .getByRole('button')
+    await expect(chips).toHaveCount(3)
+    await chips.nth(1).click()
+    await expect(chips.nth(1)).toHaveAttribute('aria-pressed', 'true')
+    const columns = section.getByRole('columnheader')
+    await expect(columns).toHaveCount(2)
+    await expect(columns.first()).toHaveAccessibleName(
+      'Seedream 5.0 Pro Text-to-Image'
+    )
+    await expect(columns.nth(1)).toHaveAccessibleName(
+      (await chips.nth(1).textContent())?.trim() ?? ''
+    )
+    await expect(
+      section.getByRole('link', { name: 'Open full comparison' })
+    ).toHaveAttribute(
+      'href',
+      /^\/hub\/models\/\?compare=byteplus--seedream-5-pro--generate-images,[^,]+$/
+    )
+  })
+
+  test('the how-you-use-it filter offers only catalogue models', async ({
+    page
+  }) => {
+    await page.goto('/hub/models/?use=api')
+    const grid = page.getByTestId('workshop-models-grid')
+    await expect(grid.getByTestId('workshop-model-card').first()).toBeVisible()
+    await expect(grid.getByTestId('open-weight-model-card')).toHaveCount(0)
     await expect(page.getByTestId('workshop-filter-count')).toHaveText('1')
-    await page.getByTestId('workshop-filter-clear').click()
-    await expect(page.getByTestId('workshop-sections')).toBeVisible()
+    await page.getByTestId('workshop-filter').click()
+    await expect(page.getByTestId('filter-access-download')).toHaveCount(0)
+    await expect(page.getByTestId('filter-access-api')).toHaveAttribute(
+      'aria-pressed',
+      'true'
+    )
+  })
+
+  test('category tabs narrow the models and stay in the address', async ({
+    page
+  }) => {
+    await page.goto('/hub/models/')
+    const tabs = page.getByRole('tablist', { name: 'Model categories' })
+    await expect(tabs.getByRole('tab', { name: 'All' })).toHaveAttribute(
+      'aria-selected',
+      'true'
+    )
+
+    await expect(tabs.getByRole('tab', { name: 'Open weights' })).toHaveCount(0)
+    await expect(tabs.getByRole('tab', { name: 'Partner nodes' })).toHaveCount(
+      0
+    )
+
+    await tabs.getByRole('tab', { name: 'Image' }).click()
+    await expect(page).toHaveURL(/[?&]tab=image/)
+    const grid = page.getByTestId('workshop-models-grid')
+    await expect(grid.getByTestId('workshop-model-card').first()).toBeVisible()
+    await expect(grid.getByTestId('open-weight-model-card')).toHaveCount(0)
+
+    await page.goto('/hub/models/?tab=video')
+    await expect(page.getByRole('tab', { name: 'Video' })).toHaveAttribute(
+      'aria-selected',
+      'true'
+    )
+
+    await page.goto('/hub/models/?tab=open')
+    await expect(page.getByRole('tab', { name: 'All' })).toHaveAttribute(
+      'aria-selected',
+      'true'
+    )
   })
 
   test('model tags deep-link into a filtered catalog', async ({ page }) => {
@@ -546,9 +744,9 @@ test.describe('Models catalog', () => {
   }) => {
     for (const width of [1440, 820, 420]) {
       await page.setViewportSize({ width, height: 1000 })
-      await page.goto('/hub/models/')
-      const row = page.getByTestId('section-generate-images')
-      const card = row.getByTestId('workshop-model-card').first()
+      await page.goto('/hub/')
+      const row = page.getByTestId('explore-results')
+      const card = row.getByTestId('explore-result').first()
       await expect(card).toBeVisible()
       await card.hover()
       const cardBox = await card.boundingBox()
@@ -561,9 +759,9 @@ test.describe('Models catalog', () => {
   })
 
   test('the fade reaches both ends of the scrolling row', async ({ page }) => {
-    await page.goto('/hub/models/')
-    const row = page.getByTestId('section-generate-images')
-    await expect(row.getByTestId('workshop-model-card').first()).toBeVisible()
+    await page.goto('/hub/')
+    const row = page.getByTestId('explore-results')
+    await expect(row.getByTestId('explore-result').first()).toBeVisible()
     await row.hover()
     const edges = await row.evaluate((section) => {
       const span = (selector: string) => {
@@ -582,42 +780,25 @@ test.describe('Models catalog', () => {
 })
 
 test.describe('Model playground', () => {
-  test('keeps a long prompt whole instead of scrolling it out of sight', async ({
+  test('holds the prompt at five lines, scrolls the rest and lets the reader drag it taller', async ({
     page
   }) => {
     await page.goto(MODEL_PATH)
     const prompt = page.getByTestId('field-prompt')
+    const height = () => prompt.evaluate((box) => box.clientHeight)
     const hidden = () =>
       prompt.evaluate((box) => box.scrollHeight - box.clientHeight)
-    const height = () => prompt.evaluate((box) => box.clientHeight)
+
+    await prompt.fill('One line.')
+    const fiveLines = await height()
 
     await prompt.fill(
       Array.from({ length: 12 }, (_, line) => `Line ${line + 1}.`).join('\n')
     )
-    await expect.poll(hidden).toBeLessThanOrEqual(1)
-    const tall = await height()
-
-    await prompt.fill('One line.')
-    await expect.poll(height).toBeLessThan(tall)
-    await expect.poll(hidden).toBeLessThanOrEqual(1)
-  })
-
-  test('keeps a long prompt whole when the layout narrows under it', async ({
-    page
-  }) => {
-    await page.goto(MODEL_PATH)
-    const prompt = page.getByTestId('field-prompt')
-    const hidden = () =>
-      prompt.evaluate((box) => box.scrollHeight - box.clientHeight)
-
-    await prompt.fill(
-      'A slow push-in on a glass teapot lit from behind by a low winter sun, steam rising and catching the light while the room around it stays in shadow, the reflections on the table kept sharp and the background soft, with no people, no text and no logos anywhere in the frame.'
-    )
-    await expect.poll(hidden).toBeLessThanOrEqual(1)
-
-    await page.setViewportSize({ width: 380, height: 900 })
-
-    await expect.poll(hidden).toBeLessThanOrEqual(1)
+    await expect.poll(height).toBe(fiveLines)
+    await expect.poll(hidden).toBeGreaterThan(1)
+    await expect(prompt).toHaveCSS('resize', 'vertical')
+    await expect(prompt).toHaveCSS('overflow-y', 'auto')
   })
 
   test('stops the prompt box short of swallowing the window', async ({
@@ -669,7 +850,7 @@ test.describe('Model playground', () => {
       page.getByRole('slider', { name: 'Safety tolerance', exact: true })
     ).toHaveCount(0)
 
-    await page.getByRole('tab', { name: 'API', exact: true }).click()
+    await page.getByTestId('model-path-api').click()
     await expect(page.getByTestId('snippet')).not.toContainText(
       'safety_tolerance'
     )
@@ -733,28 +914,28 @@ test.describe('Model playground', () => {
   test('API tab highlights snippets and mirrors the form values', async ({
     page
   }) => {
+    await page.addInitScript(() => {
+      const observer = new MutationObserver(() => {
+        const code = document.querySelector('[data-testid="highlighted-code"]')
+        if (!code) return
+        observer.disconnect()
+        document.documentElement.dataset.firstSnippetHighlighted = String(
+          code.querySelector('span') !== null
+        )
+      })
+      observer.observe(document, { childList: true, subtree: true })
+    })
     await page.goto(MODEL_PATH)
     await page
       .getByRole('textbox', { name: 'Prompt', exact: true })
       .fill('neon street at night')
-    const firstSnippetRender = page.evaluate(
-      () =>
-        new Promise<boolean>((resolve) => {
-          const observer = new MutationObserver(() => {
-            const code = document.querySelector(
-              '[data-testid="highlighted-code"]'
-            )
-            if (!code) return
-            observer.disconnect()
-            resolve(code.querySelector('span') !== null)
-          })
-          observer.observe(document.body, { childList: true, subtree: true })
-        })
-    )
-    await page.getByRole('tab', { name: 'API', exact: true }).click()
+    await page.getByTestId('model-path-api').click()
     const snippet = page.getByTestId('snippet')
     const highlighted = page.getByTestId('highlighted-code')
-    expect(await firstSnippetRender).toBe(true)
+    await expect(page.locator('html')).toHaveAttribute(
+      'data-first-snippet-highlighted',
+      'true'
+    )
     await expect(snippet).toContainText('neon street at night')
     await expect(snippet).toContainText('bfl/flux-2-max')
     await page.getByTestId('snippet-curl').click()
@@ -771,7 +952,7 @@ test.describe('Model playground', () => {
       page.getByRole('button', { name: /^Replace seedream-4-5-input-/ }).click()
     ])
     await chooser.setFiles('e2e/assets/placeholder-1x1.webp')
-    await page.getByRole('tab', { name: 'API', exact: true }).click()
+    await page.getByTestId('model-path-api').click()
     const snippet = page.getByTestId('snippet')
     await expect(snippet).toContainText(
       'client.assets.from_file("placeholder-1x1.webp")'
@@ -812,7 +993,7 @@ test.describe('Model playground', () => {
     // writes over it.
     await page.getByTestId('example-replace-confirm').click()
 
-    await expect(page.getByTestId('playground-tab')).toBeVisible()
+    await expect(page.getByTestId('playground-section')).toBeVisible()
     await expect(
       page.getByRole('textbox', { name: 'Prompt', exact: true })
     ).not.toHaveValue('')
@@ -904,29 +1085,36 @@ test.describe('Model playground', () => {
       .toBe(true)
   })
 
-  test('a lone sample takes the phone row @mobile', async ({ page }) => {
-    await page.goto('/hub/models/flux-2-pro-text-to-image/')
-    const cards = page.getByTestId('example-card')
-    await expect(cards).toHaveCount(1)
+  for (const tag of ['', ' @mobile'])
+    test(`a lone sample keeps the size of a gallery card${tag}`, async ({
+      page
+    }) => {
+      const cardWidth = async (path: string, count: number) => {
+        await page.goto(path)
+        const cards = page.getByTestId('example-card')
+        await expect(cards).toHaveCount(count)
+        let width = 0
+        await expect
+          .poll(async () => {
+            width = (await cards.first().boundingBox())?.width ?? 0
+            return width
+          })
+          .toBeGreaterThan(0)
+        return width
+      }
 
-    // The strip runs edge to edge behind a gutter of 24px on each side.
-    const list = page.getByTestId('examples-tab').locator('ul')
-    await expect
-      .poll(async () => {
-        const [listBox, cardBox] = await Promise.all([
-          list.boundingBox(),
-          cards.first().boundingBox()
-        ])
-        if (!listBox || !cardBox) return false
-        return Math.abs(cardBox.width - (listBox.width - 48)) < 2
-      })
-      .toBe(true)
-  })
+      const gallery = await cardWidth(
+        '/hub/models/luma-photon-1-text-to-image/',
+        2
+      )
+      const lone = await cardWidth('/hub/models/flux-2-pro-text-to-image/', 1)
+      expect(lone).toBeCloseTo(gallery, 0)
+    })
 })
 
 test.describe('Filter sheet @mobile', () => {
   test('the handle pulls the sheet up and lets it go', async ({ page }) => {
-    await page.goto('/hub/models/')
+    await page.goto('/hub/models/?tab=video&use=api')
     await page.getByTestId('workshop-filter').click()
 
     const sheet = page.getByTestId('workshop-filter-menu')

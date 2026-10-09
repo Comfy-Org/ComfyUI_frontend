@@ -1,13 +1,20 @@
 ---
 import BaseLayout from '@/layouts/BaseLayout.astro'
 import ModelsPage from '@/components/workshop/ModelsPage.vue'
-import type { CatalogueTab } from '@/components/workshop/CatalogueTabs.vue'
+import DesignDecisions from '@/components/workshop/design-decisions/DesignDecisions.vue'
+import { isProductionBuild } from '@/config/build-env'
+import type { HubSection } from '@/lib/workshop/hub-section'
 import ModelsShowcase from '@/components/models/ModelsShowcase.astro'
-import { HUB_APPS_PATH, HUB_WORKFLOWS_PATH } from '@/config/hub-models'
+import {
+  HUB_APPS_PATH,
+  HUB_PATH,
+  HUB_WORKFLOWS_PATH
+} from '@/config/hub-models'
 import { isIndexableModelPage } from '@/config/indexing'
 import { HUB_SECTION_COPY } from './hub-section-copy'
 
-const SECTIONS: Readonly<Record<string, Exclude<CatalogueTab, 'models'>>> = {
+const SECTIONS: Readonly<Record<string, Exclude<HubSection, 'models'>>> = {
+  [HUB_PATH]: 'explore',
   [HUB_WORKFLOWS_PATH]: 'workflows',
   [HUB_APPS_PATH]: 'apps'
 }
@@ -34,6 +41,11 @@ const copy = HUB_SECTION_COPY[section]
   >
     <ModelsShowcase slot="fallback" />
   </ModelsPage>
+  <DesignDecisions
+    enabled={!isProductionBuild()}
+    client:idle
+    transition:persist="design-decisions"
+  />
   <noscript>
     <ModelsShowcase />
   </noscript>

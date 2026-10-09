@@ -1,4 +1,6 @@
 <script setup lang="ts">
+import { cn } from '@comfyorg/tailwind-utils'
+
 import type { Locale, TranslationKey } from '@/i18n/translations'
 import { translationsFor } from '@/i18n/translations'
 import IconApps from './IconApps.vue'
@@ -32,7 +34,12 @@ const labels: Record<Kind, TranslationKey> = {
   <!-- The icon alone does not say "app" or "graph", so hovering the card opens
     the badge into its name. -->
   <span
-    class="absolute top-4 left-4 z-10 inline-flex h-7 min-w-7 items-center justify-center rounded-lg bg-black/40 px-1.5 text-white backdrop-blur-md"
+    :class="
+      cn(
+        'absolute top-4 left-4 z-10 inline-flex h-7 min-w-7 items-center justify-center rounded-lg px-1.5 text-white',
+        kind === 'comfyApp' ? 'bg-cobalt-800' : 'bg-black/40 backdrop-blur-md'
+      )
+    "
     data-testid="hub-type-badge"
     :data-kind="kind"
   >

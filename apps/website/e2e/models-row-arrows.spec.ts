@@ -5,7 +5,7 @@ import { test } from './fixtures/workshopVisibility'
 test('the row keeps a keyboard inside it when an arrow is spent', async ({
   page
 }) => {
-  await page.goto('/hub/models/')
+  await page.goto('/hub/')
   const row = page.locator('div:has(> [data-testid="card-row-arrows"])').first()
   const forward = row.getByTestId('card-row-next')
   const back = row.getByTestId('card-row-prev')

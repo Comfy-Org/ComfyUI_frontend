@@ -4,6 +4,7 @@ import { describe, expect, it } from 'vitest'
 import { defineComponent, h, ref } from 'vue'
 
 import type { UseCase } from '@/config/models-catalogue'
+import type { ModelAccess } from '@/lib/workshop/explorer/model-access'
 import type { FacetMenuOption } from './WorkshopFilterMenu.vue'
 import WorkshopFilterMenu from './WorkshopFilterMenu.vue'
 
@@ -12,13 +13,13 @@ const useCaseOptions: FacetMenuOption[] = [
   { value: '3d', label: '3D', count: 2 }
 ]
 
-function mountMenu() {
+function mountMenu(options: FacetMenuOption[] = useCaseOptions) {
   const useCases = ref<UseCase[]>([])
   render(
     defineComponent({
       setup: () => () =>
         h(WorkshopFilterMenu<UseCase>, {
-          useCaseOptions,
+          useCaseOptions: options,
           resultCount: 12,
           useCases: useCases.value,
           'onUpdate:useCases': (value: UseCase[]) => {
@@ -34,7 +35,7 @@ describe('WorkshopFilterMenu', () => {
   it('closes on Escape from inside the filter panel and restores trigger focus', async () => {
     const user = userEvent.setup()
     mountMenu()
-    const trigger = screen.getByRole('button', { name: 'Use cases' })
+    const trigger = screen.getByRole('button', { name: 'Filters' })
     await user.click(trigger)
     const dialog = await screen.findByRole('dialog')
     const useCase = await within(dialog).findByRole('button', {
@@ -89,5 +90,58 @@ describe('WorkshopFilterMenu', () => {
     await user.click(screen.getByTestId('workshop-filter-clear'))
     expect(useCases.value).toEqual([])
     expect(screen.queryByTestId('workshop-filter-count')).toBeNull()
+  })
+
+  it('adds a how-you-use-it group that toggles and clears with the rest', async () => {
+    const user = userEvent.setup()
+    const access = ref<ModelAccess[]>([])
+    render(
+      defineComponent({
+        setup: () => () =>
+          h(WorkshopFilterMenu<UseCase>, {
+            useCaseOptions,
+            accessOptions: [
+              { value: 'run', label: 'Run here', count: 3 },
+              { value: 'api', label: 'API', count: 12 }
+            ],
+            resultCount: 12,
+            useCases: [],
+            access: access.value,
+            'onUpdate:access': (value: ModelAccess[]) => {
+              access.value = value
+            }
+          })
+      })
+    )
+
+    await user.click(screen.getByRole('button', { name: 'Filters' }))
+    const dialog = await screen.findByRole('dialog', { name: 'Filters' })
+    expect(
+      within(dialog)
+        .getAllByRole('tab')
+        .map((tab) => tab.textContent.trim())
+    ).toEqual(['Use cases', 'How you use it'])
+    await user.click(
+      within(dialog).getByRole('tab', { name: 'How you use it' })
+    )
+    await user.click(screen.getByTestId('filter-access-api'))
+    expect(access.value).toEqual(['api'])
+    expect(screen.getByTestId('workshop-filter-count')).toHaveTextContent('1')
+
+    await user.click(screen.getByTestId('filter-access-api'))
+    expect(access.value).toEqual([])
+
+    await user.click(screen.getByTestId('filter-access-run'))
+    await user.click(screen.getByTestId('workshop-filter-clear'))
+    expect(access.value).toEqual([])
+  })
+
+  it('leaves the use-case section out when there is none to offer', async () => {
+    const user = userEvent.setup()
+    mountMenu([])
+
+    await user.click(screen.getByRole('button', { name: 'Filters' }))
+    const dialog = await screen.findByRole('dialog', { name: 'Filters' })
+    expect(within(dialog).queryByRole('list', { name: 'Use cases' })).toBeNull()
   })
 })

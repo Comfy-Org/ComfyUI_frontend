@@ -298,4 +298,9 @@ describe('WorkshopModelCard', () => {
     render(WorkshopModelCard, { props: { model } })
     expect(screen.getByTestId('model-card-name').textContent).toBe(shown)
   })
+
+  it('leaves how a model can be used to its page', () => {
+    render(WorkshopModelCard, { props: { model: base } })
+    expect(screen.queryByText(/^(Run|API)$/)).toBeNull()
+  })
 })

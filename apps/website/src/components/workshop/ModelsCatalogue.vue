@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { computed, defineAsyncComponent, ref, watch } from 'vue'
+import { computed, defineAsyncComponent, watch } from 'vue'
 import { useMounted, whenever } from '@vueuse/core'
 import { cn } from '@comfyorg/tailwind-utils'
 
@@ -11,8 +11,7 @@ import type {
 import type { Locale, TranslationKey } from '@/i18n/translations'
 import { translationsFor } from '@/i18n/translations'
 import WorkshopModelsGrid from './WorkshopModelsGrid.vue'
-import CatalogueTabs from './CatalogueTabs.vue'
-import type { CatalogueTab } from './CatalogueTabs.vue'
+import type { HubSection } from '@/lib/workshop/hub-section'
 import type { WorkshopPageType } from '@/scripts/workshop-analytics'
 import {
   captureWorkshopEvent,
@@ -21,14 +20,19 @@ import {
 } from '@/scripts/posthog'
 import type { CatalogueApp } from '@/lib/workshop/catalogue-apps'
 import { ac } from '@/lib/workshop/catalogue-apps'
+import { upcomingApps } from '@/lib/workshop/coming-soon-apps'
 import {
   loadAppCatalogue,
+  loadExploreCatalogue,
   loadWorkflowCatalogue
 } from '@/lib/workshop/catalogue-components'
 import { isWorkshopModelShown } from '@/scripts/workshop-model-flags'
+import { getRoutes } from '@/config/routes'
+import { rememberListOnClick } from '@/lib/workshop/shelf-memory'
 
 const WorkflowCatalogue = defineAsyncComponent(loadWorkflowCatalogue)
 const AppCatalogue = defineAsyncComponent(loadAppCatalogue)
+const ExploreCatalogue = defineAsyncComponent(loadExploreCatalogue)
 
 const {
   models,
@@ -39,16 +43,15 @@ const {
   models: readonly WorkshopModel[]
   initialSearch?: string
   locale?: Locale
-  section?: CatalogueTab
+  section?: HubSection
 }>()
 const { t } = translationsFor(locale)
 
-const inSection = ref(false)
-// A category replaces the page's own heading and the switch between
-// catalogues, so the state has to reach the page that renders them.
-const emit = defineEmits<{ section: [boolean] }>()
-watch(inSection, (value) => emit('section', value), { immediate: true })
-const browseAll = ref(false)
+// The Models hero carries its own title and subtitle, so the page's plain
+// heading steps aside for it.
+const emit = defineEmits<{ hero: [boolean] }>()
+const heroShown = computed(() => section === 'models')
+watch(heroShown, (value) => emit('hero', value), { immediate: true })
 const mounted = useMounted()
 const enabled = useWorkshopEnabled()
 const appsEnabled = useWorkshopAppsEnabled()
@@ -78,33 +81,44 @@ const appCards = computed<readonly CatalogueApp[]>(() =>
     thumbnail: app.thumbnail
   }))
 )
-const availableTabs = computed<readonly CatalogueTab[]>(() => [
-  'models',
-  ...(workflows.value.length || section === 'workflows'
-    ? (['workflows'] as const)
-    : []),
-  ...((appsEnabled.value && apps.value.length) || section === 'apps'
-    ? (['apps'] as const)
-    : [])
-])
+
+function rememberHub(event: MouseEvent) {
+  const link =
+    event.target instanceof Element ? event.target.closest('a[href]') : null
+  const modelHref = link?.getAttribute('href')
+  if (modelHref)
+    rememberListOnClick(
+      {
+        href: getRoutes(locale).hubExplore,
+        label: t('workshop.catalogue.eyebrow')
+      },
+      modelHref,
+      event
+    )
+}
 
 // Each tab says what its own listing is for, in Eric's words.
 const SUBTITLE_KEY = {
+  explore: 'workshop.explore.subtitle',
   models: 'workshop.hero.subtitle',
   workflows: 'workshop.catalogue.workflowsSubtitle',
   apps: 'workshop.catalogue.appsSubtitle'
-} as const satisfies Record<CatalogueTab, TranslationKey>
+} as const satisfies Record<HubSection, TranslationKey>
 
 whenever(
   () => mounted.value && enabled.value,
   () => {
     const catalogues = {
+      explore: {
+        model_count:
+          routerModels.value.length + workflows.value.length + apps.value.length
+      },
       models: { model_count: routerModels.value.length, page_type: 'model' },
       workflows: { model_count: workflows.value.length, page_type: 'workflow' },
       apps: { model_count: apps.value.length, page_type: 'app' }
     } as const satisfies Record<
-      CatalogueTab,
-      { model_count: number; page_type: WorkshopPageType }
+      HubSection,
+      { model_count: number; page_type?: WorkshopPageType }
     >
     captureWorkshopEvent({
       name: 'catalogue_viewed',
@@ -117,7 +131,7 @@ whenever(
 
 <template>
   <div
-    v-if="!inSection"
+    v-if="!heroShown"
     class="relative isolate -mx-6 mb-6 flex flex-wrap items-center justify-between gap-x-6 gap-y-4 overflow-hidden px-6 pb-2 max-sm:mb-4 max-sm:pb-0 lg:-mx-8 lg:px-8 sm:short:pb-0"
     data-testid="workshop-hero"
   >
@@ -137,57 +151,30 @@ whenever(
       </p>
     </div>
   </div>
+  <div v-if="section === 'explore'" @click="rememberHub">
+    <ExploreCatalogue
+      :apps="appsEnabled ? appCards : []"
+      :workflows
+      :models="routerModels"
+      :locale
+    />
+  </div>
   <WorkshopModelsGrid
-    v-if="section === 'models'"
-    v-model:browse-all="browseAll"
+    v-else-if="section === 'models'"
     :models="routerModels"
     :initial-search
     :locale
-    @section="inSection = $event"
-  >
-    <template #tabs>
-      <CatalogueTabs
-        v-if="availableTabs.length > 1 && !inSection"
-        :tabs="availableTabs"
-        :model-value="section"
-        :locale
-        links
-      />
-    </template>
-  </WorkshopModelsGrid>
+  />
   <WorkflowCatalogue
     v-else-if="section === 'workflows'"
-    v-model:browse-all="browseAll"
     :models="workflows"
     :initial-search
     :locale
-    @section="inSection = $event"
-  >
-    <template #tabs>
-      <CatalogueTabs
-        v-if="!inSection"
-        :tabs="availableTabs"
-        :model-value="section"
-        :locale
-        links
-      />
-    </template>
-  </WorkflowCatalogue>
+  />
   <AppCatalogue
     v-else
-    v-model:browse-all="browseAll"
     :apps="appCards"
+    :upcoming="upcomingApps(locale)"
     :locale
-    @section="inSection = $event"
-  >
-    <template #tabs>
-      <CatalogueTabs
-        v-if="!inSection"
-        :tabs="availableTabs"
-        :model-value="section"
-        :locale
-        links
-      />
-    </template>
-  </AppCatalogue>
+  />
 </template>

@@ -85,9 +85,9 @@ test('the API key link stays a models onboarding arrival when signed out', async
   page
 }) => {
   await page.goto(MODEL_PATH)
-  const apiTab = page.getByTestId('tab-api')
-  await waitForIsland(page, apiTab)
-  await apiTab.click()
+  const apiPath = page.getByTestId('model-path-api')
+  await waitForIsland(page, apiPath)
+  await apiPath.click()
   await expect(page.getByTestId('api-get-key')).toHaveAttribute(
     'href',
     API_KEYS_URL
@@ -102,9 +102,9 @@ test('the API key link carries the active workspace, and follows a switch', asyn
   await signIn(page, modelsAccount)
 
   await page.goto(MODEL_PATH)
-  const apiTab = page.getByTestId('tab-api')
-  await waitForIsland(page, apiTab)
-  await apiTab.click()
+  const apiPath = page.getByTestId('model-path-api')
+  await waitForIsland(page, apiPath)
+  await apiPath.click()
   const link = page.getByTestId('api-get-key')
   await expect(link).toHaveAttribute(
     'href',

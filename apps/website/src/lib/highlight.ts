@@ -60,15 +60,21 @@ export function highlightTokens(
   code: string,
   lang: CodeLang
 ): readonly HighlightToken[] | null {
+  const lines = highlightLines(code, lang)
+  return (
+    lines?.flatMap((line, index) =>
+      index === lines.length - 1 ? line : [...line, { content: '\n' }]
+    ) ?? null
+  )
+}
+
+export function highlightLines(
+  code: string,
+  lang: CodeLang
+): readonly (readonly HighlightToken[])[] | null {
   if (exceedsHighlightLimit(code)) return null
   try {
-    const { tokens } = highlighter.codeToTokens(code, {
-      lang,
-      theme: CODE_THEME
-    })
-    return tokens.flatMap((line, index) =>
-      index === tokens.length - 1 ? line : [...line, { content: '\n' }]
-    )
+    return highlighter.codeToTokens(code, { lang, theme: CODE_THEME }).tokens
   } catch {
     return null
   }

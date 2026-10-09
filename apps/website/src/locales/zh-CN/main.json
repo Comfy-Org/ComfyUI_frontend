@@ -1774,6 +1774,7 @@
     "wanAnimate2": "Wan Animate 2",
     "workflows": "工作流",
     "modelCatalogue": "ComfyUI 模型",
+    "social": "关注 Comfy",
     "changelog": "更新日志"
   },
   "g": {
@@ -2503,7 +2504,8 @@
       "primaryCta": "在 Comfy 中试用",
       "secondaryCta": "下载模型",
       "tutorialCta": "查看教程",
-      "workflowCount": "{count} 个工作流使用此模型"
+      "workflowCount": "{count} 个工作流使用此模型",
+      "downloadForComfy": "下载到 ComfyUI"
     },
     "index": {
       "subtitle": "在 ComfyUI 中运行世界领先的 AI 模型",
@@ -2575,17 +2577,12 @@
     "buyCredits": "添加积分",
     "careers": "招聘",
     "close": "关闭",
-    "colConnect": "联系",
     "colFeatures": "功能",
-    "colMore": "更多",
-    "colPrograms": "项目",
     "comfyAgent": "Comfy Agent",
     "comfyCli": "Comfy CLI",
     "comfyCloud": "Comfy Cloud",
     "comfyEnterprise": "Comfy 企业版",
-    "comfyHub": "Comfy Workflows",
     "comfyLocal": "Comfy 桌面版",
-    "comfyWorkshop": "浏览模型",
     "community": "社区",
     "company": "公司",
     "contact": "联系我们",
@@ -2604,9 +2601,6 @@
     "downloadLocal": "下载桌面版",
     "events": "活动",
     "fdct": "前沿驻场创意人才",
-    "featuredCommunityAlt": "产品摄影工作流演示图片",
-    "featuredCommunityCtaAria": "观看产品摄影演示",
-    "featuredCommunityTitle": "产品摄影",
     "featuredCompanyAlt": "Black Math 客户故事图片",
     "featuredEnterpriseAlt": "MiniMax 商业授权视频",
     "opensInNewTab": "在新标签页中打开",
@@ -2634,7 +2628,6 @@
     "planPro": "Pro",
     "pricing": "价格",
     "products": "产品",
-    "reddit": "Reddit",
     "resources": "资源",
     "roleMember": "成员",
     "roleOwner": "所有者",
@@ -2666,7 +2659,32 @@
     "colAutomate": "自动化",
     "colBuild": "构建",
     "colResources": "资源",
-    "colUpdates": "动态"
+    "colUpdates": "动态",
+    "hubApps": "应用",
+    "hubAllApps": "全部应用",
+    "reshoot": "重拍",
+    "hubWorkflows": "工作流",
+    "hubAllWorkflows": "全部工作流",
+    "hubModels": "模型",
+    "hubSeedream5Pro": "Seedream 5.0 Pro",
+    "hubSeedance25": "Seedance 2.5",
+    "hubNanoBanana2": "Nano Banana 2",
+    "hubGptImage2": "GPT Image 2",
+    "hubAllModels": "全部模型",
+    "comfyHub": "Comfy Workflows",
+    "colConnect": "联系",
+    "reddit": "Reddit",
+    "comfyWorkshop": "浏览模型",
+    "featuredHubAlt": "Seedance 2.5 视频：动物们举着拼出 SEEDANCE 2.5 的气球穿过雨中街道",
+    "featuredHubCta": "立即试用",
+    "featuredHubCtaAria": "在 Hub 中试用 Seedance 2.5 参考生成视频",
+    "hubAppsDescription": "基于 Comfy 构建的完整工具",
+    "hubEditSelectedRegion": "编辑选定区域",
+    "hubImageToVideo": "图像转视频",
+    "hubModelsDescription": "运行最新的 AI 模型",
+    "hubMotionTransfer": "运动迁移",
+    "hubVideoFromReferences": "参考生成视频",
+    "hubWorkflowsDescription": "针对任务的现成方案"
   },
   "payment": {
     "failed": {
@@ -3849,6 +3867,9 @@
     }
   },
   "workshop": {
+    "file": {
+      "usedBy": "使用它的工作流"
+    },
     "api": {
       "body": "使用试用区的输入调用 Comfy Router。运行前请设置 COMFY_API_KEY，并检查本地文件路径。",
       "copied": "已复制",
@@ -3859,19 +3880,15 @@
       "needsKey": "密钥",
       "needsFiles": "你的文件",
       "runsOnRouter": "Comfy Router",
-      "runsOnCloud": "Comfy Cloud",
       "filesRead": "代码运行时从代码中的路径读取",
-      "filesUploaded": "调用前先上传，再通过链接读取",
       "filesOmitted": "cURL 已省略上传的文件，请求可能不完整。请使用 Python 或 TypeScript 包含这些文件。",
       "getKey": "获取 API 密钥",
-      "downloadGraph": "下载 API 节点图",
       "heading": "从代码中调用该模型",
       "inputInvalid": "请在试用区填写有效的模型参数以生成请求。",
       "localFiles": "代码运行时会读取文件并进行 Base64 编码。请将路径设置为您的本地文件。",
       "mappingUnavailable": "此模型的原生 Router 请求映射尚未验证。调用前请查看 Router 文档。",
       "copyEndpoint": "复制接口地址",
-      "runsOn": "运行于",
-      "filesSdk": "由代码根据链接上传"
+      "runsOn": "运行于"
     },
     "card": {
       "creditsPerRun": "积分 / 次",
@@ -4037,7 +4054,10 @@
       "search": "搜索…",
       "sectionLabel": "筛选条件",
       "text": "文本",
-      "video": "视频"
+      "video": "视频",
+      "inputGroup": "输入",
+      "inputChip": "{media}输入",
+      "outputChip": "{media}输出"
     },
     "form": {
       "advanced": "高级设置",
@@ -4064,7 +4084,7 @@
     "hero": {
       "eyebrow": "模型",
       "heading": "ComfyUI 模型",
-      "subtitle": "接下来你想创造什么？用你自己的创意试用最新的 AI 模型，就在浏览器中。"
+      "subtitle": "发现最新的 AI 模型。其中许多可以直接在这里运行，也可以通过 API 调用或下载。"
     },
     "hub": {
       "categories": "分类",
@@ -4099,6 +4119,8 @@
       "models": "模型",
       "search": "搜索工作流、模型、创作者...",
       "showing": "显示 {shown} / {total} 个工作流",
+      "showingOf": "已显示 {shown} / {total}",
+      "showMore": "显示更多",
       "sort": {
         "newest": "最新",
         "popular": "最受欢迎"
@@ -4124,11 +4146,10 @@
       "label": "按输出浏览"
     },
     "meta": {
-      "description": "在 Comfy 上浏览并运行最新的 AI 图像、视频和音频模型。",
+      "description": "在 Comfy 上浏览最新的 AI 图像、视频和音频模型：在这里运行、通过 API 调用或下载。",
       "title": "浏览模型 - Comfy"
     },
     "model": {
-      "back": "返回全部模型",
       "backTo": "返回{category}",
       "breadcrumb": "模型",
       "browseAll": "浏览全部模型",
@@ -4152,6 +4173,7 @@
         "leadNoSummary": "{who}。",
         "cta": "在浏览器中运行，或通过 API 调用。",
         "ctaShort": "可在浏览器或 API 中运行。",
+        "ctaApi": "可通过 API 调用。",
         "price": "默认设置下约 {credits} 积分。",
         "priceNoUnit": "默认设置下约 {credits} 积分。",
         "title": "{name} API 与 Playground - Comfy",
@@ -4161,7 +4183,14 @@
       "missingInputSchema": "Comfy Router 已列出此模型，但其输入架构尚未提供。你可以查看已有信息；添加架构后将启用运行和 API 代码示例。",
       "nodePriceDefaults": "根据公布的费率或节点默认设置估算。实际费用随设置和用量变化。",
       "notSupported": "暂不支持运行",
+      "paths": {
+        "label": "使用此模型的方式",
+        "run": "在此运行",
+        "cloud": "在 Cloud 中打开",
+        "api": "通过 API 使用"
+      },
       "perRun": "每次运行",
+      "usedBy": "使用 {name} 的工作流",
       "priceNoteLabel": "此估算的计算方式",
       "related": "更多模型",
       "relatedProvider": "{provider} 的更多模型",
@@ -4314,14 +4343,11 @@
     },
     "sections": {
       "allModels": "所有模型",
-      "back": "返回所有类别",
-      "browseAll": "浏览所有模型",
       "count": "{n} 个模型",
       "featured": "精选",
       "otherFormats": "其他格式",
       "scrollBack": "向前滚动",
-      "scrollForward": "向后滚动",
-      "seeAll": "查看全部 ({n})"
+      "scrollForward": "向后滚动"
     },
     "showMore": "显示更多模型",
     "signIn": {
@@ -4360,8 +4386,6 @@
       "label": "排序",
       "name": "名称 A 到 Z",
       "popular": "推荐",
-      "priceAsc": "价格：从低到高",
-      "priceDesc": "价格：从高到低",
       "recommended": "推荐顺序"
     },
     "task": {
@@ -4385,13 +4409,20 @@
       "more": "更多分类",
       "text": "文本"
     },
+    "useCaseOption": {
+      "animateImage": "让图像动起来",
+      "edit": "编辑",
+      "editVideo": "编辑视频",
+      "generate": "生成",
+      "images": "图像",
+      "videos": "视频"
+    },
     "workflow": {
       "about": "关于",
       "by": "作者 {author}",
       "cloneCta": "在本机运行",
       "comfyApp": "Comfy 应用",
       "customNodes": "需要自定义节点",
-      "download": "下载工作流 JSON",
       "graph": "工作流",
       "graphNote": "此部署背后的节点图在这里为只读。可在 comfy.org 打开或下载 JSON 在 ComfyUI 中编辑。",
       "inputs": "输入",
@@ -4404,7 +4435,6 @@
       "relatedAll": "浏览全部",
       "serverless": "无服务器 API",
       "templateBy": "模板作者：{author}",
-      "sections": "工作流栏目",
       "graphAlt": "此工作流的节点及其连接",
       "graphHint": "仅供查看 · 拖动平移",
       "graphLoading": "正在加载节点图",
@@ -4422,9 +4452,18 @@
       "inside": "查看工作流内部",
       "previewHint": "源模板的只读预览。在 Cloud 中打开，即可查看节点并进行修改。",
       "fullPreview": "打开完整尺寸的工作流预览",
-      "apiHint": "以下请求使用与体验区相同的预设图和设置。每次提交都可能开始一次付费运行；如果提交结果未知，请勿自动重试。",
-      "apiNote": "需要付费的 Cloud 方案和额度。",
-      "apiDocs": "API 文档",
+      "apiTitle": "在代码中使用此工作流",
+      "apiLead": "将此工作流的节点图和你的输入发送到 Comfy Cloud。",
+      "apiStepKeyBody": "需要付费的 Cloud 方案和额度。",
+      "apiStepSdk": "安装 SDK",
+      "apiStepSdkBody": "需要 Python 3.10+。也可通过 npm 安装 {'@'}comfyorg/sdk。",
+      "apiStepRun": "运行",
+      "apiStepRunBody": "运行代码。它会上传你的文件并保存输出。",
+      "apiLanguage": "代码语言",
+      "apiCopyInstall": "复制安装命令",
+      "apiShowGraph": "显示完整节点图 JSON",
+      "apiHideGraph": "隐藏完整节点图 JSON",
+      "apiGraphNodes": "{count} 个节点",
       "apiSteps": "完整调用步骤",
       "apiUploads": "先上传媒体",
       "apiUploadGrant": "使用工作区凭证向 Cloud 的 POST /api/inputs/upload-url 发送 {'{'}\"content_type\":\"image/png\"{'}'}。",
@@ -4458,25 +4497,49 @@
       "connectionLost": "无法查看运行状态。请重新连接以获取最新状态。",
       "lostContact": "此页面与运行失去了联系。它可能仍在 Cloud 上运行并消耗积分。请重新连接以查看最新状态。",
       "browserUnavailable": "暂不支持从此页面运行工作流。",
-      "tryCloud": "在 Cloud 中体验",
-      "explore": "探索更多可能"
+      "explore": "探索更多可能",
+      "tryIt": "试用",
+      "paths": "使用此工作流的方式",
+      "downloadWorkflow": "下载工作流",
+      "runInCloud": "在 Comfy Cloud 中试用",
+      "apiPath": "API",
+      "filesNeeded": "所需文件",
+      "filesNote": "将每个文件放入所示文件夹，该文件夹位于你的 ComfyUI 目录中。",
+      "noFiles": "它不加载任何模型文件，无需下载。",
+      "downloadFile": "下载 {name}",
+      "runsWhere": "在哪里运行",
+      "onCloud": "Comfy Cloud",
+      "onMachine": "你的电脑",
+      "cloudReady": "无需下载——Comfy Cloud 已备好所有文件。",
+      "fileType": {
+        "checkpoint": "Checkpoint",
+        "diffusionModel": "扩散模型",
+        "lora": "LoRA",
+        "vae": "VAE",
+        "textEncoder": "文本编码器",
+        "clipVision": "CLIP 视觉",
+        "controlnet": "ControlNet",
+        "upscaler": "放大模型",
+        "audioEncoder": "音频编码器",
+        "backgroundRemoval": "背景移除"
+      },
+      "opensInNewTab": "（在新标签页中打开）"
     },
     "catalogue": {
       "apps": "应用",
       "eyebrow": "Hub",
       "categories": "分类",
       "show": "浏览",
-      "workflowsSubtitle": "用由 AI 模型驱动的多步骤工作流，把你的想法变成完成的作品。",
-      "appsSubtitle": "用把多个工作流组合在一起的应用，挑战更大的想法。",
+      "workflowsSubtitle": "下载一个，或在 Comfy Cloud 中运行，然后修改任意步骤。",
+      "appsSubtitle": "现成的工具，一个只做一件事。无需节点，无需配置。",
       "noWorkflows": "没有符合搜索和筛选条件的工作流。",
-      "backToWorkflows": "返回工作流",
       "allWorkflows": "全部工作流",
-      "browseAllWorkflows": "浏览全部工作流",
       "searchWorkflows": "搜索工作流…",
       "showWorkflows": "显示 {n} 个工作流",
       "heading": "ComfyUI 模型",
       "directory": "全部模型（按提供商）",
-      "directoryCount": "{count} 个模型"
+      "directoryCount": "{count} 个模型",
+      "categoriesLabel": "工作流分类"
     },
     "assets": {
       "title": "你的素材",
@@ -4491,7 +4554,162 @@
       "notSaved": "这次生成未能保存到你的素材。结果在过期前仍然留在页面上。",
       "cancelError": "无法请求取消。生成可能仍在进行。"
     },
-    "cinematic": {}
+    "cinematic": {},
+    "space": {
+      "createHint": "使用现成工具",
+      "customizeHint": "掌控整个流程",
+      "buildHint": "通过 API 用在你的产品中"
+    },
+    "explore": {
+      "subtitle": "从应用开始，用工作流深入，或用模型来构建。",
+      "searchLabel": "搜索 Hub",
+      "searchPlaceholder": "试试“relight”、“upscale”或模型名称",
+      "popularTitle": "当前热门",
+      "resultsFor": "“{query}”的结果",
+      "empty": "暂时没有匹配的结果。",
+      "clear": "清除搜索",
+      "workflowPill": "工作流",
+      "kindApp": "应用",
+      "kindModel": "模型",
+      "doors": "按类型浏览",
+      "doorApps": "应用",
+      "appsHint": "上传，点击，完成。无需节点，无需配置。",
+      "doorWorkflows": "工作流",
+      "workflowsHint": "打开节点图，修改任意步骤。",
+      "modelsTitle": "模型",
+      "modelsHint": "在代码中调用最新模型，也可以先在这里试用。",
+      "communityTitle": "来自社区",
+      "communityHeading": "看看大家用 Comfy 做了什么",
+      "communityBody": "社区用 ComfyUI 创作的真实作品。",
+      "communityExplore": "浏览作品集",
+      "communityShare": "分享你的作品",
+      "modelsIntent": "适合开发者",
+      "workflowsIntent": "适合 ComfyUI 用户",
+      "appsIntent": "适合创作者",
+      "doorModelPromptLake": "蓝调时刻的高山湖泊",
+      "doorModelPromptRowboat": "热带泻湖上的小划艇",
+      "doorModelRun": "运行",
+      "doorAppControlFocal": "焦距",
+      "doorAppControlRotation": "旋转",
+      "doorAppGenerate": "生成",
+      "doorWorkflowStep": "重新打光",
+      "doorWorkflowLight": "光线",
+      "doorWorkflowStrength": "强度",
+      "doorWorkflowSave": "Save Image"
+    },
+    "explorer": {
+      "tabs": {
+        "label": "模型类别",
+        "all": "全部",
+        "image": "图像",
+        "video": "视频",
+        "audio": "音频",
+        "3d": "3D",
+        "edit": "编辑",
+        "upscale": "放大",
+        "llm": "大语言模型",
+        "groups": {
+          "type": "类型",
+          "task": "任务"
+        }
+      },
+      "allModelsLink": "浏览开放权重",
+      "filter": {
+        "label": "使用方式",
+        "run": "在线运行",
+        "api": "API"
+      },
+      "badge": {
+        "run": "运行",
+        "api": "API"
+      },
+      "compare": {
+        "label": "对比",
+        "toggle": "对比 {name}",
+        "full": "最多可对比 4 个模型",
+        "trayLabel": "待对比的模型",
+        "remove": "从对比中移除 {name}",
+        "open": "对比 {count} 个模型 | 对比 {count} 个模型",
+        "pickMore": "再选 {count} 个即可对比",
+        "canAdd": "还可以再加 {count} 个",
+        "clear": "清除",
+        "provider": "提供方",
+        "task": "用途",
+        "access": "使用方式",
+        "try": "试用 {name}",
+        "tryShort": "试用",
+        "viewTitle": "对比 {count} 个模型",
+        "upTo": "最多 {max} 个",
+        "add": "添加模型",
+        "copyLink": "复制链接",
+        "copied": "链接已复制",
+        "api": "API",
+        "apiFor": "{name} API",
+        "samePrompt": "同一提示词，各个模型",
+        "samePromptNote": "每一行都给所有模型同一条提示词。样图由 Magnific 生成，它运行的是同样的模型。",
+        "promptTypes": "提示词类型",
+        "prompt": "提示词",
+        "noSample": "这条提示词没有样图",
+        "sampleAlt": "{model} 根据提示词生成：{prompt}",
+        "types": {
+          "all": "全部",
+          "portraits": "人像",
+          "product": "产品",
+          "illustration": "插画",
+          "typography": "文字排版",
+          "fusion": "融合与细节"
+        },
+        "howItCompares": "对比表现",
+        "compareWith": "对比对象",
+        "openFull": "打开完整对比"
+      }
+    },
+    "modelsHub": {
+      "subtitle": "面向开发者：通过一个 API 调用最新模型，先在这里试用，或下载开放权重在 ComfyUI 中使用。",
+      "getApiKey": "获取 API 密钥",
+      "latestLaunch": "最新发布",
+      "access": {
+        "heading": "选择模型访问方式",
+        "openTitle": "开放权重",
+        "openBody": "下载模型文件，在你自己的机器上用 ComfyUI 运行。",
+        "openCta": "浏览开放权重",
+        "partnerTitle": "合作伙伴模型与 API",
+        "partnerBody": "在这里运行，或用一个 API 密钥从你的代码中调用。",
+        "apiDocs": "API 文档"
+      },
+      "family": {
+        "eyebrow": "模型家族",
+        "title": "探索模型家族",
+        "openVersion": "{name}（开放）",
+        "versionsLabel": "{name} 模型家族的版本",
+        "wanTitle": "Wan 模型家族",
+        "wanDescription": "来自阿里巴巴的开放及托管视频模型。",
+        "wanExplore": "探索 Wan 模型家族"
+      },
+      "back": {
+        "search": "“{query}”的结果",
+        "tab": {
+          "image": "图像模型",
+          "video": "视频模型",
+          "audio": "音频模型",
+          "3d": "3D 模型",
+          "edit": "编辑模型",
+          "upscale": "放大模型",
+          "llm": "语言模型"
+        },
+        "access": {
+          "run": "可在这里运行的模型",
+          "api": "可通过 API 调用的模型"
+        }
+      }
+    },
+    "bestFor": {
+      "label": "适用于"
+    },
+    "resolution": {
+      "label": "分辨率",
+      "all": "全部分辨率"
+    }
   },
   "cinematic": {
     "ux": {
@@ -4624,7 +4842,6 @@
       "portrait": "阴天码头上的老渔夫",
       "train": "蓝调时刻的夜车车窗"
     },
-    "lead": "执导每一个镜头。选择摄影机、镜头、光线与调色，用任意模型生成电影级画面。",
     "camera": {
       "body": "机身",
       "lens": "镜头",
@@ -4788,7 +5005,6 @@
     "edit": "编辑",
     "credit": "基于 Cseti 的 CrossView-Warp LoRA 与节点",
     "pick": {
-      "lead": "从任意角度重拍任意视频。机位随心移动，无需补拍。",
       "drop": "将视频拖到这里",
       "upload": "上传视频",
       "exampleMeta": "无需上传即可试用",
@@ -4978,6 +5194,27 @@
     "play": "播放",
     "pause": "暂停"
   },
+  "hubPages": {
+    "apps": {
+      "open": "可用",
+      "soon": "即将推出",
+      "opensInNewTab": "（在新标签页中打开）"
+    },
+    "appShell": {
+      "home": "Comfy 首页"
+    },
+    "explore": {
+      "models": "{count} 个模型",
+      "workflows": "{count} 个工作流",
+      "apps": "{count} 个应用",
+      "kinds": "按类型统计的结果"
+    },
+    "workflow": {
+      "moreLikeThis": "更多类似内容",
+      "getApiKey": "获取 API 密钥",
+      "apiDocs": "API 文档"
+    }
+  },
   "changelog": {
     "meta": {
       "title": "更新日志 - Comfy",
@@ -4990,5 +5227,32 @@
     "loading": "正在加载最新更新日志…",
     "introduction": "ComfyUI 的最新功能、改进和修复，来自 Comfy 文档。",
     "retry": "重试"
+  },
+  "designDecisions": {
+    "button": "设计决策",
+    "close": "关闭设计决策",
+    "dot": "设计决策 {n}",
+    "footer": "上线后通过 hub_filter_changed 和 hub_item_clicked 进行衡量（分析 PR #20538）。",
+    "models": {
+      "sidebar": {
+        "body": "侧边栏按模型生成的内容分组（图像、视频、音频、3D、编辑、放大、LLM）并显示数量，所以第一个选择就是格式。只是重复这些类型的用途（生成图像 ≈ 图像，文本 ≈ LLM…）不再作为单独的筛选项。",
+        "title": "按类型划分的侧边栏"
+      },
+      "filters": {
+        "title": "工具栏中的“适用于”和“分辨率”",
+        "body": "用途从筛选菜单移到搜索框旁的“适用于”菜单，旁边是“分辨率”，访客最常做的两个选择无需打开筛选即可看到。“适用于”只列出侧边栏所选类型中的任务；“分辨率”列出运行表单提供的输出分辨率。约一半模型标明了分辨率，因此选择分辨率后，未标明的模型会被隐藏。"
+      }
+    },
+    "title": "设计决策",
+    "workflows": {
+      "sidebar": {
+        "title": "按分类划分的侧边栏",
+        "body": "侧边栏按 Charlene 提出的工作流分类（图生图、图生视频、视频生视频、产品与广告…）列出并显示数量，与模型页侧边栏按类型列出的方式相同。只显示至少有一个工作流的分类。每张卡片保留自己的用途标签，因此分类不会掩盖工作流实际做的事。"
+      },
+      "filters": {
+        "title": "筛选菜单中的输入、输出和模型",
+        "body": "筛选菜单沿用线上的标签页，并在“模型”旁新增“输入”（你从什么开始）和“输出”（你得到什么），依据每个工作流的上传项和结果确定。所有已列出工作流都具备的选项不会出现，因为它不会缩小范围。过去 30 天里，约 7% 的工作流页访客打开了筛选，因此这些选项留在菜单中，而不是放在网格上方。已选的选项会显示为可移除的标签。"
+      }
+    }
   }
 }

@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { useMounted } from '@vueuse/core'
+import { useIntersectionObserver, useMounted } from '@vueuse/core'
 import { computed, onScopeDispose, ref, useTemplateRef, watch } from 'vue'
 
 import type { WorkflowWorkshopModelDetail } from '@/config/models-catalogue'
@@ -25,7 +25,6 @@ import {
 } from '@/lib/workshop/workflow-credits-gate'
 import { panelSaysRefusal } from '@/lib/workshop/workflow-refusal'
 import { useStickyFooterScrollPadding } from '@/composables/useStickyFooterScrollPadding'
-import { useTablist } from '@/composables/useTablist'
 import { useWorkflowFormDraft } from '@/composables/useWorkflowFormDraft'
 import { useWorkflowRun } from '@/composables/useWorkflowRun'
 import { t } from '@/i18n/translations'
@@ -45,22 +44,30 @@ import WorkflowPreview from './WorkflowPreview.vue'
 import WorkflowApi from './WorkflowApi.vue'
 import WorkflowExampleCard from './WorkflowExampleCard.vue'
 
-const { model, scope, cloudHref } = defineProps<{
+const SECTION_CLASS =
+  'mt-16 scroll-mt-28 border-t border-transparency-white-t8 pt-12'
+
+const { model, scope } = defineProps<{
   model: WorkflowWorkshopModelDetail
   scope: string
-  cloudHref?: string
 }>()
 const emit = defineEmits<{ recovery: [active: boolean] }>()
-const sections = ['playground', 'workflow', 'api'] as const
-const section = ref<(typeof sections)[number]>('playground')
-const { onKeydown } = useTablist(() => sections, section)
 const footer = useTemplateRef<HTMLElement>('footer')
-useStickyFooterScrollPadding(footer, () => section.value === 'playground')
-const sectionLabels = {
-  playground: 'workshop.model.tabs.playground',
-  workflow: 'workshop.model.tabs.details',
-  api: 'workshop.model.tabs.api'
-} as const
+useStickyFooterScrollPadding(footer, () => true)
+const insideSection = useTemplateRef<HTMLElement>('inside')
+const apiSection = useTemplateRef<HTMLElement>('api')
+const graphReached = ref(false)
+const apiReached = ref(false)
+const { isSupported: canWatchSections } = useIntersectionObserver(
+  insideSection,
+  ([entry]) => {
+    if (entry?.isIntersecting) graphReached.value = true
+  },
+  { rootMargin: '400px 0px' }
+)
+useIntersectionObserver(apiSection, ([entry]) => {
+  if (entry?.isIntersecting) apiReached.value = true
+})
 const initial = initialWorkshopPageState(model)
 const values = ref(initial.values)
 const settledValues = ref(initial.values)
@@ -103,10 +110,14 @@ watch(
   },
   { once: true }
 )
-watch([section, enabled, workflowsEnabled], ([active, enabled, workflows]) => {
-  if (enabled && workflows && active === 'api')
-    captureWorkshopEvent({ name: 'api_viewed', properties: modelAnalytics })
-})
+watch(
+  () => apiReached.value && enabled.value && workflowsEnabled.value,
+  (viewed) => {
+    if (viewed)
+      captureWorkshopEvent({ name: 'api_viewed', properties: modelAnalytics })
+  },
+  { once: true }
+)
 function captureApiKeyClick() {
   if (enabled.value && workflowsEnabled.value)
     captureWorkshopEvent({
@@ -198,19 +209,6 @@ const statusLabel = computed(() => {
     : t('workshop.workflow.submitting')
 })
 
-function tabIndex(item: (typeof sections)[number]): number {
-  return section.value === item ? 0 : -1
-}
-
-function selectSection(item: (typeof sections)[number]) {
-  if (item !== section.value && enabled.value && workflowsEnabled.value)
-    captureWorkshopEvent({
-      name: 'tab_switched',
-      properties: { ...modelAnalytics, tab: item }
-    })
-  section.value = item
-}
-
 function selectExample(index: number) {
   const example = initial.examples[index]
   if (!example || formDisabled.value) return
@@ -234,7 +232,6 @@ function applyExample(index: number) {
   replacing.value = undefined
   selectedExample.value = index
   workflow.dismiss()
-  section.value = 'playground'
 }
 
 function updateExampleDialog(open: boolean) {
@@ -252,125 +249,128 @@ function start() {
 </script>
 
 <template>
-  <div
-    role="tablist"
-    :aria-label="t('workshop.workflow.sections')"
-    class="mb-6 flex gap-7 border-b border-transparency-white-t8"
-    @keydown="onKeydown"
+  <section
+    id="playground"
+    class="scroll-mt-28"
+    aria-labelledby="workflow-playground-heading"
   >
-    <button
-      v-for="item in sections"
-      :id="`workflow-tab-${item}`"
-      :key="item"
-      type="button"
-      role="tab"
-      :aria-selected="section === item"
-      :aria-controls="`workflow-panel-${item}`"
-      :tabindex="tabIndex(item)"
-      class="min-h-12 cursor-pointer border-b-2 border-transparent px-1 text-sm font-bold tracking-wider text-primary-warm-gray uppercase transition-colors hover:text-primary-warm-white aria-selected:border-primary-comfy-yellow aria-selected:text-primary-warm-white"
-      @click="selectSection(item)"
-    >
-      {{ t(sectionLabels[item]) }}
-    </button>
-  </div>
-  <div
-    v-show="section === 'playground'"
-    id="workflow-panel-playground"
-    role="tabpanel"
-    aria-labelledby="workflow-tab-playground"
-    class="grid gap-8 lg:grid-cols-12"
-  >
-    <section
-      class="flex min-w-0 flex-col rounded-2xl border border-transparency-white-t8 bg-transparency-white-t4 lg:col-span-5"
-      aria-labelledby="workflow-inputs-heading"
-    >
-      <form class="flex min-h-full flex-col" @submit.prevent="start">
-        <h2
-          id="workflow-inputs-heading"
-          class="border-b border-transparency-white-t8 px-5 py-3 text-xs font-bold tracking-wider text-primary-comfy-canvas uppercase"
-        >
-          {{ t('workshop.input.title') }}
-        </h2>
-        <div class="space-y-6 p-5">
-          <PlaygroundForm
-            v-model="values"
-            :schema="initial.schema"
-            :errors="fieldErrors"
-            :disabled="formDisabled"
-          />
-          <p
-            v-if="draft.restoreFailed.value"
-            role="alert"
-            class="text-sm text-primary-warm-gray"
+    <h2 id="workflow-playground-heading" class="sr-only">
+      {{ t('workshop.workflow.tryIt') }}
+    </h2>
+    <div class="grid gap-8 lg:grid-cols-12">
+      <section
+        class="flex min-w-0 flex-col rounded-2xl border border-transparency-white-t8 bg-transparency-white-t4 lg:col-span-5"
+        aria-labelledby="workflow-inputs-heading"
+      >
+        <form class="flex min-h-full flex-col" @submit.prevent="start">
+          <h3
+            id="workflow-inputs-heading"
+            class="border-b border-transparency-white-t8 px-5 py-3 text-xs font-bold tracking-wider text-primary-comfy-canvas uppercase"
           >
-            {{ t('workshop.form.draftRestoreFailed') }}
-          </p>
-        </div>
-        <div
-          ref="footer"
-          class="sticky bottom-0 z-10 mt-auto space-y-3 rounded-b-2xl border-t border-transparency-white-t8 bg-page/85 p-3 backdrop-blur-sm"
-          data-testid="workflow-run-footer"
-        >
-          <p
-            v-if="admissionPaused"
-            role="status"
-            class="text-sm text-primary-warm-gray"
-          >
-            {{ t('workshop.workflow.paused') }}
-          </p>
-          <p
-            v-if="refusalSaidHere"
-            role="alert"
-            class="text-sm text-primary-comfy-red"
-          >
-            {{ refusalSaidHere }}
-          </p>
-          <WorkflowCreditsGuard
-            :gate="creditsGate"
-            :workspace-name="session?.workspace.name"
-          >
-            <WorkflowRunControls
-              :state="state"
-              :signed-in="signedIn"
-              :can-start="canStart"
-              :status-label="statusLabel"
-              @resume="workflow.resume()"
-              @cancel="workflow.cancel()"
-              @dismiss="workflow.dismiss()"
+            {{ t('workshop.input.title') }}
+          </h3>
+          <div class="space-y-6 p-5">
+            <PlaygroundForm
+              v-model="values"
+              :schema="initial.schema"
+              :errors="fieldErrors"
+              :disabled="formDisabled"
             />
-          </WorkflowCreditsGuard>
-        </div>
-      </form>
-    </section>
-    <div class="min-w-0 space-y-4 lg:sticky lg:top-24 lg:col-span-7">
-      <WorkflowResults
-        :key="selectedRunId"
-        :model="model"
-        :state="state"
-        :example-index="selectedExample"
-        :busy="busy"
-        :status-label="statusLabel"
-        :can-start="canStart"
-        :refresh-output="workflow.refreshOutput"
-        :analytics="workflow.analytics.value"
-        :visible="section === 'playground'"
-        @retry="start"
-        @retry-delivery="workflow.retryDelivery()"
-      />
+            <p
+              v-if="draft.restoreFailed.value"
+              role="alert"
+              class="text-sm text-primary-warm-gray"
+            >
+              {{ t('workshop.form.draftRestoreFailed') }}
+            </p>
+          </div>
+          <div
+            ref="footer"
+            class="sticky bottom-0 z-10 mt-auto space-y-3 rounded-b-2xl border-t border-transparency-white-t8 bg-page/85 p-3 backdrop-blur-sm"
+            data-testid="workflow-run-footer"
+          >
+            <p
+              v-if="admissionPaused"
+              role="status"
+              class="text-sm text-primary-warm-gray"
+            >
+              {{ t('workshop.workflow.paused') }}
+            </p>
+            <p
+              v-if="refusalSaidHere"
+              role="alert"
+              class="text-sm text-primary-comfy-red"
+            >
+              {{ refusalSaidHere }}
+            </p>
+            <WorkflowCreditsGuard
+              :gate="creditsGate"
+              :workspace-name="session?.workspace.name"
+            >
+              <WorkflowRunControls
+                :state="state"
+                :signed-in="signedIn"
+                :can-start="canStart"
+                :status-label="statusLabel"
+                @resume="workflow.resume()"
+                @cancel="workflow.cancel()"
+                @dismiss="workflow.dismiss()"
+              />
+            </WorkflowCreditsGuard>
+          </div>
+        </form>
+      </section>
+      <div
+        class="min-w-0 space-y-4 lg:sticky lg:top-24 lg:col-span-7 lg:self-start"
+      >
+        <WorkflowResults
+          :key="selectedRunId"
+          :model="model"
+          :state="state"
+          :example-index="selectedExample"
+          :busy="busy"
+          :status-label="statusLabel"
+          :can-start="canStart"
+          :refresh-output="workflow.refreshOutput"
+          :analytics="workflow.analytics.value"
+          @retry="start"
+          @retry-delivery="workflow.retryDelivery()"
+        />
+      </div>
     </div>
-  </div>
-  <WorkflowPreview
-    v-show="section === 'workflow'"
-    :active="section === 'workflow'"
-    :model="model"
-    :cloud-href="cloudHref"
-  />
+    <div
+      v-if="model.examples.length"
+      class="mt-10"
+      data-testid="workflow-examples"
+    >
+      <h3 class="mb-5 text-sm font-bold text-primary-warm-white">
+        {{ t('workshop.examples.start') }}
+      </h3>
+      <div class="grid gap-5 sm:grid-cols-2 lg:grid-cols-3">
+        <WorkflowExampleCard
+          v-for="(example, index) in model.examples"
+          :key="example.name"
+          :example
+          :chosen="selectedExample === index"
+          :poster="model.thumbnailUrl"
+          :disabled="formDisabled"
+          @open="selectExample(index)"
+        />
+      </div>
+    </div>
+  </section>
   <div
-    v-show="section === 'api'"
-    id="workflow-panel-api"
-    role="tabpanel"
-    aria-labelledby="workflow-tab-api"
+    id="workflow"
+    ref="inside"
+    :class="SECTION_CLASS"
+    data-testid="workflow-inside"
   >
+    <WorkflowPreview
+      :active="graphReached || !canWatchSections"
+      :model="model"
+    />
+  </div>
+  <div id="api" ref="api" :class="SECTION_CLASS" data-testid="workflow-api">
     <WorkflowApi
       :model="model"
       :values="values"
@@ -378,30 +378,6 @@ function start() {
       @copy="captureSnippetCopy"
     />
   </div>
-  <section
-    v-if="model.examples.length"
-    v-show="section === 'playground'"
-    class="mt-14"
-    aria-labelledby="workflow-examples-heading"
-  >
-    <h2
-      id="workflow-examples-heading"
-      class="mb-5 text-sm font-bold text-primary-warm-white"
-    >
-      {{ t('workshop.examples.start') }}
-    </h2>
-    <div class="grid gap-5 sm:grid-cols-2 lg:grid-cols-3">
-      <WorkflowExampleCard
-        v-for="(example, index) in model.examples"
-        :key="example.name"
-        :example
-        :chosen="selectedExample === index"
-        :poster="model.thumbnailUrl"
-        :disabled="formDisabled"
-        @open="selectExample(index)"
-      />
-    </div>
-  </section>
   <ExampleReplaceDialog
     :open="replacing !== undefined"
     @update:open="updateExampleDialog"

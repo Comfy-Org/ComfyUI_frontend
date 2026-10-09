@@ -1,6 +1,7 @@
 import type { Page } from '@playwright/test'
 import { expect } from '@playwright/test'
 
+import { waitForIsland } from './fixtures/islands'
 import { test } from './fixtures/modelsAccount'
 
 const viewports = [
@@ -33,9 +34,15 @@ for (const viewport of viewports) {
 
     if (viewport.desktopNavigation) {
       await expect(desktopLinks).toBeVisible()
+      const hub = desktopLinks.getByRole('button', { name: 'Hub', exact: true })
+      await waitForIsland(page, hub)
+      await hub.click()
       await expect(
-        desktopLinks.getByRole('link', { name: 'Hub', exact: true })
+        navigation
+          .getByTestId('nav-dropdown')
+          .getByRole('link', { name: 'All models' })
       ).toHaveAttribute('href', '/hub/models/')
+      await hub.press('Escape')
       await expect(
         desktopLinks.getByRole('button', { name: 'Products', exact: true })
       ).toBeVisible()
@@ -46,13 +53,15 @@ for (const viewport of viewports) {
     } else {
       await expect(desktopLinks).toBeHidden()
       await expect(menuButton).toBeVisible()
+      await waitForIsland(page, menuButton)
       await menuButton.click()
       const menu = page.getByRole('dialog', { name: 'Menu' })
       await expect(menu).toBeVisible()
-      await expect(menu.getByRole('link', { name: /^Hub\b/ })).toHaveAttribute(
-        'href',
-        '/hub/models/'
-      )
+      await menu.getByRole('button', { name: /^Hub\b/ }).click()
+      await expect(
+        menu.getByRole('link', { name: 'All models' })
+      ).toHaveAttribute('href', '/hub/models/')
+      await menu.getByRole('button', { name: 'Back' }).click()
       await expect(
         menu.getByRole('button', { name: /^Products\b/ })
       ).toBeVisible()

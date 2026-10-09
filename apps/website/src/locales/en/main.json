@@ -13,14 +13,17 @@
     }
   },
   "workshop": {
+    "file": {
+      "usedBy": "Workflows that use it"
+    },
     "meta": {
       "title": "Browse Models - Comfy",
-      "description": "Browse and run the latest AI image, video and audio models on Comfy."
+      "description": "Browse the latest AI image, video and audio models on Comfy: run them here, call them by API or download them."
     },
     "hero": {
       "eyebrow": "Models",
       "heading": "ComfyUI models",
-      "subtitle": "What will you make next? Try the latest AI models with your own ideas, right in your browser."
+      "subtitle": "Find the latest AI models. Run many of them right here, call them by API or download them."
     },
     "search": {
       "label": "Search models, providers, and categories",
@@ -47,7 +50,7 @@
       "resize": "Drag to resize the filters",
       "text": "Text",
       "other": "Other",
-      "label": "Filter",
+      "label": "Filters",
       "filterBy": "Filter by…",
       "sectionLabel": "Filter by",
       "back": "All filters",
@@ -59,7 +62,10 @@
       "runsOn": "Runs on {model}",
       "outputGroup": "Output",
       "capabilityGroup": "Capabilities",
-      "search": "Search…"
+      "search": "Search…",
+      "inputGroup": "Input",
+      "inputChip": "{media} input",
+      "outputChip": "{media} output"
     },
     "result": "{count} model",
     "results": "{count} models",
@@ -72,7 +78,6 @@
     "showMore": "Show more models",
     "model": {
       "breadcrumb": "Models",
-      "back": "Back to all models",
       "backTo": "Back to {category}",
       "inputs": "Model inputs",
       "select": "Select an option",
@@ -91,6 +96,7 @@
         "leadNoSummary": "{who}.",
         "cta": "Run it in your browser or call it via API.",
         "ctaShort": "Run it in your browser or via API.",
+        "ctaApi": "Call it via API.",
         "price": "Typical cost: {credits} credits per {unit}.",
         "priceNoUnit": "Typical cost: {credits} credits.",
         "title": "{name} API & Playground - Comfy",
@@ -116,7 +122,14 @@
       "priceNoteLabel": "How this price is estimated",
       "incomplete": "Incomplete",
       "notSupported": "Run not yet supported",
-      "missingInputSchema": "We do not know this model's inputs yet, so it cannot be run or called from code. Everything else on this page still works."
+      "missingInputSchema": "We do not know this model's inputs yet, so it cannot be run or called from code. Everything else on this page still works.",
+      "paths": {
+        "label": "Ways to use this model",
+        "run": "Run here",
+        "cloud": "Open in Cloud",
+        "api": "Use via API"
+      },
+      "usedBy": "Workflows that use {name}"
     },
     "title": "Models",
     "task": {
@@ -175,10 +188,7 @@
     },
     "sections": {
       "featured": "Featured",
-      "seeAll": "See all ({n})",
       "otherFormats": "Other formats",
-      "back": "Back to all categories",
-      "browseAll": "Browse all models",
       "allModels": "All models",
       "scrollBack": "Scroll back",
       "scrollForward": "Scroll forward",
@@ -196,6 +206,14 @@
       "audio": "Audio",
       "text": "Text",
       "more": "More categories"
+    },
+    "useCaseOption": {
+      "generate": "Generate",
+      "edit": "Edit",
+      "animateImage": "Animate an image",
+      "editVideo": "Edit video",
+      "images": "Images",
+      "videos": "Videos"
     },
     "input": {
       "title": "Input"
@@ -244,8 +262,6 @@
       "label": "Sort",
       "popular": "Most popular",
       "name": "Name A to Z",
-      "priceAsc": "Price: low to high",
-      "priceDesc": "Price: high to low",
       "recommended": "Recommended"
     },
     "form": {
@@ -491,19 +507,15 @@
       "mappingUnavailable": "We have not verified this request against the Router yet. Check the docs before you rely on it.",
       "copied": "Copied",
       "getKey": "Get API key",
-      "downloadGraph": "Download the API graph",
       "docs": "Router docs",
       "needs": "What you need",
       "needsEndpoint": "Endpoint",
       "needsKey": "Key",
       "needsFiles": "Your files",
       "runsOnRouter": "Comfy Router",
-      "runsOnCloud": "Comfy Cloud",
       "filesRead": "Read from the paths in the code when it runs",
-      "filesUploaded": "Uploaded before the call, then read from their urls",
       "copyEndpoint": "Copy endpoint",
-      "runsOn": "Runs on",
-      "filesSdk": "Uploaded by the code from their urls"
+      "runsOn": "Runs on"
     },
     "hub": {
       "title": "Browse models",
@@ -547,7 +559,9 @@
       "loadMore": "Load more",
       "empty": "No workflows match your filters",
       "emptyHint": "Try removing some filters",
-      "showing": "Showing {shown} of {total} workflows"
+      "showing": "Showing {shown} of {total} workflows",
+      "showingOf": "Showing {shown} of {total}",
+      "showMore": "Show more"
     },
     "workflow": {
       "by": "by {author}",
@@ -562,13 +576,11 @@
       "graph": "Workflow",
       "graphNote": "The node graph behind this deployment is read-only here. Open it on comfy.org or download the JSON to edit it in ComfyUI.",
       "openComfy": "Open on comfy.org",
-      "download": "Download workflow JSON",
       "ratings": "Ratings & comments",
       "related": "Related workflows",
       "relatedAll": "Browse all",
       "cloneCta": "Run on your machine",
       "templateBy": "Template by {author}",
-      "sections": "Workflow sections",
       "graphAlt": "The nodes of this workflow and the links between them",
       "graphHint": "Read-only · drag to pan",
       "graphLoading": "Loading the graph",
@@ -586,9 +598,18 @@
       "inside": "Inside the workflow",
       "previewHint": "A read-only preview of the source template. Open it in Cloud to explore the nodes and make changes.",
       "fullPreview": "Open full-size workflow preview",
-      "apiHint": "The request below uses the same prepared graph and settings as the Playground. Each submission can start a paid run; do not automatically retry a submission whose outcome is unknown.",
-      "apiNote": "Needs a paid Cloud plan and credits.",
-      "apiDocs": "API documentation",
+      "apiTitle": "Use this workflow in your code",
+      "apiLead": "Sends this workflow's graph and your inputs to Comfy Cloud.",
+      "apiStepKeyBody": "Needs a paid Cloud plan with credits.",
+      "apiStepSdk": "Install the SDK",
+      "apiStepSdkBody": "Python 3.10+. Also on npm as {'@'}comfyorg/sdk.",
+      "apiStepRun": "Run it",
+      "apiStepRunBody": "Run the code. It uploads your files and saves the outputs.",
+      "apiLanguage": "Code language",
+      "apiCopyInstall": "Copy install command",
+      "apiShowGraph": "Show full graph JSON",
+      "apiHideGraph": "Hide full graph JSON",
+      "apiGraphNodes": "{count} node | {count} nodes",
       "apiSteps": "The whole call, step by step",
       "apiUploads": "Upload media first",
       "apiUploadGrant": "POST /api/inputs/upload-url with {'{'}\"content_type\":\"image/png\"{'}'} on the Cloud origin, using your workspace credential.",
@@ -622,25 +643,49 @@
       "connectionLost": "The run could not be checked. Reconnect to recover its current status.",
       "lostContact": "This page lost contact with the run. It may still be running on Cloud and using credits. Reconnect to see its current status.",
       "browserUnavailable": "Running workflows from this page is not available yet.",
-      "tryCloud": "Try in Cloud",
-      "explore": "Explore the possibilities"
+      "explore": "Explore the possibilities",
+      "tryIt": "Try it",
+      "paths": "Ways to use this workflow",
+      "downloadWorkflow": "Download workflow",
+      "runInCloud": "Try in Comfy Cloud",
+      "apiPath": "API",
+      "filesNeeded": "Files it needs",
+      "filesNote": "Put each file in the folder shown, inside your ComfyUI folder.",
+      "noFiles": "It loads no model files, so there is nothing to download.",
+      "downloadFile": "Download {name}",
+      "runsWhere": "Where to run it",
+      "onCloud": "Comfy Cloud",
+      "onMachine": "Your machine",
+      "cloudReady": "Nothing to download — Comfy Cloud already has every file.",
+      "fileType": {
+        "checkpoint": "Checkpoint",
+        "diffusionModel": "Diffusion model",
+        "lora": "LoRA",
+        "vae": "VAE",
+        "textEncoder": "Text encoder",
+        "clipVision": "CLIP vision",
+        "controlnet": "ControlNet",
+        "upscaler": "Upscaler",
+        "audioEncoder": "Audio encoder",
+        "backgroundRemoval": "Background removal"
+      },
+      "opensInNewTab": "(opens in a new tab)"
     },
     "catalogue": {
       "apps": "Apps",
       "eyebrow": "Hub",
       "categories": "Categories",
       "show": "Browse",
-      "workflowsSubtitle": "Turn your ideas into finished results with multi-step workflows powered by AI models.",
-      "appsSubtitle": "Take on bigger ideas with apps that bring multiple workflows together.",
+      "workflowsSubtitle": "Download one or run it in Comfy Cloud, then change any step.",
+      "appsSubtitle": "Ready-made tools, one job each. No nodes, no setup.",
       "noWorkflows": "No workflows match your search and filters.",
-      "backToWorkflows": "Back to workflows",
       "allWorkflows": "All workflows",
-      "browseAllWorkflows": "Browse all workflows",
       "searchWorkflows": "Search workflows…",
       "showWorkflows": "Show {n} workflows",
       "heading": "ComfyUI models",
       "directory": "All models by provider",
-      "directoryCount": "{count} models"
+      "directoryCount": "{count} models",
+      "categoriesLabel": "Workflow categories"
     },
     "assets": {
       "title": "Your assets",
@@ -655,7 +700,162 @@
       "notSaved": "This generation could not be saved to your assets. The result is still on the page until it expires.",
       "cancelError": "Could not request cancellation. Your generation may still be running."
     },
-    "cinematic": {}
+    "cinematic": {},
+    "space": {
+      "createHint": "Use a ready-made tool",
+      "customizeHint": "Control the process",
+      "buildHint": "Put it in your product with APIs"
+    },
+    "explore": {
+      "subtitle": "Start with an app, go deeper with a workflow, or build with a model.",
+      "searchLabel": "Search the Hub",
+      "searchPlaceholder": "Try “relight”, “upscale” or a model name",
+      "popularTitle": "Popular right now",
+      "resultsFor": "Results for “{query}”",
+      "empty": "Nothing matches yet.",
+      "clear": "Clear search",
+      "workflowPill": "Workflow",
+      "kindApp": "App",
+      "kindModel": "Model",
+      "doors": "Browse by format",
+      "doorApps": "Apps",
+      "appsHint": "Upload, click, done. No nodes, no setup.",
+      "doorWorkflows": "Workflows",
+      "workflowsHint": "Open the graph and change any step.",
+      "modelsTitle": "Models",
+      "modelsHint": "Call the latest models from your code. Try them here first.",
+      "communityTitle": "From the community",
+      "communityHeading": "See what people make with Comfy",
+      "communityBody": "Real work from the community, made in ComfyUI.",
+      "communityExplore": "Explore the gallery",
+      "communityShare": "Share yours",
+      "modelsIntent": "For developers",
+      "workflowsIntent": "For ComfyUI users",
+      "appsIntent": "For creators",
+      "doorModelPromptLake": "Alpine lake at blue hour",
+      "doorModelPromptRowboat": "Rowboat on a tropical lagoon",
+      "doorModelRun": "Run",
+      "doorAppControlFocal": "Focal length",
+      "doorAppControlRotation": "Rotation",
+      "doorAppGenerate": "Generate",
+      "doorWorkflowStep": "Relight",
+      "doorWorkflowLight": "light",
+      "doorWorkflowStrength": "strength",
+      "doorWorkflowSave": "Save Image"
+    },
+    "explorer": {
+      "tabs": {
+        "label": "Model categories",
+        "all": "All",
+        "image": "Image",
+        "video": "Video",
+        "audio": "Audio",
+        "3d": "3D",
+        "edit": "Edit",
+        "upscale": "Upscale",
+        "llm": "LLM",
+        "groups": {
+          "type": "Type",
+          "task": "Task"
+        }
+      },
+      "allModelsLink": "Browse open weights",
+      "filter": {
+        "label": "How you use it",
+        "run": "Run here",
+        "api": "API"
+      },
+      "badge": {
+        "run": "Run",
+        "api": "API"
+      },
+      "compare": {
+        "label": "Compare",
+        "toggle": "Compare {name}",
+        "full": "You can compare up to 4 models",
+        "trayLabel": "Models to compare",
+        "remove": "Remove {name} from compare",
+        "open": "Compare {count} model | Compare {count} models",
+        "pickMore": "Pick {count} more to compare",
+        "canAdd": "You can add {count} more",
+        "clear": "Clear",
+        "provider": "Provider",
+        "task": "What it does",
+        "access": "How you use it",
+        "try": "Try {name}",
+        "tryShort": "Try",
+        "viewTitle": "Compare {count} models",
+        "upTo": "up to {max}",
+        "add": "Add model",
+        "copyLink": "Copy link",
+        "copied": "Link copied",
+        "api": "API",
+        "apiFor": "{name} API",
+        "samePrompt": "Same prompt, every model",
+        "samePromptNote": "Each row gave every model the same prompt. Made with Magnific, which runs these same models.",
+        "promptTypes": "Prompt types",
+        "prompt": "Prompt",
+        "noSample": "No sample for this prompt",
+        "sampleAlt": "{model} output for: {prompt}",
+        "types": {
+          "all": "All",
+          "portraits": "Portraits",
+          "product": "Product",
+          "illustration": "Illustration",
+          "typography": "Typography",
+          "fusion": "Fusion & detail"
+        },
+        "howItCompares": "How it compares",
+        "compareWith": "Compare with",
+        "openFull": "Open full comparison"
+      }
+    },
+    "modelsHub": {
+      "subtitle": "For developers: call the latest models through one API, try them here first or download open weights for ComfyUI.",
+      "getApiKey": "Get an API key",
+      "latestLaunch": "Latest launch",
+      "access": {
+        "heading": "Choose how you access models",
+        "openTitle": "Open weights",
+        "openBody": "Download the files and run them on your own machine in ComfyUI.",
+        "openCta": "Browse open weights",
+        "partnerTitle": "Partner models & API",
+        "partnerBody": "Run them here or call them from your code with one API key.",
+        "apiDocs": "API docs"
+      },
+      "family": {
+        "eyebrow": "Model family",
+        "title": "Explore model families",
+        "openVersion": "{name} (open)",
+        "versionsLabel": "Releases in the {name} family",
+        "wanTitle": "The Wan family",
+        "wanDescription": "Open and hosted video models from Alibaba.",
+        "wanExplore": "Explore the Wan family"
+      },
+      "back": {
+        "search": "results for “{query}”",
+        "tab": {
+          "image": "Image models",
+          "video": "Video models",
+          "audio": "Audio models",
+          "3d": "3D models",
+          "edit": "Edit models",
+          "upscale": "Upscale models",
+          "llm": "Language models"
+        },
+        "access": {
+          "run": "Models you can run here",
+          "api": "Models with an API"
+        }
+      }
+    },
+    "bestFor": {
+      "label": "Best for"
+    },
+    "resolution": {
+      "label": "Resolution",
+      "all": "All resolutions"
+    }
   },
   "auth": {
     "signIn": {
@@ -2342,7 +2542,6 @@
     "comfyCloud": "Comfy Cloud",
     "comfyEnterprise": "Comfy Enterprise",
     "managedBuilds": "Managed Builds",
-    "comfyHub": "Comfy Workflows",
     "fdct": "Forward Deployed Creatives",
     "gallery": "Gallery",
     "learning": "Learning",
@@ -2377,10 +2576,6 @@
     "mcpServer": "Comfy MCP",
     "supportedModels": "Supported Models",
     "colFeatures": "Features",
-    "colPrograms": "Programs",
-    "colConnect": "Connect",
-    "colMore": "More",
-    "reddit": "Reddit",
     "x": "X",
     "instagram": "Instagram",
     "linkedin": "LinkedIn",
@@ -2390,9 +2585,6 @@
     "featuredProductsAlt": "Gemini Omni 1.1 Flash video: cavemen meet the future",
     "featuredProductsCta": "EXPLORE NOW",
     "featuredProductsCtaAria": "Explore the Gemini Omni 1.1 Flash release",
-    "featuredCommunityTitle": "Product Photography",
-    "featuredCommunityAlt": "Product Photography workflow demo image",
-    "featuredCommunityCtaAria": "Watch the Product Photography demo",
     "featuredCompanyTitle": "Customer story: Black Math",
     "featuredCompanyAlt": "Black Math customer story image",
     "featuredEnterpriseAlt": "MiniMax commercial license video",
@@ -2401,7 +2593,6 @@
     "developerPlatform": "Developer Platform",
     "comfyRouter": "Comfy Router",
     "workshop": "Hub",
-    "comfyWorkshop": "Browse Models",
     "signIn": "Sign in",
     "signOut": "Log out",
     "accountMenu": "Account menu",
@@ -2436,7 +2627,32 @@
     "colAutomate": "Automate",
     "colBuild": "Build",
     "colResources": "Resources",
-    "colUpdates": "Updates"
+    "colUpdates": "Updates",
+    "hubApps": "Apps",
+    "hubAllApps": "All apps",
+    "reshoot": "Re-shoot",
+    "hubWorkflows": "Workflows",
+    "hubAllWorkflows": "All workflows",
+    "hubModels": "Models",
+    "hubSeedream5Pro": "Seedream 5.0 Pro",
+    "hubSeedance25": "Seedance 2.5",
+    "hubNanoBanana2": "Nano Banana 2",
+    "hubGptImage2": "GPT Image 2",
+    "hubAllModels": "All models",
+    "comfyHub": "Comfy Workflows",
+    "colConnect": "Connect",
+    "reddit": "Reddit",
+    "comfyWorkshop": "Browse Models",
+    "featuredHubAlt": "Seedance 2.5 video: animals carry balloons spelling SEEDANCE 2.5 across a rainy street",
+    "featuredHubCta": "Try now",
+    "featuredHubCtaAria": "Try Seedance 2.5 reference to video in the Hub",
+    "hubAppsDescription": "Full tools built on Comfy",
+    "hubEditSelectedRegion": "Edit selected region",
+    "hubImageToVideo": "Image to video",
+    "hubModelsDescription": "Run the latest AI models",
+    "hubMotionTransfer": "Motion transfer",
+    "hubVideoFromReferences": "Video from references",
+    "hubWorkflowsDescription": "Ready-made recipes for a task"
   },
   "breadcrumb": {
     "agent": "Comfy Agent",
@@ -2488,6 +2704,7 @@
     "nanoBanana": "Nano Banana 2.1",
     "cloudNodes": "Comfy Cloud Nodes",
     "modelCatalogue": "ComfyUI Models",
+    "social": "Follow Comfy",
     "changelog": "Changelog"
   },
   "privacy": {
@@ -3386,7 +3603,8 @@
       "cloudCta": "RUN ON CLOUD",
       "tutorialCta": "VIEW TUTORIAL",
       "blogLink": "Read blog post",
-      "workflowCount": "{count} workflows use this model"
+      "workflowCount": "{count} workflows use this model",
+      "downloadForComfy": "Download for ComfyUI"
     },
     "whatIs": {
       "heading": "What is {name}?",
@@ -5231,7 +5449,6 @@
       "portrait": "Old fisherman on an overcast pier",
       "train": "Night train window at blue hour"
     },
-    "lead": "Direct every shot. Pick the camera, lens, light and grade, and get film-grade frames from any model.",
     "camera": {
       "body": "Body",
       "lens": "Lens",
@@ -5395,7 +5612,6 @@
     "edit": "Edit",
     "credit": "Built on Cseti's CrossView-Warp LoRA and node",
     "pick": {
-      "lead": "Re-shoot any video from any angle. Move the camera anywhere, no reshoot day needed.",
       "drop": "Drop a video here",
       "upload": "Upload a video",
       "exampleMeta": "Try it without uploading anything",
@@ -5585,6 +5801,27 @@
     "play": "Play",
     "pause": "Pause"
   },
+  "hubPages": {
+    "apps": {
+      "open": "Open",
+      "soon": "Soon",
+      "opensInNewTab": "(opens in a new tab)"
+    },
+    "appShell": {
+      "home": "Comfy home"
+    },
+    "explore": {
+      "models": "{count} model | {count} models",
+      "workflows": "{count} workflow | {count} workflows",
+      "apps": "{count} app | {count} apps",
+      "kinds": "Results by kind"
+    },
+    "workflow": {
+      "moreLikeThis": "More like this",
+      "getApiKey": "Get an API key",
+      "apiDocs": "API docs"
+    }
+  },
   "changelog": {
     "meta": {
       "title": "Changelog - Comfy",
@@ -5597,5 +5834,32 @@
     "loading": "Loading the latest release notes…",
     "introduction": "The latest ComfyUI features, improvements, and fixes, updated from Comfy docs.",
     "retry": "Try again"
+  },
+  "designDecisions": {
+    "button": "Design decisions",
+    "title": "Design decisions",
+    "close": "Close design decisions",
+    "dot": "Design decision {n}",
+    "footer": "Measured after launch with hub_filter_changed and hub_item_clicked (analytics PR #20538).",
+    "models": {
+      "sidebar": {
+        "title": "Sidebar by type",
+        "body": "The sidebar groups models by what they make (Image, Video, Audio, 3D, Edit, Upscale, LLM) with counts, so the first choice is the format. Use cases that only repeated these types (Generate images ≈ Image, Text ≈ LLM…) are no longer a separate filter."
+      },
+      "filters": {
+        "title": "Best for and Resolution in the toolbar",
+        "body": "Use cases moved out of the Filters menu into a Best for menu next to the search, with Resolution beside it, so the two choices visitors make most are visible without opening Filters. Best for lists only the tasks of the selected sidebar type; Resolution lists the output resolutions the run forms offer. About half of the models state a resolution, so choosing one hides those that do not."
+      }
+    },
+    "workflows": {
+      "sidebar": {
+        "title": "Sidebar by category",
+        "body": "The sidebar lists the workflow categories from Charlene's proposal (Image to image, Image to video, Video to video, Product & ads…) with counts, the same way the Models sidebar lists types. Only categories with at least one workflow appear. Each card keeps its own use-case label, so a category never hides what a workflow actually does."
+      },
+      "filters": {
+        "title": "Input, output and model inside Filters",
+        "body": "Filters keeps the production tabs and adds Input (what you start from) and Output (what you get), read from each workflow's uploads and results, next to Model. A choice that every listed workflow shares is not offered, since it would narrow nothing. In the last 30 days about 7% of Workflows visitors opened a filter, so these stay in the menu rather than above the grid. Selected ones show as removable chips."
+      }
+    }
   }
 }

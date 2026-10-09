@@ -7,14 +7,9 @@ import { useCinematicLeaveGuard } from '@/composables/useCinematicLeaveGuard'
 import { useCinematicPopover } from '@/composables/useCinematicPopover'
 import { useCinematicShot } from '@/composables/useCinematicShot'
 import { reportStudioBusy } from '@/composables/useStudioSwitchGuard'
-import { workshopAppRepo } from '@/lib/workshop/apps'
-import { CINEMATIC_STUDIO_APP_SLUG } from '@/lib/workshop/cinematic-studio/analytics'
 import type { CinematicModel } from '@/lib/workshop/cinematic-studio/models'
 import type { Locale } from '@/i18n/translations'
-import { translationsFor } from '@/i18n/translations'
 import RunLeaveDialog from '@/components/workshop/RunLeaveDialog.vue'
-import AppRepoLink from './AppRepoLink.vue'
-import AppsBackLink from './AppsBackLink.vue'
 import CinematicModeSwitch from './CinematicModeSwitch.vue'
 import CinematicPanel from './CinematicPanel.vue'
 import CinematicPicker from './CinematicPicker.vue'
@@ -31,7 +26,6 @@ const {
   showCredits?: boolean
   locale?: Locale
 }>()
-const { t: tc } = translationsFor(locale)
 
 const {
   studio,
@@ -107,33 +101,9 @@ function generate() {
 
 <template>
   <div
-    class="mx-auto max-w-10xl px-4 py-8 sm:px-8 lg:px-14"
+    class="mx-auto max-w-10xl px-4 pt-2 pb-8 sm:px-8 lg:px-14"
     data-testid="cinematic"
   >
-    <AppsBackLink :locale class="mb-5" />
-    <div class="mb-3 flex flex-wrap items-center gap-3">
-      <h1 class="text-2xl font-semibold text-primary-warm-white lg:text-3xl">
-        {{ tc('cinematic.title') }}
-      </h1>
-      <span
-        class="rounded-full border border-transparency-white-t20 px-2 py-0.5 font-mono text-[10px] tracking-wider text-primary-comfy-canvas uppercase"
-      >
-        {{ tc('cinematic.beta') }}
-      </span>
-    </div>
-    <div
-      class="mb-6 flex flex-col items-start gap-3 sm:flex-row sm:items-center sm:justify-between"
-    >
-      <p class="text-lg text-primary-warm-gray">
-        {{ tc('cinematic.lead') }}
-      </p>
-      <AppRepoLink
-        :repo="workshopAppRepo('studio')"
-        :app-slug="CINEMATIC_STUDIO_APP_SLUG"
-        :locale
-        class="shrink-0"
-      />
-    </div>
     <div
       ref="layout"
       class="relative grid items-start gap-6 lg:grid-cols-[minmax(0,2fr)_minmax(0,3fr)]"

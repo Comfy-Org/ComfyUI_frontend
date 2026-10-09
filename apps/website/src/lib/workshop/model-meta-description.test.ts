@@ -3,6 +3,8 @@ import { describe, expect, it } from 'vitest'
 import { hubModelSlugs } from '@/config/hub-models'
 import { prepareModelPage } from '@/routes/models/model-page'
 import { modelMetaDescription } from './model-meta-description'
+import type { PagePaths } from './page-paths'
+import { pagePaths } from './page-paths'
 
 const MAX_LENGTH = 170
 // Re-baseline ratchets, with headroom over today's catalogue.
@@ -16,6 +18,15 @@ async function canonicalPages() {
     Array.from(hubModelSlugs.keys(), (id) => prepareModelPage(id))
   )
   return pages.filter((page) => page.kind === 'page')
+}
+
+const RUNS_HERE: PagePaths = { run: true, api: true }
+
+async function describedPages() {
+  return (await canonicalPages()).map((page) => ({
+    ...page,
+    paths: pagePaths(page.model)
+  }))
 }
 
 const lorem = (count: number) => `${Array(count).fill('lorem').join(' ')}.`
@@ -117,9 +128,36 @@ describe('modelMetaDescription', () => {
       },
       expected:
         'Recraft V4：绘图。在浏览器中运行，或通过 API 调用。默认设置下约 ~9.5 积分。'
+    },
+    {
+      name: 'offers only the API when the model does not run here',
+      page: {
+        model: { name: 'Kling Omni', provider: 'Kling' },
+        paths: { run: false, api: true }
+      },
+      expected: 'Kling Omni. Call it via API.'
+    },
+    {
+      name: 'offers only the API in Chinese when the model does not run here',
+      locale: 'zh-CN' as const,
+      page: {
+        model: { name: 'Kling Omni', provider: 'Kling' },
+        paths: { run: false, api: true }
+      },
+      expected: 'Kling Omni。可通过 API 调用。'
+    },
+    {
+      name: 'promises nothing when the page can neither run nor call it',
+      page: {
+        model: { name: 'Kling Omni', provider: 'Kling' },
+        paths: { run: false, api: false }
+      },
+      expected: 'Kling Omni.'
     }
   ])('$name', ({ page, expected, locale }) => {
-    expect(modelMetaDescription(page, locale)).toBe(expected)
+    expect(modelMetaDescription({ paths: RUNS_HERE, ...page }, locale)).toBe(
+      expected
+    )
   })
 
   it.for([
@@ -138,7 +176,8 @@ describe('modelMetaDescription', () => {
   ] as const)('%s when the description runs long', ([, words, pattern]) => {
     const description = modelMetaDescription({
       model: { name: 'Luma Ray', provider: 'Luma', summary: lorem(words) },
-      priceEstimate: '4.2 credits/Run'
+      priceEstimate: '4.2 credits/Run',
+      paths: RUNS_HERE
     })
     expect(description).toMatch(pattern)
     expect(description.length).toBeLessThanOrEqual(MAX_LENGTH)
@@ -146,14 +185,15 @@ describe('modelMetaDescription', () => {
 
   it('stays within the cap when the name alone is too long', () => {
     const description = modelMetaDescription({
-      model: { name: 'Model '.repeat(40).trim(), summary: 'Short.' }
+      model: { name: 'Model '.repeat(40).trim(), summary: 'Short.' },
+      paths: RUNS_HERE
     })
     expect(description.length).toBeLessThanOrEqual(MAX_LENGTH)
     expect(description.endsWith('…')).toBe(true)
   })
 
   it('builds every model page description from its own facts', async () => {
-    const pages = await canonicalPages()
+    const pages = await describedPages()
     expect(pages.length).toBeGreaterThan(100)
     for (const page of pages) {
       const description = modelMetaDescription(page)
@@ -166,7 +206,7 @@ describe('modelMetaDescription', () => {
   })
 
   it('shows the typical cost on most single-figure priced pages', async () => {
-    const singleFigurePages = (await canonicalPages()).filter(
+    const singleFigurePages = (await describedPages()).filter(
       ({ priceEstimate }) => SINGLE_FIGURE_PRICE.test(priceEstimate ?? '')
     )
     const priced = singleFigurePages.filter((page) =>
@@ -179,7 +219,7 @@ describe('modelMetaDescription', () => {
   })
 
   it('keeps most model pages on a description body of their own', async () => {
-    const pages = await canonicalPages()
+    const pages = await describedPages()
     const pagesPerBody = new Map<string, number>()
     for (const page of pages) {
       const body = modelMetaDescription(page).slice(page.model.name.length)

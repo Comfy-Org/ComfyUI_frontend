@@ -1,12 +1,24 @@
 import { describe, expect, it } from 'vitest'
 
+import hubAppNames from '@/config/hub-app-names.json' with { type: 'json' }
+import hubWorkflowNames from '@/config/hub-workflow-names.json' with { type: 'json' }
+import { modelPageUrls } from '@/config/model-urls'
 import { getRoutes } from '@/config/routes'
 import { t } from '@/i18n/translations'
+import type { HubSections, NavItem } from './mainNavigation'
 import { getMainNavigation } from './mainNavigation'
+
+const ALL_SECTIONS: HubSections = { workflows: true, apps: true }
+
+function hubOf(navigation: NavItem[]): NavItem {
+  const hub = navigation[0]
+  expect(hub.label).toBe('Hub')
+  return hub
+}
 
 describe('getMainNavigation', () => {
   it.for(['en', 'zh-CN', 'ja'] as const)(
-    'links the Hub catalogue at the top level and under Products > Create, for %s',
+    'links the Hub catalogue from the Hub Models column and under Products > Create, for %s',
     (locale) => {
       const navigation = getMainNavigation(locale)
       const catalogue = getRoutes(locale).workshop
@@ -17,8 +29,9 @@ describe('getMainNavigation', () => {
         )
 
       expect(catalogue).toBe('/hub/models/')
-      expect(navigation[0]).toEqual({
-        label: t('nav.workshop', {}, { locale }),
+      expect(navigation[0].label).toBe(t('nav.workshop', {}, { locale }))
+      expect(navigation[0].columns?.[0].allLink).toEqual({
+        label: t('nav.hubAllModels', {}, { locale }),
         href: catalogue
       })
       expect(create?.items).toContainEqual({
@@ -26,6 +39,149 @@ describe('getMainNavigation', () => {
         href: catalogue,
         badge: 'new'
       })
+    }
+  )
+
+  it.for([
+    { sections: { workflows: false, apps: false }, headers: ['Models'] },
+    {
+      sections: { workflows: true, apps: false },
+      headers: ['Models', 'Workflows']
+    },
+    { sections: { workflows: false, apps: true }, headers: ['Models', 'Apps'] },
+    { sections: ALL_SECTIONS, headers: ['Models', 'Workflows', 'Apps'] }
+  ])(
+    'opens the Hub as one column per section that is on, showing $headers',
+    ({ sections, headers }) => {
+      const hub = hubOf(getMainNavigation('en', sections))
+
+      expect(hub.href).toBeUndefined()
+      expect(hub.columns?.map((column) => column.header)).toEqual(headers)
+      expect(hub.activePathPrefix).toBe('/hub/')
+    }
+  )
+
+  it('describes each Hub column, lists its examples and ends it with an All link', () => {
+    const hub = hubOf(getMainNavigation('en', ALL_SECTIONS))
+
+    expect(
+      hub.columns?.map(({ description, items, allLink }) => ({
+        description,
+        items: items.map(({ label, href, newTab }) => ({
+          label,
+          href,
+          newTab
+        })),
+        allLink
+      }))
+    ).toEqual([
+      {
+        description: 'Run the latest AI models',
+        items: [
+          {
+            label: 'Seedream 5.0 Pro',
+            href: '/hub/models/seedream-5-0-pro-text-to-image/',
+            newTab: undefined
+          },
+          {
+            label: 'Seedance 2.5',
+            href: '/hub/models/seedance-2-5-reference-to-video/',
+            newTab: undefined
+          },
+          {
+            label: 'Nano Banana 2',
+            href: '/hub/models/nano-banana-2-image-edit/',
+            newTab: undefined
+          },
+          {
+            label: 'GPT Image 2',
+            href: '/hub/models/gpt-image-2-text-to-image/',
+            newTab: undefined
+          }
+        ],
+        allLink: { label: 'All models', href: '/hub/models/' }
+      },
+      {
+        description: 'Ready-made recipes for a task',
+        items: [
+          {
+            label: 'Image to video',
+            href: '/hub/workflows/image-to-video/',
+            newTab: undefined
+          },
+          {
+            label: 'Video from references',
+            href: '/hub/workflows/video-from-references/',
+            newTab: undefined
+          },
+          {
+            label: 'Motion transfer',
+            href: '/hub/workflows/motion-transfer/',
+            newTab: undefined
+          },
+          {
+            label: 'Edit selected region',
+            href: '/hub/workflows/edit-selected-region/',
+            newTab: undefined
+          }
+        ],
+        allLink: { label: 'All workflows', href: '/hub/workflows/' }
+      },
+      {
+        description: 'Full tools built on Comfy',
+        items: [
+          {
+            label: 'Cinematic Studio',
+            href: '/hub/apps/cinematic-studio/',
+            newTab: true
+          },
+          { label: 'Re-shoot', href: '/hub/apps/reshoot/', newTab: true }
+        ],
+        allLink: { label: 'All apps', href: '/hub/apps/' }
+      }
+    ])
+  })
+
+  it('links every Hub entry to a page the site builds', () => {
+    const hub = hubOf(getMainNavigation('en', ALL_SECTIONS))
+    const built = new Set([
+      '/hub/models/',
+      '/hub/workflows/',
+      '/hub/apps/',
+      ...modelPageUrls.map(({ newSlug }) => `/hub/models/${newSlug}/`),
+      ...hubWorkflowNames.map((name) => `/hub/workflows/${name}/`),
+      ...hubAppNames.map((name) => `/hub/apps/${name}/`)
+    ])
+    const hrefs = [
+      ...(hub.columns ?? []).flatMap((column) => [
+        ...column.items.map(({ href }) => href),
+        column.allLink?.href
+      ]),
+      hub.featured?.cta.href
+    ]
+
+    expect(hrefs).toHaveLength(14)
+    expect(hrefs.filter((href) => !href || !built.has(href))).toEqual([])
+  })
+
+  it.for(['en', 'zh-CN'] as const)(
+    'features Seedance 2.5 in the Hub menu, linking to its model page, for %s',
+    (locale) => {
+      const featured = getMainNavigation(locale)[0].featured
+
+      expect(featured).toEqual(
+        expect.objectContaining({
+          title: 'Seedance 2.5',
+          imageSrc:
+            'https://media.comfy.org/website/seedance-2.5/balloons-poster.webp',
+          videoSrc:
+            'https://media.comfy.org/website/seedance-2.5/balloons.webm',
+          cta: expect.objectContaining({
+            label: t('nav.featuredHubCta', {}, { locale }),
+            href: '/hub/models/seedance-2-5-reference-to-video/'
+          })
+        })
+      )
     }
   )
 

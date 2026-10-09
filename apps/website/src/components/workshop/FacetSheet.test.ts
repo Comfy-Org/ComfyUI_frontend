@@ -21,7 +21,10 @@ const groups = [
     label: 'Provider',
     options: [
       { value: 'kling', label: 'Kling', count: 2 },
-      { value: 'google', label: 'Google', count: 1 }
+      { value: 'google', label: 'Google', count: 1 },
+      ...['Alibaba', 'ByteDance', 'Luma', 'Minimax', 'OpenAI', 'Runway'].map(
+        (label) => ({ value: label.toLowerCase(), label, count: 1 })
+      )
     ],
     selected: ['kling']
   },
@@ -120,6 +123,28 @@ describe('FacetSheet', () => {
     expect(await screen.findByRole('region', { name: 'Provider' })).toBeTruthy()
   })
 
+  it('keeps a tab and a search per group however short the lists are', async () => {
+    const user = userEvent.setup()
+    const { emitted } = render(FacetSheet, {
+      props: {
+        groups: [
+          { ...groups[0], options: groups[0].options.slice(0, 2) },
+          groups[1]
+        ],
+        labels,
+        resultCount: 2
+      }
+    })
+
+    expect(
+      screen.getAllByRole('tab').map((tab) => tab.textContent.trim())
+    ).toEqual(['Provider 1', 'Media 1'])
+    expect(screen.getByRole('searchbox')).toBeVisible()
+    await user.click(screen.getByRole('tab', { name: /^Media/ }))
+    await user.click(screen.getByRole('button', { name: 'Video 3' }))
+    expect(emitted('toggle')).toEqual([['media', 'video']])
+  })
+
   it('labels a lone group without exposing an inoperable tab', async () => {
     const view = render(FacetSheet, {
       props: { groups, labels, resultCount: 2 }
@@ -128,7 +153,11 @@ describe('FacetSheet', () => {
     await user.click(screen.getByRole('tab', { name: /^Media/ }))
     expect(screen.getByRole('tab', { name: /^Media/ })).toBeEnabled()
 
-    await view.rerender({ groups: [groups[1]], labels, resultCount: 1 })
+    await view.rerender({
+      groups: [{ ...groups[0], key: 'media', label: 'Media' }],
+      labels,
+      resultCount: 1
+    })
 
     expect(screen.queryByRole('tablist')).toBeNull()
     expect(screen.queryByRole('tab')).toBeNull()

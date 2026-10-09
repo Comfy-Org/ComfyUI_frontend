@@ -974,10 +974,23 @@ describe('CinematicStudio', () => {
     }
   )
 
-  it('introduces the app under its title in the side panel', () => {
-    render(CinematicStudioPanel, { props: { models } })
+  it('names the app in its floating bar alone, with the way back to the apps', async () => {
+    render(CinematicStudioPage, { props: { apps: appModels, models } })
 
-    expect(screen.getByText(tc('cinematic.lead'))).toBeVisible()
+    const bar = screen.getByTestId('app-shell-bar')
+    expect(
+      within(bar).getByRole('heading', { level: 1, name: 'Cinematic Studio' })
+    ).toBeVisible()
+    expect(within(bar).getByText(tc('cinematic.beta'))).toBeVisible()
+    expect(
+      within(bar).getByRole('link', { name: tc('cinematic.backToApps') })
+    ).toHaveAttribute('href', '/hub/apps/')
+    expect(
+      within(bar).getByRole('link', { name: 'Comfy home' })
+    ).toHaveAttribute('href', '/')
+    await screen.findByLabelText('Scene')
+    expect(screen.getAllByRole('heading', { level: 1 })).toHaveLength(1)
+    expect(screen.queryByRole('navigation', { name: 'Breadcrumb' })).toBeNull()
   })
 
   it('does not generate again once the scene is cleared', async () => {

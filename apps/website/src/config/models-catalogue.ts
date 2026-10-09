@@ -3,6 +3,8 @@ import type { WorkshopFormDefinition } from './workshop-form-definition'
 import type { WorkshopContract } from './workshop-contract'
 import type { WorkshopInputDefinition } from './workshop-input-definition'
 import type { WorkshopWorkflowDefinition } from './workshop-workflow-definition'
+import type { WorkflowParts } from '@/lib/workshop/workflow-parts'
+import type { Resolution } from '@/lib/workshop/resolution'
 import { OTHER_FORMAT_USE_CASES } from './workshop-sections'
 
 export const MODALITIES = ['image', 'video', 'audio', '3d', 'text'] as const
@@ -127,6 +129,8 @@ interface WorkshopPresentation {
   readonly modalities?: readonly Modality[]
   readonly task?: WorkshopTask
   readonly capabilities: readonly string[]
+  /** Output resolutions its run form offers, highest first. */
+  readonly resolutions?: readonly Resolution[]
   readonly creditsPerRun?: number
   readonly priceUsdFrom?: number
   readonly thumbnailUrl?: string
@@ -157,10 +161,14 @@ export type WorkflowWorkshopModel = WorkshopPresentation & {
   readonly categoryLabel?: { readonly en: string; readonly 'zh-CN': string }
   readonly categoryOrder?: number
   readonly categoryHighlight?: boolean
+  /** Category ids that older shared links used for this category. */
+  readonly categoryAliases?: readonly string[]
   readonly type: 'CLOUD' | 'SERVERLESS'
   readonly workflowId: string
   readonly routerId?: never
   readonly category?: string
+  /** The media a visitor brings: an upload's kind, or text for a prompt alone. */
+  readonly inputKinds?: readonly Modality[]
   readonly models?: readonly string[]
   readonly author?: string
 }
@@ -197,6 +205,8 @@ export type WorkflowWorkshopModelDetail = WorkshopDetailPresentation &
   WorkflowWorkshopModel & {
     readonly execution?: never
     readonly workflow: WorkshopWorkflowDefinition
+    /** The named models and model files it loads, resolved at build. */
+    readonly parts?: WorkflowParts
   }
 
 export type WorkshopModelDetail =
@@ -495,28 +505,13 @@ function searchText(model: WorkshopModel): string {
     .toLowerCase()
 }
 
-const SORT_ORDERS = ['popular', 'name', 'priceAsc', 'priceDesc'] as const
+export const SORT_ORDERS = ['popular', 'name'] as const
 export type SortOrder = (typeof SORT_ORDERS)[number]
 
-/**
- * Price orders only mean something where a price exists. Offering them over a
- * list that carries none hands the visitor three controls that all sort by
- * name, so they are withheld until a model brings a price of its own.
- */
-export function sortOrdersFor(
-  list: readonly WorkshopModel[]
-): readonly SortOrder[] {
-  return list.some((model) => model.creditsPerRun !== undefined)
-    ? SORT_ORDERS
-    : SORT_ORDERS.filter(
-        (order) => order !== 'priceAsc' && order !== 'priceDesc'
-      )
-}
-
-export function sortWorkshopModels(
-  list: readonly WorkshopModel[],
+export function sortWorkshopModels<T extends WorkshopModel>(
+  list: readonly T[],
   order: SortOrder
-): WorkshopModel[] {
+): T[] {
   const byName = (a: WorkshopModel, b: WorkshopModel) =>
     a.name.localeCompare(b.name)
   const byExamples = (a: WorkshopModel, b: WorkshopModel) =>
@@ -533,12 +528,7 @@ export function sortWorkshopModels(
     (a: WorkshopModel, b: WorkshopModel) => number
   > = {
     popular: byRecommendation,
-    name: byName,
-    priceAsc: (a, b) =>
-      (a.creditsPerRun ?? Number.POSITIVE_INFINITY) -
-        (b.creditsPerRun ?? Number.POSITIVE_INFINITY) || byName(a, b),
-    priceDesc: (a, b) =>
-      (b.creditsPerRun ?? -1) - (a.creditsPerRun ?? -1) || byName(a, b)
+    name: byName
   }
   return [...list].sort(compare[order])
 }

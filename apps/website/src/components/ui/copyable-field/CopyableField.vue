@@ -1,4 +1,5 @@
 <script setup lang="ts">
+import type { HTMLAttributes } from 'vue'
 import { cn } from '@comfyorg/tailwind-utils'
 import { Check, Copy } from '@lucide/vue'
 import { useClipboard } from '@vueuse/core'
@@ -11,8 +12,14 @@ import { computed } from 'vue'
 const {
   value,
   copyLabel = 'Copy',
-  copiedLabel = 'Copied'
-} = defineProps<{ value: string; copyLabel?: string; copiedLabel?: string }>()
+  copiedLabel = 'Copied',
+  class: className
+} = defineProps<{
+  value: string
+  copyLabel?: string
+  copiedLabel?: string
+  class?: HTMLAttributes['class']
+}>()
 
 const multiline = computed(() => value.includes('\n'))
 
@@ -28,7 +35,8 @@ function handleCopy() {
     :class="
       cn(
         'flex gap-2 rounded-xl border border-primary-warm-gray bg-transparency-white-t4 px-4 py-3',
-        multiline ? 'items-start' : 'items-center'
+        multiline ? 'items-start' : 'items-center',
+        className
       )
     "
   >

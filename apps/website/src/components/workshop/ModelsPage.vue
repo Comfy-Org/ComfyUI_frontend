@@ -22,13 +22,12 @@ import {
   useWorkshopWorkflowsEnabled
 } from '@/scripts/posthog'
 
-import type { CatalogueTab } from './CatalogueTabs.vue'
+import { loadModelsCatalogue } from '@/lib/workshop/models-catalogue-loader'
+import type { HubSection } from '@/lib/workshop/hub-section'
+import HubEyebrow from './HubEyebrow.vue'
 import WorkshopGate from './WorkshopGate.vue'
 import WorkshopLoading from './WorkshopLoading.vue'
-import {
-  workshopEyebrowClass,
-  workshopHeadingClass
-} from './workshopHeadingClasses'
+import { workshopHeadingClass } from './workshopHeadingClasses'
 
 const { t } = translationsFor('en')
 const {
@@ -40,7 +39,7 @@ const {
   slug?: string
   workflowId?: string
   heading?: string
-  section?: CatalogueTab
+  section?: HubSection
 }>()
 
 const loadingLabel = t('workshop.load.pending')
@@ -70,18 +69,16 @@ const gateAllows = computed(() => {
   if (isWorkflow.value || section === 'workflows') return workflowsEnabled.value
   return section === 'apps' ? appsEnabled.value : undefined
 })
+const isPublic = (shown: HubSection) =>
+  shown === 'models' || shown === 'explore'
 const catalogueView = computed(() => {
-  if (!mounted.value || (section !== 'models' && !settled.value))
-    return 'loading'
-  return section === 'models' || (enabled.value && gateAllows.value)
+  const isPublicSection = isPublic(section)
+  if (!mounted.value || (!isPublicSection && !settled.value)) return 'loading'
+  return isPublicSection || (enabled.value && gateAllows.value)
     ? 'granted'
     : 'denied'
 })
-// Inside a category the category's own title carries the page, so the hub's
-// eyebrow and heading give up their space to it. They stay in the document
-// rather than leaving: the page keeps the one heading it is supposed to have,
-// and the category reads as the section of it that it is.
-const inSection = shallowRef(false)
+const heroShown = shallowRef(false)
 const recoveringWorkflow = shallowRef(false)
 const savedWorkflow = shallowRef(false)
 const session =
@@ -120,8 +117,15 @@ watch(
 let legacyForward: AbortController | undefined
 onScopeDispose(() => legacyForward?.abort())
 
+const loadCatalogue = () =>
+  Promise.all([loadModelsCatalogue(), fetchModelsCatalogue()])
+const startsEarly = !slug && isPublic(section) && !import.meta.env.SSR
+const openingHref = startsEarly ? location.href : undefined
+let earlyCatalogue = startsEarly ? loadCatalogue() : undefined
+void earlyCatalogue?.catch(() => undefined)
+
 async function forwardLegacyLink(): Promise<void> {
-  const href = location.href
+  const href = openingHref ?? location.href
   if (section !== 'models' || !new URL(href).searchParams.has('type')) return
   legacyForward?.abort()
   legacyForward = new AbortController()
@@ -185,10 +189,8 @@ function createContent() {
         return () => h(ModelPage, { page: { ...page, model } })
       }
       const forwarding = forwardLegacyLink()
-      const catalogue = Promise.all([
-        import('./ModelsCatalogue.vue'),
-        fetchModelsCatalogue()
-      ])
+      const catalogue = earlyCatalogue ?? loadCatalogue()
+      earlyCatalogue = undefined
       void catalogue.catch(() => undefined)
       await forwarding
       const [{ default: ModelsCatalogue }, models] = await catalogue
@@ -202,8 +204,8 @@ function createContent() {
             h(ModelsCatalogue, {
               key: `${section}:${catalogueRevision.value}`,
               initialSearch: catalogueSearch.value,
-              onSection: (open: boolean) => {
-                inSection.value = open
+              onHero: (shown: boolean) => {
+                heroShown.value = shown
               },
               models: models.filter(
                 (model) =>
@@ -232,16 +234,14 @@ const Content = shallowRef(createContent())
 <template>
   <template v-if="!slug">
     <div
-      v-if="heading && catalogueView !== 'denied'"
+      v-if="heading && catalogueView !== 'denied' && !heroShown"
       class="mx-auto max-w-10xl px-6 pt-8 max-sm:pt-5 lg:px-8 lg:pt-12"
     >
       <div
         data-testid="workshop-heading"
-        :class="inSection ? 'sr-only' : 'animate-soft-in pb-4 sm:short:pb-3'"
+        class="animate-soft-in pb-4 sm:short:pb-3"
       >
-        <p :class="workshopEyebrowClass">
-          {{ t('workshop.catalogue.eyebrow') }}
-        </p>
+        <HubEyebrow :section />
         <h1 :class="workshopHeadingClass">{{ heading }}</h1>
       </div>
     </div>

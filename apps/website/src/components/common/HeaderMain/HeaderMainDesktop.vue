@@ -11,34 +11,42 @@ import { cn } from '@comfyorg/tailwind-utils'
 import { navigationMenuTriggerStyle } from '@/components/ui/navigation-menu/navigationMenuTriggerStyle'
 
 import { isHrefActive, useCurrentPath } from '@/composables/useCurrentPath'
-import { getMainNavigation } from '@/data/mainNavigation'
-import type { NavItem } from '@/data/mainNavigation'
+import { NO_HUB_SECTIONS, getMainNavigation } from '@/data/mainNavigation'
+import type { HubSections, NavItem } from '@/data/mainNavigation'
 import type { Locale } from '@/i18n/translations'
 import NavColumn from './NavColumn.vue'
 import NavFeaturedCard from './NavFeaturedCard.vue'
 import NewBadge from './NewBadge.vue'
 
-const { locale = 'en' } = defineProps<{ locale?: Locale }>()
-const mainNavigation = computed(() => getMainNavigation(locale))
+const { locale = 'en', hubSections = NO_HUB_SECTIONS } = defineProps<{
+  locale?: Locale
+  hubSections?: HubSections
+}>()
+const mainNavigation = computed(() => getMainNavigation(locale, hubSections))
 const currentPath = useCurrentPath()
 
-function isNavItemActive(navItem: NavItem, path: string): boolean {
+function ownsPath(navItem: NavItem, path: string): boolean {
   if (navItem.href) return isHrefActive(navItem.href, path)
-  const onLeafPage = mainNavigation.value.some(
-    (item) => item.href && isHrefActive(item.href, path)
-  )
   return (
-    !onLeafPage &&
-    (navItem.columns?.some((column) =>
+    !!navItem.activePathPrefix &&
+    `${path}/`.startsWith(navItem.activePathPrefix)
+  )
+}
+
+function isNavItemActive(navItem: NavItem, path: string): boolean {
+  if (ownsPath(navItem, path)) return true
+  if (!navItem.columns) return false
+  return (
+    !mainNavigation.value.some((item) => ownsPath(item, path)) &&
+    navItem.columns.some((column) =>
       column.items.some((item) => isHrefActive(item.href, path))
-    ) ??
-      false)
+    )
   )
 }
 </script>
 
 <template>
-  <NavigationMenu data-testid="desktop-nav-links">
+  <NavigationMenu viewport-align="start" data-testid="desktop-nav-links">
     <NavigationMenuList>
       <NavigationMenuItem
         v-for="navItem in mainNavigation"

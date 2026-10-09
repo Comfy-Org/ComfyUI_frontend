@@ -1,5 +1,3 @@
-import { readFile } from 'node:fs/promises'
-
 import type { BrowserContext, Locator } from '@playwright/test'
 import { expect } from '@playwright/test'
 
@@ -13,6 +11,10 @@ async function frame(locator: Locator) {
   if (!box) throw new Error('The element has no layout box')
   return box
 }
+
+test.beforeEach(async ({ page }) => {
+  await page.emulateMedia({ reducedMotion: 'reduce' })
+})
 
 async function allowWorkflows(context: BrowserContext) {
   await context.route('**/t.comfy.org/**', (route) =>
@@ -35,7 +37,7 @@ test('the model API tab opens with the key action and what it needs beside the c
   page
 }) => {
   await page.goto(MODEL_PATH)
-  await page.getByTestId('tab-api').click()
+  await page.getByTestId('model-path-api').click()
 
   const facts = page.getByTestId('api-facts')
   await expect(facts).toContainText('POST /v2/models/bfl/flux-2-max')
@@ -53,7 +55,7 @@ test('the model API tab copies the endpoint it shows', async ({
 }) => {
   await context.grantPermissions(['clipboard-read', 'clipboard-write'])
   await page.goto(MODEL_PATH)
-  await page.getByTestId('tab-api').click()
+  await page.getByTestId('model-path-api').click()
 
   const facts = page.getByTestId('api-facts')
   await facts.getByRole('button', { name: 'Copy endpoint' }).click()
@@ -70,37 +72,35 @@ test('@mobile the model API tab puts the key action above the code', async ({
   page
 }) => {
   await page.goto(MODEL_PATH)
-  await page.getByTestId('tab-api').click()
+  await page.getByTestId('model-path-api').click()
 
   const action = await frame(page.getByTestId('api-get-key'))
   const code = await frame(page.getByTestId('snippet'))
   expect(action.y + action.height).toBeLessThanOrEqual(code.y)
 })
 
-test('the workflow API tab opens with the key action and what it needs beside the code', async ({
+test('the workflow API section leads with the key and the SDK, then the code', async ({
   page,
   context
 }) => {
   await allowWorkflows(context)
   await page.goto(WORKFLOW_PATH)
-  await page.getByRole('tab', { name: 'API', exact: true }).click()
+  await page.getByTestId('workflow-path-api').click()
 
-  const facts = page.getByTestId('api-facts')
-  await expect(facts).toContainText('COMFY_API_KEY')
-  await expect(facts).not.toContainText('/api/prompt')
+  const api = page.getByTestId('workflow-api')
+  await expect(api).toContainText('pip install comfy-sdk==0.4.0')
+  await expect(api.getByTestId('api-facts')).toHaveCount(0)
   await page.getByRole('tab', { name: 'cURL', exact: true }).click()
-  await expect(facts).toContainText('POST')
-  await expect(facts).toContainText('/api/prompt')
-  await expect(facts).toContainText('X-API-Key')
-  await expect(facts).toContainText('extra_data.api_key_comfy_org')
+  const code = page.getByTestId('workflow-api-snippet')
+  await expect(code).toContainText('/api/prompt')
+  await expect(code).toContainText('X-API-Key')
 
   const action = await frame(page.getByTestId('api-get-key'))
-  const code = await frame(page.getByTestId('workflow-api-snippet'))
-  expect(action.y).toBeLessThanOrEqual(code.y)
-  expect(action.x).toBeGreaterThanOrEqual(code.x + code.width)
+  const codeBox = await frame(code)
+  expect(action.y + action.height).toBeLessThanOrEqual(codeBox.y)
 })
 
-test('@mobile the workflow example output is as tall as its 16:9 media', async ({
+test('@mobile the workflow example output keeps its compact height and shows the whole picture', async ({
   page,
   context
 }) => {
@@ -109,8 +109,15 @@ test('@mobile the workflow example output is as tall as its 16:9 media', async (
 
   const output = page.getByTestId('playground-output')
   await expect(output).toHaveAttribute('data-state', 'example')
-  const media = await frame(output.getByTestId('output-media'))
-  expect(media.height).toBeCloseTo((media.width * 9) / 16, 0)
+  const picture = output.getByRole('img')
+  await expect(picture).toHaveCSS('object-fit', 'contain')
+  const [media, shown] = await Promise.all([
+    frame(output.getByTestId('output-media')),
+    frame(picture)
+  ])
+  expect(media.height).toBeCloseTo(288, 0)
+  expect(media.width).toBeGreaterThan(media.height)
+  expect(shown).toEqual(media)
 })
 
 test('@mobile opens a source picture full screen with its close button clear of it', async ({
@@ -140,21 +147,20 @@ test('@mobile opens a source picture full screen with its close button clear of 
   expect(close.y + close.height).toBeLessThanOrEqual(picture.y)
 })
 
-test('the workflow API tab downloads the API graph as JSON', async ({
+test('the workflow API section offers a key and the docs, and no second download', async ({
   page,
   context
 }) => {
   await allowWorkflows(context)
   await page.goto(WORKFLOW_PATH)
-  await page.getByRole('tab', { name: 'API', exact: true }).click()
+  await page.getByTestId('workflow-path-api').click()
 
-  const [download] = await Promise.all([
-    page.waitForEvent('download'),
-    page.getByRole('button', { name: /Download the API graph/ }).click()
-  ])
-  expect(download.suggestedFilename()).toBe('remove-background-api.json')
-  const path = await download.path()
-  const graph = await readFile(path, 'utf8')
-  expect(Object.keys(JSON.parse(graph))).not.toHaveLength(0)
-  expect(graph).toContain('"class_type"')
+  const api = page.getByTestId('workflow-api')
+  await expect(api.getByRole('link', { name: /^Get an API key/ })).toBeVisible()
+  await expect(api.getByRole('link', { name: /^API docs/ })).toHaveAttribute(
+    'target',
+    '_blank'
+  )
+  await expect(api.getByRole('button', { name: /Download/ })).toHaveCount(0)
+  await expect(page.getByRole('link', { name: /Download/ })).toHaveCount(1)
 })
