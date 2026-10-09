@@ -63,6 +63,7 @@ const galleryItems = computed(() =>
   galleryAssets.value.map(replyAssetResultItem)
 )
 const galleryIndex = ref(-1)
+const autoplayGalleryVideo = ref(false)
 
 const modelThumbnails = ref<Record<string, string>>({})
 const assetNames = ref<Record<string, string>>({})
@@ -132,8 +133,15 @@ function inspect(asset: ReplyAsset): void {
     })
     return
   }
+  autoplayGalleryVideo.value = asset.kind === 'video'
   galleryIndex.value = galleryAssets.value.indexOf(asset)
 }
+
+/* URL of the tile whose hover preview is currently playing, so the play badge
+   can step out of the way instead of sitting on top of the moving frame. Driven
+   by the element's own `playing`/`pause` events rather than by the hover
+   handlers: a `play()` the browser refuses must leave the badge in place. */
+const previewing = ref<string | null>(null)
 
 function playPreview(event: Event): void {
   const video = event.target
@@ -153,7 +161,18 @@ function stopPreview(event: Event): void {
         v-for="asset in visibleVisual"
         :key="asset.url"
         type="button"
-        :aria-label="asset.label ?? asset.filename"
+        :aria-label="
+          asset.kind === 'video'
+            ? t(
+                'agent.openVideo',
+                { name: asset.label ?? asset.filename },
+                // Plain-text attribute, never parsed as HTML: the app-wide
+                // `escapeParameter: true` would otherwise announce a clip
+                // named `a&b.mp4` as `a&amp;b.mp4`.
+                { escapeParameter: false }
+              )
+            : (asset.label ?? asset.filename)
+        "
         :class="
           cn(
             'relative cursor-pointer overflow-hidden rounded-lg border-none p-0',
@@ -182,6 +201,8 @@ function stopPreview(event: Event): void {
           :class="multi ? 'size-full object-cover' : 'block h-auto max-w-full'"
           @mouseenter="playPreview"
           @mouseleave="stopPreview"
+          @playing="previewing = asset.url"
+          @pause="previewing = null"
         />
         <img
           v-else-if="modelThumbnails[asset.url]"
@@ -204,7 +225,7 @@ function stopPreview(event: Event): void {
           <span class="icon-[lucide--box] size-6 text-muted-foreground" />
         </span>
         <span
-          v-if="asset.kind === 'video'"
+          v-if="asset.kind === 'video' && previewing !== asset.url"
           data-testid="reply-video-affordance"
           aria-hidden="true"
           class="pointer-events-none absolute inset-0 flex items-center justify-center"
@@ -261,10 +282,14 @@ function stopPreview(event: Event): void {
       </Button>
     </div>
 
+    <!-- A video tile carries a play badge, so clicking it has to produce
+         playback rather than a second paused player. An image tile makes no
+         such promise, including when the user later navigates to a video. -->
     <MediaLightbox
       v-if="galleryIndex !== -1"
       :all-gallery-items="galleryItems"
       :active-index="galleryIndex"
+      :autoplay-video="autoplayGalleryVideo"
       @update:active-index="galleryIndex = $event"
     />
   </div>

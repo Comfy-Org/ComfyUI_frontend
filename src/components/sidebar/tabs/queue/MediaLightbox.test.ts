@@ -251,18 +251,23 @@ describe('MediaLightbox', () => {
       id: `v${n}`
     })
 
-    const renderTeleported = (items: MockResultItem[]) => {
+    const renderTeleported = (
+      items: MockResultItem[],
+      extraProps: { autoplayVideo?: boolean } = {}
+    ) => {
       const { rerender } = render(MediaLightbox, {
         global: { plugins: [i18n] },
         props: {
           allGalleryItems: items,
-          activeIndex: 0
+          activeIndex: 0,
+          ...extraProps
         }
       })
       const show = async (activeIndex: number) => {
         await rerender({
           allGalleryItems: items,
-          activeIndex
+          activeIndex,
+          ...extraProps
         })
         await nextTick()
       }
@@ -318,6 +323,51 @@ describe('MediaLightbox', () => {
 
       await show(0)
       expect(video()).not.toBe(first)
+    })
+
+    /* PM-1895: a caller whose thumbnail showed a play badge must not open onto
+       a second, paused play button. Retention is what makes this more than an
+       `autoplay` attribute — a revisited video reactivates, so the attribute
+       never fires again. */
+    it('PM-1895 starts an opt-in video on open and again on return', async () => {
+      const play = vi
+        .spyOn(HTMLMediaElement.prototype, 'play')
+        .mockResolvedValue()
+      const { show, video } = renderTeleported(
+        [videoItem(1), mockGalleryItems[0]],
+        { autoplayVideo: true }
+      )
+      await nextTick()
+
+      const first = video()
+      expect(first!.autoplay).toBe(true)
+      expect(play).toHaveBeenCalledTimes(1)
+
+      await show(1)
+      await show(0)
+
+      expect(video()).toBe(first)
+      expect(play).toHaveBeenCalledTimes(2)
+      play.mockRestore()
+    })
+
+    it('leaves playback alone for callers that do not opt in', async () => {
+      const play = vi
+        .spyOn(HTMLMediaElement.prototype, 'play')
+        .mockResolvedValue()
+      const { show, video } = renderTeleported([
+        videoItem(1),
+        mockGalleryItems[0]
+      ])
+      await nextTick()
+
+      expect(video()!.autoplay).toBe(false)
+
+      await show(1)
+      await show(0)
+
+      expect(play).not.toHaveBeenCalled()
+      play.mockRestore()
     })
 
     it('drops retained videos when the lightbox closes', async () => {
