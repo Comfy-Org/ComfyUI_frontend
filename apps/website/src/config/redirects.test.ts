@@ -5,6 +5,7 @@ import { describe, expect, it } from 'vitest'
 import { z } from 'zod'
 
 import { websiteRoot } from '@website/paths'
+import { localePageFiles } from '@/i18n/localeStaticPaths'
 import { modelsBuildRoutes } from '@/integrations/workshop-release-gate'
 import { routeOf } from '@/utils/hreflangRoutes'
 import hubAppNames from './hub-app-names.json' with { type: 'json' }
@@ -33,6 +34,7 @@ const astroFiles = (dir: string): string[] =>
 const builtPages = new Set([
   ...astroFiles(pagesDir)
     .map((file) => relative(pagesDir, file).split(sep).join('/'))
+    .flatMap(localePageFiles)
     .filter((file) => !file.includes('['))
     .map((file) => routeOf(`/src/pages/${file}`)),
   ...modelsBuildRoutes(true)

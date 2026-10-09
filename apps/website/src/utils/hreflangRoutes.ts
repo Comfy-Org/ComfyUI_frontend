@@ -1,8 +1,8 @@
 /**
  * Route helpers shared by the page-tree oracle and built-site audit.
- * The oracle derives published routes from Astro files independently of
- * `localeHasRoute`. The audit checks built pages against both publication
- * policy and emitted links. Both use the configured locale prefixes.
+ * The oracle expands Astro files using the locale publication policy.
+ * The audit checks built pages against that policy and emitted links.
+ * Both use the configured locale prefixes.
  * Kept free of `import.meta.glob` so a plain Node script can import it.
  */
 

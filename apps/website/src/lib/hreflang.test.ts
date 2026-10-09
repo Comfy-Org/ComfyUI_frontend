@@ -8,6 +8,7 @@ import { isNoindexPathname } from '@/config/indexing'
 import type { Locale } from '@/config/locales'
 import { DEFAULT_LOCALE, LOCALE_CODES, LOCALES } from '@/config/locales'
 import { astroRedirects } from '@/config/redirects'
+import { localePageFiles } from '@/i18n/localeStaticPaths'
 import { routeOf } from '@/utils/hreflangRoutes'
 import type { Alternate } from './hreflang'
 import {
@@ -229,6 +230,7 @@ describe('the emitter agrees with the page tree', () => {
 
   const publishedPages = astroFiles(pagesDir)
     .map((file) => relative(pagesDir, file).split(sep).join('/'))
+    .flatMap(localePageFiles)
     .filter((file) => !file.includes('['))
     .map((file) => {
       const pathname = routeOf(`/src/pages/${file}`)

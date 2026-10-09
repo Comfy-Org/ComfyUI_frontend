@@ -3,6 +3,7 @@ import { join, relative, sep } from 'node:path'
 import { describe, expect, it, vi } from 'vitest'
 
 import { websiteRoot } from '@website/paths'
+import { localePageFiles } from '@/i18n/localeStaticPaths'
 import { modelsBuildRoutes } from '@/integrations/workshop-release-gate'
 import { routeOf } from '@/utils/hreflangRoutes'
 import {
@@ -284,9 +285,6 @@ const astroFiles = (dir: string): string[] =>
     return entry.name.endsWith('.astro') ? [full] : []
   })
 
-const pageRoute = (file: string) =>
-  routeOf(`/src/pages/${relative(pagesDir, file).split(sep).join('/')}`)
-
 describe('pages that are noindex on their own', () => {
   const isNoindexOnItsOwn = (file: string) => {
     const source = readFileSync(file, 'utf8')
@@ -298,7 +296,9 @@ describe('pages that are noindex on their own', () => {
 
   const routes = astroFiles(pagesDir)
     .filter(isNoindexOnItsOwn)
-    .map(pageRoute)
+    .map((file) => relative(pagesDir, file).split(sep).join('/'))
+    .flatMap(localePageFiles)
+    .map((file) => routeOf(`/src/pages/${file}`))
     .filter((route) => route !== '/404/')
 
   it('finds the pages that pass the prop or use AuthLayout', () => {
@@ -329,7 +329,10 @@ describe('NOINDEX_ROUTES', () => {
     )
 
   const builtRoutes = [
-    ...astroFiles(pagesDir).map(pageRoute),
+    ...astroFiles(pagesDir)
+      .map((file) => relative(pagesDir, file).split(sep).join('/'))
+      .flatMap(localePageFiles)
+      .map((file) => routeOf(`/src/pages/${file}`)),
     ...modelsBuildRoutes(true).map(({ pattern }) => pattern)
   ].map(toMatcher)
 

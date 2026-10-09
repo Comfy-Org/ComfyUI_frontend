@@ -16,8 +16,7 @@ const loadCatalogueProviders: LoadDiscoveryProviders = async () =>
 
 /**
  * The providers the homepage discovery section lists, loaded only when Models
- * is in this build. Both homepages call this rather than branching in their
- * own frontmatter, which coverage cannot see, so the two cannot drift.
+ * is in this build.
  */
 export async function resolveDiscoveryProviders(
   enabled: boolean,

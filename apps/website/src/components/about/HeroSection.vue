@@ -2,6 +2,7 @@
 import { ref } from 'vue'
 
 import { useHeroAnimation } from '@/composables/useHeroAnimation'
+import { getRoutes } from '@/config/routes'
 import type { Locale } from '@/i18n/translations'
 import { translationsFor } from '@/i18n/translations'
 import BrandButton from '@/components/common/BrandButton.vue'
@@ -10,6 +11,7 @@ import VideoPlayer from '@/components/common/VideoPlayer.vue'
 
 const { locale = 'en' } = defineProps<{ locale?: Locale }>()
 const { t } = translationsFor(locale)
+const routes = getRoutes(locale)
 
 const sectionRef = ref<HTMLElement>()
 const logoRef = ref<HTMLElement>()
@@ -64,10 +66,7 @@ useHeroAnimation({
           {{ t('about.hero.body') }}
         </p>
         <div ref="ctaRef" class="mt-8">
-          <BrandButton
-            :href="locale === 'zh-CN' ? '/zh-CN/careers/' : '/careers/'"
-            variant="outline"
-          >
+          <BrandButton :href="routes.careers" variant="outline">
             {{ t('about.hero.cta') }}
           </BrandButton>
         </div>

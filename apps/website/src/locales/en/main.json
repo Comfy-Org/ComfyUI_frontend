@@ -1,5 +1,10 @@
 {
   "home": {
+    "meta": {
+      "title": "Comfy - Professional Control of Visual AI",
+      "pageName": "Professional Control of Visual AI",
+      "keywords": "comfyui app, comfyui web app, comfy ui application, comfyui application, comfy app, comfyui, visual ai app, node-based ai, generative ai workflows"
+    },
     "workshop": {
       "heading": "Run any model, from one place",
       "subheading": "Hundreds of models from the labs building them, with their real inputs and the same API you would call from your own application.",
@@ -1257,7 +1262,9 @@
       "headingHighlight": "Desktop"
     },
     "meta": {
-      "description": "Download ComfyUI for Windows, macOS, or Linux, or install from GitHub. The full open source engine, free forever, running on your own hardware."
+      "description": "Download ComfyUI for Windows, macOS, or Linux, or install from GitHub. The full open source engine, free forever, running on your own hardware.",
+      "title": "Download Comfy Desktop - Run AI on Your Hardware",
+      "keywords": "comfyui app, comfyui desktop app, comfyui desktop, comfy ui application, comfyui download, download comfyui, comfyui windows, comfyui mac, comfyui linux"
     },
     "hero": {
       "heading": "Run on your hardware.\nFree forever.",
@@ -1283,6 +1290,10 @@
     }
   },
   "cloud": {
+    "meta": {
+      "title": "Comfy Cloud - AI in the Cloud",
+      "keywords": "comfyui web app, comfyui app, comfyui online, comfyui cloud, comfy cloud, comfy ui application, comfyui browser, cloud comfyui, managed comfyui"
+    },
     "hero": {
       "heading": "The full power of\nComfyUI — from\nanywhere.",
       "subtitle": "The easiest way to start with ComfyUI. Pre-loaded models. Pre-installed custom nodes. Concurrent jobs. The full power of ComfyUI on Blackwell RTX 6000 Pros. Open a tab and start creating.",
@@ -1462,6 +1473,10 @@
     }
   },
   "pricing": {
+    "meta": {
+      "title": "Pricing - Comfy Cloud",
+      "description": "Comfy Cloud plans and credits: start free with 5 GPU runs, then pick Standard, Creator, Pro, or Team for monthly credits, hosted models, and longer workflow runtimes."
+    },
     "title": "Choose a plan",
     "subtitle": "Access cloud-powered ComfyUI workflows with straightforward, usage-based pricing.",
     "badge": {
@@ -1739,6 +1754,10 @@
     }
   },
   "about": {
+    "meta": {
+      "title": "About Us - Comfy",
+      "description": "Comfy builds ComfyUI, the open-source engine for visual AI, and the desktop, cloud, API, and enterprise products around it. Meet the team and the mission."
+    },
     "hero": {
       "label": "ABOUT",
       "heading": "Build the tools that reward creative skill",

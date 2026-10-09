@@ -82,6 +82,26 @@ Catalog files use two-space JSON indentation and a final newline. Legal and
 content pages render their sections in the order they appear in the catalog, so
 keep `en/main.json` in document order and never sort its keys.
 
+### Localized pages
+
+A page under `src/pages/[...locale]/` serves every language from one file.
+Its `getStaticPaths` is `localeStaticPaths`, which builds the English page at
+the bare path plus a prefixed copy, such as `/zh-CN/about/`, for each locale
+that publishes the route (`supportsLocaleRoute` in `src/config/routes.ts`).
+The page reads its locale from `Astro.currentLocale`, takes all of its copy,
+including the title, description and comma-separated keywords under
+`<page>.meta`, from `Astro.locals.t`, passes the locale to its components, and
+builds links with `getRoutes(locale)`.
+
+Chinese publishes every route that is not English-only. Japanese publishes
+only the routes listed for `ja` in `PARTIAL_LOCALE_ROUTES` in
+`src/config/locales.ts`; add a route there to publish its Japanese page.
+
+Most other pages still have a hand-copied twin under `src/pages/zh-CN/`. To
+move one into `[...locale]/`, move the English page there, put its literal
+title, description and keywords for each locale into the catalogs, replace
+literal locales with the page's locale, and delete the twin.
+
 ### Excluded and English-only copy
 
 `src/config/translation.ts` owns the website's language guidance, glossary and

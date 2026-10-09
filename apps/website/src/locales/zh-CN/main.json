@@ -1,5 +1,9 @@
 {
   "about": {
+    "meta": {
+      "title": "关于我们 - Comfy",
+      "description": "Comfy 打造了面向视觉 AI 的开源引擎 ComfyUI，以及围绕它的桌面版、云端、API 和企业级产品。认识我们的团队与使命。"
+    },
     "careers": {
       "cta": "查看开放职位",
       "heading": "加入团队",
@@ -735,6 +739,10 @@
     }
   },
   "cloud": {
+    "meta": {
+      "title": "Comfy Cloud - 云端 AI",
+      "keywords": "comfyui web app, comfyui app, comfyui online, comfyui cloud, ComfyUI 网页版, ComfyUI 云端, ComfyUI 应用, Comfy Cloud, 云端 ComfyUI"
+    },
     "aiModels": {
       "card": {
         "geminiOmniFlash": "Gemini\nOmni 1.1 Flash",
@@ -1236,7 +1244,9 @@
       "subtitle": "完整的 ComfyUI 引擎——开源、快速、可扩展，随你运行。"
     },
     "meta": {
-      "description": "下载适用于 Windows、macOS 或 Linux 的 ComfyUI，也可从 GitHub 安装。完整的开源引擎，永久免费，在你自己的硬件上运行。"
+      "description": "下载适用于 Windows、macOS 或 Linux 的 ComfyUI，也可从 GitHub 安装。完整的开源引擎，永久免费，在你自己的硬件上运行。",
+      "title": "下载 Comfy 桌面版 - 在您的硬件上运行 AI",
+      "keywords": "comfyui app, comfyui desktop app, comfyui download, ComfyUI 下载, ComfyUI 桌面应用, ComfyUI 应用, ComfyUI Windows, ComfyUI macOS, ComfyUI Linux"
     },
     "reason": {
       "1": {
@@ -1877,6 +1887,11 @@
     "title": "视觉 AI 的\n最强可控性"
   },
   "home": {
+    "meta": {
+      "title": "Comfy - 视觉 AI 的最强可控性",
+      "pageName": "视觉 AI 的最强可控性",
+      "keywords": "comfyui app, comfyui web app, comfyui application, ComfyUI 应用, ComfyUI 网页版, ComfyUI 桌面应用, ComfyUI 下载, 可视化 AI, 节点式 AI, 生成式 AI 工作流"
+    },
     "platform": {
       "body": "将你的 ComfyUI 工作流部署为生产级 API。数千个模型，尽在一个平台。",
       "cta": "了解开发者平台",
@@ -3160,6 +3175,10 @@
     "unmute": "取消静音"
   },
   "pricing": {
+    "meta": {
+      "title": "定价 - Comfy Cloud",
+      "description": "Comfy Cloud 套餐与积分：免费开始（5 次 GPU 运行），再选择 Standard、Creator、Pro 或 Team，获得每月积分、托管模型与更长的工作流运行时长。"
+    },
     "badge": {
       "popular": "最受欢迎"
     },
