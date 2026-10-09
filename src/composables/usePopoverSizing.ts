@@ -1,13 +1,10 @@
-import { computed, ref } from 'vue'
-import type { CSSProperties, ComputedRef, Ref } from 'vue'
+import { computed } from 'vue'
+import type { CSSProperties, ComputedRef } from 'vue'
 
 interface PopoverSizeOptions {
   minWidth?: string
   maxWidth?: string
 }
-
-// Matches the highest existing Reka popover z-index (e.g. z-3000 on SearchAutocomplete).
-const DIALOG_CHILD_Z_INDEX_FLOOR = 3000
 
 /**
  * Composable for managing popover sizing styles
@@ -31,25 +28,4 @@ export function usePopoverSizing(
 
     return style
   })
-}
-
-/**
- * Keeps portaled popovers above their containing dialog or overlay.
- */
-export function useOverlayChildStyle(): {
-  overlayScopeRef: Ref<HTMLElement | null>
-  contentStyle: ComputedRef<CSSProperties>
-} {
-  const overlayScopeRef = ref<HTMLElement | null>(null)
-  const contentStyle = computed<CSSProperties>(() => {
-    const overlay = overlayScopeRef.value?.closest('[data-reka-dialog-content]')
-    if (!overlay) return {}
-
-    const zIndex = Number.parseInt(getComputedStyle(overlay).zIndex, 10)
-    if (!Number.isFinite(zIndex)) return {}
-
-    return { zIndex: Math.max(DIALOG_CHILD_Z_INDEX_FLOOR, zIndex + 1) }
-  })
-
-  return { overlayScopeRef, contentStyle }
 }
