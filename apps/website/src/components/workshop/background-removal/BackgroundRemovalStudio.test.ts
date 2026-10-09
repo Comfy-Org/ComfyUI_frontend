@@ -116,7 +116,7 @@ describe('BackgroundRemovalStudio', () => {
     await fireEvent.update(edge, '35')
     await fireEvent.update(edge, '60')
     await user.click(within(panel()).getByTestId('background-removal-run'))
-    expect(vi.mocked(renderCutout)).toHaveBeenCalledWith(
+    expect(renderCutout).toHaveBeenCalledWith(
       expect.objectContaining({ edgeSoftness: 60 })
     )
   })
