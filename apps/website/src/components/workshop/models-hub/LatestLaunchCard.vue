@@ -2,7 +2,7 @@
 import { ArrowRight } from '@lucide/vue'
 import { computed } from 'vue'
 
-import BrandButton from '@/components/common/BrandButton.vue'
+import Button from '@/components/ui/button/Button.vue'
 import Badge from '@/components/ui/badge/Badge.vue'
 import WorkshopCardMedia from '@/components/workshop/WorkshopCardMedia.vue'
 import type { WorkshopModel } from '@/config/models-catalogue'
@@ -61,18 +61,17 @@ const taskLabel = computed(() => taskLabelFor(model, locale))
           <Badge variant="subtle">{{ taskLabel }}</Badge>
         </div>
       </div>
-      <BrandButton
+      <Button
         v-if="model.href"
         :href="model.href"
-        variant="outline-light"
-        size="nav"
-        class="shrink-0 uppercase"
+        variant="ghost"
+        :append-icon="ArrowRight"
+        class="shrink-0"
         :aria-label="t('workshop.explorer.compare.try', { name: model.name })"
         data-testid="models-hub-latest-try"
       >
         {{ t('workshop.explorer.compare.tryShort') }}
-        <ArrowRight class="ml-2 size-4" aria-hidden="true" />
-      </BrandButton>
+      </Button>
     </div>
   </div>
 </template>
