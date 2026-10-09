@@ -72,29 +72,32 @@ function redactSentryRequest(event: Event): void {
   if (!request) return
   if (request.url) request.url = redactTelemetryUrls(request.url)
   request.data = redactUnknownValue(request.data)
-  if (typeof request.query_string === 'string') {
-    request.query_string = request.query_string
-      ? REDACTED_QUERY_VALUE
-      : request.query_string
-  } else if (Array.isArray(request.query_string)) {
-    request.query_string = request.query_string.map(([key, value]) => [
-      redactTelemetryUrls(key),
-      value ? REDACTED_QUERY_VALUE : value
-    ])
-  } else if (request.query_string) {
-    request.query_string = Object.fromEntries(
-      Object.entries(request.query_string).map(([key, value]) => [
-        redactTelemetryUrls(key),
-        value ? REDACTED_QUERY_VALUE : value
-      ])
-    )
-  }
+  request.query_string = redactSentryQueryString(request.query_string)
   const headers = request.headers ?? {}
   for (const [key, value] of Object.entries(headers)) {
     if (key.toLowerCase() === 'referer') {
       headers[key] = redactTelemetryUrls(value)
     }
   }
+}
+
+type SentryQueryString = NonNullable<Event['request']>['query_string']
+
+function redactSentryQueryString(query: SentryQueryString): SentryQueryString {
+  if (typeof query === 'string') return query && REDACTED_QUERY_VALUE
+  if (Array.isArray(query)) {
+    return query.map(([key, value]) => [
+      redactTelemetryUrls(key),
+      value && REDACTED_QUERY_VALUE
+    ])
+  }
+  if (!query) return query
+  return Object.fromEntries(
+    Object.entries(query).map(([key, value]) => [
+      redactTelemetryUrls(key),
+      value && REDACTED_QUERY_VALUE
+    ])
+  )
 }
 
 function redactUnknownValue(value: unknown): unknown {
