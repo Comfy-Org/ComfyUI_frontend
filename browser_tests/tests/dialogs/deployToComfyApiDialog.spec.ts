@@ -49,9 +49,13 @@ test.describe('Deploy to Comfy API', () => {
           Number(root.dataset.testClipboardWrites ?? 0) + 1
         )
         await new Promise<void>((resolve) => {
-          window.addEventListener('e2e-release-clipboard-write', () => resolve(), {
-            once: true
-          })
+          window.addEventListener(
+            'e2e-release-clipboard-write',
+            () => resolve(),
+            {
+              once: true
+            }
+          )
         })
       }
     })
@@ -64,7 +68,7 @@ test.describe('Deploy to Comfy API', () => {
 
     await expect(button).toHaveAttribute('aria-busy', 'true')
     await expect(button).toHaveAttribute('aria-disabled', 'true')
-    await expect(button).not.toBeDisabled()
+    await expect(button).not.toHaveAttribute('disabled')
     await expect(button).toBeFocused()
     await expect.poll(clipboardWrites).toBe('1')
 
