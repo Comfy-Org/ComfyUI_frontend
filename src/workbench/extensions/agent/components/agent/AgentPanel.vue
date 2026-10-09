@@ -16,6 +16,7 @@ import type {
 import type { FreeUseVariant } from '../../experiments/freeUsePlacement'
 
 import type { ActiveTab } from '../../types/activeTab'
+import type { AgentGreeting } from '../../types/proactiveGreeting'
 import type {
   WorkflowReference,
   WorkflowReferenceMetadata,
@@ -78,7 +79,8 @@ const {
   selectHistory = async () => false,
   editableTurnId = null,
   answeringAskIds = new Set<string>(),
-  freeUsePlacement = 'control'
+  freeUsePlacement = 'control',
+  greeting
 } = defineProps<{
   entries: ConversationEntry[]
   userName?: string
@@ -119,6 +121,7 @@ const {
   editableTurnId?: TurnId | null
   answeringAskIds?: ReadonlySet<string>
   freeUsePlacement?: FreeUseVariant
+  greeting?: AgentGreeting
 }>()
 const emit = defineEmits<{
   send: [
@@ -447,6 +450,7 @@ defineExpose({ addAttachment, updateAttachment, removeAttachment })
       <div class="min-h-0 flex-1">
         <EmptyState
           v-if="!entries.length"
+          :greeting
           :user-name
           @insert="
             (text, prompt) => {

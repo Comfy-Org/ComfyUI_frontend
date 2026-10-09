@@ -5634,6 +5634,28 @@
     "gotIt": "Got it",
     "greeting": "Hello {name},",
     "greetingQuestion": "What do you want to make?",
+    "proactiveGreeting": {
+      "emptyCanvas": {
+        "title": "What would you like to do next?",
+        "description": "Pick up where you left off. Or ask the agent for help with something new."
+      },
+      "workflowOpen": {
+        "title": "Ask a question or describe a change.",
+        "description": "Comfy Agent shows you what it plans to do before anything in your workflow changes.",
+        "prompt": "Help me improve this workflow"
+      },
+      "firstOpen": {
+        "title": "A little help to get you started!",
+        "description": "Not sure where to begin? Send the question below, or write your own.",
+        "prompt": "What can you help me with?"
+      },
+      "unconnectedInput": {
+        "title": "This workflow has an unconnected input.",
+        "description": "{node}’s {input} input isn’t connected. Want help understanding what’s happening?",
+        "action": "Ask about this input",
+        "prompt": "Why isn’t the {input} input on {node} connected, and what should go there?"
+      }
+    },
     "placeholder": "Describe ideas, {'@'} to reference workflows, drag in media asset and files, or\nmention nodes",
     "suggestedPrompts": {
       "cloud": [

@@ -7,12 +7,17 @@ import Button from '@/components/ui/button/Button.vue'
 import { FALLBACK_LOCALE } from '@/i18n'
 import { isCloud } from '@/platform/distribution/types'
 
+import type { AgentGreeting } from '../../types/proactiveGreeting'
 import type { AgentStarterPromptAttribution } from '../../utils/starterPrompts'
 import { starterPromptAttribution } from '../../utils/starterPrompts'
+import ProactiveGreeting from './ProactiveGreeting.vue'
 
-const { userName } = defineProps<{ userName?: string }>()
+const { userName, greeting } = defineProps<{
+  userName?: string
+  greeting?: AgentGreeting
+}>()
 const emit = defineEmits<{
-  insert: [text: string, prompt: AgentStarterPromptAttribution]
+  insert: [text: string, prompt?: AgentStarterPromptAttribution]
 }>()
 
 const { t, te, tm, locale } = useI18n()
@@ -52,7 +57,16 @@ const promptIcons = [
 </script>
 
 <template>
-  <div class="flex h-full flex-col overflow-x-hidden overflow-y-auto px-4 py-8">
+  <ProactiveGreeting
+    v-if="greeting"
+    :greeting
+    :user-name
+    @insert="emit('insert', $event)"
+  />
+  <div
+    v-else
+    class="flex h-full flex-col overflow-x-hidden overflow-y-auto px-4 py-8"
+  >
     <div class="my-auto flex shrink-0 flex-col items-center gap-8 text-center">
       <div
         class="flex max-w-sm flex-col items-center pt-12 text-base/snug font-semibold tracking-tight text-base-foreground @min-[570px]:text-2xl/snug"
