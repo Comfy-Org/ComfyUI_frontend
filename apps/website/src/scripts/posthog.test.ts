@@ -754,6 +754,92 @@ describe('captureDownloadClick', () => {
   })
 })
 
+describe('nav featured card analytics', () => {
+  beforeEach(() => {
+    vi.resetModules()
+  })
+
+  const properties = {
+    placement: 'gemini-omni',
+    dropdown: 'products',
+    href: '/gemini-omni/',
+    variant: 'control',
+    locale: 'en'
+  } as const
+
+  it('captures the viewed and clicked events with the placement payload', async () => {
+    const {
+      initPostHog,
+      captureNavFeaturedCardViewed,
+      captureNavFeaturedCardClicked
+    } = await import('./posthog')
+    initPostHog()
+    captureNavFeaturedCardViewed(properties)
+    captureNavFeaturedCardClicked(properties)
+
+    expect(hoisted.mockCapture).toHaveBeenNthCalledWith(
+      1,
+      'website:nav_featured_card_viewed',
+      properties
+    )
+    expect(hoisted.mockCapture).toHaveBeenNthCalledWith(
+      2,
+      'website:nav_featured_card_clicked',
+      properties
+    )
+  })
+
+  it('does not capture before PostHog is initialized', async () => {
+    const { captureNavFeaturedCardViewed } = await import('./posthog')
+    captureNavFeaturedCardViewed(properties)
+
+    expect(hoisted.mockCapture).not.toHaveBeenCalled()
+  })
+
+  it('reads a flag variant only after PostHog has answered, without an exposure event', async () => {
+    const { initPostHog, readFlagVariant } = await import('./posthog')
+    hoisted.mockGetFeatureFlag.mockReturnValue('bold-image')
+    expect(readFlagVariant('nav-featured-card-image')).toBeUndefined()
+
+    initPostHog()
+    expect(readFlagVariant('nav-featured-card-image')).toBeUndefined()
+
+    emitFeatureFlags()
+    expect(readFlagVariant('nav-featured-card-image')).toBe('bold-image')
+    expect(hoisted.mockGetFeatureFlag).toHaveBeenCalledWith(
+      'nav-featured-card-image',
+      { send_event: false }
+    )
+  })
+
+  it.for([
+    { name: 'an off flag', answer: false },
+    { name: 'a missing flag', answer: undefined },
+    { name: 'a plain boolean flag', answer: true }
+  ])('has no variant for $name', async ({ answer }) => {
+    const { initPostHog, readFlagVariant } = await import('./posthog')
+    initPostHog()
+    hoisted.mockGetFeatureFlag.mockReturnValue(answer)
+    emitFeatureFlags()
+
+    expect(readFlagVariant('nav-featured-card-image')).toBeUndefined()
+  })
+
+  it('has no variant when reading the flag throws', async () => {
+    const { initPostHog, readFlagVariant } = await import('./posthog')
+    initPostHog()
+    emitFeatureFlags()
+    hoisted.mockGetFeatureFlag.mockImplementation(() => {
+      throw new Error('boom')
+    })
+
+    vi.mocked(console.error).mockImplementation(() => {})
+
+    expect(readFlagVariant('nav-featured-card-image')).toBeUndefined()
+    expect(console.error).toHaveBeenCalledOnce()
+  })
+})
+
 describe('captureCliConnectionTabClick', () => {
   beforeEach(() => {
     vi.resetModules()

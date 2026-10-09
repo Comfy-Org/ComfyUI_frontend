@@ -24,6 +24,7 @@ import type { TurnstileMode } from '@comfyorg/account-core/turnstile'
 import type { Platform } from '@/composables/useDownloadUrl'
 import type { ConnectionId, McpClientId } from '@/config/mcpClients'
 import { WORKSHOP_CLOUD_ENV } from '@/config/workshop-env'
+import type { NavFeaturedCardEventProperties } from '@/utils/navFeaturedCard'
 import type { WorkshopAnalyticsEvent } from './workshop-analytics'
 import { captureWorkshopHealth } from './workshop-datadog'
 
@@ -45,6 +46,8 @@ const ANALYTICS_EVENT = {
   routerRoadmapCardExpanded: 'website:router_roadmap_card_expanded',
   agentFaqExpanded: 'website:agent_faq_expanded',
   agentUsecaseVideoPlayed: 'website:agent_usecase_video_played',
+  navFeaturedCardViewed: 'website:nav_featured_card_viewed',
+  navFeaturedCardClicked: 'website:nav_featured_card_clicked',
   // Shared with the cloud app so one PostHog funnel covers auth outcomes
   // across every surface.
   authRefreshSucceeded: SESSION_TELEMETRY_EVENT.refreshSucceeded,
@@ -103,6 +106,12 @@ type AnalyticsEvent =
   | {
       name: typeof ANALYTICS_EVENT.agentUsecaseVideoPlayed
       properties: { video: string }
+    }
+  | {
+      name:
+        | typeof ANALYTICS_EVENT.navFeaturedCardViewed
+        | typeof ANALYTICS_EVENT.navFeaturedCardClicked
+      properties: NavFeaturedCardEventProperties
     }
   | {
       name:
@@ -232,6 +241,22 @@ export function useWorkshopFlag(name: string): Readonly<Ref<boolean>> {
     namedFlags.set(name, flag)
   }
   return readonly(flag)
+}
+
+/**
+ * The variant key of the multivariate PostHog flag `name` for this visitor, or
+ * undefined while PostHog has not answered, when the flag is off or missing,
+ * and when PostHog never loaded. Reading it sends no exposure event.
+ */
+export function readFlagVariant(name: string): string | undefined {
+  if (!initialized || !namedFlagsAnswered) return undefined
+  try {
+    const value = posthog.getFeatureFlag(name, { send_event: false })
+    return typeof value === 'string' ? value : undefined
+  } catch (error) {
+    console.error(`PostHog flag read failed for ${name}`, error)
+    return undefined
+  }
 }
 
 export function useWorkshopEnabledSettled(): Readonly<Ref<boolean>> {
@@ -504,6 +529,18 @@ export function captureAgentUsecaseVideoPlayed(video: string): void {
     name: ANALYTICS_EVENT.agentUsecaseVideoPlayed,
     properties: { video }
   })
+}
+
+export function captureNavFeaturedCardViewed(
+  properties: NavFeaturedCardEventProperties
+): void {
+  captureEvent({ name: ANALYTICS_EVENT.navFeaturedCardViewed, properties })
+}
+
+export function captureNavFeaturedCardClicked(
+  properties: NavFeaturedCardEventProperties
+): void {
+  captureEvent({ name: ANALYTICS_EVENT.navFeaturedCardClicked, properties })
 }
 
 export function captureAuthRefreshSucceeded(): void {

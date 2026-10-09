@@ -16,7 +16,20 @@ export type NavColumn = {
   placement?: 'footer'
 }
 
+/** Replacement media for one arm of the `nav-featured-card-image` flag. */
+type NavFeaturedVariant = {
+  imageSrc: string
+  videoSrc?: string
+  imageAlt?: string
+}
+
 export type NavFeatured = {
+  /**
+   * Stable placement id sent with the card's analytics events. Keep it
+   * unchanged across copy, image, and locale changes so the numbers stay
+   * comparable; use a new id only for a different placement.
+   */
+  analyticsId?: string
   imageSrc: string
   videoSrc?: string
   showPlayOverlay?: boolean
@@ -27,6 +40,13 @@ export type NavFeatured = {
     ariaLabel?: string
     href: string
   }
+  /**
+   * Image arms for the PostHog multivariate flag `nav-featured-card-image`,
+   * keyed by the flag's variant keys. The top-level media is the `control`
+   * arm. Images and videos must be hosted on media.comfy.org. A visitor whose
+   * variant is not listed here sees the control card.
+   */
+  variants?: Record<string, NavFeaturedVariant>
 }
 
 export type NavItem =
@@ -34,6 +54,8 @@ export type NavItem =
       label: string
       columns: NavColumn[]
       featured?: NavFeatured
+      /** Stable dropdown id for analytics, such as `products`. */
+      analyticsId?: string
       badge?: 'new'
       href?: never
     }
@@ -55,7 +77,9 @@ export function getMainNavigation(locale: Locale): NavItem[] {
     },
     {
       label: t('nav.products'),
+      analyticsId: 'products',
       featured: {
+        analyticsId: 'gemini-omni',
         imageSrc: 'https://media.comfy.org/website/gemini-omni/card-5.webp',
         videoSrc: 'https://media.comfy.org/website/gemini-omni/card-5.webm',
         imageAlt: t('nav.featuredProductsAlt'),
