@@ -27,7 +27,7 @@ export interface HubRowView {
   surface: HubSurface
   source: HubItemSource
   row?: string
-  slugs: string[]
+  rowSlugs: string[]
 }
 
 /** Mirrors the app's `app:search_query`: trimmed and capped, full length kept. */
@@ -82,9 +82,10 @@ export function captureHubFilterChange(
   })
 }
 
-export function captureHubRowView({ slugs, ...row }: HubRowView) {
+/** The row's whole roster once the row enters view, not which cards were seen. */
+export function captureHubRowView({ rowSlugs, ...row }: HubRowView) {
   captureWorkshopEvent({
     name: 'hub_row_viewed',
-    properties: { ...row, item_count: slugs.length, slugs }
+    properties: { ...row, item_count: rowSlugs.length, row_slugs: rowSlugs }
   })
 }

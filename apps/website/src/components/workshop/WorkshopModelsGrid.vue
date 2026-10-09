@@ -235,13 +235,15 @@ function rememberModel(
 }
 
 function openResult(model: WorkshopModel, position: number, event: MouseEvent) {
-  if (model.href)
+  if (model.href) {
+    submitSearch()
     captureHubItemClick(hubItemOf(model), {
       surface: 'models',
       source: 'results_grid',
       position,
       ...hubActiveQuery(query.value)
     })
+  }
   rememberModel(model, event)
 }
 

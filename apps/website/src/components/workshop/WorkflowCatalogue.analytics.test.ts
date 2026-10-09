@@ -179,4 +179,42 @@ describe('WorkflowCatalogue analytics', () => {
       }
     ])
   })
+
+  it('reports a search still settling before the result opened under it', async () => {
+    const user = userEvent.setup({ advanceTimers: vi.advanceTimersByTime })
+    const { unmount } = render(WorkflowCatalogue, { props: { models } })
+
+    await user.type(await searchbox(), 'Restore')
+    await user.click(screen.getByTestId('workshop-model-card'))
+    unmount()
+    vi.advanceTimersByTime(SEARCH_SETTLE_MS)
+
+    expect(
+      vi
+        .mocked(captureWorkshopEvent)
+        .mock.calls.map(([event]) => event)
+        .filter((event) => event.name !== 'hub_filter_changed')
+    ).toEqual([
+      {
+        name: 'hub_search_performed',
+        properties: {
+          surface: 'workflows',
+          query: 'restore',
+          query_length: 7,
+          results_count: 1
+        }
+      },
+      {
+        name: 'hub_item_clicked',
+        properties: {
+          surface: 'workflows',
+          kind: 'workflow',
+          slug: 'workflows/restore',
+          source: 'results_grid',
+          position: 0,
+          query: 'restore'
+        }
+      }
+    ])
+  })
 })

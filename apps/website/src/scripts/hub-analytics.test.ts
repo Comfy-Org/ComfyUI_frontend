@@ -34,12 +34,12 @@ describe('hub analytics', () => {
     expect(hubActiveQuery(raw)).toEqual(expected)
   })
 
-  it('reports a row view with how many items it showed', () => {
+  it('reports a row view with the whole row roster under row_slugs', () => {
     captureHubRowView({
       surface: 'workflows',
       source: 'category_row',
       row: 'video',
-      slugs: ['workflows/animate', 'workflows/connect']
+      rowSlugs: ['workflows/animate', 'workflows/connect']
     })
 
     expect(captureWorkshopEvent).toHaveBeenCalledWith({
@@ -49,7 +49,7 @@ describe('hub analytics', () => {
         source: 'category_row',
         row: 'video',
         item_count: 2,
-        slugs: ['workflows/animate', 'workflows/connect']
+        row_slugs: ['workflows/animate', 'workflows/connect']
       }
     })
   })

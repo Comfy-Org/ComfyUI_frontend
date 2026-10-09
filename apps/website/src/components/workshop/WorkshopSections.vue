@@ -164,7 +164,7 @@ function rememberModel(
           surface: 'models',
           source: 'use_case_row',
           row: section.useCase,
-          slugs: section.shown.map((family) => family.latest.slug)
+          rowSlugs: section.shown.map((family) => family.latest.slug)
         }"
       />
     </section>
@@ -226,7 +226,7 @@ function rememberModel(
         :view="{
           surface: 'models',
           source: 'other_formats_row',
-          slugs: otherFormats
+          rowSlugs: otherFormats
             .slice(0, ROW_LIMIT)
             .map((family) => family.latest.slug)
         }"
@@ -262,7 +262,7 @@ function rememberModel(
         :view="{
           surface: 'models',
           source: 'unplaced_grid',
-          slugs: unplaced.map((family) => family.latest.slug)
+          rowSlugs: unplaced.map((family) => family.latest.slug)
         }"
       />
     </section>

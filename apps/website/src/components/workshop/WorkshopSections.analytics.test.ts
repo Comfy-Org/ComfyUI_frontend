@@ -108,7 +108,7 @@ describe('WorkshopSections analytics', () => {
             source: 'use_case_row',
             row: 'generate-videos',
             item_count: 2,
-            slugs: ['a', 'b']
+            row_slugs: ['a', 'b']
           }
         },
         {
@@ -117,7 +117,7 @@ describe('WorkshopSections analytics', () => {
             surface: 'models',
             source: 'other_formats_row',
             item_count: 1,
-            slugs: ['voice']
+            row_slugs: ['voice']
           }
         },
         {
@@ -126,7 +126,7 @@ describe('WorkshopSections analytics', () => {
             surface: 'models',
             source: 'unplaced_grid',
             item_count: 1,
-            slugs: ['mystery']
+            row_slugs: ['mystery']
           }
         }
       ])

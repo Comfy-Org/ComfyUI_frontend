@@ -221,4 +221,44 @@ describe('WorkshopModelsGrid analytics', () => {
       }
     ])
   })
+
+  it('reports a search still settling before the result opened under it', async () => {
+    const user = userEvent.setup({ advanceTimers: vi.advanceTimersByTime })
+    const { unmount } = render(WorkshopModelsGrid, { props: { models } })
+
+    await user.type(await searchbox(), 'Flux')
+    await user.click(
+      within(screen.getByTestId('workshop-models-grid')).getByRole('link')
+    )
+    unmount()
+    vi.advanceTimersByTime(SEARCH_SETTLE_MS)
+
+    expect(
+      vi
+        .mocked(captureWorkshopEvent)
+        .mock.calls.map(([event]) => event)
+        .filter((event) => event.name !== 'hub_filter_changed')
+    ).toEqual([
+      {
+        name: 'hub_search_performed',
+        properties: {
+          surface: 'models',
+          query: 'flux',
+          query_length: 4,
+          results_count: 1
+        }
+      },
+      {
+        name: 'hub_item_clicked',
+        properties: {
+          surface: 'models',
+          kind: 'model',
+          slug: 'flux',
+          source: 'results_grid',
+          position: 0,
+          query: 'flux'
+        }
+      }
+    ])
+  })
 })

@@ -85,6 +85,7 @@ onMounted(() =>
 )
 
 function openWorkflow(model: WorkshopModel, position: number, row?: string) {
+  if (!row) submitSearch()
   captureHubItemClick(hubItemOf(model), {
     surface: 'workflows',
     position,
@@ -324,7 +325,7 @@ function leaveSection() {
             surface: 'workflows',
             source: 'category_row',
             row: category.id,
-            slugs: category.models.map((model) => model.slug)
+            rowSlugs: category.models.map((model) => model.slug)
           }"
         />
       </section>

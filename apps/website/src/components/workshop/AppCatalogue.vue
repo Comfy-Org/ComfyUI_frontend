@@ -99,7 +99,7 @@ function openApp(app: CatalogueApp, source: HubItemSource, position: number) {
           :view="{
             surface: 'apps',
             source: 'app_row',
-            slugs: shelf.map((app) => app.key)
+            rowSlugs: shelf.map((app) => app.key)
           }"
         />
       </section>

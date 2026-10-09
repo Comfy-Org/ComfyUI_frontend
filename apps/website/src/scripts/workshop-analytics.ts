@@ -220,7 +220,7 @@ export type WorkshopAnalyticsEvent =
         source: HubItemSource
         row?: string
         item_count: number
-        slugs: string[]
+        row_slugs: string[]
       }
     }
   | {
