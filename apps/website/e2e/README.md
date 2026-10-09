@@ -80,11 +80,11 @@ The SIL Open Font License is in `assets/Inter-OFL.txt`.
 
 Baselines are Linux-only (`*-visual-linux.png`); never commit ones generated
 locally. When a `@visual` assertion fails in CI, the shard uploads the actual
-image on the baseline's path as a `website-snapshot-updates-*` artifact
-(`scripts/playwright/snapshotUpdatesReporter.ts`). Once the E2E run has
-finished, comment `/update-website-screenshots`, add the
-`Update Website Screenshots` label, or tick the checkbox in the E2E status
-comment: the workflow commits those images to the branch without rerunning
-Playwright. `/update-website-screenshots full` reruns the visual project with
+image on the baseline's path as a `website-snapshot-updates-*` artifact.
+Comment `/update-website-screenshots`, add the `Update Website Screenshots`
+label, or tick the checkbox in the PR report comment: the workflow waits for
+the E2E run and commits those images to the branch without rerunning
+Playwright. A run with no failed screenshot assertions commits nothing.
+`/update-website-screenshots full` reruns the visual project with
 `--update-snapshots` instead, which also happens automatically when the run
 is missing or incomplete.
