@@ -1597,6 +1597,7 @@ export const zMediaBadRequestError = z.union([zErrorResponse, zMediaQueryError])
  */
 export const zListWorkspacesResponse = z.object({
   can_create_workspace: z.boolean(),
+  default_workspace_id: z.string().optional(),
   workspaces: z.array(zWorkspaceWithRole)
 })
 
@@ -3371,6 +3372,16 @@ export const zAgentPendingAsk = z.union([
 export const zAgentMessage = z.object({
   content: z
     .object({
+      attachment_refs: z
+        .array(
+          z.object({
+            display_name: z.string().optional(),
+            id: z.string().optional(),
+            kind: z.string().optional(),
+            name: z.string().optional()
+          })
+        )
+        .optional(),
       tool_calls: z.array(zToolCallSummary).optional()
     })
     .optional(),
