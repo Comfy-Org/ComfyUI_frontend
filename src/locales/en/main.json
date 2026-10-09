@@ -2236,7 +2236,7 @@
     "message": "Partner nodes run on third-party services and use credits from your account. Please sign in to connect your account.",
     "partnerNodesInWorkflow": "Partner nodes in this workflow",
     "whatArePartnerNodes": "What are partner nodes?",
-    "tooltip": "Partner nodes run on third-party services. They use credits, the only paid part of Comfy.",
+    "tooltip": "Partner nodes run on third-party services. They use credits from your Comfy balance, the same ones Cloud workflows and Comfy Agent spend.",
     "signIn": "Sign In"
   },
   "desktopUpdate": {
@@ -2997,7 +2997,7 @@
     },
     "unified": {
       "message": "Credits have been unified",
-      "tooltip": "We've unified payments across Comfy. Everything now runs on Comfy Credits:\n- Partner Nodes (formerly API nodes)\n- Cloud workflows\n\nYour existing Partner node balance has been converted into credits."
+      "tooltip": "We've unified payments across Comfy. Everything now runs on Comfy Credits:\n- Partner Nodes (formerly API nodes)\n- Cloud workflows\n- Comfy Agent\n\nYour existing Partner node balance has been converted into credits."
     }
   },
   "billingOperation": {
@@ -3208,7 +3208,7 @@
     "fullUsageActivity": "Full usage activity",
     "refreshCredits": "Refresh credits",
     "benefits": {
-      "benefit1": "Monthly credits for Partner Nodes — top up when needed",
+      "benefit1": "Monthly credits for Cloud workflows, Partner Nodes, and Comfy Agent — top up when needed",
       "benefit1FreeTier": "Monthly credits, top up anytime",
       "benefit2": "Up to 1 hour runtime per job on Pro",
       "benefit3": "Bring your own models (Creator & Pro)"
