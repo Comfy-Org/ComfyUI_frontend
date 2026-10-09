@@ -72,6 +72,9 @@ outputs:
   dependency-changes:
     description: 'Root `.nvmrc`, `package.json`, `pnpm-lock.yaml`, or `pnpm-workspace.yaml` changed.'
     value: ${{ steps.mode.outputs.evaluate != 'true' || steps.filter.outputs.deps == 'true' }}
+  website-only-changes:
+    description: 'Every changed file is under `apps/website/**`.'
+    value: ${{ steps.mode.outputs.evaluate == 'true' && steps.filter.outputs.app_website == 'true' && steps.relevant.outputs.outside_website != 'true' }}
 
 runs:
   using: composite
@@ -142,3 +145,6 @@ runs:
             - *unit
             - '!**/*.test.ts'
             - '!**/__mocks__/**'
+          outside_website:
+            - '**'
+            - '!apps/website/**'
