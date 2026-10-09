@@ -3,9 +3,9 @@ import { computed, ref, useId, useTemplateRef, watch } from 'vue'
 
 import { cn } from '@comfyorg/tailwind-utils'
 
-import type { Relight } from '../../../composables/useRelight'
-import type { Locale } from '../../../i18n/translations'
-import { lc } from '../../../lib/workshop/relight/copy'
+import type { Relight } from '@/composables/useRelight'
+import type { Locale } from '@/i18n/translations'
+import { lc } from '@/lib/workshop/relight/copy'
 import RelightLightEditor from './RelightLightEditor.vue'
 import RelightLightRow from './RelightLightRow.vue'
 

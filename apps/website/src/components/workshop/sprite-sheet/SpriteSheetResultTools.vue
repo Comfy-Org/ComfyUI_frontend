@@ -1,10 +1,10 @@
 <script setup lang="ts">
 import { ChevronLeft, RefreshCw } from '@lucide/vue'
 
-import type { SpriteSheet } from '../../../composables/useSpriteSheet'
-import type { Locale } from '../../../i18n/translations'
-import { spc } from '../../../lib/workshop/sprite-sheet/copy'
-import EditorTool from '../app-editor/EditorTool.vue'
+import type { SpriteSheet } from '@/composables/useSpriteSheet'
+import type { Locale } from '@/i18n/translations'
+import { spc } from '@/lib/workshop/sprite-sheet/copy'
+import EditorTool from '@/components/workshop/app-editor/EditorTool.vue'
 
 const { sprite, locale = 'en' } = defineProps<{
   sprite: SpriteSheet

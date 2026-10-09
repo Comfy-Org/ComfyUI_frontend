@@ -1,4 +1,4 @@
-import { mockJob } from '../mock-job'
+import { mockJob } from '@/lib/workshop/mock-job'
 import type {
   SpriteSheetProgress,
   SpriteSheetRequest,

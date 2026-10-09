@@ -1,11 +1,11 @@
 <script setup lang="ts">
 import { cn } from '@comfyorg/tailwind-utils'
 
-import type { SpriteImage } from '../../../composables/useSpriteSheet'
-import type { Locale } from '../../../i18n/translations'
-import { spc } from '../../../lib/workshop/sprite-sheet/copy'
-import EditorDropZone from '../app-editor/EditorDropZone.vue'
-import EditorUploadSlot from '../app-editor/EditorUploadSlot.vue'
+import type { SpriteImage } from '@/composables/useSpriteSheet'
+import type { Locale } from '@/i18n/translations'
+import { spc } from '@/lib/workshop/sprite-sheet/copy'
+import EditorDropZone from '@/components/workshop/app-editor/EditorDropZone.vue'
+import EditorUploadSlot from '@/components/workshop/app-editor/EditorUploadSlot.vue'
 import { CHECKER } from './checker'
 
 const { image, locale = 'en' } = defineProps<{

@@ -4,9 +4,9 @@ import { computed } from 'vue'
 
 import { cn } from '@comfyorg/tailwind-utils'
 
-import type { Locale } from '../../../i18n/translations'
-import { lc } from '../../../lib/workshop/relight/copy'
-import { LIGHT_COLORS } from '../../../lib/workshop/relight/lights'
+import type { Locale } from '@/i18n/translations'
+import { lc } from '@/lib/workshop/relight/copy'
+import { LIGHT_COLORS } from '@/lib/workshop/relight/lights'
 
 const { label, locale = 'en' } = defineProps<{
   label: string

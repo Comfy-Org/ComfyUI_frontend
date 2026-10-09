@@ -1,6 +1,4 @@
-import type { NamedValues } from '../../../i18n/interpolate'
-import { interpolate } from '../../../i18n/interpolate'
-import type { Locale, LocalizedText } from '../../../i18n/translations'
+import type { Locale, LocalizedText } from '@/i18n/translations'
 
 const copy = {
   'sprite.title': { en: 'Sprite Sheet Generator', 'zh-CN': '精灵图生成器' },
@@ -119,6 +117,8 @@ const copy = {
 
 export type SpriteCopyKey = keyof typeof copy
 
+type NamedValues = Record<string, string | number>
+
 /** Sprite Sheet Generator copy. A `one | many` entry picks by `n`. */
 export function spc(
   key: SpriteCopyKey,
@@ -127,5 +127,9 @@ export function spc(
 ): string {
   const entry: LocalizedText = copy[key]
   const [one, many = one] = (entry[locale] ?? entry.en).split(' | ')
-  return interpolate(named.n === 1 ? one : many, named)
+  return (named.n === 1 ? one : many).replace(
+    /\{(\w+)\}/g,
+    (placeholder, name: string) =>
+      Object.hasOwn(named, name) ? String(named[name]) : placeholder
+  )
 }

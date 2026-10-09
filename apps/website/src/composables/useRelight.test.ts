@@ -2,10 +2,10 @@ import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import type { EffectScope } from 'vue'
 import { effectScope } from 'vue'
 
-import { renderRelitImage } from '../lib/workshop/relight/render-image'
+import { renderRelitImage } from '@/lib/workshop/relight/render-image'
 import { useRelight } from './useRelight'
 
-vi.mock(import('../lib/workshop/relight/render-image'), () => ({
+vi.mock(import('@/lib/workshop/relight/render-image'), () => ({
   renderRelitImage: vi.fn(() => Promise.resolve(undefined))
 }))
 

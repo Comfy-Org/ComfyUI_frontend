@@ -2,7 +2,7 @@ import type { APIRequestContext, Page } from '@playwright/test'
 import { expect } from '@playwright/test'
 import { z } from 'zod'
 
-import { getRoutes } from '../src/config/routes'
+import { getRoutes } from '@/config/routes'
 import { test } from './fixtures/blockExternalMedia'
 import { expectIslandHydrated } from './fixtures/islands'
 import { stubWorkshopFlags } from './fixtures/workshopFlags'
@@ -151,12 +151,12 @@ test.describe('without JavaScript', () => {
     await expect(h1).toHaveCount(1)
     await expect(h1).toHaveText('ComfyUI models')
     await expect(page.getByText(/Grok Imagine in ComfyUI/)).toHaveCount(0)
-    await expect(
-      page
-        .getByTestId('models-directory')
-        .locator(`a[href^="${CATALOGUE_PATH}"]`)
-        .first()
-    ).toBeVisible()
+    const directory = page
+      .getByTestId('models-directory')
+      .locator(`a[href^="${CATALOGUE_PATH}"]`)
+    await expect(directory.first()).toBeHidden()
+    await page.getByTestId('models-directory-toggle').click()
+    await expect(directory.first()).toBeVisible()
   })
 })
 

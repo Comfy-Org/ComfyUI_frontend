@@ -1,9 +1,9 @@
 <script setup lang="ts">
-import type { SpriteSheet } from '../../../composables/useSpriteSheet'
-import type { Locale } from '../../../i18n/translations'
-import { spc } from '../../../lib/workshop/sprite-sheet/copy'
-import { SPRITE_EXAMPLE } from '../../../lib/workshop/sprite-sheet/mock-run'
-import EditorEmpty from '../app-editor/EditorEmpty.vue'
+import type { SpriteSheet } from '@/composables/useSpriteSheet'
+import type { Locale } from '@/i18n/translations'
+import { spc } from '@/lib/workshop/sprite-sheet/copy'
+import { SPRITE_EXAMPLE } from '@/lib/workshop/sprite-sheet/mock-run'
+import EditorEmpty from '@/components/workshop/app-editor/EditorEmpty.vue'
 import SpriteSheetWorkspace from './SpriteSheetWorkspace.vue'
 
 const { sprite, locale = 'en' } = defineProps<{

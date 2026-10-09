@@ -2,15 +2,15 @@ import { fireEvent, render, screen, within } from '@testing-library/vue'
 import userEvent from '@testing-library/user-event'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 
-import { renderSpriteSheet } from '../../../lib/workshop/sprite-sheet/render-sheet'
+import { renderSpriteSheet } from '@/lib/workshop/sprite-sheet/render-sheet'
 import SpriteSheetStudio from './SpriteSheetStudio.vue'
 
-vi.mock(import('../../../lib/workshop/sprite-sheet/render-sheet'), () => ({
+vi.mock(import('@/lib/workshop/sprite-sheet/render-sheet'), () => ({
   renderSpriteSheet: vi.fn(() => Promise.resolve('blob:sheet')),
   renderStyleThumbnails: vi.fn(() => Promise.resolve(undefined))
 }))
 
-vi.mock(import('../../../lib/workshop/image-size'), () => ({
+vi.mock(import('@/lib/workshop/image-size'), () => ({
   imageSize: vi.fn(() => Promise.resolve({ width: 64, height: 64 }))
 }))
 

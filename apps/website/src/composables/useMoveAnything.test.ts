@@ -2,7 +2,7 @@ import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import type { EffectScope } from 'vue'
 import { effectScope } from 'vue'
 
-import { moveRect } from '../lib/workshop/move-anything/arrange'
+import { moveRect } from '@/lib/workshop/move-anything/arrange'
 import { useMoveAnything } from './useMoveAnything'
 
 let scope: EffectScope

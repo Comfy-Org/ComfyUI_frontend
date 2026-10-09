@@ -1,10 +1,16 @@
 import { fromPartial } from '@total-typescript/shoehorn'
-import axios from 'axios'
-import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
+import axios, { AxiosHeaders } from 'axios'
+import type { AxiosResponse } from 'axios'
+import { afterEach, assert, beforeEach, describe, expect, it, vi } from 'vitest'
 
 import type { WebSession } from '@comfyorg/account-core/webSession'
 
 import type { IWidget } from '@/lib/litegraph/src/litegraph'
+import {
+  LGraph,
+  LGraphNode,
+  isComboWidget
+} from '@/lib/litegraph/src/litegraph'
 import type {
   WebSessionRequestScope,
   WebSessionRequests
@@ -63,7 +69,14 @@ const createMockOptions = (inputOverrides = {}) => ({
 })
 
 function mockAxiosResponse(data: unknown, status = 200) {
-  vi.mocked(axios.get).mockResolvedValueOnce({ data, status })
+  const response: AxiosResponse<unknown> = {
+    data,
+    status,
+    statusText: '',
+    headers: new AxiosHeaders(),
+    config: { headers: new AxiosHeaders() }
+  }
+  vi.mocked(axios.get).mockResolvedValueOnce(response)
 }
 
 function mockAxiosError(error: Error | string) {
@@ -930,6 +943,59 @@ describe('useRemoteWidget', () => {
       expect(refreshSpy).not.toHaveBeenCalled()
     })
 
+    it('initializes a remote widget after the same node is removed and re-added', async () => {
+      const graph = new LGraph()
+      const node = new LGraphNode('remote')
+      graph.add(node)
+      const widget = node.addWidget('combo', 'model', DEFAULT_VALUE, () => {}, {
+        values: []
+      })
+      assert(isComboWidget(widget))
+      const hook = useRemoteWidget({
+        node,
+        widget,
+        remoteConfig: createMockConfig(),
+        defaultValue: DEFAULT_VALUE
+      })
+
+      try {
+        graph.remove(node)
+        graph.add(node)
+        mockAxiosResponse(['optionA', 'optionB'])
+
+        await getResolvedValue(hook)
+
+        expect(widget.value).toBe('optionA')
+      } finally {
+        graph.remove(node)
+      }
+    })
+
+    it('does not apply a pending response after the owning widget is removed', async () => {
+      let resolveResponse!: (value: AxiosResponse<string[]>) => void
+      const response = new Promise<AxiosResponse<string[]>>((resolve) => {
+        resolveResponse = resolve
+      })
+      vi.mocked(axios.get).mockReturnValueOnce(response)
+      const options = createMockOptions()
+      options.widget.value = 'saved'
+      const cleanup = vi.fn()
+      options.widget.onRemove = cleanup
+      const hook = useRemoteWidget(options)
+      const loaded = getResolvedValue(hook)
+      options.widget.onRemove()
+      resolveResponse({
+        data: ['replacement'],
+        status: 200,
+        statusText: 'OK',
+        headers: new AxiosHeaders(),
+        config: { headers: new AxiosHeaders() }
+      })
+      await loaded
+      expect(options.widget.value).toBe('saved')
+      expect(cleanup).toHaveBeenCalledOnce()
+    })
+
     it('should cleanup event listener on node removal', async () => {
       let executionSuccessHandler: (() => void) | undefined
 
@@ -1060,14 +1126,13 @@ describe('useRemoteWidget', () => {
 
     it('handles errors thrown by the completion callback', async () => {
       const error = new Error('completion callback failed')
-      const errorSpy = vi.spyOn(console, 'error').mockImplementation(() => {})
       const hook = createHookWithData(['option1'])
 
       hook.getValue(() => {
         throw error
       })
 
-      await vi.waitFor(() => expect(errorSpy).toHaveBeenCalledWith(error))
+      await vi.waitFor(() => expect(console.error).toHaveBeenCalledWith(error))
       expect(hook.getInventoryStatus()).toBe('ready')
     })
 

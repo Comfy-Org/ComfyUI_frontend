@@ -1,6 +1,6 @@
 <script setup lang="ts">
-import type { FramePose } from '../../../lib/workshop/sprite-sheet/poses'
-import { poseTransform } from '../../../lib/workshop/sprite-sheet/poses'
+import type { FramePose } from '@/lib/workshop/sprite-sheet/poses'
+import { poseTransform } from '@/lib/workshop/sprite-sheet/poses'
 
 const { url, pose } = defineProps<{ url: string; pose: FramePose }>()
 </script>

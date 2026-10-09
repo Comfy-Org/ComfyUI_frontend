@@ -244,6 +244,7 @@ describe('createSessionBillingTransport', () => {
 
   it.for([
     ['ACCESS_DENIED', 'ACCESS_DENIED'],
+    ['SSO_REQUIRED', 'ACCESS_DENIED'],
     ['WORKSPACE_NOT_FOUND', 'NOT_FOUND'],
     ['NOT_AUTHENTICATED', 'NOT_AUTHENTICATED'],
     ['INVALID_FIREBASE_TOKEN', 'NOT_AUTHENTICATED'],

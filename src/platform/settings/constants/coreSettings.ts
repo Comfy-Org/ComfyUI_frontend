@@ -405,7 +405,7 @@ export const CORE_SETTINGS: SettingParams[] = [
     category: ['Appearance', 'Tree Explorer', 'ItemPadding'],
     name: 'Tree explorer item padding',
     type: 'slider',
-    defaultValue: 2,
+    defaultValue: 8,
     attrs: {
       min: 0,
       max: 8,
@@ -790,20 +790,12 @@ export const CORE_SETTINGS: SettingParams[] = [
   },
   {
     id: 'Comfy.Pointer.ClickBufferTime',
-    category: ['LiteGraph', 'Pointer', 'ClickBufferTime'],
-    name: 'Pointer click drift delay',
-    tooltip:
-      'After pressing a pointer button down, this is the maximum time (in milliseconds) that pointer movement can be ignored for.\n\nHelps prevent objects from being unintentionally nudged if the pointer is moved whilst clicking.\n\nThe distance threshold (Pointer click drift) already disambiguates clicks from drags; this time threshold only matters when the pointer is held still then released. A long delay here forces every pointerdown to wait before drag begins, which feels laggy when click+dragging an unselected node. ~2 frames at 60fps is plenty.',
-    experimental: true,
-    type: 'slider',
-    attrs: {
-      min: 0,
-      max: 1000,
-      step: 1
-    },
+    name: 'Pointer click drift delay (deprecated)',
+    type: 'hidden',
+    deprecated: true,
     defaultValue: 32,
     versionAdded: '1.4.3',
-    versionModified: '1.44.19'
+    versionModified: '1.54.3'
   },
   {
     id: 'Comfy.Pointer.DoubleClickTime',
@@ -1201,6 +1193,12 @@ export const CORE_SETTINGS: SettingParams[] = [
   {
     id: 'Comfy.AppBuilder.VueNodeSwitchDismissed',
     name: 'App Builder Vue Node switch dismissed',
+    type: 'hidden',
+    defaultValue: false
+  },
+  {
+    id: 'Comfy.PartnerNodesEducation.Dismissed',
+    name: 'Partner nodes education card dismissed',
     type: 'hidden',
     defaultValue: false
   },

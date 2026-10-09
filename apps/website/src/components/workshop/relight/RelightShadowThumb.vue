@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import { cn } from '@comfyorg/tailwind-utils'
 
-import type { ShadowStyle } from '../../../lib/workshop/relight/shadows'
+import type { ShadowStyle } from '@/lib/workshop/relight/shadows'
 
 const { look } = defineProps<{ look: ShadowStyle }>()
 

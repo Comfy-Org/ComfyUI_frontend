@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import { cn } from '@comfyorg/tailwind-utils'
 
-import type { SpriteSheetResult } from '../../../lib/workshop/sprite-sheet/contract'
+import type { SpriteSheetResult } from '@/lib/workshop/sprite-sheet/contract'
 
 const {
   result,

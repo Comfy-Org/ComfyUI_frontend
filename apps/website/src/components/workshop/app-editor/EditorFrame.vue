@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import { inject, onBeforeUnmount, onMounted, useTemplateRef, watch } from 'vue'
 
-import { EDITOR_ZOOM } from '../../../composables/useEditorZoom'
+import { EDITOR_ZOOM } from '@/composables/useEditorZoom'
 import { fittedSize } from './stage-geometry'
 import { zoomTransform } from './zoom'
 

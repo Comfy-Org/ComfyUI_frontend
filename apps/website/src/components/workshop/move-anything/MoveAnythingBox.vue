@@ -4,9 +4,9 @@ import { nextTick, ref, useTemplateRef } from 'vue'
 
 import { cn } from '@comfyorg/tailwind-utils'
 
-import type { Corner, Rect } from '../../../lib/workshop/move-anything/arrange'
-import { nudgeFor } from '../../../lib/workshop/nudge'
-import { rectStyle } from '../app-editor/stage-geometry'
+import type { Corner, Rect } from '@/lib/workshop/move-anything/arrange'
+import { nudgeFor } from '@/lib/workshop/nudge'
+import { rectStyle } from '@/components/workshop/app-editor/stage-geometry'
 
 const {
   rect,

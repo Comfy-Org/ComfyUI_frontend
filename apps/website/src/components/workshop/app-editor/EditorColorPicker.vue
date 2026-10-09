@@ -2,12 +2,12 @@
 import { clamp } from 'es-toolkit'
 import { computed, ref, useTemplateRef, watch } from 'vue'
 
-import type { Hsv } from '../../../lib/workshop/cinematic-studio/color-space'
+import type { Hsv } from '@/lib/workshop/cinematic-studio/color-space'
 import {
   hexToHsv,
   hsvToHex,
   isHex
-} from '../../../lib/workshop/cinematic-studio/color-space'
+} from '@/lib/workshop/cinematic-studio/color-space'
 
 const { labels } = defineProps<{
   /** Names the shade area, the hue slider and the hex field. */

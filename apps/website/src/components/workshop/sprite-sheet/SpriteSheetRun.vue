@@ -1,10 +1,10 @@
 <script setup lang="ts">
-import type { SpriteSheet } from '../../../composables/useSpriteSheet'
-import type { Locale } from '../../../i18n/translations'
-import { spc } from '../../../lib/workshop/sprite-sheet/copy'
-import { SPRITE_CREDITS } from '../../../lib/workshop/sprite-sheet/mock-run'
-import EditorRun from '../app-editor/EditorRun.vue'
-import type { RunProgress } from '../app-editor/run-progress'
+import type { SpriteSheet } from '@/composables/useSpriteSheet'
+import type { Locale } from '@/i18n/translations'
+import { spc } from '@/lib/workshop/sprite-sheet/copy'
+import { SPRITE_CREDITS } from '@/lib/workshop/sprite-sheet/mock-run'
+import EditorRun from '@/components/workshop/app-editor/EditorRun.vue'
+import type { RunProgress } from '@/components/workshop/app-editor/run-progress'
 
 const {
   sprite,

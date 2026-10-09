@@ -1,10 +1,10 @@
 <script setup lang="ts">
 import { Layers, Pause, Play } from '@lucide/vue'
 
-import type { SpritePlayback } from '../../../composables/useSpritePlayback'
-import type { Locale } from '../../../i18n/translations'
-import { spc } from '../../../lib/workshop/sprite-sheet/copy'
-import EditorTool from '../app-editor/EditorTool.vue'
+import type { SpritePlayback } from '@/composables/useSpritePlayback'
+import type { Locale } from '@/i18n/translations'
+import { spc } from '@/lib/workshop/sprite-sheet/copy'
+import EditorTool from '@/components/workshop/app-editor/EditorTool.vue'
 
 const { playback, locale = 'en' } = defineProps<{
   playback: SpritePlayback

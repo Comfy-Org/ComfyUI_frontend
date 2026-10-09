@@ -1,6 +1,6 @@
 <script setup lang="ts">
-import type { Relight, RelightTray } from '../../../composables/useRelight'
-import type { Locale } from '../../../i18n/translations'
+import type { Relight, RelightTray } from '@/composables/useRelight'
+import type { Locale } from '@/i18n/translations'
 import RelightSeed from './RelightSeed.vue'
 import { RELIGHT_SECTIONS } from './sections'
 

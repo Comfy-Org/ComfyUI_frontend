@@ -1,8 +1,8 @@
 import { useIntervalFn, usePreferredReducedMotion } from '@vueuse/core'
 import { computed, ref, watch } from 'vue'
 
-import type { FrameRate } from '../lib/workshop/sprite-sheet/options'
-import { nextFrameRate } from '../lib/workshop/sprite-sheet/options'
+import type { FrameRate } from '@/lib/workshop/sprite-sheet/options'
+import { nextFrameRate } from '@/lib/workshop/sprite-sheet/options'
 
 /** Plays `count()` frames on a loop at a frame rate the visitor picks. */
 export function useSpritePlayback(count: () => number) {

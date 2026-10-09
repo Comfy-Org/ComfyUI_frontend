@@ -1,21 +1,18 @@
 import { tryOnScopeDispose } from '@vueuse/core'
 import { computed, ref, shallowRef } from 'vue'
 
-import { imageSize } from '../lib/workshop/image-size'
+import { imageSize } from '@/lib/workshop/image-size'
 import type {
   SpriteSheetProgress,
   SpriteSheetResult
-} from '../lib/workshop/sprite-sheet/contract'
-import { spriteSheetRequest } from '../lib/workshop/sprite-sheet/contract'
+} from '@/lib/workshop/sprite-sheet/contract'
+import { spriteSheetRequest } from '@/lib/workshop/sprite-sheet/contract'
 import {
   SPRITE_EXAMPLE,
   runSpriteSheet
-} from '../lib/workshop/sprite-sheet/mock-run'
-import type { SpriteSetup } from '../lib/workshop/sprite-sheet/options'
-import {
-  DEFAULT_SETUP,
-  SPRITE_GRID
-} from '../lib/workshop/sprite-sheet/options'
+} from '@/lib/workshop/sprite-sheet/mock-run'
+import type { SpriteSetup } from '@/lib/workshop/sprite-sheet/options'
+import { DEFAULT_SETUP, SPRITE_GRID } from '@/lib/workshop/sprite-sheet/options'
 import { useSpritePlayback } from './useSpritePlayback'
 
 export interface SpriteImage {

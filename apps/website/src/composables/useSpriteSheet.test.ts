@@ -2,10 +2,10 @@ import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import type { EffectScope } from 'vue'
 import { effectScope } from 'vue'
 
-import { renderSpriteSheet } from '../lib/workshop/sprite-sheet/render-sheet'
+import { renderSpriteSheet } from '@/lib/workshop/sprite-sheet/render-sheet'
 import { useSpriteSheet } from './useSpriteSheet'
 
-vi.mock(import('../lib/workshop/sprite-sheet/render-sheet'), () => ({
+vi.mock(import('@/lib/workshop/sprite-sheet/render-sheet'), () => ({
   renderSpriteSheet: vi.fn(() => Promise.resolve('blob:sheet')),
   renderStyleThumbnails: vi.fn(() => Promise.resolve(undefined))
 }))
@@ -32,7 +32,6 @@ beforeEach(() => {
 
 afterEach(() => {
   scope.stop()
-  vi.mocked(renderSpriteSheet).mockClear()
 })
 
 describe('useSpriteSheet', () => {

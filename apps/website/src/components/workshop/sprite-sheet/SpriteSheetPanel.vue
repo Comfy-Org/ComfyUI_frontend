@@ -1,7 +1,7 @@
 <script setup lang="ts">
-import type { SpriteSheet } from '../../../composables/useSpriteSheet'
-import type { Locale } from '../../../i18n/translations'
-import EditorPanelRow from '../app-editor/EditorPanelRow.vue'
+import type { SpriteSheet } from '@/composables/useSpriteSheet'
+import type { Locale } from '@/i18n/translations'
+import EditorPanelRow from '@/components/workshop/app-editor/EditorPanelRow.vue'
 import SpriteSheetAnimation from './SpriteSheetAnimation.vue'
 import SpriteSheetCharacter from './SpriteSheetCharacter.vue'
 import SpriteSheetPickers from './SpriteSheetPickers.vue'

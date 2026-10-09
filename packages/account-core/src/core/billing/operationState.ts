@@ -11,20 +11,55 @@
  * so no server or payment-provider text can reach a consumer through this
  * state.
  */
-import { zBillingOpStatusResponse } from '@comfyorg/ingest-types/zod'
-import type { z } from 'zod'
+import {
+  zBillingOpChargeBreakdown,
+  zBillingOpChargeReason,
+  zBillingOpReceiptPlan,
+  zBillingOpStatusResponse
+} from '@comfyorg/ingest-types/zod'
+import { z } from 'zod'
 
 import type { BillingScope } from './billingScope.js'
+import { SubscriptionDiscountSchema } from './subscriptionDiscount.js'
 import { wireCents } from './wireCents.js'
+
+const ChargeBreakdownSchema = zBillingOpChargeBreakdown.extend({
+  amount_charged_cents: wireCents,
+  reasons: z.array(
+    zBillingOpChargeReason.extend({
+      amount_cents: wireCents,
+      discount: SubscriptionDiscountSchema.optional()
+    })
+  )
+})
+
+const ReceiptPlanSchema = zBillingOpReceiptPlan.extend({
+  price_cents: wireCents.optional(),
+  monthly_price_cents: wireCents.optional()
+})
 
 export const BillingOpStatusSchema = zBillingOpStatusResponse.extend({
   amount_charged_cents: wireCents.optional(),
-  credits_added: wireCents.optional()
+  credits_added: wireCents.optional(),
+  charge_breakdown: ChargeBreakdownSchema.optional(),
+  plan: ReceiptPlanSchema.optional()
 })
 
 export type BillingOpStatus = z.infer<typeof BillingOpStatusSchema>
 
+export type BillingChargeBreakdown = NonNullable<
+  BillingOpStatus['charge_breakdown']
+>
+export type BillingChargeReason = BillingChargeBreakdown['reasons'][number]
+
 export type BillingOperationKind = 'subscription' | 'topup' | 'cancel'
+
+/**
+ * The plan the server reports an operation is for, in every status of a plan
+ * change, initial subscription or resubscribe. Its tier and prices are absent
+ * when the server cannot describe the plan.
+ */
+export type BillingOperationPlan = NonNullable<BillingOpStatus['plan']>
 
 /**
  * Where the customer completes the operation: the challenge this tab drives
@@ -108,8 +143,11 @@ export type PendingBillingOperation = BillingOperationIdentity & {
   /** Set while the customer's last attempt was declined and they may try again. */
   readonly declineReason?: BillingDeclineReason
   readonly recoveryAction?: BillingRecoveryAction
+  /** The server's word on whether cancelling this operation would take effect; absent is no claim. */
+  readonly cancelable?: boolean
   /** True once the operation has ever waited on the customer; widens the poll budget. */
   readonly customerActionSeen: boolean
+  readonly plan?: BillingOperationPlan
 }
 
 export type FailedBillingOperation = BillingOperationIdentity & {
@@ -127,8 +165,9 @@ export type FailedBillingOperation = BillingOperationIdentity & {
  */
 export interface BillingOperationReceipt {
   readonly amountChargedCents?: number
+  readonly chargeBreakdown?: BillingChargeBreakdown
   readonly creditsAdded?: number
-  readonly plan?: NonNullable<BillingOpStatus['plan']>
+  readonly plan?: BillingOperationPlan
 }
 
 export type SucceededBillingOperation = BillingOperationIdentity & {
@@ -287,6 +326,9 @@ function receiptOf(
     ...(status.amount_charged_cents === undefined
       ? {}
       : { amountChargedCents: status.amount_charged_cents }),
+    ...(status.charge_breakdown === undefined
+      ? {}
+      : { chargeBreakdown: status.charge_breakdown }),
     ...(status.credits_added === undefined
       ? {}
       : { creditsAdded: status.credits_added }),
@@ -370,15 +412,18 @@ function reducePending(
     : status.authentication_state
   const actionUrl = nextActionUrl(state, status, authenticationState)
   const declineReason = nextDeclineReason(state, status, authenticationState)
+  const { plan: _previousPlan, ...rest } = state
 
   return {
-    ...state,
+    ...rest,
+    ...(status.plan === undefined ? {} : { plan: status.plan }),
     challenge: nextChallenge(state, status),
     authenticationState,
     actionUrl,
     serverPhase: status.phase,
     declineReason,
     recoveryAction: status.recovery_action,
+    cancelable: status.cancelable,
     customerActionSeen:
       state.customerActionSeen ||
       actionUrl !== undefined ||

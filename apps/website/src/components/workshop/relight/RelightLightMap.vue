@@ -3,9 +3,9 @@ import { Minus, Orbit, X } from '@lucide/vue'
 import { useMediaQuery } from '@vueuse/core'
 import { ref } from 'vue'
 
-import type { Locale } from '../../../i18n/translations'
-import { lc } from '../../../lib/workshop/relight/copy'
-import type { Light } from '../../../lib/workshop/relight/lights'
+import type { Locale } from '@/i18n/translations'
+import { lc } from '@/lib/workshop/relight/copy'
+import type { Light } from '@/lib/workshop/relight/lights'
 import RelightMapView from './RelightMapView.vue'
 
 const {

@@ -1,17 +1,14 @@
 <script setup lang="ts">
+import { translationsFor } from '@/i18n/translations'
 import { computed, ref } from 'vue'
 
 import { cn } from '@comfyorg/tailwind-utils'
 
-import type { CinematicModel } from '../../../lib/workshop/cinematic-studio/models'
-import type { Reel } from '../../../lib/workshop/cinematic-studio/reel'
-import {
-  selectedTake,
-  takesOfShot
-} from '../../../lib/workshop/cinematic-studio/reel'
-import type { StarterShot } from '../../../lib/workshop/cinematic-studio/starters'
-import type { Locale } from '../../../i18n/translations'
-import { tc } from '../../../lib/workshop/cinematic-studio/copy'
+import type { CinematicModel } from '@/lib/workshop/cinematic-studio/models'
+import type { Reel } from '@/lib/workshop/cinematic-studio/reel'
+import { selectedTake, takesOfShot } from '@/lib/workshop/cinematic-studio/reel'
+import type { StarterShot } from '@/lib/workshop/cinematic-studio/starters'
+import type { Locale } from '@/i18n/translations'
 import { framedStyle } from './aspect-style'
 import CinematicCreditSummary from './CinematicCreditSummary.vue'
 import CinematicFirstRun from './CinematicFirstRun.vue'
@@ -37,6 +34,7 @@ const {
   memberWorkspace?: string
   locale?: Locale
 }>()
+const { t } = translationsFor(locale)
 
 const emit = defineEmits<{
   select: [id: string]
@@ -75,10 +73,12 @@ const otherModel = computed(() => {
 <template>
   <section
     class="flex min-h-0 min-w-0 flex-1 flex-col items-center justify-center gap-3 px-4 pt-6 pb-10 sm:px-8 lg:px-14"
-    :aria-label="tc('cinematic.stage.label', locale)"
+    :aria-label="t('cinematic.stage.label')"
   >
     <template v-if="current">
-      <h1 class="sr-only">{{ tc('cinematic.title', locale) }}</h1>
+      <h1 class="sr-only">
+        {{ t('cinematic.title') }}
+      </h1>
       <div
         data-testid="cinematic-take-column"
         class="flex max-w-5xl flex-col gap-3"

@@ -1,7 +1,7 @@
 import { shallowRef, watch } from 'vue'
 
-import type { SpriteStyle } from '../lib/workshop/sprite-sheet/options'
-import { renderStyleThumbnails } from '../lib/workshop/sprite-sheet/render-sheet'
+import type { SpriteStyle } from '@/lib/workshop/sprite-sheet/options'
+import { renderStyleThumbnails } from '@/lib/workshop/sprite-sheet/render-sheet'
 
 type Thumbnails = Partial<Record<SpriteStyle, string>>
 

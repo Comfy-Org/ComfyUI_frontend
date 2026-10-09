@@ -8,6 +8,10 @@ import ConfirmationDialogContent from '@/components/dialog/content/ConfirmationD
 import ErrorDialogContent from '@/components/dialog/content/ErrorDialogContent.vue'
 import PromptDialogContent from '@/components/dialog/content/PromptDialogContent.vue'
 import TopUpCreditsDialogContentLegacy from '@/components/dialog/content/TopUpCreditsDialogContentLegacy.vue'
+import {
+  HUG_CONTENT_CLASS,
+  SELF_STYLED_PANEL_CONTENT_CLASS
+} from '@/components/ui/dialog/dialog.variants'
 import InsufficientCreditsMemberDialog from '@/platform/workspace/components/InsufficientCreditsMemberDialog.vue'
 import TopUpCreditsDialogContentWorkspace from '@/platform/workspace/components/TopUpCreditsDialogContentWorkspace.vue'
 import { useBillingCapabilities } from '@/platform/workspace/composables/useBillingCapabilities'
@@ -32,6 +36,7 @@ import type { SubscriptionDialogOptions } from '@/platform/cloud/subscription/co
 import type { PaymentIntentSource } from '@/platform/telemetry/types'
 import type { WorkspaceRole } from '@/platform/workspace/api/workspaceApi'
 import type { DowngradeToPersonalResult } from '@/platform/workspace/composables/useDowngradeToPersonal'
+import type { CancellationFlowDialogOptions } from '@/platform/cloud/subscription/launchCancellationFlow'
 
 // Lazy loaders for dialogs - components are loaded on first use
 const lazyApiNodesSignInContent = () =>
@@ -46,20 +51,6 @@ const lazyCloudNotificationContent = () =>
   import('@/platform/cloud/notification/components/CloudNotificationContent.vue')
 const lazyPublishDialog = () =>
   import('@/platform/workflow/sharing/components/publish/ComfyHubPublishDialog.vue')
-
-/**
- * Shrink-wrap the Reka DialogContent around the content's intrinsic width,
- * like the auto-sized PrimeVue root it replaces.
- */
-const HUG_CONTENT_CLASS =
-  'w-fit max-w-[calc(100vw-1rem)] sm:max-w-[calc(100vw-1rem)]'
-
-/**
- * Reka chrome for headless dialogs whose content draws its own panel
- * (background/border/rounding) — neutralize the DialogContent box and
- * shrink-wrap it around the content.
- */
-const SELF_STYLED_PANEL_CONTENT_CLASS = `${HUG_CONTENT_CLASS} border-none bg-transparent shadow-none`
 
 // A type alias, not an interface: `showDialog`'s props are index-signature
 // typed, and only object literal types get an implicit index signature.
@@ -485,6 +476,14 @@ export const useDialogService = () => {
   }
 
   async function showTopUpCreditsDialog(options?: TopUpCreditsDialogOptions) {
+    useTelemetry()?.trackBillingEvent({
+      operation: 'entry',
+      stage: 'add_credits_clicked',
+      outcome: 'pending',
+      payment_intent_source:
+        options?.source ??
+        (options?.isInsufficientCredits ? 'out_of_credits' : undefined)
+    })
     const { type } = useBillingContext()
     const { canTopUp, canSubscribeSelfServe, isReady, initialize } =
       useBillingCapabilities()
@@ -518,20 +517,15 @@ export const useDialogService = () => {
     }
     if (!canTopUp.value) return
 
-    // Only the workspace rail's content declares `source`; the legacy one
-    // takes `isInsufficientCredits` alone, so forwarding the whole options
-    // object there lands `source` in attrs as a stray DOM attribute on its
-    // root rather than as attribution.
-    const isWorkspaceRail = type.value === 'workspace'
+    // Unknown never selects the legacy content, which buys credits directly.
+    const isWorkspaceRail = type.value !== 'legacy'
 
     return dialogStore.showDialog({
       key: 'top-up-credits',
       component: isWorkspaceRail
         ? TopUpCreditsDialogContentWorkspace
         : TopUpCreditsDialogContentLegacy,
-      props: isWorkspaceRail
-        ? options
-        : { isInsufficientCredits: options?.isInsufficientCredits },
+      props: options,
       dialogComponentProps: {
         renderer: 'reka',
         headless: true,
@@ -614,10 +608,7 @@ export const useDialogService = () => {
       dialogComponentProps: {
         renderer: 'reka',
         closable: true,
-        // Contents bring their own width and separators — shrink-wrap the
-        // chrome and zero the section padding.
-        contentClass:
-          'w-fit max-w-[calc(100vw-var(--workspace-inset-right,0px)-1rem)] sm:max-w-[calc(100vw-var(--workspace-inset-right,0px)-1rem)] border-border-default',
+        contentClass: `${HUG_CONTENT_CLASS} border-border-default`,
         headerClass: 'p-0',
         bodyClass: 'p-0 overflow-y-hidden',
         footerClass: 'p-0',
@@ -873,13 +864,15 @@ export const useDialogService = () => {
   async function showCancelSubscriptionDialog(
     cancelAt?: string,
     flowAlreadyOpened?: boolean,
-    isScopeCurrent?: () => boolean
+    isScopeCurrent?: () => boolean,
+    flowAlreadyConfirmed?: boolean
   ) {
     const { default: component } =
       await import('@/components/dialog/content/subscription/CancelSubscriptionDialogContent.vue')
     if (isScopeCurrent && !isScopeCurrent()) return false
     const guardedProps = {
       ...(flowAlreadyOpened !== undefined ? { flowAlreadyOpened } : {}),
+      ...(flowAlreadyConfirmed !== undefined ? { flowAlreadyConfirmed } : {}),
       ...(cancelAt !== undefined ? { cancelAt } : {}),
       ...(isScopeCurrent ? { isScopeCurrent } : {})
     }
@@ -897,6 +890,24 @@ export const useDialogService = () => {
     })
   }
 
+  async function showCancellationFlowDialog(
+    options: CancellationFlowDialogOptions
+  ) {
+    const { default: component } =
+      await import('@/platform/cloud/subscription/components/CancellationFlowDialogContent.vue')
+    if (!options.isScopeCurrent()) return false
+    return dialogStore.showDialog({
+      key: 'cancel-subscription',
+      component,
+      props: { ...options },
+      dialogComponentProps: {
+        ...workspaceDialogProps,
+        closable: false,
+        dismissableMask: false
+      }
+    })
+  }
+
   async function showCancelSubscriptionFlow(cancelAt?: string) {
     const launchWorkspaceId = useTeamWorkspaceStore().activeWorkspaceId
     const cancellationFlow =
@@ -904,15 +915,7 @@ export const useDialogService = () => {
     return cancellationFlow.launchCancellationFlow({
       cancelAt,
       launchWorkspaceId,
-      showFallback: ({
-        flowAlreadyOpened = false,
-        isScopeCurrent = () => true
-      } = {}) =>
-        showCancelSubscriptionDialog(
-          cancelAt,
-          flowAlreadyOpened,
-          isScopeCurrent
-        )
+      showFlow: showCancellationFlowDialog
     })
   }
 
@@ -925,6 +928,7 @@ export const useDialogService = () => {
   async function showDowngradeToPersonalDialog(options: {
     planName: string
     planSlug: string
+    paymentIntentSource?: PaymentIntentSource
   }): Promise<DowngradeToPersonalResult | null> {
     const {
       useDowngradeToPersonal,
@@ -936,7 +940,9 @@ export const useDialogService = () => {
       refreshMembers,
       previewDowngrade,
       downgradeToPersonal
-    } = useDowngradeToPersonal()
+    } = useDowngradeToPersonal({
+      paymentIntentSource: options.paymentIntentSource
+    })
 
     let requiresReactivation = false
     let chargeCents = 0
@@ -1034,7 +1040,7 @@ export const useDialogService = () => {
         dialogComponentProps: {
           closable: false,
           contentClass:
-            'w-170 max-w-[calc(100vw-var(--workspace-inset-right,0px)-1rem)] sm:max-w-[min(42.5rem,calc(100vw-var(--workspace-inset-right,0px)-1rem))] rounded-2xl overflow-hidden',
+            'w-170 max-w-[calc(100vw-1rem)] sm:max-w-[calc(100vw-1rem)] rounded-2xl overflow-hidden',
           onRemoved: () => resolve()
         }
       })

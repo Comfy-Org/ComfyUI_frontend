@@ -1,8 +1,8 @@
 <script setup lang="ts">
-import type { SpriteSheet } from '../../../composables/useSpriteSheet'
-import type { Locale } from '../../../i18n/translations'
-import { spc } from '../../../lib/workshop/sprite-sheet/copy'
-import EditorHistory from '../app-editor/EditorHistory.vue'
+import type { SpriteSheet } from '@/composables/useSpriteSheet'
+import type { Locale } from '@/i18n/translations'
+import { spc } from '@/lib/workshop/sprite-sheet/copy'
+import EditorHistory from '@/components/workshop/app-editor/EditorHistory.vue'
 
 const { sprite, locale = 'en' } = defineProps<{
   sprite: SpriteSheet

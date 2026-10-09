@@ -1,13 +1,13 @@
 <script setup lang="ts">
 import { Plus } from '@lucide/vue'
 
-import type { Relight, RelightTray } from '../../../composables/useRelight'
-import type { Locale } from '../../../i18n/translations'
-import { lc } from '../../../lib/workshop/relight/copy'
-import { MOOD_LABELS } from '../../../lib/workshop/relight/lights'
-import EditorChip from '../app-editor/EditorChip.vue'
-import EditorDivider from '../app-editor/EditorDivider.vue'
-import EditorTool from '../app-editor/EditorTool.vue'
+import type { Relight, RelightTray } from '@/composables/useRelight'
+import type { Locale } from '@/i18n/translations'
+import { lc } from '@/lib/workshop/relight/copy'
+import { MOOD_LABELS } from '@/lib/workshop/relight/lights'
+import EditorChip from '@/components/workshop/app-editor/EditorChip.vue'
+import EditorDivider from '@/components/workshop/app-editor/EditorDivider.vue'
+import EditorTool from '@/components/workshop/app-editor/EditorTool.vue'
 import RelightRun from './RelightRun.vue'
 import { sectionMeta } from './sections'
 

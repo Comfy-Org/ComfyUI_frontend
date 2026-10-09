@@ -1,5 +1,5 @@
-import type { UseCase } from '../../config/models-catalogue'
-import type { TranslationKey } from '../../i18n/translations'
+import type { UseCase } from '@/config/models-catalogue'
+import type { TranslationKey } from '@/i18n/translations'
 
 export interface GalleryMedia {
   src: string

@@ -3,9 +3,9 @@ import { Film, LayoutGrid } from '@lucide/vue'
 
 import { cn } from '@comfyorg/tailwind-utils'
 
-import type { SpriteSheet } from '../../../composables/useSpriteSheet'
-import type { Locale } from '../../../i18n/translations'
-import { spc } from '../../../lib/workshop/sprite-sheet/copy'
+import type { SpriteSheet } from '@/composables/useSpriteSheet'
+import type { Locale } from '@/i18n/translations'
+import { spc } from '@/lib/workshop/sprite-sheet/copy'
 
 const { sprite, locale = 'en' } = defineProps<{
   sprite: SpriteSheet

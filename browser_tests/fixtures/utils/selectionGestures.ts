@@ -19,7 +19,7 @@ export async function pressMoveRelease(
   await comfyPage.page.mouse.move(origin.x, origin.y)
   await comfyPage.page.mouse.down()
   try {
-    // Deliberate hold tests time-based drag promotion, not rendering readiness.
+    // Deliberate hold proves press duration does not promote a click to a drag.
     if (holdMs) await sleep(holdMs)
     await comfyPage.page.mouse.move(origin.x + delta.x, origin.y + delta.y)
   } finally {

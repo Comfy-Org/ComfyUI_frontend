@@ -1,10 +1,10 @@
 <script setup lang="ts">
 import { computed } from 'vue'
 
-import type { SpriteSheet } from '../../../composables/useSpriteSheet'
-import type { Locale } from '../../../i18n/translations'
-import { spc } from '../../../lib/workshop/sprite-sheet/copy'
-import EditorTextArea from '../app-editor/EditorTextArea.vue'
+import type { SpriteSheet } from '@/composables/useSpriteSheet'
+import type { Locale } from '@/i18n/translations'
+import { spc } from '@/lib/workshop/sprite-sheet/copy'
+import EditorTextArea from '@/components/workshop/app-editor/EditorTextArea.vue'
 
 const { sprite, locale = 'en' } = defineProps<{
   sprite: SpriteSheet

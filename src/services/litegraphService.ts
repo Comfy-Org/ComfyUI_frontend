@@ -1,6 +1,7 @@
 import { pick, zip } from 'es-toolkit/compat'
 
 import { downloadFile, openFileInNewTab } from '@/base/common/downloadUtil'
+import { visibleCanvasViewport } from '@/composables/canvas/visibleCanvasViewport'
 import { useSelectedLiteGraphItems } from '@/composables/canvas/useSelectedLiteGraphItems'
 import { useSubgraphOperations } from '@/composables/graph/useSubgraphOperations'
 import { useNodeAnimatedImage } from '@/composables/node/useNodeAnimatedImage'
@@ -52,9 +53,16 @@ import type {
   InputSpec,
   OutputSpec
 } from '@/schemas/nodeDef/nodeDefSchemaV2'
-import type { ComfyNodeDef as ComfyNodeDefV1 } from '@/schemas/nodeDefSchema'
+import type {
+  ComfyNodeDef as ComfyNodeDefV1,
+  InputSpec as InputSpecV1
+} from '@/schemas/nodeDefSchema'
+import {
+  getInputSpecType,
+  zDynamicGroupInputSpec
+} from '@/schemas/nodeDefSchema'
 import { ComfyApp, app } from '@/scripts/app'
-import { $el } from '@/scripts/ui'
+import { $el } from '@/scripts/ui/utils'
 import { useExecutionStore } from '@/stores/executionStore'
 import { useNodeOutputStore } from '@/stores/nodeOutputStore'
 import { ComfyNodeDefImpl } from '@/stores/nodeDefStore'
@@ -74,7 +82,6 @@ import type { WidgetId } from '@/types/widgetId'
 import { normalizeI18nKey } from '@/utils/formatUtil'
 import {
   isAnimatedOutput,
-  isImageNode,
   isVideoNode,
   isVideoOutput,
   migrateWidgetsValues
@@ -82,7 +89,6 @@ import {
 import { getOrderedInputSpecs } from '@/workbench/utils/nodeDefOrderingUtil'
 
 import { useExtensionService } from './extensionService'
-import { useMaskEditor } from '@/composables/maskeditor/useMaskEditor'
 
 async function reencodeAsPngBlob(
   blob: Blob,
@@ -276,6 +282,19 @@ export const useLitegraphService = () => {
     addInputWidget(node, inputSpec, { dynamic: true })
   }
 
+  function validateDynamicGroupWidgets(inputData: InputSpecV1, name: string) {
+    const { template } = zDynamicGroupInputSpec.parse(inputData)[1]
+    const fields = { ...template.required, ...template.optional }
+    for (const [field, spec] of Object.entries(fields)) {
+      if (
+        !widgetStore.widgets.has(spec[1]?.widgetType ?? getInputSpecType(spec))
+      )
+        throw new TypeError(
+          `DynamicGroup field '${name}.${field}' requires a registered widget`
+        )
+    }
+  }
+
   /**
    * @internal Add a widget to the node. For both primitive types and custom widgets
    * (unless `socketless`), an input socket is also added.
@@ -301,13 +320,11 @@ export const useLitegraphService = () => {
     const widgetConstructor = widgetStore.widgets.get(widgetInputSpec.type)
     if (!widgetConstructor || inputSpec.forceInput) return
 
+    const inputData = transformInputSpecV2ToV1(widgetInputSpec)
+    if (widgetInputSpec.type === 'COMFY_DYNAMICGROUP_V3')
+      validateDynamicGroupWidgets(inputData, inputName)
     const widgetsBefore = new Set(node.widgets ?? [])
-    const result = widgetConstructor(
-      node,
-      inputName,
-      transformInputSpecV2ToV1(widgetInputSpec),
-      app
-    )
+    const result = widgetConstructor(node, inputName, inputData, app)
     const wrappedResult = result && !('type' in result) ? result : undefined
     const { minWidth = 1, minHeight = 1 } = wrappedResult ?? {}
     const returnedWidget = result && 'type' in result ? result : result?.widget
@@ -751,15 +768,6 @@ export const useLitegraphService = () => {
             }, 'input')
           })
         }
-
-        if (isImageNode(this)) {
-          options.push({
-            content: 'Open in MaskEditor | Image Canvas',
-            callback: markCoreMediaMenuCallback(() => {
-              useMaskEditor().openMaskEditor(this)
-            }, 'preview')
-          })
-        }
       }
       if (this instanceof SubgraphNode) {
         options.unshift(
@@ -953,11 +961,10 @@ export const useLitegraphService = () => {
   }
 
   function getCanvasCenter(): Point {
-    const dpi = Math.max(window.devicePixelRatio || 1, 1)
     if (!app.isGraphReady) return [0, 0]
     const visibleArea = app.canvas.ds.visible_area
     const [x, y, w, h] = visibleArea
-    return [x + w / dpi / 2, y + h / dpi / 2]
+    return [x + w / 2, y + h / 2]
   }
 
   function goToNode(nodeId: SerializedNodeId) {
@@ -995,7 +1002,9 @@ export const useLitegraphService = () => {
     const bounds = createBounds(nodes)
     if (!bounds) return
 
-    canvas.ds.fitToBounds(bounds)
+    canvas.ds.fitToBounds(bounds, {
+      viewport: visibleCanvasViewport(canvas)
+    })
     canvas.setDirty(true, true)
   }
 

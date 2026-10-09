@@ -133,7 +133,10 @@ describe('DockedAgentPanel', () => {
     const runMode = useAgentRunModeStore()
     await vi.waitFor(() => expect(runMode.mode).toBe('auto_limited'))
     expect(runMode.creditLimit).toBe(25)
-    expect(fetchApi).toHaveBeenCalledWith('/agent/run-mode', { method: 'GET' })
+    expect(fetchApi).toHaveBeenCalledWith(
+      '/agent/run-mode',
+      expect.objectContaining({ method: 'GET' })
+    )
   })
 
   it('reports non-404 run mode load failures', async () => {
@@ -149,12 +152,18 @@ describe('DockedAgentPanel', () => {
     )
   })
 
-  it('renders nothing while the panel is closed', () => {
+  it('does not mount the Agent root until the panel opens', async () => {
     const store = openPanel()
     store.isOpen = false
     renderPanel()
 
     expect(screen.queryByTestId('docked-agent-panel')).toBeNull()
+    expect(screen.queryByTestId('agent-panel-root-stub')).toBeNull()
+
+    store.isOpen = true
+    await nextTick()
+
+    expect(await screen.findByTestId('agent-panel-root-stub')).toBeTruthy()
   })
 
   it('renders nothing while the feature is disabled', () => {

@@ -3,16 +3,16 @@ import { computed } from 'vue'
 
 import { cn } from '@comfyorg/tailwind-utils'
 
-import type { SpriteSheet } from '../../../composables/useSpriteSheet'
-import { useStyleThumbnails } from '../../../composables/useStyleThumbnails'
-import type { Locale } from '../../../i18n/translations'
-import { spc } from '../../../lib/workshop/sprite-sheet/copy'
-import type { SpriteStyle } from '../../../lib/workshop/sprite-sheet/options'
+import type { SpriteSheet } from '@/composables/useSpriteSheet'
+import { useStyleThumbnails } from '@/composables/useStyleThumbnails'
+import type { Locale } from '@/i18n/translations'
+import { spc } from '@/lib/workshop/sprite-sheet/copy'
+import type { SpriteStyle } from '@/lib/workshop/sprite-sheet/options'
 import {
   SPRITE_STYLES,
   STYLE_LABELS
-} from '../../../lib/workshop/sprite-sheet/options'
-import EditorTiles from '../app-editor/EditorTiles.vue'
+} from '@/lib/workshop/sprite-sheet/options'
+import EditorTiles from '@/components/workshop/app-editor/EditorTiles.vue'
 import SpriteSheetTile from './SpriteSheetTile.vue'
 
 const { sprite, locale = 'en' } = defineProps<{

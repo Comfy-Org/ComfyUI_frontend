@@ -8,8 +8,8 @@ import { cn } from '@comfyorg/tailwind-utils'
 import {
   FORMAT_TRIGGER_CLASS,
   SEGMENT_TRIGGER_CLASS
-} from '../cinematic-studio/cinematic-menu-trigger'
-import CinematicMenu from '../cinematic-studio/CinematicMenu.vue'
+} from '@/components/workshop/cinematic-studio/cinematic-menu-trigger'
+import CinematicMenu from '@/components/workshop/cinematic-studio/CinematicMenu.vue'
 
 const {
   heading,

@@ -1,7 +1,7 @@
 <script setup lang="ts">
-import type { SpriteSheet } from '../../../composables/useSpriteSheet'
-import type { Locale } from '../../../i18n/translations'
-import EditorDivider from '../app-editor/EditorDivider.vue'
+import type { SpriteSheet } from '@/composables/useSpriteSheet'
+import type { Locale } from '@/i18n/translations'
+import EditorDivider from '@/components/workshop/app-editor/EditorDivider.vue'
 import SpriteSheetChips from './SpriteSheetChips.vue'
 import SpriteSheetPlayback from './SpriteSheetPlayback.vue'
 import SpriteSheetResultTools from './SpriteSheetResultTools.vue'

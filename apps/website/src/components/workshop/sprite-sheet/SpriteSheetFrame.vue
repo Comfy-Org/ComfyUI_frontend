@@ -1,7 +1,7 @@
 <script setup lang="ts">
-import type { SpriteSheet } from '../../../composables/useSpriteSheet'
-import { SPRITE_GRID } from '../../../lib/workshop/sprite-sheet/options'
-import { framePose } from '../../../lib/workshop/sprite-sheet/poses'
+import type { SpriteSheet } from '@/composables/useSpriteSheet'
+import { SPRITE_GRID } from '@/lib/workshop/sprite-sheet/options'
+import { framePose } from '@/lib/workshop/sprite-sheet/poses'
 import SpriteSheetCell from './SpriteSheetCell.vue'
 import SpriteSheetDraftFrame from './SpriteSheetDraftFrame.vue'
 

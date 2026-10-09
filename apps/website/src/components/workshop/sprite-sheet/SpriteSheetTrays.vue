@@ -1,8 +1,8 @@
 <script setup lang="ts">
-import type { SpriteSheet } from '../../../composables/useSpriteSheet'
-import type { Locale } from '../../../i18n/translations'
-import { spc } from '../../../lib/workshop/sprite-sheet/copy'
-import EditorTray from '../app-editor/EditorTray.vue'
+import type { SpriteSheet } from '@/composables/useSpriteSheet'
+import type { Locale } from '@/i18n/translations'
+import { spc } from '@/lib/workshop/sprite-sheet/copy'
+import EditorTray from '@/components/workshop/app-editor/EditorTray.vue'
 import { SPRITE_TRAYS, sectionMeta } from './sections'
 
 const { sprite, locale = 'en' } = defineProps<{

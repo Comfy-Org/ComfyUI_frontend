@@ -15,7 +15,7 @@ vi.hoisted(() => {
 })
 
 import { i18n } from '@/i18n'
-import type { ComposerAttachment } from '../../composables/agent/useComposer'
+import type { ComposerAttachment } from '../../types/composerAttachment'
 import { toTurnId } from '../../schemas/agentApiSchema'
 import type { WorkflowReference } from '../../types/workflowReference'
 import type { AgentStarterPromptAttribution } from '../../utils/starterPrompts'
@@ -44,9 +44,24 @@ function mountHistory(
       historyGroups: {
         ...createHistoryGroups(),
         today: [
-          { id: 'first', title: 'First chat', updatedAt: 1 },
-          { id: 'second', title: 'Second chat', updatedAt: 2 },
-          { id: 'previous', title: 'Previous chat', updatedAt: 3 }
+          {
+            id: 'first',
+            title: 'First chat',
+            updatedAt: 1,
+            titleSource: 'server'
+          },
+          {
+            id: 'second',
+            title: 'Second chat',
+            updatedAt: 2,
+            titleSource: 'server'
+          },
+          {
+            id: 'previous',
+            title: 'Previous chat',
+            updatedAt: 3,
+            titleSource: 'server'
+          }
         ]
       },
       selectHistory

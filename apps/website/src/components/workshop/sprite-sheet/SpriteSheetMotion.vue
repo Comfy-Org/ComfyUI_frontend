@@ -1,17 +1,17 @@
 <script setup lang="ts">
 import { computed } from 'vue'
 
-import type { SpriteSheet } from '../../../composables/useSpriteSheet'
-import type { Locale } from '../../../i18n/translations'
-import { spc } from '../../../lib/workshop/sprite-sheet/copy'
-import type { SpriteMotion } from '../../../lib/workshop/sprite-sheet/options'
+import type { SpriteSheet } from '@/composables/useSpriteSheet'
+import type { Locale } from '@/i18n/translations'
+import { spc } from '@/lib/workshop/sprite-sheet/copy'
+import type { SpriteMotion } from '@/lib/workshop/sprite-sheet/options'
 import {
   MOTION_LABELS,
   SPRITE_GRID,
   SPRITE_MOTIONS
-} from '../../../lib/workshop/sprite-sheet/options'
-import { framePose } from '../../../lib/workshop/sprite-sheet/poses'
-import EditorTiles from '../app-editor/EditorTiles.vue'
+} from '@/lib/workshop/sprite-sheet/options'
+import { framePose } from '@/lib/workshop/sprite-sheet/poses'
+import EditorTiles from '@/components/workshop/app-editor/EditorTiles.vue'
 import SpriteSheetDraftFrame from './SpriteSheetDraftFrame.vue'
 import SpriteSheetTile from './SpriteSheetTile.vue'
 

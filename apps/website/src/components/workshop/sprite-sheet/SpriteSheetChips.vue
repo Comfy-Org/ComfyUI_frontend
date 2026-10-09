@@ -1,9 +1,9 @@
 <script setup lang="ts">
-import type { SpriteSheet } from '../../../composables/useSpriteSheet'
-import type { Locale } from '../../../i18n/translations'
-import { spc } from '../../../lib/workshop/sprite-sheet/copy'
-import EditorChip from '../app-editor/EditorChip.vue'
-import EditorDivider from '../app-editor/EditorDivider.vue'
+import type { SpriteSheet } from '@/composables/useSpriteSheet'
+import type { Locale } from '@/i18n/translations'
+import { spc } from '@/lib/workshop/sprite-sheet/copy'
+import EditorChip from '@/components/workshop/app-editor/EditorChip.vue'
+import EditorDivider from '@/components/workshop/app-editor/EditorDivider.vue'
 import SpriteSheetRun from './SpriteSheetRun.vue'
 import { SPRITE_TRAYS, sectionMeta } from './sections'
 

@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import type { RelightMask } from '../../../lib/workshop/relight/lights'
+import type { RelightMask } from '@/lib/workshop/relight/lights'
 
 const { mask } = defineProps<{ mask: RelightMask }>()
 </script>

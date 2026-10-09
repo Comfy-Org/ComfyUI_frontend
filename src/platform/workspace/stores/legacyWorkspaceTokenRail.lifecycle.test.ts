@@ -123,8 +123,6 @@ beforeEach(() => {
     return Promise.resolve(tokenResponse({}, workspaceId))
   })
   vi.stubGlobal('fetch', mockFetch)
-  vi.spyOn(console, 'warn').mockImplementation(() => {})
-  vi.spyOn(console, 'error').mockImplementation(() => {})
 })
 
 describe('minting a workspace token', () => {
@@ -396,7 +394,7 @@ describe('ensureWorkspaceToken', () => {
       idToken: 'firebase-token',
       signedIn: true,
       response: () => failedResponse(403),
-      ended: [['workspace-999']],
+      ended: [['workspace-999', 'ACCESS_DENIED']],
       surfaced: 1
     },
     {
@@ -404,7 +402,7 @@ describe('ensureWorkspaceToken', () => {
       idToken: 'firebase-token',
       signedIn: true,
       response: () => failedResponse(404),
-      ended: [['workspace-999']],
+      ended: [['workspace-999', 'WORKSPACE_NOT_FOUND']],
       surfaced: 1
     },
     {
@@ -412,7 +410,7 @@ describe('ensureWorkspaceToken', () => {
       idToken: 'firebase-token',
       signedIn: true,
       response: () => failedResponse(401),
-      ended: [[undefined]],
+      ended: [[undefined, 'INVALID_FIREBASE_TOKEN']],
       surfaced: 1
     },
     {
@@ -436,7 +434,7 @@ describe('ensureWorkspaceToken', () => {
       idToken: undefined,
       signedIn: false,
       response: tokenResponse,
-      ended: [[undefined]],
+      ended: [[undefined, 'NOT_AUTHENTICATED']],
       surfaced: 1
     }
   ])(
@@ -528,21 +526,21 @@ describe('refreshToken', () => {
       failure: 'a 403',
       response: () => failedResponse(403),
       fetches: 2,
-      ended: [['workspace-123']],
+      ended: [['workspace-123', 'ACCESS_DENIED']],
       token: undefined
     },
     {
       failure: 'a 404',
       response: () => failedResponse(404),
       fetches: 2,
-      ended: [['workspace-123']],
+      ended: [['workspace-123', 'WORKSPACE_NOT_FOUND']],
       token: undefined
     },
     {
       failure: 'a 401',
       response: () => failedResponse(401),
       fetches: 2,
-      ended: [[undefined]],
+      ended: [[undefined, 'INVALID_FIREBASE_TOKEN']],
       token: undefined
     }
   ])(

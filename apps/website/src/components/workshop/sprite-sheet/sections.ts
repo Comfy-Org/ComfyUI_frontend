@@ -1,17 +1,14 @@
 import type { Component } from 'vue'
 
-import type {
-  SpriteSheet,
-  SpriteTray
-} from '../../../composables/useSpriteSheet'
-import type { Locale } from '../../../i18n/translations'
-import type { SpriteCopyKey } from '../../../lib/workshop/sprite-sheet/copy'
-import { spc } from '../../../lib/workshop/sprite-sheet/copy'
+import type { SpriteSheet, SpriteTray } from '@/composables/useSpriteSheet'
+import type { Locale } from '@/i18n/translations'
+import type { SpriteCopyKey } from '@/lib/workshop/sprite-sheet/copy'
+import { spc } from '@/lib/workshop/sprite-sheet/copy'
 import {
   MOTION_LABELS,
   SPRITE_GRID,
   STYLE_LABELS
-} from '../../../lib/workshop/sprite-sheet/options'
+} from '@/lib/workshop/sprite-sheet/options'
 import SpriteSheetAnimation from './SpriteSheetAnimation.vue'
 import SpriteSheetMotion from './SpriteSheetMotion.vue'
 import SpriteSheetSeed from './SpriteSheetSeed.vue'
