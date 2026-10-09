@@ -50,7 +50,7 @@ const contentStyle = useModalLiftedZIndex(rootContext.open)
         <TooltipArrow
           :width="10"
           :height="5"
-          class="fill-base-background stroke-border-default"
+          class="-mt-px fill-base-background stroke-border-default"
         />
       </TooltipContent>
     </div>
