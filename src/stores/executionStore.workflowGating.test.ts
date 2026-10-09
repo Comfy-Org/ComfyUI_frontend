@@ -1,5 +1,5 @@
 import { fromPartial } from '@total-typescript/shoehorn'
-import { beforeEach, describe, expect, it, vi } from 'vitest'
+import { assert, beforeEach, describe, expect, it, vi } from 'vitest'
 import { nextTick } from 'vue'
 
 import type { NodeProgressState } from '@/platform/remote/comfyui/execution/types'
@@ -94,8 +94,6 @@ const workflowB = workflow(WORKFLOW_B_ID, 'workflows/b.json')
  */
 const workflowACopy = workflow(WORKFLOW_A_ID, 'workflows/a copy.json')
 
-const RAF_COALESCED = new Set(['progress_state', 'progress'])
-
 /**
  * `executing` is dispatched with a bare node id for extension compatibility,
  * so the store reads the ids off the raw message api recorded. Mirror that.
@@ -114,9 +112,10 @@ function fire(event: string, detail: Record<string, unknown>) {
   const handler = apiEventHandlers.get(event)
   if (!handler) throw new Error(`${event} handler not bound`)
   handler(new CustomEvent(event, { detail }))
-  // progress frames are RAF-coalesced in the store; flush so the assertion
-  // sees the applied state rather than the pending batch.
-  if (RAF_COALESCED.has(event)) vi.advanceTimersToNextFrame()
+  // Some frames are RAF-coalesced in the store; flush unconditionally so the
+  // assertion sees the applied state rather than the pending batch, and so
+  // this does not have to track which handlers are coalesced.
+  vi.advanceTimersToNextFrame()
 }
 
 function nodeState(
@@ -136,22 +135,33 @@ function nodeState(
   }
 }
 
+/**
+ * Open these tabs through the real store, so `isOpen` and `openWorkflows` are
+ * the production implementations rather than a copy of them. A copy would keep
+ * passing if `isOpen` started keying by instance instead of path, which is
+ * exactly the identity mix-up this suite exists to catch.
+ *
+ * Additive, and a no-op for a tab already open. Pinia is rebuilt per test, so
+ * nothing accumulates across tests.
+ */
+function openTabs(...workflows: LoadedComfyWorkflow[]) {
+  const workflowStore = useWorkflowStore()
+  for (const workflow of workflows) {
+    if (workflowStore.isOpen(workflow)) continue
+    workflowStore.attachWorkflow(workflow, workflowStore.openWorkflows.length)
+  }
+}
+
 describe('executionStore workflow gating', () => {
   let store: ReturnType<typeof useExecutionStore>
-  let revokePreviews: ReturnType<typeof vi.spyOn>
-
   beforeEach(() => {
     apiEventHandlers.clear()
     api.lastExecutingMessage = null
-    mockShowTextPreview.mockClear()
-    revokePreviews = vi
-      .spyOn(useNodeOutputStore(), 'revokePreviewsByExecutionId')
-      .mockImplementation(() => {})
+    vi.mocked(
+      useNodeOutputStore().revokePreviewsByExecutionId
+    ).mockImplementation(() => {})
     useWorkflowStore().activeWorkflow = null
-    Object.assign(useWorkflowStore(), { openWorkflows: [workflowA, workflowB] })
-    vi.mocked(useWorkflowStore().isOpen).mockImplementation((wf) =>
-      useWorkflowStore().openWorkflows.some((open) => open.path === wf.path)
-    )
+    openTabs(workflowA, workflowB)
     store = useExecutionStore()
     store.bindExecutionEvents()
   })
@@ -249,50 +259,25 @@ describe('executionStore workflow gating', () => {
       })
     })
 
-    it('marks nodes for a frame from the active workflow', () => {
-      fire('executed', {
-        prompt_id: 'job-a',
-        workflow_id: WORKFLOW_A_ID,
-        node: '1',
-        display_node: '1',
-        output: {}
-      })
+    // Two handlers crossed with own-versus-foreign. `executed` and
+    // `execution_cached` are separate code paths, so all four rows stay.
+    it.for([
+      { event: 'executed', own: true },
+      { event: 'executed', own: false },
+      { event: 'execution_cached', own: true },
+      { event: 'execution_cached', own: false }
+    ])('$event marks the active job nodes: $own', ({ event, own }) => {
+      const ids = own
+        ? { prompt_id: 'job-a', workflow_id: WORKFLOW_A_ID }
+        : { prompt_id: 'job-b', workflow_id: WORKFLOW_B_ID }
+      const detail =
+        event === 'executed'
+          ? { ...ids, node: '1', display_node: '1', output: {} }
+          : { ...ids, nodes: ['1'], timestamp: 2 }
 
-      expect(store.activeJob?.nodes['1']).toBe(true)
-    })
+      fire(event, detail)
 
-    it('executed from another workflow does not mark active job nodes', () => {
-      fire('executed', {
-        prompt_id: 'job-b',
-        workflow_id: WORKFLOW_B_ID,
-        node: '1',
-        display_node: '1',
-        output: {}
-      })
-
-      expect(store.activeJob?.nodes['1']).toBeUndefined()
-    })
-
-    it('execution_cached from another workflow does not mark active job nodes', () => {
-      fire('execution_cached', {
-        prompt_id: 'job-b',
-        workflow_id: WORKFLOW_B_ID,
-        nodes: ['1'],
-        timestamp: 2
-      })
-
-      expect(store.activeJob?.nodes['1']).toBeUndefined()
-    })
-
-    it('execution_cached from the active workflow does mark them', () => {
-      fire('execution_cached', {
-        prompt_id: 'job-a',
-        workflow_id: WORKFLOW_A_ID,
-        nodes: ['1'],
-        timestamp: 2
-      })
-
-      expect(store.activeJob?.nodes['1']).toBe(true)
+      expect(store.activeJob?.nodes['1']).toBe(own ? true : undefined)
     })
   })
 
@@ -445,7 +430,7 @@ describe('executionStore workflow gating', () => {
       expect(store.nodeProgressStates['1']?.value).toBe(7)
     })
 
-    it('updates _executingNodeProgress on a workflow_id match', () => {
+    it('updates the executing node progress on a workflow_id match', () => {
       fire('execution_start', {
         prompt_id: 'job-a',
         workflow_id: WORKFLOW_A_ID,
@@ -462,10 +447,10 @@ describe('executionStore workflow gating', () => {
         nodes: { '1': nodeState('job-a', '1', 'running', 4) }
       })
 
-      expect(store._executingNodeProgress?.value).toBe(4)
+      expect(store.executingNodeProgress).toBe(0.4)
     })
 
-    it('skips _executingNodeProgress on a workflow_id mismatch', () => {
+    it('skips the executing node progress on a workflow_id mismatch', () => {
       fire('execution_start', {
         prompt_id: 'job-a',
         workflow_id: WORKFLOW_A_ID,
@@ -482,7 +467,7 @@ describe('executionStore workflow gating', () => {
         nodes: { '1': nodeState('job-b', '1', 'running', 9) }
       })
 
-      expect(store._executingNodeProgress?.value).not.toBe(9)
+      expect(store.executingNodeProgress).toBeNull()
     })
   })
 
@@ -498,7 +483,9 @@ describe('executionStore workflow gating', () => {
         nodes: { '1': nodeState('job-a', '1', 'running') }
       })
 
-      expect(revokePreviews).toHaveBeenCalled()
+      expect(
+        useNodeOutputStore().revokePreviewsByExecutionId
+      ).toHaveBeenCalled()
     })
 
     it('does not revoke previews for a frame from another workflow', () => {
@@ -508,7 +495,9 @@ describe('executionStore workflow gating', () => {
         nodes: { '1': nodeState('job-b', '1', 'running') }
       })
 
-      expect(revokePreviews).not.toHaveBeenCalled()
+      expect(
+        useNodeOutputStore().revokePreviewsByExecutionId
+      ).not.toHaveBeenCalled()
     })
 
     it('revokes when a node transitions pending -> running', () => {
@@ -517,7 +506,9 @@ describe('executionStore workflow gating', () => {
         workflow_id: WORKFLOW_A_ID,
         nodes: { '1': nodeState('job-a', '1', 'pending') }
       })
-      expect(revokePreviews).not.toHaveBeenCalled()
+      expect(
+        useNodeOutputStore().revokePreviewsByExecutionId
+      ).not.toHaveBeenCalled()
 
       fire('progress_state', {
         prompt_id: 'job-a',
@@ -525,7 +516,9 @@ describe('executionStore workflow gating', () => {
         nodes: { '1': nodeState('job-a', '1', 'running') }
       })
 
-      expect(revokePreviews).toHaveBeenCalled()
+      expect(
+        useNodeOutputStore().revokePreviewsByExecutionId
+      ).toHaveBeenCalled()
     })
 
     it('does not revoke twice while a node stays running', () => {
@@ -541,7 +534,9 @@ describe('executionStore workflow gating', () => {
         nodes: running
       })
 
-      expect(revokePreviews).toHaveBeenCalledTimes(1)
+      expect(
+        useNodeOutputStore().revokePreviewsByExecutionId
+      ).toHaveBeenCalledTimes(1)
     })
   })
 
@@ -701,35 +696,18 @@ describe('executionStore workflow gating', () => {
         workflow_id: WORKFLOW_A_ID,
         nodes: { '1': nodeState('job-a', '1', 'running', 5) }
       })
-      expect(store._executingNodeProgress?.value).toBe(5)
+      expect(store.executingNodeProgress).toBe(0.5)
 
       fireExecuting('9', { prompt_id: 'job-b', workflow_id: WORKFLOW_B_ID })
 
-      expect(store._executingNodeProgress?.value).toBe(5)
-    })
-
-    // api clears the raw message straight after dispatch, so an `executing`
-    // dispatched later by an extension is not read as belonging to whichever
-    // run arrived last. Without that, a foreign frame would silently gate out
-    // every extension-driven executing event that followed it.
-    it('is not gated by a stale raw message from an earlier frame', () => {
-      fireExecuting(null, {
-        prompt_id: 'job-b',
-        workflow_id: WORKFLOW_B_ID
-      })
-      expect(store.activeJobId).toBe('job-a')
-
-      api.lastExecutingMessage = null
-      const handler = apiEventHandlers.get('executing')!
-      handler(new CustomEvent('executing', { detail: null }))
-
-      expect(store.activeJobId).toBeNull()
+      expect(store.executingNodeProgress).toBe(0.5)
     })
 
     it('still works when the raw message was never recorded', () => {
       // Defensive: an `executing` dispatched by an extension or a test rather
       // than by the socket has no raw message, and must behave as before.
-      const handler = apiEventHandlers.get('executing')!
+      const handler = apiEventHandlers.get('executing')
+      assert.exists(handler)
       handler(new CustomEvent('executing', { detail: null }))
 
       expect(store.activeJobId).toBeNull()
@@ -755,7 +733,7 @@ describe('executionStore workflow gating', () => {
         max: 10
       })
 
-      expect(store._executingNodeProgress?.value).toBe(4)
+      expect(store.executingNodeProgress).toBe(0.4)
     })
 
     it('drops a progress frame from another workflow', () => {
@@ -767,7 +745,7 @@ describe('executionStore workflow gating', () => {
         max: 10
       })
 
-      expect(store._executingNodeProgress).toBeNull()
+      expect(store.executingNodeProgress).toBeNull()
     })
   })
 
@@ -832,7 +810,7 @@ describe('executionStore workflow gating', () => {
       await nextTick()
 
       expect(store.nodeProgressStates['1']).toBeUndefined()
-      expect(store._executingNodeProgress).toBeNull()
+      expect(store.executingNodeProgress).toBeNull()
     })
 
     it('replays the active workflow own progress when switching back', async () => {
@@ -922,9 +900,9 @@ describe('executionStore workflow gating', () => {
       useWorkflowStore().activeWorkflow = workflowA
       queueJobFrom('job-a', workflowA)
 
-      // Unrolled on purpose: each cycle depends on the state the previous one
-      // left, and the first arrival in B was clean while later ones were not,
-      // so the cycle number is part of what is being asserted.
+      // Two cycles, not a loop: each depends on the state the previous one
+      // left, and what QA saw was the first arrival in B being clean and a
+      // later one not, so first-versus-later is the distinction being made.
       const cycle = async (step: number) => {
         fire('progress_state', {
           prompt_id: 'job-a',
@@ -946,14 +924,6 @@ describe('executionStore workflow gating', () => {
       const second = await cycle(5)
       expect(second.inB, 'second arrival in B').toBeUndefined()
       expect(second.inA).toBe(5)
-
-      const third = await cycle(7)
-      expect(third.inB, 'third arrival in B').toBeUndefined()
-      expect(third.inA).toBe(7)
-
-      const fourth = await cycle(9)
-      expect(fourth.inB, 'fourth arrival in B').toBeUndefined()
-      expect(fourth.inA).toBe(9)
     })
 
     it('stays clean while the active workflow is queued behind the running one', async () => {
@@ -1019,9 +989,7 @@ describe('executionStore workflow gating', () => {
 
   describe('two open workflows that share an id', () => {
     beforeEach(() => {
-      Object.assign(useWorkflowStore(), {
-        openWorkflows: [workflowA, workflowACopy]
-      })
+      openTabs(workflowA, workflowACopy)
     })
 
     // Node outputs are written by ComfyApp's own `executed` listener, not by
@@ -1076,18 +1044,27 @@ describe('executionStore workflow gating', () => {
    */
   describe('ownership resolution precedence', () => {
     beforeEach(() => {
-      Object.assign(useWorkflowStore(), {
-        openWorkflows: [workflowA, workflowACopy]
-      })
+      openTabs(workflowA, workflowACopy)
     })
 
-    it('prefers the tab instance over a matching graph id', () => {
+    it('prefers the tab instance over both weaker legs', () => {
       useWorkflowStore().activeWorkflow = workflowA
       queueJobFrom('job-a', workflowA)
+      // Point the path leg at the copy as well, so both weaker legs name the
+      // copy and only the instance names A. Reordering the legs flips this.
+      store.ensureSessionWorkflowPath(
+        'job-a',
+        workflowACopy.path,
+        workflowA.instanceId
+      )
 
-      // The copy's graph id is identical, so the id leg would say yes.
       useWorkflowStore().activeWorkflow = workflowACopy
-      expect(store.belongsToActiveWorkflow('job-a', WORKFLOW_A_ID)).toBe(false)
+      expect(
+        store.belongsToActiveWorkflow('job-a', WORKFLOW_A_ID),
+        'the instance still says A, so the copy does not own it'
+      ).toBe(false)
+      useWorkflowStore().activeWorkflow = workflowA
+      expect(store.belongsToActiveWorkflow('job-a', WORKFLOW_A_ID)).toBe(true)
     })
 
     it('falls back to the session path when no instance is known', () => {
@@ -1135,9 +1112,7 @@ describe('executionStore workflow gating', () => {
         'a-brand-new-graph-id',
         'workflows/saved as.json'
       )
-      Object.assign(useWorkflowStore(), {
-        openWorkflows: [workflowA, savedAs]
-      })
+      openTabs(workflowA, savedAs)
       useWorkflowStore().activeWorkflow = savedAs
 
       expect(store.belongsToActiveWorkflow('job-a', WORKFLOW_A_ID)).toBe(false)

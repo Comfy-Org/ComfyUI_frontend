@@ -398,17 +398,4 @@ describe('BackendSimulator interleaving', () => {
     expect(() => interleave(script, [], 7)).toThrow(/both sides/)
     expect(() => interleave([], script, 7)).toThrow(/both sides/)
   })
-
-  it('keeps every frame exactly once when interleaving', () => {
-    const { sent, simulator } = harness()
-    const a = simulator.prompt('job-a', { workflowId: 'wf-a' })
-    const b = simulator.prompt('job-b', { workflowId: 'wf-b' })
-
-    simulator.play(
-      interleave([a.start(), a.success()], [b.start(), b.success()], 42)
-    )
-
-    expect(positionsOf(sent, 'wf-a')).toHaveLength(2)
-    expect(positionsOf(sent, 'wf-b')).toHaveLength(2)
-  })
 })

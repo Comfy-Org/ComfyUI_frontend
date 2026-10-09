@@ -56,7 +56,10 @@ test.describe('cross-tab execution leak', { tag: '@ui' }, () => {
   test.beforeEach(async ({ comfyPage }) => {
     await comfyPage.workflow.setupWorkflowsDirectory({
       [`${WORKFLOW_A}.json`]: 'execution/workflow_with_id.json',
-      [`${WORKFLOW_B}.json`]: 'execution/workflow_with_id_b.json'
+      [`${WORKFLOW_B}.json`]: 'execution/workflow_with_id_b.json',
+      // The same asset under a second name: two files carrying one workflow
+      // id, which is what a copy-paste into a new tab produces.
+      [`${WORKFLOW_A_COPY}.json`]: 'execution/workflow_with_id.json'
     })
     await comfyPage.workflow.openPersistedWorkflow(WORKFLOW_A)
   })
@@ -226,15 +229,10 @@ test.describe('cross-tab execution leak', { tag: '@ui' }, () => {
   // both. `ensureWorkflowId` keeps the id already in the pasted json, so the
   // two tabs share one workflow id while being different open workflows, and
   // the node ids are identical too. Outputs landed on the wrong tab.
-  test('a pasted copy sharing the workflow id does not receive the original output', async ({
+  test('a second open workflow sharing the workflow id does not receive the output', async ({
     comfyPage,
     getWebSocket
   }) => {
-    await comfyPage.workflow.setupWorkflowsDirectory({
-      [`${WORKFLOW_A}.json`]: 'execution/workflow_with_id.json',
-      [`${WORKFLOW_A_COPY}.json`]: 'execution/workflow_with_id_pasted_copy.json'
-    })
-    await comfyPage.workflow.openPersistedWorkflow(WORKFLOW_A)
     const exec = new ExecutionHelper(comfyPage, await getWebSocket())
     const simulator = new BackendSimulator(exec)
     const sharedId = await activeWorkflowId(comfyPage)

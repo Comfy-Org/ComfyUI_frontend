@@ -17,12 +17,9 @@ import { useExecutionStore } from '@/stores/executionStore'
  * reports the job in history while the frontend still holds progress for it.
  */
 
-const { mockShowTextPreview, mockRemoveTextPreview } = await vi.hoisted(
-  async () => ({
-    mockShowTextPreview: vi.fn(),
-    mockRemoveTextPreview: vi.fn()
-  })
-)
+const { mockRemoveTextPreview } = await vi.hoisted(async () => ({
+  mockRemoveTextPreview: vi.fn()
+}))
 
 vi.mock(import('@/composables/useAppMode'))
 vi.mock(import('@/platform/telemetry'))
@@ -30,7 +27,7 @@ vi.mock(import('@/platform/distribution/types'), () => ({ isCloud: true }))
 
 vi.mock<unknown>(import('@/composables/node/useNodeProgressText'), () => ({
   useNodeProgressText: () => ({
-    showTextPreview: mockShowTextPreview,
+    showTextPreview: vi.fn(),
     removeTextPreview: mockRemoveTextPreview
   })
 }))
@@ -97,9 +94,10 @@ function fire(event: string, detail: Record<string, unknown>) {
   const handler = apiEventHandlers.get(event)
   if (!handler) throw new Error(`${event} handler not bound`)
   handler(new CustomEvent(event, { detail }))
-  if (event === 'progress_state' || event === 'progress') {
-    vi.advanceTimersToNextFrame()
-  }
+  // Some frames are RAF-coalesced in the store; flush unconditionally so the
+  // assertion sees the applied state, and so this does not have to track which
+  // handlers are coalesced.
+  vi.advanceTimersToNextFrame()
 }
 
 function runningNode(jobId: string, nodeId: string): NodeProgressState {
@@ -114,16 +112,30 @@ function runningNode(jobId: string, nodeId: string): NodeProgressState {
   }
 }
 
+/**
+ * Open these tabs through the real store, so `isOpen` and `openWorkflows` are
+ * the production implementations rather than a copy of them. A copy would keep
+ * passing if `isOpen` started keying by instance instead of path, which is
+ * exactly the identity mix-up this suite exists to catch.
+ *
+ * Additive, and a no-op for a tab already open. Pinia is rebuilt per test, so
+ * nothing accumulates across tests.
+ */
+function openTabs(...workflows: LoadedComfyWorkflow[]) {
+  const workflowStore = useWorkflowStore()
+  for (const workflow of workflows) {
+    if (workflowStore.isOpen(workflow)) continue
+    workflowStore.attachWorkflow(workflow, workflowStore.openWorkflows.length)
+  }
+}
+
 describe('executionStore terminal-job recovery', () => {
   let store: ReturnType<typeof useExecutionStore>
 
   beforeEach(() => {
     apiEventHandlers.clear()
     useWorkflowStore().activeWorkflow = workflowA
-    Object.assign(useWorkflowStore(), { openWorkflows: [workflowA, workflowB] })
-    vi.mocked(useWorkflowStore().isOpen).mockImplementation((wf) =>
-      useWorkflowStore().openWorkflows.some((open) => open.path === wf.path)
-    )
+    openTabs(workflowA, workflowB)
     store = useExecutionStore()
     store.bindExecutionEvents()
   })
@@ -218,15 +230,30 @@ describe('executionStore terminal-job recovery', () => {
     expect(store.isJobInitializing('job-init')).toBe(false)
   })
 
-  it('is idempotent', () => {
+  it('leaves a second workflow alone on a repeat pass', () => {
     const jobId = stuckActiveJob()
+    store.registerJobWorkflowIdMapping('job-b', WORKFLOW_B_ID)
+    store.storeJob({
+      nodes: ['1'],
+      id: 'job-b',
+      promptOutput: { '1': { inputs: {}, class_type: 'TestNode' } },
+      workflow: workflowB,
+      mode: 'graph'
+    })
+    fire('execution_start', {
+      prompt_id: 'job-b',
+      workflow_id: WORKFLOW_B_ID,
+      timestamp: 1
+    })
 
     store.reconcileTerminalJobs(new Set(), new Set([jobId]))
-    expect(() =>
-      store.reconcileTerminalJobs(new Set(), new Set([jobId]))
-    ).not.toThrow()
+    store.reconcileTerminalJobs(new Set(), new Set([jobId]))
 
     expect(store.nodeProgressStates['1']).toBeUndefined()
+    expect(
+      store.getWorkflowStatus(workflowB),
+      'B never went terminal, so neither pass may release it'
+    ).toBe('running')
   })
 
   it('still recovers when the terminal frame was dropped for a legacy backend', () => {
@@ -280,7 +307,6 @@ describe('executionStore terminal-job recovery', () => {
   })
 
   it('removes the text preview before the job record it reads is deleted', async () => {
-    mockRemoveTextPreview.mockClear()
     vi.mocked(useWorkflowStore().executionIdToCurrentId).mockReturnValue('1')
     const { useCanvasStore } =
       await import('@/renderer/core/canvas/canvasStore')
