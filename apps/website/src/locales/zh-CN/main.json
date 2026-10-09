@@ -4508,6 +4508,9 @@
       "relight": "重新布光",
       "relightSummary": "在照片上放置新的光源，模型会重绘阴影与高光，同时保留主体。",
       "relightMeta": "图像 · Beeble SwitchX",
+      "spriteSheet": "精灵图生成器",
+      "spriteSheetSummary": "把一个角色变成可直接用于游戏的精灵图：选择风格和动作，模型会绘制每一帧。",
+      "spriteSheetMeta": "图像 · Nano Banana Pro",
       "reshootMeta": "视频 · MiniMax H3"
     },
     "stage": {

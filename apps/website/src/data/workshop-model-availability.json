@@ -11,6 +11,10 @@
     "flag": "workshop-reshoot-app-enabled",
     "reason": "Re-shoot runs on the app proxy (comfy-api BE-17741/BE-17804); shown only where PostHog turns it on while it rolls out."
   },
+  "apps/sprite-sheet": {
+    "flag": "workshop-sprite-sheet-app-enabled",
+    "reason": "The Sprite Sheet Generator is a front-end mock while its backend is built; shown only where PostHog turns it on."
+  },
   "bfl--flux-3-video-continuation--edit-videos": {
     "disabled": true,
     "reason": "The provider rejects the default source video as invalid (HTTP 422) with both URL and Base64 MP4 inputs."

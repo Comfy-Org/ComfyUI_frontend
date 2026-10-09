@@ -5115,6 +5115,9 @@
       "relight": "Relight",
       "relightSummary": "Place new lights on a photo, and the model redraws its shadows and highlights while keeping the subject.",
       "relightMeta": "Image · Beeble SwitchX",
+      "spriteSheet": "Sprite Sheet Generator",
+      "spriteSheetSummary": "Turn one character into a game-ready sprite sheet: pick a style and a motion, and the model draws every frame.",
+      "spriteSheetMeta": "Image · Nano Banana Pro",
       "reshootMeta": "Video · MiniMax H3"
     },
     "stage": {

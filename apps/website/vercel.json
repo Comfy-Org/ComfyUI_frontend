@@ -4801,6 +4801,16 @@
       "source": "/models/apps/reshoot/",
       "destination": "/hub/apps/reshoot/",
       "permanent": true
+    },
+    {
+      "source": "/models/apps/sprite-sheet",
+      "destination": "/hub/apps/sprite-sheet/",
+      "permanent": true
+    },
+    {
+      "source": "/models/apps/sprite-sheet/",
+      "destination": "/hub/apps/sprite-sheet/",
+      "permanent": true
     }
   ]
 }
