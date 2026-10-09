@@ -28,12 +28,6 @@ function episode(
   return { identity, scopedHasFunds, phase }
 }
 
-/**
- * Every phase crossed with every event, including the pairs that must do
- * nothing. The table is the point: the four refs this replaced allowed
- * combinations the watchers had to exclude by hand, and three of the review's
- * bugs were in how they interleaved.
- */
 describe('reduceCreditTransitionNotice', () => {
   describe('scopedRead starts an episode it has no state for', () => {
     it.for([true, false])(
