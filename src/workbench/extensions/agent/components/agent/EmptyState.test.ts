@@ -1,5 +1,6 @@
 import { render, screen } from '@testing-library/vue'
 import userEvent from '@testing-library/user-event'
+import { toRaw } from 'vue'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 
 import { i18n } from '@/i18n'
@@ -148,31 +149,6 @@ describe('EmptyState', () => {
       }
     }
   )
-
-  it('keeps translated treatment copy outside the experiment population', async () => {
-    const previousLocale = i18n.global.locale.value
-    const translatedTreatmentExists = vi
-      .spyOn(i18n.global, 'te')
-      .mockReturnValue(true)
-    i18n.global.locale.value = 'zh'
-    distribution.isCloud = true
-    try {
-      const { emitted } = render(EmptyState, {
-        props: { assignment: 'test', attributeExperiment: true },
-        global: { plugins: [i18n] }
-      })
-
-      expect(
-        screen.getByRole('button', {
-          name: i18n.global.t('agent.suggestedPrompts.cloud.0')
-        })
-      ).toBeVisible()
-      expect(emitted()).not.toHaveProperty('rendered')
-    } finally {
-      i18n.global.locale.value = previousLocale
-      translatedTreatmentExists.mockRestore()
-    }
-  })
 
   it('omits experiment attribution for a QA-rendered treatment', async () => {
     distribution.isCloud = true
@@ -328,7 +304,9 @@ describe('EmptyState', () => {
 
   it('attributes translated copy to the locale that supplied it', async () => {
     const previousLocale = i18n.global.locale.value
-    const previousMessages = structuredClone(i18n.global.getLocaleMessage('zh'))
+    const previousMessages = structuredClone(
+      toRaw(i18n.global.getLocaleMessage('zh'))
+    )
     const translatedPrompts = LOCAL_PROMPTS.map(
       ({ text }, index) => `translated ${index + 1}: ${text}`
     )
@@ -346,6 +324,45 @@ describe('EmptyState', () => {
 
       expect(emitted().insert).toEqual([
         [translatedPrompts[0], expect.objectContaining({ locale: 'zh' })]
+      ])
+    } finally {
+      i18n.global.locale.value = previousLocale
+      i18n.global.setLocaleMessage('zh', previousMessages)
+    }
+  })
+
+  it('enrolls a locale after treatment translations land', async () => {
+    const previousLocale = i18n.global.locale.value
+    const previousMessages = structuredClone(
+      toRaw(i18n.global.getLocaleMessage('zh'))
+    )
+    const translatedPrompts = CLOUD_PROMPTS.map(
+      ({ text }, index) => `translated ${index + 1}: ${text}`
+    )
+    i18n.global.mergeLocaleMessage('zh', {
+      agent: {
+        suggestedPrompts: { treatment: { cloud: translatedPrompts } }
+      }
+    })
+    i18n.global.locale.value = 'zh'
+    distribution.isCloud = true
+    try {
+      const user = userEvent.setup()
+      const { emitted } = render(EmptyState, {
+        props: { assignment: 'test', attributeExperiment: true },
+        global: { plugins: [i18n] }
+      })
+
+      await user.click(
+        screen.getByRole('button', { name: translatedPrompts[0] })
+      )
+
+      expect(emitted().rendered).toEqual([['test']])
+      expect(emitted().insert).toEqual([
+        [
+          translatedPrompts[0],
+          expect.objectContaining({ assignment: 'test', locale: 'zh' })
+        ]
       ])
     } finally {
       i18n.global.locale.value = previousLocale
