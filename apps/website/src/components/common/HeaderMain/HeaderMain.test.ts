@@ -1,9 +1,15 @@
 import { render, screen, waitFor, within } from '@testing-library/vue'
+import userEvent from '@testing-library/user-event'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { defineComponent, h, nextTick, readonly, ref } from 'vue'
 
 import { requestWorkshopBuyCredits } from '@/config/workshop-buy-credits'
-import { useWorkshopAuthFlag, useWorkshopEnabled } from '@/scripts/posthog'
+import {
+  useWorkshopAppsEnabled,
+  useWorkshopAuthFlag,
+  useWorkshopEnabled,
+  useWorkshopWorkflowsEnabled
+} from '@/scripts/posthog'
 import HeaderMain from './HeaderMain.vue'
 
 vi.mock(import('@/scripts/posthog'))
@@ -55,9 +61,38 @@ describe('HeaderMain workshop gating', () => {
       await nextTick()
 
       expect(
-        screen.getByRole('link', { name: /^Hub\b/i }).getAttribute('href')
-      ).toBe('/hub/models/')
+        within(screen.getByTestId('desktop-nav-links')).getByRole('button', {
+          name: /^Hub\b/i
+        })
+      ).toBeTruthy()
       expect(screen.queryByRole('button', { name: /^Models\b/i })).toBeNull()
+    }
+  )
+
+  it.for([
+    { workflows: false, apps: false, headers: ['Models'] },
+    { workflows: true, apps: false, headers: ['Models', 'Workflows'] },
+    { workflows: true, apps: true, headers: ['Models', 'Workflows', 'Apps'] }
+  ])(
+    'shows the Hub columns whose flags are on: $headers',
+    async ({ workflows, apps, headers }) => {
+      vi.mocked(useWorkshopWorkflowsEnabled).mockReturnValue(
+        readonly(ref(workflows))
+      )
+      vi.mocked(useWorkshopAppsEnabled).mockReturnValue(readonly(ref(apps)))
+      renderHeader()
+      await userEvent.click(
+        within(screen.getByTestId('desktop-nav-links')).getByRole('button', {
+          name: /^Hub\b/i
+        })
+      )
+      const menu = within(await screen.findByTestId('nav-dropdown'))
+
+      expect(
+        ['Models', 'Workflows', 'Apps'].filter((header) =>
+          menu.queryByText(header, { exact: true })
+        )
+      ).toEqual(headers)
     }
   )
 

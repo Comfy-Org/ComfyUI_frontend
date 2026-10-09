@@ -237,13 +237,14 @@ test('Cloud upload, refresh, partial delivery and downloads retain one run @mobi
   await expect(
     page.getByRole('img', { name: /nodes of this workflow/i })
   ).toBeVisible()
-  const panelRight = await page
-    .getByRole('tabpanel', { name: 'Details', exact: true })
-    .evaluate((panel) => panel.getBoundingClientRect().right)
+  const heroRight = await page
+    .getByTestId('workflow-hero')
+    .evaluate((hero) => hero.getBoundingClientRect().right)
   const downloadRight = await page
+    .getByTestId('workflow-hero')
     .getByRole('link', { name: 'Download workflow JSON' })
     .evaluate((link) => link.getBoundingClientRect().right)
-  expect(downloadRight).toBeLessThanOrEqual(panelRight)
+  expect(downloadRight).toBeLessThanOrEqual(heroRight)
   await page.getByRole('tab', { name: 'API', exact: true }).click()
   await expect(page.getByTestId('workflow-api-snippet')).toHaveText(
     snippet ?? ''

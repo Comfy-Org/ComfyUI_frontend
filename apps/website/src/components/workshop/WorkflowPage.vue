@@ -2,6 +2,7 @@
 import { ChevronLeft } from '@lucide/vue'
 import { computed } from 'vue'
 
+import Button from '@/components/ui/button/Button.vue'
 import type { WorkflowWorkshopModelDetail } from '@/config/models-catalogue'
 import { useCaseFor } from '@/config/models-catalogue'
 import { getRoutes } from '@/config/routes'
@@ -9,6 +10,12 @@ import { WORKSHOP_CLOUD_BASE_URL } from '@/config/workshop-env'
 import { useWorkshopSession } from '@/config/workshop-session-state'
 import { useCaseLabelKey } from '@/lib/workshop/use-case-label'
 import { t } from '@/i18n/translations'
+import {
+  captureWorkshopEvent,
+  useWorkshopEnabled,
+  useWorkshopWorkflowsEnabled
+} from '@/scripts/posthog'
+import { workshopModelAnalytics } from '@/scripts/workshop-analytics'
 import WorkflowPlayground from './WorkflowPlayground.vue'
 
 const { model } = defineProps<{ model: WorkflowWorkshopModelDetail }>()
@@ -42,6 +49,26 @@ const template = model.workflow.template
 const cloudHref = template
   ? `${WORKSHOP_CLOUD_BASE_URL}/?template=${encodeURIComponent(template.id)}`
   : undefined
+
+const enabled = useWorkshopEnabled()
+const workflowsEnabled = useWorkshopWorkflowsEnabled()
+const modelAnalytics = workshopModelAnalytics(model)
+
+function captureTryInCloud() {
+  if (enabled.value && workflowsEnabled.value)
+    captureWorkshopEvent({
+      name: 'try_in_cloud_clicked',
+      properties: modelAnalytics
+    })
+}
+
+function captureWorkflowDownload() {
+  if (enabled.value && workflowsEnabled.value)
+    captureWorkshopEvent({
+      name: 'workflow_download_clicked',
+      properties: modelAnalytics
+    })
+}
 </script>
 
 <template>
@@ -73,13 +100,36 @@ const cloudHref = template
       >
         {{ model.summary }}
       </p>
+      <div
+        v-if="cloudHref"
+        class="mt-6 flex flex-wrap items-center gap-2"
+        data-testid="workflow-actions"
+      >
+        <Button
+          as="a"
+          :href="cloudHref"
+          target="_blank"
+          rel="noopener"
+          variant="default"
+          @click="captureTryInCloud"
+          >{{ t('workshop.workflow.tryCloud') }}</Button
+        >
+        <Button
+          v-if="template?.downloadUrl"
+          as="a"
+          :href="template.downloadUrl"
+          download
+          variant="outline"
+          @click="captureWorkflowDownload"
+          >{{ t('workshop.workflow.download') }}</Button
+        >
+      </div>
     </header>
 
     <WorkflowPlayground
       :key="scope"
       :model="model"
       :scope="scope"
-      :cloud-href="cloudHref"
       @recovery="emit('recovery', $event)"
     />
   </div>

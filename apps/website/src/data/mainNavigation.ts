@@ -8,6 +8,15 @@ export type NavColumnItem = {
   icon?: string
   badge?: 'new' | 'beta'
   external?: boolean
+  newTab?: boolean
+  seeAll?: boolean
+}
+
+export function navLinkTarget(
+  item: Pick<NavColumnItem, 'external' | 'newTab'>
+): { target?: '_blank'; rel?: string } {
+  if (item.external) return { target: '_blank', rel: 'noopener noreferrer' }
+  return item.newTab ? { target: '_blank', rel: 'noopener' } : {}
 }
 
 export type NavColumn = {
@@ -34,6 +43,7 @@ export type NavItem =
       label: string
       columns: NavColumn[]
       featured?: NavFeatured
+      activePathPrefix?: string
       badge?: 'new'
       href?: never
     }
@@ -43,15 +53,89 @@ export type NavItem =
       badge?: 'new'
       columns?: never
       featured?: never
+      activePathPrefix?: never
     }
 
-export function getMainNavigation(locale: Locale): NavItem[] {
+export type HubSections = {
+  workflows: boolean
+  apps: boolean
+}
+
+export const NO_HUB_SECTIONS: HubSections = { workflows: false, apps: false }
+
+export function getMainNavigation(
+  locale: Locale,
+  hubSections: HubSections = NO_HUB_SECTIONS
+): NavItem[] {
   const { t } = translationsFor(locale)
   const routes = getRoutes(locale)
+  const when = (shown: boolean, columns: NavColumn[]) => (shown ? columns : [])
   return [
     {
       label: t('nav.workshop'),
-      href: routes.workshop
+      activePathPrefix: '/hub/',
+      columns: [
+        {
+          header: t('nav.hubModels'),
+          items: [
+            {
+              label: t('nav.hubSeedream5Pro'),
+              href: `${routes.workshop}seedream-5-0-pro-text-to-image/`
+            },
+            {
+              label: t('nav.hubSeedance25'),
+              href: `${routes.workshop}seedance-2-5-reference-to-video/`
+            },
+            {
+              label: t('nav.hubAllModels'),
+              href: routes.workshop,
+              seeAll: true
+            }
+          ]
+        },
+        ...when(hubSections.workflows, [
+          {
+            header: t('nav.hubWorkflows'),
+            items: [
+              {
+                label: t('nav.hubImageToVideo'),
+                href: `${routes.hubWorkflows}image-to-video/`
+              },
+              {
+                label: t('nav.hubVideoFromReferences'),
+                href: `${routes.hubWorkflows}video-from-references/`
+              },
+              {
+                label: t('nav.hubAllWorkflows'),
+                href: routes.hubWorkflows,
+                seeAll: true
+              }
+            ]
+          }
+        ]),
+        ...when(hubSections.apps, [
+          {
+            header: t('nav.hubApps'),
+            items: [
+              {
+                label: t('nav.cinematicStudio'),
+                href: routes.cinematicStudio,
+                newTab: true
+              },
+              {
+                label: t('nav.reshoot'),
+                href: routes.reshoot,
+                newTab: true
+              },
+              {
+                label: t('nav.hubAllApps'),
+                href: routes.hubApps,
+                seeAll: true
+              }
+            ]
+          }
+        ])
+      ]
     },
     {
       label: t('nav.products'),

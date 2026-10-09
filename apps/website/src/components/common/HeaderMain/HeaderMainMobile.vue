@@ -2,7 +2,12 @@
 import BreadthumbIcon from '@/components/icons/BreadthumbIcon.vue'
 import { ChevronLeft, ChevronRight } from '@lucide/vue'
 import { computed, onUnmounted, ref, watch } from 'vue'
-import { getMainNavigation } from '@/data/mainNavigation'
+import {
+  NO_HUB_SECTIONS,
+  getMainNavigation,
+  navLinkTarget
+} from '@/data/mainNavigation'
+import type { HubSections } from '@/data/mainNavigation'
 import { getRoutes } from '@/config/routes.ts'
 import { lockScroll, unlockScroll } from '@/composables/scrollLock'
 import type { Locale } from '@/i18n/translations.ts'
@@ -17,10 +22,13 @@ import SheetTrigger from '@/components/ui/sheet/SheetTrigger.vue'
 import Button from '@/components/ui/button/Button.vue'
 import { cn } from '@comfyorg/tailwind-utils'
 
-const { locale = 'en' } = defineProps<{ locale?: Locale }>()
+const { locale = 'en', hubSections = NO_HUB_SECTIONS } = defineProps<{
+  locale?: Locale
+  hubSections?: HubSections
+}>()
 const { t } = translationsFor(locale)
 const routes = getRoutes(locale)
-const mainNavigation = computed(() => getMainNavigation(locale))
+const mainNavigation = computed(() => getMainNavigation(locale, hubSections))
 
 const isOpen = ref(false)
 const activeSection = ref<string | null>(null)
@@ -154,8 +162,7 @@ onUnmounted(() => {
                       :href="link.href"
                       variant="nav"
                       as="a"
-                      :target="link.external ? '_blank' : undefined"
-                      :rel="link.external ? 'noopener noreferrer' : undefined"
+                      v-bind="navLinkTarget(link)"
                     >
                       <NavLinkContent :item="link" :locale="locale" />
                     </Button>

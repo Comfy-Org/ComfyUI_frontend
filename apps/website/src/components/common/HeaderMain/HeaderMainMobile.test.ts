@@ -6,7 +6,9 @@ import HeaderMainMobile from './HeaderMainMobile.vue'
 
 async function openMenu() {
   const user = userEvent.setup()
-  render(HeaderMainMobile)
+  render(HeaderMainMobile, {
+    props: { hubSections: { workflows: true, apps: true } }
+  })
   await user.click(screen.getByRole('button', { name: 'Toggle menu' }))
   return user
 }
@@ -15,11 +17,41 @@ describe('HeaderMainMobile', () => {
   it('offers Hub, Products and Enterprise at the top level', async () => {
     await openMenu()
 
-    expect(
-      screen.getByRole('link', { name: /^Hub\b/i }).getAttribute('href')
-    ).toBe('/hub/models/')
+    expect(screen.getByRole('button', { name: /^Hub\b/i })).toBeTruthy()
     expect(screen.getByRole('button', { name: /^Products\b/i })).toBeTruthy()
     expect(screen.getByRole('button', { name: /^Enterprise\b/i })).toBeTruthy()
+  })
+
+  it('drills into the Hub columns, opening apps in a tab of their own', async () => {
+    const user = await openMenu()
+    await user.click(screen.getByRole('button', { name: /^Hub\b/i }))
+
+    for (const header of ['Models', 'Workflows', 'Apps'])
+      expect(screen.getByText(header, { exact: true })).toBeVisible()
+    expect(
+      [
+        'Seedream 5.0 Pro',
+        'All models',
+        'Turn an image into a video',
+        'All workflows',
+        'Re-shoot',
+        'All apps'
+      ].map((name) => screen.getByRole('link', { name }).getAttribute('href'))
+    ).toEqual([
+      '/hub/models/seedream-5-0-pro-text-to-image/',
+      '/hub/models/',
+      '/hub/workflows/image-to-video/',
+      '/hub/workflows/',
+      '/hub/apps/reshoot/',
+      '/hub/apps/'
+    ])
+    expect(screen.getByRole('link', { name: 'Re-shoot' })).toHaveAttribute(
+      'target',
+      '_blank'
+    )
+    expect(screen.getByRole('link', { name: 'All apps' })).not.toHaveAttribute(
+      'target'
+    )
   })
 
   it('offers Browse Models under Products', async () => {
