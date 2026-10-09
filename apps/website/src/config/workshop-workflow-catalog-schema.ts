@@ -84,7 +84,8 @@ const appSchema = z
       'reshoot',
       'move-anything',
       'relight',
-      'hand-product-swap'
+      'hand-product-swap',
+      'sprite-sheet'
     ])
   })
   .strict()

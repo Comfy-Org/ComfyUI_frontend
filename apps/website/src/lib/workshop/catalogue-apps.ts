@@ -27,6 +27,11 @@ const copy = {
   handProductSwapTask: {
     en: 'Put a product in a hand',
     'zh-CN': '把产品放到手中'
+  },
+  spriteSheetName: { en: 'Sprite Sheet Generator', 'zh-CN': '精灵图生成器' },
+  spriteSheetTask: {
+    en: 'Animate a character for a game',
+    'zh-CN': '为游戏制作角色动画'
   }
 } as const satisfies Record<string, LocalizedText>
 

@@ -4527,6 +4527,9 @@
       "handProductSwap": "手持产品替换",
       "handProductSwapSummary": "把你的产品放进任意照片中的手里，模型会匹配握姿、光线与阴影。",
       "handProductSwapMeta": "图像 · Nano Banana Pro",
+      "spriteSheet": "精灵图生成器",
+      "spriteSheetSummary": "把一个角色变成可直接用于游戏的精灵图：选择风格和动作，模型会绘制每一帧。",
+      "spriteSheetMeta": "图像 · Nano Banana Pro",
       "reshootMeta": "视频 · MiniMax H3"
     },
     "stage": {

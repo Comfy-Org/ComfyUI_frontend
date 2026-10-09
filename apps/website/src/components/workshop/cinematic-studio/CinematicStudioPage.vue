@@ -35,9 +35,11 @@ import MoveAnythingStudio from '@/components/workshop/move-anything/MoveAnything
 import RelightStudio from '@/components/workshop/relight/RelightStudio.vue'
 import ReshootStudio from './reshoot/ReshootStudio.vue'
 import HandSwapStudio from '@/components/workshop/hand-product-swap/HandSwapStudio.vue'
+import SpriteSheetStudio from '@/components/workshop/sprite-sheet/SpriteSheetStudio.vue'
 import { mc } from '@/lib/workshop/move-anything/copy'
 import { lc } from '@/lib/workshop/relight/copy'
 import { hc } from '@/lib/workshop/hand-product-swap/copy'
+import { spc } from '@/lib/workshop/sprite-sheet/copy'
 import { isWorkshopModelShown } from '@/scripts/workshop-model-flags'
 
 const {
@@ -66,12 +68,14 @@ const APPS = [
   'reshoot',
   'move-anything',
   'relight',
-  'hand-product-swap'
+  'hand-product-swap',
+  'sprite-sheet'
 ] as const
 const EDITOR_APPS: readonly WorkshopAppId[] = [
   'move-anything',
   'relight',
-  'hand-product-swap'
+  'hand-product-swap',
+  'sprite-sheet'
 ]
 const reviewing = WORKSHOP_DEPLOY_ENV !== 'production'
 
@@ -160,6 +164,10 @@ const appOptions = computed(() =>
     {
       id: 'hand-product-swap',
       label: hc('swap.title', locale)
+    },
+    {
+      id: 'sprite-sheet',
+      label: spc('sprite.title', locale)
     }
   ].filter((option) =>
     shownApps.value.some((candidate) => candidate.appId === option.id)
@@ -231,6 +239,7 @@ function pickApp(id: string) {
     <MoveAnythingStudio v-else-if="app === 'move-anything'" :layout :locale />
     <RelightStudio v-else-if="app === 'relight'" :layout :locale />
     <HandSwapStudio v-else-if="app === 'hand-product-swap'" :layout :locale />
+    <SpriteSheetStudio v-else-if="app === 'sprite-sheet'" :layout :locale />
     <CinematicStudioEditor
       v-else-if="editorShown"
       :models

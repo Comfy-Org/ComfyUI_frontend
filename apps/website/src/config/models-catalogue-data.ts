@@ -64,7 +64,8 @@ const appModelSchema = presentationSchema.extend({
     'reshoot',
     'move-anything',
     'relight',
-    'hand-product-swap'
+    'hand-product-swap',
+    'sprite-sheet'
   ]),
   routerId: z.never().optional(),
   workflowId: z.never().optional()

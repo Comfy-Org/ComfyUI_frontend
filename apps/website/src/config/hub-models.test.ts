@@ -24,7 +24,8 @@ describe('hub model addresses', () => {
       routes.handProductSwap,
       routes.moveAnything,
       routes.relight,
-      routes.reshoot
+      routes.reshoot,
+      routes.spriteSheet
     ]).toEqual(hubAppSlugs.map(hubAppHref))
   })
 

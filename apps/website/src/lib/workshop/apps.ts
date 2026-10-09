@@ -10,7 +10,8 @@ const appRoutes = {
   reshoot: 'reshoot',
   'move-anything': 'moveAnything',
   relight: 'relight',
-  'hand-product-swap': 'handProductSwap'
+  'hand-product-swap': 'handProductSwap',
+  'sprite-sheet': 'spriteSheet'
 } as const satisfies Record<WorkshopAppId, keyof ReturnType<typeof getRoutes>>
 
 export function workshopAppHref(app: WorkshopAppId, locale: Locale): string {
@@ -62,6 +63,12 @@ const appCopy = {
     summary: 'cinematic.hub.handProductSwapSummary',
     badge: 'cinematic.hub.prototype',
     meta: 'cinematic.hub.handProductSwapMeta'
+  },
+  'sprite-sheet': {
+    name: 'cinematic.hub.spriteSheet',
+    summary: 'cinematic.hub.spriteSheetSummary',
+    badge: 'cinematic.hub.prototype',
+    meta: 'cinematic.hub.spriteSheetMeta'
   }
 } as const satisfies Record<
   WorkshopAppId,

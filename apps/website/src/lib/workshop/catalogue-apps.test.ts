@@ -11,12 +11,20 @@ describe('app catalogue copy', () => {
         'Re-shoot a video',
         'Move anything',
         'Relight',
-        'Hand product swap'
+        'Hand product swap',
+        'Sprite Sheet Generator'
       ]
     },
     {
       locale: 'zh-CN',
-      names: ['电影工作室', '重拍视频', '随意移动', '重新布光', '手持产品替换']
+      names: [
+        '电影工作室',
+        '重拍视频',
+        '随意移动',
+        '重新布光',
+        '手持产品替换',
+        '精灵图生成器'
+      ]
     }
   ] as const)('names every app in $locale', ({ locale, names }) => {
     expect([
@@ -24,7 +32,8 @@ describe('app catalogue copy', () => {
       ac('reshootName', locale),
       ac('moveAnythingName', locale),
       ac('relightName', locale),
-      ac('handProductSwapName', locale)
+      ac('handProductSwapName', locale),
+      ac('spriteSheetName', locale)
     ]).toEqual(names)
   })
 })
