@@ -167,7 +167,15 @@ export const workshopDisplaySchema = workshopDisplaySourceSchema
     (entry) =>
       entry.type === 'APP' ||
       [entry.media.thumbnail, ...(entry.media.samples ?? [])]
-        .flatMap((asset) => (asset ? [asset.url, ...(asset.frames ?? [])] : []))
+        .flatMap((asset) =>
+          asset
+            ? [
+                asset.url,
+                ...(asset.poster ? [asset.poster] : []),
+                ...(asset.frames ?? [])
+              ]
+            : []
+        )
         .every((url) => !url.startsWith('/')),
     'Only app pages may use media this site serves; others use an absolute URL'
   )

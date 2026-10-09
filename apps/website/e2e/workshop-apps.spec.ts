@@ -137,17 +137,21 @@ for (const { reducedMotion, frameCount } of [
     await expect(
       page.getByTestId('app-shelf').getByTestId('model-card-media')
     ).toHaveCount(0)
-    for (const cover of await covers.all()) {
-      const frames = cover.getByTestId('model-card-frame')
-      await expect(frames).toHaveCount(frameCount)
-      await expect
-        .poll(() =>
-          frames.evaluateAll((images: HTMLImageElement[]) =>
-            images.every((image) => image.complete && image.naturalWidth > 0)
+    await expect
+      .poll(() =>
+        covers.evaluateAll((elements) =>
+          elements.map(
+            (cover) =>
+              Array.from(
+                cover.querySelectorAll<HTMLImageElement>(
+                  '[data-testid="model-card-frame"]'
+                )
+              ).filter((image) => image.complete && image.naturalWidth > 0)
+                .length
           )
         )
-        .toBe(true)
-    }
+      )
+      .toEqual([frameCount, frameCount])
   })
 }
 
@@ -163,7 +167,18 @@ test('moves each hub app cover on to its next frame while it is on screen', asyn
   const shownFrames = () =>
     covers.evaluateAll((elements) =>
       elements.map((cover) =>
-        cover.querySelector('[data-shown="true"]')?.getAttribute('src')
+        Array.from(
+          cover.querySelectorAll<HTMLImageElement>(
+            '[data-testid="model-card-frame"]'
+          )
+        )
+          .find(
+            (image) =>
+              image.parentElement !== null &&
+              Number.parseFloat(getComputedStyle(image.parentElement).opacity) >
+                0.5
+          )
+          ?.getAttribute('src')
       )
     )
   const first = await shownFrames()

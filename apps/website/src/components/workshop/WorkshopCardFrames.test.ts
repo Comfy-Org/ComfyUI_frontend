@@ -20,7 +20,7 @@ const frames = ['/covers/a.webp', '/covers/b.webp', '/covers/c.webp']
 function shownFrame() {
   const shown = screen
     .getAllByTestId('model-card-frame')
-    .filter((frame) => frame.dataset.shown === 'true')
+    .filter((frame) => frame.parentElement?.classList.contains('opacity-100'))
   expect(shown).toHaveLength(1)
   return shown[0].getAttribute('src')
 }
@@ -37,26 +37,31 @@ describe('WorkshopCardFrames', () => {
 
     const images = screen.getAllByTestId('model-card-frame')
     expect(images.map((image) => image.getAttribute('src'))).toEqual(frames)
-    for (const image of images) {
-      expect(image).toHaveAttribute('loading', 'lazy')
-      expect(image).toHaveAttribute('decoding', 'async')
-    }
+    expect(images.map((image) => image.getAttribute('loading'))).toEqual(
+      frames.map(() => 'lazy')
+    )
+    expect(images.map((image) => image.getAttribute('decoding'))).toEqual(
+      frames.map(() => 'async')
+    )
     expect(shownFrame()).toBe(frames[0])
   })
 
-  it('cross-fades through the frames while on screen and loops', async () => {
-    render(WorkshopCardFrames, { props: { frames } })
-    await setAllIntersecting(true)
+  it.for([
+    { steps: 1, shown: frames[1] },
+    { steps: 2, shown: frames[2] },
+    { steps: 3, shown: frames[0] }
+  ])(
+    'shows $shown after $steps frame(s) on screen, looping back to the first',
+    async ({ steps, shown }) => {
+      render(WorkshopCardFrames, { props: { frames } })
+      await setAllIntersecting(true)
 
-    const seen = [shownFrame()]
-    for (let step = 0; step < frames.length; step++) {
-      await vi.advanceTimersByTimeAsync(FRAME_MS)
+      await vi.advanceTimersByTimeAsync(FRAME_MS * steps)
       await nextTick()
-      seen.push(shownFrame())
-    }
 
-    expect(seen).toEqual([...frames, frames[0]])
-  })
+      expect(shownFrame()).toBe(shown)
+    }
+  )
 
   it('holds its frame while off screen', async () => {
     render(WorkshopCardFrames, { props: { frames } })

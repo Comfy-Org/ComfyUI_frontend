@@ -22,11 +22,15 @@ describe('workshopAppHref', () => {
       ({ thumbnail }) => thumbnail
     )
     expect(thumbnails.length).toBeGreaterThan(0)
-    for (const thumbnail of thumbnails) {
-      expect(thumbnail?.kind).toBe('image')
-      expect(thumbnail?.frames?.length).toBeGreaterThanOrEqual(3)
-      expect(thumbnail?.frames?.[0]).toBe(thumbnail?.url)
-    }
+    expect(thumbnails.map((thumbnail) => thumbnail?.kind)).toEqual(
+      thumbnails.map(() => 'image')
+    )
+    expect(
+      thumbnails.every((thumbnail) => (thumbnail?.frames?.length ?? 0) >= 3)
+    ).toBe(true)
+    expect(thumbnails.map((thumbnail) => thumbnail?.frames?.[0])).toEqual(
+      thumbnails.map((thumbnail) => thumbnail?.url)
+    )
   })
 })
 

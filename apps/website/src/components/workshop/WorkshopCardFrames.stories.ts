@@ -5,6 +5,14 @@ import WorkshopCardFrames from './WorkshopCardFrames.vue'
 const meta: Meta<typeof WorkshopCardFrames> = {
   title: 'Website/Workshop/WorkshopCardFrames',
   component: WorkshopCardFrames,
+  args: {
+    frames: [
+      '/images/cinematic-studio/covers/light-golden.webp',
+      '/images/cinematic-studio/covers/light-blue.webp',
+      '/images/cinematic-studio/covers/light-neon.webp',
+      '/images/cinematic-studio/covers/light-night.webp'
+    ]
+  },
   decorators: [
     () => ({
       template:
@@ -16,16 +24,7 @@ const meta: Meta<typeof WorkshopCardFrames> = {
 export default meta
 type Story = StoryObj<typeof meta>
 
-export const CinematicStudio: Story = {
-  args: {
-    frames: [
-      '/images/cinematic-studio/covers/light-golden.webp',
-      '/images/cinematic-studio/covers/light-blue.webp',
-      '/images/cinematic-studio/covers/light-neon.webp',
-      '/images/cinematic-studio/covers/light-night.webp'
-    ]
-  }
-}
+export const CinematicStudio: Story = {}
 
 export const Reshoot: Story = {
   args: {

@@ -14,10 +14,7 @@ const { frames } = defineProps<{ frames: readonly string[] }>()
 const FRAME_MS = 3200
 
 const root = useTemplateRef<HTMLElement>('root')
-const onScreen = useElementVisibility(root, {
-  initialValue: false,
-  rootMargin: '20% 0px'
-})
+const onScreen = useElementVisibility(root, { initialValue: false })
 const documentVisibility = useDocumentVisibility()
 
 const moving = computed(() => frames.length > 1 && !prefersReducedMotion())
@@ -48,7 +45,7 @@ watch(playing, (play) => (play ? resume() : pause()), { immediate: true })
   >
     <div
       v-for="(src, index) in moving ? frames : frames.slice(0, 1)"
-      :key="src"
+      :key="`${index}-${src}`"
       :class="
         cn(
           'absolute inset-0 transition-opacity duration-1200 ease-in-out',
@@ -68,7 +65,6 @@ watch(playing, (play) => (play ? resume() : pause()), { immediate: true })
           )
         "
         data-testid="model-card-frame"
-        :data-shown="index === active"
         loading="lazy"
         decoding="async"
         draggable="false"
