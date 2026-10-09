@@ -117,5 +117,16 @@ export function createMagicPatchPoller(
     }
   }
 
-  return { setScope, refresh, getState: () => state }
+  function cancelRefresh() {
+    if (active && state.phase === 'polling') {
+      state = reduceMagicPatchPoll(state, {
+        type: 'poll_failed',
+        scope: state.scope,
+        scan: active.scan
+      })
+    }
+    stop()
+  }
+
+  return { setScope, refresh, cancelRefresh, getState: () => state }
 }

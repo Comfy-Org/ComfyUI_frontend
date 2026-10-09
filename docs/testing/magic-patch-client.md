@@ -57,7 +57,8 @@ alone does not validate conversion semantics, admission or execution.
 Local tests exercise actual ComfyApi control flow using test auth/native fetch,
 bounded streams, fake timers, and an abort-insensitive/cancel-unacknowledged
 stream. FREDDY independently reviewed a53's guard/per-body byte fixes without
-rerunning tests; v2 consumption and ccd traversal are newer successor work.
+rerunning tests. Independent3ff source review also closes traversal/body
+elapsed-deadline findings; execution remains the owner's evidence.
 Community r7 is preserved in the isolated branch. No real credential, network,
 browser, render, publication or runtime acceptance is inferred.
 
@@ -75,3 +76,33 @@ returning accepted bytes. Timers remain wakeups for stalled operations; a delaye
 timer cannot make an overdue response eligible. Clock injection is for owned
 poller composition/tests; the production default is performance.now. Neither
 these checks nor timers preempt synchronous JavaScript CPU execution.
+
+## Unmounted startup and reconnect controller
+
+`createMagicPatchPollingSession` creates no requests until `update` supplies an
+explicit scope, ready=true, online=true and visible=true. Scope includes the
+account/workspace generation; it is an invalidation token, never authorization.
+Readiness must eventually come from the actual qualified adapter, not a build
+flag, palette pin, user header or this helper's existence.
+
+Schedule policy `magic-patch-client-polling-schedule/1` starts cursorless immediately
+on eligible startup/reconnect, then waits5seconds after a complete scan. Failed
+scans back off5/10/20/30seconds (capped30); successful scans reset the delay.
+Only one traversal runs at a time. Repeated explicit refreshes during one scan
+coalesce to one subsequent cursorless scan. These are status reads, never
+conversion submission, repair retry, acknowledgement or worker cancellation.
+
+`update` invalidates in-flight scans on scope/readiness/online/visibility changes.
+Hidden/offline contexts retain the last complete same-scope projection, cancel
+its current scan and schedule no further reads. Scope change or lost readiness
+clears the projection immediately. Reconnect requests fresh recovery, not an old
+cursor continuation; multiple rapid transitions recover only the latest context.
+`dispose` clears scheduling, aborts the current traversal, clears scope/data and
+permanently prevents reopening. Abort-insensitive late replies cannot publish.
+
+A future mount must feed actual scope-generation, readiness, online/visibility
+events and call dispose on teardown; lifecycle subscriptions are not installed
+by this helper. `getState` exposes the existing poll projection for composition,
+not a new server DTO. Local fixture tests do not qualify actual browser events,
+credentials/gateway, immutable releases, graph refresh or feedback. The Library
+action remains unavailable. No timer callback causes missed-interval catchup.
