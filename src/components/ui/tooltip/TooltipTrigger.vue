@@ -20,6 +20,13 @@ watch(rootContext.disabled, (disabled) => {
   if (disabled) rootContext.onClose()
 })
 
+watch(rootContext.open, (open, _, onCleanup) => {
+  if (!open) return
+  const close = () => rootContext.onClose()
+  window.addEventListener('wheel', close, { capture: true, passive: true })
+  onCleanup(() => window.removeEventListener('wheel', close, { capture: true }))
+})
+
 function openOnMouseEnter(event: PointerEvent) {
   if (
     event.pointerType === 'touch' ||
@@ -40,7 +47,6 @@ function openOnClickIfEnabled() {
   <TooltipTrigger
     v-bind="forwarded"
     @pointerenter="openOnMouseEnter"
-    @wheel.passive="rootContext.onClose()"
     @click="openOnClickIfEnabled"
   >
     <slot />

@@ -71,8 +71,8 @@ Compose the parts. The trigger child must render a single element:
 
 - Hovering or keyboard focus opens the tooltip; pointer-caused focus,
   touch and a pressed mouse button do not.
-- The tooltip closes when the pointer leaves, on click, on Escape, and when
-  the wheel scrolls over its trigger.
+- The tooltip closes when the pointer leaves, on click, on Escape, and on any
+  wheel scroll, even one the canvas stops from propagating.
 - `TooltipTrigger` opens on `pointerenter` as well as reka's `pointermove`,
   because trigger content such as node widgets can stop `pointermove` from
   bubbling.

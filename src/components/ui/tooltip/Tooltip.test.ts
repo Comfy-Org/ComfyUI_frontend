@@ -125,7 +125,19 @@ describe('Tooltip', () => {
     expect(screen.queryByRole('tooltip')).not.toBeInTheDocument()
   })
 
-  it('closes when the wheel scrolls over its trigger', async () => {
+  it('closes when the pointer leaves the trigger', async () => {
+    const user = userEvent.setup()
+    render(TooltipHarness)
+    const trigger = screen.getByRole('button', { name: 'Trigger' })
+
+    await user.hover(trigger)
+    await screen.findByRole('tooltip')
+    await user.unhover(trigger)
+
+    expect(screen.queryByRole('tooltip')).not.toBeInTheDocument()
+  })
+
+  it('closes when the wheel scrolls', async () => {
     const user = userEvent.setup()
     render(TooltipHarness)
     const trigger = screen.getByRole('button', { name: 'Trigger' })
