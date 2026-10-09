@@ -35,20 +35,20 @@ interface TabUseCase {
 /** The tasks a tab splits into; a tab that is already one task has none. */
 export const tabUseCases: Partial<Record<ModelTab, readonly TabUseCase[]>> = {
   image: [
-    { useCase: 'generate-images', labelKey: 'workshop.useCaseChip.generate' },
-    { useCase: 'edit-images', labelKey: 'workshop.useCaseChip.edit' }
+    { useCase: 'generate-images', labelKey: 'workshop.useCaseOption.generate' },
+    { useCase: 'edit-images', labelKey: 'workshop.useCaseOption.edit' }
   ],
   video: [
-    { useCase: 'generate-videos', labelKey: 'workshop.useCaseChip.generate' },
+    { useCase: 'generate-videos', labelKey: 'workshop.useCaseOption.generate' },
     {
       useCase: 'animate-images',
-      labelKey: 'workshop.useCaseChip.animateImage'
+      labelKey: 'workshop.useCaseOption.animateImage'
     },
-    { useCase: 'edit-videos', labelKey: 'workshop.useCaseChip.editVideo' }
+    { useCase: 'edit-videos', labelKey: 'workshop.useCaseOption.editVideo' }
   ],
   edit: [
-    { useCase: 'edit-images', labelKey: 'workshop.useCaseChip.images' },
-    { useCase: 'edit-videos', labelKey: 'workshop.useCaseChip.videos' }
+    { useCase: 'edit-images', labelKey: 'workshop.useCaseOption.images' },
+    { useCase: 'edit-videos', labelKey: 'workshop.useCaseOption.videos' }
   ]
 }
 

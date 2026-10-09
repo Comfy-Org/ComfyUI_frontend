@@ -1,14 +1,12 @@
 <script setup lang="ts">
 import { computed } from 'vue'
 
-import BrandButton from '@/components/common/BrandButton.vue'
 import SectionHeader from '@/components/common/SectionHeader.vue'
 import type { WorkshopModel } from '@/config/models-catalogue'
-import { apiKeysLink, getRoutes } from '@/config/routes'
+import { getRoutes } from '@/config/routes'
 import type { Locale } from '@/i18n/translations'
 import { translationsFor } from '@/i18n/translations'
-import { runsHere } from '@/lib/workshop/explorer/model-access'
-import { latestLaunch, MODELS_CATALOGUE_ID } from '@/lib/workshop/models-hub'
+import { latestLaunch } from '@/lib/workshop/models-hub'
 import HubBreadcrumb from '@/components/workshop/HubBreadcrumb.vue'
 import LatestLaunchCard from './LatestLaunchCard.vue'
 
@@ -19,8 +17,6 @@ const { models, locale = 'en' } = defineProps<{
 const { t } = translationsFor(locale)
 
 const routes = getRoutes(locale)
-const runHref = `#${MODELS_CATALOGUE_ID}`
-const canRun = computed(() => models.some(runsHere))
 const featured = computed(() => latestLaunch(models))
 </script>
 
@@ -49,29 +45,6 @@ const featured = computed(() => latestLaunch(models))
       >
         {{ t('workshop.modelsHub.subtitle') }}
       </p>
-      <div
-        class="flex w-full flex-col gap-3 sm:w-auto sm:flex-row sm:flex-wrap"
-      >
-        <BrandButton
-          v-if="canRun"
-          :href="runHref"
-          variant="solid"
-          size="nav"
-          class="justify-center uppercase"
-          data-testid="models-hub-run"
-        >
-          {{ t('workshop.modelsHub.runModel') }}
-        </BrandButton>
-        <BrandButton
-          :href="apiKeysLink({ onboarding: 'router' })"
-          :variant="canRun ? 'outline' : 'solid'"
-          size="nav"
-          class="justify-center uppercase"
-          data-testid="models-hub-api-key"
-        >
-          {{ t('workshop.modelsHub.getApiKey') }}
-        </BrandButton>
-      </div>
     </div>
 
     <div v-if="featured" class="min-w-0" data-testid="models-hub-latest">

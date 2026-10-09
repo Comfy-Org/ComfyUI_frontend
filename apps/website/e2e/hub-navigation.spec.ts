@@ -188,7 +188,7 @@ for (const { section, query, filter } of [
   {
     section: 'workflows' as const,
     query: 'material',
-    filter: 'model=LTX-2.3'
+    filter: 'category=product'
   }
 ]) {
   test(`leaving filtered ${section} through the Hub does not carry its filters back`, async ({
@@ -403,15 +403,14 @@ for (const { section, openCategory } of [
     await expectSearchFillsRow(page)
 
     await openCategory(page)
-    const chosen = page
-      .getByTestId('catalogue-use-case-chips')
-      .getByRole('button', { pressed: true })
-    await expect(chosen).not.toHaveText('All')
+    await expect(page.getByTestId('workshop-filter-count')).toHaveText('1')
     await expect(page.getByTestId('section-back')).toHaveCount(0)
     await expectSearchFillsRow(page)
 
-    await page.getByTestId('use-case-chip-all').click()
-    await expect(chosen).toHaveText('All')
+    await page.getByTestId('workshop-filter').click()
+    await page.getByTestId('workshop-filter-clear').click()
+    await page.keyboard.press('Escape')
+    await expect(page.getByTestId('workshop-filter-count')).toHaveCount(0)
     await expectSearchFillsRow(page)
   })
 }

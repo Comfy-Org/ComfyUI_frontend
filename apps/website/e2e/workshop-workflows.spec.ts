@@ -114,10 +114,7 @@ test('workflow launch groups lead to the existing shared form', async ({
   await expect(
     page.getByRole('heading', { level: 1, name: 'Workflows' })
   ).toBeVisible()
-  await expect(page.getByTestId('use-case-chip-product')).toHaveAttribute(
-    'aria-pressed',
-    'true'
-  )
+  await expect(page.getByTestId('workshop-filter-count')).toHaveText('1')
   const filtered = page.getByTestId('workflow-grid')
   await expect(
     filtered.getByRole('link', { name: /Change a material/ })
@@ -223,14 +220,14 @@ test('cold workflow filters focus their controls and respect dismissal while loa
   const trigger = page.getByTestId('workshop-filter')
   await trigger.click()
   await requested.promise
-  await expect(page.getByRole('dialog', { name: 'Model' })).toHaveCount(0)
+  await expect(page.getByRole('dialog', { name: 'Filters' })).toHaveCount(0)
   await trigger.press('Escape')
   released.resolve()
   await expect(trigger).toHaveAttribute('aria-expanded', 'false')
-  await expect(page.getByRole('dialog', { name: 'Model' })).toHaveCount(0)
+  await expect(page.getByRole('dialog', { name: 'Filters' })).toHaveCount(0)
 
   await trigger.click()
-  const dialog = page.getByRole('dialog', { name: 'Model' })
+  const dialog = page.getByRole('dialog', { name: 'Filters' })
   const search = dialog.getByRole('searchbox')
   if (isMobile) {
     await expect(page.getByTestId('workshop-filter-grabber')).toBeFocused()
@@ -238,10 +235,14 @@ test('cold workflow filters focus their controls and respect dismissal while loa
   } else {
     await expect(search).toBeFocused()
   }
-  await page.keyboard.type('seedvr')
-  await expect(search).toHaveValue('seedvr')
-  await expect(dialog.getByTestId('filter-model-SeedVR2')).toBeVisible()
-  await expect(dialog.getByTestId('filter-model-LTX-2.3')).toHaveCount(0)
+  await page.keyboard.type('video')
+  await expect(search).toHaveValue('video')
+  await expect(
+    dialog.getByRole('button', { name: 'Create & edit videos 6' })
+  ).toBeVisible()
+  await expect(
+    dialog.getByRole('button', { name: 'Upscale & restore 6' })
+  ).toHaveCount(0)
   await search.press('Escape')
   await expect(dialog).toHaveCount(0)
   await expect(trigger).toBeFocused()
@@ -255,7 +256,9 @@ test('workflow search and category filters share the mobile controls @mobile', a
   await page.goto('/hub/')
   await page.getByTestId('explore-door-workflows').click()
   await expect(page).toHaveURL('/hub/workflows/')
+  await page.getByTestId('workshop-filter').click()
   await page.getByRole('button', { name: 'Upscale & restore 6' }).click()
+  await page.getByRole('button', { name: 'Show 6 workflows' }).click()
   await expect(
     page.getByTestId('workflow-grid').getByTestId('workshop-model-card')
   ).toHaveCount(6)
@@ -309,6 +312,7 @@ test('the workflows half narrows to the model it runs on, from the menu and from
   await expect(more).toHaveCount(0)
 
   await page.getByTestId('workshop-filter').click()
+  await page.getByTestId('workshop-facet-model').click()
   await page.getByTestId('filter-model-LTX-2.3').click()
   await expect(outcomes).toHaveCount(7)
 
@@ -316,7 +320,7 @@ test('the workflows half narrows to the model it runs on, from the menu and from
   // instead of intersecting it.
   await page.getByTestId('filter-model-SeedVR2').click()
   await expect(outcomes).toHaveCount(9)
-  await expect(page.getByTestId('workshop-filter-count')).toHaveText('2')
+  await expect(page.getByTestId('workshop-facet-model-count')).toHaveText('2')
 
   // Clearing gives the whole catalogue back, not just the badge.
   await page.getByTestId('workshop-filter-clear').click()
@@ -409,7 +413,7 @@ for (const { path, group, file } of [
   })
 
 const tabletToolbars = [640, 700, 768].flatMap((width) => [
-  { width, half: 'Models', path: '/hub/models/' },
+  { width, half: 'Models', path: '/hub/models/?tab=video' },
   {
     width,
     half: 'Workflows with a category selected',

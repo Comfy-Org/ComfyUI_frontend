@@ -32,24 +32,21 @@ describe('DesignDecisions', () => {
     expect(screen.queryByRole('button')).toBeNull()
   })
 
-  it('numbers the decisions of the page it is on and opens the panel from a dot', async () => {
+  it('shows only the button until it is pressed, then numbers the decisions of the page in dots and the panel', async () => {
     addAnchor('models-sidebar')
-    addAnchor('models-chips')
+    addAnchor('models-filters')
     const user = userEvent.setup()
     render(DesignDecisions, { props: { enabled: true } })
 
-    expect(
-      await screen.findByRole('button', { name: 'Design decision 1' })
-    ).toBeTruthy()
-    expect(
-      screen.getByRole('button', { name: 'Design decision 2' })
-    ).toBeTruthy()
-    expect(screen.getByTestId('design-decisions-toggle')).toHaveTextContent(
-      'Design decisions 2'
-    )
+    const toggle = await screen.findByTestId('design-decisions-toggle')
+    expect(toggle).toHaveTextContent('Design decisions 2')
+    expect(screen.queryByTestId('design-decision-dot')).toBeNull()
     expect(screen.queryByRole('complementary')).toBeNull()
 
-    await user.click(screen.getByRole('button', { name: 'Design decision 2' }))
+    await user.click(toggle)
+    expect(
+      screen.getByRole('button', { name: 'Design decision 1' })
+    ).toBeTruthy()
     const panel = screen.getByRole('complementary', {
       name: 'Design decisions'
     })
@@ -57,12 +54,19 @@ describe('DesignDecisions', () => {
       within(panel)
         .getAllByRole('heading', { level: 3 })
         .map((heading) => heading.textContent)
-    ).toEqual(['Sidebar by type', 'Use-case chips inside a type'])
+    ).toEqual(['Sidebar by type', 'Use cases inside Filters, per type'])
     expect(panel).toHaveTextContent('analytics PR #20538')
+
+    await user.click(screen.getByRole('button', { name: 'Design decision 2' }))
+    expect(screen.getByRole('complementary')).toBeTruthy()
+
+    await user.click(toggle)
+    expect(screen.queryByTestId('design-decision-dot')).toBeNull()
+    expect(screen.queryByRole('complementary')).toBeNull()
   })
 
   it('lists the workflows decision on the workflows page', async () => {
-    addAnchor('workflows-chips')
+    addAnchor('workflows-filters')
     const user = userEvent.setup()
     render(DesignDecisions, { props: { enabled: true } })
 
@@ -71,6 +75,6 @@ describe('DesignDecisions', () => {
       within(screen.getByRole('complementary'))
         .getAllByRole('heading', { level: 3 })
         .map((heading) => heading.textContent)
-    ).toEqual(['Category chips'])
+    ).toEqual(['Categories inside Filters'])
   })
 })

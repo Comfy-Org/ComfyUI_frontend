@@ -66,7 +66,6 @@ import ModelAccessSection from '@/components/workshop/models-hub/ModelAccessSect
 import ModelFamilySection from '@/components/workshop/models-hub/ModelFamilySection.vue'
 import ModelsExploreHero from '@/components/workshop/models-hub/ModelsExploreHero.vue'
 import CatalogueShowMore from './CatalogueShowMore.vue'
-import CatalogueUseCaseChips from './CatalogueUseCaseChips.vue'
 import WorkshopSearchField from './WorkshopSearchField.vue'
 import WorkshopSortMenu from './WorkshopSortMenu.vue'
 
@@ -152,7 +151,7 @@ const {
 const toolbar = useTemplateRef<HTMLElement>('toolbar')
 const heading = useTemplateRef<HTMLElement>('heading')
 
-const useCaseChips = computed<FacetMenuOption[]>(() => {
+const useCaseOptions = computed<FacetMenuOption[]>(() => {
   const counts = countByUseCase(
     models.filter(
       (model) =>
@@ -169,22 +168,14 @@ const useCaseChips = computed<FacetMenuOption[]>(() => {
     }))
 })
 
-watch(useCaseChips, (chips) => {
+watch(useCaseOptions, (options) => {
   if (tab.value === 'all') return
   const offered = selectedUseCases.value.filter((useCase) =>
-    chips.some((chip) => chip.value === useCase)
+    options.some((option) => option.value === useCase)
   )
   if (offered.length !== selectedUseCases.value.length)
     selectedUseCases.value = offered
 })
-
-const accessOptions = computed<FacetMenuOption<ModelAccess>[]>(() =>
-  MODEL_ACCESS.map((value) => ({
-    value,
-    label: t(accessFilterKey[value]),
-    count: models.filter((model) => accessFor(model).includes(value)).length
-  }))
-)
 
 const legacyFiltered = computed(
   () =>
@@ -193,19 +184,36 @@ const legacyFiltered = computed(
     legacyCapabilities.value.length > 0
 )
 
+const inTab = computed(() =>
+  searchWorkshopModels(models, {
+    query: query.value,
+    useCases: selectedUseCases.value,
+    modalities: legacyModalities.value,
+    providers: legacyProviders.value,
+    capabilities: legacyCapabilities.value
+  }).filter((model) => hostedInTab(model, tab.value))
+)
+
+// A way of using a model that every listed model offers narrows nothing, so
+// it is only offered while it would change the list or is already chosen.
+const accessOptions = computed<FacetMenuOption<ModelAccess>[]>(() =>
+  MODEL_ACCESS.map((value) => ({
+    value,
+    label: t(accessFilterKey[value]),
+    count: inTab.value.filter((model) => accessFor(model).includes(value))
+      .length
+  })).filter(
+    (option) =>
+      option.count < inTab.value.length ||
+      selectedAccess.value.includes(option.value)
+  )
+)
+
 const visible = computed(() =>
   groupModels(
     sortWorkshopModels(
-      searchWorkshopModels(models, {
-        query: query.value,
-        useCases: selectedUseCases.value,
-        modalities: legacyModalities.value,
-        providers: legacyProviders.value,
-        capabilities: legacyCapabilities.value
-      }).filter(
-        (model) =>
-          hostedInTab(model, tab.value) &&
-          offersAccess(accessFor(model), selectedAccess.value)
+      inTab.value.filter((model) =>
+        offersAccess(accessFor(model), selectedAccess.value)
       ),
       sort.value
     )
@@ -270,16 +278,15 @@ function rememberModel(model: WorkshopModel, event: MouseEvent) {
     <div class="min-w-0">
       <ModelsExploreHero :models :locale />
 
-      <!-- scroll-mt tracks the nav height; the toolbar's is lower because its py-4 absorbs the difference -->
+      <!-- The sidebar already names the list and its count, so the heading is
+        for assistive technology only. -->
       <h2
         :id="MODELS_CATALOGUE_ID"
         ref="heading"
-        class="mb-4 scroll-mt-24 text-3xl font-bold text-primary-warm-white sm:text-4xl lg:scroll-mt-32"
+        class="sr-only scroll-mt-24 lg:scroll-mt-32"
       >
         {{ t(sectionTitleKey) }}
-        <span class="text-base font-normal text-primary-warm-gray tabular-nums">
-          {{ resultCount }}
-        </span>
+        {{ resultCount }}
       </h2>
 
       <div class="flex flex-col lg:flex-row lg:items-start lg:gap-10">
@@ -326,10 +333,14 @@ function rememberModel(model: WorkshopModel, event: MouseEvent) {
                 data-testid="workshop-filters"
               >
                 <WorkshopFilterMenu
+                  v-if="useCaseOptions.length || accessOptions.length"
+                  v-model:use-cases="selectedUseCases"
                   v-model:access="selectedAccess"
+                  :use-case-options="useCaseOptions"
                   :access-options="accessOptions"
                   :result-count
                   :locale
+                  data-design-decision="models-filters"
                 />
 
                 <WorkshopSortMenu
@@ -339,14 +350,6 @@ function rememberModel(model: WorkshopModel, event: MouseEvent) {
                 />
               </div>
             </div>
-            <CatalogueUseCaseChips
-              v-model="selectedUseCases"
-              :options="useCaseChips"
-              :label="t('workshop.useCaseChip.label')"
-              :locale
-              class="basis-full"
-              data-design-decision="models-chips"
-            />
           </div>
 
           <div

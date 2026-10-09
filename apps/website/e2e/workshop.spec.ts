@@ -107,28 +107,6 @@ test.describe('Models catalog', () => {
     await expect(page).toHaveURL(new URL(href, page.url()).href)
   })
 
-  test('runs a model from the hero by scrolling to the catalogue on the same page', async ({
-    page
-  }) => {
-    await page.goto('/hub/models/')
-    await page
-      .getByTestId('models-hub-hero')
-      .getByRole('link', { name: 'Run a model' })
-      .click()
-
-    await expect(page).toHaveURL(/\/hub\/models\/#models-catalogue$/)
-    await expect(catalogueHeading(page)).toBeInViewport()
-    await expect(catalogueHeading(page)).toHaveText(/^All models \d+$/)
-    await expect(page.getByTestId('models-hub-hero')).toHaveCount(1)
-    await expect(page.getByTestId('workshop-filter-count')).toHaveCount(0)
-    await expect(
-      page
-        .getByTestId('workshop-models-grid')
-        .getByTestId('workshop-model-card')
-        .first()
-    ).toBeVisible()
-  })
-
   test('opens open weights and the Wan family from the default view', async ({
     page
   }) => {
@@ -343,7 +321,7 @@ test.describe('Models catalog', () => {
     await expect(firstLink).toBeVisible()
   })
 
-  test('an opened shelf reads as a chosen chip on its tab', async ({
+  test('an opened shelf reads as a chosen filter on its tab', async ({
     page
   }) => {
     await page.goto('/hub/models/?useCase=generate-videos')
@@ -355,12 +333,13 @@ test.describe('Models catalog', () => {
       'aria-selected',
       'true'
     )
-    await expect(
-      page.getByTestId('use-case-chip-generate-videos')
-    ).toHaveAttribute('aria-pressed', 'true')
-    await tabs.getByRole('tab', { name: /^All/ }).click()
-    await expect(catalogueHeading(page)).toHaveText(/^All models \d+$/)
-    await expect(page.getByTestId('catalogue-use-case-chips')).toHaveCount(0)
+    await expect(page.getByTestId('workshop-filter-count')).toHaveText('1')
+    await page.getByTestId('workshop-filter').click()
+    await expect(page.getByTestId('workshop-filter-applied')).toHaveText(
+      '1 selected'
+    )
+    await page.getByTestId('workshop-filter-clear').click()
+    await expect(catalogueHeading(page)).toHaveText(/^Video models \d+$/)
   })
 
   test('a model page returns to the shelf it was opened from', async ({
@@ -390,9 +369,7 @@ test.describe('Models catalog', () => {
     await expect(
       page.getByRole('heading', { level: 2, name: 'Generate videos' })
     ).toBeVisible()
-    await expect(
-      page.getByTestId('use-case-chip-generate-videos')
-    ).toHaveAttribute('aria-pressed', 'true')
+    await expect(page.getByTestId('workshop-filter-count')).toHaveText('1')
   })
 
   test('a model page returns to the category tab it was opened from', async ({
@@ -545,7 +522,7 @@ test.describe('Models catalog', () => {
     )
   })
 
-  test('the use-case chips actually narrow the catalog', async ({ page }) => {
+  test('the use-case filter actually narrows the catalog', async ({ page }) => {
     await page.goto('/hub/models/')
     const all = await catalogueCount(page)
     expect(all).toBeGreaterThan(0)
@@ -553,7 +530,8 @@ test.describe('Models catalog', () => {
     await tabs.getByRole('tab', { name: /^Image/ }).click()
     await expect(catalogueHeading(page)).toHaveText(/^Image models \d+$/)
     const image = await catalogueCount(page)
-    await page.getByTestId('use-case-chip-edit-images').click()
+    await page.getByTestId('workshop-filter').click()
+    await page.getByTestId('filter-useCase-edit-images').click()
     const cards = page
       .getByTestId('workshop-models-grid')
       .getByTestId('workshop-model-card')
@@ -561,10 +539,12 @@ test.describe('Models catalog', () => {
     await expect(catalogueHeading(page)).toHaveText(/^Edit images \d+$/)
     const narrowed = await catalogueCount(page)
     expect(narrowed).toBeLessThan(image)
-    await expect(page.getByTestId('use-case-chip-edit-images')).toContainText(
+    await expect(page.getByTestId('filter-useCase-edit-images')).toContainText(
       String(narrowed)
     )
+    await expect(page.getByTestId('workshop-filter-count')).toHaveText('1')
 
+    await page.keyboard.press('Escape')
     await showEveryPage(page)
     await expect(cards).toHaveCount(narrowed)
     await expect(
@@ -617,16 +597,17 @@ test.describe('Models catalog', () => {
   test('the how-you-use-it filter offers only catalogue models', async ({
     page
   }) => {
-    await page.goto('/hub/models/')
-    await expect(page.getByTestId('workshop-models-grid')).toBeVisible()
-    await page.getByTestId('workshop-filter').click()
-    await expect(page.getByTestId('filter-access-download')).toHaveCount(0)
-
-    await page.getByTestId('filter-access-api').click()
+    await page.goto('/hub/models/?use=api')
     const grid = page.getByTestId('workshop-models-grid')
     await expect(grid.getByTestId('workshop-model-card').first()).toBeVisible()
     await expect(grid.getByTestId('open-weight-model-card')).toHaveCount(0)
     await expect(page.getByTestId('workshop-filter-count')).toHaveText('1')
+    await page.getByTestId('workshop-filter').click()
+    await expect(page.getByTestId('filter-access-download')).toHaveCount(0)
+    await expect(page.getByTestId('filter-access-api')).toHaveAttribute(
+      'aria-pressed',
+      'true'
+    )
   })
 
   test('category tabs narrow the models and stay in the address', async ({
@@ -1079,7 +1060,7 @@ test.describe('Model playground', () => {
 
 test.describe('Filter sheet @mobile', () => {
   test('the handle pulls the sheet up and lets it go', async ({ page }) => {
-    await page.goto('/hub/models/')
+    await page.goto('/hub/models/?tab=video')
     await page.getByTestId('workshop-filter').click()
 
     const sheet = page.getByTestId('workshop-filter-menu')

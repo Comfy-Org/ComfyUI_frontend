@@ -31,6 +31,22 @@ describe('modelsListReturn', () => {
       }
     },
     {
+      kind: 'a category on the tab it implies',
+      state: { useCases: ['generate-videos'], tab: 'video' },
+      list: {
+        href: '/hub/models/?useCase=generate-videos',
+        label: 'Generate videos'
+      }
+    },
+    {
+      kind: 'a category on another tab that offers it',
+      state: { useCases: ['edit-images'], tab: 'edit' },
+      list: {
+        href: '/hub/models/?useCase=edit-images&tab=edit',
+        label: 'Edit images'
+      }
+    },
+    {
       kind: 'one way of using a model',
       state: { access: ['run'] },
       list: {

@@ -1,4 +1,4 @@
-<script setup lang="ts">
+<script setup lang="ts" generic="T extends string = UseCase">
 import { ChevronDown, ListFilter } from '@lucide/vue'
 import {
   computed,
@@ -19,7 +19,6 @@ import type { Locale } from '@/i18n/translations'
 import { translationsFor } from '@/i18n/translations'
 import type { ModelAccess } from '@/lib/workshop/explorer/model-access'
 import { toggleIn, toggleOption } from '@/lib/workshop/facet-toggle'
-import { filterLabel } from '@/lib/workshop/filter-label'
 import type { FacetSheetGroup } from './FacetSheet.vue'
 
 export interface FacetMenuOption<T extends string = UseCase> {
@@ -33,12 +32,14 @@ const WorkshopFilterPanel = defineAsyncComponent(
 )
 
 const {
+  useCaseOptions,
   modelOptions,
   accessOptions,
   resultCount,
   kind = 'models',
   locale = 'en'
 } = defineProps<{
+  useCaseOptions: readonly FacetMenuOption<T>[]
   /** The models the listing runs on, where it stands on more than its own. */
   modelOptions?: readonly FacetMenuOption<string>[]
   /** How a model can be used: run here, called by API, or downloaded. */
@@ -50,6 +51,7 @@ const {
 }>()
 const { t } = translationsFor(locale)
 
+const useCases = defineModel<T[]>('useCases', { required: true })
 const models = defineModel<string[]>('models', { default: () => [] })
 const access = defineModel<ModelAccess[]>('access', { default: () => [] })
 
@@ -87,6 +89,20 @@ watchEffect((onCleanup) => {
 })
 
 const groups = computed<FacetSheetGroup[]>(() => [
+  ...(useCaseOptions.length
+    ? [
+        {
+          key: 'useCase',
+          label: t(
+            kind === 'workflows'
+              ? 'workshop.catalogue.categories'
+              : 'workshop.launch.label'
+          ),
+          options: useCaseOptions,
+          selected: useCases.value
+        }
+      ]
+    : []),
   ...(modelOptions?.length
     ? [
         {
@@ -113,16 +129,17 @@ const selectedCount = computed(() =>
   groups.value.reduce((total, group) => total + group.selected.length, 0)
 )
 
-const label = computed(() =>
-  filterLabel(groups.value, t('workshop.filter.label'))
-)
+const label = t('workshop.filter.label')
 
 function toggle(facet: string, value: string) {
   if (facet === 'model') models.value = toggleIn(models.value, value)
-  else access.value = toggleOption(accessOptions, access.value, value)
+  else if (facet === 'access')
+    access.value = toggleOption(accessOptions, access.value, value)
+  else useCases.value = toggleOption(useCaseOptions, useCases.value, value)
 }
 
 function clearAll() {
+  useCases.value = []
   models.value = []
   access.value = []
 }
@@ -130,7 +147,7 @@ function clearAll() {
 defineExpose({ focus: () => trigger.value?.focus() })
 
 const sheetLabels = computed(() => ({
-  title: label.value,
+  title: label,
   search: t('workshop.filter.search'),
   noMatches: t('workshop.filter.noMatches'),
   applied: (n: number) => t('workshop.filter.applied', { n }),

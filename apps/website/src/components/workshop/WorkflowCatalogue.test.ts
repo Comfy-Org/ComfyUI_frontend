@@ -1,5 +1,5 @@
 import userEvent from '@testing-library/user-event'
-import { render, screen, waitFor, within } from '@testing-library/vue'
+import { render, screen, waitFor } from '@testing-library/vue'
 import { beforeEach, describe, expect, it } from 'vitest'
 
 import type { WorkflowWorkshopModel } from '@/config/models-catalogue'
@@ -132,59 +132,36 @@ describe('workflow catalogue ordering and shared links', () => {
     expect(visibleOutcomes()).toEqual(ALL)
   })
 
-  it('narrows by the category chips above the grid, several at once', async () => {
+  it('names the category it was narrowed by, and lets go of it from that name', async () => {
     const user = userEvent.setup()
     render(WorkflowCatalogue, { props: { models } })
-    const categories = screen.getByRole('group', { name: 'Categories' })
-    expect(
-      within(categories)
-        .getAllByRole('button')
-        .map((chip) => chip.textContent.replace(/\s+/g, ' ').trim())
-    ).toEqual(['All', 'video 2', 'cleanup 1'])
+    await user.click(screen.getByTestId('workshop-filter'))
+    await user.click(await screen.findByTestId('filter-useCase-video'))
+    expect(screen.getByTestId('workshop-filter-chips')).toHaveTextContent(
+      'video'
+    )
 
-    await user.click(screen.getByRole('button', { name: 'video 2' }))
-    expect(visibleOutcomes()).toEqual([
-      '/models/workflows/animate/',
-      '/models/workflows/connect/'
-    ])
+    await user.click(screen.getByRole('button', { name: 'Remove video' }))
     expect(screen.queryByTestId('workshop-filter-chips')).toBeNull()
-
-    await user.click(screen.getByRole('button', { name: 'cleanup 1' }))
     expect(visibleOutcomes()).toEqual(ALL)
-    expect(screen.getByRole('button', { name: 'All' })).toHaveAttribute(
-      'aria-pressed',
-      'false'
-    )
-
-    await user.click(screen.getByRole('button', { name: 'All' }))
-    expect(screen.getByRole('button', { name: 'video 2' })).toHaveAttribute(
-      'aria-pressed',
-      'false'
-    )
   })
 
-  it('keeps categories out of the filter menu', async () => {
+  // A cross that cleared everything would pass a test that only ever set one
+  // filter, so this one sets two and keeps the other.
+  it('takes off the chip that was pressed and leaves the rest alone', async () => {
     const user = userEvent.setup()
     render(WorkflowCatalogue, { props: { models } })
     await user.click(screen.getByTestId('workshop-filter'))
-    await screen.findByTestId('filter-model-SeedVR2')
-    expect(screen.queryByTestId('filter-useCase-video')).toBeNull()
-  })
-
-  it('combines a category chip with the model it runs on, and the chip remover keeps the category', async () => {
-    const user = userEvent.setup()
-    render(WorkflowCatalogue, { props: { models } })
-    await user.click(screen.getByRole('button', { name: 'video 2' }))
-    await user.click(screen.getByTestId('workshop-filter'))
+    await user.click(await screen.findByTestId('filter-useCase-video'))
     await user.click(await screen.findByTestId('filter-model-SeedVR2'))
-    expect(visibleOutcomes()).toEqual(['/models/workflows/connect/'])
 
-    await user.click(
-      screen.getByRole('button', { name: 'Remove Runs on SeedVR2' })
+    await user.click(screen.getByRole('button', { name: 'Remove video' }))
+    expect(screen.getByTestId('workshop-filter-chips')).toHaveTextContent(
+      'Runs on SeedVR2'
     )
     expect(visibleOutcomes()).toEqual([
-      '/models/workflows/animate/',
-      '/models/workflows/connect/'
+      '/models/workflows/connect/',
+      '/models/workflows/restore/'
     ])
   })
 
@@ -250,10 +227,7 @@ describe('workflow catalogue ordering and shared links', () => {
     await waitFor(() =>
       expect(screen.getByRole('searchbox')).toHaveValue('image')
     )
-    expect(screen.getByRole('button', { name: 'video 2' })).toHaveAttribute(
-      'aria-pressed',
-      'true'
-    )
+    expect(screen.getByTestId('workshop-filter-count')).toHaveTextContent('1')
     expect(visibleOutcomes()).toEqual([
       '/models/workflows/animate/',
       '/models/workflows/connect/'

@@ -74,6 +74,12 @@ useMutationObserver(() => (live.value ? document.body : null), schedule, {
   subtree: true
 })
 
+function toggle() {
+  panelOpen.value = !panelOpen.value
+  active.value = undefined
+  if (panelOpen.value) measure()
+}
+
 async function openAt(anchor: string) {
   active.value = anchor
   panelOpen.value = true
@@ -86,29 +92,31 @@ async function openAt(anchor: string) {
 
 <template>
   <template v-if="live && shown.length">
-    <button
-      v-for="dot in placed"
-      :key="dot.anchor"
-      type="button"
-      :aria-label="t('designDecisions.dot', { n: dot.number })"
-      class="fixed z-50 flex size-6 -translate-1/2 cursor-pointer items-center justify-center rounded-full bg-primary-comfy-yellow text-xs font-bold text-primary-comfy-ink shadow-lg ring-2 ring-page outline-none focus-visible:ring-primary-warm-white"
-      :style="{ left: `${dot.x}px`, top: `${dot.y}px` }"
-      data-testid="design-decision-dot"
-      @click="openAt(dot.anchor)"
-    >
-      {{ dot.number }}
-    </button>
+    <template v-if="panelOpen">
+      <button
+        v-for="dot in placed"
+        :key="dot.anchor"
+        type="button"
+        :aria-label="t('designDecisions.dot', { n: dot.number })"
+        class="fixed z-50 flex size-6 -translate-1/2 cursor-pointer items-center justify-center rounded-full bg-primary-comfy-yellow text-xs font-bold text-primary-comfy-ink shadow-lg ring-2 ring-page outline-none focus-visible:ring-primary-warm-white"
+        :style="{ left: `${dot.x}px`, top: `${dot.y}px` }"
+        data-testid="design-decision-dot"
+        @click="openAt(dot.anchor)"
+      >
+        {{ dot.number }}
+      </button>
+    </template>
 
     <button
       type="button"
       :aria-expanded="panelOpen"
-      class="fixed bottom-4 left-4 z-50 inline-flex h-10 cursor-pointer items-center gap-2 rounded-full bg-primary-comfy-yellow px-4 text-sm font-semibold text-primary-comfy-ink shadow-lg outline-none focus-visible:ring-3 focus-visible:ring-primary-warm-white"
+      class="fixed right-6 bottom-6 z-40 inline-flex h-8 cursor-pointer items-center gap-1.5 rounded-full border border-transparency-white-t8 bg-page/90 pr-1.5 pl-3 text-xs font-medium text-primary-comfy-canvas shadow-lg backdrop-blur-sm outline-none hover:text-primary-warm-white focus-visible:ring-3 focus-visible:ring-primary-comfy-yellow/50"
       data-testid="design-decisions-toggle"
-      @click="panelOpen = !panelOpen"
+      @click="toggle"
     >
       {{ t('designDecisions.button') }}
       <span
-        class="inline-flex size-5 items-center justify-center rounded-full bg-primary-comfy-ink text-2xs text-primary-comfy-yellow tabular-nums"
+        class="inline-flex size-5 items-center justify-center rounded-full bg-transparency-white-t8 text-2xs tabular-nums"
       >
         {{ shown.length }}
       </span>
@@ -117,7 +125,7 @@ async function openAt(anchor: string) {
     <aside
       v-if="panelOpen"
       :aria-label="t('designDecisions.title')"
-      class="fixed top-4 right-4 z-50 flex max-h-[calc(100dvh-2rem)] w-96 max-w-[calc(100vw-2rem)] flex-col overflow-hidden rounded-2xl border border-transparency-white-t8 bg-page text-primary-comfy-canvas shadow-2xl"
+      class="fixed right-6 bottom-16 z-50 flex max-h-[min(32rem,calc(100dvh-6rem))] w-96 max-w-[calc(100vw-3rem)] flex-col overflow-hidden rounded-2xl border border-transparency-white-t8 bg-page text-primary-comfy-canvas shadow-2xl"
       data-testid="design-decisions-panel"
     >
       <div

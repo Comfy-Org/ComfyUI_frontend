@@ -50,7 +50,7 @@
       "resize": "Drag to resize the filters",
       "text": "Text",
       "other": "Other",
-      "label": "Filter",
+      "label": "Filters",
       "filterBy": "Filter by…",
       "sectionLabel": "Filter by",
       "back": "All filters",
@@ -204,8 +204,7 @@
       "text": "Text",
       "more": "More categories"
     },
-    "useCaseChip": {
-      "label": "Use cases",
+    "useCaseOption": {
       "generate": "Generate",
       "edit": "Edit",
       "animateImage": "Animate an image",
@@ -787,7 +786,6 @@
     },
     "modelsHub": {
       "subtitle": "For developers: call the latest models through one API, try them here first or download open weights for ComfyUI.",
-      "runModel": "Run a model",
       "getApiKey": "Get an API key",
       "latestLaunch": "Latest launch",
       "access": {
@@ -5839,15 +5837,15 @@
         "title": "Sidebar by type",
         "body": "The sidebar groups models by what they make (Image, Video, Audio, 3D, Edit, Upscale, LLM) with counts, so the first choice is the format. Use cases that only repeated these types (Generate images ≈ Image, Text ≈ LLM…) are no longer a separate filter."
       },
-      "chips": {
-        "title": "Use-case chips inside a type",
-        "body": "Inside a type, chips split it by task (Video → Generate · Animate an image · Edit video). They only show tasks that exist in that type and only chips with results, so a combination never ends empty. Why visible: visitors look for tasks — Google and in-site searches are task phrases (image to video, face swap, upscale), and only about a third of catalogue visitors open a model (23.7k of 69k in 30 days). Use cases were hidden in the Filters menu; they now live in one visible place."
+      "filters": {
+        "title": "Use cases inside Filters, per type",
+        "body": "Use cases live in the Filters menu and only list the tasks that exist inside the selected type (Video → Generate · Animate an image · Edit video), so they never repeat the sidebar and never end empty. Kept in a menu rather than always-visible chips: in the last 30 days about 6% of Models visitors opened the use-case filter and ~2.5% picked one, while the use-case rows' 'See all' links reached ~5%."
       }
     },
     "workflows": {
-      "chips": {
-        "title": "Category chips",
-        "body": "Workflow categories are tasks (Create & edit videos, Animate characters, Product photos & ads, Upscale & restore, Edit & clean up photos), so they sit as always-visible chips with counts instead of inside Filters. Workflows get most of the traffic (85k Google clicks to /workflows vs 2.5k to /models) and the top pages are task pages: Image to video (580 visitors in 30 days), Video from references (228), Motion transfer (180). Chips combine with Runs on and search."
+      "filters": {
+        "title": "Categories inside Filters",
+        "body": "Categories (Create & edit videos, Animate characters, Product photos & ads, Upscale & restore, Edit & clean up photos) sit in the Filters menu next to Runs on. In the last 30 days about 7% of Workflows visitors opened a filter and under 2% picked a category, so they don't earn permanent space above the grid. Selected ones show as removable chips."
       }
     }
   }

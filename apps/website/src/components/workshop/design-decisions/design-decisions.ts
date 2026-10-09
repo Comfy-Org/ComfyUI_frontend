@@ -17,15 +17,15 @@ export const DESIGN_DECISIONS: readonly DesignDecision[] = [
     bodyKey: 'designDecisions.models.sidebar.body'
   },
   {
-    anchor: 'models-chips',
+    anchor: 'models-filters',
     page: 'models',
-    titleKey: 'designDecisions.models.chips.title',
-    bodyKey: 'designDecisions.models.chips.body'
+    titleKey: 'designDecisions.models.filters.title',
+    bodyKey: 'designDecisions.models.filters.body'
   },
   {
-    anchor: 'workflows-chips',
+    anchor: 'workflows-filters',
     page: 'workflows',
-    titleKey: 'designDecisions.workflows.chips.title',
-    bodyKey: 'designDecisions.workflows.chips.body'
+    titleKey: 'designDecisions.workflows.filters.title',
+    bodyKey: 'designDecisions.workflows.filters.body'
   }
 ]

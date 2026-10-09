@@ -6,7 +6,7 @@ import { translationsFor } from '@/i18n/translations'
 import type { ModelAccess } from './explorer/model-access'
 import { ACCESS_PARAM } from './explorer/model-access'
 import type { ModelTab } from './explorer/model-tabs'
-import { MODEL_TAB_PARAM } from './explorer/model-tabs'
+import { MODEL_TAB_PARAM, tabForUseCases } from './explorer/model-tabs'
 import type { ListReturn } from './shelf-memory'
 import { shelfOf } from './shelf-use-cases'
 import { useCaseLabelKey } from './use-case-label'
@@ -48,7 +48,8 @@ export function modelsListReturn(
   const params = new URLSearchParams(
     catalogSearch({ query: needle, useCase: shelf })
   )
-  if (tab !== 'all') params.set(MODEL_TAB_PARAM, tab)
+  const impliedTab = useCases.length > 0 && tabForUseCases(useCases, 'all')
+  if (tab !== 'all' && tab !== impliedTab) params.set(MODEL_TAB_PARAM, tab)
   if (access.length) params.set(ACCESS_PARAM, access.join(','))
   const search = params.toString()
   const href = `${getRoutes(locale).workshop}${search ? `?${search}` : ''}`

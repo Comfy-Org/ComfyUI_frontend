@@ -186,6 +186,7 @@ describe('ModelsCatalogue', () => {
     render(ModelsCatalogue, {
       props: { models: launchModels, section: 'workflows' }
     })
+    await user.click(await screen.findByRole('button', { name: 'Filters' }))
     await user.click(
       await screen.findByRole('button', { name: 'Edit & clean up photos 1' })
     )
@@ -466,16 +467,16 @@ describe('ModelsCatalogue', () => {
     expect(screen.queryByTestId('browse-all-end')).toBeNull()
   })
 
-  it('opens the models page with an API key link and the API docs', async () => {
+  it('leaves the API key link and the API docs to the section below the catalogue', async () => {
     render(ModelsCatalogue, {
       props: { models: launchModels, section: 'models' }
     })
 
     expect(
-      within(await screen.findByTestId('models-hub-hero'))
-        .getByRole('link', { name: 'Get an API key' })
-        .getAttribute('href')
-    ).toBe('https://platform.comfy.org/profile/api-keys?onboarding=router')
+      within(await screen.findByTestId('models-hub-hero')).queryByRole('link', {
+        name: 'Get an API key'
+      })
+    ).toBeNull()
     expect(
       within(screen.getByTestId('model-access-partner'))
         .getAllByRole('link')
