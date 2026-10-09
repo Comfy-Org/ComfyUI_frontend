@@ -354,7 +354,15 @@ export class ComfyApp {
   )
   nodePreviewImages: Partial<Record<string, string[]>>
 
-  private rootGraphInternal: LGraph | undefined
+  private readonly rootGraphRef = shallowRef<LGraph | undefined>(undefined)
+
+  private get rootGraphInternal(): LGraph | undefined {
+    return this.rootGraphRef.value
+  }
+
+  private set rootGraphInternal(graph: LGraph | undefined) {
+    this.rootGraphRef.value = graph
+  }
 
   // TODO: Migrate internal usage to the
   /** @deprecated Use {@link rootGraph} instead */
@@ -373,7 +381,10 @@ export class ComfyApp {
     return this.rootGraphInternal
   }
 
-  /** Whether the root graph has been initialized. Safe to check without triggering error logs. */
+  /**
+   * Whether the root graph has been initialized. Safe to check without
+   * triggering error logs, and reactive, so it can be watched.
+   */
   get isGraphReady(): boolean {
     return !!this.rootGraphInternal
   }

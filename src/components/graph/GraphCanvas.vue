@@ -393,7 +393,10 @@ watch(
   () => {
     if (!canvasStore.canvas) return
 
-    forEachNode(comfyApp.rootGraph, (n) => {
+    const rootGraph = comfyApp.rootGraphOrUndefined
+    if (!rootGraph) return
+
+    forEachNode(rootGraph, (n) => {
       if (!n.widgets) return
       for (const w of n.widgets) {
         if (!w[IS_CONTROL_WIDGET]) continue
