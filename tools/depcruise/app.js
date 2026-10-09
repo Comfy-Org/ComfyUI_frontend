@@ -232,8 +232,96 @@
   const PAD = 16
   let mapW = 0
   let mapH = 0
-  const px = (node) => PAD + node.x * (mapW - 2 * PAD)
-  const py = (node) => PAD + node.y * (mapH - 2 * PAD)
+  const px = (n) => PAD + posX[n] * (mapW - 2 * PAD)
+  const py = (n) => PAD + posY[n] * (mapH - 2 * PAD)
+
+  // Motion: a knot contracts around its centroid as it shrinks, and modules
+  // outside a knot spring out to a ring at the rim.
+  const N = graph.nodes.length
+  const hash = (n) => {
+    const v = Math.sin(n * 12.9898 + 78.233) * 43758.5453
+    return v - Math.floor(v)
+  }
+  const stiffness = Float32Array.from(
+    graph.nodes,
+    (_, n) => 0.03 + 0.05 * hash(n)
+  )
+  const DAMPING = 0.8
+  const FRAME_MS = 1000 / 60
+  const MIN_KNOT_SCALE = 0.18
+  const targetCache = new Map()
+  function targetsAt(s) {
+    if (targetCache.has(s)) return targetCache.get(s)
+    const values = nodeState[s]
+    const sums = new Map()
+    graph.nodes.forEach((node, n) => {
+      if (values[n] < 0) return
+      const sum = sums.get(values[n]) ?? [0, 0, 0]
+      sum[0] += node.x
+      sum[1] += node.y
+      sum[2]++
+      sums.set(values[n], sum)
+    })
+    const scale = new Map(
+      [...sums.keys()].map((id) => [
+        id,
+        Math.max(
+          MIN_KNOT_SCALE,
+          Math.sqrt((knotSizeAt(s, id) ?? 0) / knots[id].peak)
+        )
+      ])
+    )
+    const tx = new Float32Array(N)
+    const ty = new Float32Array(N)
+    graph.nodes.forEach((node, n) => {
+      const id = values[n]
+      if (id >= 0) {
+        const [sx, sy, count] = sums.get(id)
+        const cx = sx / count
+        const cy = sy / count
+        tx[n] = cx + (node.x - cx) * scale.get(id)
+        ty[n] = cy + (node.y - cy) * scale.get(id)
+        return
+      }
+      const angle = Math.atan2(node.y - 0.5, node.x - 0.5)
+      const radius = 0.42 + 0.075 * hash(n + 1)
+      tx[n] = 0.5 + Math.cos(angle) * radius
+      ty[n] = 0.5 + Math.sin(angle) * radius
+    })
+    const targets = { x: tx, y: ty }
+    targetCache.set(s, targets)
+    return targets
+  }
+  const posX = new Float32Array(N)
+  const posY = new Float32Array(N)
+  const velX = new Float32Array(N)
+  const velY = new Float32Array(N)
+  function snapTo(s, only = () => true) {
+    const { x, y } = targetsAt(s)
+    for (let n = 0; n < N; n++) {
+      if (!only(n)) continue
+      posX[n] = x[n]
+      posY[n] = y[n]
+      velX[n] = velY[n] = 0
+    }
+  }
+  function stepPhysics() {
+    const { x, y } = targetsAt(current)
+    let moving = false
+    for (let n = 0; n < N; n++) {
+      velX[n] = (velX[n] + (x[n] - posX[n]) * stiffness[n]) * DAMPING
+      velY[n] = (velY[n] + (y[n] - posY[n]) * stiffness[n]) * DAMPING
+      posX[n] += velX[n]
+      posY[n] += velY[n]
+      if (
+        Math.abs(velX[n]) + Math.abs(velY[n]) > 2e-5 ||
+        Math.abs(x[n] - posX[n]) + Math.abs(y[n] - posY[n]) > 2e-4
+      )
+        moving = true
+    }
+    if (!moving) snapTo(current)
+    return moving
+  }
 
   function drawMap() {
     const css = getComputedStyle(document.documentElement)
@@ -272,8 +360,7 @@
         ctx.strokeStyle = color[role]
         ctx.beginPath()
         for (const e of es) {
-          const a = graph.nodes[graph.edges[e][0]]
-          const b = graph.nodes[graph.edges[e][1]]
+          const [a, b] = graph.edges[e]
           ctx.moveTo(px(a), py(a))
           ctx.lineTo(px(b), py(b))
         }
@@ -292,25 +379,25 @@
       )
 
     const r = Math.max(1.7, Math.min(3, mapW / 260))
-    const dot = (node, role, alpha) => {
+    const dot = (n, role, alpha) => {
       ctx.globalAlpha = alpha
       ctx.fillStyle = color[role]
       ctx.beginPath()
-      ctx.arc(px(node), py(node), role === 'freed' ? r * 0.75 : r, 0, 7)
+      ctx.arc(px(n), py(n), role === 'freed' ? r * 0.75 : r, 0, 7)
       ctx.fill()
     }
     for (const freedPass of [true, false]) {
-      graph.nodes.forEach((node, n) => {
+      for (let n = 0; n < N; n++) {
         const role = roleOf(to[n])
-        if (!role || (role === 'freed') !== freedPass) return
-        dot(node, role, 1)
-      })
+        if (!role || (role === 'freed') !== freedPass) continue
+        dot(n, role, 1)
+      }
     }
     if (t < 1) {
-      graph.nodes.forEach((node, n) => {
+      for (let n = 0; n < N; n++) {
         const was = roleOf(from[n])
-        if (was && was !== roleOf(to[n])) dot(node, was, 1 - t)
-      })
+        if (was && was !== roleOf(to[n])) dot(n, was, 1 - t)
+      }
     }
     ctx.globalAlpha = 1
 
@@ -318,29 +405,41 @@
     ctx.strokeStyle = ink
     ctx.lineWidth = 0.75
     ctx.globalAlpha = 0.4
-    graph.nodes.forEach((node, n) => {
-      if (roleOf(before[n]) === roleOf(to[n]) || !roleOf(to[n])) return
+    for (let n = 0; n < N; n++) {
+      if (roleOf(before[n]) === roleOf(to[n]) || !roleOf(to[n])) continue
       ctx.beginPath()
-      ctx.arc(px(node), py(node), r + 1.5 + (1 - t) * 7, 0, 7)
+      ctx.arc(px(n), py(n), r + 1.5 + (1 - t) * 7, 0, 7)
       ctx.stroke()
-    })
+    }
     ctx.globalAlpha = 1
 
     if (hover >= 0 && roleOf(to[hover])) {
-      const node = graph.nodes[hover]
       ctx.strokeStyle = ink
       ctx.lineWidth = 2
       ctx.beginPath()
-      ctx.arc(px(node), py(node), r + 4, 0, 7)
+      ctx.arc(px(hover), py(hover), r + 4, 0, 7)
       ctx.stroke()
     }
   }
 
+  let frame = 0
+  let lastFrame = 0
+  let lag = 0
   function animate(now) {
     tween = Math.min(1, (now - tweenStart) / 450)
+    lag = Math.min(lag + now - lastFrame, 4 * FRAME_MS)
+    lastFrame = now
+    let moving = true
+    for (; lag >= FRAME_MS; lag -= FRAME_MS) moving = stepPhysics()
     drawMap()
-    if (tween < 1) requestAnimationFrame(animate)
-    else shownFrom = current
+    if (tween >= 1) shownFrom = current
+    frame = tween < 1 || moving ? requestAnimationFrame(animate) : 0
+  }
+  function startAnimation() {
+    if (frame) return
+    lastFrame = performance.now()
+    lag = 0
+    frame = requestAnimationFrame(animate)
   }
 
   canvas.addEventListener('pointermove', (ev) => {
@@ -350,17 +449,17 @@
     const values = nodeState[current]
     let best = -1
     let bestDist = 144
-    graph.nodes.forEach((node, n) => {
-      if (!roleOf(values[n])) return
-      const d = (px(node) - mx) ** 2 + (py(node) - my) ** 2
+    for (let n = 0; n < N; n++) {
+      if (!roleOf(values[n])) continue
+      const d = (px(n) - mx) ** 2 + (py(n) - my) ** 2
       if (d < bestDist) {
         bestDist = d
         best = n
       }
-    })
+    }
     if (best !== hover) {
       hover = best
-      if (tween >= 1) drawMap()
+      if (!frame) drawMap()
     }
     if (best < 0) return hideTip()
     const value = values[best]
@@ -380,7 +479,7 @@
   canvas.addEventListener('pointerleave', () => {
     hover = -1
     hideTip()
-    if (tween >= 1) drawMap()
+    if (!frame) drawMap()
   })
 
   // Tooltip
@@ -703,19 +802,22 @@
     const s = Math.max(0, Math.min(states.length - 1, target))
     if (s === current) return
     if (tween >= 1) shownFrom = current
+    const previous = nodeState[current]
     current = s
+    snapTo(current, (n) => previous[n] === NO_SUCH_FILE)
     drawDetail()
     drawCursor()
     syncHash()
     if (reducedMotion) {
       tween = 1
       shownFrom = current
+      snapTo(current)
       drawMap()
       return
     }
     tween = 0
     tweenStart = performance.now()
-    requestAnimationFrame(animate)
+    startAnimation()
   }
   const stops = () =>
     $('feOnly').checked
@@ -794,6 +896,7 @@
 
   drawPrs()
   current = shownFrom = applyHash()
+  snapTo(current)
   drawDetail()
   redraw()
 })()
