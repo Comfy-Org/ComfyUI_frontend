@@ -1,3 +1,4 @@
+import { SCHEMA_VERSION } from '@comfyorg/comfy-multi-player'
 import type { Op } from '@comfyorg/comfy-multi-player'
 import type { DocResetData } from '@comfyorg/ingest-types'
 
@@ -511,7 +512,12 @@ export class DocFrameClient extends EventTarget {
       v: DOC_PROTOCOL_VERSION,
       workflow_id: workflowId,
       state_vector_b64: encodeBase64(stateVector),
-      supports_reseed: true
+      supports_reseed: true,
+      // The document schema this build reads (comfy-multi-player
+      // SCHEMA_VERSION). The agent compares it with its doc host's and
+      // reports any skew, so a frontend and a doc host shipped on different
+      // schemas are caught at the first subscribe rather than by users.
+      schema_version: SCHEMA_VERSION
     })
   }
 
