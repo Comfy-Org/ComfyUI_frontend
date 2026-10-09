@@ -123,7 +123,9 @@ jobs:
         uses: ./.github/actions/setup-frontend
 
       - name: Check server facts on changed lines
-        run: pnpm lint:server-facts --base ${{ github.event.pull_request.base.sha }}
+        env:
+          BASE_SHA: ${{ github.event.pull_request.base.sha }}
+        run: pnpm lint:server-facts --base "$BASE_SHA"
 
   typecheck:
     runs-on: ubuntu-latest
