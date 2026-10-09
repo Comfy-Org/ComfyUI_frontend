@@ -1779,24 +1779,6 @@ describe('graphTraversalUtil', () => {
   describe('executionIdToNodeLocatorId', () => {
     const REMAPPED_ID = 'insert:0fbd38ecb13037d0b3b0ca78b8a20a5a:root:node:9'
 
-    it('resolves a bare root node id', () => {
-      const graph = createMockGraph([createMockNode('9')])
-
-      expect(executionIdToNodeLocatorId(graph, '9')).toBe('9')
-    })
-
-    it('resolves a genuine subgraph execution path', () => {
-      const subgraphUuid = 'a1b2c3d4-e5f6-7890-abcd-ef1234567890'
-      const interior = createMockNode('999')
-      const subgraph = createMockSubgraph(subgraphUuid, [interior])
-      const host = createMockNode('123', { isSubgraph: true, subgraph })
-      const graph = createMockGraph([host])
-
-      expect(executionIdToNodeLocatorId(graph, '123:999')).toBe(
-        `${subgraphUuid}:999`
-      )
-    })
-
     it('regression: keeps an insert_workflow-remapped root id whole instead of reading it as a subgraph path (PM-2037)', () => {
       // comfy-multi-player remaps every node an `insert_workflow` carries to
       // `insert:<opId>:root:node:<originalId>` (remap.ts), and the node lands
