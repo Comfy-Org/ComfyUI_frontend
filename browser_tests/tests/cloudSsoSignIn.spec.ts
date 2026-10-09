@@ -300,7 +300,7 @@ test.describe('Cloud login SSO entry', { tag: ['@cloud', '@ui'] }, () => {
       await expect(page.getByText(SSO_COPY.errors.orgDisabled)).toBeVisible()
     })
 
-    test('a customer record refused with sso_required opens the SSO dialog, not a failure toast', async ({
+    test('a customer record refused with sso_required shows the SSO notice on the page, not a failure toast', async ({
       page,
       cloudAuth
     }) => {
@@ -315,15 +315,19 @@ test.describe('Cloud login SSO entry', { tag: ['@cloud', '@ui'] }, () => {
       await signInWithEmail(page)
 
       await expect(
-        page
-          .getByRole('dialog')
-          .getByRole('heading', { name: SSO_COPY.required.title })
+        page.getByRole('alert').filter({
+          hasText: SSO_COPY.required.bodyWithEmail.replace(
+            '{email}',
+            CLOUD_SELF_EMAIL
+          )
+        })
       ).toBeVisible()
+      await expect(page.getByRole('dialog')).toHaveCount(0)
       await expect(page.getByText(/Failed to create customer/)).toHaveCount(0)
       await expect(page).toHaveURL(/\/cloud\/login/)
     })
 
-    test('a Firebase sign-in ingest refuses with sso_required opens the SSO dialog', async ({
+    test('a Firebase sign-in ingest refuses with sso_required shows the SSO notice on the page', async ({
       page,
       cloudAuth
     }) => {
@@ -337,15 +341,18 @@ test.describe('Cloud login SSO entry', { tag: ['@cloud', '@ui'] }, () => {
 
       await signInWithEmail(page)
 
-      const dialog = page.getByRole('dialog')
       await expect(
-        dialog.getByRole('heading', { name: SSO_COPY.required.title })
+        page.getByRole('alert').filter({
+          hasText: SSO_COPY.required.bodyWithEmail.replace(
+            '{email}',
+            CLOUD_SELF_EMAIL
+          )
+        })
       ).toBeVisible()
       await expect(
-        dialog.getByText(
-          SSO_COPY.required.bodyWithEmail.replace('{email}', CLOUD_SELF_EMAIL)
-        )
-      ).toBeVisible()
+        page.getByRole('button', { name: SSO_COPY.continueWithSso })
+      ).toHaveCount(1)
+      await expect(page.getByRole('dialog')).toHaveCount(0)
       await expect(page).toHaveURL(/\/cloud\/login/)
     })
   })
