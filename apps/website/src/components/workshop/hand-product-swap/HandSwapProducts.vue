@@ -52,7 +52,4 @@ const picked = computed({
       </span>
     </template>
   </EditorTiles>
-  <p class="px-1 text-[11px] text-primary-warm-gray">
-    {{ hc('swap.product.tip', locale) }}
-  </p>
 </template>

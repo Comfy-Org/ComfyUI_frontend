@@ -26,9 +26,7 @@ const copy = {
   'swap.tool.undo': { en: 'Undo', 'zh-CN': '撤销' },
   'swap.tool.redo': { en: 'Redo', 'zh-CN': '重做' },
   'swap.history': { en: 'History', 'zh-CN': '历史记录' },
-  'swap.hand': { en: 'Hand photo', 'zh-CN': '手部照片' },
   'swap.hand.change': { en: 'Change hand photo', 'zh-CN': '更换手部照片' },
-  'swap.change': { en: 'Change', 'zh-CN': '更换' },
   'swap.product': { en: 'Product', 'zh-CN': '产品' },
   'swap.product.can': { en: 'Can', 'zh-CN': '易拉罐' },
   'swap.product.serum': { en: 'Serum', 'zh-CN': '精华' },
@@ -36,14 +34,10 @@ const copy = {
   'swap.product.own': { en: 'Yours', 'zh-CN': '你的产品' },
   'swap.product.upload': { en: 'Upload', 'zh-CN': '上传' },
   'swap.product.uploadLabel': {
-    en: 'Upload a product image',
-    'zh-CN': '上传产品图片'
+    en: 'Upload a product image. A cut-out PNG or a shot on white works best.',
+    'zh-CN': '上传产品图片。透明背景 PNG 或白底产品图效果最佳。'
   },
   'swap.product.change': { en: 'Change product', 'zh-CN': '更换产品' },
-  'swap.product.tip': {
-    en: 'A cut-out PNG or a shot on white works best. Drop or paste one here.',
-    'zh-CN': '透明背景 PNG 或白底产品图效果最佳。可直接拖入或粘贴。'
-  },
   'swap.resolution': { en: 'Resolution', 'zh-CN': '分辨率' },
   'swap.resolution.size': {
     en: '{width} × {height} px',

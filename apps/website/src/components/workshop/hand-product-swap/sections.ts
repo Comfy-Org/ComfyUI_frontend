@@ -9,11 +9,7 @@ import HandSwapProducts from './HandSwapProducts.vue'
 import HandSwapResolution from './HandSwapResolution.vue'
 import HandSwapSeed from './HandSwapSeed.vue'
 
-/**
- * The settings in panel order. In the side panel only the product picker is
- * a collapsible section, the rest are rows; in the bottom composer each
- * opens as a tray of the same id.
- */
+/** The settings in the bottom composer, each opening as a tray of the same id. */
 export const SWAP_SECTIONS = [
   { id: 'product', title: 'swap.product', content: HandSwapProducts },
   { id: 'resolution', title: 'swap.resolution', content: HandSwapResolution },

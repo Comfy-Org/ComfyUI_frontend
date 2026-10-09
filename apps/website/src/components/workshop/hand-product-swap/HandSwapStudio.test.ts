@@ -35,7 +35,8 @@ async function openExample(layout?: string) {
 
 const panel = () =>
   screen.getByRole('complementary', { name: 'Hand product swap settings' })
-const section = (name: string) => within(panel()).getByRole('region', { name })
+const products = () =>
+  within(panel()).getByRole('radiogroup', { name: 'Product' })
 const tools = () =>
   screen.getByRole('toolbar', { name: 'Hand product swap tools' })
 
@@ -48,18 +49,16 @@ describe('HandSwapStudio', () => {
       'true'
     )
     expect(
-      within(section('Product')).getByRole('button', { name: /Product/ })
-    ).toHaveTextContent('Can')
+      within(products()).getByRole('radio', { name: 'Can' })
+    ).toHaveAttribute('aria-checked', 'true')
 
-    await user.click(
-      within(section('Product')).getByRole('radio', { name: 'Serum' })
-    )
+    await user.click(within(products()).getByRole('radio', { name: 'Serum' }))
     await user.click(
       within(panel()).getByRole('button', { name: 'Resolution: 2K' })
     )
     await user.click(screen.getByRole('menuitemradio', { name: /^4K/ }))
     expect(
-      within(section('Product')).getByRole('radio', { name: 'Serum' })
+      within(products()).getByRole('radio', { name: 'Serum' })
     ).toHaveAttribute('aria-checked', 'true')
     expect(within(panel()).getByTestId('swap-run')).toHaveTextContent(
       '25 credits'
@@ -150,7 +149,7 @@ describe('HandSwapStudio', () => {
       dataTransfer: { files: [bottle] }
     })
     expect(
-      await within(section('Product')).findByRole('radio', { name: 'Yours' })
+      await within(products()).findByRole('radio', { name: 'Yours' })
     ).toHaveAttribute('aria-checked', 'true')
 
     const paste = new Event('paste', { bubbles: true })
@@ -168,13 +167,29 @@ describe('HandSwapStudio', () => {
     loaded.mockRestore()
   })
 
-  it('keeps a shuffleable seed as a row of the panel, with no Advanced section', async () => {
-    const user = await openExample()
+  it('opens the panel with the hand photo alone on top, replaceable but never removable', async () => {
+    await openExample()
+    const fields = within(screen.getByTestId('swap-panel'))
+    const source = fields.getByRole('button', {
+      name: 'Change hand photo: hand-holding-can.jpg'
+    })
+    expect(fields.getAllByRole('button').indexOf(source)).toBe(0)
+    expect(within(panel()).queryByRole('region')).toBeNull()
+    expect(fields.queryByRole('button', { name: /Remove/ })).toBeNull()
     expect(
-      within(panel())
-        .getAllByRole('region')
-        .map((region) => region.getAttribute('aria-label'))
-    ).toEqual(['Product'])
+      fields.queryByText(/cut-out PNG or a shot on white works best/)
+    ).toBeNull()
+  })
+
+  it('keeps a shuffleable seed beside the resolution menu, each size with its pixels', async () => {
+    const user = await openExample()
+    await user.click(
+      within(panel()).getByRole('button', { name: 'Resolution: 2K' })
+    )
+    expect(
+      screen.getByRole('menuitemradio', { name: '1K 1024 × 765 px' })
+    ).toBeVisible()
+    await user.keyboard('{Escape}')
     const seed = within(panel()).getByRole('spinbutton', { name: 'Seed' })
     expect(seed).toHaveValue(42)
 
