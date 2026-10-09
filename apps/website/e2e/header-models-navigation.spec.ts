@@ -119,3 +119,38 @@ for (const { locale, path } of [
     })
   }
 }
+
+test('Hub menu marks only external links with the arrow', async ({
+  context,
+  page
+}) => {
+  await stubWorkshopFlags(context, {
+    'workshop-enabled': true,
+    'workshop-apps-enabled': true,
+    'workshop-reshoot-app-enabled': true
+  })
+  await page.setViewportSize({ width: 1440, height: 900 })
+  await page.goto('/')
+
+  const desktopLinks = page
+    .getByRole('navigation', { name: 'Main navigation' })
+    .getByTestId('desktop-nav-links')
+  await waitForIsland(page, desktopLinks)
+  const dropdown = page.getByTestId('nav-dropdown')
+
+  await desktopLinks.getByRole('button', { name: 'Hub', exact: true }).click()
+  for (const name of ['Cinematic Studio', 'Re-shoot']) {
+    const app = dropdown.getByRole('link', { name, exact: true })
+    await expect(app).toHaveAttribute('target', '_blank')
+    await expect(app.getByTestId('external-link-arrow')).toHaveCount(0)
+  }
+
+  await desktopLinks
+    .getByRole('button', { name: 'Company', exact: true })
+    .click()
+  await expect(
+    dropdown
+      .getByRole('link', { name: 'Blog', exact: true })
+      .getByTestId('external-link-arrow')
+  ).toBeVisible()
+})
