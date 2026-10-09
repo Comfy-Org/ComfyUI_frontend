@@ -14,6 +14,7 @@ import EditorPanelRow from './EditorPanelRow.vue'
 import EditorSeedField from './EditorSeedField.vue'
 import EditorSegmented from './EditorSegmented.vue'
 import EditorSelect from './EditorSelect.vue'
+import EditorSourceTile from './EditorSourceTile.vue'
 import EditorSwitch from './EditorSwitch.vue'
 
 /**
@@ -146,6 +147,25 @@ export const ComposerPills: Story = {
         <div class="relative h-24 w-96 rounded-sm bg-transparency-white-t4">
           <EditorHint text="Drag on the image to place the light" />
         </div>
+      </div>
+    `
+  })
+}
+
+/** The image or video a run starts from, alone at the top of the panel: empty, then chosen. */
+export const SourceTile: Story = {
+  render: () => ({
+    components: { EditorSourceTile },
+    template: `
+      <div class="flex w-72 flex-col gap-4">
+        <EditorSourceTile kind="video" add-label="Add the video to edit" change-label="Change" />
+        <EditorSourceTile
+          kind="image"
+          src="/images/apps/move-anything/example.jpg"
+          name="example.jpg"
+          add-label="Add a photo"
+          change-label="Change"
+        />
       </div>
     `
   })

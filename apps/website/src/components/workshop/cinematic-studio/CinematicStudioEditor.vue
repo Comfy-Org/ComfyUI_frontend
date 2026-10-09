@@ -187,6 +187,7 @@ onBeforeUnmount(() =>
           :direction
           :open-picker="picker"
           :colors
+          start-tile
           :locale
           @open="openPicker"
         />

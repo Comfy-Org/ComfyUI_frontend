@@ -21,9 +21,10 @@ import CinematicOutputControls from './CinematicOutputControls.vue'
 import CinematicReferenceButton from './CinematicReferenceButton.vue'
 import CinematicSceneField from './CinematicSceneField.vue'
 import CinematicShotList from './CinematicShotList.vue'
+import CinematicStartingTile from './CinematicStartingTile.vue'
 import CinematicVideoControls from './CinematicVideoControls.vue'
 import type { PickerKey } from './picker-key'
-import { referenceSlots } from './reference-kind'
+import { referenceSlots, startingInput } from './reference-kind'
 
 const {
   models,
@@ -31,6 +32,7 @@ const {
   direction,
   openPicker,
   colors = [],
+  startTile = false,
   locale = 'en'
 } = defineProps<{
   models: readonly CinematicModel[]
@@ -40,6 +42,8 @@ const {
   openPicker?: PickerKey
   /** The visitor's own palette, shown on the Grade row. */
   colors?: readonly string[]
+  /** Lifts what a clip starts from out of the scene box, to the top on its own. */
+  startTile?: boolean
   locale?: Locale
 }>()
 const { t: tc } = translationsFor(locale)
@@ -71,7 +75,14 @@ const modelOptions = computed(() =>
 const model = computed(() =>
   models.find((candidate) => candidate.slug === modelSlug.value)
 )
-const slots = computed(() => referenceSlots(model.value, !!firstFrame.value))
+const start = computed(() =>
+  startTile ? startingInput(model.value) : undefined
+)
+const slots = computed(() =>
+  referenceSlots(model.value, !!firstFrame.value).filter(
+    (kind) => kind !== start.value?.kind
+  )
+)
 const files = { cast, firstFrame, lastFrame, video: sourceVideo }
 const cardClass =
   'flex w-full items-center gap-3 rounded-2xl border border-transparency-white-t8 p-2.5 text-left transition-colors hover:border-transparency-white-t20'
@@ -79,6 +90,13 @@ const cardClass =
 
 <template>
   <div class="flex flex-col gap-4">
+    <CinematicStartingTile
+      v-if="start"
+      :key="start.kind"
+      v-model="files[start.kind].value"
+      :start
+      :locale
+    />
     <CinematicMenu
       v-model="modelSlug"
       :options="modelOptions"
