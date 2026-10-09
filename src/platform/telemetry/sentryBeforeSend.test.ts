@@ -103,7 +103,9 @@ describe('sentryBeforeSend', () => {
   })
 
   it('still drops third-party noise', () => {
-    const error = new DOMException('aborted', 'AbortError')
+    const error = new Error(
+      'Invalid call to runtime.sendMessage(). Tab not found.'
+    )
 
     expect(
       sentryBeforeSend(eventFor(error), { originalException: error })
