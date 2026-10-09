@@ -117,6 +117,8 @@ import type { JobGroup, JobListItem } from '@/composables/queue/useJobList'
 import { resultItemPreviewUrl } from '@/utils/resultItemUrl'
 import { isImageResult, isVideoResult } from '@/utils/resultItem'
 import AssetsListItem from '@/platform/assets/components/AssetsListItem.vue'
+import { useGeneratedPreviewLookup } from '@/platform/assets/composables/useGeneratedPreviewLookup'
+import { isHdrImageFilename } from '@/utils/hdrFormatUtil'
 import { cn } from '@comfyorg/tailwind-utils'
 import { iconForJobState } from '@/utils/queueDisplay'
 import { isActiveJobState } from '@/utils/queueUtil'
@@ -338,12 +340,17 @@ function isFailedDeletable(job: JobListItem) {
   return job.showClear !== false && job.state === 'failed'
 }
 
+const findGeneratedPreviewUrl = useGeneratedPreviewLookup()
+
 function getPreviewOutput(job: JobListItem) {
   return job.taskRef?.previewOutput
 }
 
 function getJobPreviewUrl(job: JobListItem) {
   const preview = getPreviewOutput(job)
+  if (preview && isHdrImageFilename(preview.filename)) {
+    return findGeneratedPreviewUrl(preview.filename)
+  }
   if (preview && (isImageResult(preview) || isVideoResult(preview))) {
     return resultItemPreviewUrl(preview)
   }

@@ -1,5 +1,7 @@
+import { fromPartial } from '@total-typescript/shoehorn'
 import { fireEvent, render, screen } from '@testing-library/vue'
 import userEvent from '@testing-library/user-event'
+import { useIntersectionObserver } from '@vueuse/core'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { computed } from 'vue'
 import type { ComputedRef } from 'vue'
@@ -22,15 +24,7 @@ vi.mock(import('@/platform/assets/utils/assetPreviewUtil'), () => ({
   isAssetPreviewSupported: () => mockIsAssetPreviewSupported()
 }))
 
-vi.mock<unknown>(import('@vueuse/core'), () => ({
-  useIntersectionObserver: (
-    _ref: unknown,
-    cb: (entries: Array<{ isIntersecting: boolean }>) => void
-  ) => {
-    intersectionCallbacks.push(cb)
-    return { stop: vi.fn() }
-  }
-}))
+vi.mock(import('@vueuse/core'), { spy: true })
 
 const selectedLabel = 'Selected'
 
@@ -82,6 +76,15 @@ async function flushPromises() {
 describe('FormDropdownMenuItem', () => {
   beforeEach(() => {
     intersectionCallbacks.length = 0
+    vi.mocked(useIntersectionObserver).mockImplementation((_target, cb) => {
+      intersectionCallbacks.push((entries) =>
+        cb(
+          entries.map((entry) => fromPartial(entry)),
+          fromPartial({})
+        )
+      )
+      return fromPartial({ stop: vi.fn() })
+    })
     mockIsAssetPreviewSupported.mockReset().mockReturnValue(true)
   })
 

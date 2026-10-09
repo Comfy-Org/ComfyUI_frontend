@@ -25,9 +25,11 @@ import type { FormDropdownItem } from '@/renderer/extensions/vueNodes/widgets/co
 import type { useAssetWidgetData } from '@/renderer/extensions/vueNodes/widgets/composables/useAssetWidgetData'
 import { getOutputAssetMetadata } from '@/platform/assets/schemas/assetMetadataSchema'
 import type { AssetItem } from '@/platform/assets/schemas/assetSchema'
+import { getGeneratedPreviewUrl } from '@/platform/assets/utils/assetUrlUtil'
 import { resolveOutputAssetItems } from '@/platform/assets/utils/outputAssetUtil'
 import type { AssetKind } from '@/types/widgetTypes'
 import { getMediaTypeFromFilename } from '@/utils/formatUtil'
+import { isHdrImageFilename } from '@/utils/hdrFormatUtil'
 import type { PagedList } from '@/utils/pagedList'
 
 function getDisplayLabel(
@@ -54,9 +56,32 @@ function getMediaUrl(
   assetKind: AssetKind | undefined
 ): string {
   if (!['image', 'video', 'audio'].includes(assetKind ?? '')) return ''
+  if (isHdrImageFilename(filename)) return ''
   const params = new URLSearchParams({ filename, type })
   appendCloudResParam(params, filename)
   return `/api/view?${params}`
+}
+
+function isOutputOfKind(filename: string, kind: AssetKind): boolean {
+  if (kind === 'image' && isHdrImageFilename(filename)) return true
+  return getMediaTypeFromFilename(filename) === assetKindToMediaType(kind)
+}
+
+function getOutputPath(asset: AssetItem, kind: AssetKind): string {
+  const filename = getAssetUrlFilename(asset)
+  const subfolder =
+    kind === 'mesh'
+      ? getOutputAssetMetadata(asset.user_metadata)?.subfolder
+      : undefined
+  return subfolder ? `${subfolder}/${filename}` : filename
+}
+
+function getOutputPreviewUrl(asset: AssetItem, kind: AssetKind): string {
+  if (kind === 'mesh') return ''
+  if (isHdrImageFilename(asset.name)) return getGeneratedPreviewUrl(asset)
+  return (
+    asset.preview_url || getMediaUrl(getAssetUrlFilename(asset), 'output', kind)
+  )
 }
 
 export interface UseWidgetSelectItemsOptions {
@@ -199,9 +224,8 @@ export function useWidgetSelectItems(options: UseWidgetSelectItemsOptions) {
 
   const outputItems = computed<FormDropdownItem[]>(() => {
     const kind = toValue(options.assetKind)
-    if (!['image', 'video', 'audio', 'mesh'].includes(kind ?? '')) return []
+    if (!kind || !['image', 'video', 'audio', 'mesh'].includes(kind)) return []
 
-    const targetMediaType = assetKindToMediaType(kind!)
     const seen = new Set<string>()
     const items: FormDropdownItem[] = []
     const labelFn = toValue(options.getOptionLabel)
@@ -218,26 +242,14 @@ export function useWidgetSelectItems(options: UseWidgetSelectItemsOptions) {
 
     const missing = missingMediaValues.value
     for (const asset of assets) {
-      if (getMediaTypeFromFilename(asset.name) !== targetMediaType) continue
-      if (seen.has(asset.id)) continue
+      if (!isOutputOfKind(asset.name, kind) || seen.has(asset.id)) continue
       seen.add(asset.id)
-      const filenameForUrl = getAssetUrlFilename(asset)
-      const subfolder =
-        kind === 'mesh'
-          ? getOutputAssetMetadata(asset.user_metadata)?.subfolder
-          : undefined
-      const pathWithSubfolder = subfolder
-        ? `${subfolder}/${filenameForUrl}`
-        : filenameForUrl
-      const annotatedPath = `${pathWithSubfolder} [output]`
+      const annotatedPath = `${getOutputPath(asset, kind)} [output]`
       if (missing.has(annotatedPath)) continue
       const displayLabel = `${getAssetDisplayFilename(asset)} [output]`
       items.push({
         id: `output-${asset.id}`,
-        preview_url:
-          kind === 'mesh'
-            ? ''
-            : asset.preview_url || getMediaUrl(filenameForUrl, 'output', kind),
+        preview_url: getOutputPreviewUrl(asset, kind),
         name: annotatedPath,
         label: getDisplayLabel(displayLabel, labelFn)
       })

@@ -47,6 +47,36 @@ export function computeImageStats(
   return { min, max, mean, stdDev: Math.sqrt(variance), nanCount, infCount }
 }
 
+export function computeLuminancePercentile(
+  read: (index: number) => number,
+  length: number,
+  channels: number,
+  percentile: number,
+  maxSamples = 65_536
+): number {
+  const pixelCount = Math.floor(length / channels)
+  const stride = Math.max(1, Math.floor(pixelCount / maxSamples))
+  const samples: number[] = []
+
+  for (let pixel = 0; pixel < pixelCount; pixel += stride) {
+    const i = pixel * channels
+    const r = read(i)
+    const value =
+      channels >= 3
+        ? 0.2126 * r + 0.7152 * read(i + 1) + 0.0722 * read(i + 2)
+        : r
+    if (Number.isFinite(value)) samples.push(value)
+  }
+
+  if (samples.length === 0) return 0
+  samples.sort((a, b) => a - b)
+  const rank = Math.min(
+    samples.length - 1,
+    Math.floor(percentile * samples.length)
+  )
+  return samples[rank]
+}
+
 export interface ChannelHistograms {
   r: Uint32Array
   g: Uint32Array

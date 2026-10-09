@@ -34,7 +34,7 @@
             "
             :preview-url="getAssetPreviewUrl(item.asset)"
             :preview-alt="getAssetDisplayName(item.asset)"
-            :icon-name="iconForMediaType(getAssetMediaType(item.asset))"
+            :icon-name="getAssetIcon(item.asset)"
             :is-video-preview="isVideoAsset(item.asset)"
             :primary-text="getAssetPrimaryText(item.asset)"
             :secondary-text="getAssetSecondaryText(item.asset)"
@@ -81,6 +81,7 @@ import { getOutputAssetMetadata } from '@/platform/assets/schemas/assetMetadataS
 import type { AssetItem } from '@/platform/assets/schemas/assetSchema'
 import { startAssetDrag } from '@/platform/assets/utils/assetDragUtil'
 import { getAssetDisplayName } from '@/platform/assets/utils/assetMetadataUtils'
+import { getGeneratedPreviewUrl } from '@/platform/assets/utils/assetUrlUtil'
 import { iconForMediaType } from '@/platform/assets/utils/mediaIconUtil'
 import { useAssetsStore } from '@/stores/assetsStore'
 import {
@@ -89,6 +90,7 @@ import {
   getMediaTypeFromFilename,
   truncateFilename
 } from '@/utils/formatUtil'
+import { isHdrImageFilename } from '@/utils/hdrFormatUtil'
 import { cn } from '@comfyorg/tailwind-utils'
 
 const {
@@ -133,11 +135,19 @@ function getAssetMediaType(asset: AssetItem) {
   return getMediaTypeFromFilename(asset.name)
 }
 
+function getAssetIcon(asset: AssetItem): string {
+  if (isHdrImageFilename(asset.name)) return 'icon-[lucide--sun]'
+  return iconForMediaType(getAssetMediaType(asset))
+}
+
 function isVideoAsset(asset: AssetItem): boolean {
   return getAssetMediaType(asset) === 'video'
 }
 
 function getAssetPreviewUrl(asset: AssetItem): string {
+  if (isHdrImageFilename(asset.name)) {
+    return getGeneratedPreviewUrl(asset)
+  }
   const mediaType = getAssetMediaType(asset)
   if (mediaType === 'image' || mediaType === 'video') {
     return asset.preview_url || ''

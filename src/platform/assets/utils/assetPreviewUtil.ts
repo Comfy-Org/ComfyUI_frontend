@@ -1,8 +1,8 @@
 import { useFeatureFlags } from '@/composables/useFeatureFlags'
-import { assetService } from '@/platform/assets/services/assetService'
 import { api } from '@/scripts/api'
 import { useAssetsStore } from '@/stores/assetsStore'
 
+import { attachPreview } from './attachPreview'
 import { getAssetContentId } from './assetUrlUtil'
 
 interface AssetRecord {
@@ -75,28 +75,9 @@ export async function persistThumbnail(
     const asset = await findOutputAsset(name)
     if (!asset || asset.preview_id) return
 
-    const previewFilename = `${asset.name}_preview.png`
-    const uploaded = await assetService.uploadAssetFromBase64({
-      data: await blobToDataUrl(blob),
-      name: previewFilename,
-      tags: ['output'],
-      user_metadata: { filename: previewFilename }
-    })
-
-    await assetService.updateAsset(asset.id, {
-      preview_id: uploaded.id
-    })
+    await attachPreview(asset, blob)
     await useAssetsStore().outputAssets.invalidate()
   } catch {
     // Non-critical — client still shows the rendered thumbnail
   }
-}
-
-function blobToDataUrl(blob: Blob): Promise<string> {
-  return new Promise((resolve, reject) => {
-    const reader = new FileReader()
-    reader.onload = () => resolve(reader.result as string)
-    reader.onerror = reject
-    reader.readAsDataURL(blob)
-  })
 }

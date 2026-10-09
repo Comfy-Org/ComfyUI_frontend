@@ -24,7 +24,7 @@
             total: imageUrls.length
           })
         "
-        @click="handleGridClick(index)"
+        @click="openImageInGallery(index)"
       >
         <img
           v-if="!isHdrImageUrl(imageUrls[index])"
@@ -34,13 +34,18 @@
           class="pointer-events-none size-full object-contain"
           @load="updateAspectRatio($event, index)"
         />
-        <div
+        <HdrPreviewImage
           v-else
-          class="flex size-full flex-col items-center justify-center gap-1 text-base-foreground"
+          :filename="getImageFilenameFromUrl(imageUrls[index])"
+          class="size-full"
         >
-          <i class="icon-[lucide--sun] size-6" />
-          <span class="text-xs">{{ $t('hdrViewer.hdrImage') }}</span>
-        </div>
+          <div
+            class="flex size-full flex-col items-center justify-center gap-1 text-base-foreground"
+          >
+            <i class="icon-[lucide--sun] size-6" />
+            <span class="text-xs">{{ $t('hdrViewer.hdrImage') }}</span>
+          </div>
+        </HdrPreviewImage>
       </Button>
       <div
         v-if="canExportOutputs"
@@ -89,21 +94,18 @@
       >
         <Skeleton class="size-full rounded-sm" />
       </div>
-      <button
+      <HdrPreviewImage
         v-if="!imageError && currentImageIsHdr"
-        type="button"
-        data-testid="hdr-open-button"
-        class="absolute inset-0 flex cursor-pointer flex-col items-center justify-center gap-3 border-0 bg-transparent text-base-foreground"
-        @click="openHdrViewer(currentImageUrl)"
+        :filename="getImageFilenameFromUrl(currentImageUrl)"
+        class="absolute inset-0"
       >
-        <i class="icon-[lucide--sun] size-12" />
-        <span class="text-sm">{{ $t('hdrViewer.hdrImage') }}</span>
-        <span
-          class="rounded-md bg-base-foreground px-3 py-1.5 text-sm text-base-background"
+        <div
+          class="flex size-full flex-col items-center justify-center gap-3 text-base-foreground"
         >
-          {{ $t('hdrViewer.openInHdrViewer') }}
-        </span>
-      </button>
+          <i class="icon-[lucide--sun] size-12" />
+          <span class="text-sm">{{ $t('hdrViewer.hdrImage') }}</span>
+        </div>
+      </HdrPreviewImage>
       <!-- Main Image -->
       <img
         v-if="!imageError && !currentImageIsHdr"
@@ -120,6 +122,17 @@
       <div
         class="actions invisible absolute top-2 right-2 flex gap-1 group-focus-within/panel:visible group-hover/panel:visible"
       >
+        <button
+          v-if="!imageError && currentImageIsHdr"
+          data-testid="hdr-open-button"
+          :class="actionButtonClass"
+          :title="$t('hdrViewer.openInHdrViewer')"
+          :aria-label="$t('hdrViewer.openInHdrViewer')"
+          @click="openHdrViewer(currentImageUrl)"
+        >
+          <i class="icon-[lucide--sun] size-4" />
+        </button>
+
         <!-- Mask/Edit Button -->
         <button
           v-if="!hasMultipleImages && !imageError && !currentImageIsHdr"
@@ -225,6 +238,7 @@ import { computed, nextTick, ref, useTemplateRef, watch } from 'vue'
 import { useI18n } from 'vue-i18n'
 
 import { downloadFile } from '@/base/common/downloadUtil'
+import HdrPreviewImage from '@/components/hdr/HdrPreviewImage.vue'
 import Button from '@/components/ui/button/Button.vue'
 import Skeleton from '@/components/ui/skeleton/Skeleton.vue'
 import { useMaskEditor } from '@/composables/maskeditor/useMaskEditor'
@@ -235,7 +249,7 @@ import { useToast } from '@/components/ui/toast/toastStore'
 import { openHdrViewer } from '@/services/hdrViewerService'
 import { useNodeOutputStore } from '@/stores/nodeOutputStore'
 import type { NodeId } from '@/types/nodeId'
-import { isHdrImageUrl } from '@/utils/hdrFormatUtil'
+import { getImageFilenameFromUrl, isHdrImageUrl } from '@/utils/hdrFormatUtil'
 import { getGridThumbnailUrl } from '@/utils/imageUtil'
 import { resolveNode } from '@/utils/litegraphUtil'
 import { cn } from '@comfyorg/tailwind-utils'
@@ -417,15 +431,6 @@ async function openImageInGallery(index: number) {
   viewMode.value = 'gallery'
   await nextTick()
   galleryPanelEl.value?.focus()
-}
-
-function handleGridClick(index: number) {
-  const url = imageUrls[index]
-  if (isHdrImageUrl(url)) {
-    openHdrViewer(url)
-    return
-  }
-  void openImageInGallery(index)
 }
 
 function getNavigationDotClass(index: number) {
