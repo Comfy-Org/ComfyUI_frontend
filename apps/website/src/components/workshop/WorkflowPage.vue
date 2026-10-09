@@ -82,30 +82,27 @@ function captureWorkflowDownload() {
       >
         {{ model.name }}
       </h1>
-      <div
-        class="mt-4 flex flex-col gap-6 lg:flex-row lg:items-center lg:justify-between"
+      <p
+        v-if="model.summary"
+        class="mt-4 text-lg text-primary-warm-gray lg:truncate"
+        :title="model.summary"
       >
-        <p
-          v-if="model.summary"
-          class="max-w-3xl text-lg text-primary-warm-gray"
+        {{ model.summary }}
+      </p>
+      <div
+        v-if="downloadUrl"
+        class="mt-6 flex flex-wrap items-center gap-2"
+        data-testid="workflow-actions"
+      >
+        <Button
+          as="a"
+          :href="downloadUrl"
+          download
+          variant="outline"
+          :aria-label="t('workshop.workflow.download')"
+          @click="captureWorkflowDownload"
+          >{{ t('workshop.workflow.downloadShort') }}</Button
         >
-          {{ model.summary }}
-        </p>
-        <div
-          v-if="downloadUrl"
-          class="flex shrink-0 flex-wrap items-center gap-2"
-          data-testid="workflow-actions"
-        >
-          <Button
-            as="a"
-            :href="downloadUrl"
-            download
-            variant="outline"
-            :aria-label="t('workshop.workflow.download')"
-            @click="captureWorkflowDownload"
-            >{{ t('workshop.workflow.downloadShort') }}</Button
-          >
-        </div>
       </div>
     </header>
 

@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import BreadthumbIcon from '@/components/icons/BreadthumbIcon.vue'
-import { ChevronLeft, ChevronRight } from '@lucide/vue'
+import { ArrowRight, ChevronLeft, ChevronRight } from '@lucide/vue'
 import { computed, onUnmounted, ref, watch } from 'vue'
 import {
   NO_HUB_SECTIONS,
@@ -137,15 +137,15 @@ onUnmounted(() => {
                 {{ t('nav.back') }}
               </Button>
 
-              <div v-if="activeItem" class="mt-6 flex flex-col gap-y-12">
+              <div v-if="activeItem" class="mt-6 flex flex-col">
                 <div
                   v-for="(column, columnIndex) in activeItem.columns"
                   :key="column.header ?? columnIndex"
-                  class="flex flex-col gap-y-3"
+                  class="flex flex-col gap-y-3 border-t border-transparency-white-t8 py-6 first:border-t-0 first:pt-0"
                 >
                   <div v-if="column.header">
                     <p
-                      class="text-base font-bold tracking-wider text-primary-warm-gray uppercase"
+                      class="text-xs font-bold tracking-wider text-primary-warm-gray uppercase"
                     >
                       {{ column.header }}
                     </p>
@@ -160,7 +160,7 @@ onUnmounted(() => {
                     :class="
                       column.items.every((link) => link.icon)
                         ? 'flex flex-wrap gap-6'
-                        : 'flex flex-col gap-y-3'
+                        : 'flex flex-col gap-y-1'
                     "
                   >
                     <Button
@@ -168,6 +168,7 @@ onUnmounted(() => {
                       :key="link.label"
                       :href="link.href"
                       variant="nav"
+                      class="text-xl font-normal"
                       as="a"
                       v-bind="navLinkTarget(link)"
                     >
@@ -178,9 +179,13 @@ onUnmounted(() => {
                     v-if="column.allLink"
                     :href="column.allLink.href"
                     variant="link"
+                    size="sm"
                     as="a"
                   >
                     {{ column.allLink.label }}
+                    <template #append>
+                      <ArrowRight class="size-4" aria-hidden="true" />
+                    </template>
                   </Button>
                 </div>
               </div>
