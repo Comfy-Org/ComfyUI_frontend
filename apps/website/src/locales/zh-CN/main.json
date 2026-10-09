@@ -4518,6 +4518,15 @@
       "prototype": "原型",
       "reshoot": "重拍视频",
       "reshootSummary": "为你的片段重新架设机位，从新的角度生成这一场景。",
+      "moveAnything": "随意移动",
+      "moveAnythingSummary": "把照片中的物体拖到新位置，模型会围绕它们重建画面。",
+      "moveAnythingMeta": "图像 · Qwen Image 2.1",
+      "relight": "重新布光",
+      "relightSummary": "在照片上放置新的光源，模型会重绘阴影与高光，同时保留主体。",
+      "relightMeta": "图像 · Beeble SwitchX",
+      "handProductSwap": "手持产品替换",
+      "handProductSwapSummary": "把你的产品放进任意照片中的手里，模型会匹配握姿、光线与阴影。",
+      "handProductSwapMeta": "图像 · Nano Banana Pro",
       "reshootMeta": "视频 · MiniMax H3"
     },
     "stage": {
