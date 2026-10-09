@@ -15,6 +15,26 @@ const CAPABILITY_SOURCES: ReadonlySet<string> = new Set([
 const CAPABILITY_BINDING = /^can[A-Z]\w*$/
 const CAPABILITY_FIELD = /^can_[a-z_]+$/
 const PENDING_FACT_WRAPPER = 'pendingServerFact'
+const LOCAL_UI_STATE: ReadonlySet<string> = new Set([
+  'isLoading',
+  'isPending',
+  'isSubmitting',
+  'isSaving',
+  'isBusy',
+  'isFetching',
+  'isValidating',
+  'isDirty',
+  'isValid',
+  'isInvalid',
+  'isOpen',
+  'isDisabled',
+  'loading',
+  'pending',
+  'submitting',
+  'saving',
+  'busy',
+  'inFlight'
+])
 
 const ROLE_VALUES: ReadonlySet<string> = new Set(['owner', 'member', 'admin'])
 const isRoleValue = (literal: string) => ROLE_VALUES.has(literal)
@@ -149,6 +169,78 @@ function destructuredCapabilities(pattern: ObjectPattern): string[] {
   )
 }
 
+function referenceName(node: AstNode): string | undefined {
+  const expression = unwrap(node)
+  if (expression.type === 'Identifier') return expression.name
+  if (
+    expression.type !== 'MemberExpression' ||
+    expression.computed ||
+    expression.property.name !== 'value'
+  ) {
+    return undefined
+  }
+  const object = unwrap(expression.object)
+  return object.type === 'Identifier' ? object.name : undefined
+}
+
+function negated(node: AstNode): AstNode | undefined {
+  const expression = unwrap(node)
+  return expression.type === 'UnaryExpression' && expression.operator === '!'
+    ? expression.argument
+    : undefined
+}
+
+function isLocalUiState(node: AstNode): boolean {
+  const inner = negated(node)
+  if (inner) return isLocalUiState(inner)
+  const expression = unwrap(node)
+  if (expression.type === 'LogicalExpression') {
+    return isLocalUiState(expression.left) && isLocalUiState(expression.right)
+  }
+  return LOCAL_UI_STATE.has(referenceName(expression) ?? '')
+}
+
+type IsCapability = (node: AstNode) => boolean
+
+// Local UI state may only narrow a capability: `cap && !isLoading` is true only
+// when `cap` is, and `!cap || isSubmitting` is true whenever `cap` is false.
+function impliesCapability(node: AstNode, isCapability: IsCapability): boolean {
+  const inner = negated(node)
+  if (inner) return isDisabledWithoutCapability(inner, isCapability)
+  const expression = unwrap(node)
+  if (expression.type !== 'LogicalExpression') return isCapability(expression)
+  return (
+    expression.operator === '&&' &&
+    oneSideIsLocal(expression, (side) => impliesCapability(side, isCapability))
+  )
+}
+
+function isDisabledWithoutCapability(
+  node: AstNode,
+  isCapability: IsCapability
+): boolean {
+  const inner = negated(node)
+  if (inner) return impliesCapability(inner, isCapability)
+  const expression = unwrap(node)
+  return (
+    expression.type === 'LogicalExpression' &&
+    expression.operator === '||' &&
+    oneSideIsLocal(expression, (side) =>
+      isDisabledWithoutCapability(side, isCapability)
+    )
+  )
+}
+
+function oneSideIsLocal(
+  { left, right }: Extract<AstNode, { type: 'LogicalExpression' }>,
+  narrows: (side: AstNode) => boolean
+): boolean {
+  return (
+    (narrows(left) && isLocalUiState(right)) ||
+    (isLocalUiState(left) && narrows(right))
+  )
+}
+
 export const noCapabilityRecombination: Rule = {
   meta: {
     type: 'problem',
@@ -158,7 +250,7 @@ export const noCapabilityRecombination: Rule = {
     },
     schema: [],
     messages: {
-      combined: `A server capability is combined with other state through \`{{operator}}\`. ${GUIDANCE}`,
+      combined: `A server capability is combined with other state through \`{{operator}}\`. Only local UI state may narrow it, as in \`canTopUp && !isLoading\`. ${GUIDANCE}`,
       chosen: `A server capability is chosen by a client-side condition. ${GUIDANCE}`
     }
   },
@@ -185,6 +277,19 @@ export const noCapabilityRecombination: Rule = {
       !isPendingFactCall(node) &&
       (isCapabilityReference(node) || childNodes(node).some(containsCapability))
 
+    const isCapabilityValue = (node: AstNode): boolean => {
+      const expression = unwrap(node)
+      return expression.type === 'MemberExpression' &&
+        !expression.computed &&
+        expression.property.name === 'value'
+        ? isCapabilityValue(expression.object)
+        : isCapabilityReference(expression)
+    }
+
+    const onlyNarrowedByLocalState = (node: AstNode): boolean =>
+      impliesCapability(node, isCapabilityValue) ||
+      isDisabledWithoutCapability(node, isCapabilityValue)
+
     return {
       VariableDeclarator({ id, init }) {
         if (id.type === 'Identifier') {
@@ -206,6 +311,7 @@ export const noCapabilityRecombination: Rule = {
         if (
           factOperands.length < 2 ||
           !operands.some(containsCapability) ||
+          onlyNarrowedByLocalState(node) ||
           isInsidePendingFact(node)
         ) {
           return

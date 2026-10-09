@@ -55,6 +55,29 @@ const b = isLoading.value || isReady.value
 `
     },
     {
+      name: 'a capability narrowed by a negated loading flag',
+      code: `
+const { canInviteMembers } = useBillingCapabilities()
+const enabled = canInviteMembers.value && !isLoading.value
+`
+    },
+    {
+      name: 'a disabled state from a negated capability or an in-flight submit',
+      code: `
+const { canTopUp } = useBillingCapabilities()
+const disabled = !canTopUp.value || isSubmitting.value
+`
+    },
+    {
+      name: 'a capability narrowed by several local flags',
+      code: `
+const { canTopUp } = useBillingCapabilities()
+const enabled = isValid.value && canTopUp.value && !inFlight
+const disabled = !(canTopUp.value && !saving.value) || isDirty.value
+const locked = isSaving.value || !isValid.value || !canTopUp.value
+`
+    },
+    {
       name: 'a property that merely shares a capability name',
       code: `
 const { canTopUp } = useBillingCapabilities()
@@ -121,6 +144,52 @@ const { canTopUp, canSubscribeSelfServe } = useBillingCapabilities()
 const showBuy = canTopUp.value || canSubscribeSelfServe.value
 `,
       errors: [{ messageId: 'combined', data: { operator: '||' } }]
+    },
+    {
+      name: 'a capability narrowed by a server-derived seat fact',
+      code: `
+const { canInviteMembers } = useBillingCapabilities()
+const enabled = canInviteMembers.value && hasMemberSeats.value
+`,
+      errors: [{ messageId: 'combined', data: { operator: '&&' } }]
+    },
+    {
+      name: 'a loading flag that grants a capability through ||',
+      code: `
+const { canTopUp } = useBillingCapabilities()
+const enabled = canTopUp.value || isLoading.value
+`,
+      errors: [{ messageId: 'combined', data: { operator: '||' } }]
+    },
+    {
+      name: 'a local flag that grants when the capability is false',
+      code: `
+const { canTopUp } = useBillingCapabilities()
+const enabled = !canTopUp.value && isOpen.value
+`,
+      errors: [{ messageId: 'combined', data: { operator: '&&' } }]
+    },
+    {
+      name: 'a narrowed capability or-ed with a local flag',
+      code: `
+const { canTopUp } = useBillingCapabilities()
+const enabled = (canTopUp.value && !isLoading.value) || isSaving.value
+`,
+      errors: [{ messageId: 'combined', data: { operator: '||' } }]
+    },
+    {
+      name: 'server-derived plan and subscription flags next to a capability',
+      code: `
+const { canTopUp } = useBillingCapabilities()
+const a = canTopUp.value && !isPlanEnded.value
+const b = canTopUp.value && isTeamPlan.value
+const c = !canTopUp.value || !isSubscribed.value
+`,
+      errors: [
+        { messageId: 'combined', data: { operator: '&&' } },
+        { messageId: 'combined', data: { operator: '&&' } },
+        { messageId: 'combined', data: { operator: '||' } }
+      ]
     },
     {
       name: 'an alias of a capability combined later',
