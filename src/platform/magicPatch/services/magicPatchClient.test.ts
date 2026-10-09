@@ -418,3 +418,37 @@ describe('Magic Patch body consumption policy v2', () => {
     expect(cancel).toHaveBeenCalledTimes(1)
   })
 })
+
+describe('Magic Patch monotonic body deadline', () => {
+  it('rejects a body delivered after its deadline while the timer callback is withheld', async () => {
+    vi.useFakeTimers()
+    let now = 0
+    vi.spyOn(performance, 'now').mockImplementation(() => now)
+    let resume: () => void = () => {}
+    const body = new ReadableStream<Uint8Array>(
+      {
+        pull(controller) {
+          resume = () => {
+            controller.enqueue(new TextEncoder().encode('{"requests":[]}'))
+            controller.close()
+          }
+        }
+      },
+      { highWaterMark: 0 }
+    )
+    const client = createMagicPatchClient(
+      async () => new Response(body),
+      () => true,
+      scopeGuard
+    )
+    const pending = client.list()
+    await vi.advanceTimersByTimeAsync(0)
+    now = 10000
+    resume()
+    await expect(pending).resolves.toMatchObject({
+      ok: false,
+      error: { code: 'response_timeout' }
+    })
+    expect(vi.getTimerCount()).toBe(0)
+  })
+})

@@ -12,7 +12,8 @@ export const magicPatchTraversalLimits = {
 } as const
 
 export function createMagicPatchPoller(
-  client: Pick<ReturnType<typeof createMagicPatchClient>, 'list'>
+  client: Pick<ReturnType<typeof createMagicPatchClient>, 'list'>,
+  monotonicNow: () => number = () => performance.now()
 ) {
   let state: MagicPatchPollState = { phase: 'disabled' }
   let sequence = 0
@@ -38,6 +39,7 @@ export function createMagicPatchPoller(
     stop()
     const scan = String(++sequence)
     const controller = new AbortController()
+    const deadline = monotonicNow() + magicPatchTraversalLimits.milliseconds
     active = { scan, controller }
     const current = () =>
       active?.scan === scan &&
@@ -48,6 +50,27 @@ export function createMagicPatchPoller(
       if (!current()) return
       state = reduceMagicPatchPoll(state, { type: 'poll_failed', scope, scan })
       controller.abort()
+    }
+    const allowed = () => {
+      if (!current() || controller.signal.aborted) return false
+      const now = monotonicNow()
+      if (
+        !Number.isFinite(deadline) ||
+        !Number.isFinite(now) ||
+        now >= deadline
+      ) {
+        fail()
+        return false
+      }
+      return true
+    }
+    const beforeDispatch = () => {
+      if (allowed()) return
+      controller.signal.throwIfAborted()
+      throw new DOMException(
+        'Magic Patch traversal is no longer current',
+        'AbortError'
+      )
     }
     let onAbort: () => void = () => {}
     const aborted = new Promise<void>((resolve) => {
@@ -60,9 +83,13 @@ export function createMagicPatchPoller(
       let entries = 0
       try {
         for (let page = 0; page < magicPatchTraversalLimits.pages; page++) {
-          if (!current() || controller.signal.aborted) return
-          const result = await client.list(cursor, controller.signal)
-          if (!current() || controller.signal.aborted) return
+          if (!allowed()) return
+          const result = await client.list(
+            cursor,
+            controller.signal,
+            beforeDispatch
+          )
+          if (!allowed()) return
           if (!result.ok) return fail()
           entries += result.value.requests.length
           if (entries > magicPatchTraversalLimits.entries) return fail()

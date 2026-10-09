@@ -49,7 +49,11 @@ export function createMagicPatchClient<Scope>(
   available: () => boolean,
   scopeGuard: { capture: () => Scope; current: (captured: Scope) => boolean }
 ) {
-  async function request(route: string, options: RequestInit) {
+  async function request(
+    route: string,
+    options: RequestInit,
+    beforeDispatch?: () => void
+  ) {
     if (!available()) throw new MagicPatchRequestError(503)
     const captured = scopeGuard.capture()
     const check = () => {
@@ -57,6 +61,7 @@ export function createMagicPatchClient<Scope>(
         throw new MagicPatchProtocolError('scope_changed')
       if (!available()) throw new MagicPatchRequestError(503)
       options.signal?.throwIfAborted()
+      beforeDispatch?.()
     }
     check()
     const response = await fetchApi(`/magic-patch${route}`, options, check)
@@ -84,6 +89,8 @@ export function createMagicPatchClient<Scope>(
     maximum: number
   ): Promise<Uint8Array<ArrayBuffer>> {
     const reader = call.response.body?.getReader()
+    const deadline =
+      performance.now() + magicPatchResponseLimits.bodyMilliseconds
     const chunks: Uint8Array[] = []
     let length = 0
     let interruption: { cause: unknown } | undefined
@@ -92,9 +99,16 @@ export function createMagicPatchClient<Scope>(
     const checkRead = () => {
       if (interruption) throw interruption.cause
       call.check()
+      const now = performance.now()
+      if (
+        !Number.isFinite(deadline) ||
+        !Number.isFinite(now) ||
+        now >= deadline
+      )
+        throw new MagicPatchProtocolError('response_timeout')
     }
     const consume = async () => {
-      call.check()
+      checkRead()
       const declared = call.response.headers.get('Content-Length')
       if (
         declared !== null &&
@@ -123,6 +137,7 @@ export function createMagicPatchClient<Scope>(
         bytes.set(chunk, offset)
         offset += chunk.byteLength
       }
+      checkRead()
       return bytes
     }
     try {
@@ -204,16 +219,21 @@ export function createMagicPatchClient<Scope>(
     return finish(response, zRequestStatus.parse(await readJSON(response)))
   }
 
-  async function list(after?: string, signal?: AbortSignal) {
+  async function list(
+    after?: string,
+    signal?: AbortSignal,
+    beforeDispatch?: () => void
+  ) {
     if (after !== undefined && (!after || after.length > 1024)) {
       throw new MagicPatchProtocolError('invalid_request')
     }
     const parameters = new URLSearchParams({ limit: '50' })
     if (after) parameters.set('after', after)
-    const response = await request(`/requests?${parameters}`, {
-      method: 'GET',
-      signal
-    })
+    const response = await request(
+      `/requests?${parameters}`,
+      { method: 'GET', signal },
+      beforeDispatch
+    )
     return finish(response, zRequestPage.parse(await readJSON(response)))
   }
 

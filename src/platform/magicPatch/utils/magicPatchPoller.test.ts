@@ -160,3 +160,67 @@ describe('Magic Patch bounded traversal', () => {
     expect(poller.getState()).toEqual({ phase: 'disabled' })
   })
 })
+
+describe('Magic Patch monotonic traversal deadlines', () => {
+  it.for([undefined, 'next'] as const)(
+    'rejects an overdue page with cursor %s while its timer is withheld',
+    async (cursor) => {
+      vi.useFakeTimers()
+      let now = 0
+      const list = vi
+        .fn()
+        .mockResolvedValueOnce(success({ requests: [request] }))
+        .mockImplementationOnce(async () => {
+          now = 15000
+          return success({
+            requests: [{ ...request, status_version: 2 }],
+            next_cursor: cursor
+          })
+        })
+        .mockResolvedValue(success({ requests: [] }))
+      const poller = createMagicPatchPoller({ list }, () => now)
+      poller.setScope('A/1')
+      await poller.refresh()
+      await poller.refresh()
+      expect(list).toHaveBeenCalledTimes(2)
+      expect(poller.getState()).toMatchObject({
+        phase: 'failed',
+        requests: { [request.id]: request }
+      })
+      expect(list.mock.calls[1][1].aborted).toBe(true)
+      expect(vi.getTimerCount()).toBe(0)
+    }
+  )
+
+  it('refuses the first dispatch when elapsed budget is exhausted before calling list', async () => {
+    vi.useFakeTimers()
+    const clock = vi.fn().mockReturnValue(0)
+    const list = vi.fn(async () => success({ requests: [request] }))
+    const poller = createMagicPatchPoller({ list }, clock)
+    poller.setScope('A/1')
+    await poller.refresh()
+    clock.mockReturnValueOnce(100).mockReturnValue(15100)
+    await poller.refresh()
+    expect(list).toHaveBeenCalledTimes(1)
+    expect(poller.getState()).toMatchObject({
+      phase: 'failed',
+      requests: { [request.id]: request }
+    })
+  })
+
+  it('accepts a complete response just before the deadline without a timer tick', async () => {
+    vi.useFakeTimers()
+    let now = 100
+    const list = vi.fn(async () => {
+      now = 15099
+      return success({ requests: [request] })
+    })
+    const poller = createMagicPatchPoller({ list }, () => now)
+    poller.setScope('A/1')
+    await poller.refresh()
+    expect(poller.getState()).toMatchObject({
+      phase: 'idle',
+      requests: { [request.id]: request }
+    })
+  })
+})

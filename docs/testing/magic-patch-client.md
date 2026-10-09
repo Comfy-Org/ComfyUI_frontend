@@ -64,3 +64,14 @@ browser, render, publication or runtime acceptance is inferred.
 Visual work requires the live Figma standards prerequisite. Consent, startup/
 reconnect mounting, progress, graph refresh, feedback, real gateway composition
 and actual browser scope/cancellation/lifecycle coverage remain pending.
+
+Deadlines are stored against a monotonic clock, not inferred from a timer firing.
+The poller checks before calling list and immediately after its awaited result,
+and forwards a traversal guard through list into the actual native dispatch/remint
+callback. Older list adapters that ignore this guard are unqualified. Async auth
+preparation cannot dispatch an overdue poll merely because the timer was delayed.
+The body reader similarly checks performance.now before/after reads and before
+returning accepted bytes. Timers remain wakeups for stalled operations; a delayed
+timer cannot make an overdue response eligible. Clock injection is for owned
+poller composition/tests; the production default is performance.now. Neither
+these checks nor timers preempt synchronous JavaScript CPU execution.

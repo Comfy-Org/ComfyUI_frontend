@@ -2,6 +2,7 @@ import { beforeEach, describe, expect, it, vi } from 'vitest'
 
 import { createMagicPatchClient } from '@/platform/magicPatch/services/magicPatchClient'
 import { ComfyApi } from '@/scripts/api'
+import { createMagicPatchPoller } from '@/platform/magicPatch/utils/magicPatchPoller'
 
 const { authHeader, remint } = vi.hoisted(() => ({
   authHeader: vi.fn(),
@@ -134,5 +135,39 @@ describe('Magic Patch authenticated dispatch', () => {
       error: { code: 'unavailable' }
     })
     expect(fetch).not.toHaveBeenCalled()
+  })
+})
+
+describe('Magic Patch traversal deadline at native dispatch', () => {
+  it('blocks a poll fetch after delayed authentication even when the wakeup timer is withheld', async () => {
+    vi.useFakeTimers()
+    const api = new ComfyApi()
+    let now = 0
+    let resume: (value: { Authorization: string }) => void = () => {}
+    authHeader.mockImplementation(
+      () =>
+        new Promise<{ Authorization: string }>((resolve) => {
+          resume = resolve
+        })
+    )
+    vi.mocked(fetch).mockResolvedValue(Response.json({ requests: [status] }))
+    const client = createMagicPatchClient(api.fetchApi.bind(api), () => true, {
+      capture: () => 1,
+      current: () => true
+    })
+    const poller = createMagicPatchPoller(client, () => now)
+    poller.setScope('A/1')
+    const pending = poller.refresh()
+    await vi.advanceTimersByTimeAsync(0)
+    expect(authHeader).toHaveBeenCalled()
+    now = 15000
+    resume({ Authorization: 'Bearer same-scope' })
+    await pending
+    expect(fetch).not.toHaveBeenCalled()
+    expect(poller.getState()).toEqual({
+      phase: 'failed',
+      scope: 'A/1',
+      requests: {}
+    })
   })
 })
