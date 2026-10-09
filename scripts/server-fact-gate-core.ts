@@ -22,7 +22,7 @@ export const oxlintReportSchema = z.object({
   )
 })
 
-type OxlintDiagnostic = z.infer<
+export type OxlintDiagnostic = z.infer<
   typeof oxlintReportSchema
 >['diagnostics'][number]
 
@@ -96,4 +96,18 @@ export function findingsOnChangedLines(
       ? [{ filename, line: span.line, message }]
       : []
   })
+}
+
+export function findingsInFiles(
+  rangesByFile: ReadonlyMap<string, readonly ChangedRange[]>,
+  diagnostics: readonly OxlintDiagnostic[],
+  textOf: (file: string) => string
+): Finding[] {
+  return [...rangesByFile].flatMap(([file, ranges]) =>
+    findingsOnChangedLines(
+      diagnostics.filter((diagnostic) => diagnostic.filename === file),
+      ranges,
+      textOf(file)
+    )
+  )
 }
