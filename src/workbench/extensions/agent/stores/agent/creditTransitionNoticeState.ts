@@ -1,32 +1,3 @@
-/**
- * The Agent credit-transition notice episode: one state, one pure transition.
- *
- * The notice tells a user that their free Agent-scoped grant just ran out and
- * later activity draws on the workspace balance. It may only appear after an
- * **observed** `true` -> `false` handoff on the scoped balance, it reports one
- * impression per episode, and a dismissal outlives a refill.
- *
- * Those three rules were four separate refs that had to agree, which let them
- * disagree: a `reported` identity with nothing armed, an episode armed and
- * dismissed at once, or refs pointing at different identities. Everything here
- * is one record keyed by identity, so an identity switch invalidates the
- * episode structurally instead of by remembering to reset each ref.
- *
- * Pure by design (`docs/guidance/state-and-effects.md` section 2): no Vue, no
- * store and no telemetry, so every phase crossed with every event is a table
- * test.
- */
-
-/**
- * - `idle` — observed, nothing to show. The resting phase, and where a refill
- *   returns an episode so the next handoff can arm again.
- * - `armed` — an observed handoff happened; the notice may render and still
- *   owes an impression.
- * - `reported` — rendered and counted. Still visible; it just must not count
- *   twice.
- * - `dismissed` — the user closed it. Terminal for this identity: a refill does
- *   not reopen it.
- */
 export type CreditTransitionNoticePhase =
   | 'idle'
   | 'armed'
