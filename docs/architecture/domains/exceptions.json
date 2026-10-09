@@ -18,8 +18,7 @@
         "deep-import:mask-editor:src/composables/useCoreCommands.selectOnly.test.ts->src/stores/maskEditorStore.ts#1",
         "deep-import:mask-editor:src/composables/useCoreCommands.ts->src/stores/maskEditorStore.ts#1",
         "deep-import:mask-editor:src/extensions/core/index.ts->src/extensions/core/maskeditor.ts#1",
-        "deep-import:mask-editor:src/renderer/extensions/vueNodes/components/ImagePreview.vue->src/composables/maskeditor/useMaskEditor.ts#1",
-        "deep-import:mask-editor:src/services/litegraphService.ts->src/composables/maskeditor/useMaskEditor.ts#1"
+        "deep-import:mask-editor:src/renderer/extensions/vueNodes/components/ImagePreview.vue->src/composables/maskeditor/useMaskEditor.ts#1"
       ],
       "fingerprintPrefixes": ["deep-import:mask-editor:"]
     },
@@ -32,7 +31,6 @@
       "exactFingerprints": [
         "anonymous-suppression:src/base/common/downloadUtil.test.ts:comfy/no-restricted-paths#1",
         "anonymous-suppression:src/base/common/downloadUtil.ts:comfy/no-restricted-paths#1",
-        "anonymous-suppression:src/base/common/downloadUtil.ts:comfy/no-restricted-paths#2",
         "anonymous-suppression:src/lib/litegraph/src/LGraphCanvas.slotHitDetection.test.ts:comfy/no-restricted-paths#1",
         "anonymous-suppression:src/lib/litegraph/src/canvas/getCanvasContextMenuTarget.test.ts:comfy/no-restricted-paths#1",
         "anonymous-suppression:src/platform/missingMedia/missingMediaStore.ts:comfy/no-restricted-paths#1",
