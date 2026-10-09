@@ -1,7 +1,7 @@
 import { isBinaryFbx, readFbxPolygons } from '@comfyorg/quad-wireframe-three'
 import * as THREE from 'three'
 import { fromAny } from '@total-typescript/shoehorn'
-import { describe, expect, it, vi } from 'vitest'
+import { beforeEach, describe, expect, it, vi } from 'vitest'
 
 import { MeshModelAdapter } from './MeshModelAdapter'
 import type { ModelLoadContext } from './ModelAdapter'
@@ -27,10 +27,14 @@ const mtlLoaderStub = {
 }
 const objLoaderStub = {
   setWorkerUrl: vi.fn(),
+  setTerminateWorkerOnLoad: vi.fn(),
   setMaterials: vi.fn(),
   setBaseObject3d: vi.fn(),
-  loadAsync: vi.fn<(url: string) => Promise<THREE.Object3D>>()
+  setCallbackOnLoad:
+    vi.fn<(onLoad: (object: THREE.Object3D) => void) => void>(),
+  parse: vi.fn<(bytes: ArrayBuffer) => void>()
 }
+const objFetchStub = vi.fn<(request: Request) => Promise<Response>>()
 
 vi.mock(import('three/examples/jsm/loaders/STLLoader'), () => ({
   STLLoader: fromAny(
@@ -73,9 +77,11 @@ vi.mock(import('wwobjloader2'), () => ({
   OBJLoader2Parallel: fromAny(
     class {
       setWorkerUrl = objLoaderStub.setWorkerUrl
+      setTerminateWorkerOnLoad = objLoaderStub.setTerminateWorkerOnLoad
       setMaterials = objLoaderStub.setMaterials
       setBaseObject3d = objLoaderStub.setBaseObject3d
-      loadAsync = objLoaderStub.loadAsync
+      setCallbackOnLoad = objLoaderStub.setCallbackOnLoad
+      parse = objLoaderStub.parse
     }
   ),
   MtlObjBridge: fromAny({
@@ -261,9 +267,28 @@ describe('MeshModelAdapter', () => {
   })
 
   describe('OBJ loader path', () => {
+    function parseResolvesWith(object: THREE.Object3D) {
+      let onLoad: (object: THREE.Object3D) => void = () => {}
+      objLoaderStub.setCallbackOnLoad.mockImplementation((cb) => {
+        onLoad = cb
+      })
+      objLoaderStub.parse.mockImplementation(() => onLoad(object))
+    }
+
+    function requestedUrls() {
+      return objFetchStub.mock.calls.map(([request]) => request.url)
+    }
+
+    beforeEach(() => {
+      objFetchStub.mockImplementation(() =>
+        Promise.resolve(new Response(new ArrayBuffer(8)))
+      )
+      vi.stubGlobal('fetch', objFetchStub)
+    })
+
     it('attempts the MTL sidecar in original material mode', async () => {
       mtlLoaderStub.loadAsync.mockResolvedValue({ preload: vi.fn() })
-      objLoaderStub.loadAsync.mockResolvedValue(makeFbxLikeGroup())
+      parseResolvesWith(makeFbxLikeGroup())
 
       const adapter = new MeshModelAdapter()
       await adapter.load(makeContext('original'), '/api/view/', 'cube.obj')
@@ -271,12 +296,12 @@ describe('MeshModelAdapter', () => {
       expect(mtlLoaderStub.setPath).toHaveBeenCalledWith('/api/view/')
       expect(mtlLoaderStub.loadAsync).toHaveBeenCalledWith('cube.mtl')
       expect(objLoaderStub.setMaterials).toHaveBeenCalled()
-      expect(objLoaderStub.loadAsync).toHaveBeenCalledWith('/api/view/cube.obj')
+      expect(requestedUrls().at(-1)).toContain('/api/view/cube.obj')
     })
 
     it('swallows MTL load errors and continues without materials', async () => {
       mtlLoaderStub.loadAsync.mockRejectedValue(new Error('no mtl'))
-      objLoaderStub.loadAsync.mockResolvedValue(makeFbxLikeGroup())
+      parseResolvesWith(makeFbxLikeGroup())
 
       const adapter = new MeshModelAdapter()
       const result = await adapter.load(
@@ -290,17 +315,17 @@ describe('MeshModelAdapter', () => {
     })
 
     it('skips the MTL attempt for non-original material modes', async () => {
-      objLoaderStub.loadAsync.mockResolvedValue(makeFbxLikeGroup())
+      parseResolvesWith(makeFbxLikeGroup())
 
       const adapter = new MeshModelAdapter()
       await adapter.load(makeContext('wireframe'), '/api/view/', 'cube.obj')
 
       expect(mtlLoaderStub.loadAsync).not.toHaveBeenCalled()
-      expect(objLoaderStub.loadAsync).toHaveBeenCalledWith('/api/view/cube.obj')
+      expect(requestedUrls().at(-1)).toContain('/api/view/cube.obj')
     })
 
     it('registers materials for each mesh child', async () => {
-      objLoaderStub.loadAsync.mockResolvedValue(makeFbxLikeGroup())
+      parseResolvesWith(makeFbxLikeGroup())
 
       const adapter = new MeshModelAdapter()
       const ctx = makeContext('wireframe')
@@ -310,7 +335,7 @@ describe('MeshModelAdapter', () => {
     })
 
     it('resets baseObject3d on every load so meshes do not accumulate across calls', async () => {
-      objLoaderStub.loadAsync.mockResolvedValue(makeFbxLikeGroup())
+      parseResolvesWith(makeFbxLikeGroup())
 
       const adapter = new MeshModelAdapter()
       const ctx = makeContext('wireframe')
