@@ -112,7 +112,7 @@ function expectRekaPricingDialogProps(
 ) {
   expect(dialogComponentProps).toMatchObject({
     size: 'full',
-    dismissableMask: false
+    dismissOnPointerDownOutside: false
   })
   expect(dialogComponentProps).not.toHaveProperty('style')
   expect(dialogComponentProps).not.toHaveProperty('pt')

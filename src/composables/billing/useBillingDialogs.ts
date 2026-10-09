@@ -195,7 +195,7 @@ export function useBillingDialogs() {
       dialogComponentProps: {
         ...SELF_STYLED_PANEL_DIALOG_PROPS,
         closable: false,
-        dismissableMask: false
+        dismissOnPointerDownOutside: false
       }
     })
   }
@@ -312,7 +312,7 @@ export function useBillingDialogs() {
         dialogComponentProps: {
           ...SELF_STYLED_PANEL_DIALOG_PROPS,
           closable: false,
-          dismissableMask: false,
+          dismissOnPointerDownOutside: false,
           onClose: () => resolveResult(null)
         }
       })

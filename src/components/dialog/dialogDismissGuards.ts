@@ -23,7 +23,7 @@ function isInsideOverlay(target: EventTarget | null): boolean {
 }
 
 export function onRekaPointerDownOutside(
-  options: { dismissableMask?: boolean },
+  options: { dismissOnPointerDownOutside?: boolean },
   event: OutsideEvent,
   isActive = true
 ) {
@@ -40,7 +40,7 @@ export function onRekaPointerDownOutside(
     event.preventDefault()
     return
   }
-  if (options.dismissableMask === false) {
+  if (options.dismissOnPointerDownOutside === false) {
     event.preventDefault()
   }
 }

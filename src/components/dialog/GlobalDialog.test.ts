@@ -448,7 +448,7 @@ describe('GlobalDialog Reka overlay scrim', () => {
         props: { onClose: () => store.closeDialog({ key }) },
         dialogComponentProps: {
           headless: true,
-          dismissableMask: false
+          dismissOnPointerDownOutside: false
         }
       })
     }
@@ -570,7 +570,10 @@ describe('shouldPreventRekaDismiss', () => {
       document.body.appendChild(overlay)
 
       const event = makeEvent(inner)
-      onRekaPointerDownOutside({ dismissableMask: undefined }, event)
+      onRekaPointerDownOutside(
+        { dismissOnPointerDownOutside: undefined },
+        event
+      )
 
       expect(event.defaultPrevented).toBe(true)
       overlay.remove()
@@ -579,7 +582,7 @@ describe('shouldPreventRekaDismiss', () => {
 
   it('allows dismiss when target is outside any portaled layer', () => {
     const event = makeEvent(document.body)
-    onRekaPointerDownOutside({ dismissableMask: undefined }, event)
+    onRekaPointerDownOutside({ dismissOnPointerDownOutside: undefined }, event)
     expect(event.defaultPrevented).toBe(false)
   })
 
@@ -589,7 +592,7 @@ describe('shouldPreventRekaDismiss', () => {
     document.body.appendChild(container)
 
     const event = makeEvent(container)
-    onRekaPointerDownOutside({ dismissableMask: undefined }, event)
+    onRekaPointerDownOutside({ dismissOnPointerDownOutside: undefined }, event)
 
     expect(event.defaultPrevented).toBe(false)
     container.remove()
@@ -601,19 +604,27 @@ describe('shouldPreventRekaDismiss', () => {
     // opening over Settings). Target is outside any overlay, so only the
     // is-active gate can prevent it.
     const event = makeEvent(document.body)
-    onRekaPointerDownOutside({ dismissableMask: undefined }, event, false)
+    onRekaPointerDownOutside(
+      { dismissOnPointerDownOutside: undefined },
+      event,
+      false
+    )
     expect(event.defaultPrevented).toBe(true)
   })
 
   it('allows the top-most dialog to dismiss on a true outside pointer', () => {
     const event = makeEvent(document.body)
-    onRekaPointerDownOutside({ dismissableMask: undefined }, event, true)
+    onRekaPointerDownOutside(
+      { dismissOnPointerDownOutside: undefined },
+      event,
+      true
+    )
     expect(event.defaultPrevented).toBe(false)
   })
 
-  it('prevents dismiss when dismissableMask is false even outside an overlay', () => {
+  it('prevents dismiss when dismissOnPointerDownOutside is false even outside an overlay', () => {
     const event = makeEvent(document.body)
-    onRekaPointerDownOutside({ dismissableMask: false }, event)
+    onRekaPointerDownOutside({ dismissOnPointerDownOutside: false }, event)
     expect(event.defaultPrevented).toBe(true)
   })
 

@@ -340,22 +340,22 @@ describe('dialogStore', () => {
         key: 'updatable-dialog',
         component: MockContentPropsComponent,
         props: { openingAction: null },
-        dialogComponentProps: { dismissableMask: true }
+        dialogComponentProps: { dismissOnPointerDownOutside: true }
       })
 
       const updated = store.updateDialog({
         key: 'updatable-dialog',
         contentProps: { openingAction: 'copy-and-open' },
-        dialogComponentProps: { dismissableMask: false }
+        dialogComponentProps: { dismissOnPointerDownOutside: false }
       })
 
       expect(updated).toBe(true)
       expect(store.dialogStack[0].contentProps).toMatchObject({
         openingAction: 'copy-and-open'
       })
-      expect(store.dialogStack[0].dialogComponentProps.dismissableMask).toBe(
-        false
-      )
+      expect(
+        store.dialogStack[0].dialogComponentProps.dismissOnPointerDownOutside
+      ).toBe(false)
     })
   })
 })

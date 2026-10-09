@@ -11,7 +11,6 @@ export interface DialogComponentProps {
   closable?: boolean
   /** Class applied to the Reka-UI `DialogContent` element. */
   contentClass?: HTMLAttributes['class']
-  dismissableMask?: boolean
   /**
    * When `false`, the Reka dialog does not dismiss when focus leaves its
    * content. Set on container dialogs (e.g. Settings) that host nested dialogs,
@@ -20,6 +19,7 @@ export interface DialogComponentProps {
    * outside-pointer dismissal are unaffected. Defaults to `true`.
    */
   dismissOnFocusOutside?: boolean
+  dismissOnPointerDownOutside?: boolean
   /** Class applied to the dialog footer on the non-headless path. */
   footerClass?: HTMLAttributes['class']
   /** Class applied to the dialog header on the non-headless path. */
@@ -185,7 +185,7 @@ export const useDialogStore = defineStore('dialog', () => {
         maximizable: false,
         modal: true,
         closable: true,
-        dismissableMask: true,
+        dismissOnPointerDownOutside: true,
         ...options.dialogComponentProps,
         maximized: options.dialogComponentProps?.maximized ?? false
       }

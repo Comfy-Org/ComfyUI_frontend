@@ -139,7 +139,7 @@ export function useAgentConsent() {
           },
           dialogComponentProps: {
             closable: true,
-            dismissableMask: true
+            dismissOnPointerDownOutside: true
           }
         })
       }
@@ -152,7 +152,7 @@ export function useAgentConsent() {
           contentProps: { accepting: true, error: '' },
           dialogComponentProps: {
             closable: false,
-            dismissableMask: false
+            dismissOnPointerDownOutside: false
           }
         })
 
@@ -204,7 +204,7 @@ export function useAgentConsent() {
           }
         },
         dialogComponentProps: {
-          dismissableMask: true,
+          dismissOnPointerDownOutside: true,
           modal: true,
           headless: true,
           overlayClass: 'bg-black/55',
