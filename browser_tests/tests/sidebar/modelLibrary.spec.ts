@@ -342,6 +342,7 @@ test.describe('Model library drops on Vue nodes', { tag: '@vue-nodes' }, () => {
     await comfyPage.menu.modelLibraryTab
       .getLeafByLabel('dreamshaper_8')
       .dragTo(node)
+    await comfyPage.nextFrame()
     await expect(node).toContainText('dreamshaper_8.safetensors')
     await expect
       .poll(() => filename.getValue())
@@ -362,6 +363,7 @@ test.describe('Model library drops on Vue nodes', { tag: '@vue-nodes' }, () => {
       .dragTo(comfyPage.canvas, {
         targetPosition: { x: box.width / 2, y: box.height / 2 }
       })
+    await comfyPage.nextFrame()
     await expect.poll(() => comfyPage.nodeOps.getGraphNodesCount()).toBe(1)
     const [loader] = await comfyPage.nodeOps.getNodeRefsByType(
       'CheckpointLoaderSimple'
