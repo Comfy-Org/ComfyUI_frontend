@@ -103,7 +103,15 @@ export async function discoverSso(
  * Ingest sends API routes back to `/`: they refuse a cross-site navigation,
  * so the person would land on an error. Anything off-origin goes there too.
  */
-function ssoReturnTo(raw: string, origin: string): string {
+function ssoReturnTo(
+  raw: string,
+  origin: string,
+  appOrigin: string | undefined
+): string {
+  if (appOrigin !== undefined && URL.canParse(raw)) {
+    const url = new URL(raw)
+    if (url.origin === appOrigin) return url.href
+  }
   const path = safeInternalPath(raw, origin, '/')
   const pathname = new URL(path, origin).pathname.toLowerCase()
   return pathname === '/api' || pathname.startsWith('/api/') ? '/' : path
@@ -123,6 +131,12 @@ export function ssoStartUrl(
   options: SsoStartTarget & {
     readonly returnTo: string
     readonly origin: string
+    /**
+     * The calling app's own origin when it is not Cloud's (billing-web,
+     * platform): a `returnTo` on it is sent whole, and ingest returns there
+     * only when the origin is an https one it trusts with the web session.
+     */
+    readonly appOrigin?: string
   }
 ): string {
   const url = new URL(SSO_START_PATH, options.origin)
@@ -134,7 +148,7 @@ export function ssoStartUrl(
   }
   url.searchParams.set(
     'return_to',
-    ssoReturnTo(options.returnTo, options.origin)
+    ssoReturnTo(options.returnTo, options.origin, options.appOrigin)
   )
   return url.toString()
 }

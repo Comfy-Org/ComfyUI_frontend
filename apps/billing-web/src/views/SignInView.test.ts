@@ -398,28 +398,22 @@ describe('SignInView', () => {
         refusal: 'naming its organization',
         organizationId: 'org_acme',
         path: REFUSED_ENTRY,
-        destination: `${SSO_START}?email=someone%40acme.com&organization=org_acme&return_to=%2F%3Fsettings%3Dplan-credits`
+        query: 'email=someone%40acme.com&organization=org_acme'
       },
       {
         refusal: 'naming no organization',
         organizationId: undefined,
         path: REFUSED_ENTRY,
-        destination: `${SSO_START}?email=someone%40acme.com&return_to=%2F%3Fsettings%3Dplan-credits`
-      },
-      {
-        refusal: 'without the link it came from',
-        organizationId: 'org_acme',
-        path: '/sign-in',
-        destination: `${SSO_START}?email=someone%40acme.com&organization=org_acme&return_to=%2F`
+        query: 'email=someone%40acme.com'
       }
     ])(
       'signs out and continues with SSO for a refusal $refusal',
-      async ({ organizationId, path, destination }) => {
+      async ({ organizationId, path, query }) => {
         h.ssoOrganizationId = organizationId
         const assign = vi
           .spyOn(window.location, 'assign')
           .mockImplementation(() => {})
-        await renderSignIn(path)
+        const router = await renderSignIn(path)
 
         const action = await screen.findByRole('button', {
           name: 'Continue with SSO'
@@ -430,7 +424,12 @@ describe('SignInView', () => {
         await userEvent.click(action)
 
         expect(h.signOut).toHaveBeenCalledOnce()
-        expect(assign).toHaveBeenCalledExactlyOnceWith(destination)
+        const backToThisPage = encodeURIComponent(
+          `${window.location.origin}${router.currentRoute.value.fullPath}`
+        )
+        expect(assign).toHaveBeenCalledExactlyOnceWith(
+          `${SSO_START}?${query}&return_to=${backToThisPage}`
+        )
       }
     )
 

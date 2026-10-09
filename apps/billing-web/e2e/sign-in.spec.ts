@@ -65,6 +65,7 @@ test('an account its SSO organization holds is offered Continue with SSO, which 
   await expect(page.getByRole('alert')).toContainText(
     'Your organization requires single sign-on'
   )
+  const signInPage = page.url()
   await page.getByRole('button', { name: 'Continue with SSO' }).click()
 
   await page.waitForURL((url) => url.pathname === '/api/auth/sso/start')
@@ -73,6 +74,6 @@ test('an account its SSO organization holds is offered Continue with SSO, which 
   expect(Object.fromEntries(start.searchParams)).toStrictEqual({
     email: E2E_USER.email,
     organization: 'org_e2e',
-    return_to: '/?settings=plan-credits'
+    return_to: signInPage
   })
 })

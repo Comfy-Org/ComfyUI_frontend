@@ -136,7 +136,7 @@ const {
 } = useSsoRequiredRefusal({
   code: sessionFailureCode,
   organizationId: ssoOrganizationId,
-  returnTo: computed(() => appReturnLink.value?.href)
+  returnTo: computed(() => new URL(route.fullPath, window.location.origin).href)
 })
 const ssoBody = computed(() =>
   ssoEmail.value

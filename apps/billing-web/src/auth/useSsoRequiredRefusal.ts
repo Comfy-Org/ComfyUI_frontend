@@ -16,19 +16,8 @@ import { readBillingWebSsoEnabled } from '@/config/ssoEnabled'
 interface SsoRequiredRefusal {
   readonly code: Readonly<Ref<SessionErrorCode | undefined>>
   readonly organizationId: Readonly<Ref<string | undefined>>
-  /**
-   * Where the customer lands once SSO completes. Ingest only returns to its
-   * own origin, so anything else lands on the Cloud app's root.
-   */
-  readonly returnTo: Readonly<Ref<string | undefined>>
-}
-
-function cloudPath(href: string | undefined): string {
-  if (href === undefined) return '/'
-  const url = new URL(href, CLOUD_BASE_URL)
-  return url.origin === CLOUD_BASE_URL
-    ? `${url.pathname}${url.search}${url.hash}`
-    : '/'
+  /** This page, so the customer resumes here once SSO completes. */
+  readonly returnTo: Readonly<Ref<string>>
 }
 
 async function signOutOfFirebase(): Promise<boolean> {
@@ -63,8 +52,9 @@ export function useSsoRequiredRefusal(refusal: SsoRequiredRefusal) {
   const destination = computed(() => {
     if (!enabled.value || refusal.code.value !== 'SSO_REQUIRED') return
     const back = {
-      returnTo: cloudPath(refusal.returnTo.value),
-      origin: CLOUD_BASE_URL
+      returnTo: refusal.returnTo.value,
+      origin: CLOUD_BASE_URL,
+      appOrigin: window.location.origin
     }
     const organizationId = refusal.organizationId.value
     if (organizationId)
