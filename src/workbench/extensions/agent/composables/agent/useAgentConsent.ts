@@ -205,7 +205,6 @@ export function useAgentConsent() {
         },
         dialogComponentProps: {
           dismissOnPointerDownOutside: true,
-          modal: true,
           headless: true,
           overlayClass: 'bg-black/55',
           contentClass:

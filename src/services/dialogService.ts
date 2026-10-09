@@ -391,7 +391,6 @@ export const useDialogService = () => {
   }) {
     const layoutDefaultProps: DialogComponentProps = {
       headless: true,
-      modal: true,
       closable: true
     }
 

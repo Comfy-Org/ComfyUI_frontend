@@ -6,10 +6,7 @@ import { createI18n } from 'vue-i18n'
 
 import BuilderSaveDialogContent from '@/components/builder/BuilderSaveDialogContent.vue'
 import GlobalDialog from '@/components/dialog/GlobalDialog.vue'
-import {
-  onRekaFocusOutside,
-  onRekaPointerDownOutside
-} from '@/components/dialog/dialogDismissGuards'
+import { onRekaPointerDownOutside } from '@/components/dialog/dialogDismissGuards'
 import UiDialog from '@/components/ui/dialog/Dialog.vue'
 import UiDialogOverlay from '@/components/ui/dialog/DialogOverlay.vue'
 import UiDialogPortal from '@/components/ui/dialog/DialogPortal.vue'
@@ -105,9 +102,6 @@ const Body = defineComponent({
   name: 'Body',
   setup: () => () => h('p', { 'data-testid': 'body' }, 'body content')
 })
-
-const flushPromises = () =>
-  new Promise<void>((resolve) => setTimeout(resolve, 0))
 
 const ClosedNonModalDialog = defineComponent({
   name: 'ClosedNonModalDialog',
@@ -344,28 +338,6 @@ describe('GlobalDialog Reka overlay scrim', () => {
     expect(screen.queryAllByTestId('dialog-overlay')).toHaveLength(1)
   })
 
-  it('shows a backdrop scrim while a non-modal Reka dialog is open', async () => {
-    // Reka's own DialogOverlay renders nothing when the root is non-modal,
-    // which silently dropped the scrim behind Settings/Manager (modal: false).
-    mountDialog()
-    const store = useDialogStore()
-
-    store.showDialog({
-      key: 'reka-non-modal-scrim',
-      title: 'Non-modal',
-      component: Body,
-      dialogComponentProps: { modal: false }
-    })
-
-    await screen.findByRole('dialog')
-    expect(screen.queryAllByTestId('dialog-overlay')).toHaveLength(1)
-
-    store.closeDialog({ key: 'reka-non-modal-scrim' })
-    await waitFor(() =>
-      expect(screen.queryAllByTestId('dialog-overlay')).toHaveLength(0)
-    )
-  })
-
   it('renders no scrim for a mounted but closed non-modal dialog', async () => {
     // CustomizationDialog mounts its non-modal Dialog root with open=false;
     // the scrim must stay gated on open, not just on mount.
@@ -381,9 +353,8 @@ describe('GlobalDialog Reka overlay scrim', () => {
 
     store.showDialog({
       key: 'reka-scrim-dismiss',
-      title: 'Non-modal',
-      component: Body,
-      dialogComponentProps: { modal: false }
+      title: 'Scrim',
+      component: Body
     })
 
     await screen.findByRole('dialog')
@@ -438,73 +409,6 @@ describe('GlobalDialog Reka overlay scrim', () => {
     await user.click(screen.getByRole('button', { name: 'Close' }))
 
     await waitFor(() => expect(store.isDialogOpen(key)).toBe(false))
-  })
-})
-
-describe('GlobalDialog Reka focus-outside binding', () => {
-  // Reka's DismissableLayer fires focus-outside off a real focus transition
-  // (blur inside the layer, then focusin on the new target), so drive the
-  // mounted binding by moving focus to a fresh element outside the dialog
-  // rather than dispatching a synthetic event.
-  async function moveFocusToPlainElementOutside() {
-    const outside = document.createElement('button')
-    document.body.appendChild(outside)
-    outside.focus()
-    return () => outside.remove()
-  }
-
-  it('dismisses on focus-outside by default', async () => {
-    mountDialog()
-    const store = useDialogStore()
-
-    store.showDialog({
-      key: 'focus-default',
-      title: 'Focus dismisses',
-      component: Body,
-      dialogComponentProps: { modal: false }
-    })
-
-    await screen.findByRole('dialog')
-    const removeOutside = await moveFocusToPlainElementOutside()
-    try {
-      await waitFor(() =>
-        expect(store.isDialogOpen('focus-default')).toBe(false)
-      )
-    } finally {
-      removeOutside()
-    }
-  })
-
-  it('does not dismiss on focus-outside when dismissOnFocusOutside is false', async () => {
-    // Exercises GlobalDialog's own template wiring
-    // `@focus-outside="(e) => onRekaFocusOutside(e, item.dialogComponentProps)"`
-    // through a mounted dialog — the direct `onRekaFocusOutside` unit test can't
-    // catch a regression that drops the props argument here. The positive
-    // control above proves the focus-outside path really fires, so this staying
-    // open isolates the opt-out flag rather than a dead event.
-    mountDialog()
-    const store = useDialogStore()
-
-    store.showDialog({
-      key: 'focus-opted-out',
-      title: 'Focus blocked',
-      component: Body,
-      dialogComponentProps: {
-        modal: false,
-        dismissOnFocusOutside: false
-      }
-    })
-
-    await screen.findByRole('dialog')
-    const removeOutside = await moveFocusToPlainElementOutside()
-    try {
-      // Drain every pending microtask so a wrongful dismiss lands before we
-      // assert, regardless of how many awaits deep the handler chain runs.
-      await flushPromises()
-      expect(store.isDialogOpen('focus-opted-out')).toBe(true)
-    } finally {
-      removeOutside()
-    }
   })
 })
 
@@ -595,60 +499,5 @@ describe('shouldPreventRekaDismiss', () => {
     const event = makeEvent(document.body)
     onRekaPointerDownOutside({ dismissOnPointerDownOutside: false }, event)
     expect(event.defaultPrevented).toBe(true)
-  })
-
-  it.for(['listbox', 'menu'])(
-    'focus-outside on a sibling %s portal does not dismiss the parent',
-    (role) => {
-      const overlay = document.createElement('div')
-      overlay.setAttribute('role', role)
-      const inner = document.createElement('button')
-      overlay.appendChild(inner)
-      document.body.appendChild(overlay)
-
-      const event = makeEvent(inner)
-      onRekaFocusOutside(event)
-
-      expect(event.defaultPrevented).toBe(true)
-      overlay.remove()
-    }
-  )
-
-  it('focus-outside on a toast does not dismiss the parent', () => {
-    const toast = document.createElement('div')
-    toast.dataset.toastKind = 'info'
-    const closeButton = document.createElement('button')
-    toast.appendChild(closeButton)
-    document.body.appendChild(toast)
-
-    const event = makeEvent(closeButton)
-    onRekaFocusOutside(event)
-
-    expect(event.defaultPrevented).toBe(true)
-    toast.remove()
-  })
-
-  it('focus-outside still dismisses when focus moves to a non-portal element', () => {
-    const event = makeEvent(document.body)
-    onRekaFocusOutside(event)
-    expect(event.defaultPrevented).toBe(false)
-  })
-
-  it('focus-outside never dismisses when dismissOnFocusOutside is false', () => {
-    const event = makeEvent(document.body)
-    onRekaFocusOutside(event, { dismissOnFocusOutside: false })
-    expect(event.defaultPrevented).toBe(true)
-  })
-
-  it('focus-outside on a sibling Reka portal does not dismiss the parent', () => {
-    const portal = document.createElement('div')
-    portal.setAttribute('role', 'dialog')
-    document.body.appendChild(portal)
-
-    const event = makeEvent(portal)
-    onRekaFocusOutside(event)
-
-    expect(event.defaultPrevented).toBe(true)
-    portal.remove()
   })
 })

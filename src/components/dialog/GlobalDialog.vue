@@ -3,7 +3,6 @@
   <template v-for="item in dialogStore.dialogStack" :key="item.key">
     <Dialog
       :open="item.visible"
-      :modal="item.dialogComponentProps.modal ?? true"
       @update:open="(open) => onRekaOpenChange(item.key, open)"
     >
       <DialogPortal>
@@ -36,9 +35,6 @@
                 e,
                 dialogStore.activeKey === item.key
               )
-          "
-          @focus-outside="
-            (e) => onRekaFocusOutside(e, item.dialogComponentProps)
           "
           @mousedown="() => dialogStore.riseDialog({ key: item.key })"
         >
@@ -113,10 +109,7 @@ import DialogMaximize from '@/components/ui/dialog/DialogMaximize.vue'
 import DialogOverlay from '@/components/ui/dialog/DialogOverlay.vue'
 import DialogPortal from '@/components/ui/dialog/DialogPortal.vue'
 import DialogTitle from '@/components/ui/dialog/DialogTitle.vue'
-import {
-  onRekaFocusOutside,
-  onRekaPointerDownOutside
-} from '@/components/dialog/dialogDismissGuards'
+import { onRekaPointerDownOutside } from '@/components/dialog/dialogDismissGuards'
 import { vRekaZIndex } from '@/components/dialog/vRekaZIndex'
 import type { DialogInstance } from '@/stores/dialogStore'
 import { useDialogStore } from '@/stores/dialogStore'
