@@ -1,6 +1,7 @@
 import { render, screen } from '@testing-library/vue'
 import userEvent from '@testing-library/user-event'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
+import { readonly, ref } from 'vue'
 
 import { readGeometry } from '@/lib/workshop/cinematic-studio/reshoot-engine/cvgeo'
 import {
@@ -9,6 +10,7 @@ import {
   signIn
 } from '@/lib/workshop/cinematic-studio/reshoot-engine/__fixtures__/reshootFakes'
 import { reshootTransport } from '@/lib/workshop/cinematic-studio/reshoot-engine/transport-config'
+import { useWorkshopFlag } from '@/scripts/posthog'
 import ReshootStudio from './ReshootStudio.vue'
 
 vi.mock(import('@/config/workshop-session-state'))
@@ -25,6 +27,12 @@ vi.mock(import('@/lib/workshop/cinematic-studio/reshoot-engine/cvgeo'), () => ({
 function setup() {
   render(ReshootStudio)
   return userEvent.setup({ advanceTimers: vi.advanceTimersByTime })
+}
+
+function showFullScreen(on: boolean) {
+  vi.mocked(useWorkshopFlag).mockImplementation((name) =>
+    readonly(ref(on && name === 'workshop-reshoot-fullscreen-enabled'))
+  )
 }
 
 beforeEach(() => {
@@ -162,6 +170,77 @@ describe('Re-shoot on one screen', () => {
     )
 
     expect(screen.getByRole('slider', { name: 'Rotation' })).toHaveValue('-30')
+    expect(
+      screen.getByRole('button', { name: 'Aim', current: true })
+    ).toBeInTheDocument()
+  })
+})
+
+describe('Re-shoot full screen flag', () => {
+  const editorAttribute = () =>
+    document.documentElement.hasAttribute('data-workshop-editor')
+
+  it.for([
+    { on: false, hero: 1, editors: 0, attribute: false },
+    { on: true, hero: 0, editors: 1, attribute: true }
+  ])(
+    'renders the page layout or the editor shell: flag $on',
+    ({ on, hero, editors, attribute }) => {
+      showFullScreen(on)
+      const { unmount } = render(ReshootStudio)
+
+      expect(screen.queryAllByTestId('reshoot-hero')).toHaveLength(hero)
+      expect(
+        screen.queryAllByRole('region', { name: 'Re-shoot a video' })
+      ).toHaveLength(editors)
+      expect(screen.queryAllByRole('toolbar')).toHaveLength(0)
+      expect(editorAttribute()).toBe(attribute)
+
+      unmount()
+      expect(editorAttribute()).toBe(false)
+    }
+  )
+
+  it.for([
+    { on: false, toggles: 1 },
+    { on: true, toggles: 0 }
+  ])(
+    'keeps the stage full screen toggle only on the page: flag $on',
+    async ({ on, toggles }) => {
+      showFullScreen(on)
+      const user = setup()
+
+      await user.click(screen.getByRole('button', { name: /Sci-fi pilot/ }))
+      await vi.advanceTimersByTimeAsync(3000)
+
+      expect(
+        screen.queryAllByRole('button', { name: 'Full screen' })
+      ).toHaveLength(toggles)
+      expect(screen.getByTestId('reshoot-action')).toBeEnabled()
+    }
+  )
+
+  it('runs a take in the editor and downloads it with the chosen sound', async () => {
+    showFullScreen(true)
+    const user = setup()
+    await user.click(screen.getByRole('button', { name: /Sci-fi pilot/ }))
+    await vi.advanceTimersByTimeAsync(3000)
+
+    await user.click(screen.getByTestId('reshoot-action'))
+    await vi.advanceTimersByTimeAsync(6500)
+
+    const download = () => screen.getByRole('link', { name: 'Download' })
+    expect(download()).toHaveAttribute('download', 'crossview-take-1.mp4')
+
+    await user.click(screen.getByRole('button', { name: 'Original audio' }))
+    expect(download()).toHaveAttribute(
+      'download',
+      'crossview-take-1-original-audio.mp4'
+    )
+
+    await user.click(
+      screen.getByRole('button', { name: 'Use this angle again' })
+    )
     expect(
       screen.getByRole('button', { name: 'Aim', current: true })
     ).toBeInTheDocument()

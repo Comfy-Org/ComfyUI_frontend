@@ -4995,7 +4995,12 @@
     "tryAgain": "重试",
     "noWebgl": "此预览需要 WebGL2，当前浏览器不支持。",
     "play": "播放",
-    "pause": "暂停"
+    "pause": "暂停",
+    "tools": "镜头视图",
+    "sheet": {
+      "expand": "显示重拍设置",
+      "collapse": "隐藏重拍设置"
+    }
   },
   "changelog": {
     "meta": {
