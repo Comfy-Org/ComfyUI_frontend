@@ -10,6 +10,7 @@ import { publishSkillPack } from '../api/skillsApi'
 import type { SkillPack } from '../types'
 import SkillPackFormDialog from './SkillPackFormDialog.vue'
 
+vi.mock(import('@/composables/auth/useCurrentUser'))
 vi.mock(import('../api/skillsApi'), { spy: true })
 
 const pack: SkillPack = {

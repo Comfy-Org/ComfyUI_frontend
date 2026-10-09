@@ -31,6 +31,7 @@ import type {
 } from './restrictedSyntax'
 import type {
   noImportActual as NoImportActual,
+  noMockedInExpect as NoMockedInExpect,
   noModuleScopeVitestMocks as NoModuleScopeVitestMocks,
   noPersistentLiteGraphRegistration as NoPersistentLiteGraphRegistration,
   noRedundantConsoleSpy as NoRedundantConsoleSpy,
@@ -100,6 +101,7 @@ const {
 }
 const {
   noImportActual,
+  noMockedInExpect,
   noModuleScopeVitestMocks,
   noPersistentLiteGraphRegistration,
   noRedundantConsoleSpy,
@@ -108,6 +110,7 @@ const {
   noRedundantVitestCleanup
 } = requireFrom('./vitestCleanup.ts') as {
   noImportActual: typeof NoImportActual
+  noMockedInExpect: typeof NoMockedInExpect
   noModuleScopeVitestMocks: typeof NoModuleScopeVitestMocks
   noPersistentLiteGraphRegistration: typeof NoPersistentLiteGraphRegistration
   noRedundantConsoleSpy: typeof NoRedundantConsoleSpy
@@ -131,6 +134,7 @@ export default {
     'no-es2023-array-copy-method': noEs2023ArrayCopyMethod,
     'no-import-actual': noImportActual,
     'no-misplaced-spec-files': noMisplacedSpecFiles,
+    'no-mocked-in-expect': noMockedInExpect,
     'no-module-scope-vitest-mocks': noModuleScopeVitestMocks,
     'no-new-error-throw': noNewErrorThrow,
     'no-new-zod-for-remote-api-types': noNewZodForRemoteApiTypes,

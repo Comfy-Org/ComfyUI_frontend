@@ -70,7 +70,7 @@ export function classifyAuthError(error: unknown): AuthErrorClassification {
   return { kind: 'auth', code: error.code }
 }
 
-export type AuthToastSeverity = 'error' | 'warn'
+export type AuthToastSeverity = 'error' | 'warning'
 
 /**
  * The cloud app's toast-severity policy for classified auth failures: a
@@ -80,7 +80,7 @@ export type AuthToastSeverity = 'error' | 'warn'
 export function severityForAuthError(
   classification: AuthErrorClassification
 ): AuthToastSeverity {
-  return classification.kind === 'popup-dismissed' ? 'warn' : 'error'
+  return classification.kind === 'popup-dismissed' ? 'warning' : 'error'
 }
 
 /**

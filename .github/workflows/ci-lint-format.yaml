@@ -55,6 +55,10 @@ jobs:
       - name: Run oxfmt with auto-format
         run: pnpm -r --include-workspace-root format
 
+      - name: Verify architecture contracts
+        if: hashFiles('tools/architecture/src/cli.ts') != ''
+        run: pnpm architecture:check
+
       - name: Check for changes
         id: verify-changed-files
         run: |

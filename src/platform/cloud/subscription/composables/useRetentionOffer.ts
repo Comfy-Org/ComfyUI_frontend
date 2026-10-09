@@ -1,5 +1,6 @@
 import { readonly, shallowRef } from 'vue'
 
+import { useToast } from '@/components/ui/toast/toastStore'
 import { useBillingContext } from '@/composables/billing/useBillingContext'
 import { t } from '@/i18n'
 import { recordRetentionFlowEvent } from '@/platform/cloud/subscription/launchCancellationFlow'
@@ -9,7 +10,6 @@ import type {
 } from '@/platform/cloud/subscription/utils/retentionOffer'
 import { reduceRetentionOffer } from '@/platform/cloud/subscription/utils/retentionOffer'
 import { reportError } from '@/platform/telemetry/reportError'
-import { useToastStore } from '@/platform/updates/common/toastStore'
 import { workspaceApi } from '@/platform/workspace/api/workspaceApi'
 import { WorkspaceApiError } from '@/platform/workspace/api/workspaceApiError'
 import { useBillingOperationStore } from '@/platform/workspace/stores/billingOperationStore'
@@ -83,10 +83,8 @@ export function useRetentionOffer(sessionId: string, workspaceId: string) {
         surface: 'billing',
         errorType: 'error_refreshing_billing_after_retention_discount'
       })
-      useToastStore().add({
-        severity: 'warn',
-        summary: t('subscription.retentionOffer.refreshFailed'),
-        life: 8000
+      useToast().warning(t('subscription.retentionOffer.refreshFailed'), {
+        duration: 8000
       })
     }
   }

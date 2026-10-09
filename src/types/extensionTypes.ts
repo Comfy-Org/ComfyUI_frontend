@@ -1,5 +1,8 @@
 import type { Component } from 'vue'
 
+import type { ToastId } from '@/types/toastId'
+import type { ToastAction, ToastOptions } from '@/types/toastOptions'
+
 import type { useWorkflowStore } from '@/platform/workflow/management/stores/workflowStore'
 import type { ExecutionErrorWsMessage } from '@/platform/remote/comfyui/execution/types'
 import type { NodeError } from '@/platform/remote/comfyui/types'
@@ -48,58 +51,31 @@ export type BottomPanelExtension =
   | VueBottomPanelExtension
   | CustomBottomPanelExtension
 
+export type { ToastAction, ToastOptions }
+
 /**
- * Defines message options in Toast component.
+ * @deprecated Use `toast.success/error/info/warning/loading(title, options)`.
  */
 export interface ToastMessageOptions {
-  /**
-   * Severity level of the message.
-   * @defaultValue info
-   */
-  severity?:
-    | 'success'
-    | 'info'
-    | 'warn'
-    | 'error'
-    | 'secondary'
-    | 'contrast'
-    | undefined
-  /**
-   * Summary content of the message.
-   */
-  summary?: string | undefined
-  /**
-   * Detail content of the message.
-   */
+  closable?: boolean
   detail?: string
-  /**
-   * Whether the message can be closed manually using the close icon.
-   * @defaultValue true
-   */
-  closable?: boolean | undefined
-  /**
-   * Delay in milliseconds to close the message automatically.
-   */
-  life?: number | undefined
-  /**
-   * Key of the Toast to display the message.
-   */
-  group?: string | undefined
-  /**
-   * Style class of the message.
-   */
-  styleClass?: string | string[] | Record<string, boolean>
-  /**
-   * Style class of the content.
-   * Matches PrimeVue Toast API which accepts Vue class bindings.
-   */
-  contentStyleClass?: string | string[] | Record<string, boolean>
+  life?: number
+  severity?: 'success' | 'info' | 'warn' | 'error' | 'secondary' | 'contrast'
+  summary?: string
 }
 
 export type ToastManager = {
+  /** @deprecated Use `success/error/info/warning/loading`. */
   add(message: ToastMessageOptions): void
-  remove(message: ToastMessageOptions): void
-  removeAll(): void
+  /** @deprecated Use `warning(message)`. */
+  addAlert(message: string): void
+  dismiss(id: ToastId): boolean
+  dismissAll(): void
+  error(title: string, options?: ToastOptions): ToastId
+  info(title: string, options?: ToastOptions): ToastId
+  loading(title: string, options?: ToastOptions): ToastId
+  success(title: string, options?: ToastOptions): ToastId
+  warning(title: string, options?: ToastOptions): ToastId
 }
 
 export interface ExtensionManager {

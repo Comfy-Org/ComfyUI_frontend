@@ -17,6 +17,14 @@
       "sessionError": "You are signed in, but your workspace session could not be started. Retry, or sign in again with another account.",
       "retry": "Retry session"
     },
+    "sso": {
+      "continueWithSso": "Continue with SSO",
+      "required": {
+        "title": "Your organization requires single sign-on",
+        "body": "This account signs in with your organization's single sign-on. Continue with SSO to sign in.",
+        "bodyWithEmail": "{email} signs in with your organization's single sign-on. Continue with SSO to sign in."
+      }
+    },
     "email": {
       "label": "Email",
       "placeholder": "Enter your email"
