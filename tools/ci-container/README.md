@@ -38,17 +38,25 @@ Both the checkout frontend and the bundled fallback frontend must work.
 Firefox and WebKit open the checkout frontend. The existing
 `setupApiUrl.spec.ts` exercises the real devtools settings endpoint in Chromium.
 The checkout is mounted read-only; test output stays inside the disposable
-container. Failed checks print the backend logs.
+container. Playwright runs from `/app` so local performance results in the
+checkout do not affect teardown. The fallback server uses a separate base
+directory and stops before the checkout server starts. Python assertions stay
+enabled even if the image sets `PYTHONOPTIMIZE`. Failed checks print the
+backend logs.
 
 `.github/workflows/ci-container.yaml` builds and validates candidates when
-this directory or that workflow changes. Ordinary frontend changes do not
-rebuild the image. The workflow has read-only repository access and does not
-log in to a registry.
+this directory, that workflow, `package.json`, `pnpm-lock.yaml`,
+`pnpm-workspace.yaml`, or `.nvmrc` changes. Dependency changes rebuild the image
+to catch Node and Playwright incompatibilities; ordinary frontend source changes
+do not. The workflow has read-only repository access and does not log in to a
+registry.
 
 ## Runtime contract
 
-The Dockerfile pins ComfyUI and Playwright. It supplies Python 3.12, CPU
-PyTorch, Node 26.10.0, Corepack, fonts, and `wait-for-it`.
+The Dockerfile verifies the ComfyUI release tag against `COMFYUI_COMMIT` and
+pins the Playwright release tag. Update `COMFYUI_VERSION` and `COMFYUI_COMMIT`
+together when upgrading the backend. It supplies Python 3.12, CPU PyTorch,
+Node 26.10.0, Corepack 0.36.0, fonts, and `wait-for-it`.
 ComfyUI lives at `/ComfyUI`, the Python environment at `/opt/venv`, and the
 default working directory is `/app`. The image runs as `pwuser`.
 

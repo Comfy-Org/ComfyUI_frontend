@@ -3,11 +3,11 @@ import type {
   CheckoutEntryFlow,
   SubscriptionCheckoutType
 } from '@comfyorg/account-core/billing'
-import { useToast } from 'primevue/usetoast'
-import type { ToastMessageOptions } from 'primevue/toast'
 import { computed, onScopeDispose, ref, watch } from 'vue'
 import { useI18n } from 'vue-i18n'
 
+import type { ToastId } from '@/types/toastId'
+import { useToast } from '@/components/ui/toast/toastStore'
 import { useBillingContext } from '@/composables/billing/useBillingContext'
 import { useBillingRouting } from '@/composables/billing/useBillingRouting'
 import { getComfyPlatformBaseUrl } from '@/config/comfyApi'
@@ -25,6 +25,7 @@ import { categorizeBillingApiError } from '@/platform/telemetry/utils/billingFai
 import { createBillingPortalReporter } from '@/platform/telemetry/utils/billingPortalTelemetry'
 import { api } from '@/scripts/api'
 import { useAuthStore } from '@/stores/authStore'
+import { getErrorMessage } from '@/utils/errorUtil'
 import type {
   Plan,
   PreviewSubscribeOptions,
@@ -205,9 +206,11 @@ export function useSubscriptionCheckout(
   let checkoutMutationSeq = 0
   let activeCheckoutAttemptStartedAt: number | undefined
   let lastEmittedPreviewRevision: string | undefined
-  // The payment-recovery toast is sticky and can outlive this checkout;
-  // drop it with the checkout rather than leave a button for a dead context.
-  onScopeDispose(() => toast.removeGroup('payment-recovery'))
+  const paymentRecoveryToasts: ToastId[] = []
+  function dismissToasts(ids: ToastId[]) {
+    for (const id of ids.splice(0)) toast.dismiss(id)
+  }
+  onScopeDispose(() => dismissToasts(paymentRecoveryToasts))
   useCheckoutJourneyExit()
   // Some legacy-rail status reads cannot expose a scheduled cancellation even
   // though the subscribe authority can see it in Stripe. Once that authority
@@ -460,10 +463,8 @@ export function useSubscriptionCheckout(
   // a request the BE is guaranteed to reject with no way for the user to
   // consent.
   function notifyReactivationConfirmationRequired(): void {
-    toast.add({
-      severity: 'error',
-      summary: t('g.error'),
-      detail: t('subscription.preview.reactivation.confirmationRequired')
+    toast.error(t('g.error'), {
+      description: t('subscription.preview.reactivation.confirmationRequired')
     })
   }
 
@@ -669,26 +670,25 @@ export function useSubscriptionCheckout(
         // The open above ran after an await, so it had no user gesture behind
         // it and got blocked. The toast's own button click is a gesture, so
         // retrying from there isn't blocked.
-        toast.add({
-          group: 'payment-recovery',
-          severity: 'warn',
-          summary: t('g.warning'),
-          detail: {
-            text: t('subscription.preview.paymentPopupBlocked'),
-            actionLabel: t('subscription.planLoadErrorRetry'),
-            // The toast can outlive this attempt (a newer one started, or the
-            // checkout reset); a stale click must not reopen its captured URL.
-            onAction: () => {
-              if (!isCurrent()) return
-              if (window.open(portalUrl.href, '_blank')) {
-                portal.opened(billingClient)
-              } else {
-                portal.blocked(billingClient)
+        paymentRecoveryToasts.push(
+          toast.warning(t('g.warning'), {
+            description: t('subscription.preview.paymentPopupBlocked'),
+            action: {
+              label: t('subscription.planLoadErrorRetry'),
+              // The toast can outlive this attempt (a newer one started, or the
+              // checkout reset); a stale click must not reopen its captured URL.
+              onClick: () => {
+                if (!isCurrent()) return
+                if (window.open(portalUrl.href, '_blank')) {
+                  portal.opened(billingClient)
+                } else {
+                  portal.blocked(billingClient)
+                }
+                armPaymentRecoveryReturnRefresh()
               }
-              armPaymentRecoveryReturnRefresh()
             }
-          }
-        })
+          })
+        )
         return 'blocked'
       }
       portal.opened(billingClient)
@@ -727,10 +727,8 @@ export function useSubscriptionCheckout(
     }
     if (!isReactivationCapablePreview(freshPreview)) {
       resetToPricing()
-      toast.add({
-        severity: 'error',
-        summary: t('g.error'),
-        detail: t('subscription.preview.reactivation.unavailable')
+      toast.error(t('g.error'), {
+        description: t('subscription.preview.reactivation.unavailable')
       })
       return true
     }
@@ -739,10 +737,8 @@ export function useSubscriptionCheckout(
       !previewData.value ||
       amountDueTodayChanged(previewData.value, freshPreview)
     installPreview(freshPreview)
-    toast.add({
-      severity: 'error',
-      summary: t('g.error'),
-      detail: t(
+    toast.error(t('g.error'), {
+      description: t(
         amountChanged
           ? 'subscription.preview.reactivation.amountChanged'
           : 'subscription.preview.reactivation.confirmationRequired'
@@ -794,19 +790,15 @@ export function useSubscriptionCheckout(
         amountDueTodayChanged(previewData.value, freshPreview)
       installPreview(freshPreview)
       if (!amountChanged) return false
-      toast.add({
-        severity: 'error',
-        summary: t('g.error'),
-        detail: t('subscription.preview.reactivation.amountChanged')
+      toast.error(t('g.error'), {
+        description: t('subscription.preview.reactivation.amountChanged')
       })
       return true
     }
     reactivationRequired.value = false
     resetToPricing()
-    toast.add({
-      severity: 'error',
-      summary: t('g.error'),
-      detail: t('subscription.preview.reactivation.unavailable')
+    toast.error(t('g.error'), {
+      description: t('subscription.preview.reactivation.unavailable')
     })
     return true
   }
@@ -930,10 +922,8 @@ export function useSubscriptionCheckout(
         planSlug = getApiPlanSlug(tierKey, billingCycle)
       }
       if (!planSlug) {
-        toast.add({
-          severity: 'error',
-          summary: 'Unable to subscribe',
-          detail: 'This plan is not available'
+        toast.error(t('subscription.unableToSubscribe'), {
+          description: t('subscription.planNotAvailable')
         })
         return
       }
@@ -969,10 +959,8 @@ export function useSubscriptionCheckout(
             failure_category: 'unknown'
           })
         }
-        toast.add({
-          severity: 'error',
-          summary: 'Unable to subscribe',
-          detail: response?.reason || 'This plan is not available'
+        toast.error(t('subscription.unableToSubscribe'), {
+          description: response?.reason || t('subscription.planNotAvailable')
         })
         return
       }
@@ -991,14 +979,9 @@ export function useSubscriptionCheckout(
           failure_category: categorizeBillingApiError(error)
         })
       }
-      const message =
-        error instanceof Error
-          ? error.message
-          : 'Failed to load subscription preview'
-      toast.add({
-        severity: 'error',
-        summary: 'Error',
-        detail: message
+      toast.error(t('g.error'), {
+        description:
+          getErrorMessage(error) ?? t('subscription.previewLoadFailed')
       })
     } finally {
       isLoadingPreview.value = false
@@ -1062,10 +1045,8 @@ export function useSubscriptionCheckout(
     if (!embeddedCheckoutEnabled) {
       const teamCreditStopId = payload.stop.id
       if (!teamCreditStopId) {
-        toast.add({
-          severity: 'error',
-          summary: t('subscription.teamPlan.name'),
-          detail: t('subscription.teamPlan.unavailable')
+        toast.error(t('subscription.teamPlan.name'), {
+          description: t('subscription.teamPlan.unavailable')
         })
         resetToPricing()
         return
@@ -1102,13 +1083,10 @@ export function useSubscriptionCheckout(
         checkoutStep.value = 'preview'
         return
       }
-      toast.add({
-        severity: 'error',
-        summary: t('subscription.teamPlan.name'),
-        detail:
-          previewError instanceof Error
-            ? previewError.message
-            : response?.reason || t('subscription.subscribeFailed')
+      toast.error(t('subscription.teamPlan.name'), {
+        description:
+          getErrorMessage(previewError) ??
+          (response?.reason || t('subscription.subscribeFailed'))
       })
       checkoutStep.value = 'pricing'
       selectedTeamCheckout.value = null
@@ -1156,13 +1134,10 @@ export function useSubscriptionCheckout(
       checkoutStep.value = 'preview'
       return
     }
-    toast.add({
-      severity: 'error',
-      summary: t('subscription.teamPlan.name'),
-      detail:
-        previewError instanceof Error
-          ? previewError.message
-          : response?.reason || t('subscription.subscribeFailed')
+    toast.error(t('subscription.teamPlan.name'), {
+      description:
+        getErrorMessage(previewError) ??
+        (response?.reason || t('subscription.subscribeFailed'))
     })
     checkoutStep.value = 'pricing'
     selectedTeamCheckout.value = null
@@ -1179,7 +1154,7 @@ export function useSubscriptionCheckout(
     selectedTeamCheckout.value = null
     activeCheckoutOperationId.value = null
     activeCheckoutAttemptStartedAt = undefined
-    toast.removeGroup('payment-recovery')
+    dismissToasts(paymentRecoveryToasts)
   }
 
   function handleBackToPricing() {
@@ -1316,24 +1291,19 @@ export function useSubscriptionCheckout(
 
   // A refused attempt's toast stays until dismissed; a later attempt that
   // succeeds takes them down rather than leaving a decline over the success.
-  const attemptErrorToasts: ToastMessageOptions[] = []
+  const attemptErrorToasts: ToastId[] = []
 
   function showSubscribeError(error: unknown) {
-    const message: ToastMessageOptions = {
-      severity: 'error',
-      summary: t('g.error'),
-      detail:
-        error instanceof Error
-          ? error.message
-          : t('subscription.subscribeFailed')
-    }
-    attemptErrorToasts.push(message)
-    toast.add(message)
+    attemptErrorToasts.push(
+      toast.error(t('g.error'), {
+        description: getErrorMessage(error) ?? t('subscription.subscribeFailed')
+      })
+    )
   }
 
   watch(checkoutStep, (step) => {
     if (step !== 'success') return
-    for (const message of attemptErrorToasts.splice(0)) toast.remove(message)
+    dismissToasts(attemptErrorToasts)
   })
 
   async function recoverStaleQuote(error: unknown): Promise<boolean> {
@@ -1346,17 +1316,13 @@ export function useSubscriptionCheckout(
     )
     if (!refreshed) {
       resetToPricing()
-      toast.add({
-        severity: 'error',
-        summary: t('g.error'),
-        detail: t('subscription.preview.quoteRefreshFailed')
+      toast.error(t('g.error'), {
+        description: t('subscription.preview.quoteRefreshFailed')
       })
       return true
     }
-    toast.add({
-      severity: 'error',
-      summary: t('g.error'),
-      detail: t('subscription.preview.quoteStale')
+    toast.error(t('g.error'), {
+      description: t('subscription.preview.quoteStale')
     })
     return true
   }
@@ -1626,10 +1592,8 @@ export function useSubscriptionCheckout(
       // The poller announced every subscription operation it settled, whatever
       // the caller was tracking; on this rail there is no poller to do it.
       if (response.requiredPayment) {
-        toast.add({
-          severity: 'success',
-          summary: t('billingOperation.subscriptionSuccess'),
-          life: 5000
+        toast.success(t('billingOperation.subscriptionSuccess'), {
+          duration: 5000
         })
       }
       checkoutStep.value = 'success'
@@ -1651,20 +1615,19 @@ export function useSubscriptionCheckout(
       if (!paymentWindow) {
         const paymentMethodUrl = initialActionUrl
         const opId = response.billing_op_id
-        toast.add({
-          group: 'payment-recovery',
-          severity: 'warn',
-          summary: t('g.warning'),
-          detail: {
-            text: t('subscription.preview.paymentPopupBlocked'),
-            actionLabel: t('subscription.planLoadErrorRetry'),
-            // Not the mutation lock, which is released once the op is adopted.
-            onAction: () => {
-              if (activeCheckoutOperationId.value !== opId) return
-              window.open(paymentMethodUrl, '_blank')
+        paymentRecoveryToasts.push(
+          toast.warning(t('g.warning'), {
+            description: t('subscription.preview.paymentPopupBlocked'),
+            action: {
+              label: t('subscription.planLoadErrorRetry'),
+              // Not the mutation lock, which is released once the op is adopted.
+              onClick: () => {
+                if (activeCheckoutOperationId.value !== opId) return
+                window.open(paymentMethodUrl, '_blank')
+              }
             }
-          }
-        })
+          })
+        )
       }
     }
     await advanceToSuccessOnOperation(
@@ -1784,10 +1747,8 @@ export function useSubscriptionCheckout(
 
     const teamCheckout = selectedTeamCheckout.value
     if (!teamCheckout.stop.id) {
-      toast.add({
-        severity: 'error',
-        summary: t('subscription.teamPlan.name'),
-        detail: t('subscription.teamPlan.unavailable')
+      toast.error(t('subscription.teamPlan.name'), {
+        description: t('subscription.teamPlan.unavailable')
       })
       finishCheckoutMutation(mutationToken)
       return
@@ -1943,15 +1904,9 @@ export function useSubscriptionCheckout(
           duration_ms: Date.now() - startedAt
         })
       }
-      toast.add({
-        severity: 'success',
-        summary: t('subscription.resubscribeSuccess'),
-        life: 5000
-      })
+      toast.success(t('subscription.resubscribeSuccess'), { duration: 5000 })
       emit('close', true)
     } catch (error) {
-      const message =
-        error instanceof Error ? error.message : 'Failed to resubscribe'
       telemetry?.trackBillingEvent({
         operation: 'resubscribe',
         stage: 'failed',
@@ -1963,10 +1918,9 @@ export function useSubscriptionCheckout(
           duration_ms: Date.now() - startedAt
         })
       })
-      toast.add({
-        severity: 'error',
-        summary: 'Error',
-        detail: message
+      toast.error(t('g.error'), {
+        description:
+          getErrorMessage(error) ?? t('subscription.resubscribeFailed')
       })
     } finally {
       isResubscribing.value = false

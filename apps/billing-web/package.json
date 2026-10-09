@@ -36,6 +36,7 @@
   },
   "devDependencies": {
     "@comfyorg/ingest-types": "workspace:*",
+    "@comfyorg/test-utils": "workspace:*",
     "@playwright/test": "catalog:",
     "@tailwindcss/vite": "catalog:",
     "@testing-library/jest-dom": "catalog:",

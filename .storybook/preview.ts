@@ -6,7 +6,6 @@ import type { Preview, StoryContext, StoryFn } from '@storybook/vue3-vite'
 import { createPinia } from 'pinia'
 import 'primeicons/primeicons.css'
 import PrimeVue from 'primevue/config'
-import ToastService from 'primevue/toastservice'
 import Tooltip from 'primevue/tooltip'
 
 import { i18n } from '@/i18n'
@@ -43,7 +42,6 @@ setup((app) => {
       }
     }
   })
-  app.use(ToastService)
 })
 
 // Theme and dialog decorator

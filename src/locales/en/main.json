@@ -264,7 +264,7 @@
     "community": "Community",
     "all": "All",
     "versionMismatchWarning": "Version Compatibility Warning",
-    "versionMismatchWarningMessage": "{warning}: {detail} Visit https://docs.comfy.org/installation/update_comfyui#common-update-issues for update instructions.",
+    "versionMismatchUpdateInstructions": "{detail} Visit https://docs.comfy.org/installation/update_comfyui#common-update-issues for update instructions.",
     "frontendOutdated": "Frontend version {frontendVersion} is outdated. Backend requires {requiredVersion} or higher.",
     "frontendNewer": "Frontend version {frontendVersion} may not be compatible with backend version {backendVersion}.",
     "comfyPackageOutdated": "Installed {name} version {installedVersion} is lower than the required version {requiredVersion}.",
@@ -2411,7 +2411,8 @@
     "height": "Height",
     "background": "Background",
     "clear": "Clear",
-    "uploadError": "Failed to upload painter image: {status} - {statusText}"
+    "uploadError": "Failed to upload painter image: {status} - {statusText}",
+    "uploadMissingName": "Painter image upload returned no file name"
   },
   "boundingBox": {
     "x": "X",
@@ -2554,6 +2555,15 @@
   },
   "toastMessages": {
     "nothingToPasteIntoNode": "Nothing to paste into this node",
+    "notificationsLabel": "Notification",
+    "notificationsViewportLabel": "Notifications ({hotkey})",
+    "modelsAndCacheCleared": "Models and Execution Cache have been cleared.",
+    "modelsUnloaded": "Models have been unloaded.",
+    "unloadModelsFailed": "Unloading of models failed. Installed ComfyUI may be an outdated version.",
+    "unloadModelsError": "An error occurred while trying to unload models.",
+    "workflowLinksFixed": "Fixed {patched} node connections and removed {deleted} invalid links.",
+    "workflowLinksFixedTitle": "Workflow Links Fixed",
+    "workflowValidationTitle": "Workflow Validation",
     "nothingToQueue": "Nothing to queue",
     "pleaseSelectOutputNodes": "Please select output nodes",
     "failedToQueue": "Failed to queue",
@@ -2568,6 +2578,7 @@
     "a1111CoreNodesUnavailable": "Could not load the workflow because this ComfyUI installation is missing core nodes. Check that the backend started correctly.",
     "a1111EmbeddingsUnavailable": "Embeddings could not be loaded from the server. The workflow was imported, but embedding names were left as plain text.",
     "dropFileError": "Unable to process dropped item: {error}",
+    "failedToRegisterSubgraph": "Failed to register subgraph",
     "assetDropFailed": "Unable to load the dropped asset",
     "missingMediaVerificationFailed": "Failed to verify missing media. Some inputs may not be shown in the Issues tab.",
     "missingModelVerificationFailed": "Failed to verify missing models. Some models may not be shown in the Issues tab.",
@@ -2578,6 +2589,7 @@
     "emptyCanvas": "Empty canvas",
     "fileUploadFailed": "File upload failed",
     "extraResourcesUploadFailed": "Extra resources upload failed",
+    "noWebcamImageCaptured": "No webcam image captured",
     "fileTooLarge": "File too large ({size} MB). Maximum supported size is {maxSize} MB",
     "unableToGetModelFilePath": "Unable to get model file path",
     "couldNotDetermineFileType": "Could not determine file type",
@@ -2591,6 +2603,7 @@
     "errorOpenImage": "Error opening image: {error}",
     "noTemplatesToExport": "No templates to export",
     "invalidTemplateData": "Failed to load node template: invalid data",
+    "failedToSaveNodeTemplates": "Failed to save node templates",
     "failedToFetchLogs": "Failed to fetch server logs",
     "migrateToLitegraphReroute": "Reroute nodes will be removed in future versions. Click to migrate to litegraph-native reroute.",
     "legacyMaskEditorDeprecated": "The legacy mask editor is deprecated and will be removed soon.",
@@ -3019,6 +3032,9 @@
     "cancelTimeout": "Subscription cancellation timed out"
   },
   "subscription": {
+    "planNotAvailable": "This plan is not available",
+    "previewLoadFailed": "Failed to load subscription preview",
+    "unableToSubscribe": "Unable to subscribe",
     "billingTabBlocked": "Couldn't open the billing page. Allow pop-ups for this site and try again.",
     "plansForWorkspace": "Plans for {workspace}",
     "personalWorkspace": "Personal Workspace",
@@ -3840,6 +3856,7 @@
     "roleMember": "Member",
     "createWorkspace": "Create a workspace",
     "maxWorkspacesReached": "You can only own 10 workspaces. Delete one to create a new one.",
+    "managedByOrganization": "Your organization manages your workspaces, so you can't create one.",
     "failedToSwitch": "Failed to switch workspace"
   },
   "selectionToolbox": {
@@ -4304,7 +4321,7 @@
     "assetDelete": {
       "error": "Items failed to delete",
       "success": "Deletion successful",
-      "warn": "Some items failed to delete"
+      "warning": "Some items failed to delete"
     },
     "assetsDeleted": "{n} / {total} assets were deleted",
     "jobsDeleted": "{n} / {total} jobs were deleted",
@@ -5277,7 +5294,7 @@
   },
   "workspace": {
     "inviteAccepted": "Invite Accepted",
-    "addedToWorkspace": "You have been added to:",
+    "addedToNamedWorkspace": "You have been added to {workspaceName}",
     "inviteFailed": "Failed to Accept Invite",
     "inviteSsoUnavailable": "Ask your admin to add you",
     "inviteSsoUnavailableDetail": "Invite links can't be accepted from an SSO account yet. Ask a workspace admin to add you to the workspace directly.",
@@ -5634,7 +5651,14 @@
     "gotIt": "Got it",
     "greeting": "Hello {name},",
     "greetingQuestion": "What do you want to make?",
-    "placeholder": "Describe ideas, {'@'} to reference workflows, drag in media asset and files, or\nmention nodes",
+    "placeholder": "Describe ideas, / use skills, {'@'} add references, drag in assets",
+    "placeholderWithoutSkills": "Describe ideas, {'@'} add references, drag in assets",
+    "skills": "Skills",
+    "typeToSearch": "type to search",
+    "skillNotAvailable": "Not available",
+    "skillsLoading": "Loading skills…",
+    "skillsLoadError": "Could not load skills. Try again.",
+    "noSkillsFound": "No skills found",
     "suggestedPrompts": {
       "cloud": [
         "Generate a character sheet of an astronaut",
@@ -5649,7 +5673,16 @@
         "Explain the selected nodes",
         "Help me install the missing nodes for this workflow",
         "Fix the errors in this workflow"
-      ]
+      ],
+      "treatment": {
+        "cloud": [
+          "Create a product image from a text prompt",
+          "Build an image-to-video workflow",
+          "Explain how a ComfyUI workflow works",
+          "Find the best workflow for a specific task",
+          "Diagnose and fix errors in a workflow"
+        ]
+      }
     },
     "attach": "Attach a file",
     "attachFiles": "Upload images or files",

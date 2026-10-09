@@ -1,3 +1,4 @@
+import { respondToFetch } from '@comfyorg/test-utils/fetch'
 import { render, screen, waitFor } from '@testing-library/vue'
 import userEvent from '@testing-library/user-event'
 import type { Mock } from 'vitest'
@@ -267,17 +268,10 @@ describe('CloudSignupView SSO', () => {
     vi.spyOn(window.location, 'assign').mockImplementation(assign)
   })
 
-  const discoverReplies = (body: unknown, status = 200) => {
-    const fetchMock = vi.fn<typeof fetch>(
-      async () =>
-        new Response(JSON.stringify(body), {
-          status,
-          headers: { 'Content-Type': 'application/json' }
-        })
+  const discoverReplies = (body: unknown, status = 200) =>
+    respondToFetch('/api/auth/sso/discover', () =>
+      Response.json(body, { status })
     )
-    vi.stubGlobal('fetch', fetchMock)
-    return fetchMock
-  }
 
   async function signUpWithEmail(email: string) {
     const user = userEvent.setup()
@@ -287,7 +281,7 @@ describe('CloudSignupView SSO', () => {
   }
 
   it('signs up with Firebase without asking ingest when the flag is off', async () => {
-    const fetchMock = discoverReplies({ sso: true })
+    discoverReplies({ sso: true })
     await renderSignupView()
 
     await signUpWithEmail('ada@acme.com')
@@ -299,7 +293,7 @@ describe('CloudSignupView SSO', () => {
         'turnstile-token'
       )
     )
-    expect(fetchMock).not.toHaveBeenCalled()
+    expect(fetch).not.toHaveBeenCalled()
     expect(assign).not.toHaveBeenCalled()
   })
 
@@ -319,10 +313,7 @@ describe('CloudSignupView SSO', () => {
 
   it('signs up with Firebase when SSO discovery is down', async () => {
     vi.mocked(useFeatureFlags().flags).ssoEnabled = true
-    const fetchMock = discoverReplies(
-      { code: 'INTERNAL_ERROR', message: 'down' },
-      500
-    )
+    discoverReplies({ code: 'INTERNAL_ERROR', message: 'down' }, 500)
     await renderSignupView()
 
     await signUpWithEmail('ada@example.com')
@@ -334,7 +325,7 @@ describe('CloudSignupView SSO', () => {
         'turnstile-token'
       )
     )
-    expect(fetchMock).toHaveBeenCalledOnce()
+    expect(fetch).toHaveBeenCalledOnce()
     expect(assign).not.toHaveBeenCalled()
   })
 })

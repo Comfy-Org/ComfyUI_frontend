@@ -187,7 +187,7 @@ test.describe('Node replacement', { tag: ['@node', '@ui'] }, () => {
               .getByRole('button', { name: /replace node/i })
               .click()
 
-            await expect(comfyPage.visibleToasts.first()).toContainText(
+            await expect(comfyPage.toast.visibleToasts.first()).toContainText(
               /replaced|swapped/i
             )
           })

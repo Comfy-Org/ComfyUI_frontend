@@ -228,7 +228,6 @@ export class ComfyPage {
   public readonly assets: AssetsHelper
   public readonly modelLibrary: ModelLibraryHelper
   public readonly cloudAuth: CloudAuthHelper
-  public readonly visibleToasts: Locator
 
   /** Worker index to test user ID */
   public readonly userIds: string[] = []
@@ -277,7 +276,6 @@ export class ComfyPage {
     this.contextMenu = new ContextMenu(page)
     this.currentUserPopover = new CurrentUserPopover(page)
     this.toast = new ToastHelper(page)
-    this.visibleToasts = this.toast.visibleToasts
     this.dragDrop = new DragDropHelper(page)
     this.featureFlags = new FeatureFlagHelper(page)
     this.command = new CommandHelper(page)

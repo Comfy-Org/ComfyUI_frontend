@@ -633,7 +633,7 @@ test.describe('In-App Agent panel', { tag: '@cloud' }, () => {
       buffer: Buffer.alloc(25 * 1024 * 1024)
     })
     await expect(
-      page.getByText('too-large.mp4 is larger than 24 MB')
+      comfyPage.toast.withText('too-large.mp4 is larger than 24 MB')
     ).toBeVisible()
     await expect(
       panel.getByRole('group', { name: 'too-large.mp4' })

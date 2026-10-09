@@ -3,6 +3,7 @@ import userEvent from '@testing-library/user-event'
 import { fromPartial } from '@total-typescript/shoehorn'
 import { TabsTrigger } from 'reka-ui'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
+import type { Mock } from 'vitest'
 import type { PropType } from 'vue'
 import { computed, defineComponent, h, nextTick } from 'vue'
 import { createI18n } from 'vue-i18n'
@@ -32,7 +33,7 @@ const distribution = vi.hoisted(() => ({
 const overflowObservers = vi.hoisted<
   Array<{
     isOverflowing: { value: boolean }
-    checkOverflow: ReturnType<typeof vi.fn>
+    checkOverflow: Mock<() => void>
   }>
 >(() => [])
 
@@ -777,7 +778,7 @@ describe('WorkflowTabs scrolling', () => {
     })
   })
 
-  it('does not reveal the active tab again when overflow remains true', async () => {
+  it('reveals the active tab after every overflow measurement', async () => {
     const workflowStore = useWorkflowStore()
     const workflow = await workflowStore.createTemporary('active.json').load()
     const scrollIntoView = vi.spyOn(HTMLElement.prototype, 'scrollIntoView')
@@ -785,17 +786,20 @@ describe('WorkflowTabs scrolling', () => {
     await waitFor(() => expect(overflowObservers).toHaveLength(1))
     workflowStore.attachWorkflow(workflow, 0)
     workflowStore.activeWorkflow = workflow
+    await waitFor(() =>
+      expect(overflowObservers[0].checkOverflow).toHaveBeenCalled()
+    )
+    await nextTick()
     await nextTick()
 
-    overflowObservers[0].isOverflowing.value = true
-    await nextTick()
-    await nextTick()
     scrollIntoView.mockClear()
+    overflowObservers[0].checkOverflow.mockClear()
 
-    overflowObservers[0].isOverflowing.value = true
-    await nextTick()
+    overflowObservers[0].checkOverflow()
+    await waitFor(() => expect(scrollIntoView).toHaveBeenCalledOnce())
+    overflowObservers[0].checkOverflow()
+    await waitFor(() => expect(scrollIntoView).toHaveBeenCalledTimes(2))
 
-    expect(scrollIntoView).not.toHaveBeenCalled()
     unmount()
   })
 })

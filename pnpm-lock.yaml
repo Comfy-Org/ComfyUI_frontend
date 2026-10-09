@@ -720,6 +720,9 @@ importers:
       '@comfyorg/ingest-types':
         specifier: workspace:*
         version: link:packages/ingest-types
+      '@comfyorg/test-utils':
+        specifier: workspace:*
+        version: link:packages/test-utils
       '@comfyorg/website':
         specifier: workspace:*
         version: link:apps/website
@@ -1015,6 +1018,9 @@ importers:
       '@comfyorg/ingest-types':
         specifier: workspace:*
         version: link:../../packages/ingest-types
+      '@comfyorg/test-utils':
+        specifier: workspace:*
+        version: link:../../packages/test-utils
       '@playwright/test':
         specifier: 'catalog:'
         version: 1.63.0
@@ -1181,6 +1187,9 @@ importers:
       '@comfyorg/sdk':
         specifier: 'catalog:'
         version: 0.2.0
+      '@comfyorg/test-utils':
+        specifier: workspace:*
+        version: link:../../packages/test-utils
       '@hey-api/openapi-ts':
         specifier: 0.97.3
         version: 0.97.3(magicast@0.5.4)(typescript@6.0.3)
@@ -1257,6 +1266,9 @@ importers:
         specifier: workspace:^
         version: link:../ingest-types
     devDependencies:
+      '@comfyorg/test-utils':
+        specifier: workspace:*
+        version: link:../test-utils
       '@types/node':
         specifier: 'catalog:'
         version: 25.9.5
@@ -1294,6 +1306,9 @@ importers:
       '@comfyorg/tailwind-utils':
         specifier: workspace:^
         version: link:../tailwind-utils
+      '@comfyorg/test-utils':
+        specifier: workspace:*
+        version: link:../test-utils
       '@stripe/stripe-js':
         specifier: 'catalog:'
         version: 9.12.1
@@ -1465,6 +1480,15 @@ importers:
       typescript:
         specifier: 'catalog:'
         version: 6.0.3
+
+  packages/test-utils:
+    devDependencies:
+      typescript:
+        specifier: 'catalog:'
+        version: 6.0.3
+      vitest:
+        specifier: 'catalog:'
+        version: 5.0.2(@types/node@25.9.5)(@vitest/coverage-v8@5.0.2)(@vitest/ui@5.0.2)(happy-dom@20.14.5)(jsdom@29.1.1)(vite@8.2.2(@types/node@25.9.5)(esbuild@0.28.1)(jiti@2.7.0)(terser@5.49.0)(tsx@4.23.1)(yaml@2.9.0))
 
   tools/test-recorder:
     dependencies:

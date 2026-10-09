@@ -128,6 +128,7 @@ const LOCALE_INVARIANT_ROUTE_KEYS = new Set<keyof Routes>([
 // workshop: the catalog is English-only. It is also build-gated until launch,
 // but enabled previews must not advertise a localized page that does not exist.
 const LOCALE_INVARIANT_EXTRA_PATHS = [
+  '/comfy-agent',
   // Auth surfaces render one page for every locale (copy localizes in the
   // island); a /zh-CN twin does not exist and must not be advertised.
   '/forgot-password',

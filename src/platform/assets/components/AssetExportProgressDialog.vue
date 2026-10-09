@@ -3,7 +3,7 @@ import { computed, ref } from 'vue'
 import { useI18n } from 'vue-i18n'
 
 import Loader from '@/components/loader/Loader.vue'
-import HoneyToast from '@/components/honeyToast/HoneyToast.vue'
+import ToastPanel from '@/components/ui/toast/ToastPanel.vue'
 import Button from '@/components/ui/button/Button.vue'
 import type { AssetExport } from '@/stores/assetExportStore'
 import { useAssetExportStore } from '@/stores/assetExportStore'
@@ -45,6 +45,10 @@ const footerLabel = computed(() => {
   return t('exportToast.allExportsCompleted')
 })
 
+const announcement = computed(() =>
+  isInProgress.value ? t('exportToast.exportingAssets') : footerLabel.value
+)
+
 const footerIconClass = computed(() => {
   if (isInProgress.value)
     return 'icon-[lucide--loader-circle] animate-spin text-muted-foreground'
@@ -72,7 +76,7 @@ function closeDialog() {
 </script>
 
 <template>
-  <HoneyToast v-model:expanded="isExpanded" :visible>
+  <ToastPanel v-model:expanded="isExpanded" :visible :announcement>
     <template #default>
       <div
         class="flex h-12 items-center justify-between border-b border-border-default px-4"
@@ -260,5 +264,5 @@ function closeDialog() {
         </div>
       </div>
     </template>
-  </HoneyToast>
+  </ToastPanel>
 </template>
