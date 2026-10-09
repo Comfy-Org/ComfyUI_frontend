@@ -176,9 +176,6 @@ describe('WorkshopModelsGrid category tabs', () => {
 
     await user.click(screen.getByRole('button', { name: 'Filters' }))
     const dialog = await screen.findByRole('dialog', { name: 'Filters' })
-    await user.click(
-      within(dialog).getByRole('tab', { name: /^How you use it/ })
-    )
     await user.click(within(dialog).getByRole('button', { name: /^Run here / }))
     expect(hostedNames()).toEqual([])
     expect(screen.getByText('No models match')).toBeTruthy()

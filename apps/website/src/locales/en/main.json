@@ -848,6 +848,13 @@
           "api": "Models with an API"
         }
       }
+    },
+    "bestFor": {
+      "label": "Best for"
+    },
+    "resolution": {
+      "label": "Resolution",
+      "all": "All resolutions"
     }
   },
   "auth": {
@@ -5840,8 +5847,8 @@
         "body": "The sidebar groups models by what they make (Image, Video, Audio, 3D, Edit, Upscale, LLM) with counts, so the first choice is the format. Use cases that only repeated these types (Generate images ≈ Image, Text ≈ LLM…) are no longer a separate filter."
       },
       "filters": {
-        "title": "Use cases inside Filters, per type",
-        "body": "Use cases live in the Filters menu and only list the tasks that exist inside the selected type (Video → Generate · Animate an image · Edit video), so they never repeat the sidebar and never end empty. Kept in a menu rather than always-visible chips: in the last 30 days about 6% of Models visitors opened the use-case filter and ~2.5% picked one, while the use-case rows' 'See all' links reached ~5%."
+        "title": "Best for and Resolution in the toolbar",
+        "body": "Use cases moved out of the Filters menu into a Best for menu next to the search, with Resolution beside it, so the two choices visitors make most are visible without opening Filters. Best for lists only the tasks of the selected sidebar type; Resolution lists the output resolutions the run forms offer. About half of the models state a resolution, so choosing one hides those that do not."
       }
     },
     "workflows": {

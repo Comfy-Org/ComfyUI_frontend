@@ -71,7 +71,8 @@ test('video cards load on screen and stop playing when scrolled away', async ({
   page
 }) => {
   await page.goto('/hub/models/?useCase=generate-videos')
-  await page.getByTestId('workshop-filter').click()
+  await page.getByTestId('best-for-menu').click()
+  await page.keyboard.press('Escape')
   const videos = page.getByTestId('workshop-models-grid').locator('video')
   await expect.poll(() => videos.count()).toBeGreaterThan(0)
   const first = videos.last()

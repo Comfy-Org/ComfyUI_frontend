@@ -459,15 +459,26 @@ for (const { path, group, file } of [
   })
 
 const tabletToolbars = [640, 700, 768].flatMap((width) => [
-  { width, half: 'Models', path: '/hub/models/?tab=video' },
+  {
+    width,
+    half: 'Models',
+    path: '/hub/models/?tab=video',
+    controls: [
+      'workshop-search',
+      'best-for-menu',
+      'resolution-menu',
+      'workshop-sort'
+    ]
+  },
   {
     width,
     half: 'Workflows with a category selected',
-    path: '/hub/workflows/?category=upscale'
+    path: '/hub/workflows/?category=upscale',
+    controls: ['workshop-search', 'workshop-filter', 'workshop-sort']
   }
 ])
 
-for (const { width, half, path } of tabletToolbars) {
+for (const { width, half, path, controls } of tabletToolbars) {
   test(`keeps every ${half} toolbar control on screen at ${width}px`, async ({
     page,
     context
@@ -478,12 +489,8 @@ for (const { width, half, path } of tabletToolbars) {
     const toolbar = page.getByTestId('workshop-toolbar')
     await expect(toolbar.getByTestId('workshop-search')).toBeVisible()
     await toolbar.scrollIntoViewIfNeeded()
-    for (const control of [
-      toolbar.getByTestId('workshop-search'),
-      toolbar.getByTestId('workshop-filter'),
-      toolbar.getByTestId('workshop-sort')
-    ])
-      await expect(control).toBeInViewport({ ratio: 1 })
+    for (const control of controls)
+      await expect(toolbar.getByTestId(control)).toBeInViewport({ ratio: 1 })
   })
 }
 

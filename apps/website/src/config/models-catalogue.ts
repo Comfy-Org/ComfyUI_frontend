@@ -4,6 +4,7 @@ import type { WorkshopContract } from './workshop-contract'
 import type { WorkshopInputDefinition } from './workshop-input-definition'
 import type { WorkshopWorkflowDefinition } from './workshop-workflow-definition'
 import type { WorkflowParts } from '@/lib/workshop/workflow-parts'
+import type { Resolution } from '@/lib/workshop/resolution'
 import { OTHER_FORMAT_USE_CASES } from './workshop-sections'
 
 export const MODALITIES = ['image', 'video', 'audio', '3d', 'text'] as const
@@ -128,6 +129,8 @@ interface WorkshopPresentation {
   readonly modalities?: readonly Modality[]
   readonly task?: WorkshopTask
   readonly capabilities: readonly string[]
+  /** Output resolutions its run form offers, highest first. */
+  readonly resolutions?: readonly Resolution[]
   readonly creditsPerRun?: number
   readonly priceUsdFrom?: number
   readonly thumbnailUrl?: string

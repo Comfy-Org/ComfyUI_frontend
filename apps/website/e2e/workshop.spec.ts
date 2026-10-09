@@ -298,12 +298,11 @@ test.describe('Models catalog', () => {
       'aria-selected',
       'true'
     )
-    await expect(page.getByTestId('workshop-filter-count')).toHaveText('1')
-    await page.getByTestId('workshop-filter').click()
-    await expect(page.getByTestId('workshop-filter-applied')).toHaveText(
-      '1 selected'
-    )
-    await page.getByTestId('workshop-filter-clear').click()
+    await expect(page.getByTestId('best-for-count')).toHaveText('1')
+    await page.getByTestId('best-for-menu').click()
+    const chosen = page.getByTestId('best-for-generate-videos')
+    await expect(chosen).toHaveAttribute('aria-checked', 'true')
+    await chosen.click()
     await expect(catalogueHeading(page)).toHaveText(/^Video models \d+$/)
   })
 
@@ -334,7 +333,7 @@ test.describe('Models catalog', () => {
     await expect(
       page.getByRole('heading', { level: 2, name: 'Generate videos' })
     ).toBeVisible()
-    await expect(page.getByTestId('workshop-filter-count')).toHaveText('1')
+    await expect(page.getByTestId('best-for-count')).toHaveText('1')
   })
 
   test('a model page returns to the category tab it was opened from', async ({
@@ -495,8 +494,8 @@ test.describe('Models catalog', () => {
     await tabs.getByRole('tab', { name: /^Image/ }).click()
     await expect(catalogueHeading(page)).toHaveText(/^Image models \d+$/)
     const image = await catalogueCount(page)
-    await page.getByTestId('workshop-filter').click()
-    await page.getByTestId('filter-useCase-edit-images').click()
+    await page.getByTestId('best-for-menu').click()
+    await page.getByTestId('best-for-edit-images').click()
     const cards = page
       .getByTestId('workshop-models-grid')
       .getByTestId('workshop-model-card')
@@ -504,10 +503,11 @@ test.describe('Models catalog', () => {
     await expect(catalogueHeading(page)).toHaveText(/^Edit images \d+$/)
     const narrowed = await catalogueCount(page)
     expect(narrowed).toBeLessThan(image)
-    await expect(page.getByTestId('filter-useCase-edit-images')).toContainText(
+    await expect(page.getByTestId('best-for-edit-images')).toContainText(
       String(narrowed)
     )
-    await expect(page.getByTestId('workshop-filter-count')).toHaveText('1')
+    await expect(page.getByTestId('best-for-count')).toHaveText('1')
+    await expect(page).toHaveURL(/[?&]useCase=edit-images/)
 
     await page.keyboard.press('Escape')
     await showEveryPage(page)
@@ -526,6 +526,31 @@ test.describe('Models catalog', () => {
     await tabs.getByRole('tab', { name: /^All/ }).click()
     await expect(catalogueHeading(page)).toHaveText(`All models ${all}`)
     await expect(cards).toHaveCount(Math.min(48, all))
+  })
+
+  test('the resolution menu keeps the models that offer it and stays in the address', async ({
+    page
+  }) => {
+    await page.goto('/hub/models/')
+    const all = await catalogueCount(page)
+    await page.getByTestId('resolution-menu').click()
+    const menu = page.getByRole('menu')
+    await expect(menu.getByRole('menuitemradio').first()).toHaveAccessibleName(
+      'All resolutions'
+    )
+    await menu.getByTestId('resolution-1080p').click()
+    await expect(page).toHaveURL(/[?&]resolution=1080p/)
+    await expect(page.getByTestId('resolution-menu')).toContainText('1080p')
+    await expect(catalogueHeading(page)).not.toHaveText(
+      new RegExp(`\\D${all}$`)
+    )
+    const narrowed = await catalogueCount(page)
+    expect(narrowed).toBeGreaterThan(0)
+    expect(narrowed).toBeLessThan(all)
+
+    await page.reload()
+    await expect(page.getByTestId('resolution-menu')).toContainText('1080p')
+    await expect(catalogueHeading(page)).toHaveText(new RegExp(`${narrowed}$`))
   })
 
   test('model cards leave Run and API to the model page', async ({ page }) => {
@@ -632,7 +657,6 @@ test.describe('Models catalog', () => {
     await expect(grid.getByTestId('open-weight-model-card')).toHaveCount(0)
     await expect(page.getByTestId('workshop-filter-count')).toHaveText('1')
     await page.getByTestId('workshop-filter').click()
-    await page.getByTestId('workshop-facet-access').click()
     await expect(page.getByTestId('filter-access-download')).toHaveCount(0)
     await expect(page.getByTestId('filter-access-api')).toHaveAttribute(
       'aria-pressed',
@@ -1090,7 +1114,7 @@ test.describe('Model playground', () => {
 
 test.describe('Filter sheet @mobile', () => {
   test('the handle pulls the sheet up and lets it go', async ({ page }) => {
-    await page.goto('/hub/models/?tab=video')
+    await page.goto('/hub/models/?tab=video&use=api')
     await page.getByTestId('workshop-filter').click()
 
     const sheet = page.getByTestId('workshop-filter-menu')

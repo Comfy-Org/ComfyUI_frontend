@@ -54,7 +54,7 @@ describe('DesignDecisions', () => {
       within(panel)
         .getAllByRole('heading', { level: 3 })
         .map((heading) => heading.textContent)
-    ).toEqual(['Sidebar by type', 'Use cases inside Filters, per type'])
+    ).toEqual(['Sidebar by type', 'Best for and Resolution in the toolbar'])
     expect(panel).toHaveTextContent('analytics PR #20538')
 
     await user.click(screen.getByRole('button', { name: 'Design decision 2' }))

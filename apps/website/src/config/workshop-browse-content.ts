@@ -19,6 +19,8 @@ import { modelSummary } from '@/lib/workshop/model-summary'
 import { providerName } from '@/lib/workshop/provider-name'
 import { modelOrderRank } from './workshop-model-order'
 import { hubModelHref } from './hub-models'
+import { workshopContract } from './workshop-contract-catalog'
+import { resolutionsIn } from '@/lib/workshop/resolution'
 import {
   isWorkshopModelDisabled,
   workshopModelAvailability
@@ -245,6 +247,9 @@ const browseModels: readonly RouterWorkshopModel[] = contentSources.map(
       )?.size
     })
     const provider = providerName(entry.provider)
+    const resolutions = resolutionsIn(
+      workshopContract(record.catalogId)?.inputSchema
+    )
     const summary = modelSummaryFor(
       editorialSummaries.get(slug),
       entry.description,
@@ -264,6 +269,7 @@ const browseModels: readonly RouterWorkshopModel[] = contentSources.map(
       task: taskForUseCases(useCases),
       useCases,
       capabilities: entry.tags,
+      ...(resolutions.length ? { resolutions } : {}),
       ...(thumbnail
         ? {
             thumbnailUrl: thumbnail.url,

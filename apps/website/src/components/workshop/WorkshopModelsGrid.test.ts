@@ -30,6 +30,7 @@ const models: WorkshopModel[] = [
     provider: 'Kling',
     modality: 'video',
     task: 'text-to-video',
+    resolutions: ['1080p', '720p'],
     creditsPerRun: 24
   },
   {
@@ -42,6 +43,7 @@ const models: WorkshopModel[] = [
     provider: 'Black Forest Labs',
     modality: 'image',
     task: 'image-to-image',
+    resolutions: ['2K'],
     creditsPerRun: 8
   },
   {
@@ -72,21 +74,20 @@ async function chooseTab(
 }
 
 async function useCase(user: ReturnType<typeof userEvent.setup>, name: string) {
-  if (!screen.queryByRole('dialog'))
-    await user.click(screen.getByTestId('workshop-filter'))
-  const dialog = await screen.findByRole('dialog')
-  return within(dialog).getByRole('button', { name })
+  if (!screen.queryByRole('menu'))
+    await user.click(screen.getByRole('button', { name: /^Best for/ }))
+  const menu = await screen.findByRole('menu')
+  return within(menu).getByRole('menuitemcheckbox', { name })
 }
 
 async function offeredUseCases(user: ReturnType<typeof userEvent.setup>) {
-  await user.click(screen.getByTestId('workshop-filter'))
-  const dialog = await screen.findByRole('dialog')
-  const list = within(dialog).queryByRole('list', { name: 'Use cases' })
-  const names = list
-    ? within(list)
-        .getAllByRole('button')
-        .map((button) => button.dataset.testid)
-    : []
+  const trigger = screen.queryByRole('button', { name: /^Best for/ })
+  if (!trigger) return []
+  await user.click(trigger)
+  const menu = await screen.findByRole('menu')
+  const names = within(menu)
+    .getAllByRole('menuitemcheckbox')
+    .map((item) => item.dataset.testid)
   await user.keyboard('{Escape}')
   return names
 }
@@ -160,7 +161,7 @@ describe('WorkshopModelsGrid', () => {
       'true'
     )
     expect(await useCase(user, 'Edit 1')).toHaveAttribute(
-      'aria-pressed',
+      'aria-checked',
       'true'
     )
     expect(cardNames()).toEqual([expect.stringContaining('Flux')])
@@ -230,17 +231,15 @@ describe('WorkshopModelsGrid', () => {
     const user = userEvent.setup()
     render(WorkshopModelsGrid, { props: { models } })
     expect(await offeredUseCases(user)).toEqual([
-      'filter-useCase-edit-images',
-      'filter-useCase-generate-videos'
+      'best-for-edit-images',
+      'best-for-generate-videos'
     ])
 
     await chooseTab(user, 'Video')
-    expect(await offeredUseCases(user)).toEqual([
-      'filter-useCase-generate-videos'
-    ])
+    expect(await offeredUseCases(user)).toEqual(['best-for-generate-videos'])
 
     await chooseTab(user, 'Edit')
-    expect(await offeredUseCases(user)).toEqual(['filter-useCase-edit-images'])
+    expect(await offeredUseCases(user)).toEqual(['best-for-edit-images'])
   })
 
   it('moves the sidebar to the type of a use case chosen on All', async () => {
@@ -275,7 +274,8 @@ describe('WorkshopModelsGrid', () => {
     expect(
       screen.getByRole('heading', { level: 2, name: 'Edit videos 1' })
     ).toBeTruthy()
-    expect(screen.getByTestId('workshop-filter-count')).toHaveTextContent('1')
+    expect(screen.getByTestId('best-for-count')).toHaveTextContent('1')
+    expect(location.search).toBe('?tab=video&useCase=edit-videos')
 
     await user.click(await useCase(user, 'Generate 1'))
     expect(cardNames()).toHaveLength(2)
@@ -283,8 +283,8 @@ describe('WorkshopModelsGrid', () => {
     await user.click(await useCase(user, 'Edit video 1'))
     expect(cardNames()).toEqual([expect.stringContaining('Kling AI')])
 
-    await user.click(screen.getByTestId('workshop-filter-clear'))
-    expect(screen.queryByTestId('workshop-filter-count')).toBeNull()
+    await user.click(await useCase(user, 'Generate 1'))
+    expect(screen.queryByTestId('best-for-count')).toBeNull()
     expect(cardNames()).toHaveLength(2)
   })
 
@@ -297,13 +297,13 @@ describe('WorkshopModelsGrid', () => {
 
     await chooseTab(user, 'Edit')
     expect(await useCase(user, 'Images 1')).toHaveAttribute(
-      'aria-pressed',
+      'aria-checked',
       'true'
     )
     await user.keyboard('{Escape}')
 
     await chooseTab(user, 'Video')
-    expect(screen.queryByTestId('workshop-filter-count')).toBeNull()
+    expect(screen.queryByTestId('best-for-count')).toBeNull()
     expect(cardNames()).toEqual([expect.stringContaining('Kling AI')])
   })
 
@@ -354,7 +354,7 @@ describe('WorkshopModelsGrid', () => {
           name: /Generate videos/
         })
       ).toBeTruthy()
-      expect(screen.getByTestId('workshop-filter-count')).toHaveTextContent('1')
+      expect(screen.getByTestId('best-for-count')).toHaveTextContent('1')
       expect(cardNames()).toEqual([expect.stringContaining('Kling AI')])
     }
   )
@@ -370,7 +370,7 @@ describe('WorkshopModelsGrid', () => {
     window.dispatchEvent(new Event('pageshow'))
 
     await waitFor(() =>
-      expect(screen.getByTestId('workshop-filter-count')).toHaveTextContent('1')
+      expect(screen.getByTestId('best-for-count')).toHaveTextContent('1')
     )
   })
 
@@ -612,9 +612,6 @@ describe('WorkshopModelsGrid', () => {
       const user = userEvent.setup()
       await user.click(screen.getByRole('button', { name: 'Filters' }))
       const dialog = await screen.findByRole('dialog', { name: 'Filters' })
-      await user.click(
-        within(dialog).getByRole('tab', { name: /^How you use it/ })
-      )
       for (const label of labels)
         await user.click(
           within(dialog).getByRole('button', { name: new RegExp(`^${label} `) })
@@ -640,10 +637,13 @@ describe('WorkshopModelsGrid', () => {
       ).toBeNull()
     })
 
-    it('offers the Filters menu on All, with every use case that has results', () => {
+    it('offers Best for on All, with every use case that has results', async () => {
       render(WorkshopModelsGrid, { props: { models } })
 
-      expect(screen.getByRole('button', { name: 'Filters' })).toBeTruthy()
+      expect(await offeredUseCases(userEvent.setup())).toEqual([
+        'best-for-edit-images',
+        'best-for-generate-videos'
+      ])
     })
 
     it.for([
@@ -701,6 +701,62 @@ describe('WorkshopModelsGrid', () => {
       expect(hostedCards()).toHaveLength(withUnwired.length)
       expect(screen.queryByTestId('workshop-filter-count')).toBeNull()
       expect(catalogueHeading()).toHaveTextContent(`${withUnwired.length}`)
+    })
+  })
+
+  describe('resolution', () => {
+    async function openResolutions(user: ReturnType<typeof userEvent.setup>) {
+      await user.click(screen.getByTestId('resolution-menu'))
+      return screen.findByRole('menu')
+    }
+
+    it('lists the resolutions the models offer, highest first, after All', async () => {
+      const user = userEvent.setup()
+      render(WorkshopModelsGrid, { props: { models } })
+      const menu = await openResolutions(user)
+
+      const items = within(menu).getAllByRole('menuitemradio')
+      const names = ['All resolutions', '2K 1', '1080p 1', '720p 1']
+      expect(items).toHaveLength(names.length)
+      for (const [index, name] of names.entries())
+        expect(items[index]).toHaveAccessibleName(name)
+      expect(
+        within(menu).getByRole('menuitemradio', { name: 'All resolutions' })
+      ).toHaveAttribute('aria-checked', 'true')
+    })
+
+    it('keeps only the models that offer the chosen resolution, in the address too', async () => {
+      const user = userEvent.setup()
+      render(WorkshopModelsGrid, { props: { models } })
+      const menu = await openResolutions(user)
+      await user.click(
+        within(menu).getByRole('menuitemradio', { name: '1080p 1' })
+      )
+
+      expect(cardNames()).toEqual([expect.stringContaining('Kling AI')])
+      expect(screen.getByTestId('resolution-menu')).toHaveTextContent('1080p')
+      expect(location.search).toBe('?resolution=1080p')
+
+      await user.click(
+        within(await openResolutions(user)).getByRole('menuitemradio', {
+          name: 'All resolutions'
+        })
+      )
+      expect(cardNames()).toHaveLength(3)
+      expect(location.search).toBe('')
+    })
+
+    it.for([
+      { search: '?resolution=2k', shown: ['Flux'] },
+      { search: '?resolution=8K', shown: ['Kling AI', 'Flux', 'Mystery'] }
+    ])('opens $search on $shown', async ({ search, shown }) => {
+      history.replaceState(null, '', `/hub/models/${search}`)
+      render(WorkshopModelsGrid, { props: { models } })
+      await nextTick()
+
+      expect(
+        cardNames().map((card) => shown.find((name) => card.includes(name)))
+      ).toEqual(shown)
     })
   })
 
@@ -796,7 +852,10 @@ describe('WorkshopModelsGrid', () => {
       await compare(user, 'Kling AI', 'Seedream')
 
       expect(
-        screen.getByRole('heading', { level: 2, name: /^Compare 2 models/ })
+        await screen.findByRole('heading', {
+          level: 2,
+          name: /^Compare 2 models/
+        })
       ).toHaveTextContent('up to 4')
       expect(location.search).toBe('?compare=kling-ai,seedream')
       expect(screen.queryByTestId('workshop-models-grid')).toBeNull()
@@ -832,7 +891,7 @@ describe('WorkshopModelsGrid', () => {
 
       await user.click(compareButton())
       await user.click(
-        screen.getByRole('button', { name: 'Remove Flux from compare' })
+        await screen.findByRole('button', { name: 'Remove Flux from compare' })
       )
       expect(columns()).toEqual(['Kling AI', 'Seedream'])
       expect(location.search).toBe('?compare=kling-ai,seedream')
@@ -847,7 +906,7 @@ describe('WorkshopModelsGrid', () => {
     it('opens a shared comparison on its models', async () => {
       history.replaceState(null, '', '/hub/models/?compare=flux,seedream')
       renderCatalogue()
-      await nextTick()
+      await screen.findByTestId('compare-view')
       expect(columns()).toEqual(['Flux', 'Seedream'])
     })
 

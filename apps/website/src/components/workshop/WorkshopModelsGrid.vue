@@ -2,6 +2,7 @@
 import { ArrowRight } from '@lucide/vue'
 import {
   computed,
+  defineAsyncComponent,
   nextTick,
   onBeforeUnmount,
   onMounted,
@@ -53,19 +54,31 @@ import { useModelTab } from '@/lib/workshop/explorer/model-tab-address'
 import { rememberListOnClick } from '@/lib/workshop/shelf-memory'
 import { modelsListReturn } from '@/lib/workshop/models-list-return'
 import { MODELS_CATALOGUE_ID } from '@/lib/workshop/models-hub'
-import { openedUseCases, shelfOf } from '@/lib/workshop/shelf-use-cases'
+import { shelfOf } from '@/lib/workshop/shelf-use-cases'
 import { sectionTitleKeyFor } from '@/lib/workshop/section-title'
 import type { FacetMenuOption } from './WorkshopFilterMenu.vue'
 import WorkshopFilterMenu from './WorkshopFilterMenu.vue'
+import BestForMenu from '@/components/workshop/models-hub/BestForMenu.vue'
+import ResolutionMenu from '@/components/workshop/models-hub/ResolutionMenu.vue'
+import type { Resolution } from '@/lib/workshop/resolution'
+import {
+  parseResolution,
+  RESOLUTION_PARAM,
+  RESOLUTIONS
+} from '@/lib/workshop/resolution'
+import { USE_CASE_PARAM, parseUseCases } from '@/lib/workshop/use-case-address'
 import WorkshopModelsEmpty from '@/components/workshop/WorkshopModelsEmpty.vue'
 import WorkshopModelsResults from '@/components/workshop/WorkshopModelsResults.vue'
-import CompareView from '@/components/workshop/explorer/compare/CompareView.vue'
 import CompareTray from '@/components/workshop/explorer/compare/CompareTray.vue'
 import ModelTabs from '@/components/workshop/explorer/ModelTabs.vue'
 import ModelsExploreHero from '@/components/workshop/models-hub/ModelsExploreHero.vue'
 import CatalogueShowMore from './CatalogueShowMore.vue'
 import WorkshopSearchField from './WorkshopSearchField.vue'
 import WorkshopSortMenu from './WorkshopSortMenu.vue'
+
+const CompareView = defineAsyncComponent(
+  () => import('@/components/workshop/explorer/compare/CompareView.vue')
+)
 
 const {
   models,
@@ -81,6 +94,7 @@ const { t } = translationsFor(locale)
 const query = ref('')
 const selectedUseCases = ref<UseCase[]>([])
 const selectedAccess = ref<ModelAccess[]>([])
+const selectedResolution = ref<Resolution>()
 const legacyModalities = ref<string[]>([])
 const legacyProviders = ref<string[]>([])
 const legacyCapabilities = ref<string[]>([])
@@ -97,7 +111,7 @@ let scrollReady = false
 function readAddress(search: string) {
   const initial = parseCatalogSearch(search)
   query.value = initial.query ?? ''
-  const opened = openedUseCases(initial.useCase ?? 'all')
+  const opened = parseUseCases(search)
   readTab(search)
   const implied = tabForUseCases(opened, tab.value)
   if ((tabCounts.value.get(implied) ?? 0) > 0) tab.value = implied
@@ -107,6 +121,7 @@ function readAddress(search: string) {
   legacyProviders.value = [...initial.providers]
   legacyCapabilities.value = [...initial.capabilities]
   selectedAccess.value = parseAccess(search)
+  selectedResolution.value = parseResolution(search)
 }
 
 function selectTab(next: ModelTab) {
@@ -115,12 +130,15 @@ function selectTab(next: ModelTab) {
     next === 'all' ? [] : useCasesInTab(selectedUseCases.value, next)
 }
 
-watch(selectedAccess, (value) => {
+function writeParam(name: string, value: string) {
   const url = new URL(location.href)
-  if (value.length) url.searchParams.set(ACCESS_PARAM, value.join(','))
-  else url.searchParams.delete(ACCESS_PARAM)
+  if (value) url.searchParams.set(name, value)
+  else url.searchParams.delete(name)
   if (url.href !== location.href) history.replaceState(history.state, '', url)
-})
+}
+watch(selectedAccess, (value) => writeParam(ACCESS_PARAM, value.join(',')))
+watch(selectedUseCases, (value) => writeParam(USE_CASE_PARAM, value.join(',')))
+watch(selectedResolution, (value) => writeParam(RESOLUTION_PARAM, value ?? ''))
 
 // A browser can restore this page from its cache with a shelf still open, so
 // coming back from a model would land on that shelf rather than on the
@@ -217,11 +235,29 @@ const accessOptions = computed<FacetMenuOption<ModelAccess>[]>(() =>
   )
 )
 
+const withAccess = computed(() =>
+  inTab.value.filter((model) =>
+    offersAccess(accessFor(model), selectedAccess.value)
+  )
+)
+const resolutionOptions = computed<FacetMenuOption<Resolution>[]>(() =>
+  RESOLUTIONS.map((value) => ({
+    value,
+    label: value,
+    count: withAccess.value.filter((model) =>
+      model.resolutions?.includes(value)
+    ).length
+  })).filter(
+    (option) => option.count > 0 || option.value === selectedResolution.value
+  )
+)
 const visible = computed(() =>
   groupModels(
     sortWorkshopModels(
-      inTab.value.filter((model) =>
-        offersAccess(accessFor(model), selectedAccess.value)
+      withAccess.value.filter(
+        (model) =>
+          !selectedResolution.value ||
+          !!model.resolutions?.includes(selectedResolution.value)
       ),
       sort.value
     )
@@ -233,6 +269,7 @@ const isFiltered = computed(
     query.value !== '' ||
     selectedUseCases.value.length > 0 ||
     selectedAccess.value.length > 0 ||
+    selectedResolution.value !== undefined ||
     tab.value !== 'all' ||
     legacyFiltered.value
 )
@@ -260,6 +297,7 @@ function clearFilters() {
   query.value = ''
   selectedUseCases.value = []
   selectedAccess.value = []
+  selectedResolution.value = undefined
   tab.value = 'all'
   legacyModalities.value = []
   legacyProviders.value = []
@@ -334,40 +372,45 @@ function rememberModel(model: WorkshopModel, event: MouseEvent) {
             :id="HUB_TOOLBAR_ID"
             ref="toolbar"
             data-testid="workshop-toolbar"
-            class="sticky top-20 z-30 -mx-1 mb-8 flex scroll-mt-20 flex-wrap items-center gap-3 bg-page px-1 py-4 max-sm:mb-4 max-sm:py-2 lg:top-26 lg:scroll-mt-26"
+            class="sticky top-20 z-30 -mx-1 mb-8 flex scroll-mt-20 flex-wrap items-center gap-2 bg-page px-1 py-4 max-sm:mb-4 max-sm:py-2 lg:top-26 lg:scroll-mt-26"
           >
+            <WorkshopSearchField
+              v-model="query"
+              :models
+              :locale
+              compact
+              class="min-w-0 flex-1 sm:min-w-48"
+            />
+
             <div
-              class="flex min-w-0 flex-1 items-center gap-3 max-sm:basis-full sm:min-w-fit"
+              class="flex items-center gap-2 max-sm:order-last max-sm:-mx-1 max-sm:basis-full max-sm:overflow-x-auto max-sm:px-1"
+              data-testid="workshop-dropdowns"
             >
-              <WorkshopSearchField
-                v-model="query"
-                :models
+              <BestForMenu
+                v-if="useCaseOptions.length"
+                v-model="selectedUseCases"
+                :options="useCaseOptions"
                 :locale
-                compact
-                class="min-w-0 flex-1"
+                data-design-decision="models-filters"
+              />
+              <ResolutionMenu
+                v-if="resolutionOptions.length"
+                v-model="selectedResolution"
+                :options="resolutionOptions"
+                :locale
+              />
+            </div>
+
+            <div class="flex items-center gap-2" data-testid="workshop-filters">
+              <WorkshopFilterMenu
+                v-if="accessOptions.length"
+                v-model:access="selectedAccess"
+                :access-options="accessOptions"
+                :result-count
+                :locale
               />
 
-              <div
-                class="flex items-center gap-2"
-                data-testid="workshop-filters"
-              >
-                <WorkshopFilterMenu
-                  v-if="useCaseOptions.length || accessOptions.length"
-                  v-model:use-cases="selectedUseCases"
-                  v-model:access="selectedAccess"
-                  :use-case-options="useCaseOptions"
-                  :access-options="accessOptions"
-                  :result-count
-                  :locale
-                  data-design-decision="models-filters"
-                />
-
-                <WorkshopSortMenu
-                  v-model="sort"
-                  :orders="SORT_ORDERS"
-                  :locale
-                />
-              </div>
+              <WorkshopSortMenu v-model="sort" :orders="SORT_ORDERS" :locale />
             </div>
           </div>
 
