@@ -151,7 +151,6 @@ describe('nodeIdentification', () => {
       it('encodes a colon-bearing subgraph-local id', () => {
         const rawId = 'insert:abc123:root:node:5'
         const locatorId = createNodeLocatorId(validUuid, rawId)
-        assert.exists(locatorId)
         expect(locatorId).toBe(
           `~subgraph:${validUuid}:insert%3Aabc123%3Aroot%3Anode%3A5`
         )
