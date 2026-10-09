@@ -14,6 +14,14 @@ vi.hoisted(() => {
   }
 })
 
+const distribution = vi.hoisted(() => ({ isCloud: false }))
+
+vi.mock(import('@/platform/distribution/types'), () => ({
+  get isCloud() {
+    return distribution.isCloud
+  }
+}))
+
 import { i18n } from '@/i18n'
 import type { ComposerAttachment } from '../../types/composerAttachment'
 import { toTurnId } from '../../schemas/agentApiSchema'
@@ -252,6 +260,7 @@ const eventPanelHeaderStub = defineComponent({
 
 describe('AgentPanel', () => {
   beforeEach(() => {
+    distribution.isCloud = false
     vi.useRealTimers()
     localStorage.clear()
     attachmentCalls.add.length = 0
@@ -259,6 +268,30 @@ describe('AgentPanel', () => {
     attachmentCalls.remove.length = 0
     draftCalls.insert.length = 0
     draftCalls.replaceDraft.length = 0
+  })
+
+  it('renders and forwards the treatment starter prompt exposure', () => {
+    distribution.isCloud = true
+    const { emitted } = render(AgentPanel, {
+      props: {
+        entries: [],
+        historyGroups: createHistoryGroups(),
+        starterPromptAssignment: 'test',
+        attributeStarterPromptExperiment: true
+      },
+      global: {
+        plugins: [i18n],
+        directives: { tooltip: {} },
+        stubs: { WorkflowSelectorChip: true }
+      }
+    })
+
+    expect(
+      screen.getByRole('button', {
+        name: i18n.global.t('agent.suggestedPrompts.treatment.cloud.0')
+      })
+    ).toBeVisible()
+    expect(emitted('starterPromptRendered')).toEqual([['test']])
   })
 
   it('keeps a failed opening in history and lets the user retry that row', async () => {

@@ -299,6 +299,29 @@ test.describe('Cloud login SSO entry', { tag: ['@cloud', '@ui'] }, () => {
       await expect(page.getByText(SSO_COPY.errors.orgDisabled)).toBeVisible()
     })
 
+    test('a customer record refused with sso_required opens the SSO dialog, not a failure toast', async ({
+      page,
+      cloudAuth
+    }) => {
+      await answerDiscover(page, 200, NOT_SSO)
+      await cloudAuth.mockLiveEmailSignIn()
+      await page.route('**/customers', (route) =>
+        route.request().method() === 'POST'
+          ? route.fulfill({ status: 403, json: SSO_REQUIRED })
+          : route.fallback()
+      )
+
+      await signInWithEmail(page)
+
+      await expect(
+        page
+          .getByRole('dialog')
+          .getByRole('heading', { name: SSO_COPY.required.title })
+      ).toBeVisible()
+      await expect(page.getByText(/Failed to create customer/)).toHaveCount(0)
+      await expect(page).toHaveURL(/\/cloud\/login/)
+    })
+
     test('a Firebase sign-in ingest refuses with sso_required opens the SSO dialog', async ({
       page,
       cloudAuth

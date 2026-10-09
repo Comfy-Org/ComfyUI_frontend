@@ -1,5 +1,6 @@
 import { readFileSync } from 'node:fs'
 import { join } from 'node:path'
+import { respondToFetch } from '@comfyorg/test-utils/fetch'
 import { render, screen, waitFor, within } from '@testing-library/vue'
 import userEvent from '@testing-library/user-event'
 import { assert, beforeEach, describe, expect, it, vi } from 'vitest'
@@ -14,6 +15,8 @@ const model = workflowDetailsBySlug.get('workflows/animate-reference-sheet')
 assert(model, 'the catalogue no longer carries the fixture workflow')
 const template = model.workflow.template
 assert(template, 'the fixture workflow no longer carries a template')
+const { downloadUrl } = template
+assert(downloadUrl, 'the fixture template no longer has a download URL')
 
 const graphJson = () =>
   JSON.parse(
@@ -26,14 +29,10 @@ const graphJson = () =>
     )
   ) as unknown
 
-function servingGraph(answer: () => Promise<Response>) {
-  vi.stubGlobal('fetch', vi.fn(answer))
-}
-
 // Nothing here reaches the network: a test that says nothing about the graph
 // still mounts the component that fetches it.
 beforeEach(() => {
-  servingGraph(async () => Response.error())
+  respondToFetch({}, () => Response.error())
 })
 
 describe('WorkflowPreview', () => {
@@ -242,7 +241,7 @@ describe('WorkflowPreview', () => {
   // The graph is read from the same JSON the page offers for download, so what
   // it draws is what a reader would get if they took it away.
   it('draws the nodes of the template it downloads', async () => {
-    servingGraph(async () => Response.json(graphJson()))
+    respondToFetch(downloadUrl, () => Response.json(graphJson()))
 
     render(WorkflowPreview, { props: { model } })
 
@@ -250,11 +249,11 @@ describe('WorkflowPreview', () => {
       await screen.findByRole('img', { name: /nodes of this workflow/i })
     ).toBeTruthy()
     expect(await screen.findByText('SaveVideo')).toBeTruthy()
-    expect(fetch).toHaveBeenCalledWith(template.downloadUrl)
+    expect(fetch).toHaveBeenCalledWith(downloadUrl)
   })
 
   it('waits to download the graph until its section is first reached', async () => {
-    servingGraph(async () => Response.json(graphJson()))
+    respondToFetch(downloadUrl, () => Response.json(graphJson()))
     const { rerender } = render(WorkflowPreview, {
       props: { model, active: false }
     })
@@ -263,7 +262,7 @@ describe('WorkflowPreview', () => {
 
     await rerender({ model, active: true })
     await waitFor(() => expect(fetch).toHaveBeenCalledOnce())
-    expect(fetch).toHaveBeenCalledWith(template.downloadUrl)
+    expect(fetch).toHaveBeenCalledWith(downloadUrl)
 
     await rerender({ model, active: false })
     await rerender({ model, active: true })
@@ -271,7 +270,7 @@ describe('WorkflowPreview', () => {
   })
 
   it('replaces the graph when the workflow changes', async () => {
-    servingGraph(async () => Response.json(graphJson()))
+    respondToFetch(downloadUrl, () => Response.json(graphJson()))
     const { rerender } = render(WorkflowPreview, {
       props: { model }
     })
@@ -296,7 +295,7 @@ describe('WorkflowPreview', () => {
   // The flat export is what this page showed before, so it is what a graph
   // that cannot be read falls back to.
   it('falls back to the flat export when the template cannot be read', async () => {
-    servingGraph(async () => Response.error())
+    respondToFetch(downloadUrl, () => Response.error())
 
     render(WorkflowPreview, { props: { model } })
 

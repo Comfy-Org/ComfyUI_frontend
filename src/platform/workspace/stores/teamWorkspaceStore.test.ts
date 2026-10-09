@@ -1255,6 +1255,26 @@ describe('useTeamWorkspaceStore', () => {
       expect(store.ownedWorkspacesCount).toBe(2)
     })
 
+    it.for([
+      { canCreate: false, expected: false },
+      { canCreate: true, expected: true },
+      { canCreate: undefined, expected: true }
+    ])(
+      'canCreateWorkspace follows the server (can_create_workspace: $canCreate)',
+      async ({ canCreate, expected }) => {
+        mockWorkspaceApi.list.mockResolvedValue({
+          workspaces: [mockPersonalWorkspace],
+          ...(canCreate !== undefined && { can_create_workspace: canCreate })
+        })
+
+        const store = useTeamWorkspaceStore()
+        await store.initialize()
+
+        expect(store.canCreateWorkspace).toBe(expected)
+        expect(store.workspacesManagedByOrganization).toBe(!expected)
+      }
+    )
+
     it('canCreateWorkspace respects limit', async () => {
       const manyWorkspaces = Array.from({ length: 10 }, (_, i) => ({
         id: `ws-owned-${i}`,
@@ -2267,7 +2287,7 @@ describe('useTeamWorkspaceStore', () => {
       const result = await store.acceptInvite('invite-token')
 
       expect(mockWorkspaceApi.list).toHaveBeenCalledTimes(1)
-      expect(vi.mocked(reportError)).toHaveBeenCalledWith(
+      expect(reportError).toHaveBeenCalledWith(
         expect.objectContaining({ status: 503 }),
         expect.objectContaining({
           errorType: 'error_refreshing_workspaces_after_invite_accept'

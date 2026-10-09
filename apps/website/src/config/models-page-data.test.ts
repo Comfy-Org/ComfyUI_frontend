@@ -1,4 +1,4 @@
-import { beforeEach, expect, it, vi } from 'vitest'
+import { expect, it, vi } from 'vitest'
 
 import { prepareModelPage } from '@/routes/models/model-page'
 import { workshopModels } from './workshop-browse-content'
@@ -10,14 +10,8 @@ const page = await prepareModelPage(modelSlug)
 if (page.kind !== 'page') throw new Error('Expected a canonical model fixture')
 const preparedPage = page
 
-const { fetchData } = vi.hoisted(() => ({ fetchData: vi.fn<typeof fetch>() }))
-
-beforeEach(() => {
-  vi.stubGlobal('fetch', fetchData)
-})
-
 it('restores the model form from its per-page execution contract', async () => {
-  fetchData.mockResolvedValue(
+  vi.mocked(fetch).mockResolvedValueOnce(
     Response.json({
       ...preparedPage,
       model: { ...preparedPage.model, form: undefined }
@@ -32,7 +26,7 @@ it('keeps the model files a workflow page needs', async () => {
   const workflowPage = await prepareModelPage(workflowSlug)
   if (workflowPage.kind !== 'page' || !('parts' in workflowPage.model))
     throw new Error('Expected a workflow page fixture')
-  fetchData.mockResolvedValue(Response.json(workflowPage))
+  vi.mocked(fetch).mockResolvedValueOnce(Response.json(workflowPage))
 
   const result = await fetchModelsPage(workflowSlug)
 
@@ -48,16 +42,18 @@ it('keeps the model files a workflow page needs', async () => {
 })
 
 it('loads catalogue cards without execution contracts', async () => {
-  fetchData.mockResolvedValue(Response.json(workshopModels))
+  vi.mocked(fetch).mockResolvedValueOnce(Response.json(workshopModels))
   expect(await fetchModelsCatalogue()).toEqual(workshopModels)
 })
 
 it('rejects unsuccessful page responses', async () => {
-  fetchData.mockResolvedValue(new Response(null, { status: 503 }))
+  vi.mocked(fetch).mockResolvedValueOnce(new Response(null, { status: 503 }))
   await expect(fetchModelsPage(modelSlug)).rejects.toThrow('503')
 })
 
 it('rejects malformed model data before a render view receives it', async () => {
-  fetchData.mockResolvedValue(Response.json({ ...preparedPage, model: {} }))
+  vi.mocked(fetch).mockResolvedValueOnce(
+    Response.json({ ...preparedPage, model: {} })
+  )
   await expect(fetchModelsPage(modelSlug)).rejects.toThrow()
 })

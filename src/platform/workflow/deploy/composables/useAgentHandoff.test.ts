@@ -2,9 +2,9 @@ import { fromPartial } from '@total-typescript/shoehorn'
 import { describe, expect, it, vi } from 'vitest'
 
 import { downloadBlob } from '@/base/common/downloadUtil'
+import { useToast } from '@/components/ui/toast/toastStore'
 import { useCopyToClipboard } from '@/composables/useCopyToClipboard'
 import { reportError } from '@/platform/telemetry/reportError'
-import { useToastStore } from '@/platform/updates/common/toastStore'
 import { useAgentHandoff } from '@/platform/workflow/deploy/composables/useAgentHandoff'
 import { useWorkflowStore } from '@/platform/workflow/management/stores/workflowStore'
 import { useNodeDefStore } from '@/stores/nodeDefStore'
@@ -209,7 +209,6 @@ describe('useAgentHandoff', () => {
         }
       }
     })
-    const toast = vi.spyOn(useToastStore(), 'add')
 
     await expect(useAgentHandoff().copyBrief()).resolves.toBe(false)
 
@@ -218,12 +217,13 @@ describe('useAgentHandoff', () => {
       errorType: 'error_copying_deploy_agent_brief',
       surface: 'platform'
     })
-    expect(toast).toHaveBeenCalledWith(
+    expect(useToast().toasts).toEqual([
       expect.objectContaining({
-        severity: 'error',
-        detail: 'The brief for your agent could not be prepared. Try again.'
+        description:
+          'The brief for your agent could not be prepared. Try again.',
+        kind: 'error'
       })
-    )
+    ])
     expect(downloadBlob).not.toHaveBeenCalled()
   })
 
@@ -232,7 +232,6 @@ describe('useAgentHandoff', () => {
     vi.mocked(downloadBlob).mockImplementationOnce(() => {
       throw new Error('download blocked')
     })
-    const toast = vi.spyOn(useToastStore(), 'add')
 
     await expect(useAgentHandoff().copyBrief()).resolves.toBe(false)
 
@@ -241,12 +240,13 @@ describe('useAgentHandoff', () => {
       errorType: 'error_copying_deploy_agent_brief',
       surface: 'platform'
     })
-    expect(toast).toHaveBeenCalledWith(
+    expect(useToast().toasts).toEqual([
       expect.objectContaining({
-        severity: 'error',
-        detail: 'The brief for your agent could not be prepared. Try again.'
+        description:
+          'The brief for your agent could not be prepared. Try again.',
+        kind: 'error'
       })
-    )
+    ])
   })
 
   it('reads the graph after capturing an edit still in a focused field', async () => {

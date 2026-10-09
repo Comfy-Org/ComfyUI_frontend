@@ -150,6 +150,9 @@ export const TestIds = {
     card: 'asset-card',
     videoPreview: 'media-asset-video'
   },
+  toast: {
+    panel: 'toast-panel'
+  },
   subgraphEditor: {
     hiddenSection: 'subgraph-editor-hidden-section',
     iconEye: 'icon-eye',

@@ -300,7 +300,8 @@
       "troubleshooting": "常见原因："
     },
     "toast": {
-      "close": "关闭"
+      "close": "关闭",
+      "viewportLabel": "通知 ({hotkey})"
     },
     "turnstile": {
       "expired": "验证已过期。请重新完成验证。",
@@ -1749,6 +1750,7 @@
     "enterpriseMsa": "Enterprise MSA",
     "flux3": "Flux 3",
     "geminiOmni": "Gemini Omni 1.1 Flash",
+    "language": "语言",
     "location": "美国旧金山",
     "ltx": "LTX 2.5",
     "minimaxH3": "MiniMax H3",

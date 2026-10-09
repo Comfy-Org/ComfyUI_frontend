@@ -9,6 +9,10 @@ import { computed, ref, watch } from 'vue'
 
 import { fetchWithCustomerRecovery as fetchHealingMissingCustomer } from '@comfyorg/account-core/customerRecovery'
 import {
+  isSsoRequiredRefusal,
+  ssoRequiredOrganizationId
+} from '@comfyorg/account-core/sso'
+import {
   signUpWithProvisioning,
   socialSignInWithProvisioning
 } from '@comfyorg/account-core/provisioning'
@@ -90,6 +94,17 @@ export class AuthStoreError extends Error {
     this.name = 'AuthStoreError'
     this.status = status
     this.code = code
+  }
+}
+
+/** The account belongs to an SSO organization, so it must sign in with SSO. */
+export class SsoRequiredAuthError extends AuthStoreError {
+  readonly organizationId: string | undefined
+
+  constructor(organizationId: string | undefined) {
+    super(t('auth.sso.required.body'), 403, 'sso_required')
+    this.name = 'SsoRequiredAuthError'
+    this.organizationId = organizationId
   }
 }
 
@@ -745,6 +760,13 @@ export const useAuthStore = defineStore('auth', () => {
     )
     if (!createCustomerRes.ok) {
       if (!completedUser) assertIdentityUnchanged(sessionIdentity)
+      const refusal: unknown = await createCustomerRes
+        .clone()
+        .json()
+        .catch(() => undefined)
+      if (isSsoRequiredRefusal(createCustomerRes.status, refusal)) {
+        throw new SsoRequiredAuthError(ssoRequiredOrganizationId(refusal))
+      }
       throw new AuthStoreError(
         t('toastMessages.failedToCreateCustomer', {
           error: createCustomerRes.statusText

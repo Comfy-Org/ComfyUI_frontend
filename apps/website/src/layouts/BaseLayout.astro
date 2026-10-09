@@ -17,6 +17,7 @@ import {
 import { isWorkshopInBuild } from '@/config/workshop-release'
 import {
   hreflangAlternates,
+  localeAlternates,
   ogLocale,
   ogLocaleAlternates
 } from '@/lib/hreflang'
@@ -97,6 +98,7 @@ const head = headIndexing({
   pageNoindex: shouldNoindex,
   indexableBuild: isIndexableBuild()
 })
+const languageAlternates = localeAlternates(canonicalURL.pathname)
 const alternates = head.emitAlternates
   ? hreflangAlternates(canonicalURL.pathname, canonicalURL.origin)
   : []
@@ -340,7 +342,11 @@ const structuredData = head.emitStructuredData
       <slot />
     </main>
     {!minimal && !bare && (
-      <SiteFooter locale={locale} client:visible={{ rootMargin: '200px' }} />
+      <SiteFooter
+        locale={locale}
+        alternates={languageAlternates}
+        client:visible={{ rootMargin: '200px' }}
+      />
     )}
 
     <Analytics />
