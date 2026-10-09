@@ -86,17 +86,6 @@ test.describe(
   }
 )
 
-/**
- * The free Agent grant running out while the workspace balance still funds
- * Agent activity (PM-2005). Distinct from the lifecycle above: no funding is
- * gone, so this is deliberately NOT a paywall. The two surfaces trade places —
- * the FREE-during-BETA notice stops claiming the activity is free, and the
- * transition notice says what it now draws on.
- *
- * The element screenshots are the reviewable artifact for that swap, which no
- * text assertion conveys: a reviewer can see the copy, the warning accent and
- * the dismiss affordance without building the state by hand.
- */
 test.describe(
   'Agent credit-transition notice',
   { tag: ['@cloud', '@screenshot', '@ui'] },
