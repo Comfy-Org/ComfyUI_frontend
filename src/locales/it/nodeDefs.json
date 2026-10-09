@@ -4078,9 +4078,12 @@
     }
   },
   "CreateCameraInfo": {
-    "description": "Crea una camera_info. La modalità 'orbit' punta con yaw/pitch/distanza attorno al target; 'look_at' posiziona la camera in una posizione del mondo. Le coordinate sono nello spazio mondo dell'osservatore (destrorso, Y-su).",
+    "description": "Crea un camera_info. La modalità 'orbit' punta con imbardata/inclinazione/distanza attorno al bersaglio; 'look_at' posiziona la telecamera nella posizione del mondo. Le coordinate sono nello spazio del mondo del visualizzatore (destrorso, asse Y verso l'alto).",
     "display_name": "Crea Info Camera",
     "inputs": {
+      "camera_info_state": {
+        "name": "camera_info_state"
+      },
       "camera_type": {
         "name": "tipo_camera",
         "tooltip": "Proiezione usata da Render Splat: prospettica (con scorciatoia) o ortografica (parallela)."
@@ -4860,7 +4863,7 @@
       },
       "language_code": {
         "name": "codice lingua",
-        "tooltip": "Codice lingua ISO-639-1 o ISO-639-3 (es. 'en', 'es', 'fra'). Lascia vuoto per il rilevamento automatico."
+        "tooltip": "Codice lingua ISO 639-1 (ad es., 'en', 'es', 'ja'). Lascia vuoto per il rilevamento automatico."
       },
       "model": {
         "name": "modello",
@@ -4930,7 +4933,7 @@
       },
       "language_code": {
         "name": "codice lingua",
-        "tooltip": "Codice lingua ISO-639-1 o ISO-639-3 (es. 'en', 'es', 'fra'). Lascia vuoto per il rilevamento automatico."
+        "tooltip": "Codice lingua ISO 639-1 (ad es., 'en', 'es', 'ja'). Lascia vuoto per il rilevamento automatico."
       },
       "model": {
         "name": "modello",
@@ -4938,15 +4941,6 @@
       },
       "model_similarity_boost": {
         "name": "similarity_boost"
-      },
-      "model_speed": {
-        "name": "velocità"
-      },
-      "model_style": {
-        "name": "stile"
-      },
-      "model_use_speaker_boost": {
-        "name": "use_speaker_boost"
       },
       "output_format": {
         "name": "formato output",
@@ -5834,6 +5828,52 @@
       },
       "width": {
         "name": "larghezza"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "Flux3ImageNode": {
+    "description": "Genera un'immagine con FLUX 3 da un prompt oppure modifica e combina fino a 10 immagini di riferimento. Fai riferimento alle immagini nel prompt come immagine 1, immagine 2 e così via.",
+    "display_name": "Immagine Flux 3",
+    "inputs": {
+      "aspect_ratio": {
+        "name": "aspect_ratio",
+        "tooltip": "'auto' segue la prima immagine di riferimento oppure sceglie un rapporto dal prompt."
+      },
+      "bounding_boxes": {
+        "name": "bounding_boxes",
+        "tooltip": "Riquadri facoltativi da Create Bounding Boxes che posizionano oggetti o testo nell'output. Le posizioni sono relative alla tela, quindi fornisci il rapporto d'aspetto dell'output."
+      },
+      "control_after_generate": {
+        "name": "controllo dopo la generazione"
+      },
+      "grounding": {
+        "name": "grounding",
+        "tooltip": "Consenti al modello di effettuare ricerche sul prompt sul web e tramite la ricerca immagini prima di generare."
+      },
+      "images": {
+        "name": "immagini",
+        "tooltip": "Immagini di riferimento facoltative, fino a un totale di 10, di almeno 256x256 pixel ciascuna."
+      },
+      "prompt": {
+        "name": "prompt",
+        "tooltip": "Cosa generare o la modifica da apportare. Il prompt viene interpretato ed espanso prima della generazione."
+      },
+      "resolution": {
+        "name": "risoluzione",
+        "tooltip": "Dimensione dell'output al rapporto d'aspetto scelto: 0.75K corrisponde a circa 0,6 megapixel, 1K a 1 MP, 1.5K a 2,4 MP, 2K a 4,2 MP, 4K a 16,8 MP."
+      },
+      "safety_tolerance": {
+        "name": "safety_tolerance",
+        "tooltip": "Tolleranza della moderazione; 0 è l'impostazione più restrittiva."
+      },
+      "seed": {
+        "name": "seed",
+        "tooltip": "Seed per determinare se il nodo deve essere rieseguito; FLUX 3 sceglie il proprio seed, quindi i risultati effettivi sono non deterministici indipendentemente da questo valore."
       }
     },
     "outputs": {
@@ -7434,7 +7474,7 @@
     "inputs": {
       "aspect_ratio": {
         "name": "aspect_ratio",
-        "tooltip": "Il rapporto d'aspetto del video in output."
+        "tooltip": "Il rapporto d'aspetto del video di output. Ignorato quando viene fornita un'immagine di input; il video segue il rapporto d'aspetto dell'immagine."
       },
       "control_after_generate": {
         "name": "control after generate"
@@ -7453,11 +7493,11 @@
       },
       "prompt": {
         "name": "prompt",
-        "tooltip": "Descrizione testuale del video desiderato. Opzionale per grok-imagine-video-1.5 quando viene fornita un'immagine di input."
+        "tooltip": "Descrizione testuale del video desiderato. Facoltativa per i modelli grok-imagine-video-1.5 quando viene fornita un'immagine di input."
       },
       "resolution": {
         "name": "resolution",
-        "tooltip": "La risoluzione del video in output. 1080p è disponibile solo per grok-imagine-video-1.5."
+        "tooltip": "La risoluzione del video di output. 1080p non è disponibile per grok-imagine-video."
       },
       "seed": {
         "name": "seed",
@@ -18481,7 +18521,7 @@
   "PrimitiveInt": {
     "display_name": "Intero",
     "inputs": {
-      "fixed": {
+      "control_after_generate": {
         "name": "controllo dopo la generazione"
       },
       "value": {
@@ -22372,8 +22412,8 @@
   "SeedNode": {
     "display_name": "Seed",
     "inputs": {
-      "fixed": {
-        "name": "controlla dopo la generazione"
+      "control_after_generate": {
+        "name": "controllo dopo la generazione"
       },
       "seed": {
         "name": "seed"

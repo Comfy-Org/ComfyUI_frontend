@@ -75,6 +75,8 @@
     "feedbackCaption": "Geri bildirim paylaşın",
     "focusNode": "Tuvalde göster",
     "focusNodeLabel": "{node} öğesini tuvalde göster",
+    "freeUseNotice": "BETA süresince istemler ve iş akışı çalıştırmaları ÜCRETSİZDİR.",
+    "freeUseNoticeLabel": "Ücretsiz kullanım bildirimi",
     "friend": "orada",
     "gotIt": "Anladım",
     "greeting": "Merhaba {name},",
@@ -124,12 +126,16 @@
       "upgradePlan": "Planı yükselt"
     },
     "placeholder": "Fikirlerinizi açıklayın, iş akışlarına başvurmak için {'@'} kullanın, medya varlıklarını ve dosyaları sürükleyin veya\ndüğümlerden bahsedin",
+    "recoveredTurnFailed": "Ajan bu yanıtı tamamlayamadı.",
     "reference": "Referans",
     "remove": "Kaldır",
     "removeNodeLabel": "{node} referansını kaldır",
     "removeWorkflowReference": "{name} referansını kaldır",
     "retryAfterSeconds": "{seconds} saniye sonra yeniden deneyebilirsiniz.",
     "runApproval": {
+      "answerFailed": "Yanıtınız gönderilemedi. Sayfayı yeniden yükleyip tekrar deneyin.",
+      "answerSuperseded": "Bu istek başka bir yerde zaten yanıtlandı, bu yüzden sizin yanıtınız yerine o yanıt kullanıldı.",
+      "answerUncertain": "Yanıtınızın ajana ulaştığı doğrulanamadı. Yine de uygulanmış olabilir — durumun ne olduğunu görmek için sayfayı yeniden yükleyin.",
       "cancel": "İptal",
       "lead": "Bu araç iş akışını yürütmek istiyor:",
       "leadBound": "Bu araç bu iş akışını çalıştırmak istiyor.",
@@ -196,8 +202,11 @@
     "targetWorkflowUnavailable": "Hedef iş akışı artık kullanılamıyor.",
     "thinking": "Düşünüyor...",
     "title": "Comfy Agent",
+    "toolFailedSkill": "{skill} yüklenemedi",
     "toolForgettingPreference": "Bir tercih unutuluyor",
     "toolForgotPreference": "Bir tercih unutuldu",
+    "toolLoadedSkill": "{skill} yüklendi",
+    "toolLoadingSkill": "{skill} yükleniyor",
     "toolOpenedNewTab": "Yeni bir sekme açıldı",
     "toolOpeningNewTab": "Yeni bir sekme açılıyor",
     "toolSavedPreference": "Bir tercih kaydedildi",
@@ -274,6 +283,7 @@
       "failed": "İndirme başarısız oldu",
       "inProgress": "{assetName} indiriliyor..."
     },
+    "downloadFailed": "{name} indirilemedi",
     "emptyImported": {
       "canImport": "Henüz içe aktarılmış model yok. Kendi modelinizi eklemek için \"Model İçe Aktar\"a tıklayın.",
       "restricted": "Kişisel modeller yalnızca Creator ve üzeri seviyelerde kullanılabilir."
@@ -464,6 +474,7 @@
       "generic": "Oturum açarken bir hata oluştu. Lütfen tekrar deneyin.",
       "signupBlocked": "Şu anda hesabınızı oluşturamıyoruz. Lütfen daha sonra tekrar deneyin. Sorun devam ederse support@comfy.org adresine e-posta gönderin."
     },
+    "hidePassword": "Parolayı gizle",
     "login": {
       "andText": "ve",
       "backToGithubLogin": "Bunun yerine Github ile kaydol",
@@ -480,6 +491,7 @@
       "forgotPassword": "Şifrenizi mi unuttunuz?",
       "forgotPasswordError": "Şifre sıfırlama e-postası gönderilemedi",
       "freeRunsSuffix": "{count} ücretsiz deneme almak için. | {count} ücretsiz deneme almak için.",
+      "freeRunsSuffixGoogle": "{count} ücretsiz çalıştırma elde etmek için Google ile giriş yapın. | {count} ücretsiz çalıştırma elde etmek için Google ile giriş yapın.",
       "freeTierBadge": "Ücretsiz Katman Uygun",
       "freeTierDescription": "Google ile kaydolun, her ay {credits} ücretsiz kredi kazanın. Kart gerekmez.",
       "freeTierDescriptionGeneric": "Google ile kaydolun, her ay ücretsiz kredi kazanın. Kart gerekmez.",
@@ -524,6 +536,7 @@
       "message": "Güvenlik nedeniyle, bu işlem için tekrar giriş yapmanız gerekiyor. Devam etmek istiyor musunuz?",
       "title": "Yeniden Kimlik Doğrulama Gerekli"
     },
+    "showPassword": "Parolayı göster",
     "signOut": {
       "saveFailed": "\"{workflow}\" kaydedilemediği için çıkış iptal edildi.",
       "signOut": "Çıkış Yap",
@@ -532,6 +545,12 @@
       "successDetail": "Hesabınızdan başarıyla çıkış yaptınız.",
       "unsavedChangesMessage": "Oturumu kapattığınızda kaydedilmemiş değişiklikleriniz kaybolacak. Devam etmek istiyor musunuz?",
       "unsavedChangesTitle": "Kaydedilmemiş Değişiklikler"
+    },
+    "signOutEverywhere": {
+      "action": "Tüm cihazlardan çıkış yap",
+      "failed": "Tüm cihazlardan çıkış yapılamadı",
+      "success": "Tüm cihazlardan çıkış yapıldı",
+      "successDetail": "Hesabınızda oturum açmış tüm cihazlardan çıkış yapıldı."
     },
     "signup": {
       "alreadyHaveAccount": "Zaten bir hesabınız var mı?",
@@ -989,6 +1008,7 @@
     "Copy Image": "Görüntüyü Kopyala",
     "Delete": "Sil",
     "Distribute Nodes": "Düğümleri Dağıt",
+    "Download Images": "Görüntüleri İndir",
     "Duplicate": "Çoğalt",
     "Edit Subgraph Widgets": "Alt Grafik Widget'larını Düzenle",
     "Expand": "Genişlet",
@@ -1136,6 +1156,7 @@
     "BOOLEAN": "BOOLEAN",
     "BOUNDING_BOX": "BOUNDING_BOX",
     "BOUNDING_BOXES": "SINIR KUTULARI",
+    "CAMERA_INFO_STATE": "CAMERA_INFO_STATE",
     "CLIP": "CLIP",
     "CLIP_VISION": "CLIP_VISION",
     "CLIP_VISION_OUTPUT": "CLIP_VISION_ÇIKTISI",
@@ -1242,6 +1263,13 @@
     "WAN_CAMERA_EMBEDDING": "WAN_KAMERA_GÖMÜLMESİ",
     "WEBCAM": "WEBCAM"
   },
+  "deployToComfyApi": {
+    "body": "Bu iş akışını dakikalar içinde üretim API'si olarak dağıtın. Özel düğümlerinizi, modellerinizi ve Python bağımlılıklarınızı yeniden üretilebilir bir derlemede paketleyin; Comfy API bunu otomatik ölçeklenen bir uç nokta olarak çalıştırır.",
+    "buttonLabel": "Comfy API'ye Dağıt",
+    "deployOnPlatform": "Platformda Dağıt",
+    "readDocs": "Belgeleri okuyun",
+    "title": "Comfy API'ye Dağıt"
+  },
   "desktopLogin": {
     "confirmMessage": "ComfyUI masaüstü uygulaması hesabınızla oturum açmayı bekliyor. Yalnızca ComfyUI masaüstü uygulamasından oturum açmayı yeni başlattıysanız devam edin.",
     "confirmSummary": "Masaüstü oturum açmayı onayla?",
@@ -1278,6 +1306,11 @@
     "skip": "Atla",
     "title": "Git'i indir",
     "warning": "Git'in kurulu olmasına ihtiyacınız olmadığından veya bir hata olduğundan eminseniz, bu kontrolü atlamak için Atla'yı tıklayabilirsiniz. ComfyUI'yi çalışan bir git kopyası olmadan çalıştırmak şu anda desteklenmemektedir."
+  },
+  "dynamicGroup": {
+    "add": "{group} ekle",
+    "remove": "{row} kaldır",
+    "row": "{group} #{index}"
   },
   "electronFileDownload": {
     "cancel": "İndirmeyi İptal Et",
@@ -1765,7 +1798,8 @@
     "exportingAssets": "Varlıklar dışa aktarılıyor",
     "noExportsInQueue": "Kuyrukta {filter} dışa aktarma yok",
     "preparingExport": "Dışa aktarım hazırlanıyor...",
-    "retryDownload": "İndirmeyi tekrar dene"
+    "retryDownload": "İndirmeyi tekrar dene",
+    "unsupportedDownloadUrl": "Desteklenmeyen dışa aktarma indirme URL'si"
   },
   "feedback": {
     "title": "Geri Bildirim Paylaş"
@@ -1867,6 +1901,7 @@
     "download": "İndir",
     "downloadAudio": "Sesi indir",
     "downloadImage": "Görüntüyü indir",
+    "downloadImages": "Görüntüleri indir",
     "downloadVideo": "Videoyu indir",
     "downloadWithSize": "İndir ({size})",
     "downloading": "İndiriliyor",
@@ -2004,6 +2039,7 @@
     "nMoreKeybindings": "+ {count} tane daha",
     "nMoreKeybindingsCompact": "+ {count}",
     "name": "Ad",
+    "new": "YENİ",
     "newFolder": "Yeni Klasör",
     "next": "İleri",
     "nextImage": "Sonraki görsel",
@@ -2120,6 +2156,7 @@
     "selectItemsToDelete": "Silinecek öğeleri seçin",
     "selectItemsToDuplicate": "Çoğaltılacak öğeleri seçin",
     "selectItemsToRename": "Yeniden adlandırılacak öğeleri seçin",
+    "selected": "Seçili",
     "selectedFile": "Seçilen dosya",
     "setAKeybindingForTheFollowing": "Aşağıdakiler için bir kısayol tuşu ayarla:",
     "setAsBackground": "Arka Plan Olarak Ayarla",
@@ -2176,6 +2213,7 @@
     "usageHint": "Kullanım ipucu",
     "use": "Kullan",
     "user": "Kullanıcı",
+    "validate": "Doğrula",
     "versionMismatchWarning": "Sürüm Uyumluluk Uyarısı",
     "versionMismatchWarningMessage": "{warning}: {detail} Güncelleme talimatları için https://docs.comfy.org/installation/update_comfyui#common-update-issues adresini ziyaret edin.",
     "videoFailedToLoad": "Video yüklenemedi",
@@ -3438,6 +3476,11 @@
     "outputs": "Çıktılar",
     "type": "Tür"
   },
+  "nodeOutputsExport": {
+    "download": "İndir ({count})",
+    "downloadAll": "Tümünü indir",
+    "title": "Varlıkları İndir"
+  },
   "nodeReplacement": {
     "compatibleAlternatives": "Uyumlu Alternatifler",
     "installMissingNodes": "Eksik Düğümleri Yükle",
@@ -3488,6 +3531,7 @@
       "deny": "İptal",
       "detailsHeader": "Detaylar",
       "errorExpired": "Bu onay isteğinin süresi doldu veya zaten kullanıldı. Lütfen istemci uygulamasından tekrar başlatın.",
+      "errorOriginRefused": "Bunu bu sayfadan onaylayamadık. Uygulamada oturum açma işlemini yeniden başlatın.",
       "errorScopeBroadening": "Önceden onaylanan izinler bu isteği kapsamıyor. Yeni izinlerle tekrar yetkilendirmeniz gerekiyor.",
       "errorUnavailable": "Bu özellik şu anda kullanılamıyor. Sorun devam ederse lütfen destek ile iletişime geçin.",
       "genericError": "OAuth isteği başarısız oldu. Lütfen istemci uygulamasından tekrar başlatın.",
@@ -3689,7 +3733,8 @@
     "importingModels": "Modeller İçe Aktarılıyor",
     "noImportsInQueue": "Kuyrukta {filter} yok",
     "pending": "Beklemede",
-    "progressCount": "{completed} / {total}"
+    "progressCount": "{completed} / {total}",
+    "taskUnavailable": "İndirme görevi artık kullanılamıyor."
   },
   "queue": {
     "completedIn": "{duration} içinde tamamlandı",
@@ -4237,6 +4282,7 @@
     "assets": "Varlıklar",
     "backToAssets": "Tüm varlıklara dön",
     "browseTemplates": "Örnek şablonlara göz atın",
+    "closeSidebar": "Kenar çubuğunu kapat",
     "downloads": "İndirmeler",
     "folderView": {
       "errorDetail": "Bu iş için çıktılar alınamadı. Lütfen tekrar deneyin.",
@@ -4475,6 +4521,7 @@
       "discountRefreshFailed": "İndiriminiz uygulandı. Güncellenmiş planınızı görmek için sayfayı yenileyin.",
       "endOfBillingPeriod": "fatura dönemi sonu",
       "failed": "Abonelik iptali başarısız oldu",
+      "finishOnStripe": "Aboneliğiniz henüz iptal edilmedi. Yeni açılan Stripe sayfasında iptal işlemini tamamlayın. Bunu yapana kadar planınız her zamanki gibi yenilenecektir.",
       "keepSubscription": "Aboneliği sürdür",
       "offerUnavailable": "Bu seçenek mevcut değil. Lütfen başka bir seçenek seçin.",
       "title": "Aboneliği iptal et",
@@ -4548,7 +4595,7 @@
       "runLabel": "Çalıştır"
     },
     "inactiveEnterpriseDescription": "İş akışlarını çalıştıramaz veya yeni üye ekleyemezsiniz. Erişimi geri yüklemek için satış ekibiyle iletişime geçin.",
-    "inactiveTeamDescription": "Daha fazla üye eklemek ve iş akışlarını çalıştırmak için ekip planınızı yeniden etkinleştirin",
+    "inactiveTeamDescription": "Daha fazla üye eklemek ve iş akışlarını çalıştırmak için Team planınızı yeniden etkinleştirin",
     "inactiveTeamPlanIncludes": "Aktif bir plan, {plan} içeriğine ek olarak şunları da içerir:",
     "inactiveTeamTitle": "Pasif ekip aboneliği",
     "inviteUpTo": "Şu kadar kişiyi davet et:",
@@ -4607,7 +4654,7 @@
     "perMonth": "USD / ay",
     "perYear": "/ yıl",
     "personalHeader": "Bireysel planlar yalnızca kişisel kullanım içindir. {action}",
-    "personalHeaderAction": "Ekip arkadaşları eklemek için ekip planına abone olun.",
+    "personalHeaderAction": "Ekip arkadaşları eklemek için Team planına abone olun.",
     "personalWorkspace": "Kişisel Çalışma Alanı",
     "planLoadError": "Plan detaylarınızı yükleyemedik.",
     "planLoadErrorRetry": "Tekrar dene",
@@ -4789,7 +4836,7 @@
       "perkRolePermissions": "Rol tabanlı izinler",
       "perkSharedPool": "Tüm üyeler için ortak kredi havuzu",
       "tagline": "Kendi kredi aboneliğinizi seçin. Daha büyük kredi aboneliklerinde daha yüksek indirim kazanın.",
-      "unavailable": "Bu ekip planı şu anda kullanılamıyor."
+      "unavailable": "Bu Team planı şu anda kullanılamıyor."
     },
     "teamPlanIncludes": "Planınız {plan} içeriğine ek olarak şunları da kapsar:",
     "teamPlanName": "Takım",
@@ -4904,6 +4951,38 @@
       "Video API": "Video API"
     },
     "clearAllFilters": "Tüm filtreleri temizle",
+    "detail": {
+      "backToTemplates": "{category} kategorisine dön",
+      "breadcrumbLabel": "Şablon gezintisi",
+      "cloudUpsellDescription": "Yerel kurulum veya indirme olmadan Cloud GPU'larda çalıştırın.",
+      "cloudUpsellTitle": "Bu şablonu Comfy Cloud'da çalıştırın",
+      "downloadCancelled": "İndirme iptal edildi",
+      "downloadFailed": "İndirme başarısız oldu",
+      "downloadModel": "Modeli indir",
+      "downloadModelNamed": "{model} indir",
+      "downloadModelsAndOpen": "Modelleri indir ve aç",
+      "downloadPaused": "Duraklatıldı",
+      "downloadPausedModel": "{model} indirmesi duraklatıldı",
+      "downloadPausedProgress": "Duraklatıldı · {progress}",
+      "downloadQueued": "Sıraya alındı",
+      "downloadStarting": "Başlatılıyor",
+      "downloaded": "İndirildi",
+      "downloading": "İndiriliyor",
+      "downloadingModel": "{model} indiriliyor",
+      "getItManually": "Manuel olarak edinin",
+      "installed": "Yüklü",
+      "models": "Modeller",
+      "openInCloud": "Cloud'da Aç",
+      "openNow": "Şimdi aç",
+      "partnerNodeDescription": "Bu iş akışını yerel olarak mı yoksa Comfy Cloud'da mı çalıştıracağınızı seçin.",
+      "partnerNodeTitle": "Bu iş akışı İş Ortağı Düğümlerini kullanır",
+      "requirements": "Şablon gereksinimleri",
+      "retryDownload": "Yeniden dene",
+      "retryDownloadNamed": "{model} için indirmeyi yeniden dene",
+      "unavailable": "Kullanılamıyor",
+      "unknown": "Bilinmiyor",
+      "usedBy": "{nodes} tarafından kullanılıyor"
+    },
     "error": {
       "loading": "Şablon açılamadı. Lütfen tekrar deneyin.",
       "preparingMedia": "Bazı örnek medya dosyaları hazırlanamadı. İş akışı açılacak; eksik girişler için kendi dosyalarınızı seçin.",
@@ -4959,6 +5038,7 @@
     "errorOpenImage": "Görüntü açılırken hata oluştu: {error}",
     "errorSaveSetting": "{id} ayarı kaydedilirken hata oluştu: {err}",
     "exportSuccess": "Model başarıyla {format} olarak dışa aktarıldı",
+    "extraResourcesUploadFailed": "Ek kaynaklar yüklenemedi",
     "failedExecutionPathResolution": "Seçilen düğümlerin yolu çözülemedi",
     "failedToAccessBillingPortal": "Faturalandırma portalına erişilemedi: {error}",
     "failedToApplyTexture": "Doku uygulanamadı",
@@ -5227,37 +5307,46 @@
     },
     "billingStatus": {
       "ending": {
-        "body": "Üyeler o zamana kadar tam erişimi korur. Paylaşılan kredilerinizi ve koltuklarınızı korumak için aboneliğinizi sürdürün.",
+        "body": "Üyeler o tarihe kadar tam erişime sahip olur. Ekibinizin paylaşılan kredilerini korumak için planınıza devam edin.",
+        "contactSales": "Satış ekibiyle iletişime geç",
         "enterpriseBody": "Üyeler o zamana kadar tam erişimi korur. Uzatmak için satış ekibimizle iletişime geçin.",
         "enterpriseTitle": "Enterprise planınız {date} tarihinde sona eriyor",
-        "reactivate": "Aboneliği sürdür",
-        "title": "Ekip planınız {date} tarihinde sona eriyor"
+        "memberBody": "O tarihe kadar iş akışlarını çalıştırabilirsiniz.",
+        "reactivate": "Planı devam ettir",
+        "title": "Team planınız {date} tarihinde sona eriyor"
       },
       "outOfCredits": {
         "addCredits": "Kredi ekle",
-        "body": "Ekibiniz tüm kredilerini kullandı. Devam etmek için daha fazla kredi ekleyin veya {date} tarihinde krediler yenilenene kadar bekleyin.",
-        "bodyNoDate": "Ekibiniz tüm kredilerini kullandı. Devam etmek için daha fazla kredi ekleyin.",
+        "body": "Ekibiniz tüm kredilerini kullandı. Daha fazla kredi ekleyin veya kredilerin {date} tarihinde yenilenmesini bekleyin.",
+        "bodyNoDate": "Ekibiniz tüm kredilerini kullandı. Daha fazla kredi ekleyin.",
         "dismiss": "Kapat",
-        "memberBody": "Ekibiniz tüm kredilerini kullandı. Devam etmek için çalışma alanı yöneticilerinizin daha fazla kredi eklemesi gerekiyor.",
-        "title": "Kredi kalmadı",
-        "upgradeBody": "Kredi eklemek ve üretmeye devam etmek için planınızı yükseltin."
+        "memberBody": "Ekibiniz tüm kredilerini kullandı. Çalışma alanı sahibinizden daha fazla kredi eklemesini isteyin veya kredilerin {date} tarihinde yenilenmesini bekleyin.",
+        "memberBodyNoDate": "Ekibiniz tüm kredilerini kullandı. Çalışma alanı sahibinizden daha fazla kredi eklemesini isteyin.",
+        "title": "Kredi kalmadı"
       },
       "paused": {
         "body": "Bu çalışma alanının aboneliği duraklatıldı. Devam etmek için ödemeyi güncelleyin.",
         "memberBody": "Bu çalışma alanının aboneliği duraklatıldı. Çalışma alanı yöneticilerinizin ödeme yöntemini güncellemesi gerekiyor.",
+        "personalBody": "Aboneliğiniz duraklatıldı. Devam etmek için ödeme yönteminizi güncelleyin.",
+        "personalPaymentFailedBody": "Ödemeniz gerçekleşmedi. Devam etmek için ödeme yönteminizi güncelleyin.",
         "title": "Abonelik duraklatıldı"
       },
       "payInvoice": "Faturayı öde",
       "planChange": {
         "body": "Mevcut planınız o tarihe kadar etkin kalır.",
-        "title": "Planınız {date} tarihinde {plan} olarak değişecek"
+        "title": "Planınız {date} tarihinde {plan} olarak değişecek."
       },
-      "updatePayment": "Ödemeyi güncelle",
-      "warning": {
-        "bodyNoDate": "Son ödemeniz gerçekleşmedi. Duraklatmayı önlemek için ödemeyi güncelleyin.",
-        "bodyWithAmount": "{amount} tutarındaki ödemeniz işlenemedi. Duraklamayı önlemek için faturayı ödeyin veya ödeme bilgilerinizi güncelleyin.",
-        "title": "Ödeme reddedildi"
-      }
+      "planEnded": {
+        "enterpriseBody": "Yeni bir Enterprise planı başlatmak için satış ekibiyle iletişime geçin.",
+        "enterpriseTitle": "Enterprise planınız {date} tarihinde sona erdi",
+        "planTitle": "Planınız {date} tarihinde sona erdi",
+        "salesBody": "Yeni bir plan başlatmak için satış ekibiyle iletişime geçin.",
+        "salesMemberBody": "Çalışma alanı sahibinizden satış ekibiyle iletişime geçmesini isteyin.",
+        "teamBody": "İş akışlarını çalıştırmak ve paylaşılan kredileri yeniden almak için yeniden abone olun.",
+        "teamMemberBody": "Çalışma alanı sahibinizden yeniden abone olmasını isteyin.",
+        "teamTitle": "Team planınız {date} tarihinde sona erdi"
+      },
+      "updatePayment": "Ödemeyi güncelle"
     },
     "changeRoleDialog": {
       "demoteConfirm": "Üyeye düşür",
@@ -5328,6 +5417,11 @@
       "titleSingleSeat": "Mevcut planınız tek kişilik desteklemektedir",
       "upgradeToTeam": "Takıma Yükselt"
     },
+    "invoices": {
+      "fullHistory": "Tüm fatura geçmişi",
+      "nextInvoice": "Sonraki fatura",
+      "usd": "USD"
+    },
     "leaveDialog": {
       "leave": "Ayrıl",
       "message": "Çalışma alanı sahibiyle iletişime geçmedikçe tekrar katılamazsınız.",
@@ -5368,7 +5462,7 @@
       },
       "endedEnterpriseTitle": "Enterprise planınız sona erdi",
       "endedPlanTitle": "Planınız sona erdi",
-      "endedTeamTitle": "Ekip planınız sona erdi",
+      "endedTeamTitle": "Team planınız sona erdi",
       "expiredOn": "{date} tarihinde sona erdi",
       "loadFailed": "Bu sayfadaki her şey yüklenemedi.",
       "membersCount": "{maxSeats} üyeden {count} üye",
@@ -5378,6 +5472,7 @@
       "noMembers": "Üye yok",
       "noMembersMatch": "\"{query}\" ile eşleşen üye yok",
       "pendingInvitesCount": "{count} bekleyen davet | {count} bekleyen davet",
+      "planEndedFooter": "Planınız sona erdiğinden yeni üye ekleyemezsiniz.",
       "reactivateTeam": "Takımı Yeniden Etkinleştir",
       "resubscribe": "Yeniden abone ol",
       "searchPlaceholder": "Ara...",
@@ -5396,6 +5491,7 @@
     "menu": {
       "creatorCannotLeave": "Çalışma alanını oluşturan kişi, oluşturduğu çalışma alanından ayrılamaz",
       "deleteWorkspace": "Çalışma Alanını Sil",
+      "deleteWorkspaceAfterPlanEndsTooltip": "Bu çalışma alanını, planınız {date} tarihinde sona erdikten sonra silebilirsiniz",
       "deleteWorkspaceDisabledTooltip": "Önce çalışma alanınızın aktif aboneliğini iptal edin",
       "editWorkspace": "Çalışma alanı detaylarını düzenle",
       "leaveWorkspace": "Çalışma Alanından Ayrıl"
@@ -5448,6 +5544,7 @@
     "planCredits": {
       "tabs": {
         "activity": "Etkinlik",
+        "invoices": "Faturalar",
         "overview": "Krediler"
       }
     },
@@ -5509,6 +5606,7 @@
     "hideMinimap": "Mini Haritayı Gizle",
     "label": "Yakınlaştırma Kontrolleri",
     "showMinimap": "Mini Haritayı Göster",
+    "zoomPercentage": "Yakınlaştırma yüzdesi",
     "zoomToFit": "Sığdırmak İçin Yakınlaştır"
   }
 }

@@ -4078,9 +4078,12 @@
     }
   },
   "CreateCameraInfo": {
-    "description": "Constrói um camera_info. O modo 'orbit' mira com yaw/pitch/distância ao redor do alvo; 'look_at' posiciona a câmera em uma posição no mundo. As coordenadas estão no espaço mundial do visualizador (mão direita, Y para cima).",
+    "description": "Constrói um camera_info. O modo 'orbit' mira com guinada/inclinação/distância ao redor do alvo; 'look_at' posiciona a câmera na posição do mundo. As coordenadas pertencem ao espaço mundial do visualizador (destro, Y para cima).",
     "display_name": "Criar Informações da Câmera",
     "inputs": {
+      "camera_info_state": {
+        "name": "camera_info_state"
+      },
       "camera_type": {
         "name": "tipo_de_câmera",
         "tooltip": "Projeção usada pelo Render Splat: perspectiva (com profundidade) ou ortográfica (paralela)."
@@ -4860,7 +4863,7 @@
       },
       "language_code": {
         "name": "código_idioma",
-        "tooltip": "Código de idioma ISO-639-1 ou ISO-639-3 (ex: 'en', 'es', 'fra'). Deixe em branco para detecção automática."
+        "tooltip": "Código de idioma ISO 639-1 (por exemplo, 'en', 'es', 'ja'). Deixe em branco para detecção automática."
       },
       "model": {
         "name": "modelo",
@@ -4930,7 +4933,7 @@
       },
       "language_code": {
         "name": "código do idioma",
-        "tooltip": "Código de idioma ISO-639-1 ou ISO-639-3 (ex: 'en', 'es', 'fra'). Deixe em branco para detecção automática."
+        "tooltip": "Código de idioma ISO 639-1 (por exemplo, 'en', 'es', 'ja'). Deixe em branco para detecção automática."
       },
       "model": {
         "name": "modelo",
@@ -4938,15 +4941,6 @@
       },
       "model_similarity_boost": {
         "name": "impulso de similaridade"
-      },
-      "model_speed": {
-        "name": "velocidade"
-      },
-      "model_style": {
-        "name": "estilo"
-      },
-      "model_use_speaker_boost": {
-        "name": "usar impulso de locutor"
       },
       "output_format": {
         "name": "formato de saída",
@@ -5834,6 +5828,52 @@
       },
       "width": {
         "name": "largura"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "Flux3ImageNode": {
+    "description": "Gera uma imagem com FLUX 3 a partir de um prompt ou edita e combina até 10 imagens de referência. Consulte as referências no prompt como imagem 1, imagem 2 e assim por diante.",
+    "display_name": "Flux 3 Imagem",
+    "inputs": {
+      "aspect_ratio": {
+        "name": "aspect_ratio",
+        "tooltip": "'auto' segue a primeira imagem de referência ou escolhe uma proporção a partir do prompt."
+      },
+      "bounding_boxes": {
+        "name": "bounding_boxes",
+        "tooltip": "Caixas opcionais de Criar Caixas Delimitadoras que posicionam objetos ou texto na saída. As posições são relativas ao canvas, portanto informe a proporção da saída."
+      },
+      "control_after_generate": {
+        "name": "controle após gerar"
+      },
+      "grounding": {
+        "name": "grounding",
+        "tooltip": "Permite que o modelo pesquise o prompt na web e em buscas de imagens antes de gerar."
+      },
+      "images": {
+        "name": "images",
+        "tooltip": "Imagens de referência opcionais, até 10 no total, com pelo menos 256x256 pixels cada."
+      },
+      "prompt": {
+        "name": "prompt",
+        "tooltip": "O que gerar ou a edição a fazer. O prompt é interpretado e expandido antes da geração."
+      },
+      "resolution": {
+        "name": "resolution",
+        "tooltip": "Tamanho de saída na proporção escolhida: 0.75K equivale a cerca de 0,6 megapixels, 1K a 1 MP, 1.5K a 2,4 MP, 2K a 4,2 MP e 4K a 16,8 MP."
+      },
+      "safety_tolerance": {
+        "name": "safety_tolerance",
+        "tooltip": "Tolerância de moderação; 0 é o nível mais rigoroso."
+      },
+      "seed": {
+        "name": "seed",
+        "tooltip": "Semente para determinar se o nó deve ser executado novamente; o FLUX 3 escolhe sua própria semente, portanto os resultados reais são não determinísticos independentemente deste valor."
       }
     },
     "outputs": {
@@ -7434,7 +7474,7 @@
     "inputs": {
       "aspect_ratio": {
         "name": "aspect_ratio",
-        "tooltip": "A proporção do vídeo de saída."
+        "tooltip": "A proporção do vídeo de saída. Ignorada quando uma imagem de entrada é fornecida; o vídeo segue a proporção da imagem."
       },
       "control_after_generate": {
         "name": "control after generate"
@@ -7453,11 +7493,11 @@
       },
       "prompt": {
         "name": "prompt",
-        "tooltip": "Descrição em texto do vídeo desejado. Opcional para grok-imagine-video-1.5 quando uma imagem de entrada é fornecida."
+        "tooltip": "Descrição textual do vídeo desejado. Opcional para os modelos grok-imagine-video-1.5 quando uma imagem de entrada é fornecida."
       },
       "resolution": {
         "name": "resolution",
-        "tooltip": "A resolução do vídeo de saída. 1080p está disponível apenas para grok-imagine-video-1.5."
+        "tooltip": "A resolução do vídeo de saída. 1080p não está disponível para grok-imagine-video."
       },
       "seed": {
         "name": "seed",
@@ -18481,7 +18521,7 @@
   "PrimitiveInt": {
     "display_name": "Inteiro",
     "inputs": {
-      "fixed": {
+      "control_after_generate": {
         "name": "controle após gerar"
       },
       "value": {
@@ -22372,8 +22412,8 @@
   "SeedNode": {
     "display_name": "Seed",
     "inputs": {
-      "fixed": {
-        "name": "controlar após gerar"
+      "control_after_generate": {
+        "name": "controle após gerar"
       },
       "seed": {
         "name": "semente"
