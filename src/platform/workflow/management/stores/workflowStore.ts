@@ -24,13 +24,14 @@ import { defaultGraph } from '@/scripts/defaultGraph'
 import { useExecutionStore } from '@/stores/executionStore'
 import type { NodeExecutionId, NodeLocatorId } from '@/types/nodeIdentification'
 import {
+  createLeafNodeExecutionId,
   createLeafNodeLocatorId,
   createNodeExecutionId,
   createNodeLocatorId,
   parseNodeExecutionId,
   parseNodeLocatorId
 } from '@/types/nodeIdentification'
-import { parseNodeId } from '@/types/nodeId'
+import { parseNodeId, toNodeId } from '@/types/nodeId'
 import type { NodeId } from '@/types/nodeId'
 import { generateUUID, getPathDetails } from '@/utils/formatUtil'
 import { syncEntities } from '@/utils/syncUtil'
@@ -676,7 +677,14 @@ export const useWorkflowStore = defineStore('workflow', () => {
    * @returns The local node ID
    */
   const nodeLocatorIdToNodeId = (locatorId: NodeLocatorId): NodeId => {
-    return parseNodeLocatorId(locatorId)!.localNodeId
+    const parsed = parseNodeLocatorId(locatorId)
+    if (parsed) return parsed.localNodeId
+
+    // Root-graph locator minted whole by createLeafNodeLocatorId because its
+    // raw id itself contains a colon that isn't a subgraph-scope prefix
+    // (insert_workflow's remapped ids, PM-2037/PM-1580). There is no
+    // subgraph prefix to strip, so the locator IS the node id.
+    return parseNodeId(locatorId) ?? toNodeId(String(locatorId))
   }
 
   /**
@@ -690,7 +698,12 @@ export const useWorkflowStore = defineStore('workflow', () => {
     targetSubgraph?: Subgraph
   ): NodeExecutionId | null => {
     const parsed = parseNodeLocatorId(locatorId)
-    if (!parsed) return null
+    if (!parsed) {
+      // Same leaf-locator case as nodeLocatorIdToNodeId above: no subgraph
+      // to resolve against, so mint a leaf execution id from the whole
+      // locator instead of discarding it.
+      return createLeafNodeExecutionId(locatorId)
+    }
 
     const { subgraphUuid, localNodeId } = parsed
 
