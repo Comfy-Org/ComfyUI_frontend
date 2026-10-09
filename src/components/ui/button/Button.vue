@@ -31,6 +31,12 @@ function preventDisabledClick(event: MouseEvent): void {
   event.preventDefault()
   event.stopImmediatePropagation()
 }
+
+/** Block middle-button navigation while a link-style button is inactive. */
+function preventDisabledAuxClick(event: MouseEvent): void {
+  if (event.button !== 1) return
+  preventDisabledClick(event)
+}
 </script>
 
 <template>
@@ -49,6 +55,7 @@ function preventDisabledClick(event: MouseEvent): void {
       )
     "
     @click.capture="preventDisabledClick"
+    @auxclick.capture="preventDisabledAuxClick"
   >
     <i v-if="loading" class="pi pi-spin pi-spinner" aria-hidden="true" />
     <template v-if="loading">
