@@ -25,6 +25,17 @@
   }
 }
 
+@keyframes agent-reveal-rise {
+  from {
+    opacity: 0;
+    transform: translateY(100%);
+  }
+  to {
+    opacity: 1;
+    transform: none;
+  }
+}
+
 @keyframes agent-row-enter {
   from {
     opacity: 0;
@@ -74,9 +85,26 @@
     -webkit-text-fill-color: currentcolor;
   }
 
-  .agent-row-enter {
+  .agent-row-enter,
+  .agent-reveal-line {
     animation: none;
   }
+}
+
+.disable-animations :where(#agent-panel-root, .agent-scope) .agent-reveal-line {
+  animation: none;
+}
+
+/* The clip reaches past the box so descenders and focus rings are not cut at rest. */
+.agent-reveal-mask {
+  display: block;
+  clip-path: inset(-0.25em -1em);
+}
+
+.agent-reveal-line {
+  display: block;
+  animation: agent-reveal-rise 1000ms cubic-bezier(0.23, 1, 0.32, 1) backwards;
+  animation-delay: calc(var(--reveal-index, 0) * 100ms);
 }
 
 .agent-row-enter {

@@ -454,7 +454,7 @@ defineExpose({ addAttachment, updateAttachment, removeAttachment })
           :user-name
           @insert="
             (text, prompt) => {
-              composerRef?.insert(text, prompt)
+              void composerRef?.insert(text, prompt)
             }
           "
         />

@@ -4,6 +4,9 @@ import { useI18n } from 'vue-i18n'
 
 import Button from '@/components/ui/button/Button.vue'
 
+import GreetingHeading from './GreetingHeading.vue'
+import RevealLine from './RevealLine.vue'
+
 import type { AgentGreeting } from '../../types/proactiveGreeting'
 
 const { greeting, userName } = defineProps<{
@@ -40,29 +43,28 @@ onMounted(() => {
       class="mx-auto my-auto flex w-full max-w-88 shrink-0 flex-col items-center gap-4 pt-12 text-center"
     >
       <div class="flex flex-col items-center gap-2">
-        <p class="my-0 text-base font-semibold text-base-foreground">
-          {{ t('agent.greeting', { name: userName ?? t('agent.friend') }) }}
-          <br />
-          {{ t(`${key}.title`) }}
-        </p>
+        <GreetingHeading reveal :user-name :title="t(`${key}.title`)" />
         <p class="my-0 text-sm/5 text-muted-foreground">
-          {{ t(`${key}.description`, params) }}
+          <RevealLine :index="2">
+            {{ t(`${key}.description`, params) }}
+          </RevealLine>
         </p>
       </div>
-      <Button
-        v-if="greeting.kind === 'unconnectedInput'"
-        type="button"
-        variant="inverted"
-        size="sm"
-        :disabled="asked"
-        @click="onAsk"
-      >
-        <i
-          class="icon-[lucide--circle-question-mark] size-3 shrink-0"
-          aria-hidden="true"
-        />
-        {{ t(`${key}.action`) }}
-      </Button>
+      <RevealLine v-if="greeting.kind === 'unconnectedInput'" :index="3">
+        <Button
+          type="button"
+          variant="inverted"
+          size="sm"
+          :disabled="asked"
+          @click="onAsk"
+        >
+          <i
+            class="icon-[lucide--circle-question-mark] size-3 shrink-0"
+            aria-hidden="true"
+          />
+          {{ t(`${key}.action`) }}
+        </Button>
+      </RevealLine>
     </div>
   </div>
 </template>
