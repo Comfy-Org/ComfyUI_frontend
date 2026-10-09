@@ -51,3 +51,14 @@ on exact92e; only the isolated DANNY successor changes the guarded transport.
 Visual work follows the live Figma prerequisite in
 `docs/guidance/design-standards.md`. Consent, progress mounting, graph refresh,
 exact-release feedback and production route/browser acceptance remain pending.
+
+The unmounted poller policy `magic-patch-client-traversal-limits/1` permits at
+most 20 pages, 1,000 returned entries (duplicates count), and 15 seconds per
+traversal. Composed with the bounded client, this gives a conservative maximum
+of 20 MiB accepted decoded bodies, rather than measuring compressed wire bytes.
+It aborts on scope switch/disable or superseding refresh. Even an abort-insensitive
+late reply cannot publish or request a next page; actual transport cancellation
+still needs qualification. Each refresh begins without a cursor under a new scan.
+Empty-chunk/fragmentation controls for individual reads remain pending; the
+traversal deadline aborts the actual Fetch signal. This updates the earlier
+pending whole-traversal budget gate without conferring any route/UI readiness.
