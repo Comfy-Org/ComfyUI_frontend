@@ -9,6 +9,7 @@ import { SELF_STYLED_PANEL_CONTENT_CLASS } from '@/components/ui/dialog/dialog.v
 import { useFeatureFlags } from '@/composables/useFeatureFlags'
 import { t } from '@/i18n'
 import { SSO_REQUIRED_DIALOG_KEY } from '@/platform/auth/sso/ssoRequiredDialogKey'
+import { presentInline } from '@/platform/auth/sso/ssoRequiredInline'
 import { reportError } from '@/platform/telemetry/reportError'
 import { useToastStore } from '@/platform/updates/common/toastStore'
 import { useDialogStore } from '@/stores/dialogStore'
@@ -37,6 +38,7 @@ export function presentSsoRequired(context: SsoRequiredContext = {}): boolean {
       organizationId: context.organizationId
     })
   }
+  if (presentInline(known)) return true
   void import('@/platform/auth/sso/SsoRequiredDialogContent.vue')
     .then(({ default: component }) => {
       if (dialogStore.isDialogOpen(SSO_REQUIRED_DIALOG_KEY)) {
