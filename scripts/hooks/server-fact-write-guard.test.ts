@@ -280,7 +280,7 @@ describe('server-fact-write-guard hook', () => {
 
     expect(result.status).toBe(0)
     expect(result.stderr).toMatch(
-      /^server-fact hook skipped: oxlint did not produce a report/
+      /^server-fact guard skipped \(.+\): oxlint did not produce a report/
     )
   })
 })

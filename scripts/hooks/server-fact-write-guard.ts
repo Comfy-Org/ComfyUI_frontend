@@ -205,7 +205,7 @@ function reviewEdit(
 
 if (isMainModule(import.meta.url)) {
   const config = process.env.SERVER_FACT_OXLINT_CONFIG ?? SERVER_FACT_CONFIG
-  await runHook((event) =>
+  await runHook('write-guard', (event) =>
     decideWrite(event, (contents) => lintSnapshot(contents, config))
   )
 }

@@ -1,3 +1,7 @@
+import { execFileSync } from 'node:child_process'
+import { appendFileSync, readFileSync } from 'node:fs'
+import path from 'node:path'
+
 import { z } from 'zod'
 
 import { GUIDANCE } from '../../tools/oxlint-plugins/serverFacts'
@@ -29,6 +33,7 @@ export type SnapshotReview =
 
 const AGENT_GUIDANCE = [
   'Render each server fact as received: no &&, ||, ??, ternary, comparison or helper around it, and do not choose which fact answers the question.',
+  'Local UI state (loading, in-flight, validity) may only narrow it, as in canTopUp && !isLoading.',
   "If the UI needs a fact the API does not emit, open a backend ticket and wrap the interim expression in pendingServerFact('BE-xxxx', ...).",
   'Never substitute another field: can_change_seats is not member management.',
   'See docs/adr/API-SERVER-FACTS-0042-server-facts-are-rendered-not-derived.md'
@@ -71,28 +76,94 @@ async function readStdin(): Promise<string> {
   return Buffer.concat(chunks).toString('utf8')
 }
 
-function exitWith(decision: HookDecision): never {
+const SKIP_LOG = 'server-fact-guard-skips.log'
+const SKIP_WINDOW_MS = 7 * 24 * 60 * 60 * 1000
+
+const skipEntrySchema = z.object({ ts: z.string() })
+
+export function recentSkipCount(logText: string, now: Date): number {
+  return logText
+    .split('\n')
+    .map((line) => skipEntrySchema.safeParse(parseJson(line)))
+    .filter(
+      (entry) =>
+        entry.success &&
+        now.getTime() - Date.parse(entry.data.ts) < SKIP_WINDOW_MS
+    ).length
+}
+
+function parseJson(text: string): unknown {
+  try {
+    return JSON.parse(text)
+  } catch {
+    return undefined
+  }
+}
+
+function readOptional(file: string): string {
+  try {
+    return readFileSync(file, 'utf8')
+  } catch {
+    return ''
+  }
+}
+
+/** Appends the skip to a log in the git common dir, shared by worktrees and never committed. */
+function recordSkip(hook: string, reason: string, cwd: string): string {
+  try {
+    const gitDir = execFileSync(
+      'git',
+      ['rev-parse', '--path-format=absolute', '--git-common-dir'],
+      { cwd, encoding: 'utf8', stdio: ['ignore', 'pipe', 'ignore'] }
+    ).trim()
+    const logPath = path.join(gitDir, SKIP_LOG)
+    const now = new Date()
+    appendFileSync(
+      logPath,
+      `${JSON.stringify({ ts: now.toISOString(), hook, reason })}\n`
+    )
+    const count = recentSkipCount(readOptional(logPath), now)
+    return `${count} ${count === 1 ? 'skip' : 'skips'} in the last 7 days, see ${logPath}`
+  } catch {
+    return 'skip log unavailable'
+  }
+}
+
+function exitWith(decision: HookDecision, hook: string, cwd: string): never {
   if (decision.kind === 'block') {
     process.stderr.write(`${decision.report}\n`)
     process.exit(2)
   }
   if (decision.kind === 'warn') {
-    process.stderr.write(`server-fact hook skipped: ${decision.warning}\n`)
+    const record = recordSkip(hook, decision.warning, cwd)
+    process.stderr.write(
+      `server-fact guard skipped (${record}): ${decision.warning}\n`
+    )
   }
   process.exit(0)
 }
 
-/** A broken guard must never block the tool, so every internal failure allows it. */
+/**
+ * A broken guard must never block the tool, so every internal failure allows
+ * it. Each skip is logged so a broken hook cannot become a silent bypass.
+ */
 export async function runHook(
+  hook: string,
   decide: (event: HookEvent) => HookDecision
 ): Promise<never> {
+  let cwd = process.cwd()
   try {
-    const event = hookEventSchema.safeParse(JSON.parse(await readStdin()))
+    const event = hookEventSchema.safeParse(parseJson(await readStdin()))
     if (!event.success) {
-      return exitWith({ kind: 'warn', warning: 'unreadable hook event' })
+      return exitWith(
+        { kind: 'warn', warning: 'unreadable hook event' },
+        hook,
+        cwd
+      )
     }
-    return exitWith(decide(event.data))
+    cwd = event.data.cwd ?? cwd
+    return exitWith(decide(event.data), hook, cwd)
   } catch (error) {
-    return exitWith({ kind: 'warn', warning: String(error) })
+    return exitWith({ kind: 'warn', warning: String(error) }, hook, cwd)
   }
 }

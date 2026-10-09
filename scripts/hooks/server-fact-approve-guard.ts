@@ -292,5 +292,5 @@ export function decideApproval(
 }
 
 if (isMainModule(import.meta.url)) {
-  await runHook((event) => decideApproval(event))
+  await runHook('approve-guard', (event) => decideApproval(event))
 }
