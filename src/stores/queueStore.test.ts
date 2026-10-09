@@ -4,6 +4,7 @@ import type { JobListItem } from '@/platform/remote/comfyui/jobs/jobTypes'
 import type { TaskOutput } from '@/platform/remote/comfyui/execution/types'
 import { api } from '@/scripts/api'
 import { useExecutionStore } from '@/stores/executionStore'
+import { toNodeId } from '@/types/nodeId'
 import {
   TaskItemImpl,
   useQueuePendingTaskCountStore,
@@ -773,6 +774,36 @@ describe('useQueueStore', () => {
       expect(store.historyTasks[0]).toBe(initialTask)
       // Should preserve array identity when history is unchanged
       expect(store.historyTasks).toBe(initialHistoryTasks)
+    })
+  })
+
+  describe('terminal-job reconciliation', () => {
+    it('clears progress for a job the backend reports only in history', async () => {
+      // This is the only production caller of reconcileTerminalJobs, and it was
+      // unverified: deleting the call, or swapping its two arguments so every
+      // running job is treated as terminal, left the whole suite green.
+      // Asserting the eviction rather than spying catches both.
+      const executionStore = useExecutionStore()
+      executionStore.nodeProgressStatesByJob = {
+        'hist-stuck': {
+          '1': {
+            value: 3,
+            max: 10,
+            state: 'running',
+            node_id: toNodeId('1'),
+            prompt_id: 'hist-stuck'
+          }
+        }
+      }
+
+      mockGetQueue.mockResolvedValue({ Running: [], Pending: [] })
+      mockGetHistory.mockResolvedValue([createHistoryJob(1, 'hist-stuck')])
+
+      await store.update()
+
+      expect(
+        executionStore.nodeProgressStatesByJob['hist-stuck']
+      ).toBeUndefined()
     })
   })
 

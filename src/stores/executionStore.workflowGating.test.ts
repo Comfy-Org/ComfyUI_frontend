@@ -376,6 +376,10 @@ describe('executionStore workflow gating', () => {
 
     it('execution_error from another workflow leaves active state alone but clears its initializing flag', () => {
       queueJobFrom('job-b', workflowB)
+      // Without this the job is never initializing, so the assertion below
+      // passes whatever the code does.
+      fire('notification', { id: 'job-b', value: 'Waiting for a machine' })
+      expect(store.isJobInitializing('job-b')).toBe(true)
 
       fire('execution_error', {
         prompt_id: 'job-b',

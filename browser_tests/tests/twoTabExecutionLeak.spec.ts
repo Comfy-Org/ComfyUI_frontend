@@ -100,29 +100,6 @@ test.describe('cross-tab execution leak', { tag: '@ui' }, () => {
     ).toHaveCount(0)
   })
 
-  test('the background tab records its own run while the other is visible', async ({
-    comfyPage,
-    getWebSocket
-  }) => {
-    const exec = new ExecutionHelper(comfyPage, await getWebSocket())
-    const simulator = new BackendSimulator(exec)
-    const workflowAId = await activeWorkflowId(comfyPage)
-
-    const jobId = await exec.run()
-    await comfyPage.nextFrame()
-    const running = simulator.prompt(jobId, { workflowId: workflowAId })
-    simulator.play([running.start()])
-
-    await comfyPage.workflow.openPersistedWorkflow(WORKFLOW_B)
-    simulator.play([running.success()])
-
-    // The tab badge is per-workflow state, so it must still reach its terminal
-    // mark while another tab is in front — the regression CI caught earlier.
-    const tabA = comfyPage.menu.topbar.getWorkflowTab(WORKFLOW_A)
-    await expect(tabA.getByRole('img', { name: 'Completed' })).toBeVisible()
-    await expect(tabA.getByRole('img', { name: 'Running' })).toHaveCount(0)
-  })
-
   test('the node the user is looking at does not take over a foreign run', async ({
     comfyPage,
     getWebSocket
@@ -279,7 +256,18 @@ test.describe('cross-tab execution leak', { tag: '@ui' }, () => {
       running.executed(SAVE_IMAGE_NODE, imageOutput('from-the-original.png')),
       running.success()
     ])
-    await comfyPage.nextFrame()
+
+    // A positive marker before the absence checks. `WebSocketRoute.send` does
+    // not await page-side handling and progress is coalesced per frame, so
+    // reading straight after `play` can assert on state the frames have not
+    // reached yet, and a gate that wrongly applied them would still pass. The
+    // original's own tab reaching Completed is driven by the same terminal
+    // frame, so polling it proves the batch was processed.
+    await expect(
+      comfyPage.menu.topbar
+        .getWorkflowTab(WORKFLOW_A)
+        .getByRole('img', { name: 'Completed' })
+    ).toBeVisible()
 
     const leaked = await comfyPage.page.evaluate(() =>
       JSON.stringify(window.app!.nodeOutputs)

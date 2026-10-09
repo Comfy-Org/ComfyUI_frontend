@@ -134,7 +134,9 @@ test.describe('workflow-scoped execution', { tag: '@ui' }, () => {
       workflowId: FOREIGN_WORKFLOW_ID
     })
 
-    // Seed 11 fixes the order; it is printed here so a failure is reproducible.
+    // Seed 2 puts the foreign start inside the visible run, which is the
+    // ordering that leaks without the gate. Seed 11 put it before the visible
+    // run even started, so the old order could not tear anything down.
     simulator.play(
       interleave(
         [
@@ -149,11 +151,16 @@ test.describe('workflow-scoped execution', { tag: '@ui' }, () => {
           foreign.executed(SAVE_IMAGE_NODE, imageOutput('theirs.png')),
           foreign.success()
         ],
-        11
+        2
       )
     )
 
     await expect(comfyPage.appMode.outputHistory.imageOutputs).toHaveCount(1)
+    // Which one was counted matters: a count of one is also satisfied by the
+    // foreign output arriving instead of this workflow's own.
+    await expect(
+      comfyPage.appMode.outputHistory.imageOutputs.first()
+    ).not.toHaveAttribute('src', /theirs\.png/)
   })
 
   test('an output that arrives after the terminal frame is ignored', async ({
@@ -332,13 +339,17 @@ test.describe('workflow-scoped execution', { tag: '@ui' }, () => {
     simulator.play([mine.start(), ...mine.nodeRunning(KSAMPLER_NODE, 1, 4)])
 
     // Binary frames carry a JSON header with prompt_id but core does not stamp
-    // workflow_id on them, so this leans on the queue-time mapping. Pinned
-    // here because the binary contract is a separate follow-up.
+    // workflow_id on them, so this leans on the queue-time mapping.
     simulator.play([foreign.latentPreview(KSAMPLER_NODE)])
 
-    await expect(comfyPage.appMode.outputHistory.imageOutputs).toHaveCount(0)
-    await expect(
-      comfyPage.appMode.outputHistory.inProgressItems.first()
-    ).toBeVisible()
+    // A leaked preview surfaces as a latent preview, not an image output, so
+    // asserting on imageOutputs held whatever the gate did. Then this
+    // workflow's own preview is the barrier: it proves previews render at all
+    // and that the foreign one was processed and discarded rather than still
+    // in flight.
+    await expect(comfyPage.appMode.outputHistory.latentPreviews).toHaveCount(0)
+
+    simulator.play([mine.latentPreview(KSAMPLER_NODE)])
+    await expect(comfyPage.appMode.outputHistory.latentPreviews).toHaveCount(1)
   })
 })

@@ -153,4 +153,43 @@ describe('ComfyApi realtime socket reset', () => {
     expect(window.name).toBe('')
     expect(sessionStorage.getItem('clientId')).toBeNull()
   })
+
+  it('exposes the executing ids during dispatch and clears them after', async () => {
+    // The `executing` event carries only a node id for extension
+    // compatibility, so the store reads prompt_id and workflow_id off this
+    // field during the synchronous dispatch. Nothing pinned either half:
+    // turning the `finally` into a no-op left every api and executionStore
+    // test green, and a field left set would attribute the next frame to a
+    // stale prompt.
+    await api.resetSocket()
+    const socket = FakeWebSocket.instances[0]
+    socket.simulateOpen()
+
+    let seenDuringDispatch: unknown = 'not called'
+    const listener = () => {
+      seenDuringDispatch = api.lastExecutingMessage
+    }
+    api.addEventListener('executing', listener)
+
+    socket.handlers['message']?.({
+      data: JSON.stringify({
+        type: 'executing',
+        data: {
+          node: '3',
+          display_node: '3',
+          prompt_id: 'job-a',
+          workflow_id: 'wf-a'
+        }
+      })
+    })
+
+    api.removeEventListener('executing', listener)
+
+    expect(seenDuringDispatch).toMatchObject({
+      prompt_id: 'job-a',
+      workflow_id: 'wf-a',
+      node: '3'
+    })
+    expect(api.lastExecutingMessage).toBeNull()
+  })
 })
