@@ -1001,10 +1001,18 @@
     $('domainLegend').hidden = !domainView
     if (!domainView) drawMap()
   }
+  // The hash is `<tab>/<state>`, e.g. #domains/pr-19856 or #open-prs/42.
+  // The tab is left out when it is the state's default, so #42 and #pr-19856
+  // keep working; a tab alone, e.g. #domains, means the latest commit.
+  const TAB_HASH = { details: 'details', prs: 'open-prs', domains: 'domains' }
+  const defaultTab = (s) => (prOfState.has(s) ? 'prs' : 'details')
   function syncHash() {
     const pr = prOfState.get(current)
-    const tabHash = { prs: 'open-prs', domains: 'domains' }[activeTab]
-    const hash = pr ? `pr-${pr.number}` : (tabHash ?? String(current))
+    const state = pr ? `pr-${pr.number}` : String(current)
+    const hash =
+      activeTab === defaultTab(current)
+        ? state
+        : `${TAB_HASH[activeTab]}/${state}`
     history.replaceState(null, '', `#${hash}`)
   }
   for (const name of Object.keys(TABS)) {
@@ -1201,17 +1209,19 @@
   new ResizeObserver(redraw).observe(canvas)
   matchMedia('(prefers-color-scheme: dark)').addEventListener('change', drawMap)
 
+  function stateFromHash(token) {
+    if (token === undefined) return LAST
+    const pr = prs.find((p) => `pr-${p.number}` === token)
+    if (pr) return pr.state
+    const step = Number(token)
+    return Number.isInteger(step) && step > 0 && step <= LAST ? step : 0
+  }
   function applyHash() {
-    const hash = location.hash.slice(1)
-    const hashPr = prs.find((pr) => `pr-${pr.number}` === hash)
-    const hashStep = Number(hash)
-    if (hash === 'domains') selectTab('domains')
-    else if (hashPr || hash === 'open-prs') selectTab('prs')
-    if (hashPr) return hashPr.state
-    if (hash === 'open-prs' || hash === 'domains') return LAST
-    return Number.isInteger(hashStep) && hashStep > 0 && hashStep <= LAST
-      ? hashStep
-      : 0
+    const parts = location.hash.slice(1).split('/')
+    const tab = Object.keys(TAB_HASH).find((key) => TAB_HASH[key] === parts[0])
+    const s = stateFromHash(tab ? parts[1] : parts[0])
+    selectTab(tab ?? defaultTab(s))
+    return s
   }
   addEventListener('hashchange', () => {
     stop()
