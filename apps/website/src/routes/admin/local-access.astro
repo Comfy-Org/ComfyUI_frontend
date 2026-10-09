@@ -2,7 +2,9 @@
 import { adminButtonVariants } from '@/components/cms/ui/adminButton'
 import BaseLayout from '@/layouts/BaseLayout.astro'
 import { isLocalAccess } from './local-access'
-if (!isLocalAccess(Astro)) return new Response('Not found', { status: 404 })
+const demo = Boolean(Astro.locals.siteDemo)
+if (!demo && !isLocalAccess(Astro))
+  return new Response('Not found', { status: 404 })
 const t = Astro.locals.t
 ---
 
@@ -14,11 +16,13 @@ const t = Astro.locals.t
       class="grid w-full max-w-sm gap-4 rounded-xl border border-admin-line bg-admin-card p-6"
     >
       <div class="grid gap-1">
-        <p class="text-xs text-admin-muted">{t('cmsAdmin.localReview')}</p>
+        <p class="text-xs text-admin-muted">
+          {t(demo ? 'cmsAdmin.demo' : 'cmsAdmin.localReview')}
+        </p>
         <h1 class="text-admin-title leading-tight">{t('cmsAdmin.title')}</h1>
       </div>
       <p class="text-sm leading-relaxed text-admin-muted">
-        {t('cmsAdmin.localHelp')}
+        {t(demo ? 'cmsAdmin.demoHelp' : 'cmsAdmin.localHelp')}
       </p>
       <form method="post" action="/admin/local-session" data-astro-reload>
         <button

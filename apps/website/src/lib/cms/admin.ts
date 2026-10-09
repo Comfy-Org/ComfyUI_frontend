@@ -3,6 +3,7 @@ import type { APIContext } from 'astro'
 import { zContentCatalogReview } from '@comfyorg/ingest-types/zod'
 import type { ContentCatalogReview } from '@comfyorg/ingest-types'
 import { normalizeProjection } from './catalog-contract'
+import { catalogFetch } from './demo'
 
 export interface SiteSession {
   credential: string
@@ -26,7 +27,7 @@ export async function siteAPI(
   if (!path.startsWith('/admin/api/site/'))
     throw new Error('Invalid site API path')
   try {
-    return await fetch(new URL(path, origin), {
+    return await catalogFetch(new URL(path, origin), {
       ...init,
       cache: 'no-store',
       signal: AbortSignal.timeout(5000),

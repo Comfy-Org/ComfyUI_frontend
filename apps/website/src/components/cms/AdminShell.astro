@@ -62,7 +62,7 @@ const item =
             >}
           </a>
         })}
-        {Astro.locals.siteLocalAccess && (
+        {Astro.locals.siteLocalAccess && !Astro.locals.siteDemo && (
           <>
             <p
               class="mt-4 hidden h-6 items-center px-3 text-xs font-medium tracking-[0.06em] text-admin-subtle uppercase lg:flex"
@@ -79,6 +79,9 @@ const item =
       <div
         class="mt-auto hidden gap-1 rounded-lg border border-admin-line p-3 lg:grid"
       >
+        {Astro.locals.siteDemo && (
+          <StatusLabel tone="warning" label={t('cmsAdmin.demo')} />
+        )}
         <StatusLabel
           tone="success"
           label={t('cmsAdmin.live', {

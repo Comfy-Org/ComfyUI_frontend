@@ -5,6 +5,7 @@ import { modelSchema } from '@/config/models-catalogue-data'
 import { detailSchema } from '@/config/models-page-data'
 import type { SiteSession } from './admin'
 import { normalizeProjection } from './catalog-contract'
+import { catalogFetch } from './demo'
 
 // Server-only configuration. Browser islands read same-origin JSON endpoints.
 export const cmsEnabled = () => Boolean(process.env.SITE_CATALOG_API_URL)
@@ -24,7 +25,7 @@ export async function loadSiteCatalog(session?: SiteSession) {
       url.searchParams.set('eligible', 'true')
       if (session.preview?.now) url.searchParams.set('now', session.preview.now)
     }
-    const response = await fetch(url, {
+    const response = await catalogFetch(url, {
       ...(session
         ? { headers: { Authorization: `Bearer ${session.credential}` } }
         : {}),

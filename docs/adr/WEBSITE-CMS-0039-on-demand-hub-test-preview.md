@@ -59,15 +59,25 @@ until the backend can exclude single records. Staff session credentials are veri
 on every request; cookies select Draft/Live and an effective visibility clock
 but do not grant permissions. Mutation forms enforce Origin/CSRF and use native
 navigation so client islands do not retain a previous selection. Draft Preview
-shows a slim yellow bar with Draft/Live, a time picker that can jump to
+shows a slim neutral bar with Draft/Live, a time picker that can jump to
 scheduled launches, language, a list of the Draft's changes, and Exit.
-Staff enter through a floating button and review in a sidebar/action-area layout
-using the regular website tokens. Changes are grouped by the field an editor recognises,
+Staff enter through a floating button and review in a sidebar/action-area layout.
+The admin and preview bar are work tools, so they take the developer platform's
+graphite palette and control scale (`--color-admin-*` tokens and the reka-ui
+primitives in `components/cms/ui`) rather than the marketing site's ink and yellow. Changes are grouped by the field an editor recognises,
 showing before and after values and highlighting added list items, rather than
 dumping whole records or JSON paths. The local-only sign-in
 page shares the website layout and remains inaccessible to forwarded visitors.
 Direct-loopback local review can use an isolated local staff account; that
 helper rejects forwarded requests and cannot be used on Vercel.
+
+A shareable design demo exists for review without any backend: a pull request
+labelled `cms-demo` builds its Vercel preview with `SITE_CATALOG_DEMO=1`, which
+answers the site API from the in-memory mock (`lib/cms/mock-ingest.ts`, the same
+one `pnpm dev:cms` serves locally) seeded with the public Hub records. Anyone
+with the link can enter through `/admin/local-access`; nothing reaches an
+ingest service, the state lives in one function instance and resets, and the
+mode is refused when `VERCEL_ENV` is `production`.
 
 Temporary ngrok tester invitations are available only in local dev. The owner
 creates/revokes one-use named review/edit/publish invitations on the loopback

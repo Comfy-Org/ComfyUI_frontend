@@ -8,6 +8,7 @@ declare global {
       t: typeof t
       site?: SiteSession
       siteLocalAccess?: boolean
+      siteDemo?: boolean
     }
   }
 

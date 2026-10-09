@@ -3,6 +3,7 @@ import { ExternalLink, Pencil } from '@lucide/vue'
 
 import QueueThumb from '@/components/cms/QueueThumb.vue'
 import AdminButton from '@/components/cms/ui/AdminButton.vue'
+import AdminTooltip from '@/components/cms/ui/AdminTooltip.vue'
 import StatusLabel from '@/components/cms/ui/StatusLabel.vue'
 import type { Locale } from '@/i18n/translations'
 import { translationsFor } from '@/i18n/translations'
@@ -26,7 +27,7 @@ const meta = [t(`cmsAdmin.kind.${row.kind}`), row.provider]
 
 <template>
   <li
-    class="grid min-h-14 grid-cols-[3.5rem_minmax(0,1fr)] items-center gap-3 border-b border-admin-hover px-4 py-2 text-sm transition-colors last:border-b-0 hover:bg-admin-hover md:grid-cols-[3.5rem_minmax(0,1fr)_auto]"
+    class="grid min-h-14 grid-cols-[3.5rem_minmax(0,1fr)_auto] items-center gap-3 border-b border-admin-hover px-4 py-2 text-sm transition-colors last:border-b-0 hover:bg-admin-hover"
   >
     <QueueThumb :src="row.thumbnail" class="w-14" />
     <div class="grid min-w-0 gap-1">
@@ -48,24 +49,32 @@ const meta = [t(`cmsAdmin.kind.${row.kind}`), row.provider]
         <StatusLabel v-if="appears" tone="warning" :label="appears" />
       </span>
     </div>
-    <div class="col-span-2 flex flex-wrap gap-1 md:col-span-1">
-      <AdminButton
-        :href="pageOf(row.slug)"
-        variant="ghost"
-        size="sm"
-        :icon="ExternalLink"
-      >
-        {{ t('cmsAdmin.content.view') }}
-      </AdminButton>
-      <AdminButton
-        variant="ghost"
-        size="sm"
-        disabled
-        :title="t('cmsAdmin.content.editSoon')"
-        :icon="Pencil"
-      >
-        {{ t('cmsAdmin.content.edit') }}
-      </AdminButton>
+    <div class="flex gap-1">
+      <AdminTooltip :content="t('cmsAdmin.content.view')">
+        <AdminButton
+          :href="pageOf(row.slug)"
+          variant="ghost"
+          size="icon"
+          :aria-label="t('cmsAdmin.content.view')"
+        >
+          <ExternalLink class="size-4" />
+        </AdminButton>
+      </AdminTooltip>
+      <AdminTooltip :content="t('cmsAdmin.content.editSoon')">
+        <span
+          tabindex="0"
+          class="rounded-lg outline-none focus-visible:outline-2 focus-visible:outline-admin-fg"
+        >
+          <AdminButton
+            variant="ghost"
+            size="icon"
+            disabled
+            :aria-label="t('cmsAdmin.content.edit')"
+          >
+            <Pencil class="size-4" />
+          </AdminButton>
+        </span>
+      </AdminTooltip>
     </div>
   </li>
 </template>

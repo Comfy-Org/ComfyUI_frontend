@@ -68,7 +68,17 @@ export default defineConfig({
     define: {
       __VUE_I18N_LEGACY_API__: false,
       __VUE_I18N_FULL_INSTALL__: false,
-      __INTLIFY_PROD_DEVTOOLS__: false
+      __INTLIFY_PROD_DEVTOOLS__: false,
+      // The Hub admin demo is chosen when the preview is built, and a Vercel
+      // function does not see build-only variables, so the choice is baked in.
+      ...(process.env.SITE_CATALOG_DEMO === '1'
+        ? {
+            'process.env.SITE_CATALOG_DEMO': JSON.stringify('1'),
+            'process.env.SITE_CATALOG_API_URL': JSON.stringify(
+              process.env.SITE_CATALOG_API_URL
+            )
+          }
+        : {})
     },
     optimizeDeps: {
       // Leaflet only reaches the graph through a dynamic import inside an

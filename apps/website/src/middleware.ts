@@ -4,6 +4,7 @@ import { defineMiddleware } from 'astro:middleware'
 import { resolveLocale } from './config/locales'
 import { translationsFor } from './i18n/translations'
 import { isLocalAccess } from '@/routes/admin/local-access'
+import { demoMode } from '@/lib/cms/demo'
 import { TESTER_COOKIE, localCredential, verifyTester } from '@/lib/cms/testers'
 import {
   SESSION_COOKIE,
@@ -140,7 +141,9 @@ export const onRequest = defineMiddleware(async (context, next) => {
   const admin = isAdmin(context.url.pathname)
   if (context.isPrerendered) return admin ? denied(404) : next()
   const cms = Boolean(process.env.SITE_CATALOG_API_URL)
-  context.locals.siteLocalAccess = cms && isLocalAccess(context)
+  context.locals.siteDemo = cms && demoMode()
+  context.locals.siteLocalAccess =
+    cms && (isLocalAccess(context) || context.locals.siteDemo)
   const signIn = isSignIn(context)
   if (cms && !signIn) {
     const failure = await authenticate(context)

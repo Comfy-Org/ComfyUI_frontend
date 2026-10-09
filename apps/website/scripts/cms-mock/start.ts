@@ -4,7 +4,9 @@ import { join } from 'node:path'
 
 import { repoRoot, websiteRoot } from '@website/paths'
 
-import { MOCK_CREDENTIAL, startMockIngest } from './server'
+import { MOCK_CREDENTIAL } from '@/lib/cms/mock-ingest'
+
+import { startMockIngest } from './server'
 
 const MOCK_PORT = 4400
 const stateDir = join(websiteRoot, '.cms-mock')
