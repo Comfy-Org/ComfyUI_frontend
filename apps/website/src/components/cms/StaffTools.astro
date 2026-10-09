@@ -6,7 +6,7 @@ const adminPage =
 const t = Astro.locals.t
 ---
 
-{!adminPage && (staff || local) && <a
+{!adminPage && !staff?.preview && (staff || local) && <a
   data-astro-reload
   href={staff ? '/admin/' : '/admin/local-access'}
   class="fixed right-6 bottom-6 z-40 flex h-10 items-center gap-2 rounded-lg border border-admin-line bg-admin-card px-4 font-admin text-sm text-admin-fg shadow-admin-popover transition-colors hover:bg-admin-raised focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-admin-fg"

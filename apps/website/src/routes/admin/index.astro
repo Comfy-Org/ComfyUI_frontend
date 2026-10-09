@@ -2,13 +2,17 @@
 import type { SiteSubmission } from '@comfyorg/ingest-types'
 import { zSiteSubmission } from '@comfyorg/ingest-types/zod'
 import AdminShell from '@/components/cms/AdminShell.astro'
+import { randomUUID } from 'node:crypto'
 import ContentList from '@/components/cms/ContentList.vue'
+import ContentEditor from '@/components/cms/editor/ContentEditor.vue'
+import NewContentPicker from '@/components/cms/editor/NewContentPicker.vue'
 import DraftQueue from '@/components/cms/DraftQueue.vue'
 import RollbackButton from '@/components/cms/RollbackButton.vue'
 import PageHeader from '@/components/cms/ui/PageHeader.vue'
 import StatusLabel from '@/components/cms/ui/StatusLabel.vue'
 import { resolveLocale } from '@/config/locales'
-import { siteAPI } from '@/lib/cms/admin'
+import { draftChanges, siteAPI } from '@/lib/cms/admin'
+import { editorState, newFromTemplate } from '@/lib/cms/editor'
 import { formatUtc } from '@/lib/cms/format'
 import { buildQueue, contentRows } from '@/lib/cms/queue'
 
@@ -17,9 +21,26 @@ if (!session) return new Response('Not found', { status: 404 })
 const t = Astro.locals.t
 const locale = resolveLocale(Astro.currentLocale)
 const page = Astro.params.page?.replace(/\/$/, '') ?? ''
-if (!['', 'content', 'history'].includes(page))
+const editId = page.match(/^edit\/([0-9a-f-]{36})$/i)?.[1]
+if (!['', 'content', 'history', 'new'].includes(page) && !editId)
   return new Response('Not found', { status: 404 })
 const review = session.review
+const findRecord = (uid: string | null | undefined) =>
+  review.draft.items.find((item) => item.uid === uid) ??
+  review.live.items.find((item) => item.uid === uid)
+const editRecord = editId ? findRecord(editId) : undefined
+if (editId && !editRecord) return new Response('Not found', { status: 404 })
+const template =
+  page === 'new' ? findRecord(Astro.url.searchParams.get('from')) : undefined
+const editing = editRecord
+  ? { state: editorState(editRecord), base: editRecord.data }
+  : template
+    ? { state: newFromTemplate(template, randomUUID()), base: template.data }
+    : undefined
+const liveRecord = editId
+  ? review.live.items.find((item) => item.uid === editId)
+  : undefined
+const notice = Astro.url.searchParams.get('notice')
 
 const response = await siteAPI(
   '/admin/api/site/submissions',
@@ -34,10 +55,13 @@ const rows = contentRows(review)
 const revertTarget = review.history.find(
   (event) => event.action === 'PUBLISH' || event.action === 'REVERT'
 )
+const restorable = (event: (typeof review.history)[number]) =>
+  (event.action === 'PUBLISH' || event.action === 'REVERT') &&
+  /^\d+$/.test(event.target_id)
 ---
 
 <AdminShell
-  current={page === '' ? 'draft' : (page as 'content' | 'history')}
+  current={page === '' ? 'draft' : page === 'history' ? 'history' : 'content'}
   draftCount={queue.length}
   contentCount={rows.length}
 >
@@ -59,7 +83,32 @@ const revertTarget = review.history.find(
     />
   )}
   {page === 'content' && (
-    <ContentList client:load rows={rows} locale={locale} />
+    <ContentList
+      client:load
+      rows={rows}
+      canEdit={review.can_edit}
+      locale={locale}
+    />
+  )}
+  {page === 'new' && !editing && (
+    <NewContentPicker client:load rows={rows} locale={locale} />
+  )}
+  {editing && (
+    <ContentEditor
+      client:load
+      initial={editing.state}
+      base={editing.base}
+      csrf={session.csrf}
+      canEdit={review.can_edit}
+      isLive={Boolean(liveRecord && !liveRecord.deleted)}
+      inDraft={draftChanges(review).some(({ uid }) => uid === editId)}
+      notice={
+        notice === 'saved' || notice === 'archived' || notice === 'restored'
+          ? notice
+          : undefined
+      }
+      locale={locale}
+    />
   )}
   {page === 'history' && <div class="grid gap-5">
     <PageHeader
@@ -99,13 +148,17 @@ const revertTarget = review.history.find(
               >{' '} · {t('cmsAdmin.history.by', { actor: event.actor_uid })}
               {(event.action === 'PUBLISH' || event.action === 'REVERT') &&
                 ` · ${t('cmsAdmin.history.revision', { revision: event.target_id })}`}
+              {event.action === 'REVERT' &&
+                event.previous_id &&
+                ` · ${t('cmsAdmin.history.restored', { revision: event.previous_id })}`}
             </p>
           </div>
-          {current && review.can_apply && review.previous_live_id && (
+          {!current && review.can_apply && restorable(event) && (
             <RollbackButton
               client:load
               csrf={session.csrf}
               liveId={review.live.revision_id}
+              targetRevision={Number(event.target_id)}
               locale={locale}
             />
           )}

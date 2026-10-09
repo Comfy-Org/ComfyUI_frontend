@@ -86,7 +86,23 @@ opaque sessions are hashed in an ignored private sidecar, checked on every
 request, and expire within seven days or the parent credential's expiry.
 The backend audit still identifies the shared test account; this bridge is not
 production staff authentication. Ngrok request inspection is disabled.
-Show Live/Exit clears Preview and the simulated clock; only Draft has the banner.
+Preview keeps its banner in both Draft and Live, so a reviewer can compare the
+two on the same page; only Exit clears Preview and the simulated clock. The
+banner is shown on site pages only, never inside the admin, and in Draft it
+labels the Hub cards and links the draft adds, changes or schedules.
+
+Staff edit one item at a time on `/admin/edit/{uid}`, a form rather than
+in-place editing, and save it into the draft through
+`PUT /admin/api/site/items/{uid}` (`ContentCatalogSave`). New items start as a
+copy of an existing one at `/admin/new`, so every record keeps the fields the
+website renders; the server validates each save against the catalogue and page
+schemas before sending it, because one unreadable draft item would break the
+whole preview. Archiving is the same save with `deleted: true`. The editor
+writes three fields the ingest contract does not define yet and needs the
+backend to accept: `data.translations['zh-CN']` (name and summary),
+`data.formLayout` (each input as basic, advanced or hidden), and `target_id`
+on `/admin/api/site/revert`, which restores any earlier LIVE revision instead
+of only the previous one.
 
 Hosted account sign-in, complete preview evidence, localization editing, media versioning, backend Hub
 migration, runtime sitemap/Markdown/LLM files, publication validation,

@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { Eye, Globe, List, X } from '@lucide/vue'
+import { Eye, Globe, LayoutDashboard, List, Pencil, X } from '@lucide/vue'
 import { computed, onBeforeUnmount, onMounted, ref, useTemplateRef } from 'vue'
 
 import PreviewChangesSheet from '@/components/cms/PreviewChangesSheet.vue'
@@ -11,12 +11,14 @@ import PopoverContent from '@/components/ui/popover/PopoverContent.vue'
 import PopoverTrigger from '@/components/ui/popover/PopoverTrigger.vue'
 import type { Locale } from '@/i18n/translations'
 import { translationsFor } from '@/i18n/translations'
+import { markDraftCards } from '@/lib/cms/draft-card-marks'
 import type { DraftPageChange } from '@/lib/cms/format'
 import { formatUtc, isFuture, pageOf, previewChanges } from '@/lib/cms/format'
 
 const {
   csrf,
   view = 'DRAFT',
+  editHref,
   now,
   changes,
   pathname,
@@ -24,6 +26,8 @@ const {
 } = defineProps<{
   csrf: string
   view?: 'DRAFT' | 'LIVE'
+  /** The admin editor for the page being previewed, when it is a Hub item. */
+  editHref?: string
   now?: string
   changes: DraftPageChange[]
   pathname: string
@@ -80,7 +84,12 @@ const changesOpen = ref(false)
 // docks underneath it instead of sliding over it.
 const bar = useTemplateRef('bar')
 let observer: ResizeObserver | undefined
+let unmarkCards = () => {}
 onMounted(() => {
+  if (view === 'DRAFT')
+    unmarkCards = markDraftCards(document.body, changes, (state) =>
+      t(`cmsAdmin.preview.card.${state}`)
+    )
   const url = new URL(window.location.href)
   if (url.searchParams.get('changes') === 'open') {
     changesOpen.value = true
@@ -96,6 +105,7 @@ onMounted(() => {
   if (bar.value) observer.observe(bar.value)
 })
 onBeforeUnmount(() => {
+  unmarkCards()
   observer?.disconnect()
   document.documentElement.style.removeProperty('--cms-preview-offset')
 })
@@ -106,6 +116,7 @@ const pill = adminButtonVariants({ class: 'data-[state=open]:bg-admin-hover' })
 <template>
   <div
     ref="bar"
+    data-cms-preview-bar
     role="region"
     :aria-label="t('cmsAdmin.preview.label')"
     class="sticky top-0 z-50 border-b border-admin-line bg-admin-chrome font-admin text-admin-fg"
@@ -192,6 +203,16 @@ const pill = adminButtonVariants({ class: 'data-[state=open]:bg-admin-hover' })
         <List aria-hidden="true" />
         {{ t('cmsAdmin.preview.changesButton') }}
       </button>
+
+      <a v-if="editHref" :href="editHref" :class="pill">
+        <Pencil aria-hidden="true" />
+        {{ t('cmsAdmin.preview.editPage') }}
+      </a>
+
+      <a href="/admin/" :class="pill">
+        <LayoutDashboard aria-hidden="true" />
+        {{ t('cmsAdmin.title') }}
+      </a>
 
       <PreviewForm :csrf action="exit" :return-to="pathname">
         <button :class="adminButtonVariants({ variant: 'primary' })">

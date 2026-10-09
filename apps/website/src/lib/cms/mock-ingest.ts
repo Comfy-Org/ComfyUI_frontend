@@ -56,7 +56,7 @@ export function createMockIngest(seed: SeedEntry[]) {
     edit_version: randomUUID(),
     deleted: false
   }))
-  const draft: CatalogRecord[] = [
+  let draft: CatalogRecord[] = [
     edited(live[0], {
       data: {
         ...live[0].data,
@@ -70,9 +70,22 @@ export function createMockIngest(seed: SeedEntry[]) {
     edited(live[3], {
       uid: randomUUID(),
       slug: '/hub/models/new-demo-model',
-      data: { ...live[3].data, name: 'New Demo Model', slug: 'new-demo-model' }
+      data: {
+        ...live[3].data,
+        name: 'New Demo Model',
+        slug: 'new-demo-model',
+        href: '/hub/models/new-demo-model/'
+      }
     })
   ]
+
+  // Every LIVE revision the demo can restore. The seed stands in for the two
+  // publishes before the first one the demo starts from.
+  const snapshots = new Map<number, CatalogRecord[]>([
+    [1, live],
+    [2, live],
+    [3, live]
+  ])
 
   let history: PublicationEvent[] = [
     {
@@ -178,19 +191,57 @@ export function createMockIngest(seed: SeedEntry[]) {
         target_id: String(liveRevision + 1),
         previous_id: String(liveRevision)
       })
-      live = draft
+      live = [...draft]
+      draft = [...live]
       liveRevision += 1
       generation += 1
+      snapshots.set(liveRevision, live)
       return [204]
     },
     revert: (body) => {
+      if (Number(body.live_id) !== liveRevision) return [409]
+      const target =
+        body.target_id === undefined ? liveRevision - 1 : Number(body.target_id)
+      const restored = snapshots.get(target)
+      if (!restored || target === liveRevision) return [409]
+      liveRevision += 1
+      generation += 1
+      live = [...restored]
+      snapshots.set(liveRevision, live)
       record({
-        id: randomUUID(),
+        id: String(liveRevision),
         action: 'REVERT',
-        target_id: String(body.live_id)
+        target_id: String(liveRevision),
+        previous_id: String(target)
       })
       return [204]
     }
+  }
+  const saveItem = (uid: string, body: Record<string, unknown>): Reply => {
+    if (Number(body.draft_id) !== liveRevision + 1) return [409]
+    const index = draft.findIndex((item) => item.uid === uid)
+    const current = index === -1 ? undefined : draft[index]
+    if (current && body.edit_version !== current.edit_version) return [409]
+    const data = body.data
+    if (!data || typeof data !== 'object' || typeof body.slug !== 'string')
+      return [400]
+    const saved: CatalogRecord = {
+      uid,
+      kind:
+        body.kind === 'WORKFLOW' || body.kind === 'APP' ? body.kind : 'MODEL',
+      slug: body.slug,
+      enabled: body.enabled !== false,
+      visibility: body.visibility === 'STAFF' ? 'STAFF' : 'PUBLIC',
+      deleted: body.deleted === true,
+      ...(typeof body.visible_from === 'string'
+        ? { visible_from: body.visible_from }
+        : {}),
+      data: data as CatalogRecord['data'],
+      revision: liveRevision + 1,
+      edit_version: randomUUID()
+    }
+    draft = index === -1 ? [...draft, saved] : draft.with(index, saved)
+    return [200, saved]
   }
   const reviewSubmission = (shareId: string, status: unknown): Reply => {
     submissions = submissions.filter(
@@ -211,6 +262,8 @@ export function createMockIngest(seed: SeedEntry[]) {
     const body = parseBody(raw)
     const shareId = path.match(/^submissions\/([^/]+)\/review$/)?.[1]
     if (shareId) return reviewSubmission(shareId, body.status)
+    const itemId = path.match(/^items\/([0-9a-f-]{36})$/i)?.[1]
+    if (itemId) return saveItem(itemId, body)
     return (writes[path] ?? notFound)(body)
   }
   return (
@@ -223,6 +276,8 @@ export function createMockIngest(seed: SeedEntry[]) {
       return [200, projection(liveRevision, visible(live))]
     if (authorization !== `Bearer ${MOCK_CREDENTIAL}`) return [401]
     const path = url.pathname.replace(/^\/admin\/api\/site\//, '')
-    return method === 'POST' ? write(path, raw) : read(path, url)
+    return method === 'POST' || method === 'PUT'
+      ? write(path, raw)
+      : read(path, url)
   }
 }

@@ -52,6 +52,12 @@
       "APP": "App"
     },
     "draft": {
+      "bulk": {
+        "shown": "{count} workflow matches this filter | {count} workflows match this filter",
+        "include": "Include all",
+        "leaveOut": "Leave all out",
+        "reject": "Reject {count} | Reject all {count}"
+      },
       "title": "Draft",
       "help": "Everything submitted or changed since the last publish. Open each change to review it, run workflows in Comfy Cloud, untick what isn't ready, then publish the rest together.",
       "publish": "Publish {count} change | Publish {count} changes",
@@ -135,12 +141,16 @@
     },
     "history": {
       "title": "Publish history",
-      "help": "Every publish and approval, who made it and when. You can put the site back the way it was before the last publish.",
+      "help": "Every publish and approval, who made it and when. You can put the live site back to any earlier publish.",
       "revision": "Revision {revision}",
       "liveNow": "Live now",
       "rollback": "Roll back",
       "rollbackTitle": "Roll the site back to the previous publish?",
       "rollbackBody": "The live site goes back to how it looked before the last publish. It's saved as a new publish, and your draft is kept.",
+      "restore": "Restore",
+      "restoreTitle": "Restore revision {revision}?",
+      "restoreBody": "The live site goes back to how it looked at revision {revision}. It's saved as a new publish, and your draft is kept.",
+      "restored": "restored revision {revision}",
       "confirm": "Roll back",
       "by": "by {actor}",
       "action": {
@@ -157,13 +167,22 @@
       "search": "Search title, provider or address",
       "view": "View page",
       "edit": "Edit",
-      "editSoon": "Editing from here needs the save endpoint connected. For now, changes come in as submissions.",
       "inDraft": "Changed in draft",
       "hidden": "Turned off",
       "appears": "Appears {date}",
-      "empty": "No pages match."
+      "empty": "No pages match.",
+      "active": "Active",
+      "archivedCount": "Archived {count}",
+      "statusLabel": "Show",
+      "add": "Add content",
+      "noArchived": "Nothing is archived."
     },
     "preview": {
+      "card": {
+        "new": "New",
+        "updated": "Changed",
+        "scheduled": "Scheduled"
+      },
       "label": "Preview controls",
       "mode": "Draft preview",
       "changes": "{count} page change | {count} page changes",
@@ -183,10 +202,103 @@
       "changesTitle": "Changes in this draft",
       "changesNote": "Pages this draft changes. Workflow submissions are checked in Comfy Cloud, so they aren't listed here. Visitors keep seeing the live site until you publish.",
       "toAdmin": "Back to the draft",
-      "exit": "Exit preview"
+      "exit": "Exit preview",
+      "editPage": "Edit this page"
     },
     "demo": "Demo with sample data",
-    "demoHelp": "A demo of the Hub admin running on sample data. Nothing you do here changes comfy.org, and it starts over from time to time."
+    "demoHelp": "A demo of the Hub admin running on sample data. Nothing you do here changes comfy.org, and it starts over from time to time.",
+    "editor": {
+      "newTitle": "New {kind}",
+      "archived": "Archived",
+      "live": "Live",
+      "previewPage": "Preview page",
+      "save": "Save to draft",
+      "notice": {
+        "saved": "Saved to the draft. It goes live when the draft is published.",
+        "archived": "Archived in the draft. It leaves the Hub when the draft is published.",
+        "restored": "Restored in the draft. It comes back when the draft is published."
+      },
+      "goToDraft": "Go to Draft",
+      "readOnly": "You can look, but saving changes needs the comfy_site.edit permission.",
+      "error": {
+        "denied": "You don't have permission to edit content.",
+        "invalid": "This can't be saved yet: check the name, page address and cover. The page address may already be taken.",
+        "conflict": "Someone changed the draft while you were editing. Reload to get their changes, then edit again.",
+        "failed": "Saving didn't work. Try again in a moment."
+      },
+      "details": "Details",
+      "detailsHelp": "What visitors read on the card and the page.",
+      "translationHelp": "Chinese text for the 中文 site. Leave a field empty to show the English text.",
+      "language": "Language",
+      "name": "Name",
+      "summary": "Summary",
+      "provider": "Provider",
+      "author": "Author",
+      "tags": "Tags",
+      "tagsPlaceholder": "e.g. image, edit, fast",
+      "address": "Page address",
+      "addressFixed": "The address can't change once a page exists, so links to it keep working.",
+      "problem": {
+        "name": "Add a name.",
+        "slug": "Use lowercase letters, numbers and dashes.",
+        "cover": "Add a cover image or video."
+      },
+      "cover": "Cover",
+      "coverHelp": "Shown on the Hub card and at the top of the page.",
+      "media": {
+        "image": "Image",
+        "video": "Video",
+        "kind": "Media type",
+        "url": "Media link",
+        "placeholder": "https://media.comfy.org/…"
+      },
+      "visibility": "Visibility",
+      "shown": "Shown on the Hub",
+      "audience": "Who can see it",
+      "everyone": "Everyone",
+      "staff": "Staff only",
+      "appearsFrom": "Appears from (UTC)",
+      "appearsHelp": "Leave empty to show it as soon as the draft is published.",
+      "archiveTitle": "Archive",
+      "archiveHelp": "Takes it off the Hub when the draft is published. You can restore it any time.",
+      "restoreHelp": "This is archived. Restoring puts it back on the Hub when the draft is published.",
+      "archive": "Archive",
+      "restore": "Restore",
+      "unsaved": "Unsaved changes",
+      "discard": "Discard",
+      "examples": {
+        "title": "Examples",
+        "help": "The first example is the one the playground loads. Change the order with the arrows.",
+        "add": "Add example",
+        "empty": "No examples yet.",
+        "untitled": "Untitled example",
+        "first": "Shown first",
+        "up": "Move up",
+        "down": "Move down",
+        "remove": "Remove example",
+        "exampleTitle": "Title",
+        "prompt": "Prompt",
+        "description": "Description"
+      },
+      "parameters": {
+        "title": "Parameters",
+        "help": "Choose what people see first. Advanced ones stay folded away, and hidden ones always use their default.",
+        "name": "Parameter",
+        "default": "Default",
+        "shownAs": "Shown as",
+        "required": "Required",
+        "noDefault": "No default",
+        "basic": "Basic",
+        "advanced": "Advanced",
+        "hidden": "Hidden"
+      },
+      "new": {
+        "title": "Add content",
+        "help": "Pick an existing item to start from. You get a copy with its settings and examples, ready to change.",
+        "kind": "Kind",
+        "startFrom": "Start from this"
+      }
+    }
   },
   "home": {
     "workshop": {

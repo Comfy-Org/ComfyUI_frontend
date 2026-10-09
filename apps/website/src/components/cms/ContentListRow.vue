@@ -37,7 +37,17 @@ const meta = [t(`cmsAdmin.kind.${row.kind}`), row.provider]
       >
         {{ meta }}
         <StatusLabel
-          v-if="row.inDraft"
+          v-if="row.archived"
+          tone="muted"
+          :label="t('cmsAdmin.editor.archived')"
+        />
+        <StatusLabel
+          v-else-if="row.isNew"
+          tone="success"
+          :label="t('cmsAdmin.change.new')"
+        />
+        <StatusLabel
+          v-else-if="row.inDraft"
           tone="info"
           :label="t('cmsAdmin.content.inDraft')"
         />
@@ -52,7 +62,7 @@ const meta = [t(`cmsAdmin.kind.${row.kind}`), row.provider]
     <div class="flex gap-1">
       <AdminTooltip :content="t('cmsAdmin.content.view')">
         <AdminButton
-          :href="pageOf(row.slug)"
+          :href="row.isNew ? `${row.slug}/?preview=DRAFT` : pageOf(row.slug)"
           target="_blank"
           rel="noopener"
           variant="ghost"
@@ -62,20 +72,15 @@ const meta = [t(`cmsAdmin.kind.${row.kind}`), row.provider]
           <ExternalLink class="size-4" />
         </AdminButton>
       </AdminTooltip>
-      <AdminTooltip :content="t('cmsAdmin.content.editSoon')">
-        <span
-          tabindex="0"
-          class="rounded-lg outline-none focus-visible:outline-2 focus-visible:outline-admin-fg"
+      <AdminTooltip :content="t('cmsAdmin.content.edit')">
+        <AdminButton
+          :href="`/admin/edit/${row.uid}`"
+          variant="ghost"
+          size="icon"
+          :aria-label="t('cmsAdmin.content.edit')"
         >
-          <AdminButton
-            variant="ghost"
-            size="icon"
-            disabled
-            :aria-label="t('cmsAdmin.content.edit')"
-          >
-            <Pencil class="size-4" />
-          </AdminButton>
-        </span>
+          <Pencil class="size-4" />
+        </AdminButton>
       </AdminTooltip>
     </div>
   </li>

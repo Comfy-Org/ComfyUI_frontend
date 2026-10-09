@@ -5,6 +5,12 @@ import { buildQueue } from '@/lib/cms/queue'
 
 const session = Astro.locals.site
 const preview = session?.preview
+const pagePath = Astro.url.pathname
+  .replace(/^\/zh-CN(?=\/)/, '')
+  .replace(/\/$/, '')
+const pageItem = session?.review.draft.items.find(
+  (item) => item.slug === pagePath
+)
 const adminPage =
   Astro.url.pathname === '/admin' || Astro.url.pathname.startsWith('/admin/')
 const changes = session
@@ -29,6 +35,7 @@ const changes = session
     client:load
     csrf={session.csrf}
     view={preview.view}
+    editHref={pageItem ? `/admin/edit/${pageItem.uid}` : undefined}
     now={preview.now}
     changes={changes}
     pathname={Astro.url.pathname}

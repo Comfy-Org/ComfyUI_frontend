@@ -6,6 +6,7 @@ import {
   siteAPI,
   validMutation
 } from '@/lib/cms/admin'
+import { saveDraftItem } from '@/lib/cms/save-item'
 
 function returnPath(value: FormDataEntryValue | null) {
   return typeof value === 'string' && /^\/(?![/\\])[^\s]*$/.test(value)
@@ -71,11 +72,19 @@ function publication(body: FormData) {
       destination: '/admin/history/'
     }
   } else if (action === 'revert') {
+    const target = body.get('target_id')
+    if (target !== null && !/^\d+$/.test(String(target)))
+      return new Response('Invalid revision', { status: 400 })
     return {
       commands: [
         {
           path: '/admin/api/site/revert',
-          payload: { live_id: Number(body.get('live_id')) }
+          payload: {
+            live_id: Number(body.get('live_id')),
+            // Restoring an older revision than the previous publish needs
+            // the ingest revert endpoint to accept a target.
+            ...(target === null ? {} : { target_id: Number(target) })
+          }
         }
       ],
       destination: '/admin/history/'
@@ -96,6 +105,11 @@ export const POST: APIRoute = async (context) => {
     return new Response('Access denied', { status: 403 })
   if (['exit', 'preview', 'now'].includes(String(body.get('action'))))
     return previewAction(context, body)
+  if (body.get('action') === 'save')
+    return Response.json(
+      await saveDraftItem(session, body.get('uid'), body.get('record')),
+      { headers: { 'Cache-Control': 'private, no-store' } }
+    )
   if (!session.review.can_apply)
     return new Response('Access denied', { status: 403 })
   if (body.get('confirm') !== 'yes')

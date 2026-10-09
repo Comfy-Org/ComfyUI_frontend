@@ -2,6 +2,7 @@
 import { DialogDescription, DialogTitle } from 'reka-ui'
 
 import AdminButton from '@/components/cms/ui/AdminButton.vue'
+import { fieldClass } from '@/components/cms/ui/field'
 import AdminDialogContent from '@/components/cms/ui/AdminDialogContent.vue'
 import Dialog from '@/components/ui/dialog/Dialog.vue'
 import type { Locale } from '@/i18n/translations'
@@ -20,8 +21,7 @@ const {
 const open = defineModel<boolean>('open', { required: true })
 const { t } = translationsFor(locale)
 const reasons = ['broken', 'description', 'outputs', 'duplicate', 'other']
-const field =
-  'w-full rounded-lg border border-admin-field bg-admin-page px-3 py-2 text-sm text-admin-fg outline-none placeholder:text-admin-subtle hover:border-ash-800 focus-visible:border-admin-control'
+const field = fieldClass
 </script>
 
 <template>

@@ -47,6 +47,7 @@ const submissions = computed(() =>
   )
 )
 const isIncluded = (item: QueueItem) => !excluded.value.has(item.id)
+const canToggle = (item: QueueItem) => canApply && item.source === 'submission'
 const included = computed(() => items.filter(isIncluded))
 const held = computed(() =>
   submissions.value.filter((item) => !isIncluded(item))
@@ -77,11 +78,18 @@ const sheetOpen = computed({
     if (!value) openId.value = undefined
   }
 })
+// Bulk selection follows the filter and search, so a reviewer can narrow the
+// list (one creator, one kind) and include or leave out just those.
+const visibleToggleable = computed(() => visible.value.filter(canToggle))
+const narrowed = computed(
+  () => filter.value !== 'ALL' || query.value.trim() !== ''
+)
 const includeAllState = computed(() => {
-  if (held.value.length === 0) return true
-  return held.value.length === submissions.value.length
-    ? false
-    : 'indeterminate'
+  const leftOut = visibleToggleable.value.filter(
+    (item) => !isIncluded(item)
+  ).length
+  if (leftOut === 0) return true
+  return leftOut === visibleToggleable.value.length ? false : 'indeterminate'
 })
 const heldTitles = computed(() =>
   held.value.map((item) => item.title).join(', ')
@@ -94,8 +102,18 @@ function setIncluded(item: QueueItem, value: boolean) {
   excluded.value = next
 }
 function setAllIncluded(value: boolean) {
-  excluded.value = new Set(
-    value ? [] : submissions.value.map((item) => item.id)
+  const next = new Set(excluded.value)
+  for (const item of visibleToggleable.value)
+    if (value) next.delete(item.id)
+    else next.add(item.id)
+  excluded.value = next
+}
+function includeEverything() {
+  excluded.value = new Set()
+}
+function rejectVisible() {
+  rejecting.value = visibleToggleable.value.filter(
+    (item): item is SubmissionQueueItem => item.source === 'submission'
   )
 }
 function step(direction: -1 | 1) {
@@ -105,7 +123,6 @@ function rejectOpen() {
   if (openItem.value?.source === 'submission')
     rejecting.value = [openItem.value]
 }
-const canToggle = (item: QueueItem) => canApply && item.source === 'submission'
 </script>
 
 <template>
@@ -167,7 +184,7 @@ const canToggle = (item: QueueItem) => canApply && item.source === 'submission'
           })
         }}
       </span>
-      <AdminButton variant="ghost" size="sm" @click="setAllIncluded(true)">
+      <AdminButton variant="ghost" size="sm" @click="includeEverything">
         {{ t('cmsAdmin.draft.includeAgain') }}
       </AdminButton>
       <AdminButton variant="dangerGhost" size="sm" @click="rejecting = held">
@@ -184,6 +201,36 @@ const canToggle = (item: QueueItem) => canApply && item.source === 'submission'
       :search-label="t('cmsAdmin.draft.search')"
       :locale
     />
+
+    <div
+      v-if="narrowed && visibleToggleable.length > 0"
+      class="flex flex-wrap items-center gap-2 rounded-lg border border-admin-line bg-admin-card py-1.5 pr-1.5 pl-3 text-xs"
+    >
+      <span class="mr-auto text-admin-muted">
+        {{
+          t(
+            'cmsAdmin.draft.bulk.shown',
+            { count: visibleToggleable.length },
+            visibleToggleable.length
+          )
+        }}
+      </span>
+      <AdminButton variant="ghost" size="sm" @click="setAllIncluded(true)">
+        {{ t('cmsAdmin.draft.bulk.include') }}
+      </AdminButton>
+      <AdminButton variant="ghost" size="sm" @click="setAllIncluded(false)">
+        {{ t('cmsAdmin.draft.bulk.leaveOut') }}
+      </AdminButton>
+      <AdminButton variant="dangerGhost" size="sm" @click="rejectVisible">
+        {{
+          t(
+            'cmsAdmin.draft.bulk.reject',
+            { count: visibleToggleable.length },
+            visibleToggleable.length
+          )
+        }}
+      </AdminButton>
+    </div>
 
     <div
       v-if="items.length === 0"
@@ -207,7 +254,7 @@ const canToggle = (item: QueueItem) => canApply && item.source === 'submission'
         <span role="columnheader">
           <Checkbox
             :model-value="includeAllState"
-            :disabled="!canApply || submissions.length === 0"
+            :disabled="visibleToggleable.length === 0"
             :aria-label="t('cmsAdmin.draft.includeAll')"
             @update:model-value="setAllIncluded($event === true)"
           />

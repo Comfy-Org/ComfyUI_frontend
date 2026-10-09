@@ -12,15 +12,31 @@ import { translationsFor } from '@/i18n/translations'
 const {
   csrf,
   liveId,
+  targetRevision,
   locale = 'en'
-} = defineProps<{ csrf: string; liveId: number; locale?: Locale }>()
+} = defineProps<{
+  csrf: string
+  liveId: number
+  /** Restores this past revision; leaving it out rolls back one publish. */
+  targetRevision?: number
+  locale?: Locale
+}>()
 const { t } = translationsFor(locale)
 const open = ref(false)
 </script>
 
 <template>
-  <AdminButton variant="dangerGhost" @click="open = true">
-    {{ t('cmsAdmin.history.rollback') }}
+  <AdminButton
+    :variant="targetRevision === undefined ? 'dangerGhost' : 'ghost'"
+    @click="open = true"
+  >
+    {{
+      t(
+        targetRevision === undefined
+          ? 'cmsAdmin.history.rollback'
+          : 'cmsAdmin.history.restore'
+      )
+    }}
   </AdminButton>
   <Dialog v-model:open="open">
     <AdminDialogContent :close-label="t('cmsAdmin.review.close')">
@@ -31,21 +47,45 @@ const open = ref(false)
         class="grid gap-4"
       >
         <DialogTitle class="pr-8 text-base font-medium text-balance">
-          {{ t('cmsAdmin.history.rollbackTitle') }}
+          {{
+            targetRevision === undefined
+              ? t('cmsAdmin.history.rollbackTitle')
+              : t('cmsAdmin.history.restoreTitle', {
+                  revision: targetRevision
+                })
+          }}
         </DialogTitle>
         <DialogDescription class="text-sm text-admin-muted">
-          {{ t('cmsAdmin.history.rollbackBody') }}
+          {{
+            targetRevision === undefined
+              ? t('cmsAdmin.history.rollbackBody')
+              : t('cmsAdmin.history.restoreBody', {
+                  revision: targetRevision
+                })
+          }}
         </DialogDescription>
         <input type="hidden" name="csrf" :value="csrf" />
         <input type="hidden" name="action" value="revert" />
         <input type="hidden" name="confirm" value="yes" />
         <input type="hidden" name="live_id" :value="liveId" />
+        <input
+          v-if="targetRevision !== undefined"
+          type="hidden"
+          name="target_id"
+          :value="targetRevision"
+        />
         <div class="flex flex-wrap justify-end gap-2 pt-1">
           <AdminButton @click="open = false">
             {{ t('cmsAdmin.publish.cancel') }}
           </AdminButton>
           <AdminButton type="submit" variant="danger">
-            {{ t('cmsAdmin.history.confirm') }}
+            {{
+              t(
+                targetRevision === undefined
+                  ? 'cmsAdmin.history.confirm'
+                  : 'cmsAdmin.history.restore'
+              )
+            }}
           </AdminButton>
         </div>
       </form>

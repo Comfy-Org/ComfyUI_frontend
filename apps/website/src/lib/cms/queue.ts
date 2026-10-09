@@ -153,21 +153,34 @@ export interface ContentRow {
   enabled: boolean
   visibleFrom?: string
   inDraft: boolean
+  /** Only in the draft so far: not on the live site yet. */
+  isNew: boolean
+  /** Archived in the draft, or already gone from the live site. */
+  archived: boolean
 }
 
 export function contentRows(review: ContentCatalogReview): ContentRow[] {
   const changed = new Set(draftChanges(review).map(({ uid }) => uid))
-  return review.live.items
-    .filter((record) => !record.deleted)
-    .map((record) => ({
-      uid: record.uid,
-      kind: record.kind,
-      title: text(record.data.name) ?? record.slug,
-      slug: record.slug,
-      provider: text(record.data.provider),
-      thumbnail: text(record.data.thumbnailUrl),
-      enabled: record.enabled,
-      visibleFrom: record.visible_from,
-      inDraft: changed.has(record.uid)
-    }))
+  const live = new Map(review.live.items.map((item) => [item.uid, item]))
+  const draft = new Map(review.draft.items.map((item) => [item.uid, item]))
+  return [...new Set([...live.keys(), ...draft.keys()])].flatMap((uid) => {
+    const current = draft.get(uid) ?? live.get(uid)
+    const shown = live.get(uid) ?? current
+    if (!current || !shown) return []
+    return [
+      {
+        uid,
+        kind: shown.kind,
+        title: text(shown.data.name) ?? shown.slug,
+        slug: shown.slug,
+        provider: text(shown.data.provider),
+        thumbnail: text(shown.data.thumbnailUrl),
+        enabled: shown.enabled,
+        visibleFrom: shown.visible_from,
+        inDraft: changed.has(uid),
+        isNew: !live.has(uid),
+        archived: current.deleted
+      }
+    ]
+  })
 }

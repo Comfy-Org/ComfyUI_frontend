@@ -118,14 +118,35 @@ describe('draft review queue', () => {
 
 describe('all content', () => {
   it('lists live pages and flags the ones the draft changes', () => {
-    const live = [
-      record('wan', 'a', { name: 'Wan', provider: 'Alibaba' }),
-      record('gone', 'a', { name: 'Gone' }, { deleted: true })
-    ]
+    const live = [record('wan', 'a', { name: 'Wan', provider: 'Alibaba' })]
     expect(
       contentRows(review(live, [record('wan', 'b', { name: 'Wan 3' })]))
     ).toMatchObject([
-      { uid: 'wan', title: 'Wan', provider: 'Alibaba', inDraft: true }
+      {
+        uid: 'wan',
+        title: 'Wan',
+        provider: 'Alibaba',
+        inDraft: true,
+        isNew: false,
+        archived: false
+      }
+    ])
+  })
+
+  it('includes pages new in the draft and marks archived ones', () => {
+    const live = [
+      record('flux', 'a', { name: 'Flux' }),
+      record('gone', 'a', { name: 'Gone' }, { deleted: true })
+    ]
+    const draft = [
+      record('flux', 'b', { name: 'Flux' }, { deleted: true }),
+      record('gone', 'a', { name: 'Gone' }, { deleted: true }),
+      record('kling', 'a', { name: 'Kling' })
+    ]
+    expect(contentRows(review(live, draft))).toMatchObject([
+      { uid: 'flux', archived: true, inDraft: true },
+      { uid: 'gone', archived: true, inDraft: false },
+      { uid: 'kling', title: 'Kling', isNew: true, archived: false }
     ])
   })
 })

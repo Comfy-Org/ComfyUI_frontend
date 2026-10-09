@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { Eye } from '@lucide/vue'
+import { Eye, Pencil } from '@lucide/vue'
 
 import FieldChange from '@/components/cms/FieldChange.vue'
 import QueueThumb from '@/components/cms/QueueThumb.vue'
@@ -18,16 +18,20 @@ const pagePreview = `${item.slug.replace(/\/?$/, '/')}?preview=DRAFT`
 
 <template>
   <QueueThumb v-if="item.thumbnail" :src="item.thumbnail" class="w-full" />
-  <AdminButton
-    v-if="item.change !== 'removed'"
-    :href="pagePreview"
-    target="_blank"
-    rel="noopener"
-    class="w-fit"
-    :icon="Eye"
-  >
-    {{ t('cmsAdmin.review.seeOnPage') }}
-  </AdminButton>
+  <div class="flex flex-wrap gap-2">
+    <AdminButton
+      v-if="item.change !== 'removed'"
+      :href="pagePreview"
+      target="_blank"
+      rel="noopener"
+      :icon="Eye"
+    >
+      {{ t('cmsAdmin.review.seeOnPage') }}
+    </AdminButton>
+    <AdminButton :href="`/admin/edit/${item.id}`" :icon="Pencil">
+      {{ t('cmsAdmin.content.edit') }}
+    </AdminButton>
+  </div>
   <section class="grid gap-2">
     <h3
       class="text-xs font-medium tracking-[0.06em] text-admin-muted uppercase"

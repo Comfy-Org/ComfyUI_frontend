@@ -52,6 +52,12 @@
       "APP": "应用"
     },
     "draft": {
+      "bulk": {
+        "shown": "{count} 个工作流符合筛选条件",
+        "include": "全部纳入",
+        "leaveOut": "全部移出",
+        "reject": "拒绝 {count} 个"
+      },
       "title": "草稿",
       "help": "上次发布以来提交或修改的所有内容。逐个打开审核，在 Comfy Cloud 中运行工作流，取消勾选未准备好的内容，然后一起发布其余内容。",
       "publish": "发布 {count} 项更改",
@@ -135,12 +141,16 @@
     },
     "history": {
       "title": "发布历史",
-      "help": "每次发布和批准的操作人和时间。你可以将网站恢复到上次发布之前的状态。",
+      "help": "每次发布和批准的操作人和时间。你可以将线上网站恢复到任意一次之前的发布。",
       "revision": "版本 {revision}",
       "liveNow": "当前线上",
       "rollback": "回滚",
       "rollbackTitle": "将网站回滚到上一次发布？",
       "rollbackBody": "线上网站会恢复到上次发布之前的样子。这会保存为一次新的发布，你的草稿会保留。",
+      "restore": "恢复",
+      "restoreTitle": "恢复到修订版 {revision}？",
+      "restoreBody": "线上网站会恢复到修订版 {revision} 时的样子。这会作为一次新的发布保存，你的草稿保持不变。",
+      "restored": "恢复了修订版 {revision}",
       "confirm": "回滚",
       "by": "操作人 {actor}",
       "action": {
@@ -157,13 +167,22 @@
       "search": "搜索标题、提供方或地址",
       "view": "查看页面",
       "edit": "编辑",
-      "editSoon": "在此编辑需要接入保存接口。目前更改以提交的形式进入。",
       "inDraft": "草稿中有更改",
       "hidden": "已关闭",
       "appears": "{date} 显示",
-      "empty": "没有匹配的页面。"
+      "empty": "没有匹配的页面。",
+      "active": "使用中",
+      "archivedCount": "已归档 {count}",
+      "statusLabel": "显示",
+      "add": "添加内容",
+      "noArchived": "没有已归档的内容。"
     },
     "preview": {
+      "card": {
+        "new": "新增",
+        "updated": "已更改",
+        "scheduled": "已排期"
+      },
       "label": "预览控件",
       "mode": "草稿预览",
       "changes": "{count} 个页面更改",
@@ -183,10 +202,103 @@
       "changesTitle": "本草稿中的更改",
       "changesNote": "此草稿更改的页面。工作流提交在 Comfy Cloud 中检查，因此不在此列出。发布前访客看到的仍是线上网站。",
       "toAdmin": "返回草稿",
-      "exit": "退出预览"
+      "exit": "退出预览",
+      "editPage": "编辑此页面"
     },
     "demo": "示例数据演示",
-    "demoHelp": "这是使用示例数据运行的 Hub 管理演示。在这里的任何操作都不会更改 comfy.org，并且会不时重置。"
+    "demoHelp": "这是使用示例数据运行的 Hub 管理演示。在这里的任何操作都不会更改 comfy.org，并且会不时重置。",
+    "editor": {
+      "newTitle": "新建{kind}",
+      "archived": "已归档",
+      "live": "已上线",
+      "previewPage": "预览页面",
+      "save": "保存到草稿",
+      "notice": {
+        "saved": "已保存到草稿。草稿发布后生效。",
+        "archived": "已在草稿中归档。草稿发布后将从 Hub 下线。",
+        "restored": "已在草稿中恢复。草稿发布后重新上线。"
+      },
+      "goToDraft": "前往草稿",
+      "readOnly": "你可以查看，但保存更改需要 comfy_site.edit 权限。",
+      "error": {
+        "denied": "你没有编辑内容的权限。",
+        "invalid": "暂时无法保存：请检查名称、页面地址和封面。页面地址可能已被占用。",
+        "conflict": "你编辑时有人修改了草稿。请刷新获取最新内容后再编辑。",
+        "failed": "保存失败，请稍后再试。"
+      },
+      "details": "详情",
+      "detailsHelp": "访客在卡片和页面上看到的内容。",
+      "translationHelp": "中文站点的文字。留空则显示英文。",
+      "language": "语言",
+      "name": "名称",
+      "summary": "简介",
+      "provider": "提供方",
+      "author": "作者",
+      "tags": "标签",
+      "tagsPlaceholder": "例如 image, edit, fast",
+      "address": "页面地址",
+      "addressFixed": "页面创建后地址不能更改，以免链接失效。",
+      "problem": {
+        "name": "请填写名称。",
+        "slug": "请使用小写字母、数字和连字符。",
+        "cover": "请添加封面图片或视频。"
+      },
+      "cover": "封面",
+      "coverHelp": "显示在 Hub 卡片和页面顶部。",
+      "media": {
+        "image": "图片",
+        "video": "视频",
+        "kind": "媒体类型",
+        "url": "媒体链接",
+        "placeholder": "https://media.comfy.org/…"
+      },
+      "visibility": "可见性",
+      "shown": "在 Hub 上显示",
+      "audience": "谁可以看到",
+      "everyone": "所有人",
+      "staff": "仅员工",
+      "appearsFrom": "显示时间（UTC）",
+      "appearsHelp": "留空则在草稿发布后立即显示。",
+      "archiveTitle": "归档",
+      "archiveHelp": "草稿发布后从 Hub 下线。可随时恢复。",
+      "restoreHelp": "此内容已归档。恢复后将在草稿发布时重新上线。",
+      "archive": "归档",
+      "restore": "恢复",
+      "unsaved": "有未保存的更改",
+      "discard": "放弃",
+      "examples": {
+        "title": "示例",
+        "help": "第一个示例会被预先加载到试用区。用箭头调整顺序。",
+        "add": "添加示例",
+        "empty": "暂无示例。",
+        "untitled": "未命名示例",
+        "first": "优先显示",
+        "up": "上移",
+        "down": "下移",
+        "remove": "删除示例",
+        "exampleTitle": "标题",
+        "prompt": "提示词",
+        "description": "描述"
+      },
+      "parameters": {
+        "title": "参数",
+        "help": "选择用户首先看到的参数。高级参数默认折叠，隐藏参数始终使用默认值。",
+        "name": "参数",
+        "default": "默认值",
+        "shownAs": "显示方式",
+        "required": "必填",
+        "noDefault": "无默认值",
+        "basic": "基础",
+        "advanced": "高级",
+        "hidden": "隐藏"
+      },
+      "new": {
+        "title": "添加内容",
+        "help": "选择一个已有内容作为起点。你会得到一份包含其设置和示例的副本，可直接修改。",
+        "kind": "类型",
+        "startFrom": "以此为起点"
+      }
+    }
   },
   "about": {
     "careers": {
