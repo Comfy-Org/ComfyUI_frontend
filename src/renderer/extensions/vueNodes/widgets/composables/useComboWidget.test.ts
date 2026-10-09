@@ -39,7 +39,9 @@ function createMockAssetItem(overrides: Partial<AssetItem> = {}): AssetItem {
 const mockDistributionState = vi.hoisted(() => ({ isCloud: false }))
 
 vi.mock(import('@/core/graph/widgets/valueControlWidgets'), () => ({
-  addValueControlWidgets: vi.fn()
+  addValueControlWidget: vi.fn(),
+  addValueControlWidgets: vi.fn(),
+  updateControlWidgetLabel: vi.fn()
 }))
 
 vi.mock(import('@/platform/distribution/types'), () => ({
