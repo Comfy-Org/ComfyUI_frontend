@@ -61,8 +61,7 @@ function finishSetup(cnrId: string) {
 
 describe('useWorkflowPacks', () => {
   beforeEach(() => {
-    mockListAllPacks.mockReset().mockResolvedValue({ nodes: [] })
-    mockInferPackFromNodeName.mockReset()
+    mockListAllPacks.mockResolvedValue({ nodes: [] })
     mockUseComfyRegistryService.mockReturnValue(
       fromPartial({
         listAllPacks: mockListAllPacks,
