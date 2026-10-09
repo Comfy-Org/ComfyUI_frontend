@@ -19,6 +19,7 @@ import { defaultGraph, defaultGraphJSON } from '@/scripts/defaultGraph'
 import { useExecutionStore } from '@/stores/executionStore'
 import { toNodeId } from '@/types/nodeId'
 import type { NodeId } from '@/types/nodeId'
+import type { NodeLocatorId } from '@/types/nodeIdentification'
 import { createNodeLocatorId } from '@/types/nodeIdentification'
 import { isValidUuid } from '@/utils/formatUtil'
 import { syncEntities } from '@/utils/syncUtil'
@@ -1072,11 +1073,23 @@ describe('useWorkflowStore', () => {
         expect(result).toBe('a1b2c3d4-e5f6-7890-abcd-ef1234567890:456')
       })
 
-      it('should return simple node ID for root graph nodes', () => {
-        store.activeSubgraph = undefined
-        const result = store.nodeIdToNodeLocatorId(toNodeId(123))
-        expect(result).toBe('123')
-      })
+      it.for([
+        { rawId: '', locatorId: '~root:' },
+        {
+          rawId: 'insert:0fbd38ecb13037d0b3b0ca78b8a20a5a:root:node:9',
+          locatorId:
+            '~root:insert%3A0fbd38ecb13037d0b3b0ca78b8a20a5a%3Aroot%3Anode%3A9'
+        }
+      ])(
+        'should key root node id $rawId under $locatorId',
+        ({ rawId, locatorId }) => {
+          store.activeSubgraph = undefined
+          const result = store.nodeIdToNodeLocatorId(toNodeId(rawId))
+
+          expect(result).toBe(locatorId)
+          expect(store.nodeLocatorIdToNodeId(result)).toBe(rawId)
+        }
+      )
 
       it('should use provided subgraph instead of active one', () => {
         const customSubgraphId = '11111111-2222-4333-8444-555555555555'
@@ -1143,6 +1156,25 @@ describe('useWorkflowStore', () => {
         )
         expect(stringResult).toBe('node_1')
       })
+
+      it('should decode an encoded root-leaf locator to its node id', () => {
+        const locatorId = createNodeLocatorId(
+          null,
+          'insert:0fbd38ecb13037d0b3b0ca78b8a20a5a:root:node:9'
+        )
+        const result = store.nodeLocatorIdToNodeId(locatorId)
+        expect(result).toBe(
+          'insert:0fbd38ecb13037d0b3b0ca78b8a20a5a:root:node:9'
+        )
+      })
+
+      it('should return null for an unparseable locator', () => {
+        const locatorId = fromAny<NodeLocatorId, string>(
+          '~subgraph:not-a-uuid:5'
+        )
+
+        expect(store.nodeLocatorIdToNodeId(locatorId)).toBeNull()
+      })
     })
 
     describe('nodeLocatorIdToNodeExecutionId', () => {
@@ -1175,6 +1207,62 @@ describe('useWorkflowStore', () => {
           )
         )
         expect(result).toBeNull()
+      })
+
+      it('should return null for an unparseable locator', () => {
+        const locatorId = fromAny<NodeLocatorId, string>(
+          '~subgraph:not-a-uuid:5'
+        )
+
+        expect(store.nodeLocatorIdToNodeExecutionId(locatorId)).toBeNull()
+      })
+
+      it('should mint a leaf execution id from an encoded root-leaf locator', () => {
+        const locatorId = createNodeLocatorId(
+          null,
+          'insert:0fbd38ecb13037d0b3b0ca78b8a20a5a:root:node:9'
+        )
+        const result = store.nodeLocatorIdToNodeExecutionId(locatorId)
+        expect(result).toBe(
+          'insert:0fbd38ecb13037d0b3b0ca78b8a20a5a:root:node:9'
+        )
+      })
+
+      it('should append an encoded subgraph leaf to its execution path', () => {
+        vi.mocked(isSubgraph).mockImplementation((obj): obj is Subgraph => {
+          return obj === store.activeSubgraph
+        })
+        const locatorId = createNodeLocatorId(
+          'a1b2c3d4-e5f6-7890-abcd-ef1234567890',
+          'insert:abc123:root:node:5'
+        )
+
+        const result = store.nodeLocatorIdToNodeExecutionId(locatorId)
+
+        expect(result).toBe('123:insert:abc123:root:node:5')
+      })
+
+      it('should preserve a colon-bearing subgraph host in the execution path', () => {
+        const subgraphUuid = '11111111-2222-4333-8444-555555555555'
+        const subgraph = fromPartial<Subgraph>({ id: subgraphUuid })
+        vi.mocked(comfyApp).rootGraph = fromPartial<LGraph>({
+          _nodes: [
+            createMockLGraphNode({
+              id: toNodeId('insert:op:root:node:3'),
+              isSubgraphNode: () => true,
+              subgraph
+            })
+          ]
+        })
+        vi.mocked(isSubgraph).mockImplementation(
+          (graph): graph is Subgraph => graph === subgraph
+        )
+
+        expect(
+          store.nodeLocatorIdToNodeExecutionId(
+            createNodeLocatorId(subgraphUuid, toNodeId(7))
+          )
+        ).toBe('insert:op:root:node:3:7')
       })
     })
   })
