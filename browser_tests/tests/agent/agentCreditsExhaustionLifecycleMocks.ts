@@ -7,6 +7,7 @@ import type {
 } from '@/workbench/extensions/agent/schemas/agentApiSchema'
 import type { AgentPanel } from '@e2e/fixtures/components/AgentPanel'
 import { webSocketFixture } from '@e2e/fixtures/ws'
+import { hostTelemetryFixture } from '@e2e/fixtures/hostTelemetryFixture'
 import type { AgentFundingState } from '@e2e/tests/agent/agentPanelMocks'
 import { agentTest } from '@e2e/tests/agent/agentPanelMocks'
 
@@ -59,7 +60,7 @@ class AgentCreditsLifecycleFixture {
   }
 }
 
-const base = mergeTests(agentTest, webSocketFixture)
+const base = mergeTests(agentTest, hostTelemetryFixture, webSocketFixture)
 
 export const test = base.extend<{
   creditsLifecycle: AgentCreditsLifecycleFixture

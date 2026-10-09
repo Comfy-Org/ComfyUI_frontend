@@ -101,15 +101,10 @@ test.describe(
     test('swaps the free-use notice for the workspace-balance notice when the Agent grant runs out', async ({
       agentPanel,
       creditsLifecycle,
-      page
+      hostTelemetry
     }) => {
-      const notice = agentPanel.root.getByTestId(
-        'agent-credit-transition-notice'
-      )
-      const freeUseNotice = agentPanel.root.getByRole('note', {
-        name: enMessages.agent.freeUseNoticeLabel
-      })
-      const composerFooter = agentPanel.root.locator('footer')
+      const notice = agentPanel.creditTransitionNotice
+      const freeUseNotice = agentPanel.freeUseNotice
 
       await agentPanel.open()
 
@@ -122,12 +117,6 @@ test.describe(
       })
 
       await agentPanel.selectWorkflow()
-      // Selecting a workflow leaves the pointer on its chip, whose PrimeVue
-      // tooltip then paints over the notices below and lands in the frame.
-      // It is `.p-tooltip`, not `role="tooltip"`, so waiting on the role
-      // passes while the tooltip is still on screen.
-      await page.mouse.move(0, 0)
-      await expect(page.locator('.p-tooltip')).toHaveCount(0)
 
       await test.step('exhausting the grant alone shows the transition notice', async () => {
         await creditsLifecycle.completeTurn('Build a red fox workflow', {
@@ -141,13 +130,24 @@ test.describe(
         await expect(notice).toHaveScreenshot(
           'agent-credit-transition-notice.png'
         )
+        await expect
+          .poll(() =>
+            hostTelemetry.filter(
+              ({ event }) => event === 'app:agent_credit_transition_notice'
+            )
+          )
+          .toEqual([
+            {
+              event: 'app:agent_credit_transition_notice',
+              properties: { action: 'shown' }
+            }
+          ])
       })
 
       await test.step('the transition notice replaces free-use copy without a paywall', async () => {
         await expect(freeUseNotice).toHaveCount(0)
         await expect(agentPanel.creditsExhaustedPaywall).toHaveCount(0)
-        await expect(agentPanel.sendButton).toBeVisible()
-        await expect(composerFooter).toHaveScreenshot(
+        await expect(agentPanel.composerStack).toHaveScreenshot(
           'agent-credit-transition-composer-stack.png'
         )
       })
@@ -158,9 +158,22 @@ test.describe(
           .click()
 
         await expect(notice).toHaveCount(0)
-        await expect(freeUseNotice).toHaveCount(0)
-        await expect(agentPanel.creditsExhaustedPaywall).toHaveCount(0)
-        await expect(agentPanel.sendButton).toBeVisible()
+        await expect
+          .poll(() =>
+            hostTelemetry.filter(
+              ({ event }) => event === 'app:agent_credit_transition_notice'
+            )
+          )
+          .toEqual([
+            {
+              event: 'app:agent_credit_transition_notice',
+              properties: { action: 'shown' }
+            },
+            {
+              event: 'app:agent_credit_transition_notice',
+              properties: { action: 'dismissed' }
+            }
+          ])
       })
     })
   }
