@@ -4,7 +4,7 @@ import type {
   Meta,
   StoryObj
 } from '@storybook/vue3-vite'
-import { computed, ref, shallowRef } from 'vue'
+import { computed, onUnmounted, ref, shallowRef } from 'vue'
 
 import { LOCALES } from '@/config/locales'
 import { translationsFor } from '@/i18n/translations'
@@ -144,9 +144,23 @@ const meta: Meta<
           : undefined
       )
 
+      const objectUrls = new Set<string>()
+      onUnmounted(() => {
+        for (const url of objectUrls) URL.revokeObjectURL(url)
+        objectUrls.clear()
+      })
+
+      function release(url: string | undefined) {
+        if (url && objectUrls.delete(url)) URL.revokeObjectURL(url)
+      }
+
       async function open(file: File) {
         const url = URL.createObjectURL(file)
+        objectUrls.add(url)
         const size = await imageSize(url)
+        if (!objectUrls.has(url)) return
+        if (!size) release(url)
+        release(source.value?.url)
         stage.value = size
           ? { kind: 'editing', source: { url, ...size } }
           : {

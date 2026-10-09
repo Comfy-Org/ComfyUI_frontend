@@ -104,7 +104,7 @@ export function useEditorZoom(
   function onPointerDown(event: PointerEvent) {
     const el = frame.value
     if (!el) return
-    if (event.pointerType === 'touch')
+    if (event.pointerType === 'touch' && touches.size < 2)
       touches.set(event.pointerId, { x: event.clientX, y: event.clientY })
     const zoomed = view.value.scale !== 1
     const grab =

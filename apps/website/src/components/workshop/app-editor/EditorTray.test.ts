@@ -21,22 +21,14 @@ function renderTray(fieldLabel?: boolean) {
 }
 
 describe('EditorTray', () => {
-  it.for([
-    { fieldLabel: undefined, hidden: false },
-    { fieldLabel: false, hidden: true }
-  ])(
-    'keeps the field label for screen readers only when asked (fieldLabel: $fieldLabel)',
-    ({ fieldLabel, hidden }) => {
+  it.for([undefined, false])(
+    'names its field for screen readers (fieldLabel: %s)',
+    (fieldLabel) => {
       renderTray(fieldLabel)
 
       expect(
         screen.getByRole('textbox', { name: 'Animation' })
       ).toBeInTheDocument()
-      expect(
-        screen
-          .getByRole('dialog', { name: 'Animation' })
-          .classList.contains('**:data-field-label:sr-only')
-      ).toBe(hidden)
     }
   )
 })

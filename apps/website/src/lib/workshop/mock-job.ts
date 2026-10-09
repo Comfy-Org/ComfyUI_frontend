@@ -8,10 +8,18 @@ export function mockJob<T>(
   delayMs: number
 ): Promise<T> {
   return new Promise((resolve, reject) => {
-    const timer = setTimeout(() => resolve(answer), delayMs)
-    signal.addEventListener('abort', () => {
+    if (signal.aborted) {
+      reject(signal.reason)
+      return
+    }
+    const onAbort = () => {
       clearTimeout(timer)
       reject(signal.reason)
-    })
+    }
+    const timer = setTimeout(() => {
+      signal.removeEventListener('abort', onAbort)
+      resolve(answer)
+    }, delayMs)
+    signal.addEventListener('abort', onAbort, { once: true })
   })
 }

@@ -82,15 +82,29 @@ function pointer(
 
 describe('useEditorZoom', () => {
   it.for([
-    { keys: ['+'], percent: 125 },
-    { keys: ['='], percent: 125 },
-    { keys: ['+', '-'], percent: 100 },
-    { keys: ['+', '+', '0'], percent: 100 },
-    { keys: ['_'], percent: 80 }
-  ])('reads $percent% after pressing $keys', ({ keys, percent }) => {
+    { key: '+', percent: 125 },
+    { key: '=', percent: 125 },
+    { key: '-', percent: 80 },
+    { key: '_', percent: 80 }
+  ])('reads $percent% after pressing $key', ({ key, percent }) => {
     const { zoom } = mountEditor()
-    for (const key of keys) press(key)
+    press(key)
     expect(zoom.percent.value).toBe(percent)
+  })
+
+  it('steps back to fitting with - after +', () => {
+    const { zoom } = mountEditor()
+    press('+')
+    press('-')
+    expect(zoom.percent.value).toBe(100)
+  })
+
+  it('fits again on 0', () => {
+    const { zoom } = mountEditor()
+    press('+')
+    press('+')
+    press('0')
+    expect(zoom.percent.value).toBe(100)
   })
 
   it('leaves the zoom alone while typing or with a modifier held', () => {

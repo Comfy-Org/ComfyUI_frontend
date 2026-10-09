@@ -14,6 +14,14 @@ function hover() {
   over.value = !disabled
 }
 
+function leave(event: DragEvent) {
+  const zone = event.currentTarget
+  const into = event.relatedTarget
+  if (zone instanceof Node && into instanceof Node && zone.contains(into))
+    return
+  over.value = false
+}
+
 function drop(event: DragEvent) {
   over.value = false
   const file = imageFileOf(event.dataTransfer)
@@ -27,7 +35,7 @@ function drop(event: DragEvent) {
     :data-drop-over="over || undefined"
     @dragenter.prevent="hover"
     @dragover.prevent="hover"
-    @dragleave="over = false"
+    @dragleave="leave"
     @drop.prevent.stop="drop"
   >
     <slot />

@@ -38,15 +38,20 @@ describe('EditorRun', () => {
   })
 
   it.for([
-    { progress: undefined, shown: null },
     { progress: { kind: 'queued' } as const, shown: 'Queued' },
     { progress: { kind: 'running', percent: 42 } as const, shown: '42%' }
   ])('shows $shown while running', async ({ progress, shown }) => {
     const { emitted } = renderRun({ running: true, progress })
 
-    const status = screen.queryByTestId('editor-run-progress')
-    if (shown) expect(status).toHaveTextContent(shown)
-    else expect(status).toBeNull()
+    expect(screen.getByTestId('editor-run-progress')).toHaveTextContent(shown)
+    await userEvent.click(screen.getByRole('button', { name: /Cancel/ }))
+    expect(emitted('cancel')).toHaveLength(1)
+  })
+
+  it('shows no progress while running before any arrives', async () => {
+    const { emitted } = renderRun({ running: true, progress: undefined })
+
+    expect(screen.queryByTestId('editor-run-progress')).toBeNull()
     await userEvent.click(screen.getByRole('button', { name: /Cancel/ }))
     expect(emitted('cancel')).toHaveLength(1)
   })

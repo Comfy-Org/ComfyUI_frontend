@@ -44,6 +44,19 @@ describe('EditorDropZone', () => {
     expect(zone).not.toHaveAttribute('data-drop-over')
   })
 
+  it('keeps the highlight while the file moves over its own contents', async () => {
+    const { zone } = renderZone()
+
+    await fireEvent.dragEnter(zone, { dataTransfer: transfer(shirt) })
+    const leave = new Event('dragleave', { bubbles: true })
+    Object.defineProperty(leave, 'relatedTarget', {
+      value: screen.getByText('Drop here')
+    })
+    await fireEvent(zone, leave)
+
+    expect(zone).toHaveAttribute('data-drop-over', 'true')
+  })
+
   it.for([
     { name: 'a drop without an image', disabled: false, files: [notes] },
     { name: 'any drop while disabled', disabled: true, files: [shirt] }
