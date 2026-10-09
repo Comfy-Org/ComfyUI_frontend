@@ -47,6 +47,9 @@ export default function lintStaged(stagedFiles: string[]) {
       'pnpm exec oxfmt --write --no-error-on-unmatched-pattern'
     ),
     ...lintCommands(codeFiles, styleFiles, astroFiles),
+    ...(codeFiles.length > 0
+      ? repoWide('pnpm lint:server-facts --staged')
+      : []),
     ...commandsWithFiles(
       astroFiles.map((fileName) => fileName.slice('apps/website/'.length)),
       'pnpm --dir apps/website exec prettier --write'
