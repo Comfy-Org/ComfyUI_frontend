@@ -1820,6 +1820,17 @@ describe('graphTraversalUtil', () => {
       )
     })
 
+    it('leaves a missing subgraph leaf unresolved without a literal root id', () => {
+      const subgraph = createMockSubgraph(
+        'a1b2c3d4-e5f6-7890-abcd-ef1234567890',
+        []
+      )
+      const host = createMockNode('123', { isSubgraph: true, subgraph })
+      const graph = createMockGraph([host])
+
+      expect(executionIdToNodeLocatorId(graph, '123:999')).toBeUndefined()
+    })
+
     it('resolves an interior node below a colon-bearing subgraph host id', () => {
       const subgraphUuid = 'a1b2c3d4-e5f6-7890-abcd-ef1234567890'
       const interior = createMockNode('7')
