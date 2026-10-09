@@ -636,10 +636,7 @@ export const useWorkflowStore = defineStore('workflow', () => {
    * Convert a node ID to a NodeLocatorId
    * @param nodeId The local node ID
    * @param subgraph The subgraph containing the node (defaults to active subgraph)
-   * @returns The NodeLocatorId (for root graph nodes, returns the node ID as-is)
-   *
-   * Delimiter-bearing local IDs use an encoded locator so root and subgraph
-   * nodes cannot collide in locator-keyed stores.
+   * @returns The NodeLocatorId
    */
   const nodeIdToNodeLocatorId = (
     nodeId: NodeId,
