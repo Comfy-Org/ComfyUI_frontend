@@ -11,7 +11,7 @@
         :aria-label="t('sideToolbar.labels.menu')"
         :class="
           cn(
-            'flex h-(--sidebar-item-height) w-(--sidebar-width) shrink-0 flex-col p-2 hover:bg-interface-panel-hover-surface',
+            'flex h-(--sidebar-item-height) w-(--sidebar-width) shrink-0 flex-col rounded-none p-2 hover:bg-interface-panel-hover-surface',
             open &&
               'bg-interface-panel-selected-surface hover:bg-interface-panel-selected-surface'
           )
