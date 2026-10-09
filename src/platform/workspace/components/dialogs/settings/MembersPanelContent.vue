@@ -8,7 +8,7 @@
         permissions.canManageSubscription
       "
       :variant="
-        isPlanEnded
+        showsEndedUpsell
           ? isSalesManagedPlan
             ? 'contactSales'
             : 'reactivate'
@@ -16,7 +16,7 @@
       "
       :enterprise="isEnterprisePlan"
       @action="
-        isPlanEnded && isSalesManagedPlan
+        showsEndedUpsell && isSalesManagedPlan
           ? handleContactSales()
           : showTeamPlans()
       "
@@ -38,7 +38,10 @@
           )
         "
       >
-        <div v-if="showViewTabs" class="flex items-center gap-2">
+        <div
+          v-if="showViewTabs && uiConfig.showPendingTab"
+          class="flex items-center gap-2"
+        >
           <Button
             :variant="activeView === 'active' ? 'secondary' : 'muted-textonly'"
             size="lg"
@@ -331,6 +334,12 @@ watch(isHeaderCollapsed, async () => {
 })
 
 const { t } = useI18n()
+
+// A personal workspace always pitches the Team plan here; its own plan
+// lifecycle lives on the Plan & Credits tab.
+const showsEndedUpsell = computed(
+  () => isPlanEnded.value && !isInPersonalWorkspace.value
+)
 
 const emptyStateMessage = computed(() => {
   if (!uiConfig.value.showMembersList) return null

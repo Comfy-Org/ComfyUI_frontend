@@ -1,5 +1,5 @@
 import { fromAny } from '@total-typescript/shoehorn'
-import { beforeEach, describe, expect, it, vi } from 'vitest'
+import { beforeEach, describe, expect, it } from 'vitest'
 
 import type { SubgraphNode } from '@/lib/litegraph/src/litegraph'
 import { toNodeId } from '@/types/nodeId'
@@ -16,10 +16,9 @@ describe(getPreviewExposureHostLocator, () => {
       graph: null,
       id: toNodeId('invalid:id')
     })
-    const error = vi.spyOn(console, 'error').mockImplementation(() => {})
 
     expect(getPreviewExposureHostLocator(host)).toBeNull()
-    expect(error).toHaveBeenCalledWith(
+    expect(console.error).toHaveBeenCalledWith(
       'Cannot create preview exposure host locator for node invalid:id'
     )
   })

@@ -75,12 +75,22 @@ export type BatchOutcome =
   | { state: 'unconfirmed'; ops: Op[] }
   | { state: 'undeliverable'; ops: Op[] }
 
+interface AdmissionGroup {
+  workflowId: string
+  ops: Op[]
+}
+
 export interface OpSender {
   enqueue(operations: GraphOperation[]): void
   /**
    * Mint and target-pin operations into the open admission group without
    * starting transport delivery. Consecutive admissions for one workflow
    * share the group until `flush()` seals it.
+   *
+   * If custom serialization re-enters and closes the open group, these ops are
+   * sealed at the queue position they were admitted at, keeping their
+   * `op_id`s, and delivery waits until they are placed. Mint order is
+   * preserved per document, not across documents.
    */
   admit(operations: GraphOperation[]): void
   /** Seal the open admission group into wire batches and start delivery. */
@@ -88,7 +98,7 @@ export interface OpSender {
   /** Unsettled batch count for observability; 0 = drained. */
   pending(): number
   /** Every unsettled batch, in-flight first, each addressed to its mint-time workflow. */
-  pendingOps(): ReadonlyArray<{ workflowId: string; ops: Op[] }>
+  pendingOps(): ReadonlyArray<AdmissionGroup>
   /**
    * The bound workflow's tab went inactive: the subscription is paused, not
    * lost. Until `resume()`, a batch reaching `transmit()` is parked instead
@@ -144,16 +154,21 @@ interface InFlight {
 }
 
 export function createOpSender(deps: OpSenderDeps): OpSender {
-  const queue: Array<{ workflowId: string; ops: Op[] }> = []
+  const queue: AdmissionGroup[] = []
   let queueHead = 0
-  let open: { workflowId: string; ops: Op[] } | null = null
+  let open: AdmissionGroup | null = null
   let inFlight: InFlight | null = null
-  let lastMintedVersion = -1
-  let lastMintedWorkflowId: string | null = null
+  // One Lamport cursor per workflow, cleared only by that doc's reset: the
+  // observed sequence reads 0 between a subscribe and its ack, so only the
+  // cursor keeps a re-bound workflow's stamps past ones this actor used there.
+  const lastMintedVersions = new Map<string, number>()
   let detached = false
   let suspended = false
   let pumping = false
-  let sealing = 0
+  // Delivery deferral depth: a seal or an admission in progress parks the pump
+  // until it unwinds, so work a reentrant serialization callback enqueues
+  // cannot reach the wire ahead of the earlier-minted ops still being placed.
+  let pumpDeferrals = 0
   let pumpRequested = false
   let stateEpoch = 0
   let abortGeneration = 0
@@ -178,6 +193,23 @@ export function createOpSender(deps: OpSenderDeps): OpSender {
     { reports: number; startedAt: number }
   >()
   const MAX_CHUNK_FAILURE_REPORTS = 3
+
+  function mintBaseVersion(workflowId: string | null): number {
+    const observed = deps.baseVersion()
+    if (workflowId === null) return observed
+    const lastMinted = lastMintedVersions.get(workflowId)
+    return lastMinted === undefined
+      ? observed
+      : Math.max(observed, lastMinted + 1)
+  }
+
+  function releasePumpDeferral(): void {
+    pumpDeferrals--
+    if (pumpDeferrals === 0 && pumpRequested) {
+      pumpRequested = false
+      pump()
+    }
+  }
 
   function retire(batch: InFlight, answered: number): void {
     const outstanding = batch.sends - answered
@@ -362,7 +394,7 @@ export function createOpSender(deps: OpSenderDeps): OpSender {
     }
   }
 
-  function dequeue(): { workflowId: string; ops: Op[] } | undefined {
+  function dequeue(): AdmissionGroup | undefined {
     if (queueHead >= queue.length) return
     const queued = queue[queueHead]
     queueHead++
@@ -374,7 +406,7 @@ export function createOpSender(deps: OpSenderDeps): OpSender {
   }
 
   function pump(): void {
-    if (sealing > 0) {
+    if (pumpDeferrals > 0) {
       pumpRequested = true
       return
     }
@@ -423,7 +455,8 @@ export function createOpSender(deps: OpSenderDeps): OpSender {
     minted: Op[],
     admissionTarget: string,
     admissionEpoch: number,
-    admissionAbortGeneration: number
+    admissionAbortGeneration: number,
+    admissionInsertionIndex: number
   ): boolean {
     if (stateEpoch === admissionEpoch) return false
     if (detached) {
@@ -442,46 +475,52 @@ export function createOpSender(deps: OpSenderDeps): OpSender {
       stateEpoch++
       return true
     }
-    guardedSettlementNotifier('failure_settling_agent_op_sender')({
-      state: 'undeliverable',
-      ops: minted
-    })
+    // The nested call closed or retargeted the open group: seal these ops at
+    // their admitted position, ahead of what the nested call enqueued.
+    sealGroup(
+      { workflowId: admissionTarget, ops: minted },
+      admissionInsertionIndex
+    )
+    stateEpoch++
     return true
   }
 
   function admit(operations: GraphOperation[]): void {
     if (operations.length === 0) return
     const workflowId = deps.workflowId()
-    if (workflowId !== lastMintedWorkflowId) {
-      lastMintedVersion = -1
-      lastMintedWorkflowId = workflowId
-    }
-    const baseVersion = Math.max(deps.baseVersion(), lastMintedVersion + 1)
+    const baseVersion = mintBaseVersion(workflowId)
     const actor = deps.actor()
     const minted = operations.flatMap((operation, index) =>
       mintWireOps([operation], { actor, baseVersion: baseVersion + index })
     )
-    lastMintedVersion = baseVersion + minted.length - 1
     const admissionTarget = admissionTargetOrSettle(minted, workflowId)
     if (admissionTarget === null) return
-    const admissionEpoch = stateEpoch
-    const admissionAbortGeneration = abortGeneration
-    // seal() can synchronously re-enter the sender through its settlement
-    // callback. Do not resurrect an aborted admission or append old-workflow
-    // ops to state installed by a nested admit().
-    if (open?.workflowId !== admissionTarget) seal()
-    if (
-      restoreReentrantAdmission(
-        minted,
-        admissionTarget,
-        admissionEpoch,
-        admissionAbortGeneration
+    lastMintedVersions.set(admissionTarget, baseVersion + minted.length - 1)
+    pumpDeferrals++
+    try {
+      const admissionEpoch = stateEpoch
+      const admissionAbortGeneration = abortGeneration
+      const admissionInsertionIndex = queue.length
+      // seal() can synchronously re-enter the sender through its settlement
+      // callback. Do not resurrect an aborted admission or append old-workflow
+      // ops to state installed by a nested admit().
+      if (open?.workflowId !== admissionTarget) seal()
+      if (
+        restoreReentrantAdmission(
+          minted,
+          admissionTarget,
+          admissionEpoch,
+          admissionAbortGeneration,
+          admissionInsertionIndex
+        )
       )
-    )
-      return
-    if (open) for (const op of minted) open.ops.push(op)
-    else open = { workflowId: admissionTarget, ops: minted }
-    stateEpoch++
+        return
+      if (open) for (const op of minted) open.ops.push(op)
+      else open = { workflowId: admissionTarget, ops: minted }
+      stateEpoch++
+    } finally {
+      releasePumpDeferral()
+    }
   }
 
   function sealInterruption(
@@ -597,13 +636,16 @@ export function createOpSender(deps: OpSenderDeps): OpSender {
     return ops.length
   }
 
-  function seal(): boolean {
-    if (!open) return detached
-    const { workflowId, ops } = open
+  /**
+   * Chunk one admission group into wire batches at `insertionIndex`, the queue
+   * position the group held when it was admitted.
+   */
+  function sealGroup(
+    { workflowId, ops }: AdmissionGroup,
+    insertionIndex: number
+  ): void {
     const sealAbortGeneration = abortGeneration
-    const insertionIndex = queue.length
-    open = null
-    sealing++
+    pumpDeferrals++
     try {
       const chunks = chunkWireOps(ops)
       const interrupted = sealInterruption(sealAbortGeneration)
@@ -612,12 +654,16 @@ export function createOpSender(deps: OpSenderDeps): OpSender {
     } catch (cause) {
       recoverSeal(cause, workflowId, ops, sealAbortGeneration, insertionIndex)
     } finally {
-      sealing--
-      if (sealing === 0 && pumpRequested) {
-        pumpRequested = false
-        pump()
-      }
+      releasePumpDeferral()
     }
+  }
+
+  function seal(): boolean {
+    if (!open) return detached
+    const group = open
+    const insertionIndex = queue.length
+    open = null
+    sealGroup(group, insertionIndex)
     return detached
   }
 
@@ -707,8 +753,10 @@ export function createOpSender(deps: OpSenderDeps): OpSender {
     abortAll() {
       stateEpoch++
       abortGeneration++
-      lastMintedVersion = -1
-      lastMintedWorkflowId = null
+      // A doc_reset replaces only the bound document (the follower guards on
+      // isCurrentWorkflow), so only its cursor restarts.
+      const resetWorkflowId = deps.workflowId()
+      if (resetWorkflowId !== null) lastMintedVersions.delete(resetWorkflowId)
       drainOutstanding(
         guardedSettlementNotifier('failure_settling_agent_op_sender_abort'),
         'failure_chunking_agent_op_sender_abort'

@@ -1,4 +1,4 @@
-import { createWorkshopUrlUploader } from '../src/config/workshop-url-upload'
+import { createWorkshopUrlUploader } from '@/config/workshop-url-upload'
 
 export async function runWorkshopUploadProbe(file: File, token: string) {
   try {

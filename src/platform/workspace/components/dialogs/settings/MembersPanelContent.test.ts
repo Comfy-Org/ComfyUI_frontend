@@ -1,8 +1,7 @@
 import { render, screen, within } from '@testing-library/vue'
 import userEvent from '@testing-library/user-event'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
-import type { Slots } from 'vue'
-import { computed, h, ref } from 'vue'
+import { computed, ref } from 'vue'
 import { createI18n } from 'vue-i18n'
 
 import MembersPanelContent from './MembersPanelContent.vue'
@@ -178,11 +177,6 @@ vi.mock<unknown>(
   })
 )
 
-vi.mock<unknown>(import('@/components/button/MoreButton.vue'), () => ({
-  default: (_: unknown, { slots }: { slots: Slots }) =>
-    h('div', slots.default?.({ close: () => {} }))
-}))
-
 const i18n = createI18n({
   legacy: false,
   locale: 'en',
@@ -334,6 +328,38 @@ describe('MembersPanelContent', () => {
       renderComponent()
       expect(screen.queryByRole('textbox')).toBeNull()
     })
+
+    it.for([
+      { name: 'active', isPlanEnded: false, isSalesManagedPlan: false },
+      {
+        name: 'ended self-serve',
+        isPlanEnded: true,
+        isSalesManagedPlan: false
+      },
+      {
+        name: 'ended sales-managed',
+        isPlanEnded: true,
+        isSalesManagedPlan: true
+      }
+    ])(
+      'pitches the Team plan whatever the plan state ($name)',
+      async ({ isPlanEnded, isSalesManagedPlan }) => {
+        mockIsPlanEnded.value = isPlanEnded
+        mockIsSalesManagedPlan.value = isSalesManagedPlan
+        renderComponent()
+
+        expect(
+          screen.getByText('workspacePanel.members.upsellBanner')
+        ).toBeTruthy()
+        expect(screen.queryByText(/workspacePanel\.members\.ended/)).toBeNull()
+        await userEvent.click(
+          screen.getByRole('button', {
+            name: /workspacePanel\.members\.upgradeToTeam/
+          })
+        )
+        expect(mockShowTeamPlans).toHaveBeenCalled()
+      }
+    )
   })
 
   describe('pending invite counts', () => {
@@ -467,7 +493,10 @@ describe('MembersPanelContent', () => {
       mockFilteredPendingInvites.value = [createInvite({ id: 'inv-42' })]
       renderComponent()
       await userEvent.click(
-        screen.getByRole('button', {
+        screen.getByRole('button', { name: 'g.moreOptions' })
+      )
+      await userEvent.click(
+        screen.getByRole('menuitem', {
           name: 'workspacePanel.members.actions.cancelInvite'
         })
       )
@@ -481,7 +510,10 @@ describe('MembersPanelContent', () => {
       mockFilteredPendingInvites.value = [createInvite({ id: 'inv-42' })]
       renderComponent()
       await userEvent.click(
-        screen.getByRole('button', {
+        screen.getByRole('button', { name: 'g.moreOptions' })
+      )
+      await userEvent.click(
+        screen.getByRole('menuitem', {
           name: 'workspacePanel.members.actions.resendInvite'
         })
       )
@@ -914,6 +946,17 @@ describe('MembersPanelContent', () => {
         name: 'workspacePanel.inviteMember'
       })
       expect((button as HTMLButtonElement).disabled).toBe(true)
+    })
+
+    it('hides the Active tab when there is no Pending tab to switch to', () => {
+      mockUiConfig.value = { ...mockUiConfig.value, showPendingTab: false }
+      renderComponent()
+      expect(
+        screen.queryByText('workspacePanel.members.tabs.active')
+      ).toBeNull()
+      expect(
+        screen.getByText('workspacePanel.members.columns.role')
+      ).toBeInTheDocument()
     })
 
     it('hides the view tabs for a lone owner', () => {

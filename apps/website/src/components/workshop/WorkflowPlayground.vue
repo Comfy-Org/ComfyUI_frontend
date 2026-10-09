@@ -2,43 +2,40 @@
 import { useMounted } from '@vueuse/core'
 import { computed, onScopeDispose, ref, useTemplateRef, watch } from 'vue'
 
-import type { WorkflowWorkshopModelDetail } from '../../config/models-catalogue'
-import type { SnippetLanguage } from '../../config/models-snippets'
+import type { WorkflowWorkshopModelDetail } from '@/config/models-catalogue'
+import type { SnippetLanguage } from '@/config/models-snippets'
 import {
   initialWorkshopPageState,
   workshopExampleState
-} from '../../config/workshop-page-state'
-import {
-  restoreFormValues,
-  urlUploadField
-} from '../../config/workshop-playground'
-import { WorkshopWorkflowError } from '../../config/workshop-workflow-api'
+} from '@/config/workshop-page-state'
+import { restoreFormValues, urlUploadField } from '@/config/workshop-playground'
+import { WorkshopWorkflowError } from '@/config/workshop-workflow-api'
 import {
   workflowNoticeKey,
   workflowStatusKey
-} from '../../config/workshop-workflow-presentation'
-import { requestWorkshopBuyCreditsAutomatically } from '../../config/workshop-buy-credits'
-import { refreshWorkshopCredits } from '../../config/workshop-credits'
-import { useWorkshopModelBalance } from '../../config/workshop-model-balance'
-import { useWorkshopSession } from '../../config/workshop-session-state'
-import type { WorkflowCreditsRefusal } from '../../lib/workshop/workflow-credits-gate'
+} from '@/config/workshop-workflow-presentation'
+import { requestWorkshopBuyCreditsAutomatically } from '@/config/workshop-buy-credits'
+import { refreshWorkshopCredits } from '@/config/workshop-credits'
+import { useWorkshopModelBalance } from '@/config/workshop-model-balance'
+import { useWorkshopSession } from '@/config/workshop-session-state'
+import type { WorkflowCreditsRefusal } from '@/lib/workshop/workflow-credits-gate'
 import {
   withRefusalBaseline,
   workflowCreditsGate
-} from '../../lib/workshop/workflow-credits-gate'
-import { panelSaysRefusal } from '../../lib/workshop/workflow-refusal'
-import { useStickyFooterScrollPadding } from '../../composables/useStickyFooterScrollPadding'
-import { useTablist } from '../../composables/useTablist'
-import { useWorkflowFormDraft } from '../../composables/useWorkflowFormDraft'
-import { useWorkflowRun } from '../../composables/useWorkflowRun'
-import { t } from '../../i18n/translations'
+} from '@/lib/workshop/workflow-credits-gate'
+import { panelSaysRefusal } from '@/lib/workshop/workflow-refusal'
+import { useStickyFooterScrollPadding } from '@/composables/useStickyFooterScrollPadding'
+import { useTablist } from '@/composables/useTablist'
+import { useWorkflowFormDraft } from '@/composables/useWorkflowFormDraft'
+import { useWorkflowRun } from '@/composables/useWorkflowRun'
+import { t } from '@/i18n/translations'
 import {
   captureWorkshopEvent,
   useWorkshopEnabled,
   useWorkshopWorkflowsEnabled
-} from '../../scripts/posthog'
-import { workshopModelAnalytics } from '../../scripts/workshop-analytics'
-import { sameFormValues } from '../../lib/workshop/form-values'
+} from '@/scripts/posthog'
+import { workshopModelAnalytics } from '@/scripts/workshop-analytics'
+import { sameFormValues } from '@/lib/workshop/form-values'
 import ExampleReplaceDialog from './ExampleReplaceDialog.vue'
 import PlaygroundForm from './PlaygroundForm.vue'
 import WorkflowResults from './WorkflowResults.vue'
@@ -345,7 +342,7 @@ function start() {
         </div>
       </form>
     </section>
-    <div class="space-y-4 lg:sticky lg:top-24 lg:col-span-7">
+    <div class="min-w-0 space-y-4 lg:sticky lg:top-24 lg:col-span-7">
       <WorkflowResults
         :key="selectedRunId"
         :model="model"

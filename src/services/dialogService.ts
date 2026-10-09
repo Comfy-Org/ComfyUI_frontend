@@ -20,12 +20,13 @@ import { t } from '@/i18n'
 import { useTelemetry } from '@/platform/telemetry'
 import { isCloud } from '@/platform/distribution/types'
 import { useBillingContext } from '@/composables/billing/useBillingContext'
-import { useToastStore } from '@/platform/updates/common/toastStore'
+import { useToast } from '@/components/ui/toast/toastStore'
 import { useDialogStore } from '@/stores/dialogStore'
 import type { RunErrorMessageSource } from '@/platform/errorCatalog/types'
 import type { PromptError } from '@/platform/remote/comfyui/types'
 import { PromptExecutionError } from '@/scripts/api'
 import { tryExtractValidationError } from '@/utils/executionErrorUtil'
+import { getErrorMessage } from '@/utils/errorUtil'
 import type {
   DialogComponentProps,
   ShowDialogOptions
@@ -36,6 +37,7 @@ import type { SubscriptionDialogOptions } from '@/platform/cloud/subscription/co
 import type { PaymentIntentSource } from '@/platform/telemetry/types'
 import type { WorkspaceRole } from '@/platform/workspace/api/workspaceApi'
 import type { DowngradeToPersonalResult } from '@/platform/workspace/composables/useDowngradeToPersonal'
+import type { CancellationFlowDialogOptions } from '@/platform/cloud/subscription/launchCancellationFlow'
 
 // Lazy loaders for dialogs - components are loaded on first use
 const lazyApiNodesSignInContent = () =>
@@ -889,6 +891,24 @@ export const useDialogService = () => {
     })
   }
 
+  async function showCancellationFlowDialog(
+    options: CancellationFlowDialogOptions
+  ) {
+    const { default: component } =
+      await import('@/platform/cloud/subscription/components/CancellationFlowDialogContent.vue')
+    if (!options.isScopeCurrent()) return false
+    return dialogStore.showDialog({
+      key: 'cancel-subscription',
+      component,
+      props: { ...options },
+      dialogComponentProps: {
+        ...workspaceDialogProps,
+        closable: false,
+        dismissableMask: false
+      }
+    })
+  }
+
   async function showCancelSubscriptionFlow(cancelAt?: string) {
     const launchWorkspaceId = useTeamWorkspaceStore().activeWorkspaceId
     const cancellationFlow =
@@ -896,17 +916,7 @@ export const useDialogService = () => {
     return cancellationFlow.launchCancellationFlow({
       cancelAt,
       launchWorkspaceId,
-      showFallback: ({
-        flowAlreadyOpened = false,
-        flowAlreadyConfirmed = false,
-        isScopeCurrent = () => true
-      } = {}) =>
-        showCancelSubscriptionDialog(
-          cancelAt,
-          flowAlreadyOpened,
-          isScopeCurrent,
-          flowAlreadyConfirmed
-        )
+      showFlow: showCancellationFlowDialog
     })
   }
 
@@ -946,10 +956,8 @@ export const useDialogService = () => {
         return await downgradeToPersonal(options.planSlug)
       }
     } catch (error) {
-      useToastStore().add({
-        severity: 'error',
-        summary: t('subscription.downgrade.failed'),
-        detail: error instanceof Error ? error.message : t('g.unknownError')
+      useToast().error(t('subscription.downgrade.failed'), {
+        description: getErrorMessage(error) ?? t('g.unknownError')
       })
       return null
     }

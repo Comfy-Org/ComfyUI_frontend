@@ -10,7 +10,6 @@ import {
 import { isReactive, isReadonly, nextTick } from 'vue'
 
 import {
-  ServerFeatureFlag,
   startFeatureFlagTelemetry,
   useFeatureFlags
 } from '@/composables/useFeatureFlags'
@@ -25,6 +24,7 @@ import {
   sessionAgentGrant,
   sessionAgentGrantValidUntil
 } from '@/platform/remoteConfig/remoteConfig'
+import { ServerFeatureFlag } from '@/platform/remoteConfig/serverFeatureFlag'
 import { useTelemetry } from '@/platform/telemetry'
 import { api } from '@/scripts/api'
 import { getSessionOverride } from '@/utils/sessionFeatureFlagOverride'
@@ -362,6 +362,44 @@ describe('useFeatureFlags', () => {
         )
       }
     )
+  })
+
+  describe('ssoEnabled', () => {
+    afterEach(() => {
+      vi.mocked(distributionTypes).isCloud = false
+    })
+
+    it.for([
+      {
+        case: 'missing on cloud',
+        cloud: true,
+        value: undefined,
+        expected: false
+      },
+      { case: 'false on cloud', cloud: true, value: false, expected: false },
+      {
+        case: 'malformed on cloud',
+        cloud: true,
+        value: 'true',
+        expected: false
+      },
+      { case: 'true on cloud', cloud: true, value: true, expected: true },
+      { case: 'true off cloud', cloud: false, value: true, expected: false }
+    ])('is $expected when $case', ({ cloud, value, expected }) => {
+      vi.mocked(distributionTypes).isCloud = cloud
+      vi.mocked(api.getServerFeature).mockReturnValue(value)
+
+      expect(useFeatureFlags().flags.ssoEnabled).toBe(expected)
+    })
+
+    it('is false on cloud when feature lookup throws', () => {
+      vi.mocked(distributionTypes).isCloud = true
+      vi.mocked(api.getServerFeature).mockImplementation(() => {
+        throw new Error('feature service unavailable')
+      })
+
+      expect(useFeatureFlags().flags.ssoEnabled).toBe(false)
+    })
   })
 
   describe('linearToggleEnabled', () => {
@@ -804,38 +842,6 @@ describe('useFeatureFlags', () => {
     })
   })
 
-  describe('churnkeyAppId', () => {
-    afterEach(() => {
-      vi.mocked(distributionTypes).isCloud = false
-      remoteConfig.value = {}
-    })
-
-    it('is disabled outside the cloud distribution', () => {
-      remoteConfig.value = { churnkey_app_id: 'app_test' }
-
-      expect(useFeatureFlags().flags.churnkeyAppId).toBe('')
-    })
-
-    it('reads and trims the cloud remote-config value', () => {
-      vi.mocked(distributionTypes).isCloud = true
-      remoteConfig.value = { churnkey_app_id: ' app_test ' }
-
-      expect(useFeatureFlags().flags.churnkeyAppId).toBe('app_test')
-    })
-
-    it('falls back to the trimmed server feature value', () => {
-      vi.mocked(distributionTypes).isCloud = true
-      vi.mocked(api.getServerFeature).mockImplementation(
-        (path, defaultValue) =>
-          path === ServerFeatureFlag.CHURNKEY_APP_ID
-            ? ' app_server '
-            : defaultValue
-      )
-
-      expect(useFeatureFlags().flags.churnkeyAppId).toBe('app_server')
-    })
-  })
-
   describe('feature flag telemetry', () => {
     afterEach(() => {
       vi.mocked(distributionTypes).isCloud = false
@@ -849,8 +855,7 @@ describe('useFeatureFlags', () => {
       authenticatedRemoteConfigState.value = 'authenticated'
       remoteConfig.value = {
         partner_node_governance_enabled: false,
-        unified_cloud_auth: false,
-        churnkey_app_id: ' app_test '
+        unified_cloud_auth: false
       }
       vi.mocked(api.getServerFeature).mockImplementation(
         (_path, defaultValue) => defaultValue
@@ -865,10 +870,6 @@ describe('useFeatureFlags', () => {
       expect(useTelemetry()?.trackFeatureFlagEvaluation).toHaveBeenCalledWith(
         ServerFeatureFlag.UNIFIED_CLOUD_AUTH,
         false
-      )
-      expect(useTelemetry()?.trackFeatureFlagEvaluation).toHaveBeenCalledWith(
-        ServerFeatureFlag.CHURNKEY_APP_ID,
-        'app_test'
       )
       expect(useTelemetry()?.trackFeatureFlagEvaluation).toHaveBeenCalledWith(
         'assets',
@@ -1095,7 +1096,6 @@ describe('useFeatureFlags', () => {
 
   describe('session override precedence', () => {
     afterEach(() => {
-      vi.mocked(getSessionOverride).mockReset()
       vi.mocked(distributionTypes).isCloud = false
       vi.mocked(distributionTypes).isNightly = false
       remoteConfigState.value = 'unloaded'
@@ -1120,14 +1120,14 @@ describe('useFeatureFlags', () => {
 
     it('applies a false override instead of falling through to an enabled server value', () => {
       vi.mocked(getSessionOverride).mockImplementation((flagKey) =>
-        flagKey === ServerFeatureFlag.WORKFLOW_SHARING_ENABLED
+        flagKey === ServerFeatureFlag.NODE_LIBRARY_ESSENTIALS_ENABLED
           ? false
           : undefined
       )
       vi.mocked(api.getServerFeature).mockReturnValue(true)
 
       const { flags } = useFeatureFlags()
-      expect(flags.workflowSharingEnabled).toBe(false)
+      expect(flags.nodeLibraryEssentialsEnabled).toBe(false)
     })
 
     it('turns the linear toggle off against an enabled remote config', () => {

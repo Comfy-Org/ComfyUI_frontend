@@ -3,7 +3,7 @@ import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { testFirebaseUser } from './__fixtures__/workshopSessionFakes'
 import { WORKSHOP_CLOUD_BASE_URL } from './workshop-env'
 
-vi.mock(import('../scripts/posthog'))
+vi.mock(import('@/scripts/posthog'))
 vi.mock(import('./workshop-firebase'))
 
 const SESSION = `${WORKSHOP_CLOUD_BASE_URL}/api/auth/session`
@@ -18,6 +18,7 @@ function liveSession(userId: string): Answer {
     status: 200,
     body: {
       absolute_expires_at: '2099-01-01T00:00:00Z',
+      has_personal_workspace: true,
       expires_at: '2099-01-01T00:00:00Z',
       csrf_token: 'csrf',
       user: { id: userId, email: 'a@b.c', email_verified: true }
@@ -33,26 +34,23 @@ const NO_SESSION: Answer = {
 /** Flag on; each session request takes the next answer, the last repeating. */
 function stubCloud(...sessionAnswers: Answer[]) {
   const sessionRequests: RequestInit[] = []
-  vi.stubGlobal(
-    'fetch',
-    vi.fn<typeof fetch>(async (input, init = {}) => {
-      if (String(input) !== SESSION) {
-        const flags =
-          init.credentials === 'include'
-            ? { unified_web_session: true }
-            : { web_session_probe: true }
-        return new Response(JSON.stringify(flags))
-      }
-      sessionRequests.push(init)
-      const answer =
-        sessionAnswers[
-          Math.min(sessionRequests.length, sessionAnswers.length) - 1
-        ]
-      return new Response(JSON.stringify(answer.body), {
-        status: answer.status
-      })
+  vi.mocked(fetch).mockImplementation(async (input, init = {}) => {
+    if (String(input) !== SESSION) {
+      const flags =
+        init.credentials === 'include'
+          ? { unified_web_session: true }
+          : { web_session_probe: true }
+      return new Response(JSON.stringify(flags))
+    }
+    sessionRequests.push(init)
+    const answer =
+      sessionAnswers[
+        Math.min(sessionRequests.length, sessionAnswers.length) - 1
+      ]
+    return new Response(JSON.stringify(answer.body), {
+      status: answer.status
     })
-  )
+  })
   return sessionRequests
 }
 
@@ -71,7 +69,7 @@ async function loadModules(firebaseUid: string | undefined) {
     return () => {}
   })
   const { workshopIdentity } = await import('./workshop-account')
-  const { captureWebSessionEvent } = await import('../scripts/posthog')
+  const { captureWebSessionEvent } = await import('@/scripts/posthog')
   await import('@comfyorg/account-core/requestAuth')
   return {
     signOutWorkshop: vi.mocked(firebase.signOutWorkshop),

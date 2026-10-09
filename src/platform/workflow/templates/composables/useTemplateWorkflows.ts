@@ -1,13 +1,15 @@
 import { computed, onScopeDispose, ref } from 'vue'
 import { useI18n } from 'vue-i18n'
 
-import { isCloud } from '@/platform/distribution/types'
+import { useToast } from '@/components/ui/toast/toastStore'
+import { createToastId } from '@/types/toastId'
+import { isCloud, isDesktop } from '@/platform/distribution/types'
 import { useSettingStore } from '@/platform/settings/settingStore'
 import { useSurveyFeatureTracking } from '@/platform/surveys/useSurveyFeatureTracking'
 import { useTelemetry } from '@/platform/telemetry'
 import { reportError } from '@/platform/telemetry/reportError'
-import { useToastStore } from '@/platform/updates/common/toastStore'
 import type { TemplateInput } from '@/platform/workflow/templates/schemas/templateSchema'
+import { syncCompletedTemplateInputsWithCurrentGraph } from '@/platform/workflow/templates/composables/useTemplateInputDownloadGraphSync'
 import { useWorkflowTemplatesStore } from '@/platform/workflow/templates/repositories/workflowTemplatesStore'
 import { usePartnerNodesEducationStore } from '@/platform/workflow/templates/stores/partnerNodesEducationStore'
 import type {
@@ -15,6 +17,10 @@ import type {
   TemplateInfo,
   WorkflowTemplates
 } from '@/platform/workflow/templates/types/template'
+import {
+  resolveTemplateInputAssets,
+  startMissingTemplateInputDownloads
+} from '@/platform/workflow/templates/utils/templateInputAssets'
 import type {
   ComfyWorkflowJSON,
   LegacyLoadableWorkflow
@@ -162,13 +168,32 @@ export function useTemplateWorkflows() {
     return template?.sourceModule
   }
 
+  function startTemplateInputDownloads(id: string, sourceModule: string) {
+    if (!isDesktop || sourceModule !== 'default') return
+
+    void resolveTemplateInputAssets(id, () => window.__comfyDesktop2).then(
+      (assets) => {
+        startMissingTemplateInputDownloads(id, assets, {
+          getBridge: () => window.__comfyDesktop2,
+          reportError: (error) => {
+            reportError(error, {
+              surface: 'graph',
+              errorType: 'workflow_template_input_download_failed',
+              level: 'warning'
+            })
+          }
+        })
+      }
+    )
+  }
+
   function releasePreparedLoad(controller: AbortController) {
     workflowTemplatesStore.finishTemplateLoad(controller)
     if (ownedLoadController === controller) ownedLoadController = undefined
   }
 
   function showTemplateError(detail: string) {
-    useToastStore().add({ severity: 'error', summary: t('g.error'), detail })
+    useToast().error(t('g.error'), { description: detail })
   }
 
   function reportTemplateError(error: unknown) {
@@ -184,11 +209,8 @@ export function useTemplateWorkflows() {
     inputs: TemplateInput[],
     signal: AbortSignal
   ) {
-    const toast = useToastStore()
-    const progress = {
-      severity: 'info' as const,
-      summary: t('templateWorkflows.preparingMedia')
-    }
+    const toast = useToast()
+    const progressToastId = createToastId()
     let preparedJson: ComfyWorkflowJSON | LegacyLoadableWorkflow = workflow
     const errors: unknown[] = []
     try {
@@ -198,7 +220,9 @@ export function useTemplateWorkflows() {
         signal,
         useSettingStore().get('Comfy.Workflow.NamedValuesRestore'),
         () => {
-          toast.add(progress)
+          toast.loading(t('templateWorkflows.preparingMedia'), {
+            id: progressToastId
+          })
         }
       )
       errors.push(...result.errors)
@@ -212,7 +236,7 @@ export function useTemplateWorkflows() {
       signal.throwIfAborted()
       errors.push(error)
     } finally {
-      toast.remove(progress)
+      toast.dismiss(progressToastId)
     }
     if (errors.length) {
       reportError(
@@ -222,11 +246,9 @@ export function useTemplateWorkflows() {
           errorType: 'error_loading_template_media'
         }
       )
-      toast.add({
-        severity: 'warn',
-        summary: t('g.warning'),
-        detail: t('templateWorkflows.error.preparingMedia'),
-        life: 8000
+      toast.warning(t('g.warning'), {
+        description: t('templateWorkflows.error.preparingMedia'),
+        duration: 8000
       })
     }
     return preparedJson
@@ -278,6 +300,7 @@ export function useTemplateWorkflows() {
       if (loadedWorkflow === undefined) return 'not-started'
 
       updateTemplateEducation(template?.isPartnerNode, loadedWorkflow)
+      await syncCompletedTemplateInputsWithCurrentGraph()
       if (sourceModule === 'default') trackFeatureUsed()
       return 'loaded'
     } catch (error) {
@@ -359,6 +382,7 @@ export function useTemplateWorkflows() {
       })
 
       dialogStore.closeDialog()
+      startTemplateInputDownloads(id, sourceModule)
       return await loadTemplateGraph(data, workflowName, sourceModule)
     } catch (error) {
       if (!controller.signal.aborted) reportTemplateError(error)

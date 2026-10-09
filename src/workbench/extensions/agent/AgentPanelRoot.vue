@@ -11,7 +11,6 @@ import {
   onBeforeUnmount,
   onMounted,
   provide,
-  readonly,
   ref,
   watch
 } from 'vue'
@@ -33,7 +32,7 @@ import { formatWorkflowSyncErrorDetail } from '@/workbench/extensions/agent/crdt
 import { useWorkflowService } from '@/platform/workflow/core/services/workflowService'
 import type { ComfyWorkflow } from '@/platform/workflow/management/stores/comfyWorkflow'
 import { useWorkflowStore } from '@/platform/workflow/management/stores/workflowStore'
-import type { LGraphCanvas, LGraphNode } from '@/lib/litegraph/src/litegraph'
+import type { LGraphNode } from '@/lib/litegraph/src/litegraph'
 import { useAppMode } from '@/composables/useAppMode'
 import { MIME_ASSET_INFO } from '@/platform/assets/schemas/mediaAssetSchema'
 import { fetchDroppedAsset, getDroppedAsset } from '@/utils/eventUtils'
@@ -53,12 +52,11 @@ import { api } from '@/scripts/api'
 import { app } from '@/scripts/app'
 import type { ComfyWorkflowJSON } from '@/platform/workflow/validation/schemas/workflowSchema'
 import { blankGraph } from '@/scripts/defaultGraph'
-import { useAgentNodeSelectionStore } from '@/stores/agentNodeSelectionStore'
 import { useExecutionErrorStore } from '@/stores/executionErrorStore'
 import { useWorkflowTabActivityStore } from '@/stores/workflowTabActivityStore'
 import { useSidebarTabStore } from '@/stores/workspace/sidebarTabStore'
 import { isLGraphNode } from '@/utils/litegraphUtil'
-import { useToastStore } from '@/platform/updates/common/toastStore'
+import { useToast } from '@/components/ui/toast/toastStore'
 import { toOwningGraphId, toRootGraphId } from '@/types/graphScopeId'
 import type { RootGraphId } from '@/types/graphScopeId'
 import { isCloud } from '@/platform/distribution/types'
@@ -128,6 +126,10 @@ import { createAgentEventSource } from './services/agent/agentEventSource'
 import { createStandaloneAgentEventSource } from './services/agent/standaloneAgentEventSource'
 import { useAgentChatHistoryStore } from './stores/agent/agentChatHistoryStore'
 import { agentMessageText } from './utils/agentMessageText'
+import {
+  deriveSessionTitle,
+  withCurrentSessionTitle
+} from './utils/sessionTitle'
 import { useAgentComposerStore } from './stores/agent/agentComposerStore'
 import { useAgentConsentStore } from './stores/agent/agentConsentStore'
 import { useAgentPanelStore } from './stores/agent/agentPanelStore'
@@ -145,7 +147,7 @@ const CrdtDevPanel = defineAsyncComponent(
 )
 
 const { t } = useI18n()
-const toast = useToastStore()
+const toast = useToast()
 const { open: openAccountPrecondition } = useAccountPreconditionDialog()
 const { workspaceRole } = useWorkspaceUI()
 const {
@@ -157,6 +159,7 @@ const {
 } = useBillingContext()
 const conversationStore = useAgentConversationStore()
 const history = useAgentChatHistoryStore()
+const { accepted: consentAccepted } = storeToRefs(useAgentConsentStore())
 watch(
   subscription,
   (currentSubscription) => {
@@ -278,6 +281,7 @@ watch(
  */
 const agentHasFunds = computed(() => subscription.value?.agentHasFunds)
 const creditsExhausted = computed(() => {
+  if (!consentAccepted.value) return false
   if (billingType.value !== 'workspace') return false
   // Same gate as the impression report above: an unsettled read cannot say
   // which presentation is right, and a card naming the wrong remediation is
@@ -351,11 +355,11 @@ const composerStore = useAgentComposerStore()
 const { selectedWorkflow: selectedTarget } = storeToRefs(agentPanelStore)
 const { dismissedSelectionSignature, enabled: agentEnabled } =
   storeToRefs(agentPanelStore)
-const agentNodeSelectionStore = useAgentNodeSelectionStore()
 const workflowResolver = useAgentWorkflowResolver({
   workflows: workflowStore,
   bindings: bindingStore,
-  listCloudWorkflows: () => rest.listCloudWorkflows()
+  listCloudWorkflows: () => rest.listCloudWorkflows(),
+  getCloudWorkflow: (workflowId) => rest.getCloudWorkflow(workflowId)
 })
 const {
   refreshCloudWorkflowIds,
@@ -479,7 +483,6 @@ onBeforeUnmount(() =>
     }
   })
 )
-const { accepted: consentAccepted } = storeToRefs(useAgentConsentStore())
 const { withConsent } = useAgentConsent()
 const workspaceStore = useTeamWorkspaceStore()
 const onboardingKey = computed(() =>
@@ -562,7 +565,7 @@ const nodeReferenceDisabledReason = computed(() => {
 const selectedNodes = computed<SelectedNode[]>(() =>
   canvasStore.selectedItems.filter(isLGraphNode).map(toSelectedNode)
 )
-composerStore.setNodeScope(selectedTarget.value?.path ?? null)
+composerStore.setNodeScope(selectedTarget.value?.instanceId ?? null)
 const {
   staged: selectionTags,
   consume: consumeSelection,
@@ -579,9 +582,8 @@ const {
   selection: selectedNodes,
   enabled: () => agentEnabled.value && selectedTarget.value !== null,
   isLive: () => agentPanelStore.isOpen,
-  isTracking: () => canReferenceNodes.value && agentNodeSelectionStore.isActive,
-  isPaused: () => agentNodeSelectionStore.isLoadingWorkflow,
-  scope: () => selectedTarget.value?.path ?? null,
+  isTracking: () => canReferenceNodes.value && canvasStore.isPickingNodes,
+  scope: () => selectedTarget.value?.instanceId ?? null,
   dismissedSignature: dismissedSelectionSignature,
   retainStagedNode: (node) => {
     const locator = parseNodeLocatorId(selectedNodeKey(node))
@@ -599,7 +601,9 @@ let nodeReferenceWorkflow = selectionTags.value.length
   : null
 
 function viewedGraphNodes() {
-  return app.canvas?.graph?.nodes ?? app.graph?.nodes ?? []
+  return (
+    (canvasStore.currentGraph ?? app.canvas?.graph ?? app.graph)?.nodes ?? []
+  )
 }
 
 function mentionableNodes(): SelectedNode[] {
@@ -610,31 +614,8 @@ watch(
   selectionTags,
   (tags) => {
     nodeReferenceWorkflow = tags.length ? selectedTarget.value : null
-    if (!agentPanelStore.isOpen || agentNodeSelectionStore.isLoadingWorkflow)
-      return
-    agentNodeSelectionStore.saveNodeIds(
-      selectedTarget.value?.path,
-      tags.map(selectedNodeKey)
-    )
   },
   { deep: true, flush: 'sync' }
-)
-
-watch(
-  [() => agentPanelStore.isOpen, canReferenceNodes],
-  ([open, canReference]) => {
-    if (!open || !canReference || selectionTags.value.length > 0) return
-    const locatorIds = new Set(
-      agentNodeSelectionStore.nodeIds(selectedTarget.value?.path)
-    )
-    replaceSelectionTags(
-      [...locatorIds]
-        .map((locatorId) => getNodeByLocatorId(app.rootGraph, locatorId))
-        .filter((node): node is LGraphNode => node !== null)
-        .map(toSelectedNode)
-    )
-  },
-  { immediate: true }
 )
 
 const workflowDetached = computed(() => selectedTarget.value === null)
@@ -667,15 +648,24 @@ function targetWorkflowTurnContext(
     : { id, tabPath: target.path }
 }
 
+function serializedCanvas(target: ComfyWorkflow) {
+  if (target.path === workflowStore.activeWorkflow?.path)
+    target.changeTracker?.prepareForSave()
+  return target.activeState
+}
+
 function targetWorkflowDraft(origin?: TurnOrigin): DraftSnapshot | undefined {
   if (workflowDetached.value) return undefined
   const target = originWorkflow(origin)
   if (!target) return undefined
-  if (target.path === workflowStore.activeWorkflow?.path)
-    target.changeTracker?.prepareForSave()
-  const content = target.activeState
+  const content = serializedCanvas(target)
   if (!content) return undefined
   return { content }
+}
+
+function canvasForWorkflow(workflowId: string): Record<string, unknown> | null {
+  const target = boundOrOpenWorkflowFor(workflowId)
+  return target ? serializedCanvas(target) : null
 }
 
 const selectedTargetTab = computed<ActiveTab | null>(() => {
@@ -729,22 +719,14 @@ function onWorkflowAdopted(
 }
 
 function warnWorkflowUnavailable(): void {
-  toast.add({
-    severity: 'warn',
-    detail: t('agent.targetNavigationUnavailable'),
-    life: 5000
-  })
+  toast.warning(t('agent.targetNavigationUnavailable'), { duration: 5000 })
 }
 
 function warnRestoreFailed(): void {
   const { view } = agentPanelStore
   // A loading history row reports its own failure.
   if (view.screen === 'history' && view.selection.status === 'loading') return
-  toast.add({
-    severity: 'warn',
-    detail: t('agent.targetWorkflowOpenFailed'),
-    life: 5000
-  })
+  toast.warning(t('agent.targetWorkflowOpenFailed'), { duration: 5000 })
 }
 
 function trackWorkflowOpenFailure(
@@ -862,7 +844,8 @@ const {
   status: crdtStatus,
   debugSnapshot: crdtDebugSnapshot,
   enqueueHumanOperations,
-  docInputNames
+  docInputNames,
+  docPromotedWidgets
 } = useAgentCrdtFollower(
   boundWorkflowId,
   () => resolvedUserInfo.value?.id ?? null,
@@ -876,19 +859,16 @@ const {
       if (app.isGraphReady) {
         graphActivity.recordMaterialized(
           { workflowId, rootGraphId: toRootGraphId(app.rootGraph.id) },
-          nodeIds
+          nodeIds,
+          conversationTurnId.value
         )
         if (status.value === 'idle') graphActivity.finishTurn()
       }
     },
     onReset: graphActivity.resetWorkflow,
     onSyncError: (message, code) =>
-      toast.add({
-        severity: 'error',
-        summary: t('agent.workflowSyncFailedTitle'),
-        detail: formatWorkflowSyncErrorDetail(t, message, code),
-        // A permanent desync remains visible until the person dismisses it.
-        life: 0
+      toast.error(t('agent.workflowSyncFailedTitle'), {
+        description: formatWorkflowSyncErrorDetail(t, message, code)
       })
   },
   {
@@ -900,7 +880,8 @@ const {
       const [x, y, width, height] = canvas.ds.visible_area
       return { x, y, width, height }
     }
-  }
+  },
+  canvasForWorkflow
 )
 // The bound document's serialized root graph id, independent of what is
 // currently on the canvas: `beforeLoadNewGraph` persists the outgoing
@@ -919,13 +900,18 @@ const docOpMinter = attachDocOpMinter({
   enqueue: enqueueHumanOperations,
   getGraph: () => (app.isGraphReady ? app.rootGraph : null),
   boundRootGraphId,
-  docInputNames
+  docInputNames,
+  docPromotedWidgets
 })
 const restoreOpMinter = attachRestoreOpMinter({
   isEnabled: () => agentPanelStore.enabled,
   isDocBound: () => isBoundWorkflowActive.value,
   enqueue: enqueueHumanOperations,
   getGraph: () => (app.isGraphReady ? app.rootGraph : null),
+  docInputNames: (nodeId) => {
+    const parsed = parseNodeId(nodeId)
+    return parsed === null ? null : docInputNames(parsed)
+  },
   isRestoringState: () =>
     workflowStore.activeWorkflow?.changeTracker?._restoringState === true
 })
@@ -1290,9 +1276,7 @@ onBeforeUnmount(() => {
     detachRestoreOpMinter: () => {
       restoreOpMinter.detach()
     },
-    exitNodeSelectionMode: () => {
-      exitNodeSelectionMode()
-    },
+    exitNodeSelectionMode: canvasStore.stopNodePicking,
     stopSession: () => {
       stop()
     },
@@ -1357,7 +1341,8 @@ function toChatSession(thread: AgentThreadSummary): ChatSession {
   return {
     id: thread.id,
     title: thread.title || thread.preview || t('agent.untitledChat'),
-    updatedAt: Number.isNaN(updatedAt) ? Date.now() : updatedAt
+    updatedAt: Number.isNaN(updatedAt) ? Date.now() : updatedAt,
+    titleSource: thread.title ? 'server' : 'fallback'
   }
 }
 
@@ -1391,6 +1376,16 @@ const currentChatReady = computed(
     selectedTarget.value !== null
 )
 
+const historyGroups = computed(() => {
+  const id = threadId.value
+  if (id === null || !isTranscriptReady.value || id !== history.activeId)
+    return history.grouped
+  return withCurrentSessionTitle(
+    history.grouped,
+    history.titleFor(id) || deriveSessionTitle(entries.value)
+  )
+})
+
 async function onSelectHistory(
   id: string,
   isCurrent: () => boolean
@@ -1401,7 +1396,7 @@ async function onSelectHistory(
   composerStore.invalidateSubmission()
   cancelWorkflowSelection()
   agentPanelStore.beginWorkflowRestoration()
-  exitNodeSelectionMode()
+  canvasStore.stopNodePicking()
   const opened = await loadThread(id, isCurrent)
   if (opened)
     useTelemetry()?.trackAgentThreadStarted({ source: 'history_select' })
@@ -1425,7 +1420,7 @@ function buildTranscriptMarkdown(entries: ConversationEntry[]): string {
 function onCopyMarkdown(id: string): void {
   if (id === history.activeId && id === threadId.value)
     void copy(buildTranscriptMarkdown(entries.value))
-  else toast.add({ severity: 'info', summary: t('agent.copyUnavailable') })
+  else toast.info(t('agent.copyUnavailable'))
 }
 
 const coachSteps = computed<CoachStep[]>(() => [
@@ -1485,7 +1480,7 @@ const { submit: onSend } = useAgentDraftSubmission({
     workflow: () => nodeReferenceWorkflow,
     consume: consumeSelection,
     replace: replaceSelectionTags,
-    exit: exitNodeSelectionMode
+    exit: canvasStore.stopNodePicking
   },
   // fallow-ignore-next-line complexity -- Existing PR logic; this lane changes only the composing panel test.
   send: async (text, attachments, nodes, references, meta) => {
@@ -1562,7 +1557,7 @@ function onDeleteHistory(id: string): void {
 function onNewChat(source?: 'new_chat_button' | 'history_delete'): void {
   composerStore.invalidateSubmission()
   cancelWorkflowSelection()
-  exitNodeSelectionMode()
+  canvasStore.stopNodePicking()
   composerStore.setWorkflowReferences([])
   composerStore.resetPromptHistory()
   newChat(source)
@@ -1570,52 +1565,16 @@ function onNewChat(source?: 'new_chat_button' | 'history_delete'): void {
   else agentPanelStore.startFollowingVisibleWorkflow()
 }
 
-const panelRef = ref<InstanceType<typeof AgentPanel>>()
 const fileInput = ref<HTMLInputElement>()
 const assetDragActive = ref(false)
 let assetDragDepth = 0
-provide('agentAssetDragActive', readonly(assetDragActive))
-let selectingNodes = false
-let nodeSelectionCanvas: LGraphCanvas | undefined
-
-watch(
-  () => canvasStore.selectedItems,
-  (items) => {
-    if (agentNodeSelectionStore.restoredNodeIds !== null) {
-      if (canReferenceNodes.value) {
-        replaceSelectionTags(items.filter(isLGraphNode).map(toSelectedNode))
-      }
-      agentNodeSelectionStore.finishWorkflowLoad()
-    }
-  },
-  { immediate: true }
-)
-
-function exitNodeSelectionMode(): void {
-  const canvas = nodeSelectionCanvas
-  nodeSelectionCanvas = undefined
-  selectingNodes = false
-  if (agentNodeSelectionStore.isActive) agentNodeSelectionStore.exit()
-  if (canvas) {
-    canvas.deselectAll()
-  }
-}
-
-watch(
-  () => agentNodeSelectionStore.isActive,
-  (active) => {
-    if (!active) exitNodeSelectionMode()
-  }
-)
 
 watch(
   selectedTarget,
-  (target, previous) => {
-    exitNodeSelectionMode()
-    composerStore.setNodeScope(target?.path ?? null)
+  (target) => {
+    canvasStore.stopNodePicking()
+    composerStore.setNodeScope(target?.instanceId ?? null)
     nodeReferenceWorkflow = null
-    agentNodeSelectionStore.saveNodeIds(previous?.path, [])
-    agentNodeSelectionStore.saveNodeIds(target?.path, [])
   },
   { flush: 'sync' }
 )
@@ -1623,7 +1582,7 @@ watch(
 watch(
   () => workflowStore.activeWorkflow,
   () => {
-    exitNodeSelectionMode()
+    canvasStore.stopNodePicking()
     onVisibleWorkflowChanged()
   },
   { flush: 'sync' }
@@ -1638,16 +1597,12 @@ start({
       threadId.value === agentPanelStore.view.previousThreadId)
 })
 
-watch(
-  () => canvasStore.currentGraph,
-  () => {
-    if (!agentNodeSelectionStore.isLoadingWorkflow) exitNodeSelectionMode()
-  },
-  { flush: 'sync' }
-)
+watch(() => canvasStore.currentGraph, canvasStore.stopNodePicking, {
+  flush: 'sync'
+})
 
 function onSelectNodes(): void {
-  if (!canReferenceNodes.value || selectingNodes) return
+  if (!canReferenceNodes.value || canvasStore.isPickingNodes) return
   const canvas = app.canvas
   if (!canvas) return
 
@@ -1664,11 +1619,9 @@ function onSelectNodes(): void {
   if (merged.size) {
     canvas.selectItems([...merged.values()])
   }
-  nodeSelectionCanvas = canvas
-  selectingNodes = true
-  agentNodeSelectionStore.enter()
+  canvasStore.startNodePicking()
   void nextTick(() => {
-    if (selectingNodes) canvas.canvas.focus()
+    if (canvasStore.isPickingNodes) canvas.canvas.focus()
   })
 }
 
@@ -1702,12 +1655,32 @@ const attachment = useAttachment({
     ) ?? MAX_ATTACHMENT_BYTES,
   // A rejected file is the user's problem to fix, not an agent failure, so it
   // must not raise the server-error overlay.
-  onError: (message) =>
-    toast.add({ severity: 'warn', detail: message, life: 5000 }),
+  onError: (message) => toast.warning(message, { duration: 5000 }),
+  onDuplicate: notifyDuplicateAttachments,
   stage: composerStore.addAttachment,
   update: composerStore.updateAttachment,
   remove: composerStore.removeAttachment
 })
+
+watch(
+  [
+    () => resolvedUserInfo.value?.id,
+    () => workspaceStore.activeWorkspaceId,
+    () => assetsStore.deletingAssetIds.size
+  ],
+  attachment.forgetUploads
+)
+
+function notifyDuplicateAttachments(names: string[]): void {
+  toast.info(
+    t(
+      'agent.attachmentsAlreadyAdded',
+      { name: names[0], count: names.length },
+      names.length
+    ),
+    { duration: 3500 }
+  )
+}
 
 onBeforeUnmount(() =>
   runPanelTeardown({
@@ -1718,7 +1691,7 @@ onBeforeUnmount(() =>
 )
 
 function onAttach(): void {
-  exitNodeSelectionMode()
+  canvasStore.stopNodePicking()
   useTelemetry()?.trackAgentAttachButtonClicked({ method: 'menu' })
   fileInput.value?.click()
 }
@@ -1729,7 +1702,7 @@ async function onAttachFiles(files: File[]): Promise<void> {
 }
 
 function onOpenAssets(): void {
-  exitNodeSelectionMode()
+  canvasStore.stopNodePicking()
   sidebarTabStore.activeSidebarTabId = 'assets'
 }
 
@@ -1748,11 +1721,12 @@ function onRemoveSelectionTag(id: string): void {
   removeSelectionTag(id)
   if (node) {
     canvasStore.canvas?.deselect(node)
+    canvasStore.canvas?.setDirty(true)
   }
 }
 
 function onClosePanel(): void {
-  exitNodeSelectionMode()
+  canvasStore.stopNodePicking()
   useTelemetry()?.trackAgentCloseButtonClicked()
   agentPanelStore.close('close_button')
 }
@@ -1796,35 +1770,39 @@ function onPanelDragLeave(): void {
 async function attachDroppedAsset(event: DragEvent): Promise<boolean> {
   const asset = event.dataTransfer && getDroppedAsset(event.dataTransfer)
   if (!asset) {
-    toast.add({
-      severity: 'warn',
-      detail: t('agent.assetNotAttachable'),
-      life: 5000
-    })
+    toast.warning(t('agent.assetNotAttachable'), { duration: 5000 })
     return false
   }
 
+  const sourceKey = asset.ref ? `asset:${asset.ref}` : `uri:${asset.uri}`
   if (asset.ref && asset.kind !== 'other') {
-    return (
-      panelRef.value?.addAttachment({
-        id: `asset:${asset.ref}`,
-        name: asset.name,
-        ref: asset.ref,
-        previewUrl: asset.previewUrl
-      }) ?? false
-    )
+    if (composerStore.attachments.some((item) => item.ref === asset.ref)) {
+      notifyDuplicateAttachments([asset.name])
+      return false
+    }
+    const added = composerStore.addAttachment({
+      id: `asset:${crypto.randomUUID()}`,
+      name: asset.name,
+      ref: asset.ref,
+      sourceKey,
+      previewUrl: asset.previewUrl,
+      mediaUrl: asset.mediaUrl,
+      mediaKind: asset.kind
+    })
+    if (!added) notifyDuplicateAttachments([asset.name])
+    return added
   }
 
-  const result = await attachment.addDeferredFile(asset.name, async () => {
-    const file = await fetchDroppedAsset(asset)
-    return file && isAgentAttachable(file) ? file : undefined
-  })
+  const result = await attachment.addDeferredFile(
+    asset.name,
+    async () => {
+      const file = await fetchDroppedAsset(asset)
+      return file && isAgentAttachable(file) ? file : undefined
+    },
+    sourceKey
+  )
   if (result === 'unsupported')
-    toast.add({
-      severity: 'warn',
-      detail: t('agent.assetNotAttachable'),
-      life: 5000
-    })
+    toast.warning(t('agent.assetNotAttachable'), { duration: 5000 })
   return result === 'uploaded'
 }
 
@@ -1860,7 +1838,7 @@ async function onPanelDrop(event: DragEvent): Promise<void> {
   <AgentGraphActivityBar :canvas="canvasStore.canvas" />
   <div
     id="agent-panel-root"
-    class="size-full"
+    class="relative size-full"
     @dragenter="onPanelDragEnter"
     @dragleave="onPanelDragLeave"
     @dragover="onPanelDragOver"
@@ -1876,7 +1854,6 @@ async function onPanelDrop(event: DragEvent): Promise<void> {
       @change="onFilesPicked"
     />
     <AgentPanel
-      ref="panelRef"
       :entries
       :editable-turn-id="editableTurnId"
       :answering-ask-ids="answeringAskIds"
@@ -1886,7 +1863,7 @@ async function onPanelDrop(event: DragEvent): Promise<void> {
       :can-attach="true"
       :can-open-assets="!isBuilderMode"
       :is-maximized="agentPanelStore.isMaximized"
-      :history-groups="history.grouped"
+      :history-groups="historyGroups"
       :select-history="onSelectHistory"
       :current-chat-ready="currentChatReady"
       :session-id="threadId"
@@ -1942,6 +1919,17 @@ async function onPanelDrop(event: DragEvent): Promise<void> {
         <CrdtDevPanel :status="crdtStatus" :snapshot="crdtDebugSnapshot" />
       </template>
     </AgentPanel>
+    <div
+      v-if="assetDragActive"
+      role="status"
+      class="pointer-events-none absolute inset-2 z-20 flex flex-col items-center justify-center gap-3 rounded-xl border-2 border-dashed border-border-default bg-secondary-background/90 p-4 font-inter text-sm/5 text-base-foreground"
+    >
+      <span
+        aria-hidden="true"
+        class="icon-[lucide--upload] size-8 shrink-0 text-muted-foreground"
+      />
+      <span>{{ t('agent.dragAndDropAssets') }}</span>
+    </div>
     <OnboardingCoach
       v-if="consentAccepted && onboardingKey && coachDeferredBy === null"
       :key="onboardingKey"

@@ -12,34 +12,34 @@ import {
 } from 'vue'
 
 import Button from '@/components/ui/button/Button.vue'
-import { groupModels } from '../../config/model-family'
+import { groupModels } from '@/config/model-family'
 
 import type {
   SortOrder,
   UseCase,
   WorkshopModel
-} from '../../config/models-catalogue'
+} from '@/config/models-catalogue'
 import {
   parseCatalogSearch,
   USE_CASES,
   countByUseCase,
-  filterWorkshopModels,
   sortOrdersFor,
   sortWorkshopModels
-} from '../../config/models-catalogue'
-import type { Locale, TranslationKey } from '../../i18n/translations'
-import { translationsFor } from '../../i18n/translations'
-import { HUB_TOOLBAR_ID } from '../../scripts/hubToolbar'
-import { rememberShelfOnClick } from '../../lib/workshop/shelf-memory'
-import { openedUseCases, shelfOf } from '../../lib/workshop/shelf-use-cases'
-import { sectionTitleKeyFor } from '../../lib/workshop/section-title'
-import { useCaseLabelKey } from '../../lib/workshop/use-case-label'
+} from '@/config/models-catalogue'
+import { searchWorkshopModels } from '@/config/models-search'
+import type { Locale, TranslationKey } from '@/i18n/translations'
+import { translationsFor } from '@/i18n/translations'
+import { HUB_TOOLBAR_ID } from '@/scripts/hubToolbar'
+import { rememberShelfOnClick } from '@/lib/workshop/shelf-memory'
+import { openedUseCases, shelfOf } from '@/lib/workshop/shelf-use-cases'
+import { sectionTitleKeyFor } from '@/lib/workshop/section-title'
+import { useCaseLabelKey } from '@/lib/workshop/use-case-label'
 import type { FacetMenuOption } from './WorkshopFilterMenu.vue'
 import WorkshopFilterMenu from './WorkshopFilterMenu.vue'
 import WorkshopModelCard from './WorkshopModelCard.vue'
 import FeaturedBanner from './FeaturedBanner.vue'
-import { CARD_GRID } from '../../lib/workshop/card-layout'
-import { modelSlides } from '../../lib/workshop/featured-slides'
+import { CARD_GRID } from '@/lib/workshop/card-layout'
+import { modelSlides } from '@/lib/workshop/featured-slides'
 import WorkshopSearchField from './WorkshopSearchField.vue'
 import WorkshopSections from './WorkshopSections.vue'
 import WorkshopSortMenu from './WorkshopSortMenu.vue'
@@ -110,7 +110,7 @@ const useCaseOptions = computed<FacetMenuOption[]>(() => {
 const visible = computed(() =>
   groupModels(
     sortWorkshopModels(
-      filterWorkshopModels(models, {
+      searchWorkshopModels(models, {
         query: query.value,
         useCases: selectedUseCases.value,
         modalities: legacyModalities.value,

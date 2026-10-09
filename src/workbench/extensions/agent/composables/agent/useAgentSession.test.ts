@@ -37,6 +37,7 @@ import type {
   PostMessageInput
 } from '../../services/agent/agentRestClient'
 import { useAgentConversationStore } from '../../stores/agent/agentConversationStore'
+import { useAgentSendGateStore } from '../../stores/agent/agentSendGateStore'
 import { useAgentWorkflowTabBindingStore } from '../../stores/agent/agentWorkflowTabBindingStore'
 
 import type { SelectedNode } from './useCanvasSelection'
@@ -72,7 +73,17 @@ function fakeRest(overrides: Partial<AgentRestClient> = {}): AgentRestClient {
         preference: AgentRunModePreference
       ): Promise<AgentRunModePreference> => preference
     ),
-    listCloudWorkflows: vi.fn(async () => []),
+    listCloudWorkflows: vi.fn(async () => ({
+      entries: [],
+      complete: true
+    })),
+    getCloudWorkflow: vi.fn(async (workflowId: string) => ({
+      id: workflowId,
+      latest_version: 1,
+      created_by: 'user-1',
+      created_at: '2026-09-11T10:00:00Z',
+      updated_at: '2026-09-11T10:00:00Z'
+    })),
     cancelMessage: vi.fn(
       async (): Promise<AgentCancelAccepted> => ({
         status: 'cancelling'
@@ -80,7 +91,8 @@ function fakeRest(overrides: Partial<AgentRestClient> = {}): AgentRestClient {
     ),
     answerAsk: vi.fn(
       async (): Promise<AgentAnswerAccepted> => ({
-        status: 'answered'
+        status: 'answered',
+        selected: []
       })
     ),
     uploadImage: vi.fn(
@@ -585,6 +597,210 @@ describe('useAgentSession (v1 composition root)', () => {
 
     await vi.waitFor(() => expect(reopened.isStreaming.value).toBe(true))
     expect(conversation.activeTurnId).toBe('msg-1')
+  })
+
+  it('re-attaches to the running turn when a send is refused with TURN_IN_PROGRESS', async () => {
+    const conversation = useAgentConversationStore()
+    const postMessage = vi
+      .fn<
+        (threadId: string, req: PostMessageInput) => Promise<AgentTurnAccepted>
+      >()
+      .mockResolvedValueOnce({ thread_id: 'th-1', message_id: 'msg-1' })
+      .mockRejectedValue(
+        new AgentApiError(
+          'a turn is already in progress for this thread',
+          409,
+          {
+            error: 'a turn is already in progress for this thread',
+            type: 'TURN_IN_PROGRESS',
+            active_message_id: 'msg-2',
+            turn_id: 'turn-2'
+          }
+        )
+      )
+    const rest = fakeRest({
+      postMessage,
+      getMessages: vi.fn(
+        async (): Promise<AgentMessages> => [
+          historyRow(1, 'user', 'turn-1', 'add an audio output node'),
+          historyRow(2, 'assistant', 'turn-1', 'Done.', 'msg-1'),
+          historyRow(3, 'user', 'turn-2', 'run it again', 'row-3'),
+          {
+            ...historyRow(4, 'assistant', 'turn-2', '', 'msg-2'),
+            content: {},
+            status: 'streaming'
+          }
+        ]
+      )
+    })
+    const { source, emit } = fakeEvents()
+    const session = useAgentSession({ rest, events: source })
+    session.start()
+
+    await session.sendMessage('add an audio output node')
+    emit({
+      type: 'agent_message_done',
+      data: { message_id: 'msg-1', thread_id: 'th-1' }
+    })
+    expect(session.isStreaming.value).toBe(false)
+
+    expect(await session.sendMessage('and now add a save node')).toBe(false)
+
+    await vi.waitFor(() => expect(session.isStreaming.value).toBe(true))
+    expect(conversation.activeTurnId).toBe('msg-2')
+    expect(session.entries.value.at(-1)).toMatchObject({
+      role: 'assistant',
+      parts: [
+        {
+          type: 'notice',
+          level: 'error',
+          text: 'This chat still has a response running. Wait for it to finish, or stop it, then send again.'
+        }
+      ]
+    })
+  })
+
+  it('does not let a timed-out re-attachment replace a newer turn', async () => {
+    vi.useFakeTimers()
+    try {
+      let resolveHistory: ((history: AgentMessages) => void) | undefined
+      const postMessage = vi
+        .fn<
+          (
+            threadId: string,
+            req: PostMessageInput
+          ) => Promise<AgentTurnAccepted>
+        >()
+        .mockResolvedValueOnce({ thread_id: 'th-1', message_id: 'msg-1' })
+        .mockRejectedValueOnce(
+          new AgentApiError('turn in progress', 409, {
+            error: 'turn in progress',
+            type: 'TURN_IN_PROGRESS',
+            active_message_id: 'msg-2',
+            turn_id: 'turn-2'
+          })
+        )
+        .mockResolvedValueOnce({ thread_id: 'th-1', message_id: 'msg-3' })
+      const getMessages = vi.fn(
+        () =>
+          new Promise<AgentMessages>((resolve) => {
+            resolveHistory = resolve
+          })
+      )
+      const { source, emit } = fakeEvents()
+      const session = useAgentSession({
+        rest: fakeRest({ postMessage, getMessages }),
+        events: source
+      })
+      session.start()
+      await session.sendMessage('first')
+      emit(done('msg-1'))
+
+      const refused = session.sendMessage('refused')
+      await vi.waitFor(() => expect(getMessages).toHaveBeenCalledOnce())
+      await vi.advanceTimersByTimeAsync(5_000)
+      await refused
+      expect(session.entries.value.at(-1)).toMatchObject({
+        role: 'assistant',
+        parts: [
+          {
+            type: 'notice',
+            level: 'error',
+            text: 'Message failed to send: turn in progress'
+          }
+        ]
+      })
+      await session.sendMessage('newer')
+
+      resolveHistory?.([
+        historyRow(1, 'user', 'turn-2', 'other client'),
+        {
+          ...historyRow(2, 'assistant', 'turn-2', '', 'msg-2'),
+          content: {},
+          status: 'streaming'
+        }
+      ])
+      await Promise.resolve()
+
+      expect(useAgentConversationStore().activeTurnId).toBe('msg-3')
+      expect(
+        session.entries.value
+          .filter((entry) => entry.role === 'user')
+          .map((entry) => entry.text)
+      ).toEqual(['first', 'refused', 'newer'])
+    } finally {
+      vi.useRealTimers()
+    }
+  })
+
+  it('records no failed send when the re-read finds the refused thread deleted', async () => {
+    const postMessage = vi
+      .fn<
+        (threadId: string, req: PostMessageInput) => Promise<AgentTurnAccepted>
+      >()
+      .mockResolvedValueOnce({ thread_id: 'th-1', message_id: 'msg-1' })
+      .mockRejectedValue(
+        new AgentApiError('turn in progress', 409, {
+          error: 'turn in progress',
+          type: 'TURN_IN_PROGRESS',
+          active_message_id: 'msg-2'
+        })
+      )
+    const getMessages = vi.fn(async (): Promise<AgentMessages> => {
+      throw new AgentApiError('thread not found', 404, {
+        error: 'thread not found'
+      })
+    })
+    const { source, emit } = fakeEvents()
+    const session = useAgentSession({
+      rest: fakeRest({ postMessage, getMessages }),
+      events: source
+    })
+    session.start()
+    await session.sendMessage('first')
+    emit(done('msg-1'))
+
+    await session.sendMessage('refused')
+
+    expect(
+      session.entries.value.filter((entry) => entry.role === 'user')
+    ).not.toContainEqual(expect.objectContaining({ text: 'refused' }))
+  })
+
+  it('leaves an undiscriminated 409 on an existing thread as a plain failure', async () => {
+    const postMessage = vi
+      .fn<
+        (threadId: string, req: PostMessageInput) => Promise<AgentTurnAccepted>
+      >()
+      .mockResolvedValueOnce({ thread_id: 'th-1', message_id: 'msg-1' })
+      .mockRejectedValue(
+        new AgentApiError('conflict', 409, { error: 'conflict' })
+      )
+    const rest = fakeRest({ postMessage })
+    const { source, emit } = fakeEvents()
+    const session = useAgentSession({ rest, events: source })
+    session.start()
+
+    await session.sendMessage('make a cat')
+    emit({
+      type: 'agent_message_done',
+      data: { message_id: 'msg-1', thread_id: 'th-1' }
+    })
+
+    await session.sendMessage('make it orange')
+
+    expect(rest.getMessages).not.toHaveBeenCalled()
+    expect(session.isStreaming.value).toBe(false)
+    expect(session.entries.value.at(-1)).toMatchObject({
+      role: 'assistant',
+      parts: [
+        {
+          type: 'notice',
+          level: 'error',
+          text: 'Message failed to send: conflict'
+        }
+      ]
+    })
   })
 
   // The other half of (b4a): `subscribe()` runs before the GET resolves, and
@@ -1645,7 +1861,8 @@ describe('useAgentSession (v1 composition root)', () => {
   it('answers a run approval once and stays busy until its resolution event', async () => {
     const answerAsk = vi.fn(
       async (): Promise<AgentAnswerAccepted> => ({
-        status: 'answered'
+        status: 'answered',
+        selected: ['run']
       })
     )
     const rest = fakeRest({ answerAsk })
@@ -1754,7 +1971,8 @@ describe('useAgentSession (v1 composition root)', () => {
     const parkedOnApproval = async () => {
       const answerAsk = vi.fn(
         async (): Promise<AgentAnswerAccepted> => ({
-          status: 'answered'
+          status: 'answered',
+          selected: ['run']
         })
       )
       const rest = fakeRest({ answerAsk })
@@ -1918,7 +2136,7 @@ describe('useAgentSession (v1 composition root)', () => {
         .mockRejectedValueOnce(
           new AgentApiError('failed to wake the turn', 500, undefined)
         )
-        .mockResolvedValueOnce({ status: 'answered' })
+        .mockResolvedValueOnce({ status: 'answered', selected: ['run'] })
       const events = fakeEvents()
       const session = useAgentSession({
         rest: fakeRest({ answerAsk }),
@@ -2994,6 +3212,106 @@ describe('useAgentSession (v1 composition root)', () => {
       ).toEqual(expectedStops)
     }
   )
+
+  it('applies a pending stop to an active turn adopted after a refused send', async () => {
+    let rejectPost: ((error: unknown) => void) | undefined
+    const postMessage = vi
+      .fn<
+        (threadId: string, req: PostMessageInput) => Promise<AgentTurnAccepted>
+      >()
+      .mockResolvedValueOnce({ thread_id: 'th-1', message_id: 'msg-1' })
+      .mockImplementationOnce(
+        () =>
+          new Promise<AgentTurnAccepted>((_resolve, reject) => {
+            rejectPost = reject
+          })
+      )
+    const cancelMessage = vi.fn(
+      async (): Promise<AgentCancelAccepted> => ({ status: 'cancelling' })
+    )
+    const rest = fakeRest({
+      postMessage,
+      cancelMessage,
+      getMessages: vi.fn(
+        async (): Promise<AgentMessages> => [
+          historyRow(1, 'user', 'turn-2', 'other client'),
+          {
+            ...historyRow(2, 'assistant', 'turn-2', '', 'msg-2'),
+            content: {},
+            status: 'streaming'
+          }
+        ]
+      )
+    })
+    const { source, emit } = fakeEvents()
+    const session = useAgentSession({
+      rest,
+      events: source,
+      workflow: {
+        current: () => undefined,
+        adopted: vi.fn(),
+        restored: async () => false
+      }
+    })
+    session.start()
+    await session.sendMessage('first')
+    emit(done('msg-1'))
+
+    const refused = session.sendMessage('refused')
+    await session.stopTurn('button')
+    rejectPost?.(
+      new AgentApiError('turn in progress', 409, {
+        error: 'turn in progress',
+        type: 'TURN_IN_PROGRESS',
+        active_message_id: 'msg-2',
+        turn_id: 'turn-2'
+      })
+    )
+    await refused
+
+    expect(cancelMessage).toHaveBeenCalledExactlyOnceWith('th-1', 'msg-2')
+    expect(session.entries.value.at(-1)).toMatchObject({
+      role: 'assistant',
+      parts: [
+        {
+          type: 'notice',
+          level: 'error',
+          text: 'This chat still has a response running. Wait for it to finish, or stop it, then send again.'
+        }
+      ]
+    })
+  })
+
+  it('clears a pending stop when the send fails before adopting a turn', async () => {
+    let rejectPost: ((error: unknown) => void) | undefined
+    const postMessage = vi
+      .fn<
+        (threadId: string, req: PostMessageInput) => Promise<AgentTurnAccepted>
+      >()
+      .mockImplementationOnce(
+        () =>
+          new Promise<AgentTurnAccepted>((_resolve, reject) => {
+            rejectPost = reject
+          })
+      )
+      .mockResolvedValueOnce({ thread_id: 'th-1', message_id: 'msg-2' })
+    const cancelMessage = vi.fn(
+      async (): Promise<AgentCancelAccepted> => ({ status: 'cancelling' })
+    )
+    const session = useAgentSession({
+      rest: fakeRest({ postMessage, cancelMessage }),
+      events: fakeEvents().source
+    })
+    session.start()
+
+    const failed = session.sendMessage('failed')
+    await session.stopTurn('button')
+    rejectPost?.(new TypeError('network down'))
+    await failed
+    await session.sendMessage('next')
+
+    expect(cancelMessage).not.toHaveBeenCalled()
+  })
 
   it('(g) a socket blip keeps the turn live and re-checks the server once on the way back up', async () => {
     // PM-1199 / PM-1200. The server never learns the socket went away: it
@@ -4391,6 +4709,81 @@ describe('useAgentSession (v1 composition root)', () => {
     expect(adopted).toHaveBeenCalledWith('wf-b', undefined, null)
   })
 
+  it('(h10) the selection owner is resolved after prepare() and stays with the staged tab through a switch during the hold', async () => {
+    // Two failure modes share this window. Resolving the selection owner
+    // before prepare() sends `selection` without a workflow_id when the tab's
+    // cloud id was still unresolved on mount (QAF-19). Resolving it from the
+    // tab active after the hold attributes the staged nodes to the tab the
+    // user switched to while waiting. The callback runs once, after the
+    // hold, and the send pins both ids to the originating tab.
+    const postMessage = vi.fn<AgentRestClient['postMessage']>(async () => ({
+      thread_id: 'th-1',
+      message_id: 'msg-1',
+      workflow_id: 'wf-a'
+    }))
+    const rest = fakeRest({ postMessage })
+    const { source } = fakeEvents()
+    let releasePrepare: () => void = () => undefined
+    let prepared = false
+    const prepare = vi.fn(
+      () =>
+        new Promise<void>((resolve) => {
+          releasePrepare = () => {
+            prepared = true
+            resolve()
+          }
+        })
+    )
+    let activePath = 'tab-a'
+    const idForPath = (path: string) => (path === 'tab-a' ? 'wf-a' : 'wf-b')
+    const session = useAgentSession({
+      rest,
+      events: source,
+      workflow: {
+        current: (origin) => {
+          const path = pathFor(origin, activePath)
+          return path === undefined
+            ? undefined
+            : { id: idForPath(path), tabPath: path }
+        },
+        adopted: vi.fn(),
+        prepare
+      }
+    })
+    session.start()
+
+    // Mirrors AgentPanelRoot: the target is captured when Send is clicked and
+    // its cloud id is looked up lazily, so an id that prepare() resolves is
+    // only visible once the hold has released.
+    const stagedTarget = activePath
+    const selectionWorkflowId = vi.fn(() =>
+      prepared ? idForPath(stagedTarget) : undefined
+    )
+    const tags: SelectedNode[] = [{ id: '12', title: 'KSampler' }]
+    const sendPromise = session.sendMessage(
+      'explain',
+      undefined,
+      tags,
+      undefined,
+      selectionWorkflowId
+    )
+    expect(selectionWorkflowId).not.toHaveBeenCalled()
+    activePath = 'tab-b'
+    // Drain microtasks while the hold is still up: a resolver queued before
+    // prepare() settles fires here with `prepared` still false, instead of
+    // being masked by releasePrepare() flipping it synchronously.
+    await Promise.resolve()
+    expect(selectionWorkflowId).not.toHaveBeenCalled()
+    releasePrepare()
+    await sendPromise
+
+    expect(selectionWorkflowId).toHaveBeenCalledOnce()
+    expect(vi.mocked(postMessage).mock.calls[0][1]).toMatchObject({
+      workflowId: 'wf-a',
+      selection: { node_ids: ['12'], workflow_id: 'wf-a' }
+    })
+  })
+
   it('(h6) a bind landing in the prepare()/POST window makes an echoed id read as an echo', async () => {
     // Regression for the r3929083595 race: priorWorkflowId was snapshotted
     // before prepare(), so a bindWorkflow() landing in that window (a late
@@ -5354,6 +5747,50 @@ describe('useAgentSession (v1 composition root)', () => {
     ])
     expect(session.notices.value).toHaveLength(0)
   })
+
+  // PM-1660: the gate has to be taken in sendMessage, before performSend
+  // awaits prepareWorkflow(), and released however the POST settles. Without
+  // these two cases the wiring can be removed or moved into the success branch
+  // with every agent unit suite still green — only the @cloud spec notices,
+  // and only on the success path.
+  it.for([
+    ['resolves', (resolve: () => void) => resolve()],
+    ['rejects', (_resolve: () => void, reject: () => void) => reject()]
+  ] as const)(
+    'holds the send gate from send until the POST %s, across New Chat',
+    async ([, settlePost]) => {
+      let settle: () => void = () => {}
+      const postMessage = vi.fn(
+        () =>
+          new Promise<AgentTurnAccepted>((resolve, reject) => {
+            settle = () =>
+              settlePost(
+                () =>
+                  resolve({
+                    thread_id: 'th-1',
+                    message_id: 'msg-1',
+                    workflow_id: 'wf-1'
+                  }),
+                () => reject(new Error('post failed'))
+              )
+          })
+      )
+      const rest = fakeRest({ postMessage })
+      const session = useAgentSession({ rest, events: fakeEvents().source })
+      session.start()
+      const gate = useAgentSendGateStore()
+
+      const sent = session.sendMessage('go')
+      await vi.waitFor(() => expect(postMessage).toHaveBeenCalled())
+      session.newChat('new_chat_button')
+
+      expect(gate.isSending).toBe(true)
+      settle()
+      await sent
+
+      expect(gate.isSending).toBe(false)
+    }
+  )
 })
 
 describe('thread resume (B17)', () => {

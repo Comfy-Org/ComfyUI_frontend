@@ -8,10 +8,8 @@ import { LLink } from '@/lib/litegraph/src/LLink'
 import type { ResolvedConnection } from '@/lib/litegraph/src/LLink'
 import { NullGraphError } from '@/lib/litegraph/src/infrastructure/NullGraphError'
 import { RecursionError } from '@/lib/litegraph/src/infrastructure/RecursionError'
-import type {
-  ISubgraphInput,
-  IWidgetLocator
-} from '@/lib/litegraph/src/interfaces'
+import type { IWidgetLocator } from '@/lib/litegraph/src/interfaces'
+import type { ISubgraphInput } from '@/lib/litegraph/src/types/slots'
 import { LiteGraph } from '@/lib/litegraph/src/litegraph'
 import type { INodeInputSlot, ISlotType } from '@/lib/litegraph/src/litegraph'
 import { NodeInputSlot } from '@/lib/litegraph/src/node/NodeInputSlot'
@@ -214,20 +212,24 @@ export class SubgraphNode extends LGraphNode implements BaseLGraph {
     subgraphEvents.addEventListener(
       'renaming-input',
       (e) => {
-        const { index, newName } = e.detail
+        const { index, oldName, newName } = e.detail
         const input = this.inputs.at(index)
         if (!input) {
           console.error('Subgraph input not found')
           return
         }
 
-        input.label = newName
+        const previousLabel = input.label ?? input.name
+        if (previousLabel === oldName) input.label = newName
         // Do NOT change input.widget.name — it is the stable internal
         // identifier used by onGraphConfigured (widgetInputs.ts) to match
         // inputs to widgets. Changing it to the display label would cause
         // collisions when two promoted inputs share the same label.
         if (input.widgetId) {
-          useWidgetValueStore().setLabel(input.widgetId, newName)
+          const store = useWidgetValueStore()
+          const widgetLabel =
+            store.getWidget(input.widgetId)?.label ?? previousLabel
+          if (widgetLabel === oldName) store.setLabel(input.widgetId, newName)
         }
         this.invalidatePromotedViews()
         this.graph?.trigger('node:slot-label:changed', {

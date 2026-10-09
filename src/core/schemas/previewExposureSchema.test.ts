@@ -1,4 +1,4 @@
-import { describe, expect, it, vi } from 'vitest'
+import { describe, expect, it } from 'vitest'
 
 import { parsePreviewExposures } from './previewExposureSchema'
 
@@ -31,12 +31,9 @@ describe(parsePreviewExposures, () => {
   })
 
   it('returns empty array for undefined', () => {
-    const warnSpy = vi.spyOn(console, 'warn').mockImplementation(() => {})
-
     expect(parsePreviewExposures(undefined)).toEqual([])
 
-    expect(warnSpy).not.toHaveBeenCalled()
-    warnSpy.mockRestore()
+    expect(console.warn).not.toHaveBeenCalled()
   })
 
   it('returns empty array for malformed JSON string', () => {

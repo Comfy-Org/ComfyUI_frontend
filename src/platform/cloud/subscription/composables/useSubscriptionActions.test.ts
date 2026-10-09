@@ -1,5 +1,5 @@
 import { useDialogService } from '@/services/dialogService'
-import { useToastStore } from '@/platform/updates/common/toastStore'
+import { useToast } from '@/components/ui/toast/toastStore'
 import { useCommandStore } from '@/stores/commandStore'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 
@@ -110,12 +110,12 @@ describe('useSubscriptionActions', () => {
       await handleMessageSupport()
 
       expect(isLoadingSupport.value).toBe(false)
-      expect(useToastStore().add).toHaveBeenCalledWith(
+      expect(useToast().toasts).toEqual([
         expect.objectContaining({
-          severity: 'error',
-          detail: 'Command failed'
+          description: 'Command failed',
+          kind: 'error'
         })
-      )
+      ])
     })
 
     it('reports a failed support request so it is visible without the user', async () => {
@@ -169,7 +169,7 @@ describe('useSubscriptionActions', () => {
       const { handleRefresh } = useSubscriptionActions()
 
       await expect(handleRefresh()).resolves.toBeUndefined()
-      expect(useToastStore().add).not.toHaveBeenCalled()
+      expect(useToast().toasts).toEqual([])
     })
   })
 

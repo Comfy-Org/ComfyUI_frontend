@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { splitInlineCode } from '../../lib/inline-code'
+import { splitInlineCode } from '@/lib/inline-code'
 
 const { text } = defineProps<{ text: string }>()
 </script>

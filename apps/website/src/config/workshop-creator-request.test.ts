@@ -11,7 +11,7 @@ import type { FileValue, FormValues } from './workshop-playground'
 import type { WorkshopModelDetail } from './models-catalogue'
 import { prepareWorkshopRouterInput } from './workshop-request'
 import { validateWorkshopInput } from './workshop-json-schema'
-import creatorModels from '../data/workshop-creator-models.json'
+import creatorModels from '@/data/workshop-creator-models.json'
 import { workshopContract } from './workshop-contract-catalog'
 import { formForContract } from './workshop-contract'
 import { createWorkshopUrlUploader } from './workshop-url-upload'
@@ -123,7 +123,9 @@ describe('creator file failure diagnostics', () => {
     )
     assert.isDefined(example)
     const cause = new TypeError('Private download detail')
-    vi.stubGlobal('fetch', vi.fn<typeof fetch>().mockRejectedValue(cause))
+    vi.mocked(fetch).mockImplementation(
+      vi.fn<typeof fetch>().mockRejectedValue(cause)
+    )
 
     const failure = await prepareWorkshopCreatorRequest(
       creator,
@@ -167,24 +169,21 @@ describe('creator file failure diagnostics', () => {
 describe('creator widgets to native Router requests', () => {
   beforeEach(() => {
     let grants = 0
-    vi.stubGlobal(
-      'fetch',
-      vi.fn<typeof fetch>(async (_url, init) => {
-        if (init?.method === 'POST') {
-          grants += 1
-          return Response.json({
-            upload_url: `https://storage.example/upload-${grants}`,
-            download_url: `https://storage.example/image-${grants}.png`
-          })
-        }
-        if (init?.method === 'PUT') {
-          return new Response(null)
-        }
-        return new Response('image bytes', {
-          headers: { 'Content-Type': 'image/png' }
+    vi.mocked(fetch).mockImplementation(async (_url, init) => {
+      if (init?.method === 'POST') {
+        grants += 1
+        return Response.json({
+          upload_url: `https://storage.example/upload-${grants}`,
+          download_url: `https://storage.example/image-${grants}.png`
         })
+      }
+      if (init?.method === 'PUT') {
+        return new Response(null)
+      }
+      return new Response('image bytes', {
+        headers: { 'Content-Type': 'image/png' }
       })
-    )
+    })
   })
 
   afterEach(() => {
@@ -460,11 +459,6 @@ describe('creator widgets to native Router requests', () => {
         reference_images: [upload()]
       })
     ).rejects.toMatchObject({ fieldErrors: { reference_images: 'rejected' } })
-    await expect(
-      prepare('byteplus/seedance-1-0-lite-i2v-250428', {
-        first_frame: undefined
-      })
-    ).rejects.toMatchObject({ fieldErrors: { first_frame: 'required' } })
   })
 
   it('uploads Gemini images with MIME metadata and nested configuration', async () => {

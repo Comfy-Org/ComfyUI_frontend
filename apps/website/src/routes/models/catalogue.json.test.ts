@@ -1,10 +1,10 @@
 import { expect, it, vi } from 'vitest'
 
-import { fetchModelsCatalogue } from '../../config/models-catalogue-data'
-import { isWorkshopModelDisabled } from '../../config/workshop-model-availability'
-import { appModels } from '../../config/workshop-app-content'
-import { authoredWorkshopModels } from '../../config/workshop-browse-content'
-import { workshopPages } from '../../config/workshop-page-content'
+import { fetchModelsCatalogue } from '@/config/models-catalogue-data'
+import { isWorkshopModelDisabled } from '@/config/workshop-model-availability'
+import { appModels } from '@/config/workshop-app-content'
+import { authoredWorkshopModels } from '@/config/workshop-browse-content'
+import { workshopPages } from '@/config/workshop-page-content'
 import { GET } from './catalogue.json'
 
 it('serves the catalogue cards, apps included, as JSON', async () => {
@@ -18,7 +18,9 @@ it('serves the catalogue cards, apps included, as JSON', async () => {
 
 it('serves a payload the catalogue island parses', async () => {
   const payload = await GET().json()
-  vi.stubGlobal('fetch', vi.fn<typeof fetch>().mockResolvedValue(GET()))
+  vi.mocked(fetch).mockImplementation(
+    vi.fn<typeof fetch>().mockResolvedValue(GET())
+  )
 
   expect(await fetchModelsCatalogue()).toEqual(payload)
 })
@@ -30,8 +32,7 @@ it('fails the catalogue parse when a disabled model leaks into the payload', asy
   expect(disabled).toBeDefined()
   expect(disabled).not.toHaveProperty('href')
   const payload = await GET().json()
-  vi.stubGlobal(
-    'fetch',
+  vi.mocked(fetch).mockImplementation(
     vi
       .fn<typeof fetch>()
       .mockResolvedValue(Response.json([...payload, disabled]))
