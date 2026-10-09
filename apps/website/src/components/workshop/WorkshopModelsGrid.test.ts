@@ -12,7 +12,10 @@ import {
 
 import { nextTick } from 'vue'
 
-import type { WorkshopModel } from '@/config/models-catalogue'
+import type {
+  RouterWorkshopModel,
+  WorkshopModel
+} from '@/config/models-catalogue'
 import { lastList } from '@/lib/workshop/shelf-memory'
 import WorkshopModelsGrid from './WorkshopModelsGrid.vue'
 
@@ -702,30 +705,29 @@ describe('WorkshopModelsGrid', () => {
   })
 
   describe('compare', () => {
-    const fourth: WorkshopModel = {
-      slug: 'seedream',
-      name: 'Seedream',
+    const extra = (slug: string, name: string): RouterWorkshopModel => ({
+      slug,
+      name,
       workflowCount: 0,
-      href: '/models/seedream/',
-      routerId: 'bytedance/seedream',
+      href: `/models/${slug}/`,
+      routerId: `acme/${slug}`,
       capabilities: [],
-      provider: 'ByteDance',
-      priceUsdFrom: 0.03
+      provider: 'Acme'
+    })
+    const seedream: WorkshopModel = {
+      ...extra('seedream', 'Seedream'),
+      routerId: 'bytedance/seedream',
+      provider: 'ByteDance'
     }
+    const catalogue = [...models, seedream, extra('veo', 'Veo')]
 
     function renderCatalogue() {
-      render(WorkshopModelsGrid, { props: { models: [...models, fourth] } })
+      render(WorkshopModelsGrid, { props: { models: catalogue } })
       return userEvent.setup()
     }
 
     function toggle(name: string) {
       return screen.getByRole('checkbox', { name: `Compare ${name}` })
-    }
-
-    function revealedChips() {
-      return screen
-        .getAllByTestId('compare-toggle')
-        .filter((chip) => chip.dataset.revealed === 'true')
     }
 
     function compareButton() {
@@ -734,98 +736,127 @@ describe('WorkshopModelsGrid', () => {
       )
     }
 
-    it('collects up to three models in the tray', async () => {
-      const user = renderCatalogue()
+    function columns() {
+      return within(screen.getByTestId('compare-view'))
+        .getAllByRole('columnheader')
+        .map((column) => column.getAttribute('aria-label'))
+    }
+
+    async function compare(
+      user: ReturnType<typeof userEvent.setup>,
+      ...names: string[]
+    ) {
+      for (const name of names) await user.click(toggle(name))
+      await user.click(compareButton())
+    }
+
+    it('offers Compare on every comparable card before anything is chosen', () => {
+      renderCatalogue()
+      expect(
+        screen
+          .getAllByRole('checkbox', { name: /^Compare / })
+          .map((box) => box.getAttribute('aria-label'))
+      ).toEqual(catalogue.map((model) => `Compare ${model.name}`))
       expect(screen.queryByTestId('compare-tray')).toBeNull()
+    })
 
-      expect(revealedChips()).toEqual([])
-
+    it('collects up to four models in the tray', async () => {
+      const user = renderCatalogue()
       await user.click(toggle('Kling AI'))
       expect(compareButton()).toBeDisabled()
       expect(compareButton()).toHaveTextContent('Compare 1 model')
       expect(screen.getByTestId('compare-hint')).toHaveTextContent(
         'Pick 1 more to compare'
       )
-      expect(revealedChips()).toHaveLength(4)
 
       await user.click(toggle('Flux'))
       expect(compareButton()).toBeEnabled()
-      expect(compareButton()).toHaveTextContent('Compare 2 models')
       expect(screen.getByTestId('compare-hint')).toHaveTextContent(
-        'You can add 1 more'
+        'You can add 2 more'
       )
 
       await user.click(toggle('Mystery'))
+      await user.click(toggle('Seedream'))
       expect(screen.queryByTestId('compare-hint')).toBeNull()
-      expect(toggle('Seedream')).toBeDisabled()
-      expect(toggle('Flux')).toBeChecked()
+      expect(toggle('Veo')).toBeDisabled()
 
       await user.click(
         screen.getByRole('button', { name: 'Remove Flux from compare' })
       )
       expect(toggle('Flux')).not.toBeChecked()
-      expect(toggle('Seedream')).toBeEnabled()
+      expect(toggle('Veo')).toBeEnabled()
 
       await user.click(screen.getByTestId('compare-clear'))
       expect(screen.queryByTestId('compare-tray')).toBeNull()
-      expect(revealedChips()).toEqual([])
       expect(toggle('Kling AI')).not.toBeChecked()
     })
 
-    it('sets the chosen models side by side and marks the address', async () => {
+    it('opens the chosen models side by side and names them in the address', async () => {
       const user = renderCatalogue()
-      await user.click(toggle('Kling AI'))
-      await user.click(toggle('Seedream'))
-      await user.click(compareButton())
+      await compare(user, 'Kling AI', 'Seedream')
 
-      const dialog = await screen.findByRole('dialog', {
-        name: '2 models side by side'
-      })
-      expect(location.hash).toBe('#compare')
-      expect(within(dialog).getAllByRole('columnheader')).toHaveLength(2)
-      for (const name of ['Kling AI', 'Seedream'])
-        expect(within(dialog).getByRole('columnheader', { name })).toBeTruthy()
       expect(
-        within(dialog).getByRole('row', { name: /^Provider/ })
-      ).toHaveTextContent('ProviderKlingByteDance')
-      expect(within(dialog).queryByRole('row', { name: /price/i })).toBeNull()
+        screen.getByRole('heading', { level: 2, name: /^Compare 2 models/ })
+      ).toHaveTextContent('up to 4')
+      expect(location.search).toBe('?compare=kling-ai,seedream')
+      expect(screen.queryByTestId('workshop-models-grid')).toBeNull()
+      expect(screen.queryByTestId('compare-tray')).toBeNull()
+      expect(columns()).toEqual(['Kling AI', 'Seedream'])
+      expect(screen.getByRole('row', { name: /^Provider/ })).toHaveTextContent(
+        'ProviderKlingByteDance'
+      )
       expect(
-        within(dialog)
-          .getAllByTestId('compare-model-link')
-          .map((link) => link.getAttribute('href'))
-      ).toEqual(['/models/kling-ai/', '/models/seedream/'])
-      expect(
-        within(dialog)
+        screen
           .getAllByRole('link', { name: /^Try / })
-          .map((link) => [
-            link.getAttribute('aria-label'),
-            link.textContent.trim()
-          ])
+          .map((link) => [link.getAttribute('href'), link.textContent.trim()])
       ).toEqual([
-        ['Try Kling AI', 'Try'],
-        ['Try Seedream', 'Try']
+        ['/models/kling-ai/', 'Try'],
+        ['/models/seedream/', 'Try']
       ])
-      expect(within(dialog).getAllByTestId('compare-thumbnail')).toHaveLength(2)
-      expect(within(dialog).queryByText('Model page')).toBeNull()
-
-      await user.keyboard('{Escape}')
-      await waitFor(() => expect(screen.queryByRole('dialog')).toBeNull())
-      expect(location.hash).toBe('')
+      expect(
+        screen
+          .getAllByRole('link', { name: / API$/ })
+          .map((link) => link.getAttribute('href'))
+      ).toEqual(['/models/kling-ai/#api', '/models/seedream/#api'])
+      expect(screen.getAllByTestId('compare-thumbnail')).toHaveLength(2)
     })
 
-    it('opens from #compare only once two models are chosen', async () => {
+    it('goes back to the catalogue with the choice kept, and closes when a column leaves', async () => {
       const user = renderCatalogue()
-      await user.click(toggle('Kling AI'))
-      location.hash = '#compare'
-      await nextTick()
-      window.dispatchEvent(new HashChangeEvent('hashchange'))
-      expect(screen.queryByRole('dialog')).toBeNull()
+      await compare(user, 'Kling AI', 'Flux', 'Seedream')
 
-      await user.click(toggle('Flux'))
-      window.dispatchEvent(new HashChangeEvent('hashchange'))
-      expect(
-        await screen.findByRole('dialog', { name: '2 models side by side' })
-      ).toBeTruthy()
+      await user.click(screen.getByTestId('compare-add'))
+      expect(screen.queryByTestId('compare-view')).toBeNull()
+      expect(location.search).toBe('')
+      expect(compareButton()).toHaveTextContent('Compare 3 models')
+
+      await user.click(compareButton())
+      await user.click(
+        screen.getByRole('button', { name: 'Remove Flux from compare' })
+      )
+      expect(columns()).toEqual(['Kling AI', 'Seedream'])
+      expect(location.search).toBe('?compare=kling-ai,seedream')
+
+      await user.click(
+        screen.getByRole('button', { name: 'Remove Seedream from compare' })
+      )
+      expect(screen.queryByTestId('compare-view')).toBeNull()
+      expect(compareButton()).toHaveTextContent('Compare 1 model')
+    })
+
+    it('opens a shared comparison on its models', async () => {
+      history.replaceState(null, '', '/hub/models/?compare=flux,seedream')
+      renderCatalogue()
+      await nextTick()
+      expect(columns()).toEqual(['Flux', 'Seedream'])
+    })
+
+    it('keeps the catalogue when a shared comparison names too few known models', async () => {
+      history.replaceState(null, '', '/hub/models/?compare=flux,unknown')
+      renderCatalogue()
+      await nextTick()
+      expect(screen.queryByTestId('compare-view')).toBeNull()
+      expect(compareButton()).toHaveTextContent('Compare 1 model')
     })
   })
 })

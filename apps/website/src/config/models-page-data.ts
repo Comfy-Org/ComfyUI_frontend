@@ -62,6 +62,7 @@ const modelsPageDataSchema = z.object({
   priceEstimate: z.string().optional(),
   useCaseLabel: z.string().optional(),
   workflows: z.array(workflowModelSchema),
+  comparable: z.array(modelSchema).optional(),
   tags: z.array(tagSchema),
   shownTags: z.array(tagSchema),
   restTags: z.array(tagSchema),

@@ -35,11 +35,7 @@ defineEmits<{
       aria-labelledby="workshop-models-heading"
       data-testid="workshop-models-grid"
     >
-      <li
-        v-for="family in families"
-        :key="family.key"
-        class="group/compare relative"
-      >
+      <li v-for="family in families" :key="family.key" class="relative">
         <WorkshopModelCard
           :model="family.latest"
           :locale
@@ -49,7 +45,6 @@ defineEmits<{
           v-if="canCompare(family.latest)"
           :model-value="compared.includes(family.latest.slug)"
           :name="family.latest.name"
-          :revealed="compared.length > 0"
           :disabled="
             compared.length >= MAX_COMPARED &&
             !compared.includes(family.latest.slug)

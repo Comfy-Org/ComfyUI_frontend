@@ -1,12 +1,14 @@
 import type { WorkshopModel } from '@/config/models-catalogue'
+import { sortWorkshopModels } from '@/config/models-catalogue'
 import type { Locale, TranslationKey } from '@/i18n/translations'
 import { translationsFor } from '@/i18n/translations'
 import { taskLabelFor } from '@/lib/workshop/task-label'
 import { accessBadgeKey, accessFor } from './model-access'
 
-export const MAX_COMPARED = 3
+export const MAX_COMPARED = 4
 export const MIN_COMPARED = 2
-export const COMPARE_HASH = '#compare'
+/** The compare view's models, kept in the address as `?compare=a,b`. */
+export const COMPARE_PARAM = 'compare'
 
 export function canCompare(model: WorkshopModel): boolean {
   return accessFor(model).length > 0 && !model.incompleteReason
@@ -53,4 +55,41 @@ export function compareRows(
     label: fieldLabelKey[key],
     values: models.map(read[key])
   }))
+}
+
+export function parseCompared(search: string): readonly string[] {
+  const named = new URLSearchParams(search).get(COMPARE_PARAM)?.split(',')
+  return [...new Set(named?.filter(Boolean))].slice(0, MAX_COMPARED)
+}
+
+export function comparedSearch(
+  search: string,
+  slugs: readonly string[]
+): string {
+  const params = new URLSearchParams(search)
+  if (slugs.length) params.set(COMPARE_PARAM, slugs.join(','))
+  else params.delete(COMPARE_PARAM)
+  const next = params.toString().replaceAll('%2C', ',')
+  return next ? `?${next}` : ''
+}
+
+/**
+ * The models a model page offers to compare with: others that do the same
+ * task (the same input to the same output), most popular first.
+ */
+export function comparableWith(
+  model: WorkshopModel,
+  catalogue: readonly WorkshopModel[],
+  limit = MAX_COMPARED - 1
+): WorkshopModel[] {
+  if (!canCompare(model) || !model.task) return []
+  return sortWorkshopModels(
+    catalogue.filter(
+      (other) =>
+        other.slug !== model.slug &&
+        other.task === model.task &&
+        canCompare(other)
+    ),
+    'popular'
+  ).slice(0, limit)
 }

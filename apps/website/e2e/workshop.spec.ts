@@ -535,26 +535,92 @@ test.describe('Models catalog', () => {
     await expect(card.getByText(/^(Run|API)$/)).toHaveCount(0)
   })
 
-  test('compares two hosted models side by side', async ({ page }) => {
+  test('compares hosted models side by side from a link that survives a reload', async ({
+    page
+  }) => {
     await page.goto('/hub/models/')
     const toggles = page.getByRole('checkbox', { name: /^Compare / })
+    await expect(toggles.first()).toBeVisible()
     await toggles.nth(0).check()
     await toggles.nth(1).check()
 
-    const tray = page.getByTestId('compare-tray')
-    await tray.getByTestId('compare-open').click()
-    const dialog = page.getByRole('dialog', { name: '2 models side by side' })
-    await expect(dialog).toBeVisible()
-    await expect(page).toHaveURL(/#compare$/)
-    await expect(dialog.getByTestId('compare-model-link')).toHaveCount(2)
-    const firstTry = dialog.getByTestId('compare-model-link').first()
-    await expect(firstTry).toHaveText('Try')
-    await expect(firstTry).toHaveAccessibleName(/^Try /)
-    await expect(dialog.getByTestId('compare-thumbnail')).toHaveCount(2)
+    await page.getByTestId('compare-tray').getByTestId('compare-open').click()
+    const view = page.getByTestId('compare-view')
+    await expect(
+      view.getByRole('heading', { level: 2, name: /^Compare 2 models/ })
+    ).toBeVisible()
+    await expect(page).toHaveURL(/[?&]compare=[^&,]+,[^&,]+/)
+    await expect(view.getByTestId('compare-model-link')).toHaveCount(2)
+    await expect(view.getByTestId('compare-thumbnail')).toHaveCount(2)
+    await expect(page.getByTestId('compare-tray')).toHaveCount(0)
 
-    await page.keyboard.press('Escape')
-    await expect(dialog).toBeHidden()
-    await expect(page).not.toHaveURL(/#compare$/)
+    await page.reload()
+    await expect(view.getByRole('columnheader')).toHaveCount(2)
+
+    await view.getByTestId('compare-add').click()
+    await expect(view).toHaveCount(0)
+    await expect(page).not.toHaveURL(/compare=/)
+    await expect(page.getByTestId('compare-open')).toHaveText(
+      'Compare 2 models'
+    )
+  })
+
+  test('sets four image models side by side on the same prompts', async ({
+    page
+  }) => {
+    await page.goto(
+      '/hub/models/?compare=byteplus--seedream-5-pro--generate-images,openai--gpt-image-2--generate-images,vertexai--gemini-nano-banana-2--generate-images,bfl--flux-2-pro--generate-images'
+    )
+    const view = page.getByTestId('compare-view')
+    await expect(view.getByRole('columnheader')).toHaveCount(4)
+    const types = view.getByRole('group', { name: 'Prompt types' })
+    await expect(types.getByRole('button')).toHaveText([
+      'All',
+      'Portraits',
+      'Product',
+      'Illustration',
+      'Typography',
+      'Fusion & detail'
+    ])
+    await types.getByRole('button', { name: 'Typography' }).click()
+    const rows = view.getByTestId('compare-prompt-row')
+    await expect(rows).toHaveCount(1)
+    await expect(rows.getByRole('img')).toHaveCount(4)
+    await expect(
+      rows.getByRole('img', {
+        name: /^Seedream 5\.0 Pro .* output for: A vintage travel poster/
+      })
+    ).toBeVisible()
+  })
+
+  test('a model page sets itself beside a model with the same task', async ({
+    page
+  }) => {
+    await page.goto('/hub/models/seedream-5-0-pro-text-to-image/')
+    const section = page.getByTestId('model-compare')
+    await expect(
+      section.getByRole('heading', { level: 2, name: 'How it compares' })
+    ).toBeVisible()
+    const chips = section
+      .getByRole('group', { name: 'Compare with' })
+      .getByRole('button')
+    await expect(chips).toHaveCount(3)
+    await chips.nth(1).click()
+    await expect(chips.nth(1)).toHaveAttribute('aria-pressed', 'true')
+    const columns = section.getByRole('columnheader')
+    await expect(columns).toHaveCount(2)
+    await expect(columns.first()).toHaveAccessibleName(
+      'Seedream 5.0 Pro Text-to-Image'
+    )
+    await expect(columns.nth(1)).toHaveAccessibleName(
+      (await chips.nth(1).textContent())?.trim() ?? ''
+    )
+    await expect(
+      section.getByRole('link', { name: 'Open full comparison' })
+    ).toHaveAttribute(
+      'href',
+      /^\/hub\/models\/\?compare=byteplus--seedream-5-pro--generate-images,[^,]+$/
+    )
   })
 
   test('the how-you-use-it filter offers only catalogue models', async ({

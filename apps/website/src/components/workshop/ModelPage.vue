@@ -19,6 +19,7 @@ import CardRow from './CardRow.vue'
 import DetailTrail from './DetailTrail.vue'
 import ModelPrice from './ModelPrice.vue'
 import ModelDetail from './ModelDetail.vue'
+import ModelCompare from './model-detail/ModelCompare.vue'
 import ModelPaths from './model-detail/ModelPaths.vue'
 import ModelStatus from './ModelStatus.vue'
 import ModelSupport from './ModelSupport.vue'
@@ -39,6 +40,7 @@ const { page } = defineProps<{
     priceEstimate?: string
     useCaseLabel?: string
     workflows: readonly WorkshopModel[]
+    comparable?: readonly WorkshopModel[]
     shownTags: readonly ModelTag[]
     restTags: readonly ModelTag[]
     restTagCount: number
@@ -139,6 +141,8 @@ const restTags = computed(() =>
 
     <div class="sm:px-8 lg:px-10">
       <ModelDetail :model />
+
+      <ModelCompare :model="page.model" :candidates="page.comparable ?? []" />
 
       <section
         v-if="showsWorkflows"

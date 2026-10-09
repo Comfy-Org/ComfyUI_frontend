@@ -12,6 +12,7 @@ import { translationsFor } from '@/i18n/translations'
 import { describesCapability } from '@/lib/workshop/model-tags'
 import { useCaseLabelKey } from '@/lib/workshop/use-case-label'
 import { workflowsUsingModel } from '@/lib/workshop/model-workflows'
+import { comparableWith } from '@/lib/workshop/explorer/compare'
 
 const TAGS_SHOWN = 3
 
@@ -78,6 +79,7 @@ export async function prepareModelPage(
     ),
     useCaseLabel: useCase ? t(useCaseLabelKey[useCase]) : undefined,
     workflows: model.routerId ? workflowsUsingModel(model, workshopPages) : [],
+    comparable: comparableWith(model, workshopPages),
     tags,
     ...splitShownTags(tags)
   }

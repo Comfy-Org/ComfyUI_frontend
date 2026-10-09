@@ -59,7 +59,7 @@ import type { FacetMenuOption } from './WorkshopFilterMenu.vue'
 import WorkshopFilterMenu from './WorkshopFilterMenu.vue'
 import WorkshopModelsEmpty from '@/components/workshop/WorkshopModelsEmpty.vue'
 import WorkshopModelsResults from '@/components/workshop/WorkshopModelsResults.vue'
-import CompareDialog from '@/components/workshop/explorer/compare/CompareDialog.vue'
+import CompareView from '@/components/workshop/explorer/compare/CompareView.vue'
 import CompareTray from '@/components/workshop/explorer/compare/CompareTray.vue'
 import ModelTabs from '@/components/workshop/explorer/ModelTabs.vue'
 import ModelsExploreHero from '@/components/workshop/models-hub/ModelsExploreHero.vue'
@@ -147,6 +147,7 @@ const {
   toggle: toggleCompare,
   clear: clearCompare
 } = useCompareSelection(() => models)
+watch(compareOpen, () => window.scrollTo({ top: 0 }))
 
 const toolbar = useTemplateRef<HTMLElement>('toolbar')
 const heading = useTemplateRef<HTMLElement>('heading')
@@ -281,8 +282,19 @@ function rememberModel(model: WorkshopModel, event: MouseEvent) {
 </script>
 
 <template>
-  <section :class="cn('gap-10', comparedModels.length && 'pb-24')">
-    <div class="min-w-0">
+  <section
+    :class="cn('gap-10', comparedModels.length && !compareOpen && 'pb-24')"
+  >
+    <CompareView
+      v-if="compareOpen"
+      :models="comparedModels"
+      toolbar
+      removable
+      :locale
+      @remove="toggleCompare"
+      @add="compareOpen = false"
+    />
+    <div v-else class="min-w-0">
       <ModelsExploreHero :models :locale />
 
       <!-- The sidebar already names the list and its count, so the heading is
@@ -393,17 +405,12 @@ function rememberModel(model: WorkshopModel, event: MouseEvent) {
     </div>
 
     <CompareTray
-      v-if="comparedModels.length"
+      v-if="comparedModels.length && !compareOpen"
       :models="comparedModels"
       :locale
       @remove="toggleCompare"
       @clear="clearCompare"
       @compare="compareOpen = true"
-    />
-    <CompareDialog
-      v-model:open="compareOpen"
-      :models="comparedModels"
-      :locale
     />
   </section>
 </template>
