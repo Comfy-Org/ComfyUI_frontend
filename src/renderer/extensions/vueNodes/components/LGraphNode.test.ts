@@ -6,7 +6,10 @@ import { fromAny } from '@total-typescript/shoehorn'
 
 import { nodeError, validationError } from '@/utils/__tests__/nodeErrorHelpers'
 import { useMissingModelStore } from '@/platform/missingModel/missingModelStore'
-import { createNodeExecutionId } from '@/types/nodeIdentification'
+import {
+  createNodeExecutionId,
+  createNodeLocatorId
+} from '@/types/nodeIdentification'
 import { useExecutionErrorStore } from '@/stores/executionErrorStore'
 import { useWidgetValueStore } from '@/stores/widgetValueStore'
 import { toNodeId } from '@/types/nodeId'
@@ -495,6 +498,39 @@ describe('LGraphNode', () => {
 
     expect(screen.getByTestId('node-content')).toBeInTheDocument()
   })
+
+  it.for([
+    { label: 'numeric', rawId: '9' },
+    {
+      label: 'insert_workflow-remapped',
+      rawId: 'insert:0fbd38ecb13037d0b3b0ca78b8a20a5a:root:node:9'
+    }
+  ])(
+    'renders an executed output stored under the $label node locator',
+    ({ rawId }) => {
+      const fakeRootGraph: Record<string, unknown> = {
+        id: 'graph-test',
+        getNodeById: () => null,
+        subgraphs: new Map()
+      }
+      fakeRootGraph.rootGraph = fakeRootGraph
+      useCanvasStore().currentGraph = fromAny(fakeRootGraph)
+      const nodeId = toNodeId(rawId)
+      const nodeOutputStore = useNodeOutputStore()
+      nodeOutputStore.nodeOutputs[createNodeLocatorId(null, nodeId)] = {
+        images: [{ filename: 'output.png', type: 'output' }]
+      }
+      vi.mocked(nodeOutputStore.getNodeImageUrls).mockReturnValue([
+        '/output.png'
+      ])
+
+      renderLGraphNode({
+        nodeData: { ...mockNodeData, id: nodeId, graphId: 'graph-test' }
+      })
+
+      expect(screen.getByTestId('node-content')).toBeInTheDocument()
+    }
+  )
 
   it('restores only the core LoadAudio input player on disconnect', async () => {
     const isAudioLinked = ref(true)
