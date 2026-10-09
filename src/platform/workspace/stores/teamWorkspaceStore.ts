@@ -166,7 +166,10 @@ function clearLastWorkspaceId(): void {
 
 /** An ingest deployed before `can_create_workspace` omits it; only an explicit false refuses. */
 type ListedWorkspaces = Omit<ListWorkspacesResponse, 'can_create_workspace'> &
-  Partial<Pick<ListWorkspacesResponse, 'can_create_workspace'>>
+  Partial<Pick<ListWorkspacesResponse, 'can_create_workspace'>> & {
+    /** The SSO organization's workspace a sign-in opens (cloud#12614). */
+    default_workspace_id?: string
+  }
 
 const MAX_OWNED_WORKSPACES = 10
 const MAX_INIT_RETRIES = 3
@@ -428,7 +431,7 @@ export const useTeamWorkspaceStore = defineStore('teamWorkspace', () => {
         }
 
         // 2. No valid session - fetch workspaces and pick default
-        const response = await workspaceApi.list()
+        const response: ListedWorkspaces = await workspaceApi.list()
         if (isStaleIdentity(generation)) return
         applyWorkspaceList(response)
 
@@ -436,13 +439,13 @@ export const useTeamWorkspaceStore = defineStore('teamWorkspace', () => {
           throw new NoWorkspaceAccessError('No workspaces available')
         }
 
-        // 3. Determine target workspace (priority: localStorage > personal)
-        let targetWorkspaceId: string | null = null
-
-        const lastId = getLastWorkspaceId()
-        if (lastId && workspaces.value.some((w) => w.id === lastId)) {
-          targetWorkspaceId = lastId
-        }
+        // 3. Determine target workspace (priority: the server's default >
+        // localStorage > personal)
+        const listed = (id: string | null | undefined): id is string =>
+          !!id && workspaces.value.some((w) => w.id === id)
+        let targetWorkspaceId: string | null =
+          [response.default_workspace_id, getLastWorkspaceId()].find(listed) ??
+          null
 
         if (!targetWorkspaceId) {
           const personal = workspaces.value.find((w) => w.type === 'personal')

@@ -294,6 +294,38 @@ describe('useTeamWorkspaceStore', () => {
       expect(store.activeWorkspaceId).toBe(mockTeamWorkspace.id)
     })
 
+    it.for([
+      {
+        name: "opens the server's default over the last-used workspace",
+        defaultId: mockTeamWorkspace.id,
+        lastUsed: mockPersonalWorkspace.id,
+        expected: mockTeamWorkspace.id
+      },
+      {
+        name: 'keeps the last-used workspace without a default',
+        defaultId: undefined,
+        lastUsed: mockTeamWorkspace.id,
+        expected: mockTeamWorkspace.id
+      },
+      {
+        name: 'ignores a default that is not in the list',
+        defaultId: 'ws-not-listed',
+        lastUsed: null,
+        expected: mockPersonalWorkspace.id
+      }
+    ])('$name', async ({ defaultId, lastUsed, expected }) => {
+      mockLocalStorage.getItem.mockReturnValue(lastUsed)
+      mockWorkspaceApi.list.mockResolvedValue({
+        workspaces: [mockPersonalWorkspace, mockTeamWorkspace],
+        ...(defaultId && { default_workspace_id: defaultId })
+      })
+
+      const store = useTeamWorkspaceStore()
+      await store.initialize()
+
+      expect(store.activeWorkspaceId).toBe(expected)
+    })
+
     it('falls back to personal if stored workspace not in list', async () => {
       mockLocalStorage.getItem.mockReturnValue('non-existent-workspace')
 
