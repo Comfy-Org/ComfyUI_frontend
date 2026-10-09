@@ -1,4 +1,5 @@
 <script setup lang="ts">
+import { ArrowRight } from '@lucide/vue'
 import { computed } from 'vue'
 
 import BrandButton from '@/components/common/BrandButton.vue'
@@ -75,6 +76,7 @@ const access = computed(() => accessFor(model)[0])
         data-testid="models-hub-latest-try"
       >
         {{ t('workshop.explorer.compare.tryShort') }}
+        <ArrowRight class="ml-2 size-4" aria-hidden="true" />
       </BrandButton>
     </div>
   </div>
