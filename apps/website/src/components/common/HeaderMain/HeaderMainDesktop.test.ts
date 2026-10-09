@@ -1,9 +1,13 @@
-import { render, screen } from '@testing-library/vue'
+import { render, screen, within } from '@testing-library/vue'
 import userEvent from '@testing-library/user-event'
 import { describe, expect, it, vi } from 'vitest'
 import { nextTick } from 'vue'
 
-import { captureNavFeaturedCardViewed } from '@/scripts/posthog'
+import { getRoutes } from '@/config/routes'
+import {
+  captureNavFeaturedCardClicked,
+  captureNavFeaturedCardViewed
+} from '@/scripts/posthog'
 import HeaderMainDesktop from './HeaderMainDesktop.vue'
 
 vi.mock(import('@/scripts/posthog'))
@@ -63,11 +67,57 @@ describe('HeaderMainDesktop', () => {
       )
     })
 
-    it('reports no view when another dropdown opens', async () => {
+    it.for([
+      {
+        trigger: /products/i,
+        dropdown: 'products',
+        placement: 'gemini-omni',
+        href: getRoutes('en').geminiOmni
+      },
+      {
+        trigger: /enterprise/i,
+        dropdown: 'enterprise',
+        placement: 'minimax-license',
+        href: getRoutes('en').minimaxLicense
+      },
+      {
+        trigger: /company/i,
+        dropdown: 'company',
+        placement: 'customer-story',
+        href: getRoutes('en').customerVideoBlackMath
+      }
+    ])(
+      'reports one view and then the click for the $dropdown card',
+      async ({ trigger, ...expected }) => {
+        const user = userEvent.setup()
+        render(HeaderMainDesktop)
+        await user.click(screen.getByRole('button', { name: trigger }))
+        const [card] = within(
+          await screen.findByTestId('nav-dropdown')
+        ).getAllByRole('link', { hidden: true })
+        const properties = { ...expected, variant: 'control', locale: 'en' }
+        expect(captureNavFeaturedCardViewed).toHaveBeenCalledExactlyOnceWith(
+          properties
+        )
+        expect(captureNavFeaturedCardClicked).not.toHaveBeenCalled()
+
+        card.addEventListener('click', (event) => event.preventDefault())
+        await user.click(card)
+        expect(captureNavFeaturedCardClicked).toHaveBeenCalledExactlyOnceWith(
+          properties
+        )
+        expect(captureNavFeaturedCardViewed).toHaveBeenCalledTimes(1)
+      }
+    )
+
+    it('reports the page locale with the view', async () => {
       const user = userEvent.setup()
-      render(HeaderMainDesktop)
-      await user.click(screen.getByRole('button', { name: /enterprise/i }))
-      expect(captureNavFeaturedCardViewed).not.toHaveBeenCalled()
+      render(HeaderMainDesktop, { props: { locale: 'zh-CN' } })
+      await user.click(screen.getByRole('button', { name: /产品/ }))
+      await screen.findByTestId('nav-dropdown')
+      expect(captureNavFeaturedCardViewed).toHaveBeenCalledExactlyOnceWith(
+        expect.objectContaining({ dropdown: 'products', locale: 'zh-CN' })
+      )
     })
   })
 })

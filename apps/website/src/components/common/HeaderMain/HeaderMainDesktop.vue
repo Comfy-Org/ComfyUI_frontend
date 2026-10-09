@@ -61,7 +61,7 @@ function isNavItemActive(navItem: NavItem, path: string): boolean {
                 <NavFeaturedCard
                   v-if="navItem.featured"
                   :featured="navItem.featured"
-                  :dropdown="navItem.analyticsId ?? 'unknown'"
+                  :dropdown="navItem.analyticsId"
                   :locale="locale"
                 />
                 <NavColumn

@@ -13,8 +13,8 @@ import {
   readFlagVariant
 } from '@/scripts/posthog'
 import {
-  NAV_FEATURED_CARD_IMAGE_FLAG,
   buildNavFeaturedCardEventProperties,
+  getFeaturedImageFlagKey,
   resolveFeaturedMedia
 } from '@/utils/navFeaturedCard'
 
@@ -28,7 +28,7 @@ const { featured, dropdown, locale } = defineProps<{
 // header holds no card), so the flag is read once here, when the card first
 // appears, and the media stays put for the whole open. A flag that has not
 // answered yet resolves to the control card.
-const flagValue = readFlagVariant(NAV_FEATURED_CARD_IMAGE_FLAG)
+const flagValue = readFlagVariant(getFeaturedImageFlagKey(featured))
 const media = computed(() => resolveFeaturedMedia(featured, flagValue))
 
 function eventProperties() {

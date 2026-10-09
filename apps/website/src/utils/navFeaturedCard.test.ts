@@ -3,6 +3,7 @@ import { describe, expect, it } from 'vitest'
 import type { NavFeatured } from '@/data/mainNavigation'
 import {
   buildNavFeaturedCardEventProperties,
+  getFeaturedImageFlagKey,
   getFeaturedPlacement,
   resolveFeaturedMedia
 } from './navFeaturedCard'
@@ -109,5 +110,22 @@ describe('buildNavFeaturedCardEventProperties', () => {
       variant: 'bold',
       locale: 'zh-CN'
     })
+  })
+})
+
+describe('getFeaturedImageFlagKey', () => {
+  it('names one flag per placement', () => {
+    expect(
+      getFeaturedImageFlagKey({ ...control, analyticsId: 'gemini-omni' })
+    ).toBe('nav-featured-card-image-gemini-omni')
+    expect(
+      getFeaturedImageFlagKey({ ...control, analyticsId: 'customer-story' })
+    ).toBe('nav-featured-card-image-customer-story')
+  })
+
+  it('falls back to the link path when there is no analyticsId', () => {
+    expect(getFeaturedImageFlagKey(control)).toBe(
+      'nav-featured-card-image-gemini-omni'
+    )
   })
 })

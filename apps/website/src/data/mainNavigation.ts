@@ -16,7 +16,7 @@ export type NavColumn = {
   placement?: 'footer'
 }
 
-/** Replacement media for one arm of the `nav-featured-card-image` flag. */
+/** Replacement media for one arm of a placement's image flag. */
 type NavFeaturedVariant = {
   imageSrc: string
   videoSrc?: string
@@ -41,8 +41,9 @@ export type NavFeatured = {
     href: string
   }
   /**
-   * Image arms for the PostHog multivariate flag `nav-featured-card-image`,
-   * keyed by the flag's variant keys. The top-level media is the `control`
+   * Image arms for the PostHog multivariate flag
+   * `nav-featured-card-image-<placement>` (the placement is the card's
+   * `analyticsId`), keyed by the flag's variant keys. The top-level media is the `control`
    * arm. Images and videos must be hosted on media.comfy.org. A visitor whose
    * variant is not listed here sees the control card.
    */
@@ -55,7 +56,7 @@ export type NavItem =
       columns: NavColumn[]
       featured?: NavFeatured
       /** Stable dropdown id for analytics, such as `products`. */
-      analyticsId?: string
+      analyticsId: string
       badge?: 'new'
       href?: never
     }
@@ -166,7 +167,9 @@ export function getMainNavigation(locale: Locale): NavItem[] {
     },
     {
       label: t('nav.enterprise'),
+      analyticsId: 'enterprise',
       featured: {
+        analyticsId: 'minimax-license',
         imageSrc:
           'https://media.comfy.org/website/minimax-license/hero-poster.jpg',
         videoSrc: 'https://media.comfy.org/website/minimax-license/hero.mp4',
@@ -208,7 +211,9 @@ export function getMainNavigation(locale: Locale): NavItem[] {
     { label: t('nav.pricing'), href: routes.pricing },
     {
       label: t('nav.company'),
+      analyticsId: 'company',
       featured: {
+        analyticsId: 'customer-story',
         imageSrc: 'https://media.comfy.org/website/nav/customer-story-card.jpg',
         showPlayOverlay: true,
         imageAlt: t('nav.featuredCompanyAlt'),

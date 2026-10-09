@@ -152,6 +152,25 @@ describe('NavFeaturedCard', () => {
       )
     })
 
+    it('reads the flag of its own placement', () => {
+      render(NavFeaturedCard, {
+        props: { ...cardProps, featured: variantFeatured }
+      })
+      expect(readFlagVariant).toHaveBeenCalledExactlyOnceWith(
+        'nav-featured-card-image-launch'
+      )
+    })
+
+    it('renders decorative media with empty alt text when none is set', () => {
+      const { imageAlt: _imageAlt, ...withoutAlt } = featured
+      render(NavFeaturedCard, {
+        props: { ...cardProps, featured: withoutAlt }
+      })
+      expect(screen.getByAltText('').getAttribute('src')).toBe(
+        featured.imageSrc
+      )
+    })
+
     it('renders the control card for a variant with no configured media', () => {
       vi.mocked(readFlagVariant).mockReturnValue('bold-image')
       render(NavFeaturedCard, { props: { ...cardProps, featured } })

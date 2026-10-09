@@ -1,13 +1,7 @@
 import type { NavFeatured } from '@/data/mainNavigation'
 import type { Locale } from '@/i18n/translations'
 
-/**
- * Multivariate PostHog flag that swaps the nav promo card's image. It must be
- * created in the PostHog project (prod 204330) with variant keys that match
- * the keys of `NavFeatured.variants`; the `control` arm is the card as
- * authored in `mainNavigation.ts`.
- */
-export const NAV_FEATURED_CARD_IMAGE_FLAG = 'nav-featured-card-image'
+const NAV_FEATURED_CARD_IMAGE_FLAG_PREFIX = 'nav-featured-card-image'
 
 const CONTROL_VARIANT = 'control'
 
@@ -61,6 +55,17 @@ export function resolveFeaturedMedia(
     videoSrc: featured.videoSrc,
     imageAlt: featured.imageAlt
   }
+}
+
+/**
+ * Each placement has its own multivariate PostHog flag, so its image test is
+ * bucketed and read independently of the other promo cards. Create
+ * `nav-featured-card-image-<placement>` in the PostHog project (prod 204330)
+ * with variant keys that match the keys of that card's `variants`; the
+ * `control` arm is the card as authored in `mainNavigation.ts`.
+ */
+export function getFeaturedImageFlagKey(featured: NavFeatured): string {
+  return `${NAV_FEATURED_CARD_IMAGE_FLAG_PREFIX}-${getFeaturedPlacement(featured)}`
 }
 
 /** The explicit `analyticsId`, else the path of the link without its locale. */
