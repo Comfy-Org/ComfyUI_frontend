@@ -1,7 +1,7 @@
 <template>
   <div class="flex items-center gap-2">
-    <KnobControl
-      :model-value
+    <Knob
+      v-model="modelValue"
       :min
       :max
       :step
@@ -9,10 +9,9 @@
       :aria-label="ariaLabel"
       :aria-labelledby="ariaLabelledby"
       v-bind="$attrs"
-      @update:model-value="(value) => emit('update:modelValue', value)"
     />
     <NumberField
-      :model-value
+      v-model="modelValue"
       class="w-32"
       :format-options="{ maximumFractionDigits: 3 }"
       :min
@@ -20,7 +19,6 @@
       :step
       step-snapping
       :disabled
-      @update:model-value="(value) => emit('update:modelValue', value)"
     >
       <NumberFieldDecrement />
       <NumberFieldInput :aria-label :aria-labelledby="ariaLabelledby" />
@@ -30,14 +28,13 @@
 </template>
 
 <script setup lang="ts">
-import KnobControl from '@/components/common/KnobControl.vue'
+import Knob from '@/components/ui/knob/Knob.vue'
 import NumberField from '@/components/ui/number-field/NumberField.vue'
 import NumberFieldDecrement from '@/components/ui/number-field/NumberFieldDecrement.vue'
 import NumberFieldIncrement from '@/components/ui/number-field/NumberFieldIncrement.vue'
 import NumberFieldInput from '@/components/ui/number-field/NumberFieldInput.vue'
 
 defineProps<{
-  modelValue: number
   ariaLabel?: string
   ariaLabelledby?: string
   disabled?: boolean
@@ -46,9 +43,7 @@ defineProps<{
   step?: number
 }>()
 
-const emit = defineEmits<{
-  'update:modelValue': [value: number]
-}>()
+const modelValue = defineModel<number>({ required: true })
 
 defineOptions({
   inheritAttrs: false
