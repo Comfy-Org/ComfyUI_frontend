@@ -90,6 +90,7 @@ const { tab, readAddress: readTab } = useModelTab(
   (named) => (tabCounts.value.get(named) ?? 0) > 0
 )
 const TAB_PANEL_ID = 'workshop-model-tab-panel'
+const MODELS_PAGE_SIZE = 48
 const openedShelf = computed(() => shelfOf(selectedUseCases.value))
 let scrollReady = false
 
@@ -241,7 +242,7 @@ const {
   hasMore,
   showMore,
   shown: shownFamilies
-} = usePagedList(() => visible.value)
+} = usePagedList(() => visible.value, MODELS_PAGE_SIZE)
 
 watch([openedShelf, () => query.value.trim() !== ''], () => {
   if (!scrollReady) return

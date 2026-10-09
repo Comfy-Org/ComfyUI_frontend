@@ -261,14 +261,14 @@ test.describe('Models catalog', () => {
     await expect(page.getByTestId('section-trending')).toHaveCount(0)
     await expect(page.getByTestId('section-back')).toHaveCount(0)
     const promisedCount = await catalogueCount(page)
-    expect(promisedCount).toBeGreaterThan(12)
+    expect(promisedCount).toBeGreaterThan(48)
     const cards = page
       .getByTestId('workshop-models-grid')
       .getByTestId('workshop-model-card')
-    await expect(cards).toHaveCount(12)
+    await expect(cards).toHaveCount(48)
 
     await page.getByTestId('catalogue-show-more').click()
-    await expect(cards).toHaveCount(Math.min(24, promisedCount))
+    await expect(cards).toHaveCount(Math.min(96, promisedCount))
     await showEveryPage(page)
     await expect(cards).toHaveCount(promisedCount)
   })
@@ -525,7 +525,7 @@ test.describe('Models catalog', () => {
 
     await tabs.getByRole('tab', { name: /^All/ }).click()
     await expect(catalogueHeading(page)).toHaveText(`All models ${all}`)
-    await expect(cards).toHaveCount(Math.min(12, all))
+    await expect(cards).toHaveCount(Math.min(48, all))
   })
 
   test('model cards leave Run and API to the model page', async ({ page }) => {

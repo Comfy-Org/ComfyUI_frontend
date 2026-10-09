@@ -526,9 +526,9 @@ describe('WorkshopModelsGrid', () => {
   })
 
   describe('pages', () => {
-    const many: WorkshopModel[] = Array.from({ length: 30 }, (_, index) => ({
+    const many: WorkshopModel[] = Array.from({ length: 110 }, (_, index) => ({
       slug: `model-${index}`,
-      name: `Model ${String(index).padStart(2, '0')}`,
+      name: `Model ${String(index).padStart(3, '0')}`,
       workflowCount: 1,
       href: `/models/model-${index}/`,
       routerId: `acme/model-${index}`,
@@ -536,17 +536,17 @@ describe('WorkshopModelsGrid', () => {
       provider: 'Acme'
     }))
 
-    it('shows twelve models, then twelve more on each request, until all are shown', async () => {
+    it('shows forty-eight models, then forty-eight more on each request, until all are shown', async () => {
       const user = userEvent.setup()
       render(WorkshopModelsGrid, { props: { models: many } })
-      expect(catalogueHeading()).toHaveTextContent('30')
-      expect(cardNames()).toHaveLength(12)
+      expect(catalogueHeading()).toHaveTextContent('110')
+      expect(cardNames()).toHaveLength(48)
 
       await user.click(screen.getByRole('button', { name: 'Show more' }))
-      expect(cardNames()).toHaveLength(24)
+      expect(cardNames()).toHaveLength(96)
 
       await user.click(screen.getByRole('button', { name: 'Show more' }))
-      expect(cardNames()).toHaveLength(30)
+      expect(cardNames()).toHaveLength(110)
       expect(screen.queryByRole('button', { name: 'Show more' })).toBeNull()
     })
 
@@ -554,17 +554,17 @@ describe('WorkshopModelsGrid', () => {
       const user = userEvent.setup()
       render(WorkshopModelsGrid, { props: { models: many } })
       await user.click(screen.getByRole('button', { name: 'Show more' }))
-      expect(cardNames()).toHaveLength(24)
+      expect(cardNames()).toHaveLength(96)
 
       await user.type(await search(), 'model')
-      expect(cardNames()).toHaveLength(12)
+      expect(cardNames()).toHaveLength(48)
 
       await user.click(screen.getByRole('button', { name: 'Show more' }))
       await user.click(screen.getByRole('button', { name: 'Sort' }))
       await user.click(
         await screen.findByRole('menuitemradio', { name: 'Name A to Z' })
       )
-      expect(cardNames()).toHaveLength(12)
+      expect(cardNames()).toHaveLength(48)
     })
 
     it('shows no more button when one page holds every model', () => {
