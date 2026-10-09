@@ -193,28 +193,29 @@ const columns: { title: string; links: FooterLink[] }[] = [
         external: true
       }
     ]
-  },
-  {
-    title: t('footer.contact'),
-    links: [
-      { label: t('footer.sales'), href: routes.contact },
-      {
-        label: t('footer.support'),
-        href: externalLinks.support,
-        external: true
-      },
-      {
-        label: t('footer.cloudStatus'),
-        href: externalLinks.cloudStatus,
-        external: true
-      },
-      {
-        label: t('footer.press'),
-        href: 'mailto:press@comfy.org'
-      }
-    ]
   }
 ]
+
+const contactColumn: { title: string; links: FooterLink[] } = {
+  title: t('footer.contact'),
+  links: [
+    { label: t('footer.sales'), href: routes.contact },
+    {
+      label: t('footer.support'),
+      href: externalLinks.support,
+      external: true
+    },
+    {
+      label: t('footer.cloudStatus'),
+      href: externalLinks.cloudStatus,
+      external: true
+    },
+    {
+      label: t('footer.press'),
+      href: 'mailto:press@comfy.org'
+    }
+  ]
+}
 </script>
 
 <template>
@@ -230,13 +231,17 @@ const columns: { title: string; links: FooterLink[] }[] = [
           {{ t('footer.tagline') }}
         </p>
         <FooterSocialLinks :locale />
+        <FooterLinkColumn
+          :title="contactColumn.title"
+          :links="contactColumn.links"
+        />
       </div>
 
       <div
         class="flex flex-col gap-12 lg:col-span-3 lg:row-span-2 lg:justify-between"
       >
         <div
-          class="grid grid-cols-1 gap-12 lg:grid-cols-3 xl:grid-cols-6 xl:gap-x-4"
+          class="grid grid-cols-1 gap-12 lg:grid-cols-3 xl:grid-cols-5 xl:gap-x-6"
         >
           <FooterLinkColumn
             v-for="column in columns"

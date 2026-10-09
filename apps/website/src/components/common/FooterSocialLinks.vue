@@ -24,16 +24,16 @@ const socialLinks = (
 
 <template>
   <nav :aria-label="t('footer.social')">
-    <ul class="flex flex-wrap gap-2">
+    <ul class="flex flex-wrap gap-5">
       <li v-for="link in socialLinks" :key="link.href">
         <a
           :href="link.href"
           target="_blank"
           rel="noopener"
-          class="flex size-10 items-center justify-center rounded-full border border-primary-comfy-canvas transition-colors hover:border-primary-warm-white hover:text-primary-warm-white"
+          class="block transition-colors hover:text-primary-warm-white"
         >
           <span
-            class="block size-4 icon-mask"
+            class="block size-5 icon-mask"
             :style="{ maskImage: `url('${link.icon}')` }"
             aria-hidden="true"
           />
