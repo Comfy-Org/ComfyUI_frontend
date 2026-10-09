@@ -168,11 +168,14 @@ const meta: Meta<
         }
       }
 
+      let latest: string | undefined
       async function open(file: File) {
         const url = URL.createObjectURL(file)
         objectUrls.add(url)
+        latest = url
         const size = await imageSize(url)
-        if (objectUrls.has(url)) show(url, size)
+        if (url !== latest) release(url)
+        else if (objectUrls.has(url)) show(url, size)
       }
 
       async function run() {

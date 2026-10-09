@@ -166,6 +166,23 @@ describe('useEditorZoom', () => {
     expect(pointer(frame, 'pointerdown').defaultPrevented).toBe(true)
   })
 
+  it('keeps pinching with the first two fingers when a third lands', () => {
+    const { zoom, frame, canvas } = mountEditor()
+    const touch = (pointerId: number, clientX: number, clientY = 150) => ({
+      pointerId,
+      pointerType: 'touch',
+      clientX,
+      clientY
+    })
+
+    pointer(frame, 'pointerdown', touch(1, 100))
+    pointer(frame, 'pointerdown', touch(2, 300))
+    pointer(frame, 'pointerdown', touch(3, 200, 50))
+    pointer(canvas, 'pointermove', touch(2, 400))
+
+    expect(zoom.percent.value).toBeGreaterThan(100)
+  })
+
   it('goes back to fitting the frame', () => {
     const { zoom } = mountEditor()
     zoom.zoomIn()

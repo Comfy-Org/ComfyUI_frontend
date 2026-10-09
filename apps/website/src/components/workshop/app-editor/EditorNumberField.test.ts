@@ -29,11 +29,14 @@ describe('EditorNumberField', () => {
     expect(value.value).toBe(7)
   })
 
-  it('puts the last good number back when it refuses one', async () => {
+  it.for([
+    { typed: '-3', what: 'a negative number' },
+    { typed: '{Backspace}', what: 'an empty field' }
+  ])('puts the last good number back after $what', async ({ typed }) => {
     const { value, input } = renderField()
 
     await userEvent.clear(input)
-    await userEvent.type(input, '-3')
+    await userEvent.type(input, typed)
     await userEvent.tab()
 
     expect(value.value).toBe(42)

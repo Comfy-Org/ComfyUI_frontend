@@ -5,11 +5,18 @@ const { label } = defineProps<{ label: string }>()
 const value = defineModel<number>({ required: true })
 const id = useId()
 
+function wholeNumber(raw: string) {
+  const next = Math.round(Number(raw))
+  return raw.trim() !== '' && Number.isFinite(next) && next >= 0
+    ? next
+    : undefined
+}
+
 function onChange(event: Event) {
   if (!(event.target instanceof HTMLInputElement)) return
-  const next = Math.round(Number(event.target.value))
-  if (Number.isFinite(next) && next >= 0) value.value = next
-  else event.target.value = String(value.value)
+  const next = wholeNumber(event.target.value)
+  if (next === undefined) event.target.value = String(value.value)
+  else value.value = next
 }
 </script>
 
