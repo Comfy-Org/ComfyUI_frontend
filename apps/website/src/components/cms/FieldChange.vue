@@ -25,20 +25,22 @@ const isAdded = (value: unknown) => group.added.includes(value)
 </script>
 
 <template>
-  <li class="overflow-hidden rounded-xl border border-transparency-white-t8">
+  <li class="overflow-hidden rounded-lg border border-admin-line">
     <p
-      class="border-b border-transparency-white-t8 bg-site-bg-soft px-4 py-2 text-xs text-primary-comfy-canvas"
+      class="border-b border-admin-line bg-admin-page px-3 py-1.5 text-xs text-admin-muted"
     >
       {{ humanizeField(group.field) }}
     </p>
     <dl class="grid text-sm">
       <div
         v-if="showBefore"
-        class="grid grid-cols-[4.5rem_minmax(0,1fr)] gap-2 px-4 py-2 text-primary-comfy-canvas"
+        class="grid grid-cols-[4rem_minmax(0,1fr)] gap-2 bg-admin-danger/6 px-3 py-2"
       >
-        <dt>{{ t('cmsAdmin.review.before') }}</dt>
+        <dt class="text-xs leading-5 text-admin-muted">
+          {{ t('cmsAdmin.review.before') }}
+        </dt>
         <dd
-          class="wrap-break-word line-through decoration-destructive-light/60"
+          class="wrap-break-word text-admin-muted line-through decoration-admin-danger-text/50"
         >
           {{ formatValue(group.before) || empty }}
         </dd>
@@ -47,12 +49,12 @@ const isAdded = (value: unknown) => group.added.includes(value)
         v-if="showAfter"
         :class="
           cn(
-            'grid grid-cols-[4.5rem_minmax(0,1fr)] gap-2 px-4 py-2 text-primary-warm-white',
-            showBefore && 'border-t border-dashed border-transparency-white-t8'
+            'grid grid-cols-[4rem_minmax(0,1fr)] gap-2 bg-admin-success/6 px-3 py-2',
+            showBefore && 'border-t border-admin-line'
           )
         "
       >
-        <dt class="text-primary-comfy-canvas">
+        <dt class="text-xs leading-5 text-admin-muted">
           {{ t('cmsAdmin.review.after') }}
         </dt>
         <dd v-if="highlight" class="flex flex-wrap gap-1 wrap-break-word">
@@ -61,8 +63,10 @@ const isAdded = (value: unknown) => group.added.includes(value)
             :key="i"
             :class="
               cn(
-                isAdded(value) &&
-                  'rounded-sm bg-primary-comfy-yellow/15 px-1 text-primary-comfy-yellow'
+                'rounded-sm px-1',
+                isAdded(value)
+                  ? 'bg-admin-success/15 text-admin-success'
+                  : 'bg-admin-hover'
               )
             "
             >{{ formatValue(value) }}</span

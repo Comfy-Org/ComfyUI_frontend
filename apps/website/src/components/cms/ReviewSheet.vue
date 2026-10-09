@@ -1,16 +1,14 @@
 <script setup lang="ts">
 import { ChevronDown, ChevronUp } from '@lucide/vue'
+import { DialogDescription, DialogTitle } from 'reka-ui'
 import { computed } from 'vue'
 
 import CatalogReview from '@/components/cms/CatalogReview.vue'
 import ChangeTag from '@/components/cms/ChangeTag.vue'
 import SubmissionReview from '@/components/cms/SubmissionReview.vue'
-import Button from '@/components/ui/button/Button.vue'
-import IconButton from '@/components/ui/icon-button/IconButton.vue'
+import AdminButton from '@/components/cms/ui/AdminButton.vue'
+import AdminSheetContent from '@/components/cms/ui/AdminSheetContent.vue'
 import Sheet from '@/components/ui/sheet/Sheet.vue'
-import SheetContent from '@/components/ui/sheet/SheetContent.vue'
-import SheetDescription from '@/components/ui/sheet/SheetDescription.vue'
-import SheetTitle from '@/components/ui/sheet/SheetTitle.vue'
 import Switch from '@/components/ui/switch/Switch.vue'
 import type { Locale } from '@/i18n/translations'
 import { translationsFor } from '@/i18n/translations'
@@ -47,48 +45,47 @@ const isSubmission = computed(() => item.source === 'submission')
 
 <template>
   <Sheet v-model:open="open">
-    <SheetContent
-      :close-label="t('cmsAdmin.review.close')"
-      class="w-full gap-0 border-l border-transparency-white-t8 bg-primary-comfy-ink-light sm:max-w-xl"
-    >
+    <AdminSheetContent :close-label="t('cmsAdmin.review.close')">
       <header
-        class="flex items-center gap-1 border-b border-transparency-white-t8 py-4 pr-20 pl-6"
+        class="flex h-14 shrink-0 items-center gap-1 border-b border-admin-line pr-14 pl-5"
       >
-        <span class="mr-auto text-xs text-primary-comfy-canvas tabular-nums">
+        <span class="mr-auto text-xs text-admin-muted tabular-nums">
           {{ t('cmsAdmin.review.position', { index: index + 1, total }) }}
         </span>
-        <IconButton
-          size="sm"
+        <AdminButton
+          variant="ghost"
+          size="icon"
           :disabled="index === 0"
           :aria-label="t('cmsAdmin.review.previous')"
           @click="emit('step', -1)"
         >
           <ChevronUp class="size-4" />
-        </IconButton>
-        <IconButton
-          size="sm"
+        </AdminButton>
+        <AdminButton
+          variant="ghost"
+          size="icon"
           :disabled="index === total - 1"
           :aria-label="t('cmsAdmin.review.next')"
           @click="emit('step', 1)"
         >
           <ChevronDown class="size-4" />
-        </IconButton>
+        </AdminButton>
       </header>
 
-      <div class="flex min-h-0 flex-1 flex-col gap-7 overflow-y-auto p-6">
+      <div class="flex min-h-0 flex-1 flex-col gap-6 overflow-y-auto p-5">
         <div class="grid gap-2">
-          <div class="flex flex-wrap items-center gap-2 text-xs">
+          <div
+            class="flex flex-wrap items-center gap-3 text-xs text-admin-muted"
+          >
             <ChangeTag :change="item.change" :locale />
-            <span class="text-primary-comfy-canvas">
-              {{ t(`cmsAdmin.kind.${item.kind}`) }}
-            </span>
+            {{ t(`cmsAdmin.kind.${item.kind}`) }}
           </div>
-          <SheetTitle class="text-2xl text-balance">
+          <DialogTitle class="text-lg leading-snug font-medium text-balance">
             {{ item.title }}
-          </SheetTitle>
-          <SheetDescription class="text-sm text-primary-comfy-canvas">
+          </DialogTitle>
+          <DialogDescription class="text-xs text-admin-muted">
             {{ subtitle }}
-          </SheetDescription>
+          </DialogDescription>
         </div>
 
         <SubmissionReview
@@ -101,28 +98,27 @@ const isSubmission = computed(() => item.source === 'submission')
       </div>
 
       <footer
-        class="flex flex-wrap items-center gap-3 border-t border-transparency-white-t8 px-6 py-4"
+        class="flex min-h-14 shrink-0 flex-wrap items-center gap-3 border-t border-admin-line px-5 py-3"
       >
         <label
           v-if="isSubmission"
-          class="flex cursor-pointer items-center gap-3 text-sm"
+          class="flex cursor-pointer items-center gap-2.5 text-sm"
         >
           <Switch v-model="included" :disabled="!canApply" />
           {{ t('cmsAdmin.review.include') }}
         </label>
-        <p v-else class="text-xs text-primary-comfy-canvas">
+        <p v-else class="text-xs text-admin-muted">
           {{ t('cmsAdmin.draft.catalogLocked') }}
         </p>
-        <Button
+        <AdminButton
           v-if="isSubmission && canApply"
-          variant="ghost"
-          size="sm"
-          class="ml-auto text-destructive-light"
+          variant="dangerGhost"
+          class="ml-auto"
           @click="emit('reject')"
         >
           {{ t('cmsAdmin.review.reject') }}
-        </Button>
+        </AdminButton>
       </footer>
-    </SheetContent>
+    </AdminSheetContent>
   </Sheet>
 </template>

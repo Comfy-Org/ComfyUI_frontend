@@ -1,11 +1,11 @@
 <script setup lang="ts">
 import { Eye, Globe, List, X } from '@lucide/vue'
 import { computed, ref } from 'vue'
-import { cn } from '@comfyorg/tailwind-utils'
 
 import PreviewChangesSheet from '@/components/cms/PreviewChangesSheet.vue'
 import PreviewForm from '@/components/cms/PreviewForm.vue'
 import PreviewTimePicker from '@/components/cms/PreviewTimePicker.vue'
+import { adminButtonVariants } from '@/components/cms/ui/adminButton'
 import Popover from '@/components/ui/popover/Popover.vue'
 import PopoverContent from '@/components/ui/popover/PopoverContent.vue'
 import PopoverTrigger from '@/components/ui/popover/PopoverTrigger.vue'
@@ -64,27 +64,26 @@ const summary = computed(() =>
 )
 const changesOpen = ref(false)
 
-const pill =
-  'inline-flex items-center gap-2 rounded-full border-[1.5px] border-primary-comfy-ink/35 px-3 py-1 text-sm font-medium transition-colors hover:border-primary-comfy-ink hover:bg-primary-comfy-ink/5 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-primary-comfy-ink data-[state=open]:border-primary-comfy-ink'
+const pill = adminButtonVariants({ class: 'data-[state=open]:bg-admin-hover' })
 </script>
 
 <template>
   <div
     role="region"
     :aria-label="t('cmsAdmin.preview.label')"
-    class="sticky top-0 z-50 border-b-2 border-primary-comfy-ink bg-primary-comfy-yellow text-primary-comfy-ink"
+    class="sticky top-0 z-50 border-b border-admin-line bg-admin-chrome font-admin text-admin-fg"
   >
     <div class="flex flex-wrap items-center gap-2 px-4 py-2 lg:px-6">
-      <p class="mr-auto flex items-center gap-2 text-sm font-bold">
+      <p class="mr-auto flex items-center gap-2.5 text-sm">
         <span
-          class="grid size-7 place-items-center rounded-full bg-primary-comfy-ink text-primary-comfy-yellow"
+          class="grid size-6 place-items-center rounded-md bg-admin-fg text-admin-card"
           aria-hidden="true"
         >
-          <Eye class="size-4" />
+          <Eye class="size-3.5" />
         </span>
-        {{ t('cmsAdmin.preview.mode') }}
-        <span class="hidden font-medium opacity-75 sm:inline">
-          · {{ summary }}
+        <span class="font-medium">{{ t('cmsAdmin.preview.mode') }}</span>
+        <span class="hidden text-xs text-admin-muted sm:inline">
+          {{ summary }}
         </span>
       </p>
 
@@ -94,18 +93,18 @@ const pill =
         :return-to="pathname"
         role="group"
         :aria-label="t('cmsAdmin.preview.modeLabel')"
-        class="flex rounded-full bg-primary-comfy-ink/10 p-0.5"
+        class="inline-flex gap-1 rounded-lg border border-admin-field p-0.5"
       >
         <span
           aria-current="true"
-          class="rounded-full bg-primary-comfy-ink px-3 py-1 text-sm font-semibold text-primary-comfy-yellow"
+          class="inline-flex h-6.5 items-center rounded-md bg-admin-selected px-2.5 text-xs font-medium"
         >
           {{ t('cmsAdmin.preview.draftTab') }}
         </span>
         <button
           name="view"
           value="LIVE"
-          class="rounded-full px-3 py-1 text-sm font-semibold hover:bg-primary-comfy-ink/10"
+          class="inline-flex h-6.5 cursor-pointer items-center rounded-md px-2.5 text-xs font-medium text-admin-muted hover:text-admin-fg"
         >
           {{ t('cmsAdmin.preview.liveTab') }}
         </button>
@@ -125,17 +124,17 @@ const pill =
           :class="pill"
           :aria-label="t('cmsAdmin.preview.language')"
         >
-          <Globe class="size-4" aria-hidden="true" />
+          <Globe aria-hidden="true" />
           {{ languageCode }}
         </PopoverTrigger>
-        <PopoverContent class="grid w-48 gap-1 p-2">
+        <PopoverContent class="grid w-44 gap-0.5 p-1">
           <a
             v-for="language in languages"
             :key="language.code"
             :href="language.href"
             :lang="language.code"
             :aria-current="language.code === locale ? 'true' : undefined"
-            class="rounded-lg px-3 py-2 text-sm hover:bg-transparency-white-t8 aria-[current]:bg-transparency-white-t8 aria-[current]:font-semibold"
+            class="rounded-md px-2.5 py-1.5 text-sm hover:bg-admin-hover aria-[current]:bg-admin-line"
           >
             {{ language.label }}
           </a>
@@ -143,20 +142,13 @@ const pill =
       </Popover>
 
       <button type="button" :class="pill" @click="changesOpen = true">
-        <List class="size-4" aria-hidden="true" />
+        <List aria-hidden="true" />
         {{ t('cmsAdmin.preview.changesButton') }}
       </button>
 
       <PreviewForm :csrf action="exit" :return-to="pathname">
-        <button
-          :class="
-            cn(
-              pill,
-              'border-primary-comfy-ink bg-primary-comfy-ink font-semibold text-primary-comfy-yellow hover:bg-primary-comfy-ink'
-            )
-          "
-        >
-          <X class="size-4" aria-hidden="true" />
+        <button :class="adminButtonVariants({ variant: 'primary' })">
+          <X aria-hidden="true" />
           {{ t('cmsAdmin.preview.exit') }}
         </button>
       </PreviewForm>

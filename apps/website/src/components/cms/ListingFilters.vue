@@ -31,7 +31,7 @@ const label = (option: ListingFilter) =>
     <div
       role="group"
       :aria-label="t('cmsAdmin.draft.filterLabel')"
-      class="flex flex-wrap gap-2"
+      class="inline-flex max-w-full gap-1 overflow-x-auto rounded-lg border border-admin-field p-0.5"
     >
       <button
         v-for="option in options"
@@ -40,31 +40,29 @@ const label = (option: ListingFilter) =>
         :aria-pressed="filter === option"
         :class="
           cn(
-            'rounded-full border px-3 py-1 text-sm transition-colors',
+            'inline-flex h-6.5 shrink-0 cursor-pointer items-center gap-1.5 rounded-md px-2.5 text-xs font-medium whitespace-nowrap transition-colors outline-none focus-visible:outline-2 focus-visible:-outline-offset-2 focus-visible:outline-admin-fg',
             filter === option
-              ? 'border-primary-warm-white text-primary-warm-white'
-              : 'border-transparency-white-t20 text-primary-comfy-canvas hover:text-primary-warm-white'
+              ? 'bg-admin-selected text-admin-fg'
+              : 'text-admin-muted hover:text-admin-fg'
           )
         "
         @click="filter = option"
       >
         {{ label(option) }}
-        <span class="ml-1 text-xs text-primary-comfy-canvas tabular-nums">{{
-          counts[option]
-        }}</span>
+        <span class="text-admin-subtle tabular-nums">{{ counts[option] }}</span>
       </button>
     </div>
-    <label class="relative ml-auto w-full sm:w-72">
+    <label class="relative ml-auto w-full sm:w-64">
       <span class="sr-only">{{ searchLabel }}</span>
       <Search
-        class="absolute top-1/2 left-3 size-4 -translate-y-1/2 text-primary-comfy-canvas"
+        class="absolute top-1/2 left-2.5 size-3.5 -translate-y-1/2 text-admin-muted"
         aria-hidden="true"
       />
       <input
         v-model="query"
         type="search"
         :placeholder="searchLabel"
-        class="w-full rounded-full border border-transparency-white-t20 bg-site-bg-soft py-2 pr-4 pl-9 text-sm outline-none focus-visible:border-primary-comfy-yellow"
+        class="h-8 w-full rounded-lg border border-admin-field bg-transparent pr-3 pl-8 text-xs text-admin-fg outline-none placeholder:text-admin-subtle hover:border-ash-800 focus-visible:border-admin-control"
       />
     </label>
   </div>

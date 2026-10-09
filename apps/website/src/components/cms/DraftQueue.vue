@@ -8,7 +8,8 @@ import PublishDialog from '@/components/cms/PublishDialog.vue'
 import QueueRow from '@/components/cms/QueueRow.vue'
 import RejectDialog from '@/components/cms/RejectDialog.vue'
 import ReviewSheet from '@/components/cms/ReviewSheet.vue'
-import Button from '@/components/ui/button/Button.vue'
+import AdminButton from '@/components/cms/ui/AdminButton.vue'
+import PageHeader from '@/components/cms/ui/PageHeader.vue'
 import Checkbox from '@/components/ui/checkbox/Checkbox.vue'
 import type { Locale } from '@/i18n/translations'
 import { translationsFor } from '@/i18n/translations'
@@ -109,24 +110,16 @@ const canToggle = (item: QueueItem) => canApply && item.source === 'submission'
 
 <template>
   <div class="grid gap-5">
-    <header class="flex flex-wrap items-end justify-between gap-4">
-      <div class="max-w-2xl">
-        <h1 class="text-3xl font-semibold text-primary-warm-white">
-          {{ t('cmsAdmin.draft.title') }}
-        </h1>
-        <p class="mt-2 text-primary-comfy-canvas">
-          {{ t('cmsAdmin.draft.help') }}
-        </p>
-      </div>
-      <div class="flex flex-wrap gap-3">
-        <Button
-          href="/hub/models/?preview=DRAFT"
-          variant="ghost"
-          :prepend-icon="Eye"
-        >
+    <PageHeader
+      :title="t('cmsAdmin.draft.title')"
+      :description="t('cmsAdmin.draft.help')"
+    >
+      <template #actions>
+        <AdminButton href="/hub/models/?preview=DRAFT" :icon="Eye">
           {{ t('cmsAdmin.previewDraft') }}
-        </Button>
-        <Button
+        </AdminButton>
+        <AdminButton
+          variant="primary"
           :disabled="!canApply || included.length === 0"
           @click="publishing = true"
         >
@@ -137,13 +130,13 @@ const canToggle = (item: QueueItem) => canApply && item.source === 'submission'
               included.length
             )
           }}
-        </Button>
-      </div>
-    </header>
+        </AdminButton>
+      </template>
+    </PageHeader>
 
     <p
       v-if="!canApply"
-      class="rounded-2xl border border-transparency-white-t8 px-4 py-3 text-sm text-primary-comfy-canvas"
+      class="rounded-lg border border-admin-info/25 bg-admin-info/10 px-3 py-2 text-xs text-admin-fg"
     >
       {{ t('cmsAdmin.applyOnly') }}
     </p>
@@ -158,7 +151,7 @@ const canToggle = (item: QueueItem) => canApply && item.source === 'submission'
 
     <div
       v-if="held.length"
-      class="flex flex-wrap items-center gap-3 rounded-2xl border border-primary-comfy-orange/30 bg-primary-comfy-orange/5 px-4 py-3 text-sm"
+      class="flex flex-wrap items-center gap-2 rounded-lg border border-admin-warning/25 bg-admin-warning/10 py-1.5 pr-1.5 pl-3 text-xs"
     >
       <span class="mr-auto">
         {{
@@ -168,19 +161,14 @@ const canToggle = (item: QueueItem) => canApply && item.source === 'submission'
           })
         }}
       </span>
-      <Button variant="ghost" size="sm" @click="setAllIncluded(true)">
+      <AdminButton variant="ghost" size="sm" @click="setAllIncluded(true)">
         {{ t('cmsAdmin.draft.includeAgain') }}
-      </Button>
-      <Button
-        variant="ghost"
-        size="sm"
-        class="text-destructive-light"
-        @click="rejecting = held"
-      >
+      </AdminButton>
+      <AdminButton variant="dangerGhost" size="sm" @click="rejecting = held">
         {{
           t('cmsAdmin.draft.rejectHeld', { count: held.length }, held.length)
         }}
-      </Button>
+      </AdminButton>
     </div>
 
     <ListingFilters
@@ -193,10 +181,10 @@ const canToggle = (item: QueueItem) => canApply && item.source === 'submission'
 
     <div
       v-if="items.length === 0"
-      class="grid justify-items-center gap-2 rounded-2xl border border-transparency-white-t8 px-6 py-16 text-center"
+      class="grid justify-items-center gap-1 rounded-lg border border-dashed border-admin-line px-6 py-14 text-center"
     >
-      <p class="text-lg font-semibold">{{ t('cmsAdmin.draft.emptyTitle') }}</p>
-      <p class="text-primary-comfy-canvas">
+      <p class="text-sm font-medium">{{ t('cmsAdmin.draft.emptyTitle') }}</p>
+      <p class="text-xs text-admin-muted">
         {{ t('cmsAdmin.draft.emptyBody') }}
       </p>
     </div>
@@ -204,11 +192,11 @@ const canToggle = (item: QueueItem) => canApply && item.source === 'submission'
     <div
       v-else
       role="table"
-      class="overflow-hidden rounded-2xl border border-transparency-white-t8"
+      class="overflow-hidden rounded-lg border border-admin-line"
     >
       <div
         role="row"
-        class="grid grid-cols-[2.5rem_4rem_minmax(0,1fr)_1.5rem] items-center gap-4 bg-site-bg-soft px-4 py-2 text-xs tracking-widest text-primary-comfy-canvas uppercase md:grid-cols-[2.5rem_4rem_minmax(0,1fr)_11rem_10rem_1.5rem]"
+        class="grid min-h-10 grid-cols-[1rem_3.5rem_minmax(0,1fr)_1rem] items-center gap-3 border-b border-admin-line bg-admin-card px-4 text-xs font-medium tracking-[0.06em] text-admin-muted uppercase md:grid-cols-[1rem_3.5rem_minmax(0,1fr)_11rem_10rem_1rem]"
       >
         <span role="columnheader">
           <Checkbox
@@ -232,7 +220,7 @@ const canToggle = (item: QueueItem) => canApply && item.source === 'submission'
       </div>
       <p
         v-if="visible.length === 0"
-        class="border-t border-transparency-white-t8 px-6 py-10 text-center text-primary-comfy-canvas"
+        class="px-6 py-10 text-center text-xs text-admin-muted"
       >
         {{ t('cmsAdmin.draft.noMatches') }}
       </p>

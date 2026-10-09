@@ -3,6 +3,7 @@ import { computed, ref } from 'vue'
 
 import ContentListRow from '@/components/cms/ContentListRow.vue'
 import ListingFilters from '@/components/cms/ListingFilters.vue'
+import PageHeader from '@/components/cms/ui/PageHeader.vue'
 import type { Locale } from '@/i18n/translations'
 import { translationsFor } from '@/i18n/translations'
 import type { ListingFilter } from '@/lib/cms/format'
@@ -30,14 +31,10 @@ const visible = computed(() =>
 
 <template>
   <div class="grid gap-5">
-    <header class="max-w-2xl">
-      <h1 class="text-3xl font-semibold text-primary-warm-white">
-        {{ t('cmsAdmin.content.title') }}
-      </h1>
-      <p class="mt-2 text-primary-comfy-canvas">
-        {{ t('cmsAdmin.content.help') }}
-      </p>
-    </header>
+    <PageHeader
+      :title="t('cmsAdmin.content.title')"
+      :description="t('cmsAdmin.content.help')"
+    />
     <ListingFilters
       v-model:filter="filter"
       v-model:query="query"
@@ -45,12 +42,10 @@ const visible = computed(() =>
       :search-label="t('cmsAdmin.content.search')"
       :locale
     />
-    <ul
-      class="divide-y divide-transparency-white-t8 overflow-hidden rounded-2xl border border-transparency-white-t8"
-    >
+    <ul class="overflow-hidden rounded-lg border border-admin-line">
       <li
         v-if="visible.length === 0"
-        class="px-6 py-10 text-center text-primary-comfy-canvas"
+        class="px-6 py-10 text-center text-xs text-admin-muted"
       >
         {{ t('cmsAdmin.content.empty') }}
       </li>

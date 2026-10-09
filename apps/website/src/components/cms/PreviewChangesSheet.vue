@@ -1,10 +1,11 @@
 <script setup lang="ts">
+import { DialogDescription, DialogTitle } from 'reka-ui'
+
 import ChangeTag from '@/components/cms/ChangeTag.vue'
 import PreviewForm from '@/components/cms/PreviewForm.vue'
+import AdminSheetContent from '@/components/cms/ui/AdminSheetContent.vue'
+import { adminButtonVariants } from '@/components/cms/ui/adminButton'
 import Sheet from '@/components/ui/sheet/Sheet.vue'
-import SheetContent from '@/components/ui/sheet/SheetContent.vue'
-import SheetDescription from '@/components/ui/sheet/SheetDescription.vue'
-import SheetTitle from '@/components/ui/sheet/SheetTitle.vue'
 import type { Locale } from '@/i18n/translations'
 import { translationsFor } from '@/i18n/translations'
 import type { PreviewChange } from '@/lib/cms/format'
@@ -23,24 +24,24 @@ const {
 const open = defineModel<boolean>('open', { required: true })
 const { t } = translationsFor(locale)
 const link =
-  'grid w-full gap-1 rounded-xl px-3 py-2 text-left text-primary-warm-white hover:bg-transparency-white-t8 aria-[current=page]:bg-transparency-white-t8'
+  'grid w-full cursor-pointer gap-1 rounded-lg px-3 py-2 text-left text-sm hover:bg-admin-hover aria-[current=page]:bg-admin-line'
 </script>
 
 <template>
   <Sheet v-model:open="open">
-    <SheetContent
+    <AdminSheetContent
       :close-label="t('cmsAdmin.review.close')"
-      class="w-full gap-0 bg-primary-comfy-ink-light sm:max-w-sm"
+      class="sm:max-w-sm"
     >
-      <div class="grid gap-1 p-6 pr-20">
-        <SheetTitle class="text-xl">
+      <div class="grid gap-1 border-b border-admin-line p-5 pr-14">
+        <DialogTitle class="text-base font-medium">
           {{ t('cmsAdmin.preview.changesTitle') }}
-        </SheetTitle>
-        <SheetDescription>
+        </DialogTitle>
+        <DialogDescription class="text-xs text-admin-muted">
           {{ t('cmsAdmin.preview.changesNote') }}
-        </SheetDescription>
+        </DialogDescription>
       </div>
-      <ul class="grid gap-1 overflow-y-auto px-3 pb-6">
+      <ul class="grid content-start gap-0.5 overflow-y-auto p-2">
         <li v-for="change in changes" :key="change.id">
           <PreviewForm
             v-if="change.launch"
@@ -51,10 +52,8 @@ const link =
             :return-to="change.page"
           >
             <button :class="link">
-              <span class="font-medium">{{ change.title }}</span>
-              <span
-                class="flex items-center gap-2 text-xs text-primary-comfy-orange"
-              >
+              <span>{{ change.title }}</span>
+              <span class="flex items-center gap-3 text-xs text-admin-warning">
                 <ChangeTag :change="change.change" :locale />
                 {{ change.detail }}
               </span>
@@ -66,22 +65,19 @@ const link =
             :aria-current="change.page === pathname ? 'page' : undefined"
             :class="link"
           >
-            <span class="font-medium">{{ change.title }}</span>
-            <span
-              class="flex items-center gap-2 text-xs text-primary-comfy-canvas"
-            >
+            <span>{{ change.title }}</span>
+            <span class="flex items-center gap-3 text-xs text-admin-muted">
               <ChangeTag :change="change.change" :locale />
               {{ change.detail }}
             </span>
           </a>
         </li>
       </ul>
-      <a
-        href="/admin/"
-        class="mx-6 mt-auto mb-6 rounded-2xl border border-transparency-white-t20 px-4 py-2 text-center text-sm hover:border-primary-comfy-yellow"
-      >
-        {{ t('cmsAdmin.preview.toAdmin') }}
-      </a>
-    </SheetContent>
+      <div class="mt-auto border-t border-admin-line p-3">
+        <a href="/admin/" :class="adminButtonVariants({ class: 'w-full' })">
+          {{ t('cmsAdmin.preview.toAdmin') }}
+        </a>
+      </div>
+    </AdminSheetContent>
   </Sheet>
 </template>

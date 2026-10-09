@@ -29,17 +29,21 @@ const stats = computed(() => [
 
 <template>
   <dl
-    class="grid grid-cols-2 divide-transparency-white-t8 overflow-hidden rounded-2xl border border-transparency-white-t8 md:grid-cols-4 md:divide-x"
+    class="grid grid-cols-2 gap-px overflow-hidden rounded-lg border border-admin-line bg-admin-line md:grid-cols-4"
   >
-    <div v-for="stat in stats" :key="stat.key" class="grid gap-0.5 px-5 py-3">
-      <dt class="text-xs text-primary-comfy-canvas">
+    <div
+      v-for="stat in stats"
+      :key="stat.key"
+      class="grid gap-1.5 bg-admin-card px-4 py-3"
+    >
+      <dt class="text-xs text-admin-muted">
         {{ t(`cmsAdmin.draft.${stat.key}`) }}
       </dt>
       <dd
         :class="
           cn(
-            'text-2xl font-semibold tabular-nums',
-            stat.warn && 'text-primary-comfy-orange'
+            'text-xl leading-none tabular-nums',
+            stat.warn && 'text-admin-warning'
           )
         "
       >

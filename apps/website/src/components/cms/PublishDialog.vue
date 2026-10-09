@@ -1,10 +1,10 @@
 <script setup lang="ts">
 import ChangeTag from '@/components/cms/ChangeTag.vue'
-import Button from '@/components/ui/button/Button.vue'
+import { DialogDescription, DialogTitle } from 'reka-ui'
+
+import AdminButton from '@/components/cms/ui/AdminButton.vue'
+import AdminDialogContent from '@/components/cms/ui/AdminDialogContent.vue'
 import Dialog from '@/components/ui/dialog/Dialog.vue'
-import DialogContent from '@/components/ui/dialog/DialogContent.vue'
-import DialogDescription from '@/components/ui/dialog/DialogDescription.vue'
-import DialogTitle from '@/components/ui/dialog/DialogTitle.vue'
 import type { Locale } from '@/i18n/translations'
 import { translationsFor } from '@/i18n/translations'
 import type { QueueItem } from '@/lib/cms/queue'
@@ -30,25 +30,25 @@ const { t } = translationsFor(locale)
 
 <template>
   <Dialog v-model:open="open">
-    <DialogContent :close-label="t('cmsAdmin.review.close')" class="grid gap-5">
-      <DialogTitle class="pr-14 text-2xl">
+    <AdminDialogContent :close-label="t('cmsAdmin.review.close')">
+      <DialogTitle class="pr-8 text-base font-medium text-balance">
         {{ t('cmsAdmin.publish.title', { count: items.length }, items.length) }}
       </DialogTitle>
       <ul
-        class="grid max-h-64 gap-1 overflow-y-auto rounded-2xl border border-transparency-white-t8 p-2"
+        class="grid max-h-64 overflow-y-auto rounded-lg border border-admin-line"
       >
         <li
           v-for="item in items"
           :key="item.id"
-          class="flex items-center gap-3 rounded-lg px-2 py-1.5 text-sm"
+          class="grid grid-cols-[6rem_minmax(0,1fr)] items-center gap-3 border-b border-admin-hover px-3 py-2 text-sm last:border-b-0"
         >
           <ChangeTag :change="item.change" :locale />
           <span class="truncate">{{ item.title }}</span>
         </li>
       </ul>
-      <DialogDescription class="grid gap-2 text-sm text-primary-comfy-canvas">
+      <DialogDescription class="grid gap-2 text-sm text-admin-muted">
         <span>{{ t('cmsAdmin.publish.body') }}</span>
-        <span v-if="heldCount" class="text-primary-comfy-orange">
+        <span v-if="heldCount" class="text-admin-warning">
           {{ t('cmsAdmin.publish.held', { count: heldCount }, heldCount) }}
         </span>
       </DialogDescription>
@@ -56,7 +56,7 @@ const { t } = translationsFor(locale)
         data-astro-reload
         method="post"
         action="/admin/actions"
-        class="flex flex-wrap justify-end gap-3"
+        class="flex flex-wrap justify-end gap-2 pt-1"
       >
         <input type="hidden" name="csrf" :value="csrf" />
         <input type="hidden" name="action" value="publish" />
@@ -71,11 +71,13 @@ const { t } = translationsFor(locale)
             :value="`${item.shareId}:${item.versionId}`"
           />
         </template>
-        <Button type="button" variant="ghost" @click="open = false">
+        <AdminButton @click="open = false">
           {{ t('cmsAdmin.publish.cancel') }}
-        </Button>
-        <Button type="submit">{{ t('cmsAdmin.publish.confirm') }}</Button>
+        </AdminButton>
+        <AdminButton type="submit" variant="primary">{{
+          t('cmsAdmin.publish.confirm')
+        }}</AdminButton>
       </form>
-    </DialogContent>
+    </AdminDialogContent>
   </Dialog>
 </template>

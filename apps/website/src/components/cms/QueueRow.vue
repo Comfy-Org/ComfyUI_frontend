@@ -47,13 +47,13 @@ const appears =
     role="row"
     :class="
       cn(
-        'grid cursor-pointer grid-cols-[2.5rem_4rem_minmax(0,1fr)_1.5rem] items-center gap-4 border-t border-transparency-white-t8 px-4 py-3 transition-colors hover:bg-transparency-white-t4 md:grid-cols-[2.5rem_4rem_minmax(0,1fr)_11rem_10rem_1.5rem]',
-        active && 'bg-transparency-white-t4'
+        'grid min-h-14 cursor-pointer grid-cols-[1rem_3.5rem_minmax(0,1fr)_1rem] items-center gap-3 border-b border-admin-hover px-4 py-2 text-sm transition-colors last:border-b-0 hover:bg-admin-hover md:grid-cols-[1rem_3.5rem_minmax(0,1fr)_11rem_10rem_1rem]',
+        active && 'bg-admin-line hover:bg-admin-line'
       )
     "
     @click="emit('open')"
   >
-    <span role="cell" @click.stop>
+    <span role="cell" class="flex" @click.stop>
       <Checkbox
         v-model="included"
         :disabled="!canToggle"
@@ -64,7 +64,7 @@ const appears =
     <QueueThumb
       role="cell"
       :src="item.thumbnail"
-      :class="cn('w-16', !included && 'opacity-40')"
+      :class="cn('w-14', !included && 'opacity-40')"
     />
     <span
       role="cell"
@@ -72,42 +72,37 @@ const appears =
     >
       <button
         type="button"
-        class="truncate text-left font-medium text-primary-warm-white outline-none focus-visible:underline"
+        class="cursor-pointer truncate text-left text-admin-fg outline-none focus-visible:underline"
         @click.stop="emit('open')"
       >
         {{ item.title }}
       </button>
       <span
-        class="flex flex-wrap items-center gap-2 text-xs text-primary-comfy-canvas"
+        class="flex flex-wrap items-center gap-x-3 gap-y-1 text-xs text-admin-muted"
       >
         <ChangeTag :change="item.change" :locale />
         {{ t(`cmsAdmin.kind.${item.kind}`) }}
-        <span v-if="!included" class="text-primary-comfy-orange">
-          · {{ t('cmsAdmin.draft.waits') }}
+        <span v-if="!included" class="text-admin-warning">
+          {{ t('cmsAdmin.draft.waits') }}
         </span>
       </span>
     </span>
     <span
       role="cell"
-      :class="cn('hidden min-w-0 text-sm md:grid', !included && 'opacity-50')"
+      :class="cn('hidden min-w-0 md:grid', !included && 'opacity-50')"
     >
       <span class="truncate">{{ source }}</span>
-      <span class="text-xs text-primary-comfy-canvas">{{ submitted }}</span>
+      <span class="text-xs text-admin-muted">{{ submitted }}</span>
     </span>
-    <span
-      role="cell"
-      :class="cn('hidden text-sm md:grid', !included && 'opacity-50')"
-    >
-      <span :class="cn(later && 'text-primary-comfy-orange')">{{
-        appears
-      }}</span>
-      <span v-if="later" class="text-xs text-primary-comfy-canvas">
+    <span role="cell" :class="cn('hidden md:grid', !included && 'opacity-50')">
+      <span :class="cn(later && 'text-admin-warning')">{{ appears }}</span>
+      <span v-if="later" class="text-xs text-admin-muted">
         {{ t('cmsAdmin.draft.hiddenUntil') }}
       </span>
     </span>
     <ChevronRight
       role="cell"
-      class="size-4 text-primary-comfy-canvas"
+      class="size-4 text-admin-subtle"
       aria-hidden="true"
     />
   </div>

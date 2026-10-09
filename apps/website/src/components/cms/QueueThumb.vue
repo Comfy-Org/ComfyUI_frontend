@@ -16,7 +16,7 @@ const isVideo = computed(
   <span
     :class="
       cn(
-        'grid aspect-3/2 shrink-0 place-items-center overflow-hidden rounded-lg bg-transparency-white-t8 text-primary-warm-gray',
+        'grid aspect-3/2 shrink-0 place-items-center overflow-hidden rounded-md border border-admin-line bg-admin-raised text-admin-subtle',
         className
       )
     "
@@ -37,6 +37,6 @@ const isVideo = computed(
       class="size-full object-cover"
       loading="lazy"
     />
-    <Workflow v-else class="size-5" />
+    <Workflow v-else class="size-4" />
   </span>
 </template>

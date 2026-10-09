@@ -32,7 +32,8 @@
       "label": "管理分区",
       "draft": "草稿",
       "content": "全部内容",
-      "history": "发布历史"
+      "history": "发布历史",
+      "tools": "工具"
     },
     "live": "线上 · 版本 {revision}",
     "previewDraft": "预览草稿",

@@ -19,7 +19,7 @@ const forwarded = useForwardPropsEmits(delegatedProps, emits)
     v-bind="forwarded"
     :class="
       cn(
-        'peer grid size-5 shrink-0 cursor-pointer place-items-center rounded-md border border-transparency-white-t20 transition-colors outline-none focus-visible:ring-3 focus-visible:ring-primary-comfy-yellow/50 disabled:cursor-not-allowed disabled:opacity-50 data-[state=checked]:border-primary-comfy-yellow data-[state=checked]:bg-primary-comfy-yellow data-[state=checked]:text-primary-comfy-ink data-[state=indeterminate]:border-primary-comfy-yellow data-[state=indeterminate]:text-primary-comfy-yellow',
+        'peer grid size-4 shrink-0 cursor-pointer place-items-center rounded-sm border border-admin-control transition-colors outline-none hover:border-admin-fg focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-admin-fg disabled:cursor-not-allowed disabled:opacity-40 data-[state=checked]:border-admin-fg data-[state=checked]:bg-admin-fg data-[state=checked]:text-admin-card data-[state=indeterminate]:border-admin-fg data-[state=indeterminate]:bg-admin-fg data-[state=indeterminate]:text-admin-card',
         className
       )
     "
@@ -27,10 +27,10 @@ const forwarded = useForwardPropsEmits(delegatedProps, emits)
     <CheckboxIndicator class="grid place-items-center">
       <Minus
         v-if="state === 'indeterminate'"
-        class="size-3.5"
+        class="size-3"
         aria-hidden="true"
       />
-      <Check v-else class="size-3.5" stroke-width="3" aria-hidden="true" />
+      <Check v-else class="size-3" stroke-width="3" aria-hidden="true" />
     </CheckboxIndicator>
   </CheckboxRoot>
 </template>

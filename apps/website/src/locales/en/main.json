@@ -32,7 +32,8 @@
       "label": "Admin sections",
       "draft": "Draft",
       "content": "All content",
-      "history": "Publish history"
+      "history": "Publish history",
+      "tools": "Tools"
     },
     "live": "Live · revision {revision}",
     "previewDraft": "Preview draft",

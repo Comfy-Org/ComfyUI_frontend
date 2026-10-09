@@ -5,6 +5,8 @@ import AdminShell from '@/components/cms/AdminShell.astro'
 import ContentList from '@/components/cms/ContentList.vue'
 import DraftQueue from '@/components/cms/DraftQueue.vue'
 import RollbackButton from '@/components/cms/RollbackButton.vue'
+import PageHeader from '@/components/cms/ui/PageHeader.vue'
+import StatusLabel from '@/components/cms/ui/StatusLabel.vue'
 import { resolveLocale } from '@/config/locales'
 import { siteAPI } from '@/lib/cms/admin'
 import { formatUtc } from '@/lib/cms/format'
@@ -41,7 +43,7 @@ const revertTarget = review.history.find(
 >
   {!parsed?.success && page === '' && <p
     role="alert"
-    class="mb-5 rounded-2xl border border-destructive-light/40 px-4 py-3 text-sm text-destructive-light"
+    class="mb-5 rounded-lg border border-admin-danger/30 bg-admin-danger/10 px-3 py-2 text-xs text-admin-danger-text"
   >
     {t('cmsAdmin.unavailable')}
   </p>}
@@ -60,40 +62,37 @@ const revertTarget = review.history.find(
     <ContentList client:load rows={rows} locale={locale} />
   )}
   {page === 'history' && <div class="grid gap-5">
-    <header class="max-w-2xl">
-      <h1 class="text-3xl font-semibold text-primary-warm-white">
-        {t('cmsAdmin.history.title')}
-      </h1>
-      <p class="mt-2 text-primary-comfy-canvas">
-        {t('cmsAdmin.history.help')}
-      </p>
-    </header>
-    {review.history.length === 0 && <p class="text-primary-comfy-canvas">
+    <PageHeader
+      title={t('cmsAdmin.history.title')}
+      description={t('cmsAdmin.history.help')}
+    />
+    {review.history.length === 0 && <p
+      class="rounded-lg border border-dashed border-admin-line px-6 py-14 text-center text-xs text-admin-muted"
+    >
       {t('cmsAdmin.history.empty')}
     </p>}
-    <ol class="grid gap-3">
+    {review.history.length > 0 && <ol
+      class="overflow-hidden rounded-lg border border-admin-line"
+    >
       {review.history.map((event) => {
         const current = event === revertTarget
         return <li
           class:list={[
-            'flex flex-wrap items-center gap-4 rounded-2xl border p-4',
-            current
-              ? 'border-primary-comfy-yellow/40'
-              : 'border-transparency-white-t8'
+            'flex min-h-14 flex-wrap items-center gap-x-4 gap-y-1 border-b border-admin-hover px-4 py-2 text-sm last:border-b-0',
+            current && 'bg-admin-hover'
           ]}
         >
           <div class="grid min-w-0 flex-1 gap-1">
-            <p
-              class="flex flex-wrap items-center gap-2 font-semibold text-primary-warm-white"
-            >
+            <p class="flex flex-wrap items-center gap-3">
               {t(`cmsAdmin.history.action.${event.action}`)}
-              {current && <span
-                class="rounded-full bg-primary-comfy-yellow px-2 text-xs text-primary-comfy-ink"
-              >
-                {t('cmsAdmin.history.liveNow')}
-              </span>}
+              {current && (
+                <StatusLabel
+                  tone="success"
+                  label={t('cmsAdmin.history.liveNow')}
+                />
+              )}
             </p>
-            <p class="text-sm text-primary-comfy-canvas">
+            <p class="text-xs text-admin-muted">
               <time datetime={event.created_at}>
                 {formatUtc(event.created_at, locale)}
               </time
@@ -112,6 +111,6 @@ const revertTarget = review.history.find(
           )}
         </li>
       })}
-    </ol>
+    </ol>}
   </div>}
 </AdminShell>

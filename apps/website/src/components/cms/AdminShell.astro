@@ -1,5 +1,7 @@
 ---
+import { ExternalLink, FileStack, History, Inbox, Users } from '@lucide/vue'
 import { cn } from '@comfyorg/tailwind-utils'
+import StatusLabel from '@/components/cms/ui/StatusLabel.vue'
 import BaseLayout from '@/layouts/BaseLayout.astro'
 
 interface Props {
@@ -15,73 +17,90 @@ const latest = session.review.history.find(
   (event) => event.action === 'PUBLISH' || event.action === 'REVERT'
 )
 const links = [
-  { key: 'draft', href: '/admin/', count: draftCount, hot: draftCount > 0 },
-  { key: 'content', href: '/admin/content/', count: contentCount, hot: false },
-  { key: 'history', href: '/admin/history/', count: undefined, hot: false }
+  { key: 'draft', href: '/admin/', icon: Inbox, count: draftCount },
+  {
+    key: 'content',
+    href: '/admin/content/',
+    icon: FileStack,
+    count: contentCount
+  },
+  { key: 'history', href: '/admin/history/', icon: History, count: undefined }
 ] as const
+const item =
+  'flex h-9 shrink-0 items-center gap-2 rounded-lg px-3 text-sm whitespace-nowrap text-admin-fg/80 transition-colors hover:bg-admin-hover hover:text-admin-fg focus-visible:outline-2 focus-visible:-outline-offset-2 focus-visible:outline-admin-fg [&_svg]:size-4 [&_svg]:shrink-0 [&_svg]:text-admin-muted'
 ---
 
-<BaseLayout title={t('cmsAdmin.title')} minimal noindex>
+<BaseLayout title={t('cmsAdmin.title')} bare noindex>
   <div
-    class="mx-auto grid max-w-7xl grid-cols-[minmax(0,1fr)] gap-8 px-6 pb-20 lg:grid-cols-[14rem_minmax(0,1fr)] lg:px-8"
+    class="grid min-h-screen grid-cols-[minmax(0,1fr)] bg-admin-page font-admin text-admin-fg lg:grid-cols-[15rem_minmax(0,1fr)]"
   >
-    <aside class="flex flex-col gap-6 lg:sticky lg:top-6 lg:self-start">
-      <p class="text-sm text-primary-comfy-canvas">{t('cmsAdmin.title')}</p>
+    <aside
+      class="flex flex-col gap-4 border-b border-admin-line bg-admin-chrome px-3 py-3 lg:sticky lg:top-0 lg:h-screen lg:border-r lg:border-b-0"
+    >
+      <p class="px-2 pt-1 text-sm font-medium text-admin-muted">
+        {t('cmsAdmin.title')}
+      </p>
       <nav
         aria-label={t('cmsAdmin.nav.label')}
-        class="-mx-2 flex gap-1 overflow-x-auto lg:flex-col"
+        class="flex gap-1 overflow-x-auto lg:flex-col"
       >
-        {links.map((link) => <a
-          href={link.href}
-          aria-current={current === link.key ? 'page' : undefined}
-          class={cn(
-            'flex items-center justify-between gap-3 rounded-xl px-3 py-2.5 text-sm whitespace-nowrap transition-colors hover:bg-transparency-white-t4 hover:text-primary-warm-white focus-visible:outline-2 focus-visible:outline-primary-comfy-yellow',
-            current === link.key
-              ? 'bg-transparency-white-t8 text-primary-warm-white'
-              : 'text-primary-comfy-canvas'
-          )}
-        >
-          {t(`cmsAdmin.nav.${link.key}`)}
-          {link.count !== undefined && <span
+        {links.map((link) => {
+          const active = current === link.key
+          return <a
+            href={link.href}
+            aria-current={active ? 'page' : undefined}
             class={cn(
-              'rounded-full px-2 text-xs tabular-nums',
-              link.hot
-                ? 'bg-primary-comfy-yellow font-semibold text-primary-comfy-ink'
-                : 'bg-transparency-white-t8'
+              item,
+              active && 'bg-admin-line text-admin-fg [&_svg]:text-admin-fg'
             )}
-            >{link.count}</span
-          >}
-        </a>)}
-        {Astro.locals.siteLocalAccess && <a
-          href="/admin/testers"
-          class="rounded-xl px-3 py-2.5 text-sm whitespace-nowrap text-primary-comfy-canvas hover:text-primary-warm-white"
-          >{t('cmsTesters.title')}</a
-        >}
+          >
+            <link.icon aria-hidden="true" />
+            <span class="flex-1">{t(`cmsAdmin.nav.${link.key}`)}</span>
+            {link.count !== undefined && <span
+              class="text-xs text-admin-muted tabular-nums"
+              >{link.count}</span
+            >}
+          </a>
+        })}
+        {Astro.locals.siteLocalAccess && (
+          <>
+            <p
+              class="mt-4 hidden h-6 items-center px-3 text-xs font-medium tracking-[0.06em] text-admin-subtle uppercase lg:flex"
+            >
+              {t('cmsAdmin.nav.tools')}
+            </p>
+            <a href="/admin/testers" class={item}>
+              <Users aria-hidden="true" />
+              {t('cmsTesters.title')}
+            </a>
+          </>
+        )}
       </nav>
       <div
-        class="hidden gap-1 rounded-2xl border border-transparency-white-t8 p-4 text-sm lg:grid"
+        class="mt-auto hidden gap-1 rounded-lg border border-admin-line p-3 lg:grid"
       >
-        <p
-          class="flex items-center gap-2 font-semibold text-primary-warm-white"
-        >
-          <span
-            class="size-2 rounded-full bg-primary-comfy-yellow"
-            aria-hidden="true"
-          ></span>
-          {t('cmsAdmin.live', { revision: session.review.live.revision_id })}
-        </p>
-        {latest && <p class="text-xs text-primary-comfy-canvas">
+        <StatusLabel
+          tone="success"
+          label={t('cmsAdmin.live', {
+            revision: session.review.live.revision_id
+          })}
+        />
+        {latest && <p class="text-xs text-admin-muted">
           {t('cmsAdmin.history.by', { actor: latest.actor_uid })}
         </p>}
         <a
           href="/hub/models/"
-          class="mt-2 text-xs text-primary-comfy-canvas underline-offset-4 hover:text-primary-comfy-yellow hover:underline"
-          >{t('cmsAdmin.liveSite')} →</a
+          class="mt-1 inline-flex items-center gap-1.5 text-xs text-admin-muted hover:text-admin-fg"
         >
+          {t('cmsAdmin.liveSite')}
+          <ExternalLink class="size-3" aria-hidden="true" />
+        </a>
       </div>
     </aside>
-    <section class="min-w-0">
-      <slot />
+    <section class="min-w-0 px-4 py-6 sm:px-8 lg:py-8">
+      <div class="mx-auto max-w-6xl">
+        <slot />
+      </div>
     </section>
   </div>
 </BaseLayout>

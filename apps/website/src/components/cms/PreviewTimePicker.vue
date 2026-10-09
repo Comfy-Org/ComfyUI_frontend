@@ -4,6 +4,7 @@ import { computed, ref } from 'vue'
 import { cn } from '@comfyorg/tailwind-utils'
 
 import PreviewForm from '@/components/cms/PreviewForm.vue'
+import { adminButtonVariants } from '@/components/cms/ui/adminButton'
 import Popover from '@/components/ui/popover/Popover.vue'
 import PopoverContent from '@/components/ui/popover/PopoverContent.vue'
 import PopoverTrigger from '@/components/ui/popover/PopoverTrigger.vue'
@@ -42,14 +43,12 @@ const label = now ? formatUtc(now, locale) : t('cmsAdmin.preview.now')
 <template>
   <Popover>
     <PopoverTrigger :class="triggerClass">
-      <Clock class="size-4" aria-hidden="true" />
+      <Clock aria-hidden="true" />
       <span
         :class="
           cn(
-            'size-2 rounded-full',
-            now
-              ? 'bg-primary-comfy-orange ring-1 ring-primary-comfy-ink'
-              : 'bg-primary-comfy-ink'
+            'size-1.5 rounded-full',
+            now ? 'bg-admin-warning' : 'bg-admin-success'
           )
         "
         aria-hidden="true"
@@ -64,19 +63,19 @@ const label = now ? formatUtc(now, locale) : t('cmsAdmin.preview.now')
         :return-to="pathname"
         class="grid gap-3"
       >
-        <label class="grid gap-2 text-xs text-primary-comfy-canvas">
+        <label class="grid gap-1.5 text-xs text-admin-muted">
           {{ t('cmsAdmin.preview.asOf') }}
           <input
             v-model="picked"
             type="datetime-local"
-            class="w-full rounded-xl border border-transparency-white-t20 bg-site-bg-soft px-3 py-2 text-sm text-primary-warm-white scheme-dark outline-none focus-visible:border-primary-comfy-yellow"
+            class="h-8 w-full rounded-lg border border-admin-field bg-admin-page px-2.5 text-xs text-admin-fg scheme-dark outline-none hover:border-ash-800 focus-visible:border-admin-control"
           />
         </label>
         <div class="flex flex-wrap gap-2">
           <button
             name="action"
             value="preview"
-            class="rounded-full bg-primary-comfy-yellow px-4 py-1.5 text-sm font-semibold text-primary-comfy-ink"
+            :class="adminButtonVariants({ variant: 'primary' })"
           >
             {{ t('cmsAdmin.preview.show') }}
           </button>
@@ -84,14 +83,16 @@ const label = now ? formatUtc(now, locale) : t('cmsAdmin.preview.now')
             v-if="now"
             name="action"
             value="now"
-            class="rounded-full border border-transparency-white-t20 px-4 py-1.5 text-sm"
+            :class="adminButtonVariants()"
           >
             {{ t('cmsAdmin.preview.backToNow') }}
           </button>
         </div>
       </PreviewForm>
-      <div v-if="launches.length" class="grid gap-2">
-        <p class="text-xs tracking-widest text-primary-comfy-canvas uppercase">
+      <div v-if="launches.length" class="grid gap-1.5">
+        <p
+          class="text-xs font-medium tracking-[0.06em] text-admin-muted uppercase"
+        >
           {{ t('cmsAdmin.preview.jump') }}
         </p>
         <PreviewForm
@@ -104,10 +105,10 @@ const label = now ? formatUtc(now, locale) : t('cmsAdmin.preview.now')
           :return-to="launch.page"
         >
           <button
-            class="grid w-full rounded-xl border border-transparency-white-t8 px-3 py-2 text-left hover:border-primary-comfy-yellow"
+            class="grid w-full cursor-pointer gap-0.5 rounded-lg border border-admin-line px-3 py-2 text-left text-sm hover:bg-admin-hover"
           >
-            <span class="font-medium">{{ launch.title }}</span>
-            <span class="text-xs text-primary-comfy-canvas">
+            <span>{{ launch.title }}</span>
+            <span class="text-xs text-admin-muted">
               {{ formatUtc(launch.at, locale) }}
             </span>
           </button>
