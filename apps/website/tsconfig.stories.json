@@ -7,6 +7,8 @@
     "skipLibCheck": true,
     "composite": true,
     "resolveJsonModule": true,
+    "allowImportingTsExtensions": true,
+    "noEmit": true,
     "esModuleInterop": true,
     "types": ["vite/client"],
     "paths": {
