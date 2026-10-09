@@ -22,8 +22,7 @@ class SaveImage extends LGraphNode {
   }
 }
 
-/** One Save Image node on the root graph, under the given raw id. */
-function canvasWith(rawNodeId: string) {
+function addRootSaveImageNode(rawNodeId: string) {
   const graph = new LGraph()
   const node = new SaveImage()
   node.id = toNodeId(rawNodeId)
@@ -45,7 +44,7 @@ function deliverExecutedFrame(rawNodeId: string) {
 
 describe('nodeOutputStore: outputs for insert_workflow-remapped node ids', () => {
   it('lands an executed output on a node with a plain numeric id', () => {
-    const node = canvasWith('9')
+    const node = addRootSaveImageNode('9')
 
     deliverExecutedFrame('9')
 
@@ -58,7 +57,7 @@ describe('nodeOutputStore: outputs for insert_workflow-remapped node ids', () =>
     // (`nodeToNodeLocatorId`) minted null for the same id — so the run
     // produced the image, the frame named this node, and the node stayed
     // empty while the image appeared in the chat panel.
-    const node = canvasWith(REMAPPED_ID)
+    const node = addRootSaveImageNode(REMAPPED_ID)
 
     deliverExecutedFrame(REMAPPED_ID)
 
@@ -66,7 +65,7 @@ describe('nodeOutputStore: outputs for insert_workflow-remapped node ids', () =>
   })
 
   it('resolves the image URL for an agent-inserted node', () => {
-    const node = canvasWith(REMAPPED_ID)
+    const node = addRootSaveImageNode(REMAPPED_ID)
 
     deliverExecutedFrame(REMAPPED_ID)
 
