@@ -5,6 +5,7 @@ interface BillingCapabilitiesMockState {
   canCancel: boolean
   canReactivate: boolean
   canChangeSeats: boolean
+  canManageMembers: boolean
   canInviteMembers: boolean
   canDowngradeToPersonal: boolean
 }
@@ -15,6 +16,7 @@ const defaultCapabilityState: BillingCapabilitiesMockState = {
   canCancel: true,
   canReactivate: true,
   canChangeSeats: true,
+  canManageMembers: true,
   canInviteMembers: true,
   canDowngradeToPersonal: true
 }
@@ -45,6 +47,7 @@ export function useBillingCapabilities() {
     canCancel: computed(() => capabilityState.canCancel),
     canReactivate: computed(() => capabilityState.canReactivate),
     canChangeSeats: computed(() => capabilityState.canChangeSeats),
+    canManageMembers: computed(() => capabilityState.canManageMembers),
     canInviteMembers: computed(() => capabilityState.canInviteMembers),
     canDowngradeToPersonal: computed(
       () => capabilityState.canDowngradeToPersonal
