@@ -3,10 +3,9 @@ description: >
   Reuses the screenshots a PR's E2E run already took. Every Playwright job in
   that run uploads a `<artifact-prefix>*` artifact holding the actual image of
   each failed screenshot assertion on its golden path, plus a manifest (see
-  scripts/playwright/snapshotUpdatesReporter.ts). This action waits for the
-  run for the PR head, requires an artifact from every Playwright job that
-  ran, and re-uploads the merged images as one artifact for
-  commit-snapshot-updates.
+  tools/snapshot-updates-reporter). This action waits for the run for the PR
+  head, requires an artifact from every Playwright job that ran, and
+  re-uploads the merged images as one artifact for commit-snapshot-updates.
 
 inputs:
   e2e-workflow:

@@ -12,7 +12,7 @@ import { join } from 'node:path'
 
 import { afterAll, describe, expect, it } from 'vitest'
 
-const ROOT = join(import.meta.dirname, '../..')
+const ROOT = join(import.meta.dirname, '../../..')
 const REPORTER = join(import.meta.dirname, 'snapshotUpdatesReporter.ts')
 
 const SPEC = `
