@@ -157,13 +157,7 @@ export const useSubscriptionDialog = () => {
                 }
               : {})
           },
-          // The legacy table hosts a PrimeVue Popover teleported to body; Reka
-          // modal mode traps focus and disables body pointer-events, making it
-          // unclickable. The unified table has no such overlay.
-          dialogComponentProps: {
-            ...legacyPricingDialogProps,
-            modal: false
-          }
+          dialogComponentProps: legacyPricingDialogProps
         })
         return
       }

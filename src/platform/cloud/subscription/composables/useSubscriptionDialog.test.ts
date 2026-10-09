@@ -425,9 +425,6 @@ describe('useSubscriptionDialog', () => {
       showPricingTable()
 
       const { dialogComponentProps } = mockShowLayoutDialog.mock.calls[0][0]
-      expect(dialogComponentProps).toMatchObject({
-        modal: false
-      })
       expectRekaPricingDialogProps(dialogComponentProps)
     })
 
