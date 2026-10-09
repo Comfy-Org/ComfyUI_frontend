@@ -153,6 +153,11 @@ describe('redactTelemetryUrls', () => {
       kind: 'bare token with a spaced query value',
       input: 'callback?f=a b&token=SECRET',
       expected: 'callback'
+    },
+    {
+      kind: 'digit-led root segment before more path',
+      input: 'GET /1/x?token=SECRET',
+      expected: 'GET /1/x'
     }
   ])('$kind', ({ input, expected }) => {
     it('redacts URL metadata', () => {
