@@ -8,6 +8,7 @@ import { getComfyApiBaseUrl } from '@/config/comfyApi'
 import { d, t } from '@/i18n'
 import { useAuthStore } from '@/stores/authStore'
 import type { components, operations } from '@/types/comfyRegistryTypes'
+import { escapeHtml } from '@/utils/htmlEscape'
 import { isAbortError } from '@/utils/typeGuardUtil'
 
 export enum EventType {
@@ -36,15 +37,20 @@ const TOOLTIP_PARAM_ALLOWLIST = [
   'duration'
 ] as const
 
-const DETAILS_COLUMN_PARAM_KEYS: readonly string[] = [
-  'amount',
-  'api_name',
-  'model'
-]
+type TooltipParamKey = (typeof TOOLTIP_PARAM_ALLOWLIST)[number]
 
-const ADDITIONAL_INFO_PARAM_KEYS = TOOLTIP_PARAM_ALLOWLIST.filter(
-  (key) => !DETAILS_COLUMN_PARAM_KEYS.includes(key)
-)
+const DETAILS_COLUMN_PARAM_KEYS: Partial<
+  Record<string, readonly TooltipParamKey[]>
+> = {
+  [EventType.CREDIT_ADDED]: ['amount'],
+  [EventType.API_USAGE_COMPLETED]: ['api_name', 'model']
+}
+
+function presentTooltipParamKeys(params: Record<string, unknown>) {
+  return TOOLTIP_PARAM_ALLOWLIST.filter(
+    (key) => params[key] != null && params[key] !== ''
+  )
+}
 
 const customerApiClient = axios.create({
   baseURL: getComfyApiBaseUrl(),
@@ -179,17 +185,20 @@ export const useCustomerEventsService = () => {
   }
 
   function hasAdditionalInfo(event: AuditLog) {
-    const params = event.params || {}
-    return ADDITIONAL_INFO_PARAM_KEYS.some((key) => params[key] !== undefined)
+    const shownInDetails =
+      DETAILS_COLUMN_PARAM_KEYS[event.event_type ?? ''] ?? []
+    return presentTooltipParamKeys(event.params || {}).some(
+      (key) => !shownInDetails.includes(key)
+    )
   }
 
   function getTooltipContent(event: AuditLog) {
     const params = event.params || {}
 
-    return TOOLTIP_PARAM_ALLOWLIST.filter((key) => params[key] !== undefined)
+    return presentTooltipParamKeys(params)
       .map((key) => {
         const formattedKey = formatJsonKey(key)
-        const formattedValue = formatJsonValue(params[key])
+        const formattedValue = escapeHtml(String(formatJsonValue(params[key])))
         return `<strong>${formattedKey}:</strong> ${formattedValue}`
       })
       .join('<br>')
