@@ -1779,13 +1779,7 @@ describe('graphTraversalUtil', () => {
   describe('executionIdToNodeLocatorId', () => {
     const REMAPPED_ID = 'insert:0fbd38ecb13037d0b3b0ca78b8a20a5a:root:node:9'
 
-    it('regression: keeps an insert_workflow-remapped root id whole instead of reading it as a subgraph path (PM-2037)', () => {
-      // comfy-multi-player remaps every node an `insert_workflow` carries to
-      // `insert:<opId>:root:node:<originalId>` (remap.ts), and the node lands
-      // directly on the root graph. Split on ':' this asks for a subgraph node
-      // called `insert`, finds none, and returns undefined — which silently
-      // discarded the `executed` frame's outputs, so an agent-inserted Save
-      // Image node stayed empty while the image appeared in chat.
+    it('regression: resolves an insert_workflow-remapped root id to its root locator (PM-2037)', () => {
       const graph = createMockGraph([createMockNode(REMAPPED_ID)])
 
       expect(executionIdToNodeLocatorId(graph, REMAPPED_ID)).toBe(
