@@ -7,7 +7,9 @@ const isEnabled = vi.fn()
 const addError = vi.fn()
 const getInitConfiguration = vi.fn()
 const mockIsCloud = { value: false }
-const mockFrontendBucket = { value: undefined as string | undefined }
+const mockFrontendBucket = {
+  value: undefined as 'canary' | 'stable' | undefined
+}
 const captureDesktopException = vi.fn()
 const hostTelemetryEnabled = vi.fn(() => true)
 
