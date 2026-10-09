@@ -1,15 +1,20 @@
 <script setup lang="ts">
+import { ChevronDown, Maximize } from '@lucide/vue'
+import { computed } from 'vue'
+
+import { FORMAT_TRIGGER_CLASS } from '@/components/workshop/cinematic-studio/cinematic-menu-trigger'
+import CinematicMenu from '@/components/workshop/cinematic-studio/CinematicMenu.vue'
+import EditorSourceTile from '@/components/workshop/app-editor/EditorSourceTile.vue'
 import type { HandProductSwap } from '@/composables/useHandProductSwap'
 import type { Locale } from '@/i18n/translations'
+import {
+  SWAP_RESOLUTIONS,
+  outputSize
+} from '@/lib/workshop/hand-product-swap/contract'
 import { hc } from '@/lib/workshop/hand-product-swap/copy'
 import type { SwapImage } from '@/lib/workshop/hand-product-swap/examples'
-import EditorCollapsible from '@/components/workshop/app-editor/EditorCollapsible.vue'
-import EditorPanelRow from '@/components/workshop/app-editor/EditorPanelRow.vue'
-import HandSwapHandRow from './HandSwapHandRow.vue'
 import HandSwapProducts from './HandSwapProducts.vue'
-import HandSwapResolution from './HandSwapResolution.vue'
-import HandSwapSeed from './HandSwapSeed.vue'
-import { sectionMeta } from './sections'
+import HandSwapSeedBar from './HandSwapSeedBar.vue'
 
 const {
   hand,
@@ -21,26 +26,65 @@ const {
   locale?: Locale
 }>()
 
-const { phase } = swap
+const { phase, resolution, seed } = swap
+
+const resolutions = computed(() =>
+  SWAP_RESOLUTIONS.map((id) => ({
+    id,
+    label: id,
+    meta: hc(
+      'swap.resolution.size',
+      locale,
+      outputSize(id, hand.width, hand.height)
+    )
+  }))
+)
+const resolutionValue = computed({
+  get: () => resolution.value,
+  set: (id: string) => {
+    const picked = SWAP_RESOLUTIONS.find((option) => option === id)
+    if (picked) resolution.value = picked
+  }
+})
 </script>
 
 <template>
   <fieldset
     :disabled="phase.kind === 'running' || phase.kind === 'done'"
-    class="min-w-0"
+    class="flex min-w-0 flex-col gap-3 pt-2"
     data-testid="swap-panel"
   >
-    <HandSwapHandRow :hand :locale @file="swap.useHandFile" />
-    <EditorCollapsible
-      :title="hc('swap.product', locale)"
-      :meta="sectionMeta('product', swap)"
-      initially-open
-    >
-      <HandSwapProducts :swap :locale />
-    </EditorCollapsible>
-    <EditorPanelRow>
-      <HandSwapResolution :swap :locale />
-      <HandSwapSeed :swap :locale />
-    </EditorPanelRow>
+    <EditorSourceTile
+      kind="image"
+      :src="hand.url"
+      :name="hand.name"
+      :add-label="hc('swap.empty.upload', locale)"
+      :change-label="hc('swap.hand.change', locale)"
+      input-test-id="swap-hand-input"
+      @file="swap.useHandFile"
+    />
+    <HandSwapProducts :swap :locale />
+    <div class="grid grid-cols-2 gap-2">
+      <CinematicMenu
+        v-model="resolutionValue"
+        :options="resolutions"
+        :heading="hc('swap.resolution', locale)"
+        side="top"
+        tooltip
+        :trigger-class="FORMAT_TRIGGER_CLASS"
+      >
+        <Maximize class="size-3.5 text-primary-warm-gray" aria-hidden="true" />
+        <span class="flex-1 text-left">{{ resolution }}</span>
+        <ChevronDown
+          class="size-3.5 text-primary-warm-gray"
+          aria-hidden="true"
+        />
+      </CinematicMenu>
+      <HandSwapSeedBar
+        v-model="seed"
+        :label="hc('swap.seed', locale)"
+        :shuffle-label="hc('swap.seed.shuffle', locale)"
+      />
+    </div>
   </fieldset>
 </template>
