@@ -116,7 +116,8 @@ const canToggle = (item: QueueItem) => canApply && item.source === 'submission'
     >
       <template #actions>
         <AdminButton
-          href="/hub/models/?preview=DRAFT"
+          v-if="items.length > 0"
+          href="/hub/models/?preview=DRAFT&changes=open"
           target="_blank"
           rel="noopener"
           :icon="Eye"

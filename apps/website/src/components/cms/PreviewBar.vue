@@ -81,6 +81,12 @@ const changesOpen = ref(false)
 const bar = useTemplateRef('bar')
 let observer: ResizeObserver | undefined
 onMounted(() => {
+  const url = new URL(window.location.href)
+  if (url.searchParams.get('changes') === 'open') {
+    changesOpen.value = true
+    url.searchParams.delete('changes')
+    window.history.replaceState(null, '', url)
+  }
   observer = new ResizeObserver(([entry]) =>
     document.documentElement.style.setProperty(
       '--cms-preview-offset',
@@ -102,7 +108,7 @@ const pill = adminButtonVariants({ class: 'data-[state=open]:bg-admin-hover' })
     ref="bar"
     role="region"
     :aria-label="t('cmsAdmin.preview.label')"
-    class="sticky top-0 z-60 border-b border-admin-line bg-admin-chrome font-admin text-admin-fg"
+    class="sticky top-0 z-50 border-b border-admin-line bg-admin-chrome font-admin text-admin-fg"
   >
     <div class="flex flex-wrap items-center gap-2 px-4 py-2 lg:px-6">
       <p class="mr-auto flex items-center gap-2.5 text-sm">

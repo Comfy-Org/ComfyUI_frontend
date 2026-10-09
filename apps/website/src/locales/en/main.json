@@ -130,7 +130,7 @@
       },
       "note": "Note to the creator",
       "notePlaceholder": "What should they change before submitting again?",
-      "noteApi": "The reason and note reach the creator once the review API accepts them.",
+      "noteApi": "Sending the reason and note to the creator isn't connected yet.",
       "confirm": "Reject"
     },
     "history": {
@@ -166,7 +166,7 @@
     "preview": {
       "label": "Preview controls",
       "mode": "Draft preview",
-      "changes": "{count} unpublished change | {count} unpublished changes",
+      "changes": "{count} page change | {count} page changes",
       "timeTravel": "time travel on",
       "liveMode": "Live site",
       "liveSummary": "What visitors see now",
@@ -181,7 +181,7 @@
       "language": "Language",
       "changesButton": "Changes",
       "changesTitle": "Changes in this draft",
-      "changesNote": "Visitors keep seeing the live site until you publish.",
+      "changesNote": "Pages this draft changes. Workflow submissions are checked in Comfy Cloud, so they aren't listed here. Visitors keep seeing the live site until you publish.",
       "toAdmin": "Back to the draft",
       "exit": "Exit preview"
     },

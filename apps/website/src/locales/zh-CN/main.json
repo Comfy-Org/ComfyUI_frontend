@@ -130,7 +130,7 @@
       },
       "note": "给创作者的备注",
       "notePlaceholder": "重新提交前需要修改什么？",
-      "noteApi": "审核 API 支持后，原因和备注会发送给创作者。",
+      "noteApi": "向创作者发送原因和备注的功能尚未接入。",
       "confirm": "拒绝"
     },
     "history": {
@@ -166,7 +166,7 @@
     "preview": {
       "label": "预览控件",
       "mode": "草稿预览",
-      "changes": "{count} 项未发布更改",
+      "changes": "{count} 个页面更改",
       "timeTravel": "时间穿越已开启",
       "liveMode": "线上站点",
       "liveSummary": "访客当前看到的内容",
@@ -181,7 +181,7 @@
       "language": "语言",
       "changesButton": "更改",
       "changesTitle": "本草稿中的更改",
-      "changesNote": "发布前访客看到的仍是线上网站。",
+      "changesNote": "此草稿更改的页面。工作流提交在 Comfy Cloud 中检查，因此不在此列出。发布前访客看到的仍是线上网站。",
       "toAdmin": "返回草稿",
       "exit": "退出预览"
     },

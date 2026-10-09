@@ -5,6 +5,8 @@ import { buildQueue } from '@/lib/cms/queue'
 
 const session = Astro.locals.site
 const preview = session?.preview
+const adminPage =
+  Astro.url.pathname === '/admin' || Astro.url.pathname.startsWith('/admin/')
 const changes = session
   ? buildQueue(session.review, []).flatMap((item) =>
       item.source === 'catalog'
@@ -22,7 +24,7 @@ const changes = session
   : []
 ---
 
-{session && preview && (
+{session && preview && !adminPage && (
   <PreviewBar
     client:load
     csrf={session.csrf}
