@@ -4604,8 +4604,7 @@
     "title": "电影工作室",
     "beta": "测试版",
     "repo": {
-      "view": "在 GitHub 上查看",
-      "soon": "GitHub · 即将推出"
+      "view": "在 GitHub 上查看"
     },
     "meta": {
       "description": "导演电影感静帧：选择摄影机、景别、光线、胶片与调色，然后通过 Comfy Router 运行任意图像模型。"

@@ -5211,8 +5211,7 @@
     "title": "Cinematic Studio",
     "beta": "Beta",
     "repo": {
-      "view": "View on GitHub",
-      "soon": "GitHub · Coming soon"
+      "view": "View on GitHub"
     },
     "meta": {
       "description": "Direct cinematic stills: pick the camera, shot, light, film and grade, then run any image model through the Comfy Router."
