@@ -1,8 +1,9 @@
 <script setup lang="ts">
+import { ArrowRight } from '@lucide/vue'
 import { computed, onMounted } from 'vue'
 
 import PlayOverlay from '@/components/blocks/PlayOverlay.vue'
-import ButtonPill from '@/components/ui/button-pill/ButtonPill.vue'
+import Button from '@/components/ui/button/Button.vue'
 
 import { prefersReducedMotion } from '@/composables/useReducedMotion'
 import type { NavFeatured } from '@/data/mainNavigation'
@@ -58,11 +59,11 @@ function pauseBeforeAutoplayLimit({ currentTarget }: Event) {
 </script>
 
 <template>
-  <li class="shrink-0">
+  <li class="flex shrink-0">
     <a
       :href="featured.cta.href"
       :aria-label="featured.cta.ariaLabel"
-      class="group/pill-trigger relative block"
+      class="group/pill-trigger relative flex flex-col"
       @click="captureNavFeaturedCardClicked(eventProperties())"
     >
       <video
@@ -97,10 +98,13 @@ function pauseBeforeAutoplayLimit({ currentTarget }: Event) {
       <p class="mt-4 font-extrabold uppercase">
         {{ featured.title }}
       </p>
-      <div class="mt-1">
-        <ButtonPill as="span" icon-position="left" variant="ghost">
+      <div class="mt-auto pt-1">
+        <Button as="span" variant="link" size="sm">
           {{ featured.cta.label }}
-        </ButtonPill>
+          <template #append>
+            <ArrowRight class="size-4" aria-hidden="true" />
+          </template>
+        </Button>
       </div>
     </a>
   </li>
