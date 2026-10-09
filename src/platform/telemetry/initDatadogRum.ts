@@ -14,6 +14,17 @@ const DATADOG_ENV_BY_HOSTNAME = new Map<string, DeployEnv>([
 ])
 const FRONTEND_CONTEXT_FETCH_TIMEOUT_MS = 1_000
 let initializationPromise: Promise<void> | undefined
+let resolvedBucket: string | undefined
+
+/**
+ * The canary/stable split, resolved once from the deploy's own
+ * `X-Frontend-Bucket` response header rather than inferred from a release or
+ * version string (D25) — other telemetry sinks that want the same fact
+ * should read this instead of re-fetching it.
+ */
+export function getFrontendBucket(): string | undefined {
+  return resolvedBucket
+}
 
 async function setFrontendContext(): Promise<void> {
   const response = await fetch(window.location.origin, {
@@ -26,10 +37,8 @@ async function setFrontendContext(): Promise<void> {
   const frontendVersion = response.headers.get('X-Frontend-Version')
   if (frontendVersion !== __COMFYUI_FRONTEND_COMMIT__) return
 
-  datadogRum.setGlobalContextProperty(
-    'bucket',
-    response.headers.get('X-Frontend-Bucket') ?? 'stable'
-  )
+  resolvedBucket = response.headers.get('X-Frontend-Bucket') ?? 'stable'
+  datadogRum.setGlobalContextProperty('bucket', resolvedBucket)
   datadogRum.setGlobalContextProperty('version', frontendVersion)
 }
 

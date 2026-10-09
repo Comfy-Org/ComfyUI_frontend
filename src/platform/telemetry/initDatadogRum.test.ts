@@ -8,7 +8,7 @@ vi.mock(import('./manualRefreshTracker'), () => ({
 }))
 
 import { rumBeforeSend } from './datadogRumBeforeSend'
-import { initDatadogRum } from './initDatadogRum'
+import { getFrontendBucket, initDatadogRum } from './initDatadogRum'
 import { trackUserManualRefresh } from './manualRefreshTracker'
 
 describe('initDatadogRum', () => {
@@ -85,6 +85,7 @@ describe('initDatadogRum', () => {
       version: __COMFYUI_FRONTEND_COMMIT__
     })
     expect(datadogRum.init).toHaveBeenCalledOnce()
+    expect(getFrontendBucket()).toBe('canary')
   })
 
   it('serializes concurrent initialization', async () => {
@@ -131,6 +132,7 @@ describe('initDatadogRum', () => {
       comfyui_frontend_version: __COMFYUI_FRONTEND_VERSION__,
       version: __COMFYUI_FRONTEND_COMMIT__
     })
+    expect(getFrontendBucket()).toBe('stable')
   })
 
   it('leaves traffic unclassified when the frontend version is absent', async () => {

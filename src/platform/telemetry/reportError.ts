@@ -7,6 +7,7 @@ import type { ComfyDesktop2TelemetryProperties } from '@comfyorg/comfyui-desktop
 import { REPORTED_ERROR_PREFIX } from '@comfyorg/shared-frontend-utils/telemetry'
 
 import { isCloud } from '@/platform/distribution/types'
+import { getFrontendBucket } from '@/platform/telemetry/initDatadogRum'
 import { isHostTelemetryEnabled } from '@/platform/telemetry/hostTelemetryEnabled'
 import { toError } from '@/utils/errorUtil'
 
@@ -87,7 +88,7 @@ const definedEntriesOf = <V>(
   )
 
 /** Written from `options`, so a caller tag of the same name never lands. */
-const RESERVED_TAG_KEYS = new Set(['error_type', 'level', 'surface'])
+const RESERVED_TAG_KEYS = new Set(['error_type', 'level', 'surface', 'bucket'])
 
 let dispatching = false
 
@@ -169,7 +170,11 @@ function dispatch(
 ): DeliveryState {
   const { errorType, surface, level } = options
   const context = definedEntriesOf(options.context)
-  const tags = definedTagsOf(options.tags)
+  const bucket = getFrontendBucket()
+  const tags = {
+    ...definedTagsOf(options.tags),
+    ...(bucket ? { bucket } : {})
+  }
   const sentryLive = !alreadyDelivered.sentry && isSentryEnabled()
   const datadogLive = !alreadyDelivered.datadog && isDatadogRumLive()
   let sentryDelivered = alreadyDelivered.sentry
