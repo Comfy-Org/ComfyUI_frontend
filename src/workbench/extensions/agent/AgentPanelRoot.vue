@@ -355,8 +355,6 @@ function onDismissCreditTransitionNotice(): void {
 
 function onCreditTransitionNoticeShown(): void {
   const telemetry = useTelemetry()
-  // Claiming before telemetry exists would spend the episode's one impression
-  // on a report nobody receives.
   if (!telemetry) return
   if (
     !agentPanelStore.claimCreditTransitionNoticeImpression(
