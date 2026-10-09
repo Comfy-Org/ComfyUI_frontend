@@ -5,6 +5,7 @@ import { extractWorkflow } from '@/platform/remote/comfyui/jobs/fetchJobs'
 import type {
   APITaskType,
   JobListItem,
+  JobStatus,
   TaskType
 } from '@/platform/remote/comfyui/jobs/jobTypes'
 import type {
@@ -333,18 +334,9 @@ export const useQueueStore = defineStore('queue', () => {
   }
 
   function applyHistorySnapshot(
-    history: Awaited<ReturnType<typeof api.getHistory>>,
-    activeJobIds: Set<JobId> | null
+    history: Awaited<ReturnType<typeof api.getHistory>>
   ) {
     const currentHistory = toValue(historyTasks)
-
-    // A job the backend has moved to history while we still hold progress
-    // state for it lost its terminal WebSocket frame. Evicting it here is
-    // the only path that unsticks node progress in that case.
-    if (activeJobIds) {
-      const terminalJobIds = new Set(history.map((j) => j.id))
-      useExecutionStore().reconcileTerminalJobs(activeJobIds, terminalJobIds)
-    }
 
     // Sort by create_time descending and limit to maxItems
     const sortedHistory = [...history]
@@ -381,6 +373,32 @@ export const useQueueStore = defineStore('queue', () => {
     hasFetchedHistorySnapshot.value = true
   }
 
+  const terminalStatuses = new Set<JobStatus>([
+    'completed',
+    'failed',
+    'cancelled'
+  ])
+
+  async function reconcileTrackedJobs(
+    activeJobIds: Set<JobId>,
+    history: JobListItem[]
+  ) {
+    const executionStore = useExecutionStore()
+    const terminalJobIds = new Set(history.map((job) => job.id))
+    const unresolvedJobIds = executionStore.trackedJobIds.filter(
+      (jobId) => !activeJobIds.has(jobId) && !terminalJobIds.has(jobId)
+    )
+    const details = await Promise.all(
+      unresolvedJobIds.map((jobId) => api.getJobDetail(jobId))
+    )
+    for (const detail of details) {
+      if (detail && terminalStatuses.has(detail.status)) {
+        terminalJobIds.add(detail.id)
+      }
+    }
+    executionStore.reconcileTerminalJobs(activeJobIds, terminalJobIds)
+  }
+
   const update = async () => {
     if (updateState.inFlight) {
       updateState.dirty = true
@@ -414,10 +432,14 @@ export const useQueueStore = defineStore('queue', () => {
 
       if (activeJobIds) {
         useExecutionStore().reconcileInitializingJobs(activeJobIds)
+        await reconcileTrackedJobs(
+          activeJobIds,
+          historyResult.status === 'fulfilled' ? historyResult.value : []
+        )
       }
 
       if (historyResult.status === 'fulfilled') {
-        applyHistorySnapshot(historyResult.value, activeJobIds)
+        applyHistorySnapshot(historyResult.value)
       } else {
         console.error('Failed to fetch history:', historyResult.reason)
       }

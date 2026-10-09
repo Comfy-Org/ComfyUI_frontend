@@ -45,7 +45,7 @@ import type { AppMode } from '@/utils/appMode'
 import { isAppModeValue } from '@/utils/appMode'
 import { classifyCloudValidationError } from '@/utils/executionErrorUtil'
 import { executionIdToNodeLocatorId } from '@/utils/graphTraversalUtil'
-import { createRafCoalescer } from '@/utils/rafBatch'
+import { createRafBatch, createRafCoalescer } from '@/utils/rafBatch'
 import { zeroUuid } from '@/utils/uuid'
 
 type RuntimeExecutionError = Omit<
@@ -606,7 +606,7 @@ export const useExecutionStore = defineStore('execution', () => {
     }
 
     progressCoalescer.cancel()
-    if (e.detail == null) progressStateCoalescer.cancel()
+    if (e.detail == null) cancelPendingProgressStateUpdates()
 
     // Clear the current node progress when a new node starts executing
     _executingNodeProgress.value = null
@@ -646,13 +646,21 @@ export const useExecutionStore = defineStore('execution', () => {
     nodeProgressStatesByJob.value = pruned
   }
 
-  const progressStateCoalescer = createRafCoalescer<ProgressStateWsMessage>(
-    applyProgressState,
-    'raf:progress_state'
-  )
+  const pendingProgressStates = new Map<JobId, ProgressStateWsMessage>()
+  const progressStateBatch = createRafBatch(() => {
+    const pending = [...pendingProgressStates.values()]
+    pendingProgressStates.clear()
+    for (const detail of pending) applyProgressState(detail)
+  })
 
   function handleProgressState(e: CustomEvent<ProgressStateWsMessage>) {
-    progressStateCoalescer.push(e.detail)
+    pendingProgressStates.set(e.detail.prompt_id, e.detail)
+    progressStateBatch.schedule()
+  }
+
+  function cancelPendingProgressStateUpdates() {
+    pendingProgressStates.clear()
+    progressStateBatch.cancel()
   }
 
   /**
@@ -842,7 +850,7 @@ export const useExecutionStore = defineStore('execution', () => {
 
   function cancelPendingProgressUpdates() {
     progressCoalescer.cancel()
-    progressStateCoalescer.cancel()
+    cancelPendingProgressStateUpdates()
   }
 
   function handleStatus() {
@@ -901,6 +909,12 @@ export const useExecutionStore = defineStore('execution', () => {
     const runErrorKey = runErrorKeyForJob(e.detail.prompt_id)
     if (runErrorKey === null) {
       bufferPendingExecutionError({ detail: e.detail, endTime })
+      if (
+        !messageMatchesActiveWorkflow(e.detail.prompt_id, e.detail.workflow_id)
+      ) {
+        releaseFinishedJobRecords(e.detail.prompt_id)
+        return
+      }
       resetExecutionState(e.detail.prompt_id)
       return
     }
@@ -977,6 +991,10 @@ export const useExecutionStore = defineStore('execution', () => {
     const workflow = jobIdToWorkflow.get(detail.prompt_id)
     if (workflow) clearWorkflowStatus(workflow)
     clearInitializationByJobId(detail.prompt_id)
+    if (!messageMatchesActiveWorkflow(detail.prompt_id, detail.workflow_id)) {
+      releaseFinishedJobRecords(detail.prompt_id)
+      return true
+    }
     resetExecutionState(detail.prompt_id)
     return true
   }
@@ -1185,18 +1203,7 @@ export const useExecutionStore = defineStore('execution', () => {
     activeJobIds: Set<JobId>,
     terminalJobIds: Set<JobId>
   ) {
-    // queuedJobs covers the case the other three miss: a background job that
-    // got execution_start, so its tab reads Running, but no progress_state
-    // before its terminal frame was dropped. Without it that badge stays
-    // Running until the tab closes.
-    const tracked = new Set<JobId>([
-      ...Object.keys(nodeProgressStatesByJob.value),
-      ...Object.keys(queuedJobs.value),
-      ...initializingJobIds.value
-    ])
-    if (activeJobId.value) tracked.add(activeJobId.value)
-
-    for (const jobId of tracked) {
+    for (const jobId of trackedJobIds.value) {
       if (activeJobIds.has(jobId)) continue
       if (!terminalJobIds.has(jobId)) continue
       evictTerminalJob(jobId)
@@ -1313,9 +1320,9 @@ export const useExecutionStore = defineStore('execution', () => {
   }
 
   function handleProgressText(e: CustomEvent<ProgressTextWsMessage>) {
-    const { nodeId, text, prompt_id, workflow_id } = e.detail
+    const { nodeId, text, prompt_id } = e.detail
     if (!text || !nodeId) return
-    if (!belongsToActiveWorkflow(prompt_id, workflow_id)) return
+    if (!belongsToActiveWorkflow(prompt_id, undefined)) return
 
     const currentId = getNodeIdIfExecuting(nodeId)
     if (!currentId) return
@@ -1478,6 +1485,16 @@ export const useExecutionStore = defineStore('execution', () => {
     return result
   })
 
+  const trackedJobIds = computed<JobId[]>(() => {
+    const tracked = new Set<JobId>([
+      ...Object.keys(nodeProgressStatesByJob.value),
+      ...Object.keys(queuedJobs.value),
+      ...initializingJobIds.value
+    ])
+    if (activeJobId.value) tracked.add(activeJobId.value)
+    return [...tracked]
+  })
+
   const runningWorkflowCount = computed<number>(
     () => runningJobIds.value.length
   )
@@ -1506,6 +1523,7 @@ export const useExecutionStore = defineStore('execution', () => {
     nodeLocationProgressStates,
     nodeProgressStatesByJob,
     runningJobIds,
+    trackedJobIds,
     runningWorkflowCount,
     initializingJobIds,
     isActiveWorkflowRunning,

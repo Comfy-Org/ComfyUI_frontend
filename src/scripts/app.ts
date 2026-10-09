@@ -929,6 +929,13 @@ export class ComfyApp {
     })
 
     api.addEventListener('execution_error', ({ detail }) => {
+      if (
+        !useExecutionStore().belongsToActiveWorkflow(
+          detail.prompt_id,
+          detail.workflow_id
+        )
+      )
+        return
       const precondition = resolveAccountPrecondition({
         exceptionType: detail.exception_type,
         exceptionMessage: detail.exception_message
@@ -943,7 +950,9 @@ export class ComfyApp {
 
     api.addEventListener('b_preview_with_metadata', ({ detail }) => {
       // Enhanced preview with explicit node context
-      const { blob, displayNodeId, jobId } = detail
+      const { blob, displayNodeId, jobId, workflowId } = detail
+      if (!useExecutionStore().belongsToActiveWorkflow(jobId, workflowId))
+        return
       const { setNodePreviewsByExecutionId, revokePreviewsByExecutionId } =
         useNodeOutputStore()
       const displayNodeExecutionId = tryNormalizeNodeExecutionId(displayNodeId)

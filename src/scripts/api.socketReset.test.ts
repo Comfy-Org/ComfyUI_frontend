@@ -51,6 +51,16 @@ class FakeWebSocket {
 
 const flush = () => new Promise((resolve) => setTimeout(resolve, 0))
 
+function previewWithMetadata(metadata: Record<string, string>): ArrayBuffer {
+  const metadataBytes = new TextEncoder().encode(JSON.stringify(metadata))
+  const buffer = new ArrayBuffer(8 + metadataBytes.length + 1)
+  const view = new DataView(buffer)
+  view.setUint32(0, 4)
+  view.setUint32(4, metadataBytes.length)
+  new Uint8Array(buffer, 8, metadataBytes.length).set(metadataBytes)
+  return buffer
+}
+
 describe('ComfyApi realtime socket reset', () => {
   beforeEach(() => {
     FakeWebSocket.instances = []
@@ -191,5 +201,35 @@ describe('ComfyApi realtime socket reset', () => {
       node: '3'
     })
     expect(api.lastExecutingMessage).toBeNull()
+  })
+
+  it('preserves workflow ownership from binary preview metadata', async () => {
+    await api.resetSocket()
+    const socket = FakeWebSocket.instances[0]
+    socket.simulateOpen()
+
+    let received: unknown
+    const listener = (event: Event) => {
+      received = (event as CustomEvent).detail
+    }
+    api.addEventListener('b_preview_with_metadata', listener)
+
+    socket.handlers['message']?.({
+      data: previewWithMetadata({
+        node_id: '3',
+        display_node_id: '3',
+        parent_node_id: '3',
+        real_node_id: '3',
+        prompt_id: 'job-b',
+        workflow_id: 'workflow-b',
+        image_type: 'image/png'
+      })
+    })
+
+    api.removeEventListener('b_preview_with_metadata', listener)
+    expect(received).toMatchObject({
+      jobId: 'job-b',
+      workflowId: 'workflow-b'
+    })
   })
 })

@@ -73,7 +73,8 @@ import type {
 } from '@/platform/workflow/templates/types/template'
 import type {
   ComfyApiWorkflow,
-  ComfyWorkflowJSON
+  ComfyWorkflowJSON,
+  WorkflowId
 } from '@/platform/workflow/validation/schemas/workflowSchema'
 import type { SerializedNodeId } from '@/types/nodeId'
 import type {
@@ -286,6 +287,7 @@ interface BackendApiCalls {
     displayNodeId: string
     realNodeId: string
     jobId: string
+    workflowId?: WorkflowId
   }
   progress_text: ProgressTextWsMessage
   progress_state: ProgressStateWsMessage
@@ -1154,7 +1156,8 @@ export class ComfyApi extends EventTarget {
                 displayNodeId: metadata.display_node_id,
                 parentNodeId: metadata.parent_node_id,
                 realNodeId: metadata.real_node_id,
-                jobId: metadata.prompt_id
+                jobId: metadata.prompt_id,
+                workflowId: metadata.workflow_id
               })
 
               // Also dispatch legacy b_preview for backward compatibility

@@ -23,13 +23,15 @@ const SEEDS = [0, 1, 3, 7, 42, 99, 12345]
 
 function harness() {
   const sent: SentFrame[] = []
+  const binary: Buffer[] = []
   const ws = fromPartial<WebSocketRoute>({
     send: (message: string | Buffer) => {
       if (typeof message === 'string') sent.push(JSON.parse(message))
+      else binary.push(message)
     }
   })
   const execution = new ExecutionHelper(fromPartial<ComfyPage>({}), ws)
-  return { sent, simulator: new BackendSimulator(execution), execution }
+  return { sent, binary, simulator: new BackendSimulator(execution), execution }
 }
 
 /** The positions a workflow's frames occupy in the order they were sent. */
@@ -116,6 +118,25 @@ describe('BackendSimulator frame scripting', () => {
     expect(sent[0].data.workflow_id).toBe('wf-a')
     expect(sent[1].type).toBe('status')
     expect(sent[1].data).not.toHaveProperty('workflow_id')
+  })
+
+  it('stamps validation errors and binary previews with workflow ownership', () => {
+    const { sent, binary, execution } = harness()
+
+    execution.withWorkflowId('wf-a', () => {
+      execution.validationError('job-a', '1', {})
+      execution.latentPreview('job-a', '1')
+    })
+
+    expect(sent[0].data.workflow_id).toBe('wf-a')
+    const metadataLength = binary[0].readUInt32BE(4)
+    const metadata = JSON.parse(
+      binary[0].subarray(8, 8 + metadataLength).toString()
+    )
+    expect(metadata).toMatchObject({
+      prompt_id: 'job-a',
+      workflow_id: 'wf-a'
+    })
   })
 
   it('duplicates a frame', () => {

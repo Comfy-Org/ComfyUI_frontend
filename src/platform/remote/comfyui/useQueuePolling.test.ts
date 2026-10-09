@@ -3,7 +3,9 @@ import { nextTick } from 'vue'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 
 import { useQueuePolling } from '@/platform/remote/comfyui/useQueuePolling'
+import { useExecutionStore } from '@/stores/executionStore'
 import { useQueueStore } from '@/stores/queueStore'
+import { toNodeId } from '@/types/nodeId'
 
 function mountUseQueuePolling() {
   render({
@@ -50,6 +52,25 @@ describe('useQueuePolling', () => {
     await vi.advanceTimersByTimeAsync(16_000)
 
     expect(store.update).not.toHaveBeenCalled()
+  })
+
+  it('keeps polling while execution state awaits terminal reconciliation', async () => {
+    useExecutionStore().nodeProgressStatesByJob = {
+      'stuck-job': {
+        '1': {
+          value: 3,
+          max: 10,
+          state: 'running',
+          node_id: toNodeId('1'),
+          prompt_id: 'stuck-job'
+        }
+      }
+    }
+    mountUseQueuePolling()
+
+    await vi.advanceTimersByTimeAsync(8_000)
+
+    expect(store.update).toHaveBeenCalledOnce()
   })
 
   it('resets timer when loading completes', async () => {

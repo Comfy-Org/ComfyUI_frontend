@@ -219,12 +219,14 @@ export class ExecutionHelper {
    * Encodes the metadata and a tiny 1x1 PNG so the app creates a blob URL.
    */
   latentPreview(jobId: string, nodeId: string): void {
+    const workflowId = this.metadata?.workflow_id
     const metadata = JSON.stringify({
       node_id: nodeId,
       display_node_id: nodeId,
       parent_node_id: nodeId,
       real_node_id: nodeId,
       prompt_id: jobId,
+      ...(typeof workflowId === 'string' && { workflow_id: workflowId }),
       image_type: 'image/png'
     })
     const metadataBytes = new TextEncoder().encode(metadata)
@@ -305,20 +307,15 @@ export class ExecutionHelper {
     nodeId: string,
     nodeErrors: Record<string, NodeError>
   ): void {
-    this.requireWs().send(
-      JSON.stringify({
-        type: 'execution_error',
-        data: {
-          prompt_id: jobId,
-          timestamp: Date.now(),
-          node_id: nodeId,
-          node_type: 'Unknown',
-          exception_message: JSON.stringify({ node_errors: nodeErrors }),
-          exception_type: 'prompt_outputs_failed_validation',
-          traceback: []
-        }
-      })
-    )
+    this.emit('execution_error', {
+      prompt_id: jobId,
+      timestamp: Date.now(),
+      node_id: nodeId,
+      node_type: 'Unknown',
+      exception_message: JSON.stringify({ node_errors: nodeErrors }),
+      exception_type: 'prompt_outputs_failed_validation',
+      traceback: []
+    })
   }
 
   /** Send `execution_interrupted` WS event (user-initiated stop). */

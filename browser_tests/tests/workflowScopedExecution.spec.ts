@@ -184,6 +184,7 @@ test.describe('workflow-scoped execution', { tag: '@ui' }, () => {
     simulator.play(
       swapFrames(script, `${label}:executed`, `${label}:execution_success`)
     )
+    await comfyPage.nextFrame()
 
     // A single WebSocket delivers in send order, so this ordering only happens
     // on a reconnect replay. The terminal frame has already torn down the run,
@@ -338,9 +339,8 @@ test.describe('workflow-scoped execution', { tag: '@ui' }, () => {
 
     simulator.play([mine.start(), ...mine.nodeRunning(KSAMPLER_NODE, 1, 4)])
 
-    // Binary frames carry a JSON header with prompt_id but core does not stamp
-    // workflow_id on them, so this leans on the queue-time mapping.
     simulator.play([foreign.latentPreview(KSAMPLER_NODE)])
+    await comfyPage.nextFrame()
 
     // A leaked preview surfaces as a latent preview, not an image output, so
     // asserting on imageOutputs held whatever the gate did. Then this
@@ -348,8 +348,19 @@ test.describe('workflow-scoped execution', { tag: '@ui' }, () => {
     // and that the foreign one was processed and discarded rather than still
     // in flight.
     await expect(comfyPage.appMode.outputHistory.latentPreviews).toHaveCount(0)
+    expect(
+      await comfyPage.page.evaluate(
+        () => Object.values(window.app!.nodePreviewImages).flat().length
+      )
+    ).toBe(0)
 
     simulator.play([mine.latentPreview(KSAMPLER_NODE)])
+    await comfyPage.nextFrame()
     await expect(comfyPage.appMode.outputHistory.latentPreviews).toHaveCount(1)
+    expect(
+      await comfyPage.page.evaluate(
+        () => Object.values(window.app!.nodePreviewImages).flat().length
+      )
+    ).toBeGreaterThan(0)
   })
 })

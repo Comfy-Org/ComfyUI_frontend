@@ -71,6 +71,7 @@ vi.mock<unknown>(import('@/scripts/api'), () => ({
   api: {
     getQueue: vi.fn(),
     getHistory: vi.fn(),
+    getJobDetail: vi.fn(),
     clearItems: vi.fn(),
     deleteItem: vi.fn(),
     apiURL: vi.fn((path) => `/api${path}`),
@@ -366,6 +367,7 @@ describe('useQueueStore', () => {
 
   beforeEach(() => {
     store = useQueueStore()
+    vi.mocked(api.getJobDetail).mockResolvedValue(undefined)
   })
 
   const mockGetQueue = vi.mocked(api.getQueue)
@@ -803,6 +805,34 @@ describe('useQueueStore', () => {
 
       expect(
         executionStore.nodeProgressStatesByJob['hist-stuck']
+      ).toBeUndefined()
+    })
+
+    it('looks up a tracked job that fell outside the history page', async () => {
+      const executionStore = useExecutionStore()
+      executionStore.nodeProgressStatesByJob = {
+        'older-stuck': {
+          '1': {
+            value: 3,
+            max: 10,
+            state: 'running',
+            node_id: toNodeId('1'),
+            prompt_id: 'older-stuck'
+          }
+        }
+      }
+
+      mockGetQueue.mockResolvedValue({ Running: [], Pending: [] })
+      mockGetHistory.mockResolvedValue([createHistoryJob(2, 'newer-job')])
+      vi.mocked(api.getJobDetail).mockResolvedValue(
+        createHistoryJob(1, 'older-stuck')
+      )
+
+      await store.update()
+
+      expect(api.getJobDetail).toHaveBeenCalledWith('older-stuck')
+      expect(
+        executionStore.nodeProgressStatesByJob['older-stuck']
       ).toBeUndefined()
     })
   })

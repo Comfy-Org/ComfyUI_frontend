@@ -381,6 +381,39 @@ describe('executionStore workflow gating', () => {
       expect(store.activeJobId).toBe('job-a')
       expect(store.isJobInitializing('job-b')).toBe(false)
     })
+
+    it('does not reset the active workflow when a stamped background error arrives before storeJob', () => {
+      fire('execution_error', {
+        prompt_id: 'job-b',
+        workflow_id: WORKFLOW_B_ID,
+        timestamp: 2,
+        node_id: '1',
+        node_type: 'TestNode',
+        exception_message: 'fail',
+        exception_type: 'Error',
+        traceback: []
+      })
+
+      expect(store.activeJobId).toBe('job-a')
+    })
+
+    it('does not reset the active workflow for a background account precondition', () => {
+      queueJobFrom('job-b', workflowB)
+
+      fire('execution_error', {
+        prompt_id: 'job-b',
+        workflow_id: WORKFLOW_B_ID,
+        timestamp: 2,
+        node_id: '1',
+        node_type: 'PartnerApiNode',
+        exception_message:
+          'Payment Required: Please add credits to your account to use this node.',
+        exception_type: 'InsufficientFundsError',
+        traceback: []
+      })
+
+      expect(store.activeJobId).toBe('job-a')
+    })
   })
 
   describe('progress_state', () => {
@@ -415,6 +448,34 @@ describe('executionStore workflow gating', () => {
         nodes: { '1': nodeState('job-b', '1', 'running', 7) }
       })
 
+      expect(store.nodeProgressStatesByJob['job-b']?.['1']?.value).toBe(7)
+    })
+
+    it('retains the latest progress snapshot for each job in one frame', () => {
+      const handler = apiEventHandlers.get('progress_state')
+      assert(handler)
+      handler(
+        new CustomEvent('progress_state', {
+          detail: {
+            prompt_id: 'job-a',
+            workflow_id: WORKFLOW_A_ID,
+            nodes: { '1': nodeState('job-a', '1', 'running', 3) }
+          }
+        })
+      )
+      handler(
+        new CustomEvent('progress_state', {
+          detail: {
+            prompt_id: 'job-b',
+            workflow_id: WORKFLOW_B_ID,
+            nodes: { '1': nodeState('job-b', '1', 'running', 7) }
+          }
+        })
+      )
+
+      vi.advanceTimersToNextFrame()
+
+      expect(store.nodeProgressStatesByJob['job-a']?.['1']?.value).toBe(3)
       expect(store.nodeProgressStatesByJob['job-b']?.['1']?.value).toBe(7)
     })
 

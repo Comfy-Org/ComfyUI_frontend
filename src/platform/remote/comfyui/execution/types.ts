@@ -103,7 +103,6 @@ export interface ProgressTextWsMessage {
   nodeId: NodeId
   text: string
   prompt_id?: string
-  workflow_id?: WorkflowId
 }
 export interface NotificationWsMessage {
   value: string
