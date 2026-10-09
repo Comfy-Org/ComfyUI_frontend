@@ -5,6 +5,10 @@ import type Load3d from '@/extensions/core/load3d/Load3d'
 import Load3dUtils from '@/extensions/core/load3d/Load3dUtils'
 import { createLoad3d } from '@/extensions/core/load3d/createLoad3d'
 import { isLoad3dResultViewerNode } from '@/extensions/core/load3d/nodeTypes'
+import {
+  isAssetPreviewSupported,
+  persistThumbnail
+} from '@/platform/assets/utils/assetPreviewUtil'
 import type {
   AnimationItem,
   BackgroundRenderModeType,
@@ -20,7 +24,7 @@ import type {
 } from '@/extensions/core/load3d/interfaces'
 import { t } from '@/i18n'
 import type { LGraphNode } from '@/lib/litegraph/src/LGraphNode'
-import { useToastStore } from '@/platform/updates/common/toastStore'
+import { useToast } from '@/components/ui/toast/toastStore'
 import { api } from '@/scripts/api'
 import { useLoad3dService } from '@/services/load3dService'
 
@@ -37,6 +41,18 @@ interface Load3dViewerState {
   materialMode: MaterialMode
   gizmoEnabled: boolean
   gizmoMode: GizmoMode
+}
+
+function standaloneAssetName(modelUrl: string): string | null {
+  try {
+    const url = new URL(modelUrl, window.location.origin)
+    const filename =
+      url.searchParams.get('filename') ??
+      decodeURIComponent(url.pathname.split('/').pop() ?? '')
+    return filename || null
+  } catch {
+    return null
+  }
 }
 
 const DEFAULT_STANDALONE_CONFIG: Load3dViewerState = {
@@ -95,10 +111,20 @@ export const useLoad3dViewer = (node?: LGraphNode) => {
   ])
 
   const captureAdapterFlags = (source: Load3d) => {
-    isSplatModel.value = source.isSplatModel()
-    isPlyModel.value = source.isPlyModel()
-    sourceFormat.value = source.getSourceFormat()
-    const caps = source.getCurrentModelCapabilities()
+    isSplatModel.value =
+      typeof source.isSplatModel === 'function' ? source.isSplatModel() : false
+    isPlyModel.value =
+      typeof source.isPlyModel === 'function' ? source.isPlyModel() : false
+    sourceFormat.value =
+      typeof source.getSourceFormat === 'function'
+        ? source.getSourceFormat()
+        : null
+    const getCapabilities = source.getCurrentModelCapabilities
+    const caps =
+      typeof getCapabilities === 'function'
+        ? getCapabilities.call(source)
+        : undefined
+    if (!caps) return
     canFitToViewer.value = caps.fitToViewer
     canUseGizmo.value = caps.gizmoTransform
     canUseLighting.value = caps.lighting
@@ -140,8 +166,10 @@ export const useLoad3dViewer = (node?: LGraphNode) => {
       load3d.setBackgroundColor(newColor)
     } catch (error) {
       console.error('Error updating background color:', error)
-      useToastStore().addAlert(
-        t('toastMessages.failedToUpdateBackgroundColor', { color: newColor })
+      useToast().warning(
+        t('toastMessages.failedToUpdateBackgroundColor', {
+          color: newColor
+        })
       )
     }
   })
@@ -152,8 +180,10 @@ export const useLoad3dViewer = (node?: LGraphNode) => {
       load3d.toggleGrid(newValue)
     } catch (error) {
       console.error('Error toggling grid:', error)
-      useToastStore().addAlert(
-        t('toastMessages.failedToToggleGrid', { show: newValue ? 'on' : 'off' })
+      useToast().warning(
+        t('toastMessages.failedToToggleGrid', {
+          show: newValue ? 'on' : 'off'
+        })
       )
     }
   })
@@ -164,8 +194,10 @@ export const useLoad3dViewer = (node?: LGraphNode) => {
       load3d.toggleCamera(newCameraType)
     } catch (error) {
       console.error('Error toggling camera:', error)
-      useToastStore().addAlert(
-        t('toastMessages.failedToToggleCamera', { camera: newCameraType })
+      useToast().warning(
+        t('toastMessages.failedToToggleCamera', {
+          camera: newCameraType
+        })
       )
     }
   })
@@ -173,23 +205,23 @@ export const useLoad3dViewer = (node?: LGraphNode) => {
   watch(fov, (newFov) => {
     if (!load3d) return
     try {
-      load3d.setFOV(Number(newFov))
+      load3d.setFOV(newFov)
     } catch (error) {
       console.error('Error updating FOV:', error)
-      useToastStore().addAlert(
-        t('toastMessages.failedToUpdateFOV', { fov: newFov })
-      )
+      useToast().warning(t('toastMessages.failedToUpdateFOV', { fov: newFov }))
     }
   })
 
   watch(lightIntensity, (newValue) => {
     if (!load3d) return
     try {
-      load3d.setLightIntensity(Number(newValue))
+      load3d.setLightIntensity(newValue)
     } catch (error) {
       console.error('Error updating light intensity:', error)
-      useToastStore().addAlert(
-        t('toastMessages.failedToUpdateLightIntensity', { intensity: newValue })
+      useToast().warning(
+        t('toastMessages.failedToUpdateLightIntensity', {
+          intensity: newValue
+        })
       )
     }
   })
@@ -201,7 +233,7 @@ export const useLoad3dViewer = (node?: LGraphNode) => {
       hasBackgroundImage.value = !!newValue
     } catch (error) {
       console.error('Error updating background image:', error)
-      useToastStore().addAlert(t('toastMessages.failedToUpdateBackgroundImage'))
+      useToast().warning(t('toastMessages.failedToUpdateBackgroundImage'))
     }
   })
 
@@ -211,7 +243,7 @@ export const useLoad3dViewer = (node?: LGraphNode) => {
       load3d.setBackgroundRenderMode(newValue)
     } catch (error) {
       console.error('Error updating background render mode:', error)
-      useToastStore().addAlert(
+      useToast().warning(
         t('toastMessages.failedToUpdateBackgroundRenderMode', {
           mode: newValue
         })
@@ -225,8 +257,10 @@ export const useLoad3dViewer = (node?: LGraphNode) => {
       load3d.setUpDirection(newValue)
     } catch (error) {
       console.error('Error updating up direction:', error)
-      useToastStore().addAlert(
-        t('toastMessages.failedToUpdateUpDirection', { direction: newValue })
+      useToast().warning(
+        t('toastMessages.failedToUpdateUpDirection', {
+          direction: newValue
+        })
       )
     }
   })
@@ -237,8 +271,10 @@ export const useLoad3dViewer = (node?: LGraphNode) => {
       load3d.setMaterialMode(newValue)
     } catch (error) {
       console.error('Error updating material mode:', error)
-      useToastStore().addAlert(
-        t('toastMessages.failedToUpdateMaterialMode', { mode: newValue })
+      useToast().warning(
+        t('toastMessages.failedToUpdateMaterialMode', {
+          mode: newValue
+        })
       )
     }
   })
@@ -257,7 +293,7 @@ export const useLoad3dViewer = (node?: LGraphNode) => {
   })
 
   watch(selectedAnimation, (newValue) => {
-    if (load3d && newValue !== undefined) {
+    if (load3d) {
       load3d.updateSelectedAnimation(newValue)
     }
   })
@@ -328,7 +364,7 @@ export const useLoad3dViewer = (node?: LGraphNode) => {
     containerRef: HTMLElement,
     source: Load3d
   ) => {
-    if (!containerRef || !node) return
+    if (!node) return
 
     sourceLoad3d = source
 
@@ -365,24 +401,22 @@ export const useLoad3dViewer = (node?: LGraphNode) => {
         | ModelConfig
         | undefined
       const cameraConfig = node.properties['Camera Config'] as
-        | CameraConfig
+        | Partial<CameraConfig>
         | undefined
       const lightConfig = node.properties['Light Config'] as
         | LightConfig
         | undefined
 
-      isPreview.value = isLoad3dResultViewerNode(node.type ?? '')
+      isPreview.value = isLoad3dResultViewerNode(node.type)
 
       if (sceneConfig) {
         backgroundColor.value =
           sceneConfig.backgroundColor ||
           source.sceneManager.currentBackgroundColor
-        showGrid.value =
-          sceneConfig.showGrid ?? source.sceneManager.gridHelper.visible
+        showGrid.value = sceneConfig.showGrid
         backgroundRenderMode.value =
           sceneConfig.backgroundRenderMode ||
-          source.sceneManager.backgroundRenderMode ||
-          'tiled'
+          source.sceneManager.backgroundRenderMode
 
         const backgroundInfo = source.sceneManager.getCurrentBackgroundInfo()
         if (backgroundInfo.type === 'image' && sceneConfig.backgroundImage) {
@@ -396,7 +430,7 @@ export const useLoad3dViewer = (node?: LGraphNode) => {
 
       if (cameraConfig) {
         cameraType.value =
-          cameraConfig.cameraType || source.getCurrentCameraType()
+          cameraConfig.cameraType ?? source.getCurrentCameraType()
         fov.value =
           cameraConfig.fov || source.cameraManager.perspectiveCamera.fov
       }
@@ -408,10 +442,8 @@ export const useLoad3dViewer = (node?: LGraphNode) => {
       }
 
       if (modelConfig) {
-        upDirection.value =
-          modelConfig.upDirection || source.modelManager.currentUpDirection
-        materialMode.value =
-          modelConfig.materialMode || source.modelManager.materialMode
+        upDirection.value = modelConfig.upDirection
+        materialMode.value = modelConfig.materialMode
         if (modelConfig.gizmo) {
           gizmoEnabled.value = modelConfig.gizmo.enabled
           gizmoMode.value = modelConfig.gizmo.mode
@@ -438,9 +470,7 @@ export const useLoad3dViewer = (node?: LGraphNode) => {
       setupAnimationEvents()
     } catch (error) {
       console.error('Error initializing Load3d viewer:', error)
-      useToastStore().addAlert(
-        t('toastMessages.failedToInitializeLoad3dViewer')
-      )
+      useToast().warning(t('toastMessages.failedToInitializeLoad3dViewer'))
     }
   }
 
@@ -455,8 +485,6 @@ export const useLoad3dViewer = (node?: LGraphNode) => {
     containerRef: HTMLElement,
     modelUrl: string
   ) => {
-    if (!containerRef) return
-
     try {
       if (load3d) {
         await loadStandaloneModel(modelUrl)
@@ -475,18 +503,34 @@ export const useLoad3dViewer = (node?: LGraphNode) => {
         load3d.updateStatusMouseOnViewer(true)
       }
 
-      await load3d.loadModel(modelUrl)
+      // Viewer-lifetime setup belongs to instance creation, not to this
+      // request: a concurrent initializeStandaloneViewer() call reuses the
+      // instance through loadStandaloneModel() and can supersede this load.
+      isPreview.value = true
+      setupAnimationEvents()
+
+      const accepted = await load3d.loadModel(modelUrl)
+      if (!accepted) return
       currentModelUrl = modelUrl
       restoreStandaloneConfig(modelUrl)
       captureAdapterFlags(load3d)
-
-      isPreview.value = true
-
-      setupAnimationEvents()
+      persistStandaloneThumbnail(modelUrl)
     } catch (error) {
       console.error('Error initializing standalone 3D viewer:', error)
-      useToastStore().addAlert(t('toastMessages.failedToLoadModel'))
+      useToast().warning(t('toastMessages.failedToLoadModel'))
     }
+  }
+
+  const persistStandaloneThumbnail = (modelUrl: string) => {
+    if (!load3d || !isAssetPreviewSupported()) return
+    const name = standaloneAssetName(modelUrl)
+    if (!name) return
+    void load3d
+      .captureThumbnail(256, 256)
+      .then((dataUrl) => fetch(dataUrl))
+      .then((response) => response.blob())
+      .then((blob) => persistThumbnail(name, blob))
+      .catch(() => {})
   }
 
   /**
@@ -498,13 +542,15 @@ export const useLoad3dViewer = (node?: LGraphNode) => {
 
     try {
       saveStandaloneConfig()
-      await load3d.loadModel(modelUrl)
+      const accepted = await load3d.loadModel(modelUrl)
+      if (!accepted) return
       currentModelUrl = modelUrl
       restoreStandaloneConfig(modelUrl)
       captureAdapterFlags(load3d)
+      persistStandaloneThumbnail(modelUrl)
     } catch (error) {
       console.error('Error loading model in standalone viewer:', error)
-      useToastStore().addAlert('Failed to load 3D model')
+      useToast().warning(t('toastMessages.failedToLoadModel'))
     }
   }
 
@@ -566,8 +612,10 @@ export const useLoad3dViewer = (node?: LGraphNode) => {
       await load3d.exportModel(format)
     } catch (error) {
       console.error('Error exporting model:', error)
-      useToastStore().addAlert(
-        t('toastMessages.failedToExportModel', { format: format.toUpperCase() })
+      useToast().warning(
+        t('toastMessages.failedToExportModel', {
+          format: format.toUpperCase()
+        })
       )
     }
   }
@@ -605,46 +653,44 @@ export const useLoad3dViewer = (node?: LGraphNode) => {
 
     needApplyChanges.value = false
 
-    if (nodeValue.properties) {
-      nodeValue.properties['Scene Config'] = {
-        showGrid: initialState.value.showGrid,
-        backgroundColor: initialState.value.backgroundColor,
-        backgroundImage: initialState.value.backgroundImage,
-        backgroundRenderMode: initialState.value.backgroundRenderMode
-      }
+    nodeValue.properties['Scene Config'] = {
+      showGrid: initialState.value.showGrid,
+      backgroundColor: initialState.value.backgroundColor,
+      backgroundImage: initialState.value.backgroundImage,
+      backgroundRenderMode: initialState.value.backgroundRenderMode
+    }
 
-      nodeValue.properties['Camera Config'] = {
-        cameraType: initialState.value.cameraType,
-        fov: initialState.value.fov
-      }
+    nodeValue.properties['Camera Config'] = {
+      cameraType: initialState.value.cameraType,
+      fov: initialState.value.fov
+    }
 
-      nodeValue.properties['Light Config'] = {
-        intensity: initialState.value.lightIntensity
-      }
+    nodeValue.properties['Light Config'] = {
+      intensity: initialState.value.lightIntensity
+    }
 
-      const existingModelConfig = nodeValue.properties['Model Config'] as
-        | ModelConfig
-        | undefined
-      nodeValue.properties['Model Config'] = {
-        ...existingModelConfig,
-        upDirection: initialState.value.upDirection,
-        materialMode: initialState.value.materialMode,
-        gizmo: {
-          enabled: initialState.value.gizmoEnabled,
-          mode: initialState.value.gizmoMode,
-          position: { x: 0, y: 0, z: 0 },
-          rotation: { x: 0, y: 0, z: 0 },
-          scale: { x: 1, y: 1, z: 1 }
-        }
+    const existingModelConfig = nodeValue.properties['Model Config'] as
+      | ModelConfig
+      | undefined
+    nodeValue.properties['Model Config'] = {
+      ...existingModelConfig,
+      upDirection: initialState.value.upDirection,
+      materialMode: initialState.value.materialMode,
+      gizmo: {
+        enabled: initialState.value.gizmoEnabled,
+        mode: initialState.value.gizmoMode,
+        position: { x: 0, y: 0, z: 0 },
+        rotation: { x: 0, y: 0, z: 0 },
+        scale: { x: 1, y: 1, z: 1 }
       }
+    }
 
-      const currentCameraConfig = nodeValue.properties['Camera Config'] as
-        | CameraConfig
-        | undefined
-      nodeValue.properties['Camera Config'] = {
-        ...currentCameraConfig,
-        state: initialState.value.cameraState
-      }
+    const currentCameraConfig = nodeValue.properties['Camera Config'] as
+      | CameraConfig
+      | undefined
+    nodeValue.properties['Camera Config'] = {
+      ...currentCameraConfig,
+      state: initialState.value.cameraState
     }
   }
 
@@ -659,39 +705,37 @@ export const useLoad3dViewer = (node?: LGraphNode) => {
     const viewerCameraState = load3d.getCameraState()
     const nodeValue = node
 
-    if (nodeValue.properties) {
-      nodeValue.properties['Scene Config'] = {
-        showGrid: showGrid.value,
-        backgroundColor: backgroundColor.value,
-        backgroundImage: backgroundImage.value,
-        backgroundRenderMode: backgroundRenderMode.value
-      }
+    nodeValue.properties['Scene Config'] = {
+      showGrid: showGrid.value,
+      backgroundColor: backgroundColor.value,
+      backgroundImage: backgroundImage.value,
+      backgroundRenderMode: backgroundRenderMode.value
+    }
 
-      nodeValue.properties['Camera Config'] = {
-        cameraType: cameraType.value,
-        fov: fov.value,
-        state: viewerCameraState
-      }
+    nodeValue.properties['Camera Config'] = {
+      cameraType: cameraType.value,
+      fov: fov.value,
+      state: viewerCameraState
+    }
 
-      nodeValue.properties['Light Config'] = {
-        intensity: lightIntensity.value
-      }
+    nodeValue.properties['Light Config'] = {
+      intensity: lightIntensity.value
+    }
 
-      const gizmoTransform = load3d.getGizmoTransform()
-      const existingModelConfig = nodeValue.properties['Model Config'] as
-        | ModelConfig
-        | undefined
-      nodeValue.properties['Model Config'] = {
-        ...existingModelConfig,
-        upDirection: upDirection.value,
-        materialMode: materialMode.value,
-        gizmo: {
-          enabled: gizmoEnabled.value,
-          mode: gizmoMode.value,
-          position: gizmoTransform.position,
-          rotation: gizmoTransform.rotation,
-          scale: gizmoTransform.scale
-        }
+    const gizmoTransform = load3d.getGizmoTransform()
+    const existingModelConfig = nodeValue.properties['Model Config'] as
+      | ModelConfig
+      | undefined
+    nodeValue.properties['Model Config'] = {
+      ...existingModelConfig,
+      upDirection: upDirection.value,
+      materialMode: materialMode.value,
+      gizmo: {
+        enabled: gizmoEnabled.value,
+        mode: gizmoMode.value,
+        position: gizmoTransform.position,
+        rotation: gizmoTransform.rotation,
+        scale: gizmoTransform.scale
       }
     }
 
@@ -723,7 +767,7 @@ export const useLoad3dViewer = (node?: LGraphNode) => {
    */
   const getUploadSubfolder = () => {
     const resourceFolder = String(
-      node?.properties?.['Resource Folder'] ?? ''
+      node?.properties['Resource Folder'] ?? ''
     ).trim()
     return resourceFolder ? `3d/${resourceFolder}` : '3d'
   }
@@ -741,7 +785,7 @@ export const useLoad3dViewer = (node?: LGraphNode) => {
     }
 
     if (!load3d) {
-      useToastStore().addAlert(t('toastMessages.no3dScene'))
+      useToast().warning(t('toastMessages.no3dScene'))
       return
     }
 
@@ -758,7 +802,7 @@ export const useLoad3dViewer = (node?: LGraphNode) => {
       }
     } catch (error) {
       console.error('Error uploading background image:', error)
-      useToastStore().addAlert(t('toastMessages.failedToUploadBackgroundImage'))
+      useToast().warning(t('toastMessages.failedToUploadBackgroundImage'))
     }
   }
 
@@ -769,7 +813,7 @@ export const useLoad3dViewer = (node?: LGraphNode) => {
    */
   const handleModelDrop = async (file: File) => {
     if (!load3d) {
-      useToastStore().addAlert(t('toastMessages.no3dScene'))
+      useToast().warning(t('toastMessages.no3dScene'))
       return
     }
 
@@ -780,7 +824,7 @@ export const useLoad3dViewer = (node?: LGraphNode) => {
       )
 
       if (!uploadedPath) {
-        useToastStore().addAlert(t('toastMessages.fileUploadFailed'))
+        useToast().warning(t('toastMessages.fileUploadFailed'))
         return
       }
 
@@ -791,7 +835,8 @@ export const useLoad3dViewer = (node?: LGraphNode) => {
         )
       )
 
-      await load3d.loadModel(modelUrl)
+      const accepted = await load3d.loadModel(modelUrl)
+      if (!accepted) return
 
       captureAdapterFlags(load3d)
 
@@ -805,7 +850,7 @@ export const useLoad3dViewer = (node?: LGraphNode) => {
       }
     } catch (error) {
       console.error('Model drop failed:', error)
-      useToastStore().addAlert(t('toastMessages.failedToLoadModel'))
+      useToast().warning(t('toastMessages.failedToLoadModel'))
     }
   }
 

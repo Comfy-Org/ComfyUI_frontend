@@ -1,3 +1,4 @@
+import { expect } from '@playwright/test'
 import type { Locator, Page } from '@playwright/test'
 
 import type { ComfyPage } from '@e2e/fixtures/ComfyPage'
@@ -50,7 +51,9 @@ export class BuilderSelectHelper {
   async deleteInput(title: string) {
     const menu = this.getInputItemMenu(title)
     await menu.click()
-    await this.page.getByText('Delete', { exact: true }).click()
+    await this.page
+      .getByRole('menuitem', { name: 'Delete', exact: true })
+      .click()
     await this.comfyPage.nextFrame()
   }
 
@@ -62,11 +65,14 @@ export class BuilderSelectHelper {
   async renameInputViaMenu(title: string, newName: string) {
     const menu = this.getInputItemMenu(title)
     await menu.click()
-    await this.page.getByText('Rename', { exact: true }).click()
+    await this.page
+      .getByRole('menuitem', { name: 'Rename', exact: true })
+      .click()
 
     const input = this.page
       .getByTestId(TestIds.builder.ioItemTitle)
       .getByRole('textbox')
+    await expect(input).toBeFocused()
     await input.fill(newName)
     await this.page.keyboard.press('Enter')
     await this.comfyPage.nextFrame()
@@ -98,9 +104,12 @@ export class BuilderSelectHelper {
    */
   async renameWidget(popoverTrigger: Locator, newName: string) {
     await popoverTrigger.click()
-    await this.page.getByText('Rename', { exact: true }).click()
+    await this.page
+      .getByRole('menuitem', { name: 'Rename', exact: true })
+      .click()
 
     const dialogInput = this.page.getByRole('dialog').getByRole('textbox')
+    await expect(dialogInput).toBeFocused()
     await dialogInput.fill(newName)
     await this.page.keyboard.press('Enter')
     await dialogInput.waitFor({ state: 'hidden' })
@@ -114,10 +123,9 @@ export class BuilderSelectHelper {
    */
   async selectInputWidget(nodeTitle: string, widgetName: string) {
     await this.comfyPage.canvasOps.setScale(1)
-    const nodeRef = (
-      await this.comfyPage.nodeOps.getNodeRefsByTitle(nodeTitle)
-    )[0]
-    if (!nodeRef) throw new Error(`Node ${nodeTitle} not found`)
+    const nodeRefs = await this.comfyPage.nodeOps.getNodeRefsByTitle(nodeTitle)
+    if (nodeRefs.length === 0) throw new Error(`Node ${nodeTitle} not found`)
+    const nodeRef = nodeRefs[0]
     await nodeRef.centerOnNode()
     const widgetLocator = this.comfyPage.vueNodes
       .getNodeLocator(String(nodeRef.id))
@@ -163,10 +171,9 @@ export class BuilderSelectHelper {
    */
   async selectOutputNode(nodeTitle: string) {
     await this.comfyPage.canvasOps.setScale(1)
-    const nodeRef = (
-      await this.comfyPage.nodeOps.getNodeRefsByTitle(nodeTitle)
-    )[0]
-    if (!nodeRef) throw new Error(`Node ${nodeTitle} not found`)
+    const nodeRefs = await this.comfyPage.nodeOps.getNodeRefsByTitle(nodeTitle)
+    if (nodeRefs.length === 0) throw new Error(`Node ${nodeTitle} not found`)
+    const nodeRef = nodeRefs[0]
     await nodeRef.centerOnNode()
     const nodeLocator = this.comfyPage.vueNodes.getNodeLocator(
       String(nodeRef.id)

@@ -262,6 +262,49 @@ https://github.com/user-attachments/assets/5696a89d-4a47-4fcc-9e8c-71e1264943f2
 
 ### Developer APIs
 
+<details id='extension-api-toast-kinds'>
+  <summary>v1.58: Kind-based toast API</summary>
+
+`app.extensionManager.toast` has `success`, `error`, `info`, `warning`, and
+`loading`. Each takes `(title, { description, duration, closable, action })`
+and returns an id for `dismiss(id)`. `dismissAll()` removes every toast.
+
+```js
+const toast = app.extensionManager.toast
+
+toast.info('Loaded!', { description: 'Extension loaded!', duration: 3000 })
+
+const toastId = toast.warning('Model missing', {
+  action: {
+    label: 'Download',
+    onClick: () => {
+      startDownload()
+      toast.dismiss(toastId)
+    }
+  }
+})
+```
+
+A toast stays open until dismissed unless `duration` (ms) is set. Clicking an
+`action` button does not dismiss the toast.
+
+`add()` and `addAlert()` still work but are deprecated. `addAlert(message)` now
+shows `message` as the warning title, like `warning(message)`. `remove()` and
+`removeAll()` were removed; use `dismiss(id)` or `dismissAll()`.
+
+`add()` maps the PrimeVue message fields onto the new API and ignores every
+other field:
+
+| `add()` field | New API                                                                                                                                                                                    |
+| ------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
+| `severity`    | kind: `warn` → `warning` (`warning` also works but is deprecated); `success`, `error` unchanged; `info`, `secondary`, `contrast` → `info`; any other value logs an error and shows nothing |
+| `summary`     | `title` (`detail` becomes the title when `summary` is missing)                                                                                                                             |
+| `detail`      | `description`                                                                                                                                                                              |
+| `life`        | `duration` in ms; `0` or unset keeps the toast open                                                                                                                                        |
+| `closable`    | `closable`                                                                                                                                                                                 |
+
+</details>
+
 <details>
   <summary>v1.6.13: prompt/confirm/alert replacements for ComfyUI desktop</summary>
 
@@ -459,7 +502,7 @@ app.registerExtension({
 </details>
 
 <details id='extension-api-toast'>
-  <summary>v1.2.27: Extension API to add toast message</summary>i
+  <summary>v1.2.27: Extension API to add toast message</summary>
 
 Extensions can call the following API to add toast messages.
 
@@ -472,7 +515,9 @@ app.extensionManager.toast.add({
 })
 ```
 
-Documentation of all supported options can be found here: <https://primevue.org/toast/#api.toast.interfaces.ToastMessageOptions>
+Only `severity`, `summary`, `detail`, `life` and `closable` are honoured; see the field mapping under the [kind-based toast API](#extension-api-toast-kinds).
+
+Deprecated in v1.58 by the [kind-based toast API](#extension-api-toast-kinds).
 
 ![image](https://github.com/user-attachments/assets/de02cd7e-cd81-43d1-a0b0-bccef92ff487)
 

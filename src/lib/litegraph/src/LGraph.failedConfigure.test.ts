@@ -1,5 +1,3 @@
-import { createTestingPinia } from '@pinia/testing'
-import { setActivePinia } from 'pinia'
 import { beforeEach, describe, expect, it } from 'vitest'
 
 import type {
@@ -65,7 +63,6 @@ class ThrowingNode extends LGraphNode {
 }
 
 beforeEach(() => {
-  setActivePinia(createTestingPinia({ stubActions: false }))
   layoutStore.resetForTests()
   LiteGraph.registerNodeType('test/good', GoodNode)
   LiteGraph.registerNodeType('test/throwing', ThrowingNode)
@@ -131,7 +128,7 @@ function workflowThatFailsAfterGroups(): SerialisableGraph {
   const workflow = sameWorkflowThatLoads()
   return {
     ...workflow,
-    links: workflow.links?.map((link) => ({ ...link, parentId: 1 })),
+    links: workflow.links.map((link) => ({ ...link, parentId: 1 })),
     reroutes: [{ id: 1, pos: [50, 50], linkIds: [1] }]
   }
 }
@@ -266,8 +263,6 @@ describe('LGraph.configure that throws partway through', () => {
 
     const failed = graphAfterFailedConfigure()
 
-    // The throw happens before reroute validation and before groups are built,
-    // so the graph holds a reroute the same data would not have produced.
     expect(failed.reroutes.size).toBe(1)
     expect(failed._groups).toHaveLength(0)
   })
@@ -299,7 +294,7 @@ describe('LGraph.configure that throws partway through', () => {
     expect(configuredEvents).toBe(1)
   })
 
-  it('LEAK: a nested definition that fails stays registered on an otherwise empty graph', () => {
+  it('releases a nested definition that fails on an otherwise empty graph', () => {
     const graph = new LGraph()
     const created: string[] = []
     graph.events.addEventListener('subgraph-created', (event) => {
@@ -308,14 +303,8 @@ describe('LGraph.configure that throws partway through', () => {
 
     expect(() => graph.configure(failingNestedWorkflow())).toThrow()
 
-    // The definition is registered, and `subgraph-created` has already told
-    // listeners (node-def registration, among others) about it. LGraphEventMap
-    // has no removal counterpart, so nothing retracts it.
     expect(created).toEqual([NESTED_DEFINITION_ID])
-    expect(graph.subgraphs.has(NESTED_DEFINITION_ID)).toBe(true)
-
-    // Nothing else made it in, so the graph reports itself as empty while
-    // still holding the definition.
+    expect(graph.subgraphs.has(NESTED_DEFINITION_ID)).toBe(false)
     expect(graph.empty).toBe(true)
   })
 })
@@ -329,7 +318,7 @@ describe('a workflow loaded after a failed load, on the same graph', () => {
     // Release the reused graph's store entities before configuring a second
     // graph with the same workflow id: the dedicated stores are keyed by root
     // graph id, and two live graphs claiming the same id are a collision the
-    // stores resolve by reminting (see ADR-0003), which is not what this test
+    // stores resolve by reminting (see ADR-CRDT-LAYOUT-0003), which is not what this test
     // is about.
     reused.clear()
 
@@ -354,13 +343,6 @@ describe('a workflow loaded after a failed load, on the same graph', () => {
       sourcePreviewName: 'preview'
     })
 
-    expect([
-      nodeIds.length,
-      linkIds.length,
-      rerouteIds.length,
-      groupIds.length,
-      widgetIds.length
-    ]).toEqual([3, 1, 1, 1, 3])
     expect(storeOwnership(scope, nodeIds, rerouteIds, groupIds)).toEqual({
       nodes: nodeIds,
       links: linkIds,
@@ -388,35 +370,38 @@ describe('a workflow loaded after a failed load, on the same graph', () => {
   })
 
   it('clears nested-owner state before loading the next workflow', () => {
-    const nested = graphAfterFailedConfigure(failingNestedWorkflow())
-    const definition = nested.subgraphs.get(NESTED_DEFINITION_ID)
-    if (!definition) throw new Error('Expected failed subgraph definition')
+    const nested = new LGraph()
+    let failedDefinition: LGraph | undefined
+    nested.events.addEventListener('subgraph-created', (event) => {
+      failedDefinition = event.detail.subgraph
+    })
+    expect(() => nested.configure(failingNestedWorkflow())).toThrow(
+      'onConfigure exploded'
+    )
+    if (!failedDefinition)
+      throw new Error('Expected failed subgraph definition')
 
-    const scope = graphScopeOf(definition)
-    const nodeIds = definition.nodes.map((node) => node.id)
+    const scope = graphScopeOf(failedDefinition)
+    const nodeIds = failedDefinition.nodes.map((node) => node.id)
     const linkIds = [...useLinkStore().graphTopologies(scope)].map(
       (link) => link.id
     )
-    const rerouteIds = [...definition.reroutes.keys()]
+    const rerouteIds = [...failedDefinition.reroutes.keys()]
     const widgetIds = nodeIds.flatMap((id) =>
       useWidgetValueStore().getNodeWidgetIds(BAD_ID, id)
     )
 
-    expect([
-      nodeIds.length,
-      linkIds.length,
-      rerouteIds.length,
-      widgetIds.length
-    ]).toEqual([2, 1, 1, 2])
     expect(storeOwnership(scope, nodeIds, rerouteIds, [])).toEqual({
-      nodes: nodeIds,
-      links: linkIds,
-      reroutes: rerouteIds,
-      nodeLayouts: nodeIds,
-      rerouteLayouts: rerouteIds,
+      nodes: [],
+      links: [],
+      reroutes: [],
+      nodeLayouts: [],
+      rerouteLayouts: [],
       groupLayouts: [],
-      widgets: widgetIds
+      widgets: []
     })
+    expect(linkIds).toEqual([])
+    expect(widgetIds).toEqual([])
 
     nested.configure(unrelatedWorkflow())
 
@@ -432,19 +417,11 @@ describe('a workflow loaded after a failed load, on the same graph', () => {
     expect(nested.subgraphs.has(NESTED_DEFINITION_ID)).toBe(false)
   })
 
-  it('LEAK: keeps top-level workflow keys that `configure` does not recognise', () => {
+  it('does not retain unrecognised top-level workflow keys', () => {
     const graph = graphAfterFailedConfigure()
     graph.configure(unrelatedWorkflow())
 
-    // `configure` copies every key not in LGraph.ConfigureProperties straight
-    // onto the instance, and `clear()` only resets the properties it knows
-    // about. The successor workflow has no `extensionData` key, so the failed
-    // workflow's value is still there — on a graph that otherwise believes it
-    // is the good workflow. Not serialised today, which is the only reason
-    // this does not reach disk.
-    expect(Reflect.get(graph, 'extensionData')).toEqual({
-      source: 'workflow-that-failed'
-    })
+    expect(Reflect.get(graph, 'extensionData')).toBeUndefined()
     expect(Reflect.get(new LGraph(), 'extensionData')).toBeUndefined()
   })
 })

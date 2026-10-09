@@ -1,5 +1,6 @@
 <template>
   <div
+    ref="grid"
     data-testid="node-widgets"
     class="lg-node-widgets grid grid-cols-[min-content_minmax(80px,min-content)_minmax(125px,1fr)] gap-y-1 pr-3"
     :style="{
@@ -7,67 +8,85 @@
       flex: gridTemplateRows.includes('auto') ? 1 : undefined
     }"
   >
-    <template v-for="widget in processedWidgets" :key="widget.renderKey">
-      <div
-        v-if="widget.visible"
-        data-testid="node-widget"
-        class="lg-node-widget group col-span-full grid grid-cols-subgrid items-stretch"
-      >
+    <div
+      v-for="section in sections"
+      :key="section.key"
+      :role="section.role"
+      :aria-label="section.label"
+      class="col-span-full grid grid-cols-subgrid grid-rows-subgrid"
+      :style="{ gridRow: `span ${section.rows.length}` }"
+    >
+      <template v-for="row in section.rows" :key="row.widget.renderKey">
         <div
+          :data-testid="row.testId"
+          :data-widget-name="row.widget.simplified.name"
           :class="
             cn(
-              'z-10 flex w-3 items-stretch opacity-0 transition-opacity duration-150 group-hover:opacity-100',
-              widget.slotMetadata?.linked && 'opacity-100'
+              'group col-span-full grid grid-cols-subgrid items-stretch',
+              row.showsControl && 'lg-node-widget'
             )
           "
         >
-          <InputSlot
-            v-if="widget.slotMetadata"
-            :key="`widget-slot-${widget.simplified.name}-${widget.slotMetadata.index}`"
-            :slot-data="{
-              name: widget.simplified.name,
-              type: widget.slotMetadata.type,
-              boundingRect: [0, 0, 0, 0]
-            }"
-            :node-id
-            :has-error="widget.hasError"
-            :index="widget.slotMetadata.index"
-            :socketless="widget.simplified.spec?.socketless"
-            dot-only
-          />
-        </div>
-        <AppInput
-          :widget-id="widget.widgetId"
-          :name="widget.simplified.name"
-          :enable="canSelectInputs && !widget.simplified.options?.disabled"
-        >
-          <component
-            :is="widget.vueComponent"
-            v-tooltip.left="widget.tooltipConfig ?? EMPTY_TOOLTIP"
-            :model-value="widget.simplified.value"
-            :widget="widget.simplified"
-            :node-id
-            :node-type
-            :class="
-              cn(
-                'col-span-2',
-                widget.hasError && 'font-bold text-node-stroke-error'
-              )
+          <div :class="row.slotClass">
+            <InputSlot
+              v-if="row.widget.slotMetadata"
+              :key="`widget-slot-${row.widget.simplified.name}-${row.widget.slotMetadata.index}`"
+              :slot-data="{
+                name: row.widget.simplified.name,
+                label: row.widget.simplified.label,
+                type: row.widget.slotMetadata.type,
+                boundingRect: [0, 0, 0, 0]
+              }"
+              :node-id
+              :has-error="row.widget.hasError"
+              :index="row.widget.slotMetadata.index"
+              :socketless="row.widget.simplified.spec?.socketless"
+              :standalone="row.standalone"
+              :dot-only="row.showsControl"
+            />
+          </div>
+          <AppInput
+            v-if="row.showsControl"
+            :widget-id="row.widget.widgetId"
+            :name="row.widget.simplified.name"
+            :enable="
+              canSelectInputs && !row.widget.simplified.options?.disabled
             "
-            @update:model-value="widget.updateHandler"
-            @contextmenu="widget.handleContextMenu"
-          />
-        </AppInput>
-      </div>
-    </template>
+          >
+            <component
+              :is="row.widget.vueComponent"
+              v-tooltip.left="row.widget.tooltipConfig ?? EMPTY_TOOLTIP"
+              :model-value="row.widget.simplified.value"
+              :widget="row.widget.simplified"
+              :node-id
+              :node-type
+              :invalid="row.widget.hasError"
+              :aria-invalid="row.widget.hasError || undefined"
+              :class="
+                cn(
+                  'col-span-2',
+                  row.widget.hasError && 'font-bold text-node-stroke-error'
+                )
+              "
+              @update:model-value="row.widget.updateHandler"
+              @contextmenu="row.widget.handleContextMenu"
+              @removed="restoreRowFocus"
+            />
+          </AppInput>
+        </div>
+      </template>
+    </div>
   </div>
 </template>
 
 <script setup lang="ts">
 import type { TooltipOptions } from 'primevue'
-import { computed } from 'vue'
+import { computed, nextTick, useTemplateRef, watch } from 'vue'
 
+import { useCanvasStore } from '@/renderer/core/canvas/canvasStore'
+import { syncSlotOffsets } from '@/renderer/core/layout/slots/syncSlotOffsets'
 import AppInput from '@/renderer/extensions/linearMode/AppInput.vue'
+import { useVueElementTracking } from '@/renderer/extensions/vueNodes/composables/useVueNodeResizeTracking'
 import type { WidgetGridItem } from '@/renderer/extensions/vueNodes/types/widgetGrid'
 import { shouldExpand } from '@/renderer/extensions/vueNodes/widgets/registry/widgetRegistry'
 import type { NodeId } from '@/types/nodeId'
@@ -76,27 +95,153 @@ import { cn } from '@comfyorg/tailwind-utils'
 import InputSlot from './InputSlot.vue'
 
 const EMPTY_TOOLTIP: TooltipOptions = {}
+const grid = useTemplateRef<HTMLElement>('grid')
+
+const isConvertedWidgetType = (type: string) =>
+  type === 'converted-widget' || type.startsWith('converted-widget:')
 
 const {
   processedWidgets,
   nodeType,
   canSelectInputs = false,
-  nodeId
+  nodeId,
+  syncLayout = true
 } = defineProps<{
   processedWidgets: WidgetGridItem[]
   nodeType: string
   canSelectInputs?: boolean
   nodeId?: NodeId
+  syncLayout?: boolean
 }>()
 
-const gridTemplateRows = computed(() =>
-  processedWidgets
-    .filter((widget) => widget.visible)
-    .map((widget) =>
-      shouldExpand(widget.simplified.type) || widget.hasLayoutSize
-        ? 'auto'
-        : 'min-content'
+useVueElementTracking(syncLayout ? String(nodeId ?? '') : '', 'widgets-grid')
+const canvasStore = useCanvasStore()
+const renderedRows = computed(() =>
+  processedWidgets.flatMap((widget) => {
+    const isConverted = isConvertedWidgetType(widget.simplified.type)
+    const showsControl = !isConverted && widget.visible
+    const shouldRender = isConverted
+      ? !!widget.slotMetadata
+      : widget.visible ||
+        (!!widget.suppressedByConnection && !!widget.slotMetadata)
+    if (!shouldRender) return []
+
+    return [
+      {
+        widget,
+        showsControl,
+        slotClass: cn(
+          'z-10 flex items-stretch',
+          showsControl
+            ? 'w-3 opacity-0 transition-opacity duration-150 group-hover:opacity-100'
+            : 'col-span-full',
+          widget.slotMetadata?.linked && 'opacity-100'
+        ),
+        standalone: !showsControl && !!widget.suppressedByConnection,
+        testId: showsControl ? 'node-widget' : undefined,
+        rowSize:
+          showsControl &&
+          (shouldExpand(widget.simplified.type) || widget.hasLayoutSize)
+            ? 'auto'
+            : 'min-content'
+      }
+    ]
+  })
+)
+
+function withShortFieldLabel(
+  widget: WidgetGridItem,
+  groupName: string,
+  groupLabel?: string
+) {
+  const field =
+    widget.simplified.spec?.display_name ??
+    widget.simplified.name.slice(groupName.length + 1)
+  return widget.simplified.label === `${groupLabel} ${field}`
+    ? {
+        ...widget,
+        simplified: { ...widget.simplified, displayLabel: field }
+      }
+    : widget
+}
+
+const sections = computed(() => {
+  const result: {
+    key: string
+    name?: string
+    label?: string
+    role?: 'group'
+    rows: typeof renderedRows.value
+  }[] = []
+  for (const row of renderedRows.value) {
+    const { name, type, label } = row.widget.simplified
+    if (type === 'dynamic_group_row') {
+      result.push({
+        key: row.widget.renderKey,
+        name,
+        label,
+        role: label ? 'group' : undefined,
+        rows: [row]
+      })
+      continue
+    }
+    const section = result.at(-1)
+    if (!section?.name || !name.startsWith(`${section.name}.`)) {
+      result.push({ key: row.widget.renderKey, rows: [row] })
+      continue
+    }
+    section.rows.push({
+      ...row,
+      widget: withShortFieldLabel(row.widget, section.name, section.label)
+    })
+  }
+  return result
+})
+
+async function restoreRowFocus(name: string) {
+  const group = name.slice(0, name.lastIndexOf('.'))
+  await nextTick()
+  const remaining = sections.value.filter((section) =>
+    section.name?.startsWith(`${group}.`)
+  )
+  const candidates = [
+    name,
+    ...remaining.map((section) => section.name).reverse(),
+    `${group}.$add`
+  ]
+  for (const candidate of candidates) {
+    if (!candidate) continue
+    const button = grid.value?.querySelector<HTMLButtonElement>(
+      `[data-widget-name="${CSS.escape(candidate)}"] button:not(:disabled)`
     )
-    .join(' ')
+    if (button) {
+      button.focus()
+      return
+    }
+  }
+}
+
+const gridTemplateRows = computed(() =>
+  renderedRows.value.map((row) => row.rowSize).join(' ')
+)
+
+const layoutKey = computed(() =>
+  renderedRows.value
+    .map(
+      ({ widget, showsControl }) =>
+        `${widget.renderKey}:${widget.slotMetadata?.index ?? ''}:${showsControl}`
+    )
+    .join('|')
+)
+
+watch(
+  layoutKey,
+  () => {
+    const rootGraphId = canvasStore.rootGraphId
+    if (syncLayout && grid.value && rootGraphId && nodeId) {
+      syncSlotOffsets(grid.value, rootGraphId, nodeId)
+    }
+  },
+  { flush: 'post' }
 )
 </script>

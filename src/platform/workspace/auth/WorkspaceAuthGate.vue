@@ -1,6 +1,31 @@
 <template>
   <slot v-if="initializationState === 'ready'" />
   <div
+    v-else-if="initializationState === 'no_workspace'"
+    ref="errorPanel"
+    class="flex size-full items-center justify-center bg-base-background p-8"
+    role="alert"
+    tabindex="-1"
+  >
+    <div class="flex max-w-md flex-col items-center gap-4 text-center">
+      <i
+        aria-hidden="true"
+        class="icon-[lucide--users] size-8 text-muted-foreground"
+      />
+      <div>
+        <h1 class="m-0 text-lg font-semibold text-base-foreground">
+          {{ $t('workspaceAuth.noWorkspaceAccess.title') }}
+        </h1>
+        <p class="mt-2 mb-0 text-muted-foreground">
+          {{ $t('workspaceAuth.noWorkspaceAccess.detail') }}
+        </p>
+      </div>
+      <Button variant="secondary" @click="handleSignOut">
+        {{ $t('auth.signOut.signOut') }}
+      </Button>
+    </div>
+  </div>
+  <div
     v-else-if="initializationState !== 'initializing'"
     ref="errorPanel"
     class="flex size-full items-center justify-center bg-base-background p-8"
@@ -59,6 +84,7 @@
 import { until } from '@vueuse/core'
 import { storeToRefs } from 'pinia'
 import {
+  computed,
   nextTick,
   onMounted,
   onUnmounted,
@@ -70,27 +96,30 @@ import {
 import Button from '@/components/ui/button/Button.vue'
 import { useAuthActions } from '@/composables/auth/useAuthActions'
 import { useFeatureFlags } from '@/composables/useFeatureFlags'
+import { signedInOnWebSession } from '@/platform/auth/session/webSessionFetch'
 import { isCloud } from '@/platform/distribution/types'
-import { useSubscriptionDialog } from '@/platform/cloud/subscription/composables/useSubscriptionDialog'
 import {
   remoteConfigErrorStatus,
   remoteConfigState
 } from '@/platform/remoteConfig/remoteConfig'
 import { refreshRemoteConfig } from '@/platform/remoteConfig/refreshRemoteConfig'
 import { reportError } from '@/platform/telemetry/reportError'
+import { NoWorkspaceAccessError } from '@/platform/workspace/api/workspaceApiError'
 import { useWorkspaceAuthStore } from '@/platform/workspace/stores/workspaceAuthStore'
 import { useTeamWorkspaceStore } from '@/platform/workspace/stores/teamWorkspaceStore'
+import { useBillingCapabilities } from '@/platform/workspace/composables/useBillingCapabilities'
+import { useApiKeyAuthStore } from '@/stores/apiKeyAuthStore'
 import { useAuthStore } from '@/stores/authStore'
 
 const FIREBASE_INIT_TIMEOUT_MS = 16_000
 const CONFIG_REFRESH_TIMEOUT_MS = 10_000
 
 const initializationState = ref<
-  'initializing' | 'retrying' | 'ready' | 'error'
+  'initializing' | 'retrying' | 'ready' | 'error' | 'no_workspace'
 >(isCloud ? 'initializing' : 'ready')
 const initializationRetryable = ref(true)
 const errorPanel = useTemplateRef<HTMLElement>('errorPanel')
-const subscriptionDialog = useSubscriptionDialog()
+const billingCapabilities = useBillingCapabilities()
 let initializationGeneration = 0
 let initializationController: AbortController | null = null
 let backgroundInitialization: Promise<void> | null = null
@@ -102,6 +131,20 @@ function cancelInitialization(): void {
   initializationController = null
   backgroundInitialization = null
   backgroundInitializationUserId = undefined
+}
+
+/** A tab signed in on the web session carries its workspace on the session. */
+async function requiresUnifiedToken(): Promise<boolean> {
+  return (
+    useFeatureFlags().flags.unifiedCloudAuthEnabled &&
+    useAuthStore().currentUser !== null &&
+    !(await signedInOnWebSession())
+  )
+}
+
+/** A session sign-in mid-setup lifts the need for the token that went missing. */
+async function missingUnifiedToken(hasToken: boolean): Promise<boolean> {
+  return !hasToken && (await requiresUnifiedToken())
 }
 
 async function initialize(): Promise<void> {
@@ -116,7 +159,7 @@ async function initialize(): Promise<void> {
   initializationController = controller
 
   const authStore = useAuthStore()
-  const { isInitialized, currentUser } = storeToRefs(authStore)
+  const { isInitialized, isAuthenticated } = storeToRefs(authStore)
 
   try {
     // Step 1: Wait for Firebase auth to resolve
@@ -132,7 +175,7 @@ async function initialize(): Promise<void> {
 
     // Step 2: If not authenticated, nothing more to do
     // Unauthenticated users don't have workspace context
-    if (!currentUser.value) {
+    if (!isAuthenticated.value) {
       initializationState.value = 'ready'
       return
     }
@@ -154,31 +197,23 @@ async function initialize(): Promise<void> {
       throw new Error('Failed to load authenticated remote config')
     }
 
-    const { flags } = useFeatureFlags()
     const workspaceAuthStore = useWorkspaceAuthStore()
-    if (flags.unifiedCloudAuthEnabled) {
+    const needsUnifiedToken = await requiresUnifiedToken()
+    if (generation !== initializationGeneration) return
+    if (needsUnifiedToken) {
       const authenticated = await workspaceAuthStore.mintAtLogin()
       if (generation !== initializationGeneration) return
-      if (!authenticated) {
+      if (await missingUnifiedToken(authenticated)) {
         throw new Error('Failed to initialize unified cloud auth')
       }
     }
 
     await initializeWorkspaceMode()
     if (generation !== initializationGeneration) return
-    if (
-      flags.unifiedCloudAuthEnabled &&
-      !workspaceAuthStore.getUnifiedToken()
-    ) {
+    void billingCapabilities.initialize(controller.signal)
+    const hasUnifiedToken = Boolean(workspaceAuthStore.getUnifiedToken())
+    if (needsUnifiedToken && (await missingUnifiedToken(hasUnifiedToken))) {
       throw new Error('Unified cloud auth was cleared during workspace setup')
-    }
-
-    // Resume any pending pricing flow from team workspace creation
-    // Only safe after workspace store initialized successfully — the pricing
-    // dialog reads workspace state to decide which variant to show.
-    const workspaceStore = useTeamWorkspaceStore()
-    if (workspaceStore.initState === 'ready') {
-      subscriptionDialog.resumePendingPricingFlow()
     }
 
     if (generation === initializationGeneration) {
@@ -186,12 +221,16 @@ async function initialize(): Promise<void> {
     }
   } catch (error) {
     if (generation !== initializationGeneration) return
-    console.error('[WorkspaceAuthGate] Initialization failed:', error)
     reportError(error, {
+      surface: 'auth',
       errorType: 'workspace_auth_gate_initialization_failure'
     })
     initializationRetryable.value = isRetryableInitializationError(error)
-    initializationState.value = 'error'
+    initializationState.value =
+      useFeatureFlags().flags.ssoEnabled &&
+      error instanceof NoWorkspaceAccessError
+        ? 'no_workspace'
+        : 'error'
     document.getElementById('splash-loader')?.remove()
     await nextTick()
     if (generation !== initializationGeneration) return
@@ -242,16 +281,29 @@ async function initializeWorkspaceMode(): Promise<void> {
   }
 }
 
+// The local session identity: the Firebase uid, or the validated API key for
+// key-only sessions. Workspace initialization keys off this so an API-key
+// login boots workspace context the same way a Firebase login does.
+function localSessionIdentity(): string | null {
+  const { currentUser } = storeToRefs(useAuthStore())
+  if (currentUser.value?.uid) return currentUser.value.uid
+  const apiKeyStore = useApiKeyAuthStore()
+  return apiKeyStore.isAuthenticated ? apiKeyStore.getApiKey() : null
+}
+
 function initializeWorkspacesInBackground(): Promise<void> {
-  const { isInitialized, currentUser } = storeToRefs(useAuthStore())
-  const userId = currentUser.value?.uid ?? null
-  if (backgroundInitialization && backgroundInitializationUserId === userId) {
+  const { isInitialized } = storeToRefs(useAuthStore())
+  const sessionId = localSessionIdentity()
+  if (
+    backgroundInitialization &&
+    backgroundInitializationUserId === sessionId
+  ) {
     return backgroundInitialization
   }
 
   cancelInitialization()
   const generation = initializationGeneration
-  backgroundInitializationUserId = userId
+  backgroundInitializationUserId = sessionId
 
   const operation = (async () => {
     if (!isInitialized.value) {
@@ -261,8 +313,9 @@ function initializeWorkspacesInBackground(): Promise<void> {
       })
     }
     if (
+      sessionId === null ||
       generation !== initializationGeneration ||
-      currentUser.value?.uid !== userId
+      localSessionIdentity() !== sessionId
     ) {
       return
     }
@@ -294,9 +347,12 @@ onMounted(() => {
 })
 
 if (!isCloud) {
-  const { currentUser } = storeToRefs(useAuthStore())
-  watch(currentUser, (user) => {
-    if (user) {
+  const sessionIdentity = computed(() => localSessionIdentity())
+  watch(sessionIdentity, (identity, previousIdentity) => {
+    if (previousIdentity !== null && identity !== previousIdentity) {
+      useTeamWorkspaceStore().resetForIdentityChange()
+    }
+    if (identity) {
       void initializeWorkspacesInBackground()
     } else {
       cancelInitialization()

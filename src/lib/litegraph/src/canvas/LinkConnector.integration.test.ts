@@ -1,7 +1,5 @@
 // oxlint-disable no-empty-pattern
 // TODO: Fix these tests after migration
-import { createTestingPinia } from '@pinia/testing'
-import { setActivePinia } from 'pinia'
 import { afterEach, describe, expect, vi } from 'vitest'
 
 import type {
@@ -14,7 +12,7 @@ import { LGraphNode, LLink, LinkConnector } from '@/lib/litegraph/src/litegraph'
 
 import { slotFloatingLinks } from '../LLink'
 import { test as baseTest } from '../__fixtures__/testExtensions'
-import type { ConnectingLink } from '@/lib/litegraph/src/interfaces'
+import type { ConnectingLink } from '@/lib/litegraph/src/types/slots'
 import { useLinkStore } from '@/stores/linkStore'
 import { graphScopeOf } from '@/types/graphScopeId'
 import { toLinkId } from '@/types/linkId'
@@ -23,10 +21,9 @@ import { toRerouteId } from '@/types/rerouteId'
 import {
   createMockCanvasPointerEvent,
   createMockCanvasRenderingContext2D
-} from '@/utils/__tests__/litegraphTestUtils'
+} from '@/utils/__tests__/canvasTestUtils'
 
 interface TestContext {
-  pinia: undefined
   graph: LGraph
   connector: LinkConnector
   setConnectingLinks: (value: ConnectingLink[]) => void
@@ -39,14 +36,6 @@ interface TestContext {
 }
 
 const test = baseTest.extend<TestContext>({
-  pinia: [
-    async ({}, use) => {
-      setActivePinia(createTestingPinia({ stubActions: false }))
-      await use(undefined)
-    },
-    { auto: true }
-  ],
-
   reroutesBeforeTest: async ({ reroutesComplexGraph }, use) => {
     await use([...reroutesComplexGraph.reroutes])
   },
@@ -159,7 +148,7 @@ const test = baseTest.extend<TestContext>({
 
       for (const link of graph.links.values()) {
         expect(
-          graph.getNodeById(link!.origin_id)?.outputs[link!.origin_slot].links
+          graph.getNodeById(link.origin_id)?.outputs[link.origin_slot].links
         ).toContain(link.id)
         expect(
           linkStore.getInputSlotLink(graphId, link.target_id, link.target_slot)
@@ -448,7 +437,7 @@ describe('LinkConnector Integration', () => {
       expect(connector.outputLinks.length).toBe(0)
 
       expect(disconnectedNode.outputs[0].links).toHaveLength(2)
-      expect(hasOutputNode.outputs[0].links).toBeNull()
+      expect(hasOutputNode.outputs[0].links).toEqual([])
 
       const reroutesAfter = disconnectedNode.outputs[0].links
         ?.map((linkId) => graph.links.get(linkId)!)
@@ -595,7 +584,9 @@ describe('LinkConnector Integration', () => {
       connector.dropLinks(graph, floatingRerouteEvent)
       connector.reset()
 
-      expect(manyOutputsNode.outputs[0].links).toBeNull()
+      // Fixture declares explicit `links: [9,10,11,12]`; legacy link writes
+      // are removal-only, so the emptied array is preserved rather than null.
+      expect(manyOutputsNode.outputs[0].links).toEqual([])
       expect(floatingReroute.linkIds.size).toBe(4)
 
       validateIntegrityFloatingRemoved()

@@ -1,105 +1,69 @@
+import { render } from '@testing-library/vue'
 import { describe, expect, it, vi } from 'vitest'
-import { nextTick } from 'vue'
+import { nextTick, ref } from 'vue'
+import { createI18n } from 'vue-i18n'
 
-import { useToastStore } from '@/platform/updates/common/toastStore'
+import enMessages from '@/locales/en/main.json' with { type: 'json' }
+import { useToast } from '@/components/ui/toast/toastStore'
 import { useFrontendVersionMismatchWarning } from '@/platform/updates/common/useFrontendVersionMismatchWarning'
 import { useVersionCompatibilityStore } from '@/platform/updates/common/versionCompatibilityStore'
 
-// Mock globals
-//@ts-expect-error Define global for the test
-global.__COMFYUI_FRONTEND_VERSION__ = '1.0.0'
-
-// Mock config first - this needs to be before any imports
-vi.mock('@/config', () => ({
+vi.mock(import('@/config'), () => ({
   default: {
     app_title: 'ComfyUI',
     app_version: '1.0.0'
   }
 }))
 
-// Mock app
-vi.mock('@/scripts/app', () => ({
-  app: {
-    ui: {
-      settings: {
-        dispatchChange: vi.fn()
-      }
-    }
-  }
-}))
+vi.mock(import('@/scripts/app'))
 
-// Mock api
-vi.mock('@/scripts/api', () => ({
+vi.mock<unknown>(import('@/scripts/api'), () => ({
   api: {
     getSettings: vi.fn(() => Promise.resolve({})),
     storeSetting: vi.fn(() => Promise.resolve(undefined))
   }
 }))
 
-// Mock vue-i18n
-vi.mock('vue-i18n', () => ({
-  useI18n: () => ({
-    t: (key: string, params?: Record<string, string | number> | unknown) => {
-      if (key === 'g.versionMismatchWarning')
-        return 'Version Compatibility Warning'
-      if (key === 'g.versionMismatchWarningMessage' && params) {
-        const p = params as Record<string, string>
-        return `${p.warning}: ${p.detail} Visit https://docs.comfy.org/installation/update_comfyui#common-update-issues for update instructions.`
-      }
-      if (key === 'g.frontendOutdated' && params) {
-        const p = params as Record<string, string>
-        return `Frontend version ${p.frontendVersion} is outdated. Backend requires ${p.requiredVersion} or higher.`
-      }
-      if (key === 'g.frontendNewer' && params) {
-        const p = params as Record<string, string>
-        return `Frontend version ${p.frontendVersion} may not be compatible with backend version ${p.backendVersion}.`
-      }
-      if (key === 'g.comfyPackageOutdated' && params) {
-        const p = params as Record<string, string>
-        return `Installed ${p.name} version ${p.installedVersion} is lower than the required version ${p.requiredVersion}.`
-      }
-      return key
-    }
-  }),
-  createI18n: vi.fn(() => ({
-    global: {
-      locale: { value: 'en' },
-      t: vi.fn()
-    }
-  }))
-}))
-
-// Mock lifecycle hooks to track their calls
-const mockOnMounted = vi.fn()
-vi.mock('vue', async () => {
-  const actual = await vi.importActual('vue')
-  return {
-    ...actual,
-    onMounted: (fn: () => void) => {
-      mockOnMounted()
-      fn()
-    }
-  }
+const i18n = createI18n({
+  legacy: false,
+  locale: 'en',
+  messages: { en: enMessages }
 })
+
+function mountVersionWarning(
+  ...options: Parameters<typeof useFrontendVersionMismatchWarning>
+) {
+  let result: ReturnType<typeof useFrontendVersionMismatchWarning> | undefined
+  const { unmount } = render(
+    {
+      setup() {
+        result = useFrontendVersionMismatchWarning(...options)
+        return () => null
+      }
+    },
+    {
+      global: { plugins: [i18n] }
+    }
+  )
+
+  if (!result) throw new Error('Failed to mount version warning')
+  return { ...result, unmount }
+}
 
 describe('useFrontendVersionMismatchWarning', () => {
   it('should not show warning when there is no version mismatch', () => {
-    const toastStore = useToastStore()
     const versionStore = useVersionCompatibilityStore()
-    const addAlertSpy = vi.spyOn(toastStore, 'addAlert')
 
     // Mock no version mismatch
     vi.spyOn(versionStore, 'shouldShowWarning', 'get').mockReturnValue(false)
 
-    useFrontendVersionMismatchWarning()
+    mountVersionWarning()
 
-    expect(addAlertSpy).not.toHaveBeenCalled()
+    expect(useToast().toasts).toEqual([])
   })
 
   it('should show warning immediately when immediate option is true and there is a mismatch', async () => {
-    const toastStore = useToastStore()
     const versionStore = useVersionCompatibilityStore()
-    const addAlertSpy = vi.spyOn(toastStore, 'addAlert')
     const dismissWarningSpy = vi.spyOn(versionStore, 'dismissWarning')
 
     // Mock version mismatch
@@ -110,25 +74,25 @@ describe('useFrontendVersionMismatchWarning', () => {
       requiredVersion: '2.0.0'
     })
 
-    useFrontendVersionMismatchWarning({ immediate: true })
+    mountVersionWarning({ immediate: true })
 
     // For immediate: true, the watcher should fire immediately in onMounted
     await nextTick()
 
-    expect(addAlertSpy).toHaveBeenCalledWith(
-      expect.stringContaining('Version Compatibility Warning')
-    )
-    expect(addAlertSpy).toHaveBeenCalledWith(
-      expect.stringContaining('Frontend version 1.0.0 is outdated')
+    expect(useToast().warning).toHaveBeenCalledWith(
+      'Version Compatibility Warning',
+      {
+        description: expect.stringMatching(
+          /^Frontend version 1\.0\.0 is outdated.* Visit https:\/\/docs\.comfy\.org\//
+        )
+      }
     )
     // Should automatically dismiss the warning
     expect(dismissWarningSpy).toHaveBeenCalled()
   })
 
   it('should not show warning immediately when immediate option is false', async () => {
-    const toastStore = useToastStore()
     const versionStore = useVersionCompatibilityStore()
-    const addAlertSpy = vi.spyOn(toastStore, 'addAlert')
 
     // Mock version mismatch
     vi.spyOn(versionStore, 'shouldShowWarning', 'get').mockReturnValue(true)
@@ -138,34 +102,15 @@ describe('useFrontendVersionMismatchWarning', () => {
       requiredVersion: '2.0.0'
     })
 
-    const result = useFrontendVersionMismatchWarning({ immediate: false })
+    const result = mountVersionWarning({ immediate: false })
     await nextTick()
 
     // Should not show automatically
-    expect(addAlertSpy).not.toHaveBeenCalled()
+    expect(useToast().toasts).toEqual([])
 
     // But should show when called manually
     result.showWarning()
-    expect(addAlertSpy).toHaveBeenCalledOnce()
-  })
-
-  it('should call showWarning method manually', () => {
-    const toastStore = useToastStore()
-    const versionStore = useVersionCompatibilityStore()
-    const addAlertSpy = vi.spyOn(toastStore, 'addAlert')
-    const dismissWarningSpy = vi.spyOn(versionStore, 'dismissWarning')
-
-    vi.spyOn(versionStore, 'warningMessage', 'get').mockReturnValue({
-      type: 'outdated',
-      frontendVersion: '1.0.0',
-      requiredVersion: '2.0.0'
-    })
-
-    const { showWarning } = useFrontendVersionMismatchWarning()
-    showWarning()
-
-    expect(addAlertSpy).toHaveBeenCalledOnce()
-    expect(dismissWarningSpy).toHaveBeenCalled()
+    expect(useToast().warning).toHaveBeenCalledOnce()
   })
 
   it('should expose store methods and computed values', () => {
@@ -178,38 +123,50 @@ describe('useFrontendVersionMismatchWarning', () => {
     vi.spyOn(versionStore, 'shouldShowWarning', 'get').mockReturnValue(true)
     vi.spyOn(versionStore, 'hasVersionMismatch', 'get').mockReturnValue(true)
 
-    const result = useFrontendVersionMismatchWarning()
+    const result = mountVersionWarning()
 
     expect(result.shouldShowWarning.value).toBe(true)
     expect(result.hasVersionMismatch.value).toBe(true)
 
-    void result.dismissWarning()
+    result.dismissWarning()
     expect(mockDismissWarning).toHaveBeenCalled()
   })
 
-  it('should register onMounted hook', () => {
-    useFrontendVersionMismatchWarning()
+  it('stops watching for mismatches after unmount', async () => {
+    const versionStore = useVersionCompatibilityStore()
+    const shouldShowWarning = ref(false)
+    vi.spyOn(versionStore, 'shouldShowWarning', 'get').mockImplementation(
+      () => shouldShowWarning.value
+    )
+    vi.spyOn(versionStore, 'warningMessage', 'get').mockReturnValue({
+      type: 'outdated',
+      frontendVersion: '1.0.0',
+      requiredVersion: '2.0.0'
+    })
 
-    expect(mockOnMounted).toHaveBeenCalledOnce()
+    const { unmount } = mountVersionWarning({ immediate: true })
+    await nextTick()
+    unmount()
+
+    shouldShowWarning.value = true
+    await nextTick()
+
+    expect(useToast().toasts).toEqual([])
   })
 
   it('should not show warning when warningMessage is null', () => {
-    const toastStore = useToastStore()
     const versionStore = useVersionCompatibilityStore()
-    const addAlertSpy = vi.spyOn(toastStore, 'addAlert')
 
     vi.spyOn(versionStore, 'warningMessage', 'get').mockReturnValue(null)
 
-    const { showWarning } = useFrontendVersionMismatchWarning()
+    const { showWarning } = mountVersionWarning()
     showWarning()
 
-    expect(addAlertSpy).not.toHaveBeenCalled()
+    expect(useToast().toasts).toEqual([])
   })
 
   it('should only show warning once even if called multiple times', () => {
-    const toastStore = useToastStore()
     const versionStore = useVersionCompatibilityStore()
-    const addAlertSpy = vi.spyOn(toastStore, 'addAlert')
 
     vi.spyOn(versionStore, 'warningMessage', 'get').mockReturnValue({
       type: 'outdated',
@@ -217,7 +174,7 @@ describe('useFrontendVersionMismatchWarning', () => {
       requiredVersion: '2.0.0'
     })
 
-    const { showWarning } = useFrontendVersionMismatchWarning()
+    const { showWarning } = mountVersionWarning()
 
     // Call showWarning multiple times
     showWarning()
@@ -225,13 +182,11 @@ describe('useFrontendVersionMismatchWarning', () => {
     showWarning()
 
     // Should only have been called once
-    expect(addAlertSpy).toHaveBeenCalledTimes(1)
+    expect(useToast().warning).toHaveBeenCalledTimes(1)
   })
 
   it('should emit a separate alert for each outdated comfy package', () => {
-    const toastStore = useToastStore()
     const versionStore = useVersionCompatibilityStore()
-    const addAlertSpy = vi.spyOn(toastStore, 'addAlert')
 
     vi.spyOn(versionStore, 'warningMessage', 'get').mockReturnValue(null)
     vi.spyOn(versionStore, 'packageWarningMessages', 'get').mockReturnValue([
@@ -247,17 +202,26 @@ describe('useFrontendVersionMismatchWarning', () => {
       }
     ])
 
-    const { showWarning } = useFrontendVersionMismatchWarning()
+    const { showWarning } = mountVersionWarning()
     showWarning()
 
-    expect(addAlertSpy).toHaveBeenCalledTimes(2)
-    expect(addAlertSpy).toHaveBeenCalledWith(
-      expect.stringContaining(
-        'Installed comfyui-workflow-templates version 0.9.0'
-      )
-    )
-    expect(addAlertSpy).toHaveBeenCalledWith(
-      expect.stringContaining('Installed comfyui-embedded-docs version 0.4.0')
-    )
+    expect(vi.mocked(useToast().warning).mock.calls).toEqual([
+      [
+        'Version Compatibility Warning',
+        {
+          description: expect.stringMatching(
+            /^Installed comfyui-workflow-templates version 0\.9\.0 /
+          )
+        }
+      ],
+      [
+        'Version Compatibility Warning',
+        {
+          description: expect.stringMatching(
+            /^Installed comfyui-embedded-docs version 0\.4\.0 /
+          )
+        }
+      ]
+    ])
   })
 })

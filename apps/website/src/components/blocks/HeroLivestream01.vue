@@ -3,8 +3,8 @@ import type { AnchorHTMLAttributes } from 'vue'
 import { computed, onMounted, ref } from 'vue'
 import { useNow } from '@vueuse/core'
 
-import Button from '../ui/button/Button.vue'
-import { resolveRel } from '../../utils/cta'
+import Button from '@/components/ui/button/Button.vue'
+import { resolveRel } from '@/utils/cta'
 
 type Cta = {
   label: string
@@ -78,7 +78,7 @@ const isLive = computed(
 
 <template>
   <section
-    class="max-w-9xl mx-auto flex flex-col items-center px-6 py-16 text-center lg:py-24"
+    class="mx-auto flex max-w-9xl flex-col items-center px-6 py-16 text-center lg:py-24"
   >
     <div
       v-if="isLive"

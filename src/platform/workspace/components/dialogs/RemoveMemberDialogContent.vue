@@ -10,7 +10,7 @@
         {{ $t('workspacePanel.removeMemberDialog.title') }}
       </h2>
       <button
-        class="focus-visible:ring-secondary-foreground cursor-pointer rounded-sm border-none bg-transparent p-0 text-muted-foreground transition-colors hover:text-base-foreground focus-visible:ring-1 focus-visible:outline-none"
+        class="cursor-pointer rounded-sm border-none bg-transparent p-0 text-muted-foreground transition-colors hover:text-base-foreground focus-visible:ring-1 focus-visible:ring-border-default focus-visible:outline-none"
         :aria-label="$t('g.close')"
         @click="onCancel"
       >
@@ -38,7 +38,7 @@
 </template>
 
 <script setup lang="ts">
-import { useToast } from 'primevue/usetoast'
+import { useToast } from '@/components/ui/toast/toastStore'
 import { ref } from 'vue'
 import { useI18n } from 'vue-i18n'
 
@@ -67,17 +67,12 @@ async function onRemove() {
   try {
     await workspaceStore.removeMember(memberId)
     void fetchStatus().catch(console.error)
-    toast.add({
-      severity: 'success',
-      summary: t('workspacePanel.removeMemberDialog.success'),
-      life: 2000
+    toast.success(t('workspacePanel.removeMemberDialog.success'), {
+      duration: 2000
     })
     dialogStore.closeDialog({ key: 'remove-member' })
   } catch {
-    toast.add({
-      severity: 'error',
-      summary: t('workspacePanel.removeMemberDialog.error')
-    })
+    toast.error(t('workspacePanel.removeMemberDialog.error'))
   } finally {
     loading.value = false
   }

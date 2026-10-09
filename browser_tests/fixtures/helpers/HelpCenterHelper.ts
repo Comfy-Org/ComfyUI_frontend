@@ -74,7 +74,7 @@ class HelpCenterHelper {
           body: JSON.stringify(releases)
         })
       } else {
-        await route.continue()
+        await route.fallback()
       }
     })
   }
@@ -117,8 +117,9 @@ class HelpCenterHelper {
    */
   async stubExternalPages(): Promise<void> {
     for (const pattern of [
-      'https://www.comfy.org/**',
-      'https://github.com/**'
+      'https://comfy.org/**',
+      'https://github.com/**',
+      'https://discord.com/invite/comfyorg'
     ]) {
       await this.page.context().route(pattern, (route: Route) =>
         route.fulfill({

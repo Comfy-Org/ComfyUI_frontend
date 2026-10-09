@@ -1,6 +1,9 @@
+import type { ListMembersResponse } from '@comfyorg/ingest-types'
+
 import type { WorkspaceTokenResponse } from '@/platform/workspace/stores/workspaceAuthStore'
 
 import { comfyPageFixture } from '@e2e/fixtures/ComfyPage'
+import { createBillingCapabilities } from '@e2e/fixtures/data/billingCapabilities'
 import {
   EMPTY_BILLING_BALANCE,
   EMPTY_BILLING_PLANS,
@@ -16,8 +19,8 @@ import { mockWorkspaceList } from '@e2e/fixtures/utils/workspaceMocks'
 
 /**
  * Boots the app with the workspace-switcher endpoints mocked: remote config
- * (team workspaces enabled), the workspace list, workspace-token minting for
- * whichever workspace is being switched to, and a no-op session refresh.
+ * (team workspaces enabled), the workspace list, workspace-token minting and
+ * billing capabilities for the selected workspace, and a no-op session refresh.
  */
 interface WorkspaceSwitchTokenGate {
   requestReceived: Promise<void>
@@ -33,6 +36,15 @@ export const workspaceSwitcherTest = comfyPageFixture.extend<{
     )
 
     await mockWorkspaceList(page, WORKSPACE_SWITCHER_WORKSPACES)
+
+    await page.route('**/api/workspace/members**', (route) =>
+      route.fulfill({
+        json: {
+          members: [],
+          pagination: { offset: 0, limit: 50, total: 0, has_more: false }
+        } satisfies ListMembersResponse
+      })
+    )
 
     await page.route('**/api/auth/token', async (route) => {
       const requestBody = route.request().postDataJSON() as {
@@ -73,6 +85,21 @@ export const workspaceSwitcherTest = comfyPageFixture.extend<{
     await page.route('**/api/billing/plans', (route) =>
       route.fulfill(jsonRoute(EMPTY_BILLING_PLANS))
     )
+    await page.route('**/api/billing/capabilities', async (route) => {
+      if (route.request().method() !== 'GET') return route.fallback()
+      const token = await route.request().headerValue('authorization')
+      const prefix = 'Bearer mock-workspace-token-'
+      const workspaceId = token?.startsWith(prefix)
+        ? token.slice(prefix.length)
+        : 'ws-personal'
+      await route.fulfill(
+        jsonRoute(
+          createBillingCapabilities(workspaceId, {
+            can_top_up: workspaceId !== 'ws-team-long'
+          })
+        )
+      )
+    })
 
     await use(page)
   },

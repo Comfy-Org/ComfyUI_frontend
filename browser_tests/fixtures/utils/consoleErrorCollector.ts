@@ -27,6 +27,7 @@ export async function attachPageDiagnosticEvidence(
 export function collectConsoleErrors(page: Page): {
   errors: string[]
   stop: () => void
+  [Symbol.dispose]: () => void
 } {
   const errors: string[] = []
   const listener = (message: ConsoleMessage) => {
@@ -42,13 +43,15 @@ export function collectConsoleErrors(page: Page): {
   }
   page.on('console', listener)
   page.on('pageerror', pageErrorListener)
+  const stop = () => {
+    page.off('console', listener)
+    page.off('pageerror', pageErrorListener)
+  }
   return {
     get errors() {
       return errors
     },
-    stop: () => {
-      page.off('console', listener)
-      page.off('pageerror', pageErrorListener)
-    }
+    stop,
+    [Symbol.dispose]: stop
   }
 }

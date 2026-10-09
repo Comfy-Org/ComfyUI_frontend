@@ -1,7 +1,16 @@
 # Registry corpus & ecosystem matrix
 
-A PR advisory that executes the frontend JS of every registry pack (~5,100
-packs) against the commit under review and reports a population verdict.
+A required PR and merge-queue gate that mirrors every registry pack (~5,100)
+and executes the frontend JS of the ~1,900 that ship any against relevant
+commits under review, then reports a population verdict. The aggregate check
+still appears on docs- and site-only pull requests after verifying that every
+expensive matrix dependency was skipped.
+
+**The corpus size and the executed count are different numbers, and the verdict
+is against the executed count.** Roughly 3,100 packs ship no extension-shaped JS
+and are skipped by `build_matrix.py`, so quoting the corpus size as the number of
+packs tested overstates the evidence by about 2.6x. `matrix-verdict` prints both:
+`packs with extension JS executed: 1945 (no-JS packs ignored: 3098)`.
 
 Vendored from `Comfy-Org/ComfyUI_ECS_Compat_Check` (`compat/paths.py`,
 `fetch_corpus.py`, `refresh_registry.py`), a private migration-phase
@@ -44,10 +53,10 @@ change through a reviewed bump.
   pack, opens a PR, and summarizes what moved.
 - Locally: `python3 scripts/registry-census/fetch_corpus.py --write-pins`
 
-**A red `CI: Ecosystem Matrix` on a pin-bump PR means the ecosystem moved, not
-that the diff broke something.** That is what the bump PR is for. Outside a
-pin bump or a cold rebuild of the unpinned tail, a red means the diff. Keeping
-those causes apart is the whole point.
+**A red `Custom Nodes Ecosystem Matrix test` on a pin-bump PR means the
+ecosystem moved, not that the diff broke something.** That is what the bump PR
+is for. Outside a pin bump or a cold rebuild of the unpinned tail, a red means
+the diff. Keeping those causes apart is the whole point.
 
 Every matrix run opens with a `pin-status` job printing the pin date, the age,
 and the bump URL, and raises a `::warning::` annotation once the pins are more
@@ -207,7 +216,10 @@ array-concatenation would otherwise smuggle in.
 The rules are load-bearing, not incidental:
 
 - **No secret may ever be added to a pack-executing job.** `ecosystem-matrix`
-  and `matrix-detection-proof` run unreviewed code from ~5,100 repositories.
+  and `matrix-detection-proof` run unreviewed code from ~1,900 repositories,
+  selected from a corpus of ~5,100 by a rule any pack author can satisfy at
+  will — shipping one JS file moves a pack into the executing set, so treat the
+  blast radius as the whole registry.
   Adding a Slack webhook, a token, or `id-token: write` to either job hands
   that credential to every pack author in the registry. If you need to
   notify on failure, do it from a separate `workflow_run` job.
@@ -235,7 +247,7 @@ the runner is ephemeral and tokenless.
 
 ## Runbook
 
-The advisory is red. In order:
+The required gate is red. In order:
 
 1. **Exit 2 — verdict withheld.** This is a harness failure, not an ecosystem
    result. Read the banner: short population (a shard died — check the
@@ -258,16 +270,16 @@ The advisory is red. In order:
    matrix run since the change is worth less than it appeared. Do not
    silence it.
 
-**Blast radius:** the matrix is an advisory PR check, not a required check.
-`ProtectMain` requires `test`, `lint-and-format`, `e2e-status` and
-`website-e2e`, so a red matrix informs but does not block. Promotion requires
-both adding the legacy and Vue `matrix-verdict` checks to required checks and
-adding a `merge_group` trigger; doing only the first leaves merge groups
-waiting for checks this workflow never reports.
+**Blast radius:** the workflow reports one aggregate check named
+`Custom Nodes Ecosystem Matrix test` for every pull request and merge-queue
+candidate. Branch protection should require that aggregate, not the internal
+legacy and Vue `matrix-verdict` jobs. On a relevant change, a red, skipped, or
+cancelled dependency makes the aggregate red. On an irrelevant pull request,
+the aggregate passes only after all expensive dependencies report skipped.
 
 ## Detection proof (counter-evidence)
 
-`detection-proof/corpus/` is a synthetic corpus of seven poison packs, each
+`detection-proof/corpus/` is a synthetic corpus of eight poison packs, each
 broken in exactly one measured way, plus three clean controls. The
 `matrix-detection-proof` job runs the real matrix over it and passes only if
 `verify_detection.py` sees every channel fire with its exact poison message
@@ -280,18 +292,19 @@ have poison counter-evidence or an explicit exemption explaining why it
 cannot be driven safely end to end. The service-status, timeout, and baseline
 delta criteria are exempted there and covered by verdict unit tests.
 
-| pack                     | breaks                         | detected as                      |
-| ------------------------ | ------------------------------ | -------------------------------- |
-| poison-load-throw        | throws at import               | pack + entry load gates breach   |
-| poison-regdef-throw      | `beforeRegisterNodeDef` throws | `hookErrors` (app containment)   |
-| poison-customnodes-throw | `registerCustomNodes` throws   | `hookErrors` (app containment)   |
-| poison-op-break          | `onNodeCreated` throws         | `load`/`addNode` op errs (gated) |
-| poison-serialize-throw   | `onSerialize` throws           | `serialize` op err (gated)       |
-| poison-desync            | pushes an unregistered widget  | signature drift (`wn`, counts)   |
-| poison-store-read-throw  | widget-store read throws       | operation desync (gated)         |
-| clean-control            | nothing                        | fully clean row (specificity)    |
-| clean-mjs-control        | nothing                        | `.mjs` entry loads (glob cover)  |
-| clean-asset-control      | nothing                        | css/json import resolves         |
+| pack                     | breaks                          | detected as                      |
+| ------------------------ | ------------------------------- | -------------------------------- |
+| poison-load-throw        | throws at import                | pack + entry load gates breach   |
+| poison-regdef-throw      | `beforeRegisterNodeDef` throws  | `hookErrors` (app containment)   |
+| poison-customnodes-throw | `registerCustomNodes` throws    | `hookErrors` (app containment)   |
+| poison-op-break          | `onNodeCreated` throws          | `load`/`addNode` op errs (gated) |
+| poison-serialize-throw   | `onSerialize` throws            | `serialize` op err (gated)       |
+| poison-desync            | drops a live widget's store row | signature drift (`wn`, counts)   |
+| poison-foreign-widget    | erases prototype methods        | operation error (gated)          |
+| poison-store-read-throw  | widget-store read throws        | operation desync (gated)         |
+| clean-control            | nothing                         | fully clean row (specificity)    |
+| clean-mjs-control        | nothing                         | `.mjs` entry loads (glob cover)  |
+| clean-asset-control      | nothing                         | css/json import resolves         |
 
 Insensitivity kept honest here: throwing extension hooks are CONTAINED by the
 app (`extensionService` catches and logs), so they can never fail

@@ -1,6 +1,4 @@
 import type { LGraph } from '@/lib/litegraph/src/litegraph'
-import { useWorkflowStore } from '@/platform/workflow/management/stores/workflowStore'
-import { useCanvasStore } from '@/renderer/core/canvas/canvasStore'
 import {
   calculateMinimapScale,
   calculateNodeBounds
@@ -9,15 +7,13 @@ import {
 import { renderMinimapToCanvas } from '../../extensions/minimap/minimapCanvasRenderer'
 
 /**
- * Create a thumbnail of the current canvas's active graph.
+ * Render a graph to a thumbnail data URL.
  * Used by workflow thumbnail generation.
  */
-export function createGraphThumbnail(): string | null {
-  const canvasStore = useCanvasStore()
-  const workflowStore = useWorkflowStore()
-
-  const graph = workflowStore.activeSubgraph || canvasStore.canvas?.graph
-  if (!graph || !graph._nodes || graph._nodes.length === 0) {
+export function createGraphThumbnail(
+  graph: LGraph | null | undefined
+): string | null {
+  if (!graph || graph._nodes.length === 0) {
     return null
   }
 
@@ -38,7 +34,7 @@ export function createGraphThumbnail(): string | null {
   canvas.height = height
 
   // Render the minimap
-  renderMinimapToCanvas(canvas, graph as LGraph, {
+  renderMinimapToCanvas(canvas, graph, {
     bounds,
     scale,
     settings: {

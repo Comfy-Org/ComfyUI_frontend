@@ -1,14 +1,14 @@
 import type {
   ModelLaunchMedia,
   ModelLaunchPage
-} from '../templates/model-launch/types'
+} from '@/templates/model-launch/types'
 
-import { externalLinks } from '../config/routes'
+import { externalLinks } from '@/config/routes'
 
 const ltxLinks = {
   cloudRun: 'https://cloud.comfy.org/?template=video_ltx2_5_i2v',
   cloudRunPremium: 'https://cloud.comfy.org/?template=api_ltx2_5_flf2v',
-  hubModel: `${externalLinks.workflows}/model/ltx`,
+  hubModel: new URL('model/ltx/', externalLinks.workflows).href,
   hfModel: 'https://huggingface.co/Lightricks/LTX-2.5',
   blogPost: 'https://blog.comfy.org/p/ltx-25-day-0-support-in-comfyui',
   docs: 'https://docs.comfy.org/tutorials/video/ltx/ltx-2-5',

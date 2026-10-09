@@ -2,8 +2,9 @@ import { storeToRefs } from 'pinia'
 import { computed, readonly, watch } from 'vue'
 
 import { t } from '@/i18n'
+import { isCloud } from '@/platform/distribution/types'
 import { useSettingsDialog } from '@/platform/settings/composables/useSettingsDialog'
-import { useToastStore } from '@/platform/updates/common/toastStore'
+import { useToast } from '@/components/ui/toast/toastStore'
 import { api } from '@/scripts/api'
 import { useCommandStore } from '@/stores/commandStore'
 import { useSystemStatsStore } from '@/stores/systemStatsStore'
@@ -28,11 +29,9 @@ let incompatibleToastShown = false
 const showIncompatibleToast = (): void => {
   if (incompatibleToastShown) return
   incompatibleToastShown = true
-  useToastStore().add({
-    severity: 'warn',
-    summary: t('manager.incompatibleVersion.title'),
-    detail: t('manager.incompatibleVersion.message'),
-    life: 15000
+  useToast().warning(t('manager.incompatibleVersion.title'), {
+    description: t('manager.incompatibleVersion.message'),
+    duration: 15000
   })
 }
 
@@ -57,8 +56,7 @@ export function useManagerState() {
 
       // Get current values
       const clientSupportsV4 =
-        api.getClientFeatureFlags().supports_manager_v4_ui ?? false
-
+        api.getClientFeatureFlags().supports_manager_v4_ui === true
       const serverSupportsV4 = api.getServerFeature(
         'extension.manager.supports_v4'
       )
@@ -70,7 +68,7 @@ export function useManagerState() {
       // Check command line args first (highest priority)
       // --enable-manager flag enables the manager (opposite of old --disable-manager)
       const hasEnableManager =
-        systemStats.value?.system?.argv?.includes('--enable-manager')
+        systemStats.value?.system.argv.includes('--enable-manager')
 
       // If --enable-manager is NOT present, manager is disabled
       if (!hasEnableManager) {
@@ -78,7 +76,7 @@ export function useManagerState() {
       }
 
       if (
-        systemStats.value?.system?.argv?.includes('--enable-manager-legacy-ui')
+        systemStats.value?.system.argv.includes('--enable-manager-legacy-ui')
       ) {
         return ManagerUIState.LEGACY_UI
       }
@@ -101,7 +99,6 @@ export function useManagerState() {
         return ManagerUIState.NEW_UI
       }
 
-      // Server supports v4 but client doesn't = LEGACY_UI
       if (serverSupportsV4 === true && !clientSupportsV4) {
         return ManagerUIState.LEGACY_UI
       }
@@ -185,6 +182,14 @@ export function useManagerState() {
     })
   )
 
+  /**
+   * The top bar Extensions button also opens the cloud custom nodes survey,
+   * so it stays visible on cloud where the manager itself is disabled.
+   */
+  const shouldShowExtensionsButton = readonly(
+    computed((): boolean => isCloud || shouldShowManagerButtons.value)
+  )
+
   // Fire the upgrade-required toast once when we first observe the
   // INCOMPATIBLE state. immediate: true handles the common case where the
   // composable is mounted after feature flags have already arrived.
@@ -240,10 +245,8 @@ export function useManagerState() {
         } catch {
           // If legacy command doesn't exist
           if (options?.showToastOnLegacyError !== false) {
-            useToastStore().add({
-              severity: 'error',
-              summary: t('g.error'),
-              detail: t('manager.legacyMenuNotAvailable')
+            useToast().error(t('g.error'), {
+              description: t('manager.legacyMenuNotAvailable')
             })
           }
           // Fallback to extensions panel if not showing toast
@@ -256,10 +259,8 @@ export function useManagerState() {
 
       case ManagerUIState.NEW_UI:
         if (options?.isLegacyOnly) {
-          useToastStore().add({
-            severity: 'error',
-            summary: t('g.error'),
-            detail: t('manager.legacyMenuNotAvailable')
+          useToast().error(t('g.error'), {
+            description: t('manager.legacyMenuNotAvailable')
           })
         } else {
           managerDialog.show(options?.initialTab, options?.initialPackId)
@@ -276,6 +277,7 @@ export function useManagerState() {
     isIncompatibleManager,
     shouldShowInstallButton,
     shouldShowManagerButtons,
+    shouldShowExtensionsButton,
     openManager
   }
 }

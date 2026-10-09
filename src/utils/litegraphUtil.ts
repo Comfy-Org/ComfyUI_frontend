@@ -1,13 +1,12 @@
 import { every, filter, head, isEmpty, isEqual, map } from 'es-toolkit/compat'
 
 import type { ColorOption, LGraph } from '@/lib/litegraph/src/litegraph'
-import type { ExecutedWsMessage } from '@/schemas/apiSchema'
+import type { ExecutedWsMessage } from '@/platform/remote/comfyui/execution/types'
 import {
   LGraphCanvas,
   LGraphGroup,
   LGraphNode,
   LiteGraph,
-  Reroute,
   isColorable
 } from '@/lib/litegraph/src/litegraph'
 import type {
@@ -21,7 +20,8 @@ import type {
   WidgetCallbackOptions
 } from '@/lib/litegraph/src/types/widgets'
 import type { InputSpec } from '@/schemas/nodeDef/nodeDefSchemaV2'
-import { useToastStore } from '@/platform/updates/common/toastStore'
+import { inputSpecTree } from '@/schemas/nodeDef/inputSpecTree'
+import { useToast } from '@/components/ui/toast/toastStore'
 import { useNodeZIndex } from '@/renderer/extensions/vueNodes/composables/useNodeZIndex'
 import { app } from '@/scripts/app'
 import { t } from '@/i18n'
@@ -29,7 +29,7 @@ import { parseNodeLocatorId } from '@/types/nodeIdentification'
 import type { SerializedNodeId } from '@/types/nodeId'
 import { UNASSIGNED_NODE_ID, parseNodeId } from '@/types/nodeId'
 import type { WidgetId } from '@/types/widgetId'
-import { widgetId } from '@/types/widgetId'
+import { ensureUniqueWidgetNames, widgetId } from '@/types/widgetId'
 
 type ImageNode = LGraphNode & { imgs: HTMLImageElement[] | undefined }
 type VideoNode = LGraphNode & {
@@ -47,6 +47,9 @@ export async function createNode(
   name: string
 ): Promise<LGraphNode | null> {
   if (!name) {
+    return null
+  }
+  if (isSelectOnly(canvas)) {
     return null
   }
 
@@ -67,7 +70,7 @@ export async function createNode(
     }
     return addedNode
   } else {
-    useToastStore().addAlert(t('assetBrowser.failedToCreateNode'))
+    useToast().warning(t('assetBrowser.failedToCreateNode'))
     return null
   }
 }
@@ -89,7 +92,7 @@ export function isVideoNode(node: LGraphNode | undefined): node is VideoNode {
  * Check if output data indicates animated content (animated webp/png or video).
  */
 export function isAnimatedOutput(
-  output: ExecutedWsMessage['output'] | undefined
+  output: Pick<ExecutedWsMessage['output'], 'animated'> | undefined
 ): boolean {
   return !!output?.animated?.find(Boolean)
 }
@@ -115,23 +118,34 @@ export function isAudioNode(node: LGraphNode | undefined): boolean {
   return !!node && node.previewMediaType === 'audio'
 }
 
-export function resolveComboValues(widget: IComboWidget): string[] {
-  const values = widget.options?.values
-  if (!values) return []
+export function resolveComboValues(widget: IComboWidget): (string | number)[] {
+  const values = widget.options.values
   if (typeof values === 'function') return values(widget)
   if (Array.isArray(values)) return values
   return Object.keys(values)
 }
 
-export function addToComboValues(widget: IComboWidget, value: string) {
-  if (!widget.options) widget.options = { values: [] }
-  if (!widget.options.values) widget.options.values = []
-  // @ts-expect-error Combo widget values may be a dictionary or legacy function type
-  if (!widget.options.values.includes(value)) {
-    // @ts-expect-error Combo widget values may be a dictionary or legacy function type
-    widget.options.values.push(value)
+export function addToComboValues(
+  widget: Pick<IComboWidget, 'options'>,
+  value: string
+) {
+  const values = widget.options.values
+  if (Array.isArray(values) && !values.includes(value)) {
+    values.push(value)
   }
 }
+
+/**
+ * True while the canvas is a picking surface rather than an editable one: its
+ * own `selectOnly` flag is set, or the interaction mode the application
+ * injected reads select-only (ADR-CANVAS-INTERACTION-0035).
+ *
+ * The canvas pointer and key dispatch and the command store read the mode
+ * themselves. The document-level paste, drop and history listeners guard with
+ * this helper, so a new document-level edit path has to opt in.
+ */
+export const isSelectOnly = (canvas: LGraphCanvas | undefined): boolean =>
+  canvas?.selectOnly === true
 
 export const isLGraphNode = (item: unknown): item is LGraphNode => {
   return item instanceof LGraphNode
@@ -139,10 +153,6 @@ export const isLGraphNode = (item: unknown): item is LGraphNode => {
 
 export const isLGraphGroup = (item: unknown): item is LGraphGroup => {
   return item instanceof LGraphGroup
-}
-
-export const isReroute = (item: unknown): item is Reroute => {
-  return item instanceof Reroute
 }
 
 /**
@@ -189,21 +199,59 @@ export function migrateWidgetsValues<TWidgetValue>(
   widgets: IBaseWidget[],
   widgetsValues: TWidgetValue[]
 ): TWidgetValue[] {
+  if (
+    Object.values(inputDefs).some((input) =>
+      inputSpecTree(input).some((spec) => spec.type === 'COMFY_DYNAMICGROUP_V3')
+    )
+  )
+    return widgetsValues
+
   const widgetNames = new Set(widgets.map((w) => w.name))
   const originalWidgetsInputs = Object.values(inputDefs).filter(
     (input) => widgetNames.has(input.name) || input.forceInput
   )
-
-  const widgetIndexHasForceInput = originalWidgetsInputs.flatMap((input) =>
-    input.control_after_generate
-      ? [!!input.forceInput, false]
-      : [!!input.forceInput]
+  const skippedWidgetNames = new Set(
+    map(
+      filter(widgets, (widget) => widget.serialize === false),
+      (widget) => widget.name
+    )
   )
 
-  if (widgetIndexHasForceInput.length !== widgetsValues?.length)
-    return widgetsValues
+  const widgetIndexHasForceInput = originalWidgetsInputs.flatMap((input) => {
+    if (skippedWidgetNames.has(input.name)) return []
+    return input.control_after_generate
+      ? [!!input.forceInput, false]
+      : [!!input.forceInput]
+  })
 
-  return widgetsValues.filter((_, index) => !widgetIndexHasForceInput[index])
+  const serializableWidgetCount = filter(
+    widgets,
+    (widget) => widget.serialize !== false
+  ).length
+  if (
+    !widgetIndexHasForceInput.includes(true) &&
+    widgetsValues.length === serializableWidgetCount
+  ) {
+    return widgetsValues
+  }
+
+  const compactedWidgetValues = filter(
+    widgetsValues,
+    (_, index) => widgets[index]?.serialize !== false
+  )
+  const alignedWidgetValues =
+    compactedWidgetValues.length === widgetIndexHasForceInput.length
+      ? compactedWidgetValues
+      : widgetsValues.length === widgetIndexHasForceInput.length
+        ? widgetsValues
+        : undefined
+
+  if (!alignedWidgetValues) return widgetsValues
+
+  return filter(
+    alignedWidgetValues,
+    (_, index) => !widgetIndexHasForceInput[index]
+  )
 }
 
 /**
@@ -296,7 +344,7 @@ export function resolveNodeWidget(
     if (locator?.subgraphUuid) {
       const host = graph.getNodeById(locator.localNodeId)
       if (host?.isSubgraphNode()) {
-        const widget = host.widgets?.find((w) => w.name === widgetName)
+        const widget = host.widgets.find((w) => w.name === widgetName)
         return widget ? [host, widget] : []
       }
     }
@@ -317,33 +365,52 @@ export function resolveNodeWidget(
 
 export function getWidgetIdForNode(
   node: LGraphNode,
-  widget: Pick<IBaseWidget, 'name' | 'widgetId'>,
-  duplicateIndex = 0
+  widget: Pick<IBaseWidget, 'name' | 'widgetId'>
 ): WidgetId | undefined {
   if (widget.widgetId) return widget.widgetId
   const graphId = node.graph?.rootGraph.id
   const nodeId = parseNodeId(node.id)
   if (!graphId || !nodeId || nodeId === UNASSIGNED_NODE_ID) return undefined
-  const name =
-    duplicateIndex > 0 ? `${widget.name}#${duplicateIndex}` : widget.name
-  return widgetId(graphId, nodeId, name)
+  const liveEntry = [...mapLiveWidgetsById(node)].find(
+    ([, candidate]) => candidate === widget
+  )
+  if (liveEntry) return liveEntry[0]
+  return widgetId(graphId, nodeId, widget.name)
 }
 
 /**
- * Maps a node's live widgets to their {@link WidgetId}, replicating the
- * duplicate-name disambiguation used when the ids were minted. Building the map
- * once lets callers resolve widgets by id in O(1) instead of rescanning.
+ * Maps a node's live widgets to their {@link WidgetId}. Building the map once
+ * lets callers resolve widgets by id in O(1) instead of rescanning.
  */
 export function mapLiveWidgetsById(
   node: LGraphNode
 ): Map<WidgetId, IBaseWidget> {
   const byId = new Map<WidgetId, IBaseWidget>()
-  const duplicateIndexByKey = new Map<string, number>()
-  for (const widget of node.widgets ?? []) {
-    const duplicateKey = `${widget.name}:${widget.type}`
-    const duplicateIndex = duplicateIndexByKey.get(duplicateKey) ?? 0
-    duplicateIndexByKey.set(duplicateKey, duplicateIndex + 1)
-    const id = getWidgetIdForNode(node, widget, duplicateIndex)
+  const widgets = node.widgets ?? []
+  const distinctWidgets = [...new Set(widgets)]
+  const namesAreUnique = ensureUniqueWidgetNames(distinctWidgets)
+  const graphId = node.graph?.rootGraph.id
+  const nodeId = parseNodeId(node.id)
+  const usedNames = new Set<string>()
+  const reservedNames = new Set(distinctWidgets.map(({ name }) => name))
+  for (const widget of distinctWidgets) {
+    let name = widget.name
+    if (!namesAreUnique && usedNames.has(name)) {
+      let suffix = 1
+      while (
+        usedNames.has(`${name}#${suffix}`) ||
+        reservedNames.has(`${name}#${suffix}`)
+      ) {
+        suffix++
+      }
+      name = `${name}#${suffix}`
+    }
+    usedNames.add(name)
+    const id =
+      widget.widgetId ??
+      (graphId && nodeId && nodeId !== UNASSIGNED_NODE_ID
+        ? widgetId(graphId, nodeId, name)
+        : undefined)
     if (id) byId.set(id, widget)
   }
   return byId
@@ -351,8 +418,6 @@ export function mapLiveWidgetsById(
 
 export function isLoad3dNode(node: LGraphNode) {
   return (
-    node &&
-    node.type &&
-    (node.type === 'Load3D' || node.type === 'Load3DAnimation')
+    node.type && (node.type === 'Load3D' || node.type === 'Load3DAnimation')
   )
 }

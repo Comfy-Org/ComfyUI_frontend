@@ -10,7 +10,7 @@
         {{ $t('subscription.downgrade.title', { plan: planName }) }}
       </h2>
       <button
-        class="focus-visible:ring-secondary-foreground cursor-pointer rounded-sm border-none bg-transparent p-0 text-muted-foreground transition-colors hover:text-base-foreground focus-visible:ring-1 focus-visible:outline-none"
+        class="cursor-pointer rounded-sm border-none bg-transparent p-0 text-muted-foreground transition-colors hover:text-base-foreground focus-visible:ring-1 focus-visible:ring-border-default focus-visible:outline-none"
         :aria-label="$t('g.close')"
         :disabled="isLoading"
         @click="onClose"
@@ -56,7 +56,7 @@
 </template>
 
 <script setup lang="ts">
-import { useToast } from 'primevue/usetoast'
+import { useToast } from '@/components/ui/toast/toastStore'
 import { computed, ref, watch } from 'vue'
 import { useI18n } from 'vue-i18n'
 
@@ -64,6 +64,7 @@ import { formatUsdFromCents } from '@/base/credits/comfyCredits'
 import Button from '@/components/ui/button/Button.vue'
 import Input from '@/components/ui/input/Input.vue'
 import { useDialogStore } from '@/stores/dialogStore'
+import { getErrorMessage } from '@/utils/errorUtil'
 
 const {
   planName,
@@ -132,10 +133,8 @@ async function onConfirmDowngrade() {
     await onConfirm(planSlug, requiresReactivation)
     dialogStore.closeDialog({ key: 'downgrade-remove-members' })
   } catch (error) {
-    toast.add({
-      severity: 'error',
-      summary: t('subscription.downgrade.failed'),
-      detail: error instanceof Error ? error.message : t('g.unknownError')
+    toast.error(t('subscription.downgrade.failed'), {
+      description: getErrorMessage(error) ?? t('g.unknownError')
     })
   } finally {
     isLoading.value = false

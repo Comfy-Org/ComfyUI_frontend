@@ -154,7 +154,7 @@
 </template>
 
 <script setup lang="ts">
-import { useToast } from 'primevue/usetoast'
+import { useToast } from '@/components/ui/toast/toastStore'
 import { computed, nextTick, onBeforeUnmount, onMounted, ref } from 'vue'
 import type { CSSProperties, Component } from 'vue'
 import { useI18n } from 'vue-i18n'
@@ -168,6 +168,7 @@ import { useTelemetry } from '@/platform/telemetry'
 import type { ReleaseNote } from '@/platform/updates/common/releaseService'
 import { useReleaseStore } from '@/platform/updates/common/releaseStore'
 import { useCommandStore } from '@/stores/commandStore'
+import { getErrorMessage } from '@/utils/errorUtil'
 import { electronAPI } from '@/utils/envUtil'
 import { formatVersionAnchor } from '@/utils/formatUtil'
 import { useConflictAcknowledgment } from '@/workbench/extensions/manager/composables/useConflictAcknowledgment'
@@ -232,6 +233,7 @@ const hasReleases = computed(() => releaseStore.releases.length > 0)
 const showVersionUpdates = computed(() =>
   settingStore.get('Comfy.Notification.ShowVersionUpdates')
 )
+const isDevMode = computed(() => settingStore.get('Comfy.DevMode'))
 
 // Use conflict acknowledgment state from composable
 const { shouldShowRedDot: shouldShowManagerRedDot } =
@@ -278,6 +280,16 @@ const moreItems = computed<MenuItem[]>(() => {
       visible: isDesktop,
       action: () => {
         onReinstall()
+        emit('close')
+      }
+    },
+    {
+      key: 'replay-onboarding',
+      type: 'item',
+      label: t('commands.Comfy_Onboarding_Replay.label'),
+      visible: isDevMode.value,
+      action: () => {
+        void commandStore.execute('Comfy.Onboarding.Replay')
         emit('close')
       }
     }
@@ -592,40 +604,34 @@ const onReinstall = (): void => {
 }
 
 const onUpdateComfyUI = async (): Promise<void> => {
-  const { updateComfyUI, rebootComfyUI, error } = useComfyManagerService()
+  const { updateComfyUI, startQueue, rebootComfyUI, error } =
+    useComfyManagerService()
 
-  toast.add({
-    severity: 'info',
-    summary: t('helpCenter.updateComfyUIStarted'),
-    detail: t('helpCenter.updateComfyUIStartedDetail'),
-    life: 3000
+  toast.info(t('helpCenter.updateComfyUIStarted'), {
+    description: t('helpCenter.updateComfyUIStartedDetail'),
+    duration: 3000
   })
 
   try {
     const result = await updateComfyUI({ is_stable: true })
+    if (result !== null) await startQueue()
 
     if (result === null || error.value) {
-      toast.add({
-        severity: 'error',
-        summary: t('g.error'),
-        detail: error.value || t('helpCenter.updateComfyUIFailed')
+      toast.error(t('g.error'), {
+        description: error.value || t('helpCenter.updateComfyUIFailed')
       })
       return
     }
 
-    toast.add({
-      severity: 'success',
-      summary: t('helpCenter.updateComfyUISuccess'),
-      detail: t('helpCenter.updateComfyUISuccessDetail'),
-      life: 3000
+    toast.success(t('helpCenter.updateComfyUISuccess'), {
+      description: t('helpCenter.updateComfyUISuccessDetail'),
+      duration: 3000
     })
 
     await rebootComfyUI()
   } catch (err) {
-    toast.add({
-      severity: 'error',
-      summary: t('g.error'),
-      detail: err instanceof Error ? err.message : t('g.unknownError')
+    toast.error(t('g.error'), {
+      description: getErrorMessage(err) ?? t('g.unknownError')
     })
   }
 }

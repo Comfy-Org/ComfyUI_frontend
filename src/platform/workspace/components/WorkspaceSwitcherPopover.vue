@@ -40,6 +40,7 @@
                 <WorkspaceProfilePic
                   class="size-8 shrink-0 text-sm"
                   :workspace-name="workspace.name"
+                  :subscription-tier="workspace.subscriptionTier"
                 />
                 <div class="flex min-w-0 flex-1 flex-col items-start gap-1">
                   <div class="flex max-w-full min-w-0 items-center gap-1.5">
@@ -113,7 +114,11 @@
             {{ $t('workspaceSwitcher.createWorkspace') }}
           </span>
           <span v-else class="text-sm text-muted-foreground">
-            {{ $t('workspaceSwitcher.maxWorkspacesReached') }}
+            {{
+              workspacesManagedByOrganization
+                ? $t('workspaceSwitcher.managedByOrganization')
+                : $t('workspaceSwitcher.maxWorkspacesReached')
+            }}
           </span>
         </div>
       </div>
@@ -171,6 +176,7 @@ const {
   workspaceId,
   workspaces,
   canCreateWorkspace,
+  workspacesManagedByOrganization,
   isFetchingWorkspaces,
   isSwitching
 } = storeToRefs(workspaceStore)

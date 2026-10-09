@@ -11,7 +11,7 @@ const mocks = vi.hoisted(() => ({
   openGatedRepoPage: vi.fn<typeof MissingModelDownload.openGatedRepoPage>()
 }))
 
-vi.mock('@/platform/missingModel/missingModelDownload', () => ({
+vi.mock(import('@/platform/missingModel/missingModelDownload'), () => ({
   downloadModel: mocks.downloadModel,
   fetchModelMetadata: mocks.fetchModelMetadata,
   isTrustedHuggingFaceUrl: mocks.isTrustedHuggingFaceUrl,
@@ -89,22 +89,14 @@ describe('useMissingModelDownload', () => {
   })
 
   it('opens a trusted access page through the Desktop bridge', async () => {
-    let receiver: unknown
-    let openedUrl: string | undefined
-    const bridge = {
-      isRemote: () => true,
-      async openModelAccessPage(this: unknown, url: string) {
-        receiver = this
-        openedUrl = url
-        return true
-      }
-    }
+    const openModelAccessPage = vi.fn(async (_url: string) => true)
+    const bridge = { isRemote: () => true, openModelAccessPage }
     window.__comfyDesktop2 = bridge
 
     await useMissingModelDownload().openModelAccessPage(repoUrl)
 
-    expect(receiver).toBe(bridge)
-    expect(openedUrl).toBe(repoUrl)
+    expect(openModelAccessPage.mock.contexts[0]).toBe(bridge)
+    expect(openModelAccessPage).toHaveBeenCalledWith(repoUrl)
     expect(mocks.openGatedRepoPage).not.toHaveBeenCalled()
   })
 
@@ -123,7 +115,6 @@ describe('useMissingModelDownload', () => {
 
   it('falls back when the Desktop bridge rejects the access page', async () => {
     const error = new Error('Desktop bridge unavailable')
-    const consoleError = vi.spyOn(console, 'error').mockImplementation(() => {})
     window.__comfyDesktop2 = {
       isRemote: () => false,
       openModelAccessPage: vi.fn().mockRejectedValue(error)
@@ -131,7 +122,7 @@ describe('useMissingModelDownload', () => {
 
     await useMissingModelDownload().openModelAccessPage(repoUrl)
 
-    expect(consoleError).toHaveBeenCalledWith(
+    expect(console.error).toHaveBeenCalledWith(
       'Failed to open model access page in Desktop:',
       error
     )

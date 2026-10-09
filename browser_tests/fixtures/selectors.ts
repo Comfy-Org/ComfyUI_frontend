@@ -4,20 +4,31 @@
  */
 
 export const TestIds = {
+  app: {
+    loadingOverlay: 'app-loading-overlay'
+  },
+  agent: {
+    conversationScroll: 'agent-conversation-scroll',
+    activityTrace: 'agent-activity-trace'
+  },
   sidebar: {
     toolbar: 'side-toolbar',
+    topGroup: 'sidebar-top-group',
     nodeLibrary: 'node-library-tree',
+    nodeLibraryBookmarks: 'node-library-bookmark-tree',
     nodeLibrarySearch: 'node-library-search',
     nodePreviewCard: 'node-preview-card',
+    nodePreviewInputs: 'node-preview-inputs',
+    nodePreviewBody: 'node-preview-body',
     workflows: 'workflows-sidebar',
     workflowsRefreshButton: 'workflows-refresh-button',
+    closeButton: 'sidebar-close-button',
     modeToggle: 'mode-toggle',
     tabButton: (tabId: string) => `${tabId}-tab-button`
   },
   tree: {
-    folder: 'tree-folder',
-    leaf: 'tree-leaf',
-    node: 'tree-node'
+    itemPreview: 'tree-item-preview',
+    leafCount: 'tree-leaf-count'
   },
   canvas: {
     main: 'graph-canvas',
@@ -107,6 +118,8 @@ export const TestIds = {
     loginButtonPopover: 'login-button-popover',
     loginButtonPopoverLearnMore: 'login-button-popover-learn-more',
     workflowTabs: 'topbar-workflow-tabs',
+    workflowTab: 'workflow-tab',
+    closeWorkflowButton: 'close-workflow-button',
     integratedTabBarActions: 'integrated-tab-bar-actions',
     actionBarButtons: 'action-bar-buttons',
     actionBarCard: 'action-bar-card',
@@ -114,17 +127,31 @@ export const TestIds = {
     queueInlineProgress: 'queue-inline-progress',
     queueInlineProgressNodeFill: 'queue-inline-progress-node-fill'
   },
+  partnerNodes: {
+    signInToRunButton: 'partner-sign-in-to-run-button',
+    runGateCaption: 'partner-run-gate-caption',
+    educationCard: 'partner-nodes-education-card',
+    educationCardDismiss: 'partner-nodes-education-dismiss'
+  },
   nodeLibrary: {
     bookmarksSection: 'node-library-bookmarks-section'
   },
   propertiesPanel: {
     root: 'properties-panel',
     errorsTab: 'panel-tab-errors',
-    selectionContextStrip: 'selection-context-strip'
+    tabIcon: 'panel-tab-icon',
+    selectionContextStrip: 'selection-context-strip',
+    errorsSummaryHero: 'errors-summary-hero',
+    errorsSummaryFilters: 'errors-summary-filters',
+    blockedLastRunIndicator: 'blocked-last-run-indicator'
   },
   assets: {
     browserModal: 'asset-browser-modal',
-    card: 'asset-card'
+    card: 'asset-card',
+    videoPreview: 'media-asset-video'
+  },
+  toast: {
+    panel: 'toast-panel'
   },
   subgraphEditor: {
     hiddenSection: 'subgraph-editor-hidden-section',
@@ -155,9 +182,6 @@ export const TestIds = {
     convertSubgraph: 'convert-to-subgraph-button',
     bypass: 'bypass-button'
   },
-  menu: {
-    moreMenuContent: 'more-menu-content'
-  },
   helpCenter: {
     button: 'help-center-button',
     popup: 'help-center-popup',
@@ -173,7 +197,6 @@ export const TestIds = {
     decrement: 'decrement',
     increment: 'increment',
     valueControl: 'value-control',
-    domWidgetTextarea: 'dom-widget-textarea',
     subgraphEnterButton: 'subgraph-enter-button',
     selectDefaultSearchInput: 'widget-select-default-search-input',
     selectDefaultViewport: 'widget-select-default-viewport'
@@ -256,6 +279,7 @@ export const TestIds = {
   },
   templates: {
     content: 'template-workflows-content',
+    detail: 'template-workflow-detail',
     workflowCard: (id: string) => `template-workflow-${id}`
   },
   user: {
@@ -266,10 +290,9 @@ export const TestIds = {
   queue: {
     jobHistorySidebar: 'job-history-sidebar',
     progressOverlay: 'queue-progress-overlay',
+    progressNodeFill: 'queue-progress-node-fill',
     overlayToggle: 'queue-overlay-toggle',
-    dockedJobHistoryAction: 'docked-job-history-action',
     jobDetailsPopover: 'queue-job-details-popover',
-    clearHistoryAction: 'clear-history-action',
     jobAssetsList: 'job-assets-list',
     notificationBanner: 'queue-notification-banner'
   },

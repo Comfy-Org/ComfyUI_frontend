@@ -1,5 +1,7 @@
+import { useWorkflowStore } from '@/platform/workflow/management/stores/workflowStore'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 
+import { st, t } from '@/i18n'
 import type { NodeExecutionId } from '@/types/nodeIdentification'
 import {
   createNodeExecutionId,
@@ -7,28 +9,20 @@ import {
 } from '@/types/nodeIdentification'
 
 import type { MissingModelCandidate } from '@/platform/missingModel/types'
+import { useSettingStore } from '@/platform/settings/settingStore'
 
 const mockNodeLocatorIdToNodeExecutionId = vi.hoisted(() =>
   vi.fn((nodeLocatorId: string) => nodeLocatorId)
 )
 
-vi.mock('@/i18n', () => ({
-  t: vi.fn((key: string) => `translated:${key}`),
-  st: vi.fn((_key: string, fallback: string) => fallback)
-}))
+vi.mock(import('@/i18n'))
 
-vi.mock('@/platform/distribution/types', () => ({
+vi.mock(import('@/platform/distribution/types'), () => ({
   isCloud: false
 }))
 
-vi.mock('@/platform/workflow/management/stores/workflowStore', () => ({
-  useWorkflowStore: () => ({
-    nodeLocatorIdToNodeExecutionId: mockNodeLocatorIdToNodeExecutionId
-  })
-}))
-
 import { useMissingModelStore } from './missingModelStore'
-import { useToastStore } from '@/platform/updates/common/toastStore'
+import { useToast } from '@/components/ui/toast/toastStore'
 import { app } from '@/scripts/app'
 import { toNodeId } from '@/types/nodeId'
 
@@ -55,6 +49,16 @@ function makeModelCandidate(
   }
 }
 
+beforeEach(() => {
+  vi.mocked(t).mockImplementation((key: unknown) => `translated:${String(key)}`)
+  vi.mocked(st).mockImplementation((_key, fallback) => fallback)
+  vi.mocked(
+    useWorkflowStore().nodeLocatorIdToNodeExecutionId
+  ).mockImplementation((id) =>
+    createNodeExecutionId(mockNodeLocatorIdToNodeExecutionId(id).split(':'))
+  )
+})
+
 describe('missingModelStore', () => {
   beforeEach(() => {
     mockNodeLocatorIdToNodeExecutionId.mockImplementation(
@@ -69,6 +73,25 @@ describe('missingModelStore', () => {
 
       expect(store.missingModelCandidates).not.toBeNull()
       expect(store.missingModelCandidates).toHaveLength(1)
+      expect(store.hasMissingModels).toBe(true)
+    })
+
+    it('hides derived state while the missing models warning is off', () => {
+      const settingStore = useSettingStore()
+      const store = useMissingModelStore()
+      store.setMissingModels([makeModelCandidate('model_a.safetensors')])
+      expect(store.hasMissingModels).toBe(true)
+
+      settingStore.settingValues['Comfy.ErrorSystem.ShowMissingModels'] = false
+
+      expect(store.missingModelCandidates).toHaveLength(1)
+      expect(store.visibleMissingModelCandidates).toBeNull()
+      expect(store.hasMissingModels).toBe(false)
+      expect(store.missingModelCount).toBe(0)
+      expect(store.missingModelNodeIds.size).toBe(0)
+
+      settingStore.settingValues['Comfy.ErrorSystem.ShowMissingModels'] = true
+
       expect(store.hasMissingModels).toBe(true)
     })
 
@@ -151,15 +174,11 @@ describe('missingModelStore', () => {
       vi.spyOn(app, 'refreshMissingModels').mockRejectedValue(
         new Error('object_info failed')
       )
-      const toastStore = useToastStore()
-      const addSpy = vi.spyOn(toastStore, 'add')
 
       await store.refreshMissingModels()
 
-      expect(addSpy).toHaveBeenCalledWith({
-        severity: 'error',
-        summary: 'translated:g.error',
-        detail: 'translated:rightSidePanel.missingModels.refreshFailed'
+      expect(useToast().error).toHaveBeenCalledWith('translated:g.error', {
+        description: 'translated:rightSidePanel.missingModels.refreshFailed'
       })
       expect(store.isRefreshingMissingModels).toBe(false)
     })
@@ -168,12 +187,10 @@ describe('missingModelStore', () => {
       const store = useMissingModelStore()
       const abortError = new DOMException('Refresh aborted', 'AbortError')
       vi.spyOn(app, 'refreshMissingModels').mockRejectedValue(abortError)
-      const toastStore = useToastStore()
-      const addSpy = vi.spyOn(toastStore, 'add')
 
       await store.refreshMissingModels()
 
-      expect(addSpy).not.toHaveBeenCalled()
+      expect(useToast().toasts).toEqual([])
       expect(store.isRefreshingMissingModels).toBe(false)
     })
   })

@@ -1,7 +1,12 @@
 import { expect, mergeTests } from '@playwright/test'
-import type { Page, Response } from '@playwright/test'
+import type { Page } from '@playwright/test'
 
 import { comfyPageFixture } from '@e2e/fixtures/ComfyPage'
+import {
+  PM_1150_JOB_ID,
+  pm1150Job,
+  pm1150JobDetail
+} from '@e2e/fixtures/data/pm1150AgentJob'
 import { expectNoErrorUiAfterVerification } from '@e2e/fixtures/helpers/ErrorsTabHelper'
 import {
   createRouteMockJob,
@@ -10,6 +15,7 @@ import {
   routeMockJobTimestamp
 } from '@e2e/fixtures/jobsRouteFixture'
 import { TestIds } from '@e2e/fixtures/selectors'
+import { mockViewFiles } from '@e2e/fixtures/utils/viewFileMocks'
 import { PropertiesPanelHelper } from '@e2e/tests/propertiesPanel/PropertiesPanelHelper'
 import type {
   JobDetail,
@@ -17,18 +23,6 @@ import type {
 } from '@/platform/remote/comfyui/jobs/jobTypes'
 
 const test = mergeTests(comfyPageFixture, jobsRouteFixture)
-
-interface ViewFile {
-  body?: Buffer | string
-  contentType?: string
-}
-
-type ViewFilesByName = Readonly<Record<string, ViewFile>>
-
-const transparentPng = Buffer.from(
-  'iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mP8z8BQDwAFgwJ/lwPIRwAAAABJRU5ErkJggg==',
-  'base64'
-)
 
 const alphaJob = createRouteMockJob({
   id: 'alpha',
@@ -161,51 +155,6 @@ async function mockInputFiles(page: Page, files: readonly string[]) {
   })
 }
 
-async function mockViewFiles(page: Page, filesByName: ViewFilesByName) {
-  await page.route('**/api/view**', async (route) => {
-    if (route.request().method().toUpperCase() !== 'GET') {
-      await route.fallback()
-      return
-    }
-
-    const url = new URL(route.request().url())
-    const filename = url.searchParams.get('filename')
-    if (!filename) {
-      await route.fulfill({
-        status: 400,
-        json: { error: 'Missing filename' } satisfies { error: string }
-      })
-      return
-    }
-
-    const file = filesByName[filename]
-    if (!file) {
-      await route.fulfill({
-        status: 404,
-        json: {
-          error: `Unknown filename: ${filename}`
-        } satisfies { error: string }
-      })
-      return
-    }
-
-    await route.fulfill({
-      body: file.body ?? transparentPng,
-      contentType: file.contentType ?? 'image/png'
-    })
-  })
-}
-
-function isGeneratedAssetVerificationResponse(response: Response): boolean {
-  const url = new URL(response.url())
-  return (
-    response.request().method().toUpperCase() === 'GET' &&
-    response.status() === 200 &&
-    url.pathname.endsWith('/api/jobs') &&
-    url.searchParams.get('status')?.split(',').includes('completed') === true
-  )
-}
-
 const bulkInsertionTest = comfyPageFixture.extend({
   page: async ({ page }, use) => {
     const jobsRoutes = new JobsRouteMocker(page)
@@ -225,11 +174,42 @@ test.describe('FE-130 assets sidebar route mocks', () => {
     await mockViewFiles(page, viewFiles)
   })
 
+  for (const area of ['padding', 'content'] as const) {
+    test(`uses one hover background over asset menu ${area}`, async ({
+      comfyPage
+    }) => {
+      const tab = comfyPage.menu.assetsTab
+      const menu = comfyPage.contextMenu
+      await tab.open()
+      await tab.rightClickAsset('alpha')
+
+      await menu.hoverItem('Export workflow', area)
+      await expect(async () => {
+        const { row, content } =
+          await menu.getItemBackgrounds('Export workflow')
+        expect(content).toBe(row)
+      }).toPass({ timeout: 5000 })
+    })
+  }
+
+  test('opens the asset inspector from the context menu', async ({
+    comfyPage
+  }) => {
+    const tab = comfyPage.menu.assetsTab
+    const menu = comfyPage.contextMenu
+    await tab.open()
+    await tab.rightClickAsset('alpha')
+
+    await menu.clickMenuItemExact('Inspect asset')
+    await expect(comfyPage.mediaLightbox.root).toBeVisible()
+  })
+
   test('renders generated and imported assets with image previews', async ({
     comfyPage
   }) => {
     const tab = comfyPage.menu.assetsTab
 
+    // oxlint-disable-next-line comfy/no-comfy-page-setup-call -- pre-existing call, tracked by evfail-23; not fixed in this pass
     await comfyPage.setup()
     await tab.open()
 
@@ -252,6 +232,7 @@ test.describe('FE-130 assets sidebar route mocks', () => {
   }) => {
     const tab = comfyPage.menu.assetsTab
 
+    // oxlint-disable-next-line comfy/no-comfy-page-setup-call -- pre-existing call, tracked by evfail-23; not fixed in this pass
     await comfyPage.setup()
     await tab.open()
 
@@ -282,6 +263,7 @@ test.describe('FE-130 assets sidebar route mocks', () => {
   }) => {
     const tab = comfyPage.menu.assetsTab
 
+    // oxlint-disable-next-line comfy/no-comfy-page-setup-call -- pre-existing call, tracked by evfail-23; not fixed in this pass
     await comfyPage.setup()
     await tab.open()
 
@@ -308,6 +290,7 @@ test.describe('FE-130 assets sidebar route mocks', () => {
     await jobsRoutes.mockJobsHistory([multiOutputJob])
     await jobsRoutes.mockJobDetail('multi-output', multiOutputJobDetail)
 
+    // oxlint-disable-next-line comfy/no-comfy-page-setup-call -- pre-existing call, tracked by evfail-23; not fixed in this pass
     await comfyPage.setup()
     await tab.open()
 
@@ -342,6 +325,7 @@ test.describe('FE-130 assets sidebar route mocks', () => {
       previewableCountJobDetail
     )
 
+    // oxlint-disable-next-line comfy/no-comfy-page-setup-call -- pre-existing call, tracked by evfail-23; not fixed in this pass
     await comfyPage.setup()
     await tab.open()
 
@@ -361,7 +345,6 @@ test.describe('FE-130 assets sidebar route mocks', () => {
   }) => {
     const tab = comfyPage.menu.assetsTab
 
-    await comfyPage.setup()
     await tab.open()
     await expect(tab.getAssetCardByName('alpha')).toBeVisible()
 
@@ -376,7 +359,7 @@ test.describe('FE-130 assets sidebar route mocks', () => {
     expect(deleteRequests[0]).toEqual({ delete: ['alpha'] })
     await expect(tab.getAssetCardByName('alpha')).toHaveCount(0)
     await expect(comfyPage.toast.toastSuccesses).toContainText(
-      'Asset deleted successfully'
+      'Deletion successful'
     )
   })
 })
@@ -420,24 +403,17 @@ bulkInsertionTest.describe(
         await comfyPage.page.keyboard.up('ControlOrMeta')
         await expect(tab.selectedCards).toHaveCount(2)
 
-        const generatedAssetVerificationResponse =
-          comfyPage.page.waitForResponse(isGeneratedAssetVerificationResponse)
-
         await tab.getAssetCardByName('alpha').dispatchEvent('contextmenu', {
           bubbles: true,
           cancelable: true,
           button: 2
         })
-        await expect(comfyPage.contextMenu.primeVueMenu).toBeVisible()
+        await expect(comfyPage.contextMenu.ariaMenu).toBeVisible()
         await tab.contextMenuItem('Insert all assets as nodes').click()
 
         await expect.poll(() => comfyPage.vueNodes.getNodeCount()).toBe(2)
 
-        await expectNoErrorUiAfterVerification(
-          comfyPage,
-          panel,
-          generatedAssetVerificationResponse
-        )
+        await expectNoErrorUiAfterVerification(comfyPage, panel)
       }
     )
   }
@@ -449,6 +425,7 @@ test.describe('FE-910 marquee selection and select all', () => {
     await jobsRoutes.mockJobsHistory(generatedJobs)
     await mockInputFiles(page, ['imported.png'])
     await mockViewFiles(page, viewFiles)
+    // oxlint-disable-next-line comfy/no-comfy-page-setup-call -- pre-existing call, tracked by evfail-23; not fixed in this pass
     await comfyPage.setup()
     await comfyPage.menu.assetsTab.open()
   })
@@ -691,6 +668,52 @@ test.describe('FE-910 marquee selection and select all', () => {
 
     await comfyPage.page.evaluate(() => {
       document.getElementById('test-modal')?.remove()
+    })
+  })
+})
+
+test.describe('Assets sidebar - agent-submitted job workflow open', () => {
+  test.beforeEach(async ({ jobsRoutes, page }) => {
+    await jobsRoutes.mockJobsHistory([pm1150Job])
+    await jobsRoutes.mockJobDetail(PM_1150_JOB_ID, pm1150JobDetail)
+    await mockInputFiles(page, [])
+    await mockViewFiles(page, { 'agent_job_output.png': {} })
+  })
+
+  test('PM-1150 — opens an agent-submitted job as a workflow via the stored API graph fallback', async ({
+    comfyPage
+  }) => {
+    const tab = comfyPage.menu.assetsTab
+
+    await test.step('open the agent job as a workflow', async () => {
+      await tab.open()
+      await tab.rightClickAsset('agent_job_output')
+      await tab.contextMenuItem('Open as workflow in new tab').click()
+    })
+
+    await test.step('verify the rebuilt workflow loads and renders', async () => {
+      await expect(comfyPage.toast.toastSuccesses).toBeVisible()
+      await expect(comfyPage.toast.toastWarnings).toBeHidden({
+        timeout: 1500
+      })
+
+      await expect
+        .poll(() => comfyPage.menu.topbar.getActiveTabName())
+        .toBe('agent_job_output')
+      await expect.poll(() => comfyPage.nodeOps.getNodeCount()).toBe(7)
+      await expect
+        .poll(() =>
+          comfyPage.page.evaluate(() =>
+            window.app!.graph.nodes.map((node) => node.type)
+          )
+        )
+        .toEqual(
+          expect.arrayContaining([
+            'CheckpointLoaderSimple',
+            'KSampler',
+            'SaveImage'
+          ])
+        )
     })
   })
 })

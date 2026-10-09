@@ -1,4 +1,4 @@
-import { beforeEach, describe, expect, it, vi } from 'vitest'
+import { describe, expect, it, vi } from 'vitest'
 
 import { checkModels } from './models'
 
@@ -9,12 +9,8 @@ function objectInfo(names: unknown) {
 }
 
 describe('checkModels', () => {
-  beforeEach(() => {
-    vi.spyOn(console, 'log').mockImplementation(() => {})
-  })
-
   function stubJson(body: unknown, status = 200) {
-    vi.stubGlobal('fetch', () =>
+    vi.mocked(fetch).mockImplementation(() =>
       Promise.resolve(
         new Response(JSON.stringify(body), {
           status,
@@ -37,7 +33,9 @@ describe('checkModels', () => {
   })
 
   it('stays quiet when the backend is unreachable, which backend reports', async () => {
-    vi.stubGlobal('fetch', () => Promise.reject(new Error('ECONNREFUSED')))
+    vi.mocked(fetch).mockImplementation(() =>
+      Promise.reject(new Error('ECONNREFUSED'))
+    )
     expect((await checkModels()).ok).toBe(true)
   })
 

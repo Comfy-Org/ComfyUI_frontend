@@ -1,21 +1,32 @@
 <script setup lang="ts">
+import { cn } from '@comfyorg/tailwind-utils'
+
 type Crumb = { label: string; href?: string }
 
 const {
   crumbs,
   updated,
-  label = 'Breadcrumb'
+  label = 'Breadcrumb',
+  stackOnMobile = false
 } = defineProps<{
   crumbs: readonly Crumb[]
   updated?: string
   label?: string
+  stackOnMobile?: boolean
 }>()
 </script>
 
 <template>
   <nav
     :aria-label="label"
-    class="max-w-9xl mx-auto flex items-center justify-between gap-4 px-6 py-3 lg:px-20"
+    :class="
+      cn(
+        'mx-auto flex max-w-9xl px-6 py-3 lg:px-20',
+        stackOnMobile
+          ? 'flex-col items-start gap-2 md:flex-row md:items-center md:justify-between md:gap-4'
+          : 'items-center justify-between gap-4'
+      )
+    "
   >
     <ol
       class="flex flex-wrap items-center gap-2 text-xs tracking-wide text-primary-warm-gray uppercase"

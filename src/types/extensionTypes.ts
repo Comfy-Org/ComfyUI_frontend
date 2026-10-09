@@ -1,7 +1,10 @@
 import type { Component } from 'vue'
 
+import type { ToastId } from '@/types/toastId'
+
 import type { useWorkflowStore } from '@/platform/workflow/management/stores/workflowStore'
-import type { ExecutionErrorWsMessage, NodeError } from '@/schemas/apiSchema'
+import type { ExecutionErrorWsMessage } from '@/platform/remote/comfyui/execution/types'
+import type { NodeError } from '@/platform/remote/comfyui/types'
 import type { useDialogService } from '@/services/dialogService'
 import type { ComfyCommand } from '@/stores/commandStore'
 
@@ -12,6 +15,7 @@ interface BaseSidebarTabExtension {
   iconBadge?: string | (() => string | null)
   tooltip?: string
   label?: string
+  onToggle?: () => boolean | Promise<boolean>
 }
 
 interface BaseBottomPanelExtension {
@@ -46,58 +50,42 @@ export type BottomPanelExtension =
   | VueBottomPanelExtension
   | CustomBottomPanelExtension
 
+export interface ToastAction {
+  label: string
+  onClick: () => unknown
+}
+
+export interface ToastOptions {
+  action?: ToastAction
+  closable?: boolean
+  description?: string
+  duration?: number
+  id?: ToastId
+}
+
 /**
- * Defines message options in Toast component.
+ * @deprecated Use `toast.success/error/info/warning/loading(title, options)`.
  */
 export interface ToastMessageOptions {
-  /**
-   * Severity level of the message.
-   * @defaultValue info
-   */
-  severity?:
-    | 'success'
-    | 'info'
-    | 'warn'
-    | 'error'
-    | 'secondary'
-    | 'contrast'
-    | undefined
-  /**
-   * Summary content of the message.
-   */
-  summary?: string | undefined
-  /**
-   * Detail content of the message.
-   */
+  closable?: boolean
   detail?: string
-  /**
-   * Whether the message can be closed manually using the close icon.
-   * @defaultValue true
-   */
-  closable?: boolean | undefined
-  /**
-   * Delay in milliseconds to close the message automatically.
-   */
-  life?: number | undefined
-  /**
-   * Key of the Toast to display the message.
-   */
-  group?: string | undefined
-  /**
-   * Style class of the message.
-   */
-  styleClass?: string | string[] | Record<string, boolean>
-  /**
-   * Style class of the content.
-   * Matches PrimeVue Toast API which accepts Vue class bindings.
-   */
-  contentStyleClass?: string | string[] | Record<string, boolean>
+  life?: number
+  severity?: 'success' | 'info' | 'warn' | 'error' | 'secondary' | 'contrast'
+  summary?: string
 }
 
 export type ToastManager = {
+  /** @deprecated Use `success/error/info/warning/loading`. */
   add(message: ToastMessageOptions): void
-  remove(message: ToastMessageOptions): void
-  removeAll(): void
+  /** @deprecated Use `warning(message)`. */
+  addAlert(message: string): void
+  dismiss(id: ToastId): boolean
+  dismissAll(): void
+  error(title: string, options?: ToastOptions): ToastId
+  info(title: string, options?: ToastOptions): ToastId
+  loading(title: string, options?: ToastOptions): ToastId
+  success(title: string, options?: ToastOptions): ToastId
+  warning(title: string, options?: ToastOptions): ToastId
 }
 
 export interface ExtensionManager {
@@ -110,8 +98,9 @@ export interface ExtensionManager {
   dialog: ReturnType<typeof useDialogService>
   command: CommandManager
   setting: {
+    // oxlint-disable-next-line typescript/no-unnecessary-type-parameters -- Custom extensions declare settings outside the generated schema.
     get: <T = unknown>(id: string) => T | undefined
-    set: <T = unknown>(id: string, value: T) => void
+    set: (id: string, value: unknown) => void
   }
   workflow: ReturnType<typeof useWorkflowStore>
 

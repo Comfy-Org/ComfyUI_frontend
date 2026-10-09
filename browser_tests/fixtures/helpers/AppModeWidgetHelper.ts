@@ -2,6 +2,7 @@ import type { Locator, Page } from '@playwright/test'
 
 import type { ComfyPage } from '@e2e/fixtures/ComfyPage'
 import { TestIds } from '@e2e/fixtures/selectors'
+import { WidgetSelectDefaultFixture } from '@e2e/fixtures/components/WidgetSelectDefault'
 import { WidgetSelectDropdownFixture } from '@e2e/fixtures/components/WidgetSelectDropdown'
 
 /**
@@ -65,11 +66,9 @@ export class AppModeWidgetHelper {
 
   /** Select an option from a combo/select widget. */
   async selectOption(key: string, optionName: string) {
-    const widget = this.getWidgetItem(key)
-    await widget.getByRole('combobox').click()
-    await this.page
-      .getByRole('option', { name: optionName, exact: true })
-      .click()
+    await new WidgetSelectDefaultFixture(this.getWidgetItem(key)).selectOption(
+      optionName
+    )
   }
 
   /**
@@ -79,12 +78,9 @@ export class AppModeWidgetHelper {
   async runAndCapturePrompt(): Promise<
     Record<string, { inputs: Record<string, unknown> }>
   > {
-    let promptBody: Record<string, { inputs: Record<string, unknown> }> | null =
-      null
     await this.page.route(
       '**/api/prompt',
-      async (route, req) => {
-        promptBody = req.postDataJSON().prompt
+      async (route) => {
         await route.fulfill({
           status: 200,
           body: JSON.stringify({
@@ -99,9 +95,8 @@ export class AppModeWidgetHelper {
 
     const responsePromise = this.page.waitForResponse('**/api/prompt')
     await this.comfyPage.appMode.runButton.click()
-    await responsePromise
+    const response = await responsePromise
 
-    if (!promptBody) throw new Error('No prompt payload captured')
-    return promptBody
+    return response.request().postDataJSON().prompt
   }
 }

@@ -1,8 +1,8 @@
 <script setup lang="ts">
-import RadioButton from 'primevue/radiobutton'
-import Button from '@/components/ui/button/Button.vue'
-import { computed } from 'vue'
+import { computed, useId } from 'vue'
 
+import RadioGroup from '@/components/ui/radio-group/RadioGroup.vue'
+import RadioGroupItem from '@/components/ui/radio-group/RadioGroupItem.vue'
 import { useSettingStore } from '@/platform/settings/settingStore'
 import type { ControlOptions } from '@/types/simplifiedWidget'
 
@@ -15,6 +15,7 @@ type ControlOption = {
 }
 
 const settingStore = useSettingStore()
+const radioIdPrefix = useId()
 
 const controlOptions: ControlOption[] = [
   {
@@ -64,17 +65,16 @@ const controlMode = defineModel<ControlOptions>()
       {{ $t('widgets.valueControl.header.postfix') }}
     </div>
 
-    <div class="space-y-2">
-      <Button
+    <RadioGroup v-model="controlMode" class="flex-col space-y-2">
+      <div
         v-for="option in controlOptions"
         :key="option.mode"
-        as="label"
-        variant="textonly"
-        size="lg"
         class="flex h-[unset] w-full items-center justify-between gap-7 py-2 text-left"
-        :for="option.mode"
       >
-        <div class="flex min-w-0 flex-1 items-center gap-2 text-wrap">
+        <label
+          :for="`${radioIdPrefix}-${option.mode}`"
+          class="flex min-w-0 flex-1 cursor-pointer items-center gap-2 text-wrap"
+        >
           <div
             class="flex size-8 shrink-0 items-center justify-center rounded-lg border border-border-subtle bg-secondary-background"
           >
@@ -101,15 +101,14 @@ const controlMode = defineModel<ControlOptions>()
               {{ $t(`widgets.valueControl.${option.description}`) }}
             </div>
           </div>
-        </div>
+        </label>
 
-        <RadioButton
-          v-model="controlMode"
+        <RadioGroupItem
+          :id="`${radioIdPrefix}-${option.mode}`"
           class="shrink"
-          :input-id="option.mode"
           :value="option.mode"
         />
-      </Button>
-    </div>
+      </div>
+    </RadioGroup>
   </div>
 </template>

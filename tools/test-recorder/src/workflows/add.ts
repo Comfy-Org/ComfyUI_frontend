@@ -2,6 +2,9 @@ import { existsSync, mkdirSync, readFileSync, writeFileSync } from 'node:fs'
 import { basename, join } from 'node:path'
 import { toSlug } from '../cli/slug'
 
+export const WORKFLOW_ASSET_EXPLANATION =
+  'This workflow is copied into shared test assets so automated runs on other machines can use it. Personal files that are not added this way will not work there.'
+
 export type WorkflowValidationResult =
   | { ok: true }
   | { ok: false; reason: string }

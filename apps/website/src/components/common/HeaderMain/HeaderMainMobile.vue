@@ -2,13 +2,12 @@
 import BreadthumbIcon from '@/components/icons/BreadthumbIcon.vue'
 import { ChevronLeft, ChevronRight } from '@lucide/vue'
 import { computed, onUnmounted, ref, watch } from 'vue'
-import { getMainNavigation } from '../../../data/mainNavigation'
-import { getRoutes } from '../../../config/routes.ts'
-import { lockScroll, unlockScroll } from '../../../composables/scrollLock'
-import type { Locale } from '../../../i18n/translations.ts'
-import { t } from '../../../i18n/translations.ts'
+import { getMainNavigation } from '@/data/mainNavigation'
+import { getRoutes } from '@/config/routes.ts'
+import { lockScroll, unlockScroll } from '@/composables/scrollLock'
+import type { Locale } from '@/i18n/translations.ts'
+import { translationsFor } from '@/i18n/translations.ts'
 import NavLinkContent from './NavLinkContent.vue'
-import NewBadge from './NewBadge.vue'
 import Sheet from '@/components/ui/sheet/Sheet.vue'
 import SheetContent from '@/components/ui/sheet/SheetContent.vue'
 import SheetDescription from '@/components/ui/sheet/SheetDescription.vue'
@@ -19,14 +18,15 @@ import Button from '@/components/ui/button/Button.vue'
 import { cn } from '@comfyorg/tailwind-utils'
 
 const { locale = 'en' } = defineProps<{ locale?: Locale }>()
+const { t } = translationsFor(locale)
 const routes = getRoutes(locale)
-const mainNavigation = getMainNavigation(locale)
+const mainNavigation = computed(() => getMainNavigation(locale))
 
 const isOpen = ref(false)
 const activeSection = ref<string | null>(null)
 
 const activeItem = computed(() =>
-  mainNavigation.find(
+  mainNavigation.value.find(
     (item) => item.label === activeSection.value && item.columns
   )
 )
@@ -49,30 +49,30 @@ onUnmounted(() => {
   <div>
     <Sheet v-model:open="isOpen">
       <SheetTrigger
-        :aria-label="t('nav.toggleMenu', locale)"
-        class="bg-primary-comfy-yellow grid size-10 shrink-0 cursor-pointer place-items-center rounded-xl text-primary-comfy-ink hover:opacity-90"
+        :aria-label="t('nav.toggleMenu')"
+        class="grid size-10 shrink-0 cursor-pointer place-items-center rounded-xl bg-primary-comfy-yellow text-primary-comfy-ink hover:opacity-90"
       >
         <BreadthumbIcon class="h-3 w-5 text-primary-comfy-ink" />
       </SheetTrigger>
       <SheetContent
         side="right"
         class="flex size-full flex-col px-6 py-5 sm:max-w-none"
-        :close-label="t('nav.close', locale)"
+        :close-label="t('nav.close')"
       >
         <SheetHeader class="sr-only">
-          <SheetTitle>{{ t('nav.menu', locale) }}</SheetTitle>
+          <SheetTitle>{{ t('nav.menu') }}</SheetTitle>
           <SheetDescription>
-            {{ t('nav.mobileMenuDescription', locale) }}
+            {{ t('nav.mobileMenuDescription') }}
           </SheetDescription>
         </SheetHeader>
 
         <div>
           <a
             :href="routes.home"
-            class="focus-visible:border-primary-comfy-yellow focus-visible:ring-primary-comfy-yellow/50 inline-flex w-auto shrink-0 focus-visible:ring-3"
+            class="inline-flex w-auto shrink-0 focus-visible:border-primary-comfy-yellow focus-visible:ring-3 focus-visible:ring-primary-comfy-yellow/50"
           >
             <img src="/icons/logomark.svg" alt="" class="h-11 w-auto" />
-            <span class="sr-only">{{ t('nav.home', locale) }}</span>
+            <span class="sr-only">{{ t('nav.home') }}</span>
           </a>
         </div>
 
@@ -85,7 +85,7 @@ onUnmounted(() => {
                 activeItem ? 'opacity-0' : ''
               )
             "
-            :aria-label="t('nav.menu', locale)"
+            :aria-label="t('nav.menu')"
             :inert="activeItem ? true : undefined"
           >
             <ul class="flex flex-col gap-y-8">
@@ -97,8 +97,7 @@ onUnmounted(() => {
                   :href="item.columns ? undefined : item.href"
                   @click="item.columns && (activeSection = item.label)"
                 >
-                  <span class="ppformula-text-center">{{ item.label }}</span>
-                  <NewBadge v-if="item.badge" :locale="locale" size="xxs" />
+                  <NavLinkContent :item="item" :locale="locale" />
                   <template #append>
                     <ChevronRight class="size-7" />
                   </template>
@@ -127,31 +126,40 @@ onUnmounted(() => {
                 <template #prepend>
                   <ChevronLeft />
                 </template>
-                {{ t('nav.back', locale) }}
+                {{ t('nav.back') }}
               </Button>
 
               <div v-if="activeItem" class="mt-6 flex flex-col gap-y-12">
                 <div
-                  v-for="column in activeItem.columns"
-                  :key="column.header"
+                  v-for="(column, columnIndex) in activeItem.columns"
+                  :key="column.header ?? columnIndex"
                   class="flex flex-col gap-y-3"
                 >
                   <p
-                    class="text-primary-warm-gray text-base font-bold tracking-wider uppercase"
+                    v-if="column.header"
+                    class="text-base font-bold tracking-wider text-primary-warm-gray uppercase"
                   >
                     {{ column.header }}
                   </p>
-                  <Button
-                    v-for="link in column.items"
-                    :key="link.label"
-                    :href="link.href"
-                    variant="nav"
-                    as="a"
-                    :target="link.external ? '_blank' : undefined"
-                    :rel="link.external ? 'noopener noreferrer' : undefined"
+                  <div
+                    :class="
+                      column.items.every((link) => link.icon)
+                        ? 'flex flex-wrap gap-6'
+                        : 'flex flex-col gap-y-3'
+                    "
                   >
-                    <NavLinkContent :item="link" :locale="locale" />
-                  </Button>
+                    <Button
+                      v-for="link in column.items"
+                      :key="link.label"
+                      :href="link.href"
+                      variant="nav"
+                      as="a"
+                      :target="link.external ? '_blank' : undefined"
+                      :rel="link.external ? 'noopener noreferrer' : undefined"
+                    >
+                      <NavLinkContent :item="link" :locale="locale" />
+                    </Button>
+                  </div>
                 </div>
               </div>
             </div>

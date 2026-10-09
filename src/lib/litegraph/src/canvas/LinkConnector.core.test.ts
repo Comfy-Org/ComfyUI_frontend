@@ -1,7 +1,5 @@
 // oxlint-disable no-empty-pattern
-import { createTestingPinia } from '@pinia/testing'
-import { setActivePinia } from 'pinia'
-import { test as baseTest, beforeEach, describe, expect, vi } from 'vitest'
+import { test as baseTest, describe, expect, vi } from 'vitest'
 
 import type {
   MovingInputLink,
@@ -18,7 +16,7 @@ import {
   ToInputRenderLink,
   LinkDirection
 } from '@/lib/litegraph/src/litegraph'
-import type { ConnectingLink } from '@/lib/litegraph/src/interfaces'
+import type { ConnectingLink } from '@/lib/litegraph/src/types/slots'
 import type { LinkId } from '@/types/linkId'
 import { toLinkId } from '@/types/linkId'
 import { toNodeId } from '@/types/nodeId'
@@ -47,8 +45,6 @@ interface TestContext {
     slotType?: ISlotType
   ) => LLink
 }
-
-beforeEach(() => setActivePinia(createTestingPinia({ stubActions: false })))
 
 const test = baseTest.extend<TestContext>({
   network: async ({}, use) => {
@@ -156,13 +152,14 @@ describe('LinkConnector', () => {
     }) => {
       connector.state.connectingTo = 'input'
 
-      expect(() => {
-        connector.moveInputLink(
-          network,
-          new LGraphNode('mock'),
-          createMockNodeInputSlot({ link: toLinkId(1) })
-        )
-      }).toThrow('Already dragging links.')
+      connector.moveInputLink(
+        network,
+        new LGraphNode('mock'),
+        createMockNodeInputSlot({ link: toLinkId(1) })
+      )
+
+      expect(console.error).toHaveBeenCalledWith('Already dragging links.')
+      expect(connector.inputLinks).toHaveLength(0)
     })
   })
 
@@ -197,13 +194,14 @@ describe('LinkConnector', () => {
     }) => {
       connector.state.connectingTo = 'output'
 
-      expect(() => {
-        connector.moveOutputLink(
-          network,
-          new LGraphNode('mock'),
-          createMockNodeOutputSlot({ links: [toLinkId(1)] })
-        )
-      }).toThrow('Already dragging links.')
+      connector.moveOutputLink(
+        network,
+        new LGraphNode('mock'),
+        createMockNodeOutputSlot({ links: [toLinkId(1)] })
+      )
+
+      expect(console.error).toHaveBeenCalledWith('Already dragging links.')
+      expect(connector.outputLinks).toHaveLength(0)
     })
   })
 

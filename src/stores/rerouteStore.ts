@@ -111,9 +111,9 @@ export const useRerouteStore = defineStore('reroute', () => {
   }
 
   /**
-   * Registers a reroute's chain state.
-   * @returns The store-held reactive state — callers keep it as their live
-   * state object so later field writes are tracked.
+   * @returns The registered chain. Re-registering the same raw chain under the
+   * same owner returns the incumbent; `undefined` means a distinct chain
+   * occupies its ID.
    */
   function registerReroute(
     scope: GraphScope,
@@ -151,6 +151,16 @@ export const useRerouteStore = defineStore('reroute', () => {
     return chain?.graphId === scope.owningGraphId ? chain : undefined
   }
 
+  function* graphChains(scope: GraphScope): Generator<RerouteChain> {
+    const bucket = roots.get(scope.rootGraphId)
+    const ids = bucket?.idsByOwner.get(scope.owningGraphId)
+    if (!bucket || !ids) return
+    for (const id of ids) {
+      const chain = bucket.chains.get(id)
+      if (chain) yield chain
+    }
+  }
+
   /** Removes a chain's registration; only the registered state may vacate it. */
   function deleteReroute(scope: GraphScope, chain: RerouteChain): boolean {
     const bucket = roots.get(scope.rootGraphId)
@@ -185,6 +195,7 @@ export const useRerouteStore = defineStore('reroute', () => {
   return {
     registerReroute,
     getReroute,
+    graphChains,
     deleteReroute,
     getMembership,
     clearOwner,

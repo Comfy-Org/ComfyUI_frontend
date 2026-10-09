@@ -1,7 +1,8 @@
 import { describe, expect, it } from 'vitest'
 
-import type { Locale } from '../i18n/translations'
-import { t, translationKeys } from '../i18n/translations'
+import type { Locale } from '@/i18n/translations'
+import en from '@/locales/en/main.json' with { type: 'json' }
+import zhCN from '@/locales/zh-CN/main.json' with { type: 'json' }
 import { seedancePage } from './seedance'
 
 const LOCALES = ['en', 'zh-CN'] as const satisfies readonly Locale[]
@@ -11,21 +12,51 @@ const LOCALES = ['en', 'zh-CN'] as const satisfies readonly Locale[]
 // clips render whatever they asked for.
 const RESOLUTION_CLAIM = /4\s*k\b/i
 
+function stringsIn(value: unknown): string[] {
+  if (typeof value === 'string') return [value]
+  if (typeof value !== 'object' || value === null) return []
+  return Object.values(value).flatMap(stringsIn)
+}
+
 function pageCopy(locale: Locale): { label: string; text: string }[] {
   return [
     ...(seedancePage.gallery?.cards ?? []).flatMap((card) => [
-      { label: `card ${card.id} name`, text: card.name[locale] },
-      { label: `card ${card.id} note`, text: card.note[locale] },
-      { label: `card ${card.id} description`, text: card.description[locale] },
-      { label: `card ${card.id} prompt`, text: card.prompt?.[locale] ?? '' }
+      {
+        label: `card ${card.id} name`,
+        text: card.name[locale] || card.name.en
+      },
+      {
+        label: `card ${card.id} note`,
+        text: card.note[locale] || card.note.en
+      },
+      {
+        label: `card ${card.id} description`,
+        text: card.description[locale] || card.description.en
+      },
+      {
+        label: `card ${card.id} prompt`,
+        text: card.prompt?.[locale] || card.prompt?.en || ''
+      }
     ]),
     ...(seedancePage.faq?.items ?? []).flatMap((faq) => [
-      { label: `faq ${faq.id} question`, text: faq.question[locale] },
-      { label: `faq ${faq.id} answer`, text: faq.answer[locale] }
+      {
+        label: `faq ${faq.id} question`,
+        text: faq.question[locale] || faq.question.en
+      },
+      {
+        label: `faq ${faq.id} answer`,
+        text: faq.answer[locale] || faq.answer.en
+      }
     ]),
     ...(seedancePage.steps?.items ?? []).flatMap((step) => [
-      { label: `step ${step.id} title`, text: step.title[locale] },
-      { label: `step ${step.id} description`, text: step.description[locale] }
+      {
+        label: `step ${step.id} title`,
+        text: step.title[locale] || step.title.en
+      },
+      {
+        label: `step ${step.id} description`,
+        text: step.description?.[locale] || step.description?.en || ''
+      }
     ])
   ]
 }
@@ -36,7 +67,7 @@ describe('seedance 2.5 workflow links', () => {
     // The family page lists the shipped 2.5 workflows, which is what the launch
     // playbook asks the page to link, and matches what /ltx-2.5 already does.
     expect(seedancePage.hero.secondaryCta?.href).toBe(
-      'https://comfy.org/workflows/model/seedance'
+      'https://comfy.org/workflows/model/seedance/'
     )
   })
 
@@ -72,13 +103,10 @@ describe('seedance 2.5 landing copy', () => {
   })
 
   it('claims no 4K output in any seedance translation', () => {
-    const offenders = translationKeys
-      .filter((key) => key.startsWith('seedance.'))
-      .flatMap((key) =>
-        LOCALES.filter((locale) => RESOLUTION_CLAIM.test(t(key, locale))).map(
-          (locale) => `${key} (${locale})`
-        )
-      )
+    const offenders = [
+      ...stringsIn(en.seedance).map((text) => ({ locale: 'en', text })),
+      ...stringsIn(zhCN.seedance).map((text) => ({ locale: 'zh-CN', text }))
+    ].filter(({ text }) => RESOLUTION_CLAIM.test(text))
 
     expect(offenders).toEqual([])
   })

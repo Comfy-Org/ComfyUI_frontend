@@ -5,6 +5,7 @@ import { describe, expect, it, vi } from 'vitest'
 import { defineComponent, h, nextTick } from 'vue'
 import { createI18n } from 'vue-i18n'
 
+import BuilderSaveDialogContent from '@/components/builder/BuilderSaveDialogContent.vue'
 import GlobalDialog from '@/components/dialog/GlobalDialog.vue'
 import {
   onRekaFocusOutside,
@@ -17,8 +18,8 @@ import SetMemberCreditLimitDialogContent from '@/platform/workspace/components/d
 import SubscriptionRequiredDialogContentUnified from '@/platform/workspace/components/SubscriptionRequiredDialogContentUnified.vue'
 import { useDialogStore } from '@/stores/dialogStore'
 
-vi.mock(
-  '@/platform/workspace/composables/useSubscriptionCheckout',
+vi.mock<unknown>(
+  import('@/platform/workspace/composables/useSubscriptionCheckout'),
   async () => {
     const { computed, ref } = await import('vue')
 
@@ -31,10 +32,16 @@ vi.mock(
         isResubscribing: ref(false),
         previewData: ref(null),
         reactivationRequired: ref(false),
+        quoteIsCurrent: ref(false),
+        savedPaymentMethods: ref([]),
+        selectedSavedPaymentMethodId: ref(null),
         selectedTierKey: ref(null),
         selectedTeamStop: ref(null),
         selectedBillingCycle: ref('yearly'),
         activeCheckoutActionUrl: ref(null),
+        authenticationState: ref(null),
+        authenticationError: ref(null),
+        reconciliationOperationId: ref(null),
         isPolling: ref(false),
         isTeamCheckout: computed(() => false),
         previewVariant: computed(() => null),
@@ -45,6 +52,10 @@ vi.mock(
         handleAddCreditCard: vi.fn(),
         handleConfirmTransition: vi.fn(),
         handleTeamSubscribe: vi.fn(),
+        handleSubscriptionPayment: vi.fn(),
+        handleTeamSubscriptionPayment: vi.fn(),
+        applyPromotionCode: vi.fn(),
+        invalidateQuote: vi.fn(),
         handleResubscribe: vi.fn()
       })
     }
@@ -59,7 +70,17 @@ const i18n = createI18n({
       g: {
         cancel: 'Cancel',
         close: 'Close',
-        maximizeDialog: 'Maximize'
+        maximizeDialog: 'Maximize',
+        save: 'Save'
+      },
+      builderToolbar: {
+        app: 'App',
+        appDescription: 'Opens as an app by default',
+        defaultViewLabel: 'By default, this workflow will open as:',
+        filename: 'Filename',
+        nodeGraph: 'Node graph',
+        nodeGraphDescription: 'Opens as node graph by default',
+        saveAs: 'Save as'
       },
       workspacePanel: {
         members: {
@@ -250,6 +271,27 @@ describe('GlobalDialog Reka parity with PrimeVue', () => {
     ).toBeInTheDocument()
   })
 
+  it('opens the save dialog with an accessible name and description', async () => {
+    mountDialog()
+    const store = useDialogStore()
+
+    store.showDialog({
+      key: 'builder-save',
+      component: BuilderSaveDialogContent,
+      props: { defaultFilename: 'workflow.json' },
+      dialogComponentProps: {
+        renderer: 'reka',
+        headless: true,
+        useAutomaticLabeling: true
+      }
+    })
+
+    const dialog = await screen.findByRole('dialog', { name: 'Save as' })
+    expect(dialog).toHaveAccessibleDescription('Filename')
+    expect(screen.getByLabelText('Filename')).toHaveFocus()
+    expect(console.warn).not.toHaveBeenCalled()
+  })
+
   it('closes the dialog on Escape by default', async () => {
     mountDialog()
     const store = useDialogStore()
@@ -303,13 +345,13 @@ describe('GlobalDialog Reka parity with PrimeVue', () => {
 
     await screen.findByRole('dialog')
 
-    // eslint-disable-next-line testing-library/no-node-access
+    // oxlint-disable-next-line testing-library/no-node-access
     const header = screen.getByText('Section classes').parentElement
     expect(header?.classList.contains('p-2')).toBe(true)
     // twMerge drops the default header padding in favor of headerClass
     expect(header?.classList.contains('px-4')).toBe(false)
 
-    // eslint-disable-next-line testing-library/no-node-access
+    // oxlint-disable-next-line testing-library/no-node-access
     const body = screen.getByTestId('body').parentElement
     expect(body?.classList.contains('p-0')).toBe(true)
     expect(body?.classList.contains('px-4')).toBe(false)
@@ -548,30 +590,43 @@ describe('shouldPreventRekaDismiss', () => {
   }
 
   it.for([
-    'p-select-overlay',
-    'p-colorpicker-panel',
-    'p-popover',
-    'p-autocomplete-overlay',
-    'p-overlay-mask',
-    'p-dialog'
-  ])('prevents dismiss when target is inside %s', (className) => {
-    const overlay = document.createElement('div')
-    overlay.className = className
-    const inner = document.createElement('button')
-    overlay.appendChild(inner)
-    document.body.appendChild(overlay)
+    ['class', 'p-overlay-mask'],
+    ['class', 'p-dialog'],
+    ['data-toast-kind', 'info'],
+    ['data-toast-dock', '']
+  ] as const)(
+    'prevents dismiss when target is inside %j',
+    ([attribute, value]) => {
+      const overlay = document.createElement('div')
+      overlay.setAttribute(attribute, value)
+      const inner = document.createElement('button')
+      overlay.appendChild(inner)
+      document.body.appendChild(overlay)
 
-    const event = makeEvent(inner)
-    onRekaPointerDownOutside({ dismissableMask: undefined }, event)
+      const event = makeEvent(inner)
+      onRekaPointerDownOutside({ dismissableMask: undefined }, event)
 
-    expect(event.defaultPrevented).toBe(true)
-    overlay.remove()
-  })
+      expect(event.defaultPrevented).toBe(true)
+      overlay.remove()
+    }
+  )
 
   it('allows dismiss when target is outside any PrimeVue overlay', () => {
     const event = makeEvent(document.body)
     onRekaPointerDownOutside({ dismissableMask: undefined }, event)
     expect(event.defaultPrevented).toBe(false)
+  })
+
+  it('allows dismiss from the empty space beside a toast message', () => {
+    const container = document.createElement('ol')
+    container.setAttribute('data-testid', 'toast-viewport')
+    document.body.appendChild(container)
+
+    const event = makeEvent(container)
+    onRekaPointerDownOutside({ dismissableMask: undefined }, event)
+
+    expect(event.defaultPrevented).toBe(false)
+    container.remove()
   })
 
   it('prevents dismiss when the dialog is not the top-most (stacked)', () => {
@@ -596,22 +651,33 @@ describe('shouldPreventRekaDismiss', () => {
     expect(event.defaultPrevented).toBe(true)
   })
 
-  it.for(['p-dialog', 'p-select-overlay', 'p-toast'])(
-    'focus-outside on a sibling %s portal does not dismiss the parent',
-    (className) => {
-      const overlay = document.createElement('div')
-      overlay.className = className
-      const inner = document.createElement('button')
-      overlay.appendChild(inner)
-      document.body.appendChild(overlay)
+  it('focus-outside on a sibling PrimeVue dialog portal does not dismiss the parent', () => {
+    const overlay = document.createElement('div')
+    overlay.className = 'p-dialog'
+    const inner = document.createElement('button')
+    overlay.appendChild(inner)
+    document.body.appendChild(overlay)
 
-      const event = makeEvent(inner)
-      onRekaFocusOutside(event)
+    const event = makeEvent(inner)
+    onRekaFocusOutside(event)
 
-      expect(event.defaultPrevented).toBe(true)
-      overlay.remove()
-    }
-  )
+    expect(event.defaultPrevented).toBe(true)
+    overlay.remove()
+  })
+
+  it('focus-outside on a toast does not dismiss the parent', () => {
+    const toast = document.createElement('div')
+    toast.dataset.toastKind = 'info'
+    const closeButton = document.createElement('button')
+    toast.appendChild(closeButton)
+    document.body.appendChild(toast)
+
+    const event = makeEvent(closeButton)
+    onRekaFocusOutside(event)
+
+    expect(event.defaultPrevented).toBe(true)
+    toast.remove()
+  })
 
   it('focus-outside still dismisses when focus moves to a non-portal element', () => {
     const event = makeEvent(document.body)

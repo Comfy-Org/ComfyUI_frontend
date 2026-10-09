@@ -1,21 +1,25 @@
-import { externalLinks, getRoutes } from '../config/routes'
-import type { Locale } from '../i18n/translations'
-import { t } from '../i18n/translations'
+import { externalLinks, getRoutes } from '@/config/routes'
+import type { Locale } from '@/i18n/translations'
+import { translationsFor } from '@/i18n/translations'
 
 export type NavColumnItem = {
   label: string
   href: string
-  badge?: 'new'
+  icon?: string
+  badge?: 'new' | 'beta'
   external?: boolean
 }
 
 export type NavColumn = {
-  header: string
+  header?: string
   items: NavColumnItem[]
+  placement?: 'footer'
 }
 
 export type NavFeatured = {
   imageSrc: string
+  videoSrc?: string
+  showPlayOverlay?: boolean
   imageAlt?: string
   title: string
   cta: {
@@ -42,179 +46,216 @@ export type NavItem =
     }
 
 export function getMainNavigation(locale: Locale): NavItem[] {
+  const { t } = translationsFor(locale)
   const routes = getRoutes(locale)
   return [
     {
-      label: t('nav.products', locale),
-      badge: 'new',
+      label: t('nav.workshop'),
+      href: routes.workshop
+    },
+    {
+      label: t('nav.products'),
       featured: {
-        imageSrc: 'https://media.comfy.org/website/nav/ltx-card.webp',
-        imageAlt: t('nav.featuredProductsAlt', locale),
-        title: t('nav.featuredProductsTitle', locale),
+        imageSrc: 'https://media.comfy.org/website/gemini-omni/card-5.webp',
+        videoSrc: 'https://media.comfy.org/website/gemini-omni/card-5.webm',
+        imageAlt: t('nav.featuredProductsAlt'),
+        title: t('nav.featuredProductsTitle'),
         cta: {
-          label: t('nav.featuredProductsCta', locale),
-          ariaLabel: t('nav.featuredProductsCtaAria', locale),
-          href: routes.ltx
+          label: t('nav.featuredProductsCta'),
+          ariaLabel: t('nav.featuredProductsCtaAria'),
+          href: routes.geminiOmni
         }
       },
       columns: [
         {
-          header: t('nav.products', locale),
+          header: t('nav.colCreate'),
           items: [
-            { label: t('nav.comfyLocal', locale), href: routes.download },
-            { label: t('nav.comfyCloud', locale), href: routes.cloud },
+            { label: t('nav.comfyLocal'), href: routes.download },
             {
-              label: t('nav.comfyApi', locale),
-              href: routes.api,
+              label: t('nav.comfyWorkshop'),
+              href: routes.workshop,
               badge: 'new'
             },
+            { label: t('nav.comfyCloud'), href: routes.cloud },
             {
-              label: t('nav.comfyEnterprise', locale),
-              href: routes.cloudEnterprise
+              label: t('nav.comfyHub'),
+              href: externalLinks.workflows
             }
           ]
         },
         {
-          header: t('nav.colFeatures', locale),
+          header: t('nav.colAutomate'),
           items: [
             {
-              label: t('nav.mcpServer', locale),
-              href: routes.mcp,
+              label: t('nav.comfyAgent'),
+              href: routes.agent,
               badge: 'new'
             },
-            // TODO: no page yet — re-enable when landing pages ship
-            // { label: t('nav.appMode', locale), href: '#' },
-            // { label: t('nav.agentSkills', locale), href: '#' },
+            { label: t('nav.mcpServer'), href: routes.mcp },
             {
-              label: t('nav.launches', locale),
-              href: routes.launches,
+              label: t('nav.comfyCli'),
+              href: routes.cli
+            }
+          ]
+        },
+        {
+          header: t('nav.colBuild'),
+          items: [
+            {
+              label: t('nav.developerPlatform'),
+              href: routes.platform,
               badge: 'new'
             },
-            { label: t('nav.supportedModels', locale), href: routes.models },
             {
-              label: t('nav.docs', locale),
+              label: t('nav.comfyApi'),
+              href: routes.platformComfyApi
+            },
+            {
+              label: t('nav.comfyRouter'),
+              href: routes.platformRouter,
+              badge: 'new'
+            },
+            { label: t('nav.builds'), href: routes.platformBuilder },
+            {
+              label: t('nav.managedBuilds'),
+              href: routes.managedBuilds
+            }
+          ]
+        },
+        {
+          header: t('nav.colResources'),
+          placement: 'footer',
+          items: [
+            {
+              label: t('nav.docs'),
               href: externalLinks.docs,
+              external: true
+            },
+            {
+              label: t('nav.comfySdks'),
+              href: externalLinks.docsSdk,
               external: true
             }
           ]
         }
       ]
     },
-    { label: t('nav.pricing', locale), href: routes.cloudPricing },
     {
-      label: t('nav.community', locale),
-      badge: 'new',
+      label: t('nav.enterprise'),
       featured: {
-        imageSrc: 'https://media.comfy.org/website/nav/featured-demo-card.jpg',
-        imageAlt: t('nav.featuredCommunityAlt', locale),
-        title: t('nav.featuredCommunityTitle', locale),
+        imageSrc:
+          'https://media.comfy.org/website/minimax-license/hero-poster.jpg',
+        videoSrc: 'https://media.comfy.org/website/minimax-license/hero.mp4',
+        imageAlt: t('nav.featuredEnterpriseAlt'),
+        title: t('minimaxLicense.breadcrumb.model'),
         cta: {
-          label: t('cta.watchDemo', locale),
-          ariaLabel: t('nav.featuredCommunityCtaAria', locale),
-          href: 'https://comfy.org/workflows/537cf7f1f745-537cf7f1f745/'
+          label: t('minimaxLicense.runOptions.cta'),
+          ariaLabel: `${t('minimaxLicense.runOptions.cta')}: ${t('minimaxLicense.breadcrumb.model')}`,
+          href: routes.minimaxLicense
         }
       },
       columns: [
         {
-          header: t('nav.colPrograms', locale),
           items: [
-            { label: t('nav.comfyHub', locale), href: externalLinks.workflows },
             {
-              label: t('nav.fdct', locale),
-              href: routes.fdct,
-              badge: 'new'
+              label: t('nav.comfyEnterprise'),
+              href: routes.enterprise
             },
-            { label: t('nav.gallery', locale), href: routes.gallery },
             {
-              label: t('nav.events', locale),
+              label: t('nav.fdct'),
+              href: routes.fdct
+            },
+            {
+              label: t('nav.teamBilling'),
+              href: `${routes.pricing}#team`
+            },
+            {
+              label: t('nav.commercialLicensing'),
+              href: routes.minimaxLicense
+            },
+            {
+              label: t('nav.contactSales'),
+              href: routes.contact
+            }
+          ]
+        }
+      ]
+    },
+    { label: t('nav.pricing'), href: routes.pricing },
+    {
+      label: t('nav.company'),
+      featured: {
+        imageSrc: 'https://media.comfy.org/website/nav/customer-story-card.jpg',
+        showPlayOverlay: true,
+        imageAlt: t('nav.featuredCompanyAlt'),
+        title: t('nav.featuredCompanyTitle'),
+        cta: {
+          label: t('cta.watchNow'),
+          ariaLabel: t('nav.featuredCompanyCtaAria'),
+          href: routes.customerVideoBlackMath
+        }
+      },
+      columns: [
+        {
+          header: t('nav.community'),
+          items: [
+            {
+              label: t('nav.events'),
               href: routes.events,
               badge: 'new'
             },
             {
-              label: t('nav.affiliates', locale),
-              href: routes.affiliates,
-              badge: 'new'
+              label: t('nav.affiliates'),
+              href: routes.affiliates
             },
             {
-              label: t('nav.learning', locale),
-              href: routes.learning,
-              badge: 'new'
+              label: t('nav.learning'),
+              href: routes.learning
             }
           ]
         },
         {
-          header: t('nav.colConnect', locale),
+          header: t('nav.company'),
           items: [
-            {
-              label: t('nav.discord', locale),
-              href: externalLinks.discord,
-              external: true
-            },
-            {
-              label: t('nav.github', locale),
-              href: externalLinks.github,
-              external: true
-            },
-            {
-              label: t('nav.youtube', locale),
-              href: externalLinks.youtube,
-              external: true
-            },
-            {
-              label: t('nav.reddit', locale),
-              href: externalLinks.reddit,
-              external: true
-            },
-            {
-              label: t('nav.x', locale),
-              href: externalLinks.x,
-              external: true
-            },
-            {
-              label: t('nav.instagram', locale),
-              href: externalLinks.instagram,
-              external: true
-            }
-          ]
-        }
-      ]
-    },
-    {
-      label: t('nav.company', locale),
-      featured: {
-        imageSrc: 'https://media.comfy.org/website/nav/customer-story-card.jpg',
-        imageAlt: t('nav.featuredCompanyAlt', locale),
-        title: t('nav.featuredCompanyTitle', locale),
-        cta: {
-          label: t('cta.watchNow', locale),
-          ariaLabel: t('nav.featuredCompanyCtaAria', locale),
-          href: '/customers#hero-video'
-        }
-      },
-      columns: [
-        {
-          header: t('nav.company', locale),
-          items: [
-            { label: t('nav.aboutUs', locale), href: routes.about },
-            { label: t('nav.careers', locale), href: routes.careers },
-            { label: t('nav.contact', locale), href: routes.contact }
+            { label: t('nav.aboutUs'), href: routes.about },
+            { label: t('nav.careers'), href: routes.careers },
+            { label: t('nav.contact'), href: routes.contact }
           ]
         },
         {
-          header: t('nav.colMore', locale),
+          header: t('nav.colUpdates'),
           items: [
             {
-              label: t('nav.customerStories', locale),
-              href: routes.customers
+              label: t('nav.customerStories'),
+              href: routes.customers,
+              badge: 'new'
             },
-            // TODO: no /brand page yet
-            // { label: t('nav.brand', locale), href: '#' },
+            { label: t('nav.launches'), href: routes.launches },
             {
-              label: t('nav.blogs', locale),
+              label: t('nav.blogs'),
               href: externalLinks.blog,
               external: true
             }
           ]
+        },
+        {
+          header: t('nav.colConnect'),
+          placement: 'footer',
+          items: (
+            [
+              ['nav.discord', externalLinks.discord, 'discord'],
+              ['nav.github', externalLinks.github, 'github'],
+              ['nav.youtube', externalLinks.youtube, 'youtube'],
+              ['nav.reddit', externalLinks.reddit, 'reddit'],
+              ['nav.x', externalLinks.x, 'x'],
+              ['nav.instagram', externalLinks.instagram, 'instagram']
+            ] as const
+          ).map(([key, href, icon]) => ({
+            label: t(key),
+            href,
+            icon: `/icons/social/${icon}.svg`,
+            external: true
+          }))
         }
       ]
     }

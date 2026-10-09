@@ -30,14 +30,14 @@
       </Button>
     </div>
 
-    <div
+    <SanitizedHtml
       v-if="showMarkdown"
       class="comfy-markdown-content size-full min-h-[60px] overflow-y-auto rounded-lg text-sm"
       data-capture-wheel="true"
       role="textarea"
       :aria-label="widget.name"
       aria-readonly="true"
-      v-html="renderedMarkdown"
+      :html="renderedMarkdown"
     />
     <Textarea
       v-else
@@ -66,14 +66,18 @@
 import { computed } from 'vue'
 import { useI18n } from 'vue-i18n'
 
+import SanitizedHtml from '@/components/common/SanitizedHtml.vue'
 import Button from '@/components/ui/button/Button.vue'
 import Textarea from '@/components/ui/textarea/Textarea.vue'
 import { useCopyToClipboard } from '@/composables/useCopyToClipboard'
-import { useToastStore } from '@/platform/updates/common/toastStore'
+import { useToast } from '@/components/ui/toast/toastStore'
 import { useCanvasStore } from '@/renderer/core/canvas/canvasStore'
 import { api } from '@/scripts/api'
 import { downloadFile } from '@/base/common/downloadUtil'
-import type { NodeOutputWith, ResultItem } from '@/schemas/apiSchema'
+import type {
+  NodeOutputWith,
+  ResultItem
+} from '@/platform/remote/comfyui/execution/types'
 import { useNodeOutputStore } from '@/stores/nodeOutputStore'
 import { useWorkflowStore } from '@/platform/workflow/management/stores/workflowStore'
 import {
@@ -157,11 +161,7 @@ function handleDownload() {
   try {
     downloadFile(downloadUrl.value, savedFile.value?.filename)
   } catch {
-    useToastStore().add({
-      severity: 'error',
-      summary: t('g.error'),
-      detail: t('g.failedToDownloadFile')
-    })
+    useToast().error(t('g.error'), { description: t('g.failedToDownloadFile') })
   }
 }
 </script>

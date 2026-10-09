@@ -1,4 +1,8 @@
-import { beforeEach, describe, expect, it, vi } from 'vitest'
+import { render } from '@testing-library/vue'
+import { beforeEach, describe, expect, it } from 'vitest'
+import { useDialogStore } from '@/stores/dialogStore'
+import { useToast } from '@/components/ui/toast/toastStore'
+import { createI18n } from 'vue-i18n'
 
 import type { LGraphNode } from '@/lib/litegraph/src/LGraphNode'
 import { toNodeId } from '@/types/nodeId'
@@ -9,24 +13,30 @@ import {
   setCompositorLayers
 } from './useCompositorLayers'
 
-const { showDialog, toastAdd } = vi.hoisted(() => ({
-  showDialog: vi.fn(),
-  toastAdd: vi.fn()
-}))
-
-vi.mock('@/stores/dialogStore', () => ({
-  useDialogStore: () => ({ showDialog })
-}))
-vi.mock('@/platform/updates/common/toastStore', () => ({
-  useToastStore: () => ({ add: toastAdd })
-}))
-vi.mock('vue-i18n', async () => {
-  const actual = await vi.importActual('vue-i18n')
-  return {
-    ...actual,
-    useI18n: () => ({ t: (key: string) => key })
+const i18n = createI18n({
+  legacy: false,
+  locale: 'en',
+  messages: {
+    en: {
+      layerEditor: { title: 'Layer editor' },
+      compositor: { runWorkflowFirst: 'Run the workflow first' }
+    }
   }
 })
+
+function mountComposable(): ReturnType<typeof useCompositorEditor> {
+  let composable!: ReturnType<typeof useCompositorEditor>
+  render(
+    {
+      setup() {
+        composable = useCompositorEditor()
+        return () => null
+      }
+    },
+    { global: { plugins: [i18n] } }
+  )
+  return composable
+}
 
 describe('useCompositorEditor', () => {
   const node = { id: toNodeId(1) } as unknown as LGraphNode
@@ -36,15 +46,13 @@ describe('useCompositorEditor', () => {
   })
 
   it('shows a toast and keeps the dialog closed without cached layers', () => {
-    useCompositorEditor().openCompositorEditor(node)
+    mountComposable().openCompositorEditor(node)
 
-    expect(toastAdd).toHaveBeenCalledWith(
-      expect.objectContaining({
-        severity: 'info',
-        detail: 'compositor.runWorkflowFirst'
-      })
+    expect(useToast().info).toHaveBeenCalledWith(
+      'Layer editor',
+      expect.objectContaining({ description: 'Run the workflow first' })
     )
-    expect(showDialog).not.toHaveBeenCalled()
+    expect(useDialogStore().showDialog).not.toHaveBeenCalled()
   })
 
   it('shows a toast when layers are cached without a fingerprint', () => {
@@ -52,15 +60,13 @@ describe('useCompositorEditor', () => {
       { filename: 'a.png', subfolder: '', type: 'temp' }
     ])
 
-    useCompositorEditor().openCompositorEditor(node)
+    mountComposable().openCompositorEditor(node)
 
-    expect(toastAdd).toHaveBeenCalledWith(
-      expect.objectContaining({
-        severity: 'info',
-        detail: 'compositor.runWorkflowFirst'
-      })
+    expect(useToast().info).toHaveBeenCalledWith(
+      'Layer editor',
+      expect.objectContaining({ description: 'Run the workflow first' })
     )
-    expect(showDialog).not.toHaveBeenCalled()
+    expect(useDialogStore().showDialog).not.toHaveBeenCalled()
   })
 
   it('opens the layer editor in compositor mode when layers are cached', () => {
@@ -70,10 +76,10 @@ describe('useCompositorEditor', () => {
       ['hash-a']
     )
 
-    useCompositorEditor().openCompositorEditor(node)
+    mountComposable().openCompositorEditor(node)
 
-    expect(toastAdd).not.toHaveBeenCalled()
-    expect(showDialog).toHaveBeenCalledWith(
+    expect(useToast().toasts).toEqual([])
+    expect(useDialogStore().showDialog).toHaveBeenCalledWith(
       expect.objectContaining({
         key: 'global-layer-editor',
         props: { node, mode: 'compositor' }

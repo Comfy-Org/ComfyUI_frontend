@@ -1,4 +1,4 @@
-import type { LGraph } from '../LGraph'
+import { isUuidShapedSubgraphId } from '@/schemas/subgraphIdSchema'
 import { toGroupId } from '@/types/groupId'
 import {
   mintGroupId,
@@ -19,19 +19,22 @@ import { toNodeId } from '@/types/nodeId'
 import type { NodeId, SerializedNodeId } from '@/types/nodeId'
 import { toLinkId } from '@/types/linkId'
 import { toRerouteId } from '@/types/rerouteId'
+import type { NodeProperty } from '@/types/nodeState'
+import { createUuidv4 } from '@/utils/uuid'
 import type {
   ExportedSubgraph,
   ExposedWidget,
-  ISerialisedGroup,
   ISerialisedNode,
   SerialisableLLink
 } from '../types/serialisation'
 
-const MAX_ID = 100_000_000
-
-interface DeduplicationResult {
-  subgraphs: ExportedSubgraph[]
-  rootNodes: ISerialisedNode[] | undefined
+interface DeduplicationResult<
+  Subgraph extends { id: string; nodes?: { type: string }[] } =
+    ExportedSubgraph,
+  Node extends { type: string } = ISerialisedNode
+> {
+  subgraphs: Subgraph[]
+  rootNodes: Node[] | undefined
 }
 
 interface SubgraphNormalizationReservations {
@@ -47,13 +50,11 @@ export function normalizeSubgraphDefinitions(
   state: LGraphState,
   rootNodes?: ISerialisedNode[]
 ): DeduplicationResult {
+  const normalizedIds = normalizeSubgraphDefinitionIds(subgraphs, rootNodes)
   const clonedSubgraphs =
-    firstById(
-      structuredClone(subgraphs),
-      (subgraph) => subgraph.id,
-      'subgraph'
-    ) ?? []
-  const clonedRootNodes = rootNodes ? structuredClone(rootNodes) : undefined
+    firstById(normalizedIds.subgraphs, (subgraph) => subgraph.id, 'subgraph') ??
+    []
+  const clonedRootNodes = normalizedIds.rootNodes
 
   for (const [index, subgraph] of clonedSubgraphs.entries()) {
     dropSameOwnerDuplicates(subgraph)
@@ -69,6 +70,72 @@ export function normalizeSubgraphDefinitions(
   deduplicateSubgraphGroupIds(clonedSubgraphs, reservations.groupIds, state)
   deduplicateSubgraphLinkIds(clonedSubgraphs, reservations.linkIds, state)
   deduplicateSubgraphRerouteIds(clonedSubgraphs, reservations.rerouteIds, state)
+
+  return { subgraphs: clonedSubgraphs, rootNodes: clonedRootNodes }
+}
+
+interface NestedSubgraphDefinitions<Subgraph> {
+  definitions?: { subgraphs?: Subgraph[] }
+}
+
+/**
+ * Flattens every subgraph definition reachable from `subgraphs` into one
+ * array, descending into each definition's own nested
+ * `definitions.subgraphs` (a subgraph-within-subgraph definition) at any
+ * depth. Each definition's own nested list is cleared once its contents are
+ * hoisted, since callers operate on the returned flat list.
+ */
+function flattenSubgraphDefinitions<
+  Subgraph extends NestedSubgraphDefinitions<Subgraph>
+>(subgraphs: Subgraph[]): Subgraph[] {
+  const flattened: Subgraph[] = []
+  for (const subgraph of subgraphs) {
+    flattened.push(subgraph)
+    const nested = subgraph.definitions?.subgraphs
+    if (nested?.length) {
+      flattened.push(...flattenSubgraphDefinitions(nested))
+      subgraph.definitions!.subgraphs = undefined
+    }
+  }
+  return flattened
+}
+
+export function normalizeSubgraphDefinitionIds<
+  Subgraph extends NestedSubgraphDefinitions<Subgraph> & {
+    id: string
+    nodes?: { type: string }[]
+  },
+  Node extends { type: string }
+>(
+  subgraphs: Subgraph[],
+  rootNodes?: Node[]
+): DeduplicationResult<Subgraph, Node> {
+  const clonedSubgraphs = flattenSubgraphDefinitions(structuredClone(subgraphs))
+  const clonedRootNodes = rootNodes ? structuredClone(rootNodes) : undefined
+  const ids = new Set(clonedSubgraphs.map(({ id }) => id))
+  const remapped = new Map<string, string>()
+
+  for (const subgraph of clonedSubgraphs) {
+    if (isUuidShapedSubgraphId(subgraph.id)) continue
+    let id = remapped.get(subgraph.id)
+    if (!id) {
+      do id = createUuidv4()
+      while (ids.has(id))
+      remapped.set(subgraph.id, id)
+      ids.add(id)
+      console.warn(
+        `LiteGraph: replaced legacy subgraph ID ${subgraph.id} with ${id}`
+      )
+    }
+    subgraph.id = id
+  }
+
+  for (const node of [
+    ...(clonedRootNodes ?? []),
+    ...clonedSubgraphs.flatMap(({ nodes }) => nodes ?? [])
+  ]) {
+    node.type = remapped.get(node.type) ?? node.type
+  }
 
   return { subgraphs: clonedSubgraphs, rootNodes: clonedRootNodes }
 }
@@ -157,39 +224,64 @@ function deduplicateClonedSubgraphNodeIds(
   clonedRootNodes?: ISerialisedNode[]
 ): void {
   const usedNodeIdKeys = new Set(reservedNodeIdKeys)
-  const usedNodeIds = new Set<number>()
-  for (const id of reservedNodeIdKeys) {
-    const numericId = numericSerializedNodeId(id)
-    if (numericId !== null) usedNodeIds.add(numericId)
-  }
+  const usedNodeIds = collectNumericNodeIds(reservedNodeIdKeys)
   const subgraphIdSet = new Set(clonedSubgraphs.map((sg) => sg.id))
   const remapBySubgraph = new Map<string, Map<NodeId, SerializedNodeId>>()
 
   for (const subgraph of clonedSubgraphs) {
-    const remappedIds = remapNodeIds(
-      subgraph.nodes ?? [],
+    const remappedIds = remapSubgraphNodeIds(
+      subgraph,
       usedNodeIdKeys,
       usedNodeIds,
       state
     )
-
     if (remappedIds.size === 0) continue
     remapBySubgraph.set(subgraph.id, remappedIds)
-
-    patchSerialisedLinks(
-      [...(subgraph.links ?? []), ...(subgraph.floatingLinks ?? [])],
-      remappedIds
-    )
-    patchPromotedWidgets(subgraph.widgets ?? [], remappedIds)
   }
 
   for (const subgraph of clonedSubgraphs) {
-    patchProxyWidgets(subgraph.nodes ?? [], subgraphIdSet, remapBySubgraph)
+    patchSubgraphNodeReferences(
+      subgraph.nodes ?? [],
+      subgraphIdSet,
+      remapBySubgraph
+    )
   }
 
-  if (clonedRootNodes) {
-    patchProxyWidgets(clonedRootNodes, subgraphIdSet, remapBySubgraph)
+  patchSubgraphNodeReferences(
+    clonedRootNodes ?? [],
+    subgraphIdSet,
+    remapBySubgraph
+  )
+}
+
+function collectNumericNodeIds(ids: ReadonlySet<NodeId>): Set<number> {
+  const numericIds = new Set<number>()
+  for (const id of ids) {
+    const numericId = numericSerializedNodeId(id)
+    if (numericId !== null) numericIds.add(numericId)
   }
+  return numericIds
+}
+
+function remapSubgraphNodeIds(
+  subgraph: ExportedSubgraph,
+  usedNodeIdKeys: Set<NodeId>,
+  usedNodeIds: Set<number>,
+  state: LGraphState
+): Map<NodeId, SerializedNodeId> {
+  const remappedIds = remapNodeIds(
+    subgraph.nodes ?? [],
+    usedNodeIdKeys,
+    usedNodeIds,
+    state
+  )
+  if (remappedIds.size === 0) return remappedIds
+  patchSerialisedLinks(
+    [...(subgraph.links ?? []), ...(subgraph.floatingLinks ?? [])],
+    remappedIds
+  )
+  patchPromotedWidgets(subgraph.widgets ?? [], remappedIds)
+  return remappedIds
 }
 
 /**
@@ -212,9 +304,7 @@ function remapNodeIds(
     const numericId = numericSerializedNodeId(id)
 
     if (usedNodeIdKeys.has(key)) {
-      const newId = findNextAvailableId(usedNodeIds, () =>
-        Number(mintNodeId(state))
-      )
+      const newId = Number(mintNodeId(state, 'sequential', usedNodeIds))
       remappedIds.set(key, newId)
       node.id = newId
       usedNodeIds.add(newId)
@@ -243,23 +333,6 @@ function numericSerializedNodeId(id: SerializedNodeId): number | null {
     : null
 }
 
-/**
- * Finds the next unused ID by repeatedly calling `advance`.
- * Throws if the ID space is exhausted.
- */
-function findNextAvailableId(
-  usedIds: Set<number>,
-  advance: () => number
-): number {
-  while (true) {
-    const nextId = advance()
-    if (nextId > MAX_ID) {
-      throw new Error('Node ID space exhausted')
-    }
-    if (!usedIds.has(nextId)) return nextId
-  }
-}
-
 /** Patches origin_id / target_id in serialized links. */
 function patchSerialisedLinks(
   links: SerialisableLLink[],
@@ -285,31 +358,6 @@ function patchPromotedWidgets(
   }
 }
 
-export function collectReservedGroupIds(
-  graph: Pick<LGraph, 'groups' | 'subgraphs'>,
-  serializedGroups: ISerialisedGroup[] = []
-): Set<number> {
-  return new Set<number>([
-    ...serializedGroups.map((group) => group.id),
-    ...[graph, ...graph.subgraphs.values()].flatMap((g) =>
-      g.groups.map((group) => group.id)
-    )
-  ])
-}
-
-export function collectReservedLinkIds(
-  graph: Pick<LGraph, 'links' | 'floatingLinks' | 'subgraphs'>,
-  serializedFloatingLinks: SerialisableLLink[] = []
-): Set<number> {
-  return new Set([
-    ...serializedFloatingLinks.map((link) => link.id),
-    ...[graph, ...graph.subgraphs.values()].flatMap((owner) => [
-      ...owner.links.keys(),
-      ...owner.floatingLinks.keys()
-    ])
-  ])
-}
-
 export function deduplicateSubgraphLinkIds(
   subgraphs: ExportedSubgraph[],
   reservedLinkIds: Set<number>,
@@ -322,7 +370,7 @@ export function deduplicateSubgraphLinkIds(
     const remapped = remapNumericIds(
       [...(subgraph.links ?? []), ...(subgraph.floatingLinks ?? [])],
       usedLinkIds,
-      () => mintLinkId(state),
+      () => mintLinkId(state, usedLinkIds),
       (id) => observeLinkId(state, toLinkId(id)),
       'link'
     )
@@ -347,21 +395,11 @@ export function deduplicateSubgraphGroupIds(
     remapNumericIds(
       subgraph.groups ?? [],
       usedGroupIds,
-      () => mintGroupId(state),
+      () => mintGroupId(state, usedGroupIds),
       (id) => observeGroupId(state, toGroupId(id)),
       'group'
     )
   }
-}
-
-export function collectReservedRerouteIds(
-  graph: Pick<LGraph, 'reroutes' | 'subgraphs'>
-): Set<number> {
-  return new Set<number>(
-    [graph, ...graph.subgraphs.values()].flatMap((g) =>
-      [...g.reroutes.values()].map((reroute) => reroute.id)
-    )
-  )
 }
 
 /**
@@ -400,14 +438,14 @@ function remapRerouteIds(
   return remapNumericIds(
     subgraph.reroutes ?? [],
     usedRerouteIds,
-    () => mintRerouteId(state),
+    () => mintRerouteId(state, usedRerouteIds),
     (id) => observeRerouteId(state, toRerouteId(id)),
     'reroute'
   )
 }
 
-function remapNumericIds<T extends { id: number }>(
-  items: T[],
+function remapNumericIds(
+  items: { id: number }[],
   usedIds: Set<number>,
   nextId: () => number,
   reserveId: (id: number) => void,
@@ -418,7 +456,7 @@ function remapNumericIds<T extends { id: number }>(
   for (const item of items) {
     const oldId = item.id
     if (usedIds.has(oldId)) {
-      const newId = findNextAvailableId(usedIds, nextId)
+      const newId = nextId()
       remapped.set(oldId, newId)
       item.id = newId
       usedIds.add(newId)
@@ -511,8 +549,7 @@ export function topologicalSortSubgraphs(
   return sorted
 }
 
-/** Patches legacy proxyWidgets in root-level SubgraphNode instances. */
-function patchProxyWidgets(
+function patchSubgraphNodeReferences(
   rootNodes: ISerialisedNode[],
   subgraphIdSet: Set<string>,
   remapBySubgraph: Map<string, Map<NodeId, SerializedNodeId>>
@@ -522,14 +559,40 @@ function patchProxyWidgets(
     const remappedIds = remapBySubgraph.get(node.type)
     if (!remappedIds) continue
 
-    const proxyWidgets = node.properties?.proxyWidgets
-    if (!Array.isArray(proxyWidgets)) continue
+    patchProxyWidgetReferences(node.properties?.proxyWidgets, remappedIds)
+    patchPreviewExposureReferences(
+      node.properties?.previewExposures,
+      remappedIds
+    )
+  }
+}
 
-    for (const entry of proxyWidgets) {
-      if (!Array.isArray(entry)) continue
-      const oldId = toNodeId(entry[0])
-      const newId = remappedIds.get(oldId)
-      if (newId !== undefined) entry[0] = String(newId)
-    }
+function patchProxyWidgetReferences(
+  property: NodeProperty | undefined,
+  remappedIds: Map<NodeId, SerializedNodeId>
+): void {
+  if (!Array.isArray(property)) return
+  for (const entry of property) {
+    if (!Array.isArray(entry)) continue
+    const newId = remappedIds.get(toNodeId(entry[0]))
+    if (newId !== undefined) entry[0] = String(newId)
+  }
+}
+
+function patchPreviewExposureReferences(
+  property: NodeProperty | undefined,
+  remappedIds: Map<NodeId, SerializedNodeId>
+): void {
+  if (!Array.isArray(property)) return
+  for (const entry of property) {
+    if (
+      typeof entry !== 'object' ||
+      entry === null ||
+      !('sourceNodeId' in entry) ||
+      typeof entry.sourceNodeId !== 'string'
+    )
+      continue
+    const newId = remappedIds.get(toNodeId(entry.sourceNodeId))
+    if (newId !== undefined) entry.sourceNodeId = String(newId)
   }
 }
