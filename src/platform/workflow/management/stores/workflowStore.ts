@@ -30,7 +30,7 @@ import {
   parseNodeLocatorId,
   tryNormalizeNodeExecutionId
 } from '@/types/nodeIdentification'
-import { parseNodeId, toNodeId } from '@/types/nodeId'
+import { parseNodeId } from '@/types/nodeId'
 import type { NodeId } from '@/types/nodeId'
 import { generateUUID, getPathDetails } from '@/utils/formatUtil'
 import { syncEntities } from '@/utils/syncUtil'
@@ -89,7 +89,7 @@ interface WorkflowStore {
   executionIdToCurrentId: (id: string) => string | undefined
   nodeIdToNodeLocatorId: (nodeId: NodeId, subgraph?: Subgraph) => NodeLocatorId
   nodeToNodeLocatorId: (node: LGraphNode) => NodeLocatorId
-  nodeLocatorIdToNodeId: (locatorId: NodeLocatorId) => NodeId
+  nodeLocatorIdToNodeId: (locatorId: NodeLocatorId) => NodeId | null
   nodeLocatorIdToNodeExecutionId: (
     locatorId: NodeLocatorId,
     targetSubgraph?: Subgraph
@@ -666,14 +666,8 @@ export const useWorkflowStore = defineStore('workflow', () => {
    * @param locatorId The NodeLocatorId
    * @returns The local node ID
    */
-  const nodeLocatorIdToNodeId = (locatorId: NodeLocatorId): NodeId => {
-    const parsed = parseNodeLocatorId(locatorId)
-    if (parsed) return parsed.localNodeId
-
-    // Retain compatibility with locators created before delimiter-bearing
-    // local IDs gained an encoded representation.
-    return parseNodeId(locatorId) ?? toNodeId(String(locatorId))
-  }
+  const nodeLocatorIdToNodeId = (locatorId: NodeLocatorId): NodeId | null =>
+    parseNodeLocatorId(locatorId)?.localNodeId ?? null
 
   /**
    * Convert a NodeLocatorId to an execution ID for a specific context

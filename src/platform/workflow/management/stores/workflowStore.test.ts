@@ -19,6 +19,7 @@ import { defaultGraph, defaultGraphJSON } from '@/scripts/defaultGraph'
 import { useExecutionStore } from '@/stores/executionStore'
 import { toNodeId } from '@/types/nodeId'
 import type { NodeId } from '@/types/nodeId'
+import type { NodeLocatorId } from '@/types/nodeIdentification'
 import { createNodeLocatorId } from '@/types/nodeIdentification'
 import { isValidUuid } from '@/utils/formatUtil'
 import { syncEntities } from '@/utils/syncUtil'
@@ -1171,6 +1172,14 @@ describe('useWorkflowStore', () => {
         expect(result).toBe(
           'insert:0fbd38ecb13037d0b3b0ca78b8a20a5a:root:node:9'
         )
+      })
+
+      it('should return null for an unparseable locator', () => {
+        const locatorId = fromAny<NodeLocatorId, string>(
+          '~subgraph:not-a-uuid:5'
+        )
+
+        expect(store.nodeLocatorIdToNodeId(locatorId)).toBeNull()
       })
     })
 
