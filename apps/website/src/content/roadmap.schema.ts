@@ -20,6 +20,9 @@ export const ROADMAP_STAGES = [
 // Below the NOW marker, closest to done first. `shipped` sorts above it.
 export const ROADMAP_BELOW_NOW = ['shipping', 'building', 'exploring'] as const
 
+export type RoadmapArea = (typeof ROADMAP_AREA_ORDER)[number]
+export type RoadmapStage = (typeof ROADMAP_STAGES)[number]
+
 export const roadmapSchema = z
   .strictObject({
     title: z.string(),

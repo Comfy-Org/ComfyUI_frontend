@@ -4,12 +4,14 @@ import { getCollection, render } from 'astro:content'
 import RoadmapEntry from '@/components/roadmap/RoadmapEntry.astro'
 import RoadmapFeedback from '@/components/roadmap/RoadmapFeedback.astro'
 import RoadmapLink from '@/components/roadmap/RoadmapLink.astro'
-import {
-  ROADMAP_AREA_ORDER,
-  ROADMAP_BELOW_NOW,
-  ROADMAP_STAGES
-} from '@/content/roadmap.schema'
+import { ROADMAP_STAGES } from '@/content/roadmap.schema'
 import type { Locale } from '@/i18n/translations'
+import {
+  areasInUse,
+  entriesForLocale,
+  shippedEntries,
+  upcomingEntries
+} from './roadmapTimeline'
 
 interface Props {
   locale?: Locale
@@ -18,44 +20,23 @@ interface Props {
 const { locale = 'en' } = Astro.props
 const { t } = Astro.locals
 
-const entries = await getCollection('roadmap', (entry) =>
-  entry.id.startsWith(`${locale}/`)
-)
+const entries = entriesForLocale(await getCollection('roadmap'), locale)
 
-type Stage = (typeof ROADMAP_STAGES)[number]
-
-async function group(
-  match: (stage: Stage) => boolean,
-  rank: (stage: Stage) => number
-) {
+// Ordering lives in roadmapTimeline.ts and is covered there; this only
+// attaches each entry's rendered body.
+async function withContent(list: typeof entries) {
   return Promise.all(
-    entries
-      .filter((entry) => match(entry.data.stage))
-      .sort(
-        (a, b) =>
-          rank(a.data.stage) - rank(b.data.stage) || a.data.order - b.data.order
-      )
-      .map(async (entry) => ({
-        ...entry.data,
-        id: entry.id,
-        Content: (await render(entry)).Content
-      }))
+    list.map(async (entry) => ({
+      ...entry.data,
+      id: entry.id,
+      Content: (await render(entry)).Content
+    }))
   )
 }
 
-const shippedItems = await group(
-  (stage) => stage === 'shipped',
-  () => 0
-)
-const upcomingItems = await group(
-  (stage) => stage !== 'shipped',
-  (stage) =>
-    ROADMAP_BELOW_NOW.indexOf(stage as (typeof ROADMAP_BELOW_NOW)[number])
-)
-
-const areasInUse = ROADMAP_AREA_ORDER.filter((area) =>
-  entries.some((entry) => entry.data.area === area)
-)
+const shippedItems = await withContent(shippedEntries(entries))
+const upcomingItems = await withContent(upcomingEntries(entries))
+const areas = areasInUse(entries)
 
 const chip =
   'rounded-full border px-2.5 py-1 text-2xs font-bold tracking-widest uppercase'
@@ -98,7 +79,7 @@ const filterChip = `${chip} cursor-pointer border-primary-comfy-canvas/20 text-p
       </label>
     </div>
 
-    {areasInUse.map((area) => <div class="contents">
+    {areas.map((area) => <div class="contents">
       <input
         type="radio"
         name="roadmap-area"
