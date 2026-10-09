@@ -21,6 +21,7 @@ import { useWorkflowThumbnail } from '@/renderer/core/thumbnail/useWorkflowThumb
 import { api } from '@/scripts/api'
 import { app as comfyApp } from '@/scripts/app'
 import { defaultGraph } from '@/scripts/defaultGraph'
+import { useExecutionStore } from '@/stores/executionStore'
 import type { NodeExecutionId, NodeLocatorId } from '@/types/nodeIdentification'
 import {
   appendLeafNodeExecutionId,
@@ -94,21 +95,9 @@ interface WorkflowStore {
     locatorId: NodeLocatorId,
     targetSubgraph?: Subgraph
   ) => NodeExecutionId | null
-  registerSessionWorkflowPathRewriter: (
-    rewriter: (workflowInstanceId: string, newPath: string) => void
-  ) => void
 }
 
 export const useWorkflowStore = defineStore('workflow', () => {
-  let rewriteSessionWorkflowPaths:
-    | ((workflowInstanceId: string, newPath: string) => void)
-    | undefined
-  const registerSessionWorkflowPathRewriter = (
-    rewriter: (workflowInstanceId: string, newPath: string) => void
-  ) => {
-    rewriteSessionWorkflowPaths = rewriter
-  }
-
   /**
    * History of tab activations. Most recent at the end.
    * Tracks the order in which tabs were activated to support "go to previous" behavior.
@@ -518,7 +507,10 @@ export const useWorkflowStore = defineStore('workflow', () => {
       const draftStore = useWorkflowDraftStoreV2()
 
       await workflow.rename(newPath)
-      rewriteSessionWorkflowPaths?.(workflow.instanceId, workflow.path)
+      useExecutionStore().rewriteSessionWorkflowPaths(
+        workflow.instanceId,
+        workflow.path
+      )
 
       // Synchronously swap old path for new path in lookup and open paths
       // to avoid a tab flicker caused by an async gap between detach/attach.
@@ -795,8 +787,7 @@ export const useWorkflowStore = defineStore('workflow', () => {
     nodeIdToNodeLocatorId,
     nodeToNodeLocatorId,
     nodeLocatorIdToNodeId,
-    nodeLocatorIdToNodeExecutionId,
-    registerSessionWorkflowPathRewriter
+    nodeLocatorIdToNodeExecutionId
   }
 }) satisfies () => WorkflowStore
 
