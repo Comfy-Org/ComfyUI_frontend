@@ -1794,9 +1794,6 @@ describe('graphTraversalUtil', () => {
     })
 
     it('keeps the subgraph-path reading when both readings are available', () => {
-      // The whole-id match is a FALLBACK: a resolvable subgraph path keeps the
-      // meaning it has always had, even if some root node also carries the
-      // path as a literal id.
       const subgraphUuid = 'a1b2c3d4-e5f6-7890-abcd-ef1234567890'
       const interior = createMockNode('999')
       const subgraph = createMockSubgraph(subgraphUuid, [interior])
