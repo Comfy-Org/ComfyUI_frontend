@@ -1818,5 +1818,19 @@ describe('graphTraversalUtil', () => {
         `${subgraphUuid}:999`
       )
     })
+
+    it('falls back to a literal root id when the parsed subgraph leaf does not exist', () => {
+      const subgraph = createMockSubgraph(
+        'a1b2c3d4-e5f6-7890-abcd-ef1234567890',
+        []
+      )
+      const host = createMockNode('123', { isSubgraph: true, subgraph })
+      const literal = createMockNode('123:999')
+      const graph = createMockGraph([host, literal])
+
+      expect(executionIdToNodeLocatorId(graph, '123:999')).toBe(
+        '~root:123%3A999'
+      )
+    })
   })
 })

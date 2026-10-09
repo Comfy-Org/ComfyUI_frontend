@@ -718,7 +718,11 @@ export function executionIdToNodeLocatorId(
 
   const targetGraph = traverseSubgraphPath(rootGraph, subgraphPath)
   const parsedLocalNodeId = parseNodeId(localNodeId)
-  if (targetGraph && parsedLocalNodeId) {
+  if (
+    targetGraph &&
+    parsedLocalNodeId &&
+    targetGraph.getNodeById(parsedLocalNodeId)
+  ) {
     return createNodeLocatorId(targetGraph.id, parsedLocalNodeId)
   }
 
@@ -736,7 +740,7 @@ export function executionIdToNodeLocatorId(
   // genuine subgraph execution path keeps its existing meaning.
   const wholeNodeId = parseNodeId(nodeIdStr)
   if (wholeNodeId && rootGraph.getNodeById(wholeNodeId)) {
-    return createLeafNodeLocatorId(null, wholeNodeId) ?? undefined
+    return createLeafNodeLocatorId(null, wholeNodeId)
   }
 
   return undefined
