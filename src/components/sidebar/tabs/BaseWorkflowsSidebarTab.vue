@@ -151,6 +151,9 @@
         </TreeExplorer>
       </div>
     </template>
+    <template #footer>
+      <slot name="footer" />
+    </template>
   </SidebarTabTemplate>
 </template>
 

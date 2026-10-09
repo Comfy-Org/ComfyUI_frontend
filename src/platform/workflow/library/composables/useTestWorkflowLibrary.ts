@@ -90,7 +90,7 @@ export function useTestWorkflowLibrary() {
   }
 
   async function initialize() {
-    return command(async (signal) => {
+    const success = await command(async (signal) => {
       const collections = await request(
         '/test-workflow-library/collections',
         zTestWorkflowCollections,
@@ -102,6 +102,10 @@ export function useTestWorkflowLibrary() {
         collectionsTruncated: collections.truncated
       }
     })
+    const [onlyCollection] = state.value.data.collections
+    if (success && state.value.data.collections.length === 1)
+      return chooseCollection(onlyCollection.id)
+    return success
   }
 
   async function search(nextFilters: Filters = filters, cursor = '') {

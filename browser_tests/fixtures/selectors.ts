@@ -4,6 +4,10 @@
  */
 
 export const TestIds = {
+  testWorkflowLibrary: {
+    root: 'test-workflow-library',
+    entry: (hash: string) => `test-workflow-entry-${hash}`
+  },
   sidebar: {
     toolbar: 'side-toolbar',
     nodeLibrary: 'node-library-tree',

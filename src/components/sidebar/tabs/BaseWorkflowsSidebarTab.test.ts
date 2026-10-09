@@ -146,7 +146,7 @@ vi.mock('@/components/sidebar/tabs/SidebarTabTemplate.vue', () => ({
   default: {
     name: 'SidebarTabTemplate',
     template:
-      '<div><slot name="alt-title" /><slot name="tool-buttons" /><slot name="header" /><slot name="body" /></div>'
+      '<div><slot name="alt-title" /><slot name="tool-buttons" /><slot name="header" /><slot name="body" /><slot name="footer" /></div>'
   }
 }))
 
@@ -244,6 +244,26 @@ describe('BaseWorkflowsSidebarTab', () => {
         stubs: { teleport: true }
       }
     })
+
+  it('keeps footer actions available independently of saved workflow results', () => {
+    render(BaseWorkflowsSidebarTab, {
+      props: {
+        title: 'Workflows',
+        searchSubject: 'Workflow',
+        dataTestid: 'workflows-sidebar'
+      },
+      slots: {
+        footer: '<button>Test Workflow Library</button>'
+      },
+      global: {
+        plugins: [createTestingPinia({ stubActions: false }), i18n],
+        stubs: { teleport: true }
+      }
+    })
+    expect(
+      screen.getByRole('button', { name: 'Test Workflow Library' })
+    ).toBeVisible()
+  })
 
   it('returns an empty filtered workflow set when searchQuery is empty', async () => {
     mockWorkflowStore.workflows = [

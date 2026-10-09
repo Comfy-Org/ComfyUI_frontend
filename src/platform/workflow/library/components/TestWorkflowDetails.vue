@@ -36,7 +36,13 @@ const { t } = useI18n()
       </h4>
       <p>{{ record.metadata.readiness.status }}</p>
       <p class="text-xs text-muted-foreground">
-        {{ t('testWorkflowLibrary.notVerified') }}
+        {{
+          t(
+            record.summary.verified
+              ? 'testWorkflowLibrary.verified'
+              : 'testWorkflowLibrary.notVerified'
+          )
+        }}
       </p>
       <ul class="list-inside list-disc">
         <li
@@ -118,6 +124,9 @@ const { t } = useI18n()
         class="wrap-break-word whitespace-pre-wrap"
       >
         {{ prompt.text }}
+        <span class="block text-xs break-all text-muted-foreground">{{
+          prompt.location
+        }}</span>
       </p>
     </section>
     <section>

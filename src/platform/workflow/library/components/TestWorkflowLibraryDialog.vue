@@ -103,6 +103,8 @@ onMounted(library.initialize)
 <template>
   <BaseModalLayout
     v-model:right-panel-open="rightOpen"
+    data-testid="test-workflow-library"
+    size="full"
     :content-title="t('testWorkflowLibrary.title')"
     :right-panel-title="t('testWorkflowLibrary.details')"
   >
@@ -192,8 +194,17 @@ onMounted(library.initialize)
         <p v-if="busy" role="status" class="m-0 text-sm">
           {{ t('g.loading') }}
         </p>
-        <p v-else-if="!data.collections.length" class="m-0 text-sm">
+        <p
+          v-else-if="state.phase === 'ready' && !data.collections.length"
+          class="m-0 text-sm"
+        >
           {{ t('testWorkflowLibrary.empty') }}
+        </p>
+        <p
+          v-else-if="state.phase === 'ready' && !collection"
+          class="m-0 text-sm"
+        >
+          {{ t('testWorkflowLibrary.chooseCollection') }}
         </p>
         <p v-if="data.page" class="m-0 text-xs text-muted-foreground">
           {{
@@ -211,8 +222,12 @@ onMounted(library.initialize)
         <button
           v-for="entry in data.page?.entries ?? []"
           :key="entry.workflow_sha256"
+          :data-testid="`test-workflow-entry-${entry.workflow_sha256}`"
           type="button"
           :disabled="busy"
+          :aria-pressed="
+            entry.workflow_sha256 === data.selected?.summary.workflow_sha256
+          "
           class="flex min-h-36 flex-col gap-2 rounded-lg border border-border-default bg-secondary-background p-4 text-left hover:bg-interface-menu-component-surface-hovered focus-visible:outline-2 focus-visible:outline-offset-2"
           @click="library.select(entry.workflow_sha256)"
         >
@@ -231,14 +246,29 @@ onMounted(library.initialize)
             })
           }}</span>
           <span class="text-xs text-muted-foreground">{{
-            t('testWorkflowLibrary.notVerified')
+            t(
+              entry.verified
+                ? 'testWorkflowLibrary.verified'
+                : 'testWorkflowLibrary.notVerified'
+            )
           }}</span>
         </button>
       </div>
       <p v-if="data.page && !data.page.entries.length">
         {{ t('testWorkflowLibrary.noMatches') }}
       </p>
-      <div v-if="data.page" class="mt-4 flex justify-end gap-3">
+      <div v-if="data.page" class="mt-4 flex flex-wrap items-center gap-3">
+        <p role="status" class="m-0 mr-auto text-xs text-muted-foreground">
+          {{
+            t(
+              'testWorkflowLibrary.pageCount',
+              {
+                count: data.page.entries.length
+              },
+              data.page.entries.length
+            )
+          }}
+        </p>
         <Button variant="secondary" :disabled="busy" @click="search">{{
           t('testWorkflowLibrary.firstPage')
         }}</Button>

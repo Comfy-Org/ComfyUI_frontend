@@ -198,6 +198,35 @@ describe('Test workflow library UI', () => {
     mocks.fetch.mockResolvedValue(response({}, 401))
     renderLibrary()
     expect(await screen.findByRole('alert')).toHaveTextContent('401')
+    expect(
+      screen.queryByText(messages.testWorkflowLibrary.empty)
+    ).not.toBeInTheDocument()
+    expect(mocks.handleFile).not.toHaveBeenCalled()
+  })
+
+  it('shows the first bounded page immediately when only one collection is available', async () => {
+    renderLibrary()
+    expect(
+      await screen.findByRole('button', { name: /Unknown node original/ })
+    ).toBeVisible()
+    expect(mocks.handleFile).not.toHaveBeenCalled()
+  })
+
+  it('asks for a collection when multiple accessible collections are available', async () => {
+    mocks.fetch.mockResolvedValueOnce(
+      response({
+        collections: [
+          { id: 'corpus-pilot', count: 120000 },
+          { id: 'personal-tests', count: 3 }
+        ],
+        truncated: false
+      })
+    )
+    renderLibrary()
+    expect(
+      await screen.findByText(messages.testWorkflowLibrary.chooseCollection)
+    ).toBeVisible()
+    expect(mocks.fetch).toHaveBeenCalledOnce()
     expect(mocks.handleFile).not.toHaveBeenCalled()
   })
 

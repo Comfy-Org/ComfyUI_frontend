@@ -4,17 +4,17 @@
     :search-subject="$t('g.workflow')"
     data-testid="workflows-sidebar"
   >
-    <template #header-actions>
-      <Button
-        v-if="isCloud"
-        variant="muted-textonly"
-        size="icon"
-        :aria-label="$t('testWorkflowLibrary.title')"
-        :title="$t('testWorkflowLibrary.title')"
-        @click="library.show"
-      >
-        <i class="icon-[lucide--library] size-4" aria-hidden="true" />
-      </Button>
+    <template #footer>
+      <div v-if="isCloud" class="shrink-0 border-t border-border-default p-3">
+        <Button
+          variant="secondary"
+          class="w-full justify-start gap-2"
+          @click="library.show"
+        >
+          <i class="icon-[lucide--library] size-4" aria-hidden="true" />
+          {{ $t('testWorkflowLibrary.title') }}
+        </Button>
+      </div>
     </template>
   </BaseWorkflowsSidebarTab>
 </template>

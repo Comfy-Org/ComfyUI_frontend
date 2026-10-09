@@ -109,6 +109,37 @@ beforeEach(() => {
 })
 
 describe('Test workflow library', () => {
+  it('opens the only available collection without loading any originals', async () => {
+    const { library, owner } = setup()
+    expect(await library.initialize()).toBe(true)
+    expect(library.collection.value).toBe('corpus-pilot')
+    expect(library.data.value.page?.entries).toEqual([detail.summary])
+    expect(mocks.handleFile).not.toHaveBeenCalled()
+    expect(
+      mocks.fetch.mock.calls.every(
+        ([route]) => !String(route).includes('include_workflow=true')
+      )
+    ).toBe(true)
+    owner.stop()
+  })
+
+  it('requires an explicit collection choice when more than one is available', async () => {
+    mocks.fetch.mockResolvedValueOnce(
+      response({
+        collections: [
+          { id: 'corpus-pilot', count: 120000 },
+          { id: 'other-collection', count: 3 }
+        ],
+        truncated: false
+      })
+    )
+    const { library, owner } = setup()
+    expect(await library.initialize()).toBe(true)
+    expect(library.collection.value).toBe('')
+    expect(library.data.value.page).toBeNull()
+    expect(mocks.fetch).toHaveBeenCalledOnce()
+    owner.stop()
+  })
   it('retains structured inputs and source evidence through the generated response validator', async () => {
     const source = '{\r\n"source":"unchanged observation"\r\n}\r\n'
     const extended: TestWorkflowDetail = {

@@ -7,6 +7,7 @@ const config: KnipConfig = {
     '.': {
       entry: [
         '{build,scripts}/**/*.{js,mjs,ts}',
+        'browser_tests/fixtures/helpers/testWorkflowLibraryProbe.ts',
         'vitest.matrix.config.mts',
         'src/assets/css/style.css',
         'public/comfy/api/v2.js',
