@@ -360,6 +360,7 @@ jobs:
           artifact-pattern: snapshots-shard-*
           snapshot-paths: browser_tests/
           branch: ${{ needs.setup.outputs.branch }}
+          head-sha: ${{ needs.setup.outputs.head-sha }}
           message: '[automated] Update test expectations'
           source-run-url: ${{ needs.harvest.outputs.mode == 'harvest' && needs.harvest.outputs.run-url || '' }}
 

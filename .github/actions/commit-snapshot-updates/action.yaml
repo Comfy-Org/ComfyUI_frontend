@@ -21,6 +21,11 @@ inputs:
   branch:
     description: PR branch to push to
     required: true
+  head-sha:
+    description: >
+      PR head the snapshots were produced for. The commit is refused when the
+      checked-out branch is no longer at this commit.
+    required: true
   message:
     description: First line of the commit message
     required: false
@@ -40,6 +45,20 @@ outputs:
 runs:
   using: composite
   steps:
+    - name: Verify the branch is still at the PR head
+      shell: bash
+      env:
+        HEAD_SHA: ${{ inputs.head-sha }}
+        TARGET_BRANCH: ${{ inputs.branch }}
+      run: |
+        set -euo pipefail
+
+        checked_out=$(git rev-parse HEAD)
+        if [ "$checked_out" != "$HEAD_SHA" ]; then
+          echo "::error::${TARGET_BRANCH} is at ${checked_out}, but the snapshots were produced for ${HEAD_SHA}. Trigger the update again for the new head."
+          exit 1
+        fi
+
     - name: Download rewritten snapshots
       uses: actions/download-artifact@v8
       with:
