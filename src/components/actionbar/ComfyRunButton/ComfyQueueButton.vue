@@ -182,12 +182,12 @@ const queueButtonLabel = computed(() =>
 )
 
 const queueButtonVariant = computed<
-  'destructive' | 'inverted' | 'secondary' | 'subscribe'
+  'destructive' | 'inverted' | 'tertiary' | 'subscribe'
 >(() =>
   paymentRecoveryLock === 'owner'
     ? 'subscribe'
     : paymentRecoveryLock === 'member'
-      ? 'secondary'
+      ? 'tertiary'
       : isStopInstantAction.value
         ? 'destructive'
         : 'inverted'

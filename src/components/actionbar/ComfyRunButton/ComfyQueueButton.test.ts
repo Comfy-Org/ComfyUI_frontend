@@ -173,7 +173,7 @@ describe('ComfyQueueButton', () => {
       label: 'Update payment to run',
       variant: 'subscribe'
     },
-    { paymentRecoveryLock: 'member', label: 'Run', variant: 'secondary' }
+    { paymentRecoveryLock: 'member', label: 'Run', variant: 'tertiary' }
   ] as const)(
     'keeps the queue group mounted for a paused $paymentRecoveryLock and blocks execution',
     async ({ paymentRecoveryLock, label, variant }) => {
