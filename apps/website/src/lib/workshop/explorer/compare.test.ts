@@ -137,6 +137,22 @@ describe('comparableWith', () => {
     ).toEqual(['first', 'second', 'third'])
   })
 
+  it('puts the models that answered a prompt this one answered first', () => {
+    const samples = [
+      {
+        type: 'portraits' as const,
+        prompt: 'A fisherman',
+        source: 'magnific' as const,
+        images: { self: '/self.webp', fourth: '/fourth.webp' }
+      }
+    ]
+    expect(
+      comparableWith(catalogue[0], catalogue, samples).map(
+        (model) => model.slug
+      )
+    ).toEqual(['fourth', 'first', 'second'])
+  })
+
   it.for([
     ['a model with no task', hosted({ slug: 'self' })],
     [

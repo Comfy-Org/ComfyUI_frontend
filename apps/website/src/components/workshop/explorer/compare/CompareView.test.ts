@@ -18,7 +18,11 @@ function hosted(slug: string, name: string): WorkshopModel {
   }
 }
 
-const models = [hosted('seedream', 'Seedream'), hosted('flux', 'Flux')]
+const models = [
+  hosted('seedream', 'Seedream'),
+  hosted('flux', 'Flux'),
+  hosted('gpt', 'GPT Image')
+]
 
 const samples: SamePromptSample[] = [
   {
@@ -31,13 +35,13 @@ const samples: SamePromptSample[] = [
     type: 'typography',
     prompt: 'A poster',
     source: 'magnific',
-    images: { seedream: '/s-poster.webp' }
+    images: { seedream: '/s-poster.webp', gpt: '/g-poster.webp' }
   },
   {
     type: 'product',
     prompt: 'A bottle',
     source: 'magnific',
-    images: { veo: '/v-bottle.webp' }
+    images: { flux: '/f-bottle.webp', veo: '/v-bottle.webp' }
   }
 ]
 
@@ -51,7 +55,7 @@ function promptRows() {
 }
 
 describe('CompareView', () => {
-  it('offers only the prompt types the compared models have samples for', () => {
+  it('offers only the prompt types two compared models answered', () => {
     render(CompareView, { props: { models, samples } })
 
     expect(
@@ -77,9 +81,9 @@ describe('CompareView', () => {
     expect(within(row).getByText('No sample for this prompt')).toBeTruthy()
   })
 
-  it('leaves the same-prompt section out when no compared model has a sample', () => {
+  it('leaves the same-prompt section out when no prompt has two answers', () => {
     render(CompareView, {
-      props: { models: [hosted('a', 'A'), hosted('b', 'B')], samples }
+      props: { models: [models[1], models[2]], samples }
     })
 
     expect(screen.queryByRole('group', { name: 'Prompt types' })).toBeNull()
@@ -101,7 +105,7 @@ describe('CompareView', () => {
       screen
         .getAllByRole('link', { name: / API$/ })
         .map((link) => link.getAttribute('aria-label'))
-    ).toEqual(['Seedream API', 'Flux API'])
+    ).toEqual(['Seedream API', 'Flux API', 'GPT Image API'])
   })
 
   it('keeps the title, Add model and Copy link to the catalogue view', async () => {
@@ -111,7 +115,7 @@ describe('CompareView', () => {
     })
 
     expect(
-      screen.getByRole('heading', { level: 2, name: /^Compare 2 models/ })
+      screen.getByRole('heading', { level: 2, name: /^Compare 3 models/ })
     ).toBeTruthy()
     await user.click(screen.getByRole('button', { name: 'Add model' }))
     await user.click(
