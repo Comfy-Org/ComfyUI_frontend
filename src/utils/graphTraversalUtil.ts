@@ -14,7 +14,7 @@ import {
   getParentExecutionIds,
   parseNodeLocatorId
 } from '@/types/nodeIdentification'
-import { parseNodeId } from '@/types/nodeId'
+import { parseNodeId, toNodeId } from '@/types/nodeId'
 import type { NodeId } from '@/types/nodeId'
 import type { NodeState } from '@/types/nodeState'
 import type { UUID } from '@/utils/uuid'
@@ -448,54 +448,26 @@ interface ResolvedExecutionNode {
 }
 
 function resolveExecutionNode(
-  rootGraph: LGraph,
+  graph: LGraph | Subgraph,
   executionId: string
 ): ResolvedExecutionNode | null {
-  const localNodeId = getLocalNodeIdFromExecutionId(executionId)
-  if (!localNodeId) return null
+  for (
+    let end = executionId.indexOf(':');
+    end !== -1;
+    end = executionId.indexOf(':', end + 1)
+  ) {
+    const host = graph.getNodeById(toNodeId(executionId.slice(0, end)))
+    if (!host || !isSubgraphNode(host)) continue
 
-  const subgraphPath = getSubgraphPathFromExecutionId(executionId)
-
-  // If no subgraph path, it's in the root graph
-  const parsedLocalNodeId = parseNodeId(localNodeId)
-  if (!parsedLocalNodeId) return null
-
-  if (subgraphPath.length === 0) {
-    const node = rootGraph.getNodeById(parsedLocalNodeId)
-    return node ? { graph: rootGraph, node } : null
-  }
-
-  const targetGraph = traverseSubgraphPath(rootGraph, subgraphPath)
-  const nestedNode = targetGraph?.getNodeById(parsedLocalNodeId)
-  if (targetGraph && nestedNode) return { graph: targetGraph, node: nestedNode }
-
-  return resolveExecutionNodeByLongestPrefix(rootGraph, executionId)
-}
-
-function resolveExecutionNodeByLongestPrefix(
-  graph: LGraph | Subgraph,
-  remainingPath: string
-): ResolvedExecutionNode | null {
-  const candidates = graph.nodes
-    .filter((node) => {
-      const nodeId = String(node.id)
-      return remainingPath === nodeId || remainingPath.startsWith(`${nodeId}:`)
-    })
-    .sort((left, right) => String(right.id).length - String(left.id).length)
-
-  for (const node of candidates) {
-    const nodeId = String(node.id)
-    if (remainingPath === nodeId) return { graph, node }
-    if (!isSubgraphNode(node)) continue
-
-    const nestedNode = resolveExecutionNodeByLongestPrefix(
-      node.subgraph,
-      remainingPath.slice(nodeId.length + 1)
+    const nested = resolveExecutionNode(
+      host.subgraph,
+      executionId.slice(end + 1)
     )
-    if (nestedNode) return nestedNode
+    if (nested) return nested
   }
 
-  return null
+  const node = executionId ? graph.getNodeById(toNodeId(executionId)) : null
+  return node ? { graph, node } : null
 }
 
 /**
