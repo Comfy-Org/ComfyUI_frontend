@@ -1,4 +1,5 @@
-import en from '@/locales/en/main.json' with { type: 'json' }
+import { DEFAULT_LOCALE } from '@/config/locales'
+import { translationsFor } from '@/i18n/translations'
 
 type BlockType =
   | 'paragraph'
@@ -40,7 +41,8 @@ function inferBlockType(block: string | MessageGroup): BlockType {
 }
 
 export function deriveSections(prefix: string): SectionConfig[] {
-  const catalog: unknown = en
+  const catalog: unknown =
+    translationsFor(DEFAULT_LOCALE).getLocaleMessage(DEFAULT_LOCALE)
   if (!isMessageGroup(catalog) || !isMessageGroup(catalog[prefix])) return []
 
   return Object.entries(catalog[prefix]).flatMap(([id, section]) => {
