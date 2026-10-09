@@ -1354,6 +1354,13 @@ export const zPlan = z.object({
 })
 
 /**
+ * Which developer-platform deployment this browser should run on.
+ */
+export const zPickWorkspaceDeploymentRequest = z.object({
+  deployment_id: z.string()
+})
+
+/**
  * An outstanding workspace invitation that has not yet been accepted.
  */
 export const zPendingInvite = z.object({
@@ -5310,6 +5317,26 @@ export const zUpdateWorkspacePath = z.object({
  * Workspace updated
  */
 export const zUpdateWorkspaceResponse = zWorkspace
+
+export const zClearWorkspaceDeploymentPath = z.object({
+  id: z.string()
+})
+
+/**
+ * Cleared
+ */
+export const zClearWorkspaceDeploymentResponse = z.void()
+
+export const zPickWorkspaceDeploymentBody = zPickWorkspaceDeploymentRequest
+
+export const zPickWorkspaceDeploymentPath = z.object({
+  id: z.string()
+})
+
+/**
+ * Picked; the cookie on this response carries it
+ */
+export const zPickWorkspaceDeploymentResponse = z.void()
 
 /**
  * The credential's workspace

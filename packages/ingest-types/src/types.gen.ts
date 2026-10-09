@@ -2095,6 +2095,16 @@ export type Plan = {
 }
 
 /**
+ * Which developer-platform deployment this browser should run on.
+ */
+export type PickWorkspaceDeploymentRequest = {
+  /**
+   * Developer-platform deployment id: one of this workspace's, not deleted. The error message names which check failed.
+   */
+  deployment_id: string
+}
+
+/**
  * An outstanding workspace invitation that has not yet been accepted.
  */
 export type PendingInvite = {
@@ -15251,6 +15261,110 @@ export type UpdateWorkspaceResponses = {
 
 export type UpdateWorkspaceResponse =
   UpdateWorkspaceResponses[keyof UpdateWorkspaceResponses]
+
+export type ClearWorkspaceDeploymentData = {
+  body?: never
+  path: {
+    /**
+     * Workspace ID (w-{uuid} format)
+     */
+    id: string
+  }
+  query?: never
+  url: '/api/workspaces/{id}/deployment'
+}
+
+export type ClearWorkspaceDeploymentErrors = {
+  /**
+   * `code` is `workspace_id_invalid`: the `X-Comfy-Workspace-ID` header or `workspace_id` query value is malformed, or conflicts with another value or with the workspace the credential resolves to. Answered only while `web_session_enabled` is on for the user. See the `WebSessionAuth` scheme.
+   */
+  400: ErrorResponse
+  /**
+   * Unauthorized
+   */
+  401: ErrorResponse
+  /**
+   * For a web session, one of the SessionWriteForbidden refusals (`csrf_invalid`, `workspace_access_denied`, `origin_not_allowed`, `cross_site_request`).
+   */
+  403: ErrorResponse
+  /**
+   * Workspace not found, or the caller is not a member of it
+   */
+  404: ErrorResponse
+  /**
+   * Internal server error
+   */
+  500: ErrorResponse
+}
+
+export type ClearWorkspaceDeploymentError =
+  ClearWorkspaceDeploymentErrors[keyof ClearWorkspaceDeploymentErrors]
+
+export type ClearWorkspaceDeploymentResponses = {
+  /**
+   * Cleared
+   */
+  204: void
+}
+
+export type ClearWorkspaceDeploymentResponse =
+  ClearWorkspaceDeploymentResponses[keyof ClearWorkspaceDeploymentResponses]
+
+export type PickWorkspaceDeploymentData = {
+  body: PickWorkspaceDeploymentRequest
+  path: {
+    /**
+     * Workspace ID (w-{uuid} format)
+     */
+    id: string
+  }
+  query?: never
+  url: '/api/workspaces/{id}/deployment'
+}
+
+export type PickWorkspaceDeploymentErrors = {
+  /**
+   * `code` is `workspace_id_invalid`: the `X-Comfy-Workspace-ID` header or `workspace_id` query value is malformed, or conflicts with another value or with the workspace the credential resolves to. Answered only while `web_session_enabled` is on for the user. See the `WebSessionAuth` scheme.
+   */
+  400: ErrorResponse
+  /**
+   * Unauthorized
+   */
+  401: ErrorResponse
+  /**
+   * An API key (picking a deployment needs a signed-in session), or the rollout flag is off for this account. For a web session, `code` may also be one of the SessionWriteForbidden refusals (`csrf_invalid`, `workspace_access_denied`, `origin_not_allowed`, `cross_site_request`).
+   */
+  403: ErrorResponse
+  /**
+   * Workspace not found, or the caller is not a member of it
+   */
+  404: ErrorResponse
+  /**
+   * Validation error, including a deployment_id that is not one of the workspace's deployments or has been deleted
+   */
+  422: ErrorResponse
+  /**
+   * Internal server error
+   */
+  500: ErrorResponse
+  /**
+   * comfy-deploy could not be asked whether the deployment is valid, or deployment picking is not configured in this environment
+   */
+  503: ErrorResponse
+}
+
+export type PickWorkspaceDeploymentError =
+  PickWorkspaceDeploymentErrors[keyof PickWorkspaceDeploymentErrors]
+
+export type PickWorkspaceDeploymentResponses = {
+  /**
+   * Picked; the cookie on this response carries it
+   */
+  204: void
+}
+
+export type PickWorkspaceDeploymentResponse =
+  PickWorkspaceDeploymentResponses[keyof PickWorkspaceDeploymentResponses]
 
 export type GetCurrentWorkspaceData = {
   body?: never
