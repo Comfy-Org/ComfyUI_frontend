@@ -37,7 +37,7 @@ defineProps<{
       </p>
       <p
         v-if="column.description"
-        class="mt-1 text-sm whitespace-nowrap text-primary-warm-gray"
+        class="mt-1 text-xs whitespace-nowrap text-primary-warm-gray"
       >
         {{ column.description }}
       </p>

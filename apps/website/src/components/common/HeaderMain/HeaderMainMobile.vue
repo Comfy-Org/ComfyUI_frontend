@@ -151,7 +151,7 @@ onUnmounted(() => {
                     </p>
                     <p
                       v-if="column.description"
-                      class="mt-1 text-sm text-primary-warm-gray"
+                      class="mt-1 text-xs text-primary-warm-gray"
                     >
                       {{ column.description }}
                     </p>
