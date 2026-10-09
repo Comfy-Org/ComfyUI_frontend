@@ -11,7 +11,6 @@ describe('ComfyApp root graph readiness', () => {
   let previousRootGraph: LGraph | undefined
 
   beforeEach(() => {
-    vi.spyOn(console, 'error').mockImplementation(() => {})
     previousRootGraph = getRootGraph(app)
     setRootGraph(app, undefined)
     scope = effectScope()
@@ -39,7 +38,11 @@ describe('ComfyApp root graph readiness', () => {
   it('binds a rootGraph.events listener registered before the graph exists', async () => {
     const onConfigured = vi.fn()
     scope.run(() => {
-      useEventListener(() => app.rootGraph?.events, 'configured', onConfigured)
+      useEventListener(
+        () => app.rootGraphOrUndefined?.events,
+        'configured',
+        onConfigured
+      )
     })
 
     const graph = new LGraph()
@@ -55,7 +58,11 @@ describe('ComfyApp root graph readiness', () => {
     const firstGraph = new LGraph()
     setRootGraph(app, firstGraph)
     scope.run(() => {
-      useEventListener(() => app.rootGraph?.events, 'configured', onConfigured)
+      useEventListener(
+        () => app.rootGraphOrUndefined?.events,
+        'configured',
+        onConfigured
+      )
     })
 
     const secondGraph = new LGraph()
