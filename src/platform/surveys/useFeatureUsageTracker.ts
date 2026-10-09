@@ -9,14 +9,8 @@ interface FeatureUsage {
 
 type FeatureUsageRecord = Partial<Record<string, FeatureUsage>>
 
-interface PendingFeatureUsage {
-  incrementCount: number
-  firstUsed: number
-  lastUsed: number
-}
-
 const STORAGE_KEY = 'Comfy.FeatureUsage'
-const pendingUsage = new Map<string, PendingFeatureUsage>()
+const pendingUsage = new Map<string, FeatureUsage>()
 
 function latestUsage(
   storedUsage: FeatureUsage | undefined,
@@ -44,31 +38,12 @@ function applyPendingUsage(usageData: FeatureUsageRecord) {
   return {
     ...usageData,
     ...Object.fromEntries(
-      [...pendingUsage].map(([featureId, pending]) => {
-        const stored = usageData[featureId]
-        return [
-          featureId,
-          {
-            useCount: (stored?.useCount ?? 0) + pending.incrementCount,
-            firstUsed: Math.min(
-              stored?.firstUsed ?? pending.firstUsed,
-              pending.firstUsed
-            ),
-            lastUsed: Math.max(stored?.lastUsed ?? 0, pending.lastUsed)
-          }
-        ]
-      })
+      [...pendingUsage].map(([featureId, usage]) => [
+        featureId,
+        latestUsage(usageData[featureId], usage)
+      ])
     )
   }
-}
-
-function addPendingUsage(featureId: string, now: number) {
-  const pending = pendingUsage.get(featureId)
-  pendingUsage.set(featureId, {
-    incrementCount: (pending?.incrementCount ?? 0) + 1,
-    firstUsed: pending?.firstUsed ?? now,
-    lastUsed: now
-  })
 }
 
 function persistUsageData(
@@ -129,10 +104,14 @@ export function useFeatureUsageTracker(featureId: string) {
     )
     const nextUsageData = persistedUsageData ?? {
       ...currentUsageData,
-      [featureId]: incrementUsage(existing, now)
+      [featureId]: incrementUsage(
+        latestUsage(pendingUsage.get(featureId), existing),
+        now
+      )
     }
     if (!persistedUsageData) {
-      addPendingUsage(featureId, now)
+      const nextUsage = nextUsageData[featureId]
+      if (nextUsage) pendingUsage.set(featureId, nextUsage)
     }
     usageData.value = nextUsageData
   }
