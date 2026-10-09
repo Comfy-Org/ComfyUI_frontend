@@ -75,6 +75,7 @@ if (args.base) {
     })
   node('cruise.mjs', args.base, args.head, work)
   node('open-prs.mjs', work, args.head)
+  node('census.mjs', work)
   node('build-data.mjs', work)
   rmSync(work, { recursive: true, force: true })
 }

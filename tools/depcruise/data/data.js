@@ -12,7 +12,8 @@ window.GORDIAN = {
       'Paths in delta lists are relative to src/.',
       'openPrs.states continue the step indexes: each is the tree at a pull request head (kind "pr") or at the main commit a stack forks from (kind "base"). Their delta is against `parent`, the state of the pull request below them in the stack.',
       'A pull request head is analysed as pushed, not merged into current main; behindMain says how stale its base is.',
-      'containsParentHead false means the pull request below was rebased without this one; its delta is then its whole branch against the main commit it forks from.'
+      'containsParentHead false means the pull request below was rebased without this one; its delta is then its whole branch against the main commit it forks from.',
+      'architecture is the domain census from tools/architecture (scripts/census.mjs), null when not measured. status "no-records" means the tree has no domain records yet. A domain is ready to extract when every entry in its checks is true; see DOMAINS.md.'
     ],
     knots: [
       {
@@ -229,7 +230,21 @@ window.GORDIAN = {
           { id: 6, size: 2 },
           { id: 7, size: 2 }
         ],
-        delta: { freed: [], entangled: [], splits: [] }
+        delta: { freed: [], entangled: [], splits: [] },
+        architecture: {
+          workspacePackages: [
+            'account-core',
+            'account-ui',
+            'billing-contract',
+            'design-system',
+            'ingest-types',
+            'object-info-parser',
+            'registry-types',
+            'shared-frontend-utils',
+            'tailwind-utils'
+          ],
+          status: 'no-records'
+        }
       },
       {
         index: 1,
@@ -459,6 +474,20 @@ window.GORDIAN = {
           ],
           entangled: [],
           splits: [{ from: 0, into: [8] }]
+        },
+        architecture: {
+          workspacePackages: [
+            'account-core',
+            'account-ui',
+            'billing-contract',
+            'design-system',
+            'ingest-types',
+            'object-info-parser',
+            'registry-types',
+            'shared-frontend-utils',
+            'tailwind-utils'
+          ],
+          status: 'no-records'
         }
       },
       {
@@ -493,7 +522,21 @@ window.GORDIAN = {
           { id: 6, size: 2 },
           { id: 7, size: 2 }
         ],
-        delta: { freed: [], entangled: [], splits: [] }
+        delta: { freed: [], entangled: [], splits: [] },
+        architecture: {
+          workspacePackages: [
+            'account-core',
+            'account-ui',
+            'billing-contract',
+            'design-system',
+            'ingest-types',
+            'object-info-parser',
+            'registry-types',
+            'shared-frontend-utils',
+            'tailwind-utils'
+          ],
+          status: 'no-records'
+        }
       },
       {
         index: 3,
@@ -534,6 +577,20 @@ window.GORDIAN = {
             'workbench/extensions/agent/crdt/agentSubgraphDefinitions.ts'
           ],
           splits: []
+        },
+        architecture: {
+          workspacePackages: [
+            'account-core',
+            'account-ui',
+            'billing-contract',
+            'design-system',
+            'ingest-types',
+            'object-info-parser',
+            'registry-types',
+            'shared-frontend-utils',
+            'tailwind-utils'
+          ],
+          status: 'no-records'
         }
       },
       {
@@ -689,6 +746,20 @@ window.GORDIAN = {
           ],
           entangled: [],
           splits: [{ from: 0, into: [9, 10] }]
+        },
+        architecture: {
+          workspacePackages: [
+            'account-core',
+            'account-ui',
+            'billing-contract',
+            'design-system',
+            'ingest-types',
+            'object-info-parser',
+            'registry-types',
+            'shared-frontend-utils',
+            'tailwind-utils'
+          ],
+          status: 'no-records'
         }
       },
       {
@@ -725,7 +796,21 @@ window.GORDIAN = {
           { id: 6, size: 2 },
           { id: 7, size: 2 }
         ],
-        delta: { freed: [], entangled: [], splits: [] }
+        delta: { freed: [], entangled: [], splits: [] },
+        architecture: {
+          workspacePackages: [
+            'account-core',
+            'account-ui',
+            'billing-contract',
+            'design-system',
+            'ingest-types',
+            'object-info-parser',
+            'registry-types',
+            'shared-frontend-utils',
+            'tailwind-utils'
+          ],
+          status: 'no-records'
+        }
       },
       {
         index: 6,
@@ -762,7 +847,21 @@ window.GORDIAN = {
           { id: 6, size: 2 },
           { id: 7, size: 2 }
         ],
-        delta: { freed: [], entangled: [], splits: [] }
+        delta: { freed: [], entangled: [], splits: [] },
+        architecture: {
+          workspacePackages: [
+            'account-core',
+            'account-ui',
+            'billing-contract',
+            'design-system',
+            'ingest-types',
+            'object-info-parser',
+            'registry-types',
+            'shared-frontend-utils',
+            'tailwind-utils'
+          ],
+          status: 'no-records'
+        }
       },
       {
         index: 7,
@@ -798,7 +897,21 @@ window.GORDIAN = {
           { id: 6, size: 2 },
           { id: 7, size: 2 }
         ],
-        delta: { freed: [], entangled: [], splits: [] }
+        delta: { freed: [], entangled: [], splits: [] },
+        architecture: {
+          workspacePackages: [
+            'account-core',
+            'account-ui',
+            'billing-contract',
+            'design-system',
+            'ingest-types',
+            'object-info-parser',
+            'registry-types',
+            'shared-frontend-utils',
+            'tailwind-utils'
+          ],
+          status: 'no-records'
+        }
       },
       {
         index: 8,
@@ -834,7 +947,21 @@ window.GORDIAN = {
           { id: 6, size: 2 },
           { id: 7, size: 2 }
         ],
-        delta: { freed: [], entangled: [], splits: [] }
+        delta: { freed: [], entangled: [], splits: [] },
+        architecture: {
+          workspacePackages: [
+            'account-core',
+            'account-ui',
+            'billing-contract',
+            'design-system',
+            'ingest-types',
+            'object-info-parser',
+            'registry-types',
+            'shared-frontend-utils',
+            'tailwind-utils'
+          ],
+          status: 'no-records'
+        }
       },
       {
         index: 9,
@@ -870,7 +997,21 @@ window.GORDIAN = {
           { id: 6, size: 2 },
           { id: 7, size: 2 }
         ],
-        delta: { freed: [], entangled: [], splits: [] }
+        delta: { freed: [], entangled: [], splits: [] },
+        architecture: {
+          workspacePackages: [
+            'account-core',
+            'account-ui',
+            'billing-contract',
+            'design-system',
+            'ingest-types',
+            'object-info-parser',
+            'registry-types',
+            'shared-frontend-utils',
+            'tailwind-utils'
+          ],
+          status: 'no-records'
+        }
       },
       {
         index: 10,
@@ -906,7 +1047,21 @@ window.GORDIAN = {
           { id: 6, size: 2 },
           { id: 7, size: 2 }
         ],
-        delta: { freed: [], entangled: [], splits: [] }
+        delta: { freed: [], entangled: [], splits: [] },
+        architecture: {
+          workspacePackages: [
+            'account-core',
+            'account-ui',
+            'billing-contract',
+            'design-system',
+            'ingest-types',
+            'object-info-parser',
+            'registry-types',
+            'shared-frontend-utils',
+            'tailwind-utils'
+          ],
+          status: 'no-records'
+        }
       },
       {
         index: 11,
@@ -943,7 +1098,21 @@ window.GORDIAN = {
           { id: 6, size: 2 },
           { id: 7, size: 2 }
         ],
-        delta: { freed: [], entangled: [], splits: [] }
+        delta: { freed: [], entangled: [], splits: [] },
+        architecture: {
+          workspacePackages: [
+            'account-core',
+            'account-ui',
+            'billing-contract',
+            'design-system',
+            'ingest-types',
+            'object-info-parser',
+            'registry-types',
+            'shared-frontend-utils',
+            'tailwind-utils'
+          ],
+          status: 'no-records'
+        }
       },
       {
         index: 12,
@@ -980,7 +1149,21 @@ window.GORDIAN = {
           { id: 6, size: 2 },
           { id: 7, size: 2 }
         ],
-        delta: { freed: [], entangled: [], splits: [] }
+        delta: { freed: [], entangled: [], splits: [] },
+        architecture: {
+          workspacePackages: [
+            'account-core',
+            'account-ui',
+            'billing-contract',
+            'design-system',
+            'ingest-types',
+            'object-info-parser',
+            'registry-types',
+            'shared-frontend-utils',
+            'tailwind-utils'
+          ],
+          status: 'no-records'
+        }
       },
       {
         index: 13,
@@ -1020,6 +1203,20 @@ window.GORDIAN = {
           freed: ['platform/telemetry/utils/groupMissingNodesByPack.ts'],
           entangled: [],
           splits: []
+        },
+        architecture: {
+          workspacePackages: [
+            'account-core',
+            'account-ui',
+            'billing-contract',
+            'design-system',
+            'ingest-types',
+            'object-info-parser',
+            'registry-types',
+            'shared-frontend-utils',
+            'tailwind-utils'
+          ],
+          status: 'no-records'
         }
       },
       {
@@ -1067,6 +1264,20 @@ window.GORDIAN = {
             'platform/cloud/subscription/utils/planCreditGrant.ts'
           ],
           splits: []
+        },
+        architecture: {
+          workspacePackages: [
+            'account-core',
+            'account-ui',
+            'billing-contract',
+            'design-system',
+            'ingest-types',
+            'object-info-parser',
+            'registry-types',
+            'shared-frontend-utils',
+            'tailwind-utils'
+          ],
+          status: 'no-records'
         }
       },
       {
@@ -1104,7 +1315,21 @@ window.GORDIAN = {
           { id: 6, size: 2 },
           { id: 7, size: 2 }
         ],
-        delta: { freed: [], entangled: [], splits: [] }
+        delta: { freed: [], entangled: [], splits: [] },
+        architecture: {
+          workspacePackages: [
+            'account-core',
+            'account-ui',
+            'billing-contract',
+            'design-system',
+            'ingest-types',
+            'object-info-parser',
+            'registry-types',
+            'shared-frontend-utils',
+            'tailwind-utils'
+          ],
+          status: 'no-records'
+        }
       },
       {
         index: 16,
@@ -1140,7 +1365,21 @@ window.GORDIAN = {
           { id: 6, size: 2 },
           { id: 7, size: 2 }
         ],
-        delta: { freed: [], entangled: [], splits: [] }
+        delta: { freed: [], entangled: [], splits: [] },
+        architecture: {
+          workspacePackages: [
+            'account-core',
+            'account-ui',
+            'billing-contract',
+            'design-system',
+            'ingest-types',
+            'object-info-parser',
+            'registry-types',
+            'shared-frontend-utils',
+            'tailwind-utils'
+          ],
+          status: 'no-records'
+        }
       },
       {
         index: 17,
@@ -1244,6 +1483,20 @@ window.GORDIAN = {
           ],
           entangled: [],
           splits: [{ from: 0, into: [11] }]
+        },
+        architecture: {
+          workspacePackages: [
+            'account-core',
+            'account-ui',
+            'billing-contract',
+            'design-system',
+            'ingest-types',
+            'object-info-parser',
+            'registry-types',
+            'shared-frontend-utils',
+            'tailwind-utils'
+          ],
+          status: 'no-records'
         }
       },
       {
@@ -1282,7 +1535,21 @@ window.GORDIAN = {
           { id: 6, size: 2 },
           { id: 7, size: 2 }
         ],
-        delta: { freed: [], entangled: [], splits: [] }
+        delta: { freed: [], entangled: [], splits: [] },
+        architecture: {
+          workspacePackages: [
+            'account-core',
+            'account-ui',
+            'billing-contract',
+            'design-system',
+            'ingest-types',
+            'object-info-parser',
+            'registry-types',
+            'shared-frontend-utils',
+            'tailwind-utils'
+          ],
+          status: 'no-records'
+        }
       },
       {
         index: 19,
@@ -1319,7 +1586,21 @@ window.GORDIAN = {
           { id: 6, size: 2 },
           { id: 7, size: 2 }
         ],
-        delta: { freed: [], entangled: [], splits: [] }
+        delta: { freed: [], entangled: [], splits: [] },
+        architecture: {
+          workspacePackages: [
+            'account-core',
+            'account-ui',
+            'billing-contract',
+            'design-system',
+            'ingest-types',
+            'object-info-parser',
+            'registry-types',
+            'shared-frontend-utils',
+            'tailwind-utils'
+          ],
+          status: 'no-records'
+        }
       },
       {
         index: 20,
@@ -1356,7 +1637,21 @@ window.GORDIAN = {
           { id: 6, size: 2 },
           { id: 7, size: 2 }
         ],
-        delta: { freed: [], entangled: [], splits: [] }
+        delta: { freed: [], entangled: [], splits: [] },
+        architecture: {
+          workspacePackages: [
+            'account-core',
+            'account-ui',
+            'billing-contract',
+            'design-system',
+            'ingest-types',
+            'object-info-parser',
+            'registry-types',
+            'shared-frontend-utils',
+            'tailwind-utils'
+          ],
+          status: 'no-records'
+        }
       },
       {
         index: 21,
@@ -1401,6 +1696,20 @@ window.GORDIAN = {
           ],
           entangled: [],
           splits: []
+        },
+        architecture: {
+          workspacePackages: [
+            'account-core',
+            'account-ui',
+            'billing-contract',
+            'design-system',
+            'ingest-types',
+            'object-info-parser',
+            'registry-types',
+            'shared-frontend-utils',
+            'tailwind-utils'
+          ],
+          status: 'no-records'
         }
       },
       {
@@ -1438,7 +1747,21 @@ window.GORDIAN = {
           { id: 6, size: 2 },
           { id: 7, size: 2 }
         ],
-        delta: { freed: [], entangled: [], splits: [] }
+        delta: { freed: [], entangled: [], splits: [] },
+        architecture: {
+          workspacePackages: [
+            'account-core',
+            'account-ui',
+            'billing-contract',
+            'design-system',
+            'ingest-types',
+            'object-info-parser',
+            'registry-types',
+            'shared-frontend-utils',
+            'tailwind-utils'
+          ],
+          status: 'no-records'
+        }
       },
       {
         index: 23,
@@ -1476,7 +1799,21 @@ window.GORDIAN = {
           { id: 6, size: 2 },
           { id: 7, size: 2 }
         ],
-        delta: { freed: [], entangled: [], splits: [] }
+        delta: { freed: [], entangled: [], splits: [] },
+        architecture: {
+          workspacePackages: [
+            'account-core',
+            'account-ui',
+            'billing-contract',
+            'design-system',
+            'ingest-types',
+            'object-info-parser',
+            'registry-types',
+            'shared-frontend-utils',
+            'tailwind-utils'
+          ],
+          status: 'no-records'
+        }
       },
       {
         index: 24,
@@ -1521,6 +1858,20 @@ window.GORDIAN = {
           ],
           entangled: [],
           splits: []
+        },
+        architecture: {
+          workspacePackages: [
+            'account-core',
+            'account-ui',
+            'billing-contract',
+            'design-system',
+            'ingest-types',
+            'object-info-parser',
+            'registry-types',
+            'shared-frontend-utils',
+            'tailwind-utils'
+          ],
+          status: 'no-records'
         }
       },
       {
@@ -1563,6 +1914,20 @@ window.GORDIAN = {
           freed: ['components/builder/useEmptyWorkflowDialog.ts'],
           entangled: [],
           splits: []
+        },
+        architecture: {
+          workspacePackages: [
+            'account-core',
+            'account-ui',
+            'billing-contract',
+            'design-system',
+            'ingest-types',
+            'object-info-parser',
+            'registry-types',
+            'shared-frontend-utils',
+            'tailwind-utils'
+          ],
+          status: 'no-records'
         }
       },
       {
@@ -1601,7 +1966,21 @@ window.GORDIAN = {
           { id: 6, size: 2 },
           { id: 7, size: 2 }
         ],
-        delta: { freed: [], entangled: [], splits: [] }
+        delta: { freed: [], entangled: [], splits: [] },
+        architecture: {
+          workspacePackages: [
+            'account-core',
+            'account-ui',
+            'billing-contract',
+            'design-system',
+            'ingest-types',
+            'object-info-parser',
+            'registry-types',
+            'shared-frontend-utils',
+            'tailwind-utils'
+          ],
+          status: 'no-records'
+        }
       },
       {
         index: 27,
@@ -1638,7 +2017,21 @@ window.GORDIAN = {
           { id: 6, size: 2 },
           { id: 7, size: 2 }
         ],
-        delta: { freed: [], entangled: [], splits: [] }
+        delta: { freed: [], entangled: [], splits: [] },
+        architecture: {
+          workspacePackages: [
+            'account-core',
+            'account-ui',
+            'billing-contract',
+            'design-system',
+            'ingest-types',
+            'object-info-parser',
+            'registry-types',
+            'shared-frontend-utils',
+            'tailwind-utils'
+          ],
+          status: 'no-records'
+        }
       },
       {
         index: 28,
@@ -1684,6 +2077,20 @@ window.GORDIAN = {
           ],
           entangled: [],
           splits: [{ from: 0, into: [12] }]
+        },
+        architecture: {
+          workspacePackages: [
+            'account-core',
+            'account-ui',
+            'billing-contract',
+            'design-system',
+            'ingest-types',
+            'object-info-parser',
+            'registry-types',
+            'shared-frontend-utils',
+            'tailwind-utils'
+          ],
+          status: 'no-records'
         }
       },
       {
@@ -1729,6 +2136,20 @@ window.GORDIAN = {
           ],
           entangled: ['workbench/extensions/agent/types/composerAttachment.ts'],
           splits: []
+        },
+        architecture: {
+          workspacePackages: [
+            'account-core',
+            'account-ui',
+            'billing-contract',
+            'design-system',
+            'ingest-types',
+            'object-info-parser',
+            'registry-types',
+            'shared-frontend-utils',
+            'tailwind-utils'
+          ],
+          status: 'no-records'
         }
       },
       {
@@ -1776,6 +2197,20 @@ window.GORDIAN = {
             'renderer/extensions/vueNodes/widgets/composables/useLightInfoWidget.ts'
           ],
           splits: []
+        },
+        architecture: {
+          workspacePackages: [
+            'account-core',
+            'account-ui',
+            'billing-contract',
+            'design-system',
+            'ingest-types',
+            'object-info-parser',
+            'registry-types',
+            'shared-frontend-utils',
+            'tailwind-utils'
+          ],
+          status: 'no-records'
         }
       },
       {
@@ -1814,7 +2249,21 @@ window.GORDIAN = {
           { id: 6, size: 2 },
           { id: 7, size: 2 }
         ],
-        delta: { freed: [], entangled: [], splits: [] }
+        delta: { freed: [], entangled: [], splits: [] },
+        architecture: {
+          workspacePackages: [
+            'account-core',
+            'account-ui',
+            'billing-contract',
+            'design-system',
+            'ingest-types',
+            'object-info-parser',
+            'registry-types',
+            'shared-frontend-utils',
+            'tailwind-utils'
+          ],
+          status: 'no-records'
+        }
       },
       {
         index: 32,
@@ -1871,6 +2320,20 @@ window.GORDIAN = {
           ],
           entangled: [],
           splits: []
+        },
+        architecture: {
+          workspacePackages: [
+            'account-core',
+            'account-ui',
+            'billing-contract',
+            'design-system',
+            'ingest-types',
+            'object-info-parser',
+            'registry-types',
+            'shared-frontend-utils',
+            'tailwind-utils'
+          ],
+          status: 'no-records'
         }
       },
       {
@@ -1922,6 +2385,20 @@ window.GORDIAN = {
           ],
           entangled: [],
           splits: []
+        },
+        architecture: {
+          workspacePackages: [
+            'account-core',
+            'account-ui',
+            'billing-contract',
+            'design-system',
+            'ingest-types',
+            'object-info-parser',
+            'registry-types',
+            'shared-frontend-utils',
+            'tailwind-utils'
+          ],
+          status: 'no-records'
         }
       },
       {
@@ -1960,7 +2437,21 @@ window.GORDIAN = {
           { id: 6, size: 2 },
           { id: 7, size: 2 }
         ],
-        delta: { freed: [], entangled: [], splits: [] }
+        delta: { freed: [], entangled: [], splits: [] },
+        architecture: {
+          workspacePackages: [
+            'account-core',
+            'account-ui',
+            'billing-contract',
+            'design-system',
+            'ingest-types',
+            'object-info-parser',
+            'registry-types',
+            'shared-frontend-utils',
+            'tailwind-utils'
+          ],
+          status: 'no-records'
+        }
       },
       {
         index: 35,
@@ -1999,7 +2490,21 @@ window.GORDIAN = {
           { id: 6, size: 2 },
           { id: 7, size: 2 }
         ],
-        delta: { freed: [], entangled: [], splits: [] }
+        delta: { freed: [], entangled: [], splits: [] },
+        architecture: {
+          workspacePackages: [
+            'account-core',
+            'account-ui',
+            'billing-contract',
+            'design-system',
+            'ingest-types',
+            'object-info-parser',
+            'registry-types',
+            'shared-frontend-utils',
+            'tailwind-utils'
+          ],
+          status: 'no-records'
+        }
       },
       {
         index: 36,
@@ -2038,7 +2543,21 @@ window.GORDIAN = {
           { id: 6, size: 2 },
           { id: 7, size: 2 }
         ],
-        delta: { freed: [], entangled: [], splits: [] }
+        delta: { freed: [], entangled: [], splits: [] },
+        architecture: {
+          workspacePackages: [
+            'account-core',
+            'account-ui',
+            'billing-contract',
+            'design-system',
+            'ingest-types',
+            'object-info-parser',
+            'registry-types',
+            'shared-frontend-utils',
+            'tailwind-utils'
+          ],
+          status: 'no-records'
+        }
       },
       {
         index: 37,
@@ -2077,7 +2596,21 @@ window.GORDIAN = {
           { id: 6, size: 2 },
           { id: 7, size: 2 }
         ],
-        delta: { freed: [], entangled: [], splits: [] }
+        delta: { freed: [], entangled: [], splits: [] },
+        architecture: {
+          workspacePackages: [
+            'account-core',
+            'account-ui',
+            'billing-contract',
+            'design-system',
+            'ingest-types',
+            'object-info-parser',
+            'registry-types',
+            'shared-frontend-utils',
+            'tailwind-utils'
+          ],
+          status: 'no-records'
+        }
       },
       {
         index: 38,
@@ -2115,7 +2648,21 @@ window.GORDIAN = {
           { id: 6, size: 2 },
           { id: 7, size: 2 }
         ],
-        delta: { freed: [], entangled: [], splits: [] }
+        delta: { freed: [], entangled: [], splits: [] },
+        architecture: {
+          workspacePackages: [
+            'account-core',
+            'account-ui',
+            'billing-contract',
+            'design-system',
+            'ingest-types',
+            'object-info-parser',
+            'registry-types',
+            'shared-frontend-utils',
+            'tailwind-utils'
+          ],
+          status: 'no-records'
+        }
       },
       {
         index: 39,
@@ -2153,7 +2700,21 @@ window.GORDIAN = {
           { id: 6, size: 2 },
           { id: 7, size: 2 }
         ],
-        delta: { freed: [], entangled: [], splits: [] }
+        delta: { freed: [], entangled: [], splits: [] },
+        architecture: {
+          workspacePackages: [
+            'account-core',
+            'account-ui',
+            'billing-contract',
+            'design-system',
+            'ingest-types',
+            'object-info-parser',
+            'registry-types',
+            'shared-frontend-utils',
+            'tailwind-utils'
+          ],
+          status: 'no-records'
+        }
       },
       {
         index: 40,
@@ -2192,7 +2753,21 @@ window.GORDIAN = {
           { id: 6, size: 2 },
           { id: 7, size: 2 }
         ],
-        delta: { freed: [], entangled: [], splits: [] }
+        delta: { freed: [], entangled: [], splits: [] },
+        architecture: {
+          workspacePackages: [
+            'account-core',
+            'account-ui',
+            'billing-contract',
+            'design-system',
+            'ingest-types',
+            'object-info-parser',
+            'registry-types',
+            'shared-frontend-utils',
+            'tailwind-utils'
+          ],
+          status: 'no-records'
+        }
       },
       {
         index: 41,
@@ -2231,7 +2806,21 @@ window.GORDIAN = {
           { id: 6, size: 2 },
           { id: 7, size: 2 }
         ],
-        delta: { freed: [], entangled: [], splits: [] }
+        delta: { freed: [], entangled: [], splits: [] },
+        architecture: {
+          workspacePackages: [
+            'account-core',
+            'account-ui',
+            'billing-contract',
+            'design-system',
+            'ingest-types',
+            'object-info-parser',
+            'registry-types',
+            'shared-frontend-utils',
+            'tailwind-utils'
+          ],
+          status: 'no-records'
+        }
       },
       {
         index: 42,
@@ -2270,7 +2859,21 @@ window.GORDIAN = {
           { id: 6, size: 2 },
           { id: 7, size: 2 }
         ],
-        delta: { freed: [], entangled: [], splits: [] }
+        delta: { freed: [], entangled: [], splits: [] },
+        architecture: {
+          workspacePackages: [
+            'account-core',
+            'account-ui',
+            'billing-contract',
+            'design-system',
+            'ingest-types',
+            'object-info-parser',
+            'registry-types',
+            'shared-frontend-utils',
+            'tailwind-utils'
+          ],
+          status: 'no-records'
+        }
       },
       {
         index: 43,
@@ -2330,6 +2933,20 @@ window.GORDIAN = {
             'lib/litegraph/src/types/slots.ts'
           ],
           splits: []
+        },
+        architecture: {
+          workspacePackages: [
+            'account-core',
+            'account-ui',
+            'billing-contract',
+            'design-system',
+            'ingest-types',
+            'object-info-parser',
+            'registry-types',
+            'shared-frontend-utils',
+            'tailwind-utils'
+          ],
+          status: 'no-records'
         }
       },
       {
@@ -2369,7 +2986,21 @@ window.GORDIAN = {
           { id: 6, size: 2 },
           { id: 7, size: 2 }
         ],
-        delta: { freed: [], entangled: [], splits: [] }
+        delta: { freed: [], entangled: [], splits: [] },
+        architecture: {
+          workspacePackages: [
+            'account-core',
+            'account-ui',
+            'billing-contract',
+            'design-system',
+            'ingest-types',
+            'object-info-parser',
+            'registry-types',
+            'shared-frontend-utils',
+            'tailwind-utils'
+          ],
+          status: 'no-records'
+        }
       },
       {
         index: 45,
@@ -2408,7 +3039,21 @@ window.GORDIAN = {
           { id: 6, size: 2 },
           { id: 7, size: 2 }
         ],
-        delta: { freed: [], entangled: [], splits: [] }
+        delta: { freed: [], entangled: [], splits: [] },
+        architecture: {
+          workspacePackages: [
+            'account-core',
+            'account-ui',
+            'billing-contract',
+            'design-system',
+            'ingest-types',
+            'object-info-parser',
+            'registry-types',
+            'shared-frontend-utils',
+            'tailwind-utils'
+          ],
+          status: 'no-records'
+        }
       },
       {
         index: 46,
@@ -2447,7 +3092,21 @@ window.GORDIAN = {
           { id: 6, size: 2 },
           { id: 7, size: 2 }
         ],
-        delta: { freed: [], entangled: [], splits: [] }
+        delta: { freed: [], entangled: [], splits: [] },
+        architecture: {
+          workspacePackages: [
+            'account-core',
+            'account-ui',
+            'billing-contract',
+            'design-system',
+            'ingest-types',
+            'object-info-parser',
+            'registry-types',
+            'shared-frontend-utils',
+            'tailwind-utils'
+          ],
+          status: 'no-records'
+        }
       },
       {
         index: 47,
@@ -2486,7 +3145,21 @@ window.GORDIAN = {
           { id: 6, size: 2 },
           { id: 7, size: 2 }
         ],
-        delta: { freed: [], entangled: [], splits: [] }
+        delta: { freed: [], entangled: [], splits: [] },
+        architecture: {
+          workspacePackages: [
+            'account-core',
+            'account-ui',
+            'billing-contract',
+            'design-system',
+            'ingest-types',
+            'object-info-parser',
+            'registry-types',
+            'shared-frontend-utils',
+            'tailwind-utils'
+          ],
+          status: 'no-records'
+        }
       },
       {
         index: 48,
@@ -2525,7 +3198,21 @@ window.GORDIAN = {
           { id: 6, size: 2 },
           { id: 7, size: 2 }
         ],
-        delta: { freed: [], entangled: [], splits: [] }
+        delta: { freed: [], entangled: [], splits: [] },
+        architecture: {
+          workspacePackages: [
+            'account-core',
+            'account-ui',
+            'billing-contract',
+            'design-system',
+            'ingest-types',
+            'object-info-parser',
+            'registry-types',
+            'shared-frontend-utils',
+            'tailwind-utils'
+          ],
+          status: 'no-records'
+        }
       },
       {
         index: 49,
@@ -2564,7 +3251,21 @@ window.GORDIAN = {
           { id: 6, size: 2 },
           { id: 7, size: 2 }
         ],
-        delta: { freed: [], entangled: [], splits: [] }
+        delta: { freed: [], entangled: [], splits: [] },
+        architecture: {
+          workspacePackages: [
+            'account-core',
+            'account-ui',
+            'billing-contract',
+            'design-system',
+            'ingest-types',
+            'object-info-parser',
+            'registry-types',
+            'shared-frontend-utils',
+            'tailwind-utils'
+          ],
+          status: 'no-records'
+        }
       },
       {
         index: 50,
@@ -2603,7 +3304,21 @@ window.GORDIAN = {
           { id: 6, size: 2 },
           { id: 7, size: 2 }
         ],
-        delta: { freed: [], entangled: [], splits: [] }
+        delta: { freed: [], entangled: [], splits: [] },
+        architecture: {
+          workspacePackages: [
+            'account-core',
+            'account-ui',
+            'billing-contract',
+            'design-system',
+            'ingest-types',
+            'object-info-parser',
+            'registry-types',
+            'shared-frontend-utils',
+            'tailwind-utils'
+          ],
+          status: 'no-records'
+        }
       },
       {
         index: 51,
@@ -2642,7 +3357,21 @@ window.GORDIAN = {
           { id: 6, size: 2 },
           { id: 7, size: 2 }
         ],
-        delta: { freed: [], entangled: [], splits: [] }
+        delta: { freed: [], entangled: [], splits: [] },
+        architecture: {
+          workspacePackages: [
+            'account-core',
+            'account-ui',
+            'billing-contract',
+            'design-system',
+            'ingest-types',
+            'object-info-parser',
+            'registry-types',
+            'shared-frontend-utils',
+            'tailwind-utils'
+          ],
+          status: 'no-records'
+        }
       },
       {
         index: 52,
@@ -2681,7 +3410,21 @@ window.GORDIAN = {
           { id: 6, size: 2 },
           { id: 7, size: 2 }
         ],
-        delta: { freed: [], entangled: [], splits: [] }
+        delta: { freed: [], entangled: [], splits: [] },
+        architecture: {
+          workspacePackages: [
+            'account-core',
+            'account-ui',
+            'billing-contract',
+            'design-system',
+            'ingest-types',
+            'object-info-parser',
+            'registry-types',
+            'shared-frontend-utils',
+            'tailwind-utils'
+          ],
+          status: 'no-records'
+        }
       },
       {
         index: 53,
@@ -2729,6 +3472,20 @@ window.GORDIAN = {
           ],
           entangled: [],
           splits: []
+        },
+        architecture: {
+          workspacePackages: [
+            'account-core',
+            'account-ui',
+            'billing-contract',
+            'design-system',
+            'ingest-types',
+            'object-info-parser',
+            'registry-types',
+            'shared-frontend-utils',
+            'tailwind-utils'
+          ],
+          status: 'no-records'
         }
       },
       {
@@ -2768,7 +3525,21 @@ window.GORDIAN = {
           { id: 6, size: 2 },
           { id: 7, size: 2 }
         ],
-        delta: { freed: [], entangled: ['composables/useCopy.ts'], splits: [] }
+        delta: { freed: [], entangled: ['composables/useCopy.ts'], splits: [] },
+        architecture: {
+          workspacePackages: [
+            'account-core',
+            'account-ui',
+            'billing-contract',
+            'design-system',
+            'ingest-types',
+            'object-info-parser',
+            'registry-types',
+            'shared-frontend-utils',
+            'tailwind-utils'
+          ],
+          status: 'no-records'
+        }
       },
       {
         index: 55,
@@ -2807,7 +3578,21 @@ window.GORDIAN = {
           { id: 6, size: 2 },
           { id: 7, size: 2 }
         ],
-        delta: { freed: [], entangled: [], splits: [] }
+        delta: { freed: [], entangled: [], splits: [] },
+        architecture: {
+          workspacePackages: [
+            'account-core',
+            'account-ui',
+            'billing-contract',
+            'design-system',
+            'ingest-types',
+            'object-info-parser',
+            'registry-types',
+            'shared-frontend-utils',
+            'tailwind-utils'
+          ],
+          status: 'no-records'
+        }
       },
       {
         index: 56,
@@ -2845,7 +3630,21 @@ window.GORDIAN = {
           { id: 6, size: 2 },
           { id: 7, size: 2 }
         ],
-        delta: { freed: [], entangled: [], splits: [] }
+        delta: { freed: [], entangled: [], splits: [] },
+        architecture: {
+          workspacePackages: [
+            'account-core',
+            'account-ui',
+            'billing-contract',
+            'design-system',
+            'ingest-types',
+            'object-info-parser',
+            'registry-types',
+            'shared-frontend-utils',
+            'tailwind-utils'
+          ],
+          status: 'no-records'
+        }
       },
       {
         index: 57,
@@ -2883,7 +3682,21 @@ window.GORDIAN = {
           { id: 6, size: 2 },
           { id: 7, size: 2 }
         ],
-        delta: { freed: [], entangled: [], splits: [] }
+        delta: { freed: [], entangled: [], splits: [] },
+        architecture: {
+          workspacePackages: [
+            'account-core',
+            'account-ui',
+            'billing-contract',
+            'design-system',
+            'ingest-types',
+            'object-info-parser',
+            'registry-types',
+            'shared-frontend-utils',
+            'tailwind-utils'
+          ],
+          status: 'no-records'
+        }
       },
       {
         index: 58,
@@ -2921,7 +3734,21 @@ window.GORDIAN = {
           { id: 6, size: 2 },
           { id: 7, size: 2 }
         ],
-        delta: { freed: [], entangled: [], splits: [] }
+        delta: { freed: [], entangled: [], splits: [] },
+        architecture: {
+          workspacePackages: [
+            'account-core',
+            'account-ui',
+            'billing-contract',
+            'design-system',
+            'ingest-types',
+            'object-info-parser',
+            'registry-types',
+            'shared-frontend-utils',
+            'tailwind-utils'
+          ],
+          status: 'no-records'
+        }
       },
       {
         index: 59,
@@ -2960,7 +3787,21 @@ window.GORDIAN = {
           { id: 6, size: 2 },
           { id: 7, size: 2 }
         ],
-        delta: { freed: [], entangled: [], splits: [] }
+        delta: { freed: [], entangled: [], splits: [] },
+        architecture: {
+          workspacePackages: [
+            'account-core',
+            'account-ui',
+            'billing-contract',
+            'design-system',
+            'ingest-types',
+            'object-info-parser',
+            'registry-types',
+            'shared-frontend-utils',
+            'tailwind-utils'
+          ],
+          status: 'no-records'
+        }
       },
       {
         index: 60,
@@ -2999,7 +3840,21 @@ window.GORDIAN = {
           { id: 6, size: 2 },
           { id: 7, size: 2 }
         ],
-        delta: { freed: [], entangled: [], splits: [] }
+        delta: { freed: [], entangled: [], splits: [] },
+        architecture: {
+          workspacePackages: [
+            'account-core',
+            'account-ui',
+            'billing-contract',
+            'design-system',
+            'ingest-types',
+            'object-info-parser',
+            'registry-types',
+            'shared-frontend-utils',
+            'tailwind-utils'
+          ],
+          status: 'no-records'
+        }
       },
       {
         index: 61,
@@ -3037,7 +3892,21 @@ window.GORDIAN = {
           { id: 6, size: 2 },
           { id: 7, size: 2 }
         ],
-        delta: { freed: [], entangled: [], splits: [] }
+        delta: { freed: [], entangled: [], splits: [] },
+        architecture: {
+          workspacePackages: [
+            'account-core',
+            'account-ui',
+            'billing-contract',
+            'design-system',
+            'ingest-types',
+            'object-info-parser',
+            'registry-types',
+            'shared-frontend-utils',
+            'tailwind-utils'
+          ],
+          status: 'no-records'
+        }
       },
       {
         index: 62,
@@ -3075,7 +3944,22 @@ window.GORDIAN = {
           { id: 6, size: 2 },
           { id: 7, size: 2 }
         ],
-        delta: { freed: [], entangled: [], splits: [] }
+        delta: { freed: [], entangled: [], splits: [] },
+        architecture: {
+          workspacePackages: [
+            'account-core',
+            'account-ui',
+            'billing-contract',
+            'design-system',
+            'ingest-types',
+            'object-info-parser',
+            'registry-types',
+            'shared-frontend-utils',
+            'tailwind-utils',
+            'test-utils'
+          ],
+          status: 'no-records'
+        }
       },
       {
         index: 63,
@@ -3114,7 +3998,22 @@ window.GORDIAN = {
           { id: 6, size: 2 },
           { id: 7, size: 2 }
         ],
-        delta: { freed: [], entangled: [], splits: [] }
+        delta: { freed: [], entangled: [], splits: [] },
+        architecture: {
+          workspacePackages: [
+            'account-core',
+            'account-ui',
+            'billing-contract',
+            'design-system',
+            'ingest-types',
+            'object-info-parser',
+            'registry-types',
+            'shared-frontend-utils',
+            'tailwind-utils',
+            'test-utils'
+          ],
+          status: 'no-records'
+        }
       },
       {
         index: 64,
@@ -3153,7 +4052,22 @@ window.GORDIAN = {
           { id: 6, size: 2 },
           { id: 7, size: 2 }
         ],
-        delta: { freed: [], entangled: [], splits: [] }
+        delta: { freed: [], entangled: [], splits: [] },
+        architecture: {
+          workspacePackages: [
+            'account-core',
+            'account-ui',
+            'billing-contract',
+            'design-system',
+            'ingest-types',
+            'object-info-parser',
+            'registry-types',
+            'shared-frontend-utils',
+            'tailwind-utils',
+            'test-utils'
+          ],
+          status: 'no-records'
+        }
       },
       {
         index: 65,
@@ -3192,7 +4106,22 @@ window.GORDIAN = {
           { id: 6, size: 2 },
           { id: 7, size: 2 }
         ],
-        delta: { freed: [], entangled: [], splits: [] }
+        delta: { freed: [], entangled: [], splits: [] },
+        architecture: {
+          workspacePackages: [
+            'account-core',
+            'account-ui',
+            'billing-contract',
+            'design-system',
+            'ingest-types',
+            'object-info-parser',
+            'registry-types',
+            'shared-frontend-utils',
+            'tailwind-utils',
+            'test-utils'
+          ],
+          status: 'no-records'
+        }
       },
       {
         index: 66,
@@ -3369,6 +4298,21 @@ window.GORDIAN = {
           ],
           entangled: [],
           splits: [{ from: 0, into: [13, 14] }]
+        },
+        architecture: {
+          workspacePackages: [
+            'account-core',
+            'account-ui',
+            'billing-contract',
+            'design-system',
+            'ingest-types',
+            'object-info-parser',
+            'registry-types',
+            'shared-frontend-utils',
+            'tailwind-utils',
+            'test-utils'
+          ],
+          status: 'no-records'
         }
       },
       {
@@ -3410,7 +4354,22 @@ window.GORDIAN = {
           { id: 14, size: 2 },
           { id: 7, size: 2 }
         ],
-        delta: { freed: [], entangled: [], splits: [] }
+        delta: { freed: [], entangled: [], splits: [] },
+        architecture: {
+          workspacePackages: [
+            'account-core',
+            'account-ui',
+            'billing-contract',
+            'design-system',
+            'ingest-types',
+            'object-info-parser',
+            'registry-types',
+            'shared-frontend-utils',
+            'tailwind-utils',
+            'test-utils'
+          ],
+          status: 'no-records'
+        }
       },
       {
         index: 68,
@@ -3451,7 +4410,22 @@ window.GORDIAN = {
           { id: 14, size: 2 },
           { id: 7, size: 2 }
         ],
-        delta: { freed: [], entangled: [], splits: [] }
+        delta: { freed: [], entangled: [], splits: [] },
+        architecture: {
+          workspacePackages: [
+            'account-core',
+            'account-ui',
+            'billing-contract',
+            'design-system',
+            'ingest-types',
+            'object-info-parser',
+            'registry-types',
+            'shared-frontend-utils',
+            'tailwind-utils',
+            'test-utils'
+          ],
+          status: 'no-records'
+        }
       },
       {
         index: 69,
@@ -3492,7 +4466,22 @@ window.GORDIAN = {
           { id: 14, size: 2 },
           { id: 7, size: 2 }
         ],
-        delta: { freed: [], entangled: [], splits: [] }
+        delta: { freed: [], entangled: [], splits: [] },
+        architecture: {
+          workspacePackages: [
+            'account-core',
+            'account-ui',
+            'billing-contract',
+            'design-system',
+            'ingest-types',
+            'object-info-parser',
+            'registry-types',
+            'shared-frontend-utils',
+            'tailwind-utils',
+            'test-utils'
+          ],
+          status: 'no-records'
+        }
       },
       {
         index: 70,
@@ -3533,7 +4522,22 @@ window.GORDIAN = {
           { id: 14, size: 2 },
           { id: 7, size: 2 }
         ],
-        delta: { freed: [], entangled: [], splits: [] }
+        delta: { freed: [], entangled: [], splits: [] },
+        architecture: {
+          workspacePackages: [
+            'account-core',
+            'account-ui',
+            'billing-contract',
+            'design-system',
+            'ingest-types',
+            'object-info-parser',
+            'registry-types',
+            'shared-frontend-utils',
+            'tailwind-utils',
+            'test-utils'
+          ],
+          status: 'no-records'
+        }
       },
       {
         index: 71,
@@ -3588,6 +4592,21 @@ window.GORDIAN = {
             'services/uploadTempFile.ts'
           ],
           splits: []
+        },
+        architecture: {
+          workspacePackages: [
+            'account-core',
+            'account-ui',
+            'billing-contract',
+            'design-system',
+            'ingest-types',
+            'object-info-parser',
+            'registry-types',
+            'shared-frontend-utils',
+            'tailwind-utils',
+            'test-utils'
+          ],
+          status: 'no-records'
         }
       },
       {
@@ -3628,7 +4647,22 @@ window.GORDIAN = {
           { id: 14, size: 2 },
           { id: 7, size: 2 }
         ],
-        delta: { freed: [], entangled: [], splits: [] }
+        delta: { freed: [], entangled: [], splits: [] },
+        architecture: {
+          workspacePackages: [
+            'account-core',
+            'account-ui',
+            'billing-contract',
+            'design-system',
+            'ingest-types',
+            'object-info-parser',
+            'registry-types',
+            'shared-frontend-utils',
+            'tailwind-utils',
+            'test-utils'
+          ],
+          status: 'no-records'
+        }
       },
       {
         index: 73,
@@ -3668,7 +4702,22 @@ window.GORDIAN = {
           { id: 14, size: 2 },
           { id: 7, size: 2 }
         ],
-        delta: { freed: [], entangled: [], splits: [] }
+        delta: { freed: [], entangled: [], splits: [] },
+        architecture: {
+          workspacePackages: [
+            'account-core',
+            'account-ui',
+            'billing-contract',
+            'design-system',
+            'ingest-types',
+            'object-info-parser',
+            'registry-types',
+            'shared-frontend-utils',
+            'tailwind-utils',
+            'test-utils'
+          ],
+          status: 'no-records'
+        }
       },
       {
         index: 74,
@@ -3708,7 +4757,22 @@ window.GORDIAN = {
           { id: 14, size: 2 },
           { id: 7, size: 2 }
         ],
-        delta: { freed: [], entangled: [], splits: [] }
+        delta: { freed: [], entangled: [], splits: [] },
+        architecture: {
+          workspacePackages: [
+            'account-core',
+            'account-ui',
+            'billing-contract',
+            'design-system',
+            'ingest-types',
+            'object-info-parser',
+            'registry-types',
+            'shared-frontend-utils',
+            'tailwind-utils',
+            'test-utils'
+          ],
+          status: 'no-records'
+        }
       },
       {
         index: 75,
@@ -3748,7 +4812,22 @@ window.GORDIAN = {
           { id: 14, size: 2 },
           { id: 7, size: 2 }
         ],
-        delta: { freed: [], entangled: [], splits: [] }
+        delta: { freed: [], entangled: [], splits: [] },
+        architecture: {
+          workspacePackages: [
+            'account-core',
+            'account-ui',
+            'billing-contract',
+            'design-system',
+            'ingest-types',
+            'object-info-parser',
+            'registry-types',
+            'shared-frontend-utils',
+            'tailwind-utils',
+            'test-utils'
+          ],
+          status: 'no-records'
+        }
       },
       {
         index: 76,
@@ -3788,7 +4867,22 @@ window.GORDIAN = {
           { id: 14, size: 2 },
           { id: 7, size: 2 }
         ],
-        delta: { freed: [], entangled: [], splits: [] }
+        delta: { freed: [], entangled: [], splits: [] },
+        architecture: {
+          workspacePackages: [
+            'account-core',
+            'account-ui',
+            'billing-contract',
+            'design-system',
+            'ingest-types',
+            'object-info-parser',
+            'registry-types',
+            'shared-frontend-utils',
+            'tailwind-utils',
+            'test-utils'
+          ],
+          status: 'no-records'
+        }
       },
       {
         index: 77,
@@ -3828,7 +4922,22 @@ window.GORDIAN = {
           { id: 14, size: 2 },
           { id: 7, size: 2 }
         ],
-        delta: { freed: [], entangled: [], splits: [] }
+        delta: { freed: [], entangled: [], splits: [] },
+        architecture: {
+          workspacePackages: [
+            'account-core',
+            'account-ui',
+            'billing-contract',
+            'design-system',
+            'ingest-types',
+            'object-info-parser',
+            'registry-types',
+            'shared-frontend-utils',
+            'tailwind-utils',
+            'test-utils'
+          ],
+          status: 'no-records'
+        }
       },
       {
         index: 78,
@@ -3868,7 +4977,22 @@ window.GORDIAN = {
           { id: 14, size: 2 },
           { id: 7, size: 2 }
         ],
-        delta: { freed: [], entangled: [], splits: [] }
+        delta: { freed: [], entangled: [], splits: [] },
+        architecture: {
+          workspacePackages: [
+            'account-core',
+            'account-ui',
+            'billing-contract',
+            'design-system',
+            'ingest-types',
+            'object-info-parser',
+            'registry-types',
+            'shared-frontend-utils',
+            'tailwind-utils',
+            'test-utils'
+          ],
+          status: 'no-records'
+        }
       }
     ],
     openPrs: {
@@ -3938,6 +5062,21 @@ window.GORDIAN = {
               'core/graph/widgets/valueControlWidgets.ts'
             ],
             splits: []
+          },
+          architecture: {
+            workspacePackages: [
+              'account-core',
+              'account-ui',
+              'billing-contract',
+              'design-system',
+              'ingest-types',
+              'object-info-parser',
+              'registry-types',
+              'shared-frontend-utils',
+              'tailwind-utils',
+              'test-utils'
+            ],
+            status: 'no-records'
           }
         },
         {
@@ -3986,6 +5125,21 @@ window.GORDIAN = {
             ],
             entangled: [],
             splits: []
+          },
+          architecture: {
+            workspacePackages: [
+              'account-core',
+              'account-ui',
+              'billing-contract',
+              'design-system',
+              'ingest-types',
+              'object-info-parser',
+              'registry-types',
+              'shared-frontend-utils',
+              'tailwind-utils',
+              'test-utils'
+            ],
+            status: 'no-records'
           }
         },
         {
@@ -4087,6 +5241,21 @@ window.GORDIAN = {
             ],
             entangled: [],
             splits: [{ from: 0, into: [15, 16] }]
+          },
+          architecture: {
+            workspacePackages: [
+              'account-core',
+              'account-ui',
+              'billing-contract',
+              'design-system',
+              'ingest-types',
+              'object-info-parser',
+              'registry-types',
+              'shared-frontend-utils',
+              'tailwind-utils',
+              'test-utils'
+            ],
+            status: 'no-records'
           }
         },
         {
@@ -4154,6 +5323,21 @@ window.GORDIAN = {
             ],
             entangled: [],
             splits: []
+          },
+          architecture: {
+            workspacePackages: [
+              'account-core',
+              'account-ui',
+              'billing-contract',
+              'design-system',
+              'ingest-types',
+              'object-info-parser',
+              'registry-types',
+              'shared-frontend-utils',
+              'tailwind-utils',
+              'test-utils'
+            ],
+            status: 'no-records'
           }
         },
         {
@@ -4217,6 +5401,21 @@ window.GORDIAN = {
               'platform/workspace/composables/useWorkspaceDialogs.ts'
             ],
             splits: []
+          },
+          architecture: {
+            workspacePackages: [
+              'account-core',
+              'account-ui',
+              'billing-contract',
+              'design-system',
+              'ingest-types',
+              'object-info-parser',
+              'registry-types',
+              'shared-frontend-utils',
+              'tailwind-utils',
+              'test-utils'
+            ],
+            status: 'no-records'
           }
         },
         {
@@ -4337,6 +5536,21 @@ window.GORDIAN = {
               'scripts/clipspace.ts'
             ],
             splits: [{ from: 0, into: [17] }]
+          },
+          architecture: {
+            workspacePackages: [
+              'account-core',
+              'account-ui',
+              'billing-contract',
+              'design-system',
+              'ingest-types',
+              'object-info-parser',
+              'registry-types',
+              'shared-frontend-utils',
+              'tailwind-utils',
+              'test-utils'
+            ],
+            status: 'no-records'
           }
         },
         {
@@ -4430,6 +5644,21 @@ window.GORDIAN = {
               'services/dialogServiceTypes.ts'
             ],
             splits: [{ from: 0, into: [18] }]
+          },
+          architecture: {
+            workspacePackages: [
+              'account-core',
+              'account-ui',
+              'billing-contract',
+              'design-system',
+              'ingest-types',
+              'object-info-parser',
+              'registry-types',
+              'shared-frontend-utils',
+              'tailwind-utils',
+              'test-utils'
+            ],
+            status: 'no-records'
           }
         },
         {
@@ -4504,6 +5733,21 @@ window.GORDIAN = {
             ],
             entangled: [],
             splits: []
+          },
+          architecture: {
+            workspacePackages: [
+              'account-core',
+              'account-ui',
+              'billing-contract',
+              'design-system',
+              'ingest-types',
+              'object-info-parser',
+              'registry-types',
+              'shared-frontend-utils',
+              'tailwind-utils',
+              'test-utils'
+            ],
+            status: 'no-records'
           }
         },
         {
@@ -4575,6 +5819,21 @@ window.GORDIAN = {
             ],
             entangled: [],
             splits: []
+          },
+          architecture: {
+            workspacePackages: [
+              'account-core',
+              'account-ui',
+              'billing-contract',
+              'design-system',
+              'ingest-types',
+              'object-info-parser',
+              'registry-types',
+              'shared-frontend-utils',
+              'tailwind-utils',
+              'test-utils'
+            ],
+            status: 'no-records'
           }
         },
         {
@@ -4642,6 +5901,21 @@ window.GORDIAN = {
             ],
             entangled: ['composables/billing/useSubscriptionPaywall.ts'],
             splits: [{ from: 17, into: [19] }]
+          },
+          architecture: {
+            workspacePackages: [
+              'account-core',
+              'account-ui',
+              'billing-contract',
+              'design-system',
+              'ingest-types',
+              'object-info-parser',
+              'registry-types',
+              'shared-frontend-utils',
+              'tailwind-utils',
+              'test-utils'
+            ],
+            status: 'no-records'
           }
         },
         {
@@ -4681,7 +5955,149 @@ window.GORDIAN = {
             { id: 14, size: 2 },
             { id: 7, size: 2 }
           ],
-          delta: { freed: [], entangled: [], splits: [] }
+          delta: { freed: [], entangled: [], splits: [] },
+          architecture: {
+            workspacePackages: [
+              'account-core',
+              'account-ui',
+              'billing-contract',
+              'design-system',
+              'ingest-types',
+              'object-info-parser',
+              'registry-types',
+              'shared-frontend-utils',
+              'tailwind-utils',
+              'test-utils'
+            ],
+            status: 'measured',
+            tool: {
+              sha: 'afcc41d54ec8fe160cc043cac87472493d532337',
+              own: false
+            },
+            totals: {
+              sourceFiles: 4339,
+              classifiedFiles: 133,
+              domains: 2,
+              readyDomains: 0,
+              extractedDomains: 0,
+              internalImports: 22731,
+              allowed: 323,
+              legacy: 22404,
+              forbidden: 4,
+              deepImports: 72,
+              suppressions: 21
+            },
+            domains: [
+              {
+                id: 'mask-editor',
+                capability: 'Mask editor',
+                owners: [
+                  '@trsommer',
+                  '@jtydhr88',
+                  '@Comfy-Org/comfy_frontend_devs'
+                ],
+                files: 86,
+                roles: {
+                  domain: 1,
+                  application: 54,
+                  presentation: 29,
+                  integration: 2
+                },
+                publicEntryPoints: 0,
+                enforcement: {
+                  deepImports: 'baseline',
+                  dependencies: 'baseline'
+                },
+                imports: {
+                  inside: 256,
+                  inbound: 10,
+                  inboundSources: 8,
+                  outbound: 80,
+                  outboundToUnclassified: 80
+                },
+                deepImports: 10,
+                forbidden: 4,
+                checks: {
+                  noDeepImports: false,
+                  noUnclassifiedDependencies: false,
+                  noForbiddenEdges: false,
+                  publicEntryPoint: false,
+                  enforced: false
+                },
+                ready: false,
+                extracted: false
+              },
+              {
+                id: 'workflow-templates',
+                capability: 'Workflow templates',
+                owners: [
+                  '@christian-byrne',
+                  '@comfyui-wiki',
+                  '@Comfy-Org/comfy_frontend_devs'
+                ],
+                files: 47,
+                roles: {
+                  domain: 19,
+                  application: 13,
+                  infrastructure: 1,
+                  presentation: 14
+                },
+                publicEntryPoints: 0,
+                enforcement: {
+                  deepImports: 'inventory',
+                  dependencies: 'error'
+                },
+                imports: {
+                  inside: 71,
+                  inbound: 62,
+                  inboundSources: 28,
+                  outbound: 96,
+                  outboundToUnclassified: 96
+                },
+                deepImports: 62,
+                forbidden: 0,
+                checks: {
+                  noDeepImports: false,
+                  noUnclassifiedDependencies: false,
+                  noForbiddenEdges: true,
+                  publicEntryPoint: false,
+                  enforced: false
+                },
+                ready: false,
+                extracted: false
+              }
+            ],
+            links: [
+              {
+                from: null,
+                to: 'workflow-templates',
+                allowed: 0,
+                legacy: 62,
+                forbidden: 0
+              },
+              {
+                from: null,
+                to: 'mask-editor',
+                allowed: 0,
+                legacy: 10,
+                forbidden: 0
+              },
+              {
+                from: 'mask-editor',
+                to: null,
+                allowed: 0,
+                legacy: 80,
+                forbidden: 0
+              },
+              {
+                from: 'workflow-templates',
+                to: null,
+                allowed: 0,
+                legacy: 96,
+                forbidden: 0
+              }
+            ]
+          }
         },
         {
           index: 90,
@@ -4720,7 +6136,282 @@ window.GORDIAN = {
             { id: 14, size: 2 },
             { id: 7, size: 2 }
           ],
-          delta: { freed: [], entangled: [], splits: [] }
+          delta: { freed: [], entangled: [], splits: [] },
+          architecture: {
+            workspacePackages: [
+              'account-core',
+              'account-ui',
+              'billing-contract',
+              'design-system',
+              'ingest-types',
+              'object-info-parser',
+              'registry-types',
+              'shared-frontend-utils',
+              'tailwind-utils',
+              'test-utils'
+            ],
+            status: 'measured',
+            tool: {
+              sha: 'afcc41d54ec8fe160cc043cac87472493d532337',
+              own: false
+            },
+            totals: {
+              sourceFiles: 4339,
+              classifiedFiles: 153,
+              domains: 5,
+              readyDomains: 0,
+              extractedDomains: 0,
+              internalImports: 22731,
+              allowed: 334,
+              legacy: 22388,
+              forbidden: 9,
+              deepImports: 80,
+              suppressions: 21
+            },
+            domains: [
+              {
+                id: 'image-compare',
+                capability: 'Image compare',
+                owners: ['@jtydhr88', '@Comfy-Org/comfy_frontend_devs'],
+                files: 7,
+                roles: { application: 2, presentation: 2, integration: 3 },
+                publicEntryPoints: 0,
+                enforcement: {
+                  deepImports: 'baseline',
+                  dependencies: 'baseline'
+                },
+                imports: {
+                  inside: 3,
+                  inbound: 4,
+                  inboundSources: 4,
+                  outbound: 30,
+                  outboundToUnclassified: 30
+                },
+                deepImports: 4,
+                forbidden: 0,
+                checks: {
+                  noDeepImports: false,
+                  noUnclassifiedDependencies: false,
+                  noForbiddenEdges: true,
+                  publicEntryPoint: false,
+                  enforced: false
+                },
+                ready: false,
+                extracted: false
+              },
+              {
+                id: 'image-crop',
+                capability: 'Image crop',
+                owners: ['@jtydhr88', '@Comfy-Org/comfy_frontend_devs'],
+                files: 6,
+                roles: { application: 2, presentation: 2, integration: 2 },
+                publicEntryPoints: 0,
+                enforcement: {
+                  deepImports: 'baseline',
+                  dependencies: 'baseline'
+                },
+                imports: {
+                  inside: 5,
+                  inbound: 4,
+                  inboundSources: 4,
+                  outbound: 34,
+                  outboundToUnclassified: 34
+                },
+                deepImports: 4,
+                forbidden: 1,
+                checks: {
+                  noDeepImports: false,
+                  noUnclassifiedDependencies: false,
+                  noForbiddenEdges: false,
+                  publicEntryPoint: false,
+                  enforced: false
+                },
+                ready: false,
+                extracted: false
+              },
+              {
+                id: 'mask-editor',
+                capability: 'Mask editor',
+                owners: [
+                  '@trsommer',
+                  '@jtydhr88',
+                  '@Comfy-Org/comfy_frontend_devs'
+                ],
+                files: 86,
+                roles: {
+                  domain: 1,
+                  application: 54,
+                  presentation: 29,
+                  integration: 2
+                },
+                publicEntryPoints: 0,
+                enforcement: {
+                  deepImports: 'baseline',
+                  dependencies: 'baseline'
+                },
+                imports: {
+                  inside: 256,
+                  inbound: 10,
+                  inboundSources: 8,
+                  outbound: 80,
+                  outboundToUnclassified: 80
+                },
+                deepImports: 6,
+                forbidden: 8,
+                checks: {
+                  noDeepImports: false,
+                  noUnclassifiedDependencies: false,
+                  noForbiddenEdges: false,
+                  publicEntryPoint: false,
+                  enforced: false
+                },
+                ready: false,
+                extracted: false
+              },
+              {
+                id: 'painter',
+                capability: 'Painter',
+                owners: ['@jtydhr88', '@Comfy-Org/comfy_frontend_devs'],
+                files: 7,
+                roles: { application: 2, presentation: 2, integration: 3 },
+                publicEntryPoints: 0,
+                enforcement: {
+                  deepImports: 'baseline',
+                  dependencies: 'baseline'
+                },
+                imports: {
+                  inside: 4,
+                  inbound: 4,
+                  inboundSources: 4,
+                  outbound: 38,
+                  outboundToUnclassified: 34
+                },
+                deepImports: 4,
+                forbidden: 4,
+                checks: {
+                  noDeepImports: false,
+                  noUnclassifiedDependencies: false,
+                  noForbiddenEdges: false,
+                  publicEntryPoint: false,
+                  enforced: false
+                },
+                ready: false,
+                extracted: false
+              },
+              {
+                id: 'workflow-templates',
+                capability: 'Workflow templates',
+                owners: [
+                  '@christian-byrne',
+                  '@comfyui-wiki',
+                  '@Comfy-Org/comfy_frontend_devs'
+                ],
+                files: 47,
+                roles: {
+                  domain: 19,
+                  application: 13,
+                  infrastructure: 1,
+                  presentation: 14
+                },
+                publicEntryPoints: 0,
+                enforcement: {
+                  deepImports: 'inventory',
+                  dependencies: 'error'
+                },
+                imports: {
+                  inside: 71,
+                  inbound: 62,
+                  inboundSources: 28,
+                  outbound: 96,
+                  outboundToUnclassified: 96
+                },
+                deepImports: 62,
+                forbidden: 0,
+                checks: {
+                  noDeepImports: false,
+                  noUnclassifiedDependencies: false,
+                  noForbiddenEdges: true,
+                  publicEntryPoint: false,
+                  enforced: false
+                },
+                ready: false,
+                extracted: false
+              }
+            ],
+            links: [
+              {
+                from: null,
+                to: 'workflow-templates',
+                allowed: 0,
+                legacy: 62,
+                forbidden: 0
+              },
+              {
+                from: null,
+                to: 'mask-editor',
+                allowed: 0,
+                legacy: 6,
+                forbidden: 0
+              },
+              {
+                from: 'image-crop',
+                to: null,
+                allowed: 0,
+                legacy: 34,
+                forbidden: 0
+              },
+              {
+                from: 'mask-editor',
+                to: null,
+                allowed: 0,
+                legacy: 80,
+                forbidden: 0
+              },
+              {
+                from: 'painter',
+                to: null,
+                allowed: 0,
+                legacy: 34,
+                forbidden: 0
+              },
+              {
+                from: 'workflow-templates',
+                to: null,
+                allowed: 0,
+                legacy: 96,
+                forbidden: 0
+              },
+              {
+                from: 'painter',
+                to: 'mask-editor',
+                allowed: 0,
+                legacy: 0,
+                forbidden: 4
+              },
+              {
+                from: null,
+                to: 'image-crop',
+                allowed: 0,
+                legacy: 4,
+                forbidden: 0
+              },
+              {
+                from: 'image-compare',
+                to: null,
+                allowed: 0,
+                legacy: 30,
+                forbidden: 0
+              },
+              {
+                from: null,
+                to: 'image-compare',
+                allowed: 0,
+                legacy: 4,
+                forbidden: 0
+              },
+              { from: null, to: 'painter', allowed: 0, legacy: 4, forbidden: 0 }
+            ]
+          }
         },
         {
           index: 91,
@@ -4759,7 +6450,326 @@ window.GORDIAN = {
             { id: 14, size: 2 },
             { id: 7, size: 2 }
           ],
-          delta: { freed: [], entangled: [], splits: [] }
+          delta: { freed: [], entangled: [], splits: [] },
+          architecture: {
+            workspacePackages: [
+              'account-core',
+              'account-ui',
+              'billing-contract',
+              'design-system',
+              'ingest-types',
+              'object-info-parser',
+              'registry-types',
+              'shared-frontend-utils',
+              'tailwind-utils',
+              'test-utils'
+            ],
+            status: 'measured',
+            tool: {
+              sha: 'afcc41d54ec8fe160cc043cac87472493d532337',
+              own: false
+            },
+            totals: {
+              sourceFiles: 4339,
+              classifiedFiles: 178,
+              domains: 6,
+              readyDomains: 0,
+              extractedDomains: 0,
+              internalImports: 22731,
+              allowed: 381,
+              legacy: 22341,
+              forbidden: 9,
+              deepImports: 93,
+              suppressions: 21
+            },
+            domains: [
+              {
+                id: 'image-compare',
+                capability: 'Image compare',
+                owners: ['@jtydhr88', '@Comfy-Org/comfy_frontend_devs'],
+                files: 7,
+                roles: { application: 2, presentation: 2, integration: 3 },
+                publicEntryPoints: 0,
+                enforcement: {
+                  deepImports: 'baseline',
+                  dependencies: 'baseline'
+                },
+                imports: {
+                  inside: 3,
+                  inbound: 4,
+                  inboundSources: 4,
+                  outbound: 30,
+                  outboundToUnclassified: 30
+                },
+                deepImports: 4,
+                forbidden: 0,
+                checks: {
+                  noDeepImports: false,
+                  noUnclassifiedDependencies: false,
+                  noForbiddenEdges: true,
+                  publicEntryPoint: false,
+                  enforced: false
+                },
+                ready: false,
+                extracted: false
+              },
+              {
+                id: 'image-compositor',
+                capability: 'Image compositor',
+                owners: ['@jtydhr88', '@Comfy-Org/comfy_frontend_devs'],
+                files: 25,
+                roles: { application: 19, presentation: 2, integration: 4 },
+                publicEntryPoints: 0,
+                enforcement: {
+                  deepImports: 'baseline',
+                  dependencies: 'baseline'
+                },
+                imports: {
+                  inside: 47,
+                  inbound: 13,
+                  inboundSources: 8,
+                  outbound: 94,
+                  outboundToUnclassified: 94
+                },
+                deepImports: 13,
+                forbidden: 0,
+                checks: {
+                  noDeepImports: false,
+                  noUnclassifiedDependencies: false,
+                  noForbiddenEdges: true,
+                  publicEntryPoint: false,
+                  enforced: false
+                },
+                ready: false,
+                extracted: false
+              },
+              {
+                id: 'image-crop',
+                capability: 'Image crop',
+                owners: ['@jtydhr88', '@Comfy-Org/comfy_frontend_devs'],
+                files: 6,
+                roles: { application: 2, presentation: 2, integration: 2 },
+                publicEntryPoints: 0,
+                enforcement: {
+                  deepImports: 'baseline',
+                  dependencies: 'baseline'
+                },
+                imports: {
+                  inside: 5,
+                  inbound: 4,
+                  inboundSources: 4,
+                  outbound: 34,
+                  outboundToUnclassified: 34
+                },
+                deepImports: 4,
+                forbidden: 1,
+                checks: {
+                  noDeepImports: false,
+                  noUnclassifiedDependencies: false,
+                  noForbiddenEdges: false,
+                  publicEntryPoint: false,
+                  enforced: false
+                },
+                ready: false,
+                extracted: false
+              },
+              {
+                id: 'mask-editor',
+                capability: 'Mask editor',
+                owners: [
+                  '@trsommer',
+                  '@jtydhr88',
+                  '@Comfy-Org/comfy_frontend_devs'
+                ],
+                files: 86,
+                roles: {
+                  domain: 1,
+                  application: 54,
+                  presentation: 29,
+                  integration: 2
+                },
+                publicEntryPoints: 0,
+                enforcement: {
+                  deepImports: 'baseline',
+                  dependencies: 'baseline'
+                },
+                imports: {
+                  inside: 256,
+                  inbound: 10,
+                  inboundSources: 8,
+                  outbound: 80,
+                  outboundToUnclassified: 80
+                },
+                deepImports: 6,
+                forbidden: 8,
+                checks: {
+                  noDeepImports: false,
+                  noUnclassifiedDependencies: false,
+                  noForbiddenEdges: false,
+                  publicEntryPoint: false,
+                  enforced: false
+                },
+                ready: false,
+                extracted: false
+              },
+              {
+                id: 'painter',
+                capability: 'Painter',
+                owners: ['@jtydhr88', '@Comfy-Org/comfy_frontend_devs'],
+                files: 7,
+                roles: { application: 2, presentation: 2, integration: 3 },
+                publicEntryPoints: 0,
+                enforcement: {
+                  deepImports: 'baseline',
+                  dependencies: 'baseline'
+                },
+                imports: {
+                  inside: 4,
+                  inbound: 4,
+                  inboundSources: 4,
+                  outbound: 38,
+                  outboundToUnclassified: 34
+                },
+                deepImports: 4,
+                forbidden: 4,
+                checks: {
+                  noDeepImports: false,
+                  noUnclassifiedDependencies: false,
+                  noForbiddenEdges: false,
+                  publicEntryPoint: false,
+                  enforced: false
+                },
+                ready: false,
+                extracted: false
+              },
+              {
+                id: 'workflow-templates',
+                capability: 'Workflow templates',
+                owners: [
+                  '@christian-byrne',
+                  '@comfyui-wiki',
+                  '@Comfy-Org/comfy_frontend_devs'
+                ],
+                files: 47,
+                roles: {
+                  domain: 19,
+                  application: 13,
+                  infrastructure: 1,
+                  presentation: 14
+                },
+                publicEntryPoints: 0,
+                enforcement: {
+                  deepImports: 'inventory',
+                  dependencies: 'error'
+                },
+                imports: {
+                  inside: 71,
+                  inbound: 62,
+                  inboundSources: 28,
+                  outbound: 96,
+                  outboundToUnclassified: 96
+                },
+                deepImports: 62,
+                forbidden: 0,
+                checks: {
+                  noDeepImports: false,
+                  noUnclassifiedDependencies: false,
+                  noForbiddenEdges: true,
+                  publicEntryPoint: false,
+                  enforced: false
+                },
+                ready: false,
+                extracted: false
+              }
+            ],
+            links: [
+              {
+                from: null,
+                to: 'workflow-templates',
+                allowed: 0,
+                legacy: 62,
+                forbidden: 0
+              },
+              {
+                from: null,
+                to: 'mask-editor',
+                allowed: 0,
+                legacy: 6,
+                forbidden: 0
+              },
+              {
+                from: 'image-crop',
+                to: null,
+                allowed: 0,
+                legacy: 34,
+                forbidden: 0
+              },
+              {
+                from: 'mask-editor',
+                to: null,
+                allowed: 0,
+                legacy: 80,
+                forbidden: 0
+              },
+              {
+                from: 'painter',
+                to: null,
+                allowed: 0,
+                legacy: 34,
+                forbidden: 0
+              },
+              {
+                from: 'workflow-templates',
+                to: null,
+                allowed: 0,
+                legacy: 96,
+                forbidden: 0
+              },
+              {
+                from: 'painter',
+                to: 'mask-editor',
+                allowed: 0,
+                legacy: 0,
+                forbidden: 4
+              },
+              {
+                from: null,
+                to: 'image-crop',
+                allowed: 0,
+                legacy: 4,
+                forbidden: 0
+              },
+              {
+                from: 'image-compare',
+                to: null,
+                allowed: 0,
+                legacy: 30,
+                forbidden: 0
+              },
+              {
+                from: 'image-compositor',
+                to: null,
+                allowed: 0,
+                legacy: 94,
+                forbidden: 0
+              },
+              {
+                from: null,
+                to: 'image-compare',
+                allowed: 0,
+                legacy: 4,
+                forbidden: 0
+              },
+              {
+                from: null,
+                to: 'image-compositor',
+                allowed: 0,
+                legacy: 13,
+                forbidden: 0
+              },
+              { from: null, to: 'painter', allowed: 0, legacy: 4, forbidden: 0 }
+            ]
+          }
         }
       ],
       prs: [

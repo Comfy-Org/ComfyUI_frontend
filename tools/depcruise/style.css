@@ -528,3 +528,115 @@ button.prrow.selected {
 .prrow.stale .bar {
   opacity: 0.45;
 }
+
+.legacy {
+  background: var(--muted);
+}
+#domains {
+  gap: 14px;
+}
+#domSummary {
+  margin: 0;
+}
+#domBoard,
+#domProgress {
+  display: flex;
+  flex-direction: column;
+}
+.domcard {
+  border-top: 1px solid var(--rule);
+  padding: 8px 2px 10px;
+  display: grid;
+  gap: 3px;
+}
+.domcard .t {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 4px 10px;
+  font-size: 14px;
+}
+.domcard .m {
+  font-size: 12.5px;
+  color: var(--ink-2);
+  font-variant-numeric: tabular-nums;
+}
+ul.checks {
+  list-style: none;
+  margin: 4px 0 0;
+  padding: 0;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px 12px;
+  font-size: 12px;
+}
+ul.checks li::before {
+  margin-right: 4px;
+}
+ul.checks li.pass {
+  color: var(--ink);
+}
+ul.checks li.pass::before {
+  content: '✓';
+  color: var(--k-other);
+}
+ul.checks li.fail {
+  color: var(--muted);
+}
+ul.checks li.fail::before {
+  content: '✗';
+  color: var(--k-second);
+}
+#domainMap {
+  display: block;
+  width: 100%;
+  height: auto;
+}
+#domainMap path {
+  fill: none;
+  stroke-linecap: round;
+  transition:
+    d 0.6s,
+    stroke-width 0.6s,
+    opacity 0.6s;
+}
+#domainMap path.main {
+  stroke: var(--k-main);
+}
+#domainMap path.second {
+  stroke: var(--k-second);
+}
+#domainMap path.legacy {
+  stroke: var(--muted);
+}
+#domainMap circle {
+  transition:
+    r 0.6s,
+    opacity 0.6s,
+    fill 0.6s;
+}
+#domainMap circle.main {
+  fill: var(--k-main);
+}
+#domainMap circle.other {
+  fill: var(--k-other);
+}
+#domainMap circle.freed {
+  fill: var(--freed);
+}
+#domainMap text {
+  font: 13px var(--sans);
+  fill: var(--ink-2);
+  paint-order: stroke;
+  stroke: var(--surface);
+  stroke-width: 4px;
+  stroke-linejoin: round;
+  transition: opacity 0.6s;
+}
+@media (prefers-reduced-motion: reduce) {
+  #domainMap path,
+  #domainMap circle,
+  #domainMap text {
+    transition: none;
+  }
+}

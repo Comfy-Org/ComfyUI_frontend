@@ -74,6 +74,12 @@
             id="map"
             aria-label="Module map for the selected commit"
           ></canvas>
+          <svg
+            id="domainMap"
+            role="img"
+            aria-label="Domain dependency map for the selected commit"
+            hidden
+          ></svg>
         </figure>
 
         <aside>
@@ -96,6 +102,15 @@
               hidden
             >
               Open pull requests
+            </button>
+            <button
+              id="tabDomains"
+              type="button"
+              role="tab"
+              aria-selected="false"
+              aria-controls="domains"
+            >
+              Domains
             </button>
           </div>
           <div
@@ -141,6 +156,28 @@
               Each pull request is analysed at its pushed head, so a row
               includes everything below it in its stack. Pick a row to put that
               state on the map; Up and Down move between rows.
+            </p>
+          </div>
+          <div
+            id="domains"
+            class="panel"
+            role="tabpanel"
+            aria-labelledby="tabDomains"
+            hidden
+          >
+            <p id="domSummary"></p>
+            <dl class="stats" id="domStats"></dl>
+            <h3 id="domBoardTitle">Domains in this tree</h3>
+            <div id="domBoard"></div>
+            <h3>Progress by tree</h3>
+            <div id="domProgress"></div>
+            <p class="note">
+              Measured with the domain census in
+              <code>tools/architecture</code>. A domain is ready to extract into
+              a workspace package when nothing outside reaches its internals, it
+              depends on no unclassified code, it has no forbidden imports, it
+              declares a public entry point, and both rules are enforced at
+              <code>error</code>.
             </p>
           </div>
         </aside>

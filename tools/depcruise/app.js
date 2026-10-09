@@ -4,6 +4,16 @@
   const prs = timeline.openPrs?.prs ?? []
   const states = [...steps, ...(timeline.openPrs?.states ?? [])]
   const prOfState = new Map(prs.map((pr) => [pr.state, pr]))
+  const prsBelow = (parent) =>
+    prs
+      .filter((pr) => pr.parentPr === parent)
+      .sort((a, b) => a.number - b.number)
+  const orderedPrs = []
+  const visitPr = (pr) => {
+    orderedPrs.push(pr)
+    prsBelow(pr.number).forEach(visitPr)
+  }
+  prsBelow(null).forEach(visitPr)
   const knots = timeline.knots
   const LAST = steps.length - 1
   const NOT_IN_KNOT = -1
@@ -670,12 +680,313 @@
     $('scrub').value = String(Math.min(current, LAST))
     for (const row of document.querySelectorAll('.prrow'))
       row.classList.toggle('selected', Number(row.dataset.state) === current)
+    drawDomains()
+  }
+
+  // Domains: progress towards self-contained modules, from the census in
+  // tools/architecture. See DOMAINS.md.
+  const archOf = (s) => states[s].architecture
+  const isMeasured = (s) => archOf(s)?.status === 'measured'
+  const domainOrder = [
+    ...new Set(
+      states.flatMap((s) => (s.architecture?.domains ?? []).map((d) => d.id))
+    )
+  ].sort((a, b) => a.localeCompare(b))
+  const CHECKS = {
+    noDeepImports: 'Nothing outside imports its internals',
+    noUnclassifiedDependencies: 'Depends on no unclassified code',
+    noForbiddenEdges: 'No forbidden imports',
+    publicEntryPoint: 'Declares a public entry point',
+    enforced: 'Both rules enforced at error'
+  }
+  const percent = (n, of) => `${((100 * n) / of).toFixed(1)}%`
+  const domainStatus = (d) =>
+    d.extracted
+      ? 'Extracted'
+      : d.ready
+        ? 'Ready to extract'
+        : `${Object.values(d.checks).filter(Boolean).length} of ${Object.keys(CHECKS).length} checks`
+
+  const domainLegend = el('div', 'legend')
+  domainLegend.id = 'domainLegend'
+  domainLegend.hidden = true
+  for (const [cls, label] of [
+    ['main', 'Domain'],
+    ['other', 'Ready to extract'],
+    ['freed', 'Unclassified code'],
+    ['legacy line', 'Import involving unclassified code'],
+    ['second line', 'Forbidden import'],
+    ['main line', 'Allowed import']
+  ]) {
+    const item = el('span')
+    item.append(el('i', `sw ${cls}`), label)
+    domainLegend.append(item)
+  }
+  domainLegend.append(el('span', null, 'Circle area: files'))
+  $('mapLegend').after(domainLegend)
+
+  function drawDomains() {
+    const arch = archOf(current)
+    const parent = states[current].parent
+    const before = parent !== null && isMeasured(parent) ? archOf(parent) : null
+    const t = arch?.totals
+    $('domSummary').textContent = !arch
+      ? 'This tree was not measured.'
+      : arch.status === 'no-records'
+        ? `No domain records in this tree yet; #19768 introduces them. Pick a tree that has them under Progress by tree.`
+        : arch.status === 'failed'
+          ? `The census failed on this tree: ${arch.error}`
+          : `${fmt(t.classifiedFiles)} of ${fmt(t.sourceFiles)} source files (${percent(t.classifiedFiles, t.sourceFiles)}) belong to ${plural(t.domains, 'domain', 'domains')}; ${fmt(t.readyDomains)} ${t.readyDomains === 1 ? 'is' : 'are'} ready to extract.`
+
+    const rows = arch
+      ? [
+          ...(t
+            ? [
+                ['Files in domains', (a) => a.totals.classifiedFiles],
+                ['Ready to extract', (a) => a.totals.readyDomains],
+                ['Deep imports', (a) => a.totals.deepImports],
+                ['Forbidden imports', (a) => a.totals.forbidden],
+                ['Layer-rule suppressions', (a) => a.totals.suppressions]
+              ]
+            : []),
+          ['Workspace packages', (a) => a.workspacePackages.length]
+        ]
+      : []
+    $('domStats').replaceChildren(
+      ...rows.map(([label, value]) => {
+        const row = el('div')
+        const dd = el('dd', null, fmt(value(arch)))
+        if (before && value(before) !== value(arch))
+          dd.append(
+            el(
+              'span',
+              'chg',
+              `${signed(value(arch) - value(before))} vs parent`
+            )
+          )
+        row.append(el('dt', null, label), dd)
+        return row
+      })
+    )
+
+    const domains = t ? arch.domains : []
+    $('domBoardTitle').hidden = domains.length === 0
+    $('domBoard').replaceChildren(
+      ...domains.map((d) => {
+        const card = el('div', 'domcard')
+        const title = el('div', 't')
+        title.append(
+          el('b', null, d.capability),
+          el(
+            'span',
+            d.ready || d.extracted ? 'badge' : 'badge quiet',
+            domainStatus(d)
+          )
+        )
+        const roles = Object.entries(d.roles)
+          .map(([role, n]) => `${role} ${n}`)
+          .join(', ')
+        const checks = el('ul', 'checks')
+        for (const [key, label] of Object.entries(CHECKS)) {
+          const li = el('li', d.checks[key] ? 'pass' : 'fail', label)
+          checks.append(li)
+        }
+        card.append(
+          title,
+          el(
+            'div',
+            'm',
+            `${plural(d.files, 'file', 'files')} · ${roles} · ${fmt(d.imports.inside)} imports inside, ${fmt(d.imports.inbound)} in from ${plural(d.imports.inboundSources, 'file', 'files')}, ${fmt(d.imports.outbound)} out (${fmt(d.imports.outboundToUnclassified)} to unclassified)`
+          ),
+          el(
+            'div',
+            'm',
+            `${plural(d.deepImports, 'deep import', 'deep imports')} · ${plural(d.forbidden, 'forbidden import', 'forbidden imports')} · ${plural(d.publicEntryPoints, 'entry point', 'entry points')} · deep imports ${d.enforcement.deepImports}, dependencies ${d.enforcement.dependencies}`
+          ),
+          checks
+        )
+        return card
+      })
+    )
+    drawDomainProgress()
+    drawDomainMap(t ? arch : null)
+  }
+
+  function drawDomainProgress() {
+    const rows = [
+      ...(isMeasured(LAST) ? [[LAST, null]] : []),
+      ...orderedPrs
+        .filter((pr) => isMeasured(pr.state))
+        .map((pr) => [pr.state, pr])
+    ]
+    const widest = Math.max(
+      1,
+      ...rows.map(([s]) => archOf(s).totals.classifiedFiles)
+    )
+    const list = $('domProgress')
+    if (rows.length === 0) {
+      list.replaceChildren(el('p', 'note', 'No tree has domain records yet.'))
+      return
+    }
+    list.replaceChildren(
+      ...rows.map(([s, pr]) => {
+        const t = archOf(s).totals
+        const button = el('button', `prrow${pr?.behindMain ? ' stale' : ''}`)
+        button.type = 'button'
+        button.dataset.state = String(s)
+        button.classList.toggle('selected', s === current)
+        const title = el('span', 't')
+        if (pr) {
+          title.style.paddingLeft = `${pr.depth * 12}px`
+          title.append(
+            pr.depth ? '└ ' : '',
+            el('b', null, `#${pr.number}`),
+            ` ${pr.title}`
+          )
+        } else
+          title.append(el('b', null, 'main'), ` today (${states[s].short})`)
+        const bar = el('div', 'bar')
+        bar.style.width = `${(t.classifiedFiles / widest) * 100}%`
+        const seg = el('i', 'other')
+        seg.style.flex = '1 0 0'
+        bar.append(seg)
+        button.append(
+          title,
+          el(
+            'span',
+            'm',
+            `${fmt(t.classifiedFiles)} files in ${plural(t.domains, 'domain', 'domains')} · ${fmt(t.readyDomains)} ready · ${fmt(t.deepImports)} deep · ${fmt(t.forbidden)} forbidden${pr?.behindMain ? ` · ${fmt(pr.behindMain)} behind main` : ''}`
+          ),
+          bar
+        )
+        button.addEventListener('click', () => {
+          stop()
+          go(s)
+        })
+        return button
+      })
+    )
+  }
+
+  // Domain map: domains on a ring around one node for all unclassified code;
+  // a line is the imports between two of them, its width the count.
+  const domainMap = $('domainMap')
+  const VIEW = { w: 1000, h: 720 }
+  const HUB = { x: VIEW.w / 2, y: VIEW.h / 2 }
+  domainMap.setAttribute('viewBox', `0 0 ${VIEW.w} ${VIEW.h}`)
+  const mapLayers = ['links', 'nodes', 'labels'].map((name) =>
+    domainMap.appendChild(svg('g', { class: name }))
+  )
+  const mapItems = new Map()
+  const domainPosition = (id) => {
+    if (id === null) return HUB
+    const angle =
+      -Math.PI / 2 +
+      (2 * Math.PI * domainOrder.indexOf(id)) / domainOrder.length
+    return {
+      x: HUB.x + Math.cos(angle) * VIEW.w * 0.36,
+      y: HUB.y + Math.sin(angle) * VIEW.h * 0.37
+    }
+  }
+  function mapItem(key, layer, tag) {
+    let item = mapItems.get(key)
+    if (!item) {
+      item = svg(tag, {})
+      item.style.opacity = '0'
+      mapLayers[layer].append(item)
+      mapItems.set(key, item)
+    }
+    item.dataset.seen = '1'
+    return item
+  }
+  function drawDomainMap(arch) {
+    for (const item of mapItems.values()) delete item.dataset.seen
+    const t = arch?.totals
+    const unclassified = t ? t.sourceFiles - t.classifiedFiles : 0
+    const radiusOf = (files) => 6 + Math.sqrt(files) * 2.6
+    const nodes = [
+      ...(t
+        ? [
+            {
+              id: null,
+              label: 'Unclassified',
+              files: unclassified,
+              role: 'freed'
+            }
+          ]
+        : []),
+      ...(arch?.domains ?? []).map((d) => ({
+        id: d.id,
+        label: d.capability,
+        files: d.files,
+        role: d.ready || d.extracted ? 'other' : 'main'
+      }))
+    ]
+    const radius = new Map(
+      nodes.map((n) => [
+        n.id,
+        n.id === null
+          ? Math.min(90, radiusOf(n.files) * 0.5)
+          : radiusOf(n.files)
+      ])
+    )
+    for (const link of arch?.links ?? []) {
+      const a = domainPosition(link.from)
+      const b = domainPosition(link.to)
+      const total = link.allowed + link.legacy + link.forbidden
+      const bend = 0.18
+      const cx = (a.x + b.x) / 2 + (b.y - a.y) * bend
+      const cy = (a.y + b.y) / 2 - (b.x - a.x) * bend
+      const path = mapItem(`link:${link.from}>${link.to}`, 0, 'path')
+      path.setAttribute(
+        'class',
+        link.forbidden ? 'second' : link.legacy ? 'legacy' : 'main'
+      )
+      path.style.d = `path('M ${a.x} ${a.y} Q ${cx} ${cy} ${b.x} ${b.y}')`
+      path.style.strokeWidth = String(Math.min(16, 0.8 + Math.sqrt(total)))
+      path.style.opacity = '0.7'
+      path.replaceChildren(svg('title', {}))
+      path.firstChild.textContent = `${link.from ?? 'unclassified'} → ${link.to ?? 'unclassified'}: ${[
+        link.legacy && `${fmt(link.legacy)} legacy`,
+        link.forbidden && `${fmt(link.forbidden)} forbidden`,
+        link.allowed && `${fmt(link.allowed)} allowed`
+      ]
+        .filter(Boolean)
+        .join(', ')}`
+    }
+    for (const node of nodes) {
+      const { x, y } = domainPosition(node.id)
+      const r = radius.get(node.id)
+      const circle = mapItem(`node:${node.id}`, 1, 'circle')
+      circle.setAttribute('class', node.role)
+      circle.setAttribute('cx', x)
+      circle.setAttribute('cy', y)
+      circle.style.r = `${r}px`
+      circle.style.opacity = '1'
+      const label = mapItem(`label:${node.id}`, 2, 'text')
+      label.setAttribute('x', x)
+      label.setAttribute('y', y + r + 18)
+      label.setAttribute('text-anchor', 'middle')
+      label.textContent = `${node.label} (${fmt(node.files)})`
+      label.style.opacity = '1'
+    }
+    if (!t) {
+      const empty = mapItem('empty', 2, 'text')
+      empty.setAttribute('x', HUB.x)
+      empty.setAttribute('y', HUB.y)
+      empty.setAttribute('text-anchor', 'middle')
+      empty.textContent = 'No domain records in this tree'
+      empty.style.opacity = '1'
+    }
+    for (const item of mapItems.values())
+      if (!item.dataset.seen) item.style.opacity = '0'
   }
 
   // Side panel tabs
   const TABS = {
     details: ['tabDetails', 'panelDetails'],
-    prs: ['tabPrs', 'open-prs']
+    prs: ['tabPrs', 'open-prs'],
+    domains: ['tabDomains', 'domains']
   }
   let activeTab = 'details'
   function selectTab(name) {
@@ -684,14 +995,16 @@
       $(tabId).setAttribute('aria-selected', String(key === name))
       $(panelId).hidden = key !== name
     }
+    const domainView = name === 'domains'
+    canvas.hidden = $('mapLegend').hidden = domainView
+    $('domainMap').toggleAttribute('hidden', !domainView)
+    $('domainLegend').hidden = !domainView
+    if (!domainView) drawMap()
   }
   function syncHash() {
     const pr = prOfState.get(current)
-    const hash = pr
-      ? `pr-${pr.number}`
-      : activeTab === 'prs'
-        ? 'open-prs'
-        : String(current)
+    const tabHash = { prs: 'open-prs', domains: 'domains' }[activeTab]
+    const hash = pr ? `pr-${pr.number}` : (tabHash ?? String(current))
     history.replaceState(null, '', `#${hash}`)
   }
   for (const name of Object.keys(TABS)) {
@@ -730,17 +1043,6 @@
         `${plural(stale, 'pull request forks', 'pull requests fork')} from an older main (greyed), so ${stale === 1 ? 'its' : 'their'} totals are not comparable with today's.`
       )
     $('prSummary').textContent = sentences.join(' ')
-
-    const children = (parent) =>
-      prs
-        .filter((pr) => pr.parentPr === parent)
-        .sort((a, b) => a.number - b.number)
-    const ordered = []
-    const visit = (pr) => {
-      ordered.push(pr)
-      children(pr.number).forEach(visit)
-    }
-    children(null).forEach(visit)
 
     const widest = Math.max(
       head.stats.modulesInKnots,
@@ -781,7 +1083,7 @@
     mainTitle.append(el('b', null, 'main'), ` today (${head.short})`)
     const list = $('prList')
     list.replaceChildren(row(LAST, mainTitle, totals(head)))
-    for (const pr of ordered) {
+    for (const pr of orderedPrs) {
       const state = states[pr.state]
       const title = el('span', 't')
       title.style.paddingLeft = `${pr.depth * 12}px`
@@ -903,9 +1205,10 @@
     const hash = location.hash.slice(1)
     const hashPr = prs.find((pr) => `pr-${pr.number}` === hash)
     const hashStep = Number(hash)
-    if (hashPr || hash === 'open-prs') selectTab('prs')
+    if (hash === 'domains') selectTab('domains')
+    else if (hashPr || hash === 'open-prs') selectTab('prs')
     if (hashPr) return hashPr.state
-    if (hash === 'open-prs') return LAST
+    if (hash === 'open-prs' || hash === 'domains') return LAST
     return Number.isInteger(hashStep) && hashStep > 0 && hashStep <= LAST
       ? hashStep
       : 0

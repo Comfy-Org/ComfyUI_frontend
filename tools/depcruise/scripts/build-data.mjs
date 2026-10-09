@@ -24,6 +24,13 @@ const outDir = join(dirname(fileURLToPath(import.meta.url)), '..', 'data')
 const log = (...parts) => process.stdout.write(`${parts.join(' ')}\n`)
 const byText = (a, b) => (a < b ? -1 : a > b ? 1 : 0)
 const readJson = (file) => JSON.parse(readFileSync(file, 'utf8'))
+const architectureOf = (sha) => {
+  const file = join(work, 'architecture', `${sha}.json`)
+  if (!existsSync(file)) return null
+  const measured = readJson(file)
+  delete measured.sha
+  return measured
+}
 
 const stepsDir = join(work, 'steps')
 const steps = readdirSync(stepsDir)
@@ -215,7 +222,8 @@ const described = states.map((state, s) => {
       id: state.knotIds[k],
       size: knot.length
     })),
-    delta
+    delta,
+    architecture: architectureOf(state.sha)
   }
 })
 
@@ -232,7 +240,8 @@ const timeline = {
     'Paths in delta lists are relative to src/.',
     'openPrs.states continue the step indexes: each is the tree at a pull request head (kind "pr") or at the main commit a stack forks from (kind "base"). Their delta is against `parent`, the state of the pull request below them in the stack.',
     'A pull request head is analysed as pushed, not merged into current main; behindMain says how stale its base is.',
-    'containsParentHead false means the pull request below was rebased without this one; its delta is then its whole branch against the main commit it forks from.'
+    'containsParentHead false means the pull request below was rebased without this one; its delta is then its whole branch against the main commit it forks from.',
+    'architecture is the domain census from tools/architecture (scripts/census.mjs), null when not measured. status "no-records" means the tree has no domain records yet. A domain is ready to extract when every entry in its checks is true; see DOMAINS.md.'
   ],
   knots: lineage,
   steps: described.slice(0, steps.length),
