@@ -31,6 +31,11 @@ const routes = getRoutes(locale)
 const prefix = agency ? 'vfxV2.agency' : 'vfxV2.comfy'
 const contactHref = `${routes.contact}?interest=vfx${agency ? '&campaign_type=agency-led' : ''}&landing_version=v2`
 const { examples } = vfxContent(locale)
+const previewExamples = examples.map((row) => ({
+  ...row,
+  media:
+    row.media.type === 'video' ? { ...row.media, preview: true } : row.media
+}))
 const story = getCustomerVideoStory('black-math')
 const benefits = ([1, 2, 3, 4] as const).map((id) => ({
   id: `pipeline-${id}`,
@@ -65,7 +70,7 @@ const benefits = ([1, 2, 3, 4] as const).map((id) => ({
         subtitle={t('vfxV2.agency.examplesDescription')}
         class="pb-0 lg:pb-0"
       />
-      <FeatureRows01 locale={locale} rows={examples} client:visible />
+      <FeatureRows01 locale={locale} rows={previewExamples} client:visible />
       <AgencyEngagementTimeline locale={locale} />
     </div>}
     <div id="workflows" class="scroll-mt-28">
@@ -165,6 +170,7 @@ const benefits = ([1, 2, 3, 4] as const).map((id) => ({
               src: story.videoSrc,
               poster: story.poster,
               tracks: story.captions,
+              preview: true,
               alt: t('vfx.proof.title')
             }
           }
@@ -196,7 +202,7 @@ const benefits = ([1, 2, 3, 4] as const).map((id) => ({
           subtitle={t('vfxV2.learning.description')}
           class="pb-0 lg:pb-0"
         />
-        <FeatureRows01 locale={locale} rows={examples} client:visible />
+        <FeatureRows01 locale={locale} rows={previewExamples} client:visible />
       </>
     )}
     <div class="[&_a]:uppercase">

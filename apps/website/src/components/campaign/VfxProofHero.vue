@@ -97,6 +97,7 @@ const modelLogos = computed(() =>
             :poster="selected.workflow.template.thumbnails[0]"
             :aria-label="t(`vfxV2.proof.${selected.id}`)"
             persistent-controls
+            preview
           />
           <span
             class="pointer-events-none absolute top-5 left-5 rounded-full bg-primary-comfy-ink/80 px-3 py-1.5 text-xs text-primary-comfy-canvas backdrop-blur-sm"

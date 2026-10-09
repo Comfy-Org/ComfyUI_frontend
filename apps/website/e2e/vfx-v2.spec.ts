@@ -1,6 +1,54 @@
 import { expect } from '@playwright/test'
 
 import { test } from './fixtures/blockExternalMedia'
+import { waitForIsland } from './fixtures/islands'
+
+test('customer-story preview opens playback with sound and pauses when another video starts', async ({
+  page
+}) => {
+  await page.goto('/vfx/v2/')
+  const story = page.locator('section').filter({
+    has: page.getByRole('heading', {
+      name: 'Inside Black Math’s creative systems',
+      exact: true
+    })
+  })
+  const storyVideo = story.getByLabel('Inside Black Math’s creative systems', {
+    exact: true
+  })
+  await waitForIsland(page, storyVideo)
+  await expect(
+    story.getByRole('button', { name: 'Play', exact: true })
+  ).toBeVisible()
+  await expect(story.getByTestId('player-control-bar')).toHaveCount(0)
+  await expect
+    .poll(() => storyVideo.evaluate((video: HTMLVideoElement) => video.muted))
+    .toBe(true)
+
+  await story.getByRole('button', { name: 'Play', exact: true }).click()
+  await expect(story.getByTestId('player-control-bar')).toBeVisible()
+  await expect(
+    story.getByRole('button', { name: 'Mute', exact: true })
+  ).toBeVisible()
+  await expect
+    .poll(() => storyVideo.evaluate((video: HTMLVideoElement) => video.paused))
+    .toBe(false)
+
+  const tutorials = page.locator('section').filter({
+    has: page.getByRole('heading', {
+      name: 'Replace the sky. Keep the shot.',
+      exact: true
+    })
+  })
+  const tutorialPlay = tutorials
+    .getByRole('button', { name: 'Play', exact: true })
+    .first()
+  await waitForIsland(page, tutorialPlay)
+  await tutorialPlay.click()
+  await expect
+    .poll(() => storyVideo.evaluate((video: HTMLVideoElement) => video.paused))
+    .toBe(true)
+})
 
 for (const { path, heading, contact, cta, agency, cleanplate, upscale } of [
   {
