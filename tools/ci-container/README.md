@@ -118,6 +118,59 @@ pass `--upgrade-package NAME`; use `--upgrade` for a full refresh. Review the
 lock diff, then rebuild and run the candidate validator. Backend upgrades must
 update the lock in the same PR.
 
-Publishing and adoption remain separate work under
-[FE-3237](https://linear.app/comfyorg/issue/FE-3237). Existing consumers continue
-to use `ghcr.io/comfy-org/comfyui-ci-container:0.0.27`.
+## Activate monorepo publishing
+
+Publishing is disabled until a repository administrator sets
+`CI_CONTAINER_PUBLISH_ENABLED=true`. Merging the workflow does not enable it.
+The handover requires approval separate from merging this code:
+
+1. In the existing GHCR package's **Manage Actions access**, grant
+   `Comfy-Org/ComfyUI_frontend` write access. Preserve its private visibility and
+   existing pull access. Linking the package to this repository alone does
+   not grant its `GITHUB_TOKEN` permission to publish.
+2. Disable `build-and-push.yml` in `Comfy-Org/comfyui-ci-container`. Wait for
+   every queued or running publisher to finish. Do not enable both publishers.
+3. Verify that `VERSION` is unused in GHCR and greater than its latest release.
+   The proposed first version is `0.0.28`; bump it if the old publisher has
+   used that version before cutover.
+4. Set the opt-in variable. Run **Publish CI container** on `main`.
+5. Check the run summary's digest, the `ci-container/v<VERSION>` source tag,
+   and authenticated pulls of both the new version and `0.0.27` using existing
+   consumer credentials. Confirm the image
+   remains Linux amd64 and all six compatibility aliases point to its digest.
+
+Future releases use a reviewed PR that increments `tools/ci-container/VERSION`.
+The main push triggers publication. Other frontend changes do not publish an
+image. The publisher validates the local image, uploads its version, pulls and
+validates its digest, then creates an annotated source tag containing that
+digest. It creates no GitHub Release and does not change frontend versions.
+
+## Recover an interrupted release
+
+Run the workflow on `main` with the original release's full commit SHA:
+
+```bash
+gh workflow run publish-ci-container.yaml \
+  --repo Comfy-Org/ComfyUI_frontend --ref main -f revision=FULL_RELEASE_COMMIT_SHA
+```
+
+Recovery uses the current main publisher with the requested commit's image
+source and validator, so publisher fixes apply to interrupted releases.
+An existing version is pulled by digest and revalidated without rebuilding or
+pushing the version again. Its source, revision, and version labels must match.
+The source tag must match that commit and digest. Missing alias updates resume
+from the same digest; a partial update is safe to repeat. The registry's manifest
+endpoint determines version existence; delayed GitHub package metadata cannot
+trigger a rebuild. Authentication and registry errors stop the run.
+
+After an uncertain upload result, inspect GHCR before rerunning. If a newer
+version exists, recovery refuses to move aliases backwards. If the image or
+source tag conflicts, investigate rather than delete or overwrite it; publish
+a new version when a rebuild is needed. To pause releases, set
+`CI_CONTAINER_PUBLISH_ENABLED=false` and let the active run finish.
+
+Publishing and consumer adoption remain separate stages of
+[FE-3237](https://linear.app/comfyorg/issue/FE-3237). Existing consumers still use
+`ghcr.io/comfy-org/comfyui-ci-container:0.0.27`. Changing the updater to discover
+monorepo source tags, updating consumers, and archiving the old repository
+belong to FE-3240. Keep the old package versions available for rollback.
