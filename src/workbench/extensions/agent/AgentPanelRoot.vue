@@ -1976,12 +1976,8 @@ async function onPanelDrop(event: DragEvent): Promise<void> {
       @rename-chat="onRenameChat"
       @copy-history="onCopyMarkdown"
     >
-      <template #instrument>
-        <CrdtDevPanel
-          v-if="isCrdtDevPanelEnabled"
-          :status="crdtStatus"
-          :snapshot="crdtDebugSnapshot"
-        />
+      <template v-if="isCrdtDevPanelEnabled" #instrument>
+        <CrdtDevPanel :status="crdtStatus" :snapshot="crdtDebugSnapshot" />
       </template>
       <template #composerNotice>
         <AgentCreditTransitionNotice
