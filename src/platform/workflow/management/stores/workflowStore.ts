@@ -658,7 +658,6 @@ export const useWorkflowStore = defineStore('workflow', () => {
   const nodeToNodeLocatorId = (node: LGraphNode): NodeLocatorId => {
     if (isSubgraph(node.graph))
       return createNodeLocatorId(node.graph.id, node.id)
-    // Root graph: see nodeIdToNodeLocatorId on colon-bearing raw ids.
     return createNodeLocatorId(null, node.id)
   }
 
