@@ -1,5 +1,5 @@
 import type { Meta, StoryObj } from '@storybook/vue3-vite'
-import { userEvent, within } from 'storybook/test'
+import { expect, userEvent, within } from 'storybook/test'
 
 import { toTurnId } from '../../schemas/agentApiSchema'
 import type { HistoryGroups } from '../../stores/agent/agentChatHistoryStore'
@@ -163,10 +163,14 @@ export const GreetingWorkflowAwareAsked: Story = {
   name: 'DES-1224 e / workflow-aware, CTA pressed',
   args: { userName: 'Jo', greeting: unconnectedInput },
   play: async ({ canvasElement }) => {
-    await userEvent.click(
-      within(canvasElement).getByRole('button', {
-        name: 'Ask about this input'
-      })
+    const canvas = within(canvasElement)
+    const button = canvas.getByRole('button', { name: 'Ask about this input' })
+
+    await userEvent.click(button)
+
+    await expect(button).toBeDisabled()
+    await expect(canvas.getByRole('textbox')).toHaveTextContent(
+      'Why isn’t the vae input on VAE Decode connected, and what should go there?'
     )
   }
 }

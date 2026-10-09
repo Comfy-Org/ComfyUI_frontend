@@ -24,7 +24,46 @@ function renderUnconnectedInput() {
   }
 }
 
+const IMPROVE = 'Help me improve this workflow'
+
+function renderWorkflowOpen() {
+  return render(ProactiveGreeting, {
+    props: { greeting: { kind: 'workflowOpen' } },
+    global: { plugins: [i18n] }
+  })
+}
+
 describe('ProactiveGreeting', () => {
+  it('suggests its prompt in an empty composer', () => {
+    const { emitted } = renderWorkflowOpen()
+
+    expect(emitted('insert')).toEqual([[IMPROVE, expect.any(Number)]])
+  })
+
+  it('leaves text the user already wrote alone', () => {
+    useAgentComposerStore().setText('My own question')
+
+    const { emitted } = renderWorkflowOpen()
+
+    expect(emitted('insert')).toBeUndefined()
+  })
+
+  it.for([
+    { draft: IMPROVE, after: '' },
+    { draft: `${IMPROVE} for portraits`, after: `${IMPROVE} for portraits` }
+  ])(
+    'takes back its untouched suggestion when it goes away ("$draft")',
+    ({ draft, after }) => {
+      const { unmount } = renderWorkflowOpen()
+      const store = useAgentComposerStore()
+      store.setText(draft)
+
+      unmount()
+
+      expect(store.draft).toBe(after)
+    }
+  )
+
   it('asks the question about the unconnected input', async () => {
     const { emitted, button } = renderUnconnectedInput()
 
@@ -46,8 +85,7 @@ describe('ProactiveGreeting', () => {
       useAgentComposerStore().setText(draft)
       await nextTick()
 
-      if (disabled) expect(button).toBeDisabled()
-      else expect(button).toBeEnabled()
+      expect(button).toHaveProperty('disabled', disabled)
     }
   )
 })

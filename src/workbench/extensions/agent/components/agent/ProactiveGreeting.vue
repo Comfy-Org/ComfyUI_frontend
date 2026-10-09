@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { computed, onMounted } from 'vue'
+import { computed, onBeforeUnmount, onMounted } from 'vue'
 import { useI18n } from 'vue-i18n'
 
 import Button from '@/components/ui/button/Button.vue'
@@ -46,13 +46,23 @@ const composerStore = useAgentComposerStore()
 const prompt = computed(() => t(`${key.value}.prompt`, params.value))
 const asked = computed(() => composerStore.draft.includes(prompt.value))
 
+const prefills = computed(
+  () => greeting.kind === 'workflowOpen' || greeting.kind === 'firstOpen'
+)
+
 function onAsk(): void {
+  if (asked.value) return
   emit('insert', prompt.value)
 }
 
 onMounted(() => {
-  if (greeting.kind === 'workflowOpen' || greeting.kind === 'firstOpen')
+  if (prefills.value && composerStore.draft === '')
     emit('insert', prompt.value, timing.value.followUp)
+})
+
+onBeforeUnmount(() => {
+  if (prefills.value && composerStore.draft === prompt.value)
+    composerStore.setText('')
 })
 </script>
 

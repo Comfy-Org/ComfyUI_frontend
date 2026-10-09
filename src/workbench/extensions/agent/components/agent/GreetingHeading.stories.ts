@@ -22,11 +22,3 @@ export default meta
 type Story = StoryObj<typeof meta>
 
 export const Default: Story = {}
-
-export const WithoutName: Story = {
-  args: { userName: undefined }
-}
-
-export const LongTitle: Story = {
-  args: { title: 'This workflow has an unconnected input.' }
-}

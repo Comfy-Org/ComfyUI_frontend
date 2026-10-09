@@ -64,6 +64,7 @@ const promptIcons = [
 <template>
   <ProactiveGreeting
     v-if="greeting"
+    :key="JSON.stringify(greeting)"
     :greeting
     :user-name
     @insert="
