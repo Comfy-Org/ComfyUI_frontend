@@ -71,8 +71,8 @@ watch(playing, (play) => (play ? resume() : pause()), { immediate: true })
         data-testid="model-card-frame"
         loading="lazy"
         decoding="async"
-        @load="markLoaded(index)"
         draggable="false"
+        @load="markLoaded(index)"
       />
     </div>
   </div>
