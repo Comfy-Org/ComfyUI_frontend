@@ -93,4 +93,20 @@ describe('EditorTiles', () => {
 
     expect(uploads).toEqual([own])
   })
+
+  it('moves the pick and focus with the arrow keys, from a single tab stop', async () => {
+    const { value } = renderTiles()
+
+    await userEvent.tab()
+    expect(screen.getByRole('radio', { name: 'Red carpet' })).toHaveFocus()
+    expect(screen.getByRole('radio', { name: 'Yacht' })).toHaveAttribute(
+      'tabindex',
+      '-1'
+    )
+
+    await userEvent.keyboard('{ArrowRight}')
+
+    expect(value.value).toBe('yacht')
+    expect(screen.getByRole('radio', { name: 'Yacht' })).toHaveFocus()
+  })
 })

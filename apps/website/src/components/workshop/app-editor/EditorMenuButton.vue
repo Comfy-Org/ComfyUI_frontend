@@ -53,7 +53,6 @@ function pick(id: T) {
   >
     <button
       type="button"
-      aria-haspopup="menu"
       :aria-expanded="open"
       :aria-label="iconOnly ? label : undefined"
       :title="iconOnly ? label : undefined"
@@ -77,7 +76,7 @@ function pick(id: T) {
     </button>
     <div
       v-if="open"
-      role="menu"
+      role="group"
       :aria-label="label"
       :class="
         cn(
@@ -91,7 +90,6 @@ function pick(id: T) {
         v-for="item in items"
         :key="item.id"
         type="button"
-        role="menuitem"
         :disabled="item.disabled"
         class="flex h-8 items-center gap-2 rounded-lg px-2.5 text-left text-xs text-primary-warm-white transition hover:bg-transparency-white-t8 focus-visible:bg-transparency-white-t8 focus-visible:outline-none disabled:opacity-40 disabled:hover:bg-transparent"
         @click="pick(item.id)"

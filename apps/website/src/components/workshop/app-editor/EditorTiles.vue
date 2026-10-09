@@ -48,6 +48,31 @@ function pick(id: T) {
   value.value = id
   emit('pick', id)
 }
+
+const STEP: Partial<Record<string, 1 | -1>> = {
+  ArrowRight: 1,
+  ArrowDown: 1,
+  ArrowLeft: -1,
+  ArrowUp: -1
+}
+
+const tabStop = (index: number) =>
+  options.some((option) => option.id === value.value)
+    ? options[index].id === value.value
+    : index === 0
+
+function step(event: KeyboardEvent, index: number) {
+  const direction = STEP[event.key]
+  if (!direction || !options.length) return
+  event.preventDefault()
+  const next = (index + direction + options.length) % options.length
+  pick(options[next].id)
+  const group =
+    event.currentTarget instanceof HTMLElement
+      ? event.currentTarget.parentElement
+      : null
+  group?.querySelectorAll<HTMLElement>('[role="radio"]')[next]?.focus()
+}
 </script>
 
 <template>
@@ -72,14 +97,16 @@ function pick(id: T) {
     </template>
     <template v-else>
       <EditorTile
-        v-for="option in options"
+        v-for="(option, index) in options"
         :key="option.id"
+        :tabindex="tabStop(index) ? 0 : -1"
         :label="option.label"
         :src="option.src"
         :checked="value === option.id"
         :aspect
         :large
         @pick="pick(option.id)"
+        @keydown="step($event, index)"
       >
         <slot name="tile" :option />
       </EditorTile>

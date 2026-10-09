@@ -6,11 +6,10 @@ const value = defineModel<number>({ required: true })
 const id = useId()
 
 function onChange(event: Event) {
-  const next =
-    event.target instanceof HTMLInputElement
-      ? Math.round(Number(event.target.value))
-      : NaN
+  if (!(event.target instanceof HTMLInputElement)) return
+  const next = Math.round(Number(event.target.value))
   if (Number.isFinite(next) && next >= 0) value.value = next
+  else event.target.value = String(value.value)
 }
 </script>
 
