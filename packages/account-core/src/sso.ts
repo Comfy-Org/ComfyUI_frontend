@@ -103,6 +103,11 @@ export async function discoverSso(
  * Ingest sends API routes back to `/`: they refuse a cross-site navigation,
  * so the person would land on an error. Anything off-origin goes there too.
  */
+function isApiRoute(url: URL): boolean {
+  const pathname = url.pathname.toLowerCase()
+  return pathname === '/api' || pathname.startsWith('/api/')
+}
+
 function ssoReturnTo(
   raw: string,
   origin: string,
@@ -110,11 +115,10 @@ function ssoReturnTo(
 ): string {
   if (appOrigin !== undefined && URL.canParse(raw)) {
     const url = new URL(raw)
-    if (url.origin === appOrigin) return url.href
+    if (url.origin === appOrigin) return isApiRoute(url) ? '/' : url.href
   }
   const path = safeInternalPath(raw, origin, '/')
-  const pathname = new URL(path, origin).pathname.toLowerCase()
-  return pathname === '/api' || pathname.startsWith('/api/') ? '/' : path
+  return isApiRoute(new URL(path, origin)) ? '/' : path
 }
 
 /** A named organization is the target; otherwise the email's domain is. */

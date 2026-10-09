@@ -171,6 +171,11 @@ describe('ssoStartUrl', () => {
       expected: 'https://billing.example/checkout?plan=pro'
     },
     {
+      name: 'drops an API route on the calling app',
+      returnTo: 'https://billing.example/api/status',
+      expected: '/'
+    },
+    {
       name: 'drops a URL on another origin',
       returnTo: 'https://evil.example/x',
       expected: '/'
