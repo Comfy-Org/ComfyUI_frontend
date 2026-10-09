@@ -21,6 +21,7 @@ describe('hub model addresses', () => {
     ])
     expect([
       routes.cinematicStudio,
+      routes.handProductSwap,
       routes.moveAnything,
       routes.relight,
       routes.reshoot

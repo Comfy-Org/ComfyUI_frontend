@@ -4773,6 +4773,16 @@
       "permanent": true
     },
     {
+      "source": "/models/apps/hand-product-swap",
+      "destination": "/hub/apps/hand-product-swap/",
+      "permanent": true
+    },
+    {
+      "source": "/models/apps/hand-product-swap/",
+      "destination": "/hub/apps/hand-product-swap/",
+      "permanent": true
+    },
+    {
       "source": "/models/apps/move-anything",
       "destination": "/hub/apps/move-anything/",
       "permanent": true

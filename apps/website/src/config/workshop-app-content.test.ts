@@ -13,7 +13,8 @@ describe('Workshop apps', () => {
       { appId: 'studio', href: '/hub/apps/cinematic-studio/' },
       { appId: 'reshoot', href: '/hub/apps/reshoot/' },
       { appId: 'move-anything', href: '/hub/apps/move-anything/' },
-      { appId: 'relight', href: '/hub/apps/relight/' }
+      { appId: 'relight', href: '/hub/apps/relight/' },
+      { appId: 'hand-product-swap', href: '/hub/apps/hand-product-swap/' }
     ])
   })
 
@@ -24,7 +25,8 @@ describe('Workshop apps', () => {
       ['cinematic-studio', 'studio'],
       ['reshoot', 'reshoot'],
       ['move-anything', 'move-anything'],
-      ['relight', 'relight']
+      ['relight', 'relight'],
+      ['hand-product-swap', 'hand-product-swap']
     ])
   })
 

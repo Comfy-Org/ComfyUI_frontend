@@ -32,8 +32,10 @@ import CinematicStudioPanel from './CinematicStudioPanel.vue'
 import MoveAnythingStudio from '@/components/workshop/move-anything/MoveAnythingStudio.vue'
 import RelightStudio from '@/components/workshop/relight/RelightStudio.vue'
 import ReshootStudio from './reshoot/ReshootStudio.vue'
+import HandSwapStudio from '@/components/workshop/hand-product-swap/HandSwapStudio.vue'
 import { mc } from '@/lib/workshop/move-anything/copy'
 import { lc } from '@/lib/workshop/relight/copy'
+import { hc } from '@/lib/workshop/hand-product-swap/copy'
 import { isWorkshopModelShown } from '@/scripts/workshop-model-flags'
 
 const {
@@ -57,8 +59,18 @@ const LAYOUTS = [
   { id: 'hub', label: 'cinematic.ux.hub' }
 ] as const
 
-const APPS = ['studio', 'reshoot', 'move-anything', 'relight'] as const
-const EDITOR_APPS: readonly WorkshopAppId[] = ['move-anything', 'relight']
+const APPS = [
+  'studio',
+  'reshoot',
+  'move-anything',
+  'relight',
+  'hand-product-swap'
+] as const
+const EDITOR_APPS: readonly WorkshopAppId[] = [
+  'move-anything',
+  'relight',
+  'hand-product-swap'
+]
 const reviewing = WORKSHOP_DEPLOY_ENV !== 'production'
 
 const appsEnabled = useWorkshopAppsEnabled()
@@ -131,6 +143,10 @@ const appOptions = computed(() =>
     {
       id: 'relight',
       label: lc('relight.title', locale)
+    },
+    {
+      id: 'hand-product-swap',
+      label: hc('swap.title', locale)
     }
   ].filter((option) =>
     shownApps.value.some((candidate) => candidate.appId === option.id)
@@ -201,6 +217,7 @@ function pickApp(id: string) {
     <ReshootStudio v-else-if="app === 'reshoot'" :locale />
     <MoveAnythingStudio v-else-if="app === 'move-anything'" :layout :locale />
     <RelightStudio v-else-if="app === 'relight'" :layout :locale />
+    <HandSwapStudio v-else-if="app === 'hand-product-swap'" :layout :locale />
     <CinematicStudioPanel
       v-else-if="layout === 'd'"
       :models
