@@ -7,9 +7,8 @@ import type {
 } from '@/workbench/extensions/agent/schemas/agentApiSchema'
 import type { AgentPanel } from '@e2e/fixtures/components/AgentPanel'
 import { webSocketFixture } from '@e2e/fixtures/ws'
+import type { AgentFundingState } from '@e2e/tests/agent/agentPanelMocks'
 import { agentTest } from '@e2e/tests/agent/agentPanelMocks'
-
-type AgentFundingState = 'funded' | 'exhausted' | 'scopedExhausted'
 
 class AgentCreditsLifecycleFixture {
   constructor(
@@ -17,8 +16,7 @@ class AgentCreditsLifecycleFixture {
     private readonly agentPanel: AgentPanel,
     private readonly acceptedTurns: AgentTurnAccepted[],
     private readonly ws: WebSocketRoute,
-    private readonly setAgentFunds: (hasFunds: boolean) => void,
-    private readonly setAgentScopedFunds: (scopedHasFunds: boolean) => void
+    private readonly setFundingState: (state: AgentFundingState) => void
   ) {}
 
   async completeTurn(
@@ -36,8 +34,7 @@ class AgentCreditsLifecycleFixture {
     }
 
     await expect(this.agentPanel.stopButton).toBeVisible()
-    if (fundingState === 'scopedExhausted') this.setAgentScopedFunds(false)
-    else this.setAgentFunds(fundingState === 'funded')
+    this.setFundingState(fundingState)
     const billingRefresh = this.page.waitForResponse(
       (response) =>
         response.request().method() === 'GET' &&
@@ -78,8 +75,7 @@ export const test = base.extend<{
         agentPanel,
         acceptedTurns,
         ws,
-        (hasFunds) => agentBilling.setAgentFunds(hasFunds),
-        (scopedHasFunds) => agentBilling.setAgentScopedFunds(scopedHasFunds)
+        (state) => agentBilling.setFundingState(state)
       )
     )
   }

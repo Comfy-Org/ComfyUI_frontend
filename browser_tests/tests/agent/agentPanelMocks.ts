@@ -59,6 +59,8 @@ const FUNDED_BILLING_STATUS = {
   team_credit_stop: null
 } satisfies BillingStatusResponse
 
+export type AgentFundingState = 'funded' | 'exhausted' | 'scopedExhausted'
+
 type HeldBillingRefresh = {
   entered: Promise<void>
   completed: Promise<void>
@@ -93,24 +95,30 @@ class AgentBillingFixture {
     | undefined
 
   setAgentFunds(hasFunds: boolean): void {
-    this.status = {
-      ...FUNDED_BILLING_STATUS,
-      has_funds: hasFunds,
-      scoped_effective_has_funds: { agent: hasFunds },
-      scoped_has_funds: { agent: hasFunds }
-    }
+    this.setFundingState(hasFunds ? 'funded' : 'exhausted')
   }
 
-  /**
-   * Exhausts the Agent-scoped grant alone, leaving workspace funding intact,
-   * which is the handoff `app:agent_credit_transition_notice` reports.
-   * `scoped_has_funds` is the grant itself; `scoped_effective_has_funds`
-   * stays true because the workspace balance still funds Agent activity.
-   */
-  setAgentScopedFunds(scopedHasFunds: boolean): void {
-    this.status = {
-      ...FUNDED_BILLING_STATUS,
-      scoped_has_funds: { agent: scopedHasFunds }
+  setFundingState(state: AgentFundingState): void {
+    switch (state) {
+      case 'funded':
+        this.status = FUNDED_BILLING_STATUS
+        break
+      case 'exhausted':
+        this.status = {
+          ...FUNDED_BILLING_STATUS,
+          has_funds: false,
+          scoped_effective_has_funds: { agent: false },
+          scoped_has_funds: { agent: false }
+        }
+        break
+      case 'scopedExhausted':
+        this.status = {
+          ...FUNDED_BILLING_STATUS,
+          scoped_has_funds: { agent: false }
+        }
+        break
+      default:
+        state satisfies never
     }
   }
 
