@@ -36,6 +36,7 @@ const mockPack: SkillPack = {
   updated_at: '2026-08-22T00:00:00Z'
 }
 
+vi.mock(import('@/composables/auth/useCurrentUser'))
 vi.mock(import('@/platform/skills/api/skillsApi'), { spy: true })
 
 vi.mock(import('@/components/dialog/confirm/confirmDialog'))

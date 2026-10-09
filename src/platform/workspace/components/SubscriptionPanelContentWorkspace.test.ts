@@ -212,13 +212,6 @@ vi.mock(
   import('@/platform/cloud/subscription/composables/useSubscriptionDialog')
 )
 
-vi.mock<unknown>(
-  import('primevue/usetoast'), // oxlint-disable-line comfy/no-primevue-imports
-  () => ({
-    useToast: () => ({ add: vi.fn() })
-  })
-)
-
 const i18n = createI18n({
   legacy: false,
   locale: 'en',

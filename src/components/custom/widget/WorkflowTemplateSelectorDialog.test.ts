@@ -58,9 +58,8 @@ beforeEach(() => {
     'Comfy.Templates.SelectedRunsOn': [],
     'Comfy.Templates.SortBy': 'default'
   }
-  vi.stubGlobal(
-    'fetch',
-    vi.fn(async () => Response.json({ version: 0.4, nodes: [], links: [] }))
+  vi.mocked(fetch).mockImplementation(async () =>
+    Response.json({ version: 0.4, nodes: [], links: [] })
   )
   const store = useWorkflowTemplatesStore()
   store.isLoaded = true

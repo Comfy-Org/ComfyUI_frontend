@@ -38,7 +38,10 @@
           )
         "
       >
-        <div v-if="showViewTabs" class="flex items-center gap-2">
+        <div
+          v-if="showViewTabs && uiConfig.showPendingTab"
+          class="flex items-center gap-2"
+        >
           <Button
             :variant="activeView === 'active' ? 'secondary' : 'muted-textonly'"
             size="lg"
@@ -93,7 +96,10 @@
         <div class="min-h-0 flex-1 overflow-y-auto" @scroll="handlePanelScroll">
           <!-- Table Header with Tab Buttons and Column Headers -->
           <div
-            v-if="uiConfig.showMembersList && showViewTabs"
+            v-if="
+              uiConfig.showMembersList &&
+              (showViewTabs || (isCloud && hasMultipleMembers))
+            "
             :class="
               cn(
                 'sticky -top-px z-10 grid w-full items-center bg-base-background px-2 pt-[calc(--spacing(2)+1px)] pb-2',
@@ -165,7 +171,11 @@
 
           <!-- Active Members -->
           <template v-if="activeView === 'active'">
-            <template v-if="isInPersonalWorkspace && maxSeats === 1">
+            <template
+              v-if="
+                isInPersonalWorkspace && maxSeats === 1 && !hasMultipleMembers
+              "
+            >
               <MemberListItem
                 :member="personalWorkspaceMember"
                 :is-current-user="true"
@@ -199,7 +209,7 @@
 
           <!-- Pending Invites -->
           <PendingInvitesList
-            v-if="activeView === 'pending'"
+            v-if="activeView === 'pending' && permissions.canViewPendingInvites"
             :invites="filteredPendingInvites"
             :grid-cols="uiConfig.pendingGridCols"
             :search-query="searchQuery"
@@ -274,6 +284,7 @@ import MemberUpsellBanner from '@/platform/workspace/components/dialogs/settings
 import PendingInvitesList from '@/platform/workspace/components/dialogs/settings/PendingInvitesList.vue'
 import { ENTERPRISE_URL } from '@/platform/cloud/subscription/constants/tierPricing'
 import { useMembersPanel } from '@/platform/workspace/composables/useMembersPanel'
+import { isCloud } from '@/platform/distribution/types'
 import { cn } from '@comfyorg/tailwind-utils'
 
 const TEAM_PLAN_REQUEST_URL =
@@ -342,7 +353,12 @@ const emptyStateMessage = computed(() => {
   if (!uiConfig.value.showMembersList) return null
   if (!membersLoaded.value) return null
   if (activeView.value !== 'active') return null
-  if (isInPersonalWorkspace.value && maxSeats.value === 1) return null
+  if (
+    isInPersonalWorkspace.value &&
+    maxSeats.value === 1 &&
+    !hasMultipleMembers.value
+  )
+    return null
   if (filteredMembers.value.length > 0) return null
 
   const query = searchQuery.value.trim()

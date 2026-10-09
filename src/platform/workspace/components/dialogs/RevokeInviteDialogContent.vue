@@ -38,7 +38,7 @@
 </template>
 
 <script setup lang="ts">
-import { useToast } from 'primevue/usetoast'
+import { useToast } from '@/components/ui/toast/toastStore'
 import { ref } from 'vue'
 import { useI18n } from 'vue-i18n'
 
@@ -46,6 +46,7 @@ import { useBillingContext } from '@/composables/billing/useBillingContext'
 import Button from '@/components/ui/button/Button.vue'
 import { useTeamWorkspaceStore } from '@/platform/workspace/stores/teamWorkspaceStore'
 import { useDialogStore } from '@/stores/dialogStore'
+import { getErrorMessage } from '@/utils/errorUtil'
 
 const { inviteId } = defineProps<{
   inviteId: string
@@ -69,10 +70,8 @@ async function onRevoke() {
     void fetchStatus().catch(console.error)
     dialogStore.closeDialog({ key: 'revoke-invite' })
   } catch (error) {
-    toast.add({
-      severity: 'error',
-      summary: t('g.error'),
-      detail: error instanceof Error ? error.message : undefined
+    toast.error(t('g.error'), {
+      description: getErrorMessage(error)
     })
   } finally {
     loading.value = false

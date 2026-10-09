@@ -47,6 +47,7 @@ describe('attachRestoreOpMinter', () => {
   let bound: boolean
   let source: TestSource
   let sink: TestSink
+  let docInputs: readonly (string | undefined)[] | null
 
   /** Run `mutate` as the ChangeTracker would: inside a graph load bracket. */
   function restoreThrough(mutate: () => void): void {
@@ -60,6 +61,7 @@ describe('attachRestoreOpMinter', () => {
     minted = []
     restoring = true
     bound = true
+    docInputs = null
     source = new TestSource()
     sink = new TestSink()
     graph.add(source)
@@ -71,6 +73,7 @@ describe('attachRestoreOpMinter', () => {
       isDocBound: () => bound,
       enqueue: (operations) => minted.push(...operations),
       getGraph: () => graph,
+      docInputNames: () => docInputs,
       isRestoringState: () => restoring
     })
   })
@@ -114,6 +117,22 @@ describe('attachRestoreOpMinter', () => {
         to_slot: 0,
         link_type: 'IMAGE'
       }
+    ])
+  })
+
+  it('maps a restored link target from live slot order to document order', () => {
+    sink.addInput('prompt', 'STRING')
+    docInputs = ['prompt', 'image']
+    sink.disconnectInput(0)
+
+    restoreThrough(() => source.connect(0, sink, 0))
+
+    expect(minted).toEqual([
+      expect.objectContaining({
+        op: 'connect',
+        to_node: sink.id,
+        to_slot: 1
+      })
     ])
   })
 

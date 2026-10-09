@@ -6,7 +6,6 @@ import type { ComfyNodeDef } from '@/schemas/nodeDefSchema'
 import { AgentNonValueWidgetRig } from '@e2e/fixtures/agentNonValueWidgetRig'
 import type { AgentFollowerHostSocket } from '@e2e/fixtures/agentFollowerHostSocket'
 import { agentTest as test } from '@e2e/fixtures/agentPanelFixture'
-import { ToastHelper } from '@e2e/fixtures/helpers/ToastHelper'
 
 /**
  * `preview_text` reaches the minter through an `executed` frame, the node's
@@ -142,7 +141,8 @@ test.describe(
   { tag: ['@cloud', '@agent', '@vue-nodes', '@widget'] },
   () => {
     test('execution text output mints nothing and never tells the user an edit was rejected', async ({
-      page
+      page,
+      toast
     }) => {
       test.setTimeout(60_000)
       const rig = await AgentNonValueWidgetRig.boot(page, rigConfig)
@@ -174,7 +174,7 @@ test.describe(
       })
 
       await test.step('no rejection toast, hand edit still on screen', async () => {
-        const rejectionToast = new ToastHelper(page).toastErrors.filter({
+        const rejectionToast = toast.toastErrors.filter({
           hasText: 'Widget edit was rejected and was not saved'
         })
         await expect(rejectionToast).toHaveCount(0)
