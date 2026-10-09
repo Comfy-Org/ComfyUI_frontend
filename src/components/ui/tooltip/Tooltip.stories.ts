@@ -10,17 +10,13 @@ const meta: Meta<typeof Tooltip> = {
   title: 'Components/Tooltip/Tooltip',
   component: Tooltip,
   tags: ['autodocs'],
-  parameters: { layout: 'centered' }
-}
-
-export default meta
-type Story = StoryObj<typeof meta>
-
-export const Default: Story = {
-  render: () => ({
+  parameters: { layout: 'centered' },
+  args: { disabled: false },
+  render: (args) => ({
     components: { Button, Tooltip, TooltipContent, TooltipTrigger },
+    setup: () => ({ args }),
     template: `
-      <Tooltip>
+      <Tooltip v-bind="args">
         <TooltipTrigger as-child>
           <Button variant="secondary">Hover or focus</Button>
         </TooltipTrigger>
@@ -30,19 +26,10 @@ export const Default: Story = {
   })
 }
 
-export const Disabled: Story = {
-  render: () => ({
-    components: { Button, Tooltip, TooltipContent, TooltipTrigger },
-    template: `
-      <Tooltip disabled>
-        <TooltipTrigger as-child>
-          <Button variant="secondary">No tooltip</Button>
-        </TooltipTrigger>
-        <TooltipContent>Unavailable</TooltipContent>
-      </Tooltip>
-    `
-  })
-}
+export default meta
+type Story = StoryObj<typeof meta>
+
+export const Default: Story = {}
 
 export const Sides: Story = {
   render: () => ({
