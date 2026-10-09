@@ -164,8 +164,10 @@ describe('agent insert_workflow: executed outputs reach the inserted node', () =
     const graph = canvasFromInserts(rootBlueprint(), subgraphBlueprint())
     const [host, interior] = insertedSubgraphInterior(graph)
 
-    for (const node of [...rootSaveImages(graph), host, interior])
-      expect(String(node.id)).toContain(':')
+    const ids = [...rootSaveImages(graph), host, interior].map((node) =>
+      String(node.id)
+    )
+    expect(ids).toEqual(ids.map(() => expect.stringContaining(':')))
   })
 
   it('lands an executed output on an inserted root Save Image node', () => {
@@ -217,17 +219,21 @@ describe('agent insert_workflow: executed outputs reach the inserted node', () =
   })
 
   it.for([
-    { label: 'an inserted root node', inSubgraph: false },
-    { label: 'an interior node of an inserted subgraph', inSubgraph: true }
+    {
+      label: 'an inserted root node',
+      blueprint: rootBlueprint,
+      pathOf: (graph: LGraph): LGraphNode[] => rootSaveImages(graph)
+    },
+    {
+      label: 'an interior node of an inserted subgraph',
+      blueprint: subgraphBlueprint,
+      pathOf: (graph: LGraph): LGraphNode[] => insertedSubgraphInterior(graph)
+    }
   ])(
     'round-trips $label through locator and execution ids',
-    ({ inSubgraph }) => {
-      const graph = canvasFromInserts(
-        inSubgraph ? subgraphBlueprint() : rootBlueprint()
-      )
-      const path = inSubgraph
-        ? insertedSubgraphInterior(graph)
-        : rootSaveImages(graph)
+    ({ blueprint, pathOf }) => {
+      const graph = canvasFromInserts(blueprint())
+      const path = pathOf(graph)
       const node = path[path.length - 1]
       const workflowStore = useWorkflowStore()
 

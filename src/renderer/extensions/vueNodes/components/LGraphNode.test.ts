@@ -188,7 +188,9 @@ function renderLGraphNode(props: ComponentProps<typeof LGraphNode>) {
             '<div data-testid="node-widgets">{{ processedWidgetModel.processedWidgets.map((widget) => widget.widgetId).join(",") }}</div>'
         },
         NodeContent: {
-          template: '<div data-testid="node-content" />'
+          props: ['media'],
+          template:
+            '<div data-testid="node-content">{{ media?.urls?.join(",") }}</div>'
         },
         SlotConnectionDot: true
       }
@@ -528,7 +530,9 @@ describe('LGraphNode', () => {
         nodeData: { ...mockNodeData, id: nodeId, graphId: 'graph-test' }
       })
 
-      expect(screen.getByTestId('node-content')).toBeInTheDocument()
+      expect(screen.getByTestId('node-content')).toHaveTextContent(
+        '/output.png'
+      )
     }
   )
 
