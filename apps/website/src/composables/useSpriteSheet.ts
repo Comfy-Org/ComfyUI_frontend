@@ -15,7 +15,7 @@ import type { SpriteSetup } from '@/lib/workshop/sprite-sheet/options'
 import { DEFAULT_SETUP, SPRITE_GRID } from '@/lib/workshop/sprite-sheet/options'
 import { useSpritePlayback } from './useSpritePlayback'
 
-export interface SpriteImage {
+interface SpriteImage {
   readonly url: string
   readonly name: string
   readonly width: number
