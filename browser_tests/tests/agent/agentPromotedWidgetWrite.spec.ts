@@ -56,26 +56,24 @@ test.describe(
         expect(hostWidgetsBefore.length).toBeGreaterThanOrEqual(7)
       })
 
-      const panel =
-        await test.step('point the agent panel at that workflow', async () => {
-          await agentPanel.open()
-          // The send is inert until the session has a workflow target:
-          // `Send` is gated on `workflowSelecting || !composer.canSend.value`,
-          // and the ack that carries `workflow_id` is what `bindWorkflow`
-          // subscribes on. Asserting the picker is merely visible leaves the
-          // panel unbound, so the click posts nothing and the CRDT leg below
-          // is never reached.
-          await agentPanel.selectWorkflow(PROMOTED_WIDGET_WORKFLOW_LABEL)
-          await expect
-            .poll(() =>
-              page.evaluate(
-                (id) => window.app!.graph.getNodeById(id)?.type,
-                toNodeId(PROMOTED_WIDGET_HOST_NODE_ID)
-              )
+      await test.step('point the agent panel at that workflow', async () => {
+        await agentPanel.open()
+        // The send is inert until the session has a workflow target:
+        // `Send` is gated on `workflowSelecting || !composer.canSend.value`,
+        // and the ack that carries `workflow_id` is what `bindWorkflow`
+        // subscribes on. Asserting the picker is merely visible leaves the
+        // panel unbound, so the click posts nothing and the CRDT leg below
+        // is never reached.
+        await agentPanel.selectWorkflow(PROMOTED_WIDGET_WORKFLOW_LABEL)
+        await expect
+          .poll(() =>
+            page.evaluate(
+              (id) => window.app!.graph.getNodeById(id)?.type,
+              toNodeId(PROMOTED_WIDGET_HOST_NODE_ID)
             )
-            .toBe(PROMOTED_WIDGET_SUBGRAPH_TYPE)
-          return agentPanel.root
-        })
+          )
+          .toBe(PROMOTED_WIDGET_SUBGRAPH_TYPE)
+      })
 
       const ws = await getWebSocket()
       // Resolve only a `doc_subscribe` that is proven to carry a string
@@ -92,11 +90,7 @@ test.describe(
 
       const workflowId =
         await test.step('send a turn and capture the document subscribe', async () => {
-          const composer = panel.getByRole('textbox', {
-            name: /^Describe ideas/
-          })
-          await composer.fill('set the prompt and steps')
-          await panel.getByRole('button', { name: 'Send' }).click()
+          await agentPanel.sendMessage('set the prompt and steps')
           await expect
             .poll(() => postedMessages.length)
             .toBeGreaterThanOrEqual(1)
