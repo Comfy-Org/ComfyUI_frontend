@@ -18,7 +18,11 @@ import {
   darkroomSavesToCloud,
   saveDarkroomAsset
 } from '@/config/darkroom-cloud-assets'
-import type { DarkroomProgress } from '@/config/darkroom-router'
+import type {
+  DarkroomProgress,
+  DarkroomResult,
+  DarkroomToken
+} from '@/config/darkroom-router'
 import {
   cancelDarkroomImage,
   collectDarkroomImage,
@@ -123,7 +127,12 @@ export function useDarkroom(notify: (notice: DarkroomNotice) => void) {
       modelRunnable: true,
       mounted: mounted.value,
       authAvailable: authEnabled.value && !sessionFailure.value,
-      sessionSettled: settled.value && !(user.value && !session.value),
+      // Signed in is not ready until this account's feed has loaded: an
+      // image made before then would have nowhere to be kept.
+      sessionSettled:
+        settled.value &&
+        !(user.value && !session.value) &&
+        (!session.value || loaded.value),
       role: session.value?.role,
       // A balance read mid-run lags the charges still landing.
       credits: developing.value ? undefined : credits.value
@@ -168,7 +177,8 @@ export function useDarkroom(notify: (notice: DarkroomNotice) => void) {
       ids.map(async (id) => {
         if (urls.has(id)) return
         const blob = await from.blob(id).catch(() => undefined)
-        if (blob && store === from) trackUrl(id, blob)
+        // A record that is not an image (a damaged store) is left unshown.
+        if (blob instanceof Blob && store === from) trackUrl(id, blob)
       })
     )
   }
@@ -302,6 +312,125 @@ export function useDarkroom(notify: (notice: DarkroomNotice) => void) {
   }
 
   /**
+   * Hands one image to Router and remembers the request, so a reload can
+   * pick it up. Returns nothing when the reader cancelled meanwhile.
+   */
+  async function submit(key: string, entry: SlotWork, token: DarkroomToken) {
+    const { request } = entry
+    const submission = await submitDarkroomImage({
+      model: request.model,
+      body: buildDarkroomBody(request, entry.images),
+      idempotencyKey: workshopIdempotencyKey(),
+      token,
+      // The send is seen through even if the reader cancels meanwhile:
+      // aborting it could leave Router running a request whose id never
+      // came back, with no way left to stop it.
+      signal: lifetime.signal
+    })
+    const { requestId } = submission
+    if (entry.controller.signal.aborted) {
+      void cancelDarkroomImage({
+        model: request.model,
+        requestId,
+        token
+      }).catch(() => {})
+      return undefined
+    }
+    await store?.savePending({
+      requestId,
+      settings: request,
+      created: Date.now(),
+      imageCount: entry.images.length
+    })
+    showProgress(key, submission.progress)
+    return requestId
+  }
+
+  function secondsDeveloping(key: string, since: number): number {
+    const slot = jobs.value
+      .flatMap((job) => job.slots)
+      .find((candidate) => candidate.key === key)
+    const from = slot && isPending(slot) ? slot.startedAt : since
+    return Math.round((Date.now() - from) / 100) / 10
+  }
+
+  /** Keeps a finished image and turns its slot into a done tile. */
+  async function keep(
+    key: string,
+    entry: SlotWork,
+    result: DarkroomResult,
+    startedFor: WorkshopSession,
+    startedAt: number
+  ) {
+    const active = store
+    const { response } = result
+    setSlot(key, (slot) =>
+      isPending(slot) ? { ...slot, phase: 'saving' } : slot
+    )
+    const part = response.images[response.images.length - 1]
+    const blob = await imageBlob(part, entry.controller.signal)
+    const item: DarkroomItem = {
+      id: darkroomId(),
+      created: Date.now(),
+      mime: blob.type || part.mime,
+      settings: entry.request,
+      stats: {
+        seconds: secondsDeveloping(key, startedAt),
+        modelVersion: response.modelVersion,
+        totalTokens: response.totalTokens,
+        finishReasons: response.finishReasons,
+        fallbackProvider: result.fallbackProvider,
+        droppedParams: result.droppedParams
+      },
+      text: response.texts
+    }
+    await active?.saveItem(item, blob)
+    if (store !== active) return
+    trackUrl(item.id, blob)
+    work.delete(key)
+    setSlot(key, (slot) => ({
+      key: slot.key,
+      run: slot.run,
+      seed: slot.seed,
+      status: 'done',
+      item,
+      fresh: true
+    }))
+    void refreshWorkshopCredits({ force: true })
+    void keepInCloud(item, blob, startedFor)
+  }
+
+  function failWith(key: string, error: unknown) {
+    const refused = error instanceof DarkroomRouterError
+    fail(
+      key,
+      refused ? error.failure : 'generic',
+      refused ? error.detail : String(error)
+    )
+  }
+
+  /** Waits for Router's answer, then keeps the image or says why not. */
+  async function collect(
+    key: string,
+    entry: SlotWork,
+    requestId: string,
+    startedFor: WorkshopSession,
+    startedAt: number
+  ) {
+    setSlot(key, (slot) => (isPending(slot) ? { ...slot, requestId } : slot))
+    const result = await collectDarkroomImage({
+      model: entry.request.model,
+      requestId,
+      token: () => tokenFor(startedFor),
+      signal: entry.controller.signal,
+      onProgress: (progress) => showProgress(key, progress)
+    })
+    const failure = failureFromResponse(result.response)
+    if (failure) fail(key, failure, failureDetail(result.response))
+    else await keep(key, entry, result, startedFor, startedAt)
+  }
+
+  /**
    * Sees one image through: hand it to Router (unless a reload is picking up
    * a request Router already holds), wait for it, then keep it.
    */
@@ -313,107 +442,16 @@ export function useDarkroom(notify: (notice: DarkroomNotice) => void) {
     hadReferences = entry.images.length > 0
   ) {
     const active = store
-    const { request } = entry
-    const { signal } = entry.controller
-    const token = () => tokenFor(startedFor)
-    const startedAt = Date.now()
     let requestId = resumeId
     try {
-      if (!requestId) {
-        const submission = await submitDarkroomImage({
-          model: request.model,
-          body: buildDarkroomBody(request, entry.images),
-          idempotencyKey: workshopIdempotencyKey(),
-          token,
-          // The send is seen through even if the reader cancels meanwhile:
-          // aborting it could leave Router running a request whose id never
-          // came back, with no way left to stop it.
-          signal: lifetime.signal
-        })
-        requestId = submission.requestId
-        if (signal.aborted) {
-          void cancelDarkroomImage({
-            model: request.model,
-            requestId,
-            token
-          }).catch(() => {})
-          return
-        }
-        await active?.savePending({
-          requestId,
-          settings: request,
-          created: startedAt,
-          imageCount: entry.images.length
-        })
-        showProgress(key, submission.progress)
-      }
-      const collecting = requestId
-      setSlot(key, (slot) =>
-        isPending(slot) ? { ...slot, requestId: collecting } : slot
-      )
-      const result = await collectDarkroomImage({
-        model: request.model,
-        requestId,
-        token,
-        signal,
-        onProgress: (progress) => showProgress(key, progress)
-      })
-      const failure = failureFromResponse(result.response)
-      if (failure) {
-        await active?.removePending(requestId)
-        return fail(key, failure, failureDetail(result.response))
-      }
-      setSlot(key, (slot) =>
-        isPending(slot) ? { ...slot, phase: 'saving' } : slot
-      )
-      const part = result.response.images[result.response.images.length - 1]
-      const blob = await imageBlob(part, signal)
-      const running = jobs.value
-        .flatMap((job) => job.slots)
-        .find((slot) => slot.key === key)
-      const item: DarkroomItem = {
-        id: darkroomId(),
-        created: Date.now(),
-        mime: blob.type || part.mime,
-        settings: request,
-        stats: {
-          seconds:
-            Math.round(
-              (Date.now() -
-                (running && isPending(running)
-                  ? running.startedAt
-                  : startedAt)) /
-                100
-            ) / 10,
-          modelVersion: result.response.modelVersion,
-          totalTokens: result.response.totalTokens,
-          finishReasons: result.response.finishReasons,
-          fallbackProvider: result.fallbackProvider,
-          droppedParams: result.droppedParams
-        },
-        text: result.response.texts
-      }
-      await active?.saveItem(item, blob)
+      requestId ??= await submit(key, entry, () => tokenFor(startedFor))
+      if (!requestId) return
+      await collect(key, entry, requestId, startedFor, Date.now())
       await active?.removePending(requestId)
-      if (store !== active) return
-      trackUrl(item.id, blob)
-      work.delete(key)
-      setSlot(key, (slot) => ({
-        key: slot.key,
-        run: slot.run,
-        seed: slot.seed,
-        status: 'done',
-        item,
-        fresh: true
-      }))
-      void refreshWorkshopCredits({ force: true })
-      void keepInCloud(item, blob, startedFor)
     } catch (error) {
-      if (signal.aborted) return
+      if (entry.controller.signal.aborted) return
       if (requestId) await active?.removePending(requestId).catch(() => {})
-      if (error instanceof DarkroomRouterError)
-        return fail(key, error.failure, error.detail)
-      fail(key, 'generic', String(error))
+      failWith(key, error)
     } finally {
       // A recovered image's references are gone, so it cannot be tried again.
       if (hadReferences && resumeId) work.delete(key)
@@ -464,6 +502,39 @@ export function useDarkroom(notify: (notice: DarkroomNotice) => void) {
   }
 
   /**
+   * The moodboard a row follows, with its images packed into sheets. A board
+   * that is empty, or whose images cannot be read, steers nothing.
+   */
+  async function followBoard(boardId: string | null | undefined): Promise<{
+    sheets: DarkroomImageInput[]
+    moodboard?: DarkroomMoodboardRef
+  }> {
+    const board = boardById(boardId)
+    if (!board?.items.length) return { sheets: [] }
+    const sheets = await moodboardSheets(board).catch(() => [])
+    if (!sheets.length) {
+      notify({ key: 'moodboardUnreadable', values: { name: board.name } })
+      return { sheets }
+    }
+    return {
+      sheets,
+      moodboard: {
+        id: board.id,
+        name: board.name,
+        count: board.items.length,
+        sheets: sheets.length
+      }
+    }
+  }
+
+  function isOwner(candidate: WorkshopSession): boolean {
+    return (
+      owner?.uid === candidate.uid &&
+      owner.workspace.id === candidate.workspace.id
+    )
+  }
+
+  /**
    * Starts a row: one request per image, each with the next seed. Returns
    * false when nothing was started.
    */
@@ -476,64 +547,41 @@ export function useDarkroom(notify: (notice: DarkroomNotice) => void) {
   ): Promise<boolean> {
     const startedFor = session.value
     if (!startedFor || gate.value !== 'ready' || blocked.value) return false
+    const { sheets, moodboard } = await followBoard(boardId)
+    if (!isOwner(startedFor)) return false
+
     const count = Math.max(1, Math.min(runs, maxRuns.value))
     const seed = baseSeed(typedSeed)
     const jobId = darkroomId()
-    const candidate = boardById(boardId)
-    const board = candidate?.items.length ? candidate : undefined
     const own = references.map(({ mime, data }) => ({ mime, data }))
-    const boardRef: DarkroomMoodboardRef | undefined = board && {
-      id: board.id,
-      name: board.name,
-      count: board.items.length
-    }
-    let moodboard = boardRef
-    const settingsFor = (run: number): DarkroomRequest => ({
-      ...draft,
-      seed: seed + run,
-      jobId,
-      run,
-      runs: count,
-      inputCount: own.length,
-      ...(moodboard ? { moodboard } : {})
-    })
-    const rowOf = (): DarkroomJob => ({
-      jobId,
-      settings: settingsFor(0),
-      created: Date.now(),
-      slots: Array.from({ length: count }, (_, run) =>
-        pendingSlot(jobId, run, seed + run)
-      ),
-      ...(references.length ? { references } : {})
-    })
-    jobs.value = [rowOf(), ...jobs.value]
-
-    let sheets: DarkroomImageInput[] = []
-    if (board) {
-      sheets = await moodboardSheets(board).catch(() => [])
-      if (boardRef && sheets.length)
-        moodboard = { ...boardRef, sheets: sheets.length }
-      else {
-        moodboard = undefined
-        notify({ key: 'moodboardUnreadable', values: { name: board.name } })
-      }
-      jobs.value = jobs.value.map((job) =>
-        job.jobId === jobId ? { ...job, settings: settingsFor(0) } : job
-      )
-    }
-    if (
-      owner?.uid !== startedFor.uid ||
-      owner.workspace.id !== startedFor.workspace.id
+    const requests = Array.from(
+      { length: count },
+      (_, run): DarkroomRequest => ({
+        ...draft,
+        seed: seed + run,
+        jobId,
+        run,
+        runs: count,
+        inputCount: own.length,
+        ...(moodboard && { moodboard })
+      })
     )
-      return false
+    jobs.value = [
+      {
+        jobId,
+        settings: requests[0],
+        created: Date.now(),
+        slots: requests.map((request) =>
+          pendingSlot(jobId, request.run, request.seed)
+        ),
+        ...(references.length && { references })
+      },
+      ...jobs.value
+    ]
     const images = [...own, ...sheets]
-    for (let run = 0; run < count; run++) {
-      const key = `${jobId}:${run}`
-      const entry: SlotWork = {
-        request: settingsFor(run),
-        images,
-        controller: new AbortController()
-      }
+    for (const request of requests) {
+      const key = `${jobId}:${request.run}`
+      const entry = { request, images, controller: new AbortController() }
       work.set(key, entry)
       void develop(key, entry, startedFor)
     }
@@ -799,7 +847,7 @@ export function useDarkroom(notify: (notice: DarkroomNotice) => void) {
     item: DarkroomItem
   ): Promise<DarkroomReference | undefined> {
     const blob = await store?.blob(item.id)
-    if (!blob) return undefined
+    if (!(blob instanceof Blob)) return undefined
     return { ...(await fileToInput(blob)), name: item.id }
   }
 

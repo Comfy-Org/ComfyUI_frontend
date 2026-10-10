@@ -3,7 +3,14 @@
  * `generateContent` body Router expects for the Nano Banana models.
  */
 import type { DarkroomSettings } from './vocabulary'
-import { darkroomModel, DEFAULT_DARKROOM_MODEL } from './vocabulary'
+import {
+  DARKROOM_FORMATS,
+  DARKROOM_PLANNING,
+  DARKROOM_SIZES,
+  darkroomModel,
+  DEFAULT_DARKROOM_MODEL,
+  isDarkroomShape
+} from './vocabulary'
 
 export interface DarkroomMoodboardRef {
   readonly id: string
@@ -148,5 +155,37 @@ export function buildDarkroomBody(
     ...(request.system
       ? { systemInstruction: { parts: [{ text: request.system }] } }
       : {})
+  }
+}
+
+function known<T extends string>(
+  options: readonly T[],
+  value: string | undefined
+): T | undefined {
+  return options.find((option) => option === value)
+}
+
+/**
+ * The settings that made a past image, for loading back into the bar with
+ * its seed. Anything no longer offered keeps the current choice.
+ */
+export function settingsFromRequest(
+  current: DarkroomSettings,
+  request: DarkroomRequest
+): DarkroomSettings {
+  const formats = DARKROOM_FORMATS.map((format) => format.value)
+  const planning = DARKROOM_PLANNING.map((level) => level.value)
+  return {
+    ...current,
+    model: darkroomModel(request.model)?.id ?? current.model,
+    shape: isDarkroomShape(request.aspectRatio)
+      ? request.aspectRatio
+      : current.shape,
+    size: known(DARKROOM_SIZES, request.imageSize) ?? current.size,
+    format: known(formats, request.mimeType) ?? 'image/png',
+    planning: known(planning, request.thinkingLevel) ?? '',
+    temperature: request.temperature,
+    seed: String(request.seed),
+    styleNotes: request.system ?? ''
   }
 }

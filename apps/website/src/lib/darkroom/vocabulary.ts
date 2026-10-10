@@ -201,3 +201,11 @@ export function restoreDarkroomSettings(stored: unknown): DarkroomSettings {
   if (typeof styleNotes === 'string') settings.styleNotes = styleNotes
   return settings
 }
+
+/** The page's sections, which are also its `#hash` addresses. */
+export const DARKROOM_VIEWS = ['create', 'organize', 'moodboards'] as const
+export type DarkroomView = (typeof DARKROOM_VIEWS)[number]
+
+export function darkroomView(name: string | undefined): DarkroomView {
+  return DARKROOM_VIEWS.find((view) => view === name) ?? 'create'
+}

@@ -10,9 +10,6 @@ import {
   watch
 } from 'vue'
 
-import { cn } from '@comfyorg/tailwind-utils'
-
-import AppsBackLink from '@/components/workshop/cinematic-studio/AppsBackLink.vue'
 import WorkshopGate from '@/components/workshop/WorkshopGate.vue'
 import type { DarkroomNotice } from '@/composables/useDarkroom'
 import { useDarkroom } from '@/composables/useDarkroom'
@@ -25,38 +22,35 @@ import {
 } from '@/lib/darkroom/feed'
 import { fileToInput } from '@/lib/darkroom/moodboard'
 import type { DarkroomDraft, DarkroomRequest } from '@/lib/darkroom/request'
-import { draftFromSettings } from '@/lib/darkroom/request'
+import { draftFromSettings, settingsFromRequest } from '@/lib/darkroom/request'
 import type { DarkroomItem } from '@/lib/darkroom/store'
-import type { DarkroomSettings } from '@/lib/darkroom/vocabulary'
+import type { DarkroomSettings, DarkroomView } from '@/lib/darkroom/vocabulary'
 import {
-  DARKROOM_EXAMPLES,
-  DARKROOM_FORMATS,
-  DARKROOM_PLANNING,
   DARKROOM_SHAPES,
-  DARKROOM_SIZES,
-  darkroomModel,
   darkroomModelName,
+  darkroomView,
   DEFAULT_DARKROOM_SETTINGS,
-  isDarkroomShape,
   restoreDarkroomSettings
 } from '@/lib/darkroom/vocabulary'
 import type { Locale } from '@/i18n/translations'
 import { translationsFor } from '@/i18n/translations'
 
 import DarkroomBoardMenu from './DarkroomBoardMenu.vue'
+import DarkroomHeader from './DarkroomHeader.vue'
 import DarkroomJobRow from './DarkroomJobRow.vue'
 import DarkroomLightbox from './DarkroomLightbox.vue'
 import DarkroomMoodboards from './DarkroomMoodboards.vue'
 import DarkroomOrganize from './DarkroomOrganize.vue'
 import DarkroomPromptBar from './DarkroomPromptBar.vue'
 import DarkroomSettingsPanel from './DarkroomSettingsPanel.vue'
+import DarkroomTabs from './DarkroomTabs.vue'
+import DarkroomToast from './DarkroomToast.vue'
+import DarkroomWelcome from './DarkroomWelcome.vue'
 
 const SETTINGS_KEY = 'comfy.darkroom.settings'
 const BOARD_KEY = 'comfy.darkroom.moodboard'
 const NOTIFY_KEY = 'comfy.darkroom.notify-asked'
 const FEED_PAGE = 24
-const VIEWS = ['create', 'organize', 'moodboards'] as const
-type View = (typeof VIEWS)[number]
 
 const { locale = 'en' } = defineProps<{ locale?: Locale }>()
 const { t } = translationsFor(locale)
@@ -176,13 +170,13 @@ function toggleSettings(open = !settingsOpen.value) {
 
 // ---------- views ----------
 
-const view = ref<View>('create')
+const view = ref<DarkroomView>('create')
 const boardOpen = ref<string>()
 const moodboards = useTemplateRef<{ focusName: () => void }>('moodboards')
 
 function route() {
   const [name, id] = (window.location.hash.slice(1) || 'create').split('/')
-  view.value = VIEWS.find((candidate) => candidate === name) ?? 'create'
+  view.value = darkroomView(name)
   boardOpen.value = view.value === 'moodboards' && id ? id : undefined
 }
 
@@ -356,33 +350,14 @@ async function edit(item: DarkroomItem) {
 function reuse(request: DarkroomRequest) {
   closeLightbox()
   prompt.value = request.prompt
-  const size = DARKROOM_SIZES.find((value) => value === request.imageSize)
-  const format = DARKROOM_FORMATS.find(
-    (candidate) => candidate.value === request.mimeType
-  )
-  const planning = DARKROOM_PLANNING.find(
-    (candidate) => candidate.value === (request.thinkingLevel ?? '')
-  )
-  settings.value = {
-    ...settings.value,
-    model: darkroomModel(request.model)?.id ?? settings.value.model,
-    shape: isDarkroomShape(request.aspectRatio)
-      ? request.aspectRatio
-      : settings.value.shape,
-    size: size ?? settings.value.size,
-    format: format?.value ?? 'image/png',
-    planning: planning?.value ?? '',
-    temperature: request.temperature,
-    seed: String(request.seed),
-    styleNotes: request.system ?? ''
-  }
+  settings.value = settingsFromRequest(settings.value, request)
   if (view.value !== 'create') go('create')
   window.scrollTo({ top: 0, behavior: 'smooth' })
   say(t('darkroom.toast.settingsLoaded'))
 }
 
-function useExample(key: string) {
-  prompt.value = t(`darkroom.welcome.examples.${key}.prompt`)
+function useExample(example: string) {
+  prompt.value = example
   bar.value?.focus()
 }
 
@@ -548,10 +523,53 @@ function announce(job: DarkroomJob) {
 
 onBeforeUnmount(() => clearTimeout(toastTimer))
 
-const tabClass =
-  'h-9 cursor-pointer rounded-xl px-3 text-xs font-bold tracking-wider whitespace-nowrap uppercase hover:bg-transparency-white-t8 hover:text-primary-warm-white'
-const sectionLabel =
-  'mb-3 text-xs font-bold tracking-wider text-primary-comfy-canvas uppercase'
+// ---------- what the template shows ----------
+
+const signedOut = computed(() => gate.value === 'signedOut')
+// The welcome screen waits for the feed to load, so it never flashes before
+// an account's images appear.
+const showWelcome = computed(
+  () => !jobs.value.length && (darkroom.loaded.value || !signedIn.value)
+)
+const notice = computed(() => {
+  if (darkroom.blocked.value) return t('darkroom.toast.blocked')
+  return darkroom.storageFailed.value ? t('darkroom.storageFailed') : ''
+})
+const dropHint = computed(() =>
+  boardOpen.value
+    ? t('darkroom.prompt.dropBoard')
+    : t('darkroom.prompt.dropReferences')
+)
+
+function removeReference(index: number) {
+  references.value = references.value.filter((_, at) => at !== index)
+}
+
+function showItem(item: DarkroomItem) {
+  viewing.value = item.id
+}
+
+function toggleStar(item: DarkroomItem) {
+  void darkroom.setStarred([item.id], !item.starred)
+}
+
+function boardForItem(item: DarkroomItem, anchor: HTMLElement) {
+  pickBoardFor([item.id], anchor)
+}
+
+function showBoard(id?: string) {
+  go(id ? `moodboards/${id}` : 'moodboards')
+}
+
+function manageBoards() {
+  menu.value = undefined
+  go('moodboards')
+}
+
+function varyViewed(item: DarkroomItem) {
+  closeLightbox()
+  void vary(item)
+}
 </script>
 
 <template>
@@ -572,22 +590,7 @@ const sectionLabel =
     </template>
 
     <div class="min-h-[80vh] text-content" data-testid="darkroom">
-      <header class="mx-auto w-full max-w-10xl px-4 pt-8 sm:px-8 lg:px-14">
-        <AppsBackLink :locale class="mb-5" />
-        <div class="mb-3 flex flex-wrap items-center gap-3">
-          <h1
-            class="text-2xl font-semibold text-primary-warm-white lg:text-3xl"
-          >
-            {{ t('darkroom.title') }}
-          </h1>
-          <span
-            class="rounded-full border border-transparency-white-t20 px-2 py-0.5 font-mono text-[10px] tracking-wider text-primary-comfy-canvas uppercase"
-          >
-            {{ t('darkroom.beta') }}
-          </span>
-        </div>
-        <p class="text-lg text-primary-warm-gray">{{ t('darkroom.lead') }}</p>
-      </header>
+      <DarkroomHeader :locale />
       <DarkroomPromptBar
         ref="bar"
         v-model="prompt"
@@ -599,38 +602,14 @@ const sectionLabel =
         :settings-open="settingsOpen"
         :locale
         @generate="generate"
-        @files="(files) => addFiles(files)"
-        @remove-reference="
-          (index) => (references = references.filter((_, at) => at !== index))
-        "
+        @files="addFiles"
+        @remove-reference="removeReference"
         @clear-references="references = []"
         @toggle-settings="toggleSettings()"
         @moodboard="pickActiveBoard"
       >
         <template #tabs>
-          <nav
-            class="order-first flex flex-[1_1_100%] gap-1 lg:order-0 lg:flex-none"
-            :aria-label="t('darkroom.tabs.label')"
-          >
-            <button
-              v-for="tab in VIEWS"
-              :key="tab"
-              type="button"
-              :class="
-                cn(
-                  tabClass,
-                  view === tab
-                    ? 'bg-transparency-white-t8 text-primary-warm-white'
-                    : 'text-content-muted'
-                )
-              "
-              :aria-current="view === tab ? 'page' : undefined"
-              :data-testid="`darkroom-tab-${tab}`"
-              @click="go(tab)"
-            >
-              {{ t(`darkroom.tabs.${tab}`) }}
-            </button>
-          </nav>
+          <DarkroomTabs :view :locale @show="go" />
         </template>
       </DarkroomPromptBar>
 
@@ -644,71 +623,20 @@ const sectionLabel =
       />
 
       <p
-        v-if="darkroom.blocked.value || darkroom.storageFailed.value"
+        v-if="notice"
         role="status"
         class="mx-auto mt-4 w-full max-w-10xl px-4 text-sm text-content-muted sm:px-8 lg:px-14"
       >
-        {{
-          darkroom.blocked.value
-            ? t('darkroom.toast.blocked')
-            : t('darkroom.storageFailed')
-        }}
+        {{ notice }}
       </p>
 
       <div v-show="view === 'create'">
-        <div
-          v-if="!jobs.length && (darkroom.loaded.value || !signedIn)"
-          class="mx-auto mt-10 mb-16 w-full max-w-10xl px-4 sm:px-8 lg:px-14"
-          data-testid="darkroom-welcome"
-        >
-          <h2
-            class="mb-2 text-xl font-semibold text-primary-warm-white lg:text-2xl"
-          >
-            {{ t('darkroom.welcome.heading') }}
-          </h2>
-          <p class="mb-8 max-w-160 text-base/relaxed text-primary-warm-gray">
-            {{
-              gate === 'signedOut'
-                ? t('darkroom.welcome.signedOut')
-                : t('darkroom.welcome.lede')
-            }}
-          </p>
-          <div :class="sectionLabel">{{ t('darkroom.welcome.tryOne') }}</div>
-          <div
-            class="mb-9 grid grid-cols-1 gap-3 sm:grid-cols-2 xl:grid-cols-4"
-          >
-            <button
-              v-for="example in DARKROOM_EXAMPLES"
-              :key="example"
-              type="button"
-              class="flex cursor-pointer flex-col justify-start rounded-2xl border border-transparency-white-t8 bg-transparency-white-t4 px-4.5 py-4 text-left text-sm/relaxed text-content transition-colors hover:border-transparency-white-t20 hover:text-primary-warm-white"
-              @click="useExample(example)"
-            >
-              <span :class="cn(sectionLabel, 'mb-1.5 block')">
-                {{ t(`darkroom.welcome.examples.${example}.tag`) }}
-              </span>
-              {{ t(`darkroom.welcome.examples.${example}.prompt`) }}
-            </button>
-          </div>
-          <div :class="sectionLabel">
-            {{ t('darkroom.welcome.goodToKnow') }}
-          </div>
-          <ul
-            class="grid grid-cols-1 gap-x-6 gap-y-2.5 sm:grid-cols-2 xl:grid-cols-4"
-          >
-            <li
-              v-for="tip in ['edit', 'combine', 'build', 'style', 'keys']"
-              :key="tip"
-              class="text-sm/relaxed text-content-muted"
-            >
-              <span class="text-primary-warm-white">
-                {{ t(`darkroom.welcome.tips.${tip}.lead`) }}
-              </span>
-              {{ t(`darkroom.welcome.tips.${tip}.body`) }}
-            </li>
-          </ul>
-        </div>
-
+        <DarkroomWelcome
+          v-if="showWelcome"
+          :signed-out="signedOut"
+          :locale
+          @example="useExample"
+        />
         <div
           class="mx-auto flex w-full max-w-10xl flex-col gap-9 px-4 py-6 sm:px-8 lg:px-14"
           data-testid="darkroom-feed"
@@ -720,13 +648,13 @@ const sectionLabel =
             :urls
             :can-retry="darkroom.canRetry"
             :locale
-            @open="(item) => (viewing = item.id)"
+            @open="showItem"
             @cancel="darkroom.cancel"
             @retry="darkroom.retry"
-            @star="(item) => darkroom.setStarred([item.id], !item.starred)"
+            @star="toggleStar"
             @edit="edit"
             @vary="vary"
-            @board="(item, anchor) => pickBoardFor([item.id], anchor)"
+            @board="boardForItem"
             @rerun="rerun(job)"
             @reuse="reuse(job.settings)"
             @cancel-all="darkroom.cancelJob(job)"
@@ -740,7 +668,7 @@ const sectionLabel =
         :jobs
         :urls
         :locale
-        @open="(item) => (viewing = item.id)"
+        @open="showItem"
         @board="pickBoardFor"
         @star="darkroom.setStarred"
         @remove="darkroom.deleteItems"
@@ -755,7 +683,7 @@ const sectionLabel =
         :urls
         :items-of="darkroom.boardItems"
         :locale
-        @show="(id) => go(id ? `moodboards/${id}` : 'moodboards')"
+        @show="showBoard"
         @create="createBoard"
         @rename="(id, name) => darkroom.updateBoard(id, { name })"
         @use="useBoard"
@@ -774,7 +702,7 @@ const sectionLabel =
         :active-id="activeBoardId"
         :locale
         @pick="menu.pick"
-        @manage="((menu = undefined), go('moodboards'))"
+        @manage="manageBoards"
         @close="menu = undefined"
       />
 
@@ -789,47 +717,25 @@ const sectionLabel =
         @step="step"
         @copy="copyPrompt(viewed)"
         @reuse="reuse(viewed.settings)"
-        @star="darkroom.setStarred([viewed.id], !viewed.starred)"
+        @star="toggleStar(viewed)"
         @edit="edit(viewed)"
-        @vary="(closeLightbox(), vary(viewed))"
-        @board="(anchor) => viewed && pickBoardFor([viewed.id], anchor)"
+        @vary="varyViewed(viewed)"
+        @board="(anchor) => boardForItem(viewed, anchor)"
       />
 
       <div
         v-if="dragging"
         class="pointer-events-none fixed inset-0 z-40 flex items-center justify-center border-2 border-dashed border-transparency-white-t20 bg-primary-comfy-ink/90 text-2xl text-primary-warm-white"
       >
-        {{
-          boardOpen
-            ? t('darkroom.prompt.dropBoard')
-            : t('darkroom.prompt.dropReferences')
-        }}
+        {{ dropHint }}
       </div>
 
-      <div
-        role="status"
-        aria-live="polite"
-        :class="
-          cn(
-            'fixed bottom-6 left-1/2 z-80 flex max-w-[90vw] -translate-x-1/2 items-center gap-4 rounded-2xl bg-primary-warm-white py-2.5 pr-4.5 pl-4.5 text-base font-normal text-primary-comfy-ink transition-[opacity,translate] duration-200',
-            toast
-              ? 'opacity-100'
-              : 'pointer-events-none translate-y-4 opacity-0',
-            toast?.undo && 'py-1.5 pr-2'
-          )
-        "
-        data-testid="darkroom-toast"
-      >
-        {{ toast?.message }}
-        <button
-          v-if="toast?.undo"
-          type="button"
-          class="cursor-pointer rounded-xl bg-primary-comfy-ink px-3 py-2 text-xs font-bold tracking-wider text-primary-warm-white uppercase hover:bg-primary-comfy-ink-light"
-          @click="undo"
-        >
-          {{ t('darkroom.toast.undo') }}
-        </button>
-      </div>
+      <DarkroomToast
+        :message="toast?.message"
+        :undoable="toast?.undo !== undefined"
+        :locale
+        @undo="undo"
+      />
     </div>
   </WorkshopGate>
 </template>

@@ -5,6 +5,7 @@ import { cn } from '@comfyorg/tailwind-utils'
 
 import CinematicGateButton from '@/components/workshop/cinematic-studio/CinematicGateButton.vue'
 import type { DarkroomReference } from '@/lib/darkroom/feed'
+import { stepPromptHistory } from '@/lib/darkroom/feed'
 import type { StudioGate } from '@/lib/workshop/cinematic-studio/gate'
 import type { Locale } from '@/i18n/translations'
 import { translationsFor } from '@/i18n/translations'
@@ -58,30 +59,32 @@ function focus() {
 }
 defineExpose({ focus })
 
+const HISTORY_KEYS = { ArrowUp: 'older', ArrowDown: 'newer' } as const
+
+function isHistoryKey(key: string): key is keyof typeof HISTORY_KEYS {
+  return key in HISTORY_KEYS
+}
+
+function modified(event: KeyboardEvent): boolean {
+  return event.altKey || event.ctrlKey || event.metaKey || event.shiftKey
+}
+
+/** ↑ and ↓ step through earlier prompts. */
+function browseHistory(event: KeyboardEvent, direction: 'older' | 'newer') {
+  const next = stepPromptHistory(history, historyAt, prompt.value, direction)
+  if (next === undefined) return
+  event.preventDefault()
+  historyAt = next
+  prompt.value = history[next] ?? ''
+}
+
 function keydown(event: KeyboardEvent) {
-  if (event.isComposing) return
-  if (event.key === 'Enter' && !event.shiftKey) {
+  if (event.isComposing || modified(event)) return
+  if (event.key === 'Enter') {
     event.preventDefault()
     emit('generate')
-    return
-  }
-  if (event.key !== 'ArrowUp' && event.key !== 'ArrowDown') return
-  if (event.altKey || event.ctrlKey || event.metaKey || event.shiftKey) return
-  // ↑ and ↓ step through earlier prompts, but leave what is being typed alone.
-  const browsing = historyAt >= 0 && prompt.value === history[historyAt]
-  if (prompt.value && !browsing) return
-  event.preventDefault()
-  const next =
-    event.key === 'ArrowUp'
-      ? browsing
-        ? historyAt + 1
-        : 0
-      : browsing
-        ? historyAt - 1
-        : -1
-  if (next >= history.length) return
-  historyAt = next
-  prompt.value = next < 0 ? '' : history[next]
+  } else if (isHistoryKey(event.key))
+    browseHistory(event, HISTORY_KEYS[event.key])
 }
 
 function picked(event: Event) {

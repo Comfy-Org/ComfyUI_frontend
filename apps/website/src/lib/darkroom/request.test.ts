@@ -5,7 +5,8 @@ import {
   baseSeed,
   buildDarkroomBody,
   darkroomPromptText,
-  draftFromSettings
+  draftFromSettings,
+  settingsFromRequest
 } from './request'
 import { DEFAULT_DARKROOM_SETTINGS } from './vocabulary'
 
@@ -145,6 +146,56 @@ describe('draftFromSettings', () => {
       temperature: 1,
       thinkingLevel: 'MEDIUM',
       system: 'muted'
+    })
+  })
+})
+
+describe('settingsFromRequest', () => {
+  it('loads a past image back into the bar, seed included', () => {
+    expect(
+      settingsFromRequest(
+        DEFAULT_DARKROOM_SETTINGS,
+        request({
+          model: 'vertexai/gemini-3-pro-image',
+          aspectRatio: '9:16',
+          imageSize: '4K',
+          mimeType: 'image/jpeg',
+          temperature: 0.4,
+          thinkingLevel: 'HIGH',
+          system: 'soft grain',
+          seed: 1234
+        })
+      )
+    ).toEqual({
+      model: 'vertexai/gemini-3-pro-image',
+      runs: 4,
+      shape: '9:16',
+      size: '4K',
+      format: 'image/jpeg',
+      seed: '1234',
+      planning: 'HIGH',
+      temperature: 0.4,
+      styleNotes: 'soft grain'
+    })
+  })
+
+  it('keeps the current choice where a past one is no longer offered', () => {
+    const current = { ...DEFAULT_DARKROOM_SETTINGS, shape: '1:1' as const }
+    expect(
+      settingsFromRequest(
+        current,
+        request({
+          model: 'vertexai/retired',
+          aspectRatio: '5:4',
+          imageSize: '8K',
+          thinkingLevel: 'LOW'
+        })
+      )
+    ).toMatchObject({
+      model: current.model,
+      shape: '1:1',
+      size: current.size,
+      planning: ''
     })
   })
 })

@@ -53,31 +53,42 @@ function imagePart(part: unknown): DarkroomImagePart | undefined {
   return undefined
 }
 
-export function parseDarkroomResponse(payload: unknown): DarkroomResponse {
-  const finals: DarkroomImagePart[] = []
-  const thoughts: DarkroomImagePart[] = []
-  const texts: string[] = []
-  const finishReasons: string[] = []
+interface ReadPart {
+  readonly image?: DarkroomImagePart
+  readonly words?: string
+  /** A thinking preview, not part of the answer. */
+  readonly thought: boolean
+}
 
-  for (const candidate of list(field(payload, 'candidates'))) {
-    const reason = text(field(candidate, 'finishReason'))
-    if (reason) finishReasons.push(reason)
-    for (const part of list(field(field(candidate, 'content'), 'parts'))) {
-      const thought = field(part, 'thought') === true
-      const image = imagePart(part)
-      if (image) (thought ? thoughts : finals).push(image)
-      else {
-        const words = text(field(part, 'text'))
-        if (words && !thought) texts.push(words)
-      }
-    }
+function readPart(part: unknown): ReadPart {
+  const image = imagePart(part)
+  return {
+    thought: field(part, 'thought') === true,
+    ...(image ? { image } : { words: text(field(part, 'text')) })
   }
+}
 
+function imagesOf(parts: readonly ReadPart[], thought: boolean) {
+  return parts.flatMap((part) =>
+    part.image && part.thought === thought ? [part.image] : []
+  )
+}
+
+export function parseDarkroomResponse(payload: unknown): DarkroomResponse {
+  const candidates = list(field(payload, 'candidates'))
+  const parts = candidates
+    .flatMap((candidate) => list(field(field(candidate, 'content'), 'parts')))
+    .map(readPart)
+  const finals = imagesOf(parts, false)
   const totalTokens = field(field(payload, 'usageMetadata'), 'totalTokenCount')
   return {
-    images: finals.length ? finals : thoughts.slice(-1),
-    texts,
-    finishReasons,
+    images: finals.length ? finals : imagesOf(parts, true).slice(-1),
+    texts: parts.flatMap((part) =>
+      part.words && !part.thought ? [part.words] : []
+    ),
+    finishReasons: candidates.flatMap(
+      (candidate) => text(field(candidate, 'finishReason')) ?? []
+    ),
     blockReason: text(field(field(payload, 'promptFeedback'), 'blockReason')),
     modelVersion: text(field(payload, 'modelVersion')),
     totalTokens: typeof totalTokens === 'number' ? totalTokens : undefined

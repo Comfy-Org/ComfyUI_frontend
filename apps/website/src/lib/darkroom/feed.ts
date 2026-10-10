@@ -32,7 +32,7 @@ export interface DoneSlot extends SlotBase {
   readonly fresh?: boolean
 }
 
-interface FailedSlot extends SlotBase {
+export interface FailedSlot extends SlotBase {
   readonly status: 'error'
   readonly failure: DarkroomFailure
   readonly detail: string
@@ -244,4 +244,69 @@ export function formatTokens(count: number): string {
   if (count >= 1e6) return `${(count / 1e6).toFixed(1)}M`
   if (count >= 1e3) return `${(count / 1e3).toFixed(1)}k`
   return String(count)
+}
+
+/** The status a developing tile shows, as a key under `darkroom.tile`. */
+export function pendingLabel(
+  slot: PendingSlot,
+  now: number
+): { key: string; values?: Record<string, number> } {
+  switch (slot.phase) {
+    case 'running':
+      return {
+        key: 'developing',
+        values: {
+          seconds: Math.max(0, Math.round((now - slot.startedAt) / 1000))
+        }
+      }
+    case 'saving':
+      return { key: 'saving' }
+    case 'queued':
+      return slot.ahead
+        ? { key: 'inLine', values: { count: slot.ahead } }
+        : { key: 'nextUp' }
+    default:
+      return { key: 'sending' }
+  }
+}
+
+/**
+ * Where ↑ or ↓ lands in the earlier prompts: `-1` is the empty prompt before
+ * the newest one. Nothing moves while the reader is typing something of
+ * their own, or past the oldest prompt.
+ */
+export function stepPromptHistory(
+  history: readonly string[],
+  at: number,
+  prompt: string,
+  direction: 'older' | 'newer'
+): number | undefined {
+  const browsing = at >= 0 && prompt === history[at]
+  if (prompt && !browsing) return undefined
+  const older = browsing ? at + 1 : 0
+  const newer = browsing ? at - 1 : -1
+  const next = direction === 'older' ? older : newer
+  return next < history.length ? next : undefined
+}
+
+/**
+ * A click on one image in a grid: it flips that image, or with a range
+ * anchor (a Shift-click after another pick) selects everything between.
+ */
+export function toggleSelection(
+  selected: ReadonlySet<string>,
+  ids: readonly string[],
+  index: number,
+  rangeFrom = -1
+): Set<string> {
+  const next = new Set(selected)
+  if (rangeFrom >= 0) {
+    const from = Math.min(index, rangeFrom)
+    const to = Math.max(index, rangeFrom)
+    for (const id of ids.slice(from, to + 1)) next.add(id)
+    return next
+  }
+  const id = ids.at(index)
+  if (id !== undefined && !next.delete(id)) next.add(id)
+  return next
 }

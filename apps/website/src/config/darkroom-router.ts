@@ -161,69 +161,89 @@ function pollDelayMs(response: Response): number {
   return Math.min(Math.max(seconds * 1000, POLL_MIN_MS), POLL_MAX_MS)
 }
 
+type Collecting = Call & {
+  readonly requestId: string
+  readonly onProgress?: (progress: DarkroomProgress) => void
+}
+
+/** What one poll found: the answer, or how long to wait before the next. */
+type Poll =
+  | { readonly result: DarkroomResult }
+  | { readonly waitMs: number; readonly interrupted: boolean }
+
+async function resultOf(response: Response): Promise<DarkroomResult> {
+  const payload: unknown = await response.json().catch((cause: unknown) => {
+    throw new DarkroomRouterError('generic', 'Unreadable result', { cause })
+  })
+  return {
+    response: parseDarkroomResponse(payload),
+    fallbackProvider:
+      response.headers.get('X-Comfy-Router-Fallback-Provider') ?? undefined,
+    droppedParams:
+      response.headers.get('X-Comfy-Router-Dropped-Params') ?? undefined
+  }
+}
+
+async function readPoll(
+  response: Response,
+  call: Collecting,
+  mayRetry: boolean
+): Promise<Poll> {
+  if (response.status === 202) {
+    const handle: unknown = await response.json().catch(() => undefined)
+    call.onProgress?.(progressOf(handle))
+    return { waitMs: pollDelayMs(response), interrupted: false }
+  }
+  const busy = response.status === 429 || response.status === 503
+  if (busy && mayRetry) {
+    await response.body?.cancel().catch(() => {})
+    return { waitMs: pollDelayMs(response), interrupted: true }
+  }
+  if (response.status === 404) {
+    await response.body?.cancel().catch(() => {})
+    throw new DarkroomRouterError('lost', 'HTTP 404')
+  }
+  if (!response.ok) throw await refusal(response)
+  return { result: await resultOf(response) }
+}
+
+async function poll(
+  url: string,
+  call: Collecting,
+  interruptions: number
+): Promise<Poll> {
+  const mayRetry = interruptions < INTERRUPTION_RETRIES
+  let response: Response
+  try {
+    response = await routerFetch(url, call, { method: 'GET' })
+  } catch (error) {
+    call.signal.throwIfAborted()
+    const dropped =
+      error instanceof DarkroomRouterError && error.failure === 'network'
+    if (!dropped || !mayRetry) throw error
+    return {
+      waitMs: Math.min(POLL_DEFAULT_MS * 2 ** (interruptions + 1), POLL_MAX_MS),
+      interrupted: true
+    }
+  }
+  return readPoll(response, call, mayRetry)
+}
+
 /**
  * Waits for a queued image and returns Router's answer. A dropped connection
  * or a busy Router is waited out, because the request keeps running on
  * Router's side whether or not the page is listening.
  */
 export async function collectDarkroomImage(
-  call: Call & {
-    readonly requestId: string
-    readonly onProgress?: (progress: DarkroomProgress) => void
-  }
+  call: Collecting
 ): Promise<DarkroomResult> {
   const url = requestsUrl(call.model, call.requestId)
   let interruptions = 0
   for (;;) {
-    let response: Response
-    try {
-      response = await routerFetch(url, call, { method: 'GET' })
-    } catch (error) {
-      call.signal.throwIfAborted()
-      if (
-        !(error instanceof DarkroomRouterError) ||
-        error.failure !== 'network' ||
-        interruptions >= INTERRUPTION_RETRIES
-      )
-        throw error
-      interruptions += 1
-      await waitFor(
-        Math.min(POLL_DEFAULT_MS * 2 ** interruptions, POLL_MAX_MS),
-        call.signal
-      )
-      continue
-    }
-    if (response.status === 202) {
-      interruptions = 0
-      const handle: unknown = await response.json().catch(() => undefined)
-      call.onProgress?.(progressOf(handle))
-      await waitFor(pollDelayMs(response), call.signal)
-      continue
-    }
-    if (
-      (response.status === 429 || response.status === 503) &&
-      interruptions < INTERRUPTION_RETRIES
-    ) {
-      interruptions += 1
-      await response.body?.cancel().catch(() => {})
-      await waitFor(pollDelayMs(response), call.signal)
-      continue
-    }
-    if (response.status === 404) {
-      await response.body?.cancel().catch(() => {})
-      throw new DarkroomRouterError('lost', 'HTTP 404')
-    }
-    if (!response.ok) throw await refusal(response)
-    const payload: unknown = await response.json().catch((cause: unknown) => {
-      throw new DarkroomRouterError('generic', 'Unreadable result', { cause })
-    })
-    return {
-      response: parseDarkroomResponse(payload),
-      fallbackProvider:
-        response.headers.get('X-Comfy-Router-Fallback-Provider') ?? undefined,
-      droppedParams:
-        response.headers.get('X-Comfy-Router-Dropped-Params') ?? undefined
-    }
+    const step = await poll(url, call, interruptions)
+    if ('result' in step) return step.result
+    interruptions = step.interrupted ? interruptions + 1 : 0
+    await waitFor(step.waitMs, call.signal)
   }
 }
 
