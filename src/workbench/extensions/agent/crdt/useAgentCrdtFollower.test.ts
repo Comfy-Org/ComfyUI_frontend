@@ -27,13 +27,33 @@ import type { GraphOperation } from './graphOperations'
 import type { BatchOutcome, OpSenderDeps } from './opSender'
 
 const bridgeState = vi.hoisted(() => {
+  const liveSubscriptions = new Map<object, Set<string>>()
+  let maxLiveSubscriptions = 0
+  const countLiveSubscriptions = () =>
+    [...liveSubscriptions.values()].reduce(
+      (count, workflows) => count + workflows.size,
+      0
+    )
+
   class FakeBridge extends EventTarget {
-    subscribe = vi.fn()
-    unsubscribe = vi.fn()
+    subscribe = vi.fn((workflowId: string) => {
+      // A bridge retargets its single subscription; concurrency is measured
+      // across bridge instances, not across its historical workflow ids.
+      liveSubscriptions.set(this, new Set([workflowId]))
+      maxLiveSubscriptions = Math.max(
+        maxLiveSubscriptions,
+        countLiveSubscriptions()
+      )
+    })
+    unsubscribe = vi.fn(() => {
+      liveSubscriptions.delete(this)
+    })
     resubscribe = vi.fn()
     reconnect = vi.fn()
     reconcile = vi.fn()
-    destroy = vi.fn()
+    destroy = vi.fn(() => {
+      liveSubscriptions.delete(this)
+    })
     sendHumanOps = vi.fn()
     reseed = vi.fn(() => true)
     canReseed = vi.fn(() => false)
@@ -48,7 +68,14 @@ const bridgeState = vi.hoisted(() => {
   }
   return {
     FakeBridge,
-    current: null as InstanceType<typeof FakeBridge> | null
+    current: null as InstanceType<typeof FakeBridge> | null,
+    get maxLiveSubscriptions() {
+      return maxLiveSubscriptions
+    },
+    resetLiveSubscriptions() {
+      liveSubscriptions.clear()
+      maxLiveSubscriptions = 0
+    }
   }
 })
 
@@ -252,6 +279,7 @@ describe('useAgentCrdtFollower', () => {
     useAgentPanelStore().enabled = true
     sessionStorage.clear()
     bridgeState.current = null
+    bridgeState.resetLiveSubscriptions()
     clientState.transport = null
     projectionState.applyFrame
       .mockReset()
@@ -485,6 +513,58 @@ describe('useAgentCrdtFollower', () => {
       expect(bridge().subscribe).toHaveBeenLastCalledWith('wf-2')
       unmount()
     })
+  })
+
+  it('FE-2158: one follower retargets across a tab switch and releases across remount', async () => {
+    // AgentPanelRoot.vue creates a SINGLE follower and drives it with the
+    // reactive boundWorkflowId / isBoundWorkflowActive. Exercising the switch
+    // as two mounted followers would leave a broken direct A-to-B retarget
+    // green, because no one follower would ever change workflow.
+    const { unmount, workflowId, isTargetActive, status } =
+      mountFollower('wf-a')
+    expect(bridge().subscribe).toHaveBeenLastCalledWith('wf-a')
+
+    isTargetActive.value = false
+    await nextTick()
+
+    workflowId.value = 'wf-b'
+    isTargetActive.value = true
+    await nextTick()
+    expect(bridge().subscribe).toHaveBeenLastCalledWith('wf-b')
+
+    // A frame for the workflow this follower just left must be counted and
+    // dropped, never applied to the newly bound graph.
+    dispatchFrame('doc_update', { workflowId: 'wf-a', seq: 99 })
+    expect(status().outcomes.applied).toBe(0)
+    expect(status().outcomes.skipped).toBeGreaterThan(0)
+    expect(projectionState.applyFrame).not.toHaveBeenCalled()
+
+    // Control: the retarget really did bind B, so the filter above
+    // discriminated on workflow id rather than having gone silent.
+    dispatchFrame('doc_update', { workflowId: 'wf-b', seq: 1 })
+    expect(status().outcomes.applied).toBe(1)
+    expect(projectionState.applyFrame).toHaveBeenCalledTimes(1)
+
+    const staleBridge = bridge()
+    unmount()
+    await nextTick()
+    expect(staleBridge.unsubscribe).toHaveBeenCalled()
+
+    staleBridge.dispatchEvent(
+      new CustomEvent('doc_update', {
+        detail: { workflowId: 'wf-b', seq: 2 }
+      })
+    )
+    expect(projectionState.applyFrame).toHaveBeenCalledTimes(1)
+
+    const remounted = mountFollower('wf-b')
+    expect(bridge()).not.toBe(staleBridge)
+    expect(bridge().subscribe).toHaveBeenCalledExactlyOnceWith('wf-b')
+
+    dispatchFrame('doc_update', { workflowId: 'wf-b', seq: 2 })
+    expect(projectionState.applyFrame).toHaveBeenCalledTimes(2)
+    remounted.unmount()
+    expect(bridgeState.maxLiveSubscriptions).toBeLessThanOrEqual(1)
   })
 
   it('FE-1902: persists a binding only once the server confirms it', () => {
