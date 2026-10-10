@@ -18,12 +18,14 @@ const {
   examples,
   galleryLabel,
   activeId,
-  locale = 'en'
+  locale = 'en',
+  disabled = false
 } = defineProps<{
   examples: readonly PlaygroundExample[]
   galleryLabel: string
   activeId?: string
   locale?: Locale
+  disabled?: boolean
 }>()
 const { t } = translationsFor(locale)
 
@@ -118,7 +120,8 @@ function actionFor(example: PlaygroundExample, active = false) {
                 : t('workshop.examples.open')
             }`"
             :aria-current="example.id === activeId ? 'true' : undefined"
-            class="group flex w-full cursor-pointer flex-col gap-2 text-left outline-none"
+            :disabled
+            class="group flex w-full cursor-pointer flex-col gap-2 text-left outline-none disabled:cursor-not-allowed disabled:opacity-50"
             data-testid="example-card"
             :title="`${example.title} · ${actionFor(
               example,
