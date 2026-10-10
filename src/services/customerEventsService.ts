@@ -5,6 +5,10 @@ import { ref, watch } from 'vue'
 import { webSessionResourceHeader } from '@/platform/auth/session/webSessionFetch'
 import { attachUnifiedRemintInterceptor } from '@/platform/auth/unified/remintRetry'
 import { getComfyApiBaseUrl } from '@/config/comfyApi'
+import {
+  hasParamsBeyondDetailsColumn,
+  presentTooltipParamKeys
+} from '@/services/customerEventParams'
 import { d, t } from '@/i18n'
 import { useAuthStore } from '@/stores/authStore'
 import type { components, operations } from '@/types/comfyRegistryTypes'
@@ -157,9 +161,12 @@ export const useCustomerEventsService = () => {
     }
   }
 
-  function hasAdditionalInfo(event: AuditLog) {
-    const { amount, api_name, model, ...otherParams } = event.params || {}
-    return Object.keys(otherParams).length > 0
+  function getTooltipContent(event: AuditLog) {
+    const params = event.params || {}
+
+    return presentTooltipParamKeys(params)
+      .map((key) => `${formatJsonKey(key)}: ${formatJsonValue(params[key])}`)
+      .join('\n')
   }
 
   function formatAmount(amountMicros?: number) {
@@ -242,9 +249,10 @@ export const useCustomerEventsService = () => {
     formatEventType,
     getEventSeverity,
     formatAmount,
-    hasAdditionalInfo,
+    hasAdditionalInfo: hasParamsBeyondDetailsColumn,
     formatDate,
     formatJsonKey,
-    formatJsonValue
+    formatJsonValue,
+    getTooltipContent
   }
 }

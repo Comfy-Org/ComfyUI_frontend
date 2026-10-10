@@ -290,12 +290,9 @@ describe('UsageLogsTable', () => {
       expect(infoButtons.length).toBeGreaterThan(0)
     })
 
-    it('shows each event param on its own tooltip line', async () => {
-      vi.mocked(useCustomerEventsService().formatJsonKey).mockImplementation(
-        (key) => `key(${key})`
-      )
-      vi.mocked(useCustomerEventsService().formatJsonValue).mockImplementation(
-        (value) => `value(${String(value)})`
+    it('shows the service tooltip content with one param per line', async () => {
+      vi.mocked(useCustomerEventsService().getTooltipContent).mockReturnValue(
+        'Amount: 1,000\nModel: test-model'
       )
       await renderLoaded()
 
@@ -305,7 +302,7 @@ describe('UsageLogsTable', () => {
       await userEvent.hover(firstInfoButton)
 
       expect((await screen.findByRole('tooltip')).textContent).toBe(
-        'key(amount): value(1000)\nkey(transaction_id): value(txn-123)'
+        'Amount: 1,000\nModel: test-model'
       )
     })
 
