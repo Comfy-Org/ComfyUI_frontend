@@ -1905,26 +1905,32 @@ export function useAgentSession(deps: AgentSessionDeps) {
     if (messageId !== undefined) snapshotTurns.delete(toTurnId(messageId))
   }
 
+  function handleResolvedAsk(
+    event: Extract<AgentWsEvent, { type: 'agent_ask_resolved' }>
+  ): void {
+    reportSupersededAnswer(event.data.ask_id, event.data.selected)
+    // The owning transport may already be gone, so retire the ask explicitly
+    // before ingest can otherwise leave its card enabled.
+    conversationStore.retireAsk(event.data.ask_id, event.data.thread_id)
+    recordDeliveredAsk(event.data.ask_id)
+    withdrawLateAskReport(event.data.thread_id, event.data.ask_id)
+    onAskResolved?.(event.data.ask_id)
+  }
+
+  function observeSkillEvent(event: AgentWsEvent): void {
+    for (const turn of conversationStore.liveTurns()) observeSkillTurn(turn)
+    if (event.type !== 'agent_message_done') return
+    finishSkillTurn({
+      threadId: event.data.thread_id,
+      messageId: toTurnId(event.data.message_id)
+    })
+  }
+
   function handleAgentEvent(event: AgentWsEvent): void {
     if (heldForHydration(event)) return
     observeLiveDelivery(event)
-    if (event.type === 'agent_ask_resolved') {
-      reportSupersededAnswer(event.data.ask_id, event.data.selected)
-      // Not just un-busying it: `ingest` below routes this frame through the
-      // owning turn's transport, and the turn is gone in exactly the case that
-      // matters, so on its own it would re-enable a card it cannot remove.
-      conversationStore.retireAsk(event.data.ask_id, event.data.thread_id)
-      recordDeliveredAsk(event.data.ask_id)
-      withdrawLateAskReport(event.data.thread_id, event.data.ask_id)
-      onAskResolved?.(event.data.ask_id)
-    }
-    for (const turn of conversationStore.liveTurns()) observeSkillTurn(turn)
-    if (event.type === 'agent_message_done') {
-      finishSkillTurn({
-        threadId: event.data.thread_id,
-        messageId: toTurnId(event.data.message_id)
-      })
-    }
+    if (event.type === 'agent_ask_resolved') handleResolvedAsk(event)
+    observeSkillEvent(event)
     if (event.type === 'agent_ask') {
       deliverAsk(event)
       for (const turn of conversationStore.liveTurns()) observeSkillTurn(turn)
@@ -2277,30 +2283,46 @@ export function useAgentSession(deps: AgentSessionDeps) {
     )
   }
 
+  function markRecoveredSkillUse(
+    turn: LiveTurn,
+    parts: Extract<TurnOutcome, { kind: 'terminal' }>['parts']
+  ): void {
+    if (
+      !parts?.some((part) => part.type === 'tool' && part.name === 'load_skill')
+    )
+      return
+    observeSkillTurn(turn)
+    const usage = skillTurnUsage.get(recoveryKey(turn))
+    if (usage) usage.used = true
+  }
+
+  function clearLateAskReportsForTurn(turn: LiveTurn): void {
+    for (const [key, scheduled] of lateAskReports) {
+      if (
+        scheduled.threadId !== turn.threadId ||
+        scheduled.messageId !== turn.messageId
+      )
+        continue
+      clearTimeout(scheduled.timer)
+      lateAskReports.delete(key)
+    }
+  }
+
+  function settleTerminalTurn(
+    turn: LiveTurn,
+    parts: Extract<TurnOutcome, { kind: 'terminal' }>['parts']
+  ): void {
+    markRecoveredSkillUse(turn, parts)
+    finishSkillTurn(turn)
+    clearLateAskReportsForTurn(turn)
+    conversationStore.settleTurn(turn, parts)
+    markStoppedTurnReady(turn)
+  }
+
   function settleFinishedTurn(turn: LiveTurn, outcome: TurnOutcome): boolean {
     switch (outcome.kind) {
       case 'terminal':
-        if (
-          outcome.parts?.some(
-            (part) => part.type === 'tool' && part.name === 'load_skill'
-          )
-        ) {
-          observeSkillTurn(turn)
-          const usage = skillTurnUsage.get(recoveryKey(turn))
-          if (usage) usage.used = true
-        }
-        finishSkillTurn(turn)
-        for (const [key, scheduled] of lateAskReports) {
-          if (
-            scheduled.threadId !== turn.threadId ||
-            scheduled.messageId !== turn.messageId
-          )
-            continue
-          clearTimeout(scheduled.timer)
-          lateAskReports.delete(key)
-        }
-        conversationStore.settleTurn(turn, outcome.parts)
-        markStoppedTurnReady(turn)
+        settleTerminalTurn(turn, outcome.parts)
         return true
       case 'thread-missing':
         forgetDeletedThread(turn)
