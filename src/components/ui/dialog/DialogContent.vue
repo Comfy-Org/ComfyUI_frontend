@@ -5,39 +5,50 @@ import type { HTMLAttributes } from 'vue'
 
 import { cn } from '@comfyorg/tailwind-utils'
 
-import type { DialogContentSize } from './dialog.variants'
+import type { DialogContentSize, DialogContentSurface } from './dialog.variants'
 import { dialogContentVariants } from './dialog.variants'
 
 const {
-  size,
-  maximized = false,
   class: customClass = '',
+  maximized = false,
+  size,
+  surface,
   ...restProps
 } = defineProps<
   DialogContentProps & {
-    size?: DialogContentSize
-    maximized?: boolean
     class?: HTMLAttributes['class']
+    maximized?: boolean
+    size?: DialogContentSize
+    surface?: DialogContentSurface
   }
 >()
 
 const emits = defineEmits<DialogContentEmits>()
 const forwarded = useForwardPropsEmits(restProps, emits)
+
+function focusAutofocusTarget(event: Event) {
+  if (event.defaultPrevented || !(event.target instanceof HTMLElement)) return
+  const target = event.target.querySelector<HTMLElement>('[autofocus]')
+  if (!target) return
+  target.focus()
+  if (document.activeElement === target) event.preventDefault()
+}
 </script>
 
 <template>
   <DialogContent
     v-bind="forwarded"
+    data-reka-dialog-content
     :class="
       cn(
-        dialogContentVariants({ size, maximized }),
+        dialogContentVariants({ maximized, size, surface }),
         customClass,
-        // Custom dimension and position classes must yield to maximize,
-        // mirroring the PrimeVue `.p-dialog-maximized` !important behavior.
+        // Custom dimension and position classes must yield to maximize.
         maximized &&
           'top-2 left-2 size-auto max-h-none max-w-none sm:max-w-none'
       )
     "
+    @open-auto-focus="focusAutofocusTarget"
   >
     <slot />
   </DialogContent>

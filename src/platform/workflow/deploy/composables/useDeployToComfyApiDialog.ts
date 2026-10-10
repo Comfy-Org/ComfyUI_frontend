@@ -28,14 +28,8 @@ export function useDeployToComfyApiDialog() {
         onDismiss: hide
       },
       dialogComponentProps: {
-        renderer: 'reka',
-        dismissableMask: true,
-        closeOnEscape: true,
-        modal: true,
-        headless: true,
-        overlayClass: 'bg-black/55',
-        contentClass:
-          'w-[min(640px,calc(100vw-2rem))] border-none bg-transparent p-0 shadow-none sm:max-w-[640px]'
+        dismissOnPointerDownOutside: true,
+        headless: true
       }
     })
   }

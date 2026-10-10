@@ -454,8 +454,7 @@ describe('useAgentConsent', () => {
     const dialog = await waitForConsentDialog()
 
     expect(dialog.contentProps.titleId).toBe('agent-consent')
-    expect(dialog.dialogComponentProps.dismissableMask).toBe(true)
-    expect(dialog.dialogComponentProps.closeOnEscape).toBe(true)
+    expect(dialog.dialogComponentProps.dismissOnPointerDownOutside).toBe(true)
 
     ;(dialog.contentProps.onReject as () => void)()
     await Promise.resolve(request)

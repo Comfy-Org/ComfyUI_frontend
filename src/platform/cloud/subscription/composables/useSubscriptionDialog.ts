@@ -99,12 +99,7 @@ export const useSubscriptionDialog = () => {
         () =>
           import('@/platform/workspace/components/SubscriptionInactiveMemberDialog.vue')
       ),
-      props: { onClose: hide },
-      dialogComponentProps: {
-        renderer: 'reka',
-        contentClass:
-          'w-[min(360px,95vw)] max-w-[min(360px,95vw)] sm:max-w-[min(360px,95vw)] border-0 bg-transparent shadow-none'
-      }
+      props: { onClose: hide }
     })
     return true
   }
@@ -118,11 +113,7 @@ export const useSubscriptionDialog = () => {
     trackPaywallShown(paymentIntentSource)
 
     const legacyPricingDialogProps = {
-      renderer: 'reka',
-      size: 'full',
-      dismissableMask: false,
-      contentClass:
-        'sm:max-w-7xl max-h-[90vh] rounded-2xl border border-border-default bg-secondary-background shadow-[0_25px_80px_rgba(5,6,12,0.45)]'
+      dismissOnPointerDownOutside: false
     } as const
 
     // Jun-5 model: a single unified pricing table (personal/team plan toggle on
@@ -159,13 +150,7 @@ export const useSubscriptionDialog = () => {
                 }
               : {})
           },
-          // The legacy table hosts a PrimeVue Popover teleported to body; Reka
-          // modal mode traps focus and disables body pointer-events, making it
-          // unclickable. The unified table has no such overlay.
-          dialogComponentProps: {
-            ...legacyPricingDialogProps,
-            modal: false
-          }
+          dialogComponentProps: legacyPricingDialogProps
         })
         return
       }
@@ -190,18 +175,9 @@ export const useSubscriptionDialog = () => {
           )
         },
         dialogComponentProps: {
-          // Reka (the default renderer) sizes via size/contentClass; a PrimeVue
-          // `style` width is ignored here and collapses the table to the default
-          // `md` frame. `w-fit` lets each step hug its content -- the pricing
-          // table fills its 1280px content while the compact confirm/success
-          // steps shrink (the content root sets its own width per checkoutStep).
-          renderer: 'reka',
-          size: 'full',
           // A scrim click mid-checkout would silently discard typed card
           // details and any pending 3DS state; the X is the only close.
-          dismissableMask: false,
-          contentClass:
-            'w-fit max-w-[min(1280px,95vw)] sm:max-w-[min(1280px,95vw)] max-h-[90vh] rounded-2xl border border-border-default bg-secondary-background shadow-[0_25px_80px_rgba(5,6,12,0.45)]'
+          dismissOnPointerDownOutside: false
         }
       })
       return

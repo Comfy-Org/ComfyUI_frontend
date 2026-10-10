@@ -10,6 +10,7 @@ const { class: className } = defineProps<{
 
 <template>
   <div
+    data-slot="skeleton"
     :class="cn('animate-pulse rounded-md bg-secondary-background', className)"
   />
 </template>

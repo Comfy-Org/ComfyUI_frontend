@@ -1,10 +1,10 @@
 <template>
   <div v-if="balanceLoading" class="flex items-center gap-1">
     <div class="flex items-center gap-2">
-      <Skeleton shape="circle" width="1.5rem" height="1.5rem" />
+      <Skeleton class="size-6 rounded-full" />
     </div>
     <div class="flex-1"></div>
-    <Skeleton width="8rem" height="2rem" />
+    <Skeleton class="h-8 w-32" />
   </div>
   <div v-else class="flex items-center gap-1">
     <Badge
@@ -23,9 +23,10 @@
 </template>
 
 <script setup lang="ts">
-import Skeleton from 'primevue/skeleton'
 import { computed } from 'vue'
 import { useI18n } from 'vue-i18n'
+
+import Skeleton from '@/components/ui/skeleton/Skeleton.vue'
 
 import { formatCreditsFromCents } from '@/base/credits/comfyCredits'
 import Badge from '@/components/ui/badge/Badge.vue'

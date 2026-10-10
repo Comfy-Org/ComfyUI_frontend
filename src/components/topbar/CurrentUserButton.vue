@@ -17,12 +17,7 @@
           )
         "
       >
-        <Skeleton
-          v-if="showWorkspaceSkeleton"
-          shape="circle"
-          width="32px"
-          height="32px"
-        />
+        <Skeleton v-if="showWorkspaceSkeleton" class="size-8 rounded-full" />
         <WorkspaceProfilePic
           v-else-if="showWorkspaceIcon"
           :workspace-name="workspaceName"
@@ -59,10 +54,10 @@
 <script setup lang="ts">
 import { storeToRefs } from 'pinia'
 import Popover from '@/components/common/ImperativePopover.vue'
-import Skeleton from 'primevue/skeleton'
 import { computed, defineAsyncComponent, ref } from 'vue'
 
 import UserAvatar from '@/components/common/UserAvatar.vue'
+import Skeleton from '@/components/ui/skeleton/Skeleton.vue'
 import WorkspaceProfilePic from '@/platform/workspace/components/WorkspaceProfilePic.vue'
 import Button from '@/components/ui/button/Button.vue'
 import { useCurrentUser } from '@/composables/auth/useCurrentUser'

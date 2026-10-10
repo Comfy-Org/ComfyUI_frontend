@@ -157,7 +157,7 @@ describe('showDowngradeToPersonalDialog', () => {
     expect(args.props.requiresRemoval).toBe(true)
     expect(args.props.requiresReactivation).toBe(false)
     expect(args.dialogComponentProps?.closable).toBe(false)
-    expect(args.dialogComponentProps?.dismissableMask).toBe(false)
+    expect(args.dialogComponentProps?.dismissOnPointerDownOutside).toBe(false)
 
     assert(args.dialogComponentProps?.onClose)
     args.dialogComponentProps.onClose()

@@ -398,8 +398,11 @@ function handleRemoveAllKeybindings(command: KeybindingCommand) {
       onCancel: () => dialogStore.closeDialog(dialog),
       onConfirm: async () => {
         keybindingStore.removeAllKeybindingsForCommand(command.id)
-        await keybindingService.persistUserKeybindings()
-        dialogStore.closeDialog(dialog)
+        try {
+          await keybindingService.persistUserKeybindings()
+        } finally {
+          dialogStore.closeDialog(dialog)
+        }
       }
     }
   })
@@ -448,8 +451,11 @@ function resetAllKeybindings() {
       },
       onConfirm: async () => {
         keybindingStore.resetAllKeybindings()
-        await keybindingService.persistUserKeybindings()
-        dialogStore.closeDialog(dialog)
+        try {
+          await keybindingService.persistUserKeybindings()
+        } finally {
+          dialogStore.closeDialog(dialog)
+        }
         toast.info(t('g.info'), {
           description: t('g.allKeybindingsReset'),
           duration: 3000

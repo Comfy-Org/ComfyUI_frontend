@@ -340,76 +340,22 @@ describe('dialogStore', () => {
         key: 'updatable-dialog',
         component: MockContentPropsComponent,
         props: { openingAction: null },
-        dialogComponentProps: { dismissableMask: true }
+        dialogComponentProps: { dismissOnPointerDownOutside: true }
       })
 
       const updated = store.updateDialog({
         key: 'updatable-dialog',
         contentProps: { openingAction: 'copy-and-open' },
-        dialogComponentProps: { dismissableMask: false }
+        dialogComponentProps: { dismissOnPointerDownOutside: false }
       })
 
       expect(updated).toBe(true)
       expect(store.dialogStack[0].contentProps).toMatchObject({
         openingAction: 'copy-and-open'
       })
-      expect(store.dialogStack[0].dialogComponentProps.dismissableMask).toBe(
-        false
-      )
-    })
-  })
-
-  describe('ESC key behavior with multiple dialogs', () => {
-    it('should only allow the active dialog to close with ESC key', () => {
-      const store = useDialogStore()
-
-      // Create dialogs with different priorities
-      store.showDialog({
-        key: 'dialog-1',
-        component: MockComponent,
-        priority: 1
-      })
-
-      store.showDialog({
-        key: 'dialog-2',
-        component: MockComponent,
-        priority: 2
-      })
-
-      store.showDialog({
-        key: 'dialog-3',
-        component: MockComponent,
-        priority: 3
-      })
-
-      // Only the active dialog should be closable with ESC
-      const activeDialog = store.dialogStack.find(
-        (d) => d.key === store.activeKey
-      )
-      const inactiveDialogs = store.dialogStack.filter(
-        (d) => d.key !== store.activeKey
-      )
-
-      expect(activeDialog?.dialogComponentProps.closeOnEscape).toBe(true)
-      inactiveDialogs.forEach((dialog) => {
-        expect(dialog.dialogComponentProps.closeOnEscape).toBe(false)
-      })
-
-      // Close the active dialog
-      store.closeDialog({ key: store.activeKey! })
-
-      // The new active dialog should now be closable with ESC
-      const newActiveDialog = store.dialogStack.find(
-        (d) => d.key === store.activeKey
-      )
-      const newInactiveDialogs = store.dialogStack.filter(
-        (d) => d.key !== store.activeKey
-      )
-
-      expect(newActiveDialog?.dialogComponentProps.closeOnEscape).toBe(true)
-      newInactiveDialogs.forEach((dialog) => {
-        expect(dialog.dialogComponentProps.closeOnEscape).toBe(false)
-      })
+      expect(
+        store.dialogStack[0].dialogComponentProps.dismissOnPointerDownOutside
+      ).toBe(false)
     })
   })
 })

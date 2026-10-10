@@ -1,5 +1,7 @@
 <template>
-  <div class="flex w-full flex-col">
+  <div
+    class="flex w-xl max-w-full flex-col overflow-hidden rounded-2xl border border-border-default bg-base-background shadow-lg"
+  >
     <header
       class="flex h-12 items-center justify-between gap-2 border-b border-border-default px-4"
     >

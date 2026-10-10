@@ -105,8 +105,7 @@ export function useSharedWorkflowUrlLoader() {
           }
         },
         dialogComponentProps: {
-          onClose: () => resolve({ action: 'cancel' }),
-          contentClass: 'sm:max-w-176 rounded-2xl overflow-hidden'
+          onClose: () => resolve({ action: 'cancel' })
         }
       })
     })
