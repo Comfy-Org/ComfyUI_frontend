@@ -251,3 +251,39 @@ test.describe('Vue Nodes Batch Image Preview', { tag: '@vue-nodes' }, () => {
     }
   )
 })
+
+test.describe('Vue Nodes Image Preview URLs', { tag: '@vue-nodes' }, () => {
+  wstest(
+    'shows a re-run output at the same /view URL so the browser can cache it',
+    async ({ comfyPage, getWebSocket }) => {
+      const execution = new ExecutionHelper(comfyPage, await getWebSocket())
+      await comfyPage.page.route('**/api/view?**', (route) =>
+        route.fulfill({
+          path: 'browser_tests/assets/test_upload_image.png',
+          headers: { 'Cache-Control': 'no-cache', ETag: '"v1"' }
+        })
+      )
+
+      await comfyPage.menu.topbar.newWorkflowButton.click()
+      await comfyPage.nextFrame()
+      await comfyPage.searchBoxV2.addNode('Preview Image')
+      const node = await comfyPage.vueNodes.getFixtureByTitle('Preview Image')
+      const image = node.imagePreview.getByTestId('main-image')
+      const output = (filename: string) => ({
+        images: [{ filename, subfolder: '', type: 'output' }]
+      })
+
+      execution.executed('', '1', output('first.png'))
+      await node.waitForImageLoaded('first.png')
+      await expect(image).not.toHaveAttribute('src', /[?&]rand=/)
+      const firstSrc = await image.getAttribute('src')
+
+      execution.executed('', '1', output('second.png'))
+      await node.waitForImageLoaded('second.png')
+
+      execution.executed('', '1', output('first.png'))
+      await node.waitForImageLoaded('first.png')
+      await expect(image).toHaveAttribute('src', firstSrc!)
+    }
+  )
+})
