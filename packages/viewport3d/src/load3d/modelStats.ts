@@ -76,8 +76,8 @@ async function meshStats(
   mesh: THREE.Mesh,
   signal?: AbortSignal
 ): Promise<ModelStats> {
+  if (!mesh.geometry.hasAttribute('position')) return EMPTY_STATS
   const position = mesh.geometry.getAttribute('position')
-  if (!position) return EMPTY_STATS
 
   const { remap, uniqueCount } = await weldByPosition(position, signal)
   const corners = mesh.geometry.index?.array ?? sequentialCorners(remap.length)
@@ -97,8 +97,11 @@ async function meshStats(
 }
 
 function pointsStats(points: THREE.Points): ModelStats {
-  const position = points.geometry.getAttribute('position')
-  return { ...EMPTY_STATS, vertices: position?.count ?? 0 }
+  const { geometry } = points
+  const vertices = geometry.hasAttribute('position')
+    ? geometry.getAttribute('position').count
+    : 0
+  return { ...EMPTY_STATS, vertices }
 }
 
 function addStats(a: ModelStats, b: ModelStats): ModelStats {

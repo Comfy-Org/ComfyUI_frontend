@@ -130,6 +130,7 @@ describe('computeModelStats', () => {
     const root = new THREE.Group()
     root.add(new THREE.Object3D())
     root.add(new THREE.Mesh(new THREE.BufferGeometry()))
+    root.add(new THREE.Points(new THREE.BufferGeometry()))
 
     const stats = await computeModelStats(root)
 
