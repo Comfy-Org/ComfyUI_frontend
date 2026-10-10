@@ -35,6 +35,9 @@ jobs:
       - name: Setup frontend
         uses: ./.github/actions/setup-frontend
 
+      - name: Validate local Workshop thumbnails, posters and samples
+        run: pnpm --filter @comfyorg/website check:workshop-media
+
       - name: Typecheck website
         run: pnpm --filter @comfyorg/website typecheck
 

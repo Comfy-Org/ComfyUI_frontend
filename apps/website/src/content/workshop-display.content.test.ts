@@ -1,4 +1,4 @@
-import { existsSync, readFileSync } from 'node:fs'
+import { readFileSync } from 'node:fs'
 import { join } from 'node:path'
 import { describe, expect, it } from 'vitest'
 
@@ -20,6 +20,7 @@ import {
 import { workshopModelSchema } from './workshop-models.schema'
 import { appCatalog, workflowCatalog } from '@/config/workshop-workflow-catalog'
 import { isWorkshopModelDisabled } from '@/config/workshop-model-availability'
+import { findMissingLocalWorkshopMedia } from '@/lib/workshop/local-media-files'
 
 const here = import.meta.dirname
 const display = workshopDisplayEntriesSchema.parse(
@@ -303,15 +304,9 @@ describe('the display overlay against the catalog', () => {
     }
   )
 
-  it('finds every site-relative asset in public/', () => {
-    const publicDir = join(websiteRoot, 'public')
-    const missing = display.flatMap((entry) =>
-      [entry.media.thumbnail, ...(entry.media.samples ?? [])]
-        .filter((asset) => asset?.url.startsWith('/'))
-        .map((asset) => asset?.url ?? '')
-        .filter((url) => !existsSync(join(publicDir, url)))
-    )
-
-    expect(missing).toEqual([])
+  it('finds every site-relative thumbnail, poster and sample in public/', () => {
+    expect(
+      findMissingLocalWorkshopMedia(display, join(websiteRoot, 'public'))
+    ).toEqual([])
   })
 })
