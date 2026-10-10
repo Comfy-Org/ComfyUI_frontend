@@ -21,7 +21,6 @@ describe('STARTER_SHOTS', () => {
   })
 })
 
-
 describe('findStarter', () => {
   it.for([
     { id: 'desert', found: true },
