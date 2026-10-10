@@ -59,15 +59,16 @@ watch(overflows, (on) => {
 // the strip they straddle belongs to the card underneath; once they are up, a
 // spent one swallows the click rather than passing it to that card, because a
 // dimmed control that quietly opens a model is worse than one that does
-// nothing. Touch never hides them, so there they are always the target.
+// nothing.
 const arrowClass =
-  'focus-visible:ring-primary-comfy-yellow/50 hover:border-primary-warm-gray hover:bg-site-dropdown bg-page pointer-events-auto can-hover:pointer-events-none can-hover:group-hover/row:pointer-events-auto can-hover:group-focus-within/row:pointer-events-auto absolute top-1/2 z-10 grid size-9 -translate-y-1/2 cursor-pointer place-items-center rounded-xl border border-transparency-white-t20 text-primary-warm-white shadow-lg shadow-black/40 transition-colors outline-none focus-visible:ring-3 aria-disabled:cursor-default aria-disabled:opacity-40 aria-disabled:hover:border-transparency-white-t20 aria-disabled:hover:bg-page'
+  'focus-visible:ring-primary-comfy-yellow/50 hover:border-primary-warm-gray hover:bg-site-dropdown bg-page pointer-events-none group-hover/row:pointer-events-auto group-focus-within/row:pointer-events-auto absolute top-1/2 z-10 grid size-9 -translate-y-1/2 cursor-pointer place-items-center rounded-xl border border-transparency-white-t20 text-primary-warm-white shadow-lg shadow-black/40 transition-colors outline-none focus-visible:ring-3 aria-disabled:cursor-default aria-disabled:opacity-40 aria-disabled:hover:border-transparency-white-t20 aria-disabled:hover:bg-page'
 
 // A pointer that can hover earns them by hovering, so a page of rows is not a
 // page of chrome, and a keyboard earns them by focusing. A touch screen can do
-// neither, so there they stay.
+// neither, and does not need them: the finger scrolls the row, and the next
+// card cut off at the edge says there is more. So it never gets them.
 const revealClass =
-  'pointer-events-none absolute -inset-x-1 top-0 bottom-2 transition-opacity duration-200 can-hover:opacity-0 can-hover:group-hover/row:opacity-100 can-hover:group-focus-within/row:opacity-100'
+  'pointer-events-none absolute -inset-x-1 top-0 bottom-2 hidden opacity-0 transition-opacity duration-200 group-hover/row:opacity-100 group-focus-within/row:opacity-100 can-hover:block'
 </script>
 
 <template>

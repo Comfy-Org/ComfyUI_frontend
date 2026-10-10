@@ -510,14 +510,40 @@ test.describe('Models catalog', () => {
     await page.goto('/hub/models/')
     await expect(page.getByTestId('workshop-sections')).toBeVisible()
     await page.evaluate(() => window.scrollTo({ top: 1200 }))
-    await expect(page.getByTestId('workshop-toolbar')).toBeInViewport()
+    // In the viewport is not the same as stuck: the toolbar is there at rest
+    // too. It is stuck once it sits at the offset it sticks to.
+    const toolbar = page.getByTestId('workshop-toolbar')
+    await expect
+      .poll(() =>
+        toolbar.evaluate(
+          (bar) =>
+            Math.round(bar.getBoundingClientRect().top) ===
+            Math.round(Number.parseFloat(getComputedStyle(bar).top))
+        )
+      )
+      .toBe(true)
 
     await page.getByTestId('workshop-filter').click()
     const options = page
       .getByTestId('workshop-filter-menu')
       .getByTestId(/^filter-useCase-/)
-    await expect(options.first()).toBeVisible()
-    await options.last().click()
+    const last = options.last()
+    await expect(last).toBeVisible()
+    // A clipped panel keeps its box, so only a hit test says the option is
+    // reachable. Asserting it before the click turns a timeout into a reason.
+    await expect
+      .poll(() =>
+        last.evaluate((option) => {
+          const { left, right, top, bottom } = option.getBoundingClientRect()
+          const hit = document.elementFromPoint(
+            (left + right) / 2,
+            (top + bottom) / 2
+          )
+          return option.contains(hit)
+        })
+      )
+      .toBe(true)
+    await last.click()
 
     await expect(page.getByTestId('workshop-filter-count')).toHaveText('1')
   })
