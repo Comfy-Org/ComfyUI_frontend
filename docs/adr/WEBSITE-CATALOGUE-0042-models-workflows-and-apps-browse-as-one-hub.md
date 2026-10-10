@@ -37,8 +37,8 @@ one grid and not as separate catalogues.
   `WorkshopModelsGrid`, `WorkflowCatalogue` or `AppCatalogue` per section.
 - The sections share their furniture: the same sticky toolbar band, the same
   shelf and grid layout, and the same card shape and width from
-  `card-layout.ts`. What differs is what the band holds and what the list
-  holds, not the way either is browsed.
+  `card-layout.ts`. What the band holds differs by section, and so does what
+  the list holds.
 - Each section lists one kind. A model and the workflows that run on it never
   appear in the same list, which is how the central objection to a single grid
   is answered: by not putting them side by side at all, rather than by labelling
