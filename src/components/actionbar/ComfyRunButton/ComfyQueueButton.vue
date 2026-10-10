@@ -10,8 +10,10 @@
       size="unset"
       :class="
         cn(
-          'h-full gap-1.5 rounded-l-lg rounded-r-none px-4',
-          paymentRecoveryLock ? 'font-medium' : 'font-light'
+          'h-full gap-1.5 rounded-l-lg px-4',
+          paymentRecoveryLock
+            ? 'rounded-r-lg font-medium'
+            : 'rounded-r-none font-light'
         )
       "
       data-testid="queue-button"
@@ -21,12 +23,16 @@
       {{ queueButtonLabel }}
     </Button>
 
-    <Menu side="bottom" :side-offset="4" class="min-w-44">
+    <Menu
+      v-if="!paymentRecoveryLock"
+      side="bottom"
+      :side-offset="4"
+      class="min-w-44"
+    >
       <template #trigger>
         <Button
           :variant="queueMenuTriggerVariant"
           size="unset"
-          :disabled="Boolean(paymentRecoveryLock)"
           :class="
             cn(
               queueMenuTriggerClass,
@@ -174,26 +180,23 @@ const queueButtonLabel = computed(() =>
 )
 
 const queueButtonVariant = computed<
-  'destructive' | 'inverted' | 'secondary' | 'subscribe'
+  'destructive' | 'inverted' | 'tertiary' | 'subscribe'
 >(() =>
   paymentRecoveryLock === 'owner'
     ? 'subscribe'
     : paymentRecoveryLock === 'member'
-      ? 'secondary'
+      ? 'tertiary'
       : isStopInstantAction.value
         ? 'destructive'
         : 'inverted'
 )
 const queueMenuTriggerVariant = computed(() =>
-  queueButtonVariant.value === 'subscribe'
-    ? 'secondary'
-    : queueButtonVariant.value
+  queueButtonVariant.value === 'destructive' ? 'destructive' : 'inverted'
 )
 const queueMenuTriggerVariantClass = {
   destructive:
     'border-black/20 data-[state=open]:bg-destructive-background-hover',
-  inverted: 'data-[state=open]:bg-base-foreground/80',
-  secondary: 'text-muted-foreground'
+  inverted: 'data-[state=open]:bg-base-foreground/80'
 } satisfies Record<typeof queueMenuTriggerVariant.value, string>
 const queueMenuTriggerClass =
   'h-full w-6 rounded-l-none rounded-r-lg border-0 border-l border-solid border-current/25 p-0'
