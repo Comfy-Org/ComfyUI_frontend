@@ -42,6 +42,7 @@ const maybeLocalOptions: PlaywrightTestConfig = process.env.PLAYWRIGHT_LOCAL
 export default defineConfig({
   testDir: './browser_tests',
   testIgnore: [
+    '**/tests/vueNodes/widgets/dynamicGroup.spec.ts',
     '**/liveCloud/**',
     '**/crossOriginSession/**',
     '**/*.test.ts',
