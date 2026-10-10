@@ -99,13 +99,11 @@ describe('HeaderMainDesktop', () => {
   })
 
   it.for(['Cinematic Studio', 'Re-shoot'])(
-    'opens the %s app in a tab of its own',
+    'opens the %s app in the same tab',
     async (name) => {
       const menu = await openHub()
-      const link = menu.getByRole('link', { name })
 
-      expect(link).toHaveAttribute('target', '_blank')
-      expect(link).toHaveAttribute('rel', 'noopener')
+      expect(menu.getByRole('link', { name })).not.toHaveAttribute('target')
     }
   )
 
