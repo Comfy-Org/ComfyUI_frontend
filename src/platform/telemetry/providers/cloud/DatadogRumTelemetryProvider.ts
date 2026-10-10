@@ -8,7 +8,10 @@ import type {
   BillingTelemetryEvent,
   CheckoutJourneyTelemetryEvent
 } from '@comfyorg/account-core/billing'
-import type { WebSessionTelemetryEvent } from '@comfyorg/account-core/telemetry'
+import type {
+  SsoTelemetryEvent,
+  WebSessionTelemetryEvent
+} from '@comfyorg/account-core/telemetry'
 // oxlint-disable-next-line no-restricted-imports -- the telemetry layer owns the sinks that reportError() fans out to
 import { datadogRum } from '@datadog/browser-rum'
 
@@ -70,6 +73,10 @@ export class DatadogRumTelemetryProvider implements TelemetryProvider {
   }
 
   trackWebSessionEvent(event: WebSessionTelemetryEvent): void {
+    datadogRum.addAction(event.name, event.properties)
+  }
+
+  trackSsoEvent(event: SsoTelemetryEvent): void {
     datadogRum.addAction(event.name, event.properties)
   }
 

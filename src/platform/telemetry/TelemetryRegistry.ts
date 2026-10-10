@@ -2,7 +2,10 @@ import type {
   BillingTelemetryEvent,
   CheckoutJourneyTelemetryEvent
 } from '@comfyorg/account-core/billing'
-import type { WebSessionTelemetryEvent } from '@comfyorg/account-core/telemetry'
+import type {
+  SsoTelemetryEvent,
+  WebSessionTelemetryEvent
+} from '@comfyorg/account-core/telemetry'
 import type {
   AddCreditsClickMetadata,
   AgentAttachButtonClickedMetadata,
@@ -140,6 +143,10 @@ export class TelemetryRegistry implements TelemetryDispatcher {
   // fallow-ignore-next-line unused-class-member
   trackWebSessionEvent(event: WebSessionTelemetryEvent): void {
     this.dispatch((provider) => provider.trackWebSessionEvent?.(event))
+  }
+
+  trackSsoEvent(event: SsoTelemetryEvent): void {
+    this.dispatch((provider) => provider.trackSsoEvent?.(event))
   }
 
   trackImageLoadFailed(metadata: ImageLoadFailureMetadata): void {

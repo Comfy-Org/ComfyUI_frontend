@@ -105,6 +105,22 @@ describe('TelemetryRegistry', () => {
     expect(b.trackAuthFailed).toHaveBeenCalledExactlyOnceWith(payload)
   })
 
+  it('dispatches an SSO event to every provider that records it', () => {
+    const a: TelemetryProvider = { trackSsoEvent: vi.fn() }
+    const b: TelemetryProvider = {}
+    const registry = new TelemetryRegistry()
+    registry.registerProvider(a)
+    registry.registerProvider(b)
+
+    const event = {
+      name: 'app:sso_continue_clicked',
+      properties: { surface: 'cloud_app', flow_id: 'flow-1' }
+    } as const
+    registry.trackSsoEvent(event)
+
+    expect(a.trackSsoEvent).toHaveBeenCalledExactlyOnceWith(event)
+  })
+
   it('dispatches unified auth retry outcomes to supporting providers', () => {
     const trackUnifiedAuthRetry = vi.fn()
     const registry = new TelemetryRegistry()
