@@ -62,10 +62,10 @@ const fullscreenStudio = computed(
   () => fullscreen.value && app.value === 'studio' && layout.value === 'd'
 )
 const editorShown = computed(() => fullscreenStudio.value && trying.value)
-const detailShown = computed(() => fullscreenStudio.value && !trying.value)
-const cover = computed(
-  () => apps.find((candidate) => candidate.appId === 'studio')?.thumbnail
+const studioApp = computed(() =>
+  apps.find((candidate) => candidate.appId === 'studio')
 )
+const detailShown = computed(() => fullscreenStudio.value && !trying.value)
 const detailBack = computed(() => ({
   href: workshopAppHref('studio', locale),
   label: t('cinematic.detail.backToApp')
@@ -203,9 +203,10 @@ function pickApp(id: string) {
     <CinematicAppsHub v-if="layout === 'hub'" :models="shownApps" :locale />
     <ReshootStudio v-else-if="app === 'reshoot'" :locale />
     <CinematicAppDetail
-      v-else-if="detailShown"
+      v-else-if="detailShown && studioApp"
+      :app="studioApp"
+      :apps="shownApps"
       :models
-      :cover
       :locale
       @try="tryApp"
     />

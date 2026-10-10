@@ -1744,10 +1744,10 @@ describe('CinematicStudio', () => {
       )
     })
 
-    it('opens the editor on a starter shot picked from the detail page', async () => {
+    it('opens the editor on an example picked from the detail page', async () => {
       const { user } = renderPage(true, '')
 
-      await user.click((await screen.findAllByTestId('cinematic-use-shot'))[0])
+      await user.click((await screen.findAllByTestId('cinematic-example'))[0])
 
       expect(await screen.findByLabelText('Scene')).toHaveValue(
         STARTER_SHOTS[0].scene

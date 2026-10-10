@@ -1,10 +1,5 @@
-import type {
-  AspectRatio,
-  Direction,
-  DirectionOption,
-  DirectionPart
-} from './catalog'
-import { DEFAULT_DIRECTION, directionOption } from './catalog'
+import type { AspectRatio, Direction } from './catalog'
+import { DEFAULT_DIRECTION } from './catalog'
 import type { CinematicCopyKey } from './copy'
 
 export interface StarterShot {
@@ -70,23 +65,6 @@ export const STARTER_SHOTS: readonly StarterShot[] = [
     }
   }
 ]
-
-const RECIPE_PARTS: readonly DirectionPart[] = [
-  'lens',
-  'focal',
-  'shot',
-  'light',
-  'film',
-  'look',
-  'grade'
-]
-
-/** The choices a starter makes, in the order a crew would call them. */
-export function starterRecipe(shot: StarterShot): DirectionOption[] {
-  return RECIPE_PARTS.map((part) =>
-    directionOption(part, shot.direction)
-  ).filter((option) => option.id !== 'auto')
-}
 
 export function findStarter(id: string | undefined): StarterShot | undefined {
   return STARTER_SHOTS.find((shot) => shot.id === id)

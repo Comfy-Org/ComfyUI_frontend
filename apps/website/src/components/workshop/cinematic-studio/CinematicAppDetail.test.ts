@@ -2,64 +2,61 @@ import { render, screen } from '@testing-library/vue'
 import userEvent from '@testing-library/user-event'
 import { describe, expect, it, vi } from 'vitest'
 
+import { appModels } from '@/config/workshop-app-content'
 import type { CinematicModel } from '@/lib/workshop/cinematic-studio/models'
 import CinematicAppDetail from './CinematicAppDetail.vue'
 
 vi.mock(import('@/scripts/posthog'))
 
-const model = (index: number): CinematicModel => ({
-  slug: `model-${index}`,
-  name: `Model ${index}`,
-  provider: 'bfl',
-  logo: ''
-})
-const models: CinematicModel[] = Array.from({ length: 10 }, (_, index) =>
-  model(index + 1)
-)
+const studio = appModels.find((app) => app.appId === 'studio')!
+const models: CinematicModel[] = [
+  { slug: 'flux', name: 'FLUX.2', provider: 'bfl', logo: '' }
+]
 
 function renderDetail() {
   const user = userEvent.setup()
-  return { user, ...render(CinematicAppDetail, { props: { models } }) }
+  const view = render(CinematicAppDetail, {
+    props: { app: studio, apps: appModels, models }
+  })
+  return { user, ...view }
 }
 
 describe('CinematicAppDetail', () => {
-  it('opens the editor from every Try it', async () => {
-    const { user, emitted } = renderDetail()
+  it('heads the page like a model page, with the app and its category', () => {
+    renderDetail()
 
-    for (const button of screen.getAllByRole('button', { name: 'Try it' }))
-      await user.click(button)
-
-    expect(emitted('try')).toEqual([[], []])
+    expect(
+      screen.getByRole('heading', { level: 1, name: studio.name })
+    ).toBeVisible()
+    expect(screen.getByRole('link', { name: 'Generate images' })).toBeVisible()
   })
 
-  it('opens the editor on the starter shot that was picked', async () => {
+  it('opens the editor from Try it', async () => {
     const { user, emitted } = renderDetail()
 
-    await user.click(screen.getAllByTestId('cinematic-use-shot')[1])
+    await user.click(screen.getByRole('button', { name: 'Try it' }))
+
+    expect(emitted('try')).toEqual([[]])
+  })
+
+  it('opens the editor on the example that was picked', async () => {
+    const { user, emitted } = renderDetail()
+
+    await user.click(
+      screen.getByRole('button', { name: 'Old fisherman on an overcast pier' })
+    )
 
     expect(emitted('try')).toEqual([['portrait']])
   })
 
-  it('shows each starter with the direction it sets', () => {
+  it('offers the other apps, but not this one', () => {
     renderDetail()
 
-    expect(
-      screen.getByRole('heading', { name: 'Old fisherman on an overcast pier' })
-    ).toBeVisible()
-    expect(screen.getByText('85mm')).toBeVisible()
-    expect(screen.getByText('Overcast')).toBeVisible()
-  })
-
-  it('lists a few models and reveals the rest on request', async () => {
-    const { user } = renderDetail()
-    expect(screen.queryByText('Model 10')).toBeNull()
-
-    await user.click(screen.getByRole('button', { name: 'Show all 10' }))
-
-    expect(screen.getByText('Model 10')).toBeVisible()
-    expect(screen.getByRole('button', { name: 'Show fewer' })).toHaveAttribute(
-      'aria-expanded',
-      'true'
+    const others = appModels.filter((app) => app.slug !== studio.slug)
+    for (const other of others)
+      expect(screen.getByRole('link', { name: new RegExp(other.name) })).toBeVisible()
+    expect(screen.queryAllByTestId('workshop-app-card')).toHaveLength(
+      others.length
     )
   })
 })

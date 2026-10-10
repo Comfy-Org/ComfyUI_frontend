@@ -6,7 +6,7 @@ import {
   gradeGroup,
   lookGroups
 } from './catalog'
-import { STARTER_SHOTS, findStarter, starterRecipe } from './starters'
+import { STARTER_SHOTS, findStarter } from './starters'
 
 const parts = [...cameraGroups, ...lookGroups, gradeGroup].map(
   (group) => group.part
@@ -21,21 +21,6 @@ describe('STARTER_SHOTS', () => {
   })
 })
 
-describe('starterRecipe', () => {
-  it('names the choices a starter makes and leaves Auto out', () => {
-    const portrait = findStarter('portrait')!
-
-    expect(starterRecipe(portrait).map((option) => option.id)).toEqual([
-      'prime',
-      '85',
-      'close',
-      'overcast',
-      'd250',
-      'doc',
-      'nordic'
-    ])
-  })
-})
 
 describe('findStarter', () => {
   it.for([
