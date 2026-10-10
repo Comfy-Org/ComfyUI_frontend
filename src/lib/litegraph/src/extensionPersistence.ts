@@ -36,6 +36,25 @@ function safeCloneExtensionValue(value: unknown): JsonValue | undefined {
   return isJsonValue(clonedValue) ? clonedValue : undefined
 }
 
+function isIndexedArrayLike(value: object): value is ArrayLike<unknown> {
+  if (Array.isArray(value)) return false
+  const length: unknown = Reflect.get(value, 'length')
+  if (typeof length !== 'number' || !Number.isInteger(length) || length < 0)
+    return false
+  return Object.keys(value).every((key) => {
+    const index = Number(key)
+    return Number.isInteger(index) && index >= 0 && index < length
+  })
+}
+
+function containsVueProxy(value: unknown, seen = new Set<object>()): boolean {
+  if (value === null || typeof value !== 'object') return false
+  if (isProxy(value)) return true
+  if (seen.has(value)) return false
+  seen.add(value)
+  return Object.values(value).some((child) => containsVueProxy(child, seen))
+}
+
 function detachCanonicalValue(value: unknown): unknown {
   if (value === null || typeof value !== 'object') return value
   try {
@@ -44,6 +63,12 @@ function detachCanonicalValue(value: unknown): unknown {
     if (!(error instanceof Error) || error.name !== 'DataCloneError')
       throw error
   }
+  // Live geometry views (`pos`, `size`) are non-Vue proxies over typed arrays;
+  // JSON would turn them into `{ "0": x, "1": y }` instead of `[x, y]`.
+  if (isIndexedArrayLike(value))
+    return Array.from({ length: value.length }, (_, index) =>
+      detachCanonicalValue(value[index])
+    )
   try {
     return JSON.parse(JSON.stringify(value))
   } catch {
@@ -258,12 +283,13 @@ export const runExtensionSerializeHook = <T extends object>(
     if (Object.hasOwn(view, key)) {
       const value: unknown = Reflect.get(view, key)
       // A hook that hands back live state (e.g. `o.properties = this.properties`,
-      // a reactive proxy since node state moved into the store) must not leak
-      // it into serialized output: structuredClone of that output would throw.
+      // a reactive proxy since node state moved into the store), whole or
+      // nested, must not leak into serialized output: structuredClone of that
+      // output would throw.
       Reflect.set(
         canonical,
         key,
-        value !== before.get(key) || isProxy(value)
+        value !== before.get(key) || (hook && containsVueProxy(value))
           ? detachCanonicalValue(value)
           : value
       )
