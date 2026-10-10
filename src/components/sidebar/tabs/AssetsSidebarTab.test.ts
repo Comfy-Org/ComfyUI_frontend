@@ -158,6 +158,29 @@ it('keeps pagination mounted when more assets can be loaded', () => {
   expect(screen.getByTestId('assets-grid')).toBeVisible()
 })
 
+describe('AssetsSidebarTab reopen', () => {
+  it('keeps a cached list on screen and only fetches newer items', () => {
+    const outputAssets = useAssetsStore().outputAssets
+    outputAssets.isLoading = true
+
+    renderTab()
+
+    expect(outputAssets.loadNew).toHaveBeenCalledOnce()
+    expect(outputAssets.invalidate).not.toHaveBeenCalled()
+    expect(screen.getByTestId('assets-grid')).toBeVisible()
+  })
+
+  it('loads the first page when nothing is cached', () => {
+    const outputAssets = useAssetsStore().outputAssets
+    outputAssets.items = []
+
+    renderTab()
+
+    expect(outputAssets.invalidate).toHaveBeenCalledOnce()
+    expect(outputAssets.loadNew).not.toHaveBeenCalled()
+  })
+})
+
 describe('AssetsSidebarTab folder navigation', () => {
   it('places accessible folder actions beside the job ID', async () => {
     vi.mocked(resolveOutputAssetItems).mockResolvedValue([folderAsset])
