@@ -500,6 +500,28 @@ test.describe('Models catalog', () => {
     await expect(page.getByTestId('workshop-sections')).toBeVisible()
   })
 
+  // The stuck toolbar paints its full-bleed band with a zero-width
+  // border-image rather than a clip-path. A clip would cut the use-case panel
+  // off at the toolbar's bottom edge, because on desktop that panel renders
+  // inside the toolbar instead of portalling to the body.
+  test('the use-case panel stays reachable under the stuck toolbar', async ({
+    page
+  }) => {
+    await page.goto('/hub/models/')
+    await expect(page.getByTestId('workshop-sections')).toBeVisible()
+    await page.evaluate(() => window.scrollTo({ top: 1200 }))
+    await expect(page.getByTestId('workshop-toolbar')).toBeInViewport()
+
+    await page.getByTestId('workshop-filter').click()
+    const options = page
+      .getByTestId('workshop-filter-menu')
+      .locator('[data-testid^="filter-useCase-"]')
+    await expect(options.first()).toBeVisible()
+    await options.last().click()
+
+    await expect(page.getByTestId('workshop-filter-count')).toHaveText('1')
+  })
+
   test('model tags deep-link into a filtered catalog', async ({ page }) => {
     await page.goto(MODEL_PATH)
     const tag = page

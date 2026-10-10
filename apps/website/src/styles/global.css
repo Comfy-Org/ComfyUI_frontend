@@ -162,6 +162,16 @@
   );
 }
 
+/* Paints the page colour out to the viewport edges behind a sticky element,
+   without clipping its descendants the way a clip-path band would: the border
+   is zero-width, so only the outset paints and no popover is cut off.
+   `border-style` is declared here rather than inherited from preflight,
+   because `border-image` paints nothing when the style is `none`. */
+@utility bleed-page-band {
+  border-style: solid;
+  border-image: conic-gradient(var(--color-page) 0 0) fill 0 / 0 / 0 100vmax;
+}
+
 /* Pre-hydration hide for a dismissed announcement banner (set by an inline
    script in BaseLayout head) — prevents any flash before Vue hydrates.
    The [data-banner-dismissed] literal is BANNER_DISMISS_ATTR in utils/banner.ts;
