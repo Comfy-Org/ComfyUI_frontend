@@ -19,7 +19,7 @@ const i18n = createI18n({
         nodesCount: '{count} node | {count} nodes'
       },
       rightSidePanel: {
-        locateNode: 'Locate node on canvas',
+        locateNodeFor: 'Locate {item}',
         missingNodePacks: {
           collapse: 'Collapse',
           expand: 'Expand'
@@ -107,7 +107,7 @@ describe('SwapNodeGroupRow', () => {
     it('starts collapsed — node list not visible', () => {
       renderRow()
       expect(
-        screen.queryByRole('button', { name: 'Locate node on canvas' })
+        screen.queryByRole('button', { name: /^Locate / })
       ).not.toBeInTheDocument()
     })
 
@@ -118,7 +118,7 @@ describe('SwapNodeGroupRow', () => {
         screen.getByRole('button', { name: 'Expand OldNodeType' })
       )
       expect(
-        screen.getAllByRole('button', { name: 'Locate node on canvas' })
+        screen.getAllByRole('button', { name: 'Locate OldNodeType' })
       ).toHaveLength(2)
     })
 
@@ -129,13 +129,13 @@ describe('SwapNodeGroupRow', () => {
         screen.getByRole('button', { name: 'Expand OldNodeType' })
       )
       expect(
-        screen.getAllByRole('button', { name: 'Locate node on canvas' })
+        screen.getAllByRole('button', { name: 'Locate OldNodeType' })
       ).toHaveLength(2)
       await user.click(
         screen.getByRole('button', { name: 'Collapse OldNodeType' })
       )
       expect(
-        screen.queryByRole('button', { name: 'Locate node on canvas' })
+        screen.queryByRole('button', { name: /^Locate / })
       ).not.toBeInTheDocument()
     })
 
@@ -189,7 +189,7 @@ describe('SwapNodeGroupRow', () => {
       renderRow()
       await expand()
       expect(
-        screen.getAllByRole('button', { name: 'Locate node on canvas' })
+        screen.getAllByRole('button', { name: 'Locate OldNodeType' })
       ).toHaveLength(2)
     })
 
@@ -204,7 +204,7 @@ describe('SwapNodeGroupRow', () => {
       })
       await expand()
       expect(
-        screen.queryByRole('button', { name: 'Locate node on canvas' })
+        screen.queryByRole('button', { name: /^Locate / })
       ).not.toBeInTheDocument()
     })
 
@@ -230,8 +230,29 @@ describe('SwapNodeGroupRow', () => {
         })
       ).toHaveLength(1)
       expect(
-        screen.getAllByRole('button', { name: 'Locate node on canvas' })
+        screen.getAllByRole('button', { name: 'Locate MixedNodeType' })
       ).toHaveLength(1)
+    })
+
+    it('gives each locate control a node-specific accessible name', async () => {
+      renderRow({
+        group: makeGroup({
+          type: 'AlphaNode',
+          nodeTypes: [
+            { type: 'AlphaNode', nodeId: '1', isReplaceable: true },
+            { type: 'BetaNode', nodeId: '2', isReplaceable: true }
+          ]
+        })
+      })
+
+      await expand()
+
+      expect(
+        screen.getByRole('button', { name: 'Locate AlphaNode' })
+      ).toBeInTheDocument()
+      expect(
+        screen.getByRole('button', { name: 'Locate BetaNode' })
+      ).toBeInTheDocument()
     })
   })
 
@@ -244,7 +265,7 @@ describe('SwapNodeGroupRow', () => {
         screen.getByRole('button', { name: 'Expand OldNodeType' })
       )
       const locateBtns = screen.getAllByRole('button', {
-        name: 'Locate node on canvas'
+        name: 'Locate OldNodeType'
       })
       await user.click(locateBtns[0])
       expect(onLocateNode).toHaveBeenCalledWith('1')
@@ -287,7 +308,7 @@ describe('SwapNodeGroupRow', () => {
       expect(onLocateNode).toHaveBeenCalledWith('42')
 
       await user.click(
-        screen.getByRole('button', { name: 'Locate node on canvas' })
+        screen.getByRole('button', { name: 'Locate SingleNodeType' })
       )
       expect(onLocateNode).toHaveBeenCalledTimes(2)
       expect(onLocateNode).toHaveBeenLastCalledWith('42')
@@ -308,7 +329,7 @@ describe('SwapNodeGroupRow', () => {
         screen.queryByRole('button', { name: 'NoIdNode' })
       ).not.toBeInTheDocument()
       expect(
-        screen.queryByRole('button', { name: 'Locate node on canvas' })
+        screen.queryByRole('button', { name: /^Locate / })
       ).not.toBeInTheDocument()
     })
   })
@@ -329,7 +350,7 @@ describe('SwapNodeGroupRow', () => {
         screen.queryByRole('button', { name: /^Expand / })
       ).not.toBeInTheDocument()
       expect(
-        screen.queryByRole('button', { name: 'Locate node on canvas' })
+        screen.queryByRole('button', { name: /^Locate / })
       ).not.toBeInTheDocument()
     })
 
@@ -356,7 +377,7 @@ describe('SwapNodeGroupRow', () => {
         screen.queryByRole('button', { name: 'OtherStringType' })
       ).not.toBeInTheDocument()
       expect(
-        screen.queryByRole('button', { name: 'Locate node on canvas' })
+        screen.queryByRole('button', { name: /^Locate / })
       ).not.toBeInTheDocument()
     })
   })

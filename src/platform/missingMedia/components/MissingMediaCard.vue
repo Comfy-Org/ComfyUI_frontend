@@ -34,12 +34,9 @@
               {{ item.displayItemLabel }}
             </button>
           </span>
-          <Button
+          <LocateNodeButton
             data-testid="missing-media-locate-button"
-            variant="textonly"
-            size="icon-sm"
-            class="size-8 shrink-0 text-muted-foreground hover:text-base-foreground focus-visible:ring-inset"
-            :aria-label="
+            :label="
               t(
                 'rightSidePanel.locateNodeFor',
                 {
@@ -48,10 +45,8 @@
                 { escapeParameter: false }
               )
             "
-            @click.stop="emit('locateNode', item.nodeId)"
-          >
-            <i aria-hidden="true" class="icon-[lucide--locate] size-4" />
-          </Button>
+            @locate="emit('locateNode', item.nodeId)"
+          />
         </div>
       </li>
     </TransitionGroup>
@@ -63,7 +58,7 @@ import { computed } from 'vue'
 import { useI18n } from 'vue-i18n'
 import { cn } from '@comfyorg/tailwind-utils'
 
-import Button from '@/components/ui/button/Button.vue'
+import LocateNodeButton from '@/components/rightSidePanel/errors/LocateNodeButton.vue'
 import { selectionEmphasisClass } from '@/components/rightSidePanel/errors/selectionEmphasis'
 import { resolveMissingMediaItemLabel } from '@/platform/errorCatalog/errorMessageResolver'
 import { getMissingMediaReferences } from '@/platform/missingMedia/missingMediaGrouping'
