@@ -42,6 +42,7 @@ function renderComposer() {
   return { ...view, store, selected, send, editor: screen.getByRole('textbox') }
 }
 
+vi.mock(import('@/composables/auth/useCurrentUser'))
 describe('inline node and asset references', () => {
   beforeEach(() => vi.useRealTimers())
 

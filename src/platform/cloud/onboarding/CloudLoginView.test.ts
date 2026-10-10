@@ -1,3 +1,4 @@
+import { fetchRequests, respondToFetch } from '@comfyorg/test-utils/fetch'
 import { fromPartial } from '@total-typescript/shoehorn'
 import { render, screen, waitFor } from '@testing-library/vue'
 import type { User, UserCredential } from 'firebase/auth'
@@ -7,6 +8,8 @@ import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { defineComponent, ref } from 'vue'
 import { createI18n } from 'vue-i18n'
 import { createMemoryHistory, createRouter } from 'vue-router'
+
+import { ssoFlowStore } from '@comfyorg/account-core/telemetry'
 
 import { useAuthActions } from '@/composables/auth/useAuthActions'
 import { useFeatureFlags } from '@/composables/useFeatureFlags'
@@ -19,11 +22,13 @@ import type { useSessionCookie } from '@/platform/auth/session/useSessionCookie'
 import { presentSsoRequired } from '@/platform/auth/sso/ssoRequired'
 import { SSO_REQUIRED_DIALOG_KEY } from '@/platform/auth/sso/ssoRequiredDialogKey'
 import { useAuthStore } from '@/stores/authStore'
+import { useTelemetry } from '@/platform/telemetry'
 import { useDialogStore } from '@/stores/dialogStore'
 
 vi.mock(import('@/composables/auth/useAuthActions'))
 vi.mock(import('@/composables/useFeatureFlags'))
 vi.mock(import('firebase/auth'))
+vi.mock(import('@/platform/telemetry'))
 
 const redirectAfterAuth = vi.hoisted(() => vi.fn(async () => undefined))
 vi.mock(
@@ -102,7 +107,7 @@ async function renderLoginView(
   })
   await router.push(url)
   await router.isReady()
-  return render(CloudLoginView, {
+  const rendered = render(CloudLoginView, {
     global: {
       plugins: [
         router,
@@ -111,6 +116,7 @@ async function renderLoginView(
       stubs: { CloudSignInForm: SignInFormStub }
     }
   })
+  return { ...rendered, router }
 }
 
 afterEach(() => {
@@ -237,22 +243,10 @@ describe('CloudLoginView', () => {
   })
 })
 
-const discoverReplies = (body: unknown, status = 200) => {
-  const fetchMock = vi.fn<typeof fetch>(
-    async () =>
-      new Response(JSON.stringify(body), {
-        status,
-        headers: { 'Content-Type': 'application/json' }
-      })
-  )
-  vi.stubGlobal('fetch', fetchMock)
-  return fetchMock
-}
+const SSO_DISCOVER_URL = '/api/auth/sso/discover'
 
-const discoverCalls = (fetchMock: ReturnType<typeof discoverReplies>) =>
-  fetchMock.mock.calls.filter(([url]) =>
-    String(url).endsWith('/api/auth/sso/discover')
-  )
+const discoverReplies = (body: unknown, status = 200) =>
+  respondToFetch(SSO_DISCOVER_URL, () => Response.json(body, { status }))
 
 const startParams = (assign: Mock<(url: string | URL) => void>) => {
   const [target] = assign.mock.calls[0]
@@ -308,7 +302,7 @@ describe('CloudLoginView SSO', () => {
     })
 
     it('signs in with Firebase without asking ingest about SSO', async () => {
-      const fetchMock = discoverReplies({ sso: true })
+      discoverReplies({ sso: true })
       await renderLoginView(`/cloud/login?oauth_request_id=${OAUTH_REQUEST_ID}`)
 
       await signInWithPassword('ada@acme.com')
@@ -319,7 +313,7 @@ describe('CloudLoginView SSO', () => {
           'hunter22'
         )
       )
-      expect(discoverCalls(fetchMock)).toEqual([])
+      expect(fetchRequests(SSO_DISCOVER_URL)).toEqual([])
       expect(assign).not.toHaveBeenCalled()
     })
   })
@@ -341,6 +335,108 @@ describe('CloudLoginView SSO', () => {
         email: 'ada@acme.com',
         returnTo: '/cloud/user-check'
       })
+    })
+
+    it('reports the SSO email as the attempt continuing to SSO', async () => {
+      discoverReplies({ sso: true })
+      await renderLoginView()
+
+      await continueWithSso('ada@acme.com')
+
+      await waitFor(() => expect(assign).toHaveBeenCalledOnce())
+      expect(useTelemetry()?.trackSsoEvent).toHaveBeenCalledExactlyOnceWith({
+        name: 'app:sso_continue_clicked',
+        properties: { surface: 'cloud_login', flow_id: expect.any(String) }
+      })
+    })
+
+    it('still leaves for SSO when session storage refuses the attempt', async () => {
+      vi.spyOn(Storage.prototype, 'setItem').mockImplementation(() => {
+        throw new DOMException('full', 'QuotaExceededError')
+      })
+      discoverReplies({ sso: true })
+      await renderLoginView()
+
+      await continueWithSso('ada@acme.com')
+
+      await waitFor(() => expect(assign).toHaveBeenCalledOnce())
+      expect(useTelemetry()?.trackSsoEvent).toHaveBeenCalledExactlyOnceWith(
+        expect.objectContaining({ name: 'app:sso_continue_clicked' })
+      )
+    })
+
+    it('reports nothing for an email without SSO', async () => {
+      discoverReplies({ sso: false })
+      await renderLoginView()
+
+      await continueWithSso('ada@example.com')
+
+      expect(await screen.findByText('auth.sso.notSso')).toBeInTheDocument()
+      expect(useTelemetry()?.trackSsoEvent).not.toHaveBeenCalled()
+    })
+
+    it('reports a return from the identity provider without signing in as cancelled', async () => {
+      discoverReplies({ sso: true })
+      await renderLoginView()
+      await continueWithSso('ada@acme.com')
+      await waitFor(() => expect(assign).toHaveBeenCalledOnce())
+
+      window.dispatchEvent(
+        Object.assign(new Event('pageshow'), { persisted: true })
+      )
+
+      const [[continued], [failed]] = vi.mocked(useTelemetry()!.trackSsoEvent)
+        .mock.calls
+      expect(failed).toEqual({
+        name: 'app:sso_sign_in_failed',
+        properties: {
+          surface: 'cloud_login',
+          reason: 'cancelled',
+          flow_id: continued.properties.flow_id
+        }
+      })
+    })
+
+    it.for<{ code: string; reason: string }>([
+      { code: 'SSO_INVALID_STATE', reason: 'state_mismatch' },
+      { code: 'SSO_ORG_NOT_ATTACHED', reason: 'org_not_attached' },
+      { code: 'SSO_IDP_ERROR', reason: 'server_error' }
+    ])(
+      'reports ?sso_error=$code as a $reason failure of the attempt that left',
+      async ({ code, reason }) => {
+        const attempt = ssoFlowStore.start('cloud_app')
+
+        await renderLoginView(`/cloud/login?sso_error=${code}`)
+
+        expect(useTelemetry()?.trackSsoEvent).toHaveBeenCalledExactlyOnceWith({
+          name: 'app:sso_sign_in_failed',
+          properties: { surface: 'cloud_app', reason, flow_id: attempt.flowId }
+        })
+        expect(ssoFlowStore.current()).toBeUndefined()
+      }
+    )
+
+    it('reports an ?sso_error once, dropping it from the URL but keeping its message', async () => {
+      ssoFlowStore.start('cloud_app')
+      const { router, unmount } = await renderLoginView(
+        '/cloud/login?sso_error=SSO_IDP_ERROR&previousFullPath=%2Fworkflows'
+      )
+
+      await waitFor(() =>
+        expect(router.currentRoute.value.query).toEqual({
+          previousFullPath: '/workflows'
+        })
+      )
+      expect(screen.getByText('auth.sso.errors.idpError')).toBeInTheDocument()
+      unmount()
+      render(CloudLoginView, {
+        global: {
+          plugins: [router, createI18n({ legacy: false, locale: 'en' })],
+          stubs: { CloudSignInForm: SignInFormStub }
+        }
+      })
+
+      expect(useTelemetry()?.trackSsoEvent).toHaveBeenCalledOnce()
     })
 
     it('returns to the page the visitor came from', async () => {
@@ -433,7 +529,7 @@ describe('CloudLoginView SSO', () => {
         body: { code: 'INTERNAL_ERROR', message: 'down' }
       }
     ])('signs $name in with Firebase', async ({ status, body }) => {
-      const fetchMock = discoverReplies(body, status)
+      discoverReplies(body, status)
       await renderLoginView()
 
       await signInWithPassword('ada@example.com')
@@ -444,7 +540,7 @@ describe('CloudLoginView SSO', () => {
           'hunter22'
         )
       )
-      expect(discoverCalls(fetchMock)).toHaveLength(1)
+      expect(fetchRequests(SSO_DISCOVER_URL)).toHaveLength(1)
       expect(assign).not.toHaveBeenCalled()
     })
 
@@ -476,7 +572,8 @@ describe('CloudLoginView SSO', () => {
     })
 
     it('keeps one SSO check in flight across the SSO and password forms', async () => {
-      const fetchMock = vi.fn<typeof fetch>(
+      respondToFetch(
+        SSO_DISCOVER_URL,
         (_input, init) =>
           new Promise((_resolve, reject) =>
             init?.signal?.addEventListener('abort', () =>
@@ -484,13 +581,12 @@ describe('CloudLoginView SSO', () => {
             )
           )
       )
-      vi.stubGlobal('fetch', fetchMock)
       await renderLoginView()
 
       await continueWithSso('ada@acme.com')
       await signInWithPassword('ada@acme.com')
 
-      expect(discoverCalls(fetchMock)).toHaveLength(1)
+      expect(fetchRequests(SSO_DISCOVER_URL)).toHaveLength(1)
       expect(useAuthActions().signInWithEmail).not.toHaveBeenCalled()
     })
 
@@ -538,9 +634,8 @@ describe('CloudLoginView Firebase sign-in refused for SSO', () => {
     vi.mocked(useAuthActions().signInWithEmail).mockResolvedValueOnce(
       fromPartial<UserCredential>({})
     )
-    vi.stubGlobal(
-      'fetch',
-      vi.fn(async () => Response.json({ sso: false }))
+    vi.mocked(fetch).mockImplementation(async () =>
+      Response.json({ sso: false })
     )
     const user = userEvent.setup()
     await user.click(
@@ -569,7 +664,7 @@ describe('CloudLoginView Firebase sign-in refused for SSO', () => {
 
   it.for([
     {
-      name: 'signs the account out and shows the SSO screen',
+      name: 'signs the account out and shows the SSO notice on the page',
       url: '/cloud/login',
       returnTo: '/cloud/user-check'
     },
@@ -595,7 +690,7 @@ describe('CloudLoginView Firebase sign-in refused for SSO', () => {
     await signInWithFirebase()
 
     await waitFor(() =>
-      expect(presentSsoRequired).toHaveBeenCalledWith({
+      expect(presentSsoRequired).toHaveBeenCalledWith('firebase_sign_in', {
         email: 'ada@acme.com',
         returnTo
       })
@@ -604,9 +699,14 @@ describe('CloudLoginView Firebase sign-in refused for SSO', () => {
       vi.mocked(presentSsoRequired).mock.results[0].value,
       'shown before the sign-out drops the remote config that carries sso_enabled'
     ).toBe(true)
-    await waitFor(() =>
-      expect(useDialogStore().isDialogOpen(SSO_REQUIRED_DIALOG_KEY)).toBe(true)
-    )
+    expect(
+      await screen.findByText('auth.sso.required.bodyWithEmail')
+    ).toBeInTheDocument()
+    expect(
+      screen.getAllByRole('button', { name: 'auth.sso.continueWithSso' }),
+      'the notice replaces the SSO entry, so there is one way on'
+    ).toHaveLength(1)
+    expect(useDialogStore().isDialogOpen(SSO_REQUIRED_DIALOG_KEY)).toBe(false)
     expect(useAuthStore().logout).toHaveBeenCalledOnce()
     expect(redirectAfterAuth).not.toHaveBeenCalled()
   })

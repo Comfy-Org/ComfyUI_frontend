@@ -39,6 +39,9 @@ const config: KnipConfig = {
     'packages/tailwind-utils': {
       project: ['src/**/*.{js,ts}']
     },
+    'packages/test-utils': {
+      project: ['src/**/*.ts']
+    },
     'packages/shared-frontend-utils': {
       project: ['src/**/*.{js,ts}']
     },
@@ -53,6 +56,9 @@ const config: KnipConfig = {
       entry: ['src/scripts/**/*.ts', 'src/routes/models/*.{astro,ts}'],
       // Executed by models-snippets.test.ts inside the generated Node examples.
       ignoreDependencies: ['mime-types']
+    },
+    'tools/architecture': {
+      project: ['src/**/*.ts']
     },
     'tools/test-recorder': {
       project: ['src/**/*.ts']

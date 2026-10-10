@@ -43,8 +43,7 @@ const customerEventsService: CustomerEventsService = {
   }),
   formatDate: vi.fn((date) => new Date(date).toLocaleDateString()),
   formatJsonKey: vi.fn((key) => key),
-  formatJsonValue: vi.fn((value) => value),
-  getTooltipContent: vi.fn(() => '')
+  formatJsonValue: vi.fn((value) => value)
 }
 
 export const useCustomerEventsService = vi.fn<

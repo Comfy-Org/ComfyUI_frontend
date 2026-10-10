@@ -34,26 +34,23 @@ const NO_SESSION: Answer = {
 /** Flag on; each session request takes the next answer, the last repeating. */
 function stubCloud(...sessionAnswers: Answer[]) {
   const sessionRequests: RequestInit[] = []
-  vi.stubGlobal(
-    'fetch',
-    vi.fn<typeof fetch>(async (input, init = {}) => {
-      if (String(input) !== SESSION) {
-        const flags =
-          init.credentials === 'include'
-            ? { unified_web_session: true }
-            : { web_session_probe: true }
-        return new Response(JSON.stringify(flags))
-      }
-      sessionRequests.push(init)
-      const answer =
-        sessionAnswers[
-          Math.min(sessionRequests.length, sessionAnswers.length) - 1
-        ]
-      return new Response(JSON.stringify(answer.body), {
-        status: answer.status
-      })
+  vi.mocked(fetch).mockImplementation(async (input, init = {}) => {
+    if (String(input) !== SESSION) {
+      const flags =
+        init.credentials === 'include'
+          ? { unified_web_session: true }
+          : { web_session_probe: true }
+      return new Response(JSON.stringify(flags))
+    }
+    sessionRequests.push(init)
+    const answer =
+      sessionAnswers[
+        Math.min(sessionRequests.length, sessionAnswers.length) - 1
+      ]
+    return new Response(JSON.stringify(answer.body), {
+      status: answer.status
     })
-  )
+  })
   return sessionRequests
 }
 

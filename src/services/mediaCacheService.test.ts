@@ -2,8 +2,6 @@ import { describe, expect, it, vi } from 'vitest'
 
 import { useMediaCache } from './mediaCacheService'
 
-// Mock fetch
-global.fetch = vi.fn()
 global.URL = {
   createObjectURL: vi.fn(() => 'blob:mock-url'),
   revokeObjectURL: vi.fn()

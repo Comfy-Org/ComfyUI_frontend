@@ -2,6 +2,7 @@ import type {
   AccountIdentity,
   AccountUser
 } from '@comfyorg/account-core/session'
+import { respondToFetch } from '@comfyorg/test-utils/fetch'
 
 /**
  * The identity is built from the freshly reset module graph on every
@@ -18,29 +19,24 @@ vi.mock<unknown>(import('@/config/firebase'), () => ({
 }))
 
 const STORAGE_KEY = 'comfy.billing-web.session.v1'
+const TOKEN_URL = 'https://testcloud.comfy.org/api/auth/token'
 
 function signedInUser(): AccountUser {
   return { uid: 'uid-1', getIdToken: vi.fn(async () => 'id-token') }
 }
 
-function mintedFetch() {
-  return vi.fn<typeof fetch>(
-    async () =>
-      new Response(
-        JSON.stringify({
-          token: 'jwt-1',
-          permissions: ['workspace:read'],
-          expires_at: new Date(Date.now() + 90 * 60_000).toISOString(),
-          workspace: { id: 'ws-1', name: 'Personal', type: 'personal' },
-          role: 'owner'
-        }),
-        { status: 200 }
-      )
-  )
+function mintedResponse(): Response {
+  return Response.json({
+    token: 'jwt-1',
+    permissions: ['workspace:read'],
+    expires_at: new Date(Date.now() + 90 * 60_000).toISOString(),
+    workspace: { id: 'ws-1', name: 'Personal', type: 'personal' },
+    role: 'owner'
+  })
 }
 
-function hungFetch() {
-  return vi.fn<typeof fetch>(() => new Promise<Response>(() => {}))
+function hungResponse(): Promise<Response> {
+  return new Promise<Response>(() => {})
 }
 
 async function freshSession({ configured = true } = {}) {
@@ -79,7 +75,7 @@ beforeEach(() => {
 
 describe('useBillingWebSession', () => {
   it('starts pending, before the identity has answered', async () => {
-    vi.stubGlobal('fetch', hungFetch())
+    vi.mocked(fetch).mockImplementation(hungResponse)
 
     const { projection } = await freshSession()
 
@@ -91,7 +87,7 @@ describe('useBillingWebSession', () => {
   })
 
   it('settles signed out when the deployment has no identity configuration', async () => {
-    vi.stubGlobal('fetch', hungFetch())
+    vi.mocked(fetch).mockImplementation(hungResponse)
 
     const { projection } = await freshSession({ configured: false })
 
@@ -108,23 +104,23 @@ describe('useBillingWebSession', () => {
     [
       'nobody signed in',
       null,
-      hungFetch,
+      hungResponse,
       { phase: 'signed-out', uid: null, hasSession: false }
     ],
     [
       'a mint still in flight',
       signedInUser(),
-      hungFetch,
+      hungResponse,
       { phase: 'minting', uid: 'uid-1', hasSession: false }
     ],
     [
       'a minted workspace session',
       signedInUser(),
-      mintedFetch,
+      mintedResponse,
       { phase: 'authenticated', uid: 'uid-1', hasSession: true }
     ]
-  ] as const)('projects %s', async ([, user, makeFetch, expected]) => {
-    vi.stubGlobal('fetch', makeFetch())
+  ] as const)('projects %s', async ([, user, respond, expected]) => {
+    respondToFetch(TOKEN_URL, respond)
     const { client, projection } = await freshSession()
 
     h.deliver?.(user)
@@ -138,7 +134,7 @@ describe('useBillingWebSession', () => {
   })
 
   it('reports the same phase to the router guard', async () => {
-    vi.stubGlobal('fetch', mintedFetch())
+    respondToFetch(TOKEN_URL, mintedResponse)
     const { client, phase, projection } = await freshSession()
     const user = signedInUser()
 
@@ -152,14 +148,8 @@ describe('useBillingWebSession', () => {
 
 describe('a refused mint', () => {
   it('surfaces the failure instead of falling back to a personal session', async () => {
-    vi.stubGlobal(
-      'fetch',
-      vi.fn<typeof fetch>(
-        async () =>
-          new Response(JSON.stringify({ error: 'not a member' }), {
-            status: 403
-          })
-      )
+    respondToFetch(TOKEN_URL, () =>
+      Response.json({ error: 'not a member' }, { status: 403 })
     )
     const { client, session } = await freshSession()
     const user = signedInUser()
@@ -175,8 +165,7 @@ describe('a refused mint', () => {
 
 describe('the credential cache', () => {
   it('writes the minted credential once and serves it back without a second mint', async () => {
-    const mint = mintedFetch()
-    vi.stubGlobal('fetch', mint)
+    respondToFetch(TOKEN_URL, mintedResponse)
     const { client, projection } = await freshSession()
     const user = signedInUser()
     h.deliver?.(user)
@@ -184,7 +173,7 @@ describe('the credential cache', () => {
     await vi.waitFor(() => expect(projection().phase).toBe('authenticated'))
 
     expect(sessionStorage.getItem(STORAGE_KEY)).not.toBeNull()
-    expect(mint).toHaveBeenCalledOnce()
+    expect(fetch).toHaveBeenCalledOnce()
     const secondFetch = vi.fn<typeof fetch>()
     const cached = await client.ensureFresh(signedInUser(), {
       fetchImpl: secondFetch
@@ -209,7 +198,7 @@ describe('the credential cache', () => {
         throw new Error('storage disabled')
       }
     })
-    vi.stubGlobal('fetch', mintedFetch())
+    respondToFetch(TOKEN_URL, mintedResponse)
     const { client } = await freshSession()
 
     const result = await client.ensureFresh(signedInUser())

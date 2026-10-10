@@ -8,37 +8,37 @@ import frMessages from '@/locales/fr/main.json' with { type: 'json' }
 import { TestIds } from '@e2e/fixtures/selectors'
 
 export class AgentPanel {
-  public readonly root: Locator
-  public readonly dockedPanel: Locator
-  public readonly openButton: Locator
+  public readonly activityRows: Locator
+  public readonly attachmentChips: Locator
   public readonly closeButton: Locator
+  public readonly composer: Locator
+  public readonly composerAssetSection: Locator
+  public readonly composerPromptArea: Locator
+  public readonly copiedButton: Locator
+  public readonly copyReportButton: Locator
+  public readonly creditsExhaustedPaywall: Locator
   public readonly debugHeading: Locator
+  public readonly dockedPanel: Locator
+  public readonly dockedPanelShell: Locator
+  public readonly fileInput: Locator
+  public readonly nodeSelectionBanner: Locator
+  public readonly openButton: Locator
+  public readonly root: Locator
+  public readonly scrollAssetsRight: Locator
+  public readonly sendButton: Locator
   public readonly serverLogsSwitch: Locator
   public readonly settingsSwitch: Locator
-  public readonly workflowSwitch: Locator
-  public readonly copyReportButton: Locator
-  public readonly copiedButton: Locator
-  public readonly workflowPicker: Locator
-  public readonly fileInput: Locator
-  public readonly composerAssetSection: Locator
-  public readonly scrollAssetsRight: Locator
-  public readonly attachmentChips: Locator
-  public readonly composer: Locator
-  public readonly composerPromptArea: Locator
-  public readonly sendButton: Locator
   public readonly stopButton: Locator
-  public readonly creditsExhaustedPaywall: Locator
+  public readonly workflowPicker: Locator
+  public readonly workflowSwitch: Locator
   public readonly workSummary: Locator
-  public readonly nodeSelectionBanner: Locator
-  public readonly activityRows: Locator
 
   constructor(private readonly page: Page) {
     this.root = page.locator('#agent-panel-root')
-    this.dockedPanel = page.getByTestId('docked-agent-panel')
-    this.openButton = page.getByRole('button', {
-      name: enMessages.agent.entryButton,
-      exact: true
-    })
+    this.activityRows = this.root
+      .getByTestId(TestIds.agent.activityTrace)
+      .getByRole('listitem')
+    this.attachmentChips = this.root.getByTestId('agent-attachment-chip')
     this.closeButton = this.root
       .locator('header')
       .getByRole('button', { name: enMessages.g.close, exact: true })
@@ -48,46 +48,48 @@ export class AgentPanel {
           exact: true
         })
       )
-    this.debugHeading = this.root.getByText('CRDT debug', { exact: true })
-    this.serverLogsSwitch = this.root.getByRole('switch', {
-      name: 'Server logs'
-    })
-    this.settingsSwitch = this.root.getByRole('switch', { name: 'Settings' })
-    this.workflowSwitch = this.root.getByRole('switch', {
-      name: 'Workflow JSON'
-    })
+    this.composer = this.root.getByRole('textbox', { name: /^Describe ideas/ })
+    this.composerAssetSection = this.root.getByTestId('composer-asset-section')
+    this.composerPromptArea = this.root.getByTestId('composer-inline-input')
+    this.copiedButton = this.root.getByRole('button', { name: 'Copied' })
     this.copyReportButton = this.root.getByRole('button', {
       name: 'Copy full report'
-    })
-    this.copiedButton = this.root.getByRole('button', { name: 'Copied' })
-    this.workflowPicker = this.root.getByRole('button', {
-      name: enMessages.agent.switchWorkflow
-    })
-    this.fileInput = this.root.getByTestId('agent-file-input')
-    this.composerAssetSection = this.root.getByTestId('composer-asset-section')
-    this.scrollAssetsRight = this.root.getByRole('button', {
-      name: enMessages.g.scrollRight
-    })
-    this.attachmentChips = this.root.getByTestId('agent-attachment-chip')
-    this.composer = this.root.getByRole('textbox', { name: /^Describe ideas/ })
-    this.composerPromptArea = this.root.getByTestId('composer-inline-input')
-    this.sendButton = this.root.getByRole('button', {
-      name: enMessages.agent.send
-    })
-    this.stopButton = this.root.getByRole('button', {
-      name: enMessages.agent.stop,
-      exact: true
     })
     this.creditsExhaustedPaywall = this.root.getByRole('alert').filter({
       hasText: enMessages.agent.paywall.title
     })
+    this.debugHeading = this.root.getByText('CRDT debug', { exact: true })
+    this.dockedPanel = page.getByTestId('docked-agent-panel')
+    this.dockedPanelShell = page.getByTestId('docked-agent-panel-shell')
+    this.fileInput = this.root.getByTestId('agent-file-input')
+    this.nodeSelectionBanner = page.getByTestId('node-selection-mode-banner')
+    this.openButton = page.getByRole('button', {
+      name: enMessages.agent.entryButton,
+      exact: true
+    })
+    this.scrollAssetsRight = this.root.getByRole('button', {
+      name: enMessages.g.scrollRight
+    })
+    this.sendButton = this.root.getByRole('button', {
+      name: enMessages.agent.send
+    })
+    this.serverLogsSwitch = this.root.getByRole('switch', {
+      name: 'Server logs'
+    })
+    this.settingsSwitch = this.root.getByRole('switch', { name: 'Settings' })
+    this.stopButton = this.root.getByRole('button', {
+      name: enMessages.agent.stop,
+      exact: true
+    })
+    this.workflowPicker = this.root.getByRole('button', {
+      name: enMessages.agent.switchWorkflow
+    })
+    this.workflowSwitch = this.root.getByRole('switch', {
+      name: 'Workflow JSON'
+    })
     this.workSummary = this.root.getByRole('button', {
       name: new RegExp(`^${escapeRegExp(enMessages.agent.worked)}`)
     })
-    this.nodeSelectionBanner = page.getByTestId('node-selection-mode-banner')
-    this.activityRows = this.root
-      .getByTestId(TestIds.agent.activityTrace)
-      .getByRole('listitem')
   }
 
   async scrollAssetsToEnd(): Promise<void> {

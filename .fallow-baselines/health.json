@@ -1269,6 +1269,11 @@
         "count": 1
       }
     },
+    "src/composables/billing/useBillingDialogs.ts": {
+      "crap_high": {
+        "count": 1
+      }
+    },
     "src/composables/bottomPanelTabs/useLogsTerminal.ts": {
       "crap_moderate": {
         "count": 1
@@ -3226,7 +3231,7 @@
         "count": 1
       }
     },
-    "src/scripts/valueControl.ts": {
+    "src/core/graph/widgets/valueControl.ts": {
       "crap_moderate": {
         "count": 1
       }

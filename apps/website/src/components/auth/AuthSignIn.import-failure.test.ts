@@ -13,13 +13,13 @@ vi.mock(import('@/config/workshop-firebase'), () => {
 })
 
 it('leaves the buttons usable when the Firebase chunk fails to load on a click', async () => {
-  const { messages } = useAuthToasts()
+  const { toasts } = useAuthToasts()
   render(AuthSignIn)
   const button = screen.getByRole('button', { name: /^sign in with google$/i })
   await userEvent.setup().click(button)
 
-  await waitFor(() => expect(messages.value).toHaveLength(1))
-  expect(messages.value[0].detail).toBe(
+  await waitFor(() => expect(toasts.value).toHaveLength(1))
+  expect(toasts.value[0].description).toBe(
     t('auth.errors.generic', {}, { locale: 'en' })
   )
   expect(

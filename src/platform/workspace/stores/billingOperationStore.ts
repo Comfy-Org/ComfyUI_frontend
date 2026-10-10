@@ -4,7 +4,6 @@ import type {
   SubscriptionCheckoutTier,
   SubscriptionCheckoutType
 } from '@comfyorg/account-core/billing'
-import type { ToastMessageOptions } from 'primevue/toast'
 import type { PaymentIntent } from '@stripe/stripe-js'
 import { loadStripe } from '@stripe/stripe-js/pure'
 import { customerCanActHere } from '@comfyorg/account-core/billing'
@@ -13,6 +12,7 @@ import { defineStore } from 'pinia'
 import { computed, ref } from 'vue'
 
 import { useBillingContext } from '@/composables/billing/useBillingContext'
+import { useToast } from '@/components/ui/toast/toastStore'
 import { useFeatureFlags } from '@/composables/useFeatureFlags'
 import { t } from '@/i18n'
 import type { TierKey } from '@/platform/cloud/subscription/constants/tierPricing'
@@ -22,7 +22,6 @@ import { isCloud } from '@/platform/distribution/types'
 import { useTelemetry } from '@/platform/telemetry'
 import { reportError } from '@/platform/telemetry/reportError'
 import type { PaymentIntentSource } from '@/platform/telemetry/types'
-import { useToastStore } from '@/platform/updates/common/toastStore'
 import { workspaceApi } from '@/platform/workspace/api/workspaceApi'
 import type {
   BillingAuthenticationState,
@@ -30,7 +29,10 @@ import type {
   BillingDeclineReason,
   BillingRecoveryAction
 } from '@/platform/workspace/api/workspaceApi'
-import type { ProgressToastKind } from '@/platform/workspace/billing/customerAttention'
+import type {
+  ProgressToast,
+  ProgressToastKind
+} from '@/platform/workspace/billing/customerAttention'
 import {
   isBlockedOnCustomerPhase,
   isParkedCheckout,
@@ -172,14 +174,12 @@ interface FailureRecovery {
 export const useBillingOperationStore = defineStore('billingOperation', () => {
   const workspaceStore = useTeamWorkspaceStore()
   const { flags } = useFeatureFlags()
+  const toast = useToast()
   const operations = ref<Map<string, BillingOperation>>(new Map())
   const timeouts = new Map<string, ReturnType<typeof setTimeout>>()
   const intervals = new Map<string, number>()
   const waitingWithoutActionSince = new Map<string, number>()
-  const progressToasts = new Map<
-    string,
-    { kind: ProgressToastKind; message: ToastMessageOptions }
-  >()
+  const progressToasts = new Map<string, ProgressToast>()
   const progressToastsAwaitingFirstRead = new Set<string>()
   const terminalResolvers = new Map<string, TerminalResolver>()
   const terminalPromises = new Map<string, Promise<BillingOperation>>()
@@ -249,11 +249,10 @@ export const useBillingOperationStore = defineStore('billingOperation', () => {
     type: PaymentOperationType,
     kind: ProgressToastKind | undefined
   ) {
-    const toastStore = useToastStore()
     const previous = progressToasts.get(opId)
     if (previous?.kind === kind) return
     if (previous) {
-      toastStore.remove(previous.message)
+      toast.dismiss(previous.id)
       progressToasts.delete(opId)
     }
     if (kind === undefined) return
@@ -267,14 +266,11 @@ export const useBillingOperationStore = defineStore('billingOperation', () => {
           ? 'billingOperation.topupActionRequired'
           : 'billingOperation.topupProcessing'
 
-    const message: ToastMessageOptions = {
-      // 'warn' selects the prompt icon over the spinner in GlobalToast.
-      severity: kind === 'action' ? 'warn' : 'info',
-      summary: t(messageKey),
-      group: 'billing-operation'
-    }
-    progressToasts.set(opId, { kind, message })
-    toastStore.add(message)
+    const id =
+      kind === 'action'
+        ? toast.warning(t(messageKey))
+        : toast.loading(t(messageKey))
+    progressToasts.set(opId, { kind, id })
   }
 
   function announceStart(
@@ -932,17 +928,12 @@ export const useBillingOperationStore = defineStore('billingOperation', () => {
         useSettingsDialog().show(isCloud ? 'workspace' : 'credits')
       }
 
-      const toastStore = useToastStore()
       const messageKey =
         operation.type === 'subscription'
           ? 'billingOperation.subscriptionSuccess'
           : 'billingOperation.topupSuccess'
 
-      toastStore.add({
-        severity: 'success',
-        summary: t(messageKey),
-        life: 5000
-      })
+      toast.success(t(messageKey), { duration: 5000 })
     } catch (error) {
       reportError(error, {
         surface: 'billing',
@@ -1045,11 +1036,9 @@ export const useBillingOperationStore = defineStore('billingOperation', () => {
     }
 
     if (isPaymentOperation(operation.type) && !superseded) {
-      useToastStore().add({
-        severity: 'error',
-        summary: defaultMessage,
-        detail: detail ?? undefined,
-        life: 7000
+      toast.error(defaultMessage, {
+        description: detail ?? undefined,
+        duration: 7000
       })
     }
 
@@ -1197,10 +1186,7 @@ export const useBillingOperationStore = defineStore('billingOperation', () => {
     }
 
     if (isPaymentOperation(operation.type)) {
-      useToastStore().add({
-        severity: 'error',
-        summary: message
-      })
+      toast.error(message)
     }
 
     resolveTerminal(opId)
@@ -1358,7 +1344,7 @@ export const useBillingOperationStore = defineStore('billingOperation', () => {
 
     const progressToast = progressToasts.get(opId)
     if (progressToast) {
-      useToastStore().remove(progressToast.message)
+      toast.dismiss(progressToast.id)
       progressToasts.delete(opId)
     }
   }

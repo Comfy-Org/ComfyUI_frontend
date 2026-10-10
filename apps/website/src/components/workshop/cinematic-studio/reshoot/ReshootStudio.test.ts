@@ -31,9 +31,8 @@ beforeEach(() => {
   vi.useFakeTimers({ shouldAdvanceTime: true })
   vi.mocked(reshootTransport).mockReturnValue(fakeTransport())
   vi.mocked(readGeometry).mockResolvedValue(fakeGeometry())
-  vi.stubGlobal(
-    'fetch',
-    vi.fn(async () => new Response(new Blob(['clip'], { type: 'video/mp4' })))
+  vi.mocked(fetch).mockImplementation(
+    async () => new Response(new Blob(['clip'], { type: 'video/mp4' }))
   )
   signIn()
 })

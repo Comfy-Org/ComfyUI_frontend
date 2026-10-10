@@ -10,7 +10,10 @@ import type {
   JobDetail,
   RawJobListItem
 } from '@/platform/remote/comfyui/jobs/jobTypes'
-import type { AssetDownloadWsMessage } from '@/platform/remote/comfyui/execution/types'
+import type {
+  AssetDownloadWsMessage,
+  AssetExportWsMessage
+} from '@/platform/remote/comfyui/execution/types'
 
 const jobsListRoutePattern = '**/api/jobs?*'
 const assetsListRoutePattern = /\/api\/assets(?:\?.*)?$/
@@ -142,6 +145,12 @@ export class AssetsHelper {
   async dispatchDownload(message: AssetDownloadWsMessage): Promise<void> {
     await this.page.evaluate((download) => {
       window.app!.api.dispatchCustomEvent('asset_download', download)
+    }, message)
+  }
+
+  async dispatchExport(message: AssetExportWsMessage): Promise<void> {
+    await this.page.evaluate((assetExport) => {
+      window.app!.api.dispatchCustomEvent('asset_export', assetExport)
     }, message)
   }
 

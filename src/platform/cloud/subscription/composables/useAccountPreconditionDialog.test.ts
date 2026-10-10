@@ -1,4 +1,5 @@
-import { useDialogService } from '@/services/dialogService'
+import { useAuthDialogs } from '@/composables/auth/useAuthDialogs'
+import { useBillingDialogs } from '@/composables/billing/useBillingDialogs'
 import { describe, expect, it, vi } from 'vitest'
 
 import { mockBillingContext } from '@/utils/__tests__/mockBillingContext'
@@ -6,6 +7,8 @@ import { mockBillingContext } from '@/utils/__tests__/mockBillingContext'
 import { useAccountPreconditionDialog } from './useAccountPreconditionDialog'
 
 vi.mock(import('@/services/dialogService'))
+vi.mock(import('@/composables/auth/useAuthDialogs'))
+vi.mock(import('@/composables/billing/useBillingDialogs'))
 
 vi.mock(import('@/composables/billing/useBillingContext'))
 
@@ -13,39 +16,39 @@ describe('useAccountPreconditionDialog', () => {
   it('routes a sign-in precondition to the API sign-in dialog with the node type', () => {
     useAccountPreconditionDialog().open('sign_in', { nodeType: 'ApiNode' })
 
-    expect(useDialogService().showApiNodesSignInDialog).toHaveBeenCalledWith([
+    expect(useAuthDialogs().showApiNodesSignInDialog).toHaveBeenCalledWith([
       'ApiNode'
     ])
     expect(
-      useDialogService().showSubscriptionRequiredDialog
+      useBillingDialogs().showSubscriptionRequiredDialog
     ).not.toHaveBeenCalled()
-    expect(useDialogService().showTopUpCreditsDialog).not.toHaveBeenCalled()
+    expect(useBillingDialogs().showTopUpCreditsDialog).not.toHaveBeenCalled()
   })
 
   it('routes a sign-in precondition with no node type to an empty list', () => {
     useAccountPreconditionDialog().open('sign_in')
 
-    expect(useDialogService().showApiNodesSignInDialog).toHaveBeenCalledWith([])
+    expect(useAuthDialogs().showApiNodesSignInDialog).toHaveBeenCalledWith([])
   })
 
   it('routes a subscription precondition to the subscription dialog', () => {
     useAccountPreconditionDialog().open('subscription')
 
     expect(
-      useDialogService().showSubscriptionRequiredDialog
+      useBillingDialogs().showSubscriptionRequiredDialog
     ).toHaveBeenCalledTimes(1)
-    expect(useDialogService().showApiNodesSignInDialog).not.toHaveBeenCalled()
-    expect(useDialogService().showTopUpCreditsDialog).not.toHaveBeenCalled()
+    expect(useAuthDialogs().showApiNodesSignInDialog).not.toHaveBeenCalled()
+    expect(useBillingDialogs().showTopUpCreditsDialog).not.toHaveBeenCalled()
   })
 
   it('routes a credit precondition to the top-up dialog', () => {
     useAccountPreconditionDialog().open('credits', { nodeType: 'PartnerNode' })
 
-    expect(useDialogService().showTopUpCreditsDialog).toHaveBeenCalledWith({
+    expect(useBillingDialogs().showTopUpCreditsDialog).toHaveBeenCalledWith({
       isInsufficientCredits: true
     })
     expect(
-      useDialogService().showSubscriptionRequiredDialog
+      useBillingDialogs().showSubscriptionRequiredDialog
     ).not.toHaveBeenCalled()
   })
 
@@ -53,14 +56,14 @@ describe('useAccountPreconditionDialog', () => {
     useAccountPreconditionDialog().open('subscription')
 
     expect(
-      useDialogService().showSubscriptionRequiredDialog
+      useBillingDialogs().showSubscriptionRequiredDialog
     ).toHaveBeenCalledWith({ reason: 'subscription_required' })
   })
 
   it('omits a source from the top-up dialog when none is named', () => {
     useAccountPreconditionDialog().open('credits')
 
-    expect(useDialogService().showTopUpCreditsDialog).toHaveBeenCalledWith({
+    expect(useBillingDialogs().showTopUpCreditsDialog).toHaveBeenCalledWith({
       isInsufficientCredits: true
     })
   })
@@ -71,7 +74,7 @@ describe('useAccountPreconditionDialog', () => {
     })
 
     expect(
-      useDialogService().showSubscriptionRequiredDialog
+      useBillingDialogs().showSubscriptionRequiredDialog
     ).toHaveBeenCalledWith({ reason: 'agent_paywall' })
   })
 
@@ -80,7 +83,7 @@ describe('useAccountPreconditionDialog', () => {
       source: 'agent_paywall'
     })
 
-    expect(useDialogService().showTopUpCreditsDialog).toHaveBeenCalledWith({
+    expect(useBillingDialogs().showTopUpCreditsDialog).toHaveBeenCalledWith({
       isInsufficientCredits: true,
       source: 'agent_paywall'
     })

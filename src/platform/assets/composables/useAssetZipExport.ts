@@ -1,14 +1,14 @@
 import type { CreateAssetExportData } from '@comfyorg/ingest-types'
 import { useI18n } from 'vue-i18n'
 
+import { useToast } from '@/components/ui/toast/toastStore'
 import { assetService } from '@/platform/assets/services/assetService'
 import { reportError } from '@/platform/telemetry/reportError'
-import { useToastStore } from '@/platform/updates/common/toastStore'
 import { useAssetExportStore } from '@/stores/assetExportStore'
 
 export function useAssetZipExport() {
   const { t } = useI18n()
-  const toast = useToastStore()
+  const toast = useToast()
 
   async function startZipExport(
     request: CreateAssetExportData['body'],
@@ -17,15 +17,13 @@ export function useAssetZipExport() {
     try {
       const { task_id } = await assetService.createAssetExport(request)
       useAssetExportStore().trackExport(task_id)
-      toast.add({
-        severity: 'info',
-        summary: t('exportToast.exportStarted'),
-        detail: t(
+      toast.info(t('exportToast.exportStarted'), {
+        description: t(
           'mediaAsset.selection.exportStarted',
           { count: fileCount },
           fileCount
         ),
-        life: 3000
+        duration: 3000
       })
     } catch (error) {
       reportError(error, {
@@ -33,10 +31,8 @@ export function useAssetZipExport() {
         surface: 'assets',
         context: { count: fileCount }
       })
-      toast.add({
-        severity: 'error',
-        summary: t('g.error'),
-        detail: t('exportToast.exportFailedSingle')
+      toast.error(t('g.error'), {
+        description: t('exportToast.exportFailedSingle')
       })
     }
   }

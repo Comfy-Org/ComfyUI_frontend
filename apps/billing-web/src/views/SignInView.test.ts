@@ -8,6 +8,7 @@ import type { SignInState } from '@/auth/signInState'
 import { recordBillingEntry } from '@/entry/billingEntry'
 import { createBillingI18n } from '@/i18n'
 import { createBillingRouter } from '@/router'
+import { billingWebTelemetry } from '@/telemetry/billingWebTelemetry'
 import { trackedBillingEvents } from '@/test/trackedBillingEvents'
 import SignInView from '@/views/SignInView.vue'
 
@@ -15,6 +16,10 @@ const h = vi.hoisted(() => ({
   available: true,
   initialState: undefined as SignInState | undefined,
   sessionFailureCode: undefined as SessionErrorCode | undefined,
+  ssoOrganizationId: undefined as string | undefined,
+  ssoEnabled: vi.fn<() => Promise<boolean>>(),
+  accountEmail: 'someone@acme.com' as string | null,
+  signOut: vi.fn<() => Promise<void>>(),
   signInWith: vi.fn(),
   submitEmail: vi.fn(),
   retryMint: vi.fn(),
@@ -34,6 +39,7 @@ vi.mock(import('@/auth/useSignInController'), async () => {
         leaving: computed(() => false),
         errorMessage: computed(() => ''),
         sessionFailureCode: computed(() => h.sessionFailureCode),
+        ssoOrganizationId: computed(() => h.ssoOrganizationId),
         available: computed(() => h.available),
         signInWith: h.signInWith,
         submitEmail: h.submitEmail,
@@ -43,6 +49,17 @@ vi.mock(import('@/auth/useSignInController'), async () => {
     }
   }
 })
+
+vi.mock(import('@/config/ssoEnabled'), () => ({
+  readBillingWebSsoEnabled: h.ssoEnabled
+}))
+
+vi.mock<unknown>(import('@/config/firebase'), () => ({
+  resolveBillingWebIdentity: async () => ({
+    currentUser: () => ({ email: h.accountEmail }),
+    signOut: h.signOut
+  })
+}))
 
 async function renderSignIn(path = '/sign-in') {
   const router = createBillingRouter(
@@ -67,6 +84,10 @@ beforeEach(() => {
   h.retryMint.mockClear()
   h.initialState = undefined
   h.sessionFailureCode = undefined
+  h.ssoOrganizationId = undefined
+  h.ssoEnabled.mockResolvedValue(false)
+  h.accountEmail = 'someone@acme.com'
+  h.signOut.mockResolvedValue(undefined)
   h.phase = 'signed-out'
   recordBillingEntry(undefined)
 })
@@ -359,4 +380,145 @@ describe('SignInView', () => {
       ).not.toBeInTheDocument()
     }
   )
+
+  describe('an SSO_REQUIRED refusal with sso_enabled on', () => {
+    const SSO_START = 'https://testcloud.comfy.org/api/auth/sso/start'
+
+    beforeEach(() => {
+      h.ssoEnabled.mockResolvedValue(true)
+      h.sessionFailureCode = 'SSO_REQUIRED'
+      h.initialState = {
+        step: 'signedIn',
+        origin: 'interactive',
+        mintFailed: true
+      }
+    })
+
+    it.for([
+      {
+        refusal: 'naming its organization',
+        organizationId: 'org_acme',
+        path: REFUSED_ENTRY,
+        query: 'email=someone%40acme.com&organization=org_acme'
+      },
+      {
+        refusal: 'naming no organization',
+        organizationId: undefined,
+        path: REFUSED_ENTRY,
+        query: 'email=someone%40acme.com'
+      }
+    ])(
+      'signs out and continues with SSO for a refusal $refusal',
+      async ({ organizationId, path, query }) => {
+        h.ssoOrganizationId = organizationId
+        const assign = vi
+          .spyOn(window.location, 'assign')
+          .mockImplementation(() => {})
+        const router = await renderSignIn(path)
+
+        const action = await screen.findByRole('button', {
+          name: 'Continue with SSO'
+        })
+        expect(screen.getByRole('alert')).toHaveTextContent(
+          "Your organization requires single sign-onsomeone@acme.com signs in with your organization's single sign-on."
+        )
+        await userEvent.click(action)
+
+        expect(h.signOut).toHaveBeenCalledOnce()
+        const backToThisPage = encodeURIComponent(
+          `${window.location.origin}${router.currentRoute.value.fullPath}`
+        )
+        expect(assign).toHaveBeenCalledExactlyOnceWith(
+          `${SSO_START}?${query}&return_to=${backToThisPage}`
+        )
+      }
+    )
+
+    it('reports the notice once and the click as the same attempt', async () => {
+      const trackSso = vi
+        .spyOn(billingWebTelemetry, 'trackSsoEvent')
+        .mockImplementation(() => undefined)
+      vi.spyOn(window.location, 'assign').mockImplementation(() => {})
+      await renderSignIn(REFUSED_ENTRY)
+
+      await userEvent.click(
+        await screen.findByRole('button', { name: 'Continue with SSO' })
+      )
+
+      const [[shown], [continued], ...rest] = trackSso.mock.calls
+      expect(shown).toEqual({
+        name: 'app:sso_required_shown',
+        properties: {
+          surface: 'billing_web',
+          trigger: 'session_refused',
+          presentation: 'notice',
+          flow_id: expect.any(String)
+        }
+      })
+      expect(continued).toEqual({
+        name: 'app:sso_continue_clicked',
+        properties: {
+          surface: 'billing_web',
+          flow_id: shown.properties.flow_id
+        }
+      })
+      expect(rest).toEqual([])
+    })
+
+    it('offers nothing it cannot start when neither an organization nor an email is known', async () => {
+      h.accountEmail = null
+      await renderSignIn(REFUSED_ENTRY)
+
+      await vi.waitFor(() => expect(h.ssoEnabled).toHaveBeenCalled())
+      expect(screen.getByRole('alert')).toHaveTextContent(
+        "This account can't manage billing for that workspace."
+      )
+      expect(
+        screen.queryByRole('button', { name: 'Continue with SSO' })
+      ).toBeNull()
+    })
+
+    it('stays on the page when signing out fails', async () => {
+      h.signOut.mockRejectedValue(new Error('auth/network-request-failed'))
+      const assign = vi
+        .spyOn(window.location, 'assign')
+        .mockImplementation(() => {})
+      await renderSignIn(REFUSED_ENTRY)
+
+      await userEvent.click(
+        await screen.findByRole('button', { name: 'Continue with SSO' })
+      )
+
+      expect(assign).not.toHaveBeenCalled()
+      expect(
+        await screen.findByText(
+          'Something went wrong while signing you in. Please try again.'
+        )
+      ).toBeInTheDocument()
+      expect(
+        screen.getByRole('button', { name: 'Continue with SSO' })
+      ).toBeInTheDocument()
+    })
+  })
+
+  it('keeps the workspace refusal for SSO_REQUIRED while sso_enabled is off', async () => {
+    const trackSso = vi.spyOn(billingWebTelemetry, 'trackSsoEvent')
+    h.sessionFailureCode = 'SSO_REQUIRED'
+    h.ssoOrganizationId = 'org_acme'
+    h.initialState = {
+      step: 'signedIn',
+      origin: 'interactive',
+      mintFailed: true
+    }
+    await renderSignIn(REFUSED_ENTRY)
+
+    await vi.waitFor(() => expect(h.ssoEnabled).toHaveBeenCalled())
+    expect(screen.getByRole('alert')).toHaveTextContent(
+      "This account can't manage billing for that workspace."
+    )
+    expect(
+      screen.queryByRole('button', { name: 'Continue with SSO' })
+    ).toBeNull()
+    expect(trackSso).not.toHaveBeenCalled()
+  })
 })

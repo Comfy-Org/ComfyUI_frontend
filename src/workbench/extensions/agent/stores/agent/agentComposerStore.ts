@@ -20,6 +20,7 @@ import type {
   WorkflowReference
 } from '../../types/workflowReference'
 import { insertComposerReference } from '../../utils/composerPrompt'
+import { promptReferenceParts } from '../../utils/promptReferenceParts'
 import { createVideoThumbnail } from '../../utils/videoThumbnail'
 import type { AgentStarterPromptSource } from '../../utils/starterPrompts'
 
@@ -72,6 +73,7 @@ export const useAgentComposerStore = defineStore('agentComposer', () => {
     )
   )
   const nodeScope = ref<string | null>(null)
+  let skillScope: string | null = null
   const promptEpoch = ref(0)
   // Set by the affordance that supplied the text; read once at submission and
   // reset there, so it describes the message being sent rather than the panel.
@@ -166,18 +168,29 @@ export const useAgentComposerStore = defineStore('agentComposer', () => {
     }
   }
 
-  function applyEditorPrompt(next: ComposerPrompt): void {
+  function resolveEditorReference(
+    item: ComposerReference
+  ): ComposerReference[] {
+    if (item.kind === 'node' && item.scope !== nodeScope.value) return []
+    if (item.kind !== 'asset') return [item]
+    if (!attachmentIds.value.includes(item.attachment.id)) return []
+    const attachment = assetsById.get(item.attachment.id)
+    if (!attachment) return []
+    return [{ ...item, attachment }]
+  }
+
+  function applyEditorPrompt(next: ComposerPrompt, metadataOnly = false): void {
     const seen = new Set<string>()
+    let hasSkill = false
     const references = next.references.flatMap((item): ComposerReference[] => {
+      if (item.kind === 'skill') {
+        if (item.scope !== skillScope || hasSkill) return []
+        hasSkill = true
+      }
       const key = composerReferenceKey(item)
       if (item.kind !== 'asset' && seen.has(key)) return []
       seen.add(key)
-      if (item.kind === 'node' && item.scope !== nodeScope.value) return []
-      if (item.kind !== 'asset') return [item]
-      if (!attachmentIds.value.includes(item.attachment.id)) return []
-      const attachment = assetsById.get(item.attachment.id)
-      if (!attachment) return []
-      return [{ ...item, attachment }]
+      return resolveEditorReference(item)
     })
     if (
       !next.text.trim() &&
@@ -187,7 +200,25 @@ export const useAgentComposerStore = defineStore('agentComposer', () => {
       promptOrigin.value = 'typed'
       starterPrompt.value = null
     }
-    updateDraft({ text: next.text, references })
+    if (metadataOnly) draftState.value = { text: next.text, references }
+    else updateDraft({ text: next.text, references })
+  }
+
+  function resolveSkillMetadata(next: ComposerPrompt): void {
+    if (next.text !== prompt.value.text) return
+    const previous = prompt.value.references.find(
+      (item) => item.kind === 'skill'
+    )
+    const resolved = next.references.find((item) => item.kind === 'skill')
+    if (
+      !previous?.resolvePastedName ||
+      !resolved ||
+      resolved.resolvePastedName ||
+      previous.name !== resolved.name ||
+      previous.scope !== resolved.scope
+    )
+      return
+    applyEditorPrompt(next, true)
   }
 
   function markSuggestedPrompt(source?: AgentStarterPromptSource): void {
@@ -197,6 +228,19 @@ export const useAgentComposerStore = defineStore('agentComposer', () => {
     starterPrompt.value = source ?? null
   }
 
+  function snapshotReferences(next: PromptSnapshot): ComposerReference[] {
+    return promptReferenceParts(
+      next.text,
+      next.workflowReferences,
+      next.skillReference
+    ).flatMap((part): ComposerReference[] => {
+      if (part.type === 'text') return []
+      if (part.type === 'workflow')
+        return [{ ...part.reference, kind: 'workflow' }]
+      return [{ ...part.reference, kind: 'skill', scope: skillScope ?? '' }]
+    })
+  }
+
   function replacePrompt(next: PromptSnapshot): void {
     promptOrigin.value = 'edited'
     starterPrompt.value = null
@@ -204,11 +248,9 @@ export const useAgentComposerStore = defineStore('agentComposer', () => {
     updateDraft({
       text: next.text,
       references: [
-        ...next.workflowReferences.map(
-          (item): ComposerReference => ({ ...item, kind: 'workflow' })
-        ),
+        ...snapshotReferences(next),
         ...prompt.value.references
-          .filter((item) => item.kind !== 'workflow')
+          .filter((item) => item.kind !== 'workflow' && item.kind !== 'skill')
           .map((item) => ({
             ...item,
             textOffset: Math.min(item.textOffset, next.text.length)
@@ -246,9 +288,7 @@ export const useAgentComposerStore = defineStore('agentComposer', () => {
     restorePrompt(
       {
         text: next.text,
-        references: next.workflowReferences
-          .map((item): ComposerReference => ({ ...item, kind: 'workflow' }))
-          .sort((a, b) => a.textOffset - b.textOffset)
+        references: snapshotReferences(next)
       },
       next.attachments
     )
@@ -346,6 +386,20 @@ export const useAgentComposerStore = defineStore('agentComposer', () => {
     updateDraft({
       ...result,
       text: resetTextWhenReferencesCleared(result.text, result.references)
+    })
+  }
+
+  function setSkillScope(scope: string | null): void {
+    if (scope === skillScope) return
+    skillScope = scope
+    if (!prompt.value.references.some((item) => item.kind === 'skill')) return
+    resetPromptHistory()
+    const references = prompt.value.references.filter(
+      (item) => item.kind !== 'skill'
+    )
+    updateDraft({
+      text: resetTextWhenReferencesCleared(draft.value, references),
+      references
     })
   }
 
@@ -508,6 +562,7 @@ export const useAgentComposerStore = defineStore('agentComposer', () => {
     setInsertionPoint,
     resetPromptHistory,
     applyEditorPrompt,
+    resolveSkillMetadata,
     markSuggestedPrompt,
     replacePrompt,
     restorePrompt,
@@ -516,6 +571,7 @@ export const useAgentComposerStore = defineStore('agentComposer', () => {
     removeWorkflowReference,
     removeReference,
     setNodeScope,
+    setSkillScope,
     setNodes,
     addAttachment,
     referenceAttachment,

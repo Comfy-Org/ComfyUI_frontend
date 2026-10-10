@@ -97,21 +97,18 @@ export function stubCloud({
     [SESSION]: session,
     [BALANCE]: balance
   }
-  vi.stubGlobal(
-    'fetch',
-    vi.fn<typeof fetch>(async (input, init) => {
-      const url = String(input)
-      sent.push(recordRequest(url, init))
-      await answered
-      const answer = byUrl[url] ?? {
-        status: 200,
-        body: init?.credentials === 'include' ? perUser : anonymous
-      }
-      return new Response(JSON.stringify(answer.body), {
-        status: answer.status
-      })
+  vi.mocked(fetch).mockImplementation(async (input, init) => {
+    const url = String(input)
+    sent.push(recordRequest(url, init))
+    await answered
+    const answer = byUrl[url] ?? {
+      status: 200,
+      body: init?.credentials === 'include' ? perUser : anonymous
+    }
+    return new Response(JSON.stringify(answer.body), {
+      status: answer.status
     })
-  )
+  })
   return sent
 }
 

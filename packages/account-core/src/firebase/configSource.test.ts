@@ -207,20 +207,27 @@ describe('fetchCloudFeatures', () => {
     })
   })
 
-  it.for([
-    { webSessionProbe: undefined, body: {} },
-    { webSessionProbe: undefined, body: { web_session_probe: false } },
-    { webSessionProbe: undefined, body: { web_session_probe: 'true' } },
-    { webSessionProbe: true, body: { web_session_probe: true } }
-  ])(
-    'carries web_session_probe only as a literal true: $body',
-    async ({ body, webSessionProbe }) => {
+  it.for(
+    (
+      [
+        ['webSessionProbe', 'web_session_probe'],
+        ['ssoEnabled', 'sso_enabled']
+      ] as const
+    ).flatMap(([field, key]) => [
+      { field, carried: false, body: {} },
+      { field, carried: false, body: { [key]: false } },
+      { field, carried: false, body: { [key]: 'true' } },
+      { field, carried: true, body: { [key]: true } }
+    ])
+  )(
+    'carries $field only as a literal true: $body',
+    async ({ field, carried, body }) => {
       const features = await fetchCloudFeatures('https://cloud.comfy.org', {
         fetchImpl: jsonFetch(body)
       })
 
-      expect(features.webSessionProbe).toBe(webSessionProbe)
-      expect('webSessionProbe' in features).toBe(webSessionProbe === true)
+      expect(features[field]).toBe(carried ? true : undefined)
+      expect(field in features).toBe(carried)
     }
   )
 

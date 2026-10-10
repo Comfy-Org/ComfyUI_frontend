@@ -135,7 +135,7 @@
 
 <script setup lang="ts">
 import { computed, ref } from 'vue'
-import { useToast } from 'primevue/usetoast'
+import { useToast } from '@/components/ui/toast/toastStore'
 import { useI18n } from 'vue-i18n'
 import { useObjectUrl } from '@vueuse/core'
 
@@ -149,6 +149,7 @@ import {
 } from '@/platform/workflow/sharing/utils/validateFileSize'
 import { useComfyHubProfileGate } from '@/platform/workflow/sharing/composables/useComfyHubProfileGate'
 import type { ComfyHubProfile } from '@/platform/workflow/sharing/schemas/shareSchemas'
+import { getErrorMessage } from '@/utils/errorUtil'
 
 const {
   onProfileCreated,
@@ -205,10 +206,8 @@ async function handleCreate() {
     })
     onProfileCreated(profile)
   } catch (error) {
-    toast.add({
-      severity: 'error',
-      summary: t('g.error'),
-      detail: error instanceof Error ? error.message : t('g.error')
+    toast.error(t('g.error'), {
+      description: getErrorMessage(error) ?? t('g.error')
     })
   } finally {
     isCreating.value = false

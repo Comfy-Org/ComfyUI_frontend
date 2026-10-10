@@ -1,6 +1,6 @@
+import { useToast } from '@/components/ui/toast/toastStore'
 import { beforeEach, describe, expect, it, onTestFinished, vi } from 'vitest'
 
-import { useToastStore } from '@/platform/updates/common/toastStore'
 import { useCommandStore } from '@/stores/commandStore'
 import { api } from '@/scripts/api'
 import { useSystemStatsStore } from '@/stores/systemStatsStore'
@@ -276,7 +276,7 @@ describe('useManagerState', () => {
       expect(managerState.isManagerEnabled.value).toBe(false)
     })
 
-    it('fires warn-severity toast exactly once across multiple consumers', () => {
+    it('fires the warning toast exactly once across multiple consumers', () => {
       systemStatsStore.$patch({
         systemStats: enabledManagerStats(),
         isInitialized: true
@@ -290,13 +290,14 @@ describe('useManagerState', () => {
       useManagerState()
       useManagerState()
 
-      expect(useToastStore().add).toHaveBeenCalledTimes(1)
-      expect(useToastStore().add).toHaveBeenCalledWith({
-        severity: 'warn',
-        summary: 'manager.incompatibleVersion.title',
-        detail: 'manager.incompatibleVersion.message',
-        life: 15000
-      })
+      expect(useToast().toasts).toEqual([
+        expect.objectContaining({
+          description: 'manager.incompatibleVersion.message',
+          duration: 15000,
+          kind: 'warning',
+          title: 'manager.incompatibleVersion.title'
+        })
+      ])
     })
 
     it('openManager on INCOMPATIBLE re-emits the upgrade toast without settings redirect', async () => {
@@ -310,17 +311,15 @@ describe('useManagerState', () => {
       mockServerFeatures({ supports_v4: true, supports_csrf_post: false })
 
       const managerState = useManagerState()
-      expect(useToastStore().add).toHaveBeenCalledTimes(1)
+      expect(useToast().warning).toHaveBeenCalledTimes(1)
 
       await managerState.openManager()
-      expect(useToastStore().add).toHaveBeenCalledTimes(2)
+      expect(useToast().warning).toHaveBeenCalledTimes(2)
       // second call must still be the upgrade toast, not an error toast
-      expect(useToastStore().add).toHaveBeenLastCalledWith({
-        severity: 'warn',
-        summary: 'manager.incompatibleVersion.title',
-        detail: 'manager.incompatibleVersion.message',
-        life: 15000
-      })
+      expect(useToast().warning).toHaveBeenLastCalledWith(
+        'manager.incompatibleVersion.title',
+        { description: 'manager.incompatibleVersion.message', duration: 15000 }
+      )
     })
 
     it('does not fire upgrade toast when state is NEW_UI', () => {
@@ -334,7 +333,7 @@ describe('useManagerState', () => {
       mockServerFeatures({ supports_v4: true, supports_csrf_post: true })
 
       useManagerState()
-      expect(useToastStore().add).not.toHaveBeenCalled()
+      expect(useToast().toasts).toEqual([])
     })
   })
 

@@ -66,7 +66,7 @@ async function answerFeatures(
   return new Response(
     JSON.stringify(
       credentialed
-        ? { unified_web_session: true }
+        ? { unified_web_session: true, billing_web_checkout_ui: 'full_page' }
         : { web_session_probe: true, firebase_config: FIREBASE_CONFIG }
     )
   )
@@ -75,37 +75,34 @@ async function answerFeatures(
 function stubCloud(state: FakeWebSessionState, overrides: CloudOverrides = {}) {
   const endpoint = createFakeWebSessionEndpoint({ state })
   const sent: { path: string; workspace: string | null }[] = []
-  vi.stubGlobal(
-    'fetch',
-    vi.fn<typeof fetch>(async (input, init = {}) => {
-      const { pathname } = new URL(String(input))
-      const workspace = new Headers(init.headers).get('X-Comfy-Workspace-ID')
-      sent.push({ path: pathname, workspace })
-      if (pathname === '/api/features')
-        return answerFeatures(init, overrides.credentialedFeaturesDelayMs)
-      if (pathname === '/api/workspaces/current' && overrides.workspace) {
-        return overrides.workspace()
-      }
-      if (
-        pathname === '/api/auth/session' &&
-        init.method === 'POST' &&
-        overrides.createSession
-      ) {
-        return overrides.createSession()
-      }
-      if (pathname === '/api/workspaces/current') {
-        return new Response(
-          JSON.stringify({
-            auth_method: 'session',
-            id: 'ws-team',
-            name: 'Team',
-            type: 'team'
-          })
-        )
-      }
-      return endpoint.fetch(input, init)
-    })
-  )
+  vi.mocked(fetch).mockImplementation(async (input, init = {}) => {
+    const { pathname } = new URL(String(input))
+    const workspace = new Headers(init.headers).get('X-Comfy-Workspace-ID')
+    sent.push({ path: pathname, workspace })
+    if (pathname === '/api/features')
+      return answerFeatures(init, overrides.credentialedFeaturesDelayMs)
+    if (pathname === '/api/workspaces/current' && overrides.workspace) {
+      return overrides.workspace()
+    }
+    if (
+      pathname === '/api/auth/session' &&
+      init.method === 'POST' &&
+      overrides.createSession
+    ) {
+      return overrides.createSession()
+    }
+    if (pathname === '/api/workspaces/current') {
+      return new Response(
+        JSON.stringify({
+          auth_method: 'session',
+          id: 'ws-team',
+          name: 'Team',
+          type: 'team'
+        })
+      )
+    }
+    return endpoint.fetch(input, init)
+  })
   return sent
 }
 
@@ -178,6 +175,17 @@ describe('billing-web with unified_web_session on', () => {
     expect(h.initializeApp).not.toHaveBeenCalled()
     expect(sent.map(({ path }) => path)).not.toContain('/api/auth/token')
   }, 8000)
+
+  it("renders the checkout UI the Cloud session's account is flagged for", async () => {
+    stubCloud({ kind: 'live', user: fakeWebSessionUser() })
+    const { router } = await arriveAt(CHECKOUT)
+    await vi.waitFor(() =>
+      expect(router.currentRoute.value.fullPath).toBe(CHECKOUT)
+    )
+    const { awaitCheckoutUiVariant } = await import('@/config/checkoutUi')
+
+    await expect(awaitCheckoutUiVariant()).resolves.toBe('full_page')
+  })
 
   it('keeps every entry parameter through a genuine sign-in (SO1)', async () => {
     stubCloud({ kind: 'dead', code: 'no_session' })

@@ -37,10 +37,7 @@ function makeAsset(overrides: Partial<AssetItem> = {}): AssetItem {
 const jobMetadata = { jobId: 'job-42', nodeId: 0, subfolder: '' }
 
 function mockFetchOk(blob: Blob): void {
-  vi.stubGlobal(
-    'fetch',
-    vi.fn().mockResolvedValue({ ok: true, blob: () => Promise.resolve(blob) })
-  )
+  vi.mocked(fetch).mockImplementation(async () => new Response(blob))
 }
 
 describe('extractWorkflowFromAsset', () => {
@@ -107,7 +104,9 @@ describe('extractWorkflowFromAsset', () => {
   })
 
   it('returns null workflow when fetch fails', async () => {
-    vi.stubGlobal('fetch', vi.fn().mockResolvedValue({ ok: false }))
+    vi.mocked(fetch).mockImplementation(
+      async () => new Response(null, { status: 500 })
+    )
 
     const result = await extractWorkflowFromAsset(makeAsset())
 
@@ -125,7 +124,7 @@ describe('extractWorkflowFromAsset', () => {
   })
 
   it('swallows errors during extraction and logs them', async () => {
-    vi.stubGlobal('fetch', vi.fn().mockRejectedValue(new Error('network down')))
+    vi.mocked(fetch).mockRejectedValue(new Error('network down'))
 
     const result = await extractWorkflowFromAsset(makeAsset())
 

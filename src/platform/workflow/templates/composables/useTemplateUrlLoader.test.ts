@@ -56,17 +56,7 @@ vi.mock<unknown>(
   })
 )
 
-// Mock toast
-const mockToastAdd = vi.fn()
-vi.mock<unknown>(
-  import('primevue/usetoast'), // oxlint-disable-line comfy/no-primevue-imports
-
-  () => ({
-    useToast: () => ({
-      add: mockToastAdd
-    })
-  })
-)
+import { useToast } from '@/components/ui/toast/toastStore'
 
 const apps: App<Element>[] = []
 
@@ -156,7 +146,7 @@ describe('useTemplateUrlLoader', () => {
       const { loadTemplateFromUrl } = useTemplateUrlLoader()
       await loadTemplateFromUrl()
 
-      expect(mockToastAdd).not.toHaveBeenCalled()
+      expect(useToast().toasts).toEqual([])
     }
   )
 
@@ -246,10 +236,8 @@ describe('useTemplateUrlLoader', () => {
     const { loadTemplateFromUrl } = useTemplateUrlLoader()
     await loadTemplateFromUrl()
 
-    expect(mockToastAdd).toHaveBeenCalledWith({
-      severity: 'error',
-      summary: 'Error',
-      detail: i18n.global.t('templateWorkflows.error.loading')
+    expect(useToast().error).toHaveBeenCalledWith('Error', {
+      description: i18n.global.t('templateWorkflows.error.loading')
     })
   })
 

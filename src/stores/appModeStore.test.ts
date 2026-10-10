@@ -825,7 +825,7 @@ describe('appModeStore', () => {
       store.enterBuilder()
       await nextTick()
 
-      expect(vi.mocked(useSettingStore().set)).toHaveBeenCalledWith(
+      expect(useSettingStore().set).toHaveBeenCalledWith(
         'Comfy.VueNodes.Enabled',
         true
       )
@@ -838,7 +838,7 @@ describe('appModeStore', () => {
       store.enterBuilder()
       await nextTick()
 
-      expect(vi.mocked(useSettingStore().set)).not.toHaveBeenCalledWith(
+      expect(useSettingStore().set).not.toHaveBeenCalledWith(
         'Comfy.VueNodes.Enabled',
         expect.anything()
       )
@@ -878,7 +878,7 @@ describe('appModeStore', () => {
       await nextTick()
 
       expect(workflowStore.activeWorkflow.activeMode).toBe('builder:arrange')
-      expect(vi.mocked(useSettingStore().set)).not.toHaveBeenCalledWith(
+      expect(useSettingStore().set).not.toHaveBeenCalledWith(
         'Comfy.VueNodes.Enabled',
         expect.anything()
       )

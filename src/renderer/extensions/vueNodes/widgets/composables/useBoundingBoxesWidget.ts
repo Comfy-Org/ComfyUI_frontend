@@ -4,7 +4,7 @@ import type {
   BoundingBoxesInputSpec,
   InputSpec as InputSpecV2
 } from '@/schemas/nodeDef/nodeDefSchemaV2'
-import type { ComfyWidgetConstructorV2 } from '@/scripts/widgets'
+import type { ComfyWidgetConstructorV2 } from '@/types/widgetConstructor'
 import type { BoundingBox } from '@/types/boundingBoxes'
 
 export const useBoundingBoxesWidget = (): ComfyWidgetConstructorV2 => {

@@ -1,5 +1,6 @@
 import { defineAsyncComponent } from 'vue'
 import { useDialogService } from '@/services/dialogService'
+import { useWorkspaceDialogs } from '@/platform/workspace/composables/useWorkspaceDialogs'
 import { useDialogStore } from '@/stores/dialogStore'
 import { useBillingContext } from '@/composables/billing/useBillingContext'
 import { useBillingRouting } from '@/composables/billing/useBillingRouting'
@@ -11,7 +12,10 @@ import {
 import { isCloud } from '@/platform/distribution/types'
 import { useTelemetry } from '@/platform/telemetry'
 import type { PaymentIntentSource } from '@/platform/telemetry/types'
-import type { SubscriptionCheckoutSelection } from '@/platform/workspace/composables/useSubscriptionCheckout'
+import type {
+  SubscriptionCheckoutSelection,
+  SubscriptionDialogOptions
+} from '@/composables/billing/types'
 import { useWorkspaceUI } from '@/platform/workspace/composables/useWorkspaceUI'
 import { toCurrentTier } from '@/platform/cloud/subscription/utils/billingPlanTelemetry'
 import { useBillingSdkStore } from '@/platform/workspace/billing/sdk/billingSdkStore'
@@ -27,19 +31,6 @@ import type { PendingSubscriptionCheckout } from '@/platform/workspace/utils/pen
 
 const DIALOG_KEY = 'subscription-required'
 const RESUME_PRICING_KEY = 'comfy:resume-team-pricing'
-
-export interface SubscriptionDialogOptions {
-  reason?: PaymentIntentSource
-  paymentIntentSource?: PaymentIntentSource
-  /**
-   * Forces the unified pricing dialog to open on a specific plan tab,
-   * overriding the workspace-derived default (e.g. an "Upgrade to Team" CTA
-   * always lands on the team tab even from a personal workspace).
-   */
-  planMode?: 'personal' | 'team'
-  /** Starts checkout in workspace billing dialogs; legacy billing stays table-only. */
-  initialCheckout?: SubscriptionCheckoutSelection
-}
 
 function paymentIntentSourceOf(
   options?: SubscriptionDialogOptions
@@ -252,7 +243,7 @@ export const useSubscriptionDialog = () => {
    */
   function startTeamWorkspaceUpgradeFlow() {
     hide()
-    dialogService
+    useWorkspaceDialogs()
       .showTeamWorkspacesDialog(() => {
         try {
           sessionStorage.setItem(RESUME_PRICING_KEY, '1')

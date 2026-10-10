@@ -332,7 +332,7 @@ describe('useVersionCompatibilityStore', () => {
 
       await store.initialize()
 
-      expect(vi.mocked(until)).toHaveBeenCalled()
+      expect(until).toHaveBeenCalled()
     })
 
     it('should not fetch system stats if already available', async () => {
@@ -346,7 +346,7 @@ describe('useVersionCompatibilityStore', () => {
 
       await store.initialize()
 
-      expect(vi.mocked(until)).not.toHaveBeenCalled()
+      expect(until).not.toHaveBeenCalled()
     })
   })
 
