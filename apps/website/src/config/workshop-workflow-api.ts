@@ -17,13 +17,28 @@ import type {
   WorkflowRunSummary
 } from './workshop-workflow-response'
 
+export type WorkflowUploadStage =
+  | 'download'
+  | 'mint'
+  | 'upload'
+  | 'timeout'
+  | 'network'
+
+interface WorkshopWorkflowErrorOptions extends ErrorOptions {
+  readonly stage?: WorkflowUploadStage
+}
+
 export class WorkshopWorkflowError extends Error {
+  readonly stage?: WorkflowUploadStage
+
   constructor(
     readonly code: WorkflowErrorCode | 'network' | 'response' | 'persistence',
     readonly fieldErrors: FieldErrors = {},
-    readonly status?: number
+    readonly status?: number,
+    options?: WorkshopWorkflowErrorOptions
   ) {
-    super('Workflow request failed: ' + code)
+    super('Workflow request failed: ' + code, options)
+    this.stage = options?.stage
   }
 }
 
@@ -58,9 +73,11 @@ export async function workflowResponseJson(
       offset += chunk.byteLength
     }
     return JSON.parse(new TextDecoder('utf-8', { fatal: true }).decode(bytes))
-  } catch {
+  } catch (error) {
     await reader.cancel().catch(() => {})
-    throw new WorkshopWorkflowError('response')
+    throw error instanceof WorkshopWorkflowError
+      ? error
+      : new WorkshopWorkflowError('response', {}, undefined, { cause: error })
   } finally {
     reader.releaseLock()
   }
@@ -123,7 +140,8 @@ function responseError(status: number): WorkshopWorkflowError {
     429: 'rate_limited'
   }
   return new WorkshopWorkflowError(
-    codes[status] ?? 'execution_failed',
+    codes[status] ??
+      (status >= 500 ? 'service_unavailable' : 'invalid_request'),
     {},
     status
   )
@@ -261,7 +279,9 @@ export function createWorkflowApi(
     } catch (error) {
       signal.throwIfAborted()
       if (error instanceof WorkshopWorkflowError) throw error
-      throw new WorkshopWorkflowError('network')
+      throw new WorkshopWorkflowError('network', {}, undefined, {
+        cause: error
+      })
     }
   }
 
