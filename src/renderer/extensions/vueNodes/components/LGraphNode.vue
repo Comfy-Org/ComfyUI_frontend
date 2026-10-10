@@ -741,8 +741,8 @@ function handleDragLeave() {
   isDraggingOver.value = false
 }
 
-function handleDrop() {
+function handleDrop(event: DragEvent) {
   isDraggingOver.value = false
-  app.dragOverNode = resolveLGraphNode()
+  app.dragOverNode = event.defaultPrevented ? null : resolveLGraphNode()
 }
 </script>
