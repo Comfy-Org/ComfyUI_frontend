@@ -110,6 +110,29 @@ export interface DOMWidgetOptions<
   afterResize?: (this: BaseDOMWidget<V>, node: LGraphNode) => void
 }
 
+/**
+ * Custom nodes sometimes supply a non-function `getValue`/`setValue` (e.g. a
+ * value instead of a getter). Optional chaining only skips nullish values, so
+ * guard on the type to avoid `TypeError: this.options.getValue is not a function`.
+ */
+function readDomWidgetValue<V extends object | string>(
+  options: DOMWidgetOptions<V>
+): V {
+  const { getValue } = options
+  return (
+    (typeof getValue === 'function' ? getValue.call(options) : null) ??
+    ('' as V)
+  )
+}
+
+function writeDomWidgetValue<V extends object | string>(
+  options: DOMWidgetOptions<V>,
+  value: V
+): void {
+  const { setValue } = options
+  if (typeof setValue === 'function') setValue.call(options, value)
+}
+
 export const isDOMWidget = <T extends HTMLElement, V extends object | string>(
   widget: IBaseWidget
 ): widget is DOMWidget<T, V> => 'element' in widget && !!widget.element
@@ -152,11 +175,11 @@ abstract class BaseDOMWidgetImpl<V extends object | string>
   }
 
   override get value(): V {
-    return this.options.getValue?.() ?? ('' as V)
+    return readDomWidgetValue(this.options)
   }
 
   override set value(v: V) {
-    this.options.setValue?.(v)
+    writeDomWidgetValue(this.options, v)
     this.callback?.(this.value)
   }
 
@@ -376,10 +399,10 @@ LGraphNode.prototype.addDOMWidget = function <
   // property to be on instance instead of prototype.
   Object.defineProperty(widget, 'value', {
     get(this: DOMWidgetImpl<T, V>): V {
-      return this.options.getValue?.() ?? ('' as V)
+      return readDomWidgetValue(this.options)
     },
     set(this: DOMWidgetImpl<T, V>, v: V) {
-      this.options.setValue?.(v)
+      writeDomWidgetValue(this.options, v)
       this.callback?.(this.value)
     }
   })
