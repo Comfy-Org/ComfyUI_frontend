@@ -894,6 +894,7 @@ describe('useAgentConversationStore', () => {
     store.retireAsk('turn-1:call-1')
 
     store.hydrate(parkedTranscript)
+    store.hydrate(parkedTranscript)
 
     expect(
       store.messages.some((message) =>
@@ -1634,6 +1635,56 @@ describe('useAgentConversationStore', () => {
     store.ingest(done('t1'))
     expect(store.isStreaming).toBe(false)
     expect(store.liveTurns()).toEqual([])
+  })
+
+  it.for([
+    {
+      name: 'the displayed turn',
+      turn: { threadId: 'th-front', messageId: T1 },
+      askId: 'front-ask',
+      otherAskId: 'back-ask'
+    },
+    {
+      name: 'a stashed background turn',
+      turn: { threadId: 'th-back', messageId: T2 },
+      askId: 'back-ask',
+      otherAskId: 'front-ask'
+    }
+  ])(
+    'reads back the approval showing on $name, and only that one',
+    ({ turn, askId, otherAskId }) => {
+      const store = useAgentConversationStore()
+      store.setThreadId('th-back')
+      store.startTurn(T2)
+      store.recordUser(T2, 'background prompt')
+      store.ingest(runApproval('t2', 'back-ask'))
+      store.stashActiveTurn()
+      store.setThreadId('th-front')
+      store.hydrate([])
+      store.startTurn(T1)
+      store.recordUser(T1, 'front prompt')
+      store.ingest(runApproval('t1', 'front-ask'))
+
+      expect(store.isApprovalShown(turn, askId)).toBe(true)
+      expect(store.isApprovalShown(turn, otherAskId)).toBe(false)
+      expect(store.isApprovalShown(turn, 'never-delivered')).toBe(false)
+    }
+  )
+
+  it('stops reporting an approval once its turn has settled', () => {
+    const store = useAgentConversationStore()
+    const turn = { threadId: 'th', messageId: T1 }
+    store.setThreadId('th')
+    store.startTurn(T1)
+    store.recordUser(T1, 'go')
+    store.ingest(runApproval('t1', 'ask-1'))
+    expect(store.isApprovalShown(turn, 'ask-1')).toBe(true)
+
+    store.settleTurn(turn, [
+      { type: 'text', text: 'persisted final', state: 'done' }
+    ])
+
+    expect(store.isApprovalShown(turn, 'ask-1')).toBe(false)
   })
 
   it.for([

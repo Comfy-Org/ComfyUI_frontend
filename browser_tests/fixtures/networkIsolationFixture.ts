@@ -136,7 +136,7 @@ export const networkIsolationFixture = base.extend<{
     await context.route('**/*', async (route) => {
       const url = new URL(route.request().url())
       if (origins.has(url.origin)) {
-        await route.continue()
+        await route.fallback()
         return
       }
       unexpected.add(getBlockedRequestViolation(url, route.request().method()))

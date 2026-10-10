@@ -461,7 +461,8 @@ function liveTranscriptTurn(
 }
 
 export function normalizeAgentTranscript(
-  history: AgentMessages
+  history: AgentMessages,
+  isAskUnavailable: (askId: string) => boolean = () => false
 ): NormalizedAgentTranscript {
   const userTexts = new Map<TurnId, string>()
   const userAttachments = new Map<TurnId, UserAttachment[]>()
@@ -492,10 +493,15 @@ export function normalizeAgentTranscript(
       if (workflowId) latestWorkflowId = workflowId
     }
     if (row.role === 'assistant') {
-      pendingByTurn.set(
-        turnId,
-        recordAssistantRow(row, turnId, text, assistants)
-      )
+      const pending = recordAssistantRow(row, turnId, text, assistants)
+      const priorApproval = pendingByTurn
+        .get(turnId)
+        ?.message.parts.some(
+          (part) => part.type === 'runApproval' && !isAskUnavailable(part.askId)
+        )
+      if (row.status === 'streaming' && pending === undefined && priorApproval)
+        continue
+      else pendingByTurn.set(turnId, pending)
     }
   }
 

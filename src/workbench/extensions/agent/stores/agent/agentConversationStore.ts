@@ -406,7 +406,7 @@ export const useAgentConversationStore = defineStore(
      * has to be told, or whichever one is asked to republish next puts the
      * card back.
      */
-    function retireAsk(askId: string, owner?: string): void {
+    function retireAsk(askId: string, owner?: string, permanent = true): void {
       const key = threadKey(owner)
       const withoutAsk = (parts: AssistantMessage['parts']) =>
         parts.filter(
@@ -432,7 +432,7 @@ export const useAgentConversationStore = defineStore(
       // screen if this did not strip it.
       for (const entry of backgroundTurns.values())
         if (entry.threadId === key) entry.transport.dropAskPart(askId)
-      retiredAsksFor(key).add(askId)
+      if (permanent) retiredAsksFor(key).add(askId)
       clearAskResolutionWatchdog(askId)
       submittedAskSelections.delete(askId)
       setAskAnswering(askId, false)
@@ -460,6 +460,11 @@ export const useAgentConversationStore = defineStore(
       resolvedAskIds.set(key, retired)
       return retired
     }
+
+    function isAskRetired(askId: string, owner?: string): boolean {
+      return resolvedAskIds.get(threadKey(owner))?.has(askId) ?? false
+    }
+
     /**
      * PM-1658: which way this client answered each ask. The server takes a
      * second answer from anywhere with 202 while committing only the FIRST, so
@@ -1032,6 +1037,74 @@ export const useAgentConversationStore = defineStore(
       rememberDepartedTurn(slot.threadId, slot.turnId, reason)
     }
 
+    /**
+     * The mutable message a live turn is written into, not the snapshot copy
+     * in `messages`: transports emit snapshots, so only this object carries
+     * parts applied since the last emit.
+     */
+    function liveTurnMessage(turn: LiveTurn): AssistantMessage | null {
+      const slot = activeSlot.value
+      if (
+        slot !== null &&
+        turn.threadId === slot.threadId &&
+        turn.messageId === slot.turnId
+      )
+        return slot.message
+      const entry = backgroundTurns.get(turn.messageId)
+      if (
+        !entry ||
+        entry.threadId !== turn.threadId ||
+        entry.messageId !== turn.messageId ||
+        entry.settled
+      )
+        return null
+      return entry.message
+    }
+
+    function reconcileApprovalParts(
+      turn: LiveTurn,
+      pendingAskId?: string,
+      protectedAskIds: ReadonlySet<string> = new Set()
+    ): string[] {
+      const message = liveTurnMessage(turn)
+      if (message === null) return []
+      const stale = message.parts.flatMap((part) =>
+        part.type === 'runApproval' &&
+        (pendingAskId === undefined || part.askId !== pendingAskId) &&
+        !protectedAskIds.has(part.askId) &&
+        submittedAskSelection(part.askId) === undefined &&
+        !answeringAskIds.value.has(part.askId)
+          ? [part.askId]
+          : []
+      )
+      for (const askId of stale) retireAsk(askId, turn.threadId, false)
+      return stale
+    }
+
+    /**
+     * Whether this turn is already showing `askId`. Turn recovery asks before
+     * re-delivering an ask off a persisted row: the card a hydrate drew is on
+     * screen without the session's ask ledger ever having seen a frame for
+     * it, and only this catches that one. Reads the mutable message, so it
+     * answers for the current moment and takes no reactive dependency.
+     */
+    function isApprovalShown(turn: LiveTurn, askId: string): boolean {
+      const message = liveTurnMessage(turn)
+      return (
+        message?.parts.some(
+          (part) => part.type === 'runApproval' && part.askId === askId
+        ) ?? false
+      )
+    }
+
+    function hasApprovalShown(turn: LiveTurn): boolean {
+      return (
+        liveTurnMessage(turn)?.parts.some(
+          (part) => part.type === 'runApproval'
+        ) ?? false
+      )
+    }
+
     function clearActive(): void {
       activeSlot.value = null
     }
@@ -1090,15 +1163,15 @@ export const useAgentConversationStore = defineStore(
      * raised the card is left exactly as the transcript describes it.
      */
     function dropResolvedAsks(
-      transcript: ReturnType<typeof normalizeAgentTranscript>
+      transcript: ReturnType<typeof normalizeAgentTranscript>,
+      history: AgentMessages
     ): void {
       const retired = retiredAsksFor()
-      if (retired.size === 0) return
       const named = new Set(
-        transcript.messages.flatMap((message) =>
-          message.parts.flatMap((part) =>
-            part.type === 'runApproval' ? [part.askId] : []
-          )
+        history.flatMap((row) =>
+          row.pending_ask?.kind === 'run_approval'
+            ? [row.pending_ask.ask_id]
+            : []
         )
       )
       for (const askId of retired) if (!named.has(askId)) retired.delete(askId)
@@ -1112,12 +1185,16 @@ export const useAgentConversationStore = defineStore(
       if (activeSlot.value) rememberDepartedActiveTurn('no-live-turn')
       disposeActiveAndSettledTransports()
       clearActive()
-      const transcript = normalizeAgentTranscript(history)
+      const transcript = normalizeAgentTranscript(
+        history,
+        (askId) =>
+          isAskRetired(askId) || submittedAskSelection(askId) !== undefined
+      )
       // Only the card is retired, never the turn: answering it is what lets
       // the turn RESUME, so it is still live and still needs a transport, or
       // every frame of the rest of it is dropped and the row stays "Working…"
       // with nothing able to settle it.
-      dropResolvedAsks(transcript)
+      dropResolvedAsks(transcript, history)
       messages.value = transcript.messages
       resolvedPaywallIds.value = new Set()
       userTexts.value = transcript.userTexts
@@ -1294,6 +1371,8 @@ export const useAgentConversationStore = defineStore(
       submittedAskSelection,
       commitAsk,
       retireAsk,
+      isAskRetired,
+      reconcileApprovalParts,
       startTurn,
       ingest,
       setCanvasSyncGate,
@@ -1307,6 +1386,8 @@ export const useAgentConversationStore = defineStore(
       turnUsesSkill,
       historySkillNames,
       settleTurn,
+      isApprovalShown,
+      hasApprovalShown,
       reset,
       hydrate
     }
