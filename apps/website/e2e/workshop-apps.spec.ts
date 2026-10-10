@@ -1,4 +1,4 @@
-import type { BrowserContext, Page } from '@playwright/test'
+import type { BrowserContext, Locator, Page } from '@playwright/test'
 import { expect } from '@playwright/test'
 
 import { test } from './fixtures/blockExternalMedia'
@@ -15,6 +15,7 @@ async function mockFlags(
     workflows: boolean
     auth?: boolean
     reshoot?: boolean
+    moveAnything?: boolean
   }
 ) {
   await context.route('**/t.comfy.org/**', (route) =>
@@ -27,6 +28,7 @@ async function mockFlags(
               'workshop-apps-enabled': flags.apps,
               'workshop-workflows-enabled': flags.workflows,
               'workshop-reshoot-app-enabled': flags.reshoot ?? true,
+              'workshop-move-anything-app-enabled': flags.moveAnything ?? true,
               ...(flags.auth ? { 'workshop-auth': true } : {})
             },
             featureFlagPayloads: {}
@@ -34,6 +36,17 @@ async function mockFlags(
         })
       : route.abort('blockedbyclient')
   )
+}
+
+async function openDetectedExample(page: Page) {
+  const app = page.getByTestId('move-anything')
+  await app.getByRole('button', { name: 'Try the example' }).click()
+  await expect(app.getByRole('status')).toContainText('Detecting')
+  const kitten = app.getByRole('button', { name: /^Orange kitten\./ })
+  await expect(kitten).toBeVisible()
+  await expect(app.getByTestId('move-outline')).toHaveCount(3)
+  await expect(app.getByText('Drag a thing to move it')).toBeVisible()
+  return kitten
 }
 
 /**
@@ -92,7 +105,7 @@ test('keeps Cinematic Studio closed on the workflows flag alone', async ({
   await expect(page.getByTestId('cinematic')).toHaveCount(0)
 })
 
-test('lists both apps on the hub apps page, on /hub/apps/ pages', async ({
+test('lists every app on the hub apps page, on /hub/apps/ pages', async ({
   page,
   context
 }) => {
@@ -107,12 +120,13 @@ test('lists both apps on the hub apps page, on /hub/apps/ pages', async ({
   )
   const shelf = page.getByTestId('app-shelf')
   const cards = shelf.getByRole('link')
-  await expect(cards).toHaveCount(2)
+  await expect(cards).toHaveCount(3)
   await expect(cards.nth(0)).toHaveAttribute(
     'href',
     '/hub/apps/cinematic-studio/'
   )
   await expect(cards.nth(1)).toHaveAttribute('href', '/hub/apps/reshoot/')
+  await expect(cards.nth(2)).toHaveAttribute('href', '/hub/apps/move-anything/')
   await expect(
     page.getByRole('button', { name: /Browse all apps/ })
   ).toHaveCount(0)
@@ -128,7 +142,11 @@ for (const { reducedMotion, paused } of [
     page,
     context
   }) => {
-    await mockFlags(context, { apps: true, workflows: false })
+    await mockFlags(context, {
+      apps: true,
+      workflows: false,
+      moveAnything: false
+    })
     await page.emulateMedia({ reducedMotion })
     const posters: string[] = []
     page.on('requestfinished', (request) => {
@@ -163,7 +181,11 @@ test('decodes a frame of each hub app card video while it plays', async ({
   page,
   context
 }) => {
-  await mockFlags(context, { apps: true, workflows: false })
+  await mockFlags(context, {
+    apps: true,
+    workflows: false,
+    moveAnything: false
+  })
   await page.goto('/hub/apps/')
 
   const artwork = page.getByTestId('app-shelf').getByTestId('model-card-media')
@@ -184,11 +206,12 @@ test('hides Re-shoot from the hub apps page and closes its page while its flag i
   await mockFlags(context, { apps: true, workflows: false, reshoot: false })
   await page.goto('/hub/apps/')
   const cards = page.getByTestId('app-shelf').getByRole('link')
-  await expect(cards).toHaveCount(1)
-  await expect(cards.first()).toHaveAttribute(
+  await expect(cards).toHaveCount(2)
+  await expect(cards.nth(0)).toHaveAttribute(
     'href',
     '/hub/apps/cinematic-studio/'
   )
+  await expect(cards.nth(1)).toHaveAttribute('href', '/hub/apps/move-anything/')
 
   await page.goto('/hub/apps/reshoot/')
   await expect(page.getByText('Cinematic Studio is not open yet')).toBeVisible()
@@ -202,6 +225,166 @@ test('opens Re-shoot once its flag is on', async ({ page, context }) => {
   await expect(page.getByText('Cinematic Studio is not open yet')).toHaveCount(
     0
   )
+})
+
+test('closes Move anything while its flag is off', async ({
+  page,
+  context
+}) => {
+  await mockFlags(context, {
+    apps: true,
+    workflows: false,
+    moveAnything: false
+  })
+  await page.goto('/hub/apps/move-anything/')
+  await expect(page.getByText('Cinematic Studio is not open yet')).toBeVisible()
+  await expect(page.getByTestId('move-anything')).toHaveCount(0)
+})
+
+async function expectDownloadBesideGitHub(app: Locator) {
+  const download = await app
+    .getByRole('link', { name: 'Download' })
+    .boundingBox()
+  const github = await app.getByText('GitHub · Coming soon').boundingBox()
+  if (!download || !github) throw new Error('no header buttons')
+  expect(download.y).toBe(github.y)
+  expect(download.x - (github.x + github.width)).toBeLessThanOrEqual(8)
+}
+
+async function expectPanelWidth(panel: Locator) {
+  expect((await panel.boundingBox())?.width).toBe(280)
+}
+
+test('moves a thing from the Move anything side panel and shows the result', async ({
+  page,
+  context
+}) => {
+  await mockFlags(context, { apps: true, workflows: false })
+  await page.goto('/hub/apps/move-anything/')
+  const app = page.getByTestId('move-anything')
+  await expect(app.getByTestId('move-empty')).toBeVisible()
+  const generate = app.getByTestId('move-generate')
+  await expect(generate).toHaveCount(0)
+
+  const kitten = await openDetectedExample(page)
+  const panel = app.getByRole('complementary', {
+    name: 'Move anything settings'
+  })
+  await expect(
+    panel.getByRole('button', { name: 'Change photo: kitten.jpg' })
+  ).toBeVisible()
+  await expectPanelWidth(panel)
+  await expect(generate).toBeDisabled()
+  await kitten.focus()
+  await page.keyboard.press('Shift+ArrowRight')
+  await expect(generate).toHaveText(/Move 1 object/)
+
+  await generate.click()
+  await expect(app.getByRole('status')).toContainText('Making the move')
+  await expect(app.getByRole('link', { name: 'Download' })).toBeVisible()
+  await expectDownloadBesideGitHub(app)
+  await expect(
+    app.getByRole('slider', {
+      name: 'Drag to compare the original and the new image'
+    })
+  ).toBeVisible()
+
+  await app.getByRole('button', { name: 'Edit arrangement' }).click()
+  await expect(generate).toHaveText(/Move 1 object/)
+})
+
+test('moves a thing from the Move anything bottom composer', async ({
+  page,
+  context
+}) => {
+  await mockFlags(context, { apps: true, workflows: false })
+  await page.goto('/hub/apps/move-anything/?ux=e')
+  const app = page.getByTestId('move-anything')
+  const kitten = await openDetectedExample(page)
+  await expect(app.getByRole('complementary')).toHaveCount(0)
+  await expect(app.getByTestId('move-object-chip')).toHaveCount(3)
+
+  await app.getByRole('button', { name: 'Quality: Fast' }).click()
+  await page.getByRole('menuitemradio', { name: /^Best/ }).click()
+  await expect(app.getByRole('button', { name: 'Quality: Best' })).toBeVisible()
+  await kitten.focus()
+  await page.keyboard.press('Shift+ArrowRight')
+  const generate = app
+    .getByRole('toolbar', { name: 'Move anything tools' })
+    .getByTestId('move-generate')
+  await expect(generate).toHaveText(/Move 1 object/)
+  await generate.click()
+  await expect(app.getByRole('link', { name: 'Download' })).toBeVisible()
+})
+
+test('renames and removes a thing from its chip on the Move anything photo', async ({
+  page,
+  context
+}) => {
+  await mockFlags(context, { apps: true, workflows: false })
+  await page.goto('/hub/apps/move-anything/')
+  const app = page.getByTestId('move-anything')
+  await openDetectedExample(page)
+  const chips = app.getByTestId('move-object-chip')
+
+  await chips.first().dblclick()
+  const field = app.getByRole('textbox', { name: 'Rename Orange kitten' })
+  await field.fill('Ginger')
+  await field.press('Enter')
+  const ginger = app.getByRole('button', { name: /^Ginger\./ })
+  await expect(ginger).toBeFocused()
+
+  await app.getByRole('button', { name: 'Remove Ginger' }).click()
+  await expect(chips).toHaveCount(2)
+  await app.getByRole('button', { name: 'Undo' }).click()
+  await expect(chips).toHaveCount(3)
+  await ginger.focus()
+  await page.keyboard.press('Delete')
+  await expect(ginger).toHaveCount(0)
+})
+
+test('moves a thing from the Move anything bottom sheet on phones @mobile', async ({
+  page,
+  context
+}) => {
+  await mockFlags(context, { apps: true, workflows: false })
+  await page.goto('/hub/apps/move-anything/')
+  const app = page.getByTestId('move-anything')
+  const kitten = await openDetectedExample(page)
+  const sheet = app.getByRole('complementary', {
+    name: 'Move anything settings'
+  })
+  await expect(
+    sheet.getByRole('button', { name: '3 objects · 0 moved · Fast' })
+  ).toBeVisible()
+  await kitten.focus()
+  await page.keyboard.press('Shift+ArrowRight')
+  const generate = sheet.getByTestId('move-generate')
+  await expect(generate).toHaveText(/Move 1 object/)
+
+  await generate.click()
+  await expect(app.getByRole('link', { name: 'Download' })).toBeVisible()
+  const overflow = await page.evaluate(
+    () => document.documentElement.scrollWidth - window.innerWidth
+  )
+  expect(overflow).toBe(0)
+})
+
+test('hides the site header in the editor apps only', async ({
+  page,
+  context
+}) => {
+  await mockFlags(context, { apps: true, workflows: false })
+  const header = page.getByRole('navigation', { name: 'Main navigation' })
+  await page.goto('/hub/apps/move-anything/')
+  await expect(page.getByTestId('apps-home')).toBeVisible()
+  await expect(header).toBeHidden()
+
+  await page.goto('/hub/apps/cinematic-studio/')
+  await expect(page.getByTestId('cinematic')).toBeVisible()
+  await expect(header).toBeVisible()
+  await page.goto('/hub/apps/')
+  await expect(header).toBeVisible()
 })
 
 test('sends an old catalogue link for the Apps tab to the hub apps page', async ({

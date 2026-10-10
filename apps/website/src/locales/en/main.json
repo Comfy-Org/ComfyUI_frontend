@@ -5133,6 +5133,9 @@
       "prototype": "Prototype",
       "reshoot": "Re-shoot a video",
       "reshootSummary": "Aim a new camera at your clip and generate the scene from that angle.",
+      "moveAnything": "Move anything",
+      "moveAnythingSummary": "Drag the things in a photo somewhere new, and the model rebuilds the scene around them.",
+      "moveAnythingMeta": "Image · Qwen Image 2.1",
       "reshootMeta": "Video · MiniMax H3"
     },
     "stage": {
@@ -5376,6 +5379,20 @@
       "yourPalette": "Your palette",
       "edit": "Edit palette",
       "done": "Done"
+    },
+    "download": {
+      "label": "Download",
+      "locked": "Run to download"
+    },
+    "zoom": {
+      "label": "Zoom",
+      "in": "Zoom in",
+      "out": "Zoom out",
+      "fit": "Fit to screen, now {n}%"
+    },
+    "compare": {
+      "before": "Before",
+      "after": "After"
     }
   },
   "reshoot": {

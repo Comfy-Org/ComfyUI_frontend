@@ -4526,6 +4526,9 @@
       "prototype": "原型",
       "reshoot": "重拍视频",
       "reshootSummary": "为你的片段重新架设机位，从新的角度生成这一场景。",
+      "moveAnything": "随意移动",
+      "moveAnythingSummary": "把照片中的物体拖到新位置，模型会围绕它们重建画面。",
+      "moveAnythingMeta": "图像 · Qwen Image 2.1",
       "reshootMeta": "视频 · MiniMax H3"
     },
     "stage": {
@@ -4769,6 +4772,20 @@
       "yourPalette": "你的色板",
       "edit": "编辑色板",
       "done": "完成"
+    },
+    "download": {
+      "label": "下载",
+      "locked": "运行后即可下载"
+    },
+    "zoom": {
+      "label": "缩放",
+      "in": "放大",
+      "out": "缩小",
+      "fit": "适应屏幕，当前 {n}%"
+    },
+    "compare": {
+      "before": "之前",
+      "after": "之后"
     }
   },
   "reshoot": {

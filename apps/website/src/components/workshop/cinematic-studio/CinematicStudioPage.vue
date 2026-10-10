@@ -2,7 +2,14 @@
 import { translationsFor } from '@/i18n/translations'
 import { WORKSHOP_DEPLOY_ENV } from 'astro:env/client'
 import { useMounted } from '@vueuse/core'
-import { computed, onMounted, ref, shallowRef, watch } from 'vue'
+import {
+  computed,
+  onBeforeUnmount,
+  onMounted,
+  ref,
+  shallowRef,
+  watch
+} from 'vue'
 
 import { provideStudioSwitchGuard } from '@/composables/useStudioSwitchGuard'
 import type { AppWorkshopModel } from '@/config/models-catalogue'
@@ -22,7 +29,9 @@ import CinematicAppsHub from './CinematicAppsHub.vue'
 import CinematicScenarioMenu from './CinematicScenarioMenu.vue'
 import CinematicStudio from './CinematicStudio.vue'
 import CinematicStudioPanel from './CinematicStudioPanel.vue'
+import MoveAnythingStudio from '@/components/workshop/move-anything/MoveAnythingStudio.vue'
 import ReshootStudio from './reshoot/ReshootStudio.vue'
+import { mc } from '@/lib/workshop/move-anything/copy'
 import { isWorkshopModelShown } from '@/scripts/workshop-model-flags'
 
 const {
@@ -46,7 +55,8 @@ const LAYOUTS = [
   { id: 'hub', label: 'cinematic.ux.hub' }
 ] as const
 
-const APPS = ['studio', 'reshoot'] as const
+const APPS = ['studio', 'reshoot', 'move-anything'] as const
+const EDITOR_APPS: readonly WorkshopAppId[] = ['move-anything']
 const reviewing = WORKSHOP_DEPLOY_ENV !== 'production'
 
 const appsEnabled = useWorkshopAppsEnabled()
@@ -82,6 +92,20 @@ watch(
     })
   }
 )
+const editorShown = computed(
+  () =>
+    mounted.value &&
+    workshopEnabled.value &&
+    studioEnabled.value &&
+    layout.value !== 'hub' &&
+    EDITOR_APPS.includes(app.value)
+)
+watch(editorShown, (shown) =>
+  document.documentElement.toggleAttribute('data-workshop-editor', shown)
+)
+onBeforeUnmount(() =>
+  document.documentElement.removeAttribute('data-workshop-editor')
+)
 const layoutOptions = computed(() =>
   LAYOUTS.map((option) => ({
     id: option.id,
@@ -97,6 +121,10 @@ const appOptions = computed(() =>
     {
       id: 'reshoot',
       label: t('reshoot.title')
+    },
+    {
+      id: 'move-anything',
+      label: mc('move.title', locale)
     }
   ].filter((option) =>
     shownApps.value.some((candidate) => candidate.appId === option.id)
@@ -165,6 +193,7 @@ function pickApp(id: string) {
   <WorkshopGate :allowed="studioEnabled">
     <CinematicAppsHub v-if="layout === 'hub'" :models="shownApps" :locale />
     <ReshootStudio v-else-if="app === 'reshoot'" :locale />
+    <MoveAnythingStudio v-else-if="app === 'move-anything'" :layout :locale />
     <CinematicStudioPanel
       v-else-if="layout === 'd'"
       :models
@@ -176,6 +205,7 @@ function pickApp(id: string) {
       v-if="reviewing"
       :app
       :layout
+      :editor="editorShown"
       :apps="appOptions"
       :layouts="layoutOptions"
       :app-heading="t('cinematic.ux.app')"

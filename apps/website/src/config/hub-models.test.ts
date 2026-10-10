@@ -19,9 +19,11 @@ describe('hub model addresses', () => {
       `${HUB_WORKFLOWS_PATH}/`,
       `${HUB_APPS_PATH}/`
     ])
-    expect([routes.cinematicStudio, routes.reshoot]).toEqual(
-      hubAppSlugs.map(hubAppHref)
-    )
+    expect([
+      routes.cinematicStudio,
+      routes.moveAnything,
+      routes.reshoot
+    ]).toEqual(hubAppSlugs.map(hubAppHref))
   })
 
   it('moves a model page under /hub/models by its new slug', () => {

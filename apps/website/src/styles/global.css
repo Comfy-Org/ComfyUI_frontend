@@ -103,6 +103,7 @@
   --container-8xl: 88rem;
   --container-9xl: 96rem;
   --container-10xl: 100rem;
+  --container-editor-panel: clamp(280px, 16vw, 340px);
   --aspect-ratio-gallery-card: 47/31;
   --color-page: var(--color-primary-comfy-ink);
   --color-brand: var(--color-primary-comfy-yellow);
