@@ -2161,7 +2161,7 @@ describe('useWorkflowService', () => {
 
     it('should reuse equivalent UUIDs regardless of casing', async () => {
       const workflowId = '9cea40bb-b0cf-4b40-a758-8935cfe8d52f'
-      existingWorkflow.changeTracker.activeState.id = workflowId
+      existingWorkflow.changeTracker.activeState!.id = workflowId
 
       await useWorkflowService().afterLoadNewGraph(
         'repeat',
@@ -2190,7 +2190,7 @@ describe('useWorkflowService', () => {
     })
 
     it('should reuse active workflow when only one side has an id', async () => {
-      existingWorkflow.changeTracker.activeState.id =
+      existingWorkflow.changeTracker.activeState!.id =
         '9cea40bb-b0cf-4b40-a758-8935cfe8d52f'
 
       await useWorkflowService().afterLoadNewGraph('repeat', makeWorkflowData())
@@ -2214,7 +2214,7 @@ describe('useWorkflowService', () => {
     })
 
     it('should create new temporary when ids differ', async () => {
-      existingWorkflow.changeTracker.activeState.id =
+      existingWorkflow.changeTracker.activeState!.id =
         '9cea40bb-b0cf-4b40-a758-8935cfe8d52f'
 
       await useWorkflowService().afterLoadNewGraph(
@@ -2356,7 +2356,7 @@ describe('useWorkflowService', () => {
 
     it('reuses a migrated workflow only for its original legacy id', async () => {
       const existingUuid = '9cea40bb-b0cf-4b40-a758-8935cfe8d52f'
-      existingWorkflow.changeTracker.activeState.id = existingUuid
+      existingWorkflow.changeTracker.activeState!.id = existingUuid
       existingWorkflow.legacyId = 'video-point-prompt-example'
 
       await useWorkflowService().afterLoadNewGraph(
@@ -2387,7 +2387,7 @@ describe('useWorkflowService', () => {
     ])(
       'opens a new tab for $label',
       async ({ existingId, incomingId, legacyId }) => {
-        existingWorkflow.changeTracker.activeState.id = existingId
+        existingWorkflow.changeTracker.activeState!.id = existingId
         existingWorkflow.legacyId = legacyId
 
         await useWorkflowService().afterLoadNewGraph(
@@ -2402,7 +2402,7 @@ describe('useWorkflowService', () => {
 
     it('migrates a workflow-object reload and records its legacy id', async () => {
       const existingUuid = '9cea40bb-b0cf-4b40-a758-8935cfe8d52f'
-      existingWorkflow.changeTracker.activeState.id = existingUuid
+      existingWorkflow.changeTracker.activeState!.id = existingUuid
 
       await useWorkflowService().afterLoadNewGraph(
         existingWorkflow,
@@ -2719,7 +2719,7 @@ describe('useWorkflowService', () => {
         details: ''
       }
       const workflow = createModeTestWorkflow({ path: oldPath })
-      workflow.changeTracker.activeState.id = graphId
+      workflow.changeTracker.activeState!.id = graphId
 
       vi.spyOn(workflowStore, 'renameWorkflow').mockImplementation(
         async (renamedWorkflow, path) => {

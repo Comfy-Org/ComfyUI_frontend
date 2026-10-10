@@ -250,6 +250,13 @@ function reportInactiveTrackerCall(method: string, workflowPath: string) {
   assert(false, `ChangeTracker.${method}() called on inactive tracker`)
 }
 
+function reportInvalidTrackerState(method: string, workflowPath: string) {
+  const key = `${method}:invalid-state:${workflowPath}`
+  if (reportedInactiveCalls.has(key)) return
+  reportedInactiveCalls.add(key)
+  assert(false, `ChangeTracker.${method}() received a null graph state`)
+}
+
 export class ChangeTracker {
   static MAX_HISTORY = 50
   /**
@@ -263,7 +270,7 @@ export class ChangeTracker {
   /**
    * The active state of the workflow.
    */
-  activeState: ComfyWorkflowJSON
+  activeState: ComfyWorkflowJSON | null
   undoQueue: ComfyWorkflowJSON[] = []
   redoQueue: ComfyWorkflowJSON[] = []
   changeCount: number = 0
@@ -287,7 +294,7 @@ export class ChangeTracker {
     /**
      * The initial state of the workflow
      */
-    public initialState: ComfyWorkflowJSON
+    public initialState: ComfyWorkflowJSON | null
   ) {
     this.activeState = initialState
   }
@@ -300,7 +307,7 @@ export class ChangeTracker {
     if (this._restoringState) return
 
     if (state) this.activeState = clone(state)
-    this.initialState = clone(this.activeState)
+    if (this.activeState) this.initialState = clone(this.activeState)
   }
 
   store() {
@@ -376,7 +383,7 @@ export class ChangeTracker {
     }
   }
 
-  updateModified(previousState?: ComfyWorkflowJSON) {
+  updateModified(previousState?: ComfyWorkflowJSON | null) {
     // Get the workflow from the store as ChangeTracker is raw object, i.e.
     // `this.workflow` is not reactive.
     const workflow = useWorkflowStore().getWorkflowByPath(this.workflow.path)
@@ -389,6 +396,7 @@ export class ChangeTracker {
 
     const autoQueueGraphChanged =
       !!previousState &&
+      !!this.activeState &&
       isAutoQueueOnChange() &&
       !_.isEqual(
         getExecutionGraphState(previousState),
@@ -422,12 +430,20 @@ export class ChangeTracker {
       return
     }
 
-    const currentState = clone(app.rootGraph.serialize()) as ComfyWorkflowJSON
+    const currentState = clone(
+      app.rootGraph.serialize()
+    ) as ComfyWorkflowJSON | null
+    if (!currentState) {
+      reportInvalidTrackerState('captureCanvasState', this.workflow.path)
+      return
+    }
     if (!ChangeTracker.graphEqual(this.activeState, currentState)) {
       const previousState = this.activeState
-      this.undoQueue.push(previousState)
-      if (this.undoQueue.length > ChangeTracker.MAX_HISTORY) {
-        this.undoQueue.shift()
+      if (previousState) {
+        this.undoQueue.push(previousState)
+        if (this.undoQueue.length > ChangeTracker.MAX_HISTORY) {
+          this.undoQueue.shift()
+        }
       }
 
       this.activeState = currentState
@@ -443,7 +459,13 @@ export class ChangeTracker {
     )
       return
 
-    const currentState = clone(app.rootGraph.serialize()) as ComfyWorkflowJSON
+    const currentState = clone(
+      app.rootGraph.serialize()
+    ) as ComfyWorkflowJSON | null
+    if (!currentState) {
+      reportInvalidTrackerState('squashState', this.workflow.path)
+      return
+    }
     if (ChangeTracker.graphEqual(this.activeState, currentState)) return
 
     const previousState = this.activeState
@@ -472,7 +494,7 @@ export class ChangeTracker {
     const prevState = source.pop()
     if (prevState) {
       const previousState = this.activeState
-      target.push(previousState)
+      if (previousState) target.push(previousState)
       this._restoringState = true
       try {
         await app.loadGraphData(prevState, false, false, this.workflow, {
@@ -687,8 +709,9 @@ export class ChangeTracker {
     return false
   }
 
-  static graphEqual(a: ComfyWorkflowJSON, b: ComfyWorkflowJSON) {
+  static graphEqual(a: ComfyWorkflowJSON | null, b: ComfyWorkflowJSON | null) {
     if (a === b) return true
+    if (!a || !b) return false
 
     // Compare nodes ignoring array position and execution order
     if (

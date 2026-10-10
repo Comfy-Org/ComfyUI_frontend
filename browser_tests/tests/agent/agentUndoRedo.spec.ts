@@ -15,7 +15,7 @@ async function restoredNodeCount(page: Page): Promise<number | undefined> {
   return page.evaluate(
     () =>
       (window.app!.extensionManager as WorkspaceStore).workflow.activeWorkflow
-        ?.changeTracker.activeState.nodes.length
+        ?.changeTracker.activeState?.nodes.length
   )
 }
 

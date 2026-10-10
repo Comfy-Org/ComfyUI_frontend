@@ -276,7 +276,8 @@ export const useSubgraphStore = defineStore('subgraph', () => {
     overrides: Partial<ComfyNodeDefV1> = {},
     name: string = workflow.filename
   ) {
-    const subgraphNode = workflow.changeTracker.initialState.nodes[0]
+    const initialState = workflow.initialState
+    const subgraphNode = initialState.nodes[0]
     subgraphNode.inputs ??= []
     subgraphNode.outputs ??= []
     //NOTE: Types are cast to string. This is only used for input coloring on previews
@@ -286,7 +287,7 @@ export const useSubgraphStore = defineStore('subgraph', () => {
         [`${i.type}`, undefined] satisfies InputSpec
       ])
     )
-    const workflowExtra = workflow.initialState.extra
+    const workflowExtra = initialState.extra
     const description =
       workflowExtra?.BlueprintDescription ??
       workflow.initialState.definitions?.subgraphs[0].description ??
@@ -393,7 +394,7 @@ export const useSubgraphStore = defineStore('subgraph', () => {
     if (!(name in subgraphCache))
       //As loading is blocked on in startup, this can likely be changed to invalid type
       throw new Error('not yet loaded')
-    return structuredClone(subgraphCache[name].changeTracker.initialState)
+    return structuredClone(subgraphCache[name].initialState)
   }
   async function deleteBlueprint(nodeType: string) {
     const name = nodeType.slice(BLUEPRINT_TYPE_PREFIX.length)

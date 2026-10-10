@@ -926,7 +926,7 @@ export class AgentConversationHarness {
         live: app.graph.nodes.map((node) => String(node.id)),
         serialized: app.graph.serialize().nodes.map((node) => String(node.id)),
         activeState:
-          store.workflow.activeWorkflow?.changeTracker.activeState.nodes.map(
+          store.workflow.activeWorkflow?.changeTracker.activeState?.nodes.map(
             (node) => String(node.id)
           ) ?? [],
         observer: window.__tabSwitchLens ?? null

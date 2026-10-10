@@ -70,8 +70,8 @@ function createBuilderWorkflowWithOutputs(
 ): LoadedComfyWorkflow {
   mockResolveNode.mockReturnValue(fromAny({ id: 1 }))
   const workflow = createBuilderWorkflow(activeMode)
-  workflow.changeTracker.activeState.extra ??= {}
-  workflow.changeTracker.activeState.extra.linearData = {
+  workflow.changeTracker.activeState!.extra ??= {}
+  workflow.changeTracker.activeState!.extra.linearData = {
     inputs: [],
     outputs: [toNodeId(1)]
   }
@@ -618,7 +618,7 @@ describe('appModeStore', () => {
     it('falls back to initialState when activeState has no linearData', () => {
       setupNodeWithSeedAndSteps()
       const workflow = createBuilderWorkflow('app')
-      workflow.changeTracker.activeState.extra = {}
+      workflow.changeTracker.activeState!.extra = {}
       workflow.changeTracker.initialState = fromAny({
         ...workflow.changeTracker.activeState,
         extra: {
@@ -636,7 +636,7 @@ describe('appModeStore', () => {
     it('prefers activeState linearData when available', () => {
       setupNodeWithSeedAndSteps()
       const workflow = createBuilderWorkflow('app')
-      workflow.changeTracker.activeState.extra = {
+      workflow.changeTracker.activeState!.extra = {
         linearData: { inputs: [[1, 'steps']], outputs: [toNodeId(1)] }
       }
       workflow.changeTracker.initialState = fromAny({
@@ -651,6 +651,23 @@ describe('appModeStore', () => {
 
       expect(store.selectedInputs).toEqual([[entitySteps, 'steps']])
       expect(store.selectedOutputs).toEqual([toNodeId(1)])
+    })
+
+    it('clears selections when active and initial state are null', () => {
+      setupNodeWithSeedAndSteps()
+      const workflow = createBuilderWorkflow('app')
+      workflow.changeTracker.activeState = null
+      workflow.changeTracker.initialState = null
+      workflowStore.activeWorkflow = workflow
+      store.loadSelections({
+        inputs: [[1, 'seed']],
+        outputs: [toNodeId(1)]
+      })
+
+      store.resetSelectedToWorkflow()
+
+      expect(store.selectedInputs).toEqual([])
+      expect(store.selectedOutputs).toEqual([])
     })
   })
 

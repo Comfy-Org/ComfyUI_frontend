@@ -291,7 +291,7 @@ describe('useWorkflowStore', () => {
           size: -1
         })
         existingWorkflow.changeTracker = createMockChangeTracker()
-        existingWorkflow.changeTracker.activeState.id = existingId
+        existingWorkflow.changeTracker.activeState!.id = existingId
         existingWorkflow.legacyId = legacyId
         store.attachWorkflow(existingWorkflow)
 

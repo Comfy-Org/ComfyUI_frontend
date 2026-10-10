@@ -242,7 +242,7 @@ export function useWorkflowActionsMenu(
       tracker: typeof workflow.changeTracker | undefined
     ) => {
       if (!tracker) return undefined
-      return tracker.activeState.extra?.linearData
+      return tracker.activeState?.extra?.linearData
     }
     const rawLd = isActive
       ? {

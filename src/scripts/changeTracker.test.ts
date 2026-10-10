@@ -414,7 +414,7 @@ describe('ChangeTracker', () => {
       await frames[0](0)
 
       expect(dispatchedEventNames()).toContain('autoQueueGraphChanged')
-      expect(tracker.activeState.nodes).toHaveLength(2)
+      expect(tracker.activeState!.nodes).toHaveLength(2)
     })
   })
 
@@ -476,6 +476,38 @@ describe('ChangeTracker', () => {
     })
 
     describe('state capture', () => {
+      it('recovers a null tracker state from the live canvas', () => {
+        const tracker = createTracker(createState(1))
+        const recovered = createState(2)
+        tracker.activeState = null
+        mockCanvasState(recovered)
+
+        tracker.captureCanvasState()
+
+        expect(tracker.activeState).toEqual(recovered)
+        expect(tracker.undoQueue).toEqual([])
+        expect(api.dispatchCustomEvent).toHaveBeenCalledWith(
+          'graphChanged',
+          recovered
+        )
+        expectAutoQueueGraphChangedNotDispatched()
+      })
+
+      it('does not replace valid state with a null canvas serialization', () => {
+        const initial = createState(1)
+        const tracker = createTracker(initial)
+        vi.spyOn(app.rootGraph, 'serialize').mockReturnValue(null as never)
+
+        tracker.captureCanvasState()
+
+        expect(tracker.activeState).toBe(initial)
+        expect(tracker.undoQueue).toEqual([])
+        expect(mockAssert).toHaveBeenCalledWith(
+          false,
+          'ChangeTracker.captureCanvasState() received a null graph state'
+        )
+      })
+
       it('pushes to undoQueue, updates activeState, and calls updateModified', () => {
         const initial = createState(1)
         const tracker = createTracker(initial)
@@ -561,7 +593,7 @@ describe('ChangeTracker', () => {
         mockCanvasState(canvasState)
         vi.mocked(api.dispatchCustomEvent).mockImplementationOnce((event) => {
           if (event === 'graphChanged') {
-            tracker.activeState.nodes[0].widgets_values = [2]
+            tracker.activeState!.nodes[0].widgets_values = [2]
           }
           return true
         })
@@ -585,7 +617,7 @@ describe('ChangeTracker', () => {
         mockCanvasState(changed)
         vi.mocked(api.dispatchCustomEvent).mockImplementation((event) => {
           if (event === 'graphChanged') {
-            tracker.activeState.nodes[0].widgets_values = [1]
+            tracker.activeState!.nodes[0].widgets_values = [1]
           }
           return true
         })
@@ -1336,6 +1368,25 @@ describe('ChangeTracker', () => {
   })
 
   describe('undo and redo', () => {
+    it('does not copy a null active state into redo history', async () => {
+      const initial = createState(1)
+      const tracker = createTracker(createState(2))
+      tracker.activeState = null
+      tracker.undoQueue.push(initial)
+
+      await tracker.undo()
+
+      expect(app.loadGraphData).toHaveBeenCalledWith(
+        initial,
+        false,
+        false,
+        tracker.workflow,
+        expect.any(Object)
+      )
+      expect(tracker.activeState).toEqual(initial)
+      expect(tracker.redoQueue).toEqual([])
+    })
+
     it('dispatches autoQueueGraphChanged for a data change in both directions', async () => {
       const initial = createState(1)
       const changed = structuredClone(initial)
