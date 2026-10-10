@@ -13,6 +13,7 @@ import type {
   ApplyMode,
   FrameChanges,
   LiveGraphApplierDeps,
+  NodeChange,
   RemoteApplyContext
 } from './liveGraphApplier'
 import { LocalWidgetWrites } from './localWidgetWrites'
@@ -21,9 +22,15 @@ import { changesForRejectedOps } from './rejectedOpChanges'
 interface BoundTarget {
   follower: FollowerDoc
   collector: DocChangeCollector
+  reportedPendingNodes: Map<string, NodeChange>
 }
 
-/** Document node entries one frame added and removed. */
+/**
+ * Document node entries a projection outcome reports as added and removed.
+ * Not necessarily one frame's: `applyCollected` reports a whole collected
+ * batch, and the no-graph `applyFrame` path omits entries already reported
+ * on an earlier pending frame (`reportedPendingNodes`).
+ */
 export interface DocNodeDelta {
   added: readonly string[]
   removed: readonly string[]
@@ -31,7 +38,12 @@ export interface DocNodeDelta {
 
 export type FrameOutcome =
   | { applied: false; nodes: DocNodeDelta }
-  | { applied: true; nodes: DocNodeDelta; createdNodeIds: NodeId[] }
+  | {
+      applied: true
+      nodes: DocNodeDelta
+      createdNodeIds: NodeId[]
+      failureCount: number
+    }
 
 const EMPTY_DELTA: DocNodeDelta = { added: [], removed: [] }
 
@@ -43,6 +55,16 @@ function docNodeDelta(changes: FrameChanges): DocNodeDelta {
     else if (change === 'delete') removed.push(id)
   }
   return { added, removed }
+}
+
+function pendingNodeDelta(target: BoundTarget, changes: FrameChanges) {
+  const frameNodes = new Map(
+    [...changes.nodes].filter(
+      ([id, change]) => target.reportedPendingNodes.get(id) !== change
+    )
+  )
+  target.reportedPendingNodes = new Map(changes.nodes)
+  return docNodeDelta({ ...changes, nodes: frameNodes })
 }
 
 /**
@@ -96,7 +118,8 @@ export class AgentCrdtProjection {
     this.unbind(workflowId)
     this.targets.set(workflowId, {
       follower,
-      collector: new DocChangeCollector(follower.doc)
+      collector: new DocChangeCollector(follower.doc),
+      reportedPendingNodes: new Map()
     })
   }
 
@@ -114,10 +137,13 @@ export class AgentCrdtProjection {
   applyFrame(update: DocUpdate): FrameOutcome {
     const target = this.targets.get(update.workflowId)
     if (!target) return { applied: false, nodes: EMPTY_DELTA }
-    if (!this.getGraph())
-      return { applied: false, nodes: docNodeDelta(target.collector.peek()) }
+    if (!this.getGraph()) {
+      const changes = target.collector.peek()
+      return { applied: false, nodes: pendingNodeDelta(target, changes) }
+    }
     const changes = target.collector.take()
-    const createdNodeIds = this.apply(
+    target.reportedPendingNodes.clear()
+    return this.apply(
       update.workflowId,
       target,
       changes,
@@ -127,17 +153,18 @@ export class AgentCrdtProjection {
       },
       this.takeApplyMode(update.workflowId)
     )
-    return { applied: true, nodes: docNodeDelta(changes), createdNodeIds }
   }
 
   /**
    * Applies the changes collected while no graph could take them: frames
    * delivered before the graph loaded, or while its tab was inactive.
-   * @returns ids of nodes created live on this pass.
+   * @returns the apply result for the whole collected batch.
    */
-  applyCollected(workflowId: string): NodeId[] {
+  applyCollected(workflowId: string): FrameOutcome {
     const target = this.targets.get(workflowId)
-    if (!target || !this.getGraph()) return []
+    if (!target || !this.getGraph())
+      return { applied: false, nodes: EMPTY_DELTA }
+    target.reportedPendingNodes.clear()
     return this.apply(
       workflowId,
       target,
@@ -151,16 +178,21 @@ export class AgentCrdtProjection {
    * Puts the registers a rejected human batch claimed back the way the
    * document has them. Only those registers are touched: the rejection says
    * nothing about the rest of the live graph.
-   * @returns ids of nodes created live on this pass.
+   * @returns the apply result for the rejected operations.
    */
-  revertRejected(workflowId: string, ops: readonly Op[]): NodeId[] {
+  revertRejected(workflowId: string, ops: readonly Op[]): FrameOutcome {
     const target = this.targets.get(workflowId)
-    if (!target || ops.length === 0 || !this.getGraph()) return []
-    const changes = changesForRejectedOps(target.follower.doc, ops)
-    return this.apply(workflowId, target, changes, {
-      actor: 'agent-revert',
-      opIds: ops.map((op) => op.op_id)
-    })
+    if (!target || ops.length === 0 || !this.getGraph())
+      return { applied: false, nodes: EMPTY_DELTA }
+    return this.apply(
+      workflowId,
+      target,
+      changesForRejectedOps(target.follower.doc, ops),
+      {
+        actor: 'agent:revert',
+        opIds: ops.map((op) => op.op_id)
+      }
+    )
   }
 
   /**
@@ -172,6 +204,7 @@ export class AgentCrdtProjection {
    */
   replaceOnNextFrame(workflowId: string): void {
     this.targets.get(workflowId)?.collector.discard()
+    this.targets.get(workflowId)?.reportedPendingNodes.clear()
     this.replacedLineages.add(workflowId)
     this.localWrites.clear()
   }
@@ -189,6 +222,7 @@ export class AgentCrdtProjection {
     const target = this.targets.get(workflowId)
     if (!target) return EMPTY_DELTA
     const changes = target.collector.take()
+    target.reportedPendingNodes.clear()
     this.localWrites.settleAgainst((nodeId, widget) =>
       readDocWidgetValue(target.follower.doc, nodeId, widget)
     )
@@ -208,8 +242,8 @@ export class AgentCrdtProjection {
     changes: FrameChanges,
     context: RemoteApplyContext,
     mode: ApplyMode = 'merge'
-  ): NodeId[] {
-    const { createdNodeIds } = this.applier.applyChanges(
+  ): Extract<FrameOutcome, { applied: true }> {
+    const { createdNodeIds, failureCount } = this.applier.applyChanges(
       target.follower.doc,
       changes,
       context,
@@ -221,6 +255,11 @@ export class AgentCrdtProjection {
         nodeIds: createdNodeIds
       })
     }
-    return createdNodeIds
+    return {
+      applied: true,
+      nodes: docNodeDelta(changes),
+      createdNodeIds,
+      failureCount
+    }
   }
 }

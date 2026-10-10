@@ -12,7 +12,9 @@ import type { Ref } from 'vue'
 import type { Op } from '@comfyorg/comfy-multi-player'
 
 import type { LGraph } from '@/lib/litegraph/src/litegraph'
+import { useTelemetry } from '@/platform/telemetry'
 import { reportError } from '@/platform/telemetry/reportError'
+import type { AgentGraphProjectionStage } from '@/platform/telemetry/types'
 import { api } from '@/scripts/api'
 import { parseNodeId } from '@/types/nodeId'
 import type { NodeId } from '@/types/nodeId'
@@ -25,7 +27,7 @@ import {
   SUBSCRIBE_CATCHUP_GRACE_MS
 } from './agentCrdtDocLifecycle'
 import { AgentCrdtProjection } from './agentCrdtProjection'
-import type { DocNodeDelta } from './agentCrdtProjection'
+import type { DocNodeDelta, FrameOutcome } from './agentCrdtProjection'
 import { apiTransport, createLoggedTransport } from './agentCrdtTransport'
 import { recordDevEvent } from './devPanelLog'
 import type { CrdtDebugSnapshot } from './crdtSnapshot'
@@ -89,6 +91,38 @@ interface AgentCrdtOutcomeCounters {
   reset: number
   /** A stale/duplicate frame the bridge discarded before it became a `doc_update` event (`doc_stale`). */
   dropped: number
+}
+
+interface ProjectionFrameId {
+  opIds?: readonly string[]
+  seq: number
+}
+
+const NOTHING_APPLIED: FrameOutcome = {
+  applied: false,
+  nodes: { added: [], removed: [] }
+}
+
+/** Agent-minted and actorless frames; `human:` writes are excluded. */
+function isAgentFrame(actor: string | undefined): boolean {
+  return actor === undefined || actor.startsWith('agent:')
+}
+
+function reportAgentProjection(
+  frame: ProjectionFrameId,
+  stage: AgentGraphProjectionStage,
+  outcome: FrameOutcome
+): void {
+  const opIds = frame.opIds?.filter((id) => id.length > 0) ?? []
+  useTelemetry()?.trackAgentGraphProjection({
+    op_id: opIds[0] ?? null,
+    op_count: opIds.length,
+    sequence: frame.seq,
+    stage,
+    added_count: outcome.nodes.added.length,
+    removed_count: outcome.nodes.removed.length,
+    apply_failure_count: outcome.applied ? outcome.failureCount : 0
+  })
 }
 
 function liveAddedNodeIds(
@@ -393,12 +427,17 @@ function startAgentCrdtFollower(
 
   const applyRejectedOps = (
     workflowId: string,
-    rejected: readonly Op[]
+    rejected: readonly Op[],
+    seq: number = bridge.lastSequence
   ): boolean => {
     if (getGraph() === null) return false
-    reportMaterialized(
-      workflowId,
-      projection.revertRejected(workflowId, rejected)
+    const projectionOutcome = projection.revertRejected(workflowId, rejected)
+    if (!projectionOutcome.applied) return true
+    reportMaterialized(workflowId, projectionOutcome.createdNodeIds)
+    reportAgentProjection(
+      { opIds: rejected.map((op) => op.op_id), seq },
+      'reverted',
+      projectionOutcome
     )
     return true
   }
@@ -438,7 +477,7 @@ function startAgentCrdtFollower(
       ])
       return
     }
-    if (!applyRejectedOps(workflowId, rejected))
+    if (!applyRejectedOps(workflowId, rejected, outcome.result.seq))
       pendingRejected.set(workflowId, [
         ...(pendingRejected.get(workflowId) ?? []),
         ...rejected
@@ -476,6 +515,8 @@ function startAgentCrdtFollower(
   const coalescer = createOpCoalescer(sender.admit, sender.flush)
 
   const pendingLiveNodeIds = new Set<NodeId>()
+  /** Deferred agent and actorless frames per workflow, in arrival order. */
+  const pendingProjectionFrames = new Map<string, ProjectionFrameId[]>()
   const reportMaterialized = (
     workflowId: string,
     materialized: readonly NodeId[]
@@ -488,8 +529,48 @@ function startAgentCrdtFollower(
       events
     )
   }
+  const retainPendingFrame = (update: ClassifiedDocUpdate): void => {
+    const frames = pendingProjectionFrames.get(update.workflowId)
+    const frame = { opIds: update.opIds, seq: update.seq }
+    if (frames) frames.push(frame)
+    else pendingProjectionFrames.set(update.workflowId, [frame])
+  }
+  const reportPendingFrames = (
+    workflowId: string,
+    stage: Extract<AgentGraphProjectionStage, 'applied_deferred' | 'discarded'>,
+    outcome: FrameOutcome
+  ): void => {
+    const frames = pendingProjectionFrames.get(workflowId)
+    pendingProjectionFrames.delete(workflowId)
+    for (const frame of frames ?? [])
+      reportAgentProjection(frame, stage, outcome)
+  }
+  const reportFrameProjection = (
+    update: ClassifiedDocUpdate,
+    outcome: FrameOutcome
+  ): void => {
+    const stage = outcome.applied
+      ? 'applied'
+      : getGraph() === null
+        ? 'received_no_graph'
+        : 'discarded'
+    if (isAgentFrame(update.actor)) {
+      const reported = stage === 'discarded' ? NOTHING_APPLIED : outcome
+      reportAgentProjection(update, stage, reported)
+    }
+    if (stage === 'received_no_graph') {
+      if (isAgentFrame(update.actor)) retainPendingFrame(update)
+      return
+    }
+    if (stage === 'applied')
+      reportPendingFrames(update.workflowId, 'applied_deferred', outcome)
+    else reportPendingFrames(update.workflowId, 'discarded', NOTHING_APPLIED)
+  }
   const applyCollected = (workflowId: string): void => {
-    reportMaterialized(workflowId, projection.applyCollected(workflowId))
+    const outcome = projection.applyCollected(workflowId)
+    if (!outcome.applied) return
+    reportMaterialized(workflowId, outcome.createdNodeIds)
+    reportPendingFrames(workflowId, 'applied_deferred', outcome)
   }
   const incrementOutcome = (
     key: 'received' | 'applied' | 'appliedLive' | 'skipped' | 'reset'
@@ -507,21 +588,16 @@ function startAgentCrdtFollower(
    */
   const isOwnEcho = (update: ClassifiedDocUpdate): boolean =>
     !update.catchUp && update.actor === ownActor()
-  const applyFrame = (
-    update: ClassifiedDocUpdate
-  ): { created: NodeId[]; nodes: DocNodeDelta } => {
+  const applyFrame = (update: ClassifiedDocUpdate): FrameOutcome => {
     if (isOwnEcho(update) && getGraph() !== null) {
       const nodes = projection.discardPending(update.workflowId)
       incrementOutcome('skipped')
-      return { created: [], nodes }
+      return { applied: false, nodes }
     }
     const outcome = projection.applyFrame(update)
     incrementOutcome(outcome.applied ? 'applied' : 'skipped')
     if (outcome.applied && !update.catchUp) incrementOutcome('appliedLive')
-    return {
-      created: outcome.applied ? outcome.createdNodeIds : [],
-      nodes: outcome.nodes
-    }
+    return outcome
   }
 
   function tryReseed(): boolean {
@@ -596,7 +672,10 @@ function startAgentCrdtFollower(
     lifecycle.onDocumentUpdate()
     updatesApplied.value = bridge.follower.updatesApplied
     lastFrameType.value = event.type
-    const { created, nodes } = applyFrame(update)
+    const outcome = applyFrame(update)
+    const nodes = outcome.nodes
+    const created = outcome.applied ? outcome.createdNodeIds : []
+    reportFrameProjection(update, outcome)
     recordDevEvent('doc_update', {
       workflowId: update.workflowId,
       seq: update.seq,
@@ -635,6 +714,7 @@ function startAgentCrdtFollower(
     incrementOutcome('reset')
     if (!isCurrentWorkflow(detail?.workflowId)) return
     projection.replaceOnNextFrame(detail.workflowId)
+    reportPendingFrames(detail.workflowId, 'discarded', NOTHING_APPLIED)
     sender.abortAll()
     events.onReset?.(detail.workflowId)
     connected.value = false
@@ -664,6 +744,7 @@ function startAgentCrdtFollower(
     ) {
       updatesApplied.value = 0
       projection.discardPending(workflowId)
+      reportPendingFrames(workflowId, 'discarded', NOTHING_APPLIED)
       projection.bind(workflowId, bridge.follower)
     }
   }
@@ -678,8 +759,10 @@ function startAgentCrdtFollower(
       event instanceof CustomEvent
         ? (event.detail as { workflowId?: string } | null)
         : null
-    if (detail?.workflowId !== undefined)
+    if (detail?.workflowId !== undefined) {
       projection.discardPending(detail.workflowId)
+      reportPendingFrames(detail.workflowId, 'discarded', NOTHING_APPLIED)
+    }
     outcomes.value = { ...outcomes.value, errored: outcomes.value.errored + 1 }
     recordDevEvent(
       'schema_error',
@@ -765,7 +848,10 @@ function startAgentCrdtFollower(
   const rebindProjection = (next: string | null): void => {
     const current = subscribedWorkflowId.value
     if (current === next) return
-    if (current !== null) projection.unbind(current)
+    if (current !== null) {
+      projection.unbind(current)
+      reportPendingFrames(current, 'discarded', NOTHING_APPLIED)
+    }
     if (next !== null) projection.bind(next, bridge.follower)
     subscribedWorkflowId.value = next
   }
@@ -898,7 +984,11 @@ function startAgentCrdtFollower(
       () => rejectedOpNotifier.cancel(),
       () => pendingRejected.clear(),
       () => coalescer.detach(),
-      () => projection.destroy(),
+      () => {
+        for (const workflowId of pendingProjectionFrames.keys())
+          reportPendingFrames(workflowId, 'discarded', NOTHING_APPLIED)
+        projection.destroy()
+      },
       () => bridge.destroy(),
       () => client.destroy()
     ])

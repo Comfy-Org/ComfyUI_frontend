@@ -78,6 +78,7 @@ export interface LiveGraphApplierDeps {
 
 export interface ApplyResult {
   createdNodeIds: NodeId[]
+  failureCount: number
 }
 
 /**
@@ -546,6 +547,7 @@ function floorSizeToContent(node: LGraphNode): void {
 export class LiveGraphApplier {
   private readonly deps: LiveGraphApplierDeps
   private readonly reported = new Set<string>()
+  private readonly failureCounts: number[] = []
 
   constructor(deps: LiveGraphApplierDeps) {
     this.deps = deps
@@ -559,44 +561,52 @@ export class LiveGraphApplier {
     mode: ApplyMode = 'merge'
   ): ApplyResult {
     const graph = this.deps.getGraph()
-    if (!graph) return { createdNodeIds: [] }
-    return this.write(graph, context, () => {
-      if (mode === 'replace') this.removeAbsent(graph, doc, context)
-      const created: NodeId[] = []
-      const touchedNodes = new Set<string>()
-      this.registerDefinitions(graph, doc)
+    if (!graph) return { createdNodeIds: [], failureCount: 0 }
+    this.failureCounts.push(0)
+    try {
+      return this.write(graph, context, () => {
+        if (mode === 'replace') this.removeAbsent(graph, doc, context)
+        const created: NodeId[] = []
+        const touchedNodes = new Set<string>()
+        this.registerDefinitions(graph, doc)
 
-      for (const [id, change] of changes.nodes) {
-        if (change === 'delete') {
-          this.try(context, () => this.deleteNode(graph, id))
-          continue
-        }
-        touchedNodes.add(id)
-        this.try(context, () => {
-          const result = this.upsertNode(graph, doc, id, mode)
-          if (result === 'created') created.push(toNodeId(id))
-          if (result === 'recreated') {
-            for (const link of docLinksIncident(doc, id)) {
-              this.connectLink(graph, doc, link)
-            }
+        for (const [id, change] of changes.nodes) {
+          if (change === 'delete') {
+            this.try(context, () => this.deleteNode(graph, id))
+            continue
           }
-        })
-      }
+          touchedNodes.add(id)
+          this.try(context, () => {
+            const result = this.upsertNode(graph, doc, id, mode)
+            if (result === 'created') created.push(toNodeId(id))
+            if (result === 'recreated') {
+              for (const link of docLinksIncident(doc, id)) {
+                this.connectLink(graph, doc, link)
+              }
+            }
+          })
+        }
 
-      for (const id of changes.resyncNodes) {
-        if (touchedNodes.has(id)) continue
-        this.try(context, () => this.syncFields(graph, doc, id))
-      }
+        for (const id of changes.resyncNodes) {
+          if (touchedNodes.has(id)) continue
+          this.try(context, () => this.syncFields(graph, doc, id))
+        }
 
-      for (const [id, names] of changes.widgets) {
-        if (touchedNodes.has(id)) continue
-        this.try(context, () => this.syncWidgets(graph, doc, id, names, mode))
-      }
+        for (const [id, names] of changes.widgets) {
+          if (touchedNodes.has(id)) continue
+          this.try(context, () => this.syncWidgets(graph, doc, id, names, mode))
+        }
 
-      this.applyLinks(graph, doc, [...changes.links], context)
-      if (mode === 'merge') this.placeBatch(graph, created)
-      return { createdNodeIds: created }
-    })
+        this.applyLinks(graph, doc, [...changes.links], context)
+        if (mode === 'merge') this.placeBatch(graph, created)
+        return {
+          createdNodeIds: created,
+          failureCount: this.currentFailureCount()
+        }
+      })
+    } finally {
+      this.failureCounts.pop()
+    }
   }
 
   private removeAbsent(
@@ -640,6 +650,7 @@ export class LiveGraphApplier {
     try {
       fn()
     } catch (error) {
+      this.incrementFailureCount()
       reportError(error, {
         surface: 'agent',
         errorType: 'agent_graph_apply_failed',
@@ -655,6 +666,7 @@ export class LiveGraphApplier {
     errorType: string,
     context: Record<string, unknown>
   ): void {
+    this.incrementFailureCount()
     if (this.reported.has(key)) return
     this.reported.add(key)
     reportError(new Error(message), {
@@ -663,6 +675,15 @@ export class LiveGraphApplier {
       tags: { ...AGENT_APPLY_TAGS, outcome: 'degraded' },
       context
     })
+  }
+
+  private currentFailureCount(): number {
+    return this.failureCounts.at(-1) ?? 0
+  }
+
+  private incrementFailureCount(): void {
+    const index = this.failureCounts.length - 1
+    if (index >= 0) this.failureCounts[index] += 1
   }
 
   private registerDefinitions(graph: LGraph, doc: Y.Doc): void {
@@ -678,6 +699,7 @@ export class LiveGraphApplier {
         this.reported.delete(`definition:${definition.id}`)
         continue
       }
+      this.incrementFailureCount()
       if (this.reported.has(`definition:${definition.id}`)) continue
       this.reported.add(`definition:${definition.id}`)
       reportError(failure, {
