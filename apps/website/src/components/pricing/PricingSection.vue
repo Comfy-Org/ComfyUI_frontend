@@ -99,6 +99,20 @@ const planCards = computed(() =>
     ]
   }))
 )
+
+const featureGroupRows = computed(() =>
+  Math.max(...planCards.value.map((card) => card.featureGroups.length))
+)
+
+const cardRowSpanByGroupRows: Record<number, string> = {
+  1: 'row-span-7',
+  2: 'row-span-8',
+  3: 'row-span-9',
+  4: 'row-span-10'
+}
+const cardRowSpan = computed(
+  () => cardRowSpanByGroupRows[featureGroupRows.value] ?? 'row-span-10'
+)
 </script>
 
 <template>
@@ -160,7 +174,7 @@ const planCards = computed(() =>
           featureGroups
         } in planCards"
         :key="plan.id"
-        class="row-span-7 grid grid-rows-subgrid"
+        :class="cn('grid grid-rows-subgrid', cardRowSpan)"
       >
         <div class="flex items-center gap-4">
           <PricingPlanLabel
@@ -182,8 +196,16 @@ const planCards = computed(() =>
           :locale
         />
 
-        <div v-if="featureGroups.length" class="mt-8">
-          <PricingPlanFeatureList :features="featureGroups" :locale />
+        <div
+          v-for="groupIndex in featureGroupRows"
+          :key="groupIndex"
+          :class="groupIndex === 1 ? 'mt-8' : 'mt-5'"
+        >
+          <PricingPlanFeatureList
+            v-if="featureGroups[groupIndex - 1]"
+            :features="[featureGroups[groupIndex - 1]]"
+            :locale
+          />
         </div>
 
         <PricingCredits
