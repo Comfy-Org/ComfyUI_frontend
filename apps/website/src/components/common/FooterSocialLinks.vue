@@ -30,7 +30,7 @@ const socialLinks = (
           :href="link.href"
           target="_blank"
           rel="noopener"
-          class="block transition-colors hover:text-primary-warm-white"
+          class="-m-2 block p-2 transition-colors hover:text-primary-warm-white"
         >
           <span
             class="block size-5 icon-mask"
