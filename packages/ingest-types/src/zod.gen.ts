@@ -5589,3 +5589,1015 @@ export const zGetWebsocketQuery = z.object({
   workspace_id: z.string().optional(),
   clientId: z.string().optional()
 })
+
+export const zUpdateHubWorkflowRequest = z.object({
+  name: z.string().min(1).nullish(),
+  description: z.string().nullish(),
+  tags: z.array(z.string()).nullish(),
+  models: z.array(z.string()).nullish(),
+  custom_nodes: z.array(z.string()).nullish(),
+  tutorial_url: z.string().nullish(),
+  thumbnail_type: z.enum(['image', 'video', 'image_comparison']).optional(),
+  thumbnail_token: z.string().nullish(),
+  thumbnail_comparison_token: z.string().nullish(),
+  sample_image_tokens_or_urls: z.array(z.string()).nullish(),
+  metadata: z.record(z.unknown()).nullish()
+})
+
+/**
+ * Request body for publishing or updating a workflow on the Hub.
+ */
+
+export const zHistoryEventRequest = z.object({
+  user_id: z.string().optional(),
+  workspace_id: z.string().optional(),
+  event_type: z.string().min(1),
+  event_id: z.string().min(1),
+  params: z.record(z.unknown()).optional(),
+  auth_method: z.enum(['api_key', 'bearer_token']).optional(),
+  customer_ref: z.string().optional(),
+  timestamp: z.string().datetime().optional()
+})
+
+/**
+ * Response after recording partner usage data.
+ */
+
+export const zPartnerUsageResponse = z.object({
+  status: z.string()
+})
+
+/**
+ * Request body for reporting partner resource usage (admin endpoint).
+ */
+
+export const zPartnerUsageRequest = z.object({
+  workspace_id: z.string().min(1),
+  user_id: z.string().optional(),
+  spend_source: z.string().optional(),
+  transaction_id: z.string().min(1),
+  event_type: z.string().min(1),
+  timestamp: z.string().datetime().optional(),
+  properties: z.record(z.unknown()).optional()
+})
+
+/**
+ * Billing period (uppercase to match comfy-api)
+ */
+
+export const zSecretResolveProvider = z.enum(['gemini', 'runway', 'higgsfield'])
+
+/**
+ * Request body for the internal async capability-authorized resolve endpoint. Carries the signed capability plus the requested task_id and provider, which must match the capability; the owning identity is taken from inside the verified capability, never this body.
+ */
+
+export const zResolveSecretByCapabilityRequest = z.object({
+  capability: z.string(),
+  task_id: z.string(),
+  provider: zSecretResolveProvider
+})
+
+/**
+ * One BYOK-entitled workspace and its link-expanded member user ids.
+ */
+
+export const zByokEntitlementWorkspace = z.object({
+  workspace_id: z.string(),
+  providers: z.array(z.string()),
+  member_user_ids: z.array(z.string())
+})
+
+/**
+ * Versioned, secret-free snapshot of every BYOK-entitled workspace and its link-expanded member user ids.
+ */
+
+export const zByokEntitlementSnapshot = z.object({
+  version: z.string(),
+  generated_at: z.string().datetime(),
+  global_providers: z.array(z.string()),
+  workspaces: z.array(zByokEntitlementWorkspace)
+})
+
+/**
+ * Resolved credential for the requested provider, with no owner identity. For api_key credentials the decrypted secret_value is returned; for gcp_service_account credentials a short-lived minted OAuth access_token (with its expires_at and the SA's project_id) is returned instead.
+ */
+
+export const zResolvedProviderCredential = z.object({
+  provider: zSecretResolveProvider,
+  credential_type: z.enum(['api_key', 'gcp_service_account']),
+  secret_value: z.string().optional(),
+  access_token: z.string().optional(),
+  expires_at: z.string().datetime().optional(),
+  project_id: z.string().optional()
+})
+
+/**
+ * Resolved credential for the requested provider, plus the server-derived identity of the owner it was resolved under. Returned by the synchronous resolve route only; the async capability route returns the credential alone (ResolvedProviderCredential).
+ */
+
+export const zResolveSecretResponse = zResolvedProviderCredential.and(
+  z.object({
+    user_id: z.string().optional(),
+    workspace_id: z.string().optional()
+  })
+)
+
+/**
+ * Request body for the internal secret-resolve endpoint. Carries only the provider; caller identity is derived from the forwarded credential.
+ */
+
+export const zResolveSecretRequest = z.object({
+  provider: zSecretResolveProvider
+})
+
+/**
+ * One way a provider's credential can be entered. When a provider exposes more than one option, clients present a sub-selection; the selected option's credential_type is sent on CreateSecretRequest.
+ */
+
+export const zSyncApiKeyResponse = z.object({
+  result: z.enum([
+    'revoked',
+    'already_revoked',
+    'no_op',
+    'inserted',
+    'healed',
+    'already_correct'
+  ])
+})
+
+/**
+ * Request body for synchronizing an API key from the external registry.
+ */
+
+export const zSyncApiKeyRequest = z.object({
+  event: z.enum(['delete', 'upsert']),
+  key_hash: z.string().regex(/^[0-9a-fA-F]{64}$/),
+  customer_id: z.string().min(1),
+  key_prefix: z.string().max(16).optional(),
+  name: z.string().max(255).optional(),
+  description: z.string().max(5000).optional(),
+  customer_email: z.string().max(320).optional(),
+  customer_name: z.string().max(255).optional()
+})
+
+/**
+ * The personal workspace's provisioned billing identity.
+ */
+
+export const zEnsureWorkspaceBillingProvisionedResponse = z.object({
+  workspace_id: z.string(),
+  stripe_customer_id: z.string(),
+  metronome_customer_id: z.string(),
+  metronome_contract_id: z.string()
+})
+
+/**
+ * Request body for ensuring a user's personal workspace carries a fully
+ * provisioned billing identity. Sent by comfy-api's CreateCustomer (BE-1047)
+ * with the already canonical-resolved user identity.
+ *
+ */
+
+export const zEnsureWorkspaceBillingProvisionedRequest = z.object({
+  user_id: z.string().min(1),
+  email: z.string().email().min(1)
+})
+
+/**
+ * Firebase UIDs linked to the canonical comfy_user_id. Empty list when
+ * no mappings exist (not an error — callers can treat empty as "unknown
+ * canonical").
+ *
+ */
+
+export const zListLinkedFirebaseUidsResponse = z.object({
+  firebase_uids: z.array(z.string())
+})
+
+/**
+ * Request body for reverse-looking-up Firebase UIDs linked to a canonical comfy_user_id.
+ */
+
+export const zListLinkedFirebaseUidsRequest = z.object({
+  comfy_user_id: z.string().min(1)
+})
+
+/**
+ * Response confirming the validity and scope of a workspace API key.
+ */
+
+export const zVerifyApiKeyResponse = z.object({
+  user_id: z.string(),
+  email: z.string(),
+  name: z.string(),
+  is_admin: z.boolean(),
+  workspace_id: z.string(),
+  workspace_type: z.enum(['personal', 'team']),
+  billing_rail: z.enum(['legacy_stripe', 'metronome', 'stripe']).optional(),
+  role: z.enum(['owner', 'member']),
+  has_funds: z.boolean(),
+  is_active: z.boolean(),
+  permissions: z.array(z.string())
+})
+
+/**
+ * Request body for verifying a workspace API key (admin endpoint).
+ */
+
+export const zVerifyApiKeyRequest = z.object({
+  api_key: z.string()
+})
+
+/**
+ * Response after bulk-revoking API keys for a workspace member.
+ */
+
+export const zReleaseHoldResponse = z.object({
+  firebase_id: z.string(),
+  released: z.boolean(),
+  message: z.string()
+})
+
+/**
+ * Current status of a user data deletion request.
+ */
+
+export const zDeletionStatus = z.object({
+  status_name: z.string(),
+  status_details: z.string()
+})
+
+/**
+ * Details of a pending or completed user data deletion request.
+ */
+
+export const zDeletionRequest = z.object({
+  id: z.string(),
+  firebase_id: z.string(),
+  create_time: z.string().datetime(),
+  deletion_status: z.array(zDeletionStatus)
+})
+
+/**
+ * Detailed execution error information from ComfyUI
+ */
+
+export const zSetReviewStatusResponse = z.object({
+  share_ids: z.array(z.string()),
+  status: z.enum(['approved', 'rejected'])
+})
+
+/**
+ * Request body for setting the review status of a Hub workflow.
+ */
+
+export const zSetReviewStatusRequest = z.object({
+  share_ids: z.array(z.string()).min(1),
+  status: z.enum(['approved', 'rejected'])
+})
+
+/**
+ * Response after signing out of all devices
+ */
+
+export const zSsoKeyPolicy = z.object({
+  sso_required: z.boolean()
+})
+
+/**
+ * User information response
+ */
+
+export const zLogsResponse = z.array(
+  z.object({
+    timestamp: z.string().datetime().optional(),
+    level: z.enum(['debug', 'info', 'warn', 'error']).optional(),
+    message: z.string().optional(),
+    source: z.string().optional(),
+    metadata: z.record(z.unknown()).optional()
+  })
+)
+
+/**
+ * Response after submitting feedback
+ */
+
+export const zWorkspaceBillingReconcileDecision = z.object({
+  field: z.string(),
+  before: z.string().optional(),
+  after: z.string().optional(),
+  applied: z.boolean(),
+  reason: z.string().optional()
+})
+
+/**
+ * The reconcile workflow's decision report, mirroring the producer shape (billing activities.WorkspaceReconcileReport). It contains no provider payloads or customer PII.
+ */
+
+export const zWorkspaceBillingReconcileReport = z.object({
+  workspace_id: z.string(),
+  status: z.enum(['no_op', 'dry_run', 'repaired', 'blocked', 'unsafe']),
+  retryable: z.boolean(),
+  reason: z.string().optional(),
+  decisions: z.array(zWorkspaceBillingReconcileDecision).optional()
+})
+
+export const zWorkspaceBillingReconcileExecution = z.object({
+  workflow_id: z.string(),
+  run_id: z.string().optional(),
+  status: z.string(),
+  report: zWorkspaceBillingReconcileReport.optional()
+})
+
+/**
+ * The PDP verdict. enforcing=false means allow for every api_name (callers cache per workspace and short-circuit); provider is the canonical catalog provider_id for the api_name (null for unknown or governance-excluded api_names) and is what denial bodies and metrics must use verbatim.
+ */
+
+export const zProviderPolicyCheckResponse = z.object({
+  allow: z.boolean(),
+  enforcing: z.boolean(),
+  provider: z.string().nullish(),
+  policy_updated_at: z.string().datetime().nullish()
+})
+
+/**
+ * The PDP question comfy-api asks per state-creating proxy request.
+ */
+
+export const zProviderPolicyCheckRequest = z.object({
+  workspace_id: z.string(),
+  api_name: z.string()
+})
+
+/**
+ * One provider's policy state.
+ */
+
+export const zAdminBillingMutationRequest = z.object({
+  workspace_id: z.string(),
+  actor_assertion: z.string()
+})
+
+/**
+ * First rejected op in an abort-remainder batch.
+ */
+
+export const zContentCatalogPublish = z.object({
+  draft_id: z.coerce
+    .bigint()
+    .gte(BigInt(1))
+    .max(BigInt('9223372036854775807'), {
+      message: 'Invalid value: Expected int64 to be <= 9223372036854775807'
+    }),
+  generation: z.coerce
+    .bigint()
+    .min(BigInt('-9223372036854775808'), {
+      message: 'Invalid value: Expected int64 to be >= -9223372036854775808'
+    })
+    .max(BigInt('9223372036854775807'), {
+      message: 'Invalid value: Expected int64 to be <= 9223372036854775807'
+    })
+})
+
+export const zContentCatalogSave = z.object({
+  draft_id: z.coerce
+    .bigint()
+    .gte(BigInt(1))
+    .max(BigInt('9223372036854775807'), {
+      message: 'Invalid value: Expected int64 to be <= 9223372036854775807'
+    }),
+  edit_version: z.string().optional(),
+  kind: z.enum(['MODEL', 'WORKFLOW', 'APP']),
+  slug: z.string(),
+  enabled: z.boolean(),
+  visibility: z.enum(['PUBLIC', 'STAFF']),
+  visible_from: z.string().datetime().optional(),
+  deleted: z.boolean(),
+  data: z.record(z.unknown())
+})
+
+export const zSiteSubmission = z.object({
+  uid: z.string(),
+  share_id: z.string(),
+  version_id: z.string(),
+  title: z.string(),
+  owner_uid: z.string(),
+  description: z.string(),
+  listed: z.boolean(),
+  submitted_at: z.string().datetime()
+})
+
+export const zContentPublicationEvent = z.object({
+  id: z.string(),
+  action: z.enum(['PUBLISH', 'REVERT', 'APPROVE', 'REJECT']),
+  target_id: z.string(),
+  previous_id: z.string().optional(),
+  actor_uid: z.string(),
+  created_at: z.string().datetime()
+})
+
+export const zContentCatalogRecord = z.object({
+  uid: z.string(),
+  revision: z.coerce
+    .bigint()
+    .gte(BigInt(1))
+    .max(BigInt('9223372036854775807'), {
+      message: 'Invalid value: Expected int64 to be <= 9223372036854775807'
+    }),
+  edit_version: z.string(),
+  kind: z.enum(['MODEL', 'WORKFLOW', 'APP']),
+  slug: z.string(),
+  enabled: z.boolean(),
+  visibility: z.enum(['PUBLIC', 'STAFF']),
+  visible_from: z.string().datetime().optional(),
+  deleted: z.boolean(),
+  data: z.record(z.unknown())
+})
+
+export const zContentCatalogProjection = z.object({
+  revision_id: z.coerce
+    .bigint()
+    .gte(BigInt(1))
+    .max(BigInt('9223372036854775807'), {
+      message: 'Invalid value: Expected int64 to be <= 9223372036854775807'
+    }),
+  generation: z.coerce
+    .bigint()
+    .min(BigInt('-9223372036854775808'), {
+      message: 'Invalid value: Expected int64 to be >= -9223372036854775808'
+    })
+    .max(BigInt('9223372036854775807'), {
+      message: 'Invalid value: Expected int64 to be <= 9223372036854775807'
+    }),
+  items: z.array(zContentCatalogRecord)
+})
+
+export const zContentCatalogReview = z.object({
+  draft: zContentCatalogProjection,
+  live: zContentCatalogProjection,
+  previous_live_id: z.coerce
+    .bigint()
+    .gte(BigInt(1))
+    .max(BigInt('9223372036854775807'), {
+      message: 'Invalid value: Expected int64 to be <= 9223372036854775807'
+    })
+    .optional(),
+  can_edit: z.boolean(),
+  can_apply: z.boolean(),
+  history: z.array(zContentPublicationEvent)
+})
+
+/**
+ * Represents a user-owned asset (image, video, or other generated output).
+ */
+
+export const zFeedbackResponseWritable = z.record(z.unknown())
+
+/**
+ * The workspace a media request reads from, where a media tag cannot
+ * send `X-Comfy-Workspace-ID`. It applies only while
+ * `web_session_enabled` is on for the user; with it off, and always on
+ * the `CookieAuth` cookie, it is ignored.
+ *
+ * On a `WebSessionAuth` request it selects the workspace: a workspace
+ * the user cannot access is 403 `workspace_access_denied`, and a
+ * malformed value, or one that disagrees with `X-Comfy-Workspace-ID`,
+ * is 400 `workspace_id_invalid`. A token or API key keeps its own
+ * workspace, and naming another is 400 `workspace_id_invalid`. A cookie
+ * request that names no workspace looks a filename up across all of the
+ * user's workspaces, and an asset id up in the personal one.
+ *
+ */
+
+export const zListContentCatalogItemsQuery = z.object({
+  q: z.string().max(200).optional(),
+  slug: z.string().optional(),
+  kind: z.enum(['MODEL', 'WORKFLOW', 'APP']).optional()
+})
+
+/**
+ * LIVE projection
+ */
+
+export const zListContentCatalogItemsResponse = zContentCatalogProjection
+
+export const zGetContentCatalogItemPath = z.object({
+  uid: z.string()
+})
+
+/**
+ * Website content record
+ */
+
+export const zGetContentCatalogItemResponse = zContentCatalogRecord
+
+export const zGetSiteContentCatalogQuery = z.object({
+  view: z.enum(['DRAFT', 'LIVE']).optional().default('DRAFT'),
+  now: z.string().datetime().optional(),
+  eligible: z.boolean().optional().default(false)
+})
+
+/**
+ * Selected staff catalog projection
+ */
+
+export const zGetSiteContentCatalogResponse = zContentCatalogProjection
+
+/**
+ * Staff review context; private/no-store
+ */
+
+export const zGetSiteContentReviewResponse = zContentCatalogReview
+
+/**
+ * At most 100 pending submissions, oldest first
+ */
+
+export const zListSiteSubmissionsResponse = z.array(zSiteSubmission)
+
+export const zReviewSiteSubmissionBody = z.object({
+  version_id: z.string(),
+  status: z.enum(['approved', 'rejected'])
+})
+
+export const zReviewSiteSubmissionPath = z.object({
+  share_id: z.string()
+})
+
+/**
+ * Exact submission reviewed
+ */
+
+export const zReviewSiteSubmissionResponse = z.void()
+
+export const zSaveSiteContentItemBody = zContentCatalogSave
+
+export const zSaveSiteContentItemPath = z.object({
+  uid: z.string()
+})
+
+/**
+ * Saved immutable entity version
+ */
+
+export const zSaveSiteContentItemResponse = zContentCatalogRecord
+
+export const zPublishSiteContentCatalogBody = zContentCatalogPublish
+
+/**
+ * New DRAFT after promotion
+ */
+
+export const zPublishSiteContentCatalogResponse = zContentCatalogProjection
+
+export const zRevertSiteContentCatalogBody = z.object({
+  live_id: z.coerce.bigint().gte(BigInt(1)).max(BigInt('9223372036854775807'), {
+    message: 'Invalid value: Expected int64 to be <= 9223372036854775807'
+  })
+})
+
+/**
+ * Preserved DRAFT after rollback
+ */
+
+export const zRevertSiteContentCatalogResponse = zContentCatalogProjection
+
+/**
+ * Success
+ */
+
+export const zGetKnowledgeBundleHeaders = z.object({
+  'If-None-Match': z.string().optional()
+})
+
+/**
+ * The public bundle
+ */
+
+export const zGetKnowledgeBundleResponse = z.record(z.unknown())
+
+/**
+ * The public bundle's manifest
+ */
+
+export const zGetKnowledgeManifestResponse = z.record(z.unknown())
+
+/**
+ * Empty object for workflow templates
+ */
+
+export const zGetFilesPath = z.object({
+  directory_type: z.enum(['output', 'input', 'temp'])
+})
+
+/**
+ * Array of file names sorted by modification time (newest first)
+ */
+
+export const zGetFilesResponse = z.array(z.string())
+
+export const zResolveSecretBody = zResolveSecretRequest
+
+export const zResolveSecretResponse2 = z.union([
+  zResolveSecretResponse,
+  z.void()
+])
+
+export const zResolveSecretByCapabilityBody = zResolveSecretByCapabilityRequest
+
+export const zResolveSecretByCapabilityResponse = z.union([
+  zResolvedProviderCredential,
+  z.void()
+])
+
+export const zGetByokEntitlementSnapshotQuery = z.object({
+  schema: z.number().int().gte(1).optional()
+})
+
+/**
+ * The current BYOK entitlement snapshot.
+ */
+
+export const zGetByokEntitlementSnapshotResponse = zByokEntitlementSnapshot
+
+export const zGetSsoKeyPolicyQuery = z.object({
+  user_id: z.string().max(128),
+  email: z.string().max(320).optional(),
+  key_workspace_id: z.string().max(128).optional()
+})
+
+/**
+ * Whether an SSO organization holds the account.
+ */
+
+export const zGetSsoKeyPolicyResponse = zSsoKeyPolicy
+
+/**
+ * Success
+ */
+
+export const zGetLogsResponse = zLogsResponse
+
+/**
+ * Success
+ */
+
+export const zGetOpenAiAppsChallengeResponse = z.string()
+
+/**
+ * Authorization-server metadata
+ */
+
+export const zVerifyWorkspaceApiKeyBody = zVerifyApiKeyRequest
+
+export const zVerifyWorkspaceApiKeyQuery = z.object({
+  include_billing: z.boolean().optional().default(false)
+})
+
+/**
+ * Key is valid
+ */
+
+export const zVerifyWorkspaceApiKeyResponse = zVerifyApiKeyResponse
+
+export const zCheckProviderPolicyBody = zProviderPolicyCheckRequest
+
+/**
+ * The verdict (allow or deny)
+ */
+
+export const zCheckProviderPolicyResponse = zProviderPolicyCheckResponse
+
+/**
+ * Success
+ */
+
+export const zSetReviewStatusBody = zSetReviewStatusRequest
+
+/**
+ * Status updated successfully
+ */
+
+export const zSetReviewStatusResponse2 = zSetReviewStatusResponse
+
+export const zAdminDeleteHubWorkflowPath = z.object({
+  share_id: z.string()
+})
+
+/**
+ * Successfully deleted
+ */
+
+export const zAdminDeleteHubWorkflowResponse = z.void()
+
+export const zUpdateHubWorkflowBody = zUpdateHubWorkflowRequest
+
+export const zUpdateHubWorkflowPath = z.object({
+  share_id: z.string()
+})
+
+/**
+ * Updated hub workflow detail
+ */
+
+export const zUpdateHubWorkflowResponse = zHubWorkflowDetail
+
+export const zGetDeletionRequestQuery = z.object({
+  firebase_id: z.string()
+})
+
+/**
+ * Success - deletion request found
+ */
+
+export const zGetDeletionRequestResponse = z.array(zDeletionRequest)
+
+export const zCreateDeletionRequestBody = z.object({
+  firebase_id: z.string()
+})
+
+/**
+ * Created - deletion request created or already exists
+ */
+
+export const zCreateDeletionRequestResponse = z.object({
+  user_found_in_cloud: z.boolean()
+})
+
+export const zReleaseDeletionHoldBody = z.object({
+  firebase_id: z.string()
+})
+
+/**
+ * Release authorized; the deletion workflow will proceed
+ */
+
+export const zReleaseDeletionHoldResponse = zReleaseHoldResponse
+
+export const zReportPartnerUsageBody = zPartnerUsageRequest
+
+/**
+ * Usage reported successfully
+ */
+
+export const zReportPartnerUsageResponse = zPartnerUsageResponse
+
+export const zGetHistoryEventsQuery = z.object({
+  workspace_id: z.string().optional(),
+  user_id: z.string().optional(),
+  event_type: z.string().optional(),
+  legacy_event_surface: z.boolean().optional(),
+  start_date: z.string().datetime().optional(),
+  end_date: z.string().datetime().optional(),
+  page: z.number().int().optional(),
+  limit: z.number().int().optional()
+})
+
+/**
+ * Paginated cloud history events for the workspace
+ */
+
+export const zGetHistoryEventsResponse = zBillingEventsResponse
+
+export const zReportHistoryEventBody = zHistoryEventRequest
+
+/**
+ * History event recorded successfully
+ */
+
+export const zReportHistoryEventResponse = zPartnerUsageResponse
+
+export const zUpdateSubscriptionCacheBody = z.object({
+  user_id: z.string(),
+  is_active: z.boolean(),
+  tier: z.string().optional()
+})
+
+/**
+ * Cache updated successfully
+ */
+
+export const zUpdateSubscriptionCacheResponse = z.object({
+  status: z.string().optional()
+})
+
+export const zAdminBillingPlanChangeBody = zAdminBillingMutationRequest
+
+export const zAdminBillingCreditGrantBody = zAdminBillingMutationRequest
+
+export const zAdminBillingCreditDeductionBody = zAdminBillingMutationRequest
+
+export const zAdminBillingCancelSubscriptionBody = zAdminBillingMutationRequest
+
+export const zAdminBillingPlanTermAmendBody = zAdminBillingMutationRequest
+
+export const zAdminBillingPlanTermReleaseBody = zAdminBillingMutationRequest
+
+export const zAdminBillingPlanTermImposeBody = zAdminBillingMutationRequest
+
+export const zAdminBillingSetCreditAllotmentBody = zAdminBillingMutationRequest
+
+export const zAdminBillingReleaseCreditAllotmentBody =
+  zAdminBillingMutationRequest
+
+export const zAdminBillingInvoiceCreditBody = zAdminBillingMutationRequest
+
+export const zAdminBillingInvoiceCreditRevokeBody = zAdminBillingMutationRequest
+
+export const zAdminBillingInviteMemberBody = zAdminBillingMutationRequest
+
+export const zGetWorkspaceBillingReconcilePath = z.object({
+  workspaceID: z.string()
+})
+
+export const zGetWorkspaceBillingReconcileQuery = z.object({
+  run_id: z.string().optional()
+})
+
+/**
+ * Workflow status and safe report when complete
+ */
+
+export const zGetWorkspaceBillingReconcileResponse =
+  zWorkspaceBillingReconcileExecution
+
+export const zStartWorkspaceBillingReconcileBody = z.object({
+  dry_run: z.boolean().optional().default(true),
+  requested_by: z
+    .string()
+    .max(36)
+    .regex(
+      /^[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}$/
+    )
+})
+
+export const zStartWorkspaceBillingReconcilePath = z.object({
+  workspaceID: z.string()
+})
+
+/**
+ * Workflow accepted
+ */
+
+export const zStartWorkspaceBillingReconcileResponse =
+  zWorkspaceBillingReconcileExecution
+
+export const zGetWorkspaceBillingBalancePath = z.object({
+  workspaceID: z.string()
+})
+
+/**
+ * Credit balance breakdown
+ */
+
+export const zGetWorkspaceBillingBalanceResponse = z.object({
+  total_available: z.number(),
+  subscription_balance: z.number(),
+  prepaid_balance: z.number(),
+  pending_charges: z.number(),
+  effective_balance: z.number(),
+  effective_balance_authoritative: z.boolean(),
+  has_funds: z.boolean(),
+  currency: z.string(),
+  provisioned: z.boolean(),
+  clawable: z
+    .object({
+      subscription_cents: z.coerce
+        .bigint()
+        .min(BigInt('-9223372036854775808'), {
+          message: 'Invalid value: Expected int64 to be >= -9223372036854775808'
+        })
+        .max(BigInt('9223372036854775807'), {
+          message: 'Invalid value: Expected int64 to be <= 9223372036854775807'
+        }),
+      top_up_cents: z.coerce
+        .bigint()
+        .min(BigInt('-9223372036854775808'), {
+          message: 'Invalid value: Expected int64 to be >= -9223372036854775808'
+        })
+        .max(BigInt('9223372036854775807'), {
+          message: 'Invalid value: Expected int64 to be <= 9223372036854775807'
+        }),
+      any_subscription_cents: z.coerce
+        .bigint()
+        .min(BigInt('-9223372036854775808'), {
+          message: 'Invalid value: Expected int64 to be >= -9223372036854775808'
+        })
+        .max(BigInt('9223372036854775807'), {
+          message: 'Invalid value: Expected int64 to be <= 9223372036854775807'
+        }),
+      any_top_up_cents: z.coerce
+        .bigint()
+        .min(BigInt('-9223372036854775808'), {
+          message: 'Invalid value: Expected int64 to be >= -9223372036854775808'
+        })
+        .max(BigInt('9223372036854775807'), {
+          message: 'Invalid value: Expected int64 to be <= 9223372036854775807'
+        }),
+      authoritative: z.boolean()
+    })
+    .optional(),
+  invoice_credit: z
+    .object({
+      balance_cents: z.coerce
+        .bigint()
+        .min(BigInt('-9223372036854775808'), {
+          message: 'Invalid value: Expected int64 to be >= -9223372036854775808'
+        })
+        .max(BigInt('9223372036854775807'), {
+          message: 'Invalid value: Expected int64 to be <= 9223372036854775807'
+        }),
+      authoritative: z.boolean()
+    })
+    .optional()
+})
+
+export const zListLinkedFirebaseUidsBody = zListLinkedFirebaseUidsRequest
+
+/**
+ * Linked Firebase UIDs (possibly empty list)
+ */
+
+export const zListLinkedFirebaseUidsResponse2 = zListLinkedFirebaseUidsResponse
+
+export const zEnsureWorkspaceBillingProvisionedBody =
+  zEnsureWorkspaceBillingProvisionedRequest
+
+/**
+ * The workspace's provisioned billing identity
+ */
+
+export const zEnsureWorkspaceBillingProvisionedResponse2 =
+  zEnsureWorkspaceBillingProvisionedResponse
+
+/**
+ * A valid dynamicconfig.Config JSON object.
+ */
+
+export const zInsertDynamicConfigBody = z.record(z.unknown())
+
+/**
+ * Config inserted successfully
+ */
+
+export const zInsertDynamicConfigResponse = z.object({
+  id: z.coerce
+    .bigint()
+    .min(BigInt('-9223372036854775808'), {
+      message: 'Invalid value: Expected int64 to be >= -9223372036854775808'
+    })
+    .max(BigInt('9223372036854775807'), {
+      message: 'Invalid value: Expected int64 to be <= 9223372036854775807'
+    })
+    .optional(),
+  message: z.string().optional()
+})
+
+export const zSyncApiKeyBody = zSyncApiKeyRequest
+
+/**
+ * Sync processed — see `result` field
+ */
+
+export const zSyncApiKeyResponse2 = zSyncApiKeyResponse
+
+export const zGetWorkflowVersionContentPath = z.object({
+  id: z.string()
+})
+
+/**
+ * Success
+ */
+
+export const zGetWorkflowVersionContentResponse =
+  zWorkflowVersionContentResponse
+
+export const zDeleteMonitoringTasksSubpathPath = z.object({
+  path: z.string()
+})
+
+export const zGetMonitoringTasksSubpathPath = z.object({
+  path: z.string()
+})
+
+export const zPostMonitoringTasksSubpathPath = z.object({
+  path: z.string()
+})
+
+export const zGetPprofPath = z.object({
+  path: z.string()
+})
+
+export const zShortLinkRedirectPath = z.object({
+  id: z.string()
+})
+
+export const zShortLinkRedirectQuery = z.object({
+  raw: z.enum(['1']).optional()
+})
+
+/**
+ * Raw mode (`?raw=1`): the object bytes, streamed from this host with the origin Content-Type (any media type — e.g. `image/png`, `video/mp4`) and `Content-Disposition: attachment`.
+ */
+
+export const zShortLinkRedirectResponse = z.string()

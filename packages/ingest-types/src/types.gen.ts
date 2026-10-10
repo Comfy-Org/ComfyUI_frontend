@@ -16347,3 +16347,3348 @@ export type GetWebsocketErrors = {
 }
 
 export type GetWebsocketError = GetWebsocketErrors[keyof GetWebsocketErrors]
+
+export type UpdateHubWorkflowRequest = {
+  /**
+   * Display name. Not clearable. Null/omit leaves unchanged; empty string is invalid.
+   */
+  name?: string | null
+  /**
+   * Workflow description. Send "" to clear. Null/omit leaves unchanged.
+   */
+  description?: string | null
+  /**
+   * Full replacement of tag slugs. Must exist in hub_labels. Send [] to clear. Null/omit leaves unchanged.
+   */
+  tags?: Array<string> | null
+  /**
+   * Full replacement of model slugs. Must exist in hub_labels. Send [] to clear. Null/omit leaves unchanged.
+   */
+  models?: Array<string> | null
+  /**
+   * Full replacement of custom_node slugs. Must exist in hub_labels. Send [] to clear. Null/omit leaves unchanged.
+   */
+  custom_nodes?: Array<string> | null
+  /**
+   * Tutorial URL. Send "" to clear. Null/omit leaves unchanged.
+   */
+  tutorial_url?: string | null
+  /**
+   * Thumbnail kind. Null/omit leaves unchanged; not clearable via this endpoint. If set to image_comparison, both the thumbnail and comparison thumbnail must resolve to a value on the stored record after this update is applied (either already present and not being cleared, or supplied as a token in this request).
+   *
+   */
+  thumbnail_type?: 'image' | 'video' | 'image_comparison'
+  /**
+   * Token from POST /api/hub/assets/upload-url for a newly uploaded thumbnail. Null/omit leaves the existing thumbnail unchanged. Send "" to clear. (PATCH does not accept an existing public URL here — to keep the current thumbnail, simply omit the field.)
+   *
+   */
+  thumbnail_token?: string | null
+  /**
+   * Token from POST /api/hub/assets/upload-url for a newly uploaded comparison thumbnail. Null/omit leaves unchanged. Send "" to clear. (PATCH does not accept an existing public URL here — to keep the current comparison thumbnail, simply omit the field.)
+   *
+   */
+  thumbnail_comparison_token?: string | null
+  /**
+   * Full replacement of sample images. Each element is either a token from /api/hub/assets/upload-url or an existing public URL. Send [] to clear. Null/omit leaves unchanged.
+   *
+   */
+  sample_image_tokens_or_urls?: Array<string> | null
+  /**
+   * Admin-only full replacement of the hub_workflow_detail.metadata JSON object. Null/omit leaves unchanged. Send {} to clear all keys. Accepts arbitrary JSON (size, vram, open_source, media_type, logos, etc.).
+   *
+   */
+  metadata?: {
+    [key: string]: unknown
+  } | null
+}
+
+/**
+ * Request body for publishing or updating a workflow on the Hub.
+ */
+
+export type HistoryEventRequest = {
+  /**
+   * Originating comfy-api user (Firebase UID). The cloud resolves this to the user's personal workspace. Required unless workspace_id is set.
+   */
+  user_id?: string
+  /**
+   * Cloud workspace ID to attach the history event to. Optional when user_id is provided.
+   */
+  workspace_id?: string
+  /**
+   * Cloud billing event_type string for the user-facing history event.
+   */
+  event_type: string
+  /**
+   * Unique event ID for idempotency.
+   */
+  event_id: string
+  /**
+   * Event-specific properties copied from comfy-api audit_logs.params.
+   */
+  params?: {
+    [key: string]: unknown
+  }
+  /**
+   * Optional credential class that produced the event.
+   */
+  auth_method?: 'api_key' | 'bearer_token'
+  /**
+   * Optional originating comfy-api customer ID.
+   */
+  customer_ref?: string
+  /**
+   * Optional source event timestamp; stored for forward compatibility.
+   */
+  timestamp?: string
+}
+
+/**
+ * Response after recording partner usage data.
+ */
+
+export type PartnerUsageResponse = {
+  /**
+   * Result status (e.g., "ok")
+   */
+  status: string
+}
+
+/**
+ * Request body for reporting partner resource usage (admin endpoint).
+ */
+
+export type PartnerUsageRequest = {
+  /**
+   * The workspace ID to bill usage against
+   */
+  workspace_id: string
+  /**
+   * The user who triggered the usage (for attribution)
+   */
+  user_id?: string
+  /**
+   * What the usage came through, for attribution: the API key's display prefix for key-authenticated calls, or "session" for signed-in use.
+   */
+  spend_source?: string
+  /**
+   * Unique transaction ID for idempotency
+   */
+  transaction_id: string
+  /**
+   * Type of usage event: "api_node_usage" (a partner-node call) or
+   * "router_usage" (a Comfy Router call). Free-form; any other value is
+   * forwarded as posted and audited as "api_node_usage".
+   *
+   */
+  event_type: string
+  /**
+   * When the usage occurred. Defaults to current time if omitted.
+   */
+  timestamp?: string
+  /**
+   * Event-specific properties for billing
+   */
+  properties?: {
+    [key: string]: unknown
+  }
+}
+
+/**
+ * Display only. The plan the operation targets; for a scheduled change,
+ * the plan it switches to at period end. Present only for succeeded
+ * plan changes, initial subscriptions and resubscribes. Visible to any
+ * workspace member who can read the operation.
+ *
+ */
+
+export type ResolveSecretByCapabilityRequest = {
+  /**
+   * Signed, short-lived, task-scoped capability token minted at submit time (HMAC-SHA256). Authorizes resolution of exactly this task's owner's key for this provider.
+   */
+  capability: string
+  /**
+   * The task the caller is resolving for. Must match the capability's task_id or the request is rejected.
+   */
+  task_id: string
+  provider: SecretResolveProvider
+}
+
+/**
+ * Identifier of an external provider whose user-supplied API key can be resolved through the internal secret-resolve flow.
+ */
+
+export type SecretResolveProvider = 'gemini' | 'runway' | 'higgsfield'
+
+/**
+ * One BYOK-entitled workspace and its link-expanded member user ids.
+ */
+
+export type ByokEntitlementWorkspace = {
+  /**
+   * The entitled workspace's id.
+   */
+  workspace_id: string
+  /**
+   * The providers this workspace is entitled to BYOK, sorted.
+   */
+  providers: Array<string>
+  /**
+   * All user ids with membership in this workspace, expanded through identity links and sorted. Deliberately over-approximate — include too many rather than too few.
+   */
+  member_user_ids: Array<string>
+}
+
+/**
+ * Versioned, secret-free snapshot of every BYOK-entitled workspace and its link-expanded member user ids.
+ */
+
+export type ByokEntitlementSnapshot = {
+  /**
+   * Hex SHA-256 of the canonicalized content (global providers, then workspaces sorted by id, providers and member ids sorted). Identical states produce identical versions across replicas; this is the only invalidation hook.
+   */
+  version: string
+  /**
+   * RFC3339 timestamp at which this snapshot was generated.
+   */
+  generated_at: string
+  /**
+   * Providers every workspace is entitled to BYOK without an entitlement row, sorted. Globally entitled workspaces are NOT listed under workspaces; a consumer must treat any caller as entitled to these.
+   */
+  global_providers: Array<string>
+  /**
+   * Every BYOK-entitled workspace, sorted by workspace_id.
+   */
+  workspaces: Array<ByokEntitlementWorkspace>
+}
+
+/**
+ * Resolved credential for the requested provider, plus the server-derived identity of the owner it was resolved under. Returned by the synchronous resolve route only; the async capability route returns the credential alone (ResolvedProviderCredential).
+ */
+
+export type ResolveSecretResponse = ResolvedProviderCredential & {
+  /**
+   * Server-derived identity of the resolved secret's owner — the exact (user_id, workspace_id) pair the secret was looked up under. Returned only on the sync resolve endpoint so the caller can mint the task-scoped async capability for requests that carry no Cloud JWT.
+   */
+  user_id?: string
+  /**
+   * Workspace half of the server-derived owner identity — see user_id. A capability minted from this pair round-trips through the capability-authorized resolve, whose lookup requires this exact server-derived workspace.
+   */
+  workspace_id?: string
+}
+
+/**
+ * Resolved credential for the requested provider, with no owner identity. For api_key credentials the decrypted secret_value is returned; for gcp_service_account credentials a short-lived minted OAuth access_token (with its expires_at and the SA's project_id) is returned instead.
+ */
+
+export type ResolvedProviderCredential = {
+  provider: SecretResolveProvider
+  /**
+   * Credential class discriminator selecting which fields are populated: `api_key` populates secret_value; `gcp_service_account` populates access_token, expires_at, and project_id.
+   */
+  credential_type: 'api_key' | 'gcp_service_account'
+  /**
+   * The decrypted plaintext secret for the requested provider. Present only when credential_type is `api_key`.
+   */
+  secret_value?: string
+  /**
+   * Short-lived OAuth 2.0 bearer access token minted by ingest from the stored service-account key. Present only when credential_type is `gcp_service_account`.
+   */
+  access_token?: string
+  /**
+   * Expiry of the minted access_token (RFC 3339). Present only when credential_type is `gcp_service_account`.
+   */
+  expires_at?: string
+  /**
+   * GCP project the service account belongs to, derived from the SA key. Present only when credential_type is `gcp_service_account`.
+   */
+  project_id?: string
+}
+
+/**
+ * Request body for the internal secret-resolve endpoint. Carries only the provider; caller identity is derived from the forwarded credential.
+ */
+
+export type ResolveSecretRequest = {
+  provider: SecretResolveProvider
+}
+
+/**
+ * The providers available to the authenticated user in the current workspace.
+ */
+
+export type SyncApiKeyResponse = {
+  /**
+   * `delete` outcomes:
+   * `revoked` — matching row found, was active, now revoked.
+   * `already_revoked` — matching row found, already revoked.
+   * `no_op` — no row matches the supplied hash.
+   *
+   * `upsert` outcomes:
+   * `inserted` — no row existed for the hash; a new row was created.
+   * `healed` — a row existed but was bound to a stale owner and has been
+   * re-pointed to the resolved identity.
+   * `already_correct` — a row already existed for the resolved identity
+   * (or the row is revoked and was left untouched); no write occurred.
+   *
+   */
+  result:
+    | 'revoked'
+    | 'already_revoked'
+    | 'no_op'
+    | 'inserted'
+    | 'healed'
+    | 'already_correct'
+}
+
+/**
+ * Request body for synchronizing an API key from the external registry.
+ */
+
+export type SyncApiKeyRequest = {
+  /**
+   * Lifecycle event type. `delete` soft-revokes the mirrored row.
+   * `upsert` seeds a legacy comfy-api key into workspace_api_keys so it
+   * appears on platform.comfy.org.
+   *
+   */
+  event: 'delete' | 'upsert'
+  /**
+   * SHA-256 hex digest of the plaintext API key (64 hex characters).
+   * Case-insensitive: the server lowercases the value before lookup, so
+   * producers may emit lowercase or uppercase hex. The lowercase form
+   * is recommended for consistency with the rest of the codebase, which
+   * computes hashes via `hex.EncodeToString`.
+   *
+   */
+  key_hash: string
+  /**
+   * Firebase UID of the key's owner according to comfy-api. Required on
+   * the request so cloud can detect drift between the two systems, but
+   * **advisory only**: `key_hash` is the sole authoritative identifier
+   * for the revocation. A mismatch against cloud's stored `user_id` is
+   * logged and emits `admin.api_key_sync.delete.customer_mismatch`, but
+   * does not change the outcome — the matching row is still revoked so
+   * a subsequent sync call can repair drift.
+   *
+   */
+  customer_id: string
+  /**
+   * First-16-chars display prefix of the plaintext key (e.g.
+   * `comfyui-abc12345`). Used only by `upsert` to populate the cloud
+   * `key_prefix` display column; ignored by `delete`. Must not exceed
+   * 16 characters.
+   *
+   */
+  key_prefix?: string
+  /**
+   * Human-readable key name shown in the platform UI. Used only by
+   * `upsert`; when empty a default display name is applied. Ignored by
+   * `delete`.
+   *
+   */
+  name?: string
+  /**
+   * Optional key description shown in the platform UI. Used only by
+   * `upsert`; ignored by `delete`. Capped at the cloud
+   * `workspace_api_key.description` column limit (5000).
+   *
+   */
+  description?: string
+  /**
+   * Email of the key's owner, used by `upsert` to resolve/provision the
+   * owner's personal workspace when the customer has never touched
+   * cloud. Ignored by `delete`.
+   *
+   */
+  customer_email?: string
+  /**
+   * Display name of the key's owner, used alongside `customer_email` by
+   * `upsert` to provision the owner's personal workspace. Ignored by
+   * `delete`.
+   *
+   */
+  customer_name?: string
+}
+
+/**
+ * The personal workspace's provisioned billing identity.
+ */
+
+export type EnsureWorkspaceBillingProvisionedResponse = {
+  /**
+   * The user's personal workspace ID.
+   */
+  workspace_id: string
+  /**
+   * The Stripe customer ID attached to the workspace.
+   */
+  stripe_customer_id: string
+  /**
+   * The Metronome customer ID attached to the workspace.
+   */
+  metronome_customer_id: string
+  /**
+   * The active Metronome contract ID on the workspace.
+   */
+  metronome_contract_id: string
+}
+
+/**
+ * Request body for ensuring a user's personal workspace carries a fully
+ * provisioned billing identity. Sent by comfy-api's CreateCustomer (BE-1047)
+ * with the already canonical-resolved user identity.
+ *
+ */
+
+export type EnsureWorkspaceBillingProvisionedRequest = {
+  /**
+   * Canonical cloud user ID whose personal workspace should be ensured and
+   * provisioned. The caller (comfy-api) resolves canonical-sibling routing
+   * before calling, so this is taken as authoritative — the endpoint never
+   * re-resolves or self-maps.
+   *
+   */
+  user_id: string
+  /**
+   * Owner email, used when minting a net-new vendor customer. Required for
+   * create-new; ignored on the already-provisioned fast-path.
+   *
+   */
+  email: string
+}
+
+/**
+ * Firebase UIDs linked to the canonical comfy_user_id. Empty list when
+ * no mappings exist (not an error — callers can treat empty as "unknown
+ * canonical").
+ *
+ */
+
+export type ListLinkedFirebaseUidsResponse = {
+  /**
+   * Subjects from `identity_mappings` where provider = 'firebase' and
+   * comfy_user_id matches the request. Order is unspecified.
+   *
+   */
+  firebase_uids: Array<string>
+}
+
+/**
+ * Request body for reverse-looking-up Firebase UIDs linked to a canonical comfy_user_id.
+ */
+
+export type ListLinkedFirebaseUidsRequest = {
+  /**
+   * Canonical user ID to look up. Cloud's `identity_mappings` is queried
+   * for every `subject` whose `comfy_user_id` matches and whose `provider`
+   * equals `firebase`.
+   *
+   */
+  comfy_user_id: string
+}
+
+/**
+ * Response confirming the validity and scope of a workspace API key.
+ */
+
+export type VerifyApiKeyResponse = {
+  /**
+   * Firebase UID of the key creator
+   */
+  user_id: string
+  /**
+   * User's email address
+   */
+  email: string
+  /**
+   * User's display name
+   */
+  name: string
+  /**
+   * Whether the user is an admin
+   */
+  is_admin: boolean
+  /**
+   * Workspace ID for billing attribution
+   */
+  workspace_id: string
+  /**
+   * Type of workspace
+   */
+  workspace_type: 'personal' | 'team'
+  /**
+   * Durable workspace billing authority. Omitted by older servers and billing-disabled deployments.
+   */
+  billing_rail?: 'legacy_stripe' | 'metronome' | 'stripe'
+  /**
+   * User's role in the workspace
+   */
+  role: 'owner' | 'member'
+  /**
+   * Whether the workspace has available funds for usage
+   */
+  has_funds: boolean
+  /**
+   * Whether the workspace has an active subscription
+   */
+  is_active: boolean
+  /**
+   * Permissions granted by this key. Always includes the role permission
+   * (`owner:*` or `member:*`). May also include `partner-node:use`,
+   * which is a **staging-only shim** used to gate partner-node access
+   * for non-admin users during testing. No production code path checks
+   * this permission today; it is emitted for parity with the Cloud JWT
+   * claim set so JWT and API-key callers see the same permissions.
+   *
+   */
+  permissions: Array<string>
+}
+
+/**
+ * Request body for verifying a workspace API key (admin endpoint).
+ */
+
+export type VerifyApiKeyRequest = {
+  /**
+   * The full plaintext API key to verify
+   */
+  api_key: string
+}
+
+/**
+ * Response after bulk-revoking API keys for a workspace member.
+ */
+
+export type ReleaseHoldResponse = {
+  /**
+   * The Firebase ID of the user whose hold was released
+   */
+  firebase_id: string
+  /**
+   * Whether the release authorization is recorded on the deletion request
+   */
+  released: boolean
+  /**
+   * Human-readable outcome detail
+   */
+  message: string
+}
+
+/**
+ * Details of a pending or completed user data deletion request.
+ */
+
+export type DeletionRequest = {
+  /**
+   * Unique identifier for the deletion request
+   */
+  id: string
+  /**
+   * The Firebase ID of the user being deleted
+   */
+  firebase_id: string
+  /**
+   * The time the deletion request was created
+   */
+  create_time: string
+  /**
+   * Array of deletion status objects
+   */
+  deletion_status: Array<DeletionStatus>
+}
+
+/**
+ * Current status of a user data deletion request.
+ */
+
+export type DeletionStatus = {
+  /**
+   * The name of the deletion status
+   */
+  status_name: string
+  /**
+   * Additional details about the deletion status
+   */
+  status_details: string
+}
+
+/**
+ * Detailed execution error information from ComfyUI
+ */
+
+export type SetReviewStatusResponse = {
+  /**
+   * The share IDs that were submitted for review
+   */
+  share_ids: Array<string>
+  /**
+   * The applied review status
+   */
+  status: 'approved' | 'rejected'
+}
+
+/**
+ * Request body for setting the review status of a Hub workflow.
+ */
+
+export type SetReviewStatusRequest = {
+  /**
+   * The share IDs of the hub workflows to review
+   */
+  share_ids: Array<string>
+  /**
+   * The review decision for the workflows
+   */
+  status: 'approved' | 'rejected'
+}
+
+/**
+ * Response after signing out of all devices
+ */
+
+export type SsoKeyPolicy = {
+  /**
+   * An SSO organization holds the account; refuse its personal credentials.
+   */
+  sso_required: boolean
+}
+
+/**
+ * User information response
+ */
+
+export type LogsResponse = Array<{
+  /**
+   * When the log entry was created
+   */
+  timestamp?: string
+  /**
+   * Log level
+   */
+  level?: 'debug' | 'info' | 'warn' | 'error'
+  /**
+   * Log message
+   */
+  message?: string
+  /**
+   * Source of the log entry
+   */
+  source?: string
+  /**
+   * Additional log metadata
+   */
+  metadata?: {
+    [key: string]: unknown
+  }
+}>
+
+/**
+ * Response after submitting feedback
+ */
+
+export type WorkspaceBillingReconcileDecision = {
+  field: string
+  before?: string
+  after?: string
+  applied: boolean
+  reason?: string
+}
+
+/**
+ * The reconcile workflow's decision report, mirroring the producer shape (billing activities.WorkspaceReconcileReport). It contains no provider payloads or customer PII.
+ */
+
+export type WorkspaceBillingReconcileReport = {
+  workspace_id: string
+  status: 'no_op' | 'dry_run' | 'repaired' | 'blocked' | 'unsafe'
+  retryable: boolean
+  reason?: string
+  decisions?: Array<WorkspaceBillingReconcileDecision>
+}
+
+export type WorkspaceBillingReconcileExecution = {
+  workflow_id: string
+  run_id?: string
+  status: string
+  report?: WorkspaceBillingReconcileReport
+}
+
+/**
+ * The PDP verdict. enforcing=false means allow for every api_name (callers cache per workspace and short-circuit); provider is the canonical catalog provider_id for the api_name (null for unknown or governance-excluded api_names) and is what denial bodies and metrics must use verbatim.
+ */
+
+export type ProviderPolicyCheckResponse = {
+  /**
+   * Whether the workspace may call the route.
+   */
+  allow: boolean
+  /**
+   * Whether the workspace's policy is armed.
+   */
+  enforcing: boolean
+  /**
+   * Canonical provider_id owning the api_name; null when the api_name is unknown to the catalog or excluded from governance.
+   */
+  provider?: string | null
+  /**
+   * The policy header's last write time; null when the workspace has no policy document.
+   */
+  policy_updated_at?: string | null
+}
+
+/**
+ * The PDP question comfy-api asks per state-creating proxy request.
+ */
+
+export type ProviderPolicyCheckRequest = {
+  /**
+   * The workspace the request's credential resolved to.
+   */
+  workspace_id: string
+  /**
+   * The /proxy/<api_name>/ route slug (first path segment).
+   */
+  api_name: string
+}
+
+/**
+ * One provider's policy state.
+ */
+
+export type AdminBillingMutationRequest = {
+  /**
+   * Workspace the mutation targets.
+   */
+  workspace_id: string
+  /**
+   * Opaque blob signed by the admin service. It binds the operator, the operation, the target workspace, the operation's parameters and the signing time — so a captured assertion cannot be re-pointed at another workspace or a different plan, and goes stale on its own. Verified by billing-api, never by ingest: ingest holds no key for it, which is what stops a transport-secret holder forging an actor. workspace_id is repeated outside the blob only so ingest can route and log; billing-api compares it against the signed copy.
+   */
+  actor_assertion: string
+}
+
+/**
+ * Server-to-client CRDT document frame carried by the /ws envelope.
+ */
+
+export type ContentCatalogPublish = {
+  draft_id: number
+  generation: number
+}
+
+export type ContentCatalogSave = {
+  draft_id: number
+  edit_version?: string
+  kind: 'MODEL' | 'WORKFLOW' | 'APP'
+  slug: string
+  enabled: boolean
+  visibility: 'PUBLIC' | 'STAFF'
+  visible_from?: string
+  deleted: boolean
+  data: {
+    [key: string]: unknown
+  }
+}
+
+export type SiteSubmission = {
+  uid: string
+  share_id: string
+  version_id: string
+  title: string
+  owner_uid: string
+  description: string
+  listed: boolean
+  submitted_at: string
+}
+
+export type ContentPublicationEvent = {
+  id: string
+  action: 'PUBLISH' | 'REVERT' | 'APPROVE' | 'REJECT'
+  target_id: string
+  previous_id?: string
+  actor_uid: string
+  created_at: string
+}
+
+export type ContentCatalogReview = {
+  draft: ContentCatalogProjection
+  live: ContentCatalogProjection
+  previous_live_id?: number
+  can_edit: boolean
+  can_apply: boolean
+  history: Array<ContentPublicationEvent>
+}
+
+export type ContentCatalogRecord = {
+  uid: string
+  /**
+   * Integer revision supplying this entity; may precede the requested catalog revision.
+   */
+  revision: number
+  edit_version: string
+  kind: 'MODEL' | 'WORKFLOW' | 'APP'
+  /**
+   * Canonical website pathname; identity is always UID.
+   */
+  slug: string
+  enabled: boolean
+  visibility: 'PUBLIC' | 'STAFF'
+  visible_from?: string
+  deleted: boolean
+  data: {
+    [key: string]: unknown
+  }
+}
+
+export type ContentCatalogProjection = {
+  revision_id: number
+  generation: number
+  items: Array<ContentCatalogRecord>
+}
+
+/**
+ * Paginated list of assets belonging to the authenticated user.
+ */
+
+export type FeedbackResponseWritable = {
+  [key: string]: unknown
+}
+
+/**
+ * The workspace a media request reads from, where a media tag cannot
+ * send `X-Comfy-Workspace-ID`. It applies only while
+ * `web_session_enabled` is on for the user; with it off, and always on
+ * the `CookieAuth` cookie, it is ignored.
+ *
+ * On a `WebSessionAuth` request it selects the workspace: a workspace
+ * the user cannot access is 403 `workspace_access_denied`, and a
+ * malformed value, or one that disagrees with `X-Comfy-Workspace-ID`,
+ * is 400 `workspace_id_invalid`. A token or API key keeps its own
+ * workspace, and naming another is 400 `workspace_id_invalid`. A cookie
+ * request that names no workspace looks a filename up across all of the
+ * user's workspaces, and an asset id up in the personal one.
+ *
+ */
+
+export type ListContentCatalogItemsData = {
+  body?: never
+  path?: never
+  query?: {
+    q?: string
+    slug?: string
+    kind?: 'MODEL' | 'WORKFLOW' | 'APP'
+  }
+  url: '/api/v1/catalog/items'
+}
+
+export type ListContentCatalogItemsErrors = {
+  /**
+   * Catalog disabled or unavailable
+   */
+  503: unknown
+}
+
+export type ListContentCatalogItemsResponses = {
+  /**
+   * LIVE projection
+   */
+  200: ContentCatalogProjection
+}
+
+export type ListContentCatalogItemsResponse =
+  ListContentCatalogItemsResponses[keyof ListContentCatalogItemsResponses]
+
+export type GetContentCatalogItemData = {
+  body?: never
+  path: {
+    uid: string
+  }
+  query?: never
+  url: '/api/v1/catalog/items/{uid}'
+}
+
+export type GetContentCatalogItemErrors = {
+  /**
+   * Not found or not publicly eligible
+   */
+  404: unknown
+  /**
+   * Catalog disabled or unavailable
+   */
+  503: unknown
+}
+
+export type GetContentCatalogItemResponses = {
+  /**
+   * Website content record
+   */
+  200: ContentCatalogRecord
+}
+
+export type GetContentCatalogItemResponse =
+  GetContentCatalogItemResponses[keyof GetContentCatalogItemResponses]
+
+export type GetSiteContentCatalogData = {
+  body?: never
+  path?: never
+  query?: {
+    view?: 'DRAFT' | 'LIVE'
+    now?: string
+    eligible?: boolean
+  }
+  url: '/admin/api/site/catalog'
+}
+
+export type GetSiteContentCatalogErrors = {
+  /**
+   * Requires comfy_site.edit or comfy_site.apply
+   */
+  403: unknown
+  /**
+   * Catalog disabled or unavailable
+   */
+  503: unknown
+}
+
+export type GetSiteContentCatalogResponses = {
+  /**
+   * Selected staff catalog projection
+   */
+  200: ContentCatalogProjection
+}
+
+export type GetSiteContentCatalogResponse =
+  GetSiteContentCatalogResponses[keyof GetSiteContentCatalogResponses]
+
+export type GetSiteContentReviewData = {
+  body?: never
+  path?: never
+  query?: never
+  url: '/admin/api/site/review'
+}
+
+export type GetSiteContentReviewErrors = {
+  /**
+   * Requires an explicit site edit or apply grant
+   */
+  403: unknown
+  /**
+   * Catalog unavailable
+   */
+  503: unknown
+}
+
+export type GetSiteContentReviewResponses = {
+  /**
+   * Staff review context; private/no-store
+   */
+  200: ContentCatalogReview
+}
+
+export type GetSiteContentReviewResponse =
+  GetSiteContentReviewResponses[keyof GetSiteContentReviewResponses]
+
+export type ListSiteSubmissionsData = {
+  body?: never
+  path?: never
+  query?: never
+  url: '/admin/api/site/submissions'
+}
+
+export type ListSiteSubmissionsErrors = {
+  /**
+   * Requires an explicit site edit or apply grant
+   */
+  403: unknown
+  /**
+   * Catalog unavailable
+   */
+  503: unknown
+}
+
+export type ListSiteSubmissionsResponses = {
+  /**
+   * At most 100 pending submissions, oldest first
+   */
+  200: Array<SiteSubmission>
+}
+
+export type ListSiteSubmissionsResponse =
+  ListSiteSubmissionsResponses[keyof ListSiteSubmissionsResponses]
+
+export type ReviewSiteSubmissionData = {
+  body: {
+    version_id: string
+    status: 'approved' | 'rejected'
+  }
+  path: {
+    share_id: string
+  }
+  query?: never
+  url: '/admin/api/site/submissions/{share_id}/review'
+}
+
+export type ReviewSiteSubmissionErrors = {
+  /**
+   * Requires comfy_site.apply
+   */
+  403: unknown
+  /**
+   * Submission changed or already reviewed
+   */
+  409: unknown
+  /**
+   * Catalog unavailable
+   */
+  503: unknown
+}
+
+export type ReviewSiteSubmissionResponses = {
+  /**
+   * Exact submission reviewed
+   */
+  204: void
+}
+
+export type ReviewSiteSubmissionResponse =
+  ReviewSiteSubmissionResponses[keyof ReviewSiteSubmissionResponses]
+
+export type SaveSiteContentItemData = {
+  body: ContentCatalogSave
+  path: {
+    uid: string
+  }
+  query?: never
+  url: '/admin/api/site/items/{uid}'
+}
+
+export type SaveSiteContentItemErrors = {
+  /**
+   * Invalid content
+   */
+  400: unknown
+  /**
+   * Requires comfy_site.edit
+   */
+  403: unknown
+  /**
+   * DRAFT or edit version changed
+   */
+  409: unknown
+  /**
+   * Catalog disabled or unavailable
+   */
+  503: unknown
+}
+
+export type SaveSiteContentItemResponses = {
+  /**
+   * Saved immutable entity version
+   */
+  200: ContentCatalogRecord
+}
+
+export type SaveSiteContentItemResponse =
+  SaveSiteContentItemResponses[keyof SaveSiteContentItemResponses]
+
+export type PublishSiteContentCatalogData = {
+  body: ContentCatalogPublish
+  path?: never
+  query?: never
+  url: '/admin/api/site/publish'
+}
+
+export type PublishSiteContentCatalogErrors = {
+  /**
+   * Requires comfy_site.apply
+   */
+  403: unknown
+  /**
+   * DRAFT changed since approval
+   */
+  409: unknown
+  /**
+   * Catalog disabled or unavailable
+   */
+  503: unknown
+}
+
+export type PublishSiteContentCatalogResponses = {
+  /**
+   * New DRAFT after promotion
+   */
+  200: ContentCatalogProjection
+}
+
+export type PublishSiteContentCatalogResponse =
+  PublishSiteContentCatalogResponses[keyof PublishSiteContentCatalogResponses]
+
+export type RevertSiteContentCatalogData = {
+  body: {
+    live_id: number
+  }
+  path?: never
+  query?: never
+  url: '/admin/api/site/revert'
+}
+
+export type RevertSiteContentCatalogErrors = {
+  /**
+   * Requires comfy_site.apply
+   */
+  403: unknown
+  /**
+   * LIVE changed or no previous LIVE
+   */
+  409: unknown
+  /**
+   * Catalog disabled or unavailable
+   */
+  503: unknown
+}
+
+export type RevertSiteContentCatalogResponses = {
+  /**
+   * Preserved DRAFT after rollback
+   */
+  200: ContentCatalogProjection
+}
+
+export type RevertSiteContentCatalogResponse =
+  RevertSiteContentCatalogResponses[keyof RevertSiteContentCatalogResponses]
+
+export type GetKnowledgeBundleData = {
+  body?: never
+  headers?: {
+    /**
+     * ETag from an earlier response. When it matches the current ETag the
+     * server answers 304 with the same headers and no body.
+     *
+     */
+    'If-None-Match'?: string
+  }
+  path?: never
+  query?: never
+  url: '/api/knowledge/knowledge.json'
+}
+
+export type GetKnowledgeBundleErrors = {
+  /**
+   * `code` is `workspace_id_invalid`: the `X-Comfy-Workspace-ID` header or `workspace_id` query value is malformed, or conflicts with another value or with the workspace the credential resolves to. Answered only while `web_session_enabled` is on for the user. See the `WebSessionAuth` scheme.
+   */
+  400: ErrorResponse
+  /**
+   * Authentication required
+   */
+  401: ErrorResponse
+  /**
+   * A refused request. For a web session, `code` is `workspace_access_denied` (the selected workspace is unknown, deleted, or the user is not a member; the three look the same), `origin_not_allowed` or `cross_site_request`; see the `WebSessionAuth` scheme. For any credential, `sso_required` means an SSO organization holds the account or the workspace and the credential is not an SSO sign-in. `FORBIDDEN` is the route's own authorization check failing, such as an unverified email. A credential this route does not take gets AuthTypeNotAllowedError instead, and so does the session while `web_session_enabled` is off for the user, unless the operation says it takes the session whatever `web_session_enabled` says.
+   */
+  403: ForbiddenError
+  /**
+   * No bundle is published for the configured channel
+   */
+  404: ErrorResponse
+  /**
+   * The bundle could not be read from storage
+   */
+  500: ErrorResponse
+  /**
+   * Knowledge bundle serving is not configured on this deployment
+   */
+  503: ErrorResponse
+}
+
+export type GetKnowledgeBundleError =
+  GetKnowledgeBundleErrors[keyof GetKnowledgeBundleErrors]
+
+export type GetKnowledgeBundleResponses = {
+  /**
+   * The public bundle
+   */
+  200: {
+    [key: string]: unknown
+  }
+}
+
+export type GetKnowledgeBundleResponse =
+  GetKnowledgeBundleResponses[keyof GetKnowledgeBundleResponses]
+
+export type GetKnowledgeManifestData = {
+  body?: never
+  path?: never
+  query?: never
+  url: '/api/knowledge/manifest.json'
+}
+
+export type GetKnowledgeManifestErrors = {
+  /**
+   * `code` is `workspace_id_invalid`: the `X-Comfy-Workspace-ID` header or `workspace_id` query value is malformed, or conflicts with another value or with the workspace the credential resolves to. Answered only while `web_session_enabled` is on for the user. See the `WebSessionAuth` scheme.
+   */
+  400: ErrorResponse
+  /**
+   * Authentication required
+   */
+  401: ErrorResponse
+  /**
+   * A refused request. For a web session, `code` is `workspace_access_denied` (the selected workspace is unknown, deleted, or the user is not a member; the three look the same), `origin_not_allowed` or `cross_site_request`; see the `WebSessionAuth` scheme. For any credential, `sso_required` means an SSO organization holds the account or the workspace and the credential is not an SSO sign-in. `FORBIDDEN` is the route's own authorization check failing, such as an unverified email. A credential this route does not take gets AuthTypeNotAllowedError instead, and so does the session while `web_session_enabled` is off for the user, unless the operation says it takes the session whatever `web_session_enabled` says.
+   */
+  403: ForbiddenError
+  /**
+   * No bundle is published for the configured channel
+   */
+  404: ErrorResponse
+  /**
+   * The bundle could not be read from storage
+   */
+  500: ErrorResponse
+  /**
+   * Knowledge bundle serving is not configured on this deployment
+   */
+  503: ErrorResponse
+}
+
+export type GetKnowledgeManifestError =
+  GetKnowledgeManifestErrors[keyof GetKnowledgeManifestErrors]
+
+export type GetKnowledgeManifestResponses = {
+  /**
+   * The public bundle's manifest
+   */
+  200: {
+    [key: string]: unknown
+  }
+}
+
+export type GetKnowledgeManifestResponse =
+  GetKnowledgeManifestResponses[keyof GetKnowledgeManifestResponses]
+
+export type GetFilesData = {
+  body?: never
+  path: {
+    /**
+     * Type of directory to list files from
+     */
+    directory_type: 'output' | 'input' | 'temp'
+  }
+  query?: never
+  url: '/internal/files/{directory_type}'
+}
+
+export type GetFilesErrors = {
+  /**
+   * Invalid directory type
+   */
+  400: ErrorResponse
+  /**
+   * Unauthorized - Authentication required
+   */
+  401: ErrorResponse
+  /**
+   * A refused request. For a web session, `code` is `workspace_access_denied` (the selected workspace is unknown, deleted, or the user is not a member; the three look the same), `origin_not_allowed` or `cross_site_request`; see the `WebSessionAuth` scheme. For any credential, `sso_required` means an SSO organization holds the account or the workspace and the credential is not an SSO sign-in. `FORBIDDEN` is the route's own authorization check failing, such as an unverified email. A credential this route does not take gets AuthTypeNotAllowedError instead, and so does the session while `web_session_enabled` is off for the user, unless the operation says it takes the session whatever `web_session_enabled` says.
+   */
+  403: ForbiddenError
+}
+
+export type GetFilesError = GetFilesErrors[keyof GetFilesErrors]
+
+export type GetFilesResponses = {
+  /**
+   * Array of file names sorted by modification time (newest first)
+   */
+  200: Array<string>
+}
+
+export type GetFilesResponse = GetFilesResponses[keyof GetFilesResponses]
+
+export type ResolveSecretData = {
+  body: ResolveSecretRequest
+  path?: never
+  query?: never
+  url: '/m2m/secrets/resolve'
+}
+
+export type ResolveSecretErrors = {
+  /**
+   * Unauthorized - missing or invalid identity or service secret
+   */
+  401: ErrorResponse
+  /**
+   * Validation error - unsupported provider or malformed body
+   */
+  422: ErrorResponse
+  /**
+   * Internal server error
+   */
+  500: ErrorResponse
+}
+
+export type ResolveSecretError = ResolveSecretErrors[keyof ResolveSecretErrors]
+
+export type ResolveSecretResponses = {
+  /**
+   * Secret resolved; body carries the decrypted value.
+   */
+  200: ResolveSecretResponse
+  /**
+   * No key to return — the workspace is not entitled for the provider, has no stored secret, or the feature is unavailable. These cases are intentionally indistinguishable; the caller falls back to the platform-key path.
+   */
+  204: void
+}
+
+export type ResolveSecretResponse2 =
+  ResolveSecretResponses[keyof ResolveSecretResponses]
+
+export type ResolveSecretByCapabilityData = {
+  body: ResolveSecretByCapabilityRequest
+  path?: never
+  query?: never
+  url: '/m2m/secrets/resolve-capability'
+}
+
+export type ResolveSecretByCapabilityErrors = {
+  /**
+   * Unauthorized — missing or invalid service secret, or an invalid, expired, or task/provider-mismatched capability.
+   */
+  401: ErrorResponse
+  /**
+   * Validation error - unsupported provider or malformed body
+   */
+  422: ErrorResponse
+  /**
+   * Internal server error
+   */
+  500: ErrorResponse
+}
+
+export type ResolveSecretByCapabilityError =
+  ResolveSecretByCapabilityErrors[keyof ResolveSecretByCapabilityErrors]
+
+export type ResolveSecretByCapabilityResponses = {
+  /**
+   * Secret resolved; body carries the decrypted value. The credential is returned WITHOUT owner identity (no user_id/workspace_id): this route derives identity from inside the verified capability, so echoing it back would tell a caller who the capability belongs to.
+   */
+  200: ResolvedProviderCredential
+  /**
+   * No key to return — the workspace is not entitled for the provider, has no stored secret, or the feature is unavailable. These cases are intentionally indistinguishable; the caller falls back to the platform-key path.
+   */
+  204: void
+}
+
+export type ResolveSecretByCapabilityResponse =
+  ResolveSecretByCapabilityResponses[keyof ResolveSecretByCapabilityResponses]
+
+export type GetByokEntitlementSnapshotData = {
+  body?: never
+  path?: never
+  query?: {
+    /**
+     * The highest snapshot schema version the consumer understands. Omit (or 1) for the pre-global_providers shape. While any provider is globally entitled, a consumer that has not declared 2 or higher is refused with 409 rather than served a body it would misread.
+     */
+    schema?: number
+  }
+  url: '/m2m/byok/entitlement-snapshot'
+}
+
+export type GetByokEntitlementSnapshotErrors = {
+  /**
+   * Unauthorized - missing or invalid M2M service secret
+   */
+  401: ErrorResponse
+  /**
+   * A global entitlement is live but the consumer did not declare a schema that includes global_providers. Treat exactly like any other non-success: keep last-known-good and consult the resolve rail.
+   */
+  409: ErrorResponse
+  /**
+   * Internal server error
+   */
+  500: ErrorResponse
+}
+
+export type GetByokEntitlementSnapshotError =
+  GetByokEntitlementSnapshotErrors[keyof GetByokEntitlementSnapshotErrors]
+
+export type GetByokEntitlementSnapshotResponses = {
+  /**
+   * The current BYOK entitlement snapshot.
+   */
+  200: ByokEntitlementSnapshot
+}
+
+export type GetByokEntitlementSnapshotResponse =
+  GetByokEntitlementSnapshotResponses[keyof GetByokEntitlementSnapshotResponses]
+
+export type GetSsoKeyPolicyData = {
+  body?: never
+  path?: never
+  query: {
+    /**
+     * A Comfy user id or a Firebase uid.
+     */
+    user_id: string
+    /**
+     * The caller's email, used when the account has no user row yet.
+     */
+    email?: string
+    /**
+     * The workspace of the API key being checked, for a team workspace key. A held account's key is allowed only when an SSO organization holds that workspace; omit for personal credentials.
+     */
+    key_workspace_id?: string
+  }
+  url: '/m2m/sso/key-policy'
+}
+
+export type GetSsoKeyPolicyErrors = {
+  /**
+   * `INVALID_REQUEST`: no user_id
+   */
+  400: ErrorResponse
+  /**
+   * Unauthorized - missing or invalid M2M service secret
+   */
+  401: ErrorResponse
+  /**
+   * Internal server error
+   */
+  500: ErrorResponse
+}
+
+export type GetSsoKeyPolicyError =
+  GetSsoKeyPolicyErrors[keyof GetSsoKeyPolicyErrors]
+
+export type GetSsoKeyPolicyResponses = {
+  /**
+   * Whether an SSO organization holds the account.
+   */
+  200: SsoKeyPolicy
+}
+
+export type GetSsoKeyPolicyResponse =
+  GetSsoKeyPolicyResponses[keyof GetSsoKeyPolicyResponses]
+
+export type GetLogsData = {
+  body?: never
+  path?: never
+  query?: never
+  url: '/api/logs'
+}
+
+export type GetLogsErrors = {
+  /**
+   * Unauthorized
+   */
+  401: ErrorResponse
+}
+
+export type GetLogsError = GetLogsErrors[keyof GetLogsErrors]
+
+export type GetLogsResponses = {
+  /**
+   * Success
+   */
+  200: LogsResponse
+}
+
+export type GetLogsResponse = GetLogsResponses[keyof GetLogsResponses]
+
+export type SsoWebhookData = {
+  body?: never
+  path?: never
+  query?: never
+  url: '/api/auth/sso/webhook'
+}
+
+export type SsoWebhookErrors = {
+  /**
+   * Error
+   */
+  '4XX': ErrorResponse
+  /**
+   * Retry
+   */
+  '5XX': ErrorResponse
+}
+
+export type SsoWebhookError = SsoWebhookErrors[keyof SsoWebhookErrors]
+
+export type SsoWebhookResponses = {
+  /**
+   * Applied, or acknowledged and ignored
+   */
+  200: unknown
+}
+
+export type GetOpenAiAppsChallengeData = {
+  body?: never
+  path?: never
+  query?: never
+  url: '/.well-known/openai-apps-challenge'
+}
+
+export type GetOpenAiAppsChallengeErrors = {
+  /**
+   * No challenge token configured
+   */
+  404: ErrorResponse
+}
+
+export type GetOpenAiAppsChallengeError =
+  GetOpenAiAppsChallengeErrors[keyof GetOpenAiAppsChallengeErrors]
+
+export type GetOpenAiAppsChallengeResponses = {
+  /**
+   * The challenge token
+   */
+  200: string
+}
+
+export type GetOpenAiAppsChallengeResponse =
+  GetOpenAiAppsChallengeResponses[keyof GetOpenAiAppsChallengeResponses]
+
+export type HeadOpenAiAppsChallengeData = {
+  body?: never
+  path?: never
+  query?: never
+  url: '/.well-known/openai-apps-challenge'
+}
+
+export type HeadOpenAiAppsChallengeErrors = {
+  /**
+   * No challenge token configured
+   */
+  404: unknown
+}
+
+export type HeadOpenAiAppsChallengeResponses = {
+  /**
+   * A challenge token is configured
+   */
+  200: unknown
+}
+
+export type VerifyWorkspaceApiKeyData = {
+  body: VerifyApiKeyRequest
+  path?: never
+  query?: {
+    /**
+     * When true, fetches real billing status from the billing service and populates has_funds and is_active accordingly. When false or omitted, the billing lookup is skipped and has_funds/is_active are returned as true (optimistic defaults). Use true when the caller needs to gate access based on billing (e.g. partner node auth); omit for identity-only lookups (e.g. key caching).
+     */
+    include_billing?: boolean
+  }
+  url: '/admin/api/keys/verify'
+}
+
+export type VerifyWorkspaceApiKeyErrors = {
+  /**
+   * Invalid key or unauthorized
+   */
+  401: ErrorResponse
+  /**
+   * Internal server error
+   */
+  500: ErrorResponse
+}
+
+export type VerifyWorkspaceApiKeyError =
+  VerifyWorkspaceApiKeyErrors[keyof VerifyWorkspaceApiKeyErrors]
+
+export type VerifyWorkspaceApiKeyResponses = {
+  /**
+   * Key is valid
+   */
+  200: VerifyApiKeyResponse
+}
+
+export type VerifyWorkspaceApiKeyResponse =
+  VerifyWorkspaceApiKeyResponses[keyof VerifyWorkspaceApiKeyResponses]
+
+export type CheckProviderPolicyData = {
+  body: ProviderPolicyCheckRequest
+  path?: never
+  query?: never
+  url: '/admin/api/provider-policy/check'
+}
+
+export type CheckProviderPolicyErrors = {
+  /**
+   * Malformed request (missing workspace_id or api_name)
+   */
+  400: ErrorResponse
+  /**
+   * Invalid admin secret
+   */
+  401: ErrorResponse
+  /**
+   * Internal server error
+   */
+  500: ErrorResponse
+  /**
+   * Policy unverifiable (transport/storage failure, NOT a verdict) - the caller applies its outage posture
+   */
+  503: ErrorResponse
+}
+
+export type CheckProviderPolicyError =
+  CheckProviderPolicyErrors[keyof CheckProviderPolicyErrors]
+
+export type CheckProviderPolicyResponses = {
+  /**
+   * The verdict (allow or deny)
+   */
+  200: ProviderPolicyCheckResponse
+}
+
+export type CheckProviderPolicyResponse =
+  CheckProviderPolicyResponses[keyof CheckProviderPolicyResponses]
+
+export type SetReviewStatusData = {
+  body: SetReviewStatusRequest
+  path?: never
+  query?: never
+  url: '/admin/api/hub/workflows/status'
+}
+
+export type SetReviewStatusErrors = {
+  /**
+   * Bad request - invalid status value or empty share_ids
+   */
+  400: ErrorResponse
+  /**
+   * Unauthorized - authentication required
+   */
+  401: ErrorResponse
+  /**
+   * Forbidden - insufficient permissions
+   */
+  403: ErrorResponse
+  /**
+   * Internal server error
+   */
+  500: ErrorResponse
+}
+
+export type SetReviewStatusError =
+  SetReviewStatusErrors[keyof SetReviewStatusErrors]
+
+export type SetReviewStatusResponses = {
+  /**
+   * Status updated successfully
+   */
+  200: SetReviewStatusResponse
+}
+
+export type SetReviewStatusResponse2 =
+  SetReviewStatusResponses[keyof SetReviewStatusResponses]
+
+export type AdminDeleteHubWorkflowData = {
+  body?: never
+  path: {
+    /**
+     * The share ID of the hub workflow to delete.
+     */
+    share_id: string
+  }
+  query?: never
+  url: '/admin/api/hub/workflows/{share_id}'
+}
+
+export type AdminDeleteHubWorkflowErrors = {
+  /**
+   * Unauthorized - authentication required
+   */
+  401: ErrorResponse
+  /**
+   * Forbidden - insufficient permissions
+   */
+  403: ErrorResponse
+  /**
+   * Not found - no published workflow for the given share_id
+   */
+  404: ErrorResponse
+  /**
+   * Conflict - the workflow is not rejected and cannot be deleted
+   */
+  409: ErrorResponse
+  /**
+   * Internal server error
+   */
+  500: ErrorResponse
+}
+
+export type AdminDeleteHubWorkflowError =
+  AdminDeleteHubWorkflowErrors[keyof AdminDeleteHubWorkflowErrors]
+
+export type AdminDeleteHubWorkflowResponses = {
+  /**
+   * Successfully deleted
+   */
+  204: void
+}
+
+export type AdminDeleteHubWorkflowResponse =
+  AdminDeleteHubWorkflowResponses[keyof AdminDeleteHubWorkflowResponses]
+
+export type UpdateHubWorkflowData = {
+  body: UpdateHubWorkflowRequest
+  path: {
+    /**
+     * The share ID of the hub workflow to update.
+     */
+    share_id: string
+  }
+  query?: never
+  url: '/admin/api/hub/workflows/{share_id}'
+}
+
+export type UpdateHubWorkflowErrors = {
+  /**
+   * Bad request - invalid field, unknown label slug, or invalid media token
+   */
+  400: ErrorResponse
+  /**
+   * Unauthorized - authentication required
+   */
+  401: ErrorResponse
+  /**
+   * Forbidden - insufficient permissions
+   */
+  403: ErrorResponse
+  /**
+   * Not found - no published workflow for the given share_id
+   */
+  404: ErrorResponse
+  /**
+   * Internal server error
+   */
+  500: ErrorResponse
+}
+
+export type UpdateHubWorkflowError =
+  UpdateHubWorkflowErrors[keyof UpdateHubWorkflowErrors]
+
+export type UpdateHubWorkflowResponses = {
+  /**
+   * Updated hub workflow detail
+   */
+  200: HubWorkflowDetail
+}
+
+export type UpdateHubWorkflowResponse =
+  UpdateHubWorkflowResponses[keyof UpdateHubWorkflowResponses]
+
+export type GetDeletionRequestData = {
+  body?: never
+  path?: never
+  query: {
+    /**
+     * The Firebase ID of the user
+     */
+    firebase_id: string
+  }
+  url: '/admin/api/deletion_requests'
+}
+
+export type GetDeletionRequestErrors = {
+  /**
+   * Bad request - invalid request body
+   */
+  400: ErrorResponse
+  /**
+   * Unauthorized - authentication required
+   */
+  401: ErrorResponse
+  /**
+   * Forbidden - insufficient permissions
+   */
+  403: ErrorResponse
+  /**
+   * Deletion request not found
+   */
+  404: ErrorResponse
+  /**
+   * Internal server error
+   */
+  500: ErrorResponse
+}
+
+export type GetDeletionRequestError =
+  GetDeletionRequestErrors[keyof GetDeletionRequestErrors]
+
+export type GetDeletionRequestResponses = {
+  /**
+   * Success - deletion request found
+   */
+  200: Array<DeletionRequest>
+}
+
+export type GetDeletionRequestResponse =
+  GetDeletionRequestResponses[keyof GetDeletionRequestResponses]
+
+export type CreateDeletionRequestData = {
+  body: {
+    /**
+     * The Firebase ID of the user to delete
+     */
+    firebase_id: string
+  }
+  path?: never
+  query?: never
+  url: '/admin/api/deletion_requests'
+}
+
+export type CreateDeletionRequestErrors = {
+  /**
+   * Bad request - invalid request body
+   */
+  400: ErrorResponse
+  /**
+   * Unauthorized - authentication required
+   */
+  401: ErrorResponse
+  /**
+   * Forbidden - insufficient permissions
+   */
+  403: ErrorResponse
+  /**
+   * Internal server error
+   */
+  500: ErrorResponse
+}
+
+export type CreateDeletionRequestError =
+  CreateDeletionRequestErrors[keyof CreateDeletionRequestErrors]
+
+export type CreateDeletionRequestResponses = {
+  /**
+   * Created - deletion request created or already exists
+   */
+  201: {
+    /**
+     * Whether the user had a record in the cloud database
+     */
+    user_found_in_cloud: boolean
+  }
+}
+
+export type CreateDeletionRequestResponse =
+  CreateDeletionRequestResponses[keyof CreateDeletionRequestResponses]
+
+export type ReleaseDeletionHoldData = {
+  body: {
+    /**
+     * The Firebase ID of the user whose hold to release
+     */
+    firebase_id: string
+  }
+  path?: never
+  query?: never
+  url: '/admin/api/deletion_requests/release_hold'
+}
+
+export type ReleaseDeletionHoldErrors = {
+  /**
+   * Bad request - invalid request body
+   */
+  400: ErrorResponse
+  /**
+   * Unauthorized - authentication required
+   */
+  401: ErrorResponse
+  /**
+   * Forbidden - insufficient permissions
+   */
+  403: ErrorResponse
+  /**
+   * No deletion request for this user
+   */
+  404: ErrorResponse
+  /**
+   * Internal server error
+   */
+  500: ErrorResponse
+}
+
+export type ReleaseDeletionHoldError =
+  ReleaseDeletionHoldErrors[keyof ReleaseDeletionHoldErrors]
+
+export type ReleaseDeletionHoldResponses = {
+  /**
+   * Release authorized; the deletion workflow will proceed
+   */
+  200: ReleaseHoldResponse
+}
+
+export type ReleaseDeletionHoldResponse =
+  ReleaseDeletionHoldResponses[keyof ReleaseDeletionHoldResponses]
+
+export type ReportPartnerUsageData = {
+  body: PartnerUsageRequest
+  path?: never
+  query?: never
+  url: '/admin/api/partner-usage'
+}
+
+export type ReportPartnerUsageErrors = {
+  /**
+   * Workspace not found
+   */
+  404: ErrorResponse
+  /**
+   * Validation error - missing or empty required fields
+   */
+  422: ErrorResponse
+  /**
+   * Internal server error
+   */
+  500: ErrorResponse
+}
+
+export type ReportPartnerUsageError =
+  ReportPartnerUsageErrors[keyof ReportPartnerUsageErrors]
+
+export type ReportPartnerUsageResponses = {
+  /**
+   * Usage reported successfully
+   */
+  200: PartnerUsageResponse
+}
+
+export type ReportPartnerUsageResponse =
+  ReportPartnerUsageResponses[keyof ReportPartnerUsageResponses]
+
+export type GetHistoryEventsData = {
+  body?: never
+  path?: never
+  query?: {
+    /**
+     * Target workspace. One of workspace_id or user_id is required; workspace_id wins when both are supplied.
+     */
+    workspace_id?: string
+    /**
+     * Resolve the caller's personal workspace via converged identity when workspace_id is not given. One of workspace_id or user_id is required.
+     */
+    user_id?: string
+    /**
+     * Optional exact event_type filter.
+     */
+    event_type?: string
+    /**
+     * When true, restrict results before pagination to the legacy /customers/events migrated audit-log event surface. Exact event_type filters still apply inside that allowlist.
+     */
+    legacy_event_surface?: boolean
+    /**
+     * Inclusive lower bound on created_at (RFC3339).
+     */
+    start_date?: string
+    /**
+     * Inclusive upper bound on created_at (RFC3339).
+     */
+    end_date?: string
+    /**
+     * 1-indexed page number (defaults to 1).
+     */
+    page?: number
+    /**
+     * Items per page (defaults to 10).
+     */
+    limit?: number
+  }
+  url: '/admin/api/history-events'
+}
+
+export type GetHistoryEventsErrors = {
+  /**
+   * Workspace not found
+   */
+  404: ErrorResponse
+  /**
+   * Validation error - neither workspace_id nor user_id given, or a malformed date
+   */
+  422: ErrorResponse
+  /**
+   * Internal error resolving the workspace or querying events
+   */
+  500: ErrorResponse
+  /**
+   * Billing is disabled; the caller should fall back to legacy audit_logs
+   */
+  503: ErrorResponse
+}
+
+export type GetHistoryEventsError =
+  GetHistoryEventsErrors[keyof GetHistoryEventsErrors]
+
+export type GetHistoryEventsResponses = {
+  /**
+   * Paginated cloud history events for the workspace
+   */
+  200: BillingEventsResponse
+}
+
+export type GetHistoryEventsResponse =
+  GetHistoryEventsResponses[keyof GetHistoryEventsResponses]
+
+export type ReportHistoryEventData = {
+  body: HistoryEventRequest
+  path?: never
+  query?: never
+  url: '/admin/api/history-event'
+}
+
+export type ReportHistoryEventErrors = {
+  /**
+   * Workspace not found
+   */
+  404: ErrorResponse
+  /**
+   * Validation error - missing or empty required fields
+   */
+  422: ErrorResponse
+  /**
+   * Internal server error
+   */
+  500: ErrorResponse
+}
+
+export type ReportHistoryEventError =
+  ReportHistoryEventErrors[keyof ReportHistoryEventErrors]
+
+export type ReportHistoryEventResponses = {
+  /**
+   * History event recorded successfully
+   */
+  200: PartnerUsageResponse
+}
+
+export type ReportHistoryEventResponse =
+  ReportHistoryEventResponses[keyof ReportHistoryEventResponses]
+
+export type UpdateSubscriptionCacheData = {
+  body: {
+    /**
+     * Firebase UID of the user whose cache should be updated.
+     */
+    user_id: string
+    /**
+     * Whether the user currently has an active personal subscription.
+     * When false, any cached entry is cleared.
+     *
+     */
+    is_active: boolean
+    /**
+     * Subscription tier (e.g. `PRO`, `CREATOR`). Required when
+     * `is_active=true`; ignored otherwise. Unknown values are treated as a
+     * no-op rather than cached, so a schema drift between services cannot
+     * poison the cache.
+     *
+     */
+    tier?: string
+  }
+  path?: never
+  query?: never
+  url: '/admin/api/update-subscription-cache'
+}
+
+export type UpdateSubscriptionCacheErrors = {
+  /**
+   * Missing or invalid request body
+   */
+  400: ErrorResponse
+  /**
+   * Cache write failed (Redis unavailable, DEL/SET error, marshal error).
+   * Caller should retry — state on the ingest side is unchanged.
+   *
+   */
+  500: ErrorResponse
+}
+
+export type UpdateSubscriptionCacheError =
+  UpdateSubscriptionCacheErrors[keyof UpdateSubscriptionCacheErrors]
+
+export type UpdateSubscriptionCacheResponses = {
+  /**
+   * Cache updated successfully
+   */
+  200: {
+    /**
+     * One of `updated` (cache entry written), `cleared` (cache entry
+     * removed), or `skipped` (defensive no-op for missing / unknown tier).
+     *
+     */
+    status?: string
+  }
+}
+
+export type UpdateSubscriptionCacheResponse =
+  UpdateSubscriptionCacheResponses[keyof UpdateSubscriptionCacheResponses]
+
+export type AdminBillingPlanChangeData = {
+  body: AdminBillingMutationRequest
+  path?: never
+  query?: never
+  url: '/admin/api/billing/plan-change'
+}
+
+export type AdminBillingPlanChangeErrors = {
+  /**
+   * Invalid request
+   */
+  400: ErrorResponse
+  /**
+   * Missing or invalid transport secret
+   */
+  401: ErrorResponse
+  /**
+   * The actor assertion was rejected by billing-api
+   */
+  403: ErrorResponse
+  /**
+   * The transition is not allowed for this workspace
+   */
+  422: ErrorResponse
+  /**
+   * billing-api could not be reached
+   */
+  502: ErrorResponse
+}
+
+export type AdminBillingPlanChangeError =
+  AdminBillingPlanChangeErrors[keyof AdminBillingPlanChangeErrors]
+
+export type AdminBillingPlanChangeResponses = {
+  /**
+   * The plan change was accepted and its billing operation started
+   */
+  201: unknown
+}
+
+export type AdminBillingCreditGrantData = {
+  body: AdminBillingMutationRequest
+  path?: never
+  query?: never
+  url: '/admin/api/billing/credit-grant'
+}
+
+export type AdminBillingCreditGrantErrors = {
+  /**
+   * Invalid request
+   */
+  400: ErrorResponse
+  /**
+   * Missing or invalid transport secret
+   */
+  401: ErrorResponse
+  /**
+   * The actor assertion was rejected by billing-api
+   */
+  403: ErrorResponse
+  /**
+   * The workspace does not exist
+   */
+  404: ErrorResponse
+  /**
+   * The idempotency key was already granted with a different credit amount or bucket
+   */
+  409: ErrorResponse
+  /**
+   * The grant is not allowed for this workspace (e.g. an unresolvable subscription period, or no metronome customer/contract provisioned yet)
+   */
+  422: ErrorResponse
+  /**
+   * billing-api could not be reached
+   */
+  502: ErrorResponse
+  /**
+   * Admin credit grants are not configured or not enabled on billing-api
+   */
+  503: ErrorResponse
+}
+
+export type AdminBillingCreditGrantError =
+  AdminBillingCreditGrantErrors[keyof AdminBillingCreditGrantErrors]
+
+export type AdminBillingCreditGrantResponses = {
+  /**
+   * The idempotency key was already granted; no new credits were minted (result.AlreadyGranted)
+   */
+  200: unknown
+  /**
+   * The credit grant was accepted and recorded in the ledger
+   */
+  201: unknown
+}
+
+export type AdminBillingCreditDeductionData = {
+  body: AdminBillingMutationRequest
+  path?: never
+  query?: never
+  url: '/admin/api/billing/credit-deduction'
+}
+
+export type AdminBillingCreditDeductionErrors = {
+  /**
+   * Invalid request
+   */
+  400: ErrorResponse
+  /**
+   * Missing or invalid transport secret
+   */
+  401: ErrorResponse
+  /**
+   * The actor assertion was rejected by billing-api
+   */
+  403: ErrorResponse
+  /**
+   * The workspace does not exist
+   */
+  404: ErrorResponse
+  /**
+   * The idempotency key was already used for a different amount or bucket
+   */
+  409: ErrorResponse
+  /**
+   * The requested amount exceeds the bucket's available undrawn balance, or the workspace has no metronome customer/contract provisioned
+   */
+  422: ErrorResponse
+  /**
+   * billing-api could not be reached
+   */
+  502: ErrorResponse
+  /**
+   * Admin credit deductions are not configured on billing-api
+   */
+  503: ErrorResponse
+}
+
+export type AdminBillingCreditDeductionError =
+  AdminBillingCreditDeductionErrors[keyof AdminBillingCreditDeductionErrors]
+
+export type AdminBillingCreditDeductionResponses = {
+  /**
+   * The idempotency key already clawed back this amount; nothing new was drawn down (result.AlreadyDeducted)
+   */
+  200: unknown
+  /**
+   * The credits were clawed back and recorded in the ledger
+   */
+  201: unknown
+}
+
+export type AdminBillingCancelSubscriptionData = {
+  body: AdminBillingMutationRequest
+  path?: never
+  query?: never
+  url: '/admin/api/billing/cancel'
+}
+
+export type AdminBillingCancelSubscriptionErrors = {
+  /**
+   * Invalid request
+   */
+  400: ErrorResponse
+  /**
+   * Missing or invalid transport secret
+   */
+  401: ErrorResponse
+  /**
+   * The actor assertion was rejected by billing-api
+   */
+  403: ErrorResponse
+  /**
+   * The workspace does not exist
+   */
+  404: ErrorResponse
+  /**
+   * Another billing operation is already in progress, or the subscription history requires reconciliation first
+   */
+  409: ErrorResponse
+  /**
+   * The workspace has no active subscription, or the named subscription is not the one that would be cancelled
+   */
+  422: ErrorResponse
+  /**
+   * billing-api could not be reached
+   */
+  502: ErrorResponse
+  /**
+   * Admin billing writes are not configured on billing-api
+   */
+  503: ErrorResponse
+}
+
+export type AdminBillingCancelSubscriptionError =
+  AdminBillingCancelSubscriptionErrors[keyof AdminBillingCancelSubscriptionErrors]
+
+export type AdminBillingCancelSubscriptionResponses = {
+  /**
+   * The idempotency key already named a settled cancellation; its existing billing operation is returned
+   */
+  200: unknown
+  /**
+   * The cancellation was accepted and its billing operation started
+   */
+  201: unknown
+}
+
+export type AdminBillingPlanTermAmendData = {
+  body: AdminBillingMutationRequest
+  path?: never
+  query?: never
+  url: '/admin/api/billing/plan-term'
+}
+
+export type AdminBillingPlanTermAmendErrors = {
+  /**
+   * Invalid request, or ends_at is outside the permitted bounds
+   */
+  400: ErrorResponse
+  /**
+   * Missing or invalid transport secret
+   */
+  401: ErrorResponse
+  /**
+   * The actor assertion was rejected by billing-api
+   */
+  403: ErrorResponse
+  /**
+   * A subscription change or a scheduled plan change is pending
+   */
+  409: ErrorResponse
+  /**
+   * The subscription carries no operator-imposed term, is not the one this request was approved for, or is not in a state where a term can be changed
+   */
+  422: ErrorResponse
+  /**
+   * billing-api could not be reached
+   */
+  502: ErrorResponse
+  /**
+   * Admin billing writes are not configured, or billing-api has no Stripe gateway
+   */
+  503: ErrorResponse
+}
+
+export type AdminBillingPlanTermAmendError =
+  AdminBillingPlanTermAmendErrors[keyof AdminBillingPlanTermAmendErrors]
+
+export type AdminBillingPlanTermAmendResponses = {
+  /**
+   * The plan term was moved and the change recorded
+   */
+  200: unknown
+}
+
+export type AdminBillingPlanTermReleaseData = {
+  body: AdminBillingMutationRequest
+  path?: never
+  query?: never
+  url: '/admin/api/billing/plan-term/release'
+}
+
+export type AdminBillingPlanTermReleaseErrors = {
+  /**
+   * Invalid request
+   */
+  400: ErrorResponse
+  /**
+   * Missing or invalid transport secret
+   */
+  401: ErrorResponse
+  /**
+   * The actor assertion was rejected by billing-api
+   */
+  403: ErrorResponse
+  /**
+   * A subscription change or a scheduled plan change is pending
+   */
+  409: ErrorResponse
+  /**
+   * The subscription carries no operator-imposed term, is not the one this request was approved for, or is not in a state where a term can be changed
+   */
+  422: ErrorResponse
+  /**
+   * billing-api could not be reached
+   */
+  502: ErrorResponse
+  /**
+   * Admin billing writes are not configured, or billing-api has no Stripe gateway
+   */
+  503: ErrorResponse
+}
+
+export type AdminBillingPlanTermReleaseError =
+  AdminBillingPlanTermReleaseErrors[keyof AdminBillingPlanTermReleaseErrors]
+
+export type AdminBillingPlanTermReleaseResponses = {
+  /**
+   * The plan term was removed and the change recorded
+   */
+  200: unknown
+}
+
+export type AdminBillingPlanTermImposeData = {
+  body: AdminBillingMutationRequest
+  path?: never
+  query?: never
+  url: '/admin/api/billing/plan-term/impose'
+}
+
+export type AdminBillingPlanTermImposeErrors = {
+  /**
+   * Invalid request, or ends_at is outside the permitted bounds
+   */
+  400: ErrorResponse
+  /**
+   * Missing or invalid transport secret
+   */
+  401: ErrorResponse
+  /**
+   * The actor assertion was rejected by billing-api
+   */
+  403: ErrorResponse
+  /**
+   * A subscription change or a scheduled plan change is pending
+   */
+  409: ErrorResponse
+  /**
+   * The subscription already carries an operator-imposed term or a cancellation, is not the one this request was approved for, or is not in a state where a term can be set
+   */
+  422: ErrorResponse
+  /**
+   * billing-api could not be reached
+   */
+  502: ErrorResponse
+  /**
+   * Admin billing writes are not configured, or billing-api has no Stripe gateway
+   */
+  503: ErrorResponse
+}
+
+export type AdminBillingPlanTermImposeError =
+  AdminBillingPlanTermImposeErrors[keyof AdminBillingPlanTermImposeErrors]
+
+export type AdminBillingPlanTermImposeResponses = {
+  /**
+   * The plan term was set and the change recorded
+   */
+  200: unknown
+}
+
+export type AdminBillingSetCreditAllotmentData = {
+  body: AdminBillingMutationRequest
+  path?: never
+  query?: never
+  url: '/admin/api/billing/credit-allotment'
+}
+
+export type AdminBillingSetCreditAllotmentErrors = {
+  /**
+   * Invalid request
+   */
+  400: ErrorResponse
+  /**
+   * Missing or invalid transport secret
+   */
+  401: ErrorResponse
+  /**
+   * The actor assertion was rejected by billing-api
+   */
+  403: ErrorResponse
+  /**
+   * The workspace does not exist
+   */
+  404: ErrorResponse
+  /**
+   * The idempotency key was already used with a different amount or cadence
+   */
+  409: ErrorResponse
+  /**
+   * The workspace has no Metronome customer/contract to set an allotment against; provision it first
+   */
+  422: ErrorResponse
+  /**
+   * billing-api could not be reached
+   */
+  502: ErrorResponse
+  /**
+   * Admin billing writes are not configured, or billing-api's Metronome gateway is unavailable
+   */
+  503: ErrorResponse
+}
+
+export type AdminBillingSetCreditAllotmentError =
+  AdminBillingSetCreditAllotmentErrors[keyof AdminBillingSetCreditAllotmentErrors]
+
+export type AdminBillingSetCreditAllotmentResponses = {
+  /**
+   * A replay of an already-applied request; the allotment already matched what was requested
+   */
+  200: unknown
+  /**
+   * The allotment was set (or replaced) and the change recorded
+   */
+  201: unknown
+}
+
+export type AdminBillingReleaseCreditAllotmentData = {
+  body: AdminBillingMutationRequest
+  path?: never
+  query?: never
+  url: '/admin/api/billing/credit-allotment/release'
+}
+
+export type AdminBillingReleaseCreditAllotmentErrors = {
+  /**
+   * Invalid request
+   */
+  400: ErrorResponse
+  /**
+   * Missing or invalid transport secret
+   */
+  401: ErrorResponse
+  /**
+   * The actor assertion was rejected by billing-api
+   */
+  403: ErrorResponse
+  /**
+   * The workspace does not exist
+   */
+  404: ErrorResponse
+  /**
+   * The idempotency key already released an allotment and a different one is running now, or a concurrent allotment write landed first
+   */
+  409: ErrorResponse
+  /**
+   * The workspace has no Metronome customer/contract to release an allotment from; provision it first
+   */
+  422: ErrorResponse
+  /**
+   * billing-api could not be reached
+   */
+  502: ErrorResponse
+  /**
+   * Admin billing writes are not configured, or billing-api's Metronome gateway is unavailable
+   */
+  503: ErrorResponse
+}
+
+export type AdminBillingReleaseCreditAllotmentError =
+  AdminBillingReleaseCreditAllotmentErrors[keyof AdminBillingReleaseCreditAllotmentErrors]
+
+export type AdminBillingReleaseCreditAllotmentResponses = {
+  /**
+   * The allotment was stopped, was already stopped under this key, or the workspace had none to stop
+   */
+  200: unknown
+}
+
+export type AdminBillingInvoiceCreditData = {
+  body: AdminBillingMutationRequest
+  path?: never
+  query?: never
+  url: '/admin/api/billing/invoice-credit'
+}
+
+export type AdminBillingInvoiceCreditErrors = {
+  /**
+   * Invalid request
+   */
+  400: ErrorResponse
+  /**
+   * Missing or invalid transport secret
+   */
+  401: ErrorResponse
+  /**
+   * FORBIDDEN (the actor assertion was rejected by billing-api) or WORKSPACE_BLOCKED (the workspace is administratively blocked)
+   */
+  403: ErrorResponse
+  /**
+   * The workspace does not exist
+   */
+  404: ErrorResponse
+  /**
+   * INVOICE_CREDIT_REPLAY_CONFLICT (the idempotency key already credited a different amount; use a new key) or SUBSCRIPTION_CHANGE_IN_PROGRESS (a request under this key is still in flight; retry shortly with the same key)
+   */
+  409: ErrorResponse
+  /**
+   * TRANSITION_NOT_ALLOWED (the workspace is not on the stripe billing rail or has no Stripe customer, or Stripe refused the credit)
+   */
+  422: ErrorResponse
+  /**
+   * billing-api could not be reached
+   */
+  502: ErrorResponse
+  /**
+   * Admin invoice credits are not configured on billing-api, or it could not confirm the key has not already credited the workspace; nothing was credited
+   */
+  503: ErrorResponse
+}
+
+export type AdminBillingInvoiceCreditError =
+  AdminBillingInvoiceCreditErrors[keyof AdminBillingInvoiceCreditErrors]
+
+export type AdminBillingInvoiceCreditResponses = {
+  /**
+   * The idempotency key had already credited
+   */
+  200: unknown
+  /**
+   * The credit was applied
+   */
+  201: unknown
+}
+
+export type AdminBillingInvoiceCreditRevokeData = {
+  body: AdminBillingMutationRequest
+  path?: never
+  query?: never
+  url: '/admin/api/billing/invoice-credit/revoke'
+}
+
+export type AdminBillingInvoiceCreditRevokeErrors = {
+  /**
+   * Invalid request
+   */
+  400: ErrorResponse
+  /**
+   * Missing or invalid transport secret
+   */
+  401: ErrorResponse
+  /**
+   * FORBIDDEN (the actor assertion was rejected by billing-api) or WORKSPACE_BLOCKED (the workspace is administratively blocked)
+   */
+  403: ErrorResponse
+  /**
+   * The workspace does not exist
+   */
+  404: ErrorResponse
+  /**
+   * INVOICE_CREDIT_REPLAY_CONFLICT (the idempotency key already revoked a different amount; use a new key) or SUBSCRIPTION_CHANGE_IN_PROGRESS (a request under this key is still in flight; retry shortly with the same key)
+   */
+  409: ErrorResponse
+  /**
+   * CLAWBACK_INSUFFICIENT_BALANCE (the amount exceeds the unspent Stripe credit or the operator-granted credit not yet revoked) or TRANSITION_NOT_ALLOWED (the workspace is not on the stripe billing rail or has no Stripe customer, or Stripe refused the debit)
+   */
+  422: ErrorResponse
+  /**
+   * billing-api could not be reached
+   */
+  502: ErrorResponse
+  /**
+   * Admin invoice credits are not configured on billing-api, or it could not confirm the key has not already revoked; nothing was revoked
+   */
+  503: ErrorResponse
+}
+
+export type AdminBillingInvoiceCreditRevokeError =
+  AdminBillingInvoiceCreditRevokeErrors[keyof AdminBillingInvoiceCreditRevokeErrors]
+
+export type AdminBillingInvoiceCreditRevokeResponses = {
+  /**
+   * The idempotency key had already revoked
+   */
+  200: unknown
+  /**
+   * The credit was revoked
+   */
+  201: unknown
+}
+
+export type AdminBillingInviteMemberData = {
+  body: AdminBillingMutationRequest
+  path?: never
+  query?: never
+  url: '/admin/api/billing/invite-member'
+}
+
+export type AdminBillingInviteMemberErrors = {
+  /**
+   * Invalid request
+   */
+  400: ErrorResponse
+  /**
+   * Missing or invalid transport secret
+   */
+  401: ErrorResponse
+  /**
+   * The actor assertion was rejected by billing-api, the recipient is not one the operator approved, or the workspace has no active Team plan
+   */
+  403: ErrorResponse
+  /**
+   * The workspace does not exist
+   */
+  404: ErrorResponse
+  /**
+   * The address already has a pending invite, or already belongs to a member of the workspace
+   */
+  409: ErrorResponse
+  /**
+   * billing-api could not be reached
+   */
+  502: ErrorResponse
+  /**
+   * Admin billing writes are not configured
+   */
+  503: ErrorResponse
+}
+
+export type AdminBillingInviteMemberError =
+  AdminBillingInviteMemberErrors[keyof AdminBillingInviteMemberErrors]
+
+export type AdminBillingInviteMemberResponses = {
+  /**
+   * The invite was created and its email handed to the durable send
+   */
+  201: unknown
+}
+
+export type GetWorkspaceBillingReconcileData = {
+  body?: never
+  path: {
+    workspaceID: string
+  }
+  query?: {
+    /**
+     * Pin the poll to one execution. Omitted, the latest run for the workspace's deterministic workflow ID is described, which lets an operator recover the run whose start response was lost.
+     */
+    run_id?: string
+  }
+  url: '/admin/api/workspaces/{workspaceID}/billing-reconcile'
+}
+
+export type GetWorkspaceBillingReconcileErrors = {
+  /**
+   * Invalid request
+   */
+  400: ErrorResponse
+  /**
+   * Workflow not found
+   */
+  404: ErrorResponse
+  /**
+   * Billing service unavailable
+   */
+  502: ErrorResponse
+  /**
+   * Workspace reconciliation status unavailable
+   */
+  503: ErrorResponse
+}
+
+export type GetWorkspaceBillingReconcileError =
+  GetWorkspaceBillingReconcileErrors[keyof GetWorkspaceBillingReconcileErrors]
+
+export type GetWorkspaceBillingReconcileResponses = {
+  /**
+   * Workflow status and safe report when complete
+   */
+  200: WorkspaceBillingReconcileExecution
+}
+
+export type GetWorkspaceBillingReconcileResponse =
+  GetWorkspaceBillingReconcileResponses[keyof GetWorkspaceBillingReconcileResponses]
+
+export type StartWorkspaceBillingReconcileData = {
+  body: {
+    dry_run?: boolean
+    /**
+     * Opaque audit identifier in canonical hyphenated UUID form. Any UUID version is accepted; the handlers enforce the same shape.
+     */
+    requested_by: string
+  }
+  path: {
+    workspaceID: string
+  }
+  query?: never
+  url: '/admin/api/workspaces/{workspaceID}/billing-reconcile'
+}
+
+export type StartWorkspaceBillingReconcileErrors = {
+  /**
+   * Invalid request
+   */
+  400: ErrorResponse
+  /**
+   * Workspace not found
+   */
+  404: ErrorResponse
+  /**
+   * A reconciliation is already running for the workspace
+   */
+  409: ErrorResponse
+  /**
+   * Billing service unavailable
+   */
+  502: ErrorResponse
+  /**
+   * Workspace reconciliation is unavailable
+   */
+  503: ErrorResponse
+}
+
+export type StartWorkspaceBillingReconcileError =
+  StartWorkspaceBillingReconcileErrors[keyof StartWorkspaceBillingReconcileErrors]
+
+export type StartWorkspaceBillingReconcileResponses = {
+  /**
+   * Workflow accepted
+   */
+  202: WorkspaceBillingReconcileExecution
+}
+
+export type StartWorkspaceBillingReconcileResponse =
+  StartWorkspaceBillingReconcileResponses[keyof StartWorkspaceBillingReconcileResponses]
+
+export type GetWorkspaceBillingBalanceData = {
+  body?: never
+  path: {
+    workspaceID: string
+  }
+  query?: never
+  url: '/admin/api/workspaces/{workspaceID}/billing-balance'
+}
+
+export type GetWorkspaceBillingBalanceErrors = {
+  /**
+   * Invalid request
+   */
+  400: ErrorResponse
+  /**
+   * Workspace not found
+   */
+  404: ErrorResponse
+  /**
+   * Billing service unavailable
+   */
+  502: ErrorResponse
+  /**
+   * Balance read temporarily unavailable
+   */
+  503: ErrorResponse
+}
+
+export type GetWorkspaceBillingBalanceError =
+  GetWorkspaceBillingBalanceErrors[keyof GetWorkspaceBillingBalanceErrors]
+
+export type GetWorkspaceBillingBalanceResponses = {
+  /**
+   * Credit balance breakdown
+   */
+  200: {
+    total_available: number
+    subscription_balance: number
+    prepaid_balance: number
+    pending_charges: number
+    effective_balance: number
+    /**
+     * False when pending charges could not be read and were treated as 0, so effective_balance overstates the spendable credit remaining.
+     */
+    effective_balance_authoritative: boolean
+    has_funds: boolean
+    currency: string
+    /**
+     * False when the workspace has no Metronome customer; the all-zero breakdown is not a balance of zero.
+     */
+    provisioned: boolean
+    /**
+     * Per bucket and per deduction scope, the unspent balance an admin credit deduction could remove right now. A deduction is capped by the figure for the scope it names, so both are reported. Absent when the workspace is unprovisioned.
+     */
+    clawable?: {
+      /**
+       * Ceiling for a credit_scope=operator_granted deduction from the subscription bucket.
+       */
+      subscription_cents: number
+      /**
+       * Ceiling for a credit_scope=operator_granted deduction from the top-up bucket.
+       */
+      top_up_cents: number
+      /**
+       * Ceiling for a credit_scope=any deduction from the subscription bucket -- every drawable prepaid commit there whatever its provenance. Always >= subscription_cents.
+       */
+      any_subscription_cents: number
+      /**
+       * Ceiling for a credit_scope=any deduction from the top-up bucket, which is also where customer-paid top-ups land. Always >= top_up_cents.
+       */
+      any_top_up_cents: number
+      /**
+       * False when the read behind these figures did not complete -- a Metronome failure or throttle degrades this object rather than failing the balance. All amounts are 0 then, and must not be shown as a deduction limit. A workspace with no Metronome contract reports an authoritative zero instead.
+       */
+      authoritative: boolean
+    }
+    /**
+     * Unspent Stripe customer-balance credit. Absent when the workspace is not on the stripe billing rail or billing did not report it.
+     */
+    invoice_credit?: {
+      /**
+       * USD cents, never negative.
+       */
+      balance_cents: number
+      /**
+       * False when Stripe could not be read; balance_cents is 0 then and is not the balance.
+       */
+      authoritative: boolean
+    }
+  }
+}
+
+export type GetWorkspaceBillingBalanceResponse =
+  GetWorkspaceBillingBalanceResponses[keyof GetWorkspaceBillingBalanceResponses]
+
+export type ListLinkedFirebaseUidsData = {
+  body: ListLinkedFirebaseUidsRequest
+  path?: never
+  query?: never
+  url: '/admin/api/identity/linked-uids'
+}
+
+export type ListLinkedFirebaseUidsErrors = {
+  /**
+   * Malformed request or missing comfy_user_id
+   */
+  400: ErrorResponse
+  /**
+   * Missing or invalid admin secret
+   */
+  401: ErrorResponse
+  /**
+   * Internal error
+   */
+  500: ErrorResponse
+}
+
+export type ListLinkedFirebaseUidsError =
+  ListLinkedFirebaseUidsErrors[keyof ListLinkedFirebaseUidsErrors]
+
+export type ListLinkedFirebaseUidsResponses = {
+  /**
+   * Linked Firebase UIDs (possibly empty list)
+   */
+  200: ListLinkedFirebaseUidsResponse
+}
+
+export type ListLinkedFirebaseUidsResponse2 =
+  ListLinkedFirebaseUidsResponses[keyof ListLinkedFirebaseUidsResponses]
+
+export type EnsureWorkspaceBillingProvisionedData = {
+  body: EnsureWorkspaceBillingProvisionedRequest
+  path?: never
+  query?: never
+  url: '/admin/api/workspace/ensure-billing-provisioned'
+}
+
+export type EnsureWorkspaceBillingProvisionedErrors = {
+  /**
+   * Malformed request or missing user_id
+   */
+  400: ErrorResponse
+  /**
+   * Missing or invalid admin secret
+   */
+  401: ErrorResponse
+  /**
+   * Internal error
+   */
+  500: ErrorResponse
+}
+
+export type EnsureWorkspaceBillingProvisionedError =
+  EnsureWorkspaceBillingProvisionedErrors[keyof EnsureWorkspaceBillingProvisionedErrors]
+
+export type EnsureWorkspaceBillingProvisionedResponses = {
+  /**
+   * The workspace's provisioned billing identity
+   */
+  200: EnsureWorkspaceBillingProvisionedResponse
+}
+
+export type EnsureWorkspaceBillingProvisionedResponse2 =
+  EnsureWorkspaceBillingProvisionedResponses[keyof EnsureWorkspaceBillingProvisionedResponses]
+
+export type InsertDynamicConfigData = {
+  /**
+   * A valid dynamicconfig.Config JSON object.
+   */
+  body: {
+    [key: string]: unknown
+  }
+  path?: never
+  query?: never
+  url: '/admin/api/dynamic-config'
+}
+
+export type InsertDynamicConfigErrors = {
+  /**
+   * Invalid or missing request body
+   */
+  400: ErrorResponse
+  /**
+   * Database insert failed
+   */
+  500: ErrorResponse
+}
+
+export type InsertDynamicConfigError =
+  InsertDynamicConfigErrors[keyof InsertDynamicConfigErrors]
+
+export type InsertDynamicConfigResponses = {
+  /**
+   * Config inserted successfully
+   */
+  201: {
+    /**
+     * The database ID of the newly inserted config row.
+     */
+    id?: number
+    /**
+     * Human-readable success message.
+     */
+    message?: string
+  }
+}
+
+export type InsertDynamicConfigResponse =
+  InsertDynamicConfigResponses[keyof InsertDynamicConfigResponses]
+
+export type SyncApiKeyData = {
+  body: SyncApiKeyRequest
+  path?: never
+  query?: never
+  url: '/admin/api/keys/sync'
+}
+
+export type SyncApiKeyErrors = {
+  /**
+   * Malformed request or unsupported event
+   */
+  400: ErrorResponse
+  /**
+   * Missing or invalid admin secret
+   */
+  401: ErrorResponse
+  /**
+   * Internal error
+   */
+  500: ErrorResponse
+}
+
+export type SyncApiKeyError = SyncApiKeyErrors[keyof SyncApiKeyErrors]
+
+export type SyncApiKeyResponses = {
+  /**
+   * Sync processed — see `result` field
+   */
+  200: SyncApiKeyResponse
+}
+
+export type SyncApiKeyResponse2 = SyncApiKeyResponses[keyof SyncApiKeyResponses]
+
+export type GetWorkflowVersionContentData = {
+  body?: never
+  path: {
+    /**
+     * The UUID of the workflow version whose content should be retrieved.
+     */
+    id: string
+  }
+  query?: never
+  url: '/api/workflow-versions/{id}/content'
+}
+
+export type GetWorkflowVersionContentErrors = {
+  /**
+   * `code` is `workspace_id_invalid`: the `X-Comfy-Workspace-ID` header or `workspace_id` query value is malformed, or conflicts with another value or with the workspace the credential resolves to. Answered only while `web_session_enabled` is on for the user. See the `WebSessionAuth` scheme.
+   */
+  400: ErrorResponse
+  /**
+   * Unauthorized
+   */
+  401: ErrorResponse
+  /**
+   * A refused request. For a web session, `code` is `workspace_access_denied` (the selected workspace is unknown, deleted, or the user is not a member; the three look the same), `origin_not_allowed` or `cross_site_request`; see the `WebSessionAuth` scheme. For any credential, `sso_required` means an SSO organization holds the account or the workspace and the credential is not an SSO sign-in. `FORBIDDEN` is the route's own authorization check failing, such as an unverified email. A credential this route does not take gets AuthTypeNotAllowedError instead, and so does the session while `web_session_enabled` is off for the user, unless the operation says it takes the session whatever `web_session_enabled` says.
+   */
+  403: ForbiddenError
+  /**
+   * Workflow version not found, or not in the caller's workspace
+   */
+  404: ErrorResponse
+  /**
+   * Internal server error
+   */
+  500: ErrorResponse
+}
+
+export type GetWorkflowVersionContentError =
+  GetWorkflowVersionContentErrors[keyof GetWorkflowVersionContentErrors]
+
+export type GetWorkflowVersionContentResponses = {
+  /**
+   * Success
+   */
+  200: WorkflowVersionContentResponse
+}
+
+export type GetWorkflowVersionContentResponse =
+  GetWorkflowVersionContentResponses[keyof GetWorkflowVersionContentResponses]
+
+export type GetReadyData = {
+  body?: never
+  path?: never
+  query?: never
+  url: '/ready'
+}
+
+export type GetReadyErrors = {
+  /**
+   * Not ready
+   */
+  503: unknown
+}
+
+export type GetReadyResponses = {
+  /**
+   * Ready for traffic
+   */
+  200: unknown
+}
+
+export type GetMonitoringTasksData = {
+  body?: never
+  path?: never
+  query?: never
+  url: '/monitoring/tasks'
+}
+
+export type GetMonitoringTasksErrors = {
+  /**
+   * `code` is `workspace_id_invalid`: the `X-Comfy-Workspace-ID` header or `workspace_id` query value is malformed, or conflicts with another value or with the workspace the credential resolves to. Answered only while `web_session_enabled` is on for the user. See the `WebSessionAuth` scheme.
+   */
+  400: ErrorResponse
+  /**
+   * No valid credential, or an `Authorization` header, `X-API-Key` header or `?token=` next to the session cookie that could not be read, which is refused rather than answered with the session. `code` is `UNAUTHORIZED`.
+   */
+  401: ErrorResponse
+  /**
+   * A refused request. For a web session, `code` is `workspace_access_denied` (the selected workspace is unknown, deleted, or the user is not a member; the three look the same), `origin_not_allowed` or `cross_site_request`; see the `WebSessionAuth` scheme. For any credential, `sso_required` means an SSO organization holds the account or the workspace and the credential is not an SSO sign-in. `FORBIDDEN` is the route's own authorization check failing, such as an unverified email. A credential this route does not take gets AuthTypeNotAllowedError instead, and so does the session while `web_session_enabled` is off for the user, unless the operation says it takes the session whatever `web_session_enabled` says.
+   */
+  403: ForbiddenError
+}
+
+export type GetMonitoringTasksError =
+  GetMonitoringTasksErrors[keyof GetMonitoringTasksErrors]
+
+export type GetMonitoringTasksResponses = {
+  /**
+   * HTML dashboard
+   */
+  200: unknown
+}
+
+export type DeleteMonitoringTasksSubpathData = {
+  body?: never
+  path: {
+    /**
+     * Asynqmon deletion subpath (e.g. delete task).
+     */
+    path: string
+  }
+  query?: never
+  url: '/monitoring/tasks/{path}'
+}
+
+export type DeleteMonitoringTasksSubpathErrors = {
+  /**
+   * `code` is `workspace_id_invalid`: the `X-Comfy-Workspace-ID` header or `workspace_id` query value is malformed, or conflicts with another value or with the workspace the credential resolves to. Answered only while `web_session_enabled` is on for the user. See the `WebSessionAuth` scheme.
+   */
+  400: ErrorResponse
+  /**
+   * No valid credential, or an `Authorization` header, `X-API-Key` header or `?token=` next to the session cookie that could not be read, which is refused rather than answered with the session. `code` is `UNAUTHORIZED`.
+   */
+  401: ErrorResponse
+  /**
+   * A refused request. For a web session, `code` is `workspace_access_denied` (the selected workspace is unknown, deleted, or the user is not a member; the three look the same), `origin_not_allowed` or `cross_site_request`; see the `WebSessionAuth` scheme. For any credential, `sso_required` means an SSO organization holds the account or the workspace and the credential is not an SSO sign-in. `FORBIDDEN` is the route's own authorization check failing, such as an unverified email. A credential this route does not take gets AuthTypeNotAllowedError instead, and so does the session while `web_session_enabled` is off for the user, unless the operation says it takes the session whatever `web_session_enabled` says.
+   */
+  403: ForbiddenError
+}
+
+export type DeleteMonitoringTasksSubpathError =
+  DeleteMonitoringTasksSubpathErrors[keyof DeleteMonitoringTasksSubpathErrors]
+
+export type DeleteMonitoringTasksSubpathResponses = {
+  /**
+   * Deletion result
+   */
+  200: unknown
+}
+
+export type GetMonitoringTasksSubpathData = {
+  body?: never
+  path: {
+    /**
+     * Asynqmon UI subpath (HTML page, SPA XHR, or static asset).
+     */
+    path: string
+  }
+  query?: never
+  url: '/monitoring/tasks/{path}'
+}
+
+export type GetMonitoringTasksSubpathErrors = {
+  /**
+   * `code` is `workspace_id_invalid`: the `X-Comfy-Workspace-ID` header or `workspace_id` query value is malformed, or conflicts with another value or with the workspace the credential resolves to. Answered only while `web_session_enabled` is on for the user. See the `WebSessionAuth` scheme.
+   */
+  400: ErrorResponse
+  /**
+   * No valid credential, or an `Authorization` header, `X-API-Key` header or `?token=` next to the session cookie that could not be read, which is refused rather than answered with the session. `code` is `UNAUTHORIZED`.
+   */
+  401: ErrorResponse
+  /**
+   * A refused request. For a web session, `code` is `workspace_access_denied` (the selected workspace is unknown, deleted, or the user is not a member; the three look the same), `origin_not_allowed` or `cross_site_request`; see the `WebSessionAuth` scheme. For any credential, `sso_required` means an SSO organization holds the account or the workspace and the credential is not an SSO sign-in. `FORBIDDEN` is the route's own authorization check failing, such as an unverified email. A credential this route does not take gets AuthTypeNotAllowedError instead, and so does the session while `web_session_enabled` is off for the user, unless the operation says it takes the session whatever `web_session_enabled` says.
+   */
+  403: ForbiddenError
+}
+
+export type GetMonitoringTasksSubpathError =
+  GetMonitoringTasksSubpathErrors[keyof GetMonitoringTasksSubpathErrors]
+
+export type GetMonitoringTasksSubpathResponses = {
+  /**
+   * Subpath response (asynqmon-determined content type)
+   */
+  200: unknown
+}
+
+export type PostMonitoringTasksSubpathData = {
+  body?: never
+  path: {
+    /**
+     * Asynqmon action subpath (e.g. retry, archive).
+     */
+    path: string
+  }
+  query?: never
+  url: '/monitoring/tasks/{path}'
+}
+
+export type PostMonitoringTasksSubpathErrors = {
+  /**
+   * `code` is `workspace_id_invalid`: the `X-Comfy-Workspace-ID` header or `workspace_id` query value is malformed, or conflicts with another value or with the workspace the credential resolves to. Answered only while `web_session_enabled` is on for the user. See the `WebSessionAuth` scheme.
+   */
+  400: ErrorResponse
+  /**
+   * No valid credential, or an `Authorization` header, `X-API-Key` header or `?token=` next to the session cookie that could not be read, which is refused rather than answered with the session. `code` is `UNAUTHORIZED`.
+   */
+  401: ErrorResponse
+  /**
+   * A refused request. For a web session, `code` is `workspace_access_denied` (the selected workspace is unknown, deleted, or the user is not a member; the three look the same), `origin_not_allowed` or `cross_site_request`; see the `WebSessionAuth` scheme. For any credential, `sso_required` means an SSO organization holds the account or the workspace and the credential is not an SSO sign-in. `FORBIDDEN` is the route's own authorization check failing, such as an unverified email. A credential this route does not take gets AuthTypeNotAllowedError instead, and so does the session while `web_session_enabled` is off for the user, unless the operation says it takes the session whatever `web_session_enabled` says.
+   */
+  403: ForbiddenError
+}
+
+export type PostMonitoringTasksSubpathError =
+  PostMonitoringTasksSubpathErrors[keyof PostMonitoringTasksSubpathErrors]
+
+export type PostMonitoringTasksSubpathResponses = {
+  /**
+   * Action result
+   */
+  200: unknown
+}
+
+export type GetPprofData = {
+  body?: never
+  path: {
+    /**
+     * pprof endpoint name (e.g. heap, goroutine, allocs, block, mutex, threadcreate).
+     */
+    path: string
+  }
+  query?: never
+  url: '/debug/pprof/{path}'
+}
+
+export type GetPprofResponses = {
+  /**
+   * Profile data
+   */
+  200: unknown
+}
+
+export type GetPprofProfileData = {
+  body?: never
+  path?: never
+  query?: never
+  url: '/debug/pprof/profile'
+}
+
+export type GetPprofProfileResponses = {
+  /**
+   * CPU profile data
+   */
+  200: unknown
+}
+
+export type GetPprofTraceData = {
+  body?: never
+  path?: never
+  query?: never
+  url: '/debug/pprof/trace'
+}
+
+export type GetPprofTraceResponses = {
+  /**
+   * Execution trace data
+   */
+  200: unknown
+}
+
+export type PostPprofSymbolData = {
+  body?: never
+  path?: never
+  query?: never
+  url: '/debug/pprof/symbol'
+}
+
+export type PostPprofSymbolResponses = {
+  /**
+   * Resolved symbols
+   */
+  200: unknown
+}
+
+export type ShortLinkRedirectData = {
+  body?: never
+  path: {
+    id: string
+  }
+  query?: {
+    /**
+     * When `1`, stream the object bytes from this host (200) instead of 302-redirecting to the GCS signed URL. Any other value (or absence) yields the default 302. Ignored when raw mode is disabled server-side.
+     */
+    raw?: '1'
+  }
+  url: '/api/s/{id}'
+}
+
+export type ShortLinkRedirectErrors = {
+  /**
+   * `code` is `workspace_id_invalid`: the `X-Comfy-Workspace-ID` header or `workspace_id` query value is malformed, or conflicts with another value or with the workspace the credential resolves to. Answered only while `web_session_enabled` is on for the user. See the `WebSessionAuth` scheme.
+   */
+  400: ErrorResponse
+  /**
+   * Not Found — unknown, expired, revoked, or malformed short-link ID
+   */
+  404: ErrorResponse
+}
+
+export type ShortLinkRedirectError =
+  ShortLinkRedirectErrors[keyof ShortLinkRedirectErrors]
+
+export type ShortLinkRedirectResponses = {
+  /**
+   * Raw mode (`?raw=1`): the object bytes, streamed from this host with the origin Content-Type (any media type — e.g. `image/png`, `video/mp4`) and `Content-Disposition: attachment`.
+   */
+  200: Blob | File
+}
+
+export type ShortLinkRedirectResponse =
+  ShortLinkRedirectResponses[keyof ShortLinkRedirectResponses]
