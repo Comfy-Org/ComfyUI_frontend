@@ -1579,17 +1579,24 @@ describe('AgentPanelRoot paywall telemetry', () => {
 describe('AgentPanelRoot Agent credit transition notice', () => {
   const NOTICE = 'agent-credit-transition-notice'
 
+  function observeAgentScopedFunds(scopedHasFunds: boolean | undefined): void {
+    paywallAgentScopedHasFunds.value = scopedHasFunds
+    if (scopedHasFunds === undefined) return
+    const identity = `${useCurrentUser().resolvedUserInfo.value?.id ?? 'anonymous'}:${useTeamWorkspaceStore().workspaceId ?? 'none'}`
+    useAgentPanelStore().observeAgentScopedFunds(identity, scopedHasFunds)
+  }
+
   beforeEach(() => {
     paywallHasFunds.value = true
     paywallAgentHasFunds.value = true
   })
 
   it('shows only after the Agent-scoped balance changes from available to exhausted', async () => {
-    paywallAgentScopedHasFunds.value = true
+    observeAgentScopedFunds(true)
     render(AgentPanelRoot, { global: { plugins: [i18n] } })
     await screen.findByRole('textbox')
 
-    paywallAgentScopedHasFunds.value = false
+    observeAgentScopedFunds(false)
 
     expect(await screen.findByTestId(NOTICE)).toHaveTextContent(
       i18n.global.t('agent.creditTransitionNotice')
@@ -1600,10 +1607,10 @@ describe('AgentPanelRoot Agent credit transition notice', () => {
   })
 
   it('reports one impression however often the panel remounts', async () => {
-    paywallAgentScopedHasFunds.value = true
+    observeAgentScopedFunds(true)
     const panel = render(AgentPanelRoot, { global: { plugins: [i18n] } })
     await screen.findByRole('textbox')
-    paywallAgentScopedHasFunds.value = false
+    observeAgentScopedFunds(false)
     await screen.findByTestId(NOTICE)
 
     panel.unmount()
@@ -1616,11 +1623,11 @@ describe('AgentPanelRoot Agent credit transition notice', () => {
   })
 
   it('reports an impression first shown without telemetry once telemetry is available', async () => {
-    paywallAgentScopedHasFunds.value = true
+    observeAgentScopedFunds(true)
     const panel = render(AgentPanelRoot, { global: { plugins: [i18n] } })
     await screen.findByRole('textbox')
     vi.mocked(useTelemetry).mockReturnValue(null)
-    paywallAgentScopedHasFunds.value = false
+    observeAgentScopedFunds(false)
     await screen.findByTestId(NOTICE)
     vi.mocked(useTelemetry).mockReturnValue(telemetry)
 
@@ -1634,12 +1641,12 @@ describe('AgentPanelRoot Agent credit transition notice', () => {
   })
 
   it('does not infer a transition when the first scoped-balance read is false', async () => {
-    paywallAgentScopedHasFunds.value = false
+    observeAgentScopedFunds(false)
     const panel = render(AgentPanelRoot, { global: { plugins: [i18n] } })
     await screen.findByRole('textbox')
-    paywallAgentScopedHasFunds.value = undefined
+    observeAgentScopedFunds(undefined)
     await nextTick()
-    paywallAgentScopedHasFunds.value = false
+    observeAgentScopedFunds(false)
     await nextTick()
     panel.unmount()
     render(AgentPanelRoot, { global: { plugins: [i18n] } })
@@ -1649,28 +1656,28 @@ describe('AgentPanelRoot Agent credit transition notice', () => {
   })
 
   it('preserves the last defined scoped balance across an omitted read and panel remount', async () => {
-    paywallAgentScopedHasFunds.value = true
+    observeAgentScopedFunds(true)
     const firstPanel = render(AgentPanelRoot, {
       global: { plugins: [i18n] }
     })
     await screen.findByRole('textbox')
     firstPanel.unmount()
 
-    paywallAgentScopedHasFunds.value = undefined
+    observeAgentScopedFunds(undefined)
     render(AgentPanelRoot, { global: { plugins: [i18n] } })
     await screen.findByRole('textbox')
-    paywallAgentScopedHasFunds.value = false
+    observeAgentScopedFunds(false)
 
     expect(await screen.findByTestId(NOTICE)).toBeInTheDocument()
   })
 
   it('defers an observed transition until Agent consent is ready', async () => {
     Object.assign(useAgentConsentStore(), { accepted: false })
-    paywallAgentScopedHasFunds.value = true
+    observeAgentScopedFunds(true)
     render(AgentPanelRoot, { global: { plugins: [i18n] } })
     await screen.findByRole('textbox')
 
-    paywallAgentScopedHasFunds.value = false
+    observeAgentScopedFunds(false)
     await nextTick()
     expect(screen.queryByTestId(NOTICE)).not.toBeInTheDocument()
 
@@ -1682,11 +1689,11 @@ describe('AgentPanelRoot Agent credit transition notice', () => {
     'withholds the notice while billing is $status',
     async ({ status }) => {
       paywallBilling.status = status
-      paywallAgentScopedHasFunds.value = true
+      observeAgentScopedFunds(true)
       render(AgentPanelRoot, { global: { plugins: [i18n] } })
       await screen.findByRole('textbox')
 
-      paywallAgentScopedHasFunds.value = false
+      observeAgentScopedFunds(false)
       await nextTick()
 
       expect(screen.queryByTestId(NOTICE)).not.toBeInTheDocument()
@@ -1695,11 +1702,11 @@ describe('AgentPanelRoot Agent credit transition notice', () => {
 
   it('defers the notice until the billing capability read settles', async () => {
     paywallCapabilities.isReady = false
-    paywallAgentScopedHasFunds.value = true
+    observeAgentScopedFunds(true)
     render(AgentPanelRoot, { global: { plugins: [i18n] } })
     await screen.findByRole('textbox')
 
-    paywallAgentScopedHasFunds.value = false
+    observeAgentScopedFunds(false)
     await nextTick()
     expect(screen.queryByTestId(NOTICE)).not.toBeInTheDocument()
 
@@ -1708,11 +1715,11 @@ describe('AgentPanelRoot Agent credit transition notice', () => {
   })
 
   it('yields to the exhaustion paywall when no funding remains, then shows the notice once workspace funding returns', async () => {
-    paywallAgentScopedHasFunds.value = true
+    observeAgentScopedFunds(true)
     render(AgentPanelRoot, { global: { plugins: [i18n] } })
     await screen.findByRole('textbox')
 
-    paywallAgentScopedHasFunds.value = false
+    observeAgentScopedFunds(false)
     paywallAgentHasFunds.value = false
     paywallHasFunds.value = false
 
@@ -1732,26 +1739,26 @@ describe('AgentPanelRoot Agent credit transition notice', () => {
     useCurrentUser().resolvedUserInfo = computed(() => ({
       id: accountId.value
     }))
-    paywallAgentScopedHasFunds.value = true
+    observeAgentScopedFunds(true)
     render(AgentPanelRoot, { global: { plugins: [i18n] } })
     await screen.findByRole('textbox')
 
     accountId.value = 'account-b'
     await nextTick()
-    paywallAgentScopedHasFunds.value = false
+    observeAgentScopedFunds(false)
 
     expect(await screen.findByTestId(NOTICE)).toBeInTheDocument()
   })
 
   it('reports a new impression when the scoped balance refills and runs out again', async () => {
-    paywallAgentScopedHasFunds.value = true
+    observeAgentScopedFunds(true)
     render(AgentPanelRoot, { global: { plugins: [i18n] } })
     await screen.findByRole('textbox')
-    paywallAgentScopedHasFunds.value = false
+    observeAgentScopedFunds(false)
     await screen.findByTestId(NOTICE)
-    paywallAgentScopedHasFunds.value = true
+    observeAgentScopedFunds(true)
     await nextTick()
-    paywallAgentScopedHasFunds.value = false
+    observeAgentScopedFunds(false)
     await screen.findByTestId(NOTICE)
 
     expect(telemetry.trackAgentCreditTransitionNotice.mock.calls).toEqual([
@@ -1761,10 +1768,10 @@ describe('AgentPanelRoot Agent credit transition notice', () => {
   })
 
   it('shows again for a dismissed notice once the scoped balance refills and runs out again', async () => {
-    paywallAgentScopedHasFunds.value = true
+    observeAgentScopedFunds(true)
     render(AgentPanelRoot, { global: { plugins: [i18n] } })
     await screen.findByRole('textbox')
-    paywallAgentScopedHasFunds.value = false
+    observeAgentScopedFunds(false)
     const notice = await screen.findByTestId(NOTICE)
 
     await userEvent.click(
@@ -1774,9 +1781,9 @@ describe('AgentPanelRoot Agent credit transition notice', () => {
     )
     expect(screen.queryByTestId(NOTICE)).not.toBeInTheDocument()
 
-    paywallAgentScopedHasFunds.value = true
+    observeAgentScopedFunds(true)
     await nextTick()
-    paywallAgentScopedHasFunds.value = false
+    observeAgentScopedFunds(false)
 
     expect(await screen.findByTestId(NOTICE)).toBeInTheDocument()
     expect(telemetry.trackAgentCreditTransitionNotice.mock.calls).toEqual([

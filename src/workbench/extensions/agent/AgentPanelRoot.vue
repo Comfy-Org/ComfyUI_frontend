@@ -328,15 +328,6 @@ watch(billingIdentity, () => {
   agentPanelStore.reportedExhaustionIdentity = null
 })
 
-watch(
-  [billingIdentity, agentScopedHasFunds],
-  ([identity, scopedHasFunds]) => {
-    if (scopedHasFunds === undefined) return
-    agentPanelStore.observeAgentScopedFunds(identity, scopedHasFunds)
-  },
-  { immediate: true }
-)
-
 const showCreditTransitionNotice = computed(
   () =>
     isCreditTransitionNoticeShown(
