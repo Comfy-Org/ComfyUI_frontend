@@ -45,6 +45,7 @@
     "lint:fix:ci": "pnpm lint:fix --cache-strategy content",
     "lint:fix": "pnpm oxlint --fix && eslint --cache --concurrency auto --fix",
     "lint:no-cache": "pnpm exec stylelint '{apps,packages,src}/**/*.{css,vue}' && pnpm oxlint && eslint --concurrency auto",
+    "lint:server-facts": "tsx scripts/server-fact-gate.ts",
     "lint:unstaged:fix": "tsx scripts/lint-unstaged.ts --fix",
     "lint:unstaged": "tsx scripts/lint-unstaged.ts",
     "lint:ci": "pnpm lint --cache-strategy content",
