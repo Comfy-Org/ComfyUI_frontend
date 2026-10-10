@@ -2,7 +2,7 @@
 import { translationsFor } from '@/i18n/translations'
 import { ChevronLeft } from '@lucide/vue'
 import { useMediaQuery } from '@vueuse/core'
-import { provide, useSlots, useTemplateRef } from 'vue'
+import { computed, provide, useSlots, useTemplateRef } from 'vue'
 
 import { cn } from '@comfyorg/tailwind-utils'
 
@@ -41,6 +41,13 @@ const {
   locale?: Locale
 }>()
 const { t } = translationsFor(locale)
+const backLink = computed(
+  () =>
+    back ?? {
+      href: getRoutes(locale).hubApps,
+      label: t('cinematic.backToApps')
+    }
+)
 
 const slots = useSlots()
 const wide = useMediaQuery('(min-width: 768px)')
@@ -86,8 +93,8 @@ const { frame } = zoom
           </a>
           <span class="h-4 w-px bg-transparency-white-t20" aria-hidden="true" />
           <a
-            :href="back?.href ?? getRoutes(locale).hubApps"
-            :aria-label="back?.label ?? t('cinematic.backToApps')"
+            :href="backLink.href"
+            :aria-label="backLink.label"
             data-testid="apps-back"
             class="flex size-9 shrink-0 items-center justify-center rounded-full text-primary-warm-gray transition hover:bg-transparency-white-t8 hover:text-primary-warm-white focus-visible:ring-3 focus-visible:ring-primary-comfy-yellow/50 focus-visible:outline-none"
           >
