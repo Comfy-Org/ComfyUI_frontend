@@ -33,7 +33,7 @@ jobs:
       - name: Check pendingServerFact ticket shape
         run: pnpm check:pending-server-facts --offline
 
-  # PR heads can rewrite the checker, so only default-branch code receives the secret.
+  # PR heads can rewrite the checker, so only default-branch code receives the Linear app secrets.
   expiry:
     if: github.event_name != 'pull_request'
     runs-on: ubuntu-latest
@@ -50,5 +50,6 @@ jobs:
 
       - name: Check pendingServerFact ticket expiry
         env:
-          LINEAR_API_KEY: ${{ secrets.LINEAR_API_KEY }}
+          LINEAR_CLIENT_ID: ${{ secrets.LINEAR_CLIENT_ID }}
+          LINEAR_CLIENT_SECRET: ${{ secrets.LINEAR_CLIENT_SECRET }}
         run: pnpm check:pending-server-facts

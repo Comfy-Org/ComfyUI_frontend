@@ -1,15 +1,21 @@
 import { describe, expect, it } from 'vitest'
 
 import {
+  ISSUE_STATES_QUERY,
+  LINEAR_GRAPHQL_URL,
+  LINEAR_TOKEN_URL,
   expiredTickets,
   extractTickets,
+  fetchIssueStates,
   indexIssueStates,
   preflight
 } from './pendingServerFacts'
 
-const keyMustNotBeRead = () => {
-  throw new Error('LINEAR_API_KEY was read')
+const credentialsMustNotBeRead = () => {
+  throw new Error('Linear credentials were read')
 }
+
+const credentials = { clientId: 'app-id', clientSecret: 'shh-client-secret' }
 
 describe('preflight', () => {
   it('passes well-formed tickets offline without reading the key', () => {
@@ -18,7 +24,7 @@ describe('preflight', () => {
         mode: 'offline',
         tickets: ['BE-1', 'BE-2'],
         nonLiteral: [],
-        readApiKey: keyMustNotBeRead
+        readCredentials: credentialsMustNotBeRead
       })
     ).toEqual({
       kind: 'pass',
@@ -35,7 +41,7 @@ describe('preflight', () => {
           mode,
           tickets: ['BE-1'],
           nonLiteral: ['src/a.ts:3'],
-          readApiKey: () => 'key'
+          readCredentials: () => credentials
         })
       ).toMatchObject({
         kind: 'fail',
@@ -44,26 +50,186 @@ describe('preflight', () => {
     }
   )
 
-  it('fails closed online when tickets exist and the key is missing', () => {
+  it.for([
+    [{}, 'both are missing'],
+    [{ clientId: 'app-id' }, 'the secret is missing'],
+    [{ clientSecret: 'shh-client-secret' }, 'the id is missing']
+  ] as const)(
+    'fails closed online naming both secrets when %o (%s)',
+    ([partial]) => {
+      expect(
+        preflight({
+          mode: 'online',
+          tickets: ['BE-1'],
+          nonLiteral: [],
+          readCredentials: () => partial
+        })
+      ).toMatchObject({
+        kind: 'fail',
+        lines: expect.arrayContaining([
+          expect.stringMatching(/LINEAR_CLIENT_ID and LINEAR_CLIENT_SECRET/)
+        ])
+      })
+    }
+  )
+
+  it('passes without credentials when there are no call sites', () => {
     expect(
       preflight({
         mode: 'online',
-        tickets: ['BE-1'],
+        tickets: [],
         nonLiteral: [],
-        readApiKey: () => undefined
+        readCredentials: credentialsMustNotBeRead
       })
-    ).toMatchObject({ kind: 'fail' })
+    ).toMatchObject({ kind: 'pass' })
   })
 
-  it('queries Linear online with the key', () => {
+  it('queries Linear online with the credentials', () => {
     expect(
       preflight({
         mode: 'online',
         tickets: ['BE-1'],
         nonLiteral: [],
-        readApiKey: () => 'key'
+        readCredentials: () => credentials
       })
-    ).toEqual({ kind: 'query', apiKey: 'key' })
+    ).toEqual({ kind: 'query', credentials })
+  })
+})
+
+type SentRequest = { url: string; init: RequestInit }
+
+function fakeLinear(routes: Partial<Record<string, () => Response>>) {
+  const sent: SentRequest[] = []
+  const fetch = async (url: string, init: RequestInit) => {
+    sent.push({ url, init })
+    const respond = routes[url]
+    if (!respond) throw new Error(`Unexpected request to ${url}`)
+    return respond()
+  }
+  return { fetch, sent }
+}
+
+const tokenGranted = () =>
+  Response.json({
+    access_token: 'lin_oauth_token',
+    token_type: 'Bearer',
+    expires_in: 2591999,
+    scope: 'read'
+  })
+
+describe('fetchIssueStates', () => {
+  it('exchanges the client credentials, then queries issues with the bearer token', async () => {
+    const started = { type: 'started', name: 'In Progress' }
+    const linear = fakeLinear({
+      [LINEAR_TOKEN_URL]: tokenGranted,
+      [LINEAR_GRAPHQL_URL]: () =>
+        Response.json({
+          data: { issues: { nodes: [{ identifier: 'BE-7', state: started }] } }
+        })
+    })
+
+    const result = await fetchIssueStates({
+      credentials,
+      tickets: ['BE-7', 'BE-19904'],
+      fetch: linear.fetch
+    })
+
+    expect(result).toEqual({
+      ok: true,
+      states: { 'BE-7': started, 'BE-19904': null }
+    })
+    expect(linear.sent).toEqual([
+      {
+        url: LINEAR_TOKEN_URL,
+        init: {
+          method: 'POST',
+          headers: {
+            Authorization: `Basic ${btoa('app-id:shh-client-secret')}`,
+            'Content-Type': 'application/x-www-form-urlencoded'
+          },
+          body: 'grant_type=client_credentials&scope=read'
+        }
+      },
+      {
+        url: LINEAR_GRAPHQL_URL,
+        init: {
+          method: 'POST',
+          headers: {
+            Authorization: 'Bearer lin_oauth_token',
+            'Content-Type': 'application/json'
+          },
+          body: JSON.stringify({
+            query: ISSUE_STATES_QUERY,
+            variables: { numbers: [7, 19904] }
+          })
+        }
+      }
+    ])
+  })
+
+  it('fails with the status when the token exchange is refused, without leaking the secret', async () => {
+    const linear = fakeLinear({
+      [LINEAR_TOKEN_URL]: () =>
+        Response.json(
+          {
+            error: 'invalid_client',
+            echoed: `shh-client-secret ${btoa('app-id:shh-client-secret')}`
+          },
+          { status: 401 }
+        )
+    })
+
+    const result = await fetchIssueStates({
+      credentials,
+      tickets: ['BE-7'],
+      fetch: linear.fetch
+    })
+
+    expect(result).toMatchObject({
+      ok: false,
+      reason: expect.stringMatching(/responded 401: .*invalid_client/)
+    })
+    expect(JSON.stringify(result)).not.toContain('shh-client-secret')
+    expect(JSON.stringify(result)).not.toContain(
+      btoa('app-id:shh-client-secret')
+    )
+    expect(linear.sent.map(({ url }) => url)).toEqual([LINEAR_TOKEN_URL])
+  })
+
+  it('fails without echoing the token when the token response has an unexpected shape', async () => {
+    const linear = fakeLinear({
+      [LINEAR_TOKEN_URL]: () =>
+        Response.json({ access_token: 'lin_oauth_token' })
+    })
+
+    const result = await fetchIssueStates({
+      credentials,
+      tickets: ['BE-7'],
+      fetch: linear.fetch
+    })
+
+    expect(result).toMatchObject({ ok: false })
+    expect(JSON.stringify(result)).not.toContain('lin_oauth_token')
+  })
+
+  it('fails when the issues response does not match the query shape', async () => {
+    const linear = fakeLinear({
+      [LINEAR_TOKEN_URL]: tokenGranted,
+      [LINEAR_GRAPHQL_URL]: () =>
+        Response.json({ errors: [{ message: 'Cannot query field' }] })
+    })
+
+    const result = await fetchIssueStates({
+      credentials,
+      tickets: ['BE-7'],
+      fetch: linear.fetch
+    })
+
+    expect(result).toMatchObject({
+      ok: false,
+      reason: expect.stringMatching(/Linear issues query responded 200/)
+    })
+    expect(JSON.stringify(result)).not.toContain('lin_oauth_token')
   })
 })
 

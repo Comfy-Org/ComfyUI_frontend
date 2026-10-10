@@ -1,13 +1,11 @@
 import { execFileSync } from 'node:child_process'
 import { readFileSync } from 'node:fs'
-import { z } from 'zod'
 
-import type { CheckMode, IssueNode, IssueState } from './pendingServerFacts'
+import type { CheckMode } from './pendingServerFacts'
 import {
-  ISSUE_STATES_QUERY,
   expiredTickets,
   extractTickets,
-  indexIssueStates,
+  fetchIssueStates,
   preflight
 } from './pendingServerFacts'
 
@@ -19,59 +17,12 @@ const SOURCE_PATHSPECS = [
 ]
 const TEST_FILE = /\.(test|spec)\.ts$|\/__tests__\//
 
-const issuesResponseSchema = z.object({
-  data: z.object({
-    issues: z.object({
-      nodes: z.array(
-        z.object({
-          identifier: z.string(),
-          state: z.object({ type: z.string(), name: z.string() })
-        })
-      )
-    })
-  })
-})
-
-type IssueStatesFetch =
-  | { ok: true; states: Record<string, IssueState | null> }
-  | { ok: false; reason: string }
-
 function listSourceFiles(): string[] {
   return execFileSync('git', ['ls-files', '-z', '--', ...SOURCE_PATHSPECS], {
     encoding: 'utf8'
   })
     .split('\0')
     .filter((file) => file && !TEST_FILE.test(file))
-}
-
-async function fetchIssueStates(
-  apiKey: string,
-  tickets: string[]
-): Promise<IssueStatesFetch> {
-  const numbers = tickets.map((ticket) => Number(ticket.slice('BE-'.length)))
-  let response: Response
-  try {
-    response = await fetch('https://api.linear.app/graphql', {
-      method: 'POST',
-      headers: { Authorization: apiKey, 'Content-Type': 'application/json' },
-      body: JSON.stringify({
-        query: ISSUE_STATES_QUERY,
-        variables: { numbers }
-      })
-    })
-  } catch (cause) {
-    return { ok: false, reason: `Linear request failed: ${String(cause)}` }
-  }
-  const body: unknown = await response.json().catch(() => undefined)
-  const parsed = issuesResponseSchema.safeParse(body)
-  if (!response.ok || !parsed.success) {
-    return {
-      ok: false,
-      reason: `Linear responded ${response.status}: ${JSON.stringify(body)}`
-    }
-  }
-  const nodes: IssueNode[] = parsed.data.data.issues.nodes
-  return { ok: true, states: indexIssueStates(tickets, nodes) }
 }
 
 function fail(lines: string[]): never {
@@ -101,7 +52,10 @@ const outcome = preflight({
   mode,
   tickets,
   nonLiteral,
-  readApiKey: () => process.env.LINEAR_API_KEY
+  readCredentials: () => ({
+    clientId: process.env.LINEAR_CLIENT_ID,
+    clientSecret: process.env.LINEAR_CLIENT_SECRET
+  })
 })
 if (outcome.kind === 'fail') fail(outcome.lines)
 if (outcome.kind === 'pass') {
@@ -109,7 +63,11 @@ if (outcome.kind === 'pass') {
   process.exit(0)
 }
 
-const fetched = await fetchIssueStates(outcome.apiKey, tickets)
+const fetched = await fetchIssueStates({
+  credentials: outcome.credentials,
+  tickets,
+  fetch
+})
 if (!fetched.ok) fail([fetched.reason])
 
 const { closed, unknown } = expiredTickets(fetched.states)
