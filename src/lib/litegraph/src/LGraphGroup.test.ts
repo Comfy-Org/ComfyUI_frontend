@@ -1,3 +1,4 @@
+import { reactive } from 'vue'
 import { afterEach, describe, expect, vi } from 'vitest'
 
 import type { LGraphCanvas } from '@/lib/litegraph/src/litegraph'
@@ -463,5 +464,158 @@ describe('group layout in layoutStore', () => {
     group.pos = [75, 80]
 
     expect(groups.value.get(group.id)?.position).toEqual({ x: 75, y: 80 })
+  })
+})
+
+describe('geometry an extension cannot clobber', () => {
+  test('a JSON round-trip written back onto a detached group keeps its geometry working', () => {
+    const graph = new LGraph()
+    const group = new LGraphGroup('group', toGroupId(810))
+    group.pos = [100, 100]
+    group.size = [300, 200]
+
+    Object.assign(group, JSON.parse(JSON.stringify(group)))
+    graph.add(group)
+    group.pos = [110, 120]
+
+    expect([...group.boundingRect]).toEqual([110, 120, 300, 200])
+    expect(layoutStore.getGroupLayout(graph.rootGraph.id, group.id)).toEqual({
+      id: group.id,
+      position: { x: 110, y: 120 },
+      size: { width: 300, height: 200 }
+    })
+  })
+
+  test('a JSON round-trip written back keeps tracking and moving its children', () => {
+    const graph = new LGraph()
+    const group = new LGraphGroup('group', toGroupId(819))
+    group.pos = [100, 100]
+    group.size = [300, 200]
+    graph.add(group)
+    const node = new LGraphNode('inside')
+    node.pos = [150, 150]
+    node.size = [20, 20]
+    graph.add(node)
+    node.updateArea()
+
+    const copy: Record<string, unknown> = JSON.parse(JSON.stringify(group))
+    delete copy.graph
+    Object.assign(group, copy)
+    group.recomputeInsideNodes()
+    group.move(10, 20)
+
+    expect(group.children.has(node)).toBe(true)
+    expect(group.nodes).toEqual([node])
+    expect([...group.pos]).toEqual([110, 120])
+    expect([...node.pos]).toEqual([160, 170])
+  })
+
+  test('a non-collection written over _children or _nodes is ignored', () => {
+    const graph = new LGraph()
+    const group = new LGraphGroup('group', toGroupId(820))
+    graph.add(group)
+    const children = group.children
+    const nodes = group.nodes
+
+    expect(() =>
+      Object.assign(group, { _children: [], _nodes: {} })
+    ).not.toThrow()
+
+    expect(group.children).toBe(children)
+    expect(group.nodes).toBe(nodes)
+  })
+
+  test.for([
+    ['bounds', [1, 2, 300, 400], [1, 2, 300, 400]],
+    ['_bounding', [1, 2, 300, 400], [1, 2, 300, 400]],
+    ['_pos', [1, 2], [1, 2, 140, 80]],
+    ['_size', [300, 400], [10, 10, 300, 400]]
+  ] as const)(
+    'assigning a plain array to %s updates the buffer instead of replacing it',
+    ([property, assigned, expected], { expect }) => {
+      const graph = new LGraph()
+      const group = new LGraphGroup('group', toGroupId(811))
+      graph.add(group)
+
+      Object.assign(group, { [property]: assigned })
+
+      expect([...group.boundingRect]).toEqual(expected)
+      expect(group.serialize().bounding).toEqual(expected)
+    }
+  )
+
+  test.for([
+    ['null', 'bounds', null],
+    ['a string', '_bounding', 'nonsense'],
+    ['an empty object', '_pos', {}],
+    ['a null coordinate', '_bounding', [1, null, 300, 400]],
+    ['a symbol coordinate', '_bounding', [1, 2, Symbol('w'), 400]],
+    ['numeric strings', '_bounding', ['1', '2', '300', '400']],
+    ['a boolean coordinate', '_bounding', [true, 2, 300, 400]],
+    ['a NaN coordinate', '_size', [NaN, 400]],
+    ['an infinite coordinate', 'bounds', [1, 2, Infinity, 400]],
+    ['too few coordinates', '_bounding', [1, 2]]
+  ] as const)(
+    'assigning %s to %s leaves the geometry untouched',
+    ([, property, assigned], { expect }) => {
+      vi.spyOn(console, 'warn').mockImplementation(() => {})
+      const graph = new LGraph()
+      const group = new LGraphGroup('group', toGroupId(812))
+      graph.add(group)
+
+      expect(() => Object.assign(group, { [property]: assigned })).not.toThrow()
+
+      expect([...group.boundingRect]).toEqual([10, 10, 140, 80])
+    }
+  )
+
+  test.for([
+    'bounds',
+    '_pos',
+    '_size',
+    '_bounding',
+    '_nodes',
+    '_children'
+  ] as const)(
+    '%s keeps the descriptor shape the ecosystem already sees',
+    (property, { expect }) => {
+      const group = new LGraphGroup('group', toGroupId(813))
+
+      expect(Object.getOwnPropertyDescriptor(group, property)).toMatchObject({
+        enumerable: true,
+        configurable: true
+      })
+      expect(Object.keys(group)).toContain(property)
+    }
+  )
+
+  test('a foreign assignment names itself in the console', () => {
+    const warn = vi.spyOn(console, 'warn').mockImplementation(() => {})
+    const graph = new LGraph()
+    const group = new LGraphGroup('group', toGroupId(816))
+    graph.add(group)
+
+    Object.assign(group, { bounds: { 0: 1, 1: 2, 2: 300, 3: 400 } })
+    Object.assign(group, { _bounding: { 0: 5, 1: 6, 2: 70, 3: 80 } })
+
+    expect(warn).toHaveBeenCalledTimes(1)
+    expect(warn.mock.calls[0][0]).toContain('bounds')
+  })
+
+  test('geometry still reads through a reactive proxy', () => {
+    const graph = new LGraph()
+    const group = new LGraphGroup('group', toGroupId(814))
+    graph.add(group)
+    const reactiveGroup = reactive(group)
+
+    group.pos = [60, 70]
+
+    expect([...reactiveGroup.boundingRect]).toEqual([60, 70, 140, 80])
+    expect([...reactiveGroup.pos]).toEqual([60, 70])
+    expect([...reactiveGroup._bounding]).toEqual([60, 70, 140, 80])
+
+    Object.assign(reactiveGroup, { _bounding: [1, 2, 300, 400] })
+
+    expect([...group.boundingRect]).toEqual([1, 2, 300, 400])
   })
 })

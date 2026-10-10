@@ -125,6 +125,69 @@ export class LGraphGroup implements Positionable, IPinnable, IColorable {
     this.title = title || 'Group'
     const { pale_blue } = LGraphCanvas.node_colors
     this.color = pale_blue.groupcolor
+
+    let reported = false
+    const reportForeignShape = (key: string) => {
+      if (reported) return
+      reported = true
+      console.warn(
+        `[LGraphGroup] ${key} was assigned a non-array value; kept the existing buffer`
+      )
+    }
+
+    const copyAssignmentsIntoBuffer = (
+      key: 'bounds' | '_pos' | '_size' | '_bounding',
+      arity: number,
+      write: (coords: number[]) => void
+    ) => {
+      const buffer = this[key]
+      Object.defineProperty(this, key, {
+        get: () => buffer,
+        set: (value: ArrayLike<unknown> | null | undefined) => {
+          if (!Array.isArray(value) && !ArrayBuffer.isView(value))
+            reportForeignShape(key)
+
+          const coords: number[] = []
+          for (let index = 0; index < arity; index++) {
+            const coord = value?.[index]
+            if (typeof coord !== 'number' || !Number.isFinite(coord)) return
+            coords.push(coord)
+          }
+          write(coords)
+        },
+        enumerable: true,
+        configurable: true
+      })
+    }
+
+    const writeRect = (coords: number[]) =>
+      this.setBounds(coords[0], coords[1], coords[2], coords[3])
+    copyAssignmentsIntoBuffer('bounds', 4, writeRect)
+    copyAssignmentsIntoBuffer('_bounding', 4, writeRect)
+    copyAssignmentsIntoBuffer('_pos', 2, (coords) => {
+      this.pos = [coords[0], coords[1]]
+    })
+    copyAssignmentsIntoBuffer('_size', 2, (coords) => {
+      this.setBounds(this._pos[0], this._pos[1], coords[0], coords[1])
+    })
+
+    const keepCollection = (
+      key: '_nodes' | '_children',
+      accepts: (value: unknown) => boolean
+    ) => {
+      let current = this[key]
+      Object.defineProperty(this, key, {
+        get: () => current,
+        set: (value: unknown) => {
+          if (accepts(value)) current = value as typeof current
+        },
+        enumerable: true,
+        configurable: true
+      })
+    }
+
+    keepCollection('_nodes', Array.isArray)
+    keepCollection('_children', (value) => value instanceof Set)
   }
 
   /** @inheritdoc {@link IColorable.setColorOption} */
