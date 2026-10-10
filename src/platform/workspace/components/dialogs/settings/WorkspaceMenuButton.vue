@@ -2,7 +2,7 @@
   <Menu :items="menuItems">
     <template #trigger>
       <Button
-        v-tooltip="{ value: $t('g.moreOptions'), showDelay: 300 }"
+        :tooltip="$t('g.moreOptions')"
         variant="muted-textonly"
         size="icon-lg"
         :aria-label="$t('g.moreOptions')"

@@ -1,7 +1,9 @@
 <template>
-  <router-view />
-  <GlobalDialog />
-  <SessionReconnecting v-if="isCloud" />
+  <TooltipProvider>
+    <router-view />
+    <GlobalDialog />
+    <SessionReconnecting v-if="isCloud" />
+  </TooltipProvider>
   <div
     v-show="isLoading"
     ref="loadingOverlay"
@@ -24,6 +26,7 @@ import {
 import GlobalDialog from '@/components/dialog/GlobalDialog.vue'
 import { MODAL_Z_BASE, MODAL_Z_KEY } from '@/components/dialog/vRekaZIndex'
 import config from '@/config'
+import TooltipProvider from '@/components/ui/tooltip/TooltipProvider.vue'
 import SessionReconnecting from '@/platform/auth/session/components/SessionReconnecting.vue'
 import { isCloud, isDesktop } from '@/platform/distribution/types'
 import {

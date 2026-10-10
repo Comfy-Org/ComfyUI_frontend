@@ -2,17 +2,11 @@ import userEvent from '@testing-library/user-event'
 import { render, screen } from '@testing-library/vue'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 
-import * as tooltipConfig from '@/composables/useTooltipConfig'
 import { i18n } from '@/i18n'
 import { useSettingStore } from '@/platform/settings/settingStore'
 import { useSidebarTabStore } from '@/stores/workspace/sidebarTabStore'
 
 import QueueOverlayHeader from './QueueOverlayHeader.vue'
-
-const tooltipDirectiveStub = {
-  mounted: vi.fn(),
-  updated: vi.fn()
-}
 
 const renderHeader = (props = {}) =>
   render(QueueOverlayHeader, {
@@ -22,8 +16,7 @@ const renderHeader = (props = {}) =>
       ...props
     },
     global: {
-      plugins: [i18n],
-      directives: { tooltip: tooltipDirectiveStub }
+      plugins: [i18n]
     }
   })
 
@@ -68,7 +61,6 @@ describe('QueueOverlayHeader', () => {
 
   it('emits clear history from the menu', async () => {
     const user = userEvent.setup()
-    const spy = vi.spyOn(tooltipConfig, 'buildTooltipConfig')
     const clearHistorySpy = vi.fn()
 
     renderHeader({ onClearHistory: clearHistorySpy })
@@ -76,7 +68,6 @@ describe('QueueOverlayHeader', () => {
     expect(
       screen.getByRole('button', { name: 'More options' })
     ).toBeInTheDocument()
-    expect(spy).toHaveBeenCalledWith('More')
 
     await user.click(screen.getByRole('button', { name: 'More options' }))
     await user.click(
