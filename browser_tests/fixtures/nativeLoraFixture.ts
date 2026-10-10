@@ -54,6 +54,19 @@ class NativeLoraHelper {
     }
   }
 
+  async promoteHostRow(title: string, number: number) {
+    for (const field of ['lora_name', 'strength', 'enabled']) {
+      const label = `LoRA #${number} ${field}`
+      const row = this.comfyPage.vueNodes.getWidgetRowByLabel(title, label)
+      await this.comfyPage.contextMenu.openFor(
+        row.getByText(label, { exact: true })
+      )
+      await this.comfyPage.contextMenu.clickMenuItemExact(
+        `Promote Widget: ${label}`
+      )
+    }
+  }
+
   async expectNames(names: string[]) {
     const pickers = this.node.getByRole('group', { name: /^LoRA #\d+$/ })
     await expect(pickers).toHaveCount(names.length)
@@ -63,7 +76,11 @@ class NativeLoraHelper {
   }
 
   async execute(expected: string) {
-    const queued = this.comfyPage.page.waitForResponse('**/api/prompt')
+    const queued = this.comfyPage.page.waitForResponse(
+      (response) =>
+        response.request().method() === 'POST' &&
+        new URL(response.url()).pathname === '/api/prompt'
+    )
     await this.comfyPage.command.executeCommand('Comfy.QueuePrompt')
     const response = await queued
     expect(response.status(), await response.text()).toBe(200)

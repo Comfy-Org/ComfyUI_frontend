@@ -646,7 +646,7 @@ test.describe(
         })
 
         test.describe('two-level promotion', () => {
-          test.beforeEach(async ({ comfyPage }) => {
+          test.beforeEach(async ({ comfyPage, lora }) => {
             const host =
               await comfyPage.vueNodes.getFixtureByTitle('New Subgraph')
             await comfyPage.contextMenu.openForVueNode(host.header)
@@ -658,18 +658,7 @@ test.describe(
             await comfyPage.vueNodes.enterSubgraph()
             await comfyPage.command.executeCommand('Comfy.Canvas.FitView')
             await comfyPage.canvasOps.waitForViewToSettle()
-            for (const field of ['lora_name', 'strength', 'enabled']) {
-              const row = comfyPage.vueNodes.getWidgetRowByLabel(
-                'New Subgraph',
-                `LoRA #2 ${field}`
-              )
-              await comfyPage.contextMenu.openFor(
-                row.getByText(`LoRA #2 ${field}`, { exact: true })
-              )
-              await comfyPage.contextMenu.clickMenuItemExact(
-                `Promote Widget: LoRA #2 ${field}`
-              )
-            }
+            await lora.promoteHostRow('New Subgraph', 2)
             await comfyPage.page
               .getByTestId(TestIds.breadcrumb.item('root'))
               .click()
@@ -840,7 +829,11 @@ test.describe(
       ).toHaveCount(21)
       const add = lora.node.getByRole('button', { name: 'Add LoRA' })
       await expect(add).toBeDisabled()
-      const queued = comfyPage.page.waitForResponse('**/api/prompt')
+      const queued = comfyPage.page.waitForResponse(
+        (response) =>
+          response.request().method() === 'POST' &&
+          new URL(response.url()).pathname === '/api/prompt'
+      )
       await comfyPage.command.executeCommand('Comfy.QueuePrompt')
       const response = await queued
       expect(response.status()).toBe(400)

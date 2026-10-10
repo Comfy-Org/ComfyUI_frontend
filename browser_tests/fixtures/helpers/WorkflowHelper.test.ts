@@ -1,5 +1,5 @@
 import { fromPartial } from '@total-typescript/shoehorn'
-import { afterEach, describe, expect, it, vi } from 'vitest'
+import { afterEach, assert, describe, expect, it, vi } from 'vitest'
 
 import type { ComfyApp } from '@/scripts/app'
 import { hashPath } from '@/platform/workflow/persistence/base/hashUtil'
@@ -14,12 +14,9 @@ const otherPayloadKey = `Comfy.Workflow.Draft.v2:personal:${hashPath('workflows/
 
 function captureDraftReadiness() {
   const expected = zComfyWorkflow.parse(nativeWorkflow)
-  expected.nodes[0].widgets_values = [
-    1,
-    'native-lora-e2e/A.safetensors',
-    1,
-    false
-  ]
+  const lora = expected.nodes.find((node) => node.type === 'LoadLoraModel')
+  assert.exists(lora)
+  lora.widgets_values = [1, 'native-lora-e2e/A.safetensors', 1, false]
   vi.stubGlobal(
     'app',
     fromPartial<ComfyApp>({
@@ -57,12 +54,9 @@ describe('workflow draft readiness', () => {
   it('does not accept a newer draft that still contains the old toggle value', () => {
     const { expected, isReady } = captureDraftReadiness()
     const stale = structuredClone(expected)
-    stale.nodes[0].widgets_values = [
-      1,
-      'native-lora-e2e/A.safetensors',
-      1,
-      true
-    ]
+    const lora = stale.nodes.find((node) => node.type === 'LoadLoraModel')
+    assert.exists(lora)
+    lora.widgets_values = [1, 'native-lora-e2e/A.safetensors', 1, true]
     localStorage.setItem(
       payloadKey,
       JSON.stringify({ data: JSON.stringify(stale), updatedAt: 1000 })
