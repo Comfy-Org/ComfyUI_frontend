@@ -1,6 +1,6 @@
 import { useEventListener, useResizeObserver } from '@vueuse/core'
 import _ from 'es-toolkit/compat'
-import { reactive, unref, shallowRef } from 'vue'
+import { reactive, shallowRef, unref } from 'vue'
 
 import { useToast } from '@/components/ui/toast/toastStore'
 import { partnerRunGateBlocksAutoQueue } from '@/composables/billing/usePartnerNodesRunGate'
@@ -354,31 +354,24 @@ export class ComfyApp {
   )
   nodePreviewImages: Partial<Record<string, string[]>>
 
+  /** Shallow: the graph is observed for readiness, never deep-proxied. */
   private readonly rootGraphRef = shallowRef<LGraph | undefined>(undefined)
-
-  private get rootGraphInternal(): LGraph | undefined {
-    return this.rootGraphRef.value
-  }
-
-  private set rootGraphInternal(graph: LGraph | undefined) {
-    this.rootGraphRef.value = graph
-  }
 
   // TODO: Migrate internal usage to the
   /** @deprecated Use {@link rootGraph} instead */
   get graph() {
-    return this.rootGraphInternal!
+    return this.rootGraphRef.value!
   }
 
   get rootGraph(): LGraph {
-    if (!this.rootGraphInternal) {
+    if (!this.rootGraphRef.value) {
       console.error('ComfyApp graph accessed before initialization')
     }
-    return this.rootGraphInternal!
+    return this.rootGraphRef.value!
   }
 
   get rootGraphOrUndefined(): LGraph | undefined {
-    return this.rootGraphInternal
+    return this.rootGraphRef.value
   }
 
   /**
@@ -386,7 +379,7 @@ export class ComfyApp {
    * triggering error logs, and reactive, so it can be watched.
    */
   get isGraphReady(): boolean {
-    return !!this.rootGraphInternal
+    return !!this.rootGraphRef.value
   }
 
   private canvasInternal: LGraphCanvas | undefined
@@ -1041,7 +1034,7 @@ export class ComfyApp {
 
     this.addAfterConfigureHandler(graph)
 
-    this.rootGraphInternal = graph
+    this.rootGraphRef.value = graph
     installNodeAddedTelemetry(graph)
     const interactionMode = createCanvasInteractionMode()
     this.canvas = new LGraphCanvas(canvasEl, graph, { interactionMode })

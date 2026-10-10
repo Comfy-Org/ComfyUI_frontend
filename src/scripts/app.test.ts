@@ -1,5 +1,6 @@
 import { fromAny, fromPartial } from '@total-typescript/shoehorn'
 import { ComfyApp, app as singletonApp } from './app'
+import { getRootGraph, setRootGraph } from './__tests__/appTestUtils'
 import { useToast } from '@/components/ui/toast/toastStore'
 import { useTeamWorkspaceStore } from '@/platform/workspace/stores/teamWorkspaceStore'
 import { useSubgraphNavigationStore } from '@/stores/subgraphNavigationStore'
@@ -335,7 +336,7 @@ describe('ComfyApp', () => {
   describe('loadGraphData', () => {
     function prepareResourceReload() {
       app.canvasElRef.value = document.createElement('canvas')
-      Reflect.set(app, 'rootGraphInternal', new LGraph())
+      setRootGraph(app, new LGraph())
       const store = useExecutionErrorStore()
       const graphId = '11111111-1111-4111-8111-111111111111'
       store.setActiveGraph(graphId)
@@ -461,7 +462,7 @@ describe('ComfyApp', () => {
 
     it('offers to migrate legacy reroutes and dismisses the offer once migrated', async () => {
       app.canvasElRef.value = document.createElement('canvas')
-      Reflect.set(app, 'rootGraphInternal', new LGraph())
+      setRootGraph(app, new LGraph())
       const legacyReroute = {
         ...createWorkflowGraphData(),
         nodes: [
@@ -500,7 +501,7 @@ describe('ComfyApp', () => {
 
     it('forwards clean and navigation intent to workflow navigation', async () => {
       app.canvasElRef.value = document.createElement('canvas')
-      Reflect.set(app, 'rootGraphInternal', new LGraph())
+      setRootGraph(app, new LGraph())
 
       await app.loadGraphData(createWorkflowGraphData(), false, true, null, {
         workflowNavigationId: 42
@@ -514,7 +515,7 @@ describe('ComfyApp', () => {
     })
     it('suppresses the workflow reset for a default clean load', async () => {
       app.canvasElRef.value = document.createElement('canvas')
-      Reflect.set(app, 'rootGraphInternal', new LGraph())
+      setRootGraph(app, new LGraph())
 
       await app.loadGraphData(createWorkflowGraphData())
 
@@ -527,7 +528,7 @@ describe('ComfyApp', () => {
 
     it('reports the load outcome explicitly: true on success', async () => {
       app.canvasElRef.value = document.createElement('canvas')
-      Reflect.set(app, 'rootGraphInternal', new LGraph())
+      setRootGraph(app, new LGraph())
 
       await expect(app.loadGraphData(createWorkflowGraphData())).resolves.toBe(
         true
@@ -537,7 +538,7 @@ describe('ComfyApp', () => {
     it('resolves false, not rejects, when graph configure fails', async () => {
       app.canvasElRef.value = document.createElement('canvas')
       const graph = new LGraph()
-      Reflect.set(app, 'rootGraphInternal', graph)
+      setRootGraph(app, graph)
       vi.spyOn(graph, 'configure').mockImplementation(() => {
         throw new Error('bad workflow json')
       })
@@ -568,7 +569,7 @@ describe('ComfyApp', () => {
       // promise instead and leaking any suppression/loading-state a
       // `beforeLoadGraph` listener had opened for this same load.
       app.canvasElRef.value = document.createElement('canvas')
-      Reflect.set(app, 'rootGraphInternal', new LGraph())
+      setRootGraph(app, new LGraph())
       const showDialog = vi.spyOn(useDialogStore(), 'showDialog')
       mockExtensionService.invokeExtensionsAsync.mockImplementation(
         async (hook: string) => {
@@ -607,7 +608,7 @@ describe('ComfyApp', () => {
       // suppression/loading-state a `beforeLoadGraph` listener had opened
       // for this same load.
       app.canvasElRef.value = document.createElement('canvas')
-      Reflect.set(app, 'rootGraphInternal', new LGraph())
+      setRootGraph(app, new LGraph())
       useSettingStore().settingValues['Comfy.Validation.Workflows'] = true
       const showDialog = vi.spyOn(useDialogStore(), 'showDialog')
       mockValidateWorkflow.mockRejectedValueOnce(
@@ -649,7 +650,7 @@ describe('ComfyApp', () => {
 
     it('applies load-time widget fixups as load provenance, not local edits', async () => {
       app.canvasElRef.value = document.createElement('canvas')
-      Reflect.set(app, 'rootGraphInternal', new LGraph())
+      setRootGraph(app, new LGraph())
       class KSampler extends LGraphNode {
         constructor(title = 'KSampler') {
           super(title)
@@ -707,7 +708,7 @@ describe('ComfyApp', () => {
 
     it('notifies extensions once on each side of a graph load, in order', async () => {
       app.canvasElRef.value = document.createElement('canvas')
-      Reflect.set(app, 'rootGraphInternal', new LGraph())
+      setRootGraph(app, new LGraph())
 
       await app.loadGraphData(createWorkflowGraphData(), false)
 
@@ -732,7 +733,7 @@ describe('ComfyApp', () => {
 
     it('closes every beforeLoadGraph when a newer load overtakes an older one', async () => {
       app.canvasElRef.value = document.createElement('canvas')
-      Reflect.set(app, 'rootGraphInternal', new LGraph())
+      setRootGraph(app, new LGraph())
       let releaseFirstLoad!: () => void
       const firstLoadBlocked = new Promise<void>((resolve) => {
         releaseFirstLoad = resolve
@@ -758,7 +759,7 @@ describe('ComfyApp', () => {
 
     it('lets an older valid load commit when its newer replacement fails', async () => {
       app.canvasElRef.value = document.createElement('canvas')
-      Reflect.set(app, 'rootGraphInternal', new LGraph())
+      setRootGraph(app, new LGraph())
       let releaseOlderLoad!: () => void
       const olderLoadBlocked = new Promise<void>((resolve) => {
         releaseOlderLoad = resolve
@@ -790,7 +791,7 @@ describe('ComfyApp', () => {
         canvasElement = createTestCanvasElement({ visible: false })
         document.body.append(canvasElement)
         app.canvasElRef.value = canvasElement
-        Reflect.set(app, 'rootGraphInternal', new LGraph())
+        setRootGraph(app, new LGraph())
         Reflect.set(mockCanvas, 'ds', createTestDragAndScale())
         Reflect.set(mockCanvas, 'bgcanvas', createTestCanvasElement())
         useCanvasScheduler().cancel('graph-load-camera')
@@ -832,8 +833,8 @@ describe('ComfyApp', () => {
     it('brackets an API JSON import with graph-load hooks', async () => {
       app.canvasElRef.value = document.createElement('canvas')
       const graph = new LGraph()
-      Reflect.set(app, 'rootGraphInternal', graph)
-      Reflect.set(singletonApp, 'rootGraphInternal', graph)
+      setRootGraph(app, graph)
+      setRootGraph(singletonApp, graph)
 
       await app.loadApiJson({}, 'empty.json')
 
@@ -977,8 +978,8 @@ describe('ComfyApp', () => {
         size: 0
       })
       const graph = new LGraph()
-      Reflect.set(app, 'rootGraphInternal', graph)
-      Reflect.set(singletonApp, 'rootGraphInternal', graph)
+      setRootGraph(app, graph)
+      setRootGraph(singletonApp, graph)
       useWorkflowStore().activeWorkflow = markLoaded(workflow)
       vi.spyOn(app, 'graphToPrompt').mockResolvedValue({
         output: {},
@@ -1367,8 +1368,8 @@ describe('ComfyApp', () => {
           ]
         }
       }
-      Reflect.set(app, 'rootGraphInternal', graph)
-      Reflect.set(singletonApp, 'rootGraphInternal', graph)
+      setRootGraph(app, graph)
+      setRootGraph(singletonApp, graph)
       useWorkflowStore().activeWorkflow = markLoaded(workflow)
       vi.spyOn(app, 'graphToPrompt').mockResolvedValue({
         output: promptOutput,
@@ -1912,10 +1913,10 @@ describe('ComfyApp', () => {
         const graph = new LGraph()
         const previousSingletonGraph = singletonApp.rootGraphOrUndefined
         onTestFinished(() => {
-          Reflect.set(singletonApp, 'rootGraphInternal', previousSingletonGraph)
+          setRootGraph(singletonApp, previousSingletonGraph)
         })
-        Reflect.set(app, 'rootGraphInternal', graph)
-        Reflect.set(singletonApp, 'rootGraphInternal', graph)
+        setRootGraph(app, graph)
+        setRootGraph(singletonApp, graph)
         const nodeType = 'test/ApiDynamicGroup'
         const group = {
           min: 0,
@@ -2050,8 +2051,8 @@ describe('ComfyApp', () => {
     it('clears missing node packs before loading API JSON without missing nodes', async () => {
       const graph = new LGraph()
       const activeSubgraph = createTestSubgraph({ rootGraph: graph })
-      Reflect.set(app, 'rootGraphInternal', graph)
-      Reflect.set(singletonApp, 'rootGraphInternal', graph)
+      setRootGraph(app, graph)
+      setRootGraph(singletonApp, graph)
       Reflect.set(mockCanvas, 'graph', activeSubgraph)
       Reflect.set(mockCanvas, 'subgraph', activeSubgraph)
       vi.mocked(mockCanvas.setGraph).mockImplementation((nextGraph) => {
@@ -2100,8 +2101,8 @@ describe('ComfyApp', () => {
         })
 
         const graph = new LGraph()
-        Reflect.set(app, 'rootGraphInternal', graph)
-        Reflect.set(singletonApp, 'rootGraphInternal', graph)
+        setRootGraph(app, graph)
+        setRootGraph(singletonApp, graph)
         const nodeReplacementStore = useNodeReplacementStore()
         vi.spyOn(nodeReplacementStore, 'load').mockResolvedValue()
 
@@ -2181,8 +2182,8 @@ describe('ComfyApp', () => {
       'validates API placeholder pack metadata: $name',
       async ({ metadata, expectedProperties, expectedCnrId }) => {
         const graph = new LGraph()
-        Reflect.set(app, 'rootGraphInternal', graph)
-        Reflect.set(singletonApp, 'rootGraphInternal', graph)
+        setRootGraph(app, graph)
+        setRootGraph(singletonApp, graph)
         const cleanupErrorHooks = installErrorClearingHooks(graph)
         const missingNodesStore = useMissingNodesErrorStore()
         const nodeReplacementStore = useNodeReplacementStore()
@@ -2226,9 +2227,9 @@ describe('ComfyApp', () => {
       'preserves replacement defaults for API text substitutions $name',
       async ({ metadata }) => {
         const graph = new LGraph()
-        const previousGraph = Reflect.get(singletonApp, 'rootGraphInternal')
-        Reflect.set(app, 'rootGraphInternal', graph)
-        Reflect.set(singletonApp, 'rootGraphInternal', graph)
+        const previousGraph = getRootGraph(singletonApp)
+        setRootGraph(app, graph)
+        setRootGraph(singletonApp, graph)
         const nodeType = 'test/ReplacementText'
         class ReplacementText extends LGraphNode {
           constructor() {
@@ -2241,7 +2242,7 @@ describe('ComfyApp', () => {
         const cleanupErrorHooks = installErrorClearingHooks(graph)
         onTestFinished(() => {
           cleanupErrorHooks()
-          Reflect.set(singletonApp, 'rootGraphInternal', previousGraph)
+          setRootGraph(singletonApp, previousGraph)
         })
         useSettingStore().settingValues['Comfy.NodeReplacement.Enabled'] = true
         const replacementStore = useNodeReplacementStore()
@@ -2281,13 +2282,10 @@ describe('ComfyApp', () => {
 
     it('restores late autogrow widgets and links without repeating callbacks', async () => {
       const graph = new LGraph()
-      const previousAppGraph = Reflect.get(app, 'rootGraphInternal')
-      const previousSingletonGraph = Reflect.get(
-        singletonApp,
-        'rootGraphInternal'
-      )
-      Reflect.set(app, 'rootGraphInternal', graph)
-      Reflect.set(singletonApp, 'rootGraphInternal', graph)
+      const previousAppGraph = getRootGraph(app)
+      const previousSingletonGraph = getRootGraph(singletonApp)
+      setRootGraph(app, graph)
+      setRootGraph(singletonApp, graph)
       const sourceType = 'test/ApiSourceNode'
       const targetType = 'test/ApiTargetNode'
       const targetConnectionChanges = vi.fn()
@@ -2348,8 +2346,8 @@ describe('ComfyApp', () => {
             ?.widgets?.find((widget) => widget.name === '0.weight2')?.value
         ).toBe(0.5)
       } finally {
-        Reflect.set(app, 'rootGraphInternal', previousAppGraph)
-        Reflect.set(singletonApp, 'rootGraphInternal', previousSingletonGraph)
+        setRootGraph(app, previousAppGraph)
+        setRootGraph(singletonApp, previousSingletonGraph)
         LiteGraph.unregisterNodeType(sourceType)
         LiteGraph.unregisterNodeType(targetType)
       }
@@ -2357,13 +2355,10 @@ describe('ComfyApp', () => {
 
     it('saves links connected on retry in missing-node snapshots', async () => {
       const graph = new LGraph()
-      const previousAppGraph = Reflect.get(app, 'rootGraphInternal')
-      const previousSingletonGraph = Reflect.get(
-        singletonApp,
-        'rootGraphInternal'
-      )
-      Reflect.set(app, 'rootGraphInternal', graph)
-      Reflect.set(singletonApp, 'rootGraphInternal', graph)
+      const previousAppGraph = getRootGraph(app)
+      const previousSingletonGraph = getRootGraph(singletonApp)
+      setRootGraph(app, graph)
+      setRootGraph(singletonApp, graph)
       vi.spyOn(useNodeReplacementStore(), 'load').mockResolvedValue()
       const sourceType = 'test/ApiSnapshotSource'
       const lateType = 'test/ApiLateOutput'
@@ -2418,8 +2413,8 @@ describe('ComfyApp', () => {
         )
         expect(reloaded.links.size).toBe(2)
       } finally {
-        Reflect.set(app, 'rootGraphInternal', previousAppGraph)
-        Reflect.set(singletonApp, 'rootGraphInternal', previousSingletonGraph)
+        setRootGraph(app, previousAppGraph)
+        setRootGraph(singletonApp, previousSingletonGraph)
         LiteGraph.unregisterNodeType(sourceType)
         LiteGraph.unregisterNodeType(lateType)
       }
@@ -2427,13 +2422,10 @@ describe('ComfyApp', () => {
 
     it('does not retry a connection vetoed by an extension callback', async () => {
       const graph = new LGraph()
-      const previousAppGraph = Reflect.get(app, 'rootGraphInternal')
-      const previousSingletonGraph = Reflect.get(
-        singletonApp,
-        'rootGraphInternal'
-      )
-      Reflect.set(app, 'rootGraphInternal', graph)
-      Reflect.set(singletonApp, 'rootGraphInternal', graph)
+      const previousAppGraph = getRootGraph(app)
+      const previousSingletonGraph = getRootGraph(singletonApp)
+      setRootGraph(app, graph)
+      setRootGraph(singletonApp, graph)
       const sourceType = 'test/ApiVetoSourceNode'
       const targetType = 'test/ApiVetoTargetNode'
       const connectionAttempts = vi.fn()
@@ -2476,8 +2468,8 @@ describe('ComfyApp', () => {
         expect(connectionAttempts).toHaveBeenCalledOnce()
         expect(graph.links.size).toBe(0)
       } finally {
-        Reflect.set(app, 'rootGraphInternal', previousAppGraph)
-        Reflect.set(singletonApp, 'rootGraphInternal', previousSingletonGraph)
+        setRootGraph(app, previousAppGraph)
+        setRootGraph(singletonApp, previousSingletonGraph)
         LiteGraph.unregisterNodeType(sourceType)
         LiteGraph.unregisterNodeType(targetType)
       }
@@ -2485,8 +2477,8 @@ describe('ComfyApp', () => {
 
     it('remaps flattened subgraph ids to colon-free local ids', async () => {
       const graph = new LGraph()
-      Reflect.set(app, 'rootGraphInternal', graph)
-      Reflect.set(singletonApp, 'rootGraphInternal', graph)
+      setRootGraph(app, graph)
+      setRootGraph(singletonApp, graph)
       const cleanupErrorHooks = installErrorClearingHooks(graph)
       const missingNodesStore = useMissingNodesErrorStore()
       const nodeReplacementStore = useNodeReplacementStore()
@@ -2558,8 +2550,8 @@ describe('ComfyApp', () => {
       const missingNodesStore = useMissingNodesErrorStore()
       const previousMissingNodeTypes =
         missingNodesStore.missingNodesError?.nodeTypes ?? []
-      Reflect.set(app, 'rootGraphInternal', graph)
-      Reflect.set(singletonApp, 'rootGraphInternal', graph)
+      setRootGraph(app, graph)
+      setRootGraph(singletonApp, graph)
       const widgetNodeType = 'test/ApiCurveNode'
       const curveCallback = vi.fn()
       class ApiCurveNode extends LGraphNode {
@@ -2643,8 +2635,8 @@ describe('ComfyApp', () => {
         expect(passthroughNode?.widgets?.[1].value).toEqual(passthrough)
       } finally {
         missingNodesStore.setMissingNodeTypes(previousMissingNodeTypes)
-        Reflect.set(app, 'rootGraphInternal', previousAppGraph)
-        Reflect.set(singletonApp, 'rootGraphInternal', previousSingletonGraph)
+        setRootGraph(app, previousAppGraph)
+        setRootGraph(singletonApp, previousSingletonGraph)
       }
     })
 
@@ -2652,8 +2644,8 @@ describe('ComfyApp', () => {
       const graph = new LGraph()
       const previousAppGraph = app.rootGraph
       const previousSingletonGraph = singletonApp.rootGraph
-      Reflect.set(app, 'rootGraphInternal', graph)
-      Reflect.set(singletonApp, 'rootGraphInternal', graph)
+      setRootGraph(app, graph)
+      setRootGraph(singletonApp, graph)
       const videoCallback = (value: string) => value.lastIndexOf('.')
       class VhsLoadVideoNode extends LGraphNode {
         constructor() {
@@ -2701,15 +2693,15 @@ describe('ComfyApp', () => {
         })
       } finally {
         LiteGraph.unregisterNodeType('VHS_LoadVideo')
-        Reflect.set(app, 'rootGraphInternal', previousAppGraph)
-        Reflect.set(singletonApp, 'rootGraphInternal', previousSingletonGraph)
+        setRootGraph(app, previousAppGraph)
+        setRootGraph(singletonApp, previousSingletonGraph)
       }
     })
 
     it('creates a removable placeholder for an API JSON missing node', async () => {
       const graph = new LGraph()
-      Reflect.set(app, 'rootGraphInternal', graph)
-      Reflect.set(singletonApp, 'rootGraphInternal', graph)
+      setRootGraph(app, graph)
+      setRootGraph(singletonApp, graph)
       const cleanupErrorHooks = installErrorClearingHooks(graph)
       const missingNodesStore = useMissingNodesErrorStore()
       const missingNodeType = 'Uninstalled<&Node>'
@@ -2774,8 +2766,8 @@ describe('ComfyApp', () => {
 
     it('preserves API JSON inputs on a missing node across reload', async () => {
       const graph = new LGraph()
-      Reflect.set(app, 'rootGraphInternal', graph)
-      Reflect.set(singletonApp, 'rootGraphInternal', graph)
+      setRootGraph(app, graph)
+      setRootGraph(singletonApp, graph)
       const sourceNodeType = 'test/ApiJsonSourceNode'
       const missingNodeType = 'UninstalledInputNode'
       class ApiJsonSourceNode extends LGraphNode {
@@ -2876,8 +2868,8 @@ describe('ComfyApp', () => {
 
     it('defers API JSON missing node warnings until they are flushed', async () => {
       const graph = new LGraph()
-      Reflect.set(app, 'rootGraphInternal', graph)
-      Reflect.set(singletonApp, 'rootGraphInternal', graph)
+      setRootGraph(app, graph)
+      setRootGraph(singletonApp, graph)
       const nodeReplacementStore = useNodeReplacementStore()
       vi.spyOn(nodeReplacementStore, 'load').mockResolvedValue()
       vi.spyOn(nodeReplacementStore, 'getReplacementFor').mockReturnValue(null)
@@ -2915,7 +2907,7 @@ describe('ComfyApp', () => {
   describe('A1111 import', () => {
     it('clears missing node packs, which its graph swap skips clean() for', async () => {
       const graph = new LGraph()
-      Reflect.set(app, 'rootGraphInternal', graph)
+      setRootGraph(app, graph)
       const missingNodesStore = useMissingNodesErrorStore()
       missingNodesStore.setMissingNodeTypes(['OutgoingMissingNode'])
       vi.mocked(getWorkflowDataFromFile).mockResolvedValue({
@@ -2937,7 +2929,7 @@ describe('ComfyApp', () => {
       'keeps missing node packs when the import fails with %s',
       async (outcome) => {
         const graph = new LGraph()
-        Reflect.set(app, 'rootGraphInternal', graph)
+        setRootGraph(app, graph)
         const missingNodesStore = useMissingNodesErrorStore()
         missingNodesStore.setMissingNodeTypes(['OutgoingMissingNode'])
         vi.mocked(getWorkflowDataFromFile).mockResolvedValue({
@@ -2957,7 +2949,7 @@ describe('ComfyApp', () => {
   describe('clean', () => {
     it('clears missing node packs when the graph is discarded', () => {
       const graph = new LGraph()
-      Reflect.set(app, 'rootGraphInternal', graph)
+      setRootGraph(app, graph)
       const missingNodesStore = useMissingNodesErrorStore()
       const executionErrorStore = useExecutionErrorStore()
       missingNodesStore.setMissingNodeTypes(['MissingGroupNode'])
@@ -2980,7 +2972,7 @@ describe('ComfyApp', () => {
 
     it('records run errors after clearing the current workflow', () => {
       const graph = new LGraph()
-      Reflect.set(app, 'rootGraphInternal', graph)
+      setRootGraph(app, graph)
       const executionErrorStore = useExecutionErrorStore()
 
       app.clean()
@@ -3101,8 +3093,8 @@ describe('ComfyApp', () => {
     it('restores the failed run state when returning to a workflow tab', async () => {
       const workflowService = await useRealWorkflowService()
       const graph = new LGraph()
-      Reflect.set(app, 'rootGraphInternal', graph)
-      Reflect.set(singletonApp, 'rootGraphInternal', graph)
+      setRootGraph(app, graph)
+      setRootGraph(singletonApp, graph)
 
       const workflowA = markLoaded(
         new ComfyWorkflow({ path: 'workflows/a.json', modified: 0, size: 0 })
@@ -3128,8 +3120,8 @@ describe('ComfyApp', () => {
       const workflowService = await useRealWorkflowService()
       const workflowStore = useWorkflowStore()
       const graph = new LGraph()
-      Reflect.set(app, 'rootGraphInternal', graph)
-      Reflect.set(singletonApp, 'rootGraphInternal', graph)
+      setRootGraph(app, graph)
+      setRootGraph(singletonApp, graph)
       singletonApp.canvas = mockCanvas
       Reflect.set(mockCanvas, 'ds', { scale: 1, offset: [0, 0] })
       vi.mocked(workflowStore.createNewTemporary).mockRestore()
@@ -3163,8 +3155,8 @@ describe('ComfyApp', () => {
     it('reuses the active workflow when importing the same file again', async () => {
       await useRealWorkflowService()
       const graph = new LGraph()
-      Reflect.set(app, 'rootGraphInternal', graph)
-      Reflect.set(singletonApp, 'rootGraphInternal', graph)
+      setRootGraph(app, graph)
+      setRootGraph(singletonApp, graph)
       const importedWorkflow = markLoaded(
         new ComfyWorkflow({
           path: 'workflows/repeat.json',
@@ -3282,7 +3274,7 @@ describe('ComfyApp', () => {
           experimental: false
         }
       }
-      Reflect.set(app, 'rootGraphInternal', rootGraph)
+      setRootGraph(app, rootGraph)
       vi.spyOn(app, 'getNodeDefs').mockResolvedValue(defs)
       vi.spyOn(app, 'registerNodeDef').mockResolvedValue(undefined)
 
@@ -3301,15 +3293,15 @@ describe('ComfyApp', () => {
 
   describe('refreshMissingModels', () => {
     it('delegates to the app-independent missing model refresh pipeline', async () => {
-      const graph = {
+      const graph = fromPartial<LGraph>({
         nodes: [],
         serialize: vi.fn(() => createWorkflowGraphData())
-      }
+      })
       const result = {
         missingModels: [],
         confirmedCandidates: []
       }
-      Reflect.set(app, 'rootGraphInternal', graph)
+      setRootGraph(app, graph)
       vi.spyOn(app, 'reloadNodeDefs').mockResolvedValue()
       mockRefreshMissingModelPipeline.mockResolvedValue(result)
 
@@ -3329,11 +3321,11 @@ describe('ComfyApp', () => {
     })
 
     it('omits the node definition reload when reloadDefs is false', async () => {
-      const graph = {
+      const graph = fromPartial<LGraph>({
         nodes: [],
         serialize: vi.fn(() => createWorkflowGraphData())
-      }
-      Reflect.set(app, 'rootGraphInternal', graph)
+      })
+      setRootGraph(app, graph)
       vi.spyOn(app, 'reloadNodeDefs').mockResolvedValue()
       mockRefreshMissingModelPipeline.mockResolvedValue({
         missingModels: [],
@@ -3757,7 +3749,7 @@ describe('ComfyApp', () => {
     ])('maps $outcome to its message', async (testCase) => {
       const graph = new LGraph()
       const parameters = 'positive\nNegative prompt: negative\nSteps: 20'
-      Reflect.set(app, 'rootGraphInternal', graph)
+      setRootGraph(app, graph)
       vi.mocked(getWorkflowDataFromFile).mockResolvedValue({ parameters })
       mockImportA1111.mockResolvedValue(testCase.outcome)
 
@@ -3783,7 +3775,7 @@ describe('ComfyApp', () => {
     it('awaits persistence and orders its clear callback before setGraph', async () => {
       const graph = new LGraph()
       const parameters = 'positive\nNegative prompt: negative\nSteps: 20'
-      Reflect.set(app, 'rootGraphInternal', graph)
+      setRootGraph(app, graph)
       vi.mocked(getWorkflowDataFromFile).mockResolvedValue({ parameters })
       mockImportA1111.mockImplementation(
         async (_graph, _parameters, beforeGraphClear) => {
@@ -3845,8 +3837,8 @@ describe('ComfyApp', () => {
       })
 
       const graph = new LGraph()
-      Reflect.set(app, 'rootGraphInternal', graph)
-      Reflect.set(singletonApp, 'rootGraphInternal', graph)
+      setRootGraph(app, graph)
+      setRootGraph(singletonApp, graph)
       const outgoingWorkflow = new ComfyWorkflow({
         path: 'workflows/outgoing.json',
         modified: 0,
