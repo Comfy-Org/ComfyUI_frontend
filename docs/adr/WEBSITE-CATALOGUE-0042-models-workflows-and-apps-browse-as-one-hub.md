@@ -77,10 +77,12 @@ workflow page, or where Run lives for a workflow that could run here.
 - Three listings is three surfaces to keep consistent. They share components,
   but nothing structural stops them drifting; consistency is maintained by
   convention and by tests, not by the type system.
-- The two filter menus look alike and mean different things, so a visitor who
-  learns the use cases in the models tab does not carry them to the workflows
-  tab. Neither reconciling the two vocabularies nor naming the difference in
-  the labels has been done.
+- The two filter menus sit in the same place in the band and narrow over
+  different things. Nothing is mislabelled: the models control reads "Use
+  cases", and the workflows control reads "Filter" with "Categories" and
+  "Model" as the groups inside it. But a visitor who learns the eight use cases
+  in the models tab finds a different five in the workflows tab, and whether
+  the two should be reconciled is open.
 - The split is by kind rather than by "runs here" against "open in ComfyUI",
   which may be the division a visitor actually has in mind. That remains open.
 
