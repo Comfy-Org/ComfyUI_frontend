@@ -133,7 +133,6 @@ function renderComponent() {
     props: { widget: makeWidget() },
     global: {
       plugins: [i18n],
-      directives: { tooltip: {} },
       stubs: {
         Select: SelectStub,
         SelectContent: Passthrough,

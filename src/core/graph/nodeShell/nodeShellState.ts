@@ -14,7 +14,7 @@ import { zeroUuid } from '@/utils/uuid'
 import type {
   INodeInputSlot,
   INodeOutputSlot
-} from '@/lib/litegraph/src/interfaces'
+} from '@/lib/litegraph/src/types/slots'
 import type { LGraph } from '@/lib/litegraph/src/LGraph'
 import type { LGraphNode } from '@/lib/litegraph/src/LGraphNode'
 import type { TitleMode } from '@/lib/litegraph/src/types/globalEnums'

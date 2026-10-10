@@ -2,7 +2,7 @@
   <Menu v-model:open="open" :items="items" align="end">
     <template #trigger>
       <Button
-        v-tooltip.top="moreTooltipConfig"
+        :tooltip="t('g.more')"
         variant="muted-textonly"
         size="icon"
         :aria-label="t('sideToolbar.queueProgressOverlay.moreOptions')"
@@ -20,7 +20,6 @@ import Button from '@/components/ui/button/Button.vue'
 import Menu from '@/components/ui/menu/Menu.vue'
 import type { MenuItem } from '@/components/ui/menu/types'
 import { useQueueFeatureFlags } from '@/composables/queue/useQueueFeatureFlags'
-import { buildTooltipConfig } from '@/composables/useTooltipConfig'
 import { isCloud } from '@/platform/distribution/types'
 import { useSettingStore } from '@/platform/settings/settingStore'
 import { useSurveyFeatureTracking } from '@/platform/surveys/useSurveyFeatureTracking'
@@ -35,7 +34,6 @@ const settingStore = useSettingStore()
 const sidebarTabStore = useSidebarTabStore()
 const { trackFeatureUsed } = useSurveyFeatureTracking('queue-progress-overlay')
 
-const moreTooltipConfig = computed(() => buildTooltipConfig(t('g.more')))
 const { isQueuePanelV2Enabled, isRunProgressBarEnabled } =
   useQueueFeatureFlags()
 const open = ref(false)

@@ -31,6 +31,8 @@ export interface CloudFeatures {
   readonly stripePublishableKey?: string
   /** Present only for a literal `true` `web_session_probe`; see `../core/webSessionFlag.ts`. */
   readonly webSessionProbe?: true
+  /** Present only for a literal `true` `sso_enabled`, the Cloud app's SSO rollout flag. */
+  readonly ssoEnabled?: true
   /** The Cloud app's own PostHog project, so every Comfy surface reports into one. */
   readonly posthogProjectToken?: string
   readonly posthogApiHost?: string
@@ -140,7 +142,8 @@ export async function fetchCloudFeatures(
     posthogProjectToken: readString(body, 'posthog_project_token'),
     posthogApiHost: readString(body, 'posthog_api_host'),
     telemetryDisabledEvents: parseStringList(body.telemetry_disabled_events),
-    ...(body.web_session_probe === true ? { webSessionProbe: true } : {})
+    ...(body.web_session_probe === true ? { webSessionProbe: true } : {}),
+    ...(body.sso_enabled === true ? { ssoEnabled: true } : {})
   }
 }
 

@@ -3,7 +3,7 @@
     <Menu :items="menuItems" max-height="viewport">
       <template #trigger>
         <Button
-          v-tooltip="{ value: $t('g.moreWorkflows'), showDelay: 300 }"
+          :tooltip="$t('g.moreWorkflows')"
           variant="muted-textonly"
           size="icon"
           :aria-label="$t('g.moreWorkflows')"

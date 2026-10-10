@@ -24,7 +24,7 @@ import type { PreviewExposure } from '@/core/schemas/previewExposureSchema'
 import type {
   INodeInputSlot,
   ISubgraphInput
-} from '@/lib/litegraph/src/interfaces'
+} from '@/lib/litegraph/src/types/slots'
 import type { LGraphNode } from '@/lib/litegraph/src/litegraph'
 import { SubgraphNode } from '@/lib/litegraph/src/subgraph/SubgraphNode'
 import type { IBaseWidget } from '@/lib/litegraph/src/types/widgets'

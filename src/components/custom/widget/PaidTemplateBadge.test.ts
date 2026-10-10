@@ -1,6 +1,6 @@
 import { render, screen, within } from '@testing-library/vue'
 import userEvent from '@testing-library/user-event'
-import { describe, expect, it } from 'vitest'
+import { describe, expect, it, vi } from 'vitest'
 import { createI18n } from 'vue-i18n'
 
 import PaidTemplateBadge from './PaidTemplateBadge.vue'
@@ -33,8 +33,31 @@ describe('PaidTemplateBadge', () => {
 
     await user.hover(badge)
 
-    const tooltip = await screen.findByTestId('disclosure-tooltip')
+    const tooltip = await screen.findByRole('tooltip')
     expect(within(tooltip).getByText('Premium template')).toBeInTheDocument()
     expect(within(tooltip).getByText('Runs with credits')).toBeInTheDocument()
+  })
+
+  it('opens on tap without activating the surrounding card', async () => {
+    const user = userEvent.setup()
+    const onCardClick = vi.fn()
+    render(
+      {
+        components: { PaidTemplateBadge },
+        setup: () => ({ onCardClick }),
+        template: '<div @click="onCardClick"><PaidTemplateBadge /></div>'
+      },
+      { global: { plugins: [i18n] } }
+    )
+
+    await user.pointer({
+      keys: '[TouchA]',
+      target: screen.getByTestId('paid-template-badge')
+    })
+
+    expect(await screen.findByRole('tooltip')).toHaveTextContent(
+      'Premium template'
+    )
+    expect(onCardClick).not.toHaveBeenCalled()
   })
 })

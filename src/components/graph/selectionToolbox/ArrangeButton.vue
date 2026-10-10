@@ -2,7 +2,7 @@
   <PopoverRoot v-model:open="isOpen">
     <PopoverTrigger as-child>
       <Button
-        v-tooltip.top="{ value: t('g.arrange'), showDelay: 1000 }"
+        :tooltip="t('g.arrange')"
         variant="muted-textonly"
         :aria-label="t('g.arrange')"
       >
@@ -35,10 +35,7 @@
         </div>
         <div v-else class="flex flex-row gap-1">
           <Button
-            v-tooltip.top="{
-              value: t('g.arrangeVertically'),
-              showDelay: 1000
-            }"
+            :tooltip="t('g.arrangeVertically')"
             variant="muted-textonly"
             :aria-label="t('g.arrangeVertically')"
             @click="start('vertical')"
@@ -46,10 +43,7 @@
             <i class="icon-[lucide--stretch-horizontal]" />
           </Button>
           <Button
-            v-tooltip.top="{
-              value: t('g.arrangeHorizontally'),
-              showDelay: 1000
-            }"
+            :tooltip="t('g.arrangeHorizontally')"
             variant="muted-textonly"
             :aria-label="t('g.arrangeHorizontally')"
             @click="start('horizontal')"
@@ -57,7 +51,7 @@
             <i class="icon-[lucide--stretch-vertical]" />
           </Button>
           <Button
-            v-tooltip.top="{ value: t('g.arrangeAsGrid'), showDelay: 1000 }"
+            :tooltip="t('g.arrangeAsGrid')"
             variant="muted-textonly"
             :aria-label="t('g.arrangeAsGrid')"
             @click="start('grid')"
