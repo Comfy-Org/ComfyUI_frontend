@@ -1,3 +1,4 @@
+import { useToast } from '@/components/ui/toast/toastStore'
 import { fromAny } from '@total-typescript/shoehorn'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 
@@ -6,7 +7,6 @@ import { t } from '@/i18n'
 import type { LGraphNode } from '@/lib/litegraph/src/litegraph'
 import type { ResultItem } from '@/platform/remote/comfyui/execution/types'
 import { api } from '@/scripts/api'
-import { useToastStore } from '@/platform/updates/common/toastStore'
 import { useAssetsStore } from '@/stores/assetsStore'
 import type { Mock } from 'vitest'
 
@@ -186,9 +186,7 @@ describe('useNodeImageUpload', () => {
     await capturedDragOnDrop([createFile()])
 
     expect(t).toHaveBeenCalledWith('g.uploadFileTooLarge')
-    expect(useToastStore().addAlert).toHaveBeenCalledWith(
-      'g.uploadFileTooLarge'
-    )
+    expect(useToast().warning).toHaveBeenCalledWith('g.uploadFileTooLarge')
   })
 
   it('shows a file-too-large toast with the limit on a 413 when the server reports one', async () => {
@@ -214,6 +212,19 @@ describe('useNodeImageUpload', () => {
     })
   })
 
+  it('shows a localized upload-failed toast when the upload throws', async () => {
+    vi.mocked(api.fetchApi).mockRejectedValueOnce(new Error('Network error'))
+
+    await capturedDragOnDrop([createFile()])
+
+    expect(t).toHaveBeenCalledWith('g.uploadFailed', {
+      reason: 'Network error'
+    })
+    expect(useToast().toasts).toEqual([
+      expect.objectContaining({ kind: 'warning', title: 'g.uploadFailed' })
+    ])
+  })
+
   it('resets isUploading even when upload fails', async () => {
     vi.mocked(api.fetchApi).mockRejectedValueOnce(new Error('Network error'))
 
@@ -233,9 +244,7 @@ describe('useNodeImageUpload', () => {
     const second = await capturedDragOnDrop([createFile('b.png')])
 
     expect(second).toEqual([])
-    expect(useToastStore().addAlert).toHaveBeenCalledWith(
-      'g.uploadAlreadyInProgress'
-    )
+    expect(useToast().warning).toHaveBeenCalledWith('g.uploadAlreadyInProgress')
 
     await first
   })

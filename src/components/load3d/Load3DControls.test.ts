@@ -148,10 +148,7 @@ function renderControls(overrides: RenderProps = {}) {
     },
     global: {
       plugins: [i18n],
-      stubs: childStubs,
-      directives: {
-        tooltip: () => {}
-      }
+      stubs: childStubs
     }
   })
   return { ...result, user: userEvent.setup() }

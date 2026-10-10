@@ -1,6 +1,6 @@
 import type { RedirectConfig } from 'astro'
+import { groupBy, mapValues } from 'es-toolkit'
 
-import { models } from './models'
 import {
   HUB_MODELS_PATH,
   hubAppHref,
@@ -11,9 +11,20 @@ import {
   hubWorkflowHref,
   hubWorkflowSlugs
 } from './hub-models'
+import {
+  LOCAL_MODELS_PATH,
+  localModelAliases,
+  localModelPath,
+  localModels
+} from './local-models'
+import { markdownTwinPath } from '@/lib/markdown-twin-path'
+import { partnerModelHubSlugs } from './partner-model-redirects'
 
 interface SiteRedirect {
-  /** A literal path with no trailing slash; both slash forms redirect. */
+  /**
+   * A path with no trailing slash, literal or with one `:slug(a|b)` group;
+   * both slash forms redirect, except for a `.md` or `.txt` file.
+   */
   readonly source: `/${string}`
   /** An internal destination ends in `/`, the form every page canonicalizes to. */
   readonly destination: string
@@ -32,16 +43,80 @@ interface VercelRedirect {
 const MINIMAX_TEMPORARY_BECAUSE =
   '/minimax/ is a live namespace (the license pages sit under it); the page owner signs off before both locales go permanent together'
 
-const modelAliasRedirects = models.flatMap(({ slug, canonicalSlug }) =>
-  canonicalSlug
-    ? [
-        {
-          source: `/p/supported-models/${slug}`,
-          destination: `/p/supported-models/${canonicalSlug}/`
-        } as const
-      ]
-    : []
-)
+const RETIRED_PAGE_TEMPORARY_BECAUSE =
+  'retired, may return: the gallery and launches pages can be restored from git history'
+
+const SUPPORTED_MODELS_PATH = '/p/supported-models'
+
+/** Leaves room under Vercel's 2,048-character limit on a rule's source. */
+const MAX_SLUG_GROUP_LENGTH = 1900
+
+export function slugGroups(slugs: readonly string[]): string[] {
+  const groups: string[][] = []
+  for (const slug of slugs) {
+    const group = groups.at(-1)
+    if (group && [...group, slug].join('|').length <= MAX_SLUG_GROUP_LENGTH)
+      group.push(slug)
+    else groups.push([slug])
+  }
+  return groups.map((group) => group.join('|'))
+}
+
+const supportedModelPath = (slug: string) =>
+  `${SUPPORTED_MODELS_PATH}/${slug}` as const
+
+/** A local file slug a data refresh removed → the page that replaces it. */
+export const retiredLocalModelPages: Readonly<Record<string, string>> = {}
+
+const partnerModelPage = (hubSlug: string | null) =>
+  hubSlug ? hubModelPath(hubSlug) : `${HUB_MODELS_PATH}/`
+
+const movedModelPages: Readonly<Record<string, string>> = {
+  ...mapValues(partnerModelHubSlugs, partnerModelPage),
+  ...retiredLocalModelPages
+}
+
+function slugGroupRedirects(
+  slugs: readonly string[],
+  page: string
+): SiteRedirect[] {
+  return slugGroups(slugs).flatMap((group) => [
+    { source: supportedModelPath(`:slug(${group})`), destination: page },
+    {
+      source: supportedModelPath(`:slug(${group}).md`),
+      destination: markdownTwinPath(page)
+    }
+  ])
+}
+
+const supportedModelRedirects: readonly SiteRedirect[] = [
+  { source: SUPPORTED_MODELS_PATH, destination: `${LOCAL_MODELS_PATH}/` },
+  {
+    source: `${SUPPORTED_MODELS_PATH}.md`,
+    destination: `${LOCAL_MODELS_PATH}.md`
+  },
+  {
+    source: supportedModelPath('llms.txt'),
+    destination: `${LOCAL_MODELS_PATH}/llms.txt`
+  },
+  ...localModelAliases.flatMap(({ slug, canonicalSlug }) =>
+    canonicalSlug
+      ? [
+          {
+            source: supportedModelPath(slug),
+            destination: localModelPath(canonicalSlug)
+          }
+        ]
+      : []
+  ),
+  ...Object.entries(
+    groupBy(Object.keys(movedModelPages), (slug) => movedModelPages[slug])
+  ).flatMap(([page, slugs]) => slugGroupRedirects(slugs, page)),
+  ...slugGroupRedirects(
+    localModels.map(({ slug }) => slug),
+    `${LOCAL_MODELS_PATH}/:slug/`
+  )
+]
 
 // Permanent since comfy-router#46: prod serves /hub/models, /hub/workflows and /hub/apps from this site.
 // 308 tells search engines the move is permanent: confirm a new destination serves 200 first.
@@ -71,6 +146,16 @@ export const siteRedirects: readonly SiteRedirect[] = [
   { source: '/career', destination: '/careers/' },
   { source: '/privacy', destination: '/privacy-policy/' },
   { source: '/press', destination: '/about/' },
+  {
+    source: '/about',
+    destination: '/about/',
+    slashFormIsPageBecause: '/about/ is the About page'
+  },
+  {
+    source: '/zh-CN/about',
+    destination: '/zh-CN/about/',
+    slashFormIsPageBecause: '/zh-CN/about/ is the About page'
+  },
   { source: '/blog', destination: 'https://blog.comfy.org/' },
   { source: '/discord', destination: 'https://discord.com/invite/comfyorg' },
   {
@@ -117,6 +202,46 @@ export const siteRedirects: readonly SiteRedirect[] = [
     destination: '/customers/series-entertainment/'
   },
   { source: '/zh-CN/terms-of-service', destination: '/terms-of-service/' },
+  {
+    source: '/gallery',
+    destination: '/customers/',
+    temporaryBecause: RETIRED_PAGE_TEMPORARY_BECAUSE
+  },
+  {
+    source: '/gallery.md',
+    destination: '/customers.md',
+    temporaryBecause: RETIRED_PAGE_TEMPORARY_BECAUSE
+  },
+  {
+    source: '/zh-CN/gallery',
+    destination: '/zh-CN/customers/',
+    temporaryBecause: RETIRED_PAGE_TEMPORARY_BECAUSE
+  },
+  {
+    source: '/zh-CN/gallery.md',
+    destination: '/zh-CN/customers.md',
+    temporaryBecause: RETIRED_PAGE_TEMPORARY_BECAUSE
+  },
+  {
+    source: '/launches',
+    destination: '/events/',
+    temporaryBecause: RETIRED_PAGE_TEMPORARY_BECAUSE
+  },
+  {
+    source: '/launches.md',
+    destination: '/events.md',
+    temporaryBecause: RETIRED_PAGE_TEMPORARY_BECAUSE
+  },
+  {
+    source: '/zh-CN/launches',
+    destination: '/zh-CN/events/',
+    temporaryBecause: RETIRED_PAGE_TEMPORARY_BECAUSE
+  },
+  {
+    source: '/zh-CN/launches.md',
+    destination: '/zh-CN/events.md',
+    temporaryBecause: RETIRED_PAGE_TEMPORARY_BECAUSE
+  },
   { source: '/api', destination: '/platform/' },
   { source: '/zh-CN/api', destination: '/zh-CN/platform/' },
   { source: '/platform/models', destination: '/platform/router/' },
@@ -126,7 +251,7 @@ export const siteRedirects: readonly SiteRedirect[] = [
   // Affiliates exists in English only.
   { source: '/zh-CN/affiliates', destination: '/affiliates/' },
   { source: '/zh-CN/affiliates/terms', destination: '/affiliates/terms/' },
-  ...modelAliasRedirects,
+  ...supportedModelRedirects,
   ...hubModelRedirects
 ]
 
@@ -136,17 +261,26 @@ export function isInternalDestination(destination: string): boolean {
 
 const isPermanent = (row: SiteRedirect) => row.temporaryBecause === undefined
 
-const isOldModelsAddress = ({ source }: SiteRedirect) =>
-  source === '/models' || source.startsWith('/models/')
+const RETIRED_ROOTS = ['/models', SUPPORTED_MODELS_PATH]
+
+const isRetiredAddress = ({ source }: SiteRedirect) =>
+  RETIRED_ROOTS.some(
+    (root) =>
+      source === root ||
+      source.startsWith(`${root}/`) ||
+      source.startsWith(`${root}.`)
+  )
 
 const redirectsSlashForm = (row: SiteRedirect) =>
   row.slashFormIsPageBecause === undefined
+
+const isFileAddress = (source: string) => /\.(md|txt)$/.test(source)
 
 export function toVercelRedirects(
   rows: readonly SiteRedirect[]
 ): VercelRedirect[] {
   return rows.flatMap((row) =>
-    (redirectsSlashForm(row)
+    (redirectsSlashForm(row) && !isFileAddress(row.source)
       ? [row.source, `${row.source}/`]
       : [row.source]
     ).map((source) => ({
@@ -158,11 +292,20 @@ export function toVercelRedirects(
 }
 
 /**
+ * The redirect sources a link to a canonical (slashed) page must not match. A
+ * bare-only source such as `/about` is left out: its slash form is the page.
+ */
+export const linkStaleSources: readonly string[] = toVercelRedirects(
+  siteRedirects.filter(redirectsSlashForm)
+).map(({ source }) => source)
+
+/**
  * Astro renders each entry as a meta-refresh stub so `astro preview` and the
  * e2e suite see the redirects; on Vercel the `vercel.json` rule answers first.
  * Astro cannot redirect off-site, and a stub for `/x` is the same file as a
- * page at `/x/`, so those rows live in `vercel.json` only. The old Models
- * addresses are left out too, so the build ships no stub pages under /models.
+ * page at `/x/`, so those rows live in `vercel.json` only, as do `.md` and
+ * `.txt` file addresses. The retired /models and /p/supported-models
+ * addresses are left out too, so the build ships no stub pages under them.
  */
 export const astroRedirects: Record<string, RedirectConfig> =
   Object.fromEntries(
@@ -171,7 +314,8 @@ export const astroRedirects: Record<string, RedirectConfig> =
         (row) =>
           isInternalDestination(row.destination) &&
           redirectsSlashForm(row) &&
-          !isOldModelsAddress(row)
+          !isFileAddress(row.source) &&
+          !isRetiredAddress(row)
       )
       .map((row) => [
         row.source,

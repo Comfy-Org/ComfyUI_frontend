@@ -1,9 +1,7 @@
 import { fromPartial } from '@total-typescript/shoehorn'
 import { render, screen } from '@testing-library/vue'
 import userEvent from '@testing-library/user-event'
-import PrimeVue from 'primevue/config'
-import Tooltip from 'primevue/tooltip'
-import { describe, expect, it, onTestFinished, vi } from 'vitest'
+import { describe, expect, it, vi } from 'vitest'
 import { nextTick } from 'vue'
 import { createI18n } from 'vue-i18n'
 
@@ -53,10 +51,7 @@ describe('ColorPickerButton', () => {
 
     render(ColorPickerButton, {
       global: {
-        plugins: [PrimeVue, i18n],
-        directives: {
-          tooltip: Tooltip
-        }
+        plugins: [i18n]
       }
     })
 
@@ -84,6 +79,19 @@ describe('ColorPickerButton', () => {
 
     await user.click(button)
     expect(screen.queryByTestId('noColor')).not.toBeInTheDocument()
+  })
+
+  it('shows a swatch name when the swatch gets keyboard focus', async () => {
+    setCanvasSelection([createMockPositionable()])
+    const { user } = renderComponent()
+    const pickerButton = screen.getByRole('button', { name: 'Color' })
+
+    await user.click(pickerButton)
+    await user.unhover(pickerButton)
+    await user.tab()
+
+    expect(screen.getByRole('button', { name: 'No Color' })).toHaveFocus()
+    expect(await screen.findByRole('tooltip')).toHaveTextContent('No Color')
   })
 
   it('clears the color when the active swatch is selected again', async () => {

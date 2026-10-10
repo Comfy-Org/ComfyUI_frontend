@@ -6,7 +6,7 @@ import {
   getActiveCheckoutJourney,
   resolveCheckoutJourney
 } from '@/platform/workspace/utils/checkoutJourney'
-import { useToastStore } from '@/platform/updates/common/toastStore'
+import { useToast } from '@/components/ui/toast/toastStore'
 import { useDialogStore } from '@/stores/dialogStore'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 
@@ -58,8 +58,6 @@ import { workspaceApi } from '@/platform/workspace/api/workspaceApi'
 import { useBillingOperationStore } from './billingOperationStore'
 
 beforeEach(() => {
-  vi.mocked(useToastStore().add).mockImplementation(() => {})
-  vi.mocked(useToastStore().remove).mockImplementation(() => {})
   vi.mocked(useDialogStore().closeDialog).mockImplementation(() => {})
   sessionStorage.clear()
   clearCheckoutJourney()
@@ -289,14 +287,14 @@ describe('billingOperationStore', () => {
 
     it('withdraws the processing toast once the poll finds the checkout parked on a payment method, and stays quiet', async () => {
       await pollPhase('awaiting_payment_method')
-      const processing = vi.mocked(useToastStore().add).mock.calls[0][0]
+      const processing = vi.mocked(useToast().loading).mock.results[0].value
 
       await vi.waitFor(() =>
-        expect(useToastStore().remove).toHaveBeenCalledWith(processing)
+        expect(useToast().dismiss).toHaveBeenCalledWith(processing)
       )
 
       await vi.advanceTimersByTimeAsync(31_000)
-      expect(useToastStore().add).toHaveBeenCalledOnce()
+      expect(useToast().loading).toHaveBeenCalledOnce()
     })
 
     it('exposes an invoice phase without an action URL as needing the customer', async () => {
@@ -420,11 +418,9 @@ describe('billingOperationStore', () => {
       const store = useBillingOperationStore()
       void store.startOperation('op-1', 'subscription')
 
-      expect(useToastStore().add).toHaveBeenCalledWith({
-        severity: 'info',
-        summary: 'billingOperation.subscriptionProcessing',
-        group: 'billing-operation'
-      })
+      expect(useToast().loading).toHaveBeenCalledWith(
+        'billingOperation.subscriptionProcessing'
+      )
     })
 
     it('does not show a processing toast when the checkout owns progress', () => {
@@ -439,7 +435,7 @@ describe('billingOperationStore', () => {
         suppressProcessingToast: true
       })
 
-      expect(useToastStore().add).not.toHaveBeenCalled()
+      expect(useToast().toasts).toEqual([])
     })
 
     it('shows immediate processing toast for topup operations', () => {
@@ -452,11 +448,9 @@ describe('billingOperationStore', () => {
       const store = useBillingOperationStore()
       void store.startOperation('op-1', 'topup')
 
-      expect(useToastStore().add).toHaveBeenCalledWith({
-        severity: 'info',
-        summary: 'billingOperation.topupProcessing',
-        group: 'billing-operation'
-      })
+      expect(useToast().loading).toHaveBeenCalledWith(
+        'billingOperation.topupProcessing'
+      )
     })
 
     describe('a resumed operation', () => {
@@ -490,11 +484,11 @@ describe('billingOperationStore', () => {
           resumed: true
         })
 
-        expect(useToastStore().add).not.toHaveBeenCalled()
+        expect(useToast().toasts).toEqual([])
         serve('awaiting_payment_method')
         await vi.advanceTimersByTimeAsync(31_000)
 
-        expect(useToastStore().add).not.toHaveBeenCalled()
+        expect(useToast().toasts).toEqual([])
       })
 
       it.for([['in_progress'], [undefined]] as const)(
@@ -506,16 +500,14 @@ describe('billingOperationStore', () => {
             resumed: true
           })
 
-          expect(useToastStore().add).not.toHaveBeenCalled()
+          expect(useToast().toasts).toEqual([])
           serve(phase)
           await vi.advanceTimersByTimeAsync(0)
 
-          expect(useToastStore().add).toHaveBeenCalledOnce()
-          expect(useToastStore().add).toHaveBeenCalledWith({
-            severity: 'info',
-            summary: 'billingOperation.subscriptionProcessing',
-            group: 'billing-operation'
-          })
+          expect(useToast().loading).toHaveBeenCalledOnce()
+          expect(useToast().loading).toHaveBeenCalledWith(
+            'billingOperation.subscriptionProcessing'
+          )
         }
       )
 
@@ -529,11 +521,9 @@ describe('billingOperationStore', () => {
           'https://invoice.stripe.com/sensitive-token'
         )
 
-        expect(useToastStore().add).toHaveBeenCalledWith({
-          severity: 'warn',
-          summary: 'billingOperation.subscriptionActionRequired',
-          group: 'billing-operation'
-        })
+        expect(useToast().warning).toHaveBeenCalledWith(
+          'billingOperation.subscriptionActionRequired'
+        )
         serve('in_progress')
         await vi.advanceTimersByTimeAsync(0)
       })
@@ -762,11 +752,10 @@ describe('billingOperationStore', () => {
       expect(billing.fetchStatus).not.toHaveBeenCalled()
       expect(billing.fetchBalance).not.toHaveBeenCalled()
 
-      expect(useToastStore().add).toHaveBeenCalledWith({
-        severity: 'success',
-        summary: 'billingOperation.subscriptionSuccess',
-        life: 5000
-      })
+      expect(useToast().success).toHaveBeenCalledWith(
+        'billingOperation.subscriptionSuccess',
+        { duration: 5000 }
+      )
     })
 
     it('leaves the checkout dialog open on subscription success', async () => {
@@ -1066,11 +1055,10 @@ describe('billingOperationStore', () => {
 
       await vi.advanceTimersByTimeAsync(0)
 
-      expect(useToastStore().add).toHaveBeenCalledWith({
-        severity: 'success',
-        summary: 'billingOperation.topupSuccess',
-        life: 5000
-      })
+      expect(useToast().success).toHaveBeenCalledWith(
+        'billingOperation.topupSuccess',
+        { duration: 5000 }
+      )
     })
 
     it('reports duration_ms as the time elapsed since the operation started', async () => {
@@ -1145,11 +1133,11 @@ describe('billingOperationStore', () => {
       const store = useBillingOperationStore()
       void store.startOperation('op-1', 'subscription')
 
-      const receivedToast = vi.mocked(useToastStore().add).mock.calls[0][0]
+      const receivedToast = vi.mocked(useToast().loading).mock.results[0].value
 
       await vi.advanceTimersByTimeAsync(0)
 
-      expect(useToastStore().remove).toHaveBeenCalledWith(receivedToast)
+      expect(useToast().dismiss).toHaveBeenCalledWith(receivedToast)
     })
 
     it('resolves the terminal promise even if a success side effect throws', async () => {
@@ -1159,8 +1147,8 @@ describe('billingOperationStore', () => {
         started_at: new Date().toISOString()
       })
       const error = new Error('toast rendering failed')
-      vi.mocked(useToastStore().add).mockImplementation((toast) => {
-        if (toast.severity === 'success') throw error
+      vi.mocked(useToast().success).mockImplementation(() => {
+        throw error
       })
 
       const store = useBillingOperationStore()
@@ -1183,7 +1171,7 @@ describe('billingOperationStore', () => {
         started_at: new Date().toISOString()
       })
       const error = new Error('toast cleanup failed')
-      vi.mocked(useToastStore().remove).mockImplementationOnce(() => {
+      vi.mocked(useToast().dismiss).mockImplementationOnce(() => {
         throw error
       })
 
@@ -1243,12 +1231,13 @@ describe('billingOperationStore', () => {
       )
       expect(store.hasPendingOperations).toBe(false)
 
-      expect(useToastStore().add).toHaveBeenCalledWith({
-        severity: 'error',
-        summary: 'billingOperation.subscriptionFailed',
-        detail: 'billingOperation.subscriptionFailedDetail',
-        life: 7000
-      })
+      expect(useToast().error).toHaveBeenCalledWith(
+        'billingOperation.subscriptionFailed',
+        {
+          description: 'billingOperation.subscriptionFailedDetail',
+          duration: 7000
+        }
+      )
       expect(useTelemetry()?.trackBillingEvent).toHaveBeenCalledWith({
         operation: 'operation',
         billing_client: 'legacy',
@@ -1340,9 +1329,7 @@ describe('billingOperationStore', () => {
       await vi.advanceTimersByTimeAsync(0)
 
       expect(store.getOperation('op-1')?.status).toBe('failed')
-      expect(useToastStore().add).not.toHaveBeenCalledWith(
-        expect.objectContaining({ severity: 'error' })
-      )
+      expect(useToast().error).not.toHaveBeenCalled()
       expect(useTelemetry()?.trackBillingEvent).toHaveBeenCalledWith(
         expect.objectContaining({
           stage: 'failed',
@@ -1460,12 +1447,10 @@ describe('billingOperationStore', () => {
 
       await vi.advanceTimersByTimeAsync(0)
 
-      expect(useToastStore().add).toHaveBeenCalledWith({
-        severity: 'error',
-        summary: 'billingOperation.topupFailed',
-        detail: undefined,
-        life: 7000
-      })
+      expect(useToast().error).toHaveBeenCalledWith(
+        'billingOperation.topupFailed',
+        { description: undefined, duration: 7000 }
+      )
     })
 
     // The bank refused to approve the charge without the customer. A failed
@@ -1490,12 +1475,13 @@ describe('billingOperationStore', () => {
         errorMessage: 'billingOperation.authenticatePaymentDetail',
         actionUrl: null
       })
-      expect(useToastStore().add).toHaveBeenCalledWith({
-        severity: 'error',
-        summary: 'billingOperation.topupFailed',
-        detail: 'billingOperation.authenticatePaymentDetail',
-        life: 7000
-      })
+      expect(useToast().error).toHaveBeenCalledWith(
+        'billingOperation.topupFailed',
+        {
+          description: 'billingOperation.authenticatePaymentDetail',
+          duration: 7000
+        }
+      )
     })
 
     it.for([
@@ -1554,12 +1540,13 @@ describe('billingOperationStore', () => {
         status: 'failed',
         errorMessage: 'billingOperation.methodNotChargeableOffSessionDetail'
       })
-      expect(useToastStore().add).toHaveBeenCalledWith({
-        severity: 'error',
-        summary: 'billingOperation.subscriptionFailed',
-        detail: 'billingOperation.methodNotChargeableOffSessionDetail',
-        life: 7000
-      })
+      expect(useToast().error).toHaveBeenCalledWith(
+        'billingOperation.subscriptionFailed',
+        {
+          description: 'billingOperation.methodNotChargeableOffSessionDetail',
+          duration: 7000
+        }
+      )
     })
 
     it('does not name a payment method for a downgrade to personal', async () => {
@@ -1803,11 +1790,9 @@ describe('billingOperationStore', () => {
         await vi.advanceTimersByTimeAsync(0)
 
         expect(store.getOperation('op-1')?.errorMessage).toBe(detail)
-        expect(useToastStore().add).toHaveBeenCalledWith({
-          severity: 'error',
-          summary,
-          detail,
-          life: 7000
+        expect(useToast().error).toHaveBeenCalledWith(summary, {
+          description: detail,
+          duration: 7000
         })
       }
     )
@@ -2961,10 +2946,9 @@ describe('billingOperationStore', () => {
       expect(operation?.status).toBe('timeout')
       expect(store.hasPendingOperations).toBe(false)
 
-      expect(useToastStore().add).toHaveBeenCalledWith({
-        severity: 'error',
-        summary: 'billingOperation.subscriptionTimeout'
-      })
+      expect(useToast().error).toHaveBeenCalledWith(
+        'billingOperation.subscriptionTimeout'
+      )
     })
 
     it('reports duration_ms of at least the timeout threshold', async () => {
@@ -3036,7 +3020,13 @@ describe('billingOperationStore', () => {
       expect((await terminal).status).toBe('succeeded')
       expect(store.getOperation('op-1')?.actionUrl).toBeNull()
       expect(
-        JSON.stringify(vi.mocked(useToastStore().add).mock.calls)
+        JSON.stringify([
+          vi.mocked(useToast().error).mock.calls,
+          vi.mocked(useToast().info).mock.calls,
+          vi.mocked(useToast().loading).mock.calls,
+          vi.mocked(useToast().success).mock.calls,
+          vi.mocked(useToast().warning).mock.calls
+        ])
       ).not.toContain(actionUrl)
       expect(
         JSON.stringify(vi.mocked(useTelemetry()?.trackBillingEvent)?.mock.calls)
@@ -3054,21 +3044,18 @@ describe('billingOperationStore', () => {
       const store = useBillingOperationStore()
       void store.startOperation('op-1', 'subscription')
 
-      const processingToast = {
-        severity: 'info',
-        summary: 'billingOperation.subscriptionProcessing',
-        group: 'billing-operation'
-      }
-      expect(useToastStore().add).toHaveBeenCalledWith(processingToast)
+      expect(useToast().loading).toHaveBeenCalledWith(
+        'billingOperation.subscriptionProcessing'
+      )
 
       await vi.advanceTimersByTimeAsync(0)
 
-      expect(useToastStore().remove).toHaveBeenCalledWith(processingToast)
-      expect(useToastStore().add).toHaveBeenCalledWith({
-        severity: 'warn',
-        summary: 'billingOperation.subscriptionActionRequired',
-        group: 'billing-operation'
-      })
+      expect(useToast().toasts).toEqual([
+        expect.objectContaining({
+          kind: 'warning',
+          title: 'billingOperation.subscriptionActionRequired'
+        })
+      ])
     })
 
     it('announces verification immediately when the action URL is known at start', () => {
@@ -3086,15 +3073,11 @@ describe('billingOperationStore', () => {
         'https://verify.example/sensitive-token'
       )
 
-      expect(useToastStore().add).toHaveBeenCalledWith({
-        severity: 'warn',
-        summary: 'billingOperation.topupActionRequired',
-        group: 'billing-operation'
-      })
-      expect(useToastStore().add).not.toHaveBeenCalledWith(
-        expect.objectContaining({
-          summary: 'billingOperation.topupProcessing'
-        })
+      expect(useToast().warning).toHaveBeenCalledWith(
+        'billingOperation.topupActionRequired'
+      )
+      expect(useToast().loading).not.toHaveBeenCalledWith(
+        'billingOperation.topupProcessing'
       )
     })
 
@@ -3116,23 +3099,20 @@ describe('billingOperationStore', () => {
       void store.startOperation('op-1', 'subscription')
       await vi.advanceTimersByTimeAsync(0)
 
-      const actionRequiredToast = {
-        severity: 'warn',
-        summary: 'billingOperation.subscriptionActionRequired',
-        group: 'billing-operation'
-      }
-      expect(useToastStore().add).toHaveBeenCalledWith(actionRequiredToast)
+      expect(useToast().warning).toHaveBeenCalledWith(
+        'billingOperation.subscriptionActionRequired'
+      )
 
       // The verification action is gone, so the prompt pointing at it must go
       // too rather than asking for something the customer can no longer do.
       await vi.advanceTimersByTimeAsync(30_000)
 
-      expect(useToastStore().remove).toHaveBeenCalledWith(actionRequiredToast)
-      expect(useToastStore().add).toHaveBeenLastCalledWith({
-        severity: 'info',
-        summary: 'billingOperation.subscriptionProcessing',
-        group: 'billing-operation'
-      })
+      expect(useToast().toasts).toEqual([
+        expect.objectContaining({
+          kind: 'loading',
+          title: 'billingOperation.subscriptionProcessing'
+        })
+      ])
     })
 
     it('does not re-announce verification on later polls', async () => {
@@ -3149,10 +3129,9 @@ describe('billingOperationStore', () => {
 
       const actionRequiredAdds = () =>
         vi
-          .mocked(useToastStore().add)
+          .mocked(useToast().warning)
           .mock.calls.filter(
-            (call) =>
-              call[0].summary === 'billingOperation.subscriptionActionRequired'
+            ([title]) => title === 'billingOperation.subscriptionActionRequired'
           ).length
 
       expect(actionRequiredAdds()).toBe(1)
@@ -3362,10 +3341,9 @@ describe('billingOperationStore', () => {
       await vi.advanceTimersByTimeAsync(121_000)
       await vi.runAllTimersAsync()
 
-      expect(useToastStore().add).toHaveBeenCalledWith({
-        severity: 'error',
-        summary: 'billingOperation.topupTimeout'
-      })
+      expect(useToast().error).toHaveBeenCalledWith(
+        'billingOperation.topupTimeout'
+      )
     })
 
     it('keeps polling a topup while authentication is required', async () => {
@@ -3387,10 +3365,77 @@ describe('billingOperationStore', () => {
         actionUrl,
         authenticationRequiredSeen: true
       })
-      expect(useToastStore().add).not.toHaveBeenCalledWith({
-        severity: 'error',
-        summary: 'billingOperation.topupTimeout'
+      expect(
+        vi.mocked(useToast().error).mock.calls.map(([title]) => title)
+      ).not.toContain('billingOperation.topupTimeout')
+    })
+  })
+
+  describe('retention operations', () => {
+    it('leaves the refresh and the outcome to the offer dialog', async () => {
+      const billing = mockBillingContext()
+      vi.mocked(workspaceApi.getBillingOpStatus).mockResolvedValue({
+        id: 'op-1',
+        status: 'succeeded',
+        started_at: new Date().toISOString()
       })
+
+      const store = useBillingOperationStore()
+      const terminal = store.startOperation('op-1', 'retention')
+
+      await vi.advanceTimersByTimeAsync(0)
+      const operation = await terminal
+
+      expect(operation.status).toBe('succeeded')
+      expect(billing.fetchStatus).not.toHaveBeenCalled()
+      expect(
+        useTeamWorkspaceStore().updateActiveWorkspace
+      ).not.toHaveBeenCalled()
+      expect(useSettingsDialog().show).not.toHaveBeenCalled()
+      expect(useToast().toasts).toEqual([])
+    })
+
+    it.for(['failed', 'reconciliation_needed'] as const)(
+      'leaves a %s outcome to the offer dialog',
+      async (status) => {
+        vi.mocked(workspaceApi.getBillingOpStatus).mockResolvedValue({
+          id: 'op-1',
+          status,
+          started_at: new Date().toISOString()
+        })
+
+        const store = useBillingOperationStore()
+        const terminal = store.startOperation('op-1', 'retention')
+
+        await vi.advanceTimersByTimeAsync(0)
+        const operation = await terminal
+
+        expect(operation.status).toBe(status)
+        expect(useToast().toasts).toEqual([])
+      }
+    )
+
+    it('polls only while its launch workspace is active', async () => {
+      vi.mocked(workspaceApi.getBillingOpStatus).mockResolvedValue({
+        id: 'op-1',
+        status: 'pending',
+        started_at: new Date().toISOString()
+      })
+
+      const store = useBillingOperationStore()
+      void store.startOperation('op-1', 'retention', {
+        workspaceId: 'workspace-2'
+      })
+      await vi.advanceTimersByTimeAsync(0)
+
+      expect(workspaceApi.getBillingOpStatus).not.toHaveBeenCalled()
+
+      Object.assign(useTeamWorkspaceStore(), {
+        activeWorkspaceId: 'workspace-2'
+      })
+      await vi.advanceTimersByTimeAsync(5_000)
+
+      expect(workspaceApi.getBillingOpStatus).toHaveBeenCalledWith('op-1')
     })
   })
 
@@ -3405,7 +3450,7 @@ describe('billingOperationStore', () => {
       const store = useBillingOperationStore()
       void store.startOperation('op-1', 'cancel')
 
-      expect(useToastStore().add).not.toHaveBeenCalled()
+      expect(useToast().toasts).toEqual([])
     })
 
     it('resolves with the succeeded operation and refreshes status', async () => {
@@ -3474,7 +3519,7 @@ describe('billingOperationStore', () => {
       await terminal
 
       expect(useSettingsDialog().show).not.toHaveBeenCalled()
-      expect(useToastStore().add).not.toHaveBeenCalled()
+      expect(useToast().toasts).toEqual([])
     })
 
     it('resolves with a failed operation and default message, no toast', async () => {
@@ -3495,7 +3540,7 @@ describe('billingOperationStore', () => {
       expect(
         useTeamWorkspaceStore().updateActiveWorkspace
       ).not.toHaveBeenCalled()
-      expect(useToastStore().add).not.toHaveBeenCalled()
+      expect(useToast().toasts).toEqual([])
       expect(useTelemetry()?.trackBillingEvent).toHaveBeenCalledWith(
         expect.objectContaining({
           operation: 'operation',
@@ -3531,7 +3576,7 @@ describe('billingOperationStore', () => {
       expect(
         useTeamWorkspaceStore().updateActiveWorkspace
       ).not.toHaveBeenCalled()
-      expect(useToastStore().add).not.toHaveBeenCalled()
+      expect(useToast().toasts).toEqual([])
       expect(useTelemetry()?.trackBillingEvent).toHaveBeenCalledWith(
         expect.objectContaining({
           operation: 'operation',
@@ -3628,9 +3673,7 @@ describe('billingOperationStore', () => {
       expect(store.getOperation('op-1')?.status).toBe('pending')
       expect(store.hasPendingOperations).toBe(true)
       expect(resolved).toBe(false)
-      expect(useToastStore().add).not.toHaveBeenCalledWith(
-        expect.objectContaining({ severity: 'error' })
-      )
+      expect(useToast().error).not.toHaveBeenCalled()
     })
 
     it('polls pending operations immediately when the page becomes visible', async () => {

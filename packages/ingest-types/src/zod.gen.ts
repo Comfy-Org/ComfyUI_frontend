@@ -250,20 +250,29 @@ export const zUserDataResponseFull = z.object({
   size: z.number().int().optional()
 })
 
+/**
+ * Current remaining balance, mirroring /billing/balance. Every amount is CENTS of `currency`; the `*_micros` names are a misnomer kept for wire compatibility.
+ */
 export const zUsageBalance = z.object({
+  amount_cents: z.number().optional(),
   amount_micros: z.number().optional(),
+  cloud_credit_balance_cents: z.number().optional(),
   cloud_credit_balance_micros: z.number().optional(),
   currency: z.string().optional(),
+  prepaid_balance_cents: z.number().optional(),
   prepaid_balance_micros: z.number().optional()
 })
 
+/**
+ * Mixed units, deliberately. `spend_micros` here (and `cost_micros` on UsageBucket / UsageBreakdownRow) is genuinely MICROS -- 1/1,000,000 of the currency unit -- because it comes from Metronome's usage figures. The `balance` breakdown below is CENTS, and its `*_micros` names are a misnomer; use its `*_cents` fields.
+ */
 export const zUsageSummary = z.object({
   balance: zUsageBalance.optional(),
   spend_micros: z.number()
 })
 
 /**
- * Present, with empty groups, buckets and breakdown, when the requested grouping has no data source yet. Render as unavailable, not as zero spend.
+ * Present, with empty groups, buckets and breakdown, when the requested grouping is not served for this workspace. Render as unavailable, not as zero spend.
  */
 export const zUsageNotAvailable = z.object({
   reason: z.enum(['no_attribution_source'])
@@ -392,6 +401,7 @@ export const zToolCallSummary = z.object({
   error_code: z.string().optional(),
   finished_at: z.string().datetime().optional(),
   id: z.string(),
+  job_id: z.string().optional(),
   started_at: z.string().datetime().optional(),
   status: z.enum(['success', 'error']),
   tool_call_id: z.string(),
@@ -822,6 +832,7 @@ export const zSavedPaymentMethod = z.object({
 
 export const zSsoDiscoverResponse = z.object({
   organization_name: z.string().optional(),
+  required: z.boolean().optional(),
   sso: z.boolean()
 })
 
@@ -1487,6 +1498,7 @@ export const zOAuthConsentChallengeWorkspace = z.object({
  */
 export const zOAuthConsentChallenge = z.object({
   client_display_name: z.string(),
+  client_provenance: z.enum(['first_party', 'dynamic']),
   csrf_token: z.string(),
   oauth_request_id: z.string().uuid(),
   redirect_uri: z.string().url(),
@@ -1584,6 +1596,8 @@ export const zMediaBadRequestError = z.union([zErrorResponse, zMediaQueryError])
  * Paginated list of workspaces the authenticated user belongs to.
  */
 export const zListWorkspacesResponse = z.object({
+  can_create_workspace: z.boolean(),
+  default_workspace_id: z.string().optional(),
   workspaces: z.array(zWorkspaceWithRole)
 })
 
@@ -1861,6 +1875,8 @@ export const zJobDetailResponse = z.object({
   outputs_count: z.number().int().optional(),
   preview_output: z.record(z.unknown()).optional(),
   previewable_outputs_count: z.number().int().optional(),
+  queue_position: z.number().int().gte(1).nullish(),
+  queue_reason: z.enum(['concurrency_limit', 'capacity']).optional(),
   status: z.enum([
     'pending',
     'in_progress',
@@ -2682,14 +2698,40 @@ export const zBillingPlansResponse = z.object({
 
 /**
  * Display only. The plan the operation targets; for a scheduled change,
- * the plan it switches to at period end. Present only for succeeded
- * plan changes, initial subscriptions and resubscribes. Visible to any
- * workspace member who can read the operation.
+ * the plan it switches to at period end. Present for plan changes,
+ * initial subscriptions and resubscribes in every status (pending,
+ * failed and succeeded alike), so a recovered pending operation can be
+ * labelled with its own plan. Absent when the target plan could not be
+ * resolved. Visible to any workspace member who can read the operation.
+ * tier and the price fields are absent when the server cannot describe
+ * the plan, as for the retired seat-based Team plans, whose rows carry a
+ * personal tier and whose price depends on the workspace's seats.
  *
  */
 export const zBillingOpReceiptPlan = z.object({
+  currency: z.string().optional(),
   duration: zSubscriptionDuration,
-  slug: z.string()
+  monthly_price_cents: z.coerce
+    .bigint()
+    .min(BigInt('-9223372036854775808'), {
+      message: 'Invalid value: Expected int64 to be >= -9223372036854775808'
+    })
+    .max(BigInt('9223372036854775807'), {
+      message: 'Invalid value: Expected int64 to be <= 9223372036854775807'
+    })
+    .optional(),
+  price_cents: z.coerce
+    .bigint()
+    .min(BigInt('-9223372036854775808'), {
+      message: 'Invalid value: Expected int64 to be >= -9223372036854775808'
+    })
+    .max(BigInt('9223372036854775807'), {
+      message: 'Invalid value: Expected int64 to be <= 9223372036854775807'
+    })
+    .optional(),
+  slug: z.string(),
+  team_credit_stop_id: z.string().optional(),
+  tier: zSubscriptionTier.optional()
 })
 
 /**
@@ -2761,6 +2803,7 @@ export const zBillingOpStatusResponse = z.object({
       'reconciliation_needed'
     ])
     .optional(),
+  cancelable: z.boolean().optional(),
   charge_breakdown: zBillingOpChargeBreakdown.optional(),
   completed_at: z.string().datetime().optional(),
   credits_added: z.coerce
@@ -2937,6 +2980,7 @@ export const zBillingCapabilities = z.object({
   can_change_seats: z.boolean(),
   can_downgrade_to_personal: z.boolean(),
   can_invite_members: z.boolean(),
+  can_manage_members: z.boolean(),
   can_reactivate: z.boolean(),
   can_revert_scheduled_change: z.boolean(),
   can_subscribe_self_serve: z.boolean(),
@@ -2962,14 +3006,20 @@ export const zBillingCapabilitiesResponse = z.object({
 })
 
 /**
- * Current credit balance and usage details for a workspace.
+ * Current credit balance and usage details for a workspace. Every amount here is CENTS of `currency`. The `*_micros` fields are a misnamed legacy set kept for wire compatibility; the `*_cents` fields beside them carry the identical values under honest names. `amount_micros` stays required and `amount_cents` is optional so existing strict clients are unaffected.
  */
 export const zBillingBalanceResponse = z.object({
+  amount_cents: z.number().optional(),
   amount_micros: z.number(),
+  cloud_credit_balance_cents: z.number().optional(),
   cloud_credit_balance_micros: z.number().optional(),
   currency: z.string(),
+  effective_balance_authoritative: z.boolean().optional(),
+  effective_balance_cents: z.number().optional(),
   effective_balance_micros: z.number().optional(),
+  pending_charges_cents: z.number().optional(),
   pending_charges_micros: z.number().optional(),
+  prepaid_balance_cents: z.number().optional(),
   prepaid_balance_micros: z.number().optional()
 })
 
@@ -3175,6 +3225,7 @@ export const zAgentAskKind = z.enum([
 export const zAgentPostMessageRequest = z.object({
   ask_kinds: z.array(zAgentAskKind).optional(),
   attachments: z.array(z.string()).optional(),
+  client_id: z.string().optional(),
   client_message_id: z.string().max(128).optional(),
   content: z.string(),
   current_tab: z.string().optional(),
@@ -3322,6 +3373,16 @@ export const zAgentPendingAsk = z.union([
 export const zAgentMessage = z.object({
   content: z
     .object({
+      attachment_refs: z
+        .array(
+          z.object({
+            display_name: z.string().optional(),
+            id: z.string().optional(),
+            kind: z.string().optional(),
+            name: z.string().optional()
+          })
+        )
+        .optional(),
       tool_calls: z.array(zToolCallSummary).optional()
     })
     .optional(),
@@ -3616,6 +3677,16 @@ export const zAgentLlmMessagesBody = z.record(z.unknown())
  * The upstream LLM response, streamed back as Server-Sent Events (text/event-stream) chunk-by-chunk.
  */
 export const zAgentLlmMessagesResponse = z.string()
+
+/**
+ * An OTLP ExportTraceServiceRequest, optionally gzip-encoded (Content-Encoding gzip); at most 4 MiB encoded and decoded, and 4096 spans.
+ */
+export const zAgentLlmTracesBody = z.string()
+
+/**
+ * Accepted; the body is an empty OTLP ExportTraceServiceResponse.
+ */
+export const zAgentLlmTracesResponse = z.string()
 
 /**
  * The caller's run mode (the saved choice, or the default).

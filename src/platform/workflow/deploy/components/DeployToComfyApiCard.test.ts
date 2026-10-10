@@ -7,23 +7,42 @@ import { createI18n } from 'vue-i18n'
 
 import type { useExternalLink } from '@/composables/useExternalLink'
 import enMessages from '@/locales/en/main.json'
+import { useAgentHandoff } from '@/platform/workflow/deploy/composables/useAgentHandoff'
+import type { BuildInputs } from '@/platform/workflow/deploy/utils/buildInputs'
 
 import DeployToComfyApiCard from './DeployToComfyApiCard.vue'
+
+vi.mock(
+  import('@/platform/workflow/deploy/composables/useAgentHandoff'),
+  () => {
+    const copyBrief = vi.fn(() => Promise.resolve(true))
+    const inputs = {
+      models: ['sd_xl_base_1.0.safetensors'],
+      nodeClasses: ['CheckpointLoaderSimple', 'KSampler'],
+      nodePacks: [{ id: 'comfy-core', versions: [] }],
+      workflowFileName: 'portrait-upscale.json',
+      workflowName: 'portrait-upscale'
+    } satisfies BuildInputs
+    return {
+      useAgentHandoff: () => ({ captureInputs: () => inputs, copyBrief })
+    }
+  }
+)
 
 vi.mock(import('@/config/comfyApi'), () => ({
   getComfyPlatformBaseUrl: () => 'https://platform.comfy.org'
 }))
 
-const buildDocsUrl = vi.hoisted(() =>
-  vi.fn(
+vi.mock(import('@/composables/useExternalLink'), () => {
+  const buildDocsUrl = vi.fn(
     (path: string, _options?: { includeLocale?: boolean }) =>
       `https://docs.comfy.org${path}`
   )
-)
-vi.mock(import('@/composables/useExternalLink'), () => ({
-  useExternalLink: () =>
-    fromPartial<ReturnType<typeof useExternalLink>>({ buildDocsUrl })
-}))
+  return {
+    useExternalLink: () =>
+      fromPartial<ReturnType<typeof useExternalLink>>({ buildDocsUrl })
+  }
+})
 
 const i18n = createI18n({
   legacy: false,
@@ -44,6 +63,14 @@ function renderCard(
 }
 
 describe('DeployToComfyApiCard', () => {
+  it('summarises what the graph puts into the Build', () => {
+    renderCard()
+
+    expect(
+      screen.getByTestId('deploy-to-comfy-api-summary').textContent
+    ).toContain('1 node pack · 1 model · 2 node classes')
+  })
+
   it('links to the platform developer docs', () => {
     renderCard()
 
@@ -62,6 +89,40 @@ describe('DeployToComfyApiCard', () => {
 
     expect(onDismiss).toHaveBeenCalledOnce()
     expect(onDone).not.toHaveBeenCalled()
+  })
+
+  it('copies the brief, then says so on the button and stays open', async () => {
+    const { onDone, user } = renderCard()
+
+    await user.click(screen.getByTestId('deploy-to-comfy-api-agent'))
+
+    expect(useAgentHandoff().copyBrief).toHaveBeenCalledOnce()
+    expect(screen.getByTestId('deploy-to-comfy-api-agent')).toHaveTextContent(
+      /^Copied/
+    )
+    expect(onDone).not.toHaveBeenCalled()
+  })
+
+  it('keeps the original label when the brief did not reach the clipboard', async () => {
+    vi.mocked(useAgentHandoff().copyBrief).mockResolvedValueOnce(false)
+    const { user } = renderCard()
+
+    await user.click(screen.getByTestId('deploy-to-comfy-api-agent'))
+
+    expect(screen.getByTestId('deploy-to-comfy-api-agent')).toHaveTextContent(
+      'Build with your agent'
+    )
+  })
+
+  it('drops the copied label when a later copy fails', async () => {
+    const { user } = renderCard()
+    const button = screen.getByTestId('deploy-to-comfy-api-agent')
+    await user.click(button)
+    vi.mocked(useAgentHandoff().copyBrief).mockResolvedValueOnce(false)
+
+    await user.click(button)
+
+    expect(button).toHaveTextContent('Build with your agent')
   })
 
   it('links to the developer platform in a new tab without a referrer, and reports done', async () => {

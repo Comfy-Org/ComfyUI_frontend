@@ -345,15 +345,13 @@ describe('createLazyIdentity', () => {
       Promise.reject(new Error('chunk failed'))
     )
     const port = createLazyIdentity(load)
-    const warn = vi.spyOn(console, 'warn').mockImplementation(() => {})
     port.onUserChanged(() => {
       throw new Error('listener failed')
     })
 
     await expect(port.activate()).rejects.toThrow('chunk failed')
 
-    expect(warn).toHaveBeenCalled()
-    warn.mockRestore()
+    expect(console.warn).toHaveBeenCalled()
   })
 
   it('resolves the activation even when a listener throws on the first delivery', async () => {

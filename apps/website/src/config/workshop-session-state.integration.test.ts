@@ -77,7 +77,7 @@ beforeEach(async () => {
 
 describe('useWorkshopSession over the real session client', () => {
   it('stays unsettled until Firebase delivers, then publishes minting and authenticated', async () => {
-    vi.stubGlobal('fetch', okFetch())
+    vi.mocked(fetch).mockImplementation(okFetch())
     const { session, phases } = await boot(true)
     await vi.waitFor(() => expect(deliver).toBeDefined())
     expect(
@@ -93,7 +93,7 @@ describe('useWorkshopSession over the real session client', () => {
   })
 
   it('re-enters pending across flag off then on without a signed-out frame', async () => {
-    vi.stubGlobal('fetch', okFetch())
+    vi.mocked(fetch).mockImplementation(okFetch())
     const { session, flag, phases } = await boot(true)
     await firebaseAnswers(user)
     await vi.waitFor(() => expect(session.signedIn.value).toBe(true))
@@ -118,7 +118,7 @@ describe('useWorkshopSession over the real session client', () => {
 
   it('cannot commit a mint that was in flight when the flag turned off', async () => {
     let releaseMint!: () => void
-    const fetchSpy = vi.fn<typeof fetch>(
+    vi.mocked(fetch).mockImplementation(
       () =>
         new Promise<Response>((resolve) => {
           releaseMint = () =>
@@ -129,15 +129,14 @@ describe('useWorkshopSession over the real session client', () => {
             )
         })
     )
-    vi.stubGlobal('fetch', fetchSpy)
     const { session, flag, phases, client } = await boot(true)
     await firebaseAnswers(user)
-    await vi.waitFor(() => expect(fetchSpy).toHaveBeenCalledOnce())
+    await vi.waitFor(() => expect(fetch).toHaveBeenCalledOnce())
 
     flag.value = false
     await vi.waitFor(() => expect(session.settled.value).toBe(false))
     releaseMint()
-    await fetchSpy.mock.results[0]?.value
+    await vi.mocked(fetch).mock.results[0]?.value
     await new Promise((resolve) => setTimeout(resolve))
 
     expect(client.getToken()).toBeUndefined()
@@ -150,8 +149,7 @@ describe('useWorkshopSession over the real session client', () => {
   })
 
   it('installs nothing when the flag turns off before the first Firebase answer lands', async () => {
-    const fetchSpy = okFetch()
-    vi.stubGlobal('fetch', fetchSpy)
+    vi.mocked(fetch).mockImplementation(okFetch())
     const { session, flag, phases, client } = await boot(true)
     await vi.waitFor(() => expect(deliver).toBeDefined())
 
@@ -178,7 +176,6 @@ describe('useWorkshopSession over the real session client', () => {
     vi.mocked(identifyWorkshopUser).mockImplementationOnce(() => {
       throw new Error('identify exploded')
     })
-    const errorSpy = vi.spyOn(console, 'error').mockImplementation(() => {})
     const { expires_at, ...cached } = mintBody('jwt-cached')
     sessionStorage.setItem(
       STORAGE_KEY,
@@ -188,16 +185,15 @@ describe('useWorkshopSession over the real session client', () => {
         expiresAt: Date.parse(expires_at)
       })
     )
-    const fetchSpy = okFetch()
-    vi.stubGlobal('fetch', fetchSpy)
+    vi.mocked(fetch).mockImplementation(okFetch())
     await boot(true)
 
     await firebaseAnswers(user)
-    await vi.waitFor(() => expect(errorSpy).toHaveBeenCalledOnce())
+    await vi.waitFor(() => expect(console.error).toHaveBeenCalledOnce())
     await new Promise((resolve) => setTimeout(resolve))
 
     expect(
-      fetchSpy,
+      fetch,
       'the seeded credential was served from cache, so the boot never minted'
     ).not.toHaveBeenCalled()
     expect(

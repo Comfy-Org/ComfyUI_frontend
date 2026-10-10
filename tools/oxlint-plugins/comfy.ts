@@ -30,9 +30,16 @@ import type {
   noVitestMockMethodNames as NoVitestMockMethodNames
 } from './restrictedSyntax'
 import type {
+  noCapabilityRecombination as NoCapabilityRecombination,
+  noServerFactLiterals as NoServerFactLiterals
+} from './serverFacts'
+import type {
   noImportActual as NoImportActual,
+  noMockedInExpect as NoMockedInExpect,
   noModuleScopeVitestMocks as NoModuleScopeVitestMocks,
   noPersistentLiteGraphRegistration as NoPersistentLiteGraphRegistration,
+  noRedundantConsoleSpy as NoRedundantConsoleSpy,
+  noRedundantFetchStub as NoRedundantFetchStub,
   noRedundantLiteGraphCleanup as NoRedundantLiteGraphCleanup,
   noRedundantVitestCleanup as NoRedundantVitestCleanup
 } from './vitestCleanup'
@@ -96,16 +103,28 @@ const {
   noUnsafeErrorAssertion: typeof NoUnsafeErrorAssertion
   noVitestMockMethodNames: typeof NoVitestMockMethodNames
 }
+const { noCapabilityRecombination, noServerFactLiterals } = requireFrom(
+  './serverFacts.ts'
+) as {
+  noCapabilityRecombination: typeof NoCapabilityRecombination
+  noServerFactLiterals: typeof NoServerFactLiterals
+}
 const {
   noImportActual,
+  noMockedInExpect,
   noModuleScopeVitestMocks,
   noPersistentLiteGraphRegistration,
+  noRedundantConsoleSpy,
+  noRedundantFetchStub,
   noRedundantLiteGraphCleanup,
   noRedundantVitestCleanup
 } = requireFrom('./vitestCleanup.ts') as {
   noImportActual: typeof NoImportActual
+  noMockedInExpect: typeof NoMockedInExpect
   noModuleScopeVitestMocks: typeof NoModuleScopeVitestMocks
   noPersistentLiteGraphRegistration: typeof NoPersistentLiteGraphRegistration
+  noRedundantConsoleSpy: typeof NoRedundantConsoleSpy
+  noRedundantFetchStub: typeof NoRedundantFetchStub
   noRedundantLiteGraphCleanup: typeof NoRedundantLiteGraphCleanup
   noRedundantVitestCleanup: typeof NoRedundantVitestCleanup
 }
@@ -116,6 +135,7 @@ const { noRenderInWatchEffect } = requireFrom('./watchEffectRendering.ts') as {
 export default {
   meta: { name: 'comfy' },
   rules: {
+    'no-capability-recombination': noCapabilityRecombination,
     'no-comfy-page-setup-call': noComfyPageSetupCall,
     'no-deprecated-api-schema': noDeprecatedApiSchema,
     'no-direct-selection-write': noDirectSelectionWrite,
@@ -125,6 +145,7 @@ export default {
     'no-es2023-array-copy-method': noEs2023ArrayCopyMethod,
     'no-import-actual': noImportActual,
     'no-misplaced-spec-files': noMisplacedSpecFiles,
+    'no-mocked-in-expect': noMockedInExpect,
     'no-module-scope-vitest-mocks': noModuleScopeVitestMocks,
     'no-new-error-throw': noNewErrorThrow,
     'no-new-zod-for-remote-api-types': noNewZodForRemoteApiTypes,
@@ -133,7 +154,10 @@ export default {
     'no-playwright-imports-in-fixture-data': noPlaywrightImportsInFixtureData,
     'no-primevue-imports': noPrimeVueImports,
     'no-render-in-watch-effect': noRenderInWatchEffect,
+    'no-server-fact-literals': noServerFactLiterals,
     'no-statically-disabled-test': noStaticallyDisabledTest,
+    'no-redundant-console-spy': noRedundantConsoleSpy,
+    'no-redundant-fetch-stub': noRedundantFetchStub,
     'no-redundant-litegraph-cleanup': noRedundantLiteGraphCleanup,
     'no-redundant-vitest-cleanup': noRedundantVitestCleanup,
     'no-relative-packages': noRelativePackages,

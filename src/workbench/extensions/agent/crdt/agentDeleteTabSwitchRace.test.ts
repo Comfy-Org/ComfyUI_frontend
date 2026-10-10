@@ -89,8 +89,9 @@ function setupRaceUntilReturn() {
     resultListener: ((result: OpsResultView) => void) | null
   } = { resultListener: null }
   const sender = createOpSender({
-    sendOps: (workflowId, _tab, ops) => {
-      sent.push({ workflowId, ops })
+    sendOps: (workflowId) => {
+      const [inFlightBatch] = sender.pendingOps()
+      sent.push({ workflowId, ops: inFlightBatch.ops })
       return true
     },
     onOpsResult: (listener) => {

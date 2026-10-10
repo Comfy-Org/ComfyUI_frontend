@@ -270,6 +270,18 @@ describe('LinearControls', () => {
   it.for([
     { label: 'desktop', mobile: false },
     { label: 'mobile', mobile: true }
+  ])('renders Run as the inverted button in $label controls', ({ mobile }) => {
+    renderControls({ mobile })
+
+    expect(screen.getByRole('button', { name: 'Run' })).toHaveAttribute(
+      'data-variant',
+      'inverted'
+    )
+  })
+
+  it.for([
+    { label: 'desktop', mobile: false },
+    { label: 'mobile', mobile: true }
   ])('shows a workflow error warning in $label controls', ({ mobile }) => {
     renderControls({ hasError: true, mobile })
 

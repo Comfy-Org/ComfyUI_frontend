@@ -16,7 +16,7 @@ nvm use 26 && pnpm dev:cloud
 ```
 
 - Node **26** is required (`.nvmrc` = `26`, `package.json` engines `>=26.8.2 <27`). `nvm install 26` if missing.
-- `dev:cloud` → `dev:cloud:test` → `DEV_SERVER_COMFYUI_URL=https://testcloud.comfy.org/`. Vite infers `DISTRIBUTION='cloud'` from the `.comfy.org` host (`vite.config.mts:131-138`), which is what makes `isCloud === true` and the `?ff=` override path reachable.
+- `dev:cloud` → `DEV_SERVER_COMFYUI_URL=https://testcloud.comfy.org/`. Vite infers `DISTRIBUTION='cloud'` from the `.comfy.org` host (`vite.config.mts:131-138`), which is what makes `isCloud === true` and the `?ff=` override path reachable.
 - Ready when stdout has `VITE v8.x ready in` and `➜  Local:   http://localhost:5173/`. Serving takes ~1s; a first run may spend ~30s on `pnpm install` and dependency re-optimization first.
 - **Never use `dev:cloud:prod`.** It proxies to `https://cloud.comfy.org`, which is real production with real customers and real money. `dev:cloud:staging` (stagingcloud) is the only other safe target.
 
@@ -70,7 +70,7 @@ await new Promise((resolve) => {
 })
 ```
 
-At 0 frames, Vue transitions never finish. A removed PrimeVue toast keeps its DOM node with `p-toast-message-leave-active` at opacity 0, and a new one sticks at `p-toast-message-enter-from`, so DOM queries report toasts a real user never sees. In that case assert on component state instead. Walk `el.__vueParentComponent` up to the component whose `type.name` is `Toast` and read `proxy.messages`. A 2026-09-21 run filed a false "verify toast stays after the top-up settles" finding this way.
+At 0 frames, Vue transitions never finish, so DOM queries can report elements a real user never sees, such as a dialog stuck mid-leave. For toasts, assert on the store instead: `document.querySelector('#vue-app').__vue_app__.config.globalProperties.$pinia._s.get('toast').toasts` is the list the Toaster renders. A 2026-09-21 run filed a false "verify toast stays after the top-up settles" finding from DOM queries in a hidden tab.
 
 ## Drive
 
