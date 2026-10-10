@@ -136,7 +136,6 @@ export const useNodeOutputStore = defineStore('nodeOutput', () => {
   ): string[] | undefined {
     if (!outputs?.images?.length) return
 
-    const rand = app.getRandParam()
     const previewParam = getPreviewParam(node, outputs)
 
     return outputs.images.map((image) => {
@@ -147,7 +146,7 @@ export const useNodeOutputStore = defineStore('nodeOutput', () => {
         filename: node.comfyClass === 'LoadImageOutput' ? filename : filepath,
         type: rootFolder
       })
-      return api.apiURL(`/view?${params}${previewParam}${rand}`)
+      return api.apiURL(`/view?${params}${previewParam}`)
     })
   }
 

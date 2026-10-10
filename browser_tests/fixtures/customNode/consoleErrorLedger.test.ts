@@ -143,6 +143,10 @@ describe('consoleErrorLedger', () => {
         'Failed to load resource: 404 [http://localhost:8188/api/view?type=input&filename=%28upload+a+mesh+file%29&subfolder=&rand=0.5]'
       ],
       [
+        'ComfyUI-UltraShape1',
+        'Failed to load resource: 404 [http://localhost:8188/api/view?type=input&filename=%28upload+a+mesh+file%29&subfolder=]'
+      ],
+      [
         'WhatDreamsCost-ComfyUI',
         'Failed to load resource: 404 [http://localhost:8188/api/view?filename=_cn&type=input]'
       ],
