@@ -48,11 +48,18 @@ jobs:
           scope: lint
           path: ${{ env.LINT_CACHE_PATHS }}
 
-      - name: Verify lint
-        run: pnpm lint:ci
+      - parallel:
+          - name: Verify Stylelint
+            run: pnpm stylelint
 
-      - name: Verify format
-        run: pnpm -r --include-workspace-root format:check
+          - name: Verify oxlint
+            run: pnpm oxlint
+
+          - name: Verify ESLint
+            run: pnpm exec eslint --cache --concurrency auto --cache-strategy content
+
+          - name: Verify format
+            run: pnpm -r --include-workspace-root format:check
 
       - name: Save lint caches
         if: always()
