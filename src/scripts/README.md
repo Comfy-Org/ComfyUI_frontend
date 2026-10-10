@@ -26,6 +26,13 @@ Core application class that manages:
 - Extension system
 - Workflow state
 
+Its public instance surface is the `ComfyApp` interface in `@/types/comfy`.
+Modules that `app.ts` imports (stores, services, widgets) must not import it
+back; they read the singleton with `useApp()` from `@/scripts/appInstance`.
+Top-level code (extensions, components, `App.vue`) keeps importing `app`
+from `@/scripts/app` directly. Clipspace state lives in `clipspace.ts`; the
+`ComfyApp.clipspace*` statics delegate to it for custom-node compatibility.
+
 ### UI Components (ui/)
 
 Collection of reusable UI components including:

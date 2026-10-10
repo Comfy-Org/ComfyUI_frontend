@@ -9,10 +9,9 @@ import { useKeybindingStore } from '@/platform/keybindings/keybindingStore'
 import { useMenuItemStore } from '@/stores/menuItemStore'
 import { useWidgetStore } from '@/stores/widgetStore'
 import { useBottomPanelStore } from '@/stores/workspace/bottomPanelStore'
-import type { ComfyExtension } from '@/types/comfy'
+import type { ComfyApp, ComfyExtension } from '@/types/comfy'
 import type { AuthUserInfo } from '@/types/authTypes'
-import { app } from '@/scripts/app'
-import type { ComfyApp } from '@/scripts/app'
+import { useApp } from '@/scripts/appInstance'
 
 function isPromiseLike(value: unknown): value is PromiseLike<unknown> {
   return (
@@ -57,7 +56,7 @@ export const useExtensionService = () => {
       // getCustomWidgets.
       void (async () => {
         if (extension.getCustomWidgets) {
-          const widgets = await extension.getCustomWidgets(app)
+          const widgets = await extension.getCustomWidgets(useApp())
           useWidgetStore().registerCustomWidgets(widgets)
         }
       })()
@@ -66,7 +65,7 @@ export const useExtensionService = () => {
     if (extension.onAuthUserResolved) {
       const { onUserResolved } = useCurrentUser()
       const handleUserResolved = wrapWithErrorHandlingAsync(
-        (user: AuthUserInfo) => extension.onAuthUserResolved?.(user, app),
+        (user: AuthUserInfo) => extension.onAuthUserResolved?.(user, useApp()),
         (error) => {
           console.error('[Extension Auth Hook Error]', {
             extension: extension.name,
@@ -149,7 +148,7 @@ export const useExtensionService = () => {
         try {
           const fn = ext[method]
           if (typeof fn === 'function') {
-            results.push(fn.call(ext, ...args, app))
+            results.push(fn.call(ext, ...args, useApp()))
           }
         } catch (error) {
           console.error(
@@ -204,7 +203,7 @@ export const useExtensionService = () => {
             (async () => {
               legacyMenuCompat.setCurrentExtension(ext.name)
               try {
-                return await fn.call(ext, ...args, app)
+                return await fn.call(ext, ...args, useApp())
               } finally {
                 legacyMenuCompat.setCurrentExtension(null)
               }
@@ -213,7 +212,7 @@ export const useExtensionService = () => {
           continue
         }
 
-        const result: unknown = fn.call(ext, ...args, app)
+        const result: unknown = fn.call(ext, ...args, useApp())
         pending.push(
           isPromiseLike(result)
             ? Promise.resolve(result).catch((error) => logError(ext, error))
