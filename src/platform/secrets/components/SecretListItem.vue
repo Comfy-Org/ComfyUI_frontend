@@ -29,7 +29,7 @@
       <i v-if="loading" class="pi pi-spinner pi-spin text-muted" />
       <template v-else>
         <Button
-          v-tooltip="{ value: editLabel, showDelay: 300 }"
+          :tooltip="editLabel"
           variant="muted-textonly"
           size="icon-sm"
           :aria-label="editLabel"
@@ -39,7 +39,7 @@
           <i class="pi pi-pen-to-square" />
         </Button>
         <Button
-          v-tooltip="{ value: deleteLabel, showDelay: 300 }"
+          :tooltip="deleteLabel"
           variant="muted-textonly"
           size="icon-sm"
           :aria-label="deleteLabel"

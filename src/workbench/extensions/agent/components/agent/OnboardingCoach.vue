@@ -13,7 +13,6 @@ import { computed, nextTick, onBeforeUnmount, ref, useId, watch } from 'vue'
 
 import { vRekaZIndex } from '@/components/dialog/vRekaZIndex'
 import Button from '@/components/ui/button/Button.vue'
-import { TOOLTIP_TEXT_CLASS } from '@/composables/useTooltipConfig'
 import {
   SPOTLIGHT_PAD,
   clampSpotlight,
@@ -263,10 +262,10 @@ useEventListener(
       >
         <span
           aria-hidden="true"
-          class="size-0 border-y-4 border-r-4 border-y-transparent border-r-node-component-tooltip-border"
+          class="size-0 border-y-4 border-r-4 border-y-transparent border-r-border-default"
         />
         <div
-          :class="cn(TOOLTIP_TEXT_CLASS, 'wrap-break-word whitespace-pre-line')"
+          class="rounded-md border border-border-default bg-base-background px-3 py-2 text-xs/tight wrap-break-word whitespace-pre-line text-base-foreground shadow-interface"
         >
           {{ step.tooltip }}
         </div>

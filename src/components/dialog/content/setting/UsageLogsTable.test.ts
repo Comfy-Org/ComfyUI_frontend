@@ -1,6 +1,5 @@
 import { getActivePinia } from 'pinia'
 import PrimeVue from 'primevue/config'
-import Tooltip from 'primevue/tooltip'
 import { assert, beforeEach, describe, expect, it, vi } from 'vitest'
 import { computed, nextTick, ref } from 'vue'
 
@@ -117,16 +116,12 @@ describe('UsageLogsTable', () => {
       value: mockEventsResponse
     })
     mockBillingReadRail.enabled = false
-    vi.mocked(useCustomerEventsService().getTooltipContent).mockReturnValue(
-      '<strong>Transaction Id:</strong> txn-123'
-    )
   })
 
   function renderComponent() {
     return render(UsageLogsTable, {
       global: {
-        plugins: [PrimeVue, testI18n, getActivePinia()!],
-        directives: { tooltip: Tooltip }
+        plugins: [PrimeVue, testI18n, getActivePinia()!]
       }
     })
   }
@@ -293,6 +288,25 @@ describe('UsageLogsTable', () => {
         name: 'Additional Info'
       })
       expect(infoButtons.length).toBeGreaterThan(0)
+    })
+
+    it('shows each event param on its own tooltip line', async () => {
+      vi.mocked(useCustomerEventsService().formatJsonKey).mockImplementation(
+        (key) => `key(${key})`
+      )
+      vi.mocked(useCustomerEventsService().formatJsonValue).mockImplementation(
+        (value) => `value(${String(value)})`
+      )
+      await renderLoaded()
+
+      const [firstInfoButton] = screen.getAllByRole('button', {
+        name: 'Additional Info'
+      })
+      await userEvent.hover(firstInfoButton)
+
+      expect((await screen.findByRole('tooltip')).textContent).toBe(
+        'key(amount): value(1000)\nkey(transaction_id): value(txn-123)'
+      )
     })
 
     it('does not render info buttons when no additional info', async () => {
