@@ -1,0 +1,136 @@
+{
+  "entries": [
+    {
+      "id": "playwright:browser_tests/tests/agent/agentLayoutQuality.spec.ts:draws every node without overlapping another:1",
+      "classification": "live-defect"
+    },
+    {
+      "id": "playwright:browser_tests/tests/agent/agentNestedOutputSentPreview.spec.ts:sends a nested video output by its display name, not its asset id:1",
+      "classification": "live-defect"
+    },
+    {
+      "id": "playwright:browser_tests/tests/agent/agentNodeIdCollision.spec.ts:<expression:'wipes a duplicated node and replaces it with a phantom node when ' + \"the agent's write lands on the same id\">:1",
+      "classification": "live-defect"
+    },
+    {
+      "id": "playwright:browser_tests/tests/agent/agentNodeIdCollision.spec.ts:<expression:\"leaves the agent's own graph read disagreeing with the \" + 'still-visible canvas after its write is silently dropped'>:1",
+      "classification": "live-defect"
+    },
+    {
+      "id": "playwright:browser_tests/tests/agent/agentRateLimitDuplicateSubmit.spec.ts:keeps repeated Enter presses to one rejected send:1",
+      "classification": "live-defect"
+    },
+    {
+      "id": "playwright:browser_tests/tests/agent/agentRefusedDocSubscribe.spec.ts:reports a canvas edit as succeeded when the document never arrived:1",
+      "classification": "live-defect"
+    },
+    {
+      "id": "playwright:browser_tests/tests/agent/agentReplyDrafts.spec.ts:<expression:`a completed turn keeps its ${selection} approval action live`>:1",
+      "classification": "live-defect"
+    },
+    {
+      "id": "playwright:browser_tests/tests/infrastructure/liveCloudBillingRouting.spec.ts:<expression:`blocks POST ${path} and fails even when the app catches it`>:1",
+      "classification": "infrastructure-assertion"
+    },
+    {
+      "id": "playwright:browser_tests/tests/infrastructure/liveCloudBillingRouting.spec.ts:<expression:`${client} retains the API origin and mutation guards`>:1",
+      "classification": "infrastructure-assertion"
+    },
+    {
+      "id": "playwright:browser_tests/tests/infrastructure/liveCloudBillingRouting.spec.ts:retains the external WebSocket guard:1",
+      "classification": "infrastructure-assertion"
+    },
+    {
+      "id": "playwright:browser_tests/tests/infrastructure/networkIsolation.spec.ts:<expression:`${name} reports external requests at teardown`>:1",
+      "classification": "infrastructure-assertion"
+    },
+    {
+      "id": "playwright:browser_tests/tests/infrastructure/networkIsolation.spec.ts:fails the owning test even when an external fetch error is caught:1",
+      "classification": "infrastructure-assertion"
+    },
+    {
+      "id": "playwright:browser_tests/tests/infrastructure/networkIsolation.spec.ts:fails the owning test for an external WebSocket:1",
+      "classification": "infrastructure-assertion"
+    },
+    {
+      "id": "playwright:browser_tests/tests/infrastructure/networkIsolation.spec.ts:fails the owning test for an unmocked popup:1",
+      "classification": "infrastructure-assertion"
+    },
+    {
+      "id": "playwright:browser_tests/tests/infrastructure/networkIsolation.spec.ts:guards every API verb, including context.request:1",
+      "classification": "infrastructure-assertion"
+    },
+    {
+      "id": "playwright:browser_tests/tests/sidebar/assetPanelDragOntoLoadImageWidget.spec.ts:<expression:title>:1",
+      "classification": "live-defect"
+    },
+    {
+      "id": "playwright:browser_tests/tests/vueNodes/interactions/canvas/pointerGestures.spec.ts:node-title movement below ClickDrift is a click:1",
+      "classification": "live-defect"
+    },
+    {
+      "id": "playwright:browser_tests/tests/vueNodes/interactions/canvas/pointerGestures.spec.ts:pressing an unselected unpinned node brings it to front before release:1",
+      "classification": "live-defect"
+    },
+    {
+      "id": "playwright:browser_tests/tests/vueNodes/interactions/canvas/pointerGestures.spec.ts:slow group-title click selects without moving the group:1",
+      "classification": "live-defect"
+    },
+    {
+      "id": "playwright:browser_tests/tests/vueNodes/interactions/canvas/selection.spec.ts:shift-toggling a group off also deselects its cascaded children:1",
+      "classification": "live-defect"
+    },
+    {
+      "id": "playwright:browser_tests/tests/workspace/workflowDraftForeignWindowSignIn.spec.ts:a second window signing in neither wipes drafts nor stops persistence:1",
+      "classification": "live-defect"
+    },
+    {
+      "id": "vitest:src/lib/litegraph/src/LGraphCanvas.gesture.test.ts:releases a hovered node with the pointerup event:1",
+      "classification": "live-defect"
+    },
+    {
+      "id": "vitest:src/lib/litegraph/src/LGraphCanvas.gesture.test.ts:slow movement within the drift threshold stays a click:1",
+      "classification": "live-defect"
+    },
+    {
+      "id": "vitest:src/lib/litegraph/src/LGraphCanvas.selection.test.ts:a clearing click reports one change:1",
+      "classification": "live-defect"
+    },
+    {
+      "id": "vitest:src/lib/litegraph/src/LGraphCanvas.selection.test.ts:a replacing click reports one change:1",
+      "classification": "live-defect"
+    },
+    {
+      "id": "vitest:src/lib/litegraph/src/LGraphCanvas.selection.test.ts:deselect() reports the change:1",
+      "classification": "live-defect"
+    },
+    {
+      "id": "vitest:src/lib/litegraph/src/LGraphCanvas.selection.test.ts:live marquee reports one change:1",
+      "classification": "live-defect"
+    },
+    {
+      "id": "vitest:src/lib/litegraph/src/LGraphCanvas.selection.test.ts:nested groups receive onSelected:1",
+      "classification": "live-defect"
+    },
+    {
+      "id": "vitest:src/lib/litegraph/src/LGraphCanvas.selection.test.ts:select() reports the change:1",
+      "classification": "live-defect"
+    },
+    {
+      "id": "vitest:src/lib/litegraph/src/LGraphCanvas.selection.test.ts:shift+alt marquee resolves the same way in both modes:1",
+      "classification": "live-defect"
+    },
+    {
+      "id": "vitest:src/platform/workflow/persistence/base/hashUtil.test.ts:produces different hashes for known collision paths:1",
+      "classification": "live-defect"
+    },
+    {
+      "id": "vitest:src/stores/assetDownloadStore.test.ts:excludes a failed-then-actually-completed task from activeDownloads (PM-1302):1",
+      "classification": "live-defect"
+    },
+    {
+      "id": "vitest:src/workbench/extensions/agent/crdt/semanticLayoutSeparation.guard.test.ts:omits pos and size from a minted node payload:1",
+      "classification": "live-defect"
+    }
+  ]
+}

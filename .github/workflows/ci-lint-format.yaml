@@ -199,3 +199,6 @@ jobs:
 
       - name: Verify knip, locale integrity and ADR index
         uses: ./.github/actions/repo-checks
+
+      - name: Prevent untracked expected failures
+        run: pnpm test:expected-failure-ratchet
