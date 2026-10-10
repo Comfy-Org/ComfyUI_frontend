@@ -60,16 +60,10 @@ import NodeContent from './components/NodeContent.vue'
  * failing anything below, and nothing else in the repo asserts identity
  * across a reset either. `LGraphNode.vue` is stood in for too: in production
  * it derives the `media` prop from `nodeOutputStore` (`nodeMedia`) behind its
- * own `v-if` gates. Two consequences worth knowing before trusting these
- * tests:
- *   - `media` is a constant here, so a retype that made production's
- *     `nodeMedia` return `undefined`, or flip to `'image'`, would swap the
- *     component out and destroy the element without failing anything below.
- *   - production appends a fresh `rand` per url on non-cloud builds
- *     (`app.getRandParam`), so a surviving element can still be handed a new
- *     `src` and reload. The urls are held fixed here and `src` is asserted
- *     unchanged, which keeps identity honest but says nothing about that
- *     derivation.
+ * own `v-if` gates. `media` is a constant here, so a retype that made
+ * production's `nodeMedia` return `undefined`, or flip to `'image'`, would
+ * swap the component out and destroy the element without failing anything
+ * below.
  */
 class MediaNode extends LGraphNode {
   static override title = 'Media Node'
