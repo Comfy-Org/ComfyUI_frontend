@@ -1,3 +1,4 @@
+import type { PlanFeatureGroup } from '@/data/pricingPlans'
 import type { TranslationKey } from '@/i18n/translations'
 
 export const COMFY_AGENT_MONTHLY_ALLOWANCE_USD = '$0.70'
@@ -35,3 +36,27 @@ export const comfyAgentPlanLimits: readonly ComfyAgentPlanLimits[] = [
     concurrentRequestsPerWorkspace: 16
   }
 ]
+
+export function comfyAgentFeatureGroup(planId: string): PlanFeatureGroup {
+  const allowance = {
+    text: 'pricing.agent.cardFeature.allowance',
+    params: { allowance: COMFY_AGENT_MONTHLY_ALLOWANCE_USD }
+  } as const
+  const limits = comfyAgentPlanLimits.find((plan) => plan.id === planId)
+  return {
+    titleKey: 'pricing.agent.cardTitle',
+    features: limits
+      ? [
+          allowance,
+          {
+            text: 'pricing.agent.cardFeature.tasksPerMember',
+            params: { count: limits.concurrentTasksPerMember }
+          },
+          {
+            text: 'pricing.agent.cardFeature.requestsPerWorkspace',
+            params: { count: limits.concurrentRequestsPerWorkspace }
+          }
+        ]
+      : [allowance]
+  }
+}

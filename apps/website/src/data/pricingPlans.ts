@@ -9,7 +9,7 @@ export type PlanFeatureStatus = 'included' | 'excluded' | 'coming'
 
 interface PlanFeature {
   text: TranslationKey
-  params?: Record<string, number>
+  params?: Record<string, string | number>
   status?: PlanFeatureStatus
   highlight?: boolean
 }
