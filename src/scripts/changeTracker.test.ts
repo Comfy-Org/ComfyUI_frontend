@@ -470,8 +470,79 @@ describe('ChangeTracker', () => {
         expect(app.rootGraph.serialize).not.toHaveBeenCalled()
         expect(mockAssert).toHaveBeenCalledWith(
           false,
-          'ChangeTracker.captureCanvasState() called on inactive tracker'
+          'ChangeTracker.captureCanvasState() called on inactive tracker',
+          expect.objectContaining({
+            method: 'captureCanvasState',
+            trackerWorkflowPath: tracker.workflow.path
+          })
         )
+      })
+
+      it('reports diagnostic context with the inactive-tracker assertion', () => {
+        const tracker = createTracker()
+        useWorkflowStore().activeWorkflow = fromPartial({
+          path: '/test/other.json',
+          changeTracker: {}
+        })
+
+        tracker.captureCanvasState()
+
+        expect(mockAssert).toHaveBeenCalledWith(
+          false,
+          'ChangeTracker.captureCanvasState() called on inactive tracker',
+          {
+            method: 'captureCanvasState',
+            trackerWorkflowPath: tracker.workflow.path,
+            activeWorkflowPath: '/test/other.json',
+            stack: expect.any(String)
+          }
+        )
+      })
+
+      it('does not assert when the active workflow changes inside a beforeChange/afterChange transaction', () => {
+        const tracker = createTracker()
+        tracker.beforeChange()
+
+        // createTracker() makes the new workflow active while the first
+        // tracker's transaction is still open
+        const other = createTracker()
+        tracker.afterChange()
+
+        expect(app.rootGraph.serialize).not.toHaveBeenCalled()
+        expect(mockAssert).not.toHaveBeenCalled()
+        expect(tracker.changeCount).toBe(0)
+        expect(other.changeCount).toBe(0)
+      })
+
+      it('keeps nested transactions balanced on a tracker that went inactive', () => {
+        const tracker = createTracker()
+        tracker.beforeChange()
+        tracker.beforeChange()
+        createTracker()
+
+        tracker.afterChange()
+        expect(tracker.changeCount).toBe(1)
+        tracker.afterChange()
+
+        expect(tracker.changeCount).toBe(0)
+        expect(mockAssert).not.toHaveBeenCalled()
+      })
+
+      it('captures normally once an inactive tracker becomes active again', () => {
+        const tracker = createTracker(createState(1))
+        tracker.beforeChange()
+        const other = createTracker()
+        tracker.afterChange()
+        useWorkflowStore().activeWorkflow = fromPartial({
+          changeTracker: tracker
+        })
+        mockCanvasState(createState(2))
+
+        tracker.captureCanvasState()
+
+        expect(tracker.activeState.nodes).toHaveLength(2)
+        expect(other.undoQueue).toHaveLength(0)
+        expect(mockAssert).not.toHaveBeenCalled()
       })
     })
 
@@ -1417,7 +1488,8 @@ describe('ChangeTracker', () => {
       expect(useNodeOutputStore().snapshotOutputs).not.toHaveBeenCalled()
       expect(mockAssert).toHaveBeenCalledWith(
         false,
-        'ChangeTracker.deactivate() called on inactive tracker'
+        'ChangeTracker.deactivate() called on inactive tracker',
+        expect.objectContaining({ method: 'deactivate' })
       )
     })
   })
