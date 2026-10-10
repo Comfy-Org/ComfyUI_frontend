@@ -153,6 +153,30 @@ test.describe('Load3D', { tag: '@vue-nodes' }, () => {
     }
   )
 
+  test('Shows model statistics over the viewport once a model loads', async ({
+    comfyPage,
+    load3d
+  }) => {
+    await expect(load3d.node.getByRole('term')).toHaveCount(0)
+
+    const fileChooserPromise = comfyPage.page.waitForEvent('filechooser')
+    await load3d.getUploadButton('upload 3d model').click()
+    const fileChooser = await fileChooserPromise
+    await fileChooser.setFiles(assetPath('cube.obj'))
+    await load3d.waitForModelLoaded()
+
+    await expect(load3d.node.getByRole('term')).toHaveText([
+      'Vertices',
+      'Edges',
+      'Triangles'
+    ])
+    await expect(load3d.node.getByRole('definition')).toHaveText([
+      '8',
+      '18',
+      '12'
+    ])
+  })
+
   test(
     'Uploading a background image populates Scene Config and surfaces panorama/remove controls',
     { tag: ['@screenshot'] },

@@ -121,6 +121,24 @@ async function openCategoryMenu(user: ReturnType<typeof userEvent.setup>) {
 }
 
 describe('Load3DMenuBar', () => {
+  it('shows the model stats overlay only when stats are provided', async () => {
+    const { rerender } = renderMenuBar()
+    expect(screen.queryByText('Vertices')).not.toBeInTheDocument()
+
+    await rerender({
+      modelStats: { vertices: 8, edges: 12, triangles: 12 }
+    })
+
+    expect(screen.getByText('Vertices')).toBeInTheDocument()
+    expect(screen.getByText('8')).toBeInTheDocument()
+  })
+
+  it('hides the model stats overlay when the model has no geometry', () => {
+    renderMenuBar({ modelStats: { vertices: 0, edges: 0, triangles: 0 } })
+
+    expect(screen.queryByText('Vertices')).not.toBeInTheDocument()
+  })
+
   it('shows scene controls by default', async () => {
     const { user } = renderMenuBar()
     expect(
