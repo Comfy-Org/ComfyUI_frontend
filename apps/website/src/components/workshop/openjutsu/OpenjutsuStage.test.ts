@@ -20,13 +20,14 @@ const take = (patch: Partial<SwapTake> = {}): SwapTake => ({
 
 const editing = {
   videoUrl: 'blob:clip',
-  clipSeconds: 20,
   range: { start: 2, seconds: 6 },
   partSeconds: 6,
+  frame: { width: 1344, height: 768 },
   takes: [],
   selected: 'source',
   rendering: false,
-  sample: false
+  sample: false,
+  view: 'result' as const
 }
 
 const showing = (current: SwapTake) => ({
@@ -37,25 +38,26 @@ const showing = (current: SwapTake) => ({
   rendering: current.status === 'rendering'
 })
 
-const player = () => screen.getByTestId('openjutsu-player')
-
 describe('OpenjutsuStage', () => {
-  it('invites a video before there is one', () => {
-    render(OpenjutsuStage, { props: { ...editing, videoUrl: undefined } })
+  it('asks for a video before there is one, and hands the pick over', async () => {
+    const { emitted } = render(OpenjutsuStage, {
+      props: { ...editing, videoUrl: undefined }
+    })
+    const file = new File(['clip'], 'clip.mp4', { type: 'video/mp4' })
 
     expect(screen.getByText('Your swapped video plays here')).toBeVisible()
-    expect(screen.queryByTestId('openjutsu-player')).not.toBeInTheDocument()
+    await userEvent.upload(screen.getByLabelText('Add the video to edit'), file)
+    expect(emitted('video')).toEqual([[file]])
   })
 
-  it('shows the clip and the part to swap, with the way back to trimming', async () => {
-    const { emitted } = render(OpenjutsuStage, { props: editing })
+  it('plays the clip in the site player before any take', () => {
+    render(OpenjutsuStage, { props: editing })
 
-    expect(player()).toHaveAttribute('src', 'blob:clip')
-    expect(
-      screen.getByText('Swapping 2.0 – 8.0 s (6.0 s of 20.0 s)')
-    ).toBeVisible()
-    await userEvent.click(screen.getByRole('button', { name: 'Trim' }))
-    expect(emitted('trim')).toHaveLength(1)
+    expect(screen.getByLabelText('Your clip')).toHaveAttribute(
+      'src',
+      'blob:clip'
+    )
+    expect(screen.getByRole('button', { name: 'Play' })).toBeInTheDocument()
     expect(screen.queryByRole('navigation')).not.toBeInTheDocument()
   })
 
@@ -67,10 +69,8 @@ describe('OpenjutsuStage', () => {
     })
     const { emitted } = render(OpenjutsuStage, { props: showing(rendering) })
 
-    expect(screen.getByTestId('openjutsu-progress')).toHaveTextContent(
-      'Waiting for a server'
-    )
-    expect(screen.queryByTestId('openjutsu-part')).not.toBeInTheDocument()
+    expect(screen.getByText('Waiting for a server')).toBeVisible()
+    expect(screen.getByText('0:00 elapsed')).toBeVisible()
     await userEvent.click(screen.getByRole('button', { name: 'Cancel' }))
     expect(emitted('cancel')).toHaveLength(1)
   })
@@ -90,29 +90,33 @@ describe('OpenjutsuStage', () => {
     expect(emitted('reuse')).toEqual([['take-1']])
   })
 
-  it('plays a finished take, flips to its source and back, and offers the file', async () => {
-    const { emitted } = render(OpenjutsuStage, { props: showing(take()) })
+  it.for([
+    { view: 'result', label: 'Replaced the man', src: 'blob:result' },
+    { view: 'original', label: 'Your clip', src: 'blob:clip' }
+  ] as const)('plays the $view of a finished take', ({ view, label, src }) => {
+    render(OpenjutsuStage, { props: { ...showing(take()), view } })
 
-    expect(player()).toHaveAttribute('src', 'blob:result')
-    expect(screen.getByText(/Replaced the man/)).toBeVisible()
+    expect(screen.getByLabelText(label)).toHaveAttribute('src', src)
     expect(
-      screen.queryByTestId('openjutsu-sample-note')
+      screen.queryByRole('slider', { name: /compare/ })
     ).not.toBeInTheDocument()
-    expect(screen.getByRole('link', { name: 'Download' })).toHaveAttribute(
-      'download',
-      'openjutsu-take-1.mp4'
-    )
+  })
 
-    await userEvent.click(screen.getByRole('radio', { name: 'Source' }))
-    expect(player()).toHaveAttribute('src', 'blob:clip')
-    expect(screen.getByRole('radio', { name: 'Source' })).toBeChecked()
-    await userEvent.click(screen.getByRole('radio', { name: 'Result' }))
-    expect(player()).toHaveAttribute('src', 'blob:result')
+  it('splits the result and its source under one set of controls in compare', () => {
+    render(OpenjutsuStage, {
+      props: { ...showing(take()), view: 'compare' }
+    })
 
-    await userEvent.click(
-      screen.getByRole('button', { name: 'Use these settings' })
+    expect(screen.getByLabelText('Replaced the man')).toHaveAttribute(
+      'src',
+      'blob:result'
     )
-    expect(emitted('reuse')).toEqual([['take-1']])
+    expect(
+      screen.getByRole('slider', {
+        name: 'Drag to compare the source and the result'
+      })
+    ).toHaveValue('50')
+    expect(screen.getAllByRole('button', { name: 'Play' })).toHaveLength(1)
   })
 
   it('marks a result from the stand-in backend as not real', () => {

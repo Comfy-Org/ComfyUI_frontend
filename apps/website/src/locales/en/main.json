@@ -5211,8 +5211,7 @@
     "title": "Cinematic Studio",
     "beta": "Beta",
     "repo": {
-      "view": "View on GitHub",
-      "soon": "GitHub · Coming soon"
+      "view": "View on GitHub"
     },
     "meta": {
       "description": "Direct cinematic stills: pick the camera, shot, light, film and grade, then run any image model through the Comfy Router."
@@ -5369,6 +5368,21 @@
       "yourPalette": "Your palette",
       "edit": "Edit palette",
       "done": "Done"
+    },
+    "download": {
+      "label": "Download",
+      "locked": "Run to download"
+    },
+    "zoom": {
+      "label": "Zoom",
+      "in": "Zoom in",
+      "out": "Zoom out",
+      "fit": "Fit to screen, now {n}%"
+    },
+    "compare": {
+      "label": "Compare",
+      "before": "Before",
+      "after": "After"
     }
   },
   "reshoot": {
@@ -5600,21 +5614,18 @@
       "hint": "Any length. You pick 5–15 seconds of it; one continuous shot works best.",
       "detail": "{seconds} s · swapping {used} s"
     },
-    "character": {
-      "heading": "New character",
-      "drop": "Add a character image",
-      "hint": "One image: a clear full view or a character sheet.",
-      "detail": "Replaces the person you name below"
-    },
     "target": {
       "heading": "Who to replace",
-      "placeholder": "e.g. the man in the purple shirt",
-      "hint": "Describe one person so they cannot be confused with anyone else in the shot.",
+      "placeholder": "Who to replace? Describe one person so no one else in the shot matches, e.g. the man in the purple shirt.",
       "help": "The swap follows this description, not a click on the picture. Say what sets the person apart: clothing, position, hair."
+    },
+    "seed": {
+      "shuffle": "Pick a random seed",
+      "placeholder": "Random seed"
     },
     "trim": {
       "edit": "Trim",
-      "summary": "Swapping {from} – {to} s ({seconds} s of {total} s)"
+      "summary": "{from}–{to} s of {total} s"
     },
     "needs": {
       "video": "Add a video to start",
@@ -5631,7 +5642,8 @@
       "queued": "Waiting for a server",
       "running": "Swapping the character",
       "fetching": "Fetching the result",
-      "note": "This can take several minutes. The first run after a quiet spell also loads the model."
+      "note": "This can take several minutes. The first run after a quiet spell also loads the model.",
+      "elapsed": "{time} elapsed"
     },
     "take": {
       "name": "Take {n}",
@@ -5655,9 +5667,19 @@
     "size": {
       "label": "Quality",
       "768p": "768p · sharper",
-      "480p": "480p · faster",
-      "saved": "Saves at {width}×{height}, the same shape as your video.",
-      "shape": "The result always keeps your video's shape."
+      "480p": "480p · faster"
+    },
+    "run": "Swap character",
+    "tools": "Result views",
+    "sheet": {
+      "expand": "Show swap settings",
+      "collapse": "Hide swap settings"
+    },
+    "compare": {
+      "slider": "Drag to compare the source and the result"
+    },
+    "peek": {
+      "seconds": "{seconds} s"
     }
   }
 }

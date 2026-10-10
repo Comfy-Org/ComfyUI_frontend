@@ -4604,8 +4604,7 @@
     "title": "电影工作室",
     "beta": "测试版",
     "repo": {
-      "view": "在 GitHub 上查看",
-      "soon": "GitHub · 即将推出"
+      "view": "在 GitHub 上查看"
     },
     "meta": {
       "description": "导演电影感静帧：选择摄影机、景别、光线、胶片与调色，然后通过 Comfy Router 运行任意图像模型。"
@@ -4762,6 +4761,21 @@
       "yourPalette": "你的色板",
       "edit": "编辑色板",
       "done": "完成"
+    },
+    "download": {
+      "label": "下载",
+      "locked": "运行后即可下载"
+    },
+    "zoom": {
+      "label": "缩放",
+      "in": "放大",
+      "out": "缩小",
+      "fit": "适应屏幕，当前 {n}%"
+    },
+    "compare": {
+      "label": "对比",
+      "before": "之前",
+      "after": "之后"
     }
   },
   "reshoot": {
@@ -4993,21 +5007,18 @@
       "hint": "长度不限。从中选取 5–15 秒；单个连续镜头效果最好。",
       "detail": "{seconds} 秒 · 替换其中 {used} 秒"
     },
-    "character": {
-      "heading": "新角色",
-      "drop": "添加角色图片",
-      "hint": "一张图片：清晰的全身图或角色设定图。",
-      "detail": "替换你在下方指定的人物"
-    },
     "target": {
       "heading": "替换谁",
-      "placeholder": "例如：穿紫色衬衫的男人",
-      "hint": "只描述一个人，确保不会与画面中的其他人混淆。",
+      "placeholder": "要替换谁？描述一个人，确保画面中没有其他人符合，例如：穿紫色衬衫的男人。",
       "help": "替换依据这段描述，而不是在画面上点选。请说明此人的特征：衣着、位置、发型。"
+    },
+    "seed": {
+      "shuffle": "随机选取种子",
+      "placeholder": "随机种子"
     },
     "trim": {
       "edit": "裁剪",
-      "summary": "替换 {from} – {to} 秒（共 {total} 秒中的 {seconds} 秒）"
+      "summary": "{from}–{to} 秒（共 {total} 秒）"
     },
     "needs": {
       "video": "先添加一段视频",
@@ -5024,7 +5035,8 @@
       "queued": "正在等待服务器",
       "running": "正在替换角色",
       "fetching": "正在获取结果",
-      "note": "可能需要几分钟。闲置一段时间后的首次运行还需要加载模型。"
+      "note": "可能需要几分钟。闲置一段时间后的首次运行还需要加载模型。",
+      "elapsed": "已用时 {time}"
     },
     "take": {
       "name": "第 {n} 次",
@@ -5048,9 +5060,19 @@
     "size": {
       "label": "画质",
       "768p": "768p · 更清晰",
-      "480p": "480p · 更快",
-      "saved": "以 {width}×{height} 保存，与你的视频比例一致。",
-      "shape": "结果始终保持你的视频比例。"
+      "480p": "480p · 更快"
+    },
+    "run": "替换角色",
+    "tools": "结果视图",
+    "sheet": {
+      "expand": "显示替换设置",
+      "collapse": "隐藏替换设置"
+    },
+    "compare": {
+      "slider": "拖动以对比原视频与结果"
+    },
+    "peek": {
+      "seconds": "{seconds} 秒"
     }
   }
 }
