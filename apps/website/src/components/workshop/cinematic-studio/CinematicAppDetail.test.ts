@@ -54,7 +54,9 @@ describe('CinematicAppDetail', () => {
 
     const others = appModels.filter((app) => app.slug !== studio.slug)
     for (const other of others)
-      expect(screen.getByRole('link', { name: new RegExp(other.name) })).toBeVisible()
+      expect(
+        screen.getByRole('link', { name: new RegExp(other.name) })
+      ).toBeVisible()
     expect(screen.queryAllByTestId('workshop-app-card')).toHaveLength(
       others.length
     )

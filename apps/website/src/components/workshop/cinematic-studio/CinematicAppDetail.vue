@@ -31,7 +31,7 @@ const emit = defineEmits<{ try: [starter?: string] }>()
 const { t } = translationsFor(locale)
 const routes = getRoutes(locale)
 
-const useCase = app.useCases[0]
+const useCase = app.useCases?.[0]
 const moreApps = apps
   .filter((other) => other.slug !== app.slug)
   .map((other) => ({
@@ -126,7 +126,11 @@ const moreApps = apps
           data-testid="cinematic-example"
           @click="emit('try', shot.id)"
         >
-          <img :src="shot.image" alt="" class="aspect-video w-full object-cover" />
+          <img
+            :src="shot.image"
+            alt=""
+            class="aspect-video w-full object-cover"
+          />
           <span class="block p-4 text-sm text-primary-warm-gray">
             {{ t(shot.label) }}
           </span>
