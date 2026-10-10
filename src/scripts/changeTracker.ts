@@ -241,6 +241,14 @@ function getExecutionGraphState(value: unknown): unknown {
   return executionGraph
 }
 
+/**
+ * Tail of each tracker's restore queue, see {@link ChangeTracker.updateState}.
+ * Held outside the class because a `private` member would make `ChangeTracker`
+ * nominally typed, breaking the `Partial<ChangeTracker>` mocks that many call
+ * sites build.
+ */
+const restoreChains = new WeakMap<ChangeTracker, Promise<void>>()
+
 const reportedInactiveCalls = new Set<string>()
 
 function reportInactiveTrackerCall(method: string, workflowPath: string) {
@@ -468,23 +476,44 @@ export class ChangeTracker {
     ChangeTracker._checkStateWarned = false
   }
 
+  /**
+   * Restore one step, queued behind any restore still running. Two Ctrl+Z
+   * presses schedule independent `requestAnimationFrame` callbacks in
+   * {@link init}; unqueued, the second re-enters mid-`loadGraphData`, both
+   * record the same {@link activeState} so the step between them is lost, and
+   * the first `finally` clears `_restoringState` early, exposing a
+   * half-applied canvas that `captureCanvasState` reads as an edit and
+   * responds to by emptying the redo queue.
+   */
   async updateState(source: ComfyWorkflowJSON[], target: ComfyWorkflowJSON[]) {
-    const prevState = source.pop()
-    if (prevState) {
-      const previousState = this.activeState
-      target.push(previousState)
-      this._restoringState = true
-      try {
-        await app.loadGraphData(prevState, false, false, this.workflow, {
-          checkForRerouteMigration: false,
-          silentAssetErrors: true
-        })
-        this.activeState = prevState
-        this.updateModified(previousState)
-      } finally {
-        this._restoringState = false
+    const restore = (restoreChains.get(this) ?? Promise.resolve()).then(
+      async () => {
+        const prevState = source.pop()
+        if (!prevState) return
+
+        const previousState = this.activeState
+        target.push(previousState)
+        this._restoringState = true
+        try {
+          await app.loadGraphData(prevState, false, false, this.workflow, {
+            checkForRerouteMigration: false,
+            silentAssetErrors: true
+          })
+          this.activeState = prevState
+          this.updateModified(previousState)
+        } finally {
+          this._restoringState = false
+        }
       }
-    }
+    )
+    // The tail absorbs rejections so one failed restore does not leave a
+    // rejected promise nothing ever chains past, wedging undo for the session.
+    // The caller still sees the failure through the un-caught `restore`.
+    restoreChains.set(
+      this,
+      restore.catch(() => {})
+    )
+    await restore
   }
 
   async undo() {
