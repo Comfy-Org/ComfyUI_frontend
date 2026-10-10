@@ -86,6 +86,22 @@ describe('Router catalog completeness', () => {
       ]
     },
     {
+      id: 'openai/gpt-image-2.5-flare',
+      routerIds: [
+        'fal/fal-gpt-image-2.5-flare',
+        'runware/runware-gpt-image-2.5-flare',
+        'wavespeed/wavespeed-gpt-image-2.5-flare'
+      ]
+    },
+    {
+      id: 'openai/gpt-image-2.5-sunburst',
+      routerIds: [
+        'fal/fal-gpt-image-2.5-sunburst',
+        'runware/runware-gpt-image-2.5-sunburst',
+        'wavespeed/wavespeed-gpt-image-2.5-sunburst'
+      ]
+    },
+    {
       id: 'vertexai/gemini-3.1-flash-image',
       routerIds: [
         'fal/fal-nano-banana-2',

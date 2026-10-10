@@ -74,4 +74,20 @@ describe('compileWorkshopIndex alt providers', () => {
   ])('rejects $case', ({ altProviders, error }) => {
     expect(() => compileNative(nativeSnapshot(altProviders))).toThrow(error)
   })
+
+  it('rejects a leg shared by two native models', () => {
+    const otherId = 'kling/kling-3.0-turbo'
+    const other = rawSnapshots.find((entry) => entry.id === otherId)
+    if (!other) throw new Error(`Missing snapshot fixture: ${otherId}`)
+    const shared = {
+      ...other,
+      document: { ...other.document, 'x-comfy-router-alt-providers': [LEG] }
+    }
+    const contracts = packedContracts.filter((entry) =>
+      [NATIVE_ID, otherId].includes(entry.id)
+    )
+    expect(() =>
+      compileWorkshopIndex([nativeSnapshot([LEG]), shared], contracts, {})
+    ).toThrow('Duplicate alt provider legs')
+  })
 })

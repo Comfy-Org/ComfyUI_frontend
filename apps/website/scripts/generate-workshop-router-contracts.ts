@@ -214,11 +214,6 @@ export function compileWorkshopIndex(
             )
           return { provider, routerId: model_id }
         })
-        if (
-          new Set(altProviders.map(({ routerId }) => routerId)).size !==
-          altProviders.length
-        )
-          throw new Error(`Duplicate alt provider legs: ${snapshot.id}`)
         const description = contract
           ? contract.inputSchema.description
           : snapshot.document['x-comfy-output-schema-authored']
@@ -241,6 +236,11 @@ export function compileWorkshopIndex(
     new Set(records.map((record) => record.catalogId)).size !== records.length
   )
     throw new Error('Duplicate Router index catalog IDs')
+  const altRouterIds = records.flatMap(
+    (record) => record.altProviders?.map(({ routerId }) => routerId) ?? []
+  )
+  if (new Set(altRouterIds).size !== altRouterIds.length)
+    throw new Error('Duplicate alt provider legs')
   return `[\n${records.map((record) => JSON.stringify(record)).join(',\n')}\n]\n`
 }
 
