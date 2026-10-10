@@ -7,7 +7,6 @@ import {
   createTestSubgraphNode
 } from '@/lib/litegraph/src/subgraph/__fixtures__/subgraphHelpers'
 import { api } from '@/scripts/api'
-import { app } from '@/scripts/app'
 import { useNodeOutputStore } from '@/stores/nodeOutputStore'
 import type { BoundingBox } from '@/types/boundingBoxes'
 
@@ -174,8 +173,6 @@ describe('useBoundingBoxesSources', () => {
 
     it('keeps the same URL when an unrelated link changes', () => {
       const { graph, target, image, boxes } = buildGraph()
-      let rand = 0
-      vi.spyOn(app, 'getRandParam').mockImplementation(() => `&rand=${++rand}`)
       image.connect(0, target, 0)
       useNodeOutputStore().nodeOutputs[String(image.id)] = {
         images: [{ filename: 'bg.png', type: 'input' }]

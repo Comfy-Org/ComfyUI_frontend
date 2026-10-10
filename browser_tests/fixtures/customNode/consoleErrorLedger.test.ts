@@ -159,6 +159,11 @@ describe('consoleErrorLedger', () => {
       expect(unallowlistedErrors(pack, [error])).toEqual([])
       expect(unallowlistedErrors('Some-Future-Pack', [error])).toEqual([error])
     }
+    const otherSubfolder =
+      'Failed to load resource: 404 [http://localhost:8188/api/view?type=input&filename=%28upload+a+mesh+file%29&subfolder=3d]'
+    expect(
+      unallowlistedErrors('ComfyUI-UltraShape1', [otherSubfolder])
+    ).toEqual([otherSubfolder])
   })
 
   it('attributes iTools no-saved-drawing log only to an installed iTools pack', () => {

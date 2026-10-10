@@ -131,7 +131,7 @@ const CONSOLE_ERROR_ALLOWLIST: Record<string, AllowlistRule[]> = {
     {
       id: 'ultrashape-mesh-placeholder-preview',
       pattern:
-        /Failed to load resource.*404.*api\/view\?type=input&filename=%28upload\+a\+mesh\+file%29&subfolder=/,
+        /Failed to load resource.*404.*api\/view\?type=input&filename=%28upload\+a\+mesh\+file%29&subfolder=(&rand=[\d.]+)?\]/,
       global: true,
       reason:
         'mesh preview requests the literal upload-placeholder value on a backend with no mesh input',

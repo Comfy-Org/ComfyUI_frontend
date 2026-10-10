@@ -8,6 +8,7 @@ import {
   getPromotedWidgetNames,
   getPromotedWidgetCountByName
 } from '@e2e/fixtures/utils/promotedWidgets'
+import { assetPath } from '@e2e/fixtures/utils/paths'
 import { VueNodeFixture } from '@e2e/fixtures/utils/vueNodeFixtures'
 import { webSocketFixture } from '@e2e/fixtures/ws'
 const wstest = mergeTests(test, webSocketFixture)
@@ -254,14 +255,11 @@ test.describe('Vue Nodes Batch Image Preview', { tag: '@vue-nodes' }, () => {
 
 test.describe('Vue Nodes Image Preview URLs', { tag: '@vue-nodes' }, () => {
   wstest(
-    'shows a re-run output at the same /view URL so the browser can cache it',
+    'shows a re-shown output at the same /view URL, without a cache-busting param',
     async ({ comfyPage, getWebSocket }) => {
       const execution = new ExecutionHelper(comfyPage, await getWebSocket())
       await comfyPage.page.route('**/api/view?**', (route) =>
-        route.fulfill({
-          path: 'browser_tests/assets/test_upload_image.png',
-          headers: { 'Cache-Control': 'no-cache', ETag: '"v1"' }
-        })
+        route.fulfill({ path: assetPath('test_upload_image.png') })
       )
 
       await comfyPage.menu.topbar.newWorkflowButton.click()
