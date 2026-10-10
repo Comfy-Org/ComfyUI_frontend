@@ -172,7 +172,7 @@ import { PromptExecutionError, api } from './api'
 import type { ComfyApi } from './api'
 import { defaultGraph } from './defaultGraph'
 import { importA1111 } from './pnginfo'
-import { applyPromotedWidgetControl } from './promotedWidgetControl'
+import { applyPromotedWidgetControl } from '@/core/graph/subgraph/promotedWidgetControl'
 import { ComfyUI } from './ui'
 import { $el } from './ui/utils'
 import { ComfyAppMenu } from './ui/menu/index'
@@ -354,7 +354,15 @@ export class ComfyApp {
   )
   nodePreviewImages: Partial<Record<string, string[]>>
 
-  private rootGraphInternal: LGraph | undefined
+  private readonly rootGraphRef = shallowRef<LGraph | undefined>(undefined)
+
+  private get rootGraphInternal(): LGraph | undefined {
+    return this.rootGraphRef.value
+  }
+
+  private set rootGraphInternal(graph: LGraph | undefined) {
+    this.rootGraphRef.value = graph
+  }
 
   // TODO: Migrate internal usage to the
   /** @deprecated Use {@link rootGraph} instead */
@@ -373,7 +381,10 @@ export class ComfyApp {
     return this.rootGraphInternal
   }
 
-  /** Whether the root graph has been initialized. Safe to check without triggering error logs. */
+  /**
+   * Whether the root graph has been initialized. Safe to check without
+   * triggering error logs, and reactive, so it can be watched.
+   */
   get isGraphReady(): boolean {
     return !!this.rootGraphInternal
   }

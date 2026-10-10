@@ -1,5 +1,6 @@
 import { join } from 'node:path'
 import { expect } from '@playwright/test'
+import type { Page } from '@playwright/test'
 
 import { repoRoot } from '@website/paths'
 
@@ -159,6 +160,15 @@ test.describe('Product showcase accordion @interaction', () => {
     await page.goto('/')
   })
 
+  // The active tab renders as a link and inactive tabs as buttons.
+  const featureTab = (page: Page, name: string) =>
+    page
+      .getByRole('button')
+      .or(page.getByRole('link'))
+      .filter({
+        has: page.getByRole('heading', { level: 3, name, exact: true })
+      })
+
   test('first feature is active by default', async ({ page }) => {
     await expect(
       page.getByText(/Build powerful AI pipelines by connecting nodes/).first()
@@ -168,39 +178,34 @@ test.describe('Product showcase accordion @interaction', () => {
   test('clicking inactive feature expands it and collapses previous', async ({
     page
   }) => {
-    const secondFeature = page
-      .getByRole('button', { name: /App mode/i })
-      .first()
+    const secondFeature = featureTab(page, 'Comfy Agent')
 
     await secondFeature.scrollIntoViewIfNeeded()
     await secondFeature.click()
 
     await expect(
-      secondFeature.getByText(/If you are new to ComfyUI/)
+      secondFeature.getByText(/Comfy Agent builds and runs the workflow/)
     ).toBeVisible()
 
-    const firstFeature = page
-      .getByRole('button', { name: /Full Control with Nodes/i })
-      .first()
+    const firstFeature = featureTab(page, 'Full Control with Nodes')
 
     await expect(firstFeature).not.toHaveClass(/bg-primary-comfy-yellow/)
     await expect(secondFeature).toHaveClass(/bg-primary-comfy-yellow/)
   })
 
-  test('third feature shows the mask scene on mobile @mobile', async ({
+  test('third feature shows the API demo video on mobile @mobile', async ({
     page
   }) => {
-    const thirdFeature = page
-      .getByRole('button', { name: /Community Workflows/i })
-      .first()
+    const thirdFeature = featureTab(page, 'Comfy API')
 
     await thirdFeature.scrollIntoViewIfNeeded()
     await thirdFeature.click()
 
+    await expect(thirdFeature.getByText(/with one API/)).toBeVisible()
     // The CSS-hidden desktop copy is also in the DOM; target the mobile one.
-    const maskScene = page.locator('.vms-stage:visible')
-    await expect(maskScene).toBeVisible()
-    await expect(maskScene.locator('video').first()).toBeAttached()
+    await expect(
+      page.locator('video[src$="homepage-api-cut-04.mp4"]:visible')
+    ).toBeVisible()
   })
 })
 

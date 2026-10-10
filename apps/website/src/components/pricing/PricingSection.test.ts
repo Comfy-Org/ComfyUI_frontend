@@ -104,4 +104,18 @@ describe('PricingSection credit allotment copy', () => {
     expect(screen.getAllByText('年度积分')).toHaveLength(4)
     expect(screen.queryAllByText('每月积分')).toHaveLength(0)
   })
+
+  it('shows the long runtime line on Pro only, under an Everything in Creator heading', () => {
+    render(PricingSection, { props: { defaultBillingCycle: 'yearly' } })
+
+    expect(screen.getAllByText('30 minute max workflow runtime')).toHaveLength(
+      1
+    )
+    expect(
+      screen.getAllByText('Longer workflow runtime (up to 1 hr)')
+    ).toHaveLength(1)
+    expect(screen.getByText("What's included:")).toBeTruthy()
+    expect(screen.getByText('Everything in Standard, plus:')).toBeTruthy()
+    expect(screen.getByText('Everything in Creator, plus:')).toBeTruthy()
+  })
 })

@@ -39,10 +39,7 @@
             {{ providerName }}
             <Button
               v-if="isEmailProvider"
-              v-tooltip="{
-                value: $t('userSettings.updatePassword'),
-                showDelay: 300
-              }"
+              :tooltip="$t('userSettings.updatePassword')"
               variant="muted-textonly"
               size="icon-sm"
               :aria-label="$t('userSettings.updatePassword')"
@@ -101,11 +98,13 @@ import Button from '@/components/ui/button/Button.vue'
 import Spinner from '@/components/ui/spinner/Spinner.vue'
 import { useCurrentUser } from '@/composables/auth/useCurrentUser'
 import SignOutEverywhereButton from '@/platform/auth/session/components/SignOutEverywhereButton.vue'
+import { useAuthDialogs } from '@/composables/auth/useAuthDialogs'
 import { useDialogService } from '@/services/dialogService'
 
 const { t } = useI18n()
 const router = useRouter()
 const dialogService = useDialogService()
+const { showUpdatePasswordDialog } = useAuthDialogs()
 const {
   loading,
   isLoggedIn,
@@ -122,7 +121,7 @@ const {
 } = useCurrentUser()
 async function onUpdatePassword() {
   if (!needsFirebaseSignIn.value) {
-    await dialogService.showUpdatePasswordDialog()
+    await showUpdatePasswordDialog()
     return
   }
   const confirmed = await dialogService.confirm({

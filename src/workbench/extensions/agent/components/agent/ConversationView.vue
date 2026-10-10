@@ -9,7 +9,6 @@ import { useI18n } from 'vue-i18n'
 
 import Button from '@/components/ui/button/Button.vue'
 import { useSkillPacksStore } from '@/platform/skills/stores/skillPacksStore'
-import { buildTooltipConfig } from '@/composables/useTooltipConfig'
 
 import { cn } from '@comfyorg/tailwind-utils'
 
@@ -275,7 +274,7 @@ watch(
 
     <Button
       v-if="!shouldFollowLatest"
-      v-tooltip.top="buildTooltipConfig(t('agent.latest'))"
+      :tooltip="t('agent.latest')"
       type="button"
       variant="secondary"
       size="icon"

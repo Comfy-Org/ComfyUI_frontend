@@ -27,7 +27,7 @@ import {
 } from '@/core/graph/subgraph/migration/proxyWidgetMigration'
 import { reorderSubgraphInputsByName } from '@/core/graph/subgraph/promotionUtils'
 import type { SerializedProxyWidgetTuple } from '@/core/schemas/promotionSchema'
-import { IS_CONTROL_WIDGET } from '@/scripts/controlWidgetMarker'
+import { IS_CONTROL_WIDGET } from '@/core/graph/widgets/controlWidgetMarker'
 import {
   getPreviewExposureHostLocator,
   usePreviewExposureStore

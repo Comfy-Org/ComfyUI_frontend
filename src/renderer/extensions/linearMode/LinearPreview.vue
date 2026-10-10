@@ -123,7 +123,7 @@ async function rerun(e: Event) {
     </template>
     <Button
       v-if="selectedOutput"
-      v-tooltip.top="t('g.download')"
+      :tooltip="t('g.download')"
       size="icon"
       :aria-label="t('g.download')"
       @click="() => downloadOutput(selectedOutput)"

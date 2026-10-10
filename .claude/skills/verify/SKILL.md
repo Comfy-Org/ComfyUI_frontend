@@ -16,7 +16,7 @@ nvm use 26 && pnpm dev:cloud
 ```
 
 - Node **26** is required (`.nvmrc` = `26`, `package.json` engines `>=26.8.2 <27`). `nvm install 26` if missing.
-- `dev:cloud` → `dev:cloud:test` → `DEV_SERVER_COMFYUI_URL=https://testcloud.comfy.org/`. Vite infers `DISTRIBUTION='cloud'` from the `.comfy.org` host (`vite.config.mts:131-138`), which is what makes `isCloud === true` and the `?ff=` override path reachable.
+- `dev:cloud` → `DEV_SERVER_COMFYUI_URL=https://testcloud.comfy.org/`. Vite infers `DISTRIBUTION='cloud'` from the `.comfy.org` host (`vite.config.mts:131-138`), which is what makes `isCloud === true` and the `?ff=` override path reachable.
 - Ready when stdout has `VITE v8.x ready in` and `➜  Local:   http://localhost:5173/`. Serving takes ~1s; a first run may spend ~30s on `pnpm install` and dependency re-optimization first.
 - **Never use `dev:cloud:prod`.** It proxies to `https://cloud.comfy.org`, which is real production with real customers and real money. `dev:cloud:staging` (stagingcloud) is the only other safe target.
 

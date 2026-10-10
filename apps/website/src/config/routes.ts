@@ -15,8 +15,6 @@ const baseRoutes = {
   pricing: '/pricing/',
   enterprise: '/enterprise/',
   managedBuilds: '/enterprise/managed-builds/',
-  gallery: '/gallery/',
-  launches: '/launches/',
   events: '/events/',
   about: '/about/',
   careers: '/careers/',

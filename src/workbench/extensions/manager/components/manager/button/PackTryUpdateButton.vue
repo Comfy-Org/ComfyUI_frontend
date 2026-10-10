@@ -1,6 +1,6 @@
 <template>
   <Button
-    v-tooltip.top="$t('manager.tryUpdateTooltip')"
+    :tooltip="$t('manager.tryUpdateTooltip')"
     variant="primary"
     :size
     :disabled="isUpdating"

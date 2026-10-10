@@ -3,11 +3,13 @@ FROM ghcr.io/astral-sh/uv:python3.12-bookworm-slim AS builder
 ENV UV_LINK_MODE=copy UV_PYTHON_DOWNLOADS=0
 
 ARG COMFYUI_VERSION=v0.30.0
+ARG COMFYUI_COMMIT=b1693ecba9f5b65f8c80ab36b195ab963ec92413
 
 # Clone ComfyUI
 RUN apt-get update && apt-get install -y git && \
     git clone --depth 1 --branch ${COMFYUI_VERSION} \
-    https://github.com/comfy-org/ComfyUI.git /ComfyUI
+    https://github.com/comfy-org/ComfyUI.git /ComfyUI && \
+    test "$(git -C /ComfyUI rev-parse HEAD)" = "$COMFYUI_COMMIT"
 
 # Create venv and install all Python dependencies
 ENV VIRTUAL_ENV=/opt/venv
@@ -17,8 +19,8 @@ RUN uv pip install torch torchvision torchaudio --index-url https://download.pyt
     uv pip install wait-for-it
 
 RUN rm -rf /ComfyUI/.git && \
-    rm /opt/venv/lib/python3.12/site-packages/comfy_kitchen/backends/cuda/_C.abi3.so \
-       /opt/venv/lib/python3.12/site-packages/comfy_kitchen/backends/hip/_C.abi3.so && \
+    rm /opt/venv/lib/python3.12/site-packages/comfy_kitchen/backends/cuda/_C.abi3.so && \
+    rm -f /opt/venv/lib/python3.12/site-packages/comfy_kitchen/backends/hip/_C.abi3.so && \
     find /opt/venv -name '*.pyc' -delete
 
 # Stage 2: Final image with Playwright
@@ -42,14 +44,15 @@ RUN case "$(dpkg --print-architecture)" in \
     sha256sum --check --strict /tmp/node.sha256 && \
     tar -xzf /tmp/node.tar.gz -C /usr/local --strip-components=1 --no-same-owner && \
     rm /tmp/node.tar.gz /tmp/node.sha256 && \
-    npm i -g corepack@latest && corepack enable
+    npm i -g corepack@0.36.0 && corepack enable
 
 # Copy venv and ComfyUI from builder
 COPY --from=builder --chown=pwuser:pwuser /opt/venv /opt/venv
 COPY --from=builder --chown=pwuser:pwuser /ComfyUI /ComfyUI
 
 # Fix venv Python symlinks to point to system Python (builder used /usr/local/bin/python)
-RUN ln -sf /usr/bin/python3 /opt/venv/bin/python && \
+RUN test -x /usr/bin/python3.12 && \
+    ln -sf /usr/bin/python3.12 /opt/venv/bin/python && \
     ln -sf python /opt/venv/bin/python3 && \
     ln -sf python /opt/venv/bin/python3.12
 

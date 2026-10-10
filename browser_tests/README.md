@@ -58,7 +58,7 @@ pnpm container:start
 ```
 
 The command mounts `tools/devtools` and starts ComfyUI at `localhost:8188`.
-Leave it running. Use another terminal for `pnpm dev` and a third for
+Leave it running. Use another terminal for `pnpm dev:test` and a third for
 `pnpm test:browser:local`.
 
 Run browser tests against port 5173 when using this container. Port 8188 serves
@@ -98,6 +98,10 @@ pnpm exec playwright install chromium webkit --with-deps
 
 ### Environment
 
+Start the dev server with `pnpm dev:test`. It removes the Vue dev overlay that
+blocks UI elements (`DISABLE_VUE_PLUGINS`) and loads the default workflow CI
+builds with (`VITE_USE_LEGACY_DEFAULT_GRAPH`).
+
 Create `.env` from the template and set the debugging keys:
 
 ```bash
@@ -105,9 +109,6 @@ cp .env_example .env
 ```
 
 ```bash
-# Remove Vue dev overlay that blocks UI elements
-DISABLE_VUE_PLUGINS=true
-
 # Test against dev server (recommended) or backend directly
 PLAYWRIGHT_TEST_URL=http://localhost:5173      # Dev server
 # PLAYWRIGHT_TEST_URL=http://localhost:8188     # Direct backend

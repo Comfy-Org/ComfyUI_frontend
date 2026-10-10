@@ -5,6 +5,8 @@ import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { nextTick } from 'vue'
 import { createI18n } from 'vue-i18n'
 
+import { IS_CONTROL_WIDGET } from '@/core/graph/widgets/controlWidgetMarker'
+import type { IBaseWidget } from '@/lib/litegraph/src/types/widgets'
 import { LGraph, LGraphNode } from '@/lib/litegraph/src/litegraph'
 import { useSettingStore } from '@/platform/settings/settingStore'
 import { useReleaseStore } from '@/platform/updates/common/releaseStore'
@@ -89,12 +91,26 @@ vi.mock<unknown>(import('@/scripts/app'), () => {
     setDirty: mocks.setDirty,
     canvas: document.createElement('canvas')
   }
+  let rootGraphInternal: LGraph | undefined
   return {
     app: {
       vueAppReady: false,
       canvas,
-      graph: null,
-      rootGraph: null,
+      get graph(): LGraph {
+        return rootGraphInternal!
+      },
+      get rootGraph(): LGraph {
+        return rootGraphInternal!
+      },
+      get rootGraphOrUndefined(): LGraph | undefined {
+        return rootGraphInternal
+      },
+      get isGraphReady(): boolean {
+        return !!rootGraphInternal
+      },
+      set rootGraph(graph: LGraph | undefined) {
+        rootGraphInternal = graph
+      },
       ui: { settings: { dispatchChange: vi.fn() } },
       setup: vi.fn()
     }
@@ -158,12 +174,22 @@ vi.mock(
   () => ({ useWorkflowAutoSave: vi.fn() })
 )
 
+/**
+ * Installs (or clears) the mock app's root graph, standing in for the
+ * assignment `ComfyApp.setup()` makes. The real class exposes no setter, so the
+ * mock's test-only one is reached through a cast.
+ */
+function setRootGraph(graph: LGraph | undefined) {
+  ;(app as unknown as { rootGraph: LGraph | undefined }).rootGraph = graph
+}
+
 async function mountGraphCanvas(stubs: Record<string, unknown> = {}) {
   // Handed to the component rather than left to the active-Pinia fallback, so
   // the readiness gates below are set on the instance startup actually reads.
   const pinia = getActivePinia()!
   vi.mocked(useReleaseStore().initialize).mockResolvedValue(undefined)
   app.canvas.graph = null
+  setRootGraph(undefined)
 
   // Startup waits on both readiness gates before it reaches the tour hand-off.
   useSettingStore().isReady = true
@@ -487,6 +513,67 @@ describe('GraphCanvas execution progress updates', () => {
     expect(harness.progressWrites).toBe(0)
     expect(mocks.setDirty).not.toHaveBeenCalled()
     expect(harness.workflowStore.nodeToNodeLocatorId).not.toHaveBeenCalled()
+  })
+})
+
+describe('GraphCanvas widget control mode watcher', () => {
+  async function cycleWidgetControlMode() {
+    const settingStore = useSettingStore()
+    settingStore.settingValues['Comfy.WidgetControlMode'] = 'before'
+    await nextTick()
+    settingStore.settingValues['Comfy.WidgetControlMode'] = 'after'
+    await nextTick()
+  }
+
+  function addControlWidgetNode() {
+    const controlWidget = {
+      name: 'control_after_generate',
+      label: undefined as string | undefined,
+      [IS_CONTROL_WIDGET]: true
+    }
+    const node = new LGraphNode('Test node')
+    node.id = toNodeId(1)
+    node.widgets = [controlWidget as unknown as IBaseWidget]
+
+    const graph = new LGraph()
+    graph._nodes.push(node)
+
+    return { graph, controlWidget }
+  }
+
+  // Defensive: the app only writes `canvasStore.canvas` after `setup()` has
+  // installed the root graph, so this state is not reachable in production. The
+  // guard keeps the watcher consistent with its siblings that read the graph.
+  it('defensively skips the control-widget sync when the root graph is not ready', async () => {
+    await mountGraphCanvas()
+
+    useCanvasStore().canvas = app.canvas
+    expect(app.rootGraphOrUndefined).toBeUndefined()
+
+    await expect(cycleWidgetControlMode()).resolves.toBeUndefined()
+  })
+
+  it('still syncs control-widget labels once the root graph is ready', async () => {
+    await mountGraphCanvas()
+
+    useCanvasStore().canvas = app.canvas
+    const { graph, controlWidget } = addControlWidgetNode()
+
+    await expect(cycleWidgetControlMode()).resolves.toBeUndefined()
+    expect(controlWidget.label).toBeUndefined()
+
+    setRootGraph(graph)
+
+    const settingStore = useSettingStore()
+    settingStore.settingValues['Comfy.WidgetControlMode'] = 'before'
+    await nextTick()
+    const labelBeforeMode = controlWidget.label
+    expect(labelBeforeMode).toBeTruthy()
+
+    settingStore.settingValues['Comfy.WidgetControlMode'] = 'after'
+    await nextTick()
+    expect(controlWidget.label).toBeTruthy()
+    expect(controlWidget.label).not.toBe(labelBeforeMode)
   })
 })
 

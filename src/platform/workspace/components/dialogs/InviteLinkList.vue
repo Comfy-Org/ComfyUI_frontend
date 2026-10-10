@@ -17,7 +17,7 @@
       </span>
       <Button
         v-if="row.url"
-        v-tooltip="{ value: copyLabel(row.id), showDelay: 300 }"
+        :tooltip="copyLabel(row.id)"
         variant="muted-textonly"
         size="icon-lg"
         class="shrink-0"

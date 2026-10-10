@@ -196,6 +196,8 @@ export interface WebSessionFailure {
   readonly httpStatus?: number
   /** The server's `ErrorResponse.code`, when the body carried one. */
   readonly serverCode?: string
+  /** The organization an `SSO_REQUIRED` refusal names. */
+  readonly organizationId?: string
 }
 
 export type WebSessionResult =

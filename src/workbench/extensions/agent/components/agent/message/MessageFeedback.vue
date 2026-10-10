@@ -7,7 +7,9 @@ import { cn } from '@comfyorg/tailwind-utils'
 import Button from '@/components/ui/button/Button.vue'
 import Menu from '@/components/ui/menu/Menu.vue'
 import type { MenuItem } from '@/components/ui/menu/types'
-import AccessibleTooltip from '@/components/ui/tooltip/AccessibleTooltip.vue'
+import Tooltip from '@/components/ui/tooltip/Tooltip.vue'
+import TooltipContent from '@/components/ui/tooltip/TooltipContent.vue'
+import TooltipTrigger from '@/components/ui/tooltip/TooltipTrigger.vue'
 import { useAssetDownload } from '@/platform/assets/composables/useAssetDownload'
 import { renderMarkdownToHtml } from '@/utils/markdownRendererUtil'
 import { resolveReplyAssetDownload } from '../../../utils/resolveReplyAssetDownload'
@@ -63,77 +65,48 @@ async function downloadAssets(): Promise<void> {
   <div
     class="flex w-full items-center justify-start gap-1 text-muted-foreground"
   >
-    <AccessibleTooltip
-      :label="t('agent.helpful')"
-      :skip-delay-duration="0"
-      disable-hoverable-content
-      :collision-padding="8"
+    <Button
+      :tooltip="t('agent.helpful')"
+      type="button"
+      :variant="vote === 'up' ? 'textonly' : 'muted-textonly'"
+      size="icon-sm"
+      :aria-label="t('agent.helpful')"
+      :aria-pressed="vote === 'up'"
+      class="size-6"
+      @click="setVote('up')"
     >
-      <template #trigger>
-        <Button
-          type="button"
-          :variant="vote === 'up' ? 'textonly' : 'muted-textonly'"
-          size="icon-sm"
-          :aria-label="t('agent.helpful')"
-          :aria-pressed="vote === 'up'"
-          class="size-6"
-          @click="setVote('up')"
-        >
-          <span class="icon-[lucide--thumbs-up] size-3" />
-        </Button>
-      </template>
-    </AccessibleTooltip>
-    <AccessibleTooltip
-      :label="t('agent.notHelpful')"
-      :skip-delay-duration="0"
-      disable-hoverable-content
-      :collision-padding="8"
+      <span class="icon-[lucide--thumbs-up] size-3" />
+    </Button>
+    <Button
+      :tooltip="t('agent.notHelpful')"
+      type="button"
+      :variant="vote === 'down' ? 'textonly' : 'muted-textonly'"
+      size="icon-sm"
+      :aria-label="t('agent.notHelpful')"
+      :aria-pressed="vote === 'down'"
+      class="size-6"
+      @click="setVote('down')"
     >
-      <template #trigger>
-        <Button
-          type="button"
-          :variant="vote === 'down' ? 'textonly' : 'muted-textonly'"
-          size="icon-sm"
-          :aria-label="t('agent.notHelpful')"
-          :aria-pressed="vote === 'down'"
-          class="size-6"
-          @click="setVote('down')"
-        >
-          <span class="icon-[lucide--thumbs-down] size-3" />
-        </Button>
-      </template>
-    </AccessibleTooltip>
-    <AccessibleTooltip
+      <span class="icon-[lucide--thumbs-down] size-3" />
+    </Button>
+    <Button
       v-if="assets.length"
-      :label="t('agent.downloadAssets')"
-      :skip-delay-duration="0"
-      disable-hoverable-content
-      :collision-padding="8"
+      :tooltip="t('agent.downloadAssets')"
+      type="button"
+      variant="muted-textonly"
+      size="icon-sm"
+      :aria-label="t('agent.downloadAssets')"
+      :disabled="downloading"
+      class="size-6 rounded-lg"
+      @click="downloadAssets"
     >
-      <template #trigger>
-        <Button
-          type="button"
-          variant="muted-textonly"
-          size="icon-sm"
-          :aria-label="t('agent.downloadAssets')"
-          :disabled="downloading"
-          class="size-6 rounded-lg"
-          @click="downloadAssets"
-        >
-          <span class="icon-[lucide--download] size-3" />
-        </Button>
-      </template>
-    </AccessibleTooltip>
+      <span class="icon-[lucide--download] size-3" />
+    </Button>
     <div
       class="flex h-6 w-14 rounded-lg transition-colors hover:bg-secondary-background-hover hover:text-base-foreground has-data-[state=open]:bg-secondary-background-hover has-data-[state=open]:text-base-foreground"
     >
-      <AccessibleTooltip
-        :label="copied ? t('agent.copied') : t('agent.copy')"
-        :skip-delay-duration="0"
-        disable-hoverable-content
-        :collision-padding="8"
-      >
-        <template #trigger>
+      <Tooltip disable-closing-trigger>
+        <TooltipTrigger as-child>
           <Button
             type="button"
             variant="muted-textonly"
@@ -156,8 +129,11 @@ async function downloadAssets(): Promise<void> {
               "
             />
           </Button>
-        </template>
-      </AccessibleTooltip>
+        </TooltipTrigger>
+        <TooltipContent>{{
+          copied ? t('agent.copied') : t('agent.copy')
+        }}</TooltipContent>
+      </Tooltip>
       <Menu
         :items="copyMenuItems"
         align="end"

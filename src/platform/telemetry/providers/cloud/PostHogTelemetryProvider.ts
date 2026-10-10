@@ -9,7 +9,10 @@ import type {
   BillingTelemetryEvent,
   CheckoutJourneyTelemetryEvent
 } from '@comfyorg/account-core/billing'
-import type { WebSessionTelemetryEvent } from '@comfyorg/account-core/telemetry'
+import type {
+  SsoTelemetryEvent,
+  WebSessionTelemetryEvent
+} from '@comfyorg/account-core/telemetry'
 import type { CaptureResult, PostHog } from 'posthog-js'
 import { watch } from 'vue'
 import type { WatchStopHandle } from 'vue'
@@ -465,6 +468,10 @@ export class PostHogTelemetryProvider implements TelemetryProvider {
   }
 
   trackWebSessionEvent(event: WebSessionTelemetryEvent): void {
+    this.trackEvent(event.name, event.properties)
+  }
+
+  trackSsoEvent(event: SsoTelemetryEvent): void {
     this.trackEvent(event.name, event.properties)
   }
 

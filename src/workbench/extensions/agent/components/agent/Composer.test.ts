@@ -14,7 +14,7 @@ import {
 import userEvent from '@testing-library/user-event'
 import { assert, beforeEach, describe, expect, it, vi } from 'vitest'
 import { defineComponent, h, nextTick, ref, shallowRef } from 'vue'
-import type { DirectiveBinding, ShallowRef } from 'vue'
+import type { ShallowRef } from 'vue'
 import type { ComponentProps } from 'vue-component-type-helpers'
 
 import { i18n } from '@/i18n'
@@ -29,16 +29,6 @@ import Composer from './Composer.vue'
 import { setupInlinePromptEditorDom } from './composer/inlinePromptEditorTestSetup'
 
 setupInlinePromptEditorDom()
-
-const tooltipBindings = new WeakMap<Element, unknown>()
-const tooltipDirectiveStub = {
-  mounted(element: Element, binding: DirectiveBinding<unknown>) {
-    tooltipBindings.set(element, binding.value)
-  },
-  updated(element: Element, binding: DirectiveBinding<unknown>) {
-    tooltipBindings.set(element, binding.value)
-  }
-}
 
 vi.mock(import('@/composables/auth/useCurrentUser'))
 vi.mock(import('@/scripts/api'))
@@ -76,8 +66,7 @@ function mount(
     props: { hasWorkflowTarget: true, selectWorkflowReference, ...props },
     attrs,
     global: {
-      plugins: [i18n],
-      directives: { tooltip: tooltipDirectiveStub }
+      plugins: [i18n]
     }
   })
   return { ...view, selectWorkflowReference }
@@ -162,6 +151,34 @@ describe('Composer', () => {
     expect(emitted().requestWorkflowReferences).toHaveLength(1)
     expect(emitted().mentionPick).toBeUndefined()
   })
+
+  it.for([
+    {
+      entryPoint: 'add menu',
+      open: () =>
+        userEvent.click(screen.getByRole('button', { name: 'Add to prompt' })),
+      target: () => screen.getByRole('menuitem', { name: 'Nodes' })
+    },
+    {
+      entryPoint: 'mention menu',
+      open: async () => {
+        await userEvent.click(screen.getByRole('textbox'))
+        await userEvent.paste('@')
+      },
+      target: () => screen.getByRole('menuitem', { name: 'Nodes' })
+    }
+  ])(
+    'shows why nodes are blocked in a tooltip on the $entryPoint',
+    async ({ open, target }) => {
+      const reason = 'Please select a workflow first'
+      mount({ nodeReferenceDisabledReason: reason })
+
+      await open()
+      await userEvent.hover(target())
+
+      expect(await screen.findByRole('tooltip')).toHaveTextContent(reason)
+    }
+  )
 
   it('invalidates an open Nodes submenu when the viewed workflow becomes ineligible', async () => {
     const { rerender, emitted } = mount({
@@ -275,9 +292,7 @@ describe('Composer', () => {
     expect(send).toBeEnabled()
 
     await userEvent.hover(send)
-    expect(
-      await screen.findByRole('tooltip', { hidden: true })
-    ).toHaveTextContent('Send')
+    expect(await screen.findByRole('tooltip')).toHaveTextContent('Send')
   })
 
   it('renders without vue-i18n message compilation errors', async () => {
@@ -342,9 +357,7 @@ describe('Composer', () => {
     mount({ streaming: true })
     const stop = screen.getByRole('button', { name: 'Stop' })
     await userEvent.hover(stop)
-    expect(
-      await screen.findByRole('tooltip', { hidden: true })
-    ).toHaveTextContent('Stop Esc')
+    expect(await screen.findByRole('tooltip')).toHaveTextContent('Stop Esc')
   })
 
   it('emits stop on Escape while running and ignores Enter', async () => {
@@ -428,8 +441,7 @@ describe('Composer', () => {
     })
     render(Host, {
       global: {
-        plugins: [i18n],
-        directives: { tooltip: tooltipDirectiveStub }
+        plugins: [i18n]
       }
     })
     const box = screen.getByRole('textbox')
@@ -448,9 +460,7 @@ describe('Composer', () => {
   it('shows the Stop tooltip while submitting and stops on Escape while streaming', async () => {
     const submitting = mount({ submitting: true })
     await userEvent.hover(screen.getByRole('button', { name: 'Stop' }))
-    expect(
-      await screen.findByRole('tooltip', { hidden: true })
-    ).toHaveTextContent('Stop Esc')
+    expect(await screen.findByRole('tooltip')).toHaveTextContent('Stop Esc')
     submitting.unmount()
 
     const { emitted } = mount({ streaming: true })
@@ -514,8 +524,7 @@ describe('Composer', () => {
     })
     render(Host, {
       global: {
-        plugins: [i18n],
-        directives: { tooltip: tooltipDirectiveStub }
+        plugins: [i18n]
       }
     })
     const box = screen.getByRole('textbox')
@@ -788,10 +797,10 @@ describe('Composer', () => {
         )
         mount()
 
-        const trigger = screen.getByRole('button', { name: triggerName })
-        expect(tooltipBindings.get(trigger)).toMatchObject({
-          value: tooltipCopy
-        })
+        await userEvent.hover(screen.getByRole('button', { name: triggerName }))
+        expect(await screen.findByRole('tooltip')).toHaveTextContent(
+          tooltipCopy
+        )
       }
     )
 

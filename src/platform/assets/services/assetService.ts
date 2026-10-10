@@ -526,9 +526,7 @@ function createAssetService() {
     widgetName: string
   ): boolean {
     if (!nodeType || !widgetName) return false
-    return (
-      useModelToNodeStore().getRegisteredNodeTypes()[nodeType] === widgetName
-    )
+    return useModelToNodeStore().isModelWidget(nodeType, widgetName)
   }
 
   /**

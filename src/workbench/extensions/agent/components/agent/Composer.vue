@@ -11,7 +11,6 @@ import {
 import { useI18n } from 'vue-i18n'
 
 import Button from '@/components/ui/button/Button.vue'
-import AccessibleTooltip from '@/components/ui/tooltip/AccessibleTooltip.vue'
 import { registerEscapeOverride } from '@/platform/keybindings/escapeOverride'
 import type { AgentStopMethod } from '@/platform/telemetry/types'
 import { useSkillPacksStore } from '@/platform/skills/stores/skillPacksStore'
@@ -627,32 +626,24 @@ defineExpose({
 
         <div class="flex items-center gap-1">
           <RunModePopover />
-          <AccessibleTooltip
-            :label="primaryActionTooltip"
-            :skip-delay-duration="0"
-            disable-hoverable-content
-            :collision-padding="8"
+          <Button
+            :tooltip="primaryActionTooltip"
+            type="button"
+            :variant="primaryActionVariant"
+            size="icon"
+            :aria-label="primaryActionTooltip"
+            :disabled="primaryActionDisabled"
+            @click="onPrimaryAction"
           >
-            <template #trigger>
-              <Button
-                type="button"
-                :variant="primaryActionVariant"
-                size="icon"
-                :aria-label="primaryActionTooltip"
-                :disabled="primaryActionDisabled"
-                @click="onPrimaryAction"
-              >
-                <i-lucide:square v-if="running" class="size-4" />
-                <i-lucide:arrow-up v-else class="size-4" />
-              </Button>
-            </template>
-            <template #content>
+            <i-lucide:square v-if="running" class="size-4" />
+            <i-lucide:arrow-up v-else class="size-4" />
+            <template #tooltip>
               {{ primaryActionTooltip }}
               <span v-if="primaryActionShortcut" class="ml-1 opacity-50">{{
                 primaryActionShortcut
               }}</span>
             </template>
-          </AccessibleTooltip>
+          </Button>
         </div>
       </div>
     </div>

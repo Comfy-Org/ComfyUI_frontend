@@ -22,7 +22,14 @@ import {
   peekWorkshopAccountSource,
   resolveWorkshopAccountSource
 } from '@/config/workshop-account-source.ts'
-import { useWorkshopAuthFlag, useWorkshopEnabled } from '@/scripts/posthog.ts'
+import {
+  useWorkshopAppsEnabled,
+  useWorkshopAuthFlag,
+  useWorkshopEnabled,
+  useWorkshopWorkflowsEnabled
+} from '@/scripts/posthog.ts'
+import { isWorkshopModelShown } from '@/scripts/workshop-model-flags.ts'
+import type { HubApp, HubSections } from '@/data/mainNavigation.ts'
 import GitHubStarBadge from '@/components/common/GitHubStarBadge.vue'
 import HeaderMainDesktop from './HeaderMainDesktop.vue'
 import HeaderMainMobile from './HeaderMainMobile.vue'
@@ -32,11 +39,13 @@ import Button from '@/components/ui/button/Button.vue'
 const {
   locale = 'en',
   githubStars = '',
-  workshopInBuild = false
+  workshopInBuild = false,
+  hubApps = []
 } = defineProps<{
   locale?: Locale
   githubStars?: string
   workshopInBuild?: boolean
+  hubApps?: readonly HubApp[]
 }>()
 const { t } = translationsFor(locale)
 const routes = getRoutes(locale)
@@ -46,6 +55,16 @@ const mounted = useMounted()
 const showWorkshop = computed(
   () => mounted.value && workshopInBuild && workshopEnabled.value
 )
+const workflowsEnabled = useWorkshopWorkflowsEnabled()
+const appsEnabled = useWorkshopAppsEnabled()
+const hubSections = computed<HubSections>(() => ({
+  workflows: showWorkshop.value && workflowsEnabled.value,
+  apps: showWorkshop.value && appsEnabled.value,
+  reshoot:
+    showWorkshop.value &&
+    appsEnabled.value &&
+    hubApps.some((app) => app.appId === 'reshoot' && isWorkshopModelShown(app))
+}))
 const showAccount = computed(
   () => showWorkshop.value && workshopAuthEnabled.value
 )
@@ -226,6 +245,7 @@ const ctaButtons = computed(() =>
     <!-- Desktop nav links -->
     <HeaderMainDesktop
       :locale
+      :hub-sections
       :class="showWorkshop ? 'hidden xl:block' : 'hidden lg:block'"
     />
     <div
@@ -234,7 +254,7 @@ const ctaButtons = computed(() =>
       :class="showWorkshop ? 'xl:hidden' : 'lg:hidden'"
     >
       <HeaderAccount v-if="showAccount" :locale="locale" />
-      <HeaderMainMobile :locale />
+      <HeaderMainMobile :locale :hub-sections />
     </div>
 
     <!-- Desktop CTA buttons -->
