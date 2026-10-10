@@ -142,7 +142,7 @@ jobs:
           SPEC_FILES=$(node -e 'process.stdout.write(JSON.parse(process.env.FILES_JSON).join("\n"))')
           test -n "$SPEC_FILES"
           mapfile -t FILES <<< "$SPEC_FILES"
-          pnpm exec playwright test --project="$PROJECT" --shard="$SHARD" \
+          pnpm exec playwright test --project="$PROJECT" --grep-invert '@no-video' --shard="$SHARD" \
             --timeout=180000 --retries=0 "${FILES[@]}"
 
       - name: Upload recording shard

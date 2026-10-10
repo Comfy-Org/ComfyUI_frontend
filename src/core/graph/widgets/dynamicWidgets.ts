@@ -269,6 +269,22 @@ function dynamicComboWidget(
   //A little hacky, but onConfigure won't work.
   //It fires too late and is overly disruptive
   let widgetValue = widget.value
+  // Whether `updateWidgets` has materialised a group for `activeOption` yet.
+  // A workflow reload replays widgets_values through this setter even when
+  // the restored value matches the option the node already constructed
+  // (e.g. a DynamicCombo with a single/default option). Without this guard,
+  // that redundant call tears the group down and rebuilds it from its
+  // default member count, discarding any additional autogrow-grown members
+  // (and their links) the node already had.
+  // Scoped to `app.configuringGraph` (set for the duration of
+  // `LGraph.configure()`, i.e. a workflow load/reload) so it only
+  // short-circuits that redundant replay. Node search's dynamic-input
+  // reveal speculatively sets sibling DynamicCombo widgets to try revealing
+  // a type, then reverts on failure by re-setting a widget back to its
+  // already-active option; outside `configuringGraph` that re-set must still
+  // run `updateWidgets` so a sibling combo whose widget was bound under a
+  // different name than its backing input stays consistent.
+  let optionMaterialized = false
   const getState = () => {
     const graphId = resolveNodeRootGraphId(node)
     if (!graphId) return undefined
@@ -284,6 +300,9 @@ function dynamicComboWidget(
       const state = getState()
       if (state) state.value = value
       widgetValue = value
+      if (app.configuringGraph && optionMaterialized && value === activeOption)
+        return
+      optionMaterialized = true
       updateWidgets(value)
     }
   })
