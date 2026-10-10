@@ -4,6 +4,14 @@ import { parseArgs } from 'node:util'
 import { pathToFileURL } from 'node:url'
 
 const managerOrigin = 'https://utm-link-manager.pages.dev'
+class CampaignLinkError extends Error {}
+
+export function campaignFailureMessage(error: unknown) {
+  return error instanceof CampaignLinkError
+    ? error.message
+    : 'Campaign link run failed. Check authentication and the manager before rerunning.'
+}
+
 const verticals = [
   ['vfx', 'VFX', 'vfx'],
   ['advertising', 'Advertising', 'advertising'],
@@ -20,18 +28,19 @@ export function buildCampaignLinks({
   audience = ''
 } = {}) {
   if (!['all', ...verticals.map(([route]) => route)].includes(vertical))
-    throw new Error('Unknown vertical')
+    throw new CampaignLinkError('Unknown vertical')
   if (!['all', 'comfy-led', 'agency-led'].includes(track))
-    throw new Error('Unknown campaign type')
+    throw new CampaignLinkError('Unknown campaign type')
   if (!['all', 'v1', 'v2'].includes(version))
-    throw new Error('Unknown page version')
+    throw new CampaignLinkError('Unknown page version')
   for (const value of [source, creative, audience]) {
     if (!/^[a-z0-9_]*$/.test(value))
-      throw new Error(
+      throw new CampaignLinkError(
         'Tracking values must use lowercase letters, digits or underscores'
       )
   }
-  if (!source || !creative) throw new Error('Source and creative are required')
+  if (!source || !creative)
+    throw new CampaignLinkError('Source and creative are required')
 
   return verticals
     .filter(([route]) => vertical === 'all' || vertical === route)
@@ -99,7 +108,7 @@ function parseRegisteredLinks(value: unknown) {
     !('links' in value) ||
     !Array.isArray(value.links)
   )
-    throw new Error('UTM Manager returned an invalid link list')
+    throw new CampaignLinkError('UTM Manager returned an invalid link list')
   return value.links.map((item: unknown) => {
     if (
       typeof item !== 'object' ||
@@ -109,7 +118,7 @@ function parseRegisteredLinks(value: unknown) {
       !('fullUrl' in item) ||
       typeof item.fullUrl !== 'string'
     )
-      throw new Error('UTM Manager returned an invalid link record')
+      throw new CampaignLinkError('UTM Manager returned an invalid link record')
     return { id: item.id, fullUrl: item.fullUrl }
   })
 }
@@ -127,7 +136,9 @@ export async function syncCampaignLinks(
   }
 ) {
   if (!token.trim())
-    throw new Error('UTM Manager automation credential is not configured')
+    throw new CampaignLinkError(
+      'UTM Manager automation credential is not configured'
+    )
   async function api(path: string, method = 'GET', body?: unknown) {
     const response = await request(`${managerOrigin}/api${path}`, {
       method,
@@ -140,7 +151,7 @@ export async function syncCampaignLinks(
       signal: AbortSignal.timeout(30_000)
     })
     if (!response.ok)
-      throw new Error(
+      throw new CampaignLinkError(
         `UTM Manager ${method} ${path} failed (${response.status})`
       )
     const result: unknown = await response.json()
@@ -161,7 +172,7 @@ export async function syncCampaignLinks(
     const saved = parseRegisteredLinks(await api('/links'))
     const savedUrls = new Set(saved.map(({ fullUrl }) => canonicalUrl(fullUrl)))
     if (missing.some(({ fullUrl }) => !savedUrls.has(canonicalUrl(fullUrl))))
-      throw new Error(
+      throw new CampaignLinkError(
         'Some drafts could not be verified. Check the manager before rerunning.'
       )
   }
@@ -198,10 +209,10 @@ async function main() {
     }
   })
   if (!['preview', 'check', 'create-drafts'].includes(values.mode))
-    throw new Error('Mode must be preview, check or create-drafts')
+    throw new CampaignLinkError('Mode must be preview, check or create-drafts')
   const links = linksFromEnvironment()
   if (!links.length)
-    throw new Error(
+    throw new CampaignLinkError(
       'No pages match these filters; v2 is available for VFX only'
     )
   const report =
@@ -228,10 +239,8 @@ if (
   process.argv[1] &&
   import.meta.url === pathToFileURL(process.argv[1]).href
 ) {
-  main().catch(() => {
-    console.error(
-      'Campaign link run failed. Check authentication and the manager before rerunning.'
-    )
+  main().catch((error: unknown) => {
+    console.error(campaignFailureMessage(error))
     process.exitCode = 1
   })
 }

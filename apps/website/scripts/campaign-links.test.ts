@@ -1,12 +1,46 @@
 import { describe, expect, it, vi } from 'vitest'
 
-import { buildCampaignLinks, syncCampaignLinks } from './campaign-links'
+import {
+  buildCampaignLinks,
+  campaignFailureMessage,
+  syncCampaignLinks
+} from './campaign-links'
 
 function linkResponse(links: { id: string; fullUrl: string }[]) {
   return Response.json({ links })
 }
 
 describe('campaign link automation', () => {
+  it('reports an actionable validation failure', () => {
+    expect(() => buildCampaignLinks({ vertical: 'unknown' })).toThrowError(
+      expect.toSatisfy(
+        (error: unknown) => campaignFailureMessage(error) === 'Unknown vertical'
+      )
+    )
+  })
+
+  it('reports API status without including the provider response', async () => {
+    const request = vi
+      .fn<typeof fetch>()
+      .mockResolvedValue(new Response('private provider data', { status: 403 }))
+    const message = await syncCampaignLinks(buildCampaignLinks(), {
+      token: 'test',
+      request
+    }).catch(campaignFailureMessage)
+    expect(message).toBe('UTM Manager GET /links failed (403)')
+  })
+
+  it.for([
+    new Error('secret output path'),
+    new TypeError('secret network data'),
+    new SyntaxError('secret response body'),
+    'secret untyped failure'
+  ])('redacts errors from external systems %j', (error) => {
+    expect(campaignFailureMessage(error)).toBe(
+      'Campaign link run failed. Check authentication and the manager before rerunning.'
+    )
+  })
+
   it('generates links for all eight vertical pages and both VFX v2 pages', () => {
     const links = buildCampaignLinks()
     expect(links.map(({ baseUrl }) => baseUrl)).toEqual([
