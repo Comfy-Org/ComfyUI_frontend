@@ -143,13 +143,13 @@ test('Hub menu apps open in the same tab and only external links carry the arrow
     name: 'Cinematic Studio',
     exact: true
   })
-  await expect(cinematicStudio).not.toHaveAttribute('target', '_blank')
+  await expect(cinematicStudio).not.toHaveAttribute('target')
   await expect(cinematicStudio.getByTestId('external-link-arrow')).toHaveCount(
     0
   )
 
   const reshoot = dropdown.getByRole('link', { name: 'Re-shoot', exact: true })
-  await expect(reshoot).not.toHaveAttribute('target', '_blank')
+  await expect(reshoot).not.toHaveAttribute('target')
   await expect(reshoot.getByTestId('external-link-arrow')).toHaveCount(0)
 
   await desktopLinks
