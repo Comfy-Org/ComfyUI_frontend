@@ -91,25 +91,23 @@ export function preflight({
       ]
     }
   }
-  if (!tickets.length) {
-    return {
-      kind: 'pass',
-      message: 'No pendingServerFact call sites. Nothing to check.'
-    }
-  }
   if (mode === 'offline') {
     return {
       kind: 'pass',
-      message: `${tickets.length} pendingServerFact ticket(s) are well-formed; expiry is checked by the scheduled job on main.`
+      message: tickets.length
+        ? `${tickets.length} pendingServerFact ticket(s) are well-formed; expiry is checked by the scheduled job on main.`
+        : 'No pendingServerFact call sites. Nothing to check.'
     }
   }
+  // Online runs exchange a token even with no call sites, so broken
+  // credentials surface the day they break, not the day a bridge lands.
   const { clientId, clientSecret } = readCredentials()
   if (!clientId || !clientSecret) {
     return {
       kind: 'fail',
       lines: [
-        `Found ${tickets.length} pendingServerFact ticket(s) (${tickets.join(', ')}) but the Linear app credentials are not set.`,
-        'Set the LINEAR_CLIENT_ID and LINEAR_CLIENT_SECRET secrets so their expiry can be checked.'
+        `The Linear app credentials are not set (${tickets.length} pendingServerFact ticket(s) to check).`,
+        'Set the LINEAR_CLIENT_ID and LINEAR_CLIENT_SECRET secrets so ticket expiry can be checked.'
       ]
     }
   }
