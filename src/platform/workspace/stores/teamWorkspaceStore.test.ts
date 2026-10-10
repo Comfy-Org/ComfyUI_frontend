@@ -390,6 +390,32 @@ describe('useTeamWorkspaceStore', () => {
       }
     )
 
+    it('after an SSO sign-in into a restored workspace session, reports its landing', async () => {
+      vi.mocked(useWorkspaceAuthStore().initializeFromSession).mockReturnValue(
+        true
+      )
+      Object.assign(useWorkspaceAuthStore(), {
+        currentWorkspace: mockTeamWorkspace
+      })
+      const attempt = ssoFlowStore.markContinued('cloud_app')
+      trackSsoSignInCompleted()
+      mockWorkspaceApi.list.mockResolvedValue({
+        workspaces: [mockPersonalWorkspace, mockTeamWorkspace],
+        default_workspace_id: mockTeamWorkspace.id
+      })
+
+      await useTeamWorkspaceStore().initialize()
+
+      expect(useTelemetry()?.trackSsoEvent).toHaveBeenLastCalledWith({
+        name: 'app:sso_workspace_landed',
+        properties: {
+          surface: 'cloud_app',
+          flow_id: attempt.flowId,
+          landed_in_default_workspace: true
+        }
+      })
+    })
+
     it('reports no landing for a sign-in that was not SSO', async () => {
       mockWorkspaceApi.list.mockResolvedValue({
         workspaces: [mockPersonalWorkspace, mockTeamWorkspace],
