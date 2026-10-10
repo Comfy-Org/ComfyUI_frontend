@@ -7,10 +7,13 @@
  */
 import type { BillingIntent } from '@comfyorg/billing-contract'
 
-import { useBillingContext } from '@/composables/billing/useBillingContext'
 import { useFeatureFlags } from '@/composables/useFeatureFlags'
 import { useTelemetry } from '@/platform/telemetry'
 import type { PaymentIntentSource } from '@/platform/telemetry/types'
+import {
+  readCheckoutOperation,
+  refreshBilling
+} from '@/platform/workspace/billing/billingRefresh'
 import { hostedBillingRoute } from '@/platform/workspace/billing/hostedBillingRoutes'
 import { registerRefreshOnReturn } from '@/platform/workspace/billing/refreshOnReturn'
 import { useBillingCapabilities } from '@/platform/workspace/composables/useBillingCapabilities'
@@ -100,15 +103,9 @@ function armReturnRefresh(
   workspaceId: string | undefined
 ): void {
   disarmHostedBillingReturnRefresh()
-  // Resolved inside the call, not at module scope: useBillingContext ->
-  // useWorkspaceBilling -> this module would otherwise dereference the
-  // shared context before its state is constructed.
-  const { fetchStatus, fetchBalance, readCheckoutOperation } =
-    useBillingContext()
   stopReturnRefresh = registerRefreshOnReturn(() =>
     Promise.allSettled([
-      fetchStatus(),
-      fetchBalance(),
+      refreshBilling('account'),
       useBillingCapabilities().refresh()
     ])
   )

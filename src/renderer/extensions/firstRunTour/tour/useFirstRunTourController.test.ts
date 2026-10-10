@@ -1,4 +1,5 @@
 import { useBillingContext } from '@/composables/billing/useBillingContext'
+import { useSubscriptionPaywall } from '@/composables/billing/useSubscriptionPaywall'
 import { useExecutionStore } from '@/stores/executionStore'
 import { useExecutionErrorStore } from '@/stores/executionErrorStore'
 import { useWorkflowStore } from '@/platform/workflow/management/stores/workflowStore'
@@ -41,6 +42,8 @@ const mocks = vi.hoisted(() => {
 })
 
 vi.mock(import('@/composables/billing/useBillingContext'))
+
+vi.mock(import('@/composables/billing/useSubscriptionPaywall'))
 
 vi.mock<unknown>(import('./firstRunTourDefinition'), () => ({
   firstRunTourSteps: (_templateId: string, runState: Ref<string>) => {
@@ -1221,7 +1224,7 @@ describe('useFirstRunTourController', () => {
         'the subscribe button opens the paywall itself, with its own reason and telemetry'
       ).toHaveBeenCalled()
       expect(
-        useBillingContext().showSubscriptionDialog,
+        useSubscriptionPaywall().showSubscriptionDialog,
         'opening it here too would replace the button reason with the tour own'
       ).not.toHaveBeenCalled()
       expect(

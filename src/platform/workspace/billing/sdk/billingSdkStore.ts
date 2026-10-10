@@ -29,7 +29,6 @@ import { defineStore } from 'pinia'
 import { computed, shallowRef } from 'vue'
 
 import { useToast } from '@/components/ui/toast/toastStore'
-import { useBillingContext } from '@/composables/billing/useBillingContext'
 import { useFeatureFlags } from '@/composables/useFeatureFlags'
 import { t } from '@/i18n'
 import { webSessionRequests } from '@/platform/auth/session/webSessionFetch'
@@ -47,6 +46,7 @@ import type {
   SavedPaymentMethod
 } from '@/platform/workspace/api/workspaceApi'
 import { workspaceApiUrl } from '@/platform/workspace/api/workspaceApiUrl'
+import { refreshBilling } from '@/platform/workspace/billing/billingRefresh'
 import type {
   ProgressToast,
   ProgressToastKind
@@ -387,10 +387,8 @@ export const useBillingSdkStore = defineStore('billingSdk', () => {
 
   async function settleResumed(state: BillingOperationState) {
     if (state.phase === 'succeeded') {
-      const billingContext = useBillingContext()
       await Promise.allSettled([
-        billingContext.fetchStatus(),
-        billingContext.fetchBalance(),
+        refreshBilling('account'),
         billingCapabilities.refresh()
       ])
       useDialogStore().closeDialog({ key: 'top-up-credits' })
@@ -467,18 +465,15 @@ export const useBillingSdkStore = defineStore('billingSdk', () => {
   // What the poller refreshes when one of its operations succeeds, so the
   // panels read the same state whichever rail settled the operation.
   async function refreshAfterCancel(): Promise<void> {
-    const billingContext = useBillingContext()
     await Promise.allSettled([
-      billingContext.fetchStatus(),
-      billingContext.fetchBalance(),
+      refreshBilling('account'),
       billingCapabilities.refresh()
     ])
   }
 
   async function refreshAfterSubscriptionChange(): Promise<void> {
-    const billingContext = useBillingContext()
     await Promise.allSettled([
-      billingContext.reconcileSubscriptionSuccess(),
+      refreshBilling('subscription'),
       billingCapabilities.refresh()
     ])
   }
