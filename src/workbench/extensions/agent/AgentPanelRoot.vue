@@ -1645,6 +1645,10 @@ function onDeleteHistory(id: string): void {
 }
 
 function onNewChat(source?: 'new_chat_button' | 'history_delete'): void {
+  // Starting a chat retires the follow for the same reason a history pick
+  // does: a follow still waiting on a cloud id or a summary list would land
+  // the tab's older thread on top of the chat the user just opened.
+  followOwed.value = false
   composerStore.invalidateSubmission()
   cancelWorkflowSelection()
   canvasStore.stopNodePicking()

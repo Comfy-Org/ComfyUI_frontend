@@ -4567,6 +4567,13 @@ describe('AgentPanelRoot history', () => {
       for (let i = 0; i < 5; i++) await nextTick()
     }
 
+    /**
+     * How long an armed follow is given to land. Pinned by the positive
+     * control below, so the test that asserts a follow does *not* land is
+     * waiting a proven-sufficient window rather than an arbitrary one.
+     */
+    const FOLLOW_LANDS_WITHIN_MS = 1000
+
     function userPrompts(): string[] {
       return useAgentConversationStore().entries.flatMap((entry) =>
         entry.role === 'user' ? [entry.text] : []
@@ -4647,6 +4654,102 @@ describe('AgentPanelRoot history', () => {
 
       expect(useAgentConversationStore().threadId).toBe('th-other')
       expect(loadedThreads).toEqual(['th-first', 'th-other'])
+    })
+
+    /**
+     * Arms a follow that cannot be satisfied yet: the active tab is switched
+     * to a workflow whose chat exists, while the cloud id listing that would
+     * identify it is still in flight. Returns the resolver for that listing
+     * and the threads whose transcripts were fetched.
+     */
+    async function armFollowOnPendingWorkflowIds(): Promise<{
+      resolveWorkflows: () => void
+      loadedThreads: string[]
+    }> {
+      const first = addTab('workflows/first.json')
+      const second = addTab('workflows/second.json')
+      workflowStore.activeWorkflow = second
+
+      const loadedThreads: string[] = []
+      let settleWorkflows!: (response: Response) => void
+      const workflowsResponse = new Promise<Response>((resolve) => {
+        settleWorkflows = resolve
+      })
+      vi.mocked(fetch).mockImplementation(async (input: RequestInfo | URL) => {
+        const url = String(input)
+        if (url.endsWith('/api/agent/threads'))
+          return json(
+            200,
+            agentThreadList([
+              agentThread({
+                id: 'th-first',
+                title: 'First chat',
+                last_message_at: '2026-09-22T10:00:00Z',
+                workflow_id: 'wf-first'
+              })
+            ])
+          )
+        if (url.includes('/api/workflows')) return workflowsResponse
+        const match = url.match(/\/api\/agent\/threads\/([^/]+)\/messages$/)
+        if (match) {
+          loadedThreads.push(match[1])
+          return json(200, [])
+        }
+        return json(200, { data: [], pagination: { has_more: false } })
+      })
+
+      renderWithSelectedTarget()
+      await vi.waitFor(() =>
+        expect(useAgentChatHistoryStore().sessions).toHaveLength(1)
+      )
+      workflowStore.activeWorkflow = first
+      await nextTick()
+      expect(useAgentConversationStore().threadId).toBeNull()
+
+      return {
+        loadedThreads,
+        resolveWorkflows: () =>
+          settleWorkflows(
+            json(200, {
+              data: [{ id: 'wf-first', name: 'first' }],
+              pagination: { offset: 0, limit: 100, total: 1, has_more: false }
+            })
+          )
+      }
+    }
+
+    // The positive control for the test below: it fixes how long an armed
+    // follow takes to land once the ids arrive, so the negative case's window
+    // is not a guess.
+    it('lands the tab chat once the tab cloud ids resolve', async () => {
+      const { resolveWorkflows, loadedThreads } =
+        await armFollowOnPendingWorkflowIds()
+
+      resolveWorkflows()
+
+      await vi.waitFor(
+        () => expect(useAgentConversationStore().threadId).toBe('th-first'),
+        { timeout: FOLLOW_LANDS_WITHIN_MS }
+      )
+      expect(loadedThreads).toEqual(['th-first'])
+    })
+
+    it('does not land the tab chat on a chat the user just started', async () => {
+      const { resolveWorkflows, loadedThreads } =
+        await armFollowOnPendingWorkflowIds()
+
+      await userEvent.click(
+        screen.getByRole('button', { name: i18n.global.t('agent.newChat') })
+      )
+      resolveWorkflows()
+
+      await expect(
+        vi.waitFor(
+          () => expect(useAgentConversationStore().threadId).not.toBeNull(),
+          { timeout: FOLLOW_LANDS_WITHIN_MS }
+        )
+      ).rejects.toThrow()
+      expect(loadedThreads).toEqual([])
     })
   })
 

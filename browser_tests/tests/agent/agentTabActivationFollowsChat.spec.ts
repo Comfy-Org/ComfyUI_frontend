@@ -234,24 +234,19 @@ test.describe(
 
       await test.step('a hand-picked chat with no workflow of its own survives the refresh', async () => {
         const readsBeforePick = threadListReads
-        // The regression re-reads the portrait transcript to put the active
-        // tab's chat back. Arm the listener before the pick so neither outcome
-        // can win on timing.
-        const refetchedPortrait = page
-          .waitForRequest(
-            (request) =>
-              request
-                .url()
-                .includes(`/api/agent/threads/${PORTRAIT_THREAD_ID}/messages`),
-            { timeout: 5000 }
-          )
-          .then(() => 'the portrait chat was loaded again')
-          .catch(() => null)
         await openChat('Unbound chat', UNBOUND_REQUEST)
         await expect
           .poll(() => threadListReads, { message: 'thread list refreshed' })
           .toBeGreaterThan(readsBeforePick)
-        expect(await refetchedPortrait).toBeNull()
+        // "It stayed" needs a window. The regression puts the tab's chat back
+        // shortly after that refresh lands, so asserting the unbound chat is
+        // on screen proves nothing on its own -- it holds just as well a
+        // moment before the flip.
+        await expect(
+          expect(transcriptBubbles).toHaveText([PORTRAIT_REQUEST], {
+            timeout: 3000
+          })
+        ).rejects.toThrow()
         await expect(transcriptBubbles).toHaveText([UNBOUND_REQUEST])
         await expect(
           topbar.getWorkflowTab(PORTRAIT_NAME).and(topbar.getActiveTab())
