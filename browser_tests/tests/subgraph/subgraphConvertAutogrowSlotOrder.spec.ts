@@ -145,11 +145,11 @@ test.describe(
       const subgraphNodeId =
         await comfyPage.subgraph.convertSelectionToSubgraph()
 
+      const connections = await innerConnections(comfyPage, subgraphNodeId)
+
       // Marked here, after setup, so only the link mapping is expected to fail.
       test.fail()
-      expect(await innerConnections(comfyPage, subgraphNodeId)).toEqual(
-        EXPECTED_CONNECTIONS
-      )
+      expect(connections).toEqual(EXPECTED_CONNECTIONS)
     })
   }
 )
