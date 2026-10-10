@@ -57,12 +57,6 @@ test.describe(
 
       await test.step('point the agent panel at that workflow', async () => {
         await agentPanel.open()
-        // The send is inert until the session has a workflow target:
-        // `Send` is gated on `workflowSelecting || !composer.canSend.value`,
-        // and the ack that carries `workflow_id` is what `bindWorkflow`
-        // subscribes on. Asserting the picker is merely visible leaves the
-        // panel unbound, so the click posts nothing and the CRDT leg below
-        // is never reached.
         await agentPanel.selectWorkflow(PROMOTED_WIDGET_WORKFLOW_LABEL)
         await expect
           .poll(() =>
