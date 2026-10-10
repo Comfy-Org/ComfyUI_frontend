@@ -139,6 +139,8 @@ async function chooseTakes(
 
 const generateButton = () => screen.getByTestId('cinematic-generate')
 
+const FULLSCREEN_FLAG = 'workshop-cinematic-fullscreen-enabled'
+
 describe('CinematicStudio', () => {
   beforeEach(() => {
     deploy.env = ''
@@ -146,7 +148,9 @@ describe('CinematicStudio', () => {
     vi.mocked(useWorkshopEnabled).mockReturnValue(computed(() => true))
     vi.mocked(useWorkshopEnabledSettled).mockReturnValue(computed(() => true))
     vi.mocked(useWorkshopAppsEnabled).mockReturnValue(computed(() => true))
-    vi.mocked(useWorkshopFlag).mockReturnValue(computed(() => true))
+    vi.mocked(useWorkshopFlag).mockImplementation((name) =>
+      computed(() => name !== FULLSCREEN_FLAG)
+    )
     const session = useWorkshopSession()
     session.session = computed(() => signedIn.value)
     vi.mocked(session.ensureFresh).mockResolvedValue({
@@ -1671,6 +1675,211 @@ describe('CinematicStudio', () => {
     expect(screen.queryByTestId('cinematic-picker')).toBeNull()
   })
 
+  describe('full-screen editor flag', () => {
+    const editorAttribute = () =>
+      document.documentElement.hasAttribute('data-workshop-editor')
+
+    function renderPage(fullscreen: boolean) {
+      vi.mocked(useWorkshopFlag).mockImplementation((name) =>
+        computed(() => name !== FULLSCREEN_FLAG || fullscreen)
+      )
+      const page = render(CinematicStudioPage, {
+        props: { apps: appModels, models }
+      })
+      return { ...page, user: userEvent.setup() }
+    }
+
+    it('keeps the site page layout while the flag is off', async () => {
+      renderPage(false)
+
+      expect(
+        await screen.findByRole('complementary', { name: 'Shot settings' })
+      ).toBeInTheDocument()
+      expect(screen.getByRole('heading', { level: 1 })).toHaveTextContent(
+        'Cinematic Studio'
+      )
+      expect(screen.queryByTestId('apps-home')).toBeNull()
+      expect(editorAttribute()).toBe(false)
+    })
+
+    it('opens full screen on the editor shell while the flag is on, and hands the page back on leaving', async () => {
+      const { unmount } = renderPage(true)
+
+      expect(
+        await screen.findByRole('complementary', { name: 'Shot settings' })
+      ).toBeInTheDocument()
+      expect(screen.getByTestId('apps-home')).toBeInTheDocument()
+      expect(screen.getByTestId('apps-back')).toHaveAccessibleName(
+        'Back to apps'
+      )
+      expect(editorAttribute()).toBe(true)
+
+      unmount()
+
+      expect(editorAttribute()).toBe(false)
+    })
+
+    it('runs a shot from the floating panel and offers it in the header download', async () => {
+      vi.mocked(router_render).mockImplementation(async (slug) =>
+        rendered(slug)
+      )
+      const { user } = renderPage(true)
+      expect(
+        await screen.findByRole('button', { name: 'Download' })
+      ).toHaveAttribute('aria-disabled', 'true')
+
+      await user.type(screen.getByLabelText('Scene'), 'A diner at dawn')
+      await user.click(generateButton())
+
+      expect(await screen.findByAltText(/A diner at dawn/)).toBeInTheDocument()
+      expect(screen.queryByRole('button', { name: 'Download' })).toBeNull()
+      expect(
+        screen
+          .getAllByRole('link', { name: 'Download' })
+          .map((link) => link.getAttribute('download'))
+      ).toEqual(['shot.png', 'shot.png'])
+    })
+
+    it('anchors a picker beside the floating panel, centred on its row', async () => {
+      vi.spyOn(Element.prototype, 'getBoundingClientRect').mockImplementation(
+        function (this: Element) {
+          if (this.getAttribute('data-testid') === 'cinematic-picker')
+            return DOMRect.fromRect({ y: 0, height: 300 })
+          if (this.getAttribute('aria-expanded') === 'true')
+            return DOMRect.fromRect({ y: 400, height: 48 })
+          return DOMRect.fromRect({ y: 100, height: 1000 })
+        }
+      )
+      const { user } = renderPage(true)
+      const panel = await screen.findByRole('complementary', {
+        name: 'Shot settings'
+      })
+
+      await user.click(within(panel).getByRole('button', { name: /^Film/ }))
+      const picker = await screen.findByTestId('cinematic-picker')
+      await vi.waitFor(() =>
+        expect(picker.style.getPropertyValue('--anchor-top')).toBe('274px')
+      )
+      await user.click(
+        within(screen.getByRole('dialog', { name: 'Film' })).getByRole(
+          'radio',
+          { name: 'Daylight 250D' }
+        )
+      )
+
+      expect(screen.queryByRole('dialog')).toBeNull()
+      expect(
+        within(panel).getByRole('button', { name: /^Film.*Daylight 250D/ })
+      ).toBeInTheDocument()
+    })
+  })
+
+  describe('full-screen starting input', () => {
+    const sourceModel = videoModels.find((option) => option.video?.sourceVideo)!
+    const frameModel = videoModels.find(
+      (option) => option.firstFrameSlug && !option.video?.sourceVideo
+    )!
+
+    async function renderEditor(video?: CinematicModel) {
+      vi.mocked(useWorkshopFlag).mockImplementation(() => computed(() => true))
+      vi.mocked(router_render).mockImplementation(async (slug) =>
+        rendered(slug)
+      )
+      render(CinematicStudioPage, {
+        props: { apps: appModels, models: video ? [...models, video] : models }
+      })
+      const user = userEvent.setup()
+      const panel = await screen.findByRole('complementary', {
+        name: 'Shot settings'
+      })
+      if (video)
+        await user.click(within(panel).getByRole('button', { name: 'Video' }))
+      return { user, panel }
+    }
+
+    it.for([
+      {
+        name: 'source video',
+        video: () => sourceModel,
+        kind: 'video',
+        add: 'Add the video to edit',
+        file: new File(['clip'], 'clip.mp4', { type: 'video/mp4' }),
+        slug: () => sourceModel.slug
+      },
+      {
+        name: 'first frame',
+        video: () => frameModel,
+        kind: 'firstFrame',
+        add: 'Add a starting frame',
+        file: new File(['frame'], 'frame.png', { type: 'image/png' }),
+        slug: () => frameModel.firstFrameSlug
+      }
+    ])(
+      'puts the $name alone above the scene box and runs the shot from it',
+      async ({ video, kind, add, file, slug }) => {
+        const { user, panel } = await renderEditor(video())
+
+        expect(within(panel).getByRole('button', { name: add })).toBeVisible()
+        expect(screen.queryByTestId(`cinematic-reference-${kind}`)).toBeNull()
+
+        await user.upload(screen.getByTestId(`cinematic-start-${kind}`), file)
+        expect(
+          within(panel).getByRole('button', { name: `Change: ${file.name}` })
+        ).toBeVisible()
+        await user.type(screen.getByLabelText('Scene'), 'A diner at dawn')
+        await user.click(generateButton())
+
+        await vi.waitFor(() => expect(router_render).toHaveBeenCalledOnce())
+        const call = vi.mocked(router_render).mock.calls[0]
+        expect(call[0]).toBe(slug())
+        expect(sent(call).references).toContain(file)
+      }
+    )
+
+    it('keeps the ending frame in the scene box and removes an optional first frame from its tile', async () => {
+      const { user, panel } = await renderEditor(frameModel)
+      await user.upload(
+        screen.getByTestId('cinematic-start-firstFrame'),
+        new File(['frame'], 'frame.png', { type: 'image/png' })
+      )
+      expect(
+        screen.getByTestId('cinematic-reference-lastFrame')
+      ).toBeInTheDocument()
+
+      await user.click(
+        within(panel).getByRole('button', {
+          name: 'Remove reference: Starting frame'
+        })
+      )
+
+      expect(
+        within(panel).getByRole('button', { name: 'Add a starting frame' })
+      ).toBeVisible()
+    })
+
+    it('keeps a required source video replaceable but not removable', async () => {
+      const { user, panel } = await renderEditor(sourceModel)
+      await user.upload(
+        screen.getByTestId('cinematic-start-video'),
+        new File(['clip'], 'clip.mp4', { type: 'video/mp4' })
+      )
+
+      expect(
+        within(panel).getByRole('button', { name: 'Change: clip.mp4' })
+      ).toBeVisible()
+      expect(
+        within(panel).queryByRole('button', { name: /^Remove reference/ })
+      ).toBeNull()
+    })
+
+    it('shows no starting tile for a still, whose character stays in the scene box', async () => {
+      await renderEditor()
+
+      expect(screen.queryByTestId(/^cinematic-start-/)).toBeNull()
+      expect(screen.getByTestId('cinematic-reference-cast')).toBeInTheDocument()
+    })
+  })
+
   describe('layout switch', () => {
     const panel = () =>
       screen.queryByRole('complementary', { name: 'Shot settings' })
@@ -1777,7 +1986,7 @@ describe('CinematicStudio', () => {
       expect(document.title).toBe('Re-shoot a video - Comfy')
     })
 
-    it('lists only Cinematic Studio and Re-shoot a video in the Hub apps tab', async () => {
+    it('lists every app in the Hub apps tab', async () => {
       window.history.replaceState(
         null,
         '',
@@ -1788,14 +1997,41 @@ describe('CinematicStudio', () => {
       const tab = await screen.findByRole('button', { name: 'Apps' })
       expect(tab).toHaveAttribute('aria-pressed', 'true')
       const apps = screen.getAllByRole('listitem')
-      expect(apps, 'Apps that do not open yet stay off the Hub').toHaveLength(2)
-      const [firstApp, secondApp] = apps
+      expect(apps, 'Apps that do not open yet stay off the Hub').toHaveLength(8)
+      const [
+        firstApp,
+        secondApp,
+        thirdApp,
+        fourthApp,
+        fifthApp,
+        sixthApp,
+        seventhApp,
+        eighthApp
+      ] = apps
       expect(
         within(firstApp).getByRole('link', { name: 'Cinematic Studio' })
       ).toHaveAttribute('href', '/hub/apps/cinematic-studio/')
       expect(
         within(secondApp).getByRole('link', { name: 'Re-shoot a video' })
       ).toHaveAttribute('href', '/hub/apps/reshoot/')
+      expect(
+        within(thirdApp).getByRole('link', { name: 'Move anything' })
+      ).toHaveAttribute('href', '/hub/apps/move-anything/')
+      expect(
+        within(fourthApp).getByRole('link', { name: 'Relight' })
+      ).toHaveAttribute('href', '/hub/apps/relight/')
+      expect(
+        within(fifthApp).getByRole('link', { name: 'Background Removal' })
+      ).toHaveAttribute('href', '/hub/apps/background-removal/')
+      expect(
+        within(sixthApp).getByRole('link', { name: 'Hand product swap' })
+      ).toHaveAttribute('href', '/hub/apps/hand-product-swap/')
+      expect(
+        within(seventhApp).getByRole('link', { name: 'Paparazzi me' })
+      ).toHaveAttribute('href', '/hub/apps/paparazzi-me/')
+      expect(
+        within(eighthApp).getByRole('link', { name: 'Sprite Sheet Generator' })
+      ).toHaveAttribute('href', '/hub/apps/sprite-sheet/')
     })
 
     it('runs a shot from the side panel on the model picked there', async () => {

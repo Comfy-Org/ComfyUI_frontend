@@ -1,7 +1,31 @@
 {
+  "apps/background-removal": {
+    "flag": "workshop-background-removal-app-enabled",
+    "reason": "Background Removal is a front-end mock while its backend is built; shown only where PostHog turns it on."
+  },
+  "apps/hand-product-swap": {
+    "flag": "workshop-hand-product-swap-app-enabled",
+    "reason": "Hand product swap is a front-end mock while its backend is built; shown only where PostHog turns it on."
+  },
+  "apps/move-anything": {
+    "flag": "workshop-move-anything-app-enabled",
+    "reason": "Move anything is a front-end mock while its backend is built; shown only where PostHog turns it on."
+  },
+  "apps/paparazzi-me": {
+    "flag": "workshop-paparazzi-me-app-enabled",
+    "reason": "Paparazzi me is a front-end mock while its backend is built; shown only where PostHog turns it on."
+  },
+  "apps/relight": {
+    "flag": "workshop-relight-app-enabled",
+    "reason": "Relight is a front-end mock while its backend is built; shown only where PostHog turns it on."
+  },
   "apps/reshoot": {
     "flag": "workshop-reshoot-app-enabled",
     "reason": "Re-shoot runs on the app proxy (comfy-api BE-17741/BE-17804); shown only where PostHog turns it on while it rolls out."
+  },
+  "apps/sprite-sheet": {
+    "flag": "workshop-sprite-sheet-app-enabled",
+    "reason": "The Sprite Sheet Generator is a front-end mock while its backend is built; shown only where PostHog turns it on."
   },
   "bfl--flux-3-video-continuation--edit-videos": {
     "disabled": true,

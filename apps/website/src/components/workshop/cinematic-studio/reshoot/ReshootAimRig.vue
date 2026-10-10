@@ -13,7 +13,7 @@ import {
 import type { ReshootCopyKey } from '@/lib/workshop/cinematic-studio/copy'
 import InfoTooltip from '@/components/ui/tooltip/InfoTooltip.vue'
 import type { Locale } from '@/i18n/translations'
-import ReshootBarField from './ReshootBarField.vue'
+import EditorSlider from '@/components/workshop/app-editor/EditorSlider.vue'
 import ReshootGlobe from './ReshootGlobe.vue'
 import ReshootZone from './ReshootZone.vue'
 
@@ -21,11 +21,14 @@ const {
   clip,
   camera,
   disabled = false,
+  quiet = false,
   locale = 'en'
 } = defineProps<{
   clip: string
   camera: Readonly<ReshootCamera>
   disabled?: boolean
+  /** Leaves out the line on how to drag the globe. */
+  quiet?: boolean
   locale?: Locale
 }>()
 const { t } = translationsFor(locale)
@@ -63,14 +66,14 @@ const zone = computed(() => cameraZone(camera))
 
 <template>
   <div class="flex flex-col gap-2">
-    <p class="text-center text-xs text-primary-warm-gray">
+    <p v-if="!quiet" class="text-center text-xs text-primary-warm-gray">
       {{ t('reshoot.aim.globe') }}
     </p>
     <ReshootGlobe :clip :camera :disabled :locale @aim="emit('aim', $event)" />
     <ReshootZone :zone class="mx-auto mb-1">
       {{ t(`reshoot.zone.${zone}`) }}
     </ReshootZone>
-    <ReshootBarField
+    <EditorSlider
       v-for="{ axis, label, format, hint } in MAIN"
       :key="axis"
       :model-value="camera[axis]"
@@ -82,7 +85,7 @@ const zone = computed(() => cameraZone(camera))
       @update:model-value="emit('aim', { [axis]: $event })"
     />
     <div class="flex flex-col gap-2">
-      <ReshootBarField
+      <EditorSlider
         v-for="{ axis, label, format } in MORE"
         :key="axis"
         :model-value="camera[axis]"

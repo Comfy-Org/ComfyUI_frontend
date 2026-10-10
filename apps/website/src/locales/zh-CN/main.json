@@ -4518,6 +4518,24 @@
       "prototype": "原型",
       "reshoot": "重拍视频",
       "reshootSummary": "为你的片段重新架设机位，从新的角度生成这一场景。",
+      "moveAnything": "随意移动",
+      "moveAnythingSummary": "把照片中的物体拖到新位置，模型会围绕它们重建画面。",
+      "moveAnythingMeta": "图像 · Qwen Image 2.1",
+      "relight": "重新布光",
+      "relightSummary": "在照片上放置新的光源，模型会重绘阴影与高光，同时保留主体。",
+      "relightMeta": "图像 · Beeble SwitchX",
+      "handProductSwap": "手持产品替换",
+      "handProductSwapSummary": "把你的产品放进任意照片中的手里，模型会匹配握姿、光线与阴影。",
+      "handProductSwapMeta": "图像 · Nano Banana Pro",
+      "spriteSheet": "精灵图生成器",
+      "spriteSheetSummary": "把一个角色变成可直接用于游戏的精灵图：选择风格和动作，模型会绘制每一帧。",
+      "spriteSheetMeta": "图像 · Nano Banana Pro",
+      "paparazziMe": "狗仔偶遇",
+      "paparazziMeSummary": "选一位明星和一个场景，加上你的脸，生成你们俩的闪光灯狗仔照。",
+      "paparazziMeMeta": "图像 · Nano Banana Pro",
+      "backgroundRemoval": "背景移除",
+      "backgroundRemovalSummary": "将主体从照片中抠出，放在干净的背景上，或保留透明背景。",
+      "backgroundRemovalMeta": "图像 · Recraft Remove Background",
       "reshootMeta": "视频 · MiniMax H3"
     },
     "stage": {
@@ -4603,8 +4621,7 @@
     "title": "电影工作室",
     "beta": "测试版",
     "repo": {
-      "view": "在 GitHub 上查看",
-      "soon": "GitHub · 即将推出"
+      "view": "在 GitHub 上查看"
     },
     "meta": {
       "description": "导演电影感静帧：选择摄影机、景别、光线、胶片与调色，然后通过 Comfy Router 运行任意图像模型。"
@@ -4761,6 +4778,26 @@
       "yourPalette": "你的色板",
       "edit": "编辑色板",
       "done": "完成"
+    },
+    "download": {
+      "label": "下载",
+      "locked": "运行后即可下载"
+    },
+    "zoom": {
+      "label": "缩放",
+      "in": "放大",
+      "out": "缩小",
+      "fit": "适应屏幕，当前 {n}%"
+    },
+    "compare": {
+      "label": "对比",
+      "before": "之前",
+      "after": "之后"
+    },
+    "tools": "镜头工具",
+    "sheet": {
+      "expand": "显示镜头设置",
+      "collapse": "隐藏镜头设置"
     }
   },
   "reshoot": {
@@ -4830,9 +4867,11 @@
     },
     "prompt": {
       "dialogue": "模型也会生成新的音频：如果视频中有对白，请在这里写下台词，新生成的内容会更好地保留它们。",
-      "placeholder": "例如：她身后是一面石墙，左边有更多麦田"
+      "placeholder": "例如：她身后是一面石墙，左边有更多麦田",
+      "box": "新视角中要出现的内容（可选），例如：她身后是一面石墙，左边有更多麦田。如果视频中有对白，请在这里写下台词，让新的音频保留它们。"
     },
     "clip": {
+      "seconds": "{seconds} 秒",
       "length": "该片段长 {seconds} 秒，请使用 5 到 15 秒的片段。",
       "change": "更换",
       "ready": "场景已读取",
@@ -4976,7 +5015,12 @@
     "tryAgain": "重试",
     "noWebgl": "此预览需要 WebGL2，当前浏览器不支持。",
     "play": "播放",
-    "pause": "暂停"
+    "pause": "暂停",
+    "tools": "镜头视图",
+    "sheet": {
+      "expand": "显示重拍设置",
+      "collapse": "隐藏重拍设置"
+    }
   },
   "changelog": {
     "meta": {

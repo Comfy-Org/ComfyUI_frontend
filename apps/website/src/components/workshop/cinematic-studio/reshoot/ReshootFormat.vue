@@ -79,5 +79,6 @@ const sizeValue = computed({
       <span class="flex-1 text-left">{{ size }}</span>
       <ChevronDown class="size-3.5 text-primary-warm-gray" aria-hidden="true" />
     </CinematicMenu>
+    <slot />
   </div>
 </template>

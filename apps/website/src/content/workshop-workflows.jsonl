@@ -30,3 +30,9 @@
 {"id":"workflows/remove-object","type":"CLOUD","definitionVersion":"1","source":{"repository":"Comfy-Org/ComfyUI_frontend","commit":"43fd83e5f8dcfa2ac558b6f0e42a88231c940738","path":"apps/website/src/data/workflows/api_bria_eraser.json"},"inputSchema":{"type":"object","properties":{"image":{"type":"string","format":"uri","pattern":"^https://"},"mask":{"type":"string","format":"uri","pattern":"^https://"}},"required":["image","mask"],"additionalProperties":false},"cloud":{"workflow":{"2":{"inputs":{"image":"vintage_girl_yellow_apple.png"},"class_type":"LoadImage","_meta":{"title":"Load Image"}},"4":{"inputs":{"filename_prefix":"Bria_Eraser","format":"png","images":["15",0],"format.bit_depth":"8-bit","format.input_color_space":"sRGB"},"class_type":"SaveImageAdvanced","_meta":{"title":"Save Image (Advanced)"}},"15":{"inputs":{"mask_type":"manual","moderation":"false","image":["2",0],"mask":["workshop-mask",0]},"class_type":"BriaEraser","_meta":{"title":"Bria Eraser"}},"workshop-mask":{"class_type":"LoadImageMask","inputs":{"image":"","channel":"red"},"_meta":{"title":"Edit mask (white = edit)"}}},"inputBindings":{"image":{"encoding":"cloud-asset","targets":[{"nodeId":"2","inputName":"image"}],"mediaKind":"image"},"mask":{"encoding":"cloud-asset","targets":[{"nodeId":"workshop-mask","inputName":"image"}],"mediaKind":"image"}}},"outputs":[{"id":"image","nodeId":"4","key":"images","kind":"image"}]}
 {"id":"apps/cinematic-studio","type":"APP","app":"studio"}
 {"id":"apps/reshoot","type":"APP","app":"reshoot"}
+{"id":"apps/move-anything","type":"APP","app":"move-anything"}
+{"id":"apps/relight","type":"APP","app":"relight"}
+{"id":"apps/hand-product-swap","type":"APP","app":"hand-product-swap"}
+{"id":"apps/sprite-sheet","type":"APP","app":"sprite-sheet"}
+{"id":"apps/paparazzi-me","type":"APP","app":"paparazzi-me"}
+{"id":"apps/background-removal","type":"APP","app":"background-removal"}

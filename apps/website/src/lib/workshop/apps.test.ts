@@ -6,7 +6,13 @@ import { workshopAppHref, workshopAppRepo, workshopApps } from './apps'
 describe('workshopAppHref', () => {
   it.for([
     { app: 'studio', href: '/hub/apps/cinematic-studio/' },
-    { app: 'reshoot', href: '/hub/apps/reshoot/' }
+    { app: 'reshoot', href: '/hub/apps/reshoot/' },
+    { app: 'move-anything', href: '/hub/apps/move-anything/' },
+    { app: 'relight', href: '/hub/apps/relight/' },
+    { app: 'hand-product-swap', href: '/hub/apps/hand-product-swap/' },
+    { app: 'sprite-sheet', href: '/hub/apps/sprite-sheet/' },
+    { app: 'paparazzi-me', href: '/hub/apps/paparazzi-me/' },
+    { app: 'background-removal', href: '/hub/apps/background-removal/' }
   ] as const)('puts $app at $href', ({ app, href }) => {
     expect(workshopAppHref(app, 'en')).toBe(href)
   })
@@ -19,9 +25,9 @@ describe('workshopAppHref', () => {
       workshopApps('en', appModels).find(({ key }) => key === 'reshoot')
         ?.thumbnail
     ).toEqual({
-      url: 'https://media.comfy.org/website/workshop/apps/reshoot/thumbnail-480.mp4',
+      url: '/images/apps/reshoot/cover.mp4',
       kind: 'video',
-      poster: 'https://media.comfy.org/website/workshop/apps/reshoot/poster.jpg'
+      poster: '/images/apps/reshoot/poster.jpg'
     })
   })
 })

@@ -5125,6 +5125,24 @@
       "prototype": "Prototype",
       "reshoot": "Re-shoot a video",
       "reshootSummary": "Aim a new camera at your clip and generate the scene from that angle.",
+      "moveAnything": "Move anything",
+      "moveAnythingSummary": "Drag the things in a photo somewhere new, and the model rebuilds the scene around them.",
+      "moveAnythingMeta": "Image · Qwen Image 2.1",
+      "relight": "Relight",
+      "relightSummary": "Place new lights on a photo, and the model redraws its shadows and highlights while keeping the subject.",
+      "relightMeta": "Image · Beeble SwitchX",
+      "handProductSwap": "Hand product swap",
+      "handProductSwapSummary": "Put your product in the hand from any photo, and the model matches the grip, light and shadows.",
+      "handProductSwapMeta": "Image · Nano Banana Pro",
+      "spriteSheet": "Sprite Sheet Generator",
+      "spriteSheetSummary": "Turn one character into a game-ready sprite sheet: pick a style and a motion, and the model draws every frame.",
+      "spriteSheetMeta": "Image · Nano Banana Pro",
+      "paparazziMe": "Paparazzi me",
+      "paparazziMeSummary": "Pick a star and a scene, add your face, and get a flash-lit paparazzi photo of the two of you.",
+      "paparazziMeMeta": "Image · Nano Banana Pro",
+      "backgroundRemoval": "Background Removal",
+      "backgroundRemovalSummary": "Cut the subject out of a photo and put it on a clean background, or none at all.",
+      "backgroundRemovalMeta": "Image · Recraft Remove Background",
       "reshootMeta": "Video · MiniMax H3"
     },
     "stage": {
@@ -5210,8 +5228,7 @@
     "title": "Cinematic Studio",
     "beta": "Beta",
     "repo": {
-      "view": "View on GitHub",
-      "soon": "GitHub · Coming soon"
+      "view": "View on GitHub"
     },
     "meta": {
       "description": "Direct cinematic stills: pick the camera, shot, light, film and grade, then run any image model through the Comfy Router."
@@ -5368,6 +5385,26 @@
       "yourPalette": "Your palette",
       "edit": "Edit palette",
       "done": "Done"
+    },
+    "download": {
+      "label": "Download",
+      "locked": "Run to download"
+    },
+    "zoom": {
+      "label": "Zoom",
+      "in": "Zoom in",
+      "out": "Zoom out",
+      "fit": "Fit to screen, now {n}%"
+    },
+    "compare": {
+      "label": "Compare",
+      "before": "Before",
+      "after": "After"
+    },
+    "tools": "Shot tools",
+    "sheet": {
+      "expand": "Show shot settings",
+      "collapse": "Hide shot settings"
     }
   },
   "reshoot": {
@@ -5437,9 +5474,11 @@
     },
     "prompt": {
       "dialogue": "The model also generates new audio: if your video has dialogue, prompt the lines here so the new generation retains it better.",
-      "placeholder": "e.g. a stone wall behind her, more wheat to the left"
+      "placeholder": "e.g. a stone wall behind her, more wheat to the left",
+      "box": "What the new view reveals (optional), e.g. a stone wall behind her, more wheat to the left. If the clip has dialogue, write the lines here so the new audio keeps them."
     },
     "clip": {
+      "seconds": "{seconds} s",
       "length": "This clip is {seconds} s long. Use one between 5 and 15 seconds.",
       "change": "Change",
       "ready": "Scene read",
@@ -5583,7 +5622,12 @@
     "tryAgain": "Try again",
     "noWebgl": "This preview needs WebGL2, which this browser does not offer.",
     "play": "Play",
-    "pause": "Pause"
+    "pause": "Pause",
+    "tools": "Take views",
+    "sheet": {
+      "expand": "Show re-shoot settings",
+      "collapse": "Hide re-shoot settings"
+    }
   },
   "changelog": {
     "meta": {

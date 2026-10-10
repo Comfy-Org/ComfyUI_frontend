@@ -79,7 +79,16 @@ const appSchema = z
   .object({
     id: z.string().regex(/^apps\/[a-z0-9]+(?:-[a-z0-9]+)*$/),
     type: z.literal('APP'),
-    app: z.enum(['studio', 'reshoot'])
+    app: z.enum([
+      'studio',
+      'reshoot',
+      'move-anything',
+      'relight',
+      'hand-product-swap',
+      'sprite-sheet',
+      'paparazzi-me',
+      'background-removal'
+    ])
   })
   .strict()
 

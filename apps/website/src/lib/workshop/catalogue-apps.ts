@@ -15,7 +15,34 @@ const copy = {
     'zh-CN': '像在片场一样执导镜头'
   },
   reshootName: { en: 'Re-shoot a video', 'zh-CN': '重拍视频' },
-  reshootTask: { en: 'Re-shoot from any angle', 'zh-CN': '从任意角度重拍' }
+  reshootTask: { en: 'Re-shoot from any angle', 'zh-CN': '从任意角度重拍' },
+  moveAnythingName: { en: 'Move anything', 'zh-CN': '随意移动' },
+  moveAnythingTask: {
+    en: 'Rearrange the things in a photo',
+    'zh-CN': '重新摆放照片中的物体'
+  },
+  relightName: { en: 'Relight', 'zh-CN': '重新布光' },
+  relightTask: { en: 'Light a photo again', 'zh-CN': '为照片重新打光' },
+  handProductSwapName: { en: 'Hand product swap', 'zh-CN': '手持产品替换' },
+  handProductSwapTask: {
+    en: 'Put a product in a hand',
+    'zh-CN': '把产品放到手中'
+  },
+  spriteSheetName: { en: 'Sprite Sheet Generator', 'zh-CN': '精灵图生成器' },
+  spriteSheetTask: {
+    en: 'Animate a character for a game',
+    'zh-CN': '为游戏制作角色动画'
+  },
+  paparazziMeName: { en: 'Paparazzi me', 'zh-CN': '狗仔偶遇' },
+  paparazziMeTask: {
+    en: 'Get snapped next to a star',
+    'zh-CN': '和明星同框被拍'
+  },
+  backgroundRemovalName: { en: 'Background Removal', 'zh-CN': '背景移除' },
+  backgroundRemovalTask: {
+    en: 'Cut the subject out of a photo',
+    'zh-CN': '将主体从照片中抠出'
+  }
 } as const satisfies Record<string, LocalizedText>
 
 export function ac(key: keyof typeof copy, locale: Locale = 'en'): string {

@@ -4833,6 +4833,16 @@
       "permanent": true
     },
     {
+      "source": "/models/apps/background-removal",
+      "destination": "/hub/apps/background-removal/",
+      "permanent": true
+    },
+    {
+      "source": "/models/apps/background-removal/",
+      "destination": "/hub/apps/background-removal/",
+      "permanent": true
+    },
+    {
       "source": "/models/apps/cinematic-studio",
       "destination": "/hub/apps/cinematic-studio/",
       "permanent": true
@@ -4843,6 +4853,46 @@
       "permanent": true
     },
     {
+      "source": "/models/apps/hand-product-swap",
+      "destination": "/hub/apps/hand-product-swap/",
+      "permanent": true
+    },
+    {
+      "source": "/models/apps/hand-product-swap/",
+      "destination": "/hub/apps/hand-product-swap/",
+      "permanent": true
+    },
+    {
+      "source": "/models/apps/move-anything",
+      "destination": "/hub/apps/move-anything/",
+      "permanent": true
+    },
+    {
+      "source": "/models/apps/move-anything/",
+      "destination": "/hub/apps/move-anything/",
+      "permanent": true
+    },
+    {
+      "source": "/models/apps/paparazzi-me",
+      "destination": "/hub/apps/paparazzi-me/",
+      "permanent": true
+    },
+    {
+      "source": "/models/apps/paparazzi-me/",
+      "destination": "/hub/apps/paparazzi-me/",
+      "permanent": true
+    },
+    {
+      "source": "/models/apps/relight",
+      "destination": "/hub/apps/relight/",
+      "permanent": true
+    },
+    {
+      "source": "/models/apps/relight/",
+      "destination": "/hub/apps/relight/",
+      "permanent": true
+    },
+    {
       "source": "/models/apps/reshoot",
       "destination": "/hub/apps/reshoot/",
       "permanent": true
@@ -4850,6 +4900,16 @@
     {
       "source": "/models/apps/reshoot/",
       "destination": "/hub/apps/reshoot/",
+      "permanent": true
+    },
+    {
+      "source": "/models/apps/sprite-sheet",
+      "destination": "/hub/apps/sprite-sheet/",
+      "permanent": true
+    },
+    {
+      "source": "/models/apps/sprite-sheet/",
+      "destination": "/hub/apps/sprite-sheet/",
       "permanent": true
     }
   ]
