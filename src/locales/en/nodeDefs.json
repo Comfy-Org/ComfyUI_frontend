@@ -2307,6 +2307,41 @@
       }
     }
   },
+  "CameraAngle": {
+    "display_name": "Compose Camera Angle Prompt",
+    "description": "Pick a camera angle around a subject with a 3D preview. Outputs a camera_info for 3D nodes and a plain-English shot description for prompts.",
+    "inputs": {
+      "horizontal_angle": {
+        "name": "horizontal_angle",
+        "tooltip": "Azimuth around the subject in degrees. 0 is the front, 90 the right side, 180 the back."
+      },
+      "vertical_angle": {
+        "name": "vertical_angle",
+        "tooltip": "Elevation in degrees. Negative looks up from below, positive looks down from above."
+      },
+      "zoom": {
+        "name": "zoom",
+        "tooltip": "Lens zoom on the subject: 0 is a wide shot, 10 a close-up. Carried into camera_info.zoom."
+      },
+      "image": {
+        "name": "image",
+        "tooltip": "Optional reference image shown on the front of the subject cube in the 3D preview."
+      },
+      "view": {
+        "name": "view"
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "camera_info",
+        "tooltip": null
+      },
+      "1": {
+        "name": "prompt",
+        "tooltip": null
+      }
+    }
+  },
   "Canny": {
     "display_name": "Detect Edges (Canny)",
     "inputs": {
@@ -2521,6 +2556,27 @@
       "force_sequential_txt_ids": {
         "name": "force_sequential_txt_ids",
         "tooltip": "Force usage of sequential text token IDs instead of zeroes. Should be used for checkpoints from 2026-05-22 to 2026-06-01 that are trained in this way but do not contain the __sequential__ key in the state dict."
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "ClarityCrystalUpscaleNode": {
+    "display_name": "Clarity AI Crystal Upscale",
+    "description": "Upscale an image with Clarity AI's Crystal Upscaler, a high-fidelity upscaler that stays faithful to the original and restores faces, skin, and fine texture. Maximum output: 100 megapixels.",
+    "inputs": {
+      "model": {
+        "name": "model",
+        "tooltip": "Model to use."
+      },
+      "model_creativity": {
+        "name": "creativity"
+      },
+      "model_scale_factor": {
+        "name": "scale_factor"
       }
     },
     "outputs": {
@@ -4079,7 +4135,7 @@
   },
   "CreateCameraInfo": {
     "display_name": "Create Camera Info",
-    "description": "Build a camera_infoMode 'orbit' aims with yaw/pitch/distance around the target; 'look_at' places the camera at world position. Coordinates are the viewer's world space (right-handed,Y-up).",
+    "description": "Build a camera_info. Mode 'orbit' aims with yaw/pitch/distance around the target; 'look_at' places the camera at world position. Coordinates are the viewer's world space (right-handed,Y-up).",
     "inputs": {
       "mode": {
         "name": "mode",
@@ -4110,6 +4166,9 @@
       "camera_type": {
         "name": "camera_type",
         "tooltip": "Projection used by Render Splat: perspective (foreshortening) or orthographic (parallel)."
+      },
+      "camera_info_state": {
+        "name": "camera_info_state"
       },
       "mode_distance": {
         "name": "distance"
@@ -6731,7 +6790,7 @@
     }
   },
   "GeminiNanoBanana2V2": {
-    "display_name": "Nano Banana 2",
+    "display_name": "Nano Banana 2.1",
     "description": "Generate or edit images synchronously via Google Vertex API.",
     "inputs": {
       "prompt": {
@@ -6782,7 +6841,7 @@
       },
       "2": {
         "name": "thought_image",
-        "tooltip": "First image from the model's thinking process. Only available with thinking_level HIGH and IMAGE+TEXT modality."
+        "tooltip": "First image from the model's thinking process. Only available with IMAGE+TEXT modality."
       }
     }
   },
@@ -18668,7 +18727,7 @@
     }
   },
   "QuiverImageToSVGNode": {
-    "display_name": "Quiver Image to SVG",
+    "display_name": "Quiver Image to SVG (Legacy)",
     "description": "Vectorize a raster image into SVG using Quiver AI.",
     "inputs": {
       "image": {
@@ -18713,8 +18772,53 @@
       }
     }
   },
+  "QuiverImageToSVGNodeV2": {
+    "display_name": "Quiver Image to SVG",
+    "description": "Vectorize a raster image into SVG using Quiver AI.",
+    "inputs": {
+      "model": {
+        "name": "model",
+        "tooltip": "Model to use for SVG vectorization."
+      },
+      "control_after_generate": {
+        "name": "control after generate"
+      },
+      "model_auto_crop": {
+        "name": "auto_crop"
+      },
+      "model_height": {
+        "name": "height"
+      },
+      "model_presence_penalty": {
+        "name": "presence_penalty"
+      },
+      "model_reasoning_effort": {
+        "name": "reasoning_effort"
+      },
+      "model_seed": {
+        "name": "seed"
+      },
+      "model_target_size": {
+        "name": "target_size"
+      },
+      "model_temperature": {
+        "name": "temperature"
+      },
+      "model_top_p": {
+        "name": "top_p"
+      },
+      "model_width": {
+        "name": "width"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
   "QuiverTextToSVGNode": {
-    "display_name": "Quiver Text to SVG",
+    "display_name": "Quiver Text to SVG (Legacy)",
     "description": "Generate an SVG from a text prompt using Quiver AI.",
     "inputs": {
       "prompt": {
@@ -18752,6 +18856,51 @@
       },
       "model_top_p": {
         "name": "top_p"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "QuiverTextToSVGNodeV2": {
+    "display_name": "Quiver Text to SVG",
+    "description": "Generate an SVG from a text prompt using Quiver AI.",
+    "inputs": {
+      "model": {
+        "name": "model",
+        "tooltip": "Model to use for SVG generation."
+      },
+      "control_after_generate": {
+        "name": "control after generate"
+      },
+      "model_height": {
+        "name": "height"
+      },
+      "model_instructions": {
+        "name": "instructions"
+      },
+      "model_presence_penalty": {
+        "name": "presence_penalty"
+      },
+      "model_prompt": {
+        "name": "prompt"
+      },
+      "model_reasoning_effort": {
+        "name": "reasoning_effort"
+      },
+      "model_seed": {
+        "name": "seed"
+      },
+      "model_temperature": {
+        "name": "temperature"
+      },
+      "model_top_p": {
+        "name": "top_p"
+      },
+      "model_width": {
+        "name": "width"
       }
     },
     "outputs": {
@@ -27433,6 +27582,79 @@
       },
       "model_resolution": {
         "name": "resolution"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "Vidu4ImageToVideoNode": {
+    "display_name": "Vidu Q4 Image-to-Video Generation",
+    "description": "Generate a video from a start frame and an optional prompt. The output keeps the aspect ratio of the input image.",
+    "inputs": {
+      "image": {
+        "name": "image",
+        "tooltip": "Start frame of the generated video. Aspect ratio must be between 1:5 and 5:1."
+      },
+      "model": {
+        "name": "model",
+        "tooltip": "Model to use for video generation."
+      },
+      "control_after_generate": {
+        "name": "control after generate"
+      },
+      "model_audio": {
+        "name": "audio"
+      },
+      "model_duration": {
+        "name": "duration"
+      },
+      "model_prompt": {
+        "name": "prompt"
+      },
+      "model_resolution": {
+        "name": "resolution"
+      },
+      "model_seed": {
+        "name": "seed"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "Vidu4ReferenceVideoNode": {
+    "display_name": "Vidu Q4 Reference-to-Video Generation",
+    "description": "Generate a video from reference images, optional reference audio, and a prompt.",
+    "inputs": {
+      "model": {
+        "name": "model",
+        "tooltip": "Model to use for video generation."
+      },
+      "control_after_generate": {
+        "name": "control after generate"
+      },
+      "model_aspect_ratio": {
+        "name": "aspect_ratio"
+      },
+      "model_audio": {
+        "name": "audio"
+      },
+      "model_duration": {
+        "name": "duration"
+      },
+      "model_prompt": {
+        "name": "prompt"
+      },
+      "model_resolution": {
+        "name": "resolution"
+      },
+      "model_seed": {
+        "name": "seed"
       }
     },
     "outputs": {
