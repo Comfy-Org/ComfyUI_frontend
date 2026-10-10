@@ -17,6 +17,7 @@ import type { ReplyAsset } from '../../../utils/replyAssets'
 import {
   classifyAssetUrl,
   replyAssetResultItem,
+  rewriteAgentAssetHtml,
   tokenReplyAssets
 } from '../../../utils/replyAssets'
 import CodeBlock from './CodeBlock.vue'
@@ -68,7 +69,7 @@ const segments = computed<Segment[]>(() => {
     }
     out.push({
       type: 'prose',
-      html: renderMarkdownToHtml(prose, apiBaseUrl)
+      html: rewriteAgentAssetHtml(renderMarkdownToHtml(prose, apiBaseUrl))
     })
     prose = ''
   }
