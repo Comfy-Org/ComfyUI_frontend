@@ -42,9 +42,6 @@ test.describe(
         await test.step('load the promoted-widget workflow', async () => {
           await comfyPage.workflow.loadWorkflow(PROMOTED_WIDGET_WORKFLOW_NAME)
 
-          // Precondition: the host node exposes its promoted widgets before any
-          // follower frame arrives. Guards against a silently-broken fixture
-          // load.
           const hostWidgetsBefore = await page.evaluate((id) => {
             const host = window.app!.graph.getNodeById(id)
             return (host?.widgets ?? []).map((w) => [w.name, w.value])
