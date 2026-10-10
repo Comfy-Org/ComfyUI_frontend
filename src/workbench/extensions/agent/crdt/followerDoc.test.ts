@@ -41,17 +41,52 @@ describe('FollowerDoc.applyRemoteUpdate', () => {
 })
 
 describe('FollowerDoc.lamportFloor', () => {
-  it('reports a malformed stamp ledger once and reads it as 0', () => {
+  const seeded = (configure: (host: Y.Doc) => void): FollowerDoc => {
     const host = mint({ nodes: [], links: [] }, { types: {} })
-    host.getMap('__stamps').set('bogus', 'not a stamp')
+    configure(host)
     const follower = new FollowerDoc()
     follower.applyRemoteUpdate(Y.encodeStateAsUpdate(host))
+    return follower
+  }
 
-    expect(follower.lamportFloor()).toBe(0)
-    expect(follower.lamportFloor()).toBe(0)
+  it('takes the highest valid stamp when one row is malformed, and reports once', () => {
+    const follower = seeded((host) => {
+      host
+        .getMap('__stamps')
+        .set('["widget","1","0","seed"]', [12, 'agent:t', 'a'.repeat(32)])
+      host.getMap('__stamps').set('bogus', 'not a stamp')
+    })
+
+    expect(follower.lamportFloor()).toBe(12)
+    expect(follower.lamportFloor()).toBe(12)
     expect(reportError).toHaveBeenCalledOnce()
     expect(vi.mocked(reportError).mock.calls[0][1]).toMatchObject({
-      errorType: 'failure_reading_agent_crdt_lamport_floor'
+      errorType: 'failure_reading_agent_crdt_lamport_floor',
+      context: { skippedRows: 1 }
     })
+  })
+
+  it('keeps a counter it observed after the ledger drops that row', () => {
+    const host = mint({ nodes: [], links: [] }, { types: {} })
+    const key = '["widget","1","0","seed"]'
+    host.getMap('__stamps').set(key, [50, 'human:other:tab', 'a'.repeat(32)])
+    const follower = new FollowerDoc()
+    follower.applyRemoteUpdate(Y.encodeStateAsUpdate(host))
+    const seen = Y.encodeStateVector(host)
+    host.getMap('__stamps').delete(key)
+    follower.applyRemoteUpdate(Y.encodeStateAsUpdate(host, seen))
+
+    expect(follower.doc.getMap('__stamps').has(key)).toBe(false)
+    expect(follower.lamportFloor()).toBe(50)
+  })
+
+  it('reads 0 without reporting on a doc no frame has seeded or of another schema', () => {
+    expect(new FollowerDoc().lamportFloor()).toBe(0)
+    const other = seeded((host) =>
+      host.getMap('meta').set('schema_version', 999)
+    )
+
+    expect(other.lamportFloor()).toBe(0)
+    expect(reportError).not.toHaveBeenCalled()
   })
 })

@@ -1417,6 +1417,28 @@ describe('useAgentCrdtFollower', () => {
     unmount()
   })
 
+  it('stamps above the replacement follower after a doc reset', async () => {
+    const { unmount, enqueue } = mountFollower('wf-1')
+    dispatchFrame('doc_reset', {
+      workflowId: 'wf-1',
+      actor: 'agent:turn',
+      seq: 43
+    })
+    bridge().follower = {
+      updatesApplied: 0,
+      lamportFloor: () => 70,
+      doc: { getMap: () => ({ toJSON: () => ({}) }) }
+    }
+    dispatchFrame('follower_replaced', { workflowId: 'wf-1' })
+
+    enqueue([{ op: 'set_widget', node_id: '2', widget: 'steps', value: 4 }])
+    await Promise.resolve()
+
+    const [, , ops] = clientState.sendOps.mock.calls[0]
+    expect(ops[0]).toMatchObject({ base_version: 71 })
+    unmount()
+  })
+
   it('stamps human operations above the follower doc floor, not the host sequence', async () => {
     const { unmount, enqueue } = mountFollower('wf-1')
     bridge().lastSequence = 3

@@ -19,7 +19,7 @@ export const WIRE_MAX_BATCH_BYTES = 4 * 1024 * 1024
 
 export interface MintContext {
   actor: Actor
-  /** Doc version the ops are minted against (`base_version` on every op). */
+  /** Lamport counter the op is stamped with (`base_version` and `stamp[0]`). */
   baseVersion: number
 }
 

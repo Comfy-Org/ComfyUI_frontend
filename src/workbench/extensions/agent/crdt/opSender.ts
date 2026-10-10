@@ -6,8 +6,8 @@
  * an unchanged resend converges through the applier's idempotency gate).
  *
  * Batches are strictly serialized: one in-flight batch at a time, FIFO, so
- * op order on the wire matches mint order. `base_version` is read at mint
- * time from the follower's last observed sequence.
+ * op order on the wire matches mint order. `base_version` is a Lamport tick
+ * minted above the highest stamp counter the follower has observed.
  *
  * Outcome handling is deliberately the TODAY contract: `doc_ops_result` is a
  * binary applied/skipped split. The prefix-abort reconcile and per-op

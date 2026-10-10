@@ -141,7 +141,7 @@ describe('CRDT human write-leg invariants (property)', () => {
           workflowId: () => WORKFLOW_ID,
           tab: TAB,
           actor: () => ACTOR,
-          lamportFloor: () => producerVersion++,
+          lamportFloor: () => 41,
           observedVersion: () => 41,
           reserveVersions: (
             _workflowId: string,

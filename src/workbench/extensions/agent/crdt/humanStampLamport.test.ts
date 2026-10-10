@@ -78,9 +78,7 @@ function senderOver(follower: FollowerDoc) {
     onBatchSettled: () => {}
   })
   const admitted = (): number[] =>
-    sender
-      .pendingOps()
-      .flatMap(({ ops }) => ops.map((op) => op.stamp[0]))
+    sender.pendingOps().flatMap(({ ops }) => ops.map((op) => op.stamp[0]))
   return { sender, sent, admitted }
 }
 
@@ -151,6 +149,60 @@ describe('human op stamps tick over the follower doc', () => {
     sender.admit([setSteps(4)])
 
     expect(admitted()).toEqual([31])
+    sender.detach()
+  })
+
+  it('reads the floor from a doc where a subgraph instance was deleted', () => {
+    const subgraphId = '12345678-1234-4123-8123-123456789abc'
+    const host = mint(
+      {
+        ...WORKFLOW,
+        nodes: [
+          ...WORKFLOW.nodes,
+          { id: 'S', type: subgraphId, pos: [0, 0], inputs: [], outputs: [] }
+        ],
+        definitions: {
+          subgraphs: [
+            {
+              id: subgraphId,
+              name: 'One',
+              inputs: [],
+              outputs: [],
+              nodes: [
+                {
+                  id: 10,
+                  type: 'KSampler',
+                  inputs: [],
+                  outputs: [],
+                  widgets_values: [1, 20]
+                }
+              ],
+              links: []
+            }
+          ]
+        }
+      },
+      CATALOG
+    )
+    agentWrite(host, setSteps(50), 50)
+    agentWrite(
+      host,
+      {
+        op: 'delete_node',
+        node_id: 'S',
+        removed_links: []
+      } as unknown as GraphOperation,
+      30
+    )
+    const stampKeys = [...host.getMap('__stamps').keys()]
+    expect(stampKeys.some((key) => key.startsWith('["interior_route",'))).toBe(
+      true
+    )
+    const { sender, admitted } = senderOver(followerOf(host))
+
+    sender.admit([setSteps(4)])
+
+    expect(admitted()).toEqual([51])
     sender.detach()
   })
 
