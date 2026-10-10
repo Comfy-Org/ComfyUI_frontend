@@ -53,18 +53,12 @@
     },
     "draft": {
       "bulk": {
-        "shown": "{count} workflow matches this filter | {count} workflows match this filter",
-        "include": "Include all",
-        "leaveOut": "Leave all out",
-        "reject": "Reject {count} | Reject all {count}"
+        "reject": "Reject {count} | Reject all {count}",
+        "approve": "Approve {count} | Approve all {count}"
       },
       "title": "Draft",
       "help": "Review what changed since the last publish, then publish it together.",
       "publish": "Publish {count} change | Publish {count} changes",
-      "waiting": "Waiting for review",
-      "included": "In this publish",
-      "held": "Left for the next draft",
-      "scheduled": "Scheduled to appear later",
       "all": "All",
       "filter": {
         "MODEL": "Models",
@@ -78,20 +72,28 @@
         "from": "From",
         "appears": "Appears"
       },
-      "includeAll": "Include everything in this publish",
-      "include": "Include {title} in this publish",
-      "catalogLocked": "Catalog changes publish together for now. Leaving one out needs backend support.",
       "catalogSource": "Catalog edit",
       "onPublish": "On publish",
       "removedOnPublish": "Removed on publish",
       "hiddenUntil": "Hidden until then",
-      "waits": "Waits for the next publish",
-      "heldBar": "{count} left out: {titles}",
-      "includeAgain": "Include again",
-      "rejectHeld": "Reject {count} workflow | Reject {count} workflows",
       "emptyTitle": "You're all caught up",
       "emptyBody": "Nothing is waiting for review. Changes and workflow submissions land here.",
-      "noMatches": "No changes match. Try another filter or search."
+      "noMatches": "No changes match. Try another filter or search.",
+      "summary": {
+        "undecided": "{count} workflow needs your decision | {count} workflows need your decision",
+        "flagged": "{count} change has gaps | {count} changes have gaps",
+        "scheduled": "{count} scheduled for later",
+        "publishing": "{count} change goes live when you publish | {count} changes go live when you publish"
+      },
+      "submissions": {
+        "title": "Workflow submissions",
+        "help": "Sent by creators. Approve the ones that belong on the Hub; the rest keep waiting."
+      },
+      "team": {
+        "title": "Content changes",
+        "help": "Saved to the draft by the team. They go live together; undo one to keep it out."
+      },
+      "catalogNote": "Goes live with the next publish."
     },
     "review": {
       "position": "{index} of {total}",
@@ -110,18 +112,18 @@
       "after": "After",
       "empty": "Empty",
       "description": "Description",
-      "include": "Include in this publish",
       "reject": "Reject",
       "copy": "Copy share ID",
       "copied": "Copied",
       "hubCard": "How it shows on the Hub",
       "pending": "Pending approval",
-      "noImage": "No image sent with this submission"
+      "noImage": "No image sent with this submission",
+      "newTitle": "What this adds to the site"
     },
     "publish": {
       "title": "Publish {count} change? | Publish {count} changes?",
-      "body": "Included workflows are approved and catalog changes go live together.",
-      "held": "{count} left-out change stays in the draft for next time. | {count} left-out changes stay in the draft for next time.",
+      "body": "Approved workflows and the team's content changes go live together.",
+      "held": "{count} workflow without a decision keeps waiting. | {count} workflows without a decision keep waiting.",
       "confirm": "Publish",
       "cancel": "Cancel"
     },
@@ -178,7 +180,11 @@
       "archivedCount": "Archived {count}",
       "statusLabel": "Show",
       "add": "Add content",
-      "noArchived": "Nothing is archived."
+      "noArchived": "Nothing is archived.",
+      "attentionCount": "Needs attention {count}",
+      "attentionHelp": "Pages on the Hub that are missing something. Pick a gap to fix the same thing across pages.",
+      "gapLabel": "Filter by what's missing",
+      "allGood": "Nothing needs attention. Every page has what the Hub needs."
     },
     "preview": {
       "card": {
@@ -221,7 +227,8 @@
       "notice": {
         "saved": "Saved to the draft. It goes live when the draft is published.",
         "archived": "Archived in the draft. It leaves the Hub when the draft is published.",
-        "restored": "Restored in the draft. It comes back when the draft is published."
+        "restored": "Restored in the draft. It comes back when the draft is published.",
+        "undone": "Changes undone. It matches the live site again."
       },
       "goToDraft": "Go to Draft",
       "readOnly": "You can look, but saving changes needs the comfy_site.edit permission.",
@@ -311,11 +318,16 @@
         "help": "Pick an existing item to start from. You get a copy with its settings and examples, ready to change.",
         "kind": "Kind",
         "startFrom": "Start from this"
+      },
+      "card": {
+        "title": "On the Hub",
+        "help": "The card visitors see. It updates as you type.",
+        "untitled": "Untitled",
+        "noCover": "No cover yet"
       }
     },
     "readiness": {
       "title": "Before publishing",
-      "ready": "Ready to publish",
       "toCheck": "{count} to check | {count} to check",
       "help": "Checks flag gaps but never block publishing. Fix them in the editor, or publish anyway.",
       "flagged": "{count} change still has gaps. You can publish anyway. | {count} changes still have gaps. You can publish anyway.",
@@ -332,7 +344,35 @@
         "summary": "Missing a description",
         "cover": "Missing a cover",
         "examples": "No examples yet"
-      }
+      },
+      "allPass": "Ready to publish: all {count} checks pass"
+    },
+    "undo": {
+      "undo": {
+        "action": "Undo changes",
+        "title": "Undo the changes to {title}?",
+        "body": "It goes back to what the live site shows now. What was saved to the draft for it is lost.",
+        "confirm": "Undo changes"
+      },
+      "remove": {
+        "action": "Remove from draft",
+        "title": "Remove {title} from the draft?",
+        "body": "It was never published, so it leaves the draft and won't go live.",
+        "confirm": "Remove"
+      },
+      "failed": "That didn't work. Reload the page and try again.",
+      "sectionTitle": "Unpublished changes",
+      "sectionHelp": "This page has changes saved to the draft that aren't live yet."
+    },
+    "decision": {
+      "approve": "Approve",
+      "approved": "Approved",
+      "undo": "Undo",
+      "undoApproval": "Undo approval",
+      "approvedNote": "Approved: goes live when you publish",
+      "undecided": "Not decided yet",
+      "approveTitle": "Approve {title}",
+      "rejectTitle": "Reject {title}"
     }
   },
   "home": {

@@ -6,7 +6,7 @@ import {
   siteAPI,
   validMutation
 } from '@/lib/cms/admin'
-import { saveDraftItem } from '@/lib/cms/save-item'
+import { saveDraftItem, undoDraftItem } from '@/lib/cms/save-item'
 
 function returnPath(value: FormDataEntryValue | null) {
   return typeof value === 'string' && /^\/(?![/\\])[^\s]*$/.test(value)
@@ -127,6 +127,10 @@ export const POST: APIRoute = async (context) => {
       await saveDraftItem(session, body.get('uid'), body.get('record')),
       { headers: { 'Cache-Control': 'private, no-store' } }
     )
+  if (body.get('action') === 'undo')
+    return Response.json(await undoDraftItem(session, body.get('uid')), {
+      headers: { 'Cache-Control': 'private, no-store' }
+    })
   if (!session.review.can_apply)
     return new Response('Access denied', { status: 403 })
   if (body.get('confirm') !== 'yes')

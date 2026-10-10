@@ -23,6 +23,7 @@ const {
   csrf,
   canEdit,
   isLive,
+  published = false,
   inDraft,
   notice,
   canUpload = false,
@@ -33,6 +34,8 @@ const {
   csrf: string
   canEdit: boolean
   isLive: boolean
+  /** Has a live version, even an archived one, that an undo goes back to. */
+  published?: boolean
   inDraft: boolean
   notice?: SaveNotice
   canUpload?: boolean
@@ -156,6 +159,11 @@ function discard() {
         :is-new="initial.isNew"
         :archived="initial.deleted"
         :busy="saving"
+        :undo="
+          inDraft && canEdit
+            ? { csrf, uid: initial.uid, title, published }
+            : undefined
+        "
         :locale
         @archive="save"
       />

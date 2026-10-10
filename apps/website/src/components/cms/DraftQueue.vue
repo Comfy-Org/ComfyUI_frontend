@@ -2,25 +2,30 @@
 import { Eye } from '@lucide/vue'
 import { computed, ref } from 'vue'
 
-import DraftStats from '@/components/cms/DraftStats.vue'
+import DraftContentChanges from '@/components/cms/DraftContentChanges.vue'
+import DraftSubmissions from '@/components/cms/DraftSubmissions.vue'
+import DraftSummary from '@/components/cms/DraftSummary.vue'
 import ListingFilters from '@/components/cms/ListingFilters.vue'
 import PublishDialog from '@/components/cms/PublishDialog.vue'
-import QueueRow from '@/components/cms/QueueRow.vue'
 import RejectDialog from '@/components/cms/RejectDialog.vue'
 import ReviewSheet from '@/components/cms/ReviewSheet.vue'
 import AdminButton from '@/components/cms/ui/AdminButton.vue'
 import PageHeader from '@/components/cms/ui/PageHeader.vue'
-import Checkbox from '@/components/ui/checkbox/Checkbox.vue'
 import type { Locale } from '@/i18n/translations'
 import { translationsFor } from '@/i18n/translations'
 import type { ListingFilter } from '@/lib/cms/format'
 import { isFuture, kindCounts, matchesListing } from '@/lib/cms/format'
-import type { QueueItem, SubmissionQueueItem } from '@/lib/cms/queue'
+import type {
+  CatalogQueueItem,
+  QueueItem,
+  SubmissionQueueItem
+} from '@/lib/cms/queue'
 
 const {
   items,
   csrf,
   canApply,
+  canEdit = false,
   draftId,
   generation,
   locale = 'en'
@@ -28,6 +33,7 @@ const {
   items: QueueItem[]
   csrf: string
   canApply: boolean
+  canEdit?: boolean
   draftId: number
   generation: number
   locale?: Locale
@@ -36,38 +42,46 @@ const { t } = translationsFor(locale)
 
 const filter = ref<ListingFilter>('ALL')
 const query = ref('')
-const excluded = ref(new Set<string>())
+// A submission goes live only once someone approves it; the rest keep waiting.
+const approvedIds = ref(new Set<string>())
 const openId = ref<string>()
 const publishing = ref(false)
 const rejecting = ref<SubmissionQueueItem[]>([])
 
-const submissions = computed(() =>
-  items.filter(
-    (item): item is SubmissionQueueItem => item.source === 'submission'
-  )
+const isSubmission = (item: QueueItem): item is SubmissionQueueItem =>
+  item.source === 'submission'
+const isCatalog = (item: QueueItem): item is CatalogQueueItem =>
+  item.source === 'catalog'
+const isApproved = (item: QueueItem) => approvedIds.value.has(item.id)
+
+const submissions = computed(() => items.filter(isSubmission))
+const catalog = computed(() => items.filter(isCatalog))
+const included = computed(() =>
+  items.filter((item) => isCatalog(item) || isApproved(item))
 )
-const isIncluded = (item: QueueItem) => !excluded.value.has(item.id)
-const canToggle = (item: QueueItem) => canApply && item.source === 'submission'
-const included = computed(() => items.filter(isIncluded))
-const held = computed(() =>
-  submissions.value.filter((item) => !isIncluded(item))
+const undecided = computed(() =>
+  submissions.value.filter((item) => !isApproved(item))
+)
+const flagged = computed(
+  () => catalog.value.filter((item) => item.gaps.length > 0).length
 )
 const scheduled = computed(
-  () =>
-    included.value.filter(
-      (item) => item.source === 'catalog' && isFuture(item.visibleFrom)
-    ).length
+  () => catalog.value.filter((item) => isFuture(item.visibleFrom)).length
 )
 const counts = computed(() => kindCounts(items.map((item) => item.kind)))
-const visible = computed(() =>
-  items.filter((item) =>
-    matchesListing(filter.value, query.value, item.kind, [
-      item.title,
-      item.source === 'submission' ? item.author : item.provider,
-      item.source === 'submission' ? item.shareId : item.slug
-    ])
-  )
-)
+const matches = (item: QueueItem) =>
+  matchesListing(filter.value, query.value, item.kind, [
+    item.title,
+    isSubmission(item) ? item.author : item.provider,
+    isSubmission(item) ? item.shareId : item.slug
+  ])
+const shownSubmissions = computed(() => submissions.value.filter(matches))
+const shownCatalog = computed(() => catalog.value.filter(matches))
+// The sheet steps through rows in the order the page shows them.
+const visible = computed<QueueItem[]>(() => [
+  ...shownSubmissions.value,
+  ...shownCatalog.value
+])
 const openIndex = computed(() =>
   visible.value.findIndex((item) => item.id === openId.value)
 )
@@ -78,49 +92,19 @@ const sheetOpen = computed({
     if (!value) openId.value = undefined
   }
 })
-// Bulk selection follows the filter and search, so a reviewer can narrow the
-// list (one creator, one kind) and include or leave out just those.
-const visibleToggleable = computed(() => visible.value.filter(canToggle))
-const narrowed = computed(
-  () => filter.value !== 'ALL' || query.value.trim() !== ''
-)
-const includeAllState = computed(() => {
-  const leftOut = visibleToggleable.value.filter(
-    (item) => !isIncluded(item)
-  ).length
-  if (leftOut === 0) return true
-  return leftOut === visibleToggleable.value.length ? false : 'indeterminate'
-})
-const heldTitles = computed(() =>
-  held.value.map((item) => item.title).join(', ')
-)
 
-function setIncluded(item: QueueItem, value: boolean) {
-  const next = new Set(excluded.value)
-  if (value) next.delete(item.id)
-  else next.add(item.id)
-  excluded.value = next
-}
-function setAllIncluded(value: boolean) {
-  const next = new Set(excluded.value)
-  for (const item of visibleToggleable.value)
-    if (value) next.delete(item.id)
-    else next.add(item.id)
-  excluded.value = next
-}
-function includeEverything() {
-  excluded.value = new Set()
-}
-function rejectVisible() {
-  rejecting.value = visibleToggleable.value.filter(
-    (item): item is SubmissionQueueItem => item.source === 'submission'
-  )
+function setApproved(items: QueueItem[], value: boolean) {
+  const next = new Set(approvedIds.value)
+  for (const item of items)
+    if (value) next.add(item.id)
+    else next.delete(item.id)
+  approvedIds.value = next
 }
 function step(direction: -1 | 1) {
   openId.value = visible.value[openIndex.value + direction]?.id
 }
 function rejectOpen() {
-  if (openItem.value?.source === 'submission')
+  if (openItem.value && isSubmission(openItem.value))
     rejecting.value = [openItem.value]
 }
 </script>
@@ -164,73 +148,13 @@ function rejectOpen() {
       {{ t('cmsAdmin.applyOnly') }}
     </p>
 
-    <DraftStats
-      :waiting="items.length"
-      :included="included.length"
-      :held="held.length"
+    <DraftSummary
+      :undecided="undecided.length"
+      :flagged
       :scheduled
+      :publishing="included.length"
       :locale
     />
-
-    <div
-      v-if="held.length"
-      class="flex flex-wrap items-center gap-2 rounded-lg border border-admin-warning/25 bg-admin-warning/10 py-1.5 pr-1.5 pl-3 text-xs"
-    >
-      <span class="mr-auto">
-        {{
-          t('cmsAdmin.draft.heldBar', {
-            count: held.length,
-            titles: heldTitles
-          })
-        }}
-      </span>
-      <AdminButton variant="ghost" size="sm" @click="includeEverything">
-        {{ t('cmsAdmin.draft.includeAgain') }}
-      </AdminButton>
-      <AdminButton variant="dangerGhost" size="sm" @click="rejecting = held">
-        {{
-          t('cmsAdmin.draft.rejectHeld', { count: held.length }, held.length)
-        }}
-      </AdminButton>
-    </div>
-
-    <ListingFilters
-      v-model:filter="filter"
-      v-model:query="query"
-      :counts
-      :search-label="t('cmsAdmin.draft.search')"
-      :locale
-    />
-
-    <div
-      v-if="narrowed && visibleToggleable.length > 0"
-      class="flex flex-wrap items-center gap-2 rounded-lg border border-admin-line bg-admin-card py-1.5 pr-1.5 pl-3 text-xs"
-    >
-      <span class="mr-auto text-admin-muted">
-        {{
-          t(
-            'cmsAdmin.draft.bulk.shown',
-            { count: visibleToggleable.length },
-            visibleToggleable.length
-          )
-        }}
-      </span>
-      <AdminButton variant="ghost" size="sm" @click="setAllIncluded(true)">
-        {{ t('cmsAdmin.draft.bulk.include') }}
-      </AdminButton>
-      <AdminButton variant="ghost" size="sm" @click="setAllIncluded(false)">
-        {{ t('cmsAdmin.draft.bulk.leaveOut') }}
-      </AdminButton>
-      <AdminButton variant="dangerGhost" size="sm" @click="rejectVisible">
-        {{
-          t(
-            'cmsAdmin.draft.bulk.reject',
-            { count: visibleToggleable.length },
-            visibleToggleable.length
-          )
-        }}
-      </AdminButton>
-    </div>
 
     <div
       v-if="items.length === 0"
@@ -242,71 +166,61 @@ function rejectOpen() {
       </p>
     </div>
 
-    <div
-      v-else
-      role="table"
-      class="overflow-hidden rounded-lg border border-admin-line"
-    >
-      <div
-        role="row"
-        class="grid min-h-10 grid-cols-[1rem_3.5rem_minmax(0,1fr)_1rem] items-center gap-3 border-b border-admin-line bg-admin-card px-4 text-xs font-medium tracking-[0.06em] text-admin-muted uppercase md:grid-cols-[1rem_3.5rem_minmax(0,1fr)_11rem_10rem_1rem]"
-      >
-        <span role="columnheader">
-          <Checkbox
-            :model-value="includeAllState"
-            :disabled="visibleToggleable.length === 0"
-            :aria-label="t('cmsAdmin.draft.includeAll')"
-            @update:model-value="setAllIncluded($event === true)"
-          />
-        </span>
-        <span role="columnheader" />
-        <span role="columnheader">
-          {{ t('cmsAdmin.draft.columns.change') }}
-        </span>
-        <span role="columnheader" class="hidden md:block">
-          {{ t('cmsAdmin.draft.columns.from') }}
-        </span>
-        <span role="columnheader" class="hidden md:block">
-          {{ t('cmsAdmin.draft.columns.appears') }}
-        </span>
-        <span role="columnheader" />
-      </div>
+    <template v-else>
+      <ListingFilters
+        v-model:filter="filter"
+        v-model:query="query"
+        :counts
+        :search-label="t('cmsAdmin.draft.search')"
+        :locale
+      />
       <p
         v-if="visible.length === 0"
-        class="px-6 py-10 text-center text-xs text-admin-muted"
+        class="rounded-lg border border-admin-line px-6 py-10 text-center text-xs text-admin-muted"
       >
         {{ t('cmsAdmin.draft.noMatches') }}
       </p>
-      <QueueRow
-        v-for="item in visible"
-        :key="item.id"
-        :item
-        :included="isIncluded(item)"
-        :active="openId === item.id"
-        :can-toggle="canToggle(item)"
+
+      <DraftSubmissions
+        v-if="shownSubmissions.length"
+        :items="shownSubmissions"
+        :approved-ids="approvedIds"
+        :open-id="openId"
+        :can-apply="canApply"
         :locale
-        @update:included="setIncluded(item, $event)"
-        @open="openId = item.id"
+        @approve="setApproved"
+        @reject="rejecting = $event"
+        @open="openId = $event"
       />
-    </div>
+      <DraftContentChanges
+        v-if="shownCatalog.length"
+        :items="shownCatalog"
+        :open-id="openId"
+        :can-apply="canApply"
+        :locale
+        @open="openId = $event"
+      />
+    </template>
 
     <ReviewSheet
       v-if="openItem"
       v-model:open="sheetOpen"
-      :included="isIncluded(openItem)"
+      :approved="isApproved(openItem)"
       :item="openItem"
       :index="openIndex"
       :total="visible.length"
       :can-apply="canApply"
+      :can-edit="canEdit"
+      :csrf
       :locale
-      @update:included="setIncluded(openItem, $event)"
+      @update:approved="setApproved([openItem], $event)"
       @step="step"
       @reject="rejectOpen"
     />
     <PublishDialog
       v-model:open="publishing"
       :items="included"
-      :held-count="held.length"
+      :held-count="undecided.length"
       :csrf
       :draft-id="draftId"
       :generation

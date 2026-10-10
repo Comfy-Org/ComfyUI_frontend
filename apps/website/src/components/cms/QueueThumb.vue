@@ -1,12 +1,19 @@
 <script setup lang="ts">
-import { Workflow } from '@lucide/vue'
+import { AppWindow, Box, Workflow } from '@lucide/vue'
 import { computed } from 'vue'
 import { cn } from '@comfyorg/tailwind-utils'
 
-const { src, class: className } = defineProps<{
+const {
+  src,
+  kind = 'WORKFLOW',
+  class: className
+} = defineProps<{
   src?: string
+  /** Picks the placeholder icon when there is no image. */
+  kind?: 'MODEL' | 'WORKFLOW' | 'APP'
   class?: string
 }>()
+const placeholder = { MODEL: Box, WORKFLOW: Workflow, APP: AppWindow }
 const isVideo = computed(
   () => src !== undefined && /\.(mp4|webm|mov)(\?|$)/i.test(src)
 )
@@ -24,7 +31,7 @@ const isVideo = computed(
   >
     <video
       v-if="src && isVideo"
-      :src
+      :src="src.includes('#') ? src : `${src}#t=0.1`"
       muted
       playsinline
       preload="metadata"
@@ -37,6 +44,6 @@ const isVideo = computed(
       class="size-full object-cover"
       loading="lazy"
     />
-    <Workflow v-else class="size-4" />
+    <component :is="placeholder[kind]" v-else class="size-4" />
   </span>
 </template>

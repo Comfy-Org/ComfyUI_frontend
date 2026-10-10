@@ -1,5 +1,6 @@
 <script setup lang="ts">
 import { Plus } from '@lucide/vue'
+import { cn } from '@comfyorg/tailwind-utils'
 import { computed, ref } from 'vue'
 
 import ContentListRow from '@/components/cms/ContentListRow.vue'
@@ -12,6 +13,7 @@ import { translationsFor } from '@/i18n/translations'
 import type { ListingFilter } from '@/lib/cms/format'
 import { kindCounts, matchesListing } from '@/lib/cms/format'
 import type { ContentRow } from '@/lib/cms/queue'
+import type { ReadinessGap } from '@/lib/cms/readiness'
 
 const {
   rows,
@@ -25,18 +27,39 @@ const {
 const { t } = translationsFor(locale)
 const filter = ref<ListingFilter>('ALL')
 const query = ref('')
-const status = ref<'active' | 'archived'>('active')
+type Status = 'active' | 'attention' | 'archived'
+const status = ref<Status>('active')
+const gapFilter = ref<ReadinessGap>()
 const archivedCount = rows.filter((row) => row.archived).length
+const needsAttention = rows.filter((row) => row.gaps.length > 0)
 const statuses = [
   { value: 'active' as const, label: t('cmsAdmin.content.active') },
+  {
+    value: 'attention' as const,
+    label: t('cmsAdmin.content.attentionCount', {
+      count: needsAttention.length
+    })
+  },
   {
     value: 'archived' as const,
     label: t('cmsAdmin.content.archivedCount', { count: archivedCount })
   }
 ]
-const inStatus = computed(() =>
-  rows.filter((row) => row.archived === (status.value === 'archived'))
-)
+// The most common gaps first, so the biggest clean-up is one click away.
+const gapCounts = (['cover', 'summary', 'examples', 'name', 'page'] as const)
+  .map((gap) => ({
+    gap,
+    count: needsAttention.filter((row) => row.gaps.includes(gap)).length
+  }))
+  .filter(({ count }) => count > 0)
+  .sort((a, b) => b.count - a.count)
+const inStatus = computed(() => {
+  if (status.value === 'archived') return rows.filter((row) => row.archived)
+  if (status.value === 'active') return rows.filter((row) => !row.archived)
+  return needsAttention.filter(
+    (row) => !gapFilter.value || row.gaps.includes(gapFilter.value)
+  )
+})
 const counts = computed(() => kindCounts(inStatus.value.map((row) => row.kind)))
 const visible = computed(() =>
   inStatus.value.filter((row) =>
@@ -47,6 +70,11 @@ const visible = computed(() =>
     ])
   )
 )
+const emptyText = computed(() => {
+  if (status.value === 'archived') return t('cmsAdmin.content.noArchived')
+  if (status.value === 'attention') return t('cmsAdmin.content.allGood')
+  return t('cmsAdmin.content.empty')
+})
 </script>
 
 <template>
@@ -71,6 +99,38 @@ const visible = computed(() =>
         </AdminButton>
       </template>
     </PageHeader>
+    <div
+      v-if="status === 'attention' && gapCounts.length"
+      class="grid gap-2 rounded-lg border border-admin-warning/25 bg-admin-warning/6 p-3"
+    >
+      <p class="text-xs text-admin-muted">
+        {{ t('cmsAdmin.content.attentionHelp') }}
+      </p>
+      <div
+        role="group"
+        :aria-label="t('cmsAdmin.content.gapLabel')"
+        class="flex flex-wrap gap-1.5"
+      >
+        <button
+          v-for="{ gap, count } in gapCounts"
+          :key="gap"
+          type="button"
+          :aria-pressed="gapFilter === gap"
+          :class="
+            cn(
+              'inline-flex h-7 cursor-pointer items-center gap-1.5 rounded-md border px-2.5 text-xs transition-colors outline-none focus-visible:outline-2 focus-visible:outline-admin-fg',
+              gapFilter === gap
+                ? 'border-admin-warning/60 bg-admin-warning/15 text-admin-fg'
+                : 'border-admin-line text-admin-muted hover:text-admin-fg'
+            )
+          "
+          @click="gapFilter = gapFilter === gap ? undefined : gap"
+        >
+          {{ t(`cmsAdmin.readiness.missing.${gap}`) }}
+          <span class="text-admin-subtle tabular-nums">{{ count }}</span>
+        </button>
+      </div>
+    </div>
     <ListingFilters
       v-model:filter="filter"
       v-model:query="query"
@@ -83,11 +143,7 @@ const visible = computed(() =>
         v-if="visible.length === 0"
         class="px-6 py-10 text-center text-xs text-admin-muted"
       >
-        {{
-          status === 'archived'
-            ? t('cmsAdmin.content.noArchived')
-            : t('cmsAdmin.content.empty')
-        }}
+        {{ emptyText }}
       </li>
       <ContentListRow v-for="row in visible" :key="row.uid" :row :locale />
     </ul>

@@ -19,6 +19,16 @@ export function formatValue(value: unknown): string {
   return String(value)
 }
 
+const MEDIA_LINK =
+  /^(data:(image|video)\/|https?:\/\/\S+\.(png|jpe?g|webp|gif|avif|mp4|webm|mov)(\?|$))/i
+
+/** The image or video link a field holds, so a review can show it. */
+export function mediaOf(value: unknown): string | undefined {
+  const link =
+    value && typeof value === 'object' && 'url' in value ? value.url : value
+  return typeof link === 'string' && MEDIA_LINK.test(link) ? link : undefined
+}
+
 export function humanizeField(field: string) {
   const words = field
     .replace(/([a-z0-9])([A-Z])/g, '$1 $2')

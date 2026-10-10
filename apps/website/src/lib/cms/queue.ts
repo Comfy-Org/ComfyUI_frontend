@@ -170,6 +170,8 @@ export interface ContentRow {
   isNew: boolean
   /** Archived in the draft, or already gone from the live site. */
   archived: boolean
+  /** What the current version still lacks; empty when archived or ready. */
+  gaps: ReadinessGap[]
 }
 
 export function contentRows(review: ContentCatalogReview): ContentRow[] {
@@ -179,7 +181,8 @@ export function contentRows(review: ContentCatalogReview): ContentRow[] {
   return [...new Set([...live.keys(), ...draft.keys()])].flatMap((uid) => {
     const current = draft.get(uid) ?? live.get(uid)
     const shown = live.get(uid) ?? current
-    if (!current || !shown) return []
+    // Never published and then taken back out of the draft: nothing to list.
+    if (!current || !shown || (!live.has(uid) && current.deleted)) return []
     return [
       {
         uid,
@@ -192,7 +195,8 @@ export function contentRows(review: ContentCatalogReview): ContentRow[] {
         visibleFrom: shown.visible_from,
         inDraft: changed.has(uid),
         isNew: !live.has(uid),
-        archived: current.deleted
+        archived: current.deleted,
+        gaps: current.deleted ? [] : readinessGaps(current)
       }
     ]
   })

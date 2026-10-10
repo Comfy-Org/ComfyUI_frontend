@@ -44,11 +44,19 @@ export async function saveDraftItem(
     !pageRenders(record.data)
   )
     return { ok: false, error: 'invalid' }
-  const current = session.review.draft.items.find((item) => item.uid === uid)
   const taken = session.review.draft.items.some(
     (item) => item.uid !== uid && item.slug === record.data.slug
   )
   if (taken) return { ok: false, error: 'invalid' }
+  return putItem(session, uid, record.data)
+}
+
+async function putItem(
+  session: SiteSession,
+  uid: string,
+  record: z.infer<typeof savedRecordSchema>
+): Promise<SaveResult> {
+  const current = session.review.draft.items.find((item) => item.uid === uid)
   const response = await siteAPI(
     `/admin/api/site/items/${uid}`,
     session.credential,
@@ -57,7 +65,7 @@ export async function saveDraftItem(
       body: JSON.stringify({
         draft_id: session.review.draft.revision_id,
         ...(current ? { edit_version: current.edit_version } : {}),
-        ...record.data
+        ...record
       })
     }
   )
@@ -66,4 +74,30 @@ export async function saveDraftItem(
     ok: false,
     error: response.status === 409 ? 'conflict' : 'failed'
   }
+}
+
+/**
+ * Puts one draft item back to what the live site shows. An item that was
+ * never published is removed from the draft instead.
+ */
+export async function undoDraftItem(
+  session: SiteSession,
+  uid: FormDataEntryValue | null
+): Promise<SaveResult> {
+  if (!session.review.can_edit) return { ok: false, error: 'denied' }
+  const current = session.review.draft.items.find((item) => item.uid === uid)
+  if (typeof uid !== 'string' || !current)
+    return { ok: false, error: 'invalid' }
+  const live = session.review.live.items.find((item) => item.uid === uid)
+  const { kind, slug, enabled, visibility, visible_from, data } =
+    live ?? current
+  return putItem(session, uid, {
+    kind,
+    slug,
+    enabled,
+    visibility,
+    ...(visible_from ? { visible_from } : {}),
+    deleted: live ? live.deleted : true,
+    data
+  })
 }

@@ -2,6 +2,7 @@
 import { ExternalLink, Pencil } from '@lucide/vue'
 
 import QueueThumb from '@/components/cms/QueueThumb.vue'
+import ReadinessFlag from '@/components/cms/ReadinessFlag.vue'
 import AdminButton from '@/components/cms/ui/AdminButton.vue'
 import AdminTooltip from '@/components/cms/ui/AdminTooltip.vue'
 import StatusLabel from '@/components/cms/ui/StatusLabel.vue'
@@ -29,7 +30,7 @@ const meta = [t(`cmsAdmin.kind.${row.kind}`), row.provider]
   <li
     class="grid min-h-14 grid-cols-[3.5rem_minmax(0,1fr)_auto] items-center gap-3 border-b border-admin-hover px-4 py-2 text-sm transition-colors last:border-b-0 hover:bg-admin-hover"
   >
-    <QueueThumb :src="row.thumbnail" class="w-14" />
+    <QueueThumb :src="row.thumbnail" :kind="row.kind" class="w-14" />
     <div class="grid min-w-0 gap-1">
       <span class="truncate">{{ row.title }}</span>
       <span
@@ -57,6 +58,7 @@ const meta = [t(`cmsAdmin.kind.${row.kind}`), row.provider]
           :label="t('cmsAdmin.content.hidden')"
         />
         <StatusLabel v-if="appears" tone="warning" :label="appears" />
+        <ReadinessFlag :gaps="row.gaps" :locale />
       </span>
     </div>
     <div class="flex gap-1">

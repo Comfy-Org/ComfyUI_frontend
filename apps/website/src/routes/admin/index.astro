@@ -39,7 +39,7 @@ const liveRecord = editId
 const isLive = Boolean(liveRecord && !liveRecord.deleted)
 const inDraft = draftChanges(review).some(({ uid }) => uid === editId)
 const noticeParam = Astro.url.searchParams.get('notice')
-const notice = (['saved', 'archived', 'restored'] as const).find(
+const notice = (['saved', 'archived', 'restored', 'undone'] as const).find(
   (value) => value === noticeParam
 )
 
@@ -65,6 +65,7 @@ const rows = contentRows(review)
       items={queue}
       csrf={session.csrf}
       canApply={review.can_apply}
+      canEdit={review.can_edit}
       draftId={review.draft.revision_id}
       generation={review.draft.generation}
       locale={locale}
@@ -89,6 +90,7 @@ const rows = contentRows(review)
       csrf={session.csrf}
       canEdit={review.can_edit}
       isLive={isLive}
+      published={Boolean(liveRecord)}
       inDraft={inDraft}
       notice={notice}
       canUpload={Astro.locals.siteDemo === true}

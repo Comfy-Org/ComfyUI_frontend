@@ -26,13 +26,23 @@ const checks: ReadinessGap[] = [
 </script>
 
 <template>
-  <section class="grid gap-2" :aria-label="t('cmsAdmin.readiness.title')">
+  <p
+    v-if="!gaps.length"
+    class="flex items-center gap-2 rounded-lg border border-admin-success/25 bg-admin-success/6 px-3 py-2 text-sm"
+  >
+    <CircleCheck
+      class="size-4 shrink-0 text-admin-success"
+      aria-hidden="true"
+    />
+    {{ t('cmsAdmin.readiness.allPass', { count: checks.length }) }}
+  </p>
+  <section
+    v-else
+    class="grid gap-2"
+    :aria-label="t('cmsAdmin.readiness.title')"
+  >
     <h3 class="text-xs font-medium text-admin-muted">
-      {{
-        gaps.length
-          ? t('cmsAdmin.readiness.title')
-          : t('cmsAdmin.readiness.ready')
-      }}
+      {{ t('cmsAdmin.readiness.title') }}
     </h3>
     <ul class="grid gap-1.5 rounded-lg border border-admin-line p-3 text-sm">
       <li v-for="check in checks" :key="check" class="flex items-center gap-2">
@@ -53,7 +63,7 @@ const checks: ReadinessGap[] = [
         }}
       </li>
     </ul>
-    <p v-if="gaps.length" class="text-xs text-admin-muted">
+    <p class="text-xs text-admin-muted">
       {{ t('cmsAdmin.readiness.help') }}
     </p>
   </section>

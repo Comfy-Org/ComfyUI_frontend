@@ -4,6 +4,7 @@ import { zContentCatalogReview } from '@comfyorg/ingest-types/zod'
 import type { ContentCatalogReview } from '@comfyorg/ingest-types'
 import { normalizeProjection } from './catalog-contract'
 import { catalogFetch } from './demo'
+import { contentDiff } from './diff'
 
 export interface SiteSession {
   credential: string
@@ -158,6 +159,8 @@ export function draftChanges(review: ContentCatalogReview) {
     const before = live.get(uid)
     const after = draft.get(uid)
     if (before?.edit_version === after?.edit_version) return []
+    // A save that put the live value back leaves nothing to publish.
+    if (!contentDiff(before, after).length) return []
     return [{ uid, before, after }]
   })
 }

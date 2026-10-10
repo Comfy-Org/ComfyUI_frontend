@@ -80,7 +80,7 @@ const templates = computed(() => {
           :href="`/admin/new?from=${row.uid}`"
           class="grid min-h-14 grid-cols-[3.5rem_minmax(0,1fr)_auto] items-center gap-3 px-4 py-2 text-sm transition-colors outline-none hover:bg-admin-hover focus-visible:bg-admin-hover"
         >
-          <QueueThumb :src="row.thumbnail" class="w-14" />
+          <QueueThumb :src="row.thumbnail" :kind="row.kind" class="w-14" />
           <span class="grid min-w-0 gap-0.5">
             <span class="truncate">{{ row.title }}</span>
             <span v-if="row.provider" class="text-xs text-admin-muted">

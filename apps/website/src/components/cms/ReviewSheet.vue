@@ -1,16 +1,16 @@
 <script setup lang="ts">
-import { ChevronDown, ChevronUp } from '@lucide/vue'
+import { Check, ChevronDown, ChevronUp } from '@lucide/vue'
 import { DialogDescription, DialogTitle } from 'reka-ui'
 import { computed } from 'vue'
 
 import CatalogReview from '@/components/cms/CatalogReview.vue'
 import ChangeTag from '@/components/cms/ChangeTag.vue'
-import ReadinessChecklist from '@/components/cms/ReadinessChecklist.vue'
 import SubmissionReview from '@/components/cms/SubmissionReview.vue'
+import UndoChangeButton from '@/components/cms/UndoChangeButton.vue'
 import AdminButton from '@/components/cms/ui/AdminButton.vue'
 import AdminSheetContent from '@/components/cms/ui/AdminSheetContent.vue'
+import StatusLabel from '@/components/cms/ui/StatusLabel.vue'
 import Sheet from '@/components/ui/sheet/Sheet.vue'
-import Switch from '@/components/ui/switch/Switch.vue'
 import type { Locale } from '@/i18n/translations'
 import { translationsFor } from '@/i18n/translations'
 import { formatUtc } from '@/lib/cms/format'
@@ -21,16 +21,20 @@ const {
   index,
   total,
   canApply,
+  canEdit,
+  csrf,
   locale = 'en'
 } = defineProps<{
   item: QueueItem
   index: number
   total: number
   canApply: boolean
+  canEdit: boolean
+  csrf: string
   locale?: Locale
 }>()
 const open = defineModel<boolean>('open', { required: true })
-const included = defineModel<boolean>('included', { required: true })
+const approved = defineModel<boolean>('approved', { required: true })
 const emit = defineEmits<{ step: [direction: -1 | 1]; reject: [] }>()
 const { t } = translationsFor(locale)
 
@@ -95,38 +99,58 @@ const isSubmission = computed(() => item.source === 'submission')
           :item
           :locale
         />
-        <template v-else>
-          <ReadinessChecklist
-            v-if="item.change !== 'removed'"
-            :gaps="item.gaps"
-            :kind="item.kind"
-            :locale
-          />
-          <CatalogReview :key="item.id" :item :locale />
-        </template>
+        <CatalogReview v-else :key="item.id" :item :locale />
       </div>
 
       <footer
-        class="flex min-h-14 shrink-0 flex-wrap items-center gap-3 border-t border-admin-line px-5 py-3"
+        class="flex min-h-14 shrink-0 flex-wrap items-center gap-2 border-t border-admin-line px-5 py-3"
       >
-        <label
-          v-if="isSubmission"
-          class="flex cursor-pointer items-center gap-2.5 text-sm"
-        >
-          <Switch v-model="included" :disabled="!canApply" />
-          {{ t('cmsAdmin.review.include') }}
-        </label>
-        <p v-else class="text-xs text-admin-muted">
-          {{ t('cmsAdmin.draft.catalogLocked') }}
-        </p>
-        <AdminButton
-          v-if="isSubmission && canApply"
-          variant="dangerGhost"
-          class="ml-auto"
-          @click="emit('reject')"
-        >
-          {{ t('cmsAdmin.review.reject') }}
-        </AdminButton>
+        <template v-if="isSubmission && approved">
+          <StatusLabel
+            tone="success"
+            :label="t('cmsAdmin.decision.approvedNote')"
+            class="mr-auto"
+          />
+          <AdminButton
+            v-if="canApply"
+            variant="ghost"
+            @click="approved = false"
+          >
+            {{ t('cmsAdmin.decision.undoApproval') }}
+          </AdminButton>
+        </template>
+        <template v-else-if="isSubmission">
+          <span class="mr-auto text-xs text-admin-muted">
+            {{ t('cmsAdmin.decision.undecided') }}
+          </span>
+          <template v-if="canApply">
+            <AdminButton variant="dangerGhost" @click="emit('reject')">
+              {{ t('cmsAdmin.review.reject') }}
+            </AdminButton>
+            <AdminButton
+              variant="primary"
+              :icon="Check"
+              @click="approved = true"
+            >
+              {{ t('cmsAdmin.decision.approve') }}
+            </AdminButton>
+          </template>
+        </template>
+        <template v-else>
+          <p class="mr-auto text-xs text-admin-muted">
+            {{ t('cmsAdmin.draft.catalogNote') }}
+          </p>
+          <UndoChangeButton
+            v-if="canEdit"
+            :key="item.id"
+            :csrf
+            :uid="item.id"
+            :title="item.title"
+            :published="item.change !== 'new'"
+            destination="/admin/"
+            :locale
+          />
+        </template>
       </footer>
     </AdminSheetContent>
   </Sheet>

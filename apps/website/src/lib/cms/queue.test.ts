@@ -149,4 +149,20 @@ describe('all content', () => {
       { uid: 'kling', title: 'Kling', isNew: true, archived: false }
     ])
   })
+
+  it('flags what live pages lack, but not archived ones', () => {
+    const live = [
+      record('wan', 'a', { name: 'Wan' }),
+      record('gone', 'a', {}, { deleted: true })
+    ]
+    const rows = contentRows(review(live, live))
+    expect(rows[0].gaps).toContain('summary')
+    expect(rows[0].gaps).toContain('cover')
+    expect(rows[1].gaps).toEqual([])
+  })
+
+  it('drops a never-published page taken back out of the draft', () => {
+    const draft = [record('kling', 'a', { name: 'Kling' }, { deleted: true })]
+    expect(contentRows(review([], draft))).toEqual([])
+  })
 })

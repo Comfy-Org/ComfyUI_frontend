@@ -2,6 +2,7 @@
 import { Eye, Pencil } from '@lucide/vue'
 
 import FieldChange from '@/components/cms/FieldChange.vue'
+import ReadinessChecklist from '@/components/cms/ReadinessChecklist.vue'
 import QueueThumb from '@/components/cms/QueueThumb.vue'
 import AdminButton from '@/components/cms/ui/AdminButton.vue'
 import type { Locale } from '@/i18n/translations'
@@ -17,7 +18,6 @@ const pagePreview = `${item.slug.replace(/\/?$/, '/')}?preview=DRAFT`
 </script>
 
 <template>
-  <QueueThumb v-if="item.thumbnail" :src="item.thumbnail" class="w-full" />
   <div class="flex flex-wrap gap-2">
     <AdminButton
       v-if="item.change !== 'removed'"
@@ -32,11 +32,27 @@ const pagePreview = `${item.slug.replace(/\/?$/, '/')}?preview=DRAFT`
       {{ t('cmsAdmin.content.edit') }}
     </AdminButton>
   </div>
+  <ReadinessChecklist
+    v-if="item.change !== 'removed'"
+    :gaps="item.gaps"
+    :kind="item.kind"
+    :locale
+  />
+  <QueueThumb
+    v-if="item.change === 'new' && item.thumbnail"
+    :src="item.thumbnail"
+    :kind="item.kind"
+    class="w-full"
+  />
   <section class="grid gap-2">
     <h3
       class="text-xs font-medium tracking-[0.06em] text-admin-muted uppercase"
     >
-      {{ t('cmsAdmin.review.changesTitle') }}
+      {{
+        item.change === 'new'
+          ? t('cmsAdmin.review.newTitle')
+          : t('cmsAdmin.review.changesTitle')
+      }}
     </h3>
     <ul class="grid gap-2">
       <FieldChange

@@ -1,9 +1,10 @@
 <script setup lang="ts">
 import { cn } from '@comfyorg/tailwind-utils'
 
+import FieldValue from '@/components/cms/FieldValue.vue'
 import type { Locale } from '@/i18n/translations'
 import { translationsFor } from '@/i18n/translations'
-import { formatValue, humanizeField } from '@/lib/cms/format'
+import { humanizeField } from '@/lib/cms/format'
 import type { CatalogQueueItem } from '@/lib/cms/queue'
 
 const {
@@ -18,10 +19,10 @@ const {
   locale?: Locale
 }>()
 const { t } = translationsFor(locale)
-const empty = t('cmsAdmin.review.empty')
-const afterList = Array.isArray(group.after) ? group.after : []
-const highlight = group.added.length > 0 && afterList.length > 0
-const isAdded = (value: unknown) => group.added.includes(value)
+const sides = [
+  showBefore && { side: 'before' as const, value: group.before },
+  showAfter && { side: 'after' as const, value: group.after }
+].filter((entry) => entry !== false)
 </script>
 
 <template>
@@ -33,48 +34,25 @@ const isAdded = (value: unknown) => group.added.includes(value)
     </p>
     <dl class="grid text-sm">
       <div
-        v-if="showBefore"
-        class="grid grid-cols-[4rem_minmax(0,1fr)] gap-2 bg-admin-danger/6 px-3 py-2"
-      >
-        <dt class="text-xs leading-5 text-admin-muted">
-          {{ t('cmsAdmin.review.before') }}
-        </dt>
-        <dd
-          class="wrap-break-word text-admin-muted line-through decoration-admin-danger-text/50"
-        >
-          {{ formatValue(group.before) || empty }}
-        </dd>
-      </div>
-      <div
-        v-if="showAfter"
+        v-for="({ side, value }, i) in sides"
+        :key="side"
         :class="
           cn(
-            'grid grid-cols-[4rem_minmax(0,1fr)] gap-2 bg-admin-success/6 px-3 py-2',
-            showBefore && 'border-t border-admin-line'
+            'grid grid-cols-[4rem_minmax(0,1fr)] gap-2 px-3 py-2',
+            side === 'before' ? 'bg-admin-danger/6' : 'bg-admin-success/6',
+            i > 0 && 'border-t border-admin-line'
           )
         "
       >
         <dt class="text-xs leading-5 text-admin-muted">
-          {{ t('cmsAdmin.review.after') }}
+          {{ t(`cmsAdmin.review.${side}`) }}
         </dt>
-        <dd v-if="highlight" class="flex flex-wrap gap-1 wrap-break-word">
-          <span
-            v-for="(value, i) in afterList"
-            :key="i"
-            :class="
-              cn(
-                'rounded-sm px-1',
-                isAdded(value)
-                  ? 'bg-admin-success/15 text-admin-success'
-                  : 'bg-admin-hover'
-              )
-            "
-            >{{ formatValue(value) }}</span
-          >
-        </dd>
-        <dd v-else class="wrap-break-word">
-          {{ formatValue(group.after) || empty }}
-        </dd>
+        <FieldValue
+          :value
+          :side
+          :added="group.added"
+          :empty="t('cmsAdmin.review.empty')"
+        />
       </div>
     </dl>
   </li>

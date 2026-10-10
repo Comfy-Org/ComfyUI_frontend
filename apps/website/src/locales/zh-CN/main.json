@@ -53,18 +53,12 @@
     },
     "draft": {
       "bulk": {
-        "shown": "{count} 个工作流符合筛选条件",
-        "include": "全部纳入",
-        "leaveOut": "全部移出",
-        "reject": "拒绝 {count} 个"
+        "reject": "拒绝 {count} 个",
+        "approve": "批准 {count} 个 | 全部批准 {count} 个"
       },
       "title": "草稿",
       "help": "审核上次发布以来的更改，然后一起发布。",
       "publish": "发布 {count} 项更改",
-      "waiting": "待审核",
-      "included": "本次发布",
-      "held": "留到下次草稿",
-      "scheduled": "定时显示",
       "all": "全部",
       "filter": {
         "MODEL": "模型",
@@ -78,20 +72,28 @@
         "from": "来源",
         "appears": "显示时间"
       },
-      "includeAll": "全部纳入本次发布",
-      "include": "将 {title} 纳入本次发布",
-      "catalogLocked": "目前目录更改会一起发布。单独排除需要后端支持。",
       "catalogSource": "目录编辑",
       "onPublish": "发布时",
       "removedOnPublish": "发布时删除",
       "hiddenUntil": "此前隐藏",
-      "waits": "等待下次发布",
-      "heldBar": "已排除 {count} 项：{titles}",
-      "includeAgain": "重新纳入",
-      "rejectHeld": "拒绝 {count} 个工作流",
       "emptyTitle": "全部处理完毕",
       "emptyBody": "没有待审核内容。更改和工作流提交会出现在这里。",
-      "noMatches": "没有匹配的更改，请尝试其他筛选或搜索。"
+      "noMatches": "没有匹配的更改，请尝试其他筛选或搜索。",
+      "summary": {
+        "undecided": "{count} 个工作流需要你决定",
+        "flagged": "{count} 项更改有缺漏",
+        "scheduled": "{count} 项定时稍后显示",
+        "publishing": "发布时 {count} 项更改上线"
+      },
+      "submissions": {
+        "title": "工作流投稿",
+        "help": "由创作者提交。批准适合上 Hub 的投稿，其余的继续等待。"
+      },
+      "team": {
+        "title": "内容更改",
+        "help": "由团队保存到草稿。它们会一起上线；撤销某项即可将其排除。"
+      },
+      "catalogNote": "随下次发布上线。"
     },
     "review": {
       "position": "第 {index} 项，共 {total} 项",
@@ -110,18 +112,18 @@
       "after": "之后",
       "empty": "空",
       "description": "描述",
-      "include": "纳入本次发布",
       "reject": "拒绝",
       "copy": "复制分享 ID",
       "copied": "已复制",
       "hubCard": "在 Hub 上的显示效果",
       "pending": "等待审批",
-      "noImage": "此投稿未附带图片"
+      "noImage": "此投稿未附带图片",
+      "newTitle": "这会在网站上添加的内容"
     },
     "publish": {
       "title": "发布 {count} 项更改？",
-      "body": "纳入的工作流会被批准，目录更改会一起上线。",
-      "held": "{count} 项已排除的更改会留在草稿中等待下次发布。",
+      "body": "已批准的工作流和团队的内容更改会一起上线。",
+      "held": "{count} 个未决定的工作流将继续等待。",
       "confirm": "发布",
       "cancel": "取消"
     },
@@ -178,7 +180,11 @@
       "archivedCount": "已归档 {count}",
       "statusLabel": "显示",
       "add": "添加内容",
-      "noArchived": "没有已归档的内容。"
+      "noArchived": "没有已归档的内容。",
+      "attentionCount": "需要处理 {count}",
+      "attentionHelp": "Hub 上缺少内容的页面。选择一个缺漏，即可批量处理同类问题。",
+      "gapLabel": "按缺少的内容筛选",
+      "allGood": "没有需要处理的内容。每个页面都具备 Hub 所需的内容。"
     },
     "preview": {
       "card": {
@@ -221,7 +227,8 @@
       "notice": {
         "saved": "已保存到草稿。草稿发布后生效。",
         "archived": "已在草稿中归档。草稿发布后将从 Hub 下线。",
-        "restored": "已在草稿中恢复。草稿发布后重新上线。"
+        "restored": "已在草稿中恢复。草稿发布后重新上线。",
+        "undone": "更改已撤销。它再次与线上网站一致。"
       },
       "goToDraft": "前往草稿",
       "readOnly": "你可以查看，但保存更改需要 comfy_site.edit 权限。",
@@ -311,11 +318,16 @@
         "help": "选择一个已有内容作为起点。你会得到一份包含其设置和示例的副本，可直接修改。",
         "kind": "类型",
         "startFrom": "以此为起点"
+      },
+      "card": {
+        "title": "在 Hub 上",
+        "help": "访客看到的卡片，会随输入实时更新。",
+        "untitled": "未命名",
+        "noCover": "还没有封面"
       }
     },
     "readiness": {
       "title": "发布前检查",
-      "ready": "可以发布",
       "toCheck": "{count} 项待检查 | {count} 项待检查",
       "help": "检查只会标出缺漏，不会阻止发布。可以在编辑器中修复，也可以直接发布。",
       "flagged": "{count} 项更改仍有缺漏，仍可发布。 | {count} 项更改仍有缺漏，仍可发布。",
@@ -332,7 +344,35 @@
         "summary": "缺少描述",
         "cover": "缺少封面",
         "examples": "还没有示例"
-      }
+      },
+      "allPass": "可以发布：全部 {count} 项检查均已通过"
+    },
+    "undo": {
+      "undo": {
+        "action": "撤销更改",
+        "title": "撤销对 {title} 的更改？",
+        "body": "它会恢复为线上网站当前显示的内容。草稿中为它保存的内容将丢失。",
+        "confirm": "撤销更改"
+      },
+      "remove": {
+        "action": "从草稿中移除",
+        "title": "从草稿中移除 {title}？",
+        "body": "它从未发布过，因此会离开草稿，不会上线。",
+        "confirm": "移除"
+      },
+      "failed": "操作未成功。请刷新页面后重试。",
+      "sectionTitle": "未发布的更改",
+      "sectionHelp": "此页面有已保存到草稿但尚未上线的更改。"
+    },
+    "decision": {
+      "approve": "批准",
+      "approved": "已批准",
+      "undo": "撤销",
+      "undoApproval": "撤销批准",
+      "approvedNote": "已批准：发布时上线",
+      "undecided": "尚未决定",
+      "approveTitle": "批准 {title}",
+      "rejectTitle": "拒绝 {title}"
     }
   },
   "about": {

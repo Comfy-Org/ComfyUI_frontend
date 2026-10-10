@@ -5,7 +5,7 @@ import { cn } from '@comfyorg/tailwind-utils'
 import ChangeTag from '@/components/cms/ChangeTag.vue'
 import QueueThumb from '@/components/cms/QueueThumb.vue'
 import ReadinessFlag from '@/components/cms/ReadinessFlag.vue'
-import Checkbox from '@/components/ui/checkbox/Checkbox.vue'
+import SubmissionDecision from '@/components/cms/SubmissionDecision.vue'
 import type { Locale } from '@/i18n/translations'
 import { translationsFor } from '@/i18n/translations'
 import { formatUtc, isFuture } from '@/lib/cms/format'
@@ -14,20 +14,19 @@ import type { QueueItem } from '@/lib/cms/queue'
 const {
   item,
   active,
-  canToggle,
+  canApply,
   locale = 'en'
 } = defineProps<{
   item: QueueItem
   active: boolean
-  canToggle: boolean
+  canApply: boolean
   locale?: Locale
 }>()
-const included = defineModel<boolean>('included', { required: true })
-const emit = defineEmits<{ open: [] }>()
+const approved = defineModel<boolean>('approved', { default: false })
+const emit = defineEmits<{ open: []; reject: [] }>()
 const { t } = translationsFor(locale)
 
-const lockedNote =
-  item.source === 'catalog' ? t('cmsAdmin.draft.catalogLocked') : undefined
+const isSubmission = item.source === 'submission'
 const later = isFuture(item.source === 'catalog' ? item.visibleFrom : undefined)
 const source =
   item.source === 'submission'
@@ -48,29 +47,22 @@ const appears =
     role="row"
     :class="
       cn(
-        'grid min-h-14 cursor-pointer grid-cols-[1rem_3.5rem_minmax(0,1fr)_1rem] items-center gap-3 border-b border-admin-hover px-4 py-2 text-sm transition-colors last:border-b-0 hover:bg-admin-hover md:grid-cols-[1rem_3.5rem_minmax(0,1fr)_11rem_10rem_1rem]',
+        'grid min-h-14 cursor-pointer items-center gap-3 border-b border-admin-hover px-4 py-2 text-sm transition-colors last:border-b-0 hover:bg-admin-hover',
+        isSubmission
+          ? 'grid-cols-[3.5rem_minmax(0,1fr)_auto] md:grid-cols-[3.5rem_minmax(0,1fr)_11rem_13rem]'
+          : 'grid-cols-[3.5rem_minmax(0,1fr)_1rem] md:grid-cols-[3.5rem_minmax(0,1fr)_11rem_10rem_1rem]',
         active && 'bg-admin-line hover:bg-admin-line'
       )
     "
     @click="emit('open')"
   >
-    <span role="cell" class="flex" @click.stop>
-      <Checkbox
-        v-model="included"
-        :disabled="!canToggle"
-        :title="lockedNote"
-        :aria-label="t('cmsAdmin.draft.include', { title: item.title })"
-      />
-    </span>
     <QueueThumb
       role="cell"
       :src="item.thumbnail"
-      :class="cn('w-14', !included && 'opacity-40')"
+      :kind="item.kind"
+      class="w-14"
     />
-    <span
-      role="cell"
-      :class="cn('grid min-w-0 gap-1', !included && 'opacity-50')"
-    >
+    <span role="cell" class="grid min-w-0 gap-1">
       <button
         type="button"
         class="cursor-pointer truncate text-left text-admin-fg outline-none focus-visible:underline"
@@ -88,28 +80,38 @@ const appears =
           :gaps="item.gaps"
           :locale
         />
-        <span v-if="!included" class="text-admin-warning">
-          {{ t('cmsAdmin.draft.waits') }}
-        </span>
       </span>
     </span>
-    <span
-      role="cell"
-      :class="cn('hidden min-w-0 md:grid', !included && 'opacity-50')"
-    >
+    <span role="cell" class="hidden min-w-0 md:grid">
       <span class="truncate">{{ source }}</span>
       <span class="text-xs text-admin-muted">{{ submitted }}</span>
     </span>
-    <span role="cell" :class="cn('hidden md:grid', !included && 'opacity-50')">
-      <span :class="cn(later && 'text-admin-warning')">{{ appears }}</span>
-      <span v-if="later" class="text-xs text-admin-muted">
-        {{ t('cmsAdmin.draft.hiddenUntil') }}
-      </span>
-    </span>
-    <ChevronRight
+    <span
+      v-if="isSubmission"
       role="cell"
-      class="size-4 text-admin-subtle"
-      aria-hidden="true"
-    />
+      class="flex items-center justify-end gap-1"
+      @click.stop
+    >
+      <SubmissionDecision
+        v-model:approved="approved"
+        :title="item.title"
+        :can-apply="canApply"
+        :locale
+        @reject="emit('reject')"
+      />
+    </span>
+    <template v-else>
+      <span role="cell" class="hidden md:grid">
+        <span :class="cn(later && 'text-admin-warning')">{{ appears }}</span>
+        <span v-if="later" class="text-xs text-admin-muted">
+          {{ t('cmsAdmin.draft.hiddenUntil') }}
+        </span>
+      </span>
+      <ChevronRight
+        role="cell"
+        class="size-4 text-admin-subtle"
+        aria-hidden="true"
+      />
+    </template>
   </div>
 </template>
