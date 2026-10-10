@@ -155,6 +155,20 @@ describe('assetsStore - OSS history pagination', () => {
   })
 })
 
+describe('assetsStore - OSS input files', () => {
+  it('refetches input files when asked for new items', async () => {
+    vi.mocked(fetch).mockResolvedValue(Response.json(['photo.png']))
+    const store = useAssetsStore()
+
+    await store.inputAssets.loadNew()
+
+    expect(fetch).toHaveBeenCalledOnce()
+    expect(toValue(store.inputAssets.items).map(({ name }) => name)).toEqual([
+      'photo.png'
+    ])
+  })
+})
+
 describe('assetsStore - Model Assets Cache (Cloud)', () => {
   beforeEach(() => {
     mockIsCloud.value = true

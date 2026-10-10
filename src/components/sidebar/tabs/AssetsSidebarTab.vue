@@ -474,8 +474,9 @@ watch(
     clearSelection()
     // Clear search when switching tabs
     searchQuery.value = ''
-    // Reset pagination state when tab changes
-    void refreshAssets()
+    // A cached list only needs the items added since it was loaded
+    if (mediaAssets.value.length) void currentAssets.value.loadNew()
+    else void refreshAssets()
   },
   { immediate: true }
 )
