@@ -920,7 +920,7 @@ describe('normalizeAgentTranscript', () => {
     message.content = {
       text: 'Done',
       ...content
-    } as unknown as AgentMessages[number]['content']
+    }
 
     const transcript = normalizeAgentTranscript([message])
 
@@ -967,6 +967,169 @@ describe('normalizeAgentTranscript', () => {
       },
       { type: 'text', text: 'Done', state: 'done' }
     ])
+  })
+
+  it('upgrades a stale clamped-failure part when a later row in the turn settles the same call (Cursor review finding 1 on #19621)', () => {
+    const first = row(1, 'assistant', 'turn-a', '', 'row-1')
+    first.content = {
+      tool_calls: [
+        {
+          id: 'audit-1',
+          tool_call_id: 'call-1',
+          tool_name: 'search_nodes',
+          status: 'running'
+        }
+      ]
+    }
+    const second = row(2, 'assistant', 'turn-a', 'Done', 'row-2')
+    second.content = {
+      text: 'Done',
+      tool_calls: [
+        {
+          id: 'audit-2',
+          tool_call_id: 'call-1',
+          tool_name: 'search_nodes',
+          status: 'success',
+          duration_ms: 900
+        }
+      ]
+    }
+
+    const transcript = normalizeAgentTranscript([first, second])
+
+    expect(transcript.messages[0].parts).toEqual([
+      {
+        type: 'tool',
+        callId: 'call-1',
+        name: 'search_nodes',
+        state: 'done',
+        ok: true,
+        durationMs: 900
+      },
+      { type: 'text', text: 'Done', state: 'done' }
+    ])
+  })
+
+  it('does not let a later non-terminal row override an already-terminal part for the same call (Cursor review finding 1 on #19621, negative case)', () => {
+    const first = row(1, 'assistant', 'turn-a', '', 'row-1')
+    first.content = {
+      tool_calls: [
+        {
+          id: 'audit-1',
+          tool_call_id: 'call-1',
+          tool_name: 'search_nodes',
+          status: 'success'
+        }
+      ]
+    }
+    const second = row(2, 'assistant', 'turn-a', 'Done', 'row-2')
+    second.status = 'streaming'
+    second.content = {
+      text: 'Done',
+      tool_calls: [
+        {
+          id: 'audit-2',
+          tool_call_id: 'call-1',
+          tool_name: 'search_nodes',
+          status: 'running'
+        }
+      ]
+    }
+
+    const transcript = normalizeAgentTranscript([first, second])
+
+    expect(transcript.messages[0].parts).toEqual([
+      {
+        type: 'tool',
+        callId: 'call-1',
+        name: 'search_nodes',
+        state: 'done',
+        ok: true
+      },
+      { type: 'text', text: 'Done', state: 'done' }
+    ])
+  })
+
+  it('falls back to id for callId when tool_call_id is an empty string (Cursor review finding 4 on #19621)', () => {
+    const message = row(1, 'assistant', 'turn-a', 'Done', 'row-1')
+    message.content = {
+      text: 'Done',
+      tool_calls: [
+        {
+          id: 'audit-row-uuid-1',
+          tool_call_id: '',
+          tool_name: 'search_nodes',
+          status: 'success'
+        }
+      ]
+    }
+
+    const transcript = normalizeAgentTranscript([message])
+
+    expect(transcript.messages[0].parts).toContainEqual(
+      expect.objectContaining({ callId: 'audit-row-uuid-1' })
+    )
+  })
+
+  it('does not collide two entries that both have an empty-string tool_call_id onto the same callId (Cursor review finding 4 on #19621)', () => {
+    const message = row(1, 'assistant', 'turn-a', 'Done', 'row-1')
+    message.content = {
+      text: 'Done',
+      tool_calls: [
+        {
+          id: 'audit-1',
+          tool_call_id: '',
+          tool_name: 'search_nodes',
+          status: 'success'
+        },
+        {
+          id: 'audit-2',
+          tool_call_id: '',
+          tool_name: 'add_node',
+          status: 'success'
+        }
+      ]
+    }
+
+    const transcript = normalizeAgentTranscript([message])
+
+    expect(
+      transcript.messages[0].parts.filter((part) => part.type === 'tool')
+    ).toHaveLength(2)
+  })
+
+  it('drops an id-only tool-call entry on a live row rather than seeding it under the audit id (Cursor review finding 5 on #19621)', () => {
+    const message = row(1, 'assistant', 'turn-a', '', 'row-1')
+    message.status = 'streaming'
+    message.content = {
+      tool_calls: [
+        {
+          id: 'audit-row-uuid-1',
+          tool_name: 'search_nodes',
+          status: 'running'
+        }
+      ]
+    }
+
+    const transcript = normalizeAgentTranscript([message])
+
+    expect(transcript.messages[0].parts).toEqual([])
+  })
+
+  it('still falls back to id on a non-live (restored) row, since nothing will ever seed the real tool_call_id later', () => {
+    const message = row(1, 'assistant', 'turn-a', 'Done', 'row-1')
+    message.content = {
+      text: 'Done',
+      tool_calls: [
+        { id: 'audit-row-uuid-1', tool_name: 'search_nodes', status: 'success' }
+      ]
+    }
+
+    const transcript = normalizeAgentTranscript([message])
+
+    expect(transcript.messages[0].parts).toContainEqual(
+      expect.objectContaining({ callId: 'audit-row-uuid-1' })
+    )
   })
 
   it('drops a persisted tool call entry with no status field, since status is required by the generated contract', () => {

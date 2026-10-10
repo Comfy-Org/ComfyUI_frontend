@@ -148,7 +148,50 @@ describe('agentApiSchema contract subtleties', () => {
     expect(parsed.data.skill).toBe(`${'a'.repeat(255)}😀`)
   })
 
-  it('keeps a whole transcript readable when one persisted skill is over-long', () => {
+  it('clamps an over-long skill on a persisted tool-call row', () => {
+    const parsed = zPersistedToolCallSummary.parse({
+      id: 'audit-row-uuid-1',
+      tool_call_id: 'call-1',
+      tool_name: 'load_skill',
+      status: 'success',
+      skill: 'a'.repeat(300)
+    })
+
+    expect(parsed.skill).toBe('a'.repeat(256))
+  })
+
+  it('accepts an explicit null tool_call_id and duration_ms on a persisted tool-call row (Cursor review finding 2 on #19621)', () => {
+    const parsed = zPersistedToolCallSummary.safeParse({
+      id: 'audit-row-uuid-1',
+      tool_call_id: null,
+      tool_name: 'search_nodes',
+      status: 'success',
+      duration_ms: null
+    })
+
+    expect(parsed.success).toBe(true)
+  })
+
+  it.for([null, 'not-an-array', 42, {}])(
+    'does not throw zAgentMessages.parse() when content.tool_calls is %s instead of an array (Cursor review finding 3 on #19621)',
+    (toolCalls) => {
+      expect(() =>
+        zAgentMessages.parse([
+          {
+            id: 'row-1',
+            thread_id: 't1',
+            turn_id: 'turn-a',
+            seq: 1,
+            role: 'assistant',
+            status: 'complete',
+            content: { text: 'Done', tool_calls: toolCalls }
+          }
+        ])
+      ).not.toThrow()
+    }
+  )
+
+  it('keeps a whole transcript readable when a persisted tool-call row is malformed', () => {
     const parsed = zAgentMessages.parse([
       {
         id: 'row-1',

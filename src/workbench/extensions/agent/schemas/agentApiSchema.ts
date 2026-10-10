@@ -132,9 +132,13 @@ const zSkillName = z
  */
 export const zPersistedToolCallSummary = zToolCallSummary.extend({
   id: z.string(),
-  tool_call_id: z.string().optional(),
+  // `.nullish()`, matching `zSkillName` above: a Go pointer field serialized
+  // without `omitempty` sends an explicit `null` rather than omitting the
+  // key, and `.optional()` alone rejects that, failing this entry's
+  // `safeParse` and dropping the whole tool-call row.
+  tool_call_id: z.string().nullish(),
   status: z.string(),
-  duration_ms: z.number().optional(),
+  duration_ms: z.number().nullish(),
   skill: zSkillName
 })
 export type PersistedToolCallSummary = z.infer<typeof zPersistedToolCallSummary>
@@ -157,7 +161,14 @@ export type PersistedToolCallSummary = z.infer<typeof zPersistedToolCallSummary>
  */
 const zAgentMessageContent = z
   .object({
-    tool_calls: z.array(z.unknown()).optional()
+    // `z.unknown()`, not `z.array(z.unknown())`: a Go nil slice persisted
+    // without `omitempty` sends `tool_calls: null`, and any other historical
+    // row could carry a non-array value here too. `zAgentMessages.parse()`
+    // throws on the whole history for a schema mismatch, so this field must
+    // accept anything; `agentTranscript.ts`'s `parseToolCalls` already
+    // guards with `Array.isArray` and degrades just that one row's tool
+    // calls instead.
+    tool_calls: z.unknown().optional()
   })
   .passthrough()
 
