@@ -1042,7 +1042,7 @@ test.describe(
 
       await comfyPage.menu.topbar.saveWorkflow('dynamic-group-rows')
       await comfyPage.menu.topbar.closeWorkflowTab('dynamic-group-rows')
-      await comfyPage.page.keyboard.press('w')
+      await comfyPage.menu.workflowsTab.open()
       await comfyPage.menu.workflowsTab
         .getPersistedItem('dynamic-group-rows')
         .dblclick()
