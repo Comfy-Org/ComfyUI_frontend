@@ -22,6 +22,7 @@ export enum ServerFeatureFlag {
   UNIFIED_CLOUD_AUTH = 'unified_cloud_auth',
   UNIFIED_WEB_SESSION = 'unified_web_session',
   SSO_ENABLED = 'sso_enabled',
+  LOCAL_WEB_SSO = 'local_web_sso',
   BILLING_CONTROL_ENABLED = 'billing_control_enabled',
   MEMBER_CREDIT_LIMITS_ENABLED = 'member_credit_limits_enabled',
   LEGACY_BILLING_MIGRATION_ENABLED = 'legacy_billing_migration_enabled',
