@@ -13,10 +13,18 @@ import {
   isPermanentSessionError
 } from '@comfyorg/account-core/session'
 
+import { zCurrentWorkspaceResponse } from '@comfyorg/ingest-types/zod'
+
 import { t } from '@/i18n'
 import { firebaseIdentity } from '@/platform/auth/firebaseIdentity'
+import type { WebSessionRequests } from '@/platform/auth/session/webSessionFetch'
+import {
+  signedInOnWebSession,
+  webSessionRequests
+} from '@/platform/auth/session/webSessionFetch'
 import enMessages from '@/locales/en/main.json' with { type: 'json' }
 import { useTelemetry } from '@/platform/telemetry'
+import { reportError } from '@/platform/telemetry/reportError'
 import type { UnifiedAuthRefreshOutcome } from '@/platform/telemetry/types'
 import { prepareWorkflowWorkspaceTransition } from '@/platform/workflow/persistence/base/storageIO'
 import {
@@ -28,8 +36,10 @@ import { createLegacyWorkspaceTokenRail } from '@/platform/workspace/stores/lega
 import type { WorkspaceTokenResponse } from '@/platform/workspace/stores/legacyWorkspaceTokenRail'
 import { WorkspaceAuthError } from '@/platform/workspace/stores/workspaceAuthError'
 import { useTeamWorkspaceStore } from '@/platform/workspace/stores/teamWorkspaceStore'
-import { useToastStore } from '@/platform/updates/common/toastStore'
+import { presentSsoRequired } from '@/platform/auth/sso/ssoRequired'
+import { useToast } from '@/components/ui/toast/toastStore'
 import { useAuthStore } from '@/stores/authStore'
+import type { AuthHeader } from '@/types/authTypes'
 import type { WorkspaceIdentity } from '@/platform/workspace/workspaceTypes'
 import { useFeatureFlags } from '@/composables/useFeatureFlags'
 import { isCloud } from '@/platform/distribution/types'
@@ -73,16 +83,24 @@ function sessionErrorMessageKey(
       return 'workspaceAuth.errors.notAuthenticated'
     case 'TOKEN_EXCHANGE_FAILED':
       return 'workspaceAuth.errors.tokenExchangeFailed'
+    case 'SSO_REQUIRED':
+      return useFeatureFlags().flags.ssoEnabled
+        ? 'workspaceAuth.errors.ssoRequired'
+        : 'workspaceAuth.errors.accessDenied'
   }
 }
 
 // Workspace auth has no Firebase fallback, so surface permanent failures.
 function surfacePermanentAuthError(err: WorkspaceAuthError): void {
+  if (
+    err.code === 'SSO_REQUIRED' &&
+    presentSsoRequired({ email: useAuthStore().userEmail ?? undefined })
+  ) {
+    return
+  }
   console.error('Unified workspace auth revoked or invalid:', err)
-  useToastStore().add({
-    severity: 'error',
-    summary: t('g.error'),
-    detail: t(
+  useToast().error(t('g.error'), {
+    description: t(
       sessionErrorMessageKey(
         isSessionErrorCode(err.code) ? err.code : 'TOKEN_EXCHANGE_FAILED'
       )
@@ -98,6 +116,8 @@ export const useWorkspaceAuthStore = defineStore('workspaceAuth', () => {
 
   // State
   const currentWorkspace = shallowRef<WorkspaceIdentity | null>(null)
+  /** A team workspace the server refused, held until a reload or a new selection so requests never fall back to Personal. */
+  const deniedWorkspaceId = shallowRef<string | null>(null)
   const isLoading = ref(false)
   const error = ref<Error | null>(null)
 
@@ -115,13 +135,13 @@ export const useWorkspaceAuthStore = defineStore('workspaceAuth', () => {
     initializeFromSession,
     switchLegacyWorkspace,
     refreshToken,
-    ensureWorkspaceToken,
-    ensureWorkspaceAuthHeader,
+    ensureWorkspaceToken: ensureLegacyWorkspaceToken,
+    ensureWorkspaceAuthHeader: ensureLegacyWorkspaceAuthHeader,
     getWorkspaceAuthHeader,
     getWorkspaceToken,
     hasValidWorkspaceToken,
     retireLegacyToken,
-    stopRefreshTimer,
+    dispose: disposeLegacyTokenRail,
     clearLegacyContext
   } = createLegacyWorkspaceTokenRail({
     currentWorkspace,
@@ -180,19 +200,82 @@ export const useWorkspaceAuthStore = defineStore('workspaceAuth', () => {
   }
 
   function destroy(): void {
-    stopRefreshTimer()
+    disposeLegacyTokenRail()
     stopUnifiedFlagWatch()
     unifiedSessionClient.dispose()
     clearUnifiedContext()
     stopUnifiedSnapshot()
   }
 
+  function ensureWorkspaceToken(
+    preferredWorkspaceId?: string
+  ): Promise<string | null> {
+    return onWebSession(() => ensureLegacyWorkspaceToken(preferredWorkspaceId))
+  }
+
+  function ensureWorkspaceAuthHeader(
+    preferredWorkspaceId?: string
+  ): Promise<AuthHeader | null> {
+    return onWebSession(() =>
+      ensureLegacyWorkspaceAuthHeader(preferredWorkspaceId)
+    )
+  }
+
+  /** The session carries no workspace token, so a token read is null there. */
+  function onWebSession<T>(legacy: () => Promise<T>): Promise<T | null> {
+    const requests = webSessionRequests()
+    if (!requests) return legacy()
+    return requests.scope().then((scope) => (scope ? null : legacy()))
+  }
+
   function switchWorkspace(workspaceId: string): Promise<void> {
+    const requests = webSessionRequests()
+    if (requests) return switchSessionWorkspace(requests, workspaceId)
+
+    return switchTokenWorkspace(workspaceId)
+  }
+
+  /** The session selects a workspace by header; the role comes from ingest. */
+  async function switchSessionWorkspace(
+    requests: WebSessionRequests,
+    workspaceId: string
+  ): Promise<void> {
+    const scope = await requests.scope()
+    if (!scope) return switchTokenWorkspace(workspaceId)
+
+    if (currentWorkspace.value?.id !== workspaceId)
+      currentWorkspace.value = null
+    const response = await requests.send(
+      workspaceApiUrl('/workspaces/current'),
+      { method: 'GET', cache: 'no-store' },
+      { ...scope, workspaceId }
+    )
+    const current = zCurrentWorkspaceResponse.safeParse(
+      response.ok ? await response.json() : undefined
+    )
+    if (!current.success || current.data.id !== workspaceId) {
+      throw new WorkspaceAuthError(
+        `Workspace switch refused with ${response.status}`
+      )
+    }
+    const { id, name, type, role = 'member' } = current.data
+    deniedWorkspaceId.value = null
+    currentWorkspace.value = { id, name, type, role }
+    persistWorkspaceIdentity(currentWorkspace.value)
+  }
+
+  function switchTokenWorkspace(workspaceId: string): Promise<void> {
     if (flags.unifiedCloudAuthEnabled) {
       return switchUnifiedWorkspace(workspaceId)
     }
 
     return switchLegacyWorkspace(workspaceId)
+  }
+
+  function dropDeniedWorkspace(workspaceId: string): void {
+    if (currentWorkspace.value?.id !== workspaceId) return
+    endWorkspaceSession(workspaceId)
+    deniedWorkspaceId.value = workspaceId
   }
 
   // --- Unified Cloud-JWT lifecycle (flag-gated: unified_cloud_auth) ----------
@@ -239,7 +322,11 @@ export const useWorkspaceAuthStore = defineStore('workspaceAuth', () => {
   }
 
   function unifiedSelectionInvalid(code: SessionErrorCode): boolean {
-    return code === 'ACCESS_DENIED' || code === 'WORKSPACE_NOT_FOUND'
+    return (
+      code === 'ACCESS_DENIED' ||
+      code === 'SSO_REQUIRED' ||
+      code === 'WORKSPACE_NOT_FOUND'
+    )
   }
 
   // Guard the toast on a one-shot flag reset by the next successful mint, so
@@ -270,8 +357,21 @@ export const useWorkspaceAuthStore = defineStore('workspaceAuth', () => {
     }
     if (report.outcome === 'retries_exhausted') {
       trackUnifiedRefresh('retries_exhausted')
-      console.warn(
-        'Unified token refresh failed; retries exhausted, the session ends at expiry unless a reactive re-mint lands first'
+      // The proactive refresh is the only thing that rotates the session
+      // cookie, so this is the moment the cookie rail dies — roughly two hours
+      // before the user sees anything, and while every Bearer-authenticated
+      // call keeps working. That asymmetry is FE-1595. It belongs in the error
+      // tracker, not only in a RUM action: RUM actions cannot raise a Sentry
+      // alert, which is why this failure class went unnoticed for weeks.
+      reportError(
+        new Error(
+          'Unified token refresh failed; retries exhausted, the session ends at expiry unless a reactive re-mint lands first'
+        ),
+        {
+          surface: 'auth',
+          errorType: 'failure_refreshing_unified_auth_retries_exhausted',
+          tags: { retry_count: unifiedScheduledRetryCount }
+        }
       )
       return
     }
@@ -284,11 +384,27 @@ export const useWorkspaceAuthStore = defineStore('workspaceAuth', () => {
     }
     trackUnifiedRefresh('permanent_failure')
     const code = report.failure.code
+    // Terminal: the session is being torn down. The user sees a toast, but
+    // nothing reached the error tracker, so a spike in permanent auth failures
+    // was only visible to whoever happened to open the RUM explorer.
+    reportError(
+      new Error(`Unified token refresh failed permanently: ${code}`),
+      {
+        surface: 'auth',
+        errorType: 'failure_refreshing_unified_auth_permanent',
+        tags: { failure_code: code, retry_count: unifiedScheduledRetryCount },
+        // `surfaceUnifiedPermanentFailure` below already writes the console
+        // line via `surfacePermanentAuthError`; without this the same failure
+        // prints twice.
+        logToConsole: false
+      }
+    )
     surfaceUnifiedPermanentFailure(code)
     endWorkspaceSession(
       unifiedSelectionInvalid(code)
         ? (currentWorkspace.value?.id ?? undefined)
-        : undefined
+        : undefined,
+      code
     )
   }
 
@@ -464,10 +580,19 @@ export const useWorkspaceAuthStore = defineStore('workspaceAuth', () => {
     if (getUnifiedToken()) {
       return true
     }
+    // A unified credential on a session tab would join a sibling's cross-tab
+    // lease and overwrite currentWorkspace when it adopts their token.
+    if (await signedInOnWebSession()) {
+      return false
+    }
     const authUser = await unifiedUser()
-    // Re-check after the wait: a rollback that flips the flag off while a mint
+    // Re-check after the wait: a rollback or a session sign-in while a mint
     // is parked on unifiedUser() must not let the resumed mint commit a token.
-    if (!unifiedRailEnabled() || !authUser) {
+    if (
+      !unifiedRailEnabled() ||
+      !authUser ||
+      (webSessionRequests() !== undefined && (await signedInOnWebSession()))
+    ) {
       return false
     }
     const target = currentUnifiedTarget() ?? personalWorkspaceTarget()
@@ -526,7 +651,8 @@ export const useWorkspaceAuthStore = defineStore('workspaceAuth', () => {
       endWorkspaceSession(
         unifiedSelectionInvalid(result.code)
           ? (currentWorkspace.value?.id ?? undefined)
-          : undefined
+          : undefined,
+        result.code
       )
     } else if (result?.status === 'error') {
       console.warn('Unified reactive re-mint failed:', result.code)
@@ -543,16 +669,29 @@ export const useWorkspaceAuthStore = defineStore('workspaceAuth', () => {
   }
 
   function clearWorkspaceContext(): void {
+    deniedWorkspaceId.value = null
     clearLegacyContext()
     error.value = null
     clearSessionStorage()
     clearUnifiedContext()
   }
 
-  function endWorkspaceSession(revokedWorkspaceId?: string): boolean {
+  function endWorkspaceSession(
+    revokedWorkspaceId?: string,
+    refusalCode?: string
+  ): boolean {
     const hadContext = currentWorkspace.value !== null
     const cancelWorkflowTransition =
       isCloud && hadContext ? prepareWorkflowWorkspaceTransition() : undefined
+    // A reload would take down the SSO-required screen this refusal opens.
+    if (
+      refusalCode === 'SSO_REQUIRED' &&
+      presentSsoRequired({ email: useAuthStore().userEmail ?? undefined })
+    ) {
+      clearWorkspaceContext()
+      cancelWorkflowTransition?.()
+      return false
+    }
     const revokedWorkspaceHandled = revokedWorkspaceId
       ? useTeamWorkspaceStore().forgetRevokedActiveWorkspace(revokedWorkspaceId)
       : false
@@ -571,6 +710,7 @@ export const useWorkspaceAuthStore = defineStore('workspaceAuth', () => {
   return {
     // State
     currentWorkspace,
+    deniedWorkspaceId,
     workspaceToken,
     unifiedToken,
     isLoading,
@@ -594,6 +734,8 @@ export const useWorkspaceAuthStore = defineStore('workspaceAuth', () => {
     getUnifiedToken,
     getUnifiedSessionClient,
     getUnifiedMintWorkspaceId,
-    clearWorkspaceContext
+    clearWorkspaceContext,
+    clearUnifiedContext,
+    dropDeniedWorkspace
   }
 })

@@ -1,86 +1,165 @@
 import { render, screen, waitFor, within } from '@testing-library/vue'
+import userEvent from '@testing-library/user-event'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
-import { nextTick } from 'vue'
+import { defineComponent, h, nextTick, readonly, ref } from 'vue'
 
-import { requestWorkshopBuyCredits } from '../../../config/workshop-buy-credits'
+import { requestWorkshopBuyCredits } from '@/config/workshop-buy-credits'
+import type { HubApp } from '@/data/mainNavigation'
+import {
+  useWorkshopAppsEnabled,
+  useWorkshopAuthFlag,
+  useWorkshopEnabled,
+  useWorkshopFlag,
+  useWorkshopWorkflowsEnabled
+} from '@/scripts/posthog'
 import HeaderMain from './HeaderMain.vue'
 
-const hoisted = vi.hoisted(() => ({
-  flag: undefined as { value: boolean } | undefined,
-  visibility: undefined as { value: boolean } | undefined
+vi.mock(import('@/scripts/posthog'))
+vi.mock(import('@/config/workshop-account-source'), () => ({
+  resolveWorkshopAccountSource: () => Promise.resolve('firebase'),
+  peekWorkshopAccountSource: () => 'firebase'
 }))
 
-vi.mock(import('../../../scripts/posthog.ts'), async () => {
-  const { ref } = await import('vue')
-  const flag = ref(false)
-  hoisted.flag = flag
-  const visibility = ref(false)
-  hoisted.visibility = visibility
-  return {
-    useWorkshopAuthFlag: () => flag,
-    useWorkshopEnabled: () => visibility
-  }
-})
+let flag = ref(false)
+let visibility = ref(false)
 
-vi.mock<unknown>(import('../../workshop/HeaderAccount.vue'), async () => {
-  const { defineComponent, h } = await import('vue')
-  return {
-    __esModule: true,
-    default: defineComponent({
-      name: 'HeaderAccountStub',
-      render: () => h('div', { 'data-testid': 'header-account' })
-    })
-  }
-})
+const RESHOOT_FLAG = 'workshop-reshoot-app-enabled'
+const HUB_APPS: HubApp[] = [
+  { appId: 'studio' },
+  { appId: 'reshoot', flag: RESHOOT_FLAG }
+]
 
-vi.mock<unknown>(import('../../workshop/BuyCreditsDialog.vue'), async () => {
-  const { defineComponent, h } = await import('vue')
-  return {
-    __esModule: true,
-    default: defineComponent({
-      name: 'BuyCreditsDialogStub',
-      props: { open: { type: Boolean, required: true } },
-      setup: (props) => () =>
-        props.open ? h('div', { 'data-testid': 'buy-credits-dialog' }) : null
-    })
-  }
-})
+function renderHeader(workshopInBuild = false, hubApps: HubApp[] = []) {
+  return render(HeaderMain, {
+    props: { workshopInBuild, hubApps },
+    global: {
+      stubs: {
+        HeaderAccount: defineComponent({
+          render: () => h('div', { 'data-testid': 'header-account' })
+        }),
+        BuyCreditsDialog: defineComponent({
+          props: { open: { type: Boolean, required: true } },
+          setup: (props) => () =>
+            props.open
+              ? h('div', { 'data-testid': 'buy-credits-dialog' })
+              : null
+        })
+      }
+    }
+  })
+}
 
 beforeEach(() => {
-  hoisted.flag!.value = false
-  hoisted.visibility!.value = false
+  flag = ref(false)
+  visibility = ref(false)
+  vi.mocked(useWorkshopAuthFlag).mockReturnValue(readonly(flag))
+  vi.mocked(useWorkshopEnabled).mockReturnValue(readonly(visibility))
 })
 
 describe('HeaderMain workshop gating', () => {
   it.for([
-    { workshopInBuild: false, enabled: true, modelsAvailable: false },
-    { workshopInBuild: true, enabled: false, modelsAvailable: false },
-    { workshopInBuild: true, enabled: true, modelsAvailable: true }
+    { workshopInBuild: false, enabled: true },
+    { workshopInBuild: true, enabled: false },
+    { workshopInBuild: true, enabled: true }
   ])(
-    'renders Models availability as $modelsAvailable when workshopInBuild is $workshopInBuild',
-    async ({ workshopInBuild, enabled, modelsAvailable }) => {
-      hoisted.visibility!.value = enabled
-      render(HeaderMain, { props: { workshopInBuild } })
+    'keeps Hub in the top navigation when workshopInBuild is $workshopInBuild',
+    async ({ workshopInBuild, enabled }) => {
+      visibility.value = enabled
+      renderHeader(workshopInBuild)
       await nextTick()
 
-      expect(screen.queryByRole('link', { name: /^Models\b/i }) !== null).toBe(
-        modelsAvailable
+      expect(
+        within(screen.getByTestId('desktop-nav-links')).getByRole('button', {
+          name: /^Hub\b/i
+        })
+      ).toBeTruthy()
+      expect(screen.queryByRole('button', { name: /^Models\b/i })).toBeNull()
+    }
+  )
+
+  async function openHubMenu() {
+    await userEvent.click(
+      within(screen.getByTestId('desktop-nav-links')).getByRole('button', {
+        name: /^Hub\b/i
+      })
+    )
+    return screen.findByTestId('nav-dropdown')
+  }
+
+  function setHubFlags(workflows: boolean, apps: boolean) {
+    vi.mocked(useWorkshopWorkflowsEnabled).mockReturnValue(
+      readonly(ref(workflows))
+    )
+    vi.mocked(useWorkshopAppsEnabled).mockReturnValue(readonly(ref(apps)))
+  }
+
+  it.for([
+    { enabled: true, workflows: false, apps: false, headers: ['Models'] },
+    {
+      enabled: true,
+      workflows: true,
+      apps: false,
+      headers: ['Models', 'Workflows']
+    },
+    {
+      enabled: true,
+      workflows: true,
+      apps: true,
+      headers: ['Models', 'Workflows', 'Apps']
+    },
+    { enabled: false, workflows: true, apps: true, headers: ['Models'] }
+  ])(
+    'shows the Hub columns whose flags are on (workshop $enabled): $headers',
+    async ({ enabled, workflows, apps, headers }) => {
+      visibility.value = enabled
+      setHubFlags(workflows, apps)
+      renderHeader(true)
+      const menu = within(await openHubMenu())
+
+      expect(
+        ['Models', 'Workflows', 'Apps'].filter((header) =>
+          menu.queryByText(header, { exact: true })
+        )
+      ).toEqual(headers)
+    }
+  )
+
+  it.for([
+    { reshootFlag: true, apps: ['Cinematic Studio', 'Re-shoot'] },
+    { reshootFlag: false, apps: ['Cinematic Studio'] }
+  ])(
+    'lists Re-shoot under Apps only when its own flag is on: $reshootFlag',
+    async ({ reshootFlag, apps }) => {
+      visibility.value = true
+      setHubFlags(false, true)
+      vi.mocked(useWorkshopFlag).mockImplementation((name) =>
+        readonly(ref(name === RESHOOT_FLAG && reshootFlag))
       )
+      renderHeader(true, HUB_APPS)
+      const menu = within(await openHubMenu())
+
+      const appLinks = within(menu.getByRole('list', { name: 'Apps' }))
+
+      expect(
+        ['Cinematic Studio', 'Re-shoot'].filter((app) =>
+          appLinks.queryByRole('link', { name: new RegExp(`^${app}`) })
+        )
+      ).toEqual(apps)
     }
   )
 
   it('mounts no account island while the flag is off', () => {
-    render(HeaderMain)
+    renderHeader()
 
     expect(screen.queryByTestId('header-account')).toBeNull()
   })
 
   it('mounts the account island when the flag turns on after mount', async () => {
-    hoisted.visibility!.value = true
-    render(HeaderMain, { props: { workshopInBuild: true } })
+    visibility.value = true
+    renderHeader(true)
     expect(screen.queryByTestId('header-account')).toBeNull()
 
-    hoisted.flag!.value = true
+    flag.value = true
 
     await waitFor(() => {
       expect(
@@ -91,9 +170,9 @@ describe('HeaderMain workshop gating', () => {
   })
 
   it('mounts the account island in the mobile row as well as the desktop row', async () => {
-    hoisted.flag!.value = true
-    hoisted.visibility!.value = true
-    render(HeaderMain, { props: { workshopInBuild: true } })
+    flag.value = true
+    visibility.value = true
+    renderHeader(true)
 
     await waitFor(() => {
       expect(
@@ -111,9 +190,9 @@ describe('HeaderMain workshop gating', () => {
   })
 
   it('owns one credits dialog for both account placements and page requests', async () => {
-    hoisted.flag!.value = true
-    hoisted.visibility!.value = true
-    render(HeaderMain, { props: { workshopInBuild: true } })
+    flag.value = true
+    visibility.value = true
+    renderHeader(true)
     await waitFor(() =>
       expect(screen.getAllByTestId('header-account')).toHaveLength(2)
     )
@@ -126,21 +205,21 @@ describe('HeaderMain workshop gating', () => {
   })
 
   it('replays a request made before the header island mounts', async () => {
-    hoisted.flag!.value = true
-    hoisted.visibility!.value = true
+    flag.value = true
+    visibility.value = true
     requestWorkshopBuyCredits()
 
-    render(HeaderMain, { props: { workshopInBuild: true } })
+    renderHeader(true)
 
     expect(await screen.findByTestId('buy-credits-dialog')).toBeTruthy()
   })
 
   it('does not latch requests while auth is disabled', async () => {
-    hoisted.visibility!.value = true
-    render(HeaderMain, { props: { workshopInBuild: true } })
+    visibility.value = true
+    renderHeader(true)
 
     requestWorkshopBuyCredits()
-    hoisted.flag!.value = true
+    flag.value = true
 
     await waitFor(() =>
       expect(screen.getAllByTestId('header-account')).toHaveLength(2)
@@ -149,18 +228,18 @@ describe('HeaderMain workshop gating', () => {
   })
 
   it('keeps an active checkout mounted through a flag refresh', async () => {
-    hoisted.flag!.value = true
-    hoisted.visibility!.value = true
-    render(HeaderMain, { props: { workshopInBuild: true } })
+    flag.value = true
+    visibility.value = true
+    renderHeader(true)
     requestWorkshopBuyCredits()
     expect(await screen.findByTestId('buy-credits-dialog')).toBeTruthy()
 
-    hoisted.flag!.value = false
+    flag.value = false
     await waitFor(() =>
       expect(screen.queryByTestId('header-account')).toBeNull()
     )
     expect(screen.getByTestId('buy-credits-dialog')).toBeTruthy()
-    hoisted.flag!.value = true
+    flag.value = true
     await waitFor(() =>
       expect(screen.getAllByTestId('header-account')).toHaveLength(2)
     )
@@ -168,16 +247,16 @@ describe('HeaderMain workshop gating', () => {
     expect(screen.getByTestId('buy-credits-dialog')).toBeTruthy()
   })
 
-  it('ignores credits requests while Models is hidden', async () => {
-    hoisted.flag!.value = true
-    render(HeaderMain, { props: { workshopInBuild: true } })
+  it('ignores credits requests while workshop access is hidden', async () => {
+    flag.value = true
+    renderHeader(true)
     await nextTick()
 
     requestWorkshopBuyCredits()
     await nextTick()
     expect(screen.queryByTestId('buy-credits-dialog')).toBeNull()
 
-    hoisted.visibility!.value = true
+    visibility.value = true
     await waitFor(() =>
       expect(screen.getAllByTestId('header-account')).toHaveLength(2)
     )
@@ -187,17 +266,15 @@ describe('HeaderMain workshop gating', () => {
     expect(await screen.findByTestId('buy-credits-dialog')).toBeTruthy()
   })
 
-  it('updates navigation and removes the account controls when access is revoked', async () => {
-    hoisted.flag!.value = true
-    render(HeaderMain, { props: { workshopInBuild: true } })
-    expect(screen.queryByRole('link', { name: /^Models\b/i })).toBeNull()
+  it('removes the account controls when access is revoked', async () => {
+    flag.value = true
+    renderHeader(true)
     expect(screen.queryByTestId('header-account')).toBeNull()
 
-    hoisted.visibility!.value = true
-    await screen.findByRole('link', { name: /^Models\b/i })
-    hoisted.visibility!.value = false
+    visibility.value = true
+    expect(await screen.findAllByTestId('header-account')).not.toHaveLength(0)
+    visibility.value = false
     await nextTick()
-    expect(screen.queryByRole('link', { name: /^Models\b/i })).toBeNull()
     expect(screen.queryByTestId('header-account')).toBeNull()
   })
 })

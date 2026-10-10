@@ -1,20 +1,24 @@
 <script setup lang="ts">
-import { computed } from 'vue'
+import { computed, reactive } from 'vue'
 
 import { cn } from '@comfyorg/tailwind-utils'
 
-import type { WorkshopModel } from '../../config/models-catalogue'
+import type { WorkshopModel } from '@/config/models-catalogue'
+import { sortWorkshopModels } from '@/config/models-catalogue'
+import { searchWorkshopModels } from '@/config/models-search'
 import {
-  filterWorkshopModels,
-  sortWorkshopModels
-} from '../../config/models-catalogue'
-import type { Locale } from '../../i18n/translations'
-import { t } from '../../i18n/translations'
+  isAudioUrl,
+  isVideoUrl,
+  videoPosterUrl
+} from '@/config/workshop-playground'
+import type { Locale } from '@/i18n/translations'
+import { translationsFor } from '@/i18n/translations'
 
 const {
   models,
   query,
   variant = 'dropdown',
+  kind = 'models',
   locale = 'en'
 } = defineProps<{
   models: readonly WorkshopModel[]
@@ -22,8 +26,10 @@ const {
   /** On a phone the same panel fills the screen instead of hanging off a
    * field. */
   variant?: 'dropdown' | 'sheet'
+  kind?: 'models' | 'workflows'
   locale?: Locale
 }>()
+const { t } = translationsFor(locale)
 
 const emit = defineEmits<{
   pick: [model: WorkshopModel]
@@ -31,13 +37,38 @@ const emit = defineEmits<{
 
 const SUGGESTIONS = 4
 
-const matching = computed(() => filterWorkshopModels(models, { query }))
+const matching = computed(() => searchWorkshopModels(models, { query }))
 
 const suggestions = computed(() =>
   query.trim()
     ? sortWorkshopModels(matching.value, 'name').slice(0, SUGGESTIONS)
     : []
 )
+
+const failedThumbnails = reactive(new Set<string>())
+
+function kindOfUrl(url: string) {
+  if (isVideoUrl(url)) return 'video'
+  if (isAudioUrl(url)) return 'audio'
+  return 'image'
+}
+
+function thumbnailOf(model: WorkshopModel) {
+  const url = model.thumbnail?.url ?? model.thumbnailUrl
+  if (!url || failedThumbnails.has(url)) return undefined
+  const kind = model.thumbnail?.kind ?? kindOfUrl(url)
+  return kind === 'audio' ? undefined : { url, kind }
+}
+
+const rows = computed(() =>
+  suggestions.value.map((model) => ({ model, thumbnail: thumbnailOf(model) }))
+)
+
+function sourceOf(model: WorkshopModel): string | undefined {
+  if (model.type === 'APP') return t('workshop.card.comfyApp')
+  if (model.routerId === undefined) return model.models?.join(', ')
+  return model.provider ?? t('workshop.card.partnerNode')
+}
 </script>
 
 <template>
@@ -56,11 +87,17 @@ const suggestions = computed(() =>
       <p
         class="text-[11px] font-bold tracking-wider text-primary-warm-gray uppercase"
       >
-        {{ t('workshop.search.models', locale) }}
+        {{
+          t(
+            kind === 'models'
+              ? 'workshop.search.models'
+              : 'workshop.hub.workflows'
+          )
+        }}
         <span class="tabular-nums opacity-60">({{ matching.length }})</span>
       </p>
       <button
-        v-for="model in suggestions"
+        v-for="{ model, thumbnail } in rows"
         :key="model.slug"
         type="button"
         class="flex cursor-pointer items-center gap-3 rounded-xl p-2 text-left outline-none hover:bg-transparency-white-t4 focus-visible:bg-transparency-white-t4"
@@ -68,13 +105,26 @@ const suggestions = computed(() =>
         @mousedown.prevent
         @click="emit('pick', model)"
       >
+        <video
+          v-if="thumbnail?.kind === 'video'"
+          :src="videoPosterUrl(thumbnail.url)"
+          class="size-10 shrink-0 rounded-lg object-cover"
+          aria-hidden="true"
+          data-testid="workshop-search-model-video"
+          muted
+          playsinline
+          preload="metadata"
+          @error="failedThumbnails.add(thumbnail.url)"
+        />
         <img
-          v-if="model.thumbnailUrl"
-          :src="model.thumbnailUrl"
+          v-else-if="thumbnail"
+          :src="thumbnail.url"
           alt=""
           class="size-10 shrink-0 rounded-lg object-cover"
+          data-testid="workshop-search-model-image"
           loading="lazy"
           decoding="async"
+          @error="failedThumbnails.add(thumbnail.url)"
         />
         <span
           v-else
@@ -88,14 +138,14 @@ const suggestions = computed(() =>
             {{ model.name }}
           </span>
           <span class="truncate text-xs text-primary-warm-gray">
-            {{ model.provider ?? t('workshop.card.partnerNode', locale) }}
+            {{ sourceOf(model) }}
           </span>
         </span>
       </button>
     </section>
 
     <p v-else-if="query.trim()" class="p-2 text-sm text-primary-warm-gray">
-      {{ t('workshop.hub.facets.noResults', locale) }}
+      {{ t('workshop.hub.facets.noResults') }}
     </p>
   </div>
 </template>

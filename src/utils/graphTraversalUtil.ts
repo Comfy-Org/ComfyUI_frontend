@@ -7,12 +7,13 @@ import type {
 import { LGraphEventMode } from '@/lib/litegraph/src/types/globalEnums'
 import type { NodeExecutionId, NodeLocatorId } from '@/types/nodeIdentification'
 import {
+  createLeafNodeExecutionId,
   createNodeExecutionId,
   createNodeLocatorId,
   getParentExecutionIds,
   parseNodeLocatorId
 } from '@/types/nodeIdentification'
-import { parseNodeId } from '@/types/nodeId'
+import { parseNodeId, toNodeId } from '@/types/nodeId'
 import type { NodeId } from '@/types/nodeId'
 import type { NodeState } from '@/types/nodeState'
 import type { UUID } from '@/utils/uuid'
@@ -39,7 +40,9 @@ export function subgraphIdFromState(
   return rootGraphId && state.graphId !== rootGraphId ? state.graphId : null
 }
 
-/** The locator id for a node described by its shell state. */
+/**
+ * The locator id for a node described by its shell state.
+ */
 export function locatorIdFromState(
   state: Pick<NodeState, 'id' | 'graphId'>,
   rootGraphId: UUID | undefined
@@ -429,25 +432,35 @@ export function getNodeByExecutionId(
   rootGraph: LGraph,
   executionId: string
 ): LGraphNode | null {
-  const localNodeId = getLocalNodeIdFromExecutionId(executionId)
-  if (!localNodeId) return null
+  return resolveExecutionNode(rootGraph, executionId)?.node ?? null
+}
 
-  const subgraphPath = getSubgraphPathFromExecutionId(executionId)
+interface ResolvedExecutionNode {
+  graph: LGraph | Subgraph
+  node: LGraphNode
+}
 
-  // If no subgraph path, it's in the root graph
-  const parsedLocalNodeId = parseNodeId(localNodeId)
-  if (!parsedLocalNodeId) return null
+function resolveExecutionNode(
+  graph: LGraph | Subgraph,
+  executionId: string
+): ResolvedExecutionNode | null {
+  for (
+    let end = executionId.indexOf(':');
+    end !== -1;
+    end = executionId.indexOf(':', end + 1)
+  ) {
+    const host = graph.getNodeById(toNodeId(executionId.slice(0, end)))
+    if (!host || !isSubgraphNode(host)) continue
 
-  if (subgraphPath.length === 0) {
-    return rootGraph.getNodeById(parsedLocalNodeId) || null
+    const nested = resolveExecutionNode(
+      host.subgraph,
+      executionId.slice(end + 1)
+    )
+    if (nested) return nested
   }
 
-  // Traverse to the target subgraph
-  const targetGraph = traverseSubgraphPath(rootGraph, subgraphPath)
-  if (!targetGraph) return null
-
-  // Get the node from the target graph
-  return targetGraph.getNodeById(parsedLocalNodeId) || null
+  const node = executionId ? graph.getNodeById(toNodeId(executionId)) : null
+  return node ? { graph, node } : null
 }
 
 /**
@@ -612,14 +625,31 @@ export function executionIdFromState(
   const localNodeId = parseNodeId(state.id)
   if (!localNodeId) return null
 
+  // A root-owned node has no ancestor path to encode, so its raw id can be
+  // kept whole even when it contains a colon that isn't a subgraph-scope
+  // prefix (comfy-multi-player's insert_workflow remapped ids, PM-1580) —
+  // see `createLeafNodeExecutionId`. A node that IS meant to live inside a
+  // subgraph still goes through the strict, segment-splitting path.
+  const fallback = subgraphIdFromState(state, rootGraph.id)
+    ? createNodeExecutionId([localNodeId])
+    : createLeafNodeExecutionId(localNodeId)
+
   const locatorId = locatorIdFromState(state, rootGraph.id)
   const node = locatorId && getNodeByLocatorId(rootGraph, locatorId)
-  if (!node) return createNodeExecutionId([localNodeId])
+  if (!node) return fallback
 
-  return (
-    getExecutionIdByNode(rootGraph, node) ??
-    createNodeExecutionId([localNodeId])
-  )
+  return getExecutionIdByNode(rootGraph, node) ?? fallback
+}
+
+export function getNodeByState(
+  rootGraph: LGraph,
+  state: Pick<NodeState, 'id' | 'graphId'>
+): LGraphNode | null {
+  const graph =
+    state.graphId === rootGraph.id
+      ? rootGraph
+      : findSubgraphByUuid(rootGraph, state.graphId)
+  return graph?.getNodeById(state.id) ?? null
 }
 
 /**
@@ -636,7 +666,10 @@ export function getNodeByLocatorId(
   locatorId: string
 ): LGraphNode | null {
   const parsedIds = parseNodeLocatorId(locatorId)
-  if (!parsedIds) return null
+  if (!parsedIds) {
+    const leafNodeId = parseNodeId(locatorId)
+    return leafNodeId ? rootGraph.getNodeById(leafNodeId) || null : null
+  }
 
   const { subgraphUuid, localNodeId } = parsedIds
 
@@ -674,19 +707,12 @@ export function executionIdToNodeLocatorId(
     return createNodeLocatorId(null, localNodeId)
   }
 
-  // It's an execution node ID — resolve subgraph path
   if (!rootGraph) return undefined
-  const parts = nodeIdStr.split(':')
-  const localNodeId = parts.at(-1)!
-  const subgraphPath = parts.slice(0, -1)
+  const resolved = resolveExecutionNode(rootGraph, nodeIdStr)
+  if (!resolved) return undefined
 
-  const targetGraph = traverseSubgraphPath(rootGraph, subgraphPath)
-  if (!targetGraph) return undefined
-
-  const parsedLocalNodeId = parseNodeId(localNodeId)
-  if (!parsedLocalNodeId) return undefined
-
-  return createNodeLocatorId(targetGraph.id, parsedLocalNodeId)
+  const subgraphUuid = resolved.graph === rootGraph ? null : resolved.graph.id
+  return createNodeLocatorId(subgraphUuid, resolved.node.id)
 }
 
 /**
@@ -866,7 +892,7 @@ export function collectFromNodes<T = LGraphNode, C = void>(
   const {
     collector = (node: LGraphNode) => node as T,
     contextBuilder = () => undefined as C,
-    initialContext = undefined,
+    initialContext,
     expandSubgraphs = true
   } = options || {}
   const results: T[] = []
@@ -908,7 +934,7 @@ export function getExecutionIdsForSelectedNodes(
     node: LGraphNode,
     parentExecutionId: string | null
   ): NodeExecutionId | null {
-    if (!parentExecutionId) return createNodeExecutionId([node.id])
+    if (!parentExecutionId) return createLeafNodeExecutionId(node.id)
 
     return createExecutionIdFromPath(parentExecutionId, node.id)
   }
@@ -957,4 +983,26 @@ function findPartialExecutionPathToGraph(
     if (subpath !== undefined) return node.id + ':' + subpath
   }
   return undefined
+}
+
+export function resolveInputSourceNode(
+  node: LGraphNode,
+  slot: number
+): LGraphNode | undefined {
+  let upstream = node.getInputNode(slot)
+  let link = node.getInputLink(slot)
+  const visited = new Set<LGraphNode>()
+
+  while (upstream?.isSubgraphNode()) {
+    if (!link || visited.has(upstream)) return undefined
+    visited.add(upstream)
+
+    const resolved = upstream.resolveSubgraphOutputLink(link.origin_slot)
+    if (!resolved) return undefined
+
+    upstream = resolved.outputNode ?? null
+    link = resolved.link
+  }
+
+  return upstream ?? undefined
 }

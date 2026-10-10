@@ -12,8 +12,8 @@ import {
   schemaForModel,
   validateForm
 } from './workshop-playground'
-import contracts from '../content/workshop-router-contracts.json'
-import bindings from '../data/workshop-router-bindings.json'
+import contracts from '@/content/workshop-router-contracts.json'
+import bindings from '@/data/workshop-router-bindings.json'
 import { validateWorkshopInput } from './workshop-json-schema'
 
 function contractFor(id: string) {
@@ -117,10 +117,9 @@ describe('native Router requests', () => {
       expect(body).not.toHaveProperty('medias')
       if (contract.output.format !== 'json')
         throw new Error('Expected JSON output')
-      const fetch = vi
-        .fn()
-        .mockResolvedValue(Response.json(contract.output.schema.example))
-      vi.stubGlobal('fetch', fetch)
+      vi.mocked(fetch).mockResolvedValueOnce(
+        Response.json(contract.output.schema.example)
+      )
       const result = await runSynchronousWorkshopRouter({
         contract,
         body,
@@ -142,7 +141,7 @@ describe('native Router requests', () => {
         {
           prompt: 'Test',
           output_format: 'png',
-          safety_tolerance: 3,
+          seed: 123456,
           prompt_upsampling: false
         },
         signal
@@ -150,7 +149,7 @@ describe('native Router requests', () => {
     ).toEqual({
       prompt: 'Test',
       output_format: 'png',
-      safety_tolerance: 3,
+      seed: 123456,
       prompt_upsampling: false
     })
     await expect(
@@ -277,19 +276,50 @@ describe('native Router requests', () => {
     ).rejects.toBeInstanceOf(WorkshopRouterError)
   })
 
+  it('associates an unreadable native media input with its field', async () => {
+    const file = new File(['pixels'], 'private.png', { type: 'image/png' })
+    const cause = new DOMException('File gone', 'NotFoundError')
+    vi.spyOn(file, 'arrayBuffer').mockRejectedValue(cause)
+
+    await expect(
+      prepareWorkshopRouterInput(
+        contractFor('bfl/flux-2-pro'),
+        {
+          prompt: 'Edit',
+          media_image: {
+            file,
+            name: file.name,
+            size: file.size,
+            type: file.type
+          }
+        },
+        new AbortController().signal
+      )
+    ).rejects.toMatchObject({
+      reason: 'client',
+      stage: 'file_read',
+      cause,
+      fieldErrors: { media_image: 'fileUnreadable' }
+    })
+  })
+
   it('calls /v2/models with the workspace bearer, keeps the request ID and reads native output', async () => {
     const requests: Request[] = []
-    vi.stubGlobal('fetch', async (url: string, init: RequestInit) => {
-      requests.push(new Request(url, init))
-      return Response.json(
-        {
-          id: 'provider-job',
-          status: 'Ready',
-          result: { sample: 'https://assets.example/result.jpg' }
-        },
-        { headers: { 'X-Comfy-Request-Id': 'request-123' } }
-      )
-    })
+    vi.mocked(globalThis.fetch).mockImplementation(
+      async (input: RequestInfo | URL, init: RequestInit = {}) => {
+        const url = String(input)
+
+        requests.push(new Request(url, init))
+        return Response.json(
+          {
+            id: 'provider-job',
+            status: 'Ready',
+            result: { sample: 'https://assets.example/result.jpg' }
+          },
+          { headers: { 'X-Comfy-Request-Id': 'request-123' } }
+        )
+      }
+    )
     const result = await runSynchronousWorkshopRouter({
       contract: contractFor('bfl/flux-2-pro'),
       body: { prompt: 'Test', seed: 42 },
@@ -309,22 +339,20 @@ describe('native Router requests', () => {
     expect(await requests[0].json()).toEqual({ prompt: 'Test', seed: 42 })
     expect(result.requestId).toBe('request-123')
     expect(result.outputs[0].url).toBe('https://assets.example/result.jpg')
+    expect(requests[0].signal.aborted).toBe(true)
   })
 
   it('preserves caller cancellation while a Router request is pending', async () => {
     const controller = new AbortController()
-    vi.stubGlobal(
-      'fetch',
-      vi.fn(
-        (_url: string | URL | Request, init?: RequestInit) =>
-          new Promise<Response>((_resolve, reject) => {
-            init?.signal?.addEventListener(
-              'abort',
-              () => reject(init.signal?.reason),
-              { once: true }
-            )
-          })
-      )
+    vi.mocked(globalThis.fetch).mockImplementation(
+      (_url: string | URL | Request, init?: RequestInit) =>
+        new Promise<Response>((_resolve, reject) => {
+          init?.signal?.addEventListener(
+            'abort',
+            () => reject(init.signal?.reason),
+            { once: true }
+          )
+        })
     )
     const request = runSynchronousWorkshopRouter({
       contract: contractFor('bfl/flux-2-pro'),
@@ -342,18 +370,15 @@ describe('native Router requests', () => {
 
   it('stops a Router request after the run timeout', async () => {
     vi.useFakeTimers()
-    vi.stubGlobal(
-      'fetch',
-      vi.fn(
-        (_url: string | URL | Request, init?: RequestInit) =>
-          new Promise<Response>((_resolve, reject) => {
-            init?.signal?.addEventListener(
-              'abort',
-              () => reject(init.signal?.reason),
-              { once: true }
-            )
-          })
-      )
+    vi.mocked(globalThis.fetch).mockImplementation(
+      (_url: string | URL | Request, init?: RequestInit) =>
+        new Promise<Response>((_resolve, reject) => {
+          init?.signal?.addEventListener(
+            'abort',
+            () => reject(init.signal?.reason),
+            { once: true }
+          )
+        })
     )
     await Promise.all([
       expect(
@@ -390,8 +415,6 @@ describe('native Router requests', () => {
     })
     expect(read).not.toHaveBeenCalled()
 
-    const fetch = vi.fn()
-    vi.stubGlobal('fetch', fetch)
     await expect(
       runSynchronousWorkshopRouter({
         contract: contractFor('bfl/flux-2-pro'),
@@ -417,7 +440,7 @@ describe('native Router requests', () => {
   ])(
     'classifies $status / $bucket by the Router error bucket',
     async ({ status, bucket, reason }) => {
-      const requests = vi.fn<typeof fetch>().mockResolvedValue(
+      vi.mocked(fetch).mockResolvedValueOnce(
         new Response(null, {
           status,
           headers: {
@@ -426,7 +449,6 @@ describe('native Router requests', () => {
           }
         })
       )
-      vi.stubGlobal('fetch', requests)
       await expect(
         runSynchronousWorkshopRouter({
           contract: contractFor('bfl/flux-2-pro'),
@@ -436,18 +458,184 @@ describe('native Router requests', () => {
           signal: new AbortController().signal
         })
       ).rejects.toMatchObject({ reason, requestId: 'rejected' })
-      expect(requests).toHaveBeenCalledTimes(1)
+      expect(fetch).toHaveBeenCalledTimes(1)
     }
   )
 
+  it.for([
+    { status: 400, errorType: 'insufficient_credits', reason: 'noCredits' },
+    { status: 500, errorType: 'insufficient_credits', reason: 'noCredits' },
+    { status: 400, errorType: 'invalid_input', reason: 'validation' }
+  ])(
+    'classifies a $status whose body alone names $errorType',
+    async ({ status, errorType, reason }) => {
+      vi.mocked(fetch).mockResolvedValueOnce(
+        Response.json({ detail: 'refused', error_type: errorType }, { status })
+      )
+      await expect(
+        runSynchronousWorkshopRouter({
+          contract: contractFor('bfl/flux-2-pro'),
+          body: { prompt: 'Test' },
+          token: 'test-token',
+          idempotencyKey: 'one-key',
+          signal: new AbortController().signal
+        })
+      ).rejects.toMatchObject({ reason, response: { status, errorType } })
+    }
+  )
+
+  it.for([
+    {
+      provider: 'WAN',
+      status: 502,
+      bucket: 'provider_error',
+      body: {
+        code: 'DataInspectionFailed',
+        message:
+          'Green net check failed for text (input): Input data may contain inappropriate content.'
+      }
+    },
+    {
+      provider: 'OpenAI',
+      status: 400,
+      bucket: 'invalid_input',
+      body: {
+        error: {
+          message: 'Your request was rejected by the safety system.',
+          type: 'image_generation_user_error',
+          code: 'moderation_blocked'
+        }
+      }
+    },
+    {
+      provider: 'Runway',
+      status: 502,
+      bucket: 'provider_error',
+      body: {
+        status: 'FAILED',
+        failure: 'Input media did not pass content moderation.',
+        failureCode: 'SAFETY.INPUT.MULTIMODAL'
+      }
+    }
+  ])(
+    'classifies a $provider moderation payload as policy despite $bucket',
+    async ({ status, bucket, body }) => {
+      vi.mocked(fetch).mockResolvedValueOnce(
+        Response.json(body, {
+          status,
+          headers: {
+            'X-Comfy-Error-Type': bucket,
+            'X-Comfy-Request-Id': 'moderated-request'
+          }
+        })
+      )
+
+      await expect(
+        runSynchronousWorkshopRouter({
+          contract: contractFor('bfl/flux-2-pro'),
+          body: { prompt: 'Test' },
+          token: 'test-token',
+          idempotencyKey: 'one-key',
+          signal: new AbortController().signal
+        })
+      ).rejects.toMatchObject({
+        reason: 'policy',
+        requestId: 'moderated-request',
+        response: { status, errorType: bucket }
+      })
+      expect(fetch).toHaveBeenCalledTimes(1)
+    }
+  )
+
+  it('does not mistake a moderation service outage for a policy refusal', async () => {
+    vi.mocked(fetch).mockResolvedValueOnce(
+      Response.json(
+        {
+          code: 'ModerationServiceUnavailable',
+          message: 'The content moderation service is unavailable.'
+        },
+        {
+          status: 502,
+          headers: { 'X-Comfy-Error-Type': 'provider_error' }
+        }
+      )
+    )
+
+    await expect(
+      runSynchronousWorkshopRouter({
+        contract: contractFor('bfl/flux-2-pro'),
+        body: { prompt: 'Test' },
+        token: 'test-token',
+        idempotencyKey: 'one-key',
+        signal: new AbortController().signal
+      })
+    ).rejects.toMatchObject({ reason: 'provider' })
+  })
+
+  it.for([
+    [402, 'noCredits'],
+    [429, 'rateLimit'],
+    [409, 'conflict'],
+    [403, 'unavailable'],
+    [504, 'timeout']
+  ] as const)(
+    'keeps the status classification for a %i response with policy text',
+    async ([status, reason]) => {
+      vi.mocked(fetch).mockResolvedValueOnce(
+        Response.json(
+          {
+            code: 'content_filter',
+            message: 'Content policy violation'
+          },
+          { status }
+        )
+      )
+
+      await expect(
+        runSynchronousWorkshopRouter({
+          contract: contractFor('bfl/flux-2-pro'),
+          body: { prompt: 'Test' },
+          token: 'test-token',
+          idempotencyKey: 'one-key',
+          signal: new AbortController().signal
+        })
+      ).rejects.toMatchObject({ reason })
+    }
+  )
+
+  it.for([
+    'Input media did not pass content moderation.',
+    '<html>content_filter upstream failure</html>',
+    JSON.stringify({
+      code: 'content_filter',
+      padding: 'x'.repeat(20_000)
+    })
+  ])('does not classify an incomplete or non-JSON error body', async (body) => {
+    vi.mocked(fetch).mockResolvedValueOnce(
+      new Response(body, {
+        status: 502,
+        headers: { 'X-Comfy-Error-Type': 'provider_error' }
+      })
+    )
+
+    await expect(
+      runSynchronousWorkshopRouter({
+        contract: contractFor('bfl/flux-2-pro'),
+        body: { prompt: 'Test' },
+        token: 'test-token',
+        idempotencyKey: 'one-key',
+        signal: new AbortController().signal
+      })
+    ).rejects.toMatchObject({ reason: 'provider' })
+  })
+
   it('reports errors without silently retrying a paid request', async () => {
-    const fetch = vi.fn().mockResolvedValue(
+    vi.mocked(fetch).mockResolvedValueOnce(
       new Response(null, {
         status: 402,
         headers: { 'X-Comfy-Request-Id': 'failed-request' }
       })
     )
-    vi.stubGlobal('fetch', fetch)
     await expect(
       runSynchronousWorkshopRouter({
         contract: contractFor('bfl/flux-2-pro'),
@@ -482,12 +670,16 @@ describe('native Router requests', () => {
         { headers: { 'X-Comfy-Request-Id': 'collected' } }
       )
     ]
-    vi.stubGlobal('fetch', async (url: string, init: RequestInit) => {
-      requests.push(new Request(url, init))
-      const response = responses.shift()
-      if (!response) throw new Error('Unexpected Router request')
-      return response
-    })
+    vi.mocked(globalThis.fetch).mockImplementation(
+      async (input: RequestInfo | URL, init: RequestInit = {}) => {
+        const url = String(input)
+
+        requests.push(new Request(url, init))
+        const response = responses.shift()
+        if (!response) throw new Error('Unexpected Router request')
+        return response
+      }
+    )
     const result = await runSynchronousWorkshopRouter({
       contract: contractFor('bfl/flux-2-pro'),
       body: { prompt: 'Test', seed: 42 },
@@ -511,7 +703,7 @@ describe('native Router requests', () => {
   })
 
   it('stops collecting after the deadline budget and reports a timeout', async () => {
-    const fetch = vi.fn<typeof globalThis.fetch>(
+    vi.mocked(fetch).mockImplementation(
       async () =>
         new Response(null, {
           status: 504,
@@ -521,7 +713,6 @@ describe('native Router requests', () => {
           }
         })
     )
-    vi.stubGlobal('fetch', fetch)
     await expect(
       runSynchronousWorkshopRouter({
         contract: contractFor('bfl/flux-2-pro'),
@@ -535,14 +726,13 @@ describe('native Router requests', () => {
   })
 
   it('does not resend a provider timeout, which Router does not park', async () => {
-    const fetch = vi.fn<typeof globalThis.fetch>(
+    vi.mocked(fetch).mockImplementation(
       async () =>
         new Response(null, {
           status: 504,
           headers: { 'X-Comfy-Error-Type': 'provider_timeout' }
         })
     )
-    vi.stubGlobal('fetch', fetch)
     await expect(
       runSynchronousWorkshopRouter({
         contract: contractFor('bfl/flux-2-pro'),
@@ -557,8 +747,7 @@ describe('native Router requests', () => {
 
   it('waits out an in-flight conflict before asking for the same generation again', async () => {
     vi.useFakeTimers()
-    const fetch = vi
-      .fn<typeof globalThis.fetch>()
+    vi.mocked(fetch)
       .mockResolvedValueOnce(
         new Response(null, { status: 409, headers: { 'Retry-After': '2' } })
       )
@@ -569,7 +758,6 @@ describe('native Router requests', () => {
           result: { sample: 'https://assets.example/b.jpg' }
         })
       )
-    vi.stubGlobal('fetch', fetch)
     const request = runSynchronousWorkshopRouter({
       contract: contractFor('bfl/flux-2-pro'),
       body: { prompt: 'Test' },
@@ -588,8 +776,7 @@ describe('native Router requests', () => {
 
   it('finishes a Retry-After wait after a slow request exhausts its attempt window', async () => {
     vi.useFakeTimers({ shouldAdvanceTime: false })
-    const fetch = vi
-      .fn<typeof globalThis.fetch>()
+    vi.mocked(fetch)
       .mockImplementationOnce(
         () =>
           new Promise<Response>((resolve) =>
@@ -612,7 +799,6 @@ describe('native Router requests', () => {
           result: { sample: 'https://assets.example/late.jpg' }
         })
       )
-    vi.stubGlobal('fetch', fetch)
     const request = runSynchronousWorkshopRouter({
       contract: contractFor('bfl/flux-2-pro'),
       body: { prompt: 'Test' },
@@ -627,12 +813,14 @@ describe('native Router requests', () => {
       (async () => {
         await vi.advanceTimersByTimeAsync(660_999)
         expect(fetch).toHaveBeenCalledOnce()
-        expect(fetch.mock.lastCall?.[1]?.signal?.aborted).toBe(false)
+        expect(vi.mocked(fetch).mock.lastCall?.[1]?.signal?.aborted).toBe(false)
         await vi.advanceTimersByTimeAsync(1)
       })()
     ])
     expect(fetch).toHaveBeenCalledTimes(2)
-    expect(fetch.mock.calls[1]).toEqual(fetch.mock.calls[0])
+    expect(vi.mocked(fetch).mock.calls[1]).toEqual(
+      vi.mocked(fetch).mock.calls[0]
+    )
   })
 
   it('still stops a Retry-After wait at the total run deadline', async () => {
@@ -644,7 +832,7 @@ describe('native Router requests', () => {
       { delay: 659_000, status: 409 },
       { delay: 53_000, status: 409 }
     ]
-    const fetch = vi.fn<typeof globalThis.fetch>(() => {
+    vi.mocked(fetch).mockImplementation(() => {
       const response = responses.shift()
       if (!response) throw new Error('Unexpected Router request')
       return new Promise<Response>((resolve) =>
@@ -664,7 +852,6 @@ describe('native Router requests', () => {
         )
       )
     })
-    vi.stubGlobal('fetch', fetch)
     const request = runSynchronousWorkshopRouter({
       contract: contractFor('bfl/flux-2-pro'),
       body: { prompt: 'Test' },
@@ -677,7 +864,7 @@ describe('native Router requests', () => {
       (async () => {
         await vi.advanceTimersByTimeAsync(2_699_999)
         expect(fetch).toHaveBeenCalledTimes(5)
-        expect(fetch.mock.lastCall?.[1]?.signal?.aborted).toBe(false)
+        expect(vi.mocked(fetch).mock.lastCall?.[1]?.signal?.aborted).toBe(false)
         await vi.advanceTimersByTimeAsync(1)
       })()
     ])
@@ -693,8 +880,7 @@ describe('native Router requests', () => {
     async ({ advice, wait }) => {
       vi.useFakeTimers({ shouldAdvanceTime: false })
       vi.setSystemTime(new Date('2026-10-21T07:28:00Z'))
-      const fetch = vi
-        .fn<typeof globalThis.fetch>()
+      vi.mocked(fetch)
         .mockResolvedValueOnce(
           new Response(null, {
             status: 409,
@@ -708,7 +894,6 @@ describe('native Router requests', () => {
             result: { sample: 'https://assets.example/b.jpg' }
           })
         )
-      vi.stubGlobal('fetch', fetch)
       const request = runSynchronousWorkshopRouter({
         contract: contractFor('bfl/flux-2-pro'),
         body: { prompt: 'Test' },
@@ -727,20 +912,21 @@ describe('native Router requests', () => {
         })()
       ])
       expect(fetch).toHaveBeenCalledTimes(2)
-      expect(fetch.mock.calls[1]).toEqual(fetch.mock.calls[0])
+      expect(vi.mocked(fetch).mock.calls[1]).toEqual(
+        vi.mocked(fetch).mock.calls[0]
+      )
     }
   )
 
   it.for(['', '-1', 'not-a-date', 'Wed, 21 Oct 2020 07:28:00 GMT'])(
     'does not retry invalid or expired retry advice: %s',
     async (advice) => {
-      const fetch = vi.fn<typeof globalThis.fetch>().mockResolvedValue(
+      vi.mocked(fetch).mockResolvedValueOnce(
         new Response(null, {
           status: 409,
           headers: { 'Retry-After': advice }
         })
       )
-      vi.stubGlobal('fetch', fetch)
       await expect(
         runSynchronousWorkshopRouter({
           contract: contractFor('bfl/flux-2-pro'),
@@ -756,12 +942,9 @@ describe('native Router requests', () => {
 
   it('cancels during a retry wait without submitting again', async () => {
     vi.useFakeTimers({ shouldAdvanceTime: false })
-    const fetch = vi
-      .fn<typeof globalThis.fetch>()
-      .mockResolvedValue(
-        new Response(null, { status: 409, headers: { 'Retry-After': '10' } })
-      )
-    vi.stubGlobal('fetch', fetch)
+    vi.mocked(fetch).mockResolvedValueOnce(
+      new Response(null, { status: 409, headers: { 'Retry-After': '10' } })
+    )
     const controller = new AbortController()
     const request = runSynchronousWorkshopRouter({
       contract: contractFor('bfl/flux-2-pro'),
@@ -785,7 +968,7 @@ describe('native Router requests', () => {
   it('bounds slow collections and in-flight waits by one total deadline', async () => {
     vi.useFakeTimers({ shouldAdvanceTime: false })
     const responses = [504, 409, 504, 409, 504]
-    const fetch = vi.fn<typeof globalThis.fetch>(
+    vi.mocked(fetch).mockImplementation(
       (_url, init) =>
         new Promise<Response>((resolve, reject) => {
           const status = responses.shift() ?? 409
@@ -809,7 +992,6 @@ describe('native Router requests', () => {
           init?.signal?.addEventListener('abort', abort, { once: true })
         })
     )
-    vi.stubGlobal('fetch', fetch)
     const request = runSynchronousWorkshopRouter({
       contract: contractFor('bfl/flux-2-pro'),
       body: { prompt: 'Test' },
@@ -822,26 +1004,25 @@ describe('native Router requests', () => {
       (async () => {
         await vi.advanceTimersByTimeAsync(2_699_999)
         expect(fetch).toHaveBeenCalledTimes(5)
-        expect(fetch.mock.lastCall?.[1]?.signal?.aborted).toBe(false)
+        expect(vi.mocked(fetch).mock.lastCall?.[1]?.signal?.aborted).toBe(false)
         await vi.advanceTimersByTimeAsync(1)
       })()
     ])
     expect(
-      fetch.mock.calls.every(
-        ([, init]) =>
-          init?.body === '{"prompt":"Test"}' &&
-          new Headers(init.headers).get('Idempotency-Key') === 'same-key'
-      )
+      vi
+        .mocked(fetch)
+        .mock.calls.every(
+          ([, init]) =>
+            init?.body === '{"prompt":"Test"}' &&
+            new Headers(init.headers).get('Idempotency-Key') === 'same-key'
+        )
     ).toBe(true)
     await vi.advanceTimersByTimeAsync(600_000)
     expect(fetch).toHaveBeenCalledTimes(5)
   })
 
   it('does not resend a conflict that carries no retry advice', async () => {
-    const fetch = vi
-      .fn<typeof globalThis.fetch>()
-      .mockResolvedValue(new Response(null, { status: 409 }))
-    vi.stubGlobal('fetch', fetch)
+    vi.mocked(fetch).mockResolvedValueOnce(new Response(null, { status: 409 }))
     await expect(
       runSynchronousWorkshopRouter({
         contract: contractFor('bfl/flux-2-pro'),
@@ -859,7 +1040,9 @@ describe('native Router requests', () => {
       { status: 'Error' },
       { status: 'Ready', result: { sample: 'javascript:alert(1)' } }
     ]) {
-      vi.stubGlobal('fetch', vi.fn().mockResolvedValue(Response.json(data)))
+      vi.mocked(globalThis.fetch).mockImplementation(async () =>
+        Response.json(data)
+      )
       await expect(
         runSynchronousWorkshopRouter({
           contract: contractFor('bfl/flux-2-pro'),
@@ -868,7 +1051,11 @@ describe('native Router requests', () => {
           idempotencyKey: 'one-key',
           signal: new AbortController().signal
         })
-      ).rejects.toMatchObject({ reason: 'response', response: { status: 200 } })
+      ).rejects.toMatchObject({
+        reason: 'response',
+        response: { status: 200 },
+        cause: expect.any(Error)
+      })
     }
   })
 })

@@ -216,6 +216,13 @@ We've also included a list of recommended extensions in `.vscode/extensions.json
 
 Playwright tests verify the whole app. See [browser_tests/README.md](browser_tests/README.md) for details. The snapshots are generated in the GH actions runner, not locally.
 
+### Temporarily Disabled Tests
+
+Do not commit disabled tests or suites. Delete retired tests, and fix temporarily
+failing tests before merging. The lint rules reject Vitest `skip` and `todo`
+declarations, `skipIf` and `runIf` with a literal condition that disables the
+test, and Playwright `skip` declarations.
+
 ### Running All Tests
 
 Before submitting a PR, ensure all tests pass:
@@ -368,7 +375,7 @@ Starting PR Review
 1. Use comment threads for clarification
 2. Create a huddle or schedule a live review for complex discussions
 3. Escalate to team leads if discussion goes in circles
-4. Document recurring style conflicts in Coderabbit config or `CLAUDE.md`
+4. Document recurring style conflicts in Coderabbit config or `AGENTS.md`
 5. Defer to the author for pure personal preference items (but don't
    mislabel technical decisions as preference)
 

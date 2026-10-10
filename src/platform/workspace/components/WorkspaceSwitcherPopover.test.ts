@@ -1,8 +1,11 @@
 import { getActivePinia } from 'pinia'
 import { render, screen } from '@testing-library/vue'
+import userEvent from '@testing-library/user-event'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
+import { computed } from 'vue'
 import { createI18n } from 'vue-i18n'
 
+import { useBillingContext } from '@/composables/billing/useBillingContext'
 import { useTeamWorkspaceStore } from '@/platform/workspace/stores/teamWorkspaceStore'
 
 import WorkspaceSwitcherPopover from './WorkspaceSwitcherPopover.vue'
@@ -11,15 +14,7 @@ vi.mock(import('@/platform/workspace/composables/useWorkspaceSwitch'), () => ({
   useWorkspaceSwitch: () => ({ switchWorkspace: vi.fn() })
 }))
 
-const billingMocks = vi.hoisted(() => ({
-  subscription: {
-    value: null as { tier: string; duration: string } | null
-  }
-}))
-
-vi.mock<unknown>(import('@/composables/billing/useBillingContext'), () => ({
-  useBillingContext: () => ({ subscription: billingMocks.subscription })
-}))
+vi.mock(import('@/composables/billing/useBillingContext'))
 
 const distributionMocks = vi.hoisted(() => ({ isCloud: true }))
 
@@ -42,7 +37,9 @@ const i18n = createI18n({
           'Runs that use partner nodes spend credits from this workspace. Unlike on Cloud, every workspace saves to your usual output folder.',
         createWorkspace: 'Create a team workspace',
         maxWorkspacesReached:
-          'You can only own 10 workspaces. Delete one to create a new one.'
+          'You can only own 10 workspaces. Delete one to create a new one.',
+        managedByOrganization:
+          "Your organization manages your workspaces, so you can't create one."
       },
       subscription: {
         tiers: {
@@ -69,6 +66,8 @@ function createWorkspaceState(
     subscriptionTier: null,
     members: [],
     pendingInvites: [],
+    membersLoaded: true,
+    pendingInvitesLoaded: true,
     ...overrides
   }
 }
@@ -122,7 +121,9 @@ describe('WorkspaceSwitcherPopover', () => {
   })
 
   beforeEach(() => {
-    billingMocks.subscription.value = null
+    const billingContext = useBillingContext()
+    billingContext.subscription = computed(() => null)
+    vi.mocked(useBillingContext).mockReturnValue(billingContext)
     distributionMocks.isCloud = true
   })
 
@@ -190,7 +191,18 @@ describe('WorkspaceSwitcherPopover', () => {
   })
 
   it('does not render a tier badge on team workspace rows', () => {
-    billingMocks.subscription.value = { tier: 'PRO', duration: 'MONTHLY' }
+    useBillingContext().subscription = computed(() => ({
+      isActive: true,
+      tier: 'PRO',
+      duration: 'MONTHLY',
+      planSlug: null,
+      scheduledChange: null,
+      renewalDate: null,
+      endDate: null,
+      isCancelled: false,
+      hasFunds: true,
+      agentHasFunds: true
+    }))
 
     renderComponent({
       activeWorkspaceId: 'ws-team',
@@ -261,6 +273,19 @@ describe('WorkspaceSwitcherPopover', () => {
 
     const createWorkspaceButton = screen.getByText('Create a team workspace')
     expect(list).not.toContainElement(createWorkspaceButton)
+  })
+
+  it('says why creation is off when an organization manages the workspaces', async () => {
+    const store = useTeamWorkspaceStore()
+    store.$patch({ workspacesManagedByOrganization: true })
+    const { emitted } = renderComponent()
+
+    await userEvent.click(
+      screen.getByText(/Your organization manages your workspaces/)
+    )
+
+    expect(screen.queryByText('Create a team workspace')).toBeNull()
+    expect(emitted().create).toBeUndefined()
   })
 
   it('hides the create-workspace footer on non-cloud distributions', () => {

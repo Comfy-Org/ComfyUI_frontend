@@ -1,109 +1,111 @@
 <template>
   <div
     ref="container"
-    :class="[
-      'tree-node',
-      {
-        'can-drop': canDrop,
-        'tree-folder': !props.node.leaf,
-        'tree-leaf': props.node.leaf
-      }
-    ]"
+    :class="
+      cn(
+        'tree-node flex w-full items-center justify-between rounded-sm',
+        canDrop && 'ring-1 ring-base-foreground ring-inset'
+      )
+    "
     :data-testid="`tree-node-${node.key}`"
   >
-    <div class="node-content">
-      <span class="node-label">
-        <slot name="before-label" :node="props.node" />
+    <div class="node-content flex min-w-0 flex-1 items-center">
+      <span class="node-label block min-w-0 truncate">
+        <slot name="before-label" :node="node" />
         <EditableText
           :model-value="node.label"
           :is-editing="isEditing"
           @edit="handleRename"
         />
-        <slot name="after-label" :node="props.node" />
+        <slot name="after-label" :node="node" />
       </span>
       <Badge
         v-if="showNodeBadgeText"
-        :value="nodeBadgeText"
+        variant="badge"
         severity="secondary"
-        class="leaf-count-badge"
-      />
+        class="ml-2"
+        data-testid="tree-leaf-count"
+      >
+        {{ nodeBadgeText }}
+      </Badge>
     </div>
     <div
-      class="node-actions flex gap-1 motion-safe:opacity-0 motion-safe:group-hover/tree-node:opacity-100 touch:opacity-100"
+      class="node-actions flex gap-1 motion-safe:opacity-0 motion-safe:group-focus-within/tree-node:opacity-100 motion-safe:group-hover/tree-node:opacity-100 touch:opacity-100"
     >
-      <slot name="actions" :node="props.node" />
+      <slot name="actions" :node="node" />
     </div>
   </div>
 </template>
 
 <script setup lang="ts" generic="T">
 import { setCustomNativeDragPreview } from '@atlaskit/pragmatic-drag-and-drop/element/set-custom-native-drag-preview'
-import Badge from 'primevue/badge'
 import { computed, inject, ref } from 'vue'
 
+import { cn } from '@comfyorg/tailwind-utils'
+
 import EditableText from '@/components/common/EditableText.vue'
+import Badge from '@/components/ui/badge/Badge.vue'
 import {
   usePragmaticDraggable,
   usePragmaticDroppable
 } from '@/composables/usePragmaticDragAndDrop'
-import { InjectKeyHandleEditLabelFunction } from '@/types/treeExplorerTypes'
+import {
+  InjectKeyExpandedKeys,
+  InjectKeyHandleEditLabelFunction
+} from '@/types/treeExplorerTypes'
 import type {
   RenderedTreeExplorerNode,
   TreeExplorerDragAndDropData
 } from '@/types/treeExplorerTypes'
 
-const props = defineProps<{
+const { node } = defineProps<{
   node: RenderedTreeExplorerNode<T>
 }>()
 
 const emit = defineEmits<{
-  (
-    e: 'itemDropped',
-    node: RenderedTreeExplorerNode<T>,
-    data: RenderedTreeExplorerNode<T>
-  ): void
   (e: 'dragStart', node: RenderedTreeExplorerNode<T>): void
   (e: 'dragEnd', node: RenderedTreeExplorerNode<T>): void
 }>()
 
 const nodeBadgeText = computed<string>(() => {
-  if (props.node.leaf) {
+  if (node.leaf) {
     return ''
   }
-  if (props.node.badgeText !== undefined && props.node.badgeText !== null) {
-    return props.node.badgeText
+  if (node.badgeText !== undefined && node.badgeText !== null) {
+    return node.badgeText
   }
-  return props.node.totalLeaves.toString()
+  return node.totalLeaves.toString()
 })
 const showNodeBadgeText = computed<boolean>(() => nodeBadgeText.value !== '')
 
-const isEditing = computed<boolean>(() => props.node.isEditingLabel ?? false)
+const isEditing = computed<boolean>(() => node.isEditingLabel ?? false)
 const handleEditLabel = inject(InjectKeyHandleEditLabelFunction)
+const expandedKeys = inject(InjectKeyExpandedKeys)
 const handleRename = (newName: string) => {
-  handleEditLabel?.(props.node as RenderedTreeExplorerNode, newName)
+  handleEditLabel?.(node as RenderedTreeExplorerNode, newName)
 }
 
 const container = ref<HTMLElement | null>(null)
 const canDrop = ref(false)
 
 const treeNodeElementGetter = () =>
-  container.value?.closest('.p-tree-node-content') as HTMLElement
+  container.value?.closest<HTMLElement>('.tree-explorer-item') ?? null
 
-if (props.node.draggable) {
+if (node.draggable) {
   usePragmaticDraggable(treeNodeElementGetter, {
     getInitialData: () => {
       return {
         type: 'tree-explorer-node',
-        data: props.node
+        data: node
       }
     },
-    onDragStart: () => emit('dragStart', props.node),
-    onDrop: () => emit('dragEnd', props.node),
-    onGenerateDragPreview: props.node.renderDragPreview
+    onDragStart: () => emit('dragStart', node),
+    onDrop: () => emit('dragEnd', node),
+    onGenerateDragPreview: node.renderDragPreview
       ? ({ nativeSetDragImage }) => {
           setCustomNativeDragPreview({
             render: ({ container }) => {
-              return props.node.renderDragPreview?.(container)
+              return node.renderDragPreview?.(container)
             },
             nativeSetDragImage
           })
@@ -112,18 +114,16 @@ if (props.node.draggable) {
   })
 }
 
-if (props.node.droppable) {
+if (node.droppable) {
   usePragmaticDroppable(treeNodeElementGetter, {
     onDrop: async (event) => {
       const dndData = event.source.data as TreeExplorerDragAndDropData
       if (dndData.type === 'tree-explorer-node') {
-        await props.node.handleDrop?.(dndData as TreeExplorerDragAndDropData<T>)
+        await node.handleDrop?.(dndData as TreeExplorerDragAndDropData<T>)
         canDrop.value = false
-        emit(
-          'itemDropped',
-          props.node,
-          dndData.data as RenderedTreeExplorerNode<T>
-        )
+        if (expandedKeys) {
+          expandedKeys.value = { ...expandedKeys.value, [node.key]: true }
+        }
       }
     },
     onDragEnter: (event) => {
@@ -138,26 +138,3 @@ if (props.node.droppable) {
   })
 }
 </script>
-
-<style scoped>
-.tree-node {
-  width: 100%;
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-}
-.leaf-count-badge {
-  margin-left: 0.5rem;
-}
-.node-content {
-  display: flex;
-  align-items: center;
-  flex-grow: 1;
-}
-.leaf-label {
-  margin-left: 0.5rem;
-}
-:deep(.editable-text span) {
-  word-break: break-all;
-}
-</style>

@@ -9,6 +9,7 @@
  * row that starts a drag carrying nothing.
  */
 import { getMediaTypeFromFilename } from '@/utils/formatUtil'
+import { api } from '@/scripts/api'
 
 import { getAssetType } from '../composables/media/assetMappers'
 import { getOutputAssetMetadata } from '../schemas/assetMetadataSchema'
@@ -17,6 +18,39 @@ import { MIME_ASSET_INFO } from '../schemas/mediaAssetSchema'
 import { getAssetUrlFilename } from './assetMetadataUtils'
 import { resolvePreviewUrl } from './assetPreviewUtil'
 import { getAssetFileUrl } from './assetUrlUtil'
+
+function resolveThumbnailUrl(url: string): URL | null {
+  const source =
+    URL.canParse(url) || url.startsWith('//') ? url : api.apiURL(url)
+  return URL.parse(source, location.href)
+}
+
+function assetMediaSources(asset: AssetItem) {
+  const mediaKind = getMediaTypeFromFilename(asset.name)
+  const previewUrl = URL.parse(resolvePreviewUrl(asset), location.href)
+  const playable = mediaKind === 'video' || mediaKind === 'audio'
+  const mediaUrl = playable
+    ? URL.parse(
+        getAssetFileUrl(asset, { disposition: 'inline' }),
+        location.href
+      )
+    : undefined
+  const posterUrl = asset.preview_id
+    ? previewUrl
+    : asset.thumbnail_url && asset.thumbnail_url !== asset.preview_url
+      ? resolveThumbnailUrl(asset.thumbnail_url)
+      : undefined
+  return {
+    media_kind: mediaKind,
+    preview_url:
+      mediaKind === 'image'
+        ? previewUrl?.toString()
+        : mediaKind === 'video'
+          ? posterUrl?.toString()
+          : undefined,
+    media_url: mediaUrl?.toString()
+  }
+}
 
 /**
  * Start a native drag carrying `asset`.
@@ -43,9 +77,6 @@ export function startAssetDrag(
   if (!dataTransfer) return
 
   const output = getOutputAssetMetadata(asset.user_metadata)?.allOutputs?.[0]
-  const mediaKind = getMediaTypeFromFilename(asset.name)
-  const previewUrl = URL.parse(resolvePreviewUrl(asset), location.href)
-  const fileUrl = URL.parse(getAssetFileUrl(asset), location.href)
   const assetInfo = {
     ...(output?.filename
       ? {
@@ -57,15 +88,15 @@ export function startAssetDrag(
       : {
           filename: asset.name,
           type: getAssetType(asset.tags),
-          display_name: asset.display_name
+          display_name: asset.display_name ?? undefined
         }),
     attachment_ref: getAssetUrlFilename(asset),
-    media_kind: mediaKind,
-    preview_url: mediaKind === 'image' ? previewUrl?.toString() : undefined
+    ...assetMediaSources(asset)
   }
-  dataTransfer.items.add(JSON.stringify(assetInfo), MIME_ASSET_INFO)
+  dataTransfer.setData(MIME_ASSET_INFO, JSON.stringify(assetInfo))
 
+  const fileUrl = URL.parse(getAssetFileUrl(asset), location.href)
   if (!fileUrl) return
 
-  dataTransfer.items.add(fileUrl.toString(), 'text/uri-list')
+  dataTransfer.setData('text/uri-list', fileUrl.toString())
 }

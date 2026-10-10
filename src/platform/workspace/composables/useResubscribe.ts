@@ -1,4 +1,4 @@
-import { useToast } from 'primevue/usetoast'
+import { useToast } from '@/components/ui/toast/toastStore'
 import { ref } from 'vue'
 import { useI18n } from 'vue-i18n'
 
@@ -25,6 +25,8 @@ export function useResubscribe() {
     if (!canReactivatePlan.value) return
 
     const source = 'settings_billing_panel' as const
+    const startedAt = Date.now()
+    const isWorkspaceResubscribe = shouldUseWorkspaceBilling.value
 
     useTelemetry()?.trackResubscribeClicked({ source })
     // Emitted before the awaited call so a failure always has a preceding
@@ -44,19 +46,16 @@ export function useResubscribe() {
       // tab, which isn't terminal — its `succeeded` is emitted later, from
       // useSubscription.ts's pending-checkout recovery, once a status poll
       // confirms the payment actually went through.
-      if (shouldUseWorkspaceBilling.value) {
+      if (isWorkspaceResubscribe) {
         useTelemetry()?.trackBillingEvent({
           operation: 'resubscribe',
           stage: 'succeeded',
           outcome: 'success',
-          source
+          source,
+          duration_ms: Date.now() - startedAt
         })
       }
-      toast.add({
-        severity: 'success',
-        summary: t('subscription.resubscribeSuccess'),
-        life: 5000
-      })
+      toast.success(t('subscription.resubscribeSuccess'), { duration: 5000 })
     } catch (error) {
       const detail =
         error instanceof Error && error.message.trim()
@@ -67,13 +66,12 @@ export function useResubscribe() {
         stage: 'failed',
         outcome: 'failure',
         source,
-        failure_category: categorizeBillingApiError(error)
+        failure_category: categorizeBillingApiError(error),
+        ...(isWorkspaceResubscribe && {
+          duration_ms: Date.now() - startedAt
+        })
       })
-      toast.add({
-        severity: 'error',
-        summary: t('g.error'),
-        detail
-      })
+      toast.error(t('g.error'), { description: detail })
     } finally {
       isResubscribing.value = false
     }

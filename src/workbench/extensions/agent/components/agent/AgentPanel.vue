@@ -1,18 +1,20 @@
 <script setup lang="ts">
-import {
-  DropdownMenuContent,
-  DropdownMenuItem,
-  DropdownMenuPortal,
-  DropdownMenuRoot,
-  DropdownMenuSeparator,
-  DropdownMenuTrigger
-} from 'reka-ui'
-import { computed, nextTick, ref } from 'vue'
+import { storeToRefs } from 'pinia'
+import { computed, nextTick, onScopeDispose, ref, watch } from 'vue'
 import { useI18n } from 'vue-i18n'
 
 import Button from '@/components/ui/button/Button.vue'
 import Input from '@/components/ui/input/Input.vue'
+import Menu from '@/components/ui/menu/Menu.vue'
+import type { MenuItem } from '@/components/ui/menu/types'
 import { buildTooltipConfig } from '@/composables/useTooltipConfig'
+import type {
+  AgentFreeUseNoticeMetadata,
+  AgentPaywallSurface,
+  AgentStarterPromptAssignment,
+  AgentStopMethod
+} from '@/platform/telemetry/types'
+import type { FreeUseVariant } from '../../experiments/freeUsePlacement'
 
 import type { ActiveTab } from '../../types/activeTab'
 import type {
@@ -21,7 +23,7 @@ import type {
   WorkflowReferenceOption
 } from '../../types/workflowReference'
 import type { TurnId } from '../../schemas/agentApiSchema'
-import type { ComposerAttachment } from '../../composables/agent/useComposer'
+import type { ComposerAttachment } from '../../types/composerAttachment'
 import type { SelectedNode } from '../../composables/agent/useCanvasSelection'
 import { DEFAULT_AGENT_PAYWALL_PRESENTATION } from '@/workbench/extensions/agent/services/agent/agentPaywallPresentation'
 import type {
@@ -30,15 +32,20 @@ import type {
 } from '@/workbench/extensions/agent/services/agent/agentPaywallPresentation'
 import type { ConversationEntry } from '../../stores/agent/agentConversationStore'
 import type { HistoryGroups } from '../../stores/agent/agentChatHistoryStore'
+import { useAgentPanelStore } from '../../stores/agent/agentPanelStore'
+import type { AgentPanelView } from '../../stores/agent/agentPanelStore'
+import { deriveSessionTitle } from '../../utils/sessionTitle'
 
 import AgentFeedbackCaption from './AgentFeedbackCaption.vue'
 import ChatHistoryScreen from './ChatHistoryScreen.vue'
 import Composer from './Composer.vue'
 import ConversationView from './ConversationView.vue'
 import EmptyState from './EmptyState.vue'
+import FreeUseNotice from './FreeUseNotice.vue'
 import PanelHeader from './PanelHeader.vue'
 import RunNoticeBanner from './RunNoticeBanner.vue'
 import WorkflowSelectorChip from './composer/WorkflowSelectorChip.vue'
+import AgentPaywallCard from './message/AgentPaywallCard.vue'
 
 const {
   entries,
@@ -57,16 +64,24 @@ const {
   activeTab = null,
   workflowTabs = [],
   visibleTabPath = null,
+  followsVisibleWorkflow = false,
   selectingTabPath = null,
   selectTab = async () => false,
   workflowDetached = false,
+  targetUnavailable = false,
   getMentionNodes = () => [],
   paywallPresentation = DEFAULT_AGENT_PAYWALL_PRESENTATION,
+  creditsExhausted = false,
   sessionId = null,
+  currentChatReady = false,
   customTitle,
   historyGroups,
+  selectHistory = async () => false,
   editableTurnId = null,
-  answeringAskIds = new Set<string>()
+  answeringAskIds = new Set<string>(),
+  freeUsePlacement = 'control',
+  starterPromptAssignment = 'control',
+  attributeStarterPromptExperiment = false
 } = defineProps<{
   entries: ConversationEntry[]
   userName?: string
@@ -86,16 +101,29 @@ const {
   activeTab?: ActiveTab | null
   workflowTabs?: ActiveTab[]
   visibleTabPath?: string | null
+  followsVisibleWorkflow?: boolean
   selectingTabPath?: string | null
   selectTab?: (path: string) => Promise<boolean>
   workflowDetached?: boolean
+  targetUnavailable?: boolean
   getMentionNodes?: () => SelectedNode[]
   paywallPresentation?: AgentPaywallPresentation
+  /**
+   * The workspace is out of credits right now, and no inline paywall card is
+   * already on screen saying so. Renders the standing surface beside the
+   * composer; see AgentPanelRoot's `creditsExhausted` for why it exists.
+   */
+  creditsExhausted?: boolean
   sessionId?: string | null
+  currentChatReady?: boolean
   customTitle?: string
   historyGroups: HistoryGroups
+  selectHistory?: (id: string, isCurrent: () => boolean) => Promise<boolean>
   editableTurnId?: TurnId | null
   answeringAskIds?: ReadonlySet<string>
+  freeUsePlacement?: FreeUseVariant
+  starterPromptAssignment?: AgentStarterPromptAssignment
+  attributeStarterPromptExperiment?: boolean
 }>()
 const emit = defineEmits<{
   send: [
@@ -103,8 +131,9 @@ const emit = defineEmits<{
     attachments: ComposerAttachment[],
     workflowReferences?: WorkflowReference[]
   ]
-  stop: []
+  stop: [method: AgentStopMethod]
   attach: []
+  attachFiles: [files: File[]]
   openAssets: []
   selectNodes: []
   removeTag: [id: string]
@@ -112,34 +141,133 @@ const emit = defineEmits<{
   requestWorkflowReferences: []
   removeWorkflowReference: [id: string]
   feedback: [turnId: string, vote: 'up' | 'down' | null]
-  paywallAction: [action: AgentPaywallAction]
+  paywallAction: [action: AgentPaywallAction, surface: AgentPaywallSurface]
+  standingPaywallShown: []
   newChat: []
+  startTour: []
   toggleSize: []
   close: []
   openHistory: []
-  selectHistory: [id: string]
   deleteHistory: [id: string]
   copyHistory: [id: string]
   renameHistory: [id: string, title: string]
   renameChat: [title: string]
   answerAsk: [askId: string, selection: 'run' | 'cancel']
-  openWorkflow: [workflowId: string, workflowName?: string]
+  openWorkflow: [askId: string, workflowId: string, workflowName?: string]
+  approvalShown: [askId: string, turnId: string, workflowId: string | null]
   openReferenceWorkflow: [workflowId: string, workflowName: string]
+  showTarget: []
+  freeUseNotice: [metadata: AgentFreeUseNoticeMetadata]
+  starterPromptRendered: [assignment: AgentStarterPromptAssignment]
 }>()
 
-const showHistory = ref(false)
+const targetNotice = computed(() => {
+  if (targetUnavailable) return 'unavailable'
+  if (workflowDetached || activeTab === null) return undefined
+  if (visibleTabPath !== null && visibleTabPath !== activeTab.path)
+    return 'mismatch'
+  return followsVisibleWorkflow ? 'following' : undefined
+})
+
+const panelStore = useAgentPanelStore()
+const { view } = storeToRefs(panelStore)
+const showHistory = computed(() => view.value.screen === 'history')
+const loadingHistoryId = computed(() =>
+  view.value.screen === 'history' && view.value.selection.status === 'loading'
+    ? view.value.selection.id
+    : null
+)
+const failedHistoryId = computed(() =>
+  view.value.screen === 'history' && view.value.selection.status === 'failed'
+    ? view.value.selection.id
+    : null
+)
+onScopeDispose(panelStore.interruptHistorySelection)
+
+watch(
+  [showHistory, () => creditsExhausted],
+  ([historyVisible, exhausted]) => {
+    if (!historyVisible && exhausted) emit('standingPaywallShown')
+  },
+  { immediate: true }
+)
 
 function onNewChat(): void {
-  showHistory.value = false
+  view.value = { screen: 'chat' }
   emit('newChat')
 }
 function onOpenHistory(): void {
-  showHistory.value = true
+  view.value = {
+    screen: 'history',
+    previousThreadId: sessionId,
+    selection: { status: 'idle' }
+  }
   emit('openHistory')
 }
-function onSelectHistory(id: string): void {
-  showHistory.value = false
-  emit('selectHistory', id)
+async function onSelectHistory(id: string): Promise<void> {
+  if (view.value.screen !== 'history' || loadingHistoryId.value === id) return
+  const opening: AgentPanelView = {
+    ...view.value,
+    selection: { status: 'loading', id }
+  }
+  view.value = opening
+  const isCurrent = () => view.value === opening
+  let opened = false
+  try {
+    opened = await selectHistory(id, isCurrent)
+  } finally {
+    if (isCurrent())
+      view.value = opened
+        ? { screen: 'chat' }
+        : { ...opening, selection: { status: 'failed', id } }
+  }
+}
+
+function onBackFromHistory(): void {
+  if (view.value.screen !== 'history') return
+  if (
+    sessionId === view.value.previousThreadId &&
+    (view.value.selection.status === 'idle' || currentChatReady)
+  )
+    view.value = { screen: 'chat' }
+  else if (view.value.previousThreadId === null) onNewChat()
+  else void onSelectHistory(view.value.previousThreadId)
+}
+
+function onDeleteHistory(id: string): void {
+  if (
+    view.value.screen === 'history' &&
+    (view.value.previousThreadId === id ||
+      (view.value.selection.status !== 'idle' &&
+        view.value.selection.id === id))
+  )
+    view.value = {
+      ...view.value,
+      previousThreadId:
+        view.value.previousThreadId === id ? null : view.value.previousThreadId,
+      selection: { status: 'idle' }
+    }
+  emit('deleteHistory', id)
+}
+
+const chatMenuItems = computed<MenuItem[]>(() => [
+  {
+    label: t('g.rename'),
+    icon: 'icon-[lucide--pencil]',
+    command: startRename
+  },
+  { separator: true },
+  {
+    label: t('g.delete'),
+    icon: 'icon-[lucide--trash-2]',
+    variant: 'destructive',
+    command: onDeleteChat
+  }
+])
+
+function onClose(): void {
+  panelStore.interruptHistorySelection()
+  emit('close')
 }
 
 const composerRef = ref<InstanceType<typeof Composer>>()
@@ -151,14 +279,7 @@ function onWorkflowTargetRequired(): void {
 
 const { t } = useI18n()
 
-const sessionTitle = computed(() => {
-  if (customTitle) return customTitle
-  const firstUser = entries.find(
-    (entry): entry is Extract<ConversationEntry, { role: 'user' }> =>
-      entry.role === 'user'
-  )
-  return firstUser?.text.trim().slice(0, 60) || undefined
-})
+const sessionTitle = computed(() => customTitle || deriveSessionTitle(entries))
 
 const renaming = ref(false)
 const renameDraft = ref('')
@@ -203,8 +324,8 @@ function onDeleteChat(): void {
   if (sessionId !== null) emit('deleteHistory', sessionId)
 }
 
-function addAttachment(attachment: ComposerAttachment): void {
-  composerRef.value?.addAttachment(attachment)
+function addAttachment(attachment: ComposerAttachment): boolean {
+  return composerRef.value?.addAttachment(attachment) ?? false
 }
 
 function updateAttachment(
@@ -237,17 +358,26 @@ defineExpose({ addAttachment, updateAttachment, removeAttachment })
     <PanelHeader
       :is-maximized
       @new-chat="onNewChat"
+      @start-tour="emit('startTour')"
       @toggle-size="emit('toggleSize')"
-      @close="emit('close')"
+      @close="onClose"
+    />
+
+    <FreeUseNotice
+      v-if="!showHistory && freeUsePlacement === 'top-banner'"
+      placement="top-banner"
+      @notice="emit('freeUseNotice', $event)"
     />
 
     <template v-if="showHistory">
       <ChatHistoryScreen
         :groups="historyGroups"
+        :loading-id="loadingHistoryId"
+        :failed-id="failedHistoryId"
         class="min-h-0 flex-1"
-        @back="showHistory = false"
+        @back="onBackFromHistory"
         @select="onSelectHistory"
-        @delete="emit('deleteHistory', $event)"
+        @delete="onDeleteHistory"
         @copy-markdown="emit('copyHistory', $event)"
         @rename="(id, title) => emit('renameHistory', id, title)"
       />
@@ -257,12 +387,12 @@ defineExpose({ addAttachment, updateAttachment, removeAttachment })
       <div class="flex h-10 shrink-0 items-center px-2">
         <Button
           id="agent-chat-history"
-          v-tooltip.bottom="buildTooltipConfig(t('agent.showChatHistory'))"
+          v-tooltip.right="buildTooltipConfig(t('agent.showChatHistory'))"
           type="button"
           variant="muted-textonly"
           size="icon-sm"
           :aria-label="t('agent.showChatHistory')"
-          class="size-6 shrink-0"
+          class="size-6 shrink-0 data-coach-hover:bg-secondary-background-hover"
           @click="onOpenHistory"
         >
           <span class="icon-[lucide--history] size-4 shrink-0" />
@@ -297,8 +427,15 @@ defineExpose({ addAttachment, updateAttachment, removeAttachment })
               sessionTitle || t('agent.newChatTitle')
             }}</span>
           </Button>
-          <DropdownMenuRoot v-if="sessionId">
-            <DropdownMenuTrigger as-child>
+          <Menu
+            v-if="sessionId"
+            :items="chatMenuItems"
+            side="bottom"
+            align="start"
+            :side-offset="4"
+            class="agent-scope"
+          >
+            <template #trigger>
               <Button
                 v-tooltip.bottom="buildTooltipConfig(t('agent.chatOptions'))"
                 variant="muted-textonly"
@@ -308,34 +445,8 @@ defineExpose({ addAttachment, updateAttachment, removeAttachment })
               >
                 <span class="icon-[lucide--chevron-down] size-3" />
               </Button>
-            </DropdownMenuTrigger>
-            <DropdownMenuPortal>
-              <DropdownMenuContent
-                side="bottom"
-                align="start"
-                :side-offset="4"
-                class="agent-scope z-1100 flex h-16 w-32 flex-col gap-1 rounded-xl bg-secondary-background p-1 shadow-lg"
-              >
-                <DropdownMenuItem
-                  class="flex h-6 w-full shrink-0 cursor-pointer items-center gap-1.5 rounded-lg px-1.5 py-1 text-xs text-base-foreground outline-none data-highlighted:bg-secondary-background-hover"
-                  @select="startRename"
-                >
-                  <span class="icon-[lucide--pencil] size-4 shrink-0" />
-                  <span class="truncate">{{ t('g.rename') }}</span>
-                </DropdownMenuItem>
-                <DropdownMenuSeparator
-                  class="relative h-0 w-full shrink-0 before:absolute before:inset-x-0 before:top-0 before:h-px before:bg-component-node-border"
-                />
-                <DropdownMenuItem
-                  class="flex h-6 w-full shrink-0 cursor-pointer items-center gap-1.5 rounded-lg px-1.5 py-1 text-xs text-base-foreground outline-none data-highlighted:bg-secondary-background-hover data-highlighted:text-destructive-background"
-                  @select="onDeleteChat"
-                >
-                  <span class="icon-[lucide--trash-2] size-4 shrink-0" />
-                  <span class="truncate">{{ t('g.delete') }}</span>
-                </DropdownMenuItem>
-              </DropdownMenuContent>
-            </DropdownMenuPortal>
-          </DropdownMenuRoot>
+            </template>
+          </Menu>
         </div>
       </div>
 
@@ -343,11 +454,19 @@ defineExpose({ addAttachment, updateAttachment, removeAttachment })
         <EmptyState
           v-if="!entries.length"
           :user-name
-          @insert="composerRef?.insert($event)"
+          :assignment="starterPromptAssignment"
+          :attribute-experiment="attributeStarterPromptExperiment"
+          @rendered="emit('starterPromptRendered', $event)"
+          @insert="
+            (text, prompt) => {
+              composerRef?.insert(text, prompt)
+            }
+          "
         />
         <ConversationView
           v-else
           :entries
+          :conversation-id="sessionId"
           :editable-turn-id
           :answering-ask-ids
           :paywall-presentation
@@ -356,15 +475,19 @@ defineExpose({ addAttachment, updateAttachment, removeAttachment })
           @answer-ask="
             (askId, selection) => emit('answerAsk', askId, selection)
           "
+          @approval-shown="
+            (askId, turnId, workflowId) =>
+              emit('approvalShown', askId, turnId, workflowId)
+          "
           @open-workflow="
-            (workflowId, workflowName) =>
-              emit('openWorkflow', workflowId, workflowName)
+            (askId, workflowId, workflowName) =>
+              emit('openWorkflow', askId, workflowId, workflowName)
           "
           @open-reference-workflow="
             (workflowId, workflowName) =>
               emit('openReferenceWorkflow', workflowId, workflowName)
           "
-          @paywall-action="emit('paywallAction', $event)"
+          @paywall-action="emit('paywallAction', $event, 'refused_send')"
         />
       </div>
     </template>
@@ -373,9 +496,22 @@ defineExpose({ addAttachment, updateAttachment, removeAttachment })
       <slot name="instrument" />
       <footer class="shrink-0 py-3">
         <div class="mx-auto flex w-full max-w-[640px] flex-col gap-4 px-4">
+          <AgentPaywallCard
+            v-if="creditsExhausted"
+            data-testid="agent-credits-exhausted-paywall"
+            :presentation="paywallPresentation"
+            @paywall-action="emit('paywallAction', $event, 'credits_exhausted')"
+          />
           <RunNoticeBanner
             :expanded="isMaximized"
             :workflow-name="workflowDetached ? undefined : activeTab?.name"
+            :context="targetNotice"
+            @show-target="emit('showTarget')"
+          />
+          <FreeUseNotice
+            v-if="freeUsePlacement === 'near-composer'"
+            placement="near-composer"
+            @notice="emit('freeUseNotice', $event)"
           />
           <Composer
             ref="composerRef"
@@ -392,8 +528,9 @@ defineExpose({ addAttachment, updateAttachment, removeAttachment })
             :workflow-selecting="selectingTabPath !== null || savingReference"
             :get-mention-nodes
             @send="onComposerSend"
-            @stop="emit('stop')"
+            @stop="emit('stop', $event)"
             @attach="emit('attach')"
+            @attach-files="emit('attachFiles', $event)"
             @open-assets="emit('openAssets')"
             @select-nodes="emit('selectNodes')"
             @remove-tag="emit('removeTag', $event)"
@@ -416,6 +553,20 @@ defineExpose({ addAttachment, updateAttachment, removeAttachment })
                 :select-tab
                 :detached="workflowDetached"
                 :disabled="streaming || submitting || savingReference"
+              />
+            </template>
+            <template #aboveInput>
+              <FreeUseNotice
+                v-if="freeUsePlacement === 'above-input'"
+                placement="above-input"
+                @notice="emit('freeUseNotice', $event)"
+              />
+            </template>
+            <template #insideInput>
+              <FreeUseNotice
+                v-if="freeUsePlacement === 'inside-input'"
+                placement="inside-input"
+                @notice="emit('freeUseNotice', $event)"
               />
             </template>
           </Composer>

@@ -1,40 +1,21 @@
 import userEvent from '@testing-library/user-event'
 import { render, screen, waitFor, within } from '@testing-library/vue'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
-import { ref } from 'vue'
 
 import { i18n } from '@/i18n'
-import { useToastStore } from '@/platform/updates/common/toastStore'
+import { useToast } from '@/components/ui/toast/toastStore'
+import { api } from '@/scripts/api'
 
 import type { ReplyAsset } from '../../../utils/replyAssets'
 import MessageFeedback from './MessageFeedback.vue'
 
-const clipboard = vi.hoisted(() => ({ copy: vi.fn() }))
+vi.mock(import('@/platform/telemetry/reportError'))
 
-vi.mock(import('@/platform/telemetry/reportError'), () => ({
-  reportError: vi.fn()
-}))
-
-const fetchApi = vi.hoisted(() => vi.fn())
-vi.mock<unknown>(import('@/scripts/api'), () => ({
-  api: {
-    apiURL: (route: string) => '/api' + route,
-    fetchApi
-  }
-}))
+vi.mock(import('@/scripts/api'))
 
 vi.mock(import('@/platform/assets/utils/assetPreviewUtil'), () => ({
   isAssetPreviewSupported: () => false,
   findOutputAsset: async () => undefined
-}))
-
-vi.mock<unknown>(import('@vueuse/core'), () => ({
-  useClipboard: () => ({
-    copy: clipboard.copy,
-    copied: ref(false),
-    isSupported: ref(true),
-    text: ref('')
-  })
 }))
 
 const markdownSource = '# Title\n\n**bold** move'
@@ -50,6 +31,7 @@ function renderFeedback(assets?: ReplyAsset[]) {
 
 describe('MessageFeedback', () => {
   beforeEach(() => {
+    vi.mocked(api.apiURL).mockImplementation((route) => '/api' + route)
     vi.stubGlobal(
       'ResizeObserver',
       class {
@@ -58,8 +40,7 @@ describe('MessageFeedback', () => {
         disconnect() {}
       }
     )
-    clipboard.copy.mockClear()
-    fetchApi.mockReset()
+    vi.mocked(api.fetchApi).mockReset()
   })
 
   it('emits the vote, then null when the same vote is clicked again', async () => {
@@ -111,7 +92,7 @@ describe('MessageFeedback', () => {
 
     await user.click(screen.getByRole('button', { name: 'Copy' }))
 
-    expect(clipboard.copy).toHaveBeenCalledWith('Title\nbold move')
+    expect(await navigator.clipboard.readText()).toBe('Title\nbold move')
     expect(screen.queryByRole('menu')).not.toBeInTheDocument()
   })
 
@@ -127,7 +108,7 @@ describe('MessageFeedback', () => {
 
     await user.click(menuItems[0])
 
-    expect(clipboard.copy).toHaveBeenCalledWith(markdownSource)
+    expect(await navigator.clipboard.readText()).toBe(markdownSource)
     expect(screen.queryByRole('menu')).not.toBeInTheDocument()
   })
 
@@ -140,7 +121,9 @@ describe('MessageFeedback', () => {
   })
 
   it('downloads every reply asset from the download action', async () => {
-    fetchApi.mockImplementation(async () => new Response(new Blob(['x'])))
+    vi.mocked(api.fetchApi).mockImplementation(
+      async () => new Response(new Blob(['x']))
+    )
     const createObjectURL = vi.fn(() => 'blob:mock')
     const revokeObjectURL = vi.fn()
     URL.createObjectURL = createObjectURL
@@ -152,14 +135,14 @@ describe('MessageFeedback', () => {
 
     await user.click(screen.getByRole('button', { name: 'Download assets' }))
 
-    await waitFor(() => expect(fetchApi).toHaveBeenCalledTimes(2))
-    expect(fetchApi).toHaveBeenCalledWith('https://x/a.png')
-    expect(fetchApi).toHaveBeenCalledWith('https://x/mesh.glb')
+    await waitFor(() => expect(api.fetchApi).toHaveBeenCalledTimes(2))
+    expect(api.fetchApi).toHaveBeenCalledWith('https://x/a.png')
+    expect(api.fetchApi).toHaveBeenCalledWith('https://x/mesh.glb')
     await waitFor(() => expect(revokeObjectURL).toHaveBeenCalledTimes(2))
   })
 
   it('reports failed files without blocking successful downloads or retry', async () => {
-    fetchApi
+    vi.mocked(api.fetchApi)
       .mockResolvedValueOnce(new Response(new Blob(['x'])))
       .mockResolvedValueOnce(new Response(null, { status: 500 }))
       .mockImplementation(async () => new Response(new Blob(['retry'])))
@@ -178,18 +161,15 @@ describe('MessageFeedback', () => {
     await user.click(download)
 
     await waitFor(() =>
-      expect(useToastStore().add).toHaveBeenCalledWith(
-        expect.objectContaining({
-          severity: 'error',
-          detail: '1 download failed'
-        })
-      )
+      expect(useToast().error).toHaveBeenCalledWith('Error', {
+        description: '1 download failed'
+      })
     )
     await waitFor(() => expect(download).toBeEnabled())
 
     await user.click(download)
 
-    await waitFor(() => expect(fetchApi).toHaveBeenCalledTimes(4))
+    await waitFor(() => expect(api.fetchApi).toHaveBeenCalledTimes(4))
     await waitFor(() => expect(createObjectURL).toHaveBeenCalledTimes(3))
     expect(revokeObjectURL).toHaveBeenCalledTimes(3)
   })
@@ -203,6 +183,6 @@ describe('MessageFeedback', () => {
     await user.keyboard('{Escape}')
 
     expect(screen.queryByRole('menu')).not.toBeInTheDocument()
-    expect(clipboard.copy).not.toHaveBeenCalled()
+    expect(await navigator.clipboard.readText()).toBe('')
   })
 })

@@ -1,4 +1,5 @@
 import { useBillingContext } from '@/composables/billing/useBillingContext'
+import { useToast } from '@/components/ui/toast/toastStore'
 import { useTeamWorkspaceStore } from '@/platform/workspace/stores/teamWorkspaceStore'
 import { render, screen, waitFor } from '@testing-library/vue'
 import userEvent from '@testing-library/user-event'
@@ -12,20 +13,7 @@ import InviteMembersForm from './InviteMembersForm.vue'
 
 import type { WorkspacePendingInvite } from '@/platform/workspace/stores/teamWorkspaceStore'
 
-const { mockToastAdd } = vi.hoisted(() => ({
-  mockToastAdd: vi.fn()
-}))
-
 vi.mock(import('@/composables/billing/useBillingContext'))
-
-vi.mock<unknown>(
-  import('primevue/usetoast'), // eslint-disable-line primevue-removal/no-imports
-  () => ({
-    useToast: () => ({
-      add: mockToastAdd
-    })
-  })
-)
 
 vi.mock(import('@/platform/telemetry'))
 
@@ -142,7 +130,6 @@ describe('InviteMembersForm', () => {
 
   it('completes submission when the billing refresh fails', async () => {
     const refreshError = new Error('refresh failed')
-    const consoleError = vi.spyOn(console, 'error').mockImplementation(() => {})
     const { user, emitted } = renderForm()
     vi.mocked(useBillingContext().fetchStatus).mockRejectedValueOnce(
       refreshError
@@ -156,7 +143,9 @@ describe('InviteMembersForm', () => {
     )
     expect(submitButton()).toBeEnabled()
     expect(useBillingContext().fetchStatus).toHaveBeenCalledOnce()
-    await waitFor(() => expect(consoleError).toHaveBeenCalledWith(refreshError))
+    await waitFor(() =>
+      expect(console.error).toHaveBeenCalledWith(refreshError)
+    )
   })
 
   it('ignores stale cached invites when pending invites cannot be refreshed', async () => {
@@ -167,11 +156,12 @@ describe('InviteMembersForm', () => {
     vi.mocked(
       useTeamWorkspaceStore().fetchPendingInvites
     ).mockRejectedValueOnce(refreshError)
-    const consoleError = vi.spyOn(console, 'error').mockImplementation(() => {})
     const { user, emitted } = renderForm()
 
     await user.type(emailInput(), 'stale@example.com{Enter}')
-    await waitFor(() => expect(consoleError).toHaveBeenCalledWith(refreshError))
+    await waitFor(() =>
+      expect(console.error).toHaveBeenCalledWith(refreshError)
+    )
 
     expect(
       screen.queryByText(
@@ -231,9 +221,12 @@ describe('InviteMembersForm', () => {
     )
     expect(screen.getByText('fail@x.com')).toBeInTheDocument()
     expect(screen.queryByText('ok@x.com')).not.toBeInTheDocument()
-    expect(mockToastAdd).toHaveBeenCalledWith(
-      expect.objectContaining({ severity: 'error' })
-    )
+    expect(useToast().toasts).toEqual([
+      expect.objectContaining({
+        kind: 'error',
+        title: 'workspacePanel.inviteMemberDialog.failedCount'
+      })
+    ])
     expect(emitted().submitted).toBeUndefined()
     expect(useTelemetry()?.trackWorkspaceInviteSent).toHaveBeenCalledWith({
       source: 'post_upgrade_success',
@@ -267,9 +260,12 @@ describe('InviteMembersForm', () => {
     )
     expect(screen.getByText('a@b.com')).toBeInTheDocument()
     expect(screen.getByText('c@d.com')).toBeInTheDocument()
-    expect(mockToastAdd).toHaveBeenCalledWith(
-      expect.objectContaining({ severity: 'error' })
-    )
+    expect(useToast().toasts).toEqual([
+      expect.objectContaining({
+        kind: 'error',
+        title: 'workspacePanel.inviteMemberDialog.failedCount'
+      })
+    ])
     expect(emitted().submitted).toBeUndefined()
     expect(useTelemetry()?.trackWorkspaceInviteSent).not.toHaveBeenCalled()
     expect(useBillingContext().fetchStatus).not.toHaveBeenCalled()

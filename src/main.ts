@@ -1,14 +1,10 @@
 import { definePreset } from '@primevue/themes'
 import Aura from '@primevue/themes/aura'
-import {
-  browserApiErrorsIntegration,
-  captureMessage,
-  init as sentryInit
-} from '@sentry/vue'
+import type { PaletteDesignToken } from '@primevue/themes/aura'
+import { captureMessage } from '@sentry/vue'
 import { createPinia } from 'pinia'
 import 'primeicons/primeicons.css'
 import PrimeVue from 'primevue/config'
-import ToastService from 'primevue/toastservice'
 import Tooltip from 'primevue/tooltip'
 import { createApp } from 'vue'
 
@@ -16,12 +12,14 @@ import { setAssertReporter } from '@/base/assert'
 import { flushProxyWidgetMigration } from '@/core/graph/subgraph/migration/proxyWidgetMigration'
 import { autoExposeKnownPreviewNodes } from '@/core/graph/subgraph/promotionUtils'
 import { LGraph } from '@/lib/litegraph/src/litegraph'
+import { installCloudApiAuth } from '@/platform/auth/cloudApiAuthProvider'
 import { firebaseIdentity } from '@/platform/auth/firebaseIdentity'
 import {
   configValueOrDefault,
   remoteConfig
 } from '@/platform/remoteConfig/remoteConfig'
 import { reportAssertFailure } from '@/platform/telemetry/assertFailureReporter'
+import { initSentry } from '@/platform/telemetry/initSentry'
 import {
   markStoresPending,
   markStoresReady
@@ -33,7 +31,8 @@ import '@/lib/litegraph/public/css/litegraph.css'
 import router from '@/router'
 import { isDesktop, isNightly } from '@/platform/distribution/types'
 import { stripPaymentReturnParams } from '@/platform/cloud/subscription/utils/paymentReturnUrl'
-import { useToastStore } from '@/platform/updates/common/toastStore'
+import { useToast } from '@/components/ui/toast/toastStore'
+import { installWorkspaceApiAuth } from '@/platform/workspace/api/workspaceApiAuth'
 import { useBootstrapStore } from '@/stores/bootstrapStore'
 
 import App from './App.vue'
@@ -44,7 +43,11 @@ import { i18n } from './i18n'
 const isCloud = __DISTRIBUTION__ === 'cloud'
 const hasHostTelemetryBridge = Boolean(window.__comfyDesktop2?.Telemetry)
 
-if (isCloud) stripPaymentReturnParams()
+if (isCloud) {
+  stripPaymentReturnParams()
+  installCloudApiAuth()
+}
+installWorkspaceApiAuth()
 
 bootstrapTracer.armWatchdog()
 
@@ -76,10 +79,17 @@ if (hasHostTelemetryBridge) {
   initHostTelemetry()
 }
 
+const desktopHostAuth = isCloud ? undefined : window.__comfyDesktop2?.Auth
+if (desktopHostAuth) {
+  const { startDesktopHostSession } =
+    await import('@/platform/auth/desktopHost/desktopHostSession')
+  await startDesktopHostSession(desktopHostAuth)
+}
+
 const ComfyUIPreset = definePreset(Aura, {
   semantic: {
-    // @ts-expect-error fixme ts strict error
-    primary: Aura['primitive'].blue
+    primary: (Aura as { primitive: { blue: PaletteDesignToken } }).primitive
+      .blue
   }
 })
 
@@ -105,31 +115,7 @@ const sentryDsn = isCloud
 const sentryEnabled = !import.meta.env.DEV && !!sentryDsn
 
 const phaseSentry = bootstrapTracer.startPhase('startup/sentry-init')
-sentryInit({
-  app,
-  dsn: sentryDsn,
-  enabled: sentryEnabled,
-  release: __COMFYUI_FRONTEND_VERSION__,
-  normalizeDepth: 8,
-  tracesSampleRate: isCloud ? 1.0 : 0,
-  replaysSessionSampleRate: 0,
-  replaysOnErrorSampleRate: 0,
-  // Only set these for non-cloud builds
-  ...(isCloud
-    ? {
-        integrations: [
-          // Disable event target wrapping to reduce overhead on high-frequency
-          // DOM events (pointermove, mousemove, wheel). Sentry still captures
-          // errors via window.onerror and unhandledrejection.
-          browserApiErrorsIntegration({ eventTarget: false })
-        ]
-      }
-    : {
-        integrations: [],
-        autoSessionTracking: false,
-        defaultIntegrations: false
-      })
-})
+initSentry({ app, dsn: sentryDsn, enabled: sentryEnabled, isCloud })
 phaseSentry.stop()
 
 flushErrorReports()
@@ -146,11 +132,7 @@ setAssertReporter(
       reportAssertFailure(message, context)
     }
     if (isNightly) {
-      useToastStore(pinia).add({
-        severity: 'warn',
-        summary: 'Assertion failed',
-        detail: message
-      })
+      useToast(pinia).warning('Assertion failed', { description: message })
     }
   },
   { forwardsToRum: isCloud }
@@ -182,7 +164,6 @@ app
       }
     }
   })
-  .use(ToastService)
   .use(pinia)
   .use(i18n)
 

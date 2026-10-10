@@ -11,16 +11,13 @@
  * - Locally, deleting a node removes it from the canvas and the node store
  *   immediately (`LGraph.remove()` -> `nodeDataStore.deleteNode()`), but never
  *   touches the follower's Y.Doc, which mirrors the SERVER's state.
- * - A tab (re)activation rebinds the `EcsFollowerAdapter` session, which arms
- *   a full reconcile for the next frame (`ecsFollowerAdapter.ts`
- *   `createSession`): every node the doc holds is reconciled into the store,
- *   and `agentNodeMaterializer.ts`'s `reconcile()` recreates any record with
- *   no live node. A node whose human delete is still pending must be skipped
- *   by that reconcile, or it reappears until the delete's effect lands.
+ * - A tab (re)activation keeps the projection bound and applies only what
+ *   the doc collected meanwhile, so a node whose human delete is still
+ *   pending is not recreated from the doc before the delete's effect lands.
  *
- * This test drives the real `opSender`, `EcsFollowerAdapter`, `FollowerDoc`
- * and `reconcileAgentAdapters`, forcing the suspend and the resubscribe
- * deterministically instead of relying on timing.
+ * This test drives the real `opSender`, `AgentCrdtProjection` and
+ * `FollowerDoc`, forcing the suspend and the resubscribe deterministically
+ * instead of relying on timing.
  */
 import type { Op, WidgetCatalog } from '@comfyorg/comfy-multi-player'
 import { applyOps, mint } from '@comfyorg/comfy-multi-player'
@@ -28,16 +25,12 @@ import { beforeEach, describe, expect, it } from 'vitest'
 import * as Y from 'yjs'
 
 import { LGraph, LGraphNode, LiteGraph } from '@/lib/litegraph/src/litegraph'
-import { useNodeDataStore } from '@/stores/nodeDataStore'
-import { graphScopeOf } from '@/types/graphScopeId'
 import { toNodeId } from '@/types/nodeId'
 
-import { reconcileAgentAdapters } from './agentNodeMaterializer'
-import { EcsFollowerAdapter } from './ecsFollowerAdapter'
+import { AgentCrdtProjection } from './agentCrdtProjection'
 import { FollowerDoc } from './followerDoc'
-import { inertPlacementPort } from './__fixtures__/inertPlacementPort'
-import { createGraphMutations } from './graphMutations'
 import type { GraphOperation } from './graphOperations'
+import { mintWireOps } from './opEnvelope'
 import type { BatchOutcome, OpsResultView } from './opSender'
 import { createOpSender } from './opSender'
 
@@ -50,17 +43,7 @@ class DummyNode extends LGraphNode {
 const WORKFLOW = 'wf-a'
 const CATALOG: WidgetCatalog = { types: { dummy: { widget_order: [] } } }
 
-function agentOperation(id: string, version: number, payload: object) {
-  return {
-    op_id: id,
-    actor: 'agent:test',
-    base_version: version,
-    stamp: [version, 'agent:test', id],
-    ...payload
-  }
-}
-
-function addNodePayload(id: number) {
+function addNodePayload(id: number): GraphOperation {
   return {
     op: 'add_node',
     node_id: id,
@@ -94,15 +77,9 @@ beforeEach(() => {
  */
 function setupRaceUntilReturn() {
   const graph = new LGraph()
-  const scope = graphScopeOf(graph)
   // `host` stands in for the server's canonical Yjs document.
   const host = mint({ nodes: [], links: [] }, CATALOG)
   const follower = new FollowerDoc()
-  const mutations = createGraphMutations({
-    placement: inertPlacementPort,
-    getScope: () => scope,
-    layout: { createNode: () => {}, deleteNodes: () => {} }
-  })
 
   let boundWorkflow: string | null = WORKFLOW
   let frameSeq = 0
@@ -128,18 +105,8 @@ function setupRaceUntilReturn() {
     baseVersion: () => frameSeq,
     onBatchSettled: (outcome) => settled.push(outcome)
   })
-  const adapter = new EcsFollowerAdapter(mutations, {
-    pendingDeletes: (workflowId) =>
-      new Set(
-        sender
-          .pendingOps()
-          .filter((batch) => batch.workflowId === workflowId)
-          .flatMap((batch) => batch.ops)
-          .filter((op) => op.op === 'delete_node')
-          .map((op) => String(op.node_id))
-      )
-  })
-  adapter.bind(WORKFLOW, follower)
+  const projection = new AgentCrdtProjection(() => graph)
+  projection.bind(WORKFLOW, follower)
 
   let opSequence = 0
   let sentInitialFrame = false
@@ -149,26 +116,29 @@ function setupRaceUntilReturn() {
       ops.map(() => 'applied')
     )
   }
-  const deliverFromHost = (payload?: object) => {
+  const deliverFromHost = (payload?: GraphOperation) => {
     const stateVector = Y.encodeStateVector(host)
     let opId: string | undefined
     if (payload) {
-      opId = `agent-op-${++opSequence}`
-      applyToHost([agentOperation(opId, opSequence, payload) as unknown as Op])
+      const ops = mintWireOps([payload], {
+        actor: 'agent:test',
+        baseVersion: ++opSequence
+      })
+      opId = ops[0].op_id
+      applyToHost(ops)
     }
     const update = sentInitialFrame
       ? Y.encodeStateAsUpdate(host, stateVector)
       : Y.encodeStateAsUpdate(host)
     sentInitialFrame = true
     follower.applyRemoteUpdate(update)
-    adapter.applyFrame({
+    projection.applyFrame({
       workflowId: WORKFLOW,
       seq: ++frameSeq,
       update,
       actor: 'agent:test',
       opIds: opId ? [opId] : []
     })
-    reconcileAgentAdapters(graph)
   }
   const acknowledge = (ops: Op[]) => {
     listenerBox.resultListener?.({
@@ -192,13 +162,10 @@ function setupRaceUntilReturn() {
   expect(sent).toHaveLength(1)
 
   // The user deletes the node on the canvas right away: gone from the live
-  // graph and the local node store, but the server never heard about it.
+  // graph, but the server never heard about it.
   const node = graph.getNodeById(toNodeId(1))!
   graph.remove(node)
   expect(graph.getNodeById(toNodeId(1))).toBeNull()
-  expect(
-    useNodeDataStore().getNode(scope.rootGraphId, toNodeId(1))
-  ).toBeUndefined()
 
   // The user switches to another workflow tab: the follower suspends the
   // sender and unsubscribes, so send reality is null.
@@ -212,11 +179,13 @@ function setupRaceUntilReturn() {
   expect(settled.map((outcome) => outcome.state)).toEqual(['acknowledged'])
   expect(sender.pending()).toBe(1)
 
-  // The user returns: the follower rebinds the adapter (arming a full
-  // reconcile of the next frame), resubscribes, runs the eager abort check
+  // The user returns: the follower binds the same follower again, applies
+  // what was collected meanwhile, resubscribes, runs the eager abort check
   // and resumes the sender. The held delete goes out to the same workflow.
   boundWorkflow = WORKFLOW
-  adapter.bind(WORKFLOW, follower)
+  projection.bind(WORKFLOW, follower)
+  projection.applyCollected(WORKFLOW)
+  expect(graph.getNodeById(toNodeId(1))).toBeNull()
   sender.abortIfUnbound()
   sender.resume()
   expect(sent).toHaveLength(2)
@@ -225,13 +194,12 @@ function setupRaceUntilReturn() {
 
   const teardown = () => {
     sender.detach()
-    adapter.destroy()
+    projection.destroy()
     follower.destroy()
     host.destroy()
   }
   return {
     graph,
-    scope,
     sent,
     applyToHost,
     deliverFromHost,
@@ -249,13 +217,10 @@ describe('agent-added node delete across a tab switch', () => {
     race.acknowledge(race.sent[1].ops)
 
     expect(race.graph.getNodeById(toNodeId(1))).toBeNull()
-    expect(
-      useNodeDataStore().getNode(race.scope.rootGraphId, toNodeId(1))
-    ).toBeUndefined()
     race.teardown()
   })
 
-  it('the rebind reconcile leaves the node alone while its delete is still in flight', () => {
+  it('the rebind sync leaves the node alone while its delete is still in flight', () => {
     const race = setupRaceUntilReturn()
 
     // The resubscribe catch-up arrives before the delete has landed on the

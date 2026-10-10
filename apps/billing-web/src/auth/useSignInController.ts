@@ -6,8 +6,13 @@
 import type { FirebaseIdentity } from '@comfyorg/account-core/firebase'
 import { authErrorMessage } from '@comfyorg/account-core/firebaseAuthError'
 import type { AuthErrorCopy } from '@comfyorg/account-core/firebaseAuthError'
+import type {
+  SessionErrorCode,
+  SessionFailure
+} from '@comfyorg/account-core/session'
 import type { User, UserCredential } from 'firebase/auth'
 import { computed, ref, watch } from 'vue'
+import type { Ref } from 'vue'
 
 import type {
   SignInEvent,
@@ -16,7 +21,8 @@ import type {
 } from '@/auth/signInState'
 import { signInTransition } from '@/auth/signInState'
 import en from '@/locales/en/main.json' with { type: 'json' }
-import { billingWebIdentity } from '@/config/firebase'
+import { resolveBillingWebIdentity } from '@/config/firebase'
+import { boundWorkspaceId } from '@/entry/workspaceBinding'
 import {
   billingWebSessionClient,
   useBillingWebSession
@@ -24,9 +30,62 @@ import {
 
 const AUTH_ERROR_COPY: AuthErrorCopy = en.auth.errors
 
-export function useSignInController(onSignedIn: () => void) {
-  const { user } = useBillingWebSession()
+/** Why the workspace session was refused, as far as the sign-in page acts on it. */
+export type SessionRefusal = Pick<SessionFailure, 'code' | 'organizationId'>
+
+export type SessionEstablishment =
+  | { readonly status: 'ok' }
+  | { readonly status: 'error'; readonly code: SessionErrorCode }
+
+/** What the flow signs in against: this origin's session client, or the shared web session. */
+export interface SignInPort {
+  /** Non-null once someone is signed in, restored or interactive. */
+  readonly user: Readonly<Ref<unknown>>
+  readonly failure: Readonly<Ref<SessionRefusal | undefined>>
+  readonly loadIdentity: () => Promise<FirebaseIdentity | undefined>
+  /** Establishes the workspace session; resolves whether it holds, and the code when it does not. */
+  readonly establish: (user?: User) => Promise<SessionEstablishment>
+}
+
+export function sessionClientPort(): SignInPort {
+  const { user, failure } = useBillingWebSession()
+  return {
+    user,
+    failure,
+    loadIdentity: resolveBillingWebIdentity,
+    /**
+     * The client no longer auto-mints (see `billingWebSession.ts`), so every
+     * mint this app issues goes through here — the one place that reads the
+     * entry binding at the moment it actually mints, not at construction, so
+     * a rebind that lands while the tab is signed out is not lost to a stale
+     * default.
+     */
+    establish: async (requestedUser) => {
+      const result = await billingWebSessionClient().ensureFresh(
+        requestedUser,
+        { workspaceId: boundWorkspaceId() }
+      )
+      return result?.status === 'ok'
+        ? { status: 'ok' }
+        : { status: 'error', code: result?.code ?? 'NOT_AUTHENTICATED' }
+    }
+  }
+}
+
+export function useSignInController(
+  onSignedIn: () => void,
+  port: SignInPort = sessionClientPort()
+) {
+  const { user } = port
   const state = ref<SignInState>({ step: 'idle' })
+  // Resolved asynchronously so it can't block first paint. A failed fetch no
+  // longer sticks in account-core's cache, so calling this again (from
+  // `retryAvailability`) genuinely re-fetches instead of replaying `undefined`.
+  const identity = ref<FirebaseIdentity>()
+  async function loadIdentity(): Promise<void> {
+    identity.value = await port.loadIdentity()
+  }
+  void loadIdentity()
 
   const busy = computed(
     () => state.value.step === 'pending' || state.value.step === 'minting'
@@ -64,11 +123,9 @@ export function useSignInController(onSignedIn: () => void) {
   }
 
   async function mint(requestedUser?: User): Promise<void> {
-    const result = await billingWebSessionClient().ensureFresh(requestedUser)
+    const held = await port.establish(requestedUser)
     dispatch(
-      result?.status === 'ok'
-        ? { type: 'mintSucceeded' }
-        : { type: 'mintFailed' }
+      held.status === 'ok' ? { type: 'mintSucceeded' } : { type: 'mintFailed' }
     )
   }
 
@@ -76,11 +133,11 @@ export function useSignInController(onSignedIn: () => void) {
     provider: SignInProvider,
     authenticate: (identity: FirebaseIdentity) => Promise<UserCredential>
   ): Promise<void> {
-    if (!billingWebIdentity || busy.value) return
+    if (!identity.value || busy.value) return
     dispatch({ type: 'signInStarted', provider })
     let credential: UserCredential
     try {
-      credential = await authenticate(billingWebIdentity)
+      credential = await authenticate(identity.value)
     } catch (error) {
       dispatch({ type: 'signInFailed', error })
       return
@@ -111,6 +168,11 @@ export function useSignInController(onSignedIn: () => void) {
     await mint()
   }
 
+  /** For the "sign-in unavailable" notice: re-fetches instead of leaving the page dead. */
+  async function retryAvailability(): Promise<void> {
+    await loadIdentity()
+  }
+
   watch(
     user,
     (restored) => {
@@ -132,9 +194,14 @@ export function useSignInController(onSignedIn: () => void) {
     busy,
     leaving,
     errorMessage,
-    available: billingWebIdentity !== undefined,
+    /** The mint's own refusal, e.g. naming a workspace this account is not in. */
+    sessionFailureCode: computed(() => port.failure.value?.code),
+    /** The organization an `SSO_REQUIRED` refusal names, when it names one. */
+    ssoOrganizationId: computed(() => port.failure.value?.organizationId),
+    available: computed(() => identity.value !== undefined),
     signInWith,
     submitEmail,
-    retryMint
+    retryMint,
+    retryAvailability
   }
 }

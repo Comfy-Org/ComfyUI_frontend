@@ -9,20 +9,19 @@
       "signInCaption": "合作伙伴节点需要账户",
       "signInToRun": "登录以运行"
     },
-    "share": "分享",
     "shareTooltip": "分享工作流"
   },
   "agent": {
     "addFromAssets": "从资源面板拖入资源",
     "addNodesFromGraph": "提及画布中的节点",
     "addToPrompt": "添加到提示词",
-    "alpha": "ALPHA",
     "assetNotAttachable": "可附加图像、视频、音频、3D 模型和文本文件",
     "attach": "附加文件",
     "attachFiles": "上传图像或文件",
     "attachmentTooLarge": "{name} 大于 {limit}",
     "attachmentUploadFailed": "无法上传 {name}",
     "backToPreviousChat": "返回上一个聊天",
+    "beta": "测试版",
     "changeWorkflowForChat": "更改代理可编辑的工作流",
     "chatOptions": "聊天选项",
     "chooseWorkflow": "选择工作流",
@@ -35,8 +34,8 @@
     "coachHistoryTitle": "从上次中断处继续",
     "coachProgress": "{current} / {total}",
     "coachTitle": "认识你的 Comfy Agent",
-    "coachWorkflowBody": "智能体仅编辑你选择的工作流。你还可以上传参考文件或提及其他工作流。",
-    "coachWorkflowTitle": "选择要让智能体编辑的工作流",
+    "coachWorkflowBody": "在你发送消息、选择工作流或添加节点引用之前，它会随你的标签页切换。",
+    "coachWorkflowTitle": "你的智能体会编辑你正在查看的工作流",
     "consent": {
       "accept": "开始使用 Comfy Agent",
       "body1": "Comfy Agent 可帮助您规划、构建、运行和迭代工作流。描述您想要创建的内容，Comfy Agent 将成为您的强大伙伴。",
@@ -53,7 +52,6 @@
     "copy": "复制",
     "copyMarkdown": "复制为 Markdown",
     "copyUnavailable": "此版本只能复制当前对话",
-    "credits": "积分",
     "currentTab": "当前标签页",
     "delete": "删除",
     "diagnosticReport": {
@@ -66,10 +64,19 @@
     "dismiss": "关闭",
     "downloadAssets": "下载资源",
     "dragAndDropAssets": "将资源拖放到此处",
+    "editRejected": {
+      "generic": "你的编辑被拒绝且未保存。工作流可能不再与其画布匹配——重新加载工作流以查看保留的内容。",
+      "genericPartial": "你的编辑被拒绝且未保存，但之前的一些编辑已保存。工作流可能不再与其画布匹配——重新加载工作流以查看保留的内容。",
+      "widgetWrite": "小部件编辑被拒绝且未保存。你输入的值仅存在于画布中——重新加载工作流以查看保留的值。",
+      "widgetWritePartial": "小部件编辑被拒绝且未保存，但之前的一些编辑已保存。你输入的值仅存在于画布中——重新加载工作流以查看保留的值。"
+    },
+    "editWhileWorking": "它工作时您仍可继续编辑",
     "entryButton": "智能代理",
     "feedbackCaption": "分享反馈",
     "focusNode": "在画布上显示",
     "focusNodeLabel": "在画布上显示 {node}",
+    "freeUseNotice": "在 BETA 期间，提示词和工作流运行均免费。",
+    "freeUseNoticeLabel": "免费使用说明",
     "friend": "您好",
     "gotIt": "知道了",
     "greeting": "你好，{name}，",
@@ -79,6 +86,7 @@
     "historyCurrent": "当前",
     "historyEarlier": "更早",
     "historyEmpty": "暂无对话",
+    "historyOpenFailed": "无法打开。请选择此聊天以重试。",
     "historyToday": "今天",
     "historyYesterday": "昨天",
     "latest": "最新",
@@ -100,6 +108,7 @@
       "selectNode": "选择节点"
     },
     "nodes": "节点",
+    "nodesAdded": "智能体已向工作流添加 1 个节点 | 智能体已向工作流添加 {count} 个节点",
     "notHelpful": "没有帮助",
     "openWorkflowTab": "打开 {name}",
     "otherOpenWorkflows": "其他已打开的工作流",
@@ -117,14 +126,19 @@
       "upgradePlan": "升级套餐"
     },
     "placeholder": "描述想法，使用 {'@'} 引用工作流，拖入媒体资源和文件，或\n提及节点",
+    "recoveredTurnFailed": "代理无法完成此响应。",
     "reference": "引用",
     "remove": "移除",
     "removeNodeLabel": "移除 {node} 引用",
     "removeWorkflowReference": "移除对 {name} 的引用",
     "retryAfterSeconds": "您可以在 {seconds}s 后重试。",
     "runApproval": {
+      "answerFailed": "无法发送你的回答。请重新加载页面后重试。",
+      "answerSuperseded": "此请求已在其他地方得到回答，因此使用了该回答而非你的回答。",
+      "answerUncertain": "无法确认你的回答是否已送达代理。它可能仍已被应用——请重新加载页面以查看当前状态。",
       "cancel": "取消",
       "lead": "此工具想要运行以下工作流：",
+      "leadBound": "此工具想要运行此工作流。",
       "question": "您批准吗？",
       "run": "运行",
       "thisWorkflow": "此工作流"
@@ -146,7 +160,6 @@
     "runNoticeExpanded": "代理可以修改您的工作流。允许其执行前，请检查运行权限。",
     "runPermissions": "运行权限",
     "runPermissionsDescription": "选择代理何时需要您的同意",
-    "saveChanges": "保存更改",
     "savingWorkflow": "正在保存工作流",
     "searchWorkflows": "搜索工作流",
     "selectWorkflowForAgent": "选择一个供智能体处理的工作流",
@@ -158,24 +171,42 @@
     "showChatHistory": "显示聊天记录",
     "showLess": "显示更少",
     "showMore": "显示更多",
+    "showTarget": "显示目标",
+    "showTargetWorkflow": "显示目标工作流：{workflowName}",
     "skip": "跳过",
     "stop": "停止",
     "stopShortcut": "Esc",
-    "suggestedPrompts": [
-      "生成一只戴着曲棍球面具的黄色鸭子",
-      "列出我保存的工作流",
-      "查找最适合皮肤超分辨率的工作流",
-      "解释选中的节点",
-      "使用 3 个模型构建图像转视频工作流"
-    ],
+    "suggestedPrompts": {
+      "cloud": [
+        "生成一张宇航员的角色设定图",
+        "将产品图像制作成短广告",
+        "解释所选节点",
+        "适用于 4K 的最佳图像放大工作流",
+        "修复此工作流中的错误"
+      ],
+      "local": [
+        "生成一张逼真的宇航员肖像",
+        "适合我的 GPU 的图生视频工作流",
+        "解释所选节点",
+        "帮我安装此工作流缺失的节点",
+        "修复此工作流中的错误"
+      ]
+    },
     "switchWorkflow": "切换工作流",
     "switchWorkflowForNodes": "切换到 {workflowName} 以添加节点。",
+    "takeTour": "开始导览",
+    "targetFollowsVisibleWorkflow": "在你选择目标、引用节点或发送消息之前，目标工作流会跟随当前可见的标签页。",
     "targetForThisChat": "本次聊天的智能体目标",
     "targetNavigationUnavailable": "此工作流目标已不可用。",
+    "targetWorkflowOpenFailed": "无法打开目标工作流。",
+    "targetWorkflowUnavailable": "目标工作流已不可用。",
     "thinking": "思考中...",
     "title": "Comfy Agent",
+    "toolFailedSkill": "加载 {skill} 失败",
     "toolForgettingPreference": "正在删除偏好设置",
     "toolForgotPreference": "已忘记偏好设置",
+    "toolLoadedSkill": "已加载 {skill}",
+    "toolLoadingSkill": "正在加载 {skill}",
     "toolOpenedNewTab": "已打开新标签页",
     "toolOpeningNewTab": "正在打开新标签页",
     "toolSavedPreference": "已保存偏好设置",
@@ -185,12 +216,18 @@
     "unavailableWorkflowReference": "{name}（不可用）",
     "unsavedWorkflow": "未保存",
     "untitledChat": "未命名",
+    "updatingGraph": "智能体正在更新工作流",
     "uploading": "正在上传",
+    "viewAddedNodes": "查看节点 | 查看节点",
+    "viewingDifferentWorkflow": "你正在查看与目标不同的工作流。",
     "worked": "已完成",
     "workedForMinutes": "已用时 {minutes} 分 {seconds} 秒",
     "workedForSeconds": "已用时 {seconds} 秒",
     "workflowEditNotice": "智能体现在可以编辑 {workflow}。它一次只能处理 1 个工作流，你可以在聊天过程中切换工作流。",
     "workflowReferenceUnavailableReason": "此引用的工作流已不可用，或你无权访问它。",
+    "workflowSyncFailedDetail": "此工作流使用不兼容的文档版本创建。你的画布未被更改。",
+    "workflowSyncFailedDetailCatalogMismatch": "此工作流使用与此工作区不兼容的节点目录。你的画布未被更改。",
+    "workflowSyncFailedTitle": "此工作流无法同步",
     "workflows": "工作流",
     "working": "正在处理..."
   },
@@ -246,6 +283,7 @@
       "failed": "下载失败",
       "inProgress": "正在下载 {assetName}..."
     },
+    "downloadFailed": "下载 {name} 失败",
     "emptyImported": {
       "canImport": "尚未导入模型。点击“导入模型”添加您的模型。",
       "restricted": "个人模型仅限创作者及以上等级使用。"
@@ -356,9 +394,6 @@
     "processingModelDescription": "您可以关闭此对话框。下载将在后台继续。",
     "providerCivitai": "Civitai",
     "providerHuggingFace": "Hugging Face",
-    "rename": {
-      "failed": "无法重命名资产。"
-    },
     "searchModels": "搜索模型",
     "selectFrameworks": "选择框架",
     "selectModelType": "选择模型类型",
@@ -398,6 +433,10 @@
     "uploadingModel": "正在导入模型..."
   },
   "auth": {
+    "accountChanged": {
+      "detail": "另一个标签页或 Comfy 站点已登录为 {email}，因此此页面已重置。",
+      "title": "账户已更改"
+    },
     "apiKey": {
       "cleared": "API 密钥已清除",
       "clearedDetail": "您的 API 密钥已成功清除",
@@ -435,6 +474,7 @@
       "generic": "登录时出现问题，请重试。",
       "signupBlocked": "我们目前无法创建您的账户。请稍后再试。如果问题持续，请发送邮件至 support@comfy.org。"
     },
+    "hidePassword": "隐藏密码",
     "login": {
       "andText": "和",
       "backToGithubLogin": "改用 Github 注册",
@@ -451,6 +491,7 @@
       "forgotPassword": "忘记密码？",
       "forgotPasswordError": "发送重置密码邮件失败",
       "freeRunsSuffix": "可获得 {count} 次免费运行。| 可获得 {count} 次免费运行。",
+      "freeRunsSuffixGoogle": "使用 Google 登录即可获得 {count} 次免费运行。|使用 Google 登录即可获得 {count} 次免费运行。",
       "freeTierBadge": "可享免费套餐",
       "freeTierDescription": "使用 Google 注册，每月可获得 {credits} 免费积分。无需绑定银行卡。",
       "freeTierDescriptionGeneric": "使用 Google 注册，每月可获得免费积分。无需绑定银行卡。",
@@ -495,6 +536,7 @@
       "message": "出于安全原因，此操作需要您重新登录。是否继续？",
       "title": "需要重新认证"
     },
+    "showPassword": "显示密码",
     "signOut": {
       "saveFailed": "由于保存“{workflow}”失败，已取消退出登录。",
       "signOut": "退出登录",
@@ -503,6 +545,12 @@
       "successDetail": "您已成功退出账户。",
       "unsavedChangesMessage": "您有未保存的更改，注销后这些更改将会丢失。是否继续？",
       "unsavedChangesTitle": "未保存的更改"
+    },
+    "signOutEverywhere": {
+      "action": "退出所有设备",
+      "failed": "无法退出所有设备",
+      "success": "已退出所有设备",
+      "successDetail": "所有登录您账户的设备均已退出。"
     },
     "signup": {
       "alreadyHaveAccount": "已经有账户了？",
@@ -523,6 +571,20 @@
       "expired": "验证已过期。请重新完成验证。",
       "failed": "验证失败。请重试。",
       "submitBlockedHint": "请先完成上方的验证挑战以启用注册。"
+    },
+    "webSession": {
+      "reconnecting": {
+        "detail": "目前无法连接到 Comfy。我们会持续重试，你将保持登录状态。",
+        "retry": "立即重试",
+        "title": "正在重新连接到你的账户"
+      },
+      "token": {
+        "ended": "你的会话已结束。请重新登录以继续。",
+        "identityChanged": "你的会话已更改。请重新加载以继续。",
+        "refused": "你的请求被拒绝。请重新加载页面后重试。",
+        "unavailable": "无法连接到你的账户。请稍后重试。",
+        "workspaceDenied": "你无权访问此工作区。如果此问题持续发生，请联系支持人员。"
+      }
     }
   },
   "batch": {
@@ -538,6 +600,7 @@
     "expiredCardDetail": "此卡已过期。请使用其他支付方式。",
     "incorrectCvcDetail": "银行卡安全码不正确。请检查后重试。",
     "insufficientFundsDetail": "此支付方式余额不足。请尝试其他支付方式或联系您的银行。",
+    "operationAlreadyPendingDetail": "你之前发起的一笔付款仍在处理中。必须等待其完成后，你才能选择其他套餐。",
     "paymentDeclinedDetail": "您的银行拒绝了此付款。请尝试其他支付方式或联系您的银行。",
     "processingErrorDetail": "无法处理您的付款。请重试或使用其他支付方式。",
     "reconciliationDetail": "已收到您的付款，但无法完成工作区更新。请联系支持团队，并提供此操作 ID：",
@@ -628,6 +691,46 @@
     "switchToOutputs": "切换到输出",
     "viewApp": "查看应用"
   },
+  "cameraAngle": {
+    "cameraView": "相机",
+    "cameraViewTooltip": "围绕主体移动相机",
+    "faces": {
+      "back": "背面",
+      "bottom": "底部",
+      "left": "左侧",
+      "right": "右侧",
+      "top": "顶部"
+    },
+    "hidePreview": "隐藏镜头预览",
+    "horizontal": {
+      "back": "背面",
+      "backLeft": "左后方",
+      "backRight": "右后方",
+      "front": "正面",
+      "frontLeft": "左前方",
+      "frontRight": "右前方",
+      "left": "左侧",
+      "right": "右侧"
+    },
+    "horizontalLabel": "水平角度",
+    "objectView": "对象",
+    "objectViewTooltip": "通过相机视角旋转主体",
+    "preview": "预览",
+    "showPreview": "显示镜头预览",
+    "vertical": {
+      "elevated": "抬高",
+      "eyeLevel": "平视",
+      "highAngle": "高角度",
+      "lowAngle": "低角度"
+    },
+    "verticalLabel": "垂直角度",
+    "zoom": {
+      "closeUp": "特写",
+      "medium": "中景",
+      "wide": "全景"
+    },
+    "zoomLabel": "景别"
+  },
   "clipboard": {
     "errorMessage": "复制到剪贴板失败",
     "errorNotSupported": "您的浏览器不支持剪贴板API",
@@ -715,6 +818,8 @@
         "selectAtLeastOne": "请至少选择一个选项。"
       },
       "intro": "帮助我们为您定制 ComfyUI 体验。",
+      "navigationFailed": "问卷已保存，但无法继续引导流程",
+      "navigationFailedDetail": "请重试。",
       "options": {
         "experience": {
           "new": "ComfyUI 新手",
@@ -755,6 +860,8 @@
       },
       "otherPlaceholder": "请告诉我们更多",
       "placeholder": "调查问题占位符",
+      "submitFailed": "无法提交问卷",
+      "submitFailedDetail": "你的回答未被保存。请重试。",
       "title": "云调研"
     }
   },
@@ -875,25 +982,6 @@
     "workflowName": "工作流名称",
     "workflowNamePlaceholder": "提示：输入一个易于搜索的描述性名称"
   },
-  "commands": {
-    "clear": "清空工作流",
-    "clipspace": "打开 Clipspace",
-    "dark": "深色",
-    "execute": "执行",
-    "help": "帮助",
-    "interrupt": "取消当前运行",
-    "light": "浅色",
-    "manageExtensions": "管理扩展",
-    "queue": "队列面板",
-    "refresh": "刷新节点定义",
-    "resetView": "重置画布视图",
-    "run": "运行",
-    "runWorkflow": "运行工作流",
-    "runWorkflowFront": "运行工作流（队列前端）",
-    "settings": "设置",
-    "theme": "主题",
-    "toggleBottomPanel": "切换底部面板"
-  },
   "compositor": {
     "downloadPsd": "下载 PSD",
     "empty": "运行工作流以生成合成图像",
@@ -920,6 +1008,7 @@
     "Copy Image": "复制图像",
     "Delete": "删除",
     "Distribute Nodes": "分布节点",
+    "Download Images": "下载图像",
     "Duplicate": "复制",
     "Edit Subgraph Widgets": "编辑子工作流组件",
     "Expand": "展开",
@@ -1173,6 +1262,13 @@
     "WAN_CAMERA_EMBEDDING": "WAN 摄像头嵌入",
     "WEBCAM": "摄像头"
   },
+  "deployToComfyApi": {
+    "body": "几分钟内即可将此工作流部署为生产环境 API。将自定义节点、模型和 Python 依赖项打包为可复现的构建，Comfy API 会将其作为自动扩缩容端点运行。",
+    "buttonLabel": "部署到 Comfy API",
+    "deployOnPlatform": "在平台上部署",
+    "readDocs": "阅读文档",
+    "title": "部署到 Comfy API"
+  },
   "desktopLogin": {
     "confirmMessage": "ComfyUI 桌面应用正在等待使用您的账户登录。仅当您刚刚在 ComfyUI 桌面应用中开始登录时才继续。",
     "confirmSummary": "批准桌面端登录？",
@@ -1209,6 +1305,11 @@
     "skip": "跳过",
     "title": "下载 git",
     "warning": "如果您确定不需要安装 git，或者已经安装了 git，您可以点击跳过以绕过此检查。当前不支持在没有可用 git 副本的情况下运行 ComfyUI。"
+  },
+  "dynamicGroup": {
+    "add": "添加 {group}",
+    "remove": "移除 {row}",
+    "row": "{group} #{index}"
   },
   "electronFileDownload": {
     "cancel": "取消下载",
@@ -1641,8 +1742,8 @@
     "missingMedia": "部分节点缺少所需输入",
     "missingModels": "缺少 {count} 个所需模型",
     "missingNodes": "部分节点缺失，需要安装",
-    "multipleErrorCount": "发现 {count} 个错误",
-    "multipleErrorsMessage": "请在运行工作流前解决这些问题。",
+    "multipleIssueCount": "发现 {count} 个问题 | 发现 {count} 个问题",
+    "multipleIssuesMessage": "请在运行工作流前解决这些问题。",
     "viewDetails": "查看详情"
   },
   "errorPanelSurvey": {
@@ -1696,7 +1797,8 @@
     "exportingAssets": "正在导出资源",
     "noExportsInQueue": "队列中没有{filter}导出",
     "preparingExport": "正在准备导出...",
-    "retryDownload": "重试下载"
+    "retryDownload": "重试下载",
+    "unsupportedDownloadUrl": "不支持的导出下载 URL"
   },
   "feedback": {
     "title": "分享反馈"
@@ -1798,6 +1900,7 @@
     "download": "下载",
     "downloadAudio": "下载音频",
     "downloadImage": "下载图片",
+    "downloadImages": "下载图像",
     "downloadVideo": "下载视频",
     "downloadWithSize": "下载（{size}）",
     "downloading": "正在下载",
@@ -1876,6 +1979,7 @@
     "itemsSelected": "未选择项目 | 已选择 {count} 个项目 | 已选择 {count} 个项目",
     "job": "任务",
     "jobIdCopied": "队列 ID 已复制到剪贴板",
+    "jobs": "任务",
     "keybinding": "按键绑定",
     "keybindingAlreadyExists": "快捷键已存在",
     "keybindingListAriaLabel": "快捷键：{combos}",
@@ -1934,6 +2038,7 @@
     "nMoreKeybindings": "还有 + {count} 个",
     "nMoreKeybindingsCompact": "+ {count}",
     "name": "名称",
+    "new": "新建",
     "newFolder": "新文件夹",
     "next": "下一个",
     "nextImage": "下一张图像",
@@ -2006,6 +2111,7 @@
     "removeAll": "全部移除",
     "removeAllKeybindingsMessage": "该命令的所有快捷键都将被移除",
     "removeAllKeybindingsTitle": "移除所有快捷键？",
+    "removeFilter": "移除 {label} 筛选条件",
     "removeImage": "移除图片",
     "removeKeybinding": "移除快捷键",
     "removeTag": "移除标签",
@@ -2028,6 +2134,7 @@
     "restore": "恢复",
     "restoreDialog": "还原对话框",
     "resultsCount": "找到 {count} 个结果",
+    "retry": "重试",
     "running": "正在运行",
     "save": "保存",
     "saveAnyway": "仍然保存",
@@ -2048,6 +2155,7 @@
     "selectItemsToDelete": "选择删除",
     "selectItemsToDuplicate": "选择复制",
     "selectItemsToRename": "选择重命名",
+    "selected": "已选择",
     "selectedFile": "已选文件",
     "setAKeybindingForTheFollowing": "为以下操作设置快捷键：",
     "setAsBackground": "设为背景",
@@ -2097,10 +2205,14 @@
     "updating": "正在更新 {id}",
     "upload": "上传",
     "uploadAlreadyInProgress": "上传已在进行中",
+    "uploadFailed": "上传失败：{reason}",
+    "uploadFileTooLarge": "文件过大，无法上传。",
+    "uploadFileTooLargeWithLimit": "文件过大，无法上传（限制：{limit} MB）。",
     "uploadTimedOut": "上传超时。请重试。",
     "usageHint": "使用提示",
     "use": "使用",
     "user": "用户",
+    "validate": "验证",
     "versionMismatchWarning": "版本兼容性警告",
     "versionMismatchWarningMessage": "{warning}：{detail} 请参阅 https://docs.comfy.org/installation/update_comfyui#common-update-issues 以取得更新说明。",
     "videoFailedToLoad": "视频加载失败",
@@ -2161,6 +2273,7 @@
       "r": "R",
       "rgb": "RGB"
     },
+    "checkerboard": "显示透明区域",
     "clipWarnings": "裁剪警告",
     "dither": "抖动",
     "exposure": "曝光",
@@ -2220,8 +2333,10 @@
     "star": "星星"
   },
   "imageCompare": {
+    "afterAlt": "后图像",
     "batchLabelA": "A：",
     "batchLabelB": "B：",
+    "beforeAlt": "前图像",
     "noImages": "没有可以对比的图像"
   },
   "imageCrop": {
@@ -2463,7 +2578,9 @@
     "cancelThisRun": "取消本次运行",
     "deleteAllAssets": "删除本次运行的所有资源",
     "downloadAll": "下载此次运行中的 {count} 个资产",
+    "dragAndDropAudio": "点击浏览或拖放音频文件",
     "dragAndDropImage": "拖拽图片到此处",
+    "dragAndDropVideo": "点击浏览或拖放视频",
     "emptyWorkflowExplanation": "你的工作流为空。你需要先添加一些节点，才能开始构建应用。",
     "enterNodeGraph": "进入节点图",
     "error": {
@@ -2754,6 +2871,9 @@
     "installationQueue": "安装队列",
     "installingDependencies": "正在安装依赖项...",
     "lastUpdated": "最后更新",
+    "latestActive": "最新活跃版本",
+    "latestInstallable": "最新可安装版本",
+    "latestStableVersion": "最新稳定版",
     "latestVersion": "最新",
     "legacyManagerSearchTip": "在找 ComfyUI-Manager？你可以通过启动 ComfyUI 并添加 --enable-manager-legacy-ui 参数来启用旧版管理器界面。",
     "legacyManagerUI": "使用传统界面",
@@ -2775,10 +2895,13 @@
       "updatesAvailable": "有可用更新"
     },
     "nightlyVersion": "每夜",
+    "noActiveVersions": "此包没有活跃发布版本。",
+    "noActiveVersionsFlagged": "此包没有活跃发布版本。请选择标记发布版本以请求安装，是否允许取决于管理器安全设置。",
     "noDescription": "无可用描述",
     "noNodesFound": "未找到节点",
     "noNodesFoundDescription": "无法解析包的节点，或者该包仅为前端扩展，没有任何节点。",
     "noResultsFound": "未找到符合您搜索的结果。",
+    "noUpdateVersion": "所选更新选项没有可用发布版本。",
     "nodePack": "节点包",
     "nodePackInfo": "节点包信息",
     "notAvailable": "不可用",
@@ -2786,9 +2909,11 @@
       "nodeIdRequired": "安装需要节点 ID"
     },
     "packsSelected": "选定的包",
+    "queueWaitingToContinue": "任务处于待处理状态。重试以继续。",
     "repository": "仓库",
     "restartToApplyChanges": "要应用更改，请重新启动ComfyUI",
     "restartingBackend": "正在重启后端以应用更改...",
+    "retryQueueStart": "重试",
     "searchPlaceholder": "搜索",
     "selectVersion": "选择版本",
     "selected": "已选择",
@@ -2829,9 +2954,15 @@
     },
     "update": "更新",
     "updateAll": "全部更新",
+    "updateFailed": "无法更改软件包版本。请重试。",
+    "updateLatestActiveTooltip": "切换到最新活跃版本（默认）。",
+    "updateLatestInstallableTooltip": "切换到最新可安装版本，包括标记和待定发布版本。管理器安全设置仍然适用。",
+    "updateOptions": "更新选项",
     "updateSelected": "更新所选",
+    "updateVersionInstalled": "版本 {version} 已安装。",
     "updatingAllPacks": "更新所有包",
-    "version": "版本"
+    "version": "版本",
+    "versionLoadFailed": "无法加载版本。关闭此选择器后重试。"
   },
   "maskEditor": {
     "activateLayer": "活跃层",
@@ -3069,6 +3200,7 @@
     "Refresh Node Definitions": "刷新节点定义",
     "Reinstall": "重装",
     "Rename": "重命名",
+    "Replay Onboarding": "重新播放引导",
     "Reset View": "重置视图",
     "Resize Selected Nodes": "调整选定节点的大小",
     "Restart": "重启",
@@ -3105,6 +3237,8 @@
     "linearMode_appModeToolbar_apps": "linearMode.appModeToolbar.apps"
   },
   "minimap": {
+    "highlightedNodes": "高亮节点：{count}",
+    "label": "小地图",
     "nodeColors": "节点颜色",
     "renderBypassState": "渲染绕过状态",
     "renderErrorState": "渲染错误状态",
@@ -3191,7 +3325,6 @@
     "Rodin": "Rodin",
     "Runway": "Runway",
     "Sonilo": "Sonilo",
-    "Sora": "Sora",
     "Tencent": "Tencent",
     "Topaz": "Topaz",
     "Tripo": "Tripo",
@@ -3259,6 +3392,7 @@
     "mask": "遮罩",
     "merging": "合并",
     "mesh": "网格",
+    "ming image": "ming 图像",
     "minimax": "minimax",
     "minimax music": "minimax 音乐",
     "mochi": "mochi",
@@ -3341,6 +3475,11 @@
     "outputs": "输出",
     "type": "类型"
   },
+  "nodeOutputsExport": {
+    "download": "下载（{count}）",
+    "downloadAll": "全部下载",
+    "title": "下载资源"
+  },
   "nodeReplacement": {
     "compatibleAlternatives": "兼容替代项",
     "installMissingNodes": "安装缺失节点",
@@ -3391,6 +3530,7 @@
       "deny": "取消",
       "detailsHeader": "详情",
       "errorExpired": "此授权请求已过期或已被使用。请从客户端应用重新开始。",
+      "errorOriginRefused": "无法在此页面批准此操作。请从应用中重新打开登录流程。",
       "errorScopeBroadening": "之前批准的权限不包含此次请求。您需要使用新权限重新授权。",
       "errorUnavailable": "此功能当前不可用。如问题持续，请联系支持。",
       "genericError": "OAuth 请求失败。请从客户端应用重新开始。",
@@ -3520,6 +3660,12 @@
     "skip": "跳过",
     "stepLabel": "第 {current} 步，共 {total} 步"
   },
+  "onboardingReplay": {
+    "confirmMessage": "这将重新加载 ComfyUI，并重置此环境中可用的引导步骤。不会影响你的工作流。",
+    "confirmTitle": "重新播放引导？",
+    "failedDetail": "无法重置你的引导状态。请重试。",
+    "failedSummary": "无法重新播放引导"
+  },
   "openSharedWorkflow": {
     "author": "作者：",
     "copyAssetsAndOpen": "导入资源并打开工作流",
@@ -3586,7 +3732,8 @@
     "importingModels": "正在导入模型",
     "noImportsInQueue": "队列中没有 {filter}",
     "pending": "待处理",
-    "progressCount": "{completed} / {total}"
+    "progressCount": "{completed} / {total}",
+    "taskUnavailable": "下载任务已不可用。"
   },
   "queue": {
     "completedIn": "{duration} 后完成",
@@ -4134,6 +4281,7 @@
     "assets": "资产",
     "backToAssets": "返回所有资产",
     "browseTemplates": "浏览示例模板",
+    "closeSidebar": "关闭侧边栏",
     "downloads": "下载",
     "folderView": {
       "errorDetail": "无法获取此任务的输出。请重试。",
@@ -4364,11 +4512,15 @@
       "message": "团队计费功能即将上线。您将可以为您的工作区按成员数订阅套餐。敬请关注后续更新。",
       "title": "即将推出"
     },
+    "billingTabBlocked": "无法打开账单页面。请允许此站点弹出窗口，然后重试。",
     "cancelDialog": {
       "confirmCancel": "取消订阅",
       "description": "您的访问权限将持续到 {date}。您将不再被扣费，您的工作区和积分将被保留。您可以随时重新订阅。",
+      "discountApplied": "你的折扣已应用，因此此订阅未被取消。关闭此窗口以查看更新后的套餐。",
+      "discountRefreshFailed": "你的折扣已应用。刷新页面以查看更新后的套餐。",
       "endOfBillingPeriod": "账单周期结束",
       "failed": "取消订阅失败",
+      "finishOnStripe": "您的订阅尚未取消。请在刚刚打开的 Stripe 页面完成取消操作。在此之前，您的套餐将照常续订。",
       "keepSubscription": "保留订阅",
       "offerUnavailable": "该选项不可用。请选择其他选项。",
       "title": "取消订阅",
@@ -4441,7 +4593,8 @@
       "memberTitle": "此工作区的订阅已失效",
       "runLabel": "运行"
     },
-    "inactiveTeamDescription": "重新激活您的团队套餐以添加更多成员并运行工作流",
+    "inactiveEnterpriseDescription": "你无法运行工作流或添加新成员。请联系销售团队以恢复访问权限。",
+    "inactiveTeamDescription": "重新激活您的团队套餐，以添加更多成员并运行工作流",
     "inactiveTeamPlanIncludes": "激活套餐包含 {plan} 的所有内容，以及：",
     "inactiveTeamTitle": "团队订阅已失效",
     "inviteUpTo": "可邀请多达",
@@ -4500,7 +4653,7 @@
     "perMonth": "美元 / 月",
     "perYear": "/ 年",
     "personalHeader": "个人方案仅限个人使用。{action}",
-    "personalHeaderAction": "如需添加团队成员，请订阅团队方案。",
+    "personalHeaderAction": "若要添加团队成员，请订阅团队套餐。",
     "personalWorkspace": "个人工作区",
     "planLoadError": "无法加载您的套餐详情。",
     "planLoadErrorRetry": "重试",
@@ -4511,6 +4664,7 @@
     "plansAndCredits": "套餐和积分",
     "plansAndPricing": "订阅和定价",
     "plansForWorkspace": "{workspace} 的套餐",
+    "plansLoadFailed": "加载套餐失败",
     "prepaidCreditsInfo": "单独购买且不会过期的积分",
     "prepaidDescription": "预付款额度",
     "preview": {
@@ -4556,6 +4710,7 @@
       "payAndSubscribe": "付款并订阅",
       "paymentMethod": "支付方式",
       "paymentPopupBlocked": "无法打开支付页面 — 请允许弹窗后重试。",
+      "pendingVerificationDetail": "你之前发起的一笔付款仍需要你处理。完成后将激活你当时选择的套餐。付款完成后，你可以选择其他套餐。",
       "perMember": "/ 每成员",
       "privacyPolicy": "隐私政策",
       "promoCodePlaceholder": "优惠码",
@@ -4576,7 +4731,13 @@
         "title": "正在重新激活您的订阅",
         "titleAnnual": "正在重新激活您的订阅 — 今天将收取全年费用",
         "unavailable": "我们目前无法确认此次重新激活 — 请重新选择您的套餐",
-        "upgradeBody": "您的 {plan} 原定于 {date} 结束。现在升级将重新激活订阅 — 今天将收取 {amount}，并将在 {nextDate} 自动续订，而不是结束。"
+        "upgradeBody": "您的 {plan} 原定于 {date} 结束。现在升级将重新激活订阅 — 今天将收取 {amount}，并将在 {nextDate} 自动续订，而不是结束。",
+        "withoutRenewalDate": {
+          "downgradeBody": "你的 {plan} 原定于 {date} 结束。切换至 {newPlan} 将重新激活该套餐——今天不会收费，但它现在将按新价格自动续订而非结束。",
+          "durationChangeBody": "你的 {plan} 原定于 {date} 结束。切换为按年计费将重新激活该套餐，并在今天收取全年费用 {amount}。之后它将按年自动续订而非结束。",
+          "durationChangeBodyMonthly": "你的 {plan} 原定于 {date} 结束。切换为按月计费将重新激活该套餐——今天将收取 {amount}，并且它将自动续订而非结束。",
+          "upgradeBody": "你的 {plan} 原定于 {date} 结束。现在升级将重新激活该套餐——今天将收取 {amount}，并且它将自动续订而非结束。"
+        }
       },
       "refillReplacesNote": "替换您的月度补充。现有余额保留。",
       "renewsAt": "将于 {date} 以 {amount} 续订。可随时取消。",
@@ -4623,6 +4784,8 @@
     "resubscribeFailed": "重新激活订阅失败",
     "resubscribeSuccess": "订阅已成功重新激活",
     "resubscribeTo": "恢复 {plan}",
+    "salesManagedCreditsEndedNote": "套餐额度已随你的订阅结束。",
+    "salesManagedInactiveCreditsNote": "恢复套餐后即可使用。",
     "salesManagedRunBlockedDetail": "此工作区的套餐已不再有效。请联系您的 Comfy 客户经理以恢复访问权限。",
     "salesManagedRunBlockedTitle": "套餐未激活",
     "saveYearly": "立省 20%",
@@ -4633,7 +4796,7 @@
     "subscribe": "订阅",
     "subscribeFailed": "订阅失败",
     "subscribeForMore": "升级",
-    "subscribeNow": "立即订阅",
+    "subscribeNow": "订阅",
     "subscribeTo": "订阅 {plan}",
     "subscribeToComfyCloud": "订阅 Comfy Cloud",
     "subscribeToRun": "订阅",
@@ -4672,7 +4835,7 @@
       "perkRolePermissions": "基于角色的权限管理",
       "perkSharedPool": "所有成员共享积分池",
       "tagline": "选择适合您的额度订阅。额度订阅越大，折扣越高。",
-      "unavailable": "该团队套餐当前不可用。"
+      "unavailable": "该团队套餐目前不可用。"
     },
     "teamPlanIncludes": "您的套餐包含 {plan} 的所有内容，以及：",
     "teamPlanName": "团队",
@@ -4787,7 +4950,41 @@
       "Video API": "视频 API"
     },
     "clearAllFilters": "清除所有筛选器",
+    "detail": {
+      "backToTemplates": "返回 {category}",
+      "breadcrumbLabel": "模板导航",
+      "cloudUpsellDescription": "无需本地设置或下载，即可在云端 GPU 上运行。",
+      "cloudUpsellTitle": "在 Comfy Cloud 中运行此模板",
+      "downloadCancelled": "下载已取消",
+      "downloadFailed": "下载失败",
+      "downloadModel": "下载模型",
+      "downloadModelNamed": "下载 {model}",
+      "downloadModelsAndOpen": "下载模型并打开",
+      "downloadPaused": "已暂停",
+      "downloadPausedModel": "已暂停下载 {model}",
+      "downloadPausedProgress": "已暂停 · {progress}",
+      "downloadQueued": "已排队",
+      "downloadStarting": "正在启动",
+      "downloaded": "已下载",
+      "downloading": "正在下载",
+      "downloadingModel": "正在下载 {model}",
+      "getItManually": "手动获取",
+      "installed": "已安装",
+      "models": "模型",
+      "openInCloud": "在云端打开",
+      "openNow": "立即打开",
+      "partnerNodeDescription": "选择在本地或 Comfy Cloud 中运行此工作流。",
+      "partnerNodeTitle": "此工作流使用合作伙伴节点",
+      "requirements": "模板要求",
+      "retryDownload": "重试",
+      "retryDownloadNamed": "重试下载 {model}",
+      "unavailable": "不可用",
+      "unknown": "未知",
+      "usedBy": "由 {nodes} 使用"
+    },
     "error": {
+      "loading": "无法打开该模板。请重试。",
+      "preparingMedia": "部分示例媒体无法准备。工作流将会打开；请为所有缺失的输入选择你自己的文件。",
       "templateNotFound": "未找到模板 \"{templateName}\""
     },
     "filtersApplied": "已应用 {count} 个筛选器",
@@ -4804,6 +5001,7 @@
       "credits": "使用积分运行",
       "title": "高级模板"
     },
+    "preparingMedia": "正在准备示例媒体...",
     "resultsCount": "显示 {count} / 共 {total} 个模板",
     "runsOnFilter": "运行于",
     "runsOnSelected": "{count} 次运行",
@@ -4829,6 +5027,7 @@
   "toastMessages": {
     "a1111CoreNodesUnavailable": "无法加载工作流，因为此 ComfyUI 安装缺少核心节点。请检查后端是否已正确启动。",
     "a1111EmbeddingsUnavailable": "无法从服务器加载嵌入。工作流已导入，但嵌入名称保留为纯文本。",
+    "assetDropFailed": "无法加载拖放的资源",
     "cannotCreateSubgraph": "无法创建子工作流",
     "couldNotDetermineFileType": "无法确定文件类型",
     "dropFileError": "无法处理掉落的项目：{error}",
@@ -4838,6 +5037,7 @@
     "errorOpenImage": "打开图像时出错：{error}",
     "errorSaveSetting": "保存设置 {id} 出错：{err}",
     "exportSuccess": "成功将模型导出为 {format}",
+    "extraResourcesUploadFailed": "额外资源上传失败",
     "failedExecutionPathResolution": "无法解析所选节点的路径",
     "failedToAccessBillingPortal": "访问账单门户失败：{error}",
     "failedToApplyTexture": "应用纹理失败",
@@ -4848,6 +5048,7 @@
     "failedToFetchBalance": "获取余额失败：{error}",
     "failedToFetchLogs": "无法获取服务器日志",
     "failedToFetchSubscription": "获取订阅状态失败：{error}",
+    "failedToInitializeCameraAngleViewer": "无法初始化相机角度查看器。请尝试重新加载页面。",
     "failedToInitializeCameraInfoViewer": "初始化相机信息查看器失败。请尝试重新加载页面。",
     "failedToInitializeLoad3dViewer": "初始化3D查看器失败",
     "failedToInitiateCreditPurchase": "发起积分购买失败：{error}",
@@ -5067,6 +5268,7 @@
   },
   "workspace": {
     "addedToWorkspace": "您已被添加到：",
+    "deepLinkStayed": "无法打开该工作区。您仍在 {workspaceName} 中。",
     "inviteAccepted": "邀请已接受",
     "inviteFailed": "接受邀请失败",
     "switchFailed": "切换工作区失败。请重试。",
@@ -5104,33 +5306,46 @@
     },
     "billingStatus": {
       "ending": {
-        "body": "成员在此之前可保持完整访问权限。恢复订阅以保留共享额度和席位。",
-        "reactivate": "恢复订阅",
+        "body": "在此之前，成员仍可拥有完整访问权限。恢复您的套餐以保留团队共享额度。",
+        "contactSales": "联系销售",
+        "enterpriseBody": "成员在此之前将保留完整访问权限。请联系销售团队以延长套餐。",
+        "enterpriseTitle": "你的企业套餐将于 {date} 结束",
+        "memberBody": "在此之前，您可以运行工作流。",
+        "reactivate": "恢复套餐",
         "title": "您的团队套餐将于 {date} 结束"
       },
       "outOfCredits": {
         "addCredits": "添加积分",
-        "body": "您的团队已用完所有积分。请添加更多积分以继续生成，或等待积分在 {date} 自动补充。",
-        "bodyNoDate": "您的团队已用完所有积分。请添加更多积分以继续生成。",
+        "body": "您的团队已用完所有额度。请添加更多额度，或等待额度于 {date} 补充。",
+        "bodyNoDate": "您的团队已用完所有额度。请添加更多额度。",
         "dismiss": "忽略",
-        "memberBody": "您的团队已用完所有积分。工作区管理员需要添加更多积分以继续生成。",
-        "title": "积分已用完",
-        "upgradeBody": "升级您的套餐以添加点数并继续生成。"
+        "memberBody": "您的团队已用完所有额度。请让您的工作区所有者添加更多额度，或等待额度于 {date} 补充。",
+        "memberBodyNoDate": "您的团队已用完所有额度。请让您的工作区所有者添加更多额度。",
+        "title": "积分已用完"
       },
       "paused": {
         "body": "此工作区的订阅已暂停。请更新付款方式以恢复。",
         "memberBody": "此工作区的订阅已暂停。工作区管理员需要更新付款方式。",
+        "personalBody": "您的订阅已暂停。请更新付款方式以恢复。",
+        "personalPaymentFailedBody": "您的付款未成功。请更新付款方式以恢复。",
         "title": "订阅已暂停"
       },
+      "payInvoice": "支付账单",
       "planChange": {
         "body": "您当前的套餐将在此之前保持有效。",
-        "title": "您的套餐将于 {date} 变更为 {plan}"
+        "title": "您的套餐将于 {date} 更改为 {plan}。"
       },
-      "updatePayment": "更新付款方式",
-      "warning": {
-        "bodyNoDate": "您的上一次付款未成功。请更新付款方式以避免暂停。",
-        "title": "付款被拒绝"
-      }
+      "planEnded": {
+        "enterpriseBody": "请联系销售以开通新的企业套餐。",
+        "enterpriseTitle": "您的企业套餐已于 {date} 结束",
+        "planTitle": "您的套餐已于 {date} 结束",
+        "salesBody": "请联系销售以开通新套餐。",
+        "salesMemberBody": "请让您的工作区所有者联系销售。",
+        "teamBody": "重新订阅以运行工作流并再次获得共享额度。",
+        "teamMemberBody": "请让您的工作区所有者重新订阅。",
+        "teamTitle": "您的团队套餐已于 {date} 结束"
+      },
+      "updatePayment": "更新付款方式"
     },
     "changeRoleDialog": {
       "demoteConfirm": "降级为成员",
@@ -5169,10 +5384,19 @@
     "inviteLimitReached": "您已达到 {count} 名成员的上限",
     "inviteLinks": {
       "copied": "已复制！",
+      "copiedToast": "邀请链接已复制",
       "copyAll": "复制邀请链接 | 复制全部链接（{count}）",
+      "copyFailedToast": "无法复制邀请链接",
       "copyLink": "复制邀请链接",
+      "invalidBody": "它可能已过期或被替换。请向邀请你的人索取新链接。",
+      "invalidDismiss": "知道了",
+      "invalidTitle": "此邀请链接已失效",
       "sentLead": "每个邀请都有可直接分享的专属链接：",
-      "sentTitle": "已发送 {count} 个邀请 | 已发送 {count} 个邀请"
+      "sentTitle": "已发送 {count} 个邀请 | 已发送 {count} 个邀请",
+      "switchAccount": "切换账户",
+      "wrongAccountBody": "你当前以 {email} 登录。请使用收到此邀请的电子邮箱登录以接受邀请。",
+      "wrongAccountBodyGeneric": "此邀请发送到的电子邮箱地址与您当前登录使用的地址不同。请使用收到邀请的电子邮箱登录。",
+      "wrongAccountTitle": "此邀请发送到了其他电子邮箱"
     },
     "inviteMember": "邀请成员",
     "inviteMemberDialog": {
@@ -5191,6 +5415,11 @@
       "titleNotSubscribed": "邀请成员需要订阅套餐",
       "titleSingleSeat": "您当前的套餐仅支持单人席位",
       "upgradeToTeam": "升级到团队版"
+    },
+    "invoices": {
+      "fullHistory": "完整发票历史记录",
+      "nextInvoice": "下一张发票",
+      "usd": "USD"
     },
     "leaveDialog": {
       "leave": "离开",
@@ -5213,11 +5442,13 @@
         "minutesAgo": "{n} 分钟前"
       },
       "columns": {
-        "creditsUsed": "每月积分",
+        "creditsUsed": "本月已使用的积分",
+        "email": "电子邮箱",
         "expiryDate": "过期日期",
         "inviteDate": "邀请日期",
         "role": "角色"
       },
+      "contactSales": "联系销售团队",
       "contactUs": "联系我们",
       "creditLimitDialog": {
         "description": "达到上限后，将无法继续运行工作流。",
@@ -5228,25 +5459,38 @@
         "update": "更新上限",
         "warning": "该用户已消耗 {credits} 积分。将上限设置为当前用量或更低将导致本月无法继续运行。"
       },
-      "header": "成员",
+      "endedEnterpriseTitle": "你的企业套餐已结束",
+      "endedPlanTitle": "你的套餐已结束",
+      "endedTeamTitle": "您的团队套餐已结束",
+      "expiredOn": "已于 {date} 到期",
+      "loadFailed": "无法加载此页面上的全部内容。",
       "membersCount": "{count} / {maxSeats} 名成员",
       "needMoreMembers": "需要更多成员？",
       "noInvites": "暂无待处理邀请",
+      "noInvitesMatch": "没有与“{query}”匹配的邀请",
       "noMembers": "暂无成员",
+      "noMembersMatch": "没有与“{query}”匹配的成员",
       "pendingInvitesCount": "{count} 个待处理邀请",
+      "planEndedFooter": "您的套餐已结束，因此无法添加新成员。",
       "reactivateTeam": "重新激活团队版",
+      "resubscribe": "重新订阅",
       "searchPlaceholder": "搜索...",
       "tabs": {
         "active": "已激活",
         "pendingCount": "待处理（{count}）"
       },
+      "totalMembersCount": "{count} / {maxSeats} 名成员。",
+      "totalMembersUnlimited": "{count} 名成员。 | {count} 名成员。",
       "upgradeToTeam": "升级到团队版",
       "upsellBanner": "如需添加队友，请升级您的套餐。",
+      "upsellBannerEnterpriseEnded": "请联系销售团队以重新激活你的企业套餐。",
+      "upsellBannerPlanEnded": "请联系销售团队以重新激活你的套餐。",
       "upsellBannerReactivate": "如需添加更多队友，请重新激活您的套餐。"
     },
     "menu": {
       "creatorCannotLeave": "工作区创建者无法离开他们创建的工作区",
       "deleteWorkspace": "删除工作区",
+      "deleteWorkspaceAfterPlanEndsTooltip": "您的套餐于 {date} 结束后，您可以删除此工作区",
       "deleteWorkspaceDisabledTooltip": "请先取消工作区的有效订阅",
       "editWorkspace": "编辑工作区详情",
       "leaveWorkspace": "离开工作区"
@@ -5299,6 +5543,7 @@
     "planCredits": {
       "tabs": {
         "activity": "活动",
+        "invoices": "发票",
         "overview": "积分"
       }
     },
@@ -5315,9 +5560,7 @@
       "title": "取消邀请此人？"
     },
     "tabs": {
-      "dashboard": "仪表盘",
-      "membersCount": "成员（{count}）",
-      "planCredits": "套餐与积分"
+      "dashboard": "仪表盘"
     },
     "toast": {
       "failedToCreateWorkspace": "创建工作区失败",
@@ -5362,6 +5605,7 @@
     "hideMinimap": "隐藏小地图",
     "label": "缩放控制",
     "showMinimap": "显示小地图",
+    "zoomPercentage": "缩放百分比",
     "zoomToFit": "适合画面"
   }
 }

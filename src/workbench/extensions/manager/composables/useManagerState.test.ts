@@ -1,6 +1,6 @@
-import { beforeEach, describe, expect, it, vi } from 'vitest'
+import { useToast } from '@/components/ui/toast/toastStore'
+import { beforeEach, describe, expect, it, onTestFinished, vi } from 'vitest'
 
-import { useToastStore } from '@/platform/updates/common/toastStore'
 import { useCommandStore } from '@/stores/commandStore'
 import { api } from '@/scripts/api'
 import { useSystemStatsStore } from '@/stores/systemStatsStore'
@@ -11,7 +11,14 @@ import {
 } from '@/workbench/extensions/manager/composables/useManagerState'
 
 // Mock dependencies that are not stores
-vi.mock(import('@/i18n'), () => ({ t: (key: string) => key }))
+vi.mock(import('@/i18n'))
+
+const distribution = vi.hoisted(() => ({ isCloud: false }))
+vi.mock(import('@/platform/distribution/types'), () => ({
+  get isCloud() {
+    return distribution.isCloud
+  }
+}))
 
 vi.mock<unknown>(import('@/scripts/api'), () => ({
   api: {
@@ -21,13 +28,7 @@ vi.mock<unknown>(import('@/scripts/api'), () => ({
   }
 }))
 
-vi.mock(import('@/platform/settings/composables/useSettingsDialog'), () => ({
-  useSettingsDialog: vi.fn(() => ({
-    show: vi.fn(),
-    hide: vi.fn(),
-    showAbout: vi.fn()
-  }))
-}))
+vi.mock(import('@/platform/settings/composables/useSettingsDialog'))
 
 vi.mock(
   import('@/workbench/extensions/manager/composables/useManagerDialog'),
@@ -275,7 +276,7 @@ describe('useManagerState', () => {
       expect(managerState.isManagerEnabled.value).toBe(false)
     })
 
-    it('fires warn-severity toast exactly once across multiple consumers', () => {
+    it('fires the warning toast exactly once across multiple consumers', () => {
       systemStatsStore.$patch({
         systemStats: enabledManagerStats(),
         isInitialized: true
@@ -289,13 +290,14 @@ describe('useManagerState', () => {
       useManagerState()
       useManagerState()
 
-      expect(useToastStore().add).toHaveBeenCalledTimes(1)
-      expect(useToastStore().add).toHaveBeenCalledWith({
-        severity: 'warn',
-        summary: 'manager.incompatibleVersion.title',
-        detail: 'manager.incompatibleVersion.message',
-        life: 15000
-      })
+      expect(useToast().toasts).toEqual([
+        expect.objectContaining({
+          description: 'manager.incompatibleVersion.message',
+          duration: 15000,
+          kind: 'warning',
+          title: 'manager.incompatibleVersion.title'
+        })
+      ])
     })
 
     it('openManager on INCOMPATIBLE re-emits the upgrade toast without settings redirect', async () => {
@@ -309,17 +311,15 @@ describe('useManagerState', () => {
       mockServerFeatures({ supports_v4: true, supports_csrf_post: false })
 
       const managerState = useManagerState()
-      expect(useToastStore().add).toHaveBeenCalledTimes(1)
+      expect(useToast().warning).toHaveBeenCalledTimes(1)
 
       await managerState.openManager()
-      expect(useToastStore().add).toHaveBeenCalledTimes(2)
+      expect(useToast().warning).toHaveBeenCalledTimes(2)
       // second call must still be the upgrade toast, not an error toast
-      expect(useToastStore().add).toHaveBeenLastCalledWith({
-        severity: 'warn',
-        summary: 'manager.incompatibleVersion.title',
-        detail: 'manager.incompatibleVersion.message',
-        life: 15000
-      })
+      expect(useToast().warning).toHaveBeenLastCalledWith(
+        'manager.incompatibleVersion.title',
+        { description: 'manager.incompatibleVersion.message', duration: 15000 }
+      )
     })
 
     it('does not fire upgrade toast when state is NEW_UI', () => {
@@ -333,7 +333,7 @@ describe('useManagerState', () => {
       mockServerFeatures({ supports_v4: true, supports_csrf_post: true })
 
       useManagerState()
-      expect(useToastStore().add).not.toHaveBeenCalled()
+      expect(useToast().toasts).toEqual([])
     })
   })
 
@@ -420,6 +420,46 @@ describe('useManagerState', () => {
 
       const managerState = useManagerState()
       expect(managerState.shouldShowManagerButtons.value).toBe(true)
+    })
+
+    it.for([
+      { argv: ['python', 'main.py'], expected: false },
+      { argv: ['python', 'main.py', '--enable-manager'], expected: true }
+    ])(
+      'shouldShowExtensionsButton follows manager availability off cloud ($argv)',
+      ({ argv, expected }) => {
+        systemStatsStore.$patch({
+          systemStats: systemStatsFixture(argv),
+          isInitialized: true
+        })
+        vi.mocked(api.getClientFeatureFlags).mockReturnValue({
+          supports_manager_v4_ui: true
+        })
+        mockServerFeatures({ supports_v4: true, supports_csrf_post: true })
+
+        expect(useManagerState().shouldShowExtensionsButton.value).toBe(
+          expected
+        )
+      }
+    )
+
+    it('shouldShowExtensionsButton stays true on cloud while Manager is unavailable', () => {
+      distribution.isCloud = true
+      onTestFinished(() => {
+        distribution.isCloud = false
+      })
+      systemStatsStore.$patch({
+        systemStats: systemStatsFixture(['python', 'main.py']),
+        isInitialized: true
+      })
+      vi.mocked(api.getClientFeatureFlags).mockReturnValue({
+        supports_manager_v4_ui: true
+      })
+      mockServerFeatures({ supports_v4: true, supports_csrf_post: true })
+
+      const managerState = useManagerState()
+      expect(managerState.shouldShowManagerButtons.value).toBe(false)
+      expect(managerState.shouldShowExtensionsButton.value).toBe(true)
     })
   })
 })

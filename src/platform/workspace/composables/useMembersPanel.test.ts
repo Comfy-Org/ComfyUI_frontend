@@ -1,4 +1,5 @@
 import { useBillingCapabilities } from '@/platform/workspace/composables/useBillingCapabilities'
+import { useToast } from '@/components/ui/toast/toastStore'
 import { useDialogService } from '@/services/dialogService'
 import { getActivePinia } from 'pinia'
 import type { Pinia } from 'pinia'
@@ -8,7 +9,11 @@ import type { App } from 'vue'
 import { createI18n } from 'vue-i18n'
 
 import { useCurrentUser } from '@/composables/auth/useCurrentUser'
+import { useBillingContext } from '@/composables/billing/useBillingContext'
+import type { SubscriptionInfo } from '@/composables/billing/types'
 import { useFeatureFlags } from '@/composables/useFeatureFlags'
+import type { BillingSubscriptionStatus } from '@/platform/workspace/api/workspaceApi'
+import { useWorkspaceUI } from '@/platform/workspace/composables/useWorkspaceUI'
 import type {
   WorkspacePendingInvite,
   WorkspaceMember
@@ -49,20 +54,12 @@ function createInvite(
 }
 
 describe('sortMembers', () => {
-  it('places owners before members when sorting descending', () => {
+  it('places owners before members', () => {
     const owner = createMember({ id: 'o', role: 'owner', name: 'Owner' })
     const member = createMember({ id: 'm', role: 'member', name: 'Member' })
-    const result = sortMembers([member, owner], null, 'desc')
+    const result = sortMembers([member, owner], null)
     expect(result[0].id).toBe('o')
     expect(result[1].id).toBe('m')
-  })
-
-  it('places members before owners when sorting ascending', () => {
-    const owner = createMember({ id: 'o', role: 'owner', name: 'Owner' })
-    const member = createMember({ id: 'm', role: 'member', name: 'Member' })
-    const result = sortMembers([member, owner], null, 'asc')
-    expect(result[0].id).toBe('m')
-    expect(result[1].id).toBe('o')
   })
 
   it('places current user after owners but before others', () => {
@@ -85,11 +82,11 @@ describe('sortMembers', () => {
       joinDate: new Date('2025-01-01')
     })
 
-    const result = sortMembers([other, current, owner], 'me@test.com', 'desc')
+    const result = sortMembers([other, current, owner], 'me@test.com')
     expect(result.map((m) => m.id)).toEqual(['o', 'me', 'other'])
   })
 
-  it('sorts remaining members by joinDate descending', () => {
+  it('sorts remaining members newest first', () => {
     const early = createMember({
       id: 'early',
       joinDate: new Date('2025-01-01')
@@ -98,23 +95,9 @@ describe('sortMembers', () => {
       id: 'late',
       joinDate: new Date('2025-06-01')
     })
-    const result = sortMembers([early, late], null, 'desc')
+    const result = sortMembers([early, late], null)
     expect(result[0].id).toBe('late')
     expect(result[1].id).toBe('early')
-  })
-
-  it('sorts remaining members by joinDate ascending', () => {
-    const early = createMember({
-      id: 'early',
-      joinDate: new Date('2025-01-01')
-    })
-    const late = createMember({
-      id: 'late',
-      joinDate: new Date('2025-06-01')
-    })
-    const result = sortMembers([early, late], null, 'asc')
-    expect(result[0].id).toBe('early')
-    expect(result[1].id).toBe('late')
   })
 
   it('does not mutate the input array', () => {
@@ -123,11 +106,11 @@ describe('sortMembers', () => {
       createMember({ id: 'a', joinDate: new Date('2025-01-01') })
     ]
     const original = [...members]
-    sortMembers(members, null, 'desc')
+    sortMembers(members, null)
     expect(members).toEqual(original)
   })
 
-  it('pins the original owner first regardless of sort direction', () => {
+  it('pins the original owner before other owners', () => {
     const creator = createMember({
       id: 'creator',
       role: 'owner',
@@ -147,21 +130,12 @@ describe('sortMembers', () => {
       joinDate: new Date('2025-03-01')
     })
 
-    const desc = sortMembers(
+    const result = sortMembers(
       [member, promoted, creator],
       'me@test.com',
-      'desc',
       'creator'
     )
-    expect(desc.map((m) => m.id)).toEqual(['creator', 'promoted', 'm'])
-
-    const asc = sortMembers(
-      [member, promoted, creator],
-      'me@test.com',
-      'asc',
-      'creator'
-    )
-    expect(asc[0].id).toBe('creator')
+    expect(result.map((m) => m.id)).toEqual(['creator', 'promoted', 'm'])
   })
 })
 
@@ -228,19 +202,6 @@ describe('sortPendingInvites', () => {
     expect(result[1].id).toBe('l')
   })
 
-  it('falls back to inviteDate when sortField is role', () => {
-    const early = createInvite({
-      id: 'e',
-      inviteDate: new Date('2025-01-01')
-    })
-    const late = createInvite({
-      id: 'l',
-      inviteDate: new Date('2025-06-01')
-    })
-    const result = sortPendingInvites([early, late], 'role', 'desc')
-    expect(result[0].id).toBe('l')
-  })
-
   it('does not mutate the input array', () => {
     const invites = [
       createInvite({
@@ -258,12 +219,6 @@ describe('sortPendingInvites', () => {
   })
 })
 
-const mockToastAdd = vi.fn()
-const mockResendInvite =
-  vi.fn<(inviteId: string) => Promise<WorkspacePendingInvite>>()
-
-const mockShowSubscriptionDialog = vi.fn()
-
 const {
   mockMaxSeats,
   mockOccupiedSeats,
@@ -276,7 +231,7 @@ const {
   mockWorkspaceRole,
   mockSubscription
 } = vi.hoisted(() => {
-  // eslint-disable-next-line @typescript-eslint/no-require-imports, @typescript-eslint/consistent-type-imports
+  // oxlint-disable-next-line typescript/no-require-imports, typescript/consistent-type-imports
   const { ref } = require('vue') as typeof import('vue')
 
   return {
@@ -308,12 +263,13 @@ const {
     mockCanAccessSubscriptionFeatures: ref(true),
     mockIsInitialized: ref(true),
     mockIsTeamPlan: ref(true),
-    mockSubscriptionStatus: ref<string | null>('active'),
+    mockSubscriptionStatus: ref<BillingSubscriptionStatus | null>('active'),
     mockWorkspaceRole: ref<'owner' | 'member'>('owner'),
-    mockSubscription: ref<{ tier: string; isCancelled?: boolean } | null>({
-      tier: 'PRO',
-      isCancelled: false
-    })
+    mockSubscription: ref<
+      | (Pick<SubscriptionInfo, 'tier' | 'isCancelled'> &
+          Partial<Pick<SubscriptionInfo, 'endDate'>>)
+      | null
+    >({ tier: 'PRO', isCancelled: false })
   }
 })
 
@@ -337,7 +293,9 @@ function updateWorkspaceStore() {
       subscriptionPlan: null,
       subscriptionTier: workspaceType === 'team' ? 'PRO' : 'FREE',
       members: workspaceMembers,
-      pendingInvites: workspacePendingInvites
+      pendingInvites: workspacePendingInvites,
+      membersLoaded: true,
+      pendingInvitesLoaded: true
     }
   ]
   workspaceStore.activeWorkspaceId = 'workspace-one'
@@ -375,64 +333,20 @@ function setOriginalOwner(id = 'creator-1') {
   ]
 }
 
-vi.mock<unknown>(
-  import('primevue/usetoast'), // eslint-disable-line primevue-removal/no-imports
-  () => ({
-    useToast: () => ({ add: mockToastAdd })
-  })
-)
+vi.mock(import('@/platform/workspace/composables/useWorkspaceUI'))
 
-vi.mock<unknown>(
-  import('@/platform/workspace/composables/useWorkspaceUI'),
-  () => ({
-    useWorkspaceUI: () => ({
-      permissions: mockPermissions,
-      uiConfig: mockUiConfig,
-      workspaceRole: mockWorkspaceRole
-    })
-  })
-)
-
-vi.mock(import('@/platform/distribution/types'), () => ({ isCloud: true }))
+const mockDistribution = vi.hoisted(() => ({ isCloud: true }))
+vi.mock(import('@/platform/distribution/types'), () => mockDistribution)
 
 vi.mock(import('@/platform/workspace/composables/useBillingCapabilities'))
 
 vi.mock(import('@/composables/auth/useCurrentUser'))
 
-vi.mock<unknown>(
-  import('@/platform/cloud/subscription/composables/useSubscriptionDialog'),
-  () => ({
-    useSubscriptionDialog: () => ({ show: mockShowSubscriptionDialog })
-  })
+vi.mock(
+  import('@/platform/cloud/subscription/composables/useSubscriptionDialog')
 )
 
-vi.mock<unknown>(import('@/composables/billing/useBillingContext'), () => ({
-  useBillingContext: () => ({
-    canAccessSubscriptionFeatures: mockCanAccessSubscriptionFeatures,
-    isInitialized: mockIsInitialized,
-    isTeamPlan: mockIsTeamPlan,
-    subscription: mockSubscription,
-    subscriptionStatus: mockSubscriptionStatus,
-    maxSeats: mockMaxSeats,
-    occupiedSeats: mockOccupiedSeats,
-    getMaxSeats: (tierKey: string) => {
-      const seats: Record<string, number> = {
-        free: 1,
-        standard: 1,
-        creator: 5,
-        pro: 20
-      }
-      return seats[tierKey] ?? 1
-    }
-  })
-}))
-
-vi.mock<unknown>(
-  import('@/platform/cloud/subscription/composables/useSubscriptionDialog'),
-  () => ({
-    useSubscriptionDialog: () => ({ show: vi.fn() })
-  })
-)
+vi.mock(import('@/composables/billing/useBillingContext'))
 
 vi.mock(import('@/services/dialogService'))
 
@@ -442,19 +356,68 @@ describe('useMembersPanel', () => {
   let pinia: Pinia
 
   beforeEach(() => {
+    mockDistribution.isCloud = true
+    const workspaceUI = vi.mocked(useWorkspaceUI())
+    const defaultPermissions = workspaceUI.permissions.value
+    workspaceUI.permissions = computed(() => ({
+      ...defaultPermissions,
+      ...mockPermissions.value
+    }))
+    const defaultUiConfig = workspaceUI.uiConfig.value
+    workspaceUI.uiConfig = computed(() => ({
+      ...defaultUiConfig,
+      ...mockUiConfig.value,
+      workspaceMenuAction:
+        mockUiConfig.value.workspaceMenuAction === 'delete' ? 'delete' : null
+    }))
+    workspaceUI.workspaceRole = computed(() => mockWorkspaceRole.value)
+    const billingContext = useBillingContext()
+    billingContext.canAccessSubscriptionFeatures = computed(
+      () => mockCanAccessSubscriptionFeatures.value
+    )
+    billingContext.isInitialized = mockIsInitialized
+    billingContext.isTeamPlan = computed(() => mockIsTeamPlan.value)
+    billingContext.subscription = computed(() =>
+      mockSubscription.value
+        ? {
+            isActive: true,
+            duration: null,
+            planSlug: null,
+            scheduledChange: null,
+            renewalDate: null,
+            endDate: null,
+            hasFunds: true,
+            agentHasFunds: true,
+            ...mockSubscription.value
+          }
+        : null
+    )
+    billingContext.subscriptionStatus = computed(
+      () => mockSubscriptionStatus.value
+    )
+    billingContext.maxSeats = computed(() => mockMaxSeats.value)
+    billingContext.occupiedSeats = computed(() => mockOccupiedSeats.value)
+    vi.mocked(billingContext.getMaxSeats).mockImplementation((tierKey) => {
+      const seats: Record<string, number> = {
+        free: 1,
+        standard: 1,
+        creator: 5,
+        pro: 20
+      }
+      return seats[tierKey] ?? 1
+    })
+    vi.mocked(useBillingContext).mockReturnValue(billingContext)
     useCurrentUser().userPhotoUrl = computed(() => null)
     useCurrentUser().userEmail = computed(() => 'owner@example.com')
     useCurrentUser().userDisplayName = computed(() => 'Owner User')
     pinia = getActivePinia()!
     workspaceStore = useTeamWorkspaceStore(pinia)
-    vi.spyOn(workspaceStore, 'resendInvite').mockImplementation(
-      mockResendInvite
-    )
+    vi.spyOn(workspaceStore, 'resendInvite')
     workspaceType = 'personal'
     workspaceMembers = []
     workspacePendingInvites = []
     updateWorkspaceStore()
-    vi.mocked(useFeatureFlags().flags).billingControlEnabled = true
+    vi.mocked(useFeatureFlags().flags).memberCreditLimitsEnabled = true
     mockMaxSeats.value = 73
     mockOccupiedSeats.value = 0
     mockCanAccessSubscriptionFeatures.value = true
@@ -462,7 +425,7 @@ describe('useMembersPanel', () => {
     mockIsTeamPlan.value = true
     mockSubscriptionStatus.value = 'active'
     mockWorkspaceRole.value = 'owner'
-    useBillingCapabilities().canChangeSeats = computed(() => true)
+    useBillingCapabilities().canManageMembers = computed(() => true)
     useBillingCapabilities().canInviteMembers = computed(() => true)
     mockSubscription.value = { tier: 'PRO', isCancelled: false }
     mockPermissions.value = {
@@ -559,6 +522,139 @@ describe('useMembersPanel', () => {
       expect(panel.uiConfig.value.showRoleColumn).toBe(true)
     })
 
+    it.for([
+      { canManage: true, maxSeats: 1, status: 'active' as const },
+      { canManage: true, maxSeats: 1, status: 'ended' as const },
+      { canManage: false, maxSeats: 73, status: 'active' as const },
+      { canManage: false, maxSeats: 73, status: 'ended' as const }
+    ])(
+      'renders a successful roster with $canManage management, $maxSeats seats and $status status',
+      async ({ canManage, maxSeats, status }) => {
+        useBillingCapabilities().canManageMembers = computed(() => canManage)
+        mockMaxSeats.value = maxSeats
+        mockSubscriptionStatus.value = status
+        mockMembers.value = [createMember(), createMember({ id: 'member-2' })]
+        mockPendingInvites.value = [createInvite()]
+
+        const panel = await setup()
+
+        expect(panel.permissions.value.canViewOtherMembers).toBe(true)
+        expect(panel.permissions.value.canViewPendingInvites).toBe(canManage)
+        expect(panel.uiConfig.value.showMembersList).toBe(true)
+        expect(panel.uiConfig.value.showPendingTab).toBe(canManage)
+        expect(panel.uiConfig.value.showRoleColumn).toBe(true)
+        expect(panel.showSearch.value).toBe(true)
+        expect(panel.showViewTabs.value).toBe(canManage)
+        expect(panel.memberMenuItems(createMember()).length > 0).toBe(canManage)
+      }
+    )
+
+    it.for([
+      {
+        role: 'owner' as const,
+        maxSeats: 1,
+        status: 'active' as const,
+        canManage: false,
+        showMembers: false,
+        showTabs: false
+      },
+      {
+        role: 'owner' as const,
+        maxSeats: 1,
+        status: 'ended' as const,
+        canManage: false,
+        showMembers: true,
+        showTabs: false
+      },
+      {
+        role: 'owner' as const,
+        maxSeats: 73,
+        status: 'active' as const,
+        canManage: true,
+        showMembers: true,
+        showTabs: true
+      },
+      {
+        role: 'member' as const,
+        maxSeats: 73,
+        status: 'active' as const,
+        canManage: false,
+        showMembers: true,
+        showTabs: true
+      }
+    ])(
+      'preserves desktop $role visibility with $maxSeats seats and $status status',
+      async ({ role, maxSeats, status, canManage, showMembers, showTabs }) => {
+        mockDistribution.isCloud = false
+        mockWorkspaceRole.value = role
+        mockMaxSeats.value = maxSeats
+        mockSubscriptionStatus.value = status
+        useBillingCapabilities().canManageMembers = computed(() => !canManage)
+        mockMembers.value = [createMember(), createMember({ id: 'member-2' })]
+        mockPendingInvites.value = [createInvite()]
+
+        const panel = await setup()
+
+        expect(panel.permissions.value.canManageMembers).toBe(canManage)
+        expect(panel.uiConfig.value.showMembersList).toBe(showMembers)
+        expect(panel.showViewTabs.value).toBe(showTabs)
+      }
+    )
+
+    it.for([false, true])(
+      'uses read readiness for roster visibility (members loaded: %s)',
+      async (loaded) => {
+        workspaceType = 'personal'
+        updateWorkspaceStore()
+        workspaceStore.workspaces[0] = {
+          ...workspaceStore.workspaces[0],
+          membersLoaded: loaded
+        }
+        useBillingCapabilities().canManageMembers = computed(() => false)
+        const panel = await setup()
+
+        expect(panel.permissions.value.canViewOtherMembers).toBe(loaded)
+        expect(panel.uiConfig.value.showMembersList).toBe(loaded)
+        expect(panel.showSearch.value).toBe(false)
+      }
+    )
+
+    it.for([false, true])(
+      'keeps pending invitations available independently of personal roster readiness (loaded: %s)',
+      async (loaded) => {
+        mockMembers.value = [
+          createMember({ role: 'owner', email: 'owner@example.com' })
+        ]
+        mockPendingInvites.value = [createInvite()]
+        workspaceStore.workspaces[0] = {
+          ...workspaceStore.workspaces[0],
+          membersLoaded: loaded
+        }
+        const panel = await setup()
+
+        expect(panel.uiConfig.value.showMembersList).toBe(false)
+        expect(panel.permissions.value.canViewPendingInvites).toBe(true)
+        expect(panel.uiConfig.value.showPendingTab).toBe(true)
+        expect(panel.showViewTabs.value).toBe(true)
+      }
+    )
+
+    it('keeps a successful personal single-member roster minimal regardless of seats or management', async () => {
+      workspaceType = 'personal'
+      mockMembers.value = [
+        createMember({ role: 'owner', email: 'owner@example.com' })
+      ]
+      mockMaxSeats.value = 73
+      useBillingCapabilities().canManageMembers = computed(() => true)
+      const panel = await setup()
+
+      expect(panel.permissions.value.canViewOtherMembers).toBe(true)
+      expect(panel.uiConfig.value.showMembersList).toBe(false)
+      expect(panel.uiConfig.value.showRoleColumn).toBe(false)
+      expect(panel.showSearch.value).toBe(false)
+      expect(panel.showViewTabs.value).toBe(false)
+    })
+
     it('preserves the credit column layout for a Team owner', async () => {
       mockUiConfig.value = {
         ...mockUiConfig.value,
@@ -579,6 +675,11 @@ describe('useMembersPanel', () => {
     })
 
     it('uses the single-user member layout for a personal plan', async () => {
+      mockMembers.value = [
+        createMember({ role: 'owner', email: 'owner@example.com' })
+      ]
+      useBillingCapabilities().canManageMembers = computed(() => false)
+      useBillingCapabilities().canInviteMembers = computed(() => false)
       mockIsTeamPlan.value = false
       mockMaxSeats.value = 1
 
@@ -645,6 +746,34 @@ describe('useMembersPanel', () => {
       expect(panel.filteredMembers.value).toHaveLength(1)
       expect(panel.filteredMembers.value[0].name).toBe('Alice')
     })
+
+    it('keeps the members order when the Pending sort changes', async () => {
+      const founder = createMember({
+        id: 'founder',
+        email: 'founder@example.com',
+        role: 'owner',
+        isOriginalOwner: true
+      })
+      const coOwner = createMember({
+        id: 'co-owner',
+        email: 'co@example.com',
+        role: 'owner'
+      })
+      const member = createMember({
+        id: 'member',
+        email: 'member@example.com',
+        role: 'member'
+      })
+      mockMembers.value = [member, coOwner, founder]
+      const panel = await setup()
+      const before = panel.filteredMembers.value.map((m) => m.id)
+
+      panel.toggleSort('inviteDate')
+      expect(panel.sortDirection.value).toBe('asc')
+
+      expect(panel.filteredMembers.value.map((m) => m.id)).toEqual(before)
+      expect(before).toEqual(['founder', 'co-owner', 'member'])
+    })
   })
 
   describe('toggleSort', () => {
@@ -666,27 +795,26 @@ describe('useMembersPanel', () => {
 
   describe('handleResendInvite', () => {
     it('resends the invite and shows a success toast', async () => {
-      mockResendInvite.mockResolvedValue(createInvite({ id: 'inv-1' }))
+      vi.mocked(workspaceStore.resendInvite).mockResolvedValue(
+        createInvite({ id: 'inv-1' })
+      )
       const panel = await setup()
       await panel.handleResendInvite(createInvite({ id: 'inv-1' }))
-      expect(mockResendInvite).toHaveBeenCalledWith('inv-1')
-      expect(mockToastAdd).toHaveBeenCalledWith(
-        expect.objectContaining({
-          severity: 'success',
-          summary: 'workspacePanel.toast.inviteResent'
-        })
+      expect(workspaceStore.resendInvite).toHaveBeenCalledWith('inv-1')
+      expect(useToast().success).toHaveBeenCalledWith(
+        'workspacePanel.toast.inviteResent',
+        { duration: 2000 }
       )
     })
 
     it('shows error toast on failure', async () => {
-      mockResendInvite.mockRejectedValue(new Error('fail'))
+      vi.mocked(workspaceStore.resendInvite).mockRejectedValue(
+        new Error('fail')
+      )
       const panel = await setup()
       await panel.handleResendInvite(createInvite({ id: 'inv-1' }))
-      expect(mockToastAdd).toHaveBeenCalledWith(
-        expect.objectContaining({
-          severity: 'error',
-          summary: 'workspacePanel.toast.inviteResendFailed'
-        })
+      expect(useToast().error).toHaveBeenCalledWith(
+        'workspacePanel.toast.inviteResendFailed'
       )
     })
   })
@@ -752,7 +880,7 @@ describe('useMembersPanel', () => {
   })
 
   describe('memberMenuItems', () => {
-    it('builds a Change role submenu with the current role checked', async () => {
+    it('builds a Change role radio group with the current role selected', async () => {
       const panel = await setup()
       const items = panel.memberMenuItems(createMember({ role: 'member' }))
 
@@ -762,35 +890,32 @@ describe('useMembersPanel', () => {
         'workspacePanel.members.actions.removeMember'
       ])
 
-      const roleItems = items[0].items ?? []
-      expect(roleItems.map((i) => i.label)).toEqual([
+      const roleGroup = items[0].radioGroup
+      expect(roleGroup?.options.map((i) => i.label)).toEqual([
         'workspaceSwitcher.roleOwner',
         'workspaceSwitcher.roleMember'
       ])
-      expect(roleItems.map((i) => i.checked)).toEqual([false, true])
+      expect(roleGroup?.value).toBe('member')
     })
 
     it('omits Set credit limit for owner rows', async () => {
       const panel = await setup()
       const items = panel.memberMenuItems(createMember({ role: 'owner' }))
-      const roleItems = items[0].items ?? []
+      const roleGroup = items[0].radioGroup
 
       expect(items.map((item) => item.label)).toEqual([
         'workspacePanel.members.actions.changeRole',
         'workspacePanel.members.actions.removeMember'
       ])
-      expect(roleItems.map((i) => i.checked)).toEqual([true, false])
+      expect(roleGroup?.value).toBe('owner')
     })
 
     it('routes submenu selection to the change-role dialog', async () => {
       const panel = await setup()
       const member = createMember({ id: 'mem-9', role: 'member' })
-      const ownerItem = (panel.memberMenuItems(member)[0].items ?? [])[0]
+      const ownerItem = panel.memberMenuItems(member)[0].radioGroup?.options[0]
 
-      ownerItem.command?.({
-        originalEvent: new Event('click'),
-        item: ownerItem
-      })
+      ownerItem?.command()
 
       expect(
         useDialogService().showChangeMemberRoleDialog
@@ -861,7 +986,7 @@ describe('useMembersPanel', () => {
 
     it('returns no actions without member-management permission', async () => {
       mockWorkspaceRole.value = 'member'
-      useBillingCapabilities().canChangeSeats = computed(() => false)
+      useBillingCapabilities().canManageMembers = computed(() => false)
       const panel = await setup()
 
       expect(panel.memberMenuItems(createMember())).toEqual([])
@@ -878,7 +1003,20 @@ describe('useMembersPanel', () => {
     })
 
     it('omits the credit-limit action when the flag is disabled', async () => {
-      vi.mocked(useFeatureFlags().flags).billingControlEnabled = false
+      vi.mocked(useFeatureFlags().flags).memberCreditLimitsEnabled = false
+      const panel = await setup()
+
+      expect(panel.memberMenuItems(createMember()).map((i) => i.label)).toEqual(
+        [
+          'workspacePanel.members.actions.changeRole',
+          'workspacePanel.members.actions.removeMember'
+        ]
+      )
+    })
+
+    it('omits the credit-limit action under billing controls alone', async () => {
+      vi.mocked(useFeatureFlags().flags).memberCreditLimitsEnabled = false
+      vi.mocked(useFeatureFlags().flags).billingControlEnabled = true
       const panel = await setup()
 
       expect(panel.memberMenuItems(createMember()).map((i) => i.label)).toEqual(
@@ -890,7 +1028,7 @@ describe('useMembersPanel', () => {
     })
 
     it('keeps the creator menu hidden when the flag is disabled', async () => {
-      vi.mocked(useFeatureFlags().flags).billingControlEnabled = false
+      vi.mocked(useFeatureFlags().flags).memberCreditLimitsEnabled = false
       setOriginalOwner()
       const panel = await setup()
 
@@ -956,13 +1094,14 @@ describe('useMembersPanel', () => {
       expect(panel.showViewTabs.value).toBe(true)
     })
 
-    it('hides Team member controls for a personal plan', async () => {
+    it('shows a successfully returned personal roster without management controls', async () => {
+      useBillingCapabilities().canManageMembers = computed(() => false)
       mockIsTeamPlan.value = false
       mockMaxSeats.value = 1
       mockMembers.value = [createMember(), createMember({ id: '2' })]
       const panel = await setup()
       expect(panel.showViewTabs.value).toBe(false)
-      expect(panel.showSearch.value).toBe(false)
+      expect(panel.showSearch.value).toBe(true)
     })
   })
 
@@ -976,46 +1115,26 @@ describe('useMembersPanel', () => {
       ).not.toHaveBeenCalled()
     })
 
-    it('opens the upsell dialog when not on a team plan', async () => {
-      mockIsTeamPlan.value = false
-      mockMaxSeats.value = 1
-      const panel = await setup()
-      panel.handleInviteMember()
-      expect(useDialogService().showInviteMemberUpsellDialog).toHaveBeenCalled()
-      expect(useDialogService().showInviteMemberDialog).not.toHaveBeenCalled()
-    })
-
-    it('disables the invite button at the backend member limit', async () => {
-      mockOccupiedSeats.value = 73
-      const panel = await setup()
-      expect(panel.isInviteDisabled.value).toBe(true)
-      expect(panel.inviteTooltip.value).toBe(
-        'workspacePanel.inviteLimitReached'
-      )
-      panel.handleInviteMember()
-      expect(useDialogService().showInviteMemberDialog).not.toHaveBeenCalled()
-    })
-
-    it('keeps the invite button enabled below the member cap', async () => {
-      mockOccupiedSeats.value = 72
-      const panel = await setup()
-      expect(panel.isInviteDisabled.value).toBe(false)
-      expect(panel.inviteTooltip.value).toBeNull()
-    })
-
-    it('fails closed without showing a limit tooltip while loading', async () => {
-      mockMaxSeats.value = null
-      const panel = await setup()
-      expect(panel.isInviteDisabled.value).toBe(true)
-      expect(panel.inviteTooltip.value).toBeNull()
-    })
-
-    it('fails closed while backend occupancy is unresolved', async () => {
-      mockOccupiedSeats.value = null
-      const panel = await setup()
-      expect(panel.isInviteDisabled.value).toBe(true)
-      expect(panel.inviteTooltip.value).toBeNull()
-    })
+    it.for([
+      { name: 'at capacity', maxSeats: 73, occupiedSeats: 73 },
+      { name: 'seatless', maxSeats: 1, occupiedSeats: 1 },
+      { name: 'seat limit loading', maxSeats: null, occupiedSeats: 0 },
+      { name: 'occupancy loading', maxSeats: 73, occupiedSeats: null }
+    ])(
+      'uses the server invitation decision when $name',
+      async ({ maxSeats, occupiedSeats }) => {
+        mockMaxSeats.value = maxSeats
+        mockOccupiedSeats.value = occupiedSeats
+        const panel = await setup()
+        expect(panel.isInviteDisabled.value).toBe(false)
+        expect(panel.inviteTooltip.value).toBeNull()
+        panel.handleInviteMember()
+        expect(useDialogService().showInviteMemberDialog).toHaveBeenCalled()
+        expect(
+          useDialogService().showInviteMemberUpsellDialog
+        ).not.toHaveBeenCalled()
+      }
+    )
 
     it('treats a zero backend limit as unlimited', async () => {
       mockMaxSeats.value = 0
@@ -1030,13 +1149,181 @@ describe('useMembersPanel', () => {
       expect(panel.isInviteDisabled.value).toBe(false)
     })
 
-    it('disables the invite button when the team plan is cancelled', async () => {
+    it('keeps invites live while a cancellation is scheduled', async () => {
       mockSubscription.value = { tier: 'PRO', isCancelled: true }
       const panel = await setup()
+      expect(panel.isInviteDisabled.value).toBe(false)
+      expect(panel.permissions.value.canInviteMembers).toBe(true)
+      panel.handleInviteMember()
+      expect(useDialogService().showInviteMemberDialog).toHaveBeenCalled()
+    })
+
+    it('keeps invites live for an end-dated Enterprise plan still running', async () => {
+      mockSubscription.value = {
+        tier: 'ENTERPRISE',
+        isCancelled: true,
+        endDate: '2027-01-15T00:00:00Z'
+      }
+      const panel = await setup()
+      expect(panel.isInviteDisabled.value).toBe(false)
+      expect(panel.permissions.value.canInviteMembers).toBe(true)
+      panel.handleInviteMember()
+      expect(useDialogService().showInviteMemberDialog).toHaveBeenCalled()
+    })
+
+    it('hides denied invitations on an ended plan', async () => {
+      mockSubscriptionStatus.value = 'ended'
+      useBillingCapabilities().canInviteMembers = computed(() => false)
+      const panel = await setup()
+      expect(panel.isPlanEnded.value).toBe(true)
+      expect(panel.showInviteButton.value).toBe(false)
       expect(panel.isInviteDisabled.value).toBe(true)
-      expect(panel.permissions.value.canInviteMembers).toBe(false)
       panel.handleInviteMember()
       expect(useDialogService().showInviteMemberDialog).not.toHaveBeenCalled()
+    })
+
+    it('keeps the ended invite button hidden from members', async () => {
+      mockSubscriptionStatus.value = 'ended'
+      useBillingCapabilities().canInviteMembers = computed(() => false)
+      mockPermissions.value = {
+        ...mockPermissions.value,
+        canManageSubscription: false
+      }
+      const panel = await setup()
+      expect(panel.showInviteButton.value).toBe(false)
+    })
+
+    it('classifies an ended Enterprise plan as sales-managed', async () => {
+      mockSubscriptionStatus.value = 'ended'
+      mockSubscription.value = { tier: 'ENTERPRISE', isCancelled: false }
+      const panel = await setup()
+      expect(panel.isSalesManagedPlan.value).toBe(true)
+    })
+
+    // isSalesManagedTier()'s contract: an unrecognized tier is sales-managed,
+    // so an ended unknown plan routes to Contact sales, never to the
+    // self-serve Reactivate claim.
+    it('classifies an ended unrecognized tier as sales-managed too', async () => {
+      mockSubscriptionStatus.value = 'ended'
+      mockSubscription.value = {
+        tier: 'FUTURE_TIER' as never,
+        isCancelled: false
+      }
+      const panel = await setup()
+      expect(panel.isSalesManagedPlan.value).toBe(true)
+    })
+
+    it('keeps a self-serve Pro plan off the sales-managed route', async () => {
+      mockSubscriptionStatus.value = 'ended'
+      mockSubscription.value = { tier: 'PRO', isCancelled: false }
+      const panel = await setup()
+      expect(panel.isSalesManagedPlan.value).toBe(false)
+    })
+
+    // The ended treatment is team-scoped: a lapsed personal subscription is
+    // the upgrade banner's state, not "Your Team plan has ended".
+    it('keeps a lapsed personal plan out of the team-ended treatment', async () => {
+      mockIsTeamPlan.value = false
+      mockMaxSeats.value = 1
+      mockSubscriptionStatus.value = 'ended'
+      const panel = await setup()
+      expect(panel.isPlanEnded.value).toBe(false)
+    })
+
+    // Enterprise deliberately fails the self-serve Team classifier
+    // (enterprise_* slug, no team credit stop) — the ended treatment must
+    // not depend on it, or production loses the banner and the
+    // visible-disabled Invite for exactly the tier this exists for.
+    it('keeps the ended treatment for Enterprise outside the Team classifier', async () => {
+      mockIsTeamPlan.value = false
+      mockSubscriptionStatus.value = 'ended'
+      mockSubscription.value = { tier: 'ENTERPRISE', isCancelled: false }
+      const panel = await setup()
+      expect(panel.isPlanEnded.value).toBe(true)
+      expect(panel.isSalesManagedPlan.value).toBe(true)
+    })
+
+    it('keeps the ended treatment for an unrecognized tier outside it too', async () => {
+      mockIsTeamPlan.value = false
+      mockSubscriptionStatus.value = 'ended'
+      mockSubscription.value = {
+        tier: 'FUTURE_TIER' as never,
+        isCancelled: false
+      }
+      const panel = await setup()
+      expect(panel.isPlanEnded.value).toBe(true)
+    })
+
+    // A stale payload can still carry the pre-reconcile shape: cancelled with
+    // access already closed. It reads as ended, never as an unexplained
+    // dead end.
+    it('treats a cancelled plan whose access has closed as ended', async () => {
+      mockSubscriptionStatus.value = 'canceled'
+      mockCanAccessSubscriptionFeatures.value = false
+      const panel = await setup()
+      expect(panel.isPlanEnded.value).toBe(true)
+    })
+
+    it('keeps a cancel-scheduled plan with live access un-ended', async () => {
+      mockSubscriptionStatus.value = 'canceled'
+      mockCanAccessSubscriptionFeatures.value = true
+      const panel = await setup()
+      expect(panel.isPlanEnded.value).toBe(false)
+    })
+
+    it('routes a missing tier with member seats to sales', async () => {
+      mockSubscriptionStatus.value = 'ended'
+      mockSubscription.value = null
+      const panel = await setup()
+      expect(panel.isSalesManagedPlan.value).toBe(true)
+      expect(panel.isPlanEnded.value).toBe(true)
+    })
+
+    // Without a team signal or a real tier there is nothing to hang the
+    // ended-team treatment on — a terminal tierless payload off the team
+    // plan is most plausibly lapsed personal, which the upgrade banner owns.
+    it('keeps a tierless terminal plan off the team plan out of the treatment', async () => {
+      mockIsTeamPlan.value = false
+      mockSubscriptionStatus.value = 'ended'
+      mockSubscription.value = null
+      const panel = await setup()
+      expect(panel.isPlanEnded.value).toBe(false)
+    })
+
+    it.for([true, false])(
+      'renders the server invite permission %s for an ended plan with collapsed seats',
+      async (canInvite) => {
+        mockIsTeamPlan.value = false
+        mockMaxSeats.value = 1
+        mockSubscriptionStatus.value = 'ended'
+        mockSubscription.value = { tier: 'ENTERPRISE', isCancelled: false }
+        useBillingCapabilities().canInviteMembers = computed(() => canInvite)
+        const panel = await setup()
+        expect(panel.isPlanEnded.value).toBe(true)
+        expect(panel.isSalesManagedPlan.value).toBe(true)
+        expect(panel.showInviteButton.value).toBe(canInvite)
+        expect(panel.isInviteDisabled.value).toBe(!canInvite)
+        expect(panel.uiConfig.value.showMembersList).toBe(true)
+        panel.handleInviteMember()
+        expect(useDialogService().showInviteMemberDialog).toHaveBeenCalledTimes(
+          canInvite ? 1 : 0
+        )
+        expect(
+          useDialogService().showInviteMemberUpsellDialog
+        ).not.toHaveBeenCalled()
+      }
+    )
+
+    // A lapsed personal workspace is seatless and outside the ended
+    // treatment; an Invite button that can never enable must not appear.
+    it('hides the invite button for a lapsed personal workspace', async () => {
+      mockIsTeamPlan.value = false
+      mockSubscriptionStatus.value = 'ended'
+      mockMaxSeats.value = 1
+      useBillingCapabilities().canInviteMembers = computed(() => false)
+      const panel = await setup()
+      expect(panel.isPlanEnded.value).toBe(false)
+      expect(panel.showInviteButton.value).toBe(false)
     })
 
     it('enables invite for a Team-plan owner over personal defaults', async () => {
@@ -1056,28 +1343,54 @@ describe('useMembersPanel', () => {
       expect(panel.showInviteButton.value).toBe(false)
     })
 
-    it('hides invite actions when the server denies invitations', async () => {
+    it('keeps management available when a full workspace cannot invite', async () => {
       useBillingCapabilities().canInviteMembers = computed(() => false)
+      useBillingCapabilities().canChangeSeats = computed(() => false)
+      mockSubscription.value = { tier: 'ENTERPRISE', isCancelled: true }
+      mockMaxSeats.value = 73
+      mockOccupiedSeats.value = 73
+      workspaceMembers = [createMember({ id: 'member-1' })]
+      workspacePendingInvites = [createInvite({ id: 'inv-1' })]
+      updateWorkspaceStore()
       const panel = await setup()
+      const member = createMember({ id: 'member-1' })
 
       expect(panel.showInviteButton.value).toBe(false)
+      expect(panel.isInviteDisabled.value).toBe(true)
+      expect(panel.permissions.value.canViewPendingInvites).toBe(true)
+      expect(panel.showViewTabs.value).toBe(true)
+      expect(panel.uiConfig.value.showPendingTab).toBe(true)
+      expect(panel.memberMenuItems(member)).not.toEqual([])
       await panel.handleResendInvite(createInvite({ id: 'inv-1' }))
       panel.handleRevokeInvite(createInvite({ id: 'inv-1' }))
+      panel.handleRemoveMember(member)
+      panel.handleChangeRole(member, 'owner')
       panel.handleInviteMember()
 
-      expect(mockResendInvite).not.toHaveBeenCalled()
-      expect(useDialogService().showRevokeInviteDialog).not.toHaveBeenCalled()
+      expect(workspaceStore.resendInvite).toHaveBeenCalledWith('inv-1')
+      expect(useDialogService().showRevokeInviteDialog).toHaveBeenCalledWith(
+        'inv-1'
+      )
+      expect(useDialogService().showRemoveMemberDialog).toHaveBeenCalledWith(
+        'member-1'
+      )
+      expect(useDialogService().showChangeMemberRoleDialog).toHaveBeenCalled()
       expect(useDialogService().showInviteMemberDialog).not.toHaveBeenCalled()
     })
 
-    it('hides member management when the server denies seat changes', async () => {
-      useBillingCapabilities().canChangeSeats = computed(() => false)
+    it('hides management actions when the server denies member management', async () => {
+      useBillingCapabilities().canManageMembers = computed(() => false)
       const panel = await setup()
       const member = createMember({ id: 'member-1' })
 
       expect(panel.permissions.value.canManageMembers).toBe(false)
       panel.handleRemoveMember(member)
       panel.handleChangeRole(member, 'owner')
+      await panel.handleResendInvite(createInvite())
+      panel.handleRevokeInvite(createInvite())
+      expect(panel.permissions.value.canViewPendingInvites).toBe(false)
+      expect(workspaceStore.resendInvite).not.toHaveBeenCalled()
+      expect(useDialogService().showRevokeInviteDialog).not.toHaveBeenCalled()
 
       expect(useDialogService().showRemoveMemberDialog).not.toHaveBeenCalled()
       expect(
@@ -1085,12 +1398,12 @@ describe('useMembersPanel', () => {
       ).not.toHaveBeenCalled()
     })
 
-    it('keeps invite disabled while billing is initializing', async () => {
+    it('honors the resolved invitation capability while billing is initializing', async () => {
       mockIsInitialized.value = false
       const panel = await setup()
-      expect(panel.isInviteDisabled.value).toBe(true)
+      expect(panel.isInviteDisabled.value).toBe(false)
       panel.handleInviteMember()
-      expect(useDialogService().showInviteMemberDialog).not.toHaveBeenCalled()
+      expect(useDialogService().showInviteMemberDialog).toHaveBeenCalled()
       expect(
         useDialogService().showInviteMemberUpsellDialog
       ).not.toHaveBeenCalled()

@@ -6,19 +6,22 @@ import type {
   SortOrder,
   UseCase,
   WorkshopModel
-} from '../../config/models-catalogue'
+} from '@/config/models-catalogue'
 import {
   USE_CASES,
   filterWorkshopModels,
   sortWorkshopModels,
   useCasesFor
-} from '../../config/models-catalogue'
-import { OTHER_FORMAT_USE_CASES } from '../../config/workshop-sections'
-import type { Locale, TranslationKey } from '../../i18n/translations'
-import { t } from '../../i18n/translations'
-import { groupModels } from '../../config/model-family'
-import { rememberShelf } from '../../lib/workshop/shelf-memory'
+} from '@/config/models-catalogue'
+import { OTHER_FORMAT_USE_CASES } from '@/config/workshop-sections'
+import type { Locale, TranslationKey } from '@/i18n/translations'
+import { translationsFor } from '@/i18n/translations'
+import { groupModels } from '@/config/model-family'
+import { SHELF_CARD } from '@/lib/workshop/card-layout'
+import { rememberShelfOnClick } from '@/lib/workshop/shelf-memory'
+import { captureHubItemClick, hubItemOf } from '@/scripts/hub-analytics'
 import CardRow from './CardRow.vue'
+import HubRowSeen from './HubRowSeen.vue'
 import WorkshopModelCard from './WorkshopModelCard.vue'
 
 const ROW_LIMIT = 8
@@ -34,6 +37,7 @@ const {
   sort?: SortOrder
   locale?: Locale
 }>()
+const { t } = translationsFor(locale)
 
 const emit = defineEmits<{ open: [UseCase | 'other'] }>()
 
@@ -43,12 +47,11 @@ const titleClass =
   'hover:text-primary-comfy-yellow focus-visible:ring-primary-comfy-yellow/50 cursor-pointer rounded-lg text-xl font-medium text-primary-warm-white transition-colors outline-none focus-visible:ring-3'
 
 // The count belongs to the screen the link opens, not to the row, which loads
-// eight whatever the total says.
+// eight whatever the total says. A row already holding every match has no such
+// screen to offer — the link led back to the same cards — so it keeps only its
+// heading, which opens the shelf for anyone who wants it on its own.
 const seeAllClass =
   'group hover:text-primary-comfy-yellow focus-visible:ring-primary-comfy-yellow/50 inline-flex shrink-0 cursor-pointer items-center gap-1 rounded-lg text-sm font-medium text-primary-warm-gray transition-colors outline-none focus-visible:ring-3'
-
-const cardClass =
-  'w-60 shrink-0 snap-start sm:w-[calc((100cqw-2*1.25rem)/2.5)] md:w-[calc((100cqw-3*1.25rem)/3.5)] lg:w-[calc((100cqw-4*1.25rem)/4.5)] xl:w-[calc((100cqw-5*1.25rem)/5.5)]'
 
 const sections = computed(() =>
   USE_CASES.filter((useCase) => !GROUPED.includes(useCase))
@@ -85,17 +88,20 @@ const unplaced = computed(() =>
 function rememberModel(
   shelf: UseCase | 'all' | 'other',
   model: WorkshopModel,
-  event: MouseEvent
+  event: MouseEvent,
+  position: number
 ) {
-  if (
-    event.button !== 0 ||
-    event.metaKey ||
-    event.ctrlKey ||
-    event.shiftKey ||
-    event.altKey
-  )
-    return
-  rememberShelf(shelf, model.href)
+  if (!model.href) return
+  captureHubItemClick(hubItemOf(model), {
+    surface: 'models',
+    position,
+    ...(shelf === 'other'
+      ? { source: 'other_formats_row' }
+      : shelf === 'all'
+        ? { source: 'unplaced_grid' }
+        : { source: 'use_case_row', row: shelf })
+  })
+  rememberShelfOnClick(shelf, model.href, event)
 }
 </script>
 
@@ -116,25 +122,21 @@ function rememberModel(
               :data-testid="`section-${section.useCase}-open`"
               @click="emit('open', section.useCase)"
             >
-              {{ t(labelKey[section.useCase], locale) }}
+              {{ t(labelKey[section.useCase]) }}
             </button>
           </h2>
         </template>
 
         <template #actions>
           <button
+            v-if="section.total > ROW_LIMIT"
             type="button"
             :class="seeAllClass"
             :data-testid="`section-${section.useCase}-see-all`"
             @click="emit('open', section.useCase)"
           >
             <span class="tabular-nums">
-              {{
-                t('workshop.sections.seeAll', locale).replace(
-                  '{n}',
-                  `${section.total}`
-                )
-              }}
+              {{ t('workshop.sections.seeAll', { n: section.total }) }}
             </span>
             <ChevronRight
               class="size-4 transition-transform group-hover:translate-x-0.5"
@@ -144,17 +146,27 @@ function rememberModel(
         </template>
 
         <li
-          v-for="family in section.shown"
+          v-for="(family, index) in section.shown"
           :key="family.key"
-          :class="cardClass"
+          :class="SHELF_CARD"
         >
           <WorkshopModelCard
             :model="family.latest"
             :locale
-            @click="rememberModel(section.useCase, family.latest, $event)"
+            @click="
+              rememberModel(section.useCase, family.latest, $event, index)
+            "
           />
         </li>
       </CardRow>
+      <HubRowSeen
+        :view="{
+          surface: 'models',
+          source: 'use_case_row',
+          row: section.useCase,
+          rowSlugs: section.shown.map((family) => family.latest.slug)
+        }"
+      />
     </section>
 
     <section
@@ -171,13 +183,14 @@ function rememberModel(
               data-testid="section-other-formats-open"
               @click="emit('open', 'other')"
             >
-              {{ t('workshop.sections.otherFormats', locale) }}
+              {{ t('workshop.sections.otherFormats') }}
             </button>
           </h2>
         </template>
 
         <template #actions>
           <button
+            v-if="otherFormats.length > ROW_LIMIT"
             type="button"
             :class="seeAllClass"
             data-testid="section-other-formats-see-all"
@@ -185,10 +198,9 @@ function rememberModel(
           >
             <span class="tabular-nums">
               {{
-                t('workshop.sections.seeAll', locale).replace(
-                  '{n}',
-                  `${otherFormats.length}`
-                )
+                t('workshop.sections.seeAll', {
+                  n: otherFormats.length
+                })
               }}
             </span>
             <ChevronRight
@@ -199,17 +211,26 @@ function rememberModel(
         </template>
 
         <li
-          v-for="family in otherFormats.slice(0, ROW_LIMIT)"
+          v-for="(family, index) in otherFormats.slice(0, ROW_LIMIT)"
           :key="family.key"
-          :class="cardClass"
+          :class="SHELF_CARD"
         >
           <WorkshopModelCard
             :model="family.latest"
             :locale
-            @click="rememberModel('other', family.latest, $event)"
+            @click="rememberModel('other', family.latest, $event, index)"
           />
         </li>
       </CardRow>
+      <HubRowSeen
+        :view="{
+          surface: 'models',
+          source: 'other_formats_row',
+          rowSlugs: otherFormats
+            .slice(0, ROW_LIMIT)
+            .map((family) => family.latest.slug)
+        }"
+      />
     </section>
 
     <section
@@ -221,7 +242,7 @@ function rememberModel(
         id="section-other"
         class="mb-5 flex items-baseline gap-2 text-xl font-medium text-primary-warm-white"
       >
-        {{ t('workshop.filter.other', locale) }}
+        {{ t('workshop.filter.other') }}
         <span class="text-sm text-primary-warm-gray tabular-nums">
           {{ unplaced.length }}
         </span>
@@ -229,14 +250,21 @@ function rememberModel(
       <ul
         class="grid grid-cols-1 gap-5 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4"
       >
-        <li v-for="family in unplaced" :key="family.key">
+        <li v-for="(family, index) in unplaced" :key="family.key">
           <WorkshopModelCard
             :model="family.latest"
             :locale
-            @click="rememberModel('all', family.latest, $event)"
+            @click="rememberModel('all', family.latest, $event, index)"
           />
         </li>
       </ul>
+      <HubRowSeen
+        :view="{
+          surface: 'models',
+          source: 'unplaced_grid',
+          rowSlugs: unplaced.map((family) => family.latest.slug)
+        }"
+      />
     </section>
   </div>
 </template>

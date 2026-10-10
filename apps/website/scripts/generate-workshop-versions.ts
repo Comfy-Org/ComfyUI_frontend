@@ -10,19 +10,17 @@
 import { existsSync, readFileSync, writeFileSync } from 'node:fs'
 import { join } from 'node:path'
 
-import { workshopModels } from '../src/config/workshop-browse-content'
-import type { WorkshopModel } from '../src/config/models-catalogue'
-import type { HubTemplate } from '../src/lib/hub/types'
+import { websiteRoot } from '@website/paths'
+import { workshopModels } from '@/config/workshop-browse-content'
+import type { WorkshopModel } from '@/config/models-catalogue'
+import type { HubTemplate } from '@/lib/hub/types'
 import { API_PROVIDER_MAP } from './generate-models'
 import { isDirectExecution } from './script-entry-point'
 
-const DATA = join(import.meta.dirname, '..', 'src', 'data')
+const DATA = join(websiteRoot, 'src/data')
 const OUTPUT = join(
-  import.meta.dirname,
-  '..',
-  'src',
-  'config',
-  'workshop-model-versions.generated.json'
+  websiteRoot,
+  'src/config/workshop-model-versions.generated.json'
 )
 
 const MEDIA_TYPES = ['image', 'video', 'audio', '3d', 'text'] as const

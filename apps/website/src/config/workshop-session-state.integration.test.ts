@@ -1,55 +1,36 @@
 import { beforeEach, describe, expect, it, onTestFinished, vi } from 'vitest'
-import { ref, watch } from 'vue'
-import type { Ref } from 'vue'
+import { nextTick, readonly, ref, watch } from 'vue'
+import type { User } from 'firebase/auth'
 
-import type {
-  AccountUser,
-  SessionSnapshot
-} from '@comfyorg/account-core/session'
+import type { SessionSnapshot } from '@comfyorg/account-core/session'
 
+let { identifyWorkshopUser, useWorkshopAuthFlag } =
+  await import('@/scripts/posthog')
 import {
   mintBody,
   okFetch,
-  testUser
+  testFirebaseUser
 } from './__fixtures__/workshopSessionFakes'
 import { STORAGE_KEY } from './workshop-account'
+let { workshopIdentity } = await import('./workshop-firebase')
 import { REMEMBERED_WORKSPACE_KEY } from './workshop-session-state'
 
-const h = vi.hoisted(() => ({
-  flag: undefined as Ref<boolean> | undefined,
-  identifyWorkshopUser: vi.fn(),
-  deliver: undefined as ((user: AccountUser | null) => void) | undefined
-}))
+let deliver: ((user: User | null) => void) | undefined
 
-vi.mock<unknown>(import('../scripts/posthog'), () => ({
-  identifyWorkshopUser: h.identifyWorkshopUser,
-  useWorkshopAuthFlag: () => h.flag,
-  captureAuthRefreshSucceeded: vi.fn(),
-  captureAuthRefreshFailed: vi.fn()
-}))
+vi.mock(import('@/scripts/posthog'))
+vi.mock(import('./workshop-firebase'))
 
-vi.mock<unknown>(import('./workshop-firebase'), async () => {
-  const { createTestIdentity } = await import('@comfyorg/account-core/testing')
-  return {
-    workshopIdentity: createTestIdentity<AccountUser>({
-      onUserChanged: (callback) => {
-        h.deliver = callback
-        return () => {
-          h.deliver = undefined
-        }
-      }
-    })
-  }
-})
-
-const user = testUser('user-1')
+const user = testFirebaseUser({ uid: 'user-1' })
 
 type Phase = SessionSnapshot['phase']
 
 async function boot(enabled: boolean) {
-  vi.resetModules()
   const flag = ref(enabled)
-  h.flag = flag
+  vi.mocked(useWorkshopAuthFlag).mockReturnValue(readonly(flag))
+  onTestFinished(async () => {
+    flag.value = false
+    await nextTick()
+  })
   const mod = await import('./workshop-session-state')
   const account = await import('./workshop-account')
   const session = mod.useWorkshopSession()
@@ -72,22 +53,33 @@ async function boot(enabled: boolean) {
   return { session, flag, phases, client: account.workshopSessionClient }
 }
 
-async function firebaseAnswers(answer: AccountUser | null): Promise<void> {
-  await vi.waitFor(() => expect(h.deliver).toBeDefined())
-  h.deliver?.(answer)
+async function firebaseAnswers(answer: User | null): Promise<void> {
+  await vi.waitFor(() => expect(deliver).toBeDefined())
+  deliver?.(answer)
 }
 
-beforeEach(() => {
+beforeEach(async () => {
+  vi.resetModules()
+  ;({ identifyWorkshopUser, useWorkshopAuthFlag } =
+    await import('@/scripts/posthog'))
+  ;({ workshopIdentity } = await import('./workshop-firebase'))
+
   sessionStorage.clear()
   window.localStorage.removeItem(REMEMBERED_WORKSPACE_KEY)
-  h.deliver = undefined
+  deliver = undefined
+  vi.mocked(workshopIdentity.onUserChanged).mockImplementation((callback) => {
+    deliver = callback
+    return () => {
+      deliver = undefined
+    }
+  })
 })
 
 describe('useWorkshopSession over the real session client', () => {
   it('stays unsettled until Firebase delivers, then publishes minting and authenticated', async () => {
-    vi.stubGlobal('fetch', okFetch())
+    vi.mocked(fetch).mockImplementation(okFetch())
     const { session, phases } = await boot(true)
-    await vi.waitFor(() => expect(h.deliver).toBeDefined())
+    await vi.waitFor(() => expect(deliver).toBeDefined())
     expect(
       session.settled.value,
       'a subscribed but silent Firebase has not answered yet'
@@ -97,11 +89,11 @@ describe('useWorkshopSession over the real session client', () => {
 
     await vi.waitFor(() => expect(session.signedIn.value).toBe(true))
     expect(phases).toEqual(['minting', 'authenticated'])
-    expect(h.identifyWorkshopUser).not.toHaveBeenCalledWith(null)
+    expect(identifyWorkshopUser).not.toHaveBeenCalledWith(null)
   })
 
   it('re-enters pending across flag off then on without a signed-out frame', async () => {
-    vi.stubGlobal('fetch', okFetch())
+    vi.mocked(fetch).mockImplementation(okFetch())
     const { session, flag, phases } = await boot(true)
     await firebaseAnswers(user)
     await vi.waitFor(() => expect(session.signedIn.value).toBe(true))
@@ -121,12 +113,12 @@ describe('useWorkshopSession over the real session client', () => {
       phases,
       'the client is signed out between deactivate and the next delivery; the host must never show it'
     ).not.toContain('signed-out')
-    expect(h.identifyWorkshopUser).not.toHaveBeenCalledWith(null)
+    expect(identifyWorkshopUser).not.toHaveBeenCalledWith(null)
   })
 
   it('cannot commit a mint that was in flight when the flag turned off', async () => {
     let releaseMint!: () => void
-    const fetchSpy = vi.fn<typeof fetch>(
+    vi.mocked(fetch).mockImplementation(
       () =>
         new Promise<Response>((resolve) => {
           releaseMint = () =>
@@ -137,15 +129,14 @@ describe('useWorkshopSession over the real session client', () => {
             )
         })
     )
-    vi.stubGlobal('fetch', fetchSpy)
     const { session, flag, phases, client } = await boot(true)
     await firebaseAnswers(user)
-    await vi.waitFor(() => expect(fetchSpy).toHaveBeenCalledOnce())
+    await vi.waitFor(() => expect(fetch).toHaveBeenCalledOnce())
 
     flag.value = false
     await vi.waitFor(() => expect(session.settled.value).toBe(false))
     releaseMint()
-    await fetchSpy.mock.results[0]?.value
+    await vi.mocked(fetch).mock.results[0]?.value
     await new Promise((resolve) => setTimeout(resolve))
 
     expect(client.getToken()).toBeUndefined()
@@ -158,14 +149,13 @@ describe('useWorkshopSession over the real session client', () => {
   })
 
   it('installs nothing when the flag turns off before the first Firebase answer lands', async () => {
-    const fetchSpy = okFetch()
-    vi.stubGlobal('fetch', fetchSpy)
+    vi.mocked(fetch).mockImplementation(okFetch())
     const { session, flag, phases, client } = await boot(true)
-    await vi.waitFor(() => expect(h.deliver).toBeDefined())
+    await vi.waitFor(() => expect(deliver).toBeDefined())
 
     flag.value = false
-    h.deliver?.(user)
-    await vi.waitFor(() => expect(h.deliver).toBeUndefined())
+    deliver?.(user)
+    await vi.waitFor(() => expect(deliver).toBeUndefined())
     await new Promise((resolve) => setTimeout(resolve))
 
     expect(
@@ -177,16 +167,15 @@ describe('useWorkshopSession over the real session client', () => {
       'a begin resumed by the flag-off deactivate must not subscribe the host'
     ).toEqual([])
     expect(session.settled.value).toBe(false)
-    expect(h.identifyWorkshopUser).not.toHaveBeenCalled()
+    expect(identifyWorkshopUser).not.toHaveBeenCalled()
   })
 
   it('clears the stored credential when a begin step fails after a signed-in delivery', async () => {
     // The replayed minting snapshot reaches identify inside begin, so its
     // throw fails a begin step after the signed-in delivery.
-    h.identifyWorkshopUser.mockImplementationOnce(() => {
+    vi.mocked(identifyWorkshopUser).mockImplementationOnce(() => {
       throw new Error('identify exploded')
     })
-    const errorSpy = vi.spyOn(console, 'error').mockImplementation(() => {})
     const { expires_at, ...cached } = mintBody('jwt-cached')
     sessionStorage.setItem(
       STORAGE_KEY,
@@ -196,16 +185,15 @@ describe('useWorkshopSession over the real session client', () => {
         expiresAt: Date.parse(expires_at)
       })
     )
-    const fetchSpy = okFetch()
-    vi.stubGlobal('fetch', fetchSpy)
+    vi.mocked(fetch).mockImplementation(okFetch())
     await boot(true)
 
     await firebaseAnswers(user)
-    await vi.waitFor(() => expect(errorSpy).toHaveBeenCalledOnce())
+    await vi.waitFor(() => expect(console.error).toHaveBeenCalledOnce())
     await new Promise((resolve) => setTimeout(resolve))
 
     expect(
-      fetchSpy,
+      fetch,
       'the seeded credential was served from cache, so the boot never minted'
     ).not.toHaveBeenCalled()
     expect(
