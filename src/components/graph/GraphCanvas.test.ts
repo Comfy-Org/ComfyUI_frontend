@@ -1,7 +1,16 @@
+import { fromPartial } from '@total-typescript/shoehorn'
 import { getActivePinia } from 'pinia'
-import { cleanup, render, screen } from '@testing-library/vue'
+import { cleanup, fireEvent, render, screen } from '@testing-library/vue'
 import type { RenderOptions } from '@testing-library/vue'
-import { beforeEach, describe, expect, it, vi } from 'vitest'
+import {
+  assert,
+  beforeEach,
+  describe,
+  expect,
+  it,
+  onTestFinished,
+  vi
+} from 'vitest'
 import { nextTick } from 'vue'
 import { createI18n } from 'vue-i18n'
 
@@ -249,6 +258,32 @@ describe('GraphCanvas first-run tour wiring', () => {
 })
 
 describe('GraphCanvas legacy settings bridge', () => {
+  it('keeps title-editor touches within the canvas parent used by extensions', async () => {
+    vi.spyOn(api, 'getSystemStats').mockResolvedValue(
+      fromPartial({ devices: [] })
+    )
+    await mountGraphCanvas({
+      TitleEditor: { template: '<input aria-label="Node title" />' }
+    })
+    // oxlint-disable-next-line testing-library/no-node-access -- Extensions use this canvas ID.
+    const canvas = document.getElementById('graph-canvas')
+    assert.exists(canvas)
+    // oxlint-disable-next-line testing-library/no-node-access -- Canvas-parent listeners are the compatibility contract under test.
+    const parent = canvas.parentElement
+    assert.exists(parent)
+    const receivedTouch = vi.fn()
+    parent.addEventListener('touchstart', receivedTouch, true)
+    onTestFinished(() =>
+      parent.removeEventListener('touchstart', receivedTouch, true)
+    )
+
+    await fireEvent.touchStart(
+      screen.getByRole('textbox', { name: 'Node title' })
+    )
+
+    expect(receivedTouch).toHaveBeenCalledOnce()
+  })
+
   it('replays setting changes on the legacy settings dialog', async () => {
     await mountGraphCanvas()
 
