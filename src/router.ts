@@ -25,7 +25,7 @@ import {
 } from '@/platform/auth/session/ssoReentryStorage'
 import { isCloud, isDesktop } from '@/platform/distribution/types'
 import { useTelemetry } from '@/platform/telemetry'
-import { useDialogService } from '@/services/dialogService'
+import { useAuthDialogs } from '@/composables/auth/useAuthDialogs'
 import { useAuthStore } from '@/stores/authStore'
 import { useDialogStore } from '@/stores/dialogStore'
 import { useUserStore } from '@/stores/userStore'
@@ -277,8 +277,7 @@ if (isCloud) {
     if (!isLoggedIn) {
       // For Electron, use dialog
       if (isDesktop) {
-        const dialogService = useDialogService()
-        const loginSuccess = await dialogService.showSignInDialog()
+        const loginSuccess = await useAuthDialogs().showSignInDialog()
         return loginSuccess ? next() : next(false)
       }
 

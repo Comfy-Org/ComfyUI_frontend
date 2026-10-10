@@ -40,7 +40,7 @@ vi.mock(
   import('@/platform/cloud/subscription/composables/useSubscriptionDialog')
 )
 
-import { useDialogService } from '@/services/dialogService'
+import { useBillingDialogs } from '@/composables/billing/useBillingDialogs'
 
 describe('showTopUpCreditsDialog', () => {
   beforeEach(() => {
@@ -52,7 +52,7 @@ describe('showTopUpCreditsDialog', () => {
   })
 
   it('shows the purchase dialog to users who can top up', async () => {
-    await useDialogService().showTopUpCreditsDialog({
+    await useBillingDialogs().showTopUpCreditsDialog({
       isInsufficientCredits: true
     })
 
@@ -61,10 +61,20 @@ describe('showTopUpCreditsDialog', () => {
     expect(useBillingCapabilities().initialize).not.toHaveBeenCalled()
   })
 
+  it("sets renderer 'reka' with a transparent shrink-wrapped chrome", async () => {
+    await useBillingDialogs().showTopUpCreditsDialog()
+    const [args] = vi.mocked(useDialogStore().showDialog).mock.calls[0]
+    expect(args.dialogComponentProps?.renderer).toBe('reka')
+    expect(args.dialogComponentProps?.headless).toBe(true)
+    expect(args.dialogComponentProps?.pt).toBeUndefined()
+    expect(args.dialogComponentProps?.contentClass).toContain('w-fit')
+    expect(args.dialogComponentProps?.contentClass).toContain('bg-transparent')
+  })
+
   it('shows the contact-admin notice to team members instead of the purchase dialog', async () => {
     useBillingCapabilities().canTopUp = computed(() => false)
 
-    await useDialogService().showTopUpCreditsDialog({
+    await useBillingDialogs().showTopUpCreditsDialog({
       isInsufficientCredits: true
     })
 
@@ -86,7 +96,7 @@ describe('showTopUpCreditsDialog', () => {
   it('uses the server capability on legacy billing', async () => {
     useBillingContext().type = computed(() => 'legacy')
 
-    await useDialogService().showTopUpCreditsDialog()
+    await useBillingDialogs().showTopUpCreditsDialog()
 
     const [args] = vi.mocked(useDialogStore().showDialog).mock.calls[0]
     expect(args.key).toBe('top-up-credits')
@@ -96,7 +106,7 @@ describe('showTopUpCreditsDialog', () => {
     useBillingContext().type = computed(() => 'legacy')
     useBillingCapabilities().canTopUp = computed(() => false)
 
-    await useDialogService().showTopUpCreditsDialog()
+    await useBillingDialogs().showTopUpCreditsDialog()
 
     expect(useDialogStore().showDialog).not.toHaveBeenCalled()
     expect(useSubscriptionDialog().show).not.toHaveBeenCalled()
@@ -114,7 +124,7 @@ describe('showTopUpCreditsDialog', () => {
       return Promise.resolve()
     })
 
-    await useDialogService().showTopUpCreditsDialog({
+    await useBillingDialogs().showTopUpCreditsDialog({
       isInsufficientCredits: true
     })
 
@@ -127,7 +137,7 @@ describe('showTopUpCreditsDialog', () => {
     useBillingCapabilities().canTopUp = computed(() => false)
     useBillingCapabilities().isReady = computed(() => false)
 
-    await useDialogService().showTopUpCreditsDialog()
+    await useBillingDialogs().showTopUpCreditsDialog()
 
     expect(useBillingCapabilities().initialize).toHaveBeenCalledOnce()
     expect(useDialogStore().showDialog).not.toHaveBeenCalled()
@@ -138,7 +148,7 @@ describe('showTopUpCreditsDialog', () => {
     useBillingCapabilities().canTopUp = computed(() => false)
     useBillingCapabilities().canSubscribeSelfServe = computed(() => true)
 
-    await useDialogService().showTopUpCreditsDialog()
+    await useBillingDialogs().showTopUpCreditsDialog()
 
     expect(useSubscriptionDialog().show).toHaveBeenCalledWith({
       reason: 'top_up_blocked'
@@ -150,7 +160,7 @@ describe('showTopUpCreditsDialog', () => {
     useBillingCapabilities().canTopUp = computed(() => false)
     useBillingCapabilities().canSubscribeSelfServe = computed(() => true)
 
-    await useDialogService().showTopUpCreditsDialog({
+    await useBillingDialogs().showTopUpCreditsDialog({
       isInsufficientCredits: true,
       source: 'agent_paywall'
     })
@@ -165,7 +175,7 @@ describe('showTopUpCreditsDialog', () => {
     useBillingCapabilities().canTopUp = computed(() => false)
     useBillingCapabilities().canSubscribeSelfServe = computed(() => true)
 
-    await useDialogService().showTopUpCreditsDialog({
+    await useBillingDialogs().showTopUpCreditsDialog({
       source: 'agent_paywall'
     })
 
@@ -176,7 +186,7 @@ describe('showTopUpCreditsDialog', () => {
   })
 
   it('passes the surface to the workspace rail content', async () => {
-    await useDialogService().showTopUpCreditsDialog({
+    await useBillingDialogs().showTopUpCreditsDialog({
       isInsufficientCredits: true,
       source: 'agent_paywall'
     })
@@ -191,7 +201,7 @@ describe('showTopUpCreditsDialog', () => {
   it('opens the workspace content, never the legacy one, while routing is unknown', async () => {
     useBillingContext().type = computed(() => 'unknown')
 
-    await useDialogService().showTopUpCreditsDialog({
+    await useBillingDialogs().showTopUpCreditsDialog({
       isInsufficientCredits: true,
       source: 'agent_paywall'
     })
@@ -203,7 +213,7 @@ describe('showTopUpCreditsDialog', () => {
   it('passes the surface to the legacy rail content too', async () => {
     useBillingContext().type = computed(() => 'legacy')
 
-    await useDialogService().showTopUpCreditsDialog({
+    await useBillingDialogs().showTopUpCreditsDialog({
       isInsufficientCredits: true,
       source: 'agent_paywall'
     })
@@ -244,7 +254,7 @@ describe('showTopUpCreditsDialog', () => {
         reported: {}
       }
     ] as const)('reports $name once', async ({ options, reported }) => {
-      await useDialogService().showTopUpCreditsDialog(options)
+      await useBillingDialogs().showTopUpCreditsDialog(options)
 
       expect(mockRumAddAction).toHaveBeenCalledExactlyOnceWith(
         'billing.entry.add_credits_clicked',
@@ -261,7 +271,7 @@ describe('showTopUpCreditsDialog', () => {
     it('reports the click before the capability read settles', () => {
       useBillingCapabilities().isReady = computed(() => false)
 
-      void useDialogService().showTopUpCreditsDialog({ source: 'deep_link' })
+      void useBillingDialogs().showTopUpCreditsDialog({ source: 'deep_link' })
 
       expect(mockRumAddAction).toHaveBeenCalledOnce()
     })
@@ -285,7 +295,9 @@ describe('showTopUpCreditsDialog', () => {
           () => canSubscribeSelfServe
         )
 
-        await useDialogService().showTopUpCreditsDialog({ source: 'deep_link' })
+        await useBillingDialogs().showTopUpCreditsDialog({
+          source: 'deep_link'
+        })
 
         expect(mockRumAddAction).toHaveBeenCalledOnce()
       }
@@ -299,7 +311,7 @@ describe('showTopUpCreditsDialog', () => {
     })
 
     it('opens the purchase dialog when the capability endpoint defaults open', async () => {
-      await useDialogService().showTopUpCreditsDialog()
+      await useBillingDialogs().showTopUpCreditsDialog()
 
       expect(useSubscriptionDialog().show).not.toHaveBeenCalled()
       const [args] = vi.mocked(useDialogStore().showDialog).mock.calls[0]

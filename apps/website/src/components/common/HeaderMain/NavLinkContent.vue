@@ -36,8 +36,8 @@ const { t } = translationsFor(locale)
       :label="item.badge"
     />
     <ArrowUpRight
-      v-if="item.external || item.newTab"
-      data-testid="opens-in-new-tab"
+      v-if="item.external"
+      data-testid="external-link-arrow"
       class="size-4 text-primary-comfy-yellow"
     />
   </span>
