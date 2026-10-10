@@ -81,7 +81,9 @@ vi.mock<unknown>(import('@/scripts/app'), () => ({
     rootGraph: { id: 'graph-test', getNodeById: vi.fn() },
     canvas: { setDirty: vi.fn() },
     nodeOutputs: {},
-    nodePreviewImages: {}
+    nodePreviewImages: {},
+    getPreviewFormatParam: () => '',
+    getRandParam: () => ''
   }
 }))
 
@@ -518,20 +520,21 @@ describe('LGraphNode', () => {
       fakeRootGraph.rootGraph = fakeRootGraph
       useCanvasStore().currentGraph = fromAny(fakeRootGraph)
       const nodeId = toNodeId(rawId)
-      const nodeOutputStore = useNodeOutputStore()
-      nodeOutputStore.nodeOutputs[createNodeLocatorId(null, nodeId)] = {
+      mockData.mockLgraphNode = {
+        id: nodeId,
+        graph: fakeRootGraph,
+        isSubgraphNode: () => false
+      }
+      useNodeOutputStore().nodeOutputs[createNodeLocatorId(null, nodeId)] = {
         images: [{ filename: 'output.png', type: 'output' }]
       }
-      vi.mocked(nodeOutputStore.getNodeImageUrls).mockReturnValue([
-        '/output.png'
-      ])
 
       renderLGraphNode({
         nodeData: { ...mockNodeData, id: nodeId, graphId: 'graph-test' }
       })
 
       expect(screen.getByTestId('node-content')).toHaveTextContent(
-        '/output.png'
+        'filename=output.png'
       )
     }
   )
