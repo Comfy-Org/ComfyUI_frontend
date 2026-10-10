@@ -119,3 +119,45 @@ for (const { locale, path } of [
     })
   }
 }
+
+test('Hub menu apps open in the same tab and only external links carry the arrow', async ({
+  context,
+  page
+}) => {
+  await stubWorkshopFlags(context, {
+    'workshop-enabled': true,
+    'workshop-apps-enabled': true,
+    'workshop-reshoot-app-enabled': true
+  })
+  await page.setViewportSize({ width: 1440, height: 900 })
+  await page.goto('/')
+
+  const desktopLinks = page
+    .getByRole('navigation', { name: 'Main navigation' })
+    .getByTestId('desktop-nav-links')
+  await waitForIsland(page, desktopLinks)
+  const dropdown = page.getByTestId('nav-dropdown')
+
+  await desktopLinks.getByRole('button', { name: 'Hub', exact: true }).click()
+  const cinematicStudio = dropdown.getByRole('link', {
+    name: 'Cinematic Studio',
+    exact: true
+  })
+  await expect(cinematicStudio).not.toHaveAttribute('target')
+  await expect(cinematicStudio.getByTestId('external-link-arrow')).toHaveCount(
+    0
+  )
+
+  const reshoot = dropdown.getByRole('link', { name: 'Re-shoot', exact: true })
+  await expect(reshoot).not.toHaveAttribute('target')
+  await expect(reshoot.getByTestId('external-link-arrow')).toHaveCount(0)
+
+  await desktopLinks
+    .getByRole('button', { name: 'Company', exact: true })
+    .click()
+  await expect(
+    dropdown
+      .getByRole('link', { name: 'Blog', exact: true })
+      .getByTestId('external-link-arrow')
+  ).toBeVisible()
+})

@@ -121,10 +121,7 @@
           <span class="flex items-center gap-1 text-text-primary">
             {{ $t('subscription.additionalCredits') }}
             <Button
-              v-tooltip="{
-                value: $t('subscription.additionalCreditsTooltip'),
-                showDelay: 300
-              }"
+              :tooltip="$t('subscription.additionalCreditsTooltip')"
               variant="muted-textonly"
               size="icon-sm"
               :aria-label="$t('subscription.additionalCreditsInfo')"
@@ -164,10 +161,7 @@
           <span class="flex items-center gap-1">
             {{ $t('subscription.additionalCredits') }}
             <Button
-              v-tooltip="{
-                value: $t('subscription.additionalCreditsTooltip'),
-                showDelay: 300
-              }"
+              :tooltip="$t('subscription.additionalCreditsTooltip')"
               variant="muted-textonly"
               size="icon-sm"
               :aria-label="$t('subscription.additionalCreditsInfo')"

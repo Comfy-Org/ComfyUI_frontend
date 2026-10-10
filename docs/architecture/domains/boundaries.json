@@ -2,6 +2,46 @@
   "boundaries": {
     "zones": [
       {
+        "name": "image-compare/application",
+        "patterns": [
+          "src/renderer/extensions/vueNodes/widgets/composables/useImageCompareImages.ts",
+          "src/renderer/extensions/vueNodes/widgets/composables/useImageCompareImages.test.ts"
+        ]
+      },
+      {
+        "name": "image-compare/presentation",
+        "patterns": [
+          "src/renderer/extensions/vueNodes/widgets/components/WidgetImageCompare.vue",
+          "src/renderer/extensions/vueNodes/widgets/components/WidgetImageCompare.test.ts"
+        ]
+      },
+      {
+        "name": "image-compare/integration",
+        "patterns": [
+          "src/renderer/extensions/vueNodes/widgets/composables/useImageCompareWidget.ts",
+          "src/extensions/core/imageCompare.ts",
+          "src/lib/litegraph/src/widgets/ImageCompareWidget.ts"
+        ]
+      },
+      {
+        "name": "image-crop/application",
+        "patterns": [
+          "src/composables/useImageCrop.ts",
+          "src/composables/useImageCrop.test.ts"
+        ]
+      },
+      {
+        "name": "image-crop/presentation",
+        "patterns": ["src/components/imagecrop/**"]
+      },
+      {
+        "name": "image-crop/integration",
+        "patterns": [
+          "src/extensions/core/imageCrop.ts",
+          "src/lib/litegraph/src/widgets/ImageCropWidget.ts"
+        ]
+      },
+      {
         "name": "mask-editor/domain",
         "patterns": ["src/extensions/core/maskeditor/**"]
       },
@@ -24,6 +64,22 @@
         "patterns": [
           "src/extensions/core/maskeditor.ts",
           "src/extensions/core/maskeditor.test.ts"
+        ]
+      },
+      {
+        "name": "painter/application",
+        "patterns": ["src/composables/painter/**"]
+      },
+      {
+        "name": "painter/presentation",
+        "patterns": ["src/components/painter/**"]
+      },
+      {
+        "name": "painter/integration",
+        "patterns": [
+          "src/renderer/extensions/vueNodes/widgets/composables/usePainterWidget.ts",
+          "src/extensions/core/painter.ts",
+          "src/lib/litegraph/src/widgets/PainterWidget.ts"
         ]
       },
       {
@@ -57,6 +113,48 @@
     ],
     "rules": [
       {
+        "from": "image-compare/application",
+        "allow": ["image-compare/application", "unclassified"]
+      },
+      {
+        "from": "image-compare/presentation",
+        "allow": [
+          "image-compare/application",
+          "image-compare/presentation",
+          "unclassified"
+        ]
+      },
+      {
+        "from": "image-compare/integration",
+        "allow": [
+          "image-compare/application",
+          "image-compare/presentation",
+          "image-compare/integration",
+          "unclassified"
+        ]
+      },
+      {
+        "from": "image-crop/application",
+        "allow": ["image-crop/application", "unclassified"]
+      },
+      {
+        "from": "image-crop/presentation",
+        "allow": [
+          "image-crop/application",
+          "image-crop/presentation",
+          "unclassified"
+        ]
+      },
+      {
+        "from": "image-crop/integration",
+        "allow": [
+          "image-crop/application",
+          "image-crop/presentation",
+          "image-crop/integration",
+          "unclassified"
+        ]
+      },
+      {
         "from": "mask-editor/domain",
         "allow": ["mask-editor/domain", "unclassified"]
       },
@@ -84,6 +182,23 @@
           "mask-editor/application",
           "mask-editor/presentation",
           "mask-editor/integration",
+          "unclassified"
+        ]
+      },
+      {
+        "from": "painter/application",
+        "allow": ["painter/application", "unclassified"]
+      },
+      {
+        "from": "painter/presentation",
+        "allow": ["painter/application", "painter/presentation", "unclassified"]
+      },
+      {
+        "from": "painter/integration",
+        "allow": [
+          "painter/application",
+          "painter/presentation",
+          "painter/integration",
           "unclassified"
         ]
       },

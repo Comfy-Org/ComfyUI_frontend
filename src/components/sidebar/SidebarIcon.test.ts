@@ -1,7 +1,5 @@
 import { render, screen, waitFor } from '@testing-library/vue'
 import userEvent from '@testing-library/user-event'
-import PrimeVue from 'primevue/config'
-import Tooltip from 'primevue/tooltip'
 import { describe, expect, it } from 'vitest'
 import type { ComponentProps } from 'vue-component-type-helpers'
 import { createI18n } from 'vue-i18n'
@@ -29,8 +27,7 @@ describe('SidebarIcon', () => {
 
     const result = render(SidebarIcon, {
       global: {
-        plugins: [PrimeVue, i18n],
-        directives: { tooltip: Tooltip }
+        plugins: [i18n]
       },
       props: { ...exampleProps, ...props }
     })

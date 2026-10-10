@@ -73,15 +73,42 @@ describe('preflight', () => {
     }
   )
 
-  it('passes without credentials when there are no call sites', () => {
+  it('passes offline without credentials when there are no call sites', () => {
     expect(
       preflight({
-        mode: 'online',
+        mode: 'offline',
         tickets: [],
         nonLiteral: [],
         readCredentials: credentialsMustNotBeRead
       })
     ).toMatchObject({ kind: 'pass' })
+  })
+
+  it('still requires credentials online when there are no call sites', () => {
+    expect(
+      preflight({
+        mode: 'online',
+        tickets: [],
+        nonLiteral: [],
+        readCredentials: () => ({})
+      })
+    ).toMatchObject({
+      kind: 'fail',
+      lines: expect.arrayContaining([
+        expect.stringMatching(/LINEAR_CLIENT_ID and LINEAR_CLIENT_SECRET/)
+      ])
+    })
+  })
+
+  it('queries Linear online with no call sites to verify the credentials', () => {
+    expect(
+      preflight({
+        mode: 'online',
+        tickets: [],
+        nonLiteral: [],
+        readCredentials: () => credentials
+      })
+    ).toEqual({ kind: 'query', credentials })
   })
 
   it('queries Linear online with the credentials', () => {

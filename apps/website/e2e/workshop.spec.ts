@@ -500,6 +500,54 @@ test.describe('Models catalog', () => {
     await expect(page.getByTestId('workshop-sections')).toBeVisible()
   })
 
+  // The stuck toolbar paints its full-bleed band with a zero-width
+  // border-image rather than a clip-path. A clip would cut the use-case panel
+  // off at the toolbar's bottom edge, because on desktop that panel renders
+  // inside the toolbar instead of portalling to the body.
+  test('the use-case panel stays reachable under the stuck toolbar', async ({
+    page
+  }) => {
+    await page.goto('/hub/models/')
+    await expect(page.getByTestId('workshop-sections')).toBeVisible()
+    await page.evaluate(() => window.scrollTo({ top: 1200 }))
+    // In the viewport is not the same as stuck: the toolbar is there at rest
+    // too. It is stuck once it sits at the offset it sticks to.
+    const toolbar = page.getByTestId('workshop-toolbar')
+    await expect
+      .poll(() =>
+        toolbar.evaluate(
+          (bar) =>
+            Math.round(bar.getBoundingClientRect().top) ===
+            Math.round(Number.parseFloat(getComputedStyle(bar).top))
+        )
+      )
+      .toBe(true)
+
+    await page.getByTestId('workshop-filter').click()
+    const options = page
+      .getByTestId('workshop-filter-menu')
+      .getByTestId(/^filter-useCase-/)
+    const last = options.last()
+    await expect(last).toBeVisible()
+    // A clipped panel keeps its box, so only a hit test says the option is
+    // reachable. Asserting it before the click turns a timeout into a reason.
+    await expect
+      .poll(() =>
+        last.evaluate((option) => {
+          const { left, right, top, bottom } = option.getBoundingClientRect()
+          const hit = document.elementFromPoint(
+            (left + right) / 2,
+            (top + bottom) / 2
+          )
+          return option.contains(hit)
+        })
+      )
+      .toBe(true)
+    await last.click()
+
+    await expect(page.getByTestId('workshop-filter-count')).toHaveText('1')
+  })
+
   test('model tags deep-link into a filtered catalog', async ({ page }) => {
     await page.goto(MODEL_PATH)
     const tag = page

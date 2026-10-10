@@ -45,6 +45,75 @@ export type WorkspaceSummary = {
 }
 
 /**
+ * The deployments a browser in this workspace may pick, newest first by created_at (always present). A row without a Build name keeps its place in that order.
+ */
+export type WorkspaceDeploymentList = {
+  /**
+   * False when comfy-builder refused the caller's token when asked to name the rows' Releases, or its Builds listing (401 or 403); no row then carries a Build name or Release version. True does not mean every row is named: a row whose Release comfy-builder does not name carries none either, nor does one it could not name because a read of its Builds or their Releases failed (one Build's Releases refused with 401 or 403 included), or because its Build is past the first 50 Builds its Builds listing shows (on a comfy-builder released before it could name the rows for any member).
+   */
+  builds_visible: boolean
+  /**
+   * The workspace's default deployment, set by an owner through PUT /api/workspaces/{id}/default-deployment; absent when none is set, or when the one set is gone (see gone_default_deployment_id). Present whether or not this browser follows it, so the switcher can label the row.
+   */
+  default_deployment_id?: string
+  /**
+   * The workspace's default deployment, present only when it is no longer one of the workspace's live deployments (deleted, or no longer the workspace's). Members with no pick of their own run on Comfy Cloud, and default_deployment_id is absent. The default stays recorded until an owner sets or clears it, so this is reported on every listing until then.
+   */
+  gone_default_deployment_id?: string
+  /**
+   * The deployment this browser had picked, present only when it is no longer one of the workspace's live deployments (deleted, or no longer the workspace's). Every catalog read and submit already ran this browser on Comfy Cloud for it, and this response clears the pick: the pick cookie is rewritten as the explicit Comfy Cloud pick (pick_source `browser`), whether or not the workspace has a live default, so a default an owner sets later does not move this browser. The browser is on Comfy Cloud and picked_deployment_id is absent. The next listing no longer carries it, so the editor tells the person on this response.
+   */
+  gone_picked_deployment_id?: string
+  items: Array<WorkspaceDeployment>
+  /**
+   * Where the current pick came from: `browser`, this browser's own pick cookie (a deployment, or Comfy Cloud with picked_deployment_id absent); `workspace_default`, the workspace's default deployment because the browser has no pick. Absent when there is neither.
+   */
+  pick_source?: 'browser' | 'workspace_default'
+  /**
+   * The deployment this browser is on: its own pick, read from its pick cookie, or the workspace's default deployment when the browser has no pick (BE-17480); absent when the browser runs on Comfy Cloud. It is always one of the listed deployments: a pick or a default whose deployment is not among them (deleted, or no longer the workspace's) runs on Comfy Cloud, and is reported in gone_picked_deployment_id or gone_default_deployment_id instead. pick_source says which of the two it is.
+   */
+  picked_deployment_id?: string
+}
+
+/**
+ * One live deployment of the workspace, as the editor's switcher shows it.
+ */
+export type WorkspaceDeployment = {
+  /**
+   * The Build the Release was cut from. Absent when comfy-builder did not name the Release (see builds_visible).
+   */
+  build_id?: string
+  /**
+   * The Build's name. Absent when comfy-builder did not name the Release (see builds_visible).
+   */
+  build_name?: string
+  /**
+   * When the deployment was created.
+   */
+  created_at: string
+  /**
+   * Developer-platform deployment id; what PUT /api/workspaces/{id}/deployment takes.
+   */
+  deployment_id: string
+  /**
+   * The deployment's name in comfy-deploy: the one its owner gave it, or the default comfy-deploy gives it at create. It is unique among its Build's live deployments, and it stays the same when the deployment moves to another Release. Absent only on a deployment created before deployments had names, until it is given one.
+   */
+  deployment_name?: string
+  /**
+   * The Release the deployment runs now. It changes when the deployment's owner updates it; a browser that picked the deployment follows.
+   */
+  release_id: string
+  /**
+   * The Release's version number within its Build. Absent when comfy-builder did not name the Release (see builds_visible).
+   */
+  release_version?: number
+  /**
+   * The deployment's status (ready, provisioning, stopped, ...). Any of them may be picked; a job is taken only while it is ready.
+   */
+  status: string
+}
+
+/**
  * Metadata for a workspace-scoped API key (secret is never returned).
  */
 export type WorkspaceApiKeyInfo = {
@@ -218,6 +287,84 @@ export type AssetInfo = {
    */
   public: boolean
   storage_url: string
+}
+
+/**
+ * The workflow to read.
+ */
+export type WorkflowPacksRequest = {
+  /**
+   * A ComfyUI workflow as the editor holds it (the UI format: a `nodes` array beside a `links` array, subgraphs under `definitions.subgraphs`). The API format is read too. Passed to comfy-builder as it is.
+   */
+  workflow: {
+    [key: string]: unknown
+  }
+}
+
+/**
+ * What a workflow needs. A node class built into ComfyUI, or served by a partner provider, is in none of the lists: there is nothing to install for it.
+ */
+export type WorkflowPacks = {
+  /**
+   * Which export format the workflow was read as.
+   */
+  format: 'api' | 'ui'
+  /**
+   * Packs found for the workflow's nodes by Cloud's own map of node classes to packs.
+   */
+  matched_packs: Array<WorkflowPack>
+  /**
+   * Node classes Cloud cannot confirm a pack provides, sorted by class, each with its reason. Empty when every node is built in, served by a partner provider, or placed by Cloud's own map in a listed pack. A `stamped` entry's pack is listed and will be installed, yet the workflow may still not run on Cloud as it is.
+   */
+  missing_nodes: Array<WorkflowMissingNode>
+  /**
+   * Packs the workflow itself names on its nodes (`cnr_id`) for node classes Cloud's map does not know, where the Comfy Registry's class index named the same pack. Cloud's map did not choose them, so Comfy Cloud cannot be assumed to have them installed.
+   */
+  stamped_packs: Array<WorkflowPack>
+}
+
+/**
+ * One node class of the workflow that Cloud cannot confirm a pack provides, and why.
+ */
+export type WorkflowMissingNode = {
+  /**
+   * The node class, as the workflow names it.
+   */
+  class_type: string
+  /**
+   * The Comfy Registry id the workflow's own stamp names on the node (its `cnr_id`, lowercased, as comfy-builder reads it); present only with reason `stamped`. The pack Cloud installs for the node is in `matched_packs` or `stamped_packs`, but not always under this id: Cloud's map lists some packs by their repository URL instead, with no `id`. So a client cannot count on finding that entry by this id.
+   */
+  pack?: string
+  /**
+   * `github`: the workflow says the node was installed from GitHub (its `aux_id`), and no Registry pack provides it. `unknown`: no pack provides it, or the pack that claims it publishes nothing to fetch, and the workflow names no GitHub source. `unchecked`: the Comfy Registry did not answer about it, so nothing says it is missing; asking again may find its pack. `stamped`: the node names a pack (its `cnr_id`, in `pack`) that will be installed, but Cloud could not confirm that pack provides this node: only the workflow's own stamp ties the node to it, and Cloud's map of node classes does not place it there, so the workflow may not run on Cloud as it is (the node may be newer than the pack version Cloud installs, or not the pack's at all).
+   */
+  reason: 'github' | 'unknown' | 'unchecked' | 'stamped'
+  /**
+   * The GitHub repository (`org/repo`) the workflow names for the node; present only with reason `github`.
+   */
+  repository?: string
+}
+
+/**
+ * One node pack the workflow needs, as it would be installed.
+ */
+export type WorkflowPack = {
+  /**
+   * The pack's Comfy Registry id. Absent for a pack the Registry publishes no installable version of, which is installed from `repository` instead.
+   */
+  id?: string
+  /**
+   * The pack's name, or its Registry id when it has none.
+   */
+  name: string
+  /**
+   * The repository the pack is installed from, present only when the Registry publishes no installable version of it.
+   */
+  repository?: string
+  /**
+   * The Registry version that would be installed: the newest one published, since a workflow names no versions. Absent when the pack is installed from `repository`.
+   */
+  version?: string
 }
 
 /**
@@ -2092,6 +2239,16 @@ export type Plan = {
    */
   slug: string
   tier: SubscriptionTier
+}
+
+/**
+ * Which developer-platform deployment this browser should run on.
+ */
+export type PickWorkspaceDeploymentRequest = {
+  /**
+   * Developer-platform deployment id: one of this workspace's, not deleted. The error message names which check failed.
+   */
+  deployment_id: string
 }
 
 /**
@@ -7228,7 +7385,7 @@ export type CreateAssetData = {
      */
     hash?: string
     /**
-     * Optional asset ID for idempotent creation. If provided and asset exists, returns existing asset.
+     * Optional caller-chosen asset ID. If the upload's content matches an asset you already own in this workspace, that asset is returned and its `id` may differ from the one requested. Otherwise, an ID already taken by any asset is refused with 400 `ASSET_ID_UNAVAILABLE`.
      */
     id?: string
     /**
@@ -7240,7 +7397,7 @@ export type CreateAssetData = {
      */
     name?: string
     /**
-     * Optional preview asset ID. Must be your own asset in this workspace; anything else (including a catalog asset, another user's published asset, or an ID that does not exist) is refused with 400 `INVALID_PREVIEW_ID`. If not provided, images will use their own ID as preview.
+     * Optional preview asset ID. Must be your own asset in this workspace; anything else (including a catalog asset, another user's published asset, or an ID that does not exist) is refused with 400 `INVALID_PREVIEW_ID`. If not provided, images use their own ID as preview, except OpenEXR and Radiance HDR, which get no preview; a preview_id equal to the asset's own id is ignored for those.
      */
     preview_id?: string
     /**
@@ -7259,7 +7416,7 @@ export type CreateAssetData = {
 
 export type CreateAssetErrors = {
   /**
-   * Invalid request (bad file, invalid content type, etc.), or `INVALID_PREVIEW_ID` when `preview_id` is not your own asset in this workspace
+   * Invalid request (bad file, invalid content type, etc.), `INVALID_PREVIEW_ID` when `preview_id` is not your own asset in this workspace, or `ASSET_ID_UNAVAILABLE` when a caller-chosen `id` is already taken
    */
   400: ErrorResponse
   /**
@@ -9996,6 +10153,19 @@ export type GetExtensionsData = {
   url: '/api/extensions'
 }
 
+export type GetExtensionsErrors = {
+  /**
+   * `code` is `workspace_id_invalid`: the `X-Comfy-Workspace-ID` header or `workspace_id` query value is malformed, or conflicts with another value or with the workspace the credential resolves to. Answered only while `web_session_enabled` is on for the user. See the `WebSessionAuth` scheme.
+   */
+  400: ErrorResponse
+  /**
+   * `code` is `workspace_access_denied`: the selected workspace is unknown, deleted, or the user is not a member; the three look the same. This route also serves anonymous callers, so the session's other refusals fall back to an anonymous request. See the `WebSessionAuth` scheme.
+   */
+  403: ErrorResponse
+}
+
+export type GetExtensionsError = GetExtensionsErrors[keyof GetExtensionsErrors]
+
 export type GetExtensionsResponses = {
   /**
    * URL paths (relative to web root) of available extension JS files
@@ -11251,13 +11421,6 @@ export type InterruptJobErrors = {
    */
   404: ErrorResponse
   /**
-   * The job interrupt would act on runs on a Build's deployment and
-   * cannot be interrupted from here yet. Code GATEWAY_JOB_NOT_CANCELLABLE;
-   * the message names that job, and nothing was cancelled.
-   *
-   */
-  409: ErrorResponse
-  /**
    * Internal server error
    */
   500: ErrorResponse
@@ -11480,6 +11643,56 @@ export type ListJobsResponses = {
 
 export type ListJobsResponse = ListJobsResponses[keyof ListJobsResponses]
 
+export type DeleteJobData = {
+  body?: never
+  path: {
+    /**
+     * Job identifier (UUID)
+     */
+    job_id: string
+  }
+  query?: never
+  url: '/api/jobs/{job_id}'
+}
+
+export type DeleteJobErrors = {
+  /**
+   * `code` is `workspace_id_invalid`: the `X-Comfy-Workspace-ID` header or `workspace_id` query value is malformed, or conflicts with another value or with the workspace the credential resolves to. Answered only while `web_session_enabled` is on for the user. See the `WebSessionAuth` scheme.
+   */
+  400: ErrorResponse
+  /**
+   * Unauthorized - Authentication required
+   */
+  401: ErrorResponse
+  /**
+   * A refused request that changes data. For a web session, `code` is `csrf_invalid` (no `X-CSRF-Token`, or not the session's), `workspace_access_denied` (the selected workspace is unknown, deleted, or the user is not a member; the three look the same), `no_workspace_access` (the account has no personal workspace and is a member of no live workspace), `origin_not_allowed` or `cross_site_request`; see the `WebSessionAuth` scheme. For any credential, `sso_required` means an SSO organization holds the account (its email is on the organization's verified domains) and the credential is not an SSO sign-in, or the workspace is an SSO organization's and the account is not on its domains or the credential is not an SSO sign-in; `organization_id`, when present, names the organization to sign in with. `FORBIDDEN` is the route's own authorization check failing, such as an unverified email, or, on `POST /api/workspaces`, an account an SSO organization holds (its organization manages its workspaces; signing in again does not change it). A credential this route does not take gets AuthTypeNotAllowedError instead, and so does the session while `web_session_enabled` is off for the user, unless the operation says it takes the session whatever the flag.
+   */
+  403: ForbiddenError
+  /**
+   * Job not found or does not belong to the user
+   */
+  404: ErrorResponse
+  /**
+   * A linked asset cannot be deleted because it is referenced by another resource, e.g. a workflow version (error code: ASSET_IN_USE); the job is left in place
+   */
+  409: ErrorResponse
+  /**
+   * Internal server error
+   */
+  500: ErrorResponse
+}
+
+export type DeleteJobError = DeleteJobErrors[keyof DeleteJobErrors]
+
+export type DeleteJobResponses = {
+  /**
+   * Job and its assets deleted successfully, or the job was not in a deletable state (pending/in-progress/already-deleted) and no change was made (no-op)
+   */
+  204: void
+}
+
+export type DeleteJobResponse = DeleteJobResponses[keyof DeleteJobResponses]
+
 export type GetJobDetailData = {
   body?: never
   path: {
@@ -11619,13 +11832,6 @@ export type CancelJobErrors = {
    */
   404: ErrorResponse
   /**
-   * The job runs on a Build's deployment, is still pending or running,
-   * and cannot be cancelled from here yet. Code
-   * GATEWAY_JOB_NOT_CANCELLABLE; nothing was cancelled.
-   *
-   */
-  409: ErrorResponse
-  /**
    * Internal server error - cancellation failed
    */
   500: ErrorResponse
@@ -11666,14 +11872,6 @@ export type CancelJobsErrors = {
    * One or more job IDs not found for this user (no jobs cancelled)
    */
   404: ErrorResponse
-  /**
-   * One or more jobs run on a Build's deployment, are still pending or
-   * running, and cannot be cancelled from here yet. Code
-   * GATEWAY_JOB_NOT_CANCELLABLE; the message names those jobs, and no
-   * jobs were cancelled.
-   *
-   */
-  409: ErrorResponse
   /**
    * Internal server error - cancellation failed
    */
@@ -11881,7 +12079,7 @@ export type ExecutePromptErrors = {
    */
   413: PromptErrorResponse
   /**
-   * Retryable backpressure, disambiguated by the body's `error.type`: `QUEUE_LIMIT` (this workspace's bounded job queue is full - retrying after some queued jobs complete will succeed) or `FREE_TIER_UNAVAILABLE` (the free tier is switched off for now - retrying once it is back will succeed), or `BILLING_UNAVAILABLE` with `error.reason` `funds_unavailable` (ingest got no billing verdict for the workspace because the billing service was unreachable or rejected the check, or the billing-status read behind a no-funds verdict failed - nothing was queued, and retrying the same submission after `Retry-After` seconds will succeed once billing answers). Of the billing outcomes, a plan or billing policy refusal is a 402; only billing being unavailable is a 429.
+   * Retryable backpressure, disambiguated by the body's `error.type`: `QUEUE_LIMIT` (this workspace's bounded job queue is full - retrying after some queued jobs complete will succeed) or `FREE_TIER_UNAVAILABLE` (the free tier is switched off for now - retrying once it is back will succeed), or `BILLING_UNAVAILABLE` with `error.reason` `funds_unavailable` (ingest got no billing verdict for the workspace because the billing service was unreachable or rejected the check, or the billing-status read behind a no-funds verdict failed - nothing was queued, and retrying the same submission after `Retry-After` seconds will succeed once billing answers). Of the billing outcomes, a plan or billing policy refusal is a 402; only billing being unavailable is a 429. For a browser that picked a developer-platform deployment, also `PLATFORM_REFUSED` with `error.details` `deployment_not_ready` (the deployment is on its way to ready - nothing was queued, and retrying after `Retry-After` seconds will succeed once it is ready) or another platform 429 passed through.
    */
   429: PromptErrorResponse
   /**
@@ -12018,14 +12216,6 @@ export type ManageQueueErrors = {
    * A refused request that changes data. For a web session, `code` is `csrf_invalid` (no `X-CSRF-Token`, or not the session's), `workspace_access_denied` (the selected workspace is unknown, deleted, or the user is not a member; the three look the same), `no_workspace_access` (the account has no personal workspace and is a member of no live workspace), `origin_not_allowed` or `cross_site_request`; see the `WebSessionAuth` scheme. For any credential, `sso_required` means an SSO organization holds the account (its email is on the organization's verified domains) and the credential is not an SSO sign-in, or the workspace is an SSO organization's and the account is not on its domains or the credential is not an SSO sign-in; `organization_id`, when present, names the organization to sign in with. `FORBIDDEN` is the route's own authorization check failing, such as an unverified email, or, on `POST /api/workspaces`, an account an SSO organization holds (its organization manages its workspaces; signing in again does not change it). A credential this route does not take gets AuthTypeNotAllowedError instead, and so does the session while `web_session_enabled` is off for the user, unless the operation says it takes the session whatever the flag.
    */
   403: ForbiddenError
-  /**
-   * A job listed in `delete` runs on a Build's deployment, is still
-   * pending or running, and cannot be cancelled from here yet. Code
-   * GATEWAY_JOB_NOT_CANCELLABLE; the message names those jobs, and no
-   * jobs were cancelled.
-   *
-   */
-  409: ErrorResponse
   /**
    * Internal server error
    */
@@ -15252,6 +15442,331 @@ export type UpdateWorkspaceResponses = {
 export type UpdateWorkspaceResponse =
   UpdateWorkspaceResponses[keyof UpdateWorkspaceResponses]
 
+export type ClearWorkspaceDefaultDeploymentData = {
+  body?: never
+  path: {
+    /**
+     * Workspace ID (w-{uuid} format)
+     */
+    id: string
+  }
+  query?: never
+  url: '/api/workspaces/{id}/default-deployment'
+}
+
+export type ClearWorkspaceDefaultDeploymentErrors = {
+  /**
+   * `code` is `workspace_id_invalid`: the `X-Comfy-Workspace-ID` header or `workspace_id` query value is malformed, or conflicts with another value or with the workspace the credential resolves to. Answered only while `web_session_enabled` is on for the user. See the `WebSessionAuth` scheme.
+   */
+  400: ErrorResponse
+  /**
+   * Unauthorized
+   */
+  401: ErrorResponse
+  /**
+   * Not the workspace owner. For a web session, `code` may also be one of the SessionWriteForbidden refusals (`csrf_invalid`, `workspace_access_denied`, `origin_not_allowed`, `cross_site_request`).
+   */
+  403: ErrorResponse
+  /**
+   * Workspace not found, or the caller is not a member of it
+   */
+  404: ErrorResponse
+  /**
+   * Internal server error
+   */
+  500: ErrorResponse
+}
+
+export type ClearWorkspaceDefaultDeploymentError =
+  ClearWorkspaceDefaultDeploymentErrors[keyof ClearWorkspaceDefaultDeploymentErrors]
+
+export type ClearWorkspaceDefaultDeploymentResponses = {
+  /**
+   * Cleared
+   */
+  204: void
+}
+
+export type ClearWorkspaceDefaultDeploymentResponse =
+  ClearWorkspaceDefaultDeploymentResponses[keyof ClearWorkspaceDefaultDeploymentResponses]
+
+export type SetWorkspaceDefaultDeploymentData = {
+  body: PickWorkspaceDeploymentRequest
+  path: {
+    /**
+     * Workspace ID (w-{uuid} format)
+     */
+    id: string
+  }
+  query?: never
+  url: '/api/workspaces/{id}/default-deployment'
+}
+
+export type SetWorkspaceDefaultDeploymentErrors = {
+  /**
+   * `code` is `workspace_id_invalid`: the `X-Comfy-Workspace-ID` header or `workspace_id` query value is malformed, or conflicts with another value or with the workspace the credential resolves to. Answered only while `web_session_enabled` is on for the user. See the `WebSessionAuth` scheme.
+   */
+  400: ErrorResponse
+  /**
+   * Unauthorized
+   */
+  401: ErrorResponse
+  /**
+   * Not the workspace owner, an API key (setting the default needs a signed-in session), or the rollout flag is off for this account. For a web session, `code` may also be one of the SessionWriteForbidden refusals (`csrf_invalid`, `workspace_access_denied`, `origin_not_allowed`, `cross_site_request`).
+   */
+  403: ErrorResponse
+  /**
+   * Workspace not found
+   */
+  404: ErrorResponse
+  /**
+   * Validation error, including a deployment_id that is not one of the workspace's deployments or has been deleted
+   */
+  422: ErrorResponse
+  /**
+   * Internal server error
+   */
+  500: ErrorResponse
+  /**
+   * comfy-deploy could not be asked whether the deployment is valid, or deployment picking is not configured in this environment
+   */
+  503: ErrorResponse
+}
+
+export type SetWorkspaceDefaultDeploymentError =
+  SetWorkspaceDefaultDeploymentErrors[keyof SetWorkspaceDefaultDeploymentErrors]
+
+export type SetWorkspaceDefaultDeploymentResponses = {
+  /**
+   * Set; members with no pick are on this deployment from their next request
+   */
+  204: void
+}
+
+export type SetWorkspaceDefaultDeploymentResponse =
+  SetWorkspaceDefaultDeploymentResponses[keyof SetWorkspaceDefaultDeploymentResponses]
+
+export type ClearWorkspaceDeploymentData = {
+  body?: never
+  path: {
+    /**
+     * Workspace ID (w-{uuid} format)
+     */
+    id: string
+  }
+  query?: {
+    /**
+     * `workspace`: drop this browser's own pick and follow the workspace's default deployment (BE-17480).
+     */
+    follow?: 'workspace'
+  }
+  url: '/api/workspaces/{id}/deployment'
+}
+
+export type ClearWorkspaceDeploymentErrors = {
+  /**
+   * `code` is `workspace_id_invalid`: the `X-Comfy-Workspace-ID` header or `workspace_id` query value is malformed, or conflicts with another value or with the workspace the credential resolves to. Answered only while `web_session_enabled` is on for the user. See the `WebSessionAuth` scheme.
+   */
+  400: ErrorResponse
+  /**
+   * Unauthorized
+   */
+  401: ErrorResponse
+  /**
+   * For a web session, one of the SessionWriteForbidden refusals (`csrf_invalid`, `workspace_access_denied`, `origin_not_allowed`, `cross_site_request`).
+   */
+  403: ErrorResponse
+  /**
+   * Workspace not found, or the caller is not a member of it
+   */
+  404: ErrorResponse
+  /**
+   * Internal server error
+   */
+  500: ErrorResponse
+}
+
+export type ClearWorkspaceDeploymentError =
+  ClearWorkspaceDeploymentErrors[keyof ClearWorkspaceDeploymentErrors]
+
+export type ClearWorkspaceDeploymentResponses = {
+  /**
+   * Cleared
+   */
+  204: void
+}
+
+export type ClearWorkspaceDeploymentResponse =
+  ClearWorkspaceDeploymentResponses[keyof ClearWorkspaceDeploymentResponses]
+
+export type PickWorkspaceDeploymentData = {
+  body: PickWorkspaceDeploymentRequest
+  path: {
+    /**
+     * Workspace ID (w-{uuid} format)
+     */
+    id: string
+  }
+  query?: never
+  url: '/api/workspaces/{id}/deployment'
+}
+
+export type PickWorkspaceDeploymentErrors = {
+  /**
+   * `code` is `workspace_id_invalid`: the `X-Comfy-Workspace-ID` header or `workspace_id` query value is malformed, or conflicts with another value or with the workspace the credential resolves to. Answered only while `web_session_enabled` is on for the user. See the `WebSessionAuth` scheme.
+   */
+  400: ErrorResponse
+  /**
+   * Unauthorized
+   */
+  401: ErrorResponse
+  /**
+   * An API key (picking a deployment needs a signed-in session), or the rollout flag is off for this account. For a web session, `code` may also be one of the SessionWriteForbidden refusals (`csrf_invalid`, `workspace_access_denied`, `origin_not_allowed`, `cross_site_request`).
+   */
+  403: ErrorResponse
+  /**
+   * Workspace not found, or the caller is not a member of it
+   */
+  404: ErrorResponse
+  /**
+   * Validation error, including a deployment_id that is not one of the workspace's deployments or has been deleted
+   */
+  422: ErrorResponse
+  /**
+   * Internal server error
+   */
+  500: ErrorResponse
+  /**
+   * comfy-deploy could not be asked whether the deployment is valid, or deployment picking is not configured in this environment
+   */
+  503: ErrorResponse
+}
+
+export type PickWorkspaceDeploymentError =
+  PickWorkspaceDeploymentErrors[keyof PickWorkspaceDeploymentErrors]
+
+export type PickWorkspaceDeploymentResponses = {
+  /**
+   * Picked; the cookie on this response carries it
+   */
+  204: void
+}
+
+export type PickWorkspaceDeploymentResponse =
+  PickWorkspaceDeploymentResponses[keyof PickWorkspaceDeploymentResponses]
+
+export type ListWorkspaceDeploymentsData = {
+  body?: never
+  path: {
+    /**
+     * Workspace ID (w-{uuid} format)
+     */
+    id: string
+  }
+  query?: never
+  url: '/api/workspaces/{id}/deployments'
+}
+
+export type ListWorkspaceDeploymentsErrors = {
+  /**
+   * `code` is `workspace_id_invalid`: the `X-Comfy-Workspace-ID` header or `workspace_id` query value is malformed, or conflicts with another value or with the workspace the credential resolves to. Answered only while `web_session_enabled` is on for the user. See the `WebSessionAuth` scheme.
+   */
+  400: ErrorResponse
+  /**
+   * Unauthorized
+   */
+  401: ErrorResponse
+  /**
+   * Not in the rollout, or an API key: listing needs a signed-in session
+   */
+  403: ErrorResponse
+  /**
+   * Workspace not found, or the caller is not a member
+   */
+  404: ErrorResponse
+  /**
+   * Internal server error
+   */
+  500: ErrorResponse
+  /**
+   * The platform could not be asked, or deployment picking is not configured in this environment
+   */
+  503: ErrorResponse
+}
+
+export type ListWorkspaceDeploymentsError =
+  ListWorkspaceDeploymentsErrors[keyof ListWorkspaceDeploymentsErrors]
+
+export type ListWorkspaceDeploymentsResponses = {
+  /**
+   * The workspace's live deployments, newest first
+   */
+  200: WorkspaceDeploymentList
+}
+
+export type ListWorkspaceDeploymentsResponse =
+  ListWorkspaceDeploymentsResponses[keyof ListWorkspaceDeploymentsResponses]
+
+export type ResolveWorkspaceWorkflowPacksData = {
+  body: WorkflowPacksRequest
+  path: {
+    /**
+     * Workspace ID (w-{uuid} format)
+     */
+    id: string
+  }
+  query?: never
+  url: '/api/workspaces/{id}/workflow-packs'
+}
+
+export type ResolveWorkspaceWorkflowPacksErrors = {
+  /**
+   * The workflow could not be read. `code` is comfy-builder's identifier, which a caller branches on: `INVALID_REQUEST` when no workflow was sent, `INVALID_WORKFLOW` when the payload is not a workflow or holds no nodes, `WORKFLOW_TOO_LARGE` when it names more node classes than one read may carry. While `web_session_enabled` is on, `code` may also be `workspace_id_invalid` (see SessionWorkspaceIDInvalid).
+   */
+  400: ErrorResponse
+  /**
+   * Unauthorized
+   */
+  401: ErrorResponse
+  /**
+   * The caller is not a member of the workspace, or is an API key: the read runs as the caller on a Cloud JWT minted here, which needs a signed-in session. For a web session, `code` may also be one of the SessionWriteForbidden refusals (`csrf_invalid`, `workspace_access_denied`, `origin_not_allowed`, `cross_site_request`).
+   */
+  403: ErrorResponse
+  /**
+   * The rollout flag cloud_on_customer_build_enabled is off for the caller.
+   */
+  404: ErrorResponse
+  /**
+   * The workflow is larger than the 1 MiB one read may carry.
+   */
+  413: ErrorResponse
+  /**
+   * Internal server error
+   */
+  500: ErrorResponse
+  /**
+   * comfy-builder could not be reached, failed, or refused the token minted here; nothing is known about the workflow, so try again.
+   */
+  502: ErrorResponse
+  /**
+   * Reading workflows is not configured in this environment (BUILDER_SERVICE_URL is unset).
+   */
+  503: ErrorResponse
+}
+
+export type ResolveWorkspaceWorkflowPacksError =
+  ResolveWorkspaceWorkflowPacksErrors[keyof ResolveWorkspaceWorkflowPacksErrors]
+
+export type ResolveWorkspaceWorkflowPacksResponses = {
+  /**
+   * The workflow was read; what it needs, and what nothing provides
+   */
+  200: WorkflowPacks
+}
+
+export type ResolveWorkspaceWorkflowPacksResponse =
+  ResolveWorkspaceWorkflowPacksResponses[keyof ResolveWorkspaceWorkflowPacksResponses]
+
 export type GetCurrentWorkspaceData = {
   body?: never
   path?: never
@@ -15309,10 +15824,26 @@ export type GetStaticExtensionsData = {
 
 export type GetStaticExtensionsErrors = {
   /**
-   * File not found
+   * `code` is `workspace_id_invalid`: the `X-Comfy-Workspace-ID` header or `workspace_id` query value is malformed, or conflicts with another value or with the workspace the credential resolves to. Answered only while `web_session_enabled` is on for the user. See the `WebSessionAuth` scheme.
    */
-  404: unknown
+  400: ErrorResponse
+  /**
+   * `code` is `workspace_access_denied`: the selected workspace is unknown, deleted, or the user is not a member; the three look the same. This route also serves anonymous callers, so the session's other refusals fall back to an anonymous request. See the `WebSessionAuth` scheme.
+   */
+  403: ErrorResponse
+  /**
+   * File not found. A Release-scoped path answers the same 404 whether
+   * the file is missing, the caller is not a member of the workspace the
+   * path names, the Release is not that workspace's, or the browser
+   * labels the request as included by a page other than Cloud's own
+   * (`Sec-Fetch-Site` other than `same-origin` or `none`).
+   *
+   */
+  404: ErrorResponse
 }
+
+export type GetStaticExtensionsError =
+  GetStaticExtensionsErrors[keyof GetStaticExtensionsErrors]
 
 export type GetStaticExtensionsResponses = {
   /**
