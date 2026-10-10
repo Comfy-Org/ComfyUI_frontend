@@ -22,14 +22,14 @@ import Menu from '@/components/ui/menu/Menu.vue'
 import Button from '@/components/ui/button/Button.vue'
 import { useWorkspaceUI } from '@/platform/workspace/composables/useWorkspaceUI'
 import { useTeamWorkspaceStore } from '@/platform/workspace/stores/teamWorkspaceStore'
-import { useDialogService } from '@/services/dialogService'
+import { useWorkspaceDialogs } from '@/platform/workspace/composables/useWorkspaceDialogs'
 
 const { t } = useI18n()
 const {
   showLeaveWorkspaceDialog,
   showDeleteWorkspaceDialog,
   showEditWorkspaceDialog
-} = useDialogService()
+} = useWorkspaceDialogs()
 const { isWorkspaceSubscribed } = storeToRefs(useTeamWorkspaceStore())
 const { permissions, uiConfig } = useWorkspaceUI()
 

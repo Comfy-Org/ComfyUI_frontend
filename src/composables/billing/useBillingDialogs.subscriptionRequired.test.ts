@@ -34,7 +34,7 @@ vi.mock(
   import('@/platform/cloud/subscription/composables/useSubscriptionDialog')
 )
 
-import { useDialogService } from '@/services/dialogService'
+import { useBillingDialogs } from '@/composables/billing/useBillingDialogs'
 
 describe('showSubscriptionRequiredDialog', () => {
   const originalConfig = window.__CONFIG__
@@ -53,7 +53,7 @@ describe('showSubscriptionRequiredDialog', () => {
     mockIsCloud.value = false
     window.__CONFIG__ = { subscription_required: true }
 
-    await useDialogService().showSubscriptionRequiredDialog()
+    await useBillingDialogs().showSubscriptionRequiredDialog()
 
     expect(useSubscriptionDialog().show).not.toHaveBeenCalled()
     expect(refreshRemoteConfig).not.toHaveBeenCalled()
@@ -63,7 +63,7 @@ describe('showSubscriptionRequiredDialog', () => {
     remoteConfigState.value = 'authenticated'
     window.__CONFIG__ = { subscription_required: true }
 
-    await useDialogService().showSubscriptionRequiredDialog({
+    await useBillingDialogs().showSubscriptionRequiredDialog({
       reason: 'subscribe_now_button'
     })
 
@@ -83,7 +83,7 @@ describe('showSubscriptionRequiredDialog', () => {
       return Promise.resolve()
     })
 
-    await useDialogService().showSubscriptionRequiredDialog()
+    await useBillingDialogs().showSubscriptionRequiredDialog()
 
     expect(refreshRemoteConfig).toHaveBeenCalledOnce()
     expect(useSubscriptionDialog().show).toHaveBeenCalledWith(undefined)
@@ -94,7 +94,7 @@ describe('showSubscriptionRequiredDialog', () => {
     remoteConfigState.value = 'authenticated'
     window.__CONFIG__ = { subscription_required: false }
 
-    await useDialogService().showSubscriptionRequiredDialog()
+    await useBillingDialogs().showSubscriptionRequiredDialog()
 
     expect(useSubscriptionDialog().show).not.toHaveBeenCalled()
     expect(reportError).toHaveBeenCalledOnce()

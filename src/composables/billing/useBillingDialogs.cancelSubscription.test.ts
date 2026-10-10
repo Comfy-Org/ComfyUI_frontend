@@ -16,7 +16,7 @@ vi.mock(import('@/composables/billing/useBillingContext'))
 
 vi.mock(import('@/platform/cloud/subscription/launchCancellationFlow'))
 
-import { useDialogService } from '@/services/dialogService'
+import { useBillingDialogs } from '@/composables/billing/useBillingDialogs'
 
 function cancelSubscriptionDialog() {
   return useDialogStore().dialogStack.find(
@@ -45,7 +45,7 @@ describe('showCancelSubscriptionFlow', () => {
     }
     opensFlowWith(options)
 
-    await useDialogService().showCancelSubscriptionFlow('2026-10-01')
+    await useBillingDialogs().showCancelSubscriptionFlow('2026-10-01')
 
     expect(launchCancellationFlow).toHaveBeenCalledWith(
       expect.objectContaining({ cancelAt: '2026-10-01' })
@@ -65,8 +65,46 @@ describe('showCancelSubscriptionFlow', () => {
       isScopeCurrent: () => false
     })
 
-    await useDialogService().showCancelSubscriptionFlow()
+    await useBillingDialogs().showCancelSubscriptionFlow()
 
     expect(cancelSubscriptionDialog()).toBeUndefined()
+  })
+})
+
+describe('showCancelSubscriptionDialog', () => {
+  it('preserves an existing cancellation scope guard for public callers', async () => {
+    const dialogStore = useDialogStore()
+    const existingGuard = () => false
+    dialogStore.showDialog({
+      key: 'cancel-subscription',
+      component: { render: () => null },
+      props: {
+        cancelAt: '2026-10-01',
+        flowAlreadyOpened: true,
+        isScopeCurrent: existingGuard
+      }
+    })
+
+    const shown = await useBillingDialogs().showCancelSubscriptionDialog()
+
+    expect(shown).toBe(dialogStore.dialogStack[0])
+    expect(dialogStore.dialogStack[0].contentProps).toMatchObject({
+      cancelAt: '2026-10-01',
+      flowAlreadyOpened: true,
+      isScopeCurrent: existingGuard
+    })
+  })
+
+  it('declines a guarded cancellation dialog after its scope changes', async () => {
+    const dialogStore = useDialogStore()
+
+    await expect(
+      useBillingDialogs().showCancelSubscriptionDialog(
+        undefined,
+        true,
+        () => false
+      )
+    ).resolves.toBe(false)
+    expect(dialogStore.dialogStack).toHaveLength(0)
   })
 })
