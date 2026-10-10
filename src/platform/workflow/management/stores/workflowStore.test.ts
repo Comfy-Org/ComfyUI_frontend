@@ -1,9 +1,10 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { fromAny, fromPartial } from '@total-typescript/shoehorn'
-import { nextTick } from 'vue'
+import { nextTick, reactive } from 'vue'
 
 import type { LGraph, Subgraph } from '@/lib/litegraph/src/litegraph'
 import { useSettingStore } from '@/platform/settings/settingStore'
+import type { LinearInput } from '@/platform/workflow/management/stores/comfyWorkflow'
 import type { LoadedComfyWorkflow } from '@/platform/workflow/management/stores/workflowStore'
 import type { ComfyWorkflowJSON } from '@/platform/workflow/validation/schemas/workflowSchema'
 import {
@@ -250,6 +251,23 @@ describe('useWorkflowStore', () => {
       expect(isValidUuid(state.id)).toBe(true)
       expect(workflow.legacyId).toBe('video-point-prompt-example')
       expect(workflowData).toEqual(originalData)
+    })
+
+    it('accepts workflow data holding a reactive proxy', () => {
+      const workflowData = fromPartial<ComfyWorkflowJSON>({
+        ...structuredClone(defaultGraph),
+        extra: {
+          linearData: {
+            inputs: [reactive<LinearInput>(['1', 'seed'])],
+            outputs: []
+          }
+        }
+      })
+
+      const workflow = store.createNewTemporary('proxy.json', workflowData)
+      const state = JSON.parse(workflow.content!)
+
+      expect(state.extra.linearData.inputs).toEqual([['1', 'seed']])
     })
 
     it.for([

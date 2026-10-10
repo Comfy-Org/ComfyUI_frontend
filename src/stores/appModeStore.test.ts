@@ -668,6 +668,22 @@ describe('appModeStore', () => {
       })
     })
 
+    it('writes structured-cloneable linearData, not reactive proxies', async () => {
+      workflowStore.activeWorkflow = createBuilderWorkflow()
+      await nextTick()
+
+      store.selectedInputs.push([entitySeed, 'seed', { height: 120 }])
+      store.selectedOutputs.push(toNodeId(1))
+      await nextTick()
+
+      const linearData = app.rootGraph.extra.linearData
+      expect(linearData).toEqual({
+        inputs: [[entitySeed, 'seed', { height: 120 }]],
+        outputs: [toNodeId(1)]
+      })
+      expect(() => structuredClone(linearData)).not.toThrow()
+    })
+
     it('does not write linearData when not in builder mode', async () => {
       workflowStore.activeWorkflow = createBuilderWorkflow('graph')
       await nextTick()
