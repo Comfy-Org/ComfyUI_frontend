@@ -59,8 +59,7 @@ export function useNodeOutputsExport() {
           closeExportDialog()
           void exportOutputs(selectedIndices.map((index) => outputs[index]))
         }
-      },
-      dialogComponentProps: { headerClass: 'px-4 py-3' }
+      }
     })
   }
 

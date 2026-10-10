@@ -13,13 +13,9 @@ import { useDialogStore } from '@/stores/dialogStore'
 
 type UploadModelContextResolver = () => UploadModelDialogContext | undefined
 
-// Contents bring their own width and padding — shrink-wrap the chrome and
-// zero the section padding.
 const uploadDialogComponentProps = {
-  size: 'lg',
-  contentClass: 'w-fit max-w-[calc(100vw-1rem)]',
-  headerClass: 'py-0 pl-0',
-  bodyClass: 'min-h-0 overflow-hidden p-0'
+  flush: true,
+  size: 'fit'
 } as const
 
 export function useModelUpload(

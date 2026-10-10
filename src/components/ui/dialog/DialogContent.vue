@@ -5,19 +5,21 @@ import type { HTMLAttributes } from 'vue'
 
 import { cn } from '@comfyorg/tailwind-utils'
 
-import type { DialogContentSize } from './dialog.variants'
+import type { DialogContentSize, DialogContentSurface } from './dialog.variants'
 import { dialogContentVariants } from './dialog.variants'
 
 const {
-  size,
-  maximized = false,
   class: customClass = '',
+  maximized = false,
+  size,
+  surface,
   ...restProps
 } = defineProps<
   DialogContentProps & {
-    size?: DialogContentSize
-    maximized?: boolean
     class?: HTMLAttributes['class']
+    maximized?: boolean
+    size?: DialogContentSize
+    surface?: DialogContentSurface
   }
 >()
 
@@ -31,7 +33,7 @@ const forwarded = useForwardPropsEmits(restProps, emits)
     data-reka-dialog-content
     :class="
       cn(
-        dialogContentVariants({ size, maximized }),
+        dialogContentVariants({ maximized, size, surface }),
         customClass,
         // Custom dimension and position classes must yield to maximize.
         maximized &&

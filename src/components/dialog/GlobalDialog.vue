@@ -6,10 +6,7 @@
       @update:open="(open) => onRekaOpenChange(item.key, open)"
     >
       <DialogPortal>
-        <DialogOverlay
-          v-reka-z-index
-          :class="item.dialogComponentProps.overlayClass"
-        />
+        <DialogOverlay v-reka-z-index />
         <DialogContent
           v-reka-z-index
           v-bind="
@@ -17,9 +14,13 @@
               ? {}
               : { 'aria-labelledby': item.key }
           "
-          :size="item.dialogComponentProps.size ?? 'md'"
+          :size="
+            item.dialogComponentProps.headless
+              ? 'fit'
+              : (item.dialogComponentProps.size ?? 'md')
+          "
+          :surface="item.dialogComponentProps.headless ? 'none' : 'card'"
           :maximized="!!item.dialogComponentProps.maximized"
-          :class="item.dialogComponentProps.contentClass"
           :data-dialog-key="item.key"
           @open-auto-focus="(e) => onRekaOpenAutoFocus(e, item.key)"
           @escape-key-down="
@@ -46,7 +47,13 @@
             />
           </template>
           <template v-else>
-            <DialogHeader :class="item.dialogComponentProps.headerClass">
+            <DialogHeader
+              :class="
+                item.headerComponent &&
+                item.dialogComponentProps.flush &&
+                cn('p-0', hasHeaderActions(item) && 'pr-3')
+              "
+            >
               <component
                 :is="item.headerComponent"
                 v-if="item.headerComponent"
@@ -56,25 +63,23 @@
               <DialogTitle v-else :id="item.key">
                 {{ item.title || ' ' }}
               </DialogTitle>
-              <div class="flex items-center gap-1">
+              <div
+                v-if="hasHeaderActions(item)"
+                class="flex items-center gap-1"
+              >
                 <DialogMaximize
                   v-if="item.dialogComponentProps.maximizable"
                   :maximized="!!item.dialogComponentProps.maximized"
                   @toggle="toggleMaximize(item)"
                 />
-                <DialogClose
-                  v-if="
-                    item.dialogComponentProps.closable !== false &&
-                    item.dialogComponentProps.showCloseButton !== false
-                  "
-                />
+                <DialogClose v-if="hasCloseButton(item)" />
               </div>
             </DialogHeader>
             <div
               :class="
                 cn(
-                  'flex-1 overflow-auto px-4 py-2',
-                  item.dialogComponentProps.bodyClass
+                  'flex min-h-0 flex-1 flex-col overflow-auto',
+                  !item.dialogComponentProps.flush && 'px-4 py-2'
                 )
               "
             >
@@ -86,7 +91,7 @@
             </div>
             <DialogFooter
               v-if="item.footerComponent"
-              :class="item.dialogComponentProps.footerClass"
+              :class="item.dialogComponentProps.flush && 'p-0'"
             >
               <component :is="item.footerComponent" v-bind="item.footerProps" />
             </DialogFooter>
@@ -134,6 +139,17 @@ function onRekaOpenAutoFocus(event: Event, key: string) {
     event.preventDefault()
     autofocusEl.focus()
   }
+}
+
+function hasCloseButton({ dialogComponentProps }: DialogInstance) {
+  return (
+    dialogComponentProps.closable !== false &&
+    dialogComponentProps.showCloseButton !== false
+  )
+}
+
+function hasHeaderActions(item: DialogInstance) {
+  return !!item.dialogComponentProps.maximizable || hasCloseButton(item)
 }
 
 function toggleMaximize(item: DialogInstance) {

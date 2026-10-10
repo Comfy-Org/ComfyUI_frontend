@@ -13,9 +13,8 @@ export const LayerEditorDialogHeader = defineAsyncComponent(
 )
 
 export const layerEditorDialogProps = {
+  flush: true,
   size: 'full',
-  headerClass: 'border-b border-border-default p-2',
-  bodyClass: 'flex min-h-0 flex-col p-0',
   maximizable: false,
   maximized: true,
   closable: true,

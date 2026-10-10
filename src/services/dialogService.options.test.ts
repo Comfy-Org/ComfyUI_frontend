@@ -167,23 +167,21 @@ describe('dialogService dialog options', () => {
       key: 'layout-override-test',
       component: Component,
       props: {},
-      dialogComponentProps: { closable: false, contentClass: 'w-170' }
+      dialogComponentProps: { closable: false, headless: false }
     })
     const [args] = vi.mocked(useDialogStore().showDialog).mock.calls[0]
     expect(args.dialogComponentProps?.closable).toBe(false)
-    expect(args.dialogComponentProps?.contentClass).toBe('w-170')
+    expect(args.dialogComponentProps?.headless).toBe(false)
   })
 
-  it('showSmallLayoutDialog() zeroes section padding', () => {
+  it('showSmallLayoutDialog() hugs flush sections', () => {
     const Component = { template: '<div />' }
     useDialogService().showSmallLayoutDialog({
       key: 'small-layout-test',
       component: Component
     })
     const [args] = vi.mocked(useDialogStore().showDialog).mock.calls[0]
-    expect(args.dialogComponentProps?.contentClass).toContain('w-fit')
-    expect(args.dialogComponentProps?.headerClass).toBe('p-0')
-    expect(args.dialogComponentProps?.bodyClass).toBe('p-0 overflow-y-hidden')
-    expect(args.dialogComponentProps?.footerClass).toBe('p-0')
+    expect(args.dialogComponentProps?.flush).toBe(true)
+    expect(args.dialogComponentProps?.size).toBe('fit')
   })
 })

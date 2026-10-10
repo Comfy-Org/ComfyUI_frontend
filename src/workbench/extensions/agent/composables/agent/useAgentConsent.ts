@@ -206,9 +206,6 @@ export function useAgentConsent() {
         dialogComponentProps: {
           dismissOnPointerDownOutside: true,
           headless: true,
-          overlayClass: 'bg-black/55',
-          contentClass:
-            'w-[min(640px,calc(100vw-2rem))] border-none bg-transparent shadow-none sm:max-w-[640px]',
           onClose: () => {
             if (settled) return
             settled = true
