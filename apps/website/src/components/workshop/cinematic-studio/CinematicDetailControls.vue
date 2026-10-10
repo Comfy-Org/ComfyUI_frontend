@@ -105,7 +105,7 @@ const grades = chosen(gradeGroup).slice(0, 5)
                 :style="{ backgroundColor: color }"
               />
             </span>
-            <span class="w-28 truncate text-sm text-primary-warm-gray">
+            <span class="w-36 truncate text-sm text-primary-warm-gray">
               {{ t(option.label) }}
             </span>
           </li>

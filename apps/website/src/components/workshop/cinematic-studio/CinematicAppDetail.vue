@@ -49,8 +49,8 @@ useIntersectionObserver(heroTry, ([entry]) => {
     data-testid="cinematic-detail"
   >
     <AppsBackLink :locale class="mb-6" />
-    <section class="grid items-center gap-10 lg:grid-cols-5 lg:gap-14">
-      <div class="flex flex-col items-start gap-5 lg:col-span-2">
+    <section class="grid items-center gap-10 lg:grid-cols-2 lg:gap-14">
+      <div class="flex flex-col items-start gap-5">
         <span
           class="font-mono text-xs tracking-wider text-primary-comfy-yellow uppercase"
         >
@@ -97,7 +97,7 @@ useIntersectionObserver(heroTry, ([entry]) => {
         </p>
       </div>
       <div
-        class="aspect-video overflow-hidden rounded-3xl bg-transparency-white-t4 shadow-2xl ring-1 ring-transparency-white-t8 lg:col-span-3"
+        class="aspect-video overflow-hidden rounded-3xl bg-transparency-white-t4 shadow-2xl ring-1 ring-transparency-white-t8"
       >
         <video
           v-if="cover"
