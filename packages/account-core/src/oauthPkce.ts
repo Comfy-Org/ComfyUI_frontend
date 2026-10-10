@@ -22,6 +22,7 @@ const CLOUD_RESOURCE_PATH = '/api'
 const DEFAULT_TOKEN_TIMEOUT_MS = 15_000
 /** 32 bytes encode to the 43-character minimum verifier length. */
 const RANDOM_BYTES = 32
+const LOOPBACK_HOSTS = new Set(['localhost', '127.0.0.1', '[::1]'])
 
 function base64Url(bytes: Uint8Array): string {
   const binary = Array.from(bytes, (byte) => String.fromCharCode(byte)).join('')
@@ -180,6 +181,13 @@ function classify(status: number, body: unknown, now: number): TokenResult {
   }
 }
 
+function tokenEndpoint(issuer: string): URL | undefined {
+  const url = new URL(TOKEN_PATH, issuer)
+  if (url.protocol === 'https:') return url
+  if (url.protocol === 'http:' && LOOPBACK_HOSTS.has(url.hostname)) return url
+  return undefined
+}
+
 async function postTokenGrant(
   form: Record<string, string>,
   options: TokenRequestOptions
@@ -189,15 +197,14 @@ async function postTokenGrant(
     options.timeoutMs ?? DEFAULT_TOKEN_TIMEOUT_MS
   )
   try {
-    const response = await options.fetchImpl(
-      new URL(TOKEN_PATH, options.issuer).href,
-      {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
-        body: new URLSearchParams({ ...form, client_id: options.clientId }),
-        signal
-      }
-    )
+    const endpoint = tokenEndpoint(options.issuer)
+    if (!endpoint) return { ok: false, reason: 'unavailable' }
+    const response = await options.fetchImpl(endpoint.href, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+      body: new URLSearchParams({ ...form, client_id: options.clientId }),
+      signal
+    })
     return classify(response.status, await readJson(response), options.now())
   } catch {
     return { ok: false, reason: 'unavailable' }
