@@ -688,11 +688,11 @@ describe('appModeStore', () => {
       workflowStore.activeWorkflow = createBuilderWorkflow()
       await nextTick()
 
-      store.selectedInputs.push([
-        entitySeed,
-        'seed',
-        fromAny({ height: 120, layout: reactive({ order: [1, 2] }) })
-      ])
+      const config: InputWidgetConfig & { layout: { order: number[] } } = {
+        height: 120,
+        layout: reactive({ order: [1, 2] })
+      }
+      store.selectedInputs.push([entitySeed, 'seed', config])
       await nextTick()
 
       const linearData = app.rootGraph.extra.linearData
