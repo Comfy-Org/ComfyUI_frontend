@@ -309,10 +309,11 @@
         "startFrom": "以此为起点"
       },
       "card": {
-        "title": "在 Hub 上",
-        "help": "访客看到的卡片，会随输入实时更新。",
+        "title": "在 Hub 上的显示效果",
+        "help": "访客看到的卡片，根据表单当前内容生成，包括未保存的更改。",
         "untitled": "未命名",
-        "noCover": "还没有封面"
+        "noCover": "还没有封面",
+        "open": "查看卡片"
       }
     },
     "readiness": {

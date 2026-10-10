@@ -5,6 +5,7 @@ import { computed, ref } from 'vue'
 import EditorCover from '@/components/cms/editor/EditorCover.vue'
 import EditorDetails from '@/components/cms/editor/EditorDetails.vue'
 import EditorExamples from '@/components/cms/editor/EditorExamples.vue'
+import EditorCardDialog from '@/components/cms/editor/EditorCardDialog.vue'
 import EditorHeader from '@/components/cms/editor/EditorHeader.vue'
 import EditorParameters from '@/components/cms/editor/EditorParameters.vue'
 import EditorPublishing from '@/components/cms/editor/EditorPublishing.vue'
@@ -54,6 +55,7 @@ const dirty = computed(
   () => JSON.stringify(state.value) !== JSON.stringify(initial)
 )
 const saving = ref(false)
+const showCard = ref(false)
 const error = ref<SaveError>()
 const showProblems = ref(false)
 const problems = computed(() =>
@@ -110,7 +112,9 @@ function discard() {
       "
       :can-save="canEdit && !saving && (dirty || initial.isNew)"
       :locale
+      @card="showCard = true"
     />
+    <EditorCardDialog v-model:open="showCard" :state :locale />
 
     <p
       v-if="notice"

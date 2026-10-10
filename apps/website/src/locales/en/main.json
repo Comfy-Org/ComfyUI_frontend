@@ -309,10 +309,11 @@
         "startFrom": "Start from this"
       },
       "card": {
-        "title": "On the Hub",
-        "help": "The card visitors see. It updates as you type.",
+        "title": "How it shows on the Hub",
+        "help": "The card visitors see, built from what's in the form now, including unsaved changes.",
         "untitled": "Untitled",
-        "noCover": "No cover yet"
+        "noCover": "No cover yet",
+        "open": "View card"
       }
     },
     "readiness": {

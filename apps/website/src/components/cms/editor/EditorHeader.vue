@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { ArrowLeft, ExternalLink } from '@lucide/vue'
+import { ArrowLeft, ExternalLink, LayoutTemplate } from '@lucide/vue'
 
 import AdminButton from '@/components/cms/ui/AdminButton.vue'
 import StatusLabel from '@/components/cms/ui/StatusLabel.vue'
@@ -27,6 +27,7 @@ const {
   canSave: boolean
   locale?: Locale
 }>()
+const emit = defineEmits<{ card: [] }>()
 const { t } = translationsFor(locale)
 const state = deleted
   ? { tone: 'muted' as const, label: t('cmsAdmin.editor.archived') }
@@ -63,6 +64,9 @@ const state = deleted
       </p>
     </div>
     <div class="flex flex-wrap items-center gap-2">
+      <AdminButton :icon="LayoutTemplate" @click="emit('card')">
+        {{ t('cmsAdmin.editor.card.open') }}
+      </AdminButton>
       <AdminButton
         v-if="previewHref"
         :href="previewHref"
