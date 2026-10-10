@@ -222,23 +222,26 @@ export class WorkflowHelper {
     })
   }
 
+  /**
+   * `workflowStore.openWorkflow` registers the tab but never loads the graph,
+   * so going through the store leaves the canvas on whatever it already had.
+   * Clicking the sidebar entry is the path a user takes and the only one that
+   * puts the file's nodes on the canvas.
+   */
   async openPersistedWorkflow(workflowName: string): Promise<void> {
-    await this.comfyPage.page.evaluate(async (name) => {
-      const store = (window.app!.extensionManager as WorkspaceStore).workflow
-      await store.syncWorkflows()
-      const workflow =
-        store.getWorkflowByPath(`workflows/${name}.json`) ??
-        store.persistedWorkflows.find(
-          (candidate) =>
-            candidate.filename === name ||
-            candidate.path.endsWith(`${name}.json`)
-        )
-      if (!workflow) {
-        throw new Error(`Persisted workflow not found: ${name}`)
-      }
-      await store.openWorkflow(workflow)
-    }, workflowName)
+    const sidebar = this.comfyPage.menu.workflowsTab
+    await sidebar.open()
+    await sidebar.getPersistedItem(workflowName).click()
+    await sidebar.close()
     await this.waitForWorkflowIdle()
+    await this.comfyPage.page.waitForFunction(
+      (name) =>
+        (
+          window.app!.extensionManager as WorkspaceStore
+        ).workflow.activeWorkflow?.path.endsWith(`${name}.json`) ?? false,
+      workflowName,
+      { timeout: 5000 }
+    )
     await this.comfyPage.vueNodes.waitForNodes()
   }
 

@@ -2,6 +2,7 @@ import { useTimeoutFn } from '@vueuse/core'
 import { ref, watch } from 'vue'
 
 import { useQueueStore } from '@/stores/queueStore'
+import { useExecutionStore } from '@/stores/executionStore'
 
 const BASE_INTERVAL_MS = 8_000
 const MAX_INTERVAL_MS = 32_000
@@ -9,11 +10,17 @@ const BACKOFF_MULTIPLIER = 1.5
 
 export function useQueuePolling() {
   const queueStore = useQueueStore()
+  const executionStore = useExecutionStore()
   const delay = ref(BASE_INTERVAL_MS)
 
   const { start, stop } = useTimeoutFn(
     () => {
-      if (queueStore.activeJobsCount !== 1 || queueStore.isLoading) return
+      if (
+        (queueStore.activeJobsCount < 1 &&
+          executionStore.trackedJobIds.length < 1) ||
+        queueStore.isLoading
+      )
+        return
       delay.value = Math.min(delay.value * BACKOFF_MULTIPLIER, MAX_INTERVAL_MS)
       void queueStore.update()
     },
@@ -22,12 +29,17 @@ export function useQueuePolling() {
   )
 
   function scheduleNextPoll() {
-    if (queueStore.activeJobsCount === 1 && !queueStore.isLoading) start()
+    if (
+      (queueStore.activeJobsCount >= 1 ||
+        executionStore.trackedJobIds.length >= 1) &&
+      !queueStore.isLoading
+    )
+      start()
     else stop()
   }
 
   watch(
-    () => queueStore.activeJobsCount,
+    () => [queueStore.activeJobsCount, executionStore.trackedJobIds.length],
     () => {
       delay.value = BASE_INTERVAL_MS
       scheduleNextPoll()

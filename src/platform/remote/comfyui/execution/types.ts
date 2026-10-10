@@ -3,6 +3,7 @@ import { z } from 'zod'
 import { zNodeId } from '@/platform/workflow/validation/schemas/workflowSchema'
 import type { TaskStatus } from '@/platform/tasks/services/taskService'
 import { resultItemType } from '@/schemas/resultItemTypeSchema'
+import type { WorkflowId } from '@/platform/workflow/validation/schemas/workflowSchema'
 
 export type JobId = string
 
@@ -42,6 +43,7 @@ export interface ProgressWsMessage {
   value: number
   max: number
   prompt_id: JobId
+  workflow_id?: WorkflowId
   node: NodeId
 }
 export interface NodeProgressState {
@@ -50,18 +52,21 @@ export interface NodeProgressState {
   state: 'pending' | 'running' | 'finished' | 'error'
   node_id: NodeId
   prompt_id: JobId
+  workflow_id?: WorkflowId
   display_node_id?: NodeId
   parent_node_id?: NodeId
   real_node_id?: NodeId
 }
 export interface ProgressStateWsMessage {
   prompt_id: JobId
+  workflow_id?: WorkflowId
   nodes: Record<NodeId, NodeProgressState>
 }
 export interface ExecutingWsMessage {
   node: NodeId | null
   display_node?: NodeId
   prompt_id: JobId
+  workflow_id?: WorkflowId
 }
 export interface ExecutedWsMessage extends ExecutingWsMessage {
   node: NodeId
@@ -71,6 +76,7 @@ export interface ExecutedWsMessage extends ExecutingWsMessage {
 }
 interface ExecutionWsMessageBase {
   prompt_id: JobId
+  workflow_id?: WorkflowId
   timestamp: number
 }
 export type ExecutionStartWsMessage = ExecutionWsMessageBase
@@ -79,9 +85,18 @@ export interface ExecutionCachedWsMessage extends ExecutionWsMessageBase {
   nodes: NodeId[]
 }
 export interface ExecutionInterruptedWsMessage extends ExecutionWsMessageBase {
-  node_id: NodeId
-  node_type: string
-  executed: NodeId[]
+  /**
+   * Optional because a user cancel on Cloud is synthesised by the gateway
+   * rather than forwarded from the worker, and carries only `synthetic`,
+   * `reason` and the routing ids. Core always sends all three.
+   */
+  node_id?: NodeId
+  node_type?: string
+  executed?: NodeId[]
+  /** Cloud only, set on a gateway-synthesised cancel. */
+  synthetic?: boolean
+  /** Cloud only, the human-readable cancel reason. */
+  reason?: string
 }
 export interface ExecutionErrorWsMessage extends ExecutionWsMessageBase {
   node_id?: NodeId | null

@@ -95,6 +95,7 @@ import { setTelemetryRegistry } from '@/platform/telemetry'
 import { TelemetryRegistry } from '@/platform/telemetry/TelemetryRegistry'
 import * as executionContextUtils from '@/platform/telemetry/utils/getExecutionContext'
 import { isCloud } from '@/platform/distribution/types'
+import * as accountPreconditionDialogModule from '@/platform/cloud/subscription/composables/useAccountPreconditionDialog'
 
 import { PromptExecutionError, api } from '@/scripts/api'
 import { useExecutionErrorStore } from '@/stores/executionErrorStore'
@@ -3096,6 +3097,152 @@ describe('ComfyApp', () => {
 
       expect(executionErrorHandler).toBeTypeOf('function')
       expect(executionErrorStore.isErrorOverlayOpen).toBe(false)
+    })
+
+    it('does not open an account dialog for a background run error', () => {
+      const workflowA = markLoaded(
+        new ComfyWorkflow({ path: 'workflows/a.json', modified: 0, size: 0 })
+      )
+      const workflowB = markLoaded(
+        new ComfyWorkflow({ path: 'workflows/b.json', modified: 0, size: 0 })
+      )
+      workflowA.changeTracker.activeState = workflowGraphData(workflowAId)
+      workflowB.changeTracker.activeState = workflowGraphData(workflowBId)
+      useWorkflowStore().activeWorkflow = workflowA
+      useExecutionStore().storeJob({
+        nodes: ['1'],
+        id: 'job-b',
+        promptOutput: {},
+        workflow: workflowB,
+        mode: 'graph'
+      })
+
+      const open = vi.fn()
+      vi.spyOn(
+        accountPreconditionDialogModule,
+        'useAccountPreconditionDialog'
+      ).mockReturnValue({ open })
+      const addEventListener = vi.spyOn(api, 'addEventListener')
+      Reflect.apply(Reflect.get(app, 'addApiUpdateHandlers'), app, [])
+      const executionErrorHandler = addEventListener.mock.calls.find(
+        ([event]) => event === 'execution_error'
+      )?.[1] as EventListener | undefined
+      expect(executionErrorHandler).toBeTypeOf('function')
+
+      executionErrorHandler?.(
+        new CustomEvent('execution_error', {
+          detail: {
+            prompt_id: 'job-b',
+            workflow_id: workflowBId,
+            node_id: '1',
+            node_type: 'PartnerApiNode',
+            exception_message:
+              'Payment Required: Please add credits to your account to use this node.',
+            exception_type: 'InsufficientFundsError',
+            traceback: []
+          }
+        })
+      )
+
+      expect(open).not.toHaveBeenCalled()
+    })
+
+    it('does not apply a background run output to the visible workflow', async () => {
+      // The gate in the `executed` listener. Outputs are keyed by a locator
+      // resolved against the visible graph, so without it a job finishing in
+      // another tab writes its result onto the same-numbered node in front.
+      // Spying on the writer rather than reading nodeOutputs, because the
+      // fixture graph has no nodes and the locator would never resolve.
+      const workflowA = markLoaded(
+        new ComfyWorkflow({ path: 'workflows/a.json', modified: 0, size: 0 })
+      )
+      const workflowB = markLoaded(
+        new ComfyWorkflow({ path: 'workflows/b.json', modified: 0, size: 0 })
+      )
+      workflowA.changeTracker.activeState = workflowGraphData(workflowAId)
+      workflowB.changeTracker.activeState = workflowGraphData(workflowBId)
+      useWorkflowStore().activeWorkflow = workflowA
+
+      const executionStore = useExecutionStore()
+      executionStore.storeJob({
+        nodes: ['1'],
+        id: 'job-b',
+        promptOutput: {},
+        workflow: workflowB,
+        mode: 'graph'
+      })
+
+      const setOutputs = vi.spyOn(
+        useNodeOutputStore(),
+        'setNodeOutputsByExecutionId'
+      )
+      const addEventListener = vi.spyOn(api, 'addEventListener')
+      Reflect.apply(Reflect.get(app, 'addApiUpdateHandlers'), app, [])
+      const executedHandler = addEventListener.mock.calls.find(
+        ([event]) => event === 'executed'
+      )?.[1] as EventListener | undefined
+      expect(executedHandler).toBeTypeOf('function')
+
+      executedHandler?.(
+        new CustomEvent('executed', {
+          detail: {
+            prompt_id: 'job-b',
+            workflow_id: workflowBId,
+            node: '1',
+            display_node: '1',
+            output: { images: [{ filename: 'from-b.png', type: 'output' }] }
+          }
+        })
+      )
+
+      expect(setOutputs).not.toHaveBeenCalled()
+    })
+
+    it('does not apply a background preview to the visible workflow', () => {
+      const workflowA = markLoaded(
+        new ComfyWorkflow({ path: 'workflows/a.json', modified: 0, size: 0 })
+      )
+      const workflowB = markLoaded(
+        new ComfyWorkflow({ path: 'workflows/b.json', modified: 0, size: 0 })
+      )
+      workflowA.changeTracker.activeState = workflowGraphData(workflowAId)
+      workflowB.changeTracker.activeState = workflowGraphData(workflowBId)
+      useWorkflowStore().activeWorkflow = workflowA
+
+      useExecutionStore().storeJob({
+        nodes: ['1'],
+        id: 'job-b',
+        promptOutput: {},
+        workflow: workflowB,
+        mode: 'graph'
+      })
+
+      const setPreviews = vi.spyOn(
+        useNodeOutputStore(),
+        'setNodePreviewsByExecutionId'
+      )
+      const addEventListener = vi.spyOn(api, 'addEventListener')
+      Reflect.apply(Reflect.get(app, 'addApiUpdateHandlers'), app, [])
+      const previewHandler = addEventListener.mock.calls.find(
+        ([event]) => event === 'b_preview_with_metadata'
+      )?.[1] as EventListener | undefined
+      expect(previewHandler).toBeTypeOf('function')
+
+      previewHandler?.(
+        new CustomEvent('b_preview_with_metadata', {
+          detail: {
+            blob: new Blob(),
+            nodeId: '1',
+            displayNodeId: '1',
+            parentNodeId: '1',
+            realNodeId: '1',
+            jobId: 'job-b',
+            workflowId: workflowBId
+          }
+        })
+      )
+
+      expect(setPreviews).not.toHaveBeenCalled()
     })
 
     it('restores the failed run state when returning to a workflow tab', async () => {

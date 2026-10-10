@@ -5,9 +5,11 @@ import { extractWorkflow } from '@/platform/remote/comfyui/jobs/fetchJobs'
 import type {
   APITaskType,
   JobListItem,
+  JobStatus,
   TaskType
 } from '@/platform/remote/comfyui/jobs/jobTypes'
 import type {
+  JobId,
   StatusWsMessageStatus,
   TaskOutput
 } from '@/platform/remote/comfyui/execution/types'
@@ -315,6 +317,88 @@ export const useQueueStore = defineStore('queue', () => {
     () => pendingTasks.value.length + runningTasks.value.length
   )
 
+  function applyQueueSnapshot(queue: Awaited<ReturnType<typeof api.getQueue>>) {
+    // API returns pre-sorted data (sort_by=create_time&order=desc)
+    runningTasks.value = queue.Running.map((job) => new TaskItemImpl(job))
+    pendingTasks.value = queue.Pending.map((job) => new TaskItemImpl(job))
+
+    const appearedTasks = [...pendingTasks.value, ...runningTasks.value]
+    const executionStore = useExecutionStore()
+    appearedTasks.forEach((task) => {
+      const jobIdString = task.jobId
+      const workflowId = task.workflowId
+      if (workflowId && jobIdString) {
+        executionStore.registerJobWorkflowIdMapping(jobIdString, workflowId)
+      }
+    })
+  }
+
+  function applyHistorySnapshot(
+    history: Awaited<ReturnType<typeof api.getHistory>>
+  ) {
+    const currentHistory = toValue(historyTasks)
+
+    // Sort by create_time descending and limit to maxItems
+    const sortedHistory = [...history]
+      .sort((a, b) => b.create_time - a.create_time)
+      .slice(0, toValue(maxHistoryItems))
+
+    // Reuse existing TaskItemImpl instances or create new
+    // Must recreate if outputs_count changed (e.g., API started returning it)
+    const existingByJobId = new Map(
+      currentHistory.map((impl) => [impl.jobId, impl])
+    )
+
+    const nextHistoryTasks = sortedHistory.map((job) => {
+      const existing = existingByJobId.get(job.id)
+      if (!existing) return new TaskItemImpl(job)
+      // Recreate if outputs_count changed to ensure lazy loading works
+      if (
+        existing.outputsCount !== (job.outputs_count ?? undefined) ||
+        existing.previewableOutputsCount !==
+          (job.previewable_outputs_count ?? undefined)
+      ) {
+        return new TaskItemImpl(job)
+      }
+      return existing
+    })
+
+    const isHistoryUnchanged =
+      nextHistoryTasks.length === currentHistory.length &&
+      nextHistoryTasks.every((task, index) => task === currentHistory[index])
+
+    if (!isHistoryUnchanged) {
+      historyTasks.value = nextHistoryTasks
+    }
+    hasFetchedHistorySnapshot.value = true
+  }
+
+  const terminalStatuses = new Set<JobStatus>([
+    'completed',
+    'failed',
+    'cancelled'
+  ])
+
+  async function reconcileTrackedJobs(
+    activeJobIds: Set<JobId>,
+    history: JobListItem[]
+  ) {
+    const executionStore = useExecutionStore()
+    const terminalJobIds = new Set(history.map((job) => job.id))
+    const unresolvedJobIds = executionStore.trackedJobIds.filter(
+      (jobId) => !activeJobIds.has(jobId) && !terminalJobIds.has(jobId)
+    )
+    const details = await Promise.all(
+      unresolvedJobIds.map((jobId) => api.getJobDetail(jobId))
+    )
+    for (const detail of details) {
+      if (detail && terminalStatuses.has(detail.status)) {
+        terminalJobIds.add(detail.id)
+      }
+    }
+    executionStore.reconcileTerminalJobs(activeJobIds, terminalJobIds)
+  }
+
   const update = async () => {
     if (updateState.inFlight) {
       updateState.dirty = true
@@ -330,70 +414,32 @@ export const useQueueStore = defineStore('queue', () => {
         api.getHistory(maxHistoryItems.value)
       ])
 
+      // Shared by the queue and history branches below. `null` means the queue
+      // fetch failed, which is not the same as an empty queue.
+      const activeJobIds: Set<JobId> | null =
+        queueResult.status === 'fulfilled'
+          ? new Set([
+              ...queueResult.value.Running.map((j) => j.id),
+              ...queueResult.value.Pending.map((j) => j.id)
+            ])
+          : null
+
       if (queueResult.status === 'fulfilled') {
-        const queue = queueResult.value
-        // API returns pre-sorted data (sort_by=create_time&order=desc)
-        runningTasks.value = queue.Running.map((job) => new TaskItemImpl(job))
-        pendingTasks.value = queue.Pending.map((job) => new TaskItemImpl(job))
-
-        const appearedTasks = [...pendingTasks.value, ...runningTasks.value]
-        const executionStore = useExecutionStore()
-        appearedTasks.forEach((task) => {
-          const jobIdString = task.jobId
-          const workflowId = task.workflowId
-          if (workflowId && jobIdString) {
-            executionStore.registerJobWorkflowIdMapping(jobIdString, workflowId)
-          }
-        })
-
-        const activeJobIds = new Set([
-          ...queue.Running.map((j) => j.id),
-          ...queue.Pending.map((j) => j.id)
-        ])
-        executionStore.reconcileInitializingJobs(activeJobIds)
+        applyQueueSnapshot(queueResult.value)
       } else {
         console.error('Failed to fetch queue:', queueResult.reason)
       }
 
-      if (historyResult.status === 'fulfilled') {
-        const history = historyResult.value
-        const currentHistory = toValue(historyTasks)
-
-        // Sort by create_time descending and limit to maxItems
-        const sortedHistory = [...history]
-          .sort((a, b) => b.create_time - a.create_time)
-          .slice(0, toValue(maxHistoryItems))
-
-        // Reuse existing TaskItemImpl instances or create new
-        // Must recreate if outputs_count changed (e.g., API started returning it)
-        const existingByJobId = new Map(
-          currentHistory.map((impl) => [impl.jobId, impl])
+      if (activeJobIds) {
+        useExecutionStore().reconcileInitializingJobs(activeJobIds)
+        await reconcileTrackedJobs(
+          activeJobIds,
+          historyResult.status === 'fulfilled' ? historyResult.value : []
         )
+      }
 
-        const nextHistoryTasks = sortedHistory.map((job) => {
-          const existing = existingByJobId.get(job.id)
-          if (!existing) return new TaskItemImpl(job)
-          // Recreate if outputs_count changed to ensure lazy loading works
-          if (
-            existing.outputsCount !== (job.outputs_count ?? undefined) ||
-            existing.previewableOutputsCount !==
-              (job.previewable_outputs_count ?? undefined)
-          ) {
-            return new TaskItemImpl(job)
-          }
-          return existing
-        })
-
-        const isHistoryUnchanged =
-          nextHistoryTasks.length === currentHistory.length &&
-          nextHistoryTasks.every(
-            (task, index) => task === currentHistory[index]
-          )
-
-        if (!isHistoryUnchanged) {
-          historyTasks.value = nextHistoryTasks
-        }
-        hasFetchedHistorySnapshot.value = true
+      if (historyResult.status === 'fulfilled') {
+        applyHistorySnapshot(historyResult.value)
       } else {
         console.error('Failed to fetch history:', historyResult.reason)
       }

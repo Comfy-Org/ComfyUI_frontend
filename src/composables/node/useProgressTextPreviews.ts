@@ -26,8 +26,13 @@ export function useProgressTextPreviews() {
     const { nodeId, text, prompt_id } = e.detail
     if (!text || !nodeId) return
 
-    const activeJobId = executionStore.activeJobId
-    if (prompt_id && activeJobId && prompt_id !== activeJobId) return
+    // The ownership gate, not a bare activeJobId comparison: activeJobId can
+    // name a job belonging to another open workflow, which both drops frames
+    // for the tab in front and lets a background job's text land on it. The
+    // gate falls back to the activeJobId check only when ownership cannot be
+    // resolved at all. No workflow id to pass: core packs progress_text as a
+    // binary frame that carries none, tracked in Comfy-Org/ComfyUI#16887.
+    if (!executionStore.belongsToActiveWorkflow(prompt_id, undefined)) return
 
     const executionId = String(nodeId)
     const currentId = executionId.includes(':')

@@ -36,12 +36,14 @@ import { useNodeOutputStore } from '@/stores/nodeOutputStore'
 import { useJobPreviewStore } from '@/stores/jobPreviewStore'
 import { useExecutionErrorStore } from '@/stores/executionErrorStore'
 import { tryNormalizeNodeExecutionId } from '@/types/nodeIdentification'
+import type { SerializedNodeId } from '@/types/nodeId'
 import type { NodeLocatorId } from '@/types/nodeIdentification'
 import type { AppMode } from '@/utils/appMode'
 import { isAppModeValue } from '@/utils/appMode'
 import { classifyCloudValidationError } from '@/utils/executionErrorUtil'
 import { executionIdToNodeLocatorId } from '@/utils/graphTraversalUtil'
-import { createRafCoalescer } from '@/utils/rafBatch'
+import { createRafBatch, createRafCoalescer } from '@/utils/rafBatch'
+import { zeroUuid } from '@/utils/uuid'
 
 type RuntimeExecutionError = Omit<
   ExecutionErrorWsMessage,
@@ -369,6 +371,8 @@ export const useExecutionStore = defineStore('execution', () => {
 
     const states = nodeProgressStates.value // Apparently doing this inside `Object.entries` causes issues
     for (const state of Object.values(states)) {
+      if (!messageMatchesActiveWorkflow(state.prompt_id, state.workflow_id))
+        continue
       const parts = String(state.display_node_id).split(':')
       for (let i = 0; i < parts.length; i++) {
         const executionId = parts.slice(0, i + 1).join(':')
@@ -475,35 +479,39 @@ export const useExecutionStore = defineStore('execution', () => {
   }
 
   function handleExecutionStart(e: CustomEvent<ExecutionStartWsMessage>) {
-    executionIdToLocatorCache.clear()
-    activeJobId.value = e.detail.prompt_id
-    queuedJobs.value[activeJobId.value] ??= { nodes: {} }
-    clearInitializationByJobId(activeJobId.value)
+    const jobId = e.detail.prompt_id
+    queuedJobs.value[jobId] ??= { nodes: {} }
+    clearInitializationByJobId(jobId)
 
     // Ensure path mapping exists — execution_start can arrive via WebSocket
     // before the HTTP response from queuePrompt triggers storeJob.
-    if (!jobIdToSessionWorkflowPath.value.has(activeJobId.value)) {
-      const workflow = queuedJobs.value[activeJobId.value]?.workflow
+    if (!jobIdToSessionWorkflowPath.value.has(jobId)) {
+      const workflow = queuedJobs.value[jobId]?.workflow
       if (workflow) {
-        ensureSessionWorkflowPath(
-          activeJobId.value,
-          workflow.path,
-          workflow.instanceId
-        )
+        ensureSessionWorkflowPath(jobId, workflow.path, workflow.instanceId)
       }
     }
-    executionErrorStore.clearExecutionStartErrors(
-      runErrorKeyForJob(activeJobId.value)
-    )
-    queuedJobs.value[activeJobId.value].executionStartedAt ??= performance.now()
-    setWorkflowStatus(activeJobId.value, {
+    queuedJobs.value[jobId].executionStartedAt ??= performance.now()
+    setWorkflowStatus(jobId, {
       status: 'running',
-      executionStartedAt: queuedJobs.value[activeJobId.value].executionStartedAt
+      executionStartedAt: queuedJobs.value[jobId].executionStartedAt
     })
+
+    // Only adopt as the global active job and clear shared UI state when the
+    // starting job belongs to the active workflow. Otherwise a job started
+    // from another tab would steal activeJobId and clobber the active tab's
+    // execution UI.
+    if (!messageMatchesActiveWorkflow(jobId, e.detail.workflow_id)) return
+
+    executionIdToLocatorCache.clear()
+    executionErrorStore.clearExecutionStartErrors(runErrorKeyForJob(jobId))
+    activeJobId.value = jobId
   }
 
   function handleExecutionCached(e: CustomEvent<ExecutionCachedWsMessage>) {
     if (!activeJob.value) return
+    if (!messageMatchesActiveWorkflow(e.detail.prompt_id, e.detail.workflow_id))
+      return
     for (const n of e.detail.nodes) {
       activeJob.value.nodes[n] = true
     }
@@ -522,18 +530,36 @@ export const useExecutionStore = defineStore('execution', () => {
     })
     const workflow = jobIdToWorkflow.get(jobId)
     if (workflow) clearWorkflowStatus(workflow)
-    if (activeJobId.value) clearInitializationByJobId(activeJobId.value)
+    // This job's flag, not the visible job's. Before the gate existed a
+    // background interrupt also set activeJobId so the two coincided; now
+    // clearing activeJobId's flag wipes the visible run's "waiting for a
+    // machine" state and leaves the interrupted job's own flag set.
+    clearInitializationByJobId(jobId)
+    if (!messageMatchesActiveWorkflow(jobId, e.detail.workflow_id)) {
+      // The job is finished either way, so its own records have to be released
+      // or they leak for the lifetime of the session. Only the shared UI state
+      // below belongs to the visible tab. Text previews stay gated: they are
+      // keyed by node, and the visible graph may hold the same node ids.
+      releaseFinishedJobRecords(jobId)
+      return
+    }
     resetExecutionState(jobId)
   }
 
   function handleExecuted(e: CustomEvent<ExecutedWsMessage>) {
     if (!activeJob.value) return
+    if (!messageMatchesActiveWorkflow(e.detail.prompt_id, e.detail.workflow_id))
+      return
     activeJob.value.nodes[e.detail.node] = true
   }
 
   function handleExecutionSuccess(e: CustomEvent<ExecutionSuccessWsMessage>) {
     const jobId = e.detail.prompt_id
     pendingExecutionErrorsByJobId.delete(jobId)
+    clearInitializationByJobId(jobId)
+    // Per-workflow status is keyed by this job's own workflow, so it is set
+    // for every job — a background tab must still show Completed. Only the
+    // shared execution state below is gated.
     setWorkflowStatus(jobId, {
       status: 'completed',
       endTime: performance.now()
@@ -553,19 +579,35 @@ export const useExecutionStore = defineStore('execution', () => {
         })
       }
     }
+    if (!messageMatchesActiveWorkflow(jobId, e.detail.workflow_id)) {
+      // Finished either way, so release this job's own records or they leak for
+      // the session. Only the shared UI state below belongs to the visible tab,
+      // and text previews stay gated because they are keyed by node and the
+      // visible graph may hold the same node ids.
+      releaseFinishedJobRecords(jobId)
+      return
+    }
     resetExecutionState(jobId)
   }
 
-  function handleExecuting(e: CustomEvent<string | number | null>): void {
+  function handleExecuting(e: CustomEvent<SerializedNodeId | null>): void {
+    // The event detail is just the node id, for extension compatibility, so
+    // the ids come from the raw message. Without this, the final
+    // `executing: null` of a job started in another workflow tab would clear
+    // the visible tab's active job and its node progress.
+    const raw = api.lastExecutingMessage
+    if (raw && !messageMatchesActiveWorkflow(raw.prompt_id, raw.workflow_id)) {
+      return
+    }
+
     progressCoalescer.cancel()
-    if (e.detail == null) progressStateCoalescer.cancel()
+    if (e.detail == null) cancelPendingProgressStateUpdates()
 
     // Clear the current node progress when a new node starts executing
     _executingNodeProgress.value = null
 
     if (!activeJob.value) return
 
-    // Update the executing nodes list
     if (e.detail == null) {
       activeJobId.value = null
     }
@@ -599,60 +641,201 @@ export const useExecutionStore = defineStore('execution', () => {
     nodeProgressStatesByJob.value = pruned
   }
 
-  const progressStateCoalescer = createRafCoalescer<ProgressStateWsMessage>(
-    applyProgressState,
-    'raf:progress_state'
-  )
+  const pendingProgressStates = new Map<JobId, ProgressStateWsMessage>()
+  const progressStateBatch = createRafBatch(() => {
+    const pending = [...pendingProgressStates.values()]
+    pendingProgressStates.clear()
+    for (const detail of pending) applyProgressState(detail)
+  })
 
   function handleProgressState(e: CustomEvent<ProgressStateWsMessage>) {
-    progressStateCoalescer.push(e.detail)
+    pendingProgressStates.set(e.detail.prompt_id, e.detail)
+    progressStateBatch.schedule()
+  }
+
+  function cancelPendingProgressStateUpdates() {
+    pendingProgressStates.clear()
+    progressStateBatch.cancel()
+  }
+
+  /**
+   * Revoke previews for nodes that just started executing.
+   *
+   * Uses the *actual* node id rather than the display node id intentionally,
+   * so the preview is not cleared every time a new node inside an expanded
+   * graph starts.
+   */
+  function revokeStartedNodePreviews(
+    nodes: Record<string, NodeProgressState>,
+    previousForJob: Record<string, NodeProgressState>
+  ) {
+    const { revokePreviewsByExecutionId } = useNodeOutputStore()
+    for (const nodeId in nodes) {
+      if (nodes[nodeId].state !== 'running') continue
+      if (previousForJob[nodeId]?.state === 'running') continue
+      const executionId = tryNormalizeNodeExecutionId(nodeId)
+      if (executionId) revokePreviewsByExecutionId(executionId)
+    }
+  }
+
+  /** Mirror the executing node's progress for backwards compatibility. */
+  function mirrorExecutingNodeProgress(
+    nodes: Record<string, NodeProgressState>
+  ) {
+    const executingId = executingNodeId.value
+    if (!executingId || !Object.hasOwn(nodes, executingId)) return
+    const nodeState = nodes[executingId]
+    _executingNodeProgress.value = {
+      value: nodeState.value,
+      max: nodeState.max,
+      prompt_id: nodeState.prompt_id,
+      node: nodeState.display_node_id || nodeState.node_id
+    }
   }
 
   function applyProgressState(detail: ProgressStateWsMessage) {
-    const { nodes, prompt_id: jobId } = detail
+    const { nodes, prompt_id: jobId, workflow_id: messageWorkflowId } = detail
+    const isActiveWorkflowMessage = messageMatchesActiveWorkflow(
+      jobId,
+      messageWorkflowId
+    )
 
-    // Revoke previews for nodes that are starting to execute
-    const previousForJob =
-      jobId in nodeProgressStatesByJob.value
-        ? nodeProgressStatesByJob.value[jobId]
-        : {}
-    for (const nodeId in nodes) {
-      const nodeState = nodes[nodeId]
-      if (nodeState.state === 'running' && !(nodeId in previousForJob)) {
-        // This node just started executing, revoke its previews
-        // Note that we're doing the *actual* node id instead of the display node id
-        // here intentionally. That way, we don't clear the preview every time a new node
-        // within an expanded graph starts executing.
-        const { revokePreviewsByExecutionId } = useNodeOutputStore()
-        const executionId = tryNormalizeNodeExecutionId(nodeId)
-        if (executionId) revokePreviewsByExecutionId(executionId)
-      }
+    if (isActiveWorkflowMessage) {
+      revokeStartedNodePreviews(
+        nodes,
+        nodeProgressStatesByJob.value[jobId] ?? {}
+      )
     }
 
-    // Update the progress states for all nodes
     nodeProgressStatesByJob.value = {
       ...nodeProgressStatesByJob.value,
       [jobId]: nodes
     }
     evictOldProgressJobs()
-    nodeProgressStates.value = nodes
 
-    // If we have progress for the currently executing node, update it for backwards compatibility
-    if (executingNodeId.value) {
-      const nodeState = Object.hasOwn(nodes, executingNodeId.value)
-        ? nodes[executingNodeId.value]
-        : undefined
-      if (!nodeState) return
-      _executingNodeProgress.value = {
-        value: nodeState.value,
-        max: nodeState.max,
-        prompt_id: nodeState.prompt_id,
-        node: nodeState.display_node_id || nodeState.node_id
-      }
+    // Per-job state is recorded for every workflow; only the active workflow
+    // writes the shared mirror the canvas reads.
+    if (!isActiveWorkflowMessage) return
+    nodeProgressStates.value = nodes
+    mirrorExecutingNodeProgress(nodes)
+  }
+
+  /**
+   * Graph id of the active workflow, or null when it has none.
+   *
+   * `LoadedComfyWorkflow` types both states as present, but the running store
+   * does not always honour that, and this is read from a watcher and from a
+   * computed now — so a missing state has to return null rather than throw and
+   * take unrelated features down with it.
+   */
+  /**
+   * Graph id of a workflow: the id carried by the workflow's own JSON, which
+   * every copy of that content shares, so it identifies the content and not
+   * the tab holding it.
+   *
+   * Both states are nullable on ComfyWorkflow and this is read from a watcher
+   * and a computed, so an unloaded workflow returns undefined rather than
+   * throwing.
+   */
+  function graphIdOf(
+    workflow: ComfyWorkflow | null | undefined
+  ): string | undefined {
+    return workflow?.activeState?.id ?? workflow?.initialState?.id
+  }
+
+  function activeWorkflowGraphId(): string | null {
+    return graphIdOf(workflowStore.activeWorkflow) ?? null
+  }
+
+  /**
+   * Determines whether a WebSocket execution message belongs to the currently
+   * active workflow tab, so a job started in another open workflow cannot leak
+   * its progress into the one on screen.
+   *
+   * Resolution order, strongest first:
+   *  1. {@link jobIdToWorkflowInstanceId}, the id of the open tab that queued it.
+   *  2. {@link jobIdToSessionWorkflowPath}, unique per open workflow.
+   *  3. the graph id, from the message or {@link jobIdToWorkflowId}.
+   *
+   * When ownership cannot be resolved at all, for instance a job queued in a
+   * different browser session, the message is treated as belonging to the
+   * active workflow, which preserves single-tab behaviour.
+   *
+   * A workflow id names a workflow, not an open tab, and several open tabs can
+   * carry the same one: `ensureWorkflowId` keeps whatever id the json already
+   * has, so copying a workflow into a new tab duplicates it, and loading one
+   * can leave both a temporary and a persisted entry holding it. So the id is
+   * the weakest signal here, not the strongest, and anything unique per tab has
+   * to be consulted first. QA hit this with three unsaved copies of the default
+   * graph, where every tab rendered every other tab's outputs.
+   */
+  /**
+   * The all-zero sentinel is `LGraph._id`'s default, which the codebase reads
+   * as "no id yet" and replaces on configure and on clear. Treating it as a
+   * real id would make every workflow still carrying it match every other one
+   * on the graph-id leg, which is the leak this gate exists to stop. The queue
+   * side does not send it, but core falls back to the id inside
+   * `extra_pnginfo.workflow`, so it still arrives on the wire.
+   */
+  function workflowIdOrUndefined(id: string | undefined): string | undefined {
+    return !id || id === zeroUuid ? undefined : id
+  }
+
+  function messageMatchesActiveWorkflow(
+    jobId: JobId,
+    rawMessageWorkflowId: string | undefined
+  ): boolean {
+    const messageWorkflowId = workflowIdOrUndefined(rawMessageWorkflowId)
+    const activeWorkflow = workflowStore.activeWorkflow
+    if (!activeWorkflow) return true
+
+    const mappedInstance = jobIdToWorkflowInstanceId.get(jobId)
+    if (mappedInstance && activeWorkflow.instanceId) {
+      return mappedInstance === activeWorkflow.instanceId
     }
+
+    const mappedPath = jobIdToSessionWorkflowPath.value.get(jobId)
+    if (mappedPath && activeWorkflow.path) {
+      return mappedPath === activeWorkflow.path
+    }
+
+    const activeId = workflowIdOrUndefined(activeWorkflowGraphId() ?? undefined)
+    if (activeId) {
+      const ownerId =
+        messageWorkflowId ??
+        workflowIdOrUndefined(jobIdToWorkflowId.value.get(jobId))
+      if (ownerId) return ownerId === activeId
+    }
+
+    return true
+  }
+
+  /**
+   * Returns true when workflow ownership for {@link jobId} can be resolved
+   * — either by an explicit `workflow_id` on the incoming message or by a
+   * mapping registered when the job was queued. When this returns false
+   * the caller should fall back to whatever legacy guard applied before
+   * workflow gating was introduced.
+   */
+  function canResolveWorkflowOwnership(
+    jobId: JobId,
+    messageWorkflowId: string | undefined
+  ): boolean {
+    // Must list every map messageMatchesActiveWorkflow consults, and reject the
+    // same ids it rejects, or the two disagree about the same frame: the
+    // instance is that resolver's first and strongest leg, and leaving it out
+    // here made a frame resolvable by one rule and unresolvable by the other.
+    return (
+      workflowIdOrUndefined(messageWorkflowId) !== undefined ||
+      jobIdToWorkflowInstanceId.has(jobId) ||
+      jobIdToWorkflowId.value.has(jobId) ||
+      jobIdToSessionWorkflowPath.value.has(jobId)
+    )
   }
 
   const progressCoalescer = createRafCoalescer<ProgressWsMessage>((detail) => {
+    const { prompt_id: jobId, workflow_id: messageWorkflowId } = detail
+    if (!messageMatchesActiveWorkflow(jobId, messageWorkflowId)) return
     _executingNodeProgress.value = detail
   }, 'raf:progress')
 
@@ -662,7 +845,7 @@ export const useExecutionStore = defineStore('execution', () => {
 
   function cancelPendingProgressUpdates() {
     progressCoalescer.cancel()
-    progressStateCoalescer.cancel()
+    cancelPendingProgressStateUpdates()
   }
 
   function handleStatus() {
@@ -683,7 +866,7 @@ export const useExecutionStore = defineStore('execution', () => {
    */
   function openWorkflowPathForGraph(graphId: WorkflowId): string | undefined {
     const matches = workflowStore.openWorkflows.filter(
-      (w) => (w.activeState?.id ?? w.initialState?.id) === graphId
+      (w) => graphIdOf(w) === graphId
     )
     return matches.length === 1 ? matches[0].path : undefined
   }
@@ -702,10 +885,7 @@ export const useExecutionStore = defineStore('execution', () => {
    */
   function runErrorKeyForJob(jobId: string): string | null {
     const workflow = jobIdToWorkflow.get(jobId)
-    const graphId =
-      workflow?.activeState?.id ??
-      workflow?.initialState?.id ??
-      jobIdToWorkflowId.value.get(jobId)
+    const graphId = graphIdOf(workflow) ?? jobIdToWorkflowId.value.get(jobId)
     if (graphId === undefined) return null
 
     const path =
@@ -724,6 +904,12 @@ export const useExecutionStore = defineStore('execution', () => {
     const runErrorKey = runErrorKeyForJob(e.detail.prompt_id)
     if (runErrorKey === null) {
       bufferPendingExecutionError({ detail: e.detail, endTime })
+      if (
+        !messageMatchesActiveWorkflow(e.detail.prompt_id, e.detail.workflow_id)
+      ) {
+        releaseFinishedJobRecords(e.detail.prompt_id)
+        return
+      }
       resetExecutionState(e.detail.prompt_id)
       return
     }
@@ -776,6 +962,15 @@ export const useExecutionStore = defineStore('execution', () => {
     executionErrorStore.recordExecutionError(detail, runErrorKey)
     executionErrorStore.showExecutionError(detail, runErrorKey)
     clearInitializationByJobId(detail.prompt_id)
+    // Only the active workflow's error resets the shared execution state; the
+    // dialog is already scoped by the run error key inside showExecutionError.
+    // A background job is still finished, so release its own records either way
+    // or they survive the session, same as the success and interrupt paths.
+    if (!messageMatchesActiveWorkflow(detail.prompt_id, detail.workflow_id)) {
+      releaseFinishedJobRecords(detail.prompt_id)
+      return
+    }
+
     resetExecutionState(detail.prompt_id)
   }
 
@@ -791,6 +986,10 @@ export const useExecutionStore = defineStore('execution', () => {
     const workflow = jobIdToWorkflow.get(detail.prompt_id)
     if (workflow) clearWorkflowStatus(workflow)
     clearInitializationByJobId(detail.prompt_id)
+    if (!messageMatchesActiveWorkflow(detail.prompt_id, detail.workflow_id)) {
+      releaseFinishedJobRecords(detail.prompt_id)
+      return true
+    }
     resetExecutionState(detail.prompt_id)
     return true
   }
@@ -804,6 +1003,11 @@ export const useExecutionStore = defineStore('execution', () => {
       return false
 
     clearInitializationByJobId(detail.prompt_id)
+    if (!messageMatchesActiveWorkflow(detail.prompt_id, detail.workflow_id)) {
+      releaseFinishedJobRecords(detail.prompt_id)
+      return true
+    }
+
     resetExecutionState(detail.prompt_id)
     executionErrorStore.recordPromptError(
       {
@@ -826,6 +1030,11 @@ export const useExecutionStore = defineStore('execution', () => {
     if (!result) return false
 
     clearInitializationByJobId(detail.prompt_id)
+    if (!messageMatchesActiveWorkflow(detail.prompt_id, detail.workflow_id)) {
+      releaseFinishedJobRecords(detail.prompt_id)
+      return true
+    }
+
     resetExecutionState(detail.prompt_id)
 
     if (result.kind === 'nodeErrors') {
@@ -873,6 +1082,129 @@ export const useExecutionStore = defineStore('execution', () => {
     initializingJobIds.value = next
   }
 
+  /**
+   * Returns the prompt_id the global {@link nodeProgressStates} mirror belongs
+   * to, or null when it is empty. The mirror is replaced wholesale on every
+   * `progress_state` frame, so all of its entries share one prompt_id.
+   */
+  function mirrorOwnerJobId(): JobId | null {
+    const entries = Object.values(nodeProgressStates.value)
+    if (entries.length === 0) return null
+    return entries[0].prompt_id
+  }
+
+  /**
+   * Evict per-job execution artifacts for a job that has reached a terminal
+   * state, without disturbing state owned by a different running job.
+   *
+   * Unlike {@link resetExecutionState} this is safe for any jobId, including
+   * one that is not {@link activeJobId}. It is the recovery path for a dropped
+   * terminal WebSocket frame, which would otherwise leave node progress pinned
+   * forever: the backend broadcasts `execution_success` once and never retries.
+   * Idempotent.
+   */
+  function evictTerminalJob(jobId: JobId) {
+    // Read before releasing: the release nulls activeJobId when it names this
+    // job, so asking afterwards always says no.
+    const isActive = activeJobId.value === jobId
+
+    // A dropped terminal frame left the workflow marked running forever, since
+    // handleExecutionStart set that and nothing else resets it.
+    const evictedWorkflow = jobIdToWorkflow.get(jobId)
+    if (evictedWorkflow) clearWorkflowStatus(evictedWorkflow)
+
+    releaseFinishedJobRecords(jobId)
+    clearInitializationByJobId(jobId)
+    // Only clear the shared mirror when it still belongs to the evicted job,
+    // otherwise evicting an old job would blank a live run's progress.
+    if (isActive || mirrorOwnerJobId() === jobId) {
+      nodeProgressStates.value = {}
+      executionIdToLocatorCache.clear()
+    }
+
+    if (_executingNodeProgress.value?.prompt_id === jobId) {
+      _executingNodeProgress.value = null
+    }
+
+    if (isActive) {
+      activeJobId.value = null
+      executionErrorStore.clearPromptError(runErrorKeyForJob(jobId))
+    }
+  }
+
+  /**
+   * Re-point the shared mirror at the now-active workflow's own job.
+   *
+   * Gating stops a background workflow's frames from *writing* the mirror, but
+   * whatever was written while that workflow was in front stays there — and
+   * `nodeLocationProgressStates` resolves node ids against the *currently*
+   * active graph, so two workflows that share a node id will show the stale
+   * entry on the newly visible node. Replay the active workflow's own per-job
+   * progress instead, or clear the mirror when it has no running job.
+   */
+  function reconcileMirrorForActiveWorkflow() {
+    const activeWorkflow = workflowStore.activeWorkflow
+    if (!activeWorkflow) return
+
+    // Ownership has exactly one definition, and it is not the graph id: several
+    // open tabs can carry the same one. Matching here on the graph id is the bug
+    // this feature already shipped once, so defer to the same resolver the
+    // handlers use, and require ownership to be resolvable rather than adopting
+    // a job we cannot place.
+    const matchedJobId =
+      Object.keys(nodeProgressStatesByJob.value).findLast(
+        (jobId) =>
+          canResolveWorkflowOwnership(jobId, undefined) &&
+          messageMatchesActiveWorkflow(jobId, undefined)
+      ) ?? null
+
+    if (matchedJobId) {
+      nodeProgressStates.value =
+        nodeProgressStatesByJob.value[matchedJobId] ?? {}
+      executionIdToLocatorCache.clear()
+      // handleExecutionStart deliberately does not adopt a job whose tab is in
+      // the background, so nothing had adopted it by the time the user came
+      // back: the tab showed node progress while isIdle stayed true, which left
+      // the title and overlay reading idle and made handleExecuted drop the
+      // completion frames. Per-job progress still existing means the job has
+      // not reached a terminal frame, so it is the one this tab should show.
+      if (activeJobId.value !== matchedJobId) {
+        activeJobId.value = matchedJobId
+      }
+      if (_executingNodeProgress.value?.prompt_id !== matchedJobId) {
+        _executingNodeProgress.value = null
+      }
+      return
+    }
+
+    if (Object.keys(nodeProgressStates.value).length > 0) {
+      nodeProgressStates.value = {}
+      executionIdToLocatorCache.clear()
+    }
+    _executingNodeProgress.value = null
+  }
+
+  watch(() => workflowStore.activeWorkflow, reconcileMirrorForActiveWorkflow)
+
+  /**
+   * Reconcile tracked per-job state against the backend's authoritative job
+   * sets. A job the backend reports as terminal but which still holds progress
+   * state lost its terminal frame, so evict it.
+   *
+   * @param activeJobIds jobs the backend reports as Running or Pending
+   * @param terminalJobIds jobs the backend reports in history
+   */
+  function reconcileTerminalJobs(
+    activeJobIds: Set<JobId>,
+    terminalJobIds: Set<JobId>
+  ) {
+    for (const jobId of trackedJobIds.value) {
+      if (activeJobIds.has(jobId)) continue
+      if (!terminalJobIds.has(jobId)) continue
+      evictTerminalJob(jobId)
+    }
+  }
+
   function reconcileInitializingJobs(activeJobIds: Set<JobId>) {
     const orphaned = [...initializingJobIds.value].filter(
       (id) => !activeJobIds.has(id)
@@ -895,6 +1227,26 @@ export const useExecutionStore = defineStore('execution', () => {
     return initializingJobIds.value.has(String(jobId))
   }
 
+  function releaseFinishedJobRecords(jobId: JobId) {
+    // Fire before the queuedJobs delete: the onJobReset consumer reads the
+    // job's node list off that entry to find the widgets to remove, so
+    // triggering afterwards hands it nothing. It self-gates on the active
+    // workflow, so firing for a background job is a safe no-op.
+    if (jobId in queuedJobs.value)
+      void jobReset.trigger(queuedJobs.value[jobId])
+    delete queuedJobs.value[jobId]
+    const byJob = { ...nodeProgressStatesByJob.value }
+    delete byJob[jobId]
+    nodeProgressStatesByJob.value = byJob
+    jobIdToWorkflow.delete(jobId)
+    useJobPreviewStore().clearPreview(jobId)
+    // This runs for a job whose tab is not in front, so activeJobId naming it
+    // is stale: the gated terminal branches return early and the gated
+    // `executing: null` is dropped, which left the actionbar, favicon and title
+    // non-idle with nothing running until the next queue poll evicted it.
+    if (activeJobId.value === jobId) activeJobId.value = null
+  }
+
   /**
    * Reset execution-related state after a run completes or is stopped.
    */
@@ -905,19 +1257,34 @@ export const useExecutionStore = defineStore('execution', () => {
     nodeProgressStates.value = {}
     const jobId = jobIdParam ?? activeJobId.value ?? null
     const runErrorKey = jobId ? runErrorKeyForJob(jobId) : undefined
-    if (jobId) {
-      const map = { ...nodeProgressStatesByJob.value }
-      delete map[jobId]
-      nodeProgressStatesByJob.value = map
-      useJobPreviewStore().clearPreview(jobId)
-      jobIdToWorkflow.delete(jobId)
-      if (jobId in queuedJobs.value)
-        void jobReset.trigger(queuedJobs.value[jobId])
-    }
-    if (jobId) delete queuedJobs.value[jobId]
+    if (jobId) releaseFinishedJobRecords(jobId)
     activeJobId.value = null
     _executingNodeProgress.value = null
     executionErrorStore.clearPromptError(runErrorKey)
+  }
+
+  /**
+   * Whether a text preview belongs on the visible canvas.
+   *
+   * Prefers the workflow-ownership gate and falls back to the legacy
+   * active-prompt guard only when ownership is unresolvable: activeJobId can
+   * point at another workflow's job, which would otherwise drop frames for the
+   * workflow the user is looking at.
+   *
+   * Exported because node outputs are applied outside this store, in ComfyApp's
+   * own `executed` listener, which resolves the execution id against the
+   * visible graph. Without this gate a finished job writes its output onto the
+   * same-numbered node of whatever tab is in front.
+   */
+  function belongsToActiveWorkflow(
+    jobId: JobId | undefined,
+    workflowId: string | undefined
+  ): boolean {
+    if (!jobId) return true
+    if (canResolveWorkflowOwnership(jobId, workflowId)) {
+      return messageMatchesActiveWorkflow(jobId, workflowId)
+    }
+    return !activeJobId.value || jobId === activeJobId.value
   }
 
   function storeJob({
@@ -960,7 +1327,7 @@ export const useExecutionStore = defineStore('execution', () => {
     queuedJob.shareId = workflow.shareId
     queuedJob.viewMode = mode
     queuedJob.isAppMode = isAppModeValue(mode)
-    const wid = workflow.activeState?.id ?? workflow.initialState?.id
+    const wid = graphIdOf(workflow)
     if (wid) {
       jobIdToWorkflowId.value.set(id, wid)
     }
@@ -1075,6 +1442,16 @@ export const useExecutionStore = defineStore('execution', () => {
     return result
   })
 
+  const trackedJobIds = computed<JobId[]>(() => {
+    const tracked = new Set<JobId>([
+      ...Object.keys(nodeProgressStatesByJob.value),
+      ...Object.keys(queuedJobs.value),
+      ...initializingJobIds.value
+    ])
+    if (activeJobId.value) tracked.add(activeJobId.value)
+    return [...tracked]
+  })
+
   const runningWorkflowCount = computed<number>(
     () => runningJobIds.value.length
   )
@@ -1103,6 +1480,7 @@ export const useExecutionStore = defineStore('execution', () => {
     nodeLocationProgressStates,
     nodeProgressStatesByJob,
     runningJobIds,
+    trackedJobIds,
     runningWorkflowCount,
     initializingJobIds,
     isActiveWorkflowRunning,
@@ -1110,6 +1488,7 @@ export const useExecutionStore = defineStore('execution', () => {
     clearInitializationByJobId,
     clearInitializationByJobIds,
     reconcileInitializingJobs,
+    reconcileTerminalJobs,
     clearActiveJobIfStale,
     bindExecutionEvents,
     unbindExecutionEvents,
@@ -1125,6 +1504,8 @@ export const useExecutionStore = defineStore('execution', () => {
     jobIdToSessionWorkflowPath,
     ensureSessionWorkflowPath,
     getWorkflowStatus,
-    clearWorkflowStatus
+    clearWorkflowStatus,
+    rewriteSessionWorkflowPaths,
+    belongsToActiveWorkflow
   }
 })

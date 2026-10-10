@@ -42,11 +42,14 @@ function showCanvasNode() {
   return node
 }
 
-function createWorkflow(path = 'workflows/test.json') {
+function createWorkflow(path = 'workflows/test.json', id = 'workflow-id') {
   return fromPartial<LoadedComfyWorkflow>({
-    activeState: { id: 'workflow-id' },
-    initialState: { id: 'workflow-id' },
-    path
+    activeState: { id },
+    initialState: { id },
+    path,
+    // The only identifier unique per open tab, and the strongest leg of the
+    // ownership gate this suite now goes through.
+    instanceId: `instance-${path}`
   })
 }
 
@@ -62,6 +65,22 @@ function progressTextListener() {
 
 function fireProgressText(detail: ProgressTextWsMessage) {
   progressTextListener()(new CustomEvent('progress_text', { detail }))
+}
+
+/**
+ * Queue a job from `workflow` without making it the active job, which is what a
+ * run started while another tab was in front looks like.
+ */
+function storeBackgroundJob(jobId: string, workflow: LoadedComfyWorkflow) {
+  useExecutionStore().storeJob({
+    nodes: ['1'],
+    id: jobId,
+    promptOutput: {
+      '1': { inputs: {}, class_type: 'Node', _meta: { title: 'Node' } }
+    },
+    workflow,
+    mode: 'graph'
+  })
 }
 
 function storeActiveJob(workflow: LoadedComfyWorkflow) {
@@ -122,6 +141,44 @@ describe('useProgressTextPreviews', () => {
       fireProgressText({ nodeId: toNodeId('3:1'), text: 'warming up' })
 
       expect(showTextPreview).not.toHaveBeenCalled()
+    })
+
+    // Ported from executionStore.workflowGating.test.ts when handleProgressText
+    // moved into this composable. The gate is ownership-based, not a bare
+    // activeJobId comparison, because activeJobId can name another tab's job.
+    it('drops text from a job belonging to another open workflow', () => {
+      showCanvasNode()
+      const visible = createWorkflow('workflows/a.json', 'workflow-a')
+      const other = createWorkflow('workflows/b.json', 'workflow-b')
+      useWorkflowStore().activeWorkflow = visible
+      storeBackgroundJob('job-b', other)
+      mountPreviews()
+
+      fireProgressText({
+        nodeId: toNodeId('1'),
+        text: 'from the other tab',
+        prompt_id: 'job-b'
+      })
+
+      expect(showTextPreview).not.toHaveBeenCalled()
+    })
+
+    it('shows text from the visible workflow own background job', () => {
+      const node = showCanvasNode()
+      const visible = createWorkflow('workflows/a.json', 'workflow-a')
+      useWorkflowStore().activeWorkflow = visible
+      // Owned by the tab in front but not the active job, which is what the
+      // old activeJobId-only guard dropped.
+      storeBackgroundJob('job-a', visible)
+      mountPreviews()
+
+      fireProgressText({
+        nodeId: toNodeId('1'),
+        text: 'mine',
+        prompt_id: 'job-a'
+      })
+
+      expect(showTextPreview).toHaveBeenCalledExactlyOnceWith(node, 'mine')
     })
 
     it('ignores events for a prompt other than the active job', () => {

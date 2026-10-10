@@ -26,6 +26,7 @@ import { webSessionRequests } from '@/platform/auth/session/webSessionFetch'
 import { FETCH_RESPONSE_HEADERS_TIMEOUT_MS } from '@/scripts/apiTimeouts'
 import { getDevOverride } from '@/utils/devFeatureFlagOverride'
 import { getSessionOverride } from '@/utils/sessionFeatureFlagOverride'
+import { zeroUuid } from '@/utils/uuid'
 import type {
   ModelFile,
   ModelFolderInfo
@@ -70,7 +71,8 @@ import type {
 } from '@/platform/workflow/templates/types/template'
 import type {
   ComfyApiWorkflow,
-  ComfyWorkflowJSON
+  ComfyWorkflowJSON,
+  WorkflowId
 } from '@/platform/workflow/validation/schemas/workflowSchema'
 import type { SerializedNodeId } from '@/types/nodeId'
 import type {
@@ -94,6 +96,29 @@ interface QueuePromptRequestBody {
   client_id: string
   prompt: ComfyApiWorkflow
   partial_execution_targets?: NodeExecutionId[]
+  /**
+   * Echoed back by the server on every WebSocket frame this prompt produces
+   * that carries a `prompt_id` (ComfyUI#16763 for JSON frames, #16809 for the
+   * metadata header on binary previews). An older server ignores the field
+   * rather than rejecting the prompt.
+   *
+   * Two limits worth knowing, since the contract is the server's and not ours.
+   * A third thing worth knowing is that the two backends disagree: core merges
+   * as `{**workflow_metadata, **data}`, so a frame's own fields win, while the
+   * Cloud gateway assigns `prompt_id` and `workflow_id` after the fact, so the
+   * backend wins. Do not rely on either order; the routing ids that arrive are
+   * authoritative whichever side set them.
+   *
+   * - `status` and `logs` frames have no `prompt_id`, so they are never
+   *   stamped and a consumer still needs the `prompt_id`-to-workflow mapping.
+   * - A value the server cannot use is dropped rather than rejected: over 256
+   *   characters of its own JSON serialisation, not 256 bytes of content, with
+   *   non-ASCII escaped to `\\uXXXX` first. The server then falls back to
+   *   `extra_data.extra_pnginfo.workflow.id`, so omitting this field does not
+   *   keep frames unstamped.
+   */
+  workflow_metadata?: { workflow_id: string }
+
   extra_data: {
     extra_pnginfo: {
       workflow: ComfyWorkflowJSON
@@ -262,6 +287,7 @@ interface BackendApiCalls {
     displayNodeId: string
     realNodeId: string
     jobId: string
+    workflowId?: WorkflowId
   }
   progress_text: ProgressTextWsMessage
   progress_state: ProgressStateWsMessage
@@ -439,6 +465,13 @@ export class ComfyApi extends EventTarget {
    * The current client id from websocket status updates.
    */
   clientId?: string
+  /**
+   * The last `executing` message as the server sent it, including `prompt_id`
+   * and `workflow_id`. The public `executing` event carries only the node id
+   * for backwards compatibility with extensions, so a consumer that needs to
+   * know which run a frame belongs to reads it here.
+   */
+  lastExecutingMessage: ExecutingWsMessage | null = null
   /**
    * The current user id.
    */
@@ -1051,7 +1084,8 @@ export class ComfyApi extends EventTarget {
                 displayNodeId: metadata.display_node_id,
                 parentNodeId: metadata.parent_node_id,
                 realNodeId: metadata.real_node_id,
-                jobId: metadata.prompt_id
+                jobId: metadata.prompt_id,
+                workflowId: metadata.workflow_id
               })
 
               // Also dispatch legacy b_preview for backward compatibility
@@ -1077,10 +1111,22 @@ export class ComfyApi extends EventTarget {
               this.dispatchCustomEvent('status', msg.data.status ?? null)
               break
             case 'executing':
-              this.dispatchCustomEvent(
-                'executing',
-                msg.data.display_node || msg.data.node
-              )
+              // The public `executing` event keeps its bare NodeId detail —
+              // extensions depend on that shape — so the ids travel here
+              // instead, for consumers that must know which run the frame
+              // belongs to. Dispatch is synchronous, so clearing it straight
+              // after keeps the window to this frame's own handlers: an
+              // `executing` dispatched later by an extension must not be read
+              // as belonging to whichever run happened to arrive last.
+              this.lastExecutingMessage = msg.data
+              try {
+                this.dispatchCustomEvent(
+                  'executing',
+                  msg.data.display_node || msg.data.node
+                )
+              } finally {
+                this.lastExecutingMessage = null
+              }
               break
             case 'execution_start':
             case 'execution_error':
@@ -1265,6 +1311,19 @@ export class ComfyApi extends EventTarget {
       ...(options?.partialExecutionTargets && {
         partial_execution_targets: options.partialExecutionTargets
       }),
+      // `LGraph.serialize()` returns `id` unfiltered and `LGraph._id` defaults
+      // to the all-zero sentinel, which the codebase treats as "no id yet" and
+      // replaces on load (`adoptRootGraphId`) and on clear, so it is not a
+      // routing key and is not sent as one. This does not keep it off the wire:
+      // the same graph goes out under `extra_pnginfo` and the server falls back
+      // to the id there, which is why `executionStore` also discards the
+      // sentinel on the way in. Shape is already constrained upstream — the
+      // loaded schema is `z.string().uuid()` and the only other producer is
+      // `createUuidv4()` — so the sentinel is the one value to exclude here.
+      ...(workflow.id &&
+        workflow.id !== zeroUuid && {
+          workflow_metadata: { workflow_id: workflow.id }
+        }),
       extra_data: {
         auth_token_comfy_org: this.authToken,
         api_key_comfy_org: this.apiKey,
