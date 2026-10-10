@@ -16,7 +16,13 @@ function repoWide(command: string) {
 }
 
 export default function lintStaged(stagedFiles: string[]) {
-  const relativePaths = stagedFiles.map(toRelativePath)
+  const allPaths = stagedFiles.map(toRelativePath)
+  const multiplayerChanged = allPaths.some((fileName) =>
+    fileName.startsWith('packages/comfy-multi-player/')
+  )
+  const relativePaths = allPaths.filter(
+    (fileName) => !fileName.startsWith('packages/comfy-multi-player/')
+  )
 
   if (relativePaths.some((fileName) => fileName.startsWith('tests-ui/'))) {
     return 'echo "Files in tests-ui/ are deprecated. Colocate tests with source files." && exit 1'
@@ -54,7 +60,13 @@ export default function lintStaged(stagedFiles: string[]) {
       astroFiles.map((fileName) => fileName.slice('apps/website/'.length)),
       'pnpm --dir apps/website exec prettier --write'
     ),
-    ...typecheckCommands(typecheckFiles)
+    ...typecheckCommands(typecheckFiles),
+    ...(multiplayerChanged
+      ? [
+          ...repoWide('pnpm --dir packages/comfy-multi-player lint'),
+          ...repoWide('pnpm --dir packages/comfy-multi-player typecheck')
+        ]
+      : [])
   ]
 }
 

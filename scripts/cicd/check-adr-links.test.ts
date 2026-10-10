@@ -77,6 +77,21 @@ describe('check-adr-links', () => {
     expect(result.stderr).toContain(danglingAdr)
   })
 
+  it.for([
+    { suffix: '', status: 0 },
+    { suffix: ` and ${adrPath('MISSING-0001-local.md')}`, status: 1 }
+  ])(
+    'ignores remote URLs but checks adjacent local links: $status',
+    ({ suffix, status }) => {
+      const { dir, git } = tempGitRepo()
+      const remote = `https://github.com/example/repo/blob/main/${adrPath('REMOTE-0001-history.md')}`
+      write(dir, 'README.md', `[history](${remote})${suffix}\n`)
+      git('add', '.')
+
+      expect(runScript(dir).status).toBe(status)
+    }
+  )
+
   it('ignores non-adr markdown references', () => {
     const { dir, git } = tempGitRepo()
     write(dir, 'docs/architecture/ecs.md', '# ecs\n')

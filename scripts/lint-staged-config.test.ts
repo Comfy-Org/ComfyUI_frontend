@@ -33,6 +33,19 @@ describe('lint-staged config', () => {
     expect(commands.some((command) => command.includes('eslint '))).toBe(true)
   })
 
+  it('runs the multiplayer package gates once without rewriting imported sources', async () => {
+    const lintStaged = await freshConfig()
+
+    expect(lintStaged(['packages/comfy-multi-player/src/index.ts'])).toEqual([
+      'pnpm --dir packages/comfy-multi-player lint',
+      'pnpm --dir packages/comfy-multi-player typecheck'
+    ])
+    expect(
+      lintStaged(['packages/comfy-multi-player/test/purity.test.ts'])
+    ).toEqual([])
+    expect(lintStaged(['src/main.ts'])).toContain('pnpm typecheck:app')
+  })
+
   it.for([
     ['browser_tests/example.spec.ts', 'pnpm typecheck:browser'],
     ['apps/website/src/pages/index.astro', 'pnpm typecheck:website']
