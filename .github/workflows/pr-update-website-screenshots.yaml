@@ -6,22 +6,13 @@ on:
   issue_comment:
     types: [created, edited]
 
-concurrency:
-  group: ${{ github.workflow }}-${{ github.event.issue.number || github.event.pull_request.number || github.ref }}
-  cancel-in-progress: false
-
 jobs:
-  update-screenshots:
+  setup:
     runs-on: ubuntu-latest
-    container:
-      image: mcr.microsoft.com/playwright:v1.63.0-noble
-    timeout-minutes: 15
     permissions:
-      contents: write
-      issues: write
+      contents: read
       pull-requests: read
     # Trigger: (1) label, (2) /slash-command, or (3) checkbox in E2E status comment
-    # ⚠️ This condition is duplicated on `post-starting-comment` — keep them in sync.
     if: >
       ( github.event_name == 'pull_request' &&
         github.event.label.name == 'Update Website Screenshots' ) ||
@@ -38,12 +29,12 @@ jobs:
         github.event.comment.user.login == 'github-actions[bot]' &&
         github.actor != 'github-actions[bot]' &&
         contains(github.event.comment.body, '<!-- WEBSITE_E2E_STATUS -->') &&
-        contains(github.event.comment.body, '- [x] Update website screenshots') )
+        contains(github.event.comment.body, '- [x] Update website screenshots') &&
+        !contains(github.event.changes.body.from, '- [x] Update website screenshots') )
     outputs:
       pr-number: ${{ steps.pr-info.outputs.pr-number }}
-      update-outcome: ${{ steps.update-screenshots.outcome }}
-      has-changes: ${{ steps.commit.outputs.has-changes }}
-      changed-count: ${{ steps.commit.outputs.changed-count }}
+      branch: ${{ steps.pr-info.outputs.branch }}
+      head-sha: ${{ steps.pr-info.outputs.head-sha }}
     steps:
       - name: Verify sender permissions
         if: >
@@ -74,11 +65,71 @@ jobs:
             })
             core.setOutput('pr-number', prNumber)
             core.setOutput('branch', pr.head.ref)
+            core.setOutput('head-sha', pr.head.sha)
 
+  post-starting-comment:
+    needs: setup
+    runs-on: ubuntu-latest
+    permissions:
+      pull-requests: write
+      contents: read
+    concurrency:
+      group: website-pr-comment-${{ needs.setup.outputs.pr-number }}
+      cancel-in-progress: false
+    steps:
+      - uses: actions/checkout@v7
+      - uses: ./.github/actions/upsert-comment-section
+        with:
+          pr-number: ${{ needs.setup.outputs.pr-number }}
+          section-name: screenshot-update
+          comment-marker: '<!-- COMFYUI_FRONTEND_PR_REPORT -->'
+          token: ${{ secrets.GITHUB_TOKEN }}
+          section-content: |-
+            ## 📸 Screenshot Update
+
+            > [!NOTE]
+            > Updating screenshots… [View workflow run](${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }})
+
+  harvest:
+    needs: setup
+    runs-on: ubuntu-latest
+    timeout-minutes: 45
+    concurrency:
+      group: ${{ github.workflow }}-${{ needs.setup.outputs.pr-number }}
+    permissions:
+      contents: read
+      actions: read
+    outputs:
+      mode: ${{ steps.harvest.outputs.mode }}
+      run-id: ${{ steps.harvest.outputs.run-id }}
+    steps:
+      - uses: actions/checkout@v7
+
+      - name: Harvest rewritten screenshots from the E2E run
+        id: harvest
+        uses: ./.github/actions/harvest-snapshot-updates
+        with:
+          e2e-workflow: ci-website-e2e.yaml
+          head-sha: ${{ needs.setup.outputs.head-sha }}
+          artifact-prefix: website-snapshot-updates-
+          job-prefix: website-e2e-shard
+          comment-body: ${{ github.event.comment.body }}
+          wait-minutes: '30'
+          token: ${{ secrets.GITHUB_TOKEN }}
+
+  update-screenshots:
+    needs: [setup, harvest]
+    if: needs.harvest.outputs.mode == 'full'
+    runs-on: ubuntu-latest
+    container:
+      image: mcr.microsoft.com/playwright:v1.63.0-noble
+    timeout-minutes: 15
+    permissions:
+      contents: read
+    steps:
       - uses: actions/checkout@v7
         with:
-          ref: ${{ steps.pr-info.outputs.branch }}
-          token: ${{ secrets.PR_GH_TOKEN }}
+          ref: ${{ needs.setup.outputs.branch }}
 
       - name: Setup frontend
         uses: ./.github/actions/setup-frontend
@@ -100,30 +151,6 @@ jobs:
         run: pnpm --filter @comfyorg/website test:visual:update
         continue-on-error: true
 
-      - name: Commit updated screenshots
-        id: commit
-        if: steps.update-screenshots.outcome == 'success'
-        env:
-          TARGET_BRANCH: ${{ steps.pr-info.outputs.branch }}
-        run: |
-          git config --global --add safe.directory "$(pwd)"
-          git config --global user.name 'github-actions'
-          git config --global user.email 'github-actions@github.com'
-
-          CHANGED=$(git status --porcelain=v1 --untracked-files=all -- apps/website/e2e/ | wc -l)
-          echo "changed-count=${CHANGED}" >> $GITHUB_OUTPUT
-
-          if [ "$CHANGED" -eq 0 ]; then
-            echo "No screenshot changes to commit"
-            echo "has-changes=false" >> $GITHUB_OUTPUT
-            exit 0
-          fi
-
-          echo "has-changes=true" >> $GITHUB_OUTPUT
-          git add apps/website/e2e/
-          git commit -m "[automated] Update website screenshot expectations"
-          git push origin "HEAD:refs/heads/$TARGET_BRANCH"
-
       - name: Upload test report
         uses: actions/upload-artifact@v6
         if: ${{ !cancelled() }}
@@ -132,6 +159,69 @@ jobs:
           path: apps/website/playwright-report/
           retention-days: 14
 
+      - name: Checkout snapshot actions from the trusted ref
+        if: steps.update-screenshots.outcome == 'success'
+        uses: actions/checkout@v7
+        with:
+          path: trusted
+          sparse-checkout: .github/actions
+          persist-credentials: false
+
+      - name: Stage rewritten screenshots
+        if: steps.update-screenshots.outcome == 'success'
+        uses: ./trusted/.github/actions/stage-rewritten-snapshots
+        with:
+          config-dir: apps/website
+          artifact-name: website-snapshot-updates-full
+
+      - name: Fail when the rerun did not pass
+        if: steps.update-screenshots.outcome != 'success'
+        run: |
+          echo "::error::The --update-snapshots rerun failed; see the uploaded report. Nothing was committed."
+          exit 1
+
+  commit:
+    needs: [setup, harvest, update-screenshots]
+    if: >-
+      ${{
+        !cancelled() &&
+        needs.setup.result == 'success' &&
+        needs.harvest.result == 'success' &&
+        (needs.update-screenshots.result == 'success' || needs.update-screenshots.result == 'skipped')
+      }}
+    runs-on: ubuntu-latest
+    permissions:
+      actions: read
+      contents: read
+      pull-requests: write
+    outputs:
+      has-changes: ${{ steps.commit.outputs.has-changes }}
+      changed-count: ${{ steps.commit.outputs.changed-count }}
+    steps:
+      - uses: actions/checkout@v7
+        with:
+          ref: ${{ needs.setup.outputs.branch }}
+          token: ${{ secrets.PR_GH_TOKEN }}
+
+      - name: Checkout snapshot actions from the trusted ref
+        uses: actions/checkout@v7
+        with:
+          path: trusted
+          sparse-checkout: .github/actions
+          persist-credentials: false
+
+      - name: Commit updated screenshots
+        id: commit
+        uses: ./trusted/.github/actions/commit-snapshot-updates
+        with:
+          artifact-pattern: website-snapshot-updates-*
+          config-dir: apps/website
+          snapshot-paths: apps/website/e2e/
+          branch: ${{ needs.setup.outputs.branch }}
+          head-sha: ${{ needs.setup.outputs.head-sha }}
+          message: '[automated] Update website screenshot expectations'
+          run-id: ${{ needs.harvest.outputs.run-id }}
+
       - name: Remove label
         if: always() && github.event_name == 'pull_request'
         # Label cleanup is best-effort; the restricted pull_request token may
@@ -139,7 +229,7 @@ jobs:
         continue-on-error: true
         uses: actions/github-script@v9
         env:
-          PR_NUMBER: ${{ steps.pr-info.outputs.pr-number }}
+          PR_NUMBER: ${{ needs.setup.outputs.pr-number }}
         with:
           script: |
             try {
@@ -155,56 +245,15 @@ jobs:
               core.info('Label "Update Website Screenshots" was already removed')
             }
 
-  post-starting-comment:
-    # Runs in parallel with update-screenshots to show "in progress" immediately.
-    # ⚠️ This condition is duplicated from `update-screenshots` — keep them in sync.
-    if: >
-      ( github.event_name == 'pull_request' &&
-        github.event.label.name == 'Update Website Screenshots' ) ||
-      ( github.event.issue.pull_request &&
-        github.event_name == 'issue_comment' &&
-        (
-          github.event.comment.author_association == 'OWNER' ||
-          github.event.comment.author_association == 'MEMBER' ||
-          github.event.comment.author_association == 'COLLABORATOR'
-        ) &&
-        startsWith(github.event.comment.body, '/update-website-screenshots') ) ||
-      ( github.event.issue.pull_request &&
-        github.event_name == 'issue_comment' &&
-        github.event.comment.user.login == 'github-actions[bot]' &&
-        github.actor != 'github-actions[bot]' &&
-        contains(github.event.comment.body, '<!-- WEBSITE_E2E_STATUS -->') &&
-        contains(github.event.comment.body, '- [x] Update website screenshots') )
-    runs-on: ubuntu-latest
-    permissions:
-      pull-requests: write
-      contents: read
-    concurrency:
-      group: website-pr-comment-${{ github.event.number || github.event.issue.number }}
-      cancel-in-progress: false
-    steps:
-      - uses: actions/checkout@v7
-      - uses: ./.github/actions/upsert-comment-section
-        with:
-          pr-number: ${{ github.event.number || github.event.issue.number }}
-          section-name: screenshot-update
-          comment-marker: '<!-- COMFYUI_FRONTEND_PR_REPORT -->'
-          token: ${{ secrets.GITHUB_TOKEN }}
-          section-content: |-
-            ## 📸 Screenshot Update
-
-            > [!NOTE]
-            > Updating screenshots… [View workflow run](${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }})
-
   post-result-comment:
-    needs: update-screenshots
-    if: always() && !cancelled() && needs.update-screenshots.result != 'skipped'
+    needs: [setup, harvest, update-screenshots, commit]
+    if: always() && !cancelled() && needs.setup.result == 'success'
     runs-on: ubuntu-latest
     permissions:
       pull-requests: write
       contents: read
     concurrency:
-      group: website-pr-comment-${{ needs.update-screenshots.outputs.pr-number }}
+      group: website-pr-comment-${{ needs.setup.outputs.pr-number }}
       cancel-in-progress: false
     steps:
       - uses: actions/checkout@v7
@@ -213,19 +262,21 @@ jobs:
         id: content
         uses: actions/github-script@v9
         env:
-          UPDATE_OUTCOME: ${{ needs.update-screenshots.outputs.update-outcome }}
-          HAS_CHANGES: ${{ needs.update-screenshots.outputs.has-changes }}
-          CHANGED_COUNT: ${{ needs.update-screenshots.outputs.changed-count }}
+          HARVEST_RUN_ID: ${{ needs.harvest.outputs.run-id }}
+          COMMIT_RESULT: ${{ needs.commit.result }}
+          HAS_CHANGES: ${{ needs.commit.outputs.has-changes }}
+          CHANGED_COUNT: ${{ needs.commit.outputs.changed-count }}
         with:
           script: |
-            const outcome = process.env.UPDATE_OUTCOME
+            const harvestRunId = process.env.HARVEST_RUN_ID
+            const committed = process.env.COMMIT_RESULT === 'success'
             const hasChanges = process.env.HAS_CHANGES === 'true'
             const changedCount = parseInt(process.env.CHANGED_COUNT) || 0
             const runUrl = `${context.serverUrl}/${context.repo.owner}/${context.repo.repo}/actions/runs/${context.runId}`
 
             const lines = ['## 📸 Screenshot Update', '']
 
-            if (outcome !== 'success') {
+            if (!committed) {
               lines.push(
                 '> [!CAUTION]',
                 `> Screenshot update failed. [View workflow run](${runUrl})`
@@ -237,9 +288,12 @@ jobs:
               )
             } else {
               const s = changedCount === 1 ? '' : 's'
+              const source = harvestRunId
+                ? ` taken from the [E2E run](${context.serverUrl}/${context.repo.owner}/${context.repo.repo}/actions/runs/${harvestRunId}) without rerunning Playwright`
+                : ''
               lines.push(
                 '> [!TIP]',
-                `> Updated ${changedCount} screenshot${s} and pushed to the branch.`
+                `> Updated ${changedCount} screenshot${s}${source} and pushed to the branch.`
               )
             }
 
@@ -247,7 +301,7 @@ jobs:
 
       - uses: ./.github/actions/upsert-comment-section
         with:
-          pr-number: ${{ needs.update-screenshots.outputs.pr-number }}
+          pr-number: ${{ needs.setup.outputs.pr-number }}
           section-name: screenshot-update
           comment-marker: '<!-- COMFYUI_FRONTEND_PR_REPORT -->'
           token: ${{ secrets.GITHUB_TOKEN }}

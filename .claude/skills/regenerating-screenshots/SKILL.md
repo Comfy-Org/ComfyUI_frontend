@@ -77,7 +77,11 @@ GitHub Action by creating a labeled PR from `origin/main`.
 
 - The `New Browser Test Expectations` label triggers the
   `pr-update-playwright-expectations.yaml` workflow.
-- The workflow runs Playwright with `--update-snapshots`, commits results
-  back to the PR branch, then removes the label.
+- The path filter skips the Playwright jobs of an empty-commit PR like this
+  one, so the workflow runs Playwright with `--update-snapshots`, commits
+  the results back to the PR branch, then removes the label.
+- On a PR whose E2E run has screenshot diffs, the label or a
+  `/update-playwright` comment commits the images from that run instead of
+  rerunning Playwright. `/update-playwright full` forces the rerun.
 - This is fire-and-forget — no need to wait for or monitor the Action.
 - Always return to the original branch/worktree state after pushing.

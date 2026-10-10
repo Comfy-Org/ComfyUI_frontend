@@ -75,3 +75,16 @@ downloaded for Chromium on September 7, 2026. Its
 [source file](https://fonts.gstatic.com/s/inter/v20/UcC73FwrK3iLTeHuS_nVMrMxCp50SjIa1ZL7.woff2)
 has SHA-256 `3100e775e8616cd2611beecfa23a4263d7037586789b43f035236a2e6fbd4c62`.
 The SIL Open Font License is in `assets/Inter-OFL.txt`.
+
+## Screenshot baselines
+
+Baselines are Linux-only (`*-visual-linux.png`); never commit ones generated
+locally. When a `@visual` assertion fails in CI, the shard uploads the actual
+image on the baseline's path as a `website-snapshot-updates-*` artifact.
+Comment `/update-website-screenshots`, add the `Update Website Screenshots`
+label, or tick the checkbox in the PR report comment: the workflow waits for
+the E2E run and commits those images to the branch without rerunning
+Playwright. A run with no failed screenshot assertions commits nothing.
+`/update-website-screenshots full` reruns the visual project with
+`--update-snapshots` instead, which also happens automatically when the run
+is missing or incomplete.

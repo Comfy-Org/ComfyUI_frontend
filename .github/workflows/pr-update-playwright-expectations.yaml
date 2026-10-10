@@ -5,13 +5,7 @@ on:
   pull_request:
     types: [labeled]
   issue_comment:
-    types: [created]
-
-# github.ref is the default branch for issue_comment events. Both triggers use
-# the PR number because they push snapshots to the same branch.
-concurrency:
-  group: ${{ github.workflow }}-${{ github.event.issue.number || github.event.number || github.ref }}
-  cancel-in-progress: true
+    types: [created, edited]
 
 jobs:
   setup:
@@ -25,20 +19,49 @@ jobs:
           github.event.comment.author_association == 'MEMBER' ||
           github.event.comment.author_association == 'COLLABORATOR'
         ) &&
-        startsWith(github.event.comment.body, '/update-playwright') )
+        startsWith(github.event.comment.body, '/update-playwright') ) ||
+      ( github.event.issue.pull_request &&
+        github.event_name == 'issue_comment' &&
+        github.event.comment.user.login == 'github-actions[bot]' &&
+        github.actor != 'github-actions[bot]' &&
+        contains(github.event.comment.body, '<!-- section:playwright:start -->') &&
+        contains(github.event.comment.body, '- [x] Update Playwright expectations') &&
+        !contains(github.event.changes.body.from, '- [x] Update Playwright expectations') )
     outputs:
       pr-number: ${{ steps.pr-info.outputs.pr-number }}
       branch: ${{ steps.pr-info.outputs.branch }}
+      head-sha: ${{ steps.pr-info.outputs.head-sha }}
       comment-id: ${{ steps.find-update-comment.outputs.comment-id }}
-      container-image: ${{ steps.container-image.outputs.image }}
     steps:
+      - name: Verify sender permissions
+        if: >
+          github.event_name == 'issue_comment' &&
+          contains(github.event.comment.body, '<!-- section:playwright:start -->')
+        uses: actions/github-script@v9
+        with:
+          script: |
+            const { data } = await github.rest.repos.getCollaboratorPermissionLevel({
+              ...context.repo,
+              username: context.actor
+            })
+            if (!['admin', 'write'].includes(data.permission)) {
+              core.setFailed(`User ${context.actor} does not have write access`)
+            }
+
       - name: Get PR info
         id: pr-info
-        run: |
-          echo "pr-number=${{ github.event.number || github.event.issue.number }}" >> $GITHUB_OUTPUT
-          echo "branch=$(gh pr view ${{ github.event.number || github.event.issue.number }} --repo ${{ github.repository }} --json headRefName --jq '.headRefName')" >> $GITHUB_OUTPUT
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          PR_NUMBER: ${{ github.event.number || github.event.issue.number }}
+        run: |
+          set -euo pipefail
+
+          {
+            echo "pr-number=${PR_NUMBER}"
+            gh pr view "$PR_NUMBER" --repo "$GITHUB_REPOSITORY" \
+              --json headRefName,headRefOid \
+              --jq '"branch=\(.headRefName)\nhead-sha=\(.headRefOid)"'
+          } >> "$GITHUB_OUTPUT"
 
       - name: Find Update Comment
         uses: peter-evans/find-comment@b30e6a3c0ed37e7c023ccd3f1db5c6c0b0c23aad # v4.0.0
@@ -58,10 +81,46 @@ jobs:
           edit-mode: replace
           reactions: eyes
 
+  harvest:
+    needs: setup
+    runs-on: ubuntu-latest
+    timeout-minutes: 60
+    concurrency:
+      group: ${{ github.workflow }}-${{ needs.setup.outputs.pr-number }}
+    permissions:
+      contents: read
+      actions: read
+    outputs:
+      mode: ${{ steps.harvest.outputs.mode }}
+      run-id: ${{ steps.harvest.outputs.run-id }}
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v7
+
+      - name: Harvest rewritten snapshots from the E2E run
+        id: harvest
+        uses: ./.github/actions/harvest-snapshot-updates
+        with:
+          e2e-workflow: ci-tests-e2e.yaml
+          head-sha: ${{ needs.setup.outputs.head-sha }}
+          artifact-prefix: snapshot-updates-
+          job-prefix: playwright-tests
+          comment-body: ${{ github.event.comment.body }}
+          token: ${{ secrets.GITHUB_TOKEN }}
+
+  build:
+    needs: [setup, harvest]
+    if: needs.harvest.outputs.mode == 'full'
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+    outputs:
+      container-image: ${{ steps.container-image.outputs.image }}
+    steps:
       - name: Checkout repository
         uses: actions/checkout@v7
         with:
-          ref: ${{ steps.pr-info.outputs.branch }}
+          ref: ${{ needs.setup.outputs.branch }}
 
       # issue_comment loads this workflow from the default branch. Resolve the
       # image from the checked-out PR so regenerated snapshots match its CI.
@@ -130,10 +189,10 @@ jobs:
   # Shards 1-4 run against the plain build; the `cloud` leg runs @cloud
   # tests against the frontend-dist-cloud build.
   update-snapshots-sharded:
-    needs: setup
+    needs: [setup, build]
     runs-on: ubuntu-latest
     container:
-      image: ${{ needs.setup.outputs.container-image }}
+      image: ${{ needs.build.outputs.container-image }}
       credentials:
         username: ${{ github.actor }}
         password: ${{ secrets.GITHUB_TOKEN }}
@@ -171,40 +230,18 @@ jobs:
         run: pnpm exec playwright test --update-snapshots --reporter=json,html --grep @screenshot ${{ matrix.shard == 'cloud' && '--project=cloud' || format('--grep-invert @cloud --shard={0}/4', matrix.shard) }}
         continue-on-error: true
 
+      - name: Checkout snapshot actions from the trusted ref
+        uses: actions/checkout@v7
+        with:
+          path: trusted
+          sparse-checkout: .github/actions
+          persist-credentials: false
+
       - name: Stage changed snapshot files
         id: changed-snapshots
-        shell: bash
-        run: |
-          set -euo pipefail
-
-          # Configure git safe.directory for container environment
-          git config --global --add safe.directory "$(pwd)"
-
-          # Get list of changed snapshot files (including untracked/new files)
-          changed_files=$( (
-            git diff --name-only browser_tests/ 2>/dev/null || true
-            git ls-files --others --exclude-standard browser_tests/ 2>/dev/null || true
-          ) | sort -u | grep -E '\-snapshots/' || true )
-
-          if [ -z "$changed_files" ]; then
-            echo "No snapshot changes in shard ${{ matrix.shard }}"
-            echo "has-changes=false" >> $GITHUB_OUTPUT
-            exit 0
-          fi
-
-          file_count=$(echo "$changed_files" | wc -l)
-          echo "Shard ${{ matrix.shard }}: $file_count changed snapshot(s):"
-          echo "$changed_files"
-          echo "has-changes=true" >> $GITHUB_OUTPUT
-
-          # Copy changed files to staging directory
-          mkdir -p /tmp/changed_snapshots_shard
-          while IFS= read -r file; do
-            [ -f "$file" ] || continue
-            file_without_prefix="${file#browser_tests/}"
-            mkdir -p "/tmp/changed_snapshots_shard/$(dirname "$file_without_prefix")"
-            cp "$file" "/tmp/changed_snapshots_shard/$file_without_prefix"
-          done <<< "$changed_files"
+        uses: ./trusted/.github/actions/stage-rewritten-snapshots
+        with:
+          artifact-name: snapshot-updates-shard-${{ matrix.shard }}
 
       # Reject test failures that produced no rewritten snapshots.
       - name: Verify shard did the work it claims
@@ -263,15 +300,6 @@ jobs:
 
           echo "Shard ${SHARD}: ${ran} test(s) ran, ${not_passing} not passing, snapshot changes=${HAS_CHANGES:-false}"
 
-      # Upload ONLY the changed files from this shard
-      - name: Upload changed snapshots
-        uses: actions/upload-artifact@v6
-        if: steps.changed-snapshots.outputs.has-changes == 'true'
-        with:
-          name: snapshots-shard-${{ matrix.shard }}
-          path: /tmp/changed_snapshots_shard/
-          retention-days: 1
-
       - name: Upload test report
         uses: actions/upload-artifact@v6
         if: always()
@@ -280,10 +308,22 @@ jobs:
           path: ./playwright-report/
           retention-days: 30
 
-  # Merge snapshots and commit
   merge-and-commit:
-    needs: [setup, update-snapshots-sharded]
+    needs: [setup, harvest, build, update-snapshots-sharded]
+    if: >-
+      ${{
+        !cancelled() &&
+        needs.setup.result == 'success' &&
+        needs.harvest.result == 'success' &&
+        needs.build.result != 'failure' &&
+        needs.build.result != 'cancelled' &&
+        (needs.update-snapshots-sharded.result == 'success' || needs.update-snapshots-sharded.result == 'skipped')
+      }}
     runs-on: ubuntu-latest
+    permissions:
+      actions: read
+      contents: read
+      pull-requests: write
     steps:
       - name: Checkout repository
         uses: actions/checkout@v7
@@ -291,215 +331,23 @@ jobs:
           ref: ${{ needs.setup.outputs.branch }}
           token: ${{ secrets.PR_GH_TOKEN }}
 
-      # Download all changed snapshot files from shards
-      - name: Download snapshot artifacts
-        uses: actions/download-artifact@v8
+      - name: Checkout snapshot actions from the trusted ref
+        uses: actions/checkout@v7
         with:
-          pattern: snapshots-shard-*
-          path: ./downloaded-snapshots
-          merge-multiple: true
-
-      - name: List downloaded files
-        run: |
-          echo "=========================================="
-          echo "DOWNLOADED SNAPSHOT FILES"
-          echo "=========================================="
-          if [ -d "./downloaded-snapshots" ]; then
-            find ./downloaded-snapshots -type f
-            echo ""
-            echo "Total files: $(find ./downloaded-snapshots -type f | wc -l)"
-          else
-            echo "No snapshot artifacts downloaded (no changes in any shard)"
-            echo ""
-            echo "Total files: 0"
-          fi
-
-      # Merge only the changed files into browser_tests
-      - name: Merge changed snapshots
-        run: |
-          set -euo pipefail
-
-          echo "=========================================="
-          echo "MERGING CHANGED SNAPSHOTS"
-          echo "=========================================="
-
-          # Check if any artifacts were downloaded (merge-multiple puts files directly in path)
-          if [ ! -d "./downloaded-snapshots" ]; then
-            echo "No snapshot artifacts to merge"
-            echo "=========================================="
-            echo "MERGE COMPLETE"
-            echo "=========================================="
-            echo "Files merged: 0"
-            exit 0
-          fi
-
-          # Verify target directory exists
-          if [ ! -d "browser_tests" ]; then
-            echo "::error::Target directory 'browser_tests' does not exist"
-            exit 1
-          fi
-
-          # Count files to merge
-          file_count=$(find ./downloaded-snapshots -type f | wc -l)
-
-          if [ "$file_count" -eq 0 ]; then
-            echo "No snapshot files found in downloaded artifacts"
-            echo "=========================================="
-            echo "MERGE COMPLETE"
-            echo "=========================================="
-            echo "Files merged: 0"
-            exit 0
-          fi
-
-          echo "Merging $file_count snapshot file(s)..."
-
-          # Copy all files directly, preserving directory structure
-          # With merge-multiple: true, files are directly in ./downloaded-snapshots/ without shard subdirs
-          cp -v -r ./downloaded-snapshots/* browser_tests/ 2>&1 | sed 's/^/  /'
-
-          echo ""
-          echo "=========================================="
-          echo "MERGE COMPLETE"
-          echo "=========================================="
-          echo "Files merged: $file_count"
-
-      - name: Show changes
-        run: |
-          echo "=========================================="
-          echo "CHANGES SUMMARY"
-          echo "=========================================="
-          echo ""
-          echo "Changed files in browser_tests (including untracked):"
-          CHANGES=$(git status --porcelain=v1 --untracked-files=all -- browser_tests/)
-          if [ -z "$CHANGES" ]; then
-            echo "No changes"
-            echo ""
-            echo "Total changes:"
-            echo "0"
-          else
-            echo "$CHANGES" | head -50
-            echo ""
-            echo "Total changes:"
-            echo "$CHANGES" | wc -l
-          fi
-
-      # Flag small rewrites that are likely text-rasterization noise rather than
-      # intentional visual changes.
-      - name: Report snapshot diff magnitudes
-        id: diff-report
-        shell: bash
-        run: |
-          set -uo pipefail
-
-          report='/tmp/diff-report.md'
-          : > "$report"
-
-          mapfile -t changed < <(
-            git status --porcelain=v1 --untracked-files=all -- browser_tests/ |
-              sed -e 's/^...//' -e 's/^"//' -e 's/"$//'
-          )
-          if [ "${#changed[@]}" -eq 0 ]; then
-            echo "No snapshot changes to measure"
-            exit 0
-          fi
-
-          if command -v compare >/dev/null 2>&1; then
-            echo "Measuring ${#changed[@]} rewritten snapshot(s) with ImageMagick"
-          else
-            echo "::warning::ImageMagick 'compare' unavailable; falling back to byte sizes, which cannot distinguish a real visual change from rasterization noise."
-          fi
-
-          small=0
-          {
-            echo "| snapshot | status | changed pixels |"
-            echo "| --- | --- | --- |"
-          } >> "$report"
-
-          tmp_old="$(mktemp)"
-          for f in "${changed[@]}"; do
-            [ -f "$f" ] || continue
-            name="${f#browser_tests/}"
-
-            if ! git show "HEAD:$f" > "$tmp_old" 2>/dev/null; then
-              echo "| \`${name}\` | new | n/a |" >> "$report"
-              continue
-            fi
-
-            px=''
-            if command -v compare >/dev/null 2>&1; then
-              px=$(compare -metric AE "$tmp_old" "$f" null: 2>&1 >/dev/null)
-              # Non-numeric means differing geometry or a decode failure.
-              case "$px" in
-                ''|*[!0-9]*) px='' ;;
-              esac
-            fi
-
-            if [ -n "$px" ]; then
-              echo "| \`${name}\` | modified | ${px} |" >> "$report"
-              # The threshold is advisory because small changes can be valid.
-              if [ "$px" -gt 0 ] && [ "$px" -le 2000 ]; then
-                small=$((small + 1))
-              fi
-            else
-              old_b=$(wc -c < "$tmp_old" | tr -d ' ')
-              new_b=$(wc -c < "$f" | tr -d ' ')
-              echo "| \`${name}\` | modified | ${old_b}B -> ${new_b}B |" >> "$report"
-            fi
-          done
-          rm -f "$tmp_old"
-
-          if [ "$small" -gt 0 ]; then
-            echo "::warning::${small} rewritten baseline(s) changed by <=2000 pixels. Screenshot capture is not bit-deterministic - small diffs are usually text rasterization noise, not an intended change. Confirm each rewrite corresponds to a test you expected to change before merging."
-          fi
-
-          cat "$report"
-          {
-            echo "### Rewritten snapshots (${#changed[@]})"
-            echo
-            cat "$report"
-          } >> "$GITHUB_STEP_SUMMARY"
+          path: trusted
+          sparse-checkout: .github/actions
+          persist-credentials: false
 
       - name: Commit updated expectations
         id: commit
-        env:
-          TARGET_BRANCH: ${{ needs.setup.outputs.branch }}
-        run: |
-          git config --global user.name 'github-actions'
-          git config --global user.email 'github-actions@github.com'
-
-          if [ -z "$(git status --porcelain=v1 --untracked-files=all -- browser_tests/)" ]; then
-            echo "No changes to commit"
-            echo "has-changes=false" >> $GITHUB_OUTPUT
-            exit 0
-          fi
-
-          echo "=========================================="
-          echo "COMMITTING CHANGES"
-          echo "=========================================="
-
-          echo "has-changes=true" >> $GITHUB_OUTPUT
-
-          git add browser_tests/
-
-          # Use cat so backticks and file names remain literal.
-          {
-            echo '[automated] Update test expectations'
-            if [ -s /tmp/diff-report.md ]; then
-              echo
-              cat /tmp/diff-report.md
-              echo
-              echo 'Screenshot capture is not bit-deterministic; small pixel'
-              echo 'deltas are usually text rasterization noise. Confirm each'
-              echo 'rewrite corresponds to a test expected to change.'
-            fi
-          } > /tmp/commit-msg.txt
-
-          git commit -F /tmp/commit-msg.txt
-
-          echo "Pushing to $TARGET_BRANCH..."
-          git push origin "HEAD:refs/heads/$TARGET_BRANCH"
-
-          echo "✓ Commit and push successful"
+        uses: ./trusted/.github/actions/commit-snapshot-updates
+        with:
+          artifact-pattern: snapshot-updates-*
+          snapshot-paths: browser_tests/
+          branch: ${{ needs.setup.outputs.branch }}
+          head-sha: ${{ needs.setup.outputs.head-sha }}
+          message: '[automated] Update test expectations'
+          run-id: ${{ needs.harvest.outputs.run-id }}
 
       - name: Add Done Reaction
         uses: peter-evans/create-or-update-comment@e8674b075228eee787fea43ef493e45ece1004c9 # v5.0.0

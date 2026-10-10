@@ -202,7 +202,7 @@ jobs:
       # Run sharded tests (browsers pre-installed in container)
       - name: Run Playwright tests (Shard ${{ matrix.shardIndex }}/${{ matrix.shardTotal }})
         id: playwright
-        run: pnpm exec playwright test --project=chromium --shard=${{ matrix.shardIndex }}/${{ matrix.shardTotal }}
+        run: pnpm exec playwright test --project=chromium --shard=${{ matrix.shardIndex }}/${{ matrix.shardTotal }} --reporter=blob,@comfyorg/snapshot-updates-reporter
         env:
           PLAYWRIGHT_BLOB_OUTPUT_DIR: ./blob-report
           COLLECT_COVERAGE: 'true'
@@ -214,6 +214,16 @@ jobs:
           name: blob-report-chromium-${{ matrix.shardIndex }}
           path: blob-report/
           retention-days: 1
+
+      - name: Upload rewritten snapshots
+        uses: actions/upload-artifact@b7c566a772e6b6bfb58ed0dc250532a479d7789f # v6.0.0
+        if: ${{ !cancelled() }}
+        with:
+          name: snapshot-updates-chromium-${{ matrix.shardIndex }}
+          path: snapshot-updates/
+          retention-days: 7
+          if-no-files-found: ignore
+          overwrite: true
 
       - name: Upload shard coverage data
         if: always()
@@ -266,7 +276,7 @@ jobs:
 
       - name: Run Playwright tests (cloud, Shard ${{ matrix.shardIndex }}/${{ matrix.shardTotal }})
         id: playwright
-        run: pnpm exec playwright test --project=cloud --shard=${{ matrix.shardIndex }}/${{ matrix.shardTotal }}
+        run: pnpm exec playwright test --project=cloud --shard=${{ matrix.shardIndex }}/${{ matrix.shardTotal }} --reporter=blob,@comfyorg/snapshot-updates-reporter
         env:
           PLAYWRIGHT_BLOB_OUTPUT_DIR: ./blob-report
 
@@ -277,6 +287,16 @@ jobs:
           name: blob-report-cloud-${{ matrix.shardIndex }}
           path: blob-report/
           retention-days: 1
+
+      - name: Upload rewritten snapshots
+        uses: actions/upload-artifact@b7c566a772e6b6bfb58ed0dc250532a479d7789f # v6.0.0
+        if: ${{ !cancelled() }}
+        with:
+          name: snapshot-updates-cloud-${{ matrix.shardIndex }}
+          path: snapshot-updates/
+          retention-days: 7
+          if-no-files-found: ignore
+          overwrite: true
 
   playwright-tests:
     # Ideally, each shard runs test in 6 minutes, but allow up to 30 minutes
@@ -326,9 +346,19 @@ jobs:
       # Run tests (browsers pre-installed in container)
       - name: Run Playwright tests (${{ matrix.browser }})
         id: playwright
-        run: pnpm exec playwright test --project=${{ matrix.browser }}
+        run: pnpm exec playwright test --project=${{ matrix.browser }} --reporter=blob,@comfyorg/snapshot-updates-reporter
         env:
           PLAYWRIGHT_BLOB_OUTPUT_DIR: ./blob-report
+
+      - name: Upload rewritten snapshots
+        uses: actions/upload-artifact@b7c566a772e6b6bfb58ed0dc250532a479d7789f # v6.0.0
+        if: ${{ !cancelled() }}
+        with:
+          name: snapshot-updates-${{ matrix.browser }}
+          path: snapshot-updates/
+          retention-days: 7
+          if-no-files-found: ignore
+          overwrite: true
 
       - name: Generate HTML and JSON reports
         if: always()
@@ -506,6 +536,12 @@ jobs:
         with:
           pattern: playwright-report-*
           path: reports
+
+      - name: Download snapshot update manifests
+        uses: actions/download-artifact@3e5f45b2cfb9172054b4087a40e8e0b5a5461e7c # v8.0.1
+        with:
+          pattern: snapshot-updates-*
+          path: snapshot-updates
 
       - name: Deploy reports and generate section
         env:

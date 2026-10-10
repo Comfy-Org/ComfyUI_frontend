@@ -90,7 +90,7 @@ jobs:
 
       - name: Run Playwright tests (Shard ${{ matrix.shardIndex }}/${{ matrix.shardTotal }})
         id: tests
-        run: pnpm --filter @comfyorg/website test:e2e --shard=${{ matrix.shardIndex }}/${{ matrix.shardTotal }}
+        run: pnpm --filter @comfyorg/website test:e2e --shard=${{ matrix.shardIndex }}/${{ matrix.shardTotal }} --reporter=blob,@comfyorg/snapshot-updates-reporter
         env:
           PLAYWRIGHT_BLOB_OUTPUT_DIR: ${{ github.workspace }}/apps/website/blob-report
 
@@ -102,6 +102,16 @@ jobs:
           path: apps/website/blob-report/
           if-no-files-found: error
           retention-days: 1
+
+      - name: Upload rewritten snapshots
+        uses: actions/upload-artifact@v6
+        if: ${{ !cancelled() }}
+        with:
+          name: website-snapshot-updates-${{ matrix.shardIndex }}
+          path: apps/website/snapshot-updates/
+          retention-days: 7
+          if-no-files-found: ignore
+          overwrite: true
 
   website-e2e-report:
     needs: [changes, website-e2e-shard]

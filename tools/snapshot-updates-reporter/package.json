@@ -1,0 +1,12 @@
+{
+  "name": "@comfyorg/snapshot-updates-reporter",
+  "version": "0.1.0",
+  "private": true,
+  "description": "Playwright reporter that copies the actual image of every failed snapshot assertion onto its golden path",
+  "type": "module",
+  "exports": "./src/snapshotUpdatesReporter.ts",
+  "devDependencies": {
+    "@playwright/test": "catalog:",
+    "@types/node": "catalog:"
+  }
+}

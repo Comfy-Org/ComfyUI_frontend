@@ -101,6 +101,7 @@
     "@astrojs/mdx": "catalog:",
     "@astrojs/vue": "catalog:",
     "@comfyorg/sdk": "catalog:",
+    "@comfyorg/snapshot-updates-reporter": "workspace:*",
     "@comfyorg/test-utils": "workspace:*",
     "@hey-api/openapi-ts": "0.97.3",
     "@playwright/test": "catalog:",

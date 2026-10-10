@@ -1,0 +1,98 @@
+name: Harvest Snapshot Updates
+description: >
+  Decides whether a PR's E2E run already holds the screenshots to commit.
+  Every Playwright job in that run uploads a `<artifact-prefix>*` artifact
+  holding the actual image of each failed screenshot assertion on its golden
+  path, plus a manifest (see tools/snapshot-updates-reporter). This action
+  waits for the run for the PR head and requires an artifact from every
+  Playwright job that ran.
+
+inputs:
+  e2e-workflow:
+    description: E2E workflow file name, e.g. ci-tests-e2e.yaml
+    required: true
+  head-sha:
+    description: PR head commit the E2E run must belong to
+    required: true
+  artifact-prefix:
+    description: Prefix of the per-job artifacts the E2E run uploads
+    required: true
+  job-prefix:
+    description: Prefix of the job names that run Playwright in the E2E run
+    required: true
+  comment-body:
+    description: Triggering comment; `/<command> full` forces the fallback
+    required: false
+    default: ''
+  wait-minutes:
+    description: How long to wait for an in-progress E2E run
+    required: false
+    default: '45'
+  token:
+    description: Token with actions read access
+    required: true
+
+outputs:
+  mode:
+    description: >
+      `harvest` when the E2E run's artifacts can be committed, `full` when the
+      caller must rerun Playwright with --update-snapshots instead.
+    value: ${{ steps.plan.outputs.mode }}
+  run-id:
+    description: The E2E run to download the artifacts from, when harvesting
+    value: ${{ steps.plan.outputs.run-id }}
+
+runs:
+  using: composite
+  steps:
+    - name: Locate the E2E run for the PR head
+      id: plan
+      shell: bash
+      env:
+        GH_TOKEN: ${{ inputs.token }}
+        E2E_WORKFLOW: ${{ inputs.e2e-workflow }}
+        HEAD_SHA: ${{ inputs.head-sha }}
+        ARTIFACT_PREFIX: ${{ inputs.artifact-prefix }}
+        JOB_PREFIX: ${{ inputs.job-prefix }}
+        COMMENT_BODY: ${{ inputs.comment-body }}
+        WAIT_MINUTES: ${{ inputs.wait-minutes }}
+      run: |
+        set -euo pipefail
+
+        fallback() {
+          echo "::notice::$1 Falling back to a full --update-snapshots rerun."
+          echo "mode=full" >> "$GITHUB_OUTPUT"
+          exit 0
+        }
+
+        if printf '%s\n' "$COMMENT_BODY" | head -1 | grep -qE '^/[^[:space:]]+[[:space:]]+full([[:space:]]|$)'; then
+          fallback "A full regeneration was requested."
+        fi
+
+        run_id=$(gh api "repos/${GITHUB_REPOSITORY}/actions/workflows/${E2E_WORKFLOW}/runs?head_sha=${HEAD_SHA}&event=pull_request&per_page=20" \
+          --jq '[.workflow_runs[] | select(.conclusion != "cancelled" and .conclusion != "skipped")][0].id // empty')
+        if [ -z "$run_id" ]; then
+          fallback "No E2E run exists for ${HEAD_SHA}."
+        fi
+        run_url="${GITHUB_SERVER_URL}/${GITHUB_REPOSITORY}/actions/runs/${run_id}"
+
+        if ! timeout "${WAIT_MINUTES}m" gh run watch "$run_id" --repo "$GITHUB_REPOSITORY" --interval 30 > /dev/null; then
+          fallback "The E2E run ${run_url} did not finish within ${WAIT_MINUTES} minutes."
+        fi
+
+        conclusions=$(gh api --paginate "repos/${GITHUB_REPOSITORY}/actions/runs/${run_id}/jobs?per_page=100" \
+          --jq '.jobs[] | select(.name | startswith(env.JOB_PREFIX)) | .conclusion')
+        if printf '%s' "$conclusions" | grep -qvE '^(success|failure|skipped)$'; then
+          fallback "Some ${JOB_PREFIX} jobs in ${run_url} did not finish."
+        fi
+        ran=$(printf '%s' "$conclusions" | grep -cE '^(success|failure)$' || true)
+        artifacts=$(gh api --paginate "repos/${GITHUB_REPOSITORY}/actions/runs/${run_id}/artifacts?per_page=100" \
+          --jq '.artifacts[] | select((.name | startswith(env.ARTIFACT_PREFIX)) and (.expired | not)) | .name' | wc -l)
+        if [ "$ran" -eq 0 ] || [ "$artifacts" -ne "$ran" ]; then
+          fallback "${artifacts} of ${ran} ${JOB_PREFIX} jobs in ${run_url} left a usable ${ARTIFACT_PREFIX}* artifact."
+        fi
+
+        {
+          echo "mode=harvest"
+          echo "run-id=${run_id}"
+        } >> "$GITHUB_OUTPUT"

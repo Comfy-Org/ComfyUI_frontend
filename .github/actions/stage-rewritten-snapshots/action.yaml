@@ -1,0 +1,67 @@
+name: Stage Rewritten Snapshots
+description: >
+  After a Playwright run with --update-snapshots, collects every modified or
+  new file under a `*-snapshots/` directory inside the Playwright config
+  directory and uploads them as an artifact, laid out relative to that
+  directory, in the shape commit-snapshot-updates merges back.
+
+inputs:
+  config-dir:
+    description: Directory of the Playwright config, relative to the workspace
+    required: false
+    default: .
+  artifact-name:
+    description: Artifact to upload the rewritten snapshots as
+    required: true
+
+outputs:
+  has-changes:
+    description: '`true` when at least one snapshot was rewritten'
+    value: ${{ steps.stage.outputs.has-changes }}
+
+runs:
+  using: composite
+  steps:
+    - name: Stage rewritten snapshot files
+      id: stage
+      shell: bash
+      env:
+        CONFIG_DIR: ${{ inputs.config-dir }}
+        STAGING_DIR: ${{ runner.temp }}/rewritten-snapshots
+      run: |
+        set -euo pipefail
+
+        # Container jobs run as a different user than the checkout.
+        git config --global --add safe.directory "$(pwd)"
+        cd "$CONFIG_DIR"
+
+        changed_files=$( (
+          git diff --name-only --relative -- . 2>/dev/null || true
+          git ls-files --others --exclude-standard -- . 2>/dev/null || true
+        ) | sort -u | grep -E '\-snapshots/' || true )
+
+        if [ -z "$changed_files" ]; then
+          echo "No snapshot changes"
+          echo "has-changes=false" >> "$GITHUB_OUTPUT"
+          exit 0
+        fi
+
+        count=$(printf '%s\n' "$changed_files" | wc -l)
+        echo "${count} rewritten snapshot(s):"
+        echo "$changed_files"
+
+        while IFS= read -r file; do
+          [ -f "$file" ] || continue
+          mkdir -p "${STAGING_DIR}/$(dirname "$file")"
+          cp "$file" "${STAGING_DIR}/${file}"
+        done <<< "$changed_files"
+
+        echo "has-changes=true" >> "$GITHUB_OUTPUT"
+
+    - name: Upload rewritten snapshots
+      if: steps.stage.outputs.has-changes == 'true'
+      uses: actions/upload-artifact@v6
+      with:
+        name: ${{ inputs.artifact-name }}
+        path: ${{ runner.temp }}/rewritten-snapshots/
+        retention-days: 1

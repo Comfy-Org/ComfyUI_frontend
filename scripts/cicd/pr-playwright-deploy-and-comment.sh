@@ -123,6 +123,11 @@ parse_counts() {
     fi
 }
 
+count_screenshot_diffs() {
+    find snapshot-updates -name manifest.json -exec cat {} + 2>/dev/null |
+        jq -s 'map(length) | add // 0'
+}
+
 # Builds the " (✅ x / ❌ x / ⚠️ x / ⏭️ x)" suffix for a report line, or "" when there's no total.
 counts_suffix() {
     read -r passed failed flaky skipped total <<< "$(parse_counts "$1")"
@@ -350,6 +355,15 @@ $test_line"
         done
     fi
     
+    screenshot_diffs=$(count_screenshot_diffs)
+    if [ "${screenshot_diffs:-0}" -gt 0 ]; then
+        diff_plural="s"
+        [ "$screenshot_diffs" -eq 1 ] && diff_plural=""
+        comment="$comment
+
+- [ ] Update Playwright expectations ($screenshot_diffs screenshot diff$diff_plural)"
+    fi
+
     # Add browser reports in collapsible section
     comment="$comment
 
