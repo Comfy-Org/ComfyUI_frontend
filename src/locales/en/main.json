@@ -2685,6 +2685,18 @@
       },
       "mcp:tools:call": {
         "label": "Run workflows on your behalf"
+      },
+      "comfy-mcp:tools:read": {
+        "label": "View the workflow tools available to you"
+      },
+      "comfy-mcp:tools:call": {
+        "label": "Run workflows and partner models on your behalf, using your credits"
+      },
+      "comfy-router:models:read": {
+        "label": "View the Comfy Router model catalog"
+      },
+      "comfy-router:models:invoke": {
+        "label": "Run partner models through Comfy Router, using your credits"
       }
     },
     "workspace": {

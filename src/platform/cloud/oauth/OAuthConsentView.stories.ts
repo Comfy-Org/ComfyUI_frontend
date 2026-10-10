@@ -10,7 +10,7 @@ const baseChallenge: OAuthConsentChallenge = {
   client_display_name: 'Comfy Desktop',
   resource_display_name: 'Comfy Cloud',
   redirect_uri: 'http://127.0.0.1:50632/cb',
-  scopes: ['mcp:tools:read', 'mcp:tools:call'],
+  scopes: ['comfy-mcp:tools:read', 'comfy-mcp:tools:call'],
   workspaces: [
     {
       id: 'personal-workspace',
@@ -90,7 +90,7 @@ export const UnknownScope: Story = {
   args: {
     initialChallenge: {
       ...baseChallenge,
-      scopes: ['mcp:tools:read', 'mcp:tools:call', 'mcp:billing:read']
+      scopes: [...baseChallenge.scopes, 'comfy-mcp:billing:read']
     }
   }
 }
@@ -112,7 +112,17 @@ export const RemoteWebClient: Story = {
       resource_display_name: 'Comfy Cloud MCP',
       client_application_type: 'web',
       redirect_uri: 'https://claude.ai/api/mcp/auth_callback',
-      scopes: ['comfy-mcp:tools:calls']
+      scopes: ['comfy-mcp:tools:call']
+    }
+  }
+}
+
+export const ComfyRouter: Story = {
+  args: {
+    initialChallenge: {
+      ...baseChallenge,
+      resource_display_name: 'Comfy Router',
+      scopes: ['comfy-router:models:read', 'comfy-router:models:invoke']
     }
   }
 }
