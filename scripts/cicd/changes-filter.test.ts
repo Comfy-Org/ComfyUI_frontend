@@ -106,10 +106,10 @@ it('requires E2E for an earlier source change followed by a unit-test-only queue
       PREFLIGHT: 'success',
       CHANGES: 'success',
       SHOULD_RUN: String(selected['should-run-e2e']),
+      DESKTOP_CLOUD_BUILD: 'success',
       SHARDED: 'skipped',
       CLOUD: 'skipped',
-      BROWSERS: 'skipped',
-      VIDEO: 'skipped'
+      BROWSERS: 'skipped'
     }
   })
 

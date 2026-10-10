@@ -46,6 +46,25 @@ if [ "$STATUS" = "completed" ]; then
     : "${CLOUDFLARE_ACCOUNT_ID:?CLOUDFLARE_ACCOUNT_ID is required for deployment}"
 fi
 
+WORKFLOW_RESULT=unknown
+if [ "$STATUS" = "completed" ]; then
+    : "${SOURCE_RUN_ID:?SOURCE_RUN_ID is required for completed reports}"
+    if jobs=$(gh api "repos/$GITHUB_REPOSITORY/actions/runs/$SOURCE_RUN_ID/jobs?per_page=100" --paginate --slurp); then
+        WORKFLOW_RESULT=$(echo "$jobs" | jq -r '
+        [.[].jobs[]] as $jobs |
+        [$jobs[] | select(.name == "e2e-status" or .name == "setup-desktop-cloud" or (.name | startswith("merge-reports (")) or (.name | startswith("playwright-tests")))] as $e2e |
+        [$jobs[] | select(.name | startswith("merge-reports ("))] as $merges |
+        if any($e2e[]; .conclusion == "cancelled") then "cancelled"
+        elif any($e2e[]; .name == "e2e-status" and .conclusion == "success")
+            and ($merges | length) > 0
+            and all($merges[]; .conclusion == "success") then "success"
+        else "failure" end
+        ') || WORKFLOW_RESULT=unknown
+    else
+        WORKFLOW_RESULT=unknown
+    fi
+fi
+
 # Configuration
 COMMENT_MARKER="<!-- PLAYWRIGHT_TEST_STATUS -->"
 # Use dot notation for artifact names (as Playwright creates them)
@@ -292,7 +311,9 @@ else
     unset IFS
     
     # Determine overall status (flaky tests are treated as passing)
-    if [ $total_failed -gt 0 ]; then
+    if [ "$WORKFLOW_RESULT" = "unknown" ] && [ "$total_failed" -eq 0 ]; then
+        status_icon="⚠️"
+    elif [ "$WORKFLOW_RESULT" != "success" ] || [ $total_failed -gt 0 ]; then
         status_icon="❌"
     elif [ $total_tests -gt 0 ]; then
         status_icon="✅"
@@ -308,11 +329,21 @@ else
     
     # Generate compact single-line comment (omit standalone marker when writing
     # to SUMMARY_FILE — the upsert action adds its own section delimiters).
+    result_note=""
+    if [ "$WORKFLOW_RESULT" = "cancelled" ] || { [ "$WORKFLOW_RESULT" != "success" ] && [ "$total_failed" -eq 0 ]; }; then
+        result_note="E2E ${WORKFLOW_RESULT} · "
+    fi
     if [ -n "${SUMMARY_FILE:-}" ]; then
-        comment="## 🎭 Playwright: $status_icon $total_passed passed, $total_failed failed$flaky_note"
+        comment="## 🎭 Playwright: $status_icon ${result_note}${total_passed} passed, $total_failed failed$flaky_note"
     else
         comment="$COMMENT_MARKER
-## 🎭 Playwright: $status_icon $total_passed passed, $total_failed failed$flaky_note"
+## 🎭 Playwright: $status_icon ${result_note}${total_passed} passed, $total_failed failed$flaky_note"
+    fi
+
+    if [ -n "$result_note" ]; then
+        comment="$comment
+
+Counted reports: ${BROWSERS// /, }. [Full E2E run](https://github.com/$GITHUB_REPOSITORY/actions/runs/$SOURCE_RUN_ID)."
     fi
 
     # Extract and display failed tests from all browsers (flaky tests are treated as passing)
