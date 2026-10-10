@@ -21,16 +21,16 @@ function renderLink(item: Item & Pick<NavColumnItem, 'icon'>) {
 }
 
 describe('NavLinkContent', () => {
-  it.for<Item & { marked: boolean }>([
-    { marked: false },
-    { external: true, marked: true },
-    { newTab: true, marked: true }
+  it.for<Item & { arrow: boolean }>([
+    { arrow: false },
+    { external: true, arrow: true },
+    { newTab: true, arrow: false }
   ])(
-    'marks a text link as opening a new tab: $marked (external $external, newTab $newTab)',
-    ({ marked, ...item }) => {
+    'shows the arrow on a text link only when external: $arrow (external $external, newTab $newTab)',
+    ({ arrow, ...item }) => {
       renderLink(item)
 
-      expect(screen.queryByTestId('opens-in-new-tab') !== null).toBe(marked)
+      expect(screen.queryByTestId('external-link-arrow') !== null).toBe(arrow)
     }
   )
 
