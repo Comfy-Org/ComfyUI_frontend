@@ -1,5 +1,6 @@
 import { omitBy } from 'es-toolkit'
 
+import type { SsoRequiredTrigger } from '@comfyorg/account-core/telemetry'
 import {
   isSsoRequiredRefusal,
   ssoRequiredOrganizationId
@@ -10,6 +11,7 @@ import { useFeatureFlags } from '@/composables/useFeatureFlags'
 import { t } from '@/i18n'
 import { SSO_REQUIRED_DIALOG_KEY } from '@/platform/auth/sso/ssoRequiredDialogKey'
 import { presentInline } from '@/platform/auth/sso/ssoRequiredInline'
+import { trackSsoRequiredShown } from '@/platform/auth/sso/ssoTelemetry'
 import { reportError } from '@/platform/telemetry/reportError'
 import { useToast } from '@/components/ui/toast/toastStore'
 import { useDialogStore } from '@/stores/dialogStore'
@@ -29,7 +31,10 @@ export interface SsoRequiredContext {
  * never erases the email the sign-in page passed. A refusal always answers the
  * organization, so one that names none clears an earlier one.
  */
-export function presentSsoRequired(context: SsoRequiredContext = {}): boolean {
+export function presentSsoRequired(
+  trigger: SsoRequiredTrigger,
+  context: SsoRequiredContext = {}
+): boolean {
   if (!useFeatureFlags().flags.ssoEnabled) return false
   const dialogStore = useDialogStore()
   const known = {
@@ -38,7 +43,7 @@ export function presentSsoRequired(context: SsoRequiredContext = {}): boolean {
       organizationId: context.organizationId
     })
   }
-  if (presentInline(known)) return true
+  if (presentInline(known, trigger)) return true
   void import('@/platform/auth/sso/SsoRequiredDialogContent.vue')
     .then(({ default: component }) => {
       if (dialogStore.isDialogOpen(SSO_REQUIRED_DIALOG_KEY)) {
@@ -48,6 +53,7 @@ export function presentSsoRequired(context: SsoRequiredContext = {}): boolean {
         })
         return
       }
+      trackSsoRequiredShown('cloud_app', trigger)
       dialogStore.showDialog({
         key: SSO_REQUIRED_DIALOG_KEY,
         component,
@@ -71,10 +77,13 @@ export function presentSsoRequired(context: SsoRequiredContext = {}): boolean {
   return true
 }
 
+/** A Cloud API request whose credential the organization refused. */
 export function presentForRefusal(status: number, body: unknown): boolean {
   return (
     isSsoRequiredRefusal(status, body) &&
-    presentSsoRequired({ organizationId: ssoRequiredOrganizationId(body) })
+    presentSsoRequired('api_key', {
+      organizationId: ssoRequiredOrganizationId(body)
+    })
   )
 }
 

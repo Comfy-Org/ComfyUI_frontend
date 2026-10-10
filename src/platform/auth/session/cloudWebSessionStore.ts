@@ -42,6 +42,7 @@ import { t } from '@/i18n'
 import { isCloud } from '@/platform/distribution/types'
 import { firebaseIdentity } from '@/platform/auth/firebaseIdentity'
 import { presentSsoRequired } from '@/platform/auth/sso/ssoRequired'
+import { trackSsoSignInCompleted } from '@/platform/auth/sso/ssoTelemetry'
 import { webSessionUser } from '@/platform/auth/session/webSessionUser'
 import {
   clearInteractiveSignIn,
@@ -50,6 +51,7 @@ import {
 } from '@/platform/auth/session/interactiveSignInMarker'
 import {
   forgetSsoHint,
+  isSsoSession,
   rememberSignedInSession
 } from '@/platform/auth/session/ssoReentryStorage'
 import type { WebSessionRequestScope } from '@/platform/auth/session/webSessionFetch'
@@ -342,7 +344,7 @@ export const useCloudWebSessionStore = defineStore('cloudWebSession', () => {
             })
           }
           if (failure.code === 'SSO_REQUIRED') {
-            presentSsoRequired({ email: session.user.email })
+            presentSsoRequired('session_refused', { email: session.user.email })
           }
           throw new WebSessionTokenError(
             error,
@@ -363,6 +365,9 @@ export const useCloudWebSessionStore = defineStore('cloudWebSession', () => {
       signedOutHere = false
       if (useFeatureFlags().flags.ssoEnabled) {
         rememberSignedInSession(next.session.user)
+        if (isSsoSession(next.session.user)) {
+          trackSsoSignInCompleted(next.session.user.id)
+        }
       }
     } else if (next.phase === 'signed_out' && next.outcome === 'revoked') {
       forgetSsoHint()
@@ -482,7 +487,7 @@ export const useCloudWebSessionStore = defineStore('cloudWebSession', () => {
       workspaceDenied: (workspaceId) =>
         useWorkspaceAuthStore().dropDeniedWorkspace(workspaceId),
       ssoRequired: ({ session }) =>
-        presentSsoRequired({ email: session.user.email })
+        presentSsoRequired('session_refused', { email: session.user.email })
     })
   }
 

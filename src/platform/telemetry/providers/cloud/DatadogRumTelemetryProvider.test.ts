@@ -2,6 +2,7 @@ import type {
   BillingTelemetryEvent,
   CheckoutJourneyTelemetryEvent
 } from '@comfyorg/account-core/billing'
+import type { SsoTelemetryEvent } from '@comfyorg/account-core/telemetry'
 import { computed } from 'vue'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 
@@ -207,6 +208,32 @@ describe('DatadogRumTelemetryProvider', () => {
     }
   ] as const)('records the web session event $name as is', (event) => {
     new DatadogRumTelemetryProvider().trackWebSessionEvent(event)
+
+    expect(addAction).toHaveBeenCalledExactlyOnceWith(
+      event.name,
+      event.properties
+    )
+  })
+
+  it.for<SsoTelemetryEvent>([
+    {
+      name: 'app:sso_required_shown',
+      properties: {
+        surface: 'cloud_login',
+        trigger: 'firebase_sign_in',
+        flow_id: 'flow-1'
+      }
+    },
+    {
+      name: 'app:sso_sign_in_failed',
+      properties: {
+        surface: 'cloud_app',
+        reason: 'state_mismatch',
+        flow_id: 'flow-1'
+      }
+    }
+  ])('records the SSO event $name as a custom action', (event) => {
+    new DatadogRumTelemetryProvider().trackSsoEvent(event)
 
     expect(addAction).toHaveBeenCalledExactlyOnceWith(
       event.name,

@@ -7,9 +7,11 @@ import {
   presentSsoRequired
 } from '@/platform/auth/sso/ssoRequired'
 import { SSO_REQUIRED_DIALOG_KEY } from '@/platform/auth/sso/ssoRequiredDialogKey'
+import { useTelemetry } from '@/platform/telemetry'
 import { useDialogStore } from '@/stores/dialogStore'
 
 vi.mock(import('@/composables/useFeatureFlags'))
+vi.mock(import('@/platform/telemetry'))
 
 const SSO_REFUSAL = {
   code: 'sso_required',
@@ -27,19 +29,26 @@ describe('the SSO-required screen', () => {
   beforeAll(() => import('@/platform/auth/sso/SsoRequiredDialogContent.vue'))
 
   it('stays hidden with the flag off, so the caller keeps its handling', async () => {
-    expect(presentSsoRequired({ email: 'ada@acme.com' })).toBe(false)
+    expect(
+      presentSsoRequired('session_refused', { email: 'ada@acme.com' })
+    ).toBe(false)
     expect(await shownDialog()).toBeUndefined()
   })
 
   it('opens once with the flag on, keeping what any caller knew', async () => {
     vi.mocked(useFeatureFlags().flags).ssoEnabled = true
 
-    expect(presentSsoRequired()).toBe(true)
+    expect(presentSsoRequired('session_refused')).toBe(true)
     await shownDialog()
-    expect(presentSsoRequired({ email: 'ada@acme.com', returnTo: '/x' })).toBe(
+    expect(
+      presentSsoRequired('session_refused', {
+        email: 'ada@acme.com',
+        returnTo: '/x'
+      })
+    ).toBe(true)
+    expect(presentSsoRequired('session_refused', { email: undefined })).toBe(
       true
     )
-    expect(presentSsoRequired({ email: undefined })).toBe(true)
 
     const dialog = await shownDialog()
     expect(dialog?.contentProps).toEqual({
@@ -47,6 +56,33 @@ describe('the SSO-required screen', () => {
       returnTo: '/x'
     })
     expect(useDialogStore().dialogStack).toHaveLength(1)
+    expect(useTelemetry()?.trackSsoEvent).toHaveBeenCalledExactlyOnceWith({
+      name: 'app:sso_required_shown',
+      properties: {
+        surface: 'cloud_app',
+        trigger: 'session_refused',
+        flow_id: expect.any(String)
+      }
+    })
+  })
+
+  it('reports a refused API request as the api_key trigger', async () => {
+    vi.mocked(useFeatureFlags().flags).ssoEnabled = true
+
+    presentForRefusal(403, SSO_REFUSAL)
+    await shownDialog()
+
+    expect(useTelemetry()?.trackSsoEvent).toHaveBeenCalledExactlyOnceWith({
+      name: 'app:sso_required_shown',
+      properties: expect.objectContaining({ trigger: 'api_key' })
+    })
+  })
+
+  it('reports nothing with the flag off', async () => {
+    presentSsoRequired('session_refused', { email: 'ada@acme.com' })
+    await shownDialog()
+
+    expect(useTelemetry()?.trackSsoEvent).not.toHaveBeenCalled()
   })
 
   it.for<{ name: string; status: number; body: unknown; shown: boolean }>([

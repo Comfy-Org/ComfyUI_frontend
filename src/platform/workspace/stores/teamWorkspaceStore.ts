@@ -8,6 +8,7 @@ import {
   isDesktopHostSignedIn,
   requestDesktopHostWorkspaceSwitch
 } from '@/platform/auth/desktopHost/desktopHostSession'
+import { trackSsoWorkspaceLanded } from '@/platform/auth/sso/ssoTelemetry'
 import { isCloud } from '@/platform/distribution/types'
 import { WORKSPACE_STORAGE_KEYS } from '@/platform/workspace/workspaceConstants'
 import { clearPreservedQuery } from '@/platform/navigation/preservedQueryManager'
@@ -482,6 +483,10 @@ export const useTeamWorkspaceStore = defineStore('teamWorkspace', () => {
         // 5. Set active workspace
         mutableActiveWorkspaceId.value = targetWorkspaceId
         setLastWorkspaceId(targetWorkspaceId)
+        trackSsoWorkspaceLanded(
+          !!response.default_workspace_id &&
+            targetWorkspaceId === response.default_workspace_id
+        )
 
         initState.value = 'ready'
         isFetchingWorkspaces.value = false

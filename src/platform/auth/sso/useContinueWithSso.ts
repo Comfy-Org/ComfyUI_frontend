@@ -6,6 +6,7 @@ import { ssoStartUrl } from '@comfyorg/account-core/sso'
 import { useErrorHandling } from '@/composables/useErrorHandling'
 import type { SsoRequiredContext } from '@/platform/auth/sso/ssoRequired'
 import { toSsoReturnPath } from '@/platform/auth/sso/ssoReturnPath'
+import { trackSsoContinueClicked } from '@/platform/auth/sso/ssoTelemetry'
 import { SSO_ENTRY_OPEN_QUERY } from '@/platform/cloud/onboarding/sso/ssoEntryQuery'
 import { useAuthStore } from '@/stores/authStore'
 
@@ -40,6 +41,7 @@ export function useContinueWithSso(context: () => SsoRequiredContext) {
   }
 
   async function continueWithSso() {
+    trackSsoContinueClicked('cloud_app')
     leaving.value = true
     const target = destination()
     try {

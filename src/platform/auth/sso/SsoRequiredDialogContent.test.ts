@@ -8,9 +8,12 @@ import { createI18n } from 'vue-i18n'
 import { createMemoryHistory, createRouter } from 'vue-router'
 
 import SsoRequiredDialogContent from '@/platform/auth/sso/SsoRequiredDialogContent.vue'
+import { trackSsoRequiredShown } from '@/platform/auth/sso/ssoTelemetry'
+import { useTelemetry } from '@/platform/telemetry'
 import { useAuthStore } from '@/stores/authStore'
 
 vi.mock(import('firebase/auth'))
+vi.mock(import('@/platform/telemetry'))
 
 async function renderDialog(
   props: {
@@ -68,6 +71,22 @@ describe('SsoRequiredDialogContent', () => {
     expect(target.searchParams.get('return_to')).toBe('/cloud/user-check')
     expect(target.searchParams.has('organization')).toBe(false)
     expect(useAuthStore().logout).not.toHaveBeenCalled()
+  })
+
+  it('reports the click as the shown attempt continuing to SSO', async () => {
+    trackSsoRequiredShown('cloud_app', 'session_refused')
+    await renderDialog({ email: 'ada@acme.com' })
+
+    await userEvent.click(
+      screen.getByRole('button', { name: 'auth.sso.continueWithSso' })
+    )
+
+    const [[shown], [continued]] = vi.mocked(useTelemetry()!.trackSsoEvent).mock
+      .calls
+    expect(continued).toEqual({
+      name: 'app:sso_continue_clicked',
+      properties: { surface: 'cloud_app', flow_id: shown.properties.flow_id }
+    })
   })
 
   it.for<{ name: string; email?: string }>([

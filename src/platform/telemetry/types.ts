@@ -14,7 +14,8 @@
 
 import {
   AUTH_TELEMETRY_EVENT,
-  SESSION_TELEMETRY_EVENT
+  SESSION_TELEMETRY_EVENT,
+  SSO_TELEMETRY_EVENT
 } from '@comfyorg/account-core/telemetry'
 import type {
   BillingTelemetryEvent,
@@ -33,6 +34,7 @@ import type {
   AuthErrorMetadata,
   AuthFlowAction,
   AuthMethod,
+  SsoTelemetryEvent,
   WebSessionTelemetryEvent
 } from '@comfyorg/account-core/telemetry'
 import type { SessionRefreshOutcome } from '@comfyorg/account-core/session'
@@ -53,6 +55,8 @@ export interface AuthMetadata {
   is_new_user?: boolean
   user_id?: string
   email?: string
+  /** The SSO attempt this sign-in completes. */
+  flow_id?: string
   share_id?: string
   referrer_url?: string
   utm_source?: string
@@ -1343,6 +1347,7 @@ export interface TelemetryProvider {
   trackUnifiedAuthRetry?(metadata: UnifiedAuthRetryMetadata): void
   trackUnifiedAuthRefresh?(metadata: UnifiedAuthRefreshMetadata): void
   trackWebSessionEvent?(event: WebSessionTelemetryEvent): void
+  trackSsoEvent?(event: SsoTelemetryEvent): void
   trackImageLoadFailed?(metadata: ImageLoadFailureMetadata): void
   trackUserLoggedIn?(): void
   trackBootstrapComplete?(metadata: BootstrapCompleteMetadata): void
@@ -1533,6 +1538,10 @@ export const TelemetryEvents = {
   UNIFIED_AUTH_RETRY_FAILED: 'auth.unified.request_retry.failed',
   UNIFIED_AUTH_REFRESH_SUCCEEDED: SESSION_TELEMETRY_EVENT.refreshSucceeded,
   UNIFIED_AUTH_REFRESH_FAILED: SESSION_TELEMETRY_EVENT.refreshFailed,
+  SSO_REQUIRED_SHOWN: SSO_TELEMETRY_EVENT.requiredShown,
+  SSO_CONTINUE_CLICKED: SSO_TELEMETRY_EVENT.continueClicked,
+  SSO_SIGN_IN_FAILED: SSO_TELEMETRY_EVENT.signInFailed,
+  SSO_WORKSPACE_LANDED: SSO_TELEMETRY_EVENT.workspaceLanded,
   IMAGE_LOAD_FAILED: 'app:image_load_failed',
   BOOTSTRAP_COMPLETE: 'app:bootstrap_complete',
 
@@ -1739,6 +1748,7 @@ export type TelemetryEventProperties =
   | UnifiedAuthRetryMetadata
   | UnifiedAuthRefreshMetadata
   | WebSessionTelemetryEvent['properties']
+  | SsoTelemetryEvent['properties']
   | ImageLoadFailureMetadata
   | BootstrapCompleteMetadata
   | SurveyResponses

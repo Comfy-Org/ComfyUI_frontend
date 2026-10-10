@@ -96,11 +96,13 @@ import { useI18n } from 'vue-i18n'
 import { RouterLink, useRoute } from 'vue-router'
 
 import { readSsoError } from '@comfyorg/account-core/sso'
+import { ssoFailureReason } from '@comfyorg/account-core/telemetry'
 
 import Button from '@/components/ui/button/Button.vue'
 import Message from '@/components/ui/message/Message.vue'
 import { useAuthActions } from '@/composables/auth/useAuthActions'
 import { useFeatureFlags } from '@/composables/useFeatureFlags'
+import { trackSsoSignInFailed } from '@/platform/auth/sso/ssoTelemetry'
 import CloudSignInForm from '@/platform/cloud/onboarding/components/CloudSignInForm.vue'
 import CloudSocialAuthButtons from '@/platform/cloud/onboarding/components/CloudSocialAuthButtons.vue'
 import CloudSsoRequiredNotice from '@/platform/cloud/onboarding/components/CloudSsoRequiredNotice.vue'
@@ -116,7 +118,7 @@ const { t } = useI18n()
 const route = useRoute()
 const authActions = useAuthActions()
 const { flags } = useFeatureFlags()
-const { state: ssoState, busy: ssoBusy, trySso } = useSsoSignIn()
+const { state: ssoState, busy: ssoBusy, trySso } = useSsoSignIn('cloud_login')
 
 const freeRunsSuffix = computed(() => {
   const offer = remoteConfig.value.free_tier_offer
@@ -144,11 +146,16 @@ const {
   defaultRedirect: () => ({ name: 'cloud-user-check' })
 })
 
-const ssoErrorKey = computed(() => {
-  if (!flags.ssoEnabled) return undefined
-  const code = readSsoError(route.query.sso_error)
-  return code && SSO_ERROR_MESSAGE_KEY[code]
-})
+const ssoError = computed(() =>
+  flags.ssoEnabled ? readSsoError(route.query.sso_error) : undefined
+)
+const ssoErrorKey = computed(
+  () => ssoError.value && SSO_ERROR_MESSAGE_KEY[ssoError.value]
+)
+
+if (ssoError.value) {
+  trackSsoSignInFailed(ssoFailureReason(ssoError.value), 'cloud_login')
+}
 
 const signInWithEmail = async (values: SignInData) => {
   authError.value = ''

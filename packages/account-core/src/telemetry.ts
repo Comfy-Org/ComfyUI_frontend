@@ -4,10 +4,13 @@
  * every host. The package never calls a telemetry API itself; call sites
  * stay host-specific.
  */
+import { z } from 'zod'
+
 import type {
   WebSessionBootstrapEvent,
   WebSessionIdentityOptions
 } from './core/webSessionIdentity.js'
+import type { SsoErrorCode } from './sso.js'
 
 export const SESSION_TELEMETRY_EVENT = {
   refreshSucceeded: 'auth.unified.refresh.succeeded',
@@ -75,7 +78,7 @@ export const AUTH_TELEMETRY_EVENT = {
   authFailed: 'app:user_auth_failed'
 } as const
 
-export type AuthMethod = 'email' | 'google' | 'github'
+export type AuthMethod = 'email' | 'google' | 'github' | 'sso'
 
 /** What the cloud app reports on every successful credential. */
 export interface AuthCompletedMetadata {
@@ -83,6 +86,8 @@ export interface AuthCompletedMetadata {
   is_new_user: boolean
   user_id: string
   email?: string
+  /** The SSO attempt this sign-in completes. */
+  flow_id?: string
 }
 
 export type AuthFlowAction =
@@ -98,3 +103,156 @@ export interface AuthErrorMetadata {
   error_code: string
   auth_action: AuthFlowAction
 }
+
+export const SSO_TELEMETRY_EVENT = {
+  requiredShown: 'app:sso_required_shown',
+  continueClicked: 'app:sso_continue_clicked',
+  signInFailed: 'app:sso_sign_in_failed',
+  workspaceLanded: 'app:sso_workspace_landed'
+} as const
+
+const SSO_SURFACES = [
+  'cloud_login',
+  'cloud_signup',
+  'cloud_customer_create',
+  'cloud_app',
+  'billing_web',
+  'platform',
+  'desktop',
+  'local_web'
+] as const
+
+/** Where an SSO attempt started; `cloud_app` is the in-app dialog. */
+export type SsoSurface = (typeof SSO_SURFACES)[number]
+
+/** The refusal that showed the SSO-required screen. */
+export type SsoRequiredTrigger =
+  | 'firebase_sign_in'
+  | 'api_key'
+  | 'customer_create'
+  | 'session_refused'
+
+export type SsoSignInFailureReason =
+  | 'cancelled'
+  | 'state_mismatch'
+  | 'org_not_attached'
+  | 'server_error'
+  | 'network'
+
+interface SsoFlowProperties {
+  readonly surface: SsoSurface
+  readonly flow_id: string
+}
+
+/** IDs and enums only: never an email, a name or an organization name. */
+export type SsoTelemetryEvent =
+  | {
+      readonly name: typeof SSO_TELEMETRY_EVENT.requiredShown
+      readonly properties: SsoFlowProperties & {
+        readonly trigger: SsoRequiredTrigger
+      }
+    }
+  | {
+      readonly name: typeof SSO_TELEMETRY_EVENT.continueClicked
+      readonly properties: SsoFlowProperties
+    }
+  | {
+      readonly name: typeof SSO_TELEMETRY_EVENT.signInFailed
+      readonly properties: SsoFlowProperties & {
+        readonly reason: SsoSignInFailureReason
+        readonly http_status?: number
+      }
+    }
+  | {
+      readonly name: typeof SSO_TELEMETRY_EVENT.workspaceLanded
+      readonly properties: SsoFlowProperties & {
+        readonly landed_in_org_workspace: boolean
+      }
+    }
+
+const SSO_FAILURE_REASON: Partial<
+  Readonly<Record<SsoErrorCode, SsoSignInFailureReason>>
+> = {
+  SSO_INVALID_STATE: 'state_mismatch',
+  SSO_CONFIRM_EXPIRED: 'state_mismatch',
+  SSO_ORG_NOT_ATTACHED: 'org_not_attached',
+  SSO_ORG_MISMATCH: 'org_not_attached'
+}
+
+/** Reduces an `?sso_error=` code to the reason telemetry reports. */
+export function ssoFailureReason(code: SsoErrorCode): SsoSignInFailureReason {
+  return SSO_FAILURE_REASON[code] ?? 'server_error'
+}
+
+/** One SSO attempt; `flowId` joins its steps across the IdP redirect. */
+export interface SsoFlow {
+  readonly flowId: string
+  readonly surface: SsoSurface
+}
+
+const SSO_FLOW_STORAGE_KEY = 'Comfy.Sso.TelemetryFlow'
+
+const zSsoFlow = z.object({
+  flowId: z.string().min(1),
+  surface: z.enum(SSO_SURFACES)
+})
+
+/** `getRandomValues`, unlike `randomUUID`, also works outside a secure context. */
+function newFlowId(): string {
+  return Array.from(crypto.getRandomValues(new Uint8Array(16)), (byte) =>
+    byte.toString(16).padStart(2, '0')
+  ).join('')
+}
+
+export function createSsoFlow(surface: SsoSurface): SsoFlow {
+  return { flowId: newFlowId(), surface }
+}
+
+/**
+ * Keeps the current attempt in session storage across the redirect, and in
+ * memory for this page when storage fails, so telemetry never fails a sign-in.
+ */
+export function createSsoFlowStore(storage: () => Storage) {
+  let inMemory: SsoFlow | undefined
+
+  function readStored(): SsoFlow | undefined {
+    try {
+      const raw = storage().getItem(SSO_FLOW_STORAGE_KEY)
+      if (raw === null) return undefined
+      const parsed = zSsoFlow.safeParse(JSON.parse(raw))
+      return parsed.success ? parsed.data : undefined
+    } catch {
+      return undefined
+    }
+  }
+
+  function start(surface: SsoSurface): SsoFlow {
+    const flow = createSsoFlow(surface)
+    inMemory = flow
+    try {
+      storage().setItem(SSO_FLOW_STORAGE_KEY, JSON.stringify(flow))
+    } catch {
+      return flow
+    }
+    return flow
+  }
+
+  function current(): SsoFlow | undefined {
+    return inMemory ?? readStored()
+  }
+
+  function finish(): SsoFlow | undefined {
+    const flow = current()
+    inMemory = undefined
+    try {
+      storage().removeItem(SSO_FLOW_STORAGE_KEY)
+    } catch {
+      return flow
+    }
+    return flow
+  }
+
+  return { start, current, finish }
+}
+
+export const ssoFlowStore = createSsoFlowStore(() => globalThis.sessionStorage)

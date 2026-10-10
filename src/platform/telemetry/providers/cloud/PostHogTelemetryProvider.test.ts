@@ -2,6 +2,7 @@ import type {
   BillingTelemetryEvent,
   CheckoutJourneyTelemetryEvent
 } from '@comfyorg/account-core/billing'
+import type { SsoTelemetryEvent } from '@comfyorg/account-core/telemetry'
 import type { CaptureResult, PostHog } from 'posthog-js'
 import { afterEach, assert, beforeEach, describe, expect, it, vi } from 'vitest'
 import type { Ref } from 'vue'
@@ -792,6 +793,31 @@ describe('PostHogTelemetryProvider', () => {
       await vi.dynamicImportSettled()
 
       provider.trackWebSessionEvent(event)
+
+      expect(hoisted.mockCapture).toHaveBeenCalledWith(
+        event.name,
+        event.properties
+      )
+    })
+
+    it.for<SsoTelemetryEvent>([
+      {
+        name: 'app:sso_continue_clicked',
+        properties: { surface: 'cloud_signup', flow_id: 'flow-1' }
+      },
+      {
+        name: 'app:sso_workspace_landed',
+        properties: {
+          surface: 'cloud_login',
+          flow_id: 'flow-1',
+          landed_in_org_workspace: true
+        }
+      }
+    ])('captures the SSO event $name as is', async (event) => {
+      const provider = createProvider()
+      await vi.dynamicImportSettled()
+
+      provider.trackSsoEvent(event)
 
       expect(hoisted.mockCapture).toHaveBeenCalledWith(
         event.name,
