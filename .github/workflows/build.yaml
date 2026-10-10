@@ -1,0 +1,116 @@
+name: Build & Test Frontend
+
+on:
+  push:
+    branches: [ main, develop, 'fix/**' ]
+  pull_request:
+    branches: [ main, develop ]
+  workflow_dispatch:
+    inputs:
+      build_variant:
+        description: 'Build variant to build'
+        required: false
+        type: choice
+        default: 'all'
+        options:
+          - 'all'
+          - 'cloud'
+          - 'desktop'
+          - 'web'
+      skip_tests:
+        description: 'Skip tests and linting (faster build)'
+        required: false
+        type: boolean
+        default: false
+      upload_artifacts:
+        description: 'Upload build artifacts'
+        required: false
+        type: boolean
+        default: true
+
+concurrency:
+  group: build-${{ github.event_name }}-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    
+    strategy:
+      matrix:
+        node-version: [26.8.2]
+    
+    steps:
+    - uses: actions/checkout@v4
+    
+    - name: Setup pnpm
+      uses: pnpm/action-setup@v4
+      with:
+        version: 11.13.1
+    
+    - name: Use Node.js ${{ matrix.node-version }}
+      uses: actions/setup-node@v4
+      with:
+        node-version: ${{ matrix.node-version }}
+        cache: 'pnpm'
+    
+    - name: Install dependencies
+      run: pnpm install --frozen-lockfile
+    
+    - name: Type check
+      if: ${{ !inputs.skip_tests || github.event_name != 'workflow_dispatch' }}
+      run: pnpm typecheck
+    
+    - name: Lint
+      if: ${{ !inputs.skip_tests || github.event_name != 'workflow_dispatch' }}
+      run: pnpm lint
+    
+    - name: Unit tests
+      if: ${{ !inputs.skip_tests || github.event_name != 'workflow_dispatch' }}
+      run: pnpm test:unit
+    
+    - name: Build web (default)
+      if: ${{ inputs.build_variant == 'all' || inputs.build_variant == 'web' || github.event_name != 'workflow_dispatch' }}
+      run: pnpm build
+    
+    - name: Build cloud variant
+      if: ${{ inputs.build_variant == 'all' || inputs.build_variant == 'cloud' }}
+      run: pnpm build:cloud
+    
+    - name: Build desktop variant
+      if: ${{ inputs.build_variant == 'all' || inputs.build_variant == 'desktop' }}
+      run: pnpm build:desktop-dist
+    
+    - name: Upload build artifacts (web)
+      if: ${{ (inputs.build_variant == 'all' || inputs.build_variant == 'web' || github.event_name != 'workflow_dispatch') && (inputs.upload_artifacts == true || github.event_name != 'workflow_dispatch') }}
+      uses: actions/upload-artifact@v4
+      with:
+        name: dist-web
+        path: dist/
+        retention-days: 7
+    
+    - name: Upload build artifacts (cloud)
+      if: ${{ (inputs.build_variant == 'all' || inputs.build_variant == 'cloud') && (inputs.upload_artifacts == true || github.event_name != 'workflow_dispatch') }}
+      uses: actions/upload-artifact@v4
+      with:
+        name: dist-cloud
+        path: dist/
+        retention-days: 7
+    
+    - name: Upload build artifacts (desktop)
+      if: ${{ (inputs.build_variant == 'all' || inputs.build_variant == 'desktop') && (inputs.upload_artifacts == true || github.event_name != 'workflow_dispatch') }}
+      uses: actions/upload-artifact@v4
+      with:
+        name: dist-desktop
+        path: dist/
+        retention-days: 7
+    
+    - name: Print build info
+      if: success()
+      run: |
+        echo "✅ Build completed successfully!"
+        if [ "${{ inputs.build_variant }}" != "all" ] || [ "${{ github.event_name }}" == "workflow_dispatch" ]; then
+          echo "📦 Build variant: ${{ inputs.build_variant || 'all' }}"
+          echo "⏭️ Skip tests: ${{ inputs.skip_tests || false }}"
+          echo "📤 Upload artifacts: ${{ inputs.upload_artifacts != false }}"
+        fi
