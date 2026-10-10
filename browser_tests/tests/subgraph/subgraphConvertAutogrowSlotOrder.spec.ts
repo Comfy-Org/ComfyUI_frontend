@@ -141,12 +141,12 @@ test.describe(
     test('keeps every link on its input inside the subgraph', async ({
       comfyPage
     }) => {
-      test.fail()
-
       await comfyPage.nodeOps.selectNodes([AUTOGROW_THEN_MASK_NODE_TITLE])
       const subgraphNodeId =
         await comfyPage.subgraph.convertSelectionToSubgraph()
 
+      // Marked here, after setup, so only the link mapping is expected to fail.
+      test.fail()
       expect(await innerConnections(comfyPage, subgraphNodeId)).toEqual(
         EXPECTED_CONNECTIONS
       )

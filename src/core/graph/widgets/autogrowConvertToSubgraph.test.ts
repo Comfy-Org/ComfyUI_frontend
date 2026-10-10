@@ -120,6 +120,18 @@ describe('Convert to Subgraph with a grown autogrow group (FE-3325)', () => {
     return inner
   }
 
+  test('wires the grown group ahead of mask and strength', () => {
+    const { node } = buildGraph()
+    expect(node.inputs.map((input) => input.name)).toEqual([
+      'images.image0',
+      'images.image1',
+      'images.image2',
+      'images.image3',
+      'mask',
+      'strength'
+    ])
+  })
+
   test.fails('keeps every link on its input when the sources stay outside (boundary links)', () => {
     const { graph, node } = buildGraph()
     const inner = innerAutogrowNode(graph, new Set([node]))
