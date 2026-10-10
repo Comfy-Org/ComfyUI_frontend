@@ -40,6 +40,22 @@ export interface WorkshopRunAnalytics extends WorkshopModelAnalytics {
   workspace_id: string
 }
 
+export type HubSurface = 'models' | 'workflows' | 'apps'
+
+export type HubItemKind = 'model' | 'workflow' | 'app'
+
+/** Where a card sits, so featured placement can be told from organic demand. */
+export type HubItemSource =
+  | 'featured_banner'
+  | 'use_case_row'
+  | 'other_formats_row'
+  | 'unplaced_grid'
+  | 'category_row'
+  | 'app_row'
+  | 'results_grid'
+
+export type HubFilter = 'catalogue' | 'use_case' | 'category' | 'model' | 'sort'
+
 export type WorkshopCheckoutFailureStage = 'balance' | 'credential' | 'checkout'
 
 export type WorkshopCheckoutErrorCode =
@@ -160,12 +176,52 @@ export type WorkshopAnalyticsEvent =
       properties: WorkshopModelAnalytics & { output_kind: RunOutput['kind'] }
     }
   | {
-      name: 'try_in_cloud_clicked' | 'workflow_download_clicked'
+      name: 'workflow_download_clicked'
       properties: WorkshopModelAnalytics
     }
   | {
       name: 'tab_switched'
       properties: WorkshopModelAnalytics & { tab: WorkshopTabName }
+    }
+  | {
+      name: 'hub_search_performed'
+      properties: {
+        surface: HubSurface
+        query: string
+        query_length: number
+        results_count: number
+      }
+    }
+  | {
+      name: 'hub_filter_changed'
+      properties: {
+        surface: HubSurface
+        filter: HubFilter
+        value: string
+        previous_value: string
+      }
+    }
+  | {
+      name: 'hub_item_clicked'
+      properties: {
+        surface: HubSurface
+        kind: HubItemKind
+        slug: string
+        source: HubItemSource
+        position: number
+        row?: string
+        query?: string
+      }
+    }
+  | {
+      name: 'hub_row_viewed'
+      properties: {
+        surface: HubSurface
+        source: HubItemSource
+        row?: string
+        item_count: number
+        row_slugs: string[]
+      }
     }
   | {
       name: 'github_clicked'

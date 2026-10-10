@@ -6,7 +6,7 @@ import {
   mergePreservedQueryIntoQuery
 } from '@/platform/navigation/preservedQueryManager'
 import { PRESERVED_QUERY_NAMESPACES } from '@/platform/navigation/preservedQueryNamespaces'
-import { useDialogService } from '@/services/dialogService'
+import { useWorkspaceDialogs } from '@/platform/workspace/composables/useWorkspaceDialogs'
 
 const NAMESPACE = PRESERVED_QUERY_NAMESPACES.CREATE_WORKSPACE
 
@@ -23,7 +23,7 @@ const NAMESPACE = PRESERVED_QUERY_NAMESPACES.CREATE_WORKSPACE
 export function useCreateWorkspaceUrlLoader() {
   const route = useRoute()
   const router = useRouter()
-  const dialogService = useDialogService()
+  const { showTeamWorkspacesDialog } = useWorkspaceDialogs()
 
   /**
    * Opens the team workspaces dialog if `?create_workspace=1` is present.
@@ -56,7 +56,7 @@ export function useCreateWorkspaceUrlLoader() {
     clearPreservedQuery(NAMESPACE)
 
     try {
-      await dialogService.showTeamWorkspacesDialog()
+      await showTeamWorkspacesDialog()
     } catch (error) {
       console.error(
         '[useCreateWorkspaceUrlLoader] Failed to open create workspace dialog:',

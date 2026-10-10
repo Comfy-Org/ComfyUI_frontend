@@ -1787,18 +1787,10 @@
       "teamUsing": "团队使用",
       "using": "使用"
     },
-    "contact": {
-      "heading": "用 ComfyUI 创作了很酷的作品？<br><a href=\"https://docs.google.com/forms/d/1B6_RPQfhTyKvqHk9OO2bUn8z1Qgh6QIZsF3GNMiCXDw/preview\" target=\"_blank\" rel=\"noopener noreferrer\" class=\"text-primary-comfy-yellow underline\">提交</a>你的作品，展示在我们的网站和社交媒体上，让全球 ComfyUI 社区看到。",
-      "label": "联系"
-    },
     "detail": {
       "close": "关闭",
       "visitHub": "访问社区中心"
-    },
-    "heroSubtitle": "社区使用 ComfyUI 创作成果的一小部分展示。",
-    "heroTitleAfter": " 中构建、调整与创想",
-    "heroTitleBefore": "在 ",
-    "label": "画廊"
+    }
   },
   "geminiOmni": {
     "breadcrumb": {
@@ -1907,24 +1899,6 @@
     "banner": {
       "cta": "免费试用",
       "text": "Comfy Agent 现在可以在 ComfyUI 内部构建工作流。"
-    },
-    "cta": {
-      "heading": "Comfy 的全部内容，一处尽享。",
-      "primary": "打开 Comfy Cloud",
-      "secondary": "试用工作流"
-    },
-    "hero": {
-      "primary": "下载桌面版",
-      "secondary": "免费试用云端",
-      "title": "ComfyUI 全新内容",
-      "visualAlt": "Comfy"
-    },
-    "page": {
-      "description": "所有 ComfyUI 发布汇总：新模型、桌面版、云端、MCP、CLI 与核心引擎更新，以及逐一讲解的直播回放。",
-      "title": "发布：ComfyUI 的所有新内容"
-    },
-    "section": {
-      "title": "最新发布"
     }
   },
   "learning": {
@@ -2585,7 +2559,6 @@
     "comfyEnterprise": "Comfy 企业版",
     "comfyHub": "Comfy Workflows",
     "comfyLocal": "Comfy 桌面版",
-    "comfyWorkshop": "浏览模型",
     "community": "社区",
     "company": "公司",
     "contact": "联系我们",
@@ -2646,6 +2619,27 @@
     "upgrade": "升级",
     "upgradeToAddCredits": "升级以添加积分",
     "workshop": "Hub",
+    "hubModels": "模型",
+    "hubModelsDescription": "运行最新的 AI 模型",
+    "hubSeedream5Pro": "Seedream 5.0 Pro",
+    "hubSeedance25": "Seedance 2.5",
+    "hubNanoBanana2": "Nano Banana 2",
+    "hubGptImage2": "GPT Image 2",
+    "hubAllModels": "全部模型",
+    "hubWorkflows": "工作流",
+    "hubWorkflowsDescription": "针对任务的现成方案",
+    "hubImageToVideo": "图像转视频",
+    "hubVideoFromReferences": "参考生成视频",
+    "hubMotionTransfer": "运动迁移",
+    "hubEditSelectedRegion": "编辑选定区域",
+    "hubAllWorkflows": "全部工作流",
+    "hubApps": "应用",
+    "hubAppsDescription": "基于 Comfy 构建的完整工具",
+    "reshoot": "重拍",
+    "hubAllApps": "全部应用",
+    "featuredHubAlt": "Seedance 2.5 视频：动物们举着拼出 SEEDANCE 2.5 的气球穿过雨中街道",
+    "featuredHubCta": "立即试用",
+    "featuredHubCtaAria": "在 Hub 中试用 Seedance 2.5 参考生成视频",
     "workspaceSettings": "工作区设置",
     "workspaceSwitchError": "无法切换工作区。请检查网络连接后重试。",
     "workspaces": "工作区",
@@ -3277,6 +3271,7 @@
         "eduYearlyPrice": "$26.25",
         "eduYearlyTotal": "$315",
         "estimate": "约可生成 670 个 5 秒视频*",
+        "everythingInStandardPlus": "包含标准版的全部功能，另加：",
         "label": "创作者版",
         "price": "$35",
         "yearlyCredits": "88,800",
@@ -3308,6 +3303,7 @@
         "eduYearlyPrice": "$75",
         "eduYearlyTotal": "$900",
         "estimate": "约可生成 1,915 个 5 秒视频*",
+        "everythingInCreatorPlus": "包含创作者版的全部功能，另加：",
         "label": "专业版",
         "price": "$100",
         "yearlyCredits": "253,200",
@@ -3324,6 +3320,7 @@
         "estimate": "约可生成 380 个 5 秒视频*",
         "label": "标准版",
         "price": "$20",
+        "whatsIncluded": "包含内容：",
         "yearlyCredits": "50,400",
         "yearlyEstimate": "约可生成 4,560 个 5 秒视频*",
         "yearlyPrice": "$16",
@@ -3686,16 +3683,19 @@
     "badgeHow": "了解",
     "badgeWorks": "运行方式",
     "feature1": {
+      "cta": "下载 Desktop",
       "description": "在无限画布上连接节点，构建强大的 AI 管线。每个模型、参数和处理步骤都可见且可调整。",
       "title": "节点带来的可控性"
     },
     "feature2": {
-      "description": "如果您是 ComfyUI 新手，可以从 App 模式开始——这是工作流的简化视图。您随时可以切换回节点图视图以深入了解。",
-      "title": "App 模式，工作流的简化视图"
+      "cta": "探索 Comfy Agent",
+      "description": "描述你想要的效果，Comfy Agent 会为你构建并运行工作流。",
+      "title": "Comfy Agent"
     },
     "feature3": {
-      "description": "浏览和混搭数千个社区共享的工作流。从经过验证的模板开始，按需自定义。",
-      "title": "Comfy Workflows 上的社区工作流"
+      "cta": "探索 Comfy API",
+      "description": "通过一个 API，在你自己的应用中运行 Comfy 工作流和模型。",
+      "title": "Comfy API"
     },
     "subtitle1": "在画布上连接模型、处理步骤和输出，每个决策都可见，每个步骤都可检查。",
     "subtitle2": "从工作流模板开始，或从零构建。"
@@ -4392,6 +4392,7 @@
       "comfyApp": "Comfy 应用",
       "customNodes": "需要自定义节点",
       "download": "下载工作流 JSON",
+      "downloadShort": "下载",
       "graph": "工作流",
       "graphNote": "此部署背后的节点图在这里为只读。可在 comfy.org 打开或下载 JSON 在 ComfyUI 中编辑。",
       "inputs": "输入",
@@ -4458,7 +4459,6 @@
       "connectionLost": "无法查看运行状态。请重新连接以获取最新状态。",
       "lostContact": "此页面与运行失去了联系。它可能仍在 Cloud 上运行并消耗积分。请重新连接以查看最新状态。",
       "browserUnavailable": "暂不支持从此页面运行工作流。",
-      "tryCloud": "在 Cloud 中体验",
       "explore": "探索更多可能"
     },
     "catalogue": {

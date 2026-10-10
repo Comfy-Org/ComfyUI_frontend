@@ -17,12 +17,14 @@ import { useCloudWebSessionStore } from '@/platform/auth/session/cloudWebSession
 import type { ComfyWorkflow } from '@/platform/workflow/management/stores/workflowStore'
 import { useWorkflowStore } from '@/platform/workflow/management/stores/workflowStore'
 import { api } from '@/scripts/api'
+import { useAuthDialogs } from '@/composables/auth/useAuthDialogs'
 import { useDialogService } from '@/services/dialogService'
 import { useAuthStore } from '@/stores/authStore'
 
 import UserPanel from './UserPanel.vue'
 
 vi.mock(import('@/composables/auth/useCurrentUser'))
+vi.mock(import('@/composables/auth/useAuthDialogs'))
 vi.mock(import('@/services/dialogService'))
 vi.mock(import('@/platform/distribution/types'), () => ({
   DISTRIBUTION: 'cloud' as const,
@@ -85,7 +87,7 @@ describe('UserPanel update password', () => {
       screen.getByRole('button', { name: 'Update Password' })
     )
 
-    expect(useDialogService().showUpdatePasswordDialog).toHaveBeenCalledOnce()
+    expect(useAuthDialogs().showUpdatePasswordDialog).toHaveBeenCalledOnce()
     expect(useDialogService().confirm).not.toHaveBeenCalled()
     expect(location.assign).not.toHaveBeenCalled()
   })
@@ -105,7 +107,7 @@ describe('UserPanel update password', () => {
         message: enMessages.auth.reauthRequired.message
       })
     )
-    expect(useDialogService().showUpdatePasswordDialog).not.toHaveBeenCalled()
+    expect(useAuthDialogs().showUpdatePasswordDialog).not.toHaveBeenCalled()
     expect(location.assign).toHaveBeenCalledWith(
       '/cloud/login?switchAccount=true&previousFullPath=%252F%253Ftab%253Dassets'
     )
@@ -120,7 +122,7 @@ describe('UserPanel update password', () => {
       screen.getByRole('button', { name: 'Update Password' })
     )
 
-    expect(useDialogService().showUpdatePasswordDialog).not.toHaveBeenCalled()
+    expect(useAuthDialogs().showUpdatePasswordDialog).not.toHaveBeenCalled()
     expect(location.assign).not.toHaveBeenCalled()
   })
 })

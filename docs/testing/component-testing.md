@@ -8,7 +8,7 @@ This guide covers patterns and examples for testing Vue components in the ComfyU
 
 1. [Basic Component Testing](#basic-component-testing)
 2. [PrimeVue Components Testing](#primevue-components-testing)
-3. [Tooltip Directives](#tooltip-directives)
+3. [Tooltips](#tooltips)
 4. [Component Events Testing](#component-events-testing)
 5. [User Interaction Testing](#user-interaction-testing)
 6. [Asynchronous Component Testing](#asynchronous-component-testing)
@@ -97,58 +97,14 @@ describe('ColorCustomizationSelector', () => {
 })
 ```
 
-## Tooltip Directives
+## Tooltips
 
-Testing components with tooltip directives:
+`vitest.setup.ts` gives every rendered tree the app's tooltip provider with no
+open delay. Hover or tab to the trigger and query the content by role:
 
 ```typescript
-// Example from: src/components/sidebar/SidebarIcon.spec.ts
-import { mount } from '@vue/test-utils'
-import PrimeVue from 'primevue/config'
-import Tooltip from 'primevue/tooltip'
-
-describe('SidebarIcon with tooltip', () => {
-  it('shows tooltip on hover', async () => {
-    const tooltipShowDelay = 300
-    const tooltipText = 'Settings'
-
-    const wrapper = mount(SidebarIcon, {
-      global: {
-        plugins: [PrimeVue],
-        directives: { tooltip: Tooltip }
-      },
-      props: {
-        icon: 'pi pi-cog',
-        selected: false,
-        tooltip: tooltipText
-      }
-    })
-
-    // Hover over the icon
-    await wrapper.trigger('mouseenter')
-    await new Promise((resolve) => setTimeout(resolve, tooltipShowDelay + 16))
-
-    const tooltipElAfterHover = document.querySelector('[role="tooltip"]')
-    expect(tooltipElAfterHover).not.toBeNull()
-  })
-
-  it('sets aria-label attribute when tooltip is provided', () => {
-    const tooltipText = 'Settings'
-    const wrapper = mount(SidebarIcon, {
-      global: {
-        plugins: [PrimeVue],
-        directives: { tooltip: Tooltip }
-      },
-      props: {
-        icon: 'pi pi-cog',
-        selected: false,
-        tooltip: tooltipText
-      }
-    })
-
-    expect(wrapper.attributes('aria-label')).toEqual(tooltipText)
-  })
-})
+await user.hover(screen.getByRole('button', { name: 'Delete' }))
+expect(await screen.findByRole('tooltip')).toHaveTextContent('Delete the node')
 ```
 
 ## Component Events Testing
