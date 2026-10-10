@@ -95,9 +95,11 @@ function assetsQueryInternal(
       const newItems: AssetItem[] = []
       let headCursor: string | undefined
       const seenHeadCursors = new Set<string | undefined>()
-      for (;;) {
-        if (seenHeadCursors.size === MAX_HEAD_PAGES) break
-        if (seenHeadCursors.has(headCursor)) break
+      let reachedKnownId = false
+      while (
+        seenHeadCursors.size < MAX_HEAD_PAGES &&
+        !seenHeadCursors.has(headCursor)
+      ) {
         seenHeadCursors.add(headCursor)
 
         const query = headCursor
@@ -107,7 +109,7 @@ function assetsQueryInternal(
         if (!assetResponse) return
 
         const { assets, has_more, next_cursor } = assetResponse
-        const reachedKnownId = assets.some((asset) => {
+        reachedKnownId = assets.some((asset) => {
           if (knownIds.has(asset.id)) return true
           if (!seenIds.has(asset.id)) {
             seenIds.add(asset.id)
@@ -115,15 +117,11 @@ function assetsQueryInternal(
           }
           return false
         })
-        if (reachedKnownId) {
-          items.value.splice(0, 0, ...newItems)
-          if (pageState.value === 'failed') pageState.value = 'ready'
-          return
-        }
-        if (!has_more || next_cursor === undefined) break
+        if (reachedKnownId || !has_more || next_cursor === undefined) break
         headCursor = next_cursor
       }
-      headDisconnected = true
+      items.value.splice(0, 0, ...newItems)
+      headDisconnected = !reachedKnownId
     })
     // The head never reached a cached item, so the cache no longer matches
     // the server (ids changed, or too many new items): rebuild it.
@@ -200,6 +198,7 @@ function assetsQueryInternal(
       markFailed(false)
       return
     }
+    if (pageState.value === 'failed') pageState.value = 'ready'
     return parseResult.data
   }
 
