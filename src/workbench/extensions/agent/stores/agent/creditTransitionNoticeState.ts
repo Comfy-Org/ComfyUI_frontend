@@ -26,13 +26,9 @@ function reduceScopedRead(
   identity: string,
   scopedHasFunds: boolean
 ): CreditTransitionNoticeState {
-  if (state === null || state.identity !== identity)
+  if (state === null || state.identity !== identity || scopedHasFunds)
     return { identity, scopedHasFunds, phase: 'idle' }
-  if (state.phase === 'dismissed')
-    return scopedHasFunds
-      ? { identity, scopedHasFunds, phase: 'idle' }
-      : { ...state, scopedHasFunds }
-  if (scopedHasFunds) return { ...state, scopedHasFunds, phase: 'idle' }
+  if (state.phase === 'dismissed') return { ...state, scopedHasFunds }
   const phase = state.scopedHasFunds ? 'armed' : state.phase
   return { ...state, scopedHasFunds, phase }
 }
