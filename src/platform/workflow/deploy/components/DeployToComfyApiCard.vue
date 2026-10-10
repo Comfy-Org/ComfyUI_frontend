@@ -102,12 +102,9 @@
             variant="inverted"
             size="lg"
             class="w-full @xl:w-auto"
-            as="a"
-            :href="platformUrl"
-            target="_blank"
-            rel="noopener noreferrer"
             data-testid="deploy-to-comfy-api-platform"
-            @click="emit('done')"
+            :disabled="pending"
+            @click="deployOnPlatform"
           >
             {{ $t('deployToComfyApi.deployOnPlatform') }}
           </Button>
@@ -125,9 +122,10 @@ import type { ComponentProps } from 'vue-component-type-helpers'
 
 import Video from '@/components/common/Video.vue'
 import Button from '@/components/ui/button/Button.vue'
+import { useErrorHandling } from '@/composables/useErrorHandling'
 import { useExternalLink } from '@/composables/useExternalLink'
-import { getComfyPlatformBaseUrl } from '@/config/comfyApi'
 import { useAgentHandoff } from '@/platform/workflow/deploy/composables/useAgentHandoff'
+import { usePlatformBuildHandoff } from '@/platform/workflow/deploy/composables/usePlatformBuildHandoff'
 
 const { videoSources = [], posterSrc = '' } = defineProps<{
   titleId?: string
@@ -145,13 +143,15 @@ defineOptions({ inheritAttrs: false })
 const { t } = useI18n()
 const { buildDocsUrl } = useExternalLink()
 const { captureInputs, copyBrief } = useAgentHandoff()
+const { open: openPlatformBuild } = usePlatformBuildHandoff()
+const { toastErrorHandler } = useErrorHandling()
 const [DefineDocsLink, ReuseDocsLink] = createReusableTemplate()
+const pending = ref(false)
 const isCopying = ref(false)
 const copied = ref(false)
 
 const docsUrl = buildDocsUrl('/development/overview', { includeLocale: true })
 const inputs = captureInputs()
-const platformUrl = getComfyPlatformBaseUrl()
 
 const summary = computed(() =>
   [
@@ -169,6 +169,17 @@ async function copyHandoff() {
     copied.value = await copyBrief()
   } finally {
     isCopying.value = false
+  }
+}
+
+async function deployOnPlatform() {
+  pending.value = true
+  try {
+    if (await openPlatformBuild()) emit('done')
+  } catch (error) {
+    toastErrorHandler(error)
+  } finally {
+    pending.value = false
   }
 }
 </script>
