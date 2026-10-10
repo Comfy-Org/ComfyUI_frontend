@@ -1,36 +1,21 @@
 <script setup lang="ts">
 import { ChevronDown } from '@lucide/vue'
 
-import { cn } from '@comfyorg/tailwind-utils'
-
-const { label, disabled = false } = defineProps<{
-  label: string
-  disabled?: boolean
-}>()
+const { label } = defineProps<{ label: string }>()
 </script>
 
 <template>
-  <details
-    :class="
-      cn(
-        'group rounded-2xl border border-transparency-white-t8',
-        disabled && 'pointer-events-none opacity-40'
-      )
-    "
-    :aria-disabled="disabled"
-  >
+  <details class="group rounded-2xl border border-transparency-white-t8">
     <summary
-      :tabindex="disabled ? -1 : undefined"
-      class="flex cursor-pointer list-none items-center justify-between px-4 py-3 text-xs font-bold tracking-wider text-primary-comfy-canvas uppercase select-none hover:text-primary-warm-white [&::-webkit-details-marker]:hidden"
-      @click="disabled && $event.preventDefault()"
+      class="flex h-12 cursor-pointer list-none items-center justify-between rounded-2xl px-3 text-sm font-semibold text-primary-warm-white select-none hover:bg-transparency-white-t4 [&::-webkit-details-marker]:hidden"
     >
       {{ label }}
       <ChevronDown
-        class="size-4 transition-transform group-open:rotate-180"
+        class="size-4 text-primary-warm-gray transition-transform group-open:rotate-180"
         aria-hidden="true"
       />
     </summary>
-    <div class="px-4 pb-4">
+    <div class="px-3 pb-3">
       <slot />
     </div>
   </details>

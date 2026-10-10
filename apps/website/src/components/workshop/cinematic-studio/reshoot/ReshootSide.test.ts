@@ -1,6 +1,6 @@
 import { render, screen } from '@testing-library/vue'
 import userEvent from '@testing-library/user-event'
-import { describe, expect, it } from 'vitest'
+import { describe, expect, it, vi } from 'vitest'
 import { h, ref } from 'vue'
 
 import {
@@ -12,6 +12,11 @@ import {
 import { translationsFor } from '@/i18n/translations'
 import ReshootSide from './ReshootSide.vue'
 
+vi.mock(import('@/lib/workshop/cinematic-studio/reshoot-clip'), () => ({
+  clipSecondsOf: vi.fn(),
+  fileSecondsOf: vi.fn(async () => 10)
+}))
+
 const { t: rc } = translationsFor('en')
 
 describe('ReshootSide', () => {
@@ -22,6 +27,7 @@ describe('ReshootSide', () => {
     camera: DEFAULT_CAMERA,
     keys: [],
     depth: 'ready' as const,
+    step: 'camera' as const,
     gate: 'ready' as const,
     canGenerate: true,
     aspect: RESHOOT_ASPECTS[0],
@@ -31,6 +37,61 @@ describe('ReshootSide', () => {
     motion: RESHOOT_MOTIONS[0],
     prompt: ''
   }
+
+  it('replaces the clip with a video chosen in its upload zone', async () => {
+    const upload = ref<File>()
+    render({
+      setup: () => () =>
+        h(ReshootSide, {
+          ...props,
+          size: RESHOOT_SIZES[0],
+          upload: upload.value,
+          'onUpdate:upload': (next: File | undefined) => {
+            upload.value = next
+          }
+        })
+    })
+    const chosen = new File(['clip'], 'mine.mp4', { type: 'video/mp4' })
+
+    await userEvent.upload(
+      screen.getByLabelText(new RegExp(rc('reshoot.clip.upload'))),
+      chosen
+    )
+
+    await vi.waitFor(() => expect(upload.value?.name).toBe(chosen.name))
+  })
+
+  function renderWithExample(isExample: boolean) {
+    const example = vi.fn()
+    render({
+      setup: () => () =>
+        h(ReshootSide, {
+          ...props,
+          isExample,
+          size: RESHOOT_SIZES[0],
+          onExample: example
+        })
+    })
+    return example
+  }
+
+  it('offers no way back to the example while the example is loaded', () => {
+    renderWithExample(true)
+
+    expect(
+      screen.queryByRole('button', { name: rc('reshoot.clip.useExample') })
+    ).toBeNull()
+  })
+
+  it('goes back to the example from a clip of your own', async () => {
+    const example = renderWithExample(false)
+
+    await userEvent.click(
+      screen.getByRole('button', { name: rc('reshoot.clip.useExample') })
+    )
+
+    expect(example).toHaveBeenCalledOnce()
+  })
 
   it('picks the output size from a menu that describes each size', async () => {
     const size = ref<(typeof RESHOOT_SIZES)[number]>(RESHOOT_SIZES[0])

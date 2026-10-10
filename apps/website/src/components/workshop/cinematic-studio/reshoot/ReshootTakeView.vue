@@ -14,19 +14,15 @@ const {
   clip,
   view = 'result',
   sound = 'generated',
-  cancellable = false,
   locale = 'en'
 } = defineProps<{
   take: ReshootTake
   clip: string
   view?: ReshootView
   sound?: ReshootSound
-  cancellable?: boolean
   locale?: Locale
 }>()
 const { t } = translationsFor(locale)
-
-const emit = defineEmits<{ cancel: [] }>()
 
 const now = useTimestamp({ interval: 1000 })
 const elapsed = computed(() => Math.max(0, now.value - take.startedAt))
@@ -49,7 +45,7 @@ const shown = computed(() => {
         loop
         controls
         playsinline
-        class="max-h-full max-w-full"
+        class="size-full object-contain"
       />
       <p
         v-if="view === 'warp' && !take.warpUrl"
@@ -86,14 +82,6 @@ const shown = computed(() => {
           )
         }}
       </p>
-      <button
-        v-if="cancellable"
-        type="button"
-        class="h-8 rounded-full px-4 text-xs text-primary-warm-white ring-1 ring-transparency-white-t20 ring-inset hover:bg-transparency-white-t8"
-        @click="emit('cancel')"
-      >
-        {{ t('reshoot.cancel') }}
-      </button>
     </div>
     <div
       v-else-if="take.status === 'failed'"

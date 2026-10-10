@@ -1769,7 +1769,7 @@ describe('CinematicStudio', () => {
       )
 
       expect(
-        screen.getByRole('complementary', { name: 'Your clip' })
+        screen.getByRole('complementary', { name: 'Re-shoot settings' })
       ).toBeInTheDocument()
       expect(panel()).toBeNull()
       expect(window.location.pathname).toBe('/hub/apps/reshoot/')

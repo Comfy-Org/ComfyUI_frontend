@@ -10,25 +10,27 @@ const { t } = translationsFor(locale)
 </script>
 
 <template>
-  <header class="flex flex-col gap-3" data-testid="reshoot-hero">
-    <div class="flex flex-wrap items-center gap-3">
-      <h1
-        class="max-w-4xl text-3xl font-light text-primary-comfy-canvas lg:text-5xl"
-      >
-        {{ t('reshoot.title') }}
-      </h1>
+  <header data-testid="reshoot-hero">
+    <h1 class="mb-3 text-2xl font-semibold text-primary-warm-white lg:text-3xl">
+      {{ t('reshoot.title') }}
+    </h1>
+    <div
+      class="flex flex-col items-start gap-3 sm:flex-row sm:items-center sm:justify-between"
+    >
+      <div class="flex flex-col gap-1">
+        <p class="text-lg text-primary-warm-gray">
+          {{ t('reshoot.pick.lead') }}
+        </p>
+        <p class="text-xs text-primary-warm-gray/80">
+          {{ t('reshoot.credit') }}
+        </p>
+      </div>
       <AppRepoLink
         :repo="workshopAppRepo('reshoot')"
         :app-slug="RESHOOT_APP_SLUG"
         :locale
-        class="sm:ml-auto"
+        class="shrink-0"
       />
     </div>
-    <p class="text-lg text-primary-warm-gray">
-      {{ t('reshoot.pick.lead') }}
-    </p>
-    <p class="text-xs text-primary-warm-gray/80">
-      {{ t('reshoot.credit') }}
-    </p>
   </header>
 </template>
