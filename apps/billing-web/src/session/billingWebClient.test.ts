@@ -157,16 +157,15 @@ function stubBillingRoutes(operation: Record<string, unknown>) {
       ...operation
     }
   }
-  vi.stubGlobal(
-    'fetch',
-    vi.fn(async (url: string) => {
-      const body = answers[new URL(url).pathname]
-      return new Response(JSON.stringify(body ?? {}), {
-        status: body === undefined ? 404 : 200,
-        headers: { 'Content-Type': 'application/json' }
-      })
+  vi.mocked(fetch).mockImplementation(async (input: RequestInfo | URL) => {
+    const url = String(input)
+
+    const body = answers[new URL(url).pathname]
+    return new Response(JSON.stringify(body ?? {}), {
+      status: body === undefined ? 404 : 200,
+      headers: { 'Content-Type': 'application/json' }
     })
-  )
+  })
 }
 
 function authenticatedSession(): BillingSession {
@@ -251,6 +250,36 @@ describe('SDK operation telemetry', () => {
       ])
     }
   )
+
+  it('reports a retryable decline inside an issued operation, as the SDK on billing web', async () => {
+    stubBillingRoutes({
+      status: 'pending',
+      authentication_state: 'failed_retryable',
+      decline_reason: 'card_declined'
+    })
+    const client = createBillingWebClient(authenticatedSession())
+    onTestFinished(() => disposeBillingClient(client))
+
+    await client.lifecycle.begin('subscription', issueOperation)
+
+    await vi.waitFor(() =>
+      expect(datadogRum.addAction).toHaveBeenCalledWith(
+        'billing.checkout.challenge_failed',
+        {
+          operation: 'checkout',
+          stage: 'challenge_failed',
+          outcome: 'pending',
+          operation_type: 'subscription',
+          billing_op_id: 'op_1',
+          presentation: 'hosted',
+          resumed: false,
+          decline_reason: 'card_declined',
+          billing_client: 'sdk',
+          billing_surface: 'billing_web'
+        }
+      )
+    )
+  })
 
   it.for<{
     name: string

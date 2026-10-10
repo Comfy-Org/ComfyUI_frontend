@@ -1,12 +1,12 @@
 import type { ModelRef } from 'vue'
 import { computed } from 'vue'
 
-import type { AspectRatio } from '../../../lib/workshop/cinematic-studio/catalog'
-import { ASPECT_RATIOS } from '../../../lib/workshop/cinematic-studio/catalog'
-import type { Locale } from '../../../i18n/translations'
-import { translationsFor } from '../../../i18n/translations'
-import type { CinematicVideoCapabilities } from '../../../lib/workshop/cinematic-studio/video'
-import { resolutionLabel } from '../../../lib/workshop/cinematic-studio/video'
+import type { AspectRatio } from '@/lib/workshop/cinematic-studio/catalog'
+import { ASPECT_RATIOS } from '@/lib/workshop/cinematic-studio/catalog'
+import type { Locale } from '@/i18n/translations'
+import { translationsFor } from '@/i18n/translations'
+import type { CinematicVideoCapabilities } from '@/lib/workshop/cinematic-studio/video'
+import { resolutionLabel } from '@/lib/workshop/cinematic-studio/video'
 
 /** Menu options and string-valued models for a video shot's length, resolution and frame. */
 export function useVideoMenus(

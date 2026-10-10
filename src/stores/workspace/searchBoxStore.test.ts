@@ -77,13 +77,13 @@ describe('useSearchBoxStore', () => {
       )
       await nextTick()
 
-      expect(vi.mocked(store.visible)).toBe(false)
+      expect(store.visible).toBe(false)
 
       store.toggleVisible()
 
-      expect(vi.mocked(store.visible)).toBe(false) // Doesn't become visible in legacy mode.
+      expect(store.visible).toBe(false) // Doesn't become visible in legacy mode.
 
-      expect(vi.mocked(mockPopover.showSearchBox)).toHaveBeenCalledWith(
+      expect(mockPopover.showSearchBox).toHaveBeenCalledWith(
         expect.objectContaining({
           clientX: 100,
           clientY: 200,
@@ -117,7 +117,7 @@ describe('useSearchBoxStore', () => {
 
       store.toggleVisible()
 
-      expect(vi.mocked(mockPopover.showSearchBox)).toHaveBeenCalled()
+      expect(mockPopover.showSearchBox).toHaveBeenCalled()
     })
 
     it('should disable legacy search when popover is cleared', () => {
@@ -128,14 +128,7 @@ describe('useSearchBoxStore', () => {
 
       store.toggleVisible()
 
-      expect(vi.mocked(mockPopover.showSearchBox)).not.toHaveBeenCalled()
-    })
-  })
-
-  describe('when user first loads the application', () => {
-    it('should have search box hidden by default', () => {
-      const store = useSearchBoxStore()
-      expect(store.visible).toBe(false)
+      expect(mockPopover.showSearchBox).not.toHaveBeenCalled()
     })
   })
 })

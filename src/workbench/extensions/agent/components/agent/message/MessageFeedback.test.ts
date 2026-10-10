@@ -1,16 +1,13 @@
 import userEvent from '@testing-library/user-event'
 import { render, screen, waitFor, within } from '@testing-library/vue'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
-import { ref } from 'vue'
 
 import { i18n } from '@/i18n'
-import { useToastStore } from '@/platform/updates/common/toastStore'
+import { useToast } from '@/components/ui/toast/toastStore'
 import { api } from '@/scripts/api'
 
 import type { ReplyAsset } from '../../../utils/replyAssets'
 import MessageFeedback from './MessageFeedback.vue'
-
-const clipboard = vi.hoisted(() => ({ copy: vi.fn() }))
 
 vi.mock(import('@/platform/telemetry/reportError'))
 
@@ -19,15 +16,6 @@ vi.mock(import('@/scripts/api'))
 vi.mock(import('@/platform/assets/utils/assetPreviewUtil'), () => ({
   isAssetPreviewSupported: () => false,
   findOutputAsset: async () => undefined
-}))
-
-vi.mock<unknown>(import('@vueuse/core'), () => ({
-  useClipboard: () => ({
-    copy: clipboard.copy,
-    copied: ref(false),
-    isSupported: ref(true),
-    text: ref('')
-  })
 }))
 
 const markdownSource = '# Title\n\n**bold** move'
@@ -52,7 +40,6 @@ describe('MessageFeedback', () => {
         disconnect() {}
       }
     )
-    clipboard.copy.mockClear()
     vi.mocked(api.fetchApi).mockReset()
   })
 
@@ -94,9 +81,7 @@ describe('MessageFeedback', () => {
 
       await user.hover(action)
 
-      expect(
-        await screen.findByRole('tooltip', { hidden: true })
-      ).toHaveTextContent(label)
+      expect(await screen.findByRole('tooltip')).toHaveTextContent(label)
     }
   )
 
@@ -105,8 +90,19 @@ describe('MessageFeedback', () => {
 
     await user.click(screen.getByRole('button', { name: 'Copy' }))
 
-    expect(clipboard.copy).toHaveBeenCalledWith('Title\nbold move')
+    expect(await navigator.clipboard.readText()).toBe('Title\nbold move')
     expect(screen.queryByRole('menu')).not.toBeInTheDocument()
+  })
+
+  it('keeps the Copy tooltip open to confirm the copy after a click', async () => {
+    const { user } = renderFeedback()
+    const copy = screen.getByRole('button', { name: 'Copy' })
+
+    await user.hover(copy)
+    await screen.findByRole('tooltip')
+    await user.click(copy)
+
+    expect(await screen.findByRole('tooltip')).toHaveTextContent('Copied')
   })
 
   it('the chevron menu exposes only Copy as markdown and copies the raw source', async () => {
@@ -121,7 +117,7 @@ describe('MessageFeedback', () => {
 
     await user.click(menuItems[0])
 
-    expect(clipboard.copy).toHaveBeenCalledWith(markdownSource)
+    expect(await navigator.clipboard.readText()).toBe(markdownSource)
     expect(screen.queryByRole('menu')).not.toBeInTheDocument()
   })
 
@@ -174,12 +170,9 @@ describe('MessageFeedback', () => {
     await user.click(download)
 
     await waitFor(() =>
-      expect(useToastStore().add).toHaveBeenCalledWith(
-        expect.objectContaining({
-          severity: 'error',
-          detail: '1 download failed'
-        })
-      )
+      expect(useToast().error).toHaveBeenCalledWith('Error', {
+        description: '1 download failed'
+      })
     )
     await waitFor(() => expect(download).toBeEnabled())
 
@@ -199,6 +192,6 @@ describe('MessageFeedback', () => {
     await user.keyboard('{Escape}')
 
     expect(screen.queryByRole('menu')).not.toBeInTheDocument()
-    expect(clipboard.copy).not.toHaveBeenCalled()
+    expect(await navigator.clipboard.readText()).toBe('')
   })
 })

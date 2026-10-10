@@ -52,10 +52,6 @@ beforeEach(() => {
 })
 
 describe('resolveModelNodeFromAsset', () => {
-  beforeEach(() => {
-    vi.spyOn(console, 'error').mockImplementation(() => {})
-  })
-
   describe('valid assets', () => {
     it('resolves the provider for the asset category and the filename', () => {
       mockProvider(createMockNodeProvider())

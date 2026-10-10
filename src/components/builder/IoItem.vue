@@ -1,10 +1,14 @@
 <script setup lang="ts">
+import Tooltip from '@/components/ui/tooltip/Tooltip.vue'
+import TooltipContent from '@/components/ui/tooltip/TooltipContent.vue'
+import TooltipTrigger from '@/components/ui/tooltip/TooltipTrigger.vue'
+
 import { computed, ref } from 'vue'
 import { useI18n } from 'vue-i18n'
 
 import EditableText from '@/components/common/EditableText.vue'
-import Popover from '@/components/ui/Popover.vue'
 import Button from '@/components/ui/button/Button.vue'
+import Menu from '@/components/ui/menu/Menu.vue'
 import { cn } from '@comfyorg/tailwind-utils'
 
 const { t } = useI18n()
@@ -38,7 +42,7 @@ const entries = computed(() => {
   if (canRename)
     items.push({
       label: t('g.rename'),
-      command: () => setTimeout(() => (isEditing.value = true)),
+      command: () => (isEditing.value = true),
       icon: 'icon-[lucide--pencil]'
     })
   if (remove)
@@ -74,22 +78,32 @@ const entries = computed(() => {
         @edit="onEditComplete"
         @cancel="isEditing = false"
       />
-      <div
-        v-tooltip.left="{ value: subTitleTooltip, showDelay: 300 }"
-        class="drag-handle truncate text-xs text-muted-foreground"
-        data-testid="builder-io-item-subtitle"
-        @mouseenter="
-          subTitleTooltip = isTruncated($event) ? (subTitle ?? null) : null
-        "
-        v-text="subTitle"
-      />
+      <Tooltip :disabled="!subTitleTooltip">
+        <TooltipTrigger as-child>
+          <div
+            class="drag-handle truncate text-xs text-muted-foreground"
+            data-testid="builder-io-item-subtitle"
+            @mouseenter="
+              subTitleTooltip = isTruncated($event) ? (subTitle ?? null) : null
+            "
+            v-text="subTitle"
+          />
+        </TooltipTrigger>
+        <TooltipContent side="left">{{ subTitleTooltip }}</TooltipContent>
+      </Tooltip>
     </div>
-    <Popover :entries>
-      <template #button>
-        <Button variant="muted-textonly" data-testid="widget-actions-menu">
-          <i class="icon-[lucide--ellipsis]" />
-        </Button>
+    <Menu
+      :items="entries"
+      @close-auto-focus="isEditing && $event.preventDefault()"
+    >
+      <template #trigger>
+        <Button
+          variant="muted-textonly"
+          data-testid="widget-actions-menu"
+          icon="icon-[lucide--ellipsis]"
+          :aria-label="$t('g.more')"
+        />
       </template>
-    </Popover>
+    </Menu>
   </div>
 </template>

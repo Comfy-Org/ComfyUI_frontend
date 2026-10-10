@@ -20,11 +20,14 @@
             )
           "
         />
-        <Suspense @resolve="comfyRunButtonResolved">
-          <ComfyRunButton v-coachmark="FIRST_RUN_COACH_IDS.runButton" />
-        </Suspense>
+        <div v-coachmark="FIRST_RUN_COACH_IDS.runButton" class="inline-flex">
+          <Suspense @resolve="comfyRunButtonResolved">
+            <ComfyRunButton />
+          </Suspense>
+        </div>
         <Button
-          v-tooltip.bottom="cancelJobTooltipConfig"
+          :tooltip="t('menu.interrupt')"
+          tooltip-side="bottom"
           :variant="isExecutionIdle ? 'secondary' : 'destructive'"
           size="icon"
           :disabled="isExecutionIdle"
@@ -34,7 +37,8 @@
           <i class="icon-[lucide--x] size-4" />
         </Button>
         <Button
-          v-tooltip.bottom="queueHistoryTooltipConfig"
+          :tooltip="queueToggleLabel"
+          tooltip-side="bottom"
           variant="secondary"
           size="md"
           :aria-pressed="
@@ -56,13 +60,7 @@
             variant="dot"
             class="pointer-events-none absolute -top-0.5 -right-0.5 animate-pulse"
           />
-          <span class="sr-only">
-            {{
-              isQueuePanelV2Enabled
-                ? t('sideToolbar.queueProgressOverlay.viewJobHistory')
-                : t('sideToolbar.queueProgressOverlay.expandCollapsedQueue')
-            }}
-          </span>
+          <span class="sr-only">{{ queueToggleLabel }}</span>
         </Button>
         <ContextMenu ref="queueContextMenu" :model="queueContextMenuItems" />
       </div>
@@ -89,8 +87,6 @@ import {
 } from '@vueuse/core'
 import { clamp } from 'es-toolkit/compat'
 import { storeToRefs } from 'pinia'
-import ContextMenu from 'primevue/contextmenu'
-import type { MenuItem } from 'primevue/menuitem'
 import { computed, nextTick, ref, watch } from 'vue'
 import { useI18n } from 'vue-i18n'
 
@@ -98,8 +94,9 @@ import PartnerNodesRunCaption from '@/components/actionbar/PartnerNodesRunCaptio
 import StatusBadge from '@/components/common/StatusBadge.vue'
 import QueueInlineProgress from '@/components/queue/QueueInlineProgress.vue'
 import Button from '@/components/ui/button/Button.vue'
+import ContextMenu from '@/components/ui/menu/ContextMenu.vue'
+import type { MenuItem } from '@/components/ui/menu/types'
 import { useQueueFeatureFlags } from '@/composables/queue/useQueueFeatureFlags'
-import { buildTooltipConfig } from '@/composables/useTooltipConfig'
 import FreeTierQuota from '@/platform/cloud/subscription/components/FreeTierQuota.vue'
 import { useSettingStore } from '@/platform/settings/settingStore'
 import { useTelemetry } from '@/platform/telemetry'
@@ -359,16 +356,11 @@ watch(isDragging, (dragging) => {
   }
 })
 
-const cancelJobTooltipConfig = computed(() =>
-  buildTooltipConfig(t('menu.interrupt'))
-)
-const queueHistoryTooltipConfig = computed(() =>
-  buildTooltipConfig(
-    t(
-      isQueuePanelV2Enabled.value
-        ? 'sideToolbar.queueProgressOverlay.viewJobHistory'
-        : 'sideToolbar.queueProgressOverlay.expandCollapsedQueue'
-    )
+const queueToggleLabel = computed(() =>
+  t(
+    isQueuePanelV2Enabled.value
+      ? 'sideToolbar.queueProgressOverlay.viewJobHistory'
+      : 'sideToolbar.queueProgressOverlay.expandCollapsedQueue'
   )
 )
 const activeJobsLabel = computed(() => {

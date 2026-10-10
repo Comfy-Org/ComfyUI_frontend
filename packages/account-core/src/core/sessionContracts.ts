@@ -38,9 +38,11 @@ export type SessionErrorCode =
   | 'ACCESS_DENIED'
   | 'WORKSPACE_NOT_FOUND'
   | 'TOKEN_EXCHANGE_FAILED'
+  | 'SSO_REQUIRED'
 
 const PERMANENT_ERROR_CODES: ReadonlySet<SessionErrorCode> = new Set([
   'ACCESS_DENIED',
+  'SSO_REQUIRED',
   'WORKSPACE_NOT_FOUND',
   'INVALID_FIREBASE_TOKEN',
   'NOT_AUTHENTICATED'
@@ -57,6 +59,8 @@ export type SessionResult =
       readonly code: SessionErrorCode
       /** Set only when the failure came from an HTTP response, not aborted/network. */
       readonly httpStatus?: number
+      /** The organization an `SSO_REQUIRED` refusal names, when ingest names one. */
+      readonly organizationId?: string
     }
 
 export type SessionFailure = Extract<SessionResult, { status: 'error' }>
@@ -155,6 +159,8 @@ export interface WebSessionUser {
   readonly name?: string
   readonly emailVerified: boolean
   readonly signInProvider?: string
+  /** Absent when the server does not report it; read absence as true. */
+  readonly hasPersonalWorkspace?: boolean
 }
 
 export interface WebSession {
@@ -169,7 +175,8 @@ export interface WebSession {
 /**
  * `SESSION_UNAVAILABLE` is the only transient code: 429, 5xx, network,
  * abort, and unreadable bodies land there so an outage never reads as a
- * sign-out. `SESSION_REQUEST_REFUSED` is a request no fresh session can fix.
+ * sign-out. `SESSION_REQUEST_REFUSED` is a request no fresh session can fix;
+ * `SSO_REQUIRED` is the refusal only an SSO sign-in fixes.
  */
 export type WebSessionErrorCode =
   | 'NO_SESSION'
@@ -179,6 +186,7 @@ export type WebSessionErrorCode =
   | 'IDENTITY_CHANGED'
   | 'WORKSPACE_ACCESS_DENIED'
   | 'SESSION_REQUEST_REFUSED'
+  | 'SSO_REQUIRED'
   | 'SESSION_UNAVAILABLE'
 
 export interface WebSessionFailure {
@@ -188,6 +196,8 @@ export interface WebSessionFailure {
   readonly httpStatus?: number
   /** The server's `ErrorResponse.code`, when the body carried one. */
   readonly serverCode?: string
+  /** The organization an `SSO_REQUIRED` refusal names. */
+  readonly organizationId?: string
 }
 
 export type WebSessionResult =

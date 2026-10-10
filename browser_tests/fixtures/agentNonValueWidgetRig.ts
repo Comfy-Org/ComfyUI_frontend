@@ -12,7 +12,20 @@ import {
   mockWorkflowPersistence
 } from '@e2e/fixtures/agentPanelFixture'
 import { AgentPanel } from '@e2e/fixtures/components/AgentPanel'
+import { nextFrame } from '@e2e/fixtures/utils/timing'
 import { VueNodeHelpers } from '@e2e/fixtures/VueNodeHelpers'
+
+/** Binary WS frame type 3 (`progress_text`): [u32 type][u32 idLen][id][text]. */
+export function progressTextFrame(nodeId: string, text: string): Buffer {
+  const id = Buffer.from(nodeId, 'utf8')
+  const body = Buffer.from(text, 'utf8')
+  const frame = Buffer.alloc(8 + id.length + body.length)
+  frame.writeUInt32BE(3, 0)
+  frame.writeUInt32BE(id.length, 4)
+  id.copy(frame, 8)
+  body.copy(frame, 8 + id.length)
+  return frame
+}
 
 interface NonValueWidgetRigConfig {
   catalog: WidgetCatalog
@@ -85,6 +98,42 @@ export class AgentNonValueWidgetRig {
       rig.vueNodes.getNodeLocator(String(config.visibleNodeId))
     ).toBeVisible()
     return rig
+  }
+
+  /**
+   * One execution progress tick on a node, through the ephemeral text-preview
+   * widget's real setter.
+   */
+  async streamProgressText(nodeId: number, text: string): Promise<void> {
+    this.hostSocket.sendExecutionBinary(progressTextFrame(String(nodeId), text))
+    await nextFrame(this.page)
+  }
+
+  /**
+   * Clears the live widget's own `serialize` flag to `undefined` while leaving
+   * the key present, as a widget built by object spread from a template that
+   * never set it does (`{ ...template, serialize: template.serialize }`). The
+   * store's registered flag is untouched, so this is the state in which the
+   * minter has to fall back to the store rather than read the live `undefined`
+   * as "serialize unless told otherwise".
+   */
+  clearLiveSerializeFlag(nodeId: number, name: string): Promise<void> {
+    return this.page.evaluate(
+      ({ nodeId, name }) => {
+        const node = window.app!.graph.nodes.find(
+          (candidate) => String(candidate.id) === nodeId
+        )
+        const widget = node?.widgets?.find(
+          (candidate) => candidate.name === name
+        )
+        if (!widget) throw new Error(`Expected ${name} on node ${nodeId}`)
+        widget.serialize = undefined
+        if (!('serialize' in widget)) {
+          throw new Error(`serialize stayed absent on ${name}`)
+        }
+      },
+      { nodeId: String(nodeId), name }
+    )
   }
 
   widgetValue(nodeId: number, name: string): Promise<unknown> {

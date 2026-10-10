@@ -1,6 +1,9 @@
 <template>
-  <button
-    v-tooltip.bottom="tip(t('load3d.gizmo.toggle'))"
+  <Button
+    variant="textonly"
+    size="unset"
+    :tooltip="t('load3d.gizmo.toggle')"
+    tooltip-side="bottom"
     :class="actionClass(gizmoEnabled)"
     :aria-pressed="gizmoEnabled"
     type="button"
@@ -9,14 +12,17 @@
   >
     <i class="icon-[lucide--axis-3d] size-4" />
     <span v-if="!compact">{{ t('load3d.gizmo.toggle') }}</span>
-  </button>
+  </Button>
 
   <template v-if="gizmoEnabled">
     <template v-if="!compact">
-      <button
+      <Button
         v-for="m in modeDefs"
         :key="m.mode"
-        v-tooltip.bottom="tip(t(m.labelKey))"
+        variant="textonly"
+        size="unset"
+        :tooltip="t(m.labelKey)"
+        tooltip-side="bottom"
         :class="actionClass(gizmoMode === m.mode)"
         :aria-pressed="gizmoMode === m.mode"
         type="button"
@@ -24,21 +30,27 @@
       >
         <i :class="cn(m.icon, 'size-4')" />
         <span>{{ t(m.labelKey) }}</span>
-      </button>
-      <button
-        v-tooltip.bottom="tip(t('load3d.gizmo.reset'))"
+      </Button>
+      <Button
+        variant="textonly"
+        size="unset"
+        :tooltip="t('load3d.gizmo.reset')"
+        tooltip-side="bottom"
         :class="actionClass(false)"
         type="button"
         @click="resetGizmoTransform"
       >
         <i class="icon-[lucide--rotate-ccw] size-4" />
         <span>{{ t('load3d.gizmo.reset') }}</span>
-      </button>
+      </Button>
     </template>
     <Popover v-else v-model:open="modeMenuOpen">
       <PopoverTrigger as-child>
-        <button
-          v-tooltip.bottom="tip(activeModeLabel)"
+        <Button
+          variant="textonly"
+          size="unset"
+          :tooltip="activeModeLabel"
+          tooltip-side="bottom"
           :class="actionClass(false)"
           type="button"
           :aria-label="activeModeLabel"
@@ -46,13 +58,13 @@
         >
           <i :class="cn(activeModeDef.icon, 'size-4')" />
           <i class="icon-[lucide--chevron-down] size-4 opacity-70" />
-        </button>
+        </Button>
       </PopoverTrigger>
       <PopoverContent
         side="bottom"
         align="start"
         :side-offset="8"
-        :class="panelClass"
+        :class="menuPanelClass"
       >
         <button
           v-for="m in modeDefs"
@@ -60,22 +72,14 @@
           type="button"
           :aria-pressed="gizmoMode === m.mode"
           :class="
-            cn(
-              rowClass,
-              'gap-2',
-              gizmoMode === m.mode && 'bg-button-active-surface'
-            )
+            cn(menuButtonClass, gizmoMode === m.mode && selectedMenuButtonClass)
           "
           @click="selectMode(m.mode)"
         >
           <i :class="cn(m.icon, 'size-4')" />
           {{ t(m.labelKey) }}
         </button>
-        <button
-          type="button"
-          :class="cn(rowClass, 'gap-2')"
-          @click="selectReset"
-        >
+        <button type="button" :class="menuButtonClass" @click="selectReset">
           <i class="icon-[lucide--rotate-ccw] size-4" />
           {{ t('load3d.gizmo.reset') }}
         </button>
@@ -85,24 +89,28 @@
 </template>
 
 <script setup lang="ts">
+import { PopoverTrigger } from 'reka-ui'
 import { computed, watch } from 'vue'
 import { useI18n } from 'vue-i18n'
 
+import { cn } from '@comfyorg/tailwind-utils'
+
 import {
   actionClass,
-  panelClass,
-  rowClass,
-  tip
+  menuPanelClass
 } from '@/components/load3d/menubar/menuBarStyles'
 import { usePopoverExclusivity } from '@/components/load3d/menubar/usePopoverExclusivity'
+import Button from '@/components/ui/button/Button.vue'
 import Popover from '@/components/ui/popover/Popover.vue'
 import PopoverContent from '@/components/ui/popover/PopoverContent.vue'
+import {
+  menuButtonClass,
+  selectedMenuButtonClass
+} from '@/components/ui/menu/menuStyles'
 import type {
   GizmoMode,
   ModelConfig
 } from '@/extensions/core/load3d/interfaces'
-import { cn } from '@comfyorg/tailwind-utils'
-import { PopoverTrigger } from 'reka-ui'
 
 const { compact = false } = defineProps<{
   compact?: boolean

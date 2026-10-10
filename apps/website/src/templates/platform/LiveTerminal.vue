@@ -3,7 +3,7 @@ import { cn } from '@comfyorg/tailwind-utils'
 import { useDocumentVisibility, useElementVisibility } from '@vueuse/core'
 import { computed, onScopeDispose, ref, useTemplateRef, watchEffect } from 'vue'
 
-import { prefersReducedMotion } from '../../composables/useReducedMotion'
+import { prefersReducedMotion } from '@/composables/useReducedMotion'
 
 const TYPE_MS = 35
 const COMMAND_PAUSE_MS = 500

@@ -1,9 +1,12 @@
 import { useBillingCapabilities } from '@/platform/workspace/composables/useBillingCapabilities'
-import { useDialogService } from '@/services/dialogService'
+import { useBillingDialogs } from '@/composables/billing/useBillingDialogs'
+import { useWorkspaceDialogs } from '@/platform/workspace/composables/useWorkspaceDialogs'
 import { computed, createApp, defineComponent, ref } from 'vue'
 import type { App } from 'vue'
 import { createI18n } from 'vue-i18n'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
+
+import enMessages from '@/locales/en/main.json'
 
 import { useWorkspaceMenuItems as createWorkspaceMenuItems } from './useWorkspaceMenuItems'
 
@@ -78,10 +81,14 @@ vi.mock<unknown>(
 )
 
 vi.mock(import('@/services/dialogService'))
+vi.mock(import('@/composables/billing/useBillingDialogs'))
+vi.mock(import('@/platform/workspace/composables/useWorkspaceDialogs'))
 
 const apps: App<Element>[] = []
 
-function useWorkspaceMenuItems(): ReturnType<typeof createWorkspaceMenuItems> {
+function useWorkspaceMenuItems(
+  messages = {}
+): ReturnType<typeof createWorkspaceMenuItems> {
   let result: ReturnType<typeof createWorkspaceMenuItems> | undefined
   const app = createApp(
     defineComponent({
@@ -91,7 +98,9 @@ function useWorkspaceMenuItems(): ReturnType<typeof createWorkspaceMenuItems> {
       }
     })
   )
-  app.use(createI18n({ legacy: false, locale: 'en', messages: { en: {} } }))
+  app.use(
+    createI18n({ legacy: false, locale: 'en', messages: { en: messages } })
+  )
   app.mount(document.createElement('div'))
   apps.push(app)
   if (!result) throw new Error('workspace menu items not initialized')
@@ -132,7 +141,7 @@ describe('useWorkspaceMenuItems', () => {
       item: cancelItem
     })
 
-    expect(useDialogService().showCancelSubscriptionFlow).toHaveBeenCalledWith(
+    expect(useBillingDialogs().showCancelSubscriptionFlow).toHaveBeenCalledWith(
       '2026-08-01T00:00:00Z'
     )
   })
@@ -300,7 +309,9 @@ describe('useWorkspaceMenuItems', () => {
       item: cancelItem
     })
 
-    expect(useDialogService().showCancelSubscriptionFlow).not.toHaveBeenCalled()
+    expect(
+      useBillingDialogs().showCancelSubscriptionFlow
+    ).not.toHaveBeenCalled()
   })
 
   it('shows Leave only when workspace permission grants it', () => {
@@ -331,7 +342,9 @@ describe('useWorkspaceMenuItems', () => {
       item: leaveItem
     })
 
-    expect(useDialogService().showLeaveWorkspaceDialog).not.toHaveBeenCalled()
+    expect(
+      useWorkspaceDialogs().showLeaveWorkspaceDialog
+    ).not.toHaveBeenCalled()
   })
 
   it('shows Leave and Delete when owner permissions grant both', () => {
@@ -379,6 +392,21 @@ describe('useWorkspaceMenuItems', () => {
     expect(deleteItem).toMatchObject({ disabled: true, command: undefined })
   })
 
+  it('tells the owner of a cancelled plan when Delete becomes available', () => {
+    state.canManageSubscription = true
+    state.isDeleteDisabled = true
+    state.isSubscriptionCancelled = true
+
+    const { menuItems } = useWorkspaceMenuItems(enMessages)
+    const deleteItem = menuItems.value.find(
+      (item) => item.label === 'Delete Workspace'
+    )
+
+    expect(deleteItem?.tooltip).toBe(
+      'You can delete this workspace after your plan ends on Aug 1, 2026'
+    )
+  })
+
   it('rechecks owner permission before opening the Delete dialog', () => {
     state.canManageSubscription = true
     const { menuItems } = useWorkspaceMenuItems()
@@ -392,7 +420,9 @@ describe('useWorkspaceMenuItems', () => {
       item: deleteItem
     })
 
-    expect(useDialogService().showDeleteWorkspaceDialog).not.toHaveBeenCalled()
+    expect(
+      useWorkspaceDialogs().showDeleteWorkspaceDialog
+    ).not.toHaveBeenCalled()
   })
 
   it('rechecks the subscription lock before opening the Delete dialog', () => {
@@ -408,6 +438,8 @@ describe('useWorkspaceMenuItems', () => {
       item: deleteItem
     })
 
-    expect(useDialogService().showDeleteWorkspaceDialog).not.toHaveBeenCalled()
+    expect(
+      useWorkspaceDialogs().showDeleteWorkspaceDialog
+    ).not.toHaveBeenCalled()
   })
 })

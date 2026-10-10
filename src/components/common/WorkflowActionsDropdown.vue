@@ -7,17 +7,11 @@ let restoreFocusOnMount = false
 
 <script setup lang="ts">
 import { cn } from '@comfyorg/tailwind-utils'
-import {
-  DropdownMenuContent,
-  DropdownMenuPortal,
-  DropdownMenuRoot,
-  DropdownMenuTrigger
-} from 'reka-ui'
 import { computed, nextTick, onMounted, ref, useTemplateRef } from 'vue'
 import { useI18n } from 'vue-i18n'
 
-import WorkflowActionsList from '@/components/common/WorkflowActionsList.vue'
 import Button from '@/components/ui/button/Button.vue'
+import Menu from '@/components/ui/menu/Menu.vue'
 import { useNewMenuItemIndicator } from '@/composables/useNewMenuItemIndicator'
 import { useWorkflowActionsMenu } from '@/composables/useWorkflowActionsMenu'
 import { useKeybindingStore } from '@/platform/keybindings/keybindingStore'
@@ -114,6 +108,16 @@ function switchMode() {
   })
 }
 
+function segmentLabel(seg: ViewModeSegment) {
+  return seg.active
+    ? t('breadcrumbsMenu.activeModeWorkflowActions', { mode: seg.label })
+    : seg.switchLabel
+}
+
+function segmentTooltip(seg: ViewModeSegment) {
+  return seg.active ? t('breadcrumbsMenu.workflowActions') : seg.switchTooltip
+}
+
 function onSegmentClick(seg: ViewModeSegment, event: MouseEvent) {
   if (seg.active) return
   event.stopPropagation()
@@ -148,31 +152,20 @@ onMounted(async () => {
   await nextTick()
   focusActiveSegment()
 })
-
-const tooltipPt = {
-  root: {
-    style: {
-      transform: 'translateX(calc(50% - 16px))',
-      whiteSpace: 'nowrap',
-      maxWidth: 'none'
-    }
-  },
-  text: {
-    style: { whiteSpace: 'nowrap' }
-  },
-  arrow: {
-    style: { left: '16px' }
-  }
-}
 </script>
 
 <template>
-  <DropdownMenuRoot
-    :open="dropdownOpen"
+  <Menu
+    v-model:open="dropdownOpen"
+    :items="menuItems"
     :modal="false"
+    :align
+    :side-offset="8"
+    :collision-padding="10"
+    class="min-w-56"
     @update:open="onOpenChange"
   >
-    <DropdownMenuTrigger as-child>
+    <template #trigger>
       <div
         ref="toggleRef"
         data-testid="view-mode-toggle"
@@ -187,79 +180,57 @@ const tooltipPt = {
           move-class="transition-[background-color,color,transform] duration-200"
           class="flex items-center gap-1"
         >
-          <Button
-            v-for="seg in orderedSegments"
-            :key="seg.mode"
-            v-tooltip.bottom="{
-              value: seg.active
-                ? t('breadcrumbsMenu.workflowActions')
-                : seg.switchTooltip,
-              showDelay: 300,
-              hideDelay: 300,
-              pt: seg.active ? undefined : tooltipPt
-            }"
-            type="button"
-            variant="textonly"
-            size="unset"
-            :aria-label="
-              seg.active
-                ? t('breadcrumbsMenu.activeModeWorkflowActions', {
-                    mode: seg.label
-                  })
-                : seg.switchLabel
-            "
-            :aria-haspopup="seg.active ? 'menu' : undefined"
-            :aria-expanded="seg.active ? dropdownOpen : undefined"
-            :class="
-              cn(
-                'relative flex h-8 items-center gap-0 rounded-lg font-normal transition-[background-color,color,transform] duration-200',
-                seg.displayActive
-                  ? 'bg-secondary-background pr-2 pl-2.5 text-base-foreground group-data-[state=open]:bg-secondary-background-hover group-data-[state=open]:shadow-interface hover:bg-secondary-background'
-                  : 'w-8 justify-center bg-transparent text-muted-foreground hover:bg-secondary-background hover:text-base-foreground'
-              )
-            "
-            @click="onSegmentClick(seg, $event)"
-            @keydown="onSegmentKeydown(seg, $event)"
-          >
-            <i :class="cn('size-4 shrink-0', seg.icon)" aria-hidden="true" />
-            <span
+          <div v-for="seg in orderedSegments" :key="seg.mode" class="flex">
+            <Button
+              :tooltip="segmentTooltip(seg)"
+              tooltip-side="bottom"
+              type="button"
+              variant="textonly"
+              size="unset"
+              :aria-label="segmentLabel(seg)"
+              :aria-haspopup="seg.active ? 'menu' : undefined"
+              :aria-expanded="seg.active ? dropdownOpen : undefined"
               :class="
                 cn(
-                  'grid transition-[grid-template-columns,opacity] duration-200',
+                  'relative flex h-8 items-center gap-0 rounded-lg font-normal transition-[background-color,color,transform] duration-200',
                   seg.displayActive
-                    ? 'ml-1.5 grid-cols-[1fr] opacity-100'
-                    : 'grid-cols-[0fr] opacity-0'
+                    ? 'bg-secondary-background pr-2 pl-2.5 text-base-foreground group-data-[state=open]:bg-secondary-background-hover group-data-[state=open]:shadow-interface hover:bg-secondary-background'
+                    : 'w-8 justify-center bg-transparent text-muted-foreground hover:bg-secondary-background hover:text-base-foreground'
                 )
               "
+              @click="onSegmentClick(seg, $event)"
+              @keydown="onSegmentKeydown(seg, $event)"
             >
+              <i :class="cn('size-4 shrink-0', seg.icon)" aria-hidden="true" />
               <span
-                class="flex min-w-0 items-center overflow-hidden text-sm leading-none whitespace-nowrap"
+                :class="
+                  cn(
+                    'grid transition-[grid-template-columns,opacity] duration-200',
+                    seg.displayActive
+                      ? 'ml-1.5 grid-cols-[1fr] opacity-100'
+                      : 'grid-cols-[0fr] opacity-0'
+                  )
+                "
               >
-                {{ seg.label }}
-                <i
-                  class="ml-1 icon-[lucide--chevron-down] size-4 shrink-0 text-muted-foreground"
-                  aria-hidden="true"
-                />
+                <span
+                  class="flex min-w-0 items-center overflow-hidden text-sm leading-none whitespace-nowrap"
+                >
+                  {{ seg.label }}
+                  <i
+                    class="ml-1 icon-[lucide--chevron-down] size-4 shrink-0 text-muted-foreground"
+                    aria-hidden="true"
+                  />
+                </span>
               </span>
-            </span>
-            <span
-              v-if="seg.active && hasUnseenItems"
-              aria-hidden="true"
-              class="absolute -top-0.5 -right-0.5 size-2 rounded-full bg-primary-background"
-            />
-          </Button>
+              <span
+                v-if="seg.active && hasUnseenItems"
+                aria-hidden="true"
+                class="absolute -top-0.5 -right-0.5 size-2 rounded-full bg-primary-background"
+              />
+            </Button>
+          </div>
         </TransitionGroup>
       </div>
-    </DropdownMenuTrigger>
-    <DropdownMenuPortal>
-      <DropdownMenuContent
-        :align
-        :side-offset="8"
-        :collision-padding="10"
-        class="z-1000 min-w-56 rounded-lg border border-border-subtle bg-base-background px-2 py-3 shadow-interface"
-      >
-        <WorkflowActionsList :items="menuItems" />
-      </DropdownMenuContent>
-    </DropdownMenuPortal>
-  </DropdownMenuRoot>
+    </template>
+  </Menu>
 </template>

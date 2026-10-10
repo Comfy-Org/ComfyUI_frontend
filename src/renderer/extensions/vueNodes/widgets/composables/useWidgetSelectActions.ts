@@ -2,15 +2,16 @@ import { toValue } from 'vue'
 import type { ComputedRef, MaybeRefOrGetter, Ref } from 'vue'
 
 import { useErrorHandling } from '@/composables/useErrorHandling'
-import { ServerFeatureFlag } from '@/composables/useFeatureFlags'
+import { useToast } from '@/components/ui/toast/toastStore'
 import { t } from '@/i18n'
-import { useToastStore } from '@/platform/updates/common/toastStore'
+import { ServerFeatureFlag } from '@/platform/remoteConfig/serverFeatureFlag'
 import { useWorkflowStore } from '@/platform/workflow/management/stores/workflowStore'
 import type { FormDropdownItem } from '@/renderer/extensions/vueNodes/widgets/components/form/dropdown/types'
 import type { ResultItemType } from '@/schemas/resultItemTypeSchema'
 import { api } from '@/scripts/api'
 import { useAssetsStore } from '@/stores/assetsStore'
 import type { SimplifiedWidget } from '@/types/simplifiedWidget'
+import { isExtensionlessVideo } from '@/utils/mediaUploadUtil'
 
 const BYTES_PER_MB = 1024 * 1024
 
@@ -41,7 +42,7 @@ interface UseWidgetSelectActionsOptions {
 
 export function useWidgetSelectActions(options: UseWidgetSelectActionsOptions) {
   const { modelValue, dropdownItems } = options
-  const toastStore = useToastStore()
+  const toast = useToast()
   const { wrapWithErrorHandlingAsync } = useErrorHandling()
 
   function updateSelectedItems(selectedItems: Set<string>) {
@@ -76,7 +77,7 @@ export function useWidgetSelectActions(options: UseWidgetSelectActionsOptions) {
     })
 
     if (resp.status !== 200) {
-      toastStore.addAlert(buildUploadErrorMessage(resp))
+      toast.warning(buildUploadErrorMessage(resp))
       return null
     }
 
@@ -101,11 +102,15 @@ export function useWidgetSelectActions(options: UseWidgetSelectActionsOptions) {
   const handleFilesUpdate = wrapWithErrorHandlingAsync(
     async (files: File[]) => {
       if (files.length === 0) return
+      if (files.some(isExtensionlessVideo)) {
+        toast.warning(t('g.videoFilenameExtensionRequired'))
+        return
+      }
 
       const uploadedPaths = await uploadFiles(files)
 
       if (uploadedPaths.length === 0) {
-        toastStore.addAlert('File upload failed')
+        toast.warning(t('toastMessages.fileUploadFailed'))
         return
       }
 

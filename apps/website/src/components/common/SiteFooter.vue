@@ -1,14 +1,19 @@
 <script setup lang="ts">
 import { ref } from 'vue'
 
-import { externalLinks, getRoutes } from '../../config/routes'
-import { useFrameScrub } from '../../composables/useFrameScrub'
-import type { Locale } from '../../i18n/translations'
-import { translationsFor } from '../../i18n/translations'
+import { externalLinks, getRoutes } from '@/config/routes'
+import { useFrameScrub } from '@/composables/useFrameScrub'
+import type { Locale } from '@/i18n/translations'
+import { translationsFor } from '@/i18n/translations'
+import type { LocaleAlternate } from '@/lib/hreflang'
 import FooterLinkColumn from './FooterLinkColumn.vue'
 import type { FooterLink } from './FooterLinkColumn.vue'
+import LanguageSwitcher from './LanguageSwitcher.vue'
 
-const { locale = 'en' } = defineProps<{ locale?: Locale }>()
+const { locale = 'en', alternates = [] } = defineProps<{
+  locale?: Locale
+  alternates?: readonly LocaleAlternate[]
+}>()
 const { t } = translationsFor(locale)
 const routes = getRoutes(locale)
 
@@ -48,16 +53,33 @@ const topColumns: { title: string; links: FooterLink[] }[] = [
         href: routes.platform
       },
       {
+        label: t('nav.comfyRouter'),
+        href: routes.platformRouter
+      },
+      {
         label: t('nav.comfyEnterprise'),
         href: routes.enterprise
       },
-      { label: t('nav.pricing'), href: routes.pricing },
+      {
+        label: t('nav.managedBuilds'),
+        href: routes.managedBuilds
+      },
+      { label: t('nav.pricing'), href: routes.pricing }
+    ]
+  },
+  {
+    title: t('nav.colFeatures'),
+    links: [
       { label: t('nav.mcpServer'), href: routes.mcp },
       {
         label: t('nav.comfyAgent'),
         href: routes.agent
       },
-      { label: t('nav.comfyCli'), href: routes.cli }
+      { label: t('nav.comfyCli'), href: routes.cli },
+      {
+        label: t('nav.supportedModels'),
+        href: routes.models
+      }
     ]
   },
   {
@@ -66,10 +88,6 @@ const topColumns: { title: string; links: FooterLink[] }[] = [
       {
         label: t('footer.modelCatalogue'),
         href: routes.workshop
-      },
-      {
-        label: t('nav.supportedModels'),
-        href: routes.models
       },
       {
         label: t('footer.minimaxH3'),
@@ -105,6 +123,7 @@ const topColumns: { title: string; links: FooterLink[] }[] = [
         label: t('footer.qwenImage21'),
         href: routes.qwenImage21
       },
+      { label: t('footer.nanoBanana'), href: routes.nanoBanana },
       { label: t('footer.flux3'), href: routes.flux3 }
     ]
   },
@@ -126,10 +145,6 @@ const topColumns: { title: string; links: FooterLink[] }[] = [
       {
         label: t('footer.useCases'),
         href: externalLinks.workflowUseCases
-      },
-      {
-        label: t('nav.launches'),
-        href: routes.launches
       },
       { label: t('nav.fdct'), href: routes.fdct },
       {
@@ -175,7 +190,8 @@ const topColumns: { title: string; links: FooterLink[] }[] = [
       {
         label: t('footer.affiliateProgram'),
         href: routes.affiliates
-      }
+      },
+      { label: t('footer.changelog'), href: routes.changelog }
     ]
   },
   {
@@ -243,7 +259,9 @@ const contactColumn: { title: string; links: FooterLink[] } = {
       <!-- Link columns -->
       <div class="flex flex-col gap-12 lg:row-span-2 lg:justify-between">
         <div class="flex flex-col gap-12">
-          <div class="grid grid-cols-1 gap-12 lg:grid-cols-4">
+          <div
+            class="grid grid-cols-1 gap-12 lg:grid-cols-3 xl:grid-cols-5 xl:gap-x-6"
+          >
             <FooterLinkColumn
               v-for="column in topColumns"
               :key="column.title"
@@ -261,7 +279,10 @@ const contactColumn: { title: string; links: FooterLink[] } = {
         </div>
 
         <!-- Bottom bar -->
-        <div class="flex justify-center gap-6 lg:justify-end">
+        <div
+          class="flex flex-wrap items-center justify-center gap-6 lg:justify-end"
+        >
+          <LanguageSwitcher :locale :alternates />
           <p class="text-sm">
             {{ t('footer.location') }}
           </p>

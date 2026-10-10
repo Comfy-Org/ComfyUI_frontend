@@ -11,24 +11,29 @@
 /src/components/templates/                        @christian-byrne @comfyui-wiki @Comfy-Org/comfy_frontend_devs
 
 # Mask Editor
-/src/extensions/core/maskeditor.ts                @trsommer @brucew4yn3rp @jtydhr88 @Comfy-Org/comfy_frontend_devs
-/src/extensions/core/maskEditorLayerFilenames.ts  @trsommer @brucew4yn3rp @jtydhr88 @Comfy-Org/comfy_frontend_devs
-/src/components/maskeditor/                       @trsommer @brucew4yn3rp @jtydhr88 @Comfy-Org/comfy_frontend_devs
-/src/composables/maskeditor/                      @trsommer @brucew4yn3rp @jtydhr88 @Comfy-Org/comfy_frontend_devs
-/src/stores/maskEditorStore.ts                    @trsommer @brucew4yn3rp @jtydhr88 @Comfy-Org/comfy_frontend_devs
-/src/stores/maskEditorDataStore.ts                @trsommer @brucew4yn3rp @jtydhr88 @Comfy-Org/comfy_frontend_devs
+/src/extensions/core/maskeditor.ts                @trsommer @jtydhr88 @Comfy-Org/comfy_frontend_devs
+/src/extensions/core/maskeditor.test.ts           @trsommer @jtydhr88 @Comfy-Org/comfy_frontend_devs
+/src/extensions/core/maskeditor/                  @trsommer @jtydhr88 @Comfy-Org/comfy_frontend_devs
+/src/components/maskeditor/                       @trsommer @jtydhr88 @Comfy-Org/comfy_frontend_devs
+/src/composables/maskeditor/                      @trsommer @jtydhr88 @Comfy-Org/comfy_frontend_devs
+/src/stores/maskEditorStore.ts                    @trsommer @jtydhr88 @Comfy-Org/comfy_frontend_devs
+/src/stores/maskEditorDataStore.ts                @trsommer @jtydhr88 @Comfy-Org/comfy_frontend_devs
+/src/stores/maskEditorStore.test.ts               @trsommer @jtydhr88 @Comfy-Org/comfy_frontend_devs
+/src/stores/maskEditorDataStore.test.ts           @trsommer @jtydhr88 @Comfy-Org/comfy_frontend_devs
 
 # Image Crop
 /src/extensions/core/imageCrop.ts                 @jtydhr88 @Comfy-Org/comfy_frontend_devs
 /src/components/imagecrop/                        @jtydhr88 @Comfy-Org/comfy_frontend_devs
 /src/composables/useImageCrop.ts                  @jtydhr88 @Comfy-Org/comfy_frontend_devs
+/src/composables/useImageCrop.test.ts             @jtydhr88 @Comfy-Org/comfy_frontend_devs
 /src/lib/litegraph/src/widgets/ImageCropWidget.ts @jtydhr88 @Comfy-Org/comfy_frontend_devs
 
 # Image Compare
 /src/extensions/core/imageCompare.ts                                                @jtydhr88 @Comfy-Org/comfy_frontend_devs
 /src/renderer/extensions/vueNodes/widgets/components/WidgetImageCompare.vue         @jtydhr88 @Comfy-Org/comfy_frontend_devs
 /src/renderer/extensions/vueNodes/widgets/components/WidgetImageCompare.test.ts     @jtydhr88 @Comfy-Org/comfy_frontend_devs
-/src/renderer/extensions/vueNodes/widgets/components/WidgetImageCompare.stories.ts  @jtydhr88 @Comfy-Org/comfy_frontend_devs
+/src/renderer/extensions/vueNodes/widgets/composables/useImageCompareImages.ts      @jtydhr88 @Comfy-Org/comfy_frontend_devs
+/src/renderer/extensions/vueNodes/widgets/composables/useImageCompareImages.test.ts @jtydhr88 @Comfy-Org/comfy_frontend_devs
 /src/renderer/extensions/vueNodes/widgets/composables/useImageCompareWidget.ts      @jtydhr88 @Comfy-Org/comfy_frontend_devs
 /src/lib/litegraph/src/widgets/ImageCompareWidget.ts                                @jtydhr88 @Comfy-Org/comfy_frontend_devs
 
@@ -48,7 +53,7 @@
 /src/lib/litegraph/src/widgets/CompositorWidget.ts     @jtydhr88 @Comfy-Org/comfy_frontend_devs
 
 # GLSL
-/src/renderer/glsl/                               @jtydhr88 @pythongosssss @christian-byrne @Comfy-Org/comfy_frontend_devs
+/src/renderer/glsl/                               @jtydhr88 @christian-byrne @Comfy-Org/comfy_frontend_devs
 
 # 3D
 /src/extensions/core/load3d.ts                    @jtydhr88 @Comfy-Org/comfy_frontend_devs
@@ -75,10 +80,34 @@
 # crossing that side of the boundary still has no required reviewer.
 /packages/account-core/src/core/billing/               @dante01yoon @Comfy-Org/comfy_frontend_devs
 /apps/billing-web/                                @dante01yoon @Comfy-Org/comfy_frontend_devs
-/apps/website/src/lib/workshop/                   @dante01yoon @Comfy-Org/comfy_website_devs
-/apps/website/src/config/workshop-account.ts      @dante01yoon @Comfy-Org/comfy_website_devs
-/apps/website/src/config/workshop-balance.ts      @dante01yoon @Comfy-Org/comfy_website_devs
-/apps/website/src/config/workshop-credits.ts      @dante01yoon @Comfy-Org/comfy_website_devs
+/apps/website/src/lib/workshop/                   @dante01yoon @Comfy-Org/comfy_website_devs @Comfy-Org/comfy-standard-approver
+/apps/website/src/config/workshop-account.ts      @dante01yoon @Comfy-Org/comfy_website_devs @Comfy-Org/comfy-standard-approver
+/apps/website/src/config/workshop-balance.ts      @dante01yoon @Comfy-Org/comfy_website_devs @Comfy-Org/comfy-standard-approver
+/apps/website/src/config/workshop-credits.ts      @dante01yoon @Comfy-Org/comfy_website_devs @Comfy-Org/comfy-standard-approver
+
+# Workspace members and billing gates - see ADR-API-SERVER-FACTS-0042.
+/src/platform/workspace/                          @dante01yoon @Comfy-Org/comfy_frontend_devs
+
+/src/workbench/extensions/agent/                  @Comfy-Org/comfy-standard-approver @Comfy-Org/comfy_frontend_devs @Comfy-Org/agent_devs
+/src/extensions/core/agentPanel.ts                @Comfy-Org/comfy-standard-approver @Comfy-Org/comfy_frontend_devs @Comfy-Org/agent_devs
+/src/extensions/core/agentPanel.test.ts           @Comfy-Org/comfy-standard-approver @Comfy-Org/comfy_frontend_devs @Comfy-Org/agent_devs
+/src/stores/agentNodeSelectionStore.ts            @Comfy-Org/comfy-standard-approver @Comfy-Org/comfy_frontend_devs @Comfy-Org/agent_devs
+/src/stores/agentNodeSelectionStore.test.ts       @Comfy-Org/comfy-standard-approver @Comfy-Org/comfy_frontend_devs @Comfy-Org/agent_devs
+/src/components/graph/agentPanelMount.test.ts     @Comfy-Org/comfy-standard-approver @Comfy-Org/comfy_frontend_devs @Comfy-Org/agent_devs
+/src/components/topbar/AgentEntryButton.vue       @Comfy-Org/comfy-standard-approver @Comfy-Org/comfy_frontend_devs @Comfy-Org/agent_devs
+/src/components/topbar/AgentEntryButton.stories.ts @Comfy-Org/comfy-standard-approver @Comfy-Org/comfy_frontend_devs @Comfy-Org/agent_devs
+/src/components/topbar/WorkflowAgentTargetIndicator.vue @Comfy-Org/comfy-standard-approver @Comfy-Org/comfy_frontend_devs @Comfy-Org/agent_devs
+/src/platform/settings/constants/agent.ts         @Comfy-Org/comfy-standard-approver @Comfy-Org/comfy_frontend_devs @Comfy-Org/agent_devs
+/src/platform/telemetry/utils/getAgentPanelOpen.ts      @Comfy-Org/comfy-standard-approver @Comfy-Org/comfy_frontend_devs @Comfy-Org/agent_devs
+/src/platform/telemetry/utils/getAgentPanelOpen.test.ts @Comfy-Org/comfy-standard-approver @Comfy-Org/comfy_frontend_devs @Comfy-Org/agent_devs
+/browser_tests/tests/agent/                       @Comfy-Org/comfy-standard-approver @Comfy-Org/comfy_frontend_devs @Comfy-Org/agent_devs
+/browser_tests/assets/agent/                      @Comfy-Org/comfy-standard-approver @Comfy-Org/comfy_frontend_devs @Comfy-Org/agent_devs
+/browser_tests/fixtures/data/agent/               @Comfy-Org/comfy-standard-approver @Comfy-Org/comfy_frontend_devs @Comfy-Org/agent_devs
+/browser_tests/fixtures/**/*gent*                 @Comfy-Org/comfy-standard-approver @Comfy-Org/comfy_frontend_devs @Comfy-Org/agent_devs
+/browser_tests/tests/dialogs/dialogAgentPanelInset.spec.ts @Comfy-Org/comfy-standard-approver @Comfy-Org/comfy_frontend_devs @Comfy-Org/agent_devs
+/browser_tests/tests/load3d/load3dAgentUpdate.spec.ts      @Comfy-Org/comfy-standard-approver @Comfy-Org/comfy_frontend_devs @Comfy-Org/agent_devs
+/browser_tests/tests/performance/agentComposer.spec.ts     @Comfy-Org/comfy-standard-approver @Comfy-Org/comfy_frontend_devs @Comfy-Org/agent_devs
+/browser_tests/tests/sidebar/agentVideoAsset.spec.ts       @Comfy-Org/comfy-standard-approver @Comfy-Org/comfy_frontend_devs @Comfy-Org/agent_devs
 
 # Translations - native-language reviewers
 # NOTE: GitHub only honors a code owner that has WRITE access to this repo.
@@ -108,5 +137,6 @@
 .cursor/
 .cursorrules
 
-# Agent instructions
-**/AGENTS.md                                      @christian-byrne
+# Domain architecture contracts and enforcement
+/docs/architecture/domains/                       @christian-byrne @Comfy-Org/comfy_frontend_devs
+/tools/architecture/                              @christian-byrne @Comfy-Org/comfy_frontend_devs

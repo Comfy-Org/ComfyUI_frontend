@@ -27,12 +27,28 @@ function renderGroup(
 ) {
   const result = render(ModelMenuGroup, {
     props: { config: makeConfig(), ...props },
-    global: { plugins: [i18n], directives: { tooltip: () => {} } }
+    global: { plugins: [i18n] }
   })
   return { ...result, user: userEvent.setup() }
 }
 
 describe('ModelMenuGroup', () => {
+  it.for([
+    { trigger: 'Up Direction', selected: 'ORIGINAL' },
+    { trigger: 'Material', selected: 'Original' }
+  ])(
+    'marks the selected $trigger option semantically',
+    async ({ trigger, selected }) => {
+      const { user } = renderGroup()
+
+      await user.click(screen.getByRole('button', { name: trigger }))
+
+      const option = screen.getByRole('button', { name: selected })
+      expect(option).toHaveAttribute('aria-pressed', 'true')
+      expect(option).toHaveClass('bg-secondary-background-selected')
+    }
+  )
+
   it('sets the up direction from the popover', async () => {
     const config = makeConfig()
     const { user } = renderGroup({ config })

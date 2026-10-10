@@ -42,7 +42,7 @@ type Props = {
 function renderGroup(props: Props) {
   const result = render(GizmoMenuGroup, {
     props,
-    global: { plugins: [i18n], directives: { tooltip: () => {} } }
+    global: { plugins: [i18n] }
   })
   return { ...result, user: userEvent.setup() }
 }
@@ -88,7 +88,7 @@ describe('GizmoMenuGroup', () => {
 
     expect(
       screen.getByRole('button', { name: 'Translate', pressed: true })
-    ).toBeInTheDocument()
+    ).toHaveClass('bg-secondary-background-selected')
 
     await user.click(
       screen.getByRole('button', { name: 'Rotate', pressed: false })

@@ -2,6 +2,7 @@ import { useEventListener, useResizeObserver } from '@vueuse/core'
 import _ from 'es-toolkit/compat'
 import { reactive, unref, shallowRef } from 'vue'
 
+import { useToast } from '@/components/ui/toast/toastStore'
 import { partnerRunGateBlocksAutoQueue } from '@/composables/billing/usePartnerNodesRunGate'
 import { useCanvasPositionConversion } from '@/composables/element/useCanvasPositionConversion'
 import { normalizeCameraState } from '@/renderer/core/canvas/cameraState'
@@ -13,10 +14,11 @@ import { useCanvasScheduler } from '@/renderer/core/canvas/useCanvasScheduler'
 
 import { promotedInputSource } from '@/core/graph/subgraph/promotedInputWidget'
 import { resolveConcretePromotedWidget } from '@/core/graph/subgraph/resolveConcretePromotedWidget'
+import { resolveDynamicInputSpec } from '@/core/graph/widgets/dynamicInputSpec'
 import { setBackendNodeText, st, t } from '@/i18n'
 import { normalizeI18nKey } from '@/utils/formatUtil'
 import { ChangeTracker } from '@/scripts/changeTracker'
-import type { IContextMenuValue } from '@/lib/litegraph/src/interfaces'
+import type { IContextMenuValue } from '@/lib/litegraph/src/types/contextMenu'
 import { withGraphIntentSource } from '@/lib/litegraph/src/graphIntents'
 import { createMutationView } from '@/lib/litegraph/src/infrastructure/createMutationView'
 import {
@@ -52,8 +54,8 @@ import type {
   WorkflowOpenSource,
   WorkflowQueueIntent
 } from '@/platform/telemetry/types'
-import { useToastStore } from '@/platform/updates/common/toastStore'
 import { MIME_ASSET_INFO } from '@/platform/assets/schemas/mediaAssetSchema'
+import { restoreDynamicGroupInputs } from '@/platform/workflow/core/utils/restoreDynamicGroupInputs'
 import { updatePendingWarnings } from '@/platform/workflow/core/utils/pendingWarnings'
 import { useWorkflowService } from '@/platform/workflow/core/services/workflowService'
 import {
@@ -64,14 +66,16 @@ import type { LoadedComfyWorkflow } from '@/platform/workflow/management/stores/
 import { useWorkflowValidation } from '@/platform/workflow/validation/composables/useWorkflowValidation'
 import type {
   ComfyApiWorkflow,
-  ComfyWorkflowJSON
+  ComfyWorkflowJSON,
+  WorkflowJSON04
 } from '@/platform/workflow/validation/schemas/workflowSchema'
 import { toNodeId } from '@/types/nodeId'
 import { zNodePackMetadata } from '@/platform/workflow/validation/schemas/workflowSchema'
 import type { NodeId, SerializedNodeId } from '@/types/nodeId'
 import {
+  buildSubgraphExecutionPaths,
   collectSubgraphDefinitions,
-  buildSubgraphExecutionPaths
+  parseFlattenableSubgraphDefinitions
 } from '@/platform/workflow/core/utils/workflowFlattening'
 import type { FlattenableWorkflowNode } from '@/platform/workflow/core/utils/workflowFlattening'
 import type {
@@ -91,6 +95,7 @@ import { useDialogService } from '@/services/dialogService'
 import { useExtensionService } from '@/services/extensionService'
 import { useLitegraphService } from '@/services/litegraphService'
 import { useSubgraphService } from '@/services/subgraphService'
+import { isDesktopHostSignedIn } from '@/platform/auth/desktopHost/desktopHostSession'
 import { useApiKeyAuthStore } from '@/stores/apiKeyAuthStore'
 import { useCommandStore } from '@/stores/commandStore'
 import { createCanvasInteractionMode } from '@/renderer/core/canvas/interaction/canvasInteractionMode'
@@ -107,18 +112,17 @@ import {
 } from '@/types/nodeIdentification'
 import { SYSTEM_NODE_DEFS, useNodeDefStore } from '@/stores/nodeDefStore'
 import { useNodeReplacementStore } from '@/platform/nodeReplacement/nodeReplacementStore'
+import type { MissingNodeType } from '@/platform/nodeReplacement/types'
 
 import { useSubgraphNavigationStore } from '@/stores/subgraphNavigationStore'
 import { useSubgraphStore } from '@/stores/subgraphStore'
 import { useWidgetStore } from '@/stores/widgetStore'
 import { useWidgetValueStore } from '@/stores/widgetValueStore'
 import { useWorkspaceStore } from '@/stores/workspaceStore'
-import type { ComfyExtension, MissingNodeType } from '@/types/comfy'
-import type {
-  ExtensionManager,
-  ToastMessageOptions
-} from '@/types/extensionTypes'
+import type { ComfyExtension } from '@/types/comfy'
+import type { ExtensionManager } from '@/types/extensionTypes'
 import type { NodeExecutionId } from '@/types/nodeIdentification'
+import { getErrorMessage } from '@/utils/errorUtil'
 import { normalizePromptError } from '@/utils/executionErrorUtil'
 import { graphToPrompt, unwrapExportedWidgetValue } from '@/utils/executionUtil'
 import { parseJsonWithNonFinite } from '@/utils/jsonUtil'
@@ -159,6 +163,7 @@ import {
 } from '@/utils/objectUrlUtil'
 import {
   findLegacyRerouteNodes,
+  migrateLegacyRerouteNodes,
   noNativeReroutes
 } from '@/utils/migration/migrateReroute'
 import { deserialiseAndCreate } from '@/utils/vintageClipboard'
@@ -168,8 +173,9 @@ import type { ComfyApi } from './api'
 import { defaultGraph } from './defaultGraph'
 import { importA1111 } from './pnginfo'
 import type { A1111ImportOutcome } from './pnginfo'
-import { applyPromotedWidgetControl } from './promotedWidgetControl'
-import { $el, ComfyUI } from './ui'
+import { applyPromotedWidgetControl } from '@/core/graph/subgraph/promotedWidgetControl'
+import { ComfyUI } from './ui'
+import { $el } from './ui/utils'
 import { ComfyAppMenu } from './ui/menu/index'
 import { clone } from './utils'
 import type { ComfyWidgets, CustomComfyWidgetConstructor } from './widgets'
@@ -356,7 +362,15 @@ export class ComfyApp {
   )
   nodePreviewImages: Partial<Record<string, string[]>>
 
-  private rootGraphInternal: LGraph | undefined
+  private readonly rootGraphRef = shallowRef<LGraph | undefined>(undefined)
+
+  private get rootGraphInternal(): LGraph | undefined {
+    return this.rootGraphRef.value
+  }
+
+  private set rootGraphInternal(graph: LGraph | undefined) {
+    this.rootGraphRef.value = graph
+  }
 
   // TODO: Migrate internal usage to the
   /** @deprecated Use {@link rootGraph} instead */
@@ -375,7 +389,10 @@ export class ComfyApp {
     return this.rootGraphInternal
   }
 
-  /** Whether the root graph has been initialized. Safe to check without triggering error logs. */
+  /**
+   * Whether the root graph has been initialized. Safe to check without
+   * triggering error logs, and reactive, so it can be watched.
+   */
   get isGraphReady(): boolean {
     return !!this.rootGraphInternal
   }
@@ -779,7 +796,7 @@ export class ComfyApp {
               surface: 'graph',
               errorType: 'asset_drop_load_failure'
             })
-            useToastStore().addAlert(t('toastMessages.assetDropFailed'))
+            useToast().warning(t('toastMessages.assetDropFailed'))
           }
           return
         }
@@ -825,7 +842,11 @@ export class ComfyApp {
         }
         useWorkflowService().showPendingWarnings()
       } catch (error: unknown) {
-        useToastStore().addAlert(t('toastMessages.dropFileError', { error }))
+        useToast().warning(
+          t('toastMessages.dropFileError', {
+            error: getErrorMessage(error) ?? t('g.unknownError')
+          })
+        )
       }
     })
 
@@ -1006,9 +1027,6 @@ export class ComfyApp {
     await useWorkspaceStore().workflow.syncWorkflows()
     //Doesn't need to block. Blueprints will load async
     void useSubgraphStore().fetchSubgraphs()
-    await bootstrapTracer.settle('bootstrap/extensions-load', () =>
-      useExtensionService().loadExtensions()
-    )
 
     this.addProcessKeyHandler()
     this.addConfigureHandler()
@@ -1023,10 +1041,8 @@ export class ComfyApp {
         useSubgraphService().registerNewSubgraph(subgraph, data)
       } catch (err) {
         console.error('Failed to register subgraph', err)
-        useToastStore().add({
-          severity: 'error',
-          summary: 'Failed to register subgraph',
-          detail: err instanceof Error ? err.message : String(err)
+        useToast().error(t('toastMessages.failedToRegisterSubgraph'), {
+          description: getErrorMessage(err) ?? t('g.unknownError')
         })
       }
     })
@@ -1408,10 +1424,26 @@ export class ComfyApp {
         findLegacyRerouteNodes(graphData).length &&
         noNativeReroutes(graphData)
       ) {
-        useToastStore().add({
-          group: 'reroute-migration',
-          severity: 'warn'
-        })
+        const toast = useToast()
+        const migrationToastId = toast.warning(
+          t('toastMessages.migrateToLitegraphReroute'),
+          {
+            action: {
+              label: t('g.migrate'),
+              onClick: async () => {
+                await this.loadGraphData(
+                  migrateLegacyRerouteNodes(
+                    this.rootGraph.serialize() as unknown as WorkflowJSON04
+                  ),
+                  false,
+                  false,
+                  useWorkflowStore().activeWorkflow
+                )
+                toast.dismiss(migrationToastId)
+              }
+            }
+          }
+        )
       }
 
       await useExtensionService().invokeExtensionsAsync(
@@ -1474,7 +1506,9 @@ export class ComfyApp {
 
       collectMissingNodes(graphData.nodes)
       const subgraphDefs = collectSubgraphDefinitions(
-        graphData.definitions?.subgraphs ?? []
+        parseFlattenableSubgraphDefinitions(
+          graphData.definitions?.subgraphs ?? []
+        )
       )
       const subgraphContainerIdMap = buildSubgraphExecutionPaths(
         graphData.nodes,
@@ -1889,14 +1923,22 @@ export class ComfyApp {
         workspaceGenerationBeforeAuthentication !==
           executionWorkspaceGeneration) &&
       (isCloud || workspaceIdBeforeAuthentication !== null)
-    const comfyOrgApiKey = useApiKeyAuthStore().getApiKey()
+    // Desktop host auth is the only credential while active: a stored
+    // personal key may belong to another account and never rides along.
+    const desktopHostAuth = isDesktopHostSignedIn()
+    const comfyOrgApiKey = desktopHostAuth
+      ? null
+      : useApiKeyAuthStore().getApiKey()
     // An API-key session mints no workspace JWT: the key itself is the
     // execution credential and the server resolves its bound workspace. Only a
     // key-authenticated session may pass without a token — a Firebase session
     // whose token mint failed must still fail closed rather than fall back to
     // a stored key and charge the key's workspace.
     const isApiKeySessionExecution =
-      !useAuthStore().currentUser && useApiKeyAuthStore().isAuthenticated
+      !desktopHostAuth &&
+      !useAuthStore().currentUser &&
+      !useAuthStore().sessionOnlyUser &&
+      useApiKeyAuthStore().isAuthenticated
     if (
       executionWorkspaceId &&
       !comfyOrgAuthToken &&
@@ -2187,7 +2229,7 @@ export class ComfyApp {
   }
 
   showErrorOnFileLoad(file: File) {
-    useToastStore().addAlert(
+    useToast().warning(
       t('toastMessages.fileLoadError', { fileName: file.name })
     )
   }
@@ -2334,16 +2376,14 @@ export class ComfyApp {
       }
       switch (outcome) {
         case 'core-nodes-unavailable':
-          useToastStore().addAlert(t('toastMessages.a1111CoreNodesUnavailable'))
+          useToast().warning(t('toastMessages.a1111CoreNodesUnavailable'))
           return
         case 'not-a1111':
           this.showErrorOnFileLoad(file)
           return
         case 'imported-without-embeddings':
-          useToastStore().add({
-            severity: 'warn',
-            summary: t('g.warning'),
-            detail: t('toastMessages.a1111EmbeddingsUnavailable')
+          useToast().warning(t('g.warning'), {
+            description: t('toastMessages.a1111EmbeddingsUnavailable')
           })
           break
         case 'imported':
@@ -2633,9 +2673,10 @@ export class ComfyApp {
         const node = app.rootGraph.getNodeById(currentNodeId)
         if (!node) return
         const targetNode = node
+        const inputs = restoreDynamicGroupInputs(node, data.inputs)
 
-        for (const input in data.inputs) {
-          const value = data.inputs[input]
+        for (const input in inputs) {
+          const value = inputs[input]
           if (value instanceof Array) {
             function connectInput() {
               const [fromId, fromSlot] = value
@@ -2801,23 +2842,16 @@ export class ComfyApp {
         const nodeInputs = def.input
         for (const widget of node.widgets) {
           if (widget.type === 'combo') {
-            let inputType: 'required' | 'optional' | undefined
-            if (nodeInputs.required?.[widget.name] !== undefined) {
-              inputType = 'required'
-            } else if (nodeInputs.optional?.[widget.name] !== undefined) {
-              inputType = 'optional'
-            }
-            if (inputType !== undefined) {
-              // Get the input spec associated with the widget
-              const inputSpec = nodeInputs[inputType]?.[widget.name]
-              if (inputSpec) {
-                // Refresh the combo widget's options with the values from the input spec
-                if (isComboInputSpecV2(inputSpec)) {
-                  widget.options.values = inputSpec[1]?.options
-                } else if (isComboInputSpecV1(inputSpec)) {
-                  widget.options.values = inputSpec[0]
-                }
-              }
+            const resolved = resolveDynamicInputSpec(
+              nodeInputs,
+              widget.name,
+              (name) => node.widgets?.find((item) => item.name === name)?.value
+            )
+            const inputSpec = resolved?.spec
+            if (inputSpec && isComboInputSpecV2(inputSpec)) {
+              widget.options.values = inputSpec[1]?.options
+            } else if (inputSpec && isComboInputSpecV1(inputSpec)) {
+              widget.options.values = inputSpec[0]
             }
           }
         }
@@ -2847,38 +2881,31 @@ export class ComfyApp {
    * Refresh combo list on whole nodes
    */
   async refreshComboInNodes() {
-    const requestToastMessage: ToastMessageOptions = {
-      severity: 'info',
-      summary: t('g.update'),
-      detail: t('toastMessages.updateRequested')
-    }
-    if (this.vueAppReady) {
-      useToastStore().add(requestToastMessage)
-    }
+    const requestToastId = this.vueAppReady
+      ? useToast().info(t('g.update'), {
+          description: t('toastMessages.updateRequested')
+        })
+      : undefined
 
     try {
       await this.reloadNodeDefs()
 
       if (this.vueAppReady) {
-        useToastStore().add({
-          severity: 'success',
-          summary: t('g.updated'),
-          detail: t('toastMessages.nodeDefinitionsUpdated'),
-          life: 1000
+        useToast().success(t('g.updated'), {
+          description: t('toastMessages.nodeDefinitionsUpdated'),
+          duration: 1000
         })
       }
     } catch (error) {
       if (this.vueAppReady) {
-        useToastStore().add({
-          severity: 'error',
-          summary: t('g.error'),
-          detail: t('toastMessages.nodeDefinitionsUpdateFailed')
+        useToast().error(t('g.error'), {
+          description: t('toastMessages.nodeDefinitionsUpdateFailed')
         })
       }
       throw error
     } finally {
-      if (this.vueAppReady) {
-        useToastStore().remove(requestToastMessage)
+      if (requestToastId !== undefined) {
+        useToast().dismiss(requestToastId)
       }
     }
   }

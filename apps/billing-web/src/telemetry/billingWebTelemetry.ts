@@ -54,6 +54,8 @@ interface BillingEvent {
     | CheckoutJourneyTelemetryEventName
     | WebSessionTelemetryEvent['name']
   readonly properties: Readonly<Record<string, unknown>>
+  /** Sent while the page goes away, after PostHog has drained its queue on `pagehide`. */
+  readonly onPageExit?: true
 }
 
 interface IdentitySink {
@@ -181,8 +183,12 @@ export function createBillingWebTelemetry() {
           posthog.waiting.push(event)
         return
       case 'ready':
-        if (!posthog.disabledEvents.has(event.name))
-          posthog.client.capture(event.name, event.properties)
+        if (posthog.disabledEvents.has(event.name)) return
+        if (event.onPageExit)
+          posthog.client.capture(event.name, event.properties, {
+            transport: 'sendBeacon'
+          })
+        else posthog.client.capture(event.name, event.properties)
     }
   }
 
@@ -244,7 +250,8 @@ export function createBillingWebTelemetry() {
         properties: {
           ...getCheckoutJourneyTelemetryEventPayload(event),
           billing_surface: 'billing_web'
-        }
+        },
+        ...(event.phase === 'abandoned' && { onPageExit: true })
       })
     )
   }

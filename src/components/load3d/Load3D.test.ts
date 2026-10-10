@@ -130,9 +130,6 @@ function renderLoad3D(options: RenderOptions = {}) {
             name: 'ViewerControls',
             template: '<div data-testid="viewer-controls" />'
           }
-        },
-        directives: {
-          tooltip: () => {}
         }
       }
     }),

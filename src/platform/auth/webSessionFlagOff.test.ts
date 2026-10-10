@@ -13,6 +13,7 @@ import {
   bootCloudIdentity,
   cloudSignIn
 } from '@/platform/auth/session/cloudIdentityBoot'
+import { installCloudApiAuth } from '@/platform/auth/cloudApiAuthProvider'
 import { useCloudWebSessionStore } from '@/platform/auth/session/cloudWebSessionStore'
 import { refreshRemoteConfig } from '@/platform/remoteConfig/refreshRemoteConfig'
 import { remoteConfig } from '@/platform/remoteConfig/remoteConfig'
@@ -247,15 +248,12 @@ function installFetchRecorder(features: Record<string, unknown>) {
   }
   vi.stubGlobal('WebSocket', RecordingWebSocket)
 
-  vi.stubGlobal(
-    'fetch',
-    vi.fn<typeof fetch>(async (input, init) => {
-      const request = recordRequest(input, init)
-      all.push(request)
-      pending.push(request)
-      return respond(request)
-    })
-  )
+  vi.mocked(fetch).mockImplementation(async (input, init) => {
+    const request = recordRequest(input, init)
+    all.push(request)
+    pending.push(request)
+    return respond(request)
+  })
 
   return {
     all,
@@ -446,6 +444,7 @@ describe('cloud auth requests with unified_web_session off', () => {
 
   beforeEach(() => {
     identity.reset()
+    installCloudApiAuth()
   })
 
   afterEach(() => {
@@ -776,6 +775,26 @@ describe('Firebase-only account actions with unified_web_session off', () => {
 
       expect(currentUser.isEmailProvider.value).toBe(isEmailProvider)
       expect(currentUser.needsFirebaseSignIn.value).toBe(false)
+    }
+  )
+
+  it.for([{ unified_cloud_auth: false }, { unified_cloud_auth: true }])(
+    'sends no revoke-all for a Firebase login (unified_cloud_auth $unified_cloud_auth)',
+    async (features) => {
+      const recorder = installFetchRecorder(features)
+      await refreshRemoteConfig({ useAuth: false })
+      useAuthStore()
+      identity.resolve(EMAIL_USER)
+      await bootCloudIdentity()
+
+      expect(await useCloudWebSessionStore().revokeAllSessions()).toEqual({
+        status: 'error',
+        code: 'NO_SESSION',
+        retryable: false
+      })
+      expect(
+        recorder.all.filter(({ path }) => path.startsWith('/api/auth/'))
+      ).toEqual([])
     }
   )
 })

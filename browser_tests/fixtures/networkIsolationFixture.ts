@@ -3,6 +3,7 @@ import { expect, test as base } from '@playwright/test'
 import { config as dotenvConfig } from 'dotenv'
 
 import { HERO_SLIDES } from '@/platform/cloud/onboarding/constants/heroSlides'
+import { ToastHelper } from '@e2e/fixtures/helpers/ToastHelper'
 import type { LiveCloudBillingConfig } from '@e2e/fixtures/utils/liveCloudBillingConfig'
 import { installLiveCloudBillingRouting } from '@e2e/fixtures/utils/liveCloudBillingContext'
 import {
@@ -56,8 +57,9 @@ function guardApiRequests(
 }
 
 export const networkIsolationFixture = base.extend<{
-  networkPolicy: NetworkPolicy
   liveCloudBillingConfig: LiveCloudBillingConfig | undefined
+  networkPolicy: NetworkPolicy
+  toast: ToastHelper
 }>({
   serviceWorkers: 'block',
   liveCloudBillingConfig: [undefined, { option: true }],
@@ -190,5 +192,8 @@ export const networkIsolationFixture = base.extend<{
     }
     await use(context)
     restore()
+  },
+  toast: async ({ page }, use) => {
+    await use(new ToastHelper(page))
   }
 })

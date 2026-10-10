@@ -7,8 +7,11 @@
     >
       <Popover v-model:open="categoryMenuOpen">
         <PopoverTrigger as-child>
-          <button
-            v-tooltip.bottom="compact ? tip(activeLabel) : undefined"
+          <Button
+            variant="textonly"
+            size="unset"
+            :tooltip="compact ? activeLabel : ''"
+            tooltip-side="bottom"
             :class="chipClass"
             type="button"
             :aria-label="compact ? activeLabel : undefined"
@@ -17,13 +20,13 @@
             <i v-if="compact" :class="cn(activeIcon, 'size-4')" />
             <template v-else>{{ activeLabel }}</template>
             <i class="icon-[lucide--chevron-down] size-4 opacity-70" />
-          </button>
+          </Button>
         </PopoverTrigger>
         <PopoverContent
           side="bottom"
           align="start"
           :side-offset="8"
-          :class="panelClass"
+          :class="menuPanelClass"
         >
           <button
             v-for="c in categoryDefs"
@@ -31,11 +34,11 @@
             type="button"
             :class="
               cn(
-                rowClass,
-                'gap-2',
-                activeCategory === c.key && 'bg-button-active-surface'
+                menuButtonClass,
+                activeCategory === c.key && selectedMenuButtonClass
               )
             "
+            :aria-pressed="activeCategory === c.key"
             @click="selectCategory(c.key)"
           >
             <i :class="cn(c.icon, 'size-4')" />
@@ -132,48 +135,51 @@
           v-if="enableViewer && node"
           :node="node as LGraphNode"
         />
-        <button
+        <Button
           v-if="canFitToViewer"
-          v-tooltip.top="tip(t('load3d.fitToViewer'))"
-          :class="iconBtnClass"
+          variant="textonly"
+          size="icon"
+          :tooltip="t('load3d.fitToViewer')"
           type="button"
           :aria-label="t('load3d.fitToViewer')"
           @click="emit('fitToViewer')"
         >
           <i class="icon-[lucide--scan] size-4" />
-        </button>
-        <button
+        </Button>
+        <Button
           v-if="canCenterCameraOnModel"
-          v-tooltip.top="tip(t('load3d.centerCameraOnModel'))"
-          :class="iconBtnClass"
+          variant="textonly"
+          size="icon"
+          :tooltip="t('load3d.centerCameraOnModel')"
           type="button"
           :aria-label="t('load3d.centerCameraOnModel')"
           @click="emit('centerCamera')"
         >
           <i class="icon-[lucide--crosshair] size-4" />
-        </button>
+        </Button>
         <Popover v-if="canExport" v-model:open="exportOpen">
           <PopoverTrigger as-child>
-            <button
-              v-tooltip.top="tip(t('load3d.export'))"
-              :class="iconBtnClass"
+            <Button
+              variant="textonly"
+              size="icon"
+              :tooltip="t('load3d.export')"
               type="button"
               :aria-label="t('load3d.export')"
             >
               <i class="icon-[lucide--download] size-4" />
-            </button>
+            </Button>
           </PopoverTrigger>
           <PopoverContent
             side="top"
             align="end"
             :side-offset="8"
-            :class="panelClass"
+            :class="menuPanelClass"
           >
             <button
               v-for="format in exportFormats"
               :key="format.value"
               type="button"
-              :class="rowClass"
+              :class="menuButtonClass"
               @click="onExport(format.value)"
             >
               {{ format.label }}
@@ -191,6 +197,8 @@ import { PopoverTrigger } from 'reka-ui'
 import { computed, ref, watch } from 'vue'
 import { useI18n } from 'vue-i18n'
 
+import { cn } from '@comfyorg/tailwind-utils'
+
 import AnimationMenuStrip from '@/components/load3d/menubar/AnimationMenuStrip.vue'
 import CameraMenuGroup from '@/components/load3d/menubar/CameraMenuGroup.vue'
 import GizmoMenuGroup from '@/components/load3d/menubar/GizmoMenuGroup.vue'
@@ -198,18 +206,20 @@ import HdriMenuGroup from '@/components/load3d/menubar/HdriMenuGroup.vue'
 import LightMenuGroup from '@/components/load3d/menubar/LightMenuGroup.vue'
 import {
   chipClass,
-  iconBtnClass,
-  panelClass,
-  rowClass,
-  tip
+  menuPanelClass
 } from '@/components/load3d/menubar/menuBarStyles'
 import ModelMenuGroup from '@/components/load3d/menubar/ModelMenuGroup.vue'
 import RecordMenuControl from '@/components/load3d/menubar/RecordMenuControl.vue'
 import SceneMenuGroup from '@/components/load3d/menubar/SceneMenuGroup.vue'
 import { usePopoverExclusivity } from '@/components/load3d/menubar/usePopoverExclusivity'
 import ViewerControls from '@/components/load3d/controls/ViewerControls.vue'
+import Button from '@/components/ui/button/Button.vue'
 import Popover from '@/components/ui/popover/Popover.vue'
 import PopoverContent from '@/components/ui/popover/PopoverContent.vue'
+import {
+  menuButtonClass,
+  selectedMenuButtonClass
+} from '@/components/ui/menu/menuStyles'
 import { getExportFormatOptions } from '@/extensions/core/load3d/constants'
 import type { LGraphNode } from '@/lib/litegraph/src/LGraphNode'
 import type {
@@ -221,7 +231,6 @@ import type {
   ModelConfig,
   SceneConfig
 } from '@/extensions/core/load3d/interfaces'
-import { cn } from '@comfyorg/tailwind-utils'
 
 const {
   animations = [],

@@ -1,11 +1,9 @@
 <script setup lang="ts">
 import { cn } from '@comfyorg/tailwind-utils'
 import {
-  DropdownMenuContent,
   DropdownMenuItemIndicator,
   DropdownMenuPortal,
   DropdownMenuRadioGroup,
-  DropdownMenuRadioItem,
   DropdownMenuRoot,
   DropdownMenuTrigger
 } from 'reka-ui'
@@ -14,7 +12,8 @@ import { useI18n } from 'vue-i18n'
 
 import Button from '@/components/ui/button/Button.vue'
 import Input from '@/components/ui/input/Input.vue'
-import AccessibleTooltip from '@/components/ui/tooltip/AccessibleTooltip.vue'
+import MenuContent from '@/components/ui/menu/MenuContent.vue'
+import MenuRadioItem from '@/components/ui/menu/MenuRadioItem.vue'
 import { useWorkflowTabActivityStore } from '@/stores/workflowTabActivityStore'
 
 import type { ActiveTab } from '../../../types/activeTab'
@@ -113,62 +112,52 @@ function onSearchKeydown(event: KeyboardEvent): void {
     class="flex w-full items-center justify-between gap-1.5"
   >
     <DropdownMenuRoot :open @update:open="onOpenChange">
-      <AccessibleTooltip
-        :label="workflowTooltipText"
-        side="top"
-        align="start"
-        :skip-delay-duration="0"
-        disable-hoverable-content
-        :disable-closing-trigger="false"
-        :collision-padding="8"
-      >
-        <template #trigger>
-          <DropdownMenuTrigger as-child>
-            <Button
-              type="button"
-              :variant="current ? 'textonly' : 'outline'"
-              size="unset"
-              :disabled
-              :aria-label="t('agent.switchWorkflow')"
-              :class="
-                cn(
-                  'group h-7 min-w-0 gap-2 px-2.5 text-xs/4 font-normal',
-                  current && 'flex-1'
-                )
-              "
-            >
-              <span
-                v-if="tabActivity.editingTabPath === current?.path"
-                role="img"
-                :aria-label="t('g.agentWorking')"
-                class="icon-[lucide--loader-circle] size-4 shrink-0 text-muted-foreground motion-safe:animate-spin"
-              />
-              <span
-                v-else
-                data-testid="workflow-selector-icon"
-                class="icon-[comfy--workflow] size-4 shrink-0 text-muted-foreground group-hover:text-base-foreground"
-              />
-              <span class="min-w-0 truncate">{{
-                current?.name ?? t('agent.selectWorkflowForAgent')
-              }}</span>
-              <span
-                v-if="current?.isPersisted === false || current?.modified"
-                data-testid="unsaved-dot"
-                class="flex size-3.5 shrink-0 items-center justify-center"
-              >
-                <span class="size-[7px] rounded-full bg-base-foreground" />
-              </span>
-            </Button>
-          </DropdownMenuTrigger>
-        </template>
-      </AccessibleTooltip>
+      <DropdownMenuTrigger as-child>
+        <Button
+          :tooltip="workflowTooltipText"
+          type="button"
+          :variant="current ? 'textonly' : 'outline'"
+          size="unset"
+          :disabled
+          :aria-label="t('agent.switchWorkflow')"
+          :class="
+            cn(
+              'group h-7 min-w-0 justify-start gap-2 px-2.5 text-left text-xs/4 font-normal',
+              current && 'flex-1'
+            )
+          "
+        >
+          <span
+            v-if="tabActivity.editingTabPath === current?.path"
+            role="img"
+            :aria-label="t('g.agentWorking')"
+            class="icon-[lucide--loader-circle] size-4 shrink-0 text-muted-foreground motion-safe:animate-spin"
+          />
+          <span
+            v-else
+            data-testid="workflow-selector-icon"
+            class="icon-[comfy--workflow] size-4 shrink-0 text-muted-foreground group-hover:text-base-foreground"
+          />
+          <span class="min-w-0 truncate">{{
+            current?.name ?? t('agent.selectWorkflowForAgent')
+          }}</span>
+          <span
+            v-if="current?.isPersisted === false || current?.modified"
+            data-testid="unsaved-dot"
+            class="flex size-3.5 shrink-0 items-center justify-center"
+          >
+            <span class="size-[7px] rounded-full bg-base-foreground" />
+          </span>
+        </Button>
+      </DropdownMenuTrigger>
       <DropdownMenuPortal>
-        <DropdownMenuContent
+        <MenuContent
           side="top"
           align="start"
           :side-offset="8"
           :reference="composerReference"
-          class="agent-scope z-1100 box-border w-(--reka-dropdown-menu-trigger-width) overflow-hidden rounded-lg border border-border-subtle bg-secondary-background p-1 font-inter shadow-lg"
+          width="trigger"
+          class="agent-scope"
         >
           <Input
             ref="searchInput"
@@ -197,13 +186,12 @@ function onSearchKeydown(event: KeyboardEvent): void {
               >
                 {{ section.label }}
               </div>
-              <DropdownMenuRadioItem
+              <MenuRadioItem
                 v-for="tab in section.tabs"
                 :key="tab.path"
                 :value="tab.path"
                 :disabled="disabled || selectingTabPath !== null"
                 :aria-busy="selectingTabPath === tab.path || undefined"
-                class="box-border flex h-7 w-full cursor-pointer items-center gap-1.5 rounded-lg px-1.5 py-1 text-[14px]/5 font-normal text-base-foreground outline-none data-highlighted:bg-secondary-background-hover"
                 @select.prevent
               >
                 <span
@@ -255,10 +243,10 @@ function onSearchKeydown(event: KeyboardEvent): void {
                     />
                   </DropdownMenuItemIndicator>
                 </span>
-              </DropdownMenuRadioItem>
+              </MenuRadioItem>
             </div>
           </DropdownMenuRadioGroup>
-        </DropdownMenuContent>
+        </MenuContent>
       </DropdownMenuPortal>
     </DropdownMenuRoot>
   </div>

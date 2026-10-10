@@ -1,7 +1,7 @@
 import type {
   ModelLaunchComparison,
   ModelLaunchPage
-} from '../templates/model-launch/types'
+} from '@/templates/model-launch/types'
 
 import { minimaxLinks } from './minimax'
 

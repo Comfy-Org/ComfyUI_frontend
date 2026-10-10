@@ -108,6 +108,7 @@ export type RemoteConfig = Partial<GetFeaturesResponses[200]> & {
   onboarding_tour_enabled?: boolean
   /** Full hosted (external) survey URL embedded in the Nodes Manager modal on Cloud. */
   manager_survey_url?: string
+  cancellation_survey_id?: string
   linear_toggle_enabled?: boolean
   'agent-in-app-experience'?: boolean
   'agent-free-use-message-placement'?: string
@@ -120,7 +121,6 @@ export type RemoteConfig = Partial<GetFeaturesResponses[200]> & {
   free_tier_credits?: number
   free_tier_job_allowance_enabled?: boolean
   new_free_tier_subscriptions?: boolean
-  workflow_sharing_enabled?: boolean
   comfyhub_upload_enabled?: boolean
   comfyhub_profile_gate_enabled?: boolean
   // Raw, unvalidated wire value ('stripe' | 'billing_web' by contract). Always
@@ -128,6 +128,7 @@ export type RemoteConfig = Partial<GetFeaturesResponses[200]> & {
   hosted_billing_destination?: string
   unified_cloud_auth?: boolean
   unified_web_session?: boolean
+  sso_enabled?: boolean
   // Wire key carries the server's own spelling; see ServerFeatureFlag.
   embedded_checked_enabled?: boolean
   billing_sdk_topup_enabled?: boolean
@@ -136,7 +137,6 @@ export type RemoteConfig = Partial<GetFeaturesResponses[200]> & {
   member_credit_limits_enabled?: boolean
   legacy_billing_migration_enabled?: boolean
   v1_payment_recovery?: boolean
-  churnkey_app_id?: string
   sentry_dsn?: string
   turnstile_sitekey?: string
   /** Absent when the backend has no key configured, not an empty string; always sanitize with the reader before trusting it. */

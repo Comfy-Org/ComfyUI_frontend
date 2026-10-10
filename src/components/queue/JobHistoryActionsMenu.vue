@@ -1,101 +1,25 @@
 <template>
-  <div class="flex items-center gap-1">
-    <Popover :show-arrow="false">
-      <template #button>
-        <Button
-          v-tooltip.top="moreTooltipConfig"
-          variant="textonly"
-          size="icon"
-          :aria-label="t('sideToolbar.queueProgressOverlay.moreOptions')"
-        >
-          <i
-            class="icon-[lucide--more-horizontal] block size-4 leading-none text-text-secondary"
-          />
-        </Button>
-      </template>
-      <template #default="{ close }">
-        <div class="flex min-w-56 flex-col items-stretch font-inter">
-          <Button
-            data-testid="docked-job-history-action"
-            class="w-full justify-between text-sm font-light"
-            variant="textonly"
-            size="md"
-            @click="onToggleDockedJobHistory(close)"
-          >
-            <span class="flex items-center gap-2">
-              <i
-                class="icon-[lucide--panel-left-close] size-4 text-text-secondary"
-              />
-              <span>{{
-                t('sideToolbar.queueProgressOverlay.dockedJobHistory')
-              }}</span>
-            </span>
-            <i
-              v-if="isQueuePanelV2Enabled"
-              class="icon-[lucide--check] size-4"
-            />
-          </Button>
-          <Button
-            data-testid="show-run-progress-bar-action"
-            class="w-full justify-between text-sm font-light"
-            variant="textonly"
-            size="md"
-            @click="onToggleRunProgressBar"
-          >
-            <span class="flex items-center gap-2">
-              <i class="icon-[lucide--hourglass] size-4 text-text-secondary" />
-              <span>{{
-                t('sideToolbar.queueProgressOverlay.showRunProgressBar')
-              }}</span>
-            </span>
-            <i
-              v-if="isRunProgressBarEnabled"
-              class="icon-[lucide--check] size-4"
-            />
-          </Button>
-          <!-- TODO: Bug in assets sidebar panel derives assets from history, so despite this not deleting the assets, it still effectively shows to the user as deleted -->
-          <template v-if="showClearHistoryAction">
-            <div class="my-1 border-t border-interface-stroke" />
-            <Button
-              data-testid="clear-history-action"
-              class="h-auto min-h-8 w-full items-start justify-start whitespace-normal"
-              variant="textonly"
-              size="md"
-              @click="onClearHistoryFromMenu(close)"
-            >
-              <i
-                class="icon-[lucide--trash-2] size-4 shrink-0 self-center text-destructive-background"
-              />
-              <span
-                class="flex flex-col items-start text-left leading-tight wrap-break-word"
-              >
-                <span class="text-sm font-light">
-                  {{ t('sideToolbar.queueProgressOverlay.clearHistory') }}
-                </span>
-                <span class="text-xs font-light text-text-secondary">
-                  {{
-                    t(
-                      'sideToolbar.queueProgressOverlay.clearHistoryMenuAssetsNote'
-                    )
-                  }}
-                </span>
-              </span>
-            </Button>
-          </template>
-        </div>
-      </template>
-    </Popover>
-  </div>
+  <Menu v-model:open="open" :items="items" align="end">
+    <template #trigger>
+      <Button
+        :tooltip="t('g.more')"
+        variant="muted-textonly"
+        size="icon"
+        :aria-label="t('sideToolbar.queueProgressOverlay.moreOptions')"
+        icon="icon-[lucide--more-horizontal]"
+      />
+    </template>
+  </Menu>
 </template>
 
 <script setup lang="ts">
-import { computed } from 'vue'
+import { computed, ref } from 'vue'
 import { useI18n } from 'vue-i18n'
 
-import Popover from '@/components/ui/Popover.vue'
 import Button from '@/components/ui/button/Button.vue'
+import Menu from '@/components/ui/menu/Menu.vue'
+import type { MenuItem } from '@/components/ui/menu/types'
 import { useQueueFeatureFlags } from '@/composables/queue/useQueueFeatureFlags'
-import { buildTooltipConfig } from '@/composables/useTooltipConfig'
 import { isCloud } from '@/platform/distribution/types'
 import { useSettingStore } from '@/platform/settings/settingStore'
 import { useSurveyFeatureTracking } from '@/platform/surveys/useSurveyFeatureTracking'
@@ -110,19 +34,38 @@ const settingStore = useSettingStore()
 const sidebarTabStore = useSidebarTabStore()
 const { trackFeatureUsed } = useSurveyFeatureTracking('queue-progress-overlay')
 
-const moreTooltipConfig = computed(() => buildTooltipConfig(t('g.more')))
 const { isQueuePanelV2Enabled, isRunProgressBarEnabled } =
   useQueueFeatureFlags()
-const showClearHistoryAction = computed(() => !isCloud)
+const open = ref(false)
+const items = computed<MenuItem[]>(() => [
+  {
+    label: t('sideToolbar.queueProgressOverlay.dockedJobHistory'),
+    icon: 'icon-[lucide--panel-left-close]',
+    checked: isQueuePanelV2Enabled.value,
+    command: onToggleDockedJobHistory
+  },
+  {
+    label: t('sideToolbar.queueProgressOverlay.showRunProgressBar'),
+    icon: 'icon-[lucide--hourglass]',
+    checked: isRunProgressBarEnabled.value,
+    command: onToggleRunProgressBar
+  },
+  { separator: true, visible: !isCloud },
+  {
+    label: t('sideToolbar.queueProgressOverlay.clearHistory'),
+    description: t(
+      'sideToolbar.queueProgressOverlay.clearHistoryMenuAssetsNote'
+    ),
+    icon: 'icon-[lucide--trash-2]',
+    variant: 'destructive',
+    visible: !isCloud,
+    command: () => emit('clearHistory')
+  }
+])
 
-const onClearHistoryFromMenu = (close: () => void) => {
-  close()
-  emit('clearHistory')
-}
-
-const onToggleDockedJobHistory = async (close: () => void) => {
+async function onToggleDockedJobHistory() {
   trackFeatureUsed()
-  close()
+  open.value = false
 
   try {
     if (isQueuePanelV2Enabled.value) {
@@ -140,7 +83,7 @@ const onToggleDockedJobHistory = async (close: () => void) => {
   }
 }
 
-const onToggleRunProgressBar = async () => {
+async function onToggleRunProgressBar() {
   trackFeatureUsed()
   await settingStore.set(
     'Comfy.Queue.ShowRunProgressBar',

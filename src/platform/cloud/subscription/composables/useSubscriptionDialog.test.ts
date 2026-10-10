@@ -9,12 +9,16 @@ import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { computed } from 'vue'
 
 import { useTelemetry } from '@/platform/telemetry'
+import { TelemetryRegistry } from '@/platform/telemetry/TelemetryRegistry'
+import { DatadogRumTelemetryProvider } from '@/platform/telemetry/providers/cloud/DatadogRumTelemetryProvider'
+import type { PaymentIntentSource } from '@/platform/telemetry/types'
 
 import { useBillingRouting } from '@/composables/billing/useBillingRouting'
 import { useBillingContext } from '@/composables/billing/useBillingContext'
 import { useWorkspaceUI } from '@/platform/workspace/composables/useWorkspaceUI'
 import { useFeatureFlags } from '@/composables/useFeatureFlags'
 import { useDialogService } from '@/services/dialogService'
+import { useWorkspaceDialogs } from '@/platform/workspace/composables/useWorkspaceDialogs'
 import type { SubscriptionInfo } from '@/composables/billing/types'
 import type {
   BillingSubscriptionStatus,
@@ -40,6 +44,7 @@ const mockIsLegacyTeamPlan = vi.hoisted(() => ({ value: false }))
 const mockIsTeamPlan = vi.hoisted(() => ({ value: false }))
 const mockCurrentPlanSlug = vi.hoisted(() => ({ value: null as string | null }))
 const mockStartOperation = vi.hoisted(() => vi.fn())
+const mockRumAddAction = vi.hoisted(() => vi.fn())
 const mockTeamCreditStops = vi.hoisted(() => ({
   value: null as TeamCreditStops | null
 }))
@@ -53,7 +58,14 @@ const mockSubscriptionStatus = vi.hoisted(() => ({
   value: null as BillingSubscriptionStatus | null
 }))
 
+vi.mock<unknown>(import('@datadog/browser-rum'), () => ({
+  datadogRum: { addAction: mockRumAddAction }
+}))
+
+vi.mock(import('@/composables/auth/useCurrentUser'))
+
 vi.mock(import('@/services/dialogService'))
+vi.mock(import('@/platform/workspace/composables/useWorkspaceDialogs'))
 
 vi.mock(import('@/composables/billing/useBillingRouting'))
 
@@ -90,7 +102,8 @@ function recoveredOperation(
     authenticationState: null,
     isAuthenticating: false,
     canRetryAuthentication: false,
-    errorMessage: null
+    errorMessage: null,
+    cancelable: false
   }
 }
 
@@ -110,7 +123,7 @@ beforeEach(() => {
   vi.mocked(useDialogService().showLayoutDialog).mockImplementation(
     mockShowLayoutDialog
   )
-  vi.mocked(useDialogService().showTeamWorkspacesDialog).mockImplementation(
+  vi.mocked(useWorkspaceDialogs().showTeamWorkspacesDialog).mockImplementation(
     mockShowTeamWorkspacesDialog
   )
   const billing = useBillingContext()
@@ -657,6 +670,133 @@ describe('useSubscriptionDialog', () => {
     })
   })
 
+  describe('paywall impressions reported to Datadog', () => {
+    beforeEach(() => {
+      const registry = new TelemetryRegistry()
+      registry.registerProvider(new DatadogRumTelemetryProvider())
+      vi.mocked(useTelemetry).mockReturnValue(registry)
+    })
+
+    function useUnifiedWorkspacePricing() {
+      useBillingRouting().type = computed(() => 'workspace')
+      useBillingRouting().shouldUseWorkspaceBilling = computed(() => true)
+      useBillingRouting().shouldUseUnifiedPricing = computed(() => true)
+    }
+
+    it.for<{
+      name: string
+      arrange: () => void
+      reason: PaymentIntentSource
+      tier: SubscriptionInfo['tier']
+      reported: { payment_intent_source: string; current_tier?: string }
+    }>([
+      {
+        name: 'the personal pricing table',
+        arrange: () => {},
+        reason: 'upgrade_to_add_credits',
+        tier: 'STANDARD',
+        reported: {
+          payment_intent_source: 'upgrade_to_add_credits',
+          current_tier: 'standard'
+        }
+      },
+      {
+        name: 'the unified workspace pricing table',
+        arrange: useUnifiedWorkspacePricing,
+        reason: 'subscribe_to_run',
+        tier: 'FREE',
+        reported: {
+          payment_intent_source: 'subscribe_to_run',
+          current_tier: 'free'
+        }
+      },
+      {
+        name: 'the read-only dialog a member without subscription rights sees',
+        arrange: () => {
+          useUnifiedWorkspacePricing()
+          Object.assign(useTeamWorkspaceStore(), {
+            isInPersonalWorkspace: false
+          })
+          useWorkspaceUI().permissions.value.canManageSubscription = false
+        },
+        reason: 'out_of_credits',
+        tier: 'CREATOR',
+        reported: {
+          payment_intent_source: 'out_of_credits',
+          current_tier: 'creator'
+        }
+      }
+    ])('reports the impression of $name once', (row) => {
+      row.arrange()
+      mockTier.value = row.tier
+      const { showPricingTable } = useSubscriptionDialog()
+
+      showPricingTable({ reason: row.reason })
+
+      expect(mockRumAddAction).toHaveBeenCalledExactlyOnceWith(
+        'billing.entry.paywall_shown',
+        {
+          operation: 'entry',
+          stage: 'paywall_shown',
+          outcome: 'pending',
+          billing_surface: 'cloud_app',
+          ...row.reported
+        }
+      )
+    })
+
+    it.for<{
+      tier: SubscriptionInfo['tier']
+      reported: { current_tier?: string }
+    }>([
+      { tier: 'FOUNDERS_EDITION', reported: { current_tier: 'founder' } },
+      { tier: 'TEAM', reported: { current_tier: 'team' } },
+      { tier: 'ENTERPRISE', reported: {} },
+      { tier: null, reported: {} }
+    ])('reports the plan $tier as $reported', ({ tier, reported }) => {
+      mockTier.value = tier
+      const { showPricingTable } = useSubscriptionDialog()
+
+      showPricingTable()
+
+      expect(mockRumAddAction).toHaveBeenCalledExactlyOnceWith(
+        'billing.entry.paywall_shown',
+        {
+          operation: 'entry',
+          stage: 'paywall_shown',
+          outcome: 'pending',
+          billing_surface: 'cloud_app',
+          ...reported
+        }
+      )
+    })
+
+    it('keeps reporting the paywall to the providers that already receive it', () => {
+      const legacyProvider = { trackSubscription: vi.fn() }
+      const registry = new TelemetryRegistry()
+      registry.registerProvider(new DatadogRumTelemetryProvider())
+      registry.registerProvider(legacyProvider)
+      vi.mocked(useTelemetry).mockReturnValue(registry)
+      const { showPricingTable } = useSubscriptionDialog()
+
+      showPricingTable({ reason: 'out_of_credits' })
+
+      expect(legacyProvider.trackSubscription).toHaveBeenCalledExactlyOnceWith(
+        'modal_opened',
+        { current_tier: 'free', reason: 'out_of_credits' }
+      )
+    })
+
+    it('reports nothing off the cloud', () => {
+      mockIsCloud.value = false
+      const { showPricingTable } = useSubscriptionDialog()
+
+      showPricingTable({ reason: 'subscribe_to_run' })
+
+      expect(mockRumAddAction).not.toHaveBeenCalled()
+    })
+  })
+
   describe('startTeamWorkspaceUpgradeFlow', () => {
     it('closes existing dialogs before opening team workspace dialog', () => {
       mockShowTeamWorkspacesDialog.mockResolvedValue(undefined)
@@ -685,14 +825,13 @@ describe('useSubscriptionDialog', () => {
     })
 
     it('reopens pricing table on dialog rejection', async () => {
-      const consoleSpy = vi.spyOn(console, 'error').mockImplementation(() => {})
       mockShowTeamWorkspacesDialog.mockRejectedValue(new Error('dialog error'))
 
       const { startTeamWorkspaceUpgradeFlow } = useSubscriptionDialog()
       startTeamWorkspaceUpgradeFlow()
 
       await vi.waitFor(() => {
-        expect(consoleSpy).toHaveBeenCalledWith(
+        expect(console.error).toHaveBeenCalledWith(
           '[useSubscriptionDialog] Failed to open team workspaces dialog:',
           expect.any(Error)
         )
@@ -701,8 +840,6 @@ describe('useSubscriptionDialog', () => {
       expect(mockShowLayoutDialog).toHaveBeenCalledWith(
         expect.objectContaining({ key: 'subscription-required' })
       )
-
-      consoleSpy.mockRestore()
     })
   })
 

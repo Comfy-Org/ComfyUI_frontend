@@ -59,7 +59,7 @@ function recordingFetch(
   perUser: Record<string, unknown>
 ) {
   const sent: Array<Record<string, unknown>> = []
-  const fetchImpl = vi.fn<typeof fetch>(async (input, init) => {
+  const fetchImpl: typeof fetch = async (input, init) => {
     const { credentials, cache, headers } = init ?? {}
     sent.push(
       Object.fromEntries(
@@ -73,7 +73,7 @@ function recordingFetch(
     )
     const body = credentials === 'include' ? perUser : anonymous
     return new Response(JSON.stringify(body))
-  })
+  }
   return { sent, fetchImpl }
 }
 
@@ -126,7 +126,7 @@ describe('website unified_web_session reader', () => {
     '$name: adds exactly $added.length request(s) to main, once per page load',
     async ({ anonymous, perUser, added, enabled }) => {
       const { sent, fetchImpl } = recordingFetch(anonymous, perUser)
-      vi.stubGlobal('fetch', fetchImpl)
+      vi.mocked(fetch).mockImplementation(fetchImpl)
       const readUnifiedWebSessionEnabled = await freshReader()
 
       const first = await readUnifiedWebSessionEnabled()
@@ -139,12 +139,9 @@ describe('website unified_web_session reader', () => {
   )
 
   it('is off, and never throws, when Cloud is unreachable', async () => {
-    vi.stubGlobal(
-      'fetch',
-      vi.fn<typeof fetch>(async () => {
-        throw new TypeError('Failed to fetch')
-      })
-    )
+    vi.mocked(fetch).mockImplementation(async () => {
+      throw new TypeError('Failed to fetch')
+    })
     const readUnifiedWebSessionEnabled = await freshReader()
 
     await expect(readUnifiedWebSessionEnabled()).resolves.toBe(false)

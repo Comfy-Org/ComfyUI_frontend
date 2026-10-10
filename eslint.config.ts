@@ -101,6 +101,12 @@ const i18nPlugin = pluginI18n as unknown as ESLint.Plugin
 
 // .oxlintrc.json `ignorePatterns` is the shared ignore list for both linters;
 // the rest of the oxlint configs switch off ESLint rules oxlint already runs.
+const noTooltipDirective = {
+  selector: "VAttribute[directive=true][key.name.name='tooltip']",
+  message:
+    'Use the Button tooltip prop or the design-system Tooltip compound instead of v-tooltip.'
+}
+
 const oxlintConfigs = oxlint.buildFromOxlintConfigFile(
   path.resolve(import.meta.dirname, '.oxlintrc.json')
 )
@@ -135,14 +141,49 @@ const settings = {
     })
   ],
   'vue-i18n': {
+    // The rule checks that a path exists, not that it reaches a string, so
+    // t('g') is accepted. packages/** is left out because a shared package is
+    // consumed against all three catalogs, so there is no single one to pin.
+    //
+    // ESLint's --cache keys on file content and config, never on catalog
+    // content, so removing a key without touching its call sites can survive a
+    // cache hit.
     localeDir: [
+      { pattern: './src/locales/en/main.json', localeKey: 'path' },
       {
-        pattern: './src/locales/**/*.json',
-        localeKey: 'path',
-        localePattern:
-          /^\.?\/?src\/locales\/(?<locale>[A-Za-z0-9-]+)\/.+\.json$/
+        pattern: './scripts/i18n/eslint-generated-messages.js',
+        localeKey: 'key'
       }
     ],
+    // localeDir is relative to ESLint's cwd, so a workspace-local lint run
+    // would resolve it to nothing and silently report no missing keys.
+    cwd: import.meta.dirname,
+    messageSyntaxVersion: '^9.0.0'
+  }
+} as const
+
+const billingWebI18nSettings = {
+  'vue-i18n': {
+    localeDir: [
+      {
+        pattern: './apps/billing-web/src/locales/en/main.json',
+        localeKey: 'path'
+      }
+    ],
+    cwd: import.meta.dirname,
+    messageSyntaxVersion: '^9.0.0'
+  }
+} as const
+
+const websiteI18nSettings = {
+  'vue-i18n': {
+    localeDir: [
+      {
+        pattern: './apps/website/src/locales/en/main.json',
+        localeKey: 'path'
+      }
+    ],
+    cwd: import.meta.dirname,
     messageSyntaxVersion: '^9.0.0'
   }
 } as const
@@ -335,7 +376,7 @@ export default defineConfig([
                   'label',
                   'placeholder',
                   'title',
-                  'v-tooltip'
+                  'tooltip'
                 ],
                 img: ['alt']
               },
@@ -428,7 +469,52 @@ export default defineConfig([
         rules: {
           'vue/no-v-html': 'error'
         }
+      },
+      {
+        name: 'comfy/design-system-tooltip',
+        files: ['src/**/*.vue'],
+        rules: {
+          'vue/no-restricted-syntax': ['error', noTooltipDirective]
+        }
+      },
+      {
+        name: 'comfy/single-tooltip-provider',
+        files: ['src/**/*.vue'],
+        ignores: [
+          'src/App.vue',
+          'src/components/graph/SelectionToolbox.vue',
+          'src/components/ui/tooltip/*.vue',
+          'src/renderer/core/layout/transform/TransformPane.vue'
+        ],
+        rules: {
+          'vue/no-restricted-syntax': [
+            'error',
+            noTooltipDirective,
+            {
+              selector: "VElement[rawName='TooltipProvider']",
+              message:
+                'App.vue owns the tooltip provider. Add a nested provider only for a surface with its own open delay, and list it here.'
+            }
+          ]
+        }
       }
     ]
-  }
+  },
+  // Every tree checked against its own catalog. These entries add only the
+  // catalog and the rule, so the extensions must be ones the blocks above
+  // already parse: tailwindScriptFiles for .ts, templateFiles for .vue and
+  // .astro. Adding .mts here would lint it with espree and fail on syntax.
+  ...(
+    [
+      ['src', settings],
+      ['apps/billing-web', billingWebI18nSettings],
+      ['apps/website', websiteI18nSettings]
+    ] as const
+  ).map(([root, treeSettings]) => ({
+    files: [`${root}/**/*.{ts,vue,astro}`],
+    ignores: tailwindScriptIgnores,
+    settings: treeSettings,
+    plugins: { '@intlify/vue-i18n': i18nPlugin },
+    rules: { '@intlify/vue-i18n/no-missing-keys': 'error' as const }
+  }))
 ])

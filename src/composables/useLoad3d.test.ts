@@ -20,7 +20,7 @@ import type { LGraph } from '@/lib/litegraph/src/LGraph'
 import type { LGraphNode } from '@/lib/litegraph/src/LGraphNode'
 import type { IWidget } from '@/lib/litegraph/src/types/widgets'
 import { useCanvasStore } from '@/renderer/core/canvas/canvasStore'
-import { useToastStore } from '@/platform/updates/common/toastStore'
+import { useToast } from '@/components/ui/toast/toastStore'
 import { api } from '@/scripts/api'
 import { createMockLGraphNode } from '@/utils/__tests__/litegraphTestUtils'
 import { createMockCanvasPointerEvent } from '@/utils/__tests__/canvasTestUtils'
@@ -68,7 +68,6 @@ describe('useLoad3d', () => {
   afterEach(() => scope.stop())
   let mockLoad3d: Partial<Load3d>
   let mockNode: LGraphNode
-  let mockToastStore: ReturnType<typeof useToastStore>
 
   beforeEach(() => {
     vi.mocked(api.getServerFeature).mockReturnValue(false)
@@ -191,8 +190,6 @@ describe('useLoad3d', () => {
       return this
     })
     vi.mocked(createLoad3d).mockImplementation(() => mockLoad3d as Load3d)
-
-    mockToastStore = useToastStore()
   })
 
   describe('initialization', () => {
@@ -348,7 +345,7 @@ describe('useLoad3d', () => {
 
       await composable.initializeLoad3d(containerRef)
 
-      expect(mockToastStore.addAlert).toHaveBeenCalledWith(
+      expect(useToast().warning).toHaveBeenCalledWith(
         'toastMessages.failedToInitializeLoad3dViewer'
       )
     })
@@ -825,7 +822,7 @@ describe('useLoad3d', () => {
 
       await composable.handleExportModel('glb')
 
-      expect(mockToastStore.addAlert).toHaveBeenCalledWith(
+      expect(useToast().warning).toHaveBeenCalledWith(
         'toastMessages.no3dSceneToExport'
       )
     })
@@ -842,7 +839,7 @@ describe('useLoad3d', () => {
 
       await composable.handleExportModel('glb')
 
-      expect(mockToastStore.addAlert).toHaveBeenCalledWith(
+      expect(useToast().warning).toHaveBeenCalledWith(
         'toastMessages.failedToExportModel'
       )
     })
@@ -1069,9 +1066,7 @@ describe('useLoad3d', () => {
       await composable.handleModelDrop(file)
 
       expect(mockLoad3d.loadModel).not.toHaveBeenCalled()
-      expect(mockToastStore.addAlert).toHaveBeenCalledWith(
-        'toastMessages.no3dScene'
-      )
+      expect(useToast().warning).toHaveBeenCalledWith('toastMessages.no3dScene')
     })
   })
 
@@ -1347,19 +1342,6 @@ describe('useLoad3d', () => {
       expect(savedConfig.gizmo.mode).toBe('rotate')
     })
 
-    it('should register gizmoTransformChange event handler', async () => {
-      const composable = useLoad3d(mockNode)
-      const containerRef = document.createElement('div')
-
-      await composable.initializeLoad3d(containerRef)
-
-      const addEventCalls = vi.mocked(mockLoad3d.addEventListener!).mock.calls
-      const gizmoEventCall = addEventCalls.find(
-        ([event]) => event === 'gizmoTransformChange'
-      )
-      expect(gizmoEventCall).toBeDefined()
-    })
-
     it('gizmoTransformChange event should update modelConfig', async () => {
       const composable = useLoad3d(mockNode)
       const containerRef = document.createElement('div')
@@ -1530,17 +1512,10 @@ describe('useLoad3d', () => {
   })
 
   describe('modelReady event handler (thumbnail capture)', () => {
-    let originalFetch: typeof globalThis.fetch
-
     beforeEach(() => {
-      originalFetch = globalThis.fetch
-      globalThis.fetch = vi.fn().mockResolvedValue({
-        blob: () => Promise.resolve(new Blob(['x'], { type: 'image/png' }))
-      })
-    })
-
-    afterEach(() => {
-      globalThis.fetch = originalFetch
+      vi.mocked(fetch).mockImplementation(
+        async () => new Response(new Blob(['x'], { type: 'image/png' }))
+      )
     })
 
     async function getModelReadyHandler() {
@@ -1792,10 +1767,6 @@ describe('useLoad3d', () => {
     })
 
     it('isolates a throwing callback so subsequent callbacks and event wiring still run', async () => {
-      const consoleErrorSpy = vi
-        .spyOn(console, 'error')
-        .mockImplementation(() => {})
-
       const composable = useLoad3d(mockNode)
       const throwing = vi.fn(() => {
         throw new Error('boom')
@@ -1809,20 +1780,14 @@ describe('useLoad3d', () => {
       expect(throwing).toHaveBeenCalledTimes(1)
       expect(after).toHaveBeenCalledTimes(1)
       expect(mockLoad3d.addEventListener).toHaveBeenCalled()
-      expect(mockToastStore.addAlert).not.toHaveBeenCalled()
-      expect(consoleErrorSpy).toHaveBeenCalledWith(
+      expect(useToast().toasts).toEqual([])
+      expect(console.error).toHaveBeenCalledWith(
         'Load3d ready callback failed:',
         expect.any(Error)
       )
-
-      consoleErrorSpy.mockRestore()
     })
 
     it('isolates a throwing callback in the synchronous already-mounted path', async () => {
-      const consoleErrorSpy = vi
-        .spyOn(console, 'error')
-        .mockImplementation(() => {})
-
       const composable = useLoad3d(mockNode)
       await composable.initializeLoad3d(document.createElement('div'))
 
@@ -1833,8 +1798,6 @@ describe('useLoad3d', () => {
       expect(() => composable.waitForLoad3d(throwing)).not.toThrow()
       expect(() => composable.onLoad3dReady(throwing)).not.toThrow()
       expect(throwing).toHaveBeenCalledTimes(2)
-
-      consoleErrorSpy.mockRestore()
     })
 
     it('cleans up callback maps when the node is removed before initializeLoad3d runs', async () => {

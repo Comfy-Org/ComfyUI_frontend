@@ -1,88 +1,35 @@
 import { zPromptErrorResponse } from '@comfyorg/ingest-types/zod'
 import { isPlainObject } from 'es-toolkit'
 import { merge } from 'es-toolkit/compat'
-import { watch } from 'vue'
 import type { Component } from 'vue'
+import type { ComponentAttrs } from 'vue-component-type-helpers'
 
+import { assert } from '@/base/assert'
 import ConfirmationDialogContent from '@/components/dialog/content/ConfirmationDialogContent.vue'
+import type { ConfirmationDialogType } from '@/components/dialog/content/confirmationDialogTypes'
 import ErrorDialogContent from '@/components/dialog/content/ErrorDialogContent.vue'
 import PromptDialogContent from '@/components/dialog/content/PromptDialogContent.vue'
-import TopUpCreditsDialogContentLegacy from '@/components/dialog/content/TopUpCreditsDialogContentLegacy.vue'
-import InsufficientCreditsMemberDialog from '@/platform/workspace/components/InsufficientCreditsMemberDialog.vue'
-import TopUpCreditsDialogContentWorkspace from '@/platform/workspace/components/TopUpCreditsDialogContentWorkspace.vue'
-import { useBillingCapabilities } from '@/platform/workspace/composables/useBillingCapabilities'
-import { useTeamWorkspaceStore } from '@/platform/workspace/stores/teamWorkspaceStore'
+import { HUG_CONTENT_CLASS } from '@/components/ui/dialog/dialog.variants'
+import type {
+  DowngradeToPersonalResult,
+  SubscriptionDialogOptions,
+  TopUpCreditsDialogOptions
+} from '@/composables/billing/types'
 import { t } from '@/i18n'
-import { useTelemetry } from '@/platform/telemetry'
 import { isCloud } from '@/platform/distribution/types'
-import { useBillingContext } from '@/composables/billing/useBillingContext'
-import { useToastStore } from '@/platform/updates/common/toastStore'
-import { useDialogStore } from '@/stores/dialogStore'
 import type { RunErrorMessageSource } from '@/platform/errorCatalog/types'
 import type { PromptError } from '@/platform/remote/comfyui/types'
-import { PromptExecutionError } from '@/scripts/api'
-import { tryExtractValidationError } from '@/utils/executionErrorUtil'
-import type {
-  DialogComponentProps,
-  ShowDialogOptions
-} from '@/stores/dialogStore'
-
-import type { ComponentAttrs } from 'vue-component-type-helpers'
-import type { SubscriptionDialogOptions } from '@/platform/cloud/subscription/composables/useSubscriptionDialog'
+import { useTelemetry } from '@/platform/telemetry'
 import type { PaymentIntentSource } from '@/platform/telemetry/types'
 import type { WorkspaceRole } from '@/platform/workspace/api/workspaceApi'
-import type { DowngradeToPersonalResult } from '@/platform/workspace/composables/useDowngradeToPersonal'
-
-// Lazy loaders for dialogs - components are loaded on first use
-const lazyApiNodesSignInContent = () =>
-  import('@/components/dialog/content/ApiNodesSignInContent.vue')
-const lazySignInContent = () =>
-  import('@/components/dialog/content/SignInContent.vue')
-const lazyUpdatePasswordContent = () =>
-  import('@/components/dialog/content/UpdatePasswordContent.vue')
-const lazyComfyOrgHeader = () =>
-  import('@/components/dialog/header/ComfyOrgHeader.vue')
-const lazyCloudNotificationContent = () =>
-  import('@/platform/cloud/notification/components/CloudNotificationContent.vue')
-const lazyPublishDialog = () =>
-  import('@/platform/workflow/sharing/components/publish/ComfyHubPublishDialog.vue')
-
-/**
- * Shrink-wrap the Reka DialogContent around the content's intrinsic width,
- * like the auto-sized PrimeVue root it replaces.
- */
-const HUG_CONTENT_CLASS =
-  'w-fit max-w-[calc(100vw-1rem)] sm:max-w-[calc(100vw-1rem)]'
-
-/**
- * Reka chrome for headless dialogs whose content draws its own panel
- * (background/border/rounding) — neutralize the DialogContent box and
- * shrink-wrap it around the content.
- */
-const SELF_STYLED_PANEL_CONTENT_CLASS = `${HUG_CONTENT_CLASS} border-none bg-transparent shadow-none`
-
-// A type alias, not an interface: `showDialog`'s props are index-signature
-// typed, and only object literal types get an implicit index signature.
-type TopUpCreditsDialogOptions = {
-  isInsufficientCredits?: boolean
-  source?: PaymentIntentSource
-}
-
-function topUpFallbackReason(
-  options?: TopUpCreditsDialogOptions
-): PaymentIntentSource {
-  if (options?.isInsufficientCredits) return 'out_of_credits'
-  return options?.source ?? 'top_up_blocked'
-}
-
-export type ConfirmationDialogType =
-  | 'default'
-  | 'overwrite'
-  | 'overwriteBlueprint'
-  | 'delete'
-  | 'dirtyClose'
-  | 'reinstall'
-  | 'info'
+import { PromptExecutionError } from '@/scripts/api'
+import { useDialogStore } from '@/stores/dialogStore'
+import type {
+  DialogComponentProps,
+  DialogInstance,
+  ShowDialogOptions
+} from '@/stores/dialogStore'
+import { tryExtractValidationError } from '@/utils/executionErrorUtil'
 
 interface BaseConfirmOptions {
   /** Dialog heading */
@@ -347,68 +294,6 @@ export const useDialogService = () => {
     })
   }
 
-  /**
-   * Shows a dialog requiring sign in for API nodes
-   * @returns Promise that resolves to true if user clicks login, false if cancelled
-   */
-  async function showApiNodesSignInDialog(
-    apiNodeNames: string[]
-  ): Promise<boolean> {
-    const { default: ApiNodesSignInContent } = await lazyApiNodesSignInContent()
-
-    const key = 'api-nodes-signin'
-
-    return new Promise<boolean>((resolve) => {
-      dialogStore.showDialog({
-        key,
-        component: ApiNodesSignInContent,
-        props: {
-          apiNodeNames,
-          titleId: key,
-          onLogin: () => showSignInDialog().then((result) => resolve(result)),
-          onCancel: () => resolve(false)
-        },
-        dialogComponentProps: {
-          renderer: 'reka',
-          headless: true,
-          contentClass: `${SELF_STYLED_PANEL_CONTENT_CLASS} p-0`,
-          closable: true,
-          onRemoved: () => resolve(false)
-        }
-      })
-    }).then((result) => {
-      dialogStore.closeDialog({ key })
-      return result
-    })
-  }
-
-  async function showSignInDialog(): Promise<boolean> {
-    const [{ default: SignInContent }, { default: ComfyOrgHeader }] =
-      await Promise.all([lazySignInContent(), lazyComfyOrgHeader()])
-
-    return new Promise<boolean>((resolve) => {
-      dialogStore.showDialog({
-        key: 'global-signin',
-        component: SignInContent,
-        headerComponent: ComfyOrgHeader,
-        props: {
-          onSuccess: () => resolve(true)
-        },
-        dialogComponentProps: {
-          renderer: 'reka',
-          // SignInContent is a fixed w-96 — size 'sm' (max-w-sm) leaves only
-          // 352px after the body padding; hug the intrinsic width instead.
-          contentClass: HUG_CONTENT_CLASS,
-          closable: true,
-          onRemoved: () => resolve(false)
-        }
-      })
-    }).then((result) => {
-      dialogStore.closeDialog({ key: 'global-signin' })
-      return result
-    })
-  }
-
   async function prompt({
     title,
     message,
@@ -484,85 +369,6 @@ export const useDialogService = () => {
     return enqueuePrompt<boolean | null>(key, show)
   }
 
-  async function showTopUpCreditsDialog(options?: TopUpCreditsDialogOptions) {
-    const { type } = useBillingContext()
-    const { canTopUp, canSubscribeSelfServe, isReady, initialize } =
-      useBillingCapabilities()
-    // A capability read still in flight has to be awaited here, or a top-up
-    // triggered during that window is silently dropped with no recovery UI.
-    if (!isReady.value) await initialize()
-    if (!isReady.value) return
-    if (!canTopUp.value && canSubscribeSelfServe.value) {
-      await showSubscriptionRequiredDialog({
-        reason: topUpFallbackReason(options),
-        paymentIntentSource: options?.source
-      })
-      return
-    }
-
-    if (!canTopUp.value && type.value === 'workspace') {
-      return dialogStore.showDialog({
-        key: 'insufficient-credits-member',
-        component: InsufficientCreditsMemberDialog,
-        props: {
-          onClose: () =>
-            dialogStore.closeDialog({ key: 'insufficient-credits-member' })
-        },
-        dialogComponentProps: {
-          renderer: 'reka',
-          headless: true,
-          contentClass:
-            'w-[min(360px,95vw)] max-w-[min(360px,95vw)] sm:max-w-[min(360px,95vw)] border-0 bg-transparent shadow-none'
-        }
-      })
-    }
-    if (!canTopUp.value) return
-
-    // Only the workspace rail's content declares `source`; the legacy one
-    // takes `isInsufficientCredits` alone, so forwarding the whole options
-    // object there lands `source` in attrs as a stray DOM attribute on its
-    // root rather than as attribution.
-    // Unknown never selects the legacy content, which buys credits directly.
-    const isWorkspaceRail = type.value !== 'legacy'
-
-    return dialogStore.showDialog({
-      key: 'top-up-credits',
-      component: isWorkspaceRail
-        ? TopUpCreditsDialogContentWorkspace
-        : TopUpCreditsDialogContentLegacy,
-      props: isWorkspaceRail
-        ? options
-        : { isInsufficientCredits: options?.isInsufficientCredits },
-      dialogComponentProps: {
-        renderer: 'reka',
-        headless: true,
-        contentClass: SELF_STYLED_PANEL_CONTENT_CLASS
-      }
-    })
-  }
-
-  /**
-   * Shows a dialog for updating the current user's password.
-   */
-  async function showUpdatePasswordDialog() {
-    const [{ default: UpdatePasswordContent }, { default: ComfyOrgHeader }] =
-      await Promise.all([lazyUpdatePasswordContent(), lazyComfyOrgHeader()])
-
-    return dialogStore.showDialog({
-      key: 'global-update-password',
-      component: UpdatePasswordContent,
-      headerComponent: ComfyOrgHeader,
-      props: {
-        onSuccess: () =>
-          dialogStore.closeDialog({ key: 'global-update-password' })
-      },
-      dialogComponentProps: {
-        renderer: 'reka',
-        contentClass: HUG_CONTENT_CLASS
-      }
-    })
-  }
-
   /**
    * Shows a dialog from a third party extension.
    * @param options - The dialog options.
@@ -615,10 +421,7 @@ export const useDialogService = () => {
       dialogComponentProps: {
         renderer: 'reka',
         closable: true,
-        // Contents bring their own width and separators — shrink-wrap the
-        // chrome and zero the section padding.
-        contentClass:
-          'w-fit max-w-[calc(100vw-var(--workspace-inset-right,0px)-1rem)] sm:max-w-[calc(100vw-var(--workspace-inset-right,0px)-1rem)] border-border-default',
+        contentClass: `${HUG_CONTENT_CLASS} border-border-default`,
         headerClass: 'p-0',
         bodyClass: 'p-0 overflow-y-hidden',
         footerClass: 'p-0',
@@ -627,470 +430,94 @@ export const useDialogService = () => {
     })
   }
 
-  async function showSubscriptionRequiredDialog(
-    options?: SubscriptionDialogOptions
-  ) {
-    if (!isCloud) return
-
-    // A caller (e.g. the agent panel's paywall card) can fire this before the
-    // bootstrap /features fetch resolves, most likely right after a fresh
-    // load. window.__CONFIG__ is then still empty and the flag check below
-    // would silently swallow the click. Await one fresh fetch before
-    // deciding, rather than trusting a config snapshot that was never taken.
-    if (!window.__CONFIG__?.subscription_required) {
-      const { remoteConfigState } =
-        await import('@/platform/remoteConfig/remoteConfig')
-      if (remoteConfigState.value === 'unloaded') {
-        const { refreshRemoteConfig } =
-          await import('@/platform/remoteConfig/refreshRemoteConfig')
-        await refreshRemoteConfig()
-      }
-    }
-
-    if (!window.__CONFIG__?.subscription_required) {
-      // This gate closing is never expected to be reachable from a cloud
-      // surface with subscriptions enabled. Report it instead of returning
-      // silently, so a caller's "Subscribe" button failing to do anything
-      // shows up in telemetry rather than only in a user's bug report.
-      const { reportError } = await import('@/platform/telemetry/reportError')
-      reportError(
-        new Error(
-          'showSubscriptionRequiredDialog: subscription_required gate closed'
-        ),
-        {
-          surface: 'billing',
-          errorType: 'error_opening_subscription_dialog_gate_closed'
-        }
-      )
-      return
-    }
-
-    const { useSubscriptionDialog } =
-      await import('@/platform/cloud/subscription/composables/useSubscriptionDialog')
-    const { show } = useSubscriptionDialog()
-    show(options)
+  return {
+    showExecutionErrorDialog,
+    showErrorDialog,
+    prompt,
+    confirm,
+    showExtensionDialog,
+    showLayoutDialog,
+    showSmallLayoutDialog
   }
+}
 
-  // Workspace dialogs - dynamically imported to avoid bundling when feature flag is off
-  const workspaceDialogProps = {
-    renderer: 'reka',
-    headless: true,
-    contentClass: SELF_STYLED_PANEL_CONTENT_CLASS
-  } as const
+type CoreDialogService = ReturnType<typeof useDialogService>
 
-  async function showDeleteWorkspaceDialog(options?: {
+/**
+ * Dialog surface exposed to extensions via `app.extensionManager.dialog`.
+ * Feature dialogs live in their own composables; `createExtensionDialogService`
+ * assembles them so this module never imports the features it fronts.
+ */
+export interface ExtensionDialogService extends CoreDialogService {
+  showApiNodesSignInDialog(apiNodeNames: string[]): Promise<boolean>
+  showSignInDialog(): Promise<boolean>
+  showUpdatePasswordDialog(): Promise<DialogInstance>
+  showTopUpCreditsDialog(
+    options?: TopUpCreditsDialogOptions
+  ): Promise<DialogInstance | undefined>
+  showSubscriptionRequiredDialog(
+    options?: SubscriptionDialogOptions
+  ): Promise<void>
+  showBillingComingSoonDialog(): DialogInstance
+  showCancelSubscriptionDialog(
+    cancelAt?: string,
+    flowAlreadyOpened?: boolean,
+    isScopeCurrent?: () => boolean,
+    flowAlreadyConfirmed?: boolean
+  ): Promise<DialogInstance | false>
+  showCancelSubscriptionFlow(cancelAt?: string): Promise<void>
+  showDowngradeToPersonalDialog(options: {
+    planName: string
+    planSlug: string
+    paymentIntentSource?: PaymentIntentSource
+  }): Promise<DowngradeToPersonalResult | null>
+  showDeleteWorkspaceDialog(options?: {
     workspaceId?: string
     workspaceName?: string
-  }) {
-    const { default: component } =
-      await import('@/platform/workspace/components/dialogs/DeleteWorkspaceDialogContent.vue')
-    return dialogStore.showDialog({
-      key: 'delete-workspace',
-      component,
-      props: options,
-      dialogComponentProps: workspaceDialogProps
-    })
-  }
-
-  async function showCreateWorkspaceDialog(
+  }): Promise<DialogInstance>
+  showCreateWorkspaceDialog(
     onConfirm?: (name: string) => void | Promise<void>
-  ) {
-    const { default: component } =
-      await import('@/platform/workspace/components/dialogs/CreateWorkspaceDialogContent.vue')
-    return dialogStore.showDialog({
-      key: 'create-workspace',
-      component,
-      props: { onConfirm },
-      dialogComponentProps: {
-        ...workspaceDialogProps
-      }
-    })
-  }
-
-  /**
-   * Show the team workspaces dialog for creating or switching workspaces.
-   * Optionally calls `onConfirm` after a workspace is successfully created.
-   */
-  async function showTeamWorkspacesDialog(
+  ): Promise<DialogInstance>
+  showTeamWorkspacesDialog(
     onConfirm?: (name: string) => void | Promise<void>
-  ) {
-    const { default: component } =
-      await import('@/platform/workspace/components/dialogs/TeamWorkspacesDialogContent.vue')
-    return dialogStore.showDialog({
-      key: 'team-workspaces',
-      component,
-      props: { onConfirm },
-      dialogComponentProps: {
-        ...workspaceDialogProps
-      }
-    })
-  }
-
-  async function showLeaveWorkspaceDialog() {
-    const { default: component } =
-      await import('@/platform/workspace/components/dialogs/LeaveWorkspaceDialogContent.vue')
-    return dialogStore.showDialog({
-      key: 'leave-workspace',
-      component,
-      dialogComponentProps: workspaceDialogProps
-    })
-  }
-
-  async function showEditWorkspaceDialog() {
-    const { default: component } =
-      await import('@/platform/workspace/components/dialogs/EditWorkspaceDialogContent.vue')
-    return dialogStore.showDialog({
-      key: 'edit-workspace',
-      component,
-      dialogComponentProps: {
-        ...workspaceDialogProps
-      }
-    })
-  }
-
-  async function showRemoveMemberDialog(memberId: string) {
-    const { default: component } =
-      await import('@/platform/workspace/components/dialogs/RemoveMemberDialogContent.vue')
-    return dialogStore.showDialog({
-      key: 'remove-member',
-      component,
-      props: { memberId },
-      dialogComponentProps: workspaceDialogProps
-    })
-  }
-
-  async function showChangeMemberRoleDialog(props: {
+  ): Promise<DialogInstance>
+  showLeaveWorkspaceDialog(): Promise<DialogInstance>
+  showEditWorkspaceDialog(): Promise<DialogInstance>
+  showRemoveMemberDialog(memberId: string): Promise<DialogInstance>
+  showChangeMemberRoleDialog(props: {
     memberId: string
     memberName: string
     targetRole: WorkspaceRole
-  }) {
-    const { default: component } =
-      await import('@/platform/workspace/components/dialogs/ChangeMemberRoleDialogContent.vue')
-    return dialogStore.showDialog({
-      key: 'change-member-role',
-      component,
-      props,
-      dialogComponentProps: workspaceDialogProps
-    })
-  }
-
-  async function showSetMemberCreditLimitDialog(props: {
+  }): Promise<DialogInstance>
+  showSetMemberCreditLimitDialog(props: {
     memberId: string
     memberName: string
     creditsUsed?: number
     currentLimit?: number | null
-  }) {
-    const { default: component } =
-      await import('@/platform/workspace/components/dialogs/SetMemberCreditLimitDialogContent.vue')
-    return dialogStore.showDialog({
-      key: 'set-member-credit-limit',
-      component,
-      props,
-      dialogComponentProps: workspaceDialogProps
-    })
-  }
+  }): Promise<DialogInstance>
+  showInviteMemberDialog(): Promise<DialogInstance>
+  showInviteMemberUpsellDialog(): Promise<DialogInstance>
+  showInviteLinkInvalidDialog(): Promise<DialogInstance>
+  showInviteWrongAccountDialog(props: {
+    inviteToken: string
+  }): Promise<DialogInstance>
+  showRevokeInviteDialog(inviteId: string): Promise<DialogInstance>
+  showCloudNotification(): Promise<void>
+  showPublishDialog(): Promise<void>
+}
 
-  async function showInviteMemberDialog() {
-    const { default: component } =
-      await import('@/platform/workspace/components/dialogs/InviteMemberDialogContent.vue')
-    return dialogStore.showDialog({
-      key: 'invite-member',
-      component,
-      dialogComponentProps: {
-        ...workspaceDialogProps
-      }
-    })
-  }
+let extensionDialogService: ExtensionDialogService | undefined
 
-  async function showInviteMemberUpsellDialog() {
-    const { default: component } =
-      await import('@/platform/workspace/components/dialogs/InviteMemberUpsellDialogContent.vue')
-    return dialogStore.showDialog({
-      key: 'invite-member-upsell',
-      component,
-      dialogComponentProps: {
-        ...workspaceDialogProps
-      }
-    })
-  }
+export function registerExtensionDialogService(
+  service: ExtensionDialogService
+) {
+  extensionDialogService = service
+}
 
-  async function showInviteLinkInvalidDialog() {
-    const { default: component } =
-      await import('@/platform/workspace/components/dialogs/InviteLinkInvalidDialogContent.vue')
-    return dialogStore.showDialog({
-      key: 'invite-link-invalid',
-      component,
-      dialogComponentProps: {
-        ...workspaceDialogProps
-      }
-    })
-  }
-
-  async function showInviteWrongAccountDialog(props: { inviteToken: string }) {
-    const { default: component } =
-      await import('@/platform/workspace/components/dialogs/InviteWrongAccountDialogContent.vue')
-    // showDialog keeps an existing entry's props; close first so a repeat 403
-    // carries the fresh token instead of replaying the previous one.
-    dialogStore.closeDialog({ key: 'invite-wrong-account' })
-    return dialogStore.showDialog({
-      key: 'invite-wrong-account',
-      component,
-      props,
-      dialogComponentProps: {
-        ...workspaceDialogProps
-      }
-    })
-  }
-
-  async function showRevokeInviteDialog(inviteId: string) {
-    const { default: component } =
-      await import('@/platform/workspace/components/dialogs/RevokeInviteDialogContent.vue')
-    return dialogStore.showDialog({
-      key: 'revoke-invite',
-      component,
-      props: { inviteId },
-      dialogComponentProps: workspaceDialogProps
-    })
-  }
-
-  function showBillingComingSoonDialog() {
-    return dialogStore.showDialog({
-      key: 'billing-coming-soon',
-      title: t('subscription.billingComingSoon.title'),
-      component: ConfirmationDialogContent,
-      props: {
-        message: t('subscription.billingComingSoon.message'),
-        type: 'info' as ConfirmationDialogType,
-        onConfirm: () => {}
-      },
-      dialogComponentProps: {
-        renderer: 'reka',
-        size: 'sm',
-        contentClass: 'max-w-[360px]'
-      }
-    })
-  }
-
-  async function showCancelSubscriptionDialog(
-    cancelAt?: string,
-    flowAlreadyOpened?: boolean,
-    isScopeCurrent?: () => boolean
-  ) {
-    const { default: component } =
-      await import('@/components/dialog/content/subscription/CancelSubscriptionDialogContent.vue')
-    if (isScopeCurrent && !isScopeCurrent()) return false
-    const guardedProps = {
-      ...(flowAlreadyOpened !== undefined ? { flowAlreadyOpened } : {}),
-      ...(cancelAt !== undefined ? { cancelAt } : {}),
-      ...(isScopeCurrent ? { isScopeCurrent } : {})
-    }
-    dialogStore.updateDialog({
-      key: 'cancel-subscription',
-      contentProps: guardedProps
-    })
-    return dialogStore.showDialog({
-      key: 'cancel-subscription',
-      component,
-      props: guardedProps,
-      dialogComponentProps: {
-        ...workspaceDialogProps
-      }
-    })
-  }
-
-  async function showCancelSubscriptionFlow(cancelAt?: string) {
-    const launchWorkspaceId = useTeamWorkspaceStore().activeWorkspaceId
-    const cancellationFlow =
-      await import('@/platform/cloud/subscription/launchCancellationFlow')
-    return cancellationFlow.launchCancellationFlow({
-      cancelAt,
-      launchWorkspaceId,
-      showFallback: ({
-        flowAlreadyOpened = false,
-        isScopeCurrent = () => true
-      } = {}) =>
-        showCancelSubscriptionDialog(
-          cancelAt,
-          flowAlreadyOpened,
-          isScopeCurrent
-        )
-    })
-  }
-
-  /**
-   * Downgrade a team plan to a personal plan. Skips the type-"I understand"
-   * confirm dialog only when there's nothing to confirm: no other members to
-   * remove and no reactivation charge to disclose. Failures on that fast
-   * path surface as an error toast.
-   */
-  async function showDowngradeToPersonalDialog(options: {
-    planName: string
-    planSlug: string
-  }): Promise<DowngradeToPersonalResult | null> {
-    const {
-      useDowngradeToPersonal,
-      ReactivationConfirmationRequiredError,
-      ReactivationAmountChangedError
-    } = await import('@/platform/workspace/composables/useDowngradeToPersonal')
-    const {
-      hasOtherMembers,
-      refreshMembers,
-      previewDowngrade,
-      downgradeToPersonal
-    } = useDowngradeToPersonal()
-
-    let requiresReactivation = false
-    let chargeCents = 0
-    try {
-      await refreshMembers()
-      const preview = await previewDowngrade(options.planSlug)
-      requiresReactivation = preview.requiresReactivationConfirmation
-      chargeCents = preview.preview.cost_today_cents
-      if (!hasOtherMembers.value && !requiresReactivation) {
-        return await downgradeToPersonal(options.planSlug)
-      }
-    } catch (error) {
-      useToastStore().add({
-        severity: 'error',
-        summary: t('subscription.downgrade.failed'),
-        detail: error instanceof Error ? error.message : t('g.unknownError')
-      })
-      return null
-    }
-
-    const { default: component } =
-      await import('@/platform/workspace/components/dialogs/DowngradeRemoveMembersDialogContent.vue')
-    const dialogKey = 'downgrade-remove-members'
-    dialogStore.closeDialog({ key: dialogKey })
-    return new Promise((resolve) => {
-      const stopWatching = watch(
-        () => dialogStore.isDialogOpen(dialogKey),
-        (isOpen) => {
-          if (!isOpen) resolveResult(null)
-        },
-        { flush: 'sync' }
-      )
-      function resolveResult(result: DowngradeToPersonalResult | null) {
-        stopWatching()
-        resolve(result)
-      }
-
-      dialogStore.showDialog({
-        key: dialogKey,
-        component,
-        props: {
-          planName: options.planName,
-          planSlug: options.planSlug,
-          requiresRemoval: hasOtherMembers.value,
-          requiresReactivation,
-          chargeCents,
-          onConfirm: async (planSlug: string, confirmReactivation: boolean) => {
-            try {
-              const result = await downgradeToPersonal(
-                planSlug,
-                confirmReactivation,
-                chargeCents
-              )
-              resolveResult(result)
-            } catch (error) {
-              // A fresh preview inside downgradeToPersonal() found the
-              // dialog's captured state (open-time cancellation/charge) is
-              // stale and refused to bill it. Push the corrected values into
-              // the still-open dialog so a retry sends what these errors'
-              // own preview says is actually true, instead of repeating the
-              // same rejected request forever.
-              if (
-                error instanceof ReactivationConfirmationRequiredError ||
-                error instanceof ReactivationAmountChangedError
-              ) {
-                requiresReactivation = true
-                chargeCents = error.preview.cost_today_cents
-                dialogStore.updateDialog({
-                  key: dialogKey,
-                  contentProps: { requiresReactivation, chargeCents }
-                })
-              }
-              throw error
-            }
-          }
-        },
-        dialogComponentProps: {
-          ...workspaceDialogProps,
-          closable: false,
-          dismissableMask: false,
-          onClose: () => resolveResult(null)
-        }
-      })
-    })
-  }
-
-  /** Shows one-time cloud notification modal for macOS desktop users. */
-  async function showCloudNotification(): Promise<void> {
-    const { default: component } = await lazyCloudNotificationContent()
-    return new Promise<void>((resolve) => {
-      showLayoutDialog({
-        key: 'global-cloud-notification',
-        component,
-        props: {},
-        dialogComponentProps: {
-          closable: false,
-          contentClass:
-            'w-170 max-w-[calc(100vw-var(--workspace-inset-right,0px)-1rem)] sm:max-w-[min(42.5rem,calc(100vw-var(--workspace-inset-right,0px)-1rem))] rounded-2xl overflow-hidden',
-          onRemoved: () => resolve()
-        }
-      })
-    })
-  }
-
-  async function showPublishDialog(): Promise<void> {
-    const { default: ComfyHubPublishDialog } = await lazyPublishDialog()
-    const key = 'global-comfyhub-publish'
-    showLayoutDialog({
-      key,
-      component: ComfyHubPublishDialog,
-      props: {
-        onClose: () => dialogStore.closeDialog({ key }),
-        // Falls through to the BaseModalLayout root — keeps the e2e
-        // publish-dialog selector working without the PrimeVue pt hook.
-        'data-testid': 'publish-dialog'
-      },
-      dialogComponentProps: {
-        contentClass: SELF_STYLED_PANEL_CONTENT_CLASS
-      }
-    })
-  }
-
-  return {
-    showExecutionErrorDialog,
-    showApiNodesSignInDialog,
-    showSignInDialog,
-    showPublishDialog,
-    showSubscriptionRequiredDialog,
-    showTopUpCreditsDialog,
-    showUpdatePasswordDialog,
-    showExtensionDialog,
-    showCloudNotification,
-    prompt,
-    showErrorDialog,
-    confirm,
-    showLayoutDialog,
-    showSmallLayoutDialog,
-    showDeleteWorkspaceDialog,
-    showCreateWorkspaceDialog,
-    showTeamWorkspacesDialog,
-    showLeaveWorkspaceDialog,
-    showEditWorkspaceDialog,
-    showRemoveMemberDialog,
-    showChangeMemberRoleDialog,
-    showSetMemberCreditLimitDialog,
-    showRevokeInviteDialog,
-    showInviteMemberDialog,
-    showInviteMemberUpsellDialog,
-    showInviteLinkInvalidDialog,
-    showInviteWrongAccountDialog,
-    showBillingComingSoonDialog,
-    showCancelSubscriptionDialog,
-    showCancelSubscriptionFlow,
-    showDowngradeToPersonalDialog
-  }
+export function useExtensionDialogService(): ExtensionDialogService {
+  assert(
+    extensionDialogService,
+    'Extension dialog service accessed before registerExtensionDialogService'
+  )
+  return extensionDialogService
 }

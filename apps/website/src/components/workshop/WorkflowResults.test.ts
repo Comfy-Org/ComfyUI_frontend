@@ -6,17 +6,17 @@ import { defineComponent, h, shallowRef } from 'vue'
 import {
   createWorkflowApi,
   WorkshopWorkflowError
-} from '../../config/workshop-workflow-api'
-import { subscribeToWorkshopBuyCredits } from '../../config/workshop-buy-credits'
-import { workflowDetailsBySlug } from '../../config/workshop-workflow-content'
-import { createWorkflowController } from '../../config/workshop-workflow-controller'
-import type { WorkflowState } from '../../config/workshop-workflow-state'
-import { workflowStorage } from '../../config/workshop-workflow-storage'
-import { captureWorkshopEvent } from '../../scripts/posthog'
-import { workshopModelAnalytics } from '../../scripts/workshop-analytics'
+} from '@/config/workshop-workflow-api'
+import { subscribeToWorkshopBuyCredits } from '@/config/workshop-buy-credits'
+import { workflowDetailsBySlug } from '@/config/workshop-workflow-content'
+import { createWorkflowController } from '@/config/workshop-workflow-controller'
+import type { WorkflowState } from '@/config/workshop-workflow-state'
+import { workflowStorage } from '@/config/workshop-workflow-storage'
+import { captureWorkshopEvent } from '@/scripts/posthog'
+import { workshopModelAnalytics } from '@/scripts/workshop-analytics'
 import WorkflowResults from './WorkflowResults.vue'
 
-vi.mock(import('../../scripts/posthog'))
+vi.mock(import('@/scripts/posthog'))
 
 const id = 'bafc696e-e5d4-42f1-9a3d-d01f82a0629b'
 
@@ -111,10 +111,9 @@ describe('WorkflowResults', () => {
     async (refreshed) => {
       const f = await mountResult()
       const user = userEvent.setup()
-      const download = vi
-        .fn<typeof globalThis.fetch>()
-        .mockResolvedValue(new Response(null, { status: 404 }))
-      vi.stubGlobal('fetch', download)
+      vi.mocked(fetch).mockImplementation(
+        async () => new Response(null, { status: 404 })
+      )
       const open = vi.spyOn(window, 'open').mockReturnValue(null)
       const preview = screen.getByRole('img', { name: 'Output' })
       const original = preview.getAttribute('src')
@@ -124,7 +123,7 @@ describe('WorkflowResults', () => {
       await user.click(screen.getByRole('link', { name: 'Download' }))
       await screen.findByRole('link', { name: 'Refresh download link' })
       await waitFor(() => expect(f.fetch).toHaveBeenCalledTimes(3))
-      expect(download).toHaveBeenCalledWith(
+      expect(fetch).toHaveBeenCalledWith(
         original,
         expect.objectContaining({ credentials: 'omit' })
       )
@@ -159,12 +158,7 @@ describe('WorkflowResults', () => {
 
   it('keeps the direct download fallback when the browser cannot fetch the media', async () => {
     const f = await mountResult()
-    vi.stubGlobal(
-      'fetch',
-      vi
-        .fn<typeof globalThis.fetch>()
-        .mockRejectedValue(new TypeError('Failed to fetch'))
-    )
+    vi.mocked(fetch).mockRejectedValue(new TypeError('Failed to fetch'))
     const open = vi.spyOn(window, 'open').mockReturnValue(null)
     const url = screen.getByRole('img', { name: 'Output' }).getAttribute('src')
     await userEvent

@@ -12,10 +12,8 @@
       />
     </div>
     <Button
-      v-tooltip.left="{
-        value: tooltipText,
-        showDelay: 300
-      }"
+      :tooltip="tooltipText"
+      tooltip-side="left"
       data-testid="terminal-copy-button"
       variant="secondary"
       size="sm"

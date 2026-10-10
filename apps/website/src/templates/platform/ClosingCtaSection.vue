@@ -1,9 +1,9 @@
 <script setup lang="ts">
 import { defineAsyncComponent, onMounted, ref } from 'vue'
 
-import CtaCenter01 from '../../components/blocks/CtaCenter01.vue'
-import type { Locale } from '../../i18n/translations'
-import { translationsFor } from '../../i18n/translations'
+import CtaCenter01 from '@/components/blocks/CtaCenter01.vue'
+import type { Locale } from '@/i18n/translations'
+import { translationsFor } from '@/i18n/translations'
 import { platformCtas } from './ctas'
 import ClosingCtaColumnField from './ClosingCtaColumnField.vue'
 import PlatformHeroBadge from './PlatformHeroBadge.vue'

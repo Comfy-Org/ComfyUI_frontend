@@ -72,28 +72,27 @@
       v-if="canManageMembers && !isSingleSeatPlan"
       class="flex items-center justify-end"
     >
-      <DropdownMenu v-if="menuItems.length > 0" :entries="menuItems">
-        <template #button>
+      <Menu v-if="menuItems.length > 0" :items="menuItems">
+        <template #trigger>
           <Button
-            v-tooltip="{ value: $t('g.moreOptions'), showDelay: 300 }"
+            :tooltip="$t('g.moreOptions')"
             variant="muted-textonly"
             size="icon"
             :aria-label="$t('g.moreOptions')"
-          >
-            <i class="pi pi-ellipsis-h" />
-          </Button>
+            icon="icon-[lucide--ellipsis]"
+          />
         </template>
-      </DropdownMenu>
+      </Menu>
     </div>
   </div>
 </template>
 
 <script setup lang="ts">
-import type { MenuItem } from 'primevue/menuitem'
+import type { MenuItem } from '@/components/ui/menu/types'
 import { computed } from 'vue'
 import { useI18n } from 'vue-i18n'
 
-import DropdownMenu from '@/components/common/DropdownMenu.vue'
+import Menu from '@/components/ui/menu/Menu.vue'
 import UserAvatar from '@/components/common/UserAvatar.vue'
 import Button from '@/components/ui/button/Button.vue'
 import type { WorkspaceMember } from '@/platform/workspace/stores/teamWorkspaceStore'

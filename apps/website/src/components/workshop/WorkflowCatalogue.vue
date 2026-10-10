@@ -7,19 +7,26 @@ import type { ComponentExposed } from 'vue-component-type-helpers'
 import Button from '@/components/ui/button/Button.vue'
 import type {
   SortOrder,
-  WorkflowWorkshopModel
-} from '../../config/models-catalogue'
+  WorkflowWorkshopModel,
+  WorkshopModel
+} from '@/config/models-catalogue'
+import { sortWorkshopModels } from '@/config/models-catalogue'
+import { searchWorkshopModels } from '@/config/models-search'
+import type { Locale } from '@/i18n/translations'
+import { translationsFor } from '@/i18n/translations'
+import { HUB_TOOLBAR_ID } from '@/scripts/hubToolbar'
+import { useHubCatalogueTracking } from '@/composables/useHubCatalogueTracking'
 import {
-  filterWorkshopModels,
-  sortWorkshopModels
-} from '../../config/models-catalogue'
-import type { Locale } from '../../i18n/translations'
-import { translationsFor } from '../../i18n/translations'
-import { HUB_TOOLBAR_ID } from '../../scripts/hubToolbar'
+  captureHubItemClick,
+  hubActiveQuery,
+  hubItemOf
+} from '@/scripts/hub-analytics'
 import CardRow from './CardRow.vue'
+import HubRowSeen from './HubRowSeen.vue'
 import FeaturedBanner from './FeaturedBanner.vue'
-import { CARD_GRID, SHELF_CARD } from '../../lib/workshop/card-layout'
-import { modelSlides } from '../../lib/workshop/featured-slides'
+import type { FeaturedSlide } from './FeaturedBanner.vue'
+import { CARD_GRID, SHELF_CARD } from '@/lib/workshop/card-layout'
+import { modelSlides } from '@/lib/workshop/featured-slides'
 import type { FilterChip } from './WorkshopFilterChips.vue'
 import WorkshopFilterChips from './WorkshopFilterChips.vue'
 import WorkshopFilterMenu from './WorkshopFilterMenu.vue'
@@ -55,16 +62,45 @@ watch(browseAll, () => {
   clear()
   void nextTick(() => window.scrollTo({ top: 0 }))
 })
-onMounted(() => {
-  const params = new URLSearchParams(initialSearch ?? location.search)
-  query.value = params.get('q') ?? ''
-  selected.value = params
-    .getAll('category')
-    .filter((id) => models.some((model) => model.category === id))
-  runsOn.value = params
-    .getAll('model')
-    .filter((name) => models.some((model) => model.models?.includes(name)))
+const { submitSearch, quietly } = useHubCatalogueTracking('workflows', {
+  query,
+  resultsCount: () => visible.value.length,
+  filters: [
+    ['category', () => selected.value],
+    ['model', () => runsOn.value],
+    ['sort', () => sort.value]
+  ]
 })
+onMounted(() =>
+  quietly(() => {
+    const params = new URLSearchParams(initialSearch ?? location.search)
+    query.value = params.get('q') ?? ''
+    selected.value = params
+      .getAll('category')
+      .filter((id) => models.some((model) => model.category === id))
+    runsOn.value = params
+      .getAll('model')
+      .filter((name) => models.some((model) => model.models?.includes(name)))
+  })
+)
+
+function openWorkflow(model: WorkshopModel, position: number, row?: string) {
+  if (row === undefined) submitSearch()
+  captureHubItemClick(hubItemOf(model), {
+    surface: 'workflows',
+    position,
+    ...(row !== undefined
+      ? { source: 'category_row', row }
+      : { source: 'results_grid', ...hubActiveQuery(query.value) })
+  })
+}
+
+function openFeatured(slide: FeaturedSlide, position: number) {
+  captureHubItemClick(
+    { kind: 'workflow', slug: slide.key },
+    { surface: 'workflows', source: 'featured_banner', position }
+  )
+}
 
 const rows = computed(() =>
   models
@@ -118,10 +154,13 @@ const matchingCategories = computed(() =>
       : []
   )
 )
+const searched = computed(
+  () => new Set(searchWorkshopModels(models, { query: query.value }))
+)
 const visible = computed(() => {
-  const matching = filterWorkshopModels(matchingCategories.value, {
-    query: query.value
-  })
+  const matching = matchingCategories.value.filter((model) =>
+    searched.value.has(model)
+  )
   return sort.value === 'popular'
     ? matching
     : sortWorkshopModels(matching, sort.value)
@@ -214,6 +253,7 @@ function leaveSection() {
           kind="workflows"
           compact
           :class="searchClass"
+          @submit="submitSearch"
         />
         <WorkshopFilterMenu
           ref="filterMenu"
@@ -240,6 +280,7 @@ function leaveSection() {
       :locale
       :autoplay="false"
       class="mb-10 short:mb-6"
+      @open="openFeatured"
     />
 
     <WorkshopFilterChips
@@ -267,13 +308,26 @@ function leaveSection() {
             </h2>
           </template>
           <li
-            v-for="model in category.models"
+            v-for="(model, index) in category.models"
             :key="model.slug"
             :class="SHELF_CARD"
           >
-            <WorkshopModelCard :model :locale under-heading />
+            <WorkshopModelCard
+              :model
+              :locale
+              under-heading
+              @click="openWorkflow(model, index, category.id)"
+            />
           </li>
         </CardRow>
+        <HubRowSeen
+          :view="{
+            surface: 'workflows',
+            source: 'category_row',
+            row: category.id,
+            rowSlugs: category.models.map((model) => model.slug)
+          }"
+        />
       </section>
       <button
         type="button"
@@ -295,8 +349,8 @@ function leaveSection() {
       :aria-label="t('workshop.hub.workflows')"
       data-testid="workflow-search-results"
     >
-      <li v-for="model in visible" :key="model.slug">
-        <WorkshopModelCard :model :locale />
+      <li v-for="(model, index) in visible" :key="model.slug">
+        <WorkshopModelCard :model :locale @click="openWorkflow(model, index)" />
       </li>
     </ul>
     <div

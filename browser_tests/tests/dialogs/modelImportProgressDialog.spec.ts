@@ -1,11 +1,76 @@
-import type { TaskResponse } from '@/platform/tasks/services/taskService'
+import { mergeTests } from '@playwright/test'
 
+import type { TaskResponse } from '@/platform/tasks/services/taskService'
 import {
-  comfyPageFixture as test,
+  comfyPageFixture,
   comfyExpect as expect
 } from '@e2e/fixtures/ComfyPage'
+import { modelImportProgressFixture } from '@e2e/fixtures/modelImportProgressFixture'
+import { TestIds } from '@e2e/fixtures/selectors'
+
+const test = mergeTests(comfyPageFixture, modelImportProgressFixture)
 
 test.describe('Model import progress toast', { tag: ['@screenshot'] }, () => {
+  test('filters failed imports through the popover above the expanded toast', async ({
+    modelImportProgress
+  }) => {
+    await modelImportProgress.expand()
+    await expect(
+      modelImportProgress.job('completed-model.safetensors')
+    ).toBeVisible()
+    await expect(
+      modelImportProgress.job('failed-model.safetensors')
+    ).toBeVisible()
+
+    await modelImportProgress.filterBy('Failed')
+
+    await expect(
+      modelImportProgress.job('completed-model.safetensors')
+    ).toBeHidden()
+    await expect(
+      modelImportProgress.job('failed-model.safetensors')
+    ).toBeVisible()
+  })
+
+  test('keeps a panel reachable when expanded panels outgrow a short viewport', async ({
+    comfyPage,
+    modelImportProgress
+  }) => {
+    await comfyPage.page.setViewportSize({ width: 1280, height: 360 })
+    await comfyPage.assets.dispatchExport({
+      task_id: 'stacked-export',
+      export_name: 'outputs.zip',
+      assets_total: 4,
+      assets_attempted: 1,
+      assets_failed: 0,
+      bytes_total: 1000,
+      bytes_processed: 250,
+      progress: 0.25,
+      status: 'running'
+    })
+    const exportPanel = comfyPage.page
+      .getByTestId(TestIds.toast.panel)
+      .filter({ hasText: 'Exporting Assets' })
+
+    await modelImportProgress.expand()
+    await exportPanel.getByRole('button', { name: 'Expand' }).click()
+    await modelImportProgress.filterBy('Failed')
+    await expect(
+      modelImportProgress.job('completed-model.safetensors')
+    ).toBeHidden()
+
+    const panelBounds = await modelImportProgress.root.boundingBox()
+    const collapseBounds = await modelImportProgress.root
+      .getByRole('button', { name: 'Collapse' })
+      .boundingBox()
+    expect(panelBounds).not.toBeNull()
+    expect(collapseBounds).not.toBeNull()
+    expect(
+      collapseBounds!.y + collapseBounds!.height,
+      'the footer must not be clipped by a squashed panel'
+    ).toBeLessThanOrEqual(panelBounds!.y + panelBounds!.height)
+  })
+
   test('recovers from a premature failed status once the backend silently retries and completes it (PM-1302)', async ({
     comfyPage
   }) => {
@@ -24,13 +89,14 @@ test.describe('Model import progress toast', { tag: ['@screenshot'] }, () => {
       })
 
       await expect(
-        page.getByText('Importing Models', { exact: true })
+        comfyPage.toast.panels.getByText('Importing Models', { exact: true })
       ).toBeVisible()
     })
 
-    const failedFooterText = page.getByText('1 download failed', {
-      exact: true
-    })
+    const failedFooterText = comfyPage.toast.panels.getByText(
+      '1 download failed',
+      { exact: true }
+    )
 
     await test.step('show the retryable failure reported by the backend', async () => {
       await comfyPage.assets.dispatchDownload({
@@ -60,12 +126,14 @@ test.describe('Model import progress toast', { tag: ['@screenshot'] }, () => {
 
       await expect(failedFooterText).toBeHidden()
       await expect(
-        page.getByText('All downloads completed', { exact: true })
+        comfyPage.toast.panels.getByText('All downloads completed', {
+          exact: true
+        })
       ).toBeVisible()
     })
 
     const toast = page
-      .getByRole('status')
+      .getByTestId(TestIds.toast.panel)
       .filter({ hasText: 'All downloads completed' })
 
     await expect(toast).toHaveScreenshot(
@@ -102,11 +170,11 @@ test.describe('Model import progress toast', { tag: ['@screenshot'] }, () => {
     })
 
     const toast = page
-      .getByRole('status')
+      .getByTestId(TestIds.toast.panel)
       .filter({ hasText: '1 download failed' })
     await expect(toast).toBeVisible()
     await expect(
-      page.getByText('1 download failed', { exact: true })
+      comfyPage.toast.panels.getByText('1 download failed', { exact: true })
     ).toBeVisible()
 
     await test.step('dismiss the failed model import', async () => {
@@ -156,7 +224,9 @@ test.describe('Model import progress toast', { tag: ['@screenshot'] }, () => {
       })
     })
 
-    const toast = page.getByRole('status').filter({ hasText: assetName })
+    const toast = page
+      .getByTestId(TestIds.toast.panel)
+      .filter({ hasText: assetName })
     await expect(toast).toBeVisible()
 
     await test.step('cancel through user-visible controls', async () => {
@@ -175,7 +245,7 @@ test.describe('Model import progress toast', { tag: ['@screenshot'] }, () => {
       await expect(
         toast.getByText('Cancelled', { exact: true }).first()
       ).toBeVisible()
-      await expect(toast.getByRole('button', { name: 'Close' })).toBeHidden()
+      await expect(toast.getByRole('button', { name: 'Close' })).toBeVisible()
     })
 
     await test.step('keep the terminal backend state rendered', async () => {
@@ -196,6 +266,144 @@ test.describe('Model import progress toast', { tag: ['@screenshot'] }, () => {
       ).toBeHidden()
       await expect(toast.getByRole('button', { name: 'Close' })).toBeVisible()
     })
+  })
+
+  test('a cancelled download whose task row is purged can still be dismissed', async ({
+    comfyPage
+  }) => {
+    // The store waits a real 10s before its first reconciliation, and this
+    // case has to observe that reconciliation rather than fake the clock: the
+    // toast does not render at all under an installed clock.
+    test.setTimeout(60_000)
+
+    const { page } = comfyPage
+    const taskId = '1396cc07-bab2-4f12-9b54-741f83f9224d'
+    const assetName = 'purged-model.safetensors'
+    // The backend accepts the cancellation, then purges the task row, so no
+    // terminal WS message and no successful poll will ever arrive.
+    await page.route(`**/tasks/${taskId}`, async (route) => {
+      if (route.request().method() === 'DELETE') {
+        await route.fulfill({ status: 204 })
+        return
+      }
+      await route.fulfill({ status: 404, json: { detail: 'Task not found' } })
+    })
+
+    const toast = page
+      .getByTestId(TestIds.toast.panel)
+      .filter({ hasText: assetName })
+
+    await test.step('cancel a running download', async () => {
+      await comfyPage.assets.dispatchDownload({
+        task_id: taskId,
+        asset_name: assetName,
+        bytes_total: 1000,
+        bytes_downloaded: 200,
+        progress: 20,
+        status: 'running'
+      })
+
+      await expect(toast).toBeVisible()
+      await toast.getByRole('button', { name: 'Expand' }).click()
+      await toast.getByRole('button', { name: 'Cancel Download' }).click()
+
+      await expect(
+        toast.getByText('Cancelled', { exact: true }).first()
+      ).toBeVisible()
+      await expect(toast.getByRole('button', { name: 'Close' })).toBeVisible()
+    })
+
+    await test.step('settle the cancellation once the task lookup 404s', async () => {
+      await page.waitForResponse(
+        (response) =>
+          response.url().endsWith(`/tasks/${taskId}`) &&
+          response.request().method() === 'GET',
+        { timeout: 30_000 }
+      )
+
+      await expect(toast.getByRole('button', { name: 'Close' })).toBeVisible()
+    })
+
+    await test.step('dismiss the settled cancellation', async () => {
+      await toast.getByRole('button', { name: 'Close' }).click()
+      await expect(toast).toBeHidden()
+    })
+  })
+
+  test('a dismissed unconfirmed cancellation stays hidden from late progress', async ({
+    comfyPage
+  }) => {
+    test.setTimeout(30_000)
+    const { page } = comfyPage
+    const taskId = '1396cc07-bab2-4f12-9b54-741f83f9224e'
+    const assetName = 'unconfirmed-cancel-model.safetensors'
+    await page.route(`**/tasks/${taskId}`, async (route) => {
+      if (route.request().method() === 'DELETE') {
+        await route.fulfill({ status: 204 })
+        return
+      }
+      await route.fulfill({
+        json: {
+          id: taskId,
+          idempotency_key: taskId,
+          task_name: 'task:download_file',
+          payload: {},
+          status: 'running',
+          create_time: new Date().toISOString(),
+          update_time: new Date().toISOString()
+        } satisfies TaskResponse
+      })
+    })
+
+    await comfyPage.assets.dispatchDownload({
+      task_id: taskId,
+      asset_name: assetName,
+      bytes_total: 1000,
+      bytes_downloaded: 200,
+      progress: 20,
+      status: 'running'
+    })
+
+    const toast = page
+      .getByTestId(TestIds.toast.panel)
+      .filter({ hasText: assetName })
+    await expect(toast).toBeVisible()
+    await toast.getByRole('button', { name: 'Expand' }).click()
+    const cancellation = page.waitForResponse(
+      (candidate) =>
+        candidate.url().endsWith(`/tasks/${taskId}`) &&
+        candidate.request().method() === 'DELETE'
+    )
+    await toast.getByRole('button', { name: 'Cancel Download' }).click()
+    await cancellation
+    await expect(
+      toast.getByText('Cancelled', { exact: true }).first()
+    ).toBeVisible()
+
+    const advanceReconciliation = async () => {
+      const response = page.waitForResponse(
+        (candidate) =>
+          candidate.url().endsWith(`/tasks/${taskId}`) &&
+          candidate.request().method() === 'GET'
+      )
+      await (await response).finished()
+    }
+    await advanceReconciliation()
+    await expect(
+      toast.getByText('Cancelled', { exact: true }).first()
+    ).toBeVisible()
+    await toast.getByRole('button', { name: 'Close' }).click()
+    await expect(toast).toBeHidden()
+
+    await comfyPage.assets.dispatchDownload({
+      task_id: taskId,
+      asset_name: assetName,
+      bytes_total: 1000,
+      bytes_downloaded: 750,
+      progress: 75,
+      status: 'running'
+    })
+    await expect(toast).toBeHidden()
   })
 
   test('closing a failed download while polling does not reopen its toast', async ({
@@ -240,7 +448,7 @@ test.describe('Model import progress toast', { tag: ['@screenshot'] }, () => {
     })
 
     const toast = page
-      .getByRole('status')
+      .getByTestId(TestIds.toast.panel)
       .filter({ hasText: '1 download failed' })
 
     await test.step('dismiss the model import during reconciliation', async () => {

@@ -1,7 +1,8 @@
 <template>
   <div class="flex flex-col">
     <Button
-      v-tooltip.right="{ value: $t('load3d.showGrid'), showDelay: 300 }"
+      :tooltip="$t('load3d.showGrid')"
+      tooltip-side="right"
       variant="textonly"
       size="icon"
       :class="cn('rounded-full', showGrid && 'ring-2 ring-white/50')"
@@ -14,10 +15,8 @@
     <template v-if="!hdriActive">
       <div v-if="!hasBackgroundImage">
         <Button
-          v-tooltip.right="{
-            value: $t('load3d.backgroundColor'),
-            showDelay: 300
-          }"
+          :tooltip="$t('load3d.backgroundColor')"
+          tooltip-side="right"
           variant="textonly"
           size="icon"
           class="rounded-full"
@@ -39,10 +38,8 @@
 
       <div v-if="showBackgroundImage && !hasBackgroundImage">
         <Button
-          v-tooltip.right="{
-            value: $t('load3d.uploadBackgroundImage'),
-            showDelay: 300
-          }"
+          :tooltip="$t('load3d.uploadBackgroundImage')"
+          tooltip-side="right"
           variant="textonly"
           size="icon"
           class="rounded-full"
@@ -63,10 +60,8 @@
 
     <div v-if="showBackgroundImage && hasBackgroundImage">
       <Button
-        v-tooltip.right="{
-          value: $t('load3d.panoramaMode'),
-          showDelay: 300
-        }"
+        :tooltip="$t('load3d.panoramaMode')"
+        tooltip-side="right"
         variant="textonly"
         size="icon"
         :class="
@@ -94,10 +89,8 @@
 
     <div v-if="showBackgroundImage && hasBackgroundImage">
       <Button
-        v-tooltip.right="{
-          value: $t('load3d.removeBackgroundImage'),
-          showDelay: 300
-        }"
+        :tooltip="$t('load3d.removeBackgroundImage')"
+        tooltip-side="right"
         variant="textonly"
         size="icon"
         class="rounded-full"

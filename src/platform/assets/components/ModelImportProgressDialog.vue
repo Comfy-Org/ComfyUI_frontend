@@ -1,11 +1,11 @@
 <script setup lang="ts">
 import { whenever } from '@vueuse/core'
-import Popover from 'primevue/popover'
+import Popover from '@/components/common/ImperativePopover.vue'
 import { computed, ref } from 'vue'
 import { useI18n } from 'vue-i18n'
 
 import Loader from '@/components/loader/Loader.vue'
-import HoneyToast from '@/components/honeyToast/HoneyToast.vue'
+import ToastPanel from '@/components/ui/toast/ToastPanel.vue'
 import ProgressToastItem from '@/components/toast/ProgressToastItem.vue'
 import Button from '@/components/ui/button/Button.vue'
 import { useErrorHandling } from '@/composables/useErrorHandling'
@@ -66,6 +66,19 @@ const currentJobName = computed(() => {
   return activeJob?.assetName || t('progressToast.downloadingModel')
 })
 
+const outcomeLabel = computed(() => {
+  if (failedJobs.value.length > 0)
+    return t('progressToast.downloadsFailed', {
+      count: failedJobs.value.length
+    })
+  if (cancelledJobs.value.length > 0) return t('electronFileDownload.cancelled')
+  return t('progressToast.allDownloadsCompleted')
+})
+
+const announcement = computed(() =>
+  isInProgress.value ? t('progressToast.importingModels') : outcomeLabel.value
+)
+
 const completedCount = computed(
   () =>
     completedJobs.value.length +
@@ -93,7 +106,7 @@ const activeFilterLabel = computed(() => {
 })
 
 function closeDialog() {
-  assetDownloadStore.clearFinishedDownloads()
+  assetDownloadStore.clearDismissibleDownloads()
   isExpanded.value = false
 }
 
@@ -111,7 +124,7 @@ async function cancelDownload(taskId: TaskId) {
 </script>
 
 <template>
-  <HoneyToast v-model:expanded="isExpanded" :visible>
+  <ToastPanel v-model:expanded="isExpanded" :visible :announcement>
     <template #default>
       <div
         class="flex h-12 items-center justify-between border-b border-border-default px-4"
@@ -132,17 +145,8 @@ async function cancelDownload(taskId: TaskId) {
           </Button>
           <Popover
             ref="filterPopoverRef"
-            :dismissable="true"
-            :close-on-escape="true"
-            unstyled
-            :base-z-index="9999"
-            :pt="{
-              root: { class: 'absolute z-50' },
-              content: {
-                class:
-                  'bg-transparent border-none p-0 pt-2 rounded-lg shadow-lg'
-              }
-            }"
+            align="end"
+            content-class="border-none bg-transparent p-0 pt-2"
           >
             <div
               class="flex min-w-30 flex-col items-stretch rounded-lg border border-interface-stroke bg-interface-panel-surface px-2 py-3"
@@ -219,11 +223,7 @@ async function cancelDownload(taskId: TaskId) {
               class="icon-[lucide--circle-alert] size-4 shrink-0 text-destructive-background"
             />
             <span class="min-w-0 truncate font-bold text-base-foreground">
-              {{
-                t('progressToast.downloadsFailed', {
-                  count: failedJobs.length
-                })
-              }}
+              {{ outcomeLabel }}
             </span>
           </template>
           <template v-else-if="cancelledJobs.length > 0">
@@ -231,7 +231,7 @@ async function cancelDownload(taskId: TaskId) {
               class="icon-[lucide--circle-x] size-4 shrink-0 text-muted-foreground"
             />
             <span class="min-w-0 truncate font-bold text-base-foreground">
-              {{ t('electronFileDownload.cancelled') }}
+              {{ outcomeLabel }}
             </span>
           </template>
           <template v-else>
@@ -239,7 +239,7 @@ async function cancelDownload(taskId: TaskId) {
               class="icon-[lucide--check-circle] size-4 shrink-0 text-jade-600"
             />
             <span class="min-w-0 truncate font-bold text-base-foreground">
-              {{ t('progressToast.allDownloadsCompleted') }}
+              {{ outcomeLabel }}
             </span>
           </template>
         </div>
@@ -279,7 +279,7 @@ async function cancelDownload(taskId: TaskId) {
             </Button>
 
             <Button
-              v-if="!isInProgress && !assetDownloadStore.hasPendingCancellation"
+              v-if="!isInProgress"
               variant="muted-textonly"
               size="icon"
               :aria-label="t('g.close')"
@@ -291,5 +291,5 @@ async function cancelDownload(taskId: TaskId) {
         </div>
       </div>
     </template>
-  </HoneyToast>
+  </ToastPanel>
 </template>

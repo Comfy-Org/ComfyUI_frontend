@@ -1,8 +1,6 @@
 import userEvent from '@testing-library/user-event'
 import { render, screen } from '@testing-library/vue'
 import { getActivePinia } from 'pinia'
-import PrimeVue from 'primevue/config'
-import Tooltip from 'primevue/tooltip'
 import { describe, expect, it, vi } from 'vitest'
 import { nextTick } from 'vue'
 import { createI18n } from 'vue-i18n'
@@ -16,6 +14,7 @@ import type {
   JobListItem,
   JobStatus
 } from '@/platform/remote/comfyui/jobs/jobTypes'
+import { useTelemetry } from '@/platform/telemetry'
 import { useCommandStore } from '@/stores/commandStore'
 import { useExecutionErrorStore } from '@/stores/executionErrorStore'
 import { useQueueSettingsStore } from '@/stores/queueSettingsStore'
@@ -133,12 +132,7 @@ const missingResourceCases = [
 ]
 
 const stubs = {
-  BatchCountEdit: BatchCountEditStub,
-  DropdownMenuRoot: { template: '<div><slot /></div>' },
-  DropdownMenuTrigger: { template: '<div><slot /></div>' },
-  DropdownMenuPortal: { template: '<div><slot /></div>' },
-  DropdownMenuContent: { template: '<div><slot /></div>' },
-  DropdownMenuItem: { template: '<div><slot /></div>' }
+  BatchCountEdit: BatchCountEditStub
 }
 
 function renderQueueButton(
@@ -151,10 +145,7 @@ function renderQueueButton(
   const result = render(ComfyQueueButton, {
     props,
     global: {
-      plugins: [PrimeVue, pinia, i18n],
-      directives: {
-        tooltip: Tooltip
-      },
+      plugins: [pinia, i18n],
       stubs
     }
   })
@@ -186,7 +177,9 @@ describe('ComfyQueueButton', () => {
       const commandStore = useCommandStore()
 
       expect(screen.getByTestId('batch-count-edit')).toBeInTheDocument()
-      expect(screen.getByTestId('queue-mode-menu-trigger')).toBeDisabled()
+      const trigger = screen.getByTestId('queue-mode-menu-trigger')
+      expect(trigger).toBeDisabled()
+      expect(trigger).toHaveAttribute('data-variant', 'secondary')
       expect(useQueueSettingsStore().mode).toBe('disabled')
       const button = screen.getByTestId('queue-button')
       expect(button).toHaveTextContent(label)
@@ -243,6 +236,24 @@ describe('ComfyQueueButton', () => {
     expect(getQueueButtonIcon()).toHaveClass('icon-[lucide--play]')
   })
 
+  it('selects one queue mode without closing the radio menu', async () => {
+    const { user } = renderQueueButton()
+
+    await user.click(screen.getByTestId('queue-mode-menu-trigger'))
+    await user.click(
+      screen.getByRole('menuitemradio', { name: 'Run (On Change)' })
+    )
+
+    expect(useQueueSettingsStore().mode).toBe('change')
+    expect(screen.getByRole('menu')).toBeVisible()
+    expect(
+      useTelemetry()?.trackUiButtonClicked
+    ).toHaveBeenCalledExactlyOnceWith({
+      button_id: 'queue_mode_option_run_on_change_selected',
+      element_group: 'queue'
+    })
+  })
+
   it('keeps the run instant presentation while idle even with active jobs', async () => {
     renderQueueButton()
     const queueSettingsStore = useQueueSettingsStore()
@@ -255,7 +266,11 @@ describe('ComfyQueueButton', () => {
     const queueButton = screen.getByTestId('queue-button')
 
     expect(queueButton).toHaveTextContent('Run (Instant)')
-    expect(queueButton).toHaveAttribute('data-variant', 'primary')
+    expect(queueButton).toHaveAttribute('data-variant', 'inverted')
+    expect(screen.getByTestId('queue-mode-menu-trigger')).toHaveAttribute(
+      'data-variant',
+      'inverted'
+    )
   })
 
   it('switches to stop presentation when instant mode is armed', async () => {
@@ -269,6 +284,10 @@ describe('ComfyQueueButton', () => {
 
     expect(queueButton).toHaveTextContent('Stop Run (Instant)')
     expect(queueButton).toHaveAttribute('data-variant', 'destructive')
+    expect(screen.getByTestId('queue-mode-menu-trigger')).toHaveAttribute(
+      'data-variant',
+      'destructive'
+    )
   })
 
   it('disarms instant mode without interrupting even when jobs are active', async () => {
@@ -287,7 +306,7 @@ describe('ComfyQueueButton', () => {
     expect(queueSettingsStore.mode).toBe('instant-idle')
     const queueButton = screen.getByTestId('queue-button')
     expect(queueButton).toHaveTextContent('Run (Instant)')
-    expect(queueButton).toHaveAttribute('data-variant', 'primary')
+    expect(queueButton).toHaveAttribute('data-variant', 'inverted')
 
     expect(commandStore.execute).not.toHaveBeenCalled()
   })

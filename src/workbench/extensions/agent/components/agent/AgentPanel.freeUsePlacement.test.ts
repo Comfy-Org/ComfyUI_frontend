@@ -12,6 +12,7 @@ vi.hoisted(() => {
 })
 
 import { i18n } from '@/i18n'
+import type { AgentFreeUseNoticeMetadata } from '@/platform/telemetry/types'
 
 import AgentPanel from './AgentPanel.vue'
 import type { FreeUseVariant } from '../../experiments/freeUsePlacement'
@@ -20,16 +21,22 @@ import { setupInlinePromptEditorDom } from './composer/inlinePromptEditorTestSet
 
 setupInlinePromptEditorDom()
 
+vi.mock(import('@/composables/auth/useCurrentUser'))
+
 const PLACEMENTS = FREE_USE_PLACEMENTS.filter(
   (variant) => variant !== 'control'
 )
 
-function mount(freeUsePlacement: FreeUseVariant) {
+function mount(
+  freeUsePlacement: FreeUseVariant,
+  onFreeUseNotice?: (metadata: AgentFreeUseNoticeMetadata) => void
+) {
   return render(AgentPanel, {
     props: {
       entries: [],
       historyGroups: { current: [], today: [], yesterday: [], earlier: [] },
-      freeUsePlacement
+      freeUsePlacement,
+      onFreeUseNotice
     },
     global: {
       plugins: [i18n],
@@ -128,9 +135,10 @@ describe('AgentPanel free-use placement', () => {
   )
 
   it('reports the impression and the dismissal of the notice', async () => {
-    const { emitted } = mount('above-input')
+    const onFreeUseNotice = vi.fn()
+    mount('above-input', onFreeUseNotice)
 
-    expect(emitted('freeUseNotice')).toEqual([
+    expect(onFreeUseNotice.mock.calls).toEqual([
       [{ action: 'shown', placement: 'above-input' }]
     ])
 
@@ -138,7 +146,7 @@ describe('AgentPanel free-use placement', () => {
       within(notice()).getByRole('button', { name: 'Dismiss' })
     )
 
-    expect(emitted('freeUseNotice')).toEqual([
+    expect(onFreeUseNotice.mock.calls).toEqual([
       [{ action: 'shown', placement: 'above-input' }],
       [{ action: 'dismissed', placement: 'above-input' }]
     ])
