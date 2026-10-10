@@ -2,7 +2,7 @@ import { useSettingStore } from '@/platform/settings/settingStore'
 import { useCanvasStore } from '@/renderer/core/canvas/canvasStore'
 import { api } from '@/scripts/api'
 import { fromAny, fromPartial } from '@total-typescript/shoehorn'
-import { nextTick } from 'vue'
+import { nextTick, reactive } from 'vue'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 
 import type { LGraphNode } from '@/lib/litegraph/src/LGraphNode'
@@ -680,6 +680,27 @@ describe('appModeStore', () => {
       expect(linearData).toEqual({
         inputs: [[entitySeed, 'seed', { height: 120 }]],
         outputs: [toNodeId(1)]
+      })
+      expect(() => structuredClone(linearData)).not.toThrow()
+    })
+
+    it('writes structured-cloneable linearData when a config nests a proxy', async () => {
+      workflowStore.activeWorkflow = createBuilderWorkflow()
+      await nextTick()
+
+      store.selectedInputs.push([
+        entitySeed,
+        'seed',
+        fromAny({ height: 120, layout: reactive({ order: [1, 2] }) })
+      ])
+      await nextTick()
+
+      const linearData = app.rootGraph.extra.linearData
+      expect(linearData).toEqual({
+        inputs: [
+          [entitySeed, 'seed', { height: 120, layout: { order: [1, 2] } }]
+        ],
+        outputs: []
       })
       expect(() => structuredClone(linearData)).not.toThrow()
     })
