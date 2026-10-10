@@ -41,7 +41,6 @@ test.describe(
       await test.step('load the promoted-widget workflow', async () => {
         await comfyPage.workflow.reloadAndWaitForApp()
         await comfyPage.workflow.loadWorkflow(PROMOTED_WIDGET_WORKFLOW_NAME)
-        await comfyPage.settings.setSetting('Comfy.Minimap.Visible', false)
 
         // Precondition: the host node exposes its promoted widgets before any
         // follower frame arrives. Guards against a silently-broken fixture
