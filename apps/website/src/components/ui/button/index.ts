@@ -17,10 +17,6 @@ export const buttonVariants = cva(
           'bg-primary-comfy-yellow text-primary-comfy-ink uppercase hover:bg-primary-comfy-yellow/90',
         outline:
           'border text-primary-comfy-yellow uppercase hover:bg-primary-comfy-yellow hover:text-primary-comfy-ink',
-        secondary:
-          'bg-primary-warm-white text-primary-comfy-ink uppercase hover:bg-white active:bg-primary-comfy-canvas',
-        secondaryOutline:
-          'border border-primary-warm-white/70 text-primary-warm-white uppercase hover:border-primary-warm-white hover:bg-transparency-white-t8 active:bg-transparency-white-t20',
         ghost:
           'bg-transparency-white-t8 font-medium tracking-normal text-primary-warm-white hover:bg-transparency-white-t20',
         link: "h-auto justify-start px-0 py-1 text-base text-primary-comfy-yellow uppercase hover:opacity-90 [&_svg:not([class*='size-'])]:size-6",
