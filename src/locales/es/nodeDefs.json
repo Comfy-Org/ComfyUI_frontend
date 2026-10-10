@@ -11411,11 +11411,19 @@
   "LatentApplyOperationCFG": {
     "display_name": "LatentApplyOperationCFG",
     "inputs": {
+      "end_percent": {
+        "name": "porcentaje_final",
+        "tooltip": "Deja de aplicar la operación en esta fracción del programa de eliminación de ruido del modelo. 1 es el final."
+      },
       "model": {
         "name": "modelo"
       },
       "operation": {
         "name": "operación"
+      },
+      "start_percent": {
+        "name": "porcentaje_inicial",
+        "tooltip": "Comienza a aplicar la operación en esta fracción del programa de eliminación de ruido del modelo. 0 es el inicio."
       }
     },
     "outputs": {
@@ -11650,6 +11658,24 @@
       },
       "samples": {
         "name": "muestras"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "LatentOperationBlend": {
+    "description": "Mezcla todo el latent hacia el latent de referencia, redimensionando la referencia con interpolación de vecino más cercano cuando sea necesario.",
+    "display_name": "Mezcla de operaciones de latent",
+    "inputs": {
+      "reference": {
+        "name": "referencia"
+      },
+      "strength": {
+        "name": "intensidad",
+        "tooltip": "0 deja el latent sin cambios; 1 coincide con el latent de referencia redimensionado."
       }
     },
     "outputs": {
@@ -12059,6 +12085,44 @@
     "inputs": {
       "latent": {
         "name": "latente"
+      }
+    }
+  },
+  "LoadLoraModel": {
+    "description": "Aplica una pila de LoRA a un modelo de difusión. Añade una fila por cada LoRA; cada fila selecciona un archivo LoRA y su intensidad.",
+    "display_name": "Cargar LoRA (modelo)",
+    "inputs": {
+      "loras": {
+        "name": "loras",
+        "tooltip": "Cada fila aplica un LoRA al modelo."
+      },
+      "model": {
+        "name": "modelo",
+        "tooltip": "El modelo de difusión al que se aplicarán los LoRA."
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": "El modelo de difusión modificado."
+      }
+    }
+  },
+  "LoadLoraTextEncoder": {
+    "description": "Aplica una pila de LoRA a un codificador de texto CLIP. Añade una fila por cada LoRA; cada fila selecciona un archivo LoRA y su intensidad.",
+    "display_name": "Cargar LoRA (codificador de texto)",
+    "inputs": {
+      "clip": {
+        "name": "clip",
+        "tooltip": "El codificador de texto CLIP al que se aplicarán los LoRA."
+      },
+      "loras": {
+        "name": "loras",
+        "tooltip": "Cada fila aplica un LoRA al codificador de texto."
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": "El codificador de texto CLIP modificado."
       }
     }
   },

@@ -10632,6 +10632,14 @@
       },
       "operation": {
         "name": "operation"
+      },
+      "start_percent": {
+        "name": "start_percent",
+        "tooltip": "Start applying the operation at this fraction of the model's denoising schedule. 0 is the beginning."
+      },
+      "end_percent": {
+        "name": "end_percent",
+        "tooltip": "Stop applying the operation at this fraction of the model's denoising schedule. 1 is the end."
       }
     },
     "outputs": {
@@ -10866,6 +10874,24 @@
       },
       "multiplier": {
         "name": "multiplier"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "LatentOperationBlend": {
+    "display_name": "Latent Operation Blend",
+    "description": "Blend the entire latent toward the reference latent, resizing the reference with nearest-neighbor interpolation when needed.",
+    "inputs": {
+      "reference": {
+        "name": "reference"
+      },
+      "strength": {
+        "name": "strength",
+        "tooltip": "0 leaves the latent unchanged; 1 matches the resized reference latent."
       }
     },
     "outputs": {
@@ -11275,6 +11301,44 @@
     "inputs": {
       "latent": {
         "name": "latent"
+      }
+    }
+  },
+  "LoadLoraModel": {
+    "display_name": "Load LoRA (Model)",
+    "description": "Apply a stack of LoRAs to a diffusion model. Add one row per LoRA; each row picks a LoRA file and its strength.",
+    "inputs": {
+      "model": {
+        "name": "model",
+        "tooltip": "The diffusion model the LoRAs will be applied to."
+      },
+      "loras": {
+        "name": "loras",
+        "tooltip": "Each row applies one LoRA to the model."
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": "The modified diffusion model."
+      }
+    }
+  },
+  "LoadLoraTextEncoder": {
+    "display_name": "Load LoRA (Text Encoder)",
+    "description": "Apply a stack of LoRAs to a CLIP text encoder. Add one row per LoRA; each row picks a LoRA file and its strength.",
+    "inputs": {
+      "clip": {
+        "name": "clip",
+        "tooltip": "The CLIP text encoder the LoRAs will be applied to."
+      },
+      "loras": {
+        "name": "loras",
+        "tooltip": "Each row applies one LoRA to the text encoder."
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": "The modified CLIP text encoder."
       }
     }
   },

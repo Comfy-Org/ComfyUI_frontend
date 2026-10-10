@@ -11411,11 +11411,19 @@
   "LatentApplyOperationCFG": {
     "display_name": "潛空間應用操作 CFG",
     "inputs": {
+      "end_percent": {
+        "name": "結束百分比",
+        "tooltip": "在模型去噪排程的此比例停止套用操作。1 為結束。"
+      },
       "model": {
         "name": "model"
       },
       "operation": {
         "name": "operation"
+      },
+      "start_percent": {
+        "name": "起始百分比",
+        "tooltip": "從模型去噪排程的此比例開始套用操作。0 為開始。"
       }
     },
     "outputs": {
@@ -11650,6 +11658,24 @@
       },
       "samples": {
         "name": "樣本"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "LatentOperationBlend": {
+    "description": "將整個 latent 朝參考 latent 混合，必要時使用最近鄰插值調整參考項目的大小。",
+    "display_name": "latent 操作混合",
+    "inputs": {
+      "reference": {
+        "name": "參考"
+      },
+      "strength": {
+        "name": "強度",
+        "tooltip": "0 會保持 latent 不變；1 會與調整大小後的參考 latent 相符。"
       }
     },
     "outputs": {
@@ -12059,6 +12085,44 @@
     "inputs": {
       "latent": {
         "name": "潛在空間"
+      }
+    }
+  },
+  "LoadLoraModel": {
+    "description": "將一組 lora 套用至擴散模型。每個 lora 新增一列；每列選擇一個 lora 檔案及其強度。",
+    "display_name": "載入 lora（模型）",
+    "inputs": {
+      "loras": {
+        "name": "lora",
+        "tooltip": "每列會將一個 lora 套用至模型。"
+      },
+      "model": {
+        "name": "模型",
+        "tooltip": "將套用 lora 的擴散模型。"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": "修改後的擴散模型。"
+      }
+    }
+  },
+  "LoadLoraTextEncoder": {
+    "description": "將一組 lora 套用至 CLIP 文字編碼器。每個 lora 新增一列；每列選擇一個 lora 檔案及其強度。",
+    "display_name": "載入 lora（文字編碼器）",
+    "inputs": {
+      "clip": {
+        "name": "clip",
+        "tooltip": "將套用 lora 的 CLIP 文字編碼器。"
+      },
+      "loras": {
+        "name": "lora",
+        "tooltip": "每列會將一個 lora 套用至文字編碼器。"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": "修改後的 CLIP 文字編碼器。"
       }
     }
   },

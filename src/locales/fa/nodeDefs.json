@@ -11411,11 +11411,19 @@
   "LatentApplyOperationCFG": {
     "display_name": "LatentApplyOperationCFG",
     "inputs": {
+      "end_percent": {
+        "name": "درصد پایان",
+        "tooltip": "اعمال عملیات را در این بخش از زمان‌بندی نویززدایی مدل متوقف کنید. ۱ انتهای آن است."
+      },
       "model": {
         "name": "مدل"
       },
       "operation": {
         "name": "عملیات"
+      },
+      "start_percent": {
+        "name": "درصد آغاز",
+        "tooltip": "اعمال عملیات را از این بخش از زمان‌بندی نویززدایی مدل آغاز کنید. ۰ ابتدای آن است."
       }
     },
     "outputs": {
@@ -11650,6 +11658,24 @@
       },
       "samples": {
         "name": "نمونه‌ها"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "LatentOperationBlend": {
+    "description": "کل فضای نهان را به‌سوی فضای نهان مرجع ترکیب می‌کند و در صورت نیاز، مرجع را با درون‌یابی نزدیک‌ترین همسایه تغییر اندازه می‌دهد.",
+    "display_name": "ترکیب عملیات فضای نهان",
+    "inputs": {
+      "reference": {
+        "name": "مرجع"
+      },
+      "strength": {
+        "name": "شدت",
+        "tooltip": "۰ فضای نهان را بدون تغییر باقی می‌گذارد؛ ۱ با فضای نهان مرجعِ تغییراندازه‌داده‌شده مطابقت دارد."
       }
     },
     "outputs": {
@@ -12059,6 +12085,44 @@
     "inputs": {
       "latent": {
         "name": "latent"
+      }
+    }
+  },
+  "LoadLoraModel": {
+    "description": "یک پشته از LoRAها را روی یک مدل انتشار اعمال می‌کند. برای هر LoRA یک ردیف اضافه کنید؛ هر ردیف یک فایل LoRA و شدت آن را انتخاب می‌کند.",
+    "display_name": "بارگذاری LoRA (مدل)",
+    "inputs": {
+      "loras": {
+        "name": "loras",
+        "tooltip": "هر ردیف یک LoRA را روی مدل اعمال می‌کند."
+      },
+      "model": {
+        "name": "مدل",
+        "tooltip": "مدل انتشاری که LoRAها روی آن اعمال خواهند شد."
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": "مدل انتشارِ تغییر‌یافته."
+      }
+    }
+  },
+  "LoadLoraTextEncoder": {
+    "description": "یک پشته از LoRAها را روی یک رمزگذار متن CLIP اعمال می‌کند. برای هر LoRA یک ردیف اضافه کنید؛ هر ردیف یک فایل LoRA و شدت آن را انتخاب می‌کند.",
+    "display_name": "بارگذاری LoRA (رمزگذار متن)",
+    "inputs": {
+      "clip": {
+        "name": "clip",
+        "tooltip": "رمزگذار متن CLIP که LoRAها روی آن اعمال خواهند شد."
+      },
+      "loras": {
+        "name": "loras",
+        "tooltip": "هر ردیف یک LoRA را روی رمزگذار متن اعمال می‌کند."
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": "رمزگذار متن CLIP تغییر‌یافته."
       }
     }
   },

@@ -11411,11 +11411,19 @@
   "LatentApplyOperationCFG": {
     "display_name": "تطبيق عملية مع CFG على الكامن",
     "inputs": {
+      "end_percent": {
+        "name": "نسبة الإنهاء",
+        "tooltip": "أوقف تطبيق العملية عند هذا الجزء من جدول إزالة التشويش للنموذج. 1 هي النهاية."
+      },
       "model": {
         "name": "model"
       },
       "operation": {
         "name": "operation"
+      },
+      "start_percent": {
+        "name": "نسبة البدء",
+        "tooltip": "ابدأ تطبيق العملية عند هذا الجزء من جدول إزالة التشويش للنموذج. 0 هي البداية."
       }
     },
     "outputs": {
@@ -11650,6 +11658,24 @@
       },
       "samples": {
         "name": "عينات"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "LatentOperationBlend": {
+    "description": "امزج الكامن بالكامل باتجاه الكامن المرجعي، مع تغيير حجم المرجع باستخدام استيفاء أقرب جار عند الحاجة.",
+    "display_name": "مزج العملية الكامنة",
+    "inputs": {
+      "reference": {
+        "name": "المرجع"
+      },
+      "strength": {
+        "name": "القوة",
+        "tooltip": "القيمة 0 تترك الكامن دون تغيير؛ والقيمة 1 تطابق الكامن المرجعي بعد تغيير حجمه."
       }
     },
     "outputs": {
@@ -12059,6 +12085,44 @@
     "inputs": {
       "latent": {
         "name": "كامن"
+      }
+    }
+  },
+  "LoadLoraModel": {
+    "description": "طبّق مجموعة من LoRA على نموذج انتشار. أضف صفًا واحدًا لكل LoRA؛ يحدد كل صف ملف LoRA وقوته.",
+    "display_name": "تحميل LoRA (النموذج)",
+    "inputs": {
+      "loras": {
+        "name": "loras",
+        "tooltip": "يطبّق كل صف LoRA واحدة على النموذج."
+      },
+      "model": {
+        "name": "النموذج",
+        "tooltip": "نموذج الانتشار الذي ستُطبّق عليه LoRA."
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": "نموذج الانتشار المعدّل."
+      }
+    }
+  },
+  "LoadLoraTextEncoder": {
+    "description": "طبّق مجموعة من LoRA على مرمّز النص CLIP. أضف صفًا واحدًا لكل LoRA؛ يحدد كل صف ملف LoRA وقوته.",
+    "display_name": "تحميل LoRA (مرمّز النص)",
+    "inputs": {
+      "clip": {
+        "name": "clip",
+        "tooltip": "مرمّز النص CLIP الذي ستُطبّق عليه LoRA."
+      },
+      "loras": {
+        "name": "loras",
+        "tooltip": "يطبّق كل صف LoRA واحدة على مرمّز النص."
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": "مرمّز النص CLIP المعدّل."
       }
     }
   },

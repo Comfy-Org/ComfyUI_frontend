@@ -11411,11 +11411,19 @@
   "LatentApplyOperationCFG": {
     "display_name": "잠재 데이터 CFG 연산 (연산 적용)",
     "inputs": {
+      "end_percent": {
+        "name": "종료_퍼센트",
+        "tooltip": "모델의 노이즈 제거 일정에서 이 비율에 작업 적용을 중지합니다. 1은 끝입니다."
+      },
       "model": {
         "name": "모델"
       },
       "operation": {
         "name": "연산"
+      },
+      "start_percent": {
+        "name": "시작_퍼센트",
+        "tooltip": "모델의 노이즈 제거 일정에서 이 비율부터 작업 적용을 시작합니다. 0은 시작입니다."
       }
     },
     "outputs": {
@@ -11650,6 +11658,24 @@
       },
       "samples": {
         "name": "잠재 데이터"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "LatentOperationBlend": {
+    "description": "전체 latent를 참조 latent 쪽으로 블렌드하며, 필요할 경우 최근접 이웃 보간법으로 참조를 크기 조절합니다.",
+    "display_name": "Latent 작업 블렌드",
+    "inputs": {
+      "reference": {
+        "name": "참조"
+      },
+      "strength": {
+        "name": "강도",
+        "tooltip": "0이면 latent가 변경되지 않으며, 1이면 크기 조절된 참조 latent와 일치합니다."
       }
     },
     "outputs": {
@@ -12059,6 +12085,44 @@
     "inputs": {
       "latent": {
         "name": "잠재 데이터"
+      }
+    }
+  },
+  "LoadLoraModel": {
+    "description": "확산 모델에 LoRA 스택을 적용합니다. LoRA마다 행을 하나씩 추가하세요. 각 행에서 LoRA 파일과 강도를 선택합니다.",
+    "display_name": "LoRA 불러오기 (모델)",
+    "inputs": {
+      "loras": {
+        "name": "loras",
+        "tooltip": "각 행은 모델에 LoRA 하나를 적용합니다."
+      },
+      "model": {
+        "name": "모델",
+        "tooltip": "LoRA가 적용될 확산 모델입니다."
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": "수정된 확산 모델입니다."
+      }
+    }
+  },
+  "LoadLoraTextEncoder": {
+    "description": "CLIP 텍스트 인코더에 LoRA 스택을 적용합니다. LoRA마다 행을 하나씩 추가하세요. 각 행에서 LoRA 파일과 강도를 선택합니다.",
+    "display_name": "LoRA 불러오기 (텍스트 인코더)",
+    "inputs": {
+      "clip": {
+        "name": "clip",
+        "tooltip": "LoRA가 적용될 CLIP 텍스트 인코더입니다."
+      },
+      "loras": {
+        "name": "loras",
+        "tooltip": "각 행은 텍스트 인코더에 LoRA 하나를 적용합니다."
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": "수정된 CLIP 텍스트 인코더입니다."
       }
     }
   },

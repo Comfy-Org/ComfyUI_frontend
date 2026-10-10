@@ -11411,11 +11411,19 @@
   "LatentApplyOperationCFG": {
     "display_name": "Applica Operazione Latent CFG",
     "inputs": {
+      "end_percent": {
+        "name": "percentuale_finale",
+        "tooltip": "Interrompi l'applicazione dell'operazione a questa frazione del programma di denoising del modello. 1 corrisponde alla fine."
+      },
       "model": {
         "name": "modello"
       },
       "operation": {
         "name": "operazione"
+      },
+      "start_percent": {
+        "name": "percentuale_iniziale",
+        "tooltip": "Inizia ad applicare l'operazione a questa frazione del programma di denoising del modello. 0 corrisponde all'inizio."
       }
     },
     "outputs": {
@@ -11650,6 +11658,24 @@
       },
       "samples": {
         "name": "campioni"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "LatentOperationBlend": {
+    "description": "Fonde l'intero latent verso il latent di riferimento, ridimensionando il riferimento con interpolazione del vicino più prossimo quando necessario.",
+    "display_name": "Fusione operazione latent",
+    "inputs": {
+      "reference": {
+        "name": "riferimento"
+      },
+      "strength": {
+        "name": "intensità",
+        "tooltip": "0 lascia invariato il latent; 1 corrisponde al latent di riferimento ridimensionato."
       }
     },
     "outputs": {
@@ -12059,6 +12085,44 @@
     "inputs": {
       "latent": {
         "name": "latent"
+      }
+    }
+  },
+  "LoadLoraModel": {
+    "description": "Applica una pila di LoRA a un modello di diffusione. Aggiungi una riga per ogni LoRA; ogni riga seleziona un file LoRA e la relativa intensità.",
+    "display_name": "Carica LoRA (modello)",
+    "inputs": {
+      "loras": {
+        "name": "lora",
+        "tooltip": "Ogni riga applica un LoRA al modello."
+      },
+      "model": {
+        "name": "modello",
+        "tooltip": "Il modello di diffusione a cui verranno applicati i LoRA."
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": "Il modello di diffusione modificato."
+      }
+    }
+  },
+  "LoadLoraTextEncoder": {
+    "description": "Applica una pila di LoRA a un codificatore di testo CLIP. Aggiungi una riga per ogni LoRA; ogni riga seleziona un file LoRA e la relativa intensità.",
+    "display_name": "Carica LoRA (codificatore di testo)",
+    "inputs": {
+      "clip": {
+        "name": "clip",
+        "tooltip": "Il codificatore di testo CLIP a cui verranno applicati i LoRA."
+      },
+      "loras": {
+        "name": "lora",
+        "tooltip": "Ogni riga applica un LoRA al codificatore di testo."
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": "Il codificatore di testo CLIP modificato."
       }
     }
   },

@@ -11411,11 +11411,19 @@
   "LatentApplyOperationCFG": {
     "display_name": "LatentApplyOperationCFG",
     "inputs": {
+      "end_percent": {
+        "name": "אחוז סיום",
+        "tooltip": "הפסק להחיל את הפעולה בשיעור זה מלוח הזמנים של הפחתת הרעש של המודל. 1 הוא הסוף."
+      },
       "model": {
         "name": "model"
       },
       "operation": {
         "name": "פעולה"
+      },
+      "start_percent": {
+        "name": "אחוז התחלה",
+        "tooltip": "התחל להחיל את הפעולה בשיעור זה מלוח הזמנים של הפחתת הרעש של המודל. 0 הוא ההתחלה."
       }
     },
     "outputs": {
@@ -11650,6 +11658,24 @@
       },
       "samples": {
         "name": "samples"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "LatentOperationBlend": {
+    "description": "מזג את כל המרחב הלטנטי לעבר המרחב הלטנטי המשמש כייחוס, תוך שינוי גודל הייחוס באמצעות אינטרפולציית השכן הקרוב בעת הצורך.",
+    "display_name": "מיזוג פעולת מרחב לטנטי",
+    "inputs": {
+      "reference": {
+        "name": "ייחוס"
+      },
+      "strength": {
+        "name": "עוצמה",
+        "tooltip": "0 משאיר את המרחב הלטנטי ללא שינוי; 1 מתאים למרחב הלטנטי של הייחוס לאחר שינוי הגודל."
       }
     },
     "outputs": {
@@ -12059,6 +12085,44 @@
     "inputs": {
       "latent": {
         "name": "latent"
+      }
+    }
+  },
+  "LoadLoraModel": {
+    "description": "החל ערימת LoRAs על מודל דיפוזיה. הוסף שורה אחת לכל LoRA; בכל שורה נבחרים קובץ LoRA והעוצמה שלו.",
+    "display_name": "טעינת LoRA (מודל)",
+    "inputs": {
+      "loras": {
+        "name": "LoRAs",
+        "tooltip": "כל שורה מחילה LoRA אחד על המודל."
+      },
+      "model": {
+        "name": "מודל",
+        "tooltip": "מודל הדיפוזיה שעליו יוחלו ה-LoRAs."
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": "מודל הדיפוזיה ששונה."
+      }
+    }
+  },
+  "LoadLoraTextEncoder": {
+    "description": "החל ערימת LoRAs על מקודד הטקסט CLIP. הוסף שורה אחת לכל LoRA; בכל שורה נבחרים קובץ LoRA והעוצמה שלו.",
+    "display_name": "טעינת LoRA (מקודד טקסט)",
+    "inputs": {
+      "clip": {
+        "name": "clip",
+        "tooltip": "מקודד הטקסט CLIP שעליו יוחלו ה-LoRAs."
+      },
+      "loras": {
+        "name": "LoRAs",
+        "tooltip": "כל שורה מחילה LoRA אחד על מקודד הטקסט."
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": "מקודד הטקסט CLIP ששונה."
       }
     }
   },
