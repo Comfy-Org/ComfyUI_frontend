@@ -6,30 +6,16 @@ import type { PlanLimitMetric } from './PlanLimitsTable.vue'
 import SectionHeader from '@/components/common/SectionHeader.vue'
 import CheckIcon from '@/components/icons/CheckIcon.vue'
 import { getRoutes } from '@/config/routes'
-import {
-  COMFY_AGENT_MONTHLY_ALLOWANCE_USD,
-  comfyAgentPlanLimits
-} from '@/data/comfyAgentPlanLimits'
+import { comfyAgentPlanLimits } from '@/data/comfyAgentPlanLimits'
 import { translationsFor } from '@/i18n/translations'
 import PlanLimitsTable from './PlanLimitsTable.vue'
 
 const { locale = 'en' } = defineProps<{ locale?: Locale }>()
 const { t } = translationsFor(locale)
 
-const limits = [
-  'availability',
-  'allowance',
-  'credits',
-  'runs',
-  'queue',
-  'model'
-] as const
+const limits = ['availability', 'credits', 'runs', 'queue', 'model'] as const
 
 const metrics: PlanLimitMetric<ComfyAgentPlanLimits>[] = [
-  {
-    labelKey: 'pricing.agent.metric.allowance',
-    format: () => COMFY_AGENT_MONTHLY_ALLOWANCE_USD
-  },
   {
     labelKey: 'pricing.agent.metric.tasksPerMember',
     format: (plan) => plan.concurrentTasksPerMember
@@ -87,11 +73,7 @@ const metrics: PlanLimitMetric<ComfyAgentPlanLimits>[] = [
           </p>
         </div>
         <p class="mt-3 text-sm/relaxed text-primary-comfy-canvas/55">
-          {{
-            t(`pricing.agent.limit.${limit}.description`, {
-              allowance: COMFY_AGENT_MONTHLY_ALLOWANCE_USD
-            })
-          }}
+          {{ t(`pricing.agent.limit.${limit}.description`) }}
         </p>
       </li>
     </ul>

@@ -1639,7 +1639,7 @@
     },
     "comfyApi": {
       "heading": "Comfy API pricing",
-      "subtitle": "Comfy API is a separate product from your Comfy Cloud plan, for teams building on Comfy Cloud programmatically. GPU time and storage are billed by the second; release, deployment, and concurrency limits apply to each plan below.",
+      "subtitle": "Comfy API lets you deploy your workflow as a production API. GPU time and storage are billed by the second; build, deployment, and concurrency limits apply to each plan below.",
       "metric": {
         "builds": "Total builds limit",
         "deployments": "Total deployments limit",
@@ -1673,10 +1673,6 @@
           "title": "Available on every plan",
           "description": "Any Comfy Cloud account can use Comfy Agent. It is not locked to a specific plan: all you need is a free agent allowance or a positive credit balance."
         },
-        "allowance": {
-          "title": "Free monthly allowance",
-          "description": "Every workspace gets {allowance} of free Comfy Agent usage each month. It is used first, resets on the 1st of each month (UTC), and unused credits do not roll over."
-        },
         "credits": {
           "title": "Billed in Comfy Credits",
           "description": "Once the free allowance is used up, Comfy Agent draws on your Comfy Credits for LLM tokens, at the same rates as LLM Partner Nodes. On the Team plan, usage comes from the shared credit pool."
@@ -1695,7 +1691,6 @@
         }
       },
       "metric": {
-        "allowance": "Free Agent credits per month",
         "tasksPerMember": "Agent tasks at once, per member",
         "requestsPerWorkspace": "Agent requests at once, per workspace"
       },

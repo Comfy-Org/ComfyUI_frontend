@@ -1,8 +1,6 @@
 import type { PlanFeatureGroup } from '@/data/pricingPlans'
 import type { TranslationKey } from '@/i18n/translations'
 
-export const COMFY_AGENT_MONTHLY_ALLOWANCE_USD = '$0.70'
-
 export interface ComfyAgentPlanLimits {
   id: string
   labelKey: TranslationKey

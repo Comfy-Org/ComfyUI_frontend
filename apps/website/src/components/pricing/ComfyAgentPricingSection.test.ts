@@ -7,12 +7,12 @@ describe('ComfyAgentPricingSection', () => {
   it.for([
     {
       locale: 'en',
-      limit: 'Free monthly allowance',
+      limit: 'Billed in Comfy Credits',
       href: '/agent/'
     },
     {
       locale: 'zh-CN',
-      limit: '每月免费额度',
+      limit: '使用 Comfy Credits 计费',
       href: '/zh-CN/agent/'
     }
   ] as const)(
@@ -40,13 +40,5 @@ describe('ComfyAgentPricingSection', () => {
         .slice(1)
         .map((cell) => cell.textContent.trim())
     ).toEqual(['4', '6', '8', '16'])
-  })
-
-  it('states the free monthly allowance in the allowance card', () => {
-    render(ComfyAgentPricingSection)
-
-    expect(
-      screen.getByText(/gets \$0\.70 of free Comfy Agent usage/)
-    ).toBeTruthy()
   })
 })

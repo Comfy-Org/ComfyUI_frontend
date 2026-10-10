@@ -3180,7 +3180,7 @@
     },
     "comfyApi": {
       "heading": "Comfy API 定价",
-      "subtitle": "Comfy API 是独立于你的 Comfy Cloud 套餐之外的产品，面向以编程方式构建于 Comfy Cloud 平台之上的团队。GPU 时间与存储按秒计费；下方列出了各套餐的版本、部署与并发限制。",
+      "subtitle": "Comfy API 让你将工作流部署为生产级 API。GPU 时间与存储按秒计费；下方列出了各套餐的构建、部署与并发限制。",
       "metric": {
         "builds": "构建版本总数上限",
         "deployments": "部署总数上限",
@@ -3362,10 +3362,6 @@
           "title": "所有方案均可使用",
           "description": "任何 Comfy Cloud 账户都可以使用 Comfy Agent，不限定特定方案：只需有免费 Agent 额度或积分余额大于零即可。"
         },
-        "allowance": {
-          "title": "每月免费额度",
-          "description": "每个工作区每月可免费使用价值 {allowance} 的 Comfy Agent。免费额度会优先使用，于每月 1 日（UTC）重置，未用完的额度不会结转。"
-        },
         "credits": {
           "title": "使用 Comfy Credits 计费",
           "description": "免费额度用完后，Comfy Agent 会消耗你的 Comfy Credits 来支付 LLM token 费用，费率与 LLM Partner Nodes 相同。在 Team 方案中，用量从共享积分池中扣除。"
@@ -3384,7 +3380,6 @@
         }
       },
       "metric": {
-        "allowance": "每月免费 Agent 积分",
         "tasksPerMember": "每位成员同时运行的 Agent 任务数",
         "requestsPerWorkspace": "每个工作区同时处理的 Agent 请求数"
       },
