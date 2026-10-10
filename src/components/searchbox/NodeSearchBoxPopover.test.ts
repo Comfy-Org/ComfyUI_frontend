@@ -187,7 +187,17 @@ describe('NodeSearchBoxPopover', () => {
     })
   })
 
-  it('clears filters after a node closes the search programmatically', async () => {
+  it.for([
+    {
+      closedBy: 'adding a node',
+      close: (user: ReturnType<typeof userEvent.setup>) =>
+        user.click(screen.getByRole('button', { name: 'Add node' }))
+    },
+    {
+      closedBy: 'the toggle command',
+      close: () => useSearchBoxStore().toggleVisible()
+    }
+  ])('clears filters after $closedBy closes the search', async ({ close }) => {
     const user = userEvent.setup()
     vi.spyOn(window, 'requestAnimationFrame').mockImplementation((callback) => {
       callback(0)
@@ -205,7 +215,7 @@ describe('NodeSearchBoxPopover', () => {
     await user.click(screen.getByRole('button', { name: 'Add filter' }))
     expect(screen.getByLabelText('filter count')).toHaveTextContent('1')
 
-    await user.click(screen.getByRole('button', { name: 'Add node' }))
+    await close(user)
     expect(searchBoxStore.visible).toBe(false)
     searchBoxStore.visible = true
     await nextTick()
