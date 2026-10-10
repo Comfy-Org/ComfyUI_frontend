@@ -3,9 +3,9 @@ import { render } from '@testing-library/vue'
 import { describe, expect, it, onTestFinished, vi } from 'vitest'
 import { defineComponent, ref } from 'vue'
 
+import { useToast } from '@/components/ui/toast/toastStore'
 import { i18n } from '@/i18n'
 import { reportError } from '@/platform/telemetry/reportError'
-import { useToastStore } from '@/platform/updates/common/toastStore'
 import { api } from '@/scripts/api'
 import { useAgentPanelStore } from '@/workbench/extensions/agent/stores/agent/agentPanelStore'
 
@@ -14,9 +14,7 @@ import { parseWireOps } from '@e2e/fixtures/agentWireFrame'
 import type { GraphOperation } from './graphOperations'
 import { useAgentCrdtFollower } from './useAgentCrdtFollower'
 
-vi.mock(import('@/platform/telemetry/reportError'), () => ({
-  reportError: vi.fn()
-}))
+vi.mock(import('@/platform/telemetry/reportError'))
 
 const WORKFLOW_ID = 'wf-rejected-widget-write'
 
@@ -156,8 +154,8 @@ function rejection(opId: string, code: string): Record<string, unknown> {
   }
 }
 
-function toastDetails(): unknown[] {
-  return useToastStore().messagesToAdd.map((message) => message.detail)
+function toastDescriptions(): (string | undefined)[] {
+  return useToast().toasts.map((toast) => toast.description)
 }
 
 /**
@@ -197,7 +195,7 @@ describe('a human edit the doc host rejects', () => {
 
       answerWithOpsResult(rejection(await submit(WIDGET_EDIT), code))
 
-      expect(toastDetails()).toEqual([
+      expect(toastDescriptions()).toEqual([
         expect.stringContaining(WIDGET_REJECTION_TEXT)
       ])
     }
@@ -225,7 +223,7 @@ describe('a human edit the doc host rejects', () => {
       }
     })
 
-    expect(toastDetails()).toEqual([
+    expect(toastDescriptions()).toEqual([
       expect.stringContaining(WIDGET_REJECTION_TEXT)
     ])
   })
@@ -257,7 +255,7 @@ describe('a human edit the doc host rejects', () => {
       }
     })
 
-    expect(toastDetails()).toEqual([
+    expect(toastDescriptions()).toEqual([
       expect.stringContaining(WIDGET_REJECTION_TEXT)
     ])
   })
@@ -267,13 +265,13 @@ describe('a human edit the doc host rejects', () => {
 
     answerWithOpsResult(rejection(await submit(WIDGET_EDIT), 'opaque_widgets'))
 
-    expect(useToastStore().messagesToAdd).toEqual([
-      {
-        severity: 'error',
-        summary: i18n.global.t('g.error'),
-        detail: expect.stringContaining(WIDGET_REJECTION_TEXT),
-        life: expect.any(Number)
-      }
+    expect(useToast().toasts).toEqual([
+      expect.objectContaining({
+        kind: 'error',
+        title: i18n.global.t('g.error'),
+        description: expect.stringContaining(WIDGET_REJECTION_TEXT),
+        duration: expect.any(Number)
+      })
     ])
   })
 
@@ -286,7 +284,7 @@ describe('a human edit the doc host rejects', () => {
       rejection(await submit(NODE_ADD), 'uncatalogued_widget_write')
     )
 
-    expect(toastDetails()).toEqual([
+    expect(toastDescriptions()).toEqual([
       expect.stringContaining(GENERIC_REJECTION_TEXT)
     ])
   })
@@ -298,7 +296,7 @@ describe('a human edit the doc host rejects', () => {
       rejection(await submit(WIDGET_EDIT), 'base_version_conflict')
     )
 
-    expect(toastDetails()).toEqual([
+    expect(toastDescriptions()).toEqual([
       expect.stringContaining(GENERIC_REJECTION_TEXT)
     ])
   })
@@ -309,7 +307,7 @@ describe('a human edit the doc host rejects', () => {
     answerWithOpsResult(rejection(await submit(WIDGET_EDIT), 'opaque_widgets'))
     answerWithOpsResult(rejection(await submit(WIDGET_EDIT), 'opaque_widgets'))
 
-    expect(toastDetails()).toEqual([
+    expect(toastDescriptions()).toEqual([
       expect.stringContaining(WIDGET_REJECTION_TEXT)
     ])
   })
@@ -327,7 +325,7 @@ describe('a human edit the doc host rejects', () => {
     await vi.advanceTimersByTimeAsync(10_001)
     answerWithOpsResult(rejection(await submit(WIDGET_EDIT), 'opaque_widgets'))
 
-    expect(toastDetails()).toEqual([
+    expect(toastDescriptions()).toEqual([
       expect.stringContaining(WIDGET_REJECTION_TEXT),
       expect.stringContaining(WIDGET_REJECTION_TEXT)
     ])
@@ -341,7 +339,7 @@ describe('a human edit the doc host rejects', () => {
       rejection(await submit(WIDGET_EDIT), 'base_version_conflict')
     )
 
-    expect(toastDetails()).toEqual([
+    expect(toastDescriptions()).toEqual([
       expect.stringContaining(WIDGET_REJECTION_TEXT),
       expect.stringContaining(GENERIC_REJECTION_TEXT)
     ])
@@ -359,7 +357,7 @@ describe('a human edit the doc host rejects', () => {
       skipped: []
     })
 
-    expect(useToastStore().messagesToAdd).toEqual([])
+    expect(useToast().toasts).toEqual([])
   })
 
   // The host refuses a whole batch with a top-level `code` and no `failed`
@@ -372,7 +370,7 @@ describe('a human edit the doc host rejects', () => {
 
     answerWithOpsResult(batchRefusal('catalog_mismatch'))
 
-    expect(toastDetails()).toEqual([
+    expect(toastDescriptions()).toEqual([
       expect.stringContaining(GENERIC_REJECTION_TEXT)
     ])
     expect(reportedCodes()).toEqual(['catalog_mismatch'])
@@ -441,8 +439,8 @@ describe('a human edit the doc host rejects', () => {
 
       // Still carries the canonical substring the e2e spec filters on, so the
       // partial variant cannot break that contract.
-      expect(toastDetails()).toEqual([expect.stringContaining(expected)])
-      expect(String(toastDetails()[0])).toContain('some earlier edits were')
+      expect(toastDescriptions()).toEqual([expect.stringContaining(expected)])
+      expect(toastDescriptions()[0]).toContain('some earlier edits were')
     }
   )
 })

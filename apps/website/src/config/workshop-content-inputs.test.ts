@@ -1,6 +1,7 @@
+import { fetchRequests, respondToFetch } from '@comfyorg/test-utils/fetch'
 import { assert, describe, expect, it, vi } from 'vitest'
 
-import content from '../content/workshop-display.json'
+import content from '@/content/workshop-display.json'
 import { workshopContentInputs } from './workshop-content-inputs'
 import { authoredWorkshopModels } from './workshop-browse-content'
 import { workshopContract } from './workshop-contract-catalog'
@@ -421,21 +422,20 @@ describe('use-case input contracts', () => {
       'https://cdn.jsdelivr.net/gh/Comfy-Org/workflow_templates@3db6490611e6a16b84b09110e61a07264ce47cd3/input/reference.png'
     expect(source).toEqual(expect.stringContaining('@'))
     const stored = 'https://storage.example/reference.png'
-    const transport = vi.fn<typeof fetch>(async (url, init) => {
-      if (init?.method === 'POST') {
-        return Response.json({
-          upload_url: 'https://storage.example/upload',
-          download_url: stored
+    respondToFetch(
+      {},
+      (url) =>
+        new Response(String(url), {
+          headers: { 'Content-Type': 'image/png' }
         })
-      }
-      if (init?.method === 'PUT') {
-        return new Response(null)
-      }
-      return new Response(String(url), {
-        headers: { 'Content-Type': 'image/png' }
+    )
+    respondToFetch({ method: 'POST' }, () =>
+      Response.json({
+        upload_url: 'https://storage.example/upload',
+        download_url: stored
       })
-    })
-    vi.stubGlobal('fetch', transport)
+    )
+    respondToFetch({ method: 'PUT' }, () => new Response(null))
     const uploader = createWorkshopUrlUploader()
     const upload = (file: File, signal: AbortSignal) =>
       uploader(file, 'token', 'owner:workspace', signal)
@@ -449,11 +449,12 @@ describe('use-case input contracts', () => {
         ]
       }
     })
-    expect(transport).toHaveBeenCalledTimes(3)
-    expect(transport.mock.calls[0][0]).toBe(source)
-    expect(String(transport.mock.calls[1][0])).toMatch(/\/customers\/storage$/)
-    expect(transport.mock.calls[2][0]).toBe('https://storage.example/upload')
-    const uploaded = transport.mock.calls[2][1]?.body
+    expect(fetch).toHaveBeenCalledTimes(3)
+    const [download, grant, put] = fetchRequests()
+    expect(download.url).toBe(source)
+    expect(grant.url).toMatch(/\/customers\/storage$/)
+    expect(put.url).toBe('https://storage.example/upload')
+    const uploaded = put.body
     expect(uploaded).toBeInstanceOf(File)
     if (!(uploaded instanceof File)) throw new Error('Missing upload')
     expect(uploaded.type).toBe('image/png')
@@ -463,7 +464,7 @@ describe('use-case input contracts', () => {
     ).rejects.toMatchObject({
       reason: 'validation'
     })
-    expect(transport).toHaveBeenCalledTimes(3)
+    expect(fetch).toHaveBeenCalledTimes(3)
   })
 
   it.for([

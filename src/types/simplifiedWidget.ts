@@ -7,12 +7,9 @@ import type {
   IBaseWidget,
   IWidgetOptions
 } from '@/lib/litegraph/src/types/widgets'
-import { IS_CONTROL_WIDGET } from '@/scripts/controlWidgetMarker'
+import { IS_CONTROL_WIDGET } from '@/core/graph/widgets/controlWidgetMarker'
 import type { NodeId } from '@/types/nodeId'
 import type { NodeLocatorId } from '@/types/nodeIdentification'
-
-/** Valid types for widget values */
-export type WidgetValue = string | number | boolean | object | undefined | null
 
 export const CONTROL_OPTIONS = [
   'fixed',
@@ -22,9 +19,12 @@ export const CONTROL_OPTIONS = [
 ] as const
 export type ControlOptions = (typeof CONTROL_OPTIONS)[number]
 
-function isControlOption(val: WidgetValue): val is ControlOptions {
-  return CONTROL_OPTIONS.includes(val as ControlOptions)
+export function isControlOption(value: unknown): value is ControlOptions {
+  return CONTROL_OPTIONS.some((option) => option === value)
 }
+
+/** Valid types for widget values */
+export type WidgetValue = string | number | boolean | object | undefined | null
 
 function normalizeControlOption(val: WidgetValue): ControlOptions {
   if (isControlOption(val)) return val
@@ -75,6 +75,8 @@ export interface SimplifiedWidget<
 
   /** Localized display label (falls back to name if not provided) */
   label?: string
+
+  displayLabel?: string
 
   /** Widget options including filtered PrimeVue props */
   options?: O

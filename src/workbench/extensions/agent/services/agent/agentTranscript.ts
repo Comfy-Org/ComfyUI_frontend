@@ -1,6 +1,11 @@
 import type { AgentMessages, TurnId } from '../../schemas/agentApiSchema'
-import { zPersistedToolCallSummary } from '../../schemas/agentApiSchema'
+import {
+  toTurnId,
+  zPersistedToolCallSummary
+} from '../../schemas/agentApiSchema'
 import type { WorkflowReference } from '../../types/workflowReference'
+import type { SkillReference } from '../../types/skillReference'
+import { parseSkillReferenceText } from '../../utils/skillReferenceText'
 import { parseWorkflowReferences } from '../../utils/workflowReferenceText'
 import type { AssistantMessage, ToolPart } from './agentMessageParts'
 import { createAssistantMessage } from './agentMessageParts'
@@ -39,6 +44,7 @@ export interface NormalizedAgentTranscript {
   userTexts: Map<TurnId, string>
   userAttachments: Map<TurnId, UserAttachment[]>
   userWorkflowReferences: Map<TurnId, WorkflowReference[]>
+  userSkillReferences: Map<TurnId, SkillReference>
   latestWorkflowId?: string
   rowIds: Set<string>
   /** Tracks turns with assistant rows, including rows that produce no parts. */
@@ -169,9 +175,8 @@ function parseUserWorkflowReferences(
 /**
  * `zPersistedToolCallSummary` only ever validates a terminal
  * (`success`/`error`) row — the backend drops a row a dead turn left in
- * `pending`/`running` before persisting it. `isLive` (the row is the one
- * actively backed by a live transport — the run_approval mid-ask case) is
- * kept only for a call that arrives through the live WebSocket path with a
+ * `pending`/`running` before persisting it. `isLive` (the row is backed by a
+ * live transport) is kept only for a call that arrives through the live WebSocket path with a
  * status this schema doesn't cover; a restored (non-live) row is always
  * `done`.
  */
@@ -214,6 +219,7 @@ function parseToolCallEntry(
     tool_call_id: toolCallId,
     tool_name: toolName,
     status,
+    skill,
     duration_ms: rawDuration
   } = parsed.data
   const state = toolCallPartState(status, isLive)
@@ -233,6 +239,7 @@ function parseToolCallEntry(
     name: toolName,
     state,
     ...(ok !== undefined ? { ok } : {}),
+    ...(skill ? { skill } : {}),
     ...(durationMs !== undefined ? { durationMs } : {})
   }
 }
@@ -259,9 +266,10 @@ function parseToolCalls(
 
 /**
  * Appends a persisted assistant row's tool-call and text parts onto its
- * running message. `isLive` is true only when this row is the one that will
- * be handed a live `AgentEventTransport` (the run_approval mid-ask case), so
- * its still-in-flight tool parts may legitimately stay `streaming`.
+ * running message. `isLive` is true when the row is the one that will be
+ * handed a live `AgentEventTransport` — the row the server still reports as
+ * `streaming` — so its still-in-flight tool parts may legitimately stay
+ * `streaming`.
  *
  * `message.parts` is shared across every assistant row of one turn (via
  * `assistants.get(turnId)` in `recordAssistantRow`), but `parseToolCalls`
@@ -312,26 +320,31 @@ function pendingRunApproval(
 
 /**
  * Applies one persisted assistant row onto its running message: appends any
- * parsed tool-call parts and text part, then, when the row is mid-ask,
- * attaches a `runApproval` part and marks the message still-streaming.
- * Returns the `pending` entry to record when the row is mid-ask, or
- * `undefined` otherwise.
+ * parsed tool-call parts and text part, then, for a row the server still
+ * reports as `streaming`, attaches a `runApproval` part when that row is also
+ * mid-ask. Returns the `pending` entry for a live row, or `undefined` for a
+ * terminal one; `normalizeAgentTranscript` owns `message.streaming` itself.
+ *
+ * PM-1776/PM-1682: `row.status` is the only authority on whether the turn is
+ * still running. Reading a live row as finished unless it carried a
+ * `pending_ask` left every client that hydrates mid-turn — a reopened panel,
+ * a refreshed tab — showing a completed transcript and offering Send for a
+ * thread the server answers with 409.
  */
 function applyAssistantRow(
   row: AgentMessages[number],
   message: AssistantMessage,
   text: string
 ): NormalizedAgentTranscript['pending'] {
-  message.streaming = false
-  const runApproval =
-    row.status === 'streaming' ? pendingRunApproval(row) : undefined
-  appendAssistantContent(message, row, text, runApproval !== undefined)
+  const isLive = row.status === 'streaming'
+  message.streaming = isLive
+  appendAssistantContent(message, row, text, isLive)
 
-  if (!runApproval) return undefined
+  if (!isLive) return undefined
 
-  message.parts.push({ type: 'runApproval', ...runApproval })
-  message.streaming = true
-  return { messageId: row.id as TurnId, message }
+  const runApproval = pendingRunApproval(row)
+  if (runApproval) message.parts.push({ type: 'runApproval', ...runApproval })
+  return { messageId: toTurnId(row.id), message }
 }
 
 /**
@@ -343,6 +356,7 @@ interface UserRowUpdate {
   text: string
   attachments?: UserAttachment[]
   workflowReferences?: WorkflowReference[]
+  skillReference?: SkillReference
   workflowId?: string
 }
 
@@ -351,10 +365,15 @@ function applyUserRow(row: AgentMessages[number], text: string): UserRowUpdate {
     text,
     row.content?.workflow_references
   )
+  const prompt = parseSkillReferenceText(
+    referenceUpdate?.text ?? text,
+    referenceUpdate?.references
+  )
   return {
-    text: referenceUpdate?.text ?? text,
+    text: prompt.text,
     attachments: parseUserAttachments(row.content),
-    workflowReferences: referenceUpdate?.references,
+    workflowReferences: referenceUpdate ? prompt.workflowReferences : undefined,
+    skillReference: prompt.skillReference,
     workflowId: row.workflow_id || undefined
   }
 }
@@ -381,20 +400,20 @@ function recordUserRow(
   text: string,
   userTexts: Map<TurnId, string>,
   userAttachments: Map<TurnId, UserAttachment[]>,
-  userWorkflowReferences: Map<TurnId, WorkflowReference[]>
+  userWorkflowReferences: Map<TurnId, WorkflowReference[]>,
+  userSkillReferences: Map<TurnId, SkillReference>
 ): string | undefined {
   const update = applyUserRow(row, text)
   userTexts.set(turnId, update.text)
   if (update.attachments) userAttachments.set(turnId, update.attachments)
   if (update.workflowReferences)
     userWorkflowReferences.set(turnId, update.workflowReferences)
+  if (update.skillReference)
+    userSkillReferences.set(turnId, update.skillReference)
+  else userSkillReferences.delete(turnId)
   return update.workflowId
 }
 
-/**
- * Applies an assistant row onto its turn's running message and records it
- * onto `assistants`. Returns the row's `pending` entry, if it is mid-ask.
- */
 function recordAssistantRow(
   row: AgentMessages[number],
   turnId: TurnId,
@@ -407,17 +426,52 @@ function recordAssistantRow(
   return rowPending
 }
 
+/**
+ * Strips the liveness a row's `streaming` status granted a message that turns
+ * out not to be getting a transport. The parts matter as much as the flag,
+ * and both kinds this row could have been granted are settled here because a
+ * transport is the only thing that could have settled either: a still-running
+ * tool call is clamped, and a `runApproval` ask is dropped the way
+ * `agent_ask_resolved` drops it -- left in place it renders an enabled card
+ * whose answer would be posted against a turn that is no longer active.
+ */
+export function settleLiveMessage(message: AssistantMessage): void {
+  message.streaming = false
+  message.parts = message.parts.filter((part) => part.type !== 'runApproval')
+  for (const part of message.parts) {
+    if (part.type !== 'tool' || part.state !== 'streaming') continue
+    part.state = 'done'
+    part.ok ??= false
+  }
+}
+
+/**
+ * The live turn the transcript may restore: only the thread's newest turn can
+ * still be running, and within that turn only its own newest assistant row
+ * decides. A `streaming` row that any later row has moved past — a newer turn's
+ * or its own turn's — is a stale write, and restoring it would hand the
+ * composer a turn nothing will ever settle.
+ */
+function liveTranscriptTurn(
+  pendingByTurn: Map<TurnId, NormalizedAgentTranscript['pending']>,
+  assistants: Map<TurnId, AssistantMessage>
+): NormalizedAgentTranscript['pending'] {
+  const liveTurn = [...assistants.keys()].at(-1)
+  return liveTurn === undefined ? undefined : pendingByTurn.get(liveTurn)
+}
+
 export function normalizeAgentTranscript(
   history: AgentMessages
 ): NormalizedAgentTranscript {
   const userTexts = new Map<TurnId, string>()
   const userAttachments = new Map<TurnId, UserAttachment[]>()
   const userWorkflowReferences = new Map<TurnId, WorkflowReference[]>()
+  const userSkillReferences = new Map<TurnId, SkillReference>()
   const assistants = new Map<TurnId, AssistantMessage>()
   const turnOrder: TurnId[] = []
   const seenTurns = new Set<TurnId>()
   const rowIds = new Set<string>()
-  let pending: NormalizedAgentTranscript['pending']
+  const pendingByTurn = new Map<TurnId, NormalizedAgentTranscript['pending']>()
   let latestWorkflowId: string | undefined
 
   for (const row of [...history].sort((a, b) => a.seq - b.seq)) {
@@ -432,19 +486,24 @@ export function normalizeAgentTranscript(
         text,
         userTexts,
         userAttachments,
-        userWorkflowReferences
+        userWorkflowReferences,
+        userSkillReferences
       )
       if (workflowId) latestWorkflowId = workflowId
     }
     if (row.role === 'assistant') {
-      const rowPending = recordAssistantRow(row, turnId, text, assistants)
-      if (rowPending) pending = rowPending
+      pendingByTurn.set(
+        turnId,
+        recordAssistantRow(row, turnId, text, assistants)
+      )
     }
   }
 
+  const live = liveTranscriptTurn(pendingByTurn, assistants)
   const messages = turnOrder.map((turnId) => {
     const message = assistants.get(turnId) ?? createAssistantMessage(turnId)
-    message.streaming = message === pending?.message
+    if (message === live?.message) message.streaming = true
+    else settleLiveMessage(message)
     return message
   })
 
@@ -453,9 +512,10 @@ export function normalizeAgentTranscript(
     userTexts,
     userAttachments,
     userWorkflowReferences,
+    userSkillReferences,
     latestWorkflowId,
     rowIds,
     assistantTurnIds: new Set(assistants.keys()),
-    pending
+    pending: live
   }
 }

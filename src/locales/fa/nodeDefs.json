@@ -4860,7 +4860,7 @@
       },
       "language_code": {
         "name": "language_code",
-        "tooltip": "کد زبان بر اساس ISO-639-1 یا ISO-639-3 (مثلاً 'en'، 'es'، 'fra'). برای شناسایی خودکار خالی بگذارید."
+        "tooltip": "کد زبان ISO 639-1 (برای مثال، 'en'، 'es'، 'ja'). برای تشخیص خودکار خالی بگذارید."
       },
       "model": {
         "name": "model",
@@ -4930,7 +4930,7 @@
       },
       "language_code": {
         "name": "language_code",
-        "tooltip": "کد زبان ISO-639-1 یا ISO-639-3 (مثلاً 'en'، 'es'، 'fra'). برای تشخیص خودکار خالی بگذارید."
+        "tooltip": "کد زبان ISO 639-1 (برای مثال، 'en'، 'es'، 'ja'). برای تشخیص خودکار خالی بگذارید."
       },
       "model": {
         "name": "model",
@@ -4938,15 +4938,6 @@
       },
       "model_similarity_boost": {
         "name": "similarity_boost"
-      },
-      "model_speed": {
-        "name": "speed"
-      },
-      "model_style": {
-        "name": "style"
-      },
-      "model_use_speaker_boost": {
-        "name": "use_speaker_boost"
       },
       "output_format": {
         "name": "output_format",
@@ -5834,6 +5825,52 @@
       },
       "width": {
         "name": "عرض"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "Flux3ImageNode": {
+    "description": "با FLUX 3 از یک پرامپت تصویر تولید می‌کند، یا حداکثر ۱۰ تصویر مرجع را ویرایش و ترکیب می‌کند. در پرامپت، به مراجع به‌صورت تصویر ۱، تصویر ۲ و الی آخر اشاره کنید.",
+    "display_name": "Flux 3 تصویر",
+    "inputs": {
+      "aspect_ratio": {
+        "name": "aspect_ratio",
+        "tooltip": "'auto' از نخستین تصویر مرجع پیروی می‌کند یا نسبت را از پرامپت انتخاب می‌کند."
+      },
+      "bounding_boxes": {
+        "name": "bounding_boxes",
+        "tooltip": "کادرهای اختیاری از Create Bounding Boxes که اشیا یا متن را در خروجی جای‌گذاری می‌کنند. موقعیت‌ها نسبت به بوم هستند؛ بنابراین نسبت ابعاد خروجی را به آن بدهید."
+      },
+      "control_after_generate": {
+        "name": "کنترل پس از تولید"
+      },
+      "grounding": {
+        "name": "زمینه‌سازی",
+        "tooltip": "به مدل اجازه می‌دهد پیش از تولید، پرامپت را با جست‌وجوی وب و تصویر بررسی کند."
+      },
+      "images": {
+        "name": "تصاویر",
+        "tooltip": "تصاویر مرجع اختیاری، در مجموع حداکثر ۱۰ تصویر، که هرکدام دست‌کم ۲۵۶x۲۵۶ پیکسل باشند."
+      },
+      "prompt": {
+        "name": "پرامپت",
+        "tooltip": "آنچه باید تولید شود یا ویرایشی که باید انجام شود. پرامپت پیش از تولید تفسیر و بسط داده می‌شود."
+      },
+      "resolution": {
+        "name": "وضوح",
+        "tooltip": "اندازهٔ خروجی در نسبت ابعاد انتخاب‌شده: ۰.۷۵K حدود ۰.۶ مگاپیکسل، ۱K برابر ۱ مگاپیکسل، ۱.۵K برابر ۲.۴ مگاپیکسل، ۲K برابر ۴.۲ مگاپیکسل و ۴K برابر ۱۶.۸ مگاپیکسل است."
+      },
+      "safety_tolerance": {
+        "name": "safety_tolerance",
+        "tooltip": "میزان تحمل تعدیل محتوا؛ ۰ سخت‌گیرانه‌ترین مقدار است."
+      },
+      "seed": {
+        "name": "بذر",
+        "tooltip": "بذر برای تعیین اینکه آیا node باید دوباره اجرا شود؛ FLUX 3 بذر خودش را انتخاب می‌کند، بنابراین نتایج واقعی صرف‌نظر از این مقدار غیرقطعی هستند."
       }
     },
     "outputs": {
@@ -7434,7 +7471,7 @@
     "inputs": {
       "aspect_ratio": {
         "name": "نسبت ابعاد",
-        "tooltip": "نسبت ابعاد ویدیوی خروجی."
+        "tooltip": "نسبت ابعاد ویدیوی خروجی. هنگامی که یک تصویر ورودی ارائه شده باشد نادیده گرفته می‌شود؛ ویدیو از نسبت ابعاد تصویر پیروی می‌کند."
       },
       "control_after_generate": {
         "name": "کنترل پس از تولید"
@@ -7453,11 +7490,11 @@
       },
       "prompt": {
         "name": "راهنما",
-        "tooltip": "توضیح متنی ویدیوی موردنظر. هنگامی که یک تصویر ورودی ارائه شده باشد، برای grok-imagine-video-1.5 اختیاری است."
+        "tooltip": "توضیح متنیِ ویدیوی موردنظر. برای مدل‌های grok-imagine-video-1.5، هنگامی که یک تصویر ورودی ارائه شده باشد، اختیاری است."
       },
       "resolution": {
         "name": "وضوح",
-        "tooltip": "وضوح ویدیوی خروجی. 1080p فقط برای grok-imagine-video-1.5 در دسترس است."
+        "tooltip": "وضوح ویدیوی خروجی. ۱۰۸۰p برای grok-imagine-video در دسترس نیست."
       },
       "seed": {
         "name": "بذر",
@@ -7759,6 +7796,67 @@
       },
       "1": {
         "name": "پیش‌نمایش",
+        "tooltip": null
+      }
+    }
+  },
+  "HeyGenImageToVideoNode": {
+    "description": "با استفاده از HeyGen Video 1.0، یک تصویر را با گفت‌وگو و صدای همگام‌سازی‌شده به ویدیو متحرک تبدیل کنید. تصویر به‌عنوان فریم نخست استفاده می‌شود.",
+    "display_name": "تبدیل تصویر به ویدیو با HeyGen Video 1.0",
+    "inputs": {
+      "control_after_generate": {
+        "name": "کنترل پس از تولید"
+      },
+      "model": {
+        "name": "مدل"
+      },
+      "model_duration": {
+        "name": "مدت‌زمان"
+      },
+      "model_prompt": {
+        "name": "پرامپت"
+      },
+      "model_resolution": {
+        "name": "وضوح"
+      },
+      "model_seed": {
+        "name": "seed"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "HeyGenReferenceToVideoNode": {
+    "description": "با استفاده از HeyGen Video 1.0، از یک پرامپت متنی ویدیویی با گفت‌وگو و صدای همگام‌سازی‌شده تولید کنید. در صورت تمایل، حداکثر ۱۲ تصویر مرجع، ویدیو و کلیپ صوتی متصل کنید و در پرامپت به آن‌ها با {'@'}Image1، {'@'}Video1، {'@'}Audio1 اشاره کنید.",
+    "display_name": "تبدیل مرجع به ویدیو با HeyGen Video 1.0",
+    "inputs": {
+      "control_after_generate": {
+        "name": "کنترل پس از تولید"
+      },
+      "model": {
+        "name": "مدل"
+      },
+      "model_aspect_ratio": {
+        "name": "نسبت ابعاد"
+      },
+      "model_duration": {
+        "name": "مدت‌زمان"
+      },
+      "model_prompt": {
+        "name": "پرامپت"
+      },
+      "model_resolution": {
+        "name": "وضوح"
+      },
+      "model_seed": {
+        "name": "seed"
+      }
+    },
+    "outputs": {
+      "0": {
         "tooltip": null
       }
     }
@@ -8376,6 +8474,42 @@
       }
     }
   },
+  "IdeogramEditApi": {
+    "description": "با استفاده از Ideogram 4.5، حداکثر ۵ تصویر را با راهنمایی یک پرامپت متنی ویرایش یا ترکیب می‌کند. کل تصویر را دوباره رندر می‌کند و می‌تواند اندازه یا نسبت ابعاد آن را تغییر دهد؛ برای ثابت ماندن پیکسل‌های دست‌نخورده، از Ideogram 4.5 Precise Edit استفاده کنید.",
+    "display_name": "ویرایش Ideogram 4.5",
+    "inputs": {
+      "control_after_generate": {
+        "name": "کنترل پس از تولید"
+      },
+      "model": {
+        "name": "مدل",
+        "tooltip": "مدلی که باید استفاده شود."
+      },
+      "model_height": {
+        "name": "ارتفاع"
+      },
+      "model_prompt": {
+        "name": "پرامپت"
+      },
+      "model_quality": {
+        "name": "کیفیت"
+      },
+      "model_seed": {
+        "name": "seed"
+      },
+      "model_size": {
+        "name": "اندازه"
+      },
+      "model_width": {
+        "name": "عرض"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
   "IdeogramPImage": {
     "description": "تولید تصویر با استفاده از P-Image، مدل سریع تبدیل متن به تصویر ایدوگرام. دارای تایپوگرافی قوی و فوتورئالیسم؛ پشتیبانی از کپشن ساختاریافته JSON نسخه ۴.۰ ایدوگرام برای متن، رنگ و چیدمان دقیق.",
     "display_name": "Ideogram & Pruna P-Image",
@@ -8415,6 +8549,70 @@
       "1": {
         "name": "final_prompt",
         "tooltip": "پرومپتی که تصویر واقعاً با آن تولید شده است (کپشن ساختاریافته بازنویسی‌شده در صورت اجرای prompt_upsampling، در غیر این صورت پرومپت شما). برای بازتولید این تصویر، آن را با prompt_upsampling روی OFF و همان بذر وارد کنید."
+      }
+    }
+  },
+  "IdeogramPreciseEditApi": {
+    "description": "با استفاده از ویرایش دقیق Ideogram 4.5، تصویری را با راهنمایی یک پرامپت متنی ویرایش می‌کند: فقط مواردی که پرامپت درخواست می‌کند تغییر می‌کنند، پیکسل‌های دست‌نخورده یکسان می‌مانند و خروجی، اندازهٔ تصویر ۱ را حفظ می‌کند (تصاویر بزرگ‌تر از حدود ۴ مگاپیکسل ابتدا کوچک‌مقیاس می‌شوند). حداکثر ۴ تصویر مرجع را می‌پذیرد.",
+    "display_name": "ویرایش دقیق Ideogram 4.5",
+    "inputs": {
+      "control_after_generate": {
+        "name": "کنترل پس از تولید"
+      },
+      "model": {
+        "name": "مدل",
+        "tooltip": "مدلی که باید استفاده شود."
+      },
+      "model_prompt": {
+        "name": "پرامپت"
+      },
+      "model_quality": {
+        "name": "کیفیت"
+      },
+      "model_seed": {
+        "name": "seed"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "IdeogramTextToImageApi": {
+    "description": "با استفاده از Ideogram 4.5، از یک پرامپت متنی تصویر تولید می‌کند.",
+    "display_name": "تبدیل متن به تصویر با Ideogram 4.5",
+    "inputs": {
+      "control_after_generate": {
+        "name": "کنترل پس از تولید"
+      },
+      "model": {
+        "name": "مدل",
+        "tooltip": "مدلی که باید استفاده شود."
+      },
+      "model_magic_prompt": {
+        "name": "magic_prompt"
+      },
+      "model_prompt": {
+        "name": "پرامپت"
+      },
+      "model_quality": {
+        "name": "کیفیت"
+      },
+      "model_seed": {
+        "name": "بذر"
+      },
+      "model_size": {
+        "name": "اندازه"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      },
+      "1": {
+        "name": "final_prompt",
+        "tooltip": "شرح ساختاریافته‌ای که تصویر بر اساس آن تولید شده است. برای بازتولید تصویر، آن را با magic_prompt تنظیم‌شده روی 'off' و همان seed دوباره وارد کنید."
       }
     }
   },
@@ -18320,7 +18518,7 @@
   "PrimitiveInt": {
     "display_name": "عدد صحیح",
     "inputs": {
-      "fixed": {
+      "control_after_generate": {
         "name": "کنترل پس از تولید"
       },
       "value": {
@@ -22211,7 +22409,7 @@
   "SeedNode": {
     "display_name": "بذر",
     "inputs": {
-      "fixed": {
+      "control_after_generate": {
         "name": "کنترل پس از تولید"
       },
       "seed": {

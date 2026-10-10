@@ -1,31 +1,25 @@
 import { readFileSync, readdirSync } from 'node:fs'
-import { dirname, join, sep } from 'node:path'
-import { fileURLToPath } from 'node:url'
+import { join, sep } from 'node:path'
 import { describe, expect, it } from 'vitest'
 
 import {
   findRedirectedLinks,
   internalLinks,
   isLlmsTxtLinkLine,
+  isWorkflowsAppPath,
   normalizePath,
   parseLlmsTxtLinks
-} from '../lib/llms-txt'
+} from '@/lib/llms-txt'
 import { isExcludedFromSitemap } from './indexing'
+import { linkStaleSources } from './redirects'
 import { getRoutes } from './routes'
-import { modelsBuildRoutes } from '../integrations/workshop-release-gate'
+import { websiteRoot } from '@website/paths'
+import { modelsBuildRoutes } from '@/integrations/workshop-release-gate'
 import { appPagePaths } from './workshop-app-content'
 import { workshopPagePaths } from './workshop-page-content'
 
-const websiteRoot = join(dirname(fileURLToPath(import.meta.url)), '..', '..')
 const llmsTxt = readFileSync(join(websiteRoot, 'public', 'llms.txt'), 'utf8')
 const pagesDir = join(websiteRoot, 'src', 'pages')
-const vercelRedirectSources = new Set<string>(
-  (
-    JSON.parse(readFileSync(join(websiteRoot, 'vercel.json'), 'utf8')) as {
-      redirects: { source: string }[]
-    }
-  ).redirects.map((redirect) => normalizePath(redirect.source))
-)
 
 /**
  * Pages that exist in src/pages but are deliberately kept out of llms.txt.
@@ -79,20 +73,6 @@ function isExcludedPage(page: string): boolean {
  * below already accepts them; only the two root-level files need listing.
  */
 const BUILD_ARTIFACTS = new Set(['/sitemap-index.xml', '/llms-full.txt'])
-
-/**
- * Route shapes of the Comfy Workflows app, which lives in another repo and is
- * served behind the comfy.org router. Only these shapes may be linked; the
- * slugs themselves are verified against the live site, not here.
- */
-const WORKFLOW_APP_ROUTES = [
-  /^\/workflows$/,
-  /^\/workflows\/creators$/,
-  /^\/workflows\/category\/[a-z0-9-]+$/,
-  /^\/workflows\/model(\/[a-z0-9-]+)?$/,
-  /^\/workflows\/use-cases(\/[a-z0-9-]+)?$/,
-  /^\/[a-z]{2}(-[A-Za-z]{2})?\/workflows$/
-]
 
 /** Turn `src/pages/learning/[category]/[slug].astro` into a matcher for `/learning/x/y`. */
 function pageMatchers(root: string): {
@@ -167,13 +147,14 @@ describe('llms.txt', () => {
   })
 
   it('only links comfy.org paths that this site (or the workflows app) serves', () => {
-    const unknown = internalPaths.filter((path) => {
+    const unknown = internalPaths.filter((linked) => {
+      const path = linked.replace(/\.md$/, '')
       if (BUILD_ARTIFACTS.has(path) || modelsPages.has(path)) return false
       if (
         path.startsWith('/workflows') ||
         /^\/[a-z]{2}(-[A-Za-z]{2})?\/workflows/.test(path)
       ) {
-        return !WORKFLOW_APP_ROUTES.some((route) => route.test(path))
+        return !isWorkflowsAppPath(path)
       }
       if (path.startsWith('/zh-CN')) {
         const base = normalizePath(path.slice('/zh-CN'.length))
@@ -210,15 +191,8 @@ describe('llms.txt', () => {
     expect(listedButExcluded).toEqual([])
   })
 
-  it('uses only literal redirect sources for stale link checks', () => {
-    const patternedSources = [...vercelRedirectSources].filter((source) =>
-      /[:*(]/.test(source)
-    )
-    expect(patternedSources).toEqual([])
-  })
-
   it('links a redirect destination rather than its stale source', () => {
-    const redirected = findRedirectedLinks(links, vercelRedirectSources)
+    const redirected = findRedirectedLinks(links, linkStaleSources)
     expect(redirected).toEqual([])
   })
 })

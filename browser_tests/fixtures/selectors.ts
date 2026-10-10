@@ -8,23 +8,27 @@ export const TestIds = {
     loadingOverlay: 'app-loading-overlay'
   },
   agent: {
-    conversationScroll: 'agent-conversation-scroll'
+    conversationScroll: 'agent-conversation-scroll',
+    activityTrace: 'agent-activity-trace'
   },
   sidebar: {
     toolbar: 'side-toolbar',
     topGroup: 'sidebar-top-group',
     nodeLibrary: 'node-library-tree',
+    nodeLibraryBookmarks: 'node-library-bookmark-tree',
     nodeLibrarySearch: 'node-library-search',
     nodePreviewCard: 'node-preview-card',
+    nodePreviewInputs: 'node-preview-inputs',
+    nodePreviewBody: 'node-preview-body',
     workflows: 'workflows-sidebar',
     workflowsRefreshButton: 'workflows-refresh-button',
+    closeButton: 'sidebar-close-button',
     modeToggle: 'mode-toggle',
     tabButton: (tabId: string) => `${tabId}-tab-button`
   },
   tree: {
-    folder: 'tree-folder',
-    leaf: 'tree-leaf',
-    node: 'tree-node'
+    itemPreview: 'tree-item-preview',
+    leafCount: 'tree-leaf-count'
   },
   canvas: {
     main: 'graph-canvas',
@@ -114,8 +118,10 @@ export const TestIds = {
     loginButtonPopover: 'login-button-popover',
     loginButtonPopoverLearnMore: 'login-button-popover-learn-more',
     workflowTabs: 'topbar-workflow-tabs',
+    workflowTabStrip: 'workflow-tab-strip',
     workflowTab: 'workflow-tab',
     closeWorkflowButton: 'close-workflow-button',
+    workflowDirtyIndicator: 'workflow-dirty-indicator',
     integratedTabBarActions: 'integrated-tab-bar-actions',
     actionBarButtons: 'action-bar-buttons',
     actionBarCard: 'action-bar-card',
@@ -146,6 +152,9 @@ export const TestIds = {
     card: 'asset-card',
     videoPreview: 'media-asset-video'
   },
+  toast: {
+    panel: 'toast-panel'
+  },
   subgraphEditor: {
     hiddenSection: 'subgraph-editor-hidden-section',
     iconEye: 'icon-eye',
@@ -174,9 +183,6 @@ export const TestIds = {
     colorRed: 'red',
     convertSubgraph: 'convert-to-subgraph-button',
     bypass: 'bypass-button'
-  },
-  menu: {
-    moreMenuContent: 'more-menu-content'
   },
   helpCenter: {
     button: 'help-center-button',
@@ -275,6 +281,7 @@ export const TestIds = {
   },
   templates: {
     content: 'template-workflows-content',
+    detail: 'template-workflow-detail',
     workflowCard: (id: string) => `template-workflow-${id}`
   },
   user: {
@@ -287,9 +294,7 @@ export const TestIds = {
     progressOverlay: 'queue-progress-overlay',
     progressNodeFill: 'queue-progress-node-fill',
     overlayToggle: 'queue-overlay-toggle',
-    dockedJobHistoryAction: 'docked-job-history-action',
     jobDetailsPopover: 'queue-job-details-popover',
-    clearHistoryAction: 'clear-history-action',
     jobAssetsList: 'job-assets-list',
     notificationBanner: 'queue-notification-banner'
   },

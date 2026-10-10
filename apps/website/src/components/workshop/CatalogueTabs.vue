@@ -3,9 +3,10 @@ import { computed } from 'vue'
 
 import { cn } from '@comfyorg/tailwind-utils'
 
-import { getRoutes } from '../../config/routes'
-import type { Locale } from '../../i18n/translations'
-import { t } from '../../i18n/translations'
+import { getRoutes } from '@/config/routes'
+import type { Locale } from '@/i18n/translations'
+import { translationsFor } from '@/i18n/translations'
+import { captureHubFilterChange } from '@/scripts/hub-analytics'
 
 export type CatalogueTab = 'models' | 'workflows' | 'apps'
 
@@ -19,6 +20,7 @@ const {
   tabs?: readonly CatalogueTab[]
   links?: boolean
 }>()
+const { t } = translationsFor(locale)
 const active = defineModel<CatalogueTab>({ required: true })
 const labels = {
   models: 'workshop.hub.kind.models',
@@ -31,9 +33,12 @@ const hrefs = {
   workflows: routes.hubWorkflows,
   apps: routes.hubApps
 } as const satisfies Record<CatalogueTab, string>
-const marker = computed(
-  () => `translateX(${tabs.indexOf(active.value) * 100}%)`
-)
+const markerStyle = computed(() => ({
+  transform: `translateX(${tabs.indexOf(active.value) * 100}%)`,
+  // Each hub section is its own page, so the marker cannot transition from
+  // the tab it left: named, the browser carries it across the navigation.
+  viewTransitionName: links ? 'catalogue-marker' : undefined
+}))
 const columns = computed(() =>
   tabs.length === 2 ? 'grid-cols-2' : 'grid-cols-3'
 )
@@ -56,13 +61,14 @@ const tabClass = (tab: CatalogueTab) =>
       )
     "
     :role="links ? undefined : 'group'"
-    :aria-label="t('workshop.catalogue.show', locale)"
+    :aria-label="t('workshop.catalogue.show')"
     data-testid="catalogue-tabs"
   >
     <div :class="cn('pointer-events-none absolute inset-1 grid', columns)">
       <div
         class="rounded-xl bg-transparency-white-t20 transition-transform duration-300 ease-out motion-reduce:transition-none"
-        :style="{ transform: marker }"
+        :style="markerStyle"
+        data-testid="catalogue-marker"
       />
     </div>
     <template v-for="tab in tabs" :key="tab">
@@ -72,8 +78,9 @@ const tabClass = (tab: CatalogueTab) =>
         :aria-current="active === tab ? 'page' : undefined"
         :data-testid="`catalogue-tab-${tab}`"
         :class="tabClass(tab)"
+        @click="captureHubFilterChange(active, 'catalogue', tab, active)"
       >
-        {{ t(labels[tab], locale) }}
+        {{ t(labels[tab]) }}
       </a>
       <button
         v-else
@@ -83,7 +90,7 @@ const tabClass = (tab: CatalogueTab) =>
         :class="tabClass(tab)"
         @click="active = tab"
       >
-        {{ t(labels[tab], locale) }}
+        {{ t(labels[tab]) }}
       </button>
     </template>
   </component>

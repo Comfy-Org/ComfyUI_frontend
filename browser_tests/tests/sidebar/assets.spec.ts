@@ -567,7 +567,7 @@ test.describe('Assets sidebar - context menu', () => {
 
     await tab.assetCards.first().click({ button: 'right' })
 
-    const contextMenu = comfyPage.page.locator('.p-contextmenu')
+    const contextMenu = comfyPage.page.getByRole('menu')
     await expect(contextMenu).toBeVisible()
   })
 
@@ -579,7 +579,7 @@ test.describe('Assets sidebar - context menu', () => {
 
     await tab.assetCards.first().click({ button: 'right' })
     await comfyPage.page
-      .locator('.p-contextmenu')
+      .getByRole('menu')
       .waitFor({ state: 'visible', timeout: 3000 })
 
     await expect(tab.contextMenuItem('Download')).toBeVisible()
@@ -593,7 +593,7 @@ test.describe('Assets sidebar - context menu', () => {
 
     await tab.assetCards.first().click({ button: 'right' })
     await comfyPage.page
-      .locator('.p-contextmenu')
+      .getByRole('menu')
       .waitFor({ state: 'visible', timeout: 3000 })
 
     await expect(tab.contextMenuItem('Inspect asset')).toBeVisible()
@@ -607,7 +607,7 @@ test.describe('Assets sidebar - context menu', () => {
 
     await tab.assetCards.first().click({ button: 'right' })
     await comfyPage.page
-      .locator('.p-contextmenu')
+      .getByRole('menu')
       .waitFor({ state: 'visible', timeout: 3000 })
 
     await expect(tab.contextMenuItem('Delete')).toBeVisible()
@@ -621,7 +621,7 @@ test.describe('Assets sidebar - context menu', () => {
 
     await tab.assetCards.first().click({ button: 'right' })
     await comfyPage.page
-      .locator('.p-contextmenu')
+      .getByRole('menu')
       .waitFor({ state: 'visible', timeout: 3000 })
 
     await expect(tab.contextMenuItem('Copy job ID')).toBeVisible()
@@ -635,7 +635,7 @@ test.describe('Assets sidebar - context menu', () => {
 
     await tab.assetCards.first().click({ button: 'right' })
 
-    const contextMenu = comfyPage.page.locator('.p-contextmenu')
+    const contextMenu = comfyPage.page.getByRole('menu')
     await expect(contextMenu).toBeVisible()
 
     await expect(
@@ -716,7 +716,7 @@ test.describe('Assets sidebar - context menu', () => {
     const cards = tab.assetCards
     await expect.poll(() => cards.count()).toBeGreaterThanOrEqual(2)
 
-    await tab.dismissToasts()
+    await comfyPage.toast.closeToasts()
 
     // useKeyModifier('Control') needs keyboard events, not click modifiers.
     await cards.first().click()
@@ -728,7 +728,7 @@ test.describe('Assets sidebar - context menu', () => {
     await expect(tab.selectionFooter).toBeVisible()
 
     // dispatchEvent avoids the selection footer intercepting a right click.
-    const contextMenu = comfyPage.page.locator('.p-contextmenu')
+    const contextMenu = comfyPage.page.getByRole('menu')
     await cards.first().dispatchEvent('contextmenu', {
       bubbles: true,
       cancelable: true,
@@ -807,27 +807,14 @@ test.describe('Assets sidebar - bulk actions', () => {
   })
 
   test('Selection bar stays capped, not stretched, on a wide panel', async ({
-    comfyPage
+    comfyPage,
+    comfyMouse
   }) => {
     await comfyPage.page.setViewportSize({ width: 1600, height: 900 })
     const tab = comfyPage.menu.assetsTab
     await tab.open()
 
-    const gutter = comfyPage.page.locator('.p-splitter-gutter').first()
-    await expect(gutter).toBeVisible()
-    const gutterBox = await gutter.boundingBox()
-    if (!gutterBox) {
-      throw new Error('sidebar splitter gutter has no bounding box')
-    }
-    await comfyPage.page.mouse.move(
-      gutterBox.x + gutterBox.width / 2,
-      gutterBox.y + gutterBox.height / 2
-    )
-    await comfyPage.page.mouse.down()
-    await comfyPage.page.mouse.move(900, gutterBox.y + gutterBox.height / 2, {
-      steps: 12
-    })
-    await comfyPage.page.mouse.up()
+    await tab.resize(comfyMouse, 600)
 
     await tab.assetCards.first().click()
     await expect(tab.selectionFooter).toBeVisible()
@@ -1069,8 +1056,7 @@ test.describe('Assets sidebar - delete confirmation', () => {
     await expect(dialog).toBeHidden()
     await expect(tab.assetCards).toHaveCount(initialCount - 1)
 
-    const successToast = comfyPage.page.locator('.p-toast-message-success')
-    await expect(successToast).toBeVisible()
+    await expect(comfyPage.toast.toastSuccesses).toBeVisible()
   })
 
   test('Cancelling delete preserves asset', async ({ comfyPage }) => {
@@ -1201,8 +1187,8 @@ test('Insert as node', { tag: '@vue-nodes' }, async ({ comfyPage }) => {
     await assetsTab.assetCards.nth(index).scrollIntoViewIfNeeded()
     await assetsTab.assetCards.nth(index).click({ button: 'right' })
 
-    await expect(comfyPage.contextMenu.primeVueMenu).toBeVisible()
-    await comfyPage.contextMenu.primeVueMenu.getByText('Insert as node').click()
+    await expect(comfyPage.contextMenu.ariaMenu).toBeVisible()
+    await comfyPage.contextMenu.ariaMenu.getByText('Insert as node').click()
 
     await expect.poll(() => comfyPage.vueNodes.getNodeCount()).toBe(1)
     const nodes = await comfyPage.nodeOps.getNodeRefsByType('LoadImage')

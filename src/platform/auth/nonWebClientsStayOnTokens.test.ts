@@ -10,6 +10,8 @@ import type { RequestTarget } from '@comfyorg/account-core/requestAuth'
 import { createRequestAuthorizer } from '@comfyorg/account-core/requestAuth'
 import { createSessionTokenMint } from '@comfyorg/account-core/sessionTokenMint'
 
+import { anonymousApiAuthProvider } from '@/platform/auth/apiAuthProvider'
+import { installCloudApiAuth } from '@/platform/auth/cloudApiAuthProvider'
 import { bootCloudIdentity } from '@/platform/auth/session/cloudIdentityBoot'
 import { useCurrentUser } from '@/composables/auth/useCurrentUser'
 import { getComfyApiBaseUrl } from '@/config/comfyApi'
@@ -100,9 +102,7 @@ vi.mock(import('@/services/dialogService'), () => ({
 
 vi.mock(import('@/platform/telemetry'))
 
-vi.mock(import('@/platform/telemetry/reportError'), () => ({
-  reportError: vi.fn()
-}))
+vi.mock(import('@/platform/telemetry/reportError'))
 
 await import('@/extensions/core/cloudSessionCookie')
 
@@ -188,14 +188,11 @@ function installFetchRecorder(features: Record<string, unknown>) {
     }
   }
 
-  vi.stubGlobal(
-    'fetch',
-    vi.fn<typeof fetch>(async (input, init) => {
-      const request = recordRequest(input, init)
-      all.push(request)
-      return respond(request)
-    })
-  )
+  vi.mocked(fetch).mockImplementation(async (input, init) => {
+    const request = recordRequest(input, init)
+    all.push(request)
+    return respond(request)
+  })
 
   return { all }
 }
@@ -335,6 +332,7 @@ describe('clients the web session leaves on tokens', () => {
 
   beforeEach(() => {
     identity.reset()
+    installCloudApiAuth()
     vi.mocked(distributionTypes).isCloud = true
   })
 
@@ -436,6 +434,7 @@ describe('clients the web session leaves on tokens', () => {
     'a localhost frontend signs in, refreshes and calls the API with no session or cloud credential ($name)',
     async (row) => {
       vi.mocked(distributionTypes).isCloud = false
+      api.setAuthProvider(anonymousApiAuthProvider)
       const recorder = installFetchRecorder(featuresFor(row))
       await refreshRemoteConfig({ useAuth: false })
       hooks = wireSessionCookieExtension()

@@ -1,10 +1,8 @@
 import type { Locator, Page, TestInfo } from '@playwright/test'
 import { expect } from '@playwright/test'
-import type { ApplyOutcome } from '@comfyorg/comfy-multi-player'
+import type { ApplyOutcome, WorkflowJSON } from '@comfyorg/comfy-multi-player'
 import type { ListAssetsResponse } from '@comfyorg/ingest-types'
 import { z } from 'zod'
-
-import { createI18n } from 'vue-i18n'
 
 import enMessages from '@/locales/en/main.json' with { type: 'json' }
 import type { useWorkflowStore } from '@/platform/workflow/management/stores/workflowStore'
@@ -51,6 +49,7 @@ import { RECORDED_EXPECTATIONS } from '@e2e/fixtures/data/agent/agentConversatio
 import type { TabSwitchLens, WorkspaceStore } from '@e2e/types/globals'
 
 import { jsonRoute } from '@e2e/fixtures/utils/jsonRoute'
+import { AGENT_COMPOSER_LABEL } from '@e2e/fixtures/utils/agentComposerLabel'
 import { assertAgentReplayNodeContract } from '@e2e/fixtures/utils/agentReplayNodeContract'
 import { mockSavedWorkflowPersistence } from '@e2e/fixtures/utils/savedWorkflowPersistence'
 import { loadSeedIntoActiveTab } from '@e2e/fixtures/utils/seedActiveTab'
@@ -67,14 +66,6 @@ const CANCEL_TIMEOUT = 10_000
 
 const SEND_LABEL = enMessages.agent.send
 const STOP_LABEL = enMessages.agent.stop
-// The composer names itself with the rendered message, escapes resolved; the
-// app's own i18n module is a Vite build, so the fixture renders the message
-// with the same library over the same locale file.
-const COMPOSER_LABEL = createI18n({
-  legacy: false,
-  locale: 'en',
-  messages: { en: enMessages }
-}).global.t('agent.placeholder')
 // Matches "Worked", "Worked for 3 seconds" and "Worked for 1m 2s" (agent.worked*).
 const SUMMARY_LABEL = new RegExp(`^${enMessages.agent.worked}( for .+)?$`)
 const FAILED_GLYPH = /lucide--circle-x/
@@ -254,7 +245,9 @@ export class AgentConversationHarness {
     this.expectations = expectations ?? []
     this.panel = page.locator('#agent-panel-root')
     this.streams = this.panel.getByTestId('markdown-stream')
-    this.composer = this.panel.getByRole('textbox', { name: COMPOSER_LABEL })
+    this.composer = this.panel.getByRole('textbox', {
+      name: AGENT_COMPOSER_LABEL
+    })
     this.summaries = this.panel.getByRole('button', { name: SUMMARY_LABEL })
     this.vueNodes = new VueNodeHelpers(page)
     this.topbar = new Topbar(page)
@@ -1017,6 +1010,18 @@ export class AgentConversationHarness {
 
   hostNodePositions(): (number[] | undefined)[] {
     return this.host.projection().nodes.map((node) => node.pos)
+  }
+
+  /**
+   * The workflow node the host document holds for `nodeId`, as the library
+   * projects it — the same snapshot a catch-up, a resubscribe or an agent op
+   * that copies an existing node would carry. Undefined when the document has
+   * no such node.
+   */
+  hostNode(nodeId: string): WorkflowJSON['nodes'][number] | undefined {
+    return this.host
+      .projection()
+      .nodes.find((node) => String(node.id) === nodeId)
   }
 
   async reloadWithoutLocalWorkflow(): Promise<void> {

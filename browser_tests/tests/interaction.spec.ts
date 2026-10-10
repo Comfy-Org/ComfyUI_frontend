@@ -1,4 +1,3 @@
-import type { Locator } from '@playwright/test'
 import { expect } from '@playwright/test'
 import type { Position } from '@vueuse/core'
 
@@ -462,6 +461,11 @@ test.describe('Node Interaction', () => {
     'Can toggle dom widget node open/closed',
     { tag: '@screenshot' },
     async ({ comfyPage }) => {
+      const DOUBLE_CLICK_TIME = 100
+      await comfyPage.settings.setSetting(
+        'Comfy.Pointer.DoubleClickTime',
+        DOUBLE_CLICK_TIME
+      )
       // Find the node whose collapse toggler matches the hardcoded position.
       // getNodeRefsByType order is non-deterministic, so identify by proximity.
       const nodes = await comfyPage.nodeOps.getNodeRefsByType('CLIPTextEncode')
@@ -481,21 +485,23 @@ test.describe('Node Interaction', () => {
       await comfyPage.canvas.click({
         position: togglerPos
       })
+      const firstClickAt = await comfyPage.page.evaluate(() =>
+        performance.now()
+      )
       await expect.poll(() => targetNode.isCollapsed()).toBe(true)
       await expect(comfyPage.canvas).toHaveScreenshot(
         'text-encode-toggled-off.png'
       )
-      // Wait for the double-click window (300ms) to expire so the next
-      // click at the same position isn't interpreted as a double-click.
       await expect
-        .poll(() =>
-          comfyPage.page.evaluate(() => {
-            const pointer = window.app!.canvas.pointer
-            if (!pointer.eLastDown) return true
-            return performance.now() - pointer.eLastDown.timeStamp > 300
-          })
+        .poll(
+          () =>
+            comfyPage.page.evaluate(
+              (since) => performance.now() - since,
+              firstClickAt
+            ),
+          { message: 'double-click window after the first toggle has elapsed' }
         )
-        .toBe(true)
+        .toBeGreaterThan(DOUBLE_CLICK_TIME)
       await comfyPage.canvas.click({
         position: togglerPos
       })
@@ -1178,58 +1184,56 @@ test.describe('Viewport settings', () => {
       offset: await comfyPage.canvasOps.getOffset()
     })
 
-    const changeTab = async (tab: Locator) => {
-      await tab.click()
-      await comfyPage.nextFrame()
+    const changeTab = async (workflowName: string) => {
+      await comfyPage.menu.topbar.getWorkflowTab(workflowName).click()
+      await expect
+        .poll(() => comfyPage.workflow.getActiveWorkflowPath())
+        .toBe(`workflows/${workflowName}.json`)
+      await comfyPage.canvasOps.waitForViewToSettle()
       await comfyMouse.move(DefaultGraphPositions.emptySpace)
 
-      // If tooltip is visible, wait for it to hide
       await expect(
         comfyPage.page.locator('.workflow-popover-fade')
       ).toHaveCount(0)
     }
 
-    // Screenshot the canvas element
-    await comfyPage.settings.setSetting('Comfy.Graph.CanvasMenu', true)
+    await test.step('Save two workflow tabs', async () => {
+      await comfyPage.settings.setSetting('Comfy.Graph.CanvasMenu', true)
+      await comfyPage.page
+        .getByTestId(TestIds.canvas.toggleMinimapButton)
+        .click()
+      await comfyPage.settings.setSetting('Comfy.Graph.CanvasMenu', false)
 
-    const toggleButton = comfyPage.page.getByTestId(
-      TestIds.canvas.toggleMinimapButton
-    )
-    await toggleButton.click()
-    await comfyPage.settings.setSetting('Comfy.Graph.CanvasMenu', false)
+      await comfyPage.menu.topbar.saveWorkflow('Workflow A')
+      await comfyPage.nextFrame()
+      await comfyPage.menu.topbar.saveWorkflowAs('Workflow B')
+      await comfyPage.nextFrame()
+    })
 
-    await comfyPage.menu.topbar.saveWorkflow('Workflow A')
-    await comfyPage.nextFrame()
+    const { viewportA, viewportB } =
+      await test.step('Give each workflow a distinct viewport', async () => {
+        await changeTab('Workflow A')
+        const viewportA = await getViewport()
 
-    // Save workflow as a new file, then zoom out before screen shot
-    await comfyPage.menu.topbar.saveWorkflowAs('Workflow B')
+        await changeTab('Workflow B')
+        await comfyMouse.wheel(0, 60)
+        await expect.poll(getViewport).not.toEqual(viewportA)
+        await comfyPage.canvasOps.waitForViewToSettle()
 
-    await comfyPage.nextFrame()
-    const tabA = comfyPage.menu.topbar.getWorkflowTab('Workflow A')
-    await changeTab(tabA)
+        const viewportB = await getViewport()
+        expect(viewportB).not.toEqual(viewportA)
+        return { viewportA, viewportB }
+      })
 
-    const viewportA = await getViewport()
+    await test.step('Restore Workflow A viewport', async () => {
+      await changeTab('Workflow A')
+      await expect.poll(getViewport).toEqual(viewportA)
+    })
 
-    const tabB = comfyPage.menu.topbar.getWorkflowTab('Workflow B')
-    await changeTab(tabB)
-
-    await comfyMouse.move(DefaultGraphPositions.emptySpace)
-    for (let i = 0; i < 4; i++) {
-      await comfyMouse.wheel(0, 60)
-    }
-
-    await comfyPage.nextFrame()
-    const viewportB = await getViewport()
-
-    expect(viewportB).not.toEqual(viewportA)
-
-    // Go back to Workflow A
-    await changeTab(tabA)
-    await expect.poll(getViewport).toEqual(viewportA)
-
-    // And back to Workflow B
-    await changeTab(tabB)
-    await expect.poll(getViewport).toEqual(viewportB)
+    await test.step('Restore Workflow B viewport', async () => {
+      await changeTab('Workflow B')
+      await expect.poll(getViewport).toEqual(viewportB)
+    })
   })
 })
 

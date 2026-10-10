@@ -140,7 +140,9 @@ function capabilitiesBody(overrides: Record<string, unknown> = {}) {
       can_change_seats: false,
       can_downgrade_to_personal: false,
       can_invite_members: false,
+      can_manage_members: false,
       can_reactivate: false,
+      can_revert_scheduled_change: false,
       can_subscribe_self_serve: false,
       can_top_up: true
     },

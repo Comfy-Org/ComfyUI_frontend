@@ -71,7 +71,6 @@ describe('workflowDraftStoreV2', () => {
   })
 
   afterEach(() => {
-    activeSpy?.mockRestore()
     activeSpy = null
     localStorage.clear()
     sessionStorage.clear()

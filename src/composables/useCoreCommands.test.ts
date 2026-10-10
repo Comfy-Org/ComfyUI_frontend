@@ -1,7 +1,9 @@
 import { useDialogService } from '@/services/dialogService'
+import { useToast } from '@/components/ui/toast/toastStore'
 import { useWorkflowStore } from '@/platform/workflow/management/stores/workflowStore'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 
+import { i18n } from '@/i18n'
 import { useTelemetry } from '@/platform/telemetry'
 
 import { useFeatureFlags } from '@/composables/useFeatureFlags'
@@ -16,7 +18,6 @@ import { app } from '@/scripts/app'
 import { useModelStore } from '@/stores/modelStore'
 import { useMissingModelStore } from '@/platform/missingModel/missingModelStore'
 import { resetOnboardingState } from '@/platform/onboarding/onboardingReset'
-import { useToastStore } from '@/platform/updates/common/toastStore'
 import { useCanvasStore } from '@/renderer/core/canvas/canvasStore'
 import { useSettingsDialog } from '@/platform/settings/composables/useSettingsDialog'
 import { useLitegraphService } from '@/services/litegraphService'
@@ -298,6 +299,43 @@ describe('useCoreCommands', () => {
     })
   })
 
+  describe('PasteFromClipboardWithConnect command', () => {
+    // An unresolved key renders as its own path, and this one reads as valid
+    // English, so asserting the shipped string would pass either way. Only a
+    // value the catalog alone can supply separates a lookup from an echo.
+    it('resolves its label against the catalog rather than echoing a key', () => {
+      const menuLabels = 'menuLabels'
+      const key = 'Paste with Connect'
+      const messages = i18n.global.getLocaleMessage('en') as Record<
+        string,
+        Record<string, string>
+      >
+      const original = messages[menuLabels][key]
+      const previousLocale = i18n.global.locale.value
+
+      try {
+        i18n.global.locale.value = 'en'
+        i18n.global.mergeLocaleMessage('en', {
+          [menuLabels]: { [key]: 'Sentinel paste label' }
+        })
+
+        const command = useCoreCommands().find(
+          (cmd) => cmd.id === 'Comfy.Canvas.PasteFromClipboardWithConnect'
+        )!
+
+        const label =
+          typeof command.label === 'function' ? command.label() : command.label
+
+        expect(label).toBe('Sentinel paste label')
+      } finally {
+        i18n.global.mergeLocaleMessage('en', {
+          [menuLabels]: { [key]: original }
+        })
+        i18n.global.locale.value = previousLocale
+      }
+    })
+  })
+
   describe('Replay Onboarding command', () => {
     function findCommand() {
       const command = useCoreCommands().find(
@@ -340,9 +378,7 @@ describe('useCoreCommands', () => {
 
       await findCommand().function()
 
-      expect(useToastStore().add).toHaveBeenCalledWith(
-        expect.objectContaining({ severity: 'error' })
-      )
+      expect(useToast().error).toHaveBeenCalled()
       expect(location.assign).not.toHaveBeenCalled()
       expect(location.reload).not.toHaveBeenCalled()
     })
@@ -743,9 +779,7 @@ describe('useCoreCommands', () => {
       await findCmd('Comfy.QueueSelectedOutputNodes').function()
 
       expect(mockBillingState.showSubscriptionDialog).not.toHaveBeenCalled()
-      expect(useToastStore().add).toHaveBeenCalledWith(
-        expect.objectContaining({ severity: 'error' })
-      )
+      expect(useToast().error).toHaveBeenCalled()
     })
 
     it.for([
@@ -778,9 +812,7 @@ describe('useCoreCommands', () => {
 
         expect(app.queuePrompt).not.toHaveBeenCalled()
         expect(mockBillingState.showSubscriptionDialog).not.toHaveBeenCalled()
-        expect(useToastStore().add).toHaveBeenCalledWith(
-          expect.objectContaining({ severity: 'warn' })
-        )
+        expect(useToast().warning).toHaveBeenCalled()
       }
     )
 
@@ -864,11 +896,10 @@ describe('useCoreCommands', () => {
         asset,
         'asset_browser'
       )
-      expect(useToastStore().add).not.toHaveBeenCalled()
+      expect(useToast().toasts).toEqual([])
     })
 
     it('shows an error toast when the asset cannot start a drag', async () => {
-      vi.spyOn(console, 'error').mockImplementation(() => {})
       mockStartModelNodeDrag.mockReturnValue({
         code: 'NO_PROVIDER',
         message: 'No node provider registered',
@@ -877,9 +908,7 @@ describe('useCoreCommands', () => {
 
       await selectAssetFromBrowser()
 
-      expect(useToastStore().add).toHaveBeenCalledWith(
-        expect.objectContaining({ severity: 'error' })
-      )
+      expect(useToast().error).toHaveBeenCalled()
     })
   })
 })

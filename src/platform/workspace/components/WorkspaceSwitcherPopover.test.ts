@@ -1,5 +1,6 @@
 import { getActivePinia } from 'pinia'
 import { render, screen } from '@testing-library/vue'
+import userEvent from '@testing-library/user-event'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { computed } from 'vue'
 import { createI18n } from 'vue-i18n'
@@ -36,7 +37,9 @@ const i18n = createI18n({
           'Runs that use partner nodes spend credits from this workspace. Unlike on Cloud, every workspace saves to your usual output folder.',
         createWorkspace: 'Create a team workspace',
         maxWorkspacesReached:
-          'You can only own 10 workspaces. Delete one to create a new one.'
+          'You can only own 10 workspaces. Delete one to create a new one.',
+        managedByOrganization:
+          "Your organization manages your workspaces, so you can't create one."
       },
       subscription: {
         tiers: {
@@ -63,6 +66,8 @@ function createWorkspaceState(
     subscriptionTier: null,
     members: [],
     pendingInvites: [],
+    membersLoaded: true,
+    pendingInvitesLoaded: true,
     ...overrides
   }
 }
@@ -268,6 +273,19 @@ describe('WorkspaceSwitcherPopover', () => {
 
     const createWorkspaceButton = screen.getByText('Create a team workspace')
     expect(list).not.toContainElement(createWorkspaceButton)
+  })
+
+  it('says why creation is off when an organization manages the workspaces', async () => {
+    const store = useTeamWorkspaceStore()
+    store.$patch({ workspacesManagedByOrganization: true })
+    const { emitted } = renderComponent()
+
+    await userEvent.click(
+      screen.getByText(/Your organization manages your workspaces/)
+    )
+
+    expect(screen.queryByText('Create a team workspace')).toBeNull()
+    expect(emitted().create).toBeUndefined()
   })
 
   it('hides the create-workspace footer on non-cloud distributions', () => {

@@ -1,17 +1,17 @@
-import type { MenuItem } from 'primevue/menuitem'
+import type { MenuItem } from '@/components/ui/menu/types'
 import { storeToRefs } from 'pinia'
-import { useToast } from 'primevue/usetoast'
+import { useToast } from '@/components/ui/toast/toastStore'
 import { computed, ref } from 'vue'
 import { useI18n } from 'vue-i18n'
 
 import { useCurrentUser } from '@/composables/auth/useCurrentUser'
 import { useBillingContext } from '@/composables/billing/useBillingContext'
 import { useFeatureFlags } from '@/composables/useFeatureFlags'
-import { isSalesManagedTier } from '@/platform/cloud/subscription/constants/tierPricing'
 import { useSubscriptionDialog } from '@/platform/cloud/subscription/composables/useSubscriptionDialog'
 import { isCloud } from '@/platform/distribution/types'
 import type { WorkspaceRole } from '@/platform/workspace/api/workspaceApi'
 import { useBillingCapabilities } from '@/platform/workspace/composables/useBillingCapabilities'
+import { usePlanEnded } from '@/platform/workspace/composables/usePlanEnded'
 import { useTeamPlan } from '@/platform/workspace/composables/useTeamPlan'
 import { useWorkspaceUI } from '@/platform/workspace/composables/useWorkspaceUI'
 import type {
@@ -19,16 +19,15 @@ import type {
   WorkspaceMember
 } from '@/platform/workspace/stores/teamWorkspaceStore'
 import { useTeamWorkspaceStore } from '@/platform/workspace/stores/teamWorkspaceStore'
-import { useDialogService } from '@/services/dialogService'
+import { useWorkspaceDialogs } from '@/platform/workspace/composables/useWorkspaceDialogs'
 
 type ActiveView = 'active' | 'pending'
-type SortField = 'inviteDate' | 'expiryDate' | 'role'
+type SortField = 'inviteDate' | 'expiryDate'
 type SortDirection = 'asc' | 'desc'
 
 export function sortMembers(
   members: WorkspaceMember[],
   currentUserEmail: string | null,
-  sortDirection: SortDirection,
   originalOwnerId: string | null = null
 ): WorkspaceMember[] {
   return [...members].sort((a, b) => {
@@ -37,19 +36,14 @@ export function sortMembers(
     if (aIsOriginalOwner && !bIsOriginalOwner) return -1
     if (!aIsOriginalOwner && bIsOriginalOwner) return 1
 
-    if (a.role !== b.role) {
-      const ownerFirst = a.role === 'owner' ? -1 : 1
-      return sortDirection === 'desc' ? ownerFirst : -ownerFirst
-    }
+    if (a.role !== b.role) return a.role === 'owner' ? -1 : 1
 
     const aIsCurrent = a.email.toLowerCase() === currentUserEmail?.toLowerCase()
     const bIsCurrent = b.email.toLowerCase() === currentUserEmail?.toLowerCase()
     if (aIsCurrent && !bIsCurrent) return -1
     if (!aIsCurrent && bIsCurrent) return 1
 
-    const aValue = a.joinDate.getTime()
-    const bValue = b.joinDate.getTime()
-    return sortDirection === 'asc' ? aValue - bValue : bValue - aValue
+    return b.joinDate.getTime() - a.joinDate.getTime()
   })
 }
 
@@ -66,23 +60,14 @@ export function filterBySearch<T extends { email: string; name?: string }>(
   )
 }
 
-type InviteSortField = 'inviteDate' | 'expiryDate'
-
-// Pending invites carry no role, so the members' 'role' sort has no equivalent
-// here and falls back to the invite date.
-function toInviteSortField(sortField: SortField): InviteSortField {
-  return sortField === 'expiryDate' ? 'expiryDate' : 'inviteDate'
-}
-
 export function sortPendingInvites(
   invites: WorkspacePendingInvite[],
   sortField: SortField,
   sortDirection: SortDirection
 ): WorkspacePendingInvite[] {
-  const field = toInviteSortField(sortField)
   return [...invites].sort((a, b) => {
-    const aDate = getInviteDate(a, field)
-    const bDate = getInviteDate(b, field)
+    const aDate = getInviteDate(a, sortField)
+    const bDate = getInviteDate(b, sortField)
     if (!aDate || !bDate) return 0
     const aValue = aDate.getTime()
     const bValue = bDate.getTime()
@@ -92,7 +77,7 @@ export function sortPendingInvites(
 
 function getInviteDate(
   invite: WorkspacePendingInvite,
-  field: InviteSortField
+  field: SortField
 ): Date | undefined {
   return invite[field]
 }
@@ -109,15 +94,20 @@ export function useMembersPanel() {
     showSetMemberCreditLimitDialog,
     showInviteMemberDialog,
     showInviteMemberUpsellDialog
-  } = useDialogService()
+  } = useWorkspaceDialogs()
   const workspaceStore = useTeamWorkspaceStore()
   const {
     activeWorkspace,
     isInPersonalWorkspace,
     members,
+    membersLoaded,
     pendingInvites,
+    pendingInvitesLoaded,
     originalOwnerId
   } = storeToRefs(workspaceStore)
+  const totalMembers = computed(
+    () => activeWorkspace.value?.totalMembers ?? members.value.length
+  )
   const { resendInvite } = workspaceStore
   const {
     permissions: workspacePermissions,
@@ -127,74 +117,45 @@ export function useMembersPanel() {
   const { hasTeamPlan, isOnTeamPlan, hasMemberSeats, isPlanLoading } =
     useTeamPlan()
   const subscriptionDialog = useSubscriptionDialog()
-  const {
-    maxSeats,
-    occupiedSeats,
-    subscription,
-    subscriptionStatus,
-    canAccessSubscriptionFeatures
-  } = useBillingContext()
-  const { canChangeSeats, canInviteMembers } = useBillingCapabilities()
+  const { maxSeats, occupiedSeats } = useBillingContext()
+  const { canManageMembers, canInviteMembers } = useBillingCapabilities()
 
-  // Ended (billing_status inactive) is the only member-management freeze.
-  // A cancel-scheduled subscription stays active until cancel_at and the
-  // backend permits seat adds the whole time — capability, invite endpoint,
-  // and Stripe write path all allow it (DES-1200; verified on cloud/main
-  // 2026-09-23) — so cancelled workspaces keep invites live. Two payload
-  // shapes report a terminal plan: subscription_status 'ended', and a
-  // cancelled row whose access has already closed (the backend reconciles
-  // that shape into 'ended' on read, but a stale payload can still carry
-  // it). Scoped to team plans: a lapsed personal subscription belongs to
-  // the upgrade banner, not the team-ended treatment.
-  const isPlanTerminal = computed(
-    () =>
-      subscriptionStatus.value === 'ended' ||
-      (subscriptionStatus.value === 'canceled' &&
-        !canAccessSubscriptionFeatures.value)
-  )
-  const isPlanEnded = computed(
-    () => hasMemberSeats.value && isPlanTerminal.value
-  )
-  // Sales-managed, not strictly ENTERPRISE: isSalesManagedTier() treats an
-  // unrecognized tier as sales-managed too, so an ended unknown/future plan
-  // routes to Contact sales rather than borrowing the self-serve Reactivate
-  // claim (the same fail-closed contract the pricing surfaces follow). A
-  // missing tier is equally unidentifiable, so it fails closed to the sales
-  // route too — never a self-serve Resume the capability would refuse.
-  const isSalesManagedPlan = computed(() => {
-    const tier = subscription.value?.tier
-    return tier == null ? true : isSalesManagedTier(tier)
-  })
-  // Strict: drives the contactSales copy only — an unrecognized tier keeps
-  // the sales route but gets plan-neutral wording.
-  const isEnterprisePlan = computed(
-    () => subscription.value?.tier === 'ENTERPRISE'
-  )
+  const { isPlanEnded, isSalesManagedPlan, isEnterprisePlan } = usePlanEnded()
 
   const permissions = computed(() => {
-    const canManageMembers =
-      hasMemberSeats.value &&
-      (isCloud ? canChangeSeats.value : workspaceRole.value === 'owner')
-    const canManageInvites =
-      hasMemberSeats.value &&
-      (isCloud ? canInviteMembers.value : workspaceRole.value === 'owner')
+    const canManage = isCloud
+      ? canManageMembers.value
+      : hasMemberSeats.value && workspaceRole.value === 'owner'
 
     return {
       ...workspacePermissions.value,
-      canViewOtherMembers: hasMemberSeats.value,
-      canViewPendingInvites: canManageInvites,
-      canInviteMembers: canManageInvites,
-      canManageInvites,
-      canManageMembers
+      canViewOtherMembers: isCloud
+        ? membersLoaded.value
+        : hasMemberSeats.value || canManage,
+      canViewPendingInvites: canManage,
+      canInviteMembers: isCloud ? canInviteMembers.value : canManage,
+      canManageInvites: canManage,
+      canManageMembers: canManage
     }
   })
 
+  const hasMultipleMembers = computed(() => members.value.length > 1)
+
+  const showMinimalMemberLayout = computed(() =>
+    isCloud
+      ? !membersLoaded.value ||
+        (isInPersonalWorkspace.value && members.value.length === 1)
+      : !hasMemberSeats.value &&
+        !isPlanEnded.value &&
+        !permissions.value.canManageMembers
+  )
+
   const uiConfig = computed(() => {
-    if (!hasMemberSeats.value) {
+    if (showMinimalMemberLayout.value) {
       return {
         ...workspaceUiConfig.value,
         showMembersList: false,
-        showPendingTab: false,
+        showPendingTab: isCloud && permissions.value.canViewPendingInvites,
         showSearch: false,
         showRoleColumn: false,
         showCreditsColumn: false,
@@ -204,7 +165,7 @@ export function useMembersPanel() {
       }
     }
 
-    if (workspaceRole.value === 'owner') {
+    if (isCloud ? canManageMembers.value : workspaceRole.value === 'owner') {
       return {
         ...workspaceUiConfig.value,
         showMembersList: true,
@@ -233,28 +194,20 @@ export function useMembersPanel() {
     }
   })
 
-  const hasMultipleMembers = computed(() => members.value.length > 1)
-
   const showSearch = computed(
     () => uiConfig.value.showSearch && hasMultipleMembers.value
   )
 
   const showViewTabs = computed(
     () =>
-      hasMemberSeats.value &&
+      (isCloud
+        ? permissions.value.canViewPendingInvites
+        : hasMemberSeats.value || permissions.value.canManageMembers) &&
       (hasMultipleMembers.value || pendingInvites.value.length > 0)
   )
 
-  // An ended plan resolves can_invite_members false, but hiding the control
-  // from the owner leaves no explanation — keep it visible and disabled, with
-  // the banner carrying the route back. Members stay hidden (role denial).
   const showInviteButton = computed(() =>
-    isCloud
-      ? canInviteMembers.value ||
-        (isPlanEnded.value &&
-          hasMemberSeats.value &&
-          permissions.value.canManageSubscription)
-      : workspaceRole.value === 'owner'
+    isCloud ? canInviteMembers.value : workspaceRole.value === 'owner'
   )
 
   const isMemberLimitReached = computed(
@@ -265,18 +218,20 @@ export function useMembersPanel() {
       occupiedSeats.value >= maxSeats.value
   )
 
-  const isInviteDisabled = computed(
-    () =>
-      isPlanLoading.value ||
-      !permissions.value.canInviteMembers ||
-      isPlanEnded.value ||
-      maxSeats.value === null ||
-      occupiedSeats.value === null ||
-      !hasMemberSeats.value ||
-      isMemberLimitReached.value
+  const isInviteDisabled = computed(() =>
+    isCloud
+      ? !canInviteMembers.value
+      : isPlanLoading.value ||
+        !permissions.value.canInviteMembers ||
+        isPlanEnded.value ||
+        maxSeats.value === null ||
+        occupiedSeats.value === null ||
+        !hasMemberSeats.value ||
+        isMemberLimitReached.value
   )
 
   const inviteTooltip = computed(() => {
+    if (isCloud) return null
     if (!hasMemberSeats.value) return null
     if (maxSeats.value === null || occupiedSeats.value === null) return null
     if (!isMemberLimitReached.value) return null
@@ -284,8 +239,15 @@ export function useMembersPanel() {
   })
 
   function handleInviteMember() {
-    if (isCloud ? !canInviteMembers.value : workspaceRole.value !== 'owner')
+    if (isCloud) {
+      if (canInviteMembers.value) void showInviteMemberDialog()
       return
+    }
+    handleDesktopInviteMember()
+  }
+
+  function handleDesktopInviteMember() {
+    if (workspaceRole.value !== 'owner') return
     if (
       isPlanLoading.value ||
       maxSeats.value === null ||
@@ -314,18 +276,6 @@ export function useMembersPanel() {
   const sortField = ref<SortField>('inviteDate')
   const sortDirection = ref<SortDirection>('desc')
 
-  function roleMenuItem(
-    member: WorkspaceMember,
-    role: WorkspaceRole,
-    label: string
-  ): MenuItem {
-    return {
-      label,
-      checked: member.role === role,
-      command: () => handleChangeRole(member, role)
-    }
-  }
-
   function memberMenuItems(member: WorkspaceMember): MenuItem[] {
     if (!permissions.value.canManageMembers) return []
 
@@ -347,10 +297,21 @@ export function useMembersPanel() {
     return [
       {
         label: t('workspacePanel.members.actions.changeRole'),
-        items: [
-          roleMenuItem(member, 'owner', t('workspaceSwitcher.roleOwner')),
-          roleMenuItem(member, 'member', t('workspaceSwitcher.roleMember'))
-        ]
+        radioGroup: {
+          value: member.role,
+          options: [
+            {
+              value: 'owner',
+              label: t('workspaceSwitcher.roleOwner'),
+              command: () => handleChangeRole(member, 'owner')
+            },
+            {
+              value: 'member',
+              label: t('workspaceSwitcher.roleMember'),
+              command: () => handleChangeRole(member, 'member')
+            }
+          ]
+        }
       },
       ...(flags.memberCreditLimitsEnabled && member.role === 'member'
         ? [creditLimitItem]
@@ -375,12 +336,7 @@ export function useMembersPanel() {
 
   const filteredMembers = computed(() => {
     const searched = filterBySearch(members.value, searchQuery.value)
-    return sortMembers(
-      searched,
-      userEmail.value ?? null,
-      sortDirection.value,
-      originalOwnerId.value
-    )
+    return sortMembers(searched, userEmail.value ?? null, originalOwnerId.value)
   })
 
   // Built once per member list rather than per row on every render, so an
@@ -408,16 +364,9 @@ export function useMembersPanel() {
     if (!permissions.value.canManageInvites) return
     try {
       await resendInvite(invite.id)
-      toast.add({
-        severity: 'success',
-        summary: t('workspacePanel.toast.inviteResent'),
-        life: 2000
-      })
+      toast.success(t('workspacePanel.toast.inviteResent'), { duration: 2000 })
     } catch {
-      toast.add({
-        severity: 'error',
-        summary: t('workspacePanel.toast.inviteResendFailed')
-      })
+      toast.error(t('workspacePanel.toast.inviteResendFailed'))
     }
   }
 
@@ -475,7 +424,10 @@ export function useMembersPanel() {
     memberMenuItems,
     memberMenus,
     members,
+    membersLoaded,
+    totalMembers,
     pendingInvites,
+    pendingInvitesLoaded,
     permissions,
     uiConfig,
     userPhotoUrl,

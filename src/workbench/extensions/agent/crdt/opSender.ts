@@ -19,13 +19,43 @@ import type { Op } from '@comfyorg/comfy-multi-player'
 
 import { reportError } from '@/platform/telemetry/reportError'
 
-import type { DocOpsResult } from './docFrameClient'
+import type { DocOp, DocOpsResult } from './docFrameClient'
 import type { GraphOperation } from './graphOperations'
-import { chunkWireOps, mintWireOps } from './opEnvelope'
+import {
+  chunkWireOps,
+  measureWireOp,
+  mintWireOps,
+  WIRE_MAX_OPS_PER_BATCH
+} from './opEnvelope'
+import type { SizedOp } from './opEnvelope'
 
 const SEND_RETRY_LIMIT = 5
 const SEND_RETRY_INTERVAL_MS = 500
 const RESULT_TIMEOUT_MS = 10_000
+const FAILURE_REPORT_WINDOW_MS = 60_000
+const MAX_FAILURE_REPORTS_PER_WINDOW = 3
+
+/**
+ * Admits at most {@link MAX_FAILURE_REPORTS_PER_WINDOW} reports per
+ * {@link FAILURE_REPORT_WINDOW_MS}; the window re-arms by time, not by success.
+ */
+function createReportBudget(): () => boolean {
+  let reports = 0
+  let windowStartedAt: number | null = null
+  return () => {
+    const now = performance.now()
+    if (
+      windowStartedAt === null ||
+      now - windowStartedAt >= FAILURE_REPORT_WINDOW_MS
+    ) {
+      reports = 0
+      windowStartedAt = now
+    }
+    if (reports >= MAX_FAILURE_REPORTS_PER_WINDOW) return false
+    reports++
+    return true
+  }
+}
 
 /**
  * The sender's view of a parsed `doc_ops_result`. Derived from the
@@ -40,8 +70,11 @@ export type OpsResultView = Pick<
   Partial<Pick<DocOpsResult, 'workflowId'>>
 
 export interface OpSenderDeps {
-  /** `DocFrameClient.sendOps` shape: false = the transport cannot carry it now. */
-  sendOps(workflowId: string, tab: string, ops: Op[]): boolean
+  /**
+   * `DocFrameClient.sendOps` shape: false = the transport cannot carry it
+   * now. Receives the wire objects measured at admission, never the ops.
+   */
+  sendOps(workflowId: string, tab: string, ops: readonly DocOp[]): boolean
   /** Subscribe to `doc_ops_result` frames; returns unsubscribe. */
   onOpsResult(listener: (result: OpsResultView) => void): () => void
   /**
@@ -74,12 +107,24 @@ export type BatchOutcome =
   | { state: 'unconfirmed'; ops: Op[] }
   | { state: 'undeliverable'; ops: Op[] }
 
+interface AdmissionGroup {
+  workflowId: string
+  ops: Op[]
+}
+
 export interface OpSender {
   enqueue(operations: GraphOperation[]): void
   /**
    * Mint and target-pin operations into the open admission group without
    * starting transport delivery. Consecutive admissions for one workflow
    * share the group until `flush()` seals it.
+   *
+   * Each op is serialized once here; a malformed op settles `undeliverable`
+   * at once and the rest of the admission is still admitted. Mint order is
+   * preserved per document, not across documents, including when a
+   * serializer or settlement listener re-enters `admit()` or `enqueue()`:
+   * the re-entrant admission lands behind the one in progress, and a flush
+   * requested meanwhile runs once every pending admission is committed.
    */
   admit(operations: GraphOperation[]): void
   /** Seal the open admission group into wire batches and start delivery. */
@@ -87,7 +132,7 @@ export interface OpSender {
   /** Unsettled batch count for observability; 0 = drained. */
   pending(): number
   /** Every unsettled batch, in-flight first, each addressed to its mint-time workflow. */
-  pendingOps(): ReadonlyArray<{ workflowId: string; ops: Op[] }>
+  pendingOps(): ReadonlyArray<AdmissionGroup>
   /**
    * The bound workflow's tab went inactive: the subscription is paused, not
    * lost. Until `resume()`, a batch reaching `transmit()` is parked instead
@@ -131,9 +176,30 @@ export interface OpSender {
   detach(): void
 }
 
-interface InFlight {
+interface WireBatch {
   workflowId: string
   ops: Op[]
+  wire: DocOp[]
+}
+
+function toWireBatch(workflowId: string, chunk: readonly SizedOp[]): WireBatch {
+  return {
+    workflowId,
+    ops: chunk.map((sized) => sized.op),
+    wire: chunk.map((sized) => sized.wire)
+  }
+}
+
+/** One admit() call after measurement, awaiting commitment in mint order. */
+interface Admission {
+  workflowId: string | null
+  minted: Op[]
+  admitted: SizedOp[]
+  rejected: Op[]
+  cause: unknown
+}
+
+interface InFlight extends WireBatch {
   opIds: Set<string>
   sends: number
   reportedThrow: boolean
@@ -143,13 +209,17 @@ interface InFlight {
 }
 
 export function createOpSender(deps: OpSenderDeps): OpSender {
-  const queue: Array<{ workflowId: string; ops: Op[] }> = []
-  let open: { workflowId: string; ops: Op[] } | null = null
+  const queue: WireBatch[] = []
+  let queueHead = 0
+  let open: { workflowId: string; ops: SizedOp[] } | null = null
   let inFlight: InFlight | null = null
-  let lastMintedVersion = -1
-  let lastMintedWorkflowId: string | null = null
+  // One Lamport cursor per workflow, cleared only by that doc's reset: the
+  // observed sequence reads 0 between a subscribe and its ack, so only the
+  // cursor keeps a re-bound workflow's stamps past ones this actor used there.
+  const lastMintedVersions = new Map<string, number>()
   let detached = false
   let suspended = false
+  let pumping = false
   // Late-result credits: every send a batch leaves the client with may still
   // draw a result, including the send whose silence provoked the resend and
   // the sends of a batch that has already settled. As ANONYMOUS failures
@@ -163,6 +233,17 @@ export function createOpSender(deps: OpSenderDeps): OpSender {
   // correlate a result to the send it answers.
   let staleAnonymousBudget = 0
   const retiredOpIds = new Set<string>()
+  const mayReportSettlementFailure = createReportBudget()
+  const mayReportSerializationFailure = createReportBudget()
+
+  function mintBaseVersion(workflowId: string | null): number {
+    const observed = deps.baseVersion()
+    if (workflowId === null) return observed
+    const lastMinted = lastMintedVersions.get(workflowId)
+    return lastMinted === undefined
+      ? observed
+      : Math.max(observed, lastMinted + 1)
+  }
 
   function retire(batch: InFlight, answered: number): void {
     const outstanding = batch.sends - answered
@@ -177,7 +258,7 @@ export function createOpSender(deps: OpSenderDeps): OpSender {
     if (staleAnonymousBudget === 0) retiredOpIds.clear()
   }
 
-  function reportSettleFailure(cause: unknown, errorType: string): void {
+  function reportDegraded(cause: unknown, errorType: string): void {
     reportError(cause, {
       errorType,
       surface: 'agent',
@@ -193,17 +274,20 @@ export function createOpSender(deps: OpSenderDeps): OpSender {
       try {
         deps.onBatchSettled(outcome)
       } catch (cause) {
-        if (reportedFailure) return
+        if (reportedFailure || !mayReportSettlementFailure()) return
         reportedFailure = true
-        reportSettleFailure(cause, errorType)
+        reportDegraded(cause, errorType)
       }
     }
   }
 
+  const notifyDetachSettlement = guardedSettlementNotifier(
+    'failure_settling_agent_op_sender_detach'
+  )
   function settle(outcome: BatchOutcome): void {
     if (inFlight?.timer) clearTimeout(inFlight.timer)
     inFlight = null
-    deps.onBatchSettled(outcome)
+    guardedSettlementNotifier('failure_settling_agent_op_sender')(outcome)
     pump()
   }
 
@@ -239,7 +323,7 @@ export function createOpSender(deps: OpSenderDeps): OpSender {
 
   function trySend(batch: InFlight): boolean {
     try {
-      return deps.sendOps(batch.workflowId, deps.tab, batch.ops)
+      return deps.sendOps(batch.workflowId, deps.tab, batch.wire)
     } catch (error) {
       if (!batch.reportedThrow) {
         batch.reportedThrow = true
@@ -286,13 +370,17 @@ export function createOpSender(deps: OpSenderDeps): OpSender {
   }
 
   function drainOutstanding(notify: (outcome: BatchOutcome) => void): void {
-    seal()
-    const queued = queue.splice(0)
-    if (inFlight) {
-      const batch = inFlight
+    const unsealed = open
+    open = null
+    const queued = queue.slice(queueHead)
+    queue.length = 0
+    queueHead = 0
+    const active = inFlight
+    inFlight = null
+    if (active) {
+      const batch = active
       if (batch.timer) clearTimeout(batch.timer)
       retire(batch, 0)
-      inFlight = null
       notify({
         state: batch.sends > 0 ? 'unconfirmed' : 'undeliverable',
         ops: batch.ops
@@ -301,67 +389,179 @@ export function createOpSender(deps: OpSenderDeps): OpSender {
     for (const batch of queued) {
       notify({ state: 'undeliverable', ops: batch.ops })
     }
+    if (unsealed) {
+      for (const chunk of chunkWireOps(unsealed.ops)) {
+        notify({ state: 'undeliverable', ops: chunk.map((sized) => sized.op) })
+      }
+    }
+  }
+
+  function dequeue(): WireBatch | undefined {
+    if (queueHead >= queue.length) return
+    const queued = queue[queueHead]
+    queueHead++
+    if (queueHead >= 1_024 && queueHead * 2 >= queue.length) {
+      queue.splice(0, queueHead)
+      queueHead = 0
+    }
+    return queued
   }
 
   function pump(): void {
-    if (detached || inFlight !== null) return
-    const queued = queue.shift()
-    if (!queued) return
-    inFlight = {
-      workflowId: queued.workflowId,
-      ops: queued.ops,
-      opIds: new Set(queued.ops.map((op) => op.op_id)),
-      sends: 0,
-      reportedThrow: false,
-      resent: false,
-      parked: false,
-      timer: null
+    if (pumping) return
+    pumping = true
+    try {
+      while (!detached && inFlight === null) {
+        const queued = dequeue()
+        if (!queued) return
+        inFlight = {
+          ...queued,
+          opIds: new Set(queued.ops.map((op) => op.op_id)),
+          sends: 0,
+          reportedThrow: false,
+          resent: false,
+          parked: false,
+          timer: null
+        }
+        transmit(inFlight, 0)
+      }
+    } finally {
+      pumping = false
     }
-    transmit(inFlight, 0)
   }
 
-  function admit(operations: GraphOperation[]): void {
-    if (operations.length === 0) return
-    const workflowId = deps.workflowId()
-    if (workflowId !== lastMintedWorkflowId) {
-      lastMintedVersion = -1
-      lastMintedWorkflowId = workflowId
+  function settleUndeliverableInBoundedGroups(
+    ops: Op[],
+    notify: (outcome: BatchOutcome) => void
+  ): void {
+    for (let index = 0; index < ops.length; index += WIRE_MAX_OPS_PER_BATCH) {
+      notify({
+        state: 'undeliverable',
+        ops: ops.slice(index, index + WIRE_MAX_OPS_PER_BATCH)
+      })
     }
-    const baseVersion = Math.max(deps.baseVersion(), lastMintedVersion + 1)
+  }
+
+  function measureMintedOps(minted: Op[]): {
+    admitted: SizedOp[]
+    rejected: Op[]
+    cause: unknown
+  } {
+    const measured = minted.map(measureWireOp)
+    const rejections = measured.filter((result) => !result.admitted)
+    return {
+      admitted: measured.flatMap((result) =>
+        result.admitted ? [result.sized] : []
+      ),
+      rejected: rejections.map((rejection) => rejection.op),
+      cause: rejections[0]?.cause
+    }
+  }
+
+  function mintAdmission(
+    operations: GraphOperation[],
+    workflowId: string | null
+  ): Op[] {
+    const baseVersion = mintBaseVersion(workflowId)
     const actor = deps.actor()
     const minted = operations.flatMap((operation, index) =>
       mintWireOps([operation], { actor, baseVersion: baseVersion + index })
     )
-    lastMintedVersion = baseVersion + minted.length - 1
-    if (detached) {
-      guardedSettlementNotifier('failure_settling_agent_op_sender_detach')({
-        state: 'undeliverable',
-        ops: minted
-      })
-      return
-    }
-    if (workflowId === null) {
-      deps.onBatchSettled({ state: 'undeliverable', ops: minted })
-      return
-    }
+    if (workflowId !== null)
+      lastMintedVersions.set(workflowId, baseVersion + minted.length - 1)
+    return minted
+  }
+
+  function appendToOpenGroup(workflowId: string, admitted: SizedOp[]): void {
     if (open?.workflowId !== workflowId) seal()
-    if (open) open.ops.push(...minted)
-    else open = { workflowId, ops: minted }
+    if (admitted.length === 0) return
+    if (open) for (const sized of admitted) open.ops.push(sized)
+    else open = { workflowId, ops: admitted }
+  }
+
+  // Admissions in mint order. Measurement runs user-controlled toJSON and
+  // commitment runs settlement listeners; either may re-enter admit(). A
+  // re-entrant admission takes the slot after the one in progress and is
+  // committed by the outermost call, so the open group and the queue receive
+  // ops in the order their base_versions were minted.
+  const admitting: Admission[] = []
+  let flushDeferred = false
+
+  function admit(operations: GraphOperation[]): void {
+    if (operations.length === 0) return
+    const workflowId = deps.workflowId()
+    const minted = mintAdmission(operations, workflowId)
+    const admission: Admission = {
+      workflowId,
+      minted,
+      admitted: [],
+      rejected: [],
+      cause: undefined
+    }
+    const nested = admitting.length > 0
+    admitting.push(admission)
+    Object.assign(admission, measureMintedOps(minted))
+    if (nested) return
+    commitAdmissions()
+  }
+
+  function commitAdmissions(): void {
+    try {
+      for (const admission of admitting) commitAdmission(admission)
+    } finally {
+      admitting.length = 0
+    }
+    if (!flushDeferred) return
+    flushDeferred = false
+    flush()
+  }
+
+  function commitAdmission({
+    workflowId,
+    minted,
+    admitted,
+    rejected,
+    cause
+  }: Admission): void {
+    if (detached) {
+      settleUndeliverableInBoundedGroups(minted, notifyDetachSettlement)
+      return
+    }
+    const notifyFailure = guardedSettlementNotifier(
+      'failure_settling_agent_op_sender'
+    )
+    if (workflowId === null) {
+      settleUndeliverableInBoundedGroups(minted, notifyFailure)
+      return
+    }
+    appendToOpenGroup(workflowId, admitted)
+    if (rejected.length === 0) return
+    if (mayReportSerializationFailure()) {
+      reportDegraded(cause, 'failure_serializing_agent_op_sender')
+    }
+    settleUndeliverableInBoundedGroups(rejected, notifyFailure)
   }
 
   function seal(): void {
     if (!open) return
     const { workflowId, ops } = open
     open = null
-    queue.push(...chunkWireOps(ops).map((ops) => ({ workflowId, ops })))
+    for (const chunk of chunkWireOps(ops)) {
+      queue.push(toWireBatch(workflowId, chunk))
+    }
   }
 
   function flush(): void {
+    if (admitting.length > 0) {
+      flushDeferred = true
+      return
+    }
     seal()
     pump()
   }
 
   const unsubscribe = deps.onOpsResult((result) => {
+    if (detached) return
     if (inFlight === null && staleAnonymousBudget === 0) return
     const identified = [...result.applied, ...result.skipped]
     if (result.failed?.op_id) identified.push(result.failed.op_id)
@@ -390,6 +590,9 @@ export function createOpSender(deps: OpSenderDeps): OpSender {
       drainStaleCredit()
       return
     }
+    // A parked batch or one waiting for a transport retry has not put a send
+    // on the wire, so an anonymous result cannot belong to it.
+    if (batch.sends === 0) return
     retire(batch, 1)
     settle({ state: 'acknowledged', ops: batch.ops, result })
   })
@@ -403,13 +606,19 @@ export function createOpSender(deps: OpSenderDeps): OpSender {
     admit,
     flush,
     pending() {
-      return queue.length + (inFlight ? 1 : 0) + (open ? 1 : 0)
+      return queue.length - queueHead + (inFlight ? 1 : 0) + (open ? 1 : 0)
     },
     pendingOps() {
       const batches = inFlight
         ? [{ workflowId: inFlight.workflowId, ops: inFlight.ops }]
         : []
-      return [...batches, ...queue, ...(open ? [open] : [])]
+      const unsealed = open
+        ? [{ workflowId: open.workflowId, ops: open.ops.map((s) => s.op) }]
+        : []
+      const queued = queue
+        .slice(queueHead)
+        .map(({ workflowId, ops }) => ({ workflowId, ops }))
+      return [...batches, ...queued, ...unsealed]
     },
     suspend() {
       suspended = true
@@ -427,8 +636,10 @@ export function createOpSender(deps: OpSenderDeps): OpSender {
       }
     },
     abortAll() {
-      lastMintedVersion = -1
-      lastMintedWorkflowId = null
+      // A doc_reset replaces only the bound document (the follower guards on
+      // isCurrentWorkflow), so only its cursor restarts.
+      const resetWorkflowId = deps.workflowId()
+      if (resetWorkflowId !== null) lastMintedVersions.delete(resetWorkflowId)
       drainOutstanding(
         guardedSettlementNotifier('failure_settling_agent_op_sender_abort')
       )
@@ -437,11 +648,17 @@ export function createOpSender(deps: OpSenderDeps): OpSender {
       if (detached) return
       detached = true
       try {
-        drainOutstanding(
-          guardedSettlementNotifier('failure_settling_agent_op_sender_detach')
-        )
+        drainOutstanding(notifyDetachSettlement)
+        // The listener is inert once detached. Release late-result bookkeeping
+        // even if an injected unsubscribe implementation fails below.
+        staleAnonymousBudget = 0
+        retiredOpIds.clear()
       } finally {
-        unsubscribe()
+        try {
+          unsubscribe()
+        } catch (cause) {
+          reportDegraded(cause, 'failure_unsubscribing_agent_op_sender')
+        }
       }
     }
   }

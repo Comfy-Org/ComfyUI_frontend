@@ -5,6 +5,7 @@ See @docs/guidance/\*.md for file-type-specific conventions (auto-loaded by glob
 - `docs/guidance/engineering.md` — general engineering guidelines, project philosophy, code-review checklist, external resource links
 - `docs/guidance/vue-components.md` — Vue 3 Composition API best practices
 - `docs/guidance/state-and-effects.md` — modelling a feature's state: one discriminated union, named events, a pure transition, effects reserved for synchronising outward
+- `docs/guidance/error-handling.md` — failure as data: return outcomes instead of throwing, convert at the untrusted call, validate before mutation, report once at the ownership boundary, when a throw is still right
 - `docs/guidance/typescript.md` — TypeScript type-safety rules
 - `docs/guidance/testing-principles.md` — test design rules that hold at every level: behavioral assertions, lowest proving level, N + M + 1 composition and table-driven cases with sparse filters, isolation, classical doubles, coverage as a gap finder, changing existing tests
 - `docs/guidance/vitest.md` — Vitest unit/component test conventions
@@ -90,6 +91,7 @@ Guardrails: agents must use `comfyPage` fixture (not bare `page`), never add `wa
 - `pnpm lint` / `pnpm lint:fix`: Lint (ESLint)
 - `pnpm format` / `pnpm format:check`: oxfmt
 - `pnpm typecheck`: Vue TSC type checking
+- `pnpm deps:audit`: Report `src/` import cycles with dependency-cruiser (warnings only, not a gate)
 - `pnpm storybook`: Start Storybook development server
 
 > **`vue-tsc` needs its own `node_modules` in the checkout.** `vue-tsc --noEmit`

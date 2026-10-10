@@ -12,15 +12,19 @@ const operation = z.looseObject({
     z.looseObject({ content: content.optional() })
   )
 })
-export const routerAltProvidersSchema = z.array(
-  z.object({ provider: z.string(), model_id: z.string() })
-)
 const documentSchema = z.looseObject({
   openapi: z.enum(['3.0.0', '3.0.1', '3.0.2', '3.0.3', '3.0.4']),
   'x-comfy-router-model-id': z.string(),
   'x-comfy-input-schema-authored': z.boolean(),
   'x-comfy-output-schema-authored': z.boolean(),
-  'x-comfy-router-alt-providers': routerAltProvidersSchema.optional(),
+  'x-comfy-router-alt-providers': z
+    .array(
+      z.object({
+        provider: z.string().regex(/^[\w.-]+$/),
+        model_id: z.string().regex(/^[\w.-]+\/[\w.-]+$/)
+      })
+    )
+    .optional(),
   paths: z.record(z.string(), z.looseObject({ post: operation })),
   components: z
     .looseObject({ schemas: z.record(z.string(), jsonObject).optional() })

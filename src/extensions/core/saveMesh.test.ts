@@ -356,3 +356,35 @@ describe('Comfy.SaveGLB.onNodeOutputsUpdated', () => {
     expect(configureForSaveMeshMock).not.toHaveBeenCalled()
   })
 })
+
+describe('SaveGLB thumbnail persistence', () => {
+  it.for(['onExecuted', 'onNodeOutputsUpdated'] as const)(
+    'leaves thumbnail capture to the Load3D viewer after %s',
+    async (entryPoint) => {
+      const captureThumbnail = vi.fn()
+      waitForLoad3dMock.mockImplementation((cb: (load3d: unknown) => void) => {
+        cb({ whenLoadIdle: () => Promise.resolve(), captureThumbnail })
+      })
+      const { extension, graphTraversal } = await loadSaveMeshExtensionFresh()
+      const { isAssetPreviewSupported } =
+        await import('@/platform/assets/utils/assetPreviewUtil')
+      vi.mocked(isAssetPreviewSupported).mockReturnValue(true)
+      const node = makeNode()
+      const output = {
+        '3d': [{ filename: 'mesh.glb', subfolder: 'sub', type: 'output' }]
+      }
+
+      if (entryPoint === 'onExecuted') {
+        await extension.nodeCreated(node)
+        node.onExecuted!(output)
+      } else {
+        vi.mocked(graphTraversal.getNodeByLocatorId).mockReturnValue(node)
+        extension.onNodeOutputsUpdated({ '7': output } as never)
+      }
+      await new Promise((resolve) => setTimeout(resolve, 0))
+
+      expect(configureForSaveMeshMock).toHaveBeenCalled()
+      expect(captureThumbnail).not.toHaveBeenCalled()
+    }
+  )
+})

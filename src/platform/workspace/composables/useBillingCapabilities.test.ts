@@ -66,8 +66,10 @@ function capabilitiesResponse(
       can_top_up: canTopUp,
       can_cancel: true,
       can_reactivate: true,
+      can_revert_scheduled_change: false,
       can_change_seats: true,
       can_invite_members: true,
+      can_manage_members: true,
       can_downgrade_to_personal: true,
       ...overrides
     },
@@ -253,6 +255,7 @@ describe('useBillingCapabilities', () => {
     expect(billingCapabilities.canReactivate.value).toBe(false)
     expect(billingCapabilities.canChangeSeats.value).toBe(false)
     expect(billingCapabilities.canInviteMembers.value).toBe(false)
+    expect(billingCapabilities.canManageMembers.value).toBe(false)
     expect(billingCapabilities.canDowngradeToPersonal.value).toBe(false)
     expect(billingCapabilities.snapshotAuthoritative.value).toBe(false)
 
@@ -270,6 +273,7 @@ describe('useBillingCapabilities', () => {
     expect(billingCapabilities.canReactivate.value).toBe(true)
     expect(billingCapabilities.canChangeSeats.value).toBe(true)
     expect(billingCapabilities.canInviteMembers.value).toBe(true)
+    expect(billingCapabilities.canManageMembers.value).toBe(true)
     expect(billingCapabilities.canDowngradeToPersonal.value).toBe(true)
     expect(billingCapabilities.snapshotAuthoritative.value).toBe(true)
   })
@@ -284,8 +288,10 @@ describe('useBillingCapabilities', () => {
         {
           can_cancel: false,
           can_reactivate: false,
+          can_revert_scheduled_change: false,
           can_change_seats: false,
           can_invite_members: false,
+          can_manage_members: false,
           can_downgrade_to_personal: false
         }
       )
@@ -297,7 +303,22 @@ describe('useBillingCapabilities', () => {
     expect(billingCapabilities.canReactivate.value).toBe(false)
     expect(billingCapabilities.canChangeSeats.value).toBe(false)
     expect(billingCapabilities.canInviteMembers.value).toBe(false)
+    expect(billingCapabilities.canManageMembers.value).toBe(false)
     expect(billingCapabilities.canDowngradeToPersonal.value).toBe(false)
+  })
+
+  it('does not infer member management from an older response', async () => {
+    const response = capabilitiesResponse(true)
+    Reflect.deleteProperty(response.capabilities, 'can_manage_members')
+    vi.mocked(workspaceApi.getBillingCapabilities).mockResolvedValueOnce(
+      response
+    )
+
+    await billingCapabilities.initialize()
+
+    expect(billingCapabilities.canInviteMembers.value).toBe(true)
+    expect(billingCapabilities.canChangeSeats.value).toBe(true)
+    expect(billingCapabilities.canManageMembers.value).toBe(false)
   })
 
   it('applies changed capabilities when the current scope is refreshed', async () => {
@@ -341,6 +362,7 @@ describe('useBillingCapabilities', () => {
     expect(billingCapabilities.canReactivate.value).toBe(false)
     expect(billingCapabilities.canChangeSeats.value).toBe(false)
     expect(billingCapabilities.canInviteMembers.value).toBe(false)
+    expect(billingCapabilities.canManageMembers.value).toBe(false)
     expect(billingCapabilities.canDowngradeToPersonal.value).toBe(false)
     expect(billingCapabilities.isReady.value).toBe(true)
     expect(billingCapabilities.snapshotAuthoritative.value).toBe(false)
@@ -416,6 +438,7 @@ describe('useBillingCapabilities', () => {
     expect(billingCapabilities.canReactivate.value).toBe(false)
     expect(billingCapabilities.canChangeSeats.value).toBe(false)
     expect(billingCapabilities.canInviteMembers.value).toBe(false)
+    expect(billingCapabilities.canManageMembers.value).toBe(false)
     expect(billingCapabilities.canDowngradeToPersonal.value).toBe(false)
   })
 

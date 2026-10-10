@@ -1,7 +1,7 @@
 import { vi } from 'vitest'
 import { readonly, ref } from 'vue'
 
-import type * as realPosthog from '../posthog'
+import type * as realPosthog from '@/scripts/posthog'
 
 const workshopEnabled = readonly(ref(false))
 const workshopEnabledSettled = readonly(ref(true))
@@ -33,7 +33,8 @@ const posthog: typeof realPosthog = {
   captureAuthRefreshFailed: vi.fn(),
   captureSignupOpened: vi.fn(),
   captureAuthCompleted: vi.fn(),
-  captureAuthFailed: vi.fn()
+  captureAuthFailed: vi.fn(),
+  captureWebSessionEvent: vi.fn()
 }
 
 const {
@@ -61,7 +62,8 @@ const {
   captureAuthRefreshFailed,
   captureSignupOpened,
   captureAuthCompleted,
-  captureAuthFailed
+  captureAuthFailed,
+  captureWebSessionEvent
 } = posthog
 
 export {
@@ -89,5 +91,6 @@ export {
   captureAuthRefreshFailed,
   captureSignupOpened,
   captureAuthCompleted,
-  captureAuthFailed
+  captureAuthFailed,
+  captureWebSessionEvent
 }

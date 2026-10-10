@@ -1,27 +1,26 @@
 import { readFile, writeFile } from 'node:fs/promises'
-import { resolve } from 'node:path'
+import { join } from 'node:path'
 import { z } from 'astro/zod'
 
 import {
   workshopBindingSchema,
   workshopContractRecordSchema,
   formForContract
-} from '../src/config/workshop-contract'
-import { fieldsForDefinition } from '../src/config/workshop-form-definition'
+} from '@/config/workshop-contract'
+import { websiteRoot } from '@website/paths'
+import { fieldsForDefinition } from '@/config/workshop-form-definition'
 import {
   validateWorkshopInput,
   validatorFor
-} from '../src/config/workshop-json-schema'
+} from '@/config/workshop-json-schema'
 import {
   parseRouterOpenApiSnapshot,
-  routerAltProvidersSchema,
   routerInputSchema
-} from '../src/config/workshop-router-openapi'
-import { workshopRouterIndexSchema } from '../src/config/workshop-router-index'
+} from '@/config/workshop-router-openapi'
+import { workshopRouterIndexSchema } from '@/config/workshop-router-index'
 import { curateWorkshopInputs } from './workshop-input-presentation'
 import { creatorFormFor, creatorVariantsFor } from './workshop-creator-forms'
-import availabilityOverrides from '../src/data/workshop-router-availability.json'
-import pinnedAltProviders from '../src/data/workshop-router-alt-providers.json'
+import availabilityOverrides from '@/data/workshop-router-availability.json'
 import { isDirectExecution } from './script-entry-point'
 import { adaptRouterModel } from './router-model-adapters'
 
@@ -155,8 +154,7 @@ export function compileWorkshopContracts(
 export function compileWorkshopIndex(
   rawSnapshots: unknown,
   rawContracts: unknown,
-  rawAvailability: unknown = availabilityOverrides,
-  rawAltProviders: unknown = pinnedAltProviders
+  rawAvailability: unknown = availabilityOverrides
 ): string {
   const availability = new Map(
     Object.entries(
@@ -178,16 +176,6 @@ export function compileWorkshopIndex(
   const contracts = z.array(workshopContractRecordSchema).parse(rawContracts)
   const byId = new Map(contracts.map((contract) => [contract.id, contract]))
   const snapshotIds = new Set(snapshots.map((snapshot) => snapshot.id))
-  const altProviderPins = new Map(
-    Object.entries(
-      z
-        .object({
-          docsCommit: z.string().regex(/^[a-f0-9]{40}$/),
-          models: z.record(z.string(), routerAltProvidersSchema)
-        })
-        .parse(rawAltProviders).models
-    )
-  )
   if (
     byId.size !== contracts.length ||
     snapshotIds.size !== snapshots.length ||
@@ -213,23 +201,24 @@ export function compileWorkshopIndex(
         const output = Object.hasOwn(responses, '200')
           ? responses['200']
           : undefined
-        const snapshotAltProviders =
-          snapshot.document['x-comfy-router-alt-providers']
-        if (snapshotAltProviders && altProviderPins.has(snapshot.id))
-          throw new Error(
-            `Drop the pinned alt providers now the Router snapshot carries them: ${snapshot.id}`
-          )
         const altProviders = (
-          snapshotAltProviders ??
-          altProviderPins.get(snapshot.id) ??
-          []
+          snapshot.document['x-comfy-router-alt-providers'] ?? []
         ).map(({ provider, model_id }) => {
           if (!model_id.startsWith(`${provider}/`))
             throw new Error(
               `Alt provider leg ${model_id} is not served by ${provider}: ${snapshot.id}`
             )
+          if (model_id === snapshot.id)
+            throw new Error(
+              `Alt provider leg names its own model: ${snapshot.id}`
+            )
           return { provider, routerId: model_id }
         })
+        if (
+          new Set(altProviders.map(({ routerId }) => routerId)).size !==
+          altProviders.length
+        )
+          throw new Error(`Duplicate alt provider legs: ${snapshot.id}`)
         const description = contract
           ? contract.inputSchema.description
           : snapshot.document['x-comfy-output-schema-authored']
@@ -257,31 +246,22 @@ export function compileWorkshopIndex(
 
 async function main() {
   const [
-    snapshotPath = resolve(
-      import.meta.dirname,
-      '../src/data/workshop-router-openapi.snapshot.json'
+    snapshotPath = join(
+      websiteRoot,
+      'src/data/workshop-router-openapi.snapshot.json'
     ),
-    bindingsPath = resolve(
-      import.meta.dirname,
-      '../src/data/workshop-router-bindings.json'
-    )
+    bindingsPath = join(websiteRoot, 'src/data/workshop-router-bindings.json')
   ] = process.argv.slice(2)
   const snapshots: unknown = JSON.parse(await readFile(snapshotPath, 'utf8'))
   const packed = compileWorkshopContracts(
     snapshots,
     JSON.parse(await readFile(bindingsPath, 'utf8'))
   )
-  const output = resolve(
-    import.meta.dirname,
-    '../src/content/workshop-router-contracts.json'
-  )
+  const output = join(websiteRoot, 'src/content/workshop-router-contracts.json')
   if ((await readFile(output, 'utf8').catch(() => '')) !== packed)
     await writeFile(output, packed)
   const index = compileWorkshopIndex(snapshots, JSON.parse(packed))
-  const indexPath = resolve(
-    import.meta.dirname,
-    '../src/content/workshop-router-index.json'
-  )
+  const indexPath = join(websiteRoot, 'src/content/workshop-router-index.json')
   if ((await readFile(indexPath, 'utf8').catch(() => '')) !== index)
     await writeFile(indexPath, index)
   process.stdout.write(

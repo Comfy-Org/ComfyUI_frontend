@@ -1,6 +1,6 @@
 import { fromPartial } from '@total-typescript/shoehorn'
 import { getActivePinia } from 'pinia'
-import { fireEvent, render, screen } from '@testing-library/vue'
+import { fireEvent, render, screen, waitFor } from '@testing-library/vue'
 import userEvent from '@testing-library/user-event'
 import { defineComponent, nextTick } from 'vue'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
@@ -11,6 +11,7 @@ const intersectionCallbacks = vi.hoisted(
 )
 const resizeCallbacks = vi.hoisted(() => [] as (() => void)[])
 vi.mock(import('@vueuse/core'), { spy: true })
+vi.mock(import('@/composables/auth/useCurrentUser'))
 vi.mocked(useIntersectionObserver).mockImplementation((_target, callback) => {
   intersectionCallbacks.push((entries) =>
     callback(
@@ -26,7 +27,13 @@ vi.mocked(useResizeObserver).mockImplementation((_target, callback) => {
 })
 
 import { i18n } from '@/i18n'
+import { useSkillPacksStore } from '@/platform/skills/stores/skillPacksStore'
+import { useTeamWorkspaceStore } from '@/platform/workspace/stores/teamWorkspaceStore'
+import { listSkillPacks } from '@/platform/skills/api/skillsApi'
+vi.mock(import('@/platform/skills/api/skillsApi'), { spy: true })
+vi.mock(import('@/platform/telemetry/reportError'))
 import { toTurnId, zAgentWsEvent } from '../../schemas/agentApiSchema'
+import type { AgentMessages } from '../../schemas/agentApiSchema'
 import type { AgentChatEvent } from '../../services/agent/agentEventTransport'
 import type { AssistantMessage } from '../../services/agent/agentMessageParts'
 import { useAgentConversationStore } from '../../stores/agent/agentConversationStore'
@@ -72,13 +79,32 @@ const done = (id: string) =>
     data: { message_id: id, thread_id: 'th', usage: null }
   })
 
+const PORTRAIT_SKILL_LINK =
+  '[Use the saved skill /portrait](skill://portrait?description=Original)'
+const skillHistoryRow = (
+  id: string,
+  turnId: string
+): AgentMessages[number] => ({
+  id,
+  thread_id: 'th',
+  seq: 1,
+  turn_id: turnId,
+  status: 'complete',
+  role: 'user',
+  content: { text: `${PORTRAIT_SKILL_LINK} render it` }
+})
+
 const Harness = defineComponent({
   components: { ConversationView },
   setup() {
     const store = useAgentConversationStore()
     return { store }
   },
-  template: `<ConversationView :entries="store.entries" user-name="Ada" />`
+  template: `<ConversationView
+    :entries="store.entries"
+    :conversation-id="store.threadId"
+    user-name="Ada"
+  />`
 })
 
 function mountHarness() {
@@ -108,6 +134,73 @@ describe('ConversationView', () => {
     intersectionCallbacks.length = 0
     resizeCallbacks.length = 0
   })
+
+  it('refreshes saved skills once each time a conversation with skills opens, and again on scope change', async () => {
+    const skills = useSkillPacksStore()
+    skills.flagsEnabled = true
+    vi.spyOn(skills, 'startFlagGate').mockResolvedValue()
+    vi.mocked(listSkillPacks).mockResolvedValue([])
+    const { store } = mountHarness()
+    store.setThreadId('first')
+    store.hydrate([
+      skillHistoryRow('row-1', 'turn-1'),
+      skillHistoryRow('row-2', 'turn-2')
+    ])
+    expect(await screen.findAllByTestId('skill-reference')).toHaveLength(2)
+    await waitFor(() => expect(skills.catalogConfirmed).toBe(true))
+    expect(listSkillPacks).toHaveBeenCalledOnce()
+    store.setThreadId('second')
+    store.hydrate([skillHistoryRow('row-3', 'turn-3')])
+    await waitFor(() => expect(listSkillPacks).toHaveBeenCalledTimes(2))
+    Object.assign(useTeamWorkspaceStore(), { workspaceId: 'new-workspace' })
+    await waitFor(() => expect(skills.catalogConfirmed).toBe(true))
+    expect(listSkillPacks).toHaveBeenCalledTimes(3)
+  })
+
+  it.for<{
+    conversation: string
+    open: (store: ReturnType<typeof useAgentConversationStore>) => void
+  }>([
+    { conversation: 'a new conversation', open: () => {} },
+    {
+      conversation: 'a new conversation after one with skills',
+      open: (store) => {
+        store.hydrate([skillHistoryRow('row-1', 'turn-1')])
+        store.reset()
+      }
+    },
+    {
+      conversation: 'a loaded conversation without skills',
+      open: (store) =>
+        store.hydrate([
+          {
+            id: 'row-1',
+            thread_id: 'th',
+            seq: 1,
+            turn_id: 'turn-1',
+            status: 'complete',
+            role: 'user',
+            content: { text: 'plain prompt' }
+          }
+        ])
+    }
+  ])(
+    'leaves the refresh for a live turn that first uses a skill in $conversation to the session',
+    async ({ open }) => {
+      const skills = useSkillPacksStore()
+      skills.flagsEnabled = true
+      vi.spyOn(skills, 'startFlagGate').mockResolvedValue()
+      vi.mocked(listSkillPacks).mockResolvedValue([])
+      open(useAgentConversationStore())
+      const { store } = mountHarness()
+      store.recordUser(T, `${PORTRAIT_SKILL_LINK} render it`)
+      store.startTurn(T)
+      store.ingest(done('msg-1'))
+      expect(await screen.findByTestId('skill-reference')).toBeInTheDocument()
+      await nextTick()
+      expect(listSkillPacks).not.toHaveBeenCalled()
+    }
+  )
 
   it('wire-driven v1 turn renders user pill, spinner, reasoning-free text, work summary', async () => {
     const { store } = mountHarness()
@@ -472,7 +565,7 @@ describe('ConversationView', () => {
       global: { plugins: [i18n] }
     })
 
-    // eslint-disable-next-line testing-library/no-node-access -- scroll container has no queryable role; mask classes are the behavior under test
+    // oxlint-disable-next-line testing-library/no-node-access -- scroll container has no queryable role; mask classes are the behavior under test
     const scroll = container.firstElementChild?.firstElementChild as HTMLElement
     const topMask = 'mask-t-from-[calc(100%-2rem)]'
     const bottomMask = 'mask-b-from-[calc(100%-2rem)]'

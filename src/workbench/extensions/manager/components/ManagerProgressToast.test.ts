@@ -61,7 +61,9 @@ it('offers startup retry while keeping accepted tasks pending', async () => {
     }
   })
   expect(
-    screen.getByText('Tasks are pending. Retry to continue.')
+    screen.getByText('Tasks are pending. Retry to continue.', {
+      selector: 'span'
+    })
   ).toBeVisible()
   expect(screen.getByRole('button', { name: 'Close' })).toBeDisabled()
   expect(
@@ -99,14 +101,142 @@ it('shows failed installations without suggesting a successful change', async ()
   expect(
     screen.queryByRole('button', { name: 'Apply Changes' })
   ).not.toBeInTheDocument()
-  expect(screen.getByText('Failed')).toBeInTheDocument()
+  expect(screen.getByText('Failed', { selector: 'span' })).toBeInTheDocument()
   const user = userEvent.setup()
   await user.click(screen.getByRole('button', { name: 'Expand' }))
-  await user.click(screen.getByRole('menuitem', { name: 'Failed' }))
+  await user.click(screen.getByRole('tab', { name: 'Failed' }))
   expect(screen.getByText('Denied')).toBeInTheDocument()
   expect(
     screen.queryByText(en.g.completedWithCheckmark)
   ).not.toBeInTheDocument()
+})
+
+it('supports keyboard tab navigation and associates each tab with its panel', async () => {
+  const store = useComfyManagerStore()
+  const succeeded = {
+    taskId: 'succeeded',
+    taskName: 'Installed pack',
+    logs: ['Installed']
+  }
+  const failed = {
+    taskId: 'failed',
+    taskName: 'Failed pack',
+    logs: ['Denied']
+  }
+  store.taskLogs = [succeeded, failed]
+  store.succeededTasksLogs = [succeeded]
+  store.failedTasksIds = ['failed']
+  store.failedTasksLogs = [failed]
+  render(ManagerProgressToast, {
+    global: {
+      plugins: [createI18n({ legacy: false, locale: 'en', messages: { en } })]
+    }
+  })
+  const user = userEvent.setup()
+  await user.click(screen.getByRole('button', { name: 'Expand' }))
+
+  const installationTab = screen.getByRole('tab', {
+    name: en.manager.installationQueue
+  })
+  const failedTab = screen.getByRole('tab', { name: 'Failed' })
+  expect(installationTab).toHaveAttribute('aria-selected', 'true')
+  expect(installationTab).toHaveAttribute(
+    'aria-controls',
+    screen.getByRole('tabpanel').id
+  )
+
+  installationTab.focus()
+  await user.keyboard('{ArrowRight}')
+
+  expect(failedTab).toHaveFocus()
+  expect(failedTab).toHaveAttribute('aria-selected', 'true')
+  expect(failedTab).toHaveAttribute(
+    'aria-controls',
+    screen.getByRole('tabpanel').id
+  )
+  expect(screen.getByText('Denied')).toBeVisible()
+  expect(screen.queryByText('Installed')).not.toBeInTheDocument()
+})
+
+it('scrolls the mounted task list when expanded', async () => {
+  const store = useComfyManagerStore()
+  const log = { taskId: 'done', taskName: 'Installed pack', logs: ['Done'] }
+  store.taskLogs = [log]
+  store.succeededTasksLogs = [log]
+  render(ManagerProgressToast, {
+    global: {
+      plugins: [createI18n({ legacy: false, locale: 'en', messages: { en } })]
+    }
+  })
+  const scrollHeight = vi
+    .spyOn(HTMLElement.prototype, 'scrollHeight', 'get')
+    .mockReturnValue(500)
+  onTestFinished(() => scrollHeight.mockRestore())
+
+  await userEvent.setup().click(screen.getByRole('button', { name: 'Expand' }))
+  const container = screen.getByRole('region', {
+    name: en.manager.installationQueue
+  })
+
+  expect(container.scrollTop).toBe(500)
+})
+
+it('shows the end of the latest log when expanded', async () => {
+  const store = useComfyManagerStore()
+  const log = {
+    taskId: 'done',
+    taskName: 'Installed pack',
+    logs: ['Starting', 'Done']
+  }
+  store.taskLogs = [log]
+  store.succeededTasksLogs = [log]
+  render(ManagerProgressToast, {
+    global: {
+      plugins: [createI18n({ legacy: false, locale: 'en', messages: { en } })]
+    }
+  })
+  const scrollHeight = vi
+    .spyOn(HTMLElement.prototype, 'scrollHeight', 'get')
+    .mockReturnValue(500)
+  onTestFinished(() => scrollHeight.mockRestore())
+
+  await userEvent.setup().click(screen.getByRole('button', { name: 'Expand' }))
+
+  expect(screen.getByRole('log', { name: 'Installed pack' }).scrollTop).toBe(
+    500
+  )
+})
+
+it('keeps following the latest log after switching tabs', async () => {
+  const store = useComfyManagerStore()
+  const succeeded = {
+    taskId: 'succeeded',
+    taskName: 'Installed pack',
+    logs: ['Starting']
+  }
+  const failed = { taskId: 'failed', taskName: 'Failed pack', logs: ['Denied'] }
+  store.taskLogs = [succeeded, failed]
+  store.succeededTasksLogs = [succeeded]
+  store.failedTasksIds = ['failed']
+  store.failedTasksLogs = [failed]
+  render(ManagerProgressToast, {
+    global: {
+      plugins: [createI18n({ legacy: false, locale: 'en', messages: { en } })]
+    }
+  })
+  const user = userEvent.setup()
+  await user.click(screen.getByRole('button', { name: 'Expand' }))
+  await user.click(screen.getByRole('tab', { name: 'Failed' }))
+  await user.click(
+    screen.getByRole('tab', { name: en.manager.installationQueue })
+  )
+  const latestLog = screen.getByRole('log', { name: 'Installed pack' })
+  Object.defineProperty(latestLog, 'scrollHeight', { value: 400 })
+
+  store.succeededTasksLogs[0].logs.push('Done')
+  await nextTick()
+
+  expect(latestLog.scrollTop).toBe(400)
 })
 
 it.for([[], ['failed']])(
@@ -124,7 +254,7 @@ it.for([[], ['failed']])(
       }
     })
     expect(
-      screen.getByText(en.manager.restartToApplyChanges)
+      screen.getByText(en.manager.restartToApplyChanges, { selector: 'span' })
     ).toBeInTheDocument()
     expect(screen.getByRole('button', { name: 'Apply Changes' })).toBeEnabled()
   }
@@ -169,7 +299,7 @@ it('finishes an empty batch without an error or restart action', () => {
       plugins: [createI18n({ legacy: false, locale: 'en', messages: { en } })]
     }
   })
-  expect(screen.getByText(en.g.completed)).toBeVisible()
+  expect(screen.getByText(en.g.completed, { selector: 'span' })).toBeVisible()
   expect(screen.queryByText('Failed')).not.toBeInTheDocument()
   expect(
     screen.queryByRole('button', { name: 'Apply Changes' })
@@ -254,7 +384,7 @@ it.for([
     ).toBeVisible()
     expect(screen.queryByText('Updating all packs')).not.toBeInTheDocument()
     expect(screen.getByText(en.g.completedWithCheckmark)).toBeVisible()
-    await user.click(screen.getByRole('menuitem', { name: 'Failed' }))
+    await user.click(screen.getByRole('tab', { name: 'Failed' }))
     expect(screen.getByText('Updating all packs')).toBeVisible()
     expect(screen.getByText('Update denied')).toBeVisible()
     expect(
@@ -359,3 +489,64 @@ it.for([
     ).toBeVisible()
   }
 )
+
+it('renders only while task logs exist', async () => {
+  render(ManagerProgressToast, {
+    global: {
+      plugins: [createI18n({ legacy: false, locale: 'en', messages: { en } })]
+    }
+  })
+  expect(screen.queryByRole('button', { name: 'Expand' })).toBeNull()
+
+  useComfyManagerStore().taskLogs = [
+    { logs: [], taskId: 'pending', taskName: 'Installing pack' }
+  ]
+  await nextTick()
+
+  expect(screen.getByRole('button', { name: 'Expand' })).toBeVisible()
+})
+
+it.for([
+  {
+    name: 'installing',
+    announcement: en.manager.installingDependencies,
+    arrange: (store: ReturnType<typeof useComfyManagerStore>) => {
+      vi.spyOn(store, 'isProcessingTasks', 'get').mockReturnValue(true)
+    }
+  },
+  {
+    name: 'waiting on a failed queue start',
+    announcement: en.manager.queueWaitingToContinue,
+    arrange: (store: ReturnType<typeof useComfyManagerStore>) => {
+      vi.spyOn(store, 'isProcessingTasks', 'get').mockReturnValue(true)
+      store.queueError = 'Queue start temporarily unavailable'
+    }
+  },
+  {
+    name: 'finished with a failure',
+    announcement: en.g.failed,
+    arrange: (store: ReturnType<typeof useComfyManagerStore>) => {
+      store.failedTasksIds = ['task']
+    }
+  },
+  {
+    name: 'finished successfully',
+    announcement: en.manager.restartToApplyChanges,
+    arrange: (store: ReturnType<typeof useComfyManagerStore>) => {
+      store.succeededTasksIds = ['task']
+    }
+  }
+])('announces the queue status when $name', ({ announcement, arrange }) => {
+  const store = useComfyManagerStore()
+  store.taskLogs = [{ taskId: 'task', taskName: 'Installing pack', logs: [] }]
+  arrange(store)
+  render(ManagerProgressToast, {
+    global: {
+      plugins: [createI18n({ legacy: false, locale: 'en', messages: { en } })]
+    }
+  })
+
+  expect(
+    screen.getByText(announcement, { selector: '[role="status"]' })
+  ).toBeInTheDocument()
+})

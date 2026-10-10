@@ -1,4 +1,5 @@
 // @vitest-environment happy-dom
+import { respondToFetch } from '@comfyorg/test-utils/fetch'
 import userEvent from '@testing-library/user-event'
 import { fireEvent, render, screen, within } from '@testing-library/vue'
 import { IDBFactory } from 'fake-indexeddb'
@@ -25,57 +26,56 @@ import type {
   SessionResult
 } from '@comfyorg/account-core/session'
 
-import type { WorkshopModelDetail } from '../../config/models-catalogue'
-import type { Locale } from '../../i18n/translations'
-import { subscribeToWorkshopBuyCredits } from '../../config/workshop-buy-credits'
+import type { WorkshopModelDetail } from '@/config/models-catalogue'
+import type { Locale } from '@/i18n/translations'
+import { subscribeToWorkshopBuyCredits } from '@/config/workshop-buy-credits'
 import {
   runWorkshopRouter,
   WORKSHOP_LEAVE_RUNNING
-} from '../../config/workshop-router-queue'
-import { WorkshopRouterError } from '../../config/workshop-router-errors'
-import { workshopContract } from '../../config/workshop-contract-catalog'
-import { getAuthoredRouterWorkshopModelDetail as getRouterWorkshopModelDetail } from '../../config/workshop-router-content'
-import { refreshWorkshopCredits } from '../../config/workshop-credits'
-import { useWorkshopModelBalance } from '../../config/workshop-model-balance'
-import { stopWorkshopAccountSource } from '../../config/workshop-account-source'
+} from '@/config/workshop-router-queue'
+import { WorkshopRouterError } from '@/config/workshop-router-errors'
+import { workshopContract } from '@/config/workshop-contract-catalog'
+import { getAuthoredRouterWorkshopModelDetail as getRouterWorkshopModelDetail } from '@/config/workshop-router-content'
+import { refreshWorkshopCredits } from '@/config/workshop-credits'
+import { useWorkshopModelBalance } from '@/config/workshop-model-balance'
+import { stopWorkshopAccountSource } from '@/config/workshop-account-source'
 import {
   stopWorkshopSession,
   useWorkshopSession
-} from '../../config/workshop-session-state'
-import * as draftStorage from '../../config/workshop-draft-storage'
+} from '@/config/workshop-session-state'
+import * as draftStorage from '@/config/workshop-draft-storage'
 import {
   cancelWorkshopRun,
   workshopRunInFlight
-} from '../../config/workshop-run-state'
+} from '@/config/workshop-run-state'
 import {
   captureWorkshopEvent,
   useWorkshopAuthFlag,
   useWorkshopEnabled,
-  useWorkshopEnabledSettled,
-  useWorkshopAppsEnabled
-} from '../../scripts/posthog'
+  useWorkshopEnabledSettled
+} from '@/scripts/posthog'
 import ModelDetail from './ModelDetail.vue'
 import WorkshopGate from './WorkshopGate.vue'
-import { listWorkshopGenerations } from '../../config/workshop-generation-assets'
-import { WORKSHOP_ASSETS_URL } from '../../config/workshop-env'
-import { workshopHealthLog } from '../../scripts/workshop-health'
+import { listWorkshopGenerations } from '@/config/workshop-generation-assets'
+import { WORKSHOP_ASSETS_URL } from '@/config/workshop-env'
+import { workshopHealthLog } from '@/scripts/workshop-health'
 
-vi.mock(import('../../config/workshop-session-state'))
-vi.mock(import('../../scripts/posthog'))
+vi.mock(import('@/config/workshop-session-state'))
+vi.mock(import('@/scripts/posthog'))
 
-vi.mock(import('../../config/workshop-router-queue'), { spy: true })
+vi.mock(import('@/config/workshop-router-queue'), { spy: true })
 
-vi.mock(import('../../config/workshop-generation-assets'), { spy: true })
+vi.mock(import('@/config/workshop-generation-assets'), { spy: true })
 
-vi.mock(import('../../config/workshop-output-download'), () => ({
+vi.mock(import('@/config/workshop-output-download'), () => ({
   downloadOutput: vi.fn().mockResolvedValue(true)
 }))
 
-vi.mock(import('../../config/workshop-credits'))
-vi.mock(import('../../config/workshop-model-balance'), () => ({
+vi.mock(import('@/config/workshop-credits'))
+vi.mock(import('@/config/workshop-model-balance'), () => ({
   useWorkshopModelBalance: vi.fn()
 }))
-vi.mock(import('../../config/workshop-account-source'))
+vi.mock(import('@/config/workshop-account-source'))
 
 const auth = {
   session: ref<AccountCredential>(),
@@ -471,27 +471,6 @@ describe('ModelDetail', () => {
     expect(link.getAttribute('target')).toBe('_blank')
     expect(link.getAttribute('rel')).toBe('noopener noreferrer')
   })
-
-  it.for([
-    { studio: true, offered: true },
-    { studio: false, offered: false }
-  ])(
-    'offers Cinematic Studio on a studio model only inside the staff rollout: $studio',
-    async ({ studio, offered }) => {
-      vi.mocked(useWorkshopAppsEnabled).mockReturnValue(computed(() => studio))
-      await mountDetail({
-        model: { ...model, slug: 'bfl--flux-2-pro--generate-images' }
-      })
-
-      const link = screen.queryByTestId('model-studio-link')
-      expect(link !== null).toBe(offered)
-      if (offered)
-        expect(link).toHaveAttribute(
-          'href',
-          '/hub/apps/cinematic-studio/?model=bfl--flux-2-pro--generate-images'
-        )
-    }
-  )
 
   it('does not offer a generic docs link for an undocumented provider', async () => {
     await mountDetail()
@@ -1033,21 +1012,18 @@ describe('ModelDetail', () => {
 
   it('asks for an unreadable image to be reselected and then runs successfully', async () => {
     auth.session.value = credential
-    let uploadAttempts = 0
-    const fetch = vi.fn<typeof globalThis.fetch>(async (_, init) => {
-      if (init?.method === 'POST')
-        return Response.json({
-          upload_url: 'https://storage.example/upload',
-          download_url: 'https://storage.example/image.png'
-        })
-      if (init?.method === 'PUT') {
-        uploadAttempts += 1
-        if (uploadAttempts === 1) throw new TypeError('Failed to fetch')
-        return new Response(null, { status: 200 })
-      }
-      throw new Error('Unexpected request')
-    })
-    vi.stubGlobal('fetch', fetch)
+    respondToFetch({ method: 'POST' }, () =>
+      Response.json({
+        upload_url: 'https://storage.example/upload',
+        download_url: 'https://storage.example/image.png'
+      })
+    )
+    respondToFetch({ method: 'PUT' }, () => new Response(null, { status: 200 }))
+    respondToFetch(
+      { method: 'PUT' },
+      () => Promise.reject(new TypeError('Failed to fetch')),
+      { times: 1 }
+    )
     const model = getRouterWorkshopModelDetail(
       'vertexai--gemini-nano-banana-2--edit-images'
     )
@@ -1220,15 +1196,13 @@ describe('ModelDetail', () => {
 
   it('reuses uploaded URLs and the retry key after a request whose outcome is unknown', async () => {
     auth.session.value = credential
-    const uploads = vi.fn<typeof fetch>(async (_, init) =>
-      init?.method === 'POST'
-        ? Response.json({
-            upload_url: 'https://storage.example/upload',
-            download_url: 'https://storage.example/image.png'
-          })
-        : new Response(null, { status: 200 })
+    respondToFetch({ method: 'POST' }, () =>
+      Response.json({
+        upload_url: 'https://storage.example/upload',
+        download_url: 'https://storage.example/image.png'
+      })
     )
-    vi.stubGlobal('fetch', uploads)
+    respondToFetch({ method: 'PUT' }, () => new Response(null, { status: 200 }))
     vi.mocked(runWorkshopRouter).mockRejectedValue(
       new WorkshopRouterError('network')
     )
@@ -1243,7 +1217,7 @@ describe('ModelDetail', () => {
       }),
       file
     )
-    expect(uploads).not.toHaveBeenCalled()
+    expect(fetch).not.toHaveBeenCalled()
     await user().click(screen.getByTestId('run-button'))
     await vi.waitFor(() =>
       expect(
@@ -1258,15 +1232,12 @@ describe('ModelDetail', () => {
     })
     expect(second[0].body).toEqual(first[0].body)
     expect(second[0].idempotencyKey).toBe(first[0].idempotencyKey)
-    expect(uploads).toHaveBeenCalledTimes(2)
+    expect(fetch).toHaveBeenCalledTimes(2)
   })
 
   it('shows an upload error and never calls paid generation if storage fails', async () => {
     auth.session.value = credential
-    vi.stubGlobal(
-      'fetch',
-      vi.fn<typeof fetch>().mockRejectedValue(new TypeError('Failed to fetch'))
-    )
+    vi.mocked(fetch).mockRejectedValue(new TypeError('Failed to fetch'))
     const model = getRouterWorkshopModelDetail('wavespeed--seedvr2')
     if (!model) throw new Error('Missing Wavespeed model')
     await mountDetail({ model })
@@ -1290,13 +1261,10 @@ describe('ModelDetail', () => {
     auth.session.value = credential
     const pending = Promise.withResolvers<Response>()
     let uploadSignal: AbortSignal | null | undefined
-    vi.stubGlobal(
-      'fetch',
-      vi.fn<typeof fetch>(async (_, init) => {
-        uploadSignal = init?.signal
-        return pending.promise
-      })
-    )
+    vi.mocked(fetch).mockImplementation(async (_, init) => {
+      uploadSignal = init?.signal
+      return pending.promise
+    })
     const model = getRouterWorkshopModelDetail('wavespeed--seedvr2')
     if (!model) throw new Error('Missing Wavespeed model')
     await mountDetail({ model })
@@ -1350,7 +1318,7 @@ describe('ModelDetail', () => {
       expect(button.matches(':disabled')).toBe(true)
       await user().click(button)
       expect(runWorkshopRouter).not.toHaveBeenCalled()
-      expect(vi.mocked(useWorkshopSession().ensureFresh)).not.toHaveBeenCalled()
+      expect(useWorkshopSession().ensureFresh).not.toHaveBeenCalled()
       expect(screen.queryByRole('button', { name: 'Native JSON' })).toBeNull()
     }
   )
@@ -1378,7 +1346,7 @@ describe('ModelDetail', () => {
       token: 'fresh-workspace-jwt',
       body: { prompt: 'A red teapot', seed: 123456 }
     })
-    expect(vi.mocked(useWorkshopSession().ensureFresh)).toHaveBeenCalled()
+    expect(useWorkshopSession().ensureFresh).toHaveBeenCalled()
     expect(screen.getByTestId('router-request-id').textContent).toContain(
       'request-123'
     )
@@ -1509,12 +1477,9 @@ describe('ModelDetail', () => {
     await visitor.click(
       screen.getByRole('button', { name: 'Switch to personal workspace' })
     )
-    expect(vi.mocked(useWorkshopSession().remint)).toHaveBeenCalledWith(
-      undefined,
-      {
-        preserveCredentialOnTransientFailure: true
-      }
-    )
+    expect(useWorkshopSession().remint).toHaveBeenCalledWith(undefined, {
+      preserveCredentialOnTransientFailure: true
+    })
     expect(screen.getByRole('button', { name: 'Run' })).toBeTruthy()
     expect(screen.getByRole('textbox', { name: /Prompt/ })).toHaveProperty(
       'value',
