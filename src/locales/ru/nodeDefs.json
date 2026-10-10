@@ -2766,6 +2766,41 @@
       }
     }
   },
+  "CameraAngle": {
+    "description": "Выберите ракурс камеры вокруг объекта с предпросмотром в 3D. Выводит camera_info для 3D-узлов и текстовое описание кадра на естественном языке для промптов.",
+    "display_name": "Составить промпт для ракурса камеры",
+    "inputs": {
+      "horizontal_angle": {
+        "name": "horizontal_angle",
+        "tooltip": "Азимут вокруг объекта в градусах. 0 — вид спереди, 90 — с правой стороны, 180 — сзади."
+      },
+      "image": {
+        "name": "image",
+        "tooltip": "Необязательное референсное изображение, отображаемое на передней стороне куба объекта в 3D-предпросмотре."
+      },
+      "vertical_angle": {
+        "name": "vertical_angle",
+        "tooltip": "Высота в градусах. Отрицательные значения показывают снизу вверх, положительные — сверху вниз."
+      },
+      "view": {
+        "name": "view"
+      },
+      "zoom": {
+        "name": "zoom",
+        "tooltip": "Зум объектива на объекте: 0 — общий план, 10 — крупный план. Передаётся в camera_info.zoom."
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "camera_info",
+        "tooltip": null
+      },
+      "1": {
+        "name": "prompt",
+        "tooltip": null
+      }
+    }
+  },
   "Canny": {
     "display_name": "Canny",
     "inputs": {
@@ -2900,6 +2935,27 @@
       "start_sigma": {
         "name": "начальная_сигма",
         "tooltip": "Первая сигма, для которой эти настройки вступят в силу."
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "ClarityCrystalUpscaleNode": {
+    "description": "Увеличивает изображение с помощью Crystal Upscaler от Clarity AI — высокоточного апскейлера, который сохраняет верность оригиналу и восстанавливает лица, кожу и мелкие текстуры. Максимальный выходной размер: 100 мегапикселей.",
+    "display_name": "Clarity AI Crystal Upscale",
+    "inputs": {
+      "model": {
+        "name": "model",
+        "tooltip": "Используемая модель."
+      },
+      "model_creativity": {
+        "name": "creativity"
+      },
+      "model_scale_factor": {
+        "name": "scale_factor"
       }
     },
     "outputs": {
@@ -4078,9 +4134,12 @@
     }
   },
   "CreateCameraInfo": {
-    "description": "Создаёт camera_info. Режим 'orbit' наводит с помощью углов yaw/pitch/distance вокруг цели; 'look_at' размещает камеру в мировой позиции. Координаты — в мировой системе координат наблюдателя (правосторонняя, Y-вверх).",
+    "description": "Создаёт camera_info. Режим «orbit» наводится на цель с помощью yaw/pitch/distance вокруг неё; «look_at» размещает камеру в мировой позиции. Координаты заданы в мировом пространстве просмотрщика (правосторонняя система, ось Y направлена вверх).",
     "display_name": "Создать информацию о камере",
     "inputs": {
+      "camera_info_state": {
+        "name": "camera_info_state"
+      },
       "camera_type": {
         "name": "camera_type",
         "tooltip": "Проекция, используемая Render Splat: перспективная (с искажением) или ортографическая (параллельная)."
@@ -6840,7 +6899,7 @@
   },
   "GeminiNanoBanana2V2": {
     "description": "Генерируйте или редактируйте изображения синхронно через Google Vertex API.",
-    "display_name": "Nano Banana 2",
+    "display_name": "Nano Banana 2.1",
     "inputs": {
       "control_after_generate": {
         "name": "control after generate"
@@ -6890,7 +6949,7 @@
       },
       "2": {
         "name": "thought_image",
-        "tooltip": "Первое изображение из процесса мышления модели. Доступно только при thinking_level HIGH и модальности IMAGE+TEXT."
+        "tooltip": "Первое изображение из процесса рассуждений модели. Доступно только с модальностью IMAGE+TEXT."
       }
     }
   },
@@ -10364,6 +10423,36 @@
       }
     }
   },
+  "KlingTryOnNode": {
+    "description": "Одевает человека в предмет одежды. Результат имеет тот же размер, что и изображение человека, но не более 2048px по длинной стороне.",
+    "display_name": "Виртуальная примерка Kling",
+    "inputs": {
+      "control_after_generate": {
+        "name": "управление после генерации"
+      },
+      "garment_image": {
+        "name": "garment_image",
+        "tooltip": "Одежда для примерки: фото товара, раскладка, манекен или фото на модели. Фото на модели может перенести и остальную часть этого образа. Поддерживается только одежда; обувь, сумки и аксессуары не поддерживаются."
+      },
+      "keep_pose": {
+        "name": "keep_pose",
+        "tooltip": "Отключите, чтобы разрешить изменение позы для лучшей демонстрации наряда."
+      },
+      "person_image": {
+        "name": "person_image",
+        "tooltip": "Фотография одного человека, желательно анфас или в ракурсе три четверти. Изображения со стороной более 2048px сначала уменьшаются."
+      },
+      "seed": {
+        "name": "seed",
+        "tooltip": "seed определяет, должен ли узел запускаться повторно; результаты недетерминированы независимо от seed."
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
   "KlingVideoNode": {
     "description": "Генерируйте видео с помощью Kling V3. Поддерживает текст-видео и изображение-видео с дополнительной раскадровкой, мультипромптом и генерацией аудио.",
     "display_name": "Kling 3.0 Видео",
@@ -11322,11 +11411,19 @@
   "LatentApplyOperationCFG": {
     "display_name": "Применить операцию к латенту CFG",
     "inputs": {
+      "end_percent": {
+        "name": "end_percent",
+        "tooltip": "Прекратить применять операцию на этой доле расписания шумоподавления модели. 1 — конец."
+      },
       "model": {
         "name": "модель"
       },
       "operation": {
         "name": "операция"
+      },
+      "start_percent": {
+        "name": "start_percent",
+        "tooltip": "Начать применять операцию на этой доле расписания шумоподавления модели. 0 — начало."
       }
     },
     "outputs": {
@@ -11561,6 +11658,24 @@
       },
       "samples": {
         "name": "образцы"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "LatentOperationBlend": {
+    "description": "Смешивает весь latent в сторону референсного latent, при необходимости изменяя размер референса с помощью интерполяции ближайшего соседа.",
+    "display_name": "Смешивание операций latent",
+    "inputs": {
+      "reference": {
+        "name": "эталон"
+      },
+      "strength": {
+        "name": "сила",
+        "tooltip": "0 оставляет латент без изменений; 1 соответствует эталонному латенту с изменённым размером."
       }
     },
     "outputs": {
@@ -11970,6 +12085,80 @@
     "inputs": {
       "latent": {
         "name": "скрытый"
+      }
+    }
+  },
+  "LoadLoraModel": {
+    "description": "Применяет стек LoRA к диффузионной модели. Добавьте по одной строке для каждой LoRA; в каждой строке выбираются файл LoRA и её сила.",
+    "display_name": "Загрузить LoRA (модель)",
+    "inputs": {
+      "loras": {
+        "name": "loras",
+        "tooltip": "Каждая строка применяет одну LoRA к модели."
+      },
+      "loras_$add": {
+        "name": "Добавить LoRA"
+      },
+      "loras_$notice": {
+        "name": "LoRA"
+      },
+      "loras_0": {
+        "name": "LoRA #1"
+      },
+      "loras_0_enabled": {
+        "name": "LoRA #1 включена"
+      },
+      "loras_0_lora_name": {
+        "name": "LoRA #1 lora_name"
+      },
+      "loras_0_strength": {
+        "name": "LoRA #1 сила"
+      },
+      "model": {
+        "name": "модель",
+        "tooltip": "Диффузионная модель, к которой будут применены LoRA."
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": "Изменённая диффузионная модель."
+      }
+    }
+  },
+  "LoadLoraTextEncoder": {
+    "description": "Применяет стек LoRA к текстовому кодировщику CLIP. Добавьте по одной строке для каждой LoRA; в каждой строке выбираются файл LoRA и её сила.",
+    "display_name": "Загрузить LoRA (текстовый кодировщик)",
+    "inputs": {
+      "clip": {
+        "name": "clip",
+        "tooltip": "Текстовый кодировщик CLIP, к которому будут применены LoRA."
+      },
+      "loras": {
+        "name": "loras",
+        "tooltip": "Каждая строка применяет одну LoRA к текстовому кодировщику."
+      },
+      "loras_$add": {
+        "name": "Добавить LoRA"
+      },
+      "loras_$notice": {
+        "name": "LoRA"
+      },
+      "loras_0": {
+        "name": "LoRA #1"
+      },
+      "loras_0_enabled": {
+        "name": "LoRA #1 включена"
+      },
+      "loras_0_lora_name": {
+        "name": "LoRA #1 lora_name"
+      },
+      "loras_0_strength": {
+        "name": "LoRA #1 сила"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": "Изменённый текстовый кодировщик CLIP."
       }
     }
   },
@@ -18669,7 +18858,7 @@
   },
   "QuiverImageToSVGNode": {
     "description": "Векторизация растрового изображения в SVG с помощью Quiver AI.",
-    "display_name": "Quiver Image to SVG",
+    "display_name": "Quiver: изображение в SVG (устаревшее)",
     "inputs": {
       "auto_crop": {
         "name": "auto_crop",
@@ -18713,9 +18902,54 @@
       }
     }
   },
+  "QuiverImageToSVGNodeV2": {
+    "description": "Векторизует растровое изображение в SVG с помощью Quiver AI.",
+    "display_name": "Quiver: изображение в SVG",
+    "inputs": {
+      "control_after_generate": {
+        "name": "управление после генерации"
+      },
+      "model": {
+        "name": "модель",
+        "tooltip": "Модель для векторизации SVG."
+      },
+      "model_auto_crop": {
+        "name": "auto_crop"
+      },
+      "model_height": {
+        "name": "высота"
+      },
+      "model_presence_penalty": {
+        "name": "presence_penalty"
+      },
+      "model_reasoning_effort": {
+        "name": "reasoning_effort"
+      },
+      "model_seed": {
+        "name": "seed"
+      },
+      "model_target_size": {
+        "name": "целевой_размер"
+      },
+      "model_temperature": {
+        "name": "температура"
+      },
+      "model_top_p": {
+        "name": "top_p"
+      },
+      "model_width": {
+        "name": "ширина"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
   "QuiverTextToSVGNode": {
     "description": "Генерация SVG по текстовому запросу с помощью Quiver AI.",
-    "display_name": "Quiver Text to SVG",
+    "display_name": "Quiver: текст в SVG (устаревший)",
     "inputs": {
       "control_after_generate": {
         "name": "control after generate"
@@ -18752,6 +18986,51 @@
       "seed": {
         "name": "seed",
         "tooltip": "Сид для определения необходимости повторного запуска узла; фактические результаты недетерминированы независимо от сида."
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "QuiverTextToSVGNodeV2": {
+    "description": "Создание SVG по текстовому запросу с помощью Quiver AI.",
+    "display_name": "Quiver: текст в SVG",
+    "inputs": {
+      "control_after_generate": {
+        "name": "управление после генерации"
+      },
+      "model": {
+        "name": "модель",
+        "tooltip": "Модель для создания SVG."
+      },
+      "model_height": {
+        "name": "высота"
+      },
+      "model_instructions": {
+        "name": "инструкции"
+      },
+      "model_presence_penalty": {
+        "name": "штраф_за_присутствие"
+      },
+      "model_prompt": {
+        "name": "запрос"
+      },
+      "model_reasoning_effort": {
+        "name": "усилия_рассуждения"
+      },
+      "model_seed": {
+        "name": "seed"
+      },
+      "model_temperature": {
+        "name": "температура"
+      },
+      "model_top_p": {
+        "name": "top_p"
+      },
+      "model_width": {
+        "name": "ширина"
       }
     },
     "outputs": {
@@ -27551,6 +27830,79 @@
       },
       "seed": {
         "name": "seed"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "Vidu4ImageToVideoNode": {
+    "description": "Создаёт видео из начального кадра и необязательного запроса. Результат сохраняет соотношение сторон входного изображения.",
+    "display_name": "Vidu Q4: создание видео из изображения",
+    "inputs": {
+      "control_after_generate": {
+        "name": "управление после генерации"
+      },
+      "image": {
+        "name": "изображение",
+        "tooltip": "Начальный кадр создаваемого видео. Соотношение сторон должно быть от 1:5 до 5:1."
+      },
+      "model": {
+        "name": "модель",
+        "tooltip": "Модель для создания видео."
+      },
+      "model_audio": {
+        "name": "аудио"
+      },
+      "model_duration": {
+        "name": "длительность"
+      },
+      "model_prompt": {
+        "name": "запрос"
+      },
+      "model_resolution": {
+        "name": "разрешение"
+      },
+      "model_seed": {
+        "name": "seed"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "Vidu4ReferenceVideoNode": {
+    "description": "Создаёт видео по референсным изображениям, необязательному референсному аудио и запросу.",
+    "display_name": "Vidu Q4: создание видео по референсам",
+    "inputs": {
+      "control_after_generate": {
+        "name": "управление после генерации"
+      },
+      "model": {
+        "name": "модель",
+        "tooltip": "Модель для создания видео."
+      },
+      "model_aspect_ratio": {
+        "name": "соотношение_сторон"
+      },
+      "model_audio": {
+        "name": "аудио"
+      },
+      "model_duration": {
+        "name": "длительность"
+      },
+      "model_prompt": {
+        "name": "запрос"
+      },
+      "model_resolution": {
+        "name": "разрешение"
+      },
+      "model_seed": {
+        "name": "сид"
       }
     },
     "outputs": {
