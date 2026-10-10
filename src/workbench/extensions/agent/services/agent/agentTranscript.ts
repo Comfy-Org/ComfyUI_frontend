@@ -173,12 +173,15 @@ function parseUserWorkflowReferences(
 }
 
 /**
- * `zPersistedToolCallSummary` only ever validates a terminal
- * (`success`/`error`) row — the backend drops a row a dead turn left in
- * `pending`/`running` before persisting it. `isLive` (the row is backed by a
- * live transport) is kept only for a call that arrives through the live WebSocket path with a
- * status this schema doesn't cover; a restored (non-live) row is always
- * `done`.
+ * A persisted tool-call status is `pending`/`running` while it was still in
+ * flight when a dead turn ended, and terminal (`success`/`error`, or the
+ * older `ok` success alias — see `toolCallOk`) otherwise.
+ *
+ * A restored (non-live) row has no transport left to ever settle its tool
+ * parts, so a `pending`/`running` status there is clamped straight to
+ * `done` (never rendered as a perpetual-progress chip) rather than left
+ * spinning forever; only `isLive` (the row is the one actively backed by a
+ * live transport — the run_approval mid-ask case) keeps it `streaming`.
  */
 function toolCallPartState(
   status: unknown,
@@ -191,31 +194,49 @@ function toolCallPartState(
 /**
  * `undefined` while the call is still genuinely in progress (matching the
  * live path, which omits `ok` until a terminal status arrives); once the
- * part is in a `done` state, only `success` counts as success — `error`
- * reads as failure, matching `ToolCallSummary.status`.
+ * part is in a `done` state, `success` and the older `ok` success alias
+ * both count as success, matching how the live path (`toolCallOk`'s
+ * counterpart in `agentEventTransport.ts`) resolves a terminal frame —
+ * everything else, including a restored `pending`/`running` call that had
+ * no live transport to finish it, reads as failure rather than being
+ * rendered as if it succeeded.
  */
 function toolCallOk(
   status: unknown,
   state: ToolPart['state']
 ): boolean | undefined {
   if (state === 'streaming') return undefined
-  return status === 'success'
+  return status === 'success' || status === 'ok'
 }
 
 /**
- * Validates one `content.tool_calls` entry against `zPersistedToolCallSummary`
- * and maps it onto the same `ToolPart` the live WebSocket path builds from
+ * Validates one `content.tool_calls` entry against `zPersistedToolCallSummary`,
+ * picking only the fields this function actually reads (`id`/`tool_call_id`,
+ * `tool_name`, `status`, `duration_ms`, `skill`) so an unrelated field a real
+ * historical row gets wrong or omits (e.g. `started_at`/`finished_at`,
+ * which are never read) can't sink an otherwise-usable entry. Maps a valid
+ * entry onto the same `ToolPart` the live WebSocket path builds from
  * `agent_tool_call` events, so a reloaded transcript renders through the
  * identical work-summary UI as a live turn. `undefined` for anything that
- * doesn't validate (missing `id`/`tool_call_id`/`tool_name`, wrong types, ...).
+ * doesn't validate (missing `id`/`tool_name`, wrong types, ...).
  */
 function parseToolCallEntry(
   entry: unknown,
   isLive: boolean
 ): ToolPart | undefined {
-  const parsed = zPersistedToolCallSummary.safeParse(entry)
+  const parsed = zPersistedToolCallSummary
+    .pick({
+      id: true,
+      tool_call_id: true,
+      tool_name: true,
+      status: true,
+      duration_ms: true,
+      skill: true
+    })
+    .safeParse(entry)
   if (!parsed.success) return undefined
   const {
+    id,
     tool_call_id: toolCallId,
     tool_name: toolName,
     status,
@@ -232,10 +253,11 @@ function parseToolCallEntry(
       : undefined
   return {
     type: 'tool',
-    // A live `agent_tool_call` frame keys its update on `tool_call_id`, so a
-    // restored part uses the same id to match a live frame that arrives for
-    // it later.
-    callId: toolCallId,
+    // A live `agent_tool_call` frame keys its update on `tool_call_id`, not
+    // this row's own `id` — prefer it so a restored part matches a live
+    // frame that arrives for it later. Falls back to `id` only for rows
+    // recorded before `tool_call_id` existed.
+    callId: toolCallId ?? id,
     name: toolName,
     state,
     ...(ok !== undefined ? { ok } : {}),
