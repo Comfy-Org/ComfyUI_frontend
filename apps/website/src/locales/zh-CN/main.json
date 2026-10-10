@@ -4784,16 +4784,24 @@
     "detail": {
       "try": "立即试用",
       "backToApp": "返回电影工作室",
-      "howTitle": "使用方式",
-      "step1": "从提示词或你自己的照片开始",
-      "step2": "选择相机、镜头、光线和调色",
-      "step3": "用你选择的图像模型生成镜头",
+      "eyebrow": "应用 · 图像与视频",
+      "modelCount": "支持 {count} 个模型",
+      "openSource": "开源",
+      "controlsTitle": "掌控镜头的每个部分",
+      "controlsLead": "从真实的参考画面中选择，而不是堆砌提示词术语。每个选择都会自动写入提示词。",
+      "optionCount": "{count} 个选项",
+      "cameraTitle": "相机与镜头",
+      "startersTitle": "从一个镜头开始",
+      "startersLead": "在编辑器中打开，相机、光线和调色均已设置好，再按你的想法调整。",
+      "useShot": "使用这个镜头",
       "examplesTitle": "用电影工作室制作",
       "exampleAlt": "示例画面 {n}",
-      "detailsTitle": "详情",
-      "runsOn": "支持的模型",
-      "openSource": "开源",
-      "openSourceBody": "背后的工作流已在 GitHub 公开。"
+      "modelsTitle": "在你选择的模型上运行",
+      "modelsLead": "{image} 个图像模型和 {video} 个视频模型。随时切换，你的设定保持不变。",
+      "showAllModels": "显示全部 {count} 个",
+      "showFewerModels": "收起",
+      "ctaTitle": "写下一个场景，就能拍出第一个镜头",
+      "ctaBody": "描述画面，设定镜头语言，并在你选择的模型上运行。"
     }
   },
   "reshoot": {

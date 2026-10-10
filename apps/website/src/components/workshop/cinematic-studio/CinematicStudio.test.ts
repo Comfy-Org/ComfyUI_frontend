@@ -36,6 +36,7 @@ import {
   runnableCinematicModels,
   runnableCinematicVideoModels
 } from '@/lib/workshop/cinematic-studio/models'
+import { STARTER_SHOTS } from '@/lib/workshop/cinematic-studio/starters'
 import CinematicStudio from './CinematicStudio.vue'
 import CinematicStudioPage from './CinematicStudioPage.vue'
 import CinematicStudioPanel from './CinematicStudioPanel.vue'
@@ -1728,7 +1729,7 @@ describe('CinematicStudio', () => {
     it('opens on the app detail page, whose Try it starts the editor that leads back to it', async () => {
       const { user } = renderPage(true, '')
 
-      await user.click(await screen.findByRole('button', { name: 'Try it' }))
+      await user.click(await screen.findByTestId('cinematic-try'))
 
       expect(
         await screen.findByRole('complementary', { name: 'Shot settings' })
@@ -1740,6 +1741,19 @@ describe('CinematicStudio', () => {
       expect(screen.getByTestId('apps-back')).toHaveAttribute(
         'href',
         '/hub/apps/cinematic-studio/'
+      )
+    })
+
+    it('opens the editor on a starter shot picked from the detail page', async () => {
+      const { user } = renderPage(true, '')
+
+      await user.click((await screen.findAllByTestId('cinematic-use-shot'))[0])
+
+      expect(await screen.findByLabelText('Scene')).toHaveValue(
+        STARTER_SHOTS[0].scene
+      )
+      expect(new URLSearchParams(window.location.search).get('try')).toBe(
+        STARTER_SHOTS[0].id
       )
     })
 

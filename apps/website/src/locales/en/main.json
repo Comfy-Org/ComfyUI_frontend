@@ -5391,16 +5391,24 @@
     "detail": {
       "try": "Try it",
       "backToApp": "Back to Cinematic Studio",
-      "howTitle": "How it works",
-      "step1": "Start from a prompt, or a photo of your own",
-      "step2": "Pick the camera, lens, light and grade",
-      "step3": "Run the shot on the image model you choose",
+      "eyebrow": "App · Image and video",
+      "modelCount": "Runs on {count} models",
+      "openSource": "Open source",
+      "controlsTitle": "Direct every part of the shot",
+      "controlsLead": "Choose from real reference frames instead of prompt jargon. Each choice is written into the prompt for you.",
+      "optionCount": "{count} options",
+      "cameraTitle": "Camera and lens",
+      "startersTitle": "Start from a shot",
+      "startersLead": "Open one in the editor with its camera, light and grade already set, then make it yours.",
+      "useShot": "Use this shot",
       "examplesTitle": "Made with Cinematic Studio",
       "exampleAlt": "Example frame {n}",
-      "detailsTitle": "Details",
-      "runsOn": "Runs on",
-      "openSource": "Open source",
-      "openSourceBody": "The workflow behind it is public on GitHub."
+      "modelsTitle": "Runs on the model you choose",
+      "modelsLead": "{image} image models and {video} video models. Switch any time and your direction stays.",
+      "showAllModels": "Show all {count}",
+      "showFewerModels": "Show fewer",
+      "ctaTitle": "Your first shot is one scene away",
+      "ctaBody": "Write the moment, set the direction, and run it on the model you choose."
     }
   },
   "reshoot": {

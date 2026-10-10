@@ -57,6 +57,7 @@ const fullscreen = useWorkshopFlag('workshop-cinematic-fullscreen-enabled')
 const layout = ref('d')
 const app = ref<WorkshopAppId>(initialApp)
 const trying = ref(false)
+const starter = ref<string>()
 const fullscreenStudio = computed(
   () => fullscreen.value && app.value === 'studio' && layout.value === 'd'
 )
@@ -129,18 +130,23 @@ onMounted(() => {
     layout.value = requestedLayout ?? layout.value
   const requestedApp = APPS.find((id) => id === params.get('app'))
   if (requestedApp) showApp(requestedApp)
+  readTry(params)
+})
+
+function readTry(params: URLSearchParams) {
   trying.value = params.has(TRY_PARAM)
-})
+  starter.value = params.get(TRY_PARAM) || undefined
+}
 
-useEventListener('popstate', () => {
-  trying.value = new URLSearchParams(window.location.search).has(TRY_PARAM)
-})
+useEventListener('popstate', () =>
+  readTry(new URLSearchParams(window.location.search))
+)
 
-function tryApp() {
+function tryApp(shot?: string) {
   const url = new URL(window.location.href)
-  url.searchParams.set(TRY_PARAM, '')
+  url.searchParams.set(TRY_PARAM, shot ?? '')
   window.history.pushState(window.history.state, '', url)
-  trying.value = true
+  readTry(url.searchParams)
 }
 
 function showApp(id: WorkshopAppId) {
@@ -208,6 +214,7 @@ function pickApp(id: string) {
       :models
       :show-credits="false"
       :back="detailBack"
+      :starter
       :locale
     />
     <CinematicStudioPanel
