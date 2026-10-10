@@ -55,14 +55,30 @@ describe('FollowerDoc.lamportFloor', () => {
         .getMap('__stamps')
         .set('["widget","1","0","seed"]', [12, 'agent:t', 'a'.repeat(32)])
       host.getMap('__stamps').set('bogus', 'not a stamp')
+      host
+        .getMap('__stamps')
+        .set('["widget","2","0","seed"]', [17, 'agent:t', 'b'.repeat(32)])
     })
 
-    expect(follower.lamportFloor()).toBe(12)
-    expect(follower.lamportFloor()).toBe(12)
+    expect(follower.lamportFloor()).toBe(17)
+    expect(follower.lamportFloor()).toBe(17)
     expect(reportError).toHaveBeenCalledOnce()
     expect(vi.mocked(reportError).mock.calls[0][1]).toMatchObject({
       errorType: 'failure_reading_agent_crdt_lamport_floor',
       context: { skippedRows: 1 }
+    })
+  })
+
+  it('reads 0 and reports once when a whole ledger root is unreadable', () => {
+    const follower = seeded((host) => {
+      host.getArray('__clock_reservations').push(['not a map'])
+    })
+
+    expect(follower.lamportFloor()).toBe(0)
+    expect(follower.lamportFloor()).toBe(0)
+    expect(reportError).toHaveBeenCalledOnce()
+    expect(vi.mocked(reportError).mock.calls[0][1]).toMatchObject({
+      errorType: 'failure_reading_agent_crdt_lamport_floor'
     })
   })
 

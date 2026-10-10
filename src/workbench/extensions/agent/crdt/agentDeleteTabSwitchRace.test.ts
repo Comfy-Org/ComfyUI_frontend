@@ -103,7 +103,7 @@ function setupRaceUntilReturn() {
     workflowId: () => boundWorkflow,
     tab: 'tab-1',
     actor: () => 'human:test-user:tab-1',
-    lamportFloor: () => frameSeq,
+    lamportFloor: () => follower.lamportFloor(),
     onBatchSettled: (outcome) => settled.push(outcome)
   })
   const projection = new AgentCrdtProjection(() => graph)

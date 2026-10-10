@@ -70,12 +70,6 @@ describe('CRDT human write-leg invariants (property)', () => {
       tab: TAB,
       actor: () => ACTOR,
       lamportFloor: () => 0,
-      observedVersion: () => 0,
-      reserveVersions: (
-        _workflowId: string,
-        _observed: number,
-        _count: number
-      ) => 1,
       onBatchSettled: () => {}
     }
     const sender = createOpSender(deps)
@@ -195,12 +189,6 @@ describe('CRDT human write-leg invariants (property)', () => {
             tab: TAB,
             actor: () => ACTOR,
             lamportFloor: () => 73,
-            observedVersion: () => 72,
-            reserveVersions: (
-              _workflowId: string,
-              observed: number,
-              _count: number
-            ) => observed + 1,
             onBatchSettled: () => {}
           }
           const sender = createOpSender(deps)

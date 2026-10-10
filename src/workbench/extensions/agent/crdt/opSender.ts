@@ -241,9 +241,9 @@ export function createOpSender(deps: OpSenderDeps): OpSender {
   const mayReportSerializationFailure = createReportBudget()
 
   function mintBaseVersion(workflowId: string | null): number {
-    const floor = deps.lamportFloor()
-    if (workflowId === null) return floor + 1
-    return Math.max(floor, lastMintedVersions.get(workflowId) ?? 0) + 1
+    const minted =
+      workflowId === null ? 0 : (lastMintedVersions.get(workflowId) ?? 0)
+    return Math.max(deps.lamportFloor(), minted) + 1
   }
 
   function retire(batch: InFlight, answered: number): void {
