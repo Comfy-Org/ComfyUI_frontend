@@ -5308,10 +5308,6 @@
       "manage": "管理情绪板",
       "makeOne": "创建情绪板"
     },
-    "notify": {
-      "ready": "{count} 张图片已就绪",
-      "failed": "图片生成失败"
-    },
     "toast": {
       "undo": "撤销",
       "describeFirst": "请先描述图片。",
@@ -5319,7 +5315,6 @@
       "settingsReset": "设置已恢复为默认值。",
       "settingsLoaded": "已载入提示词和设置。种子已保留，方便你重复生成。",
       "addedReference": "已添加为图片 {n}。请描述你想要的修改。",
-      "notifyOn": "图片在后台标签页完成时，Darkroom 会通知你。",
       "copied": "提示词已复制。",
       "copyFailed": "无法复制。请手动选择文字。",
       "following": "新图片将遵循“{name}”。",

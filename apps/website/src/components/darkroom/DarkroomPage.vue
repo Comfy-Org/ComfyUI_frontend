@@ -14,12 +14,7 @@ import WorkshopGate from '@/components/workshop/WorkshopGate.vue'
 import type { DarkroomNotice } from '@/composables/useDarkroom'
 import { useDarkroom } from '@/composables/useDarkroom'
 import type { DarkroomJob, DarkroomReference } from '@/lib/darkroom/feed'
-import {
-  doneSlots,
-  isDone,
-  isPending,
-  promptHistory
-} from '@/lib/darkroom/feed'
+import { doneSlots, promptHistory } from '@/lib/darkroom/feed'
 import { fileToInput } from '@/lib/darkroom/moodboard'
 import type { DarkroomDraft, DarkroomRequest } from '@/lib/darkroom/request'
 import { draftFromSettings, settingsFromRequest } from '@/lib/darkroom/request'
@@ -49,7 +44,6 @@ import DarkroomWelcome from './DarkroomWelcome.vue'
 
 const SETTINGS_KEY = 'comfy.darkroom.settings'
 const BOARD_KEY = 'comfy.darkroom.moodboard'
-const NOTIFY_KEY = 'comfy.darkroom.notify-asked'
 const FEED_PAGE = 24
 
 const { locale = 'en' } = defineProps<{ locale?: Locale }>()
@@ -258,16 +252,6 @@ useEventListener('paste', (event: ClipboardEvent) => {
 
 // ---------- generate ----------
 
-function askToNotify() {
-  if (!('Notification' in window) || Notification.permission !== 'default')
-    return
-  if (stored(NOTIFY_KEY)) return
-  store(NOTIFY_KEY, '1')
-  void Notification.requestPermission().then((permission) => {
-    if (permission === 'granted') say(t('darkroom.toast.notifyOn'))
-  })
-}
-
 async function start(
   draft: DarkroomDraft,
   images: readonly DarkroomReference[],
@@ -275,7 +259,6 @@ async function start(
   seed: string,
   boardId?: string | null
 ) {
-  askToNotify()
   if (view.value !== 'create') go('create')
   window.scrollTo({ top: 0, behavior: 'smooth' })
   await darkroom.generate(draft, images, count, seed, boardId)
@@ -472,54 +455,15 @@ async function copyPrompt(item: DarkroomItem) {
   }
 }
 
-// ---------- while you wait ----------
-
-// The tab title counts images in progress, and a row that finishes while the
-// tab is in the background says so with a system notification.
-const busyRows = new Set<string>()
+// The tab title counts the images still in progress.
 watch(
-  jobs,
-  (rows) => {
+  darkroom.developing,
+  (live) => {
     const base = t('darkroom.meta.title')
-    const live = darkroom.developing.value
     document.title = live ? `(${live}) ${base}` : base
-    for (const job of rows) {
-      const busy = job.slots.some(isPending)
-      if (!busy && busyRows.delete(job.jobId)) announce(job)
-      if (busy) busyRows.add(job.jobId)
-    }
   },
   { flush: 'post' }
 )
-
-function announce(job: DarkroomJob) {
-  if (
-    !document.hidden ||
-    !('Notification' in window) ||
-    Notification.permission !== 'granted'
-  )
-    return
-  const done = job.slots.filter(isDone)
-  const failed = job.slots.filter(
-    (slot) => slot.status === 'error' && !slot.cancelled
-  ).length
-  if (!done.length && !failed) return
-  const words = job.settings.prompt
-  const notification = new Notification(
-    done.length
-      ? t('darkroom.notify.ready', { count: done.length }, done.length)
-      : t('darkroom.notify.failed'),
-    {
-      body: words.length > 90 ? `${words.slice(0, 88)}…` : words,
-      tag: job.jobId
-    }
-  )
-  notification.onclick = () => {
-    window.focus()
-    if (view.value !== 'create') go('create')
-    notification.close()
-  }
-}
 
 onBeforeUnmount(() => clearTimeout(toastTimer))
 

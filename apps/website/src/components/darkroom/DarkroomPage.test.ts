@@ -114,6 +114,17 @@ describe('DarkroomPage', () => {
     expect(submitted).toEqual([])
   })
 
+  it('never asks the browser for a permission', async () => {
+    const requestPermission = vi.fn(async () => 'default' as const)
+    vi.stubGlobal('Notification', { permission: 'default', requestPermission })
+    await openSignedIn()
+
+    await make('A lighthouse')
+
+    expect(requestPermission).not.toHaveBeenCalled()
+    expect(document.title).toBe('Darkroom - Comfy')
+  })
+
   it('fills the prompt from an example', async () => {
     const box = await openSignedIn()
 

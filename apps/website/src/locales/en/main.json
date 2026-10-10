@@ -5915,10 +5915,6 @@
       "manage": "Manage moodboards",
       "makeOne": "Make a moodboard"
     },
-    "notify": {
-      "ready": "{count} image ready | {count} images ready",
-      "failed": "Images failed"
-    },
     "toast": {
       "undo": "Undo",
       "describeFirst": "Describe the image first.",
@@ -5926,7 +5922,6 @@
       "settingsReset": "Settings reset to defaults.",
       "settingsLoaded": "Prompt and settings loaded. Seed kept so you can repeat it.",
       "addedReference": "Added as image {n}. Describe the change you want.",
-      "notifyOn": "Darkroom will let you know when images finish in a background tab.",
       "copied": "Prompt copied.",
       "copyFailed": "Couldn't copy. Select the text instead.",
       "following": "New images will follow {name}.",
