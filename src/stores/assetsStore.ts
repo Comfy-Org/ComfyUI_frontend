@@ -1,4 +1,4 @@
-import { useAsyncState, whenever } from '@vueuse/core'
+import { useAsyncState, useEventListener, whenever } from '@vueuse/core'
 import { delay, difference } from 'es-toolkit'
 import { defineStore } from 'pinia'
 import {
@@ -29,6 +29,7 @@ import {
 } from '@/platform/assets/composables/useAssetsQuery'
 import { assetService } from '@/platform/assets/services/assetService'
 import type { AssetPaginationOptions } from '@/platform/assets/services/assetService'
+import type { AssetSeedCompletedWsMessage } from '@/platform/remote/comfyui/execution/types'
 import type { JobListItem } from '@/platform/remote/comfyui/jobs/jobTypes'
 import { api } from '@/scripts/api'
 import { WrappedList } from '@/utils/pagedList'
@@ -349,6 +350,19 @@ export const useAssetsStore = defineStore('assets', () => {
     }
     return hasAsset()
   }
+  useEventListener(
+    api,
+    'assets.seed.completed',
+    async ({ detail }: CustomEvent<AssetSeedCompletedWsMessage>) => {
+      if (detail.enriched > detail.created || detail.phase === 'full') {
+        await outputAssets.value.invalidate()
+        await inputAssets.value.invalidate()
+      } else if (detail.created) {
+        await outputAssets.value.loadNew()
+        await inputAssets.value.loadNew()
+      }
+    }
+  )
 
   /**
    * Map of asset hash filename to asset item for O(1) lookup
