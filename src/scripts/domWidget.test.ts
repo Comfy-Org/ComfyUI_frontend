@@ -216,6 +216,7 @@ describe('DOM widget value accessors with a non-function getValue/setValue', () 
           return stored
         },
         setValue(v: string) {
+          expect(this).toBe(widget.options)
           stored = v
         }
       }
