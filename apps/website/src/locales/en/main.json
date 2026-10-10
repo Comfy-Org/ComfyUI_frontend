@@ -1641,7 +1641,7 @@
       "heading": "Comfy API pricing",
       "subtitle": "Comfy API is a separate product from your Comfy Cloud plan, for teams building on Comfy Cloud programmatically. GPU time and storage are billed by the second; release, deployment, and concurrency limits apply to each plan below.",
       "metric": {
-        "releases": "Total releases limit",
+        "builds": "Total builds limit",
         "deployments": "Total deployments limit",
         "concurrency": "Max worker concurrency (per deployment)"
       },
@@ -1649,7 +1649,7 @@
       "learnMore": "Learn More",
       "cardTitle": "Comfy API",
       "cardFeature": {
-        "releases": "{count} releases",
+        "builds": "{count} builds",
         "deployments": "{count} deployments",
         "concurrency": "Up to {count} workers per deployment",
         "notIncluded": "Comfy API access"

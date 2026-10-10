@@ -124,18 +124,18 @@ describe('PricingSection Comfy API limits', () => {
   it.for([
     {
       plan: 'Pro',
-      releases: '10 releases',
+      builds: '10 builds',
       workers: 'Up to 10 workers per deployment'
     },
     {
       plan: 'Team',
-      releases: '40 releases',
+      builds: '40 builds',
       workers: 'Up to 20 workers per deployment'
     }
-  ])('lists the $plan plan limits in its card', ({ releases, workers }) => {
+  ])('lists the $plan plan limits in its card', ({ builds, workers }) => {
     render(PricingSection)
 
-    expect(screen.getByText(releases)).toBeTruthy()
+    expect(screen.getByText(builds)).toBeTruthy()
     expect(screen.getByText(workers)).toBeTruthy()
   })
 

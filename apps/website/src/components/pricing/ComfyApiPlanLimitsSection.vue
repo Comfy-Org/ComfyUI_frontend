@@ -21,8 +21,8 @@ const contactHref = computed(() => getRoutes(locale).contact)
 
 const metrics: PlanLimitMetric<ComfyApiPlanLimits>[] = [
   {
-    labelKey: 'pricing.comfyApi.metric.releases',
-    format: (plan) => plan.totalReleasesLimit
+    labelKey: 'pricing.comfyApi.metric.builds',
+    format: (plan) => plan.totalBuildsLimit
   },
   {
     labelKey: 'pricing.comfyApi.metric.deployments',

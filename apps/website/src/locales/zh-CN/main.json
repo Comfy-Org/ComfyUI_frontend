@@ -3182,7 +3182,7 @@
       "heading": "Comfy API 定价",
       "subtitle": "Comfy API 是独立于你的 Comfy Cloud 套餐之外的产品，面向以编程方式构建于 Comfy Cloud 平台之上的团队。GPU 时间与存储按秒计费；下方列出了各套餐的版本、部署与并发限制。",
       "metric": {
-        "releases": "版本总数上限",
+        "builds": "构建版本总数上限",
         "deployments": "部署总数上限",
         "concurrency": "最大工作节点并发数（每个部署）"
       },
@@ -3190,7 +3190,7 @@
       "learnMore": "了解更多",
       "cardTitle": "Comfy API",
       "cardFeature": {
-        "releases": "{count} 个发布版本",
+        "builds": "{count} 个构建版本",
         "deployments": "{count} 个部署",
         "concurrency": "每个部署最多 {count} 个 worker",
         "notIncluded": "Comfy API 访问"
