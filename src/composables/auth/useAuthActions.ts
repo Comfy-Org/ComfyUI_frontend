@@ -37,6 +37,14 @@ import type {
 } from '@/stores/authStore'
 import { usdToMicros } from '@/utils/formatUtil'
 
+function isDesktopAuthPopupTakeover(error: unknown): boolean {
+  return (
+    window.__comfyDesktop2 !== undefined &&
+    error instanceof FirebaseError &&
+    error.code === AuthErrorCodes.POPUP_BLOCKED
+  )
+}
+
 /**
  * The app's own auth.errors table, read through vue-i18n at resolution time.
  * The key set is the app's, so a code added to main.json renders without the
@@ -67,6 +75,8 @@ export const useAuthActions = () => {
 
   const reportAuthFlowError =
     (authAction: AuthFlowAction) => (error: unknown) => {
+      if (isDesktopAuthPopupTakeover(error)) return
+
       useTelemetry()?.trackAuthFailed({
         error_code: error instanceof FirebaseError ? error.code : 'unknown',
         auth_action: authAction

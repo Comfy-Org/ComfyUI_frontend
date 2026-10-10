@@ -398,6 +398,7 @@ describe('useAuthActions.logout', () => {
 
 describe('useAuthActions auth flow error telemetry', () => {
   beforeEach(() => {
+    vi.stubGlobal('__comfyDesktop2', undefined)
     Object.assign(mockWorkflowStore, { modifiedWorkflows: [] })
   })
 
@@ -488,6 +489,38 @@ describe('useAuthActions auth flow error telemetry', () => {
     expect(useTelemetry()?.trackAuthFailed).toHaveBeenCalledExactlyOnceWith({
       error_code: 'auth/popup-closed-by-user',
       auth_action: 'github_sign_up'
+    })
+  })
+
+  it('ignores the popup rejection when Desktop takes over social sign-in', async () => {
+    vi.stubGlobal('__comfyDesktop2', { isRemote: () => false })
+    vi.mocked(mockAuthStore.loginWithGoogle).mockRejectedValueOnce(
+      new FirebaseError(AuthErrorCodes.POPUP_BLOCKED, 'msg')
+    )
+    const { signInWithGoogle } = useAuthActions()
+
+    await expect(signInWithGoogle()).resolves.toBeUndefined()
+
+    expect(useTelemetry()?.trackAuthFailed).not.toHaveBeenCalled()
+    expect(mockToastStore.add).not.toHaveBeenCalled()
+  })
+
+  it('reports a real popup-blocked failure outside Desktop', async () => {
+    vi.mocked(mockAuthStore.loginWithGoogle).mockRejectedValueOnce(
+      new FirebaseError(AuthErrorCodes.POPUP_BLOCKED, 'msg')
+    )
+    const { signInWithGoogle } = useAuthActions()
+
+    await expect(signInWithGoogle()).resolves.toBeUndefined()
+
+    expect(useTelemetry()?.trackAuthFailed).toHaveBeenCalledExactlyOnceWith({
+      error_code: AuthErrorCodes.POPUP_BLOCKED,
+      auth_action: 'google_sign_in'
+    })
+    expect(mockToastStore.add).toHaveBeenCalledWith({
+      severity: 'warn',
+      summary: 'g.warning',
+      detail: 'auth.errors.auth/popup-blocked'
     })
   })
 
