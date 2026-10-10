@@ -38,6 +38,7 @@ test.describe('Cloud user secrets (API keys)', { tag: '@cloud' }, () => {
     request
   }) => {
     await mockCloudBoot(page, {
+      features: {},
       settings: SECRETS_BOOT_SETTINGS
     })
     await bootCloud(page)
@@ -129,6 +130,7 @@ test.describe('Cloud user secrets (API keys)', { tag: '@cloud' }, () => {
     request
   }) => {
     await mockCloudBoot(page, {
+      features: {},
       settings: SECRETS_BOOT_SETTINGS
     })
     await bootCloud(page)
@@ -159,6 +161,7 @@ test.describe('Cloud user secrets (API keys)', { tag: '@cloud' }, () => {
     request
   }) => {
     await mockCloudBoot(page, {
+      features: {},
       settings: SECRETS_BOOT_SETTINGS
     })
     await bootCloud(page)
