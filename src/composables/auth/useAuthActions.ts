@@ -76,7 +76,7 @@ export const useAuthActions = () => {
 
   /** Sends an account its SSO organization refused to SSO instead of a failure toast. */
   const presentSsoRefusal = (error: SsoRequiredAuthError): boolean => {
-    const presented = presentSsoRequired({
+    const presented = presentSsoRequired('customer_create', {
       email: authStore.userEmail ?? undefined,
       organizationId: error.organizationId
     })

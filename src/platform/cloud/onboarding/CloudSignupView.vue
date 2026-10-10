@@ -120,7 +120,7 @@ const route = useRoute()
 const authActions = useAuthActions()
 const telemetry = useTelemetry()
 const { flags } = useFeatureFlags()
-const { trySso } = useSsoSignIn()
+const { trySso } = useSsoSignIn('cloud_signup')
 
 const { status: regionStatus } = useRegionGate()
 const { isFreeTierEnabled } = useFreeTierOnboarding()

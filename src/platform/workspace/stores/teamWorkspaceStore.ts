@@ -8,6 +8,7 @@ import {
   isDesktopHostSignedIn,
   requestDesktopHostWorkspaceSwitch
 } from '@/platform/auth/desktopHost/desktopHostSession'
+import { trackSsoWorkspaceLanded } from '@/platform/auth/sso/ssoTelemetry'
 import { isCloud } from '@/platform/distribution/types'
 import { WORKSPACE_STORAGE_KEYS } from '@/platform/workspace/workspaceConstants'
 import { clearPreservedQuery } from '@/platform/navigation/preservedQueryManager'
@@ -189,6 +190,15 @@ type ListedWorkspaces = Omit<ListWorkspacesResponse, 'can_create_workspace'> &
     /** The SSO organization's workspace a sign-in opens (cloud#12614). */
     default_workspace_id?: string
   }
+
+function reportSsoLanding(
+  { default_workspace_id }: ListedWorkspaces,
+  workspaceId: string
+): void {
+  trackSsoWorkspaceLanded(
+    !!default_workspace_id && workspaceId === default_workspace_id
+  )
+}
 
 const MAX_OWNED_WORKSPACES = 10
 const MAX_INIT_RETRIES = 3
@@ -426,6 +436,7 @@ export const useTeamWorkspaceStore = defineStore('teamWorkspace', () => {
 
           if (sessionWorkspaceExists) {
             mutableActiveWorkspaceId.value = sessionWorkspaceId
+            reportSsoLanding(response, sessionWorkspaceId)
             initState.value = 'ready'
             isFetchingWorkspaces.value = false
             return
@@ -444,6 +455,7 @@ export const useTeamWorkspaceStore = defineStore('teamWorkspace', () => {
 
           mutableActiveWorkspaceId.value = fallbackWorkspaceId
           setLastWorkspaceId(fallbackWorkspaceId)
+          reportSsoLanding(response, fallbackWorkspaceId)
           initState.value = 'ready'
           isFetchingWorkspaces.value = false
           return
@@ -482,6 +494,7 @@ export const useTeamWorkspaceStore = defineStore('teamWorkspace', () => {
         // 5. Set active workspace
         mutableActiveWorkspaceId.value = targetWorkspaceId
         setLastWorkspaceId(targetWorkspaceId)
+        reportSsoLanding(response, targetWorkspaceId)
 
         initState.value = 'ready'
         isFetchingWorkspaces.value = false

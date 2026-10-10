@@ -29,7 +29,9 @@ export function useCloudAuthPage(options: {
   const route = useRoute()
   const router = useRouter()
   const { flags } = useFeatureFlags()
-  const { notice: ssoRequiredNotice } = useSsoRequiredInlineHost()
+  const { notice: ssoRequiredNotice } = useSsoRequiredInlineHost(
+    options.isNewUser ? 'cloud_signup' : 'cloud_login'
+  )
   const authError = ref('')
   const authMode = ref<AuthMode>(
     flags.ssoEnabled && route.query.sso === SSO_ENTRY_OPEN_QUERY.sso
@@ -50,7 +52,7 @@ export function useCloudAuthPage(options: {
   async function onAuthSuccess() {
     if (flags.ssoEnabled && (await useSessionCookie().sessionRequiresSso())) {
       const authStore = useAuthStore()
-      presentSsoRequired({
+      presentSsoRequired('firebase_sign_in', {
         email: authStore.userEmail ?? undefined,
         returnTo: resolveSsoReturnTo(route, router)
       })

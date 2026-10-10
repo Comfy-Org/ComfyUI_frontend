@@ -91,16 +91,19 @@
 </template>
 
 <script setup lang="ts">
+import { omit } from 'es-toolkit'
 import { computed } from 'vue'
 import { useI18n } from 'vue-i18n'
-import { RouterLink, useRoute } from 'vue-router'
+import { RouterLink, useRoute, useRouter } from 'vue-router'
 
 import { readSsoError } from '@comfyorg/account-core/sso'
+import { ssoFailureReason } from '@comfyorg/account-core/telemetry'
 
 import Button from '@/components/ui/button/Button.vue'
 import Message from '@/components/ui/message/Message.vue'
 import { useAuthActions } from '@/composables/auth/useAuthActions'
 import { useFeatureFlags } from '@/composables/useFeatureFlags'
+import { trackSsoSignInFailed } from '@/platform/auth/sso/ssoTelemetry'
 import CloudSignInForm from '@/platform/cloud/onboarding/components/CloudSignInForm.vue'
 import CloudSocialAuthButtons from '@/platform/cloud/onboarding/components/CloudSocialAuthButtons.vue'
 import CloudSsoRequiredNotice from '@/platform/cloud/onboarding/components/CloudSsoRequiredNotice.vue'
@@ -114,9 +117,10 @@ import type { SignInData } from '@/schemas/signInSchema'
 
 const { t } = useI18n()
 const route = useRoute()
+const router = useRouter()
 const authActions = useAuthActions()
 const { flags } = useFeatureFlags()
-const { state: ssoState, busy: ssoBusy, trySso } = useSsoSignIn()
+const { state: ssoState, busy: ssoBusy, trySso } = useSsoSignIn('cloud_login')
 
 const freeRunsSuffix = computed(() => {
   const offer = remoteConfig.value.free_tier_offer
@@ -144,11 +148,15 @@ const {
   defaultRedirect: () => ({ name: 'cloud-user-check' })
 })
 
-const ssoErrorKey = computed(() => {
-  if (!flags.ssoEnabled) return undefined
-  const code = readSsoError(route.query.sso_error)
-  return code && SSO_ERROR_MESSAGE_KEY[code]
-})
+const ssoError = readSsoError(route.query.sso_error)
+const ssoErrorKey = computed(
+  () => flags.ssoEnabled && ssoError && SSO_ERROR_MESSAGE_KEY[ssoError]
+)
+
+if (flags.ssoEnabled && ssoError) {
+  trackSsoSignInFailed(ssoFailureReason(ssoError), 'cloud_login')
+  void router.replace({ query: omit(route.query, ['sso_error']) })
+}
 
 const signInWithEmail = async (values: SignInData) => {
   authError.value = ''
