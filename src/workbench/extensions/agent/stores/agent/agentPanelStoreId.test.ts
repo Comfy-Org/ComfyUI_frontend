@@ -6,6 +6,9 @@ import { useAgentPanelStore } from './agentPanelStore'
 
 vi.mock(import('@/platform/telemetry'))
 vi.mock(import('@/composables/billing/useBillingContext'))
+// The dock mount resolves the billing identity, so instantiating it reaches
+// real Firebase auth and throws an internal assertion without this mock.
+vi.mock(import('@/composables/auth/useCurrentUser'))
 
 /**
  * Regression pin for the duplicate Pinia id `agentPanel`.
