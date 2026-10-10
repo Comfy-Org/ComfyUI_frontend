@@ -1,6 +1,6 @@
 <template>
   <div>
-    <Dialog :open="visible" @update:open="onOpenChange">
+    <Dialog v-model:open="visible">
       <DialogPortal>
         <DialogOverlay v-reka-z-index class="items-start" />
         <DialogContent
@@ -128,16 +128,12 @@ function clearFilters() {
   filterVisible.value = false
   hoveredNodeDef.value = null
 }
-function onOpenChange(open: boolean) {
-  visible.value = open
-  if (!open) clearFilters()
-}
 
 function onPointerDownOutside(event: Event) {
   if (!dismissable.value) event.preventDefault()
 }
 function closeDialog() {
-  onOpenChange(false)
+  visible.value = false
 }
 const canvasStore = useCanvasStore()
 
@@ -380,7 +376,9 @@ function reset() {
 
 // Reset connecting links when the search box is closed
 watch(visible, () => {
-  if (!visible.value) reset()
+  if (visible.value) return
+  clearFilters()
+  reset()
 })
 
 useEventListener(document, 'litegraph:canvas', canvasEventHandler)
