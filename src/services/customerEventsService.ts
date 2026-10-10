@@ -105,6 +105,8 @@ export const useCustomerEventsService = () => {
         return t('credits.eventTypes.gpuUsage')
       case 'api_node_usage':
         return t('credits.eventTypes.apiNodeUsage')
+      case 'router_usage':
+        return t('credits.eventTypes.routerUsage')
       default:
         return eventType
     }
@@ -151,6 +153,7 @@ export const useCustomerEventsService = () => {
       case 'api_usage_completed':
       case 'gpu_usage':
       case 'api_node_usage':
+      case 'router_usage':
         return 'warning'
       default:
         return 'info'
