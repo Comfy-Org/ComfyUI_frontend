@@ -133,6 +133,12 @@ describe('Load3DMenuBar', () => {
     expect(screen.getByText('8')).toBeInTheDocument()
   })
 
+  it('hides the model stats overlay when the model has no geometry', () => {
+    renderMenuBar({ modelStats: { vertices: 0, edges: 0, triangles: 0 } })
+
+    expect(screen.queryByText('Vertices')).not.toBeInTheDocument()
+  })
+
   it('shows scene controls by default', async () => {
     const { user } = renderMenuBar()
     expect(
