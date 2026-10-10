@@ -208,6 +208,33 @@ describe('CrdtDevPanel', () => {
     expect(log).not.toContain('ws_out')
   })
 
+  it('exposes dropped operation results in the event-kind filter', async () => {
+    const user = userEvent.setup()
+    recordDevEvent('doc_ops_result', {
+      workflowId: 'wf-1',
+      ok: true,
+      applied: ['op-kept']
+    })
+    recordDevEvent('doc_ops_result_dropped', {
+      reason: 'workflow_mismatch',
+      subscribedWorkflowId: 'wf-1',
+      frame: { workflowId: 'wf-2', ok: true, applied: ['op-stale'] }
+    })
+    renderPanel()
+
+    await user.click(chip()!)
+    await user.click(screen.getByTestId('crdt-dev-panel-tab-log'))
+    await user.selectOptions(
+      screen.getByTestId('crdt-dev-panel-filter'),
+      'doc_ops_result_dropped'
+    )
+
+    const log = screen.getByTestId('crdt-dev-panel-log').textContent
+    expect(log).toContain('doc_ops_result_dropped')
+    expect(log).toContain('wf-2')
+    expect(log).not.toContain('wf-1')
+  })
+
   it('lists the materialization event in the kind filter and filters by it', async () => {
     const user = userEvent.setup()
     recordDevEvent('doc_update', { seq: 1 }, { scope: 'doc' })
