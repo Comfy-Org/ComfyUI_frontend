@@ -27,7 +27,20 @@ export type NavColumn = {
   placement?: 'footer'
 }
 
+/** Replacement media for one arm of a placement's image flag. */
+type NavFeaturedVariant = {
+  imageSrc: string
+  videoSrc?: string
+  imageAlt?: string
+}
+
 export type NavFeatured = {
+  /**
+   * Stable placement id sent with the card's analytics events. Keep it
+   * unchanged across copy, image, and locale changes so the numbers stay
+   * comparable; use a new id only for a different placement.
+   */
+  analyticsId?: string
   imageSrc: string
   videoSrc?: string
   showPlayOverlay?: boolean
@@ -38,6 +51,14 @@ export type NavFeatured = {
     ariaLabel?: string
     href: string
   }
+  /**
+   * Image arms for the PostHog multivariate flag
+   * `nav-featured-card-image-<placement>` (the placement is the card's
+   * `analyticsId`), keyed by the flag's variant keys. The top-level media is the `control`
+   * arm. Images and videos must be hosted on media.comfy.org. A visitor whose
+   * variant is not listed here sees the control card.
+   */
+  variants?: Record<string, NavFeaturedVariant>
 }
 
 export type NavItem =
@@ -45,6 +66,8 @@ export type NavItem =
       label: string
       columns: NavColumn[]
       featured?: NavFeatured
+      /** Stable dropdown id for analytics, such as `products`. */
+      analyticsId: string
       activePathPrefix?: string
       badge?: 'new'
       href?: never
@@ -84,8 +107,10 @@ export function getMainNavigation(
   return [
     {
       label: t('nav.workshop'),
+      analyticsId: 'hub',
       activePathPrefix: '/hub/',
       featured: {
+        analyticsId: 'seedance-2-5',
         imageSrc:
           'https://media.comfy.org/website/seedance-2.5/balloons-poster.webp',
         videoSrc: 'https://media.comfy.org/website/seedance-2.5/balloons.webm',
@@ -165,7 +190,9 @@ export function getMainNavigation(
     },
     {
       label: t('nav.products'),
+      analyticsId: 'products',
       featured: {
+        analyticsId: 'gemini-omni',
         imageSrc: 'https://media.comfy.org/website/gemini-omni/card-5.webp',
         videoSrc: 'https://media.comfy.org/website/gemini-omni/card-5.webm',
         imageAlt: t('nav.featuredProductsAlt'),
@@ -247,7 +274,9 @@ export function getMainNavigation(
     },
     {
       label: t('nav.enterprise'),
+      analyticsId: 'enterprise',
       featured: {
+        analyticsId: 'minimax-license',
         imageSrc:
           'https://media.comfy.org/website/minimax-license/hero-poster.jpg',
         videoSrc: 'https://media.comfy.org/website/minimax-license/hero.mp4',
@@ -289,7 +318,9 @@ export function getMainNavigation(
     { label: t('nav.pricing'), href: routes.pricing },
     {
       label: t('nav.company'),
+      analyticsId: 'company',
       featured: {
+        analyticsId: 'customer-story',
         imageSrc: 'https://media.comfy.org/website/nav/customer-story-card.jpg',
         showPlayOverlay: true,
         imageAlt: t('nav.featuredCompanyAlt'),

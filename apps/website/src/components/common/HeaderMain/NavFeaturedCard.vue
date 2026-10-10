@@ -1,13 +1,49 @@
 <script setup lang="ts">
 import { ArrowRight } from '@lucide/vue'
+import { computed, onMounted } from 'vue'
 
 import PlayOverlay from '@/components/blocks/PlayOverlay.vue'
 import Button from '@/components/ui/button/Button.vue'
 
 import { prefersReducedMotion } from '@/composables/useReducedMotion'
 import type { NavFeatured } from '@/data/mainNavigation'
+import type { Locale } from '@/i18n/translations'
+import {
+  captureNavFeaturedCardClicked,
+  captureNavFeaturedCardViewed,
+  readFlagVariant
+} from '@/scripts/posthog'
+import {
+  buildNavFeaturedCardEventProperties,
+  getFeaturedImageFlagKey,
+  resolveFeaturedMedia
+} from '@/utils/navFeaturedCard'
 
-defineProps<{ featured: NavFeatured }>()
+const { featured, dropdown, locale } = defineProps<{
+  featured: NavFeatured
+  dropdown: string
+  locale: Locale
+}>()
+
+// The dropdown content only mounts once the menu opens (the server-rendered
+// header holds no card), so the flag is read once here, when the card first
+// appears, and the media stays put for the whole open. A flag that has not
+// answered yet resolves to the control card.
+const flagValue = readFlagVariant(getFeaturedImageFlagKey(featured))
+const media = computed(() => resolveFeaturedMedia(featured, flagValue))
+
+function eventProperties() {
+  return buildNavFeaturedCardEventProperties({
+    featured,
+    dropdown,
+    variant: media.value.variant,
+    locale
+  })
+}
+
+// reka-ui unmounts closed menu content (unmountOnHide), so mounting is the
+// card appearing, for a click and a hover open alike.
+onMounted(() => captureNavFeaturedCardViewed(eventProperties()))
 
 const WCAG_AUTOPLAY_LIMIT_SECONDS = 5
 const MAX_TIMEUPDATE_INTERVAL_SECONDS = 0.25
@@ -28,13 +64,14 @@ function pauseBeforeAutoplayLimit({ currentTarget }: Event) {
       :href="featured.cta.href"
       :aria-label="featured.cta.ariaLabel"
       class="group/pill-trigger relative flex flex-col"
+      @click="captureNavFeaturedCardClicked(eventProperties())"
     >
       <video
-        v-if="featured.videoSrc"
+        v-if="media.videoSrc"
         class="aspect-4/3 w-62 max-w-none rounded-xl object-cover"
-        :src="featured.videoSrc"
-        :poster="featured.imageSrc"
-        :aria-label="featured.imageAlt"
+        :src="media.videoSrc"
+        :poster="media.imageSrc"
+        :aria-label="media.imageAlt"
         width="744"
         height="558"
         :autoplay="!prefersReducedMotion()"
@@ -45,8 +82,8 @@ function pauseBeforeAutoplayLimit({ currentTarget }: Event) {
       <span v-else class="relative block w-62">
         <img
           class="aspect-4/3 w-62 max-w-none rounded-xl object-cover"
-          :src="featured.imageSrc"
-          :alt="featured.imageAlt ?? ''"
+          :src="media.imageSrc"
+          :alt="media.imageAlt ?? ''"
           width="744"
           height="558"
           loading="lazy"
