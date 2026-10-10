@@ -8,10 +8,15 @@ import PlatformPricingSection from '@/templates/platform/PricingSection.vue'
 import SectionHeader from '@/components/common/SectionHeader.vue'
 import ComfyApiPlanLimitsSection from './ComfyApiPlanLimitsSection.vue'
 
-const { locale = 'en', showLearnMoreCta = false } = defineProps<{
+const {
+  locale = 'en',
+  showLearnMoreCta = false,
+  showPlanLimits = true
+} = defineProps<{
   locale?: Locale
   /** Link to the dedicated Comfy API page — omit on that page itself. */
   showLearnMoreCta?: boolean
+  showPlanLimits?: boolean
 }>()
 const { t } = translationsFor(locale)
 
@@ -41,6 +46,11 @@ const learnMoreHref = computed(() => getRoutes(locale).platformComfyApi)
     </SectionHeader>
 
     <PlatformPricingSection :locale="locale" bare />
-    <ComfyApiPlanLimitsSection :locale="locale" bare class="mt-12" />
+    <ComfyApiPlanLimitsSection
+      v-if="showPlanLimits"
+      :locale="locale"
+      bare
+      class="mt-12"
+    />
   </section>
 </template>

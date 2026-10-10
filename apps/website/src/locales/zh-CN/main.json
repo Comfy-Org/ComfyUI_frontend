@@ -3159,7 +3159,7 @@
     },
     "banner": {
       "cta": "免费试用",
-      "subtitle": "在真实 GPU 上免费运行 5 次 — 无需信用卡。",
+      "subtitle": "在真实 GPU 上免费运行 5 次，新用户还可获得免费的 Comfy Agent 积分",
       "title": "免费开始使用 Comfy Cloud，准备好了再升级。"
     },
     "creditsLabel": "每月积分",
@@ -3180,15 +3180,21 @@
     },
     "comfyApi": {
       "heading": "Comfy API 定价",
-      "subtitle": "Comfy API 是独立于你的 Comfy Cloud 套餐之外的产品，面向以编程方式构建于 Comfy Cloud 平台之上的团队。GPU 时间与存储按秒计费；下方列出了各套餐的版本、部署与并发限制。",
-      "metricColumn": "限制项",
+      "subtitle": "Comfy API 让你将工作流部署为生产级 API。GPU 时间与存储按秒计费；构建、部署与并发限制取决于你的套餐。",
       "metric": {
-        "releases": "版本总数上限",
+        "builds": "构建版本总数上限",
         "deployments": "部署总数上限",
         "concurrency": "最大工作节点并发数（每个部署）"
       },
       "enterpriseNote": "企业版的限制由合同约定。",
-      "learnMore": "了解更多"
+      "learnMore": "了解更多",
+      "cardTitle": "Comfy API",
+      "cardFeature": {
+        "builds": "{count} 个构建版本",
+        "deployments": "{count} 个部署",
+        "concurrency": "每个部署最多 {count} 个 worker",
+        "notIncluded": "Comfy API 访问"
+      }
     },
     "feature": {
       "addCredits": "可随时增加积分",
@@ -3346,6 +3352,45 @@
     "cycle": {
       "monthly": "按月",
       "yearly": "按年"
+    },
+    "agent": {
+      "heading": "Comfy Agent",
+      "subtitle": "描述你想要的效果，即可构建并运行工作流。Comfy Agent 适用于所有方案，新用户还可获得免费积分进行试用。",
+      "learnMore": "了解更多",
+      "limit": {
+        "availability": {
+          "title": "所有方案均可使用",
+          "description": "任何 Comfy Cloud 账户都可以使用 Comfy Agent，不限定特定方案：只需有新用户免费积分或积分余额大于零即可。"
+        },
+        "credits": {
+          "title": "使用 Comfy Credits 计费",
+          "description": "免费积分用完后，Comfy Agent 会消耗你的 Comfy Credits 来支付 LLM token 费用，费率与 LLM Partner Nodes 相同。在 Team 方案中，用量从共享积分池中扣除。"
+        },
+        "runs": {
+          "title": "工作流运行",
+          "description": "Agent 运行的工作流与你自己运行的计费方式完全相同，不额外收费，并遵循你所在方案的运行时长和任务限制。"
+        },
+        "model": {
+          "title": "模型",
+          "description": "由 Comfy 为你选择模型，暂不支持使用你自己的 LLM 密钥。"
+        },
+        "queue": {
+          "title": "不限消息数量",
+          "description": "发送消息的数量没有上限。超出方案限额时，新任务会排队等待而不会失败。积分用完后，Agent 会暂停，直到你充值。"
+        }
+      },
+      "metric": {
+        "tasksPerMember": "每位成员同时运行的 Agent 任务数",
+        "requestsPerWorkspace": "每个工作区同时处理的 Agent 请求数"
+      },
+      "enterpriseNote": "Enterprise 方案享有更高的 Agent 限额。",
+      "cardTitle": "Comfy Agent",
+      "cardFeature": {
+        "sessionsPerWorkspace": "每个工作区可同时进行 {count} 个 Agent 会话"
+      }
+    },
+    "planLimits": {
+      "metricColumn": "限制"
     }
   },
   "privacy": {
