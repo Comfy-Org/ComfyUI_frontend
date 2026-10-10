@@ -56,7 +56,7 @@ watch(overflows, (on) => {
 // them without colour: the yellow belongs to See all, and two yellows on one
 // row compete.
 const arrowClass =
-  'focus-visible:ring-primary-comfy-yellow/50 hover:border-primary-warm-gray hover:bg-site-dropdown bg-page pointer-events-auto absolute top-1/2 z-10 grid size-9 -translate-y-1/2 cursor-pointer place-items-center rounded-xl border border-transparency-white-t20 text-primary-warm-white shadow-lg shadow-black/40 transition-colors outline-none focus-visible:ring-3 aria-disabled:cursor-default aria-disabled:opacity-40 aria-disabled:hover:border-transparency-white-t20 aria-disabled:hover:bg-page'
+  'focus-visible:ring-primary-comfy-yellow/50 hover:border-primary-warm-gray hover:bg-site-dropdown bg-page pointer-events-auto absolute top-1/2 z-10 grid size-9 -translate-y-1/2 cursor-pointer place-items-center rounded-xl border border-transparency-white-t20 text-primary-warm-white shadow-lg shadow-black/40 transition-colors outline-none focus-visible:ring-3 aria-disabled:pointer-events-none aria-disabled:cursor-default aria-disabled:opacity-40 aria-disabled:hover:border-transparency-white-t20 aria-disabled:hover:bg-page'
 
 // A pointer that can hover earns them by hovering, so a page of rows is not a
 // page of chrome, and a keyboard earns them by focusing. A touch screen can do

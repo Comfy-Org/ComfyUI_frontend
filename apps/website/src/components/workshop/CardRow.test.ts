@@ -40,8 +40,10 @@ describe('CardRow', () => {
 
     await scrollRow(300, 900, 300)
 
-    for (const side of ['card-row-prev', 'card-row-next'])
-      expect(screen.getByTestId(side)).not.toHaveAttribute('aria-disabled')
+    expect([
+      screen.getByTestId('card-row-prev').getAttribute('aria-disabled'),
+      screen.getByTestId('card-row-next').getAttribute('aria-disabled')
+    ]).toEqual([null, null])
   })
 
   it('pages by most of a screenful, so a card stays to hold on to', async () => {
@@ -68,6 +70,24 @@ describe('CardRow', () => {
 
     await userEvent.setup().click(screen.getByTestId('card-row-prev'))
 
+    expect(scrollBy).not.toHaveBeenCalled()
+  })
+
+  it('leaves a spent arrow reachable by keyboard, and refuses it there too', async () => {
+    renderRow()
+    await scrollRow(300, 900, 0)
+    const back = screen.getByTestId('card-row-prev')
+    const scrollBy = vi.fn()
+    screen.getByTestId('card-row').scrollBy = scrollBy
+
+    back.focus()
+    await userEvent.setup().keyboard('{Enter}')
+
+    expect([
+      back.tabIndex,
+      back.hasAttribute('disabled'),
+      back.getAttribute('aria-disabled')
+    ]).toEqual([0, false, 'true'])
     expect(scrollBy).not.toHaveBeenCalled()
   })
 
@@ -105,5 +125,19 @@ describe('CardRow', () => {
     await nextTick()
 
     expect(row).toHaveFocus()
+  })
+
+  it('does not take focus off a card when the row stops overflowing', async () => {
+    render(CardRow, {
+      slots: { default: '<li><a href="#card">A card</a></li>' }
+    })
+    await scrollRow(300, 900, 300)
+    const card = screen.getByRole('link', { name: 'A card' })
+    card.focus()
+
+    await scrollRow(300, 300, 0)
+    await nextTick()
+
+    expect(card).toHaveFocus()
   })
 })
