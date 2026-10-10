@@ -110,8 +110,7 @@ test.describe(
         return page.evaluate(
           ({ hostId, promptId, samplerId }) => {
             const host = window.app!.graph.getNodeById(hostId)
-            if (!host?.isSubgraphNode())
-              throw new Error('Missing subgraph host')
+            if (!host?.isSubgraphNode()) return null
             const hostWidgets = host.widgets.map((w) => [w.name, w.value])
             const interior = host.subgraph
             const prompt = interior.getNodeById(promptId)?.widgets?.[0]?.value

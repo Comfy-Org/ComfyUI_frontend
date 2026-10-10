@@ -31,6 +31,8 @@ const docSubscribeFrame = z.object({
 })
 
 type DocSubscribedFrame = {
+  // Subscribe acknowledgements are control frames outside the generated
+  // ServerDocFrame union; docFrameClient owns their tolerant wire parser.
   type: 'doc_subscribed'
   data: {
     v: number
