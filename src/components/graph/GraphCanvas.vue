@@ -63,41 +63,40 @@
       <NodeSelectionModeBanner />
     </template>
   </LiteGraphCanvasSplitterOverlay>
-  <div ref="canvasDropTargetRef" class="absolute inset-0">
-    <canvas
-      id="graph-canvas"
-      ref="canvasRef"
-      tabindex="1"
-      class="absolute inset-0 size-full touch-none"
-    />
+  <canvas
+    id="graph-canvas"
+    ref="canvasRef"
+    tabindex="1"
+    class="absolute inset-0 size-full touch-none"
+  />
 
-    <!-- TransformPane for Vue node rendering -->
-    <TransformPane
-      v-if="shouldRenderVueNodes && comfyApp.canvas && comfyAppReady"
-      :canvas="comfyApp.canvas"
-      :inert="canvasStore.isPickingNodes"
-      @wheel.capture="canvasInteractions.forwardEventToCanvas"
-      @pointerdown.capture="forwardPointerDownPanEvent"
-      @pointerup.capture="forwardPointerUpPanEvent"
-      @pointermove.capture="forwardPointerMovePanEvent"
-      @keydown.space="forwardSpaceKeyEvent"
-    >
-      <!-- Vue nodes rendered based on graph nodes -->
-      <LGraphNode
-        v-for="nodeData in allNodes"
-        :key="nodeData.id"
-        :node-data
-        :data-node-id="nodeData.id"
-      />
-    </TransformPane>
-
-    <LinkOverlayCanvas
-      v-if="shouldRenderVueNodes && comfyApp.canvas && comfyAppReady"
-      :canvas="comfyApp.canvas"
-      @ready="onLinkOverlayReady"
-      @dispose="onLinkOverlayDispose"
+  <!-- TransformPane for Vue node rendering -->
+  <TransformPane
+    v-if="shouldRenderVueNodes && comfyApp.canvas && comfyAppReady"
+    ref="transformPaneRef"
+    :canvas="comfyApp.canvas"
+    :inert="canvasStore.isPickingNodes"
+    @wheel.capture="canvasInteractions.forwardEventToCanvas"
+    @pointerdown.capture="forwardPointerDownPanEvent"
+    @pointerup.capture="forwardPointerUpPanEvent"
+    @pointermove.capture="forwardPointerMovePanEvent"
+    @keydown.space="forwardSpaceKeyEvent"
+  >
+    <!-- Vue nodes rendered based on graph nodes -->
+    <LGraphNode
+      v-for="nodeData in allNodes"
+      :key="nodeData.id"
+      :node-data
+      :data-node-id="nodeData.id"
     />
-  </div>
+  </TransformPane>
+
+  <LinkOverlayCanvas
+    v-if="shouldRenderVueNodes && comfyApp.canvas && comfyAppReady"
+    :canvas="comfyApp.canvas"
+    @ready="onLinkOverlayReady"
+    @dispose="onLinkOverlayDispose"
+  />
 
   <!-- Selection rectangle overlay - rendered in DOM layer to appear above DOM widgets -->
   <SelectionRectangle
@@ -227,7 +226,12 @@ const emit = defineEmits<{
   ready: []
 }>()
 const canvasRef = ref<HTMLCanvasElement | null>(null)
-const canvasDropTargetRef = useTemplateRef('canvasDropTargetRef')
+const transformPaneRef =
+  useTemplateRef<InstanceType<typeof TransformPane>>('transformPaneRef')
+const vueNodeDropTarget = computed(() => {
+  const element: unknown = transformPaneRef.value?.$el
+  return element instanceof HTMLElement ? element : null
+})
 const canvasPanelBoundsRef = useTemplateRef('canvasPanelBoundsRef')
 const nodeSearchboxPopoverRef = shallowRef<InstanceType<
   typeof NodeSearchboxPopover
@@ -493,7 +497,8 @@ useEventListener(
 const comfyAppReady = ref(false)
 const workflowPersistence = useWorkflowPersistence()
 const { runUrlActionLoaders } = useUrlActionLoaders()
-useCanvasDrop(canvasDropTargetRef)
+useCanvasDrop(canvasRef)
+useCanvasDrop(vueNodeDropTarget)
 useLitegraphSettings()
 useNodeBadge()
 
