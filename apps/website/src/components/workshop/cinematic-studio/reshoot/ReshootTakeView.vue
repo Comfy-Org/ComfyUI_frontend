@@ -31,7 +31,7 @@ const emit = defineEmits<{ cancel: [] }>()
 const now = useTimestamp({ interval: 1000 })
 const elapsed = computed(() => Math.max(0, now.value - take.startedAt))
 const shown = computed(() => {
-  if (view === 'source') return clip
+  if (view === 'source') return take.sourceUrl ?? clip
   if (view === 'warp') return take.warpUrl ?? clip
   return sound === 'original' ? (take.originalUrl ?? take.url) : take.url
 })

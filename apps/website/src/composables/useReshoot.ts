@@ -42,6 +42,7 @@ import type { ReshootRun } from '@/lib/workshop/cinematic-studio/reshoot-engine/
 import {
   failureNote,
   quoteNote,
+  relativeTime,
   runPrice
 } from '@/lib/workshop/cinematic-studio/reshoot-engine/notes'
 import type { ReshootRunPhase } from '@/lib/workshop/cinematic-studio/reshoot-engine/run'
@@ -63,6 +64,7 @@ import {
 } from '@/lib/workshop/cinematic-studio/reshoot-engine/workflow'
 import { captureWorkshopEvent, useWorkshopAuthFlag } from '@/scripts/posthog'
 import type { WorkshopRunAnalytics } from '@/scripts/workshop-analytics'
+import { useReshootAllowance } from './useReshootAllowance'
 
 /** Waits before asking for the price again after a failed quote. */
 const QUOTE_RETRY_MS = [5_000, 15_000, 30_000, 60_000]
@@ -75,6 +77,9 @@ const MAX_READ_SCENES = 4
 /** The node's frame rate, and the longest clip it takes. */
 const FPS = 24
 const MAX_SECONDS = 15
+
+/** The code a depth read gets when this person's hourly ceiling is reached. */
+const DEPTH_LIMIT = 'reshoot_depth_limit'
 
 /** A run failure's app-proxy code, mapped to the shared analytics reasons. */
 const RESHOOT_FAILURE_REASONS: Readonly<Record<string, RunFailure>> = {
@@ -94,6 +99,44 @@ function reshootRunFailure(error: unknown): RunFailure {
   return 'client'
 }
 
+function trackReshootRun(userId: string, workspaceId: string) {
+  const analytics: WorkshopRunAnalytics = {
+    model_slug: RESHOOT_APP_SLUG,
+    page_type: 'app',
+    app_slug: RESHOOT_APP_SLUG,
+    user_id: userId,
+    workspace_id: workspaceId,
+    attempt_id: workshopIdempotencyKey()
+  }
+  const startedAt = Date.now()
+  const finished = () => ({
+    ...analytics,
+    duration_ms: Date.now() - startedAt
+  })
+  captureWorkshopEvent({ name: 'run_started', properties: analytics })
+  return {
+    cancelled: () =>
+      captureWorkshopEvent({
+        name: 'run_finished',
+        properties: { ...finished(), status: 'cancelled' }
+      }),
+    succeeded: () =>
+      captureWorkshopEvent({
+        name: 'run_finished',
+        properties: { ...finished(), status: 'succeeded', output_count: 1 }
+      }),
+    failed: (error: unknown) =>
+      captureWorkshopEvent({
+        name: 'run_finished',
+        properties: {
+          ...finished(),
+          status: 'failed',
+          reason: reshootRunFailure(error)
+        }
+      })
+  }
+}
+
 export type DepthState = 'none' | 'analyzing' | 'ready' | 'failed'
 
 export interface ReshootTake {
@@ -108,6 +151,8 @@ export interface ReshootTake {
   readonly warpUrl?: string
   /** The same take with the clip's own sound instead of the generated one. */
   readonly originalUrl?: string
+  /** The clip this take was shot from, untouched. */
+  readonly sourceUrl?: string
   readonly note?: string
 }
 
@@ -132,7 +177,8 @@ const EXAMPLE_TAKE: ReshootTake = {
   keys: 0,
   status: 'done',
   startedAt: 0,
-  url: RESHOOT_EXAMPLE.result
+  url: RESHOOT_EXAMPLE.result,
+  sourceUrl: RESHOOT_EXAMPLE.clip
 }
 
 /**
@@ -151,6 +197,10 @@ export function useReshoot({ locale = 'en' }: { locale?: Locale } = {}) {
     if (credential?.status !== 'ok') throw new ReshootError('unauthorized')
     return credential.session.token
   })
+
+  const owner = () => session.value?.uid
+  const takeAllowance = useReshootAllowance('generate', owner)
+  const depthAllowance = useReshootAllowance('depth', owner)
 
   const upload = shallowRef<File>()
   const uploadUrl = useObjectUrl(upload)
@@ -283,6 +333,7 @@ export function useReshoot({ locale = 'en' }: { locale?: Locale } = {}) {
       depth.value === 'ready' &&
       !clipError.value &&
       !rendering.value &&
+      takeAllowance.allowance.value.left > 0 &&
       quoteSettled.value &&
       quote.value?.next_run !== 'blocked'
   )
@@ -298,6 +349,17 @@ export function useReshoot({ locale = 'en' }: { locale?: Locale } = {}) {
   const priceNote = computed(() => {
     if (quote.value) return quoteNote(quote.value, locale, run.value)
     return quoteFailed.value ? t('reshoot.quote.failed') : undefined
+  })
+  const secondsUntil = (at?: number) =>
+    at === undefined
+      ? t('reshoot.quote.later')
+      : relativeTime(Math.max(0, (at - Date.now()) / 1000), locale)
+  /** What this person may still generate this hour, said before a refusal. */
+  const limitNote = computed(() => {
+    const { left, runs, nextAt } = takeAllowance.allowance.value
+    return left > 0
+      ? t('reshoot.limit.left', { left, runs })
+      : t('reshoot.limit.none', { when: secondsUntil(nextAt) })
   })
   /** Why the viewport cannot show a read scene, if it cannot. */
   const notice = computed(() => {
@@ -357,6 +419,10 @@ export function useReshoot({ locale = 'en' }: { locale?: Locale } = {}) {
   }
 
   function noteFor(error: unknown): string {
+    if (error instanceof ReshootError && error.code === DEPTH_LIMIT)
+      return t('reshoot.limit.depth', {
+        when: secondsUntil(depthAllowance.allowance.value.nextAt)
+      })
     if (error instanceof ReshootError && error.code === 'insufficient_credits')
       return noCreditsNote()
     return failureNote(
@@ -415,6 +481,19 @@ export function useReshoot({ locale = 'en' }: { locale?: Locale } = {}) {
     return readGeometry(await bytes.arrayBuffer())
   }
 
+  /** A read that finishes, not one kept from before, counts against the hourly ceiling. */
+  async function freshRead(
+    via: ReshootTransport,
+    clip: ReshootClip,
+    signal: AbortSignal
+  ) {
+    if (depthAllowance.allowance.value.left === 0)
+      throw new ReshootError(DEPTH_LIMIT)
+    const geometry = await readScene(via, clip, signal)
+    if (!signal.aborted) depthAllowance.record()
+    return geometry
+  }
+
   /** The chosen clip, uploaded once, and its scene, read once per settings. */
   async function clipScene(via: ReshootTransport, signal: AbortSignal) {
     const file = upload.value ?? (await exampleFile())
@@ -422,7 +501,7 @@ export function useReshoot({ locale = 'en' }: { locale?: Locale } = {}) {
     uploads.set(file, video)
     const clip = { video, aspect: aspect.value, size: size.value }
     const key = `${video}|${clip.aspect}|${clip.size}`
-    const geometry = reads.get(key) ?? (await readScene(via, clip, signal))
+    const geometry = reads.get(key) ?? (await freshRead(via, clip, signal))
     remember(key, geometry)
     return { clip, geometry }
   }
@@ -461,6 +540,9 @@ export function useReshoot({ locale = 'en' }: { locale?: Locale } = {}) {
   // turns out too long retires that read rather than letting it finish.
   watch(clipError, (tooLong) => {
     if (tooLong && depth.value === 'analyzing') void analyze()
+  })
+  watch(unavailable, (isUnavailable) => {
+    if (!isUnavailable && picked.value && depth.value === 'none') void analyze()
   })
   watch([aspect, size], () => {
     if (picked.value) void analyze()
@@ -513,7 +595,7 @@ export function useReshoot({ locale = 'en' }: { locale?: Locale } = {}) {
     return { ...(keys.value[0]?.camera ?? camera), fov: camera.fov }
   }
 
-  async function generate() {
+  function generateReady() {
     const read = scene.value
     const startedFor = session.value
     if (
@@ -522,7 +604,14 @@ export function useReshoot({ locale = 'en' }: { locale?: Locale } = {}) {
       read.phase !== 'ready' ||
       !startedFor
     )
-      return
+      return undefined
+    return { read, startedFor, transport }
+  }
+
+  async function generate() {
+    const ready = generateReady()
+    if (!ready) return
+    const { read, startedFor, transport } = ready
     const n = takes.value.length
     const id = `take-${n}`
     const still = stillCamera()
@@ -534,7 +623,8 @@ export function useReshoot({ locale = 'en' }: { locale?: Locale } = {}) {
         camera: still,
         keys: keys.value.length,
         status: 'rendering',
-        startedAt: Date.now()
+        startedAt: Date.now(),
+        sourceUrl: objectUrl(upload.value) ?? clip.value
       }
     ]
     selected.value = id
@@ -542,20 +632,7 @@ export function useReshoot({ locale = 'en' }: { locale?: Locale } = {}) {
     runs.set(id, controller)
     const { signal } = controller
     const { geometry } = read
-    const analytics: WorkshopRunAnalytics = {
-      model_slug: RESHOOT_APP_SLUG,
-      page_type: 'app',
-      app_slug: RESHOOT_APP_SLUG,
-      user_id: startedFor.uid,
-      workspace_id: startedFor.workspace.id,
-      attempt_id: workshopIdempotencyKey()
-    }
-    const startedAt = Date.now()
-    const finished = () => ({
-      ...analytics,
-      duration_ms: Date.now() - startedAt
-    })
-    captureWorkshopEvent({ name: 'run_started', properties: analytics })
+    const run = trackReshootRun(startedFor.uid, startedFor.workspace.id)
     try {
       const job = await runJob(
         transport,
@@ -571,7 +648,8 @@ export function useReshoot({ locale = 'en' }: { locale?: Locale } = {}) {
           seed: seed.value ?? Math.floor(Math.random() * 2 ** 32)
         }),
         (phase) => updateTake(id, { phase }),
-        signal
+        signal,
+        () => takeAllowance.record(startedFor.uid)
       )
       const optional = (part: string) =>
         downloadOutput(transport, job, part, signal).catch(() => undefined)
@@ -581,10 +659,7 @@ export function useReshoot({ locale = 'en' }: { locale?: Locale } = {}) {
         optional('original-audio')
       ])
       if (signal.aborted) {
-        captureWorkshopEvent({
-          name: 'run_finished',
-          properties: { ...finished(), status: 'cancelled' }
-        })
+        run.cancelled()
         return
       }
       updateTake(id, {
@@ -593,27 +668,14 @@ export function useReshoot({ locale = 'en' }: { locale?: Locale } = {}) {
         warpUrl: objectUrl(warp),
         originalUrl: objectUrl(original)
       })
-      captureWorkshopEvent({
-        name: 'run_finished',
-        properties: { ...finished(), status: 'succeeded', output_count: 1 }
-      })
+      run.succeeded()
     } catch (error) {
       if (signal.aborted) {
-        captureWorkshopEvent({
-          name: 'run_finished',
-          properties: { ...finished(), status: 'cancelled' }
-        })
+        run.cancelled()
         return
       }
       updateTake(id, { status: 'failed', note: noteFor(error) })
-      captureWorkshopEvent({
-        name: 'run_finished',
-        properties: {
-          ...finished(),
-          status: 'failed',
-          reason: reshootRunFailure(error)
-        }
-      })
+      run.failed(error)
     } finally {
       runs.delete(id)
       void refreshQuote()
@@ -706,6 +768,7 @@ export function useReshoot({ locale = 'en' }: { locale?: Locale } = {}) {
     gate,
     canGenerate,
     priceNote,
+    limitNote,
     session,
     pick,
     analyze,

@@ -5419,14 +5419,14 @@
       "shift": "Vertical shift"
     },
     "view": {
-      "result": "Result",
+      "result": "New angle",
       "warp": "Warp guide",
-      "source": "Source"
+      "source": "Original clip"
     },
     "views": "Show",
     "sound": {
       "label": "Sound",
-      "generated": "Generated",
+      "generated": "New audio",
       "original": "Original audio"
     },
     "warpNote": "The warp guide of a real run shows here: the clip pushed to the new camera, magenta where it has to be invented.",
@@ -5452,7 +5452,7 @@
     "reuse": "Use this angle again",
     "generate": {
       "note": "Keep aiming while it renders.",
-      "wait": "Reading the scene · 20 to 40 seconds",
+      "wait": "Generate unlocks once the depth is ready.",
       "label": "Generate"
     },
     "expand": "Full screen",
@@ -5542,7 +5542,7 @@
       "ease_in_out": "Ease in and out",
       "smooth": "Smooth spline"
     },
-    "analyzing": "Estimating depth…",
+    "analyzing": "Analyzing depth…",
     "cancel": "Cancel",
     "generating": "Generating the new view",
     "takes": "Takes",
@@ -5583,7 +5583,26 @@
     "tryAgain": "Try again",
     "noWebgl": "This preview needs WebGL2, which this browser does not offer.",
     "play": "Play",
-    "pause": "Pause"
+    "pause": "Pause",
+    "pending": {
+      "clip": "Clip loaded",
+      "depth": "Analyzing depth",
+      "depthTime": "About 20 to 40 seconds",
+      "depthFailed": "Depth analysis failed",
+      "depthWaiting": "Depth analysis has not started",
+      "aim": "Aim the new camera",
+      "aimHint": "The globe and camera controls appear here once the depth is ready."
+    },
+    "frameLabel": {
+      "original": "Original clip",
+      "preview": "Preview of the new angle",
+      "nothingYet": "Nothing generated yet"
+    },
+    "limit": {
+      "left": "{left} of {runs} takes left this hour",
+      "none": "No takes left this hour. Next one {when}.",
+      "depth": "Too many clips analyzed this hour. Try again {when}."
+    }
   },
   "changelog": {
     "meta": {

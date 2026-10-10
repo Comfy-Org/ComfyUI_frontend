@@ -4812,14 +4812,14 @@
       "shift": "垂直位移"
     },
     "view": {
-      "result": "结果",
+      "result": "新机位",
       "warp": "变形引导",
-      "source": "原片"
+      "source": "原始片段"
     },
     "views": "显示",
     "sound": {
       "label": "声音",
-      "generated": "生成的声音",
+      "generated": "新音频",
       "original": "原始音频"
     },
     "warpNote": "真实运行时这里显示变形引导：片段被推到新机位，洋红色为需要生成的部分。",
@@ -4845,7 +4845,7 @@
     "reuse": "再次使用此机位",
     "generate": {
       "note": "生成期间可以继续调整机位。",
-      "wait": "正在读取场景 · 约 20 到 40 秒",
+      "wait": "深度分析完成后即可生成。",
       "label": "生成"
     },
     "expand": "全屏",
@@ -4935,7 +4935,7 @@
       "ease_in_out": "缓入缓出",
       "smooth": "平滑样条"
     },
-    "analyzing": "正在估算深度…",
+    "analyzing": "正在分析深度…",
     "cancel": "取消",
     "generating": "正在生成新视角",
     "takes": "镜头",
@@ -4976,7 +4976,26 @@
     "tryAgain": "重试",
     "noWebgl": "此预览需要 WebGL2，当前浏览器不支持。",
     "play": "播放",
-    "pause": "暂停"
+    "pause": "暂停",
+    "pending": {
+      "clip": "片段已载入",
+      "depth": "正在分析深度",
+      "depthTime": "约 20 到 40 秒",
+      "depthFailed": "深度分析失败",
+      "depthWaiting": "深度分析尚未开始",
+      "aim": "设置新机位",
+      "aimHint": "深度分析完成后，这里会出现球形视图和机位控制。"
+    },
+    "frameLabel": {
+      "original": "原始片段",
+      "preview": "新机位预览",
+      "nothingYet": "尚未生成"
+    },
+    "limit": {
+      "left": "本小时还剩 {left}/{runs} 次",
+      "none": "本小时次数已用完，下一次{when}可用。",
+      "depth": "本小时分析的片段过多，请{when}再试。"
+    }
   },
   "changelog": {
     "meta": {

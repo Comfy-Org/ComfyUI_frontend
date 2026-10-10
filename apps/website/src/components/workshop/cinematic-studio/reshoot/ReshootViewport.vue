@@ -30,6 +30,7 @@ const {
   pose,
   keepAim = true,
   frame = 0,
+  generated = false,
   locale = 'en'
 } = defineProps<{
   clip: string
@@ -43,7 +44,8 @@ const {
   pose?: Pose
   keepAim?: boolean
   frame?: number
-  /** Where the analysis stands while it runs. */
+  /** Whether any take of the visitor's own has been generated. */
+  generated?: boolean
   locale?: Locale
 }>()
 const { t } = translationsFor(locale)
@@ -67,6 +69,10 @@ const analyzing = computed(() =>
         ? 'reshoot.stage.queued'
         : 'reshoot.analyzing'
   )
+)
+
+const frameLabel = computed(() =>
+  t(live.value ? 'reshoot.frameLabel.preview' : 'reshoot.frameLabel.original')
 )
 
 const dragFrom = ref<{ x: number; y: number; tilts: boolean }>()
@@ -151,9 +157,18 @@ const DOLLY_BUTTONS = [
       class="max-h-full max-w-full transition-transform duration-150 ease-out"
       :style="{ transform }"
     />
+    <p
+      class="absolute top-3 left-3 z-10 flex max-w-[calc(100%-4.5rem)] items-center gap-1.5 truncate rounded-full bg-primary-comfy-ink/80 px-3 py-1.5 text-xs text-primary-warm-white"
+      data-testid="reshoot-frame-label"
+    >
+      {{ frameLabel }}
+      <span v-if="!generated" class="text-primary-warm-gray">
+        · {{ t('reshoot.frameLabel.nothingYet') }}
+      </span>
+    </p>
     <div
       v-if="depth === 'analyzing'"
-      class="absolute inset-0 grid place-items-center bg-primary-comfy-ink/70"
+      class="absolute inset-0 flex flex-col items-center justify-center gap-1.5 bg-primary-comfy-ink/70 px-6 text-center"
       role="status"
     >
       <span class="flex items-center gap-2.5 text-sm text-primary-warm-white">
@@ -162,6 +177,9 @@ const DOLLY_BUTTONS = [
           aria-hidden="true"
         />
         {{ analyzing }}
+      </span>
+      <span class="text-xs text-primary-warm-gray">
+        {{ t('reshoot.pending.depthTime') }}
       </span>
     </div>
     <p
@@ -196,7 +214,7 @@ const DOLLY_BUTTONS = [
     </div>
     <div
       v-if="ready"
-      class="absolute top-3 left-3 hidden flex-col gap-2 pointer-coarse:flex"
+      class="absolute top-14 left-3 hidden flex-col gap-2 pointer-coarse:flex"
     >
       <button
         v-for="{ step, label, icon } in DOLLY_BUTTONS"
