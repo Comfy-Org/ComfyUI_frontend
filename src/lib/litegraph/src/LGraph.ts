@@ -165,6 +165,7 @@ import {
 } from './subgraph/unpackSubgraph'
 import type { UnpackedTargetInput } from './subgraph/unpackSubgraph'
 import {
+  captureSerialisedInputNames,
   findUnresolvableSubgraphLink,
   findOrphanedSubgraphs,
   findReleasableSubgraphs,
@@ -174,6 +175,7 @@ import {
   mapSubgraphInputsAndLinks,
   mapSubgraphOutputsAndLinks,
   multiClone,
+  pruneDanglingSlotLinks,
   splitPositionables
 } from './subgraph/subgraphUtils'
 import { Alignment, LGraphEventMode } from './types/globalEnums'
@@ -3616,9 +3618,18 @@ export class Subgraph
     keep_old?: boolean
   ): boolean | undefined {
     const normalized = normalizeConfiguredTopology(data)
+    const serialisedInputNames = captureSerialisedInputNames(normalized.nodes)
     const r = super.configure(normalized, keep_old)
 
     this._configureSubgraph(normalized)
+    // Prune only when the payload was applied, or it would judge incumbent
+    // links against boundary slots that never took effect. Not `r !== false`:
+    // a clean load also returns `false`. `undefined` is a vetoed `configuring`
+    // event. `keep_old` is refused outright on a populated graph, and skipping
+    // it on an empty one too only costs a prune no in-repo caller asks for.
+    if (r !== undefined && !keep_old) {
+      pruneDanglingSlotLinks(this, serialisedInputNames)
+    }
     return r
   }
 

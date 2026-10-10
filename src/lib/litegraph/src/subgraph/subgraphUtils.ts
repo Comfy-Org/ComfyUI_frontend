@@ -24,7 +24,9 @@ import type {
 } from '@/lib/litegraph/src/types/slots'
 import { LiteGraph, createUuidv4 } from '@/lib/litegraph/src/litegraph'
 import { nextUniqueName } from '@/lib/litegraph/src/strings'
-import { UNASSIGNED_NODE_ID } from '@/types/nodeId'
+import { NodeSlotType } from '@/lib/litegraph/src/types/globalEnums'
+import { UNASSIGNED_NODE_ID, toNodeId } from '@/types/nodeId'
+import type { NodeId } from '@/types/nodeId'
 import type {
   ISerialisedNode,
   SerialisableLLink,
@@ -242,30 +244,167 @@ export function multiClone(nodes: Iterable<LGraphNode>): ISerialisedNode[] {
   return clonedNodes
 }
 
+function isSlotInRange(slot: number, slotCount: number): boolean {
+  return Number.isInteger(slot) && slot >= 0 && slot < slotCount
+}
+
+/**
+ * Read by both the unpack refusal and the load-time prune, so the two cannot
+ * disagree about which links are usable.
+ */
+function isUnresolvableLink(subgraph: Subgraph, link: LLink): boolean {
+  const originOk =
+    link.origin_id === UNASSIGNED_NODE_ID ||
+    (link.origin_id === SUBGRAPH_INPUT_ID
+      ? isSlotInRange(link.origin_slot, subgraph.inputs.length)
+      : subgraph.getNodeById(link.origin_id)?.outputs[link.origin_slot] !==
+        undefined)
+  const targetOk =
+    link.target_id === UNASSIGNED_NODE_ID ||
+    (link.target_id === SUBGRAPH_OUTPUT_ID
+      ? isSlotInRange(link.target_slot, subgraph.outputs.length)
+      : subgraph.getNodeById(link.target_id)?.inputs[link.target_slot] !==
+        undefined)
+  return !originOk || !targetOk
+}
+
 export function findUnresolvableSubgraphLink(
   subgraphNode: SubgraphNode
 ): LLink | undefined {
   const { subgraph } = subgraphNode
 
   for (const link of subgraph.links.values()) {
-    const originOk =
-      link.origin_id === UNASSIGNED_NODE_ID ||
-      (link.origin_id === SUBGRAPH_INPUT_ID
-        ? Number.isInteger(link.origin_slot) &&
-          link.origin_slot >= 0 &&
-          link.origin_slot < subgraph.inputs.length
-        : subgraph.getNodeById(link.origin_id)?.outputs[link.origin_slot] !==
-          undefined)
-    const targetOk =
-      link.target_id === UNASSIGNED_NODE_ID ||
-      (link.target_id === SUBGRAPH_OUTPUT_ID
-        ? Number.isInteger(link.target_slot) &&
-          link.target_slot >= 0 &&
-          link.target_slot < subgraph.outputs.length
-        : subgraph.getNodeById(link.target_id)?.inputs[link.target_slot] !==
-          undefined)
-    if (!originOk || !targetOk) return link
+    if (isUnresolvableLink(subgraph, link)) return link
   }
+}
+
+/**
+ * Must be taken before the nodes are configured: a node's `configure` may
+ * rewrite the serialized input list it is handed, so read afterwards the
+ * dropped names are already gone from it.
+ */
+export function captureSerialisedInputNames(
+  nodesData: readonly ISerialisedNode[] | undefined
+): ReadonlyMap<NodeId, string[]> {
+  const namesByNodeId = new Map<NodeId, string[]>()
+
+  for (const node of nodesData ?? []) {
+    namesByNodeId.set(
+      toNodeId(node.id),
+      (node.inputs ?? []).map((input) => input.name)
+    )
+  }
+  return namesByNodeId
+}
+
+/**
+ * Compares serialized input names, never slot counts: a node that restored
+ * every serialized input has not shrunk however few it ended up with, and a
+ * node the workflow described no inputs for cannot have lost any.
+ */
+function droppedASerialisedInput(
+  node: LGraphNode,
+  serialisedNames: readonly string[]
+): boolean {
+  const inputNames = new Set(node.inputs.map((input) => input.name))
+
+  return serialisedNames.some((name) => !inputNames.has(name))
+}
+
+/**
+ * `LLink.disconnect` does not maintain boundary `linkIds`, and that array is
+ * serialized with the workflow: a stale id left in it makes the slot report
+ * itself connected with no wire, permanently.
+ *
+ * Reconciles against the link map rather than removing the pruned ids one by
+ * one, so a duplicate entry cannot leave a copy of itself behind, and no slot
+ * index has to be trusted. Safe to run only here on the definition-load path,
+ * before any host `SubgraphNode` exists to observe a slot going quiet.
+ */
+function reconcileBoundarySlots(subgraph: Subgraph): void {
+  for (const slot of [...subgraph.inputs, ...subgraph.outputs]) {
+    const live = slot.linkIds.filter((id) => subgraph.links.has(id))
+    if (live.length === slot.linkIds.length) continue
+
+    slot.linkIds.splice(0, slot.linkIds.length, ...live)
+  }
+}
+
+/**
+ * Mirrors {@link finalizeInputLinkRemoval}: the surviving node was told this
+ * link connected during its own configure, so it has to be told it went away.
+ * The target side is deliberately silent — the input it named is the one that
+ * no longer exists.
+ */
+function notifySurvivingOrigin(connection: ResolvedConnection, link: LLink) {
+  if (!connection.outputNode || !connection.output) return
+
+  try {
+    connection.outputNode.onConnectionsChange?.(
+      NodeSlotType.OUTPUT,
+      link.origin_slot,
+      false,
+      link,
+      connection.output
+    )
+  } catch (error) {
+    console.error(`Failed to notify pruned link ${link.id}`, error)
+  }
+}
+
+/**
+ * Must run only once the subgraph is fully configured. Its nodes have to have
+ * materialized their dynamic slots, or an input merely not laid out yet reads
+ * as dropped and this deletes a live link; and `_configureSubgraph` has to have
+ * populated {@link Subgraph.inputs} and {@link Subgraph.outputs}, or
+ * {@link reconcileBoundarySlots} reconciles against empty slot lists.
+ *
+ * Keyed on the target input having gone on purpose. `realignInputLinkSlots` has
+ * already repointed the surviving input links by name, so an input slot that
+ * still does not resolve is genuinely orphaned. Output link slots get no such
+ * realignment, so a shrunk output cannot be told apart from a misrouted one,
+ * and pruning on a stale `origin_slot` could delete the link that was
+ * semantically correct. A missing target input implies
+ * {@link isUnresolvableLink}, so what this prunes stays a subset of what the
+ * unpack guard refuses.
+ */
+export function pruneDanglingSlotLinks(
+  subgraph: Subgraph,
+  serialisedInputNames: ReadonlyMap<NodeId, readonly string[]>
+): void {
+  const shrunkNodeIds = new Set<NodeId>()
+  for (const [nodeId, serialisedNames] of serialisedInputNames) {
+    const node = subgraph.getNodeById(nodeId)
+    if (node && droppedASerialisedInput(node, serialisedNames)) {
+      shrunkNodeIds.add(nodeId)
+    }
+  }
+  if (shrunkNodeIds.size === 0) return
+
+  const dangling = [...subgraph.links.values()].filter(
+    (link) =>
+      shrunkNodeIds.has(link.target_id) &&
+      subgraph.getNodeById(link.target_id)?.inputs[link.target_slot] ===
+        undefined
+  )
+
+  for (const link of dangling) {
+    console.warn('Dropping a subgraph link left by a dropped node input', {
+      subgraphId: subgraph.id,
+      linkId: link.id,
+      originId: link.origin_id,
+      originSlot: link.origin_slot,
+      originType: subgraph.getNodeById(link.origin_id)?.type,
+      targetId: link.target_id,
+      targetSlot: link.target_slot,
+      targetType: subgraph.getNodeById(link.target_id)?.type
+    })
+    const connection = link.resolve(subgraph)
+    link.disconnect(subgraph)
+    subgraph.incrementVersion()
+    notifySurvivingOrigin(connection, link)
+  }
+  reconcileBoundarySlots(subgraph)
 }
 
 /**
