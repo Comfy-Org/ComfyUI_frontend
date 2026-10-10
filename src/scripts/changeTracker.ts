@@ -247,7 +247,12 @@ function reportInactiveTrackerCall(method: string, workflowPath: string) {
   const key = `${method}:${workflowPath}`
   if (reportedInactiveCalls.has(key)) return
   reportedInactiveCalls.add(key)
-  assert(false, `ChangeTracker.${method}() called on inactive tracker`)
+  assert(false, `ChangeTracker.${method}() called on inactive tracker`, {
+    method,
+    trackerWorkflowPath: workflowPath,
+    activeWorkflowPath: useWorkflowStore().activeWorkflow?.path ?? null,
+    stack: new Error().stack?.split('\n').slice(2, 10).join('\n')
+  })
 }
 
 export class ChangeTracker {
@@ -508,8 +513,17 @@ export class ChangeTracker {
     this.changeCount++
   }
 
+  /**
+   * Close a beforeChange() transaction and, once the outermost one closes,
+   * capture the canvas.
+   *
+   * A transaction can outlive its workflow's active status (for example the
+   * layer editor stays open while the user switches workflows). Only the
+   * counter is adjusted in that case: the canvas now shows a different graph,
+   * so the capture is skipped without reporting an invariant violation.
+   */
   afterChange() {
-    if (!--this.changeCount) {
+    if (!--this.changeCount && isActiveTracker(this)) {
       this.captureCanvasState()
     }
   }
