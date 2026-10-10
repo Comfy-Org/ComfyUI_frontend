@@ -4,9 +4,9 @@ import type { Asset, ListAssetsResponse } from '@comfyorg/ingest-types'
 import { comfyPageFixture } from '@e2e/fixtures/ComfyPage'
 
 // Cloud ingest defaults `include_public` to true, which also returns the
-// shared template-input catalog and every published asset. The mock below
-// mirrors that default, so the panel only stays clean when the client sends
-// `include_public=false` (FE-3332, FE-2812).
+// shared template-input catalog. The mock below returns public assets unless
+// the request sends `include_public=false`, so the panel only stays clean
+// when the client opts out explicitly (FE-3332, FE-2812).
 
 const createdAt = new Date().toISOString()
 
