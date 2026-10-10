@@ -71,9 +71,12 @@ const { t } = translationsFor(locale)
           </thead>
           <tbody>
             <tr v-for="metric in metrics" :key="metric.labelKey">
-              <td class="max-w-72 px-2 py-3.5 text-sm text-primary-warm-white">
+              <th
+                scope="row"
+                class="max-w-72 px-2 py-3.5 text-left text-sm font-normal text-primary-warm-white"
+              >
                 {{ t(metric.labelKey) }}
-              </td>
+              </th>
               <td
                 v-for="plan in plans"
                 :key="plan.id"

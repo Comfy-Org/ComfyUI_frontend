@@ -37,7 +37,6 @@ describe('ComfyAgentPricingSection', () => {
     expect(
       within(row)
         .getAllByRole('cell')
-        .slice(1)
         .map((cell) => cell.textContent.trim())
     ).toEqual(['4', '6', '8', '16'])
   })

@@ -152,15 +152,16 @@ describe('PricingSection Comfy Agent limits', () => {
   it('lists the Agent limits above the Comfy API limits in each card', () => {
     render(PricingSection)
 
-    const agentTitles = screen.getAllByText('Comfy Agent')
-    const apiTitles = screen.getAllByText('Comfy API')
-    expect(agentTitles).toHaveLength(pricingPlans.length + 1)
-    agentTitles.forEach((agentTitle, index) => {
-      expect(
-        agentTitle.compareDocumentPosition(apiTitles[index]) &
-          Node.DOCUMENT_POSITION_FOLLOWING
-      ).toBeTruthy()
-    })
+    expect(
+      screen
+        .getAllByText(/^Comfy (Agent|API)$/)
+        .map((title) => title.textContent)
+    ).toEqual(
+      Array.from({ length: pricingPlans.length + 1 }, () => [
+        'Comfy Agent',
+        'Comfy API'
+      ]).flat()
+    )
     expect(
       screen.getByText('16 concurrent agent sessions per workspace')
     ).toBeTruthy()
