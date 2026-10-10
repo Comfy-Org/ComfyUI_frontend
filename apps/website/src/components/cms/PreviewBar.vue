@@ -22,6 +22,7 @@ const {
   editHref,
   now,
   changes,
+  pendingWorkflows = 0,
   pathname,
   locale = 'en'
 } = defineProps<{
@@ -31,6 +32,8 @@ const {
   editHref?: string
   now?: string
   changes: DraftPageChange[]
+  /** Workflow submissions waiting for approval, which no page shows yet. */
+  pendingWorkflows?: number
   pathname: string
   locale?: Locale
 }>()
@@ -259,6 +262,7 @@ const pill = adminButtonVariants({ class: 'data-[state=open]:bg-admin-hover' })
       v-model:open="changesOpen"
       :csrf
       :changes="listed"
+      :pending-workflows="pendingWorkflows"
       :pathname
       :locale
     />

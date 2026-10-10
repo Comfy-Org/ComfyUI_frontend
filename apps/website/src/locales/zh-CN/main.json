@@ -37,7 +37,7 @@
       "tools": "工具"
     },
     "live": "线上 · 版本 {revision}",
-    "previewDraft": "预览草稿",
+    "previewDraft": "在网站上查看草稿",
     "liveSite": "线上网站",
     "applyOnly": "你可以审核，但发布和批准需要 comfy_site.apply 权限。",
     "unavailable": "无法加载工作流提交，请刷新重试。",
@@ -113,7 +113,10 @@
       "include": "纳入本次发布",
       "reject": "拒绝",
       "copy": "复制分享 ID",
-      "copied": "已复制"
+      "copied": "已复制",
+      "hubCard": "在 Hub 上的显示效果",
+      "pending": "等待审批",
+      "noImage": "此投稿未附带图片"
     },
     "publish": {
       "title": "发布 {count} 项更改？",
@@ -200,10 +203,12 @@
       "language": "语言",
       "changesButton": "更改",
       "changesTitle": "本草稿中的更改",
-      "changesNote": "此草稿更改的页面。工作流提交在 Comfy Cloud 中检查，因此不在此列出。发布前访客看到的仍是线上网站。",
+      "changesNote": "此草稿更改的页面。发布之前，访客看到的仍是线上网站。",
       "toAdmin": "返回草稿",
       "exit": "退出预览",
-      "editPage": "编辑此页面"
+      "editPage": "编辑此页面",
+      "pendingWorkflows": "{count} 个工作流等待审批 | {count} 个工作流等待审批",
+      "pendingHelp": "工作流经审批并发布后才会出现在 Hub 上。请在 Hub 管理后台审核。"
     },
     "demo": "示例数据演示",
     "demoHelp": "这是使用示例数据运行的 Hub 管理演示。在这里的任何操作都不会更改 comfy.org，并且会不时重置。",

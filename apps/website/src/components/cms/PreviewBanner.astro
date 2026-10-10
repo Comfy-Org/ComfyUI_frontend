@@ -2,6 +2,7 @@
 import PreviewBar from '@/components/cms/PreviewBar.vue'
 import { resolveLocale } from '@/config/locales'
 import { buildQueue } from '@/lib/cms/queue'
+import { loadSubmissions } from '@/lib/cms/submissions'
 
 const session = Astro.locals.site
 const preview = session?.preview
@@ -13,6 +14,10 @@ const pageItem = session?.review.draft.items.find(
 )
 const adminPage =
   Astro.url.pathname === '/admin' || Astro.url.pathname.startsWith('/admin/')
+const pendingWorkflows =
+  session && preview && !adminPage
+    ? ((await loadSubmissions(session))?.length ?? 0)
+    : 0
 const changes = session
   ? buildQueue(session.review, []).flatMap((item) =>
       item.source === 'catalog'
@@ -38,6 +43,7 @@ const changes = session
     editHref={pageItem ? `/admin/edit/${pageItem.uid}` : undefined}
     now={preview.now}
     changes={changes}
+    pendingWorkflows={pendingWorkflows}
     pathname={Astro.url.pathname}
     locale={resolveLocale(Astro.currentLocale)}
   />

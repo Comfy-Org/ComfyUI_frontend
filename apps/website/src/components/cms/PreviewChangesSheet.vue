@@ -1,4 +1,5 @@
 <script setup lang="ts">
+import { Workflow } from '@lucide/vue'
 import { DialogDescription, DialogTitle } from 'reka-ui'
 
 import ChangeTag from '@/components/cms/ChangeTag.vue'
@@ -13,11 +14,13 @@ import type { PreviewChange } from '@/lib/cms/format'
 const {
   csrf,
   changes,
+  pendingWorkflows = 0,
   pathname,
   locale = 'en'
 } = defineProps<{
   csrf: string
   changes: PreviewChange[]
+  pendingWorkflows?: number
   pathname: string
   locale?: Locale
 }>()
@@ -80,6 +83,30 @@ function focusPanel(event: Event) {
           </a>
         </li>
       </ul>
+      <a
+        v-if="pendingWorkflows"
+        href="/admin/"
+        class="mx-2 mb-2 flex items-start gap-3 rounded-lg border border-admin-line bg-admin-page p-3 text-sm hover:bg-admin-hover"
+      >
+        <Workflow
+          class="mt-0.5 size-4 shrink-0 text-admin-muted"
+          aria-hidden="true"
+        />
+        <span class="grid gap-0.5">
+          <span>
+            {{
+              t(
+                'cmsAdmin.preview.pendingWorkflows',
+                { count: pendingWorkflows },
+                pendingWorkflows
+              )
+            }}
+          </span>
+          <span class="text-xs text-admin-muted">
+            {{ t('cmsAdmin.preview.pendingHelp') }}
+          </span>
+        </span>
+      </a>
       <div class="mt-auto border-t border-admin-line p-3">
         <a href="/admin/" :class="adminButtonVariants({ class: 'w-full' })">
           {{ t('cmsAdmin.preview.toAdmin') }}

@@ -37,7 +37,7 @@
       "tools": "Tools"
     },
     "live": "Live · revision {revision}",
-    "previewDraft": "Preview draft",
+    "previewDraft": "View draft on site",
     "liveSite": "Live site",
     "applyOnly": "You can review, but publishing and approving need the comfy_site.apply permission.",
     "unavailable": "Workflow submissions couldn't be loaded. Reload to try again.",
@@ -113,7 +113,10 @@
       "include": "Include in this publish",
       "reject": "Reject",
       "copy": "Copy share ID",
-      "copied": "Copied"
+      "copied": "Copied",
+      "hubCard": "How it shows on the Hub",
+      "pending": "Pending approval",
+      "noImage": "No image sent with this submission"
     },
     "publish": {
       "title": "Publish {count} change? | Publish {count} changes?",
@@ -200,10 +203,12 @@
       "language": "Language",
       "changesButton": "Changes",
       "changesTitle": "Changes in this draft",
-      "changesNote": "Pages this draft changes. Workflow submissions are checked in Comfy Cloud, so they aren't listed here. Visitors keep seeing the live site until you publish.",
+      "changesNote": "Pages this draft changes. Visitors keep seeing the live site until you publish.",
       "toAdmin": "Back to the draft",
       "exit": "Exit preview",
-      "editPage": "Edit this page"
+      "editPage": "Edit this page",
+      "pendingWorkflows": "{count} workflow is waiting for approval | {count} workflows are waiting for approval",
+      "pendingHelp": "Workflows show on the Hub once you approve and publish them. Review them in Hub admin."
     },
     "demo": "Demo with sample data",
     "demoHelp": "A demo of the Hub admin running on sample data. Nothing you do here changes comfy.org, and it starts over from time to time.",

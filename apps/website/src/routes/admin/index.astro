@@ -1,6 +1,4 @@
 ---
-import type { SiteSubmission } from '@comfyorg/ingest-types'
-import { zSiteSubmission } from '@comfyorg/ingest-types/zod'
 import AdminShell from '@/components/cms/AdminShell.astro'
 import { randomUUID } from 'node:crypto'
 import ContentList from '@/components/cms/ContentList.vue'
@@ -9,9 +7,10 @@ import NewContentPicker from '@/components/cms/editor/NewContentPicker.vue'
 import DraftQueue from '@/components/cms/DraftQueue.vue'
 import PublishHistory from '@/components/cms/PublishHistory.astro'
 import { resolveLocale } from '@/config/locales'
-import { draftChanges, siteAPI } from '@/lib/cms/admin'
+import { draftChanges } from '@/lib/cms/admin'
 import { editorState, newFromTemplate } from '@/lib/cms/editor'
 import { buildQueue, contentRows } from '@/lib/cms/queue'
+import { loadSubmissions } from '@/lib/cms/submissions'
 
 const session = Astro.locals.site
 if (!session) return new Response('Not found', { status: 404 })
@@ -44,15 +43,8 @@ const notice = (['saved', 'archived', 'restored'] as const).find(
   (value) => value === noticeParam
 )
 
-const response = await siteAPI(
-  '/admin/api/site/submissions',
-  session.credential
-)
-const parsed = response.ok
-  ? zSiteSubmission.array().safeParse(await response.json())
-  : undefined
-const submissions: SiteSubmission[] = parsed?.success ? parsed.data : []
-const queue = buildQueue(review, submissions)
+const submissions = await loadSubmissions(session)
+const queue = buildQueue(review, submissions ?? [])
 const rows = contentRows(review)
 ---
 
@@ -61,7 +53,7 @@ const rows = contentRows(review)
   draftCount={queue.length}
   contentCount={rows.length}
 >
-  {!parsed?.success && page === '' && <p
+  {!submissions && page === '' && <p
     role="alert"
     class="mb-5 rounded-lg border border-admin-danger/30 bg-admin-danger/10 px-3 py-2 text-xs text-admin-danger-text"
   >

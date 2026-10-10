@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { Play } from '@lucide/vue'
+import { Play, Workflow } from '@lucide/vue'
 
 import AdminButton from '@/components/cms/ui/AdminButton.vue'
 import CopyTextButton from '@/components/ui/copy-text-button/CopyTextButton.vue'
@@ -55,5 +55,36 @@ const cloudRun = `https://cloud.comfy.org/?share=${encodeURIComponent(item.share
         t(item.listed ? 'cmsAdmin.review.listed' : 'cmsAdmin.review.unlisted')
       }}
     </p>
+  </section>
+  <section class="grid gap-2">
+    <h3
+      class="text-xs font-medium tracking-[0.06em] text-admin-muted uppercase"
+    >
+      {{ t('cmsAdmin.review.hubCard') }}
+    </h3>
+    <article
+      class="grid max-w-xs overflow-hidden rounded-xl border border-admin-line bg-admin-page"
+    >
+      <div
+        class="relative grid aspect-4/3 place-items-center gap-1 bg-admin-raised text-admin-subtle"
+      >
+        <span class="grid justify-items-center gap-1.5 text-xs">
+          <Workflow class="size-6" aria-hidden="true" />
+          {{ t('cmsAdmin.review.noImage') }}
+        </span>
+        <span
+          class="absolute top-2 left-2 rounded-full border border-admin-warning/40 bg-admin-page/90 px-2 py-0.5 text-xs font-medium text-admin-warning"
+        >
+          {{ t('cmsAdmin.review.pending') }}
+        </span>
+      </div>
+      <div class="grid gap-1 p-3">
+        <p class="truncate text-sm font-medium">{{ item.title }}</p>
+        <p class="line-clamp-2 text-xs text-admin-muted">
+          {{ item.description }}
+        </p>
+        <p class="truncate text-xs text-admin-subtle">{{ item.author }}</p>
+      </div>
+    </article>
   </section>
 </template>
