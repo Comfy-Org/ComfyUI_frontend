@@ -190,7 +190,16 @@
         "說明所選節點",
         "協助我安裝此工作流程缺少的節點",
         "修正此工作流程中的錯誤"
-      ]
+      ],
+      "treatment": {
+        "cloud": [
+          "根據文字提示建立產品圖片",
+          "建立圖片轉影片工作流程",
+          "說明 ComfyUI 工作流程的運作方式",
+          "尋找最適合特定任務的工作流程",
+          "診斷並修正工作流程中的錯誤"
+        ]
+      }
     },
     "switchWorkflow": "切換工作流程",
     "switchWorkflowForNodes": "切換至 {workflowName} 以新增節點。",
@@ -458,6 +467,11 @@
     "deleteAccount": {
       "contactSupport": "若要刪除你的帳號，請聯絡 {email}"
     },
+    "desktopHost": {
+      "continueInBrowser": "請在瀏覽器中完成登入",
+      "signInFailed": "登入未完成。請再試一次。",
+      "signOutFailed": "Comfy Desktop 仍處於登入狀態。請完成或取消任何正在執行的安裝，然後再次登出。"
+    },
     "errors": {
       "auth/account-exists-with-different-credential": "我們無法使用此方法讓您登入。請嘗試其他登入選項，或重設密碼以繼續。",
       "auth/cancelled-popup-request": "另一個登入視窗已開啟，因此此視窗已取消。請再試一次。",
@@ -567,6 +581,36 @@
       "signUpWithGoogle": "使用 Google 註冊",
       "title": "建立帳戶"
     },
+    "sso": {
+      "continueWithSso": "使用 SSO 繼續",
+      "emailLabel": "工作電子郵件",
+      "emailPlaceholder": "輸入您的工作電子郵件",
+      "errors": {
+        "accountConflict": "有多個 Comfy 帳戶使用此電子郵件。請寄信至 support{'@'}comfy.org 以取得協助。",
+        "accountDeleted": "此帳戶已排定刪除。若此為誤刪，請寄信至 support{'@'}comfy.org。",
+        "emailDomainNotAllowed": "您組織的登入傳回了不屬於其網域的電子郵件。請要求您的管理員在目錄中使用您的工作電子郵件。",
+        "expired": "您的登入已過期，或已在其他瀏覽器中開始登入。請重新開始。",
+        "failed": "無法透過單一登入讓您登入。請再試一次。",
+        "idpError": "您的身分識別提供者未完成登入。請再試一次。",
+        "notConfigured": "您的組織尚未設定單一登入。請聯絡您的管理員。",
+        "orgDisabled": "您的組織已停用單一登入。請聯絡您的管理員。",
+        "orgMismatch": "您登入的組織與此電子郵件所屬的組織不同。請使用您的工作帳戶再試一次。",
+        "orgNotAttached": "您組織的 Comfy 工作區尚未設定。請聯絡您的管理員。",
+        "rateLimited": "登入嘗試次數過多。請等候幾分鐘後再試。",
+        "suspended": "您的組織已移除您的存取權。請聯絡您的管理員。",
+        "unavailable": "目前無法使用單一登入。請稍後再試。"
+      },
+      "invalidEmail": "請輸入有效的電子郵件地址。",
+      "notSso": "此電子郵件未使用單一登入。請使用上方其中一種登入選項。",
+      "required": {
+        "body": "此帳戶透過您組織的單一登入登入。請使用 SSO 繼續登入。",
+        "bodyWithEmail": "{email} 透過您組織的單一登入登入。請使用 SSO 繼續登入。",
+        "dismiss": "現在不要",
+        "title": "您的組織要求使用單一登入"
+      },
+      "submit": "繼續",
+      "unavailable": "目前無法檢查單一登入。請稍後再試，或使用上方其中一種登入選項。"
+    },
     "turnstile": {
       "expired": "驗證已過期。請重新完成驗證挑戰。",
       "failed": "驗證失敗。請再試一次。",
@@ -582,6 +626,7 @@
         "ended": "您的工作階段已結束。請再次登入以繼續。",
         "identityChanged": "您的工作階段已變更。請重新載入以繼續。",
         "refused": "您的請求遭到拒絕。請重新載入頁面後再試一次。",
+        "ssoRequired": "您的組織要求使用單一登入。請使用 SSO 繼續登入。",
         "unavailable": "無法連線至您的帳戶。請稍後再試。",
         "workspaceDenied": "您沒有此工作區的存取權。若持續發生此情況，請聯絡支援團隊。"
       }
@@ -596,6 +641,9 @@
     "authenticationFailedDetail": "無法完成付款驗證。請再試一次。",
     "authenticationUnavailable": "無法使用安全付款驗證。請重新整理後再試一次。",
     "cancelFailed": "取消訂閱失敗",
+    "cancelPaymentFailed": "無法取消此付款。請再試一次。",
+    "cancelPaymentInFlight": "此付款已在處理中，無法取消。",
+    "cancelPaymentNotCancelable": "此付款已無法取消。",
     "cancelTimeout": "訂閱取消逾時",
     "expiredCardDetail": "此卡片已過期。請使用其他付款方式。",
     "incorrectCvcDetail": "卡片安全碼不正確。請確認後再試一次。",
@@ -1165,6 +1213,7 @@
     "COMBO": "組合",
     "COMFY_AUTOGROW_V3": "COMFY_AUTOGROW_V3",
     "COMFY_DYNAMICCOMBO_V3": "COMFY_DYNAMICCOMBO_V3",
+    "COMFY_DYNAMICGROUP_V3": "COMFY_DYNAMICGROUP_V3",
     "COMFY_MATCHTYPE_V3": "COMFY_MATCHTYPE_V3",
     "COMPOSITOR": "合成器",
     "CONDITIONING": "條件設定",
@@ -1277,6 +1326,8 @@
     "expiredSummary": "桌面端登入失敗",
     "failedDetail": "完成桌面端登入時發生錯誤。請從 ComfyUI 桌面應用程式重新啟動登入。",
     "failedSummary": "桌面端登入失敗",
+    "ssoUnavailableDetail": "您的帳戶透過組織的 SSO 登入，而 ComfyUI 桌面應用程式目前尚無法使用此方式。請向您的管理員詢問其他登入桌面應用程式的方式。",
+    "ssoUnavailableSummary": "目前尚無法為 SSO 帳戶提供桌面版登入",
     "successDetail": "您可以返回 ComfyUI 桌面應用程式。",
     "successSummary": "登入成功"
   },
@@ -3300,6 +3351,7 @@
     "Beeble": "Beeble",
     "Bria": "Bria",
     "ByteDance": "字節跳動",
+    "Clarity AI": "Clarity AI",
     "ElevenLabs": "ElevenLabs",
     "Fish Audio": "Fish Audio",
     "Gemini": "雙子星",
@@ -4515,20 +4567,60 @@
     },
     "billingTabBlocked": "無法開啟帳單頁面。請允許此網站的彈出式視窗，然後再試一次。",
     "cancelDialog": {
-      "confirmCancel": "取消訂閱",
-      "description": "您的存取權限將持續至 {date}。您將不會再次被收費，您的工作區與點數將被保留。您可隨時重新訂閱。",
-      "discountApplied": "您的折扣已套用，因此此訂閱未被取消。請關閉此視窗以查看更新後的方案。",
-      "discountRefreshFailed": "您的折扣已套用。請重新整理頁面以查看更新後的方案。",
-      "endOfBillingPeriod": "帳單週期結束",
+      "endOfBillingPeriod": "您的計費週期結束時",
       "failed": "取消訂閱失敗",
       "finishOnStripe": "您的訂閱尚未取消。請在剛剛開啟的 Stripe 頁面完成取消程序。在此之前，您的方案仍會照常續訂。",
-      "keepSubscription": "保留訂閱",
-      "offerUnavailable": "此選項無法使用。請選擇其他選項。",
-      "title": "取消訂閱",
       "workspaceChanged": "您的使用中工作區已變更。請切換回原本的工作區後再試一次。"
     },
+    "cancelFlow": {
+      "cancelled": {
+        "title": "您的方案已取消"
+      },
+      "confirm": {
+        "cancelPlan": "取消我的方案",
+        "description": "您的 {plan} 方案將持續有效至 {date}，之後不會再向您收費。您隨時都可以重新訂閱。",
+        "features": {
+          "credits": {
+            "description": "您的點數將不再補充。",
+            "generic": "每月點數",
+            "monthly": "每月 {credits} 點數",
+            "yearly": "每年 {credits} 點數"
+          },
+          "customNodes": {
+            "description": "支援約 90% 社群工作流程的節點。",
+            "title": "自訂節點，隨時可用"
+          },
+          "gpus": {
+            "description": "RTX 6000 Pro 硬體，無須自行設定。",
+            "title": "雲端 GPU"
+          },
+          "models": {
+            "description": "開源模型與合作夥伴模型一應俱全。",
+            "title": "所有模型，共用一個餘額"
+          }
+        },
+        "loseAccess": "{date} 之後，您將無法再使用：",
+        "title": "要取消您的方案嗎？"
+      },
+      "continueCancelling": "繼續取消",
+      "done": "完成",
+      "genericPlanName": "Comfy Cloud",
+      "keepPlan": "保留我的方案",
+      "survey": {
+        "commentLabel": "還有其他想與我們分享的內容嗎？（選填）",
+        "commentPlaceholder": "告訴我們任何想法",
+        "reasons": {
+          "missingFeatures": "缺少功能或模型",
+          "notUsingEnough": "使用頻率不夠高",
+          "somethingElse": "其他原因",
+          "switchingTools": "改用其他工具",
+          "tooExpensive": "太貴"
+        },
+        "subtitle": "選填，但這有助於讓 Comfy Cloud 變得更好。",
+        "title": "您為什麼要取消？"
+      }
+    },
     "cancelPlan": "取消方案",
-    "cancelSuccess": "訂閱已成功取消",
     "canceled": "已取消",
     "canceledCard": {
       "description": "您將不會再次被收費。您的功能將持續至 {date}。",
@@ -4679,6 +4771,7 @@
       "backToAllPlans": "返回所有方案",
       "billedEachMonth": "每月收費 {amount}。可隨時取消。",
       "billingAddress": "帳單地址",
+      "cancelPaymentAndRetry": "取消付款並再試一次",
       "changePaymentMethod": "變更",
       "commitment": "承諾期",
       "completePayment": "完成付款",
@@ -4785,6 +4878,40 @@
     "resubscribeFailed": "重新啟用訂閱失敗",
     "resubscribeSuccess": "訂閱已重新啟用",
     "resubscribeTo": "恢復 {plan}",
+    "retentionOffer": {
+      "accept": "保留 {plan} 並節省 {percent}%",
+      "appliedBadge": "已套用",
+      "appliedBody": "從 {date} 起，您的下一次付款將享有 {percent}% 折扣。 | 從 {date} 起，您接下來 {months} 次付款將享有 {percent}% 折扣。",
+      "appliedTitle": "您將繼續使用 {plan}",
+      "checkAgain": "再次查看",
+      "declinedBody": "您的 {plan} 方案尚未變更。您可以目前的價格保留方案，或繼續取消。",
+      "expiredBody": "此優惠已到期，或您的方案自建立此優惠後已變更。請關閉後重新開啟取消流程，以查看您目前可選的選項。",
+      "expiredTitle": "此優惠已無法使用",
+      "failed": "我們無法套用此優惠，您的方案尚未變更。您仍可取消。",
+      "failedBody": "我們這邊發生問題，您的 {plan} 方案尚未變更。請再試一次，或繼續取消。",
+      "failedTitle": "我們無法套用您的折扣",
+      "finePrint": "一次性優惠。續訂 1 次後，{plan} 將恢復為 {regular}/月。可隨時取消。 | 一次性優惠。續訂 {months} 次後，{plan} 將恢復為 {regular}/月。可隨時取消。",
+      "keepCredits": "保留您的每月 {credits} 點數，以及 {plan} 中的所有其他內容。",
+      "keepCreditsAndLoRAs": "保留您的每月 {credits} 點數、自訂 LoRAs，以及 {plan} 中的所有其他內容。",
+      "keepEverything": "保留您 {plan} 方案中的所有內容。",
+      "nextPayments": "下一次付款 | 接下來 {months} 次付款",
+      "pendingToast": "您的折扣仍在確認中。請在進行其他帳務變更前確認您的方案。",
+      "perMonth": "/月",
+      "percentOff": "折扣 {percent}%",
+      "pricePerMonth": "{price}/月",
+      "refreshFailed": "您的折扣已套用。請重新整理頁面以查看更新後的方案。",
+      "renewsAt": "將於 {date} 以 {regular} 續訂。",
+      "savings": "這次付款您將節省 {savings}。 | 這 {months} 次付款合計將節省 {savings}。",
+      "stayOnPlan": "繼續使用 {plan}",
+      "subtitle": "在您決定期間，這裡有一項優惠",
+      "supportCode": "若持續發生此問題，請聯絡客服並提供代碼 DISCOUNT_NOT_APPLIED。",
+      "term": "適用於您的下一次付款，之後為 {regular}/月 | 適用於接下來 {months} 次付款，之後為 {regular}/月",
+      "title": "在您離開之前",
+      "tryAgain": "再試一次",
+      "unconfirmed": "我們仍在確認您的折扣。請稍候片刻再查看；若問題未排除，請聯絡客服。",
+      "unconfirmedBody": "您的折扣可能仍在套用中。在進行其他帳務變更前，請稍候片刻再查看。",
+      "unconfirmedTitle": "您的折扣尚未確認"
+    },
     "salesManagedCreditsEndedNote": "方案點數已隨您的訂閱一同結束。",
     "salesManagedInactiveCreditsNote": "方案恢復後即可使用。",
     "salesManagedRunBlockedDetail": "此工作區的方案已不再啟用。請聯絡您的 Comfy 客戶經理以恢復存取權。",
@@ -5086,6 +5213,7 @@
     "modelLoadedSuccessfully": "3D 模型載入成功",
     "no3dScene": "沒有 3D 場景可套用材質",
     "no3dSceneToExport": "沒有 3D 場景可匯出",
+    "noPersonalWorkspace": "此帳戶沒有個人帳單。請從您的團隊工作區管理帳單。",
     "noTemplatesToExport": "沒有可匯出的範本",
     "nodeDefinitionsUpdateFailed": "節點定義更新失敗",
     "nodeDefinitionsUpdated": "節點定義已更新",
@@ -5271,7 +5399,11 @@
     "addedToWorkspace": "您已加入：",
     "deepLinkStayed": "無法開啟該工作區。您仍在 {workspaceName} 中。",
     "inviteAccepted": "已接受邀請",
+    "inviteDirectoryManaged": "您的組織管理員會管理成員資格",
+    "inviteDirectoryManagedDetail": "此工作區的成員是透過您組織的目錄管理，因此無法使用邀請連結加入。請要求您組織的管理員將您加入。",
     "inviteFailed": "接受邀請失敗",
+    "inviteSsoUnavailable": "請要求管理員將您加入",
+    "inviteSsoUnavailableDetail": "目前無法透過 SSO 帳戶接受邀請連結。請要求工作區管理員直接將您加入工作區。",
     "switchFailed": "切換工作區失敗。請再試一次。",
     "viewWorkspace": "檢視工作區"
   },
@@ -5280,12 +5412,17 @@
       "accessDenied": "您沒有存取此工作區的權限",
       "invalidFirebaseToken": "驗證失敗。請重新登入。",
       "notAuthenticated": "您必須登入才能存取工作區",
+      "ssoRequired": "您的組織要求使用單一登入。請透過 SSO 繼續登入。",
       "tokenExchangeFailed": "與工作區驗證失敗：{error}",
       "workspaceNotFound": "找不到工作區"
     },
     "initializationFailed": "無法載入您的工作區",
     "initializationFailedDetail": "請檢查您的連線並再試一次。",
     "initializationFailedSignOutDetail": "請登出並重新登入以繼續。",
+    "noWorkspaceAccess": {
+      "detail": "請要求管理員將您加入工作區，然後再次登入。",
+      "title": "您沒有任何工作區的存取權"
+    },
     "retry": "再試一次"
   },
   "workspacePanel": {
@@ -5307,11 +5444,13 @@
     },
     "billingStatus": {
       "ending": {
-        "body": "在此之前，成員仍可完整存取。恢復您的方案以保留團隊的共用點數。",
+        "body": "之後不會再向您收費。成員在此之前仍可完整使用所有功能。恢復您的方案以保留團隊共用點數。",
         "contactSales": "聯絡業務人員",
         "enterpriseBody": "在此之前，成員可保有完整存取權。請聯絡我們的業務團隊以延長方案。",
         "enterpriseTitle": "您的 Enterprise 方案將於 {date} 結束",
         "memberBody": "在此之前，您仍可執行工作流程。",
+        "personalBody": "之後不會再向您收費。恢復您的方案以保留每月點數。",
+        "personalTitle": "您的 {plan} 方案將於 {date} 結束",
         "reactivate": "恢復方案",
         "title": "您的 Team 方案將於 {date} 結束"
       },
@@ -5322,13 +5461,13 @@
         "dismiss": "關閉",
         "memberBody": "您的團隊已用完所有點數。請要求工作區擁有者新增更多點數，或等待點數於 {date} 補充。",
         "memberBodyNoDate": "您的團隊已用完所有點數。請要求工作區擁有者新增更多點數。",
+        "personalBody": "您已用完所有點數。您可以加購點數，或等待點數於 {date} 補充。",
+        "personalBodyNoDate": "您已用完所有點數。您可以加購點數。",
         "title": "點數已用完"
       },
       "paused": {
         "body": "此工作區的訂閱已暫停。請更新付款方式以恢復使用。",
         "memberBody": "此工作區的訂閱已暫停。請聯絡工作區管理員更新付款方式。",
-        "personalBody": "您的訂閱已暫停。請更新付款方式以恢復訂閱。",
-        "personalPaymentFailedBody": "您的付款未成功。請更新付款方式以恢復訂閱。",
         "title": "訂閱已暫停"
       },
       "payInvoice": "支付帳單",
@@ -5339,6 +5478,9 @@
       "planEnded": {
         "enterpriseBody": "請聯絡業務人員以啟用新的 Enterprise 方案。",
         "enterpriseTitle": "您的 Enterprise 方案已於 {date} 結束",
+        "personalBody": "重新訂閱即可再次執行工作流程並取得每月點數。",
+        "personalTitle": "您的 {plan} 方案已於 {date} 結束",
+        "personalTitleNoDate": "您的 {plan} 方案已結束",
         "planTitle": "您的方案已於 {date} 結束",
         "salesBody": "請聯絡業務人員以啟用新方案。",
         "salesMemberBody": "請要求工作區擁有者聯絡業務人員。",
@@ -5593,6 +5735,7 @@
   "workspaceSwitcher": {
     "createWorkspace": "建立新工作區",
     "failedToSwitch": "切換工作區失敗",
+    "managedByOrganization": "您的組織會管理工作區，因此您無法建立工作區。",
     "maxWorkspacesReached": "您最多只能擁有 10 個工作區。請刪除一個以建立新工作區。",
     "personal": "個人",
     "roleMember": "成員",
