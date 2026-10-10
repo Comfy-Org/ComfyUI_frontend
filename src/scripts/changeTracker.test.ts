@@ -1630,6 +1630,54 @@ describe('ChangeTracker', () => {
       expect(tracker._restoringState).toBe(false)
     })
 
+    it('serializes distinct workflow requests after a pending Undo', async () => {
+      vi.useFakeTimers()
+      onTestFinished(() => {
+        vi.useRealTimers()
+      })
+      const earlier = createState(1)
+      const previous = createState(2)
+      const current = createState(3)
+      const firstSelection = createState(4)
+      const secondSelection = createState(5)
+      const firstSource = [firstSelection]
+      const secondSource = [secondSelection]
+      const tracker = createTracker(current)
+      tracker.undoQueue.push(earlier, previous)
+      let releasePending!: () => void
+      const pending = new Promise<void>((resolve) => {
+        releasePending = resolve
+      })
+      vi.mocked(app.loadGraphData).mockImplementationOnce(async () => {
+        await pending
+        tracker.reset(previous)
+        mockCanvasState(previous)
+        return true
+      })
+
+      const undo = tracker.undo()
+      let selectionFinished = false
+      const firstRequest = tracker
+        .updateState(firstSource, tracker.undoQueue)
+        .then(() => {
+          selectionFinished = true
+        })
+      const secondRequest = tracker.updateState(secondSource, tracker.undoQueue)
+      try {
+        await vi.advanceTimersByTimeAsync(0)
+        expect(selectionFinished).toBe(false)
+      } finally {
+        releasePending()
+        await Promise.all([undo, firstRequest, secondRequest])
+      }
+
+      expect(tracker.activeState).toEqual(secondSelection)
+      expect(tracker.undoQueue).toEqual([earlier, previous, firstSelection])
+      expect(tracker.redoQueue).toEqual([current])
+      expect(firstSource).toEqual([])
+      expect(secondSource).toEqual([])
+    })
+
     it.for([false, undefined])(
       'preserves state and history when restoration returns %s',
       async (result) => {
