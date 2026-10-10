@@ -11,6 +11,7 @@ import { buildTooltipConfig } from '@/composables/useTooltipConfig'
 import type {
   AgentFreeUseNoticeMetadata,
   AgentPaywallSurface,
+  AgentStarterPromptAssignment,
   AgentStopMethod
 } from '@/platform/telemetry/types'
 import type { FreeUseVariant } from '../../experiments/freeUsePlacement'
@@ -22,7 +23,7 @@ import type {
   WorkflowReferenceOption
 } from '../../types/workflowReference'
 import type { TurnId } from '../../schemas/agentApiSchema'
-import type { ComposerAttachment } from '../../composables/agent/useComposer'
+import type { ComposerAttachment } from '../../types/composerAttachment'
 import type { SelectedNode } from '../../composables/agent/useCanvasSelection'
 import { DEFAULT_AGENT_PAYWALL_PRESENTATION } from '@/workbench/extensions/agent/services/agent/agentPaywallPresentation'
 import type {
@@ -78,7 +79,9 @@ const {
   selectHistory = async () => false,
   editableTurnId = null,
   answeringAskIds = new Set<string>(),
-  freeUsePlacement = 'control'
+  freeUsePlacement = 'control',
+  starterPromptAssignment = 'control',
+  attributeStarterPromptExperiment = false
 } = defineProps<{
   entries: ConversationEntry[]
   userName?: string
@@ -119,6 +122,8 @@ const {
   editableTurnId?: TurnId | null
   answeringAskIds?: ReadonlySet<string>
   freeUsePlacement?: FreeUseVariant
+  starterPromptAssignment?: AgentStarterPromptAssignment
+  attributeStarterPromptExperiment?: boolean
 }>()
 const emit = defineEmits<{
   send: [
@@ -153,6 +158,7 @@ const emit = defineEmits<{
   openReferenceWorkflow: [workflowId: string, workflowName: string]
   showTarget: []
   freeUseNotice: [metadata: AgentFreeUseNoticeMetadata]
+  starterPromptRendered: [assignment: AgentStarterPromptAssignment]
 }>()
 
 const targetNotice = computed(() => {
@@ -448,6 +454,9 @@ defineExpose({ addAttachment, updateAttachment, removeAttachment })
         <EmptyState
           v-if="!entries.length"
           :user-name
+          :assignment="starterPromptAssignment"
+          :attribute-experiment="attributeStarterPromptExperiment"
+          @rendered="emit('starterPromptRendered', $event)"
           @insert="
             (text, prompt) => {
               composerRef?.insert(text, prompt)

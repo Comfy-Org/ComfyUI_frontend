@@ -3,7 +3,7 @@ import { render, screen, waitFor, within } from '@testing-library/vue'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 
 import { i18n } from '@/i18n'
-import { useToastStore } from '@/platform/updates/common/toastStore'
+import { useToast } from '@/components/ui/toast/toastStore'
 import { api } from '@/scripts/api'
 
 import type { ReplyAsset } from '../../../utils/replyAssets'
@@ -161,12 +161,9 @@ describe('MessageFeedback', () => {
     await user.click(download)
 
     await waitFor(() =>
-      expect(useToastStore().add).toHaveBeenCalledWith(
-        expect.objectContaining({
-          severity: 'error',
-          detail: '1 download failed'
-        })
-      )
+      expect(useToast().error).toHaveBeenCalledWith('Error', {
+        description: '1 download failed'
+      })
     )
     await waitFor(() => expect(download).toBeEnabled())
 

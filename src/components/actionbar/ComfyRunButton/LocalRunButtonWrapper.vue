@@ -27,11 +27,11 @@ import { useI18n } from 'vue-i18n'
 import ComfyQueueButton from '@/components/actionbar/ComfyRunButton/ComfyQueueButton.vue'
 import Button from '@/components/ui/button/Button.vue'
 import { usePartnerNodesRunGate } from '@/composables/billing/usePartnerNodesRunGate'
-import { useDialogService } from '@/services/dialogService'
+import { useAuthDialogs } from '@/composables/auth/useAuthDialogs'
 
 const { t } = useI18n()
 const { gate, partnerNodes } = usePartnerNodesRunGate()
-const dialogService = useDialogService()
+const { showApiNodesSignInDialog } = useAuthDialogs()
 const root = useTemplateRef<HTMLElement>('root')
 
 // Signing in swaps the focused gated button for the queue button, which would
@@ -44,7 +44,7 @@ watch(gate, async () => {
 })
 
 function openPartnerSignInDialog() {
-  void dialogService.showApiNodesSignInDialog(
+  void showApiNodesSignInDialog(
     partnerNodes.value.map((node) => node.displayName)
   )
 }

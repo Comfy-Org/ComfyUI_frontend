@@ -40,7 +40,7 @@ import type {
 import type { IBaseWidget } from '@/lib/litegraph/src/types/widgets'
 import { toConcreteWidget } from '@/lib/litegraph/src/widgets/widgetMap'
 import { useSettingStore } from '@/platform/settings/settingStore'
-import { useToastStore } from '@/platform/updates/common/toastStore'
+import { useToast } from '@/components/ui/toast/toastStore'
 import { useWorkflowStore } from '@/platform/workflow/management/stores/workflowStore'
 import { createPromotedMultilineWidget } from '@/renderer/extensions/vueNodes/widgets/utils/multilineTextarea'
 import { useCanvasStore } from '@/renderer/core/canvas/canvasStore'
@@ -62,7 +62,7 @@ import {
   zDynamicGroupInputSpec
 } from '@/schemas/nodeDefSchema'
 import { ComfyApp, app } from '@/scripts/app'
-import { $el } from '@/scripts/ui'
+import { $el } from '@/scripts/ui/utils'
 import { useExecutionStore } from '@/stores/executionStore'
 import { useNodeOutputStore } from '@/stores/nodeOutputStore'
 import { ComfyNodeDefImpl } from '@/stores/nodeDefStore'
@@ -78,11 +78,11 @@ import { parseNodeId } from '@/types/nodeId'
 import type { SerializedNodeId } from '@/types/nodeId'
 import { isBlueprintType } from '@/utils/blueprintUtils'
 import { markCoreMediaMenuCallback } from '@/utils/coreMediaMenuActionUtils'
+import { getErrorMessage } from '@/utils/errorUtil'
 import type { WidgetId } from '@/types/widgetId'
 import { normalizeI18nKey } from '@/utils/formatUtil'
 import {
   isAnimatedOutput,
-  isImageNode,
   isVideoNode,
   isVideoOutput,
   migrateWidgetsValues
@@ -90,7 +90,6 @@ import {
 import { getOrderedInputSpecs } from '@/workbench/utils/nodeDefOrderingUtil'
 
 import { useExtensionService } from './extensionService'
-import { useMaskEditor } from '@/composables/maskeditor/useMaskEditor'
 
 async function reencodeAsPngBlob(
   blob: Blob,
@@ -191,7 +190,7 @@ function getMinSize(node: LGraphNode) {
  */
 export const useLitegraphService = () => {
   const extensionService = useExtensionService()
-  const toastStore = useToastStore()
+  const toast = useToast()
   const widgetStore = useWidgetStore()
   const canvasStore = useCanvasStore()
   const { toggleSelectedNodesMode } = useSelectedLiteGraphItems()
@@ -699,9 +698,9 @@ export const useLitegraphService = () => {
                 throw error
               }
             } catch (error) {
-              toastStore.addAlert(
+              toast.warning(
                 t('toastMessages.errorCopyImage', {
-                  error: error instanceof Error ? error.message : error
+                  error: getErrorMessage(error) ?? t('g.unknownError')
                 })
               )
             }
@@ -768,15 +767,6 @@ export const useLitegraphService = () => {
             callback: markCoreMediaMenuCallback(() => {
               ComfyApp.pasteFromClipspace(this)
             }, 'input')
-          })
-        }
-
-        if (isImageNode(this)) {
-          options.push({
-            content: 'Open in MaskEditor | Image Canvas',
-            callback: markCoreMediaMenuCallback(() => {
-              useMaskEditor().openMaskEditor(this)
-            }, 'preview')
           })
         }
       }

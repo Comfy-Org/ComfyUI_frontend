@@ -1,7 +1,10 @@
 import { computed, ref, toRaw, toRef, watch } from 'vue'
 import type { MaybeRef } from 'vue'
 
-import { useViewportNodeWiring } from '@/composables/useViewportNodeWiring'
+import {
+  createSceneHoverHandlers,
+  useViewportNodeWiring
+} from '@/composables/useViewportNodeWiring'
 import { CameraAngleViewport } from '@/extensions/core/cameraAngle/CameraAngleViewport'
 import {
   clampState,
@@ -27,7 +30,7 @@ import {
 import type { NodeWithWidgets } from '@/extensions/core/cameraAngle/widgetBridge'
 import { t } from '@/i18n'
 import type { LGraphNode } from '@/lib/litegraph/src/LGraphNode'
-import { useToastStore } from '@/platform/updates/common/toastStore'
+import { useToast } from '@/components/ui/toast/toastStore'
 import { useNodeOutputStore } from '@/stores/nodeOutputStore'
 
 const IMAGE_INPUT_NAME = 'image'
@@ -85,9 +88,7 @@ export function useCameraAngle(
     } catch (error) {
       console.error('Failed to initialize CameraAngleViewport:', error)
       cleanup()
-      useToastStore().addAlert(
-        t('toastMessages.failedToInitializeCameraAngleViewer')
-      )
+      useToast().warning(t('toastMessages.failedToInitializeCameraAngleViewer'))
     }
   }
 
@@ -98,14 +99,9 @@ export function useCameraAngle(
     lastImageUrl = null
   }
 
-  const handleMouseEnter = (): void => {
-    viewport?.viewport.updateStatusMouseOnScene(true)
-    viewport?.viewport.refreshViewport()
-  }
-
-  const handleMouseLeave = (): void => {
-    viewport?.viewport.updateStatusMouseOnScene(false)
-  }
+  const { handleMouseEnter, handleMouseLeave } = createSceneHoverHandlers(
+    () => viewport?.viewport
+  )
 
   const setViewMode = (mode: CameraAngleViewMode): void => {
     viewMode.value = mode

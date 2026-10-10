@@ -1,20 +1,52 @@
 <script setup lang="ts">
+import { cn } from '@comfyorg/tailwind-utils'
+import { ArrowRight } from '@lucide/vue'
+
+import Button from '@/components/ui/button/Button.vue'
 import NavigationMenuLink from '@/components/ui/navigation-menu/NavigationMenuLink.vue'
 
 import { isHrefActive } from '@/composables/useCurrentPath'
 import type { NavColumn } from '@/data/mainNavigation'
+import { navLinkTarget } from '@/data/mainNavigation'
 import type { Locale } from '@/i18n/translations'
 import NavLinkContent from './NavLinkContent.vue'
 
-defineProps<{ column: NavColumn; locale: Locale; currentPath: string }>()
+defineProps<{
+  column: NavColumn
+  locale: Locale
+  currentPath: string
+  layout?: 'column' | 'row'
+}>()
 </script>
 
 <template>
-  <li class="flex flex-col space-y-4">
-    <p class="pl-2 font-formula text-sm font-medium text-primary-warm-gray">
-      {{ column.header }}
-    </p>
-    <ul class="flex flex-col">
+  <li
+    :class="
+      cn(
+        layout === 'row'
+          ? 'flex items-center gap-8'
+          : 'flex flex-col space-y-4',
+        column.description && 'w-52'
+      )
+    "
+  >
+    <div v-if="column.header" :class="layout === 'row' ? '' : 'pl-2'">
+      <p
+        class="font-formula text-xs font-medium text-primary-warm-gray uppercase"
+      >
+        {{ column.header }}
+      </p>
+      <p
+        v-if="column.description"
+        class="mt-1 text-xs whitespace-nowrap text-primary-warm-gray"
+      >
+        {{ column.description }}
+      </p>
+    </div>
+    <ul
+      :aria-label="column.header"
+      :class="layout === 'row' ? 'flex items-center gap-1' : 'flex flex-col'"
+    >
       <li v-for="item in column.items" :key="item.label">
         <NavigationMenuLink
           as-child
@@ -23,8 +55,7 @@ defineProps<{ column: NavColumn; locale: Locale; currentPath: string }>()
         >
           <a
             :href="item.href"
-            :target="item.external ? '_blank' : undefined"
-            :rel="item.external ? 'noopener noreferrer' : undefined"
+            v-bind="navLinkTarget(item)"
             class="whitespace-nowrap"
           >
             <NavLinkContent :item="item" :locale="locale" />
@@ -32,5 +63,13 @@ defineProps<{ column: NavColumn; locale: Locale; currentPath: string }>()
         </NavigationMenuLink>
       </li>
     </ul>
+    <div v-if="column.allLink" class="mt-auto pl-2">
+      <Button as="a" variant="link" size="sm" :href="column.allLink.href">
+        {{ column.allLink.label }}
+        <template #append>
+          <ArrowRight class="size-4" aria-hidden="true" />
+        </template>
+      </Button>
+    </div>
   </li>
 </template>

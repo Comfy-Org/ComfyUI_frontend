@@ -27,6 +27,7 @@ import type {
   AgentRunApprovalShownMetadata,
   AgentRunModeChangedMetadata,
   AgentStarterPromptClickedMetadata,
+  AgentStarterPromptExposureMetadata,
   AgentStopClickedMetadata,
   AgentThreadStartedMetadata,
   AgentWorkflowBoundMetadata,
@@ -44,6 +45,8 @@ import type {
   HelpCenterOpenedMetadata,
   HelpResourceClickedMetadata,
   ImageLoadFailureMetadata,
+  InAppSurveyEvent,
+  InAppSurveyStage,
   LinkDedupDropMetadata,
   NamedValuesShadowDiffMismatchMetadata,
   NamedValuesShadowDiffSummaryMetadata,
@@ -246,6 +249,11 @@ export class TelemetryRegistry implements TelemetryDispatcher {
     this.dispatch((provider) => provider.trackSurvey?.(stage, responses))
   }
 
+  // fallow-ignore-next-line unused-class-member
+  trackInAppSurvey(stage: InAppSurveyStage, event: InAppSurveyEvent): void {
+    this.dispatch((provider) => provider.trackInAppSurvey?.(stage, event))
+  }
+
   trackOnboardingTour(
     stage: OnboardingTourStepStage,
     metadata: OnboardingTourStepMetadata
@@ -437,6 +445,14 @@ export class TelemetryRegistry implements TelemetryDispatcher {
   ): void {
     this.dispatch((provider) =>
       provider.trackAgentStarterPromptClicked?.(metadata)
+    )
+  }
+
+  trackAgentStarterPromptExposure(
+    metadata: AgentStarterPromptExposureMetadata
+  ): void {
+    this.dispatch((provider) =>
+      provider.trackAgentStarterPromptExposure?.(metadata)
     )
   }
 

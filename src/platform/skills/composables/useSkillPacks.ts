@@ -3,7 +3,7 @@ import { ref } from 'vue'
 import { useI18n } from 'vue-i18n'
 
 import { reportError } from '@/platform/telemetry/reportError'
-import { useToastStore } from '@/platform/updates/common/toastStore'
+import { useToast } from '@/components/ui/toast/toastStore'
 
 import {
   deleteSkillPack as deleteSkillPackApi,
@@ -14,7 +14,7 @@ import type { SkillPack } from '../types'
 
 export function useSkillPacks() {
   const { t } = useI18n()
-  const toastStore = useToastStore()
+  const toast = useToast()
   const store = useSkillPacksStore()
   const { packs, loading, hasLoaded } = storeToRefs(store)
 
@@ -22,10 +22,8 @@ export function useSkillPacks() {
 
   function reportUnexpected(error: unknown, errorType: string) {
     reportError(error, { errorType, surface: 'agent' })
-    toastStore.add({
-      severity: 'error',
-      summary: t('g.error'),
-      detail:
+    toast.error(t('g.error'), {
+      description:
         error instanceof SkillPacksApiError
           ? error.message
           : t('g.unknownError')
@@ -44,13 +42,15 @@ export function useSkillPacks() {
    * Delete 404 means missing pack or disabled gate; re-list to distinguish them.
    */
   async function deleteSkillPack(pack: SkillPack) {
+    const requestScope = store.scope
     operatingPackName.value = pack.name
     try {
       await deleteSkillPackApi(pack.name)
-      store.removePack(pack.name)
+      store.removePack(pack.name, requestScope)
     } catch (error) {
+      if (!store.isCurrentScope(requestScope)) return
       if (error instanceof SkillPacksApiError && error.status === 404) {
-        store.removePack(pack.name)
+        store.removePack(pack.name, requestScope)
         await fetchSkillPacks()
         return
       }

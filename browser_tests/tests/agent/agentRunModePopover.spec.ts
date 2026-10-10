@@ -118,9 +118,9 @@ test.describe('Agent run permissions popover', { tag: '@cloud' }, () => {
     })
   })
 
-  // A rejected write keeps the menu open to retry from, but the options go
-  // aria-disabled mid-write: that retry survives only if focus does.
-  test('A failed save can be retried from the keyboard', async ({
+  // Regression coverage for https://github.com/Comfy-Org/ComfyUI_frontend/pull/20177:
+  // auth diagnostics must leave the rejected write retryable at the UI.
+  test('An auth-rejected save can be retried from the keyboard', async ({
     agentPanel,
     comfyPage
   }) => {
@@ -145,7 +145,17 @@ test.describe('Agent run permissions popover', { tag: '@cloud' }, () => {
       if (rejectNext) {
         rejectNext = false
         await held
-        return route.fulfill({ status: 500, body: 'nope' })
+        return route.fulfill({
+          ...jsonRoute({
+            accepted: ['bearer_jwt', 'x_api_key'],
+            error: {
+              type: 'auth_type_not_allowed',
+              message:
+                'Authentication method not allowed for this endpoint. Accepted: bearer_jwt, x_api_key'
+            }
+          }),
+          status: 403
+        })
       }
       return route.fulfill(jsonRoute(saved))
     })
@@ -177,7 +187,7 @@ test.describe('Agent run permissions popover', { tag: '@cloud' }, () => {
 
     await test.step('the rejected pick keeps the menu, focus and old mode', async () => {
       await expect(
-        page.getByText(enMessages.agent.runModeSaveFailed)
+        comfyPage.toast.withText(enMessages.agent.runModeSaveFailed)
       ).toBeVisible()
       await expect(autoOption).toBeFocused()
       await expect(autoOption).not.toBeChecked()
@@ -194,6 +204,104 @@ test.describe('Agent run permissions popover', { tag: '@cloud' }, () => {
         })
       ).toBeVisible()
       expect(savedModes).toEqual(['auto', 'auto'])
+    })
+  })
+
+  // PM-1660/PM-1661, reproduced from the reporter's recording: the POST that
+  // carries the message waits on the cloud-workflow refresh first. The server
+  // pins a turn's run mode when that POST arrives, so a mode written inside
+  // that window re-authorized a turn sent under the previous mode.
+  test('a mode picked while a message is still in flight is saved after it', async ({
+    agentPanel,
+    comfyPage
+  }) => {
+    const page = comfyPage.page
+    const reachedServer: string[] = []
+    let holdTheSend = false
+    let releaseTheSend: () => void = () => {}
+    const sendHeld = new Promise<void>((resolve) => {
+      releaseTheSend = resolve
+    })
+
+    // Both halves of the send are held. Holding the workflow refresh alone
+    // would not be enough: prepareWorkflow() abandons it after
+    // PREPARE_TIMEOUT_MS and issues the POST anyway, which then waits here.
+    await page.route('**/api/workflows?*', async (route) => {
+      if (holdTheSend) await sendHeld
+      await route.fallback()
+    })
+    await page.route('**/api/agent/threads/*/messages', async (route) => {
+      if (route.request().method() !== 'POST') return route.fallback()
+      // Recorded where the POST is FORWARDED, not where it is intercepted.
+      // Recording on interception would let a PUT that overtook a still-held
+      // POST still read back as ['message', 'run-mode'] and pass.
+      if (holdTheSend) await sendHeld
+      await route.fallback()
+      reachedServer.push('message')
+    })
+    await page.route('**/api/agent/run-mode', async (route) => {
+      const request = route.request()
+      // ask_approval, which is also agentRunModeStore's own default, so the
+      // starting mode does not depend on this route winning a race.
+      // DockedAgentPanel fires load() on setup, and asserting a mode only this
+      // mock can produce was right about one attempt in four: it failed the
+      // initial run and two retries in CI and was reported 'flaky' only
+      // because a fourth attempt passed.
+      if (request.method() !== 'PUT')
+        return route.fulfill(
+          jsonRoute({
+            mode: 'ask_approval',
+            credit_limit: null
+          } satisfies AgentRunModePreference)
+        )
+      reachedServer.push('run-mode')
+      return route.fulfill(
+        jsonRoute(zAgentRunMode.parse(request.postDataJSON()))
+      )
+    })
+
+    await agentPanel.open()
+    await agentPanel.selectWorkflow()
+    const panel = agentPanel.root
+    const askTrigger = panel.getByRole('button', {
+      name: enMessages.agent.runModeTriggerAsk,
+      exact: true
+    })
+    const autoTrigger = panel.getByRole('button', {
+      name: enMessages.agent.runModeTriggerAuto,
+      exact: true
+    })
+    await expect(askTrigger).toBeVisible()
+
+    holdTheSend = true
+    await agentPanel.sendMessage('run the wf')
+
+    // Picked in the ESCALATING direction: the turn was sent under
+    // ask_approval, so a PUT that overtook it would let an already-sent turn
+    // run without a consent card.
+    await test.step('switching mode now does not overtake the message', async () => {
+      await askTrigger.click()
+      await page
+        .getByRole('menuitemradio', {
+          name: new RegExp(enMessages.agent.runModeAuto)
+        })
+        .click()
+
+      // A cheap sanity guard, not the regression detector: reachedServer is
+      // pushed from a Node-side route handler, which the DOM assertion above
+      // it does not order against. The detector is the final assertion.
+      // Nothing at all should have been forwarded while the send is held.
+      await expect(
+        page.getByRole('menuitemradio', {
+          name: new RegExp(enMessages.agent.runModeAuto)
+        })
+      ).toHaveAttribute('aria-busy', 'true')
+      expect(reachedServer).toEqual([])
+
+      releaseTheSend()
+      await expect(autoTrigger).toBeVisible()
+      // The load-bearing assertion: the write landed, and it landed second.
+      await expect.poll(() => reachedServer).toEqual(['message', 'run-mode'])
     })
   })
 })

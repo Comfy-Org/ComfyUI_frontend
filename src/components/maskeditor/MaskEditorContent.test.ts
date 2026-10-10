@@ -228,7 +228,6 @@ describe('MaskEditorContent', () => {
 
   describe('init error', () => {
     it('should close the dialog and log when loader.loadFromNode rejects', async () => {
-      const errorSpy = vi.spyOn(console, 'error').mockImplementation(() => {})
       mockMaskEditorLoader.loadFromNode.mockRejectedValueOnce(
         new Error('load failed')
       )
@@ -238,15 +237,13 @@ describe('MaskEditorContent', () => {
       await waitFor(() => {
         expect(useDialogStore().closeDialog).toHaveBeenCalledTimes(1)
       })
-      expect(errorSpy).toHaveBeenCalledWith(
+      expect(console.error).toHaveBeenCalledWith(
         '[MaskEditorContent] Initialization failed:',
         expect.any(Error)
       )
-      errorSpy.mockRestore()
     })
 
     it('should close the dialog and log when initializeCanvasPanZoom rejects', async () => {
-      const errorSpy = vi.spyOn(console, 'error').mockImplementation(() => {})
       mockPanZoom.initializeCanvasPanZoom.mockRejectedValueOnce(
         new Error('panzoom failed')
       )
@@ -256,11 +253,10 @@ describe('MaskEditorContent', () => {
       await waitFor(() => {
         expect(useDialogStore().closeDialog).toHaveBeenCalledTimes(1)
       })
-      expect(errorSpy).toHaveBeenCalledWith(
+      expect(console.error).toHaveBeenCalledWith(
         '[MaskEditorContent] Initialization failed:',
         expect.any(Error)
       )
-      errorSpy.mockRestore()
     })
   })
 
@@ -306,9 +302,7 @@ describe('MaskEditorContent', () => {
 
       expect(mockBrushDrawing.saveBrushSettings).toHaveBeenCalledTimes(1)
       expect(mockKeyboard.removeListeners).toHaveBeenCalledTimes(1)
-      expect(
-        vi.mocked(mockStore.canvasHistory).clearStates
-      ).toHaveBeenCalledTimes(1)
+      expect(mockStore.canvasHistory.clearStates).toHaveBeenCalledTimes(1)
       expect(mockStore.resetState).toHaveBeenCalledTimes(1)
       expect(useMaskEditorDataStore().reset).toHaveBeenCalledTimes(1)
     })
