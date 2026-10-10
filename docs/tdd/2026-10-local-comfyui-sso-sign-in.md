@@ -3,7 +3,7 @@
 | Field        | Value                                                                                                                                             |
 | ------------ | ------------------------------------------------------------------------------------------------------------------------------------------------- |
 | Status       | Draft. Not in the SSO pilot scope (Cloud + Desktop); this records the work so it can be scheduled.                                                |
-| Linear       | FE-3099 (frontend). Execution credential: BE-998 follow-up.                                                                                       |
+| Linear       | FE-3099 (local sign-in), FE-2170 (execution token). Action items: see below.                                                                      |
 | Decision     | [ADR-AUTH-LOCAL-0043](../adr/AUTH-LOCAL-0043-local-comfyui-signs-in-through-cloud-oauth.md)                                                       |
 | Repos        | `Comfy-Org/cloud` (ingest, comfy-api), `comfyanonymous/ComfyUI` (core), `Comfy-Org/ComfyUI_frontend`                                              |
 | Out of scope | `--listen` over the LAN and remote hosts (no loopback redirect possible); Desktop local (already shipped behind `desktop_embedded_oauth_session`) |
@@ -49,50 +49,88 @@ and send them as `Authorization: Bearer` / `X-API-KEY`.
   already follow it.
 - There is no PKCE code anywhere in the repo.
 
-## Work items
+## Action items
 
-### 1. Cloud (backend)
+The source of truth is section 16 of the Notion TDD
+[Resolving stale authentication tokens in Local API Nodes](https://app.notion.com/p/3d76d73d36508186b202fb04a95cd6fa),
+which combines local sign-in with the partner-node execution token. IDs here
+match it. Prefixes: **D** decision, **B** cloud backend, **C** ComfyUI core,
+**F** frontend.
 
-| #   | Item                                                                                                                                                                                                                                                                                                                                                                         | Notes                                                                     |
-| --- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------- |
-| B1  | Seed a native public client for local web (e.g. `comfy-local-web`) with redirects `http://127.0.0.1/`, `http://[::1]/`, `http://localhost/`, and decide its scopes.                                                                                                                                                                                                          | Path `/` means core needs no new route (C1).                              |
-| B2  | Allow loopback CORS on `/oauth/token` (code exchange and refresh).                                                                                                                                                                                                                                                                                                           | One allowlist entry.                                                      |
-| B3  | Confirm the refresh-token holder fingerprint (IP + User-Agent) tolerates browser refreshes.                                                                                                                                                                                                                                                                                  |                                                                           |
-| B4  | Decide whether sign-out needs a revoke endpoint, or whether dropping the tokens is enough.                                                                                                                                                                                                                                                                                   |                                                                           |
-| B5  | **Execution credential (option 3, BE-998).** Build the partner-node token from the Notion decision "Renewable partner-node token for Local API nodes" (audience `comfy-partner-node`, partner routes only, renewed by the API-node client, revocable). For local SSO, the mint (`POST /api/auth/token` with `resource: partner-node`) must also accept the OAuth credential. | Shared with Desktop's prod gate. Largest item; design is Feedback Wanted. |
+```mermaid
+flowchart LR
+  subgraph Decisions
+    D1["D1 approve partner-node design"]
+    D2["D2 Local SSO scope"]
+    D3["D3 refresh-token storage"]
+  end
+  subgraph Backend
+    B1["B1 cloudjwt partner-node token"]
+    B2["B2 comfy-api route group + renew relay"]
+    B3["B3 ingest mint, renew, revoke"]
+    B4["B4 mint accepts OAuth access token"]
+    B5["B5 comfy-local-web client + CORS"]
+    C1["C1 core renew in comfy_api_nodes"]
+  end
+  subgraph Frontend
+    F1["F1 partner-node token at queue time"]
+    F2["F2 PKCE module"]
+    F3["F3 browser auth bridge + callback"]
+    F4["F4 token storage + refresh"]
+    F5["F5 local SSO mints from OAuth"]
+    F6["F6 QA + long-queue E2E"]
+  end
+  D1 --> B1
+  B1 --> B2
+  B1 --> B3
+  B2 --> C1
+  B3 --> B4
+  D2 --> B5
+  B5 --> B4
+  B3 --> F1
+  F2 --> F3
+  B5 --> F3
+  F3 --> F4
+  D3 --> F4
+  F1 --> F5
+  F4 --> F5
+  B4 --> F5
+  C1 --> F6
+  F5 --> F6
+```
 
-### 2. ComfyUI core
+Two tracks meet at F5: the execution token (D1 → B1–B3 → C1, F1) and local
+sign-in (D2 → B5 → F2–F4). F2 has no dependency and can start now.
 
-| #   | Item                                                                                                                                                                 | Notes                               |
-| --- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ----------------------------------- |
-| C1  | None if the redirect path is `/`. Otherwise add a route that serves the callback.                                                                                    | A core change needs a core release. |
-| C2  | For B5: renew the partner-node token in `comfy_api_nodes/util` before expiry or after a 401, per the Notion decision. No change to `server.py` or the prompt format. | Lands with B5.                      |
+### Decisions
 
-### 3. Frontend
+| #   | Decision                                                                                  | Who decides                  |
+| --- | ----------------------------------------------------------------------------------------- | ---------------------------- |
+| D1  | Approve the partner-node token design and its five decisions; the fate of core #16242     | Christian, security reviewer |
+| D2  | When is local SSO in scope, and for which customers                                       | Anupreet                     |
+| D3  | May a refresh token live in browser storage, or is sign-in per browser session acceptable | Christian, security          |
 
-| #   | Item                                                                                                                                                                                          |
-| --- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| F1  | PKCE module in `packages/account-core`: verifier and S256 challenge, `state`, authorize URL, code exchange and refresh, with unit tests.                                                      |
-| F2  | A browser auth bridge with the `DesktopHostAuthBridge` shape, started from `src/main.ts` when not Cloud, not Desktop, and the flag is on, so the existing host-auth consumers work unchanged. |
-| F3  | Handle the return: read `code` and `state` from the URL on boot, check `state`, exchange, then remove them from the URL.                                                                      |
-| F4  | Token storage and refresh: access token in memory; refresh token per the security decision (Q2); clear both on sign-out.                                                                      |
-| F5  | `getWorkspaceToken` for a workspace switch. `/api/auth/token` does not accept OAuth access tokens, so confirm how Desktop's bridge gets per-workspace tokens and reuse it (may add a B item). |
-| F6  | Feature flag (e.g. `local_web_sso`), default off; flag off is today's local sign-in.                                                                                                          |
-| F7  | Tests: unit for F1–F4, E2E with a mocked OAuth server for flag off, on and token-endpoint failure.                                                                                            |
+### Backend
 
-### 4. QA and rollout
+| #   | Action                                                                                                                                                                          | Repo    | Depends on |
+| --- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ------- | ---------- |
+| B1  | Partner-node token in `common/cloudjwt`: `sid`, single audience `comfy-partner-node`, own lifetime                                                                              | cloud   | D1         |
+| B2  | comfy-api: accept the audience on the partner route group only, 403 elsewhere; renew relay that tolerates expiry; denied-route counter                                          | cloud   | B1         |
+| B3  | Ingest: `resource: partner-node` on `/api/auth/token`; sessions table; renew and revoke; auth-method bit on billing status and secrets resolve; CORS for revoke                 | cloud   | B1         |
+| B4  | Ingest: `/api/auth/token` accepts the OAuth access token from local web, for the workspace token and the partner-node token                                                     | cloud   | B3, B5     |
+| B5  | Native public client `comfy-local-web` with redirects `http://127.0.0.1/`, `http://[::1]/`, `http://localhost/` (path `/` needs no core route); loopback CORS on `/oauth/token` | cloud   | D2         |
+| C1  | Core `comfy_api_nodes/util`: read `exp`, renew before a request or after a 401, resend once. No change to `server.py` or the prompt format                                      | ComfyUI | B2         |
 
-- Port Desktop cases D1–D11 to web local on staging (sign-in, token,
-  fail-closed workspace, partner node, sign-out, flag off, non-SSO user,
-  first-time SSO, account switch, workspace switch).
-- Turn the flag on gradually and update docs.comfy.org.
+### Frontend
 
-## Order
-
-1. Decisions Q1–Q4 below.
-2. B1, B2 (small) in parallel with F1, F2, F6.
-3. F3, F4, F5 end to end against staging, then QA.
-4. B5 and C2 as a separate track; they also unblock Desktop local in prod.
+| #   | Action                                                                                                                                                                             | Ticket           | Depends on |
+| --- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ---------------- | ---------- |
+| F1  | Request the partner-node token at queue time behind a flag; fall back to the workspace token; revoke on logout and account switch                                                  | FE-2170          | B3         |
+| F2  | PKCE module in `packages/account-core`: verifier, S256 challenge, `state`, authorize URL, code exchange and refresh, with unit tests                                               | FE-3099          | none       |
+| F3  | Browser auth bridge with the `DesktopHostAuthBridge` shape, started from `src/main.ts` behind flag `local_web_sso`; read and check `code`/`state` on boot, exchange, clean the URL | FE-3099          | F2, B5     |
+| F4  | Token storage and refresh: access token in memory, refresh token per D3; clear both on sign-out                                                                                    | FE-3099          | F3, D3     |
+| F5  | The local SSO session mints the workspace and partner-node tokens from the OAuth credential                                                                                        | FE-3099, FE-2170 | F1, F4, B4 |
+| F6  | QA: port Desktop cases D1–D11 to web local; fake-clock long-queue E2E; E2E for flag off, on and token-endpoint failure                                                             | FE-3099          | F5, C1     |
 
 ## Related documents
 
@@ -109,9 +147,9 @@ Slack: #proj-sso scope thread (Oct 6–7); #bug-dump execution-auth options (Chr
 
 ## Open questions
 
-| #   | Question                                                                                            | Owner                      |
-| --- | --------------------------------------------------------------------------------------------------- | -------------------------- |
-| Q1  | When is local in scope, and for which customers?                                                    | Anupreet                   |
-| Q2  | May a refresh token live in browser storage, or is sign-in per browser session acceptable?          | Christian, Deep (security) |
-| Q3  | Is loopback-only acceptable, or must `--listen` and remote hosts be covered (device authorization)? | Anupreet, Christian        |
-| Q4  | Does the BE-998 gate apply to local the same way it applies to Desktop local?                       | Christian                  |
+Q1 and Q2 became decisions D2 and D3 above.
+
+| #   | Question                                                                                            | Owner               |
+| --- | --------------------------------------------------------------------------------------------------- | ------------------- |
+| Q3  | Is loopback-only acceptable, or must `--listen` and remote hosts be covered (device authorization)? | Anupreet, Christian |
+| Q4  | Does the partner-node token also become the gate for turning Desktop local on in prod?              | Christian           |

@@ -67,8 +67,12 @@ Christian listed three options for execution auth (#bug-dump, Aug 25):
 
 - SSO users get API nodes back on local with no Firebase dependency.
 - Desktop and local share one host-auth path in the frontend.
-- Option 3 also fixes the long-job and revocation gaps for every local
-  user, not only SSO users.
+- Option 3 also fixes the long-job gap for every local user, not only SSO
+  users, and makes the execution credential revocable: logout, account
+  switch and removal from the workspace stop renewal, so a revoked session
+  stops working when its current token expires (at most 90 minutes, per the
+  Notion decision). Immediate rejection would need comfy-api to check the
+  session on every request, which that design does not do.
 
 ### Negative
 
@@ -81,8 +85,11 @@ Christian listed three options for execution auth (#bug-dump, Aug 25):
 
 ## Notes
 
-The work items and open questions are in
+The action items, dependency graph and open questions are in
 [docs/tdd/2026-10-local-comfyui-sso-sign-in.md](../tdd/2026-10-local-comfyui-sso-sign-in.md).
+Their source of truth is section 16 of the Notion TDD
+[Resolving stale authentication tokens in Local API Nodes](https://app.notion.com/p/3d76d73d36508186b202fb04a95cd6fa),
+which combines local sign-in with the execution token.
 
 Related Notion documents (Documents Hub):
 
