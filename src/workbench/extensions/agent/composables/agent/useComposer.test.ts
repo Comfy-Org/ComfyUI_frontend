@@ -4,6 +4,7 @@ import { useTelemetry } from '@/platform/telemetry'
 
 import { useAgentComposerStore } from '../../stores/agent/agentComposerStore'
 import type { AgentStarterPromptAttribution } from '../../utils/starterPrompts'
+import { starterPromptAttribution } from '../../utils/starterPrompts'
 import type { ComposerAttachment } from '../../types/composerAttachment'
 import { useComposer } from './useComposer'
 
@@ -17,7 +18,8 @@ const CHIP: AgentStarterPromptAttribution = {
   promptIndex: 1,
   promptCount: 5,
   promptTextHash: 'deadbeef',
-  locale: 'en'
+  locale: 'en',
+  assignment: 'control'
 }
 
 function setup(running = false) {
@@ -174,13 +176,15 @@ describe('useComposer', () => {
       prompt_text_hash: 'deadbeef',
       locale: 'zh',
       click_id: expect.any(String),
-      draft_was_empty: true
+      draft_was_empty: true,
+      '$feature/agent-starter-prompt-set': 'control'
     })
     // The id on the event is the id the send will be attributed with.
     const [[event]] = telemetry.trackAgentStarterPromptClicked.mock.calls
     expect(store.starterPrompt).toEqual({
       id: 'slot_2',
-      clickId: event.click_id
+      clickId: event.click_id,
+      assignment: 'control'
     })
   })
 
@@ -200,6 +204,21 @@ describe('useComposer', () => {
     // Appending means the last chip owns the draft, and the text is a mix.
     expect(composer.draft.value).toBe(
       'List my saved workflows Explain the selected node'
+    )
+  })
+
+  it('omits experiment properties when prompt attribution has no assignment', () => {
+    const { composer } = setup()
+
+    composer.insert(
+      'QA treatment',
+      starterPromptAttribution('QA treatment', 1, 5, 'en')
+    )
+
+    const [[event]] = telemetry.trackAgentStarterPromptClicked.mock.calls
+    expect(event).not.toHaveProperty('$feature/agent-starter-prompt-set')
+    expect(useAgentComposerStore().starterPrompt).not.toHaveProperty(
+      'assignment'
     )
   })
 

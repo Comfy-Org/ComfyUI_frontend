@@ -118,7 +118,7 @@ describe('copyTextSilently', () => {
     vi.mocked(reportError).mockImplementation(() => undefined)
 
     await expect(copyTextSilently('text')).resolves.toBe(false)
-    expect(vi.mocked(reportError)).toHaveBeenCalledWith(
+    expect(reportError).toHaveBeenCalledWith(
       expect.any(Error),
       expect.objectContaining({ errorType: 'error_copying_invite_link' })
     )

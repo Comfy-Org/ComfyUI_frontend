@@ -83,7 +83,7 @@ describe('keybindingService - Canvas Keybindings', () => {
 
     await keybindingService.keybindHandler(event)
 
-    expect(vi.mocked(useCommandStore().execute)).toHaveBeenCalledWith(
+    expect(useCommandStore().execute).toHaveBeenCalledWith(
       'Comfy.Canvas.DeleteSelectedItems'
     )
   })
@@ -95,7 +95,7 @@ describe('keybindingService - Canvas Keybindings', () => {
 
     await keybindingService.keybindHandler(event)
 
-    expect(vi.mocked(useCommandStore().execute)).toHaveBeenCalledWith(
+    expect(useCommandStore().execute).toHaveBeenCalledWith(
       'Comfy.Canvas.DeleteSelectedItems'
     )
   })
@@ -106,7 +106,7 @@ describe('keybindingService - Canvas Keybindings', () => {
 
     await keybindingService.keybindHandler(event)
 
-    expect(vi.mocked(useCommandStore().execute)).not.toHaveBeenCalled()
+    expect(useCommandStore().execute).not.toHaveBeenCalled()
   })
 
   it('should not execute DeleteSelectedItems when typing in textarea', async () => {
@@ -117,7 +117,7 @@ describe('keybindingService - Canvas Keybindings', () => {
 
     await keybindingService.keybindHandler(event)
 
-    expect(vi.mocked(useCommandStore().execute)).not.toHaveBeenCalled()
+    expect(useCommandStore().execute).not.toHaveBeenCalled()
   })
 
   it('should execute SelectAll for Ctrl+A on canvas', async () => {
@@ -128,7 +128,7 @@ describe('keybindingService - Canvas Keybindings', () => {
 
     await keybindingService.keybindHandler(event)
 
-    expect(vi.mocked(useCommandStore().execute)).toHaveBeenCalledWith(
+    expect(useCommandStore().execute).toHaveBeenCalledWith(
       'Comfy.Canvas.SelectAll'
     )
   })
@@ -141,7 +141,7 @@ describe('keybindingService - Canvas Keybindings', () => {
 
     await keybindingService.keybindHandler(event)
 
-    expect(vi.mocked(useCommandStore().execute)).not.toHaveBeenCalled()
+    expect(useCommandStore().execute).not.toHaveBeenCalled()
   })
 
   it('should not intercept Ctrl+V to allow native paste event', async () => {
@@ -152,7 +152,7 @@ describe('keybindingService - Canvas Keybindings', () => {
 
     await keybindingService.keybindHandler(event)
 
-    expect(vi.mocked(useCommandStore().execute)).not.toHaveBeenCalled()
+    expect(useCommandStore().execute).not.toHaveBeenCalled()
   })
 
   it('should execute PasteFromClipboardWithConnect for Ctrl+Shift+V on canvas', async () => {
@@ -164,7 +164,7 @@ describe('keybindingService - Canvas Keybindings', () => {
 
     await keybindingService.keybindHandler(event)
 
-    expect(vi.mocked(useCommandStore().execute)).toHaveBeenCalledWith(
+    expect(useCommandStore().execute).toHaveBeenCalledWith(
       'Comfy.Canvas.PasteFromClipboardWithConnect'
     )
   })
@@ -177,7 +177,7 @@ describe('keybindingService - Canvas Keybindings', () => {
 
     await keybindingService.keybindHandler(event)
 
-    expect(vi.mocked(useCommandStore().execute)).toHaveBeenCalledWith(
+    expect(useCommandStore().execute).toHaveBeenCalledWith(
       'Comfy.Canvas.ZoomIn'
     )
   })
@@ -193,7 +193,7 @@ describe('keybindingService - Canvas Keybindings', () => {
 
     await keybindingService.keybindHandler(event)
 
-    expect(vi.mocked(useCommandStore().execute)).not.toHaveBeenCalled()
+    expect(useCommandStore().execute).not.toHaveBeenCalled()
     outsideDiv.remove()
   })
 
@@ -207,7 +207,7 @@ describe('keybindingService - Canvas Keybindings', () => {
 
     await keybindingService.keybindHandler(event)
 
-    expect(vi.mocked(useCommandStore().execute)).not.toHaveBeenCalled()
+    expect(useCommandStore().execute).not.toHaveBeenCalled()
     outsideDiv.remove()
   })
 
@@ -227,7 +227,7 @@ describe('keybindingService - Canvas Keybindings', () => {
 
       await keybindingService.keybindHandler(event)
 
-      expect(vi.mocked(useCommandStore().execute)).not.toHaveBeenCalled()
+      expect(useCommandStore().execute).not.toHaveBeenCalled()
       expect(event.preventDefault).not.toHaveBeenCalled()
     })
 
@@ -235,7 +235,7 @@ describe('keybindingService - Canvas Keybindings', () => {
       const event = createTestKeyboardEvent('F9', { target: canvasChild })
 
       expect(keybindingService.executeCanvasKeybinding(event)).toBe(false)
-      expect(vi.mocked(useCommandStore().execute)).not.toHaveBeenCalled()
+      expect(useCommandStore().execute).not.toHaveBeenCalled()
       expect(event.preventDefault).not.toHaveBeenCalled()
     })
   })
@@ -259,7 +259,7 @@ describe('keybindingService - Canvas Keybindings', () => {
       const event = createTestKeyboardEvent('F9', { target: canvasChild })
 
       expect(keybindingService.executeCanvasKeybinding(event)).toBe(true)
-      expect(vi.mocked(useCommandStore().execute)).toHaveBeenCalledWith(
+      expect(useCommandStore().execute).toHaveBeenCalledWith(
         'Test.CanvasCommand'
       )
       expect(event.preventDefault).toHaveBeenCalled()
@@ -272,7 +272,7 @@ describe('keybindingService - Canvas Keybindings', () => {
       })
 
       expect(keybindingService.executeCanvasKeybinding(event)).toBe(false)
-      expect(vi.mocked(useCommandStore().execute)).not.toHaveBeenCalled()
+      expect(useCommandStore().execute).not.toHaveBeenCalled()
     })
 
     it('leaves non-canvas keybindings to the window handler', () => {
@@ -285,7 +285,7 @@ describe('keybindingService - Canvas Keybindings', () => {
       const event = createTestKeyboardEvent('F10', { target: canvasChild })
 
       expect(keybindingService.executeCanvasKeybinding(event)).toBe(false)
-      expect(vi.mocked(useCommandStore().execute)).not.toHaveBeenCalled()
+      expect(useCommandStore().execute).not.toHaveBeenCalled()
     })
   })
 })

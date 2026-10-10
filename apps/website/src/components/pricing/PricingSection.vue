@@ -93,7 +93,7 @@ const planCards = computed(() =>
     creditsLabel: creditsLabelFor(plan),
     estimateKey: displayEstimateKey(plan),
     featureGroups: [
-      { features: plan.features },
+      ...plan.featureGroups,
       comfyAgentFeatureGroup(plan.id),
       comfyApiFeatureGroup(plan.id)
     ]
@@ -182,7 +182,7 @@ const planCards = computed(() =>
           :locale
         />
 
-        <div class="mt-8">
+        <div v-if="featureGroups.length" class="mt-8">
           <PricingPlanFeatureList :features="featureGroups" :locale />
         </div>
 

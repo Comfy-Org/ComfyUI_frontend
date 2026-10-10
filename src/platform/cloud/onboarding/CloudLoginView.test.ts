@@ -557,7 +557,7 @@ describe('CloudLoginView Firebase sign-in refused for SSO', () => {
 
   it.for([
     {
-      name: 'signs the account out and shows the SSO screen',
+      name: 'signs the account out and shows the SSO notice on the page',
       url: '/cloud/login',
       returnTo: '/cloud/user-check'
     },
@@ -592,9 +592,14 @@ describe('CloudLoginView Firebase sign-in refused for SSO', () => {
       vi.mocked(presentSsoRequired).mock.results[0].value,
       'shown before the sign-out drops the remote config that carries sso_enabled'
     ).toBe(true)
-    await waitFor(() =>
-      expect(useDialogStore().isDialogOpen(SSO_REQUIRED_DIALOG_KEY)).toBe(true)
-    )
+    expect(
+      await screen.findByText('auth.sso.required.bodyWithEmail')
+    ).toBeInTheDocument()
+    expect(
+      screen.getAllByRole('button', { name: 'auth.sso.continueWithSso' }),
+      'the notice replaces the SSO entry, so there is one way on'
+    ).toHaveLength(1)
+    expect(useDialogStore().isDialogOpen(SSO_REQUIRED_DIALOG_KEY)).toBe(false)
     expect(useAuthStore().logout).toHaveBeenCalledOnce()
     expect(redirectAfterAuth).not.toHaveBeenCalled()
   })
