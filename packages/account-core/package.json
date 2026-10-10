@@ -44,6 +44,7 @@
     "./workspaceLink": "./src/workspaceLink.ts",
     "./telemetry": "./src/telemetry.ts",
     "./webviewDetection": "./src/webviewDetection.ts",
+    "./oauthPkce": "./src/oauthPkce.ts",
     "./package.json": "./package.json"
   },
   "publishConfig": {
@@ -135,6 +136,10 @@
       "./webviewDetection": {
         "types": "./dist/webviewDetection.d.ts",
         "import": "./dist/webviewDetection.js"
+      },
+      "./oauthPkce": {
+        "types": "./dist/oauthPkce.d.ts",
+        "import": "./dist/oauthPkce.js"
       },
       "./package.json": "./package.json"
     },
