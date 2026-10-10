@@ -887,6 +887,11 @@ describe('ComfyApp', () => {
         await vi.waitFor(() => expect(app.rootGraph.extra).toEqual({}))
         releaseAfterConfigure()
         await expect(undoLoad).resolves.toBeUndefined()
+        expect(ChangeTracker.isLoadingGraph).toBe(true)
+        expect(mockExtensionService.invokeExtensionsAsync).toHaveBeenCalledWith(
+          'onGraphLoadError',
+          expect.objectContaining({ name: 'AbortError' })
+        )
 
         expect(tracker.activeState).toEqual(changed)
         expect(tracker.initialState).toEqual(saved)
@@ -896,6 +901,78 @@ describe('ComfyApp', () => {
         await Promise.all([undoLoad, newerLoad])
       }
       expect(app.rootGraph.extra).toMatchObject({ marker: 'other' })
+      expect(ChangeTracker.isLoadingGraph).toBe(false)
+    })
+
+    it('allows capture after a newer workflow finishes while old resource scans remain pending', async () => {
+      app.canvasElRef.value = document.createElement('canvas')
+      Reflect.set(app, 'rootGraphInternal', new LGraph())
+      const oldGraph = createWorkflowGraphData()
+      oldGraph.extra = { marker: 'old' }
+      const currentGraph = createWorkflowGraphData()
+      currentGraph.extra = { marker: 'current' }
+      let releaseModels!: () => void
+      const modelsPending = new Promise<void>((resolve) => {
+        releaseModels = resolve
+      })
+      vi.mocked(runMissingModelPipeline).mockImplementationOnce(async () => {
+        await modelsPending
+        return { missingModels: [], confirmedCandidates: [] }
+      })
+      const oldLoad = app.loadGraphData(oldGraph, false, false)
+      try {
+        await vi.waitFor(() =>
+          expect(runMissingModelPipeline).toHaveBeenCalledOnce()
+        )
+        await app.loadGraphData(currentGraph, false, false, null, {
+          skipAssetScans: true
+        })
+
+        expect(app.rootGraph.extra).toMatchObject({ marker: 'current' })
+        expect(ChangeTracker.isLoadingGraph).toBe(false)
+      } finally {
+        releaseModels()
+        await oldLoad
+      }
+    })
+
+    it('keeps a configured load when a newer configure fails without clearing it', async () => {
+      app.canvasElRef.value = document.createElement('canvas')
+      Reflect.set(app, 'rootGraphInternal', new LGraph())
+      const graph = createWorkflowGraphData()
+      graph.extra = { marker: 'configured' }
+      let releaseFirst!: () => void
+      const firstPending = new Promise<void>((resolve) => {
+        releaseFirst = resolve
+      })
+      vi.when(mockExtensionService.invokeExtensionsAsync)
+        .calledWith('afterConfigureGraph', expect.anything())
+        .thenReturnOnce(firstPending)
+      const firstLoad = app.loadGraphData(graph, false, false, null, {
+        skipAssetScans: true
+      })
+      try {
+        await vi.waitFor(() =>
+          expect(
+            mockExtensionService.invokeExtensionsAsync
+          ).toHaveBeenCalledWith('afterConfigureGraph', expect.anything())
+        )
+        vi.spyOn(app.rootGraph, 'configure').mockImplementationOnce(() => {
+          throw new Error('Configuration failed before clearing')
+        })
+        await expect(
+          app.loadGraphData(createWorkflowGraphData(), false, false, null, {
+            skipAssetScans: true
+          })
+        ).resolves.toBe(false)
+        releaseFirst()
+
+        expect(await firstLoad).toBeTruthy()
+        expect(app.rootGraph.extra).toMatchObject({ marker: 'configured' })
+      } finally {
+        releaseFirst()
+        await firstLoad
+      }
     })
 
     it('lets an older valid load commit when its newer replacement fails', async () => {

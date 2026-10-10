@@ -1485,6 +1485,116 @@ describe('ChangeTracker', () => {
       expect(workflow.isModified).toBe(true)
     })
 
+    it('retains the Undo target when a same-workflow reload updates the tracker instead', async () => {
+      const saved = createState(1)
+      saved.nodes[0].widgets_values = [1]
+      const current = structuredClone(saved)
+      current.nodes[0].widgets_values = [2]
+      const reloaded = structuredClone(current)
+      reloaded.nodes[0].size = [100, 178]
+      const tracker = createTracker(saved)
+      tracker.activeState = current
+      tracker.undoQueue.push(saved)
+      const workflow = useWorkflowStore().activeWorkflow
+      assert.exists(workflow)
+      workflow.isModified = true
+      vi.mocked(useWorkflowStore().getWorkflowByPath).mockReturnValue(workflow)
+      vi.mocked(app.loadGraphData).mockImplementationOnce(async () => {
+        tracker.reset(reloaded)
+        mockCanvasState(reloaded)
+        return undefined
+      })
+
+      await tracker.undo()
+
+      expect(tracker.activeState).toEqual(reloaded)
+      expect(tracker.initialState).toEqual(saved)
+      expect(tracker.undoQueue).toEqual([saved])
+      expect(tracker.redoQueue).toEqual([])
+      expect(workflow.isModified).toBe(true)
+      expect(tracker._restoringState).toBe(false)
+    })
+
+    it('keeps Redo when a late load error follows normalization of an interior node size', async () => {
+      const saved = await createSubgraphState()
+      const changed = structuredClone(saved)
+      getSubgraphDefinition(changed).nodes[0].widgets_values = [2]
+      const normalized = structuredClone(saved)
+      getSubgraphDefinition(normalized).nodes[0].size = [100, 178]
+      const tracker = createTracker(saved)
+      tracker.activeState = changed
+      tracker.undoQueue.push(saved)
+      const error = new Error('Post-load asset scan rejected')
+      vi.mocked(app.loadGraphData).mockImplementationOnce(async () => {
+        tracker.reset(normalized)
+        mockCanvasState(normalized)
+        throw error
+      })
+
+      await expect(tracker.undo()).rejects.toThrow(error)
+
+      expect(tracker.activeState).toEqual(normalized)
+      expect(tracker.initialState).toEqual(normalized)
+      expect(tracker.undoQueue).toEqual([])
+      expect(tracker.redoQueue).toEqual([changed])
+      expect(tracker._restoringState).toBe(false)
+    })
+
+    it('retains the Undo target when an unrelated same-workflow reload precedes a late error', async () => {
+      const saved = createState(1)
+      saved.nodes[0].widgets_values = [1]
+      const current = structuredClone(saved)
+      current.nodes[0].widgets_values = [2]
+      const reloaded = structuredClone(current)
+      reloaded.nodes[0].size = [100, 178]
+      const tracker = createTracker(saved)
+      tracker.activeState = current
+      tracker.undoQueue.push(saved)
+      const workflow = useWorkflowStore().activeWorkflow
+      assert.exists(workflow)
+      workflow.isModified = true
+      vi.mocked(useWorkflowStore().getWorkflowByPath).mockReturnValue(workflow)
+      const error = new Error('Superseded Undo asset scan rejected')
+      vi.mocked(app.loadGraphData).mockImplementationOnce(async () => {
+        tracker.reset(reloaded)
+        mockCanvasState(reloaded)
+        throw error
+      })
+
+      await expect(tracker.undo()).rejects.toThrow(error)
+
+      expect(tracker.activeState).toEqual(reloaded)
+      expect(tracker.initialState).toEqual(saved)
+      expect(tracker.undoQueue).toEqual([saved])
+      expect(tracker.redoQueue).toEqual([])
+      expect(workflow.isModified).toBe(true)
+      expect(tracker._restoringState).toBe(false)
+    })
+
+    it('retains a resize Undo target when an unrelated reload changes only the node size', async () => {
+      const saved = createState(1)
+      const current = structuredClone(saved)
+      current.nodes[0].size = [400, 220]
+      const reloaded = structuredClone(current)
+      reloaded.nodes[0].size = [400, 260]
+      const tracker = createTracker(saved)
+      tracker.activeState = current
+      tracker.undoQueue.push(saved)
+      vi.mocked(app.loadGraphData).mockImplementationOnce(async () => {
+        tracker.reset(reloaded)
+        mockCanvasState(reloaded)
+        return undefined
+      })
+
+      await tracker.undo()
+
+      expect(tracker.activeState).toEqual(reloaded)
+      expect(tracker.initialState).toEqual(saved)
+      expect(tracker.undoQueue).toEqual([saved])
+      expect(tracker.redoQueue).toEqual([])
+      expect(tracker._restoringState).toBe(false)
+    })
+
     it('keeps Undo history order when another Undo is requested during a pending restore', async () => {
       const earlier = createState(1)
       const previous = createState(2)
