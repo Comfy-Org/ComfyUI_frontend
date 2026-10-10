@@ -2,7 +2,8 @@
   <SidebarTabTemplate :title="$t('sideToolbar.modelLibrary')">
     <template #tool-buttons>
       <Button
-        v-tooltip.bottom="$t('g.refresh')"
+        :tooltip="$t('g.refresh')"
+        tooltip-side="bottom"
         variant="muted-textonly"
         size="icon"
         :aria-label="$t('g.refresh')"
@@ -12,7 +13,8 @@
       </Button>
       <Button
         v-if="!flags.assetsEnabled"
-        v-tooltip.bottom="$t('g.loadAllFolders')"
+        :tooltip="$t('g.loadAllFolders')"
+        tooltip-side="bottom"
         variant="muted-textonly"
         size="icon"
         :aria-label="$t('g.loadAllFolders')"
@@ -81,7 +83,7 @@ import { startModelLoaderDrag } from '@/composables/node/startModelNodeDragFromA
 import { useFeatureFlags } from '@/composables/useFeatureFlags'
 import { useTreeExpansion } from '@/composables/useTreeExpansion'
 import { useSettingStore } from '@/platform/settings/settingStore'
-import { useToastStore } from '@/platform/updates/common/toastStore'
+import { useToast } from '@/components/ui/toast/toastStore'
 import { useAssetDownloadStore } from '@/stores/assetDownloadStore'
 import type { ComfyModelDef } from '@/stores/modelStore'
 import {
@@ -98,7 +100,7 @@ import { buildTree } from '@/utils/treeUtil'
 const modelStore = useModelStore()
 const modelToNodeStore = useModelToNodeStore()
 const settingStore = useSettingStore()
-const toastStore = useToastStore()
+const toast = useToast()
 const { t } = useI18n()
 const { flags } = useFeatureFlags()
 const assetDownloadStore = useAssetDownloadStore()
@@ -304,11 +306,9 @@ async function withLoadFailureToast(action: () => Promise<unknown>) {
     await action()
   } catch (error) {
     console.error('Model library load failed', error)
-    toastStore.add({
-      severity: 'error',
-      summary: t('g.error'),
-      detail: t('sideToolbar.modelLibraryLoadFailed'),
-      life: 5000
+    toast.error(t('g.error'), {
+      description: t('sideToolbar.modelLibraryLoadFailed'),
+      duration: 5000
     })
   }
 }

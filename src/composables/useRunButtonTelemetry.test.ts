@@ -96,7 +96,6 @@ describe('useRunButtonTelemetry', () => {
 
   it('does not throw when run button context collection fails', () => {
     const error = new Error('Context unavailable')
-    const consoleError = vi.spyOn(console, 'error').mockImplementation(() => {})
     state.executionContextError = error
 
     try {
@@ -105,12 +104,12 @@ describe('useRunButtonTelemetry', () => {
       ).not.toThrow()
 
       expect(useTelemetry()?.trackRunButton).not.toHaveBeenCalled()
-      expect(consoleError).toHaveBeenCalledExactlyOnceWith(
+      expect(console.error).toHaveBeenCalledExactlyOnceWith(
         '[Telemetry] Run button tracking failed',
         error
       )
     } finally {
-      consoleError.mockRestore()
+      vi.mocked(console.error).mockRestore()
     }
   })
 })

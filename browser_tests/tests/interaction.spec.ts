@@ -884,6 +884,7 @@ test.describe('Canvas Interaction', { tag: '@screenshot' }, () => {
 
   test('@mobile Can pan with touch', async ({ comfyPage }) => {
     await comfyPage.closeMenu()
+    await comfyPage.canvasOps.moveMouseToEmptyArea()
     await comfyPage.canvasOps.panWithTouch({ x: 200, y: 200 })
     await expect(comfyPage.canvas).toHaveScreenshot('panned-touch.png')
   })

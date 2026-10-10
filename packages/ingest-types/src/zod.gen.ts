@@ -38,6 +38,32 @@ export const zWorkspaceSummary = z.object({
 })
 
 /**
+ * One live deployment of the workspace, as the editor's switcher shows it.
+ */
+export const zWorkspaceDeployment = z.object({
+  build_id: z.string().optional(),
+  build_name: z.string().optional(),
+  created_at: z.string().datetime(),
+  deployment_id: z.string(),
+  release_id: z.string(),
+  release_version: z.number().int().optional(),
+  status: z.string()
+})
+
+/**
+ * The deployments a browser in this workspace may pick, newest first by created_at (always present). A row without a Build name keeps its place in that order.
+ */
+export const zWorkspaceDeploymentList = z.object({
+  builds_visible: z.boolean(),
+  default_deployment_id: z.string().optional(),
+  gone_default_deployment_id: z.string().optional(),
+  gone_picked_deployment_id: z.string().optional(),
+  items: z.array(zWorkspaceDeployment),
+  pick_source: z.enum(['browser', 'workspace_default']).optional(),
+  picked_deployment_id: z.string().optional()
+})
+
+/**
  * Metadata for a workspace-scoped API key (secret is never returned).
  */
 export const zWorkspaceApiKeyInfo = z.object({
@@ -146,6 +172,43 @@ export const zWorkflowPublishInfo = z.object({
   publish_time: z.string().datetime().nullish(),
   share_id: z.string(),
   workflow_id: z.string()
+})
+
+/**
+ * The workflow to read.
+ */
+export const zWorkflowPacksRequest = z.object({
+  workflow: z.record(z.unknown())
+})
+
+/**
+ * One node class of the workflow that Cloud cannot confirm a pack provides, and why.
+ */
+export const zWorkflowMissingNode = z.object({
+  class_type: z.string(),
+  pack: z.string().optional(),
+  reason: z.enum(['github', 'unknown', 'unchecked', 'stamped']),
+  repository: z.string().optional()
+})
+
+/**
+ * One node pack the workflow needs, as it would be installed.
+ */
+export const zWorkflowPack = z.object({
+  id: z.string().optional(),
+  name: z.string(),
+  repository: z.string().optional(),
+  version: z.string().optional()
+})
+
+/**
+ * What a workflow needs. A node class built into ComfyUI, or served by a partner provider, is in none of the lists: there is nothing to install for it.
+ */
+export const zWorkflowPacks = z.object({
+  format: z.enum(['api', 'ui']),
+  matched_packs: z.array(zWorkflowPack),
+  missing_nodes: z.array(zWorkflowMissingNode),
+  stamped_packs: z.array(zWorkflowPack)
 })
 
 /**
@@ -272,7 +335,7 @@ export const zUsageSummary = z.object({
 })
 
 /**
- * Present, with empty groups, buckets and breakdown, when the requested grouping has no data source yet. Render as unavailable, not as zero spend.
+ * Present, with empty groups, buckets and breakdown, when the requested grouping is not served for this workspace. Render as unavailable, not as zero spend.
  */
 export const zUsageNotAvailable = z.object({
   reason: z.enum(['no_attribution_source'])
@@ -401,6 +464,7 @@ export const zToolCallSummary = z.object({
   error_code: z.string().optional(),
   finished_at: z.string().datetime().optional(),
   id: z.string(),
+  job_id: z.string().optional(),
   started_at: z.string().datetime().optional(),
   status: z.enum(['success', 'error']),
   tool_call_id: z.string(),
@@ -831,6 +895,7 @@ export const zSavedPaymentMethod = z.object({
 
 export const zSsoDiscoverResponse = z.object({
   organization_name: z.string().optional(),
+  required: z.boolean().optional(),
   sso: z.boolean()
 })
 
@@ -1352,6 +1417,13 @@ export const zPlan = z.object({
 })
 
 /**
+ * Which developer-platform deployment this browser should run on.
+ */
+export const zPickWorkspaceDeploymentRequest = z.object({
+  deployment_id: z.string()
+})
+
+/**
  * An outstanding workspace invitation that has not yet been accepted.
  */
 export const zPendingInvite = z.object({
@@ -1496,6 +1568,7 @@ export const zOAuthConsentChallengeWorkspace = z.object({
  */
 export const zOAuthConsentChallenge = z.object({
   client_display_name: z.string(),
+  client_provenance: z.enum(['first_party', 'dynamic']),
   csrf_token: z.string(),
   oauth_request_id: z.string().uuid(),
   redirect_uri: z.string().url(),
@@ -1593,6 +1666,8 @@ export const zMediaBadRequestError = z.union([zErrorResponse, zMediaQueryError])
  * Paginated list of workspaces the authenticated user belongs to.
  */
 export const zListWorkspacesResponse = z.object({
+  can_create_workspace: z.boolean(),
+  default_workspace_id: z.string().optional(),
   workspaces: z.array(zWorkspaceWithRole)
 })
 
@@ -1870,6 +1945,8 @@ export const zJobDetailResponse = z.object({
   outputs_count: z.number().int().optional(),
   preview_output: z.record(z.unknown()).optional(),
   previewable_outputs_count: z.number().int().optional(),
+  queue_position: z.number().int().gte(1).nullish(),
+  queue_reason: z.enum(['concurrency_limit', 'capacity']).optional(),
   status: z.enum([
     'pending',
     'in_progress',
@@ -2973,6 +3050,7 @@ export const zBillingCapabilities = z.object({
   can_change_seats: z.boolean(),
   can_downgrade_to_personal: z.boolean(),
   can_invite_members: z.boolean(),
+  can_manage_members: z.boolean(),
   can_reactivate: z.boolean(),
   can_revert_scheduled_change: z.boolean(),
   can_subscribe_self_serve: z.boolean(),
@@ -3365,6 +3443,16 @@ export const zAgentPendingAsk = z.union([
 export const zAgentMessage = z.object({
   content: z
     .object({
+      attachment_refs: z
+        .array(
+          z.object({
+            display_name: z.string().optional(),
+            id: z.string().optional(),
+            kind: z.string().optional(),
+            name: z.string().optional()
+          })
+        )
+        .optional(),
       tool_calls: z.array(zToolCallSummary).optional()
     })
     .optional(),
@@ -3659,6 +3747,16 @@ export const zAgentLlmMessagesBody = z.record(z.unknown())
  * The upstream LLM response, streamed back as Server-Sent Events (text/event-stream) chunk-by-chunk.
  */
 export const zAgentLlmMessagesResponse = z.string()
+
+/**
+ * An OTLP ExportTraceServiceRequest, optionally gzip-encoded (Content-Encoding gzip); at most 4 MiB encoded and decoded, and 4096 spans.
+ */
+export const zAgentLlmTracesBody = z.string()
+
+/**
+ * Accepted; the body is an empty OTLP ExportTraceServiceResponse.
+ */
+export const zAgentLlmTracesResponse = z.string()
 
 /**
  * The caller's run mode (the saved choice, or the default).
@@ -4572,6 +4670,15 @@ export const zListJobsQuery = z.object({
  */
 export const zListJobsResponse = zJobsListResponse
 
+export const zDeleteJobPath = z.object({
+  job_id: z.string().uuid()
+})
+
+/**
+ * Job and its assets deleted successfully, or the job was not in a deletable state (pending/in-progress/already-deleted) and no change was made (no-op)
+ */
+export const zDeleteJobResponse = z.void()
+
 export const zGetJobDetailPath = z.object({
   job_id: z.string().uuid()
 })
@@ -5282,6 +5389,71 @@ export const zUpdateWorkspacePath = z.object({
  * Workspace updated
  */
 export const zUpdateWorkspaceResponse = zWorkspace
+
+export const zClearWorkspaceDefaultDeploymentPath = z.object({
+  id: z.string()
+})
+
+/**
+ * Cleared
+ */
+export const zClearWorkspaceDefaultDeploymentResponse = z.void()
+
+export const zSetWorkspaceDefaultDeploymentBody =
+  zPickWorkspaceDeploymentRequest
+
+export const zSetWorkspaceDefaultDeploymentPath = z.object({
+  id: z.string()
+})
+
+/**
+ * Set; members with no pick are on this deployment from their next request
+ */
+export const zSetWorkspaceDefaultDeploymentResponse = z.void()
+
+export const zClearWorkspaceDeploymentPath = z.object({
+  id: z.string()
+})
+
+export const zClearWorkspaceDeploymentQuery = z.object({
+  follow: z.enum(['workspace']).optional()
+})
+
+/**
+ * Cleared
+ */
+export const zClearWorkspaceDeploymentResponse = z.void()
+
+export const zPickWorkspaceDeploymentBody = zPickWorkspaceDeploymentRequest
+
+export const zPickWorkspaceDeploymentPath = z.object({
+  id: z.string()
+})
+
+/**
+ * Picked; the cookie on this response carries it
+ */
+export const zPickWorkspaceDeploymentResponse = z.void()
+
+export const zListWorkspaceDeploymentsPath = z.object({
+  id: z.string()
+})
+
+/**
+ * The workspace's live deployments, newest first
+ */
+export const zListWorkspaceDeploymentsResponse = zWorkspaceDeploymentList
+
+export const zResolveWorkspaceWorkflowPacksBody = zWorkflowPacksRequest
+
+export const zResolveWorkspaceWorkflowPacksPath = z.object({
+  id: z.string()
+})
+
+/**
+ * The workflow was read; what it needs, and what nothing provides
+ */
+export const zResolveWorkspaceWorkflowPacksResponse = zWorkflowPacks
 
 /**
  * The credential's workspace

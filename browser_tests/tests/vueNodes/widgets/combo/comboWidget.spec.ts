@@ -174,6 +174,38 @@ test.describe('Vue Combo Widget', { tag: ['@vue-nodes', '@widget'] }, () => {
     await expect(viewport).toBeVisible()
   })
 
+  test('keeps the dropdown inside a viewport narrower than the combo', async ({
+    comfyPage
+  }) => {
+    await comfyPage.workflow.loadWorkflow('vueNodes/linked-int-widget')
+    await comfyPage.canvasOps.setScale(3)
+    const samplerCombo = comfyPage.vueNodes
+      .getNodeByTitle('KSampler')
+      .getByRole('combobox', { name: 'sampler_name', exact: true })
+    const comboBox = await getViewportBox(samplerCombo)
+    await comfyPage.page.setViewportSize({
+      width: Math.floor(comboBox.width / 2),
+      height: 720
+    })
+    await comfyPage.page.evaluate(
+      ([dx, dy]) => {
+        const { canvas } = window.app!
+        canvas.ds.offset[0] += dx / canvas.ds.scale
+        canvas.ds.offset[1] += dy / canvas.ds.scale
+        canvas.setDirty(true, true)
+      },
+      [100 - comboBox.x, 200 - comboBox.y]
+    )
+    await expect
+      .poll(async () => (await samplerCombo.boundingBox())?.x)
+      .toBeCloseTo(100, 0)
+    await samplerCombo.click({ position: { x: 20, y: 20 } })
+
+    await expect(
+      comfyPage.page.getByTestId('widget-select-default-overlay')
+    ).toBeInViewport({ ratio: 1 })
+  })
+
   test('closes the dropdown when clicking outside', async ({ comfyPage }) => {
     const viewport = await openSamplerDropdown(comfyPage)
 

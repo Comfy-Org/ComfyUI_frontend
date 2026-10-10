@@ -1,82 +1,12 @@
-import type { TooltipOptions } from 'primevue/tooltip'
-import { computed, ref, unref } from 'vue'
+import { computed, unref } from 'vue'
 import type { MaybeRef } from 'vue'
 
-import { TOOLTIP_ARROW_PT } from '@/composables/useTooltipConfig'
-import { resolveNodeDefSlotText, resolveNodeDefText } from '@/i18n'
+import { resolveNodeDefSlotText, resolveNodeDefText, t } from '@/i18n'
+import type { INodeSlot } from '@/lib/litegraph/src/litegraph'
+import { RenderShape } from '@/lib/litegraph/src/types/globalEnums'
 import { useSettingStore } from '@/platform/settings/settingStore'
 import type { ComfyNodeDefImpl } from '@/stores/nodeDefStore'
 import { useNodeDefStore } from '@/stores/nodeDefStore'
-
-// PrimeVue adds this internal property to elements with tooltips
-interface PrimeVueTooltipElement extends Element {
-  $_ptooltipId?: string
-}
-
-/**
- * Hide all visible tooltips by dispatching mouseleave events
- *
- *
- * IMPORTANT: this escape is needed for many reason due to primevue's directive tooltip system.
- * We cannot use PT to conditionally render the tooltips because the entire PT object only run
- * once during the initialization of the directive not every mount/unmount.
- * Once the directive is constructed its no longer reactive in the traditional sense.
- * We have to use something non destructive like mouseevents to dismiss the tooltip.
- *
- * TODO: use a better tooltip component like RekaUI for vue nodes specifically.
- */
-
-const tooltipsTemporarilyDisabled = ref(false)
-
-const hideTooltipsGlobally = () => {
-  // Get all visible tooltip elements
-  const tooltips = document.querySelectorAll('.p-tooltip')
-
-  // Early return if no tooltips are visible
-  if (tooltips.length === 0) return
-
-  tooltips.forEach((tooltipEl) => {
-    const tooltipId = tooltipEl.id
-    if (!tooltipId) return
-
-    // Find the target element that owns this tooltip
-    const targetElements = document.querySelectorAll('[data-pd-tooltip="true"]')
-    for (const targetEl of targetElements) {
-      if ((targetEl as PrimeVueTooltipElement).$_ptooltipId === tooltipId) {
-        ;(targetEl as HTMLElement).dispatchEvent(
-          new MouseEvent('mouseleave', { bubbles: true })
-        )
-        break
-      }
-    }
-  })
-
-  // Disable tooltips temporarily after hiding (for drag operations)
-  tooltipsTemporarilyDisabled.value = true
-}
-
-/**
- * Re-enable tooltips after pointer interaction ends
- */
-const handlePointerUp = () => {
-  tooltipsTemporarilyDisabled.value = false
-}
-
-// Global tooltip hiding system
-const globalTooltipState = { listenersSetup: false }
-
-function setupGlobalTooltipHiding() {
-  if (globalTooltipState.listenersSetup) return
-
-  document.addEventListener('pointerdown', hideTooltipsGlobally)
-  document.addEventListener('pointerup', handlePointerUp)
-  window.addEventListener('wheel', hideTooltipsGlobally, {
-    capture: true, //Need this to bypass the event layer from Litegraph
-    passive: true
-  })
-
-  globalTooltipState.listenersSetup = true
-}
 
 /**
  * Composable for managing Vue node tooltips
@@ -86,22 +16,14 @@ export function useNodeTooltips(nodeType: MaybeRef<string>) {
   const nodeDefStore = useNodeDefStore()
   const settingsStore = useSettingStore()
 
-  // Setup global pointerdown listener once
-  setupGlobalTooltipHiding()
-
-  // Check if tooltips are globally enabled
   const tooltipsEnabled = computed(() =>
     settingsStore.get('Comfy.EnableTooltips')
   )
 
-  // Get node definition for tooltip data
   const findNodeDef = (type: string): ComfyNodeDefImpl | undefined =>
     nodeDefStore.nodeDefsByName[type]
   const nodeDef = computed(() => findNodeDef(unref(nodeType)))
 
-  /**
-   * Get tooltip text for node description (header hover)
-   */
   const getNodeDescription = computed(() => {
     if (!tooltipsEnabled.value || !nodeDef.value) return ''
 
@@ -112,86 +34,64 @@ export function useNodeTooltips(nodeType: MaybeRef<string>) {
     )
   })
 
-  /**
-   * Get tooltip text for input slots
-   */
-  const getInputSlotTooltip = (slotName: string) => {
-    if (!tooltipsEnabled.value || !nodeDef.value) return ''
+  const describeInput = (inputName: string) =>
+    nodeDef.value
+      ? resolveNodeDefSlotText(
+          'tooltip',
+          unref(nodeType),
+          inputName,
+          nodeDef.value.inputs[inputName]?.tooltip
+        )
+      : ''
 
-    return resolveNodeDefSlotText(
-      'tooltip',
-      unref(nodeType),
-      slotName,
-      nodeDef.value.inputs[slotName]?.tooltip
+  const getInputSlotTooltip = (
+    slot: Pick<INodeSlot, 'localized_name' | 'name'>
+  ) => {
+    if (!tooltipsEnabled.value) return ''
+
+    const inputName = slot.name || ''
+    return (
+      describeInput(inputName) ||
+      t('g.inputTooltip', { name: slot.localized_name || inputName })
     )
   }
 
-  /**
-   * Get tooltip text for output slots
-   */
-  const getOutputSlotTooltip = (slotIndex: number) => {
-    if (!tooltipsEnabled.value || !nodeDef.value) return ''
+  const getOutputSlotTooltip = (
+    slot: Pick<INodeSlot, 'name' | 'shape'>,
+    slotIndex: number
+  ) => {
+    if (!tooltipsEnabled.value) return ''
 
-    return resolveNodeDefSlotText(
-      'tooltip',
-      unref(nodeType),
-      slotIndex,
-      nodeDef.value.outputs[slotIndex]?.tooltip
-    )
+    const description = nodeDef.value
+      ? resolveNodeDefSlotText(
+          'tooltip',
+          unref(nodeType),
+          slotIndex,
+          nodeDef.value.outputs[slotIndex]?.tooltip
+        )
+      : ''
+    const text = description || `Output: ${slot.name || ''}`
+    return slot.shape === RenderShape.GRID
+      ? `${text} ${t('vueNodesSlot.iterative')}`
+      : text
   }
 
-  /**
-   * Get tooltip text for widgets
-   */
-  const getWidgetTooltip = (widget: { name: string; tooltip?: string }) => {
-    if (!tooltipsEnabled.value || !nodeDef.value) return ''
+  const getWidgetTooltip = (
+    widget: { name: string; tooltip?: string },
+    fullValue = ''
+  ) => {
+    if (!tooltipsEnabled.value) return ''
 
-    // First try widget-specific tooltip
-    const widgetTooltip = widget.tooltip
-    if (widgetTooltip) return widgetTooltip
-
-    // Then try input-based tooltip lookup
-    return resolveNodeDefSlotText(
-      'tooltip',
-      unref(nodeType),
-      widget.name,
-      nodeDef.value.inputs[widget.name]?.tooltip
-    )
-  }
-
-  /**
-   * Create tooltip configuration object for v-tooltip directive
-   * Components wrap this in computed() for reactivity
-   */
-  const createTooltipConfig = (text: string): TooltipOptions => {
-    const tooltipDelay = settingsStore.get('LiteGraph.Node.TooltipDelay')
-    const tooltipText = text || ''
-
-    return {
-      value: tooltipText,
-      showDelay: tooltipDelay,
-      hideDelay: 0, // Immediate hiding
-      disabled:
-        !tooltipsEnabled.value ||
-        !tooltipText ||
-        tooltipsTemporarilyDisabled.value, // this reactive value works but only on next mount,
-      // so if the tooltip is already visible changing this will not hide it
-      pt: {
-        text: {
-          class:
-            'border-node-component-tooltip-border bg-node-component-tooltip-surface border rounded-md px-4 py-2 text-node-component-tooltip text-sm font-normal leading-tight max-w-96 whitespace-pre-line shadow-none'
-        },
-        arrow: TOOLTIP_ARROW_PT
-      }
-    }
+    const description = nodeDef.value
+      ? widget.tooltip || describeInput(widget.name)
+      : ''
+    return [description, fullValue].join('\n\n').trim()
   }
 
   return {
-    tooltipsEnabled,
     getNodeDescription,
     getInputSlotTooltip,
     getOutputSlotTooltip,
-    getWidgetTooltip,
-    createTooltipConfig
+    getWidgetTooltip
   }
 }

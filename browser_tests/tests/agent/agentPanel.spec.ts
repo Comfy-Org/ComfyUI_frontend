@@ -621,7 +621,9 @@ test.describe('In-App Agent panel', { tag: '@cloud' }, () => {
     })
     expect((await uploadResponse).ok()).toBe(true)
     await expect(
-      panel.getByTestId('composer-asset-section').getByText('movie.mp4')
+      panel
+        .getByTestId('composer-asset-section')
+        .getByRole('group', { name: 'movie.mp4' })
     ).toBeVisible()
     await expect.poll(() => uploadCount).toBe(1)
 
@@ -631,11 +633,11 @@ test.describe('In-App Agent panel', { tag: '@cloud' }, () => {
       buffer: Buffer.alloc(25 * 1024 * 1024)
     })
     await expect(
-      page.getByText('too-large.mp4 is larger than 24 MB')
+      comfyPage.toast.withText('too-large.mp4 is larger than 24 MB')
     ).toBeVisible()
-    await expect(panel.getByText('too-large.mp4', { exact: true })).toHaveCount(
-      0
-    )
+    await expect(
+      panel.getByRole('group', { name: 'too-large.mp4' })
+    ).toHaveCount(0)
     await expect.poll(() => uploadCount).toBe(1)
   })
 

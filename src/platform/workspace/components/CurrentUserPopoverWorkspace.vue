@@ -38,32 +38,39 @@
         </span>
       </div>
       <template v-else>
-        <button
-          ref="workspaceSwitcherTrigger"
-          v-tooltip="{ value: workspaceName, showDelay: 300 }"
-          type="button"
-          class="flex w-full cursor-pointer appearance-none items-center justify-between rounded-lg border-0 bg-transparent px-4 py-2 text-left hover:bg-secondary-background-hover"
-          :aria-expanded="isWorkspaceSwitcherOpen"
-          aria-haspopup="menu"
-          aria-controls="workspace-switcher-panel"
-          data-testid="workspace-switcher-trigger"
-          @click="toggleWorkspaceSwitcher"
-          @keydown.escape.stop="isWorkspaceSwitcherOpen = false"
+        <Tooltip
+          v-model:open="isWorkspaceNameTooltipOpen"
+          :disabled="!workspaceName"
         >
-          <div class="flex w-0 flex-1 items-center gap-2">
-            <WorkspaceProfilePic
-              class="size-6 shrink-0 text-xs"
-              :workspace-name
-              :subscription-tier="activeWorkspace?.subscriptionTier"
-            />
-            <span class="truncate text-sm text-base-foreground">
-              {{ workspaceName }}
-            </span>
-          </div>
-          <i
-            class="pi pi-chevron-down shrink-0 text-sm text-muted-foreground"
-          />
-        </button>
+          <TooltipTrigger as-child>
+            <button
+              ref="workspaceSwitcherTrigger"
+              type="button"
+              class="flex w-full cursor-pointer appearance-none items-center justify-between rounded-lg border-0 bg-transparent px-4 py-2 text-left hover:bg-secondary-background-hover"
+              :aria-expanded="isWorkspaceSwitcherOpen"
+              aria-haspopup="menu"
+              aria-controls="workspace-switcher-panel"
+              data-testid="workspace-switcher-trigger"
+              @click="toggleWorkspaceSwitcher"
+              @keydown.escape.stop="closeWorkspaceSwitcherFromKeyboard"
+            >
+              <div class="flex w-0 flex-1 items-center gap-2">
+                <WorkspaceProfilePic
+                  class="size-6 shrink-0 text-xs"
+                  :workspace-name
+                  :subscription-tier="activeWorkspace?.subscriptionTier"
+                />
+                <span class="truncate text-sm text-base-foreground">
+                  {{ workspaceName }}
+                </span>
+              </div>
+              <i
+                class="pi pi-chevron-down shrink-0 text-sm text-muted-foreground"
+              />
+            </button>
+          </TooltipTrigger>
+          <TooltipContent>{{ workspaceName }}</TooltipContent>
+        </Tooltip>
 
         <div
           v-if="isWorkspaceSwitcherOpen"
@@ -95,7 +102,7 @@
         displayedCredits
       }}</span>
       <Button
-        v-tooltip="{ value: $t('credits.unified.tooltip'), showDelay: 300 }"
+        :tooltip="$t('credits.unified.tooltip')"
         variant="muted-textonly"
         size="icon-sm"
         class="mr-auto"
@@ -263,6 +270,9 @@ import UserAvatar from '@/components/common/UserAvatar.vue'
 import WorkspaceProfilePic from '@/platform/workspace/components/WorkspaceProfilePic.vue'
 import WorkspaceSwitcherPopover from '@/platform/workspace/components/WorkspaceSwitcherPopover.vue'
 import Button from '@/components/ui/button/Button.vue'
+import Tooltip from '@/components/ui/tooltip/Tooltip.vue'
+import TooltipContent from '@/components/ui/tooltip/TooltipContent.vue'
+import TooltipTrigger from '@/components/ui/tooltip/TooltipTrigger.vue'
 import { useCurrentUser } from '@/composables/auth/useCurrentUser'
 import {
   canDesktopHostSwitchWorkspace,
@@ -280,7 +290,8 @@ import { useBillingCapabilities } from '@/platform/workspace/composables/useBill
 import { useWorkspaceUI } from '@/platform/workspace/composables/useWorkspaceUI'
 import { useTeamWorkspaceStore } from '@/platform/workspace/stores/teamWorkspaceStore'
 import { useSettingsDialog } from '@/platform/settings/composables/useSettingsDialog'
-import { useDialogService } from '@/services/dialogService'
+import { useBillingDialogs } from '@/composables/billing/useBillingDialogs'
+import { useWorkspaceDialogs } from '@/platform/workspace/composables/useWorkspaceDialogs'
 
 const workspaceStore = useTeamWorkspaceStore()
 const {
@@ -293,6 +304,7 @@ const { permissions, canReactivatePlan, canOpenPricingSurface } =
   useWorkspaceUI()
 const { canTopUp, canSubscribeSelfServe } = useBillingCapabilities()
 const isWorkspaceSwitcherOpen = ref(false)
+const isWorkspaceNameTooltipOpen = ref(false)
 const workspaceSwitcherTrigger = useTemplateRef('workspaceSwitcherTrigger')
 const workspaceSwitcherPanel = useTemplateRef('workspaceSwitcherPanel')
 
@@ -325,7 +337,8 @@ const isDesktopHostWorkspaceFixed = computed(
   () => isDesktopHostSignedIn() && !canDesktopHostSwitchWorkspace()
 )
 const settingsDialog = useSettingsDialog()
-const dialogService = useDialogService()
+const { showTopUpCreditsDialog } = useBillingDialogs()
+const { showCreateWorkspaceDialog } = useWorkspaceDialogs()
 const {
   billingStatus,
   canAccessSubscriptionFeatures,
@@ -432,7 +445,7 @@ const handleUpgradeToAddCredits = () => {
 
 const handleTopUp = () => {
   useTelemetry()?.trackAddApiCreditButtonClicked({ source: 'avatar_menu' })
-  dialogService.showTopUpCreditsDialog({
+  showTopUpCreditsDialog({
     source: paymentIntentSourceForAddCreditsClick('avatar_menu')
   })
   emit('close')
@@ -453,12 +466,17 @@ const handleLogout = async () => {
 
 const handleCreateWorkspace = () => {
   isWorkspaceSwitcherOpen.value = false
-  dialogService.showCreateWorkspaceDialog()
+  showCreateWorkspaceDialog()
   emit('close')
 }
 
 const toggleWorkspaceSwitcher = () => {
   isWorkspaceSwitcherOpen.value = !isWorkspaceSwitcherOpen.value
+}
+
+const closeWorkspaceSwitcherFromKeyboard = () => {
+  isWorkspaceSwitcherOpen.value = false
+  isWorkspaceNameTooltipOpen.value = false
 }
 
 const refreshBalance = () => {

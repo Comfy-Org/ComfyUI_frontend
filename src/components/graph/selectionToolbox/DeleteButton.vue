@@ -1,10 +1,7 @@
 <template>
   <Button
-    v-show="isDeletable"
-    v-tooltip.top="{
-      value: $t('commands.Comfy_Canvas_DeleteSelectedItems.label'),
-      showDelay: 1000
-    }"
+    v-if="isDeletable"
+    :tooltip="$t('commands.Comfy_Canvas_DeleteSelectedItems.label')"
     variant="muted-textonly"
     :aria-label="$t('commands.Comfy_Canvas_DeleteSelectedItems.label')"
     data-testid="delete-button"

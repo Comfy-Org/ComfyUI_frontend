@@ -1269,6 +1269,11 @@
         "count": 1
       }
     },
+    "src/composables/billing/useBillingDialogs.ts": {
+      "crap_high": {
+        "count": 1
+      }
+    },
     "src/composables/bottomPanelTabs/useLogsTerminal.ts": {
       "crap_moderate": {
         "count": 1
@@ -3221,12 +3226,12 @@
         "count": 1
       }
     },
-    "src/scripts/ui.ts": {
+    "src/scripts/ui/utils.ts": {
       "complexity_high": {
         "count": 1
       }
     },
-    "src/scripts/valueControl.ts": {
+    "src/core/graph/widgets/valueControl.ts": {
       "crap_moderate": {
         "count": 1
       }
@@ -3599,7 +3604,7 @@
     "src/platform/cloud/subscription/composables/useFreeTierQuota.ts:high impact",
     "src/platform/assets/utils/assetFilterUtils.ts:high impact",
     "src/services/dialogService.ts:circular dependency",
-    "src/scripts/ui.ts:complexity",
+    "src/scripts/ui/utils.ts:complexity",
     "src/composables/usePaste.ts:circular dependency",
     "src/workbench/extensions/manager/composables/useConflictDetection.ts:circular dependency",
     "src/renderer/core/canvas/canvasStore.ts:circular dependency",
