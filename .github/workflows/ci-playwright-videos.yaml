@@ -126,9 +126,14 @@ jobs:
           path: dist/
 
       - uses: ./.github/actions/start-comfyui-server
+        id: comfyui-server
+        background: true
       - uses: ./.github/actions/setup-frontend
         with:
           node_cache: 'false'
+
+      - name: Wait for ComfyUI server readiness
+        wait: comfyui-server
 
       - name: Record changed tests
         env:
