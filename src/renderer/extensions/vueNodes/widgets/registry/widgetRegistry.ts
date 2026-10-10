@@ -83,6 +83,9 @@ const WidgetCompositor = defineAsyncComponent(
 const WidgetRange = defineAsyncComponent(
   () => import('@/components/range/WidgetRange.vue')
 )
+const WidgetCropByBBoxes = defineAsyncComponent(
+  () => import('@/components/cropByBBoxes/WidgetCropByBBoxes.vue')
+)
 const WidgetBoundingBoxes = defineAsyncComponent(
   () => import('@/components/boundingBoxes/WidgetBoundingBoxes.vue')
 )
@@ -257,6 +260,14 @@ const coreWidgetDefinitions: Array<[string, WidgetDefinition]> = [
     }
   ],
   [
+    'cropbboxespreview',
+    {
+      component: WidgetCropByBBoxes,
+      aliases: [],
+      essential: false
+    }
+  ],
+  [
     'boundingbox',
     {
       component: WidgetBoundingBox,
@@ -369,7 +380,8 @@ const EXPANDING_TYPES = [
   'imagecompare',
   'range',
   'boundingboxes',
-  'videoedit'
+  'videoedit',
+  'cropbboxespreview'
 ] as const
 
 export function shouldExpand(type: string): boolean {

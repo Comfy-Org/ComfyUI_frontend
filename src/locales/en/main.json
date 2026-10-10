@@ -2400,6 +2400,12 @@
     "unlockRatio": "Unlock aspect ratio",
     "custom": "Custom"
   },
+  "cropByBBoxes": {
+    "runToPreview": "Run the workflow to preview the crop",
+    "noBoxes": "No bounding boxes in the first frame",
+    "cropSize": "Crop {width} × {height}",
+    "outputSize": "Output {width} × {height} · {mode}"
+  },
   "painter": {
     "tool": "Tool",
     "brush": "Brush",
@@ -3874,6 +3880,7 @@
       "Fileupload": "File upload",
       "Galleria": "Gallery",
       "Compositor": "Compositor",
+      "CropByBBoxesPreview": "Crop preview",
       "SelectButton": "Select button",
       "ImageCompare": "Image compare",
       "Markdown": "Markdown",

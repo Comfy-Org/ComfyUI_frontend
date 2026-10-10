@@ -156,6 +156,7 @@ export type IWidget =
   | IRangeWidget
   | IVideoEditWidget
   | IResolutionPreviewWidget
+  | ICropByBBoxesPreviewWidget
   | IBoundingBoxesWidget
   | ILightInfoWidget
   | IColorsWidget
@@ -451,6 +452,14 @@ export interface IWidgetResolutionPreviewOptions extends IWidgetOptions {
   ratio_widget?: string
   megapixels_widget?: string
   multiple_widget?: string
+}
+
+export interface ICropByBBoxesPreviewWidget extends IBaseWidget<
+  null,
+  'cropbboxespreview'
+> {
+  type: 'cropbboxespreview'
+  value: null
 }
 
 export interface IResolutionPreviewWidget extends IBaseWidget<
