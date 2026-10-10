@@ -1,12 +1,16 @@
 import { applyOps, mint } from '@comfyorg/comfy-multi-player'
 import type { Op, WidgetCatalog } from '@comfyorg/comfy-multi-player'
+import type { DocUpdateFrame } from '@comfyorg/ingest-types'
 import fs from 'node:fs'
 import path from 'node:path'
 import * as Y from 'yjs'
 import { z } from 'zod'
 
 import { zComfyWorkflow } from '@/platform/workflow/validation/schemas/workflowSchema'
-import { encodeBase64 } from '@/workbench/extensions/agent/crdt/docFrameClient'
+import {
+  DOC_PROTOCOL_VERSION,
+  encodeBase64
+} from '@/workbench/extensions/agent/crdt/docFrameClient'
 
 export const PROMOTED_WIDGET_WORKFLOW_NAME =
   'subgraphs/nested-pack-promoted-values'
@@ -26,8 +30,55 @@ const docSubscribeFrame = z.object({
   data: z.object({ workflow_id: z.string() })
 })
 
-export function encodePromotedWidgetUpdate(update: Uint8Array): string {
-  return encodeBase64(update)
+type DocSubscribedFrame = {
+  type: 'doc_subscribed'
+  data: {
+    v: number
+    workflow_id: string
+    ok: true
+    seq: number
+  }
+}
+
+function createPromotedWidgetFrames(
+  workflowId: string,
+  fullState: Uint8Array,
+  delta: Uint8Array
+): [DocSubscribedFrame, DocUpdateFrame, DocUpdateFrame] {
+  return [
+    {
+      type: 'doc_subscribed',
+      data: {
+        v: DOC_PROTOCOL_VERSION,
+        workflow_id: workflowId,
+        ok: true,
+        seq: 0
+      }
+    },
+    {
+      type: 'doc_update',
+      data: {
+        v: DOC_PROTOCOL_VERSION,
+        workflow_id: workflowId,
+        seq: 0,
+        lineage_seq: 0,
+        actor: 'system:mint',
+        update_b64: encodeBase64(fullState)
+      }
+    },
+    {
+      type: 'doc_update',
+      data: {
+        v: DOC_PROTOCOL_VERSION,
+        workflow_id: workflowId,
+        seq: 1,
+        lineage_seq: 0,
+        actor: 'agent:test:1',
+        op_ids: ['op-1', 'op-2'],
+        update_b64: encodeBase64(delta)
+      }
+    }
+  ]
 }
 
 export function parsePromotedWidgetSubscribeWorkflowId(
@@ -182,7 +233,13 @@ export function createPromotedWidgetWriteData() {
   const delta = Y.encodeStateAsUpdate(doc, vectorBefore)
   doc.destroy()
 
-  return { ...data, fullState, delta }
+  return {
+    ...data,
+    fullState,
+    delta,
+    framesFor: (workflowId: string) =>
+      createPromotedWidgetFrames(workflowId, fullState, delta)
+  }
 }
 
 export type PromotedWidgetWriteData = ReturnType<

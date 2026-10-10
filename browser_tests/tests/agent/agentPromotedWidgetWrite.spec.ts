@@ -9,7 +9,6 @@ import {
   PROMOTED_WIDGET_SUBGRAPH_TYPE,
   PROMOTED_WIDGET_WORKFLOW_LABEL,
   PROMOTED_WIDGET_WORKFLOW_NAME,
-  encodePromotedWidgetUpdate,
   parsePromotedWidgetSubscribeWorkflowId
 } from '@e2e/fixtures/data/agent/promotedWidgetWrite'
 import { promotedWidgetWriteFixture } from '@e2e/fixtures/promotedWidgetWriteFixture'
@@ -37,7 +36,7 @@ test.describe(
     }) => {
       test.setTimeout(60_000)
       const page = comfyPage.page
-      const { fullState, delta, interiorPrompt, interiorWidth, interiorSteps } =
+      const { framesFor, interiorPrompt, interiorWidth, interiorSteps } =
         promotedWidgetWriteData
 
       // agentPanelMocks stubs `/api/object_info` with `{}`. Routes match
@@ -112,37 +111,10 @@ test.describe(
           })
 
         await test.step('deliver the mint and agent set_widget frames', () => {
-          ws.send(
-            JSON.stringify({
-              type: 'doc_subscribed',
-              data: { v: 1, workflow_id: workflowId, ok: true, seq: 0 }
-            })
-          )
-          ws.send(
-            JSON.stringify({
-              type: 'doc_update',
-              data: {
-                v: 1,
-                workflow_id: workflowId,
-                seq: 0,
-                actor: 'system:mint',
-                update_b64: encodePromotedWidgetUpdate(fullState)
-              }
-            })
-          )
-          ws.send(
-            JSON.stringify({
-              type: 'doc_update',
-              data: {
-                v: 1,
-                workflow_id: workflowId,
-                seq: 1,
-                actor: 'agent:test:1',
-                op_ids: ['op-1', 'op-2'],
-                update_b64: encodePromotedWidgetUpdate(delta)
-              }
-            })
-          )
+          const [subscribed, minted, updated] = framesFor(workflowId)
+          ws.send(JSON.stringify(subscribed))
+          ws.send(JSON.stringify(minted))
+          ws.send(JSON.stringify(updated))
         })
 
         const readState = () =>
