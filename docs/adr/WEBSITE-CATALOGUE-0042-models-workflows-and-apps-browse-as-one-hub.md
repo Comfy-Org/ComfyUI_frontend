@@ -43,9 +43,12 @@ one grid and not as separate catalogues.
   appear in the same list, which is how the central objection to a single grid
   is answered: by not putting them side by side at all, rather than by labelling
   them once they are.
-- Models and workflows carry the full toolbar — search, the use-case filter and
-  sort — over the same eight use cases, so the filter means the same thing in
-  both and a reader carries one vocabulary between them.
+- Models and workflows both carry search, a filter menu and sort, but they do
+  not filter over the same thing. Models filter by the eight use cases in
+  `USE_CASES`; workflows filter by their own five categories in
+  `workshop-workflow-categories.json`, and additionally by the model a workflow
+  runs on, which the models section has no counterpart for. The controls match,
+  the vocabulary does not.
 - Apps carry only the tabs. `AppCatalogue` mounts no search, filter or sort,
   because a shelf of a handful of apps is read rather than searched: the band
   is there, with only the tabs in it. The moment the apps list grows past a
@@ -74,6 +77,10 @@ workflow page, or where Run lives for a workflow that could run here.
 - Three listings is three surfaces to keep consistent. They share components,
   but nothing structural stops them drifting; consistency is maintained by
   convention and by tests, not by the type system.
+- The two filter menus look alike and mean different things, so a visitor who
+  learns the use cases in the models tab does not carry them to the workflows
+  tab. Neither reconciling the two vocabularies nor naming the difference in
+  the labels has been done.
 - The split is by kind rather than by "runs here" against "open in ComfyUI",
   which may be the division a visitor actually has in mind. That remains open.
 
@@ -86,6 +93,8 @@ Open questions this record does not answer:
    instead of on kind.
 3. Whether the interface says _workflows_ or _templates_; the Hub, the repo
    data and the copy do not currently agree.
+4. Whether the models filter and the workflows filter should share one
+   vocabulary, and which of the two it would be.
 
 Written after the fact, from the code as it stands at the Hub design pass
 (#20333). It records a decision already built and in production rather than
