@@ -18,7 +18,6 @@ const defaultFlags: FeatureFlags = {
   linearToggleEnabled: false,
   partnerNodeGovernanceEnabled: false,
   partnerRunGateEnabled: false,
-  userSecretsEnabled: false,
   nodeReplacementsEnabled: false,
   nodeLibraryEssentialsEnabled: false,
   comfyHubUploadEnabled: false,
