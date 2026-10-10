@@ -118,7 +118,8 @@ describe('NodeSearchBoxPopover', () => {
           },
           DialogContent: {
             template: '<div data-testid="search-content"><slot /></div>'
-          }
+          },
+          DialogTitle: { template: '<h2><slot /></h2>' }
         }
       }
     })

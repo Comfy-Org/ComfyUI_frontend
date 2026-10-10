@@ -24,6 +24,7 @@
             (filterVisible || $event.isComposing) && $event.preventDefault()
           "
         >
+          <DialogTitle class="sr-only">{{ $t('g.searchNodes') }}</DialogTitle>
           <div v-if="useSearchBoxV2" role="search" class="relative">
             <NodeSearchContent
               :filters="nodeFilters"
@@ -70,6 +71,7 @@ import Dialog from '@/components/ui/dialog/Dialog.vue'
 import DialogContent from '@/components/ui/dialog/DialogContent.vue'
 import DialogOverlay from '@/components/ui/dialog/DialogOverlay.vue'
 import DialogPortal from '@/components/ui/dialog/DialogPortal.vue'
+import DialogTitle from '@/components/ui/dialog/DialogTitle.vue'
 import type { LiteGraphCanvasEvent } from '@/lib/litegraph/src/litegraph'
 import { LGraphNode, LiteGraph } from '@/lib/litegraph/src/litegraph'
 import type { CanvasPointerEvent } from '@/lib/litegraph/src/types/events'
