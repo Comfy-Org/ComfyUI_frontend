@@ -8,6 +8,7 @@ import type { SignInState } from '@/auth/signInState'
 import { recordBillingEntry } from '@/entry/billingEntry'
 import { createBillingI18n } from '@/i18n'
 import { createBillingRouter } from '@/router'
+import { billingWebTelemetry } from '@/telemetry/billingWebTelemetry'
 import { trackedBillingEvents } from '@/test/trackedBillingEvents'
 import SignInView from '@/views/SignInView.vue'
 
@@ -433,6 +434,37 @@ describe('SignInView', () => {
       }
     )
 
+    it('reports the notice once and the click as the same attempt', async () => {
+      const trackSso = vi
+        .spyOn(billingWebTelemetry, 'trackSsoEvent')
+        .mockImplementation(() => undefined)
+      vi.spyOn(window.location, 'assign').mockImplementation(() => {})
+      await renderSignIn(REFUSED_ENTRY)
+
+      await userEvent.click(
+        await screen.findByRole('button', { name: 'Continue with SSO' })
+      )
+
+      const [[shown], [continued], ...rest] = trackSso.mock.calls
+      expect(shown).toEqual({
+        name: 'app:sso_required_shown',
+        properties: {
+          surface: 'billing_web',
+          trigger: 'session_refused',
+          presentation: 'notice',
+          flow_id: expect.any(String)
+        }
+      })
+      expect(continued).toEqual({
+        name: 'app:sso_continue_clicked',
+        properties: {
+          surface: 'billing_web',
+          flow_id: shown.properties.flow_id
+        }
+      })
+      expect(rest).toEqual([])
+    })
+
     it('offers nothing it cannot start when neither an organization nor an email is known', async () => {
       h.accountEmail = null
       await renderSignIn(REFUSED_ENTRY)
@@ -470,6 +502,7 @@ describe('SignInView', () => {
   })
 
   it('keeps the workspace refusal for SSO_REQUIRED while sso_enabled is off', async () => {
+    const trackSso = vi.spyOn(billingWebTelemetry, 'trackSsoEvent')
     h.sessionFailureCode = 'SSO_REQUIRED'
     h.ssoOrganizationId = 'org_acme'
     h.initialState = {
@@ -486,5 +519,6 @@ describe('SignInView', () => {
     expect(
       screen.queryByRole('button', { name: 'Continue with SSO' })
     ).toBeNull()
+    expect(trackSso).not.toHaveBeenCalled()
   })
 })

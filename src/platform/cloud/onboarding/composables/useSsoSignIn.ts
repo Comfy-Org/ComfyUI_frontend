@@ -4,8 +4,13 @@ import type { RouteLocationNormalizedLoaded, Router } from 'vue-router'
 import { useRoute, useRouter } from 'vue-router'
 
 import { discoverSso, ssoStartUrl } from '@comfyorg/account-core/sso'
+import type { SsoSurface } from '@comfyorg/account-core/telemetry'
 
 import { toSsoReturnPath } from '@/platform/auth/sso/ssoReturnPath'
+import {
+  trackSsoContinueClicked,
+  trackSsoSignInFailed
+} from '@/platform/auth/sso/ssoTelemetry'
 
 import {
   captureOAuthRequestId,
@@ -47,7 +52,7 @@ export function resolveSsoReturnTo(
 }
 
 /** SSO sign-in for the cloud auth pages, where ingest is same-origin. */
-export function useSsoSignIn() {
+export function useSsoSignIn(surface: SsoSurface) {
   const route = useRoute()
   const router = useRouter()
   const state = ref<SsoSignInState>({ phase: 'idle' })
@@ -62,7 +67,11 @@ export function useSsoSignIn() {
   // Back from the identity provider restores this page from the bfcache with
   // the navigation it started still showing as in flight.
   useEventListener(window, 'pageshow', (event) => {
-    if (event.persisted) dispatch({ type: 'restored' })
+    if (!event.persisted) return
+    if (state.value.phase === 'redirecting') {
+      trackSsoSignInFailed('cancelled', surface)
+    }
+    dispatch({ type: 'restored' })
   })
 
   /**
@@ -80,6 +89,7 @@ export function useSsoSignIn() {
     if (disposal.signal.aborted) return true
     dispatch({ type: 'discovered', discovery })
     if (discovery.kind !== 'sso') return false
+    trackSsoContinueClicked(surface)
     window.location.assign(
       ssoStartUrl({
         email,
