@@ -11,6 +11,11 @@ import { priceCinematicModels } from '@/lib/workshop/cinematic-studio/pricing'
 import { appModels, appPagePaths } from '@/config/workshop-app-content'
 import type { AppWorkshopModel } from '@/config/models-catalogue'
 import { modelOgImage } from './model-page'
+import {
+  cmsEnabled,
+  loadSiteCatalog,
+  catalogUnavailable
+} from '@/lib/cms/catalog'
 
 export const getStaticPaths: GetStaticPaths = () => appPagePaths()
 
@@ -18,7 +23,21 @@ interface Props {
   readonly model: AppWorkshopModel
 }
 
-const { model } = Astro.props
+const catalog = cmsEnabled()
+  ? await loadSiteCatalog(Astro.locals.site)
+  : undefined
+const failure = catalog && !catalog.ok ? catalogUnavailable() : undefined
+if (failure) return failure
+const liveApps = catalog?.ok
+  ? catalog.models.filter((item) => item.type === 'APP')
+  : appModels
+const model = catalog?.ok
+  ? liveApps.find(
+      (item) =>
+        item.href.replace(/\/$/, '') === Astro.url.pathname.replace(/\/$/, '')
+    )
+  : Astro.props.model
+if (!model) return new Response('Not found', { status: 404 })
 const app = model.appId
 
 // Video models carry no estimate: the pricing rules have none that match a
@@ -40,7 +59,7 @@ if (!models.length) throw new Error('Cinematic Studio has no runnable models')
   noindex
 >
   <CinematicStudioPage
-    apps={appModels}
+    apps={liveApps}
     models={models}
     initialApp={app}
     client:load

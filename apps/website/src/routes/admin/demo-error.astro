@@ -1,0 +1,15 @@
+---
+import { demoMode } from '@/lib/cms/demo'
+
+// The demo preview shows what failed, so a Vercel-only error can be read
+// without access to the function logs. Never on a real deployment.
+const { error } = Astro.props as { error?: unknown }
+const detail =
+  demoMode() && error instanceof Error
+    ? `${error.message}\n\n${error.stack ?? ''}`
+    : demoMode()
+      ? String(error)
+      : ''
+---
+
+<pre>Something went wrong.{detail && `\n\n${detail}`}</pre>

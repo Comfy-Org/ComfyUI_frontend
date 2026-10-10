@@ -1,0 +1,103 @@
+---
+import AdminShell from '@/components/cms/AdminShell.astro'
+import { randomUUID } from 'node:crypto'
+import ContentList from '@/components/cms/ContentList.vue'
+import ContentEditor from '@/components/cms/editor/ContentEditor.vue'
+import NewContentPicker from '@/components/cms/editor/NewContentPicker.vue'
+import DraftQueue from '@/components/cms/DraftQueue.vue'
+import PublishHistory from '@/components/cms/PublishHistory.astro'
+import { resolveLocale } from '@/config/locales'
+import { draftChanges } from '@/lib/cms/admin'
+import { editorState, newFromTemplate } from '@/lib/cms/editor'
+import { buildQueue, contentRows } from '@/lib/cms/queue'
+import { loadSubmissions } from '@/lib/cms/submissions'
+
+const session = Astro.locals.site
+if (!session) return new Response('Not found', { status: 404 })
+const t = Astro.locals.t
+const locale = resolveLocale(Astro.currentLocale)
+const page = Astro.params.page?.replace(/\/$/, '') ?? ''
+const editId = page.match(/^edit\/([0-9a-f-]{36})$/i)?.[1]
+if (!['', 'content', 'history', 'new'].includes(page) && !editId)
+  return new Response('Not found', { status: 404 })
+const review = session.review
+const findRecord = (uid: string | null | undefined) =>
+  review.draft.items.find((item) => item.uid === uid) ??
+  review.live.items.find((item) => item.uid === uid)
+const editRecord = editId ? findRecord(editId) : undefined
+if (editId && !editRecord) return new Response('Not found', { status: 404 })
+const template =
+  page === 'new' ? findRecord(Astro.url.searchParams.get('from')) : undefined
+const editing = editRecord
+  ? { state: editorState(editRecord), base: editRecord.data }
+  : template
+    ? { state: newFromTemplate(template, randomUUID()), base: template.data }
+    : undefined
+const liveRecord = editId
+  ? review.live.items.find((item) => item.uid === editId)
+  : undefined
+const isLive = Boolean(liveRecord && !liveRecord.deleted)
+const inDraft = draftChanges(review).some(({ uid }) => uid === editId)
+const noticeParam = Astro.url.searchParams.get('notice')
+const notice = (['saved', 'archived', 'restored', 'undone'] as const).find(
+  (value) => value === noticeParam
+)
+
+const submissions = await loadSubmissions(session)
+const queue = buildQueue(review, submissions ?? [])
+const rows = contentRows(review)
+---
+
+<AdminShell
+  current={page === '' ? 'draft' : page === 'history' ? 'history' : 'content'}
+  draftCount={queue.length}
+  contentCount={rows.length}
+>
+  {!submissions && page === '' && <p
+    role="alert"
+    class="mb-5 rounded-lg border border-admin-danger/30 bg-admin-danger/10 px-3 py-2 text-xs text-admin-danger-text"
+  >
+    {t('cmsAdmin.unavailable')}
+  </p>}
+  {page === '' && (
+    <DraftQueue
+      client:load
+      items={queue}
+      csrf={session.csrf}
+      canApply={review.can_apply}
+      canEdit={review.can_edit}
+      draftId={review.draft.revision_id}
+      generation={review.draft.generation}
+      locale={locale}
+    />
+  )}
+  {page === 'content' && (
+    <ContentList
+      client:load
+      rows={rows}
+      canEdit={review.can_edit}
+      locale={locale}
+    />
+  )}
+  {page === 'new' && !editing && (
+    <NewContentPicker client:load rows={rows} locale={locale} />
+  )}
+  {editing && (
+    <ContentEditor
+      client:load
+      initial={editing.state}
+      base={editing.base}
+      csrf={session.csrf}
+      canEdit={review.can_edit}
+      isLive={isLive}
+      published={Boolean(liveRecord)}
+      inDraft={inDraft}
+      notice={notice}
+      canUpload={Astro.locals.siteDemo === true}
+      locale={locale}
+    />
+  )}
+  {page === 'history' && (
+    <PublishHistory review={review} csrf={session.csrf} locale={locale} />
+  )}
+</AdminShell>

@@ -1,4 +1,4 @@
-import type { AstroIntegration } from 'astro'
+import type { AstroIntegration, HookParameters } from 'astro'
 import { envField } from 'astro/config'
 // Both imported statically. A dynamic `import()` inside the hook throws
 // "Vite module runner has been closed" — by `astro:build:done` the runner that
@@ -107,6 +107,39 @@ async function filesLinkingOldModels(
   return found
 }
 
+function installCmsRoutes(
+  injectRoute: HookParameters<'astro:config:setup'>['injectRoute']
+) {
+  if (!process.env.SITE_CATALOG_API_URL) return
+  for (const [pattern, file] of [
+    ['/admin/sign-in', 'sign-in.astro'],
+    ['/admin/tester-session', 'tester-session.ts'],
+    ['/admin/testers', 'testers.astro'],
+    ['/admin/[...page]', 'index.astro'],
+    ['/admin/session', 'session.ts'],
+    ['/admin/local-access', 'local-access.astro'],
+    ['/admin/local-session', 'local-access.ts'],
+    ['/admin/actions', 'actions.ts'],
+    ...(process.env.SITE_CATALOG_DEMO === '1'
+      ? [['/500', 'demo-error.astro']]
+      : [])
+  ]) {
+    injectRoute({
+      pattern,
+      entrypoint: './src/routes/admin/' + file,
+      prerender: false
+    })
+  }
+}
+
+function cmsRendering(route: ReturnType<typeof modelsBuildRoutes>[number]) {
+  const dynamic =
+    route.pattern.startsWith('/hub/') ||
+    route.pattern === '/models/catalogue.json' ||
+    route.pattern === '/models/[...slug]/page.json'
+  return process.env.SITE_CATALOG_API_URL && dynamic ? { prerender: false } : {}
+}
+
 export function workshopReleaseGate(): AstroIntegration {
   return {
     name: 'workshop-release-gate',
@@ -141,8 +174,12 @@ export function workshopReleaseGate(): AstroIntegration {
             plugins: [workshopClientBoundary()]
           }
         })
+        installCmsRoutes(injectRoute)
         for (const route of modelsBuildRoutes(isWorkshopInBuild()))
-          injectRoute(route)
+          injectRoute({
+            ...route,
+            ...cmsRendering(route)
+          })
       },
       'astro:build:start': () => {
         assertWorkshopCloudEnvForBuild()

@@ -55,6 +55,15 @@ jobs:
       - name: Pull Vercel environment information
         run: vercel pull --yes --environment=preview
 
+      # The `cms-demo` label builds this preview with the Hub admin running on
+      # in-memory sample data (apps/website/src/lib/cms/demo.ts), so design can
+      # share it. Nothing reaches a real ingest service; never on production.
+      - name: Enable the Hub admin demo
+        if: contains(github.event.pull_request.labels.*.name, 'cms-demo')
+        run: |
+          echo "SITE_CATALOG_DEMO=1" >> "$GITHUB_ENV"
+          echo "SITE_CATALOG_API_URL=https://cms-demo.invalid" >> "$GITHUB_ENV"
+
       - name: Build project artifacts
         env:
           WEBSITE_ASHBY_API_KEY: ${{ secrets.WEBSITE_ASHBY_API_KEY }}

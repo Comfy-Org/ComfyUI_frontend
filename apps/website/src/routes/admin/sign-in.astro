@@ -1,0 +1,47 @@
+---
+import BaseLayout from '@/layouts/BaseLayout.astro'
+import { CSRF_COOKIE, cookieOptions, newCSRF } from '@/lib/cms/admin'
+import { testersEnabled } from '@/lib/cms/testers'
+if (!testersEnabled()) return new Response('Not found', { status: 404 })
+const csrf = newCSRF()
+const t = Astro.locals.t
+Astro.cookies.set(CSRF_COOKIE, csrf, cookieOptions(Astro))
+---
+
+<BaseLayout title={t('cmsTesters.signIn')} minimal noindex>
+  <section class="mx-auto max-w-xl px-6 py-20">
+    <div
+      class="rounded-3xl border border-white/10 bg-primary-comfy-ink-light p-8"
+    >
+      <h1 class="mb-4 text-3xl">{t('cmsTesters.signIn')}</h1>
+      <p class="mb-6 text-primary-comfy-canvas">{t('cmsTesters.help')}</p>
+      <form
+        method="post"
+        action="/admin/tester-session"
+        data-astro-reload
+        class="grid gap-4"
+      >
+        <input type="hidden" name="csrf" value={csrf} />
+        <label class="grid gap-2"
+          >{t('cmsTesters.code')}<input
+            name="code"
+            required
+            autocomplete="one-time-code"
+            type="text"
+            data-1p-ignore
+            data-private
+            data-dd-privacy="mask"
+            spellcheck="false"
+            autocapitalize="none"
+            maxlength="64"
+            class="rounded-lg border border-white/20 bg-site-bg-soft p-3"
+        /></label>
+        <button
+          class="rounded-full bg-primary-comfy-yellow px-6 py-3 text-primary-comfy-ink"
+        >
+          {t('cmsTesters.submit')}
+        </button>
+      </form>
+    </div>
+  </section>
+</BaseLayout>

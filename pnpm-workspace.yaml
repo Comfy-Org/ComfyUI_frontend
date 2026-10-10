@@ -170,6 +170,7 @@ catalog:
   '@comfyorg/comfy-multi-player': 0.3.10
   typescript-native-bridge: 6.0.3-bridge.17.tsgo.7.0.2
   dependency-cruiser: ^18.5.0
+  '@astrojs/vercel': ^11.0.12
 
 cleanupUnusedCatalogs: true
 
@@ -210,6 +211,8 @@ overrides:
 # Transitional - drop each entry once that version is older than the release-age gate.
 minimumReleaseAgeExclude:
   - '@comfyorg/comfyui-desktop-bridge-types@0.5.0'
+  - '@astrojs/internal-helpers@0.12.0'
+  - '@astrojs/vercel@11.0.12'
 
 patchedDependencies:
   '@total-typescript/shoehorn@0.1.2': patches/@total-typescript__shoehorn@0.1.2.patch
