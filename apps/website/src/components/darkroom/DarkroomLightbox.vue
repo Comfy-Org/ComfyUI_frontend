@@ -32,6 +32,7 @@ const emit = defineEmits<{
   reuse: []
   star: []
   edit: []
+  vary: []
   board: [anchor: HTMLElement]
 }>()
 
@@ -67,7 +68,7 @@ const nav =
     role="dialog"
     aria-modal="true"
     :aria-label="t('darkroom.lightbox.label')"
-    class="fixed inset-0 z-50 flex flex-col bg-primary-comfy-ink/95"
+    class="fixed inset-0 z-60 flex flex-col bg-primary-comfy-ink/95"
     data-testid="darkroom-lightbox"
   >
     <div
@@ -157,8 +158,21 @@ const nav =
               : t('darkroom.tile.star')
           }}
         </button>
-        <button type="button" :class="action" @click="emit('edit')">
+        <button
+          type="button"
+          :class="action"
+          :title="t('darkroom.tile.editTitle')"
+          @click="emit('edit')"
+        >
           {{ t('darkroom.tile.edit') }}
+        </button>
+        <button
+          type="button"
+          :class="action"
+          :title="t('darkroom.tile.variationsTitle')"
+          @click="emit('vary')"
+        >
+          {{ t('darkroom.tile.variations') }}
         </button>
         <button
           type="button"

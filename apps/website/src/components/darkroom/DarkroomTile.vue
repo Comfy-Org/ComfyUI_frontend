@@ -188,7 +188,7 @@ const overlayButton =
         <DarkroomStarIcon :filled="!!tile.item.starred" class="size-4" />
       </button>
       <div
-        class="absolute inset-x-0 bottom-0 flex flex-wrap justify-end gap-1.5 bg-linear-to-b from-transparent to-black/60 p-2 opacity-0 transition-opacity group-focus-within/tile:opacity-100 group-hover/tile:opacity-100 pointer-coarse:opacity-100"
+        class="absolute inset-x-0 bottom-0 hidden flex-wrap justify-end gap-1.5 bg-linear-to-b from-transparent to-black/60 p-2 opacity-0 transition-opacity group-focus-within/tile:opacity-100 group-hover/tile:opacity-100 sm:flex pointer-coarse:opacity-100"
       >
         <button
           type="button"

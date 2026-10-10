@@ -3,11 +3,10 @@
  * into grid sheets, sent after the user's own references, and the request
  * adds a note telling the model to read them as art direction.
  */
-import { base64Bytes } from './response'
 import type { DarkroomImageInput } from './request'
 
-export const SHEET_MAX = 6
-export const SHEETS_MAX = 6
+const SHEET_MAX = 6
+const SHEETS_MAX = 6
 const CELL = 512
 const GAP = 8
 /** The page background, behind the gaps of a sheet. */
@@ -103,8 +102,4 @@ export async function fileToInput(
     reader.readAsDataURL(file)
   })
   return { mime: file.type || 'image/png', data: url.split(',')[1], url }
-}
-
-export function inputToBlob(input: DarkroomImageInput): Blob {
-  return new Blob([base64Bytes(input.data)], { type: input.mime })
 }

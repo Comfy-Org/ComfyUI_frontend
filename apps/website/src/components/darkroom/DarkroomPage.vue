@@ -12,6 +12,7 @@ import {
 
 import { cn } from '@comfyorg/tailwind-utils'
 
+import AppsBackLink from '@/components/workshop/cinematic-studio/AppsBackLink.vue'
 import WorkshopGate from '@/components/workshop/WorkshopGate.vue'
 import type { DarkroomNotice } from '@/composables/useDarkroom'
 import { useDarkroom } from '@/composables/useDarkroom'
@@ -550,7 +551,7 @@ onBeforeUnmount(() => clearTimeout(toastTimer))
 const tabClass =
   'h-9 cursor-pointer rounded-xl px-3 text-xs font-bold tracking-wider whitespace-nowrap uppercase hover:bg-transparency-white-t8 hover:text-primary-warm-white'
 const sectionLabel =
-  'mb-3 text-xs font-bold tracking-wider text-content-muted uppercase'
+  'mb-3 text-xs font-bold tracking-wider text-primary-comfy-canvas uppercase'
 </script>
 
 <template>
@@ -563,16 +564,30 @@ const sectionLabel =
         class="mx-auto max-w-xl px-4 py-24 text-center text-base/relaxed text-content-muted"
         data-testid="darkroom-unavailable"
       >
-        <h1
-          class="mb-2.5 text-3xl font-light tracking-tight text-primary-comfy-canvas"
-        >
+        <h1 class="mb-2 text-base font-semibold text-primary-warm-white">
           {{ t('darkroom.unavailable.title') }}
         </h1>
         {{ t('darkroom.unavailable.body') }}
       </div>
     </template>
 
-    <div class="min-h-[80vh] font-light text-content" data-testid="darkroom">
+    <div class="min-h-[80vh] text-content" data-testid="darkroom">
+      <header class="mx-auto w-full max-w-10xl px-4 pt-8 sm:px-8 lg:px-14">
+        <AppsBackLink :locale class="mb-5" />
+        <div class="mb-3 flex flex-wrap items-center gap-3">
+          <h1
+            class="text-2xl font-semibold text-primary-warm-white lg:text-3xl"
+          >
+            {{ t('darkroom.title') }}
+          </h1>
+          <span
+            class="rounded-full border border-transparency-white-t20 px-2 py-0.5 font-mono text-[10px] tracking-wider text-primary-comfy-canvas uppercase"
+          >
+            {{ t('darkroom.beta') }}
+          </span>
+        </div>
+        <p class="text-lg text-primary-warm-gray">{{ t('darkroom.lead') }}</p>
+      </header>
       <DarkroomPromptBar
         ref="bar"
         v-model="prompt"
@@ -631,7 +646,7 @@ const sectionLabel =
       <p
         v-if="darkroom.blocked.value || darkroom.storageFailed.value"
         role="status"
-        class="mx-auto mt-4 w-full max-w-10xl px-4 text-sm text-content-muted lg:px-6"
+        class="mx-auto mt-4 w-full max-w-10xl px-4 text-sm text-content-muted sm:px-8 lg:px-14"
       >
         {{
           darkroom.blocked.value
@@ -643,15 +658,15 @@ const sectionLabel =
       <div v-show="view === 'create'">
         <div
           v-if="!jobs.length && (darkroom.loaded.value || !signedIn)"
-          class="mx-auto mt-14 mb-16 max-w-208 px-4 lg:px-6"
+          class="mx-auto mt-10 mb-16 w-full max-w-10xl px-4 sm:px-8 lg:px-14"
           data-testid="darkroom-welcome"
         >
           <h2
-            class="mb-2.5 text-4xl font-light tracking-tight text-primary-comfy-canvas lg:text-5xl"
+            class="mb-2 text-xl font-semibold text-primary-warm-white lg:text-2xl"
           >
             {{ t('darkroom.welcome.heading') }}
           </h2>
-          <p class="mb-8 max-w-160 text-lg/normal">
+          <p class="mb-8 max-w-160 text-base/relaxed text-primary-warm-gray">
             {{
               gate === 'signedOut'
                 ? t('darkroom.welcome.signedOut')
@@ -660,13 +675,13 @@ const sectionLabel =
           </p>
           <div :class="sectionLabel">{{ t('darkroom.welcome.tryOne') }}</div>
           <div
-            class="mb-9 grid grid-cols-[repeat(auto-fill,minmax(230px,1fr))] gap-2.5"
+            class="mb-9 grid grid-cols-1 gap-3 sm:grid-cols-2 xl:grid-cols-4"
           >
             <button
               v-for="example in DARKROOM_EXAMPLES"
               :key="example"
               type="button"
-              class="flex cursor-pointer flex-col justify-start rounded-3xl bg-hub-surface px-4.5 py-4 text-left text-base/snug font-normal text-content hover:bg-hub-surface-hover hover:text-primary-warm-white"
+              class="flex cursor-pointer flex-col justify-start rounded-2xl border border-transparency-white-t8 bg-transparency-white-t4 px-4.5 py-4 text-left text-sm/relaxed text-content transition-colors hover:border-transparency-white-t20 hover:text-primary-warm-white"
               @click="useExample(example)"
             >
               <span :class="cn(sectionLabel, 'mb-1.5 block')">
@@ -679,12 +694,12 @@ const sectionLabel =
             {{ t('darkroom.welcome.goodToKnow') }}
           </div>
           <ul
-            class="grid grid-cols-[repeat(auto-fill,minmax(230px,1fr))] gap-x-6 gap-y-2.5"
+            class="grid grid-cols-1 gap-x-6 gap-y-2.5 sm:grid-cols-2 xl:grid-cols-4"
           >
             <li
               v-for="tip in ['edit', 'combine', 'build', 'style', 'keys']"
               :key="tip"
-              class="text-sm/snug font-normal text-content-muted"
+              class="text-sm/relaxed text-content-muted"
             >
               <span class="text-primary-warm-white">
                 {{ t(`darkroom.welcome.tips.${tip}.lead`) }}
@@ -695,7 +710,7 @@ const sectionLabel =
         </div>
 
         <div
-          class="mx-auto flex w-full max-w-10xl flex-col gap-9 p-4 lg:p-6"
+          class="mx-auto flex w-full max-w-10xl flex-col gap-9 px-4 py-6 sm:px-8 lg:px-14"
           data-testid="darkroom-feed"
         >
           <DarkroomJobRow
@@ -776,6 +791,7 @@ const sectionLabel =
         @reuse="reuse(viewed.settings)"
         @star="darkroom.setStarred([viewed.id], !viewed.starred)"
         @edit="edit(viewed)"
+        @vary="(closeLightbox(), vary(viewed))"
         @board="(anchor) => viewed && pickBoardFor([viewed.id], anchor)"
       />
 
@@ -795,7 +811,7 @@ const sectionLabel =
         aria-live="polite"
         :class="
           cn(
-            'fixed bottom-6 left-1/2 z-70 flex max-w-[90vw] -translate-x-1/2 items-center gap-4 rounded-2xl bg-primary-warm-white py-2.5 pr-4.5 pl-4.5 text-base font-normal text-primary-comfy-ink transition-[opacity,translate] duration-200',
+            'fixed bottom-6 left-1/2 z-80 flex max-w-[90vw] -translate-x-1/2 items-center gap-4 rounded-2xl bg-primary-warm-white py-2.5 pr-4.5 pl-4.5 text-base font-normal text-primary-comfy-ink transition-[opacity,translate] duration-200',
             toast
               ? 'opacity-100'
               : 'pointer-events-none translate-y-4 opacity-0',

@@ -116,7 +116,7 @@ function openDatabase(name: string): Promise<IDBDatabase> {
   })
 }
 
-export function darkroomDatabaseName(uid: string, workspaceId: string): string {
+function darkroomDatabaseName(uid: string, workspaceId: string): string {
   return `comfy-darkroom:${uid}:${workspaceId}`
 }
 

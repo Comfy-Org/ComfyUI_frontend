@@ -4997,6 +4997,8 @@
       "description": "Nano Banana 模型的图像创作空间。描述一张图片，一次最多生成四张，并在喜欢的结果上继续创作。"
     },
     "title": "Darkroom",
+    "beta": "Beta",
+    "lead": "描述一张图片，一次最多生成四张，并在喜欢的结果上继续创作。",
     "tabs": {
       "label": "分区",
       "create": "创作",

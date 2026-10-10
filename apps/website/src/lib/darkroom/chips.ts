@@ -22,7 +22,7 @@ export function shapeLabel(t: Translate, shape: string): string {
   return known ? `${t(`darkroom.shapes.${known.key}`)} ${shape}` : shape
 }
 
-export function formatWhen(created: number, locale: string): string {
+function formatWhen(created: number, locale: string): string {
   return new Date(created).toLocaleString(locale, {
     month: 'short',
     day: 'numeric',

@@ -104,25 +104,20 @@ const iconButton =
 
 <template>
   <div
-    class="sticky top-0 z-10 border-b border-transparency-white-t8 bg-primary-comfy-ink px-4 pt-4 pb-3 lg:px-6"
+    class="sticky top-20 z-30 border-b border-transparency-white-t8 bg-page px-4 pt-5 pb-3 sm:px-8 lg:top-26 lg:px-14"
   >
     <div
       class="mx-auto flex w-full max-w-10xl flex-wrap items-center gap-3 lg:flex-nowrap"
     >
-      <h1
-        class="hidden font-formula-narrow text-xl font-semibold tracking-tight whitespace-nowrap text-primary-warm-white uppercase lg:block"
-      >
-        {{ t('darkroom.title') }}
-      </h1>
       <slot name="tabs" />
       <div
-        class="flex min-w-0 flex-[1_1_100%] items-center gap-1.5 rounded-2xl border border-transparency-white-t20 bg-primary-comfy-ink-light py-1.5 pr-1.5 pl-4 focus-within:border-primary-comfy-canvas lg:flex-1"
+        class="flex min-w-0 flex-[1_1_100%] items-center gap-1.5 rounded-2xl border border-transparency-white-t20 bg-transparency-white-t4 py-1.5 pr-1.5 pl-4 focus-within:border-primary-warm-white/60 lg:flex-1"
       >
         <textarea
           ref="textarea"
           v-model="prompt"
           rows="1"
-          class="h-9 max-h-40 min-w-0 flex-1 resize-none bg-transparent py-1.5 text-base/snug text-primary-warm-white outline-none placeholder:text-content-muted"
+          class="h-9 max-h-40 min-w-0 flex-1 resize-none bg-transparent py-1.5 text-base/snug text-primary-warm-white outline-none placeholder:text-primary-warm-gray"
           :placeholder="
             history.length
               ? t('darkroom.prompt.placeholderHistory')
@@ -248,7 +243,7 @@ const iconButton =
       data-testid="darkroom-references"
     >
       <span
-        class="text-xs font-bold tracking-wider text-content-muted uppercase"
+        class="text-xs font-bold tracking-wider text-primary-comfy-canvas uppercase"
       >
         {{ t('darkroom.refs.label') }}
       </span>

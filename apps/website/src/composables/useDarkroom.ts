@@ -283,7 +283,11 @@ export function useDarkroom(notify: (notice: DarkroomNotice) => void) {
       detail,
       ...(cancelled ? { cancelled } : {})
     }))
-    if (needsCredits(failure)) requestWorkshopBuyCreditsAutomatically()
+    if (!needsCredits(failure)) return
+    // The same recovery the model pages offer: the shared top-up dialog,
+    // which decides for itself what this account may buy, and a fresh balance.
+    requestWorkshopBuyCreditsAutomatically()
+    void refreshWorkshopCredits({ force: true })
   }
 
   function showProgress(key: string, progress: DarkroomProgress) {
@@ -321,9 +325,20 @@ export function useDarkroom(notify: (notice: DarkroomNotice) => void) {
           body: buildDarkroomBody(request, entry.images),
           idempotencyKey: workshopIdempotencyKey(),
           token,
-          signal
+          // The send is seen through even if the reader cancels meanwhile:
+          // aborting it could leave Router running a request whose id never
+          // came back, with no way left to stop it.
+          signal: lifetime.signal
         })
         requestId = submission.requestId
+        if (signal.aborted) {
+          void cancelDarkroomImage({
+            model: request.model,
+            requestId,
+            token
+          }).catch(() => {})
+          return
+        }
         await active?.savePending({
           requestId,
           settings: request,
@@ -818,5 +833,3 @@ export function useDarkroom(notify: (notice: DarkroomNotice) => void) {
     referenceFrom
   }
 }
-
-export type Darkroom = ReturnType<typeof useDarkroom>

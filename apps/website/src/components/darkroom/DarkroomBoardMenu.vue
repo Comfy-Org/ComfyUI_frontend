@@ -70,14 +70,14 @@ function create() {
 }
 
 const row =
-  'flex w-full cursor-pointer items-center gap-2.5 rounded-lg px-2.5 py-2 text-left text-base text-content hover:bg-transparency-white-t8 hover:text-primary-warm-white'
+  'flex w-full cursor-pointer items-center gap-2.5 rounded-xl px-2.5 py-2 text-left text-sm text-content hover:bg-transparency-white-t8 hover:text-primary-warm-white'
 </script>
 
 <template>
   <div
     ref="menu"
     role="menu"
-    class="fixed z-60 max-h-[60vh] max-w-84 min-w-64 overflow-auto rounded-2xl border border-transparency-white-t20 bg-primary-comfy-ink-light p-1.5 shadow-lg"
+    class="fixed z-70 max-h-[60vh] max-w-84 min-w-64 overflow-auto rounded-2xl border border-transparency-white-t8 bg-site-dropdown p-1.5 shadow-lg"
     :style="position"
     data-testid="darkroom-board-menu"
   >

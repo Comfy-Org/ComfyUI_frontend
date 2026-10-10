@@ -84,7 +84,7 @@ export function shapeRatio(shape: string | undefined): number {
 export const TALL_RATIO = 0.7
 
 export const DARKROOM_SIZES = ['1K', '2K', '4K'] as const
-export type DarkroomSize = (typeof DARKROOM_SIZES)[number]
+type DarkroomSize = (typeof DARKROOM_SIZES)[number]
 
 /**
  * `LOW` is deliberately not offered: Router rejects it for Nano Banana 2.1.
@@ -97,7 +97,7 @@ export const DARKROOM_PLANNING = [
   { value: 'HIGH', key: 'careful' }
 ] as const
 
-export type DarkroomPlanning = (typeof DARKROOM_PLANNING)[number]['value']
+type DarkroomPlanning = (typeof DARKROOM_PLANNING)[number]['value']
 
 export function planningKey(value: string | undefined): string {
   return (
@@ -111,7 +111,7 @@ export const DARKROOM_FORMATS = [
   { value: 'image/jpeg', label: 'JPEG' }
 ] as const
 
-export type DarkroomFormat = (typeof DARKROOM_FORMATS)[number]['value']
+type DarkroomFormat = (typeof DARKROOM_FORMATS)[number]['value']
 
 /** Key under `darkroom.creativity` for a temperature between 0 and 2. */
 export function creativityKey(temperature: number): string {
@@ -130,7 +130,7 @@ export const DARKROOM_EXAMPLES = [
 ] as const
 
 /** The most images one prompt makes. An account's concurrency can lower it. */
-export const MAX_RUNS = 4
+const MAX_RUNS = 4
 
 export interface DarkroomSettings {
   model: string

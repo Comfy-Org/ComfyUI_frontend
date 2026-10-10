@@ -79,16 +79,14 @@ const toolButton =
   'h-11 cursor-pointer rounded-xl border border-transparency-white-t20 px-3 text-xs font-bold tracking-wider text-primary-warm-white uppercase transition-colors hover:border-primary-comfy-yellow hover:bg-primary-comfy-yellow hover:text-primary-comfy-ink disabled:cursor-not-allowed disabled:opacity-40 disabled:hover:border-transparency-white-t20 disabled:hover:bg-transparent disabled:hover:text-primary-warm-white'
 const quietButton =
   'h-11 cursor-pointer rounded-xl px-3 text-xs font-bold tracking-wider text-content-muted uppercase hover:bg-transparency-white-t8 hover:text-primary-warm-white'
-const heading =
-  'text-3xl font-light tracking-tight text-primary-comfy-canvas lg:text-4xl'
+const heading = 'text-xl font-semibold text-primary-warm-white lg:text-2xl'
 const emptyNote =
   'mx-auto max-w-xl px-4 py-18 text-center text-base/relaxed text-content-muted'
-const emptyTitle =
-  'mb-2.5 text-3xl font-light tracking-tight text-primary-comfy-canvas'
+const emptyTitle = 'mb-2 text-lg font-semibold text-primary-warm-white'
 </script>
 
 <template>
-  <div class="mx-auto w-full max-w-10xl px-4 pt-6 pb-28 lg:px-6">
+  <div class="mx-auto w-full max-w-10xl px-4 pt-6 pb-28 sm:px-8 lg:px-14">
     <template v-if="!open">
       <div
         class="mt-2 mb-6 flex flex-wrap items-end justify-between gap-x-8 gap-y-4"
@@ -111,12 +109,12 @@ const emptyTitle =
           v-for="board in boards"
           :key="board.id"
           type="button"
-          class="cursor-pointer rounded-5xl bg-hub-surface p-2 text-left hover:bg-hub-surface-hover"
+          class="cursor-pointer rounded-2xl border border-transparency-white-t8 bg-transparency-white-t4 p-2 text-left transition-colors hover:border-transparency-white-t20"
           data-testid="darkroom-board-card"
           @click="emit('show', board.id)"
         >
           <span
-            class="grid aspect-4/3 grid-cols-2 grid-rows-2 gap-0.5 overflow-hidden rounded-4xl bg-site-bg-soft"
+            class="grid aspect-4/3 grid-cols-2 grid-rows-2 gap-0.5 overflow-hidden rounded-xl bg-site-bg-soft"
           >
             <img
               v-for="(item, index) in itemsOf(board).slice(0, 4)"
@@ -135,9 +133,11 @@ const emptyTitle =
             />
           </span>
           <span
-            class="flex items-center justify-between gap-3 px-4.5 pt-3.5 pb-3"
+            class="flex items-center justify-between gap-3 px-2.5 pt-3 pb-1.5"
           >
-            <span class="truncate text-lg text-primary-warm-white">
+            <span
+              class="truncate text-base font-semibold text-primary-warm-white"
+            >
               {{ board.name }}
             </span>
             <span

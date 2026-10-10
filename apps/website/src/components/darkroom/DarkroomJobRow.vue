@@ -114,7 +114,7 @@ const quietButton =
         @tall="(isTall) => (measuredTall = measuredTall || isTall)"
       />
     </div>
-    <div class="self-start lg:sticky lg:top-44">
+    <div class="self-start lg:sticky lg:top-52">
       <p
         class="mb-3 text-base/snug wrap-break-word whitespace-pre-wrap text-primary-warm-white"
       >

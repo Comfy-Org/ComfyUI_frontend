@@ -15,7 +15,7 @@ import { combineAbortSignals, createTimeoutSignal } from '@/utils/abortSignal'
 import { WORKSHOP_CLOUD_BASE_URL } from './workshop-env'
 
 const UPLOAD_TIMEOUT_MS = 120_000
-export const DARKROOM_ASSET_TAGS = ['output', 'darkroom'] as const
+const DARKROOM_ASSET_TAGS = ['output', 'darkroom'] as const
 
 /** Off unless the build opts in, like the Workshop's own asset saving. */
 export function darkroomSavesToCloud(): boolean {
@@ -43,14 +43,19 @@ export function darkroomAssetMetadata(
   }
 }
 
+/**
+ * The upload Cloud expects. The file goes last: Cloud reads the form as it
+ * streams, and a field that arrives after the file is dropped, which leaves
+ * the asset untagged and so out of the library's default view.
+ */
 export function darkroomAssetForm(item: DarkroomItem, blob: Blob): FormData {
   const form = new FormData()
   const name = downloadName(item)
-  form.set('file', blob, name)
   form.set('name', name)
   form.set('mime_type', item.mime)
   form.set('tags', JSON.stringify(DARKROOM_ASSET_TAGS))
   form.set('user_metadata', JSON.stringify(darkroomAssetMetadata(item)))
+  form.set('file', blob, name)
   return form
 }
 

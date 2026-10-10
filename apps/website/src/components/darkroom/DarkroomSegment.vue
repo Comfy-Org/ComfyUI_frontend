@@ -17,7 +17,7 @@ const model = defineModel<T>({ required: true })
   <div
     role="group"
     :aria-label="label"
-    class="inline-flex max-w-full overflow-hidden rounded-xl border border-transparency-white-t20"
+    class="flex max-w-full overflow-hidden rounded-xl border border-transparency-white-t20 sm:inline-flex"
   >
     <button
       v-for="option in options"
@@ -28,7 +28,7 @@ const model = defineModel<T>({ required: true })
       :aria-pressed="model === option.value"
       :class="
         cn(
-          'h-11 min-w-12 flex-1 cursor-pointer border-l border-transparency-white-t20 px-4 text-sm font-bold first:border-l-0 disabled:cursor-not-allowed disabled:opacity-40',
+          'h-11 min-w-12 flex-1 cursor-pointer border-l border-transparency-white-t20 px-2 text-sm font-bold whitespace-nowrap first:border-l-0 disabled:cursor-not-allowed disabled:opacity-40 sm:flex-none sm:px-4',
           model === option.value
             ? 'bg-primary-warm-white text-primary-comfy-ink'
             : 'bg-site-bg-soft text-content enabled:hover:bg-transparency-white-t8 enabled:hover:text-primary-warm-white'

@@ -144,14 +144,12 @@ const quietButton =
 </script>
 
 <template>
-  <div class="mx-auto w-full max-w-10xl px-4 pt-6 pb-28 lg:px-6">
+  <div class="mx-auto w-full max-w-10xl px-4 pt-6 pb-28 sm:px-8 lg:px-14">
     <div
       class="mt-2 mb-6 flex flex-wrap items-end justify-between gap-x-8 gap-y-4"
     >
       <div>
-        <h2
-          class="text-3xl font-light tracking-tight text-primary-comfy-canvas lg:text-4xl"
-        >
+        <h2 class="text-xl font-semibold text-primary-warm-white lg:text-2xl">
           {{ t('darkroom.organize.heading') }}
         </h2>
         <p
@@ -267,9 +265,7 @@ const quietButton =
       v-else
       class="mx-auto max-w-xl px-4 py-18 text-center text-base/relaxed text-content-muted"
     >
-      <h3
-        class="mb-2.5 text-3xl font-light tracking-tight text-primary-comfy-canvas"
-      >
+      <h3 class="mb-2 text-lg font-semibold text-primary-warm-white">
         {{ t('darkroom.organize.emptyTitle') }}
       </h3>
       {{ t('darkroom.organize.emptyBody') }}

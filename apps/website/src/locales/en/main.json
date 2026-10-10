@@ -5604,6 +5604,8 @@
       "description": "An image playground for the Nano Banana models. Describe an image, make up to four at once, and build on the ones you like."
     },
     "title": "Darkroom",
+    "beta": "Beta",
+    "lead": "Describe an image, make up to four at once, and build on the ones you like.",
     "tabs": {
       "label": "Sections",
       "create": "Create",

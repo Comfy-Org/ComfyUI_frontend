@@ -6,7 +6,7 @@ import type { DarkroomFailure } from './failure'
 import type { DarkroomImageInput, DarkroomRequest } from './request'
 import type { DarkroomItem, DarkroomPending } from './store'
 
-export type SlotPhase = 'sending' | 'queued' | 'running' | 'saving'
+type SlotPhase = 'sending' | 'queued' | 'running' | 'saving'
 
 interface SlotBase {
   /** Stable within the page, for list keys. */
@@ -32,7 +32,7 @@ export interface DoneSlot extends SlotBase {
   readonly fresh?: boolean
 }
 
-export interface FailedSlot extends SlotBase {
+interface FailedSlot extends SlotBase {
   readonly status: 'error'
   readonly failure: DarkroomFailure
   readonly detail: string
