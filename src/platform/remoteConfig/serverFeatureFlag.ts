@@ -29,7 +29,6 @@ export enum ServerFeatureFlag {
   BILLING_SDK_TOPUP_ENABLED = 'billing_sdk_topup_enabled',
   BILLING_SDK_SUBSCRIPTION_ENABLED = 'billing_sdk_subscription_enabled',
   V1_PAYMENT_RECOVERY = 'v1_payment_recovery',
-  FREE_TIER_JOB_ALLOWANCE_ENABLED = 'free_tier_job_allowance_enabled',
   SIGNUP_TURNSTILE = 'signup_turnstile',
   SUPPORTS_MODEL_TYPE_TAGS = 'supports_model_type_tags',
   ONBOARDING_TOUR_ENABLED = 'onboarding_tour_enabled',

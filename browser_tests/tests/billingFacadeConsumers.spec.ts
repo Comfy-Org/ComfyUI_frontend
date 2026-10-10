@@ -274,7 +274,6 @@ test.describe('Billing facade consumers (FE-933)', { tag: '@cloud' }, () => {
 
     const freeTierRemoteConfig = {
       subscription_required: true,
-      free_tier_job_allowance_enabled: true,
       free_tier_balance: { allowance: 5, remaining: 3, used: 2 }
     } satisfies RemoteConfig
 
