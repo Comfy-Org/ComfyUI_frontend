@@ -59,7 +59,7 @@
         "reject": "Reject {count} | Reject all {count}"
       },
       "title": "Draft",
-      "help": "Everything submitted or changed since the last publish. Open each change to review it, run workflows in Comfy Cloud, untick what isn't ready, then publish the rest together.",
+      "help": "Review what changed since the last publish, then publish it together.",
       "publish": "Publish {count} change | Publish {count} changes",
       "waiting": "Waiting for review",
       "included": "In this publish",
