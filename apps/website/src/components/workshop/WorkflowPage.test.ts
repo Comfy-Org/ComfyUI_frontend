@@ -88,7 +88,10 @@ describe('WorkflowPage header', () => {
     ])
     expect(
       within(paths).getByRole('link', { name: /Try in Comfy Cloud/ })
-    ).toHaveAttribute('data-variant', 'default')
+    ).toHaveAttribute('data-variant', 'outline')
+    expect(
+      within(paths).getByRole('link', { name: 'Download workflow' })
+    ).toHaveAttribute('data-variant', 'outline')
     expect(within(paths).queryByRole('link', { name: 'Run here' })).toBeNull()
     expect(
       within(paths).getByRole('link', { name: 'Download workflow' })
@@ -126,7 +129,7 @@ describe('WorkflowPage header', () => {
       ])
       expect(
         within(paths).getByRole('link', { name: /Try in Comfy Cloud/ })
-      ).toHaveAttribute('data-variant', 'default')
+      ).toHaveAttribute('data-variant', 'outline')
       expect(screen.queryByTestId('workflow-playground')).toBeNull()
       expect(screen.getByTestId('workflow-inside')).toBeTruthy()
       expect(screen.queryByTestId('workflow-actions')).toBeNull()

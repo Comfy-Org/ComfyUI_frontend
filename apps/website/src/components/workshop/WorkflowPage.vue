@@ -38,8 +38,6 @@ const cloudHref = template
   ? `${WORKSHOP_CLOUD_BASE_URL}/?template=${encodeURIComponent(template.id)}`
   : undefined
 
-const primary = cloudHref ? 'cloud' : 'download'
-
 const enabled = useWorkshopEnabled()
 const workflowsEnabled = useWorkshopWorkflowsEnabled()
 function goTo(event: MouseEvent, id: string) {
@@ -97,8 +95,8 @@ function captureDownload() {
           :href="cloudHref"
           target="_blank"
           rel="noopener"
-          :variant="primary === 'cloud' ? 'default' : 'ghost'"
-          :class="primary === 'cloud' ? 'px-5' : secondaryPathClass"
+          variant="outline"
+          class="px-5"
           data-testid="workflow-path-cloud"
           @click="captureTryInCloud"
         >
@@ -115,8 +113,8 @@ function captureDownload() {
           as="a"
           :href="template.downloadUrl"
           download
-          :variant="primary === 'download' ? 'default' : 'ghost'"
-          :class="primary === 'download' ? 'px-5' : secondaryPathClass"
+          variant="outline"
+          class="px-5"
           data-testid="workflow-path-download"
           @click="captureDownload"
         >
