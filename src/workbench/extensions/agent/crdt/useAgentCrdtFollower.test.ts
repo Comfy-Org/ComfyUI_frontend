@@ -39,6 +39,7 @@ const bridgeState = vi.hoisted(() => {
     canReseed = vi.fn(() => false)
     subscribedWorkflowId: string | null = 'wf-1'
     lastSequence = 41
+    lastSchemaError: Error | null = null
     follower = {
       updatesApplied: 0,
       doc: {
@@ -869,6 +870,71 @@ describe('useAgentCrdtFollower', () => {
     expect(status().connected).toBe(false)
     expect(status().workflowId).toBe('wf-1')
     expect(projectionState.discardPending).toHaveBeenCalledWith('wf-1')
+    unmount()
+  })
+
+  /**
+   * PM-2047. The read gate (`assertReadableSchema`, KA-11) is the only refusal
+   * that blanks the WHOLE canvas, and it was the only one the person was never
+   * told about: it reported to the dev panel and the `errored` counter, so a
+   * frontend compiled against an older `SCHEMA_VERSION` than the deployed
+   * doc-host writes showed an empty canvas while the agent reported the turn
+   * as done. Both operands of that comparison are outside client state, so a
+   * refresh, re-login or reboot re-ran it and got the identical refusal —
+   * "complete failure to initialize workflow, survives refresh, re-login and
+   * restarts". The gate is unchanged; what is asserted here is that it speaks.
+   */
+  it('PM-2047: surfaces a read-gate refusal to the person as an incompatible document version', () => {
+    const onSyncError = vi.fn()
+    const { unmount } = mountFollower('wf-1', true, () => null, {
+      onSyncError
+    })
+    dispatchFrame('doc_subscribed', { ok: true })
+    bridge().lastSchemaError = new Error(
+      'CRDT follower: doc meta.schema_version=5 is not the v4 layout this build reads'
+    )
+
+    dispatchFrame('schema_error', { workflowId: 'wf-1', found: 5 })
+
+    expect(onSyncError).toHaveBeenCalledExactlyOnceWith(
+      'CRDT follower: doc meta.schema_version=5 is not the v4 layout this build reads',
+      'schema_version_mismatch'
+    )
+    unmount()
+  })
+
+  it('PM-2047: reports a read-gate refusal to telemetry, which it never did before', () => {
+    const { unmount } = mountFollower('wf-1')
+    dispatchFrame('doc_subscribed', { ok: true })
+    bridge().lastSchemaError = new Error('doc meta.schema_version=5')
+
+    dispatchFrame('schema_error', { workflowId: 'wf-1', found: 5 })
+
+    expect(telemetryState.reportError).toHaveBeenCalledWith(
+      expect.objectContaining({ message: 'doc meta.schema_version=5' }),
+      expect.objectContaining({ errorType: 'agent_doc_schema_unreadable' })
+    )
+    unmount()
+  })
+
+  /**
+   * A version skew has no repair frame — the host keeps writing the version it
+   * is pinned to — so every delivered frame refuses. One permanent condition
+   * is one sticky toast, not one per frame.
+   */
+  it('PM-2047: notifies once for a repeated refusal at the same version', () => {
+    const onSyncError = vi.fn()
+    const { unmount } = mountFollower('wf-1', true, () => null, {
+      onSyncError
+    })
+    dispatchFrame('doc_subscribed', { ok: true })
+    bridge().lastSchemaError = new Error('doc meta.schema_version=5')
+
+    dispatchFrame('schema_error', { workflowId: 'wf-1', found: 5 })
+    dispatchFrame('schema_error', { workflowId: 'wf-1', found: 5 })
+    dispatchFrame('schema_error', { workflowId: 'wf-1', found: 5 })
+
+    expect(onSyncError).toHaveBeenCalledTimes(1)
     unmount()
   })
 

@@ -145,6 +145,34 @@ function handleSubscribeRefusal(
   }
 }
 
+/** The `schema_error` payload `LayoutFollowerBridge.isReadableUpdate` emits. */
+interface SchemaRefusalDetail {
+  workflowId?: string
+  found?: unknown
+}
+
+const UNREADABLE_SCHEMA_MESSAGE = 'CRDT follower: unreadable doc schema'
+const SCHEMA_REFUSAL_TAGS = {
+  subsystem: 'agent-crdt',
+  layer: 'read-gate',
+  outcome: 'refused'
+} as const
+
+/**
+ * Latch key for one read-gate refusal. The version found is part of it so a
+ * later skew to a different version is reported again rather than swallowed by
+ * the first one's latch.
+ */
+function schemaRefusalKey(detail: SchemaRefusalDetail | null): string {
+  return `${detail?.workflowId ?? '?'}:${String(detail?.found)}`
+}
+
+function schemaRefusalContext(
+  detail: SchemaRefusalDetail | null
+): Record<string, unknown> {
+  return { workflowId: detail?.workflowId, found: detail?.found }
+}
+
 function notifyAgentMaterialization(
   update: ClassifiedDocUpdate,
   nodes: DocNodeDelta,
@@ -667,6 +695,37 @@ function startAgentCrdtFollower(
       projection.bind(workflowId, bridge.follower)
     }
   }
+  /**
+   * PM-2047: the read gate is the only refusal that blanks the WHOLE canvas,
+   * and it was the only one the person was never told about. It reported to
+   * the dev panel and an `errored` counter, so a frontend whose compiled
+   * `SCHEMA_VERSION` is older than the version the deployed doc-host writes
+   * showed an empty canvas while the agent reported the turn as done — and a
+   * reload could not change either operand of that comparison, so it survived
+   * every recovery the person had. Reuses `schema_version_mismatch`, which the
+   * subscribe-refusal path already notifies with and which
+   * `formatWorkflowSyncErrorDetail` already has copy for; the gate itself is
+   * unchanged, because reading a document this build cannot read is
+   * FORECLOSE-grade, not a fix.
+   *
+   * Latched per (workflow, version found) by {@link schemaRefusalKey}: a
+   * version skew has no repair frame, so one permanent condition is one sticky
+   * toast rather than one per delivered frame.
+   */
+  const notifiedSchemaRefusals = new Set<string>()
+  const notifySchemaRefusal = (detail: SchemaRefusalDetail | null): void => {
+    const key = schemaRefusalKey(detail)
+    if (notifiedSchemaRefusals.has(key)) return
+    notifiedSchemaRefusals.add(key)
+    const schemaError = bridge.lastSchemaError
+    reportError(schemaError ?? new Error(UNREADABLE_SCHEMA_MESSAGE), {
+      surface: 'agent',
+      errorType: 'agent_doc_schema_unreadable',
+      tags: SCHEMA_REFUSAL_TAGS,
+      context: schemaRefusalContext(detail)
+    })
+    events.onSyncError?.(schemaError?.message, 'schema_version_mismatch')
+  }
   const onSchemaError: EventListener = (event) => {
     // KA-11 fail-closed: the bridge refused to propagate an unreadable doc, so
     // nothing was projected. Surface it as its own status rather than as a
@@ -676,7 +735,7 @@ function startAgentCrdtFollower(
     lifecycle.clearStaleProbe()
     const detail =
       event instanceof CustomEvent
-        ? (event.detail as { workflowId?: string } | null)
+        ? (event.detail as SchemaRefusalDetail | null)
         : null
     if (detail?.workflowId !== undefined)
       projection.discardPending(detail.workflowId)
@@ -685,6 +744,7 @@ function startAgentCrdtFollower(
       'schema_error',
       event instanceof CustomEvent ? (event.detail ?? null) : null
     )
+    notifySchemaRefusal(detail)
   }
   const onGap: EventListener = (event) => {
     outcomes.value = { ...outcomes.value, gap: outcomes.value.gap + 1 }
