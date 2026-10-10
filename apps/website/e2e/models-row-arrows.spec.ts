@@ -25,3 +25,24 @@ test('the row keeps a keyboard on the arrow it is standing on', async ({
   await expect(forward).toBeFocused()
   await expect(back).not.toHaveAttribute('aria-disabled')
 })
+
+test('a spent arrow hands the strip it covers back to the card', async ({
+  page
+}) => {
+  await page.goto('/hub/models/')
+  const row = page.getByTestId('section-generate-images')
+  const back = row.getByTestId('card-row-prev')
+  await expect(back).toHaveAttribute('aria-disabled', 'true')
+  await back.scrollIntoViewIfNeeded()
+
+  const underTheSpentArrow = await back.evaluate((arrow) => {
+    const { right, top, bottom } = arrow.getBoundingClientRect()
+    const hit = document.elementFromPoint(right - 1, (top + bottom) / 2)
+    const owner = hit?.closest(
+      '[data-testid="workshop-model-card"], [data-testid="card-row-prev"]'
+    )
+    return owner?.getAttribute('data-testid') ?? null
+  })
+
+  expect(underTheSpentArrow).toBe('workshop-model-card')
+})
