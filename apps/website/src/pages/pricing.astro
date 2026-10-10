@@ -53,7 +53,11 @@ const description =
   <CloudPricingSection client:load />
   <WhatsIncludedSection />
   <ComfyAgentPricingSection locale={locale} />
-  <ComfyApiPricingSection locale={locale} show-learn-more-cta />
+  <ComfyApiPricingSection
+    locale={locale}
+    show-learn-more-cta
+    show-plan-limits={false}
+  />
   <MinimaxLicenseHeroSection client:visible />
   <MinimaxLicensePricingSection locale={locale} />
   <PricingFaq locale={locale} />

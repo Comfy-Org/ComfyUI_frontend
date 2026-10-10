@@ -3159,7 +3159,7 @@
     },
     "banner": {
       "cta": "免费试用",
-      "subtitle": "在真实 GPU 上免费运行 5 次，每月还有免费的 Comfy Agent 积分 — 无需信用卡。",
+      "subtitle": "在真实 GPU 上免费运行 5 次，新用户还可获得免费的 Comfy Agent 积分",
       "title": "免费开始使用 Comfy Cloud，准备好了再升级。"
     },
     "creditsLabel": "每月积分",
@@ -3180,7 +3180,7 @@
     },
     "comfyApi": {
       "heading": "Comfy API 定价",
-      "subtitle": "Comfy API 让你将工作流部署为生产级 API。GPU 时间与存储按秒计费；下方列出了各套餐的构建、部署与并发限制。",
+      "subtitle": "Comfy API 让你将工作流部署为生产级 API。GPU 时间与存储按秒计费；构建、部署与并发限制取决于你的套餐。",
       "metric": {
         "builds": "构建版本总数上限",
         "deployments": "部署总数上限",
@@ -3355,16 +3355,16 @@
     },
     "agent": {
       "heading": "Comfy Agent",
-      "subtitle": "描述你想要的效果，即可构建并运行工作流。Comfy Agent 适用于所有方案，并且每月附赠免费积分。",
+      "subtitle": "描述你想要的效果，即可构建并运行工作流。Comfy Agent 适用于所有方案，新用户还可获得免费积分进行试用。",
       "learnMore": "了解更多",
       "limit": {
         "availability": {
           "title": "所有方案均可使用",
-          "description": "任何 Comfy Cloud 账户都可以使用 Comfy Agent，不限定特定方案：只需有免费 Agent 额度或积分余额大于零即可。"
+          "description": "任何 Comfy Cloud 账户都可以使用 Comfy Agent，不限定特定方案：只需有新用户免费积分或积分余额大于零即可。"
         },
         "credits": {
           "title": "使用 Comfy Credits 计费",
-          "description": "免费额度用完后，Comfy Agent 会消耗你的 Comfy Credits 来支付 LLM token 费用，费率与 LLM Partner Nodes 相同。在 Team 方案中，用量从共享积分池中扣除。"
+          "description": "免费积分用完后，Comfy Agent 会消耗你的 Comfy Credits 来支付 LLM token 费用，费率与 LLM Partner Nodes 相同。在 Team 方案中，用量从共享积分池中扣除。"
         },
         "runs": {
           "title": "工作流运行",

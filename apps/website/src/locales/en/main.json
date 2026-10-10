@@ -1558,7 +1558,7 @@
     "creditsLabelYearly": "credits per year",
     "banner": {
       "title": "Start Comfy Cloud for free. Upgrade when ready.",
-      "subtitle": "5 free runs on real GPUs and free Comfy Agent credits every month — no credit card required.",
+      "subtitle": "5 free runs on real GPUs and free Comfy Agent credits for new users",
       "cta": "TRY FREE"
     },
     "feature": {
@@ -1639,7 +1639,7 @@
     },
     "comfyApi": {
       "heading": "Comfy API pricing",
-      "subtitle": "Comfy API lets you deploy your workflow as a production API. GPU time and storage are billed by the second; build, deployment, and concurrency limits apply to each plan below.",
+      "subtitle": "Comfy API lets you deploy your workflow as a production API. GPU time and storage are billed by the second; build, deployment, and concurrency limits depend on your plan.",
       "metric": {
         "builds": "Total builds limit",
         "deployments": "Total deployments limit",
@@ -1666,16 +1666,16 @@
     },
     "agent": {
       "heading": "Comfy Agent",
-      "subtitle": "Build and run workflows by describing what you want. Comfy Agent works on every plan and comes with free credits each month.",
+      "subtitle": "Build and run workflows by describing what you want. Comfy Agent works on every plan, and new users get free credits to try it.",
       "learnMore": "Learn More",
       "limit": {
         "availability": {
           "title": "Available on every plan",
-          "description": "Any Comfy Cloud account can use Comfy Agent. It is not locked to a specific plan: all you need is a free agent allowance or a positive credit balance."
+          "description": "Any Comfy Cloud account can use Comfy Agent. It is not locked to a specific plan: all you need is free new-user credits or a positive credit balance."
         },
         "credits": {
           "title": "Billed in Comfy Credits",
-          "description": "Once the free allowance is used up, Comfy Agent draws on your Comfy Credits for LLM tokens, at the same rates as LLM Partner Nodes. On the Team plan, usage comes from the shared credit pool."
+          "description": "Once your free credits are used up, Comfy Agent draws on your Comfy Credits for LLM tokens, at the same rates as LLM Partner Nodes. On the Team plan, usage comes from the shared credit pool."
         },
         "runs": {
           "title": "Workflow runs",

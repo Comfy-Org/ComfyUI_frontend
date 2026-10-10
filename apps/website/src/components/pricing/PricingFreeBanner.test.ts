@@ -27,7 +27,9 @@ describe('PricingFreeBanner', () => {
     expect(
       screen.getByText('Start Comfy Cloud for free. Upgrade when ready.')
     ).toBeTruthy()
-    expect(screen.getByText(/no credit card required/)).toBeTruthy()
+    expect(
+      screen.getByText(/free Comfy Agent credits for new users/)
+    ).toBeTruthy()
     expect(screen.getByRole('link', { name: 'TRY FREE' })).toBeTruthy()
   })
 
