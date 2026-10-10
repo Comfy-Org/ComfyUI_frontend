@@ -89,6 +89,31 @@ jobs:
         env:
           PLAYWRIGHT_SKIP_BROWSER_DOWNLOAD: '1'
 
+      - name: Ensure desktop bridge types dependency is published
+        shell: bash
+        env:
+          NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
+          DIST_TAG: ${{ inputs.dist_tag }}
+        run: |
+          set -euo pipefail
+          BRIDGE_PACKAGE=packages/comfyui-desktop-bridge-types/package.json
+          NAME=$(node -p "require('./${BRIDGE_PACKAGE}').name")
+          VERSION=$(node -p "require('./${BRIDGE_PACKAGE}').version")
+
+          STATUS=0
+          OUTPUT=$(npm view "${NAME}@${VERSION}" --json 2>&1) || STATUS=$?
+          if [ "$STATUS" -eq 0 ]; then
+            echo "${NAME}@${VERSION} is already published."
+            exit 0
+          fi
+          if ! echo "$OUTPUT" | grep -q "E404"; then
+            echo "::error title=Registry lookup failed::${OUTPUT}" >&2
+            exit "$STATUS"
+          fi
+
+          echo "${NAME}@${VERSION} is missing; publishing it before frontend types."
+          pnpm --dir packages/comfyui-desktop-bridge-types publish --access public --tag "$DIST_TAG" --no-git-checks --ignore-scripts
+
       - name: Build types
         run: pnpm build:types
 
