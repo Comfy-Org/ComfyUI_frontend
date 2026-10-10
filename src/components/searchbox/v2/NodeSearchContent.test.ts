@@ -345,6 +345,39 @@ describe('NodeSearchContent', () => {
       })
     })
 
+    it('finds nodes in a selected category when more than 64 nodes match the query', async () => {
+      // 80 short-named filler nodes match the same query at the same tier and
+      // outrank the longer-named nodes below, pushing them past the 64-result
+      // limit. See https://github.com/Comfy-Org/ComfyUI_frontend/issues/20696
+      const fillers = Array.from({ length: 80 }, (_, i) =>
+        createMockNodeDef({
+          name: `Layer${String(i).padStart(3, '0')}`,
+          display_name: `Layer ${String(i).padStart(3, '0')}`,
+          category: 'filler'
+        })
+      )
+      const wasNodes = [
+        'LayerAlphaNode',
+        'LayerBetaNode',
+        'LayerGammaNode'
+      ].map((name, i) =>
+        createMockNodeDef({
+          name,
+          display_name: ['Layer Alpha', 'Layer Beta', 'Layer Gamma'][i],
+          category: 'waslayers'
+        })
+      )
+      useNodeDefStore().updateNodeDefs([...fillers, ...wasNodes])
+
+      const { user } = renderComponent()
+      await user.click(await screen.findByTestId('category-waslayers'))
+      await user.type(screen.getByRole('combobox'), 'Layer')
+
+      await waitFor(() => {
+        expect(screen.getAllByTestId('node-item')).toHaveLength(3)
+      })
+    })
+
     it('should preserve search query when category changes', async () => {
       useNodeDefStore().updateNodeDefs([
         createMockNodeDef({ name: 'TestNode', display_name: 'Test Node' })

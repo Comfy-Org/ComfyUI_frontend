@@ -132,7 +132,8 @@ import {
   isEssentialNode,
   NodeSourceType
 } from '@/types/nodeSource'
-import type { FuseFilter, FuseFilterWithValue } from '@/utils/fuseUtil'
+import { FuseFilter } from '@/utils/fuseUtil'
+import type { FuseFilterWithValue } from '@/utils/fuseUtil'
 import { cn } from '@comfyorg/tailwind-utils'
 
 const sourceCategoryFilters: Record<string, (n: ComfyNodeDefImpl) => boolean> =
@@ -141,6 +142,29 @@ const sourceCategoryFilters: Record<string, (n: ComfyNodeDefImpl) => boolean> =
     [RootCategory.Comfy]: (n) => n.nodeSource.type === NodeSourceType.Core,
     [RootCategory.Custom]: isCustomNode
   }
+
+/**
+ * A filter backed by a plain predicate, so the category sidebar and root
+ * filter bar selections can be applied inside NodeSearchService.searchNode —
+ * i.e. BEFORE its `limit` slice. Filtering only after the slice makes nodes
+ * ranked 65+ unreachable under any category.
+ * See https://github.com/Comfy-Org/ComfyUI_frontend/issues/20696
+ */
+class SelectionFilter extends FuseFilter<ComfyNodeDefImpl, string> {
+  readonly predicate: (node: ComfyNodeDefImpl, value: string) => boolean
+
+  constructor(
+    id: string,
+    predicate: (node: ComfyNodeDefImpl, value: string) => boolean
+  ) {
+    super([], { id, name: id, invokeSequence: '', getItemOptions: () => [] })
+    this.predicate = predicate
+  }
+
+  public override matches(item: ComfyNodeDefImpl, value: string): boolean {
+    return this.predicate(item, value)
+  }
+}
 
 const { filters } = defineProps<{
   filters: FuseFilterWithValue<ComfyNodeDefImpl, string>[]
@@ -263,13 +287,75 @@ function onSelectCategory(category: RootCategoryId) {
   nextTick(() => searchInputRef.value?.focus())
 }
 
+// Selections from the root filter bar and the category sidebar, applied inside
+// searchNode so they narrow the full ranked list before the 64-result limit.
+// See https://github.com/Comfy-Org/ComfyUI_frontend/issues/20696
+const rootSelectionFilter = new SelectionFilter(
+  'rootSelection',
+  (node, root) => {
+    switch (root as RootCategoryId) {
+      case RootCategory.Favorites:
+        return nodeBookmarkStore.isBookmarked(node)
+      case RootCategory.Blueprint:
+        return node.category.startsWith(BLUEPRINT_CATEGORY)
+      case RootCategory.PartnerNodes:
+        return node.api_node
+      case RootCategory.Essentials:
+        return isEssentialNode(node)
+      case RootCategory.Comfy:
+        return node.nodeSource.type === NodeSourceType.Core
+      case RootCategory.Custom:
+        return isCustomNode(node)
+      default:
+        return true
+    }
+  }
+)
+const categorySelectionFilter = new SelectionFilter(
+  'categorySelection',
+  (node, category) => {
+    // Same root-prefix normalization as getCategoryResults below: when a root
+    // filter is active the selected category carries the root prefix while
+    // node.category does not.
+    const rootPrefix = rootFilter.value ? rootFilter.value + '/' : ''
+    const categoryPath = category.startsWith(rootPrefix)
+      ? category.slice(rootPrefix.length)
+      : category
+    const nodeCategory = node.category.startsWith(rootPrefix)
+      ? node.category.slice(rootPrefix.length)
+      : node.category
+    return (
+      nodeCategory === categoryPath ||
+      nodeCategory.startsWith(categoryPath + '/')
+    )
+  }
+)
+
+const selectionFilters = computed<
+  FuseFilterWithValue<ComfyNodeDefImpl, string>[]
+>(() => {
+  const selected: FuseFilterWithValue<ComfyNodeDefImpl, string>[] = []
+  if (rootFilter.value) {
+    selected.push({ filterDef: rootSelectionFilter, value: rootFilter.value })
+  }
+  if (selectedCategory.value !== DEFAULT_CATEGORY) {
+    selected.push({
+      filterDef: categorySelectionFilter,
+      value: selectedCategory.value
+    })
+  }
+  return selected
+})
+
 const searchResults = computed(() => {
   if (!searchQuery.value && filters.length === 0) {
     return nodeFrequencyStore.topNodeDefs
   }
-  return nodeDefStore.nodeSearchService.searchNode(searchQuery.value, filters, {
-    limit: 64
-  })
+  return nodeDefStore.nodeSearchService.searchNode(
+    searchQuery.value,
+    [...filters, ...selectionFilters.value],
+    { limit: 64 }
+  )
 })
 
 const sidebarCategory = computed({
