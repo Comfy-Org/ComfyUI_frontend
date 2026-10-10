@@ -358,7 +358,29 @@ export class SubgraphNode extends LGraphNode implements BaseLGraph {
           input._pendingDemotionToken = undefined
 
           if (widget) this.ensureWidgetRemoved(widget)
-          if (id && !this.inputs.some((i) => i.widgetId === id)) {
+
+          // Free the widget state only once this input is gone from the node --
+          // i.e. its slot was removed in the same tick as the disconnect, so
+          // nothing can promote it again. While the input survives, a
+          // disconnect is a demotion the user can reverse by reconnecting, and
+          // #14495 requires the value they typed on the *host* to still be
+          // there when they do, rather than reverting to the interior node's
+          // older value.
+          //
+          // `!this.inputs.some(i => i.widgetId === id)` alone reads as "nothing
+          // holds this id", which looks unconditionally true here because
+          // `input` is still listed with `widgetId === id` until six lines
+          // below. It is not dead code: making it fire on an ordinary
+          // disconnect reverts #14495, whose e2e case #18074 flipped off
+          // `test.fail()`. Raised as a defect on Comfy-Org/ComfyUI_frontend
+          // #19750; the predicate is spelled out here so the next reader does
+          // not have to rediscover why.
+          const inputStillPromotable = this.inputs.includes(input)
+          if (
+            id &&
+            !inputStillPromotable &&
+            !this.inputs.some((i) => i.widgetId === id)
+          ) {
             useWidgetValueStore().deleteWidget(id)
           }
 
