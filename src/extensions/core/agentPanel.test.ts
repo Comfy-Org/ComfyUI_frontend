@@ -335,14 +335,61 @@ describe('AgentPanel extension flag gate', () => {
     agentFlagEnabled.value = true
     Object.assign(consentStore, { accepted: false, isChecking: false })
     agentStore.isOpen = false
+    let finishConsentRead = (_: boolean) => {}
+    const consentRead = new Promise<boolean>((resolve) => {
+      finishConsentRead = resolve
+    })
+    vi.mocked(consentStore.load).mockReturnValueOnce(consentRead)
+    let decideStartup = (_: boolean) => {}
+    startupDecision = new Promise<boolean>((resolve) => {
+      decideStartup = resolve
+    })
 
     await loadEntryAndSetup()
-    await flush()
+    await vi.waitFor(() => expect(consentStore.load).toHaveBeenCalledOnce())
+    finishConsentRead(false)
+    await consentRead
+    decideStartup(true)
+    await startupDecision
 
     expect(agentStore.isOpen).toBe(false)
     expect(agentStore.open).not.toHaveBeenCalled()
     expect(useAgentConsent().withConsent).not.toHaveBeenCalled()
     expect(localStorage.getItem(ACTIVATION_VISITS_STORAGE_KEY)).toBe('2')
+  })
+
+  it('keeps a second-visit panel closed when consent finishes after dismissal', async () => {
+    localStorage.setItem(ACTIVATION_VISITS_STORAGE_KEY, '1')
+    agentFlagEnabled.value = true
+    Object.assign(consentStore, { accepted: false, isChecking: false })
+    agentStore.isOpen = true
+    let accept = () => {}
+    let finish = () => {}
+    const pending = new Promise<void>((resolve) => {
+      finish = resolve
+    })
+    vi.mocked(useAgentConsent().withConsent).mockImplementationOnce(
+      async (_trigger, onAccept) => {
+        accept = onAccept
+        await pending
+      }
+    )
+
+    await loadEntryAndSetup()
+    await vi.waitFor(() =>
+      expect(useAgentConsent().withConsent).toHaveBeenCalledOnce()
+    )
+    await vi.waitFor(() =>
+      expect(localStorage.getItem(ACTIVATION_VISITS_STORAGE_KEY)).toBe('2')
+    )
+
+    agentStore.close('close_button')
+    accept()
+    finish()
+    await pending
+
+    expect(agentStore.isOpen).toBe(false)
+    expect(agentStore.open).not.toHaveBeenCalled()
   })
 
   it('does not reopen a dismissed activation panel after flag synchronization', async () => {

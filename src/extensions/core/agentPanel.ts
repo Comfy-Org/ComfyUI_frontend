@@ -394,7 +394,12 @@ export function registerAgentPanelExtension(): void {
         void withConsent(
           'first_load',
           () => {
-            if (!agentPanelStore.enabled || agentPanelStore.isOpen) return
+            if (
+              !agentPanelStore.enabled ||
+              automaticActivationVisitsComplete() ||
+              agentPanelStore.isOpen
+            )
+              return
             agentPanelStore.open('automatic_consent')
           },
           {
