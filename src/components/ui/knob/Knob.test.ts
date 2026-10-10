@@ -43,6 +43,12 @@ describe('Knob', () => {
       clientX: 48,
       clientY: 48,
       value: 100
+    },
+    {
+      position: 'the dead zone nearer the arc start',
+      clientX: 20,
+      clientY: 44,
+      value: 0
     }
   ])(
     'maps a pointer press at $position across the 270 degree arc',

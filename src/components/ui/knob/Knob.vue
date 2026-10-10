@@ -39,8 +39,7 @@ function updateFromPointer(event: PointerEvent) {
   const y = event.clientY - bounds.top - bounds.height / 2
   const angle = (Math.atan2(y, x) * 180) / Math.PI
   const clockwise = (angle + 225 + 360) % 360
-  const position =
-    clockwise > 315 ? (clockwise < 337.5 ? 1 : 0) : clockwise / 270
+  const position = clockwise > 315 ? 0 : clockwise / 270
   setValue(min + position * (max - min))
 }
 
