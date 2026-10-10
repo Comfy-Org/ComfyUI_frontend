@@ -51,7 +51,7 @@ export async function saveDraftItem(
   return putItem(session, uid, record.data)
 }
 
-async function putItem(
+export async function putItem(
   session: SiteSession,
   uid: string,
   record: z.infer<typeof savedRecordSchema>

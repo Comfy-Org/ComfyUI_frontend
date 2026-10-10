@@ -1,23 +1,25 @@
 <script setup lang="ts">
-import { Check, ChevronDown, ChevronUp } from '@lucide/vue'
+import { ChevronDown, ChevronUp } from '@lucide/vue'
 import { DialogDescription, DialogTitle } from 'reka-ui'
 import { computed } from 'vue'
 
 import CatalogReview from '@/components/cms/CatalogReview.vue'
 import ChangeTag from '@/components/cms/ChangeTag.vue'
+import StageDecision from '@/components/cms/StageDecision.vue'
 import SubmissionReview from '@/components/cms/SubmissionReview.vue'
 import UndoChangeButton from '@/components/cms/UndoChangeButton.vue'
 import AdminButton from '@/components/cms/ui/AdminButton.vue'
 import AdminSheetContent from '@/components/cms/ui/AdminSheetContent.vue'
-import StatusLabel from '@/components/cms/ui/StatusLabel.vue'
 import Sheet from '@/components/ui/sheet/Sheet.vue'
 import type { Locale } from '@/i18n/translations'
 import { translationsFor } from '@/i18n/translations'
 import { formatUtc } from '@/lib/cms/format'
 import type { QueueItem } from '@/lib/cms/queue'
+import type { StageEntry, StageStatus } from '@/lib/cms/stage-status'
 
 const {
   item,
+  stage,
   index,
   total,
   canApply,
@@ -26,6 +28,7 @@ const {
   locale = 'en'
 } = defineProps<{
   item: QueueItem
+  stage: StageEntry
   index: number
   total: number
   canApply: boolean
@@ -34,8 +37,11 @@ const {
   locale?: Locale
 }>()
 const open = defineModel<boolean>('open', { required: true })
-const approved = defineModel<boolean>('approved', { required: true })
-const emit = defineEmits<{ step: [direction: -1 | 1]; reject: [] }>()
+const emit = defineEmits<{
+  step: [direction: -1 | 1]
+  decide: [status: StageStatus]
+  reject: []
+}>()
 const { t } = translationsFor(locale)
 
 const subtitle = computed(() =>
@@ -45,7 +51,6 @@ const subtitle = computed(() =>
       })}`
     : `${item.provider ?? t('cmsAdmin.draft.catalogSource')} · ${item.slug}`
 )
-const isSubmission = computed(() => item.source === 'submission')
 </script>
 
 <template>
@@ -84,6 +89,9 @@ const isSubmission = computed(() => item.source === 'submission')
           >
             <ChangeTag :change="item.change" :locale />
             {{ t(`cmsAdmin.kind.${item.kind}`) }}
+            <span v-if="stage.reapproval" class="text-admin-warning">
+              {{ t('cmsAdmin.stage.reapprovalHelp') }}
+            </span>
           </div>
           <DialogTitle class="text-lg leading-snug font-medium text-balance">
             {{ item.title }}
@@ -105,52 +113,27 @@ const isSubmission = computed(() => item.source === 'submission')
       <footer
         class="flex min-h-14 shrink-0 flex-wrap items-center gap-2 border-t border-admin-line px-5 py-3"
       >
-        <template v-if="isSubmission && approved">
-          <StatusLabel
-            tone="success"
-            :label="t('cmsAdmin.decision.approvedNote')"
-            class="mr-auto"
-          />
-          <AdminButton
-            v-if="canApply"
-            variant="ghost"
-            @click="approved = false"
-          >
-            {{ t('cmsAdmin.decision.undoApproval') }}
-          </AdminButton>
-        </template>
-        <template v-else-if="isSubmission">
-          <span class="mr-auto text-xs text-admin-muted">
-            {{ t('cmsAdmin.decision.undecided') }}
-          </span>
-          <template v-if="canApply">
-            <AdminButton variant="dangerGhost" @click="emit('reject')">
-              {{ t('cmsAdmin.review.reject') }}
-            </AdminButton>
-            <AdminButton
-              variant="primary"
-              :icon="Check"
-              @click="approved = true"
-            >
-              {{ t('cmsAdmin.decision.approve') }}
-            </AdminButton>
-          </template>
-        </template>
-        <template v-else>
-          <p class="mr-auto text-xs text-admin-muted">
-            {{ t('cmsAdmin.draft.catalogNote') }}
-          </p>
-          <UndoChangeButton
-            v-if="canEdit"
-            :key="item.id"
-            :csrf
-            :uid="item.id"
+        <UndoChangeButton
+          v-if="item.source === 'catalog' && canEdit"
+          :key="item.id"
+          :csrf
+          :uid="item.id"
+          :title="item.title"
+          :published="item.change !== 'new'"
+          destination="/admin/"
+          :locale
+        />
+        <span class="ml-auto flex flex-wrap items-center gap-1">
+          <StageDecision
+            :status="stage.status"
             :title="item.title"
-            :published="item.change !== 'new'"
-            destination="/admin/"
+            :can-apply="canApply"
+            :can-reject="item.source === 'submission'"
             :locale
+            @decide="emit('decide', $event)"
+            @reject="emit('reject')"
           />
-        </template>
+        </span>
       </footer>
     </AdminSheetContent>
   </Sheet>

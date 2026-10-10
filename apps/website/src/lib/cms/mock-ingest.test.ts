@@ -70,4 +70,58 @@ describe('mock ingest', () => {
     )
     expect(post('revert', { live_id: live, target_id: 1 })[0]).toBe(409)
   })
+
+  it('publishes only approved changes and sends an edited approval back', () => {
+    const { call, url, review, post } = ingest()
+    const get = (path: string) =>
+      call('GET', url(`/admin/api/site/${path}`), auth, '')[1]
+    // The seeded draft changes uids[0] (name) and uids[1], uids[2].
+    expect(
+      post('staging', { items: [{ id: uids[0], status: 'APPROVED' }] })[0]
+    ).toBe(204)
+    expect(get('staging')).toEqual({ [uids[0]]: { status: 'APPROVED' } })
+    expect(post('publish', { approved_uids: [uids[0]] })[0]).toBe(204)
+    const after = review()
+    const liveName = (uid: string) =>
+      after.live.items.find((_, i) => uids[i] === uid)?.data.name
+    expect(liveName(uids[0])).toBe('M0 (Pro)')
+    // uids[1] was turned off in the draft but not approved, so it waits.
+    const raw = call('GET', url('/admin/api/site/review'), auth, '')[1] as {
+      draft: { items: Array<{ uid: string; enabled: boolean }> }
+      live: { items: Array<{ uid: string; enabled: boolean }> }
+    }
+    const enabled = (items: typeof raw.live.items) =>
+      items.find((item) => item.uid === uids[1])?.enabled
+    expect([enabled(raw.live.items), enabled(raw.draft.items)]).toEqual([
+      true,
+      false
+    ])
+    expect(get('staging')).toEqual({})
+
+    post('staging', { items: [{ id: uids[3], status: 'APPROVED' }] })
+    const target = after.draft.items.find((item) => item.uid === uids[3])
+    post(
+      `items/${uids[3]}`,
+      {
+        draft_id: after.draft.revision_id,
+        edit_version: target?.edit_version,
+        kind: 'MODEL',
+        slug: `/hub/models/${uids[3]}`,
+        enabled: true,
+        visibility: 'PUBLIC',
+        deleted: false,
+        data: { name: 'Edited', slug: uids[3] }
+      },
+      'PUT'
+    )
+    expect(get('staging')).toEqual({
+      [uids[3]]: { status: 'NEW', reapproval: true }
+    })
+    const history = get(`items/${uids[3]}/history`) as Array<{
+      saved_by: string
+      data: { name: string }
+    }>
+    expect(history.map((save) => save.data.name)).toEqual(['Edited', 'M3'])
+    expect(history[0].saved_by).toBe('local-designer')
+  })
 })

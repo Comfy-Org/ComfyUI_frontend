@@ -57,8 +57,7 @@
         "approve": "Approve {count} | Approve all {count}"
       },
       "title": "Draft",
-      "help": "Review what changed since the last publish, then publish it together.",
-      "publish": "Publish {count} change | Publish {count} changes",
+      "help": "Approve what should go live, then publish it after a final review.",
       "all": "All",
       "filter": {
         "MODEL": "Models",
@@ -79,21 +78,14 @@
       "emptyTitle": "You're all caught up",
       "emptyBody": "Nothing is waiting for review. Changes and workflow submissions land here.",
       "noMatches": "No changes match. Try another filter or search.",
-      "summary": {
-        "undecided": "{count} workflow needs your decision | {count} workflows need your decision",
-        "flagged": "{count} change has gaps | {count} changes have gaps",
-        "scheduled": "{count} scheduled for later",
-        "publishing": "{count} change goes live when you publish | {count} changes go live when you publish"
-      },
       "submissions": {
         "title": "Workflow submissions",
-        "help": "Sent by creators. Approve the ones that belong on the Hub; the rest keep waiting."
+        "help": "Sent by creators. Run them, then approve, leave for later or reject."
       },
       "team": {
         "title": "Content changes",
-        "help": "Saved to the draft by the team. They go live together; undo one to keep it out."
-      },
-      "catalogNote": "Goes live with the next publish."
+        "help": "Saved to the draft by the team. Approve them, leave them for later, or undo one in its panel."
+      }
     },
     "review": {
       "position": "{index} of {total}",
@@ -121,10 +113,6 @@
       "newTitle": "What this adds to the site"
     },
     "publish": {
-      "title": "Publish {count} change? | Publish {count} changes?",
-      "body": "Approved workflows and the team's content changes go live together.",
-      "held": "{count} workflow without a decision keeps waiting. | {count} workflows without a decision keep waiting.",
-      "confirm": "Publish",
       "cancel": "Cancel"
     },
     "reject": {
@@ -228,7 +216,8 @@
         "saved": "Saved to the draft. It goes live when the draft is published.",
         "archived": "Archived in the draft. It leaves the Hub when the draft is published.",
         "restored": "Restored in the draft. It comes back when the draft is published.",
-        "undone": "Changes undone. It matches the live site again."
+        "undone": "Changes undone. It matches the live site again.",
+        "versionRestored": "Version restored to the draft. It goes live when the draft is published."
       },
       "goToDraft": "Go to Draft",
       "readOnly": "You can look, but saving changes needs the comfy_site.edit permission.",
@@ -366,13 +355,54 @@
     },
     "decision": {
       "approve": "Approve",
-      "approved": "Approved",
-      "undo": "Undo",
-      "undoApproval": "Undo approval",
-      "approvedNote": "Approved: goes live when you publish",
-      "undecided": "Not decided yet",
       "approveTitle": "Approve {title}",
       "rejectTitle": "Reject {title}"
+    },
+    "stage": {
+      "tabLabel": "Show changes by review status",
+      "tab": {
+        "NEW": "To review {count}",
+        "APPROVED": "Approved {count}",
+        "DEFERRED": "Later {count}"
+      },
+      "label": {
+        "NEW": "To review",
+        "APPROVED": "Approved",
+        "DEFERRED": "Later"
+      },
+      "later": "Later",
+      "laterTitle": "Leave {title} for later",
+      "laterAll": "All for later",
+      "back": "Review again",
+      "backTitle": "Send {title} back to review",
+      "reapproval": "Edited after approval",
+      "reapprovalHelp": "Edited after it was approved, so it needs another look",
+      "failed": "That decision wasn't saved. Reload the page and try again.",
+      "guide": {
+        "review": "Approve each change or leave it for later. The final review opens when nothing is left to review.",
+        "ready": "Everything is decided. {count} approved change is ready for the final review. | Everything is decided. {count} approved changes are ready for the final review."
+      },
+      "empty": {
+        "NEW": "Nothing left to review.",
+        "APPROVED": "Nothing approved yet.",
+        "DEFERRED": "Nothing is left for later."
+      }
+    },
+    "finalReview": {
+      "open": "Final review ({count})",
+      "title": "Final review",
+      "body": "This approved change goes live when you publish. | These {count} approved changes go live together when you publish.",
+      "later": "{count} change left for later stays in the draft. | {count} changes left for later stay in the draft.",
+      "confirm": "Publish {count} change | Publish {count} changes"
+    },
+    "versions": {
+      "title": "Version history",
+      "help": "Every save of this page. Restoring one saves it to the draft again; nothing goes live until it's published.",
+      "current": "Current",
+      "live": "Live",
+      "restore": "Restore",
+      "confirmTitle": "Restore the version from {date}?",
+      "confirmBody": "It replaces what the draft has for this page now. Later saves stay in the history, so you can come back to them."
     }
   },
   "home": {

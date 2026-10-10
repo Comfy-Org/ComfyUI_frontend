@@ -12,9 +12,14 @@ export function formatUtc(value: string, locale: Locale) {
   })} UTC`
 }
 
-export function formatValue(value: unknown): string {
+const ISO_DATE = /^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}(:\d{2}(\.\d+)?)?Z$/
+
+export function formatValue(value: unknown, locale: Locale = 'en'): string {
   if (value === undefined || value === null || value === '') return ''
-  if (Array.isArray(value)) return value.map(formatValue).join(', ')
+  if (typeof value === 'string' && ISO_DATE.test(value))
+    return formatUtc(value, locale)
+  if (Array.isArray(value))
+    return value.map((entry) => formatValue(entry, locale)).join(', ')
   if (typeof value === 'object') return JSON.stringify(value)
   return String(value)
 }

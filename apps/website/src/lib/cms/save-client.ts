@@ -2,7 +2,12 @@ import type { EditorState } from './editor'
 import { savedRecord } from './editor'
 import type { SaveResult } from './save-item'
 
-export type SaveNotice = 'saved' | 'archived' | 'restored' | 'undone'
+export type SaveNotice =
+  | 'saved'
+  | 'archived'
+  | 'restored'
+  | 'undone'
+  | 'versionRestored'
 
 export function noticeFor(deleted: boolean | undefined): SaveNotice {
   if (deleted === undefined) return 'saved'

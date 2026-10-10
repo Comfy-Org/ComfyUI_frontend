@@ -57,8 +57,7 @@
         "approve": "批准 {count} 个 | 全部批准 {count} 个"
       },
       "title": "草稿",
-      "help": "审核上次发布以来的更改，然后一起发布。",
-      "publish": "发布 {count} 项更改",
+      "help": "批准要上线的内容，最终审核后发布。",
       "all": "全部",
       "filter": {
         "MODEL": "模型",
@@ -79,21 +78,14 @@
       "emptyTitle": "全部处理完毕",
       "emptyBody": "没有待审核内容。更改和工作流提交会出现在这里。",
       "noMatches": "没有匹配的更改，请尝试其他筛选或搜索。",
-      "summary": {
-        "undecided": "{count} 个工作流需要你决定",
-        "flagged": "{count} 项更改有缺漏",
-        "scheduled": "{count} 项定时稍后显示",
-        "publishing": "发布时 {count} 项更改上线"
-      },
       "submissions": {
         "title": "工作流投稿",
-        "help": "由创作者提交。批准适合上 Hub 的投稿，其余的继续等待。"
+        "help": "由创作者提交。先运行，再批准、留到稍后或拒绝。"
       },
       "team": {
         "title": "内容更改",
-        "help": "由团队保存到草稿。它们会一起上线；撤销某项即可将其排除。"
-      },
-      "catalogNote": "随下次发布上线。"
+        "help": "由团队保存到草稿。批准、留到稍后，或在面板中撤销某项。"
+      }
     },
     "review": {
       "position": "第 {index} 项，共 {total} 项",
@@ -121,10 +113,6 @@
       "newTitle": "这会在网站上添加的内容"
     },
     "publish": {
-      "title": "发布 {count} 项更改？",
-      "body": "已批准的工作流和团队的内容更改会一起上线。",
-      "held": "{count} 个未决定的工作流将继续等待。",
-      "confirm": "发布",
       "cancel": "取消"
     },
     "reject": {
@@ -228,7 +216,8 @@
         "saved": "已保存到草稿。草稿发布后生效。",
         "archived": "已在草稿中归档。草稿发布后将从 Hub 下线。",
         "restored": "已在草稿中恢复。草稿发布后重新上线。",
-        "undone": "更改已撤销。它再次与线上网站一致。"
+        "undone": "更改已撤销。它再次与线上网站一致。",
+        "versionRestored": "版本已恢复到草稿。草稿发布后上线。"
       },
       "goToDraft": "前往草稿",
       "readOnly": "你可以查看，但保存更改需要 comfy_site.edit 权限。",
@@ -366,13 +355,54 @@
     },
     "decision": {
       "approve": "批准",
-      "approved": "已批准",
-      "undo": "撤销",
-      "undoApproval": "撤销批准",
-      "approvedNote": "已批准：发布时上线",
-      "undecided": "尚未决定",
       "approveTitle": "批准 {title}",
       "rejectTitle": "拒绝 {title}"
+    },
+    "stage": {
+      "tabLabel": "按审核状态显示更改",
+      "tab": {
+        "NEW": "待审核 {count}",
+        "APPROVED": "已批准 {count}",
+        "DEFERRED": "稍后 {count}"
+      },
+      "label": {
+        "NEW": "待审核",
+        "APPROVED": "已批准",
+        "DEFERRED": "稍后"
+      },
+      "later": "稍后",
+      "laterTitle": "将 {title} 留到稍后",
+      "laterAll": "全部留到稍后",
+      "back": "重新审核",
+      "backTitle": "将 {title} 送回审核",
+      "reapproval": "批准后被编辑",
+      "reapprovalHelp": "批准后又被编辑，需要再看一次",
+      "failed": "该决定未能保存。请刷新页面后重试。",
+      "guide": {
+        "review": "批准每项更改或将其留到稍后。没有待审核内容后即可进行最终审核。",
+        "ready": "全部已决定。{count} 项已批准的更改可以进行最终审核。"
+      },
+      "empty": {
+        "NEW": "没有待审核的内容。",
+        "APPROVED": "还没有已批准的内容。",
+        "DEFERRED": "没有留到稍后的内容。"
+      }
+    },
+    "finalReview": {
+      "open": "最终审核（{count}）",
+      "title": "最终审核",
+      "body": "发布时这 {count} 项已批准的更改会一起上线。",
+      "later": "{count} 项留到稍后的更改会保留在草稿中。",
+      "confirm": "发布 {count} 项更改"
+    },
+    "versions": {
+      "title": "版本历史",
+      "help": "此页面的每次保存。恢复某个版本会再次保存到草稿；发布前不会上线。",
+      "current": "当前",
+      "live": "线上",
+      "restore": "恢复",
+      "confirmTitle": "恢复 {date} 的版本？",
+      "confirmBody": "它会替换草稿中此页面的当前内容。之后的保存仍保留在历史中，可以随时恢复。"
     }
   },
   "about": {

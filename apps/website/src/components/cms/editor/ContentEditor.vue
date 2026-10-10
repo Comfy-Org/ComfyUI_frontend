@@ -8,6 +8,7 @@ import EditorExamples from '@/components/cms/editor/EditorExamples.vue'
 import EditorHeader from '@/components/cms/editor/EditorHeader.vue'
 import EditorParameters from '@/components/cms/editor/EditorParameters.vue'
 import EditorPublishing from '@/components/cms/editor/EditorPublishing.vue'
+import EditorVersions from '@/components/cms/editor/EditorVersions.vue'
 import AdminButton from '@/components/cms/ui/AdminButton.vue'
 import type { Locale } from '@/i18n/translations'
 import { translationsFor } from '@/i18n/translations'
@@ -16,6 +17,7 @@ import { editorProblems } from '@/lib/cms/editor'
 import type { SaveNotice } from '@/lib/cms/save-client'
 import { noticeFor, saveToDraft } from '@/lib/cms/save-client'
 import type { SaveError } from '@/lib/cms/save-item'
+import type { ItemVersion } from '@/lib/cms/versions'
 
 const {
   initial,
@@ -25,6 +27,8 @@ const {
   isLive,
   published = false,
   inDraft,
+  versions,
+  liveVersion,
   notice,
   canUpload = false,
   locale = 'en'
@@ -37,6 +41,8 @@ const {
   /** Has a live version, even an archived one, that an undo goes back to. */
   published?: boolean
   inDraft: boolean
+  versions?: ItemVersion[]
+  liveVersion?: string
   notice?: SaveNotice
   canUpload?: boolean
   locale?: Locale
@@ -154,19 +160,30 @@ function discard() {
           :locale
         />
       </div>
-      <EditorPublishing
-        v-model="state"
-        :is-new="initial.isNew"
-        :archived="initial.deleted"
-        :busy="saving"
-        :undo="
-          inDraft && canEdit
-            ? { csrf, uid: initial.uid, title, published }
-            : undefined
-        "
-        :locale
-        @archive="save"
-      />
+      <div class="grid content-start gap-5">
+        <EditorPublishing
+          v-model="state"
+          :is-new="initial.isNew"
+          :archived="initial.deleted"
+          :busy="saving"
+          :undo="
+            inDraft && canEdit
+              ? { csrf, uid: initial.uid, title, published }
+              : undefined
+          "
+          :locale
+          @archive="save"
+        />
+        <EditorVersions
+          v-if="versions && versions.length > 1"
+          :uid="initial.uid"
+          :versions
+          :live-version="liveVersion"
+          :csrf
+          :can-edit="canEdit"
+          :locale
+        />
+      </div>
     </div>
 
     <div

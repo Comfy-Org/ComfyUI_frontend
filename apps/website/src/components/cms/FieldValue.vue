@@ -2,6 +2,7 @@
 import { cn } from '@comfyorg/tailwind-utils'
 
 import QueueThumb from '@/components/cms/QueueThumb.vue'
+import type { Locale } from '@/i18n/translations'
 import { formatValue, mediaOf } from '@/lib/cms/format'
 
 /** One side of a field change: an image, a list with what was added, or text. */
@@ -9,12 +10,14 @@ const {
   value,
   side,
   added = [],
-  empty
+  empty,
+  locale = 'en'
 } = defineProps<{
   value: unknown
   side: 'before' | 'after'
   added?: unknown[]
   empty: string
+  locale?: Locale
 }>()
 const media = mediaOf(value)
 const list = side === 'after' && Array.isArray(value) && added.length > 0
@@ -40,7 +43,7 @@ const items: unknown[] = list && Array.isArray(value) ? value : []
             : 'bg-admin-hover'
         )
       "
-      >{{ formatValue(entry) }}</span
+      >{{ formatValue(entry, locale) }}</span
     >
   </dd>
   <dd
@@ -53,6 +56,6 @@ const items: unknown[] = list && Array.isArray(value) ? value : []
       )
     "
   >
-    {{ formatValue(value) || empty }}
+    {{ formatValue(value, locale) || empty }}
   </dd>
 </template>

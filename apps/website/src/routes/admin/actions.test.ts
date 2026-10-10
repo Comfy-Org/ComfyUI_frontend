@@ -113,7 +113,8 @@ describe('Draft publication', () => {
       ['draft_id', '2'],
       ['generation', '1'],
       ['approve', 'shr_a:v3'],
-      ['approve', 'shr_b:v1']
+      ['approve', 'shr_b:v1'],
+      ['approve_item', '11111111-1111-4111-8111-111111111111']
     ])
     expect((await response).headers.get('Location')).toBe('/admin/history/')
     expect(calls()).toEqual([
@@ -125,7 +126,14 @@ describe('Draft publication', () => {
         '/admin/api/site/submissions/shr_b/review',
         { version_id: 'v1', status: 'approved' }
       ],
-      ['/admin/api/site/publish', { draft_id: 2, generation: 1 }]
+      [
+        '/admin/api/site/publish',
+        {
+          draft_id: 2,
+          generation: 1,
+          approved_uids: ['11111111-1111-4111-8111-111111111111']
+        }
+      ]
     ])
   })
 
@@ -145,6 +153,7 @@ describe('Draft publication', () => {
 
   it.for([
     ['a malformed workflow reference', [['approve', '../publish:v1']]],
+    ['a malformed item id', [['approve_item', '../publish']]],
     ['a rejection without workflows', []]
   ] as const)('refuses %s', async ([, extra]) => {
     const action = extra.length ? 'publish' : 'reject'
@@ -166,6 +175,39 @@ describe('Draft publication', () => {
       false
     )
     expect((await response).status).toBe(403)
+    expect(calls()).toEqual([])
+  })
+})
+
+describe('Review decisions', () => {
+  it('records a decision for several changes', async () => {
+    const { response, calls } = adminPost([
+      ['action', 'stage'],
+      ['decision', JSON.stringify({ ids: ['a', 'shr_b'], status: 'DEFERRED' })]
+    ])
+    expect(await (await response).json()).toEqual({ ok: true })
+    expect(calls()).toEqual([
+      [
+        '/admin/api/site/staging',
+        {
+          items: [
+            { id: 'a', status: 'DEFERRED' },
+            { id: 'shr_b', status: 'DEFERRED' }
+          ]
+        }
+      ]
+    ])
+  })
+
+  it('refuses a decision without the apply permission', async () => {
+    const { response, calls } = adminPost(
+      [
+        ['action', 'stage'],
+        ['decision', JSON.stringify({ ids: ['a'], status: 'APPROVED' })]
+      ],
+      false
+    )
+    expect(await (await response).json()).toEqual({ ok: false })
     expect(calls()).toEqual([])
   })
 })

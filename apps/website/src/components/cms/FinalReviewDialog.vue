@@ -14,14 +14,16 @@ import type { QueueItem } from '@/lib/cms/queue'
 
 const {
   items,
-  heldCount,
+  laterCount,
   csrf,
   draftId,
   generation,
   locale = 'en'
 } = defineProps<{
+  /** The approved changes, all of which go live together. */
   items: QueueItem[]
-  heldCount: number
+  /** Changes left for later, which stay in the draft. */
+  laterCount: number
   csrf: string
   draftId: number
   generation: number
@@ -39,7 +41,7 @@ const flagged = computed(
   <Dialog v-model:open="open">
     <AdminDialogContent :close-label="t('cmsAdmin.review.close')">
       <DialogTitle class="pr-8 text-base font-medium text-balance">
-        {{ t('cmsAdmin.publish.title', { count: items.length }, items.length) }}
+        {{ t('cmsAdmin.finalReview.title') }}
       </DialogTitle>
       <ul
         class="grid max-h-64 overflow-y-auto rounded-lg border border-admin-line"
@@ -62,12 +64,16 @@ const flagged = computed(
         </li>
       </ul>
       <DialogDescription class="grid gap-2 text-sm text-admin-muted">
-        <span>{{ t('cmsAdmin.publish.body') }}</span>
+        <span>{{
+          t('cmsAdmin.finalReview.body', { count: items.length }, items.length)
+        }}</span>
         <span v-if="flagged" class="text-admin-warning">
           {{ t('cmsAdmin.readiness.flagged', { count: flagged }, flagged) }}
         </span>
-        <span v-if="heldCount" class="text-admin-warning">
-          {{ t('cmsAdmin.publish.held', { count: heldCount }, heldCount) }}
+        <span v-if="laterCount">
+          {{
+            t('cmsAdmin.finalReview.later', { count: laterCount }, laterCount)
+          }}
         </span>
       </DialogDescription>
       <form
@@ -88,12 +94,17 @@ const flagged = computed(
             name="approve"
             :value="`${item.shareId}:${item.versionId}`"
           />
+          <input v-else type="hidden" name="approve_item" :value="item.id" />
         </template>
         <AdminButton @click="open = false">
           {{ t('cmsAdmin.publish.cancel') }}
         </AdminButton>
         <AdminButton type="submit" variant="primary">{{
-          t('cmsAdmin.publish.confirm')
+          t(
+            'cmsAdmin.finalReview.confirm',
+            { count: items.length },
+            items.length
+          )
         }}</AdminButton>
       </form>
     </AdminDialogContent>
