@@ -145,6 +145,21 @@ describe('nodeOutputStore setNodeOutputsByExecutionId with merge', () => {
     expect(previewUrl.searchParams.get('type')).toBe('output')
   })
 
+  it('carries preview_id on the view URL', () => {
+    const store = useNodeOutputStore()
+    const node = createMockNode({ id: 1 })
+
+    store.setNodeOutputsByExecutionId(
+      createNodeExecutionId([node.id]),
+      createMockOutputs([{ filename: 'render.exr', preview_id: 'preview-1' }])
+    )
+
+    const [url] = store.getNodeImageUrls(node) ?? []
+    const viewUrl = new URL(url, window.location.origin)
+    expect(viewUrl.pathname).toBe('/api/view')
+    expect(viewUrl.searchParams.get('preview_id')).toBe('preview-1')
+  })
+
   it('owns preview arrays after setting them', () => {
     const store = useNodeOutputStore()
     const executionId = createNodeExecutionId([toNodeId(11)])

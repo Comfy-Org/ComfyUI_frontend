@@ -1,3 +1,5 @@
+import { api } from '@/scripts/api'
+
 const HDR_EXTENSIONS = ['.exr', '.hdr'] as const
 
 export function isHdrImageFilename(filename: string | undefined): boolean {
@@ -23,6 +25,19 @@ export function getImageFilenameFromUrl(url: string): string | undefined {
 export function isHdrImageUrl(url: string | undefined): boolean {
   if (!url) return false
   return isHdrImageFilename(getImageFilenameFromUrl(url))
+}
+
+export function getHdrPreviewUrl(url: string | undefined): string | undefined {
+  if (!url || !isHdrImageUrl(url)) return undefined
+  const previewId = new URL(url, window.location.origin).searchParams.get(
+    'preview_id'
+  )
+  if (!previewId) return undefined
+  return hdrPreviewAssetUrl(previewId)
+}
+
+export function hdrPreviewAssetUrl(previewId: string): string {
+  return api.apiURL(`/assets/${previewId}/content?disposition=inline`)
 }
 
 export function toFullResolutionUrl(url: string): string {

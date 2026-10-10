@@ -12,6 +12,7 @@ import { useTelemetry } from '@/platform/telemetry'
 import { downloadFile } from '@/base/common/downloadUtil'
 import type { ResultItem } from '@/platform/remote/comfyui/execution/types'
 import ImagePreview from '@/renderer/extensions/vueNodes/components/ImagePreview.vue'
+import { openHdrViewer } from '@/services/hdrViewerService'
 import { useNodeOutputStore } from '@/stores/nodeOutputStore'
 import { createMockLGraphNode } from '@/utils/__tests__/litegraphTestUtils'
 import { resolveNode } from '@/utils/litegraphUtil'
@@ -166,6 +167,22 @@ describe('ImagePreview', () => {
 
     expect(screen.getByTestId('hdr-open-button')).toBeInTheDocument()
     expect(screen.queryByTestId('main-image')).not.toBeInTheDocument()
+  })
+
+  it('shows the server preview of an exr output and still offers the HDR viewer', async () => {
+    const exrUrl = '/api/view?filename=out.exr&type=output&preview_id=p1'
+    renderImagePreview({ imageUrls: [exrUrl] })
+    const user = userEvent.setup()
+
+    expect(screen.getByTestId('main-image')).toHaveAttribute(
+      'src',
+      '/api/assets/p1/content?disposition=inline'
+    )
+    expect(screen.getByText('HDR image')).toBeInTheDocument()
+
+    await user.click(screen.getByRole('button', { name: 'Open in HDR Viewer' }))
+
+    expect(openHdrViewer).toHaveBeenCalledWith(exrUrl)
   })
 
   it('displays calculating dimensions text in gallery mode', async () => {

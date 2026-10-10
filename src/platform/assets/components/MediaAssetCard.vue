@@ -175,6 +175,7 @@ import {
   getMediaTypeFromFilename,
   isPreviewableMediaType
 } from '@/utils/formatUtil'
+import { isHdrImageFilename } from '@/utils/hdrFormatUtil'
 
 import { getAssetType } from '../composables/media/assetMappers'
 import { startAssetDrag } from '../utils/assetDragUtil'
@@ -255,6 +256,7 @@ const fileKind = computed((): MediaKind => {
 })
 
 const previewKind = computed((): PreviewKind => {
+  if (asset?.preview_url && isHdrImageFilename(asset.name)) return 'image'
   return getMediaTypeFromFilename(asset?.name || '')
 })
 
