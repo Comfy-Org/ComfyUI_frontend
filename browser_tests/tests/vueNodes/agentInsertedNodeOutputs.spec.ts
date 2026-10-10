@@ -45,7 +45,9 @@ test.describe('Agent-inserted node outputs', { tag: '@vue-nodes' }, () => {
     getWebSocket
   }) => {
     const ws = await getWebSocket()
-    await comfyPage.workflow.loadWorkflow('agent-inserted-subgraph-save-image')
+    await comfyPage.workflow.loadWorkflow(
+      'vueNodes/agent-inserted-subgraph-save-image'
+    )
 
     const exec = new ExecutionHelper(comfyPage, ws)
     const jobId = await exec.run()
