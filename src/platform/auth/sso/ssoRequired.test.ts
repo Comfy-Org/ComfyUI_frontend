@@ -1,4 +1,6 @@
-import { beforeAll, describe, expect, it, vi } from 'vitest'
+import { afterEach, beforeAll, describe, expect, it, vi } from 'vitest'
+
+import { ssoFlowStore } from '@comfyorg/account-core/telemetry'
 
 import { useFeatureFlags } from '@/composables/useFeatureFlags'
 import {
@@ -27,6 +29,9 @@ async function shownDialog() {
 
 describe('the SSO-required screen', () => {
   beforeAll(() => import('@/platform/auth/sso/SsoRequiredDialogContent.vue'))
+  afterEach(() => {
+    ssoFlowStore.finish()
+  })
 
   it('stays hidden with the flag off, so the caller keeps its handling', async () => {
     expect(
@@ -61,9 +66,24 @@ describe('the SSO-required screen', () => {
       properties: {
         surface: 'cloud_app',
         trigger: 'session_refused',
+        presentation: 'notice',
         flow_id: expect.any(String)
       }
     })
+  })
+
+  it.for<{ name: string; continued: boolean; kept: boolean }>([
+    { name: 'drops an attempt never continued', continued: false, kept: false },
+    { name: 'keeps an attempt already continued', continued: true, kept: true }
+  ])('closing the dialog $name', async ({ continued, kept }) => {
+    vi.mocked(useFeatureFlags().flags).ssoEnabled = true
+    presentSsoRequired('session_refused', { email: 'ada@acme.com' })
+    await shownDialog()
+    if (continued) ssoFlowStore.markContinued('cloud_app')
+
+    useDialogStore().closeDialog({ key: SSO_REQUIRED_DIALOG_KEY })
+
+    expect(ssoFlowStore.current() !== undefined).toBe(kept)
   })
 
   it('reports a refused API request as the api_key trigger', async () => {

@@ -1,5 +1,6 @@
 import type {
   SsoFlow,
+  SsoRequiredPresentation,
   SsoRequiredTrigger,
   SsoSignInFailureReason,
   SsoSurface
@@ -19,26 +20,31 @@ function flowProperties({ flowId, surface }: SsoFlow) {
   return { surface, flow_id: flowId }
 }
 
-/** Starts a new attempt each time the SSO-required screen appears. */
+/**
+ * Starts a new attempt each time SSO is required. A `redirect` leaves for SSO
+ * without a screen, so its attempt is already continued.
+ */
 export function trackSsoRequiredShown(
   surface: SsoSurface,
-  trigger: SsoRequiredTrigger
+  trigger: SsoRequiredTrigger,
+  presentation: SsoRequiredPresentation
 ): void {
   const telemetry = useTelemetry()
   if (!telemetry) return
   const flow = ssoFlowStore.start(
-    trigger === 'customer_create' ? 'cloud_customer_create' : surface
+    trigger === 'customer_create' ? 'cloud_customer_create' : surface,
+    presentation === 'redirect'
   )
   telemetry.trackSsoEvent({
     name: SSO_TELEMETRY_EVENT.requiredShown,
-    properties: { ...flowProperties(flow), trigger }
+    properties: { ...flowProperties(flow), trigger, presentation }
   })
 }
 
 export function trackSsoContinueClicked(surface: SsoSurface): void {
   const telemetry = useTelemetry()
   if (!telemetry) return
-  const flow = ssoFlowStore.current() ?? ssoFlowStore.start(surface)
+  const flow = ssoFlowStore.markContinued(surface)
   telemetry.trackSsoEvent({
     name: SSO_TELEMETRY_EVENT.continueClicked,
     properties: flowProperties(flow)
@@ -58,21 +64,30 @@ export function trackSsoSignInFailed(
   })
 }
 
-/** An SSO session after an attempt this tab started is that attempt's sign-in. */
-export function trackSsoSignInCompleted(userId: string): void {
-  const telemetry = useTelemetry()
-  if (!telemetry) return
+/** An SSO session after an attempt this tab continued is that attempt's sign-in. */
+export function trackSsoSignInCompleted(): void {
   const flow = ssoFlowStore.finish()
-  if (!flow) return
+  if (!flow?.continued) return
   signedInFlow = flow
-  telemetry.trackAuth({
-    method: 'sso',
-    user_id: userId,
-    flow_id: flow.flowId
+  useTelemetry()?.trackSsoEvent({
+    name: SSO_TELEMETRY_EVENT.signInCompleted,
+    properties: flowProperties(flow)
   })
 }
 
-export function trackSsoWorkspaceLanded(landedInOrgWorkspace: boolean): void {
+/** The SSO-required screen closed without the person continuing. */
+export function abandonSsoFlow(): void {
+  ssoFlowStore.abandon()
+}
+
+/** Another sign-in method completed, so no SSO attempt is in flight. */
+export function endSsoFlow(): void {
+  ssoFlowStore.finish()
+}
+
+export function trackSsoWorkspaceLanded(
+  landedInDefaultWorkspace: boolean
+): void {
   const flow = signedInFlow
   signedInFlow = undefined
   if (!flow) return
@@ -80,7 +95,7 @@ export function trackSsoWorkspaceLanded(landedInOrgWorkspace: boolean): void {
     name: SSO_TELEMETRY_EVENT.workspaceLanded,
     properties: {
       ...flowProperties(flow),
-      landed_in_org_workspace: landedInOrgWorkspace
+      landed_in_default_workspace: landedInDefaultWorkspace
     }
   })
 }

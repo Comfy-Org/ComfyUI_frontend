@@ -358,7 +358,7 @@ describe('useTeamWorkspaceStore', () => {
 
     it.for([
       {
-        name: "lands in the organization's workspace the server names",
+        name: 'lands in the default workspace the server names',
         defaultId: mockTeamWorkspace.id,
         landed: true
       },
@@ -370,8 +370,8 @@ describe('useTeamWorkspaceStore', () => {
     ])(
       'after an SSO sign-in, reports it $name',
       async ({ defaultId, landed }) => {
-        const attempt = ssoFlowStore.start('cloud_login')
-        trackSsoSignInCompleted('user-1')
+        const attempt = ssoFlowStore.markContinued('cloud_login')
+        trackSsoSignInCompleted()
         mockWorkspaceApi.list.mockResolvedValue({
           workspaces: [mockPersonalWorkspace, mockTeamWorkspace],
           ...(defaultId && { default_workspace_id: defaultId })
@@ -379,12 +379,12 @@ describe('useTeamWorkspaceStore', () => {
 
         await useTeamWorkspaceStore().initialize()
 
-        expect(useTelemetry()?.trackSsoEvent).toHaveBeenCalledExactlyOnceWith({
+        expect(useTelemetry()?.trackSsoEvent).toHaveBeenLastCalledWith({
           name: 'app:sso_workspace_landed',
           properties: {
             surface: 'cloud_login',
             flow_id: attempt.flowId,
-            landed_in_org_workspace: landed
+            landed_in_default_workspace: landed
           }
         })
       }

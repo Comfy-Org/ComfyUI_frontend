@@ -42,7 +42,10 @@ import { t } from '@/i18n'
 import { isCloud } from '@/platform/distribution/types'
 import { firebaseIdentity } from '@/platform/auth/firebaseIdentity'
 import { presentSsoRequired } from '@/platform/auth/sso/ssoRequired'
-import { trackSsoSignInCompleted } from '@/platform/auth/sso/ssoTelemetry'
+import {
+  endSsoFlow,
+  trackSsoSignInCompleted
+} from '@/platform/auth/sso/ssoTelemetry'
 import { webSessionUser } from '@/platform/auth/session/webSessionUser'
 import {
   clearInteractiveSignIn,
@@ -366,7 +369,7 @@ export const useCloudWebSessionStore = defineStore('cloudWebSession', () => {
       if (useFeatureFlags().flags.ssoEnabled) {
         rememberSignedInSession(next.session.user)
         if (isSsoSession(next.session.user)) {
-          trackSsoSignInCompleted(next.session.user.id)
+          trackSsoSignInCompleted()
         }
       }
     } else if (next.phase === 'signed_out' && next.outcome === 'revoked') {
@@ -384,6 +387,7 @@ export const useCloudWebSessionStore = defineStore('cloudWebSession', () => {
   /** Only after an interactive sign-in; a token refresh never calls this. */
   function signedInInteractively(user: User): void {
     const getProof = () => user.getIdToken()
+    endSsoFlow()
     if (isCloud) markInteractiveSignIn(user.uid)
     if (identity) creating = createSession(identity, getProof)
     else if (!decided) pendingSignIn = { uid: user.uid, getProof }

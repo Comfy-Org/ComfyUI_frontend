@@ -17,7 +17,8 @@ export function reportSsoRequiredShown(): void {
     name: SSO_TELEMETRY_EVENT.requiredShown,
     properties: {
       ...flowProperties(ssoFlowStore.start('billing_web')),
-      trigger: 'session_refused'
+      trigger: 'session_refused',
+      presentation: 'notice'
     }
   })
 }
@@ -25,8 +26,6 @@ export function reportSsoRequiredShown(): void {
 export function reportSsoContinueClicked(): void {
   billingWebTelemetry.trackSsoEvent({
     name: SSO_TELEMETRY_EVENT.continueClicked,
-    properties: flowProperties(
-      ssoFlowStore.current() ?? ssoFlowStore.start('billing_web')
-    )
+    properties: flowProperties(ssoFlowStore.markContinued('billing_web'))
   })
 }

@@ -806,11 +806,15 @@ describe('PostHogTelemetryProvider', () => {
         properties: { surface: 'cloud_signup', flow_id: 'flow-1' }
       },
       {
+        name: 'app:sso_sign_in_completed',
+        properties: { surface: 'cloud_login', flow_id: 'flow-1' }
+      },
+      {
         name: 'app:sso_workspace_landed',
         properties: {
           surface: 'cloud_login',
           flow_id: 'flow-1',
-          landed_in_org_workspace: true
+          landed_in_default_workspace: true
         }
       }
     ])('captures the SSO event $name as is', async (event) => {

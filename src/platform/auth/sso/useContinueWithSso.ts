@@ -18,7 +18,8 @@ export function useContinueWithSso(context: () => SsoRequiredContext) {
   const knownEmail = computed(() => context().email ?? authStore.userEmail)
   const leaving = ref(false)
 
-  function destination(): string {
+  /** The SSO start URL, or undefined when the sign-in page must ask for an email. */
+  function ssoDestination(): string | undefined {
     const { returnTo, organizationId } = context()
     const back = {
       returnTo: toSsoReturnPath(returnTo ?? router.currentRoute.value.fullPath),
@@ -31,19 +32,17 @@ export function useContinueWithSso(context: () => SsoRequiredContext) {
         ...back
       })
     }
-    if (!knownEmail.value) {
-      return router.resolve({
-        name: 'cloud-login',
-        query: SSO_ENTRY_OPEN_QUERY
-      }).href
-    }
+    if (!knownEmail.value) return undefined
     return ssoStartUrl({ email: knownEmail.value, ...back })
   }
 
   async function continueWithSso() {
-    trackSsoContinueClicked('cloud_app')
     leaving.value = true
-    const target = destination()
+    const ssoTarget = ssoDestination()
+    if (ssoTarget) trackSsoContinueClicked('cloud_app')
+    const target =
+      ssoTarget ??
+      router.resolve({ name: 'cloud-login', query: SSO_ENTRY_OPEN_QUERY }).href
     try {
       if (authStore.currentUser) await authStore.logout()
     } catch (error) {

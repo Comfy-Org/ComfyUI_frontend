@@ -6,7 +6,10 @@ import type {
 } from '@comfyorg/account-core/telemetry'
 
 import type { SsoRequiredContext } from '@/platform/auth/sso/ssoRequired'
-import { trackSsoRequiredShown } from '@/platform/auth/sso/ssoTelemetry'
+import {
+  abandonSsoFlow,
+  trackSsoRequiredShown
+} from '@/platform/auth/sso/ssoTelemetry'
 
 const hostSurfaces: SsoSurface[] = []
 const notice = shallowRef<SsoRequiredContext>()
@@ -21,7 +24,7 @@ export function presentInline(
 ): boolean {
   const surface = hostSurfaces.at(-1)
   if (!surface) return false
-  if (!notice.value) trackSsoRequiredShown(surface, trigger)
+  if (!notice.value) trackSsoRequiredShown(surface, trigger, 'notice')
   notice.value = { ...notice.value, ...context }
   return true
 }
@@ -31,6 +34,7 @@ export function useSsoRequiredInlineHost(surface: SsoSurface) {
   hostSurfaces.push(surface)
   onUnmounted(() => {
     hostSurfaces.splice(hostSurfaces.lastIndexOf(surface), 1)
+    if (notice.value) abandonSsoFlow()
     notice.value = undefined
   })
   return { notice: readonly(notice) }

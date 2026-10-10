@@ -1,4 +1,4 @@
-import { describe, expect, it } from 'vitest'
+import { describe, expect, it, vi } from 'vitest'
 
 import { createWebSessionIdentity } from './core/webSessionIdentity.js'
 import type { SsoErrorCode } from './sso.js'
@@ -129,6 +129,41 @@ describe('createSsoFlowStore', () => {
     expect(flows.current()).toEqual(started)
     expect(flows.finish()).toEqual(started)
     expect(flows.current()).toBeUndefined()
+  })
+
+  it('carries a continued attempt across the redirect, keeping its flow id', () => {
+    const storage = memoryStorage()
+    const shown = createSsoFlowStore(() => storage).start('cloud_app')
+
+    createSsoFlowStore(() => storage).markContinued('cloud_login')
+
+    expect(createSsoFlowStore(() => storage).current()).toEqual({
+      ...shown,
+      continued: true
+    })
+  })
+
+  it.for<{ name: string; continued: boolean; kept: boolean }>([
+    { name: 'drops an attempt never continued', continued: false, kept: false },
+    { name: 'keeps a continued attempt', continued: true, kept: true }
+  ])('abandoning $name', ({ continued, kept }) => {
+    const flows = createSsoFlowStore(memoryStorage)
+    flows.start('cloud_app', continued)
+
+    flows.abandon()
+
+    expect(flows.current() !== undefined).toBe(kept)
+  })
+
+  it('still starts an attempt where crypto is unavailable', () => {
+    vi.stubGlobal('crypto', undefined)
+    try {
+      expect(
+        createSsoFlowStore(memoryStorage).start('cloud_app').flowId
+      ).toMatch(/^[0-9a-f]{32}$/)
+    } finally {
+      vi.unstubAllGlobals()
+    }
   })
 
   it('ignores a stored value it cannot read as a flow', () => {

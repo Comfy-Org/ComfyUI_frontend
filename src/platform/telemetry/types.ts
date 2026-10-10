@@ -55,8 +55,6 @@ export interface AuthMetadata {
   is_new_user?: boolean
   user_id?: string
   email?: string
-  /** The SSO attempt this sign-in completes. */
-  flow_id?: string
   share_id?: string
   referrer_url?: string
   utm_source?: string
@@ -1541,6 +1539,7 @@ export const TelemetryEvents = {
   SSO_REQUIRED_SHOWN: SSO_TELEMETRY_EVENT.requiredShown,
   SSO_CONTINUE_CLICKED: SSO_TELEMETRY_EVENT.continueClicked,
   SSO_SIGN_IN_FAILED: SSO_TELEMETRY_EVENT.signInFailed,
+  SSO_SIGN_IN_COMPLETED: SSO_TELEMETRY_EVENT.signInCompleted,
   SSO_WORKSPACE_LANDED: SSO_TELEMETRY_EVENT.workspaceLanded,
   IMAGE_LOAD_FAILED: 'app:image_load_failed',
   BOOTSTRAP_COMPLETE: 'app:bootstrap_complete',

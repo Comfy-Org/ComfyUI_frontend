@@ -107,7 +107,7 @@ async function renderLoginView(
   })
   await router.push(url)
   await router.isReady()
-  return render(CloudLoginView, {
+  const rendered = render(CloudLoginView, {
     global: {
       plugins: [
         router,
@@ -116,6 +116,7 @@ async function renderLoginView(
       stubs: { CloudSignInForm: SignInFormStub }
     }
   })
+  return { ...rendered, router }
 }
 
 afterEach(() => {
@@ -414,6 +415,29 @@ describe('CloudLoginView SSO', () => {
         expect(ssoFlowStore.current()).toBeUndefined()
       }
     )
+
+    it('reports an ?sso_error once, dropping it from the URL but keeping its message', async () => {
+      ssoFlowStore.start('cloud_app')
+      const { router, unmount } = await renderLoginView(
+        '/cloud/login?sso_error=SSO_IDP_ERROR&previousFullPath=%2Fworkflows'
+      )
+
+      await waitFor(() =>
+        expect(router.currentRoute.value.query).toEqual({
+          previousFullPath: '/workflows'
+        })
+      )
+      expect(screen.getByText('auth.sso.errors.idpError')).toBeInTheDocument()
+      unmount()
+      render(CloudLoginView, {
+        global: {
+          plugins: [router, createI18n({ legacy: false, locale: 'en' })],
+          stubs: { CloudSignInForm: SignInFormStub }
+        }
+      })
+
+      expect(useTelemetry()?.trackSsoEvent).toHaveBeenCalledOnce()
+    })
 
     it('returns to the page the visitor came from', async () => {
       discoverReplies({ sso: true })

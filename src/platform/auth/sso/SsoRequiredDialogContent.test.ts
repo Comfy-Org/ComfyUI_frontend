@@ -3,9 +3,11 @@ import userEvent from '@testing-library/user-event'
 import { fromPartial } from '@total-typescript/shoehorn'
 import type { User } from 'firebase/auth'
 import type { Mock } from 'vitest'
-import { beforeEach, describe, expect, it, vi } from 'vitest'
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { createI18n } from 'vue-i18n'
 import { createMemoryHistory, createRouter } from 'vue-router'
+
+import { ssoFlowStore } from '@comfyorg/account-core/telemetry'
 
 import SsoRequiredDialogContent from '@/platform/auth/sso/SsoRequiredDialogContent.vue'
 import { trackSsoRequiredShown } from '@/platform/auth/sso/ssoTelemetry'
@@ -56,6 +58,10 @@ describe('SsoRequiredDialogContent', () => {
     vi.spyOn(window.location, 'assign').mockImplementation(assign)
   })
 
+  afterEach(() => {
+    ssoFlowStore.finish()
+  })
+
   it('explains the refusal and starts SSO for the known email', async () => {
     await renderDialog({ email: 'ada@acme.com', returnTo: '/cloud/user-check' })
 
@@ -74,7 +80,7 @@ describe('SsoRequiredDialogContent', () => {
   })
 
   it('reports the click as the shown attempt continuing to SSO', async () => {
-    trackSsoRequiredShown('cloud_app', 'session_refused')
+    trackSsoRequiredShown('cloud_app', 'session_refused', 'notice')
     await renderDialog({ email: 'ada@acme.com' })
 
     await userEvent.click(
@@ -171,5 +177,20 @@ describe('SsoRequiredDialogContent', () => {
     const target = assigned(assign)
     expect(target.pathname).toBe('/cloud/login')
     expect(target.searchParams.get('sso')).toBe('open')
+  })
+
+  it('leaves the continue to the login page it hands the attempt to', async () => {
+    trackSsoRequiredShown('cloud_app', 'session_refused', 'notice')
+    await renderDialog({})
+
+    await userEvent.click(
+      screen.getByRole('button', { name: 'auth.sso.continueWithSso' })
+    )
+
+    await waitFor(() => expect(assign).toHaveBeenCalledOnce())
+    const [[shown], ...rest] = vi.mocked(useTelemetry()!.trackSsoEvent).mock
+      .calls
+    expect(rest).toEqual([])
+    expect(ssoFlowStore.current()?.flowId).toBe(shown.properties.flow_id)
   })
 })

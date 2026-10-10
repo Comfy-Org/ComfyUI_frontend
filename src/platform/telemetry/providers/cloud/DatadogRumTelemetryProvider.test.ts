@@ -221,6 +221,7 @@ describe('DatadogRumTelemetryProvider', () => {
       properties: {
         surface: 'cloud_login',
         trigger: 'firebase_sign_in',
+        presentation: 'notice',
         flow_id: 'flow-1'
       }
     },

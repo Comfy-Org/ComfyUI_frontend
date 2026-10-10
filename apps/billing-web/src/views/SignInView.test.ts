@@ -451,6 +451,7 @@ describe('SignInView', () => {
         properties: {
           surface: 'billing_web',
           trigger: 'session_refused',
+          presentation: 'notice',
           flow_id: expect.any(String)
         }
       })

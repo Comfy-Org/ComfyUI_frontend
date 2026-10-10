@@ -78,7 +78,7 @@ export const AUTH_TELEMETRY_EVENT = {
   authFailed: 'app:user_auth_failed'
 } as const
 
-export type AuthMethod = 'email' | 'google' | 'github' | 'sso'
+export type AuthMethod = 'email' | 'google' | 'github'
 
 /** What the cloud app reports on every successful credential. */
 export interface AuthCompletedMetadata {
@@ -86,8 +86,6 @@ export interface AuthCompletedMetadata {
   is_new_user: boolean
   user_id: string
   email?: string
-  /** The SSO attempt this sign-in completes. */
-  flow_id?: string
 }
 
 export type AuthFlowAction =
@@ -108,6 +106,7 @@ export const SSO_TELEMETRY_EVENT = {
   requiredShown: 'app:sso_required_shown',
   continueClicked: 'app:sso_continue_clicked',
   signInFailed: 'app:sso_sign_in_failed',
+  signInCompleted: 'app:sso_sign_in_completed',
   workspaceLanded: 'app:sso_workspace_landed'
 } as const
 
@@ -131,6 +130,13 @@ export type SsoRequiredTrigger =
   | 'api_key'
   | 'customer_create'
   | 'session_refused'
+  | 'session_expired'
+
+/**
+ * `notice` waits for the person to continue; `redirect` sends them straight
+ * to SSO, so no `sso_continue_clicked` follows.
+ */
+export type SsoRequiredPresentation = 'notice' | 'redirect'
 
 export type SsoSignInFailureReason =
   | 'cancelled'
@@ -150,6 +156,7 @@ export type SsoTelemetryEvent =
       readonly name: typeof SSO_TELEMETRY_EVENT.requiredShown
       readonly properties: SsoFlowProperties & {
         readonly trigger: SsoRequiredTrigger
+        readonly presentation: SsoRequiredPresentation
       }
     }
   | {
@@ -164,9 +171,13 @@ export type SsoTelemetryEvent =
       }
     }
   | {
+      readonly name: typeof SSO_TELEMETRY_EVENT.signInCompleted
+      readonly properties: SsoFlowProperties
+    }
+  | {
       readonly name: typeof SSO_TELEMETRY_EVENT.workspaceLanded
       readonly properties: SsoFlowProperties & {
-        readonly landed_in_org_workspace: boolean
+        readonly landed_in_default_workspace: boolean
       }
     }
 
@@ -188,18 +199,30 @@ export function ssoFailureReason(code: SsoErrorCode): SsoSignInFailureReason {
 export interface SsoFlow {
   readonly flowId: string
   readonly surface: SsoSurface
+  /** Set once the person chose to continue to SSO. */
+  readonly continued?: boolean
 }
 
 const SSO_FLOW_STORAGE_KEY = 'Comfy.Sso.TelemetryFlow'
 
 const zSsoFlow = z.object({
   flowId: z.string().min(1),
-  surface: z.enum(SSO_SURFACES)
+  surface: z.enum(SSO_SURFACES),
+  continued: z.boolean().optional()
 })
+
+function randomBytes(): Uint8Array {
+  const bytes = new Uint8Array(16)
+  try {
+    return crypto.getRandomValues(bytes)
+  } catch {
+    return bytes.map(() => Math.floor(Math.random() * 256))
+  }
+}
 
 /** `getRandomValues`, unlike `randomUUID`, also works outside a secure context. */
 function newFlowId(): string {
-  return Array.from(crypto.getRandomValues(new Uint8Array(16)), (byte) =>
+  return Array.from(randomBytes(), (byte) =>
     byte.toString(16).padStart(2, '0')
   ).join('')
 }
@@ -226,8 +249,7 @@ export function createSsoFlowStore(storage: () => Storage) {
     }
   }
 
-  function start(surface: SsoSurface): SsoFlow {
-    const flow = createSsoFlow(surface)
+  function save(flow: SsoFlow): SsoFlow {
     inMemory = flow
     try {
       storage().setItem(SSO_FLOW_STORAGE_KEY, JSON.stringify(flow))
@@ -237,8 +259,17 @@ export function createSsoFlowStore(storage: () => Storage) {
     return flow
   }
 
+  function start(surface: SsoSurface, continued = false): SsoFlow {
+    return save({ ...createSsoFlow(surface), ...(continued && { continued }) })
+  }
+
   function current(): SsoFlow | undefined {
     return inMemory ?? readStored()
+  }
+
+  /** Marks the current attempt, or a new one from `surface`, as continued. */
+  function markContinued(surface: SsoSurface): SsoFlow {
+    return save({ ...(current() ?? createSsoFlow(surface)), continued: true })
   }
 
   function finish(): SsoFlow | undefined {
@@ -252,7 +283,13 @@ export function createSsoFlowStore(storage: () => Storage) {
     return flow
   }
 
-  return { start, current, finish }
+  /** Drops an attempt the person never continued. */
+  function abandon(): void {
+    if (current()?.continued) return
+    finish()
+  }
+
+  return { start, current, markContinued, finish, abandon }
 }
 
 export const ssoFlowStore = createSsoFlowStore(() => globalThis.sessionStorage)

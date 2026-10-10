@@ -69,7 +69,12 @@ describe('the SSO-required notice on an auth page', () => {
 
       expect(useTelemetry()?.trackSsoEvent).toHaveBeenCalledExactlyOnceWith({
         name: 'app:sso_required_shown',
-        properties: { surface, trigger, flow_id: expect.any(String) }
+        properties: {
+          surface,
+          trigger,
+          presentation: 'notice',
+          flow_id: expect.any(String)
+        }
       })
     }
   )

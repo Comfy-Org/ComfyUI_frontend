@@ -11,7 +11,10 @@ import { useFeatureFlags } from '@/composables/useFeatureFlags'
 import { t } from '@/i18n'
 import { SSO_REQUIRED_DIALOG_KEY } from '@/platform/auth/sso/ssoRequiredDialogKey'
 import { presentInline } from '@/platform/auth/sso/ssoRequiredInline'
-import { trackSsoRequiredShown } from '@/platform/auth/sso/ssoTelemetry'
+import {
+  abandonSsoFlow,
+  trackSsoRequiredShown
+} from '@/platform/auth/sso/ssoTelemetry'
 import { reportError } from '@/platform/telemetry/reportError'
 import { useToast } from '@/components/ui/toast/toastStore'
 import { useDialogStore } from '@/stores/dialogStore'
@@ -53,7 +56,7 @@ export function presentSsoRequired(
         })
         return
       }
-      trackSsoRequiredShown('cloud_app', trigger)
+      trackSsoRequiredShown('cloud_app', trigger, 'notice')
       dialogStore.showDialog({
         key: SSO_REQUIRED_DIALOG_KEY,
         component,
@@ -61,7 +64,8 @@ export function presentSsoRequired(
         dialogComponentProps: {
           renderer: 'reka',
           headless: true,
-          contentClass: SELF_STYLED_PANEL_CONTENT_CLASS
+          contentClass: SELF_STYLED_PANEL_CONTENT_CLASS,
+          onClose: abandonSsoFlow
         }
       })
     })

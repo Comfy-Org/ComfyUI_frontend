@@ -23,6 +23,7 @@ import {
   markSsoReentry,
   readSsoHint
 } from '@/platform/auth/session/ssoReentryStorage'
+import { trackSsoRequiredShown } from '@/platform/auth/sso/ssoTelemetry'
 import { isCloud, isDesktop } from '@/platform/distribution/types'
 import { useTelemetry } from '@/platform/telemetry'
 import { useAuthDialogs } from '@/composables/auth/useAuthDialogs'
@@ -191,6 +192,7 @@ if (isCloud) {
       attempt: ssoError ? 'failed' : hasRecentSsoReentry() ? 'recent' : 'none'
     })
     if (reentry.kind === 'sso-redirect' && markSsoReentry()) {
+      trackSsoRequiredShown('cloud_app', 'session_expired', 'redirect')
       window.location.assign(
         ssoStartUrl({
           email: reentry.email,

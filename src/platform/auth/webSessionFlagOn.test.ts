@@ -3209,33 +3209,80 @@ describe('a lapsed SSO session signs in again through SSO (sso_enabled)', () => 
 
     const ssoSignIns = () =>
       vi
-        .mocked(useTelemetry()!.trackAuth)
-        .mock.calls.filter(([metadata]) => metadata.method === 'sso')
+        .mocked(useTelemetry()!.trackSsoEvent)
+        .mock.calls.filter(
+          ([event]) => event.name === 'app:sso_sign_in_completed'
+        )
 
-    it('reports an SSO session after an attempt this tab started, by id only', async () => {
-      const attempt = ssoFlowStore.start('cloud_login')
+    it('reports an SSO session after an attempt this tab continued, by id only', async () => {
+      const attempt = ssoFlowStore.markContinued('cloud_login')
 
       await loadPage(SSO_SESSION)
 
       expect(ssoSignIns()).toEqual([
-        [{ method: 'sso', user_id: 'user-a', flow_id: attempt.flowId }]
+        [
+          {
+            name: 'app:sso_sign_in_completed',
+            properties: { surface: 'cloud_login', flow_id: attempt.flowId }
+          }
+        ]
       ])
       expect(ssoFlowStore.current()).toBeUndefined()
+      expect(useTelemetry()?.trackAuth).not.toHaveBeenCalled()
     })
 
-    it.for<{ name: string; attempt: boolean; session: ServerSession }>([
+    it('reports a lapse sent straight to SSO, then the SSO session it brings back', async () => {
+      await inAppThenLapsed(true)
+      await vi.waitFor(() => expect(assign).toHaveBeenCalledOnce())
+      const [[shown]] = vi.mocked(useTelemetry()!.trackSsoEvent).mock.calls
+      expect(shown).toEqual({
+        name: 'app:sso_required_shown',
+        properties: {
+          surface: 'cloud_app',
+          trigger: 'session_expired',
+          presentation: 'redirect',
+          flow_id: expect.any(String)
+        }
+      })
+
+      await loadPage(SSO_SESSION)
+
+      expect(ssoSignIns()).toEqual([
+        [
+          {
+            name: 'app:sso_sign_in_completed',
+            properties: {
+              surface: 'cloud_app',
+              flow_id: shown.properties.flow_id
+            }
+          }
+        ]
+      ])
+    })
+
+    it.for<{
+      name: string
+      attempt: 'none' | 'shown' | 'continued'
+      session: ServerSession
+    }>([
       {
         name: 'an SSO session with no attempt',
-        attempt: false,
+        attempt: 'none',
+        session: SSO_SESSION
+      },
+      {
+        name: 'an SSO session after an attempt only shown, never continued',
+        attempt: 'shown',
         session: SSO_SESSION
       },
       {
         name: 'a Google session during an attempt',
-        attempt: true,
+        attempt: 'continued',
         session: { userId: 'user-a' }
       }
     ])('reports nothing for $name', async ({ attempt, session }) => {
-      if (attempt) ssoFlowStore.start('cloud_login')
+      if (attempt === 'shown') ssoFlowStore.start('cloud_login')
+      if (attempt === 'continued') ssoFlowStore.markContinued('cloud_login')
 
       await loadPage(session)
 
