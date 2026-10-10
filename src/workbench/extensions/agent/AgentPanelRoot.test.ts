@@ -4441,6 +4441,318 @@ describe('AgentPanelRoot history', () => {
     })
   })
 
+  it('switches to the chat bound to the active workflow tab', async () => {
+    const first = addTab('workflows/first.json')
+    const second = addTab('workflows/second.json')
+    workflowStore.activeWorkflow = first
+
+    const loadedThreads: string[] = []
+    let resolveWorkflows!: (response: Response) => void
+    const workflowsResponse = new Promise<Response>((resolve) => {
+      resolveWorkflows = resolve
+    })
+    vi.mocked(fetch).mockImplementation(async (input: RequestInfo | URL) => {
+      const url = String(input)
+      if (url.endsWith('/api/agent/threads'))
+        return json(
+          200,
+          agentThreadList([
+            agentThread({
+              id: 'th-first',
+              title: 'First chat',
+              last_message_at: '2026-09-22T10:00:00Z',
+              workflow_id: 'wf-first'
+            }),
+            agentThread({
+              id: 'th-second',
+              title: 'Second chat',
+              last_message_at: '2026-09-22T09:00:00Z',
+              workflow_id: 'wf-second'
+            })
+          ])
+        )
+      if (url.includes('/api/workflows')) return workflowsResponse
+      const match = url.match(/\/api\/agent\/threads\/([^/]+)\/messages$/)
+      if (match) {
+        loadedThreads.push(match[1])
+        return json(200, [])
+      }
+      return json(200, { data: [], pagination: { has_more: false } })
+    })
+
+    renderWithSelectedTarget()
+    await vi.waitFor(() =>
+      expect(useAgentChatHistoryStore().sessions).toHaveLength(2)
+    )
+    // A mount is not an activation. The panel remounts on every minimize and
+    // restore, and adopting the tab's older chat there would throw away the
+    // chat the user had open.
+    expect(useAgentConversationStore().threadId).toBeNull()
+
+    // Activated while the cloud ids are still in flight, so the follow has
+    // nothing to match on yet.
+    workflowStore.activeWorkflow = second
+    await nextTick()
+    expect(useAgentConversationStore().threadId).toBeNull()
+
+    resolveWorkflows(
+      json(200, {
+        data: [
+          { id: 'wf-first', name: 'first' },
+          { id: 'wf-second', name: 'second' }
+        ],
+        pagination: { offset: 0, limit: 100, total: 2, has_more: false }
+      })
+    )
+
+    await vi.waitFor(() =>
+      expect(useAgentConversationStore().threadId).toBe('th-second')
+    )
+
+    workflowStore.activeWorkflow = first
+
+    await vi.waitFor(() =>
+      expect(useAgentConversationStore().threadId).toBe('th-first')
+    )
+    expect(loadedThreads).toEqual(['th-second', 'th-first'])
+  })
+
+  describe('following the active workflow tab', () => {
+    /**
+     * Two tabs whose cloud ids are listed, and a thread list the caller
+     * chooses. Records every thread whose messages were fetched so a test can
+     * assert that a chat was *not* re-loaded.
+     */
+    function stubWorkflowBoundHistory(threads: AgentThreadSummary[]): {
+      loadedThreads: string[]
+      listCalls: () => number
+    } {
+      const loadedThreads: string[] = []
+      let listCalls = 0
+      vi.mocked(fetch).mockImplementation(async (input: RequestInfo | URL) => {
+        const url = String(input)
+        if (url.endsWith('/api/agent/threads')) {
+          listCalls += 1
+          return json(200, agentThreadList(threads))
+        }
+        if (url.includes('/api/workflows'))
+          return json(200, {
+            data: [
+              { id: 'wf-first', name: 'first' },
+              { id: 'wf-second', name: 'second' }
+            ],
+            pagination: { offset: 0, limit: 100, total: 2, has_more: false }
+          })
+        const match = url.match(/\/api\/agent\/threads\/([^/]+)\/messages$/)
+        if (match) {
+          loadedThreads.push(match[1])
+          return json(200, [
+            {
+              id: `${match[1]}-user`,
+              thread_id: match[1],
+              seq: 1,
+              role: 'user',
+              status: 'complete',
+              turn_id: `${match[1]}-turn`,
+              content: { text: `Prompt in ${match[1]}` }
+            }
+          ] satisfies AgentMessages)
+        }
+        return json(200, { data: [], pagination: { has_more: false } })
+      })
+      return { loadedThreads, listCalls: () => listCalls }
+    }
+
+    async function settle(): Promise<void> {
+      for (let i = 0; i < 5; i++) await nextTick()
+    }
+
+    /**
+     * How long an armed follow is given to land. Pinned by the positive
+     * control below, so the test that asserts a follow does *not* land is
+     * waiting a proven-sufficient window rather than an arbitrary one.
+     */
+    const FOLLOW_LANDS_WITHIN_MS = 1000
+
+    function userPrompts(): string[] {
+      return useAgentConversationStore().entries.flatMap((entry) =>
+        entry.role === 'user' ? [entry.text] : []
+      )
+    }
+
+    it('keeps the current chat when the active tab has no matching thread', async () => {
+      const first = addTab('workflows/first.json')
+      const second = addTab('workflows/second.json')
+      workflowStore.activeWorkflow = second
+      const { loadedThreads } = stubWorkflowBoundHistory([
+        agentThread({
+          id: 'th-first',
+          title: 'First chat',
+          last_message_at: '2026-09-22T10:00:00Z',
+          workflow_id: 'wf-first'
+        })
+      ])
+
+      renderWithSelectedTarget()
+      workflowStore.activeWorkflow = first
+      await vi.waitFor(() =>
+        expect(useAgentConversationStore().threadId).toBe('th-first')
+      )
+      await vi.waitFor(() =>
+        expect(userPrompts()).toEqual(['Prompt in th-first'])
+      )
+
+      workflowStore.activeWorkflow = second
+      await settle()
+
+      expect(useAgentConversationStore().threadId).toBe('th-first')
+      expect(userPrompts()).toEqual(['Prompt in th-first'])
+      expect(loadedThreads).toEqual(['th-first'])
+    })
+
+    it('does not pull a manually selected chat back to the active tab', async () => {
+      const first = addTab('workflows/first.json')
+      const second = addTab('workflows/second.json')
+      workflowStore.activeWorkflow = second
+      const { loadedThreads, listCalls } = stubWorkflowBoundHistory([
+        agentThread({
+          id: 'th-first',
+          title: 'First chat',
+          last_message_at: '2026-09-22T10:00:00Z',
+          workflow_id: 'wf-first'
+        }),
+        agentThread({
+          id: 'th-other',
+          title: 'Other chat',
+          last_message_at: '2026-09-22T09:00:00Z',
+          workflow_id: 'wf-second'
+        })
+      ])
+
+      renderWithSelectedTarget()
+      workflowStore.activeWorkflow = first
+      await vi.waitFor(() =>
+        expect(useAgentConversationStore().threadId).toBe('th-first')
+      )
+      const callsBeforeSelect = listCalls()
+
+      await userEvent.click(
+        screen.getByRole('button', {
+          name: i18n.global.t('agent.showChatHistory')
+        })
+      )
+      await userEvent.click(await screen.findByText('Other chat'))
+      await vi.waitFor(() =>
+        expect(useAgentConversationStore().threadId).toBe('th-other')
+      )
+      // The selection's own refreshHistory is what used to re-assert the tab's
+      // thread, so the assertion has to wait for that refresh to land.
+      await vi.waitFor(() =>
+        expect(listCalls()).toBeGreaterThan(callsBeforeSelect)
+      )
+      await settle()
+
+      expect(useAgentConversationStore().threadId).toBe('th-other')
+      expect(loadedThreads).toEqual(['th-first', 'th-other'])
+    })
+
+    /**
+     * Arms a follow that cannot be satisfied yet: the active tab is switched
+     * to a workflow whose chat exists, while the cloud id listing that would
+     * identify it is still in flight. Returns the resolver for that listing
+     * and the threads whose transcripts were fetched.
+     */
+    async function armFollowOnPendingWorkflowIds(): Promise<{
+      resolveWorkflows: () => void
+      loadedThreads: string[]
+    }> {
+      const first = addTab('workflows/first.json')
+      const second = addTab('workflows/second.json')
+      workflowStore.activeWorkflow = second
+
+      const loadedThreads: string[] = []
+      let settleWorkflows!: (response: Response) => void
+      const workflowsResponse = new Promise<Response>((resolve) => {
+        settleWorkflows = resolve
+      })
+      vi.mocked(fetch).mockImplementation(async (input: RequestInfo | URL) => {
+        const url = String(input)
+        if (url.endsWith('/api/agent/threads'))
+          return json(
+            200,
+            agentThreadList([
+              agentThread({
+                id: 'th-first',
+                title: 'First chat',
+                last_message_at: '2026-09-22T10:00:00Z',
+                workflow_id: 'wf-first'
+              })
+            ])
+          )
+        if (url.includes('/api/workflows')) return workflowsResponse
+        const match = url.match(/\/api\/agent\/threads\/([^/]+)\/messages$/)
+        if (match) {
+          loadedThreads.push(match[1])
+          return json(200, [])
+        }
+        return json(200, { data: [], pagination: { has_more: false } })
+      })
+
+      renderWithSelectedTarget()
+      await vi.waitFor(() =>
+        expect(useAgentChatHistoryStore().sessions).toHaveLength(1)
+      )
+      workflowStore.activeWorkflow = first
+      await nextTick()
+      expect(useAgentConversationStore().threadId).toBeNull()
+
+      return {
+        loadedThreads,
+        resolveWorkflows: () =>
+          settleWorkflows(
+            json(200, {
+              data: [{ id: 'wf-first', name: 'first' }],
+              pagination: { offset: 0, limit: 100, total: 1, has_more: false }
+            })
+          )
+      }
+    }
+
+    // The positive control for the test below: it fixes how long an armed
+    // follow takes to land once the ids arrive, so the negative case's window
+    // is not a guess.
+    it('lands the tab chat once the tab cloud ids resolve', async () => {
+      const { resolveWorkflows, loadedThreads } =
+        await armFollowOnPendingWorkflowIds()
+
+      resolveWorkflows()
+
+      await vi.waitFor(
+        () => expect(useAgentConversationStore().threadId).toBe('th-first'),
+        { timeout: FOLLOW_LANDS_WITHIN_MS }
+      )
+      expect(loadedThreads).toEqual(['th-first'])
+    })
+
+    it('does not land the tab chat on a chat the user just started', async () => {
+      const { resolveWorkflows, loadedThreads } =
+        await armFollowOnPendingWorkflowIds()
+
+      await userEvent.click(
+        screen.getByRole('button', { name: i18n.global.t('agent.newChat') })
+      )
+      resolveWorkflows()
+
+      await expect(
+        vi.waitFor(
+          () => expect(useAgentConversationStore().threadId).not.toBeNull(),
+          { timeout: FOLLOW_LANDS_WITHIN_MS }
+        )
+      ).rejects.toThrow()
+      expect(loadedThreads).toEqual([])
+    })
+  })
+
   describe('history row title for the active chat', () => {
     function stubActiveThread(serverTitle: string): void {
       vi.mocked(fetch).mockImplementation(async (input: RequestInfo | URL) => {
