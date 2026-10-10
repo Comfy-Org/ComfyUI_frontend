@@ -684,6 +684,19 @@ describe('appModeStore', () => {
       expect(() => structuredClone(linearData)).not.toThrow()
     })
 
+    it('omits an undefined input config instead of writing null', async () => {
+      workflowStore.activeWorkflow = createBuilderWorkflow()
+      await nextTick()
+
+      store.selectedInputs.push([entitySeed, 'seed', undefined])
+      await nextTick()
+
+      expect(app.rootGraph.extra.linearData).toStrictEqual({
+        inputs: [[entitySeed, 'seed']],
+        outputs: []
+      })
+    })
+
     it('writes structured-cloneable linearData after a drag reorder', async () => {
       const workflow = createBuilderWorkflow()
       workflowStore.activeWorkflow = workflow
