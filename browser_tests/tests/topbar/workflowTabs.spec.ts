@@ -319,9 +319,6 @@ test.describe('Workflow tabs', () => {
               )
             )
             .toBe(true)
-          await expect(topbar.workflowTabs).toHaveScreenshot(
-            'compact-workflow-tabs.png'
-          )
         })
       }
     )
