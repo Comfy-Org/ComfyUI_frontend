@@ -237,9 +237,15 @@ export const useAppModeStore = defineStore('appMode', () => {
       if (!app.isGraphReady) return
       const graph = app.rootGraph
       const extra = graph.extra
-      // JSON deep copy: selections can nest reactive proxies (e.g. after a drag
-      // reorder), which would break structuredClone of the serialized graph.
-      extra.linearData = JSON.parse(JSON.stringify(data)) as LinearData
+      // Plain copies only: spreading the reactive selections yields proxied
+      // tuples, which break structuredClone of the serialized graph.
+      extra.linearData = {
+        inputs: data.inputs.map(
+          ([id, name, config]): LinearInput =>
+            config ? [id, name, { ...config }] : [id, name]
+        ),
+        outputs: [...data.outputs]
+      }
       workflowStore.activeWorkflow?.changeTracker.captureCanvasState()
     },
     { deep: true }
