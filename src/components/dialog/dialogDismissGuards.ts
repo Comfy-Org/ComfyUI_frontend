@@ -24,18 +24,8 @@ function isInsideOverlay(target: EventTarget | null): boolean {
 
 export function onRekaPointerDownOutside(
   options: { dismissOnPointerDownOutside?: boolean },
-  event: OutsideEvent,
-  isActive = true
+  event: OutsideEvent
 ) {
-  // Stacked dialogs each render an independent Reka `Dialog` root, so a lower
-  // dialog's DismissableLayer sees a pointer-down that opened (or landed on)
-  // the dialog above it as "outside" and would dismiss itself. Only the
-  // top-most dialog may dismiss on an outside pointer, mirroring the escape-key
-  // handling in `GlobalDialog`.
-  if (!isActive) {
-    event.preventDefault()
-    return
-  }
   if (isInsideOverlay(event.detail.originalEvent.target)) {
     event.preventDefault()
     return

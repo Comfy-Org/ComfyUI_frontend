@@ -24,17 +24,10 @@
           :data-dialog-key="item.key"
           @escape-key-down="
             (e) =>
-              (dialogStore.activeKey !== item.key ||
-                item.dialogComponentProps.closable === false) &&
-              e.preventDefault()
+              item.dialogComponentProps.closable === false && e.preventDefault()
           "
           @pointer-down-outside="
-            (e) =>
-              onRekaPointerDownOutside(
-                item.dialogComponentProps,
-                e,
-                dialogStore.activeKey === item.key
-              )
+            (e) => onRekaPointerDownOutside(item.dialogComponentProps, e)
           "
           @mousedown="() => dialogStore.riseDialog({ key: item.key })"
         >

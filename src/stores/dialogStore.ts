@@ -84,10 +84,7 @@ function notifyRemoved(dialog: DialogInstance | undefined) {
 export const useDialogStore = defineStore('dialog', () => {
   const dialogStack: Ref<DialogInstance[]> = ref([])
 
-  /**
-   * The key of the currently active (top-most) dialog, the only one Escape
-   * dismisses.
-   */
+  /** The key `closeDialog()` closes when called without one. */
   const activeKey = ref<string | null>(null)
 
   const genDialogKey = () => `dialog-${Math.random().toString(36).slice(2, 9)}`

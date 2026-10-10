@@ -225,7 +225,7 @@ describe('GlobalDialog', () => {
     expect(store.isDialogOpen('reka-esc-default')).toBe(false)
   })
 
-  it('closes only the active dialog on Escape when dialogs are stacked', async () => {
+  it('closes the top dialog on Escape when dialogs are stacked', async () => {
     mountDialog()
     const store = useDialogStore()
     const user = userEvent.setup()
@@ -261,10 +261,8 @@ describe('GlobalDialog', () => {
     store.riseDialog({ key: 'reka-esc-lower' })
     await user.keyboard('{Escape}')
 
-    expect(
-      store.isDialogOpen('reka-esc-active'),
-      'Escape must not close a dialog after another one was brought to front'
-    ).toBe(true)
+    expect(store.isDialogOpen('reka-esc-active')).toBe(false)
+    expect(store.isDialogOpen('reka-esc-lower')).toBe(true)
   })
 
   it('does not close on Escape when closable is false', async () => {
@@ -452,27 +450,9 @@ describe('shouldPreventRekaDismiss', () => {
     container.remove()
   })
 
-  it('prevents dismiss when the dialog is not the top-most (stacked)', () => {
-    // A backgrounded dialog must never dismiss on an outside pointer — the
-    // pointer belongs to the dialog stacked above it (e.g. Edit Keybinding
-    // opening over Settings). Target is outside any overlay, so only the
-    // is-active gate can prevent it.
+  it('allows dismiss on a true outside pointer', () => {
     const event = makeEvent(document.body)
-    onRekaPointerDownOutside(
-      { dismissOnPointerDownOutside: undefined },
-      event,
-      false
-    )
-    expect(event.defaultPrevented).toBe(true)
-  })
-
-  it('allows the top-most dialog to dismiss on a true outside pointer', () => {
-    const event = makeEvent(document.body)
-    onRekaPointerDownOutside(
-      { dismissOnPointerDownOutside: undefined },
-      event,
-      true
-    )
+    onRekaPointerDownOutside({ dismissOnPointerDownOutside: undefined }, event)
     expect(event.defaultPrevented).toBe(false)
   })
 
