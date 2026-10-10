@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import { translationsFor } from '@/i18n/translations'
 import { WORKSHOP_DEPLOY_ENV } from 'astro:env/client'
-import { useMounted } from '@vueuse/core'
+import { useEventListener, useMounted } from '@vueuse/core'
 import {
   computed,
   onBeforeUnmount,
@@ -26,6 +26,7 @@ import {
 } from '@/scripts/posthog'
 import RunLeaveDialog from '@/components/workshop/RunLeaveDialog.vue'
 import WorkshopGate from '@/components/workshop/WorkshopGate.vue'
+import CinematicAppDetail from './CinematicAppDetail.vue'
 import CinematicAppsHub from './CinematicAppsHub.vue'
 import CinematicScenarioMenu from './CinematicScenarioMenu.vue'
 import CinematicStudio from './CinematicStudio.vue'
@@ -91,9 +92,20 @@ const appsEnabled = useWorkshopAppsEnabled()
 const fullscreen = useWorkshopFlag('workshop-cinematic-fullscreen-enabled')
 const layout = ref('d')
 const app = ref<WorkshopAppId>(initialApp)
-const editorShown = computed(
+const trying = ref(false)
+const starter = ref<string>()
+const fullscreenStudio = computed(
   () => fullscreen.value && app.value === 'studio' && layout.value === 'd'
 )
+const editorShown = computed(() => fullscreenStudio.value && trying.value)
+const studioApp = computed(() =>
+  apps.find((candidate) => candidate.appId === 'studio')
+)
+const detailShown = computed(() => fullscreenStudio.value && !trying.value)
+const detailBack = computed(() => ({
+  href: workshopAppHref('studio', locale),
+  label: t('cinematic.detail.backToApp')
+}))
 const shownApps = computed(() =>
   apps.filter((candidate) => isWorkshopModelShown(candidate))
 )
@@ -190,6 +202,8 @@ const appOptions = computed(() =>
   )
 )
 
+const TRY_PARAM = 'try'
+
 onMounted(() => {
   const params = new URLSearchParams(window.location.search)
   const requestedLayout = params.get('ux')
@@ -197,7 +211,24 @@ onMounted(() => {
     layout.value = requestedLayout ?? layout.value
   const requestedApp = APPS.find((id) => id === params.get('app'))
   if (requestedApp) showApp(requestedApp)
+  readTry(params)
 })
+
+function readTry(params: URLSearchParams) {
+  trying.value = params.has(TRY_PARAM)
+  starter.value = params.get(TRY_PARAM) || undefined
+}
+
+useEventListener('popstate', () =>
+  readTry(new URLSearchParams(window.location.search))
+)
+
+function tryApp(shot?: string) {
+  const url = new URL(window.location.href)
+  url.searchParams.set(TRY_PARAM, shot ?? '')
+  window.history.pushState(window.history.state, '', url)
+  readTry(url.searchParams)
+}
 
 function showApp(id: WorkshopAppId) {
   app.value = id
@@ -262,10 +293,20 @@ function pickApp(id: string) {
       :layout
       :locale
     />
+    <CinematicAppDetail
+      v-else-if="detailShown && studioApp"
+      :app="studioApp"
+      :apps="shownApps"
+      :models
+      :locale
+      @try="tryApp"
+    />
     <CinematicStudioEditor
       v-else-if="editorShown"
       :models
       :show-credits="false"
+      :back="detailBack"
+      :starter
       :locale
     />
     <CinematicStudioPanel

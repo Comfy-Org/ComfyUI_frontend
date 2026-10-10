@@ -36,6 +36,7 @@ import {
   runnableCinematicModels,
   runnableCinematicVideoModels
 } from '@/lib/workshop/cinematic-studio/models'
+import { STARTER_SHOTS } from '@/lib/workshop/cinematic-studio/starters'
 import CinematicStudio from './CinematicStudio.vue'
 import CinematicStudioPage from './CinematicStudioPage.vue'
 import CinematicStudioPanel from './CinematicStudioPanel.vue'
@@ -1120,7 +1121,11 @@ describe('CinematicStudio', () => {
     'opens $app only while its PostHog flag allows it (flag $flag)',
     async ({ app, flag, open }) => {
       vi.mocked(useWorkshopFlag).mockImplementation((name) =>
-        computed(() => name !== 'workshop-reshoot-app-enabled' || flag)
+        computed(() =>
+          name === 'workshop-reshoot-app-enabled'
+            ? flag
+            : name !== FULLSCREEN_FLAG
+        )
       )
       render(CinematicStudioPage, {
         props: { apps: appModels, models, initialApp: app }
@@ -1679,9 +1684,14 @@ describe('CinematicStudio', () => {
     const editorAttribute = () =>
       document.documentElement.hasAttribute('data-workshop-editor')
 
-    function renderPage(fullscreen: boolean) {
+    function renderPage(fullscreen: boolean, search = '?try') {
       vi.mocked(useWorkshopFlag).mockImplementation((name) =>
         computed(() => name !== FULLSCREEN_FLAG || fullscreen)
+      )
+      window.history.replaceState(
+        null,
+        '',
+        `/hub/apps/cinematic-studio/${search}`
       )
       const page = render(CinematicStudioPage, {
         props: { apps: appModels, models }
@@ -1709,14 +1719,42 @@ describe('CinematicStudio', () => {
         await screen.findByRole('complementary', { name: 'Shot settings' })
       ).toBeInTheDocument()
       expect(screen.getByTestId('apps-home')).toBeInTheDocument()
-      expect(screen.getByTestId('apps-back')).toHaveAccessibleName(
-        'Back to apps'
-      )
       expect(editorAttribute()).toBe(true)
 
       unmount()
 
       expect(editorAttribute()).toBe(false)
+    })
+
+    it('opens on the app detail page, whose Try it starts the editor that leads back to it', async () => {
+      const { user } = renderPage(true, '')
+
+      await user.click(await screen.findByTestId('cinematic-try'))
+
+      expect(
+        await screen.findByRole('complementary', { name: 'Shot settings' })
+      ).toBeInTheDocument()
+      expect(new URLSearchParams(window.location.search).has('try')).toBe(true)
+      expect(screen.getByTestId('apps-back')).toHaveAccessibleName(
+        'Back to Cinematic Studio'
+      )
+      expect(screen.getByTestId('apps-back')).toHaveAttribute(
+        'href',
+        '/hub/apps/cinematic-studio/'
+      )
+    })
+
+    it('opens the editor on an example picked from the detail page', async () => {
+      const { user } = renderPage(true, '')
+
+      await user.click((await screen.findAllByTestId('cinematic-example'))[0])
+
+      expect(await screen.findByLabelText('Scene')).toHaveValue(
+        STARTER_SHOTS[0].scene
+      )
+      expect(new URLSearchParams(window.location.search).get('try')).toBe(
+        STARTER_SHOTS[0].id
+      )
     })
 
     it('runs a shot from the floating panel and offers it in the header download', async () => {
@@ -1785,6 +1823,7 @@ describe('CinematicStudio', () => {
       vi.mocked(router_render).mockImplementation(async (slug) =>
         rendered(slug)
       )
+      window.history.replaceState(null, '', '/hub/apps/cinematic-studio/?try')
       render(CinematicStudioPage, {
         props: { apps: appModels, models: video ? [...models, video] : models }
       })

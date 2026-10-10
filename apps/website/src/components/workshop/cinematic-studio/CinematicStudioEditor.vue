@@ -22,6 +22,7 @@ import { translationsFor } from '@/i18n/translations'
 import { workshopAppRepo } from '@/lib/workshop/apps'
 import type { CinematicModel } from '@/lib/workshop/cinematic-studio/models'
 import { selectedTake } from '@/lib/workshop/cinematic-studio/reel'
+import { findStarter } from '@/lib/workshop/cinematic-studio/starters'
 import CinematicEditorStage from './CinematicEditorStage.vue'
 import CinematicModeSwitch from './CinematicModeSwitch.vue'
 import CinematicPanelFields from './CinematicPanelFields.vue'
@@ -33,10 +34,15 @@ import { pickerGroups, popoverTitle } from './picker-key'
 const {
   models,
   showCredits = true,
+  back,
+  starter,
   locale = 'en'
 } = defineProps<{
   models: readonly CinematicModel[]
   showCredits?: boolean
+  back?: { href: string; label: string }
+  /** A starter shot to open with its scene and direction already set. */
+  starter?: string
   locale?: Locale
 }>()
 const { t: tc } = translationsFor(locale)
@@ -68,6 +74,7 @@ const {
   estimate,
   memberWorkspace,
   choose,
+  start,
   generate: generateShot
 } = useCinematicShot(models)
 reportStudioBusy(() => studio.rendering.value)
@@ -125,9 +132,11 @@ const panelLabels = computed(() => ({
   collapse: tc('cinematic.sheet.collapse')
 }))
 
-onMounted(() =>
+onMounted(() => {
   document.documentElement.setAttribute('data-workshop-editor', '')
-)
+  const shot = findStarter(starter)
+  if (shot) start(shot)
+})
 onBeforeUnmount(() =>
   document.documentElement.removeAttribute('data-workshop-editor')
 )
@@ -141,6 +150,7 @@ onBeforeUnmount(() =>
     :panel-labels="panelLabels"
     :show-dock="false"
     :download
+    :back
     :locale
     data-testid="cinematic"
   >
