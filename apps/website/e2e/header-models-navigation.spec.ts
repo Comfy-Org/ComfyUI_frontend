@@ -120,7 +120,7 @@ for (const { locale, path } of [
   }
 }
 
-test('Hub menu marks only external links with the arrow', async ({
+test('Hub menu apps open in the same tab and only external links carry the arrow', async ({
   context,
   page
 }) => {
@@ -143,13 +143,13 @@ test('Hub menu marks only external links with the arrow', async ({
     name: 'Cinematic Studio',
     exact: true
   })
-  await expect(cinematicStudio).toHaveAttribute('target', '_blank')
+  await expect(cinematicStudio).not.toHaveAttribute('target', '_blank')
   await expect(cinematicStudio.getByTestId('external-link-arrow')).toHaveCount(
     0
   )
 
   const reshoot = dropdown.getByRole('link', { name: 'Re-shoot', exact: true })
-  await expect(reshoot).toHaveAttribute('target', '_blank')
+  await expect(reshoot).not.toHaveAttribute('target', '_blank')
   await expect(reshoot.getByTestId('external-link-arrow')).toHaveCount(0)
 
   await desktopLinks
