@@ -25,6 +25,14 @@ const {
 
 const emits = defineEmits<DialogContentEmits>()
 const forwarded = useForwardPropsEmits(restProps, emits)
+
+function focusAutofocusTarget(event: Event) {
+  if (event.defaultPrevented || !(event.target instanceof HTMLElement)) return
+  const target = event.target.querySelector<HTMLElement>('[autofocus]')
+  if (!target) return
+  event.preventDefault()
+  target.focus()
+}
 </script>
 
 <template>
@@ -40,6 +48,7 @@ const forwarded = useForwardPropsEmits(restProps, emits)
           'top-2 left-2 size-auto max-h-none max-w-none sm:max-w-none'
       )
     "
+    @open-auto-focus="focusAutofocusTarget"
   >
     <slot />
   </DialogContent>
