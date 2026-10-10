@@ -164,6 +164,75 @@ describe('useAssetsQuery malformed response', () => {
   )
 })
 
+const pageFailures: { name: string; fail: () => Response }[] = [
+  { name: 'HTTP 403', fail: () => new Response(null, { status: 403 }) },
+  {
+    name: 'malformed JSON',
+    fail: () =>
+      new Response('{', { headers: { 'Content-Type': 'application/json' } })
+  },
+  {
+    name: 'an invalid response schema',
+    fail: () => Response.json({ assets: [] })
+  }
+]
+
+describe('useAssetsQuery recovery after a failed page', () => {
+  it.for(pageFailures)(
+    'resumes paging after a successful loadNew following $name',
+    async ({ name, fail }) => {
+      const list = await createList(`recover-${name}`, ['newest'], {
+        hasMore: true,
+        nextCursor: 'page-2'
+      })
+      fetchApiMock.mockResolvedValueOnce(fail())
+      await expect(list.loadMore()).resolves.toBe(false)
+      expect(toValue(list.hasMore)).toBe(false)
+
+      fetchApiMock.mockResolvedValueOnce(response(['newest']))
+      await list.loadNew()
+      expect(toValue(list.hasMore)).toBe(true)
+
+      fetchApiMock.mockResolvedValueOnce(response(['older']))
+      await expect(list.loadMore()).resolves.toBe(true)
+      expect(toValue(list.items).map(({ id }) => id)).toEqual([
+        'newest',
+        'older'
+      ])
+      expect(requestedAfterCursors()).toEqual(['page-2', null, 'page-2'])
+    }
+  )
+
+  it('keeps paging stopped after a failed loadNew until one succeeds', async () => {
+    const list = await createList('recover-load-new', ['newest'], {
+      hasMore: true,
+      nextCursor: 'page-2'
+    })
+    fetchApiMock.mockResolvedValueOnce(new Response(null, { status: 403 }))
+    await list.loadNew()
+    expect(toValue(list.hasMore)).toBe(false)
+
+    fetchApiMock.mockResolvedValueOnce(response(['newest']))
+    await list.loadNew()
+    expect(toValue(list.hasMore)).toBe(true)
+  })
+
+  it('clears a page failure on full invalidation', async () => {
+    const list = await createList('recover-invalidate', ['newest'], {
+      hasMore: true,
+      nextCursor: 'page-2'
+    })
+    fetchApiMock.mockResolvedValueOnce(new Response(null, { status: 403 }))
+    await list.loadMore()
+
+    fetchApiMock.mockResolvedValueOnce(
+      response(['newest'], { hasMore: true, nextCursor: 'page-2' })
+    )
+    await list.invalidate()
+    expect(toValue(list.hasMore)).toBe(true)
+  })
+})
+
 describe('useAssetsQuery stale invalidation', () => {
   it('preserves concurrent invalidations across an in-flight page', async () => {
     const list = await createList(

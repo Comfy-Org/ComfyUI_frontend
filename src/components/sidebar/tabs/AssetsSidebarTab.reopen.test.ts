@@ -1,6 +1,7 @@
 import { fromPartial } from '@total-typescript/shoehorn'
 import { render, screen, within } from '@testing-library/vue'
 import { describe, expect, it, vi } from 'vitest'
+import { toValue } from 'vue'
 import { createI18n } from 'vue-i18n'
 
 import type { useFeatureFlags } from '@/composables/useFeatureFlags'
@@ -33,6 +34,14 @@ const newest: AssetItem = {
   tags: ['output'],
   created_at: new Date(4000).toISOString(),
   updated_at: new Date(4000).toISOString()
+}
+
+const older: AssetItem = {
+  id: 'out-old',
+  name: 'out-old.png',
+  tags: ['output'],
+  created_at: new Date(1000).toISOString(),
+  updated_at: new Date(1000).toISOString()
 }
 
 const i18n = createI18n({ legacy: false, locale: 'en', messages: { en: {} } })
@@ -126,6 +135,41 @@ describe('AssetsSidebarTab reopen with the asset API', () => {
       'out-0.png',
       'out-1.png',
       'out-2.png'
+    ])
+  })
+
+  it('retries a failed older page after the panel is reopened', async () => {
+    serveAssets(async () =>
+      Response.json({
+        assets: outputs,
+        total: 4,
+        has_more: true,
+        next_cursor: 'out-2'
+      })
+    )
+    const first = renderTab()
+    await vi.waitFor(() => expect(shownAssets()).toHaveLength(3))
+    const outputAssets = useAssetsStore().outputAssets
+    serveAssets(async () => new Response(null, { status: 403 }))
+    await outputAssets.loadMore()
+    expect(toValue(outputAssets.hasMore)).toBe(false)
+    first.unmount()
+
+    serveAssets(async () =>
+      Response.json({ assets: outputs, total: 4, has_more: true })
+    )
+    renderTab()
+    await vi.waitFor(() => expect(toValue(outputAssets.hasMore)).toBe(true))
+
+    serveAssets(async () =>
+      Response.json({ assets: [older], total: 4, has_more: false })
+    )
+    await outputAssets.loadMore()
+    expect(shownAssets()).toEqual([
+      'out-0.png',
+      'out-1.png',
+      'out-2.png',
+      'out-old.png'
     ])
   })
 })

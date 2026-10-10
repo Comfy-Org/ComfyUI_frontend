@@ -31,8 +31,11 @@ function assetsQueryInternal(
   const seenCursors = new Set<string | undefined>()
   let loadGeneration = 0
   const morePages = ref(true)
+  const pageFailed = ref(false)
   const backingOff = refAutoReset(false, 2000)
-  const hasMore = computed(() => morePages.value && !backingOff.value)
+  const hasMore = computed(
+    () => morePages.value && !pageFailed.value && !backingOff.value
+  )
   const items = ref<AssetItem[]>([])
 
   const { enqueue, preempt, running: isLoading } = usePreemptableQueue()
@@ -110,6 +113,7 @@ function assetsQueryInternal(
         headCursor = next_cursor
       }
       items.value.splice(0, 0, ...newItems)
+      pageFailed.value = false
     })
   }
 
@@ -122,6 +126,7 @@ function assetsQueryInternal(
     }
     await preempt(async () => {
       morePages.value = true
+      pageFailed.value = false
       nextCursor = undefined
       seenCursors.clear()
       items.value = []
@@ -153,7 +158,7 @@ function assetsQueryInternal(
     if (!resp.ok) {
       onError('asset request failed', resp)
       if (resp.status === 429 || resp.status >= 500) backingOff.value = true
-      else morePages.value = false
+      else pageFailed.value = true
       return
     }
 
@@ -161,14 +166,14 @@ function assetsQueryInternal(
       .json()
       .catch((e) => onError('failed to decode asset json response', e))
     if (!jsonresp) {
-      morePages.value = false
+      pageFailed.value = true
       return
     }
 
     const parseResult = assetResponseSchema.safeParse(jsonresp)
     if (!parseResult.success) {
       onError('Failed to parse asset response', fromZodError(parseResult.error))
-      morePages.value = false
+      pageFailed.value = true
       return
     }
     return parseResult.data
