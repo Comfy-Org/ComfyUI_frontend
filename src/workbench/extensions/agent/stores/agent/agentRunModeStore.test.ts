@@ -294,13 +294,13 @@ describe('agentRunModeStore', () => {
     const save = store.save('ask_approval', null)
     await nextTick()
 
-    expect(vi.mocked(api.fetchApi)).not.toHaveBeenCalled()
+    expect(api.fetchApi).not.toHaveBeenCalled()
     expect(store.mode).toBe('auto')
 
     releaseSend()
     await save
 
-    expect(vi.mocked(api.fetchApi)).toHaveBeenCalledWith(
+    expect(api.fetchApi).toHaveBeenCalledWith(
       '/agent/run-mode',
       expect.objectContaining({ method: 'PUT' })
     )
@@ -329,12 +329,12 @@ describe('agentRunModeStore', () => {
     const save = store.save('auto', null)
     await nextTick()
 
-    expect(vi.mocked(api.fetchApi)).not.toHaveBeenCalled()
+    expect(api.fetchApi).not.toHaveBeenCalled()
 
     releaseSend()
     await save
 
-    expect(vi.mocked(api.fetchApi)).toHaveBeenCalledOnce()
+    expect(api.fetchApi).toHaveBeenCalledOnce()
   })
 
   // A send is only bounded as far as its response HEADERS, so a stalled body

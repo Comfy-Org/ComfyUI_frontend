@@ -2,13 +2,19 @@
 import { ChevronLeft } from '@lucide/vue'
 import { computed } from 'vue'
 
+import Button from '@/components/ui/button/Button.vue'
 import type { WorkflowWorkshopModelDetail } from '@/config/models-catalogue'
 import { useCaseFor } from '@/config/models-catalogue'
 import { getRoutes } from '@/config/routes'
-import { WORKSHOP_CLOUD_BASE_URL } from '@/config/workshop-env'
 import { useWorkshopSession } from '@/config/workshop-session-state'
 import { useCaseLabelKey } from '@/lib/workshop/use-case-label'
 import { t } from '@/i18n/translations'
+import {
+  captureWorkshopEvent,
+  useWorkshopEnabled,
+  useWorkshopWorkflowsEnabled
+} from '@/scripts/posthog'
+import { workshopModelAnalytics } from '@/scripts/workshop-analytics'
 import WorkflowPlayground from './WorkflowPlayground.vue'
 
 const { model } = defineProps<{ model: WorkflowWorkshopModelDetail }>()
@@ -38,10 +44,19 @@ const shelf = computed(() => {
 const pillClass =
   'inline-flex h-7 items-center rounded-full border border-transparency-white-t20 px-3 text-xs leading-none text-primary-comfy-canvas transition-colors hover:border-primary-comfy-yellow hover:text-primary-comfy-yellow'
 
-const template = model.workflow.template
-const cloudHref = template
-  ? `${WORKSHOP_CLOUD_BASE_URL}/?template=${encodeURIComponent(template.id)}`
-  : undefined
+const downloadUrl = model.workflow.template?.downloadUrl
+
+const enabled = useWorkshopEnabled()
+const workflowsEnabled = useWorkshopWorkflowsEnabled()
+const modelAnalytics = workshopModelAnalytics(model)
+
+function captureWorkflowDownload() {
+  if (enabled.value && workflowsEnabled.value)
+    captureWorkshopEvent({
+      name: 'workflow_download_clicked',
+      properties: modelAnalytics
+    })
+}
 </script>
 
 <template>
@@ -69,17 +84,33 @@ const cloudHref = template
       </h1>
       <p
         v-if="model.summary"
-        class="mt-4 max-w-3xl text-lg text-primary-warm-gray"
+        class="mt-4 text-lg text-primary-warm-gray lg:truncate"
+        :title="model.summary"
       >
         {{ model.summary }}
       </p>
+      <div
+        v-if="downloadUrl"
+        class="mt-6 flex flex-wrap items-center gap-2"
+        data-testid="workflow-actions"
+      >
+        <Button
+          as="a"
+          :href="downloadUrl"
+          download
+          variant="outline"
+          class="h-auto min-h-11 max-w-full whitespace-normal"
+          :aria-label="t('workshop.workflow.download')"
+          @click="captureWorkflowDownload"
+          >{{ t('workshop.workflow.downloadShort') }}</Button
+        >
+      </div>
     </header>
 
     <WorkflowPlayground
       :key="scope"
       :model="model"
       :scope="scope"
-      :cloud-href="cloudHref"
       @recovery="emit('recovery', $event)"
     />
   </div>

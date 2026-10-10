@@ -12,11 +12,14 @@
 
 # Mask Editor
 /src/extensions/core/maskeditor.ts                @trsommer @jtydhr88 @Comfy-Org/comfy_frontend_devs
-/src/extensions/core/maskEditorLayerFilenames.ts  @trsommer @jtydhr88 @Comfy-Org/comfy_frontend_devs
+/src/extensions/core/maskeditor.test.ts           @trsommer @jtydhr88 @Comfy-Org/comfy_frontend_devs
+/src/extensions/core/maskeditor/                  @trsommer @jtydhr88 @Comfy-Org/comfy_frontend_devs
 /src/components/maskeditor/                       @trsommer @jtydhr88 @Comfy-Org/comfy_frontend_devs
 /src/composables/maskeditor/                      @trsommer @jtydhr88 @Comfy-Org/comfy_frontend_devs
 /src/stores/maskEditorStore.ts                    @trsommer @jtydhr88 @Comfy-Org/comfy_frontend_devs
 /src/stores/maskEditorDataStore.ts                @trsommer @jtydhr88 @Comfy-Org/comfy_frontend_devs
+/src/stores/maskEditorStore.test.ts               @trsommer @jtydhr88 @Comfy-Org/comfy_frontend_devs
+/src/stores/maskEditorDataStore.test.ts           @trsommer @jtydhr88 @Comfy-Org/comfy_frontend_devs
 
 # Image Crop
 /src/extensions/core/imageCrop.ts                 @jtydhr88 @Comfy-Org/comfy_frontend_devs
@@ -128,3 +131,7 @@
 .claude/
 .cursor/
 .cursorrules
+
+# Domain architecture contracts and enforcement
+/docs/architecture/domains/                       @christian-byrne @Comfy-Org/comfy_frontend_devs
+/tools/architecture/                              @christian-byrne @Comfy-Org/comfy_frontend_devs

@@ -1,5 +1,5 @@
 import { useToast } from '@/components/ui/toast/toastStore'
-import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
+import { afterEach, assert, beforeEach, describe, expect, it, vi } from 'vitest'
 
 import type { ComfyNodeDefImpl } from '@/stores/nodeDefStore'
 import { useNodeDragToCanvas } from './useNodeDragToCanvas'
@@ -8,6 +8,9 @@ import { LGraphNode } from '@/lib/litegraph/src/litegraph'
 import type { LGraphCanvas } from '@/lib/litegraph/src/litegraph'
 import { fromPartial } from '@total-typescript/shoehorn'
 import { useLitegraphService } from '@/services/litegraphService'
+import { startModelLoaderDrag } from './startModelNodeDragFromAsset'
+import { useModelToNodeStore } from '@/stores/modelToNodeStore'
+import { useNodeDefStore } from '@/stores/nodeDefStore'
 
 const { mockConvertEventToCanvasOffset, mockSelectItems, mockCanvas } =
   vi.hoisted(() => {
@@ -261,7 +264,7 @@ describe('useNodeDragToCanvas', () => {
 
       const { startDrag } = useNodeDragToCanvas()
       startDrag(mockNodeDef, {
-        widgetValues: { ckpt_name: 'model.safetensors' }
+        widgetValues: [{ selector: 'ckpt_name', value: 'model.safetensors' }]
       })
 
       document.dispatchEvent(
@@ -275,43 +278,101 @@ describe('useNodeDragToCanvas', () => {
       expect(widget.value).toBe('model.safetensors')
     })
 
-    it('should warn but still place the node when a requested widget is missing', () => {
-      mockCanvas.canvas.getBoundingClientRect.mockReturnValue({
-        left: 0,
-        right: 500,
-        top: 0,
-        bottom: 500
-      })
-      mockConvertEventToCanvasOffset.mockReturnValue([150, 150])
-      const placedNode = new LGraphNode('Placed node')
-      vi.mocked(useLitegraphService().addNodeOnGraph).mockReturnValue(
-        placedNode
-      )
-
-      const { startDrag } = useNodeDragToCanvas()
-      startDrag(mockNodeDef, {
-        widgetValues: { ckpt_name: 'model.safetensors' }
-      })
-
-      document.dispatchEvent(
-        new PointerEvent('pointerup', {
-          clientX: 250,
-          clientY: 250,
-          bubbles: true
+    it.for(['LoadLoraModel', 'LoadLoraTextEncoder'])(
+      'places a model browser selection in the first matching widget of %s',
+      (nodeType) => {
+        mockCanvas.canvas.getBoundingClientRect.mockReturnValue({
+          left: 0,
+          right: 500,
+          top: 0,
+          bottom: 500
         })
-      )
+        mockConvertEventToCanvasOffset.mockReturnValue([150, 150])
+        useNodeDefStore().nodeDefsByName = {
+          [nodeType]: fromPartial<ComfyNodeDefImpl>({ name: nodeType })
+        }
+        const provider = useModelToNodeStore()
+          .getAllNodeProviders('loras')
+          .find(({ nodeDef }) => nodeDef.name === nodeType)
+        assert.exists(provider)
+        const node = new LGraphNode('LoRA stack')
+        const strength = node.addWidget(
+          'number',
+          'loras.3.strength',
+          0.5,
+          () => {}
+        )
+        const first = node.addWidget(
+          'text',
+          'loras.3.lora_name',
+          'A.safetensors',
+          () => {}
+        )
+        const second = node.addWidget(
+          'text',
+          'loras.7.lora_name',
+          'B.safetensors',
+          () => {}
+        )
+        vi.mocked(useLitegraphService().addNodeOnGraph).mockReturnValue(node)
 
-      expect(mockSelectItems).toHaveBeenCalledWith([placedNode])
-      expect(useToast().warning).toHaveBeenCalledWith(
-        expect.any(String),
-        expect.objectContaining({
-          description: 'assetBrowser.failedToSetModelValue'
+        startModelLoaderDrag(provider, 'C.safetensors')
+        document.dispatchEvent(
+          new PointerEvent('pointerup', {
+            clientX: 250,
+            clientY: 250,
+            bubbles: true
+          })
+        )
+
+        expect([strength.value, first.value, second.value]).toEqual([
+          0.5,
+          'C.safetensors',
+          'B.safetensors'
+        ])
+      }
+    )
+
+    it.for(['ckpt_name', /^ckpt_/])(
+      'warns but still places the node when %s matches no widget',
+      (selector) => {
+        mockCanvas.canvas.getBoundingClientRect.mockReturnValue({
+          left: 0,
+          right: 500,
+          top: 0,
+          bottom: 500
         })
-      )
-      expect(console.error).toHaveBeenCalledWith(
-        expect.stringContaining('ckpt_name')
-      )
-    })
+        mockConvertEventToCanvasOffset.mockReturnValue([150, 150])
+        const placedNode = new LGraphNode('Placed node')
+        vi.mocked(useLitegraphService().addNodeOnGraph).mockReturnValue(
+          placedNode
+        )
+
+        const { startDrag } = useNodeDragToCanvas()
+        startDrag(mockNodeDef, {
+          widgetValues: [{ selector, value: 'model.safetensors' }]
+        })
+
+        document.dispatchEvent(
+          new PointerEvent('pointerup', {
+            clientX: 250,
+            clientY: 250,
+            bubbles: true
+          })
+        )
+
+        expect(mockSelectItems).toHaveBeenCalledWith([placedNode])
+        expect(useToast().warning).toHaveBeenCalledWith(
+          expect.any(String),
+          expect.objectContaining({
+            description: 'assetBrowser.failedToSetModelValue'
+          })
+        )
+        expect(console.error).toHaveBeenCalledWith(
+          `Widget ${selector} not found on node ${placedNode.type}`
+        )
+      }
+    )
 
     it('should show an error toast when the graph fails to add the node', () => {
       mockCanvas.canvas.getBoundingClientRect.mockReturnValue({
