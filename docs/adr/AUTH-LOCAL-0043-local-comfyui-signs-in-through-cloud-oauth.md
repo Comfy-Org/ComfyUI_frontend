@@ -48,13 +48,16 @@ Christian listed three options for execution auth (#bug-dump, Aug 25):
   same bridge shape Desktop uses (`DesktopHostAuthBridge`), so the sign-in
   entry, credential selection, prompt credential and workspace switcher
   stay one code path for Desktop and local.
-- **Execution auth targets option 3.** API-node work should run on a
-  Cloud-issued, workspace- and job-scoped execution credential, exchanged
-  once and validated by comfy-api per request, instead of a copied user
-  token. This is a Cloud + comfy-api + core change and is tracked under
-  BE-998; it is the same gate Christian set for turning Desktop local on in
-  prod. Until it lands, local uses the OAuth access token the way it uses
-  the Firebase token today (same lifetime and authority).
+- **Execution auth targets option 3**, as designed in the Notion decision
+  "Renewable partner-node token for Local API nodes" (Feedback Wanted):
+  at queue time the frontend mints a partner-node token (audience
+  `comfy-partner-node`, accepted only on comfy-api's partner routes,
+  renewable by the API-node client, revocable by Cloud). Local SSO adds one
+  requirement to that design: the mint must accept the OAuth credential,
+  not only Firebase, web session and API keys. Until it lands, local uses
+  the OAuth access token the way it uses the Firebase token today (same
+  lifetime and authority). This is the same gate Christian set for turning
+  Desktop local on in prod (BE-998).
 - Option 1 is rejected as a long-term design: it ties execution to a live
   frontend tab and breaks for reloads, headless runs and API clients.
 
@@ -80,3 +83,14 @@ Christian listed three options for execution auth (#bug-dump, Aug 25):
 
 The work items and open questions are in
 [docs/tdd/2026-10-local-comfyui-sso-sign-in.md](../tdd/2026-10-local-comfyui-sso-sign-in.md).
+
+Related Notion documents (Documents Hub):
+
+- Decision: Renewable partner-node token for Local API nodes (the option 3
+  design this ADR defers to).
+- TDD: Resolving stale authentication tokens in Local API Nodes (FE-2170,
+  BE-13269; option 1 as the short-term mitigation, option 3 recommended).
+- TDD: SSO across all services (OIDC/SAML/SCIM), including "Before / after:
+  SSO system design proposal", which lists "Sign in with browser" for local.
+- TDD: Universal Auth Flow for the Comfy Ecosystem (OAuth + PKCE for the
+  desktop apps).

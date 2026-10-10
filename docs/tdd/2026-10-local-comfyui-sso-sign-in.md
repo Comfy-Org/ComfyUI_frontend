@@ -53,20 +53,20 @@ and send them as `Authorization: Bearer` / `X-API-KEY`.
 
 ### 1. Cloud (backend)
 
-| #   | Item                                                                                                                                                                                                                   | Notes                                          |
-| --- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ---------------------------------------------- |
-| B1  | Seed a native public client for local web (e.g. `comfy-local-web`) with redirects `http://127.0.0.1/`, `http://[::1]/`, `http://localhost/`, and decide its scopes.                                                    | Path `/` means core needs no new route (C1).   |
-| B2  | Allow loopback CORS on `/oauth/token` (code exchange and refresh).                                                                                                                                                     | One allowlist entry.                           |
-| B3  | Confirm the refresh-token holder fingerprint (IP + User-Agent) tolerates browser refreshes.                                                                                                                            |                                                |
-| B4  | Decide whether sign-out needs a revoke endpoint, or whether dropping the tokens is enough.                                                                                                                             |                                                |
-| B5  | **Execution credential (option 3, BE-998).** Exchange the user credential once for a workspace- and job-scoped execution token with a lifetime that covers queued and vendor work; comfy-api validates it per request. | Shared with Desktop's prod gate. Largest item. |
+| #   | Item                                                                                                                                                                                                                                                                                                                                                                         | Notes                                                                     |
+| --- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------- |
+| B1  | Seed a native public client for local web (e.g. `comfy-local-web`) with redirects `http://127.0.0.1/`, `http://[::1]/`, `http://localhost/`, and decide its scopes.                                                                                                                                                                                                          | Path `/` means core needs no new route (C1).                              |
+| B2  | Allow loopback CORS on `/oauth/token` (code exchange and refresh).                                                                                                                                                                                                                                                                                                           | One allowlist entry.                                                      |
+| B3  | Confirm the refresh-token holder fingerprint (IP + User-Agent) tolerates browser refreshes.                                                                                                                                                                                                                                                                                  |                                                                           |
+| B4  | Decide whether sign-out needs a revoke endpoint, or whether dropping the tokens is enough.                                                                                                                                                                                                                                                                                   |                                                                           |
+| B5  | **Execution credential (option 3, BE-998).** Build the partner-node token from the Notion decision "Renewable partner-node token for Local API nodes" (audience `comfy-partner-node`, partner routes only, renewed by the API-node client, revocable). For local SSO, the mint (`POST /api/auth/token` with `resource: partner-node`) must also accept the OAuth credential. | Shared with Desktop's prod gate. Largest item; design is Feedback Wanted. |
 
 ### 2. ComfyUI core
 
-| #   | Item                                                                                                      | Notes                               |
-| --- | --------------------------------------------------------------------------------------------------------- | ----------------------------------- |
-| C1  | None if the redirect path is `/`. Otherwise add a route that serves the callback.                         | A core change needs a core release. |
-| C2  | For B5: carry the execution token with the job and use it for submit/upload/poll instead of the snapshot. | Lands with B5.                      |
+| #   | Item                                                                                                                                                                 | Notes                               |
+| --- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ----------------------------------- |
+| C1  | None if the redirect path is `/`. Otherwise add a route that serves the callback.                                                                                    | A core change needs a core release. |
+| C2  | For B5: renew the partner-node token in `comfy_api_nodes/util` before expiry or after a 401, per the Notion decision. No change to `server.py` or the prompt format. | Lands with B5.                      |
 
 ### 3. Frontend
 
@@ -93,6 +93,16 @@ and send them as `Authorization: Bearer` / `X-API-KEY`.
 2. B1, B2 (small) in parallel with F1, F2, F6.
 3. F3, F4, F5 end to end against staging, then QA.
 4. B5 and C2 as a separate track; they also unblock Desktop local in prod.
+
+## Related documents
+
+- Notion, Documents Hub:
+  - Decision: Renewable partner-node token for Local API nodes (B5, C2).
+  - TDD: Resolving stale authentication tokens in Local API Nodes (FE-2170, BE-13269).
+  - TDD: SSO across all services (OIDC/SAML/SCIM) and its "Before / after: SSO system design proposal".
+  - TDD: Universal Auth Flow for the Comfy Ecosystem.
+  - SSO frontend test plan and SSO QA guide (Desktop cases D1–D11 to port).
+- Slack: #proj-sso scope thread (Oct 6–7); #bug-dump execution-auth options (Aug 25).
 
 ## Open questions
 
