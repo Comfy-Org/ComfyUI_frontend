@@ -1,0 +1,17 @@
+---
+import DarkroomPage from '@/components/darkroom/DarkroomPage.vue'
+import BaseLayout from '@/layouts/BaseLayout.astro'
+---
+
+<BaseLayout
+  title={Astro.locals.t('darkroom.meta.title')}
+  description={Astro.locals.t('darkroom.meta.description')}
+  noindex
+>
+  <DarkroomPage client:load />
+  <noscript>
+    <p class="p-8 text-center">
+      {Astro.locals.t('darkroom.unavailable.title')}
+    </p>
+  </noscript>
+</BaseLayout>

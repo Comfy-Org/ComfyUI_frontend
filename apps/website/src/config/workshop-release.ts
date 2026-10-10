@@ -19,7 +19,8 @@ export function isWorkshopRoute(route: string): boolean {
     (modelsKind !== undefined &&
       modelsKind !== 'hub' &&
       !isLocalModelsRoute(pathname)) ||
-    pathname === '/cinematic-studio'
+    pathname === '/cinematic-studio' ||
+    pathname === '/darkroom'
   )
 }
 
