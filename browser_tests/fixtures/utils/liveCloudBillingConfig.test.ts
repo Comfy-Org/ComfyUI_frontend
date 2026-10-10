@@ -13,8 +13,19 @@ const sandboxConfig = {
 }
 
 describe('Live Cloud billing prerequisites', () => {
+  it('routes an omitted backend to the Staging customer API', () => {
+    const selected = liveCloudBillingConfigSchema.parse({
+      PLAYWRIGHT_TEST_URL: 'http://localhost:5173',
+      CLOUD_ACCOUNT_EMAIL: sandboxConfig.CLOUD_ACCOUNT_EMAIL,
+      CLOUD_ACCOUNT_PASSWORD: sandboxConfig.CLOUD_ACCOUNT_PASSWORD
+    })
+    expect(selected.PLAYWRIGHT_SETUP_API_URL).toBe(
+      'https://stagingcloud.comfy.org'
+    )
+    expect(selected.customerOrigin).toBe('https://stagingapi.comfy.org')
+  })
+
   it.for([
-    'https://cloud.comfy.org',
     'https://testcloud.comfy.org.example.com',
     'https://testcloud.comfy.org/redirect',
     'http://testcloud.comfy.org',
@@ -37,10 +48,16 @@ describe('Live Cloud billing prerequisites', () => {
     ).toBe(false)
   })
 
-  it('accepts a local frontend backed by test Cloud', () => {
-    expect(liveCloudBillingConfigSchema.safeParse(sandboxConfig).success).toBe(
-      true
-    )
+  it.for([
+    ['https://stagingcloud.comfy.org', 'https://stagingapi.comfy.org'],
+    ['https://testcloud.comfy.org', 'https://testapi.comfy.org'],
+    ['https://cloud.comfy.org', 'https://api.comfy.org']
+  ])('selects the matching customer API for %s', ([backend, customer]) => {
+    const selected = liveCloudBillingConfigSchema.parse({
+      ...sandboxConfig,
+      PLAYWRIGHT_SETUP_API_URL: backend
+    })
+    expect(selected.customerOrigin).toBe(customer)
   })
 
   it('accepts an isolated preview deployment', () => {
@@ -55,6 +72,7 @@ describe('Live Cloud billing prerequisites', () => {
   })
 
   it('reports missing prerequisites without leaking credentials', () => {
+    vi.stubEnv('PLAYWRIGHT_TEST_URL', 'http://localhost:5173')
     vi.stubEnv('CLOUD_ACCOUNT_PASSWORD', 'private-value')
     vi.stubEnv('CLOUD_ACCOUNT_EMAIL', undefined)
     expect(loadLiveCloudBillingConfig).toThrow('CLOUD_ACCOUNT_EMAIL')
@@ -85,5 +103,31 @@ describe('Frontend origins', () => {
     })
     expect(config.PLAYWRIGHT_TEST_URL).toBe('http://localhost:5173')
     expect(config.PLAYWRIGHT_SETUP_API_URL).toBe('https://testcloud.comfy.org')
+  })
+})
+
+describe('Disposable billing account boundaries', () => {
+  it.for(['allowPayments', 'allowAccountCreation'])(
+    'rejects %s in production',
+    (permission) => {
+      expect(
+        liveCloudBillingConfigSchema.safeParse({
+          ...sandboxConfig,
+          PLAYWRIGHT_SETUP_API_URL: 'https://cloud.comfy.org',
+          [permission]: true
+        }).success
+      ).toBe(false)
+    }
+  )
+
+  it('requires permanent credentials unless creating a sandbox account', () => {
+    const config = { PLAYWRIGHT_TEST_URL: sandboxConfig.PLAYWRIGHT_TEST_URL }
+    expect(liveCloudBillingConfigSchema.safeParse(config).success).toBe(false)
+    expect(
+      liveCloudBillingConfigSchema.safeParse({
+        ...config,
+        allowAccountCreation: true
+      }).success
+    ).toBe(true)
   })
 })

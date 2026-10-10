@@ -21,7 +21,9 @@ sandbox credentials.
 
 Use a dedicated sandbox account and the public billing API. Establish the
 connection with a sign-in and billing-read smoke test. Checkout recovery
-scenarios build on this harness in a separate change.
+scenarios build on this harness in a separate change. Smoke remains read-only for
+billing state; authentication, customer provisioning, installation-version, and
+onboarding settings writes are permitted for startup.
 
 A separate JSON configuration and an external reset executable add unnecessary
 setup. Embedding database writes and Stripe/Temporal administration in the fixture
