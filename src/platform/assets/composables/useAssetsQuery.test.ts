@@ -274,6 +274,19 @@ describe('useAssetsQuery recovery after a failed page', () => {
     expect(toValue(list.hasMore)).toBe(false)
   })
 
+  it.for(pageFailures)(
+    'keeps a fully loaded list stopped after $name',
+    async ({ name, fail }) => {
+      const list = await createList(`exhausted-${name}`, ['newest'])
+      fetchApiMock.mockResolvedValueOnce(fail())
+      await list.loadNew()
+      fetchApiMock.mockResolvedValueOnce(response(['newest']))
+      await list.loadNew()
+
+      expect(toValue(list.hasMore)).toBe(false)
+    }
+  )
+
   it('clears a page failure on full invalidation', async () => {
     const list = await createList('recover-invalidate', ['newest'], {
       hasMore: true,
@@ -433,6 +446,19 @@ describe('useAssetsQuery loadNew pagination', () => {
     await list.loadNew()
 
     expect(toValue(list.items).map(({ id }) => id)).toEqual(['new-b', 'new-a'])
+  })
+
+  it('rebuilds once, not again on a later failed walk', async () => {
+    const list = await createList('rebuild-once', ['old'])
+    fetchApiMock
+      .mockResolvedValueOnce(response(['new']))
+      .mockResolvedValueOnce(response(['new']))
+    await list.loadNew()
+    fetchApiMock.mockResolvedValueOnce(new Response(null, { status: 403 }))
+    await list.loadNew()
+
+    expect(fetchApiMock).toHaveBeenCalledTimes(4)
+    expect(toValue(list.items).map(({ id }) => id)).toEqual(['new'])
   })
 })
 
