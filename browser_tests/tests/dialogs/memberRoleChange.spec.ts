@@ -17,6 +17,7 @@ import {
 } from '@e2e/fixtures/data/cloudWorkspace'
 import { CloudWorkspaceMockHelper } from '@e2e/fixtures/helpers/CloudWorkspaceMockHelper'
 import { workspace } from '@e2e/fixtures/utils/workspaceMocks'
+import { TestIds } from '@e2e/fixtures/selectors'
 import { jsonRoute } from '@e2e/fixtures/utils/jsonRoute'
 
 // Drives a raw `page` (not the `comfyPage` fixture) so the cloud app boots
@@ -112,10 +113,16 @@ test.describe('Members plan gating', { tag: '@cloud' }, () => {
     const inviteRow = memberRow(content, invites[0].email)
     await expect(inviteRow).toBeVisible()
     await menuButton(inviteRow).click()
-    await page.getByRole('menuitem', { name: 'Resend invite' }).click()
+    await page
+      .getByTestId(TestIds.menu.moreMenuContent)
+      .getByRole('button', { name: 'Resend invite' })
+      .click()
     await expect(page.getByText('Invite resent')).toBeVisible()
     await menuButton(inviteRow).click()
-    await page.getByRole('menuitem', { name: 'Cancel invite' }).click()
+    await page
+      .getByTestId(TestIds.menu.moreMenuContent)
+      .getByRole('button', { name: 'Cancel invite' })
+      .click()
     await expect(
       page.getByRole('heading', { name: 'Uninvite this person?' })
     ).toBeVisible()
