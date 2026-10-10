@@ -192,7 +192,7 @@ watch([active, onScreen], ([current, visible], [previous]) => {
             </div>
 
             <div
-              class="pointer-events-none absolute inset-x-0 bottom-0 z-20 flex flex-col gap-2 p-4 pr-32 sm:gap-3 sm:p-6 sm:pr-32 lg:p-8 lg:pr-40"
+              class="pointer-events-none absolute inset-x-0 bottom-0 z-20 flex flex-col gap-2 p-4 pr-24 sm:gap-3 sm:p-6 sm:pr-32 lg:p-8 lg:pr-40"
             >
               <h2
                 class="max-w-3xl text-[clamp(1.25rem,4vw,3rem)] leading-tight font-normal tracking-[-0.03em] text-white"

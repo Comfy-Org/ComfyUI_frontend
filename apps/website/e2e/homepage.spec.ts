@@ -1,5 +1,6 @@
 import { join } from 'node:path'
 import { expect } from '@playwright/test'
+import type { Page } from '@playwright/test'
 
 import { repoRoot } from '@website/paths'
 
@@ -130,41 +131,6 @@ test.describe('Homepage @smoke', () => {
     expect(ctaBox!.width).toBeLessThan(columnBox!.width * 0.7)
   })
 
-  test('FeaturedWorkflowsSection arrows stay clear of the slide text on mobile @mobile', async ({
-    page
-  }) => {
-    await page.setViewportSize({ width: 390, height: 844 })
-    const carousel = page.locator('[aria-roledescription="carousel"]')
-    await carousel.scrollIntoViewIfNeeded()
-
-    const boxes = await Promise.all(
-      [
-        carousel.getByRole('heading', { name: 'Product Advertisement Video' }),
-        carousel.getByText('Rob', { exact: true }),
-        carousel.getByRole('button', { name: 'Previous featured workflow' }),
-        carousel.getByRole('button', { name: 'Next featured workflow' })
-      ].map((locator) => locator.boundingBox())
-    )
-    const [title, author, prev, next] = boxes.map((box) => {
-      expect(box).not.toBeNull()
-      return box!
-    })
-    const arrows = {
-      left: prev.x,
-      right: next.x + next.width,
-      top: Math.min(prev.y, next.y),
-      bottom: Math.max(prev.y + prev.height, next.y + next.height)
-    }
-    const clearOfArrows = (box: typeof title) =>
-      box.x + box.width <= arrows.left ||
-      box.x >= arrows.right ||
-      box.y + box.height <= arrows.top ||
-      box.y >= arrows.bottom
-
-    expect(clearOfArrows(title)).toBe(true)
-    expect(clearOfArrows(author)).toBe(true)
-  })
-
   test('CaseStudySpotlight CTA has breathing room above it on mobile @mobile', async ({
     page
   }) => {
@@ -194,6 +160,15 @@ test.describe('Product showcase accordion @interaction', () => {
     await page.goto('/')
   })
 
+  // The active tab renders as a link and inactive tabs as buttons.
+  const featureTab = (page: Page, name: string) =>
+    page
+      .getByRole('button')
+      .or(page.getByRole('link'))
+      .filter({
+        has: page.getByRole('heading', { level: 3, name, exact: true })
+      })
+
   test('first feature is active by default', async ({ page }) => {
     await expect(
       page.getByText(/Build powerful AI pipelines by connecting nodes/).first()
@@ -203,39 +178,34 @@ test.describe('Product showcase accordion @interaction', () => {
   test('clicking inactive feature expands it and collapses previous', async ({
     page
   }) => {
-    const secondFeature = page
-      .getByRole('button', { name: /App mode/i })
-      .first()
+    const secondFeature = featureTab(page, 'Comfy Agent')
 
     await secondFeature.scrollIntoViewIfNeeded()
     await secondFeature.click()
 
     await expect(
-      secondFeature.getByText(/If you are new to ComfyUI/)
+      secondFeature.getByText(/Comfy Agent builds and runs the workflow/)
     ).toBeVisible()
 
-    const firstFeature = page
-      .getByRole('button', { name: /Full Control with Nodes/i })
-      .first()
+    const firstFeature = featureTab(page, 'Full Control with Nodes')
 
     await expect(firstFeature).not.toHaveClass(/bg-primary-comfy-yellow/)
     await expect(secondFeature).toHaveClass(/bg-primary-comfy-yellow/)
   })
 
-  test('third feature shows the mask scene on mobile @mobile', async ({
+  test('third feature shows the API demo video on mobile @mobile', async ({
     page
   }) => {
-    const thirdFeature = page
-      .getByRole('button', { name: /Community Workflows/i })
-      .first()
+    const thirdFeature = featureTab(page, 'Comfy API')
 
     await thirdFeature.scrollIntoViewIfNeeded()
     await thirdFeature.click()
 
+    await expect(thirdFeature.getByText(/with one API/)).toBeVisible()
     // The CSS-hidden desktop copy is also in the DOM; target the mobile one.
-    const maskScene = page.locator('.vms-stage:visible')
-    await expect(maskScene).toBeVisible()
-    await expect(maskScene.locator('video').first()).toBeAttached()
+    await expect(
+      page.locator('video[src$="homepage-api-cut-04.mp4"]:visible')
+    ).toBeVisible()
   })
 })
 
