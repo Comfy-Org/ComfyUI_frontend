@@ -86,7 +86,7 @@ function defaultPlacement(name: string, required: boolean): Placement {
   return required || name === 'prompt' ? 'basic' : 'advanced'
 }
 
-export function editorParameters(data: Data): EditorParameter[] {
+function editorParameters(data: Data): EditorParameter[] {
   const schema = inputSchema(data)
   const required = new Set(
     Array.isArray(schema.required) ? schema.required.map(String) : []

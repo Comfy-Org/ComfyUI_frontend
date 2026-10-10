@@ -7,13 +7,10 @@ import ContentList from '@/components/cms/ContentList.vue'
 import ContentEditor from '@/components/cms/editor/ContentEditor.vue'
 import NewContentPicker from '@/components/cms/editor/NewContentPicker.vue'
 import DraftQueue from '@/components/cms/DraftQueue.vue'
-import RollbackButton from '@/components/cms/RollbackButton.vue'
-import PageHeader from '@/components/cms/ui/PageHeader.vue'
-import StatusLabel from '@/components/cms/ui/StatusLabel.vue'
+import PublishHistory from '@/components/cms/PublishHistory.astro'
 import { resolveLocale } from '@/config/locales'
 import { draftChanges, siteAPI } from '@/lib/cms/admin'
 import { editorState, newFromTemplate } from '@/lib/cms/editor'
-import { formatUtc } from '@/lib/cms/format'
 import { buildQueue, contentRows } from '@/lib/cms/queue'
 
 const session = Astro.locals.site
@@ -40,7 +37,12 @@ const editing = editRecord
 const liveRecord = editId
   ? review.live.items.find((item) => item.uid === editId)
   : undefined
-const notice = Astro.url.searchParams.get('notice')
+const isLive = Boolean(liveRecord && !liveRecord.deleted)
+const inDraft = draftChanges(review).some(({ uid }) => uid === editId)
+const noticeParam = Astro.url.searchParams.get('notice')
+const notice = (['saved', 'archived', 'restored'] as const).find(
+  (value) => value === noticeParam
+)
 
 const response = await siteAPI(
   '/admin/api/site/submissions',
@@ -52,12 +54,6 @@ const parsed = response.ok
 const submissions: SiteSubmission[] = parsed?.success ? parsed.data : []
 const queue = buildQueue(review, submissions)
 const rows = contentRows(review)
-const revertTarget = review.history.find(
-  (event) => event.action === 'PUBLISH' || event.action === 'REVERT'
-)
-const restorable = (event: (typeof review.history)[number]) =>
-  (event.action === 'PUBLISH' || event.action === 'REVERT') &&
-  /^\d+$/.test(event.target_id)
 ---
 
 <AdminShell
@@ -100,70 +96,13 @@ const restorable = (event: (typeof review.history)[number]) =>
       base={editing.base}
       csrf={session.csrf}
       canEdit={review.can_edit}
-      isLive={Boolean(liveRecord && !liveRecord.deleted)}
-      inDraft={draftChanges(review).some(({ uid }) => uid === editId)}
-      notice={
-        notice === 'saved' || notice === 'archived' || notice === 'restored'
-          ? notice
-          : undefined
-      }
+      isLive={isLive}
+      inDraft={inDraft}
+      notice={notice}
       locale={locale}
     />
   )}
-  {page === 'history' && <div class="grid gap-5">
-    <PageHeader
-      title={t('cmsAdmin.history.title')}
-      description={t('cmsAdmin.history.help')}
-    />
-    {review.history.length === 0 && <p
-      class="rounded-lg border border-dashed border-admin-line px-6 py-14 text-center text-xs text-admin-muted"
-    >
-      {t('cmsAdmin.history.empty')}
-    </p>}
-    {review.history.length > 0 && <ol
-      class="overflow-hidden rounded-lg border border-admin-line"
-    >
-      {review.history.map((event) => {
-        const current = event === revertTarget
-        return <li
-          class:list={[
-            'flex min-h-14 flex-wrap items-center gap-x-4 gap-y-1 border-b border-admin-hover px-4 py-2 text-sm last:border-b-0',
-            current && 'bg-admin-hover'
-          ]}
-        >
-          <div class="grid min-w-0 flex-1 gap-1">
-            <p class="flex flex-wrap items-center gap-3">
-              {t(`cmsAdmin.history.action.${event.action}`)}
-              {current && (
-                <StatusLabel
-                  tone="success"
-                  label={t('cmsAdmin.history.liveNow')}
-                />
-              )}
-            </p>
-            <p class="text-xs text-admin-muted">
-              <time datetime={event.created_at}>
-                {formatUtc(event.created_at, locale)}
-              </time
-              >{' '} · {t('cmsAdmin.history.by', { actor: event.actor_uid })}
-              {(event.action === 'PUBLISH' || event.action === 'REVERT') &&
-                ` · ${t('cmsAdmin.history.revision', { revision: event.target_id })}`}
-              {event.action === 'REVERT' &&
-                event.previous_id &&
-                ` · ${t('cmsAdmin.history.restored', { revision: event.previous_id })}`}
-            </p>
-          </div>
-          {!current && review.can_apply && restorable(event) && (
-            <RollbackButton
-              client:load
-              csrf={session.csrf}
-              liveId={review.live.revision_id}
-              targetRevision={Number(event.target_id)}
-              locale={locale}
-            />
-          )}
-        </li>
-      })}
-    </ol>}
-  </div>}
+  {page === 'history' && (
+    <PublishHistory review={review} csrf={session.csrf} locale={locale} />
+  )}
 </AdminShell>

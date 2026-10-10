@@ -217,29 +217,35 @@ export function createMockIngest(seed: SeedEntry[]) {
       return [204]
     }
   }
+  const savedItem = (
+    uid: string,
+    body: Record<string, unknown>
+  ): CatalogRecord => ({
+    uid,
+    kind: body.kind === 'WORKFLOW' || body.kind === 'APP' ? body.kind : 'MODEL',
+    slug: String(body.slug),
+    enabled: body.enabled !== false,
+    visibility: body.visibility === 'STAFF' ? 'STAFF' : 'PUBLIC',
+    deleted: body.deleted === true,
+    ...(typeof body.visible_from === 'string'
+      ? { visible_from: body.visible_from }
+      : {}),
+    data: body.data as CatalogRecord['data'],
+    revision: liveRevision + 1,
+    edit_version: randomUUID()
+  })
+  const stale = (uid: string, body: Record<string, unknown>) => {
+    const current = draft.find((item) => item.uid === uid)
+    return (
+      Number(body.draft_id) !== liveRevision + 1 ||
+      (current !== undefined && body.edit_version !== current.edit_version)
+    )
+  }
   const saveItem = (uid: string, body: Record<string, unknown>): Reply => {
-    if (Number(body.draft_id) !== liveRevision + 1) return [409]
+    if (stale(uid, body)) return [409]
+    if (!body.data || typeof body.data !== 'object') return [400]
+    const saved = savedItem(uid, body)
     const index = draft.findIndex((item) => item.uid === uid)
-    const current = index === -1 ? undefined : draft[index]
-    if (current && body.edit_version !== current.edit_version) return [409]
-    const data = body.data
-    if (!data || typeof data !== 'object' || typeof body.slug !== 'string')
-      return [400]
-    const saved: CatalogRecord = {
-      uid,
-      kind:
-        body.kind === 'WORKFLOW' || body.kind === 'APP' ? body.kind : 'MODEL',
-      slug: body.slug,
-      enabled: body.enabled !== false,
-      visibility: body.visibility === 'STAFF' ? 'STAFF' : 'PUBLIC',
-      deleted: body.deleted === true,
-      ...(typeof body.visible_from === 'string'
-        ? { visible_from: body.visible_from }
-        : {}),
-      data: data as CatalogRecord['data'],
-      revision: liveRevision + 1,
-      edit_version: randomUUID()
-    }
     draft = index === -1 ? [...draft, saved] : draft.with(index, saved)
     return [200, saved]
   }

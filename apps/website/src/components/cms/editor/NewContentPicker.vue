@@ -1,5 +1,6 @@
 <script setup lang="ts">
 import { ArrowLeft, ArrowRight } from '@lucide/vue'
+import { cn } from '@comfyorg/tailwind-utils'
 import { computed, ref } from 'vue'
 
 import QueueThumb from '@/components/cms/QueueThumb.vue'
@@ -60,7 +61,7 @@ const templates = computed(() => {
         type="search"
         :aria-label="t('cmsAdmin.content.search')"
         :placeholder="t('cmsAdmin.content.search')"
-        :class="[fieldClass, 'ml-auto h-8 py-0 text-xs sm:w-64']"
+        :class="cn(fieldClass, 'ml-auto h-8 py-0 text-xs sm:w-64')"
       />
     </div>
     <ul class="overflow-hidden rounded-lg border border-admin-line">

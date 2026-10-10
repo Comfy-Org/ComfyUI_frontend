@@ -53,48 +53,65 @@ function submissionReviews(body: FormData, field: string, status: string) {
   })
 }
 
+function publishCommand(body: FormData) {
+  const approvals = submissionReviews(body, 'approve', 'approved')
+  if (!approvals) return new Response('Invalid submission', { status: 400 })
+  return {
+    commands: [
+      ...approvals,
+      {
+        path: '/admin/api/site/publish',
+        payload: {
+          draft_id: Number(body.get('draft_id')),
+          generation: Number(body.get('generation'))
+        }
+      }
+    ],
+    destination: '/admin/history/'
+  }
+}
+
+function revertCommand(body: FormData) {
+  const target = body.get('target_id')
+  if (target !== null && !/^\d+$/.test(String(target)))
+    return new Response('Invalid revision', { status: 400 })
+  return {
+    commands: [
+      {
+        path: '/admin/api/site/revert',
+        payload: {
+          live_id: Number(body.get('live_id')),
+          // Restoring an older revision than the previous publish needs
+          // the ingest revert endpoint to accept a target.
+          ...(target === null ? {} : { target_id: Number(target) })
+        }
+      }
+    ],
+    destination: '/admin/history/'
+  }
+}
+
+function rejectCommand(body: FormData) {
+  const rejections = submissionReviews(body, 'submission', 'rejected')
+  if (!rejections?.length)
+    return new Response('Invalid submission', { status: 400 })
+  return { commands: rejections, destination: '/admin/' }
+}
+
+const commands = new Map<
+  string,
+  (body: FormData) => ReturnType<typeof publishCommand>
+>([
+  ['publish', publishCommand],
+  ['revert', revertCommand],
+  ['reject', rejectCommand]
+])
+
 function publication(body: FormData) {
-  const action = body.get('action')
-  if (action === 'publish') {
-    const approvals = submissionReviews(body, 'approve', 'approved')
-    if (!approvals) return new Response('Invalid submission', { status: 400 })
-    return {
-      commands: [
-        ...approvals,
-        {
-          path: '/admin/api/site/publish',
-          payload: {
-            draft_id: Number(body.get('draft_id')),
-            generation: Number(body.get('generation'))
-          }
-        }
-      ],
-      destination: '/admin/history/'
-    }
-  } else if (action === 'revert') {
-    const target = body.get('target_id')
-    if (target !== null && !/^\d+$/.test(String(target)))
-      return new Response('Invalid revision', { status: 400 })
-    return {
-      commands: [
-        {
-          path: '/admin/api/site/revert',
-          payload: {
-            live_id: Number(body.get('live_id')),
-            // Restoring an older revision than the previous publish needs
-            // the ingest revert endpoint to accept a target.
-            ...(target === null ? {} : { target_id: Number(target) })
-          }
-        }
-      ],
-      destination: '/admin/history/'
-    }
-  } else if (action === 'reject') {
-    const rejections = submissionReviews(body, 'submission', 'rejected')
-    if (!rejections?.length)
-      return new Response('Invalid submission', { status: 400 })
-    return { commands: rejections, destination: '/admin/' }
-  } else return new Response('Unknown action', { status: 400 })
+  const command = commands.get(String(body.get('action')))
+  return command
+    ? command(body)
+    : new Response('Unknown action', { status: 400 })
 }
 
 export const POST: APIRoute = async (context) => {
