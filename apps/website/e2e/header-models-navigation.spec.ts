@@ -139,11 +139,18 @@ test('Hub menu marks only external links with the arrow', async ({
   const dropdown = page.getByTestId('nav-dropdown')
 
   await desktopLinks.getByRole('button', { name: 'Hub', exact: true }).click()
-  for (const name of ['Cinematic Studio', 'Re-shoot']) {
-    const app = dropdown.getByRole('link', { name, exact: true })
-    await expect(app).toHaveAttribute('target', '_blank')
-    await expect(app.getByTestId('external-link-arrow')).toHaveCount(0)
-  }
+  const cinematicStudio = dropdown.getByRole('link', {
+    name: 'Cinematic Studio',
+    exact: true
+  })
+  await expect(cinematicStudio).toHaveAttribute('target', '_blank')
+  await expect(cinematicStudio.getByTestId('external-link-arrow')).toHaveCount(
+    0
+  )
+
+  const reshoot = dropdown.getByRole('link', { name: 'Re-shoot', exact: true })
+  await expect(reshoot).toHaveAttribute('target', '_blank')
+  await expect(reshoot.getByTestId('external-link-arrow')).toHaveCount(0)
 
   await desktopLinks
     .getByRole('button', { name: 'Company', exact: true })
