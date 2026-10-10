@@ -83,10 +83,14 @@ function toRow(part: ActivityPart): ActivityRow {
 export function foldActivity(parts: readonly ActivityPart[]): ActivityRow[] {
   const rows: ActivityRow[] = []
   for (const part of parts) {
-    const previous =
-      part.type === 'thinking' ? undefined : matchingToolStep(rows.at(-1), part)
-    if (previous) mergeIntoStep(previous, part as ToolPart)
-    else rows.push(toRow(part))
+    if (part.type !== 'thinking') {
+      const previous = matchingToolStep(rows.at(-1), part)
+      if (previous) {
+        mergeIntoStep(previous, part)
+        continue
+      }
+    }
+    rows.push(toRow(part))
   }
   return rows
 }

@@ -260,7 +260,8 @@ export const useAgentConversationStore = defineStore(
     // `'unavailable'` is the state the boolean could not express -- a bound
     // canvas whose doc subscription is NOT live, where the write cannot be
     // confirmed because it cannot have arrived. See `CanvasConfirmation`.
-    let canvasSyncGate: () => CanvasConfirmation = () => 'none'
+    let canvasSyncGate: (workflowId?: string) => CanvasConfirmation = () =>
+      'none'
     // PM-1575: mirrors canvasSyncGate above, for the monotonic doc-update
     // outcome counter a transport compares its per-tool-call baseline
     // against (agentEventTransport.ts's canvasSyncBaseline). Same
@@ -517,7 +518,7 @@ export const useAgentConversationStore = defineStore(
         transport: createAgentEventTransport(
           message,
           replaceActive,
-          () => canvasSyncGate(),
+          (workflowId) => canvasSyncGate(workflowId),
           () => canvasSyncOutcomeCount(),
           reportUndeliverableAskData
         )
@@ -651,7 +652,7 @@ export const useAgentConversationStore = defineStore(
     }
 
     function setCanvasSyncGate(
-      gate: () => CanvasConfirmation,
+      gate: (workflowId?: string) => CanvasConfirmation,
       outcomeCount: () => number = () => 0
     ): void {
       canvasSyncGate = gate
@@ -665,15 +666,18 @@ export const useAgentConversationStore = defineStore(
      * catch-up can settle to 'done'. A no-op on a transport with nothing
      * pending.
      */
-    function notifyCanvasCaughtUp(): void {
-      activeSlot.value?.transport.notifyCanvasCaughtUp()
+    function notifyCanvasCaughtUp(workflowId?: string): void {
+      activeSlot.value?.transport.notifyCanvasCaughtUp(workflowId)
       for (const settledTransport of settledActiveTransports) {
-        settledTransport.notifyCanvasCaughtUp()
+        if (settledTransport.targetWorkflowId() === workflowId)
+          settledTransport.notifyCanvasCaughtUp(workflowId)
         if (!settledTransport.hasPendingCanvasSync())
           settledActiveTransports.delete(settledTransport)
       }
-      for (const entry of backgroundTurns.values())
-        entry.transport.notifyCanvasCaughtUp()
+      for (const entry of backgroundTurns.values()) {
+        if (entry.transport.targetWorkflowId() === workflowId)
+          entry.transport.notifyCanvasCaughtUp(workflowId)
+      }
     }
 
     function abortActiveTurn(): void {
@@ -1154,7 +1158,7 @@ export const useAgentConversationStore = defineStore(
           transport: createAgentEventTransport(
             pending.message,
             replaceActive,
-            () => canvasSyncGate(),
+            (workflowId) => canvasSyncGate(workflowId),
             () => canvasSyncOutcomeCount(),
             reportUndeliverableAskData
           )

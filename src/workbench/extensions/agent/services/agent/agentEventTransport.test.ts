@@ -1242,6 +1242,39 @@ describe('agentEventTransport canvas-sync gate (PM-1575)', () => {
     expect(transport.hasPendingCanvasSync()).toBe(false)
   })
 
+  it('ignores a canvas update from a different workflow', () => {
+    const message = createAssistantMessage(T)
+    const emit = vi.fn<(m: AssistantMessage) => void>()
+    const transport = createAgentEventTransport(message, emit, () => 'awaiting')
+
+    transport.ingest(activeTab('workflow-a'))
+    transport.ingest(toolCall('add_node', 'success'))
+    transport.notifyCanvasCaughtUp('workflow-b')
+
+    expect(toolParts(message)[0]).toMatchObject({ state: 'streaming' })
+    transport.notifyCanvasCaughtUp('workflow-a')
+    expect(toolParts(message)[0]).toMatchObject({
+      state: 'done',
+      canvasConfirmed: true
+    })
+  })
+
+  it('does not downgrade a confirmed write on terminal-frame redelivery', () => {
+    const message = createAssistantMessage(T)
+    const emit = vi.fn<(m: AssistantMessage) => void>()
+    const transport = createAgentEventTransport(message, emit, () => 'awaiting')
+
+    transport.ingest(toolCall('add_node', 'success'))
+    transport.notifyCanvasCaughtUp()
+    transport.ingest(toolCall('add_node', 'success'))
+    vi.advanceTimersByTime(STALE_AFTER_MS)
+
+    expect(toolParts(message)[0]).toMatchObject({
+      state: 'done',
+      canvasConfirmed: true
+    })
+  })
+
   // PM-1575 (findings #4/#5): a transport torn down for a reason other than
   // natural completion (abort, drop, reset, hydrate) must flush anything it
   // is still holding and cancel its timers, rather than leaving a part
@@ -1365,37 +1398,29 @@ describe('agentEventTransport canvas confirmation is positive, not assumed (PM-1
     expect(toolParts(message)[0].canvasConfirmed).toBeUndefined()
   })
 
-  // The states that make confirmation "impossible" are often TRANSIENT -- the
-  // schema-skew path flips the follower off at exactly the moment a write is
-  // reported, then recovers when the repair lands
-  // (`agentZeroNodesOnUnreadableSchema`). If `false` were permanent the panel
-  // would go on denying a node the person can see on the canvas, which is
-  // PM-1343's own lie pointed the other way. Only an observation grants
-  // confirmation, but an observation must be able to arrive late.
-  it('upgrades an already-settled unconfirmed write when the canvas is later observed to change', () => {
+  it('does not let a later write upgrade an earlier unconfirmed write', () => {
     const message = createAssistantMessage(T)
     const emit = vi.fn<(m: AssistantMessage) => void>()
-    const transport = createAgentEventTransport(
-      message,
-      emit,
-      () => 'unavailable'
-    )
+    const transport = createAgentEventTransport(message, emit, () => 'awaiting')
 
-    transport.ingest(toolCall('add_node', 'success'))
+    transport.ingest(toolCall('add_node', 'success', 'write-a'))
+    vi.advanceTimersByTime(STALE_AFTER_MS)
     expect(toolParts(message)[0]).toMatchObject({
       state: 'done',
       canvasConfirmed: false
     })
 
-    // The doc frame the refusal made look impossible arrives anyway.
+    transport.ingest(toolCall('add_node', 'success', 'write-b'))
     transport.notifyCanvasCaughtUp()
 
     expect(toolParts(message)[0]).toMatchObject({
       state: 'done',
+      canvasConfirmed: false
+    })
+    expect(toolParts(message)[1]).toMatchObject({
+      state: 'done',
       canvasConfirmed: true
     })
-    // The correction has to reach the panel, not just the part.
-    expect(emit).toHaveBeenCalled()
   })
 
   // The upgrade is scoped to calls that actually claimed a canvas change: a

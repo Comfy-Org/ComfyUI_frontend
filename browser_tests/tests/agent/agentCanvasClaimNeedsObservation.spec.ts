@@ -89,6 +89,10 @@ function completionClaim(text: string): string[] {
   ]
 }
 
+function sendAll(socket: WebSocketRoute, frames: readonly string[]): void {
+  frames.forEach((frame) => socket.send(frame))
+}
+
 /**
  * Boots the agent-enabled app on an empty canvas, binds the panel to that
  * tab, and waits for the follower's `doc_subscribe` to go out. Returns the
@@ -188,10 +192,10 @@ test.describe(
       // The turn then does what PM-2047 measured: reports the write a
       // success and narrates completion.
       socket.send(toolCall('add_node', 'call-add-node'))
-      for (const frame of completionClaim(
-        'Done — your nodes are ready on the canvas.'
-      ))
-        socket.send(frame)
+      sendAll(
+        socket,
+        completionClaim('Done — your nodes are ready on the canvas.')
+      )
 
       const root = page.locator('#agent-panel-root')
 
@@ -252,16 +256,21 @@ test.describe(
 
       // A healthy doc surface, deliberately: this case is not about delivery
       // at all. The document is subscribed, synced, and empty.
-      for (const frame of host.initialSync()) socket.send(JSON.stringify(frame))
+      sendAll(
+        socket,
+        host.initialSync().map((frame) => JSON.stringify(frame))
+      )
 
       // The turn reads the tab and writes nothing — `print_workflow` is a
       // read-only tool and is correctly outside the confirmation contract.
       socket.send(toolCall('print_workflow', 'call-print'))
-      for (const frame of completionClaim(
-        'Your nodes are ready. To keep this workflow, open the hamburger menu ' +
-          'in the top left and choose Export, or Save to store it in your account.'
-      ))
-        socket.send(frame)
+      sendAll(
+        socket,
+        completionClaim(
+          'Your nodes are ready. To keep this workflow, open the hamburger menu ' +
+            'in the top left and choose Export, or Save to store it in your account.'
+        )
+      )
 
       const root = page.locator('#agent-panel-root')
       await expect(root.getByRole('button', { name: COPY.send })).toBeVisible()
@@ -298,7 +307,10 @@ test.describe(
         { nodes: [], links: [] },
         { types: { MarkdownNote: { widget_order: ['text'] } } }
       )
-      for (const frame of host.initialSync()) socket.send(JSON.stringify(frame))
+      sendAll(
+        socket,
+        host.initialSync().map((frame) => JSON.stringify(frame))
+      )
 
       const update = host.apply([
         {
@@ -327,8 +339,7 @@ test.describe(
         .toBe(1)
 
       socket.send(toolCall('add_node', 'call-add-node'))
-      for (const frame of completionClaim('Added a note to the canvas.'))
-        socket.send(frame)
+      sendAll(socket, completionClaim('Added a note to the canvas.'))
 
       const root = page.locator('#agent-panel-root')
       await expect(root.getByRole('button', { name: COPY.send })).toBeVisible()

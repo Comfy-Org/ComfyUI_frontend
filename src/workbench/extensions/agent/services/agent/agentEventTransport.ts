@@ -115,7 +115,8 @@ export interface AgentEventTransport {
    * pending canvas catch-up (see `canvasConfirmation` below) can settle to
    * `done`. A no-op when nothing is pending.
    */
-  notifyCanvasCaughtUp: () => void
+  notifyCanvasCaughtUp: (workflowId?: string) => void
+  targetWorkflowId: () => string | undefined
   /** Whether any tool-call part is currently held pending canvas catch-up. */
   hasPendingCanvasSync: () => boolean
   retireAskPart: (askId: string, resolution: AskUserResolution) => void
@@ -154,7 +155,8 @@ export function createAgentEventTransport(
    * is never lengthened by that branch; only the terminal state changes, from
    * an unearned success to an honest "not confirmed".
    */
-  canvasConfirmation: () => CanvasConfirmation = () => 'none',
+  canvasConfirmation: (workflowId?: string) => CanvasConfirmation = () =>
+    'none',
   /**
    * PM-1575: the bound workflow's CRDT `outcomes.appliedLive` counter (or an
    * equivalent monotonic count of LIVE frames actually applied to the doc --
@@ -191,6 +193,7 @@ export function createAgentEventTransport(
   )
   let settled = false
   let lastTabTargetKey: string | undefined
+  let lastWorkflowId: string | undefined
   // Tool parts whose frame reported done but whose displayed state is held at
   // 'streaming' pending canvas catch-up. Each has its own bounded timer so a
   // part that never gets a `notifyCanvasCaughtUp` call still settles.
@@ -214,7 +217,10 @@ export function createAgentEventTransport(
   const canvasSyncBaseline = new Map<ToolPart, number>()
 
   function claimCanvasSyncOutcome(): void {
-    canvasSyncOutcomeWatermark = getCanvasSyncOutcomeCount()
+    canvasSyncOutcomeWatermark = Math.min(
+      getCanvasSyncOutcomeCount(),
+      canvasSyncOutcomeWatermark + 1
+    )
   }
 
   function clearPendingCanvasSyncTimer(part: ToolPart): void {
@@ -245,42 +251,22 @@ export function createAgentEventTransport(
     emit(snapshotMessage(message))
   }
 
-  /**
-   * PM-1343: a live doc frame applying is the observation this whole gate is
-   * waiting for, so it both releases parts still held AND clears a `false`
-   * recorded earlier on a part that has already settled.
-   *
-   * That second half is not a refinement, it is required for correctness.
-   * `'unavailable'` settles immediately and irreversibly, and the states that
-   * produce it are frequently TRANSIENT -- the schema-skew path flips
-   * `connected` false at exactly the moment a write is reported, then
-   * recovers when the repair lands (`agentZeroNodesOnUnreadableSchema`). The
-   * node then arrives on the canvas the person is looking at while the panel
-   * still says the change was not confirmed, which is the same class of lie
-   * as PM-1343 itself pointed the other way: the panel contradicting a canvas
-   * it can see. Confirmation must therefore be recoverable, and only an
-   * observation may grant it.
-   *
-   * Scoped to this transport's own message, and keyed on the same
-   * `appliedLive` signal the pending path already treats as "the canvas
-   * caught up", so this adds no looseness the PM-1575 contract did not have.
-   */
-  function notifyCanvasCaughtUp(): void {
-    const upgraded = message.parts.filter(
-      (part): part is ToolPart =>
-        part.type === 'tool' &&
-        part.canvasConfirmed === false &&
-        part.ok !== false &&
-        CANVAS_MUTATING_TOOLS.has(part.name)
-    )
-    for (const part of upgraded) part.canvasConfirmed = true
-    if (pendingCanvasSync.size > 0) {
-      flushPendingCanvasSync(true)
-      return
-    }
-    if (upgraded.length === 0) return
+  function confirmNextPendingCanvasSync(): void {
+    const next = pendingCanvasSync.keys().next().value
+    if (next === undefined) return
+    settlePendingCanvasSync(next, true)
     claimCanvasSyncOutcome()
     emit(snapshotMessage(message))
+  }
+
+  function notifyCanvasCaughtUp(workflowId?: string): void {
+    if (workflowId !== undefined && lastWorkflowId !== undefined) {
+      if (workflowId !== lastWorkflowId) return
+    }
+    // One observed live frame may confirm one waiting write. It must never
+    // rewrite an older timeout or refusal: the frame may belong to a later
+    // tool call, a collaborator, or a human edit.
+    confirmNextPendingCanvasSync()
   }
 
   function hasPendingCanvasSync(): boolean {
@@ -321,6 +307,9 @@ export function createAgentEventTransport(
     status: 'success' | 'error',
     durationMs: number | undefined
   ): void {
+    // A redelivered terminal frame must not downgrade a write that was
+    // already confirmed by a live document observation.
+    if (part.state === 'done' && part.canvasConfirmed === true) return
     part.ok = status === 'success'
     part.durationMs = durationMs
     // A duplicate or redelivered terminal frame (e.g. a websocket retry) must
@@ -332,18 +321,10 @@ export function createAgentEventTransport(
     canvasSyncBaseline.delete(part)
     const confirmation =
       status === 'success' && CANVAS_MUTATING_TOOLS.has(part.name)
-        ? canvasConfirmation()
+        ? canvasConfirmation(lastWorkflowId)
         : 'none'
     if (confirmation === 'none') {
       part.state = 'done'
-      return
-    }
-    if (confirmation === 'unavailable') {
-      // PM-1343: a bound canvas that cannot receive a `doc_update` will never
-      // confirm this write, so there is nothing to wait for. Settle now --
-      // the person gets the honest answer immediately rather than a spinner
-      // for 30s followed by the same answer -- but settle it as UNCONFIRMED.
-      settlePendingCanvasSync(part, false)
       return
     }
     if (baseline !== undefined && getCanvasSyncOutcomeCount() > baseline) {
@@ -354,6 +335,14 @@ export function createAgentEventTransport(
       part.state = 'done'
       part.canvasConfirmed = true
       claimCanvasSyncOutcome()
+      return
+    }
+    if (confirmation === 'unavailable') {
+      // PM-1343: a bound canvas that cannot receive a `doc_update` will never
+      // confirm this write, so there is nothing to wait for. Settle now --
+      // the person gets the honest answer immediately rather than a spinner
+      // for 30s followed by the same answer -- but settle it as UNCONFIRMED.
+      settlePendingCanvasSync(part, false)
       return
     }
     pendingCanvasSync.set(
@@ -403,6 +392,7 @@ export function createAgentEventTransport(
     const targetKey = `${data.workflow_id}\u0000${data.node_locator_id ?? ''}`
     if (lastTabTargetKey === targetKey) return false
     lastTabTargetKey = targetKey
+    lastWorkflowId = data.workflow_id
     closeOpenText()
     closeOpenThinking()
     message.thinking = false
@@ -596,6 +586,7 @@ export function createAgentEventTransport(
     ingest,
     settle,
     notifyCanvasCaughtUp,
+    targetWorkflowId: () => lastWorkflowId,
     hasPendingCanvasSync,
     dispose,
     retireAskPart

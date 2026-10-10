@@ -30,6 +30,7 @@ import type {
 import { useSettingStore } from '@/platform/settings/settingStore'
 import { formatWorkflowSyncErrorDetail } from '@/workbench/extensions/agent/crdt/workflowSyncErrorDetail'
 import { useWorkflowService } from '@/platform/workflow/core/services/workflowService'
+import { areWorkflowIdsEquivalent } from '@/platform/workflow/core/utils/workflowId'
 import type { ComfyWorkflow } from '@/platform/workflow/management/stores/comfyWorkflow'
 import { useWorkflowStore } from '@/platform/workflow/management/stores/workflowStore'
 import type { LGraphNode } from '@/lib/litegraph/src/litegraph'
@@ -1077,17 +1078,17 @@ const { activeTurnId: conversationTurnId } = storeToRefs(conversationStore)
 // glyph over an empty canvas. The fix is not a longer wait: it is naming that
 // third state so the terminal display can be "not confirmed" instead.
 //
-// `lastFrameType !== null` is the discriminator between 'unavailable' and
-// 'none', and it is load-bearing rather than defensive. 'unavailable' is a
-// claim about the doc surface -- "it is there and it is not delivering" --
-// which this client may only make once that surface has answered it at least
-// once. An environment with no doc host at all (every browser_tests spec that
-// drives chat frames without standing one up) has told us nothing, so we
-// assert nothing and keep the pre-existing immediate-done behaviour. The
-// residual that leaves -- a subscribe that is never answered in any way --
-// is deliberately out of this seam; see the receipt for op613-3.
-const canvasConfirmationState = (): CanvasConfirmation => {
-  if (!isBoundWorkflowActive.value) return 'none'
+// `lastFrameType !== null` means the current subscription attempt produced a
+// refusal or schema error. The follower clears it before resubscribe, reset,
+// and reconnect attempts, so a transient reconnect window is not mistaken
+// for a permanent refusal. A host that has never answered tells us nothing,
+// so that case keeps the pre-existing immediate-done behaviour.
+const canvasConfirmationState = (workflowId?: string): CanvasConfirmation => {
+  const bound = boundWorkflowId.value ?? undefined
+  if (bound === undefined) return 'none'
+  if (workflowId !== undefined && !areWorkflowIdsEquivalent(bound, workflowId))
+    return 'unavailable'
+  if (!isBoundWorkflowActive.value) return 'unavailable'
   const status = crdtStatus.value
   if (!status.enabled) return 'none'
   if (status.connected) return 'awaiting'
@@ -1105,7 +1106,8 @@ watch(
     // counts from 0 again -- so toggling the panel mid-turn can drive this
     // DOWN, not just up. A decrease is not a catch-up: nothing was applied,
     // so it must not release parts that are still genuinely waiting.
-    if (applied > previouslyApplied) conversationStore.notifyCanvasCaughtUp()
+    if (applied > previouslyApplied && boundWorkflowId.value !== null)
+      conversationStore.notifyCanvasCaughtUp(boundWorkflowId.value)
   }
 )
 
@@ -1129,20 +1131,37 @@ function resumedTurnTabPath(): string | null {
   return context?.id === bound ? context.tabPath : null
 }
 
-// PM-1996: the bound tab's live node count, with `layoutVersion` read purely
-// to make this recompute -- the layout store's node map is the one place that
-// already sees every arrival on the canvas, local or remote, so this needs no
-// new tracking of its own. `nodeCount` reads the map's size without
-// materialising any layout.
-const boundCanvasNodeCount = computed(() => {
-  void layoutStore.layoutVersion
-  return layoutStore.nodeCount
-})
+// PM-1996: read the active bound workflow itself. Renderer layout state is
+// shared across graphs and can retain discarded tabs, so its global node
+// count cannot answer whether this canvas is empty.
+const boundCanvasNodeCount = computed(
+  () => workflowStore.activeWorkflow?.activeState?.nodes.length ?? 0
+)
 // PM-1996: set when a turn finishes against a bound, active tab. The notice
 // it drives is `latch && the canvas is still empty`, so a document frame
 // landing late, a hand-placed node, or a tab switch clears it on its own
 // without this needing to watch for any of them.
 const turnFinishedOnBoundTab = ref(false)
+const EMPTY_CANVAS_RELEVANT_TOOLS = new Set([
+  'add_node',
+  'set_widget',
+  'connect',
+  'apply_ops',
+  'insert_workflow',
+  'define_subgraph',
+  'print_workflow'
+])
+function completedTurnCanClaimCanvasContent(): boolean {
+  const message = conversationMessages.value.at(-1)
+  return (
+    message?.parts.some(
+      (part) =>
+        part.type === 'tool' &&
+        part.ok !== false &&
+        EMPTY_CANVAS_RELEVANT_TOOLS.has(part.name)
+    ) ?? false
+  )
+}
 const canvasEmptyAfterTurn = computed(
   () =>
     turnFinishedOnBoundTab.value &&
@@ -1194,7 +1213,8 @@ watch(
     // `completedTurn` exists -- the immediate idle value on remount is a
     // hydration snapshot. A turn starting arms the opposite edge, so the
     // notice cannot survive from one turn into the next.
-    if (completedTurn) turnFinishedOnBoundTab.value = true
+    if (completedTurn)
+      turnFinishedOnBoundTab.value = completedTurnCanClaimCanvasContent()
     else if (active) turnFinishedOnBoundTab.value = false
     wasTurnActive = active
     if (active) onTurnActive(turnId)
@@ -1202,6 +1222,9 @@ watch(
   },
   { immediate: true, flush: 'sync' }
 )
+watch([threadId, boundWorkflowId], () => {
+  turnFinishedOnBoundTab.value = false
+})
 
 const executionErrorStore = useExecutionErrorStore()
 
