@@ -276,8 +276,12 @@ export const useWorkflowStore = defineStore('workflow', () => {
     })
     workflow.legacyId = getLegacyWorkflowId(workflowData?.id)
 
+    // JSON round-trip, not structuredClone: serialized graphs can still hold
+    // reactive proxies, which structuredClone rejects with DataCloneError.
     const initialWorkflowData = ensureWorkflowId(
-      structuredClone(workflowData ?? defaultGraph)
+      JSON.parse(
+        JSON.stringify(workflowData ?? defaultGraph)
+      ) as ComfyWorkflowJSON
     )
     workflow.originalContent = workflow.content =
       JSON.stringify(initialWorkflowData)

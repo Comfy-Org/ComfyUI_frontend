@@ -1,5 +1,5 @@
 import { defineStore } from 'pinia'
-import { ref, computed, watch } from 'vue'
+import { ref, computed, toRaw, watch } from 'vue'
 import { useEventListener } from '@vueuse/core'
 
 import { useAppMode } from '@/composables/useAppMode'
@@ -237,10 +237,12 @@ export const useAppModeStore = defineStore('appMode', () => {
       if (!app.isGraphReady) return
       const graph = app.rootGraph
       const extra = graph.extra
-      extra.linearData = {
-        inputs: [...data.inputs],
-        outputs: [...data.outputs]
-      }
+      // Deep-copy out of the reactive selections so graph.extra never holds
+      // proxies: they break structuredClone of the serialized graph.
+      extra.linearData = structuredClone({
+        inputs: toRaw(data.inputs),
+        outputs: toRaw(data.outputs)
+      })
       workflowStore.activeWorkflow?.changeTracker.captureCanvasState()
     },
     { deep: true }
