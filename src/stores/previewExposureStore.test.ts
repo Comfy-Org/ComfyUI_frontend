@@ -1,7 +1,8 @@
 import { fromAny } from '@total-typescript/shoehorn'
-import { beforeEach, describe, expect, it } from 'vitest'
+import { beforeEach, describe, expect, it, vi } from 'vitest'
 
 import type { SubgraphNode } from '@/lib/litegraph/src/litegraph'
+import { reportAssertFailure } from '@/platform/telemetry/assertFailureReporter'
 import { toNodeId } from '@/types/nodeId'
 import type { UUID } from '@/utils/uuid'
 
@@ -9,6 +10,8 @@ import {
   getPreviewExposureHostLocator,
   usePreviewExposureStore
 } from './previewExposureStore'
+
+vi.mock(import('@/platform/telemetry/assertFailureReporter'))
 
 describe(getPreviewExposureHostLocator, () => {
   it('encodes a delimiter-bearing host ID', () => {
@@ -19,6 +22,23 @@ describe(getPreviewExposureHostLocator, () => {
 
     expect(getPreviewExposureHostLocator(host)).toBe('~root:invalid%3Aid')
     expect(console.error).not.toHaveBeenCalled()
+    expect(reportAssertFailure).not.toHaveBeenCalled()
+  })
+
+  it('reports a host whose graph ID cannot form a locator', () => {
+    const host = fromAny<SubgraphNode, unknown>({
+      graph: { isRootGraph: false, id: 'not-a-uuid' },
+      id: toNodeId(7)
+    })
+
+    expect(getPreviewExposureHostLocator(host)).toBeNull()
+    expect(console.error).toHaveBeenCalledWith(
+      'Cannot create preview exposure host locator for node 7'
+    )
+    expect(reportAssertFailure).toHaveBeenCalledWith(
+      'Cannot create preview exposure host locator',
+      { hostNodeId: '7' }
+    )
   })
 })
 

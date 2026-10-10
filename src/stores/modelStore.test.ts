@@ -5,6 +5,7 @@ import { useFeatureFlags } from '@/composables/useFeatureFlags'
 import { assetService } from '@/platform/assets/services/assetService'
 import type * as DistributionTypes from '@/platform/distribution/types'
 import { remoteConfig } from '@/platform/remoteConfig/remoteConfig'
+import { reportError } from '@/platform/telemetry/reportError'
 import { api } from '@/scripts/api'
 import {
   ResourceState,
@@ -21,6 +22,7 @@ const mockDistribution = vi.hoisted(
 vi.mock(import('@/platform/distribution/types'), () => mockDistribution)
 
 vi.mock(import('@/platform/remoteConfig/remoteConfig'))
+vi.mock(import('@/platform/telemetry/reportError'))
 
 const featureState = vi.hoisted(() => ({
   serverFeatures: {} as Record<string, unknown>
@@ -136,6 +138,29 @@ describe('useModelStore', () => {
     expect(model.trigger_phrase).toBe('Trigger phrase of sdxl.safetensors')
     expect(model.usage_hint).toBe('Usage hint of sdxl.safetensors')
     expect(model.tags).toHaveLength(3)
+  })
+
+  it('reports only the first metadata load failure in a session', async () => {
+    enableMocks()
+    const failure = new Error('metadata unavailable')
+    vi.mocked(api.viewMetadata).mockRejectedValue(failure)
+    store = useModelStore()
+    await store.loadModelFolders()
+    const folderStore = await store.getLoadedModelFolder('checkpoints')
+    const first = folderStore!.models['0/sdxl.safetensors']
+    const second = folderStore!.models['0/sdv15.safetensors']
+
+    await first.load()
+    await second.load()
+
+    expect(first.has_loaded_metadata).toBe(false)
+    expect(second.has_loaded_metadata).toBe(false)
+    expect(reportError).toHaveBeenCalledOnce()
+    expect(reportError).toHaveBeenCalledWith(failure, {
+      errorType: 'model_metadata_load_failure',
+      surface: 'assets',
+      context: { fileName: 'sdxl.safetensors' }
+    })
   })
 
   it('should handle no metadata', async () => {
@@ -660,10 +685,10 @@ describe('useModelStore', () => {
       await getScanCallback()()
       await flushScanReload()
 
-      expect(console.error).toHaveBeenCalledWith(
-        expect.stringContaining('reload'),
-        expect.any(Error)
-      )
+      expect(reportError).toHaveBeenCalledWith(expect.any(Error), {
+        errorType: 'model_library_reload_failure',
+        surface: 'assets'
+      })
     })
   })
 
