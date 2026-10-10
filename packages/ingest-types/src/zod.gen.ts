@@ -2974,6 +2974,7 @@ export const zBillingCapabilities = z.object({
   can_change_seats: z.boolean(),
   can_downgrade_to_personal: z.boolean(),
   can_invite_members: z.boolean(),
+  can_manage_members: z.boolean(),
   can_reactivate: z.boolean(),
   can_revert_scheduled_change: z.boolean(),
   can_subscribe_self_serve: z.boolean(),

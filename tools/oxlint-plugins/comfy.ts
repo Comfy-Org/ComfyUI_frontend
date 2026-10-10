@@ -29,6 +29,10 @@ import type {
   noUnsafeErrorAssertion as NoUnsafeErrorAssertion
 } from './restrictedSyntax'
 import type {
+  noCapabilityRecombination as NoCapabilityRecombination,
+  noServerFactLiterals as NoServerFactLiterals
+} from './serverFacts'
+import type {
   noImportActual as NoImportActual,
   noModuleScopeVitestMocks as NoModuleScopeVitestMocks,
   noPersistentLiteGraphRegistration as NoPersistentLiteGraphRegistration,
@@ -93,6 +97,12 @@ const {
   noUnitTestFilesInBrowserTests: typeof NoUnitTestFilesInBrowserTests
   noUnsafeErrorAssertion: typeof NoUnsafeErrorAssertion
 }
+const { noCapabilityRecombination, noServerFactLiterals } = requireFrom(
+  './serverFacts.ts'
+) as {
+  noCapabilityRecombination: typeof NoCapabilityRecombination
+  noServerFactLiterals: typeof NoServerFactLiterals
+}
 const {
   noImportActual,
   noModuleScopeVitestMocks,
@@ -113,6 +123,7 @@ const { noRenderInWatchEffect } = requireFrom('./watchEffectRendering.ts') as {
 export default {
   meta: { name: 'comfy' },
   rules: {
+    'no-capability-recombination': noCapabilityRecombination,
     'no-comfy-page-setup-call': noComfyPageSetupCall,
     'no-deprecated-api-schema': noDeprecatedApiSchema,
     'no-direct-selection-write': noDirectSelectionWrite,
@@ -130,6 +141,7 @@ export default {
     'no-playwright-imports-in-fixture-data': noPlaywrightImportsInFixtureData,
     'no-primevue-imports': noPrimeVueImports,
     'no-render-in-watch-effect': noRenderInWatchEffect,
+    'no-server-fact-literals': noServerFactLiterals,
     'no-statically-disabled-test': noStaticallyDisabledTest,
     'no-redundant-litegraph-cleanup': noRedundantLiteGraphCleanup,
     'no-redundant-vitest-cleanup': noRedundantVitestCleanup,

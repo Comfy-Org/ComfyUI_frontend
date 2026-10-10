@@ -85,9 +85,15 @@ async function startFlow(id: string) {
 
 ## 4. Derive everything derivable
 
-Do not store `isOpening`, `canTransition`, `isLast`, or a second copy of data
-that already exists. If a `computed` can name it, do not put it in a `ref` and
-keep it in sync by hand — the sync is where the bugs live.
+Do not store `isOpening`, `isLast`, or a second copy of data that already
+exists. If a `computed` can name it, do not put it in a `ref` and keep it in
+sync by hand — the sync is where the bugs live.
+
+This covers state the feature owns. A server fact (a permission, role, tier,
+plan status, seat count, readiness or server timestamp) is not derivable here.
+Render the field the API returns. If the API does not return it, ask the
+backend for it. See
+[ADR-API-SERVER-FACTS-0042](../adr/API-SERVER-FACTS-0042-server-facts-are-rendered-not-derived.md).
 
 ## 5. Reserve effects for synchronising with the outside
 

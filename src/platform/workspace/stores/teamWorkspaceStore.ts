@@ -805,12 +805,15 @@ export const useTeamWorkspaceStore = defineStore('teamWorkspace', () => {
     // Code after this won't run (page reloads)
   }
 
+  let latestMembersRequest = 0
+
   /**
    * Fetch members for the current workspace.
    */
   async function fetchMembers(
     params: ListMembersParams = {}
   ): Promise<WorkspaceMember[]> {
+    const request = ++latestMembersRequest
     const generation = identityGeneration
     const workspaceId = activeWorkspaceId.value
     if (!workspaceId) return []
@@ -820,7 +823,10 @@ export const useTeamWorkspaceStore = defineStore('teamWorkspace', () => {
       limit: params.limit ?? 100
     })
     const members = response.members.map(mapApiMemberToWorkspaceMember)
-    if (!isStaleWorkspace(generation, workspaceId)) {
+    if (
+      request === latestMembersRequest &&
+      !isStaleWorkspace(generation, workspaceId)
+    ) {
       updateWorkspace(workspaceId, {
         members,
         membersLoaded: true,
@@ -859,7 +865,10 @@ export const useTeamWorkspaceStore = defineStore('teamWorkspace', () => {
     inFlightMembersRequest = request
     try {
       await fetchMembers()
-      if (!isStaleWorkspace(generation, workspaceId)) {
+      if (
+        !isStaleWorkspace(generation, workspaceId) &&
+        activeWorkspace.value?.membersLoaded
+      ) {
         loadedMemberWorkspaceIds.add(workspaceId)
       }
     } catch (e) {
@@ -944,17 +953,23 @@ export const useTeamWorkspaceStore = defineStore('teamWorkspace', () => {
     })
   }
 
+  let latestInvitesRequest = 0
+
   /**
    * Fetch pending invites for the current workspace.
    */
   async function fetchPendingInvites(): Promise<WorkspacePendingInvite[]> {
+    const request = ++latestInvitesRequest
     const generation = identityGeneration
     const workspaceId = activeWorkspaceId.value
     if (!workspaceId) return []
 
     const response = await workspaceApi.listInvites()
     const invites = response.invites.map(mapApiInviteToPendingInvite)
-    if (!isStaleWorkspace(generation, workspaceId)) {
+    if (
+      request === latestInvitesRequest &&
+      !isStaleWorkspace(generation, workspaceId)
+    ) {
       updateWorkspace(workspaceId, {
         pendingInvites: invites,
         pendingInvitesLoaded: true

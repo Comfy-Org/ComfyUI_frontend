@@ -4897,6 +4897,10 @@ export type BillingCapabilities = {
   can_change_seats: boolean
   can_downgrade_to_personal: boolean
   can_invite_members: boolean
+  /**
+   * Workspace owner may manage members independently of seat quantity and subscription lifecycle. Individual target restrictions still apply.
+   */
+  can_manage_members: boolean
   can_reactivate: boolean
   /**
    * Stripe-billed only; false within 1 hour of the change.
@@ -7165,7 +7169,7 @@ export type CreateAssetData = {
      */
     name?: string
     /**
-     * Optional preview asset ID. If not provided, images will use their own ID as preview.
+     * Optional preview asset ID. Must be your own asset in this workspace; anything else (including a catalog asset, another user's published asset, or an ID that does not exist) is refused with 400 `INVALID_PREVIEW_ID`. If not provided, images will use their own ID as preview.
      */
     preview_id?: string
     /**
@@ -7184,7 +7188,7 @@ export type CreateAssetData = {
 
 export type CreateAssetErrors = {
   /**
-   * Invalid request (bad file, invalid content type, etc.)
+   * Invalid request (bad file, invalid content type, etc.), or `INVALID_PREVIEW_ID` when `preview_id` is not your own asset in this workspace
    */
   400: ErrorResponse
   /**
@@ -7340,7 +7344,7 @@ export type UpdateAssetData = {
      */
     name?: string
     /**
-     * Updated preview asset ID
+     * Updated preview asset ID. Must be your own asset in this workspace.
      */
     preview_id?: string
     /**
@@ -7377,8 +7381,9 @@ export type UpdateAssetErrors = {
   403: ForbiddenError
   /**
    * Asset not found — returned both when the asset being updated does
-   * not exist and when `preview_id` does not reference an asset
-   * accessible to the caller.
+   * not exist and when `preview_id` is not your own asset in this
+   * workspace (a catalog asset or another user's published asset
+   * does not qualify).
    *
    */
   404: ErrorResponse
@@ -7575,7 +7580,7 @@ export type AddAssetTagsResponse =
 export type CreateAssetDownloadData = {
   body: {
     /**
-     * Optional preview asset ID to associate with the downloaded asset
+     * Optional preview asset ID to associate with the downloaded asset. Must be your own asset in this workspace; otherwise the request is refused with 400 `INVALID_PREVIEW_ID`.
      */
     preview_id?: string
     /**
@@ -7600,7 +7605,7 @@ export type CreateAssetDownloadData = {
 
 export type CreateAssetDownloadErrors = {
   /**
-   * Invalid URL or unsupported source
+   * Invalid URL or unsupported source, or `INVALID_PREVIEW_ID` when `preview_id` is not your own asset in this workspace
    */
   400: ErrorResponse
   /**
