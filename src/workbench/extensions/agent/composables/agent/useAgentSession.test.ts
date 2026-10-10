@@ -3,7 +3,15 @@ import type {
   UploadImageResponse
 } from '@comfyorg/ingest-types'
 import { zAgentPostMessageRequest } from '@comfyorg/ingest-types/zod'
-import { assert, beforeEach, describe, expect, it, vi } from 'vitest'
+import {
+  assert,
+  beforeEach,
+  describe,
+  expect,
+  it,
+  onTestFinished,
+  vi
+} from 'vitest'
 import { nextTick } from 'vue'
 
 import { useTelemetry } from '@/platform/telemetry'
@@ -13,6 +21,7 @@ vi.mock(import('@/composables/auth/useCurrentUser'))
 vi.mock(import('@/platform/skills/api/skillsApi'), { spy: true })
 import { reportError } from '@/platform/telemetry/reportError'
 import { StorageKeys } from '@/platform/workflow/persistence/base/storageKeys'
+import { useTeamWorkspaceStore } from '@/platform/workspace/stores/teamWorkspaceStore'
 import { api } from '@/scripts/api'
 import { createNodeLocatorId } from '@/types/nodeIdentification'
 import { toNodeId } from '@/types/nodeId'
@@ -243,10 +252,18 @@ const doneIn = (threadId: string, id: string) =>
     data: { message_id: id, thread_id: threadId, usage: null }
   })
 
+function rotateWorkspaceIdentity(): void {
+  const workspace = useTeamWorkspaceStore()
+  const generation = workspace.workspaceTransitionGeneration
+  workspace.resetForIdentityChange()
+  expect(workspace.workspaceTransitionGeneration).toBe(generation + 1)
+}
+
 function emitDeltaBurst(emit: (raw: unknown) => void, count: number): void {
   for (let index = 0; index < count; index++)
     emit(delta('msg-1', `chunk-${index} `))
 }
+
 const historyRow = (
   seq: number,
   role: 'user' | 'assistant',
@@ -526,6 +543,60 @@ describe('useAgentSession (v1 composition root)', () => {
         events: fakeEvents().source
       })
     ).not.toThrow()
+  })
+
+  describe('principal rotation isolation', () => {
+    it.fails('clears the prior workspace conversation across stop and restart', async () => {
+      let workspaceId = 'workspace-a'
+      let finishHydration: (history: AgentMessages) => void = () => {}
+      const getMessages = vi.fn(
+        () =>
+          new Promise<AgentMessages>((resolve) => {
+            expect(workspaceId).toBe('workspace-b')
+            finishHydration = resolve
+          })
+      )
+      const rest = fakeRest({ getMessages })
+      const first = useAgentSession({ rest, events: fakeEvents().source })
+      first.start()
+      await first.sendMessage('workspace A prompt')
+      first.stop()
+      await Promise.resolve()
+
+      rotateWorkspaceIdentity()
+      workspaceId = 'workspace-b'
+      const second = useAgentSession({ rest, events: fakeEvents().source })
+      onTestFinished(() => finishHydration([]))
+      second.start()
+
+      expect(second.entries.value).toHaveLength(0)
+    })
+
+    it.fails('rejects a failed POST result from the prior workspace epoch', async () => {
+      let workspaceId = 'workspace-a'
+      let rejectPost: (error: AgentApiError) => void = () => {}
+      const postMessage = vi.fn(
+        () =>
+          new Promise<AgentTurnAccepted>((_resolve, reject) => {
+            expect(workspaceId).toBe('workspace-a')
+            rejectPost = reject
+          })
+      )
+      const session = useAgentSession({
+        rest: fakeRest({ postMessage }),
+        events: fakeEvents().source
+      })
+      session.start()
+      const sending = session.sendMessage('workspace A prompt')
+      await vi.waitFor(() => expect(postMessage).toHaveBeenCalledOnce())
+
+      rotateWorkspaceIdentity()
+      workspaceId = 'workspace-b'
+      rejectPost(new AgentApiError('forbidden', 403, null))
+      await sending
+
+      expect(session.entries.value).toHaveLength(0)
+    })
   })
 
   it('(a) posts to new, adopts ids, records the user turn, and renders a settled reply', async () => {
