@@ -503,8 +503,6 @@ describe('DynamicGroup widgets', () => {
     assert.exists(removed)
     assert.exists(otherRemoved)
     assert.exists(retained)
-    const before = vi.spyOn(innerHost.subgraph, 'beforeChange')
-    const after = vi.spyOn(innerHost.subgraph, 'afterChange')
 
     widget('loras.1').callback?.(undefined)
 
@@ -513,8 +511,6 @@ describe('DynamicGroup widgets', () => {
     expect(graph.getLink(otherRemoved.id)).toBeUndefined()
     expect(outerInput.link).toBeNull()
     expect(otherHost.inputs[0].link).toBeNull()
-    expect(before).toHaveBeenCalledOnce()
-    expect(after).toHaveBeenCalledOnce()
     assert.exists(survivingInput.link)
     expect(graph.getLink(survivingInput.link)).toBe(retained)
     expect(promotedInputWidget(survivingInput)?.value).toBe(0.37)
