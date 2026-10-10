@@ -1,5 +1,6 @@
 <script setup lang="ts">
-import { Eye, Globe, LayoutDashboard, List, Pencil, X } from '@lucide/vue'
+import { Globe, LayoutDashboard, List, Pencil, X } from '@lucide/vue'
+import { cn } from '@comfyorg/tailwind-utils'
 import { computed, onBeforeUnmount, onMounted, ref, useTemplateRef } from 'vue'
 
 import PreviewChangesSheet from '@/components/cms/PreviewChangesSheet.vue'
@@ -34,6 +35,7 @@ const {
   locale?: Locale
 }>()
 const { t } = translationsFor(locale)
+const draft = view === 'DRAFT'
 
 const listed = computed(() =>
   previewChanges(changes, now ? Date.parse(now) : Date.now(), (at) =>
@@ -119,23 +121,48 @@ const pill = adminButtonVariants({ class: 'data-[state=open]:bg-admin-hover' })
     data-cms-preview-bar
     role="region"
     :aria-label="t('cmsAdmin.preview.label')"
-    class="sticky top-0 z-50 border-b border-admin-line bg-admin-chrome font-admin text-admin-fg"
+    :class="
+      cn(
+        'sticky top-0 z-50 border-t-2 border-b border-b-admin-line bg-admin-chrome font-admin text-admin-fg',
+        draft ? 'border-t-admin-info' : 'border-t-admin-success'
+      )
+    "
   >
-    <div class="flex flex-wrap items-center gap-2 px-4 py-2 lg:px-6">
+    <div
+      :class="
+        cn(
+          'flex flex-wrap items-center gap-2 px-4 py-2.5 lg:px-6',
+          draft ? 'bg-admin-info/15' : 'bg-admin-success/5'
+        )
+      "
+    >
       <p class="mr-auto flex items-center gap-2.5 text-sm">
         <span
-          class="grid size-6 place-items-center rounded-md bg-admin-fg text-admin-card"
-          aria-hidden="true"
+          :class="
+            cn(
+              'inline-flex h-7 items-center gap-2 rounded-full border px-3 text-xs font-semibold tracking-[0.04em] uppercase',
+              draft
+                ? 'border-admin-info/40 bg-admin-info/15 text-admin-info'
+                : 'border-admin-success/40 bg-admin-success/15 text-admin-success'
+            )
+          "
         >
-          <Eye class="size-3.5" />
+          <span class="relative flex size-2" aria-hidden="true">
+            <span
+              v-if="draft"
+              class="absolute inline-flex size-full animate-ping rounded-full bg-admin-info opacity-60 motion-reduce:hidden"
+            />
+            <span
+              :class="
+                cn(
+                  'relative inline-flex size-2 rounded-full',
+                  draft ? 'bg-admin-info' : 'bg-admin-success'
+                )
+              "
+            />
+          </span>
+          {{ t(draft ? 'cmsAdmin.preview.mode' : 'cmsAdmin.preview.liveMode') }}
         </span>
-        <span class="font-medium">{{
-          t(
-            view === 'LIVE'
-              ? 'cmsAdmin.preview.liveMode'
-              : 'cmsAdmin.preview.mode'
-          )
-        }}</span>
         <span class="hidden text-xs text-admin-muted sm:inline">
           {{ summary }}
         </span>
@@ -221,6 +248,12 @@ const pill = adminButtonVariants({ class: 'data-[state=open]:bg-admin-hover' })
         </button>
       </PreviewForm>
     </div>
+
+    <div
+      v-if="draft"
+      aria-hidden="true"
+      class="pointer-events-none fixed inset-0 z-60 border-2 border-admin-info/70"
+    />
 
     <PreviewChangesSheet
       v-model:open="changesOpen"
