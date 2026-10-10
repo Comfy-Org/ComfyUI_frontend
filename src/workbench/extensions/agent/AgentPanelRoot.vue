@@ -1843,6 +1843,18 @@ async function onPanelDrop(event: DragEvent): Promise<void> {
   if (await attachment.addFiles(files))
     useTelemetry()?.trackAgentAttachButtonClicked({ method: 'drag_drop' })
 }
+
+function onPanelPaste(event: ClipboardEvent): void {
+  const target = event.target
+  if (!(target instanceof Element) || !target.closest('#agent-composer')) return
+  const files = Array.from(event.clipboardData?.files ?? []).filter(
+    isAgentAttachable
+  )
+  if (files.length === 0) return
+  event.preventDefault()
+  event.stopPropagation()
+  void attachment.addFiles(files)
+}
 </script>
 
 <template>
@@ -1854,6 +1866,7 @@ async function onPanelDrop(event: DragEvent): Promise<void> {
     @dragleave="onPanelDragLeave"
     @dragover="onPanelDragOver"
     @drop="onPanelDrop"
+    @paste.capture="onPanelPaste"
   >
     <input
       ref="fileInput"
