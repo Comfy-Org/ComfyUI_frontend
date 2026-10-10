@@ -56,11 +56,13 @@
 }
 
 /* Use 0.001ms instead of 0s so transitionend/animationend events still fire
-   and JS listeners aren't broken. */
+   and JS listeners aren't broken. Limit iterations so infinite animations
+   cannot strobe at the shortened duration. */
 .disable-animations *,
 .disable-animations *::before,
 .disable-animations *::after {
   animation-duration: 0.001ms !important;
+  animation-iteration-count: 1 !important;
   transition-duration: 0.001ms !important;
 }
 
