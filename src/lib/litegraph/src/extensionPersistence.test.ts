@@ -309,6 +309,46 @@ describe('serialize output stays structured-cloneable when hooks hand back live 
     expect(() => structuredClone(serialised)).not.toThrow()
   })
 
+  it('detaches a live nested value a hook writes into an untouched canonical field', () => {
+    const { node } = nodeInGraph()
+    node.properties.cfg = { mode: 'a' }
+    node.onSerialize = function (o) {
+      o.properties!.cfg = this.properties.cfg
+    }
+
+    const serialised = node.serialize()
+
+    expect(serialised.properties).toMatchObject({ cfg: { mode: 'a' } })
+    expect(() => structuredClone(serialised)).not.toThrow()
+  })
+
+  it('detaches a proxy a graph hook writes into the existing extra', () => {
+    const graph = new LGraph()
+    graph.onSerialize = (data) => {
+      data.extra!.live = reactive({ note: 'live' })
+    }
+
+    const serialised = graph.serialize()
+
+    expect(serialised.extra?.live).toEqual({ note: 'live' })
+    expect(() => structuredClone(serialised)).not.toThrow()
+  })
+
+  it('keeps pos and size as arrays when a hook hands back the live views', () => {
+    const { node } = nodeInGraph()
+    node.pos = [10, 20]
+    node.onSerialize = function (o) {
+      o.pos = this.pos
+      o.size = this.size
+    }
+
+    const serialised = node.serialize()
+
+    expect(serialised.pos).toStrictEqual([10, 20])
+    expect(Array.isArray(serialised.size)).toBe(true)
+    expect(() => structuredClone(serialised)).not.toThrow()
+  })
+
   // frontend#8898: object widget values held by Vue reactivity broke structuredClone.
   it('serializes a reactive object widget value as plain data', () => {
     const { node } = nodeInGraph()
