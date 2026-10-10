@@ -76,8 +76,23 @@ const mergedGridStyle = computed<CSSProperties>(() => {
   }
 })
 
-const viewRows = computed(() => Math.ceil(height.value / itemHeight.value))
-const offsetRows = computed(() => Math.floor(scrollY.value / itemHeight.value))
+function getRowGapPx(): number {
+  if (!container.value) return 0
+
+  const rowGap = window.getComputedStyle(container.value).rowGap
+  if (!rowGap || rowGap === 'normal') return 0
+
+  const parsed = Number.parseFloat(rowGap)
+  return Number.isFinite(parsed) ? parsed : 0
+}
+
+const rowStride = computed(() => {
+  const gap = getRowGapPx()
+  return Math.max(itemHeight.value + gap, itemHeight.value)
+})
+
+const viewRows = computed(() => Math.ceil(height.value / rowStride.value))
+const offsetRows = computed(() => Math.floor(scrollY.value / rowStride.value))
 const isValidGrid = computed(() => height.value && width.value && items?.length)
 
 const state = computed<GridState>(() => {
@@ -90,40 +105,29 @@ const state = computed<GridState>(() => {
   const total = items?.length ?? 0
   const windowSize = Math.max(toCol - fromCol, 0)
 
-  // Clamp `end` to the current item count first, then clamp `start` against
-  // that already-valid bound (not the raw `fromCol`). This guarantees
-  // 0 <= start <= end <= total even when `fromCol`/`toCol` point past a list
-  // that just shrunk (filter change) or a column count that just grew
-  // (resize/zoom) while scrolled deep into the grid. es-toolkit's
-  // clamp(value, min, max) produces nonsensical results when min > max,
-  // which is exactly what happens if `start` is clamped against the
-  // unclamped `fromCol` in those cases.
   const end = clamp(toCol, 0, total)
   let start = clamp(fromCol, 0, end)
 
-  // If the scroll position still points entirely past the available items
-  // (the window collapsed to empty), shift it left to show the trailing
-  // items instead of leaving the view blank. A real browser would normally
-  // clamp the scroll position itself once the spacer heights shrink, but a
-  // stale/negative spacer height can get rejected by the CSSOM and prevent
-  // that from ever happening, so we clamp the window directly here.
   if (start === end && total > 0) {
     start = Math.max(0, end - windowSize)
   }
 
   return { start, end }
 })
+
 const renderedItems = computed(() =>
   isValidGrid.value ? items.slice(state.value.start, state.value.end) : []
 )
 
 function rowsToHeight(itemsCount: number): string {
   const rows = Math.ceil(itemsCount / cols.value)
-  return `${rows * itemHeight.value}px`
+  return `${rows * rowStride.value}px`
 }
+
 const topSpacerStyle = computed<CSSProperties>(() => ({
   height: rowsToHeight(state.value.start)
 }))
+
 const bottomSpacerStyle = computed<CSSProperties>(() => ({
   height: rowsToHeight(items.length - state.value.end)
 }))
