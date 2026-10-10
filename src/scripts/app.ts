@@ -415,7 +415,7 @@ export class ComfyApp {
   private configuringGraphLevel: number = 0
   private graphLoadSequence = 0
   private committedGraphLoadSequence = 0
-  private graphLoadMutationSequence = 0
+  private readonly pendingGraphLoads = new Set<number>()
   private pendingCamera:
     | { id: number; workflow: string | null | ComfyWorkflow }
     | undefined
@@ -1346,6 +1346,13 @@ export class ComfyApp {
     useWorkflowService().beforeLoadNewGraph(clean)
     await useExtensionService().invokeExtensionsAsync('beforeLoadGraph')
 
+    this.pendingGraphLoads.add(loadId)
+    ChangeTracker.isLoadingGraph = true
+    const releaseGraphLoad = () => {
+      this.pendingGraphLoads.delete(loadId)
+      if (this.pendingGraphLoads.size === 0)
+        ChangeTracker.isLoadingGraph = false
+    }
     let reset_invalid_values = false
     const missingNodeTypes: MissingNodeType[] = []
     try {
@@ -1506,6 +1513,7 @@ export class ComfyApp {
         }
       }
     } catch (error) {
+      releaseGraphLoad()
       // This try wraps everything between `beforeLoadGraph` and
       // `rootGraph.configure`: asset-scan resets, `clean()`, workflow
       // cloning, `validateWorkflow`, reroute-migration inspection, a
@@ -1558,7 +1566,6 @@ export class ComfyApp {
       }
     }
 
-    ChangeTracker.isLoadingGraph = true
     let activatedWorkflow: LoadedComfyWorkflow | undefined
     let reconcileResourceErrors: (() => void) | undefined
     let resourceScanLoadCompleted = false
@@ -1575,7 +1582,6 @@ export class ComfyApp {
           return undefined
         }
 
-        this.graphLoadMutationSequence++
         this.rootGraph.configure(graphData as ISerialisedGraph)
 
         // Save original renderer version before scaling (it gets modified during scaling)
@@ -1634,7 +1640,8 @@ export class ComfyApp {
         // Resolves rather than throws: the close/replacement guards read this outcome.
         return false
       }
-      const configuredGraphMutationSequence = this.graphLoadMutationSequence
+      const configuredGraphState = this.rootGraph.state
+      const configuredLoadId = this.committedGraphLoadSequence
       const snapTo = LiteGraph.alwaysSnapToGrid
         ? this.rootGraph.getSnapToGridSize()
         : 0
@@ -1699,8 +1706,16 @@ export class ComfyApp {
         'afterConfigureGraph',
         missingNodeTypes
       )
-      if (configuredGraphMutationSequence !== this.graphLoadMutationSequence)
+      if (
+        configuredGraphState !== this.rootGraph.state ||
+        configuredLoadId !== this.committedGraphLoadSequence
+      ) {
+        await useExtensionService().invokeExtensionsAsync(
+          'onGraphLoadError',
+          new DOMException('Workflow load was replaced', 'AbortError')
+        )
         return undefined
+      }
 
       const effectiveShareId =
         shareId ??
@@ -1722,6 +1737,7 @@ export class ComfyApp {
         effectiveShareId
       )
       await useExtensionService().invokeExtensionsAsync('afterLoadGraph')
+      this.pendingGraphLoads.delete(loadId)
       // Capture the workflow this load activated before the asset-scan awaits
       // below can hand control back and let the user switch to another one.
       activatedWorkflow = useWorkflowStore().activeWorkflow ?? undefined
@@ -1789,7 +1805,7 @@ export class ComfyApp {
         'workflow-load',
         workflowNavigationId
       )
-      ChangeTracker.isLoadingGraph = false
+      releaseGraphLoad()
       // The retirement watcher skips transitions made during the load.
       useExecutionErrorStore().retireResolvedMissingNodePromptError()
       reconcileResourceErrors?.()
@@ -2846,7 +2862,6 @@ export class ComfyApp {
     // Subgraph does not properly implement `clear` and the parent class's
     // (`LGraph`) `clear` breaks the subgraph structure.
     if (!this.canvas.subgraph) {
-      this.graphLoadMutationSequence++
       this.rootGraph.clear()
       ensureNonZeroUuid(this.rootGraph)
     }
