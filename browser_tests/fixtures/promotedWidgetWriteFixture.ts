@@ -6,7 +6,7 @@ import { createPromotedWidgetWriteData } from '@e2e/fixtures/data/agent/promoted
 export const promotedWidgetWriteFixture = base.extend<{
   promotedWidgetWriteData: PromotedWidgetWriteData
 }>({
-  promotedWidgetWriteData: async ({}, use) => {
+  promotedWidgetWriteData: async ({ networkPolicy: _networkPolicy }, use) => {
     await use(createPromotedWidgetWriteData())
   }
 })
