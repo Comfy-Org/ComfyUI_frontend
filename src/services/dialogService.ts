@@ -515,9 +515,12 @@ export function registerExtensionDialogService(
 }
 
 export function useExtensionDialogService(): ExtensionDialogService {
-  assert(
-    extensionDialogService,
+  const message =
     'Extension dialog service accessed before registerExtensionDialogService'
-  )
+  if (!extensionDialogService) {
+    assert(false, message)
+    throw new TypeError(message)
+  }
+
   return extensionDialogService
 }
