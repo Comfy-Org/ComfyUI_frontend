@@ -3391,9 +3391,7 @@
       "enterpriseNote": "Enterprise 方案享有更高的 Agent 限额。",
       "cardTitle": "Comfy Agent",
       "cardFeature": {
-        "allowance": "每月 {allowance} 免费 Agent 积分",
-        "tasksPerMember": "每位成员可同时运行 {count} 个 Agent 任务",
-        "requestsPerWorkspace": "每个工作区可同时处理 {count} 个 Agent 请求"
+        "sessionsPerWorkspace": "每个工作区可同时进行 {count} 个 Agent 会话"
       }
     },
     "planLimits": {

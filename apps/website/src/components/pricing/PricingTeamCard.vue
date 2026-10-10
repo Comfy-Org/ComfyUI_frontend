@@ -5,7 +5,7 @@ import { computed, ref } from 'vue'
 
 import { Coins as CreditsIcon } from '@lucide/vue'
 
-import { comfyAgentFeatureGroup } from '@/data/comfyAgentPlanLimits'
+import { comfyAgentFeatureGroups } from '@/data/comfyAgentPlanLimits'
 import { comfyApiFeatureGroup } from '@/data/comfyApiPlanLimits'
 import { subscribeUrl } from '@/data/pricingPlans'
 import { formatTeamCreditsShort, teamCreditTiers } from '@/data/teamCreditTiers'
@@ -83,7 +83,7 @@ const featureGroups = computed<PlanFeatureGroup[]>(() => [
       { text: 'pricing.feature.roleBasedPermissions' }
     ]
   },
-  comfyAgentFeatureGroup('team'),
+  ...comfyAgentFeatureGroups('team'),
   comfyApiFeatureGroup('team'),
   {
     titleKey: 'pricing.plan.team.comingSoon',

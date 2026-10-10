@@ -162,7 +162,7 @@ describe('PricingSection Comfy Agent limits', () => {
       ).toBeTruthy()
     })
     expect(
-      screen.getByText('16 Agent requests at once per workspace')
+      screen.getByText('16 concurrent agent sessions per workspace')
     ).toBeTruthy()
   })
 })

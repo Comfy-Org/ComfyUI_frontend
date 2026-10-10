@@ -1702,9 +1702,7 @@
       "enterpriseNote": "Enterprise plans get higher Agent limits.",
       "cardTitle": "Comfy Agent",
       "cardFeature": {
-        "allowance": "{allowance} free Agent credits every month",
-        "tasksPerMember": "{count} Agent tasks at once per member",
-        "requestsPerWorkspace": "{count} Agent requests at once per workspace"
+        "sessionsPerWorkspace": "{count} concurrent agent sessions per workspace"
       }
     },
     "planLimits": {

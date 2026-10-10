@@ -37,26 +37,18 @@ export const comfyAgentPlanLimits: readonly ComfyAgentPlanLimits[] = [
   }
 ]
 
-export function comfyAgentFeatureGroup(planId: string): PlanFeatureGroup {
-  const allowance = {
-    text: 'pricing.agent.cardFeature.allowance',
-    params: { allowance: COMFY_AGENT_MONTHLY_ALLOWANCE_USD }
-  } as const
+export function comfyAgentFeatureGroups(planId: string): PlanFeatureGroup[] {
   const limits = comfyAgentPlanLimits.find((plan) => plan.id === planId)
-  return {
-    titleKey: 'pricing.agent.cardTitle',
-    features: limits
-      ? [
-          allowance,
-          {
-            text: 'pricing.agent.cardFeature.tasksPerMember',
-            params: { count: limits.concurrentTasksPerMember }
-          },
-          {
-            text: 'pricing.agent.cardFeature.requestsPerWorkspace',
-            params: { count: limits.concurrentRequestsPerWorkspace }
-          }
-        ]
-      : [allowance]
-  }
+  if (!limits) return []
+  return [
+    {
+      titleKey: 'pricing.agent.cardTitle',
+      features: [
+        {
+          text: 'pricing.agent.cardFeature.sessionsPerWorkspace',
+          params: { count: limits.concurrentRequestsPerWorkspace }
+        }
+      ]
+    }
+  ]
 }
