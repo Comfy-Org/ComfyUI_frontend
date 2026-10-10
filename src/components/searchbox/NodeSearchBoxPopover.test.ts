@@ -9,7 +9,7 @@ import { CORE_SETTINGS } from '@/platform/settings/constants/coreSettings'
 import { useSettingStore } from '@/platform/settings/settingStore'
 import type { Settings } from '@/platform/settings/types'
 import { useLitegraphService } from '@/services/litegraphService'
-import type { ComfyNodeDefImpl } from '@/stores/nodeDefStore'
+import type { ComfyNodeDefImpl } from '@/core/graph/nodeDef/ComfyNodeDefImpl'
 import { useSearchBoxStore } from '@/stores/workspace/searchBoxStore'
 import type { FuseFilter, FuseFilterWithValue } from '@/utils/fuseUtil'
 

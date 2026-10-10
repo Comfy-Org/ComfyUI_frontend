@@ -91,8 +91,9 @@ import SearchAutocomplete from '@/components/ui/search-input/SearchAutocomplete.
 import { useSettingStore } from '@/platform/settings/settingStore'
 import { useTelemetry } from '@/platform/telemetry'
 import { useSearchQueryTracking } from '@/platform/telemetry/searchQuery/useSearchQueryTracking'
-import type { ComfyNodeDefImpl } from '@/stores/nodeDefStore'
-import { useNodeDefStore, useNodeFrequencyStore } from '@/stores/nodeDefStore'
+import type { ComfyNodeDefImpl } from '@/core/graph/nodeDef/ComfyNodeDefImpl'
+import { useNodeDefStore } from '@/stores/nodeDefStore'
+import { useNodeFrequencyStore } from '@/stores/nodeFrequencyStore'
 import type { FuseFilterWithValue } from '@/utils/fuseUtil'
 
 import SearchFilterChip from '../common/SearchFilterChip.vue'
@@ -141,7 +142,7 @@ const search = (query: string) => {
   const queryIsEmpty = query === '' && filters.length === 0
   currentQuery.value = query
   suggestions.value = queryIsEmpty
-    ? nodeFrequencyStore.topNodeDefs
+    ? nodeDefStore.topNodeDefs
     : [
         ...nodeDefStore.nodeSearchService.searchNode(query, filters, {
           limit: searchLimit

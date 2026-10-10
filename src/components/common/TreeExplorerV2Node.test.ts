@@ -7,7 +7,7 @@ import { createI18n } from 'vue-i18n'
 
 import { useNodeDragToCanvas } from '@/composables/node/useNodeDragToCanvas'
 import { useSettingStore } from '@/platform/settings/settingStore'
-import type { ComfyNodeDefImpl } from '@/stores/nodeDefStore'
+import type { ComfyNodeDefImpl } from '@/core/graph/nodeDef/ComfyNodeDefImpl'
 import { useSubgraphStore } from '@/stores/subgraphStore'
 import type { RenderedTreeExplorerNode } from '@/types/treeExplorerTypes'
 import { InjectKeyContextMenuNode } from '@/types/treeExplorerTypes'

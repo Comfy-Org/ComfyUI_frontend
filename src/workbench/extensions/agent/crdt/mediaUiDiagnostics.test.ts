@@ -4,7 +4,7 @@ import { describe, expect, it, onTestFinished } from 'vitest'
 import { LGraphNode } from '@/lib/litegraph/src/litegraph'
 import type { IBaseWidget } from '@/lib/litegraph/src/types/widgets'
 import type { NodeExecutionOutput } from '@/platform/remote/comfyui/execution/types'
-import type { DOMWidget } from '@/scripts/domWidget'
+import type { DOMWidget } from '@/types/domWidget'
 import { toNodeId } from '@/types/nodeId'
 
 import { collectMediaUiDiagnostics } from './mediaUiDiagnostics'

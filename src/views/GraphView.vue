@@ -72,7 +72,8 @@ import { scanAllMediaCandidates } from '@/platform/missingMedia/missingMediaScan
 import { startTemplateInputDownloadGraphSync } from '@/platform/workflow/templates/composables/useTemplateInputDownloadGraphSync'
 import { refreshDownloadedTemplateInputBindings } from '@/platform/workflow/templates/utils/refreshDownloadedTemplateInputBindings'
 import { SERVER_CONFIG_ITEMS } from '@/constants/serverConfig'
-import type { ServerConfig, ServerConfigValue } from '@/constants/serverConfig'
+import type { ServerConfig } from '@/constants/serverConfig'
+import type { ServerConfigValue } from '@/platform/settings/types'
 import { setActiveLocale } from '@/i18n'
 import AssetBrowserModal from '@/platform/assets/components/AssetBrowserModal.vue'
 import AssetExportProgressDialog from '@/platform/assets/components/AssetExportProgressDialog.vue'
@@ -102,7 +103,8 @@ import { useAuthStore } from '@/stores/authStore'
 import { useAssetsStore } from '@/stores/assetsStore'
 import { useMenuItemStore } from '@/stores/menuItemStore'
 import { useModelStore } from '@/stores/modelStore'
-import { useNodeDefStore, useNodeFrequencyStore } from '@/stores/nodeDefStore'
+import { useNodeDefStore } from '@/stores/nodeDefStore'
+import { useNodeFrequencyStore } from '@/stores/nodeFrequencyStore'
 import {
   useQueuePendingTaskCountStore,
   useQueueStore

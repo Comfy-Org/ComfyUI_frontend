@@ -1,5 +1,4 @@
-import type { ComfyNodeDefImpl } from '@/stores/nodeDefStore'
-import type { NodeCategoryId } from '@/types/nodeOrganizationTypes'
+import type { ComfyNodeDefImpl } from '@/core/graph/nodeDef/ComfyNodeDefImpl'
 import type { InjectionKey, ModelRef, Ref } from 'vue'
 
 import type { MenuItem } from '@/components/ui/menu/types'
@@ -11,12 +10,6 @@ export interface TreeNode<T = unknown> {
   data?: T
   icon?: string
   leaf?: boolean
-}
-
-export interface NodeLibrarySection<T = unknown> {
-  category?: NodeCategoryId
-  title?: string
-  root: RenderedTreeExplorerNode<T>
 }
 
 export interface TreeExplorerNode<T = unknown> extends TreeNode<T> {

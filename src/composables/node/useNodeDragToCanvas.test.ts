@@ -1,7 +1,7 @@
 import { useToast } from '@/components/ui/toast/toastStore'
 import { afterEach, assert, beforeEach, describe, expect, it, vi } from 'vitest'
 
-import type { ComfyNodeDefImpl } from '@/stores/nodeDefStore'
+import type { ComfyNodeDefImpl } from '@/core/graph/nodeDef/ComfyNodeDefImpl'
 import { useNodeDragToCanvas } from './useNodeDragToCanvas'
 import { useCanvasStore } from '@/renderer/core/canvas/canvasStore'
 import { LGraphNode } from '@/lib/litegraph/src/litegraph'
