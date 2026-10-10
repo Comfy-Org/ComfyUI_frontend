@@ -95,7 +95,7 @@ const moreApps = apps
     </header>
 
     <div
-      class="aspect-video overflow-hidden rounded-2xl bg-transparency-white-t4 ring-1 ring-transparency-white-t8 lg:aspect-21/9"
+      class="aspect-video overflow-hidden rounded-2xl bg-transparency-white-t4 ring-1 ring-transparency-white-t8"
     >
       <video
         v-if="app.thumbnail?.kind === 'video'"
