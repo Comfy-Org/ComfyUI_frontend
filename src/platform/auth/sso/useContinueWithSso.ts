@@ -39,7 +39,6 @@ export function useContinueWithSso(context: () => SsoRequiredContext) {
   async function continueWithSso() {
     leaving.value = true
     const ssoTarget = ssoDestination()
-    if (ssoTarget) trackSsoContinueClicked('cloud_app')
     const target =
       ssoTarget ??
       router.resolve({ name: 'cloud-login', query: SSO_ENTRY_OPEN_QUERY }).href
@@ -50,6 +49,7 @@ export function useContinueWithSso(context: () => SsoRequiredContext) {
       toastErrorHandler(error)
       return
     }
+    if (ssoTarget) trackSsoContinueClicked('cloud_app')
     window.location.assign(target)
   }
 

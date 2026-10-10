@@ -72,18 +72,24 @@ describe('the SSO-required screen', () => {
     })
   })
 
-  it.for<{ name: string; continued: boolean; kept: boolean }>([
-    { name: 'drops an attempt never continued', continued: false, kept: false },
-    { name: 'keeps an attempt already continued', continued: true, kept: true }
-  ])('closing the dialog $name', async ({ continued, kept }) => {
+  async function closeShownDialog(beforeClose: () => void) {
     vi.mocked(useFeatureFlags().flags).ssoEnabled = true
     presentSsoRequired('session_refused', { email: 'ada@acme.com' })
     await shownDialog()
-    if (continued) ssoFlowStore.markContinued('cloud_app')
-
+    beforeClose()
     useDialogStore().closeDialog({ key: SSO_REQUIRED_DIALOG_KEY })
+  }
 
-    expect(ssoFlowStore.current() !== undefined).toBe(kept)
+  it('closing the dialog drops an attempt never continued', async () => {
+    await closeShownDialog(() => {})
+
+    expect(ssoFlowStore.current()).toBeUndefined()
+  })
+
+  it('closing the dialog keeps an attempt already continued', async () => {
+    await closeShownDialog(() => ssoFlowStore.markContinued('cloud_app'))
+
+    expect(ssoFlowStore.current()?.continued).toBe(true)
   })
 
   it('reports a refused API request as the api_key trigger', async () => {

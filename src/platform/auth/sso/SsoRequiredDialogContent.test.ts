@@ -147,6 +147,22 @@ describe('SsoRequiredDialogContent', () => {
     )
   })
 
+  it('reports no continue while signing the account out fails', async () => {
+    trackSsoRequiredShown('cloud_app', 'session_refused', 'notice')
+    useAuthStore().currentUser = fromPartial<User>({ email: 'ada@acme.com' })
+    vi.mocked(useAuthStore().logout).mockRejectedValueOnce(new Error('network'))
+    await renderDialog({ email: 'ada@acme.com' })
+    const continueButton = screen.getByRole('button', {
+      name: 'auth.sso.continueWithSso'
+    })
+
+    await userEvent.click(continueButton)
+    await waitFor(() => expect(continueButton).toBeEnabled())
+
+    expect(useTelemetry()?.trackSsoEvent).toHaveBeenCalledOnce()
+    expect(ssoFlowStore.current()?.continued).toBeUndefined()
+  })
+
   it('lets the person retry when signing the account out fails', async () => {
     useAuthStore().currentUser = fromPartial<User>({ email: 'ada@acme.com' })
     vi.mocked(useAuthStore().logout)

@@ -3262,27 +3262,26 @@ describe('a lapsed SSO session signs in again through SSO (sso_enabled)', () => 
 
     it.for<{
       name: string
-      attempt: 'none' | 'shown' | 'continued'
+      arrange: () => void
       session: ServerSession
     }>([
       {
         name: 'an SSO session with no attempt',
-        attempt: 'none',
+        arrange: () => {},
         session: SSO_SESSION
       },
       {
         name: 'an SSO session after an attempt only shown, never continued',
-        attempt: 'shown',
+        arrange: () => ssoFlowStore.start('cloud_login'),
         session: SSO_SESSION
       },
       {
         name: 'a Google session during an attempt',
-        attempt: 'continued',
+        arrange: () => ssoFlowStore.markContinued('cloud_login'),
         session: { userId: 'user-a' }
       }
-    ])('reports nothing for $name', async ({ attempt, session }) => {
-      if (attempt === 'shown') ssoFlowStore.start('cloud_login')
-      if (attempt === 'continued') ssoFlowStore.markContinued('cloud_login')
+    ])('reports nothing for $name', async ({ arrange, session }) => {
+      arrange()
 
       await loadPage(session)
 
