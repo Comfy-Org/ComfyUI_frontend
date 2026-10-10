@@ -31,6 +31,7 @@ import {
 import { isWorkshopModelShown } from '@/scripts/workshop-model-flags.ts'
 import type { HubApp, HubSections } from '@/data/mainNavigation.ts'
 import GitHubStarBadge from '@/components/common/GitHubStarBadge.vue'
+import WorkshopAccount from '@/components/workshop/WorkshopAccount.vue'
 import HeaderMainDesktop from './HeaderMainDesktop.vue'
 import HeaderMainMobile from './HeaderMainMobile.vue'
 import LogoContextMenu from './LogoContextMenu.vue'
@@ -68,17 +69,6 @@ const hubSections = computed<HubSections>(() => ({
 const showAccount = computed(
   () => showWorkshop.value && workshopAuthEnabled.value
 )
-// Each loader waits for the account source, so a visitor the web session
-// knows never mounts an island that would start Firebase.
-const HeaderAccount = defineAsyncComponent(async () => {
-  const [source, firebaseHeader] = await Promise.all([
-    resolveWorkshopAccountSource(),
-    import('@/components/workshop/HeaderAccount.vue')
-  ])
-  return source === 'session'
-    ? import('@/components/workshop/HeaderSessionAccount.vue')
-    : firebaseHeader
-})
 const BuyCreditsDialog = defineAsyncComponent<Component>(async () => {
   const [source, dialog] = await Promise.all([
     resolveWorkshopAccountSource(),
@@ -216,7 +206,7 @@ const ctaButtons = computed(() =>
 
 <template>
   <nav
-    class="sticky top-0 z-50 flex items-center justify-between gap-4 bg-primary-comfy-ink px-6 py-5 lg:gap-4 lg:px-[clamp(0.25rem,4vw,5rem)] lg:py-8"
+    class="sticky top-0 z-50 flex items-center justify-between gap-4 bg-primary-comfy-ink px-6 py-5 in-data-workshop-editor:hidden lg:gap-4 lg:px-[clamp(0.25rem,4vw,5rem)] lg:py-8"
     aria-label="Main navigation"
   >
     <LogoContextMenu :locale>
@@ -253,7 +243,7 @@ const ctaButtons = computed(() =>
       class="flex shrink-0 items-center gap-2"
       :class="showWorkshop ? 'xl:hidden' : 'lg:hidden'"
     >
-      <HeaderAccount v-if="showAccount" :locale="locale" />
+      <WorkshopAccount v-if="showAccount" :locale />
       <HeaderMainMobile :locale :hub-sections />
     </div>
 
@@ -278,7 +268,7 @@ const ctaButtons = computed(() =>
           <span class="min-[1800px]:hidden">{{ cta.short }}</span>
         </span>
       </Button>
-      <HeaderAccount v-if="showAccount" :locale="locale" />
+      <WorkshopAccount v-if="showAccount" :locale />
     </div>
   </nav>
   <BuyCreditsDialog
