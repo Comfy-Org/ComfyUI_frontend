@@ -351,9 +351,13 @@ useVueElementTracking(nodeId.value, 'node')
 
 const canvasStore = useCanvasStore()
 
-const { selectedNodeIds, isGhostPlacing } = storeToRefs(useCanvasStore())
+const { selectedNodeIds, highlightedNodeIds, isGhostPlacing } =
+  storeToRefs(useCanvasStore())
 const isSelected = computed(() => {
-  return selectedNodeIds.value.has(nodeId.value)
+  return (
+    selectedNodeIds.value.has(nodeId.value) ||
+    highlightedNodeIds.value.has(nodeId.value)
+  )
 })
 
 const nodeLocatorId = computed(

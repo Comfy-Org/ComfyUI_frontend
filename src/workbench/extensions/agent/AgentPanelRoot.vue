@@ -60,7 +60,7 @@ import { useToast } from '@/components/ui/toast/toastStore'
 import { toOwningGraphId, toRootGraphId } from '@/types/graphScopeId'
 import type { RootGraphId } from '@/types/graphScopeId'
 import { isCloud } from '@/platform/distribution/types'
-import { parseNodeId } from '@/types/nodeId'
+import { parseNodeId, toNodeId } from '@/types/nodeId'
 import { parseNodeLocatorId } from '@/types/nodeIdentification'
 import { useBillingContext } from '@/composables/billing/useBillingContext'
 import { useAccountPreconditionDialog } from '@/platform/cloud/subscription/composables/useAccountPreconditionDialog'
@@ -1260,6 +1260,7 @@ async function onAnswerAsk(
 
 void refreshCloudWorkflowIds()
 onBeforeUnmount(() => {
+  canvasStore.setHighlightedNodeIds([])
   runPanelTeardown({
     releaseCoachCompletionWaiters: () => {
       releaseCoachCompletionWaiters()
@@ -1583,6 +1584,7 @@ let assetDragDepth = 0
 watch(
   selectedTarget,
   (target) => {
+    canvasStore.setHighlightedNodeIds([])
     canvasStore.stopNodePicking()
     composerStore.setNodeScope(target?.instanceId ?? null)
     nodeReferenceWorkflow = null
@@ -1608,9 +1610,14 @@ start({
       threadId.value === agentPanelStore.view.previousThreadId)
 })
 
-watch(() => canvasStore.currentGraph, canvasStore.stopNodePicking, {
-  flush: 'sync'
-})
+watch(
+  () => canvasStore.currentGraph,
+  () => {
+    canvasStore.setHighlightedNodeIds([])
+    canvasStore.stopNodePicking()
+  },
+  { flush: 'sync' }
+)
 
 function onSelectNodes(): void {
   if (!canReferenceNodes.value || canvasStore.isPickingNodes) return
@@ -1725,6 +1732,10 @@ function onMentionPick(node: SelectedNode): void {
     useTelemetry()?.trackAgentNodeTagged({ source: 'mention_picker' })
 }
 
+function onMentionHighlight(node: SelectedNode | null): void {
+  canvasStore.setHighlightedNodeIds(node ? [toNodeId(node.id)] : [])
+}
+
 function onRemoveSelectionTag(id: string): void {
   const node = canvasStore.selectedItems
     .filter(isLGraphNode)
@@ -1737,6 +1748,7 @@ function onRemoveSelectionTag(id: string): void {
 }
 
 function onClosePanel(): void {
+  canvasStore.setHighlightedNodeIds([])
   canvasStore.stopNodePicking()
   useTelemetry()?.trackAgentCloseButtonClicked()
   agentPanelStore.close('close_button')
@@ -1909,6 +1921,7 @@ async function onPanelDrop(event: DragEvent): Promise<void> {
       @select-nodes="onSelectNodes"
       @remove-tag="onRemoveSelectionTag"
       @mention-pick="onMentionPick"
+      @mention-highlight="onMentionHighlight"
       @request-workflow-references="onRequestWorkflowReferences"
       @remove-workflow-reference="composerStore.removeWorkflowReference"
       @feedback="onFeedback"
