@@ -291,7 +291,7 @@ test.describe(
         const before = await comfyPage.workflow.getExportedWorkflow({
           api: true
         })
-        await comfyPage.workflow.waitForDraftPersisted()
+        await lora.waitForDraftPersisted()
         await comfyPage.workflow.reloadAndWaitForApp()
         await lora.expectNames([
           'A.safetensors',
@@ -539,7 +539,7 @@ test.describe(
           await expect
             .poll(() => getPromotedWidgetNames(comfyPage, hostId))
             .toEqual([])
-          await comfyPage.workflow.waitForDraftPersisted()
+          await lora.waitForDraftPersisted()
           await comfyPage.workflow.reloadAndWaitForApp()
           await lora.execute('4.000')
         })
@@ -573,7 +573,7 @@ test.describe(
           await expect(lora.promotedPicker(original, 2).selection).toHaveText(
             'B.safetensors'
           )
-          await comfyPage.workflow.waitForDraftPersisted()
+          await lora.waitForDraftPersisted()
           await comfyPage.workflow.reloadAndWaitForApp()
           await lora.execute('6.000')
           const [, preview] =
@@ -594,7 +594,7 @@ test.describe(
           const before = await comfyPage.workflow.getExportedWorkflow({
             api: true
           })
-          await comfyPage.workflow.waitForDraftPersisted()
+          await lora.waitForDraftPersisted()
           await comfyPage.workflow.reloadAndWaitForApp()
           await expect.poll(() => comfyPage.subgraph.isInSubgraph()).toBe(false)
           expect(
@@ -625,7 +625,7 @@ test.describe(
             api: true
           })
           await comfyPage.vueNodes.enterSubgraph(hostId)
-          await comfyPage.workflow.waitForDraftPersisted()
+          await lora.waitForDraftPersisted()
           await comfyPage.workflow.reloadAndWaitForApp()
           await expect.poll(() => comfyPage.subgraph.isInSubgraph()).toBe(true)
           expect(
@@ -674,7 +674,7 @@ test.describe(
             await lora.promotedPicker(host, 2).selectOption('A.safetensors')
             await host.getByRole('spinbutton').fill('0.2')
             await host.getByRole('spinbutton').blur()
-            await comfyPage.workflow.waitForDraftPersisted()
+            await lora.waitForDraftPersisted()
             await comfyPage.workflow.reloadAndWaitForApp()
             await expect(lora.promotedPicker(host, 2).selection).toHaveText(
               'A.safetensors'
@@ -686,7 +686,7 @@ test.describe(
             comfyPage,
             lora
           }) => {
-            await comfyPage.workflow.waitForDraftPersisted()
+            await lora.waitForDraftPersisted()
             await comfyPage.workflow.reloadAndWaitForApp()
             const host = comfyPage.vueNodes.getNodeByTitle('New Subgraph')
             const before = await comfyPage.workflow.getExportedWorkflow({
@@ -700,7 +700,7 @@ test.describe(
               (node) => node.class_type === 'LoadLoraModel'
             )
             expect(loader?.inputs['loras.1.enabled']).toBe(false)
-            await comfyPage.workflow.waitForDraftPersisted()
+            await lora.waitForDraftPersisted()
             await comfyPage.workflow.reloadAndWaitForApp()
             await expect(host.getByRole('switch')).not.toBeChecked()
             expect(
@@ -741,7 +741,7 @@ test.describe(
             await lora.promotedPicker(host, 1).selectOption('A.safetensors')
             await host.getByRole('spinbutton').fill('0.2')
             await host.getByRole('spinbutton').blur()
-            await comfyPage.workflow.waitForDraftPersisted()
+            await lora.waitForDraftPersisted()
             await comfyPage.workflow.reloadAndWaitForApp()
             await lora.execute('3.200')
           })

@@ -4,7 +4,7 @@ import type {
 } from '@/platform/workflow/persistence/base/draftTypes'
 import type { ComfyWorkflowJSON } from '@/platform/workflow/validation/schemas/workflowSchema'
 
-export const workflowDraftReady = ({
+export const nativeLoraDraftReady = ({
   path,
   draftKey,
   expected
@@ -24,15 +24,19 @@ export const workflowDraftReady = ({
   }
   const widgetState = (graph: WidgetStateGraph): unknown => ({
     nodes:
-      graph.nodes?.map(({ id, widgets_values }) => ({
-        id,
-        widgets_values
-      })) ?? [],
+      graph.nodes
+        ?.toSorted((a, b) => String(a.id).localeCompare(String(b.id)))
+        .map(({ id, widgets_values }) => ({
+          id,
+          widgets_values
+        })) ?? [],
     subgraphs:
-      graph.definitions?.subgraphs?.map((definition) => ({
-        id: definition.id,
-        widgets: widgetState(definition)
-      })) ?? []
+      graph.definitions?.subgraphs
+        ?.toSorted((a, b) => String(a.id).localeCompare(String(b.id)))
+        .map((definition) => ({
+          id: definition.id,
+          widgets: widgetState(definition)
+        })) ?? []
   })
 
   try {

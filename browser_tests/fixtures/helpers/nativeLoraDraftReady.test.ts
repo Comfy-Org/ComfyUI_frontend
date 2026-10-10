@@ -5,7 +5,7 @@ import type { ComfyApp } from '@/scripts/app'
 import { hashPath } from '@/platform/workflow/persistence/base/hashUtil'
 import { zComfyWorkflow } from '@/platform/workflow/validation/schemas/workflowSchema'
 import nativeWorkflow from '@e2e/assets/inputs/native_lora_model.json'
-import { workflowDraftReady } from '@e2e/fixtures/helpers/workflowDraftReady'
+import { nativeLoraDraftReady } from '@e2e/fixtures/helpers/nativeLoraDraftReady'
 
 const path = 'workflows/native-draft-readiness.json'
 const pointerKey = 'Comfy.Workflow.ActivePath:draft-readiness-test'
@@ -30,11 +30,11 @@ function captureDraftReadiness() {
   return {
     expected,
     isReady: () =>
-      workflowDraftReady({ path, draftKey: hashPath(path), expected })
+      nativeLoraDraftReady({ path, draftKey: hashPath(path), expected })
   }
 }
 
-describe('workflow draft readiness', () => {
+describe('native LoRA draft widget readiness', () => {
   afterEach(() => {
     sessionStorage.removeItem(pointerKey)
     localStorage.removeItem(payloadKey)
@@ -74,6 +74,18 @@ describe('workflow draft readiness', () => {
       expect(isReady()).toBe(false)
     }
   )
+
+  it('accepts the same node values serialized in a different order', () => {
+    const { expected, isReady } = captureDraftReadiness()
+    const persisted = structuredClone(expected)
+    persisted.nodes.reverse()
+    localStorage.setItem(
+      payloadKey,
+      JSON.stringify({ data: JSON.stringify(persisted) })
+    )
+
+    expect(isReady()).toBe(true)
+  })
 
   it('accepts the edited widget values without requiring identical node geometry', () => {
     const { expected, isReady } = captureDraftReadiness()

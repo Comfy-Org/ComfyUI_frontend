@@ -1,6 +1,9 @@
 import { expect } from '@playwright/test'
 import type { Locator } from '@playwright/test'
 
+import { hashPath } from '@/platform/workflow/persistence/base/hashUtil'
+import { nativeLoraDraftReady } from '@e2e/fixtures/helpers/nativeLoraDraftReady'
+import { LocalDesktopTarget } from '@e2e/fixtures/customNode/ComfyTarget'
 import { createCloudAssetsFixture } from '@e2e/fixtures/assetApiFixture'
 import type { ComfyPage } from '@e2e/fixtures/ComfyPage'
 import { WidgetSelectDropdownFixture } from '@e2e/fixtures/components/WidgetSelectDropdown'
@@ -75,15 +78,27 @@ class NativeLoraHelper {
     }
   }
 
+  async waitForDraftPersisted() {
+    const path = await this.comfyPage.workflow.getActiveWorkflowPath()
+    if (!path) throw new Error('No active workflow to persist')
+    const expected = await this.comfyPage.workflow.getExportedWorkflow()
+    await this.comfyPage.page.waitForFunction(nativeLoraDraftReady, {
+      path,
+      draftKey: hashPath(path),
+      expected
+    })
+  }
+
   async execute(expected: string) {
-    const queued = this.comfyPage.page.waitForResponse(
-      (response) =>
-        response.request().method() === 'POST' &&
-        new URL(response.url()).pathname === '/api/prompt'
+    const result = await new LocalDesktopTarget().runWorkflow(
+      this.comfyPage.page,
+      {
+        expectedNodeIds: ['2'],
+        timeoutMs: 30_000
+      }
     )
-    await this.comfyPage.command.executeCommand('Comfy.QueuePrompt')
-    const response = await queued
-    expect(response.status(), await response.text()).toBe(200)
+    expect(result.outcome, JSON.stringify(result)).toBe('PASS')
+    expect(result.outputsByNode['2']).toMatchObject({ text: [expected] })
     await expect(
       this.comfyPage.vueNodes.getNodeLocator('2').getByRole('textbox')
     ).toHaveValue(expected)
