@@ -81,6 +81,8 @@ function onPromptClick(prompt: string, index: number): void {
   )
 }
 
+const COMPACT_PROMPT_COUNT = 3
+
 const promptIcons = [
   'icon-[lucide--image]',
   'icon-[lucide--video]',
@@ -113,7 +115,12 @@ const promptIcons = [
           type="button"
           variant="secondary"
           size="md"
-          class="w-full max-w-full min-w-0 justify-start rounded-full px-3 text-sm @min-[460px]:w-auto"
+          :class="
+            cn(
+              'w-full max-w-full min-w-0 justify-start rounded-full px-3 text-sm @min-[460px]:w-auto',
+              index >= COMPACT_PROMPT_COUNT && '@max-[460px]:hidden'
+            )
+          "
           @click="onPromptClick(prompt, index)"
         >
           <span

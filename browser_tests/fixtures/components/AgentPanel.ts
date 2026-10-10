@@ -23,12 +23,14 @@ export class AgentPanel {
   public readonly fileInput: Locator
   public readonly nodeSelectionBanner: Locator
   public readonly openButton: Locator
+  public readonly resizeHandle: Locator
   public readonly root: Locator
   public readonly scrollAssetsRight: Locator
   public readonly sendButton: Locator
   public readonly serverLogsSwitch: Locator
   public readonly settingsSwitch: Locator
   public readonly stopButton: Locator
+  public readonly suggestedPrompts: Locator
   public readonly workflowPicker: Locator
   public readonly workflowSwitch: Locator
   public readonly workSummary: Locator
@@ -67,6 +69,7 @@ export class AgentPanel {
       name: enMessages.agent.entryButton,
       exact: true
     })
+    this.resizeHandle = page.getByTestId('agent-panel-resize-handle')
     this.scrollAssetsRight = this.root.getByRole('button', {
       name: enMessages.g.scrollRight
     })
@@ -81,6 +84,15 @@ export class AgentPanel {
       name: enMessages.agent.stop,
       exact: true
     })
+    /**
+     * Includes hidden buttons: the compact empty state keeps every suggestion
+     * in the DOM and hides the overflow, so a visible-only locator cannot tell
+     * "hidden" from "never rendered". Resolved by position rather than by
+     * prompt text, which varies with distribution and starter-prompt variant.
+     */
+    this.suggestedPrompts = this.root
+      .getByTestId('suggested-prompts')
+      .getByRole('button', { includeHidden: true })
     this.workflowPicker = this.root.getByRole('button', {
       name: enMessages.agent.switchWorkflow
     })
@@ -207,6 +219,33 @@ export class AgentPanel {
   async close(): Promise<void> {
     await this.closeButton.click()
     await expect(this.root).toHaveCount(0)
+  }
+
+  /**
+   * Drags the resize handle until the panel root is exactly `width` wide.
+   *
+   * The root is the element the Agent container queries resolve against, so a
+   * test asserting a breakpoint has to measure it rather than the outer dock.
+   */
+  async resizeTo(width: number): Promise<void> {
+    const [panelBox, handleBox] = await Promise.all([
+      this.root.boundingBox(),
+      this.resizeHandle.boundingBox()
+    ])
+    if (!panelBox || !handleBox) {
+      throw new Error('Agent panel and resize handle must be visible')
+    }
+
+    const handleCenterX = handleBox.x + handleBox.width / 2
+    const handleY = handleBox.y + 20
+    await this.page.mouse.move(handleCenterX, handleY)
+    await this.page.mouse.down()
+    await this.page.mouse.move(
+      handleCenterX - (width - panelBox.width),
+      handleY
+    )
+    await this.page.mouse.up()
+    await expect(this.root).toHaveCSS('width', `${width}px`)
   }
 
   async expectPanelSize(expected: { x: number; width: number }): Promise<void> {
