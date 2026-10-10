@@ -19,6 +19,10 @@ export const PROMOTED_WIDGET_SAMPLER_NODE_ID = '3'
 export const PROMOTED_WIDGET_NEW_PROMPT = 'NEW PROMPT'
 export const PROMOTED_WIDGET_NEW_STEPS = 12
 
+export function encodePromotedWidgetUpdate(update: Uint8Array): string {
+  return Buffer.from(update).toString('base64')
+}
+
 const ASSET_PATH = path.resolve(
   import.meta.dirname,
   '../../../assets/subgraphs/nested-pack-promoted-values.json'

@@ -8,7 +8,8 @@ import {
   PROMOTED_WIDGET_SAMPLER_NODE_ID,
   PROMOTED_WIDGET_SUBGRAPH_TYPE,
   PROMOTED_WIDGET_WORKFLOW_LABEL,
-  PROMOTED_WIDGET_WORKFLOW_NAME
+  PROMOTED_WIDGET_WORKFLOW_NAME,
+  encodePromotedWidgetUpdate
 } from '@e2e/fixtures/data/agent/promotedWidgetWrite'
 import { promotedWidgetWriteFixture } from '@e2e/fixtures/promotedWidgetWriteFixture'
 import { routeObjectInfoFromSetupApi } from '@e2e/fixtures/utils/objectInfo'
@@ -19,10 +20,6 @@ import { validateComfyWorkflow } from '@/platform/workflow/validation/schemas/wo
 import { toNodeId } from '@/types/nodeId'
 
 const test = mergeTests(agentTest, webSocketFixture, promotedWidgetWriteFixture)
-
-function b64(u8: Uint8Array): string {
-  return Buffer.from(u8).toString('base64')
-}
 
 test.describe(
   'Agent promoted widget write (QAF-36 / gm-34)',
@@ -143,7 +140,7 @@ test.describe(
                 workflow_id: workflowId,
                 seq: 0,
                 actor: 'system:mint',
-                update_b64: b64(fullState)
+                update_b64: encodePromotedWidgetUpdate(fullState)
               }
             })
           )
@@ -156,7 +153,7 @@ test.describe(
                 seq: 1,
                 actor: 'agent:test:1',
                 op_ids: ['op-1', 'op-2'],
-                update_b64: b64(delta)
+                update_b64: encodePromotedWidgetUpdate(delta)
               }
             })
           )
