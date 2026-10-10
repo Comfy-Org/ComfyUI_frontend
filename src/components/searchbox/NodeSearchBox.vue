@@ -32,6 +32,7 @@
           v-reka-z-index
           class="min-w-96"
           @escape-key-down="$event.isComposing && $event.preventDefault()"
+          @pointer-down-outside="(e) => onRekaPointerDownOutside({}, e)"
           @close-auto-focus="onFilterDialogCloseAutoFocus"
         >
           <DialogHeader>
@@ -92,6 +93,7 @@ import { computed, nextTick, onMounted, onUnmounted, ref, watch } from 'vue'
 import { useI18n } from 'vue-i18n'
 
 import { vRekaZIndex } from '@/components/dialog/vRekaZIndex'
+import { onRekaPointerDownOutside } from '@/components/dialog/dialogDismissGuards'
 import NodePreview from '@/components/node/NodePreview.vue'
 import NodeSearchFilter from '@/components/searchbox/NodeSearchFilter.vue'
 import NodeSearchItem from '@/components/searchbox/NodeSearchItem.vue'

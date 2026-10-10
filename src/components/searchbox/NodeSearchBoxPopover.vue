@@ -13,7 +13,13 @@
                 : 'top-1/4 ml-[200px] w-3/5 max-w-3xl min-w-96 translate-y-0 max-md:ml-0 sm:max-w-3xl'
             )
           "
-          @pointer-down-outside="onPointerDownOutside"
+          @pointer-down-outside="
+            (e) =>
+              onRekaPointerDownOutside(
+                { dismissOnPointerDownOutside: dismissable },
+                e
+              )
+          "
           @escape-key-down="
             (filterVisible || $event.isComposing) && $event.preventDefault()
           "
@@ -58,6 +64,7 @@ import { computed, ref, toRaw, watch, watchEffect } from 'vue'
 
 import { revealDynamicInputSlot } from '@/core/graph/widgets/revealDynamicInputSlot'
 import type { Point } from '@/lib/litegraph/src/interfaces'
+import { onRekaPointerDownOutside } from '@/components/dialog/dialogDismissGuards'
 import { vRekaZIndex } from '@/components/dialog/vRekaZIndex'
 import Dialog from '@/components/ui/dialog/Dialog.vue'
 import DialogContent from '@/components/ui/dialog/DialogContent.vue'
@@ -129,9 +136,6 @@ function clearFilters() {
   hoveredNodeDef.value = null
 }
 
-function onPointerDownOutside(event: Event) {
-  if (!dismissable.value) event.preventDefault()
-}
 function closeDialog() {
   visible.value = false
 }
