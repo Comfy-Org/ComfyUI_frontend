@@ -19,6 +19,7 @@ import type {
 } from '@comfyorg/account-core/billing'
 import type { FirebaseIdentity } from '@comfyorg/account-core/firebase'
 import { createRequestAuthorizer } from '@comfyorg/account-core/requestAuth'
+import { webSessionTelemetryHooks } from '@comfyorg/account-core/telemetry'
 import type { SessionErrorCode } from '@comfyorg/account-core/session'
 import type {
   WebSession,
@@ -34,9 +35,11 @@ import { createWebSessionIdentity } from '@comfyorg/account-core/webSessionIdent
 
 import type {
   SessionEstablishment,
+  SessionRefusal,
   SignInPort
 } from '@/auth/useSignInController'
 import type { BillingWebSessionPhase } from '@/router'
+import { billingWebTelemetry } from '@/telemetry/billingWebTelemetry'
 
 export interface UnifiedBillingSessionDeps {
   /** Ingest API root, e.g. `https://cloud.comfy.org/api`. */
@@ -70,11 +73,23 @@ function establishmentOf(
     : { status: 'error', code: resolution.code }
 }
 
-/** A refused credential is its own code; every other failure to create the session is one bucket, as in the token exchange. */
-function creationFailureCode(failure: WebSessionFailure): SessionErrorCode {
-  return failure.httpStatus === 401
-    ? 'INVALID_FIREBASE_TOKEN'
-    : 'TOKEN_EXCHANGE_FAILED'
+/**
+ * A refused credential and an account its SSO organization holds are their own
+ * codes; every other failure to create the session is one bucket, as in the
+ * token exchange.
+ */
+function creationRefusal(failure: WebSessionFailure): SessionRefusal {
+  if (failure.code === 'SSO_REQUIRED') {
+    return failure.organizationId === undefined
+      ? { code: 'SSO_REQUIRED' }
+      : { code: 'SSO_REQUIRED', organizationId: failure.organizationId }
+  }
+  return {
+    code:
+      failure.httpStatus === 401
+        ? 'INVALID_FIREBASE_TOKEN'
+        : 'TOKEN_EXCHANGE_FAILED'
+  }
 }
 
 function restoredUser(identity: FirebaseIdentity): Promise<User | null> {
@@ -112,7 +127,8 @@ export function createUnifiedBillingSession(deps: UnifiedBillingSessionDeps) {
           (await (await firebaseUser())?.getIdToken()) ?? null,
         signOutLocally: async () => (await deps.loadFirebase())?.signOut()
       }
-    }
+    },
+    ...webSessionTelemetryHooks(billingWebTelemetry.trackWebSessionEvent)
   })
   const authorize = createRequestAuthorizer({
     getWorkspaceToken: () =>
@@ -121,6 +137,8 @@ export function createUnifiedBillingSession(deps: UnifiedBillingSessionDeps) {
 
   const state = shallowRef<WebSessionIdentityState>(identity.getState())
   const workspace = shallowRef<WorkspaceResolution>()
+  /** Why the last attempt to create a session was refused, until one holds. */
+  const creationFailure = shallowRef<SessionRefusal>()
   let resolvedBinding: string | undefined
   let resolving: Promise<WorkspaceResolution> | undefined
 
@@ -149,6 +167,20 @@ export function createUnifiedBillingSession(deps: UnifiedBillingSessionDeps) {
     }
   }
 
+  /** One GET on the session cookie; undefined while signed out. */
+  async function sessionGet(
+    url: string,
+    init: RequestInit
+  ): Promise<Response | undefined> {
+    const current = state.value
+    if (current.phase !== 'signed_in') return undefined
+    const auth = await authorize(
+      { kind: 'session', session: current.session },
+      { target: 'ingest', method: 'GET' }
+    )
+    return deps.fetchImpl(url, { ...init, ...auth })
+  }
+
   function resolveWorkspace(): Promise<WorkspaceResolution> {
     const current = state.value
     if (current.phase !== 'signed_in') {
@@ -175,12 +207,19 @@ export function createUnifiedBillingSession(deps: UnifiedBillingSessionDeps) {
   identity.subscribe((next) => {
     state.value = next
     workspace.value = undefined
-    if (next.phase === 'signed_in') void resolveWorkspace()
+    if (next.phase === 'signed_in') {
+      creationFailure.value = undefined
+      void resolveWorkspace()
+    }
   })
 
   function settledOf(): BillingWebSessionPhase | undefined {
     const current = state.value
-    if (current.phase === 'signed_out' || current.phase === 'api_key') {
+    if (
+      current.phase === 'signed_out' ||
+      current.phase === 'api_key' ||
+      current.phase === 'retry_wait'
+    ) {
       return 'signed-out'
     }
     if (current.phase !== 'signed_in' || workspace.value === undefined) {
@@ -206,12 +245,21 @@ export function createUnifiedBillingSession(deps: UnifiedBillingSessionDeps) {
     })
   }
 
+  /** Without a session to resolve against, a retry creates one for whoever Firebase holds. */
+  async function sessionCreator(user?: User): Promise<User | undefined> {
+    if (user !== undefined || state.value.phase === 'signed_in') return user
+    return (await firebaseUser()) ?? undefined
+  }
+
   async function establish(user?: User): Promise<SessionEstablishment> {
-    if (user === undefined) return establishmentOf(await resolveWorkspace())
-    const created = await createWebSession(session, () => user.getIdToken())
+    const creator = await sessionCreator(user)
+    if (creator === undefined) return establishmentOf(await resolveWorkspace())
+    const created = await createWebSession(session, () => creator.getIdToken())
     if (created.status !== 'ok') {
-      return { status: 'error', code: creationFailureCode(created) }
+      creationFailure.value = creationRefusal(created)
+      return { status: 'error', code: creationFailure.value.code }
     }
+    creationFailure.value = undefined
     identity.dispose()
     if ((await settledPhase()) === 'authenticated') return { status: 'ok' }
     const resolved = workspace.value
@@ -251,8 +299,10 @@ export function createUnifiedBillingSession(deps: UnifiedBillingSessionDeps) {
     user: computed(() =>
       state.value.phase === 'signed_in' ? state.value.session.user : null
     ),
-    failureCode: computed(() =>
-      workspace.value?.status === 'error' ? workspace.value.code : undefined
+    failure: computed(() =>
+      workspace.value?.status === 'error'
+        ? { code: workspace.value.code }
+        : creationFailure.value
     ),
     loadIdentity: async () =>
       (await settledPhase()) === 'signed-out' ? deps.loadFirebase() : undefined,
@@ -264,6 +314,7 @@ export function createUnifiedBillingSession(deps: UnifiedBillingSessionDeps) {
     settledPhase,
     livePhase: computed(settledOf),
     resolveWorkspace,
+    sessionGet,
     scopeSource,
     webSession,
     signInPort,

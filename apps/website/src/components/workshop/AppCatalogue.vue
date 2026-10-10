@@ -2,13 +2,16 @@
 import { ChevronLeft, ChevronRight } from '@lucide/vue'
 import { computed, nextTick, watch } from 'vue'
 
-import type { Locale } from '../../i18n/translations'
-import { t } from '../../i18n/translations'
-import { CARD_GRID, SHELF_CARD } from '../../lib/workshop/card-layout'
-import type { CatalogueApp } from '../../lib/workshop/catalogue-apps'
-import { ac } from '../../lib/workshop/catalogue-apps'
-import { HUB_TOOLBAR_ID } from '../../scripts/hubToolbar'
+import type { Locale } from '@/i18n/translations'
+import { translationsFor } from '@/i18n/translations'
+import { CARD_GRID, SHELF_CARD } from '@/lib/workshop/card-layout'
+import type { CatalogueApp } from '@/lib/workshop/catalogue-apps'
+import { ac } from '@/lib/workshop/catalogue-apps'
+import { captureHubItemClick } from '@/scripts/hub-analytics'
+import type { HubItemSource } from '@/scripts/workshop-analytics'
+import { HUB_TOOLBAR_ID } from '@/scripts/hubToolbar'
 import CardRow from './CardRow.vue'
+import HubRowSeen from './HubRowSeen.vue'
 import WorkshopAppCard from './WorkshopAppCard.vue'
 
 const ROW_LIMIT = 8
@@ -17,6 +20,7 @@ const { apps, locale = 'en' } = defineProps<{
   apps: readonly CatalogueApp[]
   locale?: Locale
 }>()
+const { t } = translationsFor(locale)
 
 const browseAll = defineModel<boolean>('browseAll', { default: false })
 const emit = defineEmits<{ section: [boolean] }>()
@@ -25,6 +29,14 @@ watch(browseAll, () => void nextTick(() => window.scrollTo({ top: 0 })))
 
 const shelf = computed(() => apps.slice(0, ROW_LIMIT))
 const hasMore = computed(() => apps.length > ROW_LIMIT)
+
+function openApp(app: CatalogueApp, source: HubItemSource, position: number) {
+  if (app.href)
+    captureHubItemClick(
+      { kind: 'app', slug: app.key },
+      { surface: 'apps', source, position }
+    )
+}
 </script>
 
 <template>
@@ -37,7 +49,7 @@ const hasMore = computed(() => apps.length > ROW_LIMIT)
         @click="browseAll = false"
       >
         <ChevronLeft class="size-4" aria-hidden="true" />
-        {{ t('workshop.sections.back', locale) }}
+        {{ t('workshop.sections.back') }}
       </button>
       <h2
         class="mt-5 mb-4 scroll-mt-24 text-3xl font-bold text-primary-warm-white sm:text-4xl lg:scroll-mt-32"
@@ -63,8 +75,8 @@ const hasMore = computed(() => apps.length > ROW_LIMIT)
       :aria-label="ac('apps', locale)"
       data-testid="app-search-results"
     >
-      <li v-for="app in apps" :key="app.key">
-        <WorkshopAppCard :app />
+      <li v-for="(app, index) in apps" :key="app.key">
+        <WorkshopAppCard :app @click="openApp(app, 'results_grid', index)" />
       </li>
     </ul>
 
@@ -79,10 +91,17 @@ const hasMore = computed(() => apps.length > ROW_LIMIT)
               {{ ac('apps', locale) }}
             </h2>
           </template>
-          <li v-for="app in shelf" :key="app.key" :class="SHELF_CARD">
-            <WorkshopAppCard :app />
+          <li v-for="(app, index) in shelf" :key="app.key" :class="SHELF_CARD">
+            <WorkshopAppCard :app @click="openApp(app, 'app_row', index)" />
           </li>
         </CardRow>
+        <HubRowSeen
+          :view="{
+            surface: 'apps',
+            source: 'app_row',
+            rowSlugs: shelf.map((app) => app.key)
+          }"
+        />
       </section>
       <button
         v-if="hasMore"

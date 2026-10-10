@@ -3,6 +3,7 @@
  */
 import type { Locator, Page } from '@playwright/test'
 
+import { WidgetSelectDefaultFixture } from '@e2e/fixtures/components/WidgetSelectDefault'
 import { SettingsHelper } from '@e2e/fixtures/helpers/SettingsHelper'
 import { TestIds } from '@e2e/fixtures/selectors'
 import { comfyExpect as expect } from '@e2e/fixtures/utils/customMatchers'
@@ -293,11 +294,10 @@ export class VueNodeHelpers {
     widgetName: string,
     optionName: string
   ): Promise<void> {
-    const node = this.getNodeByTitle(nodeTitle)
-    await node.getByRole('combobox', { name: widgetName, exact: true }).click()
-    await this.page
-      .getByRole('option', { name: optionName, exact: true })
-      .click()
+    await new WidgetSelectDefaultFixture(
+      this.getNodeByTitle(nodeTitle),
+      widgetName
+    ).selectOption(optionName)
   }
 
   /**

@@ -8,12 +8,12 @@ import {
 } from '@vueuse/core'
 import { computed, ref, useTemplateRef, watch } from 'vue'
 
-import { prefersReducedMotion } from '../../composables/useReducedMotion'
-import { usePreviewVideo } from '../../composables/usePreviewVideo'
-import type { Locale } from '../../i18n/translations'
-import { t } from '../../i18n/translations'
+import { prefersReducedMotion } from '@/composables/useReducedMotion'
+import { usePreviewVideo } from '@/composables/usePreviewVideo'
+import type { Locale } from '@/i18n/translations'
+import { translationsFor } from '@/i18n/translations'
 
-import Badge from '../ui/badge/Badge.vue'
+import Badge from '@/components/ui/badge/Badge.vue'
 import Button from '@/components/ui/button/Button.vue'
 import FeaturedBannerPagination from './FeaturedBannerPagination.vue'
 
@@ -47,10 +47,15 @@ const {
   locale?: Locale
   autoplay?: boolean
 }>()
+const { t } = translationsFor(locale)
+const emit = defineEmits<{ open: [slide: FeaturedSlide, position: number] }>()
 
 const activeIndex = ref(0)
+const shownIndex = computed(() =>
+  Math.min(activeIndex.value, slides.length - 1)
+)
 const active = computed<FeaturedSlide | undefined>(
-  () => slides[Math.min(activeIndex.value, slides.length - 1)]
+  () => slides[shownIndex.value]
 )
 
 function goTo(index: number) {
@@ -117,7 +122,7 @@ const fill = computed(() =>
   <section
     v-if="active"
     ref="banner"
-    :aria-label="t('workshop.sections.featured', locale)"
+    :aria-label="t('workshop.sections.featured')"
     class="relative isolate overflow-hidden rounded-3xl border border-transparency-white-t8"
     data-testid="section-featured"
   >
@@ -133,6 +138,7 @@ const fill = computed(() =>
         aria-hidden="true"
         class="absolute inset-0"
         data-testid="featured-slide-link"
+        @click="emit('open', active, shownIndex)"
       ></a>
       <video
         v-if="active.media?.kind === 'video'"
@@ -153,7 +159,7 @@ const fill = computed(() =>
         :src="active.media.url"
         alt=""
         class="pointer-events-none absolute inset-0 size-full object-cover"
-        decoding="async"
+        fetchpriority="high"
       />
       <div
         class="pointer-events-none absolute inset-0 bg-linear-to-t from-page/90 via-page/80 to-page/20 sm:bg-linear-to-r sm:via-page/75 sm:to-transparent"
@@ -196,8 +202,13 @@ const fill = computed(() =>
         </p>
 
         <div class="pointer-events-auto flex w-fit items-center gap-3">
-          <Button as="a" :href="active.href" class="w-fit">
-            {{ active.cta ?? t('workshop.hub.tryNow', locale) }}
+          <Button
+            as="a"
+            :href="active.href"
+            class="w-fit"
+            @click="emit('open', active, shownIndex)"
+          >
+            {{ active.cta ?? t('workshop.hub.tryNow') }}
           </Button>
           <Button
             v-if="active.docsHref"
@@ -209,7 +220,7 @@ const fill = computed(() =>
             class="w-fit"
             data-testid="featured-docs-link"
           >
-            {{ t('workshop.hub.docs', locale) }}
+            {{ t('workshop.hub.docs') }}
           </Button>
         </div>
       </div>

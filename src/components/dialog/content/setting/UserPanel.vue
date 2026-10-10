@@ -55,10 +55,13 @@
 
         <Spinner v-if="loading" class="mt-4 size-8" />
         <div v-else class="mt-4 flex flex-col gap-2">
-          <Button class="w-32" variant="secondary" @click="handleSignOut">
-            <i class="pi pi-sign-out" />
-            {{ $t('auth.signOut.signOut') }}
-          </Button>
+          <div class="flex flex-wrap items-center gap-2">
+            <Button class="w-32" variant="secondary" @click="handleSignOut">
+              <i class="pi pi-sign-out" />
+              {{ $t('auth.signOut.signOut') }}
+            </Button>
+            <SignOutEverywhereButton />
+          </div>
           <i18n-t
             v-if="!isApiKeyLogin"
             keypath="auth.deleteAccount.contactSupport"
@@ -97,11 +100,14 @@ import UserAvatar from '@/components/common/UserAvatar.vue'
 import Button from '@/components/ui/button/Button.vue'
 import Spinner from '@/components/ui/spinner/Spinner.vue'
 import { useCurrentUser } from '@/composables/auth/useCurrentUser'
+import SignOutEverywhereButton from '@/platform/auth/session/components/SignOutEverywhereButton.vue'
+import { useAuthDialogs } from '@/composables/auth/useAuthDialogs'
 import { useDialogService } from '@/services/dialogService'
 
 const { t } = useI18n()
 const router = useRouter()
 const dialogService = useDialogService()
+const { showUpdatePasswordDialog } = useAuthDialogs()
 const {
   loading,
   isLoggedIn,
@@ -116,10 +122,9 @@ const {
   handleSignOut,
   handleSignIn
 } = useCurrentUser()
-
 async function onUpdatePassword() {
   if (!needsFirebaseSignIn.value) {
-    await dialogService.showUpdatePasswordDialog()
+    await showUpdatePasswordDialog()
     return
   }
   const confirmed = await dialogService.confirm({

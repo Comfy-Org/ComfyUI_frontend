@@ -20,7 +20,8 @@ import type {
   WidgetCallbackOptions
 } from '@/lib/litegraph/src/types/widgets'
 import type { InputSpec } from '@/schemas/nodeDef/nodeDefSchemaV2'
-import { useToastStore } from '@/platform/updates/common/toastStore'
+import { inputSpecTree } from '@/schemas/nodeDef/inputSpecTree'
+import { useToast } from '@/components/ui/toast/toastStore'
 import { useNodeZIndex } from '@/renderer/extensions/vueNodes/composables/useNodeZIndex'
 import { app } from '@/scripts/app'
 import { t } from '@/i18n'
@@ -69,7 +70,7 @@ export async function createNode(
     }
     return addedNode
   } else {
-    useToastStore().addAlert(t('assetBrowser.failedToCreateNode'))
+    useToast().warning(t('assetBrowser.failedToCreateNode'))
     return null
   }
 }
@@ -198,6 +199,13 @@ export function migrateWidgetsValues<TWidgetValue>(
   widgets: IBaseWidget[],
   widgetsValues: TWidgetValue[]
 ): TWidgetValue[] {
+  if (
+    Object.values(inputDefs).some((input) =>
+      inputSpecTree(input).some((spec) => spec.type === 'COMFY_DYNAMICGROUP_V3')
+    )
+  )
+    return widgetsValues
+
   const widgetNames = new Set(widgets.map((w) => w.name))
   const originalWidgetsInputs = Object.values(inputDefs).filter(
     (input) => widgetNames.has(input.name) || input.forceInput

@@ -2,7 +2,7 @@ import { describe, expect, it } from 'vitest'
 
 import type { StudioGate, StudioGateInput } from './gate'
 import { canRunModel, studioGate } from './gate'
-import { workshopContract } from '../../../config/workshop-contract-catalog'
+import { workshopContract } from '@/config/workshop-contract-catalog'
 
 const ready: StudioGateInput = {
   runEnabled: true,

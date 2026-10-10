@@ -31,10 +31,13 @@ import {
   reportResourceLoadError
 } from '@/platform/telemetry/assetLoadErrorReporting'
 import { app } from '@/scripts/app'
+import { registerExtensionDialogService } from '@/services/dialogService'
+import { createExtensionDialogService } from '@/services/extensionDialogService'
 import { useWorkspaceStore } from '@/stores/workspaceStore'
 import { electronAPI } from '@/utils/envUtil'
 import { useConflictDetection } from '@/workbench/extensions/manager/composables/useConflictDetection'
 
+registerExtensionDialogService(createExtensionDialogService())
 const workspaceStore = useWorkspaceStore()
 app.extensionManager = useWorkspaceStore()
 
@@ -83,17 +86,11 @@ onMounted(() => {
   window.addEventListener('vite:preloadError', (event) => {
     event.preventDefault()
     reportPreloadError(event.payload)
-    // Disabled: Third-party custom node extensions frequently trigger this toast
+    // No toast: third-party custom node extensions frequently trigger this
     // (e.g., bare "vue" imports, wrong relative paths to scripts/app.js, missing
     // core dependencies). These are plugin bugs, not ComfyUI core failures, but
     // the generic error message alarms users and offers no actionable guidance.
     // The reporter above still logs the details for developers to debug.
-    // useToastStore().add({
-    //   severity: 'error',
-    //   summary: t('g.preloadErrorTitle'),
-    //   detail: t('g.preloadError'),
-    //   life: 10000
-    // })
   })
 
   // Capture resource load failures (CSS, scripts) in non-localhost distributions

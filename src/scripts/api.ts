@@ -9,30 +9,32 @@ import {
   zGetExtensionsResponse,
   zPostAssetsFromWorkflowResponse
 } from '@comfyorg/ingest-types/zod'
-import { promiseTimeout, until } from '@vueuse/core'
 import axios from 'axios'
-import { storeToRefs } from 'pinia'
 import { get } from 'es-toolkit/compat'
 import { trimEnd } from 'es-toolkit'
 import { ref } from 'vue'
 
 import defaultClientFeatureFlags from '@/config/clientFeatureFlags.json' with { type: 'json' }
+import type { ApiAuthProvider } from '@/platform/auth/apiAuthProvider'
+import { anonymousApiAuthProvider } from '@/platform/auth/apiAuthProvider'
+import {
+  authCredentialOf,
+  notifyAuthCredential
+} from '@/platform/auth/authCredential'
 import { scopeMediaRoute } from '@/platform/auth/session/sessionMediaUrl'
 import { webSessionRequests } from '@/platform/auth/session/webSessionFetch'
-import {
-  fetchWithUnifiedRemint,
-  shouldRemintCloudRequest
-} from '@/platform/auth/unified/remintRetry'
+import { FETCH_RESPONSE_HEADERS_TIMEOUT_MS } from '@/scripts/apiTimeouts'
 import { getDevOverride } from '@/utils/devFeatureFlagOverride'
 import { getSessionOverride } from '@/utils/sessionFeatureFlagOverride'
 import type {
   ModelFile,
   ModelFolderInfo
 } from '@/platform/assets/schemas/assetSchema'
+import { useToast } from '@/components/ui/toast/toastStore'
+import { t } from '@/i18n'
 import { isCloud } from '@/platform/distribution/types'
 import { addBreadcrumb } from '@sentry/vue'
 import { useTelemetry } from '@/platform/telemetry'
-import { useToastStore } from '@/platform/updates/common/toastStore'
 import type { components as ManagerComponents } from '@/workbench/extensions/manager/types/generatedManagerTypes'
 import type {
   AssetDownloadWsMessage,
@@ -78,8 +80,7 @@ import type {
   JobListItem
 } from '@/platform/remote/comfyui/jobs/jobTypes'
 import type { ComfyNodeDef } from '@/schemas/nodeDefSchema'
-import type { useAuthStore } from '@/stores/authStore'
-import type { AuthHeader } from '@/types/authTypes'
+import type { AuthCredential, AuthScheme } from '@/types/authTypes'
 import type { NodeExecutionId } from '@/types/nodeIdentification'
 import {
   fetchHistory,
@@ -144,11 +145,13 @@ interface QueuePromptRequestBody {
   number?: number
 }
 
-const FETCH_RESPONSE_HEADERS_TIMEOUT_MS = 60_000
-
 interface FetchApiOptions extends RequestInit {
   timeoutMs?: number | null
   onAuthHeader?: (attached: boolean) => void
+  /** Reports which auth path was taken, independent of onAuthHeader's attached/not boolean. */
+  onAuthScheme?: (scheme: AuthScheme) => void
+  /** Reports the kind of credential sent, to tell a missing token from a wrong one. */
+  onAuthCredential?: (credential: AuthCredential) => void
 }
 
 const FETCH_ROUTE_GROUPS = new Set([
@@ -359,24 +362,6 @@ function addHeaderEntry(headers: HeadersInit, key: string, value: string) {
   }
 }
 
-/**
- * Fire-and-forget: a telemetry chunk-load failure must never prevent the
- * token-less WebSocket connect fallback from proceeding.
- */
-async function trackWsTokenUnavailable(): Promise<void> {
-  try {
-    if (!(await shouldRemintCloudRequest())) return
-    const { useTelemetry } = await import('@/platform/telemetry')
-    useTelemetry()?.trackUnifiedAuthRetry({
-      transport: 'ws',
-      outcome: 'failed',
-      failure_reason: 'token_unavailable'
-    })
-  } catch (err) {
-    console.warn('Failed to report WebSocket token unavailability:', err)
-  }
-}
-
 /** EventTarget typing has no generic capability. */
 export interface ComfyApi extends EventTarget {
   addEventListener<TEvent extends keyof ApiEvents>(
@@ -426,7 +411,8 @@ export class PromptExecutionError extends Error {
     )) {
       message += '\n' + nodeError.class_type + ':'
       for (const errorReason of nodeError.errors) {
-        message += '\n    - ' + errorReason.message + ': ' + errorReason.details
+        message += '\n    - ' + errorReason.message
+        if (errorReason.details) message += ': ' + errorReason.details
       }
     }
 
@@ -471,10 +457,7 @@ export class ComfyApi extends EventTarget {
    */
   private socketGeneration = 0
 
-  /**
-   * Cache Firebase auth store composable function.
-   */
-  private authStoreComposable?: typeof useAuthStore
+  private authProvider: ApiAuthProvider = anonymousApiAuthProvider
 
   reportedUnknownMessageTypes = new Set<string>()
 
@@ -552,20 +535,12 @@ export class ComfyApi extends EventTarget {
   }
 
   /**
-   * Gets the Firebase auth store instance using cached composable function.
-   * Caches the composable function on first call, then reuses it.
-   * Returns null for non-cloud distributions.
-   * @returns The Firebase auth store instance, or null if not in cloud
+   * Installs the credentials source for every request and socket connection.
+   * Called once by the composition root; requests made before that are
+   * anonymous.
    */
-  private async getAuthStore() {
-    if (isCloud) {
-      if (!this.authStoreComposable) {
-        const module = await import('@/stores/authStore')
-        this.authStoreComposable = module.useAuthStore
-      }
-
-      return this.authStoreComposable()
-    }
+  setAuthProvider(provider: ApiAuthProvider): void {
+    this.authProvider = provider
   }
 
   private async getWebSessionSend(): Promise<WebSessionSend | undefined> {
@@ -584,52 +559,37 @@ export class ComfyApi extends EventTarget {
     return send?.(url, init)
   }
 
-  /** Adds today's token header; true when a 401 may be re-minted. */
+  /**
+   * Adds today's token header, reporting the scheme that was actually used and
+   * whether a 401 may be re-minted.
+   *
+   * The scheme is returned rather than assumed by the caller because this helper
+   * is the only place that knows whether a header was obtained: it reports
+   * `authHeader !== null` through `onAuthHeader` and attaches nothing when auth
+   * is unavailable. A caller that announced `cloud-auth-header` on entry to this
+   * path would misreport exactly the unauthenticated case PM-1802 is about.
+   */
   private async addCloudAuthHeader(
     headers: HeadersInit,
     onAuthHeader: FetchApiOptions['onAuthHeader']
-  ): Promise<boolean> {
-    // Get Firebase JWT token if user is logged in
-    const getAuthHeaderIfAvailable = async (): Promise<AuthHeader | null> => {
-      try {
-        const authStore = await this.getAuthStore()
-        return authStore ? await authStore.getAuthHeader() : null
-      } catch (error) {
-        console.warn('Failed to get auth header:', error)
-        return null
-      }
-    }
-
-    const authHeader = await getAuthHeaderIfAvailable()
+  ): Promise<{
+    scheme: AuthScheme
+    credential: AuthCredential
+    unifiedRetryOn401: boolean
+  }> {
+    const authHeader = await this.authProvider.getAuthHeader()
     onAuthHeader?.(authHeader !== null)
-    if (!authHeader) return false
+    if (!authHeader) {
+      return { scheme: 'none', credential: 'none', unifiedRetryOn401: false }
+    }
 
     for (const [key, value] of Object.entries(authHeader)) {
       addHeaderEntry(headers, key, value)
     }
-    return shouldRemintCloudRequest()
-  }
-
-  /**
-   * Waits for Firebase auth to be initialized before proceeding.
-   * Includes 10-second timeout to prevent infinite hanging.
-   */
-  private async waitForAuthInitialization(): Promise<void> {
-    if (isCloud) {
-      const authStore = await this.getAuthStore()
-      if (!authStore) return
-
-      if (authStore.isInitialized) return
-
-      const { isInitialized } = storeToRefs(authStore)
-      try {
-        await Promise.race([
-          until(isInitialized).toBe(true),
-          promiseTimeout(10000)
-        ])
-      } catch {
-        console.warn('Firebase auth initialization timeout after 10 seconds')
-      }
+    return {
+      scheme: 'cloud-auth-header',
+      credential: authCredentialOf(authHeader),
+      unifiedRetryOn401: await this.authProvider.shouldRetryOn401()
     }
   }
 
@@ -637,6 +597,8 @@ export class ComfyApi extends EventTarget {
     const {
       timeoutMs = FETCH_RESPONSE_HEADERS_TIMEOUT_MS,
       onAuthHeader,
+      onAuthScheme,
+      onAuthCredential,
       ...requestOptions
     } = options ?? {}
     const headers: HeadersInit = requestOptions.headers ?? {}
@@ -644,15 +606,22 @@ export class ComfyApi extends EventTarget {
     let sendOnWebSession: WebSessionSend | undefined
 
     if (isCloud) {
-      await this.waitForAuthInitialization()
+      await this.authProvider.waitForInitialization()
       sendOnWebSession = await this.getWebSessionSend()
       if (sendOnWebSession) {
         onAuthHeader?.(true)
+        onAuthScheme?.('web-session')
+        notifyAuthCredential(onAuthCredential, 'session-cookie')
       } else {
-        unifiedRetryOn401 = await this.addCloudAuthHeader(headers, onAuthHeader)
+        const cloudAuth = await this.addCloudAuthHeader(headers, onAuthHeader)
+        unifiedRetryOn401 = cloudAuth.unifiedRetryOn401
+        onAuthScheme?.(cloudAuth.scheme)
+        notifyAuthCredential(onAuthCredential, cloudAuth.credential)
       }
     } else {
       onAuthHeader?.(false)
+      onAuthScheme?.('none')
+      notifyAuthCredential(onAuthCredential, 'none')
     }
 
     addHeaderEntry(headers, 'Comfy-User', this.user)
@@ -734,7 +703,7 @@ export class ComfyApi extends EventTarget {
     }
     const response = sendOnWebSession
       ? sendOnWebSession(this.unscopedApiURL(route), init)
-      : fetchWithUnifiedRemint(
+      : this.authProvider.fetch(
           this.apiURL(route),
           init,
           unifiedRetryOn401,
@@ -910,18 +879,9 @@ export class ComfyApi extends EventTarget {
     }
     if (sessionScope) return true
 
-    // Get auth token and set cloud params if available
-    // Uses workspace token (if enabled) or Firebase token
-    try {
-      const authStore = await this.getAuthStore()
-      const authToken = await authStore?.getAuthToken()
-      if (authToken) {
-        params.set('token', authToken)
-      }
-    } catch (error) {
-      void trackWsTokenUnavailable()
-      // Continue without auth token if there's an error
-      console.warn('Could not get auth token for WebSocket connection:', error)
+    const authToken = await this.authProvider.getAuthToken()
+    if (authToken) {
+      params.set('token', authToken)
     }
     return !requests || params.has('token')
   }
@@ -1836,6 +1796,7 @@ export class ComfyApi extends EventTarget {
    * @param {boolean} options.freeExecutionCache - If true, also frees execution cache
    */
   async freeMemory(options: { freeExecutionCache: boolean }) {
+    const toast = useToast()
     try {
       let mode = ''
       if (options.freeExecutionCache) {
@@ -1851,31 +1812,19 @@ export class ComfyApi extends EventTarget {
       })
 
       if (res.status === 200) {
-        if (options.freeExecutionCache) {
-          useToastStore().add({
-            severity: 'success',
-            summary: 'Models and Execution Cache have been cleared.',
-            life: 3000
-          })
-        } else {
-          useToastStore().add({
-            severity: 'success',
-            summary: 'Models have been unloaded.',
-            life: 3000
-          })
-        }
+        toast.success(
+          t(
+            options.freeExecutionCache
+              ? 'toastMessages.modelsAndCacheCleared'
+              : 'toastMessages.modelsUnloaded'
+          ),
+          { duration: 3000 }
+        )
       } else {
-        useToastStore().add({
-          severity: 'error',
-          summary:
-            'Unloading of models failed. Installed ComfyUI may be an outdated version.'
-        })
+        toast.error(t('toastMessages.unloadModelsFailed'))
       }
     } catch {
-      useToastStore().add({
-        severity: 'error',
-        summary: 'An error occurred while trying to unload models.'
-      })
+      toast.error(t('toastMessages.unloadModelsError'))
     }
   }
 

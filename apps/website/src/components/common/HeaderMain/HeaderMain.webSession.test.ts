@@ -12,15 +12,15 @@ import { COMFY_CLIENT } from '@comfyorg/account-core/requestAuth'
 import {
   WORKSHOP_CLOUD_BASE_URL,
   WORKSHOP_CREDITS_URL
-} from '../../../config/workshop-env'
-import { ACCOUNT_SOURCE_CAP_MS } from '../../../config/workshop-account-source'
+} from '@/config/workshop-env'
+import { ACCOUNT_SOURCE_CAP_MS } from '@/config/workshop-account-source'
 
-vi.mock(import('../../../scripts/posthog'))
-vi.mock(import('../../../config/workshop-session-state'))
-vi.mock(import('../../../config/workshop-credits'))
-vi.mock(import('../../../config/workshop-billing-sdk'))
-vi.mock(import('../../../config/workshop-features'))
-vi.mock(import('../../../config/workshop-firebase'))
+vi.mock(import('@/scripts/posthog'))
+vi.mock(import('@/config/workshop-session-state'))
+vi.mock(import('@/config/workshop-credits'))
+vi.mock(import('@/config/workshop-billing-sdk'))
+vi.mock(import('@/config/workshop-features'))
+vi.mock(import('@/config/workshop-firebase'))
 
 const FEATURES = `${WORKSHOP_CLOUD_BASE_URL}/api/features`
 const SESSION = `${WORKSHOP_CLOUD_BASE_URL}/api/auth/session`
@@ -62,6 +62,7 @@ const LIVE_SESSION = {
   status: 200,
   body: {
     absolute_expires_at: '2099-01-01T00:00:00Z',
+    has_personal_workspace: true,
     expires_at: '2099-01-01T00:00:00Z',
     csrf_token: 'csrf',
     user: {
@@ -112,31 +113,27 @@ function stubCloud({
     [SESSION]: session,
     [BALANCE]: balance
   }
-  vi.stubGlobal(
-    'fetch',
-    vi.fn<typeof fetch>(async (input, init) => {
-      const url = String(input)
-      sent.push(recordRequest(url, init))
-      await answered
-      const answer = byUrl[url] ?? {
-        status: 200,
-        body: init?.credentials === 'include' ? perUser : anonymous
-      }
-      return new Response(JSON.stringify(answer.body), {
-        status: answer.status
-      })
+  vi.mocked(fetch).mockImplementation(async (input, init) => {
+    const url = String(input)
+    sent.push(recordRequest(url, init))
+    await answered
+    const answer = byUrl[url] ?? {
+      status: 200,
+      body: init?.credentials === 'include' ? perUser : anonymous
+    }
+    return new Response(JSON.stringify(answer.body), {
+      status: answer.status
     })
-  )
+  })
   return sent
 }
 
 async function renderHeader() {
-  const posthog = await import('../../../scripts/posthog')
+  const posthog = await import('@/scripts/posthog')
   vi.mocked(posthog.useWorkshopEnabled).mockReturnValue(readonly(ref(true)))
   const { default: HeaderMain } = await import('./HeaderMain.vue')
   render(HeaderMain, { props: { workshopInBuild: true } })
-  const { useWorkshopSession } =
-    await import('../../../config/workshop-session-state')
+  const { useWorkshopSession } = await import('@/config/workshop-session-state')
   return { useWorkshopSession: vi.mocked(useWorkshopSession) }
 }
 
@@ -246,7 +243,7 @@ describe('HeaderMain account source', () => {
     const { useWorkshopSession } = await renderHeader()
     await screen.findAllByTestId('header-session-account')
     const { requestWorkshopBuyCredits } =
-      await import('../../../config/workshop-buy-credits')
+      await import('@/config/workshop-buy-credits')
 
     requestWorkshopBuyCredits()
 
@@ -278,7 +275,7 @@ describe('HeaderMain account source', () => {
     await renderHeader()
     await screen.findAllByTestId('header-session-account')
     const { requestWorkshopBuyCreditsAutomatically } =
-      await import('../../../config/workshop-buy-credits')
+      await import('@/config/workshop-buy-credits')
 
     requestWorkshopBuyCreditsAutomatically()
     await Promise.resolve()
@@ -320,7 +317,7 @@ describe('HeaderMain account source', () => {
     await renderHeader()
     await nextTick()
     const { requestWorkshopBuyCredits } =
-      await import('../../../config/workshop-buy-credits')
+      await import('@/config/workshop-buy-credits')
 
     requestWorkshopBuyCredits()
 
@@ -376,9 +373,8 @@ describe('HeaderMain account source', () => {
     expect(
       await screen.findAllByRole('link', { name: /sign in/i })
     ).toHaveLength(2)
-    const { signOutWorkshop } =
-      await import('../../../config/workshop-firebase')
-    expect(vi.mocked(signOutWorkshop)).toHaveBeenCalledOnce()
+    const { signOutWorkshop } = await import('@/config/workshop-firebase')
+    expect(signOutWorkshop).toHaveBeenCalledOnce()
   })
 
   describe('decision cap', () => {

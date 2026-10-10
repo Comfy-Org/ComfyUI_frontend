@@ -1,7 +1,7 @@
 import { assert, describe, expect, it } from 'vitest'
 
 import type { AgentMessages } from '../../schemas/agentApiSchema'
-import { toTurnId } from '../../schemas/agentApiSchema'
+import { toTurnId, zAgentMessages } from '../../schemas/agentApiSchema'
 import { normalizeAgentTranscript } from './agentTranscript'
 
 const row = (
@@ -21,6 +21,36 @@ const row = (
 })
 
 describe('normalizeAgentTranscript', () => {
+  it('restores a skill and adjacent workflow references in their original order from message text', () => {
+    const message = row(1, 'user', 'turn-a', '', 'row-1')
+    message.content = {
+      text: 'Use [A](workflow://wf-a)[Use the saved skill /portrait](skill://portrait?description=Use%20defaults)[B](workflow://wf-b) today',
+      workflow_references: [
+        { workflow_id: 'wf-a', name: 'A' },
+        { workflow_id: 'wf-b', name: 'B' }
+      ]
+    }
+    const transcript = normalizeAgentTranscript([message])
+    expect(transcript.userTexts.get(toTurnId('turn-a'))).toBe('Use  today')
+    expect(transcript.userWorkflowReferences.get(toTurnId('turn-a'))).toEqual([
+      { id: 'wf-a', name: 'A', textOffset: 4 },
+      { id: 'wf-b', name: 'B', textOffset: 4 }
+    ])
+    expect(transcript).toMatchObject({
+      userSkillReferences: new Map([
+        [
+          'turn-a',
+          {
+            name: 'portrait',
+            description: 'Use defaults',
+            textOffset: 4,
+            workflowIndex: 1
+          }
+        ]
+      ])
+    })
+  })
+
   it('restores inline reference positions from the persisted message text', () => {
     const message = row(1, 'user', 'turn-a', '', 'row-1')
     message.content = {
@@ -395,6 +425,55 @@ describe('normalizeAgentTranscript', () => {
       },
       { type: 'text', text: 'Done', state: 'done' }
     ])
+  })
+
+  it('restores a persisted skill name', () => {
+    const message = row(1, 'assistant', 'turn-a', 'Done', 'row-1')
+    message.content = {
+      tool_calls: [
+        {
+          id: 'audit-row-uuid-1',
+          tool_call_id: 'call-1',
+          tool_name: 'load_skill',
+          status: 'success',
+          skill: 'comfy-director'
+        }
+      ]
+    }
+
+    const parsed = zAgentMessages.parse([message])
+
+    expect(normalizeAgentTranscript(parsed).messages[0].parts[0]).toMatchObject(
+      {
+        skill: 'comfy-director'
+      }
+    )
+  })
+
+  it('retains a persisted tool call with a null skill', () => {
+    const message = row(1, 'assistant', 'turn-a', 'Done', 'row-1')
+    message.content = {
+      tool_calls: [
+        {
+          id: 'audit-row-uuid-1',
+          tool_call_id: 'call-1',
+          tool_name: 'load_skill',
+          status: 'success',
+          skill: null
+        }
+      ]
+    }
+
+    const parsed = zAgentMessages.parse([message])
+
+    expect(normalizeAgentTranscript(parsed).messages[0].parts[0]).toEqual({
+      type: 'tool',
+      callId: 'call-1',
+      name: 'load_skill',
+      state: 'done',
+      ok: true,
+      durationMs: undefined
+    })
   })
 
   it('keys callId on tool_call_id, matching what live frames key on', () => {

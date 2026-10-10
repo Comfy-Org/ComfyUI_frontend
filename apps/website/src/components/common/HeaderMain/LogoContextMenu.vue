@@ -9,19 +9,28 @@ import {
   ContextMenuTrigger
 } from 'reka-ui'
 
-import { getRoutes } from '../../../config/routes'
-import type { Locale } from '../../../i18n/translations'
-import { t } from '../../../i18n/translations'
-import logoSvg from '../../../assets/brand/logo.svg?raw'
-import logomarkSvg from '../../../assets/brand/logomark.svg?raw'
+import { getRoutes } from '@/config/routes'
+import type { Locale } from '@/i18n/translations'
+import { translationsFor } from '@/i18n/translations'
+import logoSvg from '@/assets/brand/logo.svg?raw'
+import logomarkSvg from '@/assets/brand/logomark.svg?raw'
 
 const { locale = 'en' } = defineProps<{ locale?: Locale }>()
+const { t } = translationsFor(locale)
 
 const routes = getRoutes(locale)
 
 const svgAssets = [
-  { id: 'logo', label: t('nav.copyLogoSvg', locale), svg: logoSvg },
-  { id: 'logomark', label: t('nav.copyLogomarkSvg', locale), svg: logomarkSvg }
+  {
+    id: 'logo',
+    label: t('nav.copyLogoSvg'),
+    svg: logoSvg
+  },
+  {
+    id: 'logomark',
+    label: t('nav.copyLogomarkSvg'),
+    svg: logomarkSvg
+  }
 ]
 
 const { copy, copied, text: copiedSvg } = useClipboard({ copiedDuring: 1500 })
@@ -48,14 +57,14 @@ const itemClass =
           <span role="status" aria-live="polite">
             <template v-if="copied && copiedSvg === asset.svg">
               <Check class="size-4" aria-hidden="true" />
-              {{ t('nav.copied', locale) }}
+              {{ t('nav.copied') }}
             </template>
             <template v-else>{{ asset.label }}</template>
           </span>
         </ContextMenuItem>
         <ContextMenuItem as-child>
           <a :href="routes.brand" :class="itemClass">
-            {{ t('nav.brandAssets', locale) }}
+            {{ t('nav.brandAssets') }}
           </a>
         </ContextMenuItem>
       </ContextMenuContent>

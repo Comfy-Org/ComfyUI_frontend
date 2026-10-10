@@ -18,6 +18,7 @@ import type {
   SubscribeInput
 } from '@comfyorg/account-core/billing'
 import {
+  BILLING_CHECKOUT_FRICTION_TELEMETRY_EVENT,
   BILLING_OPERATION_TELEMETRY_EVENT,
   toBillingTelemetryEvent,
   validateActionUrl
@@ -27,6 +28,7 @@ import { until, useEventListener } from '@vueuse/core'
 import { defineStore } from 'pinia'
 import { computed, shallowRef } from 'vue'
 
+import { useToast } from '@/components/ui/toast/toastStore'
 import { useBillingContext } from '@/composables/billing/useBillingContext'
 import { useFeatureFlags } from '@/composables/useFeatureFlags'
 import { t } from '@/i18n'
@@ -34,7 +36,6 @@ import { webSessionRequests } from '@/platform/auth/session/webSessionFetch'
 import { isCloud } from '@/platform/distribution/types'
 import { useSettingsDialog } from '@/platform/settings/composables/useSettingsDialog'
 import { useTelemetry } from '@/platform/telemetry'
-import { useToastStore } from '@/platform/updates/common/toastStore'
 import type {
   BillingBalanceResponse,
   BillingCapabilitiesResponse,
@@ -46,7 +47,10 @@ import type {
   SavedPaymentMethod
 } from '@/platform/workspace/api/workspaceApi'
 import { workspaceApiUrl } from '@/platform/workspace/api/workspaceApiUrl'
-import type { ProgressToastKind } from '@/platform/workspace/billing/customerAttention'
+import type {
+  ProgressToast,
+  ProgressToastKind
+} from '@/platform/workspace/billing/customerAttention'
 import {
   isParkedCheckout,
   needsCustomerAttention,
@@ -56,6 +60,7 @@ import { resolveStripePublishableKey } from '@/platform/workspace/billing/stripe
 import { useBillingCapabilities } from '@/platform/workspace/composables/useBillingCapabilities'
 import { useTeamWorkspaceStore } from '@/platform/workspace/stores/teamWorkspaceStore'
 import { useWorkspaceAuthStore } from '@/platform/workspace/stores/workspaceAuthStore'
+import { getCheckoutJourneyPaymentIntentSource } from '@/platform/workspace/utils/checkoutJourney'
 import { useDialogStore } from '@/stores/dialogStore'
 
 import { projectBillingCapabilities } from './billingCapabilitiesView'
@@ -71,6 +76,7 @@ import type {
   SubscriptionRailOutcome
 } from './subscriptionOperationView'
 import {
+  projectCancelOperationResult,
   projectPaymentPortalResult,
   projectPreviewSubscribeResult,
   projectSubscribeResult,
@@ -93,7 +99,14 @@ const PROGRESS_SUMMARY = {
     action: 'billingOperation.subscriptionActionRequired'
   }
 } as const satisfies Record<string, Record<ProgressToastKind, string>>
-type ToastMessage = Parameters<ReturnType<typeof useToastStore>['add']>[0]
+
+const FRICTION_EVENT_NAMES: ReadonlySet<string> = new Set(
+  Object.values(BILLING_CHECKOUT_FRICTION_TELEMETRY_EVENT)
+)
+
+function isFrictionEvent(event: BillingOperationTelemetryEvent): boolean {
+  return FRICTION_EVENT_NAMES.has(event.name)
+}
 
 async function loadChallengePort(): Promise<EmbeddedChallengePort | undefined> {
   const publishableKey = resolveStripePublishableKey()
@@ -110,7 +123,7 @@ async function loadChallengePort(): Promise<EmbeddedChallengePort | undefined> {
 export const useBillingSdkStore = defineStore('billingSdk', () => {
   const workspaceAuthStore = useWorkspaceAuthStore()
   const workspaceStore = useTeamWorkspaceStore()
-  const toastStore = useToastStore()
+  const toast = useToast()
   const { flags } = useFeatureFlags()
   const billingCapabilities = useBillingCapabilities()
 
@@ -120,10 +133,7 @@ export const useBillingSdkStore = defineStore('billingSdk', () => {
   const callerStarted = new Set<BillingOperationKind>()
   const drivenChallenges = new Set<string>()
   const offeredActions = new Map<string, Set<string>>()
-  const progressToasts = new Map<
-    string,
-    { kind: ProgressToastKind; message: ToastMessage }
-  >()
+  const progressToasts = new Map<string, ProgressToast>()
 
   function sessionPorts(): Pick<
     BillingSdkOptions,
@@ -242,14 +252,24 @@ export const useBillingSdkStore = defineStore('billingSdk', () => {
   // forwarded, since only the lifecycle holds the operation's id, category
   // and timing. A command no caller announced — a resubscribe, a checkout
   // that reports nothing — is reported at both ends by the lifecycle.
+  // Friction inside an operation has no other reporter, so it always goes.
   function reportTelemetry(event: BillingOperationTelemetryEvent) {
+    if (isFrictionEvent(event)) {
+      useTelemetry()?.trackBillingEvent(toBillingTelemetryEvent(event))
+      return
+    }
     if (event.operation_type === 'topup' && !event.resumed) return
     const started = event.name === BILLING_OPERATION_TELEMETRY_EVENT.started
     if (started && event.resumed) resumedOperations.add(event.billing_op_id)
     if (started && !event.resumed && callerStarted.has(event.operation_type)) {
       return
     }
-    useTelemetry()?.trackBillingEvent(toBillingTelemetryEvent(event))
+    useTelemetry()?.trackBillingEvent(
+      toBillingTelemetryEvent(
+        event,
+        getCheckoutJourneyPaymentIntentSource(event.billing_op_id)
+      )
+    )
   }
 
   // Sound because the lifecycle runs one command per kind at a time and
@@ -277,10 +297,7 @@ export const useBillingSdkStore = defineStore('billingSdk', () => {
       [...dismissed.value].filter((id) => id !== state.id)
     )
     if (state.phase === 'timed_out') {
-      toastStore.add({
-        severity: 'error',
-        summary: t('billingOperation.topupTimeout')
-      })
+      toast.error(t('billingOperation.topupTimeout'))
     }
     if (resumedOperations.delete(state.id)) void settleResumed(state)
   }
@@ -297,19 +314,16 @@ export const useBillingSdkStore = defineStore('billingSdk', () => {
     if (current?.kind === progress) return
     clearProgressToast(state.id)
     if (progress === undefined) return
-    const message: ToastMessage = {
-      severity: progress === 'action' ? 'warn' : 'info',
-      summary: t(PROGRESS_SUMMARY[kind][progress]),
-      group: 'billing-operation'
-    }
-    progressToasts.set(state.id, { kind: progress, message })
-    toastStore.add(message)
+    const title = t(PROGRESS_SUMMARY[kind][progress])
+    const id =
+      progress === 'action' ? toast.warning(title) : toast.loading(title)
+    progressToasts.set(state.id, { kind: progress, id })
   }
 
   function clearProgressToast(operationId: string) {
     const current = progressToasts.get(operationId)
     if (!current) return
-    toastStore.remove(current.message)
+    toast.dismiss(current.id)
     progressToasts.delete(operationId)
   }
 
@@ -353,11 +367,12 @@ export const useBillingSdkStore = defineStore('billingSdk', () => {
     const offered = offeredActions.get(state.id) ?? new Set<string>()
     if (offered.has(actionUrl)) return
     offeredActions.set(state.id, offered.add(actionUrl))
-    if (window.open(actionUrl, '_blank')) return
-    toastStore.add({
-      severity: 'warn',
-      summary: t('g.warning'),
-      detail: t('subscription.preview.paymentPopupBlocked')
+    if (window.open(actionUrl, '_blank')) {
+      sdk.lifecycle.reportHostedStepOpened(state.id, 'new_tab')
+      return
+    }
+    toast.warning(t('g.warning'), {
+      description: t('subscription.preview.paymentPopupBlocked')
     })
   }
 
@@ -380,19 +395,15 @@ export const useBillingSdkStore = defineStore('billingSdk', () => {
       ])
       useDialogStore().closeDialog({ key: 'top-up-credits' })
       useSettingsDialog().show(isCloud ? 'workspace' : 'credits')
-      toastStore.add({
-        severity: 'success',
-        summary: t('billingOperation.topupSuccess'),
-        life: 5000
+      toast.success(t('billingOperation.topupSuccess'), {
+        duration: 5000
       })
       return
     }
     if (state.phase === 'failed') {
-      toastStore.add({
-        severity: 'error',
-        summary: t('billingOperation.topupFailed'),
-        detail: declineDetail(state.declineReason),
-        life: 7000
+      toast.error(t('billingOperation.topupFailed'), {
+        description: declineDetail(state.declineReason),
+        duration: 7000
       })
     }
   }
@@ -403,26 +414,19 @@ export const useBillingSdkStore = defineStore('billingSdk', () => {
   async function settleResumedSubscription(state: BillingOperationState) {
     if (state.phase === 'succeeded') {
       await refreshAfterSubscriptionChange()
-      toastStore.add({
-        severity: 'success',
-        summary: t('billingOperation.subscriptionSuccess'),
-        life: 5000
+      toast.success(t('billingOperation.subscriptionSuccess'), {
+        duration: 5000
       })
       return
     }
     if (state.phase === 'timed_out') {
-      toastStore.add({
-        severity: 'error',
-        summary: t('billingOperation.subscriptionTimeout')
-      })
+      toast.error(t('billingOperation.subscriptionTimeout'))
       return
     }
     if (state.phase === 'failed') {
-      toastStore.add({
-        severity: 'error',
-        summary: t('billingOperation.subscriptionFailed'),
-        detail: declineDetail(state.declineReason),
-        life: 7000
+      toast.error(t('billingOperation.subscriptionFailed'), {
+        description: declineDetail(state.declineReason),
+        duration: 7000
       })
     }
   }
@@ -438,14 +442,16 @@ export const useBillingSdkStore = defineStore('billingSdk', () => {
   // The backend gate on these routes is independent of the client flag, so a
   // 404 means the rail is on too early. One answer settles it for the tab:
   // every later action goes straight to the legacy call.
-  let subscriptionRouteAvailable = true
+  const subscriptionRouteAvailable = shallowRef(true)
 
   async function onSubscriptionRoute<T>(
     run: () => Promise<SubscriptionRailOutcome<T>>
   ): Promise<SubscriptionRailOutcome<T>> {
-    if (!subscriptionRouteAvailable) return { status: 'unavailable' }
+    if (!subscriptionRouteAvailable.value) return { status: 'unavailable' }
     const outcome = await run()
-    if (outcome.status === 'unavailable') subscriptionRouteAvailable = false
+    if (outcome.status === 'unavailable') {
+      subscriptionRouteAvailable.value = false
+    }
     return outcome
   }
 
@@ -530,6 +536,14 @@ export const useBillingSdkStore = defineStore('billingSdk', () => {
     // handing the URL out is the last moment this tab's list is known good.
     if (outcome.status === 'ok') sdk.paymentMethods.invalidate()
     return outcome
+  }
+
+  async function cancelOperation(
+    opId: string
+  ): Promise<SubscriptionRailOutcome> {
+    return projectCancelOperationResult(
+      await sdk.commands.cancelOperation(opId)
+    )
   }
 
   /** Adopts the operation the server reports pending; true once one is adopted. */
@@ -639,6 +653,7 @@ export const useBillingSdkStore = defineStore('billingSdk', () => {
     hasPendingOperations,
     isSettingUp,
     subscriptionActionOperation,
+    subscriptionRouteAvailable,
     getOperation,
     recoverPendingOperation,
     createTopup,
@@ -647,6 +662,7 @@ export const useBillingSdkStore = defineStore('billingSdk', () => {
     cancelSubscription,
     resubscribe,
     openPaymentPortal,
+    cancelOperation,
     recover,
     readStatus,
     readBalance,

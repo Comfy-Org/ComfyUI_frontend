@@ -13,10 +13,15 @@ vi.mock(import('@/platform/distribution/types'), () => ({ isCloud: true }))
 const NOW = new Date(2026, 2, 15, 12, 0, 0).getTime()
 const DAY = 86_400_000
 
-const session = (id: string, updatedAt: number): ChatSession => ({
+const session = (
+  id: string,
+  updatedAt: number,
+  titleSource: ChatSession['titleSource'] = 'server'
+): ChatSession => ({
   id,
   title: id,
-  updatedAt
+  updatedAt,
+  titleSource
 })
 
 describe('groupSessionsByRecency', () => {
@@ -183,14 +188,13 @@ describe('useAgentChatHistoryStore', () => {
   })
 
   it('removes a session with no server request', () => {
-    const fetchSpy = vi.spyOn(globalThis, 'fetch')
     const store = useAgentChatHistoryStore()
     store.replaceAll([session('a', 1)])
 
     store.remove('a')
 
-    expect(fetchSpy).not.toHaveBeenCalled()
+    expect(fetch).not.toHaveBeenCalled()
     expect(store.sessions).toHaveLength(0)
-    fetchSpy.mockRestore()
+    vi.mocked(fetch).mockRestore()
   })
 })

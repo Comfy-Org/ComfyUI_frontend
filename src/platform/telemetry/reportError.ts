@@ -1,6 +1,6 @@
-// eslint-disable-next-line no-restricted-imports -- the telemetry layer owns the sinks that reportError() fans out to
+// oxlint-disable-next-line no-restricted-imports -- the telemetry layer owns the sinks that reportError() fans out to
 import { datadogRum } from '@datadog/browser-rum'
-// eslint-disable-next-line no-restricted-imports -- the telemetry layer owns the sinks that reportError() fans out to
+// oxlint-disable-next-line no-restricted-imports -- the telemetry layer owns the sinks that reportError() fans out to
 import { captureException, isEnabled as isSentryEnabled } from '@sentry/vue'
 
 import type { ComfyDesktop2TelemetryProperties } from '@comfyorg/comfyui-desktop-bridge-types'
@@ -63,6 +63,16 @@ const NO_DELIVERY: DeliveryState = {
  */
 const pendingReports: PendingReport[] = []
 const MAX_PENDING_REPORTS = 25
+const reportedErrors = new WeakSet<Error>()
+
+/**
+ * Prevents an error with its own complete diagnostic from being reported again
+ * by a higher-level catch boundary. The original error remains unchanged for
+ * user-facing handling.
+ */
+export function markErrorReported(error: Error): void {
+  reportedErrors.add(error)
+}
 
 const isDatadogRumLive = () => datadogRum.getInitConfiguration() !== undefined
 
@@ -312,6 +322,7 @@ function logReport(
  */
 export function reportError(cause: unknown, options: ReportErrorOptions): void {
   try {
+    if (cause instanceof Error && reportedErrors.has(cause)) return
     if (dispatching) {
       logReport(cause, options, ' (suppressed: raised while reporting)')
       return

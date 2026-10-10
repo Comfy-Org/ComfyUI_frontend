@@ -86,6 +86,20 @@ describe('reportError', () => {
     )
   })
 
+  it('does not report an error again after its complete diagnostic was emitted', async () => {
+    const { markErrorReported, reportError } = await loadReportError()
+    const error = new Error('backend-controlled message')
+    markErrorReported(error)
+
+    reportError(error, {
+      surface: 'agent',
+      errorType: 'duplicate_agent_failure'
+    })
+
+    expect(captureException).not.toHaveBeenCalled()
+    expect(addError).not.toHaveBeenCalled()
+  })
+
   it('names a Datadog copy without changing the original error', async () => {
     const { reportError } = await loadReportError()
     const cause = new Error('Connection closed')
@@ -275,7 +289,6 @@ describe('reportError', () => {
   })
 
   it('does not throw out of flushErrorReports when the sink probe throws', async () => {
-    const consoleError = vi.spyOn(console, 'error').mockImplementation(() => {})
     sentryLive(false)
     datadogLive(false)
     const { reportError, flushErrorReports } = await loadReportError()
@@ -294,7 +307,6 @@ describe('reportError', () => {
     datadogLive(true)
     flushErrorReports()
     expect(addError).toHaveBeenCalledOnce()
-    consoleError.mockRestore()
   })
 
   it('buffers reports raised before any sink is live, then flushes them', async () => {
@@ -528,7 +540,6 @@ describe('reportError', () => {
   })
 
   it('writes the failure to the console so callers need no second sink', async () => {
-    const consoleError = vi.spyOn(console, 'error').mockImplementation(() => {})
     const { reportError } = await loadReportError()
     const error = new Error('listener failed')
 
@@ -537,15 +548,13 @@ describe('reportError', () => {
       errorType: 'canvas_layout_listener_failed'
     })
 
-    expect(consoleError).toHaveBeenCalledExactlyOnceWith(
+    expect(console.error).toHaveBeenCalledExactlyOnceWith(
       `${REPORTED_ERROR_PREFIX}canvas_layout_listener_failed`,
       error
     )
   })
 
   it('logs a warning-level report through console.warn', async () => {
-    const consoleWarn = vi.spyOn(console, 'warn').mockImplementation(() => {})
-    const consoleError = vi.spyOn(console, 'error').mockImplementation(() => {})
     const { reportError } = await loadReportError()
 
     reportError(new Error('cookie denied'), {
@@ -554,15 +563,14 @@ describe('reportError', () => {
       level: 'warning'
     })
 
-    expect(consoleWarn).toHaveBeenCalledWith(
+    expect(console.warn).toHaveBeenCalledWith(
       `${REPORTED_ERROR_PREFIX}session_cookie_creation_failure`,
       expect.any(Error)
     )
-    expect(consoleError).not.toHaveBeenCalled()
+    expect(console.error).not.toHaveBeenCalled()
   })
 
   it('skips the console line for a caller that already logged', async () => {
-    const consoleError = vi.spyOn(console, 'error').mockImplementation(() => {})
     const { reportError } = await loadReportError()
 
     reportError(new Error('[Assertion failed]: graph must exist'), {
@@ -571,12 +579,11 @@ describe('reportError', () => {
       logToConsole: false
     })
 
-    expect(consoleError).not.toHaveBeenCalled()
+    expect(console.error).not.toHaveBeenCalled()
     expect(addError).toHaveBeenCalledOnce()
   })
 
   it('logs a buffered report once, when it is raised', async () => {
-    const consoleError = vi.spyOn(console, 'error').mockImplementation(() => {})
     sentryLive(false)
     datadogLive(false)
     const { reportError, flushErrorReports } = await loadReportError()
@@ -588,7 +595,7 @@ describe('reportError', () => {
     datadogLive(true)
     flushErrorReports()
 
-    expect(consoleError).toHaveBeenCalledOnce()
+    expect(console.error).toHaveBeenCalledOnce()
   })
 
   it('still reports to Datadog when Sentry throws', async () => {
@@ -607,7 +614,6 @@ describe('reportError', () => {
   })
 
   it('delivers a report that re-enters through a sink once, then accepts the next report', async () => {
-    const consoleError = vi.spyOn(console, 'error').mockImplementation(() => {})
     const { reportError } = await loadReportError()
     const nested = new Error('Graph serialization state mismatch')
     captureException.mockImplementationOnce(() => {
@@ -624,7 +630,7 @@ describe('reportError', () => {
 
     expect(captureException).toHaveBeenCalledOnce()
     expect(addError).toHaveBeenCalledOnce()
-    expect(consoleError).toHaveBeenCalledWith(
+    expect(console.error).toHaveBeenCalledWith(
       expect.stringContaining('graph_serialization_state_mismatch'),
       nested
     )
@@ -639,8 +645,6 @@ describe('reportError', () => {
   })
 
   it('skips the console line for a suppressed re-entrant report that opted out', async () => {
-    const consoleError = vi.spyOn(console, 'error').mockImplementation(() => {})
-    const consoleWarn = vi.spyOn(console, 'warn').mockImplementation(() => {})
     const { reportError } = await loadReportError()
     captureException.mockImplementationOnce(() => {
       reportError(new Error('nested'), {
@@ -656,13 +660,11 @@ describe('reportError', () => {
       logToConsole: false
     })
 
-    expect(consoleError).not.toHaveBeenCalled()
-    expect(consoleWarn).not.toHaveBeenCalled()
+    expect(console.error).not.toHaveBeenCalled()
+    expect(console.warn).not.toHaveBeenCalled()
   })
 
   it('logs a suppressed warning-level re-entrant report through console.warn', async () => {
-    const consoleError = vi.spyOn(console, 'error').mockImplementation(() => {})
-    const consoleWarn = vi.spyOn(console, 'warn').mockImplementation(() => {})
     const { reportError } = await loadReportError()
     const nested = new Error('nested')
     captureException.mockImplementationOnce(() => {
@@ -679,10 +681,10 @@ describe('reportError', () => {
       logToConsole: false
     })
 
-    expect(consoleWarn).toHaveBeenCalledExactlyOnceWith(
+    expect(console.warn).toHaveBeenCalledExactlyOnceWith(
       `${REPORTED_ERROR_PREFIX}session_cookie_creation_failure (suppressed: raised while reporting)`,
       nested
     )
-    expect(consoleError).not.toHaveBeenCalled()
+    expect(console.error).not.toHaveBeenCalled()
   })
 })

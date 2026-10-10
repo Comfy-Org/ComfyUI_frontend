@@ -370,7 +370,7 @@ for (const { section, destination, query, filter, reachTabs } of [
   })
 }
 
-test('the mobile menu closes and reopens after its Hub link navigates', async ({
+test('the mobile menu closes and reopens after its All models link navigates', async ({
   page
 }) => {
   await page.setViewportSize({ width: 390, height: 900 })
@@ -380,7 +380,8 @@ test('the mobile menu closes and reopens after its Hub link navigates', async ({
   await toggle.click()
   const menu = page.getByRole('dialog', { name: 'Menu' })
   await expect(menu).toBeVisible()
-  await menu.getByRole('link', { name: /^Hub\b/ }).click()
+  await menu.getByRole('button', { name: /^Hub\b/ }).click()
+  await menu.getByRole('link', { name: 'All models', exact: true }).click()
   await expect(page).toHaveURL('/hub/models/')
   await expect(menu).toBeHidden()
   await expect(page.getByRole('heading', { level: 1 })).toHaveText(
@@ -393,6 +394,25 @@ test('the mobile menu closes and reopens after its Hub link navigates', async ({
   await page.getByRole('button', { name: 'Close' }).click()
   await expect(menu).toBeHidden()
   await expect(page.getByRole('heading', { level: 1 })).toBeVisible()
+})
+
+test('mobile search suggestions show a video model as a still frame', async ({
+  page
+}) => {
+  await page.setViewportSize({ width: 390, height: 900 })
+  await page.goto('/hub/models/')
+  const open = page.getByTestId('workshop-search-button')
+  await waitForIsland(page, open)
+  await open.click()
+  await page.getByTestId('workshop-search-sheet-input').fill('seedance')
+  const sheet = page.getByTestId('workshop-search-sheet')
+  await expect(sheet.getByTestId('workshop-search-model')).toHaveCount(4)
+  await expect(
+    sheet.getByTestId('workshop-search-model-video')
+  ).not.toHaveCount(0)
+  await expect(
+    sheet.locator('img[src*=".mp4"], img[src*=".webm"], img[src*=".mov"]')
+  ).toHaveCount(0)
 })
 
 test('keeps the current listing visible until a cold destination is ready', async ({

@@ -1,12 +1,14 @@
-import { applyOps, mint, nodesMap } from '@comfyorg/comfy-multi-player'
 import type { Op } from '@comfyorg/comfy-multi-player'
-import { describe, expect, it } from 'vitest'
+import { applyOps, mint, nodesMap } from '@comfyorg/comfy-multi-player'
+import { assert, describe, expect, it } from 'vitest'
 
 import type { GraphOperation } from './graphOperations'
+import type { SizedOp } from './opEnvelope'
 import {
   WIRE_MAX_BATCH_BYTES,
   WIRE_MAX_OPS_PER_BATCH,
   chunkWireOps,
+  measureWireOp,
   mintOpId,
   mintWireOps
 } from './opEnvelope'
@@ -20,6 +22,12 @@ const MINT = { actor: 'human:test-user:tab-1', baseVersion: 7 }
 // @ts-expect-error reset_doc is DeferredOp, not a mintable GraphOperation
 const REJECTED_RESET_DOC: GraphOperation = { op: 'reset_doc' }
 void REJECTED_RESET_DOC
+
+function sizedOf(op: Op): SizedOp {
+  const measured = measureWireOp(op)
+  assert(measured.admitted)
+  return measured.sized
+}
 
 function addNode(id: number): GraphOperation {
   return {
@@ -89,10 +97,10 @@ describe('chunkWireOps', () => {
       Array.from({ length: 600 }, (_, i) => addNode(i)),
       MINT
     )
-    const batches = chunkWireOps(ops)
+    const batches = chunkWireOps(ops.map(sizedOf))
 
     expect(batches.map((b) => b.length)).toEqual([256, 256, 88])
-    expect(batches.flat()).toEqual(ops)
+    expect(batches.flat().map((sized) => sized.op)).toEqual(ops)
     expect(WIRE_MAX_OPS_PER_BATCH).toBe(256)
   })
 
@@ -100,9 +108,9 @@ describe('chunkWireOps', () => {
     const clear: GraphOperation = { op: 'clear', removed_nodes: [1, 2] }
     const ops = mintWireOps([addNode(1), clear, addNode(2)], MINT)
 
-    const batches = chunkWireOps(ops)
+    const batches = chunkWireOps(ops.map(sizedOf))
 
-    expect(batches.map((b) => b.map((op) => op.op))).toEqual([
+    expect(batches.map((b) => b.map((sized) => sized.op.op))).toEqual([
       ['add_node'],
       ['clear'],
       ['add_node']
@@ -119,7 +127,7 @@ describe('chunkWireOps', () => {
     })
     const ops = mintWireOps([setWidget(1), setWidget(2), setWidget(3)], MINT)
 
-    const batches = chunkWireOps(ops)
+    const batches = chunkWireOps(ops.map(sizedOf))
 
     expect(batches.length).toBe(3)
     expect(batches.every((b) => b.length === 1)).toBe(true)
@@ -132,29 +140,132 @@ describe('chunkWireOps', () => {
       widget: 'text',
       value: 'x'.repeat(WIRE_MAX_BATCH_BYTES + 16)
     }
-    const ops: Op[] = mintWireOps([huge], MINT)
+    const sized = mintWireOps([huge], MINT).map(sizedOf)
 
-    expect(chunkWireOps(ops)).toEqual([ops])
+    expect(chunkWireOps(sized)).toEqual([sized])
+  })
+})
+
+describe('measureWireOp', () => {
+  it('reports the UTF-8 wire size, not the UTF-16 length, of the op', () => {
+    const threeByteChars = '日本語'
+    const [op] = mintWireOps(
+      [{ op: 'set_widget', node_id: 1, widget: 'text', value: threeByteChars }],
+      MINT
+    )
+    const json = JSON.stringify(op)
+    const extraBytesPerChar = 2
+
+    expect(measureWireOp(op)).toEqual({
+      admitted: true,
+      sized: {
+        op,
+        wire: JSON.parse(json),
+        bytes: json.length + threeByteChars.length * extraBytesPerChar
+      }
+    })
+  })
+
+  it('accepts an op whose toJSON still yields a wire object with its op_id', () => {
+    const [op] = mintWireOps([addNode(1)], MINT)
+    const wire = { ...op }
+    Object.assign(op, { toJSON: () => wire })
+
+    expect(measureWireOp(op)).toEqual({
+      admitted: true,
+      sized: { op, wire, bytes: JSON.stringify(wire).length }
+    })
   })
 
   it('rejects an op whose toJSON returns undefined', () => {
     const [op] = mintWireOps([addNode(1)], MINT)
     Object.assign(op, { toJSON: () => undefined })
 
-    expect(() => chunkWireOps([op])).toThrow(
-      'Operation did not serialize to JSON'
-    )
+    expect(measureWireOp(op)).toEqual({
+      admitted: false,
+      op,
+      cause: new TypeError('Operation did not serialize to JSON')
+    })
   })
 
-  it.for([null, 42, 'not-an-operation', []])(
-    'rejects an op whose toJSON returns %j',
-    (serialized) => {
-      const [op] = mintWireOps([addNode(1)], MINT)
-      Object.assign(op, { toJSON: () => serialized })
+  it.for([
+    { label: 'null', serialized: null },
+    { label: 'a number', serialized: 42 },
+    { label: 'a string', serialized: 'not-an-operation' },
+    { label: 'an array', serialized: [] },
+    { label: 'an object without op_id', serialized: { op: 'add_node' } }
+  ])('rejects an op whose toJSON returns $label', ({ serialized }) => {
+    const [op] = mintWireOps([addNode(1)], MINT)
+    Object.assign(op, { toJSON: () => serialized })
 
-      expect(() => chunkWireOps([op])).toThrow(
-        'Operation did not serialize to a wire object'
-      )
+    expect(measureWireOp(op)).toEqual({
+      admitted: false,
+      op,
+      cause: new TypeError('Operation did not serialize to a wire object')
+    })
+  })
+
+  it.for([
+    { label: 'kind', patch: { op: 'clear' } },
+    { label: 'op_id', patch: { op_id: mintOpId() } },
+    { label: 'actor', patch: { actor: 'human:other-user:tab-9' } },
+    { label: 'base_version', patch: { base_version: 999 } },
+    { label: 'stamp version', patch: { stamp: [999, MINT.actor] } },
+    { label: 'stamp actor', patch: { stamp: [7, 'human:other-user:tab-9'] } }
+  ])('rejects an op whose toJSON rewrites the envelope $label', ({ patch }) => {
+    const [op] = mintWireOps([addNode(1)], MINT)
+    Object.assign(op, { toJSON: () => ({ ...op, ...patch }) })
+
+    expect(measureWireOp(op)).toEqual({
+      admitted: false,
+      op,
+      cause: new TypeError('Operation serialized with a different envelope')
+    })
+  })
+
+  it.for([
+    {
+      label: 'serializes the moved envelope',
+      toJSON(this: Op) {
+        this.base_version = 9
+        this.stamp = [9, MINT.actor]
+        return { ...this }
+      },
+      message: 'Operation serialized with a different envelope'
+    },
+    {
+      label: 'serializes the minted envelope',
+      toJSON(this: Op) {
+        const wire = { ...this, stamp: [...this.stamp] }
+        this.base_version = 9
+        this.stamp[0] = 9
+        return wire
+      },
+      message: 'Operation changed its envelope while serializing'
+    }
+  ])(
+    'rejects an op whose toJSON moves its own envelope and $label',
+    ({ toJSON, message }) => {
+      const [op] = mintWireOps([addNode(1)], MINT)
+      Object.assign(op, { toJSON })
+
+      expect(measureWireOp(op)).toEqual({
+        admitted: false,
+        op,
+        cause: new TypeError(message)
+      })
     }
   )
+
+  it('rejects an op whose toJSON throws, carrying the thrown value as the cause', () => {
+    const [op] = mintWireOps([addNode(1)], MINT)
+    const thrown = new Error('serializer boom')
+    Object.assign(op, {
+      toJSON: () => {
+        throw thrown
+      }
+    })
+
+    expect(measureWireOp(op)).toEqual({ admitted: false, op, cause: thrown })
+  })
 })

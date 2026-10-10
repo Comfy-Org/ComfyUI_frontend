@@ -1,4 +1,5 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
+import { useToast } from '@/components/ui/toast/toastStore'
 import { computed, createApp, defineComponent, ref } from 'vue'
 import type { App } from 'vue'
 import { createI18n } from 'vue-i18n'
@@ -15,8 +16,7 @@ import { useResubscribe as createResubscribe } from './useResubscribe'
 const state = vi.hoisted(() => ({
   shouldUseWorkspaceBilling: true,
   canManageSubscriptionLifecycle: true,
-  canReactivatePlan: true,
-  toastAdd: vi.fn()
+  canReactivatePlan: true
 }))
 
 vi.mock(import('@/composables/billing/useBillingContext'))
@@ -30,13 +30,6 @@ vi.mock(import('@/platform/workspace/composables/useBillingCapabilities'))
 vi.mock(import('@/platform/workspace/composables/useWorkspaceUI'))
 
 vi.mock(import('@/platform/telemetry'))
-
-vi.mock<unknown>(
-  import('primevue/usetoast'), // oxlint-disable-line comfy/no-primevue-imports
-  () => ({
-    useToast: () => ({ add: state.toastAdd })
-  })
-)
 
 const apps: App<Element>[] = []
 
@@ -94,7 +87,7 @@ describe('useResubscribe', () => {
 
     expect(mockBillingContext().resubscribe).not.toHaveBeenCalled()
     expect(useTelemetry()?.trackResubscribeClicked).not.toHaveBeenCalled()
-    expect(state.toastAdd).not.toHaveBeenCalled()
+    expect(useToast().toasts).toEqual([])
     expect(isResubscribing.value).toBe(false)
   })
 
@@ -108,7 +101,7 @@ describe('useResubscribe', () => {
 
     expect(mockBillingContext().resubscribe).not.toHaveBeenCalled()
     expect(useTelemetry()?.trackResubscribeClicked).not.toHaveBeenCalled()
-    expect(state.toastAdd).not.toHaveBeenCalled()
+    expect(useToast().toasts).toEqual([])
     expect(isResubscribing.value).toBe(false)
   })
 
@@ -148,6 +141,13 @@ describe('useResubscribe', () => {
       outcome: 'pending',
       source: 'settings_billing_panel'
     })
+    expect(useTelemetry()?.trackBillingEvent).toHaveBeenCalledWith({
+      operation: 'resubscribe',
+      stage: 'succeeded',
+      outcome: 'success',
+      source: 'settings_billing_panel',
+      duration_ms: expect.any(Number)
+    })
   })
 
   it('does not report checkout launch as terminal legacy success', async () => {
@@ -174,9 +174,12 @@ describe('useResubscribe', () => {
     // Exactly one started event on the legacy success rail: the pre-call start,
     // with no duplicate post-await started/pending emitted after resubscribe() resolves.
     expect(useTelemetry()?.trackBillingEvent).toHaveBeenCalledTimes(1)
-    expect(state.toastAdd).toHaveBeenCalledWith(
-      expect.objectContaining({ severity: 'success' })
-    )
+    expect(useToast().toasts).toEqual([
+      expect.objectContaining({
+        kind: 'success',
+        title: 'subscription.resubscribeSuccess'
+      })
+    ])
   })
 
   it('shows an error and resets loading when resubscription fails', async () => {
@@ -188,18 +191,16 @@ describe('useResubscribe', () => {
     await handleResubscribe()
 
     expect(mockBillingContext().resubscribe).toHaveBeenCalledOnce()
-    expect(state.toastAdd).toHaveBeenCalledWith(
-      expect.objectContaining({
-        severity: 'error',
-        detail: 'Resubscribe failed for person@example.com'
-      })
-    )
+    expect(useToast().error).toHaveBeenCalledWith('g.error', {
+      description: 'Resubscribe failed for person@example.com'
+    })
     expect(useTelemetry()?.trackBillingEvent).toHaveBeenCalledWith({
       operation: 'resubscribe',
       stage: 'failed',
       outcome: 'failure',
       source: 'settings_billing_panel',
-      failure_category: 'unknown'
+      failure_category: 'unknown',
+      duration_ms: expect.any(Number)
     })
     expect(isResubscribing.value).toBe(false)
   })

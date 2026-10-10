@@ -4,7 +4,6 @@ import type {
   SubscriptionCheckoutTier,
   SubscriptionCheckoutType
 } from '@comfyorg/account-core/billing'
-import type { ToastMessageOptions } from 'primevue/toast'
 import type { PaymentIntent } from '@stripe/stripe-js'
 import { loadStripe } from '@stripe/stripe-js/pure'
 import { customerCanActHere } from '@comfyorg/account-core/billing'
@@ -13,6 +12,7 @@ import { defineStore } from 'pinia'
 import { computed, ref } from 'vue'
 
 import { useBillingContext } from '@/composables/billing/useBillingContext'
+import { useToast } from '@/components/ui/toast/toastStore'
 import { useFeatureFlags } from '@/composables/useFeatureFlags'
 import { t } from '@/i18n'
 import type { TierKey } from '@/platform/cloud/subscription/constants/tierPricing'
@@ -22,7 +22,6 @@ import { isCloud } from '@/platform/distribution/types'
 import { useTelemetry } from '@/platform/telemetry'
 import { reportError } from '@/platform/telemetry/reportError'
 import type { PaymentIntentSource } from '@/platform/telemetry/types'
-import { useToastStore } from '@/platform/updates/common/toastStore'
 import { workspaceApi } from '@/platform/workspace/api/workspaceApi'
 import type {
   BillingAuthenticationState,
@@ -30,7 +29,10 @@ import type {
   BillingDeclineReason,
   BillingRecoveryAction
 } from '@/platform/workspace/api/workspaceApi'
-import type { ProgressToastKind } from '@/platform/workspace/billing/customerAttention'
+import type {
+  ProgressToast,
+  ProgressToastKind
+} from '@/platform/workspace/billing/customerAttention'
 import {
   isBlockedOnCustomerPhase,
   isParkedCheckout,
@@ -43,7 +45,8 @@ import { useBillingCapabilities } from '@/platform/workspace/composables/useBill
 import { useTeamWorkspaceStore } from '@/platform/workspace/stores/teamWorkspaceStore'
 import {
   clearCheckoutJourney,
-  getActiveCheckoutJourney
+  getActiveCheckoutJourney,
+  getCheckoutJourneyPaymentIntentSource
 } from '@/platform/workspace/utils/checkoutJourney'
 import { useDialogStore } from '@/stores/dialogStore'
 
@@ -77,7 +80,13 @@ function trackLegacyBillingEvent(event: BillingTelemetryEvent) {
   useTelemetry()?.trackBillingEvent({ ...event, billing_client: 'legacy' })
 }
 
-type OperationType = 'subscription' | 'topup' | 'cancel'
+type OperationType = 'subscription' | 'topup' | 'cancel' | 'retention'
+type PaymentOperationType = Extract<OperationType, 'subscription' | 'topup'>
+
+function isPaymentOperation(type: OperationType): type is PaymentOperationType {
+  return type === 'subscription' || type === 'topup'
+}
+
 type OperationStatus =
   | 'pending'
   | 'succeeded'
@@ -86,6 +95,7 @@ type OperationStatus =
   | 'reconciliation_needed'
 
 export interface StartOperationMetadata {
+  workspaceId?: string
   tier?: SubscriptionCheckoutTier
   cycle?: BillingCycle
   checkoutType?: SubscriptionCheckoutType
@@ -164,14 +174,12 @@ interface FailureRecovery {
 export const useBillingOperationStore = defineStore('billingOperation', () => {
   const workspaceStore = useTeamWorkspaceStore()
   const { flags } = useFeatureFlags()
+  const toast = useToast()
   const operations = ref<Map<string, BillingOperation>>(new Map())
   const timeouts = new Map<string, ReturnType<typeof setTimeout>>()
   const intervals = new Map<string, number>()
   const waitingWithoutActionSince = new Map<string, number>()
-  const progressToasts = new Map<
-    string,
-    { kind: ProgressToastKind; message: ToastMessageOptions }
-  >()
+  const progressToasts = new Map<string, ProgressToast>()
   const progressToastsAwaitingFirstRead = new Set<string>()
   const terminalResolvers = new Map<string, TerminalResolver>()
   const terminalPromises = new Map<string, Promise<BillingOperation>>()
@@ -238,14 +246,13 @@ export const useBillingOperationStore = defineStore('billingOperation', () => {
   // do here" next to the verification prompt the same state renders.
   function syncProgressToast(
     opId: string,
-    type: Exclude<OperationType, 'cancel'>,
+    type: PaymentOperationType,
     kind: ProgressToastKind | undefined
   ) {
-    const toastStore = useToastStore()
     const previous = progressToasts.get(opId)
     if (previous?.kind === kind) return
     if (previous) {
-      toastStore.remove(previous.message)
+      toast.dismiss(previous.id)
       progressToasts.delete(opId)
     }
     if (kind === undefined) return
@@ -259,21 +266,22 @@ export const useBillingOperationStore = defineStore('billingOperation', () => {
           ? 'billingOperation.topupActionRequired'
           : 'billingOperation.topupProcessing'
 
-    const message: ToastMessageOptions = {
-      // 'warn' selects the prompt icon over the spinner in GlobalToast.
-      severity: kind === 'action' ? 'warn' : 'info',
-      summary: t(messageKey),
-      group: 'billing-operation'
-    }
-    progressToasts.set(opId, { kind, message })
-    toastStore.add(message)
+    const id =
+      kind === 'action'
+        ? toast.warning(t(messageKey))
+        : toast.loading(t(messageKey))
+    progressToasts.set(opId, { kind, id })
   }
 
   function announceStart(
     operation: BillingOperation,
     metadata: StartOperationMetadata | undefined
   ) {
-    if (operation.type === 'cancel' || metadata?.suppressProcessingToast) return
+    if (
+      !isPaymentOperation(operation.type) ||
+      metadata?.suppressProcessingToast
+    )
+      return
     if (metadata?.resumed && operation.actionUrl === null) {
       progressToastsAwaitingFirstRead.add(operation.opId)
       return
@@ -292,7 +300,7 @@ export const useBillingOperationStore = defineStore('billingOperation', () => {
     after: BillingOperation
   ) {
     if (
-      after.type !== 'cancel' &&
+      isPaymentOperation(after.type) &&
       progressToastsAwaitingFirstRead.delete(after.opId)
     ) {
       syncProgressToast(after.opId, after.type, progressToastKind(after))
@@ -305,7 +313,7 @@ export const useBillingOperationStore = defineStore('billingOperation', () => {
     before: BillingOperation,
     after: BillingOperation
   ) {
-    if (after.type === 'cancel') return
+    if (!isPaymentOperation(after.type)) return
     const kind = progressToastKind(after)
     if (kind !== progressToastKind(before)) {
       syncProgressToast(after.opId, after.type, kind)
@@ -340,11 +348,13 @@ export const useBillingOperationStore = defineStore('billingOperation', () => {
       canRetryAuthentication: false,
       authenticationRequiredSeen: actionUrl !== null,
       blockedOnCustomerSeen: false,
-      workspaceId: workspaceStore.activeWorkspaceId,
+      workspaceId: metadata?.workspaceId ?? workspaceStore.activeWorkspaceId,
       tier: metadata?.tier,
       cycle: metadata?.cycle,
       checkoutType: metadata?.checkoutType,
-      paymentIntentSource: metadata?.paymentIntentSource,
+      paymentIntentSource:
+        metadata?.paymentIntentSource ??
+        getCheckoutJourneyPaymentIntentSource(opId),
       autoHandleRequiresAction: metadata?.autoHandleRequiresAction ?? false,
       phase: null,
       downgradeToPersonal: metadata?.downgradeToPersonal,
@@ -558,7 +568,7 @@ export const useBillingOperationStore = defineStore('billingOperation', () => {
   function hasTimedOut(operation: BillingOperation): boolean {
     const elapsed = Date.now() - operation.startedAt
     if (
-      operation.type !== 'cancel' &&
+      isPaymentOperation(operation.type) &&
       (operation.authenticationRequiredSeen || operation.blockedOnCustomerSeen)
     ) {
       return elapsed > AUTHENTICATION_TIMEOUT_MS
@@ -889,6 +899,8 @@ export const useBillingOperationStore = defineStore('billingOperation', () => {
         })
       }
 
+      if (operation.type === 'retention') return
+
       const billingContext = useBillingContext()
       const capabilities = useBillingCapabilities()
       if (operation.type === 'subscription') {
@@ -916,17 +928,12 @@ export const useBillingOperationStore = defineStore('billingOperation', () => {
         useSettingsDialog().show(isCloud ? 'workspace' : 'credits')
       }
 
-      const toastStore = useToastStore()
       const messageKey =
         operation.type === 'subscription'
           ? 'billingOperation.subscriptionSuccess'
           : 'billingOperation.topupSuccess'
 
-      toastStore.add({
-        severity: 'success',
-        summary: t(messageKey),
-        life: 5000
-      })
+      toast.success(t(messageKey), { duration: 5000 })
     } catch (error) {
       reportError(error, {
         surface: 'billing',
@@ -953,7 +960,7 @@ export const useBillingOperationStore = defineStore('billingOperation', () => {
     // operation that never charges one — a cancellation, a downgrade — cannot
     // be recovered that way whatever the server reports.
     const chargesACard =
-      operation.type !== 'cancel' && !operation.downgradeToPersonal
+      isPaymentOperation(operation.type) && !operation.downgradeToPersonal
     const detail = billingFailureDetail(
       operation.type,
       errorMessage,
@@ -1028,12 +1035,10 @@ export const useBillingOperationStore = defineStore('billingOperation', () => {
       })
     }
 
-    if (operation.type !== 'cancel' && !superseded) {
-      useToastStore().add({
-        severity: 'error',
-        summary: defaultMessage,
-        detail: detail ?? undefined,
-        life: 7000
+    if (isPaymentOperation(operation.type) && !superseded) {
+      toast.error(defaultMessage, {
+        description: detail ?? undefined,
+        duration: 7000
       })
     }
 
@@ -1180,11 +1185,8 @@ export const useBillingOperationStore = defineStore('billingOperation', () => {
       })
     }
 
-    if (operation.type !== 'cancel') {
-      useToastStore().add({
-        severity: 'error',
-        summary: message
-      })
+    if (isPaymentOperation(operation.type)) {
+      toast.error(message)
     }
 
     resolveTerminal(opId)
@@ -1204,7 +1206,8 @@ export const useBillingOperationStore = defineStore('billingOperation', () => {
     errorMessage: string | null,
     isZeroPaymentOperation: boolean
   ): BillingTelemetryFailure['failure_category'] {
-    if (type === 'cancel' || isZeroPaymentOperation) return 'api_rejected'
+    if (!isPaymentOperation(type) || isZeroPaymentOperation)
+      return 'api_rejected'
 
     if (errorMessage && /network|connection|unreachable/i.test(errorMessage)) {
       return 'network'
@@ -1214,6 +1217,7 @@ export const useBillingOperationStore = defineStore('billingOperation', () => {
   }
 
   function failureMessage(type: OperationType) {
+    if (type === 'retention') return t('subscription.retentionOffer.failed')
     if (type === 'subscription') return t('billingOperation.subscriptionFailed')
     if (type === 'topup') return t('billingOperation.topupFailed')
     return t('billingOperation.cancelFailed')
@@ -1239,6 +1243,12 @@ export const useBillingOperationStore = defineStore('billingOperation', () => {
       case 'payment_method_customer_decline':
       case 'payment_intent_payment_attempt_expired':
         return t('billingOperation.authenticationFailedDetail')
+      case 'subscribe_method_not_chargeable_off_session':
+        // `recovery` is withheld from operations that never charge a card.
+        if (recovery) {
+          return t('billingOperation.methodNotChargeableOffSessionDetail')
+        }
+        break
       case 'processing_error':
       case 'issuer_not_available':
       case 'try_again_later':
@@ -1282,6 +1292,8 @@ export const useBillingOperationStore = defineStore('billingOperation', () => {
   }
 
   function timeoutMessage(type: OperationType) {
+    if (type === 'retention')
+      return t('subscription.retentionOffer.unconfirmed')
     if (type === 'subscription')
       return t('billingOperation.subscriptionTimeout')
     if (type === 'topup') return t('billingOperation.topupTimeout')
@@ -1332,7 +1344,7 @@ export const useBillingOperationStore = defineStore('billingOperation', () => {
 
     const progressToast = progressToasts.get(opId)
     if (progressToast) {
-      useToastStore().remove(progressToast.message)
+      toast.dismiss(progressToast.id)
       progressToasts.delete(opId)
     }
   }

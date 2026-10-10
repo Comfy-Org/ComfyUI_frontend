@@ -1,4 +1,4 @@
-/* eslint-disable testing-library/no-container, testing-library/no-node-access */
+/* oxlint-disable testing-library/no-container, testing-library/no-node-access */
 import { fireEvent, render } from '@testing-library/vue'
 import PrimeVue from 'primevue/config'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
@@ -19,7 +19,6 @@ import * as nodeFilterUtil from '@/utils/nodeFilterUtil'
 function createMockExtensionService(): ReturnType<typeof useExtensionService> {
   return {
     extensionCommands: { value: new Map() },
-    loadExtensions: vi.fn(),
     registerExtension: vi.fn(),
     invokeExtensions: vi.fn(() => []),
     invokeExtensionsAsync: vi.fn()
@@ -409,7 +408,6 @@ describe('SelectionToolbox', () => {
             ['test-command', { id: 'test-command', title: 'Test Command' }]
           ])
         },
-        loadExtensions: vi.fn(),
         registerExtension: vi.fn(),
         invokeExtensions: vi.fn(() => ['test-command']),
         invokeExtensionsAsync: vi.fn()

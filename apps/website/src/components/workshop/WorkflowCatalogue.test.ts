@@ -2,7 +2,7 @@ import userEvent from '@testing-library/user-event'
 import { render, screen, waitFor } from '@testing-library/vue'
 import { beforeEach, describe, expect, it } from 'vitest'
 
-import type { WorkflowWorkshopModel } from '../../config/models-catalogue'
+import type { WorkflowWorkshopModel } from '@/config/models-catalogue'
 import WorkflowCatalogue from './WorkflowCatalogue.vue'
 
 const models: WorkflowWorkshopModel[] = [

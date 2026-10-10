@@ -12,34 +12,41 @@ import {
 } from 'vue'
 
 import Button from '@/components/ui/button/Button.vue'
-import { groupModels } from '../../config/model-family'
+import { groupModels } from '@/config/model-family'
 
 import type {
   SortOrder,
   UseCase,
   WorkshopModel
-} from '../../config/models-catalogue'
+} from '@/config/models-catalogue'
 import {
   parseCatalogSearch,
   USE_CASES,
   countByUseCase,
-  filterWorkshopModels,
   sortOrdersFor,
   sortWorkshopModels
-} from '../../config/models-catalogue'
-import type { Locale, TranslationKey } from '../../i18n/translations'
-import { t } from '../../i18n/translations'
-import { HUB_TOOLBAR_ID } from '../../scripts/hubToolbar'
-import { rememberShelfOnClick } from '../../lib/workshop/shelf-memory'
-import { openedUseCases, shelfOf } from '../../lib/workshop/shelf-use-cases'
-import { sectionTitleKeyFor } from '../../lib/workshop/section-title'
-import { useCaseLabelKey } from '../../lib/workshop/use-case-label'
+} from '@/config/models-catalogue'
+import { searchWorkshopModels } from '@/config/models-search'
+import type { Locale, TranslationKey } from '@/i18n/translations'
+import { translationsFor } from '@/i18n/translations'
+import { HUB_TOOLBAR_ID } from '@/scripts/hubToolbar'
+import { rememberShelfOnClick } from '@/lib/workshop/shelf-memory'
+import { useHubCatalogueTracking } from '@/composables/useHubCatalogueTracking'
+import {
+  captureHubItemClick,
+  hubActiveQuery,
+  hubItemOf
+} from '@/scripts/hub-analytics'
+import type { FeaturedSlide } from './FeaturedBanner.vue'
+import { openedUseCases, shelfOf } from '@/lib/workshop/shelf-use-cases'
+import { sectionTitleKeyFor } from '@/lib/workshop/section-title'
+import { useCaseLabelKey } from '@/lib/workshop/use-case-label'
 import type { FacetMenuOption } from './WorkshopFilterMenu.vue'
 import WorkshopFilterMenu from './WorkshopFilterMenu.vue'
 import WorkshopModelCard from './WorkshopModelCard.vue'
 import FeaturedBanner from './FeaturedBanner.vue'
-import { CARD_GRID } from '../../lib/workshop/card-layout'
-import { modelSlides } from '../../lib/workshop/featured-slides'
+import { CARD_GRID } from '@/lib/workshop/card-layout'
+import { modelSlides } from '@/lib/workshop/featured-slides'
 import WorkshopSearchField from './WorkshopSearchField.vue'
 import WorkshopSections from './WorkshopSections.vue'
 import WorkshopSortMenu from './WorkshopSortMenu.vue'
@@ -53,6 +60,7 @@ const {
   initialSearch?: string
   locale?: Locale
 }>()
+const { t } = translationsFor(locale)
 
 const query = ref('')
 const selectedUseCases = ref<UseCase[]>([])
@@ -66,13 +74,24 @@ const openedShelf = computed(() => shelfOf(selectedUseCases.value))
 const browseAll = defineModel<boolean>('browseAll', { default: false })
 let scrollReady = false
 
+const { submitSearch, quietly } = useHubCatalogueTracking('models', {
+  query,
+  resultsCount: () => visible.value.length,
+  filters: [
+    ['use_case', () => selectedUseCases.value],
+    ['sort', () => sort.value]
+  ]
+})
+
 function readAddress(search: string) {
-  const initial = parseCatalogSearch(search)
-  query.value = initial.query ?? ''
-  selectedUseCases.value = openedUseCases(initial.useCase ?? 'all')
-  legacyModalities.value = [...initial.modalities]
-  legacyProviders.value = [...initial.providers]
-  legacyCapabilities.value = [...initial.capabilities]
+  quietly(() => {
+    const initial = parseCatalogSearch(search)
+    query.value = initial.query ?? ''
+    selectedUseCases.value = openedUseCases(initial.useCase ?? 'all')
+    legacyModalities.value = [...initial.modalities]
+    legacyProviders.value = [...initial.providers]
+    legacyCapabilities.value = [...initial.capabilities]
+  })
 }
 
 // A browser can restore this page from its cache with a shelf still open, so
@@ -101,7 +120,7 @@ const useCaseOptions = computed<FacetMenuOption[]>(() => {
   const counts = countByUseCase(models)
   return USE_CASES.filter((value) => counts[value] > 0).map((value) => ({
     value,
-    label: t(useCaseLabelKey[value], locale),
+    label: t(useCaseLabelKey[value]),
     count: counts[value]
   }))
 })
@@ -109,7 +128,7 @@ const useCaseOptions = computed<FacetMenuOption[]>(() => {
 const visible = computed(() =>
   groupModels(
     sortWorkshopModels(
-      filterWorkshopModels(models, {
+      searchWorkshopModels(models, {
         query: query.value,
         useCases: selectedUseCases.value,
         modalities: legacyModalities.value,
@@ -215,6 +234,26 @@ function rememberModel(
   if (model.href) rememberShelfOnClick(shelf, model.href, event)
 }
 
+function openResult(model: WorkshopModel, position: number, event: MouseEvent) {
+  if (model.href) {
+    submitSearch()
+    captureHubItemClick(hubItemOf(model), {
+      surface: 'models',
+      source: 'results_grid',
+      position,
+      ...hubActiveQuery(query.value)
+    })
+  }
+  rememberModel(model, event)
+}
+
+function openFeatured(slide: FeaturedSlide, position: number) {
+  captureHubItemClick(
+    { kind: 'model', slug: slide.key },
+    { surface: 'models', source: 'featured_banner', position }
+  )
+}
+
 watch(browseAll, (on) => on && resetFilters())
 </script>
 
@@ -229,7 +268,7 @@ watch(browseAll, (on) => on && resetFilters())
         @click="leaveSection"
       >
         <ChevronLeft class="size-4" aria-hidden="true" />
-        {{ t('workshop.sections.back', locale) }}
+        {{ t('workshop.sections.back') }}
       </button>
 
       <!-- scroll-mt tracks the nav height; the toolbar's is lower because its py-4 absorbs the difference -->
@@ -238,7 +277,7 @@ watch(browseAll, (on) => on && resetFilters())
         ref="heading"
         class="mt-5 mb-4 scroll-mt-24 text-3xl font-bold text-primary-warm-white sm:text-4xl lg:scroll-mt-32"
       >
-        {{ t(sectionTitleKey, locale) }}
+        {{ t(sectionTitleKey) }}
         <span class="text-base font-normal text-primary-warm-gray tabular-nums">
           {{ visible.length }}
         </span>
@@ -260,6 +299,7 @@ watch(browseAll, (on) => on && resetFilters())
             :locale
             compact
             :class="searchClass"
+            @submit="submitSearch"
           />
 
           <div class="flex items-center gap-2" data-testid="workshop-filters">
@@ -281,6 +321,7 @@ watch(browseAll, (on) => on && resetFilters())
         :slides="featuredSlides"
         :locale
         class="mb-10 short:mb-6"
+        @open="openFeatured"
       />
 
       <template v-if="browsing">
@@ -298,7 +339,7 @@ watch(browseAll, (on) => on && resetFilters())
           data-testid="browse-all-end"
           @click="browseAll = true"
         >
-          {{ t('workshop.sections.browseAll', locale) }}
+          {{ t('workshop.sections.browseAll') }}
           <ChevronRight
             class="size-4 transition-transform group-hover:translate-x-0.5"
             aria-hidden="true"
@@ -309,18 +350,18 @@ watch(browseAll, (on) => on && resetFilters())
       <template v-else>
         <div v-if="visible.length">
           <h2 id="workshop-models-heading" class="sr-only">
-            {{ t('workshop.models.heading', locale) }}
+            {{ t('workshop.models.heading') }}
           </h2>
           <ul
             :class="CARD_GRID"
             aria-labelledby="workshop-models-heading"
             data-testid="workshop-models-grid"
           >
-            <li v-for="family in visible" :key="family.key">
+            <li v-for="(family, index) in visible" :key="family.key">
               <WorkshopModelCard
                 :model="family.latest"
                 :locale
-                @click="rememberModel(family.latest, $event)"
+                @click="openResult(family.latest, index, $event)"
               />
             </li>
           </ul>
@@ -332,10 +373,10 @@ watch(browseAll, (on) => on && resetFilters())
           data-testid="workshop-empty"
         >
           <p class="text-lg font-semibold text-primary-comfy-canvas">
-            {{ t('workshop.empty.heading', locale) }}
+            {{ t('workshop.empty.heading') }}
           </p>
           <p class="text-sm text-primary-warm-gray">
-            {{ t('workshop.empty.body', locale) }}
+            {{ t('workshop.empty.body') }}
           </p>
           <Button
             v-if="isFiltered"
@@ -343,7 +384,7 @@ watch(browseAll, (on) => on && resetFilters())
             size="sm"
             @click="clearFilters"
           >
-            {{ t('workshop.empty.clear', locale) }}
+            {{ t('workshop.empty.clear') }}
           </Button>
         </div>
       </template>

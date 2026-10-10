@@ -53,7 +53,11 @@ jobs:
         run: pnpm stylelint:fix
 
       - name: Run oxfmt with auto-format
-        run: pnpm format
+        run: pnpm -r --include-workspace-root format
+
+      - name: Verify architecture contracts
+        if: hashFiles('tools/architecture/src/cli.ts') != ''
+        run: pnpm architecture:check
 
       - name: Check for changes
         id: verify-changed-files
@@ -81,7 +85,7 @@ jobs:
           echo "Please run these commands locally and push the changes:"
           echo "  pnpm lint:fix"
           echo "  pnpm stylelint:fix"
-          echo "  pnpm format"
+          echo "  pnpm -r --include-workspace-root format"
           echo ""
           echo "Or set up pre-commit hooks to automatically format on every commit:"
           echo "  pnpm prepare"
