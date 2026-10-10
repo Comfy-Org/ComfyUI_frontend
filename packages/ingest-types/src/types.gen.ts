@@ -49,7 +49,7 @@ export type WorkspaceSummary = {
  */
 export type WorkspaceDeploymentList = {
   /**
-   * False when comfy-builder refused the caller's token on its Builds listing (401 or 403); the rows then carry no Build name or Release version. True does not promise every row a name: a row has none when its Build was deleted, was made by another member (outside the enterprise tier, comfy-builder lists only the caller's own Builds), or is past the 50 newest Builds the caller can see.
+   * False when comfy-builder refused the caller's token when asked to name the rows' Releases, or its Builds listing (401 or 403); no row then carries a Build name or Release version. True does not mean every row is named: a row whose Release comfy-builder does not name carries none either, nor does one it could not name because a read of its Builds or their Releases failed (one Build's Releases refused with 401 or 403 included), or because its Build is past the first 50 Builds its Builds listing shows (on a comfy-builder released before it could name the rows for any member).
    */
   builds_visible: boolean
   /**
@@ -80,11 +80,11 @@ export type WorkspaceDeploymentList = {
  */
 export type WorkspaceDeployment = {
   /**
-   * The Build the Release was cut from. Absent when builds_visible is false, and also when it is true but the listing did not find the Release among the Builds it read: the Build was deleted, was made by another member (outside the enterprise tier, comfy-builder lists only the caller's own Builds), or is past the 50 newest Builds the caller can see.
+   * The Build the Release was cut from. Absent when comfy-builder did not name the Release (see builds_visible).
    */
   build_id?: string
   /**
-   * The Build's name. Absent when builds_visible is false, and also when it is true but the listing did not find the Release among the Builds it read: the Build was deleted, was made by another member (outside the enterprise tier, comfy-builder lists only the caller's own Builds), or is past the 50 newest Builds the caller can see.
+   * The Build's name. Absent when comfy-builder did not name the Release (see builds_visible).
    */
   build_name?: string
   /**
@@ -96,11 +96,15 @@ export type WorkspaceDeployment = {
    */
   deployment_id: string
   /**
+   * The deployment's name in comfy-deploy: the one its owner gave it, or the default comfy-deploy gives it at create. It is unique among its Build's live deployments, and it stays the same when the deployment moves to another Release. Absent only on a deployment created before deployments had names, until it is given one.
+   */
+  deployment_name?: string
+  /**
    * The Release the deployment runs now. It changes when the deployment's owner updates it; a browser that picked the deployment follows.
    */
   release_id: string
   /**
-   * The Release's version number within its Build. Absent when builds_visible is false, and also when it is true but the listing did not find the Release among the Builds it read: the Build was deleted, was made by another member (outside the enterprise tier, comfy-builder lists only the caller's own Builds), or is past the 50 newest Builds the caller can see.
+   * The Release's version number within its Build. Absent when comfy-builder did not name the Release (see builds_visible).
    */
   release_version?: number
   /**
