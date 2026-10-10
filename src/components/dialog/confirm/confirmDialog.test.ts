@@ -15,7 +15,10 @@ const i18n = createI18n({
   fallbackWarn: false
 })
 
-function renderConfirm(onConfirm: () => unknown = vi.fn()) {
+function renderConfirm(
+  onConfirm: () => unknown = vi.fn(),
+  optionsDisabled = false
+) {
   render(
     {
       components: { GlobalDialog },
@@ -33,6 +36,7 @@ function renderConfirm(onConfirm: () => unknown = vi.fn()) {
     props: { promptText: 'This cannot be undone.' },
     footerProps: {
       confirmText: 'Delete',
+      optionsDisabled,
       onCancel: () => dialogStore.closeDialog(dialog),
       onConfirm
     }
@@ -57,6 +61,18 @@ describe('showConfirmDialog', () => {
     expect(close).toHaveFocus()
     await user.tab({ shift: true })
     expect(confirm).toHaveFocus()
+  })
+
+  it('moves focus into the dialog when its autofocus button opens disabled', async () => {
+    renderConfirm(vi.fn(), true)
+
+    const dialog = await screen.findByRole('dialog', { name: 'Delete secret' })
+
+    await waitFor(() =>
+      expect(
+        within(dialog).getByRole('button', { name: 'Close' })
+      ).toHaveFocus()
+    )
   })
 
   it.for([

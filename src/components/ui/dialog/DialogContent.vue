@@ -30,8 +30,8 @@ function focusAutofocusTarget(event: Event) {
   if (event.defaultPrevented || !(event.target instanceof HTMLElement)) return
   const target = event.target.querySelector<HTMLElement>('[autofocus]')
   if (!target) return
-  event.preventDefault()
   target.focus()
+  if (document.activeElement === target) event.preventDefault()
 }
 </script>
 
