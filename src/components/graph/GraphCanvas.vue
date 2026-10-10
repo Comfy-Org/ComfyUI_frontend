@@ -195,7 +195,8 @@ import LGraphNode from '@/renderer/extensions/vueNodes/components/LGraphNode.vue
 import { UnauthorizedError } from '@/scripts/api'
 import { app as comfyApp } from '@/scripts/app'
 import { ChangeTracker } from '@/scripts/changeTracker'
-import { IS_CONTROL_WIDGET, updateControlWidgetLabel } from '@/scripts/widgets'
+import { IS_CONTROL_WIDGET } from '@/core/graph/widgets/controlWidgetMarker'
+import { updateControlWidgetLabel } from '@/core/graph/widgets/valueControlWidgets'
 import { loadExtensions } from '@/services/extensionLoader'
 import { useColorPaletteService } from '@/services/colorPaletteService'
 import { useNewUserService } from '@/services/useNewUserService'
@@ -392,7 +393,10 @@ watch(
   () => {
     if (!canvasStore.canvas) return
 
-    forEachNode(comfyApp.rootGraph, (n) => {
+    const rootGraph = comfyApp.rootGraphOrUndefined
+    if (!rootGraph) return
+
+    forEachNode(rootGraph, (n) => {
       if (!n.widgets) return
       for (const w of n.widgets) {
         if (!w[IS_CONTROL_WIDGET]) continue

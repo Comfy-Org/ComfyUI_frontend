@@ -58,10 +58,6 @@ const features: FooterColumn = {
     },
     { label: t('nav.comfyCli'), href: routes.cli },
     {
-      label: t('nav.launches'),
-      href: routes.launches
-    },
-    {
       label: t('nav.supportedModels'),
       href: routes.models
     }

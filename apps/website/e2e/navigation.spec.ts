@@ -1,7 +1,17 @@
 import type { Locator } from '@playwright/test'
 import { expect } from '@playwright/test'
 
+import { externalLinks } from '@/config/routes'
 import { test } from './fixtures/workshopVisibility'
+
+const socialChannels = [
+  ['GitHub', externalLinks.github],
+  ['Discord', externalLinks.discord],
+  ['X', externalLinks.x],
+  ['YouTube', externalLinks.youtube],
+  ['LinkedIn', externalLinks.linkedin],
+  ['Instagram', externalLinks.instagram]
+] as const
 
 function settleAnimations(root: Locator) {
   return root.evaluate((el) =>
@@ -151,7 +161,6 @@ test.describe('Desktop dropdown @interaction', () => {
     const dropdown = nav.getByTestId('nav-dropdown')
     for (const item of [
       'Comfy Desktop',
-      'Browse Models',
       'Comfy Cloud',
       'Comfy Agent',
       'Developer Platform',
@@ -200,7 +209,7 @@ test.describe('Desktop dropdown @interaction', () => {
       .hover()
 
     const dropdown = nav.getByTestId('nav-dropdown')
-    for (const item of ['Events', 'About Us', 'Customer Stories', 'Launches']) {
+    for (const item of ['Events', 'About Us', 'Customer Stories']) {
       await expect(dropdown.getByText(item, { exact: true })).toBeVisible()
     }
     await expect(
@@ -373,11 +382,11 @@ test.describe('Mobile menu @mobile', () => {
 
     const menu = page.getByRole('dialog')
     await menu.getByRole('button', { name: 'Products' }).click()
-    const models = menu.getByRole('link', { name: 'Browse Models' })
+    const platform = menu.getByRole('link', { name: 'Developer Platform' })
     const agent = menu.getByRole('link', { name: 'Comfy Agent' })
     await expect(agent).toBeVisible()
     await settleAnimations(menu)
-    const first = await badgePlacement(models, 'Browse Models')
+    const first = await badgePlacement(platform, 'Developer Platform')
     const second = await badgePlacement(agent, 'Comfy Agent')
 
     expect(first.gap).toBeGreaterThan(0)
@@ -409,32 +418,28 @@ test.describe('Footer @smoke', () => {
   test('social channels are icon links that open in a new tab', async ({
     page
   }) => {
-    const social = page
-      .locator('footer')
-      .getByRole('navigation', { name: 'Follow Comfy' })
+    const footer = page.locator('footer')
+    const social = footer.getByRole('navigation', { name: 'Follow Comfy' })
     await social.scrollIntoViewIfNeeded()
     await expect(social).toBeVisible()
 
     const links = social.getByRole('link')
-    await expect(links).toHaveText([
-      'GitHub (opens in new tab)',
-      'Discord (opens in new tab)',
-      'X (opens in new tab)',
-      'YouTube (opens in new tab)',
-      'LinkedIn (opens in new tab)',
-      'Instagram (opens in new tab)'
-    ])
-    for (const link of await links.all()) {
-      await expect(link).toHaveAttribute('href', /^https:\/\//)
-      await expect(link).toHaveAttribute('target', '_blank')
-    }
+    await expect(links).toHaveText(
+      socialChannels.map(([label]) => `${label} (opens in new tab)`)
+    )
+    expect(
+      await links.evaluateAll((anchors: HTMLAnchorElement[]) =>
+        anchors.map((anchor) => [
+          anchor.getAttribute('href'),
+          anchor.target,
+          anchor.rel
+        ])
+      )
+    ).toEqual(socialChannels.map(([, href]) => [href, '_blank', 'noopener']))
     await expect(
-      page
-        .locator('footer')
-        .getByRole('navigation', { name: 'Resources' })
-        .getByRole('link', {
-          name: /Discord|GitHub|YouTube|Instagram|LinkedIn/
-        })
+      footer.getByRole('navigation', { name: 'Resources' }).getByRole('link', {
+        name: new RegExp(socialChannels.map(([label]) => label).join('|'))
+      })
     ).toHaveCount(0)
   })
 
