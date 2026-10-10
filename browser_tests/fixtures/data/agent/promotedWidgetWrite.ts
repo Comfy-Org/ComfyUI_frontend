@@ -3,6 +3,7 @@ import type { Op, WidgetCatalog } from '@comfyorg/comfy-multi-player'
 import fs from 'node:fs'
 import path from 'node:path'
 import * as Y from 'yjs'
+import { z } from 'zod'
 
 import { zComfyWorkflow } from '@/platform/workflow/validation/schemas/workflowSchema'
 
@@ -19,8 +20,26 @@ export const PROMOTED_WIDGET_SAMPLER_NODE_ID = '3'
 export const PROMOTED_WIDGET_NEW_PROMPT = 'NEW PROMPT'
 export const PROMOTED_WIDGET_NEW_STEPS = 12
 
+const docSubscribeFrame = z.object({
+  type: z.literal('doc_subscribe'),
+  data: z.object({ workflow_id: z.string() })
+})
+
 export function encodePromotedWidgetUpdate(update: Uint8Array): string {
   return Buffer.from(update).toString('base64')
+}
+
+export function parsePromotedWidgetSubscribeWorkflowId(
+  message: string
+): string | undefined {
+  let frame: unknown
+  try {
+    frame = JSON.parse(message)
+  } catch {
+    return
+  }
+  const parsed = docSubscribeFrame.safeParse(frame)
+  return parsed.success ? parsed.data.data.workflow_id : undefined
 }
 
 const ASSET_PATH = path.resolve(
