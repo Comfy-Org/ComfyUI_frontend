@@ -320,6 +320,10 @@ jobs:
         (needs.update-snapshots-sharded.result == 'success' || needs.update-snapshots-sharded.result == 'skipped')
       }}
     runs-on: ubuntu-latest
+    permissions:
+      actions: read
+      contents: read
+      pull-requests: write
     steps:
       - name: Checkout repository
         uses: actions/checkout@v7
