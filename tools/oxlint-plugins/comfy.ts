@@ -30,6 +30,10 @@ import type {
   noVitestMockMethodNames as NoVitestMockMethodNames
 } from './restrictedSyntax'
 import type {
+  noCapabilityRecombination as NoCapabilityRecombination,
+  noServerFactLiterals as NoServerFactLiterals
+} from './serverFacts'
+import type {
   noImportActual as NoImportActual,
   noMockedInExpect as NoMockedInExpect,
   noModuleScopeVitestMocks as NoModuleScopeVitestMocks,
@@ -99,6 +103,12 @@ const {
   noUnsafeErrorAssertion: typeof NoUnsafeErrorAssertion
   noVitestMockMethodNames: typeof NoVitestMockMethodNames
 }
+const { noCapabilityRecombination, noServerFactLiterals } = requireFrom(
+  './serverFacts.ts'
+) as {
+  noCapabilityRecombination: typeof NoCapabilityRecombination
+  noServerFactLiterals: typeof NoServerFactLiterals
+}
 const {
   noImportActual,
   noMockedInExpect,
@@ -125,6 +135,7 @@ const { noRenderInWatchEffect } = requireFrom('./watchEffectRendering.ts') as {
 export default {
   meta: { name: 'comfy' },
   rules: {
+    'no-capability-recombination': noCapabilityRecombination,
     'no-comfy-page-setup-call': noComfyPageSetupCall,
     'no-deprecated-api-schema': noDeprecatedApiSchema,
     'no-direct-selection-write': noDirectSelectionWrite,
@@ -143,6 +154,7 @@ export default {
     'no-playwright-imports-in-fixture-data': noPlaywrightImportsInFixtureData,
     'no-primevue-imports': noPrimeVueImports,
     'no-render-in-watch-effect': noRenderInWatchEffect,
+    'no-server-fact-literals': noServerFactLiterals,
     'no-statically-disabled-test': noStaticallyDisabledTest,
     'no-redundant-console-spy': noRedundantConsoleSpy,
     'no-redundant-fetch-stub': noRedundantFetchStub,

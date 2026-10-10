@@ -3,6 +3,7 @@ import { expect } from '@playwright/test'
 
 import { getWav } from '@e2e/fixtures/components/AudioPreview'
 import { comfyPageFixture as test } from '@e2e/fixtures/ComfyPage'
+import { Tooltip } from '@e2e/fixtures/components/Tooltip'
 import { TestIds } from '@e2e/fixtures/selectors'
 import { trackElementFlash } from '@e2e/fixtures/utils/flashDetector'
 import { assetPath } from '@e2e/fixtures/utils/paths'
@@ -408,31 +409,32 @@ test.describe('Templates', { tag: ['@slow', '@workflow'] }, () => {
     await expect(card).toBeVisible()
 
     const overflow = card.getByRole('button', { name: 'Upscale, Inpaint' })
-    // Body-portalled, so unscopable to the card; the single-card mock keeps it unique.
-    const disclosure = comfyPage.page.getByTestId('disclosure-tooltip')
+    const tooltips = new Tooltip(comfyPage.page)
+    const disclosure = tooltips.named('Upscale, Inpaint')
+    const surface = tooltips.surface(disclosure)
 
     // toBeVisible() misses occlusion; assert the bubble is the top element at
     // its centre so it can't regress behind the z-1702 dialog. Await the open
     // state first so the hit-test doesn't race the enter animation.
     const expectOnTop = async () => {
-      await expect(disclosure).toHaveAttribute('data-state', /-open$/)
+      await expect(surface).toHaveAttribute('data-state', /-open$/)
       await expect
-        .poll(
-          () =>
-            comfyPage.page.evaluate(() => {
-              const el = document.querySelector(
-                '[data-testid="disclosure-tooltip"]'
-              )
-              if (!el) return false
-              const r = el.getBoundingClientRect()
-              if (r.width === 0 || r.height === 0) return false
+        .poll(() =>
+          surface.evaluate((el) => {
+            const r = el.getBoundingClientRect()
+            if (r.width === 0 || r.height === 0) return false
+            // Tooltip content ignores the pointer; let the hit test see it.
+            el.style.pointerEvents = 'auto'
+            try {
               const top = document.elementFromPoint(
                 r.x + r.width / 2,
                 r.y + r.height / 2
               )
               return !!top && el.contains(top)
-            }),
-          { timeout: 2000 }
+            } finally {
+              el.style.pointerEvents = ''
+            }
+          })
         )
         .toBe(true)
     }
@@ -442,14 +444,14 @@ test.describe('Templates', { tag: ['@slow', '@workflow'] }, () => {
     await expect(disclosure).toHaveText('Upscale, Inpaint')
     await expectOnTop()
     await comfyPage.page.mouse.move(0, 0)
-    await expect(disclosure).toHaveCount(0)
+    await expect(disclosure).toBeHidden()
 
     // Keyboard focus reveals the hidden tags — the gap PrimeVue's tooltip left.
     await overflow.focus()
     await expect(disclosure).toBeVisible()
     await expectOnTop()
     await comfyPage.page.keyboard.press('Escape')
-    await expect(disclosure).toHaveCount(0)
+    await expect(disclosure).toBeHidden()
 
     // Tap/click reveals the hidden tags and must NOT load the workflow.
     await overflow.click()

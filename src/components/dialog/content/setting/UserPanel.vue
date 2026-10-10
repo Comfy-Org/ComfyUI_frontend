@@ -39,10 +39,7 @@
             {{ providerName }}
             <Button
               v-if="isEmailProvider"
-              v-tooltip="{
-                value: $t('userSettings.updatePassword'),
-                showDelay: 300
-              }"
+              :tooltip="$t('userSettings.updatePassword')"
               variant="muted-textonly"
               size="icon-sm"
               :aria-label="$t('userSettings.updatePassword')"

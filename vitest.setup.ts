@@ -1,14 +1,45 @@
 import '@testing-library/jest-dom/vitest'
 import { createTestingPinia } from '@pinia/testing'
 import { disposePinia, setActivePinia } from 'pinia'
+import { createRequire } from 'node:module'
 import { afterEach, beforeEach, vi } from 'vitest'
-import 'vue'
+import { TooltipProvider } from 'reka-ui'
+import { shallowReactive } from 'vue'
+import type { Plugin } from 'vue'
 
 import './vitest.network.setup'
 
+import { appTooltipProviderDefaults } from '@/components/ui/tooltip/tooltipConfig'
 import { clearRegisteredLiteGraphTypes } from '@/lib/litegraph/src/litegraphInstance'
 import { remoteConfigState } from '@/platform/remoteConfig/remoteConfig'
 import { StubPath2D } from '@/utils/__tests__/stubPath2D'
+
+const requireFromTestingLibrary = createRequire(
+  createRequire(import.meta.url).resolve('@testing-library/vue')
+)
+const { config }: { config: { global: { plugins: Plugin[] } } } =
+  requireFromTestingLibrary('@vue/test-utils')
+
+const testTooltipProviderProps = shallowReactive({
+  ...appTooltipProviderDefaults,
+  delayDuration: 0,
+  skipDelayDuration: 300,
+  disableClosingTrigger: undefined,
+  disabled: undefined
+})
+
+const appShellTooltipProvider: Plugin = {
+  install(app) {
+    const root = app._component
+    if (typeof root === 'function' || !root.setup) return
+    const setupRoot = root.setup
+    root.setup = (props, ctx) => {
+      TooltipProvider.setup?.(testTooltipProviderProps, ctx)
+      return setupRoot(props, ctx)
+    }
+  }
+}
+config.global.plugins.push(appShellTooltipProvider)
 
 beforeEach(({ task }) => {
   for (

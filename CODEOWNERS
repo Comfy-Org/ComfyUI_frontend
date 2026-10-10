@@ -25,13 +25,15 @@
 /src/extensions/core/imageCrop.ts                 @jtydhr88 @Comfy-Org/comfy_frontend_devs
 /src/components/imagecrop/                        @jtydhr88 @Comfy-Org/comfy_frontend_devs
 /src/composables/useImageCrop.ts                  @jtydhr88 @Comfy-Org/comfy_frontend_devs
+/src/composables/useImageCrop.test.ts             @jtydhr88 @Comfy-Org/comfy_frontend_devs
 /src/lib/litegraph/src/widgets/ImageCropWidget.ts @jtydhr88 @Comfy-Org/comfy_frontend_devs
 
 # Image Compare
 /src/extensions/core/imageCompare.ts                                                @jtydhr88 @Comfy-Org/comfy_frontend_devs
 /src/renderer/extensions/vueNodes/widgets/components/WidgetImageCompare.vue         @jtydhr88 @Comfy-Org/comfy_frontend_devs
 /src/renderer/extensions/vueNodes/widgets/components/WidgetImageCompare.test.ts     @jtydhr88 @Comfy-Org/comfy_frontend_devs
-/src/renderer/extensions/vueNodes/widgets/components/WidgetImageCompare.stories.ts  @jtydhr88 @Comfy-Org/comfy_frontend_devs
+/src/renderer/extensions/vueNodes/widgets/composables/useImageCompareImages.ts      @jtydhr88 @Comfy-Org/comfy_frontend_devs
+/src/renderer/extensions/vueNodes/widgets/composables/useImageCompareImages.test.ts @jtydhr88 @Comfy-Org/comfy_frontend_devs
 /src/renderer/extensions/vueNodes/widgets/composables/useImageCompareWidget.ts      @jtydhr88 @Comfy-Org/comfy_frontend_devs
 /src/lib/litegraph/src/widgets/ImageCompareWidget.ts                                @jtydhr88 @Comfy-Org/comfy_frontend_devs
 

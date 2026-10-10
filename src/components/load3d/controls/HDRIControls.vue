@@ -1,12 +1,12 @@
 <template>
   <div v-if="!hasBackgroundImage || hdriConfig?.hdriPath" class="flex flex-col">
     <Button
-      v-tooltip.right="{
-        value: hdriConfig?.hdriPath
+      :tooltip="
+        hdriConfig?.hdriPath
           ? $t('load3d.hdri.changeFile')
-          : $t('load3d.hdri.uploadFile'),
-        showDelay: 300
-      }"
+          : $t('load3d.hdri.uploadFile')
+      "
+      tooltip-side="right"
       size="icon"
       variant="textonly"
       class="rounded-full"
@@ -22,10 +22,8 @@
 
     <template v-if="hdriConfig?.hdriPath">
       <Button
-        v-tooltip.right="{
-          value: $t('load3d.hdri.label'),
-          showDelay: 300
-        }"
+        :tooltip="$t('load3d.hdri.label')"
+        tooltip-side="right"
         size="icon"
         variant="textonly"
         :class="
@@ -38,10 +36,8 @@
       </Button>
 
       <Button
-        v-tooltip.right="{
-          value: $t('load3d.hdri.showAsBackground'),
-          showDelay: 300
-        }"
+        :tooltip="$t('load3d.hdri.showAsBackground')"
+        tooltip-side="right"
         size="icon"
         variant="textonly"
         :class="
@@ -57,10 +53,8 @@
       </Button>
 
       <Button
-        v-tooltip.right="{
-          value: $t('load3d.hdri.removeFile'),
-          showDelay: 300
-        }"
+        :tooltip="$t('load3d.hdri.removeFile')"
+        tooltip-side="right"
         size="icon"
         variant="textonly"
         class="rounded-full"

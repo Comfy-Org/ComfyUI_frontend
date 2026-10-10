@@ -7,7 +7,6 @@ import Button from '@/components/ui/button/Button.vue'
 import Input from '@/components/ui/input/Input.vue'
 import Menu from '@/components/ui/menu/Menu.vue'
 import type { MenuItem } from '@/components/ui/menu/types'
-import { buildTooltipConfig } from '@/composables/useTooltipConfig'
 import type {
   AgentPaywallSurface,
   AgentStarterPromptAssignment,
@@ -375,7 +374,8 @@ defineExpose({ addAttachment, updateAttachment, removeAttachment })
       <div class="flex h-10 shrink-0 items-center px-2">
         <Button
           id="agent-chat-history"
-          v-tooltip.right="buildTooltipConfig(t('agent.showChatHistory'))"
+          :tooltip="t('agent.showChatHistory')"
+          tooltip-side="right"
           type="button"
           variant="muted-textonly"
           size="icon-sm"
@@ -425,7 +425,8 @@ defineExpose({ addAttachment, updateAttachment, removeAttachment })
           >
             <template #trigger>
               <Button
-                v-tooltip.bottom="buildTooltipConfig(t('agent.chatOptions'))"
+                :tooltip="t('agent.chatOptions')"
+                tooltip-side="bottom"
                 variant="muted-textonly"
                 size="icon-sm"
                 :aria-label="t('agent.chatOptions')"
