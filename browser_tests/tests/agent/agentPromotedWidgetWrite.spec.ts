@@ -9,7 +9,8 @@ import {
   PROMOTED_WIDGET_SUBGRAPH_TYPE,
   PROMOTED_WIDGET_WORKFLOW_LABEL,
   PROMOTED_WIDGET_WORKFLOW_NAME,
-  encodePromotedWidgetUpdate
+  encodePromotedWidgetUpdate,
+  parsePromotedWidgetSubscribeWorkflowId
 } from '@e2e/fixtures/data/agent/promotedWidgetWrite'
 import { promotedWidgetWriteFixture } from '@e2e/fixtures/promotedWidgetWriteFixture'
 import { routeObjectInfoFromSetupApi } from '@e2e/fixtures/utils/objectInfo'
@@ -92,22 +93,7 @@ test.describe(
         const subscribedWorkflowId = new Promise<string>((resolve) => {
           ws.onMessage((msg) => {
             if (typeof msg !== 'string') return
-            let frame: unknown
-            try {
-              frame = JSON.parse(msg)
-            } catch {
-              return // not JSON, ignore
-            }
-            if (typeof frame !== 'object' || frame === null) return
-            if (!('type' in frame) || frame.type !== 'doc_subscribe') return
-            if (
-              !('data' in frame) ||
-              typeof frame.data !== 'object' ||
-              frame.data === null ||
-              !('workflow_id' in frame.data)
-            )
-              return
-            const workflowId = frame.data.workflow_id
+            const workflowId = parsePromotedWidgetSubscribeWorkflowId(msg)
             if (typeof workflowId === 'string') resolve(workflowId)
           })
         })
