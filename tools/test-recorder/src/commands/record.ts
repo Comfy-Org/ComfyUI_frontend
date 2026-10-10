@@ -1,5 +1,5 @@
 import { createInterface } from 'node:readline'
-import { writeFileSync, mkdirSync } from 'node:fs'
+import { existsSync, writeFileSync, mkdirSync } from 'node:fs'
 import { join } from 'node:path'
 import {
   text,
@@ -760,6 +760,23 @@ export async function runRecord(
   const testsDir = join(projectRoot, 'browser_tests', 'tests')
   mkdirSync(testsDir, { recursive: true })
   const outputPath = join(testsDir, `${slug}.spec.ts`)
+  if (existsSync(outputPath)) {
+    const overwrite = await confirm({
+      message: `${slug}.spec.ts already exists. Overwrite it?`,
+      initialValue: false
+    })
+    if (isCancel(overwrite)) {
+      cancel('Operation cancelled')
+      process.exit(0)
+    }
+    if (!overwrite) {
+      fail(
+        'Refusing to overwrite existing test',
+        `Choose a different name, or delete ${outputPath} first.`
+      )
+      process.exit(1)
+    }
+  }
   writeFileSync(outputPath, transformResult.code)
   if (!formatFile(outputPath)) {
     info([
