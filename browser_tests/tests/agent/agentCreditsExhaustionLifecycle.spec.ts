@@ -93,6 +93,7 @@ test.describe(
     test.use({
       connectWebSocketToServer: false,
       initialFeatureFlags: {
+        'agent-free-use-message-placement': 'near-composer',
         enable_telemetry: true
       }
     })
@@ -103,8 +104,15 @@ test.describe(
       hostTelemetry
     }) => {
       const notice = agentPanel.creditTransitionNotice
+      const freeUseNotice = agentPanel.freeUseNotice
 
       await agentPanel.open()
+
+      await test.step('free-use notice while the Agent grant still has funds', async () => {
+        await expect(freeUseNotice).toBeVisible()
+        await expect(notice).toHaveCount(0)
+      })
+
       await agentPanel.selectWorkflow()
 
       await test.step('exhausting the grant alone shows the transition notice', async () => {
@@ -137,6 +145,21 @@ test.describe(
         await expect(agentPanel.creditsExhaustedPaywall).toHaveCount(0)
         await expect(agentPanel.composerStack).toHaveScreenshot(
           'agent-credit-transition-composer-stack.png'
+        )
+      })
+
+      // PM-2005: a user was told chatting was free and silently burned ~3500
+      // credits. The defect is not the copy of either notice on its own, it is
+      // the panel telling the user Agent use is FREE at a moment when it bills
+      // the workspace balance. Assert the claim is absent, not just that the
+      // notice element is gone.
+      await test.step('the user is never told Agent use is free while it bills', async () => {
+        await expect(freeUseNotice).toHaveCount(0)
+        await expect(agentPanel.composerStack).not.toContainText(
+          enMessages.agent.freeUseNotice
+        )
+        await expect(agentPanel.composerStack).toContainText(
+          enMessages.agent.creditTransitionNotice
         )
       })
 
