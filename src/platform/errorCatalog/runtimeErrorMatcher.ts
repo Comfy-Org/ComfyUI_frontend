@@ -252,9 +252,17 @@ const RUNTIME_MATCH_RULES: RuntimeMatchRule[] = [
     // 'insufficient_credits' is the error.type BE-2866 will emit on the
     // personal submit-time 402; the team submit path is a 429 matched by
     // message in WORKSPACE_INSUFFICIENT_CREDITS_MESSAGES above.
+    // 'FREE_TIER_EXHAUSTED' is comfy-ingest's submit-time 402 for a FREE-tier
+    // account that has used up its free job allowance (no spendable funds to
+    // fall back on) - the same "add credits" precondition as the paid paths
+    // above, just reached from the free-tier gate instead of the billing
+    // ledger. Mapped here rather than surfaced as a generic submission error
+    // so the user sees the credits dialog instead of retrying a request that
+    // can never succeed.
     matches: (info, message) =>
       info.exceptionType === 'InsufficientFundsError' ||
       info.exceptionType === 'insufficient_credits' ||
+      info.exceptionType === 'FREE_TIER_EXHAUSTED' ||
       INSUFFICIENT_CREDITS_MESSAGES.has(message),
     resolve: () => catalogMatch(INSUFFICIENT_CREDITS_CATALOG_ID)
   },

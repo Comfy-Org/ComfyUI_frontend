@@ -996,6 +996,16 @@ describe('errorMessageResolver', () => {
       }
     },
     {
+      type: 'FREE_TIER_EXHAUSTED',
+      message:
+        "You've used all your free generations. Upgrade to keep creating.",
+      expected: {
+        catalogId: 'insufficient_credits',
+        displayTitle: 'Insufficient credits',
+        displayMessage: 'Add credits to your account to use this node.'
+      }
+    },
+    {
       type: 'InactiveSubscriptionError',
       message:
         'User has no active subscription. Please subscribe to a plan to continue.',

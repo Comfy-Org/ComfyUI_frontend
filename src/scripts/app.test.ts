@@ -99,6 +99,7 @@ import { isCloud } from '@/platform/distribution/types'
 import { PromptExecutionError, api } from '@/scripts/api'
 import { useExecutionErrorStore } from '@/stores/executionErrorStore'
 import { useExecutionStore } from '@/stores/executionStore'
+import { useQueueSettingsStore } from '@/stores/queueSettingsStore'
 import { useDialogStore } from '@/stores/dialogStore'
 import type { ComfyNodeDef } from '@/schemas/nodeDefSchema'
 import { createNodeExecutionId } from '@/types/nodeIdentification'
@@ -126,7 +127,8 @@ const {
   mockRefreshMissingModelPipeline,
   mockImportA1111,
   mockWorkflowService,
-  mockValidateWorkflow
+  mockValidateWorkflow,
+  mockOpenAccountPrecondition
 } = vi.hoisted(() => ({
   mockExtensionService: {
     invokeExtensions: vi.fn(),
@@ -139,8 +141,19 @@ const {
     afterLoadNewGraph: vi.fn<WorkflowService['afterLoadNewGraph']>(),
     showPendingWarnings: vi.fn<WorkflowService['showPendingWarnings']>()
   },
-  mockValidateWorkflow: vi.fn<WorkflowValidation['validateWorkflow']>()
+  mockValidateWorkflow: vi.fn<WorkflowValidation['validateWorkflow']>(),
+  mockOpenAccountPrecondition: vi.fn()
 }))
+
+// Isolates the queuePrompt precondition branch from the real credits/
+// subscription dialog chain (billing capability reads, async initialize) -
+// that chain is covered by useAccountPreconditionDialog's own tests.
+vi.mock(
+  import('@/platform/cloud/subscription/composables/useAccountPreconditionDialog'),
+  () => ({
+    useAccountPreconditionDialog: () => ({ open: mockOpenAccountPrecondition })
+  })
+)
 
 vi.mock(
   import('@/platform/workflow/validation/composables/useWorkflowValidation'),
@@ -1865,6 +1878,32 @@ describe('ComfyApp', () => {
       )
 
       await expect(app.queuePrompt(0)).resolves.toBe(true)
+    })
+
+    it('opens the credits dialog and disables Auto Queue on a free-tier allowance rejection', async () => {
+      prepareEmptyPromptQueue()
+      useQueueSettingsStore().mode = 'instant-running'
+      vi.spyOn(api, 'queuePrompt').mockRejectedValue(
+        new PromptExecutionError(
+          {
+            error: {
+              type: 'FREE_TIER_EXHAUSTED',
+              message:
+                "You've used all your free generations. Upgrade to keep creating."
+            }
+          },
+          402
+        )
+      )
+
+      await expect(app.queuePrompt(0)).resolves.toBe(true)
+
+      expect(mockOpenAccountPrecondition).toHaveBeenCalledWith('credits')
+      // Auto Queue would otherwise resubmit this exact request: a
+      // precondition rejection never creates a job, so it never sets
+      // app.lastExecutionError, the signal Auto Queue checks before
+      // requeuing.
+      expect(useQueueSettingsStore().mode).toBe('disabled')
     })
 
     it('uses the last processed queue item result after an earlier failure', async () => {
