@@ -8,6 +8,7 @@ import { TelemetryRegistry } from './TelemetryRegistry'
 import type {
   AgentConsentResolvedMetadata,
   AgentConsentShownMetadata,
+  AgentCreditTransitionNoticeMetadata,
   AgentEntryButtonClickedMetadata,
   AgentErrorMetadata,
   AgentFreeUseExposureMetadata,
@@ -364,6 +365,9 @@ describe('TelemetryRegistry', () => {
       action: 'shown',
       placement: 'above-input'
     } satisfies AgentFreeUseNoticeMetadata
+    const creditTransitionNoticeMetadata = {
+      action: 'shown'
+    } satisfies AgentCreditTransitionNoticeMetadata
 
     const cases = [
       {
@@ -382,6 +386,14 @@ describe('TelemetryRegistry', () => {
         expected: { ...freeUseNoticeMetadata },
         invoke: (registry) =>
           registry.trackAgentFreeUseNotice(freeUseNoticeMetadata)
+      },
+      {
+        method: 'trackAgentCreditTransitionNotice',
+        expected: { ...creditTransitionNoticeMetadata },
+        invoke: (registry) =>
+          registry.trackAgentCreditTransitionNotice(
+            creditTransitionNoticeMetadata
+          )
       },
       {
         method: 'trackAgentMessageFeedback',

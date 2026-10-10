@@ -248,6 +248,7 @@ const paywallBilling = vi.hoisted(() => ({
 }))
 const paywallHasFunds = ref<boolean | null>(false)
 const paywallAgentHasFunds = ref<boolean | undefined>()
+const paywallAgentScopedHasFunds = ref<boolean | undefined>()
 
 vi.mock(import('@/platform/workspace/composables/useWorkspaceUI'), {
   spy: true
@@ -333,7 +334,9 @@ beforeEach(() => {
           ? null
           : fromPartial({
               hasFunds: paywallHasFunds.value,
-              agentHasFunds: paywallAgentHasFunds.value ?? paywallHasFunds.value
+              agentHasFunds:
+                paywallAgentHasFunds.value ?? paywallHasFunds.value,
+              agentScopedHasFunds: paywallAgentScopedHasFunds.value
             })
       ),
       tier: computed(() => paywallBilling.tier),
@@ -454,6 +457,7 @@ beforeEach(() => {
   paywallBilling.fetchStatus.mockReset().mockResolvedValue(undefined)
   paywallHasFunds.value = false
   paywallAgentHasFunds.value = undefined
+  paywallAgentScopedHasFunds.value = undefined
 })
 
 const zAgentWsEventForTest = (raw: unknown): AgentChatEvent =>
@@ -1569,6 +1573,217 @@ describe('AgentPanelRoot paywall telemetry', () => {
     )
 
     expect(useTelemetry()!.trackSubscription).not.toHaveBeenCalled()
+  })
+})
+
+describe('AgentPanelRoot Agent credit transition notice', () => {
+  const NOTICE = 'agent-credit-transition-notice'
+
+  beforeEach(() => {
+    paywallHasFunds.value = true
+    paywallAgentHasFunds.value = true
+  })
+
+  it('shows only after the Agent-scoped balance changes from available to exhausted', async () => {
+    paywallAgentScopedHasFunds.value = true
+    render(AgentPanelRoot, { global: { plugins: [i18n] } })
+    await screen.findByRole('textbox')
+
+    paywallAgentScopedHasFunds.value = false
+
+    expect(await screen.findByTestId(NOTICE)).toHaveTextContent(
+      i18n.global.t('agent.creditTransitionNotice')
+    )
+    expect(
+      telemetry.trackAgentCreditTransitionNotice
+    ).toHaveBeenCalledExactlyOnceWith({ action: 'shown' })
+  })
+
+  it('reports one impression however often the panel remounts', async () => {
+    paywallAgentScopedHasFunds.value = true
+    const panel = render(AgentPanelRoot, { global: { plugins: [i18n] } })
+    await screen.findByRole('textbox')
+    paywallAgentScopedHasFunds.value = false
+    await screen.findByTestId(NOTICE)
+
+    panel.unmount()
+    render(AgentPanelRoot, { global: { plugins: [i18n] } })
+    await screen.findByTestId(NOTICE)
+
+    expect(
+      telemetry.trackAgentCreditTransitionNotice
+    ).toHaveBeenCalledExactlyOnceWith({ action: 'shown' })
+  })
+
+  it('reports an impression first shown without telemetry once telemetry is available', async () => {
+    paywallAgentScopedHasFunds.value = true
+    const panel = render(AgentPanelRoot, { global: { plugins: [i18n] } })
+    await screen.findByRole('textbox')
+    vi.mocked(useTelemetry).mockReturnValue(null)
+    paywallAgentScopedHasFunds.value = false
+    await screen.findByTestId(NOTICE)
+    vi.mocked(useTelemetry).mockReturnValue(telemetry)
+
+    panel.unmount()
+    render(AgentPanelRoot, { global: { plugins: [i18n] } })
+    await screen.findByTestId(NOTICE)
+
+    expect(
+      telemetry.trackAgentCreditTransitionNotice
+    ).toHaveBeenCalledExactlyOnceWith({ action: 'shown' })
+  })
+
+  it('does not infer a transition when the first scoped-balance read is false', async () => {
+    paywallAgentScopedHasFunds.value = false
+    const panel = render(AgentPanelRoot, { global: { plugins: [i18n] } })
+    await screen.findByRole('textbox')
+    paywallAgentScopedHasFunds.value = undefined
+    await nextTick()
+    paywallAgentScopedHasFunds.value = false
+    await nextTick()
+    panel.unmount()
+    render(AgentPanelRoot, { global: { plugins: [i18n] } })
+    await screen.findByRole('textbox')
+
+    expect(screen.queryByTestId(NOTICE)).not.toBeInTheDocument()
+  })
+
+  it('preserves the last defined scoped balance across an omitted read and panel remount', async () => {
+    paywallAgentScopedHasFunds.value = true
+    const firstPanel = render(AgentPanelRoot, {
+      global: { plugins: [i18n] }
+    })
+    await screen.findByRole('textbox')
+    firstPanel.unmount()
+
+    paywallAgentScopedHasFunds.value = undefined
+    render(AgentPanelRoot, { global: { plugins: [i18n] } })
+    await screen.findByRole('textbox')
+    paywallAgentScopedHasFunds.value = false
+
+    expect(await screen.findByTestId(NOTICE)).toBeInTheDocument()
+  })
+
+  it('defers an observed transition until Agent consent is ready', async () => {
+    Object.assign(useAgentConsentStore(), { accepted: false })
+    paywallAgentScopedHasFunds.value = true
+    render(AgentPanelRoot, { global: { plugins: [i18n] } })
+    await screen.findByRole('textbox')
+
+    paywallAgentScopedHasFunds.value = false
+    await nextTick()
+    expect(screen.queryByTestId(NOTICE)).not.toBeInTheDocument()
+
+    Object.assign(useAgentConsentStore(), { accepted: true })
+    expect(await screen.findByTestId(NOTICE)).toBeInTheDocument()
+  })
+
+  it.for([{ status: 'paused' }, { status: 'payment_failed' }] as const)(
+    'withholds the notice while billing is $status',
+    async ({ status }) => {
+      paywallBilling.status = status
+      paywallAgentScopedHasFunds.value = true
+      render(AgentPanelRoot, { global: { plugins: [i18n] } })
+      await screen.findByRole('textbox')
+
+      paywallAgentScopedHasFunds.value = false
+      await nextTick()
+
+      expect(screen.queryByTestId(NOTICE)).not.toBeInTheDocument()
+    }
+  )
+
+  it('defers the notice until the billing capability read settles', async () => {
+    paywallCapabilities.isReady = false
+    paywallAgentScopedHasFunds.value = true
+    render(AgentPanelRoot, { global: { plugins: [i18n] } })
+    await screen.findByRole('textbox')
+
+    paywallAgentScopedHasFunds.value = false
+    await nextTick()
+    expect(screen.queryByTestId(NOTICE)).not.toBeInTheDocument()
+
+    paywallCapabilities.isReady = true
+    expect(await screen.findByTestId(NOTICE)).toBeInTheDocument()
+  })
+
+  it('yields to the exhaustion paywall when no funding remains, then shows the notice once workspace funding returns', async () => {
+    paywallAgentScopedHasFunds.value = true
+    render(AgentPanelRoot, { global: { plugins: [i18n] } })
+    await screen.findByRole('textbox')
+
+    paywallAgentScopedHasFunds.value = false
+    paywallAgentHasFunds.value = false
+    paywallHasFunds.value = false
+
+    expect(
+      await screen.findByTestId('agent-credits-exhausted-paywall')
+    ).toBeInTheDocument()
+    expect(screen.queryByTestId(NOTICE)).not.toBeInTheDocument()
+
+    paywallAgentHasFunds.value = true
+    paywallHasFunds.value = true
+
+    expect(await screen.findByTestId(NOTICE)).toBeInTheDocument()
+  })
+
+  it('observes the scoped balance again after the billing identity changes', async () => {
+    const accountId = ref('account-a')
+    useCurrentUser().resolvedUserInfo = computed(() => ({
+      id: accountId.value
+    }))
+    paywallAgentScopedHasFunds.value = true
+    render(AgentPanelRoot, { global: { plugins: [i18n] } })
+    await screen.findByRole('textbox')
+
+    accountId.value = 'account-b'
+    await nextTick()
+    paywallAgentScopedHasFunds.value = false
+
+    expect(await screen.findByTestId(NOTICE)).toBeInTheDocument()
+  })
+
+  it('reports a new impression when the scoped balance refills and runs out again', async () => {
+    paywallAgentScopedHasFunds.value = true
+    render(AgentPanelRoot, { global: { plugins: [i18n] } })
+    await screen.findByRole('textbox')
+    paywallAgentScopedHasFunds.value = false
+    await screen.findByTestId(NOTICE)
+    paywallAgentScopedHasFunds.value = true
+    await nextTick()
+    paywallAgentScopedHasFunds.value = false
+    await screen.findByTestId(NOTICE)
+
+    expect(telemetry.trackAgentCreditTransitionNotice.mock.calls).toEqual([
+      [{ action: 'shown' }],
+      [{ action: 'shown' }]
+    ])
+  })
+
+  it('shows again for a dismissed notice once the scoped balance refills and runs out again', async () => {
+    paywallAgentScopedHasFunds.value = true
+    render(AgentPanelRoot, { global: { plugins: [i18n] } })
+    await screen.findByRole('textbox')
+    paywallAgentScopedHasFunds.value = false
+    const notice = await screen.findByTestId(NOTICE)
+
+    await userEvent.click(
+      within(notice).getByRole('button', {
+        name: i18n.global.t('agent.dismiss')
+      })
+    )
+    expect(screen.queryByTestId(NOTICE)).not.toBeInTheDocument()
+
+    paywallAgentScopedHasFunds.value = true
+    await nextTick()
+    paywallAgentScopedHasFunds.value = false
+
+    expect(await screen.findByTestId(NOTICE)).toBeInTheDocument()
+    expect(telemetry.trackAgentCreditTransitionNotice.mock.calls).toEqual([
+      [{ action: 'shown' }],
+      [{ action: 'dismissed' }],
+      [{ action: 'shown' }]
+    ])
   })
 })
 

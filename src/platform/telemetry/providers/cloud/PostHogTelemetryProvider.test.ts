@@ -1124,6 +1124,12 @@ describe('PostHogTelemetryProvider', () => {
             surface: 'refused_send'
           }),
         properties: { cta: 'add_credits', surface: 'refused_send' }
+      },
+      {
+        event: TelemetryEvents.AGENT_CREDIT_TRANSITION_NOTICE,
+        track: (provider: PostHogTelemetryProvider) =>
+          provider.trackAgentCreditTransitionNotice({ action: 'shown' }),
+        properties: { action: 'shown' }
       }
     ])('captures $event', async ({ event, track, properties }) => {
       const provider = createProvider()

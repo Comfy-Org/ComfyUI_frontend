@@ -316,7 +316,8 @@ describe('useWorkspaceBilling', () => {
         endDate: '2026-06-01T00:00:00Z',
         isCancelled: true,
         hasFunds: true,
-        agentHasFunds: false
+        agentHasFunds: false,
+        agentScopedHasFunds: false
       })
       expect(billing.canAccessSubscriptionFeatures.value).toBe(true)
       expect(billing.isFreeTier.value).toBe(false)
@@ -346,6 +347,26 @@ describe('useWorkspaceBilling', () => {
         await billing.fetchStatus()
 
         expect(billing.subscription.value?.agentHasFunds).toBe(expected)
+      }
+    )
+
+    it.for([
+      { scopedHasFunds: undefined, expected: undefined },
+      { scopedHasFunds: { agent: false }, expected: false }
+    ])(
+      'maps scoped_has_funds $scopedHasFunds to the Agent-scoped balance $expected',
+      async ({ scopedHasFunds, expected }) => {
+        mockWorkspaceApi.getBillingStatus.mockResolvedValue({
+          ...activeStatus,
+          has_funds: true,
+          scoped_effective_has_funds: { agent: true },
+          scoped_has_funds: scopedHasFunds
+        })
+
+        const billing = setupBilling()
+        await billing.fetchStatus()
+
+        expect(billing.subscription.value?.agentScopedHasFunds).toBe(expected)
       }
     )
 

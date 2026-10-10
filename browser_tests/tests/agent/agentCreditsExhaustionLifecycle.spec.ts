@@ -85,3 +85,84 @@ test.describe(
     })
   }
 )
+
+test.describe(
+  'Agent credit-transition notice',
+  { tag: ['@cloud', '@screenshot', '@ui'] },
+  () => {
+    test.use({
+      connectWebSocketToServer: false,
+      initialFeatureFlags: {
+        enable_telemetry: true
+      }
+    })
+
+    test('shows the workspace-balance notice when the Agent grant runs out', async ({
+      agentPanel,
+      creditsLifecycle,
+      hostTelemetry
+    }) => {
+      const notice = agentPanel.creditTransitionNotice
+
+      await agentPanel.open()
+      await agentPanel.selectWorkflow()
+
+      await test.step('exhausting the grant alone shows the transition notice', async () => {
+        await creditsLifecycle.completeTurn('Build a red fox workflow', {
+          fundingState: 'scopedExhausted'
+        })
+
+        await expect(notice).toBeVisible()
+        await expect(notice).toContainText(
+          enMessages.agent.creditTransitionNotice
+        )
+        await expect(notice).toHaveScreenshot(
+          'agent-credit-transition-notice.png'
+        )
+        await expect
+          .poll(() =>
+            hostTelemetry.filter(
+              ({ event }) => event === 'app:agent_credit_transition_notice'
+            )
+          )
+          .toEqual([
+            {
+              event: 'app:agent_credit_transition_notice',
+              properties: { action: 'shown' }
+            }
+          ])
+      })
+
+      await test.step('the transition notice shows without a paywall', async () => {
+        await expect(agentPanel.creditsExhaustedPaywall).toHaveCount(0)
+        await expect(agentPanel.composerStack).toHaveScreenshot(
+          'agent-credit-transition-composer-stack.png'
+        )
+      })
+
+      await test.step('dismissing it leaves the composer in place', async () => {
+        await notice
+          .getByRole('button', { name: enMessages.agent.dismiss })
+          .click()
+
+        await expect(notice).toHaveCount(0)
+        await expect
+          .poll(() =>
+            hostTelemetry.filter(
+              ({ event }) => event === 'app:agent_credit_transition_notice'
+            )
+          )
+          .toEqual([
+            {
+              event: 'app:agent_credit_transition_notice',
+              properties: { action: 'shown' }
+            },
+            {
+              event: 'app:agent_credit_transition_notice',
+              properties: { action: 'dismissed' }
+            }
+          ])
+      })
+    })
+  }
+)

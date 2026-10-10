@@ -51,12 +51,15 @@ const FUNDED_BILLING_STATUS = {
   max_seats: 1,
   occupied_seats: 1,
   scoped_effective_has_funds: { agent: true },
+  scoped_has_funds: { agent: true },
   scheduled_change: null,
   subscription_duration: 'MONTHLY',
   subscription_status: 'active',
   subscription_tier: 'STANDARD',
   team_credit_stop: null
 } satisfies BillingStatusResponse
+
+export type AgentFundingState = 'funded' | 'exhausted' | 'scopedExhausted'
 
 type HeldBillingRefresh = {
   entered: Promise<void>
@@ -91,11 +94,27 @@ class AgentBillingFixture {
       }
     | undefined
 
-  setAgentFunds(hasFunds: boolean): void {
-    this.status = {
-      ...FUNDED_BILLING_STATUS,
-      has_funds: hasFunds,
-      scoped_effective_has_funds: { agent: hasFunds }
+  setFundingState(state: AgentFundingState): void {
+    switch (state) {
+      case 'funded':
+        this.status = FUNDED_BILLING_STATUS
+        break
+      case 'exhausted':
+        this.status = {
+          ...FUNDED_BILLING_STATUS,
+          has_funds: false,
+          scoped_effective_has_funds: { agent: false },
+          scoped_has_funds: { agent: false }
+        }
+        break
+      case 'scopedExhausted':
+        this.status = {
+          ...FUNDED_BILLING_STATUS,
+          scoped_has_funds: { agent: false }
+        }
+        break
+      default:
+        state satisfies never
     }
   }
 

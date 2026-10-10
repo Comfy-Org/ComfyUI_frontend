@@ -12,11 +12,13 @@ export class AgentPanel {
   public readonly attachmentChips: Locator
   public readonly closeButton: Locator
   public readonly composer: Locator
+  public readonly composerStack: Locator
   public readonly composerAssetSection: Locator
   public readonly composerPromptArea: Locator
   public readonly copiedButton: Locator
   public readonly copyReportButton: Locator
   public readonly creditsExhaustedPaywall: Locator
+  public readonly creditTransitionNotice: Locator
   public readonly debugHeading: Locator
   public readonly dockedPanel: Locator
   public readonly dockedPanelShell: Locator
@@ -49,6 +51,7 @@ export class AgentPanel {
         })
       )
     this.composer = this.root.getByRole('textbox', { name: /^Describe ideas/ })
+    this.composerStack = this.root.getByTestId('agent-composer-stack')
     this.composerAssetSection = this.root.getByTestId('composer-asset-section')
     this.composerPromptArea = this.root.getByTestId('composer-inline-input')
     this.copiedButton = this.root.getByRole('button', { name: 'Copied' })
@@ -58,6 +61,9 @@ export class AgentPanel {
     this.creditsExhaustedPaywall = this.root.getByRole('alert').filter({
       hasText: enMessages.agent.paywall.title
     })
+    this.creditTransitionNotice = this.root.getByTestId(
+      'agent-credit-transition-notice'
+    )
     this.debugHeading = this.root.getByText('CRDT debug', { exact: true })
     this.dockedPanel = page.getByTestId('docked-agent-panel')
     this.dockedPanelShell = page.getByTestId('docked-agent-panel-shell')
@@ -230,6 +236,13 @@ export class AgentPanel {
   async selectWorkflow(name: string = 'Unsaved Workflow'): Promise<void> {
     await this.chooseWorkflow(name)
     await expect(this.workflowPicker).toHaveText(name)
+    await this.page.mouse.move(0, 0)
+    await this.workflowPicker.blur()
+    await expect(
+      this.page
+        .locator('.p-tooltip, [role="tooltip"]')
+        .filter({ visible: true })
+    ).toHaveCount(0)
   }
 
   async openWorkSummary(): Promise<void> {

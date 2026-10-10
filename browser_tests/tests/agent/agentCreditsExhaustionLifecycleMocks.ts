@@ -7,6 +7,8 @@ import type {
 } from '@/workbench/extensions/agent/schemas/agentApiSchema'
 import type { AgentPanel } from '@e2e/fixtures/components/AgentPanel'
 import { webSocketFixture } from '@e2e/fixtures/ws'
+import { hostTelemetryFixture } from '@e2e/fixtures/hostTelemetryFixture'
+import type { AgentFundingState } from '@e2e/tests/agent/agentPanelMocks'
 import { agentTest } from '@e2e/tests/agent/agentPanelMocks'
 
 class AgentCreditsLifecycleFixture {
@@ -15,12 +17,12 @@ class AgentCreditsLifecycleFixture {
     private readonly agentPanel: AgentPanel,
     private readonly acceptedTurns: AgentTurnAccepted[],
     private readonly ws: WebSocketRoute,
-    private readonly setAgentFunds: (hasFunds: boolean) => void
+    private readonly setFundingState: (state: AgentFundingState) => void
   ) {}
 
   async completeTurn(
     prompt: string,
-    { fundingState }: { fundingState: 'funded' | 'exhausted' }
+    { fundingState }: { fundingState: AgentFundingState }
   ): Promise<void> {
     const acceptedTurnCount = this.acceptedTurns.length
     await this.agentPanel.sendMessage(prompt)
@@ -33,7 +35,7 @@ class AgentCreditsLifecycleFixture {
     }
 
     await expect(this.agentPanel.stopButton).toBeVisible()
-    this.setAgentFunds(fundingState === 'funded')
+    this.setFundingState(fundingState)
     const billingRefresh = this.page.waitForResponse(
       (response) =>
         response.request().method() === 'GET' &&
@@ -58,7 +60,7 @@ class AgentCreditsLifecycleFixture {
   }
 }
 
-const base = mergeTests(agentTest, webSocketFixture)
+const base = mergeTests(agentTest, hostTelemetryFixture, webSocketFixture)
 
 export const test = base.extend<{
   creditsLifecycle: AgentCreditsLifecycleFixture
@@ -74,7 +76,7 @@ export const test = base.extend<{
         agentPanel,
         acceptedTurns,
         ws,
-        (hasFunds) => agentBilling.setAgentFunds(hasFunds)
+        (state) => agentBilling.setFundingState(state)
       )
     )
   }
