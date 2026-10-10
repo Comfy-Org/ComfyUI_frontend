@@ -25,6 +25,32 @@ type CustomerEventsResponseQuery =
 
 export type AuditLog = components['schemas']['AuditLog']
 
+const TOOLTIP_PARAM_ALLOWLIST = [
+  'credits_used',
+  'amount',
+  'model',
+  'api_name',
+  'endpoint',
+  'subscription_id',
+  'gpu_seconds',
+  'duration'
+] as const
+
+type TooltipParamKey = (typeof TOOLTIP_PARAM_ALLOWLIST)[number]
+
+const DETAILS_COLUMN_PARAM_KEYS: Partial<
+  Record<string, readonly TooltipParamKey[]>
+> = {
+  [EventType.CREDIT_ADDED]: ['amount'],
+  [EventType.API_USAGE_COMPLETED]: ['api_name', 'model']
+}
+
+function presentTooltipParamKeys(params: Record<string, unknown>) {
+  return TOOLTIP_PARAM_ALLOWLIST.filter(
+    (key) => params[key] != null && params[key] !== ''
+  )
+}
+
 const customerApiClient = axios.create({
   baseURL: getComfyApiBaseUrl(),
   headers: {
@@ -158,8 +184,19 @@ export const useCustomerEventsService = () => {
   }
 
   function hasAdditionalInfo(event: AuditLog) {
-    const { amount, api_name, model, ...otherParams } = event.params || {}
-    return Object.keys(otherParams).length > 0
+    const shownInDetails =
+      DETAILS_COLUMN_PARAM_KEYS[event.event_type ?? ''] ?? []
+    return presentTooltipParamKeys(event.params || {}).some(
+      (key) => !shownInDetails.includes(key)
+    )
+  }
+
+  function getTooltipContent(event: AuditLog) {
+    const params = event.params || {}
+
+    return presentTooltipParamKeys(params)
+      .map((key) => `${formatJsonKey(key)}: ${formatJsonValue(params[key])}`)
+      .join('\n')
   }
 
   function formatAmount(amountMicros?: number) {
@@ -245,6 +282,7 @@ export const useCustomerEventsService = () => {
     hasAdditionalInfo,
     formatDate,
     formatJsonKey,
-    formatJsonValue
+    formatJsonValue,
+    getTooltipContent
   }
 }
