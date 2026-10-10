@@ -234,9 +234,9 @@ export function createPromotedWidgetWriteData() {
   doc.destroy()
 
   return {
-    ...data,
-    fullState,
-    delta,
+    interiorPrompt: data.interiorPrompt,
+    interiorWidth: data.interiorWidth,
+    interiorSteps: data.interiorSteps,
     framesFor: (workflowId: string) =>
       createPromotedWidgetFrames(workflowId, fullState, delta)
   }
