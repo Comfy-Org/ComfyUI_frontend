@@ -8,8 +8,7 @@ import {
   PROMOTED_WIDGET_SAMPLER_NODE_ID,
   PROMOTED_WIDGET_SUBGRAPH_TYPE,
   PROMOTED_WIDGET_WORKFLOW_LABEL,
-  PROMOTED_WIDGET_WORKFLOW_NAME,
-  parsePromotedWidgetSubscribeWorkflowId
+  PROMOTED_WIDGET_WORKFLOW_NAME
 } from '@e2e/fixtures/data/agent/promotedWidgetWrite'
 import { promotedWidgetWriteFixture } from '@e2e/fixtures/promotedWidgetWriteFixture'
 import { webSocketFixture } from '@e2e/fixtures/ws'
@@ -31,29 +30,31 @@ test.describe(
       comfyPage,
       postedMessages,
       getWebSocket,
-      promotedWidgetWriteData
+      promotedWidgetWriteData,
+      promotedWidgetWriteHost
     }) => {
       test.setTimeout(60_000)
       const page = comfyPage.page
-      const { framesFor, interiorPrompt, interiorWidth, interiorSteps } =
+      const { framesFor, interiorPrompt, interiorSteps } =
         promotedWidgetWriteData
 
-      await test.step('load the promoted-widget workflow', async () => {
-        await comfyPage.workflow.reloadAndWaitForApp()
-        await comfyPage.workflow.loadWorkflow(PROMOTED_WIDGET_WORKFLOW_NAME)
+      const hostWidgetsBefore =
+        await test.step('load the promoted-widget workflow', async () => {
+          await comfyPage.workflow.loadWorkflow(PROMOTED_WIDGET_WORKFLOW_NAME)
 
-        // Precondition: the host node exposes its promoted widgets before any
-        // follower frame arrives. Guards against a silently-broken fixture
-        // load.
-        const hostWidgetsBefore = await page.evaluate((id) => {
-          const host = window.app!.graph.getNodeById(id)
-          return (host?.widgets ?? []).map((w) => [w.name, w.value])
-        }, toNodeId(PROMOTED_WIDGET_HOST_NODE_ID))
-        expect(hostWidgetsBefore).toEqual(
-          expect.arrayContaining([['steps', interiorSteps]])
-        )
-        expect(hostWidgetsBefore.length).toBeGreaterThanOrEqual(7)
-      })
+          // Precondition: the host node exposes its promoted widgets before any
+          // follower frame arrives. Guards against a silently-broken fixture
+          // load.
+          const hostWidgetsBefore = await page.evaluate((id) => {
+            const host = window.app!.graph.getNodeById(id)
+            return (host?.widgets ?? []).map((w) => [w.name, w.value])
+          }, toNodeId(PROMOTED_WIDGET_HOST_NODE_ID))
+          expect(hostWidgetsBefore).toEqual(
+            expect.arrayContaining([['steps', interiorSteps]])
+          )
+          expect(hostWidgetsBefore.length).toBeGreaterThanOrEqual(7)
+          return hostWidgetsBefore
+        })
 
       await test.step('point the agent panel at that workflow', async () => {
         await agentPanel.open()
@@ -69,13 +70,7 @@ test.describe(
       })
 
       const ws = await getWebSocket()
-      const subscribedWorkflowId = new Promise<string>((resolve) => {
-        ws.onMessage((msg) => {
-          if (typeof msg !== 'string') return
-          const workflowId = parsePromotedWidgetSubscribeWorkflowId(msg)
-          if (workflowId) resolve(workflowId)
-        })
-      })
+      const subscribedWorkflowId = promotedWidgetWriteHost.waitForSubscribe(ws)
 
       const workflowId =
         await test.step('send a turn and capture the document subscribe', async () => {
@@ -117,18 +112,20 @@ test.describe(
 
       const state =
         await test.step('the write lands on the host, not on the interior defaults', async () => {
+          const expectedHostWidgets = hostWidgetsBefore.map(([name, value]) => [
+            name,
+            name === 'text'
+              ? PROMOTED_WIDGET_NEW_PROMPT
+              : name === 'steps'
+                ? PROMOTED_WIDGET_NEW_STEPS
+                : value
+          ])
           await expect
             .poll(async () => {
               const s = await readState()
               return s.hostWidgets
             })
-            .toEqual(
-              expect.arrayContaining([
-                ['text', PROMOTED_WIDGET_NEW_PROMPT],
-                ['steps', PROMOTED_WIDGET_NEW_STEPS],
-                ['width', interiorWidth]
-              ])
-            )
+            .toEqual(expectedHostWidgets)
 
           const state = await readState()
           expect(state.prompt).toBe(interiorPrompt)
