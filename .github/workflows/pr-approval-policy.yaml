@@ -1,0 +1,58 @@
+name: 'PR: Approval Policy'
+
+on:
+  workflow_run:
+    workflows: ['CI: Approval Policy Signal']
+    types: [completed]
+  issue_comment:
+    types: [created, edited, deleted]
+  workflow_dispatch:
+    inputs:
+      pull-request:
+        description: Pull request number to re-evaluate
+        required: true
+        type: string
+
+permissions:
+  contents: read
+
+concurrency:
+  group: approval-policy-${{ github.event.workflow_run.head_repository.id }}-${{ github.event.workflow_run.head_branch || inputs.pull-request || github.event.issue.number }}
+  cancel-in-progress: false
+
+jobs:
+  evaluate:
+    if: >-
+      github.repository == 'Comfy-Org/ComfyUI_frontend' &&
+      github.ref == 'refs/heads/main' &&
+      (github.event_name != 'issue_comment' || github.event.issue.pull_request)
+    environment: approval-policy
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v7
+        with:
+          ref: refs/heads/main
+          persist-credentials: false
+
+      - uses: ./.github/actions/setup-frontend
+        with:
+          node_cache: 'false'
+
+      - uses: actions/create-github-app-token@fee1f7d63c2ff003460e3d139729b119787bc349 # v2.2.2
+        id: app
+        with:
+          app-id: ${{ vars.APPROVAL_POLICY_APP_ID }}
+          private-key: ${{ secrets.APPROVAL_POLICY_APP_PRIVATE_KEY }}
+          owner: Comfy-Org
+          repositories: ComfyUI_frontend
+          permission-checks: write
+          permission-contents: read
+          permission-pull-requests: read
+          permission-members: read
+
+      - name: Evaluate live approvals
+        env:
+          GH_TOKEN: ${{ steps.app.outputs.token }}
+          APPROVAL_POLICY_PR: ${{ inputs.pull-request || github.event.issue.number }}
+        run: pnpm exec tsx scripts/cicd/approval-policy.ts
