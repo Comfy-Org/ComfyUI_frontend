@@ -1395,7 +1395,21 @@ const historyGroups = computed(() => {
   )
 })
 
-async function onSelectHistory(
+/**
+ * Whether the panel still owes the active tab its chat. Only an activation
+ * arms it: a mount does not, because the panel is remounted every time it is
+ * minimized and restored, and adopting the tab's older chat there would
+ * discard the chat the user had open. A temporary tab does not arm it either
+ * -- it has no cloud chat to follow, and the id it gets later comes from this
+ * panel saving it, which binds the open chat rather than navigating away.
+ *
+ * It outlives the activation because both the summary list and the tab's cloud
+ * id can resolve afterwards, and it is retired the moment the follow is
+ * satisfied or the user picks a chat themselves.
+ */
+const followOwed = ref(false)
+
+async function selectThread(
   id: string,
   isCurrent: () => boolean
 ): Promise<boolean> {
@@ -1413,26 +1427,67 @@ async function onSelectHistory(
   return opened
 }
 
+/**
+ * A chat the user picked outranks the one the active tab points at, so it
+ * retires the pending follow. Without that, this call's own `refreshHistory()`
+ * handed the follow a fresh summary list and the tab's thread was selected
+ * back on top of the user's choice.
+ */
+async function onSelectHistory(
+  id: string,
+  isCurrent: () => boolean
+): Promise<boolean> {
+  followOwed.value = false
+  return selectThread(id, isCurrent)
+}
+
 const activeWorkflowId = computed(() => {
   const workflow = workflowStore.activeWorkflow
   return workflow ? cloudIdFor(workflow) : undefined
 })
 
+function followActiveWorkflowChat(): void {
+  if (!followOwed.value) return
+  // Pointing the composer at a workflow binds the chat the user is in to that
+  // workflow. It is not navigation to that workflow's other chats, so a cloud
+  // id that first appears while the selection is running must not replace the
+  // open chat.
+  if (workflowSelecting.value) {
+    followOwed.value = false
+    return
+  }
+  const workflowId = activeWorkflowId.value
+  if (workflowId === undefined) return
+  const matchingThread = threadSummaries.value.find(
+    (thread) => thread.workflow_id === workflowId
+  )
+  if (matchingThread === undefined) return
+  followOwed.value = false
+  if (matchingThread.id === threadId.value) return
+  // Following the active tab carries no navigation intent to invalidate;
+  // loadThread's own generation guard already drops a superseded load.
+  void selectThread(matchingThread.id, () => true)
+}
+
 watch(
-  [() => workflowStore.activeWorkflow, activeWorkflowId, threadSummaries],
-  ([workflow, workflowId, threads]) => {
-    if (workflow === null) return
-    if (workflowId === undefined) return
-    const matchingThread = threads.find(
-      (thread) => thread.workflow_id === workflowId
-    )
-    if (matchingThread === undefined || matchingThread.id === threadId.value)
-      return
-    // Following the active tab carries no navigation intent to invalidate;
-    // loadThread's own generation guard already drops a superseded load.
-    void onSelectHistory(matchingThread.id, () => true)
+  () => workflowStore.activeWorkflow,
+  (workflow) => {
+    followOwed.value = workflow !== null && !workflow.isTemporary
+    followActiveWorkflowChat()
   }
 )
+
+// Late arrivals only: the active tab's cloud id and the summary list can both
+// resolve after the activation that armed the follow. A refresh with nothing
+// owed is inert, which is what stops `selectThread`'s own refresh from
+// re-asserting the tab's chat over a chat the user picked.
+watch([activeWorkflowId, threadSummaries], () => followActiveWorkflowChat())
+
+// A selection started after the activation retires the follow for the same
+// reason: the user is binding the chat they are in, not asking for another.
+watch(workflowSelecting, (selecting) => {
+  if (selecting) followOwed.value = false
+})
 
 function buildTranscriptMarkdown(entries: ConversationEntry[]): string {
   return entries

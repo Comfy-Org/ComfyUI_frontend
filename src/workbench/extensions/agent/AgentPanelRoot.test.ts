@@ -4484,6 +4484,15 @@ describe('AgentPanelRoot history', () => {
     await vi.waitFor(() =>
       expect(useAgentChatHistoryStore().sessions).toHaveLength(2)
     )
+    // A mount is not an activation. The panel remounts on every minimize and
+    // restore, and adopting the tab's older chat there would throw away the
+    // chat the user had open.
+    expect(useAgentConversationStore().threadId).toBeNull()
+
+    // Activated while the cloud ids are still in flight, so the follow has
+    // nothing to match on yet.
+    workflowStore.activeWorkflow = second
+    await nextTick()
     expect(useAgentConversationStore().threadId).toBeNull()
 
     resolveWorkflows(
@@ -4497,15 +4506,148 @@ describe('AgentPanelRoot history', () => {
     )
 
     await vi.waitFor(() =>
-      expect(useAgentConversationStore().threadId).toBe('th-first')
-    )
-
-    workflowStore.activeWorkflow = second
-
-    await vi.waitFor(() =>
       expect(useAgentConversationStore().threadId).toBe('th-second')
     )
-    expect(loadedThreads).toEqual(['th-first', 'th-second'])
+
+    workflowStore.activeWorkflow = first
+
+    await vi.waitFor(() =>
+      expect(useAgentConversationStore().threadId).toBe('th-first')
+    )
+    expect(loadedThreads).toEqual(['th-second', 'th-first'])
+  })
+
+  describe('following the active workflow tab', () => {
+    /**
+     * Two tabs whose cloud ids are listed, and a thread list the caller
+     * chooses. Records every thread whose messages were fetched so a test can
+     * assert that a chat was *not* re-loaded.
+     */
+    function stubWorkflowBoundHistory(threads: AgentThreadSummary[]): {
+      loadedThreads: string[]
+      listCalls: () => number
+    } {
+      const loadedThreads: string[] = []
+      let listCalls = 0
+      vi.mocked(fetch).mockImplementation(async (input: RequestInfo | URL) => {
+        const url = String(input)
+        if (url.endsWith('/api/agent/threads')) {
+          listCalls += 1
+          return json(200, agentThreadList(threads))
+        }
+        if (url.includes('/api/workflows'))
+          return json(200, {
+            data: [
+              { id: 'wf-first', name: 'first' },
+              { id: 'wf-second', name: 'second' }
+            ],
+            pagination: { offset: 0, limit: 100, total: 2, has_more: false }
+          })
+        const match = url.match(/\/api\/agent\/threads\/([^/]+)\/messages$/)
+        if (match) {
+          loadedThreads.push(match[1])
+          return json(200, [
+            {
+              id: `${match[1]}-user`,
+              thread_id: match[1],
+              seq: 1,
+              role: 'user',
+              status: 'complete',
+              turn_id: `${match[1]}-turn`,
+              content: { text: `Prompt in ${match[1]}` }
+            }
+          ] satisfies AgentMessages)
+        }
+        return json(200, { data: [], pagination: { has_more: false } })
+      })
+      return { loadedThreads, listCalls: () => listCalls }
+    }
+
+    async function settle(): Promise<void> {
+      for (let i = 0; i < 5; i++) await nextTick()
+    }
+
+    function userPrompts(): string[] {
+      return useAgentConversationStore().entries.flatMap((entry) =>
+        entry.role === 'user' ? [entry.text] : []
+      )
+    }
+
+    it('keeps the current chat when the active tab has no matching thread', async () => {
+      const first = addTab('workflows/first.json')
+      const second = addTab('workflows/second.json')
+      workflowStore.activeWorkflow = second
+      const { loadedThreads } = stubWorkflowBoundHistory([
+        agentThread({
+          id: 'th-first',
+          title: 'First chat',
+          last_message_at: '2026-09-22T10:00:00Z',
+          workflow_id: 'wf-first'
+        })
+      ])
+
+      renderWithSelectedTarget()
+      workflowStore.activeWorkflow = first
+      await vi.waitFor(() =>
+        expect(useAgentConversationStore().threadId).toBe('th-first')
+      )
+      await vi.waitFor(() =>
+        expect(userPrompts()).toEqual(['Prompt in th-first'])
+      )
+
+      workflowStore.activeWorkflow = second
+      await settle()
+
+      expect(useAgentConversationStore().threadId).toBe('th-first')
+      expect(userPrompts()).toEqual(['Prompt in th-first'])
+      expect(loadedThreads).toEqual(['th-first'])
+    })
+
+    it('does not pull a manually selected chat back to the active tab', async () => {
+      const first = addTab('workflows/first.json')
+      const second = addTab('workflows/second.json')
+      workflowStore.activeWorkflow = second
+      const { loadedThreads, listCalls } = stubWorkflowBoundHistory([
+        agentThread({
+          id: 'th-first',
+          title: 'First chat',
+          last_message_at: '2026-09-22T10:00:00Z',
+          workflow_id: 'wf-first'
+        }),
+        agentThread({
+          id: 'th-other',
+          title: 'Other chat',
+          last_message_at: '2026-09-22T09:00:00Z',
+          workflow_id: 'wf-second'
+        })
+      ])
+
+      renderWithSelectedTarget()
+      workflowStore.activeWorkflow = first
+      await vi.waitFor(() =>
+        expect(useAgentConversationStore().threadId).toBe('th-first')
+      )
+      const callsBeforeSelect = listCalls()
+
+      await userEvent.click(
+        screen.getByRole('button', {
+          name: i18n.global.t('agent.showChatHistory')
+        })
+      )
+      await userEvent.click(await screen.findByText('Other chat'))
+      await vi.waitFor(() =>
+        expect(useAgentConversationStore().threadId).toBe('th-other')
+      )
+      // The selection's own refreshHistory is what used to re-assert the tab's
+      // thread, so the assertion has to wait for that refresh to land.
+      await vi.waitFor(() =>
+        expect(listCalls()).toBeGreaterThan(callsBeforeSelect)
+      )
+      await settle()
+
+      expect(useAgentConversationStore().threadId).toBe('th-other')
+      expect(loadedThreads).toEqual(['th-first', 'th-other'])
+    })
   })
 
   describe('history row title for the active chat', () => {
