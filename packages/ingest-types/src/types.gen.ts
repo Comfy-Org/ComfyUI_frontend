@@ -286,6 +286,84 @@ export type AssetInfo = {
 }
 
 /**
+ * The workflow to read.
+ */
+export type WorkflowPacksRequest = {
+  /**
+   * A ComfyUI workflow as the editor holds it (the UI format: a `nodes` array beside a `links` array, subgraphs under `definitions.subgraphs`). The API format is read too. Passed to comfy-builder as it is.
+   */
+  workflow: {
+    [key: string]: unknown
+  }
+}
+
+/**
+ * What a workflow needs. A node class built into ComfyUI, or served by a partner provider, is in none of the lists: there is nothing to install for it.
+ */
+export type WorkflowPacks = {
+  /**
+   * Which export format the workflow was read as.
+   */
+  format: 'api' | 'ui'
+  /**
+   * Packs found for the workflow's nodes by Cloud's own map of node classes to packs.
+   */
+  matched_packs: Array<WorkflowPack>
+  /**
+   * Node classes Cloud cannot confirm a pack provides, sorted by class, each with its reason. Empty when every node is built in, served by a partner provider, or placed by Cloud's own map in a listed pack. A `stamped` entry's pack is listed and will be installed, yet the workflow may still not run on Cloud as it is.
+   */
+  missing_nodes: Array<WorkflowMissingNode>
+  /**
+   * Packs the workflow itself names on its nodes (`cnr_id`) for node classes Cloud's map does not know, where the Comfy Registry's class index named the same pack. Cloud's map did not choose them, so Comfy Cloud cannot be assumed to have them installed.
+   */
+  stamped_packs: Array<WorkflowPack>
+}
+
+/**
+ * One node class of the workflow that Cloud cannot confirm a pack provides, and why.
+ */
+export type WorkflowMissingNode = {
+  /**
+   * The node class, as the workflow names it.
+   */
+  class_type: string
+  /**
+   * The Comfy Registry id the workflow's own stamp names on the node (its `cnr_id`, lowercased, as comfy-builder reads it); present only with reason `stamped`. The pack Cloud installs for the node is in `matched_packs` or `stamped_packs`, but not always under this id: Cloud's map lists some packs by their repository URL instead, with no `id`. So a client cannot count on finding that entry by this id.
+   */
+  pack?: string
+  /**
+   * `github`: the workflow says the node was installed from GitHub (its `aux_id`), and no Registry pack provides it. `unknown`: no pack provides it, or the pack that claims it publishes nothing to fetch, and the workflow names no GitHub source. `unchecked`: the Comfy Registry did not answer about it, so nothing says it is missing; asking again may find its pack. `stamped`: the node names a pack (its `cnr_id`, in `pack`) that will be installed, but Cloud could not confirm that pack provides this node: only the workflow's own stamp ties the node to it, and Cloud's map of node classes does not place it there, so the workflow may not run on Cloud as it is (the node may be newer than the pack version Cloud installs, or not the pack's at all).
+   */
+  reason: 'github' | 'unknown' | 'unchecked' | 'stamped'
+  /**
+   * The GitHub repository (`org/repo`) the workflow names for the node; present only with reason `github`.
+   */
+  repository?: string
+}
+
+/**
+ * One node pack the workflow needs, as it would be installed.
+ */
+export type WorkflowPack = {
+  /**
+   * The pack's Comfy Registry id. Absent for a pack the Registry publishes no installable version of, which is installed from `repository` instead.
+   */
+  id?: string
+  /**
+   * The pack's name, or its Registry id when it has none.
+   */
+  name: string
+  /**
+   * The repository the pack is installed from, present only when the Registry publishes no installable version of it.
+   */
+  repository?: string
+  /**
+   * The Registry version that would be installed: the newest one published, since a workflow names no versions. Absent when the pack is installed from `repository`.
+   */
+  version?: string
+}
+
+/**
  * Paginated list of saved workflows.
  */
 export type WorkflowListResponse = {
@@ -15624,6 +15702,66 @@ export type ListWorkspaceDeploymentsResponses = {
 
 export type ListWorkspaceDeploymentsResponse =
   ListWorkspaceDeploymentsResponses[keyof ListWorkspaceDeploymentsResponses]
+
+export type ResolveWorkspaceWorkflowPacksData = {
+  body: WorkflowPacksRequest
+  path: {
+    /**
+     * Workspace ID (w-{uuid} format)
+     */
+    id: string
+  }
+  query?: never
+  url: '/api/workspaces/{id}/workflow-packs'
+}
+
+export type ResolveWorkspaceWorkflowPacksErrors = {
+  /**
+   * The workflow could not be read. `code` is comfy-builder's identifier, which a caller branches on: `INVALID_REQUEST` when no workflow was sent, `INVALID_WORKFLOW` when the payload is not a workflow or holds no nodes, `WORKFLOW_TOO_LARGE` when it names more node classes than one read may carry. While `web_session_enabled` is on, `code` may also be `workspace_id_invalid` (see SessionWorkspaceIDInvalid).
+   */
+  400: ErrorResponse
+  /**
+   * Unauthorized
+   */
+  401: ErrorResponse
+  /**
+   * The caller is not a member of the workspace, or is an API key: the read runs as the caller on a Cloud JWT minted here, which needs a signed-in session. For a web session, `code` may also be one of the SessionWriteForbidden refusals (`csrf_invalid`, `workspace_access_denied`, `origin_not_allowed`, `cross_site_request`).
+   */
+  403: ErrorResponse
+  /**
+   * The rollout flag cloud_on_customer_build_enabled is off for the caller.
+   */
+  404: ErrorResponse
+  /**
+   * The workflow is larger than the 1 MiB one read may carry.
+   */
+  413: ErrorResponse
+  /**
+   * Internal server error
+   */
+  500: ErrorResponse
+  /**
+   * comfy-builder could not be reached, failed, or refused the token minted here; nothing is known about the workflow, so try again.
+   */
+  502: ErrorResponse
+  /**
+   * Reading workflows is not configured in this environment (BUILDER_SERVICE_URL is unset).
+   */
+  503: ErrorResponse
+}
+
+export type ResolveWorkspaceWorkflowPacksError =
+  ResolveWorkspaceWorkflowPacksErrors[keyof ResolveWorkspaceWorkflowPacksErrors]
+
+export type ResolveWorkspaceWorkflowPacksResponses = {
+  /**
+   * The workflow was read; what it needs, and what nothing provides
+   */
+  200: WorkflowPacks
+}
+
+export type ResolveWorkspaceWorkflowPacksResponse =
+  ResolveWorkspaceWorkflowPacksResponses[keyof ResolveWorkspaceWorkflowPacksResponses]
 
 export type GetCurrentWorkspaceData = {
   body?: never
