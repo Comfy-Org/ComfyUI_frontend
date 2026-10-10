@@ -86,11 +86,8 @@ The work items and open questions are in
 
 Related Notion documents (Documents Hub):
 
-- Decision: Renewable partner-node token for Local API nodes (the option 3
-  design this ADR defers to).
-- TDD: Resolving stale authentication tokens in Local API Nodes (FE-2170,
-  BE-13269; option 1 as the short-term mitigation, option 3 recommended).
-- TDD: SSO across all services (OIDC/SAML/SCIM), including "Before / after:
-  SSO system design proposal", which lists "Sign in with browser" for local.
-- TDD: Universal Auth Flow for the Comfy Ecosystem (OAuth + PKCE for the
-  desktop apps).
+- [Decision: Renewable partner-node token for Local API nodes](https://app.notion.com/p/3df6d73d365081b8b765c43406061d97) — Alexander Piskun, Feedback Wanted. The option 3 design this ADR defers to.
+- [TDD: Resolving stale authentication tokens in Local API Nodes](https://app.notion.com/p/3d76d73d36508186b202fb04a95cd6fa) — Jaewon Yoon, Approved + WIP. FE-2170, BE-13269; option 1 as the short-term mitigation, option 3 recommended.
+- [TDD: SSO across all services (OIDC/SAML/SCIM)](https://app.notion.com/p/3e66d73d3650815c9394f5b6d7d4ff9f) — Deep Mehta, Approved + WIP. The SSO design this work extends.
+- [Before / after: SSO system design proposal](https://app.notion.com/p/3e66d73d365081d0b5e4df4eeabf9403) — a subpage of the SSO TDD above. Lists "Sign in with browser" for local.
+- [TDD: Universal Auth Flow for the Comfy Ecosystem](https://app.notion.com/p/3256d73d36508141a96df1ec38b123d4) — Christian Byrne, Shipped. OAuth + PKCE for the desktop apps.

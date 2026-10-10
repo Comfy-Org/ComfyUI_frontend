@@ -96,13 +96,16 @@ and send them as `Authorization: Bearer` / `X-API-KEY`.
 
 ## Related documents
 
-- Notion, Documents Hub:
-  - Decision: Renewable partner-node token for Local API nodes (B5, C2).
-  - TDD: Resolving stale authentication tokens in Local API Nodes (FE-2170, BE-13269).
-  - TDD: SSO across all services (OIDC/SAML/SCIM) and its "Before / after: SSO system design proposal".
-  - TDD: Universal Auth Flow for the Comfy Ecosystem.
-  - SSO frontend test plan and SSO QA guide (Desktop cases D1–D11 to port).
-- Slack: #proj-sso scope thread (Oct 6–7); #bug-dump execution-auth options (Aug 25).
+Notion (Documents Hub):
+
+- [Decision: Renewable partner-node token for Local API nodes](https://app.notion.com/p/3df6d73d365081b8b765c43406061d97) — Alexander Piskun, Feedback Wanted. B5, C2.
+- [TDD: Resolving stale authentication tokens in Local API Nodes](https://app.notion.com/p/3d76d73d36508186b202fb04a95cd6fa) — Jaewon Yoon, Approved + WIP. FE-2170, BE-13269.
+- [TDD: SSO across all services (OIDC/SAML/SCIM)](https://app.notion.com/p/3e66d73d3650815c9394f5b6d7d4ff9f) — Deep Mehta, Approved + WIP.
+- [Before / after: SSO system design proposal](https://app.notion.com/p/3e66d73d365081d0b5e4df4eeabf9403) — a subpage of the SSO TDD above.
+- [TDD: Universal Auth Flow for the Comfy Ecosystem](https://app.notion.com/p/3256d73d36508141a96df1ec38b123d4) — Christian Byrne, Shipped.
+- [SSO frontend test plan](https://app.notion.com/p/3f16d73d365081cd86fcfa1b58374530) and [SSO QA guide](https://app.notion.com/p/3f36d73d365081ffa18df6ffca9aab15) — Jaewon Yoon. Desktop cases D1–D11 to port.
+
+Slack: #proj-sso scope thread (Oct 6–7); #bug-dump execution-auth options (Christian, Aug 25).
 
 ## Open questions
 
