@@ -55,8 +55,13 @@ watch(overflows, (on) => {
 // card showing through a control reads as a rendering fault. Hovering lifts
 // them without colour: the yellow belongs to See all, and two yellows on one
 // row compete.
+// A pointer only reaches an arrow the reader can see. While the row hides them
+// the strip they straddle belongs to the card underneath; once they are up, a
+// spent one swallows the click rather than passing it to that card, because a
+// dimmed control that quietly opens a model is worse than one that does
+// nothing. Touch never hides them, so there they are always the target.
 const arrowClass =
-  'focus-visible:ring-primary-comfy-yellow/50 hover:border-primary-warm-gray hover:bg-site-dropdown bg-page pointer-events-auto absolute top-1/2 z-10 grid size-9 -translate-y-1/2 cursor-pointer place-items-center rounded-xl border border-transparency-white-t20 text-primary-warm-white shadow-lg shadow-black/40 transition-colors outline-none focus-visible:ring-3 aria-disabled:pointer-events-none aria-disabled:cursor-default aria-disabled:opacity-40 aria-disabled:hover:border-transparency-white-t20 aria-disabled:hover:bg-page'
+  'focus-visible:ring-primary-comfy-yellow/50 hover:border-primary-warm-gray hover:bg-site-dropdown bg-page pointer-events-auto can-hover:pointer-events-none can-hover:group-hover/row:pointer-events-auto can-hover:group-focus-within/row:pointer-events-auto absolute top-1/2 z-10 grid size-9 -translate-y-1/2 cursor-pointer place-items-center rounded-xl border border-transparency-white-t20 text-primary-warm-white shadow-lg shadow-black/40 transition-colors outline-none focus-visible:ring-3 aria-disabled:cursor-default aria-disabled:opacity-40 aria-disabled:hover:border-transparency-white-t20 aria-disabled:hover:bg-page'
 
 // A pointer that can hover earns them by hovering, so a page of rows is not a
 // page of chrome, and a keyboard earns them by focusing. A touch screen can do

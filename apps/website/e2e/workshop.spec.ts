@@ -515,7 +515,7 @@ test.describe('Models catalog', () => {
     await page.getByTestId('workshop-filter').click()
     const options = page
       .getByTestId('workshop-filter-menu')
-      .locator('[data-testid^="filter-useCase-"]')
+      .getByTestId(/^filter-useCase-/)
     await expect(options.first()).toBeVisible()
     await options.last().click()
 
