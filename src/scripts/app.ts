@@ -96,6 +96,7 @@ import { useExtensionService } from '@/services/extensionService'
 import { useLitegraphService } from '@/services/litegraphService'
 import { useSubgraphService } from '@/services/subgraphService'
 import { isDesktopHostSignedIn } from '@/platform/auth/desktopHost/desktopHostSession'
+import { queueAuthToken } from '@/platform/auth/partnerNode/partnerNodeQueueToken'
 import { useApiKeyAuthStore } from '@/stores/apiKeyAuthStore'
 import { useCommandStore } from '@/stores/commandStore'
 import { createCanvasInteractionMode } from '@/renderer/core/canvas/interaction/canvasInteractionMode'
@@ -1875,10 +1876,14 @@ export class ComfyApp {
     const workspaceIdBeforeAuthentication = teamWorkspaceStore.activeWorkspaceId
     const workspaceGenerationBeforeAuthentication =
       teamWorkspaceStore.workspaceTransitionGeneration
-    const comfyOrgAuthToken = await useAuthStore().getWorkspaceAuthToken()
+    const workspaceAuthToken = await useAuthStore().getWorkspaceAuthToken()
     const executionWorkspaceId = teamWorkspaceStore.activeWorkspaceId
     const executionWorkspaceGeneration =
       teamWorkspaceStore.workspaceTransitionGeneration
+    const comfyOrgAuthToken = await queueAuthToken(
+      workspaceAuthToken,
+      executionWorkspaceId
+    )
     const workspaceChangedWhileAuthenticating =
       (workspaceIdBeforeAuthentication !== executionWorkspaceId ||
         workspaceGenerationBeforeAuthentication !==

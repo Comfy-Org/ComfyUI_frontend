@@ -12,6 +12,7 @@ export enum ServerFeatureFlag {
   LINEAR_TOGGLE_ENABLED = 'linear_toggle_enabled',
   PARTNER_NODE_GOVERNANCE_ENABLED = 'partner_node_governance_enabled',
   PARTNER_RUN_GATE_ENABLED = 'partner_run_gate_enabled',
+  PARTNER_NODE_TOKEN = 'partner_node_token',
   USER_SECRETS_ENABLED = 'user_secrets_enabled',
   NODE_REPLACEMENTS = 'node_replacements',
   NODE_LIBRARY_ESSENTIALS_ENABLED = 'node_library_essentials_enabled',

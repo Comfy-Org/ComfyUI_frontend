@@ -26,6 +26,7 @@ import {
   requestDesktopHostSignOut
 } from '@/platform/auth/desktopHost/desktopHostSession'
 import { firebaseIdentity } from '@/platform/auth/firebaseIdentity'
+import { partnerNodeTokens } from '@/platform/auth/partnerNode/partnerNodeTokens'
 import { useCloudWebSessionStore } from '@/platform/auth/session/cloudWebSessionStore'
 import type { WebSessionRequests } from '@/platform/auth/session/webSessionFetch'
 import {
@@ -240,6 +241,7 @@ export const useAuthStore = defineStore('auth', () => {
     if (nextUserId === null || identityChanged) {
       useWorkspaceAuthStore().clearWorkspaceContext()
       mintUnifiedToken.clear()
+      void partnerNodeTokens.revokeAll()
     }
     if (identityChanged) {
       clearOnboardingReplay(previousUserId)
