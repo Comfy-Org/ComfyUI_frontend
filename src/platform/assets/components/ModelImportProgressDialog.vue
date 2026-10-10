@@ -1,7 +1,8 @@
 <script setup lang="ts">
-import { whenever } from '@vueuse/core'
+import { unrefElement, whenever } from '@vueuse/core'
 import Popover from '@/components/common/ImperativePopover.vue'
-import { computed, ref } from 'vue'
+import type { ComponentPublicInstance } from 'vue'
+import { computed, nextTick, ref, useTemplateRef } from 'vue'
 import { useI18n } from 'vue-i18n'
 
 import Loader from '@/components/loader/Loader.vue'
@@ -26,6 +27,9 @@ const visible = computed(() => assetDownloadStore.hasDownloads)
 const isExpanded = ref(false)
 const activeFilter = ref<'all' | 'completed' | 'failed'>('all')
 const filterPopoverRef = ref<InstanceType<typeof Popover> | null>(null)
+const disclosureButtonRef = useTemplateRef<ComponentPublicInstance>(
+  'disclosureButtonRef'
+)
 
 whenever(
   () => !isExpanded.value,
@@ -112,7 +116,11 @@ function closeDialog() {
 
 async function cancelDownload(taskId: TaskId) {
   const result = await assetDownloadStore.cancelDownload(taskId)
-  if (result.ok) return
+  if (result.ok) {
+    await nextTick()
+    unrefElement(disclosureButtonRef)?.focus()
+    return
+  }
 
   reportError(result.error, {
     surface: 'assets',
@@ -259,6 +267,7 @@ async function cancelDownload(taskId: TaskId) {
 
           <div class="flex items-center">
             <Button
+              ref="disclosureButtonRef"
               variant="muted-textonly"
               size="icon"
               :aria-label="

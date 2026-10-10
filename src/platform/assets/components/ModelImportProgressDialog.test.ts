@@ -39,12 +39,28 @@ describe('ModelImportProgressDialog cancellation', () => {
 
     await user.click(screen.getByRole('button', { name: 'Expand' }))
     const cancelButton = screen.getByRole('button', {
-      name: 'Cancel Download'
+      name: 'Cancel'
     })
     await user.click(cancelButton)
 
     expect(store.cancelDownload).toHaveBeenCalledWith('task-123')
     expect(cancelButton).toBeDisabled()
+  })
+
+  it('moves focus to the persistent disclosure control after cancellation', async () => {
+    const user = userEvent.setup()
+    const store = renderDialog()
+    vi.spyOn(store, 'cancelDownload').mockImplementation(async () => {
+      store.downloadList[0].status = 'cancellation_pending'
+      return { ok: true, value: true }
+    })
+
+    await user.click(screen.getByRole('button', { name: 'Expand' }))
+    const cancelButton = screen.getByRole('button', { name: 'Cancel' })
+    cancelButton.focus()
+    await user.keyboard('{Enter}')
+
+    expect(screen.getByRole('button', { name: 'Collapse' })).toHaveFocus()
   })
 
   it('reports cancellation failures and shows the error toast', async () => {
@@ -54,7 +70,7 @@ describe('ModelImportProgressDialog cancellation', () => {
     vi.spyOn(store, 'cancelDownload').mockResolvedValue({ ok: false, error })
 
     await user.click(screen.getByRole('button', { name: 'Expand' }))
-    await user.click(screen.getByRole('button', { name: 'Cancel Download' }))
+    await user.click(screen.getByRole('button', { name: 'Cancel' }))
 
     await waitFor(() => {
       expect(reportError).toHaveBeenCalledWith(error, {
