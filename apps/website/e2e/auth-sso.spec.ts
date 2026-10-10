@@ -24,6 +24,10 @@ const CORS = { 'access-control-allow-origin': '*' }
 type SsoFeatures = GetFeaturesResponse & { sso_enabled?: boolean }
 
 const FLAG_ABSENT: SsoFeatures = {
+  // `agent-free-use-message-placement` is still a required generated field
+  // (packages/ingest-types) until the retired flag's Cloud removal lands and
+  // the generated client is regenerated — never hand-edit that package, see
+  // docs/release-process.md. This value is unused filler either way.
   'agent-free-use-message-placement': 'control'
 }
 const FLAG_OFF: SsoFeatures = { ...FLAG_ABSENT, sso_enabled: false }
