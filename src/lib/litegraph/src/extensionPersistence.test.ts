@@ -1,6 +1,11 @@
 import { describe, expect, it } from 'vitest'
+import { isProxy, reactive } from 'vue'
 
-import { LGraphNode, NodeInputSlot } from '@/lib/litegraph/src/litegraph'
+import {
+  LGraph,
+  LGraphNode,
+  NodeInputSlot
+} from '@/lib/litegraph/src/litegraph'
 import type { ISerialisedNode } from '@/lib/litegraph/src/types/serialisation'
 
 function nodeWithNamespacedExtension(): ISerialisedNode {
@@ -239,5 +244,81 @@ describe('LGraphNode extension payload fallbacks', () => {
     const serialized = node.serialize()
 
     expect(serialized.extensions).toEqual({ healthyExt: { note: 'kept' } })
+  })
+})
+
+describe('serialize output stays structured-cloneable when hooks hand back live state', () => {
+  // frontend#18165 (CRT Nodes "Fancy Timer"): `onSerialize(o) { o.properties = this.properties }`.
+  // Since the ECS store, node state — and so `this.properties` — is a reactive proxy.
+  function nodeInGraph() {
+    const graph = new LGraph()
+    const node = new LGraphNode('TestNode')
+    graph.add(node)
+    node.properties.elapsed = '00:01:000'
+    return { graph, node }
+  }
+
+  it('node state reached through `this.properties` is a reactive proxy', () => {
+    const { node } = nodeInGraph()
+    expect(isProxy(node.properties)).toBe(true)
+  })
+
+  it('copies a canonical field an onSerialize hook replaced with live node state', () => {
+    const { node } = nodeInGraph()
+    node.onSerialize = function (o) {
+      o.properties = this.properties
+    }
+
+    const serialised = node.serialize()
+
+    expect(serialised.properties).toEqual({ elapsed: '00:01:000' })
+    expect(isProxy(serialised.properties)).toBe(false)
+    expect(() => structuredClone(serialised)).not.toThrow()
+  })
+
+  it('keeps the whole graph serialization cloneable with such a hook', () => {
+    const { graph, node } = nodeInGraph()
+    node.onSerialize = function (o) {
+      o.properties = this.properties
+    }
+
+    expect(() => structuredClone(graph.serialize())).not.toThrow()
+  })
+
+  it('does not let later live edits leak into an already serialized node', () => {
+    const { node } = nodeInGraph()
+    node.onSerialize = function (o) {
+      o.properties = this.properties
+    }
+
+    const serialised = node.serialize()
+    node.properties.elapsed = '00:02:000'
+
+    expect(serialised.properties).toEqual({ elapsed: '00:01:000' })
+  })
+
+  it('copies a canonical graph field a graph onSerialize hook replaced with a proxy', () => {
+    const graph = new LGraph()
+    graph.onSerialize = (data) => {
+      data.extra = reactive({ note: 'live' })
+    }
+
+    const serialised = graph.serialize()
+
+    expect(serialised.extra).toMatchObject({ note: 'live' })
+    expect(() => structuredClone(serialised)).not.toThrow()
+  })
+
+  // frontend#8898: object widget values held by Vue reactivity broke structuredClone.
+  it('serializes a reactive object widget value as plain data', () => {
+    const { node } = nodeInGraph()
+    node.serialize_widgets = true
+    const widget = node.addWidget('text', 'box', '', null)
+    widget.value = reactive({ x: 1, y: [2, 3] })
+
+    const serialised = node.serialize()
+
+    expect(serialised.widgets_values).toEqual([{ x: 1, y: [2, 3] }])
+    expect(() => structuredClone(serialised)).not.toThrow()
   })
 })
