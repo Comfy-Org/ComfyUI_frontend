@@ -363,8 +363,8 @@ vi.mock(import('@/platform/distribution/types'), () => ({ isCloud: true }))
 
 vi.mock(import('@/platform/workspace/composables/useBillingCapabilities'))
 
-vi.mock<unknown>(import('@/services/dialogService'), () => ({
-  useDialogService: () => ({
+vi.mock<unknown>(import('@/composables/billing/useBillingDialogs'), () => ({
+  useBillingDialogs: () => ({
     showDowngradeToPersonalDialog: mockShowDowngradeToPersonalDialog
   })
 }))

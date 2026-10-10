@@ -13,8 +13,9 @@ import MenuItem from '@/components/ui/menu/MenuItem.vue'
 import MenuSeparator from '@/components/ui/menu/MenuSeparator.vue'
 import MenuSubContent from '@/components/ui/menu/MenuSubContent.vue'
 import MenuSubTrigger from '@/components/ui/menu/MenuSubTrigger.vue'
-import AccessibleTooltip from '@/components/ui/tooltip/AccessibleTooltip.vue'
-import { buildTooltipConfig } from '@/composables/useTooltipConfig'
+import Tooltip from '@/components/ui/tooltip/Tooltip.vue'
+import TooltipContent from '@/components/ui/tooltip/TooltipContent.vue'
+import TooltipTrigger from '@/components/ui/tooltip/TooltipTrigger.vue'
 import type { WorkflowReferenceOption } from '../../../types/workflowReference'
 
 const {
@@ -53,7 +54,7 @@ async function pickWorkflow(workflow: WorkflowReferenceOption): Promise<void> {
   <DropdownMenuRoot v-model:open="addMenuOpen">
     <DropdownMenuTrigger as-child>
       <Button
-        v-tooltip.top="buildTooltipConfig(t('agent.addToPrompt'))"
+        :tooltip="t('agent.addToPrompt')"
         variant="muted-textonly"
         size="icon"
         :aria-label="t('agent.addToPrompt')"
@@ -69,14 +70,8 @@ async function pickWorkflow(workflow: WorkflowReferenceOption): Promise<void> {
         width="compact"
         class="agent-scope"
       >
-        <AccessibleTooltip
-          :label="nodeReferenceDisabledReason ?? ''"
-          :disabled="!nodeReferenceDisabledReason"
-          :skip-delay-duration="0"
-          disable-hoverable-content
-          :collision-padding="8"
-        >
-          <template #trigger>
+        <Tooltip :disabled="!nodeReferenceDisabledReason">
+          <TooltipTrigger as-child>
             <MenuItem
               :disabled="!!nodeReferenceDisabledReason"
               :aria-description="nodeReferenceDisabledReason"
@@ -87,8 +82,9 @@ async function pickWorkflow(workflow: WorkflowReferenceOption): Promise<void> {
                 {{ t('agent.nodes') }}
               </span>
             </MenuItem>
-          </template>
-        </AccessibleTooltip>
+          </TooltipTrigger>
+          <TooltipContent>{{ nodeReferenceDisabledReason }}</TooltipContent>
+        </Tooltip>
         <DropdownMenuSub
           v-model:open="workflowSubmenuOpen"
           @update:open="onWorkflowSubmenuOpenChange"

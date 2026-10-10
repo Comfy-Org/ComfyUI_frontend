@@ -10,12 +10,12 @@ import type { ToastId } from '@/types/toastId'
 import { useToast } from '@/components/ui/toast/toastStore'
 import { useBillingContext } from '@/composables/billing/useBillingContext'
 import { useBillingRouting } from '@/composables/billing/useBillingRouting'
+import type { CheckoutTierKey } from '@/composables/billing/types'
 import { getComfyPlatformBaseUrl } from '@/config/comfyApi'
 import { paymentReturnUrl } from '@/platform/cloud/subscription/utils/paymentReturnUrl'
 import { amountDueTodayChanged } from '@comfyorg/account-ui/billing/checkout'
 import { getTeamPlanSlug } from '@/platform/cloud/subscription/constants/teamPlanCreditStops'
 import type { TeamPlanSelection } from '@/platform/cloud/subscription/constants/teamPlanCreditStops'
-import type { TierKey } from '@/platform/cloud/subscription/constants/tierPricing'
 import type { BillingCycle } from '@/platform/cloud/subscription/utils/subscriptionTierRank'
 import { isCloud } from '@/platform/distribution/types'
 import { useTelemetry } from '@/platform/telemetry'
@@ -68,21 +68,6 @@ import {
 import { trackWorkspaceCheckoutStarted } from '@/platform/workspace/utils/workspaceCheckoutTelemetry'
 
 type CheckoutStep = 'pricing' | 'preview' | 'success'
-export type CheckoutTierKey = Exclude<TierKey, 'free' | 'founder'>
-
-export type SubscriptionCheckoutSelection =
-  | {
-      planMode: 'personal'
-      tierKey: CheckoutTierKey
-      billingCycle: BillingCycle
-    }
-  | {
-      planMode: 'team'
-      stop: TeamPlanSelection
-      billingCycle: BillingCycle
-      isChange?: boolean
-    }
-
 interface SelectedTeamCheckout {
   stop: TeamPlanSelection
   checkoutType: SubscriptionCheckoutType
@@ -831,8 +816,9 @@ export function useSubscriptionCheckout(
     planSlug: string,
     tierKey: CheckoutTierKey
   ): Promise<void> {
-    const { useDialogService } = await import('@/services/dialogService')
-    const result = await useDialogService().showDowngradeToPersonalDialog({
+    const { useBillingDialogs } =
+      await import('@/composables/billing/useBillingDialogs')
+    const result = await useBillingDialogs().showDowngradeToPersonalDialog({
       planName: t(`subscription.tiers.${tierKey}.name`),
       planSlug,
       paymentIntentSource

@@ -1,6 +1,6 @@
 import { useBillingCapabilities } from '@/platform/workspace/composables/useBillingCapabilities'
 import { useToast } from '@/components/ui/toast/toastStore'
-import { useDialogService } from '@/services/dialogService'
+import { useWorkspaceDialogs } from '@/platform/workspace/composables/useWorkspaceDialogs'
 import { getActivePinia } from 'pinia'
 import type { Pinia } from 'pinia'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
@@ -19,6 +19,7 @@ import type {
   WorkspaceMember
 } from '@/platform/workspace/stores/teamWorkspaceStore'
 import { useTeamWorkspaceStore } from '@/platform/workspace/stores/teamWorkspaceStore'
+import { describeServerFactGate } from '@/utils/__tests__/serverFactGate'
 
 import {
   filterBySearch,
@@ -279,6 +280,7 @@ let workspaceStore: ReturnType<typeof useTeamWorkspaceStore> & {
 let workspaceType: 'personal' | 'team' = 'personal'
 let workspaceMembers: WorkspaceMember[] = []
 let workspacePendingInvites: WorkspacePendingInvite[] = []
+let workspaceMembersLoaded = true
 
 function updateWorkspaceStore() {
   workspaceStore.workspaces = [
@@ -294,7 +296,7 @@ function updateWorkspaceStore() {
       subscriptionTier: workspaceType === 'team' ? 'PRO' : 'FREE',
       members: workspaceMembers,
       pendingInvites: workspacePendingInvites,
-      membersLoaded: true,
+      membersLoaded: workspaceMembersLoaded,
       pendingInvitesLoaded: true
     }
   ]
@@ -349,6 +351,7 @@ vi.mock(
 vi.mock(import('@/composables/billing/useBillingContext'))
 
 vi.mock(import('@/services/dialogService'))
+vi.mock(import('@/platform/workspace/composables/useWorkspaceDialogs'))
 
 vi.mock(import('@/composables/useFeatureFlags'))
 describe('useMembersPanel', () => {
@@ -416,6 +419,7 @@ describe('useMembersPanel', () => {
     workspaceType = 'personal'
     workspaceMembers = []
     workspacePendingInvites = []
+    workspaceMembersLoaded = true
     updateWorkspaceStore()
     vi.mocked(useFeatureFlags().flags).memberCreditLimitsEnabled = true
     mockMaxSeats.value = 73
@@ -823,7 +827,7 @@ describe('useMembersPanel', () => {
     it('calls showRevokeInviteDialog', async () => {
       const panel = await setup()
       panel.handleRevokeInvite(createInvite({ id: 'inv-42' }))
-      expect(useDialogService().showRevokeInviteDialog).toHaveBeenCalledWith(
+      expect(useWorkspaceDialogs().showRevokeInviteDialog).toHaveBeenCalledWith(
         'inv-42'
       )
     })
@@ -833,7 +837,7 @@ describe('useMembersPanel', () => {
     it('calls showRemoveMemberDialog', async () => {
       const panel = await setup()
       panel.handleRemoveMember(createMember({ id: 'mem-7' }))
-      expect(useDialogService().showRemoveMemberDialog).toHaveBeenCalledWith(
+      expect(useWorkspaceDialogs().showRemoveMemberDialog).toHaveBeenCalledWith(
         'mem-7'
       )
     })
@@ -847,7 +851,7 @@ describe('useMembersPanel', () => {
         'owner'
       )
       expect(
-        useDialogService().showChangeMemberRoleDialog
+        useWorkspaceDialogs().showChangeMemberRoleDialog
       ).toHaveBeenCalledWith({
         memberId: 'mem-7',
         memberName: 'Jane',
@@ -862,7 +866,7 @@ describe('useMembersPanel', () => {
         'member'
       )
       expect(
-        useDialogService().showChangeMemberRoleDialog
+        useWorkspaceDialogs().showChangeMemberRoleDialog
       ).toHaveBeenCalledWith({
         memberId: 'own-2',
         memberName: 'Jane',
@@ -874,7 +878,7 @@ describe('useMembersPanel', () => {
       const panel = await setup()
       panel.handleChangeRole(createMember({ role: 'member' }), 'member')
       expect(
-        useDialogService().showChangeMemberRoleDialog
+        useWorkspaceDialogs().showChangeMemberRoleDialog
       ).not.toHaveBeenCalled()
     })
   })
@@ -918,7 +922,7 @@ describe('useMembersPanel', () => {
       ownerItem?.command()
 
       expect(
-        useDialogService().showChangeMemberRoleDialog
+        useWorkspaceDialogs().showChangeMemberRoleDialog
       ).toHaveBeenCalledWith(
         expect.objectContaining({ memberId: 'mem-9', targetRole: 'owner' })
       )
@@ -934,7 +938,7 @@ describe('useMembersPanel', () => {
         item: removeItem
       })
 
-      expect(useDialogService().showRemoveMemberDialog).toHaveBeenCalledWith(
+      expect(useWorkspaceDialogs().showRemoveMemberDialog).toHaveBeenCalledWith(
         'mem-9'
       )
     })
@@ -955,7 +959,7 @@ describe('useMembersPanel', () => {
       })
 
       expect(
-        useDialogService().showSetMemberCreditLimitDialog
+        useWorkspaceDialogs().showSetMemberCreditLimitDialog
       ).toHaveBeenCalledWith({
         memberId: 'mem-9',
         memberName: 'Jane',
@@ -975,7 +979,7 @@ describe('useMembersPanel', () => {
       })
 
       expect(
-        useDialogService().showSetMemberCreditLimitDialog
+        useWorkspaceDialogs().showSetMemberCreditLimitDialog
       ).toHaveBeenCalledWith({
         memberId: 'mem-9',
         memberName: 'Jane',
@@ -1109,9 +1113,9 @@ describe('useMembersPanel', () => {
     it('opens the invite dialog on an active team plan', async () => {
       const panel = await setup()
       panel.handleInviteMember()
-      expect(useDialogService().showInviteMemberDialog).toHaveBeenCalled()
+      expect(useWorkspaceDialogs().showInviteMemberDialog).toHaveBeenCalled()
       expect(
-        useDialogService().showInviteMemberUpsellDialog
+        useWorkspaceDialogs().showInviteMemberUpsellDialog
       ).not.toHaveBeenCalled()
     })
 
@@ -1129,9 +1133,9 @@ describe('useMembersPanel', () => {
         expect(panel.isInviteDisabled.value).toBe(false)
         expect(panel.inviteTooltip.value).toBeNull()
         panel.handleInviteMember()
-        expect(useDialogService().showInviteMemberDialog).toHaveBeenCalled()
+        expect(useWorkspaceDialogs().showInviteMemberDialog).toHaveBeenCalled()
         expect(
-          useDialogService().showInviteMemberUpsellDialog
+          useWorkspaceDialogs().showInviteMemberUpsellDialog
         ).not.toHaveBeenCalled()
       }
     )
@@ -1155,7 +1159,7 @@ describe('useMembersPanel', () => {
       expect(panel.isInviteDisabled.value).toBe(false)
       expect(panel.permissions.value.canInviteMembers).toBe(true)
       panel.handleInviteMember()
-      expect(useDialogService().showInviteMemberDialog).toHaveBeenCalled()
+      expect(useWorkspaceDialogs().showInviteMemberDialog).toHaveBeenCalled()
     })
 
     it('keeps invites live for an end-dated Enterprise plan still running', async () => {
@@ -1168,7 +1172,7 @@ describe('useMembersPanel', () => {
       expect(panel.isInviteDisabled.value).toBe(false)
       expect(panel.permissions.value.canInviteMembers).toBe(true)
       panel.handleInviteMember()
-      expect(useDialogService().showInviteMemberDialog).toHaveBeenCalled()
+      expect(useWorkspaceDialogs().showInviteMemberDialog).toHaveBeenCalled()
     })
 
     it('hides denied invitations on an ended plan', async () => {
@@ -1179,7 +1183,9 @@ describe('useMembersPanel', () => {
       expect(panel.showInviteButton.value).toBe(false)
       expect(panel.isInviteDisabled.value).toBe(true)
       panel.handleInviteMember()
-      expect(useDialogService().showInviteMemberDialog).not.toHaveBeenCalled()
+      expect(
+        useWorkspaceDialogs().showInviteMemberDialog
+      ).not.toHaveBeenCalled()
     })
 
     it('keeps the ended invite button hidden from members', async () => {
@@ -1305,11 +1311,11 @@ describe('useMembersPanel', () => {
         expect(panel.isInviteDisabled.value).toBe(!canInvite)
         expect(panel.uiConfig.value.showMembersList).toBe(true)
         panel.handleInviteMember()
-        expect(useDialogService().showInviteMemberDialog).toHaveBeenCalledTimes(
-          canInvite ? 1 : 0
-        )
         expect(
-          useDialogService().showInviteMemberUpsellDialog
+          useWorkspaceDialogs().showInviteMemberDialog
+        ).toHaveBeenCalledTimes(canInvite ? 1 : 0)
+        expect(
+          useWorkspaceDialogs().showInviteMemberUpsellDialog
         ).not.toHaveBeenCalled()
       }
     )
@@ -1368,14 +1374,18 @@ describe('useMembersPanel', () => {
       panel.handleInviteMember()
 
       expect(workspaceStore.resendInvite).toHaveBeenCalledWith('inv-1')
-      expect(useDialogService().showRevokeInviteDialog).toHaveBeenCalledWith(
+      expect(useWorkspaceDialogs().showRevokeInviteDialog).toHaveBeenCalledWith(
         'inv-1'
       )
-      expect(useDialogService().showRemoveMemberDialog).toHaveBeenCalledWith(
+      expect(useWorkspaceDialogs().showRemoveMemberDialog).toHaveBeenCalledWith(
         'member-1'
       )
-      expect(useDialogService().showChangeMemberRoleDialog).toHaveBeenCalled()
-      expect(useDialogService().showInviteMemberDialog).not.toHaveBeenCalled()
+      expect(
+        useWorkspaceDialogs().showChangeMemberRoleDialog
+      ).toHaveBeenCalled()
+      expect(
+        useWorkspaceDialogs().showInviteMemberDialog
+      ).not.toHaveBeenCalled()
     })
 
     it('hides management actions when the server denies member management', async () => {
@@ -1390,11 +1400,15 @@ describe('useMembersPanel', () => {
       panel.handleRevokeInvite(createInvite())
       expect(panel.permissions.value.canViewPendingInvites).toBe(false)
       expect(workspaceStore.resendInvite).not.toHaveBeenCalled()
-      expect(useDialogService().showRevokeInviteDialog).not.toHaveBeenCalled()
-
-      expect(useDialogService().showRemoveMemberDialog).not.toHaveBeenCalled()
       expect(
-        useDialogService().showChangeMemberRoleDialog
+        useWorkspaceDialogs().showRevokeInviteDialog
+      ).not.toHaveBeenCalled()
+
+      expect(
+        useWorkspaceDialogs().showRemoveMemberDialog
+      ).not.toHaveBeenCalled()
+      expect(
+        useWorkspaceDialogs().showChangeMemberRoleDialog
       ).not.toHaveBeenCalled()
     })
 
@@ -1403,10 +1417,148 @@ describe('useMembersPanel', () => {
       const panel = await setup()
       expect(panel.isInviteDisabled.value).toBe(false)
       panel.handleInviteMember()
-      expect(useDialogService().showInviteMemberDialog).toHaveBeenCalled()
+      expect(useWorkspaceDialogs().showInviteMemberDialog).toHaveBeenCalled()
       expect(
-        useDialogService().showInviteMemberUpsellDialog
+        useWorkspaceDialogs().showInviteMemberUpsellDialog
       ).not.toHaveBeenCalled()
+    })
+  })
+
+  function setCapability(
+    name: 'canInviteMembers' | 'canManageMembers' | 'canChangeSeats',
+    value: boolean
+  ) {
+    useBillingCapabilities()[name] = computed(() => value)
+  }
+
+  function flipCapability(
+    name: 'canInviteMembers' | 'canManageMembers' | 'canChangeSeats'
+  ) {
+    setCapability(name, !useBillingCapabilities()[name].value)
+  }
+
+  function endPlan() {
+    mockSubscriptionStatus.value = 'ended'
+    mockCanAccessSubscriptionFeatures.value = false
+  }
+
+  const planAndRolePerturbations = [
+    { name: 'an ended plan', apply: endPlan },
+    {
+      name: 'an Enterprise tier',
+      apply: () => {
+        mockSubscription.value = { tier: 'ENTERPRISE', isCancelled: false }
+      }
+    },
+    {
+      name: 'an ended Enterprise plan with one seat',
+      apply: () => {
+        endPlan()
+        mockSubscription.value = { tier: 'ENTERPRISE', isCancelled: false }
+        mockMaxSeats.value = 1
+      }
+    },
+    {
+      name: 'one seat',
+      apply: () => {
+        mockMaxSeats.value = 1
+      }
+    },
+    {
+      name: 'a personal plan',
+      apply: () => {
+        mockIsTeamPlan.value = false
+      }
+    },
+    {
+      name: 'a scheduled cancellation',
+      apply: () => {
+        mockSubscriptionStatus.value = 'canceled'
+        mockSubscription.value = { tier: 'PRO', isCancelled: true }
+      }
+    },
+    {
+      name: 'no subscription management',
+      apply: () => {
+        mockPermissions.value = {
+          ...mockPermissions.value,
+          canManageSubscription: false
+        }
+      }
+    },
+    {
+      name: 'the member role',
+      apply: () => {
+        mockWorkspaceRole.value = 'member'
+      }
+    },
+    {
+      name: 'a flipped can_change_seats',
+      apply: () => flipCapability('canChangeSeats')
+    }
+  ]
+
+  describeServerFactGate({
+    name: 'Invite (can_invite_members)',
+    fact: { set: (value) => setCapability('canInviteMembers', value) },
+    perturbations: [
+      ...planAndRolePerturbations,
+      {
+        name: 'a flipped can_manage_members',
+        apply: () => flipCapability('canManageMembers')
+      }
+    ],
+    mount: setup,
+    read: (panel) => ({
+      showInviteButton: panel.showInviteButton.value,
+      isInviteDisabled: panel.isInviteDisabled.value,
+      canInviteMembers: panel.permissions.value.canInviteMembers
+    })
+  })
+
+  describeServerFactGate({
+    name: 'Member management (can_manage_members)',
+    fact: { set: (value) => setCapability('canManageMembers', value) },
+    perturbations: [
+      ...planAndRolePerturbations,
+      {
+        name: 'a flipped can_invite_members',
+        apply: () => flipCapability('canInviteMembers')
+      }
+    ],
+    mount: setup,
+    read: (panel) => ({
+      canManageMembers: panel.permissions.value.canManageMembers,
+      canViewPendingInvites: panel.permissions.value.canViewPendingInvites,
+      showPendingTab: panel.uiConfig.value.showPendingTab,
+      hasMemberActions: panel.memberMenuItems(createMember()).length > 0
+    })
+  })
+
+  describeServerFactGate({
+    name: 'Roster visibility (members response)',
+    fact: {
+      set: (loaded) => {
+        workspaceMembersLoaded = loaded
+        workspaceType = 'team'
+        mockMembers.value = [createMember(), createMember({ id: 'member-2' })]
+      }
+    },
+    perturbations: [
+      ...planAndRolePerturbations,
+      {
+        name: 'a flipped can_manage_members',
+        apply: () => flipCapability('canManageMembers')
+      },
+      {
+        name: 'a flipped can_invite_members',
+        apply: () => flipCapability('canInviteMembers')
+      }
+    ],
+    mount: setup,
+    read: (panel) => ({
+      canViewOtherMembers: panel.permissions.value.canViewOtherMembers,
+      showMembersList: panel.uiConfig.value.showMembersList
     })
   })
 })

@@ -146,9 +146,7 @@
         </div>
         <div v-if="showOutputCount" class="shrink-0">
           <Button
-            v-tooltip.top.pt:pointer-events-none="
-              $t('mediaAsset.actions.seeMoreOutputs')
-            "
+            :tooltip="$t('mediaAsset.actions.seeMoreOutputs')"
             :aria-label="$t('mediaAsset.actions.seeMoreOutputs')"
             variant="secondary"
             @click.stop="handleOutputCountClick"

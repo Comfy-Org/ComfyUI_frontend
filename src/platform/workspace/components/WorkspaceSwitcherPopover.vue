@@ -76,13 +76,14 @@
       v-if="!isCloud"
       class="flex shrink-0 items-center gap-2 px-4 py-2 text-xs text-muted-foreground"
     >
-      <i
-        v-tooltip.left="{
-          value: $t('workspaceSwitcher.scopeTooltip'),
-          showDelay: 300
-        }"
-        class="pi pi-info-circle text-xs"
-      />
+      <Tooltip>
+        <TooltipTrigger as-child>
+          <i class="pi pi-info-circle text-xs" />
+        </TooltipTrigger>
+        <TooltipContent side="left">{{
+          $t('workspaceSwitcher.scopeTooltip')
+        }}</TooltipContent>
+      </Tooltip>
       <span>{{ $t('workspaceSwitcher.scopeCaption') }}</span>
     </div>
 
@@ -131,6 +132,9 @@ import { storeToRefs } from 'pinia'
 import { computed } from 'vue'
 import { useI18n } from 'vue-i18n'
 
+import Tooltip from '@/components/ui/tooltip/Tooltip.vue'
+import TooltipContent from '@/components/ui/tooltip/TooltipContent.vue'
+import TooltipTrigger from '@/components/ui/tooltip/TooltipTrigger.vue'
 import WorkspaceProfilePic from '@/platform/workspace/components/WorkspaceProfilePic.vue'
 import { useBillingContext } from '@/composables/billing/useBillingContext'
 import { isCloud } from '@/platform/distribution/types'
