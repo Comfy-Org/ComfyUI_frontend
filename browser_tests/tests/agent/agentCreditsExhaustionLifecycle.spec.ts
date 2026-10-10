@@ -93,29 +93,18 @@ test.describe(
     test.use({
       connectWebSocketToServer: false,
       initialFeatureFlags: {
-        'agent-free-use-message-placement': 'near-composer',
         enable_telemetry: true
       }
     })
 
-    test('swaps the free-use notice for the workspace-balance notice when the Agent grant runs out', async ({
+    test('shows the workspace-balance notice when the Agent grant runs out', async ({
       agentPanel,
       creditsLifecycle,
       hostTelemetry
     }) => {
       const notice = agentPanel.creditTransitionNotice
-      const freeUseNotice = agentPanel.freeUseNotice
 
       await agentPanel.open()
-
-      await test.step('free-use notice while the Agent grant has funds', async () => {
-        await expect(freeUseNotice).toBeVisible()
-        await expect(notice).toHaveCount(0)
-        await expect(freeUseNotice).toHaveScreenshot(
-          'agent-free-use-notice-scoped-funded.png'
-        )
-      })
-
       await agentPanel.selectWorkflow()
 
       await test.step('exhausting the grant alone shows the transition notice', async () => {
@@ -144,8 +133,7 @@ test.describe(
           ])
       })
 
-      await test.step('the transition notice replaces free-use copy without a paywall', async () => {
-        await expect(freeUseNotice).toHaveCount(0)
+      await test.step('the transition notice shows without a paywall', async () => {
         await expect(agentPanel.creditsExhaustedPaywall).toHaveCount(0)
         await expect(agentPanel.composerStack).toHaveScreenshot(
           'agent-credit-transition-composer-stack.png'

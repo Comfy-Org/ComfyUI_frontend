@@ -1584,50 +1584,6 @@ describe('AgentPanelRoot Agent credit transition notice', () => {
     paywallAgentHasFunds.value = true
   })
 
-  it('does not hide the free-use notice for a scoped balance that never held funds', async () => {
-    vi.mocked(useFreeUsePlacement).mockReturnValueOnce(
-      fromPartial({ variant: ref('near-composer') })
-    )
-    paywallAgentScopedHasFunds.value = false
-    render(AgentPanelRoot, { global: { plugins: [i18n] } })
-    await screen.findByRole('textbox')
-
-    expect(
-      await screen.findByRole('note', {
-        name: i18n.global.t('agent.freeUseNoticeLabel')
-      })
-    ).toBeInTheDocument()
-  })
-
-  it('hides the free-use notice only while the credit transition notice is visible', async () => {
-    vi.mocked(useFreeUsePlacement).mockReturnValueOnce(
-      fromPartial({ variant: ref('near-composer') })
-    )
-    paywallAgentScopedHasFunds.value = true
-    render(AgentPanelRoot, { global: { plugins: [i18n] } })
-    await screen.findByRole('textbox')
-    paywallAgentScopedHasFunds.value = false
-    const notice = await screen.findByTestId(NOTICE)
-
-    expect(
-      screen.queryByRole('note', {
-        name: i18n.global.t('agent.freeUseNoticeLabel')
-      })
-    ).not.toBeInTheDocument()
-
-    await userEvent.click(
-      within(notice).getByRole('button', {
-        name: i18n.global.t('agent.dismiss')
-      })
-    )
-
-    expect(
-      await screen.findByRole('note', {
-        name: i18n.global.t('agent.freeUseNoticeLabel')
-      })
-    ).toBeInTheDocument()
-  })
-
   it('shows only after the Agent-scoped balance changes from available to exhausted', async () => {
     paywallAgentScopedHasFunds.value = true
     render(AgentPanelRoot, { global: { plugins: [i18n] } })

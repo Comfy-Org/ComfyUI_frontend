@@ -1345,9 +1345,6 @@ const { copy } = useClipboard({ legacy: true })
  * denominator — to the panel openers the hypothesis is about.
  */
 const { variant: freeUsePlacement } = useFreeUsePlacement()
-const displayedFreeUsePlacement = computed(() =>
-  showCreditTransitionNotice.value ? 'control' : freeUsePlacement.value
-)
 const {
   assignment: starterPromptAssignment,
   attributeExperiment: attributeStarterPromptExperiment,
@@ -1932,7 +1929,7 @@ async function onPanelDrop(event: DragEvent): Promise<void> {
       :get-mention-nodes="mentionableNodes"
       :paywall-presentation="paywallPresentation"
       :credits-exhausted="showStandingPaywall"
-      :free-use-placement="displayedFreeUsePlacement"
+      :free-use-placement="freeUsePlacement"
       :starter-prompt-assignment="starterPromptAssignment"
       :attribute-starter-prompt-experiment="attributeStarterPromptExperiment"
       @starter-prompt-rendered="exposeStarterPromptSet"
