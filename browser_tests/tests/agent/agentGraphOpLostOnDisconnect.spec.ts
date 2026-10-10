@@ -18,6 +18,7 @@ import { AgentPanel } from '@e2e/fixtures/components/AgentPanel'
 import { HostDoc } from '@e2e/fixtures/agentConversationHostDoc'
 import type { HostFrame } from '@e2e/fixtures/agentConversationHostDoc'
 import { VueNodeHelpers } from '@e2e/fixtures/VueNodeHelpers'
+import { isRecord } from '@e2e/fixtures/utils/isRecord'
 import { jsonRoute } from '@e2e/fixtures/utils/jsonRoute'
 import { AGENT_COMPOSER_LABEL } from '@e2e/fixtures/utils/agentComposerLabel'
 
@@ -61,9 +62,6 @@ interface SubscriptionFrame {
 interface PostReconnectDocFrame extends SubscriptionFrame {
   at: number
 }
-
-const isRecord = (value: unknown): value is Record<string, unknown> =>
-  typeof value === 'object' && value !== null
 
 /** The follower's subscription frames for the workflow under test, or null. */
 function subscriptionFrameOf(raw: string | Buffer): SubscriptionFrame | null {
