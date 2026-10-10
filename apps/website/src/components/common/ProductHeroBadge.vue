@@ -121,7 +121,8 @@ const PIECE = 'h-full w-auto'
       <span
         :class="
           cn(
-            'inline-block translate-y-0.5 leading-none font-bold whitespace-nowrap',
+            'inline-block leading-none font-bold whitespace-nowrap',
+            !compact && 'translate-y-0.5',
             compact ? 'text-lg lg:text-2xl' : 'text-2xl lg:text-3xl'
           )
         "

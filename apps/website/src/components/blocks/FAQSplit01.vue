@@ -2,11 +2,11 @@
 import { cn } from '@comfyorg/tailwind-utils'
 import { computed } from 'vue'
 
-import { parseFaqAnswer } from '../../utils/faqAnswer'
-import Accordion from '../ui/accordion/Accordion.vue'
-import AccordionContent from '../ui/accordion/AccordionContent.vue'
-import AccordionItem from '../ui/accordion/AccordionItem.vue'
-import AccordionTrigger from '../ui/accordion/AccordionTrigger.vue'
+import { parseFaqAnswer } from '@/utils/faqAnswer'
+import Accordion from '@/components/ui/accordion/Accordion.vue'
+import AccordionContent from '@/components/ui/accordion/AccordionContent.vue'
+import AccordionItem from '@/components/ui/accordion/AccordionItem.vue'
+import AccordionTrigger from '@/components/ui/accordion/AccordionTrigger.vue'
 
 type Faq = { id: string; question: string; answer: string }
 

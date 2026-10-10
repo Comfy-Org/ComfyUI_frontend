@@ -1,20 +1,19 @@
 ---
-import BenefitsGrid01 from '../../../components/blocks/BenefitsGrid01.vue'
-import BuildConfiguratorSplit01 from '../../../components/blocks/BuildConfiguratorSplit01.vue'
-import CardSplitContent02 from '../../../components/blocks/CardSplitContent02.vue'
-import CompareTable01 from '../../../components/blocks/CompareTable01.vue'
-import CtaBands01 from '../../../components/blocks/CtaBands01.vue'
-import FAQSplit01 from '../../../components/blocks/FAQSplit01.vue'
-import FeatureRows02 from '../../../components/blocks/FeatureRows02.vue'
-import HeroProduct01 from '../../../components/blocks/HeroProduct01.vue'
-import StepsCards01 from '../../../components/blocks/StepsCards01.vue'
-import IndustriesSection from '../../../components/home/IndustriesSection.vue'
-import DistributionsScene from '../../../components/product/enterprise/DistributionsScene.vue'
-import { t } from '../../../i18n/translations'
-import BaseLayout from '../../../layouts/BaseLayout.astro'
-import ClosingCtaSection from '../../../templates/platform/ClosingCtaSection.vue'
-import { absoluteUrl, pageContext } from '../../../utils/jsonLd'
-import { buildFaqPageNode } from '../../enterprise/_faqMetadata'
+import BenefitsGrid01 from '@/components/blocks/BenefitsGrid01.vue'
+import BuildConfiguratorSplit01 from '@/components/blocks/BuildConfiguratorSplit01.vue'
+import CardSplitContent02 from '@/components/blocks/CardSplitContent02.vue'
+import CompareTable01 from '@/components/blocks/CompareTable01.vue'
+import CtaBands01 from '@/components/blocks/CtaBands01.vue'
+import FAQSplit01 from '@/components/blocks/FAQSplit01.vue'
+import FeatureRows02 from '@/components/blocks/FeatureRows02.vue'
+import HeroProduct01 from '@/components/blocks/HeroProduct01.vue'
+import StepsCards01 from '@/components/blocks/StepsCards01.vue'
+import IndustriesSection from '@/components/home/IndustriesSection.vue'
+import DistributionsScene from '@/components/product/enterprise/DistributionsScene.vue'
+import BaseLayout from '@/layouts/BaseLayout.astro'
+import ClosingCtaSection from '@/templates/platform/ClosingCtaSection.vue'
+import { absoluteUrl, pageContext } from '@/utils/jsonLd'
+import { buildFaqPageNode } from '@/pages/enterprise/_faqMetadata'
 
 const faqs = [
   {
@@ -127,7 +126,6 @@ const faqPage = buildFaqPageNode(url, faqs)
   <HeroProduct01
     headingTag="h1"
     title="MANAGED BUILDS"
-    tag="BETA"
     body="治理团队运行的模型、自定义节点和依赖。创建 ComfyUI 的托管发行版，并将同一个构建部署到任何地方——本地或无服务器云端。"
     primaryCta={{ label: '申请演示', href: '/zh-CN/contact/' }}
   >
@@ -168,7 +166,6 @@ const faqPage = buildFaqPageNode(url, faqs)
       { id: 'brand-lora', label: 'brand-lora（私有）', selected: true }
     ]}
     cta={{ label: '申请演示', href: '/zh-CN/contact/' }}
-    moreOptionsLabel="更多选项"
     nodesUnit="个节点"
     modelsUnit="个模型"
     pinnedLabel="已固定"
@@ -270,7 +267,7 @@ const faqPage = buildFaqPageNode(url, faqs)
           '定义组织所需的模型、合作伙伴、身份验证、发布、留存和导出事件。'
       }
     ]}
-    footnote="提供 DPA 与企业协议。数据在美国的 Google Cloud 上处理。99.5% 工作流执行可用性 SLA。SOC 2 Type II 审计正在进行中。"
+    footnote="提供 DPA 与企业协议。数据在美国的 Google Cloud 上处理。99.5% 工作流执行可用性 SLA。SOC 2 Type II 审计已完成，报告可应要求提供。"
   />
 
   <CompareTable01
@@ -291,9 +288,8 @@ const faqPage = buildFaqPageNode(url, faqs)
 
   <ClosingCtaSection
     locale="zh-CN"
-    heading-after-badge={t(
-      'enterprise.managedBuilds.closing.headingAfterBadge',
-      'zh-CN'
+    heading-after-badge={Astro.locals.t(
+      'enterprise.managedBuilds.closing.headingAfterBadge'
     )}
     client:visible
   />

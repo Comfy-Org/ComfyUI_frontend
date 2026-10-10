@@ -9,13 +9,13 @@ import { cn } from '@comfyorg/tailwind-utils'
 import { useMounted } from '@vueuse/core'
 import { onBeforeUnmount, onMounted, ref, watch } from 'vue'
 
-import { authSchemasFor } from '../../config/auth-schemas'
-import { signInErrorMessage } from '../../config/auth-sign-in-state'
-import { addToast } from '../../config/auth-toast-state'
-import { requestedReturnPath } from '../../config/workshop-return'
-import type { Locale } from '../../i18n/translations'
-import { t } from '../../i18n/translations'
-import { captureAuthFailed, useWorkshopAuthFlag } from '../../scripts/posthog'
+import { authSchemasFor } from '@/config/auth-schemas'
+import { signInErrorMessage } from '@/config/auth-sign-in-state'
+import { authToast } from '@/config/auth-toast-state'
+import { requestedReturnPath } from '@/config/workshop-return'
+import type { Locale } from '@/i18n/translations'
+import { translationsFor } from '@/i18n/translations'
+import { captureAuthFailed, useWorkshopAuthFlag } from '@/scripts/posthog'
 import AuthSpinnerIcon from './AuthSpinnerIcon.vue'
 import {
   AUTH_BRAND_SOLID_BUTTON_CLASS,
@@ -27,6 +27,7 @@ import {
 const { locale = 'en' } = defineProps<{
   locale?: Locale
 }>()
+const { t } = translationsFor(locale)
 
 /** The cloud page returns to login this long after a send. */
 const RETURN_TO_LOGIN_MS = 3000
@@ -39,7 +40,7 @@ const mounted = useMounted()
 const email = ref('')
 const errorMessage = ref('')
 const hostname = typeof window === 'undefined' ? '' : window.location.hostname
-const loadWorkshopFirebase = () => import('../../config/workshop-firebase')
+const loadWorkshopFirebase = () => import('@/config/workshop-firebase')
 
 type ResetState = 'idle' | 'sending' | 'sent' | 'error'
 const state = ref<ResetState>('idle')
@@ -143,7 +144,7 @@ async function submit() {
 
 function reportLoadFailure() {
   state.value = 'error'
-  errorMessage.value = t('auth.forgot.error', locale)
+  errorMessage.value = t('auth.forgot.error')
 }
 
 function reportSendFailure(error: unknown) {
@@ -153,21 +154,17 @@ function reportSendFailure(error: unknown) {
     auth_action: 'password_reset'
   })
   const classification = classifyAuthError(error)
-  const severity = severityForAuthError(classification)
-  addToast({
-    severity,
-    summary: t(severity === 'warn' ? 'g.warning' : 'g.error', locale),
-    detail: signInErrorMessage(classification, locale, hostname)
+  const kind = severityForAuthError(classification)
+  authToast[kind](t(`g.${kind}`), {
+    description: signInErrorMessage(classification, locale, hostname)
   })
 }
 
 function reportSent() {
   state.value = 'sent'
-  addToast({
-    severity: 'success',
-    summary: t('auth.forgot.toastSummary', locale),
-    detail: t('auth.forgot.toastDetail', locale),
-    life: TOAST_LIFE_MS
+  authToast.success(t('auth.forgot.toastSummary'), {
+    description: t('auth.forgot.toastDetail'),
+    duration: TOAST_LIFE_MS
   })
   returnTimer = setTimeout(() => {
     window.location.assign(signInDestination())
@@ -193,13 +190,13 @@ onBeforeUnmount(() => {
     <h1
       class="mt-8 mb-0 text-2xl/snug font-light tracking-tighter text-primary-comfy-canvas sm:text-3xl/snug lg:text-4xl/snug xl:text-5xl/snug 2xl:text-6xl/snug"
     >
-      {{ t('auth.forgot.heading', locale) }}
+      {{ t('auth.forgot.heading') }}
     </h1>
 
     <p
       class="mt-12 mb-0 text-base/snug font-medium text-primary-comfy-canvas xl:text-lg/snug"
     >
-      {{ t('auth.forgot.body', locale) }}
+      {{ t('auth.forgot.body') }}
     </p>
 
     <form
@@ -212,7 +209,7 @@ onBeforeUnmount(() => {
           class="mb-1 text-base text-primary-comfy-canvas/70"
           for="reset-email"
         >
-          {{ t('auth.email.label', locale) }}
+          {{ t('auth.email.label') }}
         </label>
         <input
           id="reset-email"
@@ -222,7 +219,7 @@ onBeforeUnmount(() => {
           autocomplete="email"
           required
           :disabled="!mounted"
-          :placeholder="t('auth.email.placeholder', locale)"
+          :placeholder="t('auth.email.placeholder')"
           :class="AUTH_FIELD_CLASS"
           :aria-invalid="Boolean(errorMessage) || undefined"
         />
@@ -236,7 +233,7 @@ onBeforeUnmount(() => {
         role="alert"
         :class="AUTH_MESSAGE_SUCCESS_CLASS"
       >
-        {{ t('auth.forgot.sent', locale) }}
+        {{ t('auth.forgot.sent') }}
       </div>
 
       <button
@@ -247,17 +244,17 @@ onBeforeUnmount(() => {
       >
         <AuthSpinnerIcon v-if="state === 'sending'" />
         <span :class="cn(state === 'sending' && 'sr-only')">
-          {{ t('auth.forgot.submit', locale) }}
+          {{ t('auth.forgot.submit') }}
         </span>
       </button>
 
       <a :href="signInHref" :class="AUTH_LINK_BUTTON_CLASS" @click="goToSignIn">
-        {{ t('auth.forgot.backToSignIn', locale) }}
+        {{ t('auth.forgot.backToSignIn') }}
       </a>
     </form>
 
     <p class="mt-5 mb-8 text-sm text-primary-comfy-canvas/70">
-      {{ t('auth.forgot.didntReceive', locale) }}
+      {{ t('auth.forgot.didntReceive') }}
     </p>
   </section>
 </template>

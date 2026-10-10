@@ -10,14 +10,3 @@ exports[`LLink > matches previous snapshot > Basic 1`] = `
   "float",
 ]
 `;
-
-exports[`LLink > serializes to the previous snapshot > Basic 1`] = `
-[
-  1,
-  4,
-  2,
-  5,
-  3,
-  "float",
-]
-`;

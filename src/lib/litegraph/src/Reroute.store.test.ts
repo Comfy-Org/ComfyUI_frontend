@@ -48,7 +48,6 @@ describe('Reroute ↔ rerouteStore integration', () => {
   it('does not add a reroute when its id is already registered', () => {
     const graph = new LGraph()
     const incumbent = new Reroute(toRerouteId(1), graph, [0, 0])
-    vi.spyOn(console, 'error').mockImplementation(() => {})
     useRerouteStore().registerReroute(graphScopeOf(graph), incumbent._chain)
     layoutStore.applyOperation({
       type: 'createReroute',

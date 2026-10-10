@@ -9,7 +9,6 @@ import { useAgentPanelStore } from '@/workbench/extensions/agent/stores/agent/ag
 
 import { parseWireOps } from '@e2e/fixtures/agentWireFrame'
 
-import type { GraphMutations } from './graphMutations'
 import { useAgentCrdtFollower } from './useAgentCrdtFollower'
 
 // The frame the sender actually put on the wire, narrowed the same way a
@@ -31,9 +30,7 @@ function sentOp(raw: string): { type: unknown; op_id: string } {
   return { type, op_id: op.op_id }
 }
 
-vi.mock(import('@/platform/telemetry/reportError'), () => ({
-  reportError: vi.fn()
-}))
+vi.mock(import('@/platform/telemetry/reportError'))
 
 const WORKFLOW_ID = 'wf-1'
 
@@ -41,7 +38,7 @@ const WORKFLOW_ID = 'wf-1'
 // node from a custom-node pack) or a blueprint host with a promoted widget:
 // the class is absent from the pinned catalog, so its named widget values
 // cannot be projected and the add is rejected.
-it.fails('surfaces a human add_node the doc host rejected instead of swallowing the result', () => {
+it('surfaces a human add_node the doc host rejected instead of swallowing the result', async () => {
   const previousSocket = api.socket
   const send = vi.fn<(frame: string) => void>()
   api.socket = fromPartial<WebSocket>({ readyState: WebSocket.OPEN, send })
@@ -57,10 +54,7 @@ it.fails('surfaces a human add_node the doc host rejected instead of swallowing 
   const { unmount } = render(
     defineComponent({
       setup() {
-        follower = useAgentCrdtFollower(
-          ref<string | null>(WORKFLOW_ID),
-          fromPartial<GraphMutations>({})
-        )
+        follower = useAgentCrdtFollower(ref<string | null>(WORKFLOW_ID))
         return () => null
       }
     })
@@ -87,6 +81,9 @@ it.fails('surfaces a human add_node the doc host rejected instead of swallowing 
       }
     }
   ])
+  // opCoalescer defers the flush to a microtask, so the frame is not on the
+  // mock until the queue drains.
+  await vi.waitFor(() => expect(send.mock.calls.length).toBeGreaterThan(1))
   const { type, op_id } = sentOp(send.mock.calls[1][0])
   expect(type).toBe('doc_ops')
 
@@ -111,5 +108,14 @@ it.fails('surfaces a human add_node the doc host rejected instead of swallowing 
     })
   )
 
-  expect(reportError).toHaveBeenCalled()
+  expect(reportError).toHaveBeenCalledWith(
+    expect.any(Error),
+    expect.objectContaining({
+      context: expect.objectContaining({
+        workflowId: WORKFLOW_ID,
+        opId: op_id,
+        code: 'uncatalogued_widget_write'
+      })
+    })
+  )
 })

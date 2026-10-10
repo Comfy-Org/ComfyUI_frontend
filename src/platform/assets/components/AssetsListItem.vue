@@ -65,6 +65,7 @@
             :src="previewUrl"
             :alt="previewAlt"
             class="size-full object-cover"
+            :draggable="false"
           />
         </div>
         <div

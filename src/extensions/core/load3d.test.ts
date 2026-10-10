@@ -1,17 +1,19 @@
 import { fromAny, fromPartial } from '@total-typescript/shoehorn'
+import { useToast } from '@/components/ui/toast/toastStore'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { defineComponent } from 'vue'
 
 import type { useLoad3d } from '@/composables/useLoad3d'
 import type { CameraState } from '@/extensions/core/load3d/interfaces'
 import type { LGraphNode } from '@/lib/litegraph/src/LGraphNode'
-import { useToastStore } from '@/platform/updates/common/toastStore'
 import type { ComfyNodeDef } from '@/schemas/nodeDefSchema'
-import type { ComfyApi } from '@/scripts/api'
 import type { ComfyApp } from '@/scripts/app'
 import { app } from '@/scripts/app'
 import type { useExtensionService } from '@/services/extensionService'
 import type { useLoad3dService } from '@/services/load3dService'
+import * as graphTraversal from '@/utils/graphTraversalUtil'
+import { toNodeId } from '@/types/nodeId'
+import { createNodeLocatorId } from '@/types/nodeIdentification'
 
 const {
   capture,
@@ -21,7 +23,6 @@ const {
   configureMock,
   configureForSaveMeshMock,
   getLoad3dMock,
-  getNodeByLocatorIdMock,
   nodeToLoad3dMap
 } = await vi.hoisted(async () => {
   const { createExtensionCapture } =
@@ -35,7 +36,6 @@ const {
     configureMock: vi.fn(),
     configureForSaveMeshMock: vi.fn(),
     getLoad3dMock: vi.fn(),
-    getNodeByLocatorIdMock: vi.fn(),
     nodeToLoad3dMap: new Map<object, unknown>()
   }
 })
@@ -126,29 +126,19 @@ vi.mock(import('@/scripts/domWidget'), () => ({
   addWidget: vi.fn()
 }))
 
-vi.mock(import('@/scripts/api'), () => ({
-  api: fromPartial<ComfyApi>({ apiURL: (p: string) => p })
-}))
+vi.mock(import('@/scripts/api'))
 
 vi.mock(import('@/scripts/app'), () => ({
   app: fromPartial<ComfyApp>({ canvas: { selected_nodes: {} }, rootGraph: {} }),
   ComfyApp: fromAny({ copyToClipspace: vi.fn(), clipspace_return_node: null })
 }))
 
-vi.mock(import('@/utils/graphTraversalUtil'), () => ({
-  getNodeByLocatorId: getNodeByLocatorIdMock
-}))
+vi.mock(import('@/utils/graphTraversalUtil'))
 
-vi.mock(import('@/i18n'), () => ({
-  t: (key: string) => key
-}))
+vi.mock(import('@/i18n'))
 
 vi.mock(import('@/utils/litegraphUtil'), () => ({
   isLoad3dNode: vi.fn(() => true)
-}))
-
-vi.mock(import('@/lib/litegraph/src/litegraph'), () => ({
-  LiteGraph: fromPartial({ ContextMenu: fromAny(vi.fn()) })
 }))
 
 await import('@/extensions/core/load3d')
@@ -210,7 +200,7 @@ function makeLoad3DNode(
     setSize: vi.fn(),
     addWidget: vi.fn(),
     widgets: overrides.widgets ?? [
-      { name: 'model_file', value: '' },
+      { name: 'model_file', value: '', options: { values: [] } },
       { name: 'width', value: 512 },
       { name: 'height', value: 512 },
       { name: 'image', value: '' }
@@ -465,7 +455,7 @@ describe('Comfy.Preview3D.nodeCreated', () => {
     await preview3DExt.nodeCreated!(node, app)
     node.onExecuted!({ result: [] })
 
-    expect(useToastStore().addAlert).toHaveBeenCalledWith(
+    expect(useToast().warning).toHaveBeenCalledWith(
       'toastMessages.unableToGetModelFilePath'
     )
   })
@@ -584,8 +574,8 @@ describe('Comfy.Load3D.getCustomWidgets LOAD_3D', () => {
     await modelInput.onchange!(new Event('change'))
     await flush()
 
-    expect(load3d.loadModel).toHaveBeenCalledWith('/view')
-    expect(useToastStore().addAlert).toHaveBeenCalledWith(
+    expect(load3d.loadModel).toHaveBeenCalledWith('/api/view')
+    expect(useToast().warning).toHaveBeenCalledWith(
       'toastMessages.failedToLoadModel'
     )
   })
@@ -669,7 +659,7 @@ describe('Comfy.Preview3D.onNodeOutputsUpdated', () => {
 
   it('rehydrates a Preview3D node from restored outputs', async () => {
     const node = makePreview3DNode()
-    getNodeByLocatorIdMock.mockReturnValue(node)
+    vi.mocked(graphTraversal.getNodeByLocatorId).mockReturnValue(node)
 
     preview3DExt.onNodeOutputsUpdated!({
       '7': { result: ['sub\\nested\\mesh.glb', { position: [1, 2, 3] }] }
@@ -689,18 +679,18 @@ describe('Comfy.Preview3D.onNodeOutputsUpdated', () => {
 
   it('skips entries with no result file path', async () => {
     const node = makePreview3DNode()
-    getNodeByLocatorIdMock.mockReturnValue(node)
+    vi.mocked(graphTraversal.getNodeByLocatorId).mockReturnValue(node)
 
     preview3DExt.onNodeOutputsUpdated!({
       '7': { result: [undefined] }
     } as never)
 
-    expect(getNodeByLocatorIdMock).not.toHaveBeenCalled()
+    expect(graphTraversal.getNodeByLocatorId).not.toHaveBeenCalled()
     expect(configureMock).not.toHaveBeenCalled()
   })
 
   it('skips entries whose node is not in the active rootGraph', async () => {
-    getNodeByLocatorIdMock.mockReturnValue(null)
+    vi.mocked(graphTraversal.getNodeByLocatorId).mockReturnValue(null)
 
     preview3DExt.onNodeOutputsUpdated!({
       '7': { result: ['mesh.glb'] }
@@ -711,7 +701,7 @@ describe('Comfy.Preview3D.onNodeOutputsUpdated', () => {
 
   it('skips nodes whose comfyClass is not Preview3D', async () => {
     const node = makePreview3DNode({ comfyClass: 'Load3D' })
-    getNodeByLocatorIdMock.mockReturnValue(node)
+    vi.mocked(graphTraversal.getNodeByLocatorId).mockReturnValue(node)
 
     preview3DExt.onNodeOutputsUpdated!({
       '7': { result: ['mesh.glb'] }
@@ -725,7 +715,7 @@ describe('Comfy.Preview3D.onNodeOutputsUpdated', () => {
       properties: { 'Last Time Model File': 'mesh.glb' },
       widgets: [{ name: 'model_file', value: 'mesh.glb' }]
     })
-    getNodeByLocatorIdMock.mockReturnValue(node)
+    vi.mocked(graphTraversal.getNodeByLocatorId).mockReturnValue(node)
 
     preview3DExt.onNodeOutputsUpdated!({
       '7': {
@@ -747,7 +737,7 @@ describe('Comfy.Save3DAdvanced.onNodeOutputsUpdated', () => {
 
   it('restores the saved model from the output folder when opened from history', async () => {
     const node = makePreview3DAdvancedNode({ comfyClass: 'Save3DAdvanced' })
-    getNodeByLocatorIdMock.mockReturnValue(node)
+    vi.mocked(graphTraversal.getNodeByLocatorId).mockReturnValue(node)
 
     save3DAdvancedExt.onNodeOutputsUpdated!({
       '7': { result: ['3d\\ComfyUI_00001.glb'] }
@@ -761,15 +751,56 @@ describe('Comfy.Save3DAdvanced.onNodeOutputsUpdated', () => {
     )
   })
 
+  it('restores the saved model from a standard 3d output item', () => {
+    const node = makePreview3DAdvancedNode({ comfyClass: 'Save3DAdvanced' })
+    vi.mocked(graphTraversal.getNodeByLocatorId).mockReturnValue(node)
+
+    save3DAdvancedExt.onNodeOutputsUpdated!({
+      [createNodeLocatorId(null, toNodeId(7))]: {
+        '3d': [
+          { filename: 'ComfyUI_00001.glb', subfolder: '3d', type: 'output' }
+        ],
+        camera_info: [null],
+        model_3d_info: []
+      }
+    })
+
+    expect(node.properties['Last Time Model File']).toBe('3d/ComfyUI_00001.glb')
+    expect(node.properties['Last Time Model Folder']).toBe('output')
+    expect(configureForSaveMeshMock).toHaveBeenCalledWith(
+      'output',
+      '3d/ComfyUI_00001.glb',
+      expect.objectContaining({ silentOnNotFound: true })
+    )
+  })
+
   it('skips nodes whose comfyClass is not Save3DAdvanced', async () => {
     const node = makePreview3DAdvancedNode({ comfyClass: 'Preview3DAdvanced' })
-    getNodeByLocatorIdMock.mockReturnValue(node)
+    vi.mocked(graphTraversal.getNodeByLocatorId).mockReturnValue(node)
 
     save3DAdvancedExt.onNodeOutputsUpdated!({
       '7': { result: ['mesh.glb'] }
     } as never)
 
     expect(configureForSaveMeshMock).not.toHaveBeenCalled()
+  })
+
+  it('restores a persisted temp preview on startup instead of its output default', async () => {
+    const node = makePreview3DAdvancedNode({
+      comfyClass: 'Save3DAdvanced',
+      properties: {
+        'Last Time Model File': 'preview3d_advanced_1.glb',
+        'Last Time Model Folder': 'temp'
+      }
+    })
+
+    await save3DAdvancedExt.nodeCreated!(node, app)
+
+    expect(configureForSaveMeshMock).toHaveBeenCalledWith(
+      'temp',
+      'preview3d_advanced_1.glb',
+      { silentOnNotFound: true }
+    )
   })
 })
 
@@ -803,6 +834,23 @@ describe('Comfy.Preview3DAdvanced.nodeCreated', () => {
     expect(configureForSaveMeshMock).toHaveBeenCalledWith(
       'temp',
       'prev/model.glb',
+      { silentOnNotFound: true }
+    )
+  })
+
+  it('restores from the persisted output folder instead of its temp default', async () => {
+    const node = makePreview3DAdvancedNode({
+      properties: {
+        'Last Time Model File': '3d/kept.glb',
+        'Last Time Model Folder': 'output'
+      }
+    })
+
+    await preview3DAdvancedExt.nodeCreated!(node, app)
+
+    expect(configureForSaveMeshMock).toHaveBeenCalledWith(
+      'output',
+      '3d/kept.glb',
       { silentOnNotFound: true }
     )
   })
@@ -931,7 +979,12 @@ describe('Comfy.Preview3DAdvanced.nodeCreated', () => {
     waitForLoad3dMock.mockImplementation((cb: (l: FakeLoad3d) => void) =>
       cb(load3d)
     )
-    const cameraState = { position: [1, 2, 3] }
+    const cameraState = {
+      position: { x: 1, y: 2, z: 3 },
+      target: { x: 0, y: 0, z: 0 },
+      zoom: 1,
+      cameraType: 'perspective'
+    }
     const node = makePreview3DAdvancedNode()
 
     await preview3DAdvancedExt.nodeCreated!(node, app)
@@ -1025,7 +1078,7 @@ describe('Comfy.Preview3DAdvanced.nodeCreated', () => {
     await preview3DAdvancedExt.nodeCreated!(node, app)
     node.onExecuted!({ result: [] })
 
-    expect(useToastStore().addAlert).toHaveBeenCalledWith(
+    expect(useToast().warning).toHaveBeenCalledWith(
       'toastMessages.unableToGetModelFilePath'
     )
     expect(configureForSaveMeshMock).not.toHaveBeenCalled()

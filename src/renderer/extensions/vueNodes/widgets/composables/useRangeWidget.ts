@@ -4,7 +4,7 @@ import type {
   IWidgetRangeOptions
 } from '@/lib/litegraph/src/types/widgets'
 import type { RangeInputSpec } from '@/schemas/nodeDef/nodeDefSchemaV2'
-import type { ComfyWidgetConstructorV2 } from '@/scripts/widgets'
+import type { ComfyWidgetConstructorV2 } from '@/types/widgetConstructor'
 
 export const useRangeWidget = (): ComfyWidgetConstructorV2 => {
   return (node: LGraphNode, inputSpec): IRangeWidget => {

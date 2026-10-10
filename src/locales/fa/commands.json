@@ -230,6 +230,9 @@
   "Comfy_NewBlankWorkflow": {
     "label": "ورک‌فلو جدید خالی"
   },
+  "Comfy_Onboarding_Replay": {
+    "label": "بازپخش راه‌اندازی اولیه"
+  },
   "Comfy_OpenClipspace": {
     "label": "Clipspace"
   },

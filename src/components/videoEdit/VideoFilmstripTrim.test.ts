@@ -1,10 +1,10 @@
-/* eslint-disable testing-library/prefer-user-event -- pointer capture scrubbing needs low-level pointer events */
+/* oxlint-disable testing-library/prefer-user-event -- pointer capture scrubbing needs low-level pointer events */
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { defineComponent, h, ref } from 'vue'
 import type { Ref } from 'vue'
 
 const { activeHandle } = vi.hoisted(() => {
-  // eslint-disable-next-line @typescript-eslint/no-require-imports
+  // oxlint-disable-next-line typescript/no-require-imports
   const { ref: createRef } = require('vue')
   return {
     activeHandle: createRef(null) as Ref<'min' | 'max' | 'midpoint' | null>

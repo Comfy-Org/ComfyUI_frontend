@@ -90,7 +90,6 @@ watch(visibility, (state) => {
   // Re-observe deferred elements to trigger fresh measurements
   for (const element of deferredElements) {
     if (element.isConnected) {
-      markElementForFreshMeasurement(element)
       resizeObserver.observe(element)
     }
   }
@@ -107,7 +106,6 @@ const resizeObserver = new ResizeObserver((entries) => {
     for (const entry of entries) {
       if (entry.target instanceof HTMLElement) {
         deferredElements.add(entry.target)
-        markElementForFreshMeasurement(entry.target)
         resizeObserver.unobserve(entry.target)
       }
     }

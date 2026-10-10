@@ -1,16 +1,15 @@
 ---
-import BaseLayout from '../layouts/BaseLayout.astro'
-import FormSection from '../components/contact/FormSection.vue'
-import FAQSplit01 from '../components/blocks/FAQSplit01.vue'
-import { contactFaqs } from '../data/contactFaq'
-import { t } from '../i18n/translations'
-import { faqAnswerPlainText } from '../utils/faqAnswer'
+import BaseLayout from '@/layouts/BaseLayout.astro'
+import FormSection from '@/components/contact/FormSection.vue'
+import FAQSplit01 from '@/components/blocks/FAQSplit01.vue'
+import { contactFaqs } from '@/data/contactFaq'
+import { faqAnswerPlainText } from '@/utils/faqAnswer'
 import {
   absoluteUrl,
   faqPageNode,
   organizationId,
   pageContext
-} from '../utils/jsonLd'
+} from '@/utils/jsonLd'
 
 const { siteUrl, locale, url } = pageContext(
   Astro.site,
@@ -34,15 +33,18 @@ const faqPage = faqPageNode(
   pageType="ContactPage"
   mainEntityId={organizationId(siteUrl)}
   breadcrumbs={[
-    { name: t('breadcrumb.home', locale), url: absoluteUrl(Astro.site, '/') },
-    { name: t('breadcrumb.contact', locale) }
+    {
+      name: Astro.locals.t('breadcrumb.home'),
+      url: absoluteUrl(Astro.site, '/')
+    },
+    { name: Astro.locals.t('breadcrumb.contact') }
   ]}
   extraJsonLd={[faqPage]}
 >
   <FormSection client:load />
   <FAQSplit01
     client:visible
-    heading={t('contact.faq.heading', locale)}
+    heading={Astro.locals.t('contact.faq.heading')}
     faqs={faqs}
   />
 </BaseLayout>

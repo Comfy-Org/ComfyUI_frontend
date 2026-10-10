@@ -153,7 +153,8 @@ test.describe('Node Templates', { tag: ['@canvas'] }, () => {
         mimeType: 'application/json',
         buffer: Buffer.from(JSON.stringify(payload))
       })
-      expect((await storeResponse).ok()).toBe(true)
+      const response = await storeResponse
+      expect(response.ok()).toBe(true)
       await manageDialog.waitForHidden()
 
       await nodeTemplates.openManageDialog()

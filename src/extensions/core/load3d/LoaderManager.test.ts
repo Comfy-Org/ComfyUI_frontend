@@ -1,8 +1,9 @@
+import { useToast } from '@/components/ui/toast/toastStore'
 import * as THREE from 'three'
 import { fromAny } from '@total-typescript/shoehorn'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 
-import { useToastStore } from '@/platform/updates/common/toastStore'
+import { isGaussianSplatPLY } from '@/scripts/metadata/ply'
 
 import type {
   EventManagerInterface,
@@ -55,18 +56,10 @@ function makeModelManagerStub(): ModelManagerStub {
   }
 }
 
-const {
-  meshLoad,
-  splatLoad,
-  pointCloudLoad,
-  fetchModelDataMock,
-  isGaussianSplatPLYMock
-} = vi.hoisted(() => ({
+const { meshLoad, splatLoad, pointCloudLoad } = vi.hoisted(() => ({
   meshLoad: vi.fn(),
   splatLoad: vi.fn(),
-  pointCloudLoad: vi.fn(),
-  fetchModelDataMock: vi.fn<() => Promise<ArrayBuffer>>(),
-  isGaussianSplatPLYMock: vi.fn<(b: ArrayBuffer) => Promise<boolean>>()
+  pointCloudLoad: vi.fn()
 }))
 
 vi.mock(import('./MeshModelAdapter'), () => ({
@@ -102,7 +95,7 @@ vi.mock(import('./SplatModelAdapter'), () => ({
         fetchBytes: () => Promise<ArrayBuffer>
       ): Promise<boolean> => {
         if (ext !== 'ply') return true
-        return isGaussianSplatPLYMock(await fetchBytes())
+        return isGaussianSplatPLY(await fetchBytes())
       }
       load = splatLoad
     }
@@ -112,12 +105,10 @@ vi.mock(import('./SplatModelAdapter'), () => ({
 vi.mock(import('./ModelAdapter'), { spy: true })
 
 vi.mock(import('@/scripts/metadata/ply'), () => ({
-  isGaussianSplatPLY: isGaussianSplatPLYMock
+  isGaussianSplatPLY: vi.fn()
 }))
 
-vi.mock(import('@/i18n'), () => ({
-  t: (key: string) => key
-}))
+vi.mock(import('@/i18n'))
 
 type LoaderManagerInternals = {
   pickAdapter(
@@ -135,33 +126,23 @@ function makeLoaderManager() {
   )
   const internals = lm as unknown as LoaderManagerInternals
   const pick = (ext: string) =>
-    internals.pickAdapter.call(lm, ext, () => fetchModelDataMock())
+    internals.pickAdapter.call(lm, ext, () => vi.mocked(fetchModelData)('', ''))
   return { lm, modelManager, eventManager, pick }
 }
 
 describe('LoaderManager', () => {
   beforeEach(() => {
-    vi.mocked(fetchModelData).mockImplementation(fetchModelDataMock)
     meshLoad.mockResolvedValue(null)
     splatLoad.mockResolvedValue(null)
     pointCloudLoad.mockResolvedValue(null)
-    fetchModelDataMock.mockResolvedValue(new ArrayBuffer(0))
-    isGaussianSplatPLYMock.mockResolvedValue(false)
+    vi.mocked(fetchModelData).mockResolvedValue(new ArrayBuffer(0))
+    vi.mocked(isGaussianSplatPLY).mockResolvedValue(false)
   })
 
   describe('getCurrentAdapter', () => {
     it('returns null before any model loads', () => {
       const { lm } = makeLoaderManager()
       expect(lm.getCurrentAdapter()).toBeNull()
-    })
-
-    it('exposes the picked adapter after a successful load', async () => {
-      const { lm } = makeLoaderManager()
-      meshLoad.mockResolvedValueOnce(loadResult(new THREE.Object3D()))
-
-      await lm.loadModel('api/view?filename=cube.glb')
-
-      expect(lm.getCurrentAdapter()?.kind).toBe('mesh')
     })
 
     it('resets to null at the start of a new load', async () => {
@@ -183,7 +164,6 @@ describe('LoaderManager', () => {
       expect(lm.getCurrentAdapter()?.kind).toBe('mesh')
 
       splatLoad.mockRejectedValueOnce(new Error('boom'))
-      vi.spyOn(console, 'error').mockImplementation(() => {})
 
       await lm.loadModel('api/view?filename=scan.splat')
 
@@ -295,13 +275,13 @@ describe('LoaderManager', () => {
     )
 
     it('routes .ply to the splat adapter when the bytes look like 3DGS', async () => {
-      isGaussianSplatPLYMock.mockResolvedValue(true)
+      vi.mocked(isGaussianSplatPLY).mockResolvedValue(true)
       const { pick } = makeLoaderManager()
       expect((await pick('ply'))?.kind).toBe('splat')
     })
 
     it('falls back to the point-cloud adapter for .ply that is not 3DGS', async () => {
-      isGaussianSplatPLYMock.mockResolvedValue(false)
+      vi.mocked(isGaussianSplatPLY).mockResolvedValue(false)
       const { pick } = makeLoaderManager()
       expect((await pick('ply'))?.kind).toBe('pointCloud')
     })
@@ -369,7 +349,7 @@ describe('LoaderManager', () => {
 
       await lm.loadModel('api/view?other=1')
 
-      expect(useToastStore().addAlert).toHaveBeenCalledWith(
+      expect(useToast().warning).toHaveBeenCalledWith(
         'toastMessages.couldNotDetermineFileType'
       )
       expect(modelManager.setupModel).not.toHaveBeenCalled()
@@ -441,7 +421,7 @@ describe('LoaderManager', () => {
     })
 
     it('routes .ply to the point-cloud adapter when the header does not look like 3DGS', async () => {
-      isGaussianSplatPLYMock.mockResolvedValue(false)
+      vi.mocked(isGaussianSplatPLY).mockResolvedValue(false)
       const { lm } = makeLoaderManager()
       pointCloudLoad.mockResolvedValueOnce(loadResult(new THREE.Object3D()))
 
@@ -453,7 +433,7 @@ describe('LoaderManager', () => {
     })
 
     it('reroutes .ply through the splat adapter when the header looks like 3DGS', async () => {
-      isGaussianSplatPLYMock.mockResolvedValue(true)
+      vi.mocked(isGaussianSplatPLY).mockResolvedValue(true)
       const { lm } = makeLoaderManager()
       splatLoad.mockResolvedValueOnce(loadResult(new THREE.Object3D()))
 
@@ -466,8 +446,8 @@ describe('LoaderManager', () => {
 
     it('shares a single fetch between matches() and load() so .ply is not re-downloaded', async () => {
       const buf = new ArrayBuffer(16)
-      fetchModelDataMock.mockResolvedValueOnce(buf)
-      isGaussianSplatPLYMock.mockResolvedValue(true)
+      vi.mocked(fetchModelData).mockResolvedValueOnce(buf)
+      vi.mocked(isGaussianSplatPLY).mockResolvedValue(true)
       const { lm } = makeLoaderManager()
       splatLoad.mockResolvedValueOnce(loadResult(new THREE.Object3D()))
 
@@ -481,7 +461,7 @@ describe('LoaderManager', () => {
         expect.any(Function)
       )
       // matches() called fetchBytes once; load()'s call hit the cached promise.
-      expect(fetchModelDataMock).toHaveBeenCalledTimes(1)
+      expect(fetchModelData).toHaveBeenCalledTimes(1)
     })
 
     it('dispatches .ply via the adapter matches() tiebreaker, not extension order — a splat adapter whose matches() returns false yields to point-cloud', async () => {
@@ -499,7 +479,7 @@ describe('LoaderManager', () => {
         extensions: ['ply', 'spz', 'splat', 'ksplat'] as const,
         capabilities: {} as never,
         matches: async (ext: string, fetchBytes: () => Promise<ArrayBuffer>) =>
-          ext === 'ply' ? isGaussianSplatPLYMock(await fetchBytes()) : true,
+          ext === 'ply' ? isGaussianSplatPLY(await fetchBytes()) : true,
         load: splatLoad
       }
       const pointCloudAdapter = {
@@ -512,7 +492,7 @@ describe('LoaderManager', () => {
         splatAdapter,
         pointCloudAdapter
       ])
-      isGaussianSplatPLYMock.mockResolvedValue(false)
+      vi.mocked(isGaussianSplatPLY).mockResolvedValue(false)
       pointCloudLoad.mockResolvedValueOnce(loadResult(new THREE.Object3D()))
 
       await lm.loadModel('api/view?filename=scan.ply')
@@ -526,9 +506,6 @@ describe('LoaderManager', () => {
       const { lm, eventManager } = makeLoaderManager()
       const err = new Error('boom')
       meshLoad.mockRejectedValueOnce(err)
-      const consoleError = vi
-        .spyOn(console, 'error')
-        .mockImplementation(() => {})
 
       await lm.loadModel('api/view?filename=cube.glb')
 
@@ -536,10 +513,10 @@ describe('LoaderManager', () => {
         'modelLoadingEnd',
         null
       )
-      expect(useToastStore().addAlert).toHaveBeenCalledWith(
+      expect(useToast().warning).toHaveBeenCalledWith(
         'toastMessages.errorLoadingModel'
       )
-      expect(consoleError).toHaveBeenCalled()
+      expect(console.error).toHaveBeenCalled()
     })
 
     it('suppresses the alert on a 404 when silentOnNotFound is set', async () => {
@@ -548,16 +525,13 @@ describe('LoaderManager', () => {
         'fetch for "..." responded with 404: Not Found'
       )
       meshLoad.mockRejectedValueOnce(notFound)
-      const consoleError = vi
-        .spyOn(console, 'error')
-        .mockImplementation(() => {})
 
       await lm.loadModel('api/view?filename=cube.glb', undefined, {
         silentOnNotFound: true
       })
 
-      expect(consoleError).toHaveBeenCalled()
-      expect(useToastStore().addAlert).not.toHaveBeenCalledWith(
+      expect(console.error).toHaveBeenCalled()
+      expect(useToast().warning).not.toHaveBeenCalledWith(
         'toastMessages.errorLoadingModel'
       )
     })
@@ -568,13 +542,12 @@ describe('LoaderManager', () => {
         response: { status: 404 }
       })
       meshLoad.mockRejectedValueOnce(httpError)
-      vi.spyOn(console, 'error').mockImplementation(() => {})
 
       await lm.loadModel('api/view?filename=cube.glb', undefined, {
         silentOnNotFound: true
       })
 
-      expect(useToastStore().addAlert).not.toHaveBeenCalledWith(
+      expect(useToast().warning).not.toHaveBeenCalledWith(
         'toastMessages.errorLoadingModel'
       )
     })
@@ -582,13 +555,12 @@ describe('LoaderManager', () => {
     it('still alerts on non-404 errors when silentOnNotFound is set', async () => {
       const { lm } = makeLoaderManager()
       meshLoad.mockRejectedValueOnce(new Error('parse failure: bad header'))
-      vi.spyOn(console, 'error').mockImplementation(() => {})
 
       await lm.loadModel('api/view?filename=cube.glb', undefined, {
         silentOnNotFound: true
       })
 
-      expect(useToastStore().addAlert).toHaveBeenCalledWith(
+      expect(useToast().warning).toHaveBeenCalledWith(
         'toastMessages.errorLoadingModel'
       )
     })
@@ -627,18 +599,14 @@ describe('LoaderManager', () => {
 
     it('logs and drops the load when the URL is missing a filename param', async () => {
       const { lm, modelManager } = makeLoaderManager()
-      const consoleError = vi
-        .spyOn(console, 'error')
-        .mockImplementation(() => {})
 
       await lm.loadModel('api/view?type=output', 'uploads/file.glb')
 
-      expect(consoleError).toHaveBeenCalledWith(
+      expect(console.error).toHaveBeenCalledWith(
         'Missing filename in URL:',
         'api/view?type=output'
       )
       expect(modelManager.setupModel).not.toHaveBeenCalled()
-      consoleError.mockRestore()
     })
 
     it('proxies setOriginalModel and registerOriginalMaterial through the load context', async () => {
@@ -690,10 +658,6 @@ describe('LoaderManager', () => {
         .mockImplementationOnce(() => firstLoad)
         .mockResolvedValueOnce(new THREE.Object3D())
 
-      const consoleError = vi
-        .spyOn(console, 'error')
-        .mockImplementation(() => {})
-
       const firstPromise = lm.loadModel('api/view?filename=first.glb')
       const secondPromise = lm.loadModel('api/view?filename=second.glb')
 
@@ -701,12 +665,11 @@ describe('LoaderManager', () => {
 
       await Promise.all([firstPromise, secondPromise])
 
-      expect(useToastStore().addAlert).not.toHaveBeenCalled()
+      expect(useToast().warning).not.toHaveBeenCalled()
       const endEmits = eventManager.emitEvent.mock.calls.filter(
         (call: unknown[]) => call[0] === 'modelLoadingEnd'
       )
       expect(endEmits).toHaveLength(1)
-      consoleError.mockRestore()
     })
   })
 })

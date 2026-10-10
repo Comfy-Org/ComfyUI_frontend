@@ -1,6 +1,6 @@
 import userEvent from '@testing-library/user-event'
 import { render, screen } from '@testing-library/vue'
-import { afterEach, describe, expect, it, vi } from 'vitest'
+import { afterEach, assert, beforeEach, describe, expect, it, vi } from 'vitest'
 import { defineComponent, h, nextTick, ref } from 'vue'
 import { createI18n } from 'vue-i18n'
 
@@ -10,7 +10,6 @@ import {
 } from '@/lib/litegraph/src/canvas/linkRevealState'
 import enMessages from '@/locales/en/main.json' with { type: 'json' }
 import { app } from '@/scripts/app'
-import type { ComfyApp } from '@/scripts/app'
 import { useLinkPresentationStore } from '@/stores/linkPresentationStore'
 import { useLinkStore } from '@/stores/linkStore'
 import { toOwningGraphId, toRootGraphId } from '@/types/graphScopeId'
@@ -20,17 +19,7 @@ import { toNodeId } from '@/types/nodeId'
 import InputSlot from './InputSlot.vue'
 import OutputSlot from './OutputSlot.vue'
 
-vi.mock(import('@/scripts/app'), async () => {
-  const { fromPartial } = await import('@total-typescript/shoehorn')
-  return {
-    app: fromPartial<ComfyApp>({
-      canvas: {
-        graph: { id: 'root-a', rootGraph: { id: 'root-a' } },
-        setDirty: vi.fn()
-      }
-    })
-  }
-})
+vi.mock(import('@/scripts/app'))
 
 vi.mock(
   import('@/renderer/extensions/vueNodes/composables/useSlotLinkInteraction'),
@@ -48,6 +37,11 @@ const SCOPE = {
   owningGraphId: toOwningGraphId('root-a')
 }
 
+beforeEach(() => {
+  assert.exists(app.canvas.graph)
+  app.canvas.graph.id = 'root-a'
+})
+
 afterEach(() => {
   clearRootLinkReveals(SCOPE.rootGraphId)
 })
@@ -61,9 +55,6 @@ describe('slot reveal error recovery', () => {
     async ([, Component]) => {
       const user = userEvent.setup()
       const error = new Error('Connection dot failed to render')
-      const reportError = vi
-        .spyOn(console, 'error')
-        .mockImplementation(() => {})
       const failRender = ref(false)
       const SlotConnectionDot = defineComponent(() => () => {
         if (failRender.value) throw error
@@ -113,7 +104,7 @@ describe('slot reveal error recovery', () => {
       expect(screen.getByText('⚠️')).toBeInTheDocument()
       expect(isLinkRevealed(SCOPE.rootGraphId, linkId)).toBe(false)
       expect(app.canvas.setDirty).toHaveBeenCalledWith(false, true)
-      expect(reportError).toHaveBeenCalledWith(error)
+      expect(console.error).toHaveBeenCalledWith(error)
     }
   )
 })

@@ -1,14 +1,14 @@
-import { fileURLToPath } from 'node:url'
-
+import { join } from 'node:path'
 import { expect } from '@playwright/test'
+import type { Page } from '@playwright/test'
+
+import { repoRoot } from '@website/paths'
 
 import { test } from './fixtures/workshopVisibility'
 
-const caseStudyVideoPath = fileURLToPath(
-  new URL(
-    '../../../public/assets/images/cloud-subscription.webm',
-    import.meta.url
-  )
+const caseStudyVideoPath = join(
+  repoRoot,
+  'public/assets/images/cloud-subscription.webm'
 )
 
 test.describe('Homepage @smoke', () => {
@@ -44,7 +44,7 @@ test.describe('Homepage @smoke', () => {
     await expect(cta).toBeVisible()
     await expect(cta).toHaveAttribute(
       'href',
-      '/models/byteplus--seedance-2-5-text-to-video--generate-videos/'
+      '/hub/models/seedance-2-5-text-to-video/'
     )
   })
 
@@ -56,10 +56,10 @@ test.describe('Homepage @smoke', () => {
       section.getByRole('heading', { name: /ready to run/i })
     ).toBeVisible()
     const bytedance = section.getByRole('link', { name: /ByteDance/ }).first()
-    await expect(bytedance).toHaveAttribute('href', '/models?q=ByteDance')
+    await expect(bytedance).toHaveAttribute('href', '/hub/models/?q=ByteDance')
     await expect(
       section.getByRole('link', { name: 'Browse all models' })
-    ).toHaveAttribute('href', '/models')
+    ).toHaveAttribute('href', '/hub/models/')
   })
 
   test('FeaturedWorkflowsSection carousel is visible', async ({ page }) => {
@@ -160,6 +160,15 @@ test.describe('Product showcase accordion @interaction', () => {
     await page.goto('/')
   })
 
+  // The active tab renders as a link and inactive tabs as buttons.
+  const featureTab = (page: Page, name: string) =>
+    page
+      .getByRole('button')
+      .or(page.getByRole('link'))
+      .filter({
+        has: page.getByRole('heading', { level: 3, name, exact: true })
+      })
+
   test('first feature is active by default', async ({ page }) => {
     await expect(
       page.getByText(/Build powerful AI pipelines by connecting nodes/).first()
@@ -169,39 +178,34 @@ test.describe('Product showcase accordion @interaction', () => {
   test('clicking inactive feature expands it and collapses previous', async ({
     page
   }) => {
-    const secondFeature = page
-      .getByRole('button', { name: /App mode/i })
-      .first()
+    const secondFeature = featureTab(page, 'Comfy Agent')
 
     await secondFeature.scrollIntoViewIfNeeded()
     await secondFeature.click()
 
     await expect(
-      secondFeature.getByText(/If you are new to ComfyUI/)
+      secondFeature.getByText(/Comfy Agent builds and runs the workflow/)
     ).toBeVisible()
 
-    const firstFeature = page
-      .getByRole('button', { name: /Full Control with Nodes/i })
-      .first()
+    const firstFeature = featureTab(page, 'Full Control with Nodes')
 
     await expect(firstFeature).not.toHaveClass(/bg-primary-comfy-yellow/)
     await expect(secondFeature).toHaveClass(/bg-primary-comfy-yellow/)
   })
 
-  test('third feature shows the mask scene on mobile @mobile', async ({
+  test('third feature shows the API demo video on mobile @mobile', async ({
     page
   }) => {
-    const thirdFeature = page
-      .getByRole('button', { name: /Community Workflows/i })
-      .first()
+    const thirdFeature = featureTab(page, 'Comfy API')
 
     await thirdFeature.scrollIntoViewIfNeeded()
     await thirdFeature.click()
 
+    await expect(thirdFeature.getByText(/with one API/)).toBeVisible()
     // The CSS-hidden desktop copy is also in the DOM; target the mobile one.
-    const maskScene = page.locator('.vms-stage:visible')
-    await expect(maskScene).toBeVisible()
-    await expect(maskScene.locator('video').first()).toBeAttached()
+    await expect(
+      page.locator('video[src$="homepage-api-cut-04.mp4"]:visible')
+    ).toBeVisible()
   })
 })
 
@@ -252,7 +256,12 @@ test.describe('Product cards links @smoke', () => {
     })
     const products = section.getByRole('group', { name: 'Products' })
 
-    for (const href of ['/download', '/cloud', '/platform', '/enterprise']) {
+    for (const href of [
+      '/download/',
+      '/cloud/',
+      '/platform/',
+      '/enterprise/'
+    ]) {
       await expect(products.locator(`a[href="${href}"]`)).toBeVisible()
     }
   })
@@ -268,7 +277,7 @@ test.describe('Get started section links @smoke', () => {
 
     const downloadLink = section.getByRole('link', { name: 'Download Desktop' })
     await expect(downloadLink).toBeVisible()
-    await expect(downloadLink).toHaveAttribute('href', '/download')
+    await expect(downloadLink).toHaveAttribute('href', '/download/')
 
     const cloudLink = section.getByRole('link', { name: 'Try Cloud for free' })
     await expect(cloudLink).toBeVisible()
@@ -276,5 +285,85 @@ test.describe('Get started section links @smoke', () => {
       'href',
       /^https:\/\/cloud\.comfy\.org\//
     )
+  })
+})
+
+test.describe('Model discovery row @interaction', () => {
+  test.beforeEach(async ({ context }) => {
+    await context.route('**/t.comfy.org/**', (route) =>
+      /\/(flags|decide)\//.test(route.request().url())
+        ? route.fulfill({
+            json: {
+              featureFlags: {
+                'workshop-enabled': true,
+                'workshop-workflows-enabled': true
+              },
+              featureFlagPayloads: {}
+            }
+          })
+        : route.abort('blockedbyclient')
+    )
+  })
+
+  test('the toggle swaps the row and leads to the page of the half it shows', async ({
+    page
+  }) => {
+    await page.goto('/')
+    const tabs = page.getByTestId('catalogue-tabs')
+    const browse = page.getByTestId('model-discovery').getByRole('link', {
+      name: /^Browse all/
+    })
+    await expect(browse).toHaveAttribute('href', '/hub/models/')
+
+    await tabs.getByRole('button', { name: 'Workflows' }).click()
+    await expect(
+      tabs.getByRole('button', { name: 'Workflows' })
+    ).toHaveAttribute('aria-pressed', 'true')
+    await expect(page.getByTestId('discovery-workflow').first()).toBeAttached()
+    await expect(browse).toHaveAttribute('href', '/hub/workflows/')
+    await browse.click()
+    await expect(page).toHaveURL('/hub/workflows/')
+  })
+
+  test('a hovered or focused workflow card gives its whole name', async ({
+    page
+  }) => {
+    await page.goto('/')
+    await page
+      .getByTestId('catalogue-tabs')
+      .getByRole('button', { name: 'Workflows' })
+      .click()
+    const cards = page.getByTestId('discovery-workflow')
+    await expect(cards.first()).toBeAttached()
+    await page.addStyleTag({
+      content:
+        '[data-testid="discovery-marquee"] { animation: none !important }'
+    })
+
+    const cut = await cards.evaluateAll((elements) =>
+      elements.findIndex((element) => {
+        const name = element.querySelector('span[title]')
+        const box = element.getBoundingClientRect()
+        return (
+          name !== null &&
+          name.scrollWidth > name.clientWidth + 1 &&
+          box.x > 0 &&
+          box.right < window.innerWidth
+        )
+      })
+    )
+    expect(cut).toBeGreaterThan(-1)
+
+    const card = cards.nth(cut)
+    const name = card.locator('span[title]')
+    const overflow = () =>
+      name.evaluate((element) => element.scrollWidth - element.clientWidth)
+    await card.hover()
+    await expect.poll(overflow).toBeLessThanOrEqual(1)
+
+    await page.mouse.move(0, 0)
+    await expect.poll(overflow).toBeGreaterThan(1)
+    await card.focus()
+    await expect.poll(overflow).toBeLessThanOrEqual(1)
   })
 })

@@ -3,7 +3,6 @@ import { render } from '@testing-library/vue'
 import { expect, it, onTestFinished, vi } from 'vitest'
 import { defineComponent, nextTick, ref } from 'vue'
 
-import type { GraphMutations } from './graphMutations'
 import { api } from '@/scripts/api'
 import { useAgentPanelStore } from '@/workbench/extensions/agent/stores/agent/agentPanelStore'
 
@@ -24,10 +23,7 @@ it('gates real document transport and removes reconnect listeners on revocation'
   const { unmount } = render(
     defineComponent({
       setup() {
-        follower = useAgentCrdtFollower(
-          workflowId,
-          fromPartial<GraphMutations>({})
-        )
+        follower = useAgentCrdtFollower(workflowId)
         return () => null
       }
     })

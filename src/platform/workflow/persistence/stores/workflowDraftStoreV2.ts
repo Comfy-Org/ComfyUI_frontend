@@ -243,6 +243,7 @@ export const useWorkflowDraftStoreV2 = defineStore('workflowDraftV2', () => {
     reportError(
       new Error('localStorage quota exhausted after full draft eviction'),
       {
+        surface: 'graph',
         errorType: 'storage_quota_exhausted',
         level: 'warning',
         tags: { store: 'workflowDraftStoreV2' },

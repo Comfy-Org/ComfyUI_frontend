@@ -19,7 +19,8 @@ import { parseUrl } from './url.js'
 export const RETURN_TARGETS = [
   'comfyui_workspace',
   'comfyui_credits',
-  'platform_account'
+  'platform_account',
+  'platform_billing'
 ] as const
 
 export type ReturnTarget = (typeof RETURN_TARGETS)[number]
@@ -48,6 +49,11 @@ const RETURN_TARGET_DESTINATIONS: Readonly<
   platform_account: {
     production: 'https://platform.comfy.org/',
     staging: 'https://stagingplatform.comfy.org/'
+  },
+  // Platform's own billing page, `pages/profile/billing.vue` in that app.
+  platform_billing: {
+    production: 'https://platform.comfy.org/profile/billing',
+    staging: 'https://stagingplatform.comfy.org/profile/billing'
   }
 }
 

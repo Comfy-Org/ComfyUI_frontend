@@ -7,7 +7,7 @@
       class="pb-0"
       icon="pi pi-exclamation-circle"
       :title="title"
-      :message="error.exceptionMessage"
+      :message="message"
       text-class="break-words max-w-[60vw]"
     />
     <template v-if="error.extensionFile">
@@ -62,7 +62,7 @@
 </template>
 
 <script setup lang="ts">
-import { useToast } from 'primevue/usetoast'
+import { useToast } from '@/components/ui/toast/toastStore'
 import { computed, onMounted, ref } from 'vue'
 import { useI18n } from 'vue-i18n'
 
@@ -70,6 +70,8 @@ import NoResultsPlaceholder from '@/components/common/NoResultsPlaceholder.vue'
 import FindIssueButton from '@/components/dialog/content/error/FindIssueButton.vue'
 import Button from '@/components/ui/button/Button.vue'
 import { useCopyToClipboard } from '@/composables/useCopyToClipboard'
+import { resolveRunErrorMessage } from '@/platform/errorCatalog/errorMessageResolver'
+import type { RunErrorMessageSource } from '@/platform/errorCatalog/types'
 import { useTelemetry } from '@/platform/telemetry'
 import { api } from '@/scripts/api'
 import { app } from '@/scripts/app'
@@ -78,7 +80,8 @@ import { useSystemStatsStore } from '@/stores/systemStatsStore'
 import { generateErrorReport } from '@/utils/errorReportUtil'
 import type { ErrorReportData } from '@/utils/errorReportUtil'
 
-const { error } = defineProps<{
+const { error, errorSources = [] } = defineProps<{
+  errorSources?: RunErrorMessageSource[]
   error: Omit<ErrorReportData, 'workflow' | 'systemStats' | 'serverLogs'> & {
     /**
      * The type of error report to submit.
@@ -111,8 +114,44 @@ const { t } = useI18n()
 const systemStatsStore = useSystemStatsStore()
 const telemetry = useTelemetry()
 
-const title = computed<string>(
-  () => error.nodeType ?? error.exceptionType ?? t('errorDialog.defaultTitle')
+const resolvedErrors = computed(() =>
+  errorSources.map((source) => {
+    const resolved = resolveRunErrorMessage(source)
+    const rawMessage =
+      source.kind === 'execution'
+        ? source.error.exception_message
+        : resolved.displayMessage
+          ? source.error.details
+          : [source.error.message, source.error.details]
+              .filter(Boolean)
+              .join(': ')
+
+    return {
+      title: resolved.displayTitle,
+      message: [
+        source.kind === 'node_validation'
+          ? resolved.displayItemLabel
+          : undefined,
+        resolved.displayMessage,
+        resolved.displayDetails ?? rawMessage
+      ]
+        .filter(Boolean)
+        .join('\n')
+    }
+  })
+)
+const title = computed(
+  () =>
+    (errorSources[0]?.kind === 'execution' ? error.nodeType : undefined) ??
+    resolvedErrors.value[0]?.title ??
+    error.nodeType ??
+    error.exceptionType ??
+    t('errorDialog.defaultTitle')
+)
+const message = computed(
+  () =>
+    resolvedErrors.value.map((resolved) => resolved.message).join('\n\n') ||
+    error.exceptionMessage
 )
 
 /**
@@ -133,7 +172,7 @@ onMounted(async () => {
   }
 
   try {
-    const [logs] = await Promise.all([api.getLogs()])
+    const logs = await api.getLogs()
 
     reportContent.value = generateErrorReport({
       systemStats: systemStatsStore.systemStats!,
@@ -147,10 +186,8 @@ onMounted(async () => {
     })
   } catch (error) {
     console.error('Error fetching logs:', error)
-    toast.add({
-      severity: 'error',
-      summary: t('g.error'),
-      detail: t('toastMessages.failedToFetchLogs')
+    toast.error(t('g.error'), {
+      description: t('toastMessages.failedToFetchLogs')
     })
   }
 })

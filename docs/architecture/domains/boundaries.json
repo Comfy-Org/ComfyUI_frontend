@@ -1,0 +1,248 @@
+{
+  "boundaries": {
+    "zones": [
+      {
+        "name": "image-compare/application",
+        "patterns": [
+          "src/renderer/extensions/vueNodes/widgets/composables/useImageCompareImages.ts",
+          "src/renderer/extensions/vueNodes/widgets/composables/useImageCompareImages.test.ts"
+        ]
+      },
+      {
+        "name": "image-compare/presentation",
+        "patterns": [
+          "src/renderer/extensions/vueNodes/widgets/components/WidgetImageCompare.vue",
+          "src/renderer/extensions/vueNodes/widgets/components/WidgetImageCompare.test.ts"
+        ]
+      },
+      {
+        "name": "image-compare/integration",
+        "patterns": [
+          "src/renderer/extensions/vueNodes/widgets/composables/useImageCompareWidget.ts",
+          "src/extensions/core/imageCompare.ts",
+          "src/lib/litegraph/src/widgets/ImageCompareWidget.ts"
+        ]
+      },
+      {
+        "name": "image-crop/application",
+        "patterns": [
+          "src/composables/useImageCrop.ts",
+          "src/composables/useImageCrop.test.ts"
+        ]
+      },
+      {
+        "name": "image-crop/presentation",
+        "patterns": ["src/components/imagecrop/**"]
+      },
+      {
+        "name": "image-crop/integration",
+        "patterns": [
+          "src/extensions/core/imageCrop.ts",
+          "src/lib/litegraph/src/widgets/ImageCropWidget.ts"
+        ]
+      },
+      {
+        "name": "mask-editor/domain",
+        "patterns": ["src/extensions/core/maskeditor/**"]
+      },
+      {
+        "name": "mask-editor/application",
+        "patterns": [
+          "src/composables/maskeditor/**",
+          "src/stores/maskEditorStore.ts",
+          "src/stores/maskEditorDataStore.ts",
+          "src/stores/maskEditorStore.test.ts",
+          "src/stores/maskEditorDataStore.test.ts"
+        ]
+      },
+      {
+        "name": "mask-editor/presentation",
+        "patterns": ["src/components/maskeditor/**"]
+      },
+      {
+        "name": "mask-editor/integration",
+        "patterns": [
+          "src/extensions/core/maskeditor.ts",
+          "src/extensions/core/maskeditor.test.ts"
+        ]
+      },
+      {
+        "name": "painter/application",
+        "patterns": ["src/composables/painter/**"]
+      },
+      {
+        "name": "painter/presentation",
+        "patterns": ["src/components/painter/**"]
+      },
+      {
+        "name": "painter/integration",
+        "patterns": [
+          "src/renderer/extensions/vueNodes/widgets/composables/usePainterWidget.ts",
+          "src/extensions/core/painter.ts",
+          "src/lib/litegraph/src/widgets/PainterWidget.ts"
+        ]
+      },
+      {
+        "name": "workflow-templates/domain",
+        "patterns": [
+          "src/platform/workflow/templates/types/**",
+          "src/platform/workflow/templates/schemas/**",
+          "src/platform/workflow/templates/utils/**"
+        ]
+      },
+      {
+        "name": "workflow-templates/application",
+        "patterns": [
+          "src/platform/workflow/templates/composables/**",
+          "src/platform/workflow/templates/services/**",
+          "src/platform/workflow/templates/stores/**"
+        ]
+      },
+      {
+        "name": "workflow-templates/infrastructure",
+        "patterns": ["src/platform/workflow/templates/repositories/**"]
+      },
+      {
+        "name": "workflow-templates/presentation",
+        "patterns": ["src/components/templates/**"]
+      },
+      {
+        "name": "unclassified",
+        "patterns": ["src/**"]
+      }
+    ],
+    "rules": [
+      {
+        "from": "image-compare/application",
+        "allow": ["image-compare/application", "unclassified"]
+      },
+      {
+        "from": "image-compare/presentation",
+        "allow": [
+          "image-compare/application",
+          "image-compare/presentation",
+          "unclassified"
+        ]
+      },
+      {
+        "from": "image-compare/integration",
+        "allow": [
+          "image-compare/application",
+          "image-compare/presentation",
+          "image-compare/integration",
+          "unclassified"
+        ]
+      },
+      {
+        "from": "image-crop/application",
+        "allow": ["image-crop/application", "unclassified"]
+      },
+      {
+        "from": "image-crop/presentation",
+        "allow": [
+          "image-crop/application",
+          "image-crop/presentation",
+          "unclassified"
+        ]
+      },
+      {
+        "from": "image-crop/integration",
+        "allow": [
+          "image-crop/application",
+          "image-crop/presentation",
+          "image-crop/integration",
+          "unclassified"
+        ]
+      },
+      {
+        "from": "mask-editor/domain",
+        "allow": ["mask-editor/domain", "unclassified"]
+      },
+      {
+        "from": "mask-editor/application",
+        "allow": [
+          "mask-editor/domain",
+          "mask-editor/application",
+          "unclassified"
+        ]
+      },
+      {
+        "from": "mask-editor/presentation",
+        "allow": [
+          "mask-editor/domain",
+          "mask-editor/application",
+          "mask-editor/presentation",
+          "unclassified"
+        ]
+      },
+      {
+        "from": "mask-editor/integration",
+        "allow": [
+          "mask-editor/domain",
+          "mask-editor/application",
+          "mask-editor/presentation",
+          "mask-editor/integration",
+          "unclassified"
+        ]
+      },
+      {
+        "from": "painter/application",
+        "allow": ["painter/application", "unclassified"]
+      },
+      {
+        "from": "painter/presentation",
+        "allow": ["painter/application", "painter/presentation", "unclassified"]
+      },
+      {
+        "from": "painter/integration",
+        "allow": [
+          "painter/application",
+          "painter/presentation",
+          "painter/integration",
+          "unclassified"
+        ]
+      },
+      {
+        "from": "workflow-templates/domain",
+        "allow": ["workflow-templates/domain", "unclassified"]
+      },
+      {
+        "from": "workflow-templates/application",
+        "allow": [
+          "workflow-templates/domain",
+          "workflow-templates/application",
+          "workflow-templates/infrastructure",
+          "unclassified"
+        ]
+      },
+      {
+        "from": "workflow-templates/infrastructure",
+        "allow": [
+          "workflow-templates/domain",
+          "workflow-templates/application",
+          "workflow-templates/infrastructure",
+          "unclassified"
+        ]
+      },
+      {
+        "from": "workflow-templates/presentation",
+        "allow": [
+          "workflow-templates/domain",
+          "workflow-templates/application",
+          "workflow-templates/presentation",
+          "unclassified"
+        ]
+      },
+      {
+        "from": "unclassified",
+        "allow": [
+          "workflow-templates/domain",
+          "workflow-templates/application",
+          "workflow-templates/infrastructure",
+          "workflow-templates/presentation",
+          "unclassified"
+        ]
+      }
+    ]
+  }
+}

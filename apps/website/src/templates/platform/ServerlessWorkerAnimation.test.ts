@@ -1,7 +1,7 @@
 import { render, screen } from '@testing-library/vue'
 import { describe, expect, it } from 'vitest'
 
-import { t } from '../../i18n/translations'
+import { t } from '@/i18n/translations'
 import ServerlessWorkerAnimation from './ServerlessWorkerAnimation.vue'
 
 describe('ServerlessWorkerAnimation', () => {
@@ -10,7 +10,7 @@ describe('ServerlessWorkerAnimation', () => {
 
     expect(
       screen.getByRole('img', {
-        name: t('platform.serverlessVisual.ariaLabel', 'en')
+        name: t('platform.serverlessVisual.ariaLabel', {}, { locale: 'en' })
       })
     ).toBeTruthy()
   })
@@ -27,7 +27,9 @@ describe('ServerlessWorkerAnimation', () => {
     render(ServerlessWorkerAnimation, { props: { locale: 'en' } })
 
     expect(
-      screen.getAllByText(t('platform.serverlessVisual.worker', 'en'))
+      screen.getAllByText(
+        t('platform.serverlessVisual.worker', {}, { locale: 'en' })
+      )
     ).toHaveLength(3)
   })
 })

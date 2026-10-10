@@ -32,6 +32,19 @@ describe('comfyCredits helpers', () => {
     expect(creditsToCents(211)).toBe(100) // 211 credits = 100 cents
   })
 
+  test.for([
+    [950, 2005],
+    [1850, 3904],
+    [3750, 7913],
+    [7350, 15509],
+    [14650, 30912]
+  ] as const)(
+    'rounds the exact half-credit tie at %s cents up to %s credits',
+    ([cents, expected]) => {
+      expect(centsToCredits(cents)).toBe(expected)
+    }
+  )
+
   test('converts USD to credits and back', () => {
     expect(usdToCredits(1)).toBe(211) // 1 USD = 211 credits
     expect(creditsToUsd(211)).toBe(1) // 211 credits = 1 USD

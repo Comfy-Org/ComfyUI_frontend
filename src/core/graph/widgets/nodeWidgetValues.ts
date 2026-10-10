@@ -26,6 +26,7 @@ export function setNodeWidgetValue(
   const previousValue = getNodeWidgetValue(node, name)
   if (id && useWidgetValueStore().setValue(id, value)) {
     if (widget) {
+      widget.value = value
       widget.callback?.(value)
       node.onWidgetChanged?.(name, value, previousValue, widget)
     }

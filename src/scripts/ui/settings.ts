@@ -1,10 +1,24 @@
 import { t } from '@/i18n'
 import { useSettingStore } from '@/platform/settings/settingStore'
 import type { SettingParams, Settings } from '@/platform/settings/types'
-import { useToastStore } from '@/platform/updates/common/toastStore'
+import { useToast } from '@/components/ui/toast/toastStore'
 import type { ComfyApp } from '@/scripts/app'
+import { getErrorMessage } from '@/utils/errorUtil'
 
 import { ComfyDialog } from './dialog'
+
+function saveSetting<K extends keyof Settings>(id: K, value: Settings[K]) {
+  useSettingStore()
+    .set(id, value)
+    .catch((err) => {
+      useToast().warning(
+        t('toastMessages.errorSaveSetting', {
+          err: getErrorMessage(err) ?? t('g.unknownError'),
+          id
+        })
+      )
+    })
+}
 
 export class ComfySettingsDialog extends ComfyDialog<HTMLDialogElement> {
   app: ComfyApp
@@ -84,13 +98,7 @@ export class ComfySettingsDialog extends ComfyDialog<HTMLDialogElement> {
    * @deprecated Use `settingStore.set` instead.
    */
   setSettingValue<K extends keyof Settings>(id: K, value: Settings[K]) {
-    useSettingStore()
-      .set(id, value)
-      .catch((err) => {
-        useToastStore().addAlert(
-          t('toastMessages.errorSaveSetting', { id, err })
-        )
-      })
+    saveSetting(id, value)
   }
 
   /**
@@ -123,7 +131,7 @@ export class ComfySettingsDialog extends ComfyDialog<HTMLDialogElement> {
         return settingStore.get(params.id)
       },
       set value(v) {
-        void settingStore.set(params.id, v)
+        saveSetting(params.id, v)
       }
     }
   }

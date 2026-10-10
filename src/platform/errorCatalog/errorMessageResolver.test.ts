@@ -9,7 +9,7 @@ import type { NodeValidationError } from './types'
 import type { ExecutionErrorWsMessage } from '@/platform/remote/comfyui/execution/types'
 import type { MissingMediaGroup } from '@/platform/missingMedia/types'
 import type { MissingModelGroup } from '@/platform/missingModel/types'
-import type { MissingNodeType } from '@/types/comfy'
+import type { MissingNodeType } from '@/platform/nodeReplacement/types'
 import { i18n, te } from '@/i18n'
 
 function nodeValidationError(
@@ -233,6 +233,57 @@ describe('errorMessageResolver', () => {
       toastMessage: 'KSampler returned an unrecognized validation error.'
     })
   })
+
+  it.for([
+    {
+      type: 'unknown_node_class',
+      catalogId: 'unknown_validation_error',
+      displayTitle: 'Validation failed',
+      toastMessage: 'KSampler returned an unrecognized validation error.'
+    },
+    {
+      type: 'exception_during_validation',
+      catalogId: 'exception_during_validation',
+      displayTitle: 'Validation failed',
+      toastMessage: 'KSampler failed during validation.'
+    },
+    {
+      type: 'custom_validation_failed',
+      catalogId: 'custom_validation_failed',
+      displayTitle: 'Invalid input',
+      toastMessage: 'KSampler rejected the value for unknown input.'
+    },
+    {
+      type: 'dependency_cycle',
+      catalogId: 'dependency_cycle',
+      displayTitle: 'Invalid workflow',
+      toastMessage: 'KSampler is part of a circular connection.'
+    },
+    {
+      type: 'value_not_in_list',
+      catalogId: 'value_not_in_list',
+      displayTitle: 'Invalid input',
+      toastMessage: 'KSampler has an unsupported value for unknown input.'
+    },
+    {
+      type: 'PARTNER_NODE_DISABLED',
+      catalogId: 'PARTNER_NODE_DISABLED',
+      displayTitle: 'Disabled node',
+      toastMessage: 'This node has been disabled by your workspace policy.'
+    }
+  ])(
+    'resolves $type when the backend omits details, as the cloud contract allows',
+    ({ type, catalogId, displayTitle, toastMessage }) => {
+      const resolved = resolveRunErrorMessage({
+        kind: 'node_validation',
+        error: { type, message: 'Validation failed' },
+        nodeDisplayName: 'KSampler'
+      })
+
+      expect(resolved).toMatchObject({ catalogId, displayTitle, toastMessage })
+      expect(Object.values(resolved).join('\n')).not.toContain('undefined')
+    }
+  )
 
   it('falls back to raw API copy when catalog keys are missing in the active locale', () => {
     const originalLocale = i18n.global.locale.value
@@ -621,6 +672,23 @@ describe('errorMessageResolver', () => {
       displayTitle: 'Prompt has no outputs',
       displayMessage:
         'The workflow does not contain any output nodes (e.g. Save Image, Preview Image) to produce a result.'
+    })
+  })
+
+  it('resolves agent API failures with catalog copy', () => {
+    expect(
+      resolveRunErrorMessage({
+        kind: 'prompt',
+        isCloud: true,
+        error: {
+          type: 'agent_api_failed',
+          message: 'The agent request failed',
+          details: ''
+        }
+      })
+    ).toEqual({
+      displayTitle: 'Comfy Agent error',
+      displayMessage: 'Comfy Agent hit a server error.'
     })
   })
 

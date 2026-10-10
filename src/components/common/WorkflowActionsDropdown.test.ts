@@ -24,6 +24,7 @@ beforeEach(() => {
 })
 
 const spies = vi.hoisted(() => ({
+  action: vi.fn(),
   markAsSeen: vi.fn()
 }))
 
@@ -31,7 +32,18 @@ vi.mock(import('@/platform/telemetry'))
 
 vi.mock<unknown>(import('@/composables/useWorkflowActionsMenu'), async () => {
   const { ref } = await import('vue')
-  return { useWorkflowActionsMenu: () => ({ menuItems: ref([]) }) }
+  return {
+    useWorkflowActionsMenu: () => ({
+      menuItems: ref([
+        {
+          id: 'test-action',
+          label: 'Test action',
+          badge: 'NEW',
+          command: spies.action
+        }
+      ])
+    })
+  }
 })
 
 vi.mock<unknown>(import('@/composables/useNewMenuItemIndicator'), async () => {
@@ -68,12 +80,7 @@ function renderDropdown() {
     props: { source: 'test' },
     global: {
       plugins: [i18n],
-      directives: { tooltip: {} },
-      stubs: {
-        DropdownMenuPortal: { template: '<div><slot /></div>' },
-        DropdownMenuContent: { template: '<div role="menu"><slot /></div>' },
-        WorkflowActionsList: true
-      }
+      directives: { tooltip: {} }
     }
   })
   return { ...result, user }
@@ -148,7 +155,7 @@ describe('WorkflowActionsDropdown', () => {
 
     await user.click(screen.getByRole('button', { name: 'Enter app mode' }))
 
-    expect(vi.mocked(useCommandStore().execute)).toHaveBeenCalledWith(
+    expect(useCommandStore().execute).toHaveBeenCalledWith(
       'Comfy.ToggleLinear',
       {
         metadata: { source: 'test' }
@@ -168,13 +175,23 @@ describe('WorkflowActionsDropdown', () => {
 
     await user.click(active)
 
-    expect(vi.mocked(useCommandStore().execute)).not.toHaveBeenCalled()
+    expect(useCommandStore().execute).not.toHaveBeenCalled()
     expect(active).toHaveAttribute('aria-expanded', 'true')
     expect(spies.markAsSeen).toHaveBeenCalled()
     expect(useTelemetry()?.trackUiButtonClicked).toHaveBeenCalledWith({
       button_id: 'test',
       element_group: 'workflow_actions'
     })
+  })
+
+  it('renders and executes shared menu items under the real menu root', async () => {
+    const { user } = renderDropdown()
+
+    await user.click(screen.getByRole('button', { name: /workflow actions/ }))
+    expect(screen.getByText('NEW')).toBeInTheDocument()
+    await user.click(screen.getByRole('menuitem', { name: 'Test action' }))
+
+    expect(spies.action).toHaveBeenCalledOnce()
   })
 
   it('closes the menu when the open trigger is clicked again', async () => {
@@ -194,7 +211,7 @@ describe('WorkflowActionsDropdown', () => {
     inactive.focus()
     await user.keyboard('{Enter}')
 
-    expect(vi.mocked(useCommandStore().execute)).toHaveBeenCalledWith(
+    expect(useCommandStore().execute).toHaveBeenCalledWith(
       'Comfy.ToggleLinear',
       {
         metadata: { source: 'test' }
@@ -230,7 +247,7 @@ describe('WorkflowActionsDropdown', () => {
     active.focus()
     await user.keyboard('{Enter}')
 
-    expect(vi.mocked(useCommandStore().execute)).not.toHaveBeenCalled()
+    expect(useCommandStore().execute).not.toHaveBeenCalled()
     expect(active).toHaveAttribute('aria-expanded', 'true')
   })
 

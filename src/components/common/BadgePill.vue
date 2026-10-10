@@ -32,7 +32,7 @@ const { borderStyle, filled } = defineProps<{
 }>()
 
 const textColorClass = computed(() =>
-  borderStyle && filled ? '' : 'text-foreground'
+  borderStyle && filled ? '' : 'text-base-foreground'
 )
 
 const customStyle = computed(() => {

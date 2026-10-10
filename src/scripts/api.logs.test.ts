@@ -49,6 +49,7 @@ describe('api.getLogs', () => {
           outcomes: {
             received: 0,
             applied: 0,
+            appliedLive: 0,
             skipped: 0,
             errored: 0,
             gap: 0,

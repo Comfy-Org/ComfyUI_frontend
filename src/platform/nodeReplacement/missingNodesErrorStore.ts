@@ -13,7 +13,7 @@ import {
   removePendingMissingNodeTypesByType
 } from '@/platform/workflow/core/utils/pendingWarnings'
 import { app } from '@/scripts/app'
-import type { MissingNodeType } from '@/types/comfy'
+import type { MissingNodeType } from '@/platform/nodeReplacement/types'
 import { getAncestorExecutionIds } from '@/types/nodeIdentification'
 import type { NodeExecutionId } from '@/types/nodeIdentification'
 import { getExecutionIdByNode } from '@/utils/graphTraversalUtil'

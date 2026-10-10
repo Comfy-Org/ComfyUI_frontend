@@ -4,9 +4,10 @@
     data-testid="load3d-animation-strip"
     @wheel.stop
   >
-    <button
-      v-tooltip.top="tip(playLabel)"
-      :class="iconBtnClass"
+    <Button
+      variant="textonly"
+      size="icon"
+      :tooltip="playLabel"
       type="button"
       :aria-label="playLabel"
       @click="playing = !playing"
@@ -16,7 +17,7 @@
           cn(playing ? 'icon-[lucide--pause]' : 'icon-[lucide--play]', 'size-4')
         "
       />
-    </button>
+    </Button>
 
     <Slider
       :model-value="[animationProgress]"
@@ -38,29 +39,35 @@
 
     <Popover v-model:open="speedOpen">
       <PopoverTrigger as-child>
-        <button
-          v-tooltip.top="tip(t('load3d.menuBar.playbackSpeed'))"
+        <Button
+          variant="textonly"
+          size="unset"
+          :tooltip="t('load3d.menuBar.playbackSpeed')"
           :class="chipClass"
           type="button"
           :aria-label="t('load3d.menuBar.playbackSpeed')"
         >
           {{ speedLabel }}
           <i class="icon-[lucide--chevron-down] size-4 opacity-70" />
-        </button>
+        </Button>
       </PopoverTrigger>
       <PopoverContent
         side="top"
         align="end"
         :side-offset="8"
-        :class="panelClass"
+        :class="menuPanelClass"
       >
         <button
           v-for="speed in speedOptions"
           :key="speed"
           type="button"
           :class="
-            cn(rowClass, selectedSpeed === speed && 'bg-button-active-surface')
+            cn(
+              menuButtonClass,
+              selectedSpeed === speed && selectedMenuButtonClass
+            )
           "
+          :aria-pressed="selectedSpeed === speed"
           @click="setSpeed(speed)"
         >
           {{ formatSpeed(speed) }}
@@ -70,8 +77,10 @@
 
     <Popover v-model:open="clipOpen">
       <PopoverTrigger as-child>
-        <button
-          v-tooltip.top="tip(t('load3d.menuBar.animationClip'))"
+        <Button
+          variant="textonly"
+          size="unset"
+          :tooltip="t('load3d.menuBar.animationClip')"
           :class="cn(chipClass, 'max-w-40')"
           type="button"
           :aria-label="t('load3d.menuBar.animationClip')"
@@ -79,13 +88,13 @@
           <i class="icon-[lucide--clapperboard] size-4 shrink-0" />
           <span v-if="!compact" class="truncate">{{ selectedClipName }}</span>
           <i class="icon-[lucide--chevron-down] size-4 shrink-0 opacity-70" />
-        </button>
+        </Button>
       </PopoverTrigger>
       <PopoverContent
         side="top"
         align="end"
         :side-offset="8"
-        :class="panelClass"
+        :class="menuPanelClass"
       >
         <button
           v-for="clip in animations"
@@ -93,10 +102,11 @@
           type="button"
           :class="
             cn(
-              rowClass,
-              selectedAnimation === clip.index && 'bg-button-active-surface'
+              menuButtonClass,
+              selectedAnimation === clip.index && selectedMenuButtonClass
             )
           "
+          :aria-pressed="selectedAnimation === clip.index"
           @click="setClip(clip.index)"
         >
           <span class="truncate">{{ clip.name }}</span>
@@ -111,20 +121,23 @@ import { PopoverTrigger } from 'reka-ui'
 import { computed } from 'vue'
 import { useI18n } from 'vue-i18n'
 
+import { cn } from '@comfyorg/tailwind-utils'
+
 import { formatAnimationTime } from '@/components/load3d/formatAnimationTime'
 import {
   chipClass,
-  iconBtnClass,
-  panelClass,
-  rowClass,
-  tip
+  menuPanelClass
 } from '@/components/load3d/menubar/menuBarStyles'
 import { usePopoverExclusivity } from '@/components/load3d/menubar/usePopoverExclusivity'
+import Button from '@/components/ui/button/Button.vue'
 import Popover from '@/components/ui/popover/Popover.vue'
 import PopoverContent from '@/components/ui/popover/PopoverContent.vue'
+import {
+  menuButtonClass,
+  selectedMenuButtonClass
+} from '@/components/ui/menu/menuStyles'
 import Slider from '@/components/ui/slider/Slider.vue'
 import type { AnimationItem } from '@/extensions/core/load3d/interfaces'
-import { cn } from '@comfyorg/tailwind-utils'
 
 const {
   animations = [],

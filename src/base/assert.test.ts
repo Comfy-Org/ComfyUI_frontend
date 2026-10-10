@@ -3,11 +3,7 @@ import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { assert, setAssertReporter } from '@/base/assert'
 
 describe('assert', () => {
-  let consoleErrorSpy: ReturnType<typeof vi.spyOn>
-
-  beforeEach(() => {
-    consoleErrorSpy = vi.spyOn(console, 'error').mockImplementation(() => {})
-  })
+  beforeEach(() => {})
 
   afterEach(() => {
     setAssertReporter(null)
@@ -15,13 +11,13 @@ describe('assert', () => {
 
   it('does nothing when condition is true', () => {
     expect(() => assert(true, 'should not throw')).not.toThrow()
-    expect(consoleErrorSpy).not.toHaveBeenCalled()
+    expect(console.error).not.toHaveBeenCalled()
   })
 
   it('logs console.error when condition is false', () => {
     vi.stubEnv('DEV', false)
     assert(false, 'test message')
-    expect(consoleErrorSpy).toHaveBeenCalledWith(
+    expect(console.error).toHaveBeenCalledWith(
       '[Assertion failed]: test message'
     )
   })
@@ -33,9 +29,7 @@ describe('assert', () => {
     expect(() => assert(false, 'dev error')).toThrow(
       '[Assertion failed]: dev error'
     )
-    expect(consoleErrorSpy).toHaveBeenCalledWith(
-      '[Assertion failed]: dev error'
-    )
+    expect(console.error).toHaveBeenCalledWith('[Assertion failed]: dev error')
     expect(reporter).not.toHaveBeenCalled()
   })
 
@@ -80,7 +74,7 @@ describe('assert', () => {
     vi.stubEnv('DEV', false)
     setAssertReporter(null)
     expect(() => assert(false, 'null reporter')).not.toThrow()
-    expect(consoleErrorSpy).toHaveBeenCalledWith(
+    expect(console.error).toHaveBeenCalledWith(
       '[Assertion failed]: null reporter'
     )
   })
@@ -92,10 +86,10 @@ describe('assert', () => {
     })
     setAssertReporter(reporter)
     expect(() => assert(false, 'safe under reporter failure')).not.toThrow()
-    expect(consoleErrorSpy).toHaveBeenCalledWith(
+    expect(console.error).toHaveBeenCalledWith(
       '[Assertion failed]: safe under reporter failure'
     )
-    expect(consoleErrorSpy).toHaveBeenCalledWith(
+    expect(console.error).toHaveBeenCalledWith(
       '[Assertion reporter failed]',
       expect.any(Error)
     )

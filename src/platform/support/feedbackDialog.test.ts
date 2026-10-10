@@ -9,9 +9,7 @@ import { openTypeformDialog } from '@/platform/surveys/openTypeformDialog'
 import { FEEDBACK_TYPEFORM_ID } from './config'
 import { openFeedbackDialog } from './feedbackDialog'
 
-vi.mock(import('@/i18n'), () => ({
-  t: (key: string) => key
-}))
+vi.mock(import('@/i18n'))
 
 vi.mock(import('@/platform/surveys/openTypeformDialog'), () => ({
   openTypeformDialog: vi.fn()

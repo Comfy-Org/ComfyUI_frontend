@@ -1,4 +1,4 @@
-import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
+import { beforeEach, describe, expect, it, vi } from 'vitest'
 
 import { useCommandStore } from '@/stores/commandStore'
 
@@ -30,10 +30,6 @@ describe('useErrorActions', () => {
       trackHelpResourceClicked: mocks.trackHelpResourceClicked
     }
     windowOpenSpy = vi.spyOn(window, 'open').mockImplementation(() => null)
-  })
-
-  afterEach(() => {
-    windowOpenSpy.mockRestore()
   })
 
   describe('openGitHubIssues', () => {
@@ -80,7 +76,7 @@ describe('useErrorActions', () => {
         is_external: true,
         source: 'error_dialog'
       })
-      expect(vi.mocked(useCommandStore().execute)).toHaveBeenCalledWith(
+      expect(useCommandStore().execute).toHaveBeenCalledWith(
         'Comfy.ContactSupport'
       )
       expect(result).toBeUndefined()
@@ -109,7 +105,7 @@ describe('useErrorActions', () => {
       void contactSupport()
 
       expect(mocks.trackHelpResourceClicked).not.toHaveBeenCalled()
-      expect(vi.mocked(useCommandStore().execute)).toHaveBeenCalledWith(
+      expect(useCommandStore().execute).toHaveBeenCalledWith(
         'Comfy.ContactSupport'
       )
     })

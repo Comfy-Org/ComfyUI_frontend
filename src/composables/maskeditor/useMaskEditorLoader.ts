@@ -128,7 +128,7 @@ export function useMaskEditorLoader() {
           if (response.ok) {
             maskLayersFromApi = await response.json()
           }
-        } catch (error) {
+        } catch {
           // Fallback to pattern matching if API call fails
         }
       }

@@ -3,7 +3,10 @@ import userEvent from '@testing-library/user-event'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 
 import { i18n } from '@/i18n'
-import type { HistoryGroups } from '../../stores/agent/agentChatHistoryStore'
+import type {
+  ChatSession,
+  HistoryGroups
+} from '../../stores/agent/agentChatHistoryStore'
 
 import ChatHistoryScreen from './ChatHistoryScreen.vue'
 
@@ -14,16 +17,18 @@ const emptyGroups: HistoryGroups = {
   earlier: []
 }
 
-const originalSession = {
+const originalSession: ChatSession = {
   id: 'thread-1',
   title: 'Original title',
-  updatedAt: 1
+  updatedAt: 1,
+  titleSource: 'server'
 }
 
-const secondSession = {
+const secondSession: ChatSession = {
   id: 'thread-2',
   title: 'Second title',
-  updatedAt: 2
+  updatedAt: 2,
+  titleSource: 'server'
 }
 
 const bucketLabels = /^(Current|Today|Yesterday|Earlier)$/
@@ -89,12 +94,12 @@ describe('ChatHistoryScreen', () => {
     const back = screen.getByRole('button', {
       name: 'Back to previous chat'
     })
-    expect(screen.queryByRole('tooltip', { hidden: true })).toBeNull()
+    expect(screen.queryByRole('tooltip')).toBeNull()
     await user.hover(back)
 
-    expect(
-      await screen.findByRole('tooltip', { hidden: true })
-    ).toHaveTextContent('Back to previous chat')
+    expect(await screen.findByRole('tooltip')).toHaveTextContent(
+      'Back to previous chat'
+    )
   })
 
   it('emits back when the back control is clicked', async () => {
@@ -110,10 +115,23 @@ describe('ChatHistoryScreen', () => {
 
   it('orders populated bucket labels current, today, yesterday, earlier', () => {
     renderScreen({
-      current: [{ id: 'thread-c', title: 'Alpha', updatedAt: 4 }],
-      today: [{ id: 'thread-t', title: 'Bravo', updatedAt: 3 }],
-      yesterday: [{ id: 'thread-y', title: 'Charlie', updatedAt: 2 }],
-      earlier: [{ id: 'thread-e', title: 'Delta', updatedAt: 1 }]
+      current: [
+        { id: 'thread-c', title: 'Alpha', updatedAt: 4, titleSource: 'server' }
+      ],
+      today: [
+        { id: 'thread-t', title: 'Bravo', updatedAt: 3, titleSource: 'server' }
+      ],
+      yesterday: [
+        {
+          id: 'thread-y',
+          title: 'Charlie',
+          updatedAt: 2,
+          titleSource: 'server'
+        }
+      ],
+      earlier: [
+        { id: 'thread-e', title: 'Delta', updatedAt: 1, titleSource: 'server' }
+      ]
     })
 
     expect(renderedBucketLabels()).toEqual([
@@ -181,9 +199,9 @@ describe('ChatHistoryScreen', () => {
 
     await user.hover(screen.getByRole('button', { name: 'Copy as markdown' }))
 
-    expect(
-      await screen.findByRole('tooltip', { hidden: true })
-    ).toHaveTextContent('Copy as markdown')
+    expect(await screen.findByRole('tooltip')).toHaveTextContent(
+      'Copy as markdown'
+    )
   })
 
   it('opens a selected inline edit from the history-row menu', async () => {

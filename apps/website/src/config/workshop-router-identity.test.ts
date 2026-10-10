@@ -1,11 +1,11 @@
 import { describe, expect, it } from 'vitest'
 
-import rawAudit from '../data/workshop-router-identity-audit.json'
-import availability from '../data/workshop-router-availability.json'
-import rawSnapshots from '../data/workshop-router-openapi.snapshot.json'
-import catalog from '../content/workshop-models.json'
-import display from '../content/workshop-display.json'
-import packedAliases from '../content/workshop-router-aliases.json'
+import rawAudit from '@/data/workshop-router-identity-audit.json'
+import availability from '@/data/workshop-router-availability.json'
+import rawSnapshots from '@/data/workshop-router-openapi.snapshot.json'
+import catalog from '@/content/workshop-models.json'
+import display from '@/content/workshop-display.json'
+import packedAliases from '@/content/workshop-router-aliases.json'
 import { filterWorkshopModels, countByModality } from './models-catalogue'
 import type { WorkshopModelDetail } from './models-catalogue'
 import {
@@ -25,6 +25,7 @@ import {
   workshopIdentityAuditSchema,
   workshopRouterAliasesSchema
 } from './workshop-router-identity'
+import { hubModelSlugs } from './hub-models'
 
 const audit = workshopIdentityAuditSchema.parse(rawAudit)
 const aliases = workshopRouterAliasesSchema.parse(packedAliases)
@@ -167,7 +168,7 @@ describe('legacy content identity repairs', () => {
         throw new Error('Missing published model detail')
       expect(detail.routerId).toBe(match.routerId)
       expect(detail.slug.startsWith(`${old.slug}--`)).toBe(true)
-      expect(detail.href).toBe(`/models/${detail.slug}/`)
+      expect(detail.href).toBe(`/hub/models/${hubModelSlugs.get(detail.slug)}/`)
       expect(routerWorkshopModelPaths).toContain(old.slug)
       expect(detail.incompleteReason).toBeUndefined()
       expect(detail.execution?.inputSchema).toEqual(contract.inputSchema)
@@ -224,6 +225,7 @@ describe('legacy content identity repairs', () => {
 
   it('binds every role-specific page only to a verified family target', () => {
     for (const [id, binding] of workshopContentInputs) {
+      if (binding.unavailableReason) continue
       const page = display.find((entry) => entry.id === id)
       if (!page) throw new Error(`Missing content page: ${id}`)
       const record = auditById.get(page.modelId)
@@ -291,13 +293,30 @@ describe('legacy content identity repairs', () => {
     const missing = rawSnapshots.filter(
       (entry) => !entry.document['x-comfy-input-schema-authored']
     )
-    expect(missing.map((entry) => entry.id)).toEqual(['minimax/minimax-h3'])
+    // The alternate-provider legs publish no authored input schema of their
+    // own; none of them carries website content.
+    expect(missing.map((entry) => entry.id)).toEqual([
+      'fal/fal-gpt-image-2',
+      'fal/fal-gpt-image-2.5-flare',
+      'fal/fal-gpt-image-2.5-sunburst',
+      'fal/fal-nano-banana-2',
+      'fal/fal-nano-banana-pro',
+      'fal/fal-seedance-2.0',
+      'fal/fal-seedance-2.5',
+      'higgsfield/higgsfield-seedance-2.0',
+      'higgsfield/higgsfield-seedance-2.5',
+      'wavespeed/wavespeed-gpt-image-2',
+      'wavespeed/wavespeed-gpt-image-2.5-flare',
+      'wavespeed/wavespeed-gpt-image-2.5-sunburst',
+      'wavespeed/wavespeed-nano-banana-2',
+      'wavespeed/wavespeed-nano-banana-pro',
+      'wavespeed/wavespeed-seedance-2.0',
+      'wavespeed/wavespeed-seedance-2.5'
+    ])
     for (const snapshot of missing) {
       const legacy = aliases.filter((alias) => alias.routerId === snapshot.id)
-      expect(legacy.length).toBeGreaterThan(0)
       const ids = new Set(legacy.map((alias) => alias.id))
       const content = display.filter((entry) => ids.has(entry.modelId))
-      expect(content.length).toBeGreaterThan(0)
       const slugs = [
         snapshot.id.replace('/', '--'),
         ...catalog

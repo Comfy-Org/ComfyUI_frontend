@@ -1,5 +1,5 @@
-import type { WorkshopModel } from '../../config/models-catalogue'
-import { externalLinks } from '../../config/routes'
+import type { WorkshopModel } from '@/config/models-catalogue'
+import { externalLinks } from '@/config/routes'
 
 /**
  * Where a model's docs live. The Router docs page carries one section per
@@ -33,6 +33,7 @@ const ANCHORS: Readonly<Record<string, string>> = {
   google: 'google',
   grok: 'xai',
   heygen: 'heygen',
+  higgsfield: 'higgsfield',
   ideogram: 'ideogram',
   kling: 'kling',
   krea: 'krea',
@@ -45,9 +46,12 @@ const ANCHORS: Readonly<Record<string, string>> = {
   minimax: 'minimax',
   moonvalley: 'moonvalley',
   openai: 'openai',
+  openrouter: 'openrouter',
+  pruna: 'pruna',
   qwen: 'qwen',
   recraft: 'recraft',
   runway: 'runway',
+  synclabs: 'synclabs',
   tencent: 'tencent',
   tencenthunyuan3d: 'tencent',
   veo: 'veo',

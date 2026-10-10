@@ -1,8 +1,8 @@
 import { render, screen } from '@testing-library/vue'
 import { describe, expect, it } from 'vitest'
 
-import { getRoutes } from '../../config/routes'
-import type { Locale } from '../../i18n/translations'
+import { getRoutes } from '@/config/routes'
+import type { Locale } from '@/i18n/translations'
 import CloudPricingSection from './CloudPricingSection.vue'
 
 function isBefore(first: Element, second: Element) {
@@ -46,7 +46,7 @@ describe('CloudPricingSection', () => {
   it.for([
     {
       locale: 'en',
-      teamFeature: 'Invite members up to 50',
+      teamFeature: 'Invite up to 50 members',
       enterpriseCta: 'Learn More'
     },
     {

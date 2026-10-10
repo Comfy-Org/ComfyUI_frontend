@@ -16,7 +16,7 @@ import {
   ToInputRenderLink,
   LinkDirection
 } from '@/lib/litegraph/src/litegraph'
-import type { ConnectingLink } from '@/lib/litegraph/src/interfaces'
+import type { ConnectingLink } from '@/lib/litegraph/src/types/slots'
 import type { LinkId } from '@/types/linkId'
 import { toLinkId } from '@/types/linkId'
 import { toNodeId } from '@/types/nodeId'
@@ -151,9 +151,6 @@ describe('LinkConnector', () => {
       network
     }) => {
       connector.state.connectingTo = 'input'
-      const consoleError = vi
-        .spyOn(console, 'error')
-        .mockImplementation(() => {})
 
       connector.moveInputLink(
         network,
@@ -161,7 +158,7 @@ describe('LinkConnector', () => {
         createMockNodeInputSlot({ link: toLinkId(1) })
       )
 
-      expect(consoleError).toHaveBeenCalledWith('Already dragging links.')
+      expect(console.error).toHaveBeenCalledWith('Already dragging links.')
       expect(connector.inputLinks).toHaveLength(0)
     })
   })
@@ -196,9 +193,6 @@ describe('LinkConnector', () => {
       network
     }) => {
       connector.state.connectingTo = 'output'
-      const consoleError = vi
-        .spyOn(console, 'error')
-        .mockImplementation(() => {})
 
       connector.moveOutputLink(
         network,
@@ -206,7 +200,7 @@ describe('LinkConnector', () => {
         createMockNodeOutputSlot({ links: [toLinkId(1)] })
       )
 
-      expect(consoleError).toHaveBeenCalledWith('Already dragging links.')
+      expect(console.error).toHaveBeenCalledWith('Already dragging links.')
       expect(connector.outputLinks).toHaveLength(0)
     })
   })

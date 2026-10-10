@@ -93,7 +93,6 @@ const deferredRawLogs = () => {
 
 describe('LogsTerminal', () => {
   beforeEach(() => {
-    vi.spyOn(console, 'error').mockImplementation(() => {})
     apiMock.clientId = 'test-client'
     useExecutionStore().clientId = 'test-client'
   })

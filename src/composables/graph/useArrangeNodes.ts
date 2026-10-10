@@ -116,8 +116,8 @@ const arrangeGrid = (
   const cols = Math.ceil(Math.sqrt(sorted.length))
   const rows = Math.ceil(sorted.length / cols)
 
-  const colWidths = new Array<number>(cols).fill(0)
-  const rowHeights = new Array<number>(rows).fill(0)
+  const colWidths = Array.from({ length: cols }, () => 0)
+  const rowHeights = Array.from({ length: rows }, () => 0)
   sorted.forEach((box, i) => {
     const col = i % cols
     const row = Math.floor(i / cols)

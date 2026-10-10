@@ -41,7 +41,7 @@ function dropEcho(
   return kept ? `${kept}${period}` : description
 }
 
-function words(value: string): readonly string[] {
+export function words(value: string): readonly string[] {
   return value
     .toLowerCase()
     .split(/[^a-z0-9]+/)

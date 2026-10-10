@@ -1,4 +1,5 @@
-import { render, fireEvent } from '@testing-library/vue'
+import { fireEvent, render, screen } from '@testing-library/vue'
+import userEvent from '@testing-library/user-event'
 import { fromPartial } from '@total-typescript/shoehorn'
 import { describe, expect, it, vi } from 'vitest'
 import { defineComponent } from 'vue'
@@ -54,7 +55,7 @@ const AssetsListItemStub = defineComponent({
     :data-preview-url="previewUrl"
     :data-is-video-preview="isVideoPreview"
     data-testid="assets-list-item"
-  ><button data-testid="preview-click-trigger" @click="$emit('preview-click')" /><slot /></div>`
+  ><button data-testid="preview-click-trigger" @click="$emit('preview-click')" /><slot /><slot name="actions" /></div>`
 })
 
 const buildAsset = (id: string, name: string): AssetItem =>
@@ -102,7 +103,7 @@ describe('AssetsSidebarListView', () => {
 
     const { container } = renderListView([buildOutputItem(videoAsset)])
 
-    // eslint-disable-next-line testing-library/no-container, testing-library/no-node-access
+    // oxlint-disable-next-line testing-library/no-container, testing-library/no-node-access
     const stubs = container.querySelectorAll('[data-testid="assets-list-item"]')
     const assetListItem = stubs[stubs.length - 1]
 
@@ -122,7 +123,7 @@ describe('AssetsSidebarListView', () => {
 
     const { container } = renderListView([buildOutputItem(textAsset)])
 
-    // eslint-disable-next-line testing-library/no-container, testing-library/no-node-access
+    // oxlint-disable-next-line testing-library/no-container, testing-library/no-node-access
     const stubs = container.querySelectorAll('[data-testid="assets-list-item"]')
     const assetListItem = stubs[stubs.length - 1]
 
@@ -143,11 +144,11 @@ describe('AssetsSidebarListView', () => {
       'onPreview-asset': onPreviewAsset
     })
 
-    // eslint-disable-next-line testing-library/no-container, testing-library/no-node-access
+    // oxlint-disable-next-line testing-library/no-container, testing-library/no-node-access
     const trigger = container.querySelector(
       '[data-testid="preview-click-trigger"]'
     )!
-    // eslint-disable-next-line testing-library/prefer-user-event
+    // oxlint-disable-next-line testing-library/prefer-user-event
     await fireEvent.click(trigger)
 
     expect(onPreviewAsset).toHaveBeenCalledWith(imageAsset)
@@ -165,9 +166,9 @@ describe('AssetsSidebarListView', () => {
       'onPreview-asset': onPreviewAsset
     })
 
-    // eslint-disable-next-line testing-library/no-container, testing-library/no-node-access
+    // oxlint-disable-next-line testing-library/no-container, testing-library/no-node-access
     const stub = container.querySelector('[data-testid="assets-list-item"]')!
-    // eslint-disable-next-line testing-library/prefer-user-event
+    // oxlint-disable-next-line testing-library/prefer-user-event
     await fireEvent.dblClick(stub)
 
     expect(onPreviewAsset).toHaveBeenCalledWith(imageAsset)
@@ -187,7 +188,7 @@ describe('AssetsSidebarListView', () => {
 
     function renderDraggableRow() {
       const { container } = renderListView([buildOutputItem(dragAsset)])
-      // eslint-disable-next-line testing-library/no-container, testing-library/no-node-access -- the draggable row intentionally has no interactive role
+      // oxlint-disable-next-line testing-library/no-container, testing-library/no-node-access -- the draggable row intentionally has no interactive role
       const row = container.querySelector('[data-testid="assets-list-item"]')!
       return row
     }
@@ -229,7 +230,9 @@ describe('AssetsSidebarListView', () => {
           display_name: 'Clip',
           attachment_ref: 'clip.mp4',
           media_kind: 'video',
-          preview_url: undefined
+          preview_url: undefined,
+          media_url:
+            'http://localhost:3000/api/view?filename=clip.mp4&type=output&subfolder='
         }),
         MIME_ASSET_INFO
       )
@@ -255,5 +258,62 @@ describe('AssetsSidebarListView', () => {
         expect(add).not.toHaveBeenCalled()
       }
     )
+  })
+
+  for (const [label, keys] of [
+    ['Enter', '{Enter}'],
+    ['Space', '{ }']
+  ] as const) {
+    it(`does not select a focused asset with ${label} (#16308: missing keyboard handler)`, async () => {
+      const user = userEvent.setup()
+      const imageAsset = {
+        ...buildAsset(`image-asset-${label}`, 'image.png'),
+        user_metadata: {}
+      } satisfies AssetItem
+      const onSelectAsset = vi.fn()
+
+      renderListView([buildOutputItem(imageAsset)], {
+        selectableAssets: [imageAsset],
+        'onSelect-asset': onSelectAsset
+      })
+
+      const item = screen.getByRole('button', {
+        name: 'image.png - image asset'
+      })
+      item.focus()
+      expect(item).toHaveFocus()
+
+      await user.keyboard(keys)
+
+      expect(onSelectAsset).not.toHaveBeenCalled()
+    })
+  }
+
+  it('does not select an asset when Enter activates its actions button', async () => {
+    const user = userEvent.setup()
+    const imageAsset = {
+      ...buildAsset('image-asset-actions', 'image.png'),
+      user_metadata: {}
+    } satisfies AssetItem
+    const onSelectAsset = vi.fn()
+
+    renderListView([buildOutputItem(imageAsset)], {
+      selectableAssets: [imageAsset],
+      'onSelect-asset': onSelectAsset
+    })
+
+    const item = screen.getByRole('button', {
+      name: 'image.png - image asset'
+    })
+    await user.hover(item)
+
+    const actionsButton = await screen.findByRole('button', {
+      name: 'More options'
+    })
+    actionsButton.focus()
+    expect(actionsButton).toHaveFocus()
+    await user.keyboard('{Enter}')
+
+    expect(onSelectAsset).not.toHaveBeenCalled()
   })
 })

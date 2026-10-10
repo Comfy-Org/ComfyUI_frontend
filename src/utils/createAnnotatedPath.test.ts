@@ -1,7 +1,10 @@
 import { describe, expect, it } from 'vitest'
 
 import type { ResultItem } from '@/platform/remote/comfyui/execution/types'
-import { createAnnotatedPath } from '@/utils/createAnnotatedPath'
+import {
+  createAnnotatedPath,
+  parseAnnotatedPath
+} from '@/utils/createAnnotatedPath'
 
 const resultItemCases = [
   {
@@ -103,5 +106,21 @@ describe('createAnnotatedPath', () => {
     // @ts-expect-error ResultItem paths intentionally reject caller options.
     const actual = createAnnotatedPath(item, callerOptions)
     expect(actual).toBe('asset/result.png [output]')
+  })
+})
+
+describe('parseAnnotatedPath', () => {
+  it('separates a temp annotation from its filepath', () => {
+    expect(parseAnnotatedPath('nested/preview.png [temp]')).toEqual({
+      filepath: 'nested/preview.png',
+      rootFolder: 'temp'
+    })
+  })
+
+  it('uses the fallback root for an unannotated filepath', () => {
+    expect(parseAnnotatedPath('nested/preview.png', 'output')).toEqual({
+      filepath: 'nested/preview.png',
+      rootFolder: 'output'
+    })
   })
 })

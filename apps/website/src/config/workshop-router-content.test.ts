@@ -5,7 +5,10 @@ import {
   authoredWorkshopModels
 } from './workshop-browse-content'
 import { deriveWorkshopFields } from './workshop-fields'
-import { getAuthoredRouterWorkshopModelDetail as getRouterWorkshopModelDetail } from './workshop-router-content'
+import {
+  getAuthoredRouterWorkshopModelDetail as getRouterWorkshopModelDetail,
+  promptText
+} from './workshop-router-content'
 import {
   defaultValues,
   groupPlaygroundFields,
@@ -26,6 +29,10 @@ import {
   resolveModelRouterRender
 } from './router-render'
 import { initialWorkshopPageState } from './workshop-page-state'
+
+type Overlay = NonNullable<
+  ReturnType<(typeof authoredRouterContentBySlug)['get']>
+>['overlay']
 
 describe('Router catalog form projection', () => {
   it.for([
@@ -336,14 +343,11 @@ describe('authored Router task defaults', () => {
     const model = modelFor(
       'byteplus--seedream-5-pro-layer-separation--edit-images'
     )
-    vi.stubGlobal(
-      'fetch',
-      vi.fn<typeof fetch>(
-        async () =>
-          new Response(new Uint8Array([137, 80, 78, 71]), {
-            headers: { 'Content-Type': 'image/png' }
-          })
-      )
+    vi.mocked(fetch).mockImplementation(
+      async () =>
+        new Response(new Uint8Array([137, 80, 78, 71]), {
+          headers: { 'Content-Type': 'image/png' }
+        })
     )
     const page = initialWorkshopPageState(model)
     expect(page.firstExample).toBeDefined()
@@ -361,5 +365,58 @@ describe('authored Router task defaults', () => {
       style: 'digital_illustration'
     })
     expect(prepared.body).toHaveProperty('style', 'digital_illustration')
+  })
+})
+
+describe('example prompts', () => {
+  it.for([
+    {
+      slug: 'bfl--flux-2-max--generate-images',
+      from: 'the sample',
+      prompt: (overlay: Overlay) => overlay.media.samples?.[0]?.prompt
+    },
+    {
+      slug: 'runway--aleph2-video-to-video--edit-videos',
+      from: 'the example values',
+      prompt: (overlay: Overlay) => overlay.examples[0]?.values.prompt
+    },
+    {
+      slug: 'bria--remove-image-background--edit-images',
+      from: 'nowhere',
+      prompt: () => undefined
+    }
+  ])('takes the prompt from $from', ({ slug, from, prompt }) => {
+    const overlay = authoredRouterContentBySlug.get(slug)?.overlay
+    const example = getRouterWorkshopModelDetail(slug)?.examples.at(0)
+    if (!overlay || !example) throw new Error(`Missing example: ${slug}`)
+    expect(example.prompt).toBe(prompt(overlay))
+    expect(example.prompt === undefined).toBe(from === 'nowhere')
+  })
+})
+
+describe(promptText, () => {
+  it.for([
+    { name: 'a plain prompt', prompt: 'a red fox', text: 'a red fox' },
+    {
+      name: 'JSON with a text field',
+      prompt: JSON.stringify({
+        high_level_description: 'A train in a cloud',
+        style_description: { aesthetics: 'collage' }
+      }),
+      text: 'A train in a cloud'
+    },
+    {
+      name: 'JSON without a text field',
+      prompt: JSON.stringify({ style_description: { aesthetics: 'collage' } }),
+      text: undefined
+    },
+    {
+      name: 'unparseable JSON',
+      prompt: '{"high_level_description": "A train',
+      text: undefined
+    },
+    { name: 'a blank prompt', prompt: '  ', text: undefined }
+  ])('$name', ({ prompt, text }) => {
+    expect(promptText(prompt)).toBe(text)
   })
 })

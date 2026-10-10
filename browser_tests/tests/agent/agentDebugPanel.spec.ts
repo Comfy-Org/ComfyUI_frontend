@@ -1,11 +1,10 @@
 import { expect } from '@playwright/test'
 
-import enMessages from '@/locales/en/main.json' with { type: 'json' }
-
 import {
   agentTest as test,
   bootAgentApp
 } from '@e2e/fixtures/agentPanelFixture'
+import { AgentPanel } from '@e2e/fixtures/components/AgentPanel'
 
 test.describe('Agent debug log', { tag: ['@cloud', '@agent', '@ui'] }, () => {
   test.beforeEach(async ({ page }) => {
@@ -25,12 +24,7 @@ test.describe('Agent debug log', { tag: ['@cloud', '@agent', '@ui'] }, () => {
       }
     },
     async ({ page }) => {
-      await page
-        .getByRole('button', {
-          name: enMessages.agent.entryButton,
-          exact: true
-        })
-        .click()
+      await new AgentPanel(page).open()
       await page.getByTestId('crdt-dev-panel-tab-log').click()
 
       const filter = page.getByTestId('crdt-dev-panel-filter')

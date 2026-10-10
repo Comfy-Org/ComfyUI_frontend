@@ -1,21 +1,22 @@
 <script setup lang="ts">
-import SectionHeader from '../../components/common/SectionHeader.vue'
-import { externalLinks } from '../../config/routes'
-import type { Locale } from '../../i18n/translations'
-import { t, tPlural } from '../../i18n/translations'
-import { resolveRel } from '../../utils/cta'
+import SectionHeader from '@/components/common/SectionHeader.vue'
+import { externalLinks } from '@/config/routes'
+import type { Locale } from '@/i18n/translations'
+import { translationsFor } from '@/i18n/translations'
+import { resolveRel } from '@/utils/cta'
 import { cloudNodeModelCards } from './modelCards'
 
 const { locale = 'en' } = defineProps<{ locale?: Locale }>()
+const { t } = translationsFor(locale)
 </script>
 
 <template>
   <section class="mx-auto max-w-9xl px-6 py-16 lg:py-24">
     <SectionHeader max-width="xl">
-      {{ t('cloudNodesLaunch.models.heading', locale) }}
+      {{ t('cloudNodesLaunch.models.heading') }}
       <template #subtitle>
         <p class="mt-4 text-sm text-smoke-700 lg:text-base">
-          {{ t('cloudNodesLaunch.models.subtitle', locale) }}
+          {{ t('cloudNodesLaunch.models.subtitle') }}
         </p>
       </template>
     </SectionHeader>
@@ -31,7 +32,7 @@ const { locale = 'en' } = defineProps<{ locale?: Locale }>()
         <video
           v-if="card.media.kind === 'video'"
           :src="card.media.src"
-          :aria-label="t(card.titleKey, locale)"
+          :aria-label="t(card.titleKey)"
           class="aspect-square size-full object-cover transition-transform duration-300 group-hover:scale-105"
           autoplay
           loop
@@ -41,7 +42,7 @@ const { locale = 'en' } = defineProps<{ locale?: Locale }>()
         <img
           v-else
           :src="card.media.src"
-          :alt="t(card.titleKey, locale)"
+          :alt="t(card.titleKey)"
           class="aspect-square size-full object-cover transition-transform duration-300 group-hover:scale-105"
           loading="lazy"
           decoding="async"
@@ -51,16 +52,16 @@ const { locale = 'en' } = defineProps<{ locale?: Locale }>()
           class="absolute inset-x-0 bottom-0 flex items-end justify-between gap-3 bg-linear-to-t from-black/85 to-transparent p-5"
         >
           <h3 class="text-base font-medium text-primary-comfy-canvas">
-            {{ t(card.titleKey, locale) }}
+            {{ t(card.titleKey) }}
           </h3>
           <span
             class="shrink-0 rounded-full bg-white/15 px-3 py-1 text-xs whitespace-nowrap text-primary-comfy-canvas backdrop-blur-sm"
           >
             {{
-              tPlural(
+              t(
                 'cloudNodesLaunch.models.nodeCount',
-                card.nodeCount,
-                locale
+                { count: card.nodeCount },
+                { locale, plural: card.nodeCount }
               )
             }}
           </span>
@@ -69,14 +70,14 @@ const { locale = 'en' } = defineProps<{ locale?: Locale }>()
     </ul>
 
     <p class="mt-8 text-center text-sm text-smoke-700">
-      {{ t('cloudNodesLaunch.models.footnote', locale) }}
+      {{ t('cloudNodesLaunch.models.footnote') }}
       <a
         :href="externalLinks.docsCloudNodes"
         target="_blank"
         :rel="resolveRel({ target: '_blank' })"
         class="underline underline-offset-4"
       >
-        {{ t('cloudNodesLaunch.models.footnoteLink', locale) }}
+        {{ t('cloudNodesLaunch.models.footnoteLink') }}
       </a>
     </p>
   </section>

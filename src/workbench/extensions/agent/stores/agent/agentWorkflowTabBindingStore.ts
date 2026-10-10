@@ -5,9 +5,12 @@ import { toRaw, watch } from 'vue'
 import { areWorkflowIdsEquivalent } from '@/platform/workflow/core/utils/workflowId'
 import type { ComfyWorkflow } from '@/platform/workflow/management/stores/comfyWorkflow'
 import { useWorkflowStore } from '@/platform/workflow/management/stores/workflowStore'
+import { clearLegacyAgentStorage } from '@/platform/workflow/persistence/base/storageIO'
+import {
+  getWorkspaceId,
+  StorageKeys
+} from '@/platform/workflow/persistence/base/storageKeys'
 
-const LEGACY_STORAGE_KEY = 'Comfy.Agent.WorkflowTabBindings'
-const STORAGE_KEY = 'Comfy.Agent.WorkflowTabBindings.v2'
 const BINDING_TTL_MS = 30 * 24 * 60 * 60 * 1000
 
 interface PersistedBinding {
@@ -23,32 +26,18 @@ interface OpenTab {
   path: string
 }
 
+function isNonEmptyString(value: unknown): value is string {
+  return typeof value === 'string' && value.length > 0
+}
+
 function isPersistedBinding(value: unknown): value is PersistedBinding {
   if (typeof value !== 'object' || value === null) return false
   const { tabPath, graphId, confirmedAt } = value as Record<string, unknown>
   return (
     typeof tabPath === 'string' &&
-    (graphId === null || typeof graphId === 'string') &&
+    (graphId === null || isNonEmptyString(graphId)) &&
     typeof confirmedAt === 'number'
   )
-}
-
-function readLegacyBindings(now: number): PersistedBindings {
-  try {
-    const parsed: unknown = JSON.parse(
-      localStorage.getItem(LEGACY_STORAGE_KEY) ?? 'null'
-    )
-    if (typeof parsed !== 'object' || parsed === null) return {}
-    return Object.fromEntries(
-      Object.entries(parsed).flatMap(([workflowId, tabPath]) =>
-        typeof tabPath === 'string'
-          ? [[workflowId, { tabPath, graphId: null, confirmedAt: now }]]
-          : []
-      )
-    )
-  } catch {
-    return {}
-  }
 }
 
 function liveBindings(
@@ -73,7 +62,7 @@ function graphIdOf(tab: ComfyWorkflow): string | undefined {
     return typeof parsed === 'object' &&
       parsed !== null &&
       'id' in parsed &&
-      typeof parsed.id === 'string'
+      isNonEmptyString(parsed.id)
       ? parsed.id
       : undefined
   } catch {
@@ -84,13 +73,12 @@ function graphIdOf(tab: ComfyWorkflow): string | undefined {
 export const useAgentWorkflowTabBindingStore = defineStore(
   'agentWorkflowTabBinding',
   () => {
-    const now = Date.now()
-    const hasStoredBindings = localStorage.getItem(STORAGE_KEY) !== null
-    const tabByWorkflow = useLocalStorage<PersistedBindings>(STORAGE_KEY, {})
-    tabByWorkflow.value = liveBindings(
-      hasStoredBindings ? tabByWorkflow.value : readLegacyBindings(now),
-      now
+    clearLegacyAgentStorage()
+    const tabByWorkflow = useLocalStorage<PersistedBindings>(
+      StorageKeys.agentWorkflowTabBindings(getWorkspaceId()),
+      {}
     )
+    tabByWorkflow.value = liveBindings(tabByWorkflow.value, Date.now())
 
     const workflows = useWorkflowStore()
     const boundInstances = new Map<string, ComfyWorkflow>()
@@ -150,6 +138,18 @@ export const useAgentWorkflowTabBindingStore = defineStore(
           refusedInstances.delete(workflowId)
         }
       }
+    }
+
+    /**
+     * Drops one workflow's record wherever it sits. Path-keyed `unbind` would
+     * take whichever workflow occupies the path now, which is the wrong one
+     * once the tab has been rebound.
+     */
+    function unbindWorkflow(workflowId: string): void {
+      if (!Object.hasOwn(tabByWorkflow.value, workflowId)) return
+      delete tabByWorkflow.value[workflowId]
+      boundInstances.delete(workflowId)
+      refusedInstances.delete(workflowId)
     }
 
     function releaseClosedTab({ tab, path }: OpenTab): void {
@@ -222,6 +222,13 @@ export const useAgentWorkflowTabBindingStore = defineStore(
         : undefined
     }
 
-    return { bind, unbind, matchesWorkflow, tabPathFor, workflowIdFor }
+    return {
+      bind,
+      unbind,
+      unbindWorkflow,
+      matchesWorkflow,
+      tabPathFor,
+      workflowIdFor
+    }
   }
 )

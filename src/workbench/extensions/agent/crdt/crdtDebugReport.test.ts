@@ -1,8 +1,17 @@
+import { fromPartial } from '@total-typescript/shoehorn'
 import { assert, beforeEach, describe, expect, it, vi } from 'vitest'
+
+import { LGraphNode } from '@/lib/litegraph/src/litegraph'
+import type { IBaseWidget } from '@/lib/litegraph/src/types/widgets'
 import { useExtensionStore } from '@/stores/extensionStore'
+import { toNodeId } from '@/types/nodeId'
 
 import { toTurnId } from '../schemas/agentApiSchema'
-import type { MessagePart, ToolPart } from '../services/agent/agentMessageParts'
+import type {
+  AssistantMessage,
+  MessagePart,
+  ToolPart
+} from '../services/agent/agentMessageParts'
 import { createAssistantMessage } from '../services/agent/agentMessageParts'
 
 const { getSystemStats, getLogs, getSettings } = vi.hoisted(() => ({
@@ -36,6 +45,7 @@ import type { ReportIdentifiers, ReportSources } from './crdtDebugReport'
 import type { CrdtDebugSnapshot } from './crdtSnapshot'
 import type { DevEvent } from './devPanelLog'
 import { collectCrdtDebugReport } from './crdtDebugReport'
+import { collectMediaUiDiagnostics } from './mediaUiDiagnostics'
 
 const ALL_SOURCES: ReportSources = {
   serverLogs: true,
@@ -53,6 +63,7 @@ const SNAPSHOT: CrdtDebugSnapshot = {
     outcomes: {
       received: 3,
       applied: 3,
+      appliedLive: 3,
       skipped: 0,
       errored: 0,
       gap: 0,
@@ -134,6 +145,66 @@ describe('collectCrdtDebugReport', () => {
     expect(report).toContain('Document stamps')
   })
 
+  it('includes privacy-safe media UI state without selected values or URLs', async () => {
+    const node = new LGraphNode('LoadImage')
+    node.id = toNodeId(7)
+    node.comfyClass = 'LoadImage'
+    node.widgets = [
+      fromPartial<IBaseWidget>({ name: 'image', value: 'selected-private.png' })
+    ]
+    const privateUrl = 'https://private.example/image.png'
+    const report = await collectCrdtDebugReport({
+      crdt: SNAPSHOT,
+      events: [],
+      mediaUiDiagnostics: collectMediaUiDiagnostics({
+        nodes: [node],
+        getNodeOutputs: () => undefined,
+        getNodeImageUrls: () => [privateUrl],
+        root: document
+      })
+    })
+
+    expect(report).toContain('- Media UI diagnostics: collected (1 nodes)')
+    expect(report).toContain('## Media UI diagnostics')
+    expect(report).toContain('"selectedImagePresent": true')
+    expect(report).not.toContain('selected-private.png')
+    expect(report).not.toContain(privateUrl)
+  })
+
+  it('bounds media diagnostics without dropping the following tool section', async () => {
+    const mediaUiDiagnostics = Array.from({ length: 1_000 }, (_, index) => ({
+      nodeId: String(index),
+      nodeType: 'LoadImage',
+      mediaKinds: ['image'] as const,
+      selectedImagePresent: true,
+      selectedAudioPresent: false,
+      outputImageCount: 1,
+      outputAudioCount: 0,
+      resolvedImageUrlCount: 1,
+      legacyImageCount: 0,
+      loadedLegacyImageCount: 0,
+      vueNodeCount: 1,
+      vueImageCount: 1,
+      vueAudioCount: 0,
+      audioUiRegistered: false,
+      audioElementConnected: false,
+      audioSourcePresent: false,
+      audioHiddenAsEmpty: false,
+      hideOutputImages: false
+    }))
+
+    const report = await collectCrdtDebugReport({
+      crdt: SNAPSHOT,
+      events: [],
+      mediaUiDiagnostics
+    })
+
+    expect(report).toMatch(
+      /Media UI diagnostics: collected \(\d+ of 1000 nodes; section limit\)/
+    )
+    expect(report).toContain('## Agent tool calls')
+  })
+
   it('leads with an Identifiers block carrying every ID a backend engineer searches by', async () => {
     const report = await collectCrdtDebugReport({
       crdt: SNAPSHOT,
@@ -211,6 +282,7 @@ describe('collectCrdtDebugReport', () => {
     expect(report).toContain('backend unreachable')
     expect(report).toContain('doc-1')
     expect(reportError).toHaveBeenCalledWith(expect.any(Error), {
+      surface: 'agent',
       errorType: 'agent_crdt_debug_report_source_failed',
       tags: { source: 'System stats' },
       level: 'warning'
@@ -324,45 +396,46 @@ describe('collectCrdtDebugReport', () => {
   })
 
   it('correlates tool outcomes and backend durations without conversation content', async () => {
+    const agentMessages: AssistantMessage[] = [
+      {
+        ...createAssistantMessage(toTurnId('turn-21')),
+        parts: [
+          { type: 'text', text: 'private assistant response', state: 'done' },
+          {
+            type: 'tool',
+            callId: 'call-success',
+            name: 'inspect_workflow',
+            state: 'done',
+            ok: true,
+            durationMs: 137
+          }
+        ]
+      },
+      {
+        ...createAssistantMessage(toTurnId('turn-43')),
+        parts: [
+          { type: 'thinking', text: 'private reasoning', state: 'done' },
+          {
+            type: 'tool',
+            callId: 'call-error',
+            name: 'edit_workflow',
+            state: 'done',
+            ok: false,
+            durationMs: 294
+          },
+          {
+            type: 'tool',
+            callId: 'call-unsettled',
+            name: 'run_workflow',
+            state: 'streaming'
+          }
+        ]
+      }
+    ]
     const report = await collectCrdtDebugReport({
       crdt: SNAPSHOT,
       events: [],
-      agentMessages: [
-        {
-          ...createAssistantMessage(toTurnId('turn-21')),
-          parts: [
-            { type: 'text', text: 'private assistant response', state: 'done' },
-            {
-              type: 'tool',
-              callId: 'call-success',
-              name: 'inspect_workflow',
-              state: 'done',
-              ok: true,
-              durationMs: 137
-            }
-          ]
-        },
-        {
-          ...createAssistantMessage(toTurnId('turn-43')),
-          parts: [
-            { type: 'thinking', text: 'private reasoning', state: 'done' },
-            {
-              type: 'tool',
-              callId: 'call-error',
-              name: 'edit_workflow',
-              state: 'done',
-              ok: false,
-              durationMs: 294
-            },
-            {
-              type: 'tool',
-              callId: 'call-unsettled',
-              name: 'run_workflow',
-              state: 'streaming'
-            }
-          ]
-        }
-      ]
+      agentMessages
     })
 
     expect(report).toContain(
@@ -399,6 +472,13 @@ describe('collectCrdtDebugReport', () => {
     ])
     expect(report).not.toContain('private assistant response')
     expect(report).not.toContain('private reasoning')
+    expect(agentMessages.map(({ id }) => id)).toEqual(['turn-21', 'turn-43'])
+    expect(
+      agentMessages.map(({ parts }) => parts.map(({ type }) => type))
+    ).toEqual([
+      ['text', 'tool'],
+      ['thinking', 'tool', 'tool']
+    ])
   })
 
   it.for([
@@ -956,7 +1036,7 @@ describe('collectCrdtDebugReport', () => {
       expect(second).toBe(first)
       expect(first).toContain('report truncated')
       expect(first).toContain(
-        'Report format version: 1 · Document schema version: 1'
+        'Report format version: 2 · Document schema version: 1'
       )
       expect(first).toContain('Schema version:** 1')
       expect(first).toContain('[redacted by the debug report]')

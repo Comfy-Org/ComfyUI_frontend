@@ -121,7 +121,7 @@ export const useKeybindingStore = defineStore('keybinding', () => {
   function addKeybinding(
     target: Ref<KeybindingMap>,
     keybinding: KeybindingImpl,
-    { existOk = false }: { existOk: boolean }
+    { existOk }: { existOk: boolean }
   ) {
     const existing = target.value[keybinding.combo.serialize()]
     if (!existOk && existing) {

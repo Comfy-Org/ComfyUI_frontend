@@ -1,8 +1,8 @@
 import { describe, expect, it } from 'vitest'
 
-import type { Locale } from '../../i18n/translations'
+import type { Locale } from '@/i18n/translations'
 
-import { t } from '../../i18n/translations'
+import { t } from '@/i18n/translations'
 import { cloudNodeModelCards } from './modelCards'
 
 const locales: Locale[] = ['en', 'zh-CN']
@@ -39,7 +39,7 @@ describe('cloudNodeModelCards', () => {
 
   it.for(locales)('translates every card label for %s', (locale) => {
     for (const card of cloudNodeModelCards) {
-      expect(t(card.titleKey, locale)).not.toBe('')
+      expect(t(card.titleKey, {}, { locale })).not.toBe('')
       expect(card.nodeCount).toBeGreaterThan(0)
     }
   })

@@ -3,10 +3,8 @@ import { describe, expect, it, vi } from 'vitest'
 import type { ComponentProps } from 'vue-component-type-helpers'
 
 import NodeSearchListItem from '@/components/searchbox/v2/NodeSearchListItem.vue'
-import {
-  createMockNodeDef,
-  testI18n
-} from '@/components/searchbox/v2/__test__/testUtils'
+import { createMockNodeDef } from '@/components/searchbox/v2/__test__/testUtils'
+import { testI18n } from '@/utils/__tests__/testI18n'
 import { useSettingStore } from '@/platform/settings/settingStore'
 import { useNodeFrequencyStore } from '@/stores/nodeDefStore'
 

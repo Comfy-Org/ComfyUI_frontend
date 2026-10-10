@@ -5,6 +5,7 @@ import type {
   RunButtonProperties
 } from '@/platform/telemetry/types'
 import { getActionbarDockState } from '@/platform/telemetry/utils/getActionbarDockState'
+import { getAgentPanelOpen } from '@/platform/telemetry/utils/getAgentPanelOpen'
 import { getExecutionContext } from '@/platform/telemetry/utils/getExecutionContext'
 
 type RunButtonTelemetryOptions = {
@@ -32,7 +33,8 @@ export function getRunButtonTelemetryProperties(
     trigger_source: options?.trigger_source,
     view_mode: mode.value,
     is_app_mode: isAppMode.value,
-    dock_state: getActionbarDockState()
+    dock_state: getActionbarDockState(),
+    agent_panel_open: getAgentPanelOpen()
   }
 }
 

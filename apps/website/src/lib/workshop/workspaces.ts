@@ -2,10 +2,14 @@ import type { z } from 'zod'
 
 import { zListWorkspacesResponse } from '@comfyorg/ingest-types/zod'
 
-import { WORKSHOP_CLOUD_BASE_URL } from '../../config/workshop-env'
+import { WORKSHOP_CLOUD_BASE_URL } from '@/config/workshop-env'
+import { combineAbortSignals, createTimeoutSignal } from '@/utils/abortSignal'
+
+/** Only the list itself: the website never reads `can_create_workspace`. */
+const zWorkspaceList = zListWorkspacesResponse.pick({ workspaces: true })
 
 export type WorkspaceWithRole = z.infer<
-  typeof zListWorkspacesResponse
+  typeof zWorkspaceList
 >['workspaces'][number]
 
 export interface ListWorkspacesOptions {
@@ -22,9 +26,9 @@ export async function listWorkspaces(
   token: string,
   options: ListWorkspacesOptions = {}
 ): Promise<readonly WorkspaceWithRole[]> {
-  const timeout = AbortSignal.timeout(options.timeoutMs ?? 15_000)
+  const timeout = createTimeoutSignal(options.timeoutMs ?? 15_000)
   const signal = options.signal
-    ? AbortSignal.any([options.signal, timeout])
+    ? combineAbortSignals([options.signal, timeout])
     : timeout
   const response = await fetch(
     new URL('/api/workspaces', WORKSHOP_CLOUD_BASE_URL),
@@ -33,7 +37,7 @@ export async function listWorkspaces(
   if (!response.ok)
     throw new Error('Workspace list failed with status ' + response.status)
   const body: unknown = await response.json().catch(() => undefined)
-  const parsed = zListWorkspacesResponse.safeParse(body)
+  const parsed = zWorkspaceList.safeParse(body)
   if (!parsed.success) throw new Error('Workspace list response malformed')
   return parsed.data.workspaces
 }

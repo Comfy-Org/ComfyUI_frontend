@@ -7,6 +7,7 @@ import type {
 } from '@comfyorg/ingest-types'
 import type { UserDataFullInfo } from '@/platform/remote/comfyui/types'
 import type { ComfyNodeDef } from '@/schemas/nodeDefSchema'
+import type { GraphOperation } from '@/workbench/extensions/agent/crdt/graphOperations'
 import type {
   AgentRunModePreference,
   AgentTurnAccepted
@@ -22,16 +23,17 @@ import { AgentPanel } from '@e2e/fixtures/components/AgentPanel'
 import { VueNodeHelpers } from '@e2e/fixtures/VueNodeHelpers'
 import { jsonRoute } from '@e2e/fixtures/utils/jsonRoute'
 import enMessages from '@/locales/en/main.json' with { type: 'json' }
+import { mintWireOps } from '@/workbench/extensions/agent/crdt/opEnvelope'
 
 /**
- * Regression: `setWidgetValue` in
- * `src/workbench/extensions/agent/crdt/liveWidgetProjection.ts` skips the
+ * Regression: the follower's widget write used to skip the
  * `widget.value = value` assignment whenever the preceding store write
  * already left `widget.value` reporting the new value. A `DynamicCombo`
  * widget's value getter (`dynamicComboWidget` in
  * `src/core/graph/widgets/dynamicWidgets.ts`) always does, so its setter —
- * which mounts the option's nested sub-widgets — never runs. See
- * `liveWidgetProjection.test.ts` for the unit-level regression.
+ * which mounts the option's nested sub-widgets — never ran.
+ *
+ * BE-16625: https://linear.app/comfyorg/issue/BE-16625/widget-catalog-arity-mismatch-extra-n-positional-overflow-is-a
  */
 
 const NODE_TYPE = 'TestMagnificSkinEnhancer'
@@ -116,7 +118,7 @@ test.describe(
   'Agent set_widget on a dynamic-combo widget',
   { tag: ['@cloud', '@agent', '@vue-nodes'] },
   () => {
-    test('reveals the nested sub-widget the option declares, live on canvas', async ({
+    test('applies positional overflow after rejecting an unknown dotted widget', async ({
       page
     }) => {
       test.setTimeout(60_000)
@@ -237,6 +239,30 @@ test.describe(
 
       await expect(vueNodes.getNodeLocator(String(NODE_ID))).toBeVisible()
 
+      await test.step('reject unsupported dotted widget without damaging the projection', async () => {
+        const operation: GraphOperation = {
+          op: 'set_widget',
+          node_id: NODE_ID,
+          widget: 'mode.skin_detail',
+          value: 90
+        }
+        const ops = mintWireOps([operation], {
+          actor: 'agent:test:turn',
+          baseVersion: 1
+        })
+
+        const rejected = host.applyWire(ops)
+
+        expect(rejected.outcomes).toEqual([
+          expect.objectContaining({
+            outcome: 'rejected',
+            reason: expect.objectContaining({ code: 'unknown_widget' })
+          })
+        ])
+        expect(rejected.update).toBeNull()
+        expect(host.projection().nodes[0].widgets_values).toEqual(['creative'])
+      })
+
       await test.step("agent sets mode to 'faithful' over the CRDT doc", async () => {
         hostSocket.send(
           host.apply([
@@ -259,6 +285,13 @@ test.describe(
         .getNodeLocator(String(NODE_ID))
         .getByRole('spinbutton', { name: 'mode.skin_detail' })
       await expect(skinDetailField).toBeVisible()
+      hostSocket.send(host.setDocumentWidget(NODE_ID, '_extra_1', 90))
+      await expect(skinDetailField).toHaveValue('90')
+      await expect(
+        vueNodes.getNodeLocator(String(NODE_ID)).getByText('faithful', {
+          exact: true
+        })
+      ).toBeVisible()
     })
   }
 )

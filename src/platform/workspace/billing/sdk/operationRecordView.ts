@@ -36,6 +36,8 @@ export interface BillingOperationRecordView {
   readonly canRetryAuthentication: boolean
   /** The declined-attempt line a surface shows under its own summary. */
   readonly errorMessage: string | null
+  /** True only when the server says cancelling this pending operation would take effect. */
+  readonly cancelable: boolean
 }
 
 /**
@@ -70,7 +72,8 @@ export function projectOperationRecord(
           : null,
       isAuthenticating: false,
       canRetryAuthentication: false,
-      errorMessage: null
+      errorMessage: null,
+      cancelable: false
     }
   }
 
@@ -85,6 +88,7 @@ export function projectOperationRecord(
     errorMessage:
       state.authenticationState === 'failed_retryable'
         ? declineDetail(state.declineReason ?? 'authentication_failed')
-        : null
+        : null,
+    cancelable: state.cancelable === true
   }
 }

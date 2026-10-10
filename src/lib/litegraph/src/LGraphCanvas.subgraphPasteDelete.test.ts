@@ -13,7 +13,7 @@ import {
   createUuidv4
 } from '@/lib/litegraph/src/litegraph'
 import { useWidgetValueStore } from '@/stores/widgetValueStore'
-import { createMockCanvasRenderingContext2D } from '@/utils/__tests__/litegraphTestUtils'
+import { createMockCanvasRenderingContext2D } from '@/utils/__tests__/canvasTestUtils'
 
 import {
   createTestSubgraphData,
@@ -41,9 +41,7 @@ import {
  * on host deletion — the delta is intended and called out inline.
  */
 
-vi.mock<unknown>(import('@/services/litegraphService'), () => ({
-  useLitegraphService: () => ({ updatePreviews: () => ({}) })
-}))
+vi.mock(import('@/services/litegraphService'))
 
 const INTERIOR_TYPE = 'test/qa4-interior'
 const PLAIN_TYPE = 'test/qa4-plain'

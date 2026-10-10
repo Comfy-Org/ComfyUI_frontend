@@ -1,14 +1,8 @@
-import { fromAny, fromPartial } from '@total-typescript/shoehorn'
 import { describe, expect, it, vi } from 'vitest'
-
-import type { ComfyApp } from '../app'
 
 import { toggleSwitch } from './toggleSwitch'
 
-vi.mock(import('../app'), () => ({
-  ComfyApp: fromAny(class {}),
-  app: fromPartial<ComfyApp>({})
-}))
+vi.mock(import('../app'))
 vi.mock(import('../api'))
 
 function readState(container: HTMLElement) {
