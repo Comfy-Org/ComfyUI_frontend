@@ -25,12 +25,11 @@ describe('savedImageUrls', () => {
     ])
   })
 
-  it('appends the preview format and cache-busting params', () => {
+  it('appends the preview format param', () => {
     vi.spyOn(app, 'getPreviewFormatParam').mockReturnValue('&preview=webp')
-    vi.spyOn(app, 'getRandParam').mockReturnValue('&rand=0.5')
 
     expect(savedImageUrls([{ filename: 'a.png', type: 'temp' }])).toEqual([
-      '/api/view?filename=a.png&type=temp&preview=webp&rand=0.5'
+      '/api/view?filename=a.png&type=temp&preview=webp'
     ])
   })
 

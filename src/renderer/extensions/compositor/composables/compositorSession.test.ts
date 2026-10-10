@@ -3,7 +3,6 @@ import { beforeEach, describe, expect, it, vi } from 'vitest'
 import type { LayerEditorSession } from '@/renderer/extensions/layerEditor/composables/useLayerEditorSession'
 import type { LGraphNode } from '@/lib/litegraph/src/LGraphNode'
 import { api } from '@/scripts/api'
-import { app } from '@/scripts/app'
 import { toNodeId } from '@/types/nodeId'
 
 import { loadCompositorSession } from './compositorSession'
@@ -62,7 +61,6 @@ const fallbackName = (i: number) => `Layer ${i + 1}`
 describe('loadCompositorSession', () => {
   beforeEach(() => {
     vi.mocked(api.apiURL).mockImplementation((path) => `http://host/api${path}`)
-    vi.mocked(app.getRandParam).mockReturnValue('&rand=0.5')
     getCompositorLayers.mockReturnValue([])
     getCompositorCanvas.mockReturnValue(undefined)
     resolveInitialLayerState.mockReturnValue(null)
@@ -83,8 +81,8 @@ describe('loadCompositorSession', () => {
 
     expect(session.loadImages).toHaveBeenCalledWith(
       [
-        'http://host/api/view?filename=first.png&subfolder=sub&type=temp&rand=0.5',
-        'http://host/api/view?filename=&type=temp&rand=0.5'
+        'http://host/api/view?filename=first.png&subfolder=sub&type=temp',
+        'http://host/api/view?filename=&type=temp'
       ],
       ['first', 'Layer 2']
     )

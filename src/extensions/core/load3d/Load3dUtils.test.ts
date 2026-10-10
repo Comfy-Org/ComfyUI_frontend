@@ -28,6 +28,14 @@ describe('Load3dUtils.mapSceneLightIntensityToHdri', () => {
   })
 })
 
+describe('Load3dUtils.getResourceURL', () => {
+  it('builds a /view URL with only the file params', () => {
+    expect(Load3dUtils.getResourceURL('3d', 'a b.glb')).toBe(
+      '/view?filename=a%20b.glb&type=input&subfolder=3d'
+    )
+  })
+})
+
 describe('Load3dUtils upload failures', () => {
   const serverError = () =>
     new Response(null, { status: 500, statusText: 'Internal Server Error' })
