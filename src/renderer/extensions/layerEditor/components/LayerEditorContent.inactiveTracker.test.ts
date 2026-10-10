@@ -116,4 +116,36 @@ describe('LayerEditorContent with a real ChangeTracker', () => {
     expect(mockAssert).not.toHaveBeenCalled()
     expect(owner.changeCount).toBe(0)
   })
+
+  it('keeps edits made while the editor was open when the workflow is switched away', async () => {
+    const { app } = await import('@/scripts/app')
+    const owner = createTracker()
+    activate(owner)
+    const { unmount } = render(LayerEditorContent, {
+      props: {
+        node: { id: toNodeId(1) } as unknown as LGraphNode,
+        mode: 'compositor'
+      },
+      global: { plugins: [i18n], stubs }
+    })
+    const edited = {
+      nodes: [{ id: 1 }],
+      links: []
+    } as unknown as ComfyWorkflowJSON
+    vi.spyOn(app, 'isGraphReady', 'get').mockReturnValue(true)
+    Object.defineProperty(app, 'rootGraph', {
+      configurable: true,
+      value: { serialize: () => edited }
+    })
+
+    // what beforeLoadNewGraph does, while the workflow is still active
+    owner.deactivate()
+    activate(createTracker())
+    unmount()
+
+    expect(owner.activeState).toEqual(edited)
+    expect(owner.undoQueue).toHaveLength(1)
+    expect(owner.changeCount).toBe(0)
+    expect(mockAssert).not.toHaveBeenCalled()
+  })
 })
