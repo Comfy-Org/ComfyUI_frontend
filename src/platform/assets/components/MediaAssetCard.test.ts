@@ -248,6 +248,18 @@ describe('MediaAssetCard', () => {
     expect(emitted().zoom).toEqual([[asset]])
   })
 
+  it('previews an exr asset from its preview_url', async () => {
+    const previewUrl = '/api/assets/exr-preview/content'
+    renderCard({
+      loading: false,
+      asset: { ...asset, name: 'render.exr', preview_url: previewUrl }
+    })
+
+    expect(
+      await screen.findByRole('img', { name: 'render.exr' })
+    ).toHaveAttribute('src', previewUrl)
+  })
+
   it('selects non-video assets from the preview', async () => {
     const user = userEvent.setup()
     const { container, emitted } = renderCard({

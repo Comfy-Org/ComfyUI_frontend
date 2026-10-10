@@ -26,14 +26,22 @@
         "
         @click="handleGridClick(index)"
       >
-        <img
-          v-if="!isHdrImageUrl(imageUrls[index])"
-          :src="url"
-          :alt="`${$t('g.galleryThumbnail')} ${index + 1}`"
-          draggable="false"
-          class="pointer-events-none size-full object-contain"
-          @load="updateAspectRatio($event, index)"
-        />
+        <div
+          v-if="!isHdrPlaceholder(imageUrls[index])"
+          class="pointer-events-none relative size-full"
+        >
+          <img
+            :src="url"
+            :alt="`${$t('g.galleryThumbnail')} ${index + 1}`"
+            draggable="false"
+            class="size-full object-contain"
+            @load="updateAspectRatio($event, index)"
+          />
+          <i
+            v-if="isHdrImageUrl(imageUrls[index])"
+            class="absolute top-1 left-1 icon-[lucide--sun] size-4 text-base-foreground drop-shadow-sm"
+          />
+        </div>
         <div
           v-else
           class="flex size-full flex-col items-center justify-center gap-1 text-base-foreground"
@@ -84,13 +92,13 @@
       </div>
       <!-- Loading State -->
       <div
-        v-if="showLoader && !imageError && !currentImageIsHdr"
+        v-if="showLoader && !imageError && !currentShowsHdrPlaceholder"
         class="size-full"
       >
         <Skeleton class="size-full rounded-sm" />
       </div>
       <button
-        v-if="!imageError && currentImageIsHdr"
+        v-if="!imageError && currentShowsHdrPlaceholder"
         type="button"
         data-testid="hdr-open-button"
         class="absolute inset-0 flex cursor-pointer flex-col items-center justify-center gap-3 border-0 bg-transparent text-base-foreground"
@@ -106,15 +114,22 @@
       </button>
       <!-- Main Image -->
       <img
-        v-if="!imageError && !currentImageIsHdr"
+        v-if="!imageError && !currentShowsHdrPlaceholder"
         data-testid="main-image"
-        :src="currentImageUrl"
+        :src="getHdrPreviewUrl(currentImageUrl) ?? currentImageUrl"
         :alt="imageAltText"
         draggable="false"
         class="pointer-events-none absolute inset-0 block size-full object-contain"
         @load="handleImageLoad"
         @error="handleImageError"
       />
+      <div
+        v-if="!imageError && currentImageIsHdr && !currentShowsHdrPlaceholder"
+        class="pointer-events-none absolute top-2 left-2 flex items-center gap-1 rounded-md bg-base-background/80 px-1.5 py-0.5 text-xs text-base-foreground"
+      >
+        <i class="icon-[lucide--sun] size-3.5" />
+        {{ $t('hdrViewer.hdrImage') }}
+      </div>
 
       <!-- Floating Action Buttons (appear on hover and focus) -->
       <div
@@ -129,6 +144,16 @@
           @click="handleEditMask"
         >
           <i-comfy:mask class="size-4" />
+        </button>
+
+        <button
+          v-if="!imageError && currentImageIsHdr && !currentShowsHdrPlaceholder"
+          :class="actionButtonClass"
+          :title="$t('hdrViewer.openInHdrViewer')"
+          :aria-label="$t('hdrViewer.openInHdrViewer')"
+          @click="openHdrViewer(currentImageUrl)"
+        >
+          <i class="icon-[lucide--sun] size-4" />
         </button>
 
         <!-- Layer Editor Button -->
@@ -168,7 +193,7 @@
 
     <!-- Image Dimensions (gallery mode only) -->
     <div
-      v-if="viewMode === 'gallery' && !currentImageIsHdr"
+      v-if="viewMode === 'gallery' && !currentShowsHdrPlaceholder"
       class="pt-2 text-center text-xs text-base-foreground"
     >
       <span
@@ -235,7 +260,7 @@ import { useToast } from '@/components/ui/toast/toastStore'
 import { openHdrViewer } from '@/services/hdrViewerService'
 import { useNodeOutputStore } from '@/stores/nodeOutputStore'
 import type { NodeId } from '@/types/nodeId'
-import { isHdrImageUrl } from '@/utils/hdrFormatUtil'
+import { getHdrPreviewUrl, isHdrImageUrl } from '@/utils/hdrFormatUtil'
 import { getGridThumbnailUrl } from '@/utils/imageUtil'
 import { resolveNode } from '@/utils/litegraphUtil'
 import { cn } from '@comfyorg/tailwind-utils'
@@ -288,8 +313,16 @@ const { start: startDelayedLoader, stop: stopDelayedLoader } = useTimeoutFn(
 )
 
 const currentImageUrl = computed(() => imageUrls[currentIndex.value] ?? '')
+const isHdrPlaceholder = (url: string | undefined) =>
+  isHdrImageUrl(url) && !getHdrPreviewUrl(url)
+
 const currentImageIsHdr = computed(() => isHdrImageUrl(currentImageUrl.value))
-const gridImageUrls = computed(() => imageUrls.map(getGridThumbnailUrl))
+const currentShowsHdrPlaceholder = computed(() =>
+  isHdrPlaceholder(currentImageUrl.value)
+)
+const gridImageUrls = computed(() =>
+  imageUrls.map((url) => getHdrPreviewUrl(url) ?? getGridThumbnailUrl(url))
+)
 const hasMultipleImages = computed(() => imageUrls.length > 1)
 const canExportOutputs = computed(() => {
   const node = nodeId ? resolveNode(nodeId) : undefined
@@ -421,7 +454,7 @@ async function openImageInGallery(index: number) {
 
 function handleGridClick(index: number) {
   const url = imageUrls[index]
-  if (isHdrImageUrl(url)) {
+  if (isHdrPlaceholder(url)) {
     openHdrViewer(url)
     return
   }
