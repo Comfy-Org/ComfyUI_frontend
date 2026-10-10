@@ -1,4 +1,4 @@
-import type { Locator } from '@playwright/test'
+import type { Locator, Page } from '@playwright/test'
 import { expect } from '@playwright/test'
 
 import { test } from './fixtures/workshopVisibility'
@@ -147,19 +147,34 @@ test.describe('Desktop navigation @smoke', () => {
   })
 })
 
-test.describe('Narrow desktop @smoke', () => {
-  test.use({ viewport: { width: 1100, height: 800 } })
+const NARROW_DESKTOP = 930
 
-  test.beforeEach(async ({ page }) => {
-    await page.goto('/')
-  })
+// Japanese ships no nav labels of its own, so it inherits the widest row.
+const NAV_LOCALES = [
+  { name: 'English', path: '/' },
+  { name: 'Chinese', path: '/zh-CN/' },
+  { name: 'Japanese', path: '/ja/' }
+] as const
+
+function navRow(page: Page) {
+  return page.getByRole('navigation', { name: 'Main navigation' })
+}
+
+async function expectSingleRow(page: Page) {
+  const overflow = await navRow(page).evaluate(
+    (el) => el.scrollWidth - el.clientWidth
+  )
+  expect(overflow).toBeLessThanOrEqual(0)
+}
+
+test.describe('Narrow desktop @smoke', () => {
+  test.use({ viewport: { width: NARROW_DESKTOP, height: 800 } })
 
   test('keeps every nav link instead of collapsing to the hamburger', async ({
     page
   }) => {
-    const desktopLinks = page
-      .getByRole('navigation', { name: 'Main navigation' })
-      .getByTestId('desktop-nav-links')
+    await page.goto('/')
+    const desktopLinks = navRow(page).getByTestId('desktop-nav-links')
 
     for (const label of TOP_LEVEL_LABELS) {
       await expect(
@@ -169,11 +184,9 @@ test.describe('Narrow desktop @smoke', () => {
     await expect(page.getByRole('button', { name: 'Toggle menu' })).toBeHidden()
   })
 
-  test('shows one call to action and still fits on one row', async ({
-    page
-  }) => {
-    const nav = page.getByRole('navigation', { name: 'Main navigation' })
-    const desktopCTA = nav.getByTestId('desktop-nav-cta')
+  test('shows one call to action', async ({ page }) => {
+    await page.goto('/')
+    const desktopCTA = navRow(page).getByTestId('desktop-nav-cta')
 
     await expect(
       desktopCTA.getByRole('link', { name: 'TRY CLOUD FOR FREE' })
@@ -181,10 +194,16 @@ test.describe('Narrow desktop @smoke', () => {
     await expect(
       desktopCTA.getByRole('link', { name: 'DOWNLOAD DESKTOP' })
     ).toBeHidden()
-
-    const overflow = await nav.evaluate((el) => el.scrollWidth - el.clientWidth)
-    expect(overflow).toBeLessThanOrEqual(0)
   })
+
+  for (const locale of NAV_LOCALES) {
+    test(`fits on one row in ${locale.name}`, async ({ page }) => {
+      await page.goto(locale.path)
+
+      await expect(navRow(page).getByTestId('desktop-nav-links')).toBeVisible()
+      await expectSingleRow(page)
+    })
+  }
 })
 
 test.describe('Desktop dropdown @interaction', () => {

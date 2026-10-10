@@ -192,7 +192,7 @@ const ctaButtons = computed(() => {
       primary: true
     }
   ].filter((cta) => !isHrefActive(cta.href, currentPath.value))
-  // Between lg and xl the row fits one call to action, never the last one.
+  // Until xl the desktop row fits one call to action, never the last one.
   return available.map((cta) => ({
     ...cta,
     secondary: available.length > 1 && !cta.primary
@@ -232,11 +232,11 @@ const ctaButtons = computed(() => {
     <HeaderMainDesktop
       :locale
       :workshop-in-build="showWorkshop"
-      class="hidden lg:block"
+      class="hidden min-[930px]:block"
     />
     <div
       data-testid="mobile-nav-cta"
-      class="flex shrink-0 items-center gap-2 lg:hidden"
+      class="flex shrink-0 items-center gap-2 min-[930px]:hidden"
     >
       <HeaderAccount v-if="showAccount" :locale="locale" />
       <HeaderMainMobile :locale :workshop-in-build="showWorkshop" />
@@ -245,7 +245,7 @@ const ctaButtons = computed(() => {
     <!-- Desktop CTA buttons -->
     <div
       data-testid="desktop-nav-cta"
-      class="hidden shrink-0 items-center gap-2 lg:flex"
+      class="hidden shrink-0 items-center gap-2 min-[930px]:flex"
     >
       <!-- Get Yoland to sign a contract of permission before killing this -->
       <GitHubStarBadge v-if="githubStars" :stars="githubStars" />
