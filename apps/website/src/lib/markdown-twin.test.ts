@@ -1,4 +1,5 @@
 import { mkdtemp, readFile, mkdir, writeFile } from 'node:fs/promises'
+import https from 'node:https'
 import { tmpdir } from 'node:os'
 import { join } from 'node:path'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
@@ -159,6 +160,29 @@ describe('htmlToTwin', () => {
       'https://comfy.org/x/'
     )
     expect(noMain.body).toBe('# Pack\n\nNodes.')
+  })
+
+  it.for([
+    { name: 'a catalog preload', body: '' },
+    {
+      name: 'a catalog preload with the analytics iframe',
+      body: '<noscript><iframe src="https://www.googletagmanager.com/ns.html?id=GTM-NP9JM6K7"></iframe></noscript>'
+    }
+  ])('reads $name without network requests', async ({ body }) => {
+    const request = vi.spyOn(https, 'request').mockImplementation(() => {
+      throw new Error('Markdown extraction attempted an outbound request')
+    })
+    try {
+      const page = htmlToTwin(
+        `<html><head><link rel="preload" as="fetch" crossorigin href="/_website/main.json"></head><body>${body}<main><p>x</p></main></body></html>`,
+        'https://comfy.org/x/'
+      )
+      await new Promise<void>((resolve) => setImmediate(resolve))
+      expect(page.body).toBe('x')
+      expect(request.mock.calls.length).toBe(0)
+    } finally {
+      request.mockRestore()
+    }
   })
 
   it('falls back to the route when the page has no canonical link', () => {

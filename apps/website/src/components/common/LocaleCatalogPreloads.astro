@@ -1,0 +1,26 @@
+---
+import { DEFAULT_LOCALE } from '@/config/locales'
+import type { Locale } from '@/config/locales'
+import en from '@/locales/en/main.json?url'
+import ja from '@/locales/ja/main.json?url'
+import zhCN from '@/locales/zh-CN/main.json?url'
+
+interface Props {
+  locale: Locale
+}
+
+const catalogUrls = { en, 'zh-CN': zhCN, ja } satisfies Record<Locale, string>
+const { locale } = Astro.props
+const locales = [...new Set<Locale>([DEFAULT_LOCALE, locale])]
+---
+
+{locales.map((code) => (
+  <link
+    rel="preload"
+    as="fetch"
+    crossorigin
+    href={catalogUrls[code]}
+    data-locale-catalog={code}
+    transition:persist={`locale-catalog-${code}-${catalogUrls[code]}`}
+  />
+))}
