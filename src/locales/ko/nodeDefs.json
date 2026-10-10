@@ -2766,6 +2766,41 @@
       }
     }
   },
+  "CameraAngle": {
+    "description": "3D 미리보기에서 피사체 주변의 카메라 앵글을 선택합니다. 3D 노드용 camera_info와 프롬프트용 일반 영어 샷 설명을 출력합니다.",
+    "display_name": "카메라 앵글 프롬프트 구성",
+    "inputs": {
+      "horizontal_angle": {
+        "name": "horizontal_angle",
+        "tooltip": "피사체 주변의 방위각(도)입니다. 0은 정면, 90은 오른쪽, 180은 후면입니다."
+      },
+      "image": {
+        "name": "image",
+        "tooltip": "3D 미리보기에서 피사체 큐브의 정면에 표시되는 선택적 참조 이미지입니다."
+      },
+      "vertical_angle": {
+        "name": "vertical_angle",
+        "tooltip": "고도각(도)입니다. 음수는 아래에서 위를 올려다보고, 양수는 위에서 아래를 내려다봅니다."
+      },
+      "view": {
+        "name": "view"
+      },
+      "zoom": {
+        "name": "zoom",
+        "tooltip": "피사체에 대한 렌즈 줌입니다. 0은 와이드 샷, 10은 클로즈업입니다. camera_info.zoom에 포함됩니다."
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "camera_info",
+        "tooltip": null
+      },
+      "1": {
+        "name": "prompt",
+        "tooltip": null
+      }
+    }
+  },
   "Canny": {
     "display_name": "Canny 경계 필터",
     "inputs": {
@@ -2900,6 +2935,27 @@
       "start_sigma": {
         "name": "start_sigma",
         "tooltip": "이 옵션이 적용될 첫 번째 시그마 값입니다."
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "ClarityCrystalUpscaleNode": {
+    "description": "원본에 충실하면서 얼굴, 피부 및 미세한 질감을 복원하는 고충실도 업스케일러인 Clarity AI의 Crystal Upscaler로 이미지를 업스케일합니다. 최대 출력: 100메가픽셀.",
+    "display_name": "Clarity AI Crystal 업스케일",
+    "inputs": {
+      "model": {
+        "name": "model",
+        "tooltip": "사용할 모델입니다."
+      },
+      "model_creativity": {
+        "name": "creativity"
+      },
+      "model_scale_factor": {
+        "name": "scale_factor"
       }
     },
     "outputs": {
@@ -6843,7 +6899,7 @@
   },
   "GeminiNanoBanana2V2": {
     "description": "Google Vertex API를 통해 이미지를 동기적으로 생성하거나 편집합니다.",
-    "display_name": "Nano Banana 2",
+    "display_name": "Nano Banana 2.1",
     "inputs": {
       "control_after_generate": {
         "name": "생성 후 제어"
@@ -6893,7 +6949,7 @@
       },
       "2": {
         "name": "사고 이미지",
-        "tooltip": "모델의 사고 과정에서 생성된 첫 번째 이미지입니다. 사고 수준이 HIGH이고, 모달리티가 IMAGE+TEXT일 때만 제공됩니다."
+        "tooltip": "모델의 사고 과정에서 나온 첫 번째 이미지입니다. IMAGE+TEXT 모달리티에서만 사용할 수 있습니다."
       }
     }
   },
@@ -10367,6 +10423,36 @@
       }
     }
   },
+  "KlingTryOnNode": {
+    "description": "사람에게 의상을 입힙니다. 결과는 사람 이미지와 동일한 크기이며, 가장 긴 변은 최대 2048px로 제한됩니다.",
+    "display_name": "Kling 가상 피팅",
+    "inputs": {
+      "control_after_generate": {
+        "name": "생성 후 제어"
+      },
+      "garment_image": {
+        "name": "garment_image",
+        "tooltip": "입힐 의상입니다: 제품 사진, 플랫 레이, 마네킹 사진 또는 모델 착용 사진. 모델 착용 사진은 해당 코디의 나머지 부분도 함께 반영할 수 있습니다. 의류만 지원하며 신발, 가방 및 액세서리는 지원되지 않습니다."
+      },
+      "keep_pose": {
+        "name": "keep_pose",
+        "tooltip": "더 나은 의상 표현을 위해 포즈 변경을 허용하려면 끄세요."
+      },
+      "person_image": {
+        "name": "person_image",
+        "tooltip": "한 명의 인물이 담긴 사진입니다. 정면 또는 45도 각도 사진이 가장 좋습니다. 한 변이 2048px를 초과하는 이미지는 먼저 축소됩니다."
+      },
+      "seed": {
+        "name": "seed",
+        "tooltip": "시드는 노드를 다시 실행할지 여부를 제어합니다. 결과는 시드와 관계없이 비결정적입니다."
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
   "KlingVideoNode": {
     "description": "Kling V3로 비디오를 생성합니다. 텍스트-투-비디오, 이미지-투-비디오, 선택적 스토리보드 멀티 프롬프트 및 오디오 생성을 지원합니다.",
     "display_name": "Kling 3.0 비디오",
@@ -11325,11 +11411,19 @@
   "LatentApplyOperationCFG": {
     "display_name": "잠재 데이터 CFG 연산 (연산 적용)",
     "inputs": {
+      "end_percent": {
+        "name": "end_percent",
+        "tooltip": "모델의 디노이징 일정에서 이 비율에 도달하면 연산 적용을 중지합니다. 1은 끝입니다."
+      },
       "model": {
         "name": "모델"
       },
       "operation": {
         "name": "연산"
+      },
+      "start_percent": {
+        "name": "start_percent",
+        "tooltip": "모델의 디노이징 일정에서 이 비율부터 연산을 적용하기 시작합니다. 0은 시작입니다."
       }
     },
     "outputs": {
@@ -11564,6 +11658,24 @@
       },
       "samples": {
         "name": "잠재 데이터"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "LatentOperationBlend": {
+    "description": "전체 latent를 참조 latent 방향으로 혼합하며, 필요할 경우 최근접 이웃 보간으로 참조를 리사이즈합니다.",
+    "display_name": "latent 연산 혼합",
+    "inputs": {
+      "reference": {
+        "name": "reference"
+      },
+      "strength": {
+        "name": "strength",
+        "tooltip": "0이면 latent가 변경되지 않으며, 1이면 크기가 조정된 참조 latent와 일치합니다."
       }
     },
     "outputs": {
@@ -11973,6 +12085,80 @@
     "inputs": {
       "latent": {
         "name": "잠재 데이터"
+      }
+    }
+  },
+  "LoadLoraModel": {
+    "description": "확산 모델에 LoRA 스택을 적용합니다. LoRA마다 행을 하나씩 추가하세요. 각 행에서 LoRA 파일과 강도를 선택합니다.",
+    "display_name": "LoRA 불러오기 (모델)",
+    "inputs": {
+      "loras": {
+        "name": "lora들",
+        "tooltip": "각 행은 모델에 하나의 LoRA를 적용합니다."
+      },
+      "loras_$add": {
+        "name": "LoRA 추가"
+      },
+      "loras_$notice": {
+        "name": "LoRA"
+      },
+      "loras_0": {
+        "name": "LoRA #1"
+      },
+      "loras_0_enabled": {
+        "name": "LoRA #1 활성화됨"
+      },
+      "loras_0_lora_name": {
+        "name": "LoRA #1 lora_name"
+      },
+      "loras_0_strength": {
+        "name": "LoRA #1 강도"
+      },
+      "model": {
+        "name": "모델",
+        "tooltip": "LoRA가 적용될 확산 모델입니다."
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": "수정된 확산 모델입니다."
+      }
+    }
+  },
+  "LoadLoraTextEncoder": {
+    "description": "CLIP 텍스트 인코더에 LoRA 스택을 적용합니다. LoRA마다 행을 하나씩 추가하세요. 각 행에서 LoRA 파일과 강도를 선택합니다.",
+    "display_name": "LoRA 불러오기 (텍스트 인코더)",
+    "inputs": {
+      "clip": {
+        "name": "clip",
+        "tooltip": "LoRA가 적용될 CLIP 텍스트 인코더입니다."
+      },
+      "loras": {
+        "name": "lora들",
+        "tooltip": "각 행은 텍스트 인코더에 하나의 LoRA를 적용합니다."
+      },
+      "loras_$add": {
+        "name": "LoRA 추가"
+      },
+      "loras_$notice": {
+        "name": "LoRA"
+      },
+      "loras_0": {
+        "name": "LoRA #1"
+      },
+      "loras_0_enabled": {
+        "name": "LoRA #1 활성화됨"
+      },
+      "loras_0_lora_name": {
+        "name": "LoRA #1 lora_name"
+      },
+      "loras_0_strength": {
+        "name": "LoRA #1 강도"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": "수정된 CLIP 텍스트 인코더입니다."
       }
     }
   },
@@ -18672,7 +18858,7 @@
   },
   "QuiverImageToSVGNode": {
     "description": "Quiver AI를 사용하여 래스터 이미지를 SVG로 벡터화합니다.",
-    "display_name": "Quiver 이미지 → SVG",
+    "display_name": "Quiver 이미지를 SVG로 (레거시)",
     "inputs": {
       "auto_crop": {
         "name": "auto_crop",
@@ -18716,9 +18902,54 @@
       }
     }
   },
+  "QuiverImageToSVGNodeV2": {
+    "description": "Quiver AI를 사용하여 래스터 이미지를 SVG로 벡터화합니다.",
+    "display_name": "Quiver 이미지를 SVG로",
+    "inputs": {
+      "control_after_generate": {
+        "name": "생성 후 제어"
+      },
+      "model": {
+        "name": "모델",
+        "tooltip": "SVG 벡터화에 사용할 모델입니다."
+      },
+      "model_auto_crop": {
+        "name": "auto_crop"
+      },
+      "model_height": {
+        "name": "높이"
+      },
+      "model_presence_penalty": {
+        "name": "presence_penalty"
+      },
+      "model_reasoning_effort": {
+        "name": "reasoning_effort"
+      },
+      "model_seed": {
+        "name": "시드"
+      },
+      "model_target_size": {
+        "name": "target_size"
+      },
+      "model_temperature": {
+        "name": "온도"
+      },
+      "model_top_p": {
+        "name": "top_p"
+      },
+      "model_width": {
+        "name": "너비"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
   "QuiverTextToSVGNode": {
     "description": "Quiver AI를 사용하여 텍스트 프롬프트로부터 SVG를 생성합니다.",
-    "display_name": "Quiver 텍스트 → SVG",
+    "display_name": "Quiver 텍스트를 SVG로 변환(레거시)",
     "inputs": {
       "control_after_generate": {
         "name": "control after generate"
@@ -18755,6 +18986,51 @@
       "seed": {
         "name": "seed",
         "tooltip": "노드가 다시 실행되어야 하는지 결정하는 시드입니다. 실제 결과는 시드와 관계없이 비결정적입니다."
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "QuiverTextToSVGNodeV2": {
+    "description": "Quiver AI를 사용하여 텍스트 프롬프트로 SVG를 생성합니다.",
+    "display_name": "Quiver 텍스트를 SVG로 변환",
+    "inputs": {
+      "control_after_generate": {
+        "name": "생성 후 제어"
+      },
+      "model": {
+        "name": "모델",
+        "tooltip": "SVG 생성에 사용할 모델입니다."
+      },
+      "model_height": {
+        "name": "높이"
+      },
+      "model_instructions": {
+        "name": "지침"
+      },
+      "model_presence_penalty": {
+        "name": "presence_penalty"
+      },
+      "model_prompt": {
+        "name": "프롬프트"
+      },
+      "model_reasoning_effort": {
+        "name": "reasoning_effort"
+      },
+      "model_seed": {
+        "name": "시드"
+      },
+      "model_temperature": {
+        "name": "온도"
+      },
+      "model_top_p": {
+        "name": "top_p"
+      },
+      "model_width": {
+        "name": "너비"
       }
     },
     "outputs": {
@@ -27554,6 +27830,79 @@
       },
       "seed": {
         "name": "seed"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "Vidu4ImageToVideoNode": {
+    "description": "시작 프레임과 선택적 프롬프트로 비디오를 생성합니다. 출력은 입력 이미지의 종횡비를 유지합니다.",
+    "display_name": "Vidu Q4 이미지-비디오 생성",
+    "inputs": {
+      "control_after_generate": {
+        "name": "생성 후 제어"
+      },
+      "image": {
+        "name": "이미지",
+        "tooltip": "생성된 비디오의 시작 프레임입니다. 종횡비는 1:5와 5:1 사이여야 합니다."
+      },
+      "model": {
+        "name": "모델",
+        "tooltip": "비디오 생성에 사용할 모델입니다."
+      },
+      "model_audio": {
+        "name": "오디오"
+      },
+      "model_duration": {
+        "name": "길이"
+      },
+      "model_prompt": {
+        "name": "프롬프트"
+      },
+      "model_resolution": {
+        "name": "해상도"
+      },
+      "model_seed": {
+        "name": "시드"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "Vidu4ReferenceVideoNode": {
+    "description": "참조 이미지, 선택적 참조 오디오 및 프롬프트로 비디오를 생성합니다.",
+    "display_name": "Vidu Q4 참조-비디오 생성",
+    "inputs": {
+      "control_after_generate": {
+        "name": "생성 후 제어"
+      },
+      "model": {
+        "name": "모델",
+        "tooltip": "비디오 생성에 사용할 모델입니다."
+      },
+      "model_aspect_ratio": {
+        "name": "aspect_ratio"
+      },
+      "model_audio": {
+        "name": "오디오"
+      },
+      "model_duration": {
+        "name": "길이"
+      },
+      "model_prompt": {
+        "name": "프롬프트"
+      },
+      "model_resolution": {
+        "name": "해상도"
+      },
+      "model_seed": {
+        "name": "시드"
       }
     },
     "outputs": {

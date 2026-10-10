@@ -190,7 +190,16 @@
         "Expliquer les nœuds sélectionnés",
         "M'aider à installer les nœuds manquants pour ce workflow",
         "Corriger les erreurs dans ce workflow"
-      ]
+      ],
+      "treatment": {
+        "cloud": [
+          "Créer une image de produit à partir d’une invite textuelle",
+          "Créer un workflow de conversion d’image en vidéo",
+          "Expliquer le fonctionnement d’un workflow ComfyUI",
+          "Trouver le meilleur workflow pour une tâche spécifique",
+          "Diagnostiquer et corriger les erreurs dans un workflow"
+        ]
+      }
     },
     "switchWorkflow": "Changer de workflow",
     "switchWorkflowForNodes": "Basculez vers {workflowName} pour ajouter des nœuds.",
@@ -458,6 +467,11 @@
     "deleteAccount": {
       "contactSupport": "Pour supprimer votre compte, veuillez contacter {email}"
     },
+    "desktopHost": {
+      "continueInBrowser": "Terminez la connexion dans votre navigateur",
+      "signInFailed": "La connexion n’a pas été terminée. Réessayez.",
+      "signOutFailed": "Comfy Desktop est toujours connecté. Terminez ou annulez toute installation en cours, puis déconnectez-vous à nouveau."
+    },
     "errors": {
       "auth/account-exists-with-different-credential": "Nous n’avons pas pu vous connecter avec cette méthode. Essayez une autre option de connexion ou réinitialisez votre mot de passe pour continuer.",
       "auth/cancelled-popup-request": "Une autre fenêtre de connexion était déjà ouverte, celle-ci a donc été annulée. Veuillez réessayer.",
@@ -567,6 +581,36 @@
       "signUpWithGoogle": "S'inscrire avec Google",
       "title": "Créer un compte"
     },
+    "sso": {
+      "continueWithSso": "Continuer avec le SSO",
+      "emailLabel": "E-mail professionnel",
+      "emailPlaceholder": "Saisissez votre e-mail professionnel",
+      "errors": {
+        "accountConflict": "Plus d’un compte Comfy utilise cet e-mail. Envoyez un e-mail à support{'@'}comfy.org pour obtenir de l’aide.",
+        "accountDeleted": "La suppression de ce compte est planifiée. S’il s’agit d’une erreur, envoyez un e-mail à support{'@'}comfy.org.",
+        "emailDomainNotAllowed": "La connexion de votre organisation a renvoyé une adresse e-mail en dehors de ses domaines. Demandez à votre administrateur d’utiliser votre e-mail professionnel dans l’annuaire.",
+        "expired": "Votre connexion a expiré ou a été initiée dans un autre navigateur. Recommencez.",
+        "failed": "Nous n’avons pas pu vous connecter avec l’authentification unique. Réessayez.",
+        "idpError": "Votre fournisseur d’identité n’a pas terminé la connexion. Réessayez.",
+        "notConfigured": "L’authentification unique n’est pas configurée pour votre organisation. Contactez votre administrateur.",
+        "orgDisabled": "L’authentification unique est désactivée pour votre organisation. Contactez votre administrateur.",
+        "orgMismatch": "Vous vous êtes connecté à une organisation différente de celle associée à cet e-mail. Réessayez avec votre compte professionnel.",
+        "orgNotAttached": "L’espace de travail Comfy de votre organisation n’est pas encore configuré. Contactez votre administrateur.",
+        "rateLimited": "Trop de tentatives de connexion. Attendez quelques minutes et réessayez.",
+        "suspended": "Votre organisation a supprimé votre accès. Contactez votre administrateur.",
+        "unavailable": "L’authentification unique est indisponible pour le moment. Réessayez dans un instant."
+      },
+      "invalidEmail": "Saisissez une adresse e-mail valide.",
+      "notSso": "Cet e-mail n’utilise pas l’authentification unique. Utilisez l’une des options de connexion ci-dessus.",
+      "required": {
+        "body": "Ce compte se connecte avec l’authentification unique de votre organisation. Continuez avec le SSO pour vous connecter.",
+        "bodyWithEmail": "{email} se connecte avec l’authentification unique de votre organisation. Continuez avec le SSO pour vous connecter.",
+        "dismiss": "Pas maintenant",
+        "title": "Votre organisation exige l’authentification unique"
+      },
+      "submit": "Continuer",
+      "unavailable": "Nous n’avons pas pu vérifier l’authentification unique pour le moment. Réessayez dans un instant ou utilisez l’une des options de connexion ci-dessus."
+    },
     "turnstile": {
       "expired": "La vérification a expiré. Veuillez recommencer le défi.",
       "failed": "Échec de la vérification. Veuillez réessayer.",
@@ -582,6 +626,7 @@
         "ended": "Votre session a pris fin. Connectez-vous à nouveau pour continuer.",
         "identityChanged": "Votre session a changé. Rechargez la page pour continuer.",
         "refused": "Votre demande a été refusée. Rechargez la page et réessayez.",
+        "ssoRequired": "Votre organisation exige l’authentification unique. Continuez avec le SSO pour vous connecter.",
         "unavailable": "Nous n’avons pas pu accéder à votre compte. Réessayez dans un instant.",
         "workspaceDenied": "Vous n’avez pas accès à cet espace de travail. Contactez l’assistance si cela continue de se produire."
       }
@@ -596,6 +641,9 @@
     "authenticationFailedDetail": "Nous n’avons pas pu terminer la vérification du paiement. Veuillez réessayer.",
     "authenticationUnavailable": "L’authentification sécurisée du paiement est indisponible. Actualisez la page et réessayez.",
     "cancelFailed": "Échec de l'annulation de l'abonnement",
+    "cancelPaymentFailed": "Nous n’avons pas pu annuler ce paiement. Veuillez réessayer.",
+    "cancelPaymentInFlight": "Ce paiement est déjà en cours de traitement et ne peut pas être annulé.",
+    "cancelPaymentNotCancelable": "Ce paiement ne peut plus être annulé.",
     "cancelTimeout": "Délai d'annulation de l'abonnement dépassé",
     "expiredCardDetail": "Cette carte a expiré. Utilisez un autre mode de paiement.",
     "incorrectCvcDetail": "Le code de sécurité de la carte est incorrect. Vérifiez-le et réessayez.",
@@ -1165,6 +1213,7 @@
     "COMBO": "COMBO",
     "COMFY_AUTOGROW_V3": "COMFY_AUTOGROW_V3",
     "COMFY_DYNAMICCOMBO_V3": "COMFY_DYNAMICCOMBO_V3",
+    "COMFY_DYNAMICGROUP_V3": "COMFY_DYNAMICGROUP_V3",
     "COMFY_MATCHTYPE_V3": "COMFY_MATCHTYPE_V3",
     "COMPOSITOR": "COMPOSITEUR",
     "CONDITIONING": "CONDITIONNEMENT",
@@ -1277,6 +1326,8 @@
     "expiredSummary": "Échec de la connexion sur le bureau",
     "failedDetail": "Une erreur est survenue lors de la connexion sur le bureau. Relancez la connexion depuis l’application de bureau ComfyUI.",
     "failedSummary": "Échec de la connexion sur le bureau",
+    "ssoUnavailableDetail": "Votre compte se connecte via le SSO de votre organisation, que l’application de bureau ComfyUI ne peut pas encore utiliser. Demandez à votre administrateur une autre façon de vous connecter à l’application de bureau.",
+    "ssoUnavailableSummary": "La connexion sur ordinateur n’est pas encore disponible pour les comptes SSO",
     "successDetail": "Vous pouvez retourner sur l’application de bureau ComfyUI.",
     "successSummary": "Connecté"
   },
@@ -3300,6 +3351,7 @@
     "Beeble": "Beeble",
     "Bria": "Bria",
     "ByteDance": "ByteDance",
+    "Clarity AI": "Clarity AI",
     "ElevenLabs": "ElevenLabs",
     "Fish Audio": "Fish Audio",
     "Gemini": "Gemini",
@@ -4515,20 +4567,60 @@
     },
     "billingTabBlocked": "Impossible d’ouvrir la page de facturation. Autorisez les fenêtres contextuelles pour ce site, puis réessayez.",
     "cancelDialog": {
-      "confirmCancel": "Annuler l'abonnement",
-      "description": "Votre accès continue jusqu'au {date}. Vous ne serez plus facturé, et votre espace de travail ainsi que vos crédits seront conservés. Vous pouvez vous réabonner à tout moment.",
-      "discountApplied": "Votre remise a été appliquée ; cet abonnement n’a donc pas été annulé. Fermez cette fenêtre pour voir votre forfait mis à jour.",
-      "discountRefreshFailed": "Votre remise a été appliquée. Actualisez la page pour voir votre forfait mis à jour.",
-      "endOfBillingPeriod": "fin de la période de facturation",
+      "endOfBillingPeriod": "la fin de votre période de facturation",
       "failed": "Échec de l'annulation de l'abonnement",
       "finishOnStripe": "Votre abonnement n’est pas encore annulé. Terminez l’annulation sur la page Stripe qui vient de s’ouvrir. Tant que vous ne l’aurez pas fait, votre forfait se renouvellera comme d’habitude.",
-      "keepSubscription": "Conserver l'abonnement",
-      "offerUnavailable": "Cette option n’est pas disponible. Veuillez en choisir une autre.",
-      "title": "Annuler l'abonnement",
       "workspaceChanged": "Votre espace de travail actif a changé. Revenez à l’espace précédent et réessayez."
     },
+    "cancelFlow": {
+      "cancelled": {
+        "title": "Votre abonnement est annulé"
+      },
+      "confirm": {
+        "cancelPlan": "Annuler mon abonnement",
+        "description": "Votre abonnement {plan} reste actif jusqu’au {date}, et vous ne serez plus facturé(e). Vous pouvez vous réabonner à tout moment.",
+        "features": {
+          "credits": {
+            "description": "Vos crédits ne seront plus rechargés.",
+            "generic": "Crédits mensuels",
+            "monthly": "{credits} crédits mensuels",
+            "yearly": "{credits} crédits annuels"
+          },
+          "customNodes": {
+            "description": "Les nœuds derrière près de 90 % des workflows de la communauté.",
+            "title": "Nœuds personnalisés, prêts à l’emploi"
+          },
+          "gpus": {
+            "description": "Matériel RTX 6000 Pro, sans aucune configuration.",
+            "title": "GPU cloud"
+          },
+          "models": {
+            "description": "Modèles open source et partenaires côte à côte.",
+            "title": "Tous les modèles, un seul solde"
+          }
+        },
+        "loseAccess": "Après le {date}, vous perdrez l’accès à :",
+        "title": "Annuler votre abonnement ?"
+      },
+      "continueCancelling": "Poursuivre l’annulation",
+      "done": "Terminé",
+      "genericPlanName": "Comfy Cloud",
+      "keepPlan": "Conserver mon forfait",
+      "survey": {
+        "commentLabel": "Autre chose que vous souhaitez partager ? (facultatif)",
+        "commentPlaceholder": "Dites-nous tout",
+        "reasons": {
+          "missingFeatures": "Fonctionnalités ou modèles manquants",
+          "notUsingEnough": "Je ne l’utilise pas assez",
+          "somethingElse": "Autre chose",
+          "switchingTools": "Passer à un autre outil",
+          "tooExpensive": "Trop cher"
+        },
+        "subtitle": "Facultatif, mais cela nous aide à améliorer Comfy Cloud.",
+        "title": "Pourquoi annulez-vous ?"
+      }
+    },
     "cancelPlan": "Annuler l’abonnement",
-    "cancelSuccess": "Abonnement annulé avec succès",
     "canceled": "Annulé",
     "canceledCard": {
       "description": "Vous ne serez plus facturé. Vos fonctionnalités restent actives jusqu'au {date}.",
@@ -4679,6 +4771,7 @@
       "backToAllPlans": "Retour à toutes les offres",
       "billedEachMonth": "{amount} facturé chaque mois. Annulez à tout moment.",
       "billingAddress": "Adresse de facturation",
+      "cancelPaymentAndRetry": "Annuler le paiement et réessayer",
       "changePaymentMethod": "Modifier",
       "commitment": "engagement",
       "completePayment": "Finaliser votre paiement",
@@ -4785,6 +4878,40 @@
     "resubscribeFailed": "Échec de la réactivation de l’abonnement",
     "resubscribeSuccess": "Abonnement réactivé avec succès",
     "resubscribeTo": "Reprendre {plan}",
+    "retentionOffer": {
+      "accept": "Conserver {plan} et économiser {percent}%",
+      "appliedBadge": "Appliquée",
+      "appliedBody": "Une réduction de {percent}% est appliquée à votre prochain paiement, à partir du {date}. | Une réduction de {percent}% est appliquée à vos {months} prochains paiements, à partir du {date}.",
+      "appliedTitle": "Vous conservez {plan}",
+      "checkAgain": "Vérifier de nouveau",
+      "declinedBody": "Votre forfait {plan} n’a pas changé. Vous pouvez le conserver à son prix actuel ou poursuivre l’annulation.",
+      "expiredBody": "Elle a expiré ou votre forfait a changé depuis qu’elle vous a été proposée. Fermez puis rouvrez l’annulation pour voir vos options actuelles.",
+      "expiredTitle": "Cette offre n’est plus disponible",
+      "failed": "Nous n’avons pas pu appliquer cette offre et votre forfait n’a pas changé. Vous pouvez toujours annuler.",
+      "failedBody": "Une erreur s’est produite de notre côté et votre forfait {plan} n’a pas changé. Réessayez ou poursuivez l’annulation.",
+      "failedTitle": "Nous n’avons pas pu appliquer votre réduction",
+      "finePrint": "Offre valable une seule fois. Après 1 renouvellement, {plan} repasse à {regular}/mo. Annulez à tout moment. | Offre valable une seule fois. Après {months} renouvellements, {plan} repasse à {regular}/mo. Annulez à tout moment.",
+      "keepCredits": "Conservez vos {credits} crédits mensuels et tous les autres avantages de {plan}.",
+      "keepCreditsAndLoRAs": "Conservez vos {credits} crédits mensuels, vos LoRAs personnalisés et tous les autres avantages de {plan}.",
+      "keepEverything": "Conservez tous les avantages de votre forfait {plan}.",
+      "nextPayments": "Prochain paiement | Prochains {months} paiements",
+      "pendingToast": "Votre réduction est toujours en cours de confirmation. Vérifiez votre forfait avant d’apporter une autre modification à votre facturation.",
+      "perMonth": "/mo",
+      "percentOff": "{percent}% de réduction",
+      "pricePerMonth": "{price}/mo",
+      "refreshFailed": "Votre réduction a été appliquée. Actualisez la page pour voir votre forfait mis à jour.",
+      "renewsAt": "Se renouvellera à {regular} le {date}.",
+      "savings": "Vous économiserez {savings} sur ce paiement. | Vous économiserez {savings} sur ces {months} paiements.",
+      "stayOnPlan": "Rester sur {plan}",
+      "subtitle": "Voici une offre pendant que vous décidez",
+      "supportCode": "Si cela continue de se produire, contactez l’assistance avec le code DISCOUNT_NOT_APPLIED.",
+      "term": "pour votre prochain paiement, puis {regular}/mo | pour vos {months} prochains paiements, puis {regular}/mo",
+      "title": "Avant de partir",
+      "tryAgain": "Réessayer",
+      "unconfirmed": "Nous confirmons toujours votre réduction. Vérifiez de nouveau dans un instant ou contactez l’assistance si le problème persiste.",
+      "unconfirmedBody": "Votre réduction est peut-être encore en cours d’application. Vérifiez de nouveau dans un instant avant d’apporter une autre modification à votre facturation.",
+      "unconfirmedTitle": "Votre réduction n’est pas encore confirmée"
+    },
     "salesManagedCreditsEndedNote": "Les crédits du forfait ont pris fin avec votre abonnement.",
     "salesManagedInactiveCreditsNote": "Utilisables une fois votre forfait rétabli.",
     "salesManagedRunBlockedDetail": "Le forfait de cet espace de travail n’est plus actif. Contactez votre responsable de compte Comfy pour rétablir l’accès.",
@@ -5086,6 +5213,7 @@
     "modelLoadedSuccessfully": "Modèle 3D chargé avec succès",
     "no3dScene": "Aucune scène 3D pour appliquer la texture",
     "no3dSceneToExport": "Aucune scène 3D à exporter",
+    "noPersonalWorkspace": "Ce compte n’a pas de facturation personnelle. Gérez la facturation depuis l’espace de travail de votre équipe.",
     "noTemplatesToExport": "Aucun modèle à exporter",
     "nodeDefinitionsUpdateFailed": "Échec de la mise à jour des définitions de nœud",
     "nodeDefinitionsUpdated": "Définitions de nœuds mises à jour",
@@ -5271,7 +5399,11 @@
     "addedToWorkspace": "Vous avez été ajouté à :",
     "deepLinkStayed": "Impossible d’ouvrir cet espace de travail. Vous êtes toujours dans {workspaceName}.",
     "inviteAccepted": "Invitation acceptée",
+    "inviteDirectoryManaged": "L’administrateur de votre organisation gère les membres",
+    "inviteDirectoryManagedDetail": "Les membres de cet espace de travail sont gérés via l’annuaire de votre organisation ; les liens d’invitation ne peuvent donc pas être utilisés pour le rejoindre. Demandez à l’administrateur de votre organisation de vous ajouter.",
     "inviteFailed": "Échec de l'acceptation de l'invitation",
+    "inviteSsoUnavailable": "Demandez à votre administrateur de vous ajouter",
+    "inviteSsoUnavailableDetail": "Les liens d’invitation ne peuvent pas encore être acceptés depuis un compte SSO. Demandez à un administrateur de l’espace de travail de vous y ajouter directement.",
     "switchFailed": "Échec du changement d’espace de travail. Veuillez réessayer.",
     "viewWorkspace": "Voir l’espace de travail"
   },
@@ -5280,12 +5412,17 @@
       "accessDenied": "Vous n’avez pas accès à cet espace de travail",
       "invalidFirebaseToken": "Échec de l’authentification. Veuillez vous reconnecter.",
       "notAuthenticated": "Vous devez être connecté pour accéder aux espaces de travail",
+      "ssoRequired": "Votre organisation exige l’authentification unique. Continuez avec SSO pour vous connecter.",
       "tokenExchangeFailed": "Échec de l’authentification avec l’espace de travail : {error}",
       "workspaceNotFound": "Espace de travail introuvable"
     },
     "initializationFailed": "Impossible de charger votre espace de travail",
     "initializationFailedDetail": "Vérifiez votre connexion et réessayez.",
     "initializationFailedSignOutDetail": "Déconnectez-vous puis reconnectez-vous pour continuer.",
+    "noWorkspaceAccess": {
+      "detail": "Demandez à votre administrateur de vous ajouter à un espace de travail, puis reconnectez-vous.",
+      "title": "Vous n’avez accès à aucun espace de travail"
+    },
     "retry": "Réessayer"
   },
   "workspacePanel": {
@@ -5307,11 +5444,13 @@
     },
     "billingStatus": {
       "ending": {
-        "body": "Les membres conservent un accès complet jusque-là. Reprenez votre forfait pour conserver les crédits partagés de votre équipe.",
+        "body": "Vous ne serez plus facturé(e). Les membres conservent un accès complet jusque-là. Reprenez votre abonnement pour conserver les crédits partagés de votre équipe.",
         "contactSales": "Contacter le service commercial",
         "enterpriseBody": "Les membres conservent un accès complet jusque-là. Contactez notre équipe commerciale pour le prolonger.",
         "enterpriseTitle": "Votre forfait Enterprise prend fin le {date}",
         "memberBody": "Vous pouvez exécuter des workflows jusque-là.",
+        "personalBody": "Vous ne serez plus facturé(e). Reprenez votre abonnement pour conserver vos crédits mensuels.",
+        "personalTitle": "Votre abonnement {plan} se termine le {date}",
         "reactivate": "Reprendre le forfait",
         "title": "Votre forfait Team prend fin le {date}"
       },
@@ -5322,13 +5461,13 @@
         "dismiss": "Ignorer",
         "memberBody": "Votre équipe a utilisé tous ses crédits. Demandez au propriétaire de votre espace de travail d’ajouter des crédits ou attendez qu’ils soient renouvelés le {date}.",
         "memberBodyNoDate": "Votre équipe a utilisé tous ses crédits. Demandez au propriétaire de votre espace de travail d’ajouter des crédits.",
+        "personalBody": "Vous avez utilisé tous vos crédits. Ajoutez des crédits ou attendez leur rechargement le {date}.",
+        "personalBodyNoDate": "Vous avez utilisé tous vos crédits. Ajoutez des crédits.",
         "title": "Plus de crédits"
       },
       "paused": {
         "body": "L'abonnement de cet espace de travail est en pause. Mettez à jour le paiement pour reprendre.",
         "memberBody": "L'abonnement de cet espace de travail est en pause. Les administrateurs de votre espace de travail doivent mettre à jour le mode de paiement.",
-        "personalBody": "Votre abonnement est suspendu. Mettez à jour votre mode de paiement pour le reprendre.",
-        "personalPaymentFailedBody": "Votre paiement n’a pas été effectué. Mettez à jour votre mode de paiement pour reprendre votre abonnement.",
         "title": "Abonnement en pause"
       },
       "payInvoice": "Payer la facture",
@@ -5339,6 +5478,9 @@
       "planEnded": {
         "enterpriseBody": "Contactez le service commercial pour démarrer un nouveau forfait Enterprise.",
         "enterpriseTitle": "Votre forfait Enterprise a pris fin le {date}",
+        "personalBody": "Réabonnez-vous pour exécuter des workflows et recevoir à nouveau des crédits mensuels.",
+        "personalTitle": "Votre abonnement {plan} s’est terminé le {date}",
+        "personalTitleNoDate": "Votre abonnement {plan} est terminé",
         "planTitle": "Votre forfait a pris fin le {date}",
         "salesBody": "Contactez le service commercial pour démarrer un nouveau forfait.",
         "salesMemberBody": "Demandez au propriétaire de votre espace de travail de contacter le service commercial.",
@@ -5593,6 +5735,7 @@
   "workspaceSwitcher": {
     "createWorkspace": "Créer un nouvel espace de travail",
     "failedToSwitch": "Échec du changement d’espace de travail",
+    "managedByOrganization": "Votre organisation gère vos espaces de travail, vous ne pouvez donc pas en créer.",
     "maxWorkspacesReached": "Vous ne pouvez posséder que 10 espaces de travail. Supprimez-en un pour en créer un nouveau.",
     "personal": "Personnel",
     "roleMember": "Membre",

@@ -2766,6 +2766,41 @@
       }
     }
   },
+  "CameraAngle": {
+    "description": "اختر زاوية كاميرا حول موضوع مع معاينة ثلاثية الأبعاد. يُخرج camera_info لعُقد ثلاثية الأبعاد ووصفًا نصيًا بسيطًا للّقطة لاستخدامه في المطالبات.",
+    "display_name": "إنشاء مطالبة زاوية الكاميرا",
+    "inputs": {
+      "horizontal_angle": {
+        "name": "horizontal_angle",
+        "tooltip": "الزاوية السمتية حول الموضوع بالدرجات. 0 هي الأمام، و90 الجانب الأيمن، و180 الخلف."
+      },
+      "image": {
+        "name": "image",
+        "tooltip": "صورة مرجعية اختيارية تظهر على مقدمة مكعب الموضوع في المعاينة ثلاثية الأبعاد."
+      },
+      "vertical_angle": {
+        "name": "vertical_angle",
+        "tooltip": "الارتفاع بالدرجات. القيم السالبة تنظر للأعلى من الأسفل، والموجبة تنظر للأسفل من الأعلى."
+      },
+      "view": {
+        "name": "view"
+      },
+      "zoom": {
+        "name": "zoom",
+        "tooltip": "تكبير العدسة على الموضوع: 0 لقطة واسعة، و10 لقطة مقرّبة. يُنقل إلى camera_info.zoom."
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "camera_info",
+        "tooltip": null
+      },
+      "1": {
+        "name": "prompt",
+        "tooltip": null
+      }
+    }
+  },
   "Canny": {
     "display_name": "كاني",
     "inputs": {
@@ -2900,6 +2935,27 @@
       "start_sigma": {
         "name": "start_sigma",
         "tooltip": "أول قيمة سيجما التي ستكون هذه الخيارات سارية المفعول عندها."
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "ClarityCrystalUpscaleNode": {
+    "description": "ترقية دقة صورة باستخدام Crystal Upscaler من Clarity AI، وهو مُرقٍّ عالي الدقة يحافظ على الصورة الأصلية ويستعيد الوجوه والبشرة والملمس الدقيق. الحد الأقصى للمخرجات: 100 ميغابكسل.",
+    "display_name": "ترقية Crystal بالذكاء الاصطناعي من Clarity",
+    "inputs": {
+      "model": {
+        "name": "model",
+        "tooltip": "النموذج المراد استخدامه."
+      },
+      "model_creativity": {
+        "name": "creativity"
+      },
+      "model_scale_factor": {
+        "name": "scale_factor"
       }
     },
     "outputs": {
@@ -6843,7 +6899,7 @@
   },
   "GeminiNanoBanana2V2": {
     "description": "توليد أو تعديل الصور بشكل متزامن عبر Google Vertex API.",
-    "display_name": "نانا موز 2",
+    "display_name": "Nano Banana 2.1",
     "inputs": {
       "control_after_generate": {
         "name": "التحكم بعد التوليد"
@@ -6893,7 +6949,7 @@
       },
       "2": {
         "name": "صورة التفكير",
-        "tooltip": "أول صورة من عملية تفكير النموذج. متوفرة فقط عند مستوى التفكير العالي ونمط الاستجابة صورة+نص."
+        "tooltip": "الصورة الأولى من عملية تفكير النموذج. متاحة فقط مع نمط IMAGE+TEXT."
       }
     }
   },
@@ -10367,6 +10423,36 @@
       }
     }
   },
+  "KlingTryOnNode": {
+    "description": "ألبِس شخصًا قطعة ملابس. تكون النتيجة بالحجم نفسه لصورة الشخص، وبحد أقصى 2048px لأطول ضلع.",
+    "display_name": "تجربة الملابس الافتراضية من Kling",
+    "inputs": {
+      "control_after_generate": {
+        "name": "التحكم بعد التوليد"
+      },
+      "garment_image": {
+        "name": "garment_image",
+        "tooltip": "الملابس المراد إلباسها: صورة منتج، أو عرض مسطح، أو دمية عرض، أو صورة لعارض يرتديها. قد تنقل صورة العارض بقية ذلك الزي أيضًا. الملابس فقط؛ الأحذية والحقائب والإكسسوارات غير مدعومة."
+      },
+      "keep_pose": {
+        "name": "keep_pose",
+        "tooltip": "أوقفه للسماح بتغيير الوضعية من أجل عرض أفضل للزي."
+      },
+      "person_image": {
+        "name": "person_image",
+        "tooltip": "صورة لشخص واحد، ويفضل أن تكون مواجهة للأمام أو بمنظور ثلاثة أرباع. تُصغّر الصور التي يتجاوز أحد أضلاعها 2048px أولًا."
+      },
+      "seed": {
+        "name": "seed",
+        "tooltip": "تتحكم البذرة في ما إذا كانت العقدة ستُعاد تشغيلها؛ وتبقى النتائج غير حتمية بغض النظر عن البذرة."
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
   "KlingVideoNode": {
     "description": "إنشاء مقاطع فيديو باستخدام Kling V3. يدعم التحويل من نص إلى فيديو ومن صورة إلى فيديو مع إمكانية استخدام لوحة قصة متعددة التعليمات وخيار توليد الصوت.",
     "display_name": "Kling 3.0 فيديو",
@@ -11325,11 +11411,19 @@
   "LatentApplyOperationCFG": {
     "display_name": "تطبيق عملية مع CFG على الكامن",
     "inputs": {
+      "end_percent": {
+        "name": "end_percent",
+        "tooltip": "أوقف تطبيق العملية عند هذا الجزء من جدول إزالة الضجيج الخاص بالنموذج. 1 هي النهاية."
+      },
       "model": {
         "name": "model"
       },
       "operation": {
         "name": "operation"
+      },
+      "start_percent": {
+        "name": "start_percent",
+        "tooltip": "ابدأ تطبيق العملية عند هذا الجزء من جدول إزالة الضجيج الخاص بالنموذج. 0 هي البداية."
       }
     },
     "outputs": {
@@ -11564,6 +11658,24 @@
       },
       "samples": {
         "name": "عينات"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "LatentOperationBlend": {
+    "description": "امزج الكامن بالكامل باتجاه الكامن المرجعي، مع تغيير حجم المرجع باستخدام استيفاء أقرب جار عند الحاجة.",
+    "display_name": "مزج عمليات الكامن",
+    "inputs": {
+      "reference": {
+        "name": "reference"
+      },
+      "strength": {
+        "name": "strength",
+        "tooltip": "القيمة 0 تترك التمثيل الكامن دون تغيير؛ والقيمة 1 تطابق التمثيل الكامن المرجعي بعد تغيير حجمه."
       }
     },
     "outputs": {
@@ -11973,6 +12085,80 @@
     "inputs": {
       "latent": {
         "name": "كامن"
+      }
+    }
+  },
+  "LoadLoraModel": {
+    "description": "طبّق مجموعة من LoRAs على نموذج انتشار. أضف صفًا لكل LoRA؛ يختار كل صف ملف LoRA وقوته.",
+    "display_name": "تحميل LoRA (النموذج)",
+    "inputs": {
+      "loras": {
+        "name": "LoRAs",
+        "tooltip": "يطبّق كل صف LoRA واحدًا على النموذج."
+      },
+      "loras_$add": {
+        "name": "إضافة LoRA"
+      },
+      "loras_$notice": {
+        "name": "LoRA"
+      },
+      "loras_0": {
+        "name": "LoRA رقم 1"
+      },
+      "loras_0_enabled": {
+        "name": "LoRA رقم 1 مفعّل"
+      },
+      "loras_0_lora_name": {
+        "name": "LoRA رقم 1 lora_name"
+      },
+      "loras_0_strength": {
+        "name": "قوة LoRA رقم 1"
+      },
+      "model": {
+        "name": "النموذج",
+        "tooltip": "نموذج الانتشار الذي ستُطبَّق عليه LoRAs."
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": "نموذج الانتشار المعدّل."
+      }
+    }
+  },
+  "LoadLoraTextEncoder": {
+    "description": "طبّق مجموعة من LoRAs على مشفّر النص CLIP. أضف صفًا لكل LoRA؛ يختار كل صف ملف LoRA وقوته.",
+    "display_name": "تحميل LoRA (مشفّر النص)",
+    "inputs": {
+      "clip": {
+        "name": "clip",
+        "tooltip": "مشفّر النص CLIP الذي ستُطبَّق عليه LoRAs."
+      },
+      "loras": {
+        "name": "LoRAs",
+        "tooltip": "يطبّق كل صف LoRA واحدًا على مشفّر النص."
+      },
+      "loras_$add": {
+        "name": "إضافة LoRA"
+      },
+      "loras_$notice": {
+        "name": "LoRA"
+      },
+      "loras_0": {
+        "name": "LoRA رقم 1"
+      },
+      "loras_0_enabled": {
+        "name": "LoRA رقم 1 مفعّل"
+      },
+      "loras_0_lora_name": {
+        "name": "LoRA رقم 1 lora_name"
+      },
+      "loras_0_strength": {
+        "name": "قوة LoRA رقم 1"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": "مشفّر النص CLIP المعدّل."
       }
     }
   },
@@ -18672,7 +18858,7 @@
   },
   "QuiverImageToSVGNode": {
     "description": "تحويل صورة نقطية إلى SVG باستخدام Quiver AI.",
-    "display_name": "Quiver تحويل صورة إلى SVG",
+    "display_name": "Quiver: تحويل الصورة إلى SVG (قديم)",
     "inputs": {
       "auto_crop": {
         "name": "auto_crop",
@@ -18716,9 +18902,54 @@
       }
     }
   },
+  "QuiverImageToSVGNodeV2": {
+    "description": "حوّل صورة نقطية إلى SVG متجهي باستخدام Quiver AI.",
+    "display_name": "Quiver: تحويل الصورة إلى SVG",
+    "inputs": {
+      "control_after_generate": {
+        "name": "التحكم بعد التوليد"
+      },
+      "model": {
+        "name": "النموذج",
+        "tooltip": "النموذج المستخدم لتحويل SVG إلى متجهات."
+      },
+      "model_auto_crop": {
+        "name": "auto_crop"
+      },
+      "model_height": {
+        "name": "الارتفاع"
+      },
+      "model_presence_penalty": {
+        "name": "presence_penalty"
+      },
+      "model_reasoning_effort": {
+        "name": "reasoning_effort"
+      },
+      "model_seed": {
+        "name": "seed"
+      },
+      "model_target_size": {
+        "name": "target_size"
+      },
+      "model_temperature": {
+        "name": "درجة الحرارة"
+      },
+      "model_top_p": {
+        "name": "top_p"
+      },
+      "model_width": {
+        "name": "العرض"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
   "QuiverTextToSVGNode": {
     "description": "إنشاء SVG من وصف نصي باستخدام Quiver AI.",
-    "display_name": "Quiver تحويل نص إلى SVG",
+    "display_name": "Quiver لتحويل النص إلى SVG (قديم)",
     "inputs": {
       "control_after_generate": {
         "name": "control after generate"
@@ -18755,6 +18986,51 @@
       "seed": {
         "name": "seed",
         "tooltip": "البذرة لتحديد ما إذا كان يجب إعادة تشغيل العقدة؛ النتائج الفعلية غير حتمية بغض النظر عن البذرة."
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "QuiverTextToSVGNodeV2": {
+    "description": "أنشئ SVG من موجّه نصي باستخدام Quiver AI.",
+    "display_name": "Quiver لتحويل النص إلى SVG",
+    "inputs": {
+      "control_after_generate": {
+        "name": "التحكم بعد التوليد"
+      },
+      "model": {
+        "name": "النموذج",
+        "tooltip": "النموذج المستخدم لتوليد SVG."
+      },
+      "model_height": {
+        "name": "الارتفاع"
+      },
+      "model_instructions": {
+        "name": "التعليمات"
+      },
+      "model_presence_penalty": {
+        "name": "presence_penalty"
+      },
+      "model_prompt": {
+        "name": "الموجّه"
+      },
+      "model_reasoning_effort": {
+        "name": "reasoning_effort"
+      },
+      "model_seed": {
+        "name": "البذرة"
+      },
+      "model_temperature": {
+        "name": "درجة الحرارة"
+      },
+      "model_top_p": {
+        "name": "top_p"
+      },
+      "model_width": {
+        "name": "العرض"
       }
     },
     "outputs": {
@@ -27553,6 +27829,79 @@
         "tooltip": "وصف نصي لتوليد الفيديو، بحد أقصى ٢٠٠٠ حرف."
       },
       "seed": {
+        "name": "البذرة"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "Vidu4ImageToVideoNode": {
+    "description": "أنشئ فيديو من إطار بداية وموجّه اختياري. يحافظ الإخراج على نسبة أبعاد صورة الإدخال.",
+    "display_name": "Vidu Q4 لتوليد فيديو من صورة",
+    "inputs": {
+      "control_after_generate": {
+        "name": "التحكم بعد التوليد"
+      },
+      "image": {
+        "name": "الصورة",
+        "tooltip": "إطار بداية الفيديو المُولَّد. يجب أن تكون نسبة الأبعاد بين 1:5 و5:1."
+      },
+      "model": {
+        "name": "النموذج",
+        "tooltip": "النموذج المستخدم لتوليد الفيديو."
+      },
+      "model_audio": {
+        "name": "الصوت"
+      },
+      "model_duration": {
+        "name": "المدة"
+      },
+      "model_prompt": {
+        "name": "الموجّه"
+      },
+      "model_resolution": {
+        "name": "الدقة"
+      },
+      "model_seed": {
+        "name": "البذرة"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "Vidu4ReferenceVideoNode": {
+    "description": "أنشئ فيديو من صور مرجعية وصوت مرجعي اختياري وموجّه.",
+    "display_name": "Vidu Q4 لتوليد فيديو من مراجع",
+    "inputs": {
+      "control_after_generate": {
+        "name": "التحكم بعد التوليد"
+      },
+      "model": {
+        "name": "النموذج",
+        "tooltip": "النموذج المستخدم لتوليد الفيديو."
+      },
+      "model_aspect_ratio": {
+        "name": "aspect_ratio"
+      },
+      "model_audio": {
+        "name": "الصوت"
+      },
+      "model_duration": {
+        "name": "المدة"
+      },
+      "model_prompt": {
+        "name": "الموجّه"
+      },
+      "model_resolution": {
+        "name": "الدقة"
+      },
+      "model_seed": {
         "name": "البذرة"
       }
     },
