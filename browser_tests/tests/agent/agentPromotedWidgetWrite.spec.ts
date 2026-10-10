@@ -93,8 +93,8 @@ test.describe(
         ws.send(JSON.stringify(updated))
       })
 
-      const readState = () =>
-        page.evaluate(
+      async function readState() {
+        return page.evaluate(
           ({ hostId, promptId, samplerId }) => {
             const host = window.app!.graph.getNodeById(hostId)
             if (!host?.isSubgraphNode())
@@ -113,6 +113,7 @@ test.describe(
             samplerId: toNodeId(PROMOTED_WIDGET_SAMPLER_NODE_ID)
           }
         )
+      }
 
       const state =
         await test.step('the write lands on the host, not on the interior defaults', async () => {
