@@ -8,6 +8,10 @@ import { LGraphCanvas, LiteGraph } from '@/lib/litegraph/src/litegraph'
 import type { ComfyWorkflow } from '@/platform/workflow/management/stores/workflowStore'
 import { useWorkflowStore } from '@/platform/workflow/management/stores/workflowStore'
 import type { ComfyWorkflowJSON } from '@/platform/workflow/validation/schemas/workflowSchema'
+import {
+  collectSubgraphDefinitions,
+  parseFlattenableSubgraphDefinitions
+} from '@/platform/workflow/core/utils/workflowFlattening'
 import type { ExecutedWsMessage } from '@/platform/remote/comfyui/execution/types'
 import { useDialogStore } from '@/stores/dialogStore'
 import { useExecutionStore } from '@/stores/executionStore'
@@ -28,6 +32,40 @@ function clone<T>(obj: T): T {
 
 function withoutExecutionOrder(nodes: ComfyWorkflowJSON['nodes']) {
   return nodes.map((node) => _.omit(node, ['order']))
+}
+
+function withNormalizedNodeSizes(state: ComfyWorkflowJSON): ComfyWorkflowJSON {
+  const comparable = clone(state)
+  const subgraphs = collectSubgraphDefinitions(
+    parseFlattenableSubgraphDefinitions(comparable.definitions?.subgraphs ?? [])
+  )
+  const nodes = [
+    ...comparable.nodes,
+    ...subgraphs.flatMap((subgraph) => subgraph.nodes)
+  ]
+  for (const node of nodes) {
+    if ('size' in node) node.size = [0, 0]
+  }
+  return comparable
+}
+
+function matchesRestoredTarget(
+  actual: ComfyWorkflowJSON,
+  target: ComfyWorkflowJSON,
+  previous: ComfyWorkflowJSON
+): boolean {
+  if (ChangeTracker.graphEqual(actual, target)) return true
+  const comparableTarget = withNormalizedNodeSizes(target)
+  return (
+    ChangeTracker.graphEqual(
+      withNormalizedNodeSizes(actual),
+      comparableTarget
+    ) &&
+    !ChangeTracker.graphEqual(
+      comparableTarget,
+      withNormalizedNodeSizes(previous)
+    )
+  )
 }
 
 function isActiveTracker(tracker: ChangeTracker): boolean {
@@ -271,6 +309,11 @@ export class ChangeTracker {
    * Whether the redo/undo restoring is in progress.
    */
   _restoringState: boolean = false
+  private pendingRestoration?: {
+    promise: Promise<void>
+    source: ComfyWorkflowJSON[]
+    target: ComfyWorkflowJSON[]
+  }
 
   ds?: { scale: number; offset: [number, number] }
   nodeOutputs?: Partial<Record<string, ExecutedWsMessage['output']>>
@@ -296,10 +339,9 @@ export class ChangeTracker {
    * Save the current state as the initial state.
    */
   reset(state?: ComfyWorkflowJSON) {
-    // Do not reset the state if we are restoring.
+    if (state) this.activeState = clone(state)
     if (this._restoringState) return
 
-    if (state) this.activeState = clone(state)
     this.initialState = clone(this.activeState)
   }
 
@@ -469,21 +511,62 @@ export class ChangeTracker {
   }
 
   async updateState(source: ComfyWorkflowJSON[], target: ComfyWorkflowJSON[]) {
-    const prevState = source.pop()
-    if (prevState) {
-      const previousState = this.activeState
-      target.push(previousState)
-      this._restoringState = true
-      try {
-        await app.loadGraphData(prevState, false, false, this.workflow, {
-          checkForRerouteMigration: false,
-          silentAssetErrors: true
-        })
-        this.activeState = prevState
-        this.updateModified(previousState)
-      } finally {
-        this._restoringState = false
+    while (this.pendingRestoration) {
+      const pending = this.pendingRestoration
+      await pending.promise
+      if (pending.source === source && pending.target === target) return
+    }
+    if (this._restoringState || source.length === 0) return
+    let resolveRestoration!: () => void
+    let rejectRestoration!: (reason: unknown) => void
+    const restoration = new Promise<void>((resolve, reject) => {
+      resolveRestoration = resolve
+      rejectRestoration = reject
+    })
+    const pending = { promise: restoration, source, target }
+    this.pendingRestoration = pending
+    void (async () => {
+      const prevState = source.pop()
+      if (prevState) {
+        const previousState = this.activeState
+        const restoresSavedState = ChangeTracker.graphEqual(
+          prevState,
+          this.initialState
+        )
+        let restored = false
+        this._restoringState = true
+        try {
+          const result = await app.loadGraphData(
+            prevState,
+            false,
+            false,
+            this.workflow,
+            {
+              checkForRerouteMigration: false,
+              silentAssetErrors: true
+            }
+          )
+          restored = result !== false && result !== undefined
+        } finally {
+          this._restoringState = false
+          restored ||=
+            !ChangeTracker.graphEqual(this.activeState, previousState) &&
+            matchesRestoredTarget(this.activeState, prevState, previousState)
+          if (restored) {
+            target.push(previousState)
+            if (restoresSavedState) this.initialState = clone(this.activeState)
+          } else {
+            source.push(prevState)
+          }
+          if (restored) this.updateModified(previousState)
+        }
       }
+    })().then(resolveRestoration, rejectRestoration)
+    try {
+      await restoration
+    } finally {
+      if (this.pendingRestoration === pending)
+        this.pendingRestoration = undefined
     }
   }
 

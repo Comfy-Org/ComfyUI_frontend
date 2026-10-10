@@ -34,6 +34,23 @@ test.describe('Vue Nodes Image Preview', { tag: '@vue-nodes' }, () => {
     return node
   }
 
+  test('restores an image preview with Undo and removes it again with Redo', async ({
+    comfyPage
+  }) => {
+    const node = await loadImageOnNode(comfyPage)
+    await node.title.click()
+    await comfyPage.keyboard.delete()
+    await expect(comfyPage.vueNodes.nodes).toHaveCount(0)
+
+    await comfyPage.keyboard.undo()
+    await node.waitForImageLoaded('image64x64.webp')
+    await expect(node.imagePreview).toContainText('64 x 64')
+    await node.title.click()
+
+    await comfyPage.keyboard.redo()
+    await expect(comfyPage.vueNodes.nodes).toHaveCount(0)
+  })
+
   test('opens mask editor from image preview button', async ({ comfyPage }) => {
     const { imagePreview } = await loadImageOnNode(comfyPage)
 

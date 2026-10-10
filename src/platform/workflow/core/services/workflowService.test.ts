@@ -410,6 +410,35 @@ describe('useWorkflowService', () => {
       )
     })
 
+    it('persists the displayed state when Undo fails before graph configuration', async () => {
+      vi.spyOn(useSettingStore(), 'get').mockImplementation(
+        (key: string) => key === 'Comfy.Workflow.Persist'
+      )
+      const activeWorkflow = createModeTestWorkflow()
+      const saved = makeWorkflowData()
+      const current = makeWorkflowData({ note: 'latest edit' })
+      const tracker = new ChangeTracker(activeWorkflow, saved)
+      activeWorkflow.changeTracker = tracker
+      tracker.activeState = current
+      tracker.undoQueue.push(saved)
+      workflowStore.activeWorkflow = activeWorkflow
+      vi.mocked(app.loadGraphData).mockImplementationOnce(async () => {
+        useWorkflowService().beforeLoadNewGraph(false)
+        return false
+      })
+
+      await tracker.undo()
+
+      expect(useWorkflowDraftStoreV2().saveDraft).toHaveBeenCalledWith(
+        activeWorkflow.path,
+        JSON.stringify(current),
+        { name: activeWorkflow.key, isTemporary: activeWorkflow.isTemporary }
+      )
+      expect(activeWorkflow.activeState).toEqual(current)
+      expect(tracker.undoQueue).toEqual([saved])
+      expect(tracker.redoQueue).toEqual([])
+    })
+
     it('should show an error toast when the V2 draft store cannot save', () => {
       vi.spyOn(useSettingStore(), 'get').mockImplementation((key: string) => {
         return key === 'Comfy.Workflow.Persist'
