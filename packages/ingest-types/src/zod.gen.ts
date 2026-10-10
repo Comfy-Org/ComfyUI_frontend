@@ -4382,15 +4382,6 @@ export const zGetExtensionsResponse = z.array(z.string())
  * Success
  */
 export const zGetFeaturesResponse = z.object({
-  'agent-free-use-message-placement': z
-    .enum([
-      'control',
-      'top-banner',
-      'near-composer',
-      'above-input',
-      'inside-input'
-    ])
-    .default('control'),
   'agent-starter-prompt-set': z
     .enum(['control', 'test'])
     .optional()
