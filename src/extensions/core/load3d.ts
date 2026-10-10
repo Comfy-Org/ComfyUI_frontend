@@ -64,6 +64,7 @@ import { useLoad3dService } from '@/services/load3dService'
 import { useDialogStore } from '@/stores/dialogStore'
 import type { ComfyExtension } from '@/types/comfy'
 import { isLoad3dNode } from '@/utils/litegraphUtil'
+import { selectedCanvasNodes } from '@/renderer/core/canvas/litegraph/selectionAdapter'
 
 const inputSpecLoad3D: CustomInputSpec = {
   name: 'image',
@@ -267,11 +268,10 @@ useExtensionService().registerExtension({
       icon: 'pi pi-pencil',
       label: 'Open 3D Viewer (Beta) for Selected Node',
       function: () => {
-        const selectedNodes = app.canvas.selected_nodes
-        if (Object.keys(selectedNodes).length !== 1) return
+        const selectedNodes = selectedCanvasNodes(app.canvas)
+        if (selectedNodes.length !== 1) return
 
-        const selectedNode = selectedNodes[Object.keys(selectedNodes)[0]]
-
+        const [selectedNode] = selectedNodes
         if (!isLoad3dNode(selectedNode)) return
 
         ComfyApp.copyToClipspace(selectedNode)

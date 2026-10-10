@@ -408,7 +408,7 @@ describe('LGraphCanvas pointer gestures', () => {
         click: 'a plain click replacing the selection',
         modifiers: {},
         preselect: ['B'],
-        emitted: [[], ['A']]
+        emitted: [['A']]
       },
       {
         click: 'a shift click adding a node',

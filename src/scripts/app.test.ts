@@ -4002,7 +4002,10 @@ describe('ComfyApp', () => {
 
       const graph = new LGraph()
       const change = vi.spyOn(graph, 'change')
-      const canvas = fromPartial<LGraphCanvas>({ graph, selected_nodes: {} })
+      const canvas = fromPartial<LGraphCanvas>({
+        graph,
+        selectedItems: new Set()
+      })
       const event = new KeyboardEvent('keydown', {
         key: 'F9',
         cancelable: true
@@ -4031,7 +4034,10 @@ describe('ComfyApp', () => {
 
       const graph = new LGraph()
       const change = vi.spyOn(graph, 'change')
-      const canvas = fromPartial<LGraphCanvas>({ graph, selected_nodes: {} })
+      const canvas = fromPartial<LGraphCanvas>({
+        graph,
+        selectedItems: new Set()
+      })
       const event = new KeyboardEvent('keydown', {
         key: 'F9',
         cancelable: true

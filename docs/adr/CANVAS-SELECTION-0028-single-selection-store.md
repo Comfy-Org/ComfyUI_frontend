@@ -4,7 +4,7 @@ Date: 2026-09-04
 
 ## Status
 
-Proposed
+Accepted
 
 ## Context
 
@@ -200,3 +200,22 @@ Planned migration order:
 3. Migrate first-party canvas and Vue readers and writers one path at a time.
 4. Derive highlighting and legacy views from the store, then remove redundant
    mirrors whose compatibility checks are complete.
+
+Amendment on acceptance, refining decision 6 and decision 7:
+
+- Every public operation that changes selection (`select`, `deselect`,
+  `deselectAll`, `selectItems`, `processSelect`, and marquee completion)
+  emits `onSelectionChange` exactly once, after the batch is applied, and
+  not at all when the operation left selection unchanged. `select` and
+  `deselect` previously emitted nothing; `processSelect` and `selectItems`
+  previously emitted twice when they cleared the prior selection first.
+- Click and marquee intent is resolved by one pure module,
+  `src/core/selection/selectionIntent.ts`, reached from both the classic
+  canvas and the Vue node adapter through `processSelect`. Shift and
+  ctrl/meta both toggle. A shift+alt marquee adds, matching the classic
+  canvas.
+- Modifier-click on a selected group deselects the group and its cascaded
+  children together; the previous group-only carve-out is removed.
+- `LGraphCanvas.selected_nodes` is deprecated. First-party readers use
+  `selectedCanvasNodes()` from the selection adapter; the accessor warns once
+  per session and remains for extensions.

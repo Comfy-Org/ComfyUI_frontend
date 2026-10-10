@@ -11,6 +11,7 @@ import {
   measureViewportFromElement
 } from '@/renderer/core/canvas/canvasViewport'
 import { useCanvasScheduler } from '@/renderer/core/canvas/useCanvasScheduler'
+import { selectedCanvasNodes } from '@/renderer/core/canvas/litegraph/selectionAdapter'
 
 import { promotedInputSource } from '@/core/graph/subgraph/promotedInputWidget'
 import { resolveConcretePromotedWidget } from '@/core/graph/subgraph/resolveConcretePromotedWidget'
@@ -1270,8 +1271,7 @@ export class ComfyApp {
       // Move mouse position down to paste the next template below
       let maxY: number | undefined
 
-      for (const i in app.canvas.selected_nodes) {
-        const node = app.canvas.selected_nodes[i]
+      for (const node of selectedCanvasNodes(app.canvas)) {
         const nodeBottom = node.pos[1] + node.size[1]
         if (maxY === undefined || nodeBottom > maxY) {
           maxY = nodeBottom

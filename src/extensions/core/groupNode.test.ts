@@ -760,13 +760,10 @@ describe('GroupNodeHandler.convertToNodes', () => {
 
     // The app mock stubs out selectItems/selectNodes; make it behave like
     // the real LGraphCanvas so deserialiseAndCreate's selection is visible
-    // to convertToNodes via app.canvas.selected_nodes.
+    // to convertToNodes via app.canvas.selectedItems.
     Object.assign(app.canvas, {
-      selectNodes(nodes: { id: number | string }[]) {
-        app.canvas.selected_nodes = {}
-        for (const n of nodes) {
-          vi.mocked(app.canvas).selected_nodes[n.id] = fromAny(n)
-        }
+      selectNodes(nodes: LGraphNode[]) {
+        vi.mocked(app.canvas).selectedItems = new Set(nodes)
       }
     })
 

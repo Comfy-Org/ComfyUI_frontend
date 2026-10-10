@@ -8,6 +8,7 @@ import { useMaskEditor } from '@/composables/maskeditor/useMaskEditor'
 import { useCanvasTransform } from '@/composables/maskeditor/useCanvasTransform'
 import { markCoreMediaMenuCallback } from '@/utils/coreMediaMenuActionUtils'
 import { isImageNode } from '@/utils/litegraphUtil'
+import { selectedCanvasNodes } from '@/renderer/core/canvas/litegraph/selectionAdapter'
 
 function openMaskEditor(node: LGraphNode): void {
   if (!node.imgs?.length && node.previewMediaType !== 'image') {
@@ -78,10 +79,10 @@ app.registerExtension({
       icon: 'pi pi-pencil',
       label: 'Open Mask Editor for Selected Node',
       function: () => {
-        const selectedNodes = app.canvas.selected_nodes
-        if (Object.keys(selectedNodes).length !== 1) return
+        const selectedNodes = selectedCanvasNodes(app.canvas)
+        if (selectedNodes.length !== 1) return
 
-        const selectedNode = selectedNodes[Object.keys(selectedNodes)[0]]
+        const [selectedNode] = selectedNodes
         openMaskEditor(selectedNode)
       }
     },
