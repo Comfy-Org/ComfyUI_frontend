@@ -217,6 +217,16 @@ describe('useAssetsQuery recovery after a failed page', () => {
     expect(toValue(list.hasMore)).toBe(true)
   })
 
+  it('keeps a fully loaded list stopped after a successful loadNew', async () => {
+    const list = await createList('exhausted-load-new', ['newest'])
+    fetchApiMock.mockResolvedValueOnce(response(['newest']))
+    await list.loadNew()
+
+    expect(toValue(list.hasMore)).toBe(false)
+    await expect(list.loadMore()).resolves.toBe(false)
+    expect(fetchApiMock).toHaveBeenCalledTimes(2)
+  })
+
   it('clears a page failure on full invalidation', async () => {
     const list = await createList('recover-invalidate', ['newest'], {
       hasMore: true,

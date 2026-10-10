@@ -105,9 +105,10 @@ describe('AssetsSidebarTab reopen with the asset API', () => {
       })
     )
     const first = renderTab()
-    await vi.waitFor(() =>
-      expect(screen.getByTestId('assets-grid')).toBeVisible()
-    )
+    await vi.waitFor(() => {
+      expect(shownAssets()).toHaveLength(3)
+      expect(toValue(useAssetsStore().outputAssets.isLoading)).toBe(false)
+    })
     first.unmount()
     const requestsBeforeReopen = outputRequests().length
 
@@ -148,8 +149,11 @@ describe('AssetsSidebarTab reopen with the asset API', () => {
       })
     )
     const first = renderTab()
-    await vi.waitFor(() => expect(shownAssets()).toHaveLength(3))
     const outputAssets = useAssetsStore().outputAssets
+    await vi.waitFor(() => {
+      expect(shownAssets()).toHaveLength(3)
+      expect(toValue(outputAssets.isLoading)).toBe(false)
+    })
     serveAssets(async () => new Response(null, { status: 403 }))
     await outputAssets.loadMore()
     expect(toValue(outputAssets.hasMore)).toBe(false)
