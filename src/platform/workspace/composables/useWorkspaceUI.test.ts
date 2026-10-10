@@ -13,6 +13,9 @@ const mockIsCloud = vi.hoisted(() => ({ value: true }))
 const mockShouldUseWorkspaceBilling = ref(true)
 const mockIsActiveSubscription = vi.hoisted(() => ({ value: false }))
 const mockIsCancelled = vi.hoisted(() => ({ value: false }))
+const mockSubscriptionStatus = vi.hoisted(() => ({
+  value: null as 'active' | 'ended' | 'canceled' | null
+}))
 const mockIsTeamPlan = vi.hoisted(() => ({ value: false }))
 const mockMemberCreditLimitsEnabled = vi.hoisted(() => ({ value: false }))
 const mockCanReactivate = ref(false)
@@ -82,6 +85,7 @@ function resetStore() {
   Object.assign(useTeamWorkspaceStore(), { originalOwnerId: null })
   mockIsActiveSubscription.value = false
   mockIsCancelled.value = false
+  mockSubscriptionStatus.value = null
   mockIsTeamPlan.value = false
   mockMemberCreditLimitsEnabled.value = false
   mockCanReactivate.value = false
@@ -116,6 +120,9 @@ describe('useWorkspaceUI', { tags: ['shared-state'] }, () => {
       agentHasFunds: true,
       isCancelled: mockIsCancelled.value
     }))
+    billingContext.subscriptionStatus = computed(
+      () => mockSubscriptionStatus.value
+    )
     vi.mocked(useBillingContext).mockReturnValue(billingContext)
     useBillingRouting().shouldUseWorkspaceBilling = computed(
       () => mockShouldUseWorkspaceBilling.value
@@ -301,6 +308,38 @@ describe('useWorkspaceUI', { tags: ['shared-state'] }, () => {
         'grid-cols-[50%_20%_20%_10%]'
       )
       expect(ui.uiConfig.value.showCreditsColumn).toBe(false)
+    })
+
+    it('keeps Delete disabled while billing status is still loading', async () => {
+      Object.assign(useTeamWorkspaceStore(), {
+        activeWorkspace: { ...teamOwnerWorkspace, isSubscribed: true }
+      })
+      const ui = await loadComposable()
+
+      expect(ui.isDeleteDisabled.value).toBe(true)
+    })
+
+    it('keeps Delete disabled when a live plan has lost feature access', async () => {
+      Object.assign(useTeamWorkspaceStore(), {
+        activeWorkspace: { ...teamOwnerWorkspace, isSubscribed: true }
+      })
+      mockSubscriptionStatus.value = 'active'
+      mockIsActiveSubscription.value = false
+      const ui = await loadComposable()
+
+      expect(ui.isDeleteDisabled.value).toBe(true)
+    })
+
+    it('enables Delete only after billing reports the plan ended', async () => {
+      Object.assign(useTeamWorkspaceStore(), {
+        activeWorkspace: { ...teamOwnerWorkspace, isSubscribed: true }
+      })
+      mockIsCancelled.value = true
+      mockSubscriptionStatus.value = 'ended'
+      const ui = await loadComposable()
+
+      expect(ui.isDeleteDisabled.value).toBe(false)
+      expect(ui.deleteDisabledTooltipKey.value).toBeNull()
     })
 
     it('keeps the credits column hidden under billing controls alone', async () => {
@@ -527,20 +566,15 @@ describe('useWorkspaceUI', { tags: ['shared-state'] }, () => {
     })
 
     it.for([
-      { isActive: true, isCancelled: false, disabled: true },
-      { isActive: true, isCancelled: true, disabled: true },
-      { isActive: false, isCancelled: true, disabled: false },
-      { isActive: false, isCancelled: false, disabled: false }
-    ])(
-      'active=$isActive cancelled=$isCancelled → disabled=$disabled',
-      async ({ isActive, isCancelled, disabled }) => {
-        mockIsActiveSubscription.value = isActive
-        mockIsCancelled.value = isCancelled
-        const ui = await loadComposable()
+      { status: 'active' as const, disabled: true },
+      { status: 'canceled' as const, disabled: true },
+      { status: 'ended' as const, disabled: false }
+    ])('status=$status → disabled=$disabled', async ({ status, disabled }) => {
+      mockSubscriptionStatus.value = status
+      const ui = await loadComposable()
 
-        expect(ui.isDeleteDisabled.value).toBe(disabled)
-      }
-    )
+      expect(ui.isDeleteDisabled.value).toBe(disabled)
+    })
   })
 
   describe('shared instance', () => {

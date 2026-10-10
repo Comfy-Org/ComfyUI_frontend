@@ -100,11 +100,17 @@ interface CloudBootOptions {
    * served here so neither alone is what the assertions rest on.
    */
   railOnFeatures?: boolean
+  workspaceType?: 'personal' | 'team'
+  cancelAt?: string
 }
 
 async function mockCloudBoot(
   page: Page,
-  { railOnFeatures = false }: CloudBootOptions = {}
+  {
+    railOnFeatures = false,
+    workspaceType = 'personal',
+    cancelAt
+  }: CloudBootOptions = {}
 ): Promise<LifecycleRoutes> {
   const resubscribeRequests: Request[] = []
   const portalRequests: Request[] = []
@@ -145,13 +151,27 @@ async function mockCloudBoot(
     r.fulfill(jsonRoute({ token: 'mock-workspace-token' }))
   )
   await page.route('**/releases**', (r) => r.fulfill(jsonRoute([])))
-  await mockWorkspaceTokenMint(page, workspace('personal', 'owner'))
+  const activeWorkspace = workspace(workspaceType, 'owner')
+  await mockWorkspaceTokenMint(page, activeWorkspace)
   await page.route('**/api/workspaces', (r) =>
-    r.fulfill(jsonRoute({ workspaces: [workspace('personal', 'owner')] }))
+    r.fulfill(jsonRoute({ workspaces: [activeWorkspace] }))
+  )
+  await page.route('**/api/workspace/members**', (r) =>
+    r.fulfill(
+      jsonRoute({
+        members: [],
+        pagination: { offset: 0, limit: 50, total: 0, has_more: false }
+      })
+    )
   )
 
   await page.route('**/api/billing/status', (r) =>
-    r.fulfill(jsonRoute(CANCELLED_STATUS))
+    r.fulfill(
+      jsonRoute({
+        ...CANCELLED_STATUS,
+        ...(cancelAt === undefined ? {} : { cancel_at: cancelAt })
+      })
+    )
   )
   await page.route('**/api/billing/balance', (r) =>
     r.fulfill(
@@ -167,9 +187,7 @@ async function mockCloudBoot(
   await page.route('**/api/billing/capabilities', (r) => {
     if (r.request().method() !== 'GET') return r.fallback()
     return r.fulfill(
-      jsonRoute(
-        createWorkspaceBillingCapabilities(workspace('personal', 'owner'))
-      )
+      jsonRoute(createWorkspaceBillingCapabilities(activeWorkspace))
     )
   })
   await page.route('**/customers/balance', (r) =>
@@ -240,6 +258,40 @@ async function mockCloudBoot(
     }
   }
 }
+
+test.describe(
+  'workspace deletion after cancellation',
+  { tag: '@cloud' },
+  () => {
+    test.use({ timezoneId: 'UTC' })
+
+    // Regression: https://github.com/Comfy-Org/ComfyUI_frontend/issues/20107
+    test('shows when Delete becomes available while the canceled plan remains live', async ({
+      page
+    }) => {
+      test.setTimeout(60_000)
+      await mockCloudBoot(page, {
+        workspaceType: 'team',
+        cancelAt: '2099-11-01T12:00:00Z'
+      })
+      await bootApp(page)
+
+      const panel = await openPlanAndCredits(page)
+      await panel.getByRole('button', { name: 'More options' }).click()
+      const deleteItem = page.getByRole('menuitem', {
+        name: 'Delete Workspace'
+      })
+
+      await expect(deleteItem).toBeDisabled()
+      await deleteItem.hover()
+      await expect(
+        page.getByText(
+          'You can delete this workspace after your plan ends on Nov 1'
+        )
+      ).toBeVisible()
+    })
+  }
+)
 
 interface AppBootOptions {
   /** Every `window.open` is refused, as a browser blocking the popup does. */

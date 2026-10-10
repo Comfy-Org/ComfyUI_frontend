@@ -103,6 +103,8 @@ export function useWorkspaceMenuItems() {
       return t('workspacePanel.menu.deleteWorkspaceAfterPlanEndsTooltip', {
         date: planEndDate
       })
+    if (isDeleteDisabled.value && isSubscriptionCancelled.value)
+      return t('workspacePanel.menu.deleteWorkspaceAfterPlanEnds')
     const key = deleteDisabledTooltipKey.value
     return key ? t(key) : undefined
   })
