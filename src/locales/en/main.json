@@ -3859,6 +3859,33 @@
     "managedByOrganization": "Your organization manages your workspaces, so you can't create one.",
     "failedToSwitch": "Failed to switch workspace"
   },
+  "deploymentSwitcher": {
+    "runningOn": "Running on",
+    "comfyCloud": "Comfy Cloud",
+    "comfyCloudCaption": "Comfy's own node set",
+    "deployment": "{build} v{version}",
+    "unnamedDeployment": "Deployment {id}",
+    "pickGone": "The deployment you picked no longer exists.",
+    "pickGoneDetail": "This browser now runs on Comfy Cloud. Pick a deployment again from the account menu to use one.",
+    "defaultGone": "The workspace's default deployment no longer exists.",
+    "caption": "{id}, {status}",
+    "captionDefault": "{id}, {status} · Workspace default",
+    "noDeployments": "This workspace has no deployments yet. Deploy a Release on the Developer Platform first.",
+    "buildsHidden": "Build names are not visible to this account.",
+    "reloadNote": "Picking reloads the editor with the deployment's nodes. When the deployment is updated to another Release, reload to get its new nodes.",
+    "releaseChanged": "This deployment now runs a different Release. Reload to get its nodes.",
+    "deploymentChanged": "This browser now runs on {deployment}. Reload to get its nodes.",
+    "reload": "Reload",
+    "failedToSwitch": "Could not switch",
+    "workspaceDefault": "Workspace default",
+    "workspaceDefaultIs": "Workspace default: {deployment}",
+    "noWorkspaceDefault": "No workspace default: members start on Comfy Cloud.",
+    "followWorkspace": "Use the workspace default",
+    "followWorkspaceCaption": "Drop this browser's own pick and run on {deployment}",
+    "setAsDefault": "Set as workspace default",
+    "clearDefault": "Clear workspace default",
+    "failedToSetDefault": "Could not change the workspace default"
+  },
   "selectionToolbox": {
     "executeButton": {
       "tooltip": "Execute to selected output nodes (Highlighted with orange border)",
@@ -4864,7 +4891,12 @@
         "toastMessageOneCloud": "This node isn't supported on Cloud.",
         "toastMessageOneOss": "This workflow uses a custom node that isn't installed. Install it from the registry or replace the node.",
         "toastMessageManyCloud": "This workflow uses nodes that aren't supported on Cloud.",
-        "toastMessageManyOss": "{count} nodes require missing node packs."
+        "toastMessageManyOss": "{count} nodes require missing node packs.",
+        "displayMessageDeployment": "These nodes aren't on {deployment}. Replace them, or pick a deployment that has them.",
+        "toastTitleOneDeployment": "{nodeType} isn't on {deployment}",
+        "toastTitleManyDeployment": "Nodes aren't on {deployment}",
+        "toastMessageOneDeployment": "Replace this node, or pick a deployment that has it.",
+        "toastMessageManyDeployment": "Replace these nodes, or pick a deployment that has them."
       },
       "swap_nodes": {
         "displayMessage": "Some nodes can be replaced with alternatives",
@@ -4883,7 +4915,12 @@
         "toastMessageOneCloud": "This model isn't supported. Choose a different one.",
         "toastMessageOneOss": "{nodeName} is missing a required model file.",
         "toastMessageManyCloud": "Some models aren't supported. Choose different ones.",
-        "toastMessageManyOss": "{count} model files are missing."
+        "toastMessageManyOss": "{count} model files are missing.",
+        "displayMessageDeployment": "These models aren't on {deployment}. Open the node to choose one it has.",
+        "toastTitleOneDeployment": "{modelName} isn't on {deployment}",
+        "toastTitleManyDeployment": "Models aren't on {deployment}",
+        "toastMessageOneDeployment": "Choose a different model, or pick a deployment that has it.",
+        "toastMessageManyDeployment": "Choose different models, or pick a deployment that has them."
       },
       "missing_media": {
         "displayMessage": "A required media input has no file selected.",

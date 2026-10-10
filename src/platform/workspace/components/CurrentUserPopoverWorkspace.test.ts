@@ -24,6 +24,7 @@ import { useSubscriptionDialog } from '@/platform/cloud/subscription/composables
 import { useSettingsDialog } from '@/platform/settings/composables/useSettingsDialog'
 import { useWorkspaceUI } from '@/platform/workspace/composables/useWorkspaceUI'
 import type { BillingStatus } from '@/platform/workspace/api/workspaceApi'
+import { workspaceApi } from '@/platform/workspace/api/workspaceApi'
 
 import CurrentUserPopoverWorkspace from './CurrentUserPopoverWorkspace.vue'
 
@@ -79,6 +80,8 @@ vi.mock(import('@/platform/distribution/types'), () => ({
 
 vi.mock(import('@/composables/billing/useBillingDialogs'))
 vi.mock(import('@/platform/workspace/composables/useWorkspaceDialogs'))
+
+vi.mock(import('@/platform/workspace/api/workspaceApi'))
 
 vi.mock(import('@/platform/telemetry'))
 
@@ -302,6 +305,29 @@ describe('CurrentUserPopoverWorkspace', () => {
         !canSwitch
       )
     })
+  })
+
+  it('shows the deployment switcher on Cloud once the listing answers', async () => {
+    Object.assign(useTeamWorkspaceStore(), { workspaceId: 'ws-1' })
+    vi.mocked(workspaceApi.listDeployments).mockResolvedValue({
+      items: [],
+      builds_visible: true
+    })
+    renderComponent()
+
+    expect(
+      await screen.findByTestId('deployment-switcher-current')
+    ).toHaveTextContent('Comfy Cloud')
+    expect(workspaceApi.listDeployments).toHaveBeenCalledWith('ws-1')
+  })
+
+  it('does not ask for deployments on Local', () => {
+    state.isCloud = false
+    Object.assign(useTeamWorkspaceStore(), { workspaceId: 'ws-1' })
+    renderComponent()
+
+    expect(screen.queryByTestId('deployment-switcher')).not.toBeInTheDocument()
+    expect(workspaceApi.listDeployments).not.toHaveBeenCalled()
   })
 
   it('exposes the full workspace name on hover', async () => {

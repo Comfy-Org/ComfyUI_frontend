@@ -39,6 +39,11 @@ export const workspaceApi = vi.mockObject<typeof realWorkspaceApi>(
       created_at: '2026-01-01T00:00:00Z',
       joined_at: '2026-01-01T00:00:00Z'
     }),
+    listDeployments: async () => ({ items: [], builds_visible: true }),
+    pickDeployment: async () => {},
+    clearDeployment: async () => {},
+    setDefaultDeployment: async () => {},
+    clearDefaultDeployment: async () => {},
     delete: async () => {},
     leave: async () => {},
     listMembers: async () => ({
