@@ -218,21 +218,22 @@ describe('Tooltip', () => {
   })
 
   it.for([
-    { openOnClick: true, expected: 'open' },
-    { openOnClick: false, expected: 'closed' }
+    { openOnClick: true, tooltips: ['Helpful text'] },
+    { openOnClick: false, tooltips: [] }
   ])(
-    'is $expected after a tap when openOnClick is $openOnClick',
-    async ({ openOnClick, expected }) => {
+    'renders the tooltip after a tap only when openOnClick is set (openOnClick: $openOnClick)',
+    async ({ openOnClick, tooltips }) => {
       const user = userEvent.setup()
       render(TooltipHarness, { props: { openOnClick } })
-      const trigger = screen.getByRole('button', { name: 'Trigger' })
 
-      await user.pointer({ keys: '[TouchA]', target: trigger })
+      await user.pointer({
+        keys: '[TouchA]',
+        target: screen.getByRole('button', { name: 'Trigger' })
+      })
 
-      expect(trigger).toHaveAttribute(
-        'data-state',
-        expect.stringMatching(expected)
-      )
+      expect(
+        screen.queryAllByRole('tooltip').map((tooltip) => tooltip.textContent)
+      ).toEqual(tooltips)
     }
   )
 
