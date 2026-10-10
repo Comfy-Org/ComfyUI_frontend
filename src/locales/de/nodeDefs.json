@@ -11411,11 +11411,19 @@
   "LatentApplyOperationCFG": {
     "display_name": "LatentApplyOperationCFG",
     "inputs": {
+      "end_percent": {
+        "name": "Endprozentsatz",
+        "tooltip": "Beenden Sie die Anwendung der Operation bei diesem Anteil des Entrauschungsplans des Modells. 1 ist das Ende."
+      },
       "model": {
         "name": "model"
       },
       "operation": {
         "name": "operation"
+      },
+      "start_percent": {
+        "name": "Startprozentsatz",
+        "tooltip": "Beginnen Sie mit der Anwendung der Operation bei diesem Anteil des Entrauschungsplans des Modells. 0 ist der Anfang."
       }
     },
     "outputs": {
@@ -11650,6 +11658,24 @@
       },
       "samples": {
         "name": "samples"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "LatentOperationBlend": {
+    "description": "Mischen Sie den gesamten latenten Raum in Richtung des Referenzraums und skalieren Sie den Referenzraum bei Bedarf mit Nächster-Nachbar-Interpolation.",
+    "display_name": "Latent-Operation mischen",
+    "inputs": {
+      "reference": {
+        "name": "Referenz"
+      },
+      "strength": {
+        "name": "Stärke",
+        "tooltip": "Bei 0 bleibt der latente Raum unverändert; bei 1 entspricht er dem skalierten Referenzraum."
       }
     },
     "outputs": {
@@ -12059,6 +12085,44 @@
     "inputs": {
       "latent": {
         "name": "latent"
+      }
+    }
+  },
+  "LoadLoraModel": {
+    "description": "Wenden Sie einen Stapel von LoRAs auf ein Diffusionsmodell an. Fügen Sie für jede LoRA eine Zeile hinzu; jede Zeile wählt eine LoRA-Datei und deren Stärke aus.",
+    "display_name": "LoRA laden (Modell)",
+    "inputs": {
+      "loras": {
+        "name": "LoRAs",
+        "tooltip": "Jede Zeile wendet eine LoRA auf das Modell an."
+      },
+      "model": {
+        "name": "Modell",
+        "tooltip": "Das Diffusionsmodell, auf das die LoRAs angewendet werden."
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": "Das modifizierte Diffusionsmodell."
+      }
+    }
+  },
+  "LoadLoraTextEncoder": {
+    "description": "Wenden Sie einen Stapel von LoRAs auf einen CLIP-Text-Encoder an. Fügen Sie für jede LoRA eine Zeile hinzu; jede Zeile wählt eine LoRA-Datei und deren Stärke aus.",
+    "display_name": "LoRA laden (Text-Encoder)",
+    "inputs": {
+      "clip": {
+        "name": "clip",
+        "tooltip": "Der CLIP-Text-Encoder, auf den die LoRAs angewendet werden."
+      },
+      "loras": {
+        "name": "LoRAs",
+        "tooltip": "Jede Zeile wendet eine LoRA auf den Text-Encoder an."
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": "Der modifizierte CLIP-Text-Encoder."
       }
     }
   },

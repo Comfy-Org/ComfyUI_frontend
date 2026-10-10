@@ -11411,11 +11411,19 @@
   "LatentApplyOperationCFG": {
     "display_name": "Latent应用操作CFG",
     "inputs": {
+      "end_percent": {
+        "name": "结束百分比",
+        "tooltip": "在模型去噪调度的此比例处停止应用该操作。1 表示结束。"
+      },
       "model": {
         "name": "模型"
       },
       "operation": {
         "name": "操作"
+      },
+      "start_percent": {
+        "name": "开始百分比",
+        "tooltip": "在模型去噪调度的此比例处开始应用该操作。0 表示开始。"
       }
     },
     "outputs": {
@@ -11650,6 +11658,24 @@
       },
       "samples": {
         "name": "Latent"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "LatentOperationBlend": {
+    "description": "将整个潜空间向参考潜空间混合，必要时使用最近邻插值调整参考潜空间的大小。",
+    "display_name": "潜空间操作混合",
+    "inputs": {
+      "reference": {
+        "name": "参考"
+      },
+      "strength": {
+        "name": "强度",
+        "tooltip": "0 保持潜空间不变；1 与调整大小后的参考潜空间一致。"
       }
     },
     "outputs": {
@@ -12059,6 +12085,44 @@
     "inputs": {
       "latent": {
         "name": "Latent"
+      }
+    }
+  },
+  "LoadLoraModel": {
+    "description": "将一组 LoRA 应用于扩散模型。每个 LoRA 添加一行；每行选择一个 LoRA 文件及其强度。",
+    "display_name": "加载 LoRA（模型）",
+    "inputs": {
+      "loras": {
+        "name": "lora",
+        "tooltip": "每行将一个 LoRA 应用于模型。"
+      },
+      "model": {
+        "name": "模型",
+        "tooltip": "将要应用 LoRA 的扩散模型。"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": "修改后的扩散模型。"
+      }
+    }
+  },
+  "LoadLoraTextEncoder": {
+    "description": "将一组 LoRA 应用于 CLIP 文本编码器。每个 LoRA 添加一行；每行选择一个 LoRA 文件及其强度。",
+    "display_name": "加载 LoRA（文本编码器）",
+    "inputs": {
+      "clip": {
+        "name": "clip",
+        "tooltip": "将要应用 LoRA 的 CLIP 文本编码器。"
+      },
+      "loras": {
+        "name": "lora",
+        "tooltip": "每行将一个 LoRA 应用于文本编码器。"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": "修改后的 CLIP 文本编码器。"
       }
     }
   },

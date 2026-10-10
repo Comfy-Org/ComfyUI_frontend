@@ -11411,11 +11411,19 @@
   "LatentApplyOperationCFG": {
     "display_name": "LatentApplyOperationCFG",
     "inputs": {
+      "end_percent": {
+        "name": "pourcentage_fin",
+        "tooltip": "Arrête d’appliquer l’opération à cette fraction du programme de débruitage du modèle. 1 correspond à la fin."
+      },
       "model": {
         "name": "model"
       },
       "operation": {
         "name": "operation"
+      },
+      "start_percent": {
+        "name": "pourcentage_début",
+        "tooltip": "Commence à appliquer l’opération à cette fraction du programme de débruitage du modèle. 0 correspond au début."
       }
     },
     "outputs": {
@@ -11650,6 +11658,24 @@
       },
       "samples": {
         "name": "échantillons"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "LatentOperationBlend": {
+    "description": "Mélange l’ensemble du latent vers le latent de référence, en redimensionnant la référence avec une interpolation au plus proche si nécessaire.",
+    "display_name": "Mélange d’opérations latent",
+    "inputs": {
+      "reference": {
+        "name": "référence"
+      },
+      "strength": {
+        "name": "intensité",
+        "tooltip": "0 laisse le latent inchangé ; 1 correspond au latent de référence redimensionné."
       }
     },
     "outputs": {
@@ -12059,6 +12085,44 @@
     "inputs": {
       "latent": {
         "name": "latent"
+      }
+    }
+  },
+  "LoadLoraModel": {
+    "description": "Applique une pile de LoRA à un modèle de diffusion. Ajoutez une ligne par LoRA ; chaque ligne sélectionne un fichier LoRA et son intensité.",
+    "display_name": "Charger LoRA (modèle)",
+    "inputs": {
+      "loras": {
+        "name": "loras",
+        "tooltip": "Chaque ligne applique un LoRA au modèle."
+      },
+      "model": {
+        "name": "modèle",
+        "tooltip": "Le modèle de diffusion auquel les LoRA seront appliqués."
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": "Le modèle de diffusion modifié."
+      }
+    }
+  },
+  "LoadLoraTextEncoder": {
+    "description": "Applique une pile de LoRA à un encodeur de texte CLIP. Ajoutez une ligne par LoRA ; chaque ligne sélectionne un fichier LoRA et son intensité.",
+    "display_name": "Charger LoRA (encodeur de texte)",
+    "inputs": {
+      "clip": {
+        "name": "clip",
+        "tooltip": "L’encodeur de texte CLIP auquel les LoRA seront appliqués."
+      },
+      "loras": {
+        "name": "loras",
+        "tooltip": "Chaque ligne applique un LoRA à l’encodeur de texte."
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": "L’encodeur de texte CLIP modifié."
       }
     }
   },

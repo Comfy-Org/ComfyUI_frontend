@@ -11411,11 +11411,19 @@
   "LatentApplyOperationCFG": {
     "display_name": "潜在操作CFGを適用",
     "inputs": {
+      "end_percent": {
+        "name": "終了割合",
+        "tooltip": "モデルのノイズ除去スケジュールにおいて、この割合で演算の適用を停止します。1は終了位置です。"
+      },
       "model": {
         "name": "モデル"
       },
       "operation": {
         "name": "操作"
+      },
+      "start_percent": {
+        "name": "開始割合",
+        "tooltip": "モデルのノイズ除去スケジュールにおいて、この割合から演算の適用を開始します。0は開始位置です。"
       }
     },
     "outputs": {
@@ -11650,6 +11658,24 @@
       },
       "samples": {
         "name": "samples"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "LatentOperationBlend": {
+    "description": "潜在全体を参照潜在へ向けてブレンドします。必要に応じて、最近傍補間で参照をリサイズします。",
+    "display_name": "潜在演算ブレンド",
+    "inputs": {
+      "reference": {
+        "name": "参照"
+      },
+      "strength": {
+        "name": "強度",
+        "tooltip": "0では潜在は変更されません。1ではリサイズされた参照潜在と一致します。"
       }
     },
     "outputs": {
@@ -12059,6 +12085,44 @@
     "inputs": {
       "latent": {
         "name": "latent"
+      }
+    }
+  },
+  "LoadLoraModel": {
+    "description": "拡散モデルにLoRAのスタックを適用します。LoRAごとに1行追加し、各行でLoRAファイルとその強度を選択します。",
+    "display_name": "LoRAを読み込む（モデル）",
+    "inputs": {
+      "loras": {
+        "name": "LoRA",
+        "tooltip": "各行で1つのLoRAをモデルに適用します。"
+      },
+      "model": {
+        "name": "モデル",
+        "tooltip": "LoRAが適用される拡散モデル。"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": "変更後の拡散モデル。"
+      }
+    }
+  },
+  "LoadLoraTextEncoder": {
+    "description": "CLIPテキストエンコーダーにLoRAのスタックを適用します。LoRAごとに1行追加し、各行でLoRAファイルとその強度を選択します。",
+    "display_name": "LoRAを読み込む（テキストエンコーダー）",
+    "inputs": {
+      "clip": {
+        "name": "clip",
+        "tooltip": "LoRAが適用されるCLIPテキストエンコーダー。"
+      },
+      "loras": {
+        "name": "LoRA",
+        "tooltip": "各行で1つのLoRAをテキストエンコーダーに適用します。"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": "変更後のCLIPテキストエンコーダー。"
       }
     }
   },

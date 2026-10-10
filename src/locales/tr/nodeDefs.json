@@ -11411,11 +11411,19 @@
   "LatentApplyOperationCFG": {
     "display_name": "GizliİşlemUygulaCFG",
     "inputs": {
+      "end_percent": {
+        "name": "bitiş_yüzdesi",
+        "tooltip": "İşlemi modelin gürültü giderme zamanlamasının bu kesrinde uygulamayı durdurun. 1 sondur."
+      },
       "model": {
         "name": "model"
       },
       "operation": {
         "name": "işlem"
+      },
+      "start_percent": {
+        "name": "başlangıç_yüzdesi",
+        "tooltip": "İşlemi modelin gürültü giderme zamanlamasının bu kesrinde uygulamaya başlayın. 0 başlangıçtır."
       }
     },
     "outputs": {
@@ -11650,6 +11658,24 @@
       },
       "samples": {
         "name": "örnekler"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "LatentOperationBlend": {
+    "description": "Tüm latenti referans latente doğru harmanlar; gerektiğinde referansı en yakın komşu enterpolasyonuyla yeniden boyutlandırır.",
+    "display_name": "Latent İşlem Harmanlama",
+    "inputs": {
+      "reference": {
+        "name": "referans"
+      },
+      "strength": {
+        "name": "güç",
+        "tooltip": "0 latenti değiştirmez; 1, yeniden boyutlandırılmış referans latentle eşleşir."
       }
     },
     "outputs": {
@@ -12059,6 +12085,44 @@
     "inputs": {
       "latent": {
         "name": "gizli"
+      }
+    }
+  },
+  "LoadLoraModel": {
+    "description": "Bir difüzyon modeline bir LoRA yığını uygular. Her LoRA için bir satır ekleyin; her satır bir LoRA dosyası ve gücünü seçer.",
+    "display_name": "LoRA Yükle (Model)",
+    "inputs": {
+      "loras": {
+        "name": "loras",
+        "tooltip": "Her satır modele bir LoRA uygular."
+      },
+      "model": {
+        "name": "model",
+        "tooltip": "LoRA'ların uygulanacağı difüzyon modeli."
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": "Değiştirilmiş difüzyon modeli."
+      }
+    }
+  },
+  "LoadLoraTextEncoder": {
+    "description": "Bir CLIP metin kodlayıcısına bir LoRA yığını uygular. Her LoRA için bir satır ekleyin; her satır bir LoRA dosyası ve gücünü seçer.",
+    "display_name": "LoRA Yükle (Metin Kodlayıcı)",
+    "inputs": {
+      "clip": {
+        "name": "clip",
+        "tooltip": "LoRA'ların uygulanacağı CLIP metin kodlayıcısı."
+      },
+      "loras": {
+        "name": "loras",
+        "tooltip": "Her satır metin kodlayıcısına bir LoRA uygular."
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": "Değiştirilmiş CLIP metin kodlayıcısı."
       }
     }
   },
