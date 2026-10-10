@@ -40,6 +40,93 @@ describe('Router catalog completeness', () => {
     ).toBe(false)
   })
 
+  const altProviderLegs = new Map(
+    workshopRouterIndexSchema
+      .parse(packedIndex)
+      .map((record) => [
+        record.id,
+        record.altProviders?.map(({ routerId }) => routerId)
+      ])
+  )
+
+  it.for([
+    {
+      id: 'kling/kling-v3',
+      routerIds: ['higgsfield/higgsfield-kling-3-std']
+    },
+    {
+      id: 'kling/kling-3.0-turbo',
+      routerIds: ['higgsfield/higgsfield-kling-3-turbo']
+    },
+    { id: 'wan/wan3.0-video', routerIds: ['higgsfield/higgsfield-wan-3'] },
+    {
+      id: 'byteplus/dreamina-seedance-2-0-260128',
+      routerIds: [
+        'fal/fal-seedance-2.0',
+        'higgsfield/higgsfield-seedance-2.0',
+        'runware/runware-seedance-2.0',
+        'wavespeed/wavespeed-seedance-2.0'
+      ]
+    },
+    {
+      id: 'byteplus/dreamina-seedance-2-5-260628',
+      routerIds: [
+        'fal/fal-seedance-2.5',
+        'higgsfield/higgsfield-seedance-2.5',
+        'runware/runware-seedance-2.5',
+        'wavespeed/wavespeed-seedance-2.5'
+      ]
+    },
+    {
+      id: 'openai/gpt-image-2',
+      routerIds: [
+        'fal/fal-gpt-image-2',
+        'runware/runware-gpt-image-2',
+        'wavespeed/wavespeed-gpt-image-2'
+      ]
+    },
+    {
+      id: 'openai/gpt-image-2.5-flare',
+      routerIds: [
+        'fal/fal-gpt-image-2.5-flare',
+        'runware/runware-gpt-image-2.5-flare',
+        'wavespeed/wavespeed-gpt-image-2.5-flare'
+      ]
+    },
+    {
+      id: 'openai/gpt-image-2.5-sunburst',
+      routerIds: [
+        'fal/fal-gpt-image-2.5-sunburst',
+        'runware/runware-gpt-image-2.5-sunburst',
+        'wavespeed/wavespeed-gpt-image-2.5-sunburst'
+      ]
+    },
+    {
+      id: 'vertexai/gemini-3.1-flash-image',
+      routerIds: [
+        'fal/fal-nano-banana-2',
+        'runware/runware-nano-banana-2',
+        'wavespeed/wavespeed-nano-banana-2'
+      ]
+    },
+    {
+      id: 'vertexai/gemini-3-pro-image',
+      routerIds: [
+        'fal/fal-nano-banana-pro',
+        'runware/runware-nano-banana-pro',
+        'wavespeed/wavespeed-nano-banana-pro'
+      ]
+    }
+  ])('publishes the alt-provider legs serving $id', ({ id, routerIds }) => {
+    expect(altProviderLegs.get(id)).toEqual(routerIds)
+  })
+
+  it('publishes every alt-provider leg the Router snapshot carries', () => {
+    expect(
+      [...altProviderLegs.values()].flatMap((routerIds) => routerIds ?? [])
+    ).toHaveLength(26)
+  })
+
   it('requires rechecking an availability override when its Router snapshot changes', () => {
     const updated = rawSnapshots.map((snapshot) =>
       snapshot.id === 'ideogram/p-image-ideogram'

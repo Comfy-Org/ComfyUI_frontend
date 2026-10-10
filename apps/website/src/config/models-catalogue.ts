@@ -149,6 +149,11 @@ export type RouterWorkshopModel = WorkshopPresentation & {
   /** Absent for a disabled model: it has no built page to link to. */
   readonly href?: string
   readonly routerId: string
+  /** Alternate-provider Router IDs that serve this model. */
+  readonly servedBy?: readonly {
+    readonly provider: string
+    readonly routerId: string
+  }[]
   readonly workflowId?: never
 }
 

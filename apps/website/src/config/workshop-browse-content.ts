@@ -257,6 +257,7 @@ const browseModels: readonly RouterWorkshopModel[] = contentSources.map(
       ...(recommendedRank !== undefined ? { recommendedRank } : {}),
       ...(isWorkshopModelDisabled(slug) ? {} : { href: hubModelHref(slug) }),
       routerId: record.id,
+      ...(record.altProviders ? { servedBy: record.altProviders } : {}),
       incompleteReason: record.incompleteReason,
       provider,
       modality: modalityFor(entry),
