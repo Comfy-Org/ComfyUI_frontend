@@ -1346,7 +1346,7 @@ const { copy } = useClipboard({ legacy: true })
  */
 const { variant: freeUsePlacement } = useFreeUsePlacement()
 const displayedFreeUsePlacement = computed(() =>
-  agentScopedHasFunds.value === false ? 'control' : freeUsePlacement.value
+  showCreditTransitionNotice.value ? 'control' : freeUsePlacement.value
 )
 const {
   assignment: starterPromptAssignment,

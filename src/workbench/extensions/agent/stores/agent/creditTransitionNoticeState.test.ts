@@ -113,14 +113,14 @@ describe('reduceCreditTransitionNotice', () => {
       }
     )
 
-    it('keeps a dismissal across a refill', () => {
+    it('clears a dismissal on refill, starting a fresh episode', () => {
       expect(
         reduceCreditTransitionNotice(episode('dismissed', false), {
           type: 'scopedRead',
           identity: IDENTITY,
           scopedHasFunds: true
         })
-      ).toEqual(episode('dismissed', true))
+      ).toEqual(episode('idle', true))
     })
   })
 
