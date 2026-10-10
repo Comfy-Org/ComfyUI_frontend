@@ -91,6 +91,8 @@ test.describe(
       'Promoted Widget Visibility in Vue Mode',
       { tag: ['@vue-nodes'] },
       () => {
+        test.use({ initialSettings: { 'Comfy.UseNewMenu': 'Top' } })
+
         test('Promoted widget connected to the subgraph input is interactive on the host', async ({
           comfyPage
         }) => {
@@ -113,14 +115,34 @@ test.describe(
 
         test(
           'Promoted advanced widget remains visible when global advanced widgets are disabled',
-          { tag: ['@node'] },
+          { tag: ['@node', '@slow'] },
           async ({ comfyPage }) => {
+            const settingId = 'Comfy.Node.AlwaysShowAdvancedWidgets'
+            const settingName = 'Always show advanced widgets on all nodes'
+            const parentValue = '2.25'
+
+            test.setTimeout(120_000)
+            await comfyPage.workflow.setupWorkflowsDirectory({})
+            await comfyPage.nodeOps.clearGraph()
+            await comfyPage.nodeOps.waitForGraphNodes(0)
+
+            await test.step('Verify the named global setting is disabled', async () => {
+              await comfyPage.settings.setSetting(settingId, false)
+              await comfyPage.settingDialog.open()
+              await comfyPage.settingDialog.searchBox.fill(settingName)
+              const settingRow = comfyPage.settingDialog.root.locator(
+                `[data-setting-id="${settingId}"]`
+              )
+              await expect(settingRow).toContainText(settingName)
+              await expect(settingRow.getByRole('switch')).toHaveAttribute(
+                'aria-checked',
+                'false'
+              )
+              await comfyPage.settingDialog.close()
+            })
+
             const subgraphNodeId =
               await test.step('Convert a node with hidden advanced widgets to a subgraph', async () => {
-                await comfyPage.settings.setSetting(
-                  'Comfy.Node.AlwaysShowAdvancedWidgets',
-                  false
-                )
                 const modelSamplingNode = await comfyPage.nodeOps.addNode(
                   'ModelSamplingFlux',
                   {},
@@ -153,18 +175,75 @@ test.describe(
               await comfyPage.subgraph.exitViaBreadcrumb()
             })
 
-            await test.step('Keep the promoted widget visible on the host', async () => {
+            await test.step('Edit the visible promoted widget on the host', async () => {
               await expectPromotedWidgetNamesToContain(
                 comfyPage,
                 subgraphNodeId,
                 'max_shift'
               )
-              await expect(
-                comfyPage.vueNodes
-                  .getNodeLocator(subgraphNodeId)
-                  .getByLabel('max_shift', { exact: true })
-              ).toBeVisible()
+              const promotedWidget = comfyPage.vueNodes
+                .getNodeLocator(subgraphNodeId)
+                .getByLabel('max_shift', { exact: true })
+              await expect(promotedWidget).toBeVisible()
+              const promotedInput = promotedWidget.getByRole('spinbutton')
+              await promotedInput.fill(parentValue)
+              await promotedInput.press('Tab')
+              await expect(promotedInput).toHaveValue(parentValue)
             })
+
+            const host = await comfyPage.nodeOps.getNodeRefById(subgraphNodeId)
+            const identity = await comfyPage.subgraph.getHostIdentity(host)
+            await comfyPage.subgraph.expectPromotedWidget(host, 'max_shift', {
+              ...identity,
+              label: 'max_shift',
+              value: Number(parentValue)
+            })
+
+            const workflowName = `vue-advanced-promoted-host-value-${Date.now()}`
+            await comfyPage.workflow.saveWorkflow(workflowName)
+            await comfyPage.workflow.reloadAndOpenPersistedWorkflow(
+              workflowName
+            )
+
+            const restored =
+              await comfyPage.nodeOps.getNodeRefById(subgraphNodeId)
+            await comfyPage.subgraph.expectPromotedWidget(
+              restored,
+              'max_shift',
+              {
+                ...identity,
+                label: 'max_shift',
+                value: Number(parentValue)
+              }
+            )
+
+            await comfyPage.menu.topbar.setVueNodesEnabled(false)
+            await fitToViewInstant(comfyPage, { zoom: 1 })
+            const liteGraphWidget = await restored.getWidgetByName('max_shift')
+            expect(await liteGraphWidget.getValue()).toBe(Number(parentValue))
+            await liteGraphWidget.click()
+            await comfyPage.nodeOps.fillLegacyWidgetDialog('2.5')
+            expect(await liteGraphWidget.getValue()).toBe(2.5)
+
+            const saveResponse = comfyPage.page.waitForResponse(
+              (response) =>
+                response.request().method() === 'POST' &&
+                new URL(response.url()).pathname.includes(
+                  encodeURIComponent(`workflows/${workflowName}.json`)
+                )
+            )
+            await comfyPage.menu.topbar.triggerTopbarCommand(['File', 'Save'])
+            expect((await saveResponse).status()).toBe(200)
+            await comfyPage.workflow.reloadAndOpenPersistedWorkflow(
+              workflowName
+            )
+            const legacyRestored =
+              await comfyPage.nodeOps.getNodeRefById(subgraphNodeId)
+            expect(
+              await (
+                await legacyRestored.getWidgetByName('max_shift')
+              ).getValue()
+            ).toBe(2.5)
           }
         )
 

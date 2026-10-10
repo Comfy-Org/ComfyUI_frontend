@@ -56,3 +56,66 @@ test.describe(
     })
   }
 )
+
+for (const renderer of [
+  { name: 'LiteGraph', tag: ['@slow', '@subgraph', '@ui'] },
+  { name: 'Vue', tag: ['@slow', '@subgraph', '@ui', '@vue-nodes'] }
+]) {
+  test.describe(`${renderer.name} renderer`, { tag: renderer.tag }, () => {
+    for (const scenario of [
+      { survivorName: 'copy', removedName: 'original' },
+      { survivorName: 'original', removedName: 'copy' }
+    ] as const) {
+      test(`the ${scenario.survivorName} keeps its independent value after deleting the ${scenario.removedName} and reopening`, async ({
+        comfyPage
+      }) => {
+        test.slow()
+        await comfyPage.workflow.setupWorkflowsDirectory({})
+        await comfyPage.workflow.loadWorkflow(
+          'subgraphs/subgraph-with-promoted-text-widget'
+        )
+        const original = await comfyPage.nodeOps.getNodeRefById('11')
+        const copy = await original.duplicate()
+        const survivor = scenario.survivorName === 'copy' ? copy : original
+        const removed = scenario.removedName === 'copy' ? copy : original
+        const survivorValue = `${scenario.survivorName} durable value`
+        const removedValue = `${scenario.removedName} discarded value`
+
+        await test.step('Set independent host values', async () => {
+          await survivor.fillPromotedTextWidget('text', survivorValue)
+          await removed.fillPromotedTextWidget('text', removedValue)
+          await survivor.expectPromotedTextWidgetValue('text', survivorValue)
+          await removed.expectPromotedTextWidgetValue('text', removedValue)
+        })
+
+        await test.step(`Delete the ${scenario.removedName}`, async () => {
+          await removed.delete()
+          await removed.expectExists(false)
+          await survivor.expectPromotedTextWidgetValue('text', survivorValue)
+        })
+
+        const workflowName = `${renderer.name.toLowerCase()}-${scenario.survivorName}-host-value`
+
+        await test.step('Save, reload, and reopen the workflow', async () => {
+          await comfyPage.workflow.saveWorkflow(workflowName)
+          await comfyPage.workflow.reloadAndOpenPersistedWorkflow(workflowName)
+        })
+
+        await test.step('Verify and edit the surviving host value', async () => {
+          const restored = await comfyPage.nodeOps.getNodeRefById(
+            String(survivor.id)
+          )
+          await restored.expectPromotedTextWidgetValue('text', survivorValue)
+          await restored.fillPromotedTextWidget(
+            'text',
+            `${survivorValue} edited after reopen`
+          )
+          await restored.expectPromotedTextWidgetValue(
+            'text',
+            `${survivorValue} edited after reopen`
+          )
+        })
+      })
+    }
+  })
+}

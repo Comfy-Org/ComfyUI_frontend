@@ -8,6 +8,7 @@ import type {
   ComfyApiWorkflow,
   ComfyWorkflowJSON
 } from '@/platform/workflow/validation/schemas/workflowSchema'
+import { zComfyWorkflow } from '@/platform/workflow/validation/schemas/workflowSchema'
 import type { WorkspaceStore } from '@e2e/types/globals'
 import type { ComfyPage } from '@e2e/fixtures/ComfyPage'
 import { assetPath } from '@e2e/fixtures/utils/paths'
@@ -130,6 +131,39 @@ export class WorkflowHelper {
     if (test.info().tags.includes('@vue-nodes')) {
       await this.comfyPage.vueNodes.waitForNodes()
     }
+  }
+
+  async getPersistedWorkflow(workflowName: string): Promise<ComfyWorkflowJSON> {
+    const workflowPath = `/api/userdata/${encodeURIComponent(`workflows/${workflowName}.json`)}`
+    const response = await this.comfyPage.request.get(
+      `${this.comfyPage.apiUrl}${workflowPath}`,
+      { headers: { 'Comfy-User': this.comfyPage.id } }
+    )
+    expect(response.ok()).toBe(true)
+    return zComfyWorkflow.parse(await response.json())
+  }
+
+  async saveWorkflow(workflowName: string): Promise<ComfyWorkflowJSON> {
+    const workflowPath = `/api/userdata/${encodeURIComponent(`workflows/${workflowName}.json`)}`
+    const saveResponse = this.comfyPage.page.waitForResponse(
+      (response) =>
+        new URL(response.url()).pathname === workflowPath &&
+        response.request().method() === 'POST'
+    )
+    await this.comfyPage.menu.topbar.saveWorkflow(workflowName)
+    const response = await saveResponse
+    expect(response.status()).toBe(200)
+    expect(response.request().headers()['comfy-user']).toBe(this.comfyPage.id)
+    return zComfyWorkflow.parse(response.request().postDataJSON())
+  }
+
+  async reloadAndOpenPersistedWorkflow(workflowName: string): Promise<void> {
+    await this.reloadAndWaitForApp()
+    const { workflowsTab } = this.comfyPage.menu
+    await workflowsTab.open()
+    await workflowsTab.getPersistedItem(workflowName).click()
+    await this.waitForWorkflowIdle()
+    await workflowsTab.close()
   }
 
   async deleteWorkflow(
