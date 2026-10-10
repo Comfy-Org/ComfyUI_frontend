@@ -132,18 +132,18 @@ describe('Convert to Subgraph with a grown autogrow group (FE-3325)', () => {
     ])
   })
 
-  test('converts with the autogrow node inside the subgraph', () => {
-    const boundary = buildGraph()
-    expect(
-      innerAutogrowNode(boundary.graph, new Set([boundary.node])).type
-    ).toBe(AUTOGROW_NODE_TYPE)
-    const internal = buildGraph()
-    expect(
-      innerAutogrowNode(
-        internal.graph,
-        new Set([internal.source, internal.node])
-      ).type
-    ).toBe(AUTOGROW_NODE_TYPE)
+  test('converts with the autogrow node inside the subgraph when the sources stay outside', () => {
+    const { graph, node } = buildGraph()
+    expect(innerAutogrowNode(graph, new Set([node])).type).toBe(
+      AUTOGROW_NODE_TYPE
+    )
+  })
+
+  test('converts with the autogrow node inside the subgraph when the sources are converted too', () => {
+    const { graph, source, node } = buildGraph()
+    expect(innerAutogrowNode(graph, new Set([source, node])).type).toBe(
+      AUTOGROW_NODE_TYPE
+    )
   })
 
   test.fails('keeps every link on its input when the sources stay outside (boundary links)', () => {
