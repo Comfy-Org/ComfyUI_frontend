@@ -78,13 +78,41 @@ const CANVAS_MUTATING_TOOLS = new Set([
   'define_subgraph'
 ])
 
+/**
+ * PM-1343 / PM-1586 / PM-1996: what the browser can say about whether a
+ * canvas-mutating tool call's effect reached the person's canvas.
+ *
+ * - `'none'`   — the question does not arise: no bound workflow on the active
+ *                tab, so there is no canvas this turn was supposed to change
+ *                and nothing to confirm (a headless conversation, a detached
+ *                panel, a turn targeting a tab the person is not looking at).
+ * - `'awaiting'` — a doc subscription for the bound workflow is live, so a
+ *                matching `doc_update` may still arrive. Hold the call's
+ *                displayed state and settle it when it does.
+ * - `'unavailable'` — a bound workflow is on the active tab AND its doc
+ *                subscription is not live (refused, errored, dropped). A
+ *                `doc_update` is the ONLY route by which an agent write
+ *                reaches this canvas, so confirmation is not late, it is
+ *                impossible. Do not wait: settle now, as unconfirmed.
+ *
+ * The third state is the whole point. Before it existed the gate was a
+ * boolean read off `crdtStatus.connected`, which meant the confirmation check
+ * ran only when confirmation was never in doubt and was SKIPPED in exactly
+ * the states where the write cannot have landed — so an `agent_tool_call`
+ * frame saying `status: 'success'` flipped straight to a settled success
+ * glyph on an empty canvas. That is the PM-2047 shape ("every write returned
+ * draft_committed=true and the next turn still started at zero") and the
+ * PM-1343 baseline that survived the schema deploy.
+ */
+export type CanvasConfirmation = 'none' | 'awaiting' | 'unavailable'
+
 export interface AgentEventTransport {
   ingest: (event: AgentChatEvent) => void
   settle: () => void
   /**
    * PM-1575: called whenever the bound workflow's CRDT follower applies a
    * fresh doc update, so any tool-call parts this transport held back
-   * pending canvas catch-up (see `shouldAwaitCanvasSync` below) can settle to
+   * pending canvas catch-up (see `canvasConfirmation` below) can settle to
    * `done`. A no-op when nothing is pending.
    */
   notifyCanvasCaughtUp: () => void
@@ -120,8 +148,13 @@ export function createAgentEventTransport(
    * (`agentCrdtDocLifecycle.ts`), rather than inventing a new one. Defaults
    * to never deferring, so a caller with no canvas to catch up on (or that
    * never wires this up) keeps the immediate-done behavior.
+   *
+   * PM-1343: returning `'unavailable'` settles the call immediately and marks
+   * it `canvasConfirmed: false` -- see {@link CanvasConfirmation}. The wait
+   * is never lengthened by that branch; only the terminal state changes, from
+   * an unearned success to an honest "not confirmed".
    */
-  shouldAwaitCanvasSync: () => boolean = () => false,
+  canvasConfirmation: () => CanvasConfirmation = () => 'none',
   /**
    * PM-1575: the bound workflow's CRDT `outcomes.appliedLive` counter (or an
    * equivalent monotonic count of LIVE frames actually applied to the doc --
@@ -131,7 +164,7 @@ export function createAgentEventTransport(
    * a (re)subscribe), read fresh whenever this transport needs it -- see
    * `canvasSyncBaseline` below for why. Defaults to a constant so a caller
    * with no counter to offer (e.g. a caller that also leaves
-   * `shouldAwaitCanvasSync` at its default) never spuriously looks "caught
+   * `canvasConfirmation` at its default) never spuriously looks "caught
    * up".
    */
   getCanvasSyncOutcomeCount: () => number = () => 0,
@@ -190,20 +223,64 @@ export function createAgentEventTransport(
     pendingCanvasSync.delete(part)
   }
 
-  function settlePendingCanvasSync(part: ToolPart): void {
+  /**
+   * PM-1343: `confirmed` records whether the canvas was actually observed to
+   * change, and it is the whole difference between the two callers below. A
+   * live doc frame arriving is an observation; a 30-second timer expiring is
+   * the absence of one. Both used to produce the identical settled-success
+   * row, which is how "the agent says done, the canvas is empty" reached
+   * users as an affirmative checkmark instead of a warning.
+   */
+  function settlePendingCanvasSync(part: ToolPart, confirmed: boolean): void {
     clearPendingCanvasSyncTimer(part)
     part.state = 'done'
+    part.canvasConfirmed = confirmed
   }
 
-  function flushPendingCanvasSync(): void {
+  function flushPendingCanvasSync(confirmed: boolean): void {
     if (pendingCanvasSync.size === 0) return
-    for (const part of pendingCanvasSync.keys()) settlePendingCanvasSync(part)
+    for (const part of pendingCanvasSync.keys())
+      settlePendingCanvasSync(part, confirmed)
     claimCanvasSyncOutcome()
     emit(snapshotMessage(message))
   }
 
+  /**
+   * PM-1343: a live doc frame applying is the observation this whole gate is
+   * waiting for, so it both releases parts still held AND clears a `false`
+   * recorded earlier on a part that has already settled.
+   *
+   * That second half is not a refinement, it is required for correctness.
+   * `'unavailable'` settles immediately and irreversibly, and the states that
+   * produce it are frequently TRANSIENT -- the schema-skew path flips
+   * `connected` false at exactly the moment a write is reported, then
+   * recovers when the repair lands (`agentZeroNodesOnUnreadableSchema`). The
+   * node then arrives on the canvas the person is looking at while the panel
+   * still says the change was not confirmed, which is the same class of lie
+   * as PM-1343 itself pointed the other way: the panel contradicting a canvas
+   * it can see. Confirmation must therefore be recoverable, and only an
+   * observation may grant it.
+   *
+   * Scoped to this transport's own message, and keyed on the same
+   * `appliedLive` signal the pending path already treats as "the canvas
+   * caught up", so this adds no looseness the PM-1575 contract did not have.
+   */
   function notifyCanvasCaughtUp(): void {
-    flushPendingCanvasSync()
+    const upgraded = message.parts.filter(
+      (part): part is ToolPart =>
+        part.type === 'tool' &&
+        part.canvasConfirmed === false &&
+        part.ok !== false &&
+        CANVAS_MUTATING_TOOLS.has(part.name)
+    )
+    for (const part of upgraded) part.canvasConfirmed = true
+    if (pendingCanvasSync.size > 0) {
+      flushPendingCanvasSync(true)
+      return
+    }
+    if (upgraded.length === 0) return
+    claimCanvasSyncOutcome()
+    emit(snapshotMessage(message))
   }
 
   function hasPendingCanvasSync(): boolean {
@@ -211,14 +288,18 @@ export function createAgentEventTransport(
   }
 
   function dispose(): void {
-    flushPendingCanvasSync()
+    // An abort, drop, reset or hydrate is not an observation of the canvas
+    // either: the held parts are released so no timer outlives this message,
+    // and they are released as unconfirmed, because nothing here saw the
+    // edit land.
+    flushPendingCanvasSync(false)
   }
 
   /**
    * PM-1575: applies a finished tool-call frame's outcome to its part, then
    * decides whether the part's displayed `state` can flip straight to
    * `'done'` or must be held at `'streaming'` pending canvas catch-up (see
-   * `shouldAwaitCanvasSync` above). Pulled out of `ingest` so that switch's
+   * `canvasConfirmation` above). Pulled out of `ingest` so that switch's
    * `agent_tool_call` branch stays a simple call instead of an inline gate.
    *
    * Only a `'success'` outcome can be waited on: it is the only case where a
@@ -249,30 +330,40 @@ export function createAgentEventTransport(
     clearPendingCanvasSyncTimer(part)
     const baseline = canvasSyncBaseline.get(part)
     canvasSyncBaseline.delete(part)
-    if (
-      status === 'success' &&
-      CANVAS_MUTATING_TOOLS.has(part.name) &&
-      shouldAwaitCanvasSync()
-    ) {
-      if (baseline !== undefined && getCanvasSyncOutcomeCount() > baseline) {
-        // The matching doc_update already applied -- either while the tool
-        // was still running, or before this tool call's first frame ever
-        // reached the transport -- see `canvasSyncBaseline` above. Nothing
-        // left to wait on.
-        part.state = 'done'
-        claimCanvasSyncOutcome()
-      } else {
-        pendingCanvasSync.set(
-          part,
-          setTimeout(() => {
-            settlePendingCanvasSync(part)
-            emit(snapshotMessage(message))
-          }, STALE_AFTER_MS)
-        )
-      }
-    } else {
+    const confirmation =
+      status === 'success' && CANVAS_MUTATING_TOOLS.has(part.name)
+        ? canvasConfirmation()
+        : 'none'
+    if (confirmation === 'none') {
       part.state = 'done'
+      return
     }
+    if (confirmation === 'unavailable') {
+      // PM-1343: a bound canvas that cannot receive a `doc_update` will never
+      // confirm this write, so there is nothing to wait for. Settle now --
+      // the person gets the honest answer immediately rather than a spinner
+      // for 30s followed by the same answer -- but settle it as UNCONFIRMED.
+      settlePendingCanvasSync(part, false)
+      return
+    }
+    if (baseline !== undefined && getCanvasSyncOutcomeCount() > baseline) {
+      // The matching doc_update already applied -- either while the tool
+      // was still running, or before this tool call's first frame ever
+      // reached the transport -- see `canvasSyncBaseline` above. Nothing
+      // left to wait on.
+      part.state = 'done'
+      part.canvasConfirmed = true
+      claimCanvasSyncOutcome()
+      return
+    }
+    pendingCanvasSync.set(
+      part,
+      setTimeout(() => {
+        // The timer expiring is the absence of an observation, not one.
+        settlePendingCanvasSync(part, false)
+        emit(snapshotMessage(message))
+      }, STALE_AFTER_MS)
+    )
   }
 
   /**

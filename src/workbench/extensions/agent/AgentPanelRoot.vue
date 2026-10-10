@@ -140,6 +140,7 @@ import {
   toAgentPaywallCta,
   toAgentPaywallReason
 } from './services/agent/agentPaywallPresentation'
+import type { CanvasConfirmation } from './services/agent/agentEventTransport'
 import { createAgentEventSource } from './services/agent/agentEventSource'
 import { resolveAgentIdentity } from './services/agent/agentIdentity'
 import { useAgentChatHistoryStore } from './stores/agent/agentChatHistoryStore'
@@ -1064,8 +1065,36 @@ const { activeTurnId: conversationTurnId } = storeToRefs(conversationStore)
 // agentEventTransport.ts's file header -- read that unrelated catch-up as
 // its own matching update and settle to 'done' immediately, defeating the
 // wait this gate exists for.
+//
+// PM-1343 / PM-1586 / PM-1996: `connected` alone was the whole gate, and that
+// is the defect the three tickets share. Read as a boolean it says "a
+// doc_update may still arrive", so the confirmation check ran only while
+// confirmation was not really in doubt, and was SKIPPED in every state where
+// an agent write cannot reach this canvas at all -- a refused document (the
+// PM-2047 schema skew flips `connected` false at exactly that moment), a
+// permanent subscribe refusal, a dropped subscription. In those states a
+// tool-call frame carrying `status: 'success'` settled straight to a success
+// glyph over an empty canvas. The fix is not a longer wait: it is naming that
+// third state so the terminal display can be "not confirmed" instead.
+//
+// `lastFrameType !== null` is the discriminator between 'unavailable' and
+// 'none', and it is load-bearing rather than defensive. 'unavailable' is a
+// claim about the doc surface -- "it is there and it is not delivering" --
+// which this client may only make once that surface has answered it at least
+// once. An environment with no doc host at all (every browser_tests spec that
+// drives chat frames without standing one up) has told us nothing, so we
+// assert nothing and keep the pre-existing immediate-done behaviour. The
+// residual that leaves -- a subscribe that is never answered in any way --
+// is deliberately out of this seam; see the receipt for op613-3.
+const canvasConfirmationState = (): CanvasConfirmation => {
+  if (!isBoundWorkflowActive.value) return 'none'
+  const status = crdtStatus.value
+  if (!status.enabled) return 'none'
+  if (status.connected) return 'awaiting'
+  return status.lastFrameType === null ? 'none' : 'unavailable'
+}
 conversationStore.setCanvasSyncGate(
-  () => crdtStatus.value.connected,
+  canvasConfirmationState,
   () => crdtStatus.value.outcomes.appliedLive
 )
 watch(
@@ -1100,6 +1129,58 @@ function resumedTurnTabPath(): string | null {
   return context?.id === bound ? context.tabPath : null
 }
 
+// PM-1996: the bound tab's live node count, with `layoutVersion` read purely
+// to make this recompute -- the layout store's node map is the one place that
+// already sees every arrival on the canvas, local or remote, so this needs no
+// new tracking of its own. `nodeCount` reads the map's size without
+// materialising any layout.
+const boundCanvasNodeCount = computed(() => {
+  void layoutStore.layoutVersion
+  return layoutStore.nodeCount
+})
+// PM-1996: set when a turn finishes against a bound, active tab. The notice
+// it drives is `latch && the canvas is still empty`, so a document frame
+// landing late, a hand-placed node, or a tab switch clears it on its own
+// without this needing to watch for any of them.
+const turnFinishedOnBoundTab = ref(false)
+const canvasEmptyAfterTurn = computed(
+  () =>
+    turnFinishedOnBoundTab.value &&
+    isBoundWorkflowActive.value &&
+    boundCanvasNodeCount.value === 0
+)
+
+// A server-side LLM-hop refusal does not reach the browser as a 402. Refresh
+// the authoritative effective-funds verdict after every observed turn
+// completion so both exhaustion and external top-ups converge.
+function refreshBillingAfterTurn(): void {
+  if (billingType.value !== 'workspace') return
+  void refreshBillingStatus().catch((error: unknown) => {
+    reportError(error, {
+      surface: 'agent',
+      errorType: 'error_refreshing_agent_billing_status'
+    })
+  })
+}
+
+function onTurnIdle(completedTurn: boolean): void {
+  // The immediate idle value on remount is a hydration snapshot, not a
+  // completed turn. A real idle transition is observed after this pass.
+  if (completedTurn) {
+    graphActivity.finishTurn()
+    refreshBillingAfterTurn()
+  }
+  const completedPath = tabActivity.editingTabPath
+  tabActivity.setEditing(null)
+  if (completedPath !== null) tabActivity.markModified(completedPath)
+}
+
+function onTurnActive(turnId: typeof conversationTurnId.value): void {
+  graphActivity.startTurn(turnId)
+  if (tabActivity.editingTabPath === null)
+    tabActivity.setEditing(resumedTurnTabPath())
+}
+
 // Adoption (onWorkflowAdopted) and tab activation (onAgentActiveTab) are the
 // primary spinner setters; the non-idle branch only re-arms it after the
 // stash/resume flip of a panel remount, where those setters never run.
@@ -1107,30 +1188,17 @@ let wasTurnActive = false
 watch(
   [status, conversationTurnId],
   ([value, turnId]) => {
-    const completedTurn = wasTurnActive && value === 'idle'
-    if (value === 'idle') {
-      // The immediate idle value on remount is a hydration snapshot, not a
-      // completed turn. A real idle transition is observed after this pass.
-      if (completedTurn) graphActivity.finishTurn()
-    } else graphActivity.startTurn(turnId)
-    wasTurnActive = value !== 'idle'
-    if (value === 'idle') {
-      // A server-side LLM-hop refusal does not reach the browser as a 402.
-      // Refresh the authoritative effective-funds verdict after every observed
-      // turn completion so both exhaustion and external top-ups converge.
-      if (completedTurn && billingType.value === 'workspace') {
-        void refreshBillingStatus().catch((error: unknown) => {
-          reportError(error, {
-            surface: 'agent',
-            errorType: 'error_refreshing_agent_billing_status'
-          })
-        })
-      }
-      const completedPath = tabActivity.editingTabPath
-      tabActivity.setEditing(null)
-      if (completedPath !== null) tabActivity.markModified(completedPath)
-    } else if (tabActivity.editingTabPath === null)
-      tabActivity.setEditing(resumedTurnTabPath())
+    const active = value !== 'idle'
+    const completedTurn = wasTurnActive && !active
+    // PM-1996: only a real idle TRANSITION counts, for the same reason
+    // `completedTurn` exists -- the immediate idle value on remount is a
+    // hydration snapshot. A turn starting arms the opposite edge, so the
+    // notice cannot survive from one turn into the next.
+    if (completedTurn) turnFinishedOnBoundTab.value = true
+    else if (active) turnFinishedOnBoundTab.value = false
+    wasTurnActive = active
+    if (active) onTurnActive(turnId)
+    else onTurnIdle(completedTurn)
   },
   { immediate: true, flush: 'sync' }
 )
@@ -1418,7 +1486,7 @@ onBeforeUnmount(() => {
     // default instead of leaving whatever this instance last set.
     resetCanvasSyncGate: () => {
       conversationStore.setCanvasSyncGate(
-        () => false,
+        () => 'none',
         () => 0
       )
     }
@@ -2060,6 +2128,7 @@ async function onPanelDrop(event: DragEvent): Promise<void> {
       :select-tab="onSelectWorkflowTarget"
       :workflow-detached="workflowDetached"
       :target-unavailable="agentPanelStore.targetUnavailable"
+      :canvas-empty-after-turn="canvasEmptyAfterTurn"
       :get-mention-nodes="mentionableNodes"
       :paywall-presentation="paywallPresentation"
       :credits-exhausted="showStandingPaywall"

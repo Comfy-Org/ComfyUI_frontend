@@ -28,6 +28,19 @@ export interface ToolPart {
   state: PartState
   ok?: boolean
   durationMs?: number
+  /**
+   * PM-1343 / PM-1586: whether the canvas was actually observed to change for
+   * a canvas-mutating tool call that reported success. `true` once a live doc
+   * frame for the bound workflow applied, `false` when no such observation
+   * ever arrived, and `undefined` for every call where the question does not
+   * arise (a read-only tool, a failed call, no bound canvas to change).
+   *
+   * `ok` and this field answer different questions and both are needed: `ok`
+   * is what the *server* said about its own tool execution, which the
+   * PM-2047 incident showed can be `success` on every write while the user's
+   * canvas stays at zero nodes. Only this field is about what the browser saw.
+   */
+  canvasConfirmed?: boolean
 }
 
 export interface ThinkingPart {

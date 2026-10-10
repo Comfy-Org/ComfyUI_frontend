@@ -69,6 +69,7 @@ const {
   selectTab = async () => false,
   workflowDetached = false,
   targetUnavailable = false,
+  canvasEmptyAfterTurn = false,
   getMentionNodes = () => [],
   paywallPresentation = DEFAULT_AGENT_PAYWALL_PRESENTATION,
   creditsExhausted = false,
@@ -106,6 +107,13 @@ const {
   selectTab?: (path: string) => Promise<boolean>
   workflowDetached?: boolean
   targetUnavailable?: boolean
+  /**
+   * PM-1996: a turn has finished on the bound tab and that tab has no nodes
+   * on it. Outranks every other notice context below, because every one of
+   * those is advice about which workflow you are looking at, and this one is
+   * a correction of what the turn just told you about its contents.
+   */
+  canvasEmptyAfterTurn?: boolean
   getMentionNodes?: () => SelectedNode[]
   paywallPresentation?: AgentPaywallPresentation
   /**
@@ -163,6 +171,7 @@ const emit = defineEmits<{
 }>()
 
 const targetNotice = computed(() => {
+  if (canvasEmptyAfterTurn) return 'emptyCanvas'
   if (targetUnavailable) return 'unavailable'
   if (workflowDetached || activeTab === null) return undefined
   if (visibleTabPath !== null && visibleTabPath !== activeTab.path)

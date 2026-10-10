@@ -340,7 +340,7 @@ describe('useAgentConversationStore', () => {
   // seconds later than the canvas actually caught up.
   it('still settles a canvas-sync-pending tool call after its turn has settled', () => {
     const store = useAgentConversationStore()
-    store.setCanvasSyncGate(() => true)
+    store.setCanvasSyncGate(() => 'awaiting')
     store.startTurn(T1)
     store.ingest(toolCall('t1', 'add_node', 'success'))
     store.ingest(done('t1'))
@@ -371,7 +371,7 @@ describe('useAgentConversationStore', () => {
     const store = useAgentConversationStore()
     let outcomeCount = 0
     store.setCanvasSyncGate(
-      () => true,
+      () => 'awaiting',
       () => outcomeCount
     )
     store.startTurn(T1)
@@ -393,7 +393,7 @@ describe('useAgentConversationStore', () => {
   // STALE_AFTER_MS fallback.
   it('keeps an earlier settled turn reachable after a second turn also settles with a held part', () => {
     const store = useAgentConversationStore()
-    store.setCanvasSyncGate(() => true)
+    store.setCanvasSyncGate(() => 'awaiting')
 
     store.startTurn(T1)
     store.ingest(toolCall('t1', 'add_node', 'success'))
@@ -422,7 +422,7 @@ describe('useAgentConversationStore', () => {
   // a turn nobody is tracking anymore.
   it('flushes a held tool-call part immediately when its turn is aborted', () => {
     const store = useAgentConversationStore()
-    store.setCanvasSyncGate(() => true)
+    store.setCanvasSyncGate(() => 'awaiting')
     store.startTurn(T1)
     store.ingest(toolCall('t1', 'add_node', 'success'))
     expect(store.messages[0].parts[0]).toMatchObject({ state: 'streaming' })
@@ -717,7 +717,7 @@ describe('useAgentConversationStore', () => {
   // settling the moment it is clear nothing will ever resume it.
   it('flushes a held tool-call part immediately when a settled background turn is resumed but not reactivated', () => {
     const store = useAgentConversationStore()
-    store.setCanvasSyncGate(() => true)
+    store.setCanvasSyncGate(() => 'awaiting')
     store.setThreadId('th')
     store.startTurn(T1)
     store.ingest(toolCall('t1', 'add_node', 'success'))
@@ -737,7 +737,7 @@ describe('useAgentConversationStore', () => {
   // with the disposed transport's own stale snapshot.
   it('does not let an orphaned canvas-sync timer overwrite hydrated content under the same turn id', () => {
     const store = useAgentConversationStore()
-    store.setCanvasSyncGate(() => true)
+    store.setCanvasSyncGate(() => 'awaiting')
     store.startTurn(T1)
     store.ingest(toolCall('t1', 'add_node', 'success'))
     store.ingest(done('t1'))
@@ -758,10 +758,10 @@ describe('useAgentConversationStore', () => {
   // remount) never reached a transport created before it.
   it('routes a later setCanvasSyncGate() call to a transport created before it', () => {
     const store = useAgentConversationStore()
-    store.setCanvasSyncGate(() => false)
+    store.setCanvasSyncGate(() => 'none')
     store.startTurn(T1)
 
-    store.setCanvasSyncGate(() => true)
+    store.setCanvasSyncGate(() => 'awaiting')
     store.ingest(toolCall('t1', 'add_node', 'success'))
 
     expect(store.messages[0].parts[0]).toMatchObject({ state: 'streaming' })
@@ -779,7 +779,7 @@ describe('useAgentConversationStore', () => {
     const store = useAgentConversationStore()
     const applied = ref(5)
     store.setCanvasSyncGate(
-      () => true,
+      () => 'awaiting',
       () => applied.value
     )
     store.startTurn(T1)
@@ -1960,7 +1960,7 @@ describe('useAgentConversationStore', () => {
   it('keeps a successful tool pending until canvas catch-up after background settlement', () => {
     const store = useAgentConversationStore()
     store.setThreadId('th')
-    store.setCanvasSyncGate(() => true)
+    store.setCanvasSyncGate(() => 'awaiting')
     store.startTurn(T1)
     store.ingest(toolCall('t1', 'add_node', 'success'))
     store.stashActiveTurn()

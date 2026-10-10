@@ -7,6 +7,13 @@ interface ToolRow {
   state: PartState
   ok?: boolean
   count: number
+  /**
+   * PM-1343: see `ToolPart.canvasConfirmed`. Folded pessimistically below —
+   * one unconfirmed call in a folded group makes the whole row unconfirmed,
+   * because the row is the only thing the person sees and "two of three edits
+   * reached your canvas" must not render as a settled success.
+   */
+  canvasConfirmed?: boolean
 }
 
 interface ThinkingRow {
@@ -31,6 +38,44 @@ function matchingToolStep(
 }
 
 /**
+ * PM-1343: pessimistic fold. One unconfirmed call makes the whole folded row
+ * unconfirmed and that verdict is not undone by a later confirmed sibling,
+ * because the row is the only thing the person sees -- "two of three edits
+ * reached your canvas" must not render as a settled success. `true` therefore
+ * only ever fills an answer that is still absent.
+ */
+function foldCanvasConfirmed(previous: ToolRow, part: ToolPart): void {
+  if (part.canvasConfirmed === false) previous.canvasConfirmed = false
+  else if (
+    part.canvasConfirmed === true &&
+    previous.canvasConfirmed === undefined
+  )
+    previous.canvasConfirmed = true
+}
+
+/** Absorbs a repeat call into the step already standing for it. */
+function mergeIntoStep(previous: ToolRow, part: ToolPart): void {
+  previous.count += 1
+  if (part.state === 'streaming') previous.state = 'streaming'
+  if (part.ok !== undefined) previous.ok = part.ok
+  foldCanvasConfirmed(previous, part)
+}
+
+function toRow(part: ActivityPart): ActivityRow {
+  return part.type === 'thinking'
+    ? { kind: 'thinking', text: part.text, state: part.state }
+    : {
+        kind: 'tool',
+        name: part.name,
+        skill: part.skill,
+        state: part.state,
+        ok: part.ok,
+        canvasConfirmed: part.canvasConfirmed,
+        count: 1
+      }
+}
+
+/**
  * Consecutive calls to the same tool read as one step carrying a count: the
  * transport keeps every call so a single one stays addressable, the trace only
  * needs the shape of the work.
@@ -38,29 +83,10 @@ function matchingToolStep(
 export function foldActivity(parts: readonly ActivityPart[]): ActivityRow[] {
   const rows: ActivityRow[] = []
   for (const part of parts) {
-    if (part.type === 'thinking') {
-      rows.push({
-        kind: 'thinking',
-        text: part.text,
-        state: part.state
-      })
-      continue
-    }
-    const previous = matchingToolStep(rows.at(-1), part)
-    if (previous) {
-      previous.count += 1
-      if (part.state === 'streaming') previous.state = 'streaming'
-      if (part.ok !== undefined) previous.ok = part.ok
-    } else {
-      rows.push({
-        kind: 'tool',
-        name: part.name,
-        skill: part.skill,
-        state: part.state,
-        ok: part.ok,
-        count: 1
-      })
-    }
+    const previous =
+      part.type === 'thinking' ? undefined : matchingToolStep(rows.at(-1), part)
+    if (previous) mergeIntoStep(previous, part as ToolPart)
+    else rows.push(toRow(part))
   }
   return rows
 }
