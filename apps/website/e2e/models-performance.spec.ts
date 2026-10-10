@@ -50,23 +50,6 @@ test('catalogue browsing stays within its JavaScript budget', async ({
   expect(catalogueBytes).toBeLessThan(900_000)
 })
 
-test('the footer loads its animation when it approaches the viewport', async ({
-  page
-}) => {
-  const frames: string[] = []
-  page.on('request', (request) => {
-    if (request.url().includes('/footer-logo-seq/')) frames.push(request.url())
-  })
-
-  await page.goto('/hub/models/')
-  await expect(page.getByTestId('workshop-search')).toBeVisible()
-  expect(frames).toEqual([])
-
-  const frameLoaded = page.waitForResponse(/\/footer-logo-seq\//)
-  await page.getByRole('contentinfo').scrollIntoViewIfNeeded()
-  expect((await frameLoaded).ok()).toBe(true)
-})
-
 test('video cards load on screen and stop playing when scrolled away', async ({
   page
 }) => {

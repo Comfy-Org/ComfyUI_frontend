@@ -1,7 +1,17 @@
 import type { Locator } from '@playwright/test'
 import { expect } from '@playwright/test'
 
+import { externalLinks } from '@/config/routes'
 import { test } from './fixtures/workshopVisibility'
+
+const socialChannels = [
+  ['GitHub', externalLinks.github],
+  ['Discord', externalLinks.discord],
+  ['X', externalLinks.x],
+  ['YouTube', externalLinks.youtube],
+  ['LinkedIn', externalLinks.linkedin],
+  ['Instagram', externalLinks.instagram]
+] as const
 
 function settleAnimations(root: Locator) {
   return root.evaluate((el) =>
@@ -403,6 +413,34 @@ test.describe('Footer @smoke', () => {
         footer.getByRole('heading', { name: heading }).first()
       ).toBeVisible()
     }
+  })
+
+  test('social channels are icon links that open in a new tab', async ({
+    page
+  }) => {
+    const footer = page.locator('footer')
+    const social = footer.getByRole('navigation', { name: 'Follow Comfy' })
+    await social.scrollIntoViewIfNeeded()
+    await expect(social).toBeVisible()
+
+    const links = social.getByRole('link')
+    await expect(links).toHaveText(
+      socialChannels.map(([label]) => `${label} (opens in new tab)`)
+    )
+    expect(
+      await links.evaluateAll((anchors: HTMLAnchorElement[]) =>
+        anchors.map((anchor) => [
+          anchor.getAttribute('href'),
+          anchor.target,
+          anchor.rel
+        ])
+      )
+    ).toEqual(socialChannels.map(([, href]) => [href, '_blank', 'noopener']))
+    await expect(
+      footer.getByRole('navigation', { name: 'Resources' }).getByRole('link', {
+        name: new RegExp(socialChannels.map(([label]) => label).join('|'))
+      })
+    ).toHaveCount(0)
   })
 
   test('copyright text is visible', async ({ page }) => {

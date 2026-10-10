@@ -13,7 +13,11 @@ const { title, links } = defineProps<{
 
 <template>
   <nav :aria-label="title" class="flex flex-col gap-4">
-    <h3 class="text-sm font-bold">{{ title }}</h3>
+    <h3
+      class="text-sm font-bold tracking-wider text-primary-warm-gray uppercase"
+    >
+      {{ title }}
+    </h3>
     <div class="flex flex-col">
       <a
         v-for="link in links"
