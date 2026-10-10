@@ -18,7 +18,7 @@ const workflowService: ReturnType<typeof realUseWorkflowService> = {
   loadPreviousOpenedWorkflow: vi.fn(async () => {}),
   duplicateWorkflow: vi.fn(async () => {}),
   showPendingWarnings: vi.fn(),
-  afterLoadNewGraph: vi.fn(async () => {}),
+  afterLoadNewGraph: vi.fn(async () => true),
   beforeLoadNewGraph: vi.fn()
 }
 

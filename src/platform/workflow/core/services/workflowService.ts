@@ -482,6 +482,10 @@ export const useWorkflowService = () => {
           await restoreRetainedWorkflow(workflow)
           return false
         }
+        if (loaded === 'superseded') {
+          useSubgraphNavigationStore().endWorkflowNavigation(navigationIntentId)
+          return false
+        }
         showPendingWarnings(undefined, {
           silent: !loadFromRemote && !options.force
         })
@@ -703,20 +707,28 @@ export const useWorkflowService = () => {
   const afterLoadNewGraph = async (
     value: string | ComfyWorkflow | null,
     workflowData: ComfyWorkflowJSON,
-    shareId?: string
-  ) => {
-    await activateLoadedWorkflow(value, workflowData, shareId)
+    shareId?: string,
+    options: { isCurrent?: () => boolean } = {}
+  ): Promise<boolean> => {
+    if (!(await activateLoadedWorkflow(value, workflowData, shareId, options)))
+      return false
     useNodeOutputStore().restorePreviewsForWorkflow(
       useWorkspaceStore().workflow.activeWorkflow?.path
     )
+    return true
   }
 
   const activateLoadedWorkflow = async (
     value: string | ComfyWorkflow | null,
     workflowData: ComfyWorkflowJSON,
-    shareId?: string
-  ) => {
+    shareId?: string,
+    options: { isCurrent?: () => boolean } = {}
+  ): Promise<boolean> => {
     const workflowStore = useWorkspaceStore().workflow
+    const openCurrentWorkflow = (workflow: ComfyWorkflow) =>
+      options.isCurrent
+        ? workflowStore.openWorkflow(workflow, options)
+        : workflowStore.openWorkflow(workflow)
     const { isAppMode } = useAppMode()
     const wasAppMode = isAppMode.value
     const rootGraphId = adoptRootGraphId(workflowData)
@@ -764,8 +776,8 @@ export const useWorkflowService = () => {
           ((existingWorkflow.isPersisted && !existingWorkflow.isLoaded) ||
             isSameActiveWorkflowLoad)
         ) {
-          const loadedWorkflow =
-            await workflowStore.openWorkflow(existingWorkflow)
+          const loadedWorkflow = await openCurrentWorkflow(existingWorkflow)
+          if (!loadedWorkflow || options.isCurrent?.() === false) return false
           activateRunErrors(loadedWorkflow)
           if (loadedWorkflow.initialMode === undefined) {
             // Prefer the file's linearMode over the draft's since the file
@@ -787,7 +799,7 @@ export const useWorkflowService = () => {
             )
           )
           loadedWorkflow.changeTracker.restore()
-          return
+          return true
         }
       }
 
@@ -800,12 +812,14 @@ export const useWorkflowService = () => {
         tempWorkflow.shareId = shareId
       }
       trackIfEnteringApp(tempWorkflow)
-      const loadedWorkflow = await workflowStore.openWorkflow(tempWorkflow)
+      const loadedWorkflow = await openCurrentWorkflow(tempWorkflow)
+      if (!loadedWorkflow || options.isCurrent?.() === false) return false
       activateRunErrors(loadedWorkflow)
-      return
+      return true
     }
 
-    const loadedWorkflow = await workflowStore.openWorkflow(value)
+    const loadedWorkflow = await openCurrentWorkflow(value)
+    if (!loadedWorkflow || options.isCurrent?.() === false) return false
     activateRunErrors(loadedWorkflow)
     if (shareId) {
       loadedWorkflow.shareId = shareId
@@ -819,6 +833,7 @@ export const useWorkflowService = () => {
       ensureWorkflowId(workflowData, activeStateFallbackId(loadedWorkflow))
     )
     loadedWorkflow.changeTracker.restore()
+    return true
   }
 
   /**

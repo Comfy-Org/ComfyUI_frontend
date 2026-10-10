@@ -172,6 +172,7 @@ import { PromptExecutionError, api } from './api'
 import type { ComfyApi } from './api'
 import { defaultGraph } from './defaultGraph'
 import { importA1111 } from './pnginfo'
+import type { A1111ImportOutcome } from './pnginfo'
 import { applyPromotedWidgetControl } from '@/core/graph/subgraph/promotedWidgetControl'
 import { ComfyUI } from './ui'
 import { $el } from './ui/utils'
@@ -307,6 +308,13 @@ function createNodeOutputsMutationView(
       return deleted
     }
   })
+}
+
+class SupersededGraphLoad extends Error {
+  constructor() {
+    super('Graph load superseded by a newer load')
+    this.name = 'SupersededGraphLoad'
+  }
 }
 
 export class ComfyApp {
@@ -1315,6 +1323,21 @@ export class ComfyApp {
     await useExtensionService().invokeExtensionsAsync('onGraphLoadError', error)
   }
 
+  private ownsGraphLoad(loadId: number): boolean {
+    return loadId >= this.committedGraphLoadSequence
+  }
+
+  private commitGraphLoad(loadId: number): void {
+    this.committedGraphLoadSequence = Math.max(
+      loadId,
+      this.committedGraphLoadSequence
+    )
+  }
+
+  private rejectSupersededGraphLoad(): 'superseded' {
+    return 'superseded'
+  }
+
   async loadGraphData(
     graphData?: ComfyWorkflowJSON,
     clean: boolean = true,
@@ -1329,7 +1352,7 @@ export class ComfyApp {
       silentAssetErrors?: boolean
       workflowNavigationId?: number
     } = {}
-  ): Promise<LoadedComfyWorkflow | boolean | undefined> {
+  ): Promise<LoadedComfyWorkflow | boolean | 'superseded' | undefined> {
     const canvasScheduler = useCanvasScheduler()
     const loadId = ++this.graphLoadSequence
 
@@ -1344,6 +1367,8 @@ export class ComfyApp {
     } = options
     useWorkflowService().beforeLoadNewGraph(clean)
     await useExtensionService().invokeExtensionsAsync('beforeLoadGraph')
+
+    if (!this.ownsGraphLoad(loadId)) return this.rejectSupersededGraphLoad()
 
     let reset_invalid_values = false
     const missingNodeTypes: MissingNodeType[] = []
@@ -1362,16 +1387,6 @@ export class ComfyApp {
       } else {
         useMissingModelStore().clearMissingModels()
         useMissingMediaStore().clearMissingMedia()
-      }
-
-      if (clean) {
-        // Reset canvas context before configuring a new graph so subgraph UI
-        // state from the previous workflow cannot leak into the newly loaded
-        // one, and so `clean()` can clear the root graph even when the user is
-        // currently inside a subgraph.
-        this.canvas.setGraph(this.rootGraph)
-
-        withGraphIntentSource('load', () => this.clean())
       }
 
       // Use explicit validation instead of falsy check to avoid replacing
@@ -1395,6 +1410,10 @@ export class ComfyApp {
         // Ideally we should not block users from loading the workflow.
         graphData = validatedGraphData ?? graphData
       }
+      if (!this.ownsGraphLoad(loadId)) {
+        return this.rejectSupersededGraphLoad()
+      }
+      const subgraphTypes = useSubgraphService().normalizeSubgraphs(graphData)
       // Only show the reroute migration warning if the workflow does not have native
       // reroutes. Merging reroute network has great complexity, and it is not supported
       // for now.
@@ -1427,8 +1446,6 @@ export class ComfyApp {
         )
       }
 
-      useSubgraphService().loadSubgraphs(graphData)
-
       await useExtensionService().invokeExtensionsAsync(
         'beforeConfigureGraph',
         graphData,
@@ -1452,7 +1469,10 @@ export class ComfyApp {
           return
         }
         for (const n of nodes) {
-          if (!(n.type in LiteGraph.registered_node_types)) {
+          if (
+            !(n.type in LiteGraph.registered_node_types) &&
+            !subgraphTypes.has(n.type)
+          ) {
             // Always sanitize so configure() can handle unregistered types,
             // but only report as missing if the node is active.
             const isMuted =
@@ -1515,6 +1535,7 @@ export class ComfyApp {
       // below. Left unhandled, that would both reject silently and leak any
       // suppression/loading-state a `beforeLoadGraph` listener opened for
       // this load, since nothing ever notifies it the load ended.
+      if (!this.ownsGraphLoad(loadId)) return this.rejectSupersededGraphLoad()
       await this.reportGraphLoadFailure(error)
       void useSubgraphNavigationStore().updateHash(
         'workflow-load',
@@ -1557,23 +1578,26 @@ export class ComfyApp {
       }
     }
 
-    ChangeTracker.isLoadingGraph = true
+    if (!this.ownsGraphLoad(loadId)) return this.rejectSupersededGraphLoad()
+
+    const endGraphLoadSuppression = ChangeTracker.beginGraphLoad()
     let activatedWorkflow: LoadedComfyWorkflow | undefined
     let reconcileResourceErrors: (() => void) | undefined
     let resourceScanLoadCompleted = false
     try {
       try {
-        if (loadId < this.committedGraphLoadSequence) {
-          await useExtensionService().invokeExtensionsAsync(
-            'onGraphLoadError',
-            new DOMException(
-              'Graph load superseded by a newer load',
-              'AbortError'
-            )
-          )
-          return undefined
+        this.commitGraphLoad(loadId)
+
+        if (clean) {
+          // Reset canvas context before configuring a new graph so subgraph UI
+          // state from the previous workflow cannot leak into the newly loaded
+          // one, and so `clean()` can clear the root graph even when the user is
+          // currently inside a subgraph.
+          this.canvas.setGraph(this.rootGraph)
+          withGraphIntentSource('load', () => this.clean())
         }
 
+        useSubgraphService().loadSubgraphs(graphData)
         this.rootGraph.configure(graphData as ISerialisedGraph)
 
         // Save original renderer version before scaling (it gets modified during scaling)
@@ -1592,10 +1616,6 @@ export class ComfyApp {
           )
         }
 
-        this.committedGraphLoadSequence = Math.max(
-          loadId,
-          this.committedGraphLoadSequence
-        )
         const preservesPendingCamera =
           !restore_view &&
           workflow !== null &&
@@ -1628,6 +1648,9 @@ export class ComfyApp {
           }
         }
       } catch (error) {
+        if (!this.ownsGraphLoad(loadId)) {
+          return this.rejectSupersededGraphLoad()
+        }
         await this.reportGraphLoadFailure(error)
         // Resolves rather than throws: the close/replacement guards read this outcome.
         return false
@@ -1697,6 +1720,10 @@ export class ComfyApp {
         missingNodeTypes
       )
 
+      if (!this.ownsGraphLoad(loadId)) {
+        return await this.rejectSupersededGraphLoad()
+      }
+
       const effectiveShareId =
         shareId ??
         (workflow instanceof ComfyWorkflow ? workflow.shareId : undefined)
@@ -1711,12 +1738,19 @@ export class ComfyApp {
       }
       useTelemetry()?.trackWorkflowOpened(telemetryPayload)
       useTelemetry()?.trackWorkflowImported(telemetryPayload)
-      await useWorkflowService().afterLoadNewGraph(
+      const activated = await useWorkflowService().afterLoadNewGraph(
         workflow,
         this.rootGraph.serialize() as unknown as ComfyWorkflowJSON,
-        effectiveShareId
+        effectiveShareId,
+        { isCurrent: () => this.ownsGraphLoad(loadId) }
       )
+      if (!activated) return await this.rejectSupersededGraphLoad()
       await useExtensionService().invokeExtensionsAsync('afterLoadGraph')
+
+      if (!this.ownsGraphLoad(loadId)) {
+        return await this.rejectSupersededGraphLoad()
+      }
+
       // Capture the workflow this load activated before the asset-scan awaits
       // below can hand control back and let the user switch to another one.
       activatedWorkflow = useWorkflowStore().activeWorkflow ?? undefined
@@ -1767,6 +1801,10 @@ export class ComfyApp {
         })
       }
 
+      if (!this.ownsGraphLoad(loadId)) {
+        return await this.rejectSupersededGraphLoad()
+      }
+
       if (!deferWarnings) {
         useWorkflowService().showPendingWarnings(undefined, {
           silent: silentAssetErrors
@@ -1784,9 +1822,10 @@ export class ComfyApp {
         'workflow-load',
         workflowNavigationId
       )
-      ChangeTracker.isLoadingGraph = false
-      // The retirement watcher skips transitions made during the load.
-      useExecutionErrorStore().retireResolvedMissingNodePromptError()
+      endGraphLoadSuppression()
+      if (!ChangeTracker.isLoadingGraph) {
+        useExecutionErrorStore().retireResolvedMissingNodePromptError()
+      }
       reconcileResourceErrors?.()
     }
   }
@@ -2208,6 +2247,7 @@ export class ComfyApp {
     }
   ) {
     const fileName = file.name.replace(/\.\w+$/, '') // Strip file extension
+    const loadId = ++this.graphLoadSequence
     const workflowData = await getWorkflowDataFromFile(file)
     const { workflow, prompt, parameters, templates } = workflowData ?? {}
 
@@ -2312,20 +2352,28 @@ export class ComfyApp {
 
     // Use parameters strictly as the final fallback
     if (parameters && typeof parameters === 'string') {
-      const outcome = await importA1111(
-        this.rootGraph,
-        parameters,
-        async () => {
+      let outcome: A1111ImportOutcome
+      try {
+        outcome = await importA1111(this.rootGraph, parameters, async () => {
+          if (!this.ownsGraphLoad(loadId)) throw new SupersededGraphLoad()
           try {
             // false: final destination; no later load republishes the hash.
             useWorkflowService().beforeLoadNewGraph(false)
             await useExtensionService().invokeExtensionsAsync('beforeLoadGraph')
           } finally {
-            useMissingNodesErrorStore().setMissingNodeTypes([])
+            if (this.ownsGraphLoad(loadId)) {
+              useMissingNodesErrorStore().setMissingNodeTypes([])
+            }
           }
+          if (!this.ownsGraphLoad(loadId)) throw new SupersededGraphLoad()
           this.canvas.setGraph(this.rootGraph)
-        }
-      )
+          this.commitGraphLoad(loadId)
+        })
+      } catch (error) {
+        if (!(error instanceof SupersededGraphLoad)) throw error
+        await this.rejectSupersededGraphLoad()
+        return
+      }
       switch (outcome) {
         case 'core-nodes-unavailable':
           useToast().warning(t('toastMessages.a1111CoreNodesUnavailable'))
@@ -2353,10 +2401,20 @@ export class ComfyApp {
         'afterConfigureGraph',
         []
       )
-      await useWorkflowService().afterLoadNewGraph(
+      if (!this.ownsGraphLoad(loadId)) {
+        await this.rejectSupersededGraphLoad()
+        return
+      }
+      const activated = await useWorkflowService().afterLoadNewGraph(
         fileName,
-        this.rootGraph.serialize() as unknown as ComfyWorkflowJSON
+        this.rootGraph.serialize() as unknown as ComfyWorkflowJSON,
+        undefined,
+        { isCurrent: () => this.ownsGraphLoad(loadId) }
       )
+      if (!activated) {
+        await this.rejectSupersededGraphLoad()
+        return
+      }
       await useExtensionService().invokeExtensionsAsync('afterLoadGraph')
       return
     }
@@ -2491,12 +2549,15 @@ export class ComfyApp {
     fileName: string,
     options: { deferWarnings?: boolean } = {}
   ): Promise<void> {
+    const loadId = ++this.graphLoadSequence
     // false: no workflow load follows to republish the hash.
     useWorkflowService().beforeLoadNewGraph(false)
     await useExtensionService().invokeExtensionsAsync('beforeLoadGraph')
-    this.canvas.setGraph(this.rootGraph)
-    withGraphIntentSource('load', () => this.clean())
 
+    if (!this.ownsGraphLoad(loadId)) {
+      await this.rejectSupersededGraphLoad()
+      return
+    }
     const ids = Object.keys(apiData)
     // Export (API) flattens subgraph nodes to ids like "194:45". At the root
     // graph a colon reads as an execution-id path: Locate walks into node
@@ -2520,6 +2581,14 @@ export class ComfyApp {
     const missingNodeTypes: MissingNodeType[] = []
     const nodeReplacementStore = useNodeReplacementStore()
     await nodeReplacementStore.load()
+
+    if (!this.ownsGraphLoad(loadId)) {
+      await this.rejectSupersededGraphLoad()
+      return
+    }
+    this.canvas.setGraph(this.rootGraph)
+    withGraphIntentSource('load', () => this.clean())
+    this.commitGraphLoad(loadId)
     withGraphIntentSource('load', () => {
       for (const id of ids) {
         const data = apiData[id]
@@ -2697,11 +2766,26 @@ export class ComfyApp {
       'afterConfigureGraph',
       missingNodeTypes
     )
-    await useWorkflowService().afterLoadNewGraph(
+
+    if (!this.ownsGraphLoad(loadId)) {
+      await this.rejectSupersededGraphLoad()
+      return
+    }
+    const activated = await useWorkflowService().afterLoadNewGraph(
       fileName,
-      this.rootGraph.serialize() as unknown as ComfyWorkflowJSON
+      this.rootGraph.serialize() as unknown as ComfyWorkflowJSON,
+      undefined,
+      { isCurrent: () => this.ownsGraphLoad(loadId) }
     )
+    if (!activated) {
+      await this.rejectSupersededGraphLoad()
+      return
+    }
     await useExtensionService().invokeExtensionsAsync('afterLoadGraph')
+    if (!this.ownsGraphLoad(loadId)) {
+      await this.rejectSupersededGraphLoad()
+      return
+    }
     if (missingNodeTypes.length) {
       this.showMissingNodesError(missingNodeTypes, options)
     }

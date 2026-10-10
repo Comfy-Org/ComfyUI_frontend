@@ -60,10 +60,10 @@ export const useSubgraphService = () => {
     return nodeDef
   }
 
-  /** Loads all exported subgraph definitions from workflow */
-  function loadSubgraphs(graphData: ComfyWorkflowJSON) {
+  /** Normalizes exported subgraph ids without mutating shared graph state. */
+  function normalizeSubgraphs(graphData: ComfyWorkflowJSON) {
     const subgraphs = graphData.definitions?.subgraphs
-    if (!subgraphs) return
+    if (!subgraphs) return new Set<string>()
 
     const normalized = normalizeSubgraphDefinitionIds(
       subgraphs,
@@ -71,8 +71,16 @@ export const useSubgraphService = () => {
     )
     graphData.definitions!.subgraphs = normalized.subgraphs
     if (normalized.rootNodes) graphData.nodes = normalized.rootNodes
+    return new Set(normalized.subgraphs.map(({ id }) => id))
+  }
+
+  /** Loads all normalized exported subgraph definitions from workflow. */
+  function loadSubgraphs(graphData: ComfyWorkflowJSON) {
+    const subgraphs = graphData.definitions?.subgraphs
+    if (!subgraphs) return
+
     // Assertion: overriding Zod schema
-    const exportedSubgraphs = normalized.subgraphs as ExportedSubgraph[]
+    const exportedSubgraphs = subgraphs as ExportedSubgraph[]
     const missingSubgraphs = exportedSubgraphs.filter(
       ({ id }) => !comfyApp.rootGraph.subgraphs.has(id)
     )
@@ -101,6 +109,7 @@ export const useSubgraphService = () => {
   }
 
   return {
+    normalizeSubgraphs,
     loadSubgraphs,
     registerNewSubgraph
   }

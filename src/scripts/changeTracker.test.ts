@@ -676,6 +676,17 @@ describe('ChangeTracker', () => {
         }
       )
 
+      it('lets the newest graph load release suppression without waiting for an older load', () => {
+        const endOlderLoad = ChangeTracker.beginGraphLoad()
+        const endNewerLoad = ChangeTracker.beginGraphLoad()
+
+        endNewerLoad()
+
+        expect(ChangeTracker.isLoadingGraph).toBe(false)
+        endOlderLoad()
+        expect(ChangeTracker.isLoadingGraph).toBe(false)
+      })
+
       it('does not push when state is identical', () => {
         const state = createState()
         const tracker = createTracker(state)
