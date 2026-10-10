@@ -2,7 +2,16 @@ import { readFileSync } from 'node:fs'
 import { applyOps, mint, project } from '@comfyorg/comfy-multi-player'
 import type { WidgetCatalog, WorkflowJSON } from '@comfyorg/comfy-multi-player'
 import { fromPartial } from '@total-typescript/shoehorn'
-import { afterEach, assert, beforeEach, describe, expect, it, vi } from 'vitest'
+import {
+  afterEach,
+  assert,
+  beforeEach,
+  describe,
+  expect,
+  it,
+  onTestFinished,
+  vi
+} from 'vitest'
 import { z } from 'zod'
 
 import { isRootGraphDocBound } from '@/lib/litegraph/src/docBoundGraphs'
@@ -174,6 +183,11 @@ describe('attachDocOpMinter', () => {
   let bound: boolean
   let docInputNames: DocOpMinterDeps['docInputNames']
   let docPromotedWidgets: DocOpMinterDeps['docPromotedWidgets']
+  let docCaughtUp: boolean
+  let docIdentity: object
+  let refused: Parameters<
+    NonNullable<DocOpMinterDeps['onWidgetWriteRefused']>
+  >[0][]
 
   beforeEach(() => {
     graph = new LGraph()
@@ -183,6 +197,9 @@ describe('attachDocOpMinter', () => {
     bound = true
     docInputNames = () => null
     docPromotedWidgets = () => null
+    docCaughtUp = true
+    docIdentity = {}
+    refused = []
     minter = attachDocOpMinter({
       isEnabled: () => enabled,
       isDocBound: () => bound,
@@ -190,7 +207,10 @@ describe('attachDocOpMinter', () => {
       getGraph: () => graph,
       boundRootGraphId: () => rootGraphId,
       docInputNames: (nodeId) => docInputNames(nodeId),
-      docPromotedWidgets: (nodeId) => docPromotedWidgets(nodeId)
+      docPromotedWidgets: (nodeId) => docPromotedWidgets(nodeId),
+      isDocCaughtUp: () => docCaughtUp,
+      docIdentity: () => docIdentity,
+      onWidgetWriteRefused: (write) => refused.push(write)
     })
   })
 
@@ -479,7 +499,9 @@ describe('attachDocOpMinter', () => {
       getGraph: () => graph,
       boundRootGraphId: () => rootGraphId,
       docInputNames: () => null,
-      docPromotedWidgets: () => null
+      docPromotedWidgets: () => null,
+      isDocCaughtUp: () => true,
+      docIdentity: () => null
     })
 
     const added = new TestSink()
@@ -945,6 +967,216 @@ describe('attachDocOpMinter', () => {
       )?.widgets_values
     ).toEqual([null, 'pasted'])
     doc.destroy()
+  })
+
+  it.for([
+    {
+      name: 'an unpromoted host widget',
+      reason: 'unpromoted_widget',
+      errorType: 'agent_crdt_unpromoted_host_widget',
+      act: (host: ReturnType<typeof createTestSubgraphNode>) => {
+        host.addWidget('text', 'extra', 'before', () => {}).value = 'after'
+        return 'extra'
+      }
+    },
+    {
+      name: 'a drifted host layout',
+      reason: 'layout_drift',
+      errorType: 'agent_crdt_promoted_widget_order_drift',
+      act: (host: ReturnType<typeof createTestSubgraphNode>) => {
+        docPromotedWidgets = () => ({
+          valueCount: 2,
+          declaredNames: ['text', 'prefix'],
+          promotedNames: ['text', 'prefix']
+        })
+        host.widgets[1].value = 'misplaced'
+        return 'text'
+      }
+    },
+    {
+      name: 'a document that has not caught up yet',
+      reason: 'doc_not_synced',
+      errorType: 'agent_crdt_promoted_widget_doc_not_synced',
+      act: (host: ReturnType<typeof createTestSubgraphNode>) => {
+        docPromotedWidgets = () => ({
+          valueCount: 2,
+          declaredNames: ['prefix', 'text'],
+          promotedNames: ['prefix', 'text']
+        })
+        docCaughtUp = false
+        host.widgets[1].value = 'too early'
+        return 'text'
+      }
+    }
+  ])(
+    'reports and notifies a refused write to $name',
+    async ({ reason, errorType, act }) => {
+      const { host, doc } = seedPromotedHost()
+
+      const name = act(host)
+      await afterFlush()
+
+      expect(minted).toEqual([])
+      expect(refused).toEqual([{ nodeId: host.id, name, reason }])
+      expect(reportError).toHaveBeenCalledWith(
+        expect.any(Error),
+        expect.objectContaining({ errorType })
+      )
+      doc.destroy()
+    }
+  )
+
+  it('mints for a host it added to a document that is still empty', async () => {
+    const subgraph = createTestSubgraph({
+      rootGraph: graph,
+      inputs: [{ name: 'text', type: 'STRING' }]
+    })
+    graph.subgraphs.set(subgraph.id, subgraph)
+    withGraphIntentSource('load', () => {
+      const interior = LiteGraph.createNode('TestPrompt')
+      assert.exists(interior)
+      subgraph.add(interior)
+      subgraph.inputNode.slots[0].connect(interior.inputs[0], interior)
+    })
+    docPromotedWidgets = () => null
+    docCaughtUp = false
+    const host = createTestSubgraphNode(subgraph)
+
+    graph.add(host)
+    await afterFlush()
+    host.widgets[0].value = 'typed before the echo'
+    await afterFlush()
+
+    expect(minted).toEqual([
+      expect.objectContaining({ op: 'add_node', node_id: host.id }),
+      expect.objectContaining({ op: 'set_widget', node_id: host.id })
+    ])
+    expect(refused).toEqual([])
+  })
+
+  it('mints for a host it added before its document emptied', async () => {
+    const subgraph = createTestSubgraph({
+      rootGraph: graph,
+      inputs: [{ name: 'text', type: 'STRING' }]
+    })
+    graph.subgraphs.set(subgraph.id, subgraph)
+    withGraphIntentSource('load', () => {
+      const interior = LiteGraph.createNode('TestPrompt')
+      assert.exists(interior)
+      subgraph.add(interior)
+      subgraph.inputNode.slots[0].connect(interior.inputs[0], interior)
+    })
+    docPromotedWidgets = () => null
+    const host = createTestSubgraphNode(subgraph)
+    graph.add(host)
+    await afterFlush()
+    minted.length = 0
+
+    docCaughtUp = false
+    host.widgets[0].value = 'typed after a delete echo emptied the doc'
+    await afterFlush()
+
+    expect(minted).toEqual([
+      expect.objectContaining({ op: 'set_widget', node_id: host.id })
+    ])
+    expect(refused).toEqual([])
+  })
+
+  it('refuses a host it added once its document has been replaced', async () => {
+    const subgraph = createTestSubgraph({
+      rootGraph: graph,
+      inputs: [{ name: 'text', type: 'STRING' }]
+    })
+    graph.subgraphs.set(subgraph.id, subgraph)
+    withGraphIntentSource('load', () => {
+      const interior = LiteGraph.createNode('TestPrompt')
+      assert.exists(interior)
+      subgraph.add(interior)
+      subgraph.inputNode.slots[0].connect(interior.inputs[0], interior)
+    })
+    docPromotedWidgets = () => null
+    docCaughtUp = false
+    const host = createTestSubgraphNode(subgraph)
+    graph.add(host)
+    await afterFlush()
+    minted.length = 0
+
+    docIdentity = {}
+    host.widgets[0].value = 'typed before the new catch-up'
+    await afterFlush()
+
+    expect(minted).toEqual([])
+    expect(refused).toEqual([
+      { nodeId: host.id, name: 'text', reason: 'doc_not_synced' }
+    ])
+  })
+
+  it('still mints for a host the populated document does not hold yet', async () => {
+    const { host, doc } = seedPromotedHost()
+    docPromotedWidgets = () => null
+
+    host.widgets[1].value = 'pasted'
+    await afterFlush()
+
+    expect(minted).toEqual([
+      expect.objectContaining({ node_id: host.id, widget: 'text' })
+    ])
+    expect(refused).toEqual([])
+    doc.destroy()
+  })
+
+  it('notifies a refused widget once per throttle window, not per keystroke', async () => {
+    const { host, doc } = seedPromotedHost()
+    docPromotedWidgets = () => ({
+      valueCount: 2,
+      declaredNames: ['text', 'prefix'],
+      promotedNames: ['text', 'prefix']
+    })
+
+    vi.useFakeTimers({ toFake: ['Date'] })
+    onTestFinished(() => {
+      vi.useRealTimers()
+    })
+
+    host.widgets[1].value = 'p'
+    await afterFlush()
+    host.widgets[1].value = 'pa'
+    await afterFlush()
+    expect(refused).toHaveLength(1)
+
+    vi.advanceTimersByTime(10_000)
+    host.widgets[1].value = 'past the window'
+    await afterFlush()
+
+    expect(refused).toHaveLength(2)
+    doc.destroy()
+  })
+
+  it('notifies the same node and widget again in another workflow', async () => {
+    const first = seedPromotedHost()
+    docPromotedWidgets = () => ({
+      valueCount: 2,
+      declaredNames: ['text', 'prefix'],
+      promotedNames: ['text', 'prefix']
+    })
+    first.host.widgets[1].value = 'p'
+    await afterFlush()
+
+    graph = new LGraph()
+    rootGraphId = toRootGraphId(graph.id)
+    const second = seedPromotedHost()
+    docPromotedWidgets = () => ({
+      valueCount: 2,
+      declaredNames: ['text', 'prefix'],
+      promotedNames: ['text', 'prefix']
+    })
+    second.host.widgets[1].value = 'p'
+    await afterFlush()
+
+    expect(second.host.id).toBe(first.host.id)
+    expect(refused).toHaveLength(2)
+    first.doc.destroy()
+    second.doc.destroy()
   })
 
   it('reports a drifted host once, not once per keystroke', async () => {

@@ -344,7 +344,9 @@ export function useAgentCrdtFollower(
     docInputNames: (nodeId: NodeId) =>
       follower.value?.docInputNames(nodeId) ?? null,
     docPromotedWidgets: (nodeId: NodeId) =>
-      follower.value?.docPromotedWidgets(nodeId) ?? null
+      follower.value?.docPromotedWidgets(nodeId) ?? null,
+    isDocCaughtUp: () => follower.value?.isDocCaughtUp() ?? false,
+    docIdentity: () => follower.value?.docIdentity() ?? null
   }
 }
 
@@ -931,6 +933,8 @@ function startAgentCrdtFollower(
     docInputNames: (nodeId: NodeId) =>
       readDocSlotNames(bridge.follower.doc, String(nodeId), 'inputs'),
     docPromotedWidgets: (nodeId: NodeId) =>
-      readDocPromotedWidgets(bridge.follower.doc, String(nodeId))
+      readDocPromotedWidgets(bridge.follower.doc, String(nodeId)),
+    isDocCaughtUp: () => bridge.isSubscribeBaselineIntegrated,
+    docIdentity: (): object => bridge.follower.doc
   }
 }

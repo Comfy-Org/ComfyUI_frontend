@@ -192,7 +192,9 @@ describe('agent CRDT outbound leg: link mint by live position vs. doc order', ()
       docInputNames: (nodeId) =>
         readDocSlotNames(doc, String(nodeId), 'inputs'),
       docPromotedWidgets: (nodeId) =>
-        readDocPromotedWidgets(doc, String(nodeId))
+        readDocPromotedWidgets(doc, String(nodeId)),
+      isDocCaughtUp: () => true,
+      docIdentity: () => doc
     })
     onTestFinished(() => port.detach())
 
