@@ -45,6 +45,7 @@ export const zWorkspaceDeployment = z.object({
   build_name: z.string().optional(),
   created_at: z.string().datetime(),
   deployment_id: z.string(),
+  deployment_name: z.string().optional(),
   release_id: z.string(),
   release_version: z.number().int().optional(),
   status: z.string()
