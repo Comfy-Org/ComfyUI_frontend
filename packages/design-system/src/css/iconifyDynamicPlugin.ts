@@ -5,6 +5,7 @@ import { matchIconName } from '@iconify/utils/lib/icon/name'
 import plugin from 'tailwindcss/plugin'
 
 import { COMFY_ICON_PREFIX, loadComfyIconSet } from './comfyIconSet.js'
+import { withForcedColors } from './forcedColors.js'
 
 const SCALE = 1.2
 
@@ -38,12 +39,12 @@ export default plugin(({ matchComponents }) => {
   matchComponents({
     icon: (icon) => {
       try {
-        return getDynamicCSSRules(icon, options)
+        return withForcedColors(getDynamicCSSRules(icon, options))
       } catch {
         return {}
       }
     },
     'icon-img': (icon) => getModeCSSRules(icon, 'background'),
-    'icon-mask': (icon) => getModeCSSRules(icon, 'mask')
+    'icon-mask': (icon) => withForcedColors(getModeCSSRules(icon, 'mask'))
   })
 })
