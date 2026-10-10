@@ -178,7 +178,6 @@ describe('ImagePreview', () => {
       'src',
       '/api/assets/p1/content?disposition=inline'
     )
-    expect(screen.getByText('HDR image')).toBeInTheDocument()
 
     await user.click(screen.getByRole('button', { name: 'Open in HDR Viewer' }))
 

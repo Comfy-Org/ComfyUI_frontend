@@ -92,13 +92,13 @@
       </div>
       <!-- Loading State -->
       <div
-        v-if="showLoader && !imageError && !currentShowsHdrPlaceholder"
+        v-if="showLoader && !imageError && !isHdrPlaceholder(currentImageUrl)"
         class="size-full"
       >
         <Skeleton class="size-full rounded-sm" />
       </div>
       <button
-        v-if="!imageError && currentShowsHdrPlaceholder"
+        v-if="!imageError && isHdrPlaceholder(currentImageUrl)"
         type="button"
         data-testid="hdr-open-button"
         class="absolute inset-0 flex cursor-pointer flex-col items-center justify-center gap-3 border-0 bg-transparent text-base-foreground"
@@ -114,22 +114,15 @@
       </button>
       <!-- Main Image -->
       <img
-        v-if="!imageError && !currentShowsHdrPlaceholder"
+        v-if="!imageError && !isHdrPlaceholder(currentImageUrl)"
         data-testid="main-image"
-        :src="getHdrPreviewUrl(currentImageUrl) ?? currentImageUrl"
+        :src="currentHdrPreviewUrl ?? currentImageUrl"
         :alt="imageAltText"
         draggable="false"
         class="pointer-events-none absolute inset-0 block size-full object-contain"
         @load="handleImageLoad"
         @error="handleImageError"
       />
-      <div
-        v-if="!imageError && currentImageIsHdr && !currentShowsHdrPlaceholder"
-        class="pointer-events-none absolute top-2 left-2 flex items-center gap-1 rounded-md bg-base-background/80 px-1.5 py-0.5 text-xs text-base-foreground"
-      >
-        <i class="icon-[lucide--sun] size-3.5" />
-        {{ $t('hdrViewer.hdrImage') }}
-      </div>
 
       <!-- Floating Action Buttons (appear on hover and focus) -->
       <div
@@ -147,7 +140,7 @@
         </button>
 
         <button
-          v-if="!imageError && currentImageIsHdr && !currentShowsHdrPlaceholder"
+          v-if="!imageError && currentHdrPreviewUrl"
           :class="actionButtonClass"
           :title="$t('hdrViewer.openInHdrViewer')"
           :aria-label="$t('hdrViewer.openInHdrViewer')"
@@ -193,7 +186,7 @@
 
     <!-- Image Dimensions (gallery mode only) -->
     <div
-      v-if="viewMode === 'gallery' && !currentShowsHdrPlaceholder"
+      v-if="viewMode === 'gallery' && !isHdrPlaceholder(currentImageUrl)"
       class="pt-2 text-center text-xs text-base-foreground"
     >
       <span
@@ -317,8 +310,8 @@ const isHdrPlaceholder = (url: string | undefined) =>
   isHdrImageUrl(url) && !getHdrPreviewUrl(url)
 
 const currentImageIsHdr = computed(() => isHdrImageUrl(currentImageUrl.value))
-const currentShowsHdrPlaceholder = computed(() =>
-  isHdrPlaceholder(currentImageUrl.value)
+const currentHdrPreviewUrl = computed(() =>
+  getHdrPreviewUrl(currentImageUrl.value)
 )
 const gridImageUrls = computed(() =>
   imageUrls.map((url) => getHdrPreviewUrl(url) ?? getGridThumbnailUrl(url))

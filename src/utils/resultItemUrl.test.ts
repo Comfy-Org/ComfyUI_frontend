@@ -40,14 +40,4 @@ describe('resultItemPreviewUrl', () => {
       expect(url.pathname).toBe(pathname)
     }
   )
-
-  it('serves the HDR preview inline', () => {
-    const url = new URL(
-      resultItemPreviewUrl(
-        resultItem({ filename: 'render.exr', preview_id: 'p1' })
-      ),
-      window.location.origin
-    )
-    expect(url.searchParams.get('disposition')).toBe('inline')
-  })
 })

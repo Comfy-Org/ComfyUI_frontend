@@ -28,12 +28,11 @@ export function isHdrImageUrl(url: string | undefined): boolean {
 }
 
 export function getHdrPreviewUrl(url: string | undefined): string | undefined {
-  if (!url || !isHdrImageUrl(url)) return undefined
-  const previewId = new URL(url, window.location.origin).searchParams.get(
-    'preview_id'
-  )
-  if (!previewId) return undefined
-  return hdrPreviewAssetUrl(previewId)
+  const previewId =
+    url &&
+    isHdrImageUrl(url) &&
+    new URL(url, window.location.origin).searchParams.get('preview_id')
+  return previewId ? hdrPreviewAssetUrl(previewId) : undefined
 }
 
 export function hdrPreviewAssetUrl(previewId: string): string {
