@@ -2,6 +2,7 @@ import { assert, beforeEach, describe, expect, it, vi } from 'vitest'
 
 import { reportError } from '@/platform/telemetry/reportError'
 import { api } from '@/scripts/api'
+import { useExtensionStore } from '@/stores/extensionStore'
 
 import type { ExtensionLoadFailure } from './extensionService'
 import {
@@ -167,6 +168,62 @@ describe('extension loading', () => {
         'bootstrap/extensions-load-custom:start',
         'bootstrap/extensions-load-custom:end'
       ])
+    })
+  })
+
+  describe('invokeExtensionsAsync', () => {
+    const hook = 'addCustomNodeDefs'
+
+    it('skips extensions without the hook and preserves registration order', async () => {
+      const calls: string[] = []
+      const store = useExtensionStore()
+      store.registerExtension({ name: 'a', [hook]: () => calls.push('a') })
+      store.registerExtension({ name: 'none' })
+      store.registerExtension({ name: 'b', [hook]: () => calls.push('b') })
+
+      await useExtensionService().invokeExtensionsAsync(hook, {})
+
+      expect(calls).toEqual(['a', 'b'])
+    })
+
+    it('invokes sync hooks before awaiting async hooks and keeps their results', async () => {
+      const calls: string[] = []
+      const store = useExtensionStore()
+      store.registerExtension({
+        name: 'sync',
+        [hook]: () => {
+          calls.push('sync')
+          return 0
+        }
+      })
+      store.registerExtension({
+        name: 'async',
+        [hook]: async () => {
+          calls.push('async')
+          return false
+        }
+      })
+
+      const pending = useExtensionService().invokeExtensionsAsync(hook, {})
+      expect(calls).toEqual(['sync', 'async'])
+      await expect(pending).resolves.toEqual([0, false])
+    })
+
+    it('isolates a throwing hook and continues with later extensions', async () => {
+      const after = vi.fn()
+      const store = useExtensionStore()
+      store.registerExtension({
+        name: 'throws',
+        [hook]: () => {
+          throw new Error('boom')
+        }
+      })
+      store.registerExtension({ name: 'after', [hook]: after })
+
+      await useExtensionService().invokeExtensionsAsync(hook, {})
+
+      expect(after).toHaveBeenCalledOnce()
+      expect(console.error).toHaveBeenCalledOnce()
     })
   })
 })

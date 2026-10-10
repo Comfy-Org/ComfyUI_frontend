@@ -18,6 +18,15 @@ import { getErrorMessage } from '@/utils/errorUtil'
 import { app } from '@/scripts/app'
 import type { ComfyApp } from '@/scripts/app'
 
+function isPromiseLike(value: unknown): value is PromiseLike<unknown> {
+  return (
+    value instanceof Promise ||
+    (typeof value === 'object' &&
+      value !== null &&
+      typeof (value as { then?: unknown }).then === 'function')
+  )
+}
+
 const INLINED_CLOUD_EXTENSIONS = new Set([
   '/extensions/cloud/rum.js',
   '/extensions/cloud/sentry.js'
@@ -270,7 +279,9 @@ export const useExtensionService = () => {
 
   /**
    * Invoke an async extension callback
-   * Each callback will be invoked concurrently
+   * Each callback will be invoked concurrently. Only extensions that define
+   * the callback do any work, and only promises that callbacks actually
+   * return are awaited.
    * @param {string} method The extension callback to execute
    * @param  {...unknown} args Any arguments to pass to the callback
    * @returns
@@ -279,44 +290,45 @@ export const useExtensionService = () => {
     method: T,
     ...args: Parameters<ComfyExtensionParamsWithoutApp<T>>
   ) => {
-    return await Promise.all(
-      extensionStore.enabledExtensions.map(async (ext) => {
-        if (method in ext) {
-          try {
-            const fn = ext[method]
-            if (typeof fn !== 'function') {
-              return
-            }
+    const logError = (ext: ComfyExtension, error: unknown) =>
+      console.error(
+        `Error calling extension '${ext.name}' method '${method}'`,
+        { error },
+        { extension: ext },
+        { args }
+      )
 
-            // Set current extension name for legacy compatibility tracking
-            if (method === 'setup') {
+    const pending: unknown[] = []
+    for (const ext of extensionStore.enabledExtensions) {
+      try {
+        const fn = ext[method]
+        if (typeof fn !== 'function') continue
+
+        if (method === 'setup') {
+          pending.push(
+            (async () => {
               legacyMenuCompat.setCurrentExtension(ext.name)
-            }
-
-            const result = await fn.call(ext, ...args, app)
-
-            // Clear current extension after setup
-            if (method === 'setup') {
-              legacyMenuCompat.setCurrentExtension(null)
-            }
-
-            return result
-          } catch (error) {
-            // Clear current extension on error too
-            if (method === 'setup') {
-              legacyMenuCompat.setCurrentExtension(null)
-            }
-
-            console.error(
-              `Error calling extension '${ext.name}' method '${method}'`,
-              { error },
-              { extension: ext },
-              { args }
-            )
-          }
+              try {
+                return await fn.call(ext, ...args, app)
+              } finally {
+                legacyMenuCompat.setCurrentExtension(null)
+              }
+            })().catch((error) => logError(ext, error))
+          )
+          continue
         }
-      })
-    )
+
+        const result: unknown = fn.call(ext, ...args, app)
+        pending.push(
+          isPromiseLike(result)
+            ? Promise.resolve(result).catch((error) => logError(ext, error))
+            : result
+        )
+      } catch (error) {
+        logError(ext, error)
+      }
+    }
+    return await Promise.all(pending)
   }
 
   return {
