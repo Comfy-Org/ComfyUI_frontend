@@ -17,6 +17,7 @@ import {
 import { useI18n } from 'vue-i18n'
 
 import { useCurrentUser } from '@/composables/auth/useCurrentUser'
+import { useTeamWorkspaceStore } from '@/platform/workspace/stores/teamWorkspaceStore'
 import { useTelemetry } from '@/platform/telemetry'
 import { reportError } from '@/platform/telemetry/reportError'
 import type {
@@ -67,7 +68,6 @@ import { useAccountPreconditionDialog } from '@/platform/cloud/subscription/comp
 import { useBillingCapabilities } from '@/platform/workspace/composables/useBillingCapabilities'
 import { useOnboardingTourStore } from '@/platform/onboarding/onboardingTourStore'
 import { useWorkspaceUI } from '@/platform/workspace/composables/useWorkspaceUI'
-import { useTeamWorkspaceStore } from '@/platform/workspace/stores/teamWorkspaceStore'
 import {
   adoptSharedOnboardingFlag,
   hasSeenCoach,
@@ -105,6 +105,7 @@ import type {
   WorkflowTurnContext
 } from './composables/agent/useAgentSession'
 import type { CoachStep } from './composables/agent/useOnboarding'
+import { useBillingIdentity } from './composables/useBillingIdentity'
 import { useAgentConsent } from './composables/agent/useAgentConsent'
 import { useAgentWorkflowResolver } from './composables/agent/useAgentWorkflowResolver'
 import { useAgentWorkflowSelection } from './composables/agent/useAgentWorkflowSelection'
@@ -193,7 +194,6 @@ const sidebarTabStore = useSidebarTabStore()
 const { isBuilderMode } = useAppMode()
 
 const { resolvedUserInfo, userDisplayName } = useCurrentUser()
-const teamWorkspaceStore = useTeamWorkspaceStore()
 const userName = computed(
   () => userDisplayName.value?.trim().split(/\s+/)[0] || undefined
 )
@@ -319,10 +319,7 @@ const showStandingPaywall = computed(() => {
 })
 
 const agentPanelStore = useAgentPanelStore()
-const billingIdentity = computed(
-  () =>
-    `${resolvedUserInfo.value?.id ?? 'anonymous'}:${teamWorkspaceStore.workspaceId ?? 'none'}`
-)
+const billingIdentity = useBillingIdentity()
 
 watch(billingIdentity, () => {
   agentPanelStore.reportedExhaustionIdentity = null
@@ -1336,6 +1333,21 @@ const { copy } = useClipboard({ legacy: true })
  * denominator — to the panel openers the hypothesis is about.
  */
 const { variant: freeUsePlacement } = useFreeUsePlacement()
+/**
+ * Interim, until #20706 removes the FREE-during-BETA claim outright: the
+ * free-use notice renders directly below this notice in the composer stack, so
+ * leaving it on would tell the user Agent use is free in the same breath as
+ * telling them it now bills the workspace balance — the PM-2005 defect itself,
+ * and against the standing ruling never to imply Agent use is free.
+ *
+ * This suppresses the rendered treatment only. Experiment exposure is reported
+ * from useFreeUsePlacement on setup, so a suppressed user is still logged as
+ * exposed; whether that should also change is the open product question on
+ * r4205002263 and is deliberately not decided here.
+ */
+const displayedFreeUsePlacement = computed(() =>
+  showCreditTransitionNotice.value ? 'control' : freeUsePlacement.value
+)
 const {
   assignment: starterPromptAssignment,
   attributeExperiment: attributeStarterPromptExperiment,
@@ -1920,7 +1932,7 @@ async function onPanelDrop(event: DragEvent): Promise<void> {
       :get-mention-nodes="mentionableNodes"
       :paywall-presentation="paywallPresentation"
       :credits-exhausted="showStandingPaywall"
-      :free-use-placement="freeUsePlacement"
+      :free-use-placement="displayedFreeUsePlacement"
       :starter-prompt-assignment="starterPromptAssignment"
       :attribute-starter-prompt-experiment="attributeStarterPromptExperiment"
       @starter-prompt-rendered="exposeStarterPromptSet"

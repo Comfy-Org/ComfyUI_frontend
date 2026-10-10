@@ -1,10 +1,10 @@
 import type { Component, ComputedRef } from 'vue'
 import { computed, defineAsyncComponent, watch } from 'vue'
 
-import { useCurrentUser } from '@/composables/auth/useCurrentUser'
 import { useBillingContext } from '@/composables/billing/useBillingContext'
-import { useTeamWorkspaceStore } from '@/platform/workspace/stores/teamWorkspaceStore'
 import { useAgentPanelStore } from '@/workbench/extensions/agent/stores/agent/agentPanelStore'
+
+import { useBillingIdentity } from './useBillingIdentity'
 
 interface AgentDockMount {
   docked: ComputedRef<boolean>
@@ -28,8 +28,6 @@ export function useAgentDockMount(): AgentDockMount {
   }
   const agentPanelStore = useAgentPanelStore()
   const { subscription } = useBillingContext()
-  const { resolvedUserInfo } = useCurrentUser()
-  const teamWorkspaceStore = useTeamWorkspaceStore()
 
   // This composable is owned by the persistent graph/linear hosts, unlike the
   // dock component, which is unmounted whenever the panel closes. Keep the
@@ -43,12 +41,10 @@ export function useAgentDockMount(): AgentDockMount {
     { immediate: true }
   )
 
+  const billingIdentity = useBillingIdentity()
+
   watch(
-    [
-      () =>
-        `${resolvedUserInfo.value?.id ?? 'anonymous'}:${teamWorkspaceStore.workspaceId ?? 'none'}`,
-      () => subscription.value?.agentScopedHasFunds
-    ],
+    [billingIdentity, () => subscription.value?.agentScopedHasFunds],
     ([identity, scopedHasFunds]) => {
       if (scopedHasFunds === undefined) return
       agentPanelStore.observeAgentScopedFunds(identity, scopedHasFunds)
