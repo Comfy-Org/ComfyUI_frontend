@@ -121,7 +121,6 @@ describe('CRDT human write-leg invariants (property)', () => {
     fc.assert(
       fc.property(arbOperations, (operations) => {
         const sent: (readonly DocOp[])[] = []
-        let producerVersion = 41
         let resultListener = (_result: OpsResultView): void => {
           throw new Error('Expected an operation-result listener')
         }
@@ -142,16 +141,6 @@ describe('CRDT human write-leg invariants (property)', () => {
           tab: TAB,
           actor: () => ACTOR,
           lamportFloor: () => 41,
-          observedVersion: () => 41,
-          reserveVersions: (
-            _workflowId: string,
-            observed: number,
-            count: number
-          ) => {
-            const firstVersion = Math.max(producerVersion, observed) + 1
-            producerVersion = firstVersion + count - 1
-            return firstVersion
-          },
           onBatchSettled: () => {}
         }
         const sender = createOpSender(deps)

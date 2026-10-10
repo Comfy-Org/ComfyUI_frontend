@@ -13,7 +13,6 @@ export class FollowerDoc extends EventTarget {
   readonly doc = new Y.Doc()
   updatesApplied = 0
   private reportedUnreadableFloor = false
-  private highestObservedCounter = 0
 
   /**
    * `Y.applyUpdate` integrates structs as it decodes them, so a malformed
@@ -24,7 +23,6 @@ export class FollowerDoc extends EventTarget {
     Y.decodeUpdate(update)
     Y.applyUpdate(this.doc, update, REMOTE_DOC_UPDATE_ORIGIN)
     this.updatesApplied++
-    this.observeLamportFloor()
     this.dispatchEvent(
       new CustomEvent('update', {
         detail: { update, updatesApplied: this.updatesApplied }
@@ -33,40 +31,38 @@ export class FollowerDoc extends EventTarget {
   }
 
   /**
-   * The highest stamp counter this replica has observed: local ops mint above
-   * it. It only rises, so a counter the applier later drops from the ledger
-   * (a node re-add clears that node's widget stamps) still counts. A doc no
-   * frame has seeded yet, or one the schema gate refuses, adds nothing.
+   * The highest stamp counter this replica holds: local ops mint above it.
+   * A doc no frame has seeded yet, or one the schema gate refuses, reads 0
+   * and leaves ordering to the sender's own cursor. Unreadable ledger rows
+   * are skipped (reported once per doc) so they never hide the valid ones.
    */
   lamportFloor(): number {
-    this.observeLamportFloor()
-    return this.highestObservedCounter
-  }
-
-  private observeLamportFloor(): void {
     try {
-      if (readSchemaVersion(this.doc) !== SCHEMA_VERSION) return
-      this.raiseFloor(observedDocCounter(this.doc) ?? 0)
-    } catch (error) {
-      // One unreadable row must not hide the valid counters beside it.
-      let skipped = 0
-      this.doc.getMap<unknown>('__stamps').forEach((value) => {
-        if (isStampTuple(value)) this.raiseFloor(value[0])
-        else skipped++
+      if (readSchemaVersion(this.doc) !== SCHEMA_VERSION) return 0
+      const { counter, skipped } = observedDocCounter(this.doc, {
+        skipMalformed: true
       })
-      if (!this.reportedUnreadableFloor) {
-        this.reportedUnreadableFloor = true
-        reportError(error, {
-          surface: 'agent',
-          errorType: 'failure_reading_agent_crdt_lamport_floor',
-          context: { skippedRows: skipped }
-        })
+      if (skipped > 0) {
+        this.reportUnreadableFloor(
+          new Error('agent CRDT stamp ledger has unreadable rows'),
+          skipped
+        )
       }
+      return counter ?? 0
+    } catch (error) {
+      this.reportUnreadableFloor(error)
+      return 0
     }
   }
 
-  private raiseFloor(counter: number): void {
-    this.highestObservedCounter = Math.max(this.highestObservedCounter, counter)
+  private reportUnreadableFloor(error: unknown, skippedRows?: number): void {
+    if (this.reportedUnreadableFloor) return
+    this.reportedUnreadableFloor = true
+    reportError(error, {
+      surface: 'agent',
+      errorType: 'failure_reading_agent_crdt_lamport_floor',
+      context: { skippedRows }
+    })
   }
 
   stateVector(): Uint8Array {
@@ -76,16 +72,4 @@ export class FollowerDoc extends EventTarget {
   destroy(): void {
     this.doc.destroy()
   }
-}
-
-function isStampTuple(value: unknown): value is [number, string, string] {
-  return (
-    Array.isArray(value) &&
-    value.length === 3 &&
-    Number.isSafeInteger(value[0]) &&
-    value[0] >= 0 &&
-    typeof value[1] === 'string' &&
-    typeof value[2] === 'string' &&
-    value[2].length > 0
-  )
 }

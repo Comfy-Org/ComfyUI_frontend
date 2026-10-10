@@ -10,14 +10,18 @@ import type {
   WorkflowJSON
 } from '@comfyorg/comfy-multi-player'
 import { applyOps, mint, readGraph } from '@comfyorg/comfy-multi-player'
-import { describe, expect, it } from 'vitest'
+import { describe, expect, it, vi } from 'vitest'
 import * as Y from 'yjs'
+
+import { reportError } from '@/platform/telemetry/reportError'
 
 import type { DocOp } from './docFrameClient'
 import { FollowerDoc } from './followerDoc'
 import type { GraphOperation } from './graphOperations'
 import { mintWireOps } from './opEnvelope'
 import { createOpSender } from './opSender'
+
+vi.mock(import('@/platform/telemetry/reportError'))
 
 const WORKFLOW_ID = 'wf-1'
 const HUMAN = 'human:test-user:tab-1'
@@ -149,6 +153,7 @@ describe('human op stamps tick over the follower doc', () => {
     sender.admit([setSteps(4)])
 
     expect(admitted()).toEqual([31])
+    expect(reportError).not.toHaveBeenCalled()
     sender.detach()
   })
 
@@ -203,6 +208,7 @@ describe('human op stamps tick over the follower doc', () => {
     sender.admit([setSteps(4)])
 
     expect(admitted()).toEqual([51])
+    expect(reportError).not.toHaveBeenCalled()
     sender.detach()
   })
 

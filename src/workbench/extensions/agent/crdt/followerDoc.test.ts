@@ -66,20 +66,6 @@ describe('FollowerDoc.lamportFloor', () => {
     })
   })
 
-  it('keeps a counter it observed after the ledger drops that row', () => {
-    const host = mint({ nodes: [], links: [] }, { types: {} })
-    const key = '["widget","1","0","seed"]'
-    host.getMap('__stamps').set(key, [50, 'human:other:tab', 'a'.repeat(32)])
-    const follower = new FollowerDoc()
-    follower.applyRemoteUpdate(Y.encodeStateAsUpdate(host))
-    const seen = Y.encodeStateVector(host)
-    host.getMap('__stamps').delete(key)
-    follower.applyRemoteUpdate(Y.encodeStateAsUpdate(host, seen))
-
-    expect(follower.doc.getMap('__stamps').has(key)).toBe(false)
-    expect(follower.lamportFloor()).toBe(50)
-  })
-
   it('reads 0 without reporting on a doc no frame has seeded or of another schema', () => {
     expect(new FollowerDoc().lamportFloor()).toBe(0)
     const other = seeded((host) =>
