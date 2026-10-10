@@ -38,6 +38,7 @@ import {
   stopDesktopHostSession
 } from '@/platform/auth/desktopHost/desktopHostSession'
 import { firebaseIdentity } from '@/platform/auth/firebaseIdentity'
+import { partnerNodeTokens } from '@/platform/auth/partnerNode/partnerNodeTokens'
 import type { IdentityObserver } from '@/utils/__tests__/stubAccountIdentityPort'
 import { replayIdentityPort } from '@/utils/__tests__/stubAccountIdentityPort'
 
@@ -283,6 +284,26 @@ describe('useAuthStore', () => {
 
       expect(await pending).toBeNull()
       expect(store.balance).toBeNull()
+    })
+  })
+
+  describe('partner-node session revoke', () => {
+    it.for([
+      { name: 'sign-out', next: () => null, revokes: 1 },
+      {
+        name: 'an account switch',
+        next: () => ({ ...mockUser, uid: 'account-b' }),
+        revokes: 1
+      },
+      { name: 'the same account again', next: () => mockUser, revokes: 0 }
+    ])('revokes $revokes time(s) on $name', ({ next, revokes }) => {
+      const revokeAll = vi
+        .spyOn(partnerNodeTokens, 'revokeAll')
+        .mockResolvedValue(undefined)
+
+      authStateCallback(next())
+
+      expect(revokeAll).toHaveBeenCalledTimes(revokes)
     })
   })
 
