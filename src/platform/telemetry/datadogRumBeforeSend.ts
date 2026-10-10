@@ -63,10 +63,10 @@ function tagRumErrorOrigin(event: RumErrorEvent): void {
     const errorSignals = isExtensionLoadReport(context)
       ? [...failureSignals, event.error.stack]
       : [event.error.stack]
+    const origins = errorSignals.map(classifyRumErrorOrigin)
     const errorOrigin =
-      errorSignals
-        .map(classifyRumErrorOrigin)
-        .find((origin) => origin.origin !== 'third_party') ??
+      origins.find((origin) => origin.origin === 'extension') ??
+      origins.find((origin) => origin.origin === 'first_party') ??
       classifyRumErrorOrigin(event.error.stack)
     const existingErrorContext = event.context?.error
     const errorContext =
@@ -91,8 +91,7 @@ function getExtensionFailureSignals(
 
   return failures.flatMap((failure) => {
     if (typeof failure !== 'object' || failure === null) return []
-    const record = failure as Record<string, unknown>
-    return [record.stack, record.ext].filter(
+    return [Reflect.get(failure, 'stack'), Reflect.get(failure, 'ext')].filter(
       (value): value is string => typeof value === 'string'
     )
   })

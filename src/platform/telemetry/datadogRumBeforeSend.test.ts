@@ -149,6 +149,63 @@ describe('rumBeforeSend', () => {
     })
   })
 
+  it('extracts custom attribution from a preserved stack without an extension path', () => {
+    const event = createErrorEvent(
+      'Error loading 1 extension',
+      'at reportExtensionLoadFailures (https://cloud.comfy.org/assets/app.js:1:2)'
+    )
+    event.context = {
+      error_type: 'error_loading_extension',
+      failures: [
+        {
+          message: 'ReferenceError: broken',
+          stack:
+            'ReferenceError: broken\n    at load (https://cloud.comfy.org/extensions/comfyui-foo/main.js:12:3)'
+        }
+      ]
+    }
+
+    expect(rumBeforeSend(event, fromPartial({}))).toBe(true)
+    expect(event.context).toMatchObject({
+      error: { origin: 'extension', extension: 'comfyui-foo' }
+    })
+  })
+
+  const malformedContexts: Array<[string, Record<string, unknown>]> = [
+    ['missing error type', { failures: [] }],
+    [
+      'non-array failures',
+      { error_type: 'error_loading_extension', failures: {} }
+    ],
+    [
+      'null failure',
+      { error_type: 'error_loading_extension', failures: [null] }
+    ],
+    [
+      'non-string details',
+      {
+        error_type: 'error_loading_extension',
+        failures: [{ stack: 42, ext: false }]
+      }
+    ]
+  ]
+
+  it.for(malformedContexts)(
+    'keeps malformed batched context first-party: %s',
+    ([_name, context]) => {
+      const event = createErrorEvent(
+        'Error loading extensions',
+        'at report (https://cloud.comfy.org/assets/app.js:1:2)'
+      )
+      event.context = context
+
+      expect(rumBeforeSend(event, fromPartial({}))).toBe(true)
+      expect(event.context).toMatchObject({
+        error: { origin: 'first_party' }
+      })
+    }
+  )
+
   it('groups Firebase pending-promise errors without rewriting them', () => {
     for (const message of [
       `[2026-08-27T20:58:34.782Z]  ${FIREBASE_ASSERTION}`,
