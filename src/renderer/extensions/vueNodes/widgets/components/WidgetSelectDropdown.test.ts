@@ -204,6 +204,39 @@ describe('WidgetSelectDropdown', () => {
     expect(screen.getByText('model_a.safetensors')).toBeDefined()
   })
 
+  it('does not forward internal widget metadata to the dropdown DOM', () => {
+    const consoleWarn = vi.spyOn(console, 'warn')
+    const widget = createMockWidget<string | undefined>({
+      value: 'model_a.safetensors',
+      name: 'test_model',
+      type: 'combo',
+      options: {
+        values: ['model_a.safetensors'],
+        nodeType: 'CheckpointLoaderSimple',
+        getOptionLabel: (value) => value ?? ''
+      }
+    })
+
+    renderComponent(widget, 'model_a.safetensors', {
+      assetKind: 'model',
+      isAssetMode: true
+    })
+
+    expect(
+      screen.getByRole('button', {
+        name: 'widgets.uploadSelect.placeholderModel'
+      })
+    ).toBeInTheDocument()
+
+    const renderedMarkup = document.body.innerHTML
+    expect(renderedMarkup).not.toMatch(/ values="/i)
+    expect(renderedMarkup).not.toMatch(/ getoptionlabel="/i)
+    expect(renderedMarkup).not.toMatch(/ nodetype="/i)
+    expect(consoleWarn.mock.calls.flat().join(' ')).not.toContain(
+      'Failed setting prop "nodeType"'
+    )
+  })
+
   describe('composable wiring', () => {
     const items: FormDropdownItem[] = [
       { id: 'input-0', name: 'cat.png', label: 'cat.png' },
