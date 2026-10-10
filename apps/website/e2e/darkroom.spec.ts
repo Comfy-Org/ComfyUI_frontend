@@ -164,6 +164,7 @@ test('makes a row of images and keeps it across a reload', async ({
   await expect(row).toContainText('A fox reading a map')
   await expect(row).toContainText('Nano Banana 2.1')
   // One request per image, each with the next seed.
+  await expect.poll(() => router.submitted.length).toBe(4)
   expect(router.submitted.map((sent) => sent.model)).toEqual(
     Array(4).fill('gemini-nano-banana-2.1')
   )
@@ -204,6 +205,7 @@ test('sends the settings the controls describe', async ({
   await generate(page, 'A lighthouse')
 
   await expect(page.getByTestId('darkroom-tile-done')).toHaveCount(2)
+  await expect.poll(() => router.submitted.length).toBe(2)
   expect(router.submitted[0].model).toBe('gemini-3.1-flash-lite-image')
   expect(router.submitted[0].body.generationConfig).toMatchObject({
     imageConfig: { imageSize: '4K', aspectRatio: '9:16' }

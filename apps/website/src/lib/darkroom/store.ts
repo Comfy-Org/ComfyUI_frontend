@@ -191,14 +191,17 @@ export async function openDarkroomStore(
       })
     },
     async patchItem(id, patch) {
-      const item = await settled<DarkroomItem | undefined>(
-        database.transaction(ITEMS, 'readonly').objectStore(ITEMS).get(id)
-      )
-      if (!item) return
-      const { starred, ...rest } = { ...item, ...patch }
-      const next = starred ? { ...rest, starred: true } : rest
+      // One transaction for the read and the write: IndexedDB runs
+      // overlapping writers in turn, so a star and a Cloud id set at the same
+      // moment both land.
       await write([ITEMS], (store) => {
-        store(ITEMS).put(next)
+        const items = store(ITEMS)
+        const reading: IDBRequest<DarkroomItem | undefined> = items.get(id)
+        reading.onsuccess = () => {
+          if (!reading.result) return
+          const { starred, ...rest } = { ...reading.result, ...patch }
+          items.put(starred ? { ...rest, starred: true } : rest)
+        }
       })
     },
     async trash(ids) {

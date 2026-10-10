@@ -90,6 +90,8 @@ watch(all, (items) => {
 })
 watch([query, starredOnly], () => {
   limit.value = PAGE
+  // The last pick is a place in the old list; it means nothing in the new.
+  lastPicked = -1
 })
 
 useInfiniteScroll(

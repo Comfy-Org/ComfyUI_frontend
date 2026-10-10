@@ -243,6 +243,56 @@ describe('useDarkroom', () => {
     expect(router.submitted[0].generationConfig).toMatchObject({ seed: 7 })
   })
 
+  it('replays the same request after a dropped connection, never a second one', async () => {
+    signIn()
+    const { darkroom } = start()
+    await ready(darkroom)
+    const keys: (string | null)[] = []
+    const routed = vi.mocked(fetch).getMockImplementation()
+    let dropped = false
+    vi.mocked(fetch).mockImplementation(async (input, init) => {
+      if (init?.method !== 'POST') return routed!(input, init)
+      keys.push(new Headers(init.headers).get('Idempotency-Key'))
+      if (!dropped) {
+        dropped = true
+        throw new TypeError('Failed to fetch')
+      }
+      return routed!(input, init)
+    })
+
+    await darkroom.generate(DRAFT, [], 1, '')
+    await vi.waitFor(() =>
+      expect(slotsOf(darkroom)[0]).toMatchObject({ failure: 'network' })
+    )
+    darkroom.retry(slotsOf(darkroom)[0].key)
+    await vi.waitFor(() => expect(slotsOf(darkroom)[0].status).toBe('done'))
+
+    expect(keys).toHaveLength(2)
+    expect(keys[0]).toBeTruthy()
+    expect(keys[1]).toBe(keys[0])
+  })
+
+  it('sends a new request once Router has answered the last one', async () => {
+    router.refusal = { status: 500, errorType: 'internal_error' }
+    signIn()
+    const { darkroom } = start()
+    await ready(darkroom)
+    const keys: (string | null)[] = []
+    const routed = vi.mocked(fetch).getMockImplementation()
+    vi.mocked(fetch).mockImplementation(async (input, init) => {
+      if (init?.method === 'POST')
+        keys.push(new Headers(init.headers).get('Idempotency-Key'))
+      return routed!(input, init)
+    })
+
+    await darkroom.generate(DRAFT, [], 1, '')
+    await vi.waitFor(() => expect(slotsOf(darkroom)[0].status).toBe('error'))
+    darkroom.retry(slotsOf(darkroom)[0].key)
+    await vi.waitFor(() => expect(keys).toHaveLength(2))
+
+    expect(keys[1]).not.toBe(keys[0])
+  })
+
   it('cancels an image still in line, on Router too', async () => {
     router.finished = false
     signIn()

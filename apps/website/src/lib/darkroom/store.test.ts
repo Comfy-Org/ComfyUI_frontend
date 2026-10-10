@@ -73,6 +73,25 @@ describe('darkroom store', () => {
     expect((await store.items())[0].cloudAssetId).toBe('asset-1')
   })
 
+  it('keeps both changes when two land on one image at once', async () => {
+    await store.saveItem(item('a', 1), image())
+
+    await Promise.all([
+      store.patchItem('a', { starred: true }),
+      store.patchItem('a', { cloudAssetId: 'asset-1' })
+    ])
+
+    expect((await store.items())[0]).toMatchObject({
+      starred: true,
+      cloudAssetId: 'asset-1'
+    })
+  })
+
+  it('leaves an image that is gone alone', async () => {
+    await store.patchItem('missing', { starred: true })
+    expect(await store.items()).toEqual([])
+  })
+
   it('moves deleted images to the trash, where Undo can reach them', async () => {
     await store.saveItem(item('a', 1), image())
     await store.saveItem(item('b', 2), image())

@@ -23,6 +23,7 @@ const {
 const { t } = translationsFor(locale)
 
 const emit = defineEmits<{
+  open: []
   star: []
   edit: []
   vary: []
@@ -55,22 +56,31 @@ const overlayButton =
 </script>
 
 <template>
-  <img
-    v-if="url"
-    :src="url"
-    :alt="tile.item.settings.prompt"
-    :class="
-      cn(
-        'block size-full object-cover',
-        tile.fresh &&
-          'motion-safe:transition-[opacity,filter,scale] motion-safe:duration-1000',
-        arriving &&
-          'motion-safe:scale-105 motion-safe:opacity-0 motion-safe:blur-lg'
-      )
-    "
-    @load="loaded"
-    @error="shown = true"
-  />
+  <!-- The image is the button that opens the viewer, so it can be reached
+       and opened from the keyboard as well as by a click. -->
+  <button
+    type="button"
+    class="block size-full cursor-zoom-in"
+    :title="t('darkroom.organize.viewLarger')"
+    @click.stop="emit('open')"
+  >
+    <img
+      v-if="url"
+      :src="url"
+      :alt="tile.item.settings.prompt"
+      :class="
+        cn(
+          'block size-full object-cover',
+          tile.fresh &&
+            'motion-safe:transition-[opacity,filter,scale] motion-safe:duration-1000',
+          arriving &&
+            'motion-safe:scale-105 motion-safe:opacity-0 motion-safe:blur-lg'
+        )
+      "
+      @load="loaded"
+      @error="shown = true"
+    />
+  </button>
   <span
     class="absolute top-2 left-2 rounded-lg bg-primary-comfy-ink/75 px-2 py-0.5 text-xs text-primary-warm-white opacity-0 transition-opacity group-hover/tile:opacity-100"
   >

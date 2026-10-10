@@ -47,13 +47,9 @@ function measured(natural: number, tall: boolean) {
 
 const STATE_CLASS = {
   pending: '',
-  done: 'cursor-zoom-in',
+  done: '',
   error: 'flex flex-col items-start justify-center gap-2 overflow-auto p-5'
 } as const
-
-function open() {
-  if (tile.status === 'done') emit('open')
-}
 </script>
 
 <template>
@@ -66,7 +62,6 @@ function open() {
     "
     :style="{ aspectRatio: String(ratio) }"
     :data-testid="`darkroom-tile-${tile.status}`"
-    @click="open"
   >
     <DarkroomTilePending
       v-if="tile.status === 'pending'"
@@ -80,6 +75,7 @@ function open() {
       :tile
       :url
       :locale
+      @open="emit('open')"
       @star="emit('star')"
       @edit="emit('edit')"
       @vary="emit('vary')"

@@ -89,6 +89,11 @@ interface SlotWork {
   readonly request: DarkroomRequest
   readonly images: readonly DarkroomImageInput[]
   controller: AbortController
+  /**
+   * Kept while a send may have reached Router without the page hearing back,
+   * so trying again replays that request instead of paying for a second.
+   */
+  idempotencyKey?: string
 }
 
 const BOARD_NAME_LIMIT = 80
@@ -211,12 +216,20 @@ export function useDarkroom(notify: (notice: DarkroomNotice) => void) {
     }
     if (owner !== next) return opened.close()
     store = opened
-    const [items, pending, savedBoards] = await Promise.all([
+    const read = await Promise.all([
       opened.items(),
       opened.pending(),
       opened.boards()
-    ])
+    ]).catch(() => undefined)
     if (store !== opened) return
+    if (!read) {
+      // The store opened but cannot be read: carry on without it, and say so.
+      opened.close()
+      store = undefined
+      storageFailed.value = loaded.value = true
+      return
+    }
+    const [items, pending, savedBoards] = read
     jobs.value = jobsFromStore(items, pending)
     boards.value = savedBoards
     loaded.value = true
@@ -320,7 +333,7 @@ export function useDarkroom(notify: (notice: DarkroomNotice) => void) {
     const submission = await submitDarkroomImage({
       model: request.model,
       body: buildDarkroomBody(request, entry.images),
-      idempotencyKey: workshopIdempotencyKey(),
+      idempotencyKey: (entry.idempotencyKey ??= workshopIdempotencyKey()),
       token,
       // The send is seen through even if the reader cancels meanwhile:
       // aborting it could leave Router running a request whose id never
@@ -400,8 +413,12 @@ export function useDarkroom(notify: (notice: DarkroomNotice) => void) {
     void keepInCloud(item, blob, startedFor)
   }
 
-  function failWith(key: string, error: unknown) {
+  function failWith(key: string, entry: SlotWork, error: unknown) {
     const refused = error instanceof DarkroomRouterError
+    // Only a dropped connection leaves the outcome unknown. Any answer from
+    // Router settles the send, so the next try is a new request.
+    if (!refused || error.failure !== 'network')
+      entry.idempotencyKey = undefined
     fail(
       key,
       refused ? error.failure : 'generic',
@@ -451,7 +468,7 @@ export function useDarkroom(notify: (notice: DarkroomNotice) => void) {
     } catch (error) {
       if (entry.controller.signal.aborted) return
       if (requestId) await active?.removePending(requestId).catch(() => {})
-      failWith(key, error)
+      failWith(key, entry, error)
     } finally {
       // A recovered image's references are gone, so it cannot be tried again.
       if (hadReferences && resumeId) work.delete(key)
@@ -485,18 +502,23 @@ export function useDarkroom(notify: (notice: DarkroomNotice) => void) {
   }
 
   const sheetCache = new Map<string, Promise<DarkroomImageInput[]>>()
+  /**
+   * A board's images as grid sheets. The cache is keyed by the addresses
+   * drawn, so a board read before all its images had loaded is drawn again
+   * once they have, and an empty result is never kept.
+   */
   function moodboardSheets(board: DarkroomBoard) {
-    const cacheKey = `${board.id}|${board.items.join(',')}`
+    const drawn = board.items.flatMap((id) => urls.get(id) ?? [])
+    const cacheKey = `${board.id}|${drawn.join(',')}`
     const cached = sheetCache.get(cacheKey)
     if (cached) return cached
-    const drawing = Promise.all(
-      planSheets(
-        board.items.flatMap((id) => {
-          const url = urls.get(id)
-          return url ? [url] : []
-        })
-      ).map(drawSheet)
-    ).then((sheets) => sheets.filter((sheet) => sheet !== undefined))
+    const drawing = Promise.all(planSheets(drawn).map(drawSheet)).then(
+      (sheets) => {
+        const usable = sheets.filter((sheet) => sheet !== undefined)
+        if (!usable.length) sheetCache.delete(cacheKey)
+        return usable
+      }
+    )
     sheetCache.set(cacheKey, drawing)
     return drawing
   }

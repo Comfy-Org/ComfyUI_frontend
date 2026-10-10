@@ -698,6 +698,7 @@ function varyViewed(item: DarkroomItem) {
         :anchor="menu.anchor"
         :mode="menu.mode"
         :boards
+        :items-of="darkroom.boardItems"
         :covers
         :active-id="activeBoardId"
         :locale

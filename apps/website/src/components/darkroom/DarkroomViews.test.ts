@@ -303,6 +303,7 @@ describe('moodboards', () => {
           anchor: document.body,
           mode,
           boards,
+          itemsOf,
           covers: new Map([['dusk', 'blob:a']]),
           activeId
         }

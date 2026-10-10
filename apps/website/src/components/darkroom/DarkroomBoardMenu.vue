@@ -12,6 +12,7 @@ const {
   anchor,
   mode,
   boards,
+  itemsOf,
   covers,
   activeId,
   locale = 'en'
@@ -20,6 +21,8 @@ const {
   /** `add` picks a board to add images to; `use` picks the one to follow. */
   mode: 'add' | 'use'
   boards: readonly DarkroomBoard[]
+  /** A board's images that still exist. */
+  itemsOf: (board: DarkroomBoard) => string[]
   /** Board id to the address of its first image. */
   covers: ReadonlyMap<string, string>
   activeId?: string | null
@@ -39,7 +42,9 @@ const newName = ref('')
 
 // In `use` mode only boards with images can steer a generation.
 const shown = computed(() =>
-  mode === 'use' ? boards.filter((board) => board.items.length) : boards
+  boards
+    .map((board) => ({ board, count: itemsOf(board).length }))
+    .filter((entry) => mode === 'add' || entry.count > 0)
 )
 
 onMounted(async () => {
@@ -105,7 +110,7 @@ const row =
       <span class="truncate">{{ t('darkroom.boards.none') }}</span>
     </button>
     <button
-      v-for="board in shown"
+      v-for="{ board, count } in shown"
       :key="board.id"
       type="button"
       role="menuitem"
@@ -130,9 +135,7 @@ const row =
         class="size-8 shrink-0 rounded-md border border-dashed border-transparency-white-t20 bg-site-bg-soft"
       />
       <span class="truncate">{{ board.name }}</span>
-      <span class="ml-auto text-sm text-content-muted">
-        {{ board.items.length }}
-      </span>
+      <span class="ml-auto text-sm text-content-muted">{{ count }}</span>
     </button>
     <div
       v-if="mode === 'use' || boards.length"

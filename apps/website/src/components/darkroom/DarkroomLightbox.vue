@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import { useEventListener } from '@vueuse/core'
-import { computed } from 'vue'
+import { computed, onBeforeUnmount, onMounted, useTemplateRef } from 'vue'
 
 import { cn } from '@comfyorg/tailwind-utils'
 
@@ -46,7 +46,37 @@ const chips = computed(() =>
   })
 )
 
+// The viewer is modal: focus moves into it, Tab stays inside it, and focus
+// goes back to where it was when the viewer closes.
+const dialog = useTemplateRef<HTMLElement>('dialog')
+const closeButton = useTemplateRef<HTMLButtonElement>('closeButton')
+let opener: Element | null = null
+
+onMounted(() => {
+  opener = document.activeElement
+  closeButton.value?.focus()
+})
+onBeforeUnmount(() => {
+  if (opener instanceof HTMLElement) opener.focus()
+})
+
+function keepFocusInside(event: KeyboardEvent) {
+  const stops = [
+    ...(dialog.value?.querySelectorAll<HTMLElement>(
+      'button:not(:disabled), a[href]'
+    ) ?? [])
+  ]
+  const first = stops.at(0)
+  const last = stops.at(-1)
+  const leaving = event.shiftKey ? first : last
+  if (document.activeElement !== leaving) return
+  event.preventDefault()
+  const wrapTo = event.shiftKey ? last : first
+  wrapTo?.focus()
+}
+
 useEventListener('keydown', (event: KeyboardEvent) => {
+  if (event.key === 'Tab') keepFocusInside(event)
   if (event.key === 'Escape') emit('close')
   if (event.key === 'ArrowRight' && hasNext) emit('step', 1)
   if (event.key === 'ArrowLeft' && hasPrevious) emit('step', -1)
@@ -65,6 +95,7 @@ const nav =
 
 <template>
   <div
+    ref="dialog"
     role="dialog"
     aria-modal="true"
     :aria-label="t('darkroom.lightbox.label')"
@@ -190,7 +221,12 @@ const nav =
         >
           {{ t('darkroom.tile.download') }}
         </a>
-        <button type="button" :class="action" @click="emit('close')">
+        <button
+          ref="closeButton"
+          type="button"
+          :class="action"
+          @click="emit('close')"
+        >
           {{ t('darkroom.lightbox.close') }}
         </button>
       </div>
