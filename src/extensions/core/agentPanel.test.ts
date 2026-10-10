@@ -330,6 +330,20 @@ describe('AgentPanel extension flag gate', () => {
     expect(localStorage.getItem(ACTIVATION_VISITS_STORAGE_KEY)).toBe('2')
   })
 
+  it('counts a visit when the persisted panel is already open', async () => {
+    localStorage.setItem(ACTIVATION_VISITS_STORAGE_KEY, '1')
+    agentFlagEnabled.value = true
+    Object.assign(consentStore, { accepted: true, isChecking: false })
+    agentStore.isOpen = true
+
+    await loadEntryAndSetup()
+    await vi.waitFor(() =>
+      expect(localStorage.getItem(ACTIVATION_VISITS_STORAGE_KEY)).toBe('2')
+    )
+
+    expect(agentStore.open).not.toHaveBeenCalled()
+  })
+
   it('preserves a closed preference after the two-visit discovery window', async () => {
     localStorage.setItem(ACTIVATION_VISITS_STORAGE_KEY, '2')
     agentFlagEnabled.value = true
@@ -356,6 +370,11 @@ describe('AgentPanel extension flag gate', () => {
     expect(agentStore.open).not.toHaveBeenCalled()
     expect(useAgentConsent().withConsent).not.toHaveBeenCalled()
     expect(localStorage.getItem(ACTIVATION_VISITS_STORAGE_KEY)).toBe('2')
+    expect(await offerExited()).toHaveBeenCalledWith({
+      exit: 'activation_window_complete',
+      stage: 'startup',
+      retry_armed: false
+    })
   })
 
   it('keeps a second-visit panel closed when consent finishes after dismissal', async () => {

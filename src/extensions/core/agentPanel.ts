@@ -438,6 +438,7 @@ export function registerAgentPanelExtension(): void {
                 automaticActivationVisitsComplete() &&
                 !agentPanelStore.isOpen
               ) {
+                reportOfferExit('activation_window_complete', 'startup')
                 dropHold()
                 return
               }
