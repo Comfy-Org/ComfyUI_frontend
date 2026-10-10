@@ -6,7 +6,10 @@ import { fromAny } from '@total-typescript/shoehorn'
 
 import { nodeError, validationError } from '@/utils/__tests__/nodeErrorHelpers'
 import { useMissingModelStore } from '@/platform/missingModel/missingModelStore'
-import { createNodeExecutionId } from '@/types/nodeIdentification'
+import {
+  createNodeExecutionId,
+  createNodeLocatorId
+} from '@/types/nodeIdentification'
 import { useExecutionErrorStore } from '@/stores/executionErrorStore'
 import { useWidgetValueStore } from '@/stores/widgetValueStore'
 import { toNodeId } from '@/types/nodeId'
@@ -78,7 +81,9 @@ vi.mock<unknown>(import('@/scripts/app'), () => ({
     rootGraph: { id: 'graph-test', getNodeById: vi.fn() },
     canvas: { setDirty: vi.fn() },
     nodeOutputs: {},
-    nodePreviewImages: {}
+    nodePreviewImages: {},
+    getPreviewFormatParam: () => '',
+    getRandParam: () => ''
   }
 }))
 
@@ -185,7 +190,9 @@ function renderLGraphNode(props: ComponentProps<typeof LGraphNode>) {
             '<div data-testid="node-widgets">{{ processedWidgetModel.processedWidgets.map((widget) => widget.widgetId).join(",") }}</div>'
         },
         NodeContent: {
-          template: '<div data-testid="node-content" />'
+          props: ['media'],
+          template:
+            '<div data-testid="node-content">{{ media?.urls?.join(",") }}</div>'
         },
         SlotConnectionDot: true
       }
@@ -495,6 +502,42 @@ describe('LGraphNode', () => {
 
     expect(screen.getByTestId('node-content')).toBeInTheDocument()
   })
+
+  it.for([
+    { label: 'numeric', rawId: '9' },
+    {
+      label: 'insert_workflow-remapped',
+      rawId: 'insert:0fbd38ecb13037d0b3b0ca78b8a20a5a:root:node:9'
+    }
+  ])(
+    'renders an executed output stored under the $label node locator',
+    ({ rawId }) => {
+      const fakeRootGraph: Record<string, unknown> = {
+        id: 'graph-test',
+        getNodeById: () => null,
+        subgraphs: new Map()
+      }
+      fakeRootGraph.rootGraph = fakeRootGraph
+      useCanvasStore().currentGraph = fromAny(fakeRootGraph)
+      const nodeId = toNodeId(rawId)
+      mockData.mockLgraphNode = {
+        id: nodeId,
+        graph: fakeRootGraph,
+        isSubgraphNode: () => false
+      }
+      useNodeOutputStore().nodeOutputs[createNodeLocatorId(null, nodeId)] = {
+        images: [{ filename: 'output.png', type: 'output' }]
+      }
+
+      renderLGraphNode({
+        nodeData: { ...mockNodeData, id: nodeId, graphId: 'graph-test' }
+      })
+
+      expect(screen.getByTestId('node-content')).toHaveTextContent(
+        'filename=output.png'
+      )
+    }
+  )
 
   it('restores only the core LoadAudio input player on disconnect', async () => {
     const isAudioLinked = ref(true)
