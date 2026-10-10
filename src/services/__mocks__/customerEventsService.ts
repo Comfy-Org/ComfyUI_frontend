@@ -1,6 +1,10 @@
 import { onTestFinished, vi } from 'vitest'
 import { ref } from 'vue'
 
+import {
+  hasParamsBeyondDetailsColumn,
+  presentTooltipParamKeys
+} from '../customerEventParams'
 import type * as real from '../customerEventsService'
 
 type CustomerEventsService = ReturnType<typeof real.useCustomerEventsService>
@@ -37,18 +41,16 @@ const customerEventsService: CustomerEventsService = {
     if (!amount) return '0.00'
     return (amount / 100).toFixed(2)
   }),
-  hasAdditionalInfo: vi.fn((event) => {
-    const { amount, api_name, model, ...otherParams } = event.params ?? {}
-    return Object.keys(otherParams).length > 0
-  }),
+  hasAdditionalInfo: vi.fn(hasParamsBeyondDetailsColumn),
   formatDate: vi.fn((date) => new Date(date).toLocaleDateString()),
   formatJsonKey: vi.fn((key) => key),
   formatJsonValue: vi.fn((value) => value),
-  getTooltipContent: vi.fn((event) =>
-    Object.entries(event.params ?? {})
-      .map(([key, value]) => `${key}: ${String(value)}`)
+  getTooltipContent: vi.fn((event) => {
+    const params = event.params ?? {}
+    return presentTooltipParamKeys(params)
+      .map((key) => `${key}: ${String(params[key])}`)
       .join('\n')
-  )
+  })
 }
 
 export const useCustomerEventsService = vi.fn<

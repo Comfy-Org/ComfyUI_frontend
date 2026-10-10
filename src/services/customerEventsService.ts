@@ -5,6 +5,10 @@ import { ref, watch } from 'vue'
 import { webSessionResourceHeader } from '@/platform/auth/session/webSessionFetch'
 import { attachUnifiedRemintInterceptor } from '@/platform/auth/unified/remintRetry'
 import { getComfyApiBaseUrl } from '@/config/comfyApi'
+import {
+  hasParamsBeyondDetailsColumn,
+  presentTooltipParamKeys
+} from '@/services/customerEventParams'
 import { d, t } from '@/i18n'
 import { useAuthStore } from '@/stores/authStore'
 import type { components, operations } from '@/types/comfyRegistryTypes'
@@ -24,32 +28,6 @@ type CustomerEventsResponseQuery =
   operations['GetCustomerEvents']['parameters']['query']
 
 export type AuditLog = components['schemas']['AuditLog']
-
-const TOOLTIP_PARAM_ALLOWLIST = [
-  'credits_used',
-  'amount',
-  'model',
-  'api_name',
-  'endpoint',
-  'subscription_id',
-  'gpu_seconds',
-  'duration'
-] as const
-
-type TooltipParamKey = (typeof TOOLTIP_PARAM_ALLOWLIST)[number]
-
-const DETAILS_COLUMN_PARAM_KEYS: Partial<
-  Record<string, readonly TooltipParamKey[]>
-> = {
-  [EventType.CREDIT_ADDED]: ['amount'],
-  [EventType.API_USAGE_COMPLETED]: ['api_name', 'model']
-}
-
-function presentTooltipParamKeys(params: Record<string, unknown>) {
-  return TOOLTIP_PARAM_ALLOWLIST.filter(
-    (key) => params[key] != null && params[key] !== ''
-  )
-}
 
 const customerApiClient = axios.create({
   baseURL: getComfyApiBaseUrl(),
@@ -183,14 +161,6 @@ export const useCustomerEventsService = () => {
     }
   }
 
-  function hasAdditionalInfo(event: AuditLog) {
-    const shownInDetails =
-      DETAILS_COLUMN_PARAM_KEYS[event.event_type ?? ''] ?? []
-    return presentTooltipParamKeys(event.params || {}).some(
-      (key) => !shownInDetails.includes(key)
-    )
-  }
-
   function getTooltipContent(event: AuditLog) {
     const params = event.params || {}
 
@@ -279,7 +249,7 @@ export const useCustomerEventsService = () => {
     formatEventType,
     getEventSeverity,
     formatAmount,
-    hasAdditionalInfo,
+    hasAdditionalInfo: hasParamsBeyondDetailsColumn,
     formatDate,
     formatJsonKey,
     formatJsonValue,
