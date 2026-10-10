@@ -76,15 +76,11 @@ test.describe(
       })
 
       const ws = await getWebSocket()
-      // Resolve only a `doc_subscribe` that is proven to carry a string
-      // workflow id. Accepting the frame on `type` alone lets a drifted
-      // frame with missing or null `data` satisfy the promise, after which
-      // every `doc_update` below is addressed to `undefined`.
       const subscribedWorkflowId = new Promise<string>((resolve) => {
         ws.onMessage((msg) => {
           if (typeof msg !== 'string') return
           const workflowId = parsePromotedWidgetSubscribeWorkflowId(msg)
-          if (typeof workflowId === 'string') resolve(workflowId)
+          if (workflowId) resolve(workflowId)
         })
       })
 
