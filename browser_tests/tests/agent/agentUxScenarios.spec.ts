@@ -6,6 +6,32 @@ import { TestIds } from '@e2e/fixtures/selectors'
 import { agentTest as test } from '@e2e/tests/agent/agentPanelMocks'
 
 test.describe('Linear Agent UX scenarios', { tag: '@cloud' }, () => {
+  test('PM-1373 shows fewer cold-start suggestions below the compact panel breakpoint', async ({
+    agentPanel
+  }) => {
+    await agentPanel.open()
+    const suggestions = agentPanel.suggestedPrompts
+    await expect(suggestions).toHaveCount(5)
+
+    await test.step('Resize to 459px, just below the breakpoint', async () => {
+      await agentPanel.resizeTo(459)
+      await expect.soft(suggestions.nth(0)).toBeVisible()
+      await expect.soft(suggestions.nth(1)).toBeVisible()
+      await expect.soft(suggestions.nth(2)).toBeVisible()
+      await expect.soft(suggestions.nth(3)).toBeHidden()
+      await expect.soft(suggestions.nth(4)).toBeHidden()
+    })
+
+    await test.step('Resize to 460px, the expanded breakpoint', async () => {
+      await agentPanel.resizeTo(460)
+      await expect.soft(suggestions.nth(0)).toBeVisible()
+      await expect.soft(suggestions.nth(1)).toBeVisible()
+      await expect.soft(suggestions.nth(2)).toBeVisible()
+      await expect.soft(suggestions.nth(3)).toBeVisible()
+      await expect.soft(suggestions.nth(4)).toBeVisible()
+    })
+  })
+
   for (const width of [480, 640]) {
     test(`X-01 / PM-672 keeps controls usable at ${width}px panel width`, async ({
       agentPanel,
@@ -15,17 +41,7 @@ test.describe('Linear Agent UX scenarios', { tag: '@cloud' }, () => {
       await agentPanel.open()
       const panel = page.locator('#agent-panel-root')
 
-      const dock = page.getByTestId('docked-agent-panel')
-      const resizeHandle = page.getByTestId('agent-panel-resize-handle')
-      const handleBox = await resizeHandle.boundingBox()
-      if (!handleBox)
-        throw new Error('Agent panel resize handle is not visible')
-      const handleCenterX = handleBox.x + handleBox.width / 2
-      await page.mouse.move(handleCenterX, handleBox.y + 20)
-      await page.mouse.down()
-      await page.mouse.move(handleCenterX - (width - 420), handleBox.y + 20)
-      await page.mouse.up()
-      await expect(dock).toHaveCSS('width', `${width}px`)
+      await agentPanel.resizeTo(width)
 
       const composer = panel.getByRole('textbox', { name: /^Describe ideas/ })
       const send = panel.getByRole('button', { name: 'Send' })
