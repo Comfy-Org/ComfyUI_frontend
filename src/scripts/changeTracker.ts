@@ -468,6 +468,7 @@ export class ChangeTracker {
   }
 
   async updateState(source: ComfyWorkflowJSON[], target: ComfyWorkflowJSON[]) {
+    if (this._restoringState) return
     const prevState = source.pop()
     if (prevState) {
       const previousState = this.activeState
@@ -488,15 +489,17 @@ export class ChangeTracker {
             silentAssetErrors: true
           }
         )
-        if (result === false || result === undefined) return
-
-        restored = true
-        target.push(previousState)
-        if (restoresSavedState) this.initialState = clone(this.activeState)
-        this.updateModified(previousState)
+        restored = result !== false && result !== undefined
       } finally {
-        if (!restored) source.push(prevState)
+        restored ||= !ChangeTracker.graphEqual(this.activeState, previousState)
+        if (restored) {
+          target.push(previousState)
+          if (restoresSavedState) this.initialState = clone(this.activeState)
+        } else {
+          source.push(prevState)
+        }
         this._restoringState = false
+        if (restored) this.updateModified(previousState)
       }
     }
   }

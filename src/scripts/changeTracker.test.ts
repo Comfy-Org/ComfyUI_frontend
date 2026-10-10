@@ -1451,6 +1451,63 @@ describe('ChangeTracker', () => {
       ).toEqual(otherState)
     })
 
+    it('keeps Redo reachable when a load rejects after committing the normalized Undo state', async () => {
+      const saved = createState(1)
+      saved.nodes[0].widgets_values = [1]
+      const changed = structuredClone(saved)
+      changed.nodes[0].widgets_values = [2]
+      const normalized = structuredClone(saved)
+      normalized.nodes[0].size = [100, 178]
+      const tracker = createTracker(saved)
+      tracker.activeState = changed
+      tracker.undoQueue.push(saved)
+      const workflow = useWorkflowStore().activeWorkflow
+      assert.exists(workflow)
+      workflow.isModified = true
+      vi.mocked(useWorkflowStore().getWorkflowByPath).mockReturnValue(workflow)
+      const error = new Error('Post-load asset scan rejected')
+      vi.mocked(app.loadGraphData).mockImplementationOnce(async () => {
+        tracker.reset(normalized)
+        mockCanvasState(normalized)
+        throw error
+      })
+
+      await expect(tracker.undo()).rejects.toThrow(error)
+
+      expect(tracker.activeState).toEqual(normalized)
+      expect(tracker.initialState).toEqual(normalized)
+      expect(tracker.undoQueue).toEqual([])
+      expect(tracker.redoQueue).toEqual([changed])
+      expect(workflow.isModified).toBe(false)
+      expect(tracker._restoringState).toBe(false)
+      await tracker.redo()
+      expect(tracker.activeState).toEqual(changed)
+      expect(workflow.isModified).toBe(true)
+    })
+
+    it('keeps Undo history order when another Undo is requested during a pending restore', async () => {
+      const earlier = createState(1)
+      const previous = createState(2)
+      const current = createState(3)
+      const tracker = createTracker(current)
+      tracker.undoQueue.push(earlier, previous)
+      let releasePending!: (value: boolean | undefined) => void
+      const pending = new Promise<boolean | undefined>((resolve) => {
+        releasePending = resolve
+      })
+      vi.mocked(app.loadGraphData).mockReturnValueOnce(pending)
+
+      const firstUndo = tracker.undo()
+      await tracker.undo()
+      releasePending(undefined)
+      await firstUndo
+
+      expect(tracker.activeState).toEqual(current)
+      expect(tracker.undoQueue).toEqual([earlier, previous])
+      expect(tracker.redoQueue).toEqual([])
+      expect(tracker._restoringState).toBe(false)
+    })
+
     it.for([false, undefined])(
       'preserves state and history when restoration returns %s',
       async (result) => {

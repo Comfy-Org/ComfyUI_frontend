@@ -415,6 +415,7 @@ export class ComfyApp {
   private configuringGraphLevel: number = 0
   private graphLoadSequence = 0
   private committedGraphLoadSequence = 0
+  private graphLoadMutationSequence = 0
   private pendingCamera:
     | { id: number; workflow: string | null | ComfyWorkflow }
     | undefined
@@ -1574,6 +1575,7 @@ export class ComfyApp {
           return undefined
         }
 
+        this.graphLoadMutationSequence++
         this.rootGraph.configure(graphData as ISerialisedGraph)
 
         // Save original renderer version before scaling (it gets modified during scaling)
@@ -1632,6 +1634,7 @@ export class ComfyApp {
         // Resolves rather than throws: the close/replacement guards read this outcome.
         return false
       }
+      const configuredGraphMutationSequence = this.graphLoadMutationSequence
       const snapTo = LiteGraph.alwaysSnapToGrid
         ? this.rootGraph.getSnapToGridSize()
         : 0
@@ -1696,6 +1699,8 @@ export class ComfyApp {
         'afterConfigureGraph',
         missingNodeTypes
       )
+      if (configuredGraphMutationSequence !== this.graphLoadMutationSequence)
+        return undefined
 
       const effectiveShareId =
         shareId ??
@@ -2841,6 +2846,7 @@ export class ComfyApp {
     // Subgraph does not properly implement `clear` and the parent class's
     // (`LGraph`) `clear` breaks the subgraph structure.
     if (!this.canvas.subgraph) {
+      this.graphLoadMutationSequence++
       this.rootGraph.clear()
       ensureNonZeroUuid(this.rootGraph)
     }

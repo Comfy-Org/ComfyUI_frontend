@@ -55,6 +55,7 @@ import type { LoadedComfyWorkflow } from '@/platform/workflow/management/stores/
 import { useWorkflowService } from '@/platform/workflow/core/services/workflowService'
 import type { useWorkflowValidation } from '@/platform/workflow/validation/composables/useWorkflowValidation'
 import { createMockChangeTracker } from '@/utils/__tests__/litegraphTestUtils'
+import { ChangeTracker } from '@/scripts/changeTracker'
 import {
   createTestCanvasElement,
   createTestDragAndScale,
@@ -754,6 +755,147 @@ describe('ComfyApp', () => {
         (hook) => hook === 'afterConfigureGraph' || hook === 'onGraphLoadError'
       )
       expect(closed).toHaveLength(opened.length)
+    })
+
+    it('does not assign a newer workflow graph to an Undo load waiting after configuration', async () => {
+      app.canvasElRef.value = document.createElement('canvas')
+      Reflect.set(app, 'rootGraphInternal', new LGraph())
+      const firstWorkflow = new ComfyWorkflow({
+        path: 'workflows/undo.json',
+        modified: 0,
+        size: 0
+      })
+      const saved = createWorkflowGraphData()
+      saved.extra = { marker: 'saved' }
+      const changed = structuredClone(saved)
+      changed.extra = { marker: 'changed' }
+      const firstTracker = new ChangeTracker(firstWorkflow, saved)
+      firstTracker.activeState = changed
+      firstTracker._restoringState = true
+      firstWorkflow.changeTracker = firstTracker
+      const secondWorkflow = new ComfyWorkflow({
+        path: 'workflows/other.json',
+        modified: 0,
+        size: 0
+      })
+      const other = createWorkflowGraphData()
+      other.extra = { marker: 'other' }
+      const secondTracker = new ChangeTracker(secondWorkflow, other)
+      secondWorkflow.changeTracker = secondTracker
+      mockWorkflowService.afterLoadNewGraph.mockImplementation(
+        async (
+          workflow: string | ComfyWorkflow | null,
+          state: ComfyWorkflowJSON
+        ) => {
+          assert(workflow instanceof ComfyWorkflow)
+          workflow.changeTracker?.reset(state)
+        }
+      )
+      let releasePending!: () => void
+      const pending = new Promise<void>((resolve) => {
+        releasePending = resolve
+      })
+      vi.when(mockExtensionService.invokeExtensionsAsync)
+        .calledWith('afterConfigureGraph', expect.anything())
+        .thenReturnOnce(pending)
+
+      const undoLoad = app.loadGraphData(saved, false, false, firstWorkflow, {
+        skipAssetScans: true
+      })
+      await vi.waitFor(() =>
+        expect(mockExtensionService.invokeExtensionsAsync).toHaveBeenCalledWith(
+          'afterConfigureGraph',
+          expect.anything()
+        )
+      )
+      await app.loadGraphData(other, false, false, secondWorkflow, {
+        skipAssetScans: true
+      })
+      releasePending()
+      await expect(undoLoad).resolves.toBeUndefined()
+
+      expect(firstTracker.activeState).toEqual(changed)
+      expect(firstTracker.initialState).toEqual(saved)
+      expect(secondTracker.activeState.extra).toMatchObject({ marker: 'other' })
+      expect(app.rootGraph.extra).toMatchObject({ marker: 'other' })
+    })
+
+    it('does not assign a cleared canvas to Undo while the newer workflow is still preparing', async () => {
+      app.canvasElRef.value = document.createElement('canvas')
+      Reflect.set(app, 'rootGraphInternal', new LGraph())
+      const firstWorkflow = new ComfyWorkflow({
+        path: 'workflows/undo.json',
+        modified: 0,
+        size: 0
+      })
+      const saved = createWorkflowGraphData()
+      saved.extra = { marker: 'saved' }
+      const changed = structuredClone(saved)
+      changed.extra = { marker: 'changed' }
+      const tracker = new ChangeTracker(firstWorkflow, saved)
+      tracker.activeState = changed
+      tracker._restoringState = true
+      firstWorkflow.changeTracker = tracker
+      const secondWorkflow = new ComfyWorkflow({
+        path: 'workflows/other.json',
+        modified: 0,
+        size: 0
+      })
+      const other = createWorkflowGraphData()
+      other.extra = { marker: 'other' }
+      mockWorkflowService.afterLoadNewGraph.mockImplementation(
+        async (
+          workflow: string | ComfyWorkflow | null,
+          state: ComfyWorkflowJSON
+        ) => {
+          assert(workflow instanceof ComfyWorkflow)
+          workflow.changeTracker?.reset(state)
+        }
+      )
+      let releaseAfterConfigure!: () => void
+      const afterConfigure = new Promise<void>((resolve) => {
+        releaseAfterConfigure = resolve
+      })
+      vi.when(mockExtensionService.invokeExtensionsAsync)
+        .calledWith('afterConfigureGraph', expect.anything())
+        .thenReturnOnce(afterConfigure)
+
+      const undoLoad = app.loadGraphData(saved, false, false, firstWorkflow, {
+        skipAssetScans: true
+      })
+      await vi.waitFor(() =>
+        expect(mockExtensionService.invokeExtensionsAsync).toHaveBeenCalledWith(
+          'afterConfigureGraph',
+          expect.anything()
+        )
+      )
+      let releaseBeforeConfigure!: () => void
+      const beforeConfigure = new Promise<void>((resolve) => {
+        releaseBeforeConfigure = resolve
+      })
+      vi.when(mockExtensionService.invokeExtensionsAsync)
+        .calledWith(
+          'beforeConfigureGraph',
+          expect.anything(),
+          expect.anything()
+        )
+        .thenReturnOnce(beforeConfigure)
+      const newerLoad = app.loadGraphData(other, true, false, secondWorkflow, {
+        skipAssetScans: true
+      })
+      try {
+        await vi.waitFor(() => expect(app.rootGraph.extra).toEqual({}))
+        releaseAfterConfigure()
+        await expect(undoLoad).resolves.toBeUndefined()
+
+        expect(tracker.activeState).toEqual(changed)
+        expect(tracker.initialState).toEqual(saved)
+      } finally {
+        releaseAfterConfigure()
+        releaseBeforeConfigure()
+        await Promise.all([undoLoad, newerLoad])
+      }
+      expect(app.rootGraph.extra).toMatchObject({ marker: 'other' })
     })
 
     it('lets an older valid load commit when its newer replacement fails', async () => {
