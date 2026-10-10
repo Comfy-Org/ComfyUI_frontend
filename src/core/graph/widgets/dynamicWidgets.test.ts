@@ -956,3 +956,131 @@ describe('Autogrow followed by an ordinary combo child (FE-258)', () => {
     }).toEqual({ images: before, maskConnected: true })
   })
 })
+
+const STARTLOOP_LIKE_NODE_TYPE = 'test/StartLoopLike'
+
+/**
+ * Shaped after the core `StartLoop` node (#20609): a dynamic combo (`mode`
+ * with simple | For options, each declaring `num_iterations`) followed by an
+ * ordinary optional advanced widget (`cache_iterations`). #20609 reports that
+ * on frontend 1.52.7 the trailing advanced widget silently reverted to its
+ * schema default on every form of load.
+ */
+const startLoopLikeNodeDef: ComfyNodeDefV1 = {
+  name: STARTLOOP_LIKE_NODE_TYPE,
+  display_name: 'Start Loop Like',
+  category: 'testing',
+  python_module: 'nodes',
+  description: '',
+  input: {
+    required: {
+      mode: [
+        'COMFY_DYNAMICCOMBO_V3',
+        {
+          options: [
+            {
+              key: 'simple',
+              inputs: {
+                required: { num_iterations: ['INT', { default: 2 }] }
+              }
+            },
+            {
+              key: 'For',
+              inputs: {
+                required: { num_iterations: ['INT', { default: 2 }] }
+              }
+            }
+          ]
+        }
+      ]
+    },
+    optional: {
+      cache_iterations: ['BOOLEAN', { default: false, advanced: true }]
+    }
+  },
+  output: ['INT'],
+  output_name: ['ITERATION'],
+  output_node: false
+}
+
+describe('Dynamic combo round-trip with widgets declared after the combo (#20609)', () => {
+  beforeEach(async () => {
+    await useLitegraphService().registerNodeDef(
+      STARTLOOP_LIKE_NODE_TYPE,
+      startLoopLikeNodeDef
+    )
+  })
+
+  function addStartLoopLikeNode(graph: LGraph) {
+    const node = LiteGraph.createNode(STARTLOOP_LIKE_NODE_TYPE)
+    assert.ok(node, 'start-loop-like node')
+    graph.add(node)
+    return node
+  }
+
+  function widgetValues(node: LGraphNode) {
+    return Object.fromEntries(
+      (node.widgets ?? []).map((widget) => [widget.name, widget.value])
+    )
+  }
+
+  function setValue(
+    node: LGraphNode,
+    name: string,
+    value: string | number | boolean
+  ) {
+    const widget = node.widgets?.find((widget) => widget.name === name)
+    assert.ok(widget, `widget ${name}`)
+    widget.value = value
+  }
+
+  function reload(graph: LGraph) {
+    const reloaded = new LGraph()
+    reloaded.configure(structuredClone(graph.serialize()))
+    const reloadedNode = reloaded.getNodeById(toNodeId(1))
+    assert.ok(reloadedNode, 'reloaded node')
+    return reloadedNode
+  }
+
+  test('keeps a trailing advanced widget across a save/load round-trip in simple mode', () => {
+    const graph = new LGraph()
+    const node = addStartLoopLikeNode(graph)
+    setValue(node, 'mode.num_iterations', 2)
+    setValue(node, 'cache_iterations', true)
+
+    expect(widgetValues(reload(graph))).toEqual({
+      mode: 'simple',
+      'mode.num_iterations': 2,
+      cache_iterations: true
+    })
+  })
+
+  test('keeps the trailing advanced widget when the option was toggled away and back before saving', () => {
+    const graph = new LGraph()
+    const node = addStartLoopLikeNode(graph)
+    setValue(node, 'cache_iterations', true)
+    // Force the load to rebuild the simple option's children: leave the
+    // simple option selected after visiting For.
+    setValue(node, 'mode', 'For')
+    setValue(node, 'mode', 'simple')
+
+    expect(widgetValues(reload(graph))).toEqual({
+      mode: 'simple',
+      'mode.num_iterations': 2,
+      cache_iterations: true
+    })
+  })
+
+  test('keeps the trailing advanced widget across a save/load round-trip in For mode', () => {
+    const graph = new LGraph()
+    const node = addStartLoopLikeNode(graph)
+    setValue(node, 'mode', 'For')
+    setValue(node, 'cache_iterations', true)
+
+    expect(widgetValues(reload(graph))).toEqual({
+      mode: 'For',
+      'mode.num_iterations': 2,
+      cache_iterations: true
+    })
+  })
+})
