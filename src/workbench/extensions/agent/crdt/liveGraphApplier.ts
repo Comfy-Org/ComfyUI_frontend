@@ -41,6 +41,7 @@ import {
 } from './agentSubgraphDefinitions'
 import type { PlacementRect } from './batchPlacement'
 import { placementOffset } from './batchPlacement'
+import { orderWidgetEntries, overflowWidgetIndex } from './widgetEntryOrder'
 
 export type NodeChange = 'add' | 'update' | 'delete'
 
@@ -420,13 +421,6 @@ function supportsDynamicWidgetOverflow(node: LGraphNode): boolean {
       inputSpecTree(spec).some(({ type }) => type === 'COMFY_DYNAMICCOMBO_V3')
     )
   )
-}
-
-const OVERFLOW_WIDGET_NAME_RE = /^_extra_(0|[1-9]\d*)$/
-
-function overflowWidgetIndex(name: string): number | null {
-  const match = OVERFLOW_WIDGET_NAME_RE.exec(name)
-  return match ? Number(match[1]) : null
 }
 
 function documentWidget(
@@ -1181,24 +1175,6 @@ function isLinkPresent(
   )
 }
 
-/** Rank of a not-yet-mounted document name; past every live/overflow position. */
-const MOUNTED_LAST = Number.MAX_SAFE_INTEGER
-
-/**
- * Apply order for a document widget map: live widgets in their positional
- * order, then overflow aliases by position, then names no widget carries yet.
- * The live order keeps a selector ahead of children it may rebuild. Unresolved
- * entries are retried after each round, so selectors can mount widgets at any
- * depth.
- */
-function widgetEntryRank(node: LGraphNode, name: string): number {
-  const live = serializableWidgets(node)
-  const liveIndex = live.findIndex((widget) => widget.name === name)
-  if (liveIndex !== -1) return liveIndex
-  const index = overflowWidgetIndex(name)
-  return index === null ? MOUNTED_LAST : live.length + index
-}
-
 function isWidgetEntry(
   entry: [string, unknown]
 ): entry is [string, WidgetValue] {
@@ -1207,7 +1183,7 @@ function isWidgetEntry(
 
 /**
  * Ordinary node widget values by document name, ordered so Y.Map insertion
- * order cannot decide the outcome (`widgetEntryRank`); a positional list is
+ * order cannot decide the outcome; a positional list is
  * read in serializable-widget order.
  */
 function ordinaryWidgetEntries(
@@ -1215,8 +1191,11 @@ function ordinaryWidgetEntries(
   widgets: NonNullable<DocNode['widgets']>
 ): [string, unknown][] {
   if (!Array.isArray(widgets)) {
-    return Object.entries(widgets).sort(
-      ([a], [b]) => widgetEntryRank(node, a) - widgetEntryRank(node, b)
+    const entries = Object.entries(widgets)
+    if (entries.length < 2) return entries
+    return orderWidgetEntries(
+      serializableWidgets(node).map((widget) => widget.name),
+      entries
     )
   }
   return serializableWidgets(node).map((widget, index) => [
