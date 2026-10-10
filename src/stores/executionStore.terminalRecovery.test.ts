@@ -312,9 +312,9 @@ describe('executionStore terminal-job recovery', () => {
     // the delete would hand it nothing and silently remove no widget. Order is
     // the whole point here.
     const jobId = stuckQueuedJob()
-    const seen: (string[] | undefined)[] = []
+    const seen: string[][] = []
     store.onJobReset((job) => {
-      seen.push(job && Object.keys(job.nodes))
+      seen.push(Object.keys(job.nodes))
     })
 
     store.reconcileTerminalJobs(new Set(), new Set([jobId]))
