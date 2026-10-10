@@ -26,13 +26,7 @@ export function showConfirmDialog(
     props,
     footerProps,
     dialogComponentProps: {
-      size: 'md',
-      contentClass: 'rounded-2xl border-border-default sm:max-w-lg',
-      // Confirm sections carry their own padding — zero out the dialog
-      // chrome padding.
-      headerClass: 'p-0 pr-3',
-      bodyClass: 'p-0',
-      footerClass: 'p-0'
+      flush: true
     }
   })
 }

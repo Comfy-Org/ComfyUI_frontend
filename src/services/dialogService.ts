@@ -9,7 +9,6 @@ import ConfirmationDialogContent from '@/components/dialog/content/ConfirmationD
 import type { ConfirmationDialogType } from '@/components/dialog/content/confirmationDialogTypes'
 import ErrorDialogContent from '@/components/dialog/content/ErrorDialogContent.vue'
 import PromptDialogContent from '@/components/dialog/content/PromptDialogContent.vue'
-import { HUG_CONTENT_CLASS } from '@/components/ui/dialog/dialog.variants'
 import type {
   DowngradeToPersonalResult,
   SubscriptionDialogOptions,
@@ -414,10 +413,8 @@ export const useDialogService = () => {
       ...rest,
       dialogComponentProps: {
         closable: true,
-        contentClass: `${HUG_CONTENT_CLASS} border-border-default`,
-        headerClass: 'p-0',
-        bodyClass: 'p-0 overflow-y-hidden',
-        footerClass: 'p-0',
+        flush: true,
+        size: 'fit',
         ...callerProps
       }
     })

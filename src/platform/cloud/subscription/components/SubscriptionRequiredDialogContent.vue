@@ -1,7 +1,7 @@
 <template>
   <div
     v-if="showCustomPricingTable"
-    class="relative flex h-full flex-col gap-6 overflow-y-auto p-4 pt-8 md:px-16 md:py-8"
+    class="relative flex h-full max-h-[90vh] w-[calc(100vw-1rem)] flex-col gap-6 overflow-y-auto rounded-2xl border border-border-default bg-secondary-background p-4 pt-8 shadow-[0_25px_80px_rgba(5,6,12,0.45)] sm:max-w-7xl md:px-16 md:py-8"
   >
     <Button
       size="icon"
@@ -65,7 +65,10 @@
       </div>
     </div>
   </div>
-  <div v-else class="legacy-dialog relative grid h-full grid-cols-5">
+  <div
+    v-else
+    class="legacy-dialog relative grid h-full max-h-[90vh] w-[calc(100vw-1rem)] grid-cols-5 rounded-2xl border border-border-default bg-secondary-background shadow-[0_25px_80px_rgba(5,6,12,0.45)] sm:max-w-7xl"
+  >
     <!-- Custom close button -->
     <Button
       size="icon"

@@ -5,19 +5,10 @@ import { ManagerTab } from '@/workbench/extensions/manager/types/comfyManagerTyp
 import { useManagerDialog } from '@/workbench/extensions/manager/composables/useManagerDialog'
 
 describe('useManagerDialog', () => {
-  it("show() opens at size 'full' with Manager content sizing", () => {
+  it('show() opens the global-manager dialog', () => {
     useManagerDialog().show()
     const [args] = vi.mocked(useDialogStore().showDialog).mock.calls[0]
     expect(args.key).toBe('global-manager')
-    expect(args.dialogComponentProps!.size).toBe('full')
-    expect(args.dialogComponentProps!.contentClass).toContain(
-      'w-[min(90vw,1724px)]'
-    )
-    expect(args.dialogComponentProps!.contentClass).toContain('h-[80vh]')
-    expect(args.dialogComponentProps!.contentClass).toContain('max-h-[1026px]')
-    expect(args.dialogComponentProps!.contentClass).toContain(
-      'min-[3000px]:w-[min(90vw,2200px)]'
-    )
   })
 
   it('show(initialTab) forwards initialTab to ManagerDialog props', () => {

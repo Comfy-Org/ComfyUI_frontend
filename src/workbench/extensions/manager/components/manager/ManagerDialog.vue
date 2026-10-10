@@ -5,7 +5,7 @@
     v-model:right-panel-open="isRightPanelOpen"
     :content-title="$t('manager.discoverCommunityContent')"
     :right-panel-title="$t('manager.nodePackInfo')"
-    size="panel"
+    size="lg"
     class="manager-dialog"
   >
     <template #leftPanelHeaderTitle>

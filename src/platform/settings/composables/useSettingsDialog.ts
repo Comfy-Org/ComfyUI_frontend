@@ -1,6 +1,5 @@
 import type { Component } from 'vue'
 
-import { isCloud } from '@/platform/distribution/types'
 import { reportError } from '@/platform/telemetry/reportError'
 import { useDialogStore } from '@/stores/dialogStore'
 
@@ -12,9 +11,6 @@ import type {
 const DIALOG_KEY = 'global-settings'
 
 // The redesigned Settings dialog is 1280px wide (DES 3253-16079).
-const SETTINGS_CONTENT_CLASS =
-  'w-[90vw] max-w-[1280px] sm:max-w-[1280px] h-[80vh] max-h-none rounded-2xl overflow-hidden'
-
 let settingDialogComponent: Component<SettingDialogProps> | undefined
 
 /**
@@ -53,10 +49,7 @@ export function useSettingsDialog() {
       },
       dialogComponentProps: {
         headless: true,
-        closable: true,
-        size: 'full',
-        contentClass: SETTINGS_CONTENT_CLASS,
-        overlayClass: isCloud ? 'p-8' : undefined
+        closable: true
       }
     })
   }

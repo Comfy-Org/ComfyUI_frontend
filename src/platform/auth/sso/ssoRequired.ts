@@ -5,7 +5,6 @@ import {
   ssoRequiredOrganizationId
 } from '@comfyorg/account-core/sso'
 
-import { SELF_STYLED_PANEL_CONTENT_CLASS } from '@/components/ui/dialog/dialog.variants'
 import { useFeatureFlags } from '@/composables/useFeatureFlags'
 import { t } from '@/i18n'
 import { SSO_REQUIRED_DIALOG_KEY } from '@/platform/auth/sso/ssoRequiredDialogKey'
@@ -53,8 +52,7 @@ export function presentSsoRequired(context: SsoRequiredContext = {}): boolean {
         component,
         props: known,
         dialogComponentProps: {
-          headless: true,
-          contentClass: SELF_STYLED_PANEL_CONTENT_CLASS
+          headless: true
         }
       })
     })

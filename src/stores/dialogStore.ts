@@ -1,21 +1,19 @@
 import { defineStore } from 'pinia'
 import { markRaw, ref } from 'vue'
-import type { Component, HTMLAttributes, Ref } from 'vue'
+import type { Component, Ref } from 'vue'
 
 import type { DialogContentSize } from '@/components/ui/dialog/dialog.variants'
 import type { ComponentAttrs } from 'vue-component-type-helpers'
 
 export interface DialogComponentProps {
-  /** Class applied to the content wrapper on the non-headless path. */
-  bodyClass?: HTMLAttributes['class']
   closable?: boolean
-  /** Class applied to the Reka-UI `DialogContent` element. */
-  contentClass?: HTMLAttributes['class']
   dismissOnPointerDownOutside?: boolean
-  /** Class applied to the dialog footer on the non-headless path. */
-  footerClass?: HTMLAttributes['class']
-  /** Class applied to the dialog header on the non-headless path. */
-  headerClass?: HTMLAttributes['class']
+  /**
+   * The header, body and footer components lay out and pad their own
+   * sections, so the dialog frame adds no padding around them.
+   */
+  flush?: boolean
+  /** The component renders the whole panel: its surface, size and close button. */
   headless?: boolean
   maximizable?: boolean
   maximized?: boolean
@@ -28,8 +26,6 @@ export interface DialogComponentProps {
    * `onClose`, which never fires on eviction.
    */
   onRemoved?: () => void
-  /** Class applied to the Reka-UI `DialogOverlay` element. */
-  overlayClass?: HTMLAttributes['class']
   /**
    * Hides the header close button while keeping `closable` dismissal paths
    * (Escape, programmatic close) available. Defaults to shown.

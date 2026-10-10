@@ -1,6 +1,6 @@
 <template>
   <div
-    class="flex flex-col overflow-hidden rounded-2xl border border-border-default bg-base-background"
+    class="flex w-90 max-w-full flex-col overflow-hidden rounded-2xl border border-border-default bg-base-background"
   >
     <div
       class="flex h-12 items-center gap-2 border-b border-border-default p-4"
