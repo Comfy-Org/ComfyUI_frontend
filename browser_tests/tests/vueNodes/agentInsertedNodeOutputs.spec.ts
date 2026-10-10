@@ -63,10 +63,13 @@ test.describe('Agent-inserted node outputs', { tag: '@vue-nodes' }, () => {
 
     await comfyPage.vueNodes.enterSubgraph(INSERTED_HOST_ID)
 
-    await expect(
-      comfyPage.vueNodes
-        .getNodeByTitle('Save Image')
-        .getByRole('img', { name: 'View image 1 of 1' })
-    ).toBeVisible()
+    const image = comfyPage.vueNodes
+      .getNodeByTitle('Save Image')
+      .getByRole('img', { name: 'View image 1 of 1' })
+    await expect(image).toBeVisible()
+    await expect(image).toHaveAttribute('src', /filename=example\.png/)
+    await expect
+      .poll(() => image.evaluate((img: HTMLImageElement) => img.naturalWidth))
+      .toBeGreaterThan(0)
   })
 })
