@@ -4990,5 +4990,350 @@
     "loading": "正在加载最新更新日志…",
     "introduction": "ComfyUI 的最新功能、改进和修复，来自 Comfy 文档。",
     "retry": "重试"
+  },
+  "darkroom": {
+    "meta": {
+      "title": "Darkroom - Comfy",
+      "description": "Nano Banana 模型的图像创作空间。描述一张图片，一次最多生成四张，并在喜欢的结果上继续创作。"
+    },
+    "title": "Darkroom",
+    "tabs": {
+      "label": "分区",
+      "create": "创作",
+      "organize": "整理",
+      "moodboards": "情绪板"
+    },
+    "unavailable": {
+      "title": "Darkroom 暂未开放",
+      "body": "此页面尚未向你的账号开放。"
+    },
+    "storageFailed": "此浏览器阻止了存储，离开页面后，你在这里生成的图片将不会保留。",
+    "prompt": {
+      "label": "提示词",
+      "placeholder": "描述一张图片",
+      "placeholderHistory": "描述一张图片，或按 ↑ 调出之前的提示词",
+      "references": "添加参考图",
+      "referencesTitle": "添加参考图（也可以拖到页面任意位置，或直接粘贴）",
+      "moodboard": "情绪板",
+      "moodboardTitle": "按情绪板的风格生成",
+      "moodboardActive": "新图片将遵循“{name}”情绪板。点击更换。",
+      "settings": "设置",
+      "dropReferences": "松开即可添加为参考图",
+      "dropBoard": "松开即可添加到此情绪板"
+    },
+    "refs": {
+      "label": "参考图",
+      "alt": "参考图 {n}",
+      "remove": "移除图片 {n}",
+      "hintOne": "描述要修改的内容，或添加更多图片进行组合。",
+      "hintMany": "用编号指代它们，例如“图片 2 中的夹克”。",
+      "removeAll": "全部移除"
+    },
+    "settings": {
+      "model": "模型",
+      "images": "图片数量",
+      "imagesHelp": "一次生成多少张。",
+      "imagesTip": "一次生成 {count} 张图片",
+      "resolution": "分辨率",
+      "resolutionOff": "此模型只有一种分辨率。",
+      "shape": "形状",
+      "more": "更多控制",
+      "creativity": "创造力",
+      "creativityHelp": "较低时更贴近你的描述，较高时更自由发挥。",
+      "planning": "规划",
+      "planningHelp": "模型在绘制前思考的程度。“细致”适合较长、细节丰富的提示词，但耗时更长。",
+      "seed": "种子",
+      "seedPlaceholder": "随机",
+      "seedHelp": "留空可获得全新的结果。使用相同的种子和设置，可以得到相近的图片。",
+      "seedPick": "选取",
+      "seedPickTitle": "选取一个随机种子",
+      "format": "文件类型",
+      "formatHelp": "PNG 保留全部细节，JPEG 体积更小。",
+      "notes": "风格备注",
+      "notesPlaceholder": "例如：柔和的胶片颗粒、低饱和色彩、不含文字",
+      "notesHelp": "会添加到每张图片，直到你清除为止。",
+      "reset": "恢复默认设置",
+      "done": "完成",
+      "summary": "{model} · {shape} · {count} 张图片",
+      "changed": {
+        "creativity": "创造力：{word}"
+      }
+    },
+    "models": {
+      "nanoBanana21": "最新的 Nano Banana，适合作为起点。",
+      "nanoBanana2": "上一个版本，便于对比结果。",
+      "nanoBananaPro": "Pro 模型。速度最慢，1K 下每张约 17 秒。",
+      "nanoBanana2Lite": "速度最快，1K 下每张约 5 秒。",
+      "nanoBanana": "最初的模型。它只有一种分辨率，因此分辨率选项不可用。"
+    },
+    "shapes": {
+      "auto": "自动",
+      "autoName": "自动形状",
+      "autoTitle": "由模型决定，或与你的参考图保持一致",
+      "fromRefs": "跟随参考图",
+      "square": "方形",
+      "wide": "宽屏",
+      "tall": "竖屏",
+      "landscape": "横向",
+      "portrait": "纵向",
+      "photo": "照片",
+      "poster": "海报",
+      "social": "社交",
+      "cinema": "影院"
+    },
+    "sizes": {
+      "1K": "最快，适合尝试想法。",
+      "2K": "更清晰，适合作为默认选择。",
+      "4K": "最清晰也最慢，适合最终成品。"
+    },
+    "planning": {
+      "auto": "自动",
+      "quick": "快速",
+      "balanced": "均衡",
+      "careful": "细致"
+    },
+    "creativity": {
+      "steady": "稳定",
+      "focused": "专注",
+      "balanced": "均衡",
+      "loose": "自由",
+      "wild": "奔放"
+    },
+    "chips": {
+      "moodboard": "情绪板 · {name}",
+      "seed": "种子 {seed}",
+      "seedRange": "种子 {first}–{last}",
+      "creativity": "创造力：{word}（{value}）",
+      "planning": "{level}规划",
+      "notes": "已启用风格备注",
+      "seconds": "{seconds} 秒"
+    },
+    "welcome": {
+      "heading": "冲印你的第一张图片",
+      "lede": "描述一个画面并按 Enter。每条提示词会生成一行图片，旁边附有设置，方便你再次运行或在结果上继续创作。",
+      "signedOut": "登录你的 Comfy 账号即可开始。每条提示词会生成一行图片，旁边附有设置，方便你再次运行或在结果上继续创作。",
+      "tryOne": "试试这些",
+      "goodToKnow": "小贴士",
+      "examples": {
+        "photo": {
+          "tag": "摄影",
+          "prompt": "黎明时分山脊上的一棵孤柏，山谷中雾气弥漫，中画幅胶片质感"
+        },
+        "product": {
+          "tag": "产品",
+          "prompt": "亚麻桌布上的一只陶瓷咖啡杯，柔和的窗边光线，俯拍产品图"
+        },
+        "illustration": {
+          "tag": "插画",
+          "prompt": "一只狐狸在灯笼照亮的森林里看地图，水粉插画，暖色调"
+        },
+        "poster": {
+          "tag": "海报",
+          "prompt": "一张山间小镇的极简旅行海报，大胆的扁平色块，顶部写着“ALPENGLOW”"
+        }
+      },
+      "tips": {
+        "edit": {
+          "lead": "编辑照片。",
+          "body": "把图片拖到页面任意位置，然后描述要做的修改。"
+        },
+        "combine": {
+          "lead": "组合图片。",
+          "body": "用编号指代它们：“把图片 2 中的夹克穿到图片 1 中的人身上”。"
+        },
+        "build": {
+          "lead": "在结果上继续创作。",
+          "body": "将鼠标悬停在图片上，选择“编辑”或“变体”。"
+        },
+        "style": {
+          "lead": "设定风格。",
+          "body": "把图片收集到情绪板中，然后在提示词旁选择它。"
+        },
+        "keys": {
+          "lead": "按 Enter 生成。",
+          "body": "按 Shift+Enter 换行。"
+        }
+      }
+    },
+    "tile": {
+      "sending": "发送中",
+      "inLine": "排队中 · 前面还有 {count} 张",
+      "nextUp": "排队中 · 即将开始",
+      "developing": "冲印中 {seconds} 秒",
+      "saving": "保存中",
+      "cancel": "取消",
+      "cancelTitle": "停止这张图片",
+      "failed": "失败",
+      "cancelled": "已取消",
+      "tryAgain": "重试",
+      "details": "详情",
+      "seedTag": "种子 {seed} · {seconds} 秒",
+      "star": "加星标",
+      "starTitle": "加星标：删除时会保留它",
+      "edit": "编辑",
+      "editTitle": "添加为参考图，然后描述要做的修改",
+      "variations": "变体",
+      "variationsTitle": "基于这张图片、使用相同提示词生成新图片",
+      "board": "+ 情绪板",
+      "boardTitle": "添加到情绪板",
+      "download": "下载"
+    },
+    "row": {
+      "runAgain": "再次运行",
+      "runAgainTitle": "相同的提示词和设置，新的种子",
+      "reuse": "使用这些设置",
+      "reuseTitle": "将此提示词、设置和种子载入输入栏",
+      "cancel": "取消",
+      "cancelTitle": "停止仍在排队或冲印中的图片",
+      "delete": "删除",
+      "deleteTitle": "删除这一行的图片",
+      "styleNotes": "风格备注：{notes}",
+      "madeFrom": "基于 {count} 张参考图生成"
+    },
+    "failure": {
+      "blocked": {
+        "title": "被安全过滤器拦截",
+        "message": "模型拒绝了这次请求。请尝试换一种说法。"
+      },
+      "noImage": {
+        "title": "这次没有生成图片",
+        "message": "模型完成了请求但没有返回图片。请重试或换一种说法。"
+      },
+      "noImageText": {
+        "title": "这次没有生成图片",
+        "message": "模型只回复了文字。请换一种说法，或直接要求“一张……的图片”。"
+      },
+      "signedOut": {
+        "title": "已退出登录",
+        "message": "这张图片开始之前，你的会话已结束。请登录后重试。"
+      },
+      "noCredits": {
+        "title": "积分不足",
+        "message": "此 Comfy 账号需要更多积分才能继续生成。"
+      },
+      "rateLimit": {
+        "title": "请求过多",
+        "message": "Comfy 正在限流。请稍等片刻后重试。"
+      },
+      "settings": {
+        "title": "设置未被接受",
+        "message": "模型不接受这组设置。请尝试其他形状、分辨率或规划级别。"
+      },
+      "tooLarge": {
+        "title": "参考图过大",
+        "message": "参考图的总大小超出了发送上限。请减少数量或使用更小的图片。"
+      },
+      "timeout": {
+        "title": "耗时过长",
+        "message": "请求超时。请重试，或使用较低的分辨率。"
+      },
+      "unavailable": {
+        "title": "不可用",
+        "message": "你的账号目前无法使用此模型。"
+      },
+      "network": {
+        "title": "无法连接到 Comfy",
+        "message": "这张图片发送之前连接中断了。请检查网络后重试。"
+      },
+      "stopped": {
+        "title": "已停止",
+        "message": "模型可能已经完成了这张图片，这种情况下仍会计费。它不会被保存。"
+      },
+      "cancelledInLine": {
+        "title": "开始前已取消",
+        "message": "没有产生任何费用。"
+      },
+      "lost": {
+        "title": "无法取回这张图片",
+        "message": "页面关闭时这张图片仍在冲印中，其结果已不可用。"
+      },
+      "generic": {
+        "title": "出了点问题",
+        "message": "Comfy 未能完成这张图片。请重试。"
+      }
+    },
+    "lightbox": {
+      "label": "图片查看器",
+      "previous": "上一张图片",
+      "next": "下一张图片",
+      "copy": "复制提示词",
+      "copyTitle": "将提示词复制到剪贴板",
+      "starred": "★ 已加星标",
+      "savedToCloud": "已保存到 Comfy Cloud",
+      "close": "关闭"
+    },
+    "organize": {
+      "heading": "整理",
+      "sub": "共 {count} 张图片。选择一些图片即可添加到情绪板。",
+      "usage": "今天：{count} 张图片，{today} tokens · 累计：{total} tokens",
+      "search": "搜索提示词",
+      "starred": "已加星标",
+      "starredTitle": "仅显示已加星标的图片",
+      "selectAll": "全选",
+      "clearSelection": "取消选择",
+      "emptyTitle": "这里还没有内容",
+      "emptyBody": "你生成的所有图片都会出现在这里，方便整理到情绪板中。",
+      "selected": "已选择 {count} 张",
+      "addToBoard": "添加到情绪板",
+      "unstar": "取消星标",
+      "clear": "清除",
+      "viewLarger": "放大查看"
+    },
+    "boards": {
+      "heading": "情绪板",
+      "sub": "收集风格相近的图片。在提示词旁选择一个情绪板，新图片就会遵循它的风格。",
+      "new": "新建情绪板",
+      "newName": "新情绪板",
+      "newPlaceholder": "输入新情绪板名称后按 Enter",
+      "newLabel": "新情绪板名称",
+      "nameLabel": "情绪板名称",
+      "count": "{count} 张图片",
+      "inUse": "使用中",
+      "following": "新图片将遵循此情绪板",
+      "all": "全部情绪板",
+      "use": "用它生成",
+      "stop": "停止使用",
+      "add": "添加图片",
+      "removeItem": "从情绪板中移除",
+      "confirmDelete": "要删除情绪板“{name}”吗？你生成的图片仍会保留在“整理”中。",
+      "emptyTitle": "还没有情绪板",
+      "emptyBody": "在这里新建一个，然后从“整理”、任意结果上的“+ 情绪板”添加图片，或直接拖入你自己的图片。",
+      "boardEmptyTitle": "这个情绪板是空的",
+      "boardEmptyBody": "把图片拖到这里，使用“添加图片”，或在“整理”中选择一些图片。",
+      "menuAdd": "添加到情绪板",
+      "menuUse": "按以下风格生成",
+      "none": "不使用情绪板",
+      "manage": "管理情绪板",
+      "makeOne": "创建情绪板"
+    },
+    "notify": {
+      "ready": "{count} 张图片已就绪",
+      "failed": "图片生成失败"
+    },
+    "toast": {
+      "undo": "撤销",
+      "describeFirst": "请先描述图片。",
+      "blocked": "此账号已停用合作伙伴模型，因此 Darkroom 无法用它生成图片。",
+      "settingsReset": "设置已恢复为默认值。",
+      "settingsLoaded": "已载入提示词和设置。种子已保留，方便你重复生成。",
+      "addedReference": "已添加为图片 {n}。请描述你想要的修改。",
+      "notifyOn": "图片在后台标签页完成时，Darkroom 会通知你。",
+      "copied": "提示词已复制。",
+      "copyFailed": "无法复制。请手动选择文字。",
+      "following": "新图片将遵循“{name}”。",
+      "followingDescribe": "新图片将遵循“{name}”。请描述要生成的内容。",
+      "moodboardUnreadable": "无法读取“{name}”中的图片。将不使用它继续生成。",
+      "starredMany": "已为 {count} 张图片加星标。",
+      "unstarredMany": "已取消 {count} 张图片的星标。",
+      "starFailed": "未能保存全部星标。请重试。",
+      "starredKeptOne": "这张图片已加星标。取消星标后才能删除。",
+      "starredKeptMany": "这些图片已加星标。取消星标后才能删除。",
+      "deleted": "已删除 {count} 张图片。",
+      "deletedKept": "已删除 {count} 张图片，保留了 {kept} 张已加星标的图片。",
+      "restored": "已恢复 {count} 张图片。",
+      "undoFailed": "无法撤销。请重试。",
+      "addedToBoard": "已将 {count} 张图片添加到“{name}”。",
+      "boardFailed": "无法更新情绪板。请重试。"
+    }
   }
 }

@@ -5597,5 +5597,350 @@
     "loading": "Loading the latest release notes…",
     "introduction": "The latest ComfyUI features, improvements, and fixes, updated from Comfy docs.",
     "retry": "Try again"
+  },
+  "darkroom": {
+    "meta": {
+      "title": "Darkroom - Comfy",
+      "description": "An image playground for the Nano Banana models. Describe an image, make up to four at once, and build on the ones you like."
+    },
+    "title": "Darkroom",
+    "tabs": {
+      "label": "Sections",
+      "create": "Create",
+      "organize": "Organize",
+      "moodboards": "Moodboards"
+    },
+    "unavailable": {
+      "title": "Darkroom isn't available yet",
+      "body": "This page is not open to your account yet."
+    },
+    "storageFailed": "This browser is blocking storage, so images you make here won't be kept after you leave the page.",
+    "prompt": {
+      "label": "Prompt",
+      "placeholder": "Describe an image",
+      "placeholderHistory": "Describe an image, or press ↑ for an earlier prompt",
+      "references": "Add reference images",
+      "referencesTitle": "Add reference images (or drag them anywhere, or paste)",
+      "moodboard": "Moodboard",
+      "moodboardTitle": "Generate in the style of a moodboard",
+      "moodboardActive": "New images follow the {name} moodboard. Click to change.",
+      "settings": "Settings",
+      "dropReferences": "Drop to add as reference images",
+      "dropBoard": "Drop to add to this moodboard"
+    },
+    "refs": {
+      "label": "References",
+      "alt": "Reference {n}",
+      "remove": "Remove image {n}",
+      "hintOne": "Describe what to change, or add more images to combine.",
+      "hintMany": "Refer to them by number, like “the jacket from image 2”.",
+      "removeAll": "Remove all"
+    },
+    "settings": {
+      "model": "Model",
+      "images": "Images",
+      "imagesHelp": "How many to make at once.",
+      "imagesTip": "Make {count} image at once | Make {count} images at once",
+      "resolution": "Resolution",
+      "resolutionOff": "This model has one resolution.",
+      "shape": "Shape",
+      "more": "More controls",
+      "creativity": "Creativity",
+      "creativityHelp": "Lower stays close to your words. Higher takes more liberties.",
+      "planning": "Planning",
+      "planningHelp": "How much the model thinks before drawing. Careful suits long, detailed prompts but takes longer.",
+      "seed": "Seed",
+      "seedPlaceholder": "Random",
+      "seedHelp": "Leave empty for fresh results. Reuse a seed with the same settings to get close to the same image.",
+      "seedPick": "Pick",
+      "seedPickTitle": "Pick a random seed",
+      "format": "File type",
+      "formatHelp": "PNG keeps every detail. JPEG is smaller.",
+      "notes": "Style notes",
+      "notesPlaceholder": "e.g. soft film grain, muted colours, no text",
+      "notesHelp": "Added to every image until you clear it.",
+      "reset": "Reset to defaults",
+      "done": "Done",
+      "summary": "{model} · {shape} · {count} image | {model} · {shape} · {count} images",
+      "changed": {
+        "creativity": "Creativity {word}"
+      }
+    },
+    "models": {
+      "nanoBanana21": "The newest Nano Banana. A good place to start.",
+      "nanoBanana2": "The previous version, for comparing results.",
+      "nanoBananaPro": "The Pro model. Slowest, about 17s an image at 1K.",
+      "nanoBanana2Lite": "The fastest, about 5s an image at 1K.",
+      "nanoBanana": "The original model. It has one resolution, so Resolution is off."
+    },
+    "shapes": {
+      "auto": "Auto",
+      "autoName": "Auto shape",
+      "autoTitle": "Let the model choose, or match your reference image",
+      "fromRefs": "from refs",
+      "square": "Square",
+      "wide": "Wide",
+      "tall": "Tall",
+      "landscape": "Landscape",
+      "portrait": "Portrait",
+      "photo": "Photo",
+      "poster": "Poster",
+      "social": "Social",
+      "cinema": "Cinema"
+    },
+    "sizes": {
+      "1K": "Fastest. Good for trying ideas.",
+      "2K": "Sharper. A good default.",
+      "4K": "Sharpest and slowest. For final picks."
+    },
+    "planning": {
+      "auto": "Auto",
+      "quick": "Quick",
+      "balanced": "Balanced",
+      "careful": "Careful"
+    },
+    "creativity": {
+      "steady": "Steady",
+      "focused": "Focused",
+      "balanced": "Balanced",
+      "loose": "Loose",
+      "wild": "Wild"
+    },
+    "chips": {
+      "moodboard": "Moodboard · {name}",
+      "seed": "Seed {seed}",
+      "seedRange": "Seed {first}–{last}",
+      "creativity": "Creativity {word} ({value})",
+      "planning": "{level} planning",
+      "notes": "Style notes on",
+      "seconds": "{seconds}s"
+    },
+    "welcome": {
+      "heading": "Develop your first image",
+      "lede": "Describe a picture and press Enter. Each prompt makes a row of images, with the settings beside them so you can run it again or build on a result.",
+      "signedOut": "Sign in with your Comfy account to start. Each prompt makes a row of images, with the settings beside them so you can run it again or build on a result.",
+      "tryOne": "Try one",
+      "goodToKnow": "Good to know",
+      "examples": {
+        "photo": {
+          "tag": "Photo",
+          "prompt": "A lone cypress on a ridge at dawn, mist in the valley below, medium format film"
+        },
+        "product": {
+          "tag": "Product",
+          "prompt": "A ceramic coffee cup on a linen tablecloth, soft window light, top-down product shot"
+        },
+        "illustration": {
+          "tag": "Illustration",
+          "prompt": "A fox reading a map in a lantern-lit forest, gouache illustration, warm palette"
+        },
+        "poster": {
+          "tag": "Poster",
+          "prompt": "A minimalist travel poster for a mountain town, bold flat shapes, the words \"ALPENGLOW\" at the top"
+        }
+      },
+      "tips": {
+        "edit": {
+          "lead": "Edit a photo.",
+          "body": "Drop images anywhere on the page, then describe the change."
+        },
+        "combine": {
+          "lead": "Combine images.",
+          "body": "Refer to them by number: “put the jacket from image 2 on the person in image 1”."
+        },
+        "build": {
+          "lead": "Build on a result.",
+          "body": "Hover an image and pick Edit or Variations."
+        },
+        "style": {
+          "lead": "Set a style.",
+          "body": "Collect images in a moodboard, then pick it next to the prompt."
+        },
+        "keys": {
+          "lead": "Enter generates.",
+          "body": "Shift+Enter adds a new line."
+        }
+      }
+    },
+    "tile": {
+      "sending": "Sending",
+      "inLine": "In line · {count} ahead",
+      "nextUp": "In line · next up",
+      "developing": "Developing {seconds}s",
+      "saving": "Saving",
+      "cancel": "Cancel",
+      "cancelTitle": "Stop this image",
+      "failed": "Failed",
+      "cancelled": "Cancelled",
+      "tryAgain": "Try again",
+      "details": "Details",
+      "seedTag": "Seed {seed} · {seconds}s",
+      "star": "Star",
+      "starTitle": "Star: keeps it safe from Delete",
+      "edit": "Edit",
+      "editTitle": "Add as a reference, then describe the change",
+      "variations": "Variations",
+      "variationsTitle": "New images from this one, same prompt",
+      "board": "+ Moodboard",
+      "boardTitle": "Add to a moodboard",
+      "download": "Download"
+    },
+    "row": {
+      "runAgain": "Run again",
+      "runAgainTitle": "Same prompt and settings, new seeds",
+      "reuse": "Use these settings",
+      "reuseTitle": "Load this prompt, settings and seed into the bar",
+      "cancel": "Cancel",
+      "cancelTitle": "Stop the images still waiting or developing",
+      "delete": "Delete",
+      "deleteTitle": "Delete this row's images",
+      "styleNotes": "Style notes: {notes}",
+      "madeFrom": "Made from {count} reference image | Made from {count} reference images"
+    },
+    "failure": {
+      "blocked": {
+        "title": "Blocked by the safety filter",
+        "message": "The model declined this one. Try rewording the prompt."
+      },
+      "noImage": {
+        "title": "No image this time",
+        "message": "The model finished without an image. Try again or rephrase."
+      },
+      "noImageText": {
+        "title": "No image this time",
+        "message": "The model replied with text instead. Try rephrasing, or ask for “an image of …”."
+      },
+      "signedOut": {
+        "title": "Signed out",
+        "message": "Your session ended before this image started. Sign in, then try again."
+      },
+      "noCredits": {
+        "title": "Out of credits",
+        "message": "This Comfy account needs more credits to keep generating."
+      },
+      "rateLimit": {
+        "title": "Too many requests",
+        "message": "Comfy is rate limiting right now. Wait a moment, then try again."
+      },
+      "settings": {
+        "title": "Settings not accepted",
+        "message": "The model didn't accept this combination. Try another shape, resolution or planning level."
+      },
+      "tooLarge": {
+        "title": "References too large",
+        "message": "Together the reference images are too big to send. Use fewer or smaller images."
+      },
+      "timeout": {
+        "title": "Took too long",
+        "message": "The request timed out. Try again, or use a lower resolution."
+      },
+      "unavailable": {
+        "title": "Not available",
+        "message": "This model isn't available to your account right now."
+      },
+      "network": {
+        "title": "Can't reach Comfy",
+        "message": "The connection dropped before this image was sent. Check your connection, then try again."
+      },
+      "stopped": {
+        "title": "Stopped",
+        "message": "The model may already have finished this one, in which case it is still charged. It isn't saved."
+      },
+      "cancelledInLine": {
+        "title": "Cancelled before it started",
+        "message": "Nothing was charged."
+      },
+      "lost": {
+        "title": "Couldn't pick this one up",
+        "message": "This image was still developing when the page closed, and its result is no longer available."
+      },
+      "generic": {
+        "title": "Something went wrong",
+        "message": "Comfy couldn't finish this image. Try again."
+      }
+    },
+    "lightbox": {
+      "label": "Image viewer",
+      "previous": "Previous image",
+      "next": "Next image",
+      "copy": "Copy prompt",
+      "copyTitle": "Copy the prompt to the clipboard",
+      "starred": "★ Starred",
+      "savedToCloud": "Saved to Comfy Cloud",
+      "close": "Close"
+    },
+    "organize": {
+      "heading": "Organize",
+      "sub": "{count} image. Select it to add it to a moodboard. | {count} images. Select some to add them to a moodboard.",
+      "usage": "Today: {count} image, {today} tokens · All time: {total} tokens | Today: {count} images, {today} tokens · All time: {total} tokens",
+      "search": "Search prompts",
+      "starred": "Starred",
+      "starredTitle": "Show only starred images",
+      "selectAll": "Select all",
+      "clearSelection": "Clear selection",
+      "emptyTitle": "Nothing here yet",
+      "emptyBody": "Everything you generate lands here, ready to sort into moodboards.",
+      "selected": "{count} selected",
+      "addToBoard": "Add to moodboard",
+      "unstar": "Unstar",
+      "clear": "Clear",
+      "viewLarger": "View larger"
+    },
+    "boards": {
+      "heading": "Moodboards",
+      "sub": "Collect images that share a feel. Pick a moodboard next to the prompt and new images follow its style.",
+      "new": "New moodboard",
+      "newName": "New moodboard",
+      "newPlaceholder": "New moodboard name, then Enter",
+      "newLabel": "New moodboard name",
+      "nameLabel": "Moodboard name",
+      "count": "{count} image | {count} images",
+      "inUse": "In use",
+      "following": "New images follow this moodboard",
+      "all": "All moodboards",
+      "use": "Generate with this",
+      "stop": "Stop using",
+      "add": "Add images",
+      "removeItem": "Remove from moodboard",
+      "confirmDelete": "Delete the moodboard “{name}”? Your generated images stay in Organize.",
+      "emptyTitle": "No moodboards yet",
+      "emptyBody": "Start one here, then add images from Organize, from any result with + Moodboard, or by dropping in your own.",
+      "boardEmptyTitle": "This moodboard is empty",
+      "boardEmptyBody": "Drop images here, use Add images, or select some in Organize.",
+      "menuAdd": "Add to moodboard",
+      "menuUse": "Generate in the style of",
+      "none": "No moodboard",
+      "manage": "Manage moodboards",
+      "makeOne": "Make a moodboard"
+    },
+    "notify": {
+      "ready": "{count} image ready | {count} images ready",
+      "failed": "Images failed"
+    },
+    "toast": {
+      "undo": "Undo",
+      "describeFirst": "Describe the image first.",
+      "blocked": "Partner models are turned off for this account, so Darkroom can't generate with it.",
+      "settingsReset": "Settings reset to defaults.",
+      "settingsLoaded": "Prompt and settings loaded. Seed kept so you can repeat it.",
+      "addedReference": "Added as image {n}. Describe the change you want.",
+      "notifyOn": "Darkroom will let you know when images finish in a background tab.",
+      "copied": "Prompt copied.",
+      "copyFailed": "Couldn't copy. Select the text instead.",
+      "following": "New images will follow {name}.",
+      "followingDescribe": "New images will follow {name}. Describe what to make.",
+      "moodboardUnreadable": "Couldn't read the {name} images. Generating without it.",
+      "starredMany": "Starred {count} images.",
+      "unstarredMany": "Unstarred {count} images.",
+      "starFailed": "Couldn't save every star. Try again.",
+      "starredKeptOne": "That image is starred. Unstar it to delete it.",
+      "starredKeptMany": "Those images are starred. Unstar them to delete them.",
+      "deleted": "Deleted {count} image. | Deleted {count} images.",
+      "deletedKept": "Deleted {count} image. Kept {kept} starred. | Deleted {count} images. Kept {kept} starred.",
+      "restored": "Restored {count} image. | Restored {count} images.",
+      "undoFailed": "Couldn't undo. Try again.",
+      "addedToBoard": "Added {count} image to {name}. | Added {count} images to {name}.",
+      "boardFailed": "Couldn't update the moodboard. Try again."
+    }
   }
 }
