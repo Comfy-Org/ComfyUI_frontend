@@ -129,6 +129,7 @@ export type RemoteConfig = Partial<GetFeaturesResponses[200]> & {
   unified_cloud_auth?: boolean
   unified_web_session?: boolean
   sso_enabled?: boolean
+  local_web_sso?: boolean
   // Wire key carries the server's own spelling; see ServerFeatureFlag.
   embedded_checked_enabled?: boolean
   billing_sdk_topup_enabled?: boolean
