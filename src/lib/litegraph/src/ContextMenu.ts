@@ -4,7 +4,7 @@ import type {
   ContextMenuDivElement,
   IContextMenuOptions,
   IContextMenuValue
-} from './interfaces'
+} from './types/contextMenu'
 import { LiteGraph } from './litegraph'
 
 const ALLOWED_TAGS = ['span', 'b', 'i', 'em', 'strong']

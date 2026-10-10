@@ -1,0 +1,133 @@
+{
+  "boundaries": {
+    "zones": [
+      {
+        "name": "mask-editor/domain",
+        "patterns": ["src/extensions/core/maskeditor/**"]
+      },
+      {
+        "name": "mask-editor/application",
+        "patterns": [
+          "src/composables/maskeditor/**",
+          "src/stores/maskEditorStore.ts",
+          "src/stores/maskEditorDataStore.ts",
+          "src/stores/maskEditorStore.test.ts",
+          "src/stores/maskEditorDataStore.test.ts"
+        ]
+      },
+      {
+        "name": "mask-editor/presentation",
+        "patterns": ["src/components/maskeditor/**"]
+      },
+      {
+        "name": "mask-editor/integration",
+        "patterns": [
+          "src/extensions/core/maskeditor.ts",
+          "src/extensions/core/maskeditor.test.ts"
+        ]
+      },
+      {
+        "name": "workflow-templates/domain",
+        "patterns": [
+          "src/platform/workflow/templates/types/**",
+          "src/platform/workflow/templates/schemas/**",
+          "src/platform/workflow/templates/utils/**"
+        ]
+      },
+      {
+        "name": "workflow-templates/application",
+        "patterns": [
+          "src/platform/workflow/templates/composables/**",
+          "src/platform/workflow/templates/services/**",
+          "src/platform/workflow/templates/stores/**"
+        ]
+      },
+      {
+        "name": "workflow-templates/infrastructure",
+        "patterns": ["src/platform/workflow/templates/repositories/**"]
+      },
+      {
+        "name": "workflow-templates/presentation",
+        "patterns": ["src/components/templates/**"]
+      },
+      {
+        "name": "unclassified",
+        "patterns": ["src/**"]
+      }
+    ],
+    "rules": [
+      {
+        "from": "mask-editor/domain",
+        "allow": ["mask-editor/domain", "unclassified"]
+      },
+      {
+        "from": "mask-editor/application",
+        "allow": [
+          "mask-editor/domain",
+          "mask-editor/application",
+          "unclassified"
+        ]
+      },
+      {
+        "from": "mask-editor/presentation",
+        "allow": [
+          "mask-editor/domain",
+          "mask-editor/application",
+          "mask-editor/presentation",
+          "unclassified"
+        ]
+      },
+      {
+        "from": "mask-editor/integration",
+        "allow": [
+          "mask-editor/domain",
+          "mask-editor/application",
+          "mask-editor/presentation",
+          "mask-editor/integration",
+          "unclassified"
+        ]
+      },
+      {
+        "from": "workflow-templates/domain",
+        "allow": ["workflow-templates/domain", "unclassified"]
+      },
+      {
+        "from": "workflow-templates/application",
+        "allow": [
+          "workflow-templates/domain",
+          "workflow-templates/application",
+          "workflow-templates/infrastructure",
+          "unclassified"
+        ]
+      },
+      {
+        "from": "workflow-templates/infrastructure",
+        "allow": [
+          "workflow-templates/domain",
+          "workflow-templates/application",
+          "workflow-templates/infrastructure",
+          "unclassified"
+        ]
+      },
+      {
+        "from": "workflow-templates/presentation",
+        "allow": [
+          "workflow-templates/domain",
+          "workflow-templates/application",
+          "workflow-templates/presentation",
+          "unclassified"
+        ]
+      },
+      {
+        "from": "unclassified",
+        "allow": [
+          "workflow-templates/domain",
+          "workflow-templates/application",
+          "workflow-templates/infrastructure",
+          "workflow-templates/presentation",
+          "unclassified"
+        ]
+      }
+    ]
+  }
+}

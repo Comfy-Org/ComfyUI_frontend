@@ -66,7 +66,6 @@
 <script setup lang="ts">
 import { toTypedSchema } from '@vee-validate/zod'
 import { useThrottleFn } from '@vueuse/core'
-import { useToast } from 'primevue/usetoast'
 import { Field as VeeField, useForm, useIsFieldValid } from 'vee-validate'
 import { computed } from 'vue'
 import { useI18n } from 'vue-i18n'
@@ -89,7 +88,6 @@ import { useAuthStore } from '@/stores/authStore'
 const authStore = useAuthStore()
 const authActions = useAuthActions()
 const loading = computed(() => authStore.loading)
-const toast = useToast()
 
 const { t } = useI18n()
 
@@ -99,7 +97,7 @@ const emit = defineEmits<{
 
 const emailInputId = 'comfy-org-sign-in-email'
 
-const { handleSubmit, meta, values } = useForm({
+const { handleSubmit, meta, validateField, values } = useForm({
   validationSchema: toTypedSchema(signInSchema),
   initialValues: { email: '', password: '' }
 })
@@ -112,13 +110,9 @@ const onSubmit = useThrottleFn(
 )
 
 async function handleForgotPassword() {
+  const { valid } = await validateField('email')
   const email = values.email
-  if (!email || !isEmailValid.value) {
-    toast.add({
-      severity: 'warn',
-      summary: t('auth.login.emailPlaceholder'),
-      life: 5_000
-    })
+  if (!valid || !email) {
     document.getElementById(emailInputId)?.focus()
     return
   }

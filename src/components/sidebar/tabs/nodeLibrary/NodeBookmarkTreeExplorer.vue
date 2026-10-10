@@ -54,7 +54,8 @@
               />
             </Button>
             <Button
-              v-tooltip.bottom="$t('g.learnMore')"
+              :tooltip="$t('g.learnMore')"
+              tooltip-side="bottom"
               variant="muted-textonly"
               size="icon-sm"
               :aria-label="$t('g.learnMore')"
@@ -80,21 +81,14 @@
 </template>
 
 <script setup lang="ts">
-import {
-  computed,
-  getCurrentInstance,
-  h,
-  nextTick,
-  ref,
-  render,
-  watch
-} from 'vue'
+import { computed, getCurrentInstance, nextTick, ref, watch } from 'vue'
 import { useI18n } from 'vue-i18n'
 
 import FolderCustomizationDialog from '@/components/common/CustomizationDialog.vue'
 import TreeExplorer from '@/components/common/TreeExplorer.vue'
 import TreeExplorerTreeNode from '@/components/common/TreeExplorerTreeNode.vue'
 import NodePreview from '@/components/node/NodePreview.vue'
+import { renderNodePreview } from '@/components/node/renderNodePreview'
 import Badge from '@/components/ui/badge/Badge.vue'
 import Button from '@/components/ui/button/Button.vue'
 import { useTreeExpansion } from '@/composables/useTreeExpansion'
@@ -239,12 +233,7 @@ const renderedBookmarkedRoot = computed<TreeExplorerNode<ComfyNodeDefImpl>>(
         },
         renderDragPreview(container) {
           if (!node.data) return
-          const vnode = h(NodePreview, { nodeDef: node.data })
-          vnode.appContext = appContext
-          render(vnode, container)
-          return () => {
-            render(null, container)
-          }
+          return renderNodePreview(container, node.data, appContext)
         },
         droppable: !node.leaf,
         async handleDrop(data: TreeExplorerDragAndDropData<ComfyNodeDefImpl>) {

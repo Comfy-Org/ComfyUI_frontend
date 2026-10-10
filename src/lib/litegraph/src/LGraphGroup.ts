@@ -17,13 +17,13 @@ import { createMutationView } from './infrastructure/createMutationView'
 import type {
   ColorOption,
   IColorable,
-  IContextMenuValue,
   IPinnable,
   Point,
   Positionable,
   Rect,
   Size
 } from './interfaces'
+import type { IContextMenuValue } from './types/contextMenu'
 import { LiteGraph, Rectangle } from './litegraph'
 import {
   containsCentre,

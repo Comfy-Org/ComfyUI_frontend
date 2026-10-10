@@ -1,8 +1,8 @@
+import type { Positionable } from '@/lib/litegraph/src/interfaces'
 import type {
   INodeInputSlot,
-  INodeOutputSlot,
-  Positionable
-} from '@/lib/litegraph/src/interfaces'
+  INodeOutputSlot
+} from '@/lib/litegraph/src/types/slots'
 import { CustomEventTarget } from '@/lib/litegraph/src/infrastructure/CustomEventTarget'
 import type { LGraphEventMap } from '@/lib/litegraph/src/infrastructure/LGraphEventMap'
 import { Rectangle } from '@/lib/litegraph/src/infrastructure/Rectangle'

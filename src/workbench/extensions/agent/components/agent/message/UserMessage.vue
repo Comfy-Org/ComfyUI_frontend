@@ -6,7 +6,9 @@ import { useI18n } from 'vue-i18n'
 import { cn } from '@comfyorg/tailwind-utils'
 import Button from '@/components/ui/button/Button.vue'
 import Tag from '@/components/chip/Tag.vue'
-import AccessibleTooltip from '@/components/ui/tooltip/AccessibleTooltip.vue'
+import Tooltip from '@/components/ui/tooltip/Tooltip.vue'
+import TooltipContent from '@/components/ui/tooltip/TooltipContent.vue'
+import TooltipTrigger from '@/components/ui/tooltip/TooltipTrigger.vue'
 import { iconForMediaType } from '@/platform/assets/utils/mediaIconUtil'
 import { api } from '@/scripts/api'
 import { getMediaTypeFromFilename } from '@/utils/formatUtil'
@@ -19,7 +21,9 @@ import type {
 import type { ReplyAsset } from '../../../utils/replyAssets'
 import { isReplyAssetKind } from '../../../utils/replyAssets'
 import { agentMessageText } from '../../../utils/agentMessageText'
-import { workflowReferenceParts } from '../../../utils/workflowReferenceParts'
+import { promptReferenceParts } from '../../../utils/promptReferenceParts'
+import type { SkillReference as SkillReferenceData } from '../../../types/skillReference'
+import CatalogSkillReference from '../CatalogSkillReference.vue'
 import ReplyAssetGroup from './ReplyAssetGroup.vue'
 import {
   selectedUserMessageClipboard,
@@ -31,12 +35,14 @@ const {
   attachments = [],
   tags = [],
   workflowReferences = [],
+  skillReference,
   editable = false
 } = defineProps<{
   text: string
   attachments?: UserAttachment[]
   tags?: string[]
   workflowReferences?: WorkflowReference[]
+  skillReference?: SkillReferenceData
   editable?: boolean
 }>()
 const emit = defineEmits<{
@@ -46,10 +52,16 @@ const emit = defineEmits<{
 
 const { t } = useI18n()
 const promptParts = computed(() =>
-  workflowReferenceParts(text, workflowReferences)
+  promptReferenceParts(text, workflowReferences, skillReference)
 )
 const readableText = computed(() =>
-  agentMessageText({ text, workflowReferences, tags, attachments })
+  agentMessageText({
+    text,
+    workflowReferences,
+    skillReference,
+    tags,
+    attachments
+  })
 )
 const bubble = useTemplateRef<HTMLElement>('bubble')
 const plainClipboard = useClipboard({ copiedDuring: 2000, legacy: true })
@@ -60,13 +72,14 @@ const copied = computed(
 
 async function copyMessage(): Promise<void> {
   if (
-    workflowReferences.length &&
+    (workflowReferences.length || skillReference) &&
     richClipboard.isSupported.value &&
     typeof ClipboardItem !== 'undefined'
   ) {
     const content = userMessageClipboard({
       text,
       workflowReferences,
+      skillReference,
       tags,
       attachments
     })
@@ -190,7 +203,7 @@ function gridAsset(item: UserAttachment): ReplyAsset | undefined {
       </figure>
     </div>
     <div
-      v-if="text || workflowReferences.length"
+      v-if="text || workflowReferences.length || skillReference"
       ref="bubble"
       data-testid="user-message-bubble"
       class="w-fit max-w-full rounded-lg bg-secondary-background px-2.5 py-1.5 text-sm/5 font-normal wrap-break-word whitespace-pre-wrap text-muted-foreground"
@@ -231,6 +244,10 @@ function gridAsset(item: UserAttachment): ReplyAsset | undefined {
             <span class="icon-[comfy--workflow] size-3 shrink-0" />
           </template>
         </Tag>
+        <CatalogSkillReference
+          v-else-if="part.type === 'skill'"
+          :skill="part.reference"
+        />
         <template v-else>{{ part.text }}</template>
       </template>
     </div>
@@ -238,33 +255,26 @@ function gridAsset(item: UserAttachment): ReplyAsset | undefined {
       v-if="readableText"
       class="pointer-events-none flex text-muted-foreground opacity-0 transition-opacity group-hover:pointer-events-auto group-hover:opacity-100 focus-within:pointer-events-auto focus-within:opacity-100 touch:pointer-events-auto touch:opacity-100"
     >
-      <AccessibleTooltip
-        v-if="editable && (text || workflowReferences.length)"
-        :label="t('g.edit')"
-        :skip-delay-duration="0"
-        disable-hoverable-content
-        :collision-padding="8"
+      <Button
+        v-if="editable && (text || workflowReferences.length || skillReference)"
+        :tooltip="t('g.edit')"
+        type="button"
+        variant="muted-textonly"
+        size="icon-sm"
+        :aria-label="t('g.edit')"
+        class="size-6 rounded-lg"
+        @click="
+          emit('edit', {
+            text,
+            workflowReferences,
+            ...(skillReference ? { skillReference } : {})
+          })
+        "
       >
-        <template #trigger>
-          <Button
-            type="button"
-            variant="muted-textonly"
-            size="icon-sm"
-            :aria-label="t('g.edit')"
-            class="size-6 rounded-lg"
-            @click="emit('edit', { text, workflowReferences })"
-          >
-            <span class="icon-[lucide--pencil] size-3" />
-          </Button>
-        </template>
-      </AccessibleTooltip>
-      <AccessibleTooltip
-        :label="copied ? t('agent.copied') : t('agent.copy')"
-        :skip-delay-duration="0"
-        disable-hoverable-content
-        :collision-padding="8"
-      >
-        <template #trigger>
+        <span class="icon-[lucide--pencil] size-3" />
+      </Button>
+      <Tooltip disable-closing-trigger>
+        <TooltipTrigger as-child>
           <Button
             type="button"
             variant="muted-textonly"
@@ -282,8 +292,11 @@ function gridAsset(item: UserAttachment): ReplyAsset | undefined {
               "
             />
           </Button>
-        </template>
-      </AccessibleTooltip>
+        </TooltipTrigger>
+        <TooltipContent>{{
+          copied ? t('agent.copied') : t('agent.copy')
+        }}</TooltipContent>
+      </Tooltip>
     </div>
   </div>
 </template>

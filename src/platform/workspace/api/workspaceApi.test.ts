@@ -45,8 +45,11 @@ beforeEach(() => {
 })
 
 import { workspaceApi } from './workspaceApi'
+import { installWorkspaceApiAuth } from './workspaceApiAuth'
 import { NoWorkspaceAccessError } from './workspaceApiError'
 import { stubFirebaseAuthHarness } from '@/utils/__tests__/stubAccountIdentityPort'
+
+installWorkspaceApiAuth()
 
 const AUTH_HEADER = { Authorization: 'Bearer test-token' } as const
 
@@ -525,6 +528,7 @@ describe('workspaceApi', () => {
           can_reactivate: true,
           can_change_seats: true,
           can_invite_members: true,
+          can_manage_members: true,
           can_downgrade_to_personal: false
         }
       }

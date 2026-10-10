@@ -37,10 +37,7 @@ it.for([
   'holds a neutral loading frame while the $view data loads, even before the flag answers',
   async ({ slug, visible }) => {
     const pending = Promise.withResolvers<Response>()
-    vi.stubGlobal(
-      'fetch',
-      vi.fn<typeof fetch>().mockReturnValue(pending.promise)
-    )
+    vi.mocked(fetch).mockReturnValue(pending.promise)
     settled.value = false
     render(ModelsPage, { props: { slug } })
     expect(await screen.findByTestId('models-loading')).toBeTruthy()

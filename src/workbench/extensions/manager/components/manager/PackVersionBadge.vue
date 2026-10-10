@@ -1,21 +1,19 @@
 <template>
   <div>
-    <div
-      v-tooltip.top="
-        isDisabled ? $t('manager.enablePackToChangeVersion') : null
+    <Button
+      :tooltip="isDisabled ? $t('manager.enablePackToChangeVersion') : ''"
+      variant="textonly"
+      size="unset"
+      :class="
+        cn(
+          'gap-1 rounded-2xl py-1 text-xs font-normal',
+          fill && 'bg-dialog-surface px-1.5',
+          isDisabled && 'cursor-not-allowed opacity-60'
+        )
       "
-      class="inline-flex items-center gap-1 rounded-2xl py-1 text-xs"
-      :class="{
-        'bg-dialog-surface px-1.5': fill,
-        'cursor-pointer': !isDisabled,
-        'cursor-not-allowed opacity-60': isDisabled
-      }"
       :aria-haspopup="!isDisabled"
-      :role="isDisabled ? 'text' : 'button'"
-      :tabindex="isDisabled ? -1 : 0"
+      :aria-disabled="isDisabled"
       @click="!isDisabled && toggleVersionSelector($event)"
-      @keydown.enter="!isDisabled && toggleVersionSelector($event)"
-      @keydown.space="!isDisabled && toggleVersionSelector($event)"
     >
       <i
         v-if="isUpdateAvailable"
@@ -23,7 +21,7 @@
       />
       <span>{{ installedVersion }}</span>
       <i v-if="!isDisabled" class="pi pi-chevron-right text-2xs" />
-    </div>
+    </Button>
 
     <Popover ref="popoverRef" align="start" content-class="p-0">
       <PackVersionSelectorPopover
@@ -37,10 +35,13 @@
 </template>
 
 <script setup lang="ts">
-import Popover from '@/components/common/ImperativePopover.vue'
 import { valid as validSemver } from 'semver'
 import { computed, ref, watch } from 'vue'
 
+import { cn } from '@comfyorg/tailwind-utils'
+
+import Popover from '@/components/common/ImperativePopover.vue'
+import Button from '@/components/ui/button/Button.vue'
 import type { components } from '@/types/comfyRegistryTypes'
 import PackVersionSelectorPopover from '@/workbench/extensions/manager/components/manager/PackVersionSelectorPopover.vue'
 import { usePackUpdateStatus } from '@/workbench/extensions/manager/composables/nodePack/usePackUpdateStatus'

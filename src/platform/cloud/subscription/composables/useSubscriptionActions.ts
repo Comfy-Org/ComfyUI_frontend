@@ -5,14 +5,14 @@ import { useErrorHandling } from '@/composables/useErrorHandling'
 import { useTelemetry } from '@/platform/telemetry'
 import { reportError } from '@/platform/telemetry/reportError'
 import { paymentIntentSourceForAddCreditsClick } from '@/platform/telemetry/utils/paymentIntentSource'
-import { useDialogService } from '@/services/dialogService'
+import { useBillingDialogs } from '@/composables/billing/useBillingDialogs'
 import { useCommandStore } from '@/stores/commandStore'
 
 /**
  * Composable for handling subscription panel actions and loading states
  */
 export function useSubscriptionActions() {
-  const dialogService = useDialogService()
+  const { showTopUpCreditsDialog } = useBillingDialogs()
   const commandStore = useCommandStore()
   const telemetry = useTelemetry()
   const { fetchBalance, fetchStatus } = useBillingContext()
@@ -28,7 +28,7 @@ export function useSubscriptionActions() {
     telemetry?.trackAddApiCreditButtonClicked({
       source: 'settings_billing_panel'
     })
-    void dialogService.showTopUpCreditsDialog({
+    void showTopUpCreditsDialog({
       source: paymentIntentSourceForAddCreditsClick('settings_billing_panel')
     })
   }

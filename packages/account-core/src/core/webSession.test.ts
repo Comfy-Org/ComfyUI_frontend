@@ -148,6 +148,26 @@ describe('web session status mapping', () => {
     }
   )
 
+  it('keeps the organization an sso_required refusal names', async () => {
+    const result = await readWebSession(
+      optionsFor(
+        respondWith(
+          403,
+          JSON.stringify({
+            code: 'sso_required',
+            message: 'use SSO',
+            organization_id: 'org_acme'
+          })
+        )
+      )
+    )
+
+    expect(result).toMatchObject({
+      code: 'SSO_REQUIRED',
+      organizationId: 'org_acme'
+    })
+  })
+
   it.for([
     { name: '429 edge rate limit', status: 429, body: errorBody('no_session') },
     {

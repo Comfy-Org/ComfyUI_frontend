@@ -1,4 +1,4 @@
-import { useToast } from 'primevue/usetoast'
+import { useToast } from '@/components/ui/toast/toastStore'
 import { useI18n } from 'vue-i18n'
 import { useRoute, useRouter } from 'vue-router'
 
@@ -10,12 +10,14 @@ import {
 } from '@/platform/navigation/preservedQueryManager'
 import { PRESERVED_QUERY_NAMESPACES } from '@/platform/navigation/preservedQueryNamespaces'
 import { reportError } from '@/platform/telemetry/reportError'
-import { useDialogService } from '@/services/dialogService'
+import { useWorkspaceDialogs } from '@/platform/workspace/composables/useWorkspaceDialogs'
 import { useAuthStore } from '@/stores/authStore'
+import { getErrorMessage } from '@/utils/errorUtil'
 
 import { WorkspaceApiError } from '../api/workspaceApi'
 import { MEMBERSHIP_MANAGED_BY_DIRECTORY } from '../api/workspaceApiError'
 import { useTeamWorkspaceStore } from '../stores/teamWorkspaceStore'
+import { useWorkspaceSwitch } from './useWorkspaceSwitch'
 
 function isDirectoryManagedRefusal(error: unknown): boolean {
   return (
@@ -41,7 +43,9 @@ export function useInviteUrlLoader() {
   const router = useRouter()
   const { t } = useI18n()
   const toast = useToast()
-  const dialogService = useDialogService()
+  const { switchWorkspace } = useWorkspaceSwitch()
+  const { showInviteLinkInvalidDialog, showInviteWrongAccountDialog } =
+    useWorkspaceDialogs()
   const workspaceStore = useTeamWorkspaceStore()
   const authStore = useAuthStore()
   const INVITE_NAMESPACE = PRESERVED_QUERY_NAMESPACES.INVITE
@@ -93,11 +97,8 @@ export function useInviteUrlLoader() {
     }
 
     if (authStore.signedInWithSso && authStore.currentUser === null) {
-      toast.add({
-        severity: 'info',
-        summary: t('workspace.inviteSsoUnavailable'),
-        detail: t('workspace.inviteSsoUnavailableDetail'),
-        closable: true
+      toast.info(t('workspace.inviteSsoUnavailable'), {
+        description: t('workspace.inviteSsoUnavailableDetail')
       })
       cleanupUrlParams()
       clearPreservedQuery(INVITE_NAMESPACE)
@@ -107,20 +108,22 @@ export function useInviteUrlLoader() {
     try {
       const result = await workspaceStore.acceptInvite(inviteParam)
 
-      toast.add({
-        severity: 'success',
-        summary: t('workspace.inviteAccepted'),
-        detail: {
-          text: t(
-            'workspace.addedToWorkspace',
-            { workspaceName: result.workspaceName },
-            { escapeParameter: false }
-          ),
-          workspaceName: result.workspaceName,
-          workspaceId: result.workspaceId
-        },
-        group: 'invite-accepted',
-        closable: true
+      const inviteToastId = toast.success(t('workspace.inviteAccepted'), {
+        description: t(
+          'workspace.addedToNamedWorkspace',
+          { workspaceName: result.workspaceName },
+          { escapeParameter: false }
+        ),
+        action: {
+          label: t('workspace.viewWorkspace'),
+          onClick: async () => {
+            if (await switchWorkspace(result.workspaceId)) {
+              toast.dismiss(inviteToastId)
+            } else {
+              toast.error(t('workspace.switchFailed'), { duration: 5000 })
+            }
+          }
+        }
       })
     } catch (error) {
       await presentAcceptFailure(error, inviteParam)
@@ -146,21 +149,18 @@ export function useInviteUrlLoader() {
         ? error.status
         : undefined
     if (isDirectoryManagedRefusal(error)) {
-      toast.add({
-        severity: 'info',
-        summary: t('workspace.inviteDirectoryManaged'),
-        detail: t('workspace.inviteDirectoryManagedDetail'),
-        closable: true
+      toast.info(t('workspace.inviteDirectoryManaged'), {
+        description: t('workspace.inviteDirectoryManagedDetail')
       })
       return
     }
     try {
       if (status === 404) {
-        await dialogService.showInviteLinkInvalidDialog()
+        await showInviteLinkInvalidDialog()
         return
       }
       if (status === 403) {
-        await dialogService.showInviteWrongAccountDialog({ inviteToken })
+        await showInviteWrongAccountDialog({ inviteToken })
         return
       }
     } catch (dialogError) {
@@ -173,10 +173,8 @@ export function useInviteUrlLoader() {
       errorType: 'error_accepting_workspace_invite',
       surface: 'workspace'
     })
-    toast.add({
-      severity: 'error',
-      summary: t('workspace.inviteFailed'),
-      detail: error instanceof Error ? error.message : t('g.unknownError')
+    toast.error(t('workspace.inviteFailed'), {
+      description: getErrorMessage(error) ?? t('g.unknownError')
     })
   }
 

@@ -7,7 +7,7 @@ import type {
   LGraphCanvas
 } from '@/lib/litegraph/src/litegraph'
 import { LGraphNode } from '@/lib/litegraph/src/litegraph'
-import type { ContextMenuDivElement } from '@/lib/litegraph/src/interfaces'
+import type { ContextMenuDivElement } from '@/lib/litegraph/src/types/contextMenu'
 import type { ComfyNodeDef } from '@/schemas/nodeDefSchema'
 import { ComfyApp, app } from '@/scripts/app'
 import { createMockLGraphNode } from '@/utils/__tests__/litegraphTestUtils'

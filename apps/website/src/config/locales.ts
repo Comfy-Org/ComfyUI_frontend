@@ -2,6 +2,7 @@ interface LocaleConfig {
   prefix: string
   hreflang: string
   ogLocale: string
+  nativeName: string
 }
 
 export const DEFAULT_LOCALE = 'en'
@@ -10,17 +11,20 @@ export const LOCALES = {
   en: {
     prefix: '',
     hreflang: 'en',
-    ogLocale: 'en_US'
+    ogLocale: 'en_US',
+    nativeName: 'English'
   },
   'zh-CN': {
     prefix: '/zh-CN',
     hreflang: 'zh-CN',
-    ogLocale: 'zh_CN'
+    ogLocale: 'zh_CN',
+    nativeName: '简体中文'
   },
   ja: {
     prefix: '/ja',
     hreflang: 'ja',
-    ogLocale: 'ja_JP'
+    ogLocale: 'ja_JP',
+    nativeName: '日本語'
   }
 } as const satisfies Record<string, LocaleConfig>
 

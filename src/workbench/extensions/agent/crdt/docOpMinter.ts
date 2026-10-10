@@ -21,7 +21,7 @@ import { liveAutogrowGroupOf } from '@/core/graph/widgets/dynamicWidgets'
 import { registerDocBoundRootGraphProbe } from '@/lib/litegraph/src/docBoundGraphs'
 import { onGraphIntent } from '@/lib/litegraph/src/graphIntents'
 import type { GraphIntentEvent } from '@/lib/litegraph/src/graphIntents'
-import type { INodeInputSlot } from '@/lib/litegraph/src/interfaces'
+import type { INodeInputSlot } from '@/lib/litegraph/src/types/slots'
 import type { LGraph } from '@/lib/litegraph/src/LGraph'
 import type { LGraphNode } from '@/lib/litegraph/src/LGraphNode'
 import type { LLink } from '@/lib/litegraph/src/LLink'
@@ -357,9 +357,9 @@ function withoutCancelledAdd(
  * document has no such node yet. Undefined when the document has the node
  * but no slot by that name.
  */
-function docInputIndex(
+export function docInputIndex(
   docNames: readonly (string | undefined)[] | null,
-  input: INodeInputSlot | undefined,
+  input: Pick<INodeInputSlot, 'name'> | undefined,
   liveIndex: number
 ): number | undefined {
   if (docNames === null || input === undefined) return liveIndex

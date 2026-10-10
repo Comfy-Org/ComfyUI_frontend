@@ -1,7 +1,9 @@
 import { t } from '@/i18n'
-import { useToastStore } from '@/platform/updates/common/toastStore'
+import { useToast } from '@/components/ui/toast/toastStore'
 import { api } from '@/scripts/api'
 import { app } from '@/scripts/app'
+import { uploadTempFile } from '@/services/uploadTempFile'
+import { getErrorMessage } from '@/utils/errorUtil'
 
 class Load3dUtils {
   static async uploadTempImage(
@@ -15,23 +17,10 @@ class Load3dUtils {
       type: fileType === 'mp4' ? 'video/mp4' : 'image/png'
     })
 
-    const body = new FormData()
-    body.append('image', file)
-    body.append('subfolder', 'threed')
-    body.append('type', 'temp')
-
-    const resp = await api.fetchApi('/upload/image', {
-      method: 'POST',
-      body
-    })
-
-    if (resp.status !== 200) {
-      const err = `Error uploading temp file: ${resp.status} - ${resp.statusText}`
-      useToastStore().addAlert(err)
-      throw new Error(err)
-    }
-
-    return await resp.json()
+    const upload = await uploadTempFile(file, 'threed')
+    if (!upload.ok)
+      throw new Error(`Error uploading temp file: ${upload.reason}`)
+    return upload.file
   }
 
   static readonly MAX_UPLOAD_SIZE_MB = 100
@@ -50,7 +39,7 @@ class Load3dUtils {
         fileSizeMB.toFixed(2),
         'MB'
       )
-      useToastStore().addAlert(message)
+      useToast().warning(message)
       return undefined
     }
 
@@ -75,14 +64,18 @@ class Load3dUtils {
 
         uploadPath = path
       } else {
-        useToastStore().addAlert(resp.status + ' - ' + resp.statusText)
+        useToast().warning(
+          t('g.uploadFailed', {
+            reason: `${resp.status} - ${resp.statusText}`
+          })
+        )
       }
     } catch (error) {
       console.error('[Load3D] uploadFile: exception', error)
-      useToastStore().addAlert(
-        error instanceof Error
-          ? error.message
-          : t('toastMessages.fileUploadFailed')
+      useToast().warning(
+        t('g.uploadFailed', {
+          reason: getErrorMessage(error) ?? t('g.unknownError')
+        })
       )
     }
 

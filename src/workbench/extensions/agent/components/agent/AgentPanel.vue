@@ -7,10 +7,10 @@ import Button from '@/components/ui/button/Button.vue'
 import Input from '@/components/ui/input/Input.vue'
 import Menu from '@/components/ui/menu/Menu.vue'
 import type { MenuItem } from '@/components/ui/menu/types'
-import { buildTooltipConfig } from '@/composables/useTooltipConfig'
 import type {
   AgentFreeUseNoticeMetadata,
   AgentPaywallSurface,
+  AgentStarterPromptAssignment,
   AgentStopMethod
 } from '@/platform/telemetry/types'
 import type { FreeUseVariant } from '../../experiments/freeUsePlacement'
@@ -78,7 +78,9 @@ const {
   selectHistory = async () => false,
   editableTurnId = null,
   answeringAskIds = new Set<string>(),
-  freeUsePlacement = 'control'
+  freeUsePlacement = 'control',
+  starterPromptAssignment = 'control',
+  attributeStarterPromptExperiment = false
 } = defineProps<{
   entries: ConversationEntry[]
   userName?: string
@@ -119,6 +121,8 @@ const {
   editableTurnId?: TurnId | null
   answeringAskIds?: ReadonlySet<string>
   freeUsePlacement?: FreeUseVariant
+  starterPromptAssignment?: AgentStarterPromptAssignment
+  attributeStarterPromptExperiment?: boolean
 }>()
 const emit = defineEmits<{
   send: [
@@ -153,6 +157,7 @@ const emit = defineEmits<{
   openReferenceWorkflow: [workflowId: string, workflowName: string]
   showTarget: []
   freeUseNotice: [metadata: AgentFreeUseNoticeMetadata]
+  starterPromptRendered: [assignment: AgentStarterPromptAssignment]
 }>()
 
 const targetNotice = computed(() => {
@@ -381,7 +386,8 @@ defineExpose({ addAttachment, updateAttachment, removeAttachment })
       <div class="flex h-10 shrink-0 items-center px-2">
         <Button
           id="agent-chat-history"
-          v-tooltip.right="buildTooltipConfig(t('agent.showChatHistory'))"
+          :tooltip="t('agent.showChatHistory')"
+          tooltip-side="right"
           type="button"
           variant="muted-textonly"
           size="icon-sm"
@@ -431,7 +437,8 @@ defineExpose({ addAttachment, updateAttachment, removeAttachment })
           >
             <template #trigger>
               <Button
-                v-tooltip.bottom="buildTooltipConfig(t('agent.chatOptions'))"
+                :tooltip="t('agent.chatOptions')"
+                tooltip-side="bottom"
                 variant="muted-textonly"
                 size="icon-sm"
                 :aria-label="t('agent.chatOptions')"
@@ -448,6 +455,9 @@ defineExpose({ addAttachment, updateAttachment, removeAttachment })
         <EmptyState
           v-if="!entries.length"
           :user-name
+          :assignment="starterPromptAssignment"
+          :attribute-experiment="attributeStarterPromptExperiment"
+          @rendered="emit('starterPromptRendered', $event)"
           @insert="
             (text, prompt) => {
               composerRef?.insert(text, prompt)

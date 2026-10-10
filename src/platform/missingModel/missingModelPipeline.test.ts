@@ -1,9 +1,10 @@
+import { useToast } from '@/components/ui/toast/toastStore'
 import { fromPartial } from '@total-typescript/shoehorn'
 import { useWorkflowStore } from '@/platform/workflow/management/stores/workflowStore'
 import { useMissingModelStore } from './missingModelStore'
 import { useExecutionErrorStore } from '@/stores/executionErrorStore'
 import { useModelToNodeStore } from '@/stores/modelToNodeStore'
-import { useToastStore } from '@/platform/updates/common/toastStore'
+
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 
 import type { LGraph } from '@/lib/litegraph/src/litegraph'
@@ -88,7 +89,6 @@ beforeEach(() => {
   vi.mocked(useExecutionErrorStore().surfaceMissingModels).mockImplementation(
     () => undefined
   )
-  vi.mocked(useToastStore().add).mockImplementation(() => undefined)
 })
 
 vi.mock<unknown>(import('@/platform/missingModel/missingModelScan'), () => ({
@@ -246,11 +246,9 @@ describe('missingModelPipeline', () => {
         ])
       else expect(onVerified).not.toHaveBeenCalled()
       if (outcome === 'failed') {
-        expect(useToastStore().add).toHaveBeenCalledWith(
-          expect.objectContaining({
-            severity: 'warn',
-            summary: t('toastMessages.missingModelVerificationFailed')
-          })
+        expect(useToast().warning).toHaveBeenCalledWith(
+          t('toastMessages.missingModelVerificationFailed'),
+          { duration: 5000 }
         )
         expect(reportError).toHaveBeenCalledWith(
           new Error('asset service unavailable'),
@@ -260,7 +258,7 @@ describe('missingModelPipeline', () => {
           }
         )
       } else {
-        expect(useToastStore().add).not.toHaveBeenCalled()
+        expect(useToast().toasts).toEqual([])
         expect(reportError).not.toHaveBeenCalled()
       }
     }

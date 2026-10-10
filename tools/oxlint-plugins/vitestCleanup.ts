@@ -28,6 +28,8 @@ const GLOBALLY_SPIED_CONSOLE_METHODS = new Set([
 ])
 const CONSOLE_GLOBAL = new Set(['console'])
 const CONSOLE_OWNERS = new Set(['globalThis', 'window'])
+const FETCH_GLOBAL = new Set(['fetch'])
+const FETCH_OWNERS = new Set(['global', 'globalThis', 'window'])
 
 const MODULE_SCOPE_MOCK_METHODS = new Set(['spyOn', 'stubGlobal'])
 const PARTIAL_MOCK_METHODS = new Set(['doMock', 'mock'])
@@ -105,6 +107,11 @@ type Expression =
   | MemberExpression
   | ChainExpression
 
+interface AssignmentExpression extends Node {
+  readonly type: 'AssignmentExpression'
+  readonly left: Expression
+}
+
 interface CallExpression extends Node {
   readonly type: 'CallExpression'
   readonly callee: Expression
@@ -181,12 +188,21 @@ interface Scope {
   readonly upper?: Scope
 }
 
+interface RuleFixer {
+  replaceText(node: Node, text: string): unknown
+}
+
 interface RuleContext {
   readonly sourceCode: {
     getAncestors(node: Node): readonly Node[]
     getScope(node: Node): Scope
+    getText(node: Node): string
   }
-  report(descriptor: { node: Node; message: string }): void
+  report(descriptor: {
+    node: Node
+    message: string
+    fix?: (fixer: RuleFixer) => unknown
+  }): void
 }
 
 function unwrapChain(expression: Expression): Expression {
@@ -682,6 +698,141 @@ export const noRedundantConsoleSpy = {
         context.report({
           node,
           message: `console.${methodName} is already spied before every test by vitest.console.setup.ts, and output from passing tests is silenced. Assert with expect(console.${methodName}) and replace its implementation with vi.mocked(console.${methodName}).`
+        })
+      }
+    }
+  }
+}
+
+const FETCH_STUB_MESSAGE =
+  'fetch is already a mock from vitest.network.setup.ts that blocks real requests by default, and the automatic reset restores that guard. Configure it with vi.mocked(fetch) instead.'
+
+function isGlobalFetch(context: RuleContext, expression: Expression) {
+  if (isGlobalIdentifier(context, expression, FETCH_GLOBAL)) return true
+  const member = asMemberExpression(expression)
+  return (
+    member !== undefined &&
+    staticMemberName(member) === 'fetch' &&
+    isGlobalIdentifier(context, member.object, FETCH_OWNERS)
+  )
+}
+
+export const noRedundantFetchStub = {
+  create(context: RuleContext) {
+    return {
+      AssignmentExpression(node: AssignmentExpression) {
+        if (isGlobalFetch(context, node.left)) {
+          context.report({ node, message: FETCH_STUB_MESSAGE })
+        }
+      },
+      CallExpression(node: CallExpression) {
+        const methodName = vitestMethodName(context, node)
+        if (node.arguments.length < 2) return
+        const [target, property] = node.arguments
+        const stubsFetch =
+          methodName === 'stubGlobal' && staticModuleName(target) === 'fetch'
+        const spiesOnFetch =
+          methodName === 'spyOn' &&
+          isGlobalIdentifier(context, target, FETCH_OWNERS) &&
+          staticModuleName(property) === 'fetch'
+        if (stubsFetch || spiesOnFetch) {
+          context.report({ node, message: FETCH_STUB_MESSAGE })
+        }
+      }
+    }
+  }
+}
+
+interface ObjectPattern extends Node {
+  readonly type: 'ObjectPattern'
+  readonly properties: readonly (Node & { readonly key?: Expression })[]
+}
+
+function destructuresExpect(param: Node): boolean {
+  return (
+    param.type === 'ObjectPattern' &&
+    (param as ObjectPattern).properties.some(
+      ({ key }) => key !== undefined && asIdentifier(key)?.name === 'expect'
+    )
+  )
+}
+
+function isVitestExpect(context: RuleContext, identifier: Identifier) {
+  const variable = resolvedVariable(context, identifier)
+  if (!variable?.defs.length) return true
+  return variable.defs.some(
+    (definition) =>
+      (definition.type === 'ImportBinding' &&
+        definition.parent.source?.value === 'vitest') ||
+      (definition.type === 'Parameter' &&
+        isFunctionExpression(definition.node) &&
+        definition.node.params.some(destructuresExpect))
+  )
+}
+
+function isExpectCall(context: RuleContext, call: CallExpression): boolean {
+  const callee = unwrapChain(call.callee)
+  const member = asMemberExpression(callee)
+  const target =
+    member && staticMemberName(member) === 'soft' ? member.object : callee
+  const identifier = asIdentifier(target)
+  return identifier?.name === 'expect' && isVitestExpect(context, identifier)
+}
+
+const PARENTHESIS_FREE_SUBJECTS = new Set([
+  'CallExpression',
+  'Identifier',
+  'MemberExpression',
+  'TSNonNullExpression'
+])
+
+function mockedRootOfSubject(
+  context: RuleContext,
+  subject: Expression
+): CallExpression | undefined {
+  let current = unwrapChain(subject)
+  while (
+    current.type === 'MemberExpression' ||
+    current.type === 'TSNonNullExpression'
+  ) {
+    if (current.type === 'MemberExpression') {
+      const member = current as MemberExpression
+      if (staticMemberName(member) === 'mock') return
+      current = unwrapChain(member.object)
+    } else {
+      current = unwrapChain(
+        (current as Node & { expression: Expression }).expression
+      )
+    }
+  }
+  if (current.type !== 'CallExpression') return
+  const call = current as CallExpression
+  return vitestMethodName(context, call) === 'mocked' &&
+    call.arguments.length > 0
+    ? call
+    : undefined
+}
+
+export const noMockedInExpect = {
+  meta: { fixable: 'code' },
+  create(context: RuleContext) {
+    return {
+      CallExpression(node: CallExpression) {
+        if (node.arguments.length === 0 || !isExpectCall(context, node)) return
+        const mocked = mockedRootOfSubject(context, node.arguments[0])
+        if (!mocked) return
+        const [mockedValue] = mocked.arguments
+        const valueText = context.sourceCode.getText(mockedValue)
+        const needsParentheses =
+          mockedValue.type === 'SequenceExpression' ||
+          (mocked !== unwrapChain(node.arguments[0]) &&
+            !PARENTHESIS_FREE_SUBJECTS.has(mockedValue.type))
+        const replacement = needsParentheses ? `(${valueText})` : valueText
+        context.report({
+          node: mocked,
+          message:
+            'vi.mocked() only changes the type, and expect() accepts the function directly. Pass the function to expect() without vi.mocked().',
+          fix: (fixer) => fixer.replaceText(mocked, replacement)
         })
       }
     }

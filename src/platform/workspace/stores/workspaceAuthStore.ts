@@ -37,7 +37,7 @@ import type { WorkspaceTokenResponse } from '@/platform/workspace/stores/legacyW
 import { WorkspaceAuthError } from '@/platform/workspace/stores/workspaceAuthError'
 import { useTeamWorkspaceStore } from '@/platform/workspace/stores/teamWorkspaceStore'
 import { presentSsoRequired } from '@/platform/auth/sso/ssoRequired'
-import { useToastStore } from '@/platform/updates/common/toastStore'
+import { useToast } from '@/components/ui/toast/toastStore'
 import { useAuthStore } from '@/stores/authStore'
 import type { AuthHeader } from '@/types/authTypes'
 import type { WorkspaceIdentity } from '@/platform/workspace/workspaceTypes'
@@ -99,10 +99,8 @@ function surfacePermanentAuthError(err: WorkspaceAuthError): void {
     return
   }
   console.error('Unified workspace auth revoked or invalid:', err)
-  useToastStore().add({
-    severity: 'error',
-    summary: t('g.error'),
-    detail: t(
+  useToast().error(t('g.error'), {
+    description: t(
       sessionErrorMessageKey(
         isSessionErrorCode(err.code) ? err.code : 'TOKEN_EXCHANGE_FAILED'
       )
@@ -118,6 +116,8 @@ export const useWorkspaceAuthStore = defineStore('workspaceAuth', () => {
 
   // State
   const currentWorkspace = shallowRef<WorkspaceIdentity | null>(null)
+  /** A team workspace the server refused, held until a reload or a new selection so requests never fall back to Personal. */
+  const deniedWorkspaceId = shallowRef<string | null>(null)
   const isLoading = ref(false)
   const error = ref<Error | null>(null)
 
@@ -259,7 +259,9 @@ export const useWorkspaceAuthStore = defineStore('workspaceAuth', () => {
       )
     }
     const { id, name, type, role = 'member' } = current.data
+    deniedWorkspaceId.value = null
     currentWorkspace.value = { id, name, type, role }
+    persistWorkspaceIdentity(currentWorkspace.value)
   }
 
   function switchTokenWorkspace(workspaceId: string): Promise<void> {
@@ -273,6 +275,7 @@ export const useWorkspaceAuthStore = defineStore('workspaceAuth', () => {
   function dropDeniedWorkspace(workspaceId: string): void {
     if (currentWorkspace.value?.id !== workspaceId) return
     endWorkspaceSession(workspaceId)
+    deniedWorkspaceId.value = workspaceId
   }
 
   // --- Unified Cloud-JWT lifecycle (flag-gated: unified_cloud_auth) ----------
@@ -666,6 +669,7 @@ export const useWorkspaceAuthStore = defineStore('workspaceAuth', () => {
   }
 
   function clearWorkspaceContext(): void {
+    deniedWorkspaceId.value = null
     clearLegacyContext()
     error.value = null
     clearSessionStorage()
@@ -706,6 +710,7 @@ export const useWorkspaceAuthStore = defineStore('workspaceAuth', () => {
   return {
     // State
     currentWorkspace,
+    deniedWorkspaceId,
     workspaceToken,
     unifiedToken,
     isLoading,

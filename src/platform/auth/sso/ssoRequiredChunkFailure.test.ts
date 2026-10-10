@@ -3,7 +3,7 @@ import { describe, expect, it, vi } from 'vitest'
 import { useFeatureFlags } from '@/composables/useFeatureFlags'
 import { presentSsoRequired } from '@/platform/auth/sso/ssoRequired'
 import { reportError } from '@/platform/telemetry/reportError'
-import { useToastStore } from '@/platform/updates/common/toastStore'
+import { useToast } from '@/components/ui/toast/toastStore'
 
 vi.mock(import('@/composables/useFeatureFlags'))
 vi.mock(import('@/platform/telemetry/reportError'))
@@ -17,11 +17,11 @@ describe('the SSO-required screen when its chunk fails to load', () => {
 
     expect(presentSsoRequired()).toBe(true)
     await vi.waitFor(() =>
-      expect(useToastStore().messagesToAdd).toEqual([
+      expect(useToast().toasts).toEqual([
         expect.objectContaining({
-          severity: 'error',
-          summary: 'Your organization requires single sign-on',
-          detail: expect.stringContaining('Continue with SSO')
+          kind: 'error',
+          title: 'Your organization requires single sign-on',
+          description: expect.stringContaining('Continue with SSO')
         })
       ])
     )

@@ -10,7 +10,10 @@ export default defineConfig({
     unstubEnvs: true,
     unstubGlobals: true,
     silent: 'passed-only',
-    setupFiles: ['../../vitest.console.setup.ts'],
+    setupFiles: [
+      '../../vitest.console.setup.ts',
+      '../../vitest.network.setup.ts'
+    ],
     coverage: {
       provider: 'v8',
       reporter: ['text', 'lcov'],

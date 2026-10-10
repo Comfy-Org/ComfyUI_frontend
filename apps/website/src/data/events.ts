@@ -101,11 +101,6 @@ function eventVideo(
   }
 }
 
-const launchesHref: LocalizedText = {
-  en: localizeHref('/launches/', 'en'),
-  'zh-CN': localizeHref('/launches/', 'zh-CN')
-}
-
 export function youtubeWatchHref(videoId: string): LocalizedText {
   const href = `https://www.youtube.com/watch?v=${videoId}`
   return { en: href, 'zh-CN': href }
@@ -935,7 +930,6 @@ const events: readonly ComfyEvent[] = [
       'zh-CN': '2026年8月5日 · 上午10点（PT）'
     },
     startDateTime: '2026-08-05T10:00:00-07:00',
-    link: { href: launchesHref, newTab: false },
     liveVideoId: '4xS4LOn3CTE',
     featured: {
       order: 4,

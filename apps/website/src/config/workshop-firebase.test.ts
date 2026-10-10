@@ -101,9 +101,8 @@ describe('signUpWorkshopWithEmail rollback reporting', () => {
     h.createUserWithEmail.mockResolvedValue({
       user: { delete: deleteFn, getIdToken: async () => 'jwt' }
     })
-    vi.stubGlobal(
-      'fetch',
-      vi.fn(async () => new Response(null, { status: 500 }))
+    vi.mocked(fetch).mockImplementation(
+      async () => new Response(null, { status: 500 })
     )
   }
 
@@ -119,7 +118,7 @@ describe('signUpWorkshopWithEmail rollback reporting', () => {
 
     expect(deleteFn).toHaveBeenCalledTimes(2)
     expect(
-      vi.mocked(captureSignupRollbackFailure),
+      captureSignupRollbackFailure,
       'a double delete failure orphans the account; without the event nobody ever learns'
     ).toHaveBeenCalledOnce()
   })
@@ -135,7 +134,7 @@ describe('signUpWorkshopWithEmail rollback reporting', () => {
       signUpWorkshopWithEmail('a@b.example', 'hunter22!', 'cf-token')
     ).rejects.toThrow('Customer provisioning failed')
 
-    expect(vi.mocked(captureSignupRollbackFailure)).not.toHaveBeenCalled()
+    expect(captureSignupRollbackFailure).not.toHaveBeenCalled()
   })
 })
 
@@ -171,9 +170,8 @@ describe('social sign-in provisioning boundary', () => {
   })
 
   it('wraps a provisioning failure with the signed-in user and the original cause', async () => {
-    vi.stubGlobal(
-      'fetch',
-      vi.fn(async () => new Response(null, { status: 500 }))
+    vi.mocked(fetch).mockImplementation(
+      async () => new Response(null, { status: 500 })
     )
 
     const failure = await provisionWorkshopCustomer({

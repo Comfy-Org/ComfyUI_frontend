@@ -434,7 +434,7 @@ describe('useReleaseStore', () => {
 
       await store.initialize()
 
-      expect(vi.mocked(until)).toHaveBeenCalled()
+      expect(until).toHaveBeenCalled()
       expect(releaseService.getReleases).toHaveBeenCalled()
     })
 

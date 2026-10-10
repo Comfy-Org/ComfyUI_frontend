@@ -3,9 +3,65 @@ import { describe, expect, it } from 'vitest'
 import type { Alternate } from './hreflangRoutes'
 
 import { hreflangAlternates } from '@/lib/hreflang'
-import { auditBuiltSite, routeOfHref, sitemapChunkNames } from './hreflangAudit'
+import {
+  auditBuiltSite,
+  auditLanguageLinks,
+  languageLinksIn,
+  routeOfHref,
+  sitemapChunkNames
+} from './hreflangAudit'
 
 const ORIGIN = 'https://comfy.org'
+
+describe('auditLanguageLinks', () => {
+  function renderedPages(pages: [string, string][]) {
+    return new Map(pages.map(([route, html]) => [route, languageLinksIn(html)]))
+  }
+
+  it('reads rendered anchors regardless of attribute order and query strings', () => {
+    const pages = renderedPages([
+      [
+        '/privacy-policy/',
+        `<meta name="robots" content="noindex"><nav><a href='/zh-CN/privacy-policy/?a=1&amp;b=2#terms' hreflang='zh-CN'>中文</a></nav>`
+      ],
+      ['/zh-CN/privacy-policy/', '']
+    ])
+    expect(auditLanguageLinks(pages, ORIGIN)).toEqual([])
+  })
+
+  it.for(['/privacy-policy/', '/hub/models/dynamic-model/', '/injected-page/'])(
+    'rejects a missing rendered language target on %s',
+    (route) => {
+      const pages = renderedPages([
+        [route, '<a hreflang="ja" href="/ja/missing/">日本語</a>']
+      ])
+      expect(auditLanguageLinks(pages, ORIGIN)).toEqual([
+        `${route}: language link ja -> /ja/missing/ was not built (404)`
+      ])
+    }
+  )
+
+  it.for([
+    { html: '<a hreflang="en">English</a>', error: 'has no href' },
+    {
+      html: '<a hreflang="en" href="http://[">English</a>',
+      error: 'has an invalid href (http://[)'
+    },
+    {
+      html: '<a hreflang="en" href="https://comfy.org.evil.test/">English</a>',
+      error: 'points off-origin (https://comfy.org.evil.test/)'
+    }
+  ])('rejects an anchor that $error', ({ html, error }) => {
+    expect(auditLanguageLinks(renderedPages([['/', html]]), ORIGIN)).toEqual([
+      `/: language link en ${error}`
+    ])
+  })
+
+  it('ignores metadata, template content, and links without hreflang', () => {
+    const html = `<link rel="alternate" hreflang="ja" href="/missing/"><template><a hreflang="ja" href="/missing/">日本語</a></template><a href="/missing/">Other</a>`
+    expect(auditLanguageLinks(renderedPages([['/', html]]), ORIGIN)).toEqual([])
+  })
+})
 
 /** The alternates a healthy cluster emits, identical on both twins. */
 function cluster(path: string): Alternate[] {

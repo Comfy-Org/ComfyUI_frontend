@@ -8,10 +8,8 @@ import { LLink } from '@/lib/litegraph/src/LLink'
 import type { ResolvedConnection } from '@/lib/litegraph/src/LLink'
 import { NullGraphError } from '@/lib/litegraph/src/infrastructure/NullGraphError'
 import { RecursionError } from '@/lib/litegraph/src/infrastructure/RecursionError'
-import type {
-  ISubgraphInput,
-  IWidgetLocator
-} from '@/lib/litegraph/src/interfaces'
+import type { IWidgetLocator } from '@/lib/litegraph/src/interfaces'
+import type { ISubgraphInput } from '@/lib/litegraph/src/types/slots'
 import { LiteGraph } from '@/lib/litegraph/src/litegraph'
 import type { INodeInputSlot, ISlotType } from '@/lib/litegraph/src/litegraph'
 import { NodeInputSlot } from '@/lib/litegraph/src/node/NodeInputSlot'

@@ -18,7 +18,7 @@ import { isCloud } from '@/platform/distribution/types'
 import { useTelemetry } from '@/platform/telemetry'
 import { reportError as reportTelemetryError } from '@/platform/telemetry/reportError'
 import { createBillingPortalReporter } from '@/platform/telemetry/utils/billingPortalTelemetry'
-import type { SubscriptionDialogOptions } from '@/platform/cloud/subscription/composables/useSubscriptionDialog'
+import type { SubscriptionDialogOptions } from '@/composables/billing/types'
 import type {
   CheckoutAttributionMetadata,
   ResubscribeClickMetadata,
@@ -38,7 +38,7 @@ import {
 import { useTeamWorkspaceStore } from '@/platform/workspace/stores/teamWorkspaceStore'
 import { platformLink } from '@/platform/workspace/utils/platformLink'
 import { AuthStoreError, useAuthStore } from '@/stores/authStore'
-import { useDialogService } from '@/services/dialogService'
+import { useBillingDialogs } from '@/composables/billing/useBillingDialogs'
 import { toTierKey } from '@/platform/cloud/subscription/constants/tierPricing'
 import type { BillingCycle } from '@/platform/cloud/subscription/utils/subscriptionTierRank'
 import type { operations } from '@/types/comfyRegistryTypes'
@@ -117,7 +117,7 @@ function useSubscriptionInternal() {
     return subscriptionStatus.value?.is_active ?? false
   })
   const { reportError, accessBillingPortalDirect } = useAuthActions()
-  const { showSubscriptionRequiredDialog } = useDialogService()
+  const { showSubscriptionRequiredDialog } = useBillingDialogs()
 
   const authStore = useAuthStore()
   const workspaceStore = useTeamWorkspaceStore()

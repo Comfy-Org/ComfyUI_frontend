@@ -13,7 +13,7 @@ import {
 } from '@/types/widgetId'
 
 import { createArrayMutationView } from '../infrastructure/createMutationView'
-import type { INodeInputSlot } from '../interfaces'
+import type { INodeInputSlot } from '../types/slots'
 import { isNodeBindable } from '../utils/type'
 import { getWidgetIds } from '../utils/widget'
 import { BaseWidget } from '../widgets/BaseWidget'

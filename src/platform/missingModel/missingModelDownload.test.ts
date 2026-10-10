@@ -1,3 +1,4 @@
+import { respondToFetch } from '@comfyorg/test-utils/fetch'
 import { reportError } from '@/platform/telemetry/reportError'
 import { useElectronDownloadStore } from '@/stores/electronDownloadStore'
 import { useSidebarTabStore } from '@/stores/workspace/sidebarTabStore'
@@ -15,8 +16,7 @@ import {
   toBrowsableUrl
 } from './missingModelDownload'
 
-const { fetchMock, mockIsDesktop, mockStartDownload } = vi.hoisted(() => ({
-  fetchMock: vi.fn(),
+const { mockIsDesktop, mockStartDownload } = vi.hoisted(() => ({
   mockIsDesktop: { value: false },
   mockStartDownload: vi.fn()
 }))
@@ -45,7 +45,6 @@ function downloadableModel(): Parameters<typeof dispatchModelDownload>[0] {
 }
 beforeEach(() => {
   mockIsDesktop.value = false
-  vi.stubGlobal('fetch', fetchMock)
   clearMetadataCache()
   delete window.__comfyDesktop2Remote
   delete window.__comfyDesktop2
@@ -64,78 +63,75 @@ describe('fetchModelMetadata', () => {
   })
 
   it('fetches file size via HEAD for non-Civitai URLs', async () => {
-    fetchMock.mockResolvedValueOnce({
-      ok: true,
-      headers: new Headers({ 'content-length': '1048576' })
-    })
+    vi.mocked(fetch).mockResolvedValueOnce(
+      new Response(null, { headers: { 'content-length': '1048576' } })
+    )
 
     const url = 'https://huggingface.co/org/model/resolve/main/head.safetensors'
     const metadata = await fetchModelMetadata(url)
     expect(metadata.fileSize).toBe(1048576)
     expect(metadata.gatedRepoUrl).toBeNull()
-    expect(fetchMock).toHaveBeenCalledWith(url, { method: 'HEAD' })
+    expect(fetch).toHaveBeenCalledWith(url, { method: 'HEAD' })
   })
 
   it('uses Civitai API for Civitai model URLs', async () => {
     const url = 'https://civitai.com/api/download/models/123'
-    fetchMock.mockResolvedValueOnce({
-      ok: true,
-      json: async () => ({
-        files: [{ sizeKB: 1024, downloadUrl: url }]
-      })
-    })
+    vi.mocked(fetch).mockResolvedValueOnce(
+      Response.json({ files: [{ sizeKB: 1024, downloadUrl: url }] })
+    )
 
     const metadata = await fetchModelMetadata(url)
     expect(metadata.fileSize).toBe(1024 * 1024)
     expect(metadata.gatedRepoUrl).toBeNull()
-    expect(fetchMock).toHaveBeenCalledWith(
+    expect(fetch).toHaveBeenCalledWith(
       'https://civitai.com/api/v1/model-versions/123'
     )
   })
 
   it('returns null fileSize when Civitai API fails', async () => {
-    fetchMock.mockResolvedValueOnce({ ok: false })
+    vi.mocked(fetch).mockResolvedValueOnce(new Response(null, { status: 500 }))
 
     const metadata = await fetchModelMetadata(
       'https://civitai.com/api/download/models/123'
     )
     expect(metadata.fileSize).toBeNull()
     expect(metadata.gatedRepoUrl).toBeNull()
-    expect(fetchMock).toHaveBeenCalledTimes(1)
+    expect(fetch).toHaveBeenCalledTimes(1)
   })
 
   it('caches successful Civitai responses without a matching file', async () => {
     const url = 'https://civitai.com/api/download/models/123'
-    fetchMock.mockResolvedValueOnce({
-      ok: true,
-      json: async () => ({ files: [] })
-    })
+    vi.mocked(fetch).mockResolvedValueOnce(Response.json({ files: [] }))
 
     const first = await fetchModelMetadata(url)
     const second = await fetchModelMetadata(url)
 
     expect(first.fileSize).toBeNull()
     expect(second.fileSize).toBeNull()
-    expect(fetchMock).toHaveBeenCalledTimes(1)
+    expect(fetch).toHaveBeenCalledTimes(1)
   })
 
   it('retries failed Civitai metadata responses', async () => {
     const url = 'https://civitai.com/api/download/models/123'
-    fetchMock.mockResolvedValue({ ok: false })
+    respondToFetch(
+      'https://civitai.com/api/v1/model-versions/123',
+      () => new Response(null, { status: 500 })
+    )
 
     expect((await fetchModelMetadata(url)).fileSize).toBeNull()
     expect((await fetchModelMetadata(url)).fileSize).toBeNull()
-    expect(fetchMock).toHaveBeenCalledTimes(2)
+    expect(fetch).toHaveBeenCalledTimes(2)
   })
 
   it.for([401, 403, 451])(
     'returns gatedRepoUrl for gated HuggingFace HEAD requests (%s)',
     async (status) => {
-      fetchMock.mockResolvedValueOnce({
-        ok: false,
-        status,
-        headers: new Headers({ 'x-error-code': 'GatedRepo' })
-      })
+      vi.mocked(fetch).mockResolvedValueOnce(
+        new Response(null, {
+          status,
+          headers: { 'x-error-code': 'GatedRepo' }
+        })
+      )
 
       const metadata = await fetchModelMetadata(
         `https://huggingface.co/bfl/FLUX.1/resolve/main/gated-${status}.safetensors`
@@ -148,26 +144,23 @@ describe('fetchModelMetadata', () => {
   it('caches gated HuggingFace metadata', async () => {
     const url =
       'https://huggingface.co/bfl/FLUX.1/resolve/main/gated-cache.safetensors'
-    fetchMock.mockResolvedValueOnce({
-      ok: false,
-      status: 403,
-      headers: new Headers({ 'x-error-code': 'GatedRepo' })
-    })
+    vi.mocked(fetch).mockResolvedValueOnce(
+      new Response(null, {
+        status: 403,
+        headers: { 'x-error-code': 'GatedRepo' }
+      })
+    )
 
     await fetchModelMetadata(url)
     await fetchModelMetadata(url)
 
-    expect(fetchMock).toHaveBeenCalledTimes(1)
+    expect(fetch).toHaveBeenCalledTimes(1)
   })
 
   it.for([401, 403, 451])(
     'does not treat HuggingFace %s as gated without the GatedRepo error code',
     async (status) => {
-      fetchMock.mockResolvedValueOnce({
-        ok: false,
-        status,
-        headers: new Headers()
-      })
+      vi.mocked(fetch).mockResolvedValueOnce(new Response(null, { status }))
 
       const metadata = await fetchModelMetadata(
         `https://huggingface.co/org/model/resolve/main/not-gated-${status}.safetensors`
@@ -180,15 +173,18 @@ describe('fetchModelMetadata', () => {
   it('does not cache a non-gated HuggingFace failure', async () => {
     const url =
       'https://huggingface.co/org/model/resolve/main/not-gated-404.safetensors'
-    fetchMock.mockResolvedValue({
-      ok: false,
-      status: 404,
-      headers: new Headers({ 'x-error-code': 'GatedRepo' })
-    })
+    respondToFetch(
+      url,
+      () =>
+        new Response(null, {
+          status: 404,
+          headers: { 'x-error-code': 'GatedRepo' }
+        })
+    )
 
     expect((await fetchModelMetadata(url)).gatedRepoUrl).toBeNull()
     expect((await fetchModelMetadata(url)).gatedRepoUrl).toBeNull()
-    expect(fetchMock).toHaveBeenCalledTimes(2)
+    expect(fetch).toHaveBeenCalledTimes(2)
   })
 
   it('does not treat non-HuggingFace hosts as gated', async () => {
@@ -197,7 +193,7 @@ describe('fetchModelMetadata', () => {
     )
     expect(metadata.gatedRepoUrl).toBeNull()
     expect(metadata.fileSize).toBeNull()
-    expect(fetchMock).not.toHaveBeenCalled()
+    expect(fetch).not.toHaveBeenCalled()
   })
 
   it('returns null for unrecognized Civitai URL patterns', async () => {
@@ -205,101 +201,95 @@ describe('fetchModelMetadata', () => {
     const metadata = await fetchModelMetadata(url)
     expect(metadata.fileSize).toBeNull()
     expect(metadata.gatedRepoUrl).toBeNull()
-    expect(fetchMock).not.toHaveBeenCalled()
+    expect(fetch).not.toHaveBeenCalled()
   })
 
   it('returns cached metadata on second call', async () => {
     const url =
       'https://huggingface.co/org/model/resolve/main/cached.safetensors'
 
-    fetchMock.mockResolvedValueOnce({
-      ok: true,
-      headers: new Headers({ 'content-length': '500' })
-    })
+    vi.mocked(fetch).mockResolvedValueOnce(
+      new Response(null, { headers: { 'content-length': '500' } })
+    )
 
     const first = await fetchModelMetadata(url)
     const second = await fetchModelMetadata(url)
 
     expect(first.fileSize).toBe(500)
     expect(second.fileSize).toBe(500)
-    expect(fetchMock).toHaveBeenCalledTimes(1)
+    expect(fetch).toHaveBeenCalledTimes(1)
   })
 
   it('caches successful responses without content-length', async () => {
     const url =
       'https://huggingface.co/org/model/resolve/main/no-size.safetensors'
-    fetchMock.mockResolvedValueOnce({
-      ok: true,
-      headers: new Headers({})
-    })
+    vi.mocked(fetch).mockResolvedValueOnce(new Response(null))
 
     const first = await fetchModelMetadata(url)
     const second = await fetchModelMetadata(url)
 
     expect(first.fileSize).toBeNull()
     expect(second.fileSize).toBeNull()
-    expect(fetchMock).toHaveBeenCalledTimes(1)
+    expect(fetch).toHaveBeenCalledTimes(1)
   })
 
   it('returns null fileSize for an invalid content-length', async () => {
     const url =
       'https://huggingface.co/org/model/resolve/main/invalid-size.safetensors'
-    fetchMock.mockResolvedValueOnce({
-      ok: true,
-      headers: new Headers({ 'content-length': 'abc' })
-    })
+    vi.mocked(fetch).mockResolvedValueOnce(
+      new Response(null, { headers: { 'content-length': 'abc' } })
+    )
 
     const metadata = await fetchModelMetadata(url)
 
     expect(metadata.fileSize).toBeNull()
-    expect(fetchMock).toHaveBeenCalledWith(url, { method: 'HEAD' })
+    expect(fetch).toHaveBeenCalledWith(url, { method: 'HEAD' })
   })
 
   it('retries after a metadata request fails', async () => {
     const url =
       'https://huggingface.co/org/model/resolve/main/network-retry.safetensors'
-    fetchMock
-      .mockRejectedValueOnce(new TypeError('Failed to fetch'))
-      .mockResolvedValueOnce({
-        ok: true,
-        headers: new Headers({ 'content-length': '1024' })
-      })
+    respondToFetch(
+      url,
+      () => new Response(null, { headers: { 'content-length': '1024' } })
+    )
+    respondToFetch(
+      url,
+      () => Promise.reject(new TypeError('Failed to fetch')),
+      { times: 1 }
+    )
 
     const first = await fetchModelMetadata(url)
     const second = await fetchModelMetadata(url)
 
     expect(first.fileSize).toBeNull()
     expect(second.fileSize).toBe(1024)
-    expect(fetchMock).toHaveBeenCalledTimes(2)
+    expect(fetch).toHaveBeenCalledTimes(2)
   })
 
   it('retries after a non-ok HEAD response', async () => {
     const url =
       'https://huggingface.co/org/model/resolve/main/retry.safetensors'
-    fetchMock
-      .mockResolvedValueOnce({
-        ok: false,
-        status: 503,
-        headers: new Headers()
-      })
-      .mockResolvedValueOnce({
-        ok: true,
-        headers: new Headers({ 'content-length': '1024' })
-      })
+    respondToFetch(
+      url,
+      () => new Response(null, { headers: { 'content-length': '1024' } })
+    )
+    respondToFetch(url, () => new Response(null, { status: 503 }), {
+      times: 1
+    })
 
     expect((await fetchModelMetadata(url)).fileSize).toBeNull()
     expect((await fetchModelMetadata(url)).fileSize).toBe(1024)
-    expect(fetchMock).toHaveBeenCalledTimes(2)
+    expect(fetch).toHaveBeenCalledTimes(2)
   })
 
   it('deduplicates concurrent requests for the same URL', async () => {
     const url =
       'https://huggingface.co/org/model/resolve/main/dedup.safetensors'
 
-    fetchMock.mockResolvedValueOnce({
-      ok: true,
-      headers: new Headers({ 'content-length': '2048' })
-    })
+    vi.mocked(fetch).mockResolvedValueOnce(
+      new Response(null, { headers: { 'content-length': '2048' } })
+    )
 
     const [first, second] = await Promise.all([
       fetchModelMetadata(url),
@@ -308,7 +298,7 @@ describe('fetchModelMetadata', () => {
 
     expect(first.fileSize).toBe(2048)
     expect(second.fileSize).toBe(2048)
-    expect(fetchMock).toHaveBeenCalledTimes(1)
+    expect(fetch).toHaveBeenCalledTimes(1)
   })
 })
 
@@ -319,10 +309,10 @@ describe('fetchModelMetadataWithStatus', () => {
     const controller = new AbortController()
     const url =
       'https://huggingface.co/org/model/resolve/main/cancelled.safetensors'
-    fetchMock.mockResolvedValueOnce(new Response())
+    vi.mocked(fetch).mockResolvedValueOnce(new Response())
     await fetchModelMetadataWithStatus(url, { signal: controller.signal })
 
-    expect(fetchMock).toHaveBeenCalledWith(url, {
+    expect(fetch).toHaveBeenCalledWith(url, {
       method: 'HEAD',
       signal: controller.signal
     })
@@ -333,13 +323,15 @@ describe('fetchModelMetadataWithStatus', () => {
       name: 'a non-OK response',
       slug: 'not-found',
       prepare: () =>
-        fetchMock.mockResolvedValueOnce(new Response(null, { status: 404 }))
+        vi
+          .mocked(fetch)
+          .mockResolvedValueOnce(new Response(null, { status: 404 }))
     },
     {
       name: 'a network error',
       slug: 'network',
       prepare: () =>
-        fetchMock.mockRejectedValueOnce(new TypeError('Failed to fetch'))
+        vi.mocked(fetch).mockRejectedValueOnce(new TypeError('Failed to fetch'))
     }
   ])('reports $name for an allowed URL as failed', async (testCase) => {
     testCase.prepare()
@@ -372,7 +364,7 @@ describe('fetchModelMetadataWithStatus', () => {
       metadata: emptyMetadata
     }
   ])('reports $name as resolved', async (testCase) => {
-    fetchMock.mockResolvedValueOnce(testCase.response())
+    vi.mocked(fetch).mockResolvedValueOnce(testCase.response())
 
     await expect(fetchModelMetadataWithStatus(testCase.url)).resolves.toEqual({
       metadata: testCase.metadata,
@@ -396,17 +388,16 @@ describe('fetchModelMetadataWithStatus', () => {
         metadata: emptyMetadata,
         resolution
       })
-      expect(fetchMock).not.toHaveBeenCalled()
+      expect(fetch).not.toHaveBeenCalled()
     }
   )
 
   it('shares one inflight request and cache with the legacy metadata API', async () => {
     const url =
       'https://huggingface.co/org/model/resolve/main/shared-outcome.safetensors'
-    fetchMock.mockResolvedValueOnce({
-      ok: true,
-      headers: new Headers({ 'content-length': '2048' })
-    })
+    vi.mocked(fetch).mockResolvedValueOnce(
+      new Response(null, { headers: { 'content-length': '2048' } })
+    )
 
     const [outcome, legacyMetadata] = await Promise.all([
       fetchModelMetadataWithStatus(url),
@@ -422,7 +413,7 @@ describe('fetchModelMetadataWithStatus', () => {
       gatedRepoUrl: null
     })
     await expect(fetchModelMetadataWithStatus(url)).resolves.toEqual(outcome)
-    expect(fetchMock).toHaveBeenCalledTimes(1)
+    expect(fetch).toHaveBeenCalledTimes(1)
   })
 })
 
@@ -541,10 +532,9 @@ describe('model URL allowlist', () => {
       url: 'https://github.com/xinntao/Real-ESRGAN/releases/download/v0.1.0/RealESRGAN_x4plus.pth'
     }
   ])('allows exact URL $url', async ({ name, url }) => {
-    fetchMock.mockResolvedValueOnce({
-      ok: true,
-      headers: new Headers({ 'content-length': '1' })
-    })
+    vi.mocked(fetch).mockResolvedValueOnce(
+      new Response(null, { headers: { 'content-length': '1' } })
+    )
 
     expect(
       isModelDownloadable({
@@ -557,7 +547,7 @@ describe('model URL allowlist', () => {
     const metadata = await fetchModelMetadata(url)
 
     expect(metadata.fileSize).toBe(1)
-    expect(fetchMock).toHaveBeenCalledWith(url, { method: 'HEAD' })
+    expect(fetch).toHaveBeenCalledWith(url, { method: 'HEAD' })
   })
 
   it.for([
@@ -582,7 +572,7 @@ describe('model URL allowlist', () => {
     const metadata = await fetchModelMetadata(url)
 
     expect(metadata).toEqual({ fileSize: null, gatedRepoUrl: null })
-    expect(fetchMock).not.toHaveBeenCalled()
+    expect(fetch).not.toHaveBeenCalled()
   })
 })
 

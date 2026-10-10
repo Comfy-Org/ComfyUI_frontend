@@ -21,6 +21,7 @@ import type {
   AgentPaywallCtaMetadata,
   AgentPaywallShownMetadata,
   AgentStarterPromptClickedMetadata,
+  AgentStarterPromptExposureMetadata,
   AgentWorkflowAppliedMetadata,
   TelemetryProvider
 } from './types'
@@ -319,6 +320,9 @@ describe('TelemetryRegistry', () => {
       click_id: 'click-1',
       draft_was_empty: true
     } satisfies AgentStarterPromptClickedMetadata
+    const starterPromptExposureMetadata = {
+      '$feature/agent-starter-prompt-set': 'test'
+    } satisfies AgentStarterPromptExposureMetadata
     const consentShownMetadata = {
       trigger: 'button_click'
     } satisfies AgentConsentShownMetadata
@@ -419,6 +423,14 @@ describe('TelemetryRegistry', () => {
         expected: { ...starterPromptClickedMetadata },
         invoke: (registry) =>
           registry.trackAgentStarterPromptClicked(starterPromptClickedMetadata)
+      },
+      {
+        method: 'trackAgentStarterPromptExposure',
+        expected: { ...starterPromptExposureMetadata },
+        invoke: (registry) =>
+          registry.trackAgentStarterPromptExposure(
+            starterPromptExposureMetadata
+          )
       },
       {
         method: 'trackAgentConsentShown',

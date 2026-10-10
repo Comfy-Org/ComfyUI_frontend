@@ -5,7 +5,7 @@ import { v4 as uuidv4 } from 'uuid'
 
 import { useTelemetry } from '@/platform/telemetry'
 
-import { composerPromptForSend } from '../../utils/composerPrompt'
+import { composerPromptForSubmission } from '../../utils/composerPrompt'
 import type { AgentStarterPromptAttribution } from '../../utils/starterPrompts'
 import { useAgentComposerStore } from '../../stores/agent/agentComposerStore'
 
@@ -36,7 +36,7 @@ export function useComposer(options: UseComposerOptions) {
     }
     if (!canSend.value) return
     options.onSend(
-      composerPromptForSend(prompt.value).text.trim(),
+      composerPromptForSubmission(prompt.value).text.trim(),
       attachments.value
     )
   }
@@ -62,7 +62,13 @@ export function useComposer(options: UseComposerOptions) {
       return
     }
     const clickId = uuidv4()
-    store.markSuggestedPrompt({ id: starterPrompt.promptId, clickId })
+    store.markSuggestedPrompt({
+      id: starterPrompt.promptId,
+      clickId,
+      ...(starterPrompt.assignment
+        ? { assignment: starterPrompt.assignment }
+        : {})
+    })
     useTelemetry()?.trackAgentStarterPromptClicked({
       prompt_id: starterPrompt.promptId,
       prompt_index: starterPrompt.promptIndex,
@@ -70,7 +76,12 @@ export function useComposer(options: UseComposerOptions) {
       prompt_text_hash: starterPrompt.promptTextHash,
       locale: starterPrompt.locale,
       click_id: clickId,
-      draft_was_empty: draftWasEmpty
+      draft_was_empty: draftWasEmpty,
+      ...(starterPrompt.assignment
+        ? {
+            '$feature/agent-starter-prompt-set': starterPrompt.assignment
+          }
+        : {})
     })
   }
 
@@ -80,7 +91,9 @@ export function useComposer(options: UseComposerOptions) {
     prompt,
     promptEpoch,
     applyEditorPrompt: store.applyEditorPrompt,
+    resolveSkillMetadata: store.resolveSkillMetadata,
     setInsertionPoint: store.setInsertionPoint,
+    setSkillScope: store.setSkillScope,
     removeReference: store.removeReference,
     workflowReferences,
     canSend,

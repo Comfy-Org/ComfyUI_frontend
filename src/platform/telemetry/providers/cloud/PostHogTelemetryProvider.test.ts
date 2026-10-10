@@ -2,7 +2,8 @@ import type {
   BillingTelemetryEvent,
   CheckoutJourneyTelemetryEvent
 } from '@comfyorg/account-core/billing'
-import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
+import type { CaptureResult, PostHog } from 'posthog-js'
+import { afterEach, assert, beforeEach, describe, expect, it, vi } from 'vitest'
 import type { Ref } from 'vue'
 import { computed, nextTick, ref } from 'vue'
 
@@ -21,11 +22,13 @@ import { TelemetryEvents } from '../../types'
 
 const hoisted = vi.hoisted(() => {
   const mockCapture = vi.fn()
-  const mockInit = vi.fn()
+  const mockInit = vi.fn<PostHog['init']>()
   const mockIdentify = vi.fn()
   const mockPeopleSet = vi.fn()
   const mockPeopleSetOnce = vi.fn()
-  const mockRegister = vi.fn()
+  const mockRegister = vi.fn<PostHog['register']>()
+  const mockGetProperty = vi.fn<(name: string) => unknown>()
+  const mockUnregister = vi.fn<PostHog['unregister']>()
   const mockPosthogReset = vi.fn()
   const executionContext = {
     is_template: true,
@@ -54,6 +57,8 @@ const hoisted = vi.hoisted(() => {
     mockPeopleSet,
     mockPeopleSetOnce,
     mockRegister,
+    mockGetProperty,
+    mockUnregister,
     mockPosthogReset,
     executionContext,
     agentPanelOpen: false,
@@ -64,6 +69,8 @@ const hoisted = vi.hoisted(() => {
         capture: mockCapture,
         identify: mockIdentify,
         register: mockRegister,
+        get_property: mockGetProperty,
+        unregister: mockUnregister,
         people: { set: mockPeopleSet, set_once: mockPeopleSetOnce },
         reset: mockPosthogReset
       }
@@ -123,6 +130,31 @@ function createProvider(
   return provider
 }
 
+function runBeforeSend(event: CaptureResult | null): CaptureResult | null {
+  const config = hoisted.mockInit.mock.calls[0][1]
+  assert.exists(config?.before_send)
+  const { before_send } = config
+  const chain = Array.isArray(before_send) ? before_send : [before_send]
+  return chain.reduce((acc, fn) => fn(acc), event)
+}
+
+function mockPostHogPersistence(initial: Record<string, unknown> = {}) {
+  const persisted = new Map(Object.entries(initial))
+  hoisted.mockRegister.mockImplementation((props) => {
+    Object.entries(props).forEach(([key, value]) => persisted.set(key, value))
+  })
+  hoisted.mockGetProperty.mockImplementation((key) => persisted.get(key))
+  hoisted.mockUnregister.mockImplementation((key) => {
+    persisted.delete(key)
+  })
+  hoisted.mockPosthogReset.mockImplementation(() => persisted.clear())
+  return persisted
+}
+
+function setLocation(search: string): void {
+  window.history.replaceState({}, '', `/${search}`)
+}
+
 describe('PostHogTelemetryProvider', () => {
   beforeEach(() => {
     hoisted.refs.remoteConfig = remoteConfig
@@ -136,6 +168,10 @@ describe('PostHogTelemetryProvider', () => {
     window.__CONFIG__ = {
       posthog_project_token: 'phc_test_token'
     }
+  })
+
+  afterEach(() => {
+    setLocation('')
   })
 
   describe('initialization', () => {
@@ -275,17 +311,24 @@ describe('PostHogTelemetryProvider', () => {
       delete window.__comfyDesktop2
     })
 
-    it('registers client=web and deployment=cloud in a plain browser', async () => {
+    it('stamps client=web and deployment=cloud on events in a plain browser', async () => {
       createProvider()
       await vi.dynamicImportSettled()
 
-      expect(hoisted.mockRegister).toHaveBeenCalledWith({
+      const result = runBeforeSend({
+        uuid: 'test',
+        event: 'test',
+        properties: {}
+      })
+      assert.exists(result)
+
+      expect(result.properties).toMatchObject({
         client: 'web',
         deployment: 'cloud'
       })
     })
 
-    it('registers client=desktop when the desktop preload bridge is present', async () => {
+    it('stamps client=desktop when the desktop preload bridge is present', async () => {
       window.__comfyDesktop2 = {
         isRemote: () => false,
         Telemetry: { capture: vi.fn() }
@@ -293,50 +336,27 @@ describe('PostHogTelemetryProvider', () => {
       createProvider()
       await vi.dynamicImportSettled()
 
-      expect(hoisted.mockRegister).toHaveBeenCalledWith({
+      const result = runBeforeSend({
+        uuid: 'test',
+        event: 'test',
+        properties: {}
+      })
+      assert.exists(result)
+
+      expect(result.properties).toMatchObject({
         client: 'desktop',
         deployment: 'cloud'
       })
     })
-
-    it('registers platform axes before flushing pre-init queued events', async () => {
-      const provider = createProvider()
-      provider.trackSignupOpened()
-      await vi.dynamicImportSettled()
-
-      const registerOrder = hoisted.mockRegister.mock.invocationCallOrder[0]
-      const captureOrder = hoisted.mockCapture.mock.invocationCallOrder[0]
-      expect(registerOrder).toBeLessThan(captureOrder)
-    })
   })
 
   describe('desktop entry capture', () => {
-    function setLocation(search: string): void {
-      Object.defineProperty(window.location, 'search', {
-        configurable: true,
-        value: search,
-        writable: true
-      })
-    }
-
-    afterEach(() => {
-      setLocation('')
-    })
-
-    // The platform-axes register (client/deployment) always fires, so these
-    // assert no register call carrying desktop-entry attribution props.
-    function desktopEntryRegisterCalls(): unknown[][] {
-      return hoisted.mockRegister.mock.calls.filter(
-        ([props]) => props && 'source_app' in (props as Record<string, unknown>)
-      )
-    }
-
     it('does not register desktop props when utm_source is absent', async () => {
       setLocation('')
       createProvider()
       await vi.dynamicImportSettled()
 
-      expect(desktopEntryRegisterCalls()).toHaveLength(0)
+      expect(hoisted.mockRegister).not.toHaveBeenCalled()
     })
 
     it('does not register desktop props when utm_source is not comfy.desktop', async () => {
@@ -344,7 +364,7 @@ describe('PostHogTelemetryProvider', () => {
       createProvider()
       await vi.dynamicImportSettled()
 
-      expect(desktopEntryRegisterCalls()).toHaveLength(0)
+      expect(hoisted.mockRegister).not.toHaveBeenCalled()
     })
 
     it('registers source_app and desktop_device_id when arriving from desktop', async () => {
@@ -370,6 +390,25 @@ describe('PostHogTelemetryProvider', () => {
       })
     })
 
+    it('attributes queued events to the new desktop entry instead of an old device', async () => {
+      const persisted = mockPostHogPersistence({
+        source_app: 'desktop',
+        desktop_device_id: 'old-device'
+      })
+      const persistedAtCapture: Record<string, unknown>[] = []
+      hoisted.mockCapture.mockImplementation(() => {
+        persistedAtCapture.push(Object.fromEntries(persisted))
+      })
+      setLocation('?utm_source=comfy.desktop&desktop_device_id=new-device')
+      const provider = createProvider()
+      provider.trackSignupOpened()
+      await vi.dynamicImportSettled()
+
+      expect(persistedAtCapture).toEqual([
+        { source_app: 'desktop', desktop_device_id: 'new-device' }
+      ])
+    })
+
     it('persists desktop props to the person on identify so backend events inherit them', async () => {
       setLocation('?utm_source=comfy.desktop&desktop_device_id=device-xyz')
       createProvider()
@@ -392,6 +431,88 @@ describe('PostHogTelemetryProvider', () => {
       expect(hoisted.mockPeopleSetOnce).toHaveBeenCalledWith(
         expect.objectContaining({ first_seen_via_desktop: expect.any(String) })
       )
+    })
+
+    it('keeps saved referral props on events without writing Desktop attribution to a new person profile', async () => {
+      const persisted = mockPostHogPersistence({
+        source_app: 'desktop',
+        desktop_device_id: 'previous-device'
+      })
+      const events: Array<CaptureResult | null> = []
+      hoisted.mockCapture.mockImplementation((event: string) => {
+        events.push(
+          runBeforeSend({
+            uuid: 'saved-referral-event',
+            event,
+            properties: Object.fromEntries(persisted)
+          })
+        )
+      })
+      setLocation('')
+      const provider = createProvider()
+      await vi.dynamicImportSettled()
+
+      const callback = vi.mocked(useCurrentUser().onUserResolved).mock
+        .calls[0][0]
+      callback({ id: 'different-user' })
+      provider.trackSignupOpened()
+
+      expect(hoisted.mockIdentify).toHaveBeenCalledWith('different-user')
+      expect(Object.fromEntries(persisted)).toEqual({
+        source_app: 'desktop',
+        desktop_device_id: 'previous-device'
+      })
+      expect(events).toEqual([
+        {
+          uuid: 'saved-referral-event',
+          event: TelemetryEvents.USER_SIGN_UP_OPENED,
+          properties: {
+            source_app: 'desktop',
+            desktop_device_id: 'previous-device',
+            client: 'web',
+            deployment: 'cloud'
+          }
+        }
+      ])
+      expect(hoisted.mockPeopleSet).not.toHaveBeenCalled()
+      expect(hoisted.mockPeopleSetOnce).not.toHaveBeenCalled()
+    })
+
+    it('attributes a fresh Desktop visit to the account signed in after logout on the same page', async () => {
+      const persisted = mockPostHogPersistence()
+      setLocation('?utm_source=comfy.desktop&desktop_device_id=device-xyz')
+      createProvider()
+      await vi.dynamicImportSettled()
+
+      const resolved = vi.mocked(useCurrentUser().onUserResolved).mock
+        .calls[0][0]
+      const logout = vi.mocked(useCurrentUser().onUserLogout).mock.calls[0][0]
+      resolved({ id: 'first-user' })
+      expect(hoisted.mockPeopleSet).toHaveBeenCalledWith(
+        expect.objectContaining({ desktop_device_id: 'device-xyz' })
+      )
+      expect(hoisted.mockPeopleSetOnce).toHaveBeenCalledOnce()
+      hoisted.mockPeopleSet.mockClear()
+      hoisted.mockPeopleSetOnce.mockClear()
+
+      logout()
+      resolved({ id: 'next-user' })
+
+      expect(hoisted.mockIdentify).toHaveBeenLastCalledWith('next-user')
+      expect(Object.fromEntries(persisted)).toEqual({
+        source_app: 'desktop',
+        desktop_device_id: 'device-xyz'
+      })
+      expect(hoisted.mockPeopleSet).toHaveBeenCalledWith(
+        expect.objectContaining({
+          source_app: 'desktop',
+          desktop_device_id: 'device-xyz',
+          last_seen_via_desktop: expect.any(String)
+        })
+      )
+      expect(hoisted.mockPeopleSetOnce).toHaveBeenCalledWith({
+        first_seen_via_desktop: expect.any(String)
+      })
     })
 
     it('does not touch the person profile on identify for non-desktop visitors', async () => {
@@ -545,6 +666,20 @@ describe('PostHogTelemetryProvider', () => {
           click_id: 'click-1',
           draft_was_empty: true
         }
+      )
+    })
+
+    it('captures starter prompt exposure with its assignment', async () => {
+      const provider = createProvider()
+      await vi.dynamicImportSettled()
+
+      provider.trackAgentStarterPromptExposure({
+        '$feature/agent-starter-prompt-set': 'test'
+      })
+
+      expect(hoisted.mockCapture).toHaveBeenCalledWith(
+        TelemetryEvents.AGENT_STARTER_PROMPT_EXPOSURE,
+        { '$feature/agent-starter-prompt-set': 'test' }
       )
     })
 
@@ -1701,6 +1836,104 @@ describe('PostHogTelemetryProvider', () => {
       expect(hoisted.mockPosthogReset).toHaveBeenCalledWith(true)
     })
 
+    it('preserves desktop attribution after a clean-URL reload and logout', async () => {
+      const persisted = mockPostHogPersistence()
+      setLocation('?utm_source=comfy.desktop&desktop_device_id=device-abc')
+      createProvider()
+      await vi.dynamicImportSettled()
+
+      setLocation('')
+      createProvider()
+      await vi.dynamicImportSettled()
+      persisted.set('previous_user_property', 'must not survive logout')
+      const logout = vi.mocked(useCurrentUser().onUserLogout).mock.calls[1][0]
+      logout()
+
+      const result = runBeforeSend({
+        uuid: 'after-logout',
+        event: '$pageview',
+        properties: Object.fromEntries(persisted)
+      })
+      assert.exists(result)
+      expect(result.properties).toEqual({
+        client: 'web',
+        deployment: 'cloud',
+        source_app: 'desktop',
+        desktop_device_id: 'device-abc'
+      })
+    })
+
+    it.for([
+      {
+        source: 'desktop',
+        deviceId: 'saved-device',
+        expected: { source_app: 'desktop', desktop_device_id: 'saved-device' }
+      },
+      {
+        source: 'desktop',
+        deviceId: undefined,
+        expected: { source_app: 'desktop' }
+      },
+      { source: 'desktop', deviceId: '', expected: { source_app: 'desktop' } },
+      { source: 'desktop', deviceId: 123, expected: { source_app: 'desktop' } },
+      { source: 'web', deviceId: 'saved-device', expected: {} },
+      { source: undefined, deviceId: 'saved-device', expected: {} }
+    ])(
+      'restores only valid persisted attribution: $source / $deviceId',
+      async ({ source, deviceId, expected }) => {
+        const persisted = mockPostHogPersistence({
+          source_app: source,
+          desktop_device_id: deviceId
+        })
+        createProvider()
+        await vi.dynamicImportSettled()
+
+        const logout = vi.mocked(useCurrentUser().onUserLogout).mock.calls[0][0]
+        logout()
+
+        expect(Object.fromEntries(persisted)).toEqual(expected)
+      }
+    )
+
+    it.for([
+      {
+        search: '?utm_source=comfy.desktop&desktop_device_id=new-device',
+        expected: { source_app: 'desktop', desktop_device_id: 'new-device' }
+      },
+      {
+        search: '?utm_source=comfy.desktop',
+        expected: { source_app: 'desktop' }
+      }
+    ])(
+      'prefers a new desktop entry URL over persisted attribution: $search',
+      async ({ search, expected }) => {
+        const persisted = mockPostHogPersistence({
+          source_app: 'desktop',
+          desktop_device_id: 'old-device'
+        })
+        setLocation(search)
+        createProvider()
+        await vi.dynamicImportSettled()
+
+        expect(Object.fromEntries(persisted)).toEqual(expected)
+
+        const logout = vi.mocked(useCurrentUser().onUserLogout).mock.calls[0][0]
+        logout()
+
+        expect(Object.fromEntries(persisted)).toEqual(expected)
+      }
+    )
+
+    it('does not register anything on logout for non-desktop visitors', async () => {
+      createProvider()
+      await vi.dynamicImportSettled()
+
+      const callback = vi.mocked(useCurrentUser().onUserLogout).mock.calls[0][0]
+      callback()
+
+      expect(hoisted.mockRegister).not.toHaveBeenCalled()
+    })
+
     it('does not register the watcher before init resolves', () => {
       createProvider()
 
@@ -1756,13 +1989,19 @@ describe('PostHogTelemetryProvider', () => {
   })
 
   describe('before_send', () => {
+    it('preserves dropped events through the callback chain', async () => {
+      createProvider()
+      await vi.dynamicImportSettled()
+
+      expect(runBeforeSend(null)).toBeNull()
+    })
+
     it('strips PII keys from event properties, $set, and $set_once', async () => {
       createProvider()
       await vi.dynamicImportSettled()
 
-      const { before_send } = hoisted.mockInit.mock.calls[0][1]
-
       const event = {
+        uuid: 'test',
         event: 'test',
         properties: {
           email: 'props@example.com',
@@ -1783,7 +2022,8 @@ describe('PostHogTelemetryProvider', () => {
         }
       }
 
-      const result = before_send(event)
+      const result = runBeforeSend(event)
+      assert.exists(result)
 
       // event.properties — all four PII keys stripped, non-PII preserved
       expect(result.properties).not.toHaveProperty('email')
@@ -1816,8 +2056,9 @@ describe('PostHogTelemetryProvider', () => {
       await vi.dynamicImportSettled()
 
       const initConfig = hoisted.mockInit.mock.calls[0][1]
+      assert.exists(initConfig)
 
-      expect(initConfig.before_send).not.toBe(remoteBefore_send)
+      expect(initConfig.before_send).not.toContain(remoteBefore_send)
     })
   })
 })

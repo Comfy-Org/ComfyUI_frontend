@@ -1,7 +1,5 @@
-import type {
-  IContextMenuValue,
-  Positionable
-} from '@/lib/litegraph/src/interfaces'
+import type { Positionable } from '@/lib/litegraph/src/interfaces'
+import type { IContextMenuValue } from '@/lib/litegraph/src/types/contextMenu'
 import type { LGraphCanvas, LGraphNode } from '@/lib/litegraph/src/litegraph'
 import type { MissingNodeType } from '@/platform/nodeReplacement/types'
 import type { SettingParams } from '@/platform/settings/types'

@@ -242,7 +242,8 @@ test.describe('Enterprise workspace billing', { tag: '@cloud' }, () => {
   })
 
   test('keeps an ended Enterprise workspace out of self-service recovery', async ({
-    page
+    page,
+    toast
   }) => {
     const workspace = await setupSalesManagedWorkspace(
       page,
@@ -283,10 +284,9 @@ test.describe('Enterprise workspace billing', { tag: '@cloud' }, () => {
     await expect(
       page.getByRole('heading', { name: 'Choose a Plan' })
     ).toHaveCount(0)
-    await expect(page.locator('.p-toast-message-warn')).toContainText(
-      'Plan inactive'
-    )
-    await expect(page.locator('.p-toast-message-warn')).toContainText(
+    const warning = toast.toastWarnings
+    await expect(warning).toContainText('Plan inactive')
+    await expect(warning).toContainText(
       'Contact your Comfy account manager to restore access.'
     )
   })
