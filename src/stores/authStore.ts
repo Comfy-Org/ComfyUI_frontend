@@ -451,9 +451,14 @@ export const useAuthStore = defineStore('auth', () => {
         teamWorkspaceStore.initState === 'loading' ||
         teamWorkspaceStore.initState === 'error')
     ) {
+      const requestingIdentity = currentUserCredentialIdentity()
       try {
-        await teamWorkspaceStore.initialize()
+        await teamWorkspaceStore.initialize({ honorFailureCooldown: true })
       } catch {
+        // The account may have changed while initialization was in flight;
+        // never hand this request another account's credential.
+        if (currentUserCredentialIdentity() !== requestingIdentity)
+          return undefined
         // A remote non-Cloud origin (e.g. a proxied self-hosted instance)
         // cannot reach cloud.comfy.org/api/workspaces: the browser blocks the
         // cross-origin request, so workspace discovery fails regardless of

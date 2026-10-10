@@ -159,8 +159,9 @@ function clearLastWorkspaceId(): void {
 const MAX_OWNED_WORKSPACES = 10
 const MAX_INIT_RETRIES = 3
 const BASE_RETRY_DELAY_MS = 1000
-// After a failed init, reject immediate re-init attempts for this long so
-// repeated token requests don't each re-run the full retry/backoff cycle.
+// After a failed init, callers that opt in reject immediate re-init attempts
+// for this long so repeated token requests don't each re-run the full
+// retry/backoff cycle.
 export const INIT_RETRY_COOLDOWN_MS = 30_000
 
 export const useTeamWorkspaceStore = defineStore('teamWorkspace', () => {
@@ -471,21 +472,22 @@ export const useTeamWorkspaceStore = defineStore('teamWorkspace', () => {
     isFetchingWorkspaces.value = false
   }
 
-  function initialize(options?: { force?: boolean }): Promise<void> {
+  function initialize(options?: {
+    honorFailureCooldown?: boolean
+  }): Promise<void> {
     if (initializationPromise) return initializationPromise
     if (initState.value !== 'uninitialized' && initState.value !== 'error') {
       return Promise.resolve()
     }
 
-    // Cooldown after a failed init: re-running the full retry/backoff cycle
-    // on every token request would stall each submission behind up to
-    // MAX_INIT_RETRIES doomed attempts. Reject until the cooldown expires;
-    // initState stays 'error', so callers fall back to their error path.
-    // An explicit retry (e.g. the WorkspaceAuthGate retry button) bypasses
-    // the cooldown: the user decided to retry now, and the gate is already
-    // showing the error rather than blocking a submission behind a cycle.
+    // Opt-in cooldown after a failed init, for per-submission token requests:
+    // re-running the full retry/backoff cycle on every submission would stall
+    // each one behind up to MAX_INIT_RETRIES doomed attempts. Reject until the
+    // cooldown expires; initState stays 'error', so the caller takes its
+    // fallback path. Other callers (the auth gate's retry button, agent
+    // consent) keep retrying immediately.
     if (
-      !options?.force &&
+      options?.honorFailureCooldown &&
       initState.value === 'error' &&
       lastInitFailureAt !== null &&
       Date.now() - lastInitFailureAt < INIT_RETRY_COOLDOWN_MS

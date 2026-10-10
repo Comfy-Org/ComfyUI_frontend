@@ -40,6 +40,7 @@ type MockUser = Omit<User, 'getIdToken'> & {
  */
 describe('getWorkspaceAuthToken remote-origin workspace init failure', () => {
   let store: ReturnType<typeof useAuthStore>
+  let authStateObservers: Array<(user: User | null) => void>
 
   const mockUser = fromPartial<MockUser>({
     uid: 'test-user-id',
@@ -50,7 +51,7 @@ describe('getWorkspaceAuthToken remote-origin workspace init failure', () => {
   beforeEach(() => {
     mockDistributionTypes.isCloud = false
     stubFirebaseAuthHarness()
-    const authStateObservers: Array<(user: User | null) => void> = []
+    authStateObservers = []
     vi.mocked(firebaseAuth.onAuthStateChanged).mockImplementation(
       (_, callback) => {
         const observer = callback as (user: User | null) => void
@@ -81,6 +82,35 @@ describe('getWorkspaceAuthToken remote-origin workspace init failure', () => {
     )
 
     await expect(store.getWorkspaceAuthToken()).resolves.toBe('firebase-token')
+  })
+
+  it('asks the store to honor its failure cooldown', async () => {
+    vi.mocked(useTeamWorkspaceStore().initialize).mockRejectedValue(
+      new Error('Network Error')
+    )
+
+    await store.getWorkspaceAuthToken()
+
+    expect(useTeamWorkspaceStore().initialize).toHaveBeenCalledWith({
+      honorFailureCooldown: true
+    })
+  })
+
+  it('returns no credential when the account changes during workspace init', async () => {
+    const otherUser = fromPartial<MockUser>({
+      uid: 'other-user-id',
+      email: 'other@example.com',
+      getIdToken: vi.fn().mockResolvedValue('other-firebase-token')
+    })
+    vi.mocked(useTeamWorkspaceStore().initialize).mockImplementation(
+      async () => {
+        for (const observer of authStateObservers) observer(otherUser)
+        throw new Error('Network Error')
+      }
+    )
+
+    await expect(store.getWorkspaceAuthToken()).resolves.toBeUndefined()
+    expect(otherUser.getIdToken).not.toHaveBeenCalled()
   })
 
   it('still falls back when a previous boot left the store in the error state', async () => {

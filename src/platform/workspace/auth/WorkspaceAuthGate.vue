@@ -106,7 +106,7 @@ function cancelInitialization(): void {
   backgroundInitializationUserId = undefined
 }
 
-async function initialize(options?: { forceRetry?: boolean }): Promise<void> {
+async function initialize(): Promise<void> {
   if (!isCloud) {
     void initializeWorkspacesInBackground()
     return
@@ -168,7 +168,7 @@ async function initialize(options?: { forceRetry?: boolean }): Promise<void> {
       }
     }
 
-    await initializeWorkspaceMode(options?.forceRetry === true)
+    await initializeWorkspaceMode()
     if (generation !== initializationGeneration) return
     void billingCapabilities.initialize(controller.signal)
     if (needsUnifiedToken && !workspaceAuthStore.getUnifiedToken()) {
@@ -207,7 +207,7 @@ function isRetryableInitializationError(error: unknown): boolean {
 
 async function retryInitialization(): Promise<void> {
   initializationState.value = 'retrying'
-  await initialize({ forceRetry: true })
+  await initialize()
 }
 
 async function handleSignOut(): Promise<void> {
@@ -215,9 +215,7 @@ async function handleSignOut(): Promise<void> {
   await useAuthActions().logout()
 }
 
-async function initializeWorkspaceMode(
-  forceRetry: boolean = false
-): Promise<void> {
+async function initializeWorkspaceMode(): Promise<void> {
   // Initialize the full workspace store which handles:
   // - Restoring workspace token from session (fast path for refresh)
   // - Fetching workspace list
@@ -228,7 +226,7 @@ async function initializeWorkspaceMode(
     workspaceStore.initState === 'uninitialized' ||
     workspaceStore.initState === 'error'
   ) {
-    await workspaceStore.initialize({ force: forceRetry })
+    await workspaceStore.initialize()
   }
   if (
     workspaceStore.initState !== 'ready' ||
