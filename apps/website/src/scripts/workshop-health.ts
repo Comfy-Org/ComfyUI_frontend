@@ -19,6 +19,14 @@ function isAccountRefusal(failure: FailedRun): boolean {
   )
 }
 
+function isAttributedRateLimit(failure: FailedRun): boolean {
+  return (
+    failure.reason === 'rateLimit' &&
+    (failure.router_error_type === 'rate_limit_exceeded' ||
+      failure.workflow_error_code === 'rate_limited')
+  )
+}
+
 function hasFieldErrors(failure: FailedRun): boolean {
   return Boolean(
     failure.field_error_names?.length && failure.field_error_codes?.length
@@ -68,6 +76,7 @@ function isActionableInputIssue(failure: FailedRun): boolean {
 function isExcludedFailure(failure: FailedRun): boolean {
   return (
     isAccountRefusal(failure) ||
+    isAttributedRateLimit(failure) ||
     isActionableInputIssue(failure) ||
     ['noCredits', 'policy', 'concurrency'].includes(failure.reason)
   )
