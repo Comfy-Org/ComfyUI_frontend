@@ -261,6 +261,7 @@ vi.mock(import('@/platform/workspace/composables/useBillingCapabilities'), {
 import type { AgentMessages, TurnId } from './schemas/agentApiSchema'
 import { toTurnId, zAgentWsEvent } from './schemas/agentApiSchema'
 import { MAX_ATTACHMENT_BYTES } from './composables/agent/useAttachment'
+import { formatBillingIdentity } from './composables/useBillingIdentity'
 import type { AgentChatEvent } from './services/agent/agentEventTransport'
 import { useAgentChatHistoryStore } from './stores/agent/agentChatHistoryStore'
 import { useAgentConversationStore } from './stores/agent/agentConversationStore'
@@ -1582,13 +1583,60 @@ describe('AgentPanelRoot Agent credit transition notice', () => {
   function observeAgentScopedFunds(scopedHasFunds: boolean | undefined): void {
     paywallAgentScopedHasFunds.value = scopedHasFunds
     if (scopedHasFunds === undefined) return
-    const identity = `${useCurrentUser().resolvedUserInfo.value?.id ?? 'anonymous'}:${useTeamWorkspaceStore().workspaceId ?? 'none'}`
+    const identity = formatBillingIdentity(
+      useCurrentUser().resolvedUserInfo.value?.id,
+      useTeamWorkspaceStore().workspaceId
+    )
     useAgentPanelStore().observeAgentScopedFunds(identity, scopedHasFunds)
   }
 
   beforeEach(() => {
     paywallHasFunds.value = true
     paywallAgentHasFunds.value = true
+  })
+
+  it('does not hide the free-use notice for a scoped balance that never held funds', async () => {
+    vi.mocked(useFreeUsePlacement).mockReturnValueOnce(
+      fromPartial({ variant: ref('near-composer') })
+    )
+    observeAgentScopedFunds(false)
+    render(AgentPanelRoot, { global: { plugins: [i18n] } })
+    await screen.findByRole('textbox')
+
+    expect(
+      await screen.findByRole('note', {
+        name: i18n.global.t('agent.freeUseNoticeLabel')
+      })
+    ).toBeInTheDocument()
+  })
+
+  it('hides the free-use notice only while the credit transition notice is visible', async () => {
+    vi.mocked(useFreeUsePlacement).mockReturnValueOnce(
+      fromPartial({ variant: ref('near-composer') })
+    )
+    observeAgentScopedFunds(true)
+    render(AgentPanelRoot, { global: { plugins: [i18n] } })
+    await screen.findByRole('textbox')
+    observeAgentScopedFunds(false)
+    const notice = await screen.findByTestId(NOTICE)
+
+    expect(
+      screen.queryByRole('note', {
+        name: i18n.global.t('agent.freeUseNoticeLabel')
+      })
+    ).not.toBeInTheDocument()
+
+    await userEvent.click(
+      within(notice).getByRole('button', {
+        name: i18n.global.t('agent.dismiss')
+      })
+    )
+
+    expect(
+      await screen.findByRole('note', {
+        name: i18n.global.t('agent.freeUseNoticeLabel')
+      })
+    ).toBeInTheDocument()
   })
 
   it('shows only after the Agent-scoped balance changes from available to exhausted', async () => {
@@ -1730,22 +1778,6 @@ describe('AgentPanelRoot Agent credit transition notice', () => {
 
     paywallAgentHasFunds.value = true
     paywallHasFunds.value = true
-
-    expect(await screen.findByTestId(NOTICE)).toBeInTheDocument()
-  })
-
-  it('observes the scoped balance again after the billing identity changes', async () => {
-    const accountId = ref('account-a')
-    useCurrentUser().resolvedUserInfo = computed(() => ({
-      id: accountId.value
-    }))
-    observeAgentScopedFunds(true)
-    render(AgentPanelRoot, { global: { plugins: [i18n] } })
-    await screen.findByRole('textbox')
-
-    accountId.value = 'account-b'
-    await nextTick()
-    observeAgentScopedFunds(false)
 
     expect(await screen.findByTestId(NOTICE)).toBeInTheDocument()
   })

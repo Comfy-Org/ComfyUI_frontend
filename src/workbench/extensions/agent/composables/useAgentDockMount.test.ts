@@ -2,11 +2,15 @@ import { fromPartial } from '@total-typescript/shoehorn'
 import { computed, nextTick, ref } from 'vue'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 
+import { useCurrentUser } from '@/composables/auth/useCurrentUser'
+import type { AuthUserInfo } from '@/types/authTypes'
 import { useBillingContext } from '@/composables/billing/useBillingContext'
 import type { SubscriptionInfo } from '@/composables/billing/types'
+import { useTeamWorkspaceStore } from '@/platform/workspace/stores/teamWorkspaceStore'
 import { useAgentPanelStore } from '@/workbench/extensions/agent/stores/agent/agentPanelStore'
 
 import { useAgentDockMount } from './useAgentDockMount'
+import { formatBillingIdentity } from './useBillingIdentity'
 
 vi.mock(import('@/platform/telemetry'))
 vi.mock(import('@/composables/auth/useCurrentUser'))
@@ -109,6 +113,43 @@ describe('useAgentDockMount', () => {
     await nextTick()
 
     expect(store.claimCreditTransitionNoticeImpression(identity)).toBe(true)
+  })
+
+  // Relocated from AgentPanelRoot.test.ts: the identity half of this watcher
+  // moved here, so the panel could no longer observe an identity switch.
+  it('observes the scoped balance again after the billing identity changes', async () => {
+    vi.stubGlobal('__DISTRIBUTION__', 'cloud')
+    const accountId = ref('account-a')
+    useCurrentUser().resolvedUserInfo = computed(() =>
+      fromPartial<AuthUserInfo>({ id: accountId.value })
+    )
+    const subscription = ref({
+      hasFunds: true,
+      agentHasFunds: true,
+      agentScopedHasFunds: true
+    })
+    vi.mocked(useBillingContext).mockReturnValue({
+      ...billingContext,
+      subscription: computed(() =>
+        fromPartial<SubscriptionInfo>(subscription.value)
+      )
+    })
+    const store = useAgentPanelStore()
+
+    useAgentDockMount()
+
+    accountId.value = 'account-b'
+    await nextTick()
+    subscription.value = {
+      hasFunds: true,
+      agentHasFunds: true,
+      agentScopedHasFunds: false
+    }
+    await nextTick()
+
+    expect(store.creditTransitionNotice?.identity).toBe(
+      formatBillingIdentity('account-b', useTeamWorkspaceStore().workspaceId)
+    )
   })
 
   it('returns an inert mount on non-cloud distributions', () => {
