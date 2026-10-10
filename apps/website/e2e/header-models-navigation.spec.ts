@@ -5,7 +5,8 @@ import { test } from './fixtures/modelsAccount'
 
 const viewports = [
   { name: 'mobile', width: 390, desktopNavigation: false },
-  { name: '1024px desktop', width: 1024, desktopNavigation: false },
+  { name: '1023px desktop', width: 1023, desktopNavigation: false },
+  { name: '1024px desktop', width: 1024, desktopNavigation: true },
   { name: 'wide desktop', width: 1440, desktopNavigation: true }
 ] as const
 

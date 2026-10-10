@@ -175,8 +175,8 @@ watch(
 )
 
 const currentPath = useCurrentPath()
-const ctaButtons = computed(() =>
-  [
+const ctaButtons = computed(() => {
+  const available = [
     {
       full: t('nav.downloadLocal'),
       short: t('nav.ctaDesktopCore'),
@@ -192,7 +192,12 @@ const ctaButtons = computed(() =>
       primary: true
     }
   ].filter((cta) => !isHrefActive(cta.href, currentPath.value))
-)
+  // Between lg and xl the row fits one call to action, never the last one.
+  return available.map((cta) => ({
+    ...cta,
+    secondary: available.length > 1 && !cta.primary
+  }))
+})
 </script>
 
 <template>
@@ -227,12 +232,11 @@ const ctaButtons = computed(() =>
     <HeaderMainDesktop
       :locale
       :workshop-in-build="showWorkshop"
-      :class="showWorkshop ? 'hidden xl:block' : 'hidden lg:block'"
+      class="hidden lg:block"
     />
     <div
       data-testid="mobile-nav-cta"
-      class="flex shrink-0 items-center gap-2"
-      :class="showWorkshop ? 'xl:hidden' : 'lg:hidden'"
+      class="flex shrink-0 items-center gap-2 lg:hidden"
     >
       <HeaderAccount v-if="showAccount" :locale="locale" />
       <HeaderMainMobile :locale :workshop-in-build="showWorkshop" />
@@ -241,8 +245,7 @@ const ctaButtons = computed(() =>
     <!-- Desktop CTA buttons -->
     <div
       data-testid="desktop-nav-cta"
-      class="hidden shrink-0 items-center gap-2"
-      :class="showWorkshop ? 'xl:flex' : 'lg:flex'"
+      class="hidden shrink-0 items-center gap-2 lg:flex"
     >
       <!-- Get Yoland to sign a contract of permission before killing this -->
       <GitHubStarBadge v-if="githubStars" :stars="githubStars" />
@@ -253,6 +256,7 @@ const ctaButtons = computed(() =>
         :href="cta.href"
         :variant="cta.primary ? 'default' : 'outline'"
         :aria-label="cta.ariaLabel"
+        :class="cta.secondary ? 'hidden xl:inline-flex' : undefined"
       >
         <span>
           <span class="hidden min-[1800px]:inline-block">{{ cta.full }}</span>

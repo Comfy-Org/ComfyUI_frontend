@@ -147,6 +147,46 @@ test.describe('Desktop navigation @smoke', () => {
   })
 })
 
+test.describe('Narrow desktop @smoke', () => {
+  test.use({ viewport: { width: 1100, height: 800 } })
+
+  test.beforeEach(async ({ page }) => {
+    await page.goto('/')
+  })
+
+  test('keeps every nav link instead of collapsing to the hamburger', async ({
+    page
+  }) => {
+    const desktopLinks = page
+      .getByRole('navigation', { name: 'Main navigation' })
+      .getByTestId('desktop-nav-links')
+
+    for (const label of TOP_LEVEL_LABELS) {
+      await expect(
+        desktopLinks.getByText(label, { exact: true }).first()
+      ).toBeVisible()
+    }
+    await expect(page.getByRole('button', { name: 'Toggle menu' })).toBeHidden()
+  })
+
+  test('shows one call to action and still fits on one row', async ({
+    page
+  }) => {
+    const nav = page.getByRole('navigation', { name: 'Main navigation' })
+    const desktopCTA = nav.getByTestId('desktop-nav-cta')
+
+    await expect(
+      desktopCTA.getByRole('link', { name: 'TRY CLOUD FOR FREE' })
+    ).toBeVisible()
+    await expect(
+      desktopCTA.getByRole('link', { name: 'DOWNLOAD DESKTOP' })
+    ).toBeHidden()
+
+    const overflow = await nav.evaluate((el) => el.scrollWidth - el.clientWidth)
+    expect(overflow).toBeLessThanOrEqual(0)
+  })
+})
+
 test.describe('Desktop dropdown @interaction', () => {
   test.beforeEach(async ({ page }) => {
     await page.goto('/')

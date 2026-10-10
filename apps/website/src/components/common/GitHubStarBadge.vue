@@ -13,7 +13,7 @@ const { stars } = defineProps<{
     target="_blank"
     rel="noopener noreferrer"
     :aria-label="`ComfyUI on GitHub — ${stars} stars`"
-    class="hidden shrink-0 items-center gap-1 lg:flex"
+    class="hidden shrink-0 items-center gap-1 xl:flex"
   >
     <NodeBadge
       :segments="[{ text: stars }]"
