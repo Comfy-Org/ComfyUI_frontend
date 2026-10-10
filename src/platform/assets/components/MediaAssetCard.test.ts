@@ -11,9 +11,19 @@ import MediaAssetCard from '@/platform/assets/components/MediaAssetCard.vue'
 import { unflattenOutputAssets } from '@/platform/assets/composables/media/assetMappers'
 import type { AssetItem } from '@/platform/assets/schemas/assetSchema'
 import { MIME_ASSET_INFO } from '@/platform/assets/schemas/mediaAssetSchema'
+import { provideWebSessionRequests } from '@/platform/auth/session/webSessionFetch'
+import type { WebSessionRequests } from '@/platform/auth/session/webSessionFetch'
 import { useMediaAssetActions } from '../composables/useMediaAssetActions'
 
+const mockIsCloud = vi.hoisted(() => ({ value: false }))
+
 vi.mock(import('../composables/useMediaAssetActions'))
+
+vi.mock(import('@/platform/distribution/types'), () => ({
+  get isCloud() {
+    return mockIsCloud.value
+  }
+}))
 
 vi.mock(import('@/composables/useFeatureFlags'))
 
@@ -123,6 +133,7 @@ function dispatchDragStart(
 
 beforeEach(() => {
   vi.mocked(useAssetsStore().isAssetDeleting).mockImplementation(() => false)
+  mockIsCloud.value = false
 })
 
 describe('MediaAssetCard', () => {
@@ -298,6 +309,58 @@ describe('MediaAssetCard', () => {
       expect(emitted().select).toHaveLength(1)
     }
   )
+
+  it('names the web-session workspace on an image preview served by the assets API', async () => {
+    const release = provideWebSessionRequests(
+      fromPartial<WebSessionRequests>({ workspaceId: () => 'ws-1' })
+    )
+    try {
+      renderCard({
+        loading: false,
+        asset: {
+          ...asset,
+          name: 'a.png',
+          thumbnail_url: '/api/assets/img-id/content'
+        }
+      })
+
+      expect(await screen.findByRole('img', { name: 'a.png' })).toHaveAttribute(
+        'src',
+        '/api/assets/img-id/content?workspace_id=ws-1'
+      )
+    } finally {
+      release()
+    }
+  })
+
+  it('names the web-session workspace on a video preview served by the assets API', async () => {
+    const release = provideWebSessionRequests(
+      fromPartial<WebSessionRequests>({ workspaceId: () => 'ws-1' })
+    )
+    try {
+      const { container } = renderCard({
+        loading: false,
+        asset: {
+          ...asset,
+          name: 'clip.mp4',
+          preview_url: '/api/assets/clip-id/content'
+        }
+      })
+      const video = await vi.waitFor(() => {
+        // oxlint-disable-next-line testing-library/no-container, testing-library/no-node-access -- <video> has no ARIA role in happy-dom
+        const element = container.querySelector('video')
+        expect(element).toBeInTheDocument()
+        return element!
+      })
+
+      expect(video).toHaveAttribute(
+        'src',
+        '/api/assets/clip-id/content?workspace_id=ws-1'
+      )
+    } finally {
+      release()
+    }
+  })
 
   it('disables native controls for compact video cards', async () => {
     const user = userEvent.setup()
@@ -503,4 +566,66 @@ describe('MediaAssetCard', () => {
       )
     }
   )
+
+  it.for([
+    {
+      kind: 'video',
+      name: 'cloud_video.mp4',
+      testId: 'media-asset-video'
+    },
+    {
+      kind: 'audio',
+      name: 'cloud_audio.mp3',
+      testId: 'wave-audio-media'
+    }
+  ])(
+    'plays a hashed $kind asset on cloud from a cookie-compatible /view url',
+    async ({ name, testId }) => {
+      mockIsCloud.value = true
+      vi.mocked(useFeatureFlags().flags).assetsEnabled = true
+
+      renderCard({
+        loading: false,
+        asset: {
+          ...asset,
+          id: 'cloud-media',
+          name,
+          hash: 'abc123.mp4',
+          tags: ['output'],
+          preview_url: undefined,
+          thumbnail_url: undefined
+        }
+      })
+
+      const src = (await screen.findByTestId(testId)).getAttribute('src')
+      const url = new URL(src ?? '', 'http://localhost')
+
+      expect(url.pathname).toBe('/api/view')
+      expect(url.searchParams.get('filename')).toBe('abc123.mp4')
+      expect(url.searchParams.get('type')).toBe('output')
+      expect(src).not.toContain('/content')
+    }
+  )
+
+  it('falls back to the inline content url on cloud when the asset has no hash', async () => {
+    mockIsCloud.value = true
+    vi.mocked(useFeatureFlags().flags).assetsEnabled = true
+
+    renderCard({
+      loading: false,
+      asset: {
+        ...asset,
+        id: 'no-hash',
+        name: 'clip.mp4',
+        hash: undefined,
+        preview_url: undefined,
+        thumbnail_url: undefined
+      }
+    })
+
+    expect(await screen.findByTestId('media-asset-video')).toHaveAttribute(
+      'src',
+      '/api/assets/no-hash/content?disposition=inline'
+    )
+  })
 })
