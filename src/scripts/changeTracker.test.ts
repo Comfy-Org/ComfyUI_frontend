@@ -1596,6 +1596,10 @@ describe('ChangeTracker', () => {
     })
 
     it('keeps Undo history order when another Undo is requested during a pending restore', async () => {
+      vi.useFakeTimers()
+      onTestFinished(() => {
+        vi.useRealTimers()
+      })
       const earlier = createState(1)
       const previous = createState(2)
       const current = createState(3)
@@ -1608,9 +1612,17 @@ describe('ChangeTracker', () => {
       vi.mocked(app.loadGraphData).mockReturnValueOnce(pending)
 
       const firstUndo = tracker.undo()
-      await tracker.undo()
-      releasePending(undefined)
-      await firstUndo
+      let secondUndoFinished = false
+      const secondUndo = tracker.undo().then(() => {
+        secondUndoFinished = true
+      })
+      try {
+        await vi.advanceTimersByTimeAsync(0)
+        expect(secondUndoFinished).toBe(false)
+      } finally {
+        releasePending(undefined)
+        await Promise.all([firstUndo, secondUndo])
+      }
 
       expect(tracker.activeState).toEqual(current)
       expect(tracker.undoQueue).toEqual([earlier, previous])

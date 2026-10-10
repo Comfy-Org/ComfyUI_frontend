@@ -309,6 +309,7 @@ export class ChangeTracker {
    * Whether the redo/undo restoring is in progress.
    */
   _restoringState: boolean = false
+  private pendingRestoration?: Promise<void>
 
   ds?: { scale: number; offset: [number, number] }
   nodeOutputs?: Partial<Record<string, ExecutedWsMessage['output']>>
@@ -506,41 +507,59 @@ export class ChangeTracker {
   }
 
   async updateState(source: ComfyWorkflowJSON[], target: ComfyWorkflowJSON[]) {
-    if (this._restoringState) return
-    const prevState = source.pop()
-    if (prevState) {
-      const previousState = this.activeState
-      const restoresSavedState = ChangeTracker.graphEqual(
-        prevState,
-        this.initialState
-      )
-      let restored = false
-      this._restoringState = true
-      try {
-        const result = await app.loadGraphData(
+    if (this.pendingRestoration) {
+      await this.pendingRestoration
+      return
+    }
+    if (this._restoringState || source.length === 0) return
+    let resolveRestoration!: () => void
+    let rejectRestoration!: (reason: unknown) => void
+    const restoration = new Promise<void>((resolve, reject) => {
+      resolveRestoration = resolve
+      rejectRestoration = reject
+    })
+    this.pendingRestoration = restoration
+    void (async () => {
+      const prevState = source.pop()
+      if (prevState) {
+        const previousState = this.activeState
+        const restoresSavedState = ChangeTracker.graphEqual(
           prevState,
-          false,
-          false,
-          this.workflow,
-          {
-            checkForRerouteMigration: false,
-            silentAssetErrors: true
-          }
+          this.initialState
         )
-        restored = result !== false && result !== undefined
-      } finally {
-        this._restoringState = false
-        restored ||=
-          !ChangeTracker.graphEqual(this.activeState, previousState) &&
-          matchesRestoredTarget(this.activeState, prevState, previousState)
-        if (restored) {
-          target.push(previousState)
-          if (restoresSavedState) this.initialState = clone(this.activeState)
-        } else {
-          source.push(prevState)
+        let restored = false
+        this._restoringState = true
+        try {
+          const result = await app.loadGraphData(
+            prevState,
+            false,
+            false,
+            this.workflow,
+            {
+              checkForRerouteMigration: false,
+              silentAssetErrors: true
+            }
+          )
+          restored = result !== false && result !== undefined
+        } finally {
+          this._restoringState = false
+          restored ||=
+            !ChangeTracker.graphEqual(this.activeState, previousState) &&
+            matchesRestoredTarget(this.activeState, prevState, previousState)
+          if (restored) {
+            target.push(previousState)
+            if (restoresSavedState) this.initialState = clone(this.activeState)
+          } else {
+            source.push(prevState)
+          }
+          if (restored) this.updateModified(previousState)
         }
-        if (restored) this.updateModified(previousState)
       }
+    })().then(resolveRestoration, rejectRestoration)
+    try {
+      await restoration
+    } finally {
+      this.pendingRestoration = undefined
     }
   }
 
