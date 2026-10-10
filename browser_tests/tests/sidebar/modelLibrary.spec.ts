@@ -309,3 +309,67 @@ test.describe('Model library sidebar - empty state', () => {
     })
   })
 })
+
+test.describe('Model library drops on Vue nodes', { tag: '@vue-nodes' }, () => {
+  test.use({ initialSettings: { 'Comfy.ModelLibrary.UseAssetBrowser': false } })
+
+  test.beforeEach(async ({ comfyPage }) => {
+    await comfyPage.modelLibrary.mockFoldersWithFiles(MOCK_FOLDERS)
+    await comfyPage.workflow.loadWorkflow('inputs/checkpoint_loader')
+    const tab = comfyPage.menu.modelLibraryTab
+    await tab.open()
+    await tab.refreshButton.click()
+    await tab.getFolderByLabel('checkpoints').click()
+    await expect(tab.getLeafByLabel('dreamshaper_8')).toBeVisible()
+    await comfyPage.command.executeCommand('Comfy.Canvas.FitView')
+    await comfyPage.canvasOps.waitForViewToSettle()
+  })
+
+  test.afterEach(async ({ comfyPage }) => {
+    await comfyPage.modelLibrary.clearMocks()
+    await comfyPage.canvasOps.resetView()
+  })
+
+  test('updates an existing loader without creating another node', async ({
+    comfyPage
+  }) => {
+    const [loader] = await comfyPage.nodeOps.getNodeRefsByType(
+      'CheckpointLoaderSimple'
+    )
+    const filename = await loader.getWidgetByName('ckpt_name')
+    const node = comfyPage.vueNodes.getNodeByTitle('Load Checkpoint')
+    const nodeCount = await comfyPage.nodeOps.getGraphNodesCount()
+    await comfyPage.menu.modelLibraryTab
+      .getLeafByLabel('dreamshaper_8')
+      .dragTo(node)
+    await comfyPage.nextFrame()
+    await expect(node).toContainText('dreamshaper_8.safetensors')
+    await expect
+      .poll(() => filename.getValue())
+      .toBe('dreamshaper_8.safetensors')
+    await expect
+      .poll(() => comfyPage.nodeOps.getGraphNodesCount())
+      .toBe(nodeCount)
+  })
+
+  test('still creates a loader when dropped onto empty canvas', async ({
+    comfyPage
+  }) => {
+    await comfyPage.menu.topbar.newWorkflowButton.click()
+    await expect.poll(() => comfyPage.nodeOps.getGraphNodesCount()).toBe(0)
+    const box = (await comfyPage.canvas.boundingBox())!
+    await comfyPage.menu.modelLibraryTab
+      .getLeafByLabel('dreamshaper_8')
+      .dragTo(comfyPage.canvas, {
+        targetPosition: { x: box.width / 2, y: box.height / 2 }
+      })
+    await comfyPage.nextFrame()
+    await expect.poll(() => comfyPage.nodeOps.getGraphNodesCount()).toBe(1)
+    const [loader] = await comfyPage.nodeOps.getNodeRefsByType(
+      'CheckpointLoaderSimple'
+    )
+    await expect
+      .poll(async () => (await loader.getWidgetByName('ckpt_name')).getValue())
+      .toBe('dreamshaper_8.safetensors')
+  })
+})
