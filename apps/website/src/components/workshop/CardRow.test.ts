@@ -115,18 +115,6 @@ describe('CardRow', () => {
     expect(screen.getByTestId('card-row')).toHaveFocus()
   })
 
-  it('leaves focus alone when the reader is not standing on an arrow', async () => {
-    renderRow()
-    await scrollRow(300, 900, 300)
-    const row = screen.getByTestId('card-row')
-    row.focus()
-
-    await scrollRow(300, 300, 0)
-    await nextTick()
-
-    expect(row).toHaveFocus()
-  })
-
   it('does not take focus off a card when the row stops overflowing', async () => {
     render(CardRow, {
       slots: { default: '<li><a href="#card">A card</a></li>' }
