@@ -49,10 +49,24 @@ test.describe(
             const host = window.app!.graph.getNodeById(id)
             return (host?.widgets ?? []).map((w) => [w.name, w.value])
           }, toNodeId(PROMOTED_WIDGET_HOST_NODE_ID))
+          expect(
+            hostWidgetsBefore.map(([name]) => name),
+            'The fixture must expose every promoted host widget'
+          ).toEqual([
+            'text',
+            'width',
+            'height',
+            'unet_name',
+            'clip_name',
+            'vae_name',
+            'steps'
+          ])
           expect(hostWidgetsBefore).toEqual(
-            expect.arrayContaining([['steps', interiorSteps]])
+            expect.arrayContaining([
+              ['text', interiorPrompt],
+              ['steps', interiorSteps]
+            ])
           )
-          expect(hostWidgetsBefore.length).toBeGreaterThanOrEqual(7)
           return hostWidgetsBefore
         })
 
@@ -70,7 +84,8 @@ test.describe(
       })
 
       const ws = await getWebSocket()
-      const subscribedWorkflowId = promotedWidgetWriteHost.waitForSubscribe(ws)
+      const readSubscribedWorkflowId =
+        promotedWidgetWriteHost.captureSubscribeWorkflowId(ws)
 
       const workflowId =
         await test.step('send a turn and capture the document subscribe', async () => {
@@ -78,7 +93,13 @@ test.describe(
           await expect
             .poll(() => postedMessages.length)
             .toBeGreaterThanOrEqual(1)
-          return subscribedWorkflowId
+          await expect
+            .poll(readSubscribedWorkflowId, {
+              message: 'the Agent must send doc_subscribe',
+              timeout: 10_000
+            })
+            .toBeDefined()
+          return readSubscribedWorkflowId()!
         })
 
       await test.step('deliver the mint and agent set_widget frames', () => {
@@ -110,35 +131,30 @@ test.describe(
         )
       }
 
-      const state =
-        await test.step('the write lands on the host, not on the interior defaults', async () => {
-          const expectedHostWidgets = hostWidgetsBefore.map(([name, value]) => [
-            name,
-            name === 'text'
-              ? PROMOTED_WIDGET_NEW_PROMPT
-              : name === 'steps'
-                ? PROMOTED_WIDGET_NEW_STEPS
-                : value
-          ])
-          await expect
-            .poll(async () => {
-              const s = await readState()
-              return s.hostWidgets
-            })
-            .toEqual(expectedHostWidgets)
+      const expectedHostWidgets = hostWidgetsBefore.map(([name, value]) => [
+        name,
+        name === 'text'
+          ? PROMOTED_WIDGET_NEW_PROMPT
+          : name === 'steps'
+            ? PROMOTED_WIDGET_NEW_STEPS
+            : value
+      ])
+      const expectedState = {
+        hostWidgets: expectedHostWidgets,
+        prompt: interiorPrompt,
+        steps: interiorSteps
+      }
 
-          const state = await readState()
-          expect(state.prompt).toBe(interiorPrompt)
-          expect(state.steps).toBe(interiorSteps)
-          return state
-        })
+      await test.step('the write lands on the host, not on the interior defaults', async () => {
+        await expect.poll(readState).toEqual(expectedState)
+      })
 
       await test.step('the write survives save and reload', async () => {
         const saved = await page.evaluate(() => window.app!.graph.serialize())
         const validatedSave = await validateComfyWorkflow(saved)
         if (!validatedSave) throw new Error('Invalid saved workflow')
         await comfyPage.workflow.loadGraphData(validatedSave)
-        await expect.poll(readState).toEqual(state)
+        await expect.poll(readState).toEqual(expectedState)
       })
     })
   }

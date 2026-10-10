@@ -8,29 +8,14 @@ import {
   parsePromotedWidgetSubscribeWorkflowId
 } from '@e2e/fixtures/data/agent/promotedWidgetWrite'
 
-const SUBSCRIBE_TIMEOUT = 10_000
-
 class PromotedWidgetWriteHost {
-  async waitForSubscribe(ws: WebSocketRoute): Promise<string> {
-    let timer: ReturnType<typeof setTimeout> | undefined
-    const subscribed = new Promise<string>((resolve) => {
-      ws.onMessage((message) => {
-        if (typeof message !== 'string') return
-        const workflowId = parsePromotedWidgetSubscribeWorkflowId(message)
-        if (workflowId) resolve(workflowId)
-      })
+  captureSubscribeWorkflowId(ws: WebSocketRoute): () => string | undefined {
+    let workflowId: string | undefined
+    ws.onMessage((message) => {
+      if (typeof message !== 'string') return
+      workflowId ??= parsePromotedWidgetSubscribeWorkflowId(message)
     })
-    const timeout = new Promise<never>((_, reject) => {
-      timer = setTimeout(
-        () => reject(new Error('the Agent never sent doc_subscribe')),
-        SUBSCRIBE_TIMEOUT
-      )
-    })
-    try {
-      return await Promise.race([subscribed, timeout])
-    } finally {
-      clearTimeout(timer)
-    }
+    return () => workflowId
   }
 }
 

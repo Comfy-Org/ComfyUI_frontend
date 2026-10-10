@@ -160,17 +160,11 @@ function fixtureData() {
     return value
   })
   const promptIndex = hostWidgetNames.indexOf('text')
-  const widthIndex = hostWidgetNames.indexOf('width')
   const stepsIndex = hostWidgetNames.indexOf('steps')
   const interiorPrompt = hostWidgetValues[promptIndex]
-  const interiorWidth = hostWidgetValues[widthIndex]
   const interiorSteps = hostWidgetValues[stepsIndex]
-  if (
-    typeof interiorPrompt !== 'string' ||
-    typeof interiorWidth !== 'number' ||
-    typeof interiorSteps !== 'number'
-  )
-    throw new Error('Fixture must define prompt, width, and steps promotions')
+  if (typeof interiorPrompt !== 'string' || typeof interiorSteps !== 'number')
+    throw new Error('Fixture must define prompt and steps promotions')
 
   return {
     asset,
@@ -179,7 +173,6 @@ function fixtureData() {
     promptIndex,
     stepsIndex,
     interiorPrompt,
-    interiorWidth,
     interiorSteps
   }
 }
@@ -235,7 +228,6 @@ export function createPromotedWidgetWriteData() {
 
   return {
     interiorPrompt: data.interiorPrompt,
-    interiorWidth: data.interiorWidth,
     interiorSteps: data.interiorSteps,
     framesFor: (workflowId: string) =>
       createPromotedWidgetFrames(workflowId, fullState, delta)
