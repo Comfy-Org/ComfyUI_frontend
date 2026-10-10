@@ -13,14 +13,14 @@ const { t } = translationsFor(locale)
 
 <template>
   <section
-    class="mx-auto flex max-w-9xl flex-col items-center px-6 pt-6 pb-16 lg:px-10 2xl:max-w-none"
+    class="mx-auto flex max-w-9xl flex-col items-center px-6 pt-6 pb-8 md:pt-0 md:pb-2 lg:px-10 2xl:max-w-none"
   >
     <div class="hidden w-full md:block">
       <HeroGraph :locale />
     </div>
 
     <div class="flex w-full flex-col items-center gap-6 md:hidden">
-      <HeroHeadline :locale class="text-3xl" />
+      <HeroHeadline :locale class="text-[1.40625rem]" />
       <HeroMobileFlow />
       <BrandButton
         :href="externalLinks.cloudCta('hero_get_started_free')"
