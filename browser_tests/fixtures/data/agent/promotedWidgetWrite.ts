@@ -6,6 +6,7 @@ import * as Y from 'yjs'
 import { z } from 'zod'
 
 import { zComfyWorkflow } from '@/platform/workflow/validation/schemas/workflowSchema'
+import { encodeBase64 } from '@/workbench/extensions/agent/crdt/docFrameClient'
 
 export const PROMOTED_WIDGET_WORKFLOW_NAME =
   'subgraphs/nested-pack-promoted-values'
@@ -26,7 +27,7 @@ const docSubscribeFrame = z.object({
 })
 
 export function encodePromotedWidgetUpdate(update: Uint8Array): string {
-  return Buffer.from(update).toString('base64')
+  return encodeBase64(update)
 }
 
 export function parsePromotedWidgetSubscribeWorkflowId(
