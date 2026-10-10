@@ -26,6 +26,7 @@ type SentryTransactionEvent = Parameters<
   NonNullable<SentryOptions['beforeSendTransaction']>
 >[0]
 type SentrySpan = Parameters<NonNullable<SentryOptions['beforeSendSpan']>>[0]
+
 function redactSentryEvent(event: ErrorEvent, hint: EventHint) {
   const filtered = sentryBeforeSend(event, hint)
   if (!filtered) return null
