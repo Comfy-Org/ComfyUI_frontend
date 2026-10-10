@@ -306,20 +306,23 @@ describe('executionStore terminal-job recovery', () => {
     expect(store.getWorkflowStatus(workflowA)).toBeUndefined()
   })
 
-  it('removes the text preview before the job record it reads is deleted', async () => {
-    vi.mocked(useWorkflowStore().executionIdToCurrentId).mockReturnValue('1')
-    const { useCanvasStore } =
-      await import('@/renderer/core/canvas/canvasStore')
-    useCanvasStore().canvas = fromPartial({
-      graph: { getNodeById: () => fromPartial({}) }
-    })
+  it('fires onJobReset while the job record its consumer reads still exists', () => {
+    // useProgressTextPreviews.clearTextPreviews reads the job's node list off
+    // the queuedJobs entry to find the widgets to remove, so triggering after
+    // the delete would hand it nothing and silently remove no widget. Order is
+    // the whole point here.
     const jobId = stuckQueuedJob()
+    const seen: (string[] | undefined)[] = []
+    store.onJobReset((job) => {
+      seen.push(job && Object.keys(job.nodes))
+    })
 
     store.reconcileTerminalJobs(new Set(), new Set([jobId]))
 
-    // clearTextPreviewsForJob reads the job's node list out of queuedJobs and
-    // returns early once it is gone, so order is the whole point here.
-    expect(mockRemoveTextPreview).toHaveBeenCalled()
+    expect(
+      seen,
+      'fired exactly once, with the node list still populated'
+    ).toEqual([['1']])
   })
 
   it('releases a background job records when it ends in an error', () => {

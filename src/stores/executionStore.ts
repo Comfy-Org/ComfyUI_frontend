@@ -1,7 +1,7 @@
+import { createEventHook } from '@vueuse/core'
 import { defineStore } from 'pinia'
 import { computed, ref, shallowRef, watch } from 'vue'
 
-import { useNodeProgressText } from '@/composables/node/useNodeProgressText'
 import { useAppMode } from '@/composables/useAppMode'
 import { isCloud } from '@/platform/distribution/types'
 import { resolveAccountPrecondition } from '@/platform/errorCatalog/accountPreconditionRouting'
@@ -17,7 +17,6 @@ import type {
   ComfyApiWorkflow,
   WorkflowId
 } from '@/platform/workflow/validation/schemas/workflowSchema'
-import { useCanvasStore } from '@/renderer/core/canvas/canvasStore'
 import type {
   ExecutedWsMessage,
   ExecutionCachedWsMessage,
@@ -29,7 +28,6 @@ import type {
   NodeProgressState,
   NotificationWsMessage,
   ProgressStateWsMessage,
-  ProgressTextWsMessage,
   ProgressWsMessage
 } from '@/platform/remote/comfyui/execution/types'
 import { api } from '@/scripts/api'
@@ -39,7 +37,6 @@ import { useJobPreviewStore } from '@/stores/jobPreviewStore'
 import { useExecutionErrorStore } from '@/stores/executionErrorStore'
 import { tryNormalizeNodeExecutionId } from '@/types/nodeIdentification'
 import type { SerializedNodeId } from '@/types/nodeId'
-import { parseNodeId } from '@/types/nodeId'
 import type { NodeLocatorId } from '@/types/nodeIdentification'
 import type { AppMode } from '@/utils/appMode'
 import { isAppModeValue } from '@/utils/appMode'
@@ -61,7 +58,7 @@ interface ExecutionNodeInfo {
   type?: string | null
 }
 
-interface QueuedJob {
+export interface QueuedJob {
   /**
    * The nodes that are queued to be executed. The key is the node id and the
    * value is a boolean indicating if the node has been executed.
@@ -146,13 +143,13 @@ export const WORKFLOW_STATUS_I18N_KEYS: Record<
 
 export const useExecutionStore = defineStore('execution', () => {
   const workflowStore = useWorkflowStore()
-  const canvasStore = useCanvasStore()
   const executionErrorStore = useExecutionErrorStore()
   const { mode, isAppMode } = useAppMode()
 
   const clientId = ref<string | null>(null)
   const activeJobId = ref<JobId | null>(null)
   const queuedJobs = ref<Record<JobId, QueuedJob>>({})
+  const jobReset = createEventHook<QueuedJob>()
   // This is the progress of all nodes in the currently executing workflow
   const nodeProgressStates = ref<Record<string, NodeProgressState>>({})
   const nodeProgressStatesByJob = ref<
@@ -458,7 +455,6 @@ export const useExecutionStore = defineStore('execution', () => {
     api.addEventListener('progress_state', handleProgressState)
     api.addEventListener('status', handleStatus)
     api.addEventListener('execution_error', handleExecutionError)
-    api.addEventListener('progress_text', handleProgressText)
   }
 
   function unbindExecutionEvents() {
@@ -473,7 +469,6 @@ export const useExecutionStore = defineStore('execution', () => {
     api.removeEventListener('progress_state', handleProgressState)
     api.removeEventListener('status', handleStatus)
     api.removeEventListener('execution_error', handleExecutionError)
-    api.removeEventListener('progress_text', handleProgressText)
 
     if (workflowStatus.value.size > 0) workflowStatus.value = new Map()
     pendingWorkflowStatusByJobId.clear()
@@ -1232,33 +1227,13 @@ export const useExecutionStore = defineStore('execution', () => {
     return initializingJobIds.value.has(String(jobId))
   }
 
-  /**
-   * Removes any leftover `progress_text` preview widget from every node that
-   * ran in this job, so a node's completed status line doesn't stick around
-   * and starve other widgets of the node's height on the next run.
-   */
-  function clearTextPreviewsForJob(jobId: JobId) {
-    if (!(jobId in queuedJobs.value)) return
-    const job = queuedJobs.value[jobId]
-    if (!job.workflow || job.workflow !== workflowStore.activeWorkflow) return
-
-    const { removeTextPreview } = useNodeProgressText()
-    for (const nodeId of Object.keys(job.nodes)) {
-      const currentId = workflowStore.executionIdToCurrentId(nodeId)
-      if (!currentId) continue
-      const parsedCurrentId = parseNodeId(currentId)
-      if (!parsedCurrentId) continue
-      const node = canvasStore.canvas?.graph?.getNodeById(parsedCurrentId)
-      if (node) removeTextPreview(node)
-    }
-  }
-
   function releaseFinishedJobRecords(jobId: JobId) {
-    // Must precede the queuedJobs delete: clearTextPreviewsForJob reads the
-    // job's node list out of that entry and returns early once it is gone, so
-    // clearing afterwards silently removes nothing. (It is also a no-op when
-    // this runs for a background job, since it only touches the front tab.)
-    clearTextPreviewsForJob(jobId)
+    // Fire before the queuedJobs delete: the onJobReset consumer reads the
+    // job's node list off that entry to find the widgets to remove, so
+    // triggering afterwards hands it nothing. It self-gates on the active
+    // workflow, so firing for a background job is a safe no-op.
+    if (jobId in queuedJobs.value)
+      void jobReset.trigger(queuedJobs.value[jobId])
     delete queuedJobs.value[jobId]
     const byJob = { ...nodeProgressStatesByJob.value }
     delete byJob[jobId]
@@ -1288,13 +1263,6 @@ export const useExecutionStore = defineStore('execution', () => {
     executionErrorStore.clearPromptError(runErrorKey)
   }
 
-  function getNodeIdIfExecuting(nodeId: string | number) {
-    const nodeIdStr = String(nodeId)
-    return nodeIdStr.includes(':')
-      ? workflowStore.executionIdToCurrentId(nodeIdStr)
-      : nodeIdStr
-  }
-
   /**
    * Whether a text preview belongs on the visible canvas.
    *
@@ -1317,21 +1285,6 @@ export const useExecutionStore = defineStore('execution', () => {
       return messageMatchesActiveWorkflow(jobId, workflowId)
     }
     return !activeJobId.value || jobId === activeJobId.value
-  }
-
-  function handleProgressText(e: CustomEvent<ProgressTextWsMessage>) {
-    const { nodeId, text, prompt_id } = e.detail
-    if (!text || !nodeId) return
-    if (!belongsToActiveWorkflow(prompt_id, undefined)) return
-
-    const currentId = getNodeIdIfExecuting(nodeId)
-    if (!currentId) return
-    const parsedCurrentId = parseNodeId(currentId)
-    if (!parsedCurrentId) return
-    const node = canvasStore.canvas?.graph?.getNodeById(parsedCurrentId)
-    if (!node) return
-
-    useNodeProgressText().showTextPreview(node, text)
   }
 
   function storeJob({
@@ -1454,6 +1407,10 @@ export const useExecutionStore = defineStore('execution', () => {
     if (next) jobIdToSessionWorkflowPath.value = next
   }
 
+  workflowStore.onWorkflowRenamed((workflow) =>
+    rewriteSessionWorkflowPaths(workflow.instanceId, workflow.path)
+  )
+
   /**
    * Register or update a mapping from job ID to workflow ID.
    */
@@ -1535,6 +1492,7 @@ export const useExecutionStore = defineStore('execution', () => {
     clearActiveJobIfStale,
     bindExecutionEvents,
     unbindExecutionEvents,
+    onJobReset: jobReset.on,
     storeJob,
     registerJobWorkflowIdMapping,
     uniqueExecutingNodeIdStrings,

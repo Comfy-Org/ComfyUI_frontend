@@ -1,6 +1,7 @@
 import type { Op } from '@comfyorg/comfy-multi-player'
 import { beforeEach, describe, expect, it } from 'vitest'
 
+import type { DocOp } from './docFrameClient'
 import type { GraphOperation } from './graphOperations'
 import { createOpCoalescer } from './opCoalescer'
 import { WIRE_MAX_OPS_PER_BATCH } from './opEnvelope'
@@ -13,14 +14,14 @@ function deleteNode(id: number): GraphOperation {
   return { op: 'delete_node', node_id: id, removed_links: [] }
 }
 
-function nodeIds(ops: Op[]): unknown[] {
+function nodeIds(ops: ReadonlyArray<Op | DocOp>): unknown[] {
   return ops.map((op) => ('node_id' in op ? op.node_id : undefined))
 }
 
 const flushMicrotasks = () => Promise.resolve()
 
 describe('createOpCoalescer over the op sender', () => {
-  let sent: Op[][]
+  let sent: (readonly DocOp[])[]
   let settled: BatchOutcome[]
   let resultListener: ((result: OpsResultView) => void) | null
   let boundWorkflow: string | null

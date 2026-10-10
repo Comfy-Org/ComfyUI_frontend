@@ -25,20 +25,9 @@ import { zeroUuid } from '@/utils/uuid'
  *    it was before gating existed (permissive)
  */
 
-const { mockShowTextPreview } = await vi.hoisted(async () => ({
-  mockShowTextPreview: vi.fn()
-}))
-
 vi.mock(import('@/composables/useAppMode'))
 vi.mock(import('@/platform/telemetry'))
 vi.mock(import('@/platform/distribution/types'), () => ({ isCloud: true }))
-
-vi.mock<unknown>(import('@/composables/node/useNodeProgressText'), () => ({
-  useNodeProgressText: () => ({
-    showTextPreview: mockShowTextPreview,
-    removeTextPreview: vi.fn()
-  })
-}))
 
 type EventHandler = (event: CustomEvent) => void
 const apiEventHandlers = new Map<string, EventHandler>()
@@ -677,41 +666,6 @@ describe('executionStore workflow gating', () => {
       fire('execution_start', { prompt_id: 'job-b', timestamp: 1 })
 
       expect(store.activeJobId).toBeNull()
-    })
-  })
-
-  describe('progress_text', () => {
-    beforeEach(() => {
-      useWorkflowStore().activeWorkflow = workflowA
-    })
-
-    it('drops text whose workflow_id does not match the active workflow', () => {
-      queueJobFrom('job-b', workflowB)
-
-      fire('progress_text', {
-        nodeId: '1',
-        text: 'hello',
-        prompt_id: 'job-b',
-        workflow_id: WORKFLOW_B_ID
-      })
-
-      expect(mockShowTextPreview).not.toHaveBeenCalled()
-    })
-
-    it('drops text with no id information when a different job is active', () => {
-      fire('execution_start', {
-        prompt_id: 'job-a',
-        workflow_id: WORKFLOW_A_ID,
-        timestamp: 1
-      })
-
-      fire('progress_text', {
-        nodeId: '1',
-        text: 'hello',
-        prompt_id: 'job-unknown'
-      })
-
-      expect(mockShowTextPreview).not.toHaveBeenCalled()
     })
   })
 
