@@ -18,6 +18,7 @@ import type {
   WorkspaceMember
 } from '@/platform/workspace/stores/teamWorkspaceStore'
 import { useTeamWorkspaceStore } from '@/platform/workspace/stores/teamWorkspaceStore'
+import { describeServerFactGate } from '@/utils/__tests__/serverFactGate'
 
 import {
   filterBySearch,
@@ -280,6 +281,7 @@ let workspaceStore: ReturnType<typeof useTeamWorkspaceStore> & {
 let workspaceType: 'personal' | 'team' = 'personal'
 let workspaceMembers: WorkspaceMember[] = []
 let workspacePendingInvites: WorkspacePendingInvite[] = []
+let workspaceMembersLoaded = true
 
 function updateWorkspaceStore() {
   workspaceStore.workspaces = [
@@ -295,7 +297,7 @@ function updateWorkspaceStore() {
       subscriptionTier: workspaceType === 'team' ? 'PRO' : 'FREE',
       members: workspaceMembers,
       pendingInvites: workspacePendingInvites,
-      membersLoaded: true,
+      membersLoaded: workspaceMembersLoaded,
       pendingInvitesLoaded: true
     }
   ]
@@ -422,6 +424,7 @@ describe('useMembersPanel', () => {
     workspaceType = 'personal'
     workspaceMembers = []
     workspacePendingInvites = []
+    workspaceMembersLoaded = true
     updateWorkspaceStore()
     vi.mocked(useFeatureFlags().flags).memberCreditLimitsEnabled = true
     mockMaxSeats.value = 73
@@ -1278,6 +1281,144 @@ describe('useMembersPanel', () => {
       expect(
         useDialogService().showInviteMemberUpsellDialog
       ).not.toHaveBeenCalled()
+    })
+  })
+
+  function setCapability(
+    name: 'canInviteMembers' | 'canManageMembers' | 'canChangeSeats',
+    value: boolean
+  ) {
+    useBillingCapabilities()[name] = computed(() => value)
+  }
+
+  function flipCapability(
+    name: 'canInviteMembers' | 'canManageMembers' | 'canChangeSeats'
+  ) {
+    setCapability(name, !useBillingCapabilities()[name].value)
+  }
+
+  function endPlan() {
+    mockSubscriptionStatus.value = 'ended'
+    mockCanAccessSubscriptionFeatures.value = false
+  }
+
+  const planAndRolePerturbations = [
+    { name: 'an ended plan', apply: endPlan },
+    {
+      name: 'an Enterprise tier',
+      apply: () => {
+        mockSubscription.value = { tier: 'ENTERPRISE', isCancelled: false }
+      }
+    },
+    {
+      name: 'an ended Enterprise plan with one seat',
+      apply: () => {
+        endPlan()
+        mockSubscription.value = { tier: 'ENTERPRISE', isCancelled: false }
+        mockMaxSeats.value = 1
+      }
+    },
+    {
+      name: 'one seat',
+      apply: () => {
+        mockMaxSeats.value = 1
+      }
+    },
+    {
+      name: 'a personal plan',
+      apply: () => {
+        mockIsTeamPlan.value = false
+      }
+    },
+    {
+      name: 'a scheduled cancellation',
+      apply: () => {
+        mockSubscriptionStatus.value = 'canceled'
+        mockSubscription.value = { tier: 'PRO', isCancelled: true }
+      }
+    },
+    {
+      name: 'no subscription management',
+      apply: () => {
+        mockPermissions.value = {
+          ...mockPermissions.value,
+          canManageSubscription: false
+        }
+      }
+    },
+    {
+      name: 'the member role',
+      apply: () => {
+        mockWorkspaceRole.value = 'member'
+      }
+    },
+    {
+      name: 'a flipped can_change_seats',
+      apply: () => flipCapability('canChangeSeats')
+    }
+  ]
+
+  describeServerFactGate({
+    name: 'Invite (can_invite_members)',
+    fact: { set: (value) => setCapability('canInviteMembers', value) },
+    perturbations: [
+      ...planAndRolePerturbations,
+      {
+        name: 'a flipped can_manage_members',
+        apply: () => flipCapability('canManageMembers')
+      }
+    ],
+    mount: setup,
+    read: (panel) => ({
+      showInviteButton: panel.showInviteButton.value,
+      isInviteDisabled: panel.isInviteDisabled.value,
+      canInviteMembers: panel.permissions.value.canInviteMembers
+    })
+  })
+
+  describeServerFactGate({
+    name: 'Member management (can_manage_members)',
+    fact: { set: (value) => setCapability('canManageMembers', value) },
+    perturbations: [
+      ...planAndRolePerturbations,
+      {
+        name: 'a flipped can_invite_members',
+        apply: () => flipCapability('canInviteMembers')
+      }
+    ],
+    mount: setup,
+    read: (panel) => ({
+      canManageMembers: panel.permissions.value.canManageMembers,
+      canViewPendingInvites: panel.permissions.value.canViewPendingInvites,
+      showPendingTab: panel.uiConfig.value.showPendingTab,
+      hasMemberActions: panel.memberMenuItems(createMember()).length > 0
+    })
+  })
+
+  describeServerFactGate({
+    name: 'Roster visibility (members response)',
+    fact: {
+      set: (loaded) => {
+        workspaceMembersLoaded = loaded
+        workspaceType = 'team'
+        mockMembers.value = [createMember(), createMember({ id: 'member-2' })]
+      }
+    },
+    perturbations: [
+      ...planAndRolePerturbations,
+      {
+        name: 'a flipped can_manage_members',
+        apply: () => flipCapability('canManageMembers')
+      },
+      {
+        name: 'a flipped can_invite_members',
+        apply: () => flipCapability('canInviteMembers')
+      }
+    ],
+    mount: setup,
+    read: (panel) => ({
+      canViewOtherMembers: panel.permissions.value.canViewOtherMembers,
+      showMembersList: panel.uiConfig.value.showMembersList
     })
   })
 })
