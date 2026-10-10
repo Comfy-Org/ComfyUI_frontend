@@ -38,6 +38,32 @@ export const zWorkspaceSummary = z.object({
 })
 
 /**
+ * One live deployment of the workspace, as the editor's switcher shows it.
+ */
+export const zWorkspaceDeployment = z.object({
+  build_id: z.string().optional(),
+  build_name: z.string().optional(),
+  created_at: z.string().datetime(),
+  deployment_id: z.string(),
+  release_id: z.string(),
+  release_version: z.number().int().optional(),
+  status: z.string()
+})
+
+/**
+ * The deployments a browser in this workspace may pick, newest first by created_at (always present). A row without a Build name keeps its place in that order.
+ */
+export const zWorkspaceDeploymentList = z.object({
+  builds_visible: z.boolean(),
+  default_deployment_id: z.string().optional(),
+  gone_default_deployment_id: z.string().optional(),
+  gone_picked_deployment_id: z.string().optional(),
+  items: z.array(zWorkspaceDeployment),
+  pick_source: z.enum(['browser', 'workspace_default']).optional(),
+  picked_deployment_id: z.string().optional()
+})
+
+/**
  * Metadata for a workspace-scoped API key (secret is never returned).
  */
 export const zWorkspaceApiKeyInfo = z.object({
@@ -4607,6 +4633,15 @@ export const zListJobsQuery = z.object({
  */
 export const zListJobsResponse = zJobsListResponse
 
+export const zDeleteJobPath = z.object({
+  job_id: z.string().uuid()
+})
+
+/**
+ * Job and its assets deleted successfully, or the job was not in a deletable state (pending/in-progress/already-deleted) and no change was made (no-op)
+ */
+export const zDeleteJobResponse = z.void()
+
 export const zGetJobDetailPath = z.object({
   job_id: z.string().uuid()
 })
@@ -5318,8 +5353,33 @@ export const zUpdateWorkspacePath = z.object({
  */
 export const zUpdateWorkspaceResponse = zWorkspace
 
+export const zClearWorkspaceDefaultDeploymentPath = z.object({
+  id: z.string()
+})
+
+/**
+ * Cleared
+ */
+export const zClearWorkspaceDefaultDeploymentResponse = z.void()
+
+export const zSetWorkspaceDefaultDeploymentBody =
+  zPickWorkspaceDeploymentRequest
+
+export const zSetWorkspaceDefaultDeploymentPath = z.object({
+  id: z.string()
+})
+
+/**
+ * Set; members with no pick are on this deployment from their next request
+ */
+export const zSetWorkspaceDefaultDeploymentResponse = z.void()
+
 export const zClearWorkspaceDeploymentPath = z.object({
   id: z.string()
+})
+
+export const zClearWorkspaceDeploymentQuery = z.object({
+  follow: z.enum(['workspace']).optional()
 })
 
 /**
@@ -5337,6 +5397,15 @@ export const zPickWorkspaceDeploymentPath = z.object({
  * Picked; the cookie on this response carries it
  */
 export const zPickWorkspaceDeploymentResponse = z.void()
+
+export const zListWorkspaceDeploymentsPath = z.object({
+  id: z.string()
+})
+
+/**
+ * The workspace's live deployments, newest first
+ */
+export const zListWorkspaceDeploymentsResponse = zWorkspaceDeploymentList
 
 /**
  * The credential's workspace
