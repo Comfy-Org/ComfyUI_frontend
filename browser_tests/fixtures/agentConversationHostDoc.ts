@@ -105,6 +105,17 @@ export class HostDoc {
     this.doc.getMap('meta').delete('schema_version')
   }
 
+  // Test-only: stamps a schema version this build does NOT read, which is the
+  // shape a real cutover produces — a doc-host on a newer `comfy-multi-player`
+  // writes `SCHEMA_VERSION + 1` while the served frontend still compiles
+  // against the older one. Distinct from `corruptSchemaVersion`: that one
+  // simulates an ABSENT version, for which the host can later send a repair
+  // frame. A version skew has no repair frame, because the writer is not
+  // wrong — the two sides are simply pinned to different releases.
+  advanceSchemaVersionBeyondReader(): void {
+    this.doc.getMap('meta').set('schema_version', SCHEMA_VERSION + 1)
+  }
+
   // Test-only: restores meta.schema_version and returns the frame carrying
   // just that repair, mirroring apply()'s before/after delta shape so the
   // caller can transmit the repair as its own frame -- separately from, and
