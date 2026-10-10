@@ -4,27 +4,27 @@ import { ref } from 'vue'
 
 import EditorMedia from '@/components/cms/editor/EditorMedia.vue'
 import EditorSection from '@/components/cms/editor/EditorSection.vue'
+import MediaPicker from '@/components/cms/editor/MediaPicker.vue'
 import AdminButton from '@/components/cms/ui/AdminButton.vue'
-import AdminSegmented from '@/components/cms/ui/AdminSegmented.vue'
 import AdminTooltip from '@/components/cms/ui/AdminTooltip.vue'
 import { fieldClass } from '@/components/cms/ui/field'
 import type { Locale } from '@/i18n/translations'
 import { translationsFor } from '@/i18n/translations'
-import type { EditorExample, MediaKind } from '@/lib/cms/editor'
+import type { EditorExample } from '@/lib/cms/editor'
 
-const { locale = 'en', namePrefix } = defineProps<{
+const {
+  locale = 'en',
+  namePrefix,
+  canUpload
+} = defineProps<{
   locale?: Locale
+  canUpload: boolean
   /** Stems the internal name a new example is saved under. */
   namePrefix: string
 }>()
 const examples = defineModel<EditorExample[]>({ required: true })
 const { t } = translationsFor(locale)
 const openIndex = ref<number | undefined>(examples.value.length ? 0 : undefined)
-
-const mediaKinds: ReadonlyArray<{ value: MediaKind; label: string }> = [
-  { value: 'image', label: t('cmsAdmin.editor.media.image') },
-  { value: 'video', label: t('cmsAdmin.editor.media.video') }
-]
 
 function move(index: number, by: -1 | 1) {
   const next = [...examples.value]
@@ -136,7 +136,7 @@ function add() {
         </div>
         <div
           v-if="openIndex === index"
-          class="grid gap-4 border-t border-admin-line p-4 md:grid-cols-[minmax(0,1fr)_12rem]"
+          class="grid gap-4 border-t border-admin-line p-4 md:grid-cols-[minmax(0,1fr)_14rem]"
         >
           <div class="grid gap-4">
             <label class="grid gap-1.5 text-xs text-admin-muted">
@@ -156,28 +156,13 @@ function add() {
               />
             </label>
           </div>
-          <div class="grid content-start gap-3">
-            <EditorMedia
-              :url="example.media"
-              :kind="example.mediaKind"
-              class="aspect-4/3"
-            />
-            <AdminSegmented
-              v-model="example.mediaKind"
-              :options="mediaKinds"
-              :label="t('cmsAdmin.editor.media.kind')"
-              size="sm"
-            />
-            <label class="grid gap-1.5 text-xs text-admin-muted">
-              {{ t('cmsAdmin.editor.media.url') }}
-              <input
-                v-model="example.media"
-                type="url"
-                :placeholder="t('cmsAdmin.editor.media.placeholder')"
-                :class="fieldClass"
-              />
-            </label>
-          </div>
+          <MediaPicker
+            v-model:url="example.media"
+            v-model:kind="example.mediaKind"
+            :can-upload="canUpload"
+            preview-class="aspect-4/3"
+            :locale
+          />
         </div>
       </li>
     </ol>

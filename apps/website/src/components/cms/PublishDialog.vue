@@ -1,6 +1,9 @@
 <script setup lang="ts">
-import ChangeTag from '@/components/cms/ChangeTag.vue'
 import { DialogDescription, DialogTitle } from 'reka-ui'
+import { computed } from 'vue'
+
+import ChangeTag from '@/components/cms/ChangeTag.vue'
+import ReadinessFlag from '@/components/cms/ReadinessFlag.vue'
 
 import AdminButton from '@/components/cms/ui/AdminButton.vue'
 import AdminDialogContent from '@/components/cms/ui/AdminDialogContent.vue'
@@ -26,6 +29,10 @@ const {
 }>()
 const open = defineModel<boolean>('open', { required: true })
 const { t } = translationsFor(locale)
+const flagged = computed(
+  () =>
+    items.filter((item) => item.source === 'catalog' && item.gaps.length).length
+)
 </script>
 
 <template>
@@ -43,11 +50,22 @@ const { t } = translationsFor(locale)
           class="grid grid-cols-[6rem_minmax(0,1fr)] items-center gap-3 border-b border-admin-hover px-3 py-2 text-sm last:border-b-0"
         >
           <ChangeTag :change="item.change" :locale />
-          <span class="truncate">{{ item.title }}</span>
+          <span class="flex min-w-0 items-center gap-2">
+            <span class="truncate">{{ item.title }}</span>
+            <ReadinessFlag
+              v-if="item.source === 'catalog'"
+              :gaps="item.gaps"
+              :locale
+              class="shrink-0 text-xs"
+            />
+          </span>
         </li>
       </ul>
       <DialogDescription class="grid gap-2 text-sm text-admin-muted">
         <span>{{ t('cmsAdmin.publish.body') }}</span>
+        <span v-if="flagged" class="text-admin-warning">
+          {{ t('cmsAdmin.readiness.flagged', { count: flagged }, flagged) }}
+        </span>
         <span v-if="heldCount" class="text-admin-warning">
           {{ t('cmsAdmin.publish.held', { count: heldCount }, heldCount) }}
         </span>

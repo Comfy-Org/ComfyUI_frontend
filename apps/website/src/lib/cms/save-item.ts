@@ -1,10 +1,8 @@
 import { z } from 'astro/zod'
 
-import { modelSchema } from '@/config/models-catalogue-data'
-import { detailSchema } from '@/config/models-page-data'
-
 import type { SiteSession } from './admin'
 import { siteAPI } from './admin'
+import { pageRenders } from './readiness'
 
 export type SaveError = 'denied' | 'invalid' | 'conflict' | 'failed'
 export type SaveResult = { ok: true } | { ok: false; error: SaveError }
@@ -29,13 +27,6 @@ function parseRecord(raw: FormDataEntryValue | null) {
   }
 }
 
-/** The site renders every draft item, so one it can't read breaks the whole preview. */
-function renderable(record: z.infer<typeof savedRecordSchema>) {
-  if (record.data.href !== `${record.slug}/`) return false
-  if (!modelSchema.safeParse(record.data).success) return false
-  return record.kind === 'APP' || detailSchema.safeParse(record.data).success
-}
-
 /** Saves one item into the draft through the site API's item endpoint. */
 export async function saveDraftItem(
   session: SiteSession,
@@ -50,7 +41,7 @@ export async function saveDraftItem(
       uid
     ) ||
     !record?.success ||
-    !renderable(record.data)
+    !pageRenders(record.data)
   )
     return { ok: false, error: 'invalid' }
   const current = session.review.draft.items.find((item) => item.uid === uid)

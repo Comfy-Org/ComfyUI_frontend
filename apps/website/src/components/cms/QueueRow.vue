@@ -4,6 +4,7 @@ import { cn } from '@comfyorg/tailwind-utils'
 
 import ChangeTag from '@/components/cms/ChangeTag.vue'
 import QueueThumb from '@/components/cms/QueueThumb.vue'
+import ReadinessFlag from '@/components/cms/ReadinessFlag.vue'
 import Checkbox from '@/components/ui/checkbox/Checkbox.vue'
 import type { Locale } from '@/i18n/translations'
 import { translationsFor } from '@/i18n/translations'
@@ -82,6 +83,11 @@ const appears =
       >
         <ChangeTag :change="item.change" :locale />
         {{ t(`cmsAdmin.kind.${item.kind}`) }}
+        <ReadinessFlag
+          v-if="item.source === 'catalog'"
+          :gaps="item.gaps"
+          :locale
+        />
         <span v-if="!included" class="text-admin-warning">
           {{ t('cmsAdmin.draft.waits') }}
         </span>

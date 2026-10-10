@@ -249,8 +249,17 @@
         "image": "图片",
         "video": "视频",
         "kind": "媒体类型",
-        "url": "媒体链接",
-        "placeholder": "https://media.comfy.org/…"
+        "placeholder": "https://media.comfy.org/…",
+        "drop": "拖放到此处上传",
+        "upload": "上传文件",
+        "orLink": "或粘贴链接",
+        "uploaded": "已上传的文件",
+        "remove": "移除文件",
+        "noStorage": "上传需要文件存储，目前尚未接入。请先粘贴链接。",
+        "problem": {
+          "type": "请使用图片或视频文件。",
+          "size": "目前文件最大为 3 MB。"
+        }
       },
       "visibility": "可见性",
       "shown": "在 Hub 上显示",
@@ -297,6 +306,27 @@
         "help": "选择一个已有内容作为起点。你会得到一份包含其设置和示例的副本，可直接修改。",
         "kind": "类型",
         "startFrom": "以此为起点"
+      }
+    },
+    "readiness": {
+      "title": "发布前检查",
+      "ready": "可以发布",
+      "toCheck": "{count} 项待检查 | {count} 项待检查",
+      "help": "检查只会标出缺漏，不会阻止发布。可以在编辑器中修复，也可以直接发布。",
+      "flagged": "{count} 项更改仍有缺漏，仍可发布。 | {count} 项更改仍有缺漏，仍可发布。",
+      "passed": {
+        "page": "页面可以生成",
+        "name": "已有名称",
+        "summary": "已有描述",
+        "cover": "已有封面",
+        "examples": "已有示例"
+      },
+      "missing": {
+        "page": "无法用这些数据生成页面",
+        "name": "缺少名称",
+        "summary": "缺少描述",
+        "cover": "缺少封面",
+        "examples": "还没有示例"
       }
     }
   },

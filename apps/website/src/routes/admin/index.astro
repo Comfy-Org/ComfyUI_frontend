@@ -99,6 +99,7 @@ const rows = contentRows(review)
       isLive={isLive}
       inDraft={inDraft}
       notice={notice}
+      canUpload={Astro.locals.siteDemo === true}
       locale={locale}
     />
   )}

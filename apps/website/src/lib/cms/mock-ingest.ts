@@ -74,7 +74,10 @@ export function createMockIngest(seed: SeedEntry[]) {
         ...live[3].data,
         name: 'New Demo Model',
         slug: 'new-demo-model',
-        href: '/hub/models/new-demo-model/'
+        href: '/hub/models/new-demo-model/',
+        // Left incomplete on purpose, so the demo shows what Draft flags.
+        summary: undefined,
+        examples: []
       }
     })
   ]

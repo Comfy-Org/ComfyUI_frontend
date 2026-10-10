@@ -5,6 +5,7 @@ import { computed } from 'vue'
 
 import CatalogReview from '@/components/cms/CatalogReview.vue'
 import ChangeTag from '@/components/cms/ChangeTag.vue'
+import ReadinessChecklist from '@/components/cms/ReadinessChecklist.vue'
 import SubmissionReview from '@/components/cms/SubmissionReview.vue'
 import AdminButton from '@/components/cms/ui/AdminButton.vue'
 import AdminSheetContent from '@/components/cms/ui/AdminSheetContent.vue'
@@ -94,7 +95,15 @@ const isSubmission = computed(() => item.source === 'submission')
           :item
           :locale
         />
-        <CatalogReview v-else :key="item.id" :item :locale />
+        <template v-else>
+          <ReadinessChecklist
+            v-if="item.change !== 'removed'"
+            :gaps="item.gaps"
+            :kind="item.kind"
+            :locale
+          />
+          <CatalogReview :key="item.id" :item :locale />
+        </template>
       </div>
 
       <footer

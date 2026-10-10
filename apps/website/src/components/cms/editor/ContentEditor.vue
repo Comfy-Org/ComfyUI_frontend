@@ -25,6 +25,7 @@ const {
   isLive,
   inDraft,
   notice,
+  canUpload = false,
   locale = 'en'
 } = defineProps<{
   initial: EditorState
@@ -34,6 +35,7 @@ const {
   isLive: boolean
   inDraft: boolean
   notice?: SaveNotice
+  canUpload?: boolean
   locale?: Locale
 }>()
 const { t } = translationsFor(locale)
@@ -134,11 +136,13 @@ function discard() {
         <EditorCover
           v-model="state.cover"
           :missing="problems.includes('cover')"
+          :can-upload="canUpload"
           :locale
         />
         <EditorExamples
           v-model="state.examples"
           :name-prefix="state.slug.split('/').pop() || 'item'"
+          :can-upload="canUpload"
           :locale
         />
         <EditorParameters

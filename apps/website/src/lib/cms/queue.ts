@@ -6,6 +6,8 @@ import type {
 
 import { draftChanges } from './admin'
 import { contentDiff } from './diff'
+import type { ReadinessGap } from './readiness'
+import { readinessGaps } from './readiness'
 
 export type QueueChange = 'new' | 'updated' | 'removed'
 
@@ -31,6 +33,8 @@ export interface CatalogQueueItem extends QueueBase {
   provider?: string
   visibleFrom?: string
   fields: FieldGroup[]
+  /** What the item still lacks; empty when removed or ready. */
+  gaps: ReadinessGap[]
 }
 
 export interface SubmissionQueueItem extends QueueBase {
@@ -99,32 +103,41 @@ function changeOf(
 
 const text = (value: unknown) => (typeof value === 'string' ? value : undefined)
 
+const liveAfter = (after: ContentCatalogRecord | undefined) =>
+  after && !after.deleted ? after : undefined
+
+function catalogItem(
+  uid: string,
+  before: ContentCatalogRecord | undefined,
+  after: ContentCatalogRecord | undefined
+): CatalogQueueItem | undefined {
+  const record = after ?? before
+  const fields = groupFields(before, after)
+  if (!record || !fields.length) return undefined
+  const shown = liveAfter(after)
+  return {
+    source: 'catalog',
+    id: uid,
+    kind: record.kind,
+    change: changeOf(before, after),
+    title: text(record.data.name) ?? record.slug,
+    slug: record.slug,
+    provider: text(record.data.provider),
+    thumbnail: text(record.data.thumbnailUrl),
+    visibleFrom: shown?.visible_from,
+    fields,
+    gaps: shown ? readinessGaps(shown) : []
+  }
+}
+
 export function buildQueue(
   review: ContentCatalogReview,
   submissions: SiteSubmission[]
 ): QueueItem[] {
-  const catalog = draftChanges(review).flatMap(
-    ({ uid, before, after }): CatalogQueueItem[] => {
-      const record = after ?? before
-      if (!record) return []
-      const fields = groupFields(before, after)
-      if (!fields.length) return []
-      return [
-        {
-          source: 'catalog',
-          id: uid,
-          kind: record.kind,
-          change: changeOf(before, after),
-          title: text(record.data.name) ?? record.slug,
-          slug: record.slug,
-          provider: text(record.data.provider),
-          thumbnail: text(record.data.thumbnailUrl),
-          visibleFrom: after?.deleted ? undefined : after?.visible_from,
-          fields
-        }
-      ]
-    }
-  )
+  const catalog = draftChanges(review).flatMap(({ uid, before, after }) => {
+    const item = catalogItem(uid, before, after)
+    return item ? [item] : []
+  })
   const workflows = submissions.map(
     (row): SubmissionQueueItem => ({
       source: 'submission',

@@ -249,8 +249,17 @@
         "image": "Image",
         "video": "Video",
         "kind": "Media type",
-        "url": "Media link",
-        "placeholder": "https://media.comfy.org/…"
+        "placeholder": "https://media.comfy.org/…",
+        "drop": "Drop to upload",
+        "upload": "Upload file",
+        "orLink": "Or paste a link",
+        "uploaded": "Uploaded file",
+        "remove": "Remove file",
+        "noStorage": "Uploading needs file storage, which isn't connected yet. Paste a link for now.",
+        "problem": {
+          "type": "Use an image or a video file.",
+          "size": "Files can be up to 3 MB for now."
+        }
       },
       "visibility": "Visibility",
       "shown": "Shown on the Hub",
@@ -297,6 +306,27 @@
         "help": "Pick an existing item to start from. You get a copy with its settings and examples, ready to change.",
         "kind": "Kind",
         "startFrom": "Start from this"
+      }
+    },
+    "readiness": {
+      "title": "Before publishing",
+      "ready": "Ready to publish",
+      "toCheck": "{count} to check | {count} to check",
+      "help": "Checks flag gaps but never block publishing. Fix them in the editor, or publish anyway.",
+      "flagged": "{count} change still has gaps. You can publish anyway. | {count} changes still have gaps. You can publish anyway.",
+      "passed": {
+        "page": "The page builds",
+        "name": "Has a name",
+        "summary": "Has a description",
+        "cover": "Has a cover",
+        "examples": "Has examples"
+      },
+      "missing": {
+        "page": "The page can't be built from this data",
+        "name": "Missing a name",
+        "summary": "Missing a description",
+        "cover": "Missing a cover",
+        "examples": "No examples yet"
       }
     }
   },
