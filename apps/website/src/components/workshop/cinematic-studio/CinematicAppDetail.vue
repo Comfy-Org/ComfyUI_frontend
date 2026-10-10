@@ -154,19 +154,14 @@ useIntersectionObserver(heroTry, ([entry]) => {
       <p class="max-w-xl text-primary-warm-gray lg:text-lg">
         {{ t('cinematic.detail.ctaBody') }}
       </p>
-      <Button
-        type="button"
-        size="lg"
-        :prepend-icon="Play"
-        @click="emit('try')"
-      >
+      <Button type="button" size="lg" :prepend-icon="Play" @click="emit('try')">
         {{ t('cinematic.detail.try') }}
       </Button>
     </section>
 
     <div
       v-if="!heroTryVisible"
-      class="fixed inset-x-0 bottom-0 z-40 border-t border-transparency-white-t8 bg-primary-comfy-ink/95 p-3 backdrop-blur sm:hidden"
+      class="fixed inset-x-0 bottom-0 z-40 border-t border-transparency-white-t8 bg-primary-comfy-ink/95 p-3 backdrop-blur-sm sm:hidden"
     >
       <Button
         type="button"

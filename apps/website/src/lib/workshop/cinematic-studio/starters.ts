@@ -83,8 +83,9 @@ const RECIPE_PARTS: readonly DirectionPart[] = [
 
 /** The choices a starter makes, in the order a crew would call them. */
 export function starterRecipe(shot: StarterShot): DirectionOption[] {
-  return RECIPE_PARTS.map((part) => directionOption(part, shot.direction))
-    .filter((option) => option.id !== 'auto')
+  return RECIPE_PARTS.map((part) =>
+    directionOption(part, shot.direction)
+  ).filter((option) => option.id !== 'auto')
 }
 
 export function findStarter(id: string | undefined): StarterShot | undefined {

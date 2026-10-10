@@ -53,7 +53,10 @@ const grades = chosen(gradeGroup).slice(0, 5)
             :src="option.preview"
             :alt="t(option.label)"
             :class="
-              cn('size-full object-cover', index === 0 && 'col-span-2 row-span-2')
+              cn(
+                'size-full object-cover',
+                index === 0 && 'col-span-2 row-span-2'
+              )
             "
             loading="lazy"
           />
