@@ -58,7 +58,16 @@ function shouldKeepRumEvent(event: Parameters<RumBeforeSend>[0]): boolean {
 
 function tagRumErrorOrigin(event: RumErrorEvent): void {
   try {
-    const errorOrigin = classifyRumErrorOrigin(event.error.stack)
+    const context = event.context ?? {}
+    const failureSignals = getExtensionFailureSignals(context)
+    const errorSignals = isExtensionLoadReport(context)
+      ? [...failureSignals, event.error.stack]
+      : [event.error.stack]
+    const errorOrigin =
+      errorSignals
+        .map(classifyRumErrorOrigin)
+        .find((origin) => origin.origin !== 'third_party') ??
+      classifyRumErrorOrigin(event.error.stack)
     const existingErrorContext = event.context?.error
     const errorContext =
       typeof existingErrorContext === 'object' && existingErrorContext !== null
@@ -72,6 +81,25 @@ function tagRumErrorOrigin(event: RumErrorEvent): void {
   } catch {
     return
   }
+}
+
+function getExtensionFailureSignals(
+  context: Record<string, unknown>
+): string[] {
+  const failures = context.failures
+  if (!Array.isArray(failures)) return []
+
+  return failures.flatMap((failure) => {
+    if (typeof failure !== 'object' || failure === null) return []
+    const record = failure as Record<string, unknown>
+    return [record.stack, record.ext].filter(
+      (value): value is string => typeof value === 'string'
+    )
+  })
+}
+
+function isExtensionLoadReport(context: Record<string, unknown>): boolean {
+  return context.error_type === 'error_loading_extension'
 }
 
 export const rumBeforeSend: RumBeforeSend = (event) => {

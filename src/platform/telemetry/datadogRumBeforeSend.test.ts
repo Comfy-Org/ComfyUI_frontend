@@ -126,6 +126,29 @@ describe('rumBeforeSend', () => {
     })
   })
 
+  it('uses batched extension failure context to preserve custom attribution', () => {
+    const event = createErrorEvent(
+      'Error loading 1 extension',
+      'at reportExtensionLoadFailures (https://cloud.comfy.org/assets/app.js:1:2)'
+    )
+    event.context = {
+      error_type: 'error_loading_extension',
+      failures: [
+        {
+          ext: '/extensions/comfyui-foo/main.js',
+          message: 'ReferenceError: broken',
+          stack:
+            'ReferenceError: broken\n    at load (https://cloud.comfy.org/extensions/comfyui-foo/main.js:12:3)'
+        }
+      ]
+    }
+
+    expect(rumBeforeSend(event, fromPartial({}))).toBe(true)
+    expect(event.context).toMatchObject({
+      error: { origin: 'extension', extension: 'comfyui-foo' }
+    })
+  })
+
   it('groups Firebase pending-promise errors without rewriting them', () => {
     for (const message of [
       `[2026-08-27T20:58:34.782Z]  ${FIREBASE_ASSERTION}`,
