@@ -309,7 +309,11 @@ export class ChangeTracker {
    * Whether the redo/undo restoring is in progress.
    */
   _restoringState: boolean = false
-  private pendingRestoration?: Promise<void>
+  private pendingRestoration?: {
+    promise: Promise<void>
+    source: ComfyWorkflowJSON[]
+    target: ComfyWorkflowJSON[]
+  }
 
   ds?: { scale: number; offset: [number, number] }
   nodeOutputs?: Partial<Record<string, ExecutedWsMessage['output']>>
@@ -507,9 +511,10 @@ export class ChangeTracker {
   }
 
   async updateState(source: ComfyWorkflowJSON[], target: ComfyWorkflowJSON[]) {
-    if (this.pendingRestoration) {
-      await this.pendingRestoration
-      return
+    while (this.pendingRestoration) {
+      const pending = this.pendingRestoration
+      await pending.promise
+      if (pending.source === source && pending.target === target) return
     }
     if (this._restoringState || source.length === 0) return
     let resolveRestoration!: () => void
@@ -518,7 +523,8 @@ export class ChangeTracker {
       resolveRestoration = resolve
       rejectRestoration = reject
     })
-    this.pendingRestoration = restoration
+    const pending = { promise: restoration, source, target }
+    this.pendingRestoration = pending
     void (async () => {
       const prevState = source.pop()
       if (prevState) {
@@ -559,7 +565,8 @@ export class ChangeTracker {
     try {
       await restoration
     } finally {
-      this.pendingRestoration = undefined
+      if (this.pendingRestoration === pending)
+        this.pendingRestoration = undefined
     }
   }
 
