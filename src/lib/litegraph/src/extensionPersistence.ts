@@ -1,3 +1,5 @@
+import { isProxy } from 'vue'
+
 import type {
   ExportedSubgraph,
   ISerialisedGraph,
@@ -32,6 +34,21 @@ function safeCloneExtensionValue(value: unknown): JsonValue | undefined {
   }
 
   return isJsonValue(clonedValue) ? clonedValue : undefined
+}
+
+function detachCanonicalValue(value: unknown): unknown {
+  if (value === null || typeof value !== 'object') return value
+  try {
+    return structuredClone(value)
+  } catch (error) {
+    if (!(error instanceof Error) || error.name !== 'DataCloneError')
+      throw error
+  }
+  try {
+    return JSON.parse(JSON.stringify(value))
+  } catch {
+    return value
+  }
 }
 
 function readClonedEntry(source: object, key: string): JsonValue | undefined {
@@ -229,6 +246,9 @@ export const runExtensionSerializeHook = <T extends object>(
     return canonical
 
   const view = canonical
+  const before = new Map(
+    [...canonicalFields].map((key) => [key, Reflect.get(view, key)])
+  )
   Object.assign(view, structuredClone(state.legacy), {
     extensions: structuredClone({ ...state.namespaced, ...state.legacy })
   })
@@ -236,7 +256,17 @@ export const runExtensionSerializeHook = <T extends object>(
 
   for (const key of canonicalFields) {
     if (Object.hasOwn(view, key)) {
-      Reflect.set(canonical, key, Reflect.get(view, key))
+      const value: unknown = Reflect.get(view, key)
+      // A hook that hands back live state (e.g. `o.properties = this.properties`,
+      // a reactive proxy since node state moved into the store) must not leak
+      // it into serialized output: structuredClone of that output would throw.
+      Reflect.set(
+        canonical,
+        key,
+        value !== before.get(key) || isProxy(value)
+          ? detachCanonicalValue(value)
+          : value
+      )
     } else {
       Reflect.deleteProperty(canonical, key)
     }
