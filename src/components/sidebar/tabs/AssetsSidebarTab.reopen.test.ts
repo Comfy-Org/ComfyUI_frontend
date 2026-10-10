@@ -6,6 +6,7 @@ import { createI18n } from 'vue-i18n'
 import type { useFeatureFlags } from '@/composables/useFeatureFlags'
 import type { AssetItem } from '@/platform/assets/schemas/assetSchema'
 import { api } from '@/scripts/api'
+import { useAssetsStore } from '@/stores/assetsStore'
 
 import AssetsSidebarTab from './AssetsSidebarTab.vue'
 
@@ -46,38 +47,61 @@ function renderTab() {
   })
 }
 
-function listRequests() {
+const OUTPUT_TAGS = 'output,temp'
+
+function outputRequests() {
   return vi
     .mocked(api.fetchApi)
-    .mock.calls.map(([url]) => new URL(url, 'http://x').searchParams)
-    .filter((params) => params.get('tags_any') !== 'input')
+    .mock.calls.map(([url]) => new URL(url, 'http://x'))
+    .filter(
+      (url) =>
+        url.pathname === '/assets' &&
+        url.searchParams.get('tags_any') === OUTPUT_TAGS
+    )
+    .map((url) => url.searchParams)
+}
+
+function serveAssets(outputPage: () => Promise<Response>) {
+  vi.spyOn(api, 'fetchApi').mockImplementation(async (route) =>
+    new URL(route, 'http://x').searchParams.get('tags_any') === OUTPUT_TAGS
+      ? outputPage()
+      : Response.json({ assets: [], total: 0, has_more: false })
+  )
 }
 
 describe('AssetsSidebarTab reopen with the asset API', () => {
   it('keeps the loaded list on screen and fetches only the head', async () => {
-    vi.spyOn(api, 'fetchApi').mockImplementation(async () =>
-      Response.json({ assets: outputs, total: outputs.length, has_more: false })
+    serveAssets(async () =>
+      Response.json({
+        assets: outputs,
+        total: 6,
+        has_more: true,
+        next_cursor: 'out-2'
+      })
     )
     const first = renderTab()
     await vi.waitFor(() =>
       expect(screen.getByTestId('assets-grid')).toBeVisible()
     )
     first.unmount()
-    const requestsBeforeReopen = listRequests().length
+    const requestsBeforeReopen = outputRequests().length
 
     let respond!: (response: Response) => void
-    vi.mocked(api.fetchApi).mockImplementation(
-      () => new Promise((resolve) => (respond = resolve))
-    )
+    serveAssets(() => new Promise((resolve) => (respond = resolve)))
     renderTab()
 
     await vi.waitFor(() =>
-      expect(listRequests()).toHaveLength(requestsBeforeReopen + 1)
+      expect(outputRequests()).toHaveLength(requestsBeforeReopen + 1)
     )
     expect(screen.getByTestId('assets-grid')).toBeVisible()
-    expect(listRequests().at(-1)?.get('limit')).toBe('10')
-    respond(
-      Response.json({ assets: outputs, total: outputs.length, has_more: false })
+    expect(outputRequests().at(-1)?.get('limit')).toBe('10')
+
+    respond(Response.json({ assets: outputs, total: 6, has_more: true }))
+    serveAssets(async () =>
+      Response.json({ assets: [], total: 6, has_more: false })
     )
+    await useAssetsStore().outputAssets.loadMore()
+
+    expect(outputRequests().at(-1)?.get('after')).toBe('out-2')
   })
 })
