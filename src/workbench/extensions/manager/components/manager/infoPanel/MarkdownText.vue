@@ -4,7 +4,11 @@
     <div v-else class="wrap-break-word">
       <template v-for="(segment, index) in parsedSegments" :key="index">
         <a
-          v-if="segment.type === 'link' && 'url' in segment"
+          v-if="
+            segment.type === 'link' &&
+            segment.url &&
+            isSafeExternalUrl(segment.url)
+          "
           :href="segment.url"
           target="_blank"
           rel="noopener noreferrer"
@@ -28,6 +32,8 @@
 <script setup lang="ts">
 import { computed } from 'vue'
 
+import { isSafeExternalUrl } from '@/utils/urlSafety'
+
 const { text } = defineProps<{
   text: string
 }>()
@@ -46,7 +52,7 @@ const hasMarkdown = computed(() => {
   return hasMarkdown
 })
 
-const parsedSegments = computed(() => {
+const parsedSegments = computed<MarkdownSegment[]>(() => {
   if (!hasMarkdown.value) return [{ type: 'text', text }]
 
   const segments: MarkdownSegment[] = []
