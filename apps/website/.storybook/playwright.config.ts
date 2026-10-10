@@ -1,3 +1,5 @@
+import { dirname } from 'node:path'
+
 import { defineConfig } from '@playwright/test'
 
 export default defineConfig({
@@ -30,9 +32,10 @@ export default defineConfig({
     }))
   ),
   webServer: {
+    cwd: dirname(import.meta.dirname),
     command:
       'python3 -m http.server 6098 --bind 127.0.0.1 --directory dist/storybook',
-    port: 6098,
+    url: 'http://127.0.0.1:6098/iframe.html',
     reuseExistingServer: !process.env.CI
   }
 })
