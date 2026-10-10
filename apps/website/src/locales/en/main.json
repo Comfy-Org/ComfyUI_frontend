@@ -5387,6 +5387,20 @@
     "sheet": {
       "expand": "Show shot settings",
       "collapse": "Hide shot settings"
+    },
+    "detail": {
+      "try": "Try it",
+      "backToApp": "Back to Cinematic Studio",
+      "howTitle": "How it works",
+      "step1": "Start from a prompt, or a photo of your own",
+      "step2": "Pick the camera, lens, light and grade",
+      "step3": "Run the shot on the image model you choose",
+      "examplesTitle": "Made with Cinematic Studio",
+      "exampleAlt": "Example frame {n}",
+      "detailsTitle": "Details",
+      "runsOn": "Runs on",
+      "openSource": "Open source",
+      "openSourceBody": "The workflow behind it is public on GitHub."
     }
   },
   "reshoot": {

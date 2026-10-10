@@ -4780,6 +4780,20 @@
     "sheet": {
       "expand": "显示镜头设置",
       "collapse": "隐藏镜头设置"
+    },
+    "detail": {
+      "try": "立即试用",
+      "backToApp": "返回电影工作室",
+      "howTitle": "使用方式",
+      "step1": "从提示词或你自己的照片开始",
+      "step2": "选择相机、镜头、光线和调色",
+      "step3": "用你选择的图像模型生成镜头",
+      "examplesTitle": "用电影工作室制作",
+      "exampleAlt": "示例画面 {n}",
+      "detailsTitle": "详情",
+      "runsOn": "支持的模型",
+      "openSource": "开源",
+      "openSourceBody": "背后的工作流已在 GitHub 公开。"
     }
   },
   "reshoot": {

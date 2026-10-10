@@ -33,10 +33,12 @@ import { pickerGroups, popoverTitle } from './picker-key'
 const {
   models,
   showCredits = true,
+  back,
   locale = 'en'
 } = defineProps<{
   models: readonly CinematicModel[]
   showCredits?: boolean
+  back?: { href: string; label: string }
   locale?: Locale
 }>()
 const { t: tc } = translationsFor(locale)
@@ -141,6 +143,7 @@ onBeforeUnmount(() =>
     :panel-labels="panelLabels"
     :show-dock="false"
     :download
+    :back
     :locale
     data-testid="cinematic"
   >

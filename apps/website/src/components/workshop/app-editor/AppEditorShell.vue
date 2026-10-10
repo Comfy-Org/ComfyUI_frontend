@@ -24,6 +24,7 @@ const {
   panelLabels,
   panelDimmed = false,
   download,
+  back,
   locale = 'en'
 } = defineProps<{
   title: string
@@ -35,6 +36,8 @@ const {
   panelDimmed?: boolean
   /** The result to download from the header, once there is one. */
   download?: { href: string; name: string }
+  /** Where the back arrow leads instead of the Hub's Apps tab. */
+  back?: { href: string; label: string }
   locale?: Locale
 }>()
 const { t } = translationsFor(locale)
@@ -83,8 +86,8 @@ const { frame } = zoom
           </a>
           <span class="h-4 w-px bg-transparency-white-t20" aria-hidden="true" />
           <a
-            :href="getRoutes(locale).hubApps"
-            :aria-label="t('cinematic.backToApps')"
+            :href="back?.href ?? getRoutes(locale).hubApps"
+            :aria-label="back?.label ?? t('cinematic.backToApps')"
             data-testid="apps-back"
             class="flex size-9 shrink-0 items-center justify-center rounded-full text-primary-warm-gray transition hover:bg-transparency-white-t8 hover:text-primary-warm-white focus-visible:ring-3 focus-visible:ring-primary-comfy-yellow/50 focus-visible:outline-none"
           >
