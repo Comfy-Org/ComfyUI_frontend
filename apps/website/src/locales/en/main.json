@@ -5402,6 +5402,17 @@
       "label": "Compare",
       "before": "Before",
       "after": "After"
+    },
+    "tools": "Shot tools",
+    "sheet": {
+      "expand": "Show shot settings",
+      "collapse": "Hide shot settings"
+    },
+    "detail": {
+      "try": "Try it",
+      "backToApp": "Back to Cinematic Studio",
+      "modelCount": "Runs on {count} models",
+      "moreApps": "More apps"
     }
   },
   "reshoot": {

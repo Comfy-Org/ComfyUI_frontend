@@ -6,7 +6,7 @@ import {
   gradeGroup,
   lookGroups
 } from './catalog'
-import { STARTER_SHOTS } from './starters'
+import { STARTER_SHOTS, findStarter } from './starters'
 
 const parts = [...cameraGroups, ...lookGroups, gradeGroup].map(
   (group) => group.part
@@ -18,5 +18,16 @@ describe('STARTER_SHOTS', () => {
       expect(directionOption(part, shot.direction).id).toBe(
         shot.direction[part]
       )
+  })
+})
+
+
+describe('findStarter', () => {
+  it.for([
+    { id: 'desert', found: true },
+    { id: 'nowhere', found: false },
+    { id: undefined, found: false }
+  ])('finds $id: $found', ({ id, found }) => {
+    expect(findStarter(id) !== undefined).toBe(found)
   })
 })
