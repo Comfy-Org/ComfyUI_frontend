@@ -10,23 +10,6 @@ export interface CapturedTelemetryEvent {
 
 let drainMarkers = 0
 
-/**
- * Waits until every telemetry capture issued so far has reached
- * {@link hostTelemetryFixture}'s array.
- *
- * Only *absence* assertions need this. The bridge below hands each event to the
- * `__captureHostTelemetry` binding and discards the promise (`void`), so
- * delivery into `hostTelemetry` is asynchronous: a test that reads the array
- * immediately after an interaction can find it still empty, and
- * `expect(hostTelemetry.some(...)).toBe(false)` then passes whether or not the
- * app emitted the event. Presence assertions are already safe because
- * `expect.poll` retries until the event lands.
- *
- * The boundary is a marker pushed through the same binding: awaiting its
- * round-trip proves the channel has drained, and bindings from one page are
- * delivered in call order, so anything captured earlier has already arrived.
- * The marker is removed again so callers only ever see real events.
- */
 export async function drainHostTelemetry(
   page: Page,
   hostTelemetry: CapturedTelemetryEvent[]
@@ -35,8 +18,6 @@ export async function drainHostTelemetry(
   await page.evaluate(async (event) => {
     await window.__captureHostTelemetry?.({ event, properties: {} })
   }, marker)
-  // Fails loudly rather than silently skipping the boundary if the binding is
-  // ever missing, which the optional call above would otherwise swallow.
   await expect
     .poll(() => hostTelemetry.some(({ event }) => event === marker))
     .toBe(true)
