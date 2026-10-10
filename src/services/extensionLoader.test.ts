@@ -56,17 +56,20 @@ describe('extension loading', () => {
     })
 
     it('reports a whole load as one typed error naming the failing packs', () => {
-      const failures = [failureFor(BROKEN), failureFor('/extensions/b/b.js')]
+      const firstError = new Error(`Cannot find module '${BROKEN}'`)
+      const secondError = new Error("Cannot find module '/extensions/b/b.js'")
+      const failures = [
+        { ext: BROKEN, error: firstError },
+        { ext: '/extensions/b/b.js', error: secondError }
+      ]
 
       reportExtensionLoadFailures(failures)
 
       expect(reportError).toHaveBeenCalledOnce()
       const [cause, options] = vi.mocked(reportError).mock.calls[0]
       assert(cause instanceof Error)
-      expect(cause.message).toBe(
-        'Error loading 2 extensions: /extensions/comfyui-broken/main.js, /extensions/b/b.js'
-      )
-      expect(cause.cause).toBe(failures[0].error)
+      expect(cause.message).toBe('Error loading 2 extensions')
+      expect(cause).toBeInstanceOf(AggregateError)
       expect(options).toMatchObject({
         errorType: 'error_loading_extension',
         surface: 'platform',
@@ -74,10 +77,15 @@ describe('extension loading', () => {
       })
       expect(options.tags).toEqual({ failed_extension_count: 2 })
       expect(options.context?.failures).toEqual([
-        { ext: BROKEN, message: `Cannot find module '${BROKEN}'` },
+        {
+          ext: BROKEN,
+          message: `Cannot find module '${BROKEN}'`,
+          stack: firstError.stack
+        },
         {
           ext: '/extensions/b/b.js',
-          message: "Cannot find module '/extensions/b/b.js'"
+          message: "Cannot find module '/extensions/b/b.js'",
+          stack: secondError.stack
         }
       ])
     })
@@ -91,9 +99,7 @@ describe('extension loading', () => {
 
       const [cause, options] = vi.mocked(reportError).mock.calls[0]
       assert(cause instanceof Error)
-      expect(cause.message).toContain('Error loading 13 extensions')
-      expect(cause.message).toContain('(+3 more)')
-      expect(cause.message).not.toContain('pack-10')
+      expect(cause.message).toBe('Error loading 13 extensions')
       expect(options.tags).toMatchObject({ failed_extension_count: 13 })
       expect(options.context?.failures).toHaveLength(10)
     })
@@ -118,9 +124,7 @@ describe('extension loading', () => {
       expect(reportError).toHaveBeenCalledOnce()
       const [cause, options] = vi.mocked(reportError).mock.calls[0]
       assert(cause instanceof Error)
-      expect(cause.message).toBe(
-        'Error loading 2 extensions: /extensions/pack-a/main.js, /extensions/pack-b/main.js'
-      )
+      expect(cause.message).toBe('Error loading 2 extensions')
       expect(options.tags).toEqual({ failed_extension_count: 2 })
       expect(console.error).not.toHaveBeenCalled()
     })
@@ -143,9 +147,7 @@ describe('extension loading', () => {
 
       const [cause] = vi.mocked(reportError).mock.calls[0]
       assert(cause instanceof Error)
-      expect(cause.message).toBe(
-        'Error loading 1 extension: /extensions/pack-a/main.js'
-      )
+      expect(cause.message).toBe('Error loading 1 extension')
     })
 
     it('times the core and custom imports as separate subphases', async () => {

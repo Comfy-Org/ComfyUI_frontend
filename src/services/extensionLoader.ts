@@ -3,7 +3,7 @@ import { bootstrapTracer } from '@/platform/telemetry/perf/bootstrapTracer'
 import { reportError } from '@/platform/telemetry/reportError'
 import { api } from '@/scripts/api'
 import { useExtensionStore } from '@/stores/extensionStore'
-import { getErrorMessage } from '@/utils/errorUtil'
+import { toError } from '@/utils/errorUtil'
 
 const INLINED_CLOUD_EXTENSIONS = new Set([
   '/extensions/cloud/rum.js',
@@ -18,6 +18,8 @@ export function shouldLoadExtension(
   return !isCloudBuild || !INLINED_CLOUD_EXTENSIONS.has(extension)
 }
 
+const MAX_EXTENSION_PATH_LENGTH = 256
+const MAX_EXTENSION_DIAGNOSTIC_LENGTH = 4096
 const MAX_NAMED_FAILED_EXTENSIONS = 10
 
 export interface ExtensionLoadFailure {
@@ -48,35 +50,34 @@ async function importCustomExtension(
 }
 
 /**
- * The paths go in the message because `reportError` writes its console line
- * from the error, not from `options.tags`. The count is tagged; backend paths
- * are unbounded and belong in context instead of an indexed facet.
+ * Keep the error message stable so Sentry and Datadog group systemic failures
+ * together. The bounded paths and original stacks stay in context, where they
+ * remain available for diagnosing the individual failed extension.
  */
 export function reportExtensionLoadFailures(
   failures: ExtensionLoadFailure[]
 ): void {
   if (failures.length === 0) return
 
-  const named = failures.slice(0, MAX_NAMED_FAILED_EXTENSIONS)
-  const elided = failures.length - named.length
-  const paths = named.map(({ ext }) => ext).join(', ')
   const noun = failures.length === 1 ? 'extension' : 'extensions'
+  const errors = failures.map(({ error }) => toError(error))
+  const reportedFailures = failures.slice(0, MAX_NAMED_FAILED_EXTENSIONS)
 
   reportError(
-    new Error(
-      `Error loading ${failures.length} ${noun}: ${paths}` +
-        (elided > 0 ? ` (+${elided} more)` : ''),
-      { cause: failures[0].error }
-    ),
+    new AggregateError(errors, `Error loading ${failures.length} ${noun}`),
     {
       errorType: 'error_loading_extension',
       surface: 'platform',
       level: 'warning',
       tags: { failed_extension_count: failures.length },
       context: {
-        failures: named.map(({ ext, error }) => ({
-          ext,
-          message: getErrorMessage(error)
+        failures: reportedFailures.map(({ ext }, index) => ({
+          ext: ext.slice(0, MAX_EXTENSION_PATH_LENGTH),
+          message: errors[index].message.slice(
+            0,
+            MAX_EXTENSION_DIAGNOSTIC_LENGTH
+          ),
+          stack: errors[index].stack?.slice(0, MAX_EXTENSION_DIAGNOSTIC_LENGTH)
         }))
       }
     }
