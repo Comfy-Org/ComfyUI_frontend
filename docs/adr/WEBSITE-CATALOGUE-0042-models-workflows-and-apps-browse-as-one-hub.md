@@ -35,9 +35,10 @@ one grid and not as separate catalogues.
 - `/hub/models/`, `/hub/workflows/` and `/hub/apps/` are three routes behind
   one tab bar. `ModelsCatalogue.vue` owns the tabs and renders exactly one of
   `WorkshopModelsGrid`, `WorkflowCatalogue` or `AppCatalogue` per section.
-- The sections share their furniture: the same sticky toolbar, the same shelf
-  and grid layout, and the same card shape and width from `card-layout.ts`.
-  What differs is the listing, not the way it is browsed.
+- The sections share their furniture: the same sticky toolbar band, the same
+  shelf and grid layout, and the same card shape and width from
+  `card-layout.ts`. What differs is what the band holds and what the list
+  holds, not the way either is browsed.
 - Each section lists one kind. A model and the workflows that run on it never
   appear in the same list, which is how the central objection to a single grid
   is answered: by not putting them side by side at all, rather than by labelling
@@ -46,9 +47,9 @@ one grid and not as separate catalogues.
   sort — over the same eight use cases, so the filter means the same thing in
   both and a reader carries one vocabulary between them.
 - Apps carry only the tabs. `AppCatalogue` mounts no search, filter or sort,
-  because a shelf of a handful of apps is read rather than searched. The tab is
-  therefore a deliberate exception to "browsed the same way", and the moment
-  the apps list grows past a screenful it needs revisiting.
+  because a shelf of a handful of apps is read rather than searched: the band
+  is there, with only the tabs in it. The moment the apps list grows past a
+  screenful this needs revisiting.
 
 This settles the shape of browsing. It does not settle what belongs on a
 workflow page, or where Run lives for a workflow that could run here.
